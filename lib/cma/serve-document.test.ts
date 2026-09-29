@@ -7,6 +7,8 @@ const getCmaStoredHtmlBySlug = vi.fn()
 const getCmaRenderSourceBySlug = vi.fn()
 const getCmaAccessIdentity = vi.fn()
 const renderImmersiveCmaHtml = vi.fn(() => '<html><body>DRAFT CMA FROM RENDER_ARGS</body></html>')
+const getCmaCityClosedDuring = vi.fn(async () => [] as unknown[])
+const getLikeHomeSales = vi.fn(async () => [] as unknown[])
 
 vi.mock('@/lib/data', () => ({
   getCmaServeHead: (...args: unknown[]) => getCmaServeHead(...args),
@@ -16,7 +18,8 @@ vi.mock('@/lib/data', () => ({
 }))
 
 vi.mock('@/lib/data/cma/builderReads', () => ({
-  getCmaCityClosedDuring: vi.fn(async () => []),
+  getCmaCityClosedDuring: () => getCmaCityClosedDuring(),
+  getLikeHomeSales: () => getLikeHomeSales(),
   getCmaBrokerBySlugOrEmail: vi.fn(async () => ({
     id: 'broker-1',
     slug: 'matthew-ryan',
@@ -174,6 +177,82 @@ describe('serveCmaDocument', () => {
     expect(result).toEqual({ kind: 'json', status: 404, body: { error: 'CMA not found' } })
     expect(renderImmersiveCmaHtml).not.toHaveBeenCalled()
     expect(getCmaStoredHtmlBySlug).not.toHaveBeenCalled()
+  })
+
+  it('still renders a draft when the live market and credit reads hang', async () => {
+    vi.useFakeTimers()
+    try {
+      getCmaCityClosedDuring.mockImplementation(() => new Promise(() => {}))
+      getLikeHomeSales.mockImplementation(() => new Promise(() => {}))
+      getCmaServeHead.mockResolvedValue({
+        html_path: 'db:cmas.html_content:cma-3711-purcell',
+        status: 'draft',
+        broker_slug: 'matthew-ryan',
+      })
+      getCmaRenderSourceBySlug.mockResolvedValue({
+        html_path: 'db:cmas.html_content:cma-3711-purcell',
+        status: 'draft',
+        broker_slug: 'matthew-ryan',
+        build_summary: null,
+        render_args: {
+          comps: [{ address: '3700 Purcell' }],
+          subject: {
+            streetAddress: '3711 Purcell',
+            city: 'Bend',
+            subdivision: 'Northwest Crossing',
+            sqft: 1800,
+            yearBuilt: 2004,
+            latitude: 44.06,
+            longitude: -121.3,
+          },
+          expiredAudit: { finalCycle: { listDate: '2025-01-15', offMarketDate: '2025-06-01' } },
+          generatedAtIso: '2025-06-02T00:00:00.000Z',
+        },
+      })
+      const pending = serveCmaDocument({
+        slug: 'cma-3711-purcell',
+        requestUrl: 'https://ryan-realty.com/admin/cmas/cma-3711-purcell/view',
+        isAdmin: true,
+        viewerEmail: 'matt@ryan-realty.com',
+        skipRegisterGate: true,
+      })
+      await vi.advanceTimersByTimeAsync(4_000)
+      const result = await pending
+      expect(result.kind).toBe('html')
+      if (result.kind !== 'html') return
+      expect(result.html).toContain('DRAFT CMA FROM RENDER_ARGS')
+      expect(result.html).not.toContain('CMA not found')
+    } finally {
+      vi.useRealTimers()
+      getCmaCityClosedDuring.mockImplementation(async () => [])
+      getLikeHomeSales.mockImplementation(async () => [])
+    }
+  })
+
+  it('serves stored HTML when immersive render hangs, not a blank response', async () => {
+    vi.useFakeTimers()
+    try {
+      renderImmersiveCmaHtml.mockImplementation(() => new Promise(() => {}) as unknown as string)
+      getCmaServeHead.mockResolvedValue(draftHead)
+      getCmaRenderSourceBySlug.mockResolvedValue(draftFromRenderArgs)
+      getCmaStoredHtmlBySlug.mockResolvedValue('<html><body>stored purcell letter</body></html>')
+      const pending = serveCmaDocument({
+        slug: DRAFT_SLUG,
+        requestUrl: `https://ryan-realty.com/admin/cmas/${DRAFT_SLUG}/view`,
+        isAdmin: true,
+        viewerEmail: 'matt@ryan-realty.com',
+        skipRegisterGate: true,
+      })
+      await vi.advanceTimersByTimeAsync(12_000)
+      const result = await pending
+      expect(result.kind).toBe('html')
+      if (result.kind !== 'html') return
+      expect(result.html).toContain('stored purcell letter')
+      expect(result.html).not.toContain('CMA not found')
+    } finally {
+      vi.useRealTimers()
+      renderImmersiveCmaHtml.mockImplementation(() => '<html><body>DRAFT CMA FROM RENDER_ARGS</body></html>')
+    }
   })
 })
 

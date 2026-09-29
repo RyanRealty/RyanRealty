@@ -881,6 +881,66 @@ export interface FailedAskCapResult {
   cappedTo: number | null
   /** What the comp engine wanted before the ceiling. */
   uncappedRecommended: number | null
+  /**
+   * True when the failed ask sat below the hero band, so the haircut
+   * was skipped and the recommendation was pinned to the band low.
+   */
+  belowRange?: boolean
+}
+
+/** Hero Low/High the letter prints. Same pair `closedCompBand` uses. */
+export function heroBandFromPricing(p: {
+  valueLow?: number | null
+  valueHigh?: number | null
+}): { low: number; high: number } | null {
+  const lo = Number(p.valueLow)
+  const hi = Number(p.valueHigh)
+  if (!(lo > 0) || !(hi > 0)) return null
+  return { low: Math.min(lo, hi), high: Math.max(lo, hi) }
+}
+
+function positivePrice(n: number | null | undefined): number | null {
+  return typeof n === 'number' && Number.isFinite(n) && n > 0 ? n : null
+}
+
+/**
+ * The closed-sale low a nudge or a failed-ask pin may use.
+ *
+ * The printed low is this number, unless a minimum-width open dropped it.
+ * That open is presentation. The same-subdivision floor, recorded as
+ * `evidenceLow` after the floor and before the open, wins over the earlier
+ * sale low when it is higher. When nothing was opened, this is the printed low.
+ */
+export function closedSaleLow(pricing: {
+  valueLow?: number | null
+  valueHigh?: number | null
+  rangeRule?: { saleLow?: number; evidenceLow?: number } | null
+}): number | null {
+  const printed = heroBandFromPricing(pricing)
+  if (!printed) return null
+  const above = [positivePrice(pricing.rangeRule?.saleLow), positivePrice(pricing.rangeRule?.evidenceLow)].filter(
+    (n): n is number => n != null && n > printed.low && n <= printed.high,
+  )
+  if (above.length === 0) return printed.low
+  return Math.max(...above)
+}
+
+/**
+ * Seller sentence when the last ask was already under the sales. No em dash.
+ * Printed on the pricing beat and stored on `pricing.notes`.
+ */
+export function failedAskBelowRangeNote(ask: number): string {
+  return `The last listing asked ${usd(ask)}, below the sales band. The recommended list sits on the sales, not on that ask.`
+}
+
+function hasStoredBelowRangeReason(pricing: {
+  priceOverride?: number | null
+  reviewReason?: string | null
+  notes?: string[]
+}): boolean {
+  if (pricing.priceOverride == null || !(pricing.priceOverride > 0)) return false
+  const text = `${pricing.reviewReason ?? ''} ${(pricing.notes ?? []).join(' ')}`
+  return /broker adjustment|price override|applied on review/i.test(text)
 }
 
 /**
@@ -943,25 +1003,62 @@ function clampUsd(n: number): string {
   return `$${Math.round(n).toLocaleString('en-US')}`
 }
 
+function sameMark(a: number, b: number): boolean {
+  if (!(a > 0) || !(b > 0)) return false
+  return Math.round(a / 1000) * 1000 === Math.round(b / 1000) * 1000
+}
+
+/** The recent-failure ceiling, rounded the same way clampCeilings rounds it. */
+function failedAskP75(ask: number): number {
+  return Math.round((FAILED_ASK_BACKTEST.closeP75Ratio * ask) / 1000) * 1000
+}
+
 /**
- * The sentence the document prints where the clamp binds. It names the number
- * the evidence produced, the number that already failed, and the number we
- * will print instead — so a reader who follows the method to one answer is
- * never handed a different one with nothing in between.
+ * The sentence the document prints where the clamp binds.
+ *
+ * The cover owns the recommended dollars. This sentence must not say "that
+ * price" next to the failed ask, and it must not call the cover price the
+ * 75th percentile unless that price still is the percentile. A later nudge
+ * or a band-floor lift moves the list off the percentile. The prose follows.
  */
+export function failedAskClampProse(args: {
+  supported: number
+  ask: number
+  /** The ceiling the clamp itself wrote, before a later nudge. */
+  ceiling: number
+  /** The list the letter will print. */
+  rec: number
+  /** True when the ceiling was the recent-failure percentile, not the ask itself. */
+  percentile: boolean
+}): string {
+  const head = `The sales support a value of ${clampUsd(args.supported)}.`
+  const because = `Because ${clampUsd(args.ask)} already failed to sell`
+  const pairs = FAILED_ASK_BACKTEST.pairs.toLocaleString('en-US')
+  const p75 = failedAskP75(args.ask)
+  const recIsP75 = args.percentile && sameMark(args.rec, p75) && sameMark(args.ceiling, p75)
+  if (recIsP75) {
+    return `${head} ${because}, we recommend the price on the cover, the 75th percentile of what failed listings later sold for across ${pairs} Central Oregon pairs.`
+  }
+  if (args.percentile && args.rec < p75) {
+    return `${head} ${because}, we do not list above the 75th percentile of what failed listings later sold for across ${pairs} Central Oregon pairs. The price on the cover is under that ceiling.`
+  }
+  return `${head} ${because}, we recommend the price on the cover, which stays under that ask.`
+}
+
 function clampSentence(args: {
   supported: number
   ask: number
   printed: number
   phrase: string | null
 }): string {
-  const head = `The sales alone would support listing at ${clampUsd(args.supported)}.`
-  const why = args.phrase
-    ? `${clampUsd(args.printed)}, which is ${args.phrase} across ${FAILED_ASK_BACKTEST.pairs.toLocaleString(
-        'en-US',
-      )} Central Oregon pairs.`
-    : `${clampUsd(args.printed)}.`
-  return `${head} Because ${clampUsd(args.ask)} already failed to sell, we do not recommend going above ${why}`
+  const percentile = args.phrase != null && /75th percentile/.test(args.phrase)
+  return failedAskClampProse({
+    supported: args.supported,
+    ask: args.ask,
+    ceiling: args.printed,
+    rec: args.printed,
+    percentile,
+  })
 }
 
 /**
@@ -990,6 +1087,11 @@ export function applyFailedAskCap(
     clamp?: CmaPricingClamp | null
     /** Re-anchored here whenever the ceiling moves the list (round four, class A). */
     sellerNet?: CmaSellerNet | null
+    valueLow?: number
+    valueHigh?: number
+    priceOverride?: number | null
+    failedAskBelowRange?: boolean
+    rangeRule?: { saleLow?: number; evidenceLow?: number } | null
   },
   args: { lastFailedListPrice: number | null; offMarketDate: string | null; asOf?: Date },
 ): FailedAskCapResult {
@@ -1001,6 +1103,7 @@ export function applyFailedAskCap(
     (pricing.clamp?.applications ?? []).map((a) => [a.tier, a.before]),
   )
   pricing.clamp = null
+  pricing.failedAskBelowRange = false
   // THE NET FOLLOWS THE LIST. This ceiling is the one thing on the build path
   // that moves `recommended` after `attachSellerNet` has run, and it runs up
   // to three times per build (lib/cma/build.ts steps 4, 4.45, 4.46). A seller
@@ -1008,6 +1111,30 @@ export function applyFailedAskCap(
   // new place, so every exit from here re-anchors it.
   reanchorSellerNet(pricing)
   if (ask == null || !Number.isFinite(ask) || ask <= 0) return none
+  const band = heroBandFromPricing(pricing)
+  // The sales' own low. A minimum-width open can put the printed low under
+  // this. The ask is judged against the sales, not against that open.
+  const salesLow = closedSaleLow(pricing)
+  // Haircut only when the failed ask was inside or above the sales.
+  // An ask already below the sales is not a ceiling: cutting further from it
+  // is the Nugget defect (range $734k-$878k, ask $725k, rec $712k). Pin the
+  // recommendation to the sales low so the printed list sits on the sales
+  // and the expired-list-cap contract can pass (rec <= that low, not rec <= ask).
+  if (band && salesLow != null && ask < salesLow) {
+    pricing.failedAskBelowRange = true
+    const pinned = salesLow
+    pricing.recommended = pinned
+    pricing.conservative = Math.min(pricing.conservative, pinned)
+    if (pricing.highEnd < pinned) pricing.highEnd = pinned
+    const note = failedAskBelowRangeNote(ask)
+    if (!pricing.notes.includes(note)) pricing.notes.push(note)
+    reanchorSellerNet(pricing)
+    return { applied: false, cappedTo: null, uncappedRecommended: null, belowRange: true }
+  }
+  // A broker override with a note may sit below the sales. Do not lift or cut it.
+  if (band && salesLow != null && pricing.recommended < salesLow && hasStoredBelowRangeReason(pricing)) {
+    return none
+  }
 
   let recent = false
   if (args.offMarketDate) {
@@ -1021,8 +1148,18 @@ export function applyFailedAskCap(
 
   const ceilings = clampCeilings(ask, recent)
   const consCeil = ceilings.conservative.value
-  const recCeil = ceilings.recommended.value
-  const highCeil = ceilings.highEnd.value
+  // Inside the band the haircut may still bind, but the recommend never
+  // drops below the hero low unless a stored broker override said so.
+  const askInsideBand = band != null && salesLow != null && ask >= salesLow && ask <= band.high
+  const insideFloor = salesLow ?? band?.low ?? 0
+  const recCeil =
+    askInsideBand && !hasStoredBelowRangeReason(pricing)
+      ? Math.max(ceilings.recommended.value, insideFloor)
+      : ceilings.recommended.value
+  const highCeil =
+    askInsideBand && !hasStoredBelowRangeReason(pricing)
+      ? Math.max(ceilings.highEnd.value, recCeil)
+      : ceilings.highEnd.value
   if (pricing.conservative <= consCeil && pricing.recommended <= recCeil && pricing.highEnd <= highCeil)
     return none
 
@@ -1084,7 +1221,7 @@ export function applyFailedAskCap(
         sentence: clampSentence({
           supported: headline.before,
           ask,
-          printed: headline.after,
+          printed: pricing.recommended,
           phrase: ceilings[headline.tier].phrase,
         }),
       }
@@ -1114,6 +1251,47 @@ export function applyFailedAskCap(
   if (!pricing.notes.includes(askNote)) pricing.notes.push(askNote)
   reanchorSellerNet(pricing)
   return { applied: true, cappedTo: recCeil, uncappedRecommended: supported }
+}
+
+/**
+ * The actives step and the closed-band clamp can move `recommended` after
+ * `applyFailedAskCap` has already written "we recommend listing at $X".
+ * Rewrite that sentence and `clamp.after` from the final recommendation so
+ * the letter does not print two recommend prices.
+ */
+export function rewriteFailedAskClampAfterRec<
+  T extends { recommended: number; clamp?: CmaPricingClamp | null },
+>(pricing: T): T {
+  const clamp = pricing.clamp
+  if (!clamp || clamp.kind !== 'failed-ask') return pricing
+  const rec = Math.round(pricing.recommended)
+  if (!(rec > 0)) return pricing
+  const askMatch = clamp.sentence.match(/Because \$([\d,]+) already failed to sell/i)
+  const ask = askMatch ? Number(askMatch[1]!.replace(/,/g, '')) : null
+  const percentile = clamp.basis?.ratio === FAILED_ASK_BACKTEST.closeP75Ratio || /75th percentile/.test(clamp.sentence)
+  const sentence =
+    ask != null && ask > 0
+      ? failedAskClampProse({
+          supported: clamp.before,
+          ask,
+          ceiling: clamp.after,
+          rec,
+          percentile,
+        })
+      : clamp.sentence
+  const after = clamp.appliedTo === 'recommended' ? rec : clamp.after
+  if (sentence === clamp.sentence && clamp.after === after && clamp.applications.every((a) => a.tier !== 'recommended' || a.after === rec)) {
+    return pricing
+  }
+  return {
+    ...pricing,
+    clamp: {
+      ...clamp,
+      after,
+      sentence,
+      applications: clamp.applications.map((a) => (a.tier === 'recommended' ? { ...a, after: rec } : a)),
+    },
+  }
 }
 
 /**

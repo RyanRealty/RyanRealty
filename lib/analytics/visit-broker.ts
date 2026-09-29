@@ -114,15 +114,25 @@ export function visitBrokerGa4Fields(slug: BrokerSlug | null | undefined): Visit
   }
 }
 
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/**
+ * `?`, raw `&`, and HTML `&amp;` are all separators. A link written into an
+ * email attribute is `utm_source=cma&amp;utm_medium=document`, and a check
+ * that only sees `&` will miss the param and append a second one.
+ */
 export function hasQueryParam(url: string, name: string): boolean {
-  return new RegExp(`[?&]${name}=`, 'i').test(url)
+  return new RegExp(`(?:\\?|&(?:amp;)?)${escapeRegExp(name)}=`, 'i').test(url)
 }
 
 export function queryParamValue(url: string, name: string): string | null {
+  const normalized = /&amp;/i.test(url) ? url.replace(/&amp;/gi, '&') : url
   try {
-    return new URL(url).searchParams.get(name)
+    return new URL(normalized).searchParams.get(name)
   } catch {
-    const m = url.match(new RegExp(`[?&]${name}=([^&#]*)`, 'i'))
+    const m = normalized.match(new RegExp(`[?&]${escapeRegExp(name)}=([^&#]*)`, 'i'))
     if (!m) return null
     try {
       return decodeURIComponent(m[1])
@@ -132,10 +142,14 @@ export function queryParamValue(url: string, name: string): string | null {
   }
 }
 
+/** When the URL is HTML-escaped, the new separator is `&amp;` too. */
 export function appendQueryParam(url: string, name: string, value: string): string {
   if (hasQueryParam(url, name)) return url
-  const sep = url.includes('?') ? '&' : '?'
-  return `${url}${sep}${name}=${encodeURIComponent(value)}`
+  const hashAt = url.indexOf('#')
+  const base = hashAt === -1 ? url : url.slice(0, hashAt)
+  const fragment = hashAt === -1 ? '' : url.slice(hashAt)
+  const sep = base.includes('?') ? (/&amp;/i.test(base) ? '&amp;' : '&') : '?'
+  return `${base}${sep}${name}=${encodeURIComponent(value)}${fragment}`
 }
 
 /**

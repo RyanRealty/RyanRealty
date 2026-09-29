@@ -69,6 +69,13 @@ describe('mapBpoQueueRow', () => {
     expect(r.contactEmail).toBeNull()
   })
 
+  it('carries the subject listing key when the opinion has one', () => {
+    expect(mapBpoQueueRow(bpoRow()).subjectListingKey).toBeNull()
+    expect(mapBpoQueueRow(bpoRow({ subject_listing_key: 'ZZTESTKEYLOT33' })).subjectListingKey).toBe(
+      'ZZTESTKEYLOT33',
+    )
+  })
+
   it('has no asking price of its own to compare against', () => {
     const r = mapBpoQueueRow(bpoRow())
     expect(r.theirPrice).toBeNull()

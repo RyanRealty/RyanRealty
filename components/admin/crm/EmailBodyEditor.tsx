@@ -39,7 +39,7 @@
  */
 
 import { useMemo, useRef, useState } from 'react'
-import { buildEmailPreviewDoc, looksLikeHtml, type EmailBodyFormat } from '@/lib/crm/email-body'
+import { buildEmailPreviewDoc, buildEmailPreviewSrcDoc, looksLikeHtml, withPreviewLinkTarget, type EmailBodyFormat } from '@/lib/crm/email-body'
 import { findUnresolvedMergeTokens } from '@/lib/crm/merge'
 import { MergeFieldInserter, insertAtCursor, type CustomFieldToken } from '@/components/admin/crm/MergeFieldInserter'
 import { FilterChip, SearchField } from '@/components/admin/v2'
@@ -68,6 +68,12 @@ export function EmailBodyEditor(props: {
   mergeMode?: 'resolved' | 'template'
   /** Live crm_field_definitions → Custom Fields group in the merge dropdown. */
   customFields?: CustomFieldToken[]
+  /**
+   * When set, the preview renders this HTML for the current body. The
+   * textarea still shows `body` as typed. CMA review passes the shared
+   * letter renderer so the preview and the send cannot drift.
+   */
+  renderPreviewBody?: (body: string) => string
   /** Extra toolbar control (EmailComposer injects its attachment button). */
   toolbarExtra?: React.ReactNode
   subjectPlaceholder?: string
@@ -81,10 +87,17 @@ export function EmailBodyEditor(props: {
     looksLikeHtml(props.body) ? 'html' : 'text',
   )
 
-  const previewDoc = useMemo(
-    () => buildEmailPreviewDoc(props.body, props.signatureHtml ?? null, format),
-    [props.body, props.signatureHtml, format],
-  )
+  const previewDoc = useMemo(() => {
+    if (props.renderPreviewBody) {
+      if (!props.body.trim()) {
+        return withPreviewLinkTarget(buildEmailPreviewDoc('', props.signatureHtml ?? null, 'text'))
+      }
+      return withPreviewLinkTarget(
+        buildEmailPreviewSrcDoc(`${props.renderPreviewBody(props.body)}${props.signatureHtml ?? ''}`),
+      )
+    }
+    return withPreviewLinkTarget(buildEmailPreviewDoc(props.body, props.signatureHtml ?? null, format))
+  }, [props.body, props.signatureHtml, props.renderPreviewBody, format])
   const unresolved = useMemo(
     () => findUnresolvedMergeTokens(props.subject + ' ' + props.body),
     [props.subject, props.body],
@@ -170,10 +183,14 @@ export function EmailBodyEditor(props: {
         className={cn('av2-input field-sizing-content w-full', tab === 'edit' ? '' : 'hidden')}
         style={format === 'html' ? { fontFamily: 'var(--a-font-mono)', fontSize: 'var(--a-text-sm)' } : undefined}
       />
+      {/* Preview-only: base target=_blank plus allow-popups-to-escape-sandbox.
+          The sent report button has no target. A click that stays in the
+          sandboxed frame drops the admin cookie, and a draft then returns
+          CMA not found. Scripts and same-origin stay off. */}
       {tab === 'preview' ? (
         <iframe
           title="Email preview"
-          sandbox=""
+          sandbox="allow-popups allow-popups-to-escape-sandbox"
           srcDoc={previewDoc}
           className="h-96 w-full rounded-xl"
           style={{ border: '1px solid var(--a-border)', background: 'var(--a-surface)' }}

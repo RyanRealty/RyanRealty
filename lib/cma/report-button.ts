@@ -5,8 +5,12 @@
  * previews is what goes out (send walk 2026-09-08: the preview of a custom
  * email showed no report link while the send appended one).
  */
+function escapeAttr(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
+}
+
 export function cmaReportButtonHtml(viewUrl: string): string {
-  return `<p style="margin:0 0 24px 0;"><a href="${viewUrl}" style="display:inline-block;background:#102742;color:#faf8f4;font-size:13px;font-weight:700;letter-spacing:.08em;text-decoration:none;padding:14px 32px;">READ THE FULL REPORT &rarr;</a></p>`
+  return `<p style="margin:0 0 24px 0;"><a href="${escapeAttr(viewUrl)}" style="display:inline-block;background:#102742;color:#faf8f4;font-size:13px;font-weight:700;letter-spacing:.08em;text-decoration:none;padding:14px 32px;">READ THE FULL REPORT &rarr;</a></p>`
 }
 
 /** The preheader for a broker-typed note: its first sentence, not the composed one. */

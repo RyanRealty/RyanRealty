@@ -10,6 +10,7 @@ import { priceHistoryLineCompactHtml, pricePathFromListing } from '@/lib/cma/pri
 import { listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
 import { compAreaContains, compAreaIn, compAreaPhrase, milesPhrase, type CompArea } from '@/lib/pricing/comp-area'
 import { countWord } from '@/lib/pricing/estimate'
+import { publishStreetNumber, publishStreetPart } from '@/lib/listing/publish-street-line'
 
 const esc = escapeHtml
 
@@ -33,6 +34,8 @@ export type CmaBandRival = {
   originalListPrice?: number | null
   onMarketDate?: string | null
   listingHistoryLine?: string | null
+  /** Miles from the subject. Blank on a stored row until print fills it from coordinates. */
+  proximity?: string | null
 }
 
 export type CmaBandSubject = {
@@ -55,9 +58,8 @@ export type BandStreetRow = {
 }
 
 export function rivalAddress(row: BandStreetRow): string {
-  return [row.StreetNumber, row.StreetName]
-    .map((p) => (p ?? '').trim())
-    .filter(Boolean)
+  return [publishStreetNumber(row.StreetNumber), publishStreetPart(row.StreetName)]
+    .filter((p): p is string => Boolean(p))
     .join(' ')
 }
 
@@ -558,6 +560,44 @@ export function buildBandRivalSet(input: {
   }
 }
 
+/**
+ * The competition read came back empty (no inventory, or no ring to query).
+ * The chapter still says so. It does not disappear, and it does not fall
+ * back to every listing in the city.
+ */
+export function emptyCompetitionSet(args: {
+  rings: readonly CompArea[]
+  compArea: CompArea
+  lo: number
+  hi: number
+}): CmaBandRivalSet {
+  const area = args.rings[0] && args.rings[0].kind !== 'city' ? args.rings[0] : null
+  const lo = `$${args.lo.toLocaleString('en-US')}`
+  const hi = `$${args.hi.toLocaleString('en-US')}`
+  const sentence = area
+    ? `No home ${compAreaIn(area)} is for sale between ${lo} and ${hi}, and none is under contract. The search did not cover the whole city.`
+    : `This home has no map point, so no competition was pulled. The search did not cover the whole city.`
+  return {
+    area: area ?? {
+      kind: 'radius',
+      names: [],
+      radiusMiles: null,
+      centre: args.compArea.centre,
+      source: 'competition: no coordinates, city not used',
+      sentence: 'The homes closest to yours.',
+    },
+    lo: args.lo,
+    hi: args.hi,
+    activeCount: 0,
+    pendingCount: 0,
+    rivals: [],
+    sentence,
+    source: 'Competition ladder returned no listings inside the cap.',
+    widenedFrom: null,
+    ringsTried: args.rings.flatMap((r) => (r.kind === 'radius' && r.radiusMiles != null ? [r.radiusMiles] : [])),
+  }
+}
+
 /** Minimum active-or-pending count a rural competition ring must hold before the search stops widening (Matt 2026-09-08). */
 export const COMPETITION_RING_MIN = 3
 
@@ -591,7 +631,14 @@ export type CompetitionRingPick<T> = {
  * widest is always a radius (only the sole, unwidened ring can be a mapped
  * boundary or a city), so re-testing membership only ever needs lat/lng.
  */
-export function pickCompetitionRing<T extends { Latitude?: number | null; Longitude?: number | null }>(
+export function pickCompetitionRing<
+  T extends {
+    Latitude?: number | null
+    Longitude?: number | null
+    SubdivisionName?: string | null
+    City?: string | null
+  },
+>(
   input: {
     rings: readonly CompArea[]
     activeRows: readonly T[]
@@ -604,8 +651,8 @@ export function pickCompetitionRing<T extends { Latitude?: number | null; Longit
   const geo = (r: T) => ({
     latitude: r.Latitude ?? null,
     longitude: r.Longitude ?? null,
-    subdivision: null,
-    city: null,
+    subdivision: r.SubdivisionName ?? null,
+    city: r.City ?? null,
   })
   for (let i = 0; i < rings.length; i++) {
     const ring = rings[i]!

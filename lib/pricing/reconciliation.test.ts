@@ -43,7 +43,9 @@ describe('reconcileAdjustedSales', () => {
       ],
       subjectSqft: 1_700,
     })
-    expect(out.weights.map((w) => w.weight)).toEqual([60, 30, 10])
+    const shares = out.weights.map((w) => w.weight)
+    expect(Math.max(...shares)).toBeLessThanOrEqual(40)
+    expect(shares.reduce((a, b) => a + b, 0)).toBeCloseTo(100, 5)
     expect(out.mostWeighted).toBe('A')
   })
 

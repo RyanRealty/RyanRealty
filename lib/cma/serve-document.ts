@@ -13,6 +13,7 @@ import {
 import { getCmaBrokerBySlugOrEmail } from '@/lib/data/cma/builderReads'
 import { renderImmersiveCmaHtml } from '@/lib/cma/immersive'
 import { resolveCmaPrintHtml, resolveDocLinkCtx } from '@/lib/cma/print-html'
+import { applyPreparedLinesToStoredHtml } from '@/lib/cma/letter-privacy'
 import { buildCmaMapDataUri, cmaMapOptionsFromArgs } from '@/lib/cma/map'
 import type { CompPinMapOverlay } from '@/lib/cma/comp-pin-map'
 import { applyCompVerdicts, verdictsFromBuildSummary } from '@/lib/cma/client-facing'
@@ -33,6 +34,7 @@ import {
 import { SMS_CONSENT_TEXT } from '@/lib/crm/sms-consent-text'
 import type { CmaRenderSource } from '@/lib/data/cma/documents'
 import { adminReviewBannerHtml, injectAdminReviewBanner } from '@/lib/cma/review-banner'
+import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { IDENTITY_LINK_PARAM, verifyPersonLinkToken } from '@/lib/identity/link-token'
 import { PERSON_COOKIE, signedPersonIdFromCookie } from '@/lib/identity/person-cookie'
 
@@ -46,6 +48,14 @@ import { PERSON_COOKIE, signedPersonIdFromCookie } from '@/lib/identity/person-c
 function recipientFromParam(v: string | null | undefined): number | null {
   return verifyPersonLinkToken(v)?.personId ?? null
 }
+
+/** Optional live reads (market, credits, map, broker). Past this, render what is already stored. */
+const CMA_READ_MS = 4_000
+/** Backstop around the whole immersive render, longer than one optional read so it does not race them. */
+const CMA_IMMERSIVE_MS = 12_000
+
+const CMA_RENDER_UNAVAILABLE_HTML =
+  '<!doctype html><html><head><meta charset="utf-8"><title>Report</title></head><body><p>This report exists, but it did not finish rendering. Refresh to try again.</p></body></html>'
 
 export const CMA_DOC_HEADERS = {
   'Content-Type': 'text/html',
@@ -85,7 +95,12 @@ export async function immersiveFromRow(
 ): Promise<string | null> {
   if (!row.render_args || typeof row.render_args !== 'object') return null
   try {
-    const brokerRow = await getCmaBrokerBySlugOrEmail({ slug: row.broker_slug ?? 'matthew-ryan' })
+    const brokerRow = await withTimeoutFallback(
+      getCmaBrokerBySlugOrEmail({ slug: row.broker_slug ?? 'matthew-ryan' }),
+      null,
+      CMA_READ_MS,
+      'cma.broker',
+    )
     const broker: CmaBroker = {
       id: (brokerRow?.id as string) ?? null,
       slug: (brokerRow?.slug as string) ?? (row.broker_slug ?? 'matthew-ryan'),
@@ -100,44 +115,57 @@ export async function immersiveFromRow(
     const comps = applyCompVerdicts(stored.comps ?? [], verdictsFromBuildSummary(row.build_summary))
     // C9: render_args omits mapDataUri (~300KB). Rebuild the Google comps pin map
     // here so Open report / immersive shows subject + numbered sales once.
-    let mapDataUri: string | null = stored.mapDataUri ?? null
     // The overlay travels with the tile: it is the centre, zoom and pin
     // coordinates the tile was actually drawn at, and without it chapter 3's
     // map is a bitmap that cannot answer a tap (tasteReview item 2).
-    let mapOverlay: CompPinMapOverlay | null = null
-    if (!mapDataUri) {
-      try {
-        const map = await buildCmaMapDataUri(stored.subject, comps, cmaMapOptionsFromArgs(stored))
-        mapDataUri = map?.dataUri ?? null
-        mapOverlay = map
-          ? {
-              view: map.view,
-              pins: map.pins,
-              boundaryShown: map.boundaryShown,
-              parentShown: map.parentShown,
-              radiusShown: map.radiusShown,
+    const mapPromise = stored.mapDataUri
+      ? Promise.resolve({ dataUri: stored.mapDataUri as string, overlay: null as CompPinMapOverlay | null })
+      : withTimeoutFallback(
+          (async () => {
+            try {
+              const map = await buildCmaMapDataUri(stored.subject, comps, cmaMapOptionsFromArgs(stored))
+              if (!map?.dataUri) return { dataUri: null as string | null, overlay: null as CompPinMapOverlay | null }
+              return {
+                dataUri: map.dataUri,
+                overlay: {
+                  view: map.view,
+                  pins: map.pins,
+                  boundaryShown: map.boundaryShown,
+                  parentShown: map.parentShown,
+                  radiusShown: map.radiusShown,
+                } satisfies CompPinMapOverlay,
+              }
+            } catch {
+              return { dataUri: null as string | null, overlay: null as CompPinMapOverlay | null }
             }
-          : null
-      } catch {
-        mapDataUri = null
-        mapOverlay = null
-      }
-    }
+          })(),
+          { dataUri: null, overlay: null },
+          CMA_READ_MS,
+          'cma.map',
+        )
+    // Budget is this serve path only. Print / PDF call the same loaders with
+    // no budget, so a slow read still lands in the letter instead of being dropped.
+    const [mapBits, listingMarket, likeHomeCredits, docLinks] = await Promise.all([
+      mapPromise,
+      listingMarketForDocument(stored, row.status, CMA_READ_MS),
+      likeHomeCreditsForDocument({ ...stored, comps }, row.status, CMA_READ_MS),
+      slug
+        ? withTimeoutFallback(resolveDocLinkCtx(slug, broker.slug), null, CMA_READ_MS, 'cma.docLinks')
+        : Promise.resolve(null),
+    ])
     const base = {
       ...stored,
       comps,
       broker,
-      mapDataUri,
-      mapOverlay,
+      mapDataUri: mapBits.dataUri,
+      mapOverlay: mapBits.overlay,
       subjectMapDataUri: null,
       // Identity for every tracked link in the document. Resolved here rather
       // than at build: it belongs to the delivery, not to the stored figures.
-      docLinks: slug ? await resolveDocLinkCtx(slug, broker.slug) : null,
+      docLinks,
       // Finalized/delivered owner docs never print the draft review band.
       documentStatus: row.status,
     }
-    const listingMarket = await listingMarketForDocument(base, row.status)
-    const likeHomeCredits = await likeHomeCreditsForDocument(base, row.status)
     const hydrated = hydrateArea
       ? await hydrateCmaMarketArea({ ...base, listingMarket, likeHomeCredits })
       : { ...base, listingMarket, likeHomeCredits }
@@ -153,8 +181,12 @@ function withTracker(html: string, extra = ''): string {
   return html.includes('</body>') ? html.replace('</body>', `${tracker}</body>`) : html + tracker
 }
 
-function storedHtmlResult(html: string, origin: string, extra = ''): CmaServeResult {
-  let out = html.replace(/https?:\/\/[^'")\s]+(\/fonts\/[^'")\s]+)/g, `${origin}$1`)
+function storedHtmlResult(html: string, origin: string, extra = '', street?: string | null): CmaServeResult {
+  let out = applyPreparedLinesToStoredHtml(html, {
+    streetAddress: street,
+    brokerName: 'Matt Ryan',
+  })
+  out = out.replace(/https?:\/\/[^'")\s]+(\/fonts\/[^'")\s]+)/g, `${origin}$1`)
   out = withTracker(out, `<script src="/rr-cma-doc.js" defer></script>${extra}`)
   return { kind: 'html', status: 200, html: out, headers: CMA_DOC_HEADERS }
 }
@@ -180,10 +212,32 @@ export type CmaServeOpts = {
 export async function serveCmaDocument(opts: CmaServeOpts): Promise<CmaServeResult> {
   const result = await serveCmaDocumentResult(opts)
   if (!opts.adminReview || result.kind !== 'html') return result
-  const source = await getCmaRenderSourceBySlug(opts.slug.trim().toLowerCase())
+  // The review gate reads pricing off render_args. Cap it: this is a second
+  // fetch after the letter is already in hand, and it must not blank the tab.
+  const source = await withTimeoutFallback(
+    getCmaRenderSourceBySlug(opts.slug.trim().toLowerCase()),
+    null,
+    CMA_READ_MS,
+    'cma.reviewBanner',
+  )
   const pricing = (source?.render_args as { pricing?: unknown } | null)?.pricing ?? null
   const banner = adminReviewBannerHtml(pricing)
   return banner ? { ...result, html: injectAdminReviewBanner(result.html, banner) } : result
+}
+
+/** Stored letter, else a legacy file, else a visible error. Never "CMA not found" — the head row exists. */
+async function storedOrUnavailable(
+  safeSlug: string,
+  origin: string,
+  consentBar: string,
+  htmlPath: string | null,
+): Promise<CmaServeResult> {
+  const stored = await withTimeoutFallback(getCmaStoredHtmlBySlug(safeSlug), null, CMA_READ_MS, 'cma.storedHtml')
+  if (stored) return storedHtmlResult(stored, origin, consentBar)
+  if (htmlPath?.startsWith('public/cmas/')) {
+    return { kind: 'redirect', url: htmlPath.replace(/^public/, ''), status: 302 }
+  }
+  return { kind: 'html', status: 200, html: CMA_RENDER_UNAVAILABLE_HTML, headers: CMA_DOC_HEADERS }
 }
 
 async function serveCmaDocumentResult(opts: CmaServeOpts): Promise<CmaServeResult> {
@@ -297,17 +351,46 @@ async function serveCmaDocumentResult(opts: CmaServeOpts): Promise<CmaServeResul
   // Tip Ready letter fixes (C1/C4/C9) land without a Falcon html_content rebuild.
   // Market hydrate stays false (D27 freeze). Map rebuild is fail-open + local.
   if (!wantsPrint) {
-    const source = await getCmaRenderSourceBySlug(safeSlug)
-    if (source) {
-      const immersive = await immersiveFromRow(source, origin, false, safeSlug)
-      if (immersive) {
-        return { kind: 'html', status: 200, html: withTracker(immersive, consentBar), headers: CMA_DOC_HEADERS }
+    const sourceRead = await withTimeoutFallbackResult(
+      getCmaRenderSourceBySlug(safeSlug),
+      null,
+      CMA_READ_MS,
+      'cma.renderSource',
+    )
+    if (!sourceRead.ok) {
+      return storedOrUnavailable(safeSlug, origin, consentBar, head.html_path)
+    }
+    if (sourceRead.value) {
+      const rendered = await withTimeoutFallbackResult(
+        immersiveFromRow(sourceRead.value, origin, false, safeSlug),
+        null,
+        CMA_IMMERSIVE_MS,
+        'cma.immersive',
+      )
+      if (rendered.ok && rendered.value) {
+        return { kind: 'html', status: 200, html: withTracker(rendered.value, consentBar), headers: CMA_DOC_HEADERS }
+      }
+      // A hang is not "no document" and not "CMA not found" — the row was found above.
+      if (!rendered.ok) {
+        return storedOrUnavailable(safeSlug, origin, consentBar, head.html_path)
       }
     }
   }
 
   // Fallback: frozen stored HTML (print path, legacy rows, immersive render miss).
-  const stored = await getCmaStoredHtmlBySlug(safeSlug)
+  const storedRead = await withTimeoutFallbackResult(
+    getCmaStoredHtmlBySlug(safeSlug),
+    null,
+    CMA_READ_MS,
+    'cma.storedHtml',
+  )
+  if (!storedRead.ok) {
+    if (head.html_path?.startsWith('public/cmas/')) {
+      return { kind: 'redirect', url: head.html_path.replace(/^public/, ''), status: 302 }
+    }
+    return { kind: 'html', status: 200, html: CMA_RENDER_UNAVAILABLE_HTML, headers: CMA_DOC_HEADERS }
+  }
+  const stored = storedRead.value
   if (stored) return storedHtmlResult(stored, origin, consentBar)
 
   if (head.html_path?.startsWith('public/cmas/')) {

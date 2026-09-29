@@ -949,89 +949,97 @@ export function runPickerContractTests(d, { root = process.cwd() } = {}) {
 
 /* CLI: print the shotsHash for a parity.json, or for key=path pairs.
  * `--ship <parity.json>` is the Tip Ready / node-complete gate. */
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+/**
+ * CLI body. Returns the exit code instead of calling process.exit().
+ * process.exit() right after console.error() drops output on macOS, where
+ * stdout/stderr pipes are asynchronous: everything past the first 8 KB of a
+ * long refuse list was lost (the open-state / catalog line comes last), so a
+ * caller reading the output saw a truncated verdict. Setting exitCode and
+ * returning lets Node flush both streams before it exits.
+ */
+function runCli() {
   const root = process.cwd()
   const args = process.argv.slice(2)
   if (args[0] === '--about-lock') {
     const problems = aboutLockSourceProblems({ root })
     if (problems.length) {
       console.error(problems.join('\n'))
-      process.exit(1)
+      return 1
     }
     console.log(`about lock OK — ${ABOUT_LOCK_ID}`)
-    process.exit(0)
+    return 0
   }
   if (args[0] === '--ship') {
     const rel = args[1]
     if (!rel) {
       console.error('usage: node scripts/lib/taste-receipt.mjs --ship <parity.json> | --about-lock')
-      process.exit(2)
+      return 2
     }
     const d = JSON.parse(readFileSync(join(root, rel), 'utf8'))
     if (isPickerContract(d)) {
       const problems = pickerContractProblems(d, { root })
       if (problems.length) {
         console.error(problems.join('\n'))
-        process.exit(1)
+        return 1
       }
       const ran = runPickerContractTests(d, { root })
       if (ran.status !== 0) {
         console.error(ran.output)
         console.error('ship refuse — picker contract tests failed. Cos prose is not Tip Ready.')
-        process.exit(1)
+        return 1
       }
       console.log('ship OK — picker contract tests passed')
-      process.exit(0)
+      return 0
     }
     if (isPlaceCraftDocument(d)) {
       const problems = placeCraftShipProblems(d, { root })
       if (problems.length) {
         console.error(problems.join('\n'))
         console.error('ship refuse — place craft Tip Ready needs competitor first-look + map-drives-hierarchy. Cos prose is not Tip Ready.')
-        process.exit(1)
+        return 1
       }
       console.log('ship OK — place craft · map-drives-hierarchy · competitor first-look')
-      process.exit(0)
+      return 0
     }
     if (isMapHierarchyDocument(d)) {
       const problems = mapHierarchyShipProblems(d, { root })
       if (problems.length) {
         console.error(problems.join('\n'))
         console.error('ship refuse — map hierarchy Tip Ready needs subject-polygon-only + child-select zoom. Cos prose is not Tip Ready.')
-        process.exit(1)
+        return 1
       }
       console.log('ship OK — map-hierarchy · subject-polygon-only · child-select-zooms')
-      process.exit(0)
+      return 0
     }
     if (isHierarchyNamingDocument(d)) {
       const problems = hierarchyNamingShipProblems(d, { root })
       if (problems.length) {
         console.error(problems.join('\n'))
         console.error('ship refuse — hierarchy naming Tip Ready needs community≠neighborhood + name-only crumbs. Cos prose is not Tip Ready.')
-        process.exit(1)
+        return 1
       }
       console.log('ship OK — hierarchy-naming · community≠neighborhood · breadcrumb-sameness')
-      process.exit(0)
+      return 0
     }
     if (isPlaceTypedInventoryDocument(d)) {
       const problems = placeTypedInventoryShipProblems(d, { root })
       if (problems.length) {
         console.error(problems.join('\n'))
         console.error('ship refuse — place typed inventory Tip Ready needs typed stock + scrubber unmounted. Cos prose is not Tip Ready.')
-        process.exit(1)
+        return 1
       }
       console.log('ship OK — place-typed-inventory · typed stock · empty omit · scrubber unmounted')
-      process.exit(0)
+      return 0
     }
     if (isSearchAtlasDocument(d)) {
       const problems = searchAtlasShipProblems(d, { root })
       if (problems.length) {
         console.error(problems.join('\n'))
         console.error('ship refuse — search atlas Tip Ready needs map-dominant + labeled compare + house sheet. Cos prose is not Tip Ready.')
-        process.exit(1)
+        return 1
       }
       console.log('ship OK — search-atlas · map-dominant · labeled compare · house sheet')
-      process.exit(0)
+      return 0
     }
     const kitFromPath = rel.includes('ui_kits/') ? rel.split('/').filter(Boolean).at(-2) : null
     const kit = /ui_kits\/about\//.test(rel.replace(/\\/g, '/')) ? 'about' : kitFromPath
@@ -1060,19 +1068,19 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     }
     if (problems.length) {
       console.error(problems.join('\n'))
-      process.exit(1)
+      return 1
     }
     const tr = d?.tasteReview ?? {}
     const notes = [`demoMatch ${typeof tr.demoMatch === 'boolean' ? tr.demoMatch : 'n/a'}`]
     if (parseCompetitiveBrief(d?.competitiveBrief)) notes.push(`competitiveBriefPass ${tr.competitiveBriefPass}`)
     console.log(`ship OK — no regression (${String(tr.comparedToPrior ?? 'first')}) · ${notes.join(' · ')} (notes) · open-state · catalog-install`)
-    process.exit(0)
+    return 0
   }
   if (args.length === 0) {
     console.error(
       'usage: node scripts/lib/taste-receipt.mjs <parity.json> | --ship <parity.json> | key=path [key=path ...]',
     )
-    process.exit(2)
+    return 2
   }
   let shots
   if (args.length === 1 && args[0].endsWith('.json')) {
@@ -1080,16 +1088,17 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     shots = d?.tasteReview?.shots
     if (!isPlainObject(shots)) {
       console.error(`${args[0]} has no tasteReview.shots to hash.`)
-      process.exit(2)
+      return 2
     }
   } else {
+    const bad = args.find((a) => a.indexOf('=') < 1)
+    if (bad) {
+      console.error(`not a key=path pair: ${bad}`)
+      return 2
+    }
     shots = Object.fromEntries(
       args.map((a) => {
         const i = a.indexOf('=')
-        if (i < 1) {
-          console.error(`not a key=path pair: ${a}`)
-          process.exit(2)
-        }
         return [a.slice(0, i), a.slice(i + 1)]
       }),
     )
@@ -1097,7 +1106,12 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const hash = shotsHashFor(root, shots)
   if (!hash) {
     console.error('a file named in shots is not on disk — nothing to hash.')
-    process.exit(1)
+    return 1
   }
   console.log(hash)
+  return 0
+}
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  process.exitCode = runCli()
 }

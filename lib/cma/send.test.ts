@@ -19,6 +19,13 @@ const h = vi.hoisted(() => ({
   updateCmaRowFieldsBySlug: vi.fn(),
   logCmaTimelineEvent: vi.fn(),
   recordEmailEvent: vi.fn(),
+  ensureNativeLead: vi.fn(),
+  stampCmaPersonId: vi.fn(),
+  screenAddressForSolicitation: vi.fn(async () => ({
+    ok: true as const,
+    checked: 1,
+    detail: 'clear',
+  })),
   row: {
     id: 'row-1',
     status: 'finalized',
@@ -62,6 +69,7 @@ vi.mock('@/lib/data', async (importOriginal) => ({
   updateCmaRowFieldsBySlug: h.updateCmaRowFieldsBySlug,
   findCrmPersonIdByEmail: vi.fn(async () => 42),
   stampCmaLinkOnPerson: vi.fn(async () => undefined),
+  stampCmaPersonId: h.stampCmaPersonId,
   logCmaTimelineEvent: h.logCmaTimelineEvent,
   getBrokers: vi.fn(async () => []),
 }))
@@ -80,7 +88,13 @@ vi.mock('@/lib/cma-pdf', () => ({
   CmaNotFoundError: class CmaNotFoundError extends Error {},
 }))
 vi.mock('@/lib/crm/email-events', () => ({ recordEmailEvent: h.recordEmailEvent }))
+vi.mock('@/lib/data/crm/ensureNativeLead', () => ({
+  ensureNativeLead: (...args: unknown[]) => h.ensureNativeLead(...args),
+}))
 vi.mock('@/lib/email/auto-track', () => ({ instrumentLeadHtml: vi.fn(async (html: string) => html) }))
+vi.mock('@/lib/cma/solicit-screen', () => ({
+  screenAddressForSolicitation: h.screenAddressForSolicitation,
+}))
 
 import { sendCmaToLead } from '@/lib/cma/send'
 import { GMAIL_AUTH_TIMEOUT_MS } from '@/lib/gmail-draft'
@@ -98,6 +112,9 @@ beforeEach(() => {
   h.updateCmaRowFieldsBySlug.mockResolvedValue({ ok: true })
   h.logCmaTimelineEvent.mockResolvedValue(undefined)
   h.recordEmailEvent.mockResolvedValue({ ok: true })
+  h.ensureNativeLead.mockResolvedValue({ personId: 88, created: true })
+  h.stampCmaPersonId.mockResolvedValue({ ok: true })
+  h.screenAddressForSolicitation.mockResolvedValue({ ok: true, checked: 1, detail: 'clear' })
   consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
 })
 
@@ -116,6 +133,85 @@ describe('sendCmaToLead', () => {
     expect(h.gmailSend).toHaveBeenCalledTimes(1)
     expect(h.sendEmail).not.toHaveBeenCalled()
     expect(h.updateCmaRowFieldsBySlug).toHaveBeenCalledWith(SLUG, expect.objectContaining({ status: 'delivered' }))
+    expect(h.recordEmailEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'sent',
+        emailKey: `cma:${SLUG}`,
+        meta: expect.objectContaining({
+          transport: 'gmail',
+          slug: SLUG,
+          gmailThreadId: 'thr-1',
+          rfcMessageId: expect.stringMatching(/^<.+@ryan-realty\.com>$/),
+        }),
+      }),
+    )
+    expect(h.ensureNativeLead).not.toHaveBeenCalled()
+    expect(h.stampCmaPersonId).toHaveBeenCalledWith(SLUG, 42)
+  })
+
+  it('saves an existing CRM contact on the cmas row before the PDF renders', async () => {
+    const pdf = await import('@/lib/cma-pdf')
+    const order: string[] = []
+    h.stampCmaPersonId.mockImplementation(async () => {
+      order.push('stamp')
+      return { ok: true }
+    })
+    vi.mocked(pdf.renderCmaPdfBuffer).mockImplementation(async () => {
+      order.push('pdf')
+      return { buffer: Buffer.from('%PDF-1.7'), finalized: true }
+    })
+
+    const res = await sendCmaToLead(SLUG)
+
+    expect(res).toMatchObject({ ok: true, personId: 42 })
+    expect(h.stampCmaPersonId).toHaveBeenCalledWith(SLUG, 42)
+    expect(order).toEqual(['stamp', 'pdf'])
+  })
+
+  it('fails the send when saving the contact id on the row fails, and does not render the PDF', async () => {
+    const pdf = await import('@/lib/cma-pdf')
+    h.stampCmaPersonId.mockResolvedValueOnce({ ok: false, error: 'write refused' })
+
+    const res = await sendCmaToLead(SLUG)
+
+    expect(res.ok).toBe(false)
+    expect(res.error).toMatch(/untracked/i)
+    expect(res.error).toMatch(/write refused/)
+    expect(pdf.renderCmaPdfBuffer).not.toHaveBeenCalled()
+    expect(h.gmailSend).not.toHaveBeenCalled()
+    expect(h.sendEmail).not.toHaveBeenCalled()
+    expect(h.updateCmaRowFieldsBySlug).not.toHaveBeenCalled()
+    expect(h.recordEmailEvent).not.toHaveBeenCalled()
+  })
+
+  it('creates a CRM contact when none exists, then tracks the send', async () => {
+    const { findCrmPersonIdByEmail } = await import('@/lib/data')
+    vi.mocked(findCrmPersonIdByEmail).mockResolvedValueOnce(null)
+
+    const res = await sendCmaToLead(SLUG)
+
+    expect(res).toMatchObject({ ok: true, transport: 'gmail', personId: 88 })
+    expect(h.ensureNativeLead).toHaveBeenCalledWith(
+      expect.objectContaining({ email: 'lead@example.com', source: 'cma-send' }),
+    )
+    expect(h.stampCmaPersonId).toHaveBeenCalledWith(SLUG, 88)
+    expect(h.recordEmailEvent).toHaveBeenCalledWith(expect.objectContaining({ personId: 88 }))
+    expect(h.logCmaTimelineEvent).toHaveBeenCalled()
+  })
+
+  it('refuses the send when a CRM contact cannot be created', async () => {
+    const { findCrmPersonIdByEmail } = await import('@/lib/data')
+    vi.mocked(findCrmPersonIdByEmail).mockResolvedValueOnce(null)
+    h.ensureNativeLead.mockResolvedValueOnce({ personId: 0, created: false })
+
+    const res = await sendCmaToLead(SLUG)
+
+    expect(res.ok).toBe(false)
+    expect(res.error).toMatch(/untracked/i)
+    expect(h.gmailSend).not.toHaveBeenCalled()
+    expect(h.sendEmail).not.toHaveBeenCalled()
+    expect(h.updateCmaRowFieldsBySlug).not.toHaveBeenCalled()
+    expect(h.recordEmailEvent).not.toHaveBeenCalled()
   })
 
   it('falls back to Resend when the Gmail sign-in stalls past its deadline', async () => {
@@ -162,5 +258,46 @@ describe('sendCmaToLead', () => {
     expect(h.logCmaTimelineEvent).not.toHaveBeenCalled()
     expect(h.recordEmailEvent).not.toHaveBeenCalled()
     expect(consoleError).toHaveBeenCalledWith(expect.stringContaining(SLUG))
+  })
+
+  it('passes the subject listing key into the solicitation screen on an expired send', async () => {
+    const { getCmaAdminRowBySlug } = await import('@/lib/data')
+    vi.mocked(getCmaAdminRowBySlug).mockResolvedValueOnce({
+      ...h.row,
+      request_source: 'expired-outreach-queue',
+      doc_type: 'expired-audit',
+      subject_address: '4242 Example Lane, Bend, OR 97701',
+      subject_city: 'Bend',
+      subject_listing_key: 'ZZTESTKEYLOT33',
+    })
+
+    const res = await sendCmaToLead(SLUG)
+
+    expect(res.ok).toBe(true)
+    expect(h.screenAddressForSolicitation).toHaveBeenCalledWith({
+      address: '4242 Example Lane, Bend, OR 97701',
+      city: 'Bend',
+      sinceIso: null,
+      subjectListingKey: 'ZZTESTKEYLOT33',
+    })
+  })
+
+  it('passes null when the expired row has no subject listing key', async () => {
+    const { getCmaAdminRowBySlug } = await import('@/lib/data')
+    vi.mocked(getCmaAdminRowBySlug).mockResolvedValueOnce({
+      ...h.row,
+      request_source: 'expired-outreach-queue',
+      doc_type: 'expired-audit',
+      subject_address: '4242 Example Lane, Bend, OR 97701',
+      subject_city: 'Bend',
+      subject_listing_key: null,
+    })
+
+    const res = await sendCmaToLead(SLUG)
+
+    expect(res.ok).toBe(true)
+    expect(h.screenAddressForSolicitation).toHaveBeenCalledWith(
+      expect.objectContaining({ subjectListingKey: null, address: '4242 Example Lane, Bend, OR 97701' }),
+    )
   })
 })

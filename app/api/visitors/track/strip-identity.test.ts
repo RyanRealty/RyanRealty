@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { stripIdentityParams } from './strip-identity'
+import { stripClickDestination, stripIdentityParams, visitorEventMetadata } from './strip-identity'
 import { trackedDocLink } from '@/lib/cma/doc-links'
 import { cmaCampaignFromUrl } from '@/lib/cma/doc-links'
 
@@ -39,6 +39,37 @@ describe('stripIdentityParams', () => {
     expect(stripIdentityParams('android-app://com.google.android.gm')).toBe(
       'android-app://com.google.android.gm',
     )
+  })
+
+  it('stripClickDestination is the same identity strip used on stored arrivals', () => {
+    expect(
+      stripClickDestination(
+        'https://ryan-realty.com/subdivisions/diamond-bar-ranch?_pid=tok&_fuid=9&utm_campaign=cma-x',
+      ),
+    ).toBe('https://ryan-realty.com/subdivisions/diamond-bar-ranch?utm_campaign=cma-x')
+  })
+
+  it('keeps a stripped destination at essential consent and drops other metadata', () => {
+    const dest =
+      'https://ryan-realty.com/reviews?_pid=tok&utm_source=cma&utm_medium=document&utm_campaign=cma-x'
+    expect(
+      visitorEventMetadata({ destination: dest, extra: 'drop-me' }, true),
+    ).toEqual({
+      destination: 'https://ryan-realty.com/reviews?utm_source=cma&utm_medium=document&utm_campaign=cma-x',
+    })
+    expect(visitorEventMetadata({ extra: 'drop-me' }, true)).toBeUndefined()
+  })
+
+  it('keeps sibling metadata when consent is not essential, still stripping identity', () => {
+    expect(
+      visitorEventMetadata(
+        { destination: 'https://ryan-realty.com/about?_pid=tok', extra: 'keep' },
+        false,
+      ),
+    ).toEqual({
+      destination: 'https://ryan-realty.com/about',
+      extra: 'keep',
+    })
   })
 
   it('a tracked document link survives the strip with its campaign intact', () => {

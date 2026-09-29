@@ -15,8 +15,8 @@ import { getProspectDripState } from './drip'
 import { resolveDocsBatch, resolveComplianceBatch } from './batch'
 import { getProspectEngagement, EMPTY_ENGAGEMENT, type ProspectEngagementKey } from './engagement'
 import { isProspectDocClientReady } from './doc-ready'
-import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
-import { blockAllChannels, isUndefinedColumnError, type ProspectComplianceState, type ProspectDetail, type ProspectDocState, type ProspectKind, type ProspectPriceCycle, type ProspectRow } from './types'
+import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
+import { blockAllChannels, hasSendableEmail, hasSendablePhone, isUndefinedColumnError, type ProspectComplianceState, type ProspectDetail, type ProspectDocState, type ProspectKind, type ProspectPriceCycle, type ProspectRow } from './types'
 
 // Fail-closed default when the batch somehow omits a row (it never should — it
 // iterates every input — but the read must never send an unclassified row).
@@ -572,5 +572,320 @@ export async function getProspectDetail(kind: ProspectKind, id: string): Promise
     ),
     priceHistory,
     drip,
+  }
+}
+
+/** Detail page budget. A slow optional read fails the panel; it does not spin the route. */
+export const PROSPECT_DETAIL_FAST_MS = 4_000
+
+export const PROSPECT_DETAIL_LOAD_ERRORS = {
+  core: 'The prospect record did not finish loading.',
+  liveStatus: 'Live MLS status did not finish loading. Showing the status saved on this prospect.',
+  history: 'Listing history did not finish loading.',
+  docs: 'Audit status did not finish loading.',
+  compliance: 'Live compliance check did not finish loading.',
+  drip: 'Drip status did not finish loading.',
+} as const
+
+const EMPTY_DRIP: ProspectDetail['drip'] = { sequenceId: null, sequenceName: null, enrolled: false }
+
+// Same dangerous skip-trace flags as resolveComplianceBatch. The detail shell
+// paints from the row only; the live probe replaces this once it returns.
+const SNAPSHOT_DANGEROUS_FLAGS = new Set([
+  'litigator',
+  'deceased',
+  'dnc',
+  'dnc:tcpa',
+  'do-not-call',
+  'do_not_call',
+  'do-not-text',
+  'hard-stop',
+])
+
+/** Persisted flags only. Relist is unknown until the live probe — not claimed false as a fact. */
+export function complianceSnapshotFromRow(kind: ProspectKind, raw: RawRow): ProspectComplianceState {
+  const flags = Array.isArray(raw.compliance_flags) ? (raw.compliance_flags as unknown[]).map((f) => String(f)) : []
+  const dangerous = flags.find((f) => SNAPSHOT_DANGEROUS_FLAGS.has(f.toLowerCase())) ?? null
+  const persistedHardStop = raw.compliance_hard_stop === true
+  const allChannelReason = persistedHardStop
+    ? 'Compliance hard stop on the record'
+    : dangerous
+      ? `Skip-trace flag: ${dangerous}`
+      : null
+  const noPhone = !hasSendablePhone((raw.contact_phone as string | null) ?? null)
+  const noEmail = !hasSendableEmail((raw.contact_email as string | null) ?? null)
+  const channels = allChannelReason
+    ? blockAllChannels(allChannelReason)
+    : {
+        sms: { blocked: noPhone, reason: noPhone ? 'No phone on file' : null },
+        email: { blocked: noEmail, reason: noEmail ? 'No email on file' : null },
+        call: { blocked: noPhone, reason: noPhone ? 'No phone on file' : null },
+      }
+  const offMarket = kind === 'fsbo' ? ((raw.status as string | null) ?? 'active') !== 'active' : false
+  const reasons: string[] = []
+  if (allChannelReason) reasons.push(allChannelReason)
+  if (noPhone) reasons.push('SMS: No phone on file')
+  if (noEmail) reasons.push('EMAIL: No email on file')
+  if (offMarket) reasons.push('Off market')
+  return {
+    hardStop: allChannelReason != null,
+    flags,
+    relisted: false,
+    offMarket,
+    suppressedSms: allChannelReason != null,
+    noPhone,
+    noEmail,
+    reasons,
+    channels,
+    allChannelsBlocked: (['sms', 'email', 'call'] as const).every((c) => channels[c].blocked),
+  }
+}
+
+async function readExpiredRaw(sb: Sb, id: string): Promise<RawRow | null> {
+  let { data: r, error } = await sb
+    .from('expired_listings')
+    .select(prospectSelect('expired'))
+    // @canonical-key — expired_listings.listing_key is the MLS key stored at detection.
+    .eq('listing_key', id)
+    .maybeSingle()
+  if (error && shouldRetryWithoutEmailColumns(error)) {
+    markEmailOutreachColumnsAbsent()
+    ;({ data: r, error } = await sb
+      .from('expired_listings')
+      .select(prospectSelectLegacy('expired'))
+      // @canonical-key — same self-lookup as the optimistic path above.
+      .eq('listing_key', id)
+      .maybeSingle())
+  }
+  if (error) throw new Error(error.message)
+  if (!r) return null
+  return r as unknown as RawRow
+}
+
+async function readFsboRaw(sb: Sb, id: string): Promise<RawRow | null> {
+  let { data: r, error } = await sb.from('fsbo_listings').select(prospectSelect('fsbo')).eq('fsbo_url', id).maybeSingle()
+  if (error && shouldRetryWithoutEmailColumns(error)) {
+    markEmailOutreachColumnsAbsent()
+    ;({ data: r, error } = await sb
+      .from('fsbo_listings')
+      .select(prospectSelectLegacy('fsbo'))
+      .eq('fsbo_url', id)
+      .maybeSingle())
+  }
+  if (error) throw new Error(error.message)
+  if (!r) return null
+  return r as unknown as RawRow
+}
+
+function propertyFromExpired(raw: RawRow, listing: ExpiredListingJoin | null): Omit<
+  ProspectDetail,
+  keyof ProspectRow | 'priceHistory' | 'drip' | 'ownershipYears'
+> {
+  return {
+    standardStatus: listing?.standardStatus ?? (raw.standard_status as string | null) ?? null,
+    subdivision: (raw.subdivision as string | null) ?? null,
+    bedrooms: numOrNull(raw.bedrooms),
+    bathrooms: numOrNull(raw.bathrooms),
+    sqft: numOrNull(raw.sqft),
+    yearBuilt: listing?.yearBuilt ?? null,
+    lotAcres: listing?.lotAcres ?? null,
+    garageSpaces: listing?.garageSpaces ?? null,
+    viewDescription: listing?.viewDescription ?? null,
+    propertyType: (raw.property_type as string | null) ?? listing?.propertyType ?? null,
+    publicRemarks: listing?.publicRemarks ?? null,
+    priorListAgentName: (raw.list_agent_name as string | null) ?? null,
+    priorListOfficeName: (raw.list_office_name as string | null) ?? null,
+    originalListPrice: numOrNull(raw.original_list_price),
+    daysOnMarket: numOrNull(raw.days_on_market),
+    cumulativeDaysOnMarket: numOrNull(raw.cumulative_days_on_market),
+    contactSource: (raw.contact_source as string | null) ?? null,
+    ownerLookupStatus: (raw.owner_lookup_status as string | null) ?? null,
+    enrichmentNotes: (raw.enrichment_notes as string | null) ?? null,
+  }
+}
+
+function propertyFromFsbo(raw: RawRow): Omit<ProspectDetail, keyof ProspectRow | 'priceHistory' | 'drip' | 'ownershipYears'> {
+  return {
+    standardStatus: (raw.status as string | null) ?? null,
+    subdivision: null,
+    bedrooms: numOrNull(raw.bedrooms),
+    bathrooms: numOrNull(raw.bathrooms),
+    sqft: numOrNull(raw.sqft),
+    yearBuilt: numOrNull(raw.year_built),
+    lotAcres: raw.lot_size_sqft != null ? Number(raw.lot_size_sqft) / 43560 : null,
+    garageSpaces: null,
+    viewDescription: null,
+    propertyType: (raw.property_type as string | null) ?? null,
+    publicRemarks: (raw.description as string | null) ?? null,
+    priorListAgentName: null,
+    priorListOfficeName: null,
+    originalListPrice: null,
+    daysOnMarket: numOrNull(raw.days_listed),
+    cumulativeDaysOnMarket: null,
+    contactSource: (raw.contact_source as string | null) ?? null,
+    ownerLookupStatus: (raw.owner_lookup_status as string | null) ?? null,
+    enrichmentNotes: (raw.enrichment_notes as string | null) ?? null,
+  }
+}
+
+function shellDetail(
+  kind: ProspectKind,
+  raw: RawRow,
+  listing: ExpiredListingJoin | null,
+  liveStatusLoadError: string | null,
+): ProspectDetail {
+  const compliance = complianceSnapshotFromRow(kind, raw)
+  const doc: ProspectDocState = { state: 'none' }
+  const skeleton = kind === 'expired' ? mapExpiredSkeleton(raw, doc, compliance, listing) : mapFsboSkeleton(raw, doc, compliance)
+  const row = finalizeRow(skeleton, EMPTY_ENGAGEMENT)
+  const notes = (raw.enrichment_notes as string | null) ?? null
+  return {
+    ...row,
+    ...(kind === 'expired' ? propertyFromExpired(raw, listing) : propertyFromFsbo(raw)),
+    ownershipYears: ownershipYearsFromDate(
+      deriveOwnershipSince({ customOwnershipSince: null, enrichmentNotes: notes, priceHistory: [] }),
+    ),
+    priceHistory: [],
+    drip: EMPTY_DRIP,
+    optionalPending: true,
+    liveStatusLoadError,
+    historyLoadError: null,
+    docLoadError: null,
+    complianceLoadError: null,
+    dripLoadError: null,
+  }
+}
+
+export type ProspectDetailCoreResult =
+  | { outcome: 'missing' }
+  | { outcome: 'unavailable'; message: string }
+  | { outcome: 'ok'; detail: ProspectDetail; raw: RawRow; listing: ExpiredListingJoin | null }
+
+/**
+ * Row plus the keyed listings join. Email is on the prospect row. Live status
+ * is the joined MLS status, or the status saved on the row when that join
+ * does not finish. Does not run the street-number relist probe, the full
+ * `cmas` scan, or listing history — those are optional panels.
+ *
+ * `missing` is the only 404. A timeout is `unavailable`, never "no such row".
+ */
+export async function getProspectDetailCore(kind: ProspectKind, id: string): Promise<ProspectDetailCoreResult> {
+  const trimmed = id.trim()
+  if (!trimmed) return { outcome: 'missing' }
+  const sb = createServiceClient()
+
+  if (kind === 'expired') {
+    // The route id IS the listing key, so the join does not wait on the row.
+    const [rowRead, joinRead] = await Promise.all([
+      withTimeoutFallbackResult(readExpiredRaw(sb, trimmed), null, PROSPECT_DETAIL_FAST_MS, 'prospectDetail.coreRow'),
+      withTimeoutFallbackResult(
+        fetchExpiredListingJoin(sb, trimmed),
+        null,
+        PROSPECT_DETAIL_FAST_MS,
+        'prospectDetail.liveStatus',
+      ),
+    ])
+    if (!rowRead.ok) return { outcome: 'unavailable', message: PROSPECT_DETAIL_LOAD_ERRORS.core }
+    if (!rowRead.value) return { outcome: 'missing' }
+    const listing = joinRead.ok ? joinRead.value : null
+    return {
+      outcome: 'ok',
+      detail: shellDetail(kind, rowRead.value, listing, joinRead.ok ? null : PROSPECT_DETAIL_LOAD_ERRORS.liveStatus),
+      raw: rowRead.value,
+      listing,
+    }
+  }
+
+  const rowRead = await withTimeoutFallbackResult(
+    readFsboRaw(sb, trimmed),
+    null,
+    PROSPECT_DETAIL_FAST_MS,
+    'prospectDetail.coreRow',
+  )
+  if (!rowRead.ok) return { outcome: 'unavailable', message: PROSPECT_DETAIL_LOAD_ERRORS.core }
+  if (!rowRead.value) return { outcome: 'missing' }
+  return {
+    outcome: 'ok',
+    detail: shellDetail(kind, rowRead.value, null, null),
+    raw: rowRead.value,
+    listing: null,
+  }
+}
+
+/**
+ * Optional panels for the detail page. Each source is capped. A hang or a
+ * throw sets an error string and leaves email + live status from `loaded`
+ * untouched. Never returns null — a timeout is not "this prospect does not exist".
+ */
+export async function attachProspectOptionalPanels(loaded: {
+  detail: ProspectDetail
+  raw: RawRow
+  listing: ExpiredListingJoin | null
+}): Promise<ProspectDetail> {
+  const kind = loaded.detail.kind
+  const sb = createServiceClient()
+  const [docRes, compRes, historyRes, dripRes, ownRes] = await Promise.all([
+    withTimeoutFallbackResult(
+      resolveDocsBatch(kind, [loaded.raw]),
+      new Map<string, ProspectDocState>(),
+      PROSPECT_DETAIL_FAST_MS,
+      'prospectDetail.docs',
+    ),
+    withTimeoutFallbackResult(
+      resolveComplianceBatch(kind, [loaded.raw]),
+      new Map<string, ProspectComplianceState>(),
+      PROSPECT_DETAIL_FAST_MS,
+      'prospectDetail.compliance',
+    ),
+    withTimeoutFallbackResult(fetchPriceHistory(loaded.detail), [] as ProspectPriceCycle[], PROSPECT_DETAIL_FAST_MS, 'prospectDetail.priceHistory'),
+    withTimeoutFallbackResult(getProspectDripState(kind, loaded.detail.personId), EMPTY_DRIP, PROSPECT_DETAIL_FAST_MS, 'prospectDetail.drip'),
+    withTimeoutFallbackResult(
+      fetchCustomOwnershipSince(sb, loaded.detail.personId),
+      null,
+      PROSPECT_DETAIL_FAST_MS,
+      'prospectDetail.ownership',
+    ),
+  ])
+
+  const doc: ProspectDocState = docRes.ok
+    ? (docRes.value.get(loaded.detail.id) ?? { state: 'none' })
+    : { state: 'none' }
+  const compliance = compRes.ok
+    ? (compRes.value.get(loaded.detail.id) ?? FAILSAFE_COMPLIANCE)
+    : loaded.detail.compliance
+  const skeleton =
+    kind === 'expired'
+      ? mapExpiredSkeleton(loaded.raw, doc, compliance, loaded.listing)
+      : mapFsboSkeleton(loaded.raw, doc, compliance)
+  const engagementRes = await withTimeoutFallbackResult(
+    getProspectEngagement(kind, [engagementKeyFor(skeleton)]),
+    {} as Record<string, ProspectRow['engagement']>,
+    PROSPECT_DETAIL_FAST_MS,
+    'prospectDetail.engagement',
+  )
+  const priceHistory = historyRes.ok ? historyRes.value : []
+  const drip = dripRes.ok ? dripRes.value : loaded.detail.drip
+  const notes = loaded.detail.enrichmentNotes
+  const row = finalizeRow(skeleton, engagementRes.ok ? engagementRes.value[loaded.detail.id] : undefined)
+
+  return {
+    ...loaded.detail,
+    ...row,
+    standardStatus: loaded.detail.standardStatus,
+    ownershipYears: ownershipYearsFromDate(
+      deriveOwnershipSince({
+        customOwnershipSince: ownRes.ok ? ownRes.value : null,
+        enrichmentNotes: notes,
+        priceHistory,
+      }),
+    ),
+    priceHistory,
+    drip,
+    optionalPending: false,
+    liveStatusLoadError: loaded.detail.liveStatusLoadError ?? null,
+    historyLoadError: historyRes.ok ? null : PROSPECT_DETAIL_LOAD_ERRORS.history,
+    docLoadError: docRes.ok ? null : PROSPECT_DETAIL_LOAD_ERRORS.docs,
+    complianceLoadError: compRes.ok ? null : PROSPECT_DETAIL_LOAD_ERRORS.compliance,
+    dripLoadError: dripRes.ok ? null : PROSPECT_DETAIL_LOAD_ERRORS.drip,
   }
 }

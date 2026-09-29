@@ -49,4 +49,12 @@ describe('CmaReviewActions', () => {
     expect(src).toContain('Save email for drip')
     expect(src).toContain('saveCmaFirstContactOverrideAction')
   })
+
+  it('confirms a flagged CMA before approve or send, then retries with acknowledgement', () => {
+    expect(src).toContain('needsReviewAck')
+    expect(src).toContain('Approve anyway, acknowledging the recorded findings?')
+    expect(src).toContain('Send anyway, acknowledging the recorded findings?')
+    expect(src).toContain('approveCmaAction(props.slug, { acknowledgeReview: true })')
+    expect(src).toContain('approveAndDeliverCma(props.slug, ov, { delivery, acknowledgeReview: true })')
+  })
 })

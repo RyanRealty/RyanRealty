@@ -136,11 +136,19 @@ function randomBoundary(prefix: string): string {
 }
 
 /** Build a raw RFC 822 MIME message (multipart/mixed with a multipart/alternative body). */
-function buildMimeMessage(p: CreateGmailDraftParams, from: string): string {
+/** RFC 5322 Message-ID we stamp so a later DSN can In-Reply-To the send. */
+export function nextRfcMessageId(from: string): string {
+  const host = (from.split('@')[1] || 'ryan-realty.com').replace(/[>\s]/g, '')
+  const token = `${Date.now().toString(36)}.${Math.random().toString(36).slice(2, 12)}`
+  return `<${token}@${host}>`
+}
+
+function buildMimeMessage(p: CreateGmailDraftParams, from: string): { mime: string; rfcMessageId: string } {
   const CRLF = '\r\n'
   const mixed = randomBoundary('mixed')
   const alt = randomBoundary('alt')
   const hasAttachments = !!p.attachments && p.attachments.length > 0
+  const rfcMessageId = nextRfcMessageId(from)
 
   const headers: string[] = [
     `From: ${from}`,
@@ -150,6 +158,7 @@ function buildMimeMessage(p: CreateGmailDraftParams, from: string): string {
   if (p.bcc) headers.push(`Bcc: ${p.bcc}`)
   if (p.replyTo) headers.push(`Reply-To: ${p.replyTo}`)
   headers.push(`Subject: ${encodeHeader(p.subject)}`)
+  headers.push(`Message-ID: ${rfcMessageId}`)
   headers.push('MIME-Version: 1.0')
 
   // text/plain + text/html alternative, both base64 (robust against brand glyphs).
@@ -168,12 +177,15 @@ function buildMimeMessage(p: CreateGmailDraftParams, from: string): string {
   ].join(CRLF)
 
   if (!hasAttachments) {
-    return [
-      ...headers,
-      `Content-Type: multipart/alternative; boundary="${alt}"`,
-      '',
-      altBlock,
-    ].join(CRLF)
+    return {
+      mime: [
+        ...headers,
+        `Content-Type: multipart/alternative; boundary="${alt}"`,
+        '',
+        altBlock,
+      ].join(CRLF),
+      rfcMessageId,
+    }
   }
 
   const parts: string[] = [
@@ -196,7 +208,7 @@ function buildMimeMessage(p: CreateGmailDraftParams, from: string): string {
     )
   }
   parts.push(`--${mixed}--`)
-  return parts.join(CRLF)
+  return { mime: parts.join(CRLF), rfcMessageId }
 }
 
 function toBase64Url(raw: string): string {
@@ -239,7 +251,7 @@ export async function createGmailDraft(
 
   try {
     const gmail = google.gmail({ version: 'v1', auth: jwt, timeout: GMAIL_REQUEST_TIMEOUT_MS })
-    const raw = toBase64Url(buildMimeMessage(params, from))
+    const raw = toBase64Url(buildMimeMessage(params, from).mime)
     const res = await gmail.users.drafts.create({
       userId: 'me',
       requestBody: { message: { raw } },
@@ -266,6 +278,8 @@ export interface GmailSendResult {
   ok: boolean
   messageId?: string
   threadId?: string
+  /** RFC 5322 Message-ID we stamped on the MIME (for DSN In-Reply-To matching). */
+  rfcMessageId?: string
   error?: string
   hint?: string
   /**
@@ -320,6 +334,7 @@ export async function sendGmailMessage(
   // Nothing has gone to Gmail yet, so a failure building the message is safe
   // for the caller to fall back from.
   let raw: string
+  let rfcMessageId: string
   try {
     let sendParams = params
     if (params.bodyHtml) {
@@ -335,7 +350,9 @@ export async function sendGmailMessage(
         }),
       }
     }
-    raw = toBase64Url(buildMimeMessage(sendParams, from))
+    const built = buildMimeMessage(sendParams, from)
+    raw = toBase64Url(built.mime)
+    rfcMessageId = built.rfcMessageId
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : String(e) }
   }
@@ -352,6 +369,7 @@ export async function sendGmailMessage(
       ok: true,
       messageId: res.data.id ?? undefined,
       threadId: res.data.threadId ?? undefined,
+      rfcMessageId,
     }
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)

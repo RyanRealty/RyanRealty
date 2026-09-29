@@ -16,15 +16,29 @@
  * at $446-544). The mechanism that stops that lives in
  * lib/cma/judge-consistency.ts and its module header is the spec. This file is
  * the orchestration around it: declare the rule in the tool schema, call the
- * model, run the check, and when the check finds a contradiction, take ONE
- * targeted repair turn that hands the model its own verdicts and the specific
- * conflict. Whatever survives the repair is resolved deterministically here —
- * strand/band violators are excluded, and the numeric band is written into
- * their reason so the excluded list reads as one rule.
+ * model, run the check. A single-sample repair turn was itself another draw
+ * from the same non-deterministic model, so the stability pass takes a majority
+ * of three passes instead. Whatever the majority returns is resolved
+ * deterministically here: strand/band violators are excluded, and the numeric
+ * band is written into their reason so the excluded list reads as one rule.
+ * Comps whose exclusion was thrown out for an unsupported threshold are
+ * protected from that second cut.
  *
  * Runs on XAI_API_KEY through lib/grok (Matt 2026-09-01). Fails OPEN: if the key is absent or
  * a call errors, returns null and the caller falls back to the deterministic
- * set + the dispersion guard. Never blocks a build, never throws.
+ * set + the dispersion guard. Never blocks a build on an unavailable judge.
+ *
+ * STABILITY (2026-09-29). grok-4.6 with reasoning effort low and no seed was
+ * returning different keep/exclude decisions on byte-identical briefs, and a
+ * single flip under the 3-comp minimum failed the build or moved the price.
+ * The xAI chat body now sends temperature 0 and a fixed seed (both documented
+ * on POST /v1/chat/completions; neither is in the reasoning-model reject list).
+ * Seed is best-effort, so the judge also takes a majority of 3 independent
+ * passes, drops an exclusion whose cited threshold the fields do not support,
+ * and caches the votes by a checksum of the exact model input. A split that
+ * decides whether the row reaches the kept-comp minimum throws JudgeUnstableError
+ * (JUDGE_UNSTABLE) instead of pricing. That is the one throw: an unavailable
+ * judge still returns null.
  */
 
 import { GROK_MODELS, generateGrokStructured, grokConfigured, type GrokMessage } from '@/lib/grok'
@@ -44,6 +58,58 @@ import {
   type CompVerdict,
   type ExclusionBasis,
 } from '@/lib/cma/judge-consistency'
+import { groundVote } from '@/lib/cma/judge-ground'
+import {
+  JUDGE_REASONING_EFFORT,
+  JUDGE_RUNS,
+  JUDGE_SEED,
+  JUDGE_TEMPERATURE,
+  JUDGE_VERSION,
+  JudgeUnstableError,
+  aggregateJudgeVotes,
+  cacheHit,
+  canonicalJudgeInput,
+  decisionRecord,
+  judgeInputChecksum,
+  parseStoredJudgeCache,
+  storedVoteFromGround,
+  type JudgeDecisionRecord,
+  type StoredVote,
+} from '@/lib/cma/judge-vote'
+
+export function readJudgeCache(summary: unknown): JudgeDecisionRecord | null {
+  return parseStoredJudgeCache(summary, MODEL)
+}
+
+export {
+  JUDGE_RUNS,
+  JUDGE_SEED,
+  JUDGE_TEMPERATURE,
+  JUDGE_VERSION,
+  JUDGE_UNSTABLE,
+  JudgeUnstableError,
+  parseStoredJudgeCache,
+} from '@/lib/cma/judge-vote'
+export type { JudgeDecisionRecord, StoredVote } from '@/lib/cma/judge-vote'
+
+/** Injected by tests and the read-only replay. Production leaves this unset and uses lib/grok. */
+export type JudgeModelCall = (args: {
+  system: string
+  messages: GrokMessage[]
+}) => Promise<{ payload: unknown; raw: string; costUsd: number }>
+
+export type JudgeCompsOptions = {
+  /** Prior `build_summary.judge_cache`, when the row has one. */
+  priorCache?: JudgeDecisionRecord | null
+  /** Kept-comp minimum the unstable check is measured against. Default 3. */
+  minComps?: number
+  /**
+   * When false, an unstable split is returned on the judgment instead of thrown.
+   * Curated (broker-picked) sets do not drop comps, so the minimum is not in play.
+   */
+  enforceKeepMinimum?: boolean
+  callModel?: JudgeModelCall
+}
 
 // The consistency vocabulary is defined next to the check that enforces it;
 // re-exported here so every existing caller keeps importing from one place.
@@ -85,6 +151,12 @@ export interface CompJudgment {
   costUsd: number
   model: string
   usedLlm: true
+  /** Checksum of the exact model input. Present once the stability pass has run. */
+  inputChecksum?: string
+  /** True when this judgment was read from the stored decision, not a new model call. */
+  cacheHit?: boolean
+  /** Votes and the aggregated decision, persisted on the row as judge_cache. */
+  decision?: JudgeDecisionRecord
 }
 
 /** Trimmed remarks excerpt — condition/renovation/quality clues without prompt bloat. */
@@ -280,21 +352,6 @@ function parseJudgment(payload: unknown, comps: CmaComp[]): RawJudgment | null {
   }
 }
 
-/** Render a judgment back to the model for the repair turn. */
-function renderJudgmentForRepair(comps: CmaComp[], j: RawJudgment): string {
-  const byKey = new Map(comps.map((c) => [c.listingKey, c]))
-  const line = (v: CompVerdict) => {
-    const c = byKey.get(v.listingKey)
-    return `- ${v.listingKey} · ${c?.address ?? '?'} · $${c ? ppsf(c) : '?'}/sqft · tier=${v.tier}${v.basis ? ` · basis=${v.basis}` : ''} · ${v.reason}`
-  }
-  return (
-    `Declared band: $${j.ppsfFloor} to $${j.ppsfCeiling}/sqft\n` +
-    `Declared rule: ${j.exclusionRule}\n` +
-    `Verdicts:\n${j.verdicts.map(line).join('\n')}\n` +
-    `Confidence: ${j.confidence}\nNarrative: ${j.narrative}`
-  )
-}
-
 interface JudgeTurn {
   payload: unknown | null
   raw: string | null
@@ -308,16 +365,40 @@ interface JudgeTurn {
  * forcing, the token ceiling, and the cost accounting are defined once and
  * cannot drift apart between the two.
  */
-async function sendJudgeTurn(messages: GrokMessage[]): Promise<JudgeTurn> {
+async function sendJudgeTurn(messages: GrokMessage[], callModel?: JudgeModelCall): Promise<JudgeTurn> {
+  if (callModel) {
+    const res = await callModel({ system: SYSTEM, messages })
+    return { payload: res.payload, raw: res.raw, costUsd: res.costUsd ?? 0 }
+  }
   const res = await generateGrokStructured<Record<string, unknown>>({
     system: SYSTEM,
     messages,
     schema: JUDGE_SCHEMA,
     schemaName: 'record_comp_judgment',
     maxTokens: 2500,
-    reasoningEffort: 'low',
+    reasoningEffort: JUDGE_REASONING_EFFORT,
+    // Both are on the xAI chat completions body. The Cursor CLI transport
+    // ignores them: cursor-agent has no temperature or seed flag.
+    temperature: JUDGE_TEMPERATURE,
+    seed: JUDGE_SEED,
   })
   return { payload: res.value, raw: res.raw, costUsd: res.costUsd ?? 0 }
+}
+
+export function judgePromptChecksum(user: string, model: string = MODEL): string {
+  return judgeInputChecksum(
+    canonicalJudgeInput({
+      judgeVersion: JUDGE_VERSION,
+      model,
+      seed: JUDGE_SEED,
+      temperature: JUDGE_TEMPERATURE,
+      reasoningEffort: JUDGE_REASONING_EFFORT,
+      schemaName: 'record_comp_judgment',
+      schemaJson: JSON.stringify(JUDGE_SCHEMA),
+      system: SYSTEM,
+      user,
+    }),
+  )
 }
 
 /**
@@ -328,7 +409,7 @@ async function sendJudgeTurn(messages: GrokMessage[]): Promise<JudgeTurn> {
  * different brief is a different question, and the answer would not be
  * comparable to the one it is replacing.
  */
-function buildJudgeUserPrompt(
+export function buildJudgeUserPrompt(
   subject: CmaSubject,
   comps: CmaComp[],
   market: CmaMarketContext | null,
@@ -368,69 +449,122 @@ function buildJudgeUserPrompt(
   )
 }
 
+function judgmentFromRecord(record: JudgeDecisionRecord, fromCache: boolean): CompJudgment {
+  return {
+    verdicts: record.verdicts.map((v) => ({ ...v })),
+    keptKeys: [...record.keptKeys],
+    confidence: record.confidence,
+    narrative: record.narrative,
+    ppsfFloor: record.ppsfFloor,
+    ppsfCeiling: record.ppsfCeiling,
+    exclusionRule: record.exclusionRule,
+    consistency: {
+      firstPassViolations: [],
+      repairRan: false,
+      postRepairViolations: [],
+      resolvedByCode: [fromCache ? 'Reused the stored comparability decision.' : `Majority of ${JUDGE_RUNS} passes.`],
+    },
+    costUsd: 0,
+    model: record.model,
+    usedLlm: true,
+    inputChecksum: record.inputChecksum,
+    cacheHit: fromCache,
+    decision: record,
+  }
+}
+
 /**
  * Judge which candidate comps are genuinely comparable to the subject.
- * Returns null (fail-open) when XAI_API_KEY is missing or the call fails.
+ * Returns null (fail-open) when the model is unavailable or a call fails.
+ * Throws JudgeUnstableError when a split vote is what decides the kept-comp minimum.
  */
 export async function judgeComps(
   subject: CmaSubject,
   comps: CmaComp[],
   market: CmaMarketContext | null,
+  options: JudgeCompsOptions = {},
 ): Promise<CompJudgment | null> {
   setJudgeUnavailableReason(null)
-  if (!grokConfigured() || comps.length === 0) return null
+  if (comps.length === 0) return null
+  if (!options.callModel && !grokConfigured()) return null
 
   const user = buildJudgeUserPrompt(subject, comps, market)
+  const inputChecksum = judgePromptChecksum(user, MODEL)
+  const minComps = options.minComps ?? 3
+  const enforce = options.enforceKeepMinimum !== false
+  const prior = options.priorCache && options.priorCache.model === MODEL && cacheHit(options.priorCache, inputChecksum)
+    ? options.priorCache
+    : null
+  if (prior) {
+    if (prior.unstable && enforce) {
+      throw new JudgeUnstableError(
+        prior.message ??
+          'JUDGE_UNSTABLE. The stored comparability review did not agree on enough kept sales. The build was not priced.',
+        prior,
+        true,
+      )
+    }
+    return judgmentFromRecord(prior, true)
+  }
 
   try {
     let costUsd = 0
+    const votes: StoredVote[] = []
+    for (let i = 0; i < JUDGE_RUNS; i++) {
+      const turn = await sendJudgeTurn([{ role: 'user', content: user }], options.callModel)
+      costUsd += turn.costUsd
+      if (turn.payload == null) throw new Error('judge returned no payload')
+      const parsed = parseJudgment(turn.payload, comps)
+      if (!parsed) throw new Error('judge returned no usable verdicts')
+      const grounds = groundVote(subject, comps, parsed.verdicts, {
+        floor: parsed.ppsfFloor,
+        ceiling: parsed.ppsfCeiling,
+      })
+      votes.push(
+        storedVoteFromGround(grounds, {
+          confidence: parsed.confidence,
+          narrative: parsed.narrative,
+          ppsfFloor: parsed.ppsfFloor,
+          ppsfCeiling: parsed.ppsfCeiling,
+          exclusionRule: parsed.exclusionRule,
+        }),
+      )
+    }
+    const aggregate = aggregateJudgeVotes({
+      votes,
+      minComps,
+      candidateKeys: comps.map((c) => c.listingKey),
+    })
+    if (aggregate.unstable && enforce) {
+      const record = decisionRecord({
+        model: MODEL,
+        inputChecksum,
+        minComps,
+        votes,
+        aggregate,
+      })
+      throw new JudgeUnstableError(aggregate.message ?? 'JUDGE_UNSTABLE. The build was not priced.', record, false)
+    }
 
-    const first = await sendJudgeTurn([{ role: 'user', content: user }])
-    costUsd += first.costUsd
-    if (first.payload == null) return null
-    let judged = parseJudgment(first.payload, comps)
-    if (!judged) return null
+    const judged: RawJudgment = {
+      verdicts: aggregate.verdicts.map((v) => ({ ...v })),
+      confidence: aggregate.confidence,
+      narrative: aggregate.narrative,
+      ppsfFloor: aggregate.ppsfFloor,
+      ppsfCeiling: aggregate.ppsfCeiling,
+      exclusionRule: aggregate.exclusionRule,
+    }
 
     const firstCheck = checkJudgmentConsistency({ comps, ...judged })
     const firstPassViolations = firstCheck.violations
-    let check = firstCheck
-    let repairRan = false
-
-    // ── ONE targeted repair turn, only when code found a contradiction ───────
-    if (firstCheck.violations.length > 0) {
-      repairRan = true
-      const repairUser =
-        `A mechanical consistency check ran over your judgment and found contradictions. ` +
-        `Your job now is to return ONE corrected judgment that survives the same check.\n\n` +
-        `YOUR JUDGMENT:\n${renderJudgmentForRepair(comps, judged)}\n\n` +
-        `CONTRADICTIONS FOUND:\n${firstCheck.violations.map((v, i) => `${i + 1}. ${v}`).join('\n')}\n\n` +
-        `Resolve each one honestly. You may move a comp to exclude, move an exclusion back to weak, widen or ` +
-        `narrow the declared band, change an exclusion's basis to the criterion it really rests on, or rewrite ` +
-        `the narrative. What you may NOT do is keep a comp inside a band you also exclude on, keep a sale that ` +
-        `sits with the excluded cluster, or describe a comp one way in the narrative and another way in its ` +
-        `verdict. If resolving a contradiction leaves only three or four genuinely comparable sales, that is the ` +
-        `correct answer and you should say so and lower the confidence. Do not keep a non-comparable sale to hit ` +
-        `a count. Return the complete corrected judgment through the tool, every candidate included.`
-
-      const second = await sendJudgeTurn([
-        { role: 'user', content: user },
-        { role: 'assistant', content: first.raw ?? JSON.stringify(first.payload) },
-        { role: 'user', content: repairUser },
-      ])
-      costUsd += second.costUsd
-      const repaired = second.payload != null ? parseJudgment(second.payload, comps) : null
-      if (repaired) {
-        const recheck = checkJudgmentConsistency({ comps, ...repaired })
-        // Take the repair when it is strictly better; otherwise keep round one.
-        if (recheck.violations.length < check.violations.length) {
-          judged = repaired
-          check = recheck
-        }
-      }
-    }
+    const check = firstCheck
+    const repairRan = false
 
     // ── deterministic resolution of whatever survived ───────────────────────
-    const resolvedByCode: string[] = []
+    const resolvedByCode: string[] = [`Majority of ${JUDGE_RUNS} passes. No single-sample repair turn.`]
+    for (const key of aggregate.protectedKeys) {
+      resolvedByCode.push(`${key}: exclusion ignored, the cited threshold is not supported by the fields`)
+    }
     const byKey = new Map(comps.map((c) => [c.listingKey, c]))
 
     // Any candidate with no verdict is kept at half weight with an honest
@@ -457,7 +591,7 @@ export async function judgeComps(
       verdicts: judged.verdicts,
     })
     judged.verdicts = restored.verdicts
-    const protectedKeys = new Set<string>(restored.restoredKeys)
+    const protectedKeys = new Set<string>([...restored.restoredKeys, ...aggregate.protectedKeys])
     if (restored.restoredKeys.length > 0) {
       for (const key of restored.restoredKeys) {
         const c = byKey.get(key)
@@ -495,6 +629,9 @@ export async function judgeComps(
       }
       protectedKeys.add(v.listingKey)
       if (v.tier !== 'exclude') continue
+      // The street exempts the price cut only. A different product on a
+      // street that shares the first word stays excluded.
+      if (!isPriceTierExclusion(v)) continue
       v.tier = 'strong'
       delete v.basis
       v.reason = `Same street as the subject and within ${Math.round(SAME_STREET_SIZE_BAND * 100)}% of its size. The closest sale there is to this house, so it prices it whatever the wider neighborhood runs at.`
@@ -583,8 +720,25 @@ export async function judgeComps(
     // which are banned in client prose. Numeric ranges become "to"; other
     // dashes become commas; semicolons become periods.
     const sanitize = sanitizeClientProse
+    const verdicts = judged.verdicts.map((v) => ({ ...v, reason: sanitize(v.reason) }))
+    const record = decisionRecord({
+      model: MODEL,
+      inputChecksum,
+      minComps,
+      votes,
+      aggregate,
+      finalized: {
+        verdicts,
+        keptKeys,
+        narrative: sanitize(narrative),
+        confidence: judged.confidence,
+        ppsfFloor: judged.ppsfFloor,
+        ppsfCeiling: judged.ppsfCeiling,
+        exclusionRule: sanitize(judged.exclusionRule),
+      },
+    })
     return {
-      verdicts: judged.verdicts.map((v) => ({ ...v, reason: sanitize(v.reason) })),
+      verdicts,
       keptKeys,
       confidence: judged.confidence,
       narrative: sanitize(narrative),
@@ -600,8 +754,12 @@ export async function judgeComps(
       costUsd: +costUsd.toFixed(4),
       model: MODEL,
       usedLlm: true,
+      inputChecksum,
+      cacheHit: false,
+      decision: record,
     }
   } catch (err) {
+    if (err instanceof JudgeUnstableError) throw err
     const reason = err instanceof Error ? err.message : String(err)
     setJudgeUnavailableReason(reason)
     console.warn('[cma/judge] comparability judgment failed, falling back to deterministic:', reason)

@@ -123,6 +123,32 @@ describe('selectComps — SQL filter follows the subject product type', () => {
     expect(result.trace.some((t) => t.includes("property_sub_type='Single Family Residence'"))).toBe(false)
   })
 
+  it('drops a new build against an ordinary resale of the same subtype', async () => {
+    const year = new Date().getFullYear()
+    selectCmaCompsPool.mockResolvedValue([
+      closedRow({
+        ListingKey: 'new-build',
+        StreetNumber: '200',
+        property_sub_type: 'Townhouse',
+        year_built: year,
+        TotalLivingAreaSqFt: 1800,
+      }),
+      closedRow({
+        ListingKey: 'resale',
+        StreetNumber: '300',
+        property_sub_type: 'Townhouse',
+        year_built: year - 12,
+        TotalLivingAreaSqFt: 1800,
+      }),
+    ])
+    const result = await selectComps(
+      subject({ propertySubType: 'Townhouse', yearBuilt: year - 11, sqft: 1800 }),
+    )
+    expect(result.comps.map((c) => c.listingKey)).toContain('resale')
+    expect(result.comps.map((c) => c.listingKey)).not.toContain('new-build')
+    expect(result.diagnostics.excluded_totals.year_quality).toBeGreaterThan(0)
+  })
+
   it('still drops a townhouse row in JS when the pool is mixed', async () => {
     selectCmaCompsPool.mockResolvedValue([
       closedRow({ ListingKey: 'sfr', StreetNumber: '100', property_sub_type: 'Single Family Residence' }),

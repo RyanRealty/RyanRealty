@@ -15,10 +15,11 @@ import type { CmaSiteData } from '@/lib/cma/county'
 import { attachSellerNet, resolveConcessions, sellerNetFromPrice } from '@/lib/pricing/seller-net'
 import type { CmaAdjustedComp, CmaComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import { citySlug, storyAdjustment, type StoryClass } from '@/lib/pricing/classes'
-import { closedCompWeight } from '@/lib/pricing/closed-comp-weight'
+import { capClosedCompShares, closedCompWeight } from '@/lib/pricing/closed-comp-weight'
 import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
 import type { SelectedPricingComp } from '@/lib/pricing/match'
 import { closedSaleDomTotal } from '@/lib/cma/listing-history-line'
+import { proximityLabel } from '@/lib/cma/market-area'
 import {
   describeIndexShape,
   describePath,
@@ -39,10 +40,12 @@ import {
 import { applyFailedAskCap as applyExpiredFailedAskCap } from '@/lib/cma/expired-audit'
 import {
   applyExclusivePocketDateAdj,
+  describeAppliedDateAdjustments,
   exclusivePocketPathNote,
   selectionIsExclusivePocket,
   TIME_ADJUSTMENT_BASIS_POCKET,
   TIME_ADJUSTMENT_MEASURE_POCKET,
+  type AppliedDateMove,
 } from '@/lib/pricing/exclusive-pocket-date-adj'
 
 const SIZE_ADJ_FACTOR = 0.5
@@ -136,6 +139,109 @@ export function roundPriceDown(n: number): number {
 export function roundPriceUp(n: number): number {
   if (!Number.isFinite(n)) return n
   return Math.ceil(n / priceRoundingStep(n)) * priceRoundingStep(n)
+}
+
+/**
+ * Nearest thousand, kept inside the printed band.
+ *
+ * The band ends are already on the grid. A raw off-grid sale is not a reason
+ * to step up: $849,416 inside a printed band of $849,000 to $900,000 prints
+ * $849,000, the band low.
+ *
+ * When the unrounded pin is at or within one thousand of the last ask, the
+ * printed list does not go above that ask. $499,148 against an ask of
+ * $499,000 prints $499,000. $499,600 against the same ask prints $499,000,
+ * not $500,000.
+ */
+export function roundPrintedRecommendation(
+  rec: number,
+  bounds: { low?: number | null; high?: number | null; ask?: number | null },
+): number {
+  if (!Number.isFinite(rec) || !(rec > 0)) return rec
+  const step = 1000
+  let next = Math.round(rec / step) * step
+  const low =
+    bounds.low != null && bounds.high != null && bounds.low > 0 && bounds.high > 0
+      ? Math.min(bounds.low, bounds.high)
+      : null
+  const high = low != null ? Math.max(bounds.low as number, bounds.high as number) : null
+  if (low != null && next < low) next = Math.ceil(low / step) * step
+  if (high != null && next > high) next = Math.floor(high / step) * step
+  if (low != null && next < low) next = low
+  if (high != null && next > high) next = high
+  const ask = bounds.ask
+  if (ask != null && Number.isFinite(ask) && ask > 0 && Math.abs(rec - ask) <= step && next > ask) {
+    const capped = Math.floor(ask / step) * step
+    const fits = (n: number) => n > 0 && (low == null || n >= low) && (high == null || n <= high)
+    if (fits(capped)) next = capped
+    else if (low != null && fits(low) && low <= ask) next = low
+  }
+  return next
+}
+
+/** Printed band ends sit on the same outward grid the range already uses. On-grid ends stay. */
+export function roundPrintedBand(low: number, high: number): { low: number; high: number } {
+  if (!(low > 0) || !(high > 0)) return { low, high }
+  const lo = Math.min(low, high)
+  const hi = Math.max(low, high)
+  const stepLo = priceRoundingStep(lo)
+  const stepHi = priceRoundingStep(hi)
+  const nextLo = lo % stepLo === 0 ? lo : roundPriceDown(lo)
+  const nextHi = hi % stepHi === 0 ? hi : roundPriceUp(hi)
+  if (!(nextLo > 0) || nextLo > nextHi) return { low: lo, high: hi }
+  return { low: nextLo, high: nextHi }
+}
+
+export function roundPrintedPrices<
+  T extends {
+    recommended: number
+    valueLow: number
+    valueHigh: number
+    conservative?: number
+    highEnd?: number
+    failedAsk?: number | null
+  },
+>(pricing: T, askOverride?: number | null): T {
+  const band = roundPrintedBand(pricing.valueLow, pricing.valueHigh)
+  const ask =
+    askOverride != null && Number.isFinite(askOverride) && askOverride > 0
+      ? askOverride
+      : pricing.failedAsk != null && pricing.failedAsk > 0
+        ? pricing.failedAsk
+        : null
+  const recommended = roundPrintedRecommendation(pricing.recommended, {
+    low: band.low,
+    high: band.high,
+    ask,
+  })
+  let conservative = pricing.conservative
+  if (typeof conservative === 'number' && conservative > 0) {
+    // Same grid as the list. A raw off-grid floor rounds to the nearest
+    // thousand inside the printed band, then cannot sit above the list.
+    conservative = roundPrintedRecommendation(conservative, { low: band.low, high: band.high })
+    if (conservative > recommended) conservative = recommended
+  }
+  let highEnd = pricing.highEnd
+  if (typeof highEnd === 'number' && highEnd > 0) {
+    let rounded = Math.round(highEnd / 1000) * 1000
+    if (ask != null && highEnd <= ask && rounded > ask) {
+      const under = Math.floor(ask / 1000) * 1000
+      rounded = under >= recommended ? under : recommended
+    }
+    if (band.high > 0 && rounded > band.high && band.high >= recommended) rounded = band.high
+    if (rounded < recommended) rounded = recommended
+    highEnd = rounded
+  }
+  if (
+    recommended === pricing.recommended &&
+    band.low === pricing.valueLow &&
+    band.high === pricing.valueHigh &&
+    conservative === pricing.conservative &&
+    highEnd === pricing.highEnd
+  ) {
+    return pricing
+  }
+  return { ...pricing, recommended, valueLow: band.low, valueHigh: band.high, conservative, highEnd }
 }
 
 /** At or above this many sales the range drops one at each end. */
@@ -255,6 +361,12 @@ export function buildTimeAdjustmentBasis(opts: {
    * The picker already excluded the tracts that series mixes in.
    */
   exclusivePocket?: boolean
+  /**
+   * The adjustments that were actually applied, sale by sale. When any of
+   * them moved, the sentence names those comps and the percentage. A pocket
+   * that refused the city-index pump still has to admit a cooling it did apply.
+   */
+  applied?: readonly AppliedDateMove[]
 }): PricingTimeAdjustment {
   const windowMonths = opts.windowMonths ?? TIME_ADJUSTMENT_WINDOW_MONTHS
   const fetchedAt = opts.fetchedAt ?? new Date().toISOString()
@@ -266,6 +378,11 @@ export function buildTimeAdjustmentBasis(opts: {
       wouldMove != null && Number.isFinite(wouldMove) && wouldMove !== 0
         ? ` That city index ${wouldMove > 0 ? 'rose' : 'fell'} ${Math.abs(wouldMove).toFixed(1)} percent over the last ${windowMonths} months; it is not applied here.`
         : ''
+    const appliedDetail = describeAppliedDateAdjustments(opts.applied ?? [])
+    const place = opts.cityName?.trim() || 'this city'
+    const sentence = appliedDetail
+      ? `These sales are the exclusive pocket. ${appliedDetail} The ${place} city index is not used to pump prices. Size and story class do not adjust.`
+      : `These sales are the exclusive pocket. Date adjustment does not walk the city index, which includes tracts already excluded from this set. Each sale stays on its own sold and last-ask price. Size and story class do not adjust.${would}`
     return {
       pctPerMonth: 0,
       pctOverWindow: 0,
@@ -280,7 +397,7 @@ export function buildTimeAdjustmentBasis(opts: {
         fetchedAt,
         query: `exclusive pocket — city_slug='${opts.citySlug}' index computed but not applied`,
       },
-      sentence: `These sales are the exclusive pocket. Date adjustment does not walk the city index, which includes tracts already excluded from this set. Each sale stays on its own sold and last-ask price — size and story class do not adjust.${would}`,
+      sentence,
     }
   }
   const trend = marketIndexTrend({ points: opts.points, asOf: opts.asOf, windowMonths })
@@ -383,8 +500,31 @@ export interface PricingRangeRule {
   saleToAskSource: 'city-index' | 'market-context' | 'these-sales' | 'none'
   /** Sale-to-ask ratios dropped by the ±50% rule. */
   ratiosExcluded: number
+  /**
+   * Rounded min and max of the sales that set the ends, before a minimum-width
+   * open or a later floor. The sentence uses these when the printed band is
+   * not that spread.
+   */
+  saleLow?: number
+  saleHigh?: number
+  /**
+   * Closed low after the same-subdivision floor and before the minimum-width
+   * open in the exclusive-pocket block. The open is presentation. A later
+   * nudge or failed-ask pin chases this, not the opened low.
+   */
+  evidenceLow?: number
   /** The rule in one sentence, in the document's own words. */
   sentence: string
+  /**
+   * Sales kept out of the ends because their time-adjusted $/sf sat more
+   * than 25 percent off the median. They still carry weight in the price.
+   */
+  endpointPpsfAside?: number
+  /**
+   * Sales kept out of the ends because their capped share was under 5 percent.
+   * They still carry that share of the price.
+   */
+  endpointWeightAside?: number
 }
 
 /**
@@ -557,6 +697,190 @@ export function trimPpsfOutliers<T extends { ppsfTimeAdjusted: number }>(rows: T
   if (mid <= 0) return rows
   const kept = rows.filter((r) => Math.abs(r.ppsfTimeAdjusted - mid) / mid <= PPSF_OUTLIER)
   return kept.length >= 3 ? kept : rows
+}
+
+/**
+ * Band endpoints only. A $/sqft outlier may still carry weight on the
+ * recommendation; it may not sit on the printed low or high when the
+ * starting set has four or more sales. Wider than the 12% point-estimate
+ * trim so a tight D10 min-max set is not pulled in; Marshmallow's $618/sf
+ * against a ~$430/sf cluster is still outside.
+ */
+export const BAND_ENDPOINT_PPSF_OUTLIER = 0.25
+
+/**
+ * A sale under this share of the weight does not set a band end. The
+ * highest-weight sale stays even after the 40% cap (Slate Rolen). A 1.6%
+ * sale (Oakside 2821 Aldrich) does not.
+ */
+export const BAND_ENDPOINT_MIN_WEIGHT_SHARE = 0.05
+
+/**
+ * Minimum band width, as a fraction of the recommendation. About ±2.5%.
+ * A band already about 4% wide is left on the sales. A few-thousand-dollar
+ * band is false precision and is opened out to this width.
+ */
+export const BAND_MIN_WIDTH_RATIO = 0.05
+export const BAND_WIDTH_ALREADY_ENOUGH = 0.04
+
+function rowsHaveWeights<T extends { weight?: number | null }>(rows: readonly T[]): boolean {
+  return (
+    rows.length > 0 &&
+    rows.every((r) => typeof r.weight === 'number' && Number.isFinite(r.weight) && (r.weight as number) >= 0) &&
+    rows.some((r) => (r.weight as number) > 0)
+  )
+}
+
+export function salesForBandEndpoints<T extends { ppsfTimeAdjusted: number; weight?: number | null }>(rows: T[]): T[] {
+  return splitBandEndpoints(rows).kept
+}
+
+/**
+ * Which sales may set a band end, and why the others may not.
+ * A $/sf outlier and a sale under the weight floor still carry their share
+ * of the recommendation. They only lose the right to set the printed low or high.
+ */
+export function splitBandEndpoints<T extends { ppsfTimeAdjusted: number; weight?: number | null }>(
+  rows: T[],
+): { kept: T[]; ppsfAside: number; weightAside: number } {
+  let pool = rows
+  let ppsfAside = 0
+  if (rows.length >= 4) {
+    const mid = median(rows.map((r) => r.ppsfTimeAdjusted).filter((n) => n > 0))
+    if (mid > 0) {
+      const kept = rows.filter((r) => {
+        if (!(r.ppsfTimeAdjusted > 0)) return true
+        return Math.abs(r.ppsfTimeAdjusted - mid) / mid <= BAND_ENDPOINT_PPSF_OUTLIER
+      })
+      // Start with four or more; keep the trim when at least three remain
+      // (Marshmallow: four sales, one $/sf outlier, three stay on the endpoints).
+      if (kept.length >= 3) {
+        ppsfAside = rows.length - kept.length
+        pool = kept
+      }
+    }
+  }
+  if (!rowsHaveWeights(rows)) return { kept: pool, ppsfAside, weightAside: 0 }
+  const rawWeights = rows.map((r) => (typeof r.weight === 'number' && r.weight > 0 ? r.weight : 0))
+  const total = rawWeights.reduce((sum, w) => sum + w, 0)
+  if (!(total > 0)) return { kept: pool, ppsfAside, weightAside: 0 }
+  // The letter prints capped shares (capClosedCompShares, 40% cap). The
+  // endpoint test used to read the raw share, so a sale the grid shows at
+  // 6.4% was treated as 3.5% and could not set an end. One weight basis.
+  const shares = capClosedCompShares(rawWeights)
+  const shareOf = (row: T) => shares[rows.indexOf(row)] ?? 0
+  const top = rows.reduce((best, row) => (shareOf(row) > shareOf(best) ? row : best))
+  const keep = new Set<T>()
+  for (const row of pool) {
+    if (shareOf(row) + 1e-12 >= BAND_ENDPOINT_MIN_WEIGHT_SHARE) keep.add(row)
+  }
+  // The capped top-weight comp stays on an endpoint even if a $/sf trim
+  // dropped it, as long as its share is still meaningful.
+  if (shareOf(top) + 1e-12 >= BAND_ENDPOINT_MIN_WEIGHT_SHARE) keep.add(top)
+  const out = rows.filter((row) => keep.has(row))
+  const kept = out.length >= 2 ? out : pool
+  let weightAside = 0
+  if (kept !== pool) {
+    const keptSet = new Set(kept)
+    weightAside = pool.filter((row) => !keptSet.has(row)).length
+    if (ppsfAside > 0 && !pool.includes(top) && keptSet.has(top)) ppsfAside -= 1
+  }
+  return { kept, ppsfAside, weightAside }
+}
+
+/**
+ * Open a false-precision band out to about ±2.5% around `rec`. A band that
+ * is already about 4% of the rec wide stays on the sales, so a supported
+ * spread (Oakside Meridian, about $483k-$505k) is not pulled past those sales.
+ */
+export function ensureMinBandWidth(
+  low: number,
+  high: number,
+  rec: number,
+): { low: number; high: number } {
+  if (!(rec > 0) || !(low > 0) || !(high > 0)) return { low, high }
+  const lo = Math.min(low, high)
+  const hi = Math.max(low, high)
+  if ((hi - lo) / rec >= BAND_WIDTH_ALREADY_ENOUGH) return { low: lo, high: hi }
+  const half = rec * (BAND_MIN_WIDTH_RATIO / 2)
+  return { low: Math.min(lo, rec - half), high: Math.max(hi, rec + half) }
+}
+
+/** The tail of a range sentence that explains the list-strategy share. */
+function rangeSentenceSuffix(sentence: string): string {
+  const idx = sentence.search(/The range is (?:those|the) adjusted/)
+  return idx >= 0 ? ` ${sentence.slice(idx)}` : ''
+}
+
+/**
+ * The range sentence names the sales that set the ends and the dollars the
+ * letter prints. When a later step opens or lifts the band, it does not call
+ * that wider pair "the spread of the sale prices".
+ */
+export function describeRangeSentence(args: {
+  rule: PricingRangeRuleName
+  n: number
+  kept: number
+  printedLow: number
+  printedHigh: number
+  saleLow: number
+  saleHigh: number
+  /** Trimmed-rule aside count wording, already composed. */
+  trimmedAside?: string | null
+  suffix?: string
+}): string {
+  const usd = (n: number) => `$${Math.round(n).toLocaleString('en-US')}`
+  const suffix = args.suffix ?? ''
+  if (args.rule === 'trimmed-one-each-end') {
+    const aside = args.trimmedAside ?? ''
+    return `The range is the spread of the ${countWord(args.kept)} sale prices behind this price, adjusted for date and size: ${usd(args.printedLow)} to ${usd(args.printedHigh)}. ${aside}${suffix}`
+  }
+  const same = args.printedLow === args.saleLow && args.printedHigh === args.saleHigh
+  const count =
+    args.kept === args.n
+      ? `all ${countWord(args.n)}`
+      : `the ${countWord(args.kept)} of the ${countWord(args.n)}`
+  if (same) {
+    return `The range is the spread of ${count} sale prices adjusted for date and size: ${usd(args.printedLow)} to ${usd(args.printedHigh)}.${suffix}`
+  }
+  return `The ${countWord(args.kept)} sale prices that set the ends, of the ${countWord(args.n)} adjusted for date and size, run from ${usd(args.saleLow)} to ${usd(args.saleHigh)}. The printed range is ${usd(args.printedLow)} to ${usd(args.printedHigh)}.${suffix}`
+}
+
+/**
+ * After a later step moves valueLow/valueHigh, the range sentence still
+ * quotes the dollars it was written with. Rewrite that pair to the hero
+ * band so the prose and the cover cannot disagree. When the rule recorded
+ * the sale spread, the sentence keeps that spread and names the printed
+ * band separately instead of calling the opened band the sale prices.
+ */
+export function syncRangeRuleToHeroBand<T extends { valueLow: number; valueHigh: number; rangeRule?: PricingRangeRule | null }>(
+  pricing: T,
+): T {
+  const rule = pricing.rangeRule
+  if (!rule?.sentence) return pricing
+  const low = Math.round(Math.min(pricing.valueLow, pricing.valueHigh) / 1000) * 1000
+  const high = Math.round(Math.max(pricing.valueLow, pricing.valueHigh) / 1000) * 1000
+  if (!(low > 0) || !(high > 0)) return pricing
+  const saleLow = rule.saleLow
+  const saleHigh = rule.saleHigh
+  const sentence =
+    rule.rule === 'min-max' && saleLow != null && saleHigh != null && saleLow > 0 && saleHigh > 0
+      ? describeRangeSentence({
+          rule: 'min-max',
+          n: rule.n,
+          kept: rule.kept,
+          printedLow: low,
+          printedHigh: high,
+          saleLow,
+          saleHigh,
+          suffix: rangeSentenceSuffix(rule.sentence),
+        })
+      : rule.sentence.replace(
+          /\$[\d,]+\s+to\s+\$[\d,]+/,
+          `$${low.toLocaleString('en-US')} to $${high.toLocaleString('en-US')}`,
+        )
+  if (sentence === rule.sentence && rule.adjustedLow === low && rule.adjustedHigh === high) return pricing
+  return { ...pricing, rangeRule: { ...rule, adjustedLow: low, adjustedHigh: high, sentence } }
 }
 
 /**
@@ -758,8 +1082,15 @@ export function adjustCmaCompAlongMarket(opts: {
     saleSqft: sale.sqft,
     monthsSinceClose,
   })
+  const proximity =
+    (sale.proximity ?? '').trim() ||
+    proximityLabel(
+      { lat: opts.subject.latitude ?? null, lng: opts.subject.longitude ?? null },
+      { lat: sale.latitude ?? null, lng: sale.longitude ?? null },
+    )
   const adjusted: CmaAdjustedComp = {
     ...sale,
+    proximity,
     monthsSinceClose: +monthsSinceClose.toFixed(1),
     timeAdjustment,
     timeAdjustedPrice,
@@ -823,13 +1154,23 @@ export function listPriceFromEngine(opts: {
   const band = saleBandFromAdjusted(opts.subjectSqft, opts.adjusted)
   // The sales that carry a printed adjusted price, split by the ONE range rule
   // (partitionByRangeRule). Land has no living area and prices per acre, so it
-  // stays on the $/sqft path it already used.
-  const part = opts.subjectSqft > 0
+  // stays on the $/sqft path it already used. Band endpoints drop $/sqft
+  // outliers when four or more sales remain; the recommendation still
+  // reconciles the original kept set.
+  const recPart = opts.subjectSqft > 0
     ? partitionByRangeRule(opts.adjusted)
     : { priced: [], kept: [], setAside: [], rule: null as PricingRangeRuleName | null }
-  const range = rangeFromPartition(part)
-  // The price is reconciled over the KEPT sales only. A sale the document says
-  // was set aside carries none of it.
+  const part = recPart
+  const endpointSplit =
+    opts.subjectSqft > 0
+      ? splitBandEndpoints(recPart.kept)
+      : { kept: recPart.kept, ppsfAside: 0, weightAside: 0 }
+  const useEndpointKept = endpointSplit.kept.length >= 3
+  const endpointKept = useEndpointKept ? endpointSplit.kept : recPart.kept
+  const range = rangeFromPartition({
+    ...recPart,
+    kept: endpointKept,
+  })
   const reconciledValue =
     range != null
       ? weightedAdjustedPrice(
@@ -891,6 +1232,28 @@ export function listPriceFromEngine(opts: {
     rangeLow = Math.round(range.low)
     rangeHigh = Math.round(range.high)
   }
+  // The sales' own ends, before a minimum-width open. The sentence names
+  // these when the printed band is wider or higher than the comps.
+  const saleLow = rangeLow
+  const saleHigh = rangeHigh
+  // A $3k band on a $620k recommendation is false precision. Open it to
+  // about ±2.5% around the reconciled price when the sales themselves are
+  // tighter than that. A band that is already wide enough is left alone.
+  if (rangeLow != null && rangeHigh != null) {
+    const center = reconciledValue != null && reconciledValue > 0 ? reconciledValue : (rangeLow + rangeHigh) / 2
+    const widened = ensureMinBandWidth(rangeLow, rangeHigh, center)
+    let nextLow = roundPriceDown(widened.low)
+    let nextHigh = roundPriceUp(widened.high)
+    // Do not widen onto a sale the range rule set aside.
+    if (asideBelow != null && nextLow <= asideBelow) nextLow = rangeLow
+    if (asideAbove != null && nextHigh >= asideAbove) nextHigh = rangeHigh
+    rangeLow = nextLow
+    rangeHigh = nextHigh
+    if (rangeLow > rangeHigh) {
+      rangeLow = roundPriceDown(center)
+      rangeHigh = roundPriceUp(center)
+    }
+  }
 
   const recommendedList = mid != null ? listFromClose(mid, ratio) : null
   let conservativeList = rangeLow != null ? listFromClose(rangeLow, ratio) : band != null ? listFromClose(band.low, ratio) : null
@@ -900,10 +1263,13 @@ export function listPriceFromEngine(opts: {
     if (highEndList != null && highEndList < recommendedList) highEndList = recommendedList
   }
 
+  // The printed band is the adjusted sale prices. The city close-to-ask
+  // share is a list-strategy fact. It is not applied to this range. Saying
+  // the figures were "carried to an asking price" was the Nugget defect.
   const askStep =
     ratio != null
-      ? ` Homes in this city are closing at ${(ratio * 100).toFixed(1)} percent of the price they first asked, so each figure is carried to an asking price at that share.`
-      : ' No local share of the original asking price was available, so the asking prices are the adjusted sale prices themselves.'
+      ? ` The range is those adjusted sale prices. Homes in this city are closing at ${(ratio * 100).toFixed(1)} percent of the price they first asked. That share is a list-strategy fact. It is not applied to this range.`
+      : ' The range is the adjusted sale prices. No local share of the original asking price was available to use as a list-strategy fact.'
   const rangeRule: PricingRangeRule | null =
     range != null && rangeLow != null && rangeHigh != null
       ? {
@@ -915,22 +1281,32 @@ export function listPriceFromEngine(opts: {
           saleToAskRatio: ratio,
           saleToAskSource,
           ratiosExcluded,
-          // BOTH COUNTS, BY NAME. The sentence used to open on the number of
-          // sales the rule ran over (7) and then describe a spread of the five
-          // it kept, so the printed n, the strip's n and the sentence's n were
-          // three different claims about the same picture. Then it named only
-          // the kept count and "two more", and chapter 5 of cma-19968 could
-          // still say six sales support a range four of them produced. It now
-          // states the kept count and the whole count in one arithmetic a
-          // reader can check: four of the six.
-          sentence:
-            range.rule === 'trimmed-one-each-end'
-              ? `The range is the spread of the ${countWord(range.kept)} sale prices behind this price, adjusted for date and size: $${rangeLow.toLocaleString('en-US')} to $${rangeHigh.toLocaleString('en-US')}. ${
-                  range.n - range.kept === 1
-                    ? `One of the ${countWord(range.n)} sales sat outside every one of them and was set aside`
-                    : `${countWord(range.n - range.kept, true)} of the ${countWord(range.n)} sales sat outside every one of them and were set aside`
-                }, so no single sale could set the range.${askStep}`
-              : `The range is the spread of all ${countWord(range.n)} sale prices adjusted for date and size: $${rangeLow.toLocaleString('en-US')} to $${rangeHigh.toLocaleString('en-US')}.${askStep}`,
+          saleLow: saleLow ?? undefined,
+          saleHigh: saleHigh ?? undefined,
+          endpointPpsfAside: useEndpointKept ? endpointSplit.ppsfAside : 0,
+          endpointWeightAside: useEndpointKept ? endpointSplit.weightAside : 0,
+          // BOTH COUNTS, BY NAME. The sentence states how many sales set the
+          // ends and how many were in the set. When the printed band was
+          // opened past those sales, it says so instead of calling the opened
+          // dollars the spread of the sale prices.
+          sentence: describeRangeSentence({
+            rule: range.rule,
+            n: range.n,
+            kept: range.kept,
+            printedLow: rangeLow,
+            printedHigh: rangeHigh,
+            saleLow: saleLow ?? rangeLow,
+            saleHigh: saleHigh ?? rangeHigh,
+            trimmedAside:
+              range.rule === 'trimmed-one-each-end'
+                ? `${
+                    range.n - range.kept === 1
+                      ? `One of the ${countWord(range.n)} sales sat outside every one of them and was set aside`
+                      : `${countWord(range.n - range.kept, true)} of the ${countWord(range.n)} sales sat outside every one of them and were set aside`
+                  }, so no single sale could set the range.`
+                : null,
+            suffix: askStep,
+          }),
         }
       : null
 
@@ -1047,12 +1423,18 @@ export function applyEngineRecommendedList(
   // is rounded here, so both arrive at the cover on the same grid.
   const valueLow = engine.rangeRule?.adjustedLow ?? roundPriceDown(conservative)
   const valueHigh = engine.rangeRule?.adjustedHigh ?? roundPriceUp(highEnd)
+  // High / aspirational list is the same evidence as the band top. Carrying
+  // the sale-to-ask ratio past valueHigh printed $1,034k over a $1,000k top.
+  const bandTop = Math.max(valueLow, valueHigh)
+  const highEndClamped = Math.min(highEnd, bandTop)
+  const conservativeClamped = Math.min(conservative, highEndClamped)
+  const listClamped = Math.min(Math.max(list, conservativeClamped), highEndClamped)
   return clipCoverToFailedAsk(
     {
       ...pricing,
-      recommended: list,
-      conservative,
-      highEnd,
+      recommended: listClamped,
+      conservative: conservativeClamped,
+      highEnd: highEndClamped,
       valueLow: Math.min(valueLow, valueHigh),
       valueHigh: Math.max(valueLow, valueHigh),
       predictedClose: close,
@@ -1202,6 +1584,12 @@ export function priceCmaSet(args: {
     yoyMedianPriceDeltaPct: args.market?.yoyMedianPriceDeltaPct ?? null,
     indexUnavailableReason: args.indexUnavailableReason ?? null,
     exclusivePocket: selectionIsExclusivePocket(args.selection.tiersUsed),
+    applied: args.adjusted.map((c) => ({
+      address: c.address,
+      closePrice: c.closePrice,
+      timeAdjustment: c.timeAdjustment,
+      timeAdjustedPrice: c.timeAdjustedPrice,
+    })),
   })
   // THE HOUSE NEXT DOOR IS THE EVIDENCE, AND IT GETS THE LAST WORD BEFORE THE
   // FAILED-ASK CEILING (Matt 2026-09-10). computePricing already applied it,
@@ -1241,6 +1629,7 @@ export function priceCmaSet(args: {
       covered.valueHigh = covered.highEnd
       covered.needsReview = true
     }
+    return syncRangeRuleToHeroBand(covered)
   }
   return covered
 }

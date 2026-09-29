@@ -13,7 +13,8 @@
     "flex-flow-side-by-side-matrix-labels",
     "matrix-empty-thumb-align",
     "matrix-label-wrap-not-ellipsis",
-    "sales-that-set-it-one-heading"
+    "sales-that-set-it-one-heading",
+    "first-contact-tracked-area-links"
   ],
   "testFiles": [
     "lib/cma/canter-letter-flow.contract.test.ts"

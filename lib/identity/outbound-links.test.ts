@@ -80,6 +80,35 @@ describe('decorateOutboundText — the one decoration helper', () => {
     expect(verifyPersonLinkToken(personal.searchParams.get('_pid'))).toEqual({ personId: 3, channel: 'personal' })
   })
 
+  it('keeps trailing punctuation outside the URL, including on an SMS body', () => {
+    const sms = decorateOutboundText('The page is https://ryan-realty.com/reviews.', {
+      brokerSlug: 'matt',
+      personId: 3,
+      channel: 'sms',
+    })
+    expect(sms.endsWith('.')).toBe(true)
+    const url = sms.slice(sms.indexOf('https'), -1)
+    const u = new URL(url)
+    expect(u.pathname).toBe('/reviews')
+    expect(u.searchParams.getAll('utm_medium')).toEqual(['sms'])
+    expect(u.searchParams.get('agent')).toBe('matt')
+  })
+
+  it('does not duplicate utm_medium when the href already uses &amp;', () => {
+    const html =
+      '<a href="https://ryan-realty.com/about?utm_source=cma&amp;utm_medium=document&amp;utm_campaign=cma-1.">who we are</a>'
+    const out = decorateOutboundText(html, { brokerSlug: 'matt', personId: 3, channel: 'email' })
+    expect(out).not.toContain('cma-1.')
+    const href = out.match(/href="([^"]+)"/)?.[1]?.replace(/&amp;/g, '&') ?? ''
+    const u = new URL(href)
+    expect(u.searchParams.getAll('utm_medium')).toEqual(['document'])
+    expect(u.searchParams.get('utm_source')).toBe('cma')
+    expect(u.searchParams.get('utm_campaign')).toBe('cma-1')
+    expect(u.searchParams.get('utm_content')).toBe('agent-matt')
+    expect(u.searchParams.get('agent')).toBe('matt')
+    expect(verifyPersonLinkToken(u.searchParams.get('_pid'))).toEqual({ personId: 3, channel: 'email' })
+  })
+
   it('leaves admin and tracker links untouched', () => {
     const out = decorateOutboundText('https://ryan-realty.com/admin/crm and https://ryan-realty.com/r/AbC123', {
       brokerSlug: 'matt',

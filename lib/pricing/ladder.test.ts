@@ -6,6 +6,7 @@ import {
   isPocketExclusiveTier,
   keepTightestByClosePrice,
   pocketHoldsGeographyExclusive,
+  pocketStopsLaterRungs,
   pocketStarvedForYearQuality,
   POCKET_STARVE_BELOW,
   POCKET_TIGHT_SET_MIN,
@@ -154,6 +155,16 @@ describe('pricingTierLadder — the parent level (Matt 2026-09-09)', () => {
     expect(pocketHoldsGeographyExclusive(1, 1, true)).toBe(true)
     expect(pocketHoldsGeographyExclusive(2, 0, true)).toBe(true)
     expect(pocketHoldsGeographyExclusive(1, 0, true)).toBe(false)
+    // Two closed sales inside a quarter mile are a tight cluster and still
+    // short of the 3-sale floor. The ladder keeps walking. Three or more
+    // may stop, which is what keeps Canter off the mile rings.
+    expect(pocketStopsLaterRungs({ kept: 2, exclusiveClosed: 2, clusterPocket: true })).toBe(false)
+    expect(
+      pocketStopsLaterRungs({ kept: 2, exclusiveClosed: 2, exclusivePending: 1, clusterPocket: true }),
+    ).toBe(true)
+    expect(pocketStopsLaterRungs({ kept: 3, exclusiveClosed: 2, exclusivePending: 1, clusterPocket: true })).toBe(true)
+    expect(pocketStopsLaterRungs({ kept: 5, exclusiveClosed: 5 })).toBe(true)
+    expect(pocketStopsLaterRungs({ kept: 4, exclusiveClosed: 4 })).toBe(false)
   })
 
   it('marks the community rungs sameCommunity and nothing else', () => {

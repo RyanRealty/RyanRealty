@@ -9,11 +9,8 @@ import {
   dateLong,
   escapeHtml,
   monthYear,
-  reviewNoticeBandHtml,
   sparkPhotoAt,
 } from '@/lib/cma/render-blocks'
-import { readReviewNotice } from '@/lib/cma/render-contract'
-import { isCmaClientReady } from '@/lib/cma/draft-access'
 import type {
   CmaAdjustedComp,
   CmaBroker,
@@ -37,6 +34,13 @@ import { letterCoverPayoffHtml } from '@/lib/cma/cover-value'
 import {
   cmaCoverLabelHtml,
 } from '@/lib/cma/fsbo-cma-render'
+import {
+  ownerContactNameTokens,
+  preparedCoverLine,
+  scrubMlsOwnerTokens,
+  expandNameMonthDatesInHtml,
+  scrubMlsTextRow,
+} from '@/lib/cma/letter-privacy'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -112,8 +116,8 @@ export interface RenderCmaArgs {
   docLinks?: TrackedDocLinkCtx | null
   /**
    * Row status at SERVE (draft / needs_review / finalized / delivered).
-   * Finalized and delivered owner PDFs must never print the draft
-   * "under broker review" band even if pricing.review still carries a notice.
+   * The owner letter never prints the broker-review banner. That flag stays
+   * on the admin view only.
    */
   documentStatus?: string | null
   /**
@@ -135,6 +139,142 @@ interface PageDef {
   closing?: boolean
 }
 
+// A spread is two full charts stacked on paper. The heading keeps the lead
+// sentence only. Pulling the chart into .page-open makes that box too tall
+// to sit under a short competition-grid tail, and the tail is left alone.
+const LARGE_OPENING =
+  /<(?:table|div)\b[^>]*class="[^"]*(?:comp-matrix-wrap|worth-strip|status-price|chart-block|status-price-wrap|spread)[^"]*"/i
+
+function takeTopElement(html: string): { html: string; rest: string } | null {
+  const src = html.trimStart()
+  const open = src.match(/^<([a-zA-Z][\w:-]*)(\s[^>]*)?>/)
+  if (!open) return null
+  const tag = open[1]!.toLowerCase()
+  if (open[0].endsWith('/>') || /^(img|br|hr|input|meta|source)$/i.test(tag)) {
+    return { html: src.slice(0, open[0].length), rest: src.slice(open[0].length) }
+  }
+  let depth = 1
+  let i = open[0].length
+  const openRe = new RegExp(`<${tag}\\b`, 'i')
+  const closeRe = new RegExp(`</${tag}\\b`, 'i')
+  while (i < src.length && depth > 0) {
+    const rest = src.slice(i)
+    const nextOpen = rest.search(openRe)
+    const nextClose = rest.search(closeRe)
+    if (nextClose < 0) return { html: src, rest: '' }
+    if (nextOpen >= 0 && nextOpen < nextClose) {
+      depth += 1
+      i += nextOpen + tag.length + 1
+    } else {
+      depth -= 1
+      const closeStart = i + nextClose
+      const gt = src.indexOf('>', closeStart)
+      i = gt >= 0 ? gt + 1 : closeStart + tag.length + 3
+    }
+  }
+  return { html: src.slice(0, i), rest: src.slice(i) }
+}
+
+function classListHas(html: string, name: string): boolean {
+  const m = html.match(/^\s*<[a-zA-Z][\w:-]*\b[^>]*\bclass="([^"]*)"/i)
+  if (!m) return false
+  return m[1]!.split(/\s+/).includes(name)
+}
+
+function elementIsChart(html: string): boolean {
+  return /<svg\b/i.test(html) || classListHas(html, 'szn') || classListHas(html, 'chart-block')
+}
+
+/**
+ * Lead copy in a spread column, stopping at the chart.
+ * The SVG stays in the column so a short grid tail can share a sheet with
+ * the heading. A column with no chart returns null and the caller keeps
+ * the old "first column stays with the heading" split.
+ */
+function splitLeadBeforeChart(colInner: string): { lead: string; rest: string } | null {
+  let remaining = colInner
+  let lead = ''
+  while (remaining.trim()) {
+    const el = takeTopElement(remaining)
+    if (!el) return null
+    if (elementIsChart(el.html)) return { lead, rest: remaining }
+    lead += el.html
+    remaining = el.rest
+  }
+  return null
+}
+
+/**
+ * Pull the first chart's lead sentence out of a spread. The chart SVG stays
+ * in the spread, outside the unbreakable opening.
+ */
+function peelSpreadChartLead(spreadHtml: string): { lead: string; rest: string } | null {
+  const openTag = spreadHtml.match(/^<div\b[^>]*>/i)
+  if (!openTag || !classListHas(spreadHtml, 'spread')) return null
+  const closeAt = spreadHtml.lastIndexOf('</div>')
+  if (closeAt < openTag[0].length) return null
+  const inner = spreadHtml.slice(openTag[0].length, closeAt)
+  const first = takeTopElement(inner)
+  if (!first || !classListHas(first.html, 'spread-col')) return null
+  const colOpen = first.html.match(/^<div\b[^>]*>/i)
+  if (!colOpen) return null
+  const colClose = first.html.lastIndexOf('</div>')
+  if (colClose < colOpen[0].length) return null
+  const colInner = first.html.slice(colOpen[0].length, colClose)
+  const split = splitLeadBeforeChart(colInner)
+  if (!split) return null
+  const newCol = `${colOpen[0]}${split.rest}</div>`
+  return { lead: split.lead, rest: `${openTag[0]}${newCol}${first.rest}</div>` }
+}
+
+/**
+ * A spread with no chart in the first column: keep that column with the
+ * heading and let a second column start the next sheet.
+ */
+function peelFirstSpreadCol(spreadHtml: string): { first: string; rest: string } | null {
+  const openTag = spreadHtml.match(/^<div\b[^>]*>/i)
+  if (!openTag) return null
+  const closeAt = spreadHtml.lastIndexOf('</div>')
+  if (closeAt < openTag[0].length) return null
+  const inner = spreadHtml.slice(openTag[0].length, closeAt)
+  const first = takeTopElement(inner)
+  if (!first || !classListHas(first.html, 'spread-col')) return null
+  if (!first.rest.trim()) return null
+  return { first: first.html, rest: `${openTag[0]}${first.rest}</div>` }
+}
+
+/** Heading plus the first small block, so a section never opens alone. */
+export function splitPageOpening(body: string): { open: string; rest: string } {
+  const src = body.trim()
+  const heading = src.match(/^<h[1-4]\b[\s\S]*?<\/h[1-4]>/i)
+  if (!heading) return { open: '', rest: src }
+  const after = src.slice(heading[0].length)
+  const next = takeTopElement(after)
+  if (!next) return { open: heading[0], rest: after }
+  if (classListHas(next.html, 'spread')) {
+    const chart = peelSpreadChartLead(next.html)
+    if (chart) {
+      const lead = chart.lead.trim() ? `<div class="open-lead">${chart.lead}</div>` : ''
+      return { open: heading[0] + lead, rest: chart.rest + next.rest }
+    }
+    const peeled = peelFirstSpreadCol(next.html)
+    if (peeled) return { open: heading[0] + peeled.first, rest: peeled.rest + next.rest }
+  }
+  // A chart with no lead stays out of the unbreakable opening so it cannot
+  // drag the heading onto the next sheet.
+  if (elementIsChart(next.html)) {
+    return { open: heading[0], rest: after }
+  }
+  if (LARGE_OPENING.test(next.html) || /^<table\b/i.test(next.html)) {
+    return { open: heading[0], rest: after }
+  }
+  return { open: heading[0] + next.html, rest: next.rest }
+}
+
+function openingFollowedByChart(rest: string): boolean {
+  return classListHas(rest, 'spread') || classListHas(rest, 'szn') || classListHas(rest, 'chart-block')
+}
+
 function wrapPage(page: PageDef): string {
   if (page.cover) {
     return `
@@ -146,13 +286,20 @@ function wrapPage(page: PageDef): string {
   // throughout, navy on the cover and the closing sheet only. The closing
   // takes the cream wordmark, because the navy one disappears into the field.
   const logo = page.closing ? 'logo-white.png' : 'logo-blue.png'
+  const { open, rest } = splitPageOpening(page.body)
+  // The chart is outside the opening. break-after:auto on this class lets a
+  // short grid tail share the sheet with the heading. The SVG stays whole.
+  const chartFollows = openingFollowedByChart(rest)
   return `
 <section class="page${page.flyer ? ' page-flyer' : ''}${page.closing ? ' page-closing' : ''}">
+  <div class="page-open${chartFollows ? ' is-chart-follow' : ''}">
   <header class="pg-header">
     <img src="${SITE_URL}/images/brand/${logo}" alt="Ryan Realty" class="logo" />
     <div class="pg-meta">${page.meta}</div>
   </header>
-  ${page.body}
+  ${open}
+  </div>
+  ${rest}
 </section>`
 }
 
@@ -235,10 +382,11 @@ function heroForSubject(subject: CmaSubject): { src: string | null; caption: str
 function coverPage(a: RenderCmaArgs): PageDef {
   // Cover prefers MLS photo; never a second map (C9). Non-map fallback when no photo.
   const hero = heroForSubject(a.subject)
-  const prepared = [
-    a.client.name ? `Prepared for ${a.client.name}` : 'Prepared',
-    `by ${a.broker.displayName}, Ryan Realty`,
-  ].join(' ')
+  const prepared = preparedCoverLine({
+    brokerName: a.broker.displayName,
+    generatedAt: dateLong(a.generatedAtIso),
+    streetAddress: a.subject.streetAddress,
+  })
   // FlexMLS letter FLOW on the letter cover (same trio as immersive hero):
   // Low · High · Recommended once. Never sole legacy cover-price.
   const payoff = letterCoverPayoffHtml(a.pricing)
@@ -253,7 +401,7 @@ function coverPage(a: RenderCmaArgs): PageDef {
       <h1 class="cover-title">${esc(a.subject.streetAddress)}</h1>
       <div class="cover-sub">${esc(a.subject.city)}, Oregon ${esc(a.subject.postalCode ?? '')}</div>
       ${payoff}
-      <p class="cover-presented">${esc(`${prepared} · ${dateLong(a.generatedAtIso)}`)}</p>
+      <p class="cover-presented">${esc(prepared)}</p>
       ${hero.stale ? `<p class="hero-caption">${esc(hero.caption)}</p>` : ''}
     </div>
   </div>`,
@@ -261,32 +409,69 @@ function coverPage(a: RenderCmaArgs): PageDef {
 
 }
 
-/**
- * The review band, directly under the cover.
- *
- * Round-four class C: it belongs on the sheet a reader turns to first, not on
- * a page of its own. `.page-cover` already breaks after itself, so prepending
- * the band to the first chapter puts it at the top of page two on paper and
- * immediately under the cover on screen — one sheet, no orphan page.
- */
-function withReviewNotice(a: RenderCmaArgs, pages: PageDef[]): PageDef[] {
-  // Owner / finalized PDF: never leak the draft review banner (Tip Ready P0).
-  if (isCmaClientReady(a.documentStatus)) return pages
-  const review = readReviewNotice(a.pricing)
-  if (!review) return pages
-  const band = reviewNoticeBandHtml(review.notice ?? '', 'letter')
-  if (!band) return pages
-  const at = pages.findIndex((p) => !p.cover)
-  if (at < 0) return [...pages, { meta: 'Pricing report', body: band }]
-  return pages.map((p, i) => (i === at ? { ...p, body: `${band}
-${p.body}` } : p))
+export function scrubLetterSources(a: RenderCmaArgs): RenderCmaArgs {
+  const source = { clientName: a.client?.name ?? null }
+  if (ownerContactNameTokens(source).length === 0) return a
+  const story = a.subdivisionStory
+  return {
+    ...a,
+    subject: scrubMlsTextRow(a.subject, source),
+    comps: a.comps.map((c) => scrubMlsTextRow(c, source)),
+    expiredPeers: a.expiredPeers
+      ? { ...a.expiredPeers, peers: a.expiredPeers.peers.map((p) => scrubMlsTextRow(p, source)) }
+      : a.expiredPeers,
+    bandRivals: a.bandRivals
+      ? { ...a.bandRivals, rivals: a.bandRivals.rivals.map((r) => scrubMlsTextRow(r, source)) }
+      : a.bandRivals,
+    subdivisionStory: story
+      ? {
+          ...story,
+          sections: story.sections.map((s) => ({
+            ...s,
+            body: scrubMlsOwnerTokens(s.body, source),
+          })),
+          notableSales: story.notableSales.map((s) => ({
+            ...s,
+            line: scrubMlsOwnerTokens(s.line, source),
+          })),
+        }
+      : story,
+    extras: scrubExtras(a.extras, source),
+  }
+}
+
+function scrubExtras(
+  extras: RenderCmaArgs['extras'],
+  source: { clientName: string | null },
+): RenderCmaArgs['extras'] {
+  if (!extras || ownerContactNameTokens(source).length === 0) return extras
+  const market = extras.marketArea
+  const band = extras.band
+  return {
+    ...extras,
+    marketArea: market
+      ? {
+          ...market,
+          expiredPeers: market.expiredPeers?.map((peer) => scrubMlsTextRow(peer, source)),
+        }
+      : market,
+    band: band
+      ? {
+          ...band,
+          rivals: band.rivals?.map((rival) => scrubMlsTextRow(rival, source)) ?? band.rivals,
+        }
+      : band,
+  }
 }
 
 export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: number } {
   // P10: cover, then the ONE chapter order both documents walk
   // (OPINION_CHAPTER_ORDER). Nothing is appended here — a chapter that exists
   // only on the letter is exactly the drift the shared order removes.
-  const pages: PageDef[] = withReviewNotice(a, [coverPage(a), ...assembleOpinionPages(a)])
+  // The broker-review banner is admin-only (serve-document adminReview).
+  // It does not belong in the owner letter, draft or final.
+  const src = scrubLetterSources(a)
+  const pages: PageDef[] = [coverPage(src), ...assembleOpinionPages(src)]
   const body = pages.map((p) => wrapPage(p)).join('\n')
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -302,5 +487,8 @@ export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: numb
 ${body}
 </body>
 </html>`
-  return { html, pageCount: pages.length }
+  return {
+    html: expandNameMonthDatesInHtml(html, { clientName: a.client?.name ?? null }),
+    pageCount: pages.length,
+  }
 }
