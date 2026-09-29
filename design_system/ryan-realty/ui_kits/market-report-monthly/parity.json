@@ -1,0 +1,71 @@
+{
+  "route": "app/housing-market/reports/monthly/page.tsx",
+  "visualLanguage": "design_system/public/PUBLIC_UI.md, built from components/site/v3 only. This directory holds NO index.html: the monthly report archive never had a bespoke mockup, and its visual target is the pattern set, not a picture. The contract below binds the route's component set (ci:mockup-parity) and its section plan (ci:page-purpose).",
+  "competitiveTarget": "The citable home of the Central Oregon monthly market report. Beat the Bend brokerages' market-update posts (text-heavy, no chart, no market table, archive as a plain blog sidebar) and the portals' metro pages (a few KPI tiles and one chart): the latest edition answered in the first viewport with its four figures and an interrogable 36-month median line, the edition's own PDF one tap away, and every edition since January 2006 addressable by month on one calendar, each month shaded by its Central Oregon median and revealing its first headline sentence on hover, keyboard focus or a phone's press and hold, with the source trace under every figure.",
+  "note": "Authored 2026-09-25 with the taste pass that broke the page's repeated eyebrow-then-heading beat (separate evaluator, defect 4) and gave the calendar's reveal to phones (defect 2). Rhythm: no two adjacent sections share a pattern. Every figure is read from a published edition's frozen payload through lib/data/market-report/editions and formatted by the PDF's own helpers (lib/market-report/format), so the archive, the edition page and the PDF print one number per fact; nothing here computes a market statistic. With nothing published the page renders one honest Quiet and is noindex. No tasteReview yet: a separate evaluator owes it.",
+  "requiredComponents": [
+    {
+      "name": "MetadataBlock",
+      "section": "BreadcrumbList, CollectionPage (webPage), a Dataset of the latest edition's region figures (variableMeasured equals the numbers on screen, dateModified is the edition's published_at), an ItemList of the twelve newest editions, and FAQPage of the methods questions V3Answers renders. With nothing published, BreadcrumbList alone.",
+      "blocking": true
+    },
+    {
+      "name": "V3SectionTracker",
+      "section": "Section-view tracking, first inside main.",
+      "blocking": true
+    },
+    {
+      "name": "V3Breadcrumb",
+      "section": "Chrome. Home > Housing market > Market reports > Monthly report, the current page never a link.",
+      "blocking": true
+    },
+    {
+      "name": "ArchiveSections",
+      "section": "The body, in app/housing-market/reports/monthly/_v3/ArchiveSections.tsx: the latest edition as a level-1 V3Instrument (figures, the Central Oregon median line with its resting reading, the source, the read action), V3Doors for its PDF and the previous edition, the archive calendar (MonthlyArchive: a running head, the year index, the price legend, one row per year of twelve months, each month a door to its page and its PDF, shaded by its median, revealing its first headline sentence on hover, focus or a phone's hold through V3HoldReveal), and V3Answers for how the report is built with the outbound doors. With nothing published, one level-1 V3Quiet.",
+      "blocking": true
+    },
+    {
+      "name": "V3Footer",
+      "section": "Chrome. The canonical sitemap projection (V3_FOOTER_COLUMNS), rendered outside main so it maps to contentinfo.",
+      "blocking": true
+    }
+  ],
+  "layoutComponents": [
+    {
+      "name": "V3Chrome",
+      "section": "renders from app/layout.tsx",
+      "note": "Not a page-level import. Do not remount."
+    }
+  ],
+  "deferredComponents": [
+    {
+      "name": "V3Stage",
+      "reason": "Pattern 4 needs an owned photo or video and is never allowed over a number. A market page opens on its answer (PUBLIC_UI.md, the Market row of the openings table)."
+    }
+  ],
+  "jsonLd": {
+    "required": [
+      { "type": "BreadcrumbList", "emittedBy": "MetadataBlock schemas array (breadcrumb entry), from archiveSchemas in _v3/report-schemas.ts" },
+      { "type": "CollectionPage", "emittedBy": "MetadataBlock schemas array (webPage entry, pageType CollectionPage)", "note": "Only when an edition is published." },
+      { "type": "Dataset", "emittedBy": "MetadataBlock schemas array (dataset entry)", "note": "Only when the latest edition's payload is read. Each value is the number the page prints." },
+      { "type": "ItemList", "emittedBy": "MetadataBlock schemas array (itemList entry): the twelve newest editions" },
+      { "type": "FAQPage", "emittedBy": "MetadataBlock schemas array (faqPage entry): the same methodQuestions array V3Answers renders" }
+    ]
+  },
+  "dataLayer": {
+    "listPublishedEditions": "lib/data/market-report/editions.ts, anon read, RLS: published rows only. Newest first. One read per request (react cache) for the metadata and the body.",
+    "getPublishedEdition": "lib/data/market-report/editions.ts, the newest edition with its frozen payload, the object the PDF was rendered from.",
+    "note": "The page owns the reads and hands rows to ArchiveSections; _v3/report-view.ts turns them into barrel props with the PDF's formatters and computes no market figure."
+  },
+  "sectionOrder": [
+    "V3SectionTracker: first inside main.",
+    "MetadataBlock: the structured data listed under jsonLd.",
+    "V3Breadcrumb: Home, Housing market, Market reports, Monthly report.",
+    "ArchiveSections: the body, in this order.",
+    "inside the body, 1: the latest edition, a level-1 Instrument (id latest) that opens on its eyebrow and the H1, the page's statement.",
+    "inside the body, 2: the download Doors (id download), the edition's PDF and the previous month.",
+    "inside the body, 3: the archive calendar (id archive), which opens on a running head: the heading at the left and its count on the same line at the far end.",
+    "inside the body, 4: how the report is built, V3Answers (id methods), on its heading alone, with the outbound doors.",
+    "V3Footer: outside main."
+  ]
+}

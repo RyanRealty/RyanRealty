@@ -158,6 +158,23 @@ export { V3MosCompare, V3_MOS_COMPARE_MAX } from './V3MosCompare.client'
 export type { V3MosCompareProps, V3MosCompareCity } from './V3MosCompare.client'
 
 /**
+ * A monthly run folded into one strip per calendar year, months in columns,
+ * against the caller's threshold bands, the part of a month past the threshold
+ * in full ink (2026-09-25, the monthly market report's supply). Interrogable on
+ * the V3ChartHover contract: pointer, finger, arrow keys, a live reading. Sits
+ * in an Instrument's `drawing` slot beside a line, so a second series is a
+ * second form, not the same frame twice.
+ */
+export { V3SeasonStrips } from './V3SeasonStrips.client'
+export type {
+  V3SeasonStripsProps,
+  V3SeasonRow,
+  V3SeasonCell,
+  V3SeasonBand,
+  V3SeasonPos,
+} from './V3SeasonStrips.client'
+
+/**
  * JSON-LD injector. New public pages import this as MetadataBlock so they
  * stay on the barrel (ci:public-ui). Grandfathered routes may still import
  * the flat components/site/MetadataBlock.
@@ -393,6 +410,14 @@ export type {
 export { V3_LEDGER_SPARK_MIN } from './V3Ledger'
 /** The Ledger's phone hold (SITE-52); mounted by V3Ledger itself, exported so the barrel gate sees one register. */
 export { V3LedgerRevealIsland, V3_LEDGER_HOLD_MS } from './V3LedgerReveal.client'
+/**
+ * The same tap-and-hold for any set of doors that reveal something on hover
+ * and focus (generalised 2026-09-25): the monthly report archive's months use
+ * it so a phone gets the reveal a pointer gets. The item's stylesheet reads
+ * `data-revealed="true"`; a plain tap still opens the door.
+ */
+export { V3HoldReveal, V3_HOLD_MS } from './V3HoldReveal.client'
+export type { V3HoldRevealProps } from './V3HoldReveal.client'
 
 /**
  * The listing unit for Ledger-register search surfaces: one live listing as a

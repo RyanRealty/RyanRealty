@@ -4,6 +4,15 @@
  * enumeration: one template, one eyebrow, the data picks the members) → Doors
  * (the PDF, the months either side, the year) → Answers.
  *
+ * COMPOSED AS ONE OBJECT, NOT A STACK (taste evaluator, 2026-09-25: every
+ * section opened on the same eyebrow-then-heading beat, and the region's two
+ * series were one line chart drawn twice). Each section now opens on what it
+ * leads with: the region on its title and figures, with the median line and
+ * the supply strips side by side as two forms for two questions; the table on
+ * a running head (its heading and its context on one line); each city on its
+ * own picture, the median line above the verdict (chartLead); the closing
+ * answers on their heading alone.
+ *
  * Pure: the page owns the reads and hands over the edition and the published
  * list. Everything renders from the stored payload, the object the PDF was
  * rendered from, with the PDF's own formatters, so the two cannot disagree
@@ -19,6 +28,7 @@ import {
   V3Doors,
   V3Instrument,
   V3Ledger,
+  V3SeasonStrips,
   type V3Door,
 } from '@/components/site/v3'
 import { PdfLinkNavigation } from './PdfLinkNavigation.client'
@@ -41,8 +51,8 @@ import {
   overviewSource,
   pdfFacts,
   publishedVerdict,
-  supplyTrendChart,
   sectionSource,
+  supplySeasons,
 } from './report-view'
 
 export type EditionSectionsProps = {
@@ -102,6 +112,7 @@ export function EditionSections({ editionMonth: key, edition, editions, complete
   const cityRun = namesJoined(cities.map((s) => s.geo.label))
   const [firstDoor, ...restDoors] = editionDoors(key, edition, editions)
   const note = overviewNote(payload)
+  const supply = supplySeasons(payload.region.series, 'Central Oregon', k)
 
   return (
     <>
@@ -113,7 +124,7 @@ export function EditionSections({ editionMonth: key, edition, editions, complete
         {...(brief.length ? { note: v3Text(brief.join(' ')) } : {})}
         figures={marketFigures(k, { href: '#markets', supplyHref: '/months-of-supply' })}
         chart={medianTrendChart(payload.region.series, 'Central Oregon')}
-        chartSecondary={supplyTrendChart(payload.region.series, 'Central Oregon', k)}
+        {...(supply ? { drawing: <V3SeasonStrips {...supply} id="report-supply" /> } : {})}
         source={v3Text(sectionSource('Central Oregon', key, completeThrough))}
         sourceName={v3Text(REPORT_SOURCE_NAME)}
         asOf={edition.data_complete_through}
@@ -126,6 +137,7 @@ export function EditionSections({ editionMonth: key, edition, editions, complete
         <V3Ledger
           id="markets"
           eyebrow={v3Text('Central Oregon at a glance')}
+          eyebrowInline
           heading={v3Text('Market by market')}
           {...(note ? { note: v3Text(note) } : {})}
           rows={[firstRow, ...restRows]}
@@ -137,6 +149,7 @@ export function EditionSections({ editionMonth: key, edition, editions, complete
         <V3Ledger
           id="markets"
           eyebrow={v3Text('Central Oregon at a glance')}
+          eyebrowInline
           heading={v3Text('Market by market')}
           rows={[]}
           emptyMessage={v3Text('This edition carries no market-by-market table.')}
@@ -152,6 +165,7 @@ export function EditionSections({ editionMonth: key, edition, editions, complete
             key={section.geo.slug}
             id={section.geo.slug}
             level={2}
+            chartLead
             eyebrow={v3Text(`${cityRun} · ${when}`)}
             headline={v3Text(verdict ? `${place} in ${monthWord}: ${VERDICT_LABEL[verdict]}` : `${place} in ${monthWord}`)}
             {...(section.summary.length ? { note: v3Text(section.summary.join(' ')) } : {})}
@@ -169,7 +183,6 @@ export function EditionSections({ editionMonth: key, edition, editions, complete
 
       <V3Answers
         id="about-numbers"
-        eyebrow="About the numbers"
         heading="How to read this report"
         questions={[
           {

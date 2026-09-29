@@ -1,4 +1,4 @@
-// @no-parity — report archive on the shared v3 patterns; no bespoke mockup contract.
+// Parity contract: design_system/ryan-realty/ui_kits/market-report-monthly/parity.json (ci:mockup-parity, ci:page-purpose).
 /**
  * /housing-market/reports/monthly — the Central Oregon monthly market report:
  * the latest edition first, then every edition since the first, by year.

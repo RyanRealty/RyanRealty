@@ -248,6 +248,16 @@ type V3LedgerBase = {
   headingLevel?: 1 | 2
   /** The context line above the heading: the place, the window, the filter. */
   eyebrow?: V3Text
+  /**
+   * Set the eyebrow as a KICKER on the heading's own line, at its far end,
+   * instead of on a line above it (2026-09-25). A ledger reads like a table,
+   * and a running head across the measure (the name at the left, the context
+   * at the right, the rows under both) reads like a table's head. A page uses
+   * it to break the eyebrow-then-heading beat that had every section of the
+   * monthly report open the same way (separate taste evaluator). On a narrow
+   * screen the kicker wraps under the heading. Does nothing without an eyebrow.
+   */
+  eyebrowInline?: boolean
   /** One sentence under the heading when the list needs a stated basis. */
   note?: V3Text
   /**
@@ -409,6 +419,7 @@ export function V3Ledger(props: V3LedgerProps) {
     heading,
     headingLevel = 2,
     eyebrow,
+    eyebrowInline = false,
     note,
     drawing,
     source,
@@ -485,10 +496,24 @@ export function V3Ledger(props: V3LedgerProps) {
       aria-label={headingId ? undefined : heading}
     >
       <div className="v3-ledger__head">
-        {eyebrow ? <V3Eyebrow>{eyebrow}</V3Eyebrow> : null}
-        <V3Heading level={headingLevel} id={headingId}>
-          {heading}
-        </V3Heading>
+        {eyebrow && eyebrowInline ? (
+          /* The running head: the name, then the context at the far end of the
+             same line. The heading stays first in reading order, so the region
+             is still named by it and the kicker reads as its qualifier. */
+          <div className="v3-ledger__headline">
+            <V3Heading level={headingLevel} id={headingId}>
+              {heading}
+            </V3Heading>
+            <V3Eyebrow className="v3-ledger__kicker">{eyebrow}</V3Eyebrow>
+          </div>
+        ) : (
+          <>
+            {eyebrow ? <V3Eyebrow>{eyebrow}</V3Eyebrow> : null}
+            <V3Heading level={headingLevel} id={headingId}>
+              {heading}
+            </V3Heading>
+          </>
+        )}
         {note ? <p className="v3-ledger__note">{note}</p> : null}
         {drawing ? <div className="v3-ledger__drawing">{drawing}</div> : null}
       </div>

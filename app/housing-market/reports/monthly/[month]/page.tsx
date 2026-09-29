@@ -1,5 +1,5 @@
 // @no-static-params — monthly editions are rows the monthly cron publishes, not a finite geo set.
-// @no-parity — one report edition on the shared v3 patterns; no bespoke mockup contract.
+// Parity contract: design_system/ryan-realty/ui_kits/market-report-monthly-edition/parity.json (ci:mockup-parity, ci:page-purpose).
 /**
  * /housing-market/reports/monthly/[month] — one edition of the Central Oregon
  * monthly market report (month = 'YYYY-MM').

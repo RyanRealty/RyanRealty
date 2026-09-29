@@ -46,7 +46,7 @@ import { MOS_BALANCED_MAX, MOS_SELLER_MAX, marketVerdict } from '@/lib/market/cl
 import { formatFileSize } from '@/lib/format/bytes'
 import { homesForSalePath } from '@/lib/slug'
 import { SITE_CITY_SLUGS } from '@/lib/central-oregon'
-import { customTicks, moneyTicks, spacedTicks } from '@/lib/charts/ticks'
+import { moneyTicks, spacedTicks } from '@/lib/charts/ticks'
 import type { StatValue } from '@/lib/site/json-ld'
 import {
   v3Text,
@@ -56,6 +56,8 @@ import {
   type V3InstrumentFigure,
   type V3InstrumentFigures,
   type V3LedgerFigureRow,
+  type V3SeasonCell,
+  type V3SeasonStripsProps,
 } from '@/components/site/v3'
 
 /* -------------------------------------------------------------------------- */
@@ -123,17 +125,6 @@ function yearStartTicks(
   return spacedTicks(lines, 3)
 }
 
-/**
- * Months-of-supply gridlines, every label to the same precision: "2.0, 2.5,
- * 3.0" when any line falls between whole months, "2, 3, 4" when none does,
- * never "2, 2.5, 3" down one axis.
- */
-function supplyTicks(lines: Parameters<typeof customTicks>[0]): { value: number; label: V3Text }[] {
-  const ticks = customTicks(lines, (v) => v.toFixed(1))
-  const whole = ticks.every((t) => Math.abs(t.value - Math.round(t.value)) < 1e-9)
-  return whole ? ticks.map((t) => ({ value: t.value, label: v3Text(t.value.toFixed(0)) })) : ticks
-}
-
 /* -------------------------------------------------------------------------- */
 /* The PDF, described                                                          */
 /* -------------------------------------------------------------------------- */
@@ -180,15 +171,22 @@ export function downloadLabel(key: string, item: Pick<EditionListItem, 'page_cou
 /* -------------------------------------------------------------------------- */
 
 /**
+ * The call the house thresholds make on a months-of-supply figure (≤ 4
+ * seller's, 4 to 6 balanced, ≥ 6 buyer's), through lib/market/classify.ts, the
+ * one source of those boundaries. Null for a figure it cannot call.
+ */
+export function supplyVerdict(mos: number | null | undefined): Verdict | null {
+  const kind = marketVerdict(mos).kind
+  return kind === 'sellers' ? 'seller' : kind === 'buyers' ? 'buyer' : kind === 'balanced' ? 'balanced' : null
+}
+
+/**
  * The stored verdict, printed only when it matches the house thresholds for
  * the stored months of supply (≤ 4 seller's, 4 to 6 balanced, ≥ 6 buyer's).
  */
 export function publishedVerdict(k: Pick<Kpis, 'mos' | 'verdict'>): Verdict | null {
   if (k.mos == null || k.verdict == null) return null
-  const kind = marketVerdict(k.mos).kind
-  const expected: Verdict | null =
-    kind === 'sellers' ? 'seller' : kind === 'buyers' ? 'buyer' : kind === 'balanced' ? 'balanced' : null
-  return expected === k.verdict ? k.verdict : null
+  return supplyVerdict(k.mos) === k.verdict ? k.verdict : null
 }
 
 /** The period a figure covers, the way the PDF's table heads it: "August", "Jun to Aug". */
@@ -363,30 +361,54 @@ export function medianTrendChart(series: MonthlySeries | undefined, place: strin
   }
 }
 
+/** The column heads of a season strip, January first: a month's initial. */
+const MONTH_INITIALS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'] as const
+
 /**
- * Months of supply, month by month, over the balanced zone, as the edition
- * stored it. The claim is the edition month's own reading and call (the last
- * point of this same line), in the words the PDF prints beside it.
+ * Months of supply, month by month, as the edition stored it, folded into one
+ * strip per calendar year (newest first) against the balanced zone, with the
+ * part of a month past the 4-month line in full ink. A second LINE in the same
+ * frame as the median read as one shape twice (taste evaluator, 2026-09-25);
+ * supply is asked a different question from price, "which months crossed the
+ * line, and is each year crossing sooner", and the strips answer it.
+ *
+ * Every figure is the one the line printed: the stored value through mosText
+ * (formatMonthsOfSupply, which never lets the digits cross a threshold the
+ * value did not), the month named the way the line named it, and each month's
+ * call from supplyVerdict, the house thresholds' one source. The domain is zero
+ * (a column starts at zero) to the buyer's line or the run's own top, whichever
+ * is higher, so the whole balanced zone is always on the row. The claim is the
+ * edition month's reading and call, in the words the PDF prints beside it.
  */
-export function supplyTrendChart(
+export function supplySeasons(
   series: MonthlySeries | undefined,
   place: string,
   k: Kpis,
-): V3ChartProps | undefined {
+): V3SeasonStripsProps | undefined {
   if (!series) return undefined
   const pts = plotted(series.mos)
   if (pts.length < 2) return undefined
   const first = pts[0]!
   const last = pts[pts.length - 1]!
-  const points: V3ChartPoint[] = pts.map((p) => ({
-    value: p.v,
-    label: v3Text(`${mosText(p.v)} months`),
-    tick: v3Text(monthTickLabel(p.k)),
-    at: monthIndex(p.k),
-  }))
-  const lines = [{ name: v3Text('Months of supply'), points }]
-  const yTicks = supplyTicks(lines)
-  const xTicks = yearStartTicks(pts, lines)
+  const byYear = new Map<number, (V3SeasonCell | null)[]>()
+  for (const p of pts) {
+    const year = Number(p.k.slice(0, 4))
+    const month = Number(p.k.slice(5, 7))
+    if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) continue
+    const cells = byYear.get(year) ?? Array.from({ length: 12 }, (): V3SeasonCell | null => null)
+    const call = supplyVerdict(p.v)
+    cells[month - 1] = {
+      value: p.v,
+      tick: v3Text(monthTickLabel(p.k)),
+      label: v3Text(`${mosText(p.v)} months`),
+      ...(call ? { note: v3Text(VERDICT_LABEL[call]) } : {}),
+    }
+    byYear.set(year, cells)
+  }
+  const rows = [...byYear.entries()]
+    .sort((a, b) => b[0] - a[0])
+    .map(([year, cells]) => ({ name: v3Text(String(year)), cells }))
+  const top = Math.max(...pts.map((p) => p.v))
   const verdict = publishedVerdict(k)
   const claim =
     k.mos != null && verdict && last.k === k.period.end.slice(0, 7)
@@ -395,7 +417,9 @@ export function supplyTrendChart(
   return {
     caption: v3Text(`${place} months of supply by month, ${monthLabel(first.k)} to ${monthLabel(last.k)}`),
     ...(claim ? { claim: v3Text(claim) } : {}),
-    series: lines,
+    rows,
+    columns: MONTH_INITIALS.map((m) => v3Text(m)),
+    max: Math.max(MOS_BALANCED_MAX, Math.ceil(top)),
     bands: [
       {
         from: MOS_SELLER_MAX,
@@ -403,9 +427,7 @@ export function supplyTrendChart(
         label: v3Text(`Balanced: above ${MOS_SELLER_MAX} and under ${MOS_BALANCED_MAX} months`),
       },
     ],
-    ...(yTicks.length ? { yTicks } : {}),
-    ...(xTicks.length ? { xTicks } : {}),
-    restingRead: 'last',
+    threshold: MOS_SELLER_MAX,
     emptyReason: v3Text('Too few sales in these months for a supply reading.'),
   }
 }

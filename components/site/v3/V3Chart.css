@@ -953,11 +953,18 @@
 
 /* On a phone the reading is one line in a band reserved above the plot, never
    a card over it: a 144px card on a 276px plot hid half the chart and clipped
-   at the right (pass five, R10). The crosshair and dots still mark the column;
-   the band is part of the plot box, so the layer's top: 0 lands in it. */
+   at the right (pass five, R10). The crosshair and dots still mark the column.
+   The reading LAYER starts under the band, over the drawing alone: its dots
+   are placed as fractions of the drawing, and while the layer also spanned the
+   band every dot floated up to 20px above the point it read (measured on the
+   monthly report at 375, 2026-09-25). The tip is lifted back into the band. */
 @media (max-width: 47.99rem) {
   .v3 .v3-chart__plot {
     padding-top: 1.75rem;
+  }
+
+  .v3 .v3-chart__plot > .v3-chart__hover {
+    top: 1.75rem;
   }
 
   /* The rail follows the plot's reading band, or its labels map onto a scale
@@ -970,7 +977,7 @@
 
   .v3 .v3-chart__tip,
   .v3 .v3-chart__tip--flip {
-    top: 0;
+    top: -1.75rem;
     left: 0 !important;
     right: 0;
     min-width: 0;
@@ -998,6 +1005,60 @@
   }
 
   .v3 .v3-chart__tip-row {
+    display: inline-flex;
+    gap: var(--v3-space-3xs);
+  }
+}
+
+/* reading="band": the phone's reading band at every width, for a chart that
+   is the picture of its section (V3Instrument chartLead). One line above the
+   plot, never a card over the line's peaks. Below 48rem the rules above
+   already apply to every chart, so this block only carries them up. */
+@media (min-width: 48rem) {
+  .v3.v3-chart--band .v3-chart__plot {
+    padding-top: 1.75rem;
+  }
+
+  .v3.v3-chart--band .v3-chart__y--ticks,
+  .v3.v3-chart--band .v3-chart__y--ends {
+    margin-top: 1.75rem;
+    height: calc(var(--v3-chart-plot) - 1.75rem);
+  }
+
+  .v3.v3-chart--band .v3-chart__plot > .v3-chart__hover {
+    top: 1.75rem;
+  }
+
+  .v3.v3-chart--band .v3-chart__tip,
+  .v3.v3-chart--band .v3-chart__tip--flip {
+    top: -1.75rem;
+    left: 0 !important;
+    right: 0;
+    min-width: 0;
+    padding: 0.1rem 0.25rem;
+    transform: none;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 var(--v3-space-xs);
+    border: 0;
+    box-shadow: none;
+    background: color-mix(in srgb, var(--v3-cream) 94%, transparent);
+    font-size: var(--v3-size-eyebrow);
+    line-height: 1.35;
+  }
+
+  .v3.v3-chart--band .v3-chart__tip-tick {
+    margin: 0;
+  }
+
+  .v3.v3-chart--band .v3-chart__tip-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--v3-space-xs);
+  }
+
+  .v3.v3-chart--band .v3-chart__tip-row {
     display: inline-flex;
     gap: var(--v3-space-3xs);
   }

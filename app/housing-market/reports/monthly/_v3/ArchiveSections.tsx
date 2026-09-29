@@ -4,6 +4,11 @@
  * the one reach control) → the archive calendar → Answers (how the report is
  * built, and the outbound doors). With nothing published, one honest Quiet.
  *
+ * Each section opens on what it leads with rather than on the same eyebrow
+ * over a heading (taste evaluator, 2026-09-25): the latest edition on its
+ * title and figures, the download on its door, the calendar on a running head
+ * (the heading and its count on one line), the methods on their heading alone.
+ *
  * Pure: the page owns the reads (lib/data/market-report/editions) and hands
  * the list and the latest edition here. Every figure is the stored payload's,
  * formatted by the PDF's own helpers (CLAUDE.md §0).
@@ -142,8 +147,7 @@ export function ArchiveSections({ editions, edition, completeThrough }: ArchiveS
 
       <V3Answers
         id="methods"
-        eyebrow="How the report is built"
-        heading="About the numbers"
+        heading="How the report is built"
         questionHeadings
         questions={methodQuestions(completeThrough)}
         doors={[
