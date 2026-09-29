@@ -35,10 +35,12 @@ import {
   clearAbsentFromMls,
   getAbsentFromMlsKeys,
   getClosedListingKeysInWindow,
+  getListingRowsForRepairLog,
   getListingsForReconcile,
   rebuildPlaceMembershipForKeys,
   recordAbsentFromMls,
   recordRepairLog,
+  setRepairLogNote,
   setRepairLogOutcome,
 } from '@/lib/data/sync/closingsReconcile'
 import {
@@ -231,13 +233,29 @@ async function pool<T>(items: T[], size: number, fn: (item: T) => Promise<void>)
   )
 }
 
+/** What a repair writes to listing_mls_repair_log beside each listing it rewrites. */
+export type RepairLogContext = {
+  window: { from: string; to: string }
+  /** Why each key was picked: the drift reasons that selected it. */
+  reasons: Map<string, DriftReason[]>
+}
+
 /**
  * Re-pull these listings from Spark in full and write them back: row, media
  * kept where we hold more, history replaced, terminal rows re-frozen.
+ *
+ * Batch by batch, each listing's before-image goes to listing_mls_repair_log
+ * first (Matt 2026-09-25: old values are kept so a repair can be undone): the
+ * whole row as read right before the write, its statistic facts, and what
+ * Spark serves. A failed log write stops the repair before that batch is
+ * written. Each chunk's rows move to repaired or failed as soon as its upsert
+ * answers, so an interrupted run leaves only its unconfirmed chunk pending; a
+ * repaired listing whose history or re-freeze did not land gets a note.
  */
-export async function repairListingsFromSpark(keys: string[]): Promise<{
+export async function repairListingsFromSpark(keys: string[], log: RepairLogContext): Promise<{
   repaired: number
   repairedKeys: string[]
+  repairLogged: number
   failed: string[]
   historyRefreshed: number
   refinalized: number
@@ -245,13 +263,24 @@ export async function repairListingsFromSpark(keys: string[]): Promise<{
 }> {
   const unique = [...new Set(keys)]
   if (unique.length === 0) {
-    return { repaired: 0, repairedKeys: [], failed: [], historyRefreshed: 0, refinalized: 0, membershipRows: 0 }
+    return { repaired: 0, repairedKeys: [], repairLogged: 0, failed: [], historyRefreshed: 0, refinalized: 0, membershipRows: 0 }
   }
   const mortgageRate = await resolveRunMortgageRate()
   const existing = await getListingsForReconcile(unique)
   const failed: string[] = []
   let repaired = 0
   const written: { key: string; listNumber: string; status: string | null }[] = []
+  const logId = new Map<string, number>()
+  const idsFor = (ks: string[]) => ks.flatMap((k) => (logId.has(k) ? [logId.get(k)!] : []))
+  // The listings are already written when an outcome or a note is recorded, so a
+  // failed log update is reported, never allowed to stop the rest of the repair.
+  const logUpdate = async (what: string, fn: () => Promise<unknown>) => {
+    try {
+      await fn()
+    } catch (err) {
+      console.error(`[closingsReconcile] repair log ${what} not recorded`, err)
+    }
+  }
 
   for (let i = 0; i < unique.length; i += 20) {
     const batch = unique.slice(i, i + 20)
@@ -268,6 +297,7 @@ export async function repairListingsFromSpark(keys: string[]): Promise<{
       if (typeof k === 'string') byKey.set(k, r)
     }
     const rows: Record<string, unknown>[] = []
+    const served = new Map<string, Record<string, unknown>>()
     const preserve: string[] = []
     for (const key of batch) {
       const r = byKey.get(key)
@@ -286,18 +316,47 @@ export async function repairListingsFromSpark(keys: string[]): Promise<{
       row.history_finalized = false
       if (existing.get(key)?.media_finalized) preserve.push(listNumber)
       rows.push(row)
+      served.set(key, (r.StandardFields ?? {}) as Record<string, unknown>)
     }
+    if (rows.length === 0) continue
     const held = preserve.length > 0 ? await getHeldMediaByListNumbers(preserve) : new Map()
     const merged = rows.map((row) => {
       const h = held.get(String(row.ListNumber))
       return h ? mergeFrozenMedia(row, h) : row
     })
+
+    // The before-image, read right before the write it records.
+    const before = await getListingRowsForRepairLog(merged.map((row) => String(row.ListingKey)))
+    const ids = await recordRepairLog(
+      merged.map((row) => {
+        const key = String(row.ListingKey)
+        const prior = before.get(key) ?? null
+        const fields = served.get(key) ?? {}
+        return {
+          listingKey: key,
+          listNumber: String(row.ListNumber),
+          reasons: log.reasons.get(key) ?? [],
+          ours: prior ? snapshot(factsFromListingRow(prior)) : null,
+          beforeRow: prior,
+          mls: {
+            ...snapshot(factsFromSparkFields(fields)),
+            propertyType: typeof fields.PropertyType === 'string' ? fields.PropertyType : null,
+          },
+          windowFrom: log.window.from,
+          windowTo: log.window.to,
+        }
+      }),
+    )
+    for (const [k, id] of ids) logId.set(k, id)
+
     for (let j = 0; j < merged.length; j += DELTA_SYNC.UPSERT_CHUNK) {
       const chunk = merged.slice(j, j + DELTA_SYNC.UPSERT_CHUNK)
+      const chunkKeys = chunk.map((row) => String(row.ListingKey ?? row.ListNumber))
       const w = await upsertListingRows(chunk)
       if (!w.ok) {
         console.error('[closingsReconcile] upsert failed', w.error)
-        for (const row of chunk) failed.push(String(row.ListingKey ?? row.ListNumber))
+        failed.push(...chunkKeys)
+        await logUpdate('outcome', () => setRepairLogOutcome(idsFor(chunkKeys), 'failed'))
         continue
       }
       repaired += chunk.length
@@ -308,23 +367,39 @@ export async function repairListingsFromSpark(keys: string[]): Promise<{
           status: typeof row.StandardStatus === 'string' ? row.StandardStatus : null,
         })
       }
+      await logUpdate('outcome', () => setRepairLogOutcome(idsFor(chunkKeys), 'repaired'))
     }
   }
 
   let historyRefreshed = 0
-  const refreeze: string[] = []
+  const refreeze: { key: string; listNumber: string }[] = []
+  const historyMissed: string[] = []
   await pool(written, REPAIR_HISTORY_CONCURRENCY, async (w) => {
     const h = await fetchAndInsertHistoryCore(token(), w.key)
     if (h.inserted > 0) historyRefreshed += 1
     // Re-freeze only a terminal row whose history actually landed (or had none to land).
     const historySaved = h.ok && (h.inserted > 0 || h.items.length === 0)
-    if (historySaved && w.status && isTerminalStatus(w.status)) refreeze.push(w.listNumber)
+    if (!historySaved) historyMissed.push(w.key)
+    else if (w.status && isTerminalStatus(w.status)) refreeze.push({ key: w.key, listNumber: w.listNumber })
   })
   let refinalized = 0
   if (refreeze.length > 0) {
-    const r = await setListingFreezeFlags(refreeze, { is_finalized: true, history_finalized: true, history_verified_full: true })
+    const r = await setListingFreezeFlags(
+      refreeze.map((f) => f.listNumber),
+      { is_finalized: true, history_finalized: true, history_verified_full: true },
+    )
     refinalized = r.updated
-    if (!r.ok) console.error('[closingsReconcile] re-freeze failed', r.error)
+    if (!r.ok) {
+      console.error('[closingsReconcile] re-freeze failed', r.error)
+      await logUpdate('note', () =>
+        setRepairLogNote(idsFor(refreeze.map((f) => f.key)), 'Row and history rewritten; the re-freeze write failed.'),
+      )
+    }
+  }
+  if (historyMissed.length > 0) {
+    await logUpdate('note', () =>
+      setRepairLogNote(idsFor(historyMissed), 'Row rewritten; its history was not replaced, so it was left unfrozen.'),
+    )
   }
 
   // Everything downstream of a listing row that a repair can move: its place
@@ -338,7 +413,7 @@ export async function repairListingsFromSpark(keys: string[]): Promise<{
     const spans = await refreshMarketFactSpansForKeys(repairedKeys)
     if (spans.missed.length > 0) console.warn(`[closingsReconcile] episodes not rebuilt for ${spans.missed.join(', ')}`)
   }
-  return { repaired, repairedKeys, failed, historyRefreshed, refinalized, membershipRows }
+  return { repaired, repairedKeys, repairLogged: logId.size, failed, historyRefreshed, refinalized, membershipRows }
 }
 
 /** Find drift in the window and, when asked, repair it (capped). */
@@ -349,8 +424,10 @@ export function absentRecordLimit(ourClosedInWindow: number): number {
 
 /**
  * Record the window's closings Spark no longer serves, and release any key
- * recorded earlier that Spark serves again. The recorded list is short, so
- * every run re-checks all of it by key.
+ * recorded earlier, with a close date in the same window, that Spark serves
+ * again. A run re-checks only its own window's keys by key, so the daily cron
+ * never re-reads the whole history from Spark; an older key is re-checked when
+ * its window is reconciled (scripts/closings-reconcile.ts).
  *
  * A Spark outage (an error page read as an empty result, a rejected filter)
  * would make every closing we hold look removed, and recording them would
@@ -360,7 +437,7 @@ export function absentRecordLimit(ourClosedInWindow: number): number {
  */
 async function syncAbsentFromMls(
   notInSpark: string[],
-  window: { sparkClosings: number; ourClosedInWindow: number },
+  window: { from: string; to: string; sparkClosings: number; ourClosedInWindow: number },
 ): Promise<{ recorded: number; cleared: number; refused: string | null }> {
   let refused: string | null = null
   if (notInSpark.length > 0 && window.sparkClosings === 0) {
@@ -380,7 +457,8 @@ async function syncAbsentFromMls(
       }
     }),
   )
-  const held = (await getAbsentFromMlsKeys()).filter((k) => !notInSpark.includes(k))
+  const missing = new Set(notInSpark)
+  const held = (await getAbsentFromMlsKeys({ from: window.from, to: window.to })).filter((k) => !missing.has(k))
   const back = held.length > 0 ? [...(await fetchSparkLiteByKeys(held)).keys()] : []
   const cleared = await clearAbsentFromMls(back)
   return { recorded, cleared, refused }
@@ -394,41 +472,27 @@ export async function reconcileClosings(opts: {
 }): Promise<ClosingsReconcileResult> {
   const found = await findClosingsDrift(opts.from, opts.to)
   const absentFromMls = opts.repair
-    ? await syncAbsentFromMls(found.notInSpark, { sparkClosings: found.sparkClosings, ourClosedInWindow: found.ourClosedInWindow })
+    ? await syncAbsentFromMls(found.notInSpark, {
+        from: opts.from,
+        to: opts.to,
+        sparkClosings: found.sparkClosings,
+        ourClosedInWindow: found.ourClosedInWindow,
+      })
     : { recorded: 0, cleared: 0, refused: null }
   if (!opts.repair || found.drift.length === 0) {
     return { ...found, absentFromMls, repaired: 0, repairedKeys: [], repairLogged: 0, repairFailed: [], historyRefreshed: 0, refinalized: 0, membershipRows: 0 }
   }
   const toRepair = found.drift.slice(0, opts.maxRepairs ?? 2000)
-  // The before-image is kept first; recordRepairLog throws rather than let a
-  // listing be rewritten without it (Matt 2026-09-25: old values are kept).
-  const logIds = await recordRepairLog(
-    toRepair.map((d) => ({
-      listingKey: d.key,
-      listNumber: d.listNumber,
-      reasons: d.reasons,
-      ours: d.ours,
-      mls: d.mls,
-      windowFrom: opts.from,
-      windowTo: opts.to,
-    })),
+  const r = await repairListingsFromSpark(
+    toRepair.map((d) => d.key),
+    { window: { from: opts.from, to: opts.to }, reasons: new Map(toRepair.map((d) => [d.key, d.reasons])) },
   )
-  const r = await repairListingsFromSpark(toRepair.map((d) => d.key))
-  const rewritten = new Set(r.repairedKeys)
-  try {
-    await setRepairLogOutcome([...logIds].filter(([k]) => rewritten.has(k)).map(([, id]) => id), 'repaired')
-    await setRepairLogOutcome([...logIds].filter(([k]) => !rewritten.has(k)).map(([, id]) => id), 'failed')
-  } catch (err) {
-    // The listings are already written and their before-images kept; a row left
-    // 'pending' only lacks its outcome, which the repaired keys below still carry.
-    console.error('[closingsReconcile] repair log outcome not recorded', err)
-  }
   return {
     ...found,
     absentFromMls,
     repaired: r.repaired,
     repairedKeys: r.repairedKeys,
-    repairLogged: logIds.size,
+    repairLogged: r.repairLogged,
     repairFailed: r.failed,
     historyRefreshed: r.historyRefreshed,
     refinalized: r.refinalized,

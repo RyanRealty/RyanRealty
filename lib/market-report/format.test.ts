@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { marketVerdict } from '@/lib/data/market-truth/registry'
-import { mosText } from './format'
+import { moneyShort, mosText } from './format'
 
 describe('mosText', () => {
   it('prints one decimal when that reads the same verdict', () => {
@@ -28,5 +28,21 @@ describe('mosText', () => {
   it('prints a dash for no value', () => {
     expect(mosText(null)).toBe('–')
     expect(mosText(Number.NaN)).toBe('–')
+  })
+})
+
+describe('moneyShort', () => {
+  it('prints thousands and millions the way the report reads them', () => {
+    expect(moneyShort(780_000)).toBe('$780K')
+    expect(moneyShort(474_500)).toBe('$475K')
+    expect(moneyShort(1_250_000)).toBe('$1.25M')
+    expect(moneyShort(1_000_000)).toBe('$1M')
+    expect(moneyShort(null)).toBe('–')
+  })
+
+  it('never prints a figure just under a million as "$1,000K" or as a million', () => {
+    expect(moneyShort(999_499)).toBe('$999K')
+    expect(moneyShort(999_500)).toBe('$999.5K')
+    expect(moneyShort(999_999)).toBe('$999.9K')
   })
 })

@@ -65,7 +65,13 @@ export function moneyShort(n: number | null | undefined): string {
     const s = m >= 10 ? m.toFixed(1) : m.toFixed(2)
     return `$${s.replace(/\.?0+$/, '')}M`
   }
-  if (abs >= 1_000) return `$${Math.round(n / 1000).toLocaleString('en-US')}K`
+  if (abs >= 1_000) {
+    const k = Math.round(n / 1000)
+    // $999,500 to $999,999 would round to "$1,000K", a million the figure is not:
+    // keep it under the line to the tenth.
+    if (Math.abs(k) >= 1000) return `$${(Math.trunc(n / 100) / 10).toFixed(1)}K`
+    return `$${k.toLocaleString('en-US')}K`
+  }
   return `$${Math.round(n)}`
 }
 

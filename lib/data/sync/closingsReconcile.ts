@@ -127,12 +127,18 @@ export async function recordAbsentFromMls(
   return rows.length
 }
 
-/** Every listing key currently recorded as absent from the MLS (a short list). */
-export async function getAbsentFromMlsKeys(): Promise<string[]> {
+/**
+ * Listing keys recorded as absent from the MLS whose close date falls in the
+ * window (all of them without one). A run re-checks only its own window's, so
+ * the daily cron never re-reads the whole history from Spark.
+ */
+export async function getAbsentFromMlsKeys(window?: { from: string; to: string }): Promise<string[]> {
   const sb = createServiceClient()
-  const { rows, error } = await fetchPagedRows<{ listing_key: string }>((from, to) =>
-    sb.from('market_listing_absent_from_mls').select('listing_key').order('listing_key').range(from, to),
-  )
+  const { rows, error } = await fetchPagedRows<{ listing_key: string }>((from, to) => {
+    let q = sb.from('market_listing_absent_from_mls').select('listing_key')
+    if (window) q = q.gte('close_date', window.from).lte('close_date', window.to)
+    return q.order('listing_key').range(from, to)
+  })
   if (error) throw new Error(`[getAbsentFromMlsKeys] ${error.message}`)
   return rows.map((r) => r.listing_key)
 }
@@ -151,8 +157,10 @@ export type RepairLogEntry = {
   listingKey: string
   listNumber: string | null
   reasons: string[]
-  /** Our values before the repair (the reconciliation's snapshot). */
+  /** Our values before the repair: the facts a statistic reads. */
   ours: unknown
+  /** The whole listing row as it stood right before the repair wrote over it. */
+  beforeRow?: Record<string, unknown> | null
   /** What Spark served at repair time. */
   mls: unknown
   windowFrom: string | null
@@ -188,6 +196,7 @@ export async function recordRepairLog(entries: RepairLogEntry[], source = 'closi
           window_to: e.windowTo,
           reasons: e.reasons,
           ours: e.ours ?? null,
+          before_row: e.beforeRow ?? null,
           mls: e.mls,
           outcome: e.outcome ?? 'pending',
           note: e.note ?? null,
@@ -198,6 +207,32 @@ export async function recordRepairLog(entries: RepairLogEntry[], source = 'closi
     for (const r of (data ?? []) as { id: number; listing_key: string }[]) ids.set(r.listing_key, r.id)
   }
   return ids
+}
+
+/**
+ * The full rows a repair is about to overwrite, read right before the write
+ * (one batch, at most 20 keys), for the repair log's before-image.
+ */
+export async function getListingRowsForRepairLog(keys: string[]): Promise<Map<string, Record<string, unknown>>> {
+  const out = new Map<string, Record<string, unknown>>()
+  const unique = [...new Set(keys.filter(Boolean))]
+  if (unique.length === 0) return out
+  const sb = createServiceClient()
+  const { data, error } = await sb.from('listings').select('*').in('ListingKey', unique)
+  if (error) throw new Error(`[getListingRowsForRepairLog] ${error.message}`)
+  for (const r of (data ?? []) as Record<string, unknown>[]) {
+    if (typeof r.ListingKey === 'string') out.set(r.ListingKey, r)
+  }
+  return out
+}
+
+/** Say what a logged repair left undone (history not replaced, row not re-frozen). */
+export async function setRepairLogNote(ids: number[], note: string): Promise<number> {
+  if (ids.length === 0) return 0
+  const sb = createServiceClient()
+  const { error } = await sb.from('listing_mls_repair_log').update({ note }).in('id', ids)
+  if (error) throw new Error(`[setRepairLogNote] ${error.message}`)
+  return ids.length
 }
 
 /** Move logged repairs from pending to what happened. */
