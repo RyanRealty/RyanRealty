@@ -91,7 +91,7 @@ export function listedVsDetachedNote(input: {
   }
   return [
     `That ${detachedCount.toLocaleString('en-US')} is single-family only, which is the population every figure on this page measures.`,
-    `${placeName} also has ${listedCount.toLocaleString('en-US')} homes listed across its named subdivisions when every property type is counted.`,
+    `${placeName} also has ${listedCount.toLocaleString('en-US')} homes listed on this page when every property type is counted.`,
   ]
 }
 

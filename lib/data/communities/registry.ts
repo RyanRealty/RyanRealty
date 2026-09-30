@@ -14,6 +14,7 @@
  */
 
 import rawRegistry from '@/data/resort-communities.json' assert { type: 'json' }
+import { getResortCommunityLiteBySubdivisionName } from '@/lib/communities/registry-lite'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -138,37 +139,27 @@ export function getCanonicalCityForSubdivision(subdivisionName: string | null | 
   return canonicalCityByAlias.get(key) ?? null
 }
 
-// Built once: lowercased label + each subdivision_alias → registry entry.
-const communityByAlias: Map<string, ResortCommunityEntry> = (() => {
-  const map = new Map<string, ResortCommunityEntry>()
-  for (const entry of communities) {
-    map.set(entry.label.trim().toLowerCase(), entry)
-    map.set(entry.slug.trim().toLowerCase(), entry)
-    for (const alias of entry.subdivision_aliases ?? []) {
-      map.set(alias.trim().toLowerCase(), entry)
-    }
-    for (const sub of entry.sub_neighborhoods ?? []) {
-      map.set(sub.name.trim().toLowerCase(), entry)
-      map.set(sub.slug.trim().toLowerCase(), entry)
-      for (const a of sub.mls_aliases ?? []) {
-        map.set(a.trim().toLowerCase(), entry)
-      }
-    }
-  }
-  return map
-})()
+// Full entries by slug, for handing back the prose-bearing entry once the
+// lite index (lib/communities/registry-lite.ts) has resolved which community
+// a name belongs to. Slugs are unique (registry.test.ts asserts it).
+const communityBySlug: ReadonlyMap<string, ResortCommunityEntry> = new Map(
+  communities.map((entry) => [entry.slug, entry] as const),
+)
 
 /**
  * Resolve a curated Community (resort / master-plan) from an MLS subdivision
  * name or slug. Returns null when the string is an ordinary plat, not a
  * registry Community. See CONTEXT.md — Community vs Subdivision.
+ *
+ * The alias index lives in lib/communities/registry-lite.ts (one
+ * implementation, shared with client-reachable code that must not import
+ * this file); this returns the full entry for the community it resolves.
  */
 export function getResortCommunityBySubdivisionName(
   subdivisionName: string | null | undefined,
 ): ResortCommunityEntry | null {
-  const key = subdivisionName?.trim().toLowerCase()
-  if (!key) return null
-  return communityByAlias.get(key) ?? null
+  const lite = getResortCommunityLiteBySubdivisionName(subdivisionName)
+  return lite ? (communityBySlug.get(lite.slug) ?? null) : null
 }
 
 function placeLookupKeys(value: string | null | undefined): string[] {

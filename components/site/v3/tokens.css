@@ -232,6 +232,13 @@
   /* Minimum touch target, thumb reachable at 390 (Apple HIG / Material). */
   --v3-tap: 44px;
 
+  /* Jax (V3DogFloater): a fixed disc at the viewport's inline end, top 50%,
+     inset --v3-space-md. --v3-dog-clear is his lane: a row that runs to the
+     right edge keeps its controls out of the last --v3-dog-clear of it (the
+     listing's photo strip puts its counter there, 2026-09-25). */
+  --v3-dog-fab: 4.25rem;
+  --v3-dog-clear: calc(var(--v3-dog-fab) + var(--v3-space-md));
+
   /* Chrome + listing/split first-slice sizes (2026-08-29).
      Chrome bar is 64px with a 2px navy rule. Mosaic/carousel/card/map sizes
      are layout only — they do not invent a second stats path. */

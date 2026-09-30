@@ -39,6 +39,7 @@ import { formatPriceExact } from '@/lib/format/money'
 import { asPlaceBoundary } from '@/lib/place/place-type-page'
 import { PLACE_TYPE_PAGE_SLUGS } from '@/lib/place/publish-place-type-cards'
 import { publicCommunitySlug } from '@/lib/communities/community-public-pair'
+import { trustedCommunityOutlineSlug } from '@/lib/communities/community-outline'
 import {
   placeTypeAtlasEyebrow,
   placeTypeClaim,
@@ -67,7 +68,6 @@ import {
 import { PlaceTypeFilm } from './_v3/PlaceTypeFilm.client'
 import { PlaceTypeAtlasSection } from '@/app/cities/[slug]/types/[type]/_v3/PlaceTypeAtlasSection'
 import { PlaceTypeAtlasStandin } from '@/app/cities/[slug]/types/[type]/_v3/PlaceTypeAtlasStandin'
-import boundarySanityBaseline from '@/data/boundary-sanity-baseline.json' assert { type: 'json' }
 import '@/components/search/search-ledger.css'
 import '@/components/place/place-opening.css'
 import '@/app/cities/[slug]/types/[type]/_v3/place-type-page.css'
@@ -84,7 +84,19 @@ type Props = {
   params: Promise<{ slug: string; type: string }>
 }
 
-const UNRELIABLE_BOUNDARY_SLUGS = new Set(boundarySanityBaseline.allowed as string[])
+/**
+ * The community's stored outline and the pins inside it, keyed by the
+ * registry entry's durable slug (/communities/juniper-preserve reads
+ * 'pronghorn') and read only when the one trust rule allows it
+ * (lib/communities/community-outline.ts). An outline the map may not draw is
+ * not the list's scope either.
+ */
+function readCommunityOutline(slug: string) {
+  const outlineSlug = trustedCommunityOutlineSlug(slug)
+  return outlineSlug
+    ? getGeoBoundaryMapData({ geoType: 'neighborhood', geoSlug: outlineSlug })
+    : Promise.resolve({ polygon: null, pins: [] })
+}
 
 /**
  * What "in this community" means for a listing read. The recorded boundary's
@@ -109,7 +121,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!community) notFound()
   const publicName = getResortCommunityBySlug(slug)?.label ?? community.name
   const boundary = await withTimeoutFallbackResult(
-    getGeoBoundaryMapData({ geoType: 'neighborhood', geoSlug: slug }),
+    readCommunityOutline(slug),
     { polygon: null, pins: [] },
     3000,
     'comm-type:boundary',
@@ -162,13 +174,12 @@ async function renderCommunityPlaceTypePage({ params }: Props) {
   const cityHref = community.citySlug ? `/cities/${community.citySlug}` : placeHref
 
   const boundaryRead = await withTimeoutFallbackResult(
-    getGeoBoundaryMapData({ geoType: 'neighborhood', geoSlug: slug }),
+    readCommunityOutline(slug),
     { polygon: null, pins: [] },
     4500,
     'comm-type:boundary',
   )
-  const boundaryReliable = !UNRELIABLE_BOUNDARY_SLUGS.has(slug)
-  const storedBoundary = boundaryReliable ? asPlaceBoundary(boundaryRead.value.polygon) : null
+  const storedBoundary = asPlaceBoundary(boundaryRead.value.polygon)
   const pinKeys = boundaryRead.ok
     ? boundaryRead.value.pins.map((pin) => pin.listingKey).filter(Boolean)
     : []

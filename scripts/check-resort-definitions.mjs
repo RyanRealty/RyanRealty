@@ -29,6 +29,16 @@ import { readFileSync } from 'node:fs'
 const REGISTRY = 'data/resort-communities.json'
 const CITY_PAGE = 'app/cities/[slug]/page.tsx'
 const COMMUNITY_PAGE = 'app/communities/[slug]/page.tsx'
+const COMMUNITY_POPULATION = 'lib/place/community-population.ts'
+const COMMUNITY_REGISTRY_CONTEXT = 'lib/communities/community-registry-context.ts'
+const COMMUNITY_OUTLINE = 'lib/communities/community-outline.ts'
+function readOrEmpty(path) {
+  try {
+    return readFileSync(path, 'utf8')
+  } catch {
+    return ''
+  }
+}
 const HELPER = 'lib/kb/resort-active-counts.ts'
 
 const fails = []
@@ -188,20 +198,34 @@ try {
   fails.push(`${COMMUNITY_PAGE}: cannot read community page (${e.message})`)
 }
 if (commPageSrc) {
+  // Since 2026-09-25 the page lists ONE for-sale population, built in
+  // lib/place/community-population.ts (the map and the homes list both read
+  // it), with the registry context and the outline trust rule in their own
+  // modules. The wiring is required where it lives now; each token's owner is
+  // named so a move cannot silently drop it.
+  const WIRING = {
+    [COMMUNITY_PAGE]: commPageSrc,
+    [COMMUNITY_POPULATION]: readOrEmpty(COMMUNITY_POPULATION),
+    [COMMUNITY_REGISTRY_CONTEXT]: readOrEmpty(COMMUNITY_REGISTRY_CONTEXT),
+    [COMMUNITY_OUTLINE]: readOrEmpty(COMMUNITY_OUTLINE),
+  }
   const required = [
-    { token: 'resortActiveSfrCounts(', why: 'alias-aware active-SFR count (matches the city ledger)' },
-    { token: 'resortTilesForSlug(', why: 'alias-matched listings for the map/featured/ticker' },
-    { token: 'cityResorts(', why: 'resort membership (is_resort filter)' },
-    { token: 'isBoundaryReliable(', why: 'oversized-boundary guard (no bloated polygon/count)' },
+    { file: COMMUNITY_POPULATION, token: 'resortActiveSfrCounts(', why: 'alias-aware active-SFR count (matches the city ledger)' },
+    { file: COMMUNITY_POPULATION, token: 'resortTilesForSlug(', why: 'alias-matched listings for the map/featured/ticker' },
+    { file: COMMUNITY_REGISTRY_CONTEXT, token: 'cityResorts(', why: 'resort membership (is_resort filter)' },
+    { file: COMMUNITY_OUTLINE, token: 'isCommunityOutlineTrusted(', why: 'oversized-boundary guard (no bloated polygon/count)' },
+    { file: COMMUNITY_POPULATION, token: 'communityOutlineRef(', why: 'one trust rule for the map and the homes list' },
+    { file: COMMUNITY_PAGE, token: 'getCommunityPopulation(', why: 'the map and the homes list read one population' },
+    { file: COMMUNITY_PAGE, token: 'communityRegistryContext(', why: 'one registry resolution for head and body' },
     // The canonical-slug hop is NOT an in-page redirect any more: a redirect
     // thrown after loading.tsx flushed serves 200 with no Location header
     // (measured 2026-08-19, 91 of 104 compound slugs), so the hop moved to
     // middleware. The wiring is asserted below on the files that own it now.
-    { token: 'getResortCommunityContent(', why: 'rich resort content (amenities/golf/membership/builders) fetch' },
+    { file: COMMUNITY_PAGE, token: 'getResortCommunityContent(', why: 'rich resort content (amenities/golf/membership/builders) fetch' },
   ]
-  for (const { token, why } of required) {
-    if (!commPageSrc.includes(token)) {
-      fails.push(`${COMMUNITY_PAGE}: missing "${token}" (§0 ${why}) — the resort community wiring is incomplete`)
+  for (const { file, token, why } of required) {
+    if (!WIRING[file].includes(token)) {
+      fails.push(`${file}: missing "${token}" (§0 ${why}) — the resort community wiring is incomplete`)
     }
   }
 

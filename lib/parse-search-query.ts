@@ -20,7 +20,7 @@
  */
 
 import { SEARCH_FIELDS } from '@/lib/search/field-registry'
-import { getAllResortCommunities } from '@/lib/data/communities/registry'
+import { getAllResortCommunitiesLite } from '@/lib/communities/registry-lite'
 import {
   communityForPlaceToken,
   isImpliedParentCity,
@@ -138,7 +138,7 @@ function buildMatchers(): CompiledMatcher[] {
   // Resort labels before style voice so "Northwest Crossing" is not architecturalStyles=Northwest.
   // Community only — do not auto-pin the registry parent city (Caldera → Sunriver).
   const cityNames = new Set(CITY_PATTERNS.map(([, n]) => n.toLowerCase()))
-  for (const c of getAllResortCommunities()) {
+  for (const c of getAllResortCommunitiesLite()) {
     const params = { subdivision: c.label }
     for (const phrase of [c.label, c.slug.replace(/-/g, ' ')]) {
       if (cityNames.has(phrase.toLowerCase())) continue

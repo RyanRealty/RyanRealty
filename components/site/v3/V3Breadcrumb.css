@@ -204,6 +204,11 @@
   text-overflow: unset;
 }
 
+/* One clean ellipsis, on the address only (Matt 2026-09-25). With every rung
+   at flex 1 auto the overflow was shared out by width, so a phone read
+   "Be… / Southern Crossi… / Coult… / 61390 Merriewood Co…". Now the last rung
+   grows from zero into whatever the ancestors leave and ellipsizes there; the
+   ancestors give way only once it is down to 8ch, and the city never does. */
 @media (max-width: 39.99rem) {
   /* SITE-137: listing-detail overflow-x:clip still chops overflow:visible
      "Avenue" to "Av". Keep the painted place path; last rung uses remaining
@@ -230,8 +235,12 @@
     overflow: hidden;
   }
 
+  .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__item:first-child:not(:last-child) {
+    flex: none;
+  }
+
   .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__item:last-child {
-    flex: 1 1 auto;
+    flex: 1 1 0%;
     min-width: 8ch;
     overflow: hidden;
   }
@@ -279,4 +288,15 @@
   position: absolute;
   inset-block: calc((var(--v3-tap) - 1.75rem) / -2);
   inset-inline: 0;
+}
+
+/* Phone overlay-compact rungs are blocks (so the address can ellipsize), and
+   a block puts its one line at the top of the 1.75rem row while the slash
+   between rungs is centred in it: the slashes hung below the words (listing
+   phone crumb, 2026-09-25). A 1.75rem line box centres the words too. */
+@media (max-width: 39.99rem) {
+  .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__link,
+  .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__text {
+    line-height: 1.75rem;
+  }
 }

@@ -11,7 +11,7 @@
 import { normalizeSavedSearchFilters, type SavedSearchFilters } from '@/lib/search-filters'
 import { BEND_DISTRICTS, labelForNeighborhoodSlug } from '@/lib/neighborhood-areas'
 import { getPropertyTypeLabel } from '@/lib/property-type-labels'
-import resortCommunities from '@/data/resort-communities.json'
+import { getAllResortCommunitiesLite } from '@/lib/communities/registry-lite'
 
 /** Alert cadences the alert cron honors (mirrors lib/saved-search-cadence). */
 export type AlertFrequency = 'instant' | 'daily' | 'weekly' | 'monthly'
@@ -191,21 +191,17 @@ export function summarizeAreaLabels(labels: string[]): string {
   return `${clean[0]}, ${clean[1]} and ${clean.length - 2} more`
 }
 
-type RegistryCommunity = { slug?: unknown; label?: unknown }
 
 /**
  * Default neighborhood/community options for the alert editor place picker:
  * the 13 Bend districts + every resort/area community from the registry,
- * de-duped by slug and sorted by label. Client-safe (static JSON, same import
- * lib/neighborhood-areas already makes).
+ * de-duped by slug and sorted by label. Client-safe: reads the lite registry
+ * (lib/communities/registry-lite.ts), never the ~50 KB source JSON.
  */
 export function listNeighborhoodOptions(): GeoOption[] {
   const bySlug = new Map<string, GeoOption>()
   for (const d of BEND_DISTRICTS) bySlug.set(d.slug, { slug: d.slug, label: d.label })
-  const communities = Array.isArray((resortCommunities as { communities?: unknown }).communities)
-    ? ((resortCommunities as { communities: RegistryCommunity[] }).communities)
-    : []
-  for (const c of communities) {
+  for (const c of getAllResortCommunitiesLite()) {
     const slug = typeof c.slug === 'string' ? c.slug : null
     const label = typeof c.label === 'string' ? c.label : null
     if (!slug || !label || bySlug.has(slug)) continue
