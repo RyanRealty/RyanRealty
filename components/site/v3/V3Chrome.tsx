@@ -632,20 +632,24 @@ export function V3Chrome({ currentPath, id, className, live }: V3ChromeProps) {
   // Closes on a same-path click too, which derivation alone cannot see: a link
   // to the page the visitor is already on changes nothing to compare against.
   const close = useCallback(() => setOpenPath(null), [])
-  // A link followed out of the chrome takes focus out of it. Keyboard focus in
-  // the bar drops the page's scroll padding (V3Chrome.css), and a link to an
-  // anchor (/sell#get-value) scrolls its target after the click: with focus
-  // still on the link, or handed back to the menu button, the target would
-  // land under the bar. Only a plain activation of a page link counts (a
-  // click or Enter); a modified click opens a tab and leaves this page and its
-  // focus alone.
+  // A link followed out of the chrome takes focus out of it. Focus in the bar
+  // drops the page's scroll padding (V3Chrome.css), and a link to an anchor
+  // (/sell#get-value) scrolls its target after the click: with focus still on
+  // the link, or handed back to the menu button, the target would land under
+  // the bar. Only a plain activation (a click or Enter) of a link that moves
+  // the reader counts: to another page, or to an anchor. A modified click
+  // opens a tab, a call link dials, and a link to the page already showing
+  // changes nothing, so each of those leaves focus where the menu returns it.
   const followedLinkRef = useRef(false)
   const onChromeClickCapture = useCallback((event: ReactMouseEvent<HTMLElement>) => {
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
     const link = (event.target as Element | null)?.closest?.('a[href]')
     if (!(link instanceof HTMLAnchorElement)) return
-    // A call link or a new tab leaves the reader on this page.
     if (!/^https?:$/.test(link.protocol) || (link.target && link.target !== '_self')) return
+    const here = window.location
+    const elsewhere =
+      link.origin !== here.origin || link.pathname !== here.pathname || link.search !== here.search
+    if (!elsewhere && !link.hash) return
     followedLinkRef.current = true
     if (link.hash) link.blur()
   }, [])
