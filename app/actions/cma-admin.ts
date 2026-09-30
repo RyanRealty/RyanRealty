@@ -358,8 +358,19 @@ export async function unarchiveCmaAction(slug: string): Promise<{ error: string 
     const safeSlug = slug.trim().toLowerCase()
     const row = await getCmaAdminReviewRowBySlug(safeSlug)
     if (!row) return { error: 'CMA not found' }
-    // Restore the pre-archive status from the row's own lifecycle timestamps.
-    const status = row.delivered_at ? 'delivered' : row.finalized_at ? 'finalized' : 'draft'
+    // Restore the pre-archive status from the row's own lifecycle timestamps,
+    // unless the document was rebuilt after it was approved: a rebuilt report
+    // has not been approved and must pass approveCmaAction again before the
+    // owner's link shows it.
+    const approvedAt = String(row.finalized_at ?? row.delivered_at ?? '')
+    const rebuiltSinceApproval = Boolean(approvedAt) && String(row.built_at ?? '') > approvedAt
+    const status = rebuiltSinceApproval
+      ? 'draft'
+      : row.delivered_at
+        ? 'delivered'
+        : row.finalized_at
+          ? 'finalized'
+          : 'draft'
     // MATT'S 80% LINE (2026-09-30). Unarchiving a delivered or finalized row
     // puts its page back in front of the owner, so a held CMA stays archived.
     if (status !== 'draft') {

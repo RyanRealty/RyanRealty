@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-09-30T23:22:59.264Z
+**Generated:** 2026-09-30T23:39:44.936Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -750,7 +750,7 @@ Companion files:
 
 **Tables:** `cmas`, `expired_listings`, `fsbo_listings`, `cma_comps`, `cma_versions`, `crm_people`
 
-**Selected columns:** `build_summary`, `list_price`, `original_list_price`, `html_path`, `status`, `broker_slug`, `html_content`, `render_args`, `id`, `person_id`, `client_email`, `client_name`, `subject_address`, `emails`, `custom`
+**Selected columns:** `build_summary`, `list_price`, `original_list_price`, `html_path`, `status`, `broker_slug`, `archived_at`, `delivered_at`, `html_content`, `render_args`, `id`, `person_id`, `client_email`, `client_name`, `subject_address`, `emails`, `custom`
 
 ---
 
@@ -896,7 +896,7 @@ Companion files:
 
 **Tables:** `cmas`, `expired_listings`
 
-**Selected columns:** `id`, `request_source`, `doc_type`, `recommended_list`, `build_summary`, `list_price`, `original_list_price`
+**Selected columns:** `id`, `request_source`, `doc_type`, `recommended_list`, `build_summary`, `subject_listing_key`, `list_price`, `original_list_price`
 
 ---
 

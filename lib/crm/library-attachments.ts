@@ -8,6 +8,7 @@ import type { CrmAttachmentChannel, CrmAttachmentRef } from '@/lib/crm/attachmen
 import { AGENCY_PAMPHLET_URL } from '@/lib/crm/email-signature'
 import { brokerDisplayName } from '@/lib/brokers/directory'
 import { getBrokers } from '@/lib/data/brokers/getBrokers'
+import { getCmaSendFloorBySlug } from '@/lib/data/cma/send-floor'
 
 export type LibraryAttachmentKind = 'disclosure' | 'cma' | 'vcard'
 
@@ -51,6 +52,10 @@ export async function stageLibraryAttachment(params: {
   if (params.kind === 'cma') {
     const slug = String(params.cmaSlug ?? '').trim().toLowerCase()
     if (!slug) return { ok: false, error: 'Missing CMA.' }
+    // MATT'S 80% LINE (2026-09-30). An attached CMA goes to the contact, so a
+    // held expired CMA is never staged (lib/cma/send-floor.ts).
+    const floor = await getCmaSendFloorBySlug(slug)
+    if (floor.held) return { ok: false, error: floor.reason }
     const { renderCmaPdfBuffer } = await import('@/lib/cma-pdf')
     const rendered = await renderCmaPdfBuffer(slug)
     return putAttachmentBytes({

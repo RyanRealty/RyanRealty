@@ -26,6 +26,8 @@ const FILES = [
   'lib/data/cma/unified-queue.ts',
   'app/actions/cma-queue.ts',
   'lib/data/prospecting/drip-drain.ts',
+  'lib/cma/serve-document.ts',
+  'app/actions/cma-publish.ts',
 ]
 
 function reset() {
@@ -102,8 +104,20 @@ describe('ci:cma-send-floor', () => {
     )
   })
 
-  it('R4: the text intro without the check fails', () => {
-    expectCaught('R4', () => edit('app/actions/prospecting.ts', (s) => s.replace('await getCmaSendFloorBySlug(clientReady.slug)\n    if (smsFloor.held)', 'null as never\n    if (smsFloor?.held)')))
+  it('R4: the text intro that never acts on the check fails', () => {
+    expectCaught('R4', () => edit('app/actions/prospecting.ts', (s) => s.replace('if (smsFloor.held) {', 'if (smsFloor.ratio === 0) {')))
+  })
+
+  it('R4: the email intro that acts after the claim fails', () => {
+    expectCaught('R4', () =>
+      edit('app/actions/prospecting.ts', (s) => {
+        const at = s.indexOf('if (emailFloor.held) {')
+        const claim = s.indexOf('claimProspectEmailSend(kind')
+        if (at < 0 || claim < 0) return s
+        // Put a claim ahead of the floor's use inside the same function.
+        return s.slice(0, at) + 'await claimProspectEmailSend(kind, id, args.idempotencyKey)\n    ' + s.slice(at)
+      }),
+    )
   })
 
   it('R5: the legacy delivery without the check fails', () => {
@@ -127,6 +141,52 @@ describe('ci:cma-send-floor', () => {
       const p = join(SANDBOX, 'lib/new-cma-mailer.ts')
       writeFileSync(p, "export async function x(slug: string) {\n  await sendEmail({ to: 'a', html: `https://ryan-realty.com/cma/${slug}` })\n}\n")
     })
+  })
+
+  it('R2: a check whose answer is ignored fails', () => {
+    expectCaught('R2', () =>
+      edit('lib/cma/send.ts', (s) => s.replace('if (floor.held) return { ok: false, error: `Not sent. ${floor.reason}` }', 'if (false && floor.held) return { ok: false, error: `Not sent. ${floor.reason}` }')),
+    )
+  })
+
+  it('R8: a new file that texts a CMA link without the check fails', () => {
+    expectCaught('R8', () => {
+      writeFileSync(
+        join(SANDBOX, 'lib/new-cma-texter.ts'),
+        "export async function x(slug: string, to: string) {\n  await sendSmsViaMessagingService({ to, body: 'https://ryan-realty.com/cma/' + slug })\n}\n",
+      )
+    })
+  })
+
+  it('R8: a comment that names sendEmail is not a send', () => {
+    reset()
+    writeFileSync(
+      join(SANDBOX, 'lib/broker-preview.ts'),
+      "// Never sendEmail( from here; the broker opens it.\nexport const previewLink = (slug: string) => `https://ryan-realty.com/cma/${slug}`\n",
+    )
+    const r = runGate()
+    expect(r.code, r.out).toBe(0)
+  })
+
+  it('R9: a new file that attaches the CMA PDF without the check fails', () => {
+    expectCaught('R9', () => {
+      writeFileSync(
+        join(SANDBOX, 'lib/new-pdf-mailer.ts'),
+        "export async function x(slug: string) {\n  const pdf = await renderCmaPdfBuffer(slug)\n  await sendEmail({ to: 'a', attachments: [pdf] })\n}\n",
+      )
+    })
+  })
+
+  it('R10: a public page that shows a held CMA fails', () => {
+    expectCaught('R10', () =>
+      edit('lib/cma/serve-document.ts', (s) => s.replace('const floor = await getCmaSendFloorBySlug(safeSlug)', 'const floor = { held: false }')),
+    )
+  })
+
+  it('R11: publishing a held CMA to a listing page fails', () => {
+    expectCaught('R11', () =>
+      edit('app/actions/cma-publish.ts', (s) => s.replace('if (floor.held && floor.reason) reasons.push(floor.reason)', 'void floor')),
+    )
   })
 
   it('R8: the same file with the check stays green', () => {

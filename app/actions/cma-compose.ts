@@ -7,6 +7,7 @@
 
 import { requireCrmAccess, requirePersonInScope } from '@/app/actions/crm'
 import { getCmaComposeTarget } from '@/lib/data/cma/compose-target'
+import { getCmaSendFloorBySlug } from '@/lib/data/cma/send-floor'
 import { getRecipientOptionsForContact } from '@/lib/data/crm/getRecipientOptionsForContact'
 import { getBrokerSelfRecordByEmail } from '@/lib/data/brokers/getBrokers'
 import { applySlugStreetDirectional } from '@/lib/cma/address-slug'
@@ -49,6 +50,10 @@ export async function stageCmaPdfForComposeAction(input: {
     const target = await getCmaComposeTarget({ personId, slug })
     if (!target) return { ok: false, error: 'This CMA is not on this contact' }
     if (target.status === 'archived') return { ok: false, error: 'Restore the CMA before attaching it' }
+    // MATT'S 80% LINE (2026-09-30). The composer sends this PDF to the contact,
+    // so a held expired CMA is never attached (lib/cma/send-floor.ts).
+    const floor = await getCmaSendFloorBySlug(slug)
+    if (floor.held) return { ok: false, error: floor.reason }
 
     const address = applySlugStreetDirectional(target.subjectAddress || slug, slug)
     const { renderCmaPdfBuffer } = await import('@/lib/cma-pdf')

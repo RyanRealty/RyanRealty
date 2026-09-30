@@ -4,6 +4,7 @@ import { createGmailDraft } from '@/lib/gmail-draft'
 import { createServiceClient } from '@/lib/supabase/service'
 import { isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { isAuthorizedAdminOrCron } from '@/lib/auth/guards'
+import { getCmaSendFloorBySlug } from '@/lib/data/cma/send-floor'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -71,6 +72,13 @@ async function handleDraft(slug: string, body: DraftPayload) {
     }
   } catch (e) {
     console.warn('[cma-gmail-draft] Supabase lookup failed', e instanceof Error ? e.message : e)
+  }
+
+  // MATT'S 80% LINE (2026-09-30). A draft to the lead with the PDF attached is
+  // one click from a send, so a held expired CMA never gets one.
+  const floor = await getCmaSendFloorBySlug(safeSlug)
+  if (floor.held) {
+    return NextResponse.json({ error: floor.reason }, { status: floor.unreadable ? 503 : 409 })
   }
 
   const subjectAddress = cma?.subject_address ?? safeSlug.replace(/^cma-/, '').replace(/-/g, ' ')

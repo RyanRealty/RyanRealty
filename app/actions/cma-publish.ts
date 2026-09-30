@@ -24,6 +24,7 @@ import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { getCmaAdminRowBySlug, updateCmaRowFieldsBySlug } from '@/lib/data'
 import { cmaPublishRefusals } from '@/app/actions/cma-publish-preconditions'
+import { getCmaSendFloorBySlug } from '@/lib/data/cma/send-floor'
 
 export type CmaPublishResult = {
   error: string | null
@@ -65,6 +66,10 @@ export async function publishCmaToListingAction(slug: string): Promise<CmaPublis
     if (!row) return { error: 'CMA not found' }
 
     const reasons = cmaPublishRefusals(row)
+    // MATT'S 80% LINE (2026-09-30). A listing page hands the document to any
+    // registrant, so a held expired CMA never goes on one.
+    const floor = await getCmaSendFloorBySlug(safeSlug)
+    if (floor.held && floor.reason) reasons.push(floor.reason)
     if (reasons.length > 0) {
       return { error: 'This CMA cannot go on a listing page.', blockers: reasons }
     }
