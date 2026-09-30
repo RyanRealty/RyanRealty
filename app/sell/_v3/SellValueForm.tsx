@@ -605,7 +605,7 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
       <form
         id={formId}
         onSubmit={advanceFromAddress}
-        className="scroll-mt-24 sell-stage-field"
+        className="scroll-mt-4 sell-stage-field"
         noValidate
       >
         {/* No autoFocus on first render: this form also mounts at the BOTTOM of

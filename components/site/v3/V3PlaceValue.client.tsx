@@ -38,7 +38,15 @@ export type V3PlaceValueActivity = {
   count: string
   label: string
   asOf: string | null
-  spark?: { d: string; last: { x: number; y: number } | null } | null
+  /**
+   * buildSparkPlot's line: the path, the newest month's mark, and every lone
+   * published month the path alone would not paint (a gap on each side).
+   */
+  spark?: {
+    d: string
+    last: { x: number; y: number } | null
+    dots?: readonly { x: number; y: number }[]
+  } | null
 }
 
 export type V3PlaceValueProps = {
@@ -274,6 +282,9 @@ export function V3PlaceValue({ slug, placeName, answer, request, activity, id, c
               aria-hidden="true"
             >
               <path d={activity.spark.d} fill="none" stroke="currentColor" strokeWidth="1.5" />
+              {(activity.spark.dots ?? []).map((dot) => (
+                <circle key={`${dot.x}-${dot.y}`} cx={dot.x} cy={dot.y} r="1.5" fill="currentColor" />
+              ))}
               {activity.spark.last ? (
                 <circle cx={activity.spark.last.x} cy={activity.spark.last.y} r="2" fill="currentColor" />
               ) : null}

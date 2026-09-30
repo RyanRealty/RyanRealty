@@ -205,6 +205,24 @@ export type V3InstrumentProps = {
    * Market hub / MOS definition: the drawing IS the number.
    */
   chartFirst?: boolean
+  /**
+   * The chart LEADS the section: drawn above the eyebrow and the heading, the
+   * way a Stage opens on its media, and a little taller, because here it is the
+   * opening. For a run of market chapters (one Instrument per city, the monthly
+   * report's Bend and Redmond), so the page alternates text-led and
+   * picture-led sections instead of stacking one labelled box after another
+   * (separate taste evaluator, 2026-09-25: every section opened on the same
+   * eyebrow-then-heading beat). The figures and the trace still follow the
+   * heading. Ignored when the section has no chart, drawing or card: it then
+   * opens on its eyebrow exactly as before.
+   *
+   * Only the PICTURE moves. The document keeps the heading first (eyebrow,
+   * heading, note, then the series, where chartFirst puts it) and the
+   * stylesheet lifts the series above them, so the accessibility tree and a
+   * screen reader meet the section's name before its chart (code review,
+   * 2026-09-29: the first build put the figure ahead of the heading).
+   */
+  chartLead?: boolean
   /** The supporting figures, left to right in the order the caller passes them. */
   figures: V3InstrumentFigures
   /**
@@ -319,6 +337,7 @@ export function V3Instrument({
   foldAfter,
   foldLabel,
   chartFirst = false,
+  chartLead = false,
   settleFigures = false,
   figures,
   source,
@@ -371,6 +390,60 @@ export function V3Instrument({
   // opt-in through the data — no caller passes a sentence, no caller moves.
   const said = figures.some((f) => f.sentence)
 
+  // A lead needs something to lead with; without a series the section opens on
+  // its eyebrow, as it always did.
+  const leading =
+    chartLead &&
+    (Boolean(chart) || Boolean(drawing) || Boolean(chartSecondary) || (cards?.length ?? 0) > 0)
+  // A chart that is the section's picture reads on the band above its plot, so
+  // no resting card sits on its peaks; a caller's own choice still wins.
+  const leadReading = (props: V3ChartProps) =>
+    leading && props.reading == null ? { reading: 'band' as const } : {}
+
+  // The series block, built once and placed by the ordering props below: under
+  // the figures (the default), between the verdict and the figures
+  // (chartFirst), or in its own lead wrapper after the verdict that the
+  // stylesheet draws above the eyebrow (chartLead).
+  const charts = (
+    <>
+      {chart || drawing ? (
+        <div
+          className={cn(
+            'v3-instrument__stage',
+            chart && drawing && 'v3-instrument__stage--split',
+          )}
+        >
+          {chart ? (
+            <div className="v3-instrument__chart">
+              <V3Chart
+                {...chart}
+                {...leadReading(chart)}
+                id={chart.id ?? (id ? `${id}-chart` : undefined)}
+              />
+            </div>
+          ) : null}
+          {drawing ? <div className="v3-instrument__drawing">{drawing}</div> : null}
+        </div>
+      ) : null}
+      {chartSecondary ? (
+        <div className="v3-instrument__chart">
+          <V3Chart
+            {...chartSecondary}
+            {...leadReading(chartSecondary)}
+            id={chartSecondary.id ?? (id ? `${id}-chart-2` : undefined)}
+          />
+        </div>
+      ) : null}
+      {cards && cards.length > 0 ? (
+        <div className="v3-instrument__cards">
+          {cards.map((card, i) => (
+            <V3ChartCard key={card.id ?? `${i}-${card.title}`} {...card} />
+          ))}
+        </div>
+      ) : null}
+    </>
+  )
+
   return (
     <section
       id={id}
@@ -378,6 +451,7 @@ export function V3Instrument({
         V3_ROOT_CLASS,
         'v3-instrument',
         chartFirst && 'v3-instrument--chart-first',
+        leading && 'v3-instrument--chart-lead',
         said && 'v3-instrument--said',
         className,
       )}
@@ -394,41 +468,13 @@ export function V3Instrument({
 
       {note ? <p className="v3-instrument__note">{note}</p> : null}
 
+      {/* THE LEAD. Drawn first on screen and read after the verdict: in the
+          document it sits where chartFirst puts a chart, after the heading
+          and its note, so a screen reader meets the section's name before
+          its picture. V3Instrument.css lifts it above the eyebrow (order). */}
+      {leading ? <div className="v3-instrument__lead">{charts}</div> : null}
+
       {(() => {
-        const charts = (
-          <>
-            {chart || drawing ? (
-              <div
-                className={cn(
-                  'v3-instrument__stage',
-                  chart && drawing && 'v3-instrument__stage--split',
-                )}
-              >
-                {chart ? (
-                  <div className="v3-instrument__chart">
-                    <V3Chart {...chart} id={chart.id ?? (id ? `${id}-chart` : undefined)} />
-                  </div>
-                ) : null}
-                {drawing ? <div className="v3-instrument__drawing">{drawing}</div> : null}
-              </div>
-            ) : null}
-            {chartSecondary ? (
-              <div className="v3-instrument__chart">
-                <V3Chart
-                  {...chartSecondary}
-                  id={chartSecondary.id ?? (id ? `${id}-chart-2` : undefined)}
-                />
-              </div>
-            ) : null}
-            {cards && cards.length > 0 ? (
-              <div className="v3-instrument__cards">
-                {cards.map((card, i) => (
-                  <V3ChartCard key={card.id ?? `${i}-${card.title}`} {...card} />
-                ))}
-              </div>
-            ) : null}
-          </>
-        )
         const renderFigure = (figure: (typeof figures)[number], i: number) => {
           const key = `${i}-${figure.label}`
           const face =
@@ -542,6 +588,7 @@ export function V3Instrument({
             ) : null}
           </>
         )
+        if (leading) return figureBlock
         return chartFirst ? (
           <>
             {charts}

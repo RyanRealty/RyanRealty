@@ -64,4 +64,10 @@ describe('moneyShort', () => {
     expect(moneyShort(2_000_000)).toBe('$2M')
     expect(moneyShort(12_400_000)).toBe('$12.4M')
   })
+
+  it('never prints a figure just under a million as "$1000K" or as a million', () => {
+    expect(moneyShort(999_499)).toBe('$999K')
+    expect(moneyShort(999_500)).toBe('$999.5K')
+    expect(moneyShort(999_999)).toBe('$999.9K')
+  })
 })

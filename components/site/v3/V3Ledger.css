@@ -25,13 +25,9 @@
   padding: var(--v3-section-pad) var(--v3-gutter);
 }
 
-/* Hash landing (#towns, #activity, #open-houses, #guides). The chrome is
-   sticky at --v3-chrome-h, so the section opens one space under it: the same
-   offset the atlas, the alerts strip and the pulse use (SITE-07, 2026-09-09;
-   the older space-3xl + tap sum left a blank band between chrome and rule). */
-.v3.v3-ledger[id] {
-  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
-}
+/* Hash landing (#towns, #activity, #open-houses, #guides): the section opens
+   one space under the sticky chrome (SITE-07, 2026-09-09) through the page's
+   scroll padding (V3Chrome.css), which clears it for every target at once. */
 
 /* THE LOOK (Broadside): rule weight is the hierarchy — a section following
    content opens on the 2px navy section rule. See V3Instrument.css. */
@@ -317,47 +313,49 @@
 
 /* Reveal ---------------------------------------------------------------------
    One line the row's text does not carry, and an optional twelve-point run as
-   a line (SITE-52). HIDDEN at rest and shown by hover, by keyboard focus, and
-   by the phone's tap-and-hold (V3LedgerReveal.client.tsx sets data-revealed
-   on the item). It OVERLAYS the top of the next row rather than taking a
-   band in the flow: a reserved band left a dead strip under every row at
-   rest (the first capture, 2026-09-09), and a band that appears in the flow
-   moves the rows under the cursor, which oscillates at every row boundary.
-   Opaque, wash-tinted cream, the same horizontal bleed as the row's hover
-   wash, so it reads as the hovered row continuing, not a tooltip. The list
-   stays a list; the reveal is the reward for asking. */
-.v3-ledger__item {
-  position: relative;
-}
+   a line (SITE-52). HIDDEN at rest.
 
+   Where it opens decides what it costs (2026-09-30). Laid over the next row
+   (to 09-29) it hid that row's name while its detail showed, cut a line of
+   text in half at 375 and covered the footnote under the last row (second
+   taste evaluator). Grown into the flow on hover (09-29) it moved every row
+   under the pointer, and a shift a hover causes counts toward Cumulative
+   Layout Shift: only a click, a tap or a key press excuses one. So:
+
+   - An encoded row (the bar lists: the city index and the monthly report's
+     markets) keeps its reveal in the figure column, under the bar. From 768
+     up the name and its detail already make the row two or three lines tall
+     and the column under the bar is empty, so the slot is held at rest
+     (visibility, not display): opening it moves nothing and covers nothing.
+     A screen with a pointer holds the slot under 768 too, where it is a line
+     of its own under the bar: blank at rest, but only for a narrow desktop
+     window, and a hover then opens it without moving a row. A hover,
+     keyboard focus or the hold opens it.
+   - Everywhere else (a phone, or a list without bars) the reveal opens on
+     its own line and the rows below make room, for keyboard focus or the
+     phone's hold only (V3LedgerReveal.client.tsx sets data-revealed on the
+     item), both excused input. A hover there wears the row's wash and opens
+     nothing. The city index drops its bars only when no city published a
+     count at all, a feed outage.
+
+   Keyboard focus is :focus-visible on the row's link, never :focus-within: a
+   click leaves focus on the link, and a row a pointer clicked must not stay
+   open beside the next one it hovers. */
 .v3-ledger__reveal {
-  position: absolute;
-  top: 100%;
-  left: calc(-1 * var(--v3-space-sm));
-  right: calc(-1 * var(--v3-space-sm));
-  z-index: 1;
-  display: flex;
+  grid-column: 1 / -1;
+  display: none;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--v3-space-2xs) var(--v3-space-md);
-  padding: var(--v3-space-2xs) var(--v3-space-sm) var(--v3-space-xs);
-  visibility: hidden;
-  background: color-mix(in srgb, var(--v3-navy) 6%, var(--v3-cream));
+  margin-top: var(--v3-space-2xs);
   font-size: var(--v3-size-source);
   line-height: var(--v3-leading-note);
   color: var(--v3-ink-muted);
-  pointer-events: none;
-}
-
-.v3-ledger__item:hover,
-.v3-ledger__item:focus-within,
-.v3-ledger__item[data-revealed='true'] {
-  z-index: 2;
 }
 
 /* The run and its words stay together, and sit at the right edge under the
-   figure when the band has room for both. */
+   figure when the line has room for both. */
 .v3-ledger__run {
   display: inline-flex;
   align-items: center;
@@ -365,10 +363,86 @@
   margin-left: auto;
 }
 
-.v3-ledger__item:hover .v3-ledger__reveal,
-.v3-ledger__item:focus-within .v3-ledger__reveal,
+.v3-ledger__row:focus-visible .v3-ledger__reveal,
 .v3-ledger__item[data-revealed='true'] .v3-ledger__reveal {
-  visibility: visible;
+  display: flex;
+  animation: v3-ledger-reveal var(--v3-dur-state) var(--v3-ease-out);
+}
+
+/* The figure column of an encoded row that reveals: the bar and figure on top,
+   the reveal's slot under them. Its first baseline is the figure's, so the row
+   aligns exactly as it does around a bare measure. */
+.v3-ledger__figures {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  justify-self: stretch;
+  min-width: 0;
+}
+
+@media (min-width: 48rem), (hover: hover) {
+  .v3-ledger__figures .v3-ledger__reveal {
+    display: flex;
+    visibility: hidden;
+    opacity: 0;
+    animation: none;
+    transition:
+      opacity var(--v3-dur-state) var(--v3-ease-out),
+      visibility 0s linear var(--v3-dur-state);
+  }
+
+  .v3-ledger__row:focus-visible .v3-ledger__figures .v3-ledger__reveal,
+  .v3-ledger__item[data-revealed='true'] .v3-ledger__figures .v3-ledger__reveal {
+    visibility: visible;
+    opacity: 1;
+    animation: none;
+    transition: opacity var(--v3-dur-state) var(--v3-ease-out);
+  }
+}
+
+/* Hover alone opens it, never a phone's sticky tap-hover. */
+@media (hover: hover) {
+  .v3-ledger__row:hover .v3-ledger__figures .v3-ledger__reveal {
+    visibility: visible;
+    opacity: 1;
+    transition: opacity var(--v3-dur-state) var(--v3-ease-out);
+  }
+}
+
+/* A held row wears the hover wash a pointer gives it, so the finger sees
+   which row opened. */
+.v3-ledger__item[data-revealed='true'] .v3-ledger__row {
+  background: var(--v3-wash);
+  box-shadow: 0 0 0 var(--v3-space-sm) var(--v3-wash);
+}
+
+/* A line opened in the flow fades in where it opens; the space it takes
+   arrives at once. Reduced motion collapses the duration token (tokens.css),
+   which leaves the finished state. */
+@keyframes v3-ledger-reveal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* The hold's hint, for a screen with no hover only: a pointer finds the
+   reveal by hovering, a finger has no way to know it is there. */
+.v3-ledger__hint {
+  display: none;
+  margin: 0;
+  max-width: var(--v3-measure-text);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-muted);
+}
+
+@media (hover: none) {
+  .v3-ledger__hint {
+    display: block;
+  }
 }
 
 .v3-ledger__reveal-line {
@@ -409,8 +483,12 @@
    is two columns, so the measure spans the full width under the name rather
    than fighting it for a few pixels. */
 @media (max-width: 47.99rem) {
-  .v3-ledger--encoded .v3-ledger__measure {
+  .v3-ledger--encoded .v3-ledger__measure,
+  .v3-ledger--encoded .v3-ledger__figures {
     grid-column: 1 / -1;
+  }
+
+  .v3-ledger--encoded .v3-ledger__measure {
     margin-top: var(--v3-space-3xs);
   }
 }

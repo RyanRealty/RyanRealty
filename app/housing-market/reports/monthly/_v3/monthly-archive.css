@@ -1,0 +1,425 @@
+/* ===========================================================================
+   The monthly report archive (MonthlyArchive.tsx). Tokens only: every color,
+   size, rule and duration resolves from components/site/v3/tokens.css.
+
+   The form is a calendar: one hairline row per year, the year in the display
+   face, and twelve month cells in calendar order, so a month that was never
+   published is a visible gap rather than a shorter list. Each published cell
+   is two doors (the edition page, the PDF) and a short reveal on hover and
+   focus: the edition's first headline sentence.
+
+   Doubled block selector, the same guard every barrel pattern uses: a global
+   single-class rule cannot reach this section.
+   =========================================================================== */
+
+.v3.monthly-archive {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: var(--v3-section-pad) var(--v3-gutter);
+}
+
+* + .v3.monthly-archive {
+  border-top: var(--v3-rule-section);
+}
+
+/* No scroll margin of its own: the sticky chrome's clearance is the page's
+   scroll padding (V3Chrome.css), which every anchor and every focus lands
+   under. */
+
+.monthly-archive__head {
+  display: grid;
+  gap: var(--v3-space-xs);
+  margin-bottom: var(--v3-space-lg);
+}
+
+/* The running head is the barrel's (V3RunningHead, tokens.css): one rule set
+   with the edition page's table, which opens the same way. */
+
+.monthly-archive__lede {
+  margin: 0;
+  max-width: var(--v3-measure-text);
+}
+
+/* The years. --------------------------------------------------------------- */
+.monthly-archive__years {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-bottom: var(--v3-rule-hairline);
+}
+
+.monthly-archive__year {
+  display: grid;
+  gap: var(--v3-space-xs) var(--v3-space-xl);
+  padding: var(--v3-space-md) 0 var(--v3-space-lg);
+  border-top: var(--v3-rule-hairline);
+}
+
+.monthly-archive__yearhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--v3-space-sm);
+  min-width: 0;
+}
+
+.monthly-archive__yearname {
+  margin: 0;
+  color: var(--v3-ink);
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-2);
+  font-weight: var(--v3-weight-display);
+  letter-spacing: var(--v3-track-display);
+  line-height: var(--v3-leading-heading);
+  font-variant-numeric: tabular-nums;
+}
+
+.monthly-archive__yearcount {
+  margin: 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-source);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+}
+
+/* Twelve cells in calendar order: two rows of six up to 64rem (a 375px
+   phone still gives each cell a 44px-wide target), the whole year on one line
+   from 64rem. */
+.monthly-archive__months {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--v3-space-xs) var(--v3-space-2xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 64rem) {
+  .monthly-archive__year {
+    grid-template-columns: 7rem minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .monthly-archive__yearhead {
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: var(--v3-space-3xs);
+    padding-top: var(--v3-space-2xs);
+  }
+
+  .monthly-archive__months {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+}
+
+/* One month. The rule over the cell is the calendar's grid line; the latest
+   edition's rule is navy, which is the only emphasis in the archive. */
+.monthly-archive__month {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  border-top: 2px solid var(--v3-edge);
+}
+
+.monthly-archive__month--latest {
+  border-top-color: var(--v3-navy);
+}
+
+.monthly-archive__month--empty {
+  align-content: start;
+  border-top-color: var(--v3-hairline);
+}
+
+/* The month's bar: the grid line thickens and darkens with Central Oregon's
+   median sale price that month, placed between the lowest and highest median
+   in the archive (--cell-shade, 0 to 1, from report-view archiveYears). Across
+   twenty years the bars read as the price cycle before a month is opened. The
+   figure itself prints under the month, so the shade is never the only
+   carrier of the number. */
+.monthly-archive__month--shaded {
+  border-top-width: 6px;
+  border-top-color: color-mix(in srgb, var(--v3-navy) calc(12% + var(--cell-shade, 0) * 88%), var(--v3-cream));
+}
+
+/* With the bar carrying price, the latest edition keeps its own mark: its
+   month stays underlined. */
+.monthly-archive__month--latest .monthly-archive__read {
+  text-decoration-color: currentColor;
+}
+
+.monthly-archive__median {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-label);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--v3-leading-body);
+}
+
+.monthly-archive__legend {
+  display: flex;
+  align-items: center;
+  gap: var(--v3-space-xs);
+  margin: 0 0 var(--v3-space-sm);
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+}
+
+.monthly-archive__legend-scale {
+  flex: 0 0 4rem;
+  height: 6px;
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--v3-navy) 12%, var(--v3-cream)),
+    var(--v3-navy)
+  );
+}
+
+/* The hold's hint, for a screen with no hover only: a pointer finds a month's
+   first line by hovering, a finger has no way to know it is there. */
+.monthly-archive__hint {
+  display: none;
+  margin: 0 0 var(--v3-space-sm);
+  max-width: var(--v3-measure-text);
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+}
+
+@media (hover: none) {
+  .monthly-archive__hint {
+    display: block;
+  }
+}
+
+/* The gap between two months belongs half to each: a month's doors reach into
+   it, so a target is the cell plus one column gap wide. At 320px a sixth of
+   the row is 42px, under the tap floor; with the gap it is 47.6px. The text
+   stays on the cell's edge, because the padding gives back what the margin
+   takes. */
+.monthly-archive__read {
+  display: flex;
+  align-items: center;
+  min-height: var(--v3-tap);
+  margin-inline: calc(var(--v3-space-2xs) / -2);
+  padding: var(--v3-space-3xs) calc(var(--v3-space-2xs) / 2) 0;
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-strong);
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: var(--v3-underline-offset);
+  transition: text-decoration-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.monthly-archive__read:hover,
+.monthly-archive__read:focus-visible {
+  text-decoration-color: currentColor;
+}
+
+.monthly-archive__pdf,
+.monthly-archive__nopdf {
+  display: flex;
+  align-items: center;
+  min-height: var(--v3-tap);
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+}
+
+.monthly-archive__pdf {
+  margin-inline: calc(var(--v3-space-2xs) / -2);
+  padding-inline: calc(var(--v3-space-2xs) / 2);
+  color: var(--v3-ink-muted);
+  text-decoration: underline;
+  text-decoration-color: var(--v3-edge);
+  text-underline-offset: var(--v3-underline-offset);
+  transition:
+    color var(--v3-dur-state) var(--v3-ease-out),
+    text-decoration-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.monthly-archive__pdf:hover,
+.monthly-archive__pdf:focus-visible {
+  color: var(--v3-ink);
+  text-decoration-color: currentColor;
+}
+
+.monthly-archive__nopdf {
+  color: var(--v3-ink-muted);
+}
+
+.monthly-archive__gap {
+  display: flex;
+  align-items: center;
+  min-height: var(--v3-tap);
+  padding: var(--v3-space-3xs) 0 0;
+  /* Muted ink, not the rule color: a month not yet published still has to be
+     readable (the rule color measured 1.25:1 against the cream). */
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body);
+}
+
+/* The ring sits INSIDE a door, not around it. A month's doors fill their cell
+   edge to edge (half a column gap each side), so a ring drawn outside cut into
+   the median figure under the month and clipped the neighbour's PDF door
+   (taste evaluator, 2026-09-29). Inset by its own width, it stays in the
+   door's box and still reads all the way round. */
+.monthly-archive__month .monthly-archive__read:focus-visible,
+.monthly-archive__month .monthly-archive__pdf:focus-visible {
+  outline: var(--v3-focus-width) solid var(--v3-focus);
+  outline-offset: calc(-1 * var(--v3-focus-width));
+}
+
+/* The reveal: the edition's first headline sentence, over the row below.
+   Opened three ways, and every way at every width: a pointer that can hover
+   (hover alone, so a phone's sticky tap-hover never fakes it), KEYBOARD focus
+   in the month, and a phone's press and hold (V3HoldReveal sets data-revealed
+   on the month). Keyboard focus is :focus-visible, never :focus-within: a tap
+   focuses the link it lands on too, so a phone that tapped a PDF door, or came
+   back to the page from an edition, found a panel six cells wide stuck open
+   over the row below (code review, 2026-09-29). It sits inside the month's
+   link, so it resets the link's weight, and it is out of the flow, so nothing
+   under a pointer moves while it opens. */
+.monthly-archive__peek {
+  position: absolute;
+  top: calc(100% + var(--v3-space-3xs));
+  left: 0;
+  z-index: 5;
+  display: grid;
+  gap: var(--v3-space-3xs);
+  width: min(20rem, 60vw);
+  padding: var(--v3-space-sm) var(--v3-space-md);
+  background: var(--v3-panel-bg);
+  border: var(--v3-panel-border);
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-body);
+  line-height: var(--v3-leading-note);
+  text-align: left;
+  text-wrap: pretty;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity var(--v3-dur-state) var(--v3-ease-out),
+    visibility var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.monthly-archive__month:has(:focus-visible) .monthly-archive__peek,
+.monthly-archive__month[data-revealed='true'] .monthly-archive__peek {
+  opacity: 1;
+  visibility: visible;
+}
+
+@media (hover: hover) {
+  .monthly-archive__month:hover .monthly-archive__peek {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+/* A held sentence is part of its month's door: a tap on it opens that month.
+   At rest and on hover it takes no pointer, so it never hides the month drawn
+   under it from a mouse. */
+.monthly-archive__month[data-revealed='true'] .monthly-archive__peek {
+  pointer-events: auto;
+}
+
+/* The open month sits above its neighbours, so its sentence is never painted
+   under the next row's links. */
+.monthly-archive__month:has(:focus-visible),
+.monthly-archive__month[data-revealed='true'] {
+  z-index: 6;
+}
+
+@media (hover: hover) {
+  .monthly-archive__month:hover {
+    z-index: 6;
+  }
+}
+
+/* A press and hold on a month's link is the reveal, not the OS link menu or a
+   text selection. Only a link that carries a sentence is held (V3HoldReveal's
+   handle), so only that link gives up the menu: the PDF door, and a month with
+   no sentence to show, keep the phone's own long press (open, download,
+   share). */
+.monthly-archive__hold .monthly-archive__read:has(.monthly-archive__peek) {
+  -webkit-touch-callout: none;
+}
+
+@media (hover: none) {
+  .monthly-archive__hold .monthly-archive__read:has(.monthly-archive__peek) {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+
+/* From 40rem the sentence opens beside the month as a panel. Cells in the
+   right half of the row open leftward, so the panel stays on the page: six
+   across below 64rem, twelve above. */
+@media (min-width: 40rem) {
+  .monthly-archive__month:nth-child(6n + 4) .monthly-archive__peek,
+  .monthly-archive__month:nth-child(6n + 5) .monthly-archive__peek,
+  .monthly-archive__month:nth-child(6n) .monthly-archive__peek {
+    left: auto;
+    right: 0;
+  }
+}
+
+@media (min-width: 64rem) {
+  .monthly-archive__month:nth-child(n) .monthly-archive__peek {
+    left: 0;
+    right: auto;
+  }
+
+  .monthly-archive__month:nth-child(n + 7) .monthly-archive__peek {
+    left: auto;
+    right: 0;
+  }
+}
+
+/* On a phone a month is a sixth of the row, too narrow to hold a sentence
+   beside it, so the sentence spans the whole row of months under the one
+   opened: its left edge steps back one column (the cell's width plus the
+   column gap) for every column to the left of the month, and it is exactly
+   six cells and five gaps wide, so it can never widen the page. */
+@media (max-width: 39.99rem) {
+  .monthly-archive__peek {
+    --month-col: 0;
+    left: calc(var(--month-col) * -1 * (100% + var(--v3-space-2xs)));
+    width: calc(600% + 5 * var(--v3-space-2xs));
+  }
+
+  .monthly-archive__month:nth-child(6n + 2) .monthly-archive__peek {
+    --month-col: 1;
+  }
+
+  .monthly-archive__month:nth-child(6n + 3) .monthly-archive__peek {
+    --month-col: 2;
+  }
+
+  .monthly-archive__month:nth-child(6n + 4) .monthly-archive__peek {
+    --month-col: 3;
+  }
+
+  .monthly-archive__month:nth-child(6n + 5) .monthly-archive__peek {
+    --month-col: 4;
+  }
+
+  .monthly-archive__month:nth-child(6n) .monthly-archive__peek {
+    --month-col: 5;
+  }
+}
+
+.monthly-archive__peek-when {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+}
+
+.monthly-archive__source {
+  margin-top: var(--v3-space-lg);
+}

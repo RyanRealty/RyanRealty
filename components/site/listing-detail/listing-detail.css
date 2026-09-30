@@ -97,12 +97,9 @@
   max-width: 100%;
 }
 
-/* Anchor arrivals clear the sticky site chrome (60px header + breathing):
-   #listing-like-alerts-style jumps park the target heading under the mast
-   without this. scroll-margin only acts on anchor/scrollIntoView landings. */
-.listing-detail [id] {
-  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-sm));
-}
+/* Anchor arrivals clear the sticky site chrome through the page's scroll
+   padding (V3Chrome.css): #listing-like-alerts-style jumps parked the target
+   heading under the mast before it. */
 
 .listing-detail .mono-num {
   font-variant-numeric: tabular-nums;
