@@ -8,6 +8,9 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
 
+/** Comps one run may remove; more means a listings read gone wrong (see the prune below). */
+const PRUNE_BUDGET = 50
+
 /**
  * GET /api/cron/refresh-sale-pricing-facts
  *
@@ -51,14 +54,24 @@ export async function GET(request: Request) {
   // (deleted because the MLS removed the sale, back to Pending, re-typed) stays
   // until this sweep drops it; 3 x 20,000 keys a run covers the ~150,000-row
   // table about every 18 hours. A listing the MLS is still changing gets a
-  // 48-hour clock first (a status correction can flip back). A batch with more
-  // than 200 to drop is refused and deletes nothing (a listings read gone
-  // wrong, not a normal day): the owner is texted and the steps below still run.
-  const pruned = { deleted: 0, scanned: 0, settling: 0, keys: [] as string[], refused: null as string | null, done: false }
+  // 48-hour clock first (a status correction can flip back). A run may remove
+  // PRUNE_BUDGET comps: a batch that would take it past that removes nothing
+  // (a listings read gone wrong, not a normal day, which held 4 in the whole
+  // table on 2026-09-30), the owner is texted, and the steps below still run.
+  const pruned = {
+    deleted: 0,
+    scanned: 0,
+    settling: 0,
+    keys: [] as string[],
+    refused: null as string | null,
+    refusedKeys: [] as string[],
+    done: false,
+  }
   for (let i = 0; i < 3; i++) {
     const { data: prune, error: pruneErr } = await supabase.rpc('prune_sale_pricing_facts_batch', {
       p_limit: 20000,
       p_job: 'sale_pricing_facts_prune',
+      p_max_delete: PRUNE_BUDGET - pruned.deleted,
     })
     if (pruneErr) {
       console.error('[refresh-sale-pricing-facts] prune', pruneErr.message)
@@ -70,6 +83,7 @@ export async function GET(request: Request) {
     if (Array.isArray(prune?.keys)) pruned.keys.push(...prune.keys.map(String))
     if (prune?.ok === false) {
       pruned.refused = String(prune?.refused ?? 'refused')
+      if (Array.isArray(prune?.refused_keys)) pruned.refusedKeys.push(...prune.refused_keys.map(String))
       break
     }
     if (prune?.done) {
@@ -81,7 +95,7 @@ export async function GET(request: Request) {
     console.error('[refresh-sale-pricing-facts] prune refused', pruned.refused)
     await queueBrokerHealthAlert({
       key: 'comp-prune-refused',
-      body: `The CMA comp cleanup refused a batch and removed nothing: ${pruned.refused.slice(0, 160)}. The listings read may be incomplete.`,
+      body: `The CMA comp cleanup refused a batch: ${pruned.refused.slice(0, 150)} (${pruned.deleted} removed earlier this run). The listings read may be incomplete; that batch stays refused until someone checks it and approves the cleanup.`,
       cooldownMinutes: 1440,
     })
   }
@@ -253,7 +267,7 @@ export async function GET(request: Request) {
     console.error('[refresh-sale-pricing-facts] listing_reads', err)
   }
   return NextResponse.json({
-    ok: true,
+    ok: pruned.refused == null,
     upserted,
     pruned,
     concessionsUpdated,

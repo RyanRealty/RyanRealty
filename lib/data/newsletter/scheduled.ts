@@ -85,7 +85,6 @@ export async function findNewsletterIdBySubject(subject: string): Promise<string
 export type NewsletterByMarker = {
   id: string
   status: string
-  body_html: string | null
   citations: NewsletterCitationEntry[]
 }
 
@@ -93,19 +92,19 @@ export async function findNewsletterByCreatedBy(createdBy: string): Promise<News
   const sb = createServiceClient()
   const { data, error } = await sb
     .from('newsletters')
-    .select('id,status,body_html,citations')
+    .select('id,status,citations')
     .eq('created_by', createdBy)
     .order('created_at', { ascending: true })
     .limit(1)
     .maybeSingle()
   if (error) throw new Error(`findNewsletterByCreatedBy: ${error.message}`)
   const row = data as NewsletterByMarker | null
-  return row ? { id: row.id, status: row.status, body_html: row.body_html, citations: row.citations ?? [] } : null
+  return row ? { id: row.id, status: row.status, citations: row.citations ?? [] } : null
 }
 
 /**
- * Monthly market report emails still open to change (draft or scheduled),
- * newest first: the daily backstop re-checks each against its edition. The
+ * Monthly market report emails still open (draft, scheduled, or going out),
+ * newest first: the daily backstop checks each against its edition. The
  * newest 24 months are plenty; an email older than that is not going out.
  */
 export async function listOpenEditionEmailDrafts(prefix: string): Promise<Array<{ id: string; created_by: string }>> {
@@ -114,9 +113,28 @@ export async function listOpenEditionEmailDrafts(prefix: string): Promise<Array<
     .from('newsletters')
     .select('id,created_by')
     .like('created_by', `${prefix}%`)
-    .in('status', ['draft', 'scheduled'])
+    .in('status', ['draft', 'scheduled', 'sending'])
     .order('created_by', { ascending: false })
     .limit(24)
   if (error) throw new Error(`listOpenEditionEmailDrafts: ${error.message}`)
   return (data ?? []) as Array<{ id: string; created_by: string }>
+}
+
+/**
+ * Take a draft or scheduled issue out of reach for good, in one conditional
+ * update: canceled, and its producer marker moved to `retiredCreatedBy` so a
+ * replacement can take the live one (a monthly market report email whose
+ * report was republished with new figures). False when it was neither a
+ * draft nor scheduled any more (the send cron claimed it, or it is gone).
+ */
+export async function retireNewsletterDraft(id: string, retiredCreatedBy: string): Promise<boolean> {
+  const sb = createServiceClient()
+  const { data, error } = await sb
+    .from('newsletters')
+    .update({ status: 'canceled', created_by: retiredCreatedBy, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .in('status', ['draft', 'scheduled'])
+    .select('id')
+  if (error) throw new Error(`retireNewsletterDraft: ${error.message}`)
+  return (data?.length ?? 0) > 0
 }

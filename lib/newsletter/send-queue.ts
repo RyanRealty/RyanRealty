@@ -141,7 +141,7 @@ export async function enqueueNewsletter(newsletterId: string): Promise<EnqueueRe
   if (!letter.body_html && !letter.body_text) return { ok: false, error: 'empty_body' }
 
   // CAS lock — a second concurrent approve gets null and aborts (S-1).
-  const token = await claimNewsletterForSending(newsletterId)
+  const token = await claimNewsletterForSending(newsletterId, { listSend: true })
   if (!token) return { ok: false, error: 'already_sending' }
 
   try {

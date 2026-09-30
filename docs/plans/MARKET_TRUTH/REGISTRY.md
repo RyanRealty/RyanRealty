@@ -299,18 +299,19 @@ holds; these are the report's additional predicates. Definition id on every row:
   ended. An edition is frozen when it publishes; its payload and citations are stored with it.
 - **The monthly email (Matt 2026-09-30, "Draft it for my OK").** When the newest month publishes,
   `lib/market-report/edition-email-draft.ts` writes its email as a `newsletters` DRAFT
-  (`created_by` `cron:market-report-edition:<YYYY-MM>`, one per month, unique index
+  (`created_by` `cron:market-report-edition:<YYYY-MM>`, one live per month, unique index
   `20260930130000`) and texts Matt the `/admin/newsletters/<id>` link. The email prints only the
   edition's frozen figures, each cited as printed (a median to the whole dollar), and must pass the
-  R-2 figure check before it is written. Accuracy outranks edits: every publish, by any path
-  (`publishEdition`), and the daily refresh's backstop re-check each open draft against its
-  edition, and when the figures changed the whole draft is rebuilt (a scheduled one first goes
-  back to draft for his re-approval; he is texted that any edits were replaced). Approve &
-  Schedule refuses a draft that changed while its checks ran. Deleting the draft cancels it, so a
-  skipped month stays skipped. Nothing goes to anyone until Matt approves that send, and a
-  broker's one-click newsletter send delivers only the current issue he approved (sent in the
-  last 45 days, else the next scheduled), never a draft (`lib/data/newsletter/current-issue.ts`).
-  The site's Market menu links the archive directly (Matt 2026-09-30, "Yes, add the link").
+  R-2 figure check before it is written. A draft is never rewritten: every publish by any path
+  (`publishEdition`) and the daily refresh's backstop check each open email against its edition,
+  and when the figures changed (compared with their signs, from each citation's filter) the old
+  email is canceled, even if scheduled, and a new draft is written and texted; one already going
+  out is flagged for him to pause. What Matt reviews is what he approves. Deleting a draft cancels
+  it, so a skipped month stays skipped. Nothing goes to anyone until Matt approves that send, and
+  a broker's one-click newsletter send delivers only the current issue he sent to the list
+  (`newsletters.list_send`, in the last 45 days) or scheduled, never a draft or a one-off test
+  (`lib/data/newsletter/current-issue.ts`). The site's Market menu links the archive directly
+  (Matt 2026-09-30, "Yes, add the link").
 
 **Closings drift, found 2026-09-25.** Across the whole feed (every property type, every city Spark
 serves), Spark held 1,093 closings from January 2024 to September 2026 that our `listings` copy
@@ -352,9 +353,10 @@ reconciliation). `prune_market_fact_sale` now drops sale facts whose listing is 
    facts. The CMA's comparable-sales table (`sale_pricing_facts`) only ever upserted, so it still
    held them; `prune_sale_pricing_facts_batch` (migrations `20260930120000`, `20260930140000`,
    `20260930150000`, in the 6-hourly pricing cron) removed them and one Redmond sale the MLS had
-   moved back to Pending, the only four stale rows in the whole table. A listing the MLS is still
-   changing gets a 48-hour clock first (`sale_pricing_facts.stale_since`), and a batch with more
-   than 200 to remove deletes nothing and texts the owner. 717 Larch now counts once, under the number the MLS
+   moved back to Pending, the only four stale rows in the whole table (migration `20260930170000`
+   is the current version). A listing the MLS is still changing gets a 48-hour clock first
+   (`sale_pricing_facts.stale_since`), and a run may remove 50: a batch past that removes nothing
+   and texts the owner, and a person approves a larger cleanup with `p_max_delete`. 717 Larch now counts once, under the number the MLS
    re-entered it as (220220138). After the deletion the trailing 13 months matched Spark
    exactly: 14,461 closings, 0 drifted, 0 absent. The three stay in `market_listing_absent_from_mls`, so if the delta sync ever brought
    one back, Market Truth would still leave it out.

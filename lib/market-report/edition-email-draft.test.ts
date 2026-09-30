@@ -21,12 +21,13 @@ import type { EditionPayload, Kpis, MarketSection } from './types'
 
 const BUILD_A = '2026-09-25T13:48:04.422Z'
 const BUILD_B = '2026-10-02T09:00:00.000Z'
+const MARKER = 'cron:market-report-edition:2026-08'
 
 const fig = (v: number | null, n: number) => ({ v, n })
-function kpis(median: number): Kpis {
+function kpis(median: number, yoy = -0.0229): Kpis {
   return {
     period: { kind: 'month', start: '2026-08-01', end: '2026-08-31' },
-    median: fig(median, 291), medianPrior: fig(null, 0), medianYoY: -0.0229,
+    median: fig(median, 291), medianPrior: fig(null, 0), medianYoY: yoy,
     sales: 291, salesPrior: 329, salesYoY: -0.1155,
     dtc: fig(38, 279), dtcPrior: fig(null, 0), ppsf: fig(null, 0), stl: fig(null, 0), stol: fig(null, 0),
     priceCutShare: fig(null, 0), concessionShare: fig(null, 0), concessionMedian: fig(null, 0), cashShare: fig(null, 0),
@@ -39,7 +40,7 @@ function section(slug: string, label: string, k: Kpis): MarketSection {
   return { geo: { slug, label, type: slug === 'central-oregon' ? 'region' : 'city' }, segment: 'sfr', cadence: 'monthly', kpis: k, kpis12: k, summary: [] } as unknown as MarketSection
 }
 
-function editionRow(opts: { status?: EditionRow['status']; median?: number; build?: string; monthly?: MarketSection[] } = {}): EditionRow {
+function editionRow(opts: { status?: EditionRow['status']; median?: number; yoy?: number; build?: string; monthly?: MarketSection[] } = {}): EditionRow {
   const build = opts.build ?? BUILD_A
   return {
     edition_month: '2026-08-01',
@@ -56,7 +57,7 @@ function editionRow(opts: { status?: EditionRow['status']; median?: number; buil
     payload: {
       definitionId: 'mr-v1',
       generatedAt: build,
-      region: section('central-oregon', 'Central Oregon', kpis(opts.median ?? 640000)),
+      region: section('central-oregon', 'Central Oregon', kpis(opts.median ?? 640000, opts.yoy)),
       monthly: opts.monthly ?? [],
     } as unknown as EditionPayload,
     citations: [],
@@ -66,10 +67,9 @@ function editionRow(opts: { status?: EditionRow['status']; median?: number; buil
   }
 }
 
-/** A stored draft exactly as the builder wrote it from `edition`. */
+/** A stored email exactly as the builder wrote it from `edition`. */
 function storedFrom(edition: EditionRow, status = 'draft', id = 'nl-0'): NewsletterByMarker {
-  const email = buildEditionEmail(edition)
-  return { id, status, body_html: email.bodyHtml, citations: email.citations }
+  return { id, status, citations: buildEditionEmail(edition).citations }
 }
 
 type DepMocks = { [K in keyof EditionEmailDraftDeps]: Mock<EditionEmailDraftDeps[K]> }
@@ -80,8 +80,7 @@ function deps(over: Override = {}): DepMocks & Pick<Override, 'listOpen'> {
     getEdition: vi.fn<EditionEmailDraftDeps['getEdition']>(async () => editionRow()),
     findDraft: vi.fn<EditionEmailDraftDeps['findDraft']>(async () => null),
     createDraft: vi.fn<EditionEmailDraftDeps['createDraft']>(async () => ({ ok: true, id: 'nl-1' })),
-    rewriteDraft: vi.fn<EditionEmailDraftDeps['rewriteDraft']>(async () => true),
-    unschedule: vi.fn<EditionEmailDraftDeps['unschedule']>(async () => true),
+    retireDraft: vi.fn<EditionEmailDraftDeps['retireDraft']>(async () => true),
     ...over,
   }
 }
@@ -95,25 +94,28 @@ describe('writing the month', () => {
     const d = deps()
     expect(await ensureEditionEmailDraft('2026-08', { create: true }, d)).toEqual({ status: 'created', id: 'nl-1', subject: 'Central Oregon market report: August 2026' })
     const input = d.createDraft.mock.calls[0]![0] as { created_by: string; audience: string; body_html: string; citations: NewsletterCitationEntry[] }
-    expect(input.created_by).toBe('cron:market-report-edition:2026-08')
+    expect(input.created_by).toBe(MARKER)
     expect(input.audience).toBe('all')
     expect(input.body_html).toContain('$640,000')
-    expect(input.citations.length).toBeGreaterThan(5)
     expect(new Set(input.citations.map((c) => c.fetched_at))).toEqual(new Set([BUILD_A]))
   })
 
-  it('does nothing for a month that is not published, and never creates when asked only to re-check', async () => {
-    const draftEdition = deps({ getEdition: vi.fn(async () => editionRow({ status: 'draft' })) })
-    expect(await ensureEditionEmailDraft('2026-08', { create: true }, draftEdition)).toEqual({ status: 'skipped', reason: 'the 2026-08 edition is draft' })
-    const recheck = deps()
-    expect((await ensureEditionEmailDraft('2026-08', { create: false }, recheck)).status).toBe('skipped')
-    expect(draftEdition.createDraft).not.toHaveBeenCalled()
-    expect(recheck.createDraft).not.toHaveBeenCalled()
+  it('does nothing for a month that is not published', async () => {
+    const d = deps({ getEdition: vi.fn(async () => editionRow({ status: 'draft' })) })
+    expect(await ensureEditionEmailDraft('2026-08', { create: true }, d)).toEqual({ status: 'skipped', reason: 'the 2026-08 edition is draft' })
+    expect(d.createDraft).not.toHaveBeenCalled()
+  })
+
+  it('asked only to check, with no draft, reads nothing more and writes nothing', async () => {
+    const d = deps()
+    expect(await ensureEditionEmailDraft('2026-08', { create: false }, d)).toEqual({ status: 'skipped', reason: 'no 2026-08 email draft to check' })
+    expect(d.getEdition).not.toHaveBeenCalled()
+    expect(d.createDraft).not.toHaveBeenCalled()
   })
 
   it('reads back the draft another run wrote first when the unique index refuses a second', async () => {
     const findDraft = vi.fn<EditionEmailDraftDeps['findDraft']>(async () => null)
-    findDraft.mockResolvedValueOnce(null).mockResolvedValueOnce({ id: 'nl-first', status: 'draft', body_html: '', citations: [] })
+    findDraft.mockResolvedValueOnce(null).mockResolvedValueOnce({ id: 'nl-first', status: 'draft', citations: [] })
     const d = deps({ findDraft, createDraft: vi.fn(async () => ({ ok: false, error: 'persist_failed' })) })
     expect(await ensureEditionEmailDraft('2026-08', { create: true }, d)).toEqual({ status: 'exists', id: 'nl-first', newsletterStatus: 'draft' })
   })
@@ -122,7 +124,7 @@ describe('writing the month', () => {
     // A place label carrying a stat-shaped token the builder does not cite.
     const odd = editionRow({ monthly: [section('bend', 'Bend 12 listings', kpis(727500))] })
     const d = deps({ getEdition: vi.fn(async () => odd) })
-    await expect(ensureEditionEmailDraft('2026-08', { create: true }, d)).rejects.toThrow('was not written: a printed figure has no citation')
+    await expect(ensureEditionEmailDraft('2026-08', { create: true }, d)).rejects.toThrow('its email draft was not written: a printed figure has no citation')
     expect(d.createDraft).not.toHaveBeenCalled()
   })
 
@@ -131,87 +133,79 @@ describe('writing the month', () => {
   })
 })
 
-describe('an existing draft follows its edition', () => {
-  it('leaves alone a draft built from the current edition, draft or scheduled', async () => {
-    for (const status of ['draft', 'scheduled']) {
+describe('an existing email and its edition', () => {
+  it('leaves alone an email built from this edition, or from a newer build than this read', async () => {
+    for (const status of ['draft', 'scheduled', 'sending']) {
       const d = deps({ findDraft: vi.fn(async () => storedFrom(editionRow(), status)) })
       expect(await ensureEditionEmailDraft('2026-08', {}, d)).toEqual({ status: 'exists', id: 'nl-0', newsletterStatus: status })
-      expect(d.rewriteDraft).not.toHaveBeenCalled()
-      expect(d.unschedule).not.toHaveBeenCalled()
+      expect(d.retireDraft).not.toHaveBeenCalled()
     }
+    const newer = deps({ findDraft: vi.fn(async () => storedFrom(republished())) })
+    expect((await ensureEditionEmailDraft('2026-08', {}, newer)).status).toBe('exists')
+    expect(newer.retireDraft).not.toHaveBeenCalled()
   })
 
-  it('never touches one that is sending, sent, failed or canceled (a month Matt skipped stays skipped)', async () => {
-    for (const status of ['sending', 'sent', 'failed', 'canceled']) {
+  it('never touches one that is sent, failed or canceled (a month Matt skipped stays skipped)', async () => {
+    for (const status of ['sent', 'failed', 'canceled']) {
       const d = deps({ getEdition: vi.fn(async () => republished()), findDraft: vi.fn(async () => storedFrom(editionRow(), status)) })
       expect(await ensureEditionEmailDraft('2026-08', { create: true }, d)).toEqual({ status: 'exists', id: 'nl-0', newsletterStatus: status })
+      expect(d.getEdition).not.toHaveBeenCalled()
       expect(d.createDraft).not.toHaveBeenCalled()
-      expect(d.rewriteDraft).not.toHaveBeenCalled()
     }
   })
 
-  it('rebuilds the whole draft when the report is rebuilt with new figures: subject, preheader, both bodies, trace', async () => {
-    const d = deps({ getEdition: vi.fn(async () => republished()), findDraft: vi.fn(async () => storedFrom(editionRow())) })
-    expect(await ensureEditionEmailDraft('2026-08', {}, d)).toEqual({ status: 'refreshed', id: 'nl-0', subject: 'Central Oregon market report: August 2026', wasScheduled: false })
-    const fields = d.rewriteDraft.mock.calls[0]![1] as Record<string, unknown>
-    expect(Object.keys(fields).sort()).toEqual(['body_html', 'body_text', 'citations', 'preview_text', 'subject'])
-    const fresh = buildEditionEmail(republished())
-    expect(fields.body_html).toBe(fresh.bodyHtml)
-    expect(fields.body_text).toBe(fresh.bodyText)
-    expect(fields.preview_text).toBe(fresh.previewText)
-    expect(String(fields.preview_text)).toContain('$655,000')
-  })
-
-  it('rebuilds a draft Matt edited too: accuracy outranks edits, and the text tells him', async () => {
-    const edited = storedFrom(editionRow())
-    edited.body_html = edited.body_html!.replace('Our monthly report', 'A note from Matt. Our monthly report')
-    const r = await draftEditionEmailAndTell('2026-08', {}, deps({ getEdition: vi.fn(async () => republished()), findDraft: vi.fn(async () => edited) }))
-    expect(r.status).toBe('refreshed')
-    expect(queueBrokerHealthAlert.mock.calls[0]![0].body).toContain('any edits you had made to it were replaced')
-  })
-
-  it('takes a scheduled draft back to draft before rebuilding it: its approval was for the old figures', async () => {
-    const d = deps({ getEdition: vi.fn(async () => republished()), findDraft: vi.fn(async () => storedFrom(editionRow(), 'scheduled')) })
-    expect(await ensureEditionEmailDraft('2026-08', {}, d)).toMatchObject({ status: 'refreshed', wasScheduled: true })
-    expect(d.unschedule).toHaveBeenCalledWith('nl-0')
-    expect(d.unschedule.mock.invocationCallOrder[0]!).toBeLessThan(d.rewriteDraft.mock.invocationCallOrder[0]!)
-  })
-
-  it('leaves a scheduled draft the send cron already took', async () => {
-    const d = deps({ getEdition: vi.fn(async () => republished()), findDraft: vi.fn(async () => storedFrom(editionRow(), 'scheduled')), unschedule: vi.fn(async () => false) })
-    expect(await ensureEditionEmailDraft('2026-08', {}, d)).toEqual({ status: 'exists', id: 'nl-0', newsletterStatus: 'sending' })
-    expect(d.rewriteDraft).not.toHaveBeenCalled()
-  })
-
-  it('when Matt schedules it between the read and the rewrite, takes it back and rewrites it', async () => {
-    const stale = storedFrom(editionRow())
-    const findDraft = vi.fn<EditionEmailDraftDeps['findDraft']>(async () => ({ ...stale, status: 'scheduled' }))
-    findDraft.mockResolvedValueOnce(stale)
-    const rewriteDraft = vi.fn<EditionEmailDraftDeps['rewriteDraft']>(async () => true)
-    rewriteDraft.mockResolvedValueOnce(false)
-    const d = deps({ getEdition: vi.fn(async () => republished()), findDraft, rewriteDraft })
-    expect(await ensureEditionEmailDraft('2026-08', {}, d)).toMatchObject({ status: 'refreshed', wasScheduled: true })
-    expect(d.unschedule).toHaveBeenCalledTimes(1)
-    expect(rewriteDraft).toHaveBeenCalledTimes(2)
-  })
-
-  it('a rebuild with the same figures only carries the build stamp forward, and never touches a scheduled draft', async () => {
-    const sameFigures = editionRow({ build: BUILD_B })
-    const d = deps({ getEdition: vi.fn(async () => sameFigures), findDraft: vi.fn(async () => storedFrom(editionRow())) })
+  it('a rebuild with the same figures writes nothing', async () => {
+    const d = deps({ getEdition: vi.fn(async () => editionRow({ build: BUILD_B })), findDraft: vi.fn(async () => storedFrom(editionRow())) })
     expect((await ensureEditionEmailDraft('2026-08', {}, d)).status).toBe('exists')
-    expect(Object.keys(d.rewriteDraft.mock.calls[0]![1] as object)).toEqual(['citations'])
-    const scheduled = deps({ getEdition: vi.fn(async () => sameFigures), findDraft: vi.fn(async () => storedFrom(editionRow(), 'scheduled')) })
-    expect((await ensureEditionEmailDraft('2026-08', {}, scheduled)).status).toBe('exists')
-    expect(scheduled.rewriteDraft).not.toHaveBeenCalled()
-    expect(scheduled.unschedule).not.toHaveBeenCalled()
+    expect(d.retireDraft).not.toHaveBeenCalled()
+    expect(d.createDraft).not.toHaveBeenCalled()
   })
 
-  it('a rebuilt edition whose email cannot be built still takes a scheduled draft back, and says so', async () => {
+  it('replaces the email when the figures change: the old one canceled under a retired marker, a new draft written', async () => {
+    const d = deps({ getEdition: vi.fn(async () => republished()), findDraft: vi.fn(async () => storedFrom(editionRow())) })
+    expect(await ensureEditionEmailDraft('2026-08', {}, d)).toEqual({ status: 'replaced', id: 'nl-1', replacedId: 'nl-0', wasScheduled: false, build: BUILD_B })
+    expect(d.retireDraft).toHaveBeenCalledWith('nl-0', `${MARKER}:replaced:${BUILD_B}`)
+    const input = d.createDraft.mock.calls[0]![0] as { created_by: string; body_html: string; preview_text: string }
+    expect(input.created_by).toBe(MARKER)
+    expect(input.body_html).toBe(buildEditionEmail(republished()).bodyHtml)
+    expect(input.preview_text).toContain('$655,000')
+    expect(d.retireDraft.mock.invocationCallOrder[0]!).toBeLessThan(d.createDraft.mock.invocationCallOrder[0]!)
+  })
+
+  it('sees a change of direction the printed size hides ("down 2%" to "up 2%")', async () => {
+    const up = editionRow({ yoy: 0.0229, build: BUILD_B })
+    expect(buildEditionEmail(up).citations.map((c) => c.value)).toEqual(buildEditionEmail(editionRow()).citations.map((c) => c.value))
+    const d = deps({ getEdition: vi.fn(async () => up), findDraft: vi.fn(async () => storedFrom(editionRow())) })
+    expect((await ensureEditionEmailDraft('2026-08', {}, d)).status).toBe('replaced')
+    expect((d.createDraft.mock.calls[0]![0] as { body_html: string }).body_html).toContain('up 2% from August 2025')
+  })
+
+  it('replaces a scheduled email too, and says it had been scheduled', async () => {
+    const d = deps({ getEdition: vi.fn(async () => republished()), findDraft: vi.fn(async () => storedFrom(editionRow(), 'scheduled')) })
+    expect(await ensureEditionEmailDraft('2026-08', {}, d)).toMatchObject({ status: 'replaced', wasScheduled: true })
+  })
+
+  it('an email already going out is left, and flagged', async () => {
+    const d = deps({ getEdition: vi.fn(async () => republished()), findDraft: vi.fn(async () => storedFrom(editionRow(), 'sending')) })
+    expect(await ensureEditionEmailDraft('2026-08', {}, d)).toEqual({ status: 'stale-sending', id: 'nl-0', build: BUILD_B })
+    expect(d.retireDraft).not.toHaveBeenCalled()
+  })
+
+  it('when it moves under the replacement, reads it again and decides on what is there now', async () => {
+    const stale = storedFrom(editionRow())
+    const findDraft = vi.fn<EditionEmailDraftDeps['findDraft']>(async () => ({ ...stale, status: 'sending' }))
+    findDraft.mockResolvedValueOnce(stale)
+    const d = deps({ getEdition: vi.fn(async () => republished()), findDraft, retireDraft: vi.fn(async () => false) })
+    expect(await ensureEditionEmailDraft('2026-08', {}, d)).toEqual({ status: 'stale-sending', id: 'nl-0', build: BUILD_B })
+    expect(d.createDraft).not.toHaveBeenCalled()
+  })
+
+  it('a rebuilt edition whose email cannot be built still takes the old email out of reach, and says so first', async () => {
     const odd = editionRow({ build: BUILD_B, monthly: [section('bend', 'Bend 12 listings', kpis(727500))] })
     const d = deps({ getEdition: vi.fn(async () => odd), findDraft: vi.fn(async () => storedFrom(editionRow(), 'scheduled')) })
-    await expect(ensureEditionEmailDraft('2026-08', {}, d)).rejects.toThrow('it is back to a draft so it cannot go out with the earlier figures')
-    expect(d.unschedule).toHaveBeenCalledWith('nl-0')
-    expect(d.rewriteDraft).not.toHaveBeenCalled()
+    await expect(ensureEditionEmailDraft('2026-08', {}, d)).rejects.toThrow(/^its scheduled email was pulled back and canceled so it cannot go out with the earlier figures/)
+    expect(d.retireDraft).toHaveBeenCalledTimes(1)
+    expect(d.createDraft).not.toHaveBeenCalled()
   })
 })
 
@@ -234,15 +228,23 @@ describe('texts to Matt', () => {
     expect(queueBrokerHealthAlert).not.toHaveBeenCalled()
   })
 
-  it('tells him when a republish rebuilt the email and moved a scheduled one back', async () => {
+  it('tells him about every replacement, keyed by build, with the new link and whether the old one was scheduled', async () => {
     await draftEditionEmailAndTell('2026-08', {}, deps({ getEdition: vi.fn(async () => republished()), findDraft: vi.fn(async () => storedFrom(editionRow(), 'scheduled')) }))
     const alert = queueBrokerHealthAlert.mock.calls[0]![0]
-    expect(alert.key).toBe('market-report-email-refresh-2026-08')
-    expect(alert.body).toContain('back to a draft')
+    expect(alert.key).toBe(`market-report-email-replaced-2026-08-${BUILD_B}`)
+    expect(alert.body).toContain('pulled back and canceled, so it will not go out')
+    expect(alert.body).toContain('https://ryan-realty.com/admin/newsletters/nl-1')
   })
 
-  it('never throws: a failure comes back as failed and is texted on a weekly key', async () => {
-    const r = await draftEditionEmailAndTell('2026-08', {}, deps({ getEdition: vi.fn(async () => { throw new Error('read failed') }) }))
+  it('tells him to pause an email going out on old figures', async () => {
+    await draftEditionEmailAndTell('2026-08', {}, deps({ getEdition: vi.fn(async () => republished()), findDraft: vi.fn(async () => storedFrom(editionRow(), 'sending')) }))
+    const alert = queueBrokerHealthAlert.mock.calls[0]![0]
+    expect(alert.key).toBe(`market-report-email-sending-2026-08-${BUILD_B}`)
+    expect(alert.body).toContain('pause it')
+  })
+
+  it('never throws: a failure comes back as failed and is texted on a weekly key, outcome first', async () => {
+    const r = await draftEditionEmailAndTell('2026-08', { create: true }, deps({ getEdition: vi.fn(async () => { throw new Error('read failed') }) }))
     expect(r).toEqual({ status: 'failed', error: 'read failed' })
     const alert = queueBrokerHealthAlert.mock.calls[0]![0]
     expect(alert.key).toBe('market-report-email-failed-2026-08')
@@ -251,7 +253,7 @@ describe('texts to Matt', () => {
 })
 
 describe('backstopEditionEmails', () => {
-  it('writes the newest month, and re-checks the other open drafts without creating or reminding', async () => {
+  it('writes the newest month, and checks the other open emails without creating or reminding', async () => {
     const d = deps({
       findDraft: vi.fn(async (marker: string) => (marker.endsWith('2026-07') ? storedFrom(editionRow(), 'draft', 'nl-7') : null)),
       listOpen: vi.fn(async () => [

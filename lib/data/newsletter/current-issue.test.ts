@@ -14,6 +14,7 @@ type Row = {
   send_started_at: string | null
   send_finished_at: string | null
   scheduled_at: string | null
+  list_send: boolean
 }
 let rows: Row[] = []
 let failOn: string | null = null
@@ -22,15 +23,20 @@ const statusesAsked: string[][] = []
 vi.mock('@/lib/data/client', () => ({
   createServiceClient: () => {
     let statuses: string[] = []
+    let listOnly = false
     let since: string | null = null
     let orderCol = ''
     let ascending = true
     const builder: Record<string, unknown> = {
       // Each query starts clean.
-      from: () => { statuses = []; since = null; orderCol = ''; ascending = true; return builder },
+      from: () => { statuses = []; listOnly = false; since = null; orderCol = ''; ascending = true; return builder },
       select: () => builder,
       in: (_col: string, vals: string[]) => { statuses = vals; statusesAsked.push(vals); return builder },
-      eq: (_col: string, val: string) => { statuses = [val]; statusesAsked.push([val]); return builder },
+      eq: (col: string, val: string | boolean) => {
+        if (col === 'list_send') listOnly = val === true
+        else { statuses = [String(val)]; statusesAsked.push([String(val)]) }
+        return builder
+      },
       gte: (_col: string, val: string) => { since = val; return builder },
       or: () => builder,
       order: (col: string, opts: { ascending: boolean }) => { orderCol = col; ascending = opts.ascending; return builder },
@@ -39,6 +45,7 @@ vi.mock('@/lib/data/client', () => ({
         if (failOn && statuses.includes(failOn)) return Promise.resolve({ data: null, error: { message: 'timeout' } })
         const hits = rows
           .filter((r) => statuses.includes(r.status))
+          .filter((r) => !listOnly || r.list_send)
           .filter((r) => r.body_html || r.body_text)
           .filter((r) => !since || (r.send_started_at != null && r.send_started_at >= since))
           .sort((a, b) => {
@@ -53,7 +60,10 @@ vi.mock('@/lib/data/client', () => ({
   },
 }))
 
-const getNewsletter = vi.fn(async (id: string) => ({ id, full: true }))
+const getNewsletter = vi.fn(async (id: string) => {
+  const r = rows.find((x) => x.id === id)
+  return r ? { ...r, full: true } : null
+})
 vi.mock('@/lib/data/newsletter', () => ({ getNewsletter: (id: string) => getNewsletter(id) }))
 
 import { CURRENT_DAYS, getCurrentNewsletterIssue, getCurrentNewsletterIssueRef } from './current-issue'
@@ -61,7 +71,8 @@ import { CURRENT_DAYS, getCurrentNewsletterIssue, getCurrentNewsletterIssueRef }
 const NOW = new Date('2026-10-10T12:00:00Z')
 const row = (id: string, status: string, over: Partial<Row> = {}): Row => ({
   id, status, subject: id, body_html: '<p>x</p>', body_text: null,
-  send_started_at: null, send_finished_at: null, scheduled_at: null, ...over,
+  send_started_at: null, send_finished_at: null, scheduled_at: null,
+  list_send: status === 'sent' || status === 'sending', ...over,
 })
 
 afterEach(() => {
@@ -88,7 +99,15 @@ describe('getCurrentNewsletterIssueRef', () => {
     expect(await getCurrentNewsletterIssueRef(NOW)).toMatchObject({ id: 'october', status: 'sending' })
   })
 
-  it('does not count a send older than the window (the July 2026 sends to Matt\'s own inboxes), and falls to the next scheduled issue', async () => {
+  it('never counts a one-off send to a few inboxes (the July 2026 kind), however recent', async () => {
+    rows = [
+      row('october-test', 'sent', { send_started_at: '2026-10-09T10:00:00Z', list_send: false }),
+      row('september', 'sent', { send_started_at: '2026-09-03T16:00:00Z' }),
+    ]
+    expect((await getCurrentNewsletterIssueRef(NOW))?.id).toBe('september')
+  })
+
+  it('does not count a send older than the window, and falls to the next scheduled issue', async () => {
     expect(CURRENT_DAYS).toBe(45)
     rows = [
       row('july', 'sent', { send_started_at: '2026-07-10T14:48:43Z', send_finished_at: '2026-07-10T14:50:00Z' }),
@@ -122,9 +141,15 @@ describe('getCurrentNewsletterIssueRef', () => {
 describe('getCurrentNewsletterIssue', () => {
   it('loads the whole row of the current issue for the send, and nothing when there is none', async () => {
     rows = [row('september', 'sent', { send_started_at: '2026-09-03T16:00:00Z' })]
-    expect(await getCurrentNewsletterIssue(NOW)).toEqual({ id: 'september', full: true })
+    expect(await getCurrentNewsletterIssue(NOW)).toMatchObject({ id: 'september', full: true })
     rows = []
     expect(await getCurrentNewsletterIssue(NOW)).toBeNull()
     expect(getNewsletter).toHaveBeenCalledTimes(1)
+  })
+
+  it('checks the row again: one pulled back to draft between the two reads is not sent', async () => {
+    rows = [row('october', 'scheduled', { scheduled_at: '2026-10-12T16:00:00Z' })]
+    getNewsletter.mockImplementationOnce(async (id: string) => ({ ...rows[0]!, id, status: 'draft', full: true }))
+    expect(await getCurrentNewsletterIssue(NOW)).toBeNull()
   })
 })

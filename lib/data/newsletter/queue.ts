@@ -37,14 +37,24 @@ export type ScheduleRow = { day_index: number; tier: number; cap: number; sent_c
  * only if THIS call won. A second concurrent approve sees status='sending' and
  * gets null → it must abort. Never a read-then-write.
  */
-export async function claimNewsletterForSending(newsletterId: string): Promise<string | null> {
+export async function claimNewsletterForSending(
+  newsletterId: string,
+  opts: { listSend?: boolean } = {},
+): Promise<string | null> {
   const sb = createServiceClient()
   // Web-Crypto global (Node 18+ and edge runtime) — avoids importing node:crypto,
   // which breaks the edge /api/og route that pulls this in via the @/lib/data barrel.
   const token = crypto.randomUUID()
   const { data, error } = await sb
     .from(LETTERS)
-    .update({ status: 'sending', lock_token: token, send_started_at: new Date().toISOString() })
+    // list_send marks a send to the subscriber list, the only kind the CRM's
+    // one-click send may offer as the current issue (migration 20260930160000).
+    .update({
+      status: 'sending',
+      lock_token: token,
+      send_started_at: new Date().toISOString(),
+      ...(opts.listSend ? { list_send: true } : {}),
+    })
     .eq('id', newsletterId)
     .in('status', ['draft', 'scheduled'])
     .select('id')
@@ -62,7 +72,8 @@ export async function releaseNewsletterLock(
   // M4: when the caller holds a token, only release IF it still owns the lock. Without
   // this, a late error handler from a crashed enqueue could reset a newsletter that a
   // newer send has since re-locked, orphaning its queued rows.
-  let q = sb.from(LETTERS).update({ status, lock_token: null, send_started_at: null }).eq('id', newsletterId)
+  // A released claim sent nothing, so it is not a list send either.
+  let q = sb.from(LETTERS).update({ status, lock_token: null, send_started_at: null, list_send: false }).eq('id', newsletterId)
   if (expectedToken) q = q.eq('lock_token', expectedToken)
   await q
 }

@@ -400,29 +400,6 @@ export async function deleteNewsletterDraft(id: string): Promise<{ ok: boolean }
   return { ok: !error }
 }
 
-/**
- * Rewrite a draft's content only while it is still a draft, in one
- * conditional update: a schedule or send that lands first wins, and the body
- * it was checked against is never swapped underneath it. False when the row
- * was no longer a draft.
- */
-export async function updateNewsletterDraftContent(
-  id: string,
-  fields: Partial<Pick<NewsletterRow, 'subject' | 'preview_text' | 'body_html' | 'body_text'>> & {
-    citations?: NewsletterCitationEntry[]
-  },
-): Promise<boolean> {
-  const sb = createServiceClient()
-  const { data, error } = await sb
-    .from(LETTERS)
-    .update({ ...fields, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .eq('status', 'draft')
-    .select('id')
-  if (error) throw new Error(`updateNewsletterDraftContent: ${error.message}`)
-  return (data?.length ?? 0) > 0
-}
-
 // ── Per-recipient tracking (opens / clicks / delivery) ──────────────────────
 
 const RECIPIENTS = 'newsletter_recipients'

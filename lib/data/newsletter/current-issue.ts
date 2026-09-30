@@ -6,8 +6,10 @@ import { getNewsletter, type NewsletterRow } from '@/lib/data/newsletter'
  * The issue a broker's one-click "send the newsletter" delivers, and the one
  * the send panel names before it sends: the current issue Matt approved.
  *
- * Approved means it went out (sent, or sending now) or he scheduled it. A
- * draft never qualifies, whoever wrote it: the monthly Bend Brief and the
+ * Approved means it went out to the subscriber list (sent, or sending now,
+ * with list_send: a one-off test to a few inboxes does not count) or he
+ * scheduled it. A draft never qualifies, whoever wrote it: the monthly Bend
+ * Brief and the
  * monthly market report email draft themselves for his per-issue approval,
  * the admin Generate button writes one under his name, and none of them is
  * the brokerage's message until he approves it (CLAUDE.md §1; Matt
@@ -17,10 +19,11 @@ import { getNewsletter, type NewsletterRow } from '@/lib/data/newsletter'
  *
  * Current means it went out in the last CURRENT_DAYS: both issues are
  * monthly (the Bend Brief on the 1st, the market report on the 8th), and an
- * older one carries last season's figures, like the three July 2026 sends of
- * the Bend Brief (to Matt's own inboxes and one contact), still "sent". The
- * newest send leads (by when it started), so an issue still going out
- * outranks last month's. With nothing current, the next scheduled issue.
+ * older one carries last season's figures. The newest send leads (by when it
+ * started), so an issue still going out outranks last month's. With nothing
+ * current, the next scheduled issue. On 2026-09-30 that is none: the only
+ * sent issues are three July 2026 Bend Brief sends to Matt's own inboxes and
+ * one contact, one-offs all.
  *
  * One selection for the send action (app/actions/contact-newsletter.ts, which
  * loads the whole row) and the panel (getLatestNewsletterIssue, which needs
@@ -57,6 +60,7 @@ export async function getCurrentNewsletterIssueRef(now: Date = new Date()): Prom
     .from('newsletters')
     .select(REF_COLUMNS)
     .in('status', ['sent', 'sending'])
+    .eq('list_send', true)
     .gte('send_started_at', since)
     .or(HAS_BODY)
     .order('send_started_at', { ascending: false })
@@ -77,8 +81,16 @@ export async function getCurrentNewsletterIssueRef(now: Date = new Date()): Prom
   return toRef(next as Record<string, unknown> | null)
 }
 
-/** The whole row of the current issue, for the send. */
+const APPROVED = new Set(['sent', 'sending', 'scheduled'])
+
+/**
+ * The whole row of the current issue, for the send. It is read again by id,
+ * so it is checked again: a scheduled issue pulled back to draft between the
+ * two reads (its report was republished) is not sent.
+ */
 export async function getCurrentNewsletterIssue(now: Date = new Date()): Promise<NewsletterRow | null> {
   const ref = await getCurrentNewsletterIssueRef(now)
-  return ref ? getNewsletter(ref.id) : null
+  if (!ref) return null
+  const letter = await getNewsletter(ref.id)
+  return letter && APPROVED.has(letter.status) ? letter : null
 }
