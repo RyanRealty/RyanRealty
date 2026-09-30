@@ -66,6 +66,8 @@ export async function loadHomeNewConRun(): Promise<HomePlaceRun> {
       label: 'Bend new homes',
       href: '/new-construction',
       description: 'Single-family first · map and builder savings',
+      // The whole; the subdivisions under it are its parts and share a scale.
+      total: true,
       photoSrc: BEND_NEW_CON_STAGE_FALLBACK_POSTER,
       ...(bendCount != null ? { count: bendCount } : {}),
     },

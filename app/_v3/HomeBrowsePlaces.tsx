@@ -35,6 +35,13 @@ export type HomePlaceDoor = {
   /** City-index or communityImage photo. Omit when none — reserved plate still renders. */
   photoSrc?: string
   description?: string
+  /**
+   * The row is the whole the other rows are parts of ("Bend new homes" over
+   * its subdivisions): it prints its figure but draws no bar, and the parts'
+   * bars share a scale of their own (2026-09-29: against the 216 total, 8,
+   * 12 and 20 all drew the same dash).
+   */
+  total?: boolean
 }
 
 export type HomePlaceRun = {
@@ -173,9 +180,15 @@ export function HomeBrowsePlaces({
         // list with the count drawn as a bar (2026-09-25: three card
         // carousels in a row read as one repeated module). A carousel run
         // keeps its cards, and a card's count now names what it counts.
-        const counted = run.doors.map((door) => doorCount(door.count))
-        const ledger = counted.some(Boolean) && run.layout !== 'carousel'
-        const most = Math.max(1, ...counted.map((c) => c?.n ?? 0))
+        const countedAll = run.doors.map((door) => doorCount(door.count))
+        const ledger = countedAll.some(Boolean) && run.layout !== 'carousel'
+        // A ledger row with neither a photograph nor a figure is an empty
+        // state, not a door (2026-09-29: a grey "B" beside live counts).
+        const doors = ledger
+          ? run.doors.filter((door, i) => Boolean(countedAll[i]) || Boolean(placeDoorPhotoSrc(door.photoSrc)))
+          : run.doors
+        const counted = doors.map((door) => doorCount(door.count))
+        const most = Math.max(1, ...counted.map((c, i) => (doors[i]?.total ? 0 : (c?.n ?? 0))))
         const carousel = !ledger && run.layout === 'carousel' && run.doors.length > 1
         return (
           <section key={runId} className="home-browse-places__run" aria-labelledby={runId}>
@@ -195,7 +208,7 @@ export function HomeBrowsePlaces({
 
             {ledger ? (
               <ol className="home-browse-places__ledger">
-                {run.doors.map((door, i) => {
+                {doors.map((door, i) => {
                   const live = counted[i]
                   const photoSrc = placeDoorPhotoSrc(door.photoSrc)
                   return (
@@ -225,7 +238,7 @@ export function HomeBrowsePlaces({
                         </span>
                         <span className="home-browse-places__lmeasure">
                           <span className="home-browse-places__ltrack" aria-hidden="true">
-                            {live ? (
+                            {live && !door.total ? (
                               <span
                                 className="home-browse-places__lbar"
                                 style={{ width: `${((live.n / most) * 100).toFixed(1)}%` }}
