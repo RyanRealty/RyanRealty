@@ -23,6 +23,13 @@ import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getProspect, getProspectDetail, updateCmaRowFieldsBySlug } from '@/lib/data'
 import { verifyFsboStillActive, verifyNotRelisted } from '@/lib/data/prospecting/batch'
+import {
+  acceptRelistProof,
+  isDripCronActor,
+  mintRelistProof,
+  type DripCronActor,
+  type RelistProof,
+} from '@/lib/prospecting/send-capability'
 import { resolveDripSequenceForKind } from '@/lib/data/prospecting/drip'
 import {
   claimProspectSend,
@@ -201,6 +208,7 @@ export async function sendProspectingIntro(
     const relistCheck = await verifyNotRelisted(kind, {
       street_address: prospect.streetAddress,
       city: prospect.city,
+      postal_code: prospect.postalCode,
       // Expired: off-market timestamp. FSBO: detected_at — Closed after detect hard-skips.
       expiryComparator: kind === 'fsbo' ? prospect.detectedAt : prospect.expiredAt,
       listing_key: kind === 'expired' ? prospect.id : null,
@@ -211,7 +219,12 @@ export async function sendProspectingIntro(
       return { ok: false, error: 'This property is now active, pending, or sold after expire. Outreach is not allowed.', code: 'relisted' }
     }
     if (relistCheck.verifyFailed) {
-      return { ok: false, error: 'Could not verify the property is still off-market. Send blocked until MLS status is confirmed.', code: 'relisted' }
+      return {
+        ok: false,
+        error: 'Could not verify the property is still off-market. Send blocked until MLS status is confirmed.',
+        code: 'verify-failed',
+        verifyScope: relistCheck.failureScope ?? 'global',
+      }
     }
 
     // 7. Phone.
@@ -461,13 +474,27 @@ export async function sendProspectingEmailIntro(
     idempotencyKey: string
     subjectOverride?: string | null
     bodyOverride?: string | null
-    /** Cron drip drain — skips interactive admin auth; cron route already gated. */
-    actor?: 'admin' | 'drip-cron'
+    /**
+     * The first-touch drip drain passes DRIP_CRON_ACTOR (its cron route is
+     * gated by requireCronAuth) to skip the interactive admin check. Only the
+     * object minted in lib/prospecting/send-capability.ts counts: this is a
+     * server action, so the string 'drip-cron' from a browser (the bypass
+     * this replaced, 2026-09-30) gets the admin gate like anything else.
+     */
+    actor?: 'admin' | DripCronActor
+    /**
+     * The drip's own relist verdict for this owner, reached seconds before
+     * (lib/prospecting/send-capability.ts). Fresh, clear and minted on the
+     * server, it stands in for this action's check and rides down to the CMA
+     * rail, so one send asks Spark once instead of three times. Anything else
+     * is ignored and the MLS is asked here.
+     */
+    relistProof?: RelistProof
   },
 ): Promise<SendEmailIntroResult> {
   try {
     // 1. Auth (mirrors the SMS intro step 1). Drip cron is gated by requireCronAuth.
-    if (args.actor !== 'drip-cron') {
+    if (!isDripCronActor(args.actor)) {
       if (!(await requireAdmin())) return { ok: false, error: 'Unauthorized', code: 'auth' }
     }
 
@@ -519,21 +546,34 @@ export async function sendProspectingEmailIntro(
     if (prospect.compliance.relisted) {
       return { ok: false, error: 'This property has re-listed or sold after expire. Soliciting it is not allowed.', code: 'relisted' }
     }
-    const relistCheck = await verifyNotRelisted(kind, {
-      street_address: prospect.streetAddress,
-      city: prospect.city,
-      // Expired: off-market timestamp. FSBO: detected_at — Closed after detect hard-skips.
-      expiryComparator: kind === 'fsbo' ? prospect.detectedAt : prospect.expiredAt,
-      listing_key: kind === 'expired' ? prospect.id : null,
-      // FSBO: verify loads enrichment taxlot / live status from fsbo_listings.
-      fsbo_url: kind === 'fsbo' ? prospect.id : null,
-    })
+    const soldAfter = kind === 'fsbo' ? prospect.detectedAt : prospect.expiredAt
+    // The drip checked this owner seconds ago: its fresh, clear verdict stands.
+    const carried = acceptRelistProof(args.relistProof, { kind, id })
+    const relistCheck =
+      carried?.verdict ??
+      (await verifyNotRelisted(kind, {
+        street_address: prospect.streetAddress,
+        city: prospect.city,
+        postal_code: prospect.postalCode,
+        // Expired: off-market timestamp. FSBO: detected_at — Closed after detect hard-skips.
+        expiryComparator: soldAfter,
+        listing_key: kind === 'expired' ? prospect.id : null,
+        // FSBO: verify loads enrichment taxlot / live status from fsbo_listings.
+        fsbo_url: kind === 'fsbo' ? prospect.id : null,
+      }))
     if (relistCheck.relisted) {
       return { ok: false, error: 'This property is now active, pending, or sold after expire. Outreach is not allowed.', code: 'relisted' }
     }
     if (relistCheck.verifyFailed) {
-      return { ok: false, error: 'Could not verify the property is still off-market. Send blocked until MLS status is confirmed.', code: 'relisted' }
+      return {
+        ok: false,
+        error: 'Could not verify the property is still off-market. Send blocked until MLS status is confirmed.',
+        code: 'verify-failed',
+        verifyScope: relistCheck.failureScope ?? 'global',
+      }
     }
+    // Handed to the CMA rail so its screen does not ask Spark again.
+    const relistProof = carried ?? mintRelistProof(kind, id, relistCheck)
 
     // 7. Recipient (email twin of the SMS phone gate). Quiet hours deliberately
     // NOT checked — TCPA's calling-window rule covers calls/texts, not email.
@@ -654,8 +694,25 @@ export async function sendProspectingEmailIntro(
         subject: args.subjectOverride?.trim() || undefined,
         bodyText: args.bodyOverride?.trim() || undefined,
       },
-      { callerHoldsProspectClaim: true },
+      { callerHoldsProspectClaim: true, relistProof, soldAfter },
     )
+    if (!sent.ok && sent.screenRefusal) {
+      // The rail's solicitation screen refused before anything was built or
+      // sent: release the claim and say which refusal it was. 'relisted'
+      // (listed, pending or sold since) ends the owner's time in the drip;
+      // 'verify-failed' holds it with its scope. It used to come back as
+      // send-failed, and the drip served the same refused row every minute.
+      await releaseProspectEmailSend(kind, id)
+      if (sent.screenRefusal.code === 'relisted') {
+        return { ok: false, error: sent.error ?? 'The solicitation screen refused this owner.', code: 'relisted' }
+      }
+      return {
+        ok: false,
+        error: sent.error ?? 'The solicitation screen could not verify this address.',
+        code: 'verify-failed',
+        verifyScope: sent.screenRefusal.scope ?? 'global',
+      }
+    }
     if (!sent.ok) {
       if (isUnconfirmedGmailSendError(sent.error)) {
         console.error('[sendProspectingEmailIntro] Gmail did not confirm the send; claim kept for stuck-send recovery:', {
@@ -990,6 +1047,7 @@ export async function enrollProspectInDripAction(
       const relistCheck = await verifyNotRelisted(kind, {
         street_address: prospect.streetAddress,
         city: prospect.city,
+        postal_code: prospect.postalCode,
         expiryComparator: kind === 'fsbo' ? prospect.detectedAt : prospect.expiredAt,
         listing_key: kind === 'expired' ? prospect.id : null,
         fsbo_url: kind === 'fsbo' ? prospect.id : null,

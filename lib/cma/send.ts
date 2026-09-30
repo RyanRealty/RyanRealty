@@ -47,7 +47,8 @@ import { composeCmaFirstContact, type CmaFirstContactFacts } from '@/lib/cma/fir
 import { acquireCmaProspectLease, type CmaProspectLease } from '@/lib/cma/prospect-send-claim'
 import { cmaFirstContactFactsForSend, cmaSendBrokerSlug } from '@/lib/cma/first-contact-for-send'
 import { paragraphsForLetterBody, paragraphsToPlain, renderCmaLetterBlock } from '@/lib/cma/first-contact-render'
-import { screenAddressForSolicitation } from '@/lib/cma/solicit-screen'
+import { screenAddressForSolicitation, type SolicitBlockReason } from '@/lib/cma/solicit-screen'
+import { acceptRelistProof, type RelistProof } from '@/lib/prospecting/send-capability'
 import { buildSignature } from '@/lib/crm/email-signature'
 import { getBrokers } from '@/lib/data'
 import { previewTextFromCustomBody } from '@/lib/cma/report-button'
@@ -246,6 +247,20 @@ ${signature?.plain ?? ''}${brandedTextFooter()}`
 export interface SendCmaToLeadResult {
   ok: boolean
   error?: string
+  /**
+   * Set when the solicitation screen refused the send, so a caller can tell
+   * "this owner must not be written to" ('relisted': listed, pending or sold
+   * since) and "the check could not answer" ('verify-failed', with its scope)
+   * from a failed delivery. The drip dequeues the first and holds the second;
+   * a plain send failure it retries. Until 2026-09-30 every refusal read as
+   * send-failed, and the drip served the same refused row every minute.
+   */
+  screenRefusal?: {
+    code: 'relisted' | 'verify-failed'
+    reason: SolicitBlockReason
+    /** For verify-failed: 'global' (a source could not answer) or 'row' (this address cannot be screened). */
+    scope: 'global' | 'row' | null
+  }
   /** Which rail carried the email: the broker's own mailbox, or the Resend fallback. */
   transport?: 'gmail' | 'resend'
   /** The broker mailbox the email went out from (gmail transport only). */
@@ -266,6 +281,19 @@ export interface SendCmaToLeadOptions {
    * holds the list.
    */
   callerHoldsProspectClaim?: boolean
+  /**
+   * The live MLS verdict the prospecting intro reached seconds ago for this
+   * owner's address (lib/prospecting/send-capability.ts). Minted on the server
+   * only; a fresh, clear one lets the screen skip its own Spark call, anything
+   * else is ignored and the MLS is asked again.
+   */
+  relistProof?: RelistProof
+  /**
+   * The day the prospect came off the market (expired) or was found (FSBO),
+   * for the screen's "sold since". Without it only a sale inside
+   * RECENT_SALE_MONTHS blocks.
+   */
+  soldAfter?: string | null
 }
 
 /**
@@ -382,16 +410,34 @@ export async function sendCmaToLead(
   // third because writing to them says we do not know the market. Fails
   // closed: an unreadable MLS blocks the send.
   if (ctx.origin === 'expired' || ctx.origin === 'fsbo') {
+    const proof = acceptRelistProof(options?.relistProof, {
+      kind: ctx.origin,
+      id: options?.relistProof?.id ?? '',
+    })
     const screen = await screenAddressForSolicitation({
       address: ctx.subjectAddress,
       city: ctx.facts.city ?? null,
-      sinceIso: null,
+      // The prospect's off-market (or FSBO detect) day when the caller knows
+      // it: the subject key of an FSBO CMA is usually a sale from years ago.
+      sinceIso: options?.soldAfter ?? null,
       // Without the subject's own listing, "Lot 33" on the only row at the
       // address looks like an unknown unit and the screen refuses the send.
       subjectListingKey: ctx.subjectListingKey ?? null,
+      // Ask the MLS itself too: our listings copy can lag it (2026-09-30: 74
+      // of 552 expired targets were back on the market in Spark). Not twice
+      // in one send: the intro's fresh, clear answer stands for this call.
+      live: true,
+      liveAlreadyClear: proof != null,
     })
     if (!screen.ok) {
-      return { ok: false, error: `Not sent. ${screen.detail}` }
+      return {
+        ok: false,
+        error: `Not sent. ${screen.detail}`,
+        screenRefusal:
+          screen.reason === 'unverified'
+            ? { code: 'verify-failed', reason: screen.reason, scope: screen.scope ?? 'global' }
+            : { code: 'relisted', reason: screen.reason, scope: null },
+      }
     }
   }
 

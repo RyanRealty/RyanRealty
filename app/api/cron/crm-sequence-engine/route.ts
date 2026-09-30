@@ -7,6 +7,10 @@
  *    enrollments whose sequence is 'active'. Activating a sequence is a
  *    deliberate human/agent action — nothing auto-fires after deploy.
  *  - Every email step passes the suppression chokepoint (fail-closed).
+ *  - Every text and email of an expired / FSBO recovery enrollment first asks
+ *    the MLS whether the owner's home is listed or sold
+ *    (lib/crm/sequence-relist-guard.ts): relisted stops the enrollment, a
+ *    check that cannot answer holds the step, no linked home pauses it.
  *  - stop_on_reply: any inbound timeline entry after enrollment pauses the drip.
  *  - SMS steps send via Twilio messaging service when A2P campaign is VERIFIED.
  *  - Send window 07:00–19:00 America/Los_Angeles; outside it, steps reschedule.
@@ -44,6 +48,8 @@ import { resolveConditionPath } from '@/lib/crm/conditions-eval'
 import { manualEnrollPerson } from '@/lib/crm/enroll'
 import { recordSequenceOutbound } from '@/lib/crm/sequence-outbound'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
+import { decideRecoveryTouch, loadRecoverySequenceMap, recoveryKindFor } from '@/lib/crm/sequence-relist-guard'
+import { queueBrokerHealthAlert } from '@/lib/crm/broker-alerts'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -72,7 +78,7 @@ export async function GET(request: Request) {
 
   const { data: due, error } = await sb
     .from('crm_sequence_enrollments')
-    .select('id,person_id,sequence_id,step_index,created_at,first_touch_override,crm_sequences!inner(id,name,status,stop_on_reply,steps)')
+    .select('id,person_id,sequence_id,step_index,created_at,first_touch_override,crm_sequences!inner(id,name,status,stop_on_reply,steps,fub_legacy_plan_id)')
     .eq('status', 'running')
     .eq('crm_sequences.status', 'active')
     .or(`next_run_at.is.null,next_run_at.lte.${new Date().toISOString()}`)
@@ -83,6 +89,11 @@ export async function GET(request: Request) {
   }
 
   let executed = 0, paused = 0, completed = 0, skippedDupEmail = 0, suppressed = 0, errored = 0, queuedSms = 0
+  // The relist guard (expired / FSBO recovery): stopped as listed or sold,
+  // held because the MLS check could not answer, paused with no home to check.
+  let relistStopped = 0, relistHeld = 0, relistPaused = 0
+  // Which sequences are recovery workflows: read once per run, only when there is work.
+  const recoverySequences = (due ?? []).length > 0 ? await loadRecoverySequenceMap() : new Map<number, never>()
   // SMS steps passed over because texting is off for the contact (FUNNEL-3).
   let skippedSms = 0
   const fallbackOnSuppressedSms = suppressedSmsFallbackEmailEnabled()
@@ -121,7 +132,13 @@ export async function GET(request: Request) {
   }
 
   for (const en of due ?? []) {
-    const seq = en.crm_sequences as unknown as { name: string; stop_on_reply: boolean; steps: Step[] }
+    const seq = en.crm_sequences as unknown as {
+      id: number
+      name: string
+      stop_on_reply: boolean
+      steps: Step[]
+      fub_legacy_plan_id?: number | null
+    }
     // A refused write is an error, never a silent no-op. From 2026-06-13 to
     // 2026-09-24 the table's status CHECK rejected 'awaiting_broker_next'
     // (23514), this helper ignored the error, and every enrollment whose next
@@ -213,6 +230,56 @@ export async function GET(request: Request) {
         await log(`Sequence "${seq.name}" stopped — step ${en.step_index} missing or not normalized`)
         errored++
         continue
+      }
+
+      // ── THE RELIST GUARD (2026-09-30) ────────────────────────────────────
+      // Before every text or email of an expired / FSBO recovery enrollment,
+      // ask the MLS (and our listings table) whether the owner's home is back
+      // on the market or sold. The enroll-time check was the only one, and on
+      // 2026-09-21 this engine texted the owner of 20873 Greenmont, Active with
+      // another brokerage since 07-06. Ahead of every other gate on purpose:
+      // a CMA hold or an A2P queue must not keep a listed owner's enrollment
+      // alive, and nothing below may send before this says so.
+      if (step.channel === 'email' || step.channel === 'sms') {
+        const kind = recoveryKindFor(
+          { id: Number(seq.id ?? en.sequence_id), fub_legacy_plan_id: seq.fub_legacy_plan_id ?? null },
+          person,
+          recoverySequences,
+        )
+        if (kind) {
+          const guard = await decideRecoveryTouch({
+            enrollmentId: Number(en.id),
+            stepIndex: en.step_index,
+            sequenceName: seq.name,
+            person: { id: Number(person.id), fub_legacy_id: (person.fub_legacy_id as number | null) ?? null, name: (person.name as string | null) ?? null },
+          })
+          if (guard.action === 'stop') {
+            await finish({ status: 'stopped' })
+            await log(guard.title, guard.body)
+            relistStopped++
+            continue
+          }
+          if (guard.action === 'pause') {
+            await finish({ status: 'paused' })
+            await log(guard.title, guard.body)
+            if (guard.alert) await queueBrokerHealthAlert({ ...guard.alert, cooldownMinutes: 7 * 24 * 60 })
+            relistPaused++
+            continue
+          }
+          if (guard.action === 'hold') {
+            await finish({ next_run_at: guard.retryAt.toISOString() })
+            const { error: noteErr } = await sb.from('crm_timeline').upsert(
+              {
+                person_id: person.id, kind: 'system', title: guard.title, body: guard.body,
+                source: 'sequence', dedupe_key: guard.dedupeKey,
+              },
+              { onConflict: 'dedupe_key', ignoreDuplicates: true },
+            )
+            if (noteErr) console.error(`[crm-sequence-engine] enrollment ${en.id}: relist hold note failed:`, noteErr.message)
+            relistHeld++
+            continue
+          }
+        }
       }
 
       // Merge context — resolves %agent_*%/%sender_*%/%company_*% from real
@@ -716,6 +783,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     ok: true, due: (due ?? []).length, executed, paused, completed, skippedSms, skippedDupEmail, suppressed, errored, queuedSms, a2pStatus,
+    relistStopped, relistHeld, relistPaused,
     duration_ms: Date.now() - startMs,
   })
 }

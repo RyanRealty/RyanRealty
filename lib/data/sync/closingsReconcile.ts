@@ -12,6 +12,7 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
+import { MLS_ON_MARKET_STATUSES } from '@/lib/listing-status-public'
 
 export type ReconcileListingRow = {
   ListNumber: string
@@ -83,6 +84,53 @@ export async function getClosedListingKeysInWindow(from: string, to: string): Pr
     start = nextDay(end)
   }
   return out
+}
+
+/**
+ * The statuses a listing is on the market in: the one shared list
+ * (MLS_ON_MARKET_STATUSES, lib/listing-status-public.ts). The sync tracks the
+ * pre-marketing one too; public pages filter it through that same module.
+ */
+export const ON_MARKET_STATUSES = MLS_ON_MARKET_STATUSES
+
+/** The statuses a listing leaves the market in without selling. */
+export const UNSOLD_TERMINAL_STATUSES = ['Expired', 'Withdrawn', 'Canceled'] as const
+
+/** Every listing key we hold in an on-market status (about 9,000 keys; light select). */
+export async function getOnMarketListingKeys(): Promise<string[]> {
+  const sb = createServiceClient()
+  const { rows, error } = await fetchPagedRows<{ ListingKey: string | null }>((from, to) =>
+    sb
+      .from('listings')
+      .select('ListingKey')
+      .in('StandardStatus', [...ON_MARKET_STATUSES])
+      .order('ListingKey')
+      .range(from, to),
+  )
+  if (error) throw new Error(`[getOnMarketListingKeys] ${error.message}`)
+  return rows.flatMap((r) => (r.ListingKey ? [r.ListingKey] : []))
+}
+
+/**
+ * Listing keys we hold as Expired, Withdrawn or Canceled whose status changed
+ * on or after `sinceIso` (the expired-outreach universe). The
+ * ModificationTimestamp bound is implied (a status change is a modification)
+ * and lets the (StandardStatus, ModificationTimestamp) index drive the read.
+ */
+export async function getRecentUnsoldTerminalKeys(sinceIso: string): Promise<string[]> {
+  const sb = createServiceClient()
+  const { rows, error } = await fetchPagedRows<{ ListingKey: string | null }>((from, to) =>
+    sb
+      .from('listings')
+      .select('ListingKey')
+      .in('StandardStatus', [...UNSOLD_TERMINAL_STATUSES])
+      .gte('ModificationTimestamp', sinceIso)
+      .gte('status_change_timestamp', sinceIso)
+      .order('ListingKey')
+      .range(from, to),
+  )
+  if (error) throw new Error(`[getRecentUnsoldTerminalKeys] ${error.message}`)
+  return rows.flatMap((r) => (r.ListingKey ? [r.ListingKey] : []))
 }
 
 /**

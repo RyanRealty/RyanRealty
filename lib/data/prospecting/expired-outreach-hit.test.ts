@@ -48,6 +48,25 @@ function hit(over: Partial<Parameters<typeof expiredOutreachListingHits>[0]> = {
   })
 }
 
+describe('expiredOutreachListingHits — every on-market status this MLS uses', () => {
+  it('blocks an Active Under Contract listing at the address after expire', () => {
+    // The MLS enumerates Active, Active Under Contract, Coming Soon, Pending as on
+    // the market (Spark /standardfields/StandardStatus, 2026-09-30).
+    expect(
+      hit({
+        listing: listing({ StandardStatus: 'Active Under Contract', CloseDate: null, parcel_number: null }),
+        subjectParcel: null,
+      }),
+    ).toBe(true)
+  })
+
+  it('the listings probe asks for Active Under Contract too', async () => {
+    const { EXPIRED_OUTREACH_STATUS_OR, EXPIRED_OUTREACH_ON_MARKET } = await import('./compliance')
+    expect([...EXPIRED_OUTREACH_ON_MARKET].sort()).toEqual(['Active', 'Active Under Contract', 'Coming Soon', 'Pending'])
+    expect(EXPIRED_OUTREACH_STATUS_OR).toContain('"Active Under Contract"')
+  })
+})
+
 describe('expiredOutreachListingHits — sold after expire', () => {
   it('blocks a Closed sale after expire on the same street + city', () => {
     expect(

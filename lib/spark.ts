@@ -345,6 +345,16 @@ export async function fetchSparkListingsPage(
     orderby?: string
     select?: string
     expand?: string
+    /** Per-attempt abort (default 30s). A send-path check passes a short one. */
+    timeoutMs?: number
+    /** Wait out one 429 and retry (default true). A send-path check fails closed instead. */
+    retryOn429?: boolean
+    /**
+     * Throw on a 404 instead of answering "no listings" (default false). A
+     * search never 404s for an empty result, so a compliance check that must
+     * not read a broken endpoint as "nothing listed here" sets this.
+     */
+    notFoundAsError?: boolean
   } = {}
 ): Promise<SparkListingsResponse> {
   const { page = 1, limit = 100, filter, orderby, select, expand } = options
@@ -363,7 +373,7 @@ export async function fetchSparkListingsPage(
   // instead of burning the whole cron budget. Intentionally NOT resilientFetch:
   // its exponential backoff would fight the fixed 60s 429 rate window below.
   // 30s is generous for a heavy expanded page yet well inside the function budget.
-  const SPARK_PAGE_TIMEOUT_MS = 30_000
+  const SPARK_PAGE_TIMEOUT_MS = options.timeoutMs ?? 30_000
   const doFetch = async () => {
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), SPARK_PAGE_TIMEOUT_MS)
@@ -383,13 +393,13 @@ export async function fetchSparkListingsPage(
   let res = await doFetch()
   // One 429 backoff, mirroring lib/spark-odata.ts fetchWithRetry. A transient
   // rate-limit must not abort a multi-thousand-page full/delta sync run.
-  if (res.status === 429) {
+  if (res.status === 429 && options.retryOn429 !== false) {
     console.warn('[spark] HTTP 429 rate limited. waiting 60s then retrying once')
     await new Promise((r) => setTimeout(r, 60_000))
     res = await doFetch()
   }
 
-  if (res.status === 404) {
+  if (res.status === 404 && options.notFoundAsError !== true) {
     return { D: { Success: true, Results: [], Pagination: { TotalRows: 0, PageSize: limit, TotalPages: 0, CurrentPage: 1 } } }
   }
   if (!res.ok) {
@@ -410,33 +420,45 @@ const LISTING_EXPAND =
 /**
  * Fetch a single listing by ListingKey with full media expansions.
  * Returns null when the listing is not found (404), e.g. removed from MLS or invalid key.
+ * `opts.select` limits the fields Spark returns; `opts.timeoutMs` aborts a hung
+ * request (it throws, so a fail-closed caller blocks).
  */
 export async function fetchSparkListingByKey(
   accessToken: string,
   listingKey: string,
-  expand = LISTING_EXPAND
+  expand = LISTING_EXPAND,
+  opts: { select?: string; timeoutMs?: number } = {}
 ): Promise<SparkListingsResponse | null> {
   const token = accessToken.trim()
   const params = new URLSearchParams()
   if (expand) params.set('_expand', expand)
+  if (opts.select) params.set('_select', opts.select)
   const url = `${SPARK_BASE}/listings/${encodeURIComponent(listingKey)}?${params.toString()}`
-  const res = await fetch(url, {
-    headers: {
-      Authorization: `${SPARK_AUTH_SCHEME} ${token}`,
-      Accept: 'application/json',
-    },
-    next: { revalidate: 0 },
-  })
-  if (res.status === 404) return null
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`Spark API error ${res.status}: ${text}`)
+  // The timeout covers the body too: an abort mid-body rejects the read.
+  const controller = opts.timeoutMs ? new AbortController() : null
+  const timer = controller ? setTimeout(() => controller.abort(), opts.timeoutMs) : null
+  try {
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `${SPARK_AUTH_SCHEME} ${token}`,
+        Accept: 'application/json',
+      },
+      next: { revalidate: 0 },
+      signal: controller?.signal,
+    })
+    if (res.status === 404) return null
+    if (!res.ok) {
+      const text = await res.text()
+      throw new Error(`Spark API error ${res.status}: ${text}`)
+    }
+    const data = (await res.json()) as SparkListingsResponse
+    if (data.D?.Errors?.length) {
+      throw new Error(`Spark API errors: ${JSON.stringify(data.D.Errors)}`)
+    }
+    return data
+  } finally {
+    if (timer) clearTimeout(timer)
   }
-  const data = (await res.json()) as SparkListingsResponse
-  if (data.D?.Errors?.length) {
-    throw new Error(`Spark API errors: ${JSON.stringify(data.D.Errors)}`)
-  }
-  return data
 }
 
 /**

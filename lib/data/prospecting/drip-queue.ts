@@ -20,6 +20,8 @@ export type QueuedDripItem = {
   queuedAt: string
   streetAddress: string | null
   city: string | null
+  /** The ZIP, for the MLS relist check's city-blind match. */
+  postalCode: string | null
   expiredAt: string | null
 }
 
@@ -106,7 +108,10 @@ export async function findProspectForCmaSlug(
 }
 
 /**
- * Oldest queued first-touch across Expired + FSBO (FIFO).
+/**
+ * Oldest queued first-touch across Expired + FSBO (FIFO) whose queue stamp has
+ * come due. A row set aside after a relist check that could not answer for its
+ * address carries a stamp in the future (setAsideQueuedFirstTouch) and waits.
  *
  * `kinds` restricts the read. The expired hard stop asks for fsbo only so an
  * older expired row cannot block an FSBO send, and asks for expired only when
@@ -115,14 +120,18 @@ export async function findProspectForCmaSlug(
  */
 export async function peekOldestQueuedFirstTouch(opts?: {
   kinds?: readonly ProspectKind[]
+  /** The drain's clock: a row whose queue stamp is later than this has not come due. */
+  now?: Date
 }): Promise<QueuedDripItem | null> {
+  const now = opts?.now ?? new Date()
   const kinds = opts?.kinds ?? (['expired', 'fsbo'] as const)
   const wantExpired = kinds.includes('expired')
   const wantFsbo = kinds.includes('fsbo')
   const sb = createServiceClient()
+  const due = now.toISOString()
   const selectExpired =
-    'listing_key, outreach_email_queued_at, street_address, city, expired_at, status_change_timestamp'
-  const selectFsbo = 'fsbo_url, outreach_email_queued_at, street_address, city, detected_at'
+    'listing_key, outreach_email_queued_at, street_address, city, postal_code, expired_at, status_change_timestamp'
+  const selectFsbo = 'fsbo_url, outreach_email_queued_at, street_address, city, postal_code, detected_at'
   const empty = Promise.resolve({ data: null, error: null as null })
 
   const [expRes, fsboRes] = await Promise.all([
@@ -132,6 +141,7 @@ export async function peekOldestQueuedFirstTouch(opts?: {
           .select(selectExpired)
           .eq('outreach_email_status', 'queued')
           .not('outreach_email_queued_at', 'is', null)
+          .lte('outreach_email_queued_at', due)
           .is('outreach_email_sent_at', null)
           .order('outreach_email_queued_at', { ascending: true })
           .limit(1)
@@ -143,6 +153,7 @@ export async function peekOldestQueuedFirstTouch(opts?: {
           .select(selectFsbo)
           .eq('outreach_email_status', 'queued')
           .not('outreach_email_queued_at', 'is', null)
+          .lte('outreach_email_queued_at', due)
           .is('outreach_email_sent_at', null)
           .order('outreach_email_queued_at', { ascending: true })
           .limit(1)
@@ -162,6 +173,7 @@ export async function peekOldestQueuedFirstTouch(opts?: {
       queuedAt: String(row.outreach_email_queued_at),
       streetAddress: (row.street_address as string | null) ?? null,
       city: (row.city as string | null) ?? null,
+      postalCode: (row.postal_code as string | null) ?? null,
       expiredAt:
         ((row.expired_at as string | null) ?? null) ||
         ((row.status_change_timestamp as string | null) ?? null),
@@ -175,6 +187,7 @@ export async function peekOldestQueuedFirstTouch(opts?: {
       queuedAt: String(row.outreach_email_queued_at),
       streetAddress: (row.street_address as string | null) ?? null,
       city: (row.city as string | null) ?? null,
+      postalCode: (row.postal_code as string | null) ?? null,
       expiredAt: (row.detected_at as string | null) ?? null,
     })
   }
@@ -242,6 +255,55 @@ export async function findInFlightFirstTouchSend(now: Date): Promise<InFlightFir
   if (hits.length === 0) return null
   hits.sort((a, b) => Date.parse(b.claimAt) - Date.parse(a.claimAt))
   return hits[0]
+}
+
+/** PostgREST / Postgres saying a column is not there (a migration not applied yet). */
+function isMissingColumn(error: { code?: string; message?: string } | null | undefined): boolean {
+  if (!error) return false
+  return error.code === '42703' || error.code === 'PGRST204' || /outreach_email_verify_attempts/i.test(error.message ?? '')
+}
+
+/**
+ * Set a queued row aside after its relist check could not answer for THIS
+ * address (a 'row' failure: no key and no street number, more listings at the
+ * number than a page, a listing our key may not read, a shared address with no
+ * unit). Counts the attempt and moves the queue stamp to `retryAt`, so the rows
+ * behind it drain now and this one comes back then. Only a row still queued
+ * moves.
+ *
+ * The count lives in outreach_email_verify_attempts (migration
+ * 20260930140000). Before that migration is applied the row is still set
+ * aside, uncounted (`attempts: null`), so the drain never hard-skips on a count
+ * it could not keep. Throws on any other read or write error: the drain then
+ * fails closed and sends nothing.
+ */
+export async function setAsideQueuedFirstTouch(
+  kind: ProspectKind,
+  id: string,
+  retryAt: Date,
+): Promise<{ attempts: number | null }> {
+  const sb = createServiceClient()
+  const table = kind === 'expired' ? 'expired_listings' : 'fsbo_listings'
+  const keyCol = kind === 'expired' ? 'listing_key' : 'fsbo_url'
+  const { data, error } = await sb.from(table).select('outreach_email_verify_attempts').eq(keyCol, id).maybeSingle()
+  if (error && !isMissingColumn(error)) throw new Error(`set aside read (${kind}) failed: ${error.message}`)
+  const attempts = error ? null : Number((data as { outreach_email_verify_attempts?: number | null } | null)?.outreach_email_verify_attempts ?? 0) + 1
+  const patch: Record<string, unknown> = { outreach_email_queued_at: retryAt.toISOString() }
+  if (attempts != null) patch.outreach_email_verify_attempts = attempts
+  const { error: upErr } = await sb.from(table).update(patch).eq(keyCol, id).eq('outreach_email_status', 'queued')
+  if (upErr) throw new Error(`set aside write (${kind}) failed: ${upErr.message}`)
+  return { attempts }
+}
+
+/** Start the count again after a row leaves the queue on it (a broker may queue it again). Best effort. */
+export async function clearQueuedFirstTouchVerifyAttempts(kind: ProspectKind, id: string): Promise<void> {
+  const sb = createServiceClient()
+  const table = kind === 'expired' ? 'expired_listings' : 'fsbo_listings'
+  const keyCol = kind === 'expired' ? 'listing_key' : 'fsbo_url'
+  const { error } = await sb.from(table).update({ outreach_email_verify_attempts: 0 }).eq(keyCol, id)
+  if (error && !isMissingColumn(error)) {
+    console.error('[prospecting] clearQueuedFirstTouchVerifyAttempts failed:', error.message, { kind, id })
+  }
 }
 
 /** Dequeue after a fail-closed live-status hard-skip (relisted / verify failed). */
@@ -319,7 +381,7 @@ export async function listQueuedFirstTouch(limit = 500): Promise<QueuedDripItem[
   const [expRes, fsboRes] = await Promise.all([
     sb
       .from('expired_listings')
-      .select('listing_key, outreach_email_queued_at, street_address, city, expired_at, status_change_timestamp')
+      .select('listing_key, outreach_email_queued_at, street_address, city, postal_code, expired_at, status_change_timestamp')
       .eq('outreach_email_status', 'queued')
       .not('outreach_email_queued_at', 'is', null)
       .is('outreach_email_sent_at', null)
@@ -327,7 +389,7 @@ export async function listQueuedFirstTouch(limit = 500): Promise<QueuedDripItem[
       .limit(limit),
     sb
       .from('fsbo_listings')
-      .select('fsbo_url, outreach_email_queued_at, street_address, city, detected_at')
+      .select('fsbo_url, outreach_email_queued_at, street_address, city, postal_code, detected_at')
       .eq('outreach_email_status', 'queued')
       .not('outreach_email_queued_at', 'is', null)
       .is('outreach_email_sent_at', null)
@@ -346,6 +408,7 @@ export async function listQueuedFirstTouch(limit = 500): Promise<QueuedDripItem[
       queuedAt: String(row.outreach_email_queued_at),
       streetAddress: (row.street_address as string | null) ?? null,
       city: (row.city as string | null) ?? null,
+      postalCode: (row.postal_code as string | null) ?? null,
       expiredAt:
         ((row.expired_at as string | null) ?? null) ||
         ((row.status_change_timestamp as string | null) ?? null),
@@ -359,6 +422,7 @@ export async function listQueuedFirstTouch(limit = 500): Promise<QueuedDripItem[
       queuedAt: String(row.outreach_email_queued_at),
       streetAddress: (row.street_address as string | null) ?? null,
       city: (row.city as string | null) ?? null,
+      postalCode: (row.postal_code as string | null) ?? null,
       expiredAt: (row.detected_at as string | null) ?? null,
     })
   }

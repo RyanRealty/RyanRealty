@@ -15,17 +15,30 @@
  *      then send. Skipped rows leave the queue; the next eligible queued row may
  *      be tried in the same tick until one send is attempted or the queue is
  *      empty. Still at most ONE send per tick (spacing).
+ *
+ * A relist check that cannot answer is one of two things. When the MLS or our
+ * listings table could not answer at all ('global': Spark down, rate limited,
+ * no key), every row would fail the same way, so the drain stops, sends
+ * nothing and moves nothing. When only this address cannot be answered
+ * ('row'), the row is set aside for DRIP_VERIFY_RETRY_MS and the next row is
+ * tried in the same tick; the third such failure takes it out of the queue and
+ * texts Matt. Until 2026-09-30 both kinds left the row at the head of the
+ * queue, so one unanswerable address stopped every send behind it, silently.
  */
 import 'server-only'
 
 import { verifyFsboStillActive, verifyNotRelisted } from '@/lib/data/prospecting/batch'
 import {
+  clearQueuedFirstTouchVerifyAttempts,
   findInFlightFirstTouchSend,
   getLastDripSentAt,
   hardSkipQueuedFirstTouch,
   peekOldestQueuedFirstTouch,
+  setAsideQueuedFirstTouch,
   type QueuedDripItem,
 } from '@/lib/data/prospecting/drip-queue'
+import { queueBrokerHealthAlert } from '@/lib/crm/broker-alerts'
+import { DRIP_CRON_ACTOR, mintRelistProof } from '@/lib/prospecting/send-capability'
 import { recoverStuckFirstTouchSends, type StuckSendOutcome } from '@/lib/data/prospecting/drip-recover'
 import {
   canSendDripNow,
@@ -54,10 +67,25 @@ export type DripDrainResult =
       claimAt?: string
     }
   | { ok: true; action: 'sent'; kind: QueuedDripItem['kind']; id: string }
-  | { ok: true; action: 'skipped-all'; skipped: number }
+  /** Every due row left the queue (skipped) or was set aside for a later tick (setAside). */
+  | { ok: true; action: 'skipped-all'; skipped: number; setAside?: number }
   | { ok: false; error: string; kind?: QueuedDripItem['kind']; id?: string }
 
 const MAX_HARD_SKIPS_PER_TICK = 25
+
+/**
+ * Relist checks that may fail for one address before its row leaves the queue.
+ * A 'row' failure is a fact about the record (no key and no street number, a
+ * street number with more on-market listings than a page, a listing our key
+ * may not read, a shared address with no unit), so asking again rarely
+ * changes the answer; three checks an hour apart give a fix to the record or a
+ * blip the scope got wrong two real chances, cost six Spark calls, and hand the
+ * row to a person the same working morning.
+ */
+export const DRIP_VERIFY_MAX_ATTEMPTS = 3
+
+/** How long a row whose address could not be verified waits before its next check. */
+export const DRIP_VERIFY_RETRY_MS = 60 * 60_000
 
 /**
  * A run that spent longer than this settling stuck sends does not also start a
@@ -121,46 +149,67 @@ export async function drainProspectingFirstTouchDrip(now: Date = new Date()): Pr
     ? { kinds: ['fsbo'] as const }
     : undefined
   let skipped = 0
+  let setAside = 0
+  const tried = new Set<string>()
+  const doneForNow = (): DripDrainResult =>
+    skipped + setAside > 0
+      ? { ok: true, action: 'skipped-all', skipped, ...(setAside > 0 ? { setAside } : {}) }
+      : { ok: true, action: 'idle', reason: 'empty' }
   for (let i = 0; i < MAX_HARD_SKIPS_PER_TICK; i++) {
-    const next = await peekOldestQueuedFirstTouch(peekArgs)
+    const next = await peekOldestQueuedFirstTouch({ ...peekArgs, now })
     if (!next) {
-      if (skipped > 0) return { ok: true, action: 'skipped-all', skipped }
-      if (EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP) {
-        const held = await peekOldestQueuedFirstTouch({ kinds: ['expired'] })
+      if (EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP && skipped + setAside === 0) {
+        const held = await peekOldestQueuedFirstTouch({ kinds: ['expired'], now })
         if (held?.kind === 'expired') {
           return { ok: true, action: 'idle', reason: 'expired-hard-stop' }
         }
       }
-      return { ok: true, action: 'idle', reason: 'empty' }
+      return doneForNow()
     }
     if (EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP && next.kind === 'expired') {
       return { ok: true, action: 'idle', reason: 'expired-hard-stop' }
     }
+    // Never check one row twice in a tick (a set-aside write that did not
+    // take would otherwise hand the same row back 25 times).
+    const rowKey = `${next.kind}:${next.id}`
+    if (tried.has(rowKey)) return doneForNow()
+    tried.add(rowKey)
 
     const relistCheck = await verifyNotRelisted(next.kind, {
       street_address: next.streetAddress,
       city: next.city,
+      postal_code: next.postalCode,
       // Expired: off-market ts. FSBO: detected_at (Closed after detect hard-skips).
       expiryComparator: next.expiredAt,
       listing_key: next.kind === 'expired' ? next.id : null,
       fsbo_url: next.kind === 'fsbo' ? next.id : null,
     })
-    if (relistCheck.relisted || relistCheck.verifyFailed) {
-      const reason = relistCheck.verifyFailed
-        ? 'verify-failed-fail-closed'
-        : 'relisted-active-pending-coming-soon-or-closed'
-      await hardSkipQueuedFirstTouch(next.kind, next.id, reason)
+    if (relistCheck.relisted) {
+      await hardSkipQueuedFirstTouch(next.kind, next.id, 'relisted-active-pending-coming-soon-or-closed')
       skipped++
+      continue
+    }
+    if (relistCheck.verifyFailed) {
+      // The MLS or our table could not answer at all: every row would fail the
+      // same way. Send nothing and move nothing (dequeuing here would let one
+      // Spark outage empty the queue, 25 rows a minute).
+      if (relistCheck.failureScope !== 'row') {
+        return { ok: false, error: 'relist check could not answer; left queued', kind: next.kind, id: next.id }
+      }
+      // Only this address cannot be answered: set it aside and go on.
+      if ((await setAsideAfterVerifyFailure(next, relistCheck.reason, now)) === 'dequeued') skipped++
+      else setAside++
       continue
     }
     if (next.kind === 'fsbo') {
       const still = await verifyFsboStillActive(next.id)
-      if (still.verifyFailed || !still.active) {
-        await hardSkipQueuedFirstTouch(
-          next.kind,
-          next.id,
-          still.verifyFailed ? 'fsbo-status-verify-failed' : 'fsbo-off-market',
-        )
+      // An unreadable fsbo_listings row is our database failing, not this
+      // owner: hold, like any check that could not answer. It used to dequeue.
+      if (still.verifyFailed) {
+        return { ok: false, error: 'FSBO status read failed; left queued', kind: next.kind, id: next.id }
+      }
+      if (!still.active) {
+        await hardSkipQueuedFirstTouch(next.kind, next.id, 'fsbo-off-market')
         skipped++
         continue
       }
@@ -184,15 +233,28 @@ export async function drainProspectingFirstTouchDrip(now: Date = new Date()): Pr
     }
     const sent = await sendProspectingEmailIntro(next.kind, next.id, {
       idempotencyKey,
-      actor: 'drip-cron',
+      actor: DRIP_CRON_ACTOR,
       subjectOverride,
       bodyOverride,
+      // This check stands for the intro's and the CMA rail's: one send asks
+      // Spark once (it asked three times, six calls, until 2026-09-30).
+      relistProof: mintRelistProof(next.kind, next.id, relistCheck),
     })
     if (!sent.ok) {
       // Another run claimed this row between our peek and our claim and is
       // sending it now. Stand down; the row stays exactly as that run leaves it.
       if (sent.code === 'in-progress') {
         return { ok: true, action: 'busy', reason: 'claimed-elsewhere', kind: next.kind, id: next.id }
+      }
+      // The send path's own screen could not answer (the CMA rail's table
+      // read, or an address it cannot screen). Same two cases as above.
+      if (sent.code === 'verify-failed') {
+        if (sent.verifyScope !== 'row') {
+          return { ok: false, error: sent.error ?? 'relist check could not answer; left queued', kind: next.kind, id: next.id }
+        }
+        if ((await setAsideAfterVerifyFailure(next, sent.error ?? null, now)) === 'dequeued') skipped++
+        else setAside++
+        continue
       }
       // Permanent hard-stops / already-sent: dequeue so the drip does not stall.
       // Transient send-failed: leave queued (claim release restores queued when
@@ -208,5 +270,31 @@ export async function drainProspectingFirstTouchDrip(now: Date = new Date()): Pr
     return { ok: true, action: 'sent', kind: next.kind, id: next.id }
   }
 
-  return { ok: true, action: 'skipped-all', skipped }
+  return { ok: true, action: 'skipped-all', skipped, ...(setAside > 0 ? { setAside } : {}) }
+}
+
+/**
+ * A relist check that could not answer for this row's address: set the row
+ * aside for DRIP_VERIFY_RETRY_MS, counted. On the DRIP_VERIFY_MAX_ATTEMPTS-th
+ * failure take it out of the queue and text Matt (the ops alert, deduped per
+ * address for a week), so a person checks the MLS by hand. Before the counter
+ * migration is applied the row is only set aside, never dropped.
+ */
+async function setAsideAfterVerifyFailure(
+  next: QueuedDripItem,
+  reason: string | null,
+  now: Date,
+): Promise<'set-aside' | 'dequeued'> {
+  const { attempts } = await setAsideQueuedFirstTouch(next.kind, next.id, new Date(now.getTime() + DRIP_VERIFY_RETRY_MS))
+  if (attempts == null || attempts < DRIP_VERIFY_MAX_ATTEMPTS) return 'set-aside'
+  await hardSkipQueuedFirstTouch(next.kind, next.id, `relist-verify-failed:${attempts}`)
+  await clearQueuedFirstTouchVerifyAttempts(next.kind, next.id)
+  const where = [next.streetAddress, next.city].filter(Boolean).join(', ') || next.id
+  const why = (reason ?? 'no reason given').replace(/\s+/g, ' ').slice(0, 140)
+  await queueBrokerHealthAlert({
+    key: `drip-verify-${next.kind}-${where.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 48)}`,
+    body: `Drip took ${where} (${next.kind}) out of the queue: the MLS relist check could not answer ${attempts} times (${why}). Nothing was sent. Check the MLS by hand, then queue it again from its CMA.`,
+    cooldownMinutes: 7 * 24 * 60,
+  })
+  return 'dequeued'
 }

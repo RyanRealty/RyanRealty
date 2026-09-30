@@ -14,6 +14,7 @@ import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { isSuppressed, isSuppressedByEmail, isSuppressedByPhone } from '@/lib/crm/suppressions'
 import { isClosedStatus } from '@/lib/listing-status'
+import { MLS_ON_MARKET_STATUSES } from '@/lib/listing-status-public'
 import {
   blockAllChannels,
   hasSendableEmail,
@@ -26,19 +27,25 @@ import {
   type ProspectKind,
 } from './types'
 
-/** On-market statuses the existing expired-outreach probe already used. */
-export const EXPIRED_OUTREACH_ON_MARKET = ['Active', 'Pending', 'Coming Soon'] as const
+/**
+ * Every on-market status this MLS uses: the one shared list
+ * (MLS_ON_MARKET_STATUSES, lib/listing-status-public.ts). Active Under
+ * Contract was missing here until 2026-09-30, so a home under contract with
+ * another broker did not block outreach.
+ */
+export const EXPIRED_OUTREACH_ON_MARKET = MLS_ON_MARKET_STATUSES
 
 /**
  * Same listings probe as the original relist check, plus Closed so a
  * post-expire sale at the address (or parcel) paints as relisted.
- * PostgREST `or` — Coming Soon needs quotes (space in the value).
+ * PostgREST `or` — values with a space need quotes.
  */
-export const EXPIRED_OUTREACH_STATUS_OR =
-  'StandardStatus.in.(Active,Pending,"Coming Soon"),StandardStatus.ilike.*Closed*'
+export const EXPIRED_OUTREACH_STATUS_OR = `StandardStatus.in.(${MLS_ON_MARKET_STATUSES.map((s) =>
+  /\s/.test(s) ? `"${s}"` : s,
+).join(',')}),StandardStatus.ilike.*Closed*`
 
 export const EXPIRED_OUTREACH_LISTING_SELECT =
-  'StreetNumber, StreetName, City, status_change_timestamp, StandardStatus, CloseDate, parcel_number'
+  'ListingKey, StreetNumber, StreetName, City, status_change_timestamp, StandardStatus, CloseDate, parcel_number'
 
 /** Junk APN values the listings column sometimes carries — not a real taxlot. */
 export function normalizeParcelNumber(raw: unknown): string | null {
@@ -49,6 +56,7 @@ export function normalizeParcelNumber(raw: unknown): string | null {
 }
 
 export type ExpiredOutreachListing = {
+  ListingKey?: unknown
   StreetNumber?: unknown
   StreetName?: unknown
   City?: unknown
@@ -78,6 +86,12 @@ export function parcelFromEnrichmentNotes(notes: string | null | undefined): str
   return m ? normalizeParcelNumber(m[1]) : null
 }
 
+/** "La Pine" and "LaPine", "Sun River" and "Sunriver": one city. Blank matches only blank, as before. */
+function sameCity(a: unknown, b: unknown): boolean {
+  const key = (v: unknown) => String(v ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '')
+  return key(a) === key(b)
+}
+
 export function expiredOutreachListingHits(opts: {
   kind: ProspectKind
   listing: ExpiredOutreachListing
@@ -87,8 +101,9 @@ export function expiredOutreachListingHits(opts: {
   subjectParcel: string | null
 }): boolean {
   const streetName = String(opts.listing.StreetName ?? '').toUpperCase()
-  const city = String(opts.listing.City ?? '').toUpperCase()
-  const addressMatch = streetName.startsWith(opts.namePrefix) && city === opts.cityUpper
+  // The city in any spelling: our copy and the prospect rows both carry
+  // "La Pine" and "LaPine", and an exact compare let one miss the other.
+  const addressMatch = streetName.startsWith(opts.namePrefix) && sameCity(opts.listing.City, opts.cityUpper)
   const listingParcel = normalizeParcelNumber(opts.listing.parcel_number)
   const parcelMatch = Boolean(opts.subjectParcel && listingParcel && opts.subjectParcel === listingParcel)
   if (!addressMatch && !parcelMatch) return false

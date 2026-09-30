@@ -4,7 +4,7 @@
  * anywhere makes the drain stand down (one drain at a time), and a claim held
  * by another run ('in-progress') is never read as "already sent".
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const getLastDripSentAt = vi.fn()
 const peekOldestQueuedFirstTouch = vi.fn()
@@ -16,12 +16,33 @@ const verifyFsboStillActive = vi.fn()
 const sendProspectingEmailIntro = vi.fn()
 const getProspect = vi.fn()
 const loadCmaFirstContactOverride = vi.fn()
+const setAsideQueuedFirstTouch = vi.fn()
+const clearQueuedFirstTouchVerifyAttempts = vi.fn()
+const queueBrokerHealthAlert = vi.fn()
 
+// The expired hard stop (Matt 2026-09-30) is a module constant; the drain reads
+// it through the module each call, so a getter lets one block run with it off.
+const schedule = vi.hoisted(() => ({ expiredHardStop: true }))
+vi.mock('@/lib/data/prospecting/drip-schedule', async (importOriginal) => {
+  const real = await importOriginal<typeof import('@/lib/data/prospecting/drip-schedule')>()
+  return {
+    ...real,
+    get EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP() {
+      return schedule.expiredHardStop
+    },
+  }
+})
 vi.mock('@/lib/data/prospecting/drip-queue', () => ({
   getLastDripSentAt: (...a: unknown[]) => getLastDripSentAt(...a),
   peekOldestQueuedFirstTouch: (...a: unknown[]) => peekOldestQueuedFirstTouch(...a),
   hardSkipQueuedFirstTouch: (...a: unknown[]) => hardSkipQueuedFirstTouch(...a),
   findInFlightFirstTouchSend: (...a: unknown[]) => findInFlightFirstTouchSend(...a),
+  setAsideQueuedFirstTouch: (...a: unknown[]) => setAsideQueuedFirstTouch(...a),
+  clearQueuedFirstTouchVerifyAttempts: (...a: unknown[]) => clearQueuedFirstTouchVerifyAttempts(...a),
+}))
+
+vi.mock('@/lib/crm/broker-alerts', () => ({
+  queueBrokerHealthAlert: (...a: unknown[]) => queueBrokerHealthAlert(...a),
 }))
 
 vi.mock('@/lib/data/prospecting/drip-recover', () => ({
@@ -45,7 +66,8 @@ vi.mock('@/lib/cma/first-contact-override', () => ({
   loadCmaFirstContactOverride: (...a: unknown[]) => loadCmaFirstContactOverride(...a),
 }))
 
-import { DRIP_RECOVERY_SEND_BUDGET_MS, drainProspectingFirstTouchDrip } from './drip-drain'
+import { DRIP_RECOVERY_SEND_BUDGET_MS, DRIP_VERIFY_MAX_ATTEMPTS, DRIP_VERIFY_RETRY_MS, drainProspectingFirstTouchDrip } from './drip-drain'
+import { DRIP_CRON_ACTOR, acceptRelistProof } from '@/lib/prospecting/send-capability'
 
 const THU_8AM_PT = new Date('2026-09-03T15:00:00.000Z')
 const THU_8_02_PT = new Date('2026-09-03T15:02:00.000Z')
@@ -88,8 +110,13 @@ beforeEach(() => {
   sendProspectingEmailIntro.mockReset()
   getProspect.mockReset()
   loadCmaFirstContactOverride.mockReset()
+  setAsideQueuedFirstTouch.mockReset()
+  clearQueuedFirstTouchVerifyAttempts.mockReset()
+  queueBrokerHealthAlert.mockReset()
   getProspect.mockResolvedValue(null)
   loadCmaFirstContactOverride.mockResolvedValue(null)
+  setAsideQueuedFirstTouch.mockResolvedValue({ attempts: 1 })
+  queueBrokerHealthAlert.mockResolvedValue(true)
   recoverStuckFirstTouchSends.mockResolvedValue([])
   findInFlightFirstTouchSend.mockResolvedValue(null)
   verifyFsboStillActive.mockResolvedValue({ active: true, verifyFailed: false })
@@ -116,11 +143,16 @@ describe('drainProspectingFirstTouchDrip — one-at-a-time', () => {
       'fsbo',
       'https://fsbo.example/1',
       expect.objectContaining({
-        actor: 'drip-cron',
         subjectOverride: null,
         bodyOverride: null,
       }),
     )
+    const args = sendProspectingEmailIntro.mock.calls[0]![2] as { actor: unknown; relistProof: unknown }
+    // The server-minted actor, never the string a browser could send.
+    expect(args.actor).toBe(DRIP_CRON_ACTOR)
+    // Its own relist check rides down the send (one Spark check per send).
+    expect(acceptRelistProof(args.relistProof, { kind: 'fsbo', id: 'https://fsbo.example/1' })).not.toBeNull()
+    expect(peekOldestQueuedFirstTouch).toHaveBeenCalledWith(expect.objectContaining({ now: THU_8AM_PT }))
   })
 
   it('hard-skips a relisted row fail-closed then continues to the next', async () => {
@@ -150,6 +182,41 @@ describe('drainProspectingFirstTouchDrip — one-at-a-time', () => {
     expect(hardSkipQueuedFirstTouch).toHaveBeenCalledTimes(1)
     expect(out).toEqual({ ok: true, action: 'sent', kind: 'fsbo', id: 'https://fsbo.example/2' })
     expect(sendProspectingEmailIntro).toHaveBeenCalledTimes(1)
+  })
+
+  it('a check that cannot answer (Spark down) sends nothing and leaves the row queued for the next tick', async () => {
+    getLastDripSentAt.mockResolvedValue(null)
+    peekOldestQueuedFirstTouch.mockResolvedValue({
+      kind: 'fsbo',
+      id: 'https://fsbo.example/3',
+      queuedAt: '2026-09-03T14:00:00.000Z',
+      streetAddress: '15 Franklin',
+      city: 'Bend',
+      expiredAt: '2026-08-06T05:00:00.000Z',
+    })
+    verifyNotRelisted.mockResolvedValue({ relisted: false, verifyFailed: true, reason: 'Spark by-key read timed out after 8000 ms' })
+    const out = await drainProspectingFirstTouchDrip(THU_8AM_PT)
+    expect(out).toMatchObject({ ok: false, kind: 'fsbo', id: 'https://fsbo.example/3' })
+    expect(hardSkipQueuedFirstTouch).not.toHaveBeenCalled()
+    expect(sendProspectingEmailIntro).not.toHaveBeenCalled()
+    expect(peekOldestQueuedFirstTouch).toHaveBeenCalledTimes(1)
+  })
+
+  it('a send refused because the check could not answer leaves the row queued', async () => {
+    getLastDripSentAt.mockResolvedValue(null)
+    peekOldestQueuedFirstTouch.mockResolvedValue({
+      kind: 'fsbo',
+      id: 'https://fsbo.example/4',
+      queuedAt: '2026-09-03T14:00:00.000Z',
+      streetAddress: '10 Oak',
+      city: 'Bend',
+      expiredAt: '2026-08-15T00:00:00.000Z',
+    })
+    verifyNotRelisted.mockResolvedValue({ relisted: false, verifyFailed: false })
+    sendProspectingEmailIntro.mockResolvedValue({ ok: false, error: 'Could not verify', code: 'verify-failed' })
+    const out = await drainProspectingFirstTouchDrip(THU_8AM_PT)
+    expect(out).toMatchObject({ ok: false, kind: 'fsbo', id: 'https://fsbo.example/4' })
+    expect(hardSkipQueuedFirstTouch).not.toHaveBeenCalled()
   })
 })
 
@@ -309,6 +376,133 @@ describe('drainProspectingFirstTouchDrip — stuck sends are settled first (D)',
   })
 })
 
+describe('drainProspectingFirstTouchDrip — one address the check cannot answer does not stop the queue (2026-09-30 review)', () => {
+  // These rules govern expired rows once Matt reopens the gate, so they run with
+  // the expired hard stop off; the hard stop has its own block below.
+  beforeEach(() => {
+    schedule.expiredHardStop = false
+  })
+  afterEach(() => {
+    schedule.expiredHardStop = true
+  })
+  const ZERO_LAND = {
+    kind: 'expired' as const,
+    id: 'LAND0',
+    queuedAt: '2026-09-03T13:00:00.000Z',
+    streetAddress: '0 Lava Dr',
+    city: 'Bend',
+    postalCode: '97702',
+    expiredAt: '2026-08-01T00:00:00.000Z',
+  }
+  const ROW_FAIL = {
+    relisted: false,
+    verifyFailed: true,
+    failureScope: 'row',
+    reason: 'Spark lists 1200 listings on the market at number 0, more than one page shows',
+  }
+  const CLEAR = { relisted: false, verifyFailed: false, failureScope: null, reason: null }
+
+  it('sets the row aside for an hour, counted, and sends the next row in the same tick', async () => {
+    getLastDripSentAt.mockResolvedValue(null)
+    peekOldestQueuedFirstTouch.mockResolvedValueOnce(ZERO_LAND).mockResolvedValueOnce(QUEUED_LK1)
+    verifyNotRelisted.mockResolvedValueOnce(ROW_FAIL).mockResolvedValueOnce(CLEAR)
+    sendProspectingEmailIntro.mockResolvedValue(SENT_OK)
+    const out = await drainProspectingFirstTouchDrip(THU_8AM_PT)
+    expect(out).toEqual({ ok: true, action: 'sent', kind: 'expired', id: 'LK1' })
+    expect(setAsideQueuedFirstTouch).toHaveBeenCalledWith('expired', 'LAND0', new Date(THU_8AM_PT.getTime() + DRIP_VERIFY_RETRY_MS))
+    expect(hardSkipQueuedFirstTouch).not.toHaveBeenCalled()
+    expect(queueBrokerHealthAlert).not.toHaveBeenCalled()
+    expect(sendProspectingEmailIntro).toHaveBeenCalledTimes(1)
+    expect(sendProspectingEmailIntro.mock.calls[0]![1]).toBe('LK1')
+  })
+
+  it(`on the ${DRIP_VERIFY_MAX_ATTEMPTS}rd failure takes the row out of the queue and texts Matt, then carries on`, async () => {
+    getLastDripSentAt.mockResolvedValue(null)
+    peekOldestQueuedFirstTouch.mockResolvedValueOnce(ZERO_LAND).mockResolvedValueOnce(QUEUED_LK1)
+    verifyNotRelisted.mockResolvedValueOnce(ROW_FAIL).mockResolvedValueOnce(CLEAR)
+    setAsideQueuedFirstTouch.mockResolvedValue({ attempts: DRIP_VERIFY_MAX_ATTEMPTS })
+    sendProspectingEmailIntro.mockResolvedValue(SENT_OK)
+    const out = await drainProspectingFirstTouchDrip(THU_8AM_PT)
+    expect(out).toEqual({ ok: true, action: 'sent', kind: 'expired', id: 'LK1' })
+    expect(hardSkipQueuedFirstTouch).toHaveBeenCalledWith('expired', 'LAND0', `relist-verify-failed:${DRIP_VERIFY_MAX_ATTEMPTS}`)
+    expect(clearQueuedFirstTouchVerifyAttempts).toHaveBeenCalledWith('expired', 'LAND0')
+    expect(queueBrokerHealthAlert).toHaveBeenCalledTimes(1)
+    const alert = queueBrokerHealthAlert.mock.calls[0]![0] as { key: string; body: string }
+    expect(alert.body).toMatch(/0 Lava Dr, Bend/)
+    expect(alert.body).toMatch(/could not answer 3 times/)
+    expect(alert.body).toMatch(/Nothing was sent/)
+  })
+
+  it('never drops a row on a count it cannot keep (counter migration not applied yet)', async () => {
+    getLastDripSentAt.mockResolvedValue(null)
+    peekOldestQueuedFirstTouch.mockResolvedValueOnce(ZERO_LAND).mockResolvedValueOnce(null)
+    verifyNotRelisted.mockResolvedValue(ROW_FAIL)
+    setAsideQueuedFirstTouch.mockResolvedValue({ attempts: null })
+    const out = await drainProspectingFirstTouchDrip(THU_8AM_PT)
+    expect(out).toEqual({ ok: true, action: 'skipped-all', skipped: 0, setAside: 1 })
+    expect(hardSkipQueuedFirstTouch).not.toHaveBeenCalled()
+    expect(queueBrokerHealthAlert).not.toHaveBeenCalled()
+  })
+
+  it('a global failure (Spark down) still sends nothing, sets nothing aside and dequeues nothing', async () => {
+    getLastDripSentAt.mockResolvedValue(null)
+    peekOldestQueuedFirstTouch.mockResolvedValue(QUEUED_LK1)
+    verifyNotRelisted.mockResolvedValue({ ...ROW_FAIL, failureScope: 'global', reason: 'Spark by-key read timed out after 8000 ms' })
+    const out = await drainProspectingFirstTouchDrip(THU_8AM_PT)
+    expect(out).toMatchObject({ ok: false, kind: 'expired', id: 'LK1' })
+    expect(setAsideQueuedFirstTouch).not.toHaveBeenCalled()
+    expect(hardSkipQueuedFirstTouch).not.toHaveBeenCalled()
+    expect(queueBrokerHealthAlert).not.toHaveBeenCalled()
+    expect(sendProspectingEmailIntro).not.toHaveBeenCalled()
+    expect(peekOldestQueuedFirstTouch).toHaveBeenCalledTimes(1)
+  })
+
+  it("the CMA rail's screen failing for the address (verify-failed, row) sets it aside too", async () => {
+    getLastDripSentAt.mockResolvedValue(null)
+    peekOldestQueuedFirstTouch.mockResolvedValueOnce(QUEUED_LK1).mockResolvedValueOnce(null)
+    verifyNotRelisted.mockResolvedValue(CLEAR)
+    sendProspectingEmailIntro.mockResolvedValue({
+      ok: false,
+      error: "Not sent. This street address carries listings for more than one unit and the subject's unit is not recorded",
+      code: 'verify-failed',
+      verifyScope: 'row',
+    })
+    const out = await drainProspectingFirstTouchDrip(THU_8AM_PT)
+    expect(setAsideQueuedFirstTouch).toHaveBeenCalledTimes(1)
+    expect(out).toEqual({ ok: true, action: 'skipped-all', skipped: 0, setAside: 1 })
+  })
+
+  it("a screen refusal the rail reads as relisted dequeues (it used to come back send-failed and stall the queue)", async () => {
+    getLastDripSentAt.mockResolvedValue(null)
+    peekOldestQueuedFirstTouch.mockResolvedValueOnce(QUEUED_LK1).mockResolvedValueOnce(null)
+    verifyNotRelisted.mockResolvedValue(CLEAR)
+    sendProspectingEmailIntro.mockResolvedValue({ ok: false, error: 'Not sent. The address closed on 2026-09-12.', code: 'relisted' })
+    const out = await drainProspectingFirstTouchDrip(THU_8AM_PT)
+    expect(hardSkipQueuedFirstTouch).toHaveBeenCalledWith('expired', 'LK1', 'send-refused:relisted')
+    expect(out).toEqual({ ok: true, action: 'skipped-all', skipped: 1 })
+  })
+
+  it('never checks one row twice in a tick', async () => {
+    getLastDripSentAt.mockResolvedValue(null)
+    peekOldestQueuedFirstTouch.mockResolvedValue(ZERO_LAND)
+    verifyNotRelisted.mockResolvedValue(ROW_FAIL)
+    const out = await drainProspectingFirstTouchDrip(THU_8AM_PT)
+    expect(verifyNotRelisted).toHaveBeenCalledTimes(1)
+    expect(out).toEqual({ ok: true, action: 'skipped-all', skipped: 0, setAside: 1 })
+  })
+
+  it('an unreadable FSBO status holds the queue instead of dequeuing the owner', async () => {
+    getLastDripSentAt.mockResolvedValue(null)
+    peekOldestQueuedFirstTouch.mockResolvedValue({ ...QUEUED_LK1, kind: 'fsbo', id: 'https://fsbo.example/9' })
+    verifyNotRelisted.mockResolvedValue(CLEAR)
+    verifyFsboStillActive.mockResolvedValue({ active: false, verifyFailed: true })
+    const out = await drainProspectingFirstTouchDrip(THU_8AM_PT)
+    expect(out).toMatchObject({ ok: false, kind: 'fsbo' })
+    expect(hardSkipQueuedFirstTouch).not.toHaveBeenCalled()
+    expect(sendProspectingEmailIntro).not.toHaveBeenCalled()
+  })
+})
+
 describe('drainProspectingFirstTouchDrip — expired hard stop', () => {
   it('does not send a queued expired row while the expired first-touch hard stop is on', async () => {
     getLastDripSentAt.mockResolvedValue(null)
@@ -353,7 +547,7 @@ describe('drainProspectingFirstTouchDrip — expired hard stop', () => {
     expect(sendProspectingEmailIntro).toHaveBeenCalledWith(
       'fsbo',
       'https://fsbo.example/1',
-      expect.objectContaining({ actor: 'drip-cron' }),
+      expect.objectContaining({ actor: DRIP_CRON_ACTOR }),
     )
     expect(hardSkipQueuedFirstTouch).not.toHaveBeenCalled()
   })

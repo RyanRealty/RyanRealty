@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * The closings reconciliation against a fake Spark and a fake store: which
@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
  */
 
 type Fields = Record<string, unknown>
-const spark = { window: [] as Fields[], byKey: new Map<string, Fields>() }
+const spark = { window: [] as Fields[], byKey: new Map<string, Fields>(), onMarket: [] as Fields[], filters: [] as string[] }
 const store = {
   closedInWindow: [] as string[],
   rows: new Map<string, Record<string, unknown>>(),
@@ -24,11 +24,19 @@ const store = {
   upserted: [] as string[],
   upsertFails: false,
   historyFails: new Set<string>(),
+  onMarketKeys: [] as string[],
+  terminalKeys: [] as string[],
+  overrides: new Map<string, { status: boolean; listPrice: boolean }>(),
+  repairSources: [] as string[],
 }
 
 vi.mock('@/lib/spark', () => ({
   fetchSparkListingsPage: vi.fn(async (_token: string, opts: { filter?: string }) => {
     const filter = opts.filter ?? ''
+    spark.filters.push(filter)
+    if (filter.startsWith("StandardStatus Eq 'Active'")) {
+      return { D: { Results: spark.onMarket.map((f) => ({ StandardFields: f })), Pagination: { TotalPages: 1 } } }
+    }
     if (filter.startsWith("StandardStatus Eq 'Closed'")) {
       return { D: { Results: spark.window.map((f) => ({ StandardFields: f })), Pagination: { TotalPages: 1 } } }
     }
@@ -38,7 +46,10 @@ vi.mock('@/lib/spark', () => ({
   }),
 }))
 vi.mock('@/lib/data/sync/closingsReconcile', () => ({
+  ON_MARKET_STATUSES: ['Active', 'Active Under Contract', 'Coming Soon', 'Pending'],
   getClosedListingKeysInWindow: vi.fn(async () => store.closedInWindow),
+  getOnMarketListingKeys: vi.fn(async () => store.onMarketKeys),
+  getRecentUnsoldTerminalKeys: vi.fn(async () => store.terminalKeys),
   getListingsForReconcile: vi.fn(async (keys: string[]) => {
     const out = new Map<string, Record<string, unknown>>()
     for (const k of keys) if (store.rows.has(k)) out.set(k, store.rows.get(k)!)
@@ -61,8 +72,9 @@ vi.mock('@/lib/data/sync/closingsReconcile', () => ({
     for (const k of keys) store.absent.delete(k)
     return keys.length
   }),
-  recordRepairLog: vi.fn(async (entries: Record<string, unknown>[]) => {
+  recordRepairLog: vi.fn(async (entries: Record<string, unknown>[], source?: string) => {
     if (store.repairLogFails) throw new Error('[recordRepairLog] insert failed')
+    store.repairSources.push(source ?? 'closings-reconcile')
     const ids = new Map<string, number>()
     for (const e of entries) {
       store.repairLog.push(e)
@@ -85,7 +97,11 @@ vi.mock('@/lib/data/sync/closingsReconcile', () => ({
   }),
 }))
 vi.mock('@/lib/data/sync/syncWrites', () => ({
-  getAdminOverrideFlags: vi.fn(async () => new Map()),
+  getAdminOverrideFlags: vi.fn(async (listNumbers: string[]) => {
+    const out = new Map<string, { status: boolean; listPrice: boolean }>()
+    for (const n of listNumbers) if (store.overrides.has(n)) out.set(n, store.overrides.get(n)!)
+    return out
+  }),
   getHeldMediaByListNumbers: vi.fn(async () => new Map()),
   setListingFreezeFlags: vi.fn(async (listNumbers: string[]) => ({ ok: true, updated: listNumbers.length })),
   upsertListingRows: vi.fn(async (rows: Record<string, unknown>[]) => {
@@ -108,10 +124,12 @@ vi.mock('@/lib/sync/deltaSync', () => ({
     ListNumber: r.StandardFields.ListingId,
     StandardStatus: r.StandardFields.StandardStatus,
     ClosePrice: r.StandardFields.ClosePrice,
+    ModificationTimestamp: r.StandardFields.ModificationTimestamp ?? null,
   })),
 }))
 
-import { reconcileClosings } from './closingsReconcile'
+import { reconcileClosings, reconcileListingStatus } from './closingsReconcile'
+import { isMlsOnMarketStatus } from '@/lib/listing-status-public'
 
 function sparkClosing(key: string, over: Fields = {}): Fields {
   return {
@@ -149,6 +167,12 @@ beforeEach(() => {
   process.env.SPARK_API_KEY = 'test-key'
   spark.window = []
   spark.byKey = new Map()
+  spark.onMarket = []
+  spark.filters = []
+  store.onMarketKeys = []
+  store.terminalKeys = []
+  store.overrides = new Map()
+  store.repairSources = []
   store.closedInWindow = []
   store.rows = new Map()
   store.absent = new Set()
@@ -315,5 +339,282 @@ describe('reconcileClosings', () => {
     expect(r.notInSpark).toHaveLength(100)
     expect(r.absentFromMls.recorded).toBe(0)
     expect(r.absentFromMls.refused).toMatch(/more than removed listings explain/)
+  })
+})
+
+/**
+ * Listing status reconciliation (2026-09-30): every listing Spark or we hold on
+ * the market, plus our recent Expired/Withdrawn/Canceled rows, set against each
+ * other by key. It shares the closings repair path (before-image first, the
+ * delta sync's mapper, history, re-freeze), logged as 'status-reconcile'.
+ */
+function sparkListing(key: string, over: Fields = {}): Fields {
+  return {
+    ListingKey: key,
+    ListingId: `L${key}`,
+    StandardStatus: 'Active',
+    ListPrice: 625000,
+    City: 'Bend',
+    PropertyType: 'A',
+    PropertySubType: 'Single Family Residence',
+    TotalLivingAreaSqFt: 1800,
+    ModificationTimestamp: '2026-08-18T22:14:24Z',
+    ...over,
+  }
+}
+
+function ourListing(key: string, over: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    ListNumber: `L${key}`,
+    ListingKey: key,
+    StandardStatus: 'Active',
+    City: 'Bend',
+    CloseDate: null,
+    ClosePrice: null,
+    ListPrice: 625000,
+    property_sub_type: 'Single Family Residence',
+    TotalLivingAreaSqFt: 1800,
+    is_finalized: false,
+    media_finalized: false,
+    ...over,
+  }
+}
+
+/** Enough steady on-market listings that one drifted row is not read as an outage. */
+function steadyMarket(n: number): string[] {
+  const keys = Array.from({ length: n }, (_, i) => `S${i}`)
+  for (const k of keys) {
+    spark.onMarket.push(sparkListing(k))
+    store.rows.set(k, ourListing(k))
+  }
+  store.onMarketKeys.push(...keys)
+  return keys
+}
+
+describe('reconcileListingStatus', () => {
+  it('finds a relist the delta sync skipped: Spark holds the key on the market, we hold it Expired and frozen', async () => {
+    steadyMarket(3)
+    const key = '20260120200524195349000000'
+    spark.onMarket.push(sparkListing(key))
+    store.rows.set(key, ourListing(key, { StandardStatus: 'Expired', is_finalized: true }))
+    const r = await reconcileListingStatus({ repair: false, terminalSinceDays: 120 })
+    expect(r.sparkOnMarket).toBe(4)
+    expect(r.ourOnMarket).toBe(3)
+    expect(r.drift).toEqual([
+      expect.objectContaining({ key, reasons: ['status'], ours: expect.objectContaining({ status: 'Expired' }), mls: expect.objectContaining({ status: 'Active' }) }),
+    ])
+    expect(r.repaired).toBe(0)
+    expect(store.upserted).toEqual([])
+    expect(store.repairLog).toEqual([])
+  })
+
+  it('repairs it through the closings repair path, logged as status-reconcile, and leaves it unfrozen', async () => {
+    steadyMarket(3)
+    const key = '20260120200524195349000000'
+    spark.onMarket.push(sparkListing(key))
+    spark.byKey.set(key, sparkListing(key))
+    store.rows.set(key, ourListing(key, { StandardStatus: 'Expired', is_finalized: true }))
+    const r = await reconcileListingStatus({ repair: true, terminalSinceDays: 120 })
+    expect(r.repaired).toBe(1)
+    expect(r.repairedKeys).toEqual([key])
+    expect(r.refinalized).toBe(0)
+    expect(store.upserted).toEqual([key])
+    expect(store.repairSources).toEqual(['status-reconcile'])
+    expect(store.repairLog[0]).toMatchObject({ listingKey: key, reasons: ['status'], windowFrom: null, windowTo: null, ours: { status: 'Expired' } })
+  })
+
+  it('finds a ghost on-market row by key: we hold it Active, Spark holds it Canceled; a repair re-freezes it', async () => {
+    steadyMarket(3)
+    store.onMarketKeys.push('GHOST')
+    store.rows.set('GHOST', ourListing('GHOST'))
+    spark.byKey.set('GHOST', sparkListing('GHOST', { StandardStatus: 'Canceled', ModificationTimestamp: '2026-05-13T18:57:12Z' }))
+    const r = await reconcileListingStatus({ repair: true, terminalSinceDays: 120 })
+    expect(r.drift.map((d) => [d.key, d.reasons])).toEqual([['GHOST', ['status']]])
+    expect(r.repaired).toBe(1)
+    expect(r.refinalized).toBe(1)
+  })
+
+  it('reports an on-market row Spark does not serve at all, and never writes it', async () => {
+    steadyMarket(3)
+    store.onMarketKeys.push('VANISHED')
+    store.rows.set('VANISHED', ourListing('VANISHED'))
+    const r = await reconcileListingStatus({ repair: true, terminalSinceDays: 120 })
+    expect(r.notInSpark).toEqual(['VANISHED'])
+    expect(r.drift).toEqual([])
+    expect(store.upserted).toEqual([])
+  })
+
+  it('re-checks our recent Expired/Withdrawn/Canceled rows by key', async () => {
+    steadyMarket(3)
+    store.terminalKeys = ['T1', 'T2']
+    store.rows.set('T1', ourListing('T1', { StandardStatus: 'Withdrawn', is_finalized: true }))
+    store.rows.set('T2', ourListing('T2', { StandardStatus: 'Expired', is_finalized: true }))
+    spark.byKey.set('T1', sparkListing('T1', { StandardStatus: 'Canceled' }))
+    spark.byKey.set('T2', sparkListing('T2', { StandardStatus: 'Expired' }))
+    const r = await reconcileListingStatus({ repair: false, terminalSinceDays: 120 })
+    expect(r.terminalChecked).toBe(2)
+    expect(r.drift.map((d) => [d.key, d.reasons])).toEqual([['T1', ['status']]])
+  })
+
+  it('skips the terminal re-check when asked (terminalSinceDays 0)', async () => {
+    steadyMarket(3)
+    store.terminalKeys = ['T1']
+    store.rows.set('T1', ourListing('T1', { StandardStatus: 'Withdrawn', is_finalized: true }))
+    spark.byKey.set('T1', sparkListing('T1', { StandardStatus: 'Canceled' }))
+    const r = await reconcileListingStatus({ repair: false, terminalSinceDays: 0 })
+    expect(r.terminalChecked).toBe(0)
+    expect(r.drift).toEqual([])
+  })
+
+  it('a listing Spark holds on the market that we do not hold at all is missing, and a repair writes it', async () => {
+    steadyMarket(3)
+    spark.onMarket.push(sparkListing('NEW'))
+    spark.byKey.set('NEW', sparkListing('NEW'))
+    const r = await reconcileListingStatus({ repair: true, terminalSinceDays: 120 })
+    expect(r.drift.map((d) => [d.key, d.reasons])).toEqual([['NEW', ['missing']]])
+    expect(store.upserted).toEqual(['NEW'])
+  })
+
+  it('a broker override of status is our copy on purpose, not drift', async () => {
+    steadyMarket(3)
+    spark.onMarket.push(sparkListing('OVR'))
+    store.rows.set('OVR', ourListing('OVR', { StandardStatus: 'Withdrawn', is_finalized: true }))
+    store.overrides.set('LOVR', { status: true, listPrice: false })
+    const r = await reconcileListingStatus({ repair: true, terminalSinceDays: 120 })
+    expect(r.drift).toEqual([])
+    expect(store.upserted).toEqual([])
+  })
+
+  it('an on-market row we hold frozen is repaired (and so unfrozen) even when every fact agrees', async () => {
+    steadyMarket(3)
+    spark.onMarket.push(sparkListing('FROZEN'))
+    spark.byKey.set('FROZEN', sparkListing('FROZEN'))
+    store.rows.set('FROZEN', ourListing('FROZEN', { is_finalized: true }))
+    const r = await reconcileListingStatus({ repair: true, terminalSinceDays: 120 })
+    expect(r.drift.map((d) => [d.key, d.reasons])).toEqual([['FROZEN', ['frozen_not_terminal']]])
+    expect(store.upserted).toEqual(['FROZEN'])
+    expect(r.refinalized).toBe(0)
+  })
+
+  it('a broker override of list price is not drift either (a repair would only re-apply it, every day)', async () => {
+    steadyMarket(3)
+    spark.onMarket.push(sparkListing('LPO', { ListPrice: 600000 }))
+    store.rows.set('LPO', ourListing('LPO', { ListPrice: 625000 }))
+    store.overrides.set('LLPO', { status: false, listPrice: true })
+    const r = await reconcileListingStatus({ repair: true, terminalSinceDays: 120 })
+    expect(r.drift).toEqual([])
+    expect(store.upserted).toEqual([])
+  })
+
+  it('status drift is repaired first when the cap bites', async () => {
+    steadyMarket(3)
+    // A list-price-only drift sorts ahead by key, a status drift behind it.
+    spark.onMarket.push(sparkListing('A-PRICE', { ListPrice: 600000 }))
+    store.rows.set('A-PRICE', ourListing('A-PRICE'))
+    spark.onMarket.push(sparkListing('Z-STATUS'))
+    store.rows.set('Z-STATUS', ourListing('Z-STATUS', { StandardStatus: 'Expired', is_finalized: true }))
+    spark.byKey.set('Z-STATUS', sparkListing('Z-STATUS'))
+    spark.byKey.set('A-PRICE', sparkListing('A-PRICE', { ListPrice: 600000 }))
+    const r = await reconcileListingStatus({ repair: true, maxRepairs: 1, terminalSinceDays: 120 })
+    expect(r.drift.map((d) => d.key)).toEqual(['Z-STATUS', 'A-PRICE'])
+    expect(store.upserted).toEqual(['Z-STATUS'])
+  })
+
+  it('refuses to repair when Spark returns far fewer on-market listings than we hold (an outage, not a market)', async () => {
+    const ours = Array.from({ length: 10 }, (_, i) => `O${i}`)
+    store.onMarketKeys = ours
+    for (const k of ours) store.rows.set(k, ourListing(k))
+    spark.onMarket = [sparkListing('O0'), sparkListing('O1')]
+    spark.byKey.set('O2', sparkListing('O2', { StandardStatus: 'Canceled' }))
+    const r = await reconcileListingStatus({ repair: true, terminalSinceDays: 120 })
+    expect(r.refused).toMatch(/Spark returned 2 on-market listings while we hold 10/)
+    expect(r.repaired).toBe(0)
+    expect(store.upserted).toEqual([])
+    // No per-key lookups are spent on a pull that looks like an outage.
+    expect(spark.filters.some((f) => f.includes('ListingKey Eq'))).toBe(false)
+  })
+
+  it('never writes an older MLS record over a row the delta sync has since written newer', async () => {
+    steadyMarket(3)
+    spark.onMarket.push(sparkListing('RACE'))
+    spark.byKey.set('RACE', sparkListing('RACE', { ModificationTimestamp: '2026-09-29T10:00:00Z' }))
+    store.rows.set('RACE', ourListing('RACE', { StandardStatus: 'Expired', is_finalized: true, ModificationTimestamp: '2026-09-29T10:05:00+00:00' }))
+    const r = await reconcileListingStatus({ repair: true, terminalSinceDays: 120 })
+    expect(r.drift.map((d) => d.key)).toEqual(['RACE'])
+    expect(r.repaired).toBe(0)
+    expect(r.skippedNewer).toEqual(['RACE'])
+    expect(r.repairFailed).toEqual([])
+    expect(store.upserted).toEqual([])
+    expect(store.repairLog).toEqual([])
+  })
+})
+
+describe('a broker status override does not loop the reconcile (2026-09-30 review)', () => {
+  /**
+   * A stateful store for this block: an upsert merges the broker's pinned
+   * status back (as upsertListingRows does), a freeze write sets the flags,
+   * and "our on-market / recent terminal keys" are read off the rows. PIN is
+   * Expired in Spark while a broker's edit pins it Active here, and it is
+   * frozen (the finalize followed Spark's terminal status). REAL is the same
+   * shape without an override: frozen Active by mistake, Expired in Spark.
+   */
+  const pinned = new Map<string, string>()
+  const restore: Array<() => void> = []
+
+  afterEach(() => {
+    for (const r of restore.splice(0)) r()
+  })
+
+  beforeEach(async () => {
+    pinned.clear()
+    const dal = await import('@/lib/data/sync/closingsReconcile')
+    const writes = await import('@/lib/data/sync/syncWrites')
+    for (const fn of [dal.getOnMarketListingKeys, dal.getRecentUnsoldTerminalKeys, writes.upsertListingRows, writes.setListingFreezeFlags]) {
+      const m = vi.mocked(fn as (...a: never[]) => unknown)
+      const original = m.getMockImplementation()
+      restore.push(() => m.mockImplementation(original as never))
+    }
+    vi.mocked(dal.getOnMarketListingKeys).mockImplementation(async () =>
+      [...store.rows.values()].filter((r) => isMlsOnMarketStatus(String(r.StandardStatus))).map((r) => String(r.ListingKey)),
+    )
+    vi.mocked(dal.getRecentUnsoldTerminalKeys).mockImplementation(async () =>
+      [...store.rows.values()].filter((r) => ['Expired', 'Withdrawn', 'Canceled'].includes(String(r.StandardStatus))).map((r) => String(r.ListingKey)),
+    )
+    vi.mocked(writes.upsertListingRows).mockImplementation(async (rows: Record<string, unknown>[]) => {
+      for (const row of rows) {
+        const key = String(row.ListingKey)
+        const prev = store.rows.get(key) ?? {}
+        store.rows.set(key, { ...prev, ...row, StandardStatus: pinned.get(String(row.ListNumber)) ?? row.StandardStatus })
+        store.upserted.push(key)
+      }
+      return { ok: true }
+    })
+    vi.mocked(writes.setListingFreezeFlags).mockImplementation(async (listNumbers: string[], flags: Record<string, unknown>) => {
+      for (const r of store.rows.values()) if (listNumbers.includes(String(r.ListNumber))) Object.assign(r, flags)
+      return { ok: true, updated: listNumbers.length }
+    })
+  })
+
+  it('three runs, one change: the unexplained frozen row is repaired once, the pinned one never', async () => {
+    steadyMarket(3)
+    spark.byKey.set('PIN', sparkListing('PIN', { StandardStatus: 'Expired' }))
+    spark.byKey.set('REAL', sparkListing('REAL', { StandardStatus: 'Expired' }))
+    store.rows.set('PIN', ourListing('PIN', { StandardStatus: 'Active', is_finalized: true }))
+    store.rows.set('REAL', ourListing('REAL', { StandardStatus: 'Active', is_finalized: true }))
+    store.overrides.set('LPIN', { status: true, listPrice: true })
+    pinned.set('LPIN', 'Active')
+
+    const runs = []
+    for (let i = 0; i < 3; i++) runs.push(await reconcileListingStatus({ repair: true, terminalSinceDays: 120 }))
+
+    expect(runs.map((r) => r.drift.map((d) => `${d.key}:${d.reasons.join('+')}`))).toEqual([
+      ['REAL:status+frozen_not_terminal'],
+      [],
+      [],
+    ])
+    expect(store.upserted).toEqual(['REAL'])
+    expect(store.rows.get('REAL')).toMatchObject({ StandardStatus: 'Expired', is_finalized: true })
+    // The broker's pin stands, frozen, and nothing rewrites it.
+    expect(store.rows.get('PIN')).toMatchObject({ StandardStatus: 'Active', is_finalized: true })
   })
 })
