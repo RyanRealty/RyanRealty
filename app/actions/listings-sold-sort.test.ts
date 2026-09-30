@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * The Sold scope's tile reads order by the close date (Matt 2026-09-23): on a
@@ -27,6 +27,12 @@ vi.mock('@/lib/data', () => ({
   searchListingsAllCount: vi.fn(),
   pickSearchFeatureFilters: () => ({}),
 }))
+
+// The actions module is heavy: its first import can pass 5 s when the whole suite
+// shares the machine, which timed out the first case. Load it once, up front.
+beforeAll(async () => {
+  await import('./listings')
+}, 60_000)
 
 const bounds = { west: -122, south: 43.5, east: -120.8, north: 44.6 }
 

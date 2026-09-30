@@ -25,7 +25,6 @@
   line-height: 1.35;
   color: var(--v3-navy);
   max-width: 42rem;
-  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
 }
 
 .zip-opening__claim a {
@@ -344,7 +343,6 @@
 #masonry-open,
 .zip-opening__masonry-frame {
   position: relative;
-  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
   padding-bottom: 6.5rem;
 }
 

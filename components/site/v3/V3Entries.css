@@ -132,7 +132,9 @@
   min-width: 0;
   padding-block: var(--v3-space-lg);
   border-top: var(--v3-rule-hairline);
-  scroll-margin-top: calc(var(--v3-chrome-h, 4.5rem) + var(--v3-space-lg));
+  /* Over the page's scroll padding (chrome + md, V3Chrome.css): the entry
+     still lands the chrome plus lg under the top. */
+  scroll-margin-top: calc(var(--v3-space-lg) - var(--v3-space-md));
 }
 
 .v3-entries__item:first-child {

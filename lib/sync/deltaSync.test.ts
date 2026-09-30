@@ -27,6 +27,12 @@ function existing(overrides: Partial<ExistingListingLite> = {}): ExistingListing
     StandardStatus: 'Active',
     ListPrice: 500000,
     is_finalized: false,
+    City: 'Bend',
+    CloseDate: null,
+    ClosePrice: null,
+    property_sub_type: null,
+    TotalLivingAreaSqFt: null,
+    media_finalized: false,
     ...overrides,
   }
 }
@@ -131,16 +137,156 @@ describe('computeDeltaPlan', () => {
     expect(plan.priceHistoryRows[0].change_pct).toBe(10)
   })
 
-  it('finalized existing row: skipped entirely — no upsert, no events', () => {
+  it('finalized existing row with no material change: skipped entirely — no upsert, no events', () => {
     const plan = computeDeltaPlan(
-      [mkResult({ ListPrice: 450000, StandardStatus: 'Pending' })],
-      mapOf(existing({ is_finalized: true })),
+      [mkResult({ StandardStatus: 'Closed', CloseDate: '2026-04-03', ClosePrice: 825000, SubdivisionName: 'Renamed' })],
+      mapOf(
+        existing({
+          is_finalized: true,
+          StandardStatus: 'Closed',
+          CloseDate: '2026-04-03T00:00:00+00:00',
+          ClosePrice: 825000,
+        }),
+      ),
       { nowIso: NOW },
     )
     expect(plan.rowsToUpsert).toHaveLength(0)
+    expect(plan.reopenedRows).toHaveLength(0)
     expect(plan.activityEvents).toHaveLength(0)
     expect(plan.priceHistoryRows).toHaveLength(0)
     expect(plan.counters.skippedFinalized).toBe(1)
+    expect(plan.counters.reopenedFinalized).toBe(0)
+  })
+
+  it('finalized Withdrawn row that Spark now reports Closed: reopens, status_closed, re-finalizes', () => {
+    const plan = computeDeltaPlan(
+      [mkResult({ StandardStatus: 'Closed', CloseDate: '2026-08-11', ClosePrice: 3824000 })],
+      mapOf(existing({ is_finalized: true, StandardStatus: 'Withdrawn', media_finalized: false })),
+      { nowIso: NOW },
+    )
+    expect(plan.counters.skippedFinalized).toBe(0)
+    expect(plan.counters.reopenedFinalized).toBe(1)
+    expect(plan.rowsToUpsert).toHaveLength(0)
+    expect(plan.reopenedRows).toHaveLength(1)
+    expect(plan.reopenedRows[0].is_finalized).toBe(false)
+    expect(plan.reopenedRows[0].history_finalized).toBe(false)
+    expect(plan.reopened[0].reasons).toEqual(['status', 'close_date', 'close_price'])
+    expect(plan.reopened[0].preserveMedia).toBe(false)
+    expect(eventTypes(plan)).toEqual(['status_closed'])
+    expect(plan.statusHistoryRows).toHaveLength(1)
+    expect(plan.finalizeTargets.map((t) => t.listingKey)).toEqual(['KEY1'])
+  })
+
+  it('finalized Closed row whose close date was corrected: reopens on close_date, no status event', () => {
+    const plan = computeDeltaPlan(
+      [mkResult({ StandardStatus: 'Closed', CloseDate: '2026-08-14', ClosePrice: 925000 })],
+      mapOf(
+        existing({
+          is_finalized: true,
+          StandardStatus: 'Closed',
+          CloseDate: '2026-07-28T00:00:00+00:00',
+          ClosePrice: 925000,
+          media_finalized: true,
+        }),
+      ),
+      { nowIso: NOW },
+    )
+    expect(plan.reopened).toEqual([
+      { listNumber: '220000001', listingKey: 'KEY1', reasons: ['close_date'], preserveMedia: true },
+    ])
+    expect(plan.activityEvents).toHaveLength(0)
+    expect(plan.finalizeTargets).toHaveLength(1)
+  })
+
+  it('finalized row we hold without a sub-type or living area: reopens when Spark has them', () => {
+    const plan = computeDeltaPlan(
+      [
+        mkResult({
+          StandardStatus: 'Closed',
+          CloseDate: '2026-04-03',
+          ClosePrice: 825000,
+          PropertySubType: 'Single Family Residence',
+          BuildingAreaTotal: 2838,
+        }),
+      ],
+      mapOf(
+        existing({ is_finalized: true, StandardStatus: 'Closed', CloseDate: '2026-04-03', ClosePrice: 825000 }),
+      ),
+      { nowIso: NOW },
+    )
+    expect(plan.reopened[0]?.reasons).toEqual(['sub_type', 'sqft'])
+  })
+
+  it('a fact Spark leaves blank or masks never reopens a finalized row', () => {
+    const plan = computeDeltaPlan(
+      [mkResult({ StandardStatus: 'Closed', City: '********', CloseDate: null, ClosePrice: null })],
+      mapOf(
+        existing({ is_finalized: true, StandardStatus: 'Closed', CloseDate: '2026-04-03', ClosePrice: 825000 }),
+      ),
+      { nowIso: NOW },
+    )
+    expect(plan.counters.skippedFinalized).toBe(1)
+    expect(plan.reopenedRows).toHaveLength(0)
+  })
+
+  it('a reopened row that sold months ago reopens quietly: no sold event, no status history', () => {
+    const plan = computeDeltaPlan(
+      [mkResult({ StandardStatus: 'Closed', CloseDate: '2026-03-02', ClosePrice: 610000 })],
+      mapOf(existing({ is_finalized: true, StandardStatus: 'Pending' })),
+      { nowIso: NOW },
+    )
+    expect(plan.reopenedRows).toHaveLength(1)
+    expect(plan.activityEvents).toHaveLength(0)
+    expect(plan.statusHistoryRows).toHaveLength(0)
+    expect(plan.finalizeTargets).toHaveLength(1)
+  })
+
+  it('a reopened row never announces a price change', () => {
+    const plan = computeDeltaPlan(
+      [mkResult({ StandardStatus: 'Closed', CloseDate: '2026-07-10', ClosePrice: 480000, ListPrice: 495000 })],
+      mapOf(existing({ is_finalized: true, StandardStatus: 'Pending', ListPrice: 500000 })),
+      { nowIso: NOW },
+    )
+    expect(eventTypes(plan)).toEqual(['status_closed'])
+    expect(plan.priceHistoryRows).toHaveLength(0)
+  })
+
+  it('a withdrawn listing back on the market is still news when it reopens', () => {
+    const plan = computeDeltaPlan(
+      [mkResult({ StandardStatus: 'Active', ListPrice: 749999 })],
+      mapOf(existing({ is_finalized: true, StandardStatus: 'Withdrawn', ListPrice: 799000 })),
+      { nowIso: NOW },
+    )
+    expect(eventTypes(plan)).toEqual(['status_active'])
+    expect(plan.statusHistoryRows).toHaveLength(1)
+    expect(plan.finalizeTargets).toHaveLength(0)
+  })
+
+  it('a listing sent twice in one window is written once, as last sent', () => {
+    const plan = computeDeltaPlan(
+      [mkResult({ ListPrice: 510000 }), mkResult({ ListPrice: 505000 })],
+      mapOf(existing()),
+      { nowIso: NOW },
+    )
+    expect(plan.rowsToUpsert).toHaveLength(1)
+    expect(plan.rowsToUpsert[0].ListPrice).toBe(505000)
+  })
+
+  it('reopened rows never share a batch with ordinary rows', () => {
+    const plan = computeDeltaPlan(
+      [
+        mkResult({ ListNumber: '220000001', ListingKey: 'KEY1', StandardStatus: 'Closed', CloseDate: '2026-08-11', ClosePrice: 1 }),
+        mkResult({ ListNumber: '220000002', ListingKey: 'KEY2', StandardStatus: 'Active' }),
+      ],
+      mapOf(
+        existing({ is_finalized: true, StandardStatus: 'Withdrawn' }),
+        existing({ ListNumber: '220000002', ListingKey: 'KEY2' }),
+      ),
+      { nowIso: NOW },
+    )
+    expect(plan.reopenedRows.map((r) => r.ListNumber)).toEqual(['220000001'])
+    expect(plan.rowsToUpsert.map((r) => r.ListNumber)).toEqual(['220000002'])
+    expect('is_finalized' in plan.rowsToUpsert[0]).toBe(false)
   })
 
   it('simultaneous status change AND price change: both events emitted', () => {

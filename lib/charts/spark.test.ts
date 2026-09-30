@@ -37,6 +37,18 @@ describe('buildSparkPlot', () => {
     expect(plot!.d).toBe('M0.0 10.0 L50.0 10.0 L100.0 10.0')
   })
 
+  it('hands back a lone published point the path cannot show, so the caller can mark it', () => {
+    // Index 2 has no published neighbour: "M50.0 0.0" alone paints nothing.
+    const plot = buildSparkPlot([4, 3, 1, null, 2, 3, null, null, 5], { w: 80, h: 20, pad: 0 })
+    expect(plot).not.toBeNull()
+    expect(plot!.dots).toEqual([])
+    const lone = buildSparkPlot([4, 3, null, 1, null, 2, 3, null, 5], { w: 80, h: 20, pad: 0 })
+    expect(lone!.dots).toEqual([{ x: 30, y: 20 }])
+    // The last point is the end mark's, never a dot as well.
+    expect(lone!.last).toEqual({ x: 80, y: 0 })
+    expect(buildSparkPlot([1, 2, 3], { w: 100, h: 20 })!.dots).toEqual([])
+  })
+
   it('keeps x on the full index axis so a trailing null still leaves the gap', () => {
     const plot = buildSparkPlot([1, 2, null], { w: 100, h: 20, pad: 0 })
     expect(plot!.last).toEqual({ x: 50, y: 0 })

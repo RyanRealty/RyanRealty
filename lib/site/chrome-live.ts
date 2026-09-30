@@ -67,7 +67,11 @@ export function moneyShort(value: number): string {
     const s = m >= 10 ? m.toFixed(1) : m.toFixed(2)
     return `$${s.replace(/\.?0+$/, '')}M`
   }
-  return `$${Math.round(value / 1000)}K`
+  const k = Math.round(value / 1000)
+  // $999,500 to $999,999 would round to "$1000K", a million the figure is not:
+  // keep it under the line to the tenth.
+  if (k >= 1000) return `$${(Math.trunc(value / 100) / 10).toFixed(1)}K`
+  return `$${k}K`
 }
 
 export function composeChromeLive(input: ChromeLiveInputs): V3ChromeLive {

@@ -259,18 +259,13 @@
   }
 
   /* Landmark keeps aria-label="Buy · Sell · Join". The visible labels on
-     this row are Buy, Sell, Join, Company, Contact — one rank. */
+     this row are Buy, Sell, Join, Company, Contact — one rank. The summary
+     is gone here, not clipped to a pixel: a 1px summary was still a control,
+     so Tab landed on it and the focus vanished, and Enter folded the row
+     away (second taste evaluator, 2026-09-29, WCAG 2.4.7). The column is
+     open at this width (V3FooterFold), and the landmark names it. */
   .v3-footer__column[data-heading='Buy · Sell · Join'] .v3-footer__column-title {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    min-height: 0;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
+    display: none;
   }
 
   .v3-footer__column[data-heading='Buy · Sell · Join'] .v3-footer__clusters {

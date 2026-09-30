@@ -652,11 +652,11 @@
   display: block;
   min-width: 3.2rem;
   padding: 0;
-  /* The rail's box IS the plot's box: the grid row can be taller than the
-     plot, and a rail stretched to the row mapped every label onto a scale
+  /* The rail's box IS the plot's drawing box: the grid row can be taller than
+     the plot, and a rail stretched to the row mapped every label onto a scale
      28px longer than the gridlines it names (evaluator round five,
-     SUBDIVISION-CHART-2). */
-  height: var(--v3-chart-plot);
+     SUBDIVISION-CHART-2). Its height and top offset are set with the plot's
+     readout band (THE READOUT BAND, below), from the same property. */
   align-self: start;
 }
 
@@ -787,30 +787,31 @@
   background: var(--v3-ink);
 }
 
+/* The reading. Its base form is ONE LINE in the readout band at the top of
+   the plot (see THE READOUT BAND below); a desktop chart that did not ask for
+   the band turns it into the floating card. */
 .v3 .v3-chart__tip {
   position: absolute;
-  top: 0;
-  transform: translateX(10px);
-  min-width: 9rem;
-  padding: var(--v3-space-2xs) var(--v3-space-xs);
-  background: var(--v3-cream);
-  border: 1px solid color-mix(in srgb, var(--v3-navy) 30%, transparent);
-  box-shadow: var(--v3-media-shadow);
-  font-size: var(--v3-size-body-sm);
+  top: calc(-1 * var(--v3-chart-readout));
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--v3-space-xs);
+  /* Its own width, not what is left of the plot: the resting tip sits on the
+     newest point at the right edge, where shrink-to-fit wrapped "Median sale
+     price" onto three lines. */
+  width: max-content;
+  max-width: min(22rem, calc(100vw - 2rem));
+  min-width: 0;
+  padding: 0.1rem 0.25rem;
+  background: color-mix(in srgb, var(--v3-cream) 94%, transparent);
+  font-size: var(--v3-size-eyebrow);
   font-variant-numeric: tabular-nums;
+  line-height: 1.35;
   pointer-events: none;
   z-index: 2;
-}
-
-.v3 .v3-chart__tip--flip {
-  transform: translateX(calc(-100% - 10px));
-}
-
-/* Resting tip (SITE-81): the newest month is open before a pointer arrives,
-   so a still of the fold already shows the chart is interactive. */
-.v3 .v3-chart__tip--resting {
-  border-color: var(--v3-navy);
-  box-shadow: var(--v3-media-shadow);
 }
 
 /* Year pager (beautifului-insight) — isolate one year; month scrub below. */
@@ -920,7 +921,7 @@
 }
 
 .v3 .v3-chart__tip-tick {
-  margin: 0 0 var(--v3-space-3xs);
+  margin: 0;
   color: var(--v3-ink-muted);
   font-size: var(--v3-size-eyebrow);
   letter-spacing: var(--v3-track-eyebrow);
@@ -929,14 +930,14 @@
 
 .v3 .v3-chart__tip-list {
   margin: 0;
-  display: grid;
-  gap: 0.1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--v3-space-xs);
 }
 
 .v3 .v3-chart__tip-row {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--v3-space-sm);
+  display: inline-flex;
+  gap: var(--v3-space-3xs);
   color: var(--v3-ink-muted);
 }
 
@@ -962,65 +963,178 @@
   clip-path: inset(50%);
 }
 
-/* On a phone the reading is one line in a band reserved above the plot, never
-   a card over it: a 144px card on a 276px plot hid half the chart and clipped
-   at the right (pass five, R10). The crosshair and dots still mark the column;
-   the band is part of the plot box, so the layer's top: 0 lands in it. */
+/* ---------------------------------------------------------------------------
+   THE READOUT BAND. The reading prints on one line in a band reserved at the
+   top of the plot, never in a card over it: a 144px card on a 276px plot hid
+   half the chart and clipped at the right (pass five, R10). The crosshair and
+   dots still mark the column.
+
+   Every chart reads this way on a phone. From 48rem a chart keeps the band
+   only when it asked for it (reading="band": the chart that is the picture of
+   its section, V3Instrument chartLead, where a card would sit on the line's
+   peaks); every other desktop chart sets the band to nothing and turns the
+   reading into the floating card below.
+
+   ONE custom property carries the band, --v3-chart-readout (tokens.css), and
+   ONE set of rules reads it. The phone rules and the reading="band" rules used
+   to be two copies with the height typed out eight times, so the plot's top
+   padding and the reading layer's top could drift apart and float every dot
+   off the point it reads (code review, 2026-09-29).
+   --------------------------------------------------------------------------- */
+
+.v3 .v3-chart__plot {
+  padding-top: var(--v3-chart-readout);
+}
+
+/* The reading LAYER starts under the band, over the drawing alone: its dots
+   are placed as fractions of the drawing, and while the layer also spanned the
+   band every dot floated up to 20px above the point it read (measured on the
+   monthly report at 375, 2026-09-25). The tip is lifted back into the band by
+   its own top, which reads the same property. */
+.v3 .v3-chart__plot > .v3-chart__hover,
+.v3 .v3-chart__plot > .v3-chart__callouts {
+  top: var(--v3-chart-readout);
+}
+
+/* The rail follows the plot's band, or its labels map onto a scale longer
+   than the gridlines they name. */
+.v3 .v3-chart__y--ticks,
+.v3 .v3-chart__y--ends {
+  margin-top: var(--v3-chart-readout);
+  height: calc(var(--v3-chart-plot) - var(--v3-chart-readout));
+}
+
+/* The y labels stand clear of the Jax button (V3DogFloater: 4.25rem wide,
+   --v3-space-md in from the right edge, fixed at mid-screen) on a phone, where
+   the rail runs to the gutter: at 375 the button sat on "$1,500,000" and left
+   "$1," (2026-09-25). The gutter already gives part of the band. */
 @media (max-width: 47.99rem) {
-  .v3 .v3-chart__plot {
-    padding-top: 1.75rem;
-  }
-
-  /* The rail follows the plot's reading band, or its labels map onto a scale
-     28px longer than the gridlines they name. */
-  .v3 .v3-chart__y--ticks,
-  .v3 .v3-chart__y--ends {
-    margin-top: 1.75rem;
-    height: calc(var(--v3-chart-plot) - 1.75rem);
-  }
-
-  /* The y labels stand clear of the Jax button (V3DogFloater: 4.25rem wide,
-     --v3-space-md in from the right edge, fixed at mid-screen) on a phone,
-     where the rail runs to the gutter: at 375 the button sat on "$1,500,000"
-     and left "$1," (2026-09-25). The gutter already gives part of the band. */
   .v3 .v3-chart__y--ticks,
   .v3 .v3-chart__y--ends {
     margin-inline-end: calc(4.25rem + var(--v3-space-md) - var(--v3-gutter));
   }
+}
 
-  .v3 .v3-chart__tip,
-  .v3 .v3-chart__tip--flip {
-    top: 0;
-    left: 0 !important;
-    right: 0;
-    min-width: 0;
-    padding: 0.1rem 0.25rem;
-    transform: none;
+/* The desktop card: a small cream panel beside the point, flipping sides past
+   the right third. The island hands the point's x over as --v3-chart-tip-x, so
+   the band can pin the reading to the left edge without fighting an inline
+   left. */
+@media (min-width: 48rem) {
+  .v3.v3-chart:not(.v3-chart--band) {
+    --v3-chart-readout: 0px;
+  }
+
+  .v3.v3-chart:not(.v3-chart--band) .v3-chart__tip {
+    left: var(--v3-chart-tip-x, 0);
+    right: auto;
+    display: block;
+    min-width: 9rem;
+    padding: var(--v3-space-2xs) var(--v3-space-xs);
+    transform: translateX(10px);
+    background: var(--v3-cream);
+    border: 1px solid color-mix(in srgb, var(--v3-navy) 30%, transparent);
+    box-shadow: var(--v3-media-shadow);
+    font-size: var(--v3-size-body-sm);
+    line-height: inherit;
+  }
+
+  .v3.v3-chart:not(.v3-chart--band) .v3-chart__tip--flip {
+    transform: translateX(calc(-100% - 10px));
+  }
+
+  /* Resting tip (SITE-81): the newest month is open before a pointer arrives,
+     so a still of the fold already shows the chart is interactive. */
+  .v3.v3-chart:not(.v3-chart--band) .v3-chart__tip--resting {
+    border-color: var(--v3-navy);
+  }
+
+  .v3.v3-chart:not(.v3-chart--band) .v3-chart__tip-tick {
+    margin: 0 0 var(--v3-space-3xs);
+  }
+
+  .v3.v3-chart:not(.v3-chart--band) .v3-chart__tip-list {
+    display: grid;
+    gap: 0.1rem;
+  }
+
+  .v3.v3-chart:not(.v3-chart--band) .v3-chart__tip-row {
     display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 0 var(--v3-space-xs);
-    border: 0;
-    box-shadow: none;
-    background: color-mix(in srgb, var(--v3-cream) 94%, transparent);
-    font-size: var(--v3-size-eyebrow);
-    line-height: 1.35;
+    justify-content: space-between;
+    gap: var(--v3-space-sm);
   }
+}
 
-  .v3 .v3-chart__tip-tick {
-    margin: 0;
-  }
+/* ---------------------------------------------------------------------------
+   CALLOUTS. The points a claim names (a run's high and its low), marked on
+   the line with an open ring and labelled beside it: the high above its ring,
+   the low below. Nothing on the line is higher than the high or lower than the
+   low, so neither label can sit on the line; the domain carries a label's
+   height of air on the labelled side (V3Chart CALLOUT_HEADROOM), so neither
+   reaches the reading band or the axis either. The layer takes the reading
+   layer's box (THE READOUT BAND, above), so a point's fraction of the drawing
+   lands on the pixel the line does. The reading layer paints over it.
+   --------------------------------------------------------------------------- */
 
-  .v3 .v3-chart__tip-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0 var(--v3-space-xs);
-  }
+.v3 .v3-chart__callouts {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
 
-  .v3 .v3-chart__tip-row {
-    display: inline-flex;
-    gap: var(--v3-space-3xs);
-  }
+.v3 .v3-chart__callout {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+/* Open, so the line reads through it and the resting dot still shows when the
+   newest month is the high or the low. */
+.v3 .v3-chart__callout::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0.55rem;
+  height: 0.55rem;
+  border: 1.5px solid var(--v3-ink);
+  border-radius: 50%;
+  background: var(--v3-cream);
+  transform: translate(-50%, -50%);
+}
+
+.v3 .v3-chart__callout-label {
+  position: absolute;
+  padding: 0 var(--v3-space-3xs);
+  background: color-mix(in srgb, var(--v3-cream) 90%, transparent);
+  color: var(--v3-ink);
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-medium);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--v3-track-label);
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.v3 .v3-chart__callout--above .v3-chart__callout-label {
+  bottom: 0.45rem;
+}
+
+.v3 .v3-chart__callout--below .v3-chart__callout-label {
+  top: 0.45rem;
+}
+
+.v3 .v3-chart__callout--center .v3-chart__callout-label {
+  left: 0;
+  transform: translateX(-50%);
+}
+
+/* Near an edge the label hangs inward from its point. */
+.v3 .v3-chart__callout--start .v3-chart__callout-label {
+  left: calc(-1 * var(--v3-space-2xs));
+}
+
+.v3 .v3-chart__callout--end .v3-chart__callout-label {
+  right: calc(-1 * var(--v3-space-2xs));
 }
 
 /* Year ticks on a phone: six four-digit labels do not fit a 242px plot

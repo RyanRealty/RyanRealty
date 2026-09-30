@@ -436,3 +436,45 @@ export function V3Heading({
     </h2>
   )
 }
+
+/* -------------------------------------------------------------------------- */
+/* V3RunningHead                                                               */
+/* -------------------------------------------------------------------------- */
+
+export type V3RunningHeadProps = {
+  /** 1 opens the page, 2 titles a section (V3Heading's rule). */
+  level: 1 | 2
+  /** The name. Non-nullable: a heading is a name, so it cannot be empty. */
+  heading: NonNullable<ReactNode>
+  /** The context, set on the heading's baseline at the far end of the line. One line, never a sentence. */
+  kicker: NonNullable<ReactNode>
+  /** The heading's id. Pair with aria-labelledby on the section it names. */
+  id?: string
+  className?: string
+  /** A class on the heading itself, for the owning section's own spacing. */
+  headingClassName?: string
+}
+
+/**
+ * THE RUNNING HEAD. A heading with its context set on the heading's own
+ * baseline at the far end of the measure, the way a table's head names its
+ * columns, instead of an eyebrow stacked over it. A page reaches for it to
+ * break the eyebrow-then-heading beat when every section would otherwise open
+ * the same way (the monthly report, taste evaluator 2026-09-25). The heading
+ * stays first in reading order, so the region is still named by it and the
+ * kicker reads as its qualifier; on a short line the kicker wraps under it.
+ *
+ * One rule set serves every running head (tokens.css, V3RunningHead): the
+ * Ledger's `eyebrowInline` renders this, and so does the monthly report's
+ * archive, so the two can never drift into two looks for one beat.
+ */
+export function V3RunningHead({ level, heading, kicker, id, className, headingClassName }: V3RunningHeadProps) {
+  return (
+    <div className={cn('v3-running-head', className)}>
+      <V3Heading level={level} id={id} className={headingClassName}>
+        {heading}
+      </V3Heading>
+      <V3Eyebrow className="v3-running-head__kicker">{kicker}</V3Eyebrow>
+    </div>
+  )
+}

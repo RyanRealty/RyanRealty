@@ -143,6 +143,7 @@
 
 .lease-towns:has(.lease-map [data-row='1']:is(:hover, :focus-within)) .v3-ledger__item:nth-child(1) .v3-ledger__reveal {
   visibility: visible;
+  opacity: 1;
 }
 
 .lease-towns:has(.v3-ledger__item:nth-child(2):is(:hover, :focus-within)) .lease-map__spot:not([data-row='2']),
@@ -166,6 +167,7 @@
 
 .lease-towns:has(.lease-map [data-row='2']:is(:hover, :focus-within)) .v3-ledger__item:nth-child(2) .v3-ledger__reveal {
   visibility: visible;
+  opacity: 1;
 }
 
 .lease-towns:has(.v3-ledger__item:nth-child(3):is(:hover, :focus-within)) .lease-map__spot:not([data-row='3']),
@@ -189,6 +191,7 @@
 
 .lease-towns:has(.lease-map [data-row='3']:is(:hover, :focus-within)) .v3-ledger__item:nth-child(3) .v3-ledger__reveal {
   visibility: visible;
+  opacity: 1;
 }
 
 .lease-towns:has(.v3-ledger__item:nth-child(4):is(:hover, :focus-within)) .lease-map__spot:not([data-row='4']),
@@ -212,6 +215,7 @@
 
 .lease-towns:has(.lease-map [data-row='4']:is(:hover, :focus-within)) .v3-ledger__item:nth-child(4) .v3-ledger__reveal {
   visibility: visible;
+  opacity: 1;
 }
 
 .lease-towns:has(.v3-ledger__item:nth-child(5):is(:hover, :focus-within)) .lease-map__spot:not([data-row='5']),
@@ -235,6 +239,7 @@
 
 .lease-towns:has(.lease-map [data-row='5']:is(:hover, :focus-within)) .v3-ledger__item:nth-child(5) .v3-ledger__reveal {
   visibility: visible;
+  opacity: 1;
 }
 
 .lease-towns:has(.v3-ledger__item:nth-child(6):is(:hover, :focus-within)) .lease-map__spot:not([data-row='6']),
@@ -258,6 +263,7 @@
 
 .lease-towns:has(.lease-map [data-row='6']:is(:hover, :focus-within)) .v3-ledger__item:nth-child(6) .v3-ledger__reveal {
   visibility: visible;
+  opacity: 1;
 }
 
 .lease-towns:has(.v3-ledger__item:nth-child(7):is(:hover, :focus-within)) .lease-map__spot:not([data-row='7']),
@@ -281,6 +287,7 @@
 
 .lease-towns:has(.lease-map [data-row='7']:is(:hover, :focus-within)) .v3-ledger__item:nth-child(7) .v3-ledger__reveal {
   visibility: visible;
+  opacity: 1;
 }
 
 .lease-towns:has(.v3-ledger__item:nth-child(8):is(:hover, :focus-within)) .lease-map__spot:not([data-row='8']),
@@ -304,6 +311,7 @@
 
 .lease-towns:has(.lease-map [data-row='8']:is(:hover, :focus-within)) .v3-ledger__item:nth-child(8) .v3-ledger__reveal {
   visibility: visible;
+  opacity: 1;
 }
 
 .lease-towns:has(.v3-ledger__item:nth-child(9):is(:hover, :focus-within)) .lease-map__spot:not([data-row='9']),
@@ -327,6 +335,7 @@
 
 .lease-towns:has(.lease-map [data-row='9']:is(:hover, :focus-within)) .v3-ledger__item:nth-child(9) .v3-ledger__reveal {
   visibility: visible;
+  opacity: 1;
 }
 
 .lease-towns:has(.v3-ledger__item:nth-child(10):is(:hover, :focus-within)) .lease-map__spot:not([data-row='10']),
@@ -350,6 +359,7 @@
 
 .lease-towns:has(.lease-map [data-row='10']:is(:hover, :focus-within)) .v3-ledger__item:nth-child(10) .v3-ledger__reveal {
   visibility: visible;
+  opacity: 1;
 }
 
 .lease-towns:has(.v3-ledger__item:nth-child(11):is(:hover, :focus-within)) .lease-map__spot:not([data-row='11']),
@@ -373,6 +383,7 @@
 
 .lease-towns:has(.lease-map [data-row='11']:is(:hover, :focus-within)) .v3-ledger__item:nth-child(11) .v3-ledger__reveal {
   visibility: visible;
+  opacity: 1;
 }
 
 .lease-towns:has(.v3-ledger__item:nth-child(12):is(:hover, :focus-within)) .lease-map__spot:not([data-row='12']),
@@ -396,6 +407,7 @@
 
 .lease-towns:has(.lease-map [data-row='12']:is(:hover, :focus-within)) .v3-ledger__item:nth-child(12) .v3-ledger__reveal {
   visibility: visible;
+  opacity: 1;
 }
 
 /* THE DRAWER (LeaseTownDrawer). Every town after the lead is one row: name

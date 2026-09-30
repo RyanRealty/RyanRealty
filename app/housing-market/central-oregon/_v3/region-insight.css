@@ -7,8 +7,6 @@
   display: block;
   width: 100%;
   min-width: 0;
-  /* The card is a capture target and an anchor; clear the fixed chrome. */
-  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
 }
 
 /* Liveline paints its month axis inside the canvas's own bottom padding, so

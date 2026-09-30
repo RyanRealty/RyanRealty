@@ -269,7 +269,7 @@
     }
   ],
   "removedComponents": [
-    "kb-root + page-level kb.css + SmoothScrollProvider + KbSectionTracker. The page opens V3_ROOT_CLASS + .listing-detail; V3SectionTracker records sections; native hash scrolling honors the scroll-margin-top that listing-detail.css sets on every [id], so anchor jumps still clear the fixed mast.",
+    "kb-root + page-level kb.css + SmoothScrollProvider + KbSectionTracker. The page opens V3_ROOT_CLASS + .listing-detail; V3SectionTracker records sections; native hash scrolling honors the page's scroll-padding-top (V3Chrome.css, the sticky chrome's height plus one space, since 2026-09-30), so anchor jumps still clear the fixed mast.",
     "KbBreadcrumb -> V3Breadcrumb (same trail, belowNav default clears the fixed header).",
     "KbFooter (with its listing-scoped Schedule/Ask band) -> V3Footer outside main. Schedule a tour and Ask already live on PriceCtaStrip, ListingBrokerCTA, and the mobile bar; V3Footer has no button and carries the ODS attribution slot.",
     "KbFeatured -> ListingFeaturedHomes (listing register, identical rail)."

@@ -16,7 +16,6 @@
   padding: clamp(1.5rem, 3.5vw, 2.5rem) 0 clamp(2rem, 4vw, 3rem);
   background: var(--v3-surface);
   color: var(--v3-ink);
-  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
 }
 
 * + .v3.v3-slots {

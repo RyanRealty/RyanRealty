@@ -251,7 +251,7 @@ Unused CRM modules: `lib/crm/lead-router.ts` (`captureLead` zero callers), `lib/
 | `_lss_backfill_cursor` | **dropped** `20260818223000` (6 shards, all done, last write 2026-08-01) | no TS; not in `cron.job` | **dropped** |
 | `listing_backfill_cursors` | **1** row · job `sale_pricing_facts` · **2026-08-18 18:21Z** | live facts refresh | **keep** |
 | `sync_year_cursor` | **1** row · `phase=idle` since **2026-04-14** | `scripts/sync-status-report.mjs` + `/api/admin/sync/backfill-health` | **keep** |
-| `get_beacon_metrics` | OpenAPI yes | `get_city_period_metrics` wrapper → `getReportMetrics` (admin reports + `market-stat-consistency` cron) | **keep** |
+| `report_period_metrics_core` | OpenAPI yes | `get_city_period_metrics` wrapper → `getReportMetrics` (admin reports + `market-stat-consistency` cron) | **keep** |
 | `get_homepage_market_stats` | **dropped** `20260818210000` | types only | **dropped** |
 
 **Not seen:** whether all 484 files are applied; RLS/GRANT state; `cron.job` contents (schema not exposed on PostgREST).

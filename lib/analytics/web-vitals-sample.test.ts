@@ -32,7 +32,7 @@ describe('parseWebVitalSample', () => {
     }
   })
 
-  // TRACK-3: Next 16 still calls onFID, so FID beacons keep arriving.
+  // TRACK-3: Next 16 still calls onFID, so FID reports keep arriving.
   it('drops FID', () => {
     expect(parseWebVitalSample(sample({ name: 'FID', value: 12 }))).toEqual({ ok: false, reason: 'metric' })
   })

@@ -193,10 +193,10 @@ const SEEDS = [
   {
     versionGap: 'G23',
     domain: 'nurture',
-    title: 'Email residue kill (FUB/Beacon)',
-    objective: 'REQUIREMENTS R-147: stop FUB/Beacon archived nurture emails still sending via connected Gmail; purge FUB vocabulary and dead keys where safe.',
+    title: 'Email residue kill (FUB smart campaigns)',
+    objective: 'REQUIREMENTS R-147: stop FUB smart-campaign archived nurture emails still sending via connected Gmail; purge FUB vocabulary and dead keys where safe.',
     output: 'Residue sends stopped at the source; purge list executed with evidence.',
-    accept: 'Zero FUB/Beacon-originated sends observed over a full week of email_events; keys/vocab census clean.',
+    accept: 'Zero FUB-smart-campaign-originated sends observed over a full week of email_events; keys/vocab census clean.',
   },
   {
     versionGap: 'G24',

@@ -311,7 +311,11 @@ export function MorphingSearch({
 				const focusTarget = previousFocus?.isConnected
 					? previousFocus
 					: triggerRef.current;
-				focusTarget?.focus();
+				// Handed back, not moved to: the target was on screen when the
+				// dialog opened and the page stayed put under it, so returning
+				// focus never scrolls. In the site's sticky header a scroll here
+				// jumped the page about 400px (V3Chrome.css).
+				focusTarget?.focus({ preventScroll: true });
 			});
 			return () => cancelAnimationFrame(frame);
 		}
