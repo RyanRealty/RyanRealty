@@ -444,6 +444,7 @@
     "ci:skyslope-mirror": "node scripts/check-skyslope-mirror.mjs",
     "ci:meta-audience-hold": "node scripts/check-meta-audience-hold.mjs",
     "ci:join-conversion": "node scripts/check-join-conversion.mjs",
+    "ci:sell-cta-tracking": "node scripts/check-sell-cta-tracking.mjs",
     "ci:video-docket": "node scripts/check-video-docket.mjs",
     "ci:integration-health": "node scripts/check-integration-health.mjs",
     "ci:search-completeness-accept": "node scripts/check-search-completeness-accept.mjs",
