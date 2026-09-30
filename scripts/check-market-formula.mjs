@@ -114,7 +114,6 @@ const MOS_ROUNDING_LEDGER = {
   'app/actions/dashboard.ts': 1,
   'app/housing-market/page.tsx': 2,
   'lib/area-market.ts': 1,
-  'lib/cma/market.ts': 1,
   'lib/data/market/market-narrative.ts': 1,
 
   'components/site/PriceBandTable.tsx': 1,
