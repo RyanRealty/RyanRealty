@@ -1238,11 +1238,17 @@
   -webkit-user-select: none;
 }
 
-/* The hit area reaches a full tap target without drawing any taller. */
+/* The hit area reaches a full tap target without drawing any taller: the
+   token's 44px, centred on the track (2026-09-29: a rem inset measured 42.2px
+   where the root size is under 16px, and ci:tap-targets failed it). */
 .v3-dial__asks-track::before {
   content: '';
   position: absolute;
-  inset: -0.6rem 0 -0.6rem 0;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: var(--v3-tap);
+  transform: translateY(-50%);
 }
 
 .v3-dial__asks-ticks {
