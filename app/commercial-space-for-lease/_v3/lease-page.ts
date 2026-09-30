@@ -104,6 +104,43 @@ export type LeaseLedgerRow = {
   /** This town's lease count over the largest town's, 0 to 1. */
   weight: number
   detail?: string
+  /** What a hover on the row reveals: the kinds of space and their sizes. */
+  reveal?: string
+}
+
+/**
+ * The line a hover on a town's row reveals (2026-09-29: "no hover on the
+ * bars"): what kinds of space its leases are, most first, and the span of
+ * their listed sizes. Every figure is a count or a size off the rows the dial
+ * under it shows; a kind or a size a row does not carry is not guessed.
+ */
+export function leaseTownReveal(rows: readonly V3ListingRowData[]): string | null {
+  const kinds = new Map<string, number>()
+  for (const row of rows) {
+    const kind = row.propertySubType?.trim()
+    if (kind) kinds.set(kind, (kinds.get(kind) ?? 0) + 1)
+  }
+  const kindLine = [...kinds.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([kind, n]) => `${kind} ${formatCount(n)}`)
+    .join(' · ')
+  const sizes = rows
+    .map((row) => row.sqft)
+    .filter((n): n is number => n != null && Number.isFinite(n) && n > 0)
+  let sizeLine = ''
+  if (sizes.length > 0) {
+    const lo = Math.min(...sizes)
+    const hi = Math.max(...sizes)
+    sizeLine =
+      lo === hi
+        ? `${formatCount(lo)} sq ft`
+        : `${formatCount(lo)} to ${formatCount(hi)} sq ft`
+    if (sizes.length < rows.length) {
+      sizeLine += ` (${formatCount(sizes.length)} ${sizes.length === 1 ? 'lists' : 'list'} a size)`
+    }
+  }
+  const line = [kindLine, sizeLine].filter(Boolean).join('; ')
+  return line || null
 }
 
 /** One row per town: its count as a length, its rate line (every lease in it) under the name. */
@@ -118,6 +155,10 @@ export function leaseCityLedgerRows(groups: readonly LeaseCityGroup[]): LeaseLed
     // rent in one sentence asked the reader to convert between them. The
     // figures and their counts are publishLeaseRateSummary's, unchanged.
     ...(group.rateSummary ? { detail: group.rateSummary.split(' · ').join('\n') } : {}),
+    ...(() => {
+      const reveal = leaseTownReveal(group.rows)
+      return reveal ? { reveal } : {}
+    })(),
   }))
 }
 
