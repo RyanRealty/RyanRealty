@@ -29,6 +29,24 @@ export const SIGNER_ONLY_TYPES: ReadonlySet<SignFieldType> = new Set(['signature
 /** Stamped at submit (the server's clock, the recipient's own name). */
 export const AUTO_STAMPED_TYPES: ReadonlySet<SignFieldType> = new Set(['full_name', 'date_signed', 'time_signed'])
 
+/**
+ * Types whose value the sealer prints as fitted text (lib/tc/seal-pdf.ts
+ * drawFieldValue: fitTextToBox, the same lines and baselines PrintedLines
+ * draws). The signing page shows them the same way, so a name, a date or a
+ * typed note reads on screen exactly as it prints.
+ */
+export const PRINTED_TEXT_TYPES: ReadonlySet<SignFieldType> = new Set(['text', 'date', 'time', 'full_name', 'date_signed', 'time_signed'])
+
+/**
+ * True when the signing page should draw this value as the sealer prints it.
+ * A line of a lined section (a text value that carries its own size) is
+ * already laid out and prints as-is, so it keeps its own rendering.
+ */
+export function drawsAsPrintedText(type: SignFieldType, value: SignFieldValue | null | undefined, text: string): boolean {
+  if (!PRINTED_TEXT_TYPES.has(type) || !text.trim()) return false
+  return !(value?.kind === 'text' && typeof value.size === 'number' && value.size > 0)
+}
+
 /** Sender marks on the page, never values. */
 export const ANNOTATION_TYPES: ReadonlySet<SignFieldType> = new Set(['strike', 'highlight'])
 

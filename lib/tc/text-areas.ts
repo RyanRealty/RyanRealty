@@ -66,9 +66,18 @@ export function helveticaWidth(text: string, size: number): number {
   return (total * size) / 1000
 }
 
-/** The sealer's type size for a box this tall (points): lib/tc/seal-pdf.ts drawFieldValue. */
+/**
+ * Every value on a signed document prints at one size (points): a name, a
+ * date, a typed note and a lined section alike. 10 pt sits on the form's own
+ * 12 pt ruled line with room for a descender. Sizing each box from its own
+ * height put a 27.7 pt box at 11 pt beside a 12 pt line at 8.6 pt, so the
+ * page read as mismatched (Matt's test packet, 2026-09-30).
+ */
+export const DOCUMENT_TEXT_PT = 10
+
+/** The sealer's type size for a box this tall (points): the document size, smaller only for a box too short to hold it. */
 export function textSizeForBox(heightPts: number): number {
-  return Math.max(7, Math.min(11, heightPts * 0.72))
+  return Math.max(7, Math.min(DOCUMENT_TEXT_PT, heightPts - 2))
 }
 
 /** The sealer's usable width for a box this wide (points): 2 pt padding each side. */
