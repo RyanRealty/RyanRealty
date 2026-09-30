@@ -1146,6 +1146,30 @@ async function renderCityDetail({ params }: Props) {
                 mos={foldMosProps}
                 latestSale={foldLatestSale}
               />
+              {/* The places inside this city as doors, under the figure: the
+                  column with room at 1440 (2026-09-29: it stood ~400px empty
+                  beside the alerts), the same row the neighborhood page runs.
+                  Names only: their counts live on the rail by the map. */}
+              {railEntries.some((entry) => entry.href) ? (
+                <nav
+                  className="city-fold__places"
+                  aria-label={isBend ? `${cityName} neighborhoods` : `${cityName} subdivisions`}
+                >
+                  <p className="city-fold__places-label">
+                    {isBend ? `${cityName} neighborhoods` : `Places in ${cityName}`}
+                  </p>
+                  <p className="city-fold__places-row">
+                    {railEntries
+                      .filter((entry) => entry.href)
+                      .slice(0, 24)
+                      .map((entry) => (
+                        <span key={entry.id} className="city-fold__places-door">
+                          <a href={entry.href}>{entry.name}</a>{' '}
+                        </span>
+                      ))}
+                  </p>
+                </nav>
+              ) : null}
             </aside>
             <aside className="city-fold__figure city-fold__figure--ask">
               <CityAlertsStrip
