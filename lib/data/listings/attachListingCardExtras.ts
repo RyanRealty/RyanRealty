@@ -132,14 +132,17 @@ export async function attachListingCardExtras(
   const [{ data, error }, drops] = await Promise.all([
     sb
       .from('listings')
-      .select('ListingKey, original_list_price, virtual_tour_url, ListOfficeName, PhotoURL, details')
+      // The listings column is OriginalListPrice (mixed case, passed bare to supabase-js).
+      // Named original_list_price from 2026-09-21 to 09-30, the whole read failed and
+      // every card lost its photos, tour, listing office and price drop.
+      .select('ListingKey, OriginalListPrice, virtual_tour_url, ListOfficeName, PhotoURL, details')
       .in('ListingKey', slice), // @canonical-key — keys come from listing_tile_mv ListingKey on the same card row
     latestPriceDropsForKeys(slice),
   ])
   if (error || !data) return out
   for (const raw of data as Array<{
     ListingKey?: string | null
-    original_list_price?: number | null
+    OriginalListPrice?: number | string | null
     virtual_tour_url?: string | null
     ListOfficeName?: string | null
     PhotoURL?: string | null
@@ -162,8 +165,8 @@ export async function attachListingCardExtras(
     }
     if (photos.length === 0) push(raw.PhotoURL ? listingRowPhotoSrc(raw.PhotoURL) : raw.PhotoURL)
     const original =
-      raw.original_list_price != null && Number.isFinite(Number(raw.original_list_price))
-        ? Number(raw.original_list_price)
+      raw.OriginalListPrice != null && Number.isFinite(Number(raw.OriginalListPrice))
+        ? Number(raw.OriginalListPrice)
         : null
     const priceDrop = drops.get(key) ?? null
     out.set(key, {
