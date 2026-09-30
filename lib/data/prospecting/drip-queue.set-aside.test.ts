@@ -166,12 +166,12 @@ describe('setAsideQueuedFirstTouch', () => {
 describe('peekOldestQueuedFirstTouch after a set-aside', () => {
   it('serves the next row, and the set-aside row only once its stamp comes due', async () => {
     h.tables.expired_listings = [queued('LAND0', '2026-09-30T13:00:00.000Z'), queued('NEXT', '2026-09-30T14:00:00.000Z')]
-    expect((await peekOldestQueuedFirstTouch(NOW))?.id).toBe('LAND0')
+    expect((await peekOldestQueuedFirstTouch({ now: NOW }))?.id).toBe('LAND0')
     await setAsideQueuedFirstTouch('expired', 'LAND0', RETRY)
-    expect(await peekOldestQueuedFirstTouch(NOW)).toMatchObject({ id: 'NEXT', postalCode: '97702' })
+    expect(await peekOldestQueuedFirstTouch({ now: NOW })).toMatchObject({ id: 'NEXT', postalCode: '97702' })
     h.tables.expired_listings[1]!.outreach_email_status = 'sent'
-    expect(await peekOldestQueuedFirstTouch(NOW)).toBeNull()
-    expect((await peekOldestQueuedFirstTouch(new Date(RETRY.getTime() + 1)))?.id).toBe('LAND0')
+    expect(await peekOldestQueuedFirstTouch({ now: NOW })).toBeNull()
+    expect((await peekOldestQueuedFirstTouch({ now: new Date(RETRY.getTime() + 1) }))?.id).toBe('LAND0')
   })
 })
 

@@ -1,6 +1,8 @@
 'use server'
 
+import { cookies, headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
+import { CONSENT_COOKIE, recordingAllowed } from '@/lib/identity/consent'
 
 export type UserEventType =
   | 'page_view'
@@ -20,6 +22,12 @@ export type UserEventType =
   | 'alert_create'
   | 'search_zero_results'
 
+/**
+ * One row in user_events. Refused, as every tracker's event is
+ * (docs/TRACKING_POLICY.md), for a visitor whose banner answer is a decline or whose
+ * browser sends Global Privacy Control: the callers gate on the same thing, and a
+ * client cannot widen it.
+ */
 export async function trackUserEvent(params: {
   eventType: UserEventType
   sessionId?: string | null
@@ -27,6 +35,8 @@ export async function trackUserEvent(params: {
   listingKey?: string | null
   payload?: Record<string, unknown> | null
 }) {
+  const [cookieStore, hdrs] = await Promise.all([cookies(), headers()])
+  if (!recordingAllowed({ consentCookie: cookieStore.get(CONSENT_COOKIE)?.value ?? null, secGpc: hdrs.get('sec-gpc') })) return
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   await supabase.from('user_events').insert({

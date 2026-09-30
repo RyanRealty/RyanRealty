@@ -13,7 +13,6 @@
     "app/reports/[slug]/[geoName]/page.tsx",
     "app/reports/sales/[city]/[period]/page.tsx",
     "app/sell/[intent]/page.tsx",
-    "app/team/[slug]/edit/page.tsx",
-    "app/team/[slug]/page.tsx"
+    "app/team/[slug]/edit/page.tsx"
   ]
 }

@@ -7,6 +7,7 @@
 
 import { resolveClientVisitBroker, visitBrokerGa4Fields } from '@/lib/analytics/visit-broker'
 import { trackEventWithCAPI } from '@/lib/meta-pixel-helpers'
+import { readSessionId } from '@/lib/analytics/visitor-session'
 
 declare global {
   interface Window {
@@ -168,62 +169,30 @@ export function trackPageView(pageType: string, params: Record<string, unknown> 
 
 // ----------------------------------------------------------------------------
 // First-party session id — stitches anonymous browsing to the CRM person
-// they become when they identify. VisitTracker mints this uuid. Lead forms
-// and the email-click bridge read it and the server replays prior events
-// onto crm_people.
+// they become when they identify. The session id, its lifecycle and the
+// rule that ends it (30 minutes idle, a new campaign) live in ONE module,
+// lib/analytics/visitor-session.ts; the trackers advance it
+// (components/VisitTracker.tsx firstPartyEventContext) and lead forms read it
+// here, and the server replays prior events onto crm_people.
+//
+// This import is also part of WHEN that module is evaluated: this file is in
+// the bundle every page hydrates with, so the session module records the page's
+// arrival (its address, referrer and navigation type) at hydration, before the
+// lazily loaded VisitTracker posts anything. A tap before it mounts no longer
+// changes the address the arrival is judged on.
 // ----------------------------------------------------------------------------
 
-const RR_SESSION_STORAGE_KEY = 'rr_session_id'
-const RR_SESSION_UUID_V4_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-
 /**
- * Read the visitor session id VisitTracker stored in localStorage. Returns
+ * The visitor session id as the trackers left it in localStorage. Returns
  * undefined when absent or malformed (so it drops cleanly from a submission
- * object). Never creates one — that's VisitTracker's job, and a form-only
- * session with no prior tracked events has nothing to backfill anyway.
+ * object). Never creates one and never advances the session clock — that is the
+ * tracker's job, and a form-only session with no prior tracked events has
+ * nothing to backfill anyway. Past 30 minutes of inactivity the id still names
+ * the session that holds the browsing history, which is the one a form submit
+ * must stitch; every other session on the browser is stitched by rr_vid.
  */
 export function readRrSessionId(): string | undefined {
-  if (typeof window === 'undefined') return undefined
-  try {
-    const id = window.localStorage.getItem(RR_SESSION_STORAGE_KEY)
-    return id && RR_SESSION_UUID_V4_RE.test(id) ? id : undefined
-  } catch {
-    return undefined
-  }
-}
-
-function mintUuidV4(): string {
-  const c = typeof crypto !== 'undefined' ? crypto : undefined
-  if (c && typeof c.randomUUID === 'function') return c.randomUUID()
-  const bytes = new Uint8Array(16)
-  if (c && typeof c.getRandomValues === 'function') c.getRandomValues(bytes)
-  else for (let i = 0; i < 16; i++) bytes[i] = Math.floor(Math.random() * 256)
-  bytes[6] = (bytes[6]! & 0x0f) | 0x40
-  bytes[8] = (bytes[8]! & 0x3f) | 0x80
-  const h = Array.from(bytes, (b) => b.toString(16).padStart(2, '0'))
-  return `${h.slice(0, 4).join('')}-${h.slice(4, 6).join('')}-${h.slice(6, 8).join('')}-${h.slice(8, 10).join('')}-${h.slice(10).join('')}`
-}
-
-/**
- * The visitor session id, minted when absent — the same key and shape
- * VisitTracker uses, so whichever tracker fires first on a fresh visit owns
- * the id and the other reads it. Before this, a section_view sent before
- * VisitTracker had minted the id carried `sessionId: undefined` and the
- * endpoint answered 400 on every first page load (evaluator 2026-09-02, B7).
- * Event and effect code only, never render.
- */
-export function getOrCreateRrSessionId(): string | undefined {
-  if (typeof window === 'undefined') return undefined
-  const existing = readRrSessionId()
-  if (existing) return existing
-  const id = mintUuidV4()
-  try {
-    window.localStorage.setItem(RR_SESSION_STORAGE_KEY, id)
-  } catch {
-    /* storage blocked: the id still stitches this page's events */
-  }
-  return id
+  return readSessionId() ?? undefined
 }
 
 // ----------------------------------------------------------------------------

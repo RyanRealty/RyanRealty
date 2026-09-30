@@ -74,12 +74,13 @@ static artifact — `public/rr-cma-doc.js:1-19`).
   (`lib/cma/register-gate.ts:64-72`). A GA4/device split for these unlisted routes was
   not queried this pass — gap in §11, not asserted.
 - **Automated actors:** the injected `rr-doc-tracker.js` (page_view, identity stitch,
-  click telemetry — `public/rr-doc-tracker.js:1-16`); `rr-cma-doc.js` (screen-only
+  click telemetry — `public/rr-doc-tracker.js:1-57`); `rr-cma-doc.js` (screen-only
   interactive layer — `public/rr-cma-doc.js:1-19`); `/api/track/e/identify` (cookie +
-  session backfill — `app/api/track/e/identify/route.ts:1-45`); the live email
-  open-pixel/click trackers (`app/api/track/e/open/route.ts:31-92`;
-  `app/api/track/e/click/route.ts:17-72` — timeline + `email_events` rows, no broker
-  alert). NOT a live actor: the CMA-specific open/view route
+  session backfill — `app/api/track/e/identify/route.ts:1-52`); the live email
+  open-pixel/click trackers (`app/api/track/e/open/route.ts:32-116`;
+  `app/api/track/e/click/route.ts:31-98` — timeline + `email_events` rows, no broker
+  alert; a click by a scanner or crawler redirects and is recorded only as
+  `email_events` `click_automated`, `:38-42,100-121`). NOT a live actor: the CMA-specific open/view route
   (`app/api/cma/[slug]/track/route.ts:6-24`) would queue a first-open broker alert,
   but no email embeds its URLs — orphaned, §10 D6.
 - **Accountable for completion:** the sending broker — they trigger the send, read the
@@ -95,8 +96,8 @@ static artifact — `public/rr-cma-doc.js:1-19`).
 | The BPO document + status | `public.broker_price_opinions` | `lib/data/bpo/reads.ts:1-13` |
 | Who may open a CMA (identity), claim, and the consent flag | `crm_people` — `emails`, `custom.cmaConsent`, `custom.cmaClaimedBy` | `lib/data/cma/documents.ts:146-161`; `app/api/cma/register/route.ts:61-92` |
 | Consent audit (exact wording version, choices, viewer) | `crm_timeline` row, dedupe-keyed `cma-register:<slug>:<personId>` (first writer wins) | `app/api/cma/register/route.ts:94-104` |
-| Read + on-document click telemetry | `visitor_sessions` + `visitor_events` (`page_category='client-document'`) | `public/rr-doc-tracker.js:40-56,89-103`; `app/api/visitors/track/route.ts:1-35`; `docs/DATABASE_SCHEMA_SNAPSHOT.md:4958` |
-| Email opens/clicks | `crm_timeline` (`email_open` / `email_click`) + `email_events` keyed `cma:<slug>` | `app/api/track/e/open/route.ts:27,41-44`; `app/api/track/e/click/route.ts:15,26-29`; `lib/data/cma/getCmaPerformance.ts:7-12` |
+| Read + on-document click telemetry | `visitor_sessions` + `visitor_events` (`page_category='client-document'`) | `public/rr-doc-tracker.js:462-490,508-542`; `app/api/visitors/track/route.ts:1-35`; `docs/DATABASE_SCHEMA_SNAPSHOT.md:4958` |
+| Email opens/clicks | `crm_timeline` (`email_open` / `email_click`) + `email_events` keyed `cma:<slug>` | `app/api/track/e/open/route.ts:27-31,37-57`; `app/api/track/e/click/route.ts:15-30,45-60`; `lib/data/cma/getCmaPerformance.ts:7-12` |
 | Published-CMA registrations + delivery tokens (hashed) + delivery counts | `public.cma_document_registrations` | `lib/data/cma/getPublishedCma.ts:514-531,573-580`; `docs/DATABASE_SCHEMA_SNAPSHOT.md:1558` |
 | First-open broker notices | `crm_broker_alerts` queue + drain exist but receive NOTHING from this process — the only CMA-open feeder is an orphaned route no email links to (§10 D6) | `app/api/cma/[slug]/track/route.ts:47-52`; `vercel.json:21-22` |
 
@@ -104,8 +105,9 @@ Explicitly NOT a SoR: the served HTML response (regenerated per request, `no-sto
 `app/cma/[slug]/route.ts:41-43,154-162`); the `rr_pid` cookie (a pointer to the person,
 never the record — `app/actions/identity-bridge.ts:31,83-95`); GA4 (`fireLeadGenerated`
 mirror on the token path is best-effort — `app/actions/cma-download.ts:195-204`); the
-stored `page_url` never carries identity params (privacy rule —
-`public/rr-doc-tracker.js:36-38`).
+stored `page_url` never carries identity params (privacy rule — the track route
+strips them before it stores or forwards anything, `app/api/visitors/track/strip-identity.ts`;
+the tracker also takes them off the address bar, `public/rr-doc-tracker.js:380-390`).
 
 ## 5. End-to-end path (inception → completion)
 
@@ -154,20 +156,32 @@ Primary path: a CMA recipient opening from the delivery email (mobile).
    artifact with fonts repointed to the serving origin plus BOTH scripts (tracker +
    interactive layer) (`app/cma/[slug]/route.ts:163-194`).
 10. **Read telemetry + identity stitch** — machine · tracker posts `page_view`
-    (`pageCategory:'client-document'`, essential consent, same `rr_session_id`
-    localStorage key as the site) → then calls `/api/track/e/identify?_pid&sid` → server
+    (`pageCategory:'client-document'`, the visitor's own consent tier read from the cookie
+    banner exactly as the site does, so a visitor who declined posts nothing, and a browser
+    sending Global Privacy Control stores no identifier and posts only the `{ gpc: true }`
+    notice the site sends too (the track route suppresses a contact the browser already
+    carries); the real URL and the campaign / click-id /
+    referrer / landing-page fields the site sends; same `rr_session_id` localStorage key as
+    the site, under the session rule: a new session after 30 minutes idle, on an arrival
+    from a different campaign (only the view of a page reached from outside the site; a
+    tap, a reload or the back button is never one), or when the stored id is one no
+    lifecycle record names (the record's session kept in `rr_visit_sid_v1`, which a tab
+    still on the tracker from before the rule never rewrites); `docs/TRACKING_POLICY.md`
+    "Sessions", updated 2026-09-30) →
+    then calls `/api/track/e/identify?_pid&sid` (plus `&webdriver=1` from an automated
+    browser, which the action refuses) → server
     validates the id against `crm_people`, sets the `rr_pid` cookie, backfills the
     anonymous session (`identified_via email_click_pid`) → tracker strips `_pid/_fuid`
-    from the address bar (`public/rr-doc-tracker.js:40-74`;
-    `app/api/track/e/identify/route.ts:29-45`; `app/actions/identity-bridge.ts:77-123`).
+    from the address bar (`public/rr-doc-tracker.js:375-506`;
+    `app/api/track/e/identify/route.ts:35-52`; `app/actions/identity-bridge.ts:76-183`).
 11. **On-document clicks** — visitor+machine · one delegated listener posts a `cta_click`
     per anchor tap; navigation never blocked; fails silent
-    (`public/rr-doc-tracker.js:76-107`).
+    (`public/rr-doc-tracker.js:508-542`).
 12. **Broker learns it landed (pull, not push)** — machine · the instrumented email's
     pixel and wrapped links land `email_open` / `email_click` rows on `crm_timeline` +
     `email_events` (the click row landed at step 1; the open row lands whenever the
-    mail client loads the pixel — `app/api/track/e/open/route.ts:41-72`;
-    `app/api/track/e/click/route.ts:26-55`), surfaced on the person's comms chain and
+    mail client loads the pixel — `app/api/track/e/open/route.ts:34-77`;
+    `app/api/track/e/click/route.ts:43-95`; a scanner's click writes neither), surfaced on the person's comms chain and
     the CMA performance report (`lib/data/cma/getCmaPerformance.ts:5-12`). NO push
     alert fires: the first-open broker-alert route exists but nothing embeds its URLs
     (§10 D6).
@@ -199,7 +213,7 @@ Primary path: a CMA recipient opening from the delivery email (mobile).
 - **Privacy** — identity params never persist: stored `page_url` is the clean URL and the
   tracker rewrites the address bar; every serve is `noindex + private, no-store`; the
   token route adds `noarchive` + `Referrer-Policy: no-referrer`; registration IPs stored
-  only as hashes (`public/rr-doc-tracker.js:36-38,65-70`;
+  only as hashes (`app/api/visitors/track/strip-identity.ts`; `public/rr-doc-tracker.js:380-390`;
   `app/api/cma-document/[token]/route.ts:44-54`; `app/actions/cma-download.ts:162-165`).
 - **ODS/IDX compliance** — the gate is on WHO gets the document, never on WHAT is in it:
   ODS §7-5 D preserves full comps in a client valuation; the published-CMA registration
@@ -256,7 +270,7 @@ file-based CMA 302s to its committed static asset — `app/cma/[slug]/route.ts:1
   this pass — no number stated; flagged as a §11 gap.
 - **Core Web Vitals:** these are unlisted, noindexed routes — they will never appear in
   GSC/CrUX, so the only latency evidence available is our own telemetry, which records
-  page_views but no performance timings (`public/rr-doc-tracker.js:40-56`). Not
+  page_views but no performance timings (`public/rr-doc-tracker.js:462-490`). Not
   measured this pass; §11 gap.
 - **Who sees "slow":** a known client the broker just personally emailed — the highest-
   stakes audience the site has. A slow or broken document here burns an existing
@@ -342,7 +356,7 @@ Materially divergent doors under one process:
   - **D4 — click telemetry drops the destination.** The tracker's `cta_click` posts the
     link TEXT as `pageTitle` (href only as fallback), so for every labeled anchor the
     click destination is not recorded despite the docblock promising "destination + link
-    text" (`public/rr-doc-tracker.js:76-103`).
+    text" (`public/rr-doc-tracker.js:508-542`).
   - **D5 — stale infrastructure comment.** `app/api/cma/[slug]/track/route.ts:20-21`
     still describes the alert relay as "mac mini relay"; the Mac mini is retired
     (VM parity). Comment drift only — the queue + drain path is live
@@ -365,7 +379,7 @@ Materially divergent doors under one process:
 - **Duplicate/parallel paths that should die:** the legacy `public/cmas/` file-based
   serve (redirect-only, dies by attrition — `app/cma/[slug]/route.ts:197-203`); the
   legacy `?_fuid=` identity param retained beside `_pid` for pre-cutover links
-  (`app/api/track/e/identify/route.ts:36-40`).
+  (`app/api/track/e/identify/route.ts:43-47`).
 
 ## 11. Target shape (process-level, not pixels)
 

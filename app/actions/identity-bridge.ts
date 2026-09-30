@@ -15,7 +15,12 @@
 
 import { cookies, headers } from 'next/headers'
 import { fireGa4Event, readGa4ClientIdFromCookies } from '@/lib/ga4-measurement-protocol'
-import { backfillSessionToFub, stitchVisitorIdentity, type IdentifiedVia } from '@/lib/visitor-backfill'
+import {
+  backfillSessionToFub,
+  isAutomatedSession,
+  stitchVisitorIdentity,
+  type IdentifiedVia,
+} from '@/lib/visitor-backfill'
 import { identifiedViaForChannel, verifyPersonLinkToken } from '@/lib/identity/link-token'
 import {
   PERSON_COOKIE,
@@ -24,12 +29,21 @@ import {
   readPersonCookie,
 } from '@/lib/identity/person-cookie'
 import { CONSENT_COOKIE, identificationAllowed } from '@/lib/identity/consent'
+import { classifyAutomation } from '@/lib/analytics/automation'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { personIdsByEmailCi } from '@/lib/data/crm/personByEmailCi'
 import { personExistsById } from '@/lib/data/crm/personExistsById'
 
 const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+/**
+ * What the browser itself reports about the request. `webdriver` is
+ * navigator.webdriver: a scripted browser with an ordinary user agent, which no
+ * request header shows. The identify calls run at page load, before the tracker
+ * has created a session the action could ask about, so the browser says it here.
+ */
+export type IdentifySignals = { webdriver?: boolean }
 
 /**
  * Legacy `?_fuid=<vendor CRM id>` links. RETIRED 2026-09-23 (P7 identity loop):
@@ -62,35 +76,84 @@ export async function identifyPersonFromEmailClick(
 export async function identifyPersonFromEmailClickNative(
   personToken: string,
   sessionId?: string,
+  signals?: IdentifySignals,
 ): Promise<{ ok: boolean; error?: string }> {
   const verified = verifyPersonLinkToken(String(personToken ?? '').trim())
   if (!verified) return { ok: false, error: 'Invalid or unsigned identity token' }
   if (!(await personExistsById(verified.personId))) return { ok: false, error: 'No matching person found' }
-  return bridgeIdentifiedPerson(verified.personId, sessionId, identifiedViaForChannel(verified.channel))
+  return bridgeIdentifiedPerson(verified.personId, sessionId, identifiedViaForChannel(verified.channel), signals)
 }
 
 /**
- * May this request identify anyone? A cookie-banner decline or a Global Privacy
- * Control signal means we record nothing (docs/TRACKING_POLICY.md); every other
- * tier, including no answer at all, allows first-party identification of a
- * person who clicked our own link or signed in (disclosed in app/privacy).
+ * May this request identify anyone? Not automation: an email security scanner,
+ * link previewer or crawler that opens a tracked link must not read as the
+ * contact browsing (docs/TRACKING_POLICY.md, identity loop rule 5), so a request
+ * whose user agent, or whose browser's own navigator.webdriver (`signals`),
+ * lib/analytics/automation.ts classifies as automated identifies nobody,
+ * whatever token it carries. Not a cookie-banner decline or a Global Privacy
+ * Control signal either: those mean we record nothing. Every other tier,
+ * including no answer at all, allows first-party identification of a person who
+ * clicked our own link or signed in (disclosed in app/privacy).
  */
-async function identificationAllowedForRequest(): Promise<boolean> {
+async function identificationRefusal(signals?: IdentifySignals): Promise<'automated' | 'declined' | null> {
   const [cookieStore, hdrs] = await Promise.all([cookies(), headers()])
-  return identificationAllowed({
+  if (classifyAutomation({ userAgent: hdrs.get('user-agent'), webdriver: signals?.webdriver === true }).automated) return 'automated'
+  const allowed = identificationAllowed({
     consentCookie: cookieStore.get(CONSENT_COOKIE)?.value ?? null,
     secGpc: hdrs.get('sec-gpc'),
   })
+  return allowed ? null : 'declined'
 }
 
-/** Shared tail of the email-click identify path: cookie + GA4 + session backfill. */
+/**
+ * Shared tail of the email-click identify path: session backfill, then cookie +
+ * GA4 + browser stitch.
+ *
+ * The backfill runs FIRST, and a session it reports as automation ends the
+ * identification before anything else is written. The request's user agent
+ * (identificationRefusal) catches a scanner that declares itself; a scripted
+ * browser with an ordinary user agent reports navigator.webdriver, in the body of
+ * its tracker post (the session row the track route flagged shows it) and in
+ * `signals` on this call, which is all there is when the call comes before any
+ * session exists (PersonIdentityBridge runs at mount, before VisitTracker posts).
+ * Cookying that browser as the contact, tagging GA4, or mapping its rr_vid to the
+ * contact would make it "the contact browsing" (docs/TRACKING_POLICY.md, identity
+ * loop rule 5).
+ */
 async function bridgeIdentifiedPerson(
   id: number,
   sessionId: string | undefined,
   via: IdentifiedVia,
+  signals?: IdentifySignals,
 ): Promise<{ ok: boolean; error?: string }> {
-  if (!(await identificationAllowedForRequest())) return { ok: false, error: 'Tracking declined' }
+  const refusal = await identificationRefusal(signals)
+  if (refusal) return { ok: false, error: refusal === 'automated' ? 'Automated request' : 'Tracking declined' }
   const cookieStore = await cookies()
+  const validSessionId = sessionId && UUID_V4_RE.test(sessionId) ? sessionId : null
+
+  // Stitch this browser's browsing history to the person. The email click is
+  // high-confidence identity (the link carried their id), so replaying their
+  // session is exactly the "put a name to the number" moment. No email here,
+  // the resolved id is the join key.
+  //
+  // Awaited (not void): in a serverless action a fire-and-forget promise can
+  // be frozen with the lambda and never complete. And the landing page fires
+  // the session-creating tracker POST and this identify concurrently on mount,
+  // so when the session row does not exist yet we wait one beat and retry —
+  // otherwise the very session the click created never stitches.
+  if (validSessionId) {
+    try {
+      let result = await backfillSessionToFub({ sessionId: validSessionId, fubPersonId: id, identifiedVia: via })
+      if (!result.sessionFound) {
+        await new Promise((r) => setTimeout(r, 2500))
+        result = await backfillSessionToFub({ sessionId: validSessionId, fubPersonId: id, identifiedVia: via })
+      }
+      if (result.automated) return { ok: false, error: 'Automated request' }
+    } catch (e) {
+      console.warn('[identity-bridge] session backfill failed (non-blocking):', e)
+    }
+  }
+
   cookieStore.set(PERSON_COOKIE, personCookieValue(id), personCookieOptions())
 
   // GA4 Measurement Protocol — record that this browser was just bridged to
@@ -106,35 +169,13 @@ async function bridgeIdentifiedPerson(
     },
   }).catch((e) => console.warn('[identity-bridge] GA4 event failed:', e))
 
-  // Stitch this browser's browsing history to the person. The email click is
-  // high-confidence identity (the link carried their id), so replaying their
-  // session is exactly the "put a name to the number" moment. No email here,
-  // the resolved id is the join key.
-  //
-  // Awaited (not void): in a serverless action a fire-and-forget promise can
-  // be frozen with the lambda and never complete. And the landing page fires
-  // the session-creating tracker POST and this identify concurrently on mount,
-  // so when the session row does not exist yet we wait one beat and retry —
-  // otherwise the very session the click created never stitches.
-  if (sessionId && UUID_V4_RE.test(sessionId)) {
-    try {
-      const first = await backfillSessionToFub({ sessionId, fubPersonId: id, identifiedVia: via })
-      if (!first.sessionFound) {
-        await new Promise((r) => setTimeout(r, 2500))
-        await backfillSessionToFub({ sessionId, fubPersonId: id, identifiedVia: via })
-      }
-    } catch (e) {
-      console.warn('[identity-bridge] session backfill failed (non-blocking):', e)
-    }
-  }
-
   // rr_vid stitch even when the client omitted session_id — otherwise an
   // email-click identify never writes visitor_identity_map.crm_person_id.
   const rrVid = cookieStore.get('rr_vid')?.value ?? null
   await stitchVisitorIdentity({
     rrVid,
     fubPersonId: id,
-    sessionId: sessionId && UUID_V4_RE.test(sessionId) ? sessionId : null,
+    sessionId: validSessionId,
     source: via,
   })
 
@@ -150,11 +191,12 @@ async function bridgeIdentifiedPerson(
  * the client AFTER sign-in, carrying that session_id, and:
  *   1. Resolves the user SERVER-SIDE from the Supabase session (never trusts a
  *      client-passed email) and looks up their crm_people record by email.
- *   2. Stamps the identity cookie so every FUTURE event on this browser attributes
- *      to the person (forward attribution).
- *   3. Replays this browser's prior anonymous browsing history and marks the
+ *   2. Replays this browser's prior anonymous browsing history and marks the
  *      visitor session identified (backfillSessionToFub), matching identity to
- *      the activity they already did while anonymous.
+ *      the activity they already did while anonymous. A session the track route
+ *      flagged as automation ends it here: nothing below is written for it.
+ *   3. Stamps the identity cookie so every FUTURE event on this browser attributes
+ *      to the person (forward attribution).
  *   4. Also stitches by rr_vid so sessions without a client session_id are caught.
  *
  * Idempotent (backfillSessionToFub dedupes on pushed_to_fub_at; the cookie
@@ -162,13 +204,14 @@ async function bridgeIdentifiedPerson(
  */
 export async function identifyAuthenticatedSession(
   sessionId?: string,
+  signals?: IdentifySignals,
 ): Promise<{ ok: boolean; bridged: boolean }> {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     const email = user?.email?.trim().toLowerCase()
     if (!email || !user) return { ok: true, bridged: false } // anonymous — nothing to bridge
-    if (!(await identificationAllowedForRequest())) return { ok: true, bridged: false }
+    if (await identificationRefusal(signals)) return { ok: true, bridged: false }
 
     const sb = createServiceClient()
     const matchIds = await personIdsByEmailCi(sb, email).catch(() => [] as number[])
@@ -176,20 +219,26 @@ export async function identifyAuthenticatedSession(
     const provider = (user?.app_metadata?.provider as string | undefined) ?? ''
     const via = provider === 'google' ? 'google' : provider === 'facebook' ? 'facebook' : 'magic_link'
     const rrVid = (await cookies()).get('rr_vid')?.value ?? null
+    const validSessionId = sessionId && UUID_V4_RE.test(sessionId) ? sessionId : null
 
     if (personId) {
+      // Backfill first: a session flagged as automation (see bridgeIdentifiedPerson)
+      // is not identified, cookied or stitched, whoever signed in on it.
+      if (validSessionId) {
+        const backfill = await backfillSessionToFub({ sessionId: validSessionId, fubPersonId: personId, email, identifiedVia: via })
+        if (backfill.automated) return { ok: true, bridged: false }
+      }
       const cookieStore = await cookies()
       cookieStore.set(PERSON_COOKIE, personCookieValue(personId), personCookieOptions())
-      if (sessionId && UUID_V4_RE.test(sessionId)) {
-        await backfillSessionToFub({ sessionId, fubPersonId: personId, email, identifiedVia: via })
-      }
       // rr_vid catches this browser's other sessions (no client session_id).
       await stitchVisitorIdentity({ rrVid, fubPersonId: personId, email, userId: user.id, sessionId: sessionId ?? null, source: 'auth_session' })
       return { ok: true, bridged: true }
     }
 
     // Known email but not yet a CRM contact: still record the identity graph
-    // and mark the session identified by rr_vid so it is not anonymous.
+    // and mark the session identified by rr_vid so it is not anonymous. Not for
+    // a session flagged as automation.
+    if (validSessionId && (await isAutomatedSession(validSessionId))) return { ok: true, bridged: false }
     await stitchVisitorIdentity({ rrVid, email, userId: user.id, sessionId: sessionId ?? null, source: 'auth_session' })
     return { ok: true, bridged: false }
   } catch {

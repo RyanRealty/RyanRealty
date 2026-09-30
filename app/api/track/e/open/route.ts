@@ -3,6 +3,7 @@ import { verifyEmailToken } from '@/lib/email-tracking'
 import { createServiceClient } from '@/lib/supabase/service'
 import { recordEmailEvent, sendTypeFromEmailKey } from '@/lib/crm/email-events'
 import { recordNewsletterEngagement } from '@/lib/newsletter/track-ledger'
+import { classifyAutomation } from '@/lib/analytics/automation'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -79,10 +80,16 @@ export async function GET(req: NextRequest) {
       // document visit, same per-(document, contact) dedupe — whichever of the
       // two fires first is the one alert the broker gets. Non-blocking: the
       // pixel always returns.
+      //
+      // Never for automation (docs/TRACKING_POLICY.md, identity loop rule 5): a
+      // scanner or previewer that fetches the pixel is not the recipient reading
+      // the report. The open itself is still recorded above, as it always was;
+      // only the alert to the broker's phone is withheld.
       try {
         const { cmaSlugFromEmailKey, queueCmaOpenedAlert } = await import('@/lib/crm/cma-engagement')
         const slug = cmaSlugFromEmailKey(ctx.emailKey)
-        if (slug) await queueCmaOpenedAlert({ slug, crmPersonId: ctx.personId, trigger: 'email' })
+        const automated = classifyAutomation({ userAgent: req.headers.get('user-agent') }).automated
+        if (slug && !automated) await queueCmaOpenedAlert({ slug, crmPersonId: ctx.personId, trigger: 'email' })
       } catch (err) {
         console.warn('[track/open] cma-opened alert error:', err)
       }

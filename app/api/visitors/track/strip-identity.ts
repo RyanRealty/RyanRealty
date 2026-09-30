@@ -74,3 +74,23 @@ export function stripIdentityParams(url: string | null | undefined): string | un
     return raw
   }
 }
+
+/**
+ * Where a tracked redirect sends a request it classified as AUTOMATION (a mail
+ * security gateway, a link previewer, a crawler): our own site's link with no
+ * person on it, and any other site's link untouched (it never carries ours). The
+ * redirect re-signs `_pid` for a person clicking (P7 identity loop); for automation
+ * it must not. A gateway resolves the link with a library user agent, then renders
+ * where it was sent in a sandbox with an ordinary one, and a signed token there made
+ * the sandbox the contact: identified, cookied, and a broker text queued (review of
+ * 2026-09-30). Used by /api/track/e/click and the SMS short link /r/<code>.
+ */
+export function withoutIdentityOnOwnSite(url: string): string {
+  try {
+    const host = new URL(url).hostname.toLowerCase().replace(/^www\./, '')
+    if (host !== 'ryan-realty.com') return url
+  } catch {
+    return url
+  }
+  return stripIdentityParams(url) ?? url
+}

@@ -40,14 +40,22 @@ import {
 import { queueBrokerHealthAlert } from '@/lib/crm/broker-alerts'
 import { DRIP_CRON_ACTOR, mintRelistProof } from '@/lib/prospecting/send-capability'
 import { recoverStuckFirstTouchSends, type StuckSendOutcome } from '@/lib/data/prospecting/drip-recover'
-import { canSendDripNow, DRIP_SPACING_MINUTES } from '@/lib/data/prospecting/drip-schedule'
+import {
+  canSendDripNow,
+  DRIP_SPACING_MINUTES,
+  EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP,
+} from '@/lib/data/prospecting/drip-schedule'
 import { sendProspectingEmailIntro } from '@/app/actions/prospecting'
 import { getProspect } from '@/lib/data'
 import { loadCmaFirstContactOverride } from '@/lib/cma/first-contact-override'
 import type { SendGuardCode } from '@/lib/data/prospecting/types'
 
 export type DripDrainResult =
-  | { ok: true; action: 'idle'; reason: 'weekend' | 'before-window' | 'spacing' | 'empty' }
+  | {
+      ok: true
+      action: 'idle'
+      reason: 'weekend' | 'before-window' | 'spacing' | 'empty' | 'expired-hard-stop'
+    }
   | { ok: true; action: 'recovered'; recovered: StuckSendOutcome[] }
   | {
       ok: true
@@ -133,6 +141,13 @@ export async function drainProspectingFirstTouchDrip(now: Date = new Date()): Pr
   }
 
   // 4. Peek, verify, send.
+  // Expired hard stop: never send, dequeue, or mark an expired row. Ask the
+  // FIFO for FSBO only so a queued expired CMA cannot block an FSBO send.
+  // A peeked expired row (the filter was ignored, or a later code path) is
+  // refused here too, and left exactly as it was.
+  const peekArgs = EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP
+    ? { kinds: ['fsbo'] as const }
+    : undefined
   let skipped = 0
   let setAside = 0
   const tried = new Set<string>()
@@ -141,8 +156,19 @@ export async function drainProspectingFirstTouchDrip(now: Date = new Date()): Pr
       ? { ok: true, action: 'skipped-all', skipped, ...(setAside > 0 ? { setAside } : {}) }
       : { ok: true, action: 'idle', reason: 'empty' }
   for (let i = 0; i < MAX_HARD_SKIPS_PER_TICK; i++) {
-    const next = await peekOldestQueuedFirstTouch(now)
-    if (!next) return doneForNow()
+    const next = await peekOldestQueuedFirstTouch({ ...peekArgs, now })
+    if (!next) {
+      if (EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP && skipped + setAside === 0) {
+        const held = await peekOldestQueuedFirstTouch({ kinds: ['expired'], now })
+        if (held?.kind === 'expired') {
+          return { ok: true, action: 'idle', reason: 'expired-hard-stop' }
+        }
+      }
+      return doneForNow()
+    }
+    if (EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP && next.kind === 'expired') {
+      return { ok: true, action: 'idle', reason: 'expired-hard-stop' }
+    }
     // Never check one row twice in a tick (a set-aside write that did not
     // take would otherwise hand the same row back 25 times).
     const rowKey = `${next.kind}:${next.id}`

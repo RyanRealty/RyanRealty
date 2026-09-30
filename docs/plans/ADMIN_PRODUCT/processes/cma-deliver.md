@@ -38,7 +38,7 @@ A seller asking "what's my home worth" gets a broker-reviewed, accuracy-gated va
 6. **Ready-notify** · system · action `ready`; `queueCmaReadyAlert` texts `/admin/cmas/<slug>` (canonical host hardcoded — vercel.app strips auth cookies) (`worker.ts:139-156`; `broker-alerts.ts:203-221`) · **phone**
 7. **Review + approve** · human · `/admin/cmas/[slug]`; `approveCmaAction` refuses if `needs_review` unless explicitly acknowledged (`cma-admin.ts:186-220`) → `finalized` · desktop-shaped today · failure: silent abandonment (draft sits; no nag)
 8. **Prepare + send** · human · `prepareCmaSendAction` preview (`:315-352`); `sendCmaToLeadAction` → `sendCmaToLead()` (`send.ts:304-398`): requires finalized/delivered + client email; suppression fail-closed (`:308-315`); PDF ≤25MB (`:317-328`); Gmail DWD from signing broker's mailbox, Resend fallback (`:343-378`) → `delivered` + `delivered_at` (`:382`) · either device
-9. **Client views** · client · `/cma/[slug]` serves `html_content`; non-admin 404 unless finalized/delivered (`route.ts:44-57`); `rr-doc-tracker.js` posts page_view + identity (`:68-75`) · no expiry (status-gated, permanent)
+9. **Client views** · client · `/cma/[slug]` serves `html_content`; non-admin 404 unless finalized/delivered (`route.ts:44-57`); `rr-doc-tracker.js` posts page_view + identity (`public/rr-doc-tracker.js:462-506`) · no expiry (status-gated, permanent)
 10. **Outcome measured** · system · CMA performance report (`getCmaPerformance`); send→convert stats · n/a
 
 ## 6. Decision points
