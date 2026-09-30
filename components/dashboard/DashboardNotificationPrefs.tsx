@@ -8,6 +8,7 @@ import type { NotificationPreferences } from '@/app/actions/profile'
 import { setSavedSearchFrequencyForUser } from '@/app/actions/saved-searches'
 import {
   getMyReportSubscriptionAction,
+  restartMyEmailAction,
   setMyReportSubscriptionAction,
 } from '@/app/actions/market-report-optin'
 import { cn } from '@/lib/utils'
@@ -103,6 +104,11 @@ function MarketReportPrefs() {
   const [needsArea, setNeedsArea] = useState(false)
   const [showSaved, setShowSaved] = useState(false)
   const [pending, startTransition] = useTransition()
+  /** All email from Ryan Realty is off for this address, so no report arrives. */
+  const [emailOff, setEmailOff] = useState(false)
+  /** Only her own unsubscribe is in the way, so she can turn email back on here. */
+  const [emailRestartable, setEmailRestartable] = useState(false)
+  const [restarting, startRestart] = useTransition()
   /** Server truth. Autosave compares the draft against this, never against a flag. */
   const lastSavedRef = useRef<MarketReportDraft | null>(null)
   /** The debounced draft, so an unmount mid-window still lands the write. */
@@ -120,6 +126,8 @@ function MarketReportPrefs() {
         return
       }
       setAreaOptions(result.data.areas)
+      setEmailOff(result.data.emailOff === true)
+      setEmailRestartable(result.data.emailRestartable === true)
       const sub = result.data.subscription
       if (sub) {
         setSelectedAreas(sub.areas)
@@ -137,6 +145,18 @@ function MarketReportPrefs() {
       cancelled = true
     }
   }, [])
+
+  function restartEmail() {
+    startRestart(async () => {
+      const result = await restartMyEmailAction()
+      if (result.error || !result.data) {
+        toast.error(result.error ?? 'We could not turn email back on. Try again.')
+        return
+      }
+      setEmailOff(result.data.emailOff)
+      if (!result.data.emailOff) setEmailRestartable(false)
+    })
+  }
 
   function toggleArea(slug: string) {
     setSelectedAreas((current) =>
@@ -281,6 +301,29 @@ function MarketReportPrefs() {
               </SelectContent>
             </Select>
           </div>
+
+          {emailOff ? (
+            <div className="rounded-md border border-border p-3" role="status">
+              <p className="text-sm font-medium text-foreground">Email from Ryan Realty is off for this address</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {emailRestartable
+                  ? 'Market reports will not arrive until you turn our email back on.'
+                  : 'Email to this address is off for a reason we cannot clear here. Reply to any of our emails and we will sort it out.'}
+              </p>
+              {emailRestartable ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="mt-2 min-h-11 sm:min-h-8"
+                  disabled={restarting}
+                  onClick={restartEmail}
+                >
+                  Start receiving Ryan Realty email again
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
 
           <p className="text-xs text-muted-foreground" role="status" aria-live="polite">
             {pending ? 'Saving…' : showSaved ? 'Saved' : 'Changes save automatically.'}

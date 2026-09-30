@@ -47,7 +47,7 @@ function block(slug: string, over: Partial<MarketReportAreaBlock> = {}): MarketR
     yoyPct: 2.1,
     marketHealthLabel: 'Warm',
     refreshedAt: '2026-07-22T00:00:00.000Z',
-    source: 'market_pulse_live',
+    source: 'market_metric',
     href: `/cities/${slug}/market-report`,
     ...over,
   }
@@ -59,12 +59,22 @@ function makeDeps(over: Partial<BulkDeps> = {}) {
   const setCitations = vi.fn(async () => ({ ok: true }))
   const enqueueAudience = vi.fn(async () => ({ ok: true as const, queued: 5334, brokerSplit: {}, large: true }))
   const enqueueList = vi.fn(async () => ({ ok: true, queued: 3 }))
+  // The §0 Spark gate: every printed figure reconciled, unless a test says otherwise.
+  type GateInput = { blocks: unknown[]; figures: Array<{ area: string; label: string }> }
+  const sparkGate = vi.fn<(input: GateInput) => Promise<unknown>>(async () => ({
+    verdict: 'ok' as const,
+    rule: 'CLAUDE.md §0: any |delta| > 1% is a STOP',
+    checkedAt: IN_WINDOW.toISOString(),
+    since: null,
+    checks: [{ area: 'bend', figure: 'months of supply', supabase: 4, spark: 4, deltaPct: 0, population: 'p', status: 'ok' as const }],
+    queries: [],
+    polygonGaps: [],
+    error: null,
+  }))
+  const alert = vi.fn(async () => true)
   const deps = {
     fetchAreas: vi.fn(async () => [block('bend'), block('redmond')]),
-    fetchReportSubscribers: vi.fn(async () => [
-      { subscriptionId: 1, personId: 11, personName: 'A', assignedBroker: 'matt', fubPersonId: null, areas: ['bend'], frequency: 'monthly' as const, isActive: true, lastSentAt: null, lastAttemptAt: null },
-      { subscriptionId: 2, personId: 12, personName: 'B', assignedBroker: 'matt', fubPersonId: null, areas: ['redmond'], frequency: 'weekly' as const, isActive: true, lastSentAt: null, lastAttemptAt: null },
-    ]),
+    fetchReportSubscribers: vi.fn(async () => [subRow(1, 11, ['bend'], 'monthly'), subRow(2, 12, ['redmond'], 'weekly')]),
     resolvePersonEmail: vi.fn(async (id: number) => `person${id}@example.com`),
     fetchSegmentSubscribers: vi.fn(async () => [
       { id: 's1', email: 'Seg1@Example.com', name: null, crm_person_id: null, unsubscribe_token: 't1' },
@@ -79,9 +89,35 @@ function makeDeps(over: Partial<BulkDeps> = {}) {
     setCitations,
     enqueueAudience,
     enqueueList,
+    sparkGate,
+    alert,
     ...over,
   } as unknown as BulkDeps
-  return { deps, createDraft, setCitations, enqueueAudience, enqueueList }
+  return { deps, createDraft, setCitations, enqueueAudience, enqueueList, sparkGate, alert }
+}
+
+/** An active report subscription: approved and live unless a test says otherwise. */
+function subRow(
+  subscriptionId: number,
+  personId: number,
+  areas: string[] = ['bend'],
+  frequency: 'weekly' | 'monthly' | 'quarterly' = 'monthly',
+  over: { firstSendApprovedAt?: string | null; personDeleted?: boolean } = {},
+) {
+  return {
+    subscriptionId,
+    personId,
+    personName: `P${personId}`,
+    assignedBroker: 'matt',
+    fubPersonId: null,
+    areas,
+    frequency,
+    isActive: true,
+    lastSentAt: null,
+    lastAttemptAt: null,
+    firstSendApprovedAt: 'firstSendApprovedAt' in over ? over.firstSendApprovedAt : '2026-07-01T17:00:00.000Z',
+    personDeleted: over.personDeleted ?? false,
+  }
 }
 
 const AREAS = ['bend', 'redmond']
@@ -360,3 +396,82 @@ describe('runMarketReportBulkSend — §0 data accuracy', () => {
     expect(deps.fetchAreas).not.toHaveBeenCalled()
   })
 })
+
+describe('report subscribers get only what the scheduled path would send (review 2026-09-30)', () => {
+  it('skips a deleted contact and a subscription waiting on its first-send approval, and says so in the trace', async () => {
+    const { deps } = makeDeps({
+      fetchReportSubscribers: vi.fn(async () => [
+        subRow(1, 11),
+        subRow(2, 12, ['bend'], 'monthly', { personDeleted: true }),
+        subRow(3, 13, ['bend'], 'monthly', { firstSendApprovedAt: null }),
+      ]) as never,
+    })
+    const r = await resolveMarketReportAudience({ kind: 'report-subscribers', cadence: 'any', areaSlug: null }, deps)
+    expect(r.emails).toEqual(['person11@example.com'])
+    expect(r.trace).toContain('1 deleted contact skipped')
+    expect(r.trace).toContain('1 awaiting first-send approval skipped')
+    expect(deps.resolvePersonEmail).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('the §0 Spark gate runs before a bulk issue is queued (review 2026-09-30)', () => {
+  const queue = (deps: BulkDeps) =>
+    runMarketReportBulkSend({
+      audience: { kind: 'crm-tag', tag: 'past-client' },
+      areas: AREAS,
+      mode: 'queue',
+      approvedBy: 'matt@ryan-realty.com',
+      now: IN_WINDOW,
+      deps,
+    })
+
+  it('checks every figure the issue prints: months of supply and the verdict for each area, and the median it names', async () => {
+    const { deps, sparkGate } = makeDeps()
+    const r = await queue(deps)
+    expect(r.ok).toBe(true)
+    expect(sparkGate).toHaveBeenCalledTimes(1)
+    const figures = sparkGate.mock.calls[0]![0].figures.map((f) => `${f.area} ${f.label}`)
+    expect(figures).toEqual([
+      'bend months of supply',
+      'bend market verdict',
+      'redmond months of supply',
+      'redmond market verdict',
+      'bend median sale price, last 12 months',
+    ])
+  })
+
+  it('a STOP holds the whole issue: no draft, no queue, and Matt is paged with both values', async () => {
+    const stop = vi.fn(async () => ({
+      verdict: 'STOP' as const,
+      rule: 'CLAUDE.md §0: any |delta| > 1% is a STOP',
+      checkedAt: IN_WINDOW.toISOString(),
+      since: null,
+      checks: [{ area: 'redmond', figure: 'months of supply', supabase: 4, spark: 4.4, deltaPct: -9.09, population: 'Market Truth city', status: 'STOP' as const }],
+      queries: [],
+      polygonGaps: [],
+      error: null,
+    }))
+    const { deps, createDraft, enqueueList, alert } = makeDeps({ sparkGate: stop as never })
+    const r = await queue(deps)
+    expect(r).toMatchObject({ ok: false, error: 'spark_hold' })
+    expect((r as { detail?: string }).detail).toContain('redmond months of supply: printed 4, Spark 4.4, delta -9.09%')
+    expect(createDraft).not.toHaveBeenCalled()
+    expect(enqueueList).not.toHaveBeenCalled()
+    expect(alert).toHaveBeenCalledTimes(1)
+  })
+
+  it('a figure the gate could not verify, or a gate that threw, holds the issue too', async () => {
+    for (const sparkGate of [
+      vi.fn(async () => ({ verdict: 'not-reconciled' as const, rule: 'r', checkedAt: 'x', since: null, checks: [], queries: [], polygonGaps: [], error: 'Spark API error 503' })),
+      vi.fn(async () => {
+        throw new Error('socket hang up')
+      }),
+    ]) {
+      const { deps, createDraft } = makeDeps({ sparkGate: sparkGate as never })
+      const r = await queue(deps)
+      expect(r).toMatchObject({ ok: false, error: 'spark_hold' })
+      expect(createDraft).not.toHaveBeenCalled()
+    }
+  })
+})
+

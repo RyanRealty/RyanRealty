@@ -593,6 +593,12 @@ const SCAN_DIRS = [
   // crm/page.tsx. Pure v2 — primitives from the barrel, colour only via
   // var(--a-*) — so scoping it here is the sanctioned move Rule 3 asks for.
   'components/admin/crm/ResponseClockPanel.tsx',
+  // Market report card (2026-09-29): mounted by the scanned PersonWorkspace and
+  // PersonEngagementRegion, plus the page that shows one sent report. Built on
+  // the v2 barrel with colour only via var(--a-*), so they join the scan.
+  'components/admin/crm/MarketReportCard.tsx',
+  'components/admin/crm/MarketReportSection.tsx',
+  'app/admin/(protected)/people/[id]/market-reports/[sendId]/page.tsx',
   'components/admin/shared/mobile/MobileCalendarTab.tsx',
   'components/admin/shared/mobile/MobileCommsTab.tsx',
   'components/admin/shared/people-list/PeopleListView.tsx',

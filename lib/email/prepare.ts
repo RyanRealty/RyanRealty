@@ -39,6 +39,23 @@ export interface PrepareEmailInput {
   personId?: number | null
   /** Override the unsubscribe URL (e.g. a channel-specific confirm page). */
   unsubscribeUrl?: string
+  /**
+   * The RFC 8058 target for the List-Unsubscribe header when it is not the
+   * footer link: an endpoint that stops the list on a
+   * `List-Unsubscribe=One-Click` POST. The market report points its header at
+   * its report-scoped one-click endpoint while its footer link opens the
+   * preferences page (Matt 2026-09-29). Defaults to the unsubscribe URL.
+   */
+  oneClickUnsubscribeUrl?: string
+  /**
+   * 'append' (default): append the CAN-SPAM footer to both parts, as every
+   * caller always has. 'from-body': the body already carries it (the branded
+   * shell footer and a text footer with the postal address and the
+   * unsubscribe link), so do not print a second one. prepare still checks:
+   * a part missing the address or the unsubscribe link gets the footer
+   * appended anyway, so an email without either can never be built.
+   */
+  footer?: 'append' | 'from-body'
 }
 
 export interface PreparedEmail {
@@ -73,6 +90,21 @@ export function htmlToPlainText(html: string): string {
     .trim()
 }
 
+/**
+ * The HTML already carries a CAN-SPAM footer: the postal address and, when
+ * there is one, the unsubscribe link (as an href). Pure, exported for tests.
+ */
+export function htmlCarriesFooter(html: string, unsubUrl: string | undefined): boolean {
+  if (!html.includes(escapeHtml(BROKERAGE_POSTAL_ADDRESS)) && !html.includes(BROKERAGE_POSTAL_ADDRESS)) return false
+  return !unsubUrl || html.includes(`href="${unsubUrl}"`)
+}
+
+/** The plain text already carries the postal address and the unsubscribe URL. Pure. */
+export function textCarriesFooter(text: string, unsubUrl: string | undefined): boolean {
+  if (!text.includes(BROKERAGE_POSTAL_ADDRESS)) return false
+  return !unsubUrl || text.includes(unsubUrl)
+}
+
 export function prepareDeliverableEmail(input: PrepareEmailInput): PreparedEmail {
   const unsubUrl =
     input.unsubscribeUrl ?? (input.personId ? buildUnsubscribeUrl(input.personId) : undefined)
@@ -89,13 +121,15 @@ export function prepareDeliverableEmail(input: PrepareEmailInput): PreparedEmail
     ? `\n\n--\n${BROKERAGE_POSTAL_ADDRESS}\nUnsubscribe: ${unsubUrl}`
     : `\n\n--\n${BROKERAGE_POSTAL_ADDRESS}`
 
-  const html = input.html + footerHtml
   const baseText = (input.text ?? '').trim() || htmlToPlainText(input.html)
-  const text = baseText + footerText
+  const fromBody = input.footer === 'from-body'
+  const html = fromBody && htmlCarriesFooter(input.html, unsubUrl) ? input.html : input.html + footerHtml
+  const text = fromBody && textCarriesFooter(baseText, unsubUrl) ? baseText : baseText + footerText
 
   const headers: Record<string, string> = {}
-  if (unsubUrl) {
-    headers['List-Unsubscribe'] = `<${unsubUrl}>`
+  const oneClick = (input.oneClickUnsubscribeUrl ?? '').trim() || unsubUrl
+  if (oneClick) {
+    headers['List-Unsubscribe'] = `<${oneClick}>`
     headers['List-Unsubscribe-Post'] = 'List-Unsubscribe=One-Click'
   }
 

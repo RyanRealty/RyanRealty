@@ -32,6 +32,12 @@ export type MetricProvenance = {
   computedAt: string
   isFloor: boolean
   withheldReason: string | null
+  /**
+   * The cell's period_end (YYYY-MM-DD): a windowed stat covers close dates in
+   * (period_end - window, period_end]. Optional so hand-built provenance in
+   * tests and fixtures keeps compiling; every row read here carries it.
+   */
+  periodEnd?: string
 }
 
 export type MetricResult = {
@@ -157,6 +163,7 @@ function toMetricResult(row: Record<string, unknown>): MetricResult {
       computedAt: String(row.computed_at),
       isFloor: Boolean(row.is_floor),
       withheldReason: stale ?? (row.withheld_reason == null ? null : String(row.withheld_reason)),
+      periodEnd: row.period_end == null ? undefined : String(row.period_end).slice(0, 10),
     },
   }
 }

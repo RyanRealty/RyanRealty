@@ -30,6 +30,12 @@ export type SellBendMarket = {
   medianListPrice: number | null
   computedAt: string
   completeThrough: string
+  /**
+   * The months_of_supply cell's period_end: the last day of the six-month
+   * closed window the ratio divides by (close_date in (period_end - 180 days,
+   * period_end]). A trace or a reconciliation rebuilds that window from it.
+   */
+  periodEnd?: string
 }
 
 /** Inventory-only snapshot. MOS/verdict may be below min_n; active can still publish. */
@@ -102,6 +108,7 @@ function assemble(geoType: string, geoSlug: string, byKey: Map<string, MetricRow
     medianListPrice: publishable(medianList) ? Number(medianList!.value) : null,
     computedAt: mos!.computed_at,
     completeThrough: mos!.complete_through,
+    periodEnd: mos!.period_end ? String(mos!.period_end).slice(0, 10) : undefined,
   }
 }
 

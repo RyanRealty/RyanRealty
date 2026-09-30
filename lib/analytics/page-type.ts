@@ -65,6 +65,7 @@ export const PUBLIC_PAGE_SEGMENTS = [
   'data-deletion',
   'dev',
   'dmca',
+  'email-preferences',
   'fair-housing',
   'faq',
   'feed',
@@ -250,6 +251,7 @@ export function pageTypeFromPath(pathname: string): PageType {
     p.startsWith('/auth') ||
     p.startsWith('/forgot-password') ||
     p.startsWith('/newsletter') ||
+    p.startsWith('/email-preferences') ||
     p.startsWith('/marketing') ||
     p.startsWith('/alerts') ||
     p.startsWith('/sign') ||

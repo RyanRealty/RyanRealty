@@ -23,7 +23,6 @@ import { adminAssignSavedSearchAction, adminDeleteSavedSearchAction } from '@/ap
 import { startCmaForContactAction } from '@/app/actions/contact-cma'
 import { sendDeliverable } from '@/app/actions/send-deliverable'
 import { startBpoForContactAction } from '@/app/actions/contact-bpo'
-import { setReportSubscriptionAction } from '@/app/actions/crm-report-subscriptions'
 
 const BASE = '/admin/people'
 
@@ -112,17 +111,6 @@ export async function startBpoForm(personId: number): Promise<void> {
     r.ok
       ? `${BASE}/${personId}/tools?flash=${encodeURIComponent('Broker price opinion built. Review it below.')}`
       : `${BASE}/${personId}/tools?error=${encodeURIComponent(`Price opinion not started — ${r.error}`)}`,
-  )
-}
-export async function setReportSubsForm(personId: number, formData: FormData): Promise<void> {
-  const isActive = String(formData.get('active') ?? '') === 'on'
-  const frequency = String(formData.get('frequency') ?? 'monthly') as 'weekly' | 'monthly' | 'quarterly'
-  const areas = formData.getAll('areas').map((a) => String(a)).filter(Boolean)
-  const r = await setReportSubscriptionAction(personId, { areas, frequency, isActive })
-  redirect(
-    r.ok
-      ? `${BASE}/${personId}/tools?flash=${encodeURIComponent(r.message ?? 'Market reports updated.')}`
-      : `${BASE}/${personId}/tools?error=${encodeURIComponent(`Market reports not updated — ${r.error}`)}`,
   )
 }
 export async function assignSavedSearchForm(formData: FormData): Promise<void> {

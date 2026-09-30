@@ -2,6 +2,8 @@ import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { daysSince } from '@/lib/format/relative-ago'
 import type { DeliverySendRow } from '@/lib/data/crm/emailDelivery'
+import { CADENCE_WINDOW_MS } from '@/lib/crm/market-report-cadence'
+import { normalizeReportFrequency } from '@/lib/data/crm/getContactReportSubscriptions'
 
 /**
  * emailDeliveryAttention — builds the "needs attention" list for the Delivery
@@ -32,6 +34,7 @@ import type { DeliverySendRow } from '@/lib/data/crm/emailDelivery'
 export type DeliveryAttentionKind =
   | 'report-overdue'
   | 'report-attempted'
+  | 'report-awaiting-approval'
   | 'alert-quiet'
   | 'no-opens'
   | 'bounced'
@@ -121,7 +124,7 @@ export async function buildDeliveryAttention(input: {
   const [reportRes, alertRes, alertCountRes] = await Promise.all([
     sb
       .from('crm_report_subscriptions')
-      .select('person_id, areas, frequency, is_active, created_at, last_sent_at, last_attempt_at')
+      .select('person_id, areas, frequency, is_active, created_at, last_sent_at, last_attempt_at, first_send_approved_at')
       .eq('is_active', true)
       .limit(1000),
     sb
@@ -142,6 +145,7 @@ export async function buildDeliveryAttention(input: {
     created_at: string | null
     last_sent_at: string | null
     last_attempt_at: string | null
+    first_send_approved_at: string | null
   }
   type AlertRow = {
     id: string
@@ -178,6 +182,7 @@ export async function buildDeliveryAttention(input: {
   const counts: Record<DeliveryAttentionKind, number> = {
     'report-overdue': 0,
     'report-attempted': 0,
+    'report-awaiting-approval': 0,
     'alert-quiet': 0,
     'no-opens': 0,
     bounced: 0,
@@ -195,9 +200,30 @@ export async function buildDeliveryAttention(input: {
     const name = displayName(p)
     const email = primaryEmail(p)
     const freq = (r.frequency ?? 'monthly').trim().toLowerCase()
-    const cadence = cadenceDaysFor(freq, 30)
+    // The send engine's own window (quarterly is 89 days, not 90).
+    const cadence = CADENCE_WINDOW_MS[normalizeReportFrequency(freq)] / 86_400_000
     const anchorIso = r.last_sent_at ?? r.created_at
     const idleDays = daysSince(anchorIso, nowMs)
+
+    // Nothing sends until a broker previews the report and approves the first
+    // send (Matt 2026-09-29), so an unapproved subscription is waiting on us,
+    // not overdue and not failing.
+    if (!r.first_send_approved_at) {
+      push({
+        kind: 'report-awaiting-approval',
+        severity: 'watch',
+        headline: `${who(name, email)}'s ${freq} market report is waiting for your approval`,
+        detail: 'Nothing goes to them until a broker previews the report and approves the first send.',
+        fix: 'Open their page, send yourself a preview from the Market report section, then approve the first send.',
+        personId: r.person_id,
+        personName: name,
+        email,
+        fixHref: r.person_id > 0 ? `/admin/people/${r.person_id}#market-report` : SUBSCRIPTIONS_HUB,
+        fixLabel: 'Open contact',
+        atIso: r.created_at,
+      })
+      continue
+    }
 
     const attemptFailed =
       r.last_attempt_at != null && (r.last_sent_at == null || r.last_attempt_at > r.last_sent_at)
@@ -212,7 +238,7 @@ export async function buildDeliveryAttention(input: {
           r.last_sent_at == null
             ? `The last try was ${attemptDays === 0 ? 'today' : `${attemptDays} days ago`} and nothing has ever been delivered to them.`
             : `The last try was ${attemptDays === 0 ? 'today' : `${attemptDays} days ago`}; the last report that actually went out was ${daysSince(r.last_sent_at, nowMs)} days ago.`,
-        fix: 'Open their page and check for a missing email address, a bad address, or an unsubscribe. Fix it and the next run will pick them up.',
+        fix: "Open their page: the Market report section lists every attempt and why it was held or failed (stale market data, email turned off, no address). Fix it and the next run will pick them up.",
         personId: r.person_id,
         personName: name,
         email,

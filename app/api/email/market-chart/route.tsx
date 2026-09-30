@@ -5,11 +5,24 @@
  * embeds its charts as <img> tags pointing here. Rendered with next/og
  * (satori) — navy #102742 on cream #faf8f4, no logo, tabular figures.
  *
- * GET params:
- *   geo    — geo type: city | neighborhood | region | community | subdivision | zip
- *   slug   — geo slug, e.g. bend, tetherow
- *   metric — median_price | inventory | dom
- *   months — window of completed months (6–24, default 12)
+ * Two ways in:
+ *
+ *   SIGNED (the market-report email, review 2026-09-30): `d` + `s`, a series
+ *   signed by lib/email/market-chart-token.ts carrying the exact months and
+ *   values the email printed and its §0 Spark check verified. Drawn from those
+ *   values and NOTHING else: this path never reads market data, so the email,
+ *   its web view and its archive always show the image the check saw. An
+ *   altered or unsigned series is a 404. The URL fixes the image, so it is
+ *   cached for good.
+ *
+ *   READ (the weekly market report page's banner, app/actions/generate-market-report.ts,
+ *   fetched once at generation and stored as bytes; and reports mailed before
+ *   the signed path existed):
+ *     geo    — geo type: city | neighborhood | region | community | subdivision | zip
+ *     slug   — geo slug, e.g. bend, tetherow
+ *     metric — median_price | inventory | dom
+ *     months — window of completed months (6–24, default 12)
+ *     through — optional YYYY-MM: the last month drawn
  *
  * Unauthenticated by design (Gmail/Outlook image proxies fetch it) — it only
  * exposes aggregate public market stats already published on the site's market
@@ -26,7 +39,8 @@
  * `market_stats_cache` (leftover has no monthly time series to chart from).
  * Do not migrate this route to leftover.
  *
- * Cache: s-maxage 6h (matches market_stats_cache freshness) + a day of SWR.
+ * Cache: READ, s-maxage 6h (matches market_stats_cache freshness) + a day of
+ * SWR; SIGNED, immutable (the URL is the data).
  */
 
 import { formatDate } from '@/lib/format/date'
@@ -34,6 +48,8 @@ import { ImageResponse } from 'next/og'
 import { getMarketTrend, type MarketTrendPoint } from '@/lib/data/market/getMarketTrend'
 import { buildMarketReportAreas } from '@/lib/data/crm/getContactReportSubscriptions'
 import type { GeoType } from '@/lib/data/types/shared'
+import { MissingSigningSecretError } from '@/lib/email/signing-secret'
+import { verifyMarketChart } from '@/lib/email/market-chart-token'
 
 export const revalidate = 21600
 
@@ -97,6 +113,25 @@ type ChartPoint = { periodStart: string; value: number }
 
 export async function GET(req: Request): Promise<Response> {
   const url = new URL(req.url)
+
+  // SIGNED: draw the verified series, never a read (see the file comment).
+  if (url.searchParams.has('d')) {
+    let signed: ReturnType<typeof verifyMarketChart>
+    try {
+      signed = verifyMarketChart(url.searchParams.get('d'), url.searchParams.get('s'))
+    } catch (e) {
+      if (e instanceof MissingSigningSecretError) return new Response('Chart unavailable', { status: 503 })
+      throw e
+    }
+    if (!signed) return new Response('Not found', { status: 404 })
+    return drawChart({
+      geoLabel: signed.label,
+      metric: METRICS[signed.metric],
+      points: signed.points.map((p) => ({ periodStart: `${p.month}-01`, value: p.value })),
+      cacheControl: 'public, max-age=31536000, immutable',
+    })
+  }
+
   const geoParam = (url.searchParams.get('geo') ?? 'city').trim()
   const slug = (url.searchParams.get('slug') ?? '').trim().toLowerCase()
   const metricParam = (url.searchParams.get('metric') ?? 'median_price').trim() as ChartMetric
@@ -107,8 +142,17 @@ export async function GET(req: Request): Promise<Response> {
   const metric = METRICS[metricParam]
   if (!metric) return new Response('Unknown metric', { status: 400 })
   const months = Number.isFinite(monthsParam) ? Math.min(24, Math.max(6, monthsParam)) : 12
+  // `through=YYYY-MM` pins the chart to the months an older email described
+  // (reports mailed before the signed path existed still carry it).
+  const throughParam = (url.searchParams.get('through') ?? '').trim()
+  if (throughParam && !/^\d{4}-(0[1-9]|1[0-2])$/.test(throughParam)) {
+    return new Response('Bad through', { status: 400 })
+  }
 
-  const trend = await getMarketTrend(geoParam as GeoType, slug, months)
+  const series = await getMarketTrend(geoParam as GeoType, slug, throughParam ? 36 : months)
+  const trend = throughParam
+    ? series.filter((p) => p.periodStart.slice(0, 7) <= throughParam).slice(-months)
+    : series
   const points: ChartPoint[] = trend
     .map((p) => {
       const v = metric.pick(p)
@@ -116,9 +160,25 @@ export async function GET(req: Request): Promise<Response> {
     })
     .filter((p): p is ChartPoint => p !== null)
 
+  // s-maxage 6h to match the cache table's freshness, then a day of SWR.
+  return drawChart({
+    geoLabel: labelForSlug(slug),
+    metric,
+    points,
+    cacheControl: 'public, s-maxage=21600, stale-while-revalidate=86400',
+  })
+}
+
+/** Draw one series. Every figure on the image comes from `points`. */
+function drawChart(input: {
+  geoLabel: string
+  metric: (typeof METRICS)[ChartMetric]
+  points: ChartPoint[]
+  cacheControl: string
+}): Response {
+  const { geoLabel, metric, points } = input
   if (points.length < 3) return new Response('Not enough data', { status: 404 })
 
-  const geoLabel = labelForSlug(slug)
   const values = points.map((p) => p.value)
   const rawMin = Math.min(...values)
   const rawMax = Math.max(...values)
@@ -293,7 +353,6 @@ export async function GET(req: Request): Promise<Response> {
     { width: WIDTH, height: HEIGHT },
   )
 
-  // s-maxage 6h to match the cache table's freshness, then a day of SWR.
-  image.headers.set('Cache-Control', 'public, s-maxage=21600, stale-while-revalidate=86400')
+  image.headers.set('Cache-Control', input.cacheControl)
   return image
 }

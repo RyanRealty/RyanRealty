@@ -32,15 +32,22 @@
  *   - Live inventory + MoS for cities: `getDetachedMarkets` (Market Truth
  *     detached, same three figures as `/sell`). A city miss does not fall
  *     back to pulse 488 / 3.54 / seller — live headlines stay empty and the
- *     block uses rolling_365d inventory/MOS. Resort neighborhoods still read
- *     `getMarketPulse` (`refresh_community_market_pulse`); MoS at that grain
- *     is withheld (`geo-grain-trust`). Do not invent MOS from leftover sold.
+ *     block uses rolling_365d inventory/MOS. A neighborhood (a Bend district or
+ *     a resort community) reads Market Truth's detached active_count directly
+ *     (`getDetachedInventories`, the cell getMarketPulse overlays; the pulse's
+ *     own count includes Coming Soon); MoS at that grain is withheld
+ *     (`geo-grain-trust`). Do not invent MOS from leftover sold.
  *     Unchanged by D27 (D17's carve-out: core inventory/MOS stay pulse/cache).
  *
  * Months of supply (CLAUDE.md §0): MoS = active / (closed_6mo / 6). Thresholds:
- * <= 4 sellers, 4-6 balanced, >= 6 buyers. The returned `marketVerdict` is
- * computed FROM the returned `monthsOfSupply`, so the verdict can never
- * contradict the number.
+ * <= 4 sellers, 4-6 balanced, >= 6 buyers. The block carries the RAW
+ * (unrounded) figure, and `marketVerdict` is computed from that raw value
+ * (monthsOfSupplyVerdict, lib/format/months-of-supply.ts), so the verdict can
+ * never contradict the number. Every surface prints it through
+ * formatMonthsOfSupply, the one boundary-safe display rule: a raw 4.003 prints
+ * "4.1" beside "Balanced market", never "4.00" (review 2026-09-30: the block
+ * used to round to two decimals first, and "4.00 months" printed beside the
+ * balanced verdict the raw 4.003 earns).
  *
  * W8.1a (Matt 2026-07-27: "switch resorts to 6mo"): cities and resorts both
  * prefer live pulse MoS (6-month base) when the row exists. `soldLast12mo`
@@ -50,10 +57,13 @@
  * 12-month sold count, or when the live numerator is not the count on the
  * block (`publishMonthsOfSupply`). Neighborhood MOS stays unpublished unless
  * that helper's source is market-truth — do not invent MOS from leftover
- * sold. When pulse MoS is null or withheld (sparse slow-turnover geos, or
- * impossible arithmetic), city grain may fall back to `rawMonthsOfSupply`
- * on the cache rolling_365d sold count so leftover closed is not a MOS
- * formula.
+ * sold. When the live MoS is null or withheld (sparse slow-turnover geos, or
+ * impossible arithmetic), city grain may fall back to the §0 formula itself:
+ * homes for sale / (closes in the last six completed months / 6), the closes
+ * summed from the monthly cache series (sixMonthCloses). Before 2026-09-30
+ * this fallback divided by twelve months of sales, a formula §0 does not
+ * allow. It withholds below MIN_MOS_SIX_MONTH_CLOSES closes, like the live
+ * figure.
  *
  * Slug resolution: the subscribable areas (lib/data/crm/getContactReportSubscriptions
  * buildMarketReportAreas) are the 7 Central Oregon cities + the 14 resort
@@ -63,44 +73,51 @@
  * for resort communities.
  *
  * DAL boundary (G1): this module reads ONLY through other DAL functions
- * (getCityMarketDetail, getDetachedMarkets, getMarketPulse,
- * getPublicDetachedPace). It contains no raw `.from()`.
+ * (getCityMarketDetail, getDetachedMarkets, getDetachedInventories,
+ * getMarketTrend, getPublicDetachedPace). It contains no raw `.from()`.
  */
 
 import { getCityMarketDetail } from '@/lib/data/market/getCityMarketDetail'
-import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
 import { getMarketTrend, type MarketTrendPoint } from '@/lib/data/market/getMarketTrend'
 import {
   cityDetachedSlug,
+  getDetachedInventories,
   getDetachedMarkets,
+  type DetachedInventory,
   type SellBendMarket,
 } from '@/lib/data/market-truth/getSellBendMarket'
 import {
   EMPTY_PUBLIC_PACE,
-  getPublicDetachedPace,
+  getPublicDetachedPaceDetailed,
+  type PublicPaceProvenance,
   type PublicPaceRow,
 } from '@/lib/data/market-truth/public-pace'
+import type { MetricProvenance } from '@/lib/data/market-truth/getMetric'
 import { buildMarketReportAreas } from '@/lib/data/crm/getContactReportSubscriptions'
 import { hrefForNeighborhoodSlug } from '@/lib/neighborhood-areas'
 import { REPORT_CITY_SLUG_SET } from '@/lib/data/geo/report-cities'
 import { marketVerdict } from '@/lib/market/classify'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
-import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
+import { MIN_MOS_SIX_MONTH_CLOSES, publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
+import { monthsOfSupply as sixMonthMonthsOfSupply } from '@/lib/market/classify'
+import { monthsOfSupplyVerdict } from '@/lib/format/months-of-supply'
 import { isSoldAttributionTrusted } from '@/lib/market/geo-grain-trust'
 import type { MoSVerdict } from '@/lib/data/types/market'
 import { formatDate } from '@/lib/format/date'
 
 /**
  * Source tag for a block's LIVE inventory + months-of-supply figures ONLY
- * (`activeListings`, `monthsOfSupply`) — whether that live pair came from
- * `market_pulse_live` (or its Market Truth city-overlay equivalent) or fell
- * back to the `market_stats_cache` rolling_365d row. It does NOT describe
+ * (`activeListings`, `monthsOfSupply`): whether that live pair came from
+ * Market Truth (`market_metric`: a city's headlines, a neighborhood's
+ * inventory) or fell back to the `market_stats_cache` rolling_365d row. The
+ * value was `market_pulse_live` until 2026-09-30, when the report stopped
+ * reading the pulse at all; it named a table no figure came from. It does NOT describe
  * `medianPrice` / `soldLast12mo` / `yoyPct`, which are leftover Market Truth
  * pace cells (D27) when present and null on a miss — never this tag's two
  * values — nor `domMedian`, which always stays `market_stats_cache`
  * rolling_365d regardless of this tag.
  */
-export type MarketReportSource = 'market_stats_cache:rolling_365d' | 'market_pulse_live'
+export type MarketReportSource = 'market_stats_cache:rolling_365d' | 'market_metric'
 
 /**
  * Month-over-month context derived from the monthly cache series (completed
@@ -132,6 +149,51 @@ export type MarketTrendSummary = {
 }
 
 /**
+ * Where each group of a block's figures came from, with the clock and the
+ * sample behind it. The email's figures trace (lib/crm/market-report-figures)
+ * prints `as_of` and `n` from here, and the sender's freshness hold
+ * (lib/crm/market-report-freshness) reads the clocks. Attached on the fetch
+ * path only; a block built without it simply carries no trace clocks.
+ */
+export type MarketReportProvenance = {
+  /**
+   * The market_stats_cache rolling_365d row: median days on market, and the
+   * row whose existence keeps an area in the report.
+   */
+  cache: {
+    updatedAt: string | null
+    periodStart: string | null
+    periodEnd: string | null
+    soldCount: number | null
+    methodologyVersion: string | null
+  } | null
+  /**
+   * The live inventory (and, for a city, months of supply) source: Market
+   * Truth's detached active_count at both grains, a city through
+   * getDetachedMarkets and a neighborhood through getDetachedInventories. The
+   * pulse's own count (which includes Coming Soon) is never read here.
+   */
+  live: {
+    table: 'market_metric'
+    /** When the row was computed or refreshed. */
+    computedAt: string | null
+    /** Market Truth only: the last day the underlying data is complete through. */
+    completeThrough: string | null
+    /**
+     * Market Truth city only: the months_of_supply cell's period_end, the end
+     * of its six-month closed window. Null when not recorded.
+     */
+    periodEnd?: string | null
+  } | null
+  /** The Market Truth leftover twelve-month cells (median, closed count, YoY). */
+  twelveMonth: {
+    medianClose: MetricProvenance | null
+    closedCount: MetricProvenance | null
+    yoyMedian: MetricProvenance | null
+  } | null
+}
+
+/**
  * One subscribed area's verified market figures. Every numeric field is sourced
  * from the cache; a field is `null` when the cache row does not carry it (never
  * a fabricated stand-in).
@@ -147,11 +209,23 @@ export type MarketReportAreaBlock = {
   medianPrice: number | null
   /** Current active SFR listing count. */
   activeListings: number | null
-  /** Real closed-sale count over the trailing 12 months (the MoS close base). */
+  /** Real closed-sale count over the trailing 12 months. */
   soldLast12mo: number | null
-  /** Months of supply = active / (soldLast12mo / 12). Computed, not stored. */
+  /**
+   * Months of supply, RAW (unrounded): active / (closed_last_6_months / 6).
+   * Print it only through formatMonthsOfSupply (lib/format/months-of-supply.ts).
+   */
   monthsOfSupply: number | null
-  /** Verdict derived FROM monthsOfSupply against the §0 thresholds. */
+  /**
+   * Which path produced `monthsOfSupply`: the live source's own figure
+   * (Market Truth, six-month absorption) or the §0 formula computed from the
+   * last six completed months of the monthly cache series. Null when
+   * withheld. The figures trace names it.
+   */
+  monthsOfSupplySource?: 'live' | 'computed-6mo' | null
+  /** The six-month close base of a computed figure (null for a live one). */
+  monthsOfSupplyBasis?: SixMonthCloses | null
+  /** Verdict derived FROM the raw monthsOfSupply against the §0 thresholds. */
   marketVerdict: MoSVerdict | null
   /** Median days on market (closed), trailing 12 months. */
   domMedian: number | null
@@ -163,7 +237,7 @@ export type MarketReportAreaBlock = {
   refreshedAt: string | null
   /**
    * Where this block's live `activeListings` + `monthsOfSupply` came from
-   * (pulse vs cache) — see the `MarketReportSource` doc for what this does
+   * (Market Truth vs cache) — see the `MarketReportSource` doc for what this does
    * NOT cover: `medianPrice` / `soldLast12mo` / `yoyPct` are leftover when
    * present (D27), and `domMedian` is always cache, independent of this tag.
    */
@@ -185,50 +259,59 @@ export type MarketReportAreaBlock = {
    * when the geo has no monthly cache series.
    */
   trend?: MarketTrendSummary | null
+  /** Clocks and samples behind the figures (fetch path only). */
+  provenance?: MarketReportProvenance | null
+}
+
+/** Closes over the last six completed calendar months, summed from the monthly series. */
+export type SixMonthCloses = {
+  closed: number
+  /** First day of the first month (YYYY-MM-DD). */
+  from: string
+  /** Last day of the last month (YYYY-MM-DD). */
+  through: string
+}
+
+function monthIndex(periodStart: string): number | null {
+  const y = Number(periodStart.slice(0, 4))
+  const m = Number(periodStart.slice(5, 7))
+  return Number.isInteger(y) && Number.isInteger(m) && m >= 1 && m <= 12 ? y * 12 + (m - 1) : null
 }
 
 /**
- * Raw (UNROUNDED) months of supply from an active count and a trailing-12-month
- * close count, per the canonical absorption formula. Pure — exported for unit
- * tests. This is the value the verdict must classify from: rounding to one
- * decimal BEFORE classifying misbins a true 4.04 as a seller's market (4.0 <= 4)
- * and a true 5.96 as a buyer's market (6.0 >= 6). The display figure rounds; the
- * classification does not.
- *
- * Returns null when the inputs cannot produce a real figure (no active count,
- * no closes, or a zero close rate which would divide by zero). Never returns a
- * fabricated number to fill a gap.
+ * The closed_last_6_months of CLAUDE.md §0 from the monthly cache series
+ * (getMarketTrend: completed months only, oldest first): the last six points,
+ * when they are six CONSECUTIVE calendar months and every one carries a sold
+ * count. Null otherwise (a gap or a missing count is not a six-month total).
+ * Pure.
  */
-export function rawMonthsOfSupply(
-  activeCount: number | null | undefined,
-  soldLast12mo: number | null | undefined,
-): number | null {
-  if (activeCount == null || soldLast12mo == null) return null
-  if (!Number.isFinite(activeCount) || !Number.isFinite(soldLast12mo)) return null
-  if (soldLast12mo <= 0) return null
-  const closesPerMonth = soldLast12mo / 12
-  if (closesPerMonth <= 0) return null
-  const mos = activeCount / closesPerMonth
-  if (!Number.isFinite(mos)) return null
-  return mos
+export function sixMonthCloses(points: readonly MarketTrendPoint[] | null | undefined): SixMonthCloses | null {
+  if (!points || points.length < 6) return null
+  const last = points.slice(-6)
+  const idx = last.map((p) => monthIndex(p.periodStart))
+  if (idx.some((i) => i == null)) return null
+  for (let i = 1; i < 6; i++) if ((idx[i] as number) !== (idx[i - 1] as number) + 1) return null
+  let closed = 0
+  for (const p of last) {
+    const n = toNum(p.soldCount)
+    if (n == null || n < 0) return null
+    closed += n
+  }
+  const lastStart = last[5]!.periodStart
+  const through = new Date(Date.UTC(Number(lastStart.slice(0, 4)), Number(lastStart.slice(5, 7)), 0)).toISOString().slice(0, 10)
+  return { closed, from: `${last[0]!.periodStart.slice(0, 7)}-01`, through }
 }
 
 /**
- * Compute months of supply, rounded to one decimal — the precision every market
- * surface renders. Pure — exported for unit tests. Wraps rawMonthsOfSupply so
- * the display value and the classification value derive from the same figure.
- *
- * Returns null when the inputs cannot produce a real figure. Never returns a
- * fabricated number to fill a gap.
+ * The §0 verdict for a RAW months-of-supply figure, from
+ * monthsOfSupplyVerdict (the pair of formatMonthsOfSupply, so the words and
+ * the printed digits come from one module). Null when unavailable. Pure.
  */
-export function computeMonthsOfSupply(
-  activeCount: number | null | undefined,
-  soldLast12mo: number | null | undefined,
-): number | null {
-  const raw = rawMonthsOfSupply(activeCount, soldLast12mo)
-  if (raw == null) return null
-  // One decimal — matches the precision every market surface renders.
-  return Math.round(raw * 10) / 10
+export function reportMarketVerdict(mos: number | null | undefined): MoSVerdict | null {
+  if (mos == null || !Number.isFinite(mos)) return null
+  const v = monthsOfSupplyVerdict(mos)
+  if (!v) return null
+  return v.key === 'seller' ? 'sellers' : v.key === 'buyer' ? 'buyers' : 'balanced'
 }
 
 /**
@@ -324,11 +407,30 @@ function toNum(v: unknown): number | null {
 async function readAreaLeftover(
   geoType: 'city' | 'neighborhood',
   geoSlug: string,
-): Promise<PublicPaceRow> {
+): Promise<{ row: PublicPaceRow; provenance: PublicPaceProvenance }> {
   try {
-    return await getPublicDetachedPace({ geoType, geoSlug })
+    return await getPublicDetachedPaceDetailed({ geoType, geoSlug })
   } catch {
-    return { ...EMPTY_PUBLIC_PACE }
+    return { row: { ...EMPTY_PUBLIC_PACE }, provenance: {} }
+  }
+}
+
+/**
+ * The neighborhoods' live inventory: Market Truth's detached active_count
+ * (StandardStatus Active, primary place membership), the same cell
+ * getMarketPulse overlays on the pulse row, read for every neighborhood of the
+ * report in ONE call. Read directly so the report names the source it reads:
+ * the pulse's own active_count includes Coming Soon, and a public count must
+ * not (lib/listing-status-public.ts). A miss or a failed read withholds the
+ * count (unknown is not zero) and the block falls back to the cache row's
+ * inventory, traced as such.
+ */
+async function readNeighborhoodInventories(slugs: readonly string[]): Promise<Map<string, DetachedInventory>> {
+  if (slugs.length === 0) return new Map()
+  try {
+    return await getDetachedInventories(slugs.map((geoSlug) => ({ geoType: 'neighborhood' as const, geoSlug })))
+  } catch {
+    return new Map()
   }
 }
 
@@ -366,7 +468,11 @@ export function buildAreaBlock(args: {
     endOfPeriodInventory: number | null
     updatedAt: string | null
   } | null
-  /** From getMarketPulse (cities + resort neighborhoods); null on miss. */
+  /**
+   * The live pair (named `pulse` for history): a city's Market Truth headlines
+   * (active count and months of supply), or a neighborhood's Market Truth
+   * inventory (active count only). Null on a miss.
+   */
   pulse: {
     activeCount: number | null
     monthsOfSupply: number | null
@@ -374,6 +480,8 @@ export function buildAreaBlock(args: {
   } | null
   /** From getPublicDetachedPace. Passed on the fetch path; miss omits 12-month close figures. */
   leftover?: Pick<PublicPaceRow, 'medianClose' | 'closedCount' | 'yoyMedian'> | null
+  /** The last six completed months' closes (sixMonthCloses), for the §0 fallback. */
+  closedSixMonths?: SixMonthCloses | null
 }): MarketReportAreaBlock | null {
   const { slug, geoType, detail, pulse, leftover } = args
   if (!detail) return null
@@ -402,14 +510,9 @@ export function buildAreaBlock(args: {
     return null
   }
 
-  // MoS: prefer the cache-computed live figure (cities + resorts; canonical
-  // 6-month absorption base per W8.1a). Fall back to trailing-12mo absorption
-  // only when pulse MoS is unavailable (sparse slow-turnover geos). Live
-  // 6-month MoS need not equal activeListings / (soldLast12mo / 12) — see the
-  // module docstring. The verdict derives from the RAW (unrounded) figure while
-  // the number shown is rounded to one decimal, so a true 4.04 bins as balanced
-  // (not seller's) and a true 5.96 as balanced (not buyer's) — the pill can
-  // never contradict the underlying absorption rate.
+  // MoS: prefer the live figure (Market Truth, six-month absorption, W8.1a).
+  // Live 6-month MoS need not equal activeListings / (soldLast12mo / 12) —
+  // see the module docstring.
   const liveMos = publishMonthsOfSupply({
     grain: geoType,
     pulseMos: pulse ? toNum(pulse.monthsOfSupply) : null,
@@ -417,24 +520,24 @@ export function buildAreaBlock(args: {
     displayedActiveCount: activeListings,
     soldCount12mo: soldLast12mo,
   })
-  // The trailing-12 absorption fallback reads cache sold, not leftover
-  // closedCount — leftover is not a MOS formula. An untrusted grain cannot
-  // reach it either: a resort-community report would otherwise mail a computed
-  // figure in place of the withheld one, off a sold count that finds a
-  // fraction of the sales.
-  const rawMos =
-    liveMos != null
-      ? liveMos
-      : isSoldAttributionTrusted(geoType)
-        ? rawMonthsOfSupply(activeListings, cacheSold)
-        : null
-  // Keep two-decimal precision so the display can stay consistent with the
-  // raw-derived verdict at the 4.0 / 6.0 boundaries (formatMonths shows the
-  // extra decimal only in the narrow boundary band). Verdict is from rawMos.
-  const monthsOfSupply = rawMos != null ? Math.round(rawMos * 100) / 100 : null
+  // The fallback is the §0 formula itself: homes for sale / (closes in the
+  // last six completed months / 6), the closes from the monthly cache series
+  // (never leftover closedCount, which is not a MOS formula), withheld below
+  // the Market Truth floor like the live figure. An untrusted grain cannot
+  // reach it: a resort-community report would otherwise mail a computed figure
+  // in place of the withheld one, off a sold count that finds a fraction of
+  // the sales.
+  const six = args.closedSixMonths ?? null
+  const computedMos =
+    liveMos == null && isSoldAttributionTrusted(geoType) && six && six.closed >= MIN_MOS_SIX_MONTH_CLOSES && activeListings != null
+      ? sixMonthMonthsOfSupply(activeListings, six.closed)
+      : null
+  // RAW, unrounded: the verdict classifies it, and every surface prints it
+  // through formatMonthsOfSupply (boundary-safe), never a pre-rounded copy.
+  const monthsOfSupply = liveMos ?? computedMos
 
   const source: MarketReportSource =
-    liveMos != null || liveActive != null ? 'market_pulse_live' : 'market_stats_cache:rolling_365d'
+    liveMos != null || liveActive != null ? 'market_metric' : 'market_stats_cache:rolling_365d'
 
   return {
     slug,
@@ -445,7 +548,9 @@ export function buildAreaBlock(args: {
     activeListings,
     soldLast12mo,
     monthsOfSupply,
-    marketVerdict: classifyMarketVerdict(rawMos),
+    monthsOfSupplySource: liveMos != null ? 'live' : computedMos != null ? 'computed-6mo' : null,
+    monthsOfSupplyBasis: liveMos == null && computedMos != null ? six : null,
+    marketVerdict: reportMarketVerdict(monthsOfSupply),
     domMedian,
     yoyPct,
     marketHealthLabel: detail.marketHealthLabel ?? null,
@@ -460,8 +565,9 @@ export function buildAreaBlock(args: {
  *
  * For each slug: resolve geo_type, pull the trailing-12-month historical row
  * (getCityMarketDetail at rolling_365d), leftover 12-month pace
- * (getPublicDetachedPace), and live inventory (city: Market Truth detached
- * only — no pulse headline fallback; resort neighborhood: getMarketPulse).
+ * (getPublicDetachedPace), and live inventory (Market Truth detached at both
+ * grains, never the pulse's own count: city getDetachedMarkets, neighborhood
+ * getDetachedInventories).
  * Areas with no usable signal at all are OMITTED. The result preserves input
  * order, de-duped by slug.
  *
@@ -491,14 +597,16 @@ export async function getMarketReportData(
   if (slugs.length === 0) return []
 
   const citySlugs = slugs.filter((s) => resolveAreaGeoType(s) === 'city')
-  let detached = new Map<string, SellBendMarket>()
-  try {
-    if (citySlugs.length) {
-      detached = await getDetachedMarkets(citySlugs.map((s) => ({ geoType: 'city' as const, geoSlug: s })))
+  const neighborhoodSlugs = slugs.filter((s) => resolveAreaGeoType(s) === 'neighborhood')
+  const readCities = async (): Promise<Map<string, SellBendMarket>> => {
+    if (citySlugs.length === 0) return new Map()
+    try {
+      return await getDetachedMarkets(citySlugs.map((s) => ({ geoType: 'city' as const, geoSlug: s })))
+    } catch {
+      return new Map()
     }
-  } catch {
-    detached = new Map()
   }
+  const [detached, inventories] = await Promise.all([readCities(), readNeighborhoodInventories(neighborhoodSlugs)])
 
   const blocks = await Promise.all(
     slugs.map(async (slug): Promise<MarketReportAreaBlock | null> => {
@@ -509,33 +617,59 @@ export async function getMarketReportData(
           ? detached.get(`city:${cityDetachedSlug(slug)}`) ??
             detached.get(`city:${cityDetachedSlug(cacheSlug)}`)
           : undefined
+      const inventory = geoType === 'neighborhood' ? inventories.get(`neighborhood:${cityDetachedSlug(slug)}`) ?? null : null
 
-      const [detail, pulse, trendPoints, leftover] = await Promise.all([
+      const [detail, trendPoints, leftoverRead] = await Promise.all([
         getCityMarketDetail({ geoType, geoSlug: cacheSlug, periodType: 'rolling_365d' }),
-        geoType === 'neighborhood'
-          ? getMarketPulse({ geoType, geoSlug: cacheSlug })
-          : Promise.resolve(null),
         getMarketTrend(geoType, cacheSlug, 12),
         readAreaLeftover(geoType, slug),
       ])
+      const leftover = leftoverRead.row
 
+      // Months of supply is never read at neighborhood grain: the pulse and
+      // Market Truth figures there were withheld by publishMonthsOfSupply
+      // (an untrusted sold attribution) before this read went direct.
       const live = mt
         ? {
             activeCount: mt.activeCount,
             monthsOfSupply: mt.monthsOfSupply,
             refreshedAt: mt.computedAt,
           }
-        : pulse
-          ? {
-              activeCount: pulse.activeCount,
-              monthsOfSupply: pulse.monthsOfSupply,
-              refreshedAt: pulse.refreshedAt,
-            }
+        : inventory
+          ? { activeCount: inventory.activeCount, monthsOfSupply: null, refreshedAt: inventory.computedAt }
           : null
+
+      const provenance: MarketReportProvenance = {
+        cache: detail
+          ? {
+              updatedAt: detail.updatedAt ?? null,
+              periodStart: detail.periodStart ?? null,
+              periodEnd: detail.periodEnd ?? null,
+              soldCount: toNum(detail.soldCount),
+              methodologyVersion: detail.methodologyVersion ?? null,
+            }
+          : null,
+        live: mt
+          ? {
+              table: 'market_metric',
+              computedAt: mt.computedAt ?? null,
+              completeThrough: mt.completeThrough ?? null,
+              periodEnd: mt.periodEnd ?? null,
+            }
+          : inventory
+            ? { table: 'market_metric', computedAt: inventory.computedAt ?? null, completeThrough: null, periodEnd: null }
+            : null,
+        twelveMonth: {
+          medianClose: leftoverRead.provenance.median_close ?? null,
+          closedCount: leftoverRead.provenance.closed_count ?? null,
+          yoyMedian: leftoverRead.provenance.yoy_median_price ?? null,
+        },
+      }
 
       const block = buildAreaBlock({
         slug,
         geoType,
+        closedSixMonths: sixMonthCloses(trendPoints),
         detail: detail
           ? {
               medianSalePrice: detail.medianSalePrice,
@@ -551,7 +685,7 @@ export async function getMarketReportData(
         leftover,
       })
       if (!block) return null
-      return { ...block, trend: buildTrendSummary(trendPoints) }
+      return { ...block, trend: buildTrendSummary(trendPoints), provenance }
     }),
   )
 

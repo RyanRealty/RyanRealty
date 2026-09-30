@@ -11,7 +11,8 @@
  * where the surrounding words are sentence case.
  */
 
-import { deleteSavedSearchForm, setReportSubsForm } from '@/app/admin/(protected)/crm/[id]/form-actions'
+import { deleteSavedSearchForm } from '@/app/admin/(protected)/crm/[id]/form-actions'
+import { MarketReportSection } from '@/components/admin/crm/MarketReportSection'
 import { ContactQuickActions } from '@/components/admin/crm/ContactQuickActions'
 import ContactBehaviorPanel from '@/components/admin/crm/ContactBehaviorPanel'
 import ContactEmailEngagement from '@/components/admin/crm/ContactEmailEngagement'
@@ -28,10 +29,7 @@ import { getContactEmailEngagement } from '@/lib/data/crm/getContactEmailEngagem
 import { getNewsletterHistoryForPerson } from '@/lib/data/newsletter/perLead'
 import { getContactListingAlerts } from '@/lib/data/crm/getContactListingAlerts'
 import type { ContactMemberships } from '@/lib/data/crm/getContactMemberships'
-import type {
-  ContactReportSubscription,
-  MarketReportArea,
-} from '@/lib/data/crm/getContactReportSubscriptions'
+import type { ContactReportSubscription } from '@/lib/data/crm/getContactReportSubscriptions'
 import { describeSearch } from '@/app/admin/(protected)/crm/[id]/person-view-model'
 
 export async function PersonEngagementRegion({
@@ -41,7 +39,6 @@ export async function PersonEngagementRegion({
   primaryEmail,
   contactMemberships,
   reportSub,
-  reportAreas,
 }: {
   personId: number
   fubLegacyId: number | null
@@ -49,7 +46,6 @@ export async function PersonEngagementRegion({
   primaryEmail: string | null
   contactMemberships: ContactMemberships
   reportSub: ContactReportSubscription | null
-  reportAreas: MarketReportArea[]
 }) {
   const [
     savedSearches,
@@ -83,8 +79,7 @@ export async function PersonEngagementRegion({
             ? { isActive: reportSub.isActive, areas: reportSub.areas, frequency: reportSub.frequency }
             : null
         }
-        reportAreas={reportAreas}
-        reportSetAction={setReportSubsForm.bind(null, personId)}
+        reportPanel={<MarketReportSection personId={personId} returnTo={`/admin/people/${personId}/tools`} />}
       />
       <ContactBehaviorPanel summary={behaviorSummary} />
       {homesPanel.length > 0 ? (

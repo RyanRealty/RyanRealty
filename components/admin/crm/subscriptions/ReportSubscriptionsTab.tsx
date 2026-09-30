@@ -27,11 +27,13 @@ import {
   previewReportEmailAction,
 } from '@/app/actions/subscriptions-admin'
 import type { AdminReportSubscriptionRow } from '@/lib/data/crm/subscriptionsAdmin'
+import { isContactStopVia } from '@/lib/crm/market-report-subscription-control'
 import {
   Button,
   ConfirmDialog,
   Menu,
   SearchField,
+  StateWord,
   ToolbarCheck,
   ToolbarSelect,
 } from '@/components/admin/v2'
@@ -39,7 +41,6 @@ import '@/components/admin/v2/report-grid.css'
 import {
   PAGE_SIZE,
   formatSubscriptionDate,
-  StatusBadge,
   EngagementCell,
   PaginationBar,
   TableSkeleton,
@@ -49,6 +50,22 @@ import AssignBrokerDialog from '@/components/admin/crm/subscriptions/AssignBroke
 import EmailPreviewDialog from '@/components/admin/crm/subscriptions/EmailPreviewDialog'
 
 type StatusFilter = 'active' | 'paused' | 'all'
+
+/**
+ * The report's state in words (Matt 2026-09-29): on and approved, on but
+ * waiting for the first-send approval, off, or stopped (and by whom). A
+ * contact's own stop reads differently from a broker's.
+ */
+function ReportStatus({ row }: { row: AdminReportSubscriptionRow }) {
+  if (row.state === 'stopped') {
+    return <StateWord state="down">{isContactStopVia(row.stoppedVia) ? 'Stopped by contact' : 'Stopped'}</StateWord>
+  }
+  if (row.state === 'paused') {
+    return <StateWord state="waiting">{isContactStopVia(row.pausedVia) ? 'Paused by contact' : 'Off'}</StateWord>
+  }
+  if (!row.firstSendApprovedAt) return <StateWord state="waiting">Waiting for approval</StateWord>
+  return <StateWord state="ok">On</StateWord>
+}
 type ReportFrequency = 'weekly' | 'monthly' | 'quarterly'
 type FrequencyFilter = ReportFrequency | 'all'
 
@@ -146,10 +163,23 @@ export default function ReportSubscriptionsTab({
       const res = await bulkUpdateReportSubscriptionsAction(targetIds, patch)
       if (!res.data) {
         toast.error(res.error ?? 'Could not update those subscriptions')
+        // Part of a bulk change may have landed before the error: show what is true now.
+        reload()
         return
       }
       const n = res.data.updated
-      toast.success(`${verb} ${n.toLocaleString('en-US')} ${n === 1 ? 'subscription' : 'subscriptions'}`)
+      const stopped = res.data.skippedContactStopped
+      const noAreas = res.data.skippedNoAreas
+      toast.success(
+        `${verb} ${n.toLocaleString('en-US')} ${n === 1 ? 'subscription' : 'subscriptions'}` +
+          (stopped > 0
+            ? `. Skipped ${stopped.toLocaleString('en-US')} the contact stopped or paused themselves; restart those one at a time with their consent note on the contact's market report card`
+            : '') +
+          (noAreas > 0
+            ? `. Skipped ${noAreas.toLocaleString('en-US')} with no areas; pick an area on each one first`
+            : '') +
+          '.',
+      )
       reload()
     })
   }
@@ -354,14 +384,14 @@ export default function ReportSubscriptionsTab({
                   </span>
                   <span role="cell" data-label="Areas" className="av2-rgrid__c">
                     <span className="block truncate text-sm" style={{ color: 'var(--a-text)' }}>
-                      {row.areas.length > 0 ? row.areas.join(', ') : '—'}
+                      {row.areaLabels.length > 0 ? row.areaLabels.join(', ') : 'No areas'}
                     </span>
                   </span>
                   <span role="cell" data-label="Frequency" className="av2-rgrid__c text-sm" style={{ color: 'var(--a-text)' }}>
                     {frequencyLabel(row.frequency)}
                   </span>
                   <span role="cell" data-label="Status" className="av2-rgrid__c">
-                    <StatusBadge active={row.active} />
+                    <ReportStatus row={row} />
                   </span>
                   <span role="cell" data-label="Engagement" className="av2-rgrid__c">
                     <EngagementCell engagement={row.engagement} />

@@ -3,15 +3,21 @@
  * email.
  *
  * Split out of market-report-email.ts (2026-07-29) so the renderer stays under
- * its size budget and the formatting rules live in one place with no imports
- * beyond a type. Every function here is pure and total: given a null or a
- * non-finite input it returns the em-dash data placeholder rather than a
- * fabricated stand-in, per CLAUDE.md §0.
+ * its size budget and the formatting rules live in one place, importing only a
+ * type and the canonical months-of-supply formatter. Every function here is
+ * pure and total.
+ *
+ * A MISSING VALUE IS NULL, NEVER A PLACEHOLDER (Matt 2026-09-29). These used to
+ * return an em dash for an unavailable figure, so a neighborhood report printed
+ * "Months of supply —" on every send (neighborhood months of supply is always
+ * withheld) and the em dash reached a client's inbox, which Matt's 2026-09-20
+ * no-em-dash lock forbids. Now a formatter returns null for a value it cannot
+ * print, the type forces the caller to decide, and the renderer drops the row.
+ * A figure that cannot be shown is left out, not filled (CLAUDE.md §0 rule 7).
  *
  * Brand-voice rules encoded here (CLAUDE.md §2): currency rounded to the
  * nearest thousand, days as an integer plus "days", percents at one decimal
- * with a signed arrow, sentence-case verdict phrases, the em-dash reserved as
- * the "unavailable" placeholder.
+ * with a signed arrow, sentence-case verdict phrases, no em dash anywhere.
  *
  * market-report-email.ts re-exports the public names, so existing importers
  * (app/actions/generate-market-report.ts, the test suite) keep working against
@@ -19,57 +25,71 @@
  */
 
 import type { MoSVerdict } from '@/lib/data/types/market'
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 
-/**
- * Round to the nearest thousand and format as $XXX,000. Pure. Returns the
- * em-dash data placeholder (allowed for "unavailable") when the value is null.
- */
-export function formatCurrencyRounded(value: number | null | undefined): string {
-  if (value == null || !Number.isFinite(value)) return '—'
+function usable(value: number | null | undefined): value is number {
+  return value != null && Number.isFinite(value)
+}
+
+/** Round to the nearest thousand and format as $XXX,000. Null when unavailable. */
+export function formatCurrencyRounded(value: number | null | undefined): string | null {
+  if (!usable(value)) return null
   const rounded = Math.round(value / 1000) * 1000
   return '$' + rounded.toLocaleString('en-US')
 }
 
-/** Integer + " days" (e.g. "38 days"). Em-dash placeholder when unavailable. */
-export function formatDays(value: number | null | undefined): string {
-  if (value == null || !Number.isFinite(value)) return '—'
-  return `${Math.round(value)} days`
+/** Integer + " days" (e.g. "38 days"). Null when unavailable. */
+export function formatDays(value: number | null | undefined): string | null {
+  if (!usable(value)) return null
+  const n = Math.round(value)
+  return `${n} ${n === 1 ? 'day' : 'days'}`
 }
 
-/** One-decimal signed-arrow YoY: "↑ 2.1% YoY" / "↓ 1.4% YoY" / flat. Em-dash when null. */
-export function formatYoy(value: number | null | undefined): string {
-  if (value == null || !Number.isFinite(value)) return '—'
+/** One-decimal signed-arrow YoY: "↑ 2.1% YoY" / "↓ 1.4% YoY" / "flat YoY". Null when unavailable. */
+export function formatYoy(value: number | null | undefined): string | null {
+  if (!usable(value)) return null
   const rounded = Math.round(value * 10) / 10
   if (rounded === 0) return 'flat YoY'
   const arrow = rounded > 0 ? '↑' : '↓'
   return `${arrow} ${Math.abs(rounded).toFixed(1)}% YoY`
 }
 
-/** One-decimal signed-arrow month change: "↑ 2.2% vs May" / "flat vs May". */
-export function formatMomPct(value: number | null | undefined, prevMonth: string | null): string {
-  if (value == null || !Number.isFinite(value) || !prevMonth) return '—'
+/**
+ * The same year-over-year move in words a seller reads without jargon:
+ * "↑ 2.1% from a year ago", "flat from a year ago". Null when unavailable.
+ */
+export function formatYoyPlain(value: number | null | undefined): string | null {
+  if (!usable(value)) return null
+  const rounded = Math.round(value * 10) / 10
+  if (rounded === 0) return 'flat from a year ago'
+  const arrow = rounded > 0 ? '↑' : '↓'
+  return `${arrow} ${Math.abs(rounded).toFixed(1)}% from a year ago`
+}
+
+/** One-decimal signed-arrow month change: "↑ 2.2% vs May" / "flat vs May". Null when unavailable. */
+export function formatMomPct(value: number | null | undefined, prevMonth: string | null): string | null {
+  if (!usable(value) || !prevMonth) return null
   const rounded = Math.round(value * 10) / 10
   if (rounded === 0) return `flat vs ${prevMonth}`
   const arrow = rounded > 0 ? '↑' : '↓'
   return `${arrow} ${Math.abs(rounded).toFixed(1)}% vs ${prevMonth}`
 }
 
-/** Months of supply + " months". One decimal, except within the narrow bands
- *  around the 4.0 / 6.0 verdict thresholds, where a second decimal is shown so
- *  the printed number can never appear to contradict the verdict pill (a true
- *  4.04 shows "4.04 months" next to "balanced market", not "4.0 months"). */
-export function formatMonths(value: number | null | undefined): string {
-  if (value == null || !Number.isFinite(value)) return '—'
-  // INCLUSIVE band edges: a true 4.05 classifies balanced (4.05 > 4) but
-  // (4.05).toFixed(1) floating-point-rounds DOWN to "4.0" — printing
-  // "Balanced market · 4.0 months" is the exact verdict-vs-number
-  // contradiction §0 rule 5 bans. Bend hit this live on 2026-07-16.
-  const nearThreshold = (value >= 3.95 && value <= 4.05) || (value >= 5.95 && value <= 6.05)
-  return `${value.toFixed(nearThreshold ? 2 : 1)} months`
+/**
+ * Months of supply + " months", from the RAW figure, through the one
+ * boundary-safe display rule every market surface uses (formatMonthsOfSupply,
+ * lib/format/months-of-supply.ts; ci:market-formula holds it). One decimal,
+ * and the printed digits never cross a verdict threshold the raw value does
+ * not: a raw 4.003 is balanced and prints "4.1", never "4.0" or "4.00" beside
+ * "Balanced market" (review 2026-09-30). Null when unavailable.
+ */
+export function formatMonths(value: number | null | undefined): string | null {
+  if (!usable(value)) return null
+  return `${formatMonthsOfSupply(value)} months`
 }
 
-/** Plain-language verdict phrase (sentence case, no hype). */
-export function verdictLabel(verdict: MoSVerdict | null | undefined): string {
+/** Plain-language verdict phrase (sentence case, no hype). Null when unknown. */
+export function verdictLabel(verdict: MoSVerdict | null | undefined): string | null {
   switch (verdict) {
     case 'sellers':
       return "Seller's market"
@@ -78,7 +98,7 @@ export function verdictLabel(verdict: MoSVerdict | null | undefined): string {
     case 'buyers':
       return "Buyer's market"
     default:
-      return '—'
+      return null
   }
 }
 
@@ -100,26 +120,8 @@ export function meaningLine(verdict: MoSVerdict | null | undefined): string | nu
   }
 }
 
-/** Whole number with comma separators. Em-dash when unavailable. */
-export function formatCount(value: number | null | undefined): string {
-  if (value == null || !Number.isFinite(value)) return '—'
+/** Whole number with comma separators. Null when unavailable. */
+export function formatCount(value: number | null | undefined): string | null {
+  if (!usable(value)) return null
   return Math.round(value).toLocaleString('en-US')
-}
-
-/** Signed whole-count delta phrase: "12 more than May" / "8 fewer than May". */
-export function inventoryDeltaPhrase(delta: number | null, prevMonth: string | null): string | null {
-  if (delta == null || !Number.isFinite(delta) || !prevMonth) return null
-  const n = Math.round(Math.abs(delta))
-  if (n === 0) return `unchanged from ${prevMonth}`
-  return `${n.toLocaleString('en-US')} ${delta > 0 ? 'more' : 'fewer'} than ${prevMonth}`
-}
-
-/** Signed day-delta phrase: "3 days faster than May" / "2 days slower than May". */
-export function domDeltaPhrase(delta: number | null, prevMonth: string | null): string | null {
-  if (delta == null || !Number.isFinite(delta) || !prevMonth) return null
-  const n = Math.round(Math.abs(delta))
-  if (n === 0) return `even with ${prevMonth}`
-  const word = n === 1 ? 'day' : 'days'
-  // A lower DOM month over month means homes sold faster.
-  return `${n} ${word} ${delta < 0 ? 'faster' : 'slower'} than ${prevMonth}`
 }

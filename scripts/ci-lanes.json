@@ -1348,6 +1348,7 @@
       "lib/observability/**",
       "next.config.ts",
       "scripts/check-tracking-policy.mjs",
+      "middleware.ts",
       "lib/analytics/**",
       "lib/tracking/**",
       "app/**",

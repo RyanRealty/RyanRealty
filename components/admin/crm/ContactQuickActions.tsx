@@ -4,7 +4,7 @@
  * ContactQuickActions — the clean quick-action chip row that lives at the top of
  * the contact page, by the name (replaces the old "Memberships" card). Four
  * chips: Newsletter (tap = subscribe/unsubscribe), Automations (sheet to enroll),
- * Saved searches (sheet to view), Market reports (sheet to set areas/frequency).
+ * Saved searches (sheet to view), Market reports (sheet with the market report card).
  * Each chip shows live state — a check when on, a count when relevant.
  *
  * 11F: on the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
@@ -27,14 +27,12 @@ import { useState, useTransition } from 'react'
 import { BarChart3, Check, Mail, Search, Workflow } from 'lucide-react'
 import { Button, Sheet, Switch } from '@/components/admin/v2'
 import { setNewsletterSubscription, setSequenceEnrollment } from '@/app/actions/crm-membership'
-import ReportSubscriptionsPanel from '@/components/admin/crm/ReportSubscriptionsPanel'
 import type { ContactSequenceMembership } from '@/lib/data/crm/getContactMemberships'
 
 type Result = { ok: true; message?: string } | { ok: false; error: string }
 
 export type QuickSavedSearch = { id: number | string; label: string; url: string | null; active: boolean }
 export type QuickReportSub = { isActive: boolean; areas: string[]; frequency: 'weekly' | 'monthly' | 'quarterly' }
-export type QuickReportArea = { slug: string; label: string }
 
 /** Shared chip look: pill button, accent fill when "on". */
 function Chip({ on, icon, label, count, onClick }: { on: boolean; icon: React.ReactNode; label: string; count?: number; onClick?: () => void }) {
@@ -60,10 +58,12 @@ export function ContactQuickActions(props: {
   automations: ContactSequenceMembership[]
   savedSearches: QuickSavedSearch[]
   reportSub: QuickReportSub | null
-  reportAreas: QuickReportArea[]
-  reportSetAction: (formData: FormData) => Promise<void>
-  /** One-off immediate market-report send (ReportSubscriptionsPanel "Send report now"). */
-  reportSendNowAction?: (formData: FormData) => Promise<Result>
+  /**
+   * The market report card (components/admin/crm/MarketReportSection.tsx),
+   * rendered on the server and shown in the "Market reports" sheet: the same
+   * card, controls, preview, approval and report list as the person page.
+   */
+  reportPanel: React.ReactNode
   /** The issue a one-off newsletter send delivers (subject shown before sending). */
   latestNewsletter?: { subject: string; status: 'sent' | 'scheduled'; sentAt: string | null } | null
   /** Send the latest newsletter issue to this contact right now. */
@@ -312,14 +312,7 @@ export function ContactQuickActions(props: {
           Market reports
         </Button>
         <Sheet open={reportsSheetOpen} onClose={() => setReportsSheetOpen(false)} title="Market reports">
-          <div>
-            <ReportSubscriptionsPanel
-              current={props.reportSub}
-              areaOptions={props.reportAreas}
-              setAction={props.reportSetAction}
-              sendNowAction={props.reportSendNowAction}
-            />
-          </div>
+          <div>{props.reportPanel}</div>
         </Sheet>
       </div>
 

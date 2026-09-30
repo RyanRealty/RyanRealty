@@ -95,15 +95,20 @@ export function MarketReportPreviewDialog({
             <div className="flex flex-wrap items-center gap-2">
               {preview.renderedAreas.map((slug) => (
                 <span key={slug} style={{ ...BADGE_BASE, background: 'var(--a-inset)' }}>
-                  {slug}
+                  {preview.areaLabels[slug] ?? slug}
                 </span>
               ))}
               {preview.omittedAreas.map((slug) => (
                 <span key={slug} style={{ ...BADGE_BASE, border: '1px solid var(--a-border)' }}>
-                  {slug} (no cache data, omitted)
+                  {preview.areaLabels[slug] ?? slug} (no verified data, omitted)
                 </span>
               ))}
             </div>
+            {preview.heldNote ? (
+              <p role="status" style={{ margin: 0, fontSize: 'var(--a-text-sm)', color: 'var(--a-danger)' }}>
+                {preview.heldNote}
+              </p>
+            ) : null}
 
             <iframe
               title="Market report email preview"

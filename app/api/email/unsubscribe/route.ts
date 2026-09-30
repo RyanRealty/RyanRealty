@@ -12,10 +12,17 @@
  *
  * The suppression is written through the lib/crm/suppressions chokepoint, so a
  * withdrawal only ever STOPS email and is reflected everywhere a send is gated.
+ * It is also recorded (2026-09-29): an email_events 'unsubscribe' row and a
+ * crm_timeline row, so the contact record shows the opt-out and when.
+ *
+ * The market report no longer points here: its unsubscribe stops only the
+ * report (app/api/email/report-unsubscribe, Matt 2026-09-29).
  */
 import { type NextRequest, NextResponse } from 'next/server'
-import { verifyUnsubscribeToken } from '@/lib/email/unsubscribe-token'
+import { verifyUnsubscribeToken, type UnsubscribePayload } from '@/lib/email/unsubscribe-token'
 import { addSuppression } from '@/lib/crm/suppressions'
+import { recordEmailEvent } from '@/lib/crm/email-events'
+import { logReportTimeline } from '@/lib/data/crm/marketReportSubscription'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -35,21 +42,51 @@ function htmlResponse(body: string, status: number): NextResponse {
   return new NextResponse(body, { status, headers: { 'Content-Type': 'text/html; charset=utf-8' } })
 }
 
-export async function POST(request: NextRequest) {
-  const payload = verifyUnsubscribeToken(readToken(request))
-  if (!payload) {
-    return htmlResponse(htmlPage('Link expired', 'This unsubscribe link is invalid or expired. Reply to any email and we will remove you.'), 400)
+/**
+ * Verify, or null. A misconfigured production secret throws in the verifier
+ * (lib/email/signing-secret.ts); that reads as "cannot check this link now",
+ * never as a pass.
+ */
+function verify(token: string): { payload: UnsubscribePayload | null; unavailable: boolean } {
+  try {
+    return { payload: verifyUnsubscribeToken(token), unavailable: false }
+  } catch {
+    return { payload: null, unavailable: true }
   }
+}
+
+const UNAVAILABLE = htmlPage('Please try again', 'We could not check this link right now. Reply to any email and we will remove you.')
+const EXPIRED = htmlPage('Link expired', 'This unsubscribe link is invalid or expired. Reply to any email and we will remove you.')
+
+export async function POST(request: NextRequest) {
+  const { payload, unavailable } = verify(readToken(request))
+  if (unavailable) return htmlResponse(UNAVAILABLE, 503)
+  if (!payload) return htmlResponse(EXPIRED, 400)
   await addSuppression({ personId: payload.personId, channel: 'email', reason: 'unsubscribe', source: 'one-click' })
+  // Best-effort records: the suppression above is the load-bearing opt-out.
+  try {
+    await recordEmailEvent({
+      personId: payload.personId,
+      sendType: 'other',
+      event: 'unsubscribe',
+      meta: { via: 'one-click', scope: 'all' },
+    })
+    await logReportTimeline(payload.personId, {
+      title: 'Unsubscribed from all Ryan Realty email (one-click link)',
+      payload: { sendType: 'all', via: 'one-click' },
+      source: 'one-click',
+    })
+  } catch {
+    // never let a reporting write fail the unsubscribe
+  }
   return htmlResponse(htmlPage('You are unsubscribed', 'You will no longer receive marketing emails from Ryan Realty. It can take a little time for any in-flight email to stop.'), 200)
 }
 
 export async function GET(request: NextRequest) {
   const token = readToken(request)
-  const payload = verifyUnsubscribeToken(token)
-  if (!payload) {
-    return htmlResponse(htmlPage('Link expired', 'This unsubscribe link is invalid or expired. Reply to any email and we will remove you.'), 400)
-  }
+  const { payload, unavailable } = verify(token)
+  if (unavailable) return htmlResponse(UNAVAILABLE, 503)
+  if (!payload) return htmlResponse(EXPIRED, 400)
   return htmlResponse(
     htmlPage('Unsubscribe from Ryan Realty emails', 'Confirm below and we will stop sending you marketing emails. You can always opt back in later.', { token }),
     200,

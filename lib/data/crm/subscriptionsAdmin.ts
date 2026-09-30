@@ -1,6 +1,20 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
+import { reportAreaLabel } from '@/lib/crm/market-report-areas'
+import { UNMAPPED_OWN_BOOK } from '@/lib/crm/scope'
+import {
+  isContactHeld,
+  notHeldByContactFilter,
+  planReportChanges,
+  type ReportChange,
+} from '@/lib/crm/market-report-subscription-control'
+import {
+  mapReportSubscriptionRecord,
+  REPORT_SUBSCRIPTION_COLS,
+  type ReportSubscriptionPatch,
+  type ReportSubscriptionRecord,
+} from '@/lib/data/crm/marketReportSubscription'
 import {
   getAlertEngagementByIds,
   getReportEngagementByPersonIds,
@@ -205,8 +219,18 @@ export type AdminReportSubscriptionRow = {
   personEmail: string | null
   assignedBroker: string | null
   areas: string[]
+  /** Display labels for `areas`, in order ("bend-larkspur" -> "Larkspur"). */
+  areaLabels: string[]
   frequency: string
   active: boolean
+  /** on / paused (off, not stopped) / stopped (a report-scoped stop). */
+  state: 'on' | 'paused' | 'stopped'
+  /** Who stopped it: one-click, email-link, self-serve (the contact) or admin. */
+  stoppedVia: string | null
+  /** Who paused it (email-link, self-serve: the contact; admin: a broker). */
+  pausedVia: string | null
+  /** Null until a broker approves the first send after a preview. */
+  firstSendApprovedAt: string | null
   lastSentAt: string | null
   updatedAt: string | null
   engagement: SubscriptionEngagement
@@ -221,6 +245,11 @@ export type ListReportSubscriptionsOptions = {
   area?: string
   limit?: number
   offset?: number
+  /**
+   * A scoped broker's own slug (lib/crm/scope.ts scopeBroker): only contacts
+   * assigned to them are listed. Null or absent = every contact (the owner).
+   */
+  scopeBroker?: string | null
 }
 
 type ReportSubRow = {
@@ -230,6 +259,10 @@ type ReportSubRow = {
   is_active: boolean
   last_sent_at: string | null
   updated_at: string | null
+  stopped_at?: string | null
+  stopped_via?: string | null
+  paused_via?: string | null
+  first_send_approved_at?: string | null
 }
 
 type PersonLite = {
@@ -247,11 +280,24 @@ function primaryEmail(emails: Array<{ value?: string, isPrimary?: number | boole
   return value || null
 }
 
+/** Contact ids per request when checking ids against crm_people (a bounded URL). */
+const PERSON_ID_CHUNK = 200
+
+const REPORT_LIST_COLS =
+  'person_id, areas, frequency, is_active, last_sent_at, updated_at, stopped_at, stopped_via, paused_via, first_send_approved_at'
+
 /**
  * List market report subscriptions with the person's name/email/broker.
- * Two-step read: crm_report_subscriptions has no FK to crm_people, so the
- * PostgREST embedded join is unavailable. A name/email search resolves the
- * matching person ids FIRST, then filters subscriptions to those ids.
+ * crm_report_subscriptions has no FK to crm_people, so the PostgREST embedded
+ * join is unavailable.
+ *
+ * Unfiltered (the owner, no search): one counted, paged read of the table.
+ *
+ * Scoped (a broker's own book) or searched: SUBSCRIPTION-FIRST. Every
+ * subscription the row filters keep is read (one row per subscribed contact,
+ * far fewer than any broker's book), their contacts are checked against the
+ * scope and the search PERSON_ID_CHUNK ids at a time, and the page is cut
+ * from that ordered list. No request carries a whole book of contact ids.
  */
 export async function listReportSubscriptionsAdmin(
   opts: ListReportSubscriptionsOptions,
@@ -259,52 +305,67 @@ export async function listReportSubscriptionsAdmin(
   const sb = createServiceClient()
   const limit = Math.min(100, Math.max(1, opts.limit ?? 50))
   const offset = Math.max(0, opts.offset ?? 0)
-
-  // Step 0 (search only): resolve person ids matching the query by name OR
-  // email (the emails jsonb cast to text, same pattern as buildCrmPeopleQuery).
-  let personIdFilter: number[] | null = null
+  const scope = opts.scopeBroker ?? null
   const q = (opts.q ?? '').trim().replace(/[,()"\\]/g, ' ').trim()
-  if (q) {
-    // Paged read (PostgREST caps single responses at 1,000 rows — the old
-    // .limit(2000) silently truncated broad search matches there).
-    const { rows: matches, error: matchErr } = await fetchPagedRows<{ id: number }>(
-      (from, to) =>
-        sb
-          .from('crm_people')
-          .select('id')
-          .eq('deleted', false)
-          .or(`name.ilike.%${q}%,emails::text.ilike.%${q}%`)
-          .order('id', { ascending: true })
-          .range(from, to),
-      2000,
-    )
-    if (matchErr) {
-      console.error('[listReportSubscriptionsAdmin match]', matchErr.message)
+  if (scope === UNMAPPED_OWN_BOOK) return { rows: [], total: 0 }
+
+  let subs: ReportSubRow[]
+  let total: number
+  if (!scope && !q) {
+    let query = sb.from('crm_report_subscriptions').select(REPORT_LIST_COLS, { count: 'exact' })
+    if (opts.status === 'active') query = query.eq('is_active', true)
+    if (opts.status === 'paused') query = query.eq('is_active', false)
+    if (opts.frequency && opts.frequency !== 'all') query = query.eq('frequency', opts.frequency)
+    if (opts.area) query = query.contains('areas', [opts.area])
+    const { data, count, error } = await query
+      .order('updated_at', { ascending: false })
+      .order('person_id', { ascending: true })
+      .range(offset, offset + limit - 1)
+    if (error) {
+      console.error('[listReportSubscriptionsAdmin]', error.message)
       return { rows: [], total: 0 }
     }
-    personIdFilter = matches.map((m) => m.id)
-    if (personIdFilter.length === 0) return { rows: [], total: 0 }
+    subs = (data ?? []) as unknown as ReportSubRow[]
+    total = count ?? subs.length
+  } else {
+    // 1. Every subscription the row filters keep, newest first.
+    const { rows: candidates, error: candErr } = await fetchPagedRows<ReportSubRow>((from, to) => {
+      let query = sb.from('crm_report_subscriptions').select(REPORT_LIST_COLS)
+      if (opts.status === 'active') query = query.eq('is_active', true)
+      if (opts.status === 'paused') query = query.eq('is_active', false)
+      if (opts.frequency && opts.frequency !== 'all') query = query.eq('frequency', opts.frequency)
+      if (opts.area) query = query.contains('areas', [opts.area])
+      return query
+        .order('updated_at', { ascending: false })
+        .order('person_id', { ascending: true })
+        .range(from, to)
+    })
+    if (candErr) {
+      console.error('[listReportSubscriptionsAdmin candidates]', candErr.message)
+      return { rows: [], total: 0 }
+    }
+    // 2. Keep the ones whose contact is live, in the caller's book, and
+    // matches the search (name, or the emails jsonb cast to text, the same
+    // pattern as buildCrmPeopleQuery).
+    const ids = [...new Set(candidates.map((r) => Number(r.person_id)))]
+    const keep = new Set<number>()
+    for (let i = 0; i < ids.length; i += PERSON_ID_CHUNK) {
+      let people = sb.from('crm_people').select('id').in('id', ids.slice(i, i + PERSON_ID_CHUNK)).eq('deleted', false)
+      if (scope) people = people.eq('assigned_broker', scope)
+      if (q) people = people.or(`name.ilike.%${q}%,emails::text.ilike.%${q}%`)
+      const { data, error } = await people
+      if (error) {
+        console.error('[listReportSubscriptionsAdmin people filter]', error.message)
+        return { rows: [], total: 0 }
+      }
+      for (const row of (data ?? []) as Array<{ id: number }>) keep.add(Number(row.id))
+    }
+    const kept = candidates.filter((r) => keep.has(Number(r.person_id)))
+    total = kept.length
+    subs = kept.slice(offset, offset + limit)
   }
 
-  let query = sb
-    .from('crm_report_subscriptions')
-    .select('person_id, areas, frequency, is_active, last_sent_at, updated_at', { count: 'exact' })
-  if (personIdFilter) query = query.in('person_id', personIdFilter)
-  if (opts.status === 'active') query = query.eq('is_active', true)
-  if (opts.status === 'paused') query = query.eq('is_active', false)
-  if (opts.frequency && opts.frequency !== 'all') query = query.eq('frequency', opts.frequency)
-  if (opts.area) query = query.contains('areas', [opts.area])
-
-  const { data, count, error } = await query
-    .order('updated_at', { ascending: false })
-    .range(offset, offset + limit - 1)
-  if (error) {
-    console.error('[listReportSubscriptionsAdmin]', error.message)
-    return { rows: [], total: 0 }
-  }
-  const subs = (data ?? []) as unknown as ReportSubRow[]
-
-  // Step 2: hydrate the page's people + engagement in two parallel reads.
+  // Then hydrate the page's people + engagement in two parallel reads.
   const ids = [...new Set(subs.map((r) => r.person_id))]
   const peopleById = new Map<number, PersonLite>()
   const [engagementByPersonId] = await Promise.all([
@@ -322,20 +383,26 @@ export async function listReportSubscriptionsAdmin(
 
   const rows: AdminReportSubscriptionRow[] = subs.map((r) => {
     const person = peopleById.get(r.person_id) ?? null
+    const areas = Array.isArray(r.areas) ? r.areas : []
     return {
       personId: r.person_id,
       personName: person?.name ?? null,
       personEmail: primaryEmail(person?.emails ?? []),
       assignedBroker: person?.assigned_broker ?? null,
-      areas: Array.isArray(r.areas) ? r.areas : [],
+      areas,
+      areaLabels: areas.map(reportAreaLabel),
       frequency: r.frequency ?? 'monthly',
       active: r.is_active,
+      state: r.is_active ? 'on' : r.stopped_at ? 'stopped' : 'paused',
+      stoppedVia: r.stopped_via ?? null,
+      pausedVia: r.paused_via ?? null,
+      firstSendApprovedAt: r.first_send_approved_at ?? null,
       lastSentAt: r.last_sent_at,
       updatedAt: r.updated_at,
       engagement: engagementByPersonId.get(r.person_id) ?? emptyEngagement(),
     }
   })
-  return { rows, total: count ?? rows.length }
+  return { rows, total }
 }
 
 // ── Single-row reads + mutations (edit / preview / assign) ──────────────────
@@ -417,47 +484,6 @@ export async function updateAlertSubscription(
   return { ok: true, error: null }
 }
 
-/** Fetch one market report subscription by person id (edit dialog + preview). */
-export async function getReportSubscriptionByPersonId(
-  personId: number,
-): Promise<{ personId: number, areas: string[], frequency: string, active: boolean } | null> {
-  const sb = createServiceClient()
-  const { data, error } = await sb
-    .from('crm_report_subscriptions')
-    .select('person_id, areas, frequency, is_active')
-    .eq('person_id', personId)
-    .maybeSingle()
-  if (error || !data) {
-    if (error) console.error('[getReportSubscriptionByPersonId]', error.message)
-    return null
-  }
-  const r = data as unknown as ReportSubRow
-  return {
-    personId: r.person_id,
-    areas: Array.isArray(r.areas) ? r.areas : [],
-    frequency: r.frequency ?? 'monthly',
-    active: r.is_active,
-  }
-}
-
-/** Update one market report subscription (areas / cadence / active). */
-export async function updateReportSubscription(
-  personId: number,
-  patch: { areas?: string[], frequency?: 'weekly' | 'monthly' | 'quarterly', active?: boolean },
-): Promise<{ ok: boolean, error: string | null }> {
-  const sb = createServiceClient()
-  const fields: Record<string, unknown> = { updated_at: new Date().toISOString() }
-  if (patch.areas !== undefined) fields.areas = patch.areas
-  if (patch.frequency !== undefined) fields.frequency = patch.frequency
-  if (patch.active !== undefined) fields.is_active = patch.active
-  const { error } = await sb.from('crm_report_subscriptions').update(fields).eq('person_id', personId)
-  if (error) {
-    console.error('[updateReportSubscription]', error.message)
-    return { ok: false, error: 'Could not save those changes' }
-  }
-  return { ok: true, error: null }
-}
-
 /** Delete one market report subscription (the person keeps their CRM record). */
 export async function deleteReportSubscription(
   personId: number,
@@ -472,45 +498,144 @@ export async function deleteReportSubscription(
 }
 
 /**
- * Assign the CRM person behind a subscription to a broker. Subscription rows
- * carry no broker column — attribution + report sends resolve the broker from
- * crm_people.assigned_broker, so that is what an admin assignment writes.
+ * The subset of `personIds` a caller may change: every id for the owner
+ * (scope null), none for an unmapped non-superuser, else the contacts
+ * assigned to the caller's own slug (the same rule as requirePersonInScope,
+ * lib/crm/scope.ts isPersonInScope). PERSON_ID_CHUNK ids per read, so a bulk
+ * selection is one bounded query per chunk rather than one query per contact.
  */
-export async function setPersonAssignedBroker(
-  personId: number,
-  brokerSlug: string,
-): Promise<{ ok: boolean, error: string | null }> {
+export async function filterPersonIdsInBrokerScope(
+  personIds: readonly number[],
+  scope: string | null,
+): Promise<{ ids: number[], error: string | null }> {
+  const clean = [...new Set(personIds.filter((n) => Number.isInteger(n) && n > 0))]
+  if (scope === null) return { ids: clean, error: null }
+  if (scope === UNMAPPED_OWN_BOOK || clean.length === 0) return { ids: [], error: null }
   const sb = createServiceClient()
-  const { error } = await sb
-    .from('crm_people')
-    .update({ assigned_broker: brokerSlug })
-    .eq('id', personId)
-    .eq('deleted', false)
-  if (error) {
-    console.error('[setPersonAssignedBroker]', error.message)
-    return { ok: false, error: 'Could not assign that broker' }
+  const keep = new Set<number>()
+  for (let i = 0; i < clean.length; i += PERSON_ID_CHUNK) {
+    const { data, error } = await sb
+      .from('crm_people')
+      .select('id')
+      .in('id', clean.slice(i, i + PERSON_ID_CHUNK))
+      .eq('assigned_broker', scope)
+    if (error) {
+      console.error('[filterPersonIdsInBrokerScope]', error.message)
+      return { ids: [], error: 'Could not check which contacts are in your book' }
+    }
+    for (const row of (data ?? []) as Array<{ id: number }>) keep.add(Number(row.id))
   }
-  return { ok: true, error: null }
+  return { ids: clean.filter((id) => keep.has(id)), error: null }
 }
 
-/** Bulk pause/resume/re-cadence market report subscriptions by person id. */
+export type BulkReportUpdateResult = {
+  /** Subscriptions actually changed (already-so rows are not counted). */
+  updated: number
+  /** Stopped or paused by the contact herself: a bulk turn-on never restarts one. */
+  skippedContactStopped: number
+  /** No areas: a report cannot turn on with nothing to report on. */
+  skippedNoAreas: number
+  error: string | null
+}
+
+/**
+ * Bulk pause / resume / re-cadence market report subscriptions by person id
+ * (Matt's decisions 2026-09-29: no subscription changes silently).
+ *
+ * Each row is planned through the same planner as one contact's card
+ * (lib/crm/market-report-subscription-control.ts), so the hub's bulk bar
+ * follows the same rules: a row already in the asked state is left alone and
+ * gets no timeline row; a turn-on skips a row with no areas and every row the
+ * contact stopped herself (restarting one needs her new consent on record, one
+ * contact at a time, on the market report card); an admin stop or a pause
+ * turns back on and its stop stamp clears. Rows with the same planned patch
+ * are written together, and every changed row gets one crm_timeline row
+ * naming the admin.
+ */
 export async function bulkUpdateReportSubscriptions(
   personIds: number[],
   patch: { active?: boolean, frequency?: 'weekly' | 'monthly' | 'quarterly' },
-): Promise<{ updated: number, error: string | null }> {
-  if (personIds.length === 0) return { updated: 0, error: null }
+  actor: { email: string, brokerSlug: string | null } = { email: 'an admin', brokerSlug: null },
+): Promise<BulkReportUpdateResult> {
+  const result: BulkReportUpdateResult = { updated: 0, skippedContactStopped: 0, skippedNoAreas: 0, error: null }
+  const ids = [...new Set(personIds.filter((n) => Number.isInteger(n) && n > 0))]
+  if (ids.length === 0) return result
   const sb = createServiceClient()
-  const fields: Record<string, unknown> = { updated_at: new Date().toISOString() }
-  if (patch.active !== undefined) fields.is_active = patch.active
-  if (patch.frequency !== undefined) fields.frequency = patch.frequency
-  const { data, error } = await sb
-    .from('crm_report_subscriptions')
-    .update(fields)
-    .in('person_id', personIds)
-    .select('person_id')
-  if (error) {
-    console.error('[bulkUpdateReportSubscriptions]', error.message)
-    return { updated: 0, error: 'Could not update those subscriptions' }
+
+  // 1. The rows as they are now.
+  const records: ReportSubscriptionRecord[] = []
+  for (let i = 0; i < ids.length; i += PERSON_ID_CHUNK) {
+    const { data, error } = await sb
+      .from('crm_report_subscriptions')
+      .select(REPORT_SUBSCRIPTION_COLS)
+      .in('person_id', ids.slice(i, i + PERSON_ID_CHUNK))
+    if (error) {
+      console.error('[bulkUpdateReportSubscriptions] read', error.message)
+      return { ...result, error: 'Could not update those subscriptions' }
+    }
+    for (const row of (data ?? []) as unknown as Parameters<typeof mapReportSubscriptionRecord>[0][]) {
+      records.push(mapReportSubscriptionRecord(row))
+    }
   }
-  return { updated: data?.length ?? 0, error: null }
+
+  // 2. Plan each row: the interval first, then on/off (the card's order).
+  const changes: ReportChange[] = []
+  if (patch.frequency) changes.push({ kind: 'frequency', frequency: patch.frequency })
+  if (patch.active !== undefined) changes.push(patch.active ? { kind: 'resume' } : { kind: 'pause' })
+  if (changes.length === 0) return result
+  const groups = new Map<string, { patch: ReportSubscriptionPatch, rows: Array<{ personId: number, title: string }> }>()
+  for (const rec of records) {
+    const plan = planReportChanges(rec, changes, { via: 'admin', adminEmail: actor.email })
+    if (!plan.ok) {
+      if (plan.code === 'consent-required' || isContactHeld(rec)) result.skippedContactStopped += 1
+      else result.skippedNoAreas += 1
+      continue
+    }
+    if (plan.noop) continue
+    const key = JSON.stringify(plan.patch)
+    const group = groups.get(key) ?? { patch: plan.patch, rows: [] }
+    group.rows.push({ personId: rec.personId, title: `${plan.titles.join('; ')} (Subscriptions hub, bulk)` })
+    groups.set(key, group)
+  }
+
+  // 3. Write each group. A turn-on also re-checks, in the same statement,
+  // that the contact has not stopped the report herself since the read.
+  const nowIso = new Date().toISOString()
+  const titles = new Map<number, string>()
+  for (const group of groups.values()) {
+    for (const r of group.rows) titles.set(r.personId, r.title)
+    const groupIds = group.rows.map((r) => r.personId)
+    for (let i = 0; i < groupIds.length; i += PERSON_ID_CHUNK) {
+      let update = sb
+        .from('crm_report_subscriptions')
+        .update({ ...group.patch, updated_at: nowIso })
+        .in('person_id', groupIds.slice(i, i + PERSON_ID_CHUNK))
+      if (group.patch.is_active === true) {
+        // Neither her stop nor her pause may have landed since the read.
+        update = update.or(notHeldByContactFilter())
+      }
+      const { data, error } = await update.select('person_id')
+      if (error) {
+        console.error('[bulkUpdateReportSubscriptions]', error.message)
+        result.error = 'Could not update those subscriptions'
+        break
+      }
+      const changed = ((data ?? []) as Array<{ person_id: number }>).map((r) => Number(r.person_id))
+      result.updated += changed.length
+      const rows = changed.map((personId) => ({
+        person_id: personId,
+        kind: 'system',
+        title: (titles.get(personId) ?? 'Market report changed (Subscriptions hub, bulk)').slice(0, 500),
+        payload: { sendType: 'market-report', via: 'admin', change: 'bulk', patch },
+        broker: actor.brokerSlug,
+        source: 'app',
+      }))
+      if (rows.length > 0) {
+        const { error: tlErr } = await sb.from('crm_timeline').insert(rows)
+        if (tlErr) console.error('[bulkUpdateReportSubscriptions] timeline', tlErr.message)
+      }
+    }
+    if (result.error) break
+  }
+  return result
 }

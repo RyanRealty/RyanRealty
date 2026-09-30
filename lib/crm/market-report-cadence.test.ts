@@ -1,5 +1,15 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, it, expect } from 'vitest'
-import { isDue, CADENCE_WINDOW_MS } from './market-report-cadence'
+import {
+  isDue,
+  CADENCE_WINDOW_MS,
+  MARKET_REPORT_CRON_HOURS_UTC,
+  dueAt,
+  inReportSendWindow,
+  nextCronRunInWindow,
+  nextReportSendAt,
+} from './market-report-cadence'
 
 const NOW = new Date('2026-06-25T12:00:00.000Z')
 const DAY = 24 * 60 * 60 * 1000
@@ -66,5 +76,57 @@ describe('isDue — accepts a Date and defends against clock skew', () => {
   it('a future lastSentAt is not due (fail-safe, no re-send)', () => {
     const future = new Date(NOW.getTime() + 5 * DAY).toISOString()
     expect(isDue({ frequency: 'weekly', lastSentAt: future, now: NOW })).toBe(false)
+  })
+})
+
+describe('the send window (8am to 8pm Pacific, same as the bulk path)', () => {
+  it('is pinned to the cron vercel.json actually runs', () => {
+    const vercel = JSON.parse(readFileSync(resolve('vercel.json'), 'utf8')) as { crons: Array<{ path: string; schedule: string }> }
+    const cron = vercel.crons.find((c) => c.path === '/api/cron/crm-market-report-send')
+    expect(cron).toBeDefined()
+    const hours = cron!.schedule.split(' ')[1].split(',').map(Number)
+    expect(hours).toEqual([...MARKET_REPORT_CRON_HOURS_UTC])
+  })
+
+  it('only the 16:00 and 22:00 UTC runs fall inside the window, summer and winter', () => {
+    for (const day of ['2026-07-15', '2026-12-15']) {
+      const inside = MARKET_REPORT_CRON_HOURS_UTC.filter((h) => inReportSendWindow(new Date(`${day}T${String(h).padStart(2, '0')}:00:00Z`)))
+      expect(inside).toEqual([16, 22])
+    }
+  })
+
+  it('the 2026-09-05 10:00 UTC send (3am Pacific) is outside it', () => {
+    expect(inReportSendWindow(new Date('2026-09-05T10:00:16Z'))).toBe(false)
+  })
+})
+
+describe('nextCronRunInWindow / nextReportSendAt (the named basis for "next send")', () => {
+  it('finds the next in-window cron run', () => {
+    expect(nextCronRunInWindow(new Date('2026-09-29T17:00:00Z'))?.toISOString()).toBe('2026-09-29T22:00:00.000Z')
+    expect(nextCronRunInWindow(new Date('2026-09-29T22:30:00Z'))?.toISOString()).toBe('2026-09-30T16:00:00.000Z')
+    expect(nextCronRunInWindow(new Date('2026-09-30T16:00:00Z'))?.toISOString()).toBe('2026-09-30T16:00:00.000Z')
+  })
+
+  it('is null while off or waiting on the first-send approval', () => {
+    const now = new Date('2026-09-29T17:00:00Z')
+    expect(nextReportSendAt({ isActive: false, approved: true, frequency: 'monthly', lastSentAt: null, now })).toBeNull()
+    expect(nextReportSendAt({ isActive: true, approved: false, frequency: 'monthly', lastSentAt: null, now })).toBeNull()
+  })
+
+  it('an approved, never-sent subscription goes at the next in-window run', () => {
+    const now = new Date('2026-09-29T17:00:00Z')
+    expect(nextReportSendAt({ isActive: true, approved: true, frequency: 'monthly', lastSentAt: null, now })?.toISOString()).toBe(
+      '2026-09-29T22:00:00.000Z',
+    )
+  })
+
+  it('a sent subscription waits out its cadence window, then the next in-window run', () => {
+    const now = new Date('2026-09-29T17:00:00Z')
+    expect(dueAt('monthly', '2026-09-08T22:00:16.177Z')?.toISOString()).toBe('2026-10-08T22:00:16.177Z')
+    expect(
+      nextReportSendAt({ isActive: true, approved: true, frequency: 'monthly', lastSentAt: '2026-09-08T22:00:16.177Z', now })?.toISOString(),
+    ).toBe('2026-10-09T16:00:00.000Z')
+    // Quarterly is 89 days, the same window the engine enforces (defect r: the panel said 90).
+    expect(dueAt('quarterly', '2026-07-01T16:00:00.000Z')?.toISOString()).toBe('2026-09-28T16:00:00.000Z')
   })
 })

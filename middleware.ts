@@ -205,13 +205,30 @@ const COMPLIANCE_VERIFICATION_PATHS = new Set([
 ])
 
 /**
+ * The unsubscribe and email-preference pages every market report links to
+ * (lib/email/report-link-token.ts). An opt-out must work for whoever holds
+ * the email, wherever they read it and whatever client fetches the page:
+ * CAN-SPAM requires a working unsubscribe, and the footer Unsubscribe moved
+ * here from /api/email/unsubscribe, which this screen never touched (review
+ * 2026-09-30). A reader in a screened country, or a mail client or scanner
+ * with an HTTP-library User-Agent, must still reach the page and its form.
+ * The page itself is private (noindex, no tags), so exempting it costs GA4
+ * nothing.
+ */
+function isEmailPreferencesPath(pathname: string): boolean {
+  return pathname === '/email-preferences' || pathname === '/email-preferences/' || pathname.startsWith('/email-preferences/')
+}
+
+/**
  * Decide whether to block a page request. Returns a short reason string when the
- * request should be 403'd, or null to let it through. Never screens /api/*.
+ * request should be 403'd, or null to let it through. Never screens /api/*,
+ * the compliance-verification pages, or the email-preferences pages.
  */
 function screenBotRequest(request: NextRequest, pathname: string): string | null {
   if (process.env.BOT_SCREEN_DISABLED === '1') return null
   if (pathname.startsWith('/api/')) return null
   if (COMPLIANCE_VERIFICATION_PATHS.has(pathname.replace(/\/$/, '') || '/')) return null
+  if (isEmailPreferencesPath(pathname)) return null
 
   const ua = request.headers.get('user-agent') ?? ''
 

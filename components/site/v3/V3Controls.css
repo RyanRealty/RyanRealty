@@ -1,0 +1,128 @@
+/* ===========================================================================
+   V3 CONTROLS
+   Styles for V3Controls.tsx and nothing else. Every value resolves from
+   ./tokens.css, which V3Controls.tsx imports and whose scope the section opens
+   on itself with V3_ROOT_CLASS. No raw color, no elevation, no hardcoded
+   motion.
+
+   A Controls block is the working half of a Quiet block: the same measure,
+   the same hairline rhythm, the name on the left and the one action on the
+   right. On a phone the action drops under the name and spans the row, so
+   every button meets the 44px thumb floor at full width.
+   =========================================================================== */
+
+.v3.v3-controls {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: var(--v3-section-pad) var(--v3-gutter);
+}
+
+/* Rule placement follows every other pattern: a block that follows content
+   opens on the section rule. */
+* + .v3.v3-controls {
+  border-top: var(--v3-rule-section);
+}
+
+.v3-controls__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-xs);
+  margin-bottom: var(--v3-space-lg);
+  max-width: var(--v3-measure-text);
+}
+
+.v3-controls__heading {
+  margin: 0;
+}
+
+.v3-controls__note {
+  margin: 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  text-wrap: pretty;
+}
+
+.v3-controls__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.v3-controls__item {
+  border-top: var(--v3-rule-hairline);
+}
+
+.v3-controls__item:last-child {
+  border-bottom: var(--v3-rule-hairline);
+}
+
+.v3-controls__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  column-gap: var(--v3-space-lg);
+  row-gap: var(--v3-space-sm);
+  padding: var(--v3-space-md) 0;
+}
+
+.v3-controls__text {
+  min-width: 0;
+  align-self: center;
+}
+
+.v3-controls__term {
+  margin: 0;
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-body);
+}
+
+.v3-controls__detail {
+  margin: var(--v3-space-3xs) 0 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+  text-wrap: pretty;
+}
+
+.v3-controls__act {
+  display: flex;
+  align-items: end;
+  gap: var(--v3-space-sm);
+}
+
+.v3-controls__select {
+  min-width: 12rem;
+}
+
+.v3-controls__submit {
+  min-height: var(--v3-tap);
+  white-space: nowrap;
+}
+
+.v3-controls__exit {
+  margin: var(--v3-space-md) 0 0;
+}
+
+@media (max-width: 40rem) {
+  .v3-controls__row {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .v3-controls__act {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .v3-controls__select {
+    min-width: 0;
+  }
+
+  .v3-controls__submit {
+    width: 100%;
+    justify-content: center;
+  }
+}

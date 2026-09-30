@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { notHeldByContactFilter } from '@/lib/crm/market-report-subscription-control'
 import { primaryEmailOf, signalsFor } from './add-newsletter'
 import { canSubscribe } from '@/lib/crm/membership-consent'
 
@@ -24,11 +25,16 @@ let stageReadError: string | null = null
 let peopleReadError: string | null = null
 // SS-3 resurrection pre-check: null = no prior opt-out (row is created active);
 // { is_active: false } simulates a search the lead unsubscribed (stays muted).
-let alertPreCheckRow: { is_active: boolean } | null = null
+// The market-report handler's existing-row read (.eq(person_id).maybeSingle())
+// is served from the same slot, with the report columns.
+let alertPreCheckRow: Record<string, unknown> | null = null
 
-const updates: Array<{ table: string; id: number; patch: Record<string, unknown> }> = []
+const updates: Array<{ table: string; id: number; patch: Record<string, unknown>; filters: Array<[string, string, unknown]> }> = []
 const inserts: Array<{ table: string; row: Record<string, unknown> }> = []
-const upserts: Array<{ table: string; row: Record<string, unknown> }> = []
+const upserts: Array<{ table: string; row: Record<string, unknown>; opts?: Record<string, unknown> }> = []
+// The market-report handler writes conditionally: a row changed since the job
+// read it (a stop, a pause, a row that appeared) matches nothing.
+let reportRowChanged = false
 
 function makeSb() {
   return {
@@ -76,26 +82,48 @@ function makeSb() {
         return q
       }
       chain.update = (patch: Record<string, unknown>) => {
-        const finish = (id: number) => {
-          updates.push({ table, id, patch })
-          return Promise.resolve({ error: null })
+        // A filter chain: .eq / .is / .or, then awaited (-> { error }) or
+        // .select() (-> { data, error }). Records the update once.
+        let id = -1
+        const filters: Array<[string, string, unknown]> = []
+        let recorded = false
+        const record = () => {
+          if (!recorded) updates.push({ table, id, patch, filters })
+          recorded = true
         }
-        return {
-          eq: (_col: string, id: number) => {
-            // Support .eq().is() cascade filters (tasks/deals) and plain .eq().
-            const p = finish(id) as Promise<{ error: null }> & { is: () => Promise<{ error: null }> }
-            p.is = () => finish(id)
-            return p
-          },
+        const q: Record<string, unknown> = {}
+        q.eq = (col: string, v: unknown) => {
+          if (id === -1) id = Number(v)
+          filters.push(['eq', col, v])
+          return q
         }
+        q.is = (col: string, v: unknown) => {
+          filters.push(['is', col, v])
+          return q
+        }
+        q.or = (expr: string) => {
+          filters.push(['or', 'expr', expr])
+          return q
+        }
+        q.select = () => {
+          record()
+          const hit = table === 'crm_report_subscriptions' && reportRowChanged ? [] : [{ person_id: id }]
+          return Promise.resolve({ data: hit, error: null })
+        }
+        q.then = (resolve: (v: unknown) => void) => {
+          record()
+          resolve({ error: null })
+        }
+        return q
       }
       chain.insert = (row: Record<string, unknown>) => {
         inserts.push({ table, row })
         return Promise.resolve({ error: null })
       }
-      chain.upsert = (row: Record<string, unknown>) => {
-        upserts.push({ table, row })
-        return Promise.resolve({ error: null })
+      chain.upsert = (row: Record<string, unknown>, opts?: Record<string, unknown>) => {
+        upserts.push({ table, row, opts })
+        const changed = table === 'crm_report_subscriptions' && reportRowChanged
+        return Promise.resolve({ error: null, count: changed ? 0 : 1 })
       }
       return chain
     },
@@ -114,6 +142,9 @@ vi.mock('@/lib/crm/enroll', () => ({
     )
   },
 }))
+
+// A first setup starts its cadence from the last report the contact received.
+vi.mock('@/lib/data/crm/marketReportSends', () => ({ getLatestDeliveredReportAt: async () => null }))
 
 // report-subscription sanitizer needs the area registry + frequency normalizer.
 vi.mock('@/lib/data/crm/getContactReportSubscriptions', () => ({
@@ -140,6 +171,7 @@ beforeEach(() => {
   stageReadError = null
   peopleReadError = null
   alertPreCheckRow = null
+  reportRowChanged = false
   updates.length = 0
   inserts.length = 0
   upserts.length = 0
@@ -380,6 +412,101 @@ describe('setReportSubscriptionHandler', () => {
     const res = await setReportSubscriptionHandler([1], { areas: [], frequency: 'monthly', isActive: false }, ctxOwner)
     expect(res.processed).toBe(1)
     expect(upserts[0].row.is_active).toBe(false)
+    accountedFor(res, 1)
+  })
+
+  it('turning OFF with no areas keeps the areas already on the row', async () => {
+    alertPreCheckRow = { is_active: true, stopped_at: null, stopped_via: null, areas: ['bend'], frequency: 'monthly' }
+    const res = await setReportSubscriptionHandler([1], { areas: [], frequency: 'monthly', isActive: false }, ctxOwner)
+    expect(res.processed).toBe(1)
+    const writes = updates.filter((u) => u.table === 'crm_report_subscriptions')
+    expect(writes).toHaveLength(1)
+    expect(writes[0].patch.is_active).toBe(false)
+    expect(writes[0].patch).not.toHaveProperty('areas')
+    accountedFor(res, 1)
+  })
+
+  it('writes an existing row only while it is as read: the same on/off and the same stop stamp', async () => {
+    alertPreCheckRow = { is_active: false, stopped_at: '2026-09-20T00:00:00Z', stopped_via: 'admin', areas: ['bend'], frequency: 'monthly' }
+    const res = await setReportSubscriptionHandler([1], { areas: ['bend'], frequency: 'monthly', isActive: true }, ctxOwner)
+    expect(res.processed).toBe(1)
+    const [w] = updates.filter((u) => u.table === 'crm_report_subscriptions')
+    expect(w.filters).toEqual(
+      expect.arrayContaining([
+        ['eq', 'person_id', 1],
+        ['eq', 'is_active', false],
+        ['eq', 'stopped_at', '2026-09-20T00:00:00Z'],
+        // Neither her stop NOR her pause may have landed since the read (review 2026-09-30).
+        ['or', 'expr', notHeldByContactFilter()],
+      ]),
+    )
+    expect(upserts).toHaveLength(0)
+  })
+
+  it('turning reports on skips a contact who PAUSED them herself: her pause holds like her stop (review 2026-09-30)', async () => {
+    alertPreCheckRow = {
+      is_active: false,
+      stopped_at: null,
+      stopped_via: null,
+      paused_at: '2026-09-20T00:00:00Z',
+      paused_via: 'email-link',
+      areas: ['bend'],
+      frequency: 'monthly',
+    }
+    const res = await setReportSubscriptionHandler([1], { areas: ['bend'], frequency: 'monthly', isActive: true }, ctxOwner)
+    expect(res.skipped).toBe(1)
+    expect(res.breakdown?.skipped_contact_paused).toBe(1)
+    expect(updates.filter((u) => u.table === 'crm_report_subscriptions')).toHaveLength(0)
+    accountedFor(res, 1)
+  })
+
+  it("a broker's bulk turn-off is recorded as the broker's pause, never as hers", async () => {
+    alertPreCheckRow = { is_active: true, stopped_at: null, stopped_via: null, areas: ['bend'], frequency: 'monthly' }
+    await setReportSubscriptionHandler([1], { areas: ['bend'], frequency: 'monthly', isActive: false }, ctxOwner)
+    const [w] = updates.filter((u) => u.table === 'crm_report_subscriptions')
+    expect(w.patch).toMatchObject({ is_active: false, paused_via: 'admin' })
+    expect(typeof w.patch.paused_at).toBe('string')
+  })
+
+  it('never overwrites a stop made between its read and its write (her one-click lands mid-job)', async () => {
+    // The job read the row on; she stopped it before the write.
+    alertPreCheckRow = { is_active: true, stopped_at: null, stopped_via: null, areas: ['bend'], frequency: 'monthly' }
+    reportRowChanged = true
+    const res = await setReportSubscriptionHandler([1], { areas: ['bend', 'redmond'], frequency: 'weekly', isActive: true }, ctxOwner)
+    expect(res.skipped).toBe(1)
+    expect(res.breakdown?.changed_during_job).toBe(1)
+    const [w] = updates.filter((u) => u.table === 'crm_report_subscriptions')
+    expect(w.filters).toEqual(expect.arrayContaining([['is', 'stopped_at', null], ['eq', 'is_active', true]]))
+    expect(inserts.filter((i) => i.table === 'crm_timeline')).toHaveLength(0)
+    accountedFor(res, 1)
+  })
+
+  it('a first setup inserts only while no row exists; one that appeared meanwhile is left alone', async () => {
+    reportRowChanged = true
+    const res = await setReportSubscriptionHandler([1], { areas: ['bend'], frequency: 'monthly', isActive: true }, ctxOwner)
+    expect(res.skipped).toBe(1)
+    expect(res.breakdown?.changed_during_job).toBe(1)
+    expect(upserts[0].opts).toMatchObject({ onConflict: 'person_id', ignoreDuplicates: true })
+    expect(inserts.filter((i) => i.table === 'crm_timeline')).toHaveLength(0)
+    accountedFor(res, 1)
+  })
+
+  it('leaves a contact who is already exactly so alone: no write, no timeline row', async () => {
+    alertPreCheckRow = { is_active: true, stopped_at: null, stopped_via: null, areas: ['redmond', 'bend'], frequency: 'weekly' }
+    const res = await setReportSubscriptionHandler([1], { areas: ['bend', 'redmond'], frequency: 'weekly', isActive: true }, ctxOwner)
+    expect(res.processed).toBe(1)
+    expect(res.breakdown?.unchanged).toBe(1)
+    expect(upserts).toHaveLength(0)
+    expect(inserts.filter((i) => i.table === 'crm_timeline')).toHaveLength(0)
+    accountedFor(res, 1)
+  })
+
+  it('never turns on a report the contact stopped herself', async () => {
+    alertPreCheckRow = { is_active: false, stopped_at: '2026-09-30T00:00:00Z', stopped_via: 'one-click', areas: ['bend'], frequency: 'monthly' }
+    const res = await setReportSubscriptionHandler([1], { areas: ['bend'], frequency: 'monthly', isActive: true }, ctxOwner)
+    expect(res.skipped).toBe(1)
+    expect(res.breakdown?.skipped_contact_stopped).toBe(1)
+    expect(upserts).toHaveLength(0)
     accountedFor(res, 1)
   })
 })

@@ -95,6 +95,19 @@ const ROOTS = [
   'lib/data/places',
   'lib/cma/place-comps.ts',
   'lib/market',
+  // The market report a contact receives (Matt 2026-09-29): every report had
+  // printed "—" for a missing value, including months of supply on every
+  // neighborhood report. The renderer, its formatters, the branded shell and
+  // its footer, and the no-login preferences page, its report web view, its
+  // one-click answer, and the account page's market-report block. Its
+  // controls primitive (components/site/v3/V3Controls.tsx) is walked with the
+  // v3 tree above.
+  'lib/crm/market-report-email.ts',
+  'lib/crm/market-report-format.ts',
+  'lib/email/shell.ts',
+  'app/email-preferences',
+  'app/api/email/report-unsubscribe/route.ts',
+  'components/dashboard/DashboardNotificationPrefs.tsx',
 ]
 
 /**

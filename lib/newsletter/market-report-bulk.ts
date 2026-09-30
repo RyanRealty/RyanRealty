@@ -46,6 +46,17 @@ import 'server-only'
  * Approval: routing a real audience is a per-action approval class (CLAUDE.md
  * "Approval Model" — publishing / outbound to real people). mode 'preview' is the
  * dry run and writes NOTHING; mode 'queue' refuses without an explicit approver.
+ *
+ * The same rails as the scheduled report (review 2026-09-30):
+ *   - §0 Spark gate: before anything is queued, every figure the issue prints
+ *     (each area's months of supply, which places its meter, and the verdict
+ *     read from it; the median the intro names) is rebuilt from Spark by the
+ *     sender's own gate (lib/crm/market-report-spark-gate.ts), strict 1% rule.
+ *     A STOP, a figure it cannot rebuild, or a gate that cannot run HOLDS the
+ *     whole issue: no draft, nothing queued, and Matt is paged with both values.
+ *   - The 'report-subscribers' audience skips a deleted contact and a
+ *     subscription still waiting on its first-send approval, the same people
+ *     the scheduled path never mails.
  */
 
 import {
@@ -73,6 +84,11 @@ import { getAudienceEligiblePeople } from '@/lib/data/crm/getAudienceEligiblePeo
 import { getActiveSubscribersForSend } from '@/lib/data/newsletter'
 import { createNewsletterDraft, setNewsletterCitations, type NewsletterCitationEntry } from '@/lib/data'
 import { htmlToPlainText } from '@/lib/email/prepare'
+import type { MarketReportAreaBlock } from '@/lib/data/crm/getMarketReportData'
+import type { ReportFigure } from '@/lib/crm/market-report-email'
+import { formatMonths } from '@/lib/crm/market-report-format'
+import { describeSparkGate, runSparkGate, SPARK_GATE_RULE, type SparkGateResult } from '@/lib/crm/market-report-spark-gate'
+import { queueBrokerHealthAlert } from '@/lib/crm/broker-alerts'
 
 // ── audience resolution ───────────────────────────────────────────────────────
 
@@ -136,9 +152,21 @@ export async function resolveMarketReportAudience(
     case 'report-subscribers': {
       const subs = await d.fetchReportSubscribers(MAX_LIST_RECIPIENTS)
       let matched = 0
+      let deleted = 0
+      let unapproved = 0
       for (const s of subs) {
         if (audience.cadence !== 'any' && s.frequency !== audience.cadence) continue
         if (audience.areaSlug && !s.areas.includes(audience.areaSlug)) continue
+        // The people the scheduled path never mails (review 2026-09-30): a
+        // deleted contact, and a subscription no broker has approved yet.
+        if (s.personDeleted) {
+          deleted += 1
+          continue
+        }
+        if (!s.firstSendApprovedAt) {
+          unapproved += 1
+          continue
+        }
         matched += 1
         push(await d.resolvePersonEmail(s.personId))
       }
@@ -147,7 +175,9 @@ export async function resolveMarketReportAudience(
         label,
         route,
         emails,
-        trace: `crm_report_subscriptions is_active=true · ${matched} matched the filter · ${emails.length} had an email on file`,
+        trace:
+          `crm_report_subscriptions is_active=true · ${matched} matched the filter · ${emails.length} had an email on file · ` +
+          `${deleted} deleted contact${deleted === 1 ? '' : 's'} skipped · ${unapproved} awaiting first-send approval skipped`,
       }
     }
     case 'newsletter-segment': {
@@ -202,6 +232,8 @@ export type BulkError =
   | 'outside_send_window'
   | 'draft_failed'
   | 'enqueue_failed'
+  /** The §0 Spark gate did not pass every printed figure: nothing was queued. */
+  | 'spark_hold'
 
 export type BulkPreviewResult = {
   ok: true
@@ -242,6 +274,8 @@ export interface BulkDeps extends AudienceDeps {
   setCitations: typeof setNewsletterCitations
   enqueueAudience: typeof enqueueNewsletter
   enqueueList: typeof enqueueNewsletterToEmails
+  sparkGate: typeof runSparkGate
+  alert: typeof queueBrokerHealthAlert
 }
 
 const REAL_BULK_DEPS: BulkDeps = {
@@ -251,6 +285,62 @@ const REAL_BULK_DEPS: BulkDeps = {
   setCitations: setNewsletterCitations,
   enqueueAudience: enqueueNewsletter,
   enqueueList: enqueueNewsletterToEmails,
+  sparkGate: runSparkGate,
+  alert: queueBrokerHealthAlert,
+}
+
+/**
+ * Every figure the bulk issue prints, in the trace shape the §0 Spark gate
+ * checks (lib/crm/market-report-spark-check.ts reads the label): each area's
+ * months of supply (its meter's position) and the verdict read from it, and
+ * the twelve-month median the intro names (the single area's, or Bend's in a
+ * multi-area issue; marketIntroLine in lib/newsletter/produce-draft.ts).
+ * Pure.
+ */
+export function bulkIssueFigures(
+  cities: ReadonlyArray<{ slug: string; areaLabel: string; monthsOfSupply: number; verdict: string; medianPrice: number | null }>,
+  fetchedAt: string,
+): ReportFigure[] {
+  const out: ReportFigure[] = []
+  for (const c of cities) {
+    out.push({
+      area: c.slug,
+      areaLabel: c.areaLabel,
+      label: 'months of supply',
+      value: c.monthsOfSupply,
+      display: `meter at ${formatMonths(c.monthsOfSupply) ?? 'n/a'}`,
+      source: 'getMarketReportData (the bulk issue meter)',
+      filter: `${c.slug} months_of_supply=${c.monthsOfSupply}`,
+      as_of: fetchedAt,
+      n: null,
+    })
+    out.push({
+      area: c.slug,
+      areaLabel: c.areaLabel,
+      label: 'market verdict',
+      value: null,
+      display: c.verdict,
+      source: 'derived from months of supply (4 or less sellers, 4 to 6 balanced, 6 or more buyers)',
+      filter: `months_of_supply=${c.monthsOfSupply}`,
+      as_of: fetchedAt,
+      n: null,
+    })
+  }
+  const named = cities.length === 1 ? cities[0] : cities.find((c) => c.slug === 'bend')
+  if (named && named.medianPrice != null) {
+    out.push({
+      area: named.slug,
+      areaLabel: named.areaLabel,
+      label: 'median sale price, last 12 months',
+      value: named.medianPrice,
+      display: String(named.medianPrice),
+      source: 'getMarketReportData (the bulk issue intro)',
+      filter: `${named.slug} trailing 12 months closed`,
+      as_of: fetchedAt,
+      n: null,
+    })
+  }
+  return out
 }
 
 export interface BulkSendInput {
@@ -396,6 +486,38 @@ export async function runMarketReportBulkSend(input: BulkSendInput): Promise<Bul
       error: 'outside_send_window',
       detail: nextEmailSendWindow(now).toISOString(),
     }
+  }
+
+  // ── §0 Spark gate: nothing is queued unreconciled (review 2026-09-30). ──────
+  const printed = new Set(renderedAreas)
+  const checkedBlocks = (blocks ?? []).filter((b: MarketReportAreaBlock) => printed.has(b.slug))
+  let spark: SparkGateResult
+  try {
+    spark = await deps.sparkGate({ blocks: checkedBlocks, figures: bulkIssueFigures(cities, fetchedAt), now })
+  } catch (e) {
+    spark = {
+      verdict: 'not-reconciled',
+      rule: SPARK_GATE_RULE,
+      checkedAt: now.toISOString(),
+      since: null,
+      checks: [],
+      queries: [],
+      polygonGaps: [],
+      error: e instanceof Error ? e.message : String(e),
+    }
+  }
+  if (spark.verdict !== 'ok') {
+    const detail = describeSparkGate(spark, 600)
+    try {
+      await deps.alert({
+        key: `market-report-bulk:spark-hold:${renderedAreas.join(',')}`,
+        cooldownMinutes: 60,
+        body: `A bulk market report (${resolved.label}, ${resolved.emails.length} recipients) was held before queueing: ${detail.slice(0, 300)}`,
+      })
+    } catch {
+      // best-effort: the refusal below is the record the approver sees
+    }
+    return { ok: false, error: 'spark_hold', detail }
   }
 
   const draft = await deps.createDraft({

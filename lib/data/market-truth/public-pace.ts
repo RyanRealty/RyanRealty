@@ -5,7 +5,7 @@
  * Miss omits the stat. Neighborhood leftover is sample-gated; MOS stays off.
  * Figures go through getMetrics.
  */
-import { getMetrics, type MetricResult } from '@/lib/data/market-truth/getMetric'
+import { getMetrics, type MetricProvenance, type MetricResult } from '@/lib/data/market-truth/getMetric'
 import { formatPriceExact } from '@/lib/format/money'
 
 export const PUBLIC_PACE_WINDOW_MONTHS = 12
@@ -222,8 +222,25 @@ export async function getPublicDetachedPace(opts: {
   geoType: 'city' | 'region' | 'zip' | 'neighborhood'
   geoSlug: string
 }): Promise<PublicPaceRow> {
+  return (await getPublicDetachedPaceDetailed(opts)).row
+}
+
+/**
+ * The provenance of each published pace figure: its sample, window, the date
+ * the data is complete through, and when it was computed. A figure that did
+ * not publish has no entry. Consumers that print these numbers to a person
+ * (the market-report email's figures trace) need the n and the as-of date
+ * beside the value, not only the value (CLAUDE.md §0).
+ */
+export type PublicPaceProvenance = Partial<Record<PublicPaceStat, MetricProvenance>>
+
+/** getPublicDetachedPace plus the provenance of every figure it published. */
+export async function getPublicDetachedPaceDetailed(opts: {
+  geoType: 'city' | 'region' | 'zip' | 'neighborhood'
+  geoSlug: string
+}): Promise<{ row: PublicPaceRow; provenance: PublicPaceProvenance }> {
   const geoSlug = hyphenSlug(opts.geoSlug)
-  if (!geoSlug) return { ...EMPTY_PUBLIC_PACE }
+  if (!geoSlug) return { row: { ...EMPTY_PUBLIC_PACE }, provenance: {} }
 
   const inputs = PUBLIC_PACE_STATS.map((stat) => ({
     stat,
@@ -257,7 +274,12 @@ export async function getPublicDetachedPace(opts: {
   const daysToClose = pick('median_days_to_close')
   const medianAgeActive = pick('median_age_active_inventory')
 
-  return {
+  const provenance: PublicPaceProvenance = {}
+  for (const [stat, result] of byStat) {
+    if (publishedNumber(result) != null) provenance[stat] = result.provenance
+  }
+
+  const row: PublicPaceRow = {
     daysToContract: daysToContract == null ? null : Math.round(daysToContract),
     daysToClose: daysToClose == null ? null : Math.round(daysToClose),
     closedCount: closedCount == null || closedCount <= 0 ? null : Math.round(closedCount),
@@ -279,4 +301,5 @@ export async function getPublicDetachedPace(opts: {
     newCount30d: newCount30d == null || newCount30d <= 0 ? null : Math.round(newCount30d),
     daysToPending90d: daysToPending90d == null ? null : Math.round(daysToPending90d),
   }
+  return { row, provenance }
 }

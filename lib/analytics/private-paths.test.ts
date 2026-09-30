@@ -2,9 +2,23 @@ import { describe, expect, it } from 'vitest'
 import { isPrivatePath, PRIVATE_PATH_JS, scrubDeep, scrubPrivateUrls } from './private-paths'
 
 describe('pages whose address carries a secret', () => {
-  it('are the signing link, the CMA review link and the unsubscribe pages, and nothing else', () => {
-    for (const p of ['/sign/Yi4wyKxKtxZNhijQFu1lKJu9WWofkfJNdzW0bFkwtpc', '/sign', '/cma-drafts/42', '/alerts/unsubscribe', '/newsletter/unsubscribe']) expect(isPrivatePath(p)).toBe(true)
-    for (const p of ['/', '/signing', '/admin/signing/abc', '/listings/123', '/sign-up', null, undefined]) expect(isPrivatePath(p)).toBe(false)
+  it('are the signing link, the CMA review link, the unsubscribe pages and the report preferences pages, and nothing else', () => {
+    for (const p of [
+      '/sign/Yi4wyKxKtxZNhijQFu1lKJu9WWofkfJNdzW0bFkwtpc',
+      '/sign',
+      '/cma-drafts/42',
+      '/alerts/unsubscribe',
+      '/newsletter/unsubscribe',
+      '/email-preferences',
+      '/email-preferences/report',
+    ]) expect(isPrivatePath(p)).toBe(true)
+    for (const p of ['/', '/signing', '/admin/signing/abc', '/listings/123', '/sign-up', '/email-preferencesx', null, undefined]) expect(isPrivatePath(p)).toBe(false)
+  })
+
+  it('keeps a report link out of the click tracker and the identity decorator', async () => {
+    const { isPrivateLink } = await import('./private-paths')
+    expect(isPrivateLink('https://ryan-realty.com/email-preferences?t=abc.def&stop=1')).toBe(true)
+    expect(isPrivateLink('https://ryan-realty.com/email-preferences/report?t=abc.def')).toBe(true)
   })
 
   it('are tested the same way by the inline script that runs before React', () => {

@@ -7,15 +7,14 @@
  * is the authorization (same model as lib/email-tracking.ts / the alerts
  * unsubscribe link). HMAC-SHA256 so the person id cannot be forged to opt
  * someone else out.
+ *
+ * The secret comes from lib/email/signing-secret.ts, resolved per call. In
+ * production a missing secret throws instead of signing with the public
+ * development string (a forgeable unsubscribe of anyone, 2026-09-29 fix).
  */
 import 'server-only'
 import { createHmac, timingSafeEqual } from 'node:crypto'
-
-const SECRET =
-  process.env.EMAIL_TRACKING_SECRET ||
-  process.env.CMA_PREVIEW_SECRET ||
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  'insecure-dev-secret'
+import { emailSigningSecret } from '@/lib/email/signing-secret'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -25,7 +24,7 @@ export interface UnsubscribePayload {
 }
 
 function mac(payload: string): string {
-  return createHmac('sha256', SECRET).update(payload).digest('base64url')
+  return createHmac('sha256', emailSigningSecret('unsubscribe-token')).update(payload).digest('base64url')
 }
 
 export function signUnsubscribeToken(personId: number): string {
@@ -33,6 +32,11 @@ export function signUnsubscribeToken(personId: number): string {
   return `${payload}.${mac(payload)}`
 }
 
+/**
+ * Verify a token. Null when it is malformed, tampered, or names no person.
+ * Throws MissingSigningSecretError in production when no real secret is set:
+ * a verify against the public string would accept forged tokens.
+ */
 export function verifyUnsubscribeToken(token: string | null | undefined): UnsubscribePayload | null {
   const [payload, sig] = (token ?? '').split('.')
   if (!payload || !sig) return null

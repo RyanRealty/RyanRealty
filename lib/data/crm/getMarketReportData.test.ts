@@ -9,9 +9,9 @@ import { EMPTY_PUBLIC_PACE } from '@/lib/data/market-truth/public-pace'
 // vitest regardless of source position; vi.hoisted keeps the fn references
 // available inside the factory closures. Pattern mirrors
 // lib/data/market/getCityReportSnapshot.test.ts.
-const { detailMock, pulseMock, trendMock, detachedMock, leftoverMock } = vi.hoisted(() => ({
+const { detailMock, inventoryMock, trendMock, detachedMock, leftoverMock } = vi.hoisted(() => ({
   detailMock: vi.fn(),
-  pulseMock: vi.fn(),
+  inventoryMock: vi.fn(),
   trendMock: vi.fn(),
   detachedMock: vi.fn(),
   leftoverMock: vi.fn(),
@@ -19,9 +19,6 @@ const { detailMock, pulseMock, trendMock, detachedMock, leftoverMock } = vi.hois
 
 vi.mock('@/lib/data/market/getCityMarketDetail', () => ({
   getCityMarketDetail: (args: unknown) => detailMock(args),
-}))
-vi.mock('@/lib/data/market/getMarketPulse', () => ({
-  getMarketPulse: (args: unknown) => pulseMock(args),
 }))
 vi.mock('@/lib/data/market/getMarketTrend', () => ({
   getMarketTrend: (...args: unknown[]) => trendMock(...args),
@@ -33,6 +30,7 @@ vi.mock('@/lib/data/market-truth/getSellBendMarket', async () => {
   return {
     ...actual,
     getDetachedMarkets: (...args: unknown[]) => detachedMock(...args),
+    getDetachedInventories: (...args: unknown[]) => inventoryMock(...args),
   }
 })
 vi.mock('@/lib/data/market-truth/public-pace', async () => {
@@ -42,18 +40,23 @@ vi.mock('@/lib/data/market-truth/public-pace', async () => {
   return {
     ...actual,
     getPublicDetachedPace: (...args: unknown[]) => leftoverMock(...args),
+    // The fetch path reads the row WITH its per-cell provenance (the send's
+    // freshness check and figure trace use the computed_at stamps).
+    getPublicDetachedPaceDetailed: async (...args: unknown[]) => ({ row: await leftoverMock(...args), provenance: {} }),
   }
 })
 
 import {
-  computeMonthsOfSupply,
   classifyMarketVerdict,
+  reportMarketVerdict,
   resolveAreaGeoType,
   buildAreaBlock,
   buildTrendSummary,
   monthLabel,
   getMarketReportData,
+  sixMonthCloses,
 } from './getMarketReportData'
+import { formatMonths } from '@/lib/crm/market-report-format'
 import type { MarketTrendPoint } from '@/lib/data/market/getMarketTrend'
 
 describe('buildTrendSummary', () => {
@@ -111,27 +114,67 @@ describe('monthLabel', () => {
   })
 })
 
-describe('computeMonthsOfSupply', () => {
-  it('computes active / (sold12mo / 12) and rounds to one decimal', () => {
-    // 60 active, 120 sold/yr -> 10/mo -> 6.0 months
-    expect(computeMonthsOfSupply(60, 120)).toBe(6)
-    // 491 active, 1657 sold/yr (Bend rolling_365d) -> 1657/12 = 138.08/mo -> 3.6
-    expect(computeMonthsOfSupply(491, 1657)).toBe(3.6)
-    // 28 active, 31 sold/yr (Tetherow) -> 31/12 = 2.583/mo -> 10.8
-    expect(computeMonthsOfSupply(28, 31)).toBe(10.8)
+describe('sixMonthCloses (closed_last_6_months, CLAUDE.md §0)', () => {
+  const month = (periodStart: string, soldCount: number | null): MarketTrendPoint => ({
+    periodStart,
+    medianSalePrice: null,
+    soldCount,
+    medianDom: null,
+    endOfPeriodInventory: null,
+  })
+  const run = ['2026-03-01', '2026-04-01', '2026-05-01', '2026-06-01', '2026-07-01', '2026-08-01']
+
+  it('sums the last six completed months when they are consecutive and all counted', () => {
+    const points = [month('2026-02-01', 999), ...run.map((m, i) => month(m, 100 + i))]
+    expect(sixMonthCloses(points)).toEqual({ closed: 615, from: '2026-03-01', through: '2026-08-31' })
   })
 
-  it('returns null when inputs are missing or non-finite', () => {
-    expect(computeMonthsOfSupply(null, 100)).toBeNull()
-    expect(computeMonthsOfSupply(60, null)).toBeNull()
-    expect(computeMonthsOfSupply(undefined, undefined)).toBeNull()
-    expect(computeMonthsOfSupply(Number.NaN, 100)).toBeNull()
-    expect(computeMonthsOfSupply(60, Number.POSITIVE_INFINITY)).toBeNull()
+  it('is null on a gap, a missing count, or fewer than six months (never a partial total)', () => {
+    expect(sixMonthCloses(run.slice(1).map((m) => month(m, 10)))).toBeNull()
+    expect(sixMonthCloses([...run.slice(0, 5), '2026-09-01'].map((m) => month(m, 10)))).toBeNull()
+    expect(sixMonthCloses(run.map((m, i) => month(m, i === 2 ? null : 10)))).toBeNull()
+    expect(sixMonthCloses(null)).toBeNull()
+  })
+})
+
+describe('months of supply prints from the RAW figure, and the verdict is taken from the same raw figure', () => {
+  it('a raw 4.003 prints "4.1 months" beside "Balanced market", never 4.00 (the verdict the raw earns)', () => {
+    // 4.003 is balanced (> 4). Rounding it first printed "4.00 months" beside "Balanced market".
+    expect(reportMarketVerdict(4.003)).toBe('balanced')
+    expect(formatMonths(4.003)).toBe('4.1 months')
+    // At the edges the printed digits and the verdict agree the other way too.
+    expect(reportMarketVerdict(4)).toBe('sellers')
+    expect(formatMonths(4)).toBe('4.0 months')
+    expect(reportMarketVerdict(5.999)).toBe('balanced')
+    expect(formatMonths(5.999)).toBe('5.9 months')
+    expect(reportMarketVerdict(6)).toBe('buyers')
+    expect(formatMonths(6)).toBe('6.0 months')
   })
 
-  it('returns null on a zero close rate (never divides by zero, never fabricates)', () => {
-    expect(computeMonthsOfSupply(60, 0)).toBeNull()
-    expect(computeMonthsOfSupply(60, -5)).toBeNull()
+  it('agrees with the canonical classifier everywhere', () => {
+    for (const v of [0.4, 3.99, 4, 4.0001, 4.05, 5.5, 5.95, 5.9999, 6, 6.01, 12]) {
+      expect(reportMarketVerdict(v)).toBe(classifyMarketVerdict(v))
+    }
+    expect(reportMarketVerdict(null)).toBeNull()
+  })
+
+  it('a block keeps the raw live figure (no pre-rounding) and derives its verdict from it', () => {
+    const block = buildAreaBlock({
+      slug: 'bend',
+      geoType: 'city',
+      detail: {
+        medianSalePrice: 721000,
+        soldCount: 1657,
+        medianDom: 25,
+        yoyMedianPriceDeltaPct: -1.22,
+        marketHealthLabel: 'Warm',
+        endOfPeriodInventory: 491,
+        updatedAt: '2026-06-25T00:00:00Z',
+      },
+      pulse: { activeCount: 600, monthsOfSupply: 4.003, refreshedAt: '2026-06-25T12:00:00Z' },
+    })
+    expect(block!.monthsOfSupply).toBe(4.003)
+    expect(block!.marketVerdict).toBe('balanced')
   })
 })
 
@@ -171,7 +214,7 @@ describe('buildAreaBlock', () => {
     expect(block!.activeListings).toBe(480) // live pulse, not historical 491
     expect(block!.monthsOfSupply).toBe(3.5) // cache-computed live MoS
     expect(block!.marketVerdict).toBe('sellers') // derived from 3.5
-    expect(block!.source).toBe('market_pulse_live')
+    expect(block!.source).toBe('market_metric')
     expect(block!.areaLabel).toBe('Bend')
     expect(block!.href).toBe('/cities/bend')
   })
@@ -225,7 +268,7 @@ describe('buildAreaBlock', () => {
     expect(block!.monthsOfSupply).toBeNull()
     expect(block!.soldLast12mo).toBe(31) // volume line stays rolling_365d
     expect(block!.marketVerdict).toBeNull()
-    expect(block!.source).toBe('market_pulse_live')
+    expect(block!.source).toBe('market_metric')
     expect(block!.href).toBe('/communities/tetherow')
   })
 
@@ -251,7 +294,7 @@ describe('buildAreaBlock', () => {
     expect(block!.monthsOfSupply).toBeNull()
     expect(block!.marketVerdict).toBeNull()
     // Live active still stamps pulse as source even when MoS is withheld.
-    expect(block!.source).toBe('market_pulse_live')
+    expect(block!.source).toBe('market_metric')
   })
 
   it('publishes no community MoS when there is no pulse row at all', () => {
@@ -295,6 +338,44 @@ describe('buildAreaBlock', () => {
         pulse: null,
       }),
     ).toBeNull()
+  })
+
+  it('the fallback is the §0 six-month formula: active / (closes in the last six completed months / 6)', () => {
+    const block = buildAreaBlock({
+      slug: 'bend',
+      geoType: 'city',
+      detail: FULL_DETAIL,
+      pulse: null,
+      closedSixMonths: { closed: 900, from: '2026-01-01', through: '2026-06-30' },
+    })
+    // 491 active / (900 / 6) = 3.2733..., never 491 / (1657 / 12) = 3.556 (twelve months of sales).
+    expect(block!.monthsOfSupply).toBeCloseTo(491 / 150, 10)
+    expect(block!.monthsOfSupplySource).toBe('computed-6mo')
+    expect(block!.monthsOfSupplyBasis).toEqual({ closed: 900, from: '2026-01-01', through: '2026-06-30' })
+    expect(block!.marketVerdict).toBe('sellers')
+    // No six-month base: no fallback at all (never twelve months of sales).
+    const none = buildAreaBlock({ slug: 'bend', geoType: 'city', detail: FULL_DETAIL, pulse: null })
+    expect(none!.monthsOfSupply).toBeNull()
+    expect(none!.marketVerdict).toBeNull()
+  })
+
+  it('the six-month fallback withholds below the Market Truth floor, and never at neighborhood grain', () => {
+    const thin = buildAreaBlock({
+      slug: 'terrebonne',
+      geoType: 'city',
+      detail: { ...FULL_DETAIL, soldCount: 40 },
+      pulse: null,
+      closedSixMonths: { closed: 29, from: '2026-01-01', through: '2026-06-30' },
+    })
+    expect(thin!.monthsOfSupply).toBeNull()
+    const hood = buildAreaBlock({
+      slug: 'tetherow',
+      geoType: 'neighborhood',
+      detail: FULL_DETAIL,
+      pulse: null,
+      closedSixMonths: { closed: 300, from: '2026-01-01', through: '2026-06-30' },
+    })
+    expect(hood!.monthsOfSupply).toBeNull()
   })
 
   it('the verdict in a built block always matches the canonical classifier output for its monthsOfSupply', () => {
@@ -371,7 +452,7 @@ describe('buildAreaBlock', () => {
     expect(block!.activeListings).toBe(480)
     expect(block!.activeListings).not.toBe(FULL_DETAIL.endOfPeriodInventory)
     expect(block!.monthsOfSupply).toBe(3.5)
-    expect(block!.source).toBe('market_pulse_live')
+    expect(block!.source).toBe('market_metric')
   })
 })
 
@@ -411,17 +492,18 @@ describe('getMarketReportData (D27 leftover fetch integration)', () => {
     medianListPrice: 799000,
     computedAt: '2026-06-25T12:00:00Z',
     completeThrough: '2026-06-25',
+    periodEnd: '2026-06-25',
   }
   const leftoverHit = { ...EMPTY_PUBLIC_PACE, medianClose: 760_000, closedCount: 2095, yoyMedian: -0.0194 }
 
   beforeEach(() => {
     detailMock.mockReset()
-    pulseMock.mockReset()
+    inventoryMock.mockReset()
     trendMock.mockReset()
     detachedMock.mockReset()
     leftoverMock.mockReset()
     detailMock.mockResolvedValue(detail)
-    pulseMock.mockResolvedValue(null)
+    inventoryMock.mockResolvedValue(new Map())
     trendMock.mockResolvedValue([])
     detachedMock.mockResolvedValue(new Map([['city:bend', detachedBend]]))
     leftoverMock.mockResolvedValue(leftoverHit)
@@ -507,12 +589,77 @@ describe('getMarketReportData (D27 leftover fetch integration)', () => {
       updatedAt: '2026-08-16T00:00:00Z',
     })
     detachedMock.mockResolvedValue(new Map())
-    pulseMock.mockResolvedValue({ activeCount: 35, monthsOfSupply: 4.6, refreshedAt: '2026-08-16T19:00:00Z' })
+    inventoryMock.mockResolvedValue(
+      new Map([['neighborhood:tetherow', { activeCount: 35, medianListPrice: null, computedAt: '2026-08-16T19:00:00Z' }]]),
+    )
     leftoverMock.mockResolvedValue({ ...EMPTY_PUBLIC_PACE, medianClose: 2_200_000, closedCount: 40, yoyMedian: 0.03 })
     const blocks = await getMarketReportData(['tetherow'])
     expect(blocks).toHaveLength(1)
     expect(blocks[0].medianPrice).toBe(2_200_000)
     expect(blocks[0].soldLast12mo).toBe(40)
-    expect(blocks[0].source).toBe('market_pulse_live')
+    expect(blocks[0].source).toBe('market_metric')
+  })
+
+  it('carries the provenance the sender checks for freshness and the figures trace names', async () => {
+    const [bend] = await getMarketReportData(['bend'])
+    // A city's live inventory and months of supply come from Market Truth.
+    expect(bend.monthsOfSupplySource).toBe('live')
+    expect(bend.provenance?.live).toEqual({
+      table: 'market_metric',
+      computedAt: '2026-06-25T12:00:00Z',
+      completeThrough: '2026-06-25',
+      // The months_of_supply cell's period_end: the Spark reconciliation
+      // rebuilds its six-month closed window from it.
+      periodEnd: '2026-06-25',
+    })
+    // The rolling_365d row that carries median days on market.
+    expect(bend.provenance?.cache?.updatedAt).toBe('2026-06-25T00:00:00Z')
+    expect(bend.provenance?.cache?.soldCount).toBe(1657)
+    expect(bend.twelveMonthSource).toBe('market-truth')
+  })
+
+  it("reads a neighborhood's live count from Market Truth directly and names market_metric", async () => {
+    // The pulse's own active_count includes Coming Soon; a report never reads it.
+    detachedMock.mockResolvedValue(new Map())
+    inventoryMock.mockResolvedValue(
+      new Map([['neighborhood:bend-larkspur', { activeCount: 29, medianListPrice: 629000, computedAt: '2026-09-30T00:40:03Z' }]]),
+    )
+    const [hood] = await getMarketReportData(['bend-larkspur'])
+    expect(inventoryMock).toHaveBeenCalledWith([{ geoType: 'neighborhood', geoSlug: 'bend-larkspur' }])
+    expect(hood.geoType).toBe('neighborhood')
+    expect(hood.activeListings).toBe(29)
+    // Months of supply never prints at neighborhood grain.
+    expect(hood.monthsOfSupply).toBeNull()
+    expect(hood.provenance?.live).toEqual({ table: 'market_metric', computedAt: '2026-09-30T00:40:03Z', completeThrough: null, periodEnd: null })
+  })
+
+  it('reads every neighborhood of a report in one call', async () => {
+    detachedMock.mockResolvedValue(new Map())
+    inventoryMock.mockResolvedValue(
+      new Map([
+        ['neighborhood:bend-larkspur', { activeCount: 29, medianListPrice: null, computedAt: '2026-09-30T00:40:03Z' }],
+        ['neighborhood:tetherow', { activeCount: 13, medianListPrice: null, computedAt: '2026-09-30T00:40:03Z' }],
+      ]),
+    )
+    const blocks = await getMarketReportData(['bend-larkspur', 'tetherow'])
+    expect(inventoryMock).toHaveBeenCalledTimes(1)
+    expect(inventoryMock).toHaveBeenCalledWith([
+      { geoType: 'neighborhood', geoSlug: 'bend-larkspur' },
+      { geoType: 'neighborhood', geoSlug: 'tetherow' },
+    ])
+    expect(blocks.map((b) => b.activeListings)).toEqual([29, 13])
+  })
+
+  it('records no live source when Market Truth has no count, or the read fails (the block falls back to the cache row)', async () => {
+    detachedMock.mockResolvedValue(new Map())
+    inventoryMock.mockResolvedValue(new Map())
+    const [missed] = await getMarketReportData(['bend-larkspur'])
+    expect(missed.provenance?.live).toBeNull()
+    expect(missed.source).toBe('market_stats_cache:rolling_365d')
+
+    inventoryMock.mockRejectedValue(new Error('market_metric timeout'))
+    const [failed] = await getMarketReportData(['bend-larkspur'])
+    expect(failed.provenance?.live).toBeNull()
+    expect(failed.activeListings).toBe(detail.endOfPeriodInventory)
   })
 })
