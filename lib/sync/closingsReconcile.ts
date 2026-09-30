@@ -56,7 +56,7 @@ import {
 import { refreshMarketFactSpansForKeys } from '@/lib/data/market-report/compute'
 import { queueBrokerHealthAlert } from '@/lib/crm/broker-alerts'
 import { heldSalesText, noticeText, removalFailedText } from '@/lib/sync/mlsRemovedText'
-import { restoreServedAgain } from '@/lib/sync/mlsRemovedRestore'
+import { rebuildRestoredSales, restoreServedAgain } from '@/lib/sync/mlsRemovedRestore'
 
 /**
  * History fetches run two at a time. The delta sync shares this Spark key every
@@ -138,6 +138,8 @@ export type AbsentFromMlsResult = {
   waiting: number
   /** Deletions and restores texted to the owner this run. */
   told: number
+  /** Restored sales whose rows the daily check rebuilt this run (after the day's writes). */
+  restoresRebuilt: number
   /** The deletion step's error; the run goes on, and the next one tries again. */
   removalFailed: string | null
 }
@@ -151,6 +153,7 @@ const NO_ABSENT_WORK: AbsentFromMlsResult = {
   held: 0,
   waiting: 0,
   told: 0,
+  restoresRebuilt: 0,
   removalFailed: null,
 }
 
@@ -616,20 +619,31 @@ export async function reconcileClosings(opts: {
         },
         { remove: opts.removeAbsent === true, maxRemovals: opts.maxRemovals ?? MLS_REMOVED_DAILY_BUDGET },
       )
-    : NO_ABSENT_WORK
-  if (!opts.repair || found.drift.length === 0) {
-    return { ...found, absentFromMls, repaired: 0, repairedKeys: [], repairLogged: 0, repairFailed: [], historyRefreshed: 0, refinalized: 0, membershipRows: 0 }
+    : { ...NO_ABSENT_WORK }
+  let r: Awaited<ReturnType<typeof repairListingsFromSpark>> = {
+    repaired: 0,
+    repairedKeys: [],
+    repairLogged: 0,
+    failed: [],
+    historyRefreshed: 0,
+    refinalized: 0,
+    membershipRows: 0,
   }
-  const toRepair = found.drift.slice(0, opts.maxRepairs ?? 2000)
-  // A closing Spark has and we do not may be one we deleted as removed and the
-  // MLS now serves again: put the saved row back first, so the repair updates
-  // our full record (frozen gallery, broker overrides, counters) and logs it.
-  const missingKeys = toRepair.filter((d) => d.reasons.includes('missing')).map((d) => d.key)
-  if (missingKeys.length > 0) await restoreServedAgain(missingKeys)
-  const r = await repairListingsFromSpark(
-    toRepair.map((d) => d.key),
-    { window: { from: opts.from, to: opts.to }, reasons: new Map(toRepair.map((d) => [d.key, d.reasons])) },
-  )
+  if (opts.repair && found.drift.length > 0) {
+    const toRepair = found.drift.slice(0, opts.maxRepairs ?? 2000)
+    // A closing Spark has and we do not may be one we deleted as removed and the
+    // MLS now serves again: put the saved row back first, so the repair updates
+    // our full record (frozen gallery, broker overrides, counters) and logs it.
+    const missingKeys = toRepair.filter((d) => d.reasons.includes('missing')).map((d) => d.key)
+    if (missingKeys.length > 0) await restoreServedAgain(missingKeys)
+    r = await repairListingsFromSpark(
+      toRepair.map((d) => d.key),
+      { window: { from: opts.from, to: opts.to }, reasons: new Map(toRepair.map((d) => [d.key, d.reasons])) },
+    )
+  }
+  // After the day's writes, including the repair above: every restored sale
+  // still pending gets its rows rebuilt from the listing as it stands now.
+  if (opts.repair && opts.removeAbsent === true) absentFromMls.restoresRebuilt = await rebuildRestoredSales()
   return {
     ...found,
     absentFromMls,

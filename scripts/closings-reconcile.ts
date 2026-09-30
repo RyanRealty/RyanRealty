@@ -69,7 +69,7 @@ async function main() {
   if (removeAbsent) {
     const a = r.absentFromMls
     console.log(
-      `deleted as removed from the MLS: ${a.removed.length}${a.removalHeld ? ` (none: ${a.removalHeld})` : ''}; held for approval: ${a.held}; not due yet: ${a.waiting}; texted: ${a.told}${a.removalFailed ? `; deletion FAILED: ${a.removalFailed}` : ''}`,
+      `deleted as removed from the MLS: ${a.removed.length}${a.removalHeld ? ` (none: ${a.removalHeld})` : ''}; held for approval: ${a.held}; not due yet: ${a.waiting}; texted: ${a.told}; restores rebuilt: ${a.restoresRebuilt}${a.removalFailed ? `; deletion FAILED: ${a.removalFailed}` : ''}`,
     )
     for (const s of a.removed) console.log(`  ${s.listingKey} MLS ${s.listNumber ?? '?'}, closed ${s.closeDate ?? '?'}: whole row in listing_mls_repair_log ${s.logId}`)
   }

@@ -78,10 +78,10 @@ describe('noticeText', () => {
 describe('heldSalesText', () => {
   it('over the budget: how many are due, how many the day still allows, and that none were removed', () => {
     expect(heldSalesText({ reason: 'budget', due: 14, held: 14, budget: 7 })).toBe(
-      '14 closed sales the MLS no longer has are due to be removed, more than the 7 it may still remove today, so the daily check removed none and is holding them. They stay out of the market report, and while they are still missing, nothing more is removed until someone checks and approves.',
+      '14 closed sales the MLS no longer has are due to be removed, more than the 7 the daily check may still remove today, so it removed none and is holding them. They stay out of the market report, and while they are still missing, nothing more is removed until someone checks and approves.',
     )
     expect(heldSalesText({ reason: 'budget', due: 1, held: 1, budget: 0 })).toBe(
-      '1 closed sale the MLS no longer has is due to be removed, more than none it may still remove today, so the daily check removed none and is holding it. It stays out of the market report, and while it is still missing, nothing more is removed until someone checks and approves.',
+      '1 closed sale the MLS no longer has is due to be removed, and the daily check may remove no more today, so it removed none and is holding it. It stays out of the market report, and while it is still missing, nothing more is removed until someone checks and approves.',
     )
   })
 

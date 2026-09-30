@@ -140,6 +140,9 @@ export async function getAbsentFromMlsKeys(window?: { from: string; to: string }
   return rows.map((r) => r.listing_key)
 }
 
+const REMOVED_SOURCE = 'absent-from-mls-delete'
+const RESTORED_SOURCE = 'absent-from-mls-restore'
+
 /** A closed sale deleted from our copy because the MLS no longer serves it. */
 export type RemovedSale = {
   /** listing_mls_repair_log id holding the whole row (undo: re-insert before_row). */
@@ -279,14 +282,66 @@ export async function restoreMlsRemovedSales(keys: string[]): Promise<RestoredSa
  * runs, for one key at a time. A key the comp filter leaves out comes back in
  * skipped.
  */
-export async function refreshSalePricingFactsForKeys(keys: string[]): Promise<{ refreshed: string[]; skipped: string[] }> {
+export async function refreshSalePricingFactsForKeys(
+  keys: string[],
+): Promise<{ refreshed: string[]; skipped: string[]; failed: { listingKey: string; error: string }[] }> {
   const unique = [...new Set(keys.filter(Boolean))]
-  if (unique.length === 0) return { refreshed: [], skipped: [] }
+  if (unique.length === 0) return { refreshed: [], skipped: [], failed: [] }
   const sb = createServiceClient()
   const { data, error } = await sb.rpc('refresh_sale_pricing_facts_for_keys', { p_keys: unique })
   if (error) throw new Error(`[refreshSalePricingFactsForKeys] ${error.message}`)
-  const d = (data ?? {}) as { refreshed?: string[]; skipped?: string[] }
-  return { refreshed: d.refreshed ?? [], skipped: d.skipped ?? [] }
+  const d = (data ?? {}) as { refreshed?: string[]; skipped?: string[]; failed?: { listing_key: string; error: string }[] }
+  return {
+    refreshed: d.refreshed ?? [],
+    skipped: d.skipped ?? [],
+    failed: (d.failed ?? []).map((f) => ({ listingKey: f.listing_key, error: f.error })),
+  }
+}
+
+/**
+ * Restores whose derived rows are not rebuilt yet (source absent-from-mls-restore,
+ * outcome 'pending'), oldest first, with each sale's close day (UTC).
+ */
+export async function getPendingMlsRestores(limit = 200): Promise<{ id: number; listingKey: string; closeDate: string | null }[]> {
+  const sb = createServiceClient()
+  const { data, error } = await sb
+    .from('listing_mls_repair_log')
+    .select('id, listing_key, close_date:mls->>closeDate')
+    .eq('source', RESTORED_SOURCE)
+    .eq('outcome', 'pending')
+    .order('id')
+    .limit(limit)
+  if (error) throw new Error(`[getPendingMlsRestores] ${error.message}`)
+  return ((data ?? []) as unknown as { id: number; listing_key: string; close_date: string | null }[]).map((r) => {
+    const t = r.close_date ? Date.parse(r.close_date) : Number.NaN
+    return {
+      id: Number(r.id),
+      listingKey: r.listing_key,
+      closeDate: Number.isNaN(t) ? (r.close_date?.slice(0, 10) ?? null) : new Date(t).toISOString().slice(0, 10),
+    }
+  })
+}
+
+/** Mark restores whose derived rows were all rebuilt. */
+export async function markMlsRestoresRebuilt(ids: number[]): Promise<number> {
+  if (ids.length === 0) return 0
+  const sb = createServiceClient()
+  const { error } = await sb.from('listing_mls_repair_log').update({ outcome: 'repaired' }).in('id', ids).eq('outcome', 'pending')
+  if (error) throw new Error(`[markMlsRestoresRebuilt] ${error.message}`)
+  return ids.length
+}
+
+/**
+ * Every listing key ever deleted as removed from the MLS: a handful, read once
+ * by the full Spark sync so it asks for a restore only when a page holds one.
+ */
+export async function getDeletedMlsSaleKeys(): Promise<Set<string>> {
+  const sb = createServiceClient()
+  const { rows, error } = await fetchPagedRows<{ listing_key: string }>((from, to) =>
+    sb.from('listing_mls_repair_log').select('listing_key').eq('source', REMOVED_SOURCE).order('id').range(from, to),
+  )
+  if (error) throw new Error(`[getDeletedMlsSaleKeys] ${error.message}`)
+  return new Set(rows.map((r) => r.listing_key))
 }
 
 /** A deletion or restore of an MLS-removed sale the owner has not been texted about yet. */
@@ -320,8 +375,6 @@ type NoticeRow = {
   m_close_price: string | null
 }
 
-const REMOVED_SOURCE = 'absent-from-mls-delete'
-const RESTORED_SOURCE = 'absent-from-mls-restore'
 
 /**
  * Deletions and restores of MLS-removed sales not yet texted to the owner

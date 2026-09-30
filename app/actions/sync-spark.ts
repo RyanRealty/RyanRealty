@@ -152,6 +152,11 @@ export async function syncSparkListings(options?: {
   let totalUpserted = 0
   let pagesProcessed = 0
   const mortgageRate = (await (await import('@/lib/data/market/getLiveMortgageRate')).getLiveMortgageRate())?.ratePct ?? null // ONE live-rate read per full sync; null → mapper default
+  // The keys ever deleted as removed from the MLS, read once per run; an empty set if the read fails.
+  const deletedMlsSaleKeys = await (await import('@/lib/data/sync/closingsReconcile')).getDeletedMlsSaleKeys().catch((err: unknown) => {
+    console.error('[syncSparkListings] deleted MLS sale keys not read', err)
+    return new Set<string>()
+  })
 
   try {
     while (currentPage <= totalPages && pagesProcessed < maxPages) {
@@ -190,9 +195,13 @@ export async function syncSparkListings(options?: {
       // A sale deleted because the MLS stopped serving it (Matt 2026-09-30),
       // which the MLS serves again, gets its saved row back before this write,
       // so its record is updated rather than replaced by a bare new one and
-      // Matt is told it came back. Never throws.
-      const { restoreServedAgain } = await import('@/lib/sync/mlsRemovedRestore')
-      await restoreServedAgain(rows.map((r) => String(r.ListingKey ?? '')).filter(Boolean))
+      // Matt is told it came back. Asked only when this page holds one of the
+      // few deleted keys (read once per run). Never throws.
+      const servedAgain = rows.map((r) => String(r.ListingKey ?? '')).filter((k) => deletedMlsSaleKeys.has(k))
+      if (servedAgain.length > 0) {
+        const { restoreServedAgain } = await import('@/lib/sync/mlsRemovedRestore')
+        await restoreServedAgain(servedAgain)
+      }
 
       const { upsertListingRows } = await import('@/lib/data')
       const ignoreDuplicates = options?.insertOnly === true

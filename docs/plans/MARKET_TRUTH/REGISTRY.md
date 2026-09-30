@@ -381,7 +381,7 @@ reconciliation). `prune_market_fact_sale` now drops sale facts whose listing is 
    next time: "Delete it automatically. The daily check deletes it after saving the full record,
    and texts you what it removed."). Each daily closings check counts a sighting of every sale
    it confirms missing (`record_absent_from_mls`, one per 12 hours at most), and passes those
-   keys to `delete_mls_removed_sales` (migrations `20260930220000` to `20260930250000`), which
+   keys to `delete_mls_removed_sales` (migrations `20260930220000` to `20260930260000`), which
    deletes a sale on its third sighting, 36 hours or more after the first: one bad answer from
    Spark, or a day the check did not run, never deletes anything. In one transaction the whole
    row goes to `listing_mls_repair_log` first (source `absent-from-mls-delete`, the shape of
@@ -404,7 +404,9 @@ reconciliation). `prune_market_fact_sale` now drops sale facts whose listing is 
    again, the delta sync, the full Spark sync and the closings repair put its saved row back
    before they write, frozen as saved, and rebuild its membership, episodes, report attributes,
    sale fact and CMA comp (`restore_mls_removed_sales`, `lib/sync/mlsRemovedRestore.ts`), so it
-   returns with its frozen gallery, broker overrides and counters, and Matt is told. A test
+   returns with its frozen gallery, broker overrides and counters, and Matt is told. The restore
+   stays pending until the daily check rebuilds those rows again after the day's writes, so a
+   sale re-served with corrected figures is rebuilt on them and a failed step is retried. A test
    (`lib/sync/mlsRemovedRestore.test.ts`) fails if the deletion ever clears a table the restore
    does not rebuild, and `delete_mls_removed_sales_selftest()` runs the whole cycle on synthetic
    rows and rolls back (the integration suite calls it). A published monthly edition keeps the figures it was published

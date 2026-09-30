@@ -65,8 +65,11 @@ export function noticeText(kind: MlsRemovalNotice['kind'], notices: MlsRemovalNo
 /** The text when sales were due but none were removed. */
 export function heldSalesText(h: { reason: 'budget' | 'hold'; due: number; held: number; budget: number | null }): string {
   if (h.reason === 'budget') {
-    const room = h.budget == null || h.budget <= 0 ? 'none it may still remove today' : `the ${h.budget} it may still remove today`
-    return `${sales(h.due)} the MLS no longer has ${h.due === 1 ? 'is' : 'are'} due to be removed, more than ${room}, so the daily check removed none and is holding ${h.due === 1 ? 'it' : 'them'}. ${h.due === 1 ? 'It stays' : 'They stay'} out of the market report, and while ${h.due === 1 ? 'it is' : 'they are'} still missing, nothing more is removed until someone checks and approves.`
+    const room =
+      h.budget == null || h.budget <= 0
+        ? 'and the daily check may remove no more today'
+        : `more than the ${h.budget} the daily check may still remove today`
+    return `${sales(h.due)} the MLS no longer has ${h.due === 1 ? 'is' : 'are'} due to be removed, ${room}, so it removed none and is holding ${h.due === 1 ? 'it' : 'them'}. ${h.due === 1 ? 'It stays' : 'They stay'} out of the market report, and while ${h.due === 1 ? 'it is' : 'they are'} still missing, nothing more is removed until someone checks and approves.`
   }
   return `${sales(h.held)} the MLS no longer has ${h.held === 1 ? 'is' : 'are'} held until someone checks and approves the removal, so the daily check removed none today. ${h.held === 1 ? 'It stays' : 'They stay'} out of the market report meanwhile.`
 }

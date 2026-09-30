@@ -16,6 +16,8 @@ const restore = vi.fn(async (_keys: string[]) => ({
   failed: [{ listingKey: 'K4', error: 'null value in column' }],
 }))
 
+const pending: { id: number; listingKey: string; closeDate: string | null }[] = []
+const marked: number[] = []
 vi.mock('@/lib/data/sync/closingsReconcile', () => ({
   restoreMlsRemovedSales: (keys: string[]) => restore(keys),
   rebuildPlaceMembershipForKeys: vi.fn(async (keys: string[]) => {
@@ -24,7 +26,12 @@ vi.mock('@/lib/data/sync/closingsReconcile', () => ({
   }),
   refreshSalePricingFactsForKeys: vi.fn(async (keys: string[]) => {
     calls.push(`comps:${keys.join(',')}`)
-    return { refreshed: keys, skipped: [] }
+    return { refreshed: keys, skipped: [], failed: [] }
+  }),
+  getPendingMlsRestores: vi.fn(async () => pending),
+  markMlsRestoresRebuilt: vi.fn(async (ids: number[]) => {
+    marked.push(...ids)
+    return ids.length
   }),
 }))
 const spans = vi.fn(async (keys: string[]) => {
@@ -45,10 +52,12 @@ vi.mock('@/lib/data/market-report/compute', () => ({
 
 import { readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
-import { REBUILT_AFTER_RESTORE, REBUILT_BY_REPORT_REFRESH, restoreServedAgain } from './mlsRemovedRestore'
+import { REBUILT_AFTER_RESTORE, REBUILT_BY_REPORT_REFRESH, rebuildRestoredSales, restoreServedAgain } from './mlsRemovedRestore'
 
 afterEach(() => {
   calls.length = 0
+  pending.length = 0
+  marked.length = 0
   restore.mockClear()
   spans.mockClear()
 })
@@ -100,10 +109,41 @@ describe('the deletion and the restore stay symmetric', () => {
       .map((f) => readFileSync(path.join(dir, f), 'utf8'))
       .filter((sql) => /FUNCTION public\.delete_mls_removed_sales\(/.test(sql))
       .pop()!
-    const body = latest.slice(latest.search(/FUNCTION public\.delete_mls_removed_sales\(/))
-    const cleared = [...body.matchAll(/DELETE FROM public\.(\w+) WHERE listing_key = ANY \(v_gone\)/g)].map((m) => m[1])
-    expect(cleared.length).toBeGreaterThan(0)
-    const rebuilt = new Set<string>([...REBUILT_AFTER_RESTORE, ...REBUILT_BY_REPORT_REFRESH])
-    expect(cleared.filter((t) => !rebuilt.has(t!))).toEqual([])
+    const start = latest.search(/FUNCTION public\.delete_mls_removed_sales\(/)
+    const bodyStart = latest.indexOf('$$', start)
+    const body = latest.slice(bodyStart, latest.indexOf('$$', bodyStart + 2))
+    // Every table the function deletes from, however the statement is spelled.
+    const cleared = [...new Set([...body.matchAll(/DELETE\s+FROM\s+(?:public\.)?"?(\w+)"?/gi)].map((m) => m[1]!.toLowerCase()))]
+    expect(cleared).toContain('listings')
+    expect(cleared).toContain('sale_pricing_facts')
+    const rebuilt = new Set<string>(['listings', ...REBUILT_AFTER_RESTORE, ...REBUILT_BY_REPORT_REFRESH])
+    // sale_pricing_price_steps, listing_feature_flags and listing_remarks_search go by
+    // cascade from sale_pricing_facts and listings, and come back with them.
+    expect(cleared.filter((t) => !rebuilt.has(t))).toEqual([])
+  })
+})
+
+describe('rebuildRestoredSales', () => {
+  it('rebuilds every pending restore after the day\'s writes, and marks them only when every step succeeded', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    pending.push({ id: 9001, listingKey: 'K1', closeDate: '2026-03-10' }, { id: 9002, listingKey: 'K2', closeDate: '2026-03-10' })
+    expect(await rebuildRestoredSales()).toBe(2)
+    expect(calls).toEqual(['membership:K1,K2', 'spans:K1,K2', 'attributes:K1,K2', 'facts:2026-03-10..2026-03-11', 'comps:K1,K2'])
+    expect(marked).toEqual([9001, 9002])
+  })
+
+  it('one failed step leaves the batch pending for the next day', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    pending.push({ id: 9003, listingKey: 'K3', closeDate: '2026-02-20' })
+    spans.mockRejectedValueOnce(new Error('timeout'))
+    expect(await rebuildRestoredSales()).toBe(0)
+    expect(marked).toEqual([])
+    // The other steps still ran.
+    expect(calls).toContain('comps:K3')
+  })
+
+  it('nothing pending, nothing to do', async () => {
+    expect(await rebuildRestoredSales()).toBe(0)
+    expect(calls).toEqual([])
   })
 })

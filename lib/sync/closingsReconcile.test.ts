@@ -114,7 +114,9 @@ vi.mock('@/lib/data/sync/closingsReconcile', () => ({
     return ids.length
   }),
 }))
+const rebuildRestoredSales = vi.fn(async () => 0)
 vi.mock('@/lib/sync/mlsRemovedRestore', () => ({
+  rebuildRestoredSales: () => rebuildRestoredSales(),
   restoreServedAgain: vi.fn(async (keys: string[]) => {
     store.restoreCalls.push(keys)
     const restored = keys.filter((k) => store.restorable.has(k))
@@ -219,7 +221,7 @@ beforeEach(() => {
   alertQueues = true
 })
 
-const NONE_REMOVED = { removed: [], removalHeld: null, held: 0, waiting: 0, told: 0, removalFailed: null }
+const NONE_REMOVED = { removed: [], removalHeld: null, held: 0, waiting: 0, told: 0, restoresRebuilt: 0, removalFailed: null }
 
 function removedSale(over: Partial<RemovedSale> = {}): RemovedSale {
   return {
@@ -498,7 +500,7 @@ describe('deleting the sales the MLS removed (Matt 2026-09-30)', () => {
     const r = await reconcileClosings({ ...WINDOW, repair: true, removeAbsent: true })
     expect(r.absentFromMls).toMatchObject({ removed: [], removalHeld: 'budget', held: 14, waiting: 2 })
     expect(alerts).toEqual([{ key: 'mls-removed-held', body: heldSalesText({ reason: 'budget', due: 14, held: 14, budget: 7 }) }])
-    expect(alerts[0]!.body).toContain('more than the 7 it may still remove today')
+    expect(alerts[0]!.body).toContain('more than the 7 the daily check may still remove today')
 
     alerts.length = 0
     store.deleteResult = { removed: [], refused: 'hold', due: 1, held: 15, waiting: 0, budget: 10 }
@@ -528,6 +530,33 @@ describe('deleting the sales the MLS removed (Matt 2026-09-30)', () => {
     const r = await reconcileClosings({ ...WINDOW, repair: true, removeAbsent: true })
     expect(r.absentFromMls.waiting).toBe(1)
     expect(alerts).toEqual([])
+  })
+})
+
+describe('rebuilding restored sales after the day\'s writes', () => {
+  it('the daily run rebuilds every pending restore after its repairs, and reports how many', async () => {
+    spark.window = [sparkClosing('K1', { ClosePrice: 93588 })]
+    spark.byKey.set('K1', sparkClosing('K1', { ClosePrice: 93588 }))
+    store.closedInWindow = ['K1']
+    store.rows.set('K1', ourRow('K1', { ClosePrice: 93588000 }))
+    let upsertedAtRebuild: string[] = []
+    rebuildRestoredSales.mockImplementationOnce(async () => {
+      upsertedAtRebuild = [...store.upserted]
+      return 2
+    })
+    const r = await reconcileClosings({ from: '2026-03-01', to: '2026-03-31', repair: true, removeAbsent: true })
+    expect(r.absentFromMls.restoresRebuilt).toBe(2)
+    // The repair's write landed first.
+    expect(upsertedAtRebuild).toEqual(['K1'])
+  })
+
+  it('runs with nothing to repair too, and never outside the daily run', async () => {
+    rebuildRestoredSales.mockClear()
+    await reconcileClosings({ from: '2026-03-01', to: '2026-03-31', repair: true, removeAbsent: true })
+    expect(rebuildRestoredSales).toHaveBeenCalledTimes(1)
+    await reconcileClosings({ from: '2026-03-01', to: '2026-03-31', repair: true })
+    await reconcileClosings({ from: '2026-03-01', to: '2026-03-31', repair: false, removeAbsent: true })
+    expect(rebuildRestoredSales).toHaveBeenCalledTimes(1)
   })
 })
 

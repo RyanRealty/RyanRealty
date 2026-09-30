@@ -3,7 +3,7 @@
  * "Delete it automatically"). Nothing here leaves a row behind:
  *
  *   1. delete_mls_removed_sales_selftest (migrations 20260930230000 to
- *      20260930250000) runs the destructive functions on synthetic rows inside
+ *      20260930260000) runs the destructive functions on synthetic rows inside
  *      a block it rolls back and returns what it saw: sightings counted once
  *      per 12 hours; over the budget nothing deleted and the due sales held;
  *      the hold standing on a later run with room, and against a NULL approval;
@@ -11,9 +11,10 @@
  *      sale only, whole row logged first and its derived rows gone, even with
  *      a stale confirmation; a held sale no longer confirmed missing no longer
  *      holding; the MLS serving it again putting the saved row back, frozen as
- *      saved, and its CMA comp rebuilt by key. It clears any real hold inside
- *      the block first, so its answers are exact. Its rolled-back inserts spend
- *      log ids.
+ *      saved, logged pending until its rows are rebuilt, and CMA comps rebuilt
+ *      by key, each on its own. It takes the deletion's lock first and clears
+ *      any real hold inside the block, so its answers are exact and it never
+ *      deadlocks with an approval. Its rolled-back inserts spend log ids.
  *   2. delete_mls_removed_sales and restore_mls_removed_sales are callable with
  *      the argument names the DAL sends; a key with no listing is left alone.
  *   3. The notice read parses the saved row's mixed-case keys, and the three
@@ -48,7 +49,7 @@ run('deleting MLS-removed sales against the real DB', () => {
     // The self-test clears any real hold inside its rolled-back block, so these answers are exact.
     expect(t.comp_before).toBe(true)
     expect(t.over_budget).toMatchObject({ refused: true, reason: 'budget', due: 2, waiting: 2, deleted: 0, k1_still_there: true })
-    expect(t.over_budget!.held_keys).toEqual(['selftest-mls-removed-1', 'selftest-mls-removed-2'])
+    expect(t.over_budget!.held_keys).toEqual(['selftest-mls-removed-10', 'selftest-mls-removed-20'])
     expect(t.while_held).toMatchObject({ refused: true, reason: 'hold', due: 2, deleted: 0 })
     expect(t.null_approval).toMatchObject({ refused: true, reason: 'hold', deleted: 0 })
     expect(t.empty_keys).toMatchObject({ refused: false, due: 0, deleted: 0, held: 2 })
@@ -75,7 +76,7 @@ run('deleting MLS-removed sales against the real DB', () => {
         mls_confirmations: 3,
         reported_at: null,
       },
-      row: { listing_key: 'selftest-mls-removed-1', close_date: '2026-03-10', close_price: 735000, street_number: '15714' },
+      row: { listing_key: 'selftest-mls-removed-10', close_date: '2026-03-10', close_price: 735000, street_number: '15714' },
     })
     expect(String(t.approved!.absent_note)).toMatch(/on approval, whole row in listing_mls_repair_log id \d+$/)
     expect(t.approved_stale).toMatchObject({ refused: false, due: 1, deleted: 1 })
@@ -83,16 +84,21 @@ run('deleting MLS-removed sales against the real DB', () => {
     expect(t.restored).toMatchObject({
       count: 1,
       failed: [],
-      key: 'selftest-mls-removed-1',
+      key: 'selftest-mls-removed-10',
       close_date: '2026-03-10',
       row: { status: 'Closed', close_price: 735000, like_count: 7, street: 'Selftest Turn', is_finalized: true, media_finalized: true },
       absent_released: true,
-      restore_log: { source: 'absent-from-mls-restore', reasons: ['served_again'], city: 'Bend', reported_at: null },
+      restore_log: { source: 'absent-from-mls-restore', reasons: ['served_again'], city: 'Bend', reported_at: null, outcome: 'pending' },
     })
+    // Each key on its own: the restored sale and a second eligible one refreshed, the Active one
+    // skipped without touching any other comp, and no cursor left behind.
+    expect([...(t.comp_rebuilt!.refreshed as string[])].sort()).toEqual(['selftest-mls-removed-10', 'selftest-mls-removed-20'])
     expect(t.comp_rebuilt).toMatchObject({
-      refreshed: ['selftest-mls-removed-1'],
-      skipped: ['selftest-mls-removed-4'],
+      skipped: ['selftest-mls-removed-40'],
+      failed: [],
       comp_back: true,
+      comp_k2: true,
+      comp_k4: false,
       cursors_left: false,
     })
     expect(t.restored_again).toBe(0)
