@@ -19,17 +19,22 @@
 # the pass as proof. A gate measuring yesterday's bytes is a false negative
 # wearing a green tick, so the staleness check is part of the gate.
 #
-# ALL FOUR GATES RUN EVERY TIME (2026-09-16). Before this, the whole script ran
+# EVERY GATE RUNS EVERY TIME (2026-09-16). Before this, the whole script ran
 # under `set -e`, so a failing `ci:route-smoke` skipped page-payload,
 # tap-targets and route-content-floor entirely — observed in this sandbox on a
 # Postgres statement timeout inside sitemaps/listings.xml that production does
 # not reproduce (it serves 200 there). CLAUDE.md's ship-class rule needs every
 # gate's result from the SAME run, not a report that stops at the first
-# failure, so the four gates below run under `set +e` and
+# failure, so the gates below run under `set +e` and
 # scripts/lib/runtime-gate-summary.mjs prints one pass/fail line per gate and
 # sets the script's final exit code — non-zero if ANY gate failed.
 #
-#   npm run ci:runtime-gates              # route-smoke, page-payload, tap-targets, route-content-floor
+# listing-phone-fold joined 2026-09-30: the listing page's first screen at
+# 375x812 and 390x844 (address, price and beds / baths / sq ft in the fold, a
+# hero the photograph's own shape, no empty band, Jax clear of the price), the
+# fold PR #386 fixed. scripts/check-listing-phone-fold.mjs says why.
+#
+#   npm run ci:runtime-gates              # route-smoke, page-payload, tap-targets, route-content-floor, listing-phone-fold
 #   PORT=3010 npm run ci:runtime-gates    # somewhere else
 #
 # Build first: `npm run build`. This starts a server, it does not make one.
@@ -50,6 +55,7 @@ export SMOKE_BASE_URL="$BASE"
 export PAGE_PAYLOAD_BASE_URL="$BASE"
 export TAP_TARGETS_BASE_URL="$BASE"
 export CONTENT_FLOOR_BASE_URL="$BASE"
+export PHONE_FOLD_BASE_URL="$BASE"
 LOG="${RUNTIME_GATES_LOG:-/tmp/runtime-gates-server.log}"
 
 if [ ! -f .next/BUILD_ID ]; then
@@ -135,10 +141,13 @@ npm run ci:tap-targets
 STATUS_TAP=$?
 npm run ci:route-content-floor
 STATUS_FLOOR=$?
+npm run ci:listing-phone-fold
+STATUS_PHONE_FOLD=$?
 
 node scripts/lib/runtime-gate-summary.mjs \
   "route-smoke=$STATUS_SMOKE" \
   "page-payload=$STATUS_PAYLOAD" \
   "tap-targets=$STATUS_TAP" \
-  "route-content-floor=$STATUS_FLOOR"
+  "route-content-floor=$STATUS_FLOOR" \
+  "listing-phone-fold=$STATUS_PHONE_FOLD"
 exit $?

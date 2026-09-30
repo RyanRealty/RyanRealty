@@ -43,6 +43,8 @@ import {
   type SendIntroResult,
   type SendEmailIntroResult,
 } from '@/lib/data/prospecting/types'
+import { prospectDocBaseSlug } from '@/lib/data/prospecting/doc-slug'
+import { isUnconfirmedGmailSendError } from '@/lib/gmail-draft'
 import { slugifyAddress } from '@/lib/cma/address-slug'
 import {
   getLatestClientReadyCmaRowForBaseSlug,
@@ -159,11 +161,9 @@ export async function sendProspectingIntro(
     // slugifyAddress can collide across cities and resolve a DIFFERENT owner's audit
     // (adversarial audit 2026-07-18 F1). The state is guaranteed ready|sent here
     // (guards above), so a slug is always present; fall back to the address slug
-    // only in the impossible no-slug case.
-    const docBaseSlug =
-      prospect.doc.state === 'ready' || prospect.doc.state === 'sent'
-        ? prospect.doc.slug.replace(/--v\d+$/, '')
-        : slugifyAddress(prospect.streetAddress)
+    // only in the impossible no-slug case. The rule lives in
+    // lib/data/prospecting/doc-slug.ts, shared with the email intro.
+    const docBaseSlug = prospectDocBaseSlug(prospect) ?? slugifyAddress(prospect.streetAddress)
     const clientReady = await getLatestClientReadyCmaRowForBaseSlug(docBaseSlug)
     if (!clientReady) {
       return {
@@ -326,7 +326,8 @@ export async function sendProspectingIntro(
       return { ok: false, error: 'Intro already sent to this owner.', code: 'already-sent' }
     }
     if (claim === 'claimed_elsewhere') {
-      return { ok: false, error: 'Another send is already in progress for this owner.', code: 'already-sent' }
+      // In flight, not finished: 'already-sent' would tell a caller it is done.
+      return { ok: false, error: 'Another send is already in progress for this owner.', code: 'in-progress' }
     }
     if (claim === 'not_found') {
       return { ok: false, error: 'Prospect not found at claim time.', code: 'not-found' }
@@ -485,10 +486,9 @@ export async function sendProspectingEmailIntro(
     if (!prospect.streetAddress) {
       return { ok: false, error: 'No street address on the prospect record.', code: 'not-found' }
     }
-    const docBaseSlug =
-      prospect.doc.state === 'ready' || prospect.doc.state === 'sent'
-        ? prospect.doc.slug.replace(/--v\d+$/, '')
-        : slugifyAddress(prospect.streetAddress)
+    // One rule with the stuck-send recovery, which finds this send's
+    // email_events rows by the same base (lib/data/prospecting/doc-slug.ts).
+    const docBaseSlug = prospectDocBaseSlug(prospect) ?? slugifyAddress(prospect.streetAddress)
     const clientReady = await getLatestClientReadyCmaRowForBaseSlug(docBaseSlug)
     if (!clientReady) {
       return {
@@ -596,7 +596,14 @@ export async function sendProspectingEmailIntro(
       return { ok: false, error: 'Intro already emailed to this owner.', code: 'already-sent' }
     }
     if (claim === 'claimed_elsewhere') {
-      return { ok: false, error: 'Another send is already in progress for this owner.', code: 'already-sent' }
+      // In flight, not finished. The drip used to read 'already-sent' here as
+      // "done" and dequeue the owner while the other run was still sending
+      // (2026-09-29 22:55 UTC). 'in-progress' tells it to stand down instead.
+      return {
+        ok: false,
+        error: 'Another send to this owner is in progress. Check back in a few minutes before sending again.',
+        code: 'in-progress',
+      }
     }
     if (claim === 'not_found') {
       return { ok: false, error: 'Prospect not found at claim time.', code: 'not-found' }
@@ -631,7 +638,13 @@ export async function sendProspectingEmailIntro(
     // 13. Send via the canonical CMA delivery rail. Suppression re-checks again
     // inside the rail (fail-closed), tracking + timeline + attribution are the
     // rail's job (emailKey `cma:<slug>` — the engagement reader's key). A
-    // failure here means NO email left the building → release and allow retry.
+    // refusal here means NO email left the building → release and allow retry.
+    // The one exception: Gmail took the message and never answered, so it may
+    // have gone out. Releasing that claim would put a drip member back in the
+    // queue for the next tick to send again. Keep the claim; the drip's
+    // stuck-send recovery checks Gmail Sent once the claim is stale, then
+    // finalizes (it left) or releases (it provably did not). A throw from the
+    // rail lands in the catch below, which never releases either.
     // This action already owns the owner's email claim (step 10), so the rail is
     // told not to claim, stamp, finalize or release that row itself: a second
     // claim would come back claimed_elsewhere and refuse this very send.
@@ -644,6 +657,14 @@ export async function sendProspectingEmailIntro(
       { callerHoldsProspectClaim: true },
     )
     if (!sent.ok) {
+      if (isUnconfirmedGmailSendError(sent.error)) {
+        console.error('[sendProspectingEmailIntro] Gmail did not confirm the send; claim kept for stuck-send recovery:', {
+          kind,
+          id,
+          error: sent.error,
+        })
+        return { ok: false, error: sent.error ?? 'Gmail did not confirm the send.', code: 'send-failed' }
+      }
       await releaseProspectEmailSend(kind, id)
       console.error('[sendProspectingEmailIntro] rail send failed, claim released:', sent.error)
       return { ok: false, error: sent.error ?? 'Email send failed.', code: 'send-failed' }

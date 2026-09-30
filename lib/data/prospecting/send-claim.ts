@@ -81,6 +81,12 @@ export async function releaseProspectSend(kind: ProspectKind, id: string): Promi
 // the claim FAILS SOFT to 'not_deployed' so the action can refuse with a clear
 // message instead of a raw PGRST202 — fail-closed either way (no email leaves).
 
+/**
+ * The SMS answers, plus 'not_deployed'. One difference in meaning: an EMAIL
+ * claim holds 15 minutes, not 2 (migration 20260930000100), because an email
+ * send is a whole CMA send that can run 300 s and the drip's stuck-send
+ * recovery settles a dead claim at 10 minutes (lib/data/prospecting/drip-recover.ts).
+ */
 export type EmailClaimStatus = ClaimStatus | 'not_deployed'
 
 /** PostgREST "function not found in schema cache" (PGRST202) / missing-function classifier. */

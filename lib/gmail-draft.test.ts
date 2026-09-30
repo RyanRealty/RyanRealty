@@ -44,7 +44,13 @@ vi.mock('@/lib/email/auto-track', () => ({
   instrumentLeadHtml: vi.fn(async (html: string) => html),
 }))
 
-import { createGmailDraft, GMAIL_AUTH_TIMEOUT_MS, GMAIL_REQUEST_TIMEOUT_MS, sendGmailMessage } from '@/lib/gmail-draft'
+import {
+  createGmailDraft,
+  GMAIL_AUTH_TIMEOUT_MS,
+  GMAIL_REQUEST_TIMEOUT_MS,
+  isUnconfirmedGmailSendError,
+  sendGmailMessage,
+} from '@/lib/gmail-draft'
 import { instrumentLeadHtml } from '@/lib/email/auto-track'
 
 const MESSAGE = {
@@ -183,6 +189,9 @@ describe('sendGmailMessage', () => {
       unconfirmed: true,
       error: expect.stringMatching(/may have gone out.*Sent/i),
     })
+    // Callers that only see the error text (sendCmaToLead drops the flag) must
+    // still recognize it: the prospecting email intro keeps its claim on it.
+    expect(isUnconfirmedGmailSendError(res.value?.error)).toBe(true)
     expect(calls('/messages/send')).toHaveLength(1)
   })
 
@@ -196,6 +205,7 @@ describe('sendGmailMessage', () => {
 
     expect(res).toMatchObject({ ok: false, error: 'Backend Error' })
     expect(res.unconfirmed).toBeFalsy()
+    expect(isUnconfirmedGmailSendError(res.error)).toBe(false)
     expect(calls('/messages/send')).toHaveLength(1)
   })
 

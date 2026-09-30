@@ -377,6 +377,12 @@ export type SendGuardCode =
   | 'quiet-hours'
   | 'suppressed'
   | 'already-sent'
+  /**
+   * Another tab, device or drain run holds this owner's claim and is sending
+   * right now. NOT 'already-sent': nothing has finished, and the drip must not
+   * treat a live send as a finished one (it dequeued on that, 2026-09-29).
+   */
+  | 'in-progress'
   | 'merge-unresolved'
   | 'send-failed'
   | 'not-found'
