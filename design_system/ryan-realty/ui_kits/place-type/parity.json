@@ -61,11 +61,11 @@
     }
   ],
   "tasteReview": {
-    "evaluatedAt": "2026-09-24",
+    "evaluatedAt": "2026-09-30",
     "rubricVersion": "v1-2026-09-12",
-    "evaluator": "npx tsx scripts/taste-evaluate.ts place-type --builder claude-opus-5.5 --shots <the 4 files below>. The grok CLI and the Cursor CLI are missing in this sandbox, so the judge chain fell to its claude link (claude CLI, sonnet, subscription): three scorings of these shots in one call, recorded exactly as returned, no re-roll. Builder claude-opus-5.5 is not the judge.",
+    "evaluator": "npx tsx scripts/taste-evaluate.ts place-type --builder claude-opus-5-5 --evaluator claude --url http://127.0.0.1:3311/cities/bend/types/single-family --shots <the 6 files below>. The grok CLI and the Cursor CLI are missing in this sandbox, so the judge is the chain's claude link (claude CLI, sonnet, subscription): three scorings of these shots in one call, recorded exactly as returned, no re-roll. The builder (the listing-dial integration lane, claude-opus-5-5) is not the judge.",
     "evaluatorModel": "claude-sonnet-5",
-    "builderModel": "claude-opus-5.5",
+    "builderModel": "claude-opus-5-5",
     "transport": "claude-cli",
     "shotSpec": {
       "routes": [
@@ -77,40 +77,43 @@
       ],
       "states": [
         "default",
+        "dial",
         "dial-open"
       ],
-      "capture": "node scripts/take-route-shots.mjs place-type http://127.0.0.1:3484/cities/bend/types/single-family --states 'dial-open=.place-type-film .v3-dial__step--next@.place-type-film!click'. First viewport, scale 1, palette-quantized, against this branch's own next build + next start."
+      "capture": "node scripts/take-route-shots.mjs place-type http://127.0.0.1:3311/cities/bend/types/single-family --states 'dial=.place-type-film .v3-dial,dial-open=.place-type-film .v3-dial__thumbs > :nth-child(2)@.place-type-film!click'. First viewport, scale 1, palette-quantized, against the listing-dial fix tree's own next build + next start (2026-09-30)."
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/place-type/shots/desktop.png",
-      "mobile375": "design_system/ryan-realty/ui_kits/place-type/shots/mobile375.png",
+      "dialDesktop": "design_system/ryan-realty/ui_kits/place-type/shots/dial-desktop.png",
+      "dialMobile375": "design_system/ryan-realty/ui_kits/place-type/shots/dial-mobile375.png",
       "dialOpenDesktop": "design_system/ryan-realty/ui_kits/place-type/shots/dial-open-desktop.png",
-      "dialOpenMobile375": "design_system/ryan-realty/ui_kits/place-type/shots/dial-open-mobile375.png"
+      "dialOpenMobile375": "design_system/ryan-realty/ui_kits/place-type/shots/dial-open-mobile375.png",
+      "mobile375": "design_system/ryan-realty/ui_kits/place-type/shots/mobile375.png"
     },
-    "shotsHash": "sha256:1fc3e744e56d17a9e5395b49bb05d65951621d6554976a32db2a57fe372c7712",
+    "shotsHash": "sha256:de25c383df4e80b47513fe3cbac68e7a809bcff3e7dcb596abe1f434b12c4ba7",
     "scores": [
+      62,
       64,
-      68,
-      63
+      66
     ],
     "score": 64,
     "criteria": {
-      "designQuality": 19,
-      "originality": 17,
-      "interaction": 10,
+      "designQuality": 20,
+      "originality": 14,
+      "interaction": 12,
       "craft": 10,
       "honestyFunction": 8
     },
     "perCriterion": {
-      "design": 19,
-      "originality": 17,
-      "interaction": 10,
+      "design": 20,
+      "originality": 14,
+      "interaction": 12,
       "craft": 10,
       "honesty": 8
     },
     "honestyFunction": 8,
     "demoMatch": false,
-    "beats": "Zillow's Bend, OR home-price page: this page wins on sourcing (named MLS + Oregon Data Share + a stamped pull time) and on tying median price directly to subdivision shape on the map instead of a generic price-heat overlay, but Zillow's grid still moves faster to compare many homes at once than this single-frame listing dial does.",
+    "beats": "Redfin/Zillow's Bend neighborhood pages, on linkage: dragging the price histogram, tapping a map cluster, and paging the listing filmstrip all move the same marker and the same detail card here, where a portal makes you bounce between a separate list view, a separate map view, and a separate detail page to do the equivalent work.",
     "adaptedFrom": [
       {
         "id": "house-listing-dial"
@@ -124,44 +127,33 @@
     ],
     "defects": [
       {
-        "section": "Atlas map price pills",
+        "section": "LISTINGS ON THE MAP cluster pills",
         "severity": "craft",
-        "finding": "one marker reads bare '$479k' with no 'median' prefix while all 17 others say 'median $XXXk' — the labeling pattern breaks on its own map, which reads as a data error rather than a design choice",
-        "primitive": "design_system/ryan-realty/ui_kits/place-type/index.tsx",
+        "finding": "every pill on the map reads 'N homes / $median' except one near the bottom-right cluster, which drops to a bare '$479k' with no count line, breaking the mark language the rest of the map teaches the reader in the first three seconds",
         "replaceWith": null
       },
       {
-        "section": "price range slider ('Up to any price')",
+        "section": "dial thumbnail filmstrip, mobile (dial-mobile375.png)",
         "severity": "taste",
-        "finding": "the track is filled solid to the far right end with no tick marks, min/max labels, or a visible price at the handle, so at rest it looks like a maxed-out progress bar rather than an interactive filter — nothing in the static frame promises a draggable range",
-        "primitive": "design_system/ryan-realty/ui_kits/place-type/index.tsx",
+        "finding": "the mobile dial view ends in a large blank cream field below the 3-visible-thumbnail filmstrip, dead space on the one viewport where scroll real estate is scarce, reading as an unfinished layout rather than a deliberate pause",
         "replaceWith": null
       },
       {
-        "section": "Atlas + V3ListingDial pairing",
-        "severity": "defect",
-        "finding": "the dial is showing 2244 Lolo Drive in NorthWest Crossing but the map behind it shows no ring, pin, or highlighted parcel for that home — the two data surfaces sit next to each other without visibly linking, so the map reads as decoration rather than as tracking the photo you're on",
-        "primitive": "design_system/ryan-realty/ui_kits/place-type/index.tsx",
-        "replaceWith": "house-atlas"
-      },
-      {
-        "section": "H1 + intro sentence",
+        "section": "BD/BA/SQFT/$SQFT spec row + NEAR THIS PRICE comps list",
         "severity": "taste",
-        "finding": "'Single-family in Bend' plus 'Nine in ten ask between $379,500 and $2,149,000' is correct and well-sourced but reads exactly like a template would generate for any city/type pair — nothing here is specific enough to Bend that you'd screenshot it",
-        "primitive": "design_system/ryan-realty/ui_kits/place-type/index.tsx",
+        "finding": "a bare number-over-label spec grid with no sentence telling the reader what it means (a KPI grid), sitting above a comps list that states price deltas but never says whether that gap buys more house, less land, or a worse street — this block is interchangeable with any national portal's listing card",
         "replaceWith": null
       }
     ],
-    "verdict": "This is a competent, honestly-sourced page, not a breathtaking one: the median-price map and the numbered listing dial are real, deliberate choices that beat a plain Zillow list, but the slider looks broken at rest, one map label breaks its own pattern, and the map never visibly tracks the home the dial is showing. demoMatch is false because nothing on this page is a catalog component standing in for a house form — it's house-atlas, house-quiet, and house-listing-dial doing their jobs adequately but without the polish or the linkage that would make a visitor stop scrolling.",
-    "comparedToPrior": "rebaselined",
+    "verdict": "demoMatch is false: nothing on this page reproduces a named catalog demo, cream-box or otherwise — the map, the claim line, and the listing dial are all house-built, which is correct per the retired-carousel note but means the catalog UX bar was never actually cleared here. What's on screen is a competent, on-brand, MLS-honest listings summary with a genuinely linked map/histogram/dial interaction chain, but the card, spec row, and comps list are stock portal furniture (the KPI-grid tell) that a buyer would not screenshot to show a friend. It beats a static portal page on linkage and loses to nothing named in the taste brief on originality of form.",
+    "comparedToPrior": "held",
     "priorMark": {
-      "evaluatedAt": "2026-09-15",
-      "score": 57,
-      "evaluatorModel": "grok-4.6",
+      "evaluatedAt": "2026-09-24",
+      "score": 64,
+      "evaluatorModel": "claude-sonnet-5",
       "rubricVersion": "v1-2026-09-12",
-      "shotsHash": "sha256:308ac8cb7c957fae51bc01dd4e980b8fd787956f7067441a7511b82d152cf334"
-    },
-    "rebaselineReason": "evaluatorModel grok-4.6 -> claude-sonnet-5; shotsHash (new captures of the listing dial, Matt 2026-09-24, SITE-195). The judge is a different instrument from the prior mark, so this is the first mark on the claude-sonnet-5 ruler for this class and the floor the next pass may not fall under."
+      "shotsHash": "sha256:1fc3e744e56d17a9e5395b49bb05d65951621d6554976a32db2a57fe372c7712"
+    }
   },
   "sectionOrder": [
     "V3SectionTracker",
