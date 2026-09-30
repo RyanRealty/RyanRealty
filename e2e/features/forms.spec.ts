@@ -30,9 +30,9 @@ function isLocalEnv(): boolean {
 }
 
 /**
- * /contact is a one-question V3Sheet. Inquiry is step 1 (defaulted), name
- * is step 2, email is step 3 (`#contact-email`). Never submit the last step
- * on production — that writes `crm_people`.
+ * /contact is one screen (V3Ask, app/contact/_v3/ContactAsk.client.tsx): name,
+ * email, phone, message, the text-consent box, then "Send message". Never submit
+ * it on production: that writes `crm_people`.
  */
 async function reachContactEmail(page: Page) {
   const res = await page.goto('/contact', { waitUntil: 'domcontentloaded', timeout: DATA_TIMEOUT })
@@ -42,15 +42,10 @@ async function reachContactEmail(page: Page) {
     timeout: 20_000,
   })
 
-  const continueBtn = page.getByRole('button', { name: /^continue$/i })
-  await expect(continueBtn).toBeVisible()
-  await continueBtn.click()
-
   const nameInput = page.locator('#contact-name')
   await expect(nameInput).toBeVisible({ timeout: 10_000 })
   await expect(nameInput).toHaveCount(1)
   await nameInput.fill(E2E_NAME)
-  await continueBtn.click()
 
   const emailInput = page.locator('#contact-email')
   await expect(emailInput).toBeVisible({ timeout: 10_000 })
@@ -74,9 +69,9 @@ test.describe('Contact form (/contact)', () => {
 
     const isValid = await emailInput.evaluate((el: HTMLInputElement) => el.checkValidity())
     expect(isValid, 'Invalid email should fail HTML5 email validation').toBe(false)
-
-    await page.getByRole('button', { name: /^continue$/i }).click()
-    await expect(page.locator('#contact-email-error')).toContainText(/does not look complete/i)
+    // The browser holds the form on the email's type, before any submit handler runs.
+    const typeMismatch = await emailInput.evaluate((el: HTMLInputElement) => el.validity.typeMismatch)
+    expect(typeMismatch, 'The browser should reject the address as not an email').toBe(true)
     await expect(page.locator('#contact-email')).toBeVisible()
   })
 
@@ -88,11 +83,11 @@ test.describe('Contact form (/contact)', () => {
     const isValid = await emailInput.evaluate((el: HTMLInputElement) => el.checkValidity())
     expect(isValid, 'Valid canary email should pass HTML5 validation').toBe(true)
 
-    const continueBtn = page.getByRole('button', { name: /^continue$/i })
-    await expect(continueBtn).toBeVisible()
-    await expect(continueBtn).toBeEnabled()
+    const sendBtn = page.getByRole('button', { name: /^send message$/i })
+    await expect(sendBtn).toBeVisible()
+    await expect(sendBtn).toBeEnabled()
 
-    // DO NOT advance to Send message / submit — that writes crm_people.
+    // DO NOT click Send message on production: that writes crm_people.
     if (!isLocalEnv()) return
   })
 })

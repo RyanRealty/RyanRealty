@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Locator, type Page } from '@playwright/test'
 
 /**
  * search-filters.spec.ts
@@ -21,6 +21,21 @@ import { test, expect } from '@playwright/test'
 const DATA_TIMEOUT = 90_000
 const SEARCH_URL = '/homes-for-sale/bend'
 
+/** Open the All filters sheet (components/search/AllFiltersSheet.tsx) and return it. */
+async function openAllFilters(page: Page): Promise<Locator> {
+  const open = page.getByRole('button', { name: /^all filters/i })
+  await expect(open).toBeVisible({ timeout: DATA_TIMEOUT })
+  await open.click()
+  const sheet = page.getByRole('dialog')
+  await expect(sheet).toBeVisible({ timeout: 10_000 })
+  return sheet
+}
+
+/** The sheet's apply button ("Show N homes" or "Apply filters"), beside Reset in its footer. */
+function applyButton(sheet: Locator): Locator {
+  return sheet.locator('[data-slot="sheet-footer"]').getByRole('button').filter({ hasNotText: /^reset$/i })
+}
+
 test.describe('Search filters', () => {
   test.setTimeout(DATA_TIMEOUT)
 
@@ -34,11 +49,10 @@ test.describe('Search filters', () => {
     await page.goto(SEARCH_URL, { waitUntil: 'domcontentloaded', timeout: DATA_TIMEOUT })
     await expect(page.locator('main').first()).toBeVisible({ timeout: DATA_TIMEOUT })
 
-    const priceButton = page.getByRole('button', { name: /^price/i })
-    await expect(priceButton).toBeVisible({ timeout: DATA_TIMEOUT })
-    await priceButton.click()
-
-    const maxPriceInput = page.locator('input[name="maxPrice"]')
+    // Price is typed in All filters: the bar's Price pill is sheet-only since
+    // SITE-110 (.srch-chip--sheet), and the dock carries the price slider.
+    const sheet = await openAllFilters(page)
+    const maxPriceInput = sheet.getByLabel('Price maximum')
     await expect(maxPriceInput).toBeVisible({ timeout: 10_000 })
     await maxPriceInput.fill('750000')
 
@@ -46,7 +60,7 @@ test.describe('Search filters', () => {
       page.waitForURL((url) => url.searchParams.get('maxPrice') === '750000', {
         timeout: DATA_TIMEOUT,
       }),
-      maxPriceInput.press('Enter'),
+      applyButton(sheet).click(),
     ])
 
     const bedsButton = page.getByRole('button', { name: /^beds/i })
@@ -80,12 +94,11 @@ test.describe('Search filters', () => {
     })
     await expect(page.locator('main').first()).toBeVisible({ timeout: DATA_TIMEOUT })
 
-    const priceButton = page.getByRole('button', { name: /^price/i })
-    await expect(priceButton).toBeVisible({ timeout: DATA_TIMEOUT })
-    await priceButton.click()
-    const maxPriceInput = page.locator('input[name="maxPrice"]')
+    const sheet = await openAllFilters(page)
+    const maxPriceInput = sheet.getByLabel('Price maximum')
     await expect(maxPriceInput).toBeVisible({ timeout: 10_000 })
     await expect(maxPriceInput).toHaveValue('1000000')
+    await page.keyboard.press('Escape')
 
     await page.goto(SEARCH_URL, { waitUntil: 'domcontentloaded', timeout: DATA_TIMEOUT })
     await expect(page.locator('main').first()).toBeVisible({ timeout: DATA_TIMEOUT })

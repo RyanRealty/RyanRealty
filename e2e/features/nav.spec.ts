@@ -24,9 +24,11 @@ test.describe('Navigation', () => {
     await page.goto('/', { waitUntil: 'domcontentloaded', timeout: DATA_TIMEOUT })
     await expect(page.locator('main').first()).toBeVisible()
 
-    // SiteHeader.tsx: <Link aria-label="Ryan Realty home">
-    const logoLink = page.getByRole('link', { name: /ryan realty home/i })
+    // The header carries the mark twice (desktop and phone layouts) and the footer
+    // once, all aria-label="Ryan Realty home": the one on screen is the header's.
+    const logoLink = page.locator('header a[aria-label="Ryan Realty home"]:visible').first()
     await expect(logoLink).toBeVisible({ timeout: 15_000 })
+    expect(await logoLink.getAttribute('href')).toBe('/')
 
     // Header nav links should exist
     const headerLinks = page.locator('header a[href]')
