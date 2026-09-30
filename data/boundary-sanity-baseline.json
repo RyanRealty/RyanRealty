@@ -1,29 +1,96 @@
 {
-  "note": "Communities allowed to exceed thresholdAcres in data/boundary-sanity.json — either an un-corrected oversized polygon awaiting authoritative-plat correction (see memory reference-oversized-community-boundaries) or a genuinely large rural community. Correct a boundary, refresh the snapshot, then remove its slug here. A NEW oversized boundary not listed fails ci:boundary-sanity.",
+  "note": "Two lists, checked by ci:boundary-sanity against data/boundary-sanity.json. `allowed`: polygons that are wrong or unchecked and await correction; the community pages read this list as their one trust rule (lib/communities/community-outline.ts), so an outline listed here is read by nothing on the page, not the map and not the homes list, and each entry says why in `evidence`. `verified`: polygons over thresholdAcres that are genuinely this large, each with the acres it was checked at, its source and the evidence; when the measured acres move more than 1% the polygon changed and the entry fails until it is checked again. Shrunk 2026-09-25 from 24 slugs (the 2026-06-14 oversized set) after the 2026-08-23 rebuilds from county plats: broken-top, crosswater, northwest-crossing, pronghorn, vandevert-ranch and widgi-creek now measure under the threshold, and every remaining community outline is an authoritative county line.",
   "allowed": [
-    "bend-awbrey-butte",
-    "bend-boyd-acres",
-    "bend-century-west",
-    "bend-larkspur",
-    "bend-mountain-view",
-    "bend-old-farm-district",
-    "bend-orchard-district",
-    "bend-river-west",
-    "bend-southeast-bend",
-    "bend-southern-crossing",
-    "bend-southwest-bend",
-    "bend-summit-west",
-    "black-butte-ranch",
-    "brasada-ranch",
-    "broken-top",
-    "caldera-springs",
-    "crosswater",
-    "eagle-crest",
-    "northwest-crossing",
-    "pronghorn",
-    "sunriver",
-    "three-rivers",
-    "vandevert-ranch",
-    "widgi-creek"
-  ]
+    "bend-boyd-acres"
+  ],
+  "evidence": {
+    "bend-boyd-acres": "City of Bend GIS Neighborhood Districts OBJECTID=8 measures 3,007 acres on the spheroid, but the layer's own Acres attribute says 2,390.29: a 25.8% gap no other district shows (the rest sit within 8%). Unexplained, so not verified. A Bend district, not a community outline: no community page reads it."
+  },
+  "verified": {
+    "sunriver": {
+      "acres": 3744,
+      "source": "Deschutes County GIS Unincorporated Communities (COMMUNITY=SUNRIVER); minus Crosswater plat sliver (20260823240000)",
+      "evidence": "The county's own community line around the resort, not a listing hull. Registry verification 2026-08-26: all 30 Sunriver MLS sub-area names sit 89.7% to 100% inside it."
+    },
+    "three-rivers": {
+      "acres": 2520,
+      "source": "Deschutes County GIS Subdivisions (ST_Union of Deschutes River Recreation Homesites plats) (20260823240000)",
+      "evidence": "Recorded plats, and smaller than the 4,819-acre Three Rivers census-designated place, not larger: it under-draws the community (8 of the 11 registry aliases sit outside it, registry verification 2026-08-26). Correct as far as it goes; widening it to the CDP is a separate open item."
+    },
+    "eagle-crest": {
+      "acres": 1643,
+      "source": "Deschutes County GIS Subdivisions (ST_Union of Eagle Crest plats, including Ridge at Eagle Crest) (20260823210000)",
+      "evidence": "The union of the recorded Eagle Crest plats, the Ridge at Eagle Crest phases included. Registry verification 2026-08-26: Ridge At Eagle Crest 201 of 201 listings inside."
+    },
+    "black-butte-ranch": {
+      "acres": 1189,
+      "source": "Deschutes County GIS Subdivisions (ST_Union of Black Butte Ranch plats) (20260823210000), plus the Country House condominium's assessor parcels 140909AA9xxxx (20260925033420)",
+      "evidence": "The union of the ranch's recorded homesite sections; the containment list is 54 plats, every one named '... Of Black Butte Ranch' (registry verification 2026-08-26). Plus the Country House condominium, 4.51 acres, on the registry's MLS City evidence (Matt 2026-09-25: condo tracts join the outline)."
+    },
+    "caldera-springs": {
+      "acres": 1019,
+      "source": "Deschutes County GIS Subdivisions (ST_Union of Caldera Springs plats) (20260823210000)",
+      "evidence": "The union of the recorded plats labelled Caldera Springs; the label union and the stored row agree to 0.0 acres (community outline audit 2026-09-25)."
+    },
+    "brasada-ranch": {
+      "acres": 888,
+      "source": "Crook County GIS Subdivisions (name=BRASADA RANCH) (20260823240000)",
+      "evidence": "The recorded Brasada Ranch subdivision, Crook County GIS LandGroup/7 OBJECTID 186, the same geometry SITE-58 ingested as the subdivision row."
+    },
+    "bend-awbrey-butte": {
+      "acres": 2297,
+      "source": "City of Bend GIS Neighborhood Districts (OBJECTID=10, NAME=Awbrey Butte)",
+      "evidence": "The city's own district line; the layer's Acres attribute says 2,273.27 (+1.0% measured on the spheroid). A Bend district, not a community outline."
+    },
+    "bend-old-farm-district": {
+      "acres": 2103,
+      "source": "City of Bend GIS Neighborhood Districts (OBJECTID=2, NAME=Old Farm District)",
+      "evidence": "The city's own district line; the layer's Acres attribute says 2,064.48 (+1.9% measured on the spheroid). A Bend district, not a community outline."
+    },
+    "bend-larkspur": {
+      "acres": 1967,
+      "source": "City of Bend GIS Neighborhood Districts (OBJECTID=3, NAME=Larkspur)",
+      "evidence": "The city's own district line; the layer's Acres attribute says 1,916.66 (+2.6% measured on the spheroid). A Bend district, not a community outline."
+    },
+    "bend-mountain-view": {
+      "acres": 1847,
+      "source": "City of Bend GIS Neighborhood Districts (OBJECTID=5, NAME=Mountain View)",
+      "evidence": "The city's own district line; the layer's Acres attribute says 1,825.43 (+1.2% measured on the spheroid). A Bend district, not a community outline."
+    },
+    "bend-summit-west": {
+      "acres": 1671,
+      "source": "City of Bend GIS Neighborhood Districts (OBJECTID=12, NAME=Summit West)",
+      "evidence": "The city's own district line; the layer's Acres attribute says 1,553.06 (+7.6% measured on the spheroid). A Bend district, not a community outline."
+    },
+    "bend-southwest-bend": {
+      "acres": 1603,
+      "source": "City of Bend GIS Neighborhood Districts (OBJECTID=6, NAME=Southwest Bend)",
+      "evidence": "The city's own district line; the layer's Acres attribute says 1,589.67 (+0.8% measured on the spheroid). A Bend district, not a community outline."
+    },
+    "bend-century-west": {
+      "acres": 1560,
+      "source": "City of Bend GIS Neighborhood Districts (OBJECTID=11, NAME=Century West)",
+      "evidence": "The city's own district line; the layer's Acres attribute says 1,544.22 (+1.0% measured on the spheroid). A Bend district, not a community outline."
+    },
+    "bend-river-west": {
+      "acres": 1522,
+      "source": "City of Bend GIS Neighborhood Districts (OBJECTID=13, NAME=River West)",
+      "evidence": "The city's own district line; the layer's Acres attribute says 1,459.11 (+4.3% measured on the spheroid). A Bend district, not a community outline."
+    },
+    "bend-orchard-district": {
+      "acres": 1433,
+      "source": "City of Bend GIS Neighborhood Districts (OBJECTID=4, NAME=Orchard District)",
+      "evidence": "The city's own district line; the layer's Acres attribute says 1,358.35 (+5.5% measured on the spheroid). A Bend district, not a community outline."
+    },
+    "bend-southeast-bend": {
+      "acres": 1318,
+      "source": "City of Bend GIS Neighborhood Districts (OBJECTID=1, NAME=Southeast Bend), ST_MakeValid 2026-08-23",
+      "evidence": "The city's own district line, made valid on 2026-08-23 at the same acreage; the layer's Acres attribute says 1,285.82 (+2.5% measured on the spheroid). A Bend district, not a community outline."
+    },
+    "bend-southern-crossing": {
+      "acres": 926,
+      "source": "City of Bend GIS Neighborhood Districts (OBJECTID=9, NAME=Southern Crossing)",
+      "evidence": "The city's own district line; the layer's Acres attribute says 882.87 (+4.9% measured on the spheroid). A Bend district, not a community outline."
+    }
+  }
 }

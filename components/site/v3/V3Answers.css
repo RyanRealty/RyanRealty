@@ -117,7 +117,9 @@
 }
 
 .v3.v3-answers .v3-answers__item[id] {
-  scroll-margin-top: calc(var(--v3-space-3xl) + var(--v3-tap));
+  /* Over the page's scroll padding (chrome + md, V3Chrome.css): the row
+     still lands 3xl + tap under the top, where it always has. */
+  scroll-margin-top: calc(var(--v3-space-3xl) + var(--v3-tap) - var(--v3-chrome-h) - var(--v3-space-md));
 }
 
 /* THE REFERENCE ROW. A question this section answers in prose because there is

@@ -125,7 +125,50 @@
   max-width: min(18rem, 52vw);
 }
 
+/* ONE LINE, CUT WITH AN ELLIPSIS, ANCESTOR FIRST (second taste evaluator,
+   2026-09-29). At 320 the trail's first crumb broke onto two lines and the
+   current one was sliced mid-letter by the list's clip ("Monthly repor",
+   "August 202"): its ellipsis never drew, because an inline-flex box is not a
+   block container and text-overflow only ends a block's line. Every crumb of
+   a surface trail is now a one-line block that ends in an ellipsis when it
+   has to. An ancestor gives up the width; the current page gives up none (a
+   shrink factor would still take a fraction of a pixel from it, and a
+   fraction is enough to draw the ellipsis), and only its own cap above
+   (18rem, or 52vw on a phone) shortens a long page name. The line box is the
+   tap height, so the text still sits in the middle of its 44px. The overlay
+   trails keep their own rules below. */
+/* Nothing in the list overflows it any more (the crumbs give up width
+   themselves), so the list stops clipping: the clip cut the focus ring of every
+   crumb down to its right edge, since a 44px crumb in a 44px list has its
+   ring's top, bottom and left outside the list (WCAG 2.4.7, 2026-09-29). */
+.v3.v3-breadcrumb:not(.v3-breadcrumb--overlay) .v3-breadcrumb__list {
+  overflow: visible;
+}
+
+.v3.v3-breadcrumb:not(.v3-breadcrumb--overlay) .v3-breadcrumb__item {
+  flex: 0 1 auto;
+}
+
+.v3.v3-breadcrumb:not(.v3-breadcrumb--overlay) .v3-breadcrumb__item--more,
+.v3.v3-breadcrumb:not(.v3-breadcrumb--overlay) .v3-breadcrumb__item:last-child {
+  flex: 0 0 auto;
+}
+
+.v3.v3-breadcrumb:not(.v3-breadcrumb--overlay) .v3-breadcrumb__link,
+.v3.v3-breadcrumb:not(.v3-breadcrumb--overlay) .v3-breadcrumb__text {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: var(--v3-tap);
+}
+
 .v3.v3-breadcrumb .v3-breadcrumb__collapse {
+  /* The ellipsis is one glyph; without a width floor the control measured
+     31px wide against the 44px tap target (any trail of three or more). */
+  min-inline-size: var(--v3-tap);
+  justify-content: center;
   margin: 0;
   padding: 0 var(--v3-space-2xs);
   border: 0;
@@ -204,6 +247,11 @@
   text-overflow: unset;
 }
 
+/* One clean ellipsis, on the address only (Matt 2026-09-25). With every rung
+   at flex 1 auto the overflow was shared out by width, so a phone read
+   "Be… / Southern Crossi… / Coult… / 61390 Merriewood Co…". Now the last rung
+   grows from zero into whatever the ancestors leave and ellipsizes there; the
+   ancestors give way only once it is down to 8ch, and the city never does. */
 @media (max-width: 39.99rem) {
   /* SITE-137: listing-detail overflow-x:clip still chops overflow:visible
      "Avenue" to "Av". Keep the painted place path; last rung uses remaining
@@ -230,8 +278,12 @@
     overflow: hidden;
   }
 
+  .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__item:first-child:not(:last-child) {
+    flex: none;
+  }
+
   .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__item:last-child {
-    flex: 1 1 auto;
+    flex: 1 1 0%;
     min-width: 8ch;
     overflow: hidden;
   }
@@ -279,4 +331,15 @@
   position: absolute;
   inset-block: calc((var(--v3-tap) - 1.75rem) / -2);
   inset-inline: 0;
+}
+
+/* Phone overlay-compact rungs are blocks (so the address can ellipsize), and
+   a block puts its one line at the top of the 1.75rem row while the slash
+   between rungs is centred in it: the slashes hung below the words (listing
+   phone crumb, 2026-09-25). A 1.75rem line box centres the words too. */
+@media (max-width: 39.99rem) {
+  .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__link,
+  .v3.v3-breadcrumb--overlay-compact .v3-breadcrumb__text {
+    line-height: 1.75rem;
+  }
 }

@@ -186,10 +186,16 @@ describe('the band is mounted on the homepage, under the hero search', () => {
 
   // The band carries an id and the chrome is sticky, so it is a scroll target
   // that must reserve the header. Without this the claim's ascenders are sliced
-  // at 375 and "More" reads as "Wore" (2026-09-08 evaluator).
+  // at 375 and "More" reads as "Wore" (2026-09-08 evaluator). The page's scroll
+  // padding reserves it for every target (V3Chrome.css); the band adds no
+  // margin of its own, or it would land twice as far down.
   it('reserves the sticky chrome when the band is the scroll target', () => {
-    const css = readFileSync(resolve('components/site/v3/V3Pulse.css'), 'utf8')
-    expect(css).toContain('scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md))')
+    const chrome = readFileSync(resolve('components/site/v3/V3Chrome.css'), 'utf8')
+    expect(chrome).toMatch(
+      /html:has\(> body > \.v3-chrome\)\s*\{\s*scroll-padding-top:\s*calc\(var\(--v3-chrome-h\) \+ var\(--v3-space-md\)\);/,
+    )
+    const css = readFileSync(resolve('components/site/v3/V3Pulse.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
+    expect(css).not.toContain('scroll-margin-top')
   })
 
   // The move, stated as a test: the count lives on the page now, not in a menu.

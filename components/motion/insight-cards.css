@@ -80,6 +80,17 @@
   overflow: visible;
 }
 
+/* The compare card draws its own legend (.insight-cards__legend). Liveline
+   still paints a series-toggle button per line whenever it gets more than one
+   series, and our series carry label: '' so those buttons have no accessible
+   name (pa11y on /zip/97703, 2026-09-30; intermittent because the row fades
+   in over 0.4 s). The toggles duplicate the legend, so they leave the page and
+   the accessibility tree. This stage mounts no other Liveline button: no
+   windows, no mode switch. */
+.insight-chart-stage[data-series-legend='card'] button {
+  display: none;
+}
+
 .insight-tooltip {
   position: absolute;
   top: 0.35rem;
@@ -241,7 +252,6 @@ a.insight-cards__pill:focus-visible {
   padding: 0 0 clamp(2rem, 4vw, 2.75rem);
   background: var(--v3-surface);
   color: var(--v3-ink);
-  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
 }
 
 .invest-insight__inner {

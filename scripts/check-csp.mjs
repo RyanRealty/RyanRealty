@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * G38 — Content-Security-Policy beacon-domain gate.
+ * G38 — Content-Security-Policy tracking-domain gate.
  *
- * The site runs on paid ads. The measurement beacons (Google Analytics 4,
+ * The site runs on paid ads. The measurement pings (Google Analytics 4,
  * Google Ads conversions, Meta Pixel) are loaded/connected from specific hosts.
  * If the CSP `connect-src` / `script-src` in next.config.ts drops one of them,
- * the beacon is silently blocked and tracking dies with ZERO runtime error —
+ * the request is silently blocked and tracking dies with ZERO runtime error —
  * exactly the bug that killed GA4 (www.google.com/g/collect blocked) and the
  * Meta Pixel (connect.facebook.net blocked). This gate hard-fails if any
  * required host is missing, so a future CSP edit can't re-break attribution.
@@ -38,7 +38,7 @@ const REQUIRED = {
     'https://*.google-analytics.com',
     'https://www.google-analytics.com',
     'https://*.analytics.google.com',
-    // GA4 Signals / cross-device beacons to the APEX host — the wildcard above
+    // GA4 Signals / cross-device requests to the APEX host — the wildcard above
     // does NOT match the bare domain, so /g/collect to it was CSP-blocked.
     'https://analytics.google.com',
     'https://www.google.com',
@@ -81,9 +81,9 @@ for (const [directive, hosts] of Object.entries(REQUIRED)) {
 }
 
 if (missing.length) {
-  console.error('CSP gate FAILED — required analytics/ads beacon hosts missing (tracking will silently break):')
+  console.error('CSP gate FAILED — required analytics/ads tracking hosts missing (tracking will silently break):')
   for (const m of missing) console.error('  - ' + m)
   console.error('\nFix: add the host(s) to the CSP value in next.config.ts.')
   process.exit(1)
 }
-console.log(`CSP gate passed (all ${Object.values(REQUIRED).flat().length} required GA4/ads/Meta beacon hosts present).`)
+console.log(`CSP gate passed (all ${Object.values(REQUIRED).flat().length} required GA4/ads/Meta tracking hosts present).`)

@@ -3,15 +3,15 @@
  * check-no-visits-reads.mjs — ci:no-visits-reads (W1.5).
  *
  * The legacy `visits` table is RETIRED for reads. It now only takes a stray
- * legacy WordPress-beacon trickle (via an old anon INSERT policy); all real
+ * legacy WordPress tracking-pixel trickle (via an old anon INSERT policy); all real
  * traffic writes to `visitor_sessions` + `visitor_events`. Four analytics
  * readers (the admin dashboard, traffic-sources + lead-flow reports, and the
  * partnership-revenue action) were reading `visits` and silently showing that
  * stale trickle. They are repointed to the live tables; this gate keeps it that
  * way — any new `.from('visits')` read fails the build. Reads must go to
  * visitor_sessions (session + attribution + identity) or visitor_events
- * (per-page-view path). The table itself is left in place (the beacon still
- * inserts, and dropping it is a separate migration decision).
+ * (per-page-view path). The table itself is left in place (the WordPress
+ * tracking pixel still inserts, and dropping it is a separate migration decision).
  *
  * Usage: node scripts/check-no-visits-reads.mjs
  */
@@ -50,7 +50,7 @@ console.log('===================================================')
 console.log(`files scanned: ${files.length}`)
 if (hits.length) {
   console.error(`\n\x1b[31m✗ ci:no-visits-reads: ${hits.length} read(s) from the retired \`visits\` table\x1b[0m`)
-  for (const h of hits) console.error(`  ✗ ${h} — read visitor_sessions / visitor_events instead (visits carries only a stale legacy beacon trickle).`)
+  for (const h of hits) console.error(`  ✗ ${h} — read visitor_sessions / visitor_events instead (visits carries only a stale legacy tracking-pixel trickle).`)
   process.exit(1)
 }
 console.log('✓ No reads from the retired `visits` table; analytics read the live visitor_sessions / visitor_events.')

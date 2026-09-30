@@ -24,6 +24,7 @@ import { parsePositiveInt, parsePositiveNumber } from '@/lib/cma/client-link'
 import type { CmaActionRow } from '@/lib/data'
 import { buildCma } from '@/lib/cma/build'
 import { runWithGrokTransportAsync } from '@/lib/grok/transport'
+import { cmaBuildGrokTransport } from '@/lib/cma/build-transport'
 import { autoSendBuiltCma } from '@/lib/cma/auto-send'
 import { slugifyAddress } from '@/lib/cma-request'
 
@@ -134,11 +135,11 @@ async function processOne(action: CmaActionRow): Promise<{ slug: string; status:
       ? (payload['home_details'] as Record<string, unknown>)
       : null
   const linkedPersonId = num(payload['crm_person_id']) ?? notifyEntries(payload)[0]?.personId ?? null
-  // CHOICE (Matt 2026-09-15): expired Auto-CMA judge/audit rides Cursor
-  // subscription (cursor-agent; XAI_API_KEY stripped) — same pattern as Tip Ready
-  // taste receipts. Manual /admin/cmas rebuilds keep default xAI transport so
-  // broker rebuilds still work when Cursor CLI is absent on the host. Shared
-  // generateGrokStructured path; transport is ALS-scoped per build.
+  // Which bill pays for the judge and audit: lib/cma/build-transport.ts.
+  // Expired Auto-CMA prefers the Cursor subscription and falls back to the xAI
+  // key when cursor-agent is not on the host (Vercel has none; Matt
+  // 2026-09-29). Manual /admin/cmas rebuilds keep default xAI transport.
+  // Transport is ALS-scoped per build.
   const requestSource =
     str((action.data_evidence ?? {})['request_source'] as string | undefined) ?? 'brain-queue'
   const buildArgs = {
@@ -174,10 +175,10 @@ async function processOne(action: CmaActionRow): Promise<{ slug: string; status:
     docType: (str(payload['doc_type']) === 'expired-audit' ? 'expired-audit' : 'cma') as 'expired-audit' | 'cma',
     requestSource,
   }
-  const result =
-    requestSource === 'expired-listing-cron'
-      ? await runWithGrokTransportAsync('cursor', () => buildCma(buildArgs))
-      : await buildCma(buildArgs)
+  const transport = cmaBuildGrokTransport(requestSource)
+  const result = transport
+    ? await runWithGrokTransportAsync(transport, () => buildCma(buildArgs))
+    : await buildCma(buildArgs)
 
   if (result.ok) {
     // Per-lane Auto-send (Matt 2026-09-07). The switch lives in

@@ -322,7 +322,6 @@
   line-height: var(--v3-leading-heading);
   border-top: var(--v3-rule-hairline);
   padding-top: var(--v3-space-md);
-  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
 }
 
 /* Layered on purpose (ci:css-layers): an un-layered element color rule beats

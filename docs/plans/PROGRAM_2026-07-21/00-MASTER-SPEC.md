@@ -78,7 +78,7 @@ These ship wrong output today. Several are license-adjacent. All are small.
 
 | # | Domain | The defect | Owner |
 |---|---|---|---|
-| D7 | Market reports | `get_beacon_price_bands` buckets **closed sales by list price** in admin reports and CSV exports. A §0 violation on a public surface. The sibling function was fixed 2026-06-26; this one was missed. | Growth |
+| D7 | Market reports | `report_price_bands_core` buckets **closed sales by list price** in admin reports and CSV exports. A §0 violation on a public surface. The sibling function was fixed 2026-06-26; this one was missed. | Growth |
 | D17 | Broker toolkit | CRM scoping **fails open**. `if (scopeToSelf && crmSlug)` — an unmapped broker email yields `crmSlug = null`, the filter never applies, and the query returns every broker's clients and tasks. The seeded role emails do not match the hardcoded map keys, which is the exact trigger. | Nurture |
 | D3 | Geo pages | The sitemap emits `/cities/{city}/{sub}`, which does not resolve, while the working route `/communities/{city}-{sub}` is never emitted. Thousands of URLs point at hollow 200s. | Growth |
 | D14 | Sharing | Three nav surfaces labeled "Sold homes" render active inventory. | Growth |

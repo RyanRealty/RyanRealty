@@ -14,7 +14,7 @@
  * of a chart); this is the interrogation.
  */
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { InsightPager } from '@/components/motion/insight-pager'
 import { cn } from '@/lib/utils'
 
@@ -319,7 +319,10 @@ export function V3ChartHover({
               flip && 'v3-chart__tip--flip',
               rest != null && active === rest && 'v3-chart__tip--resting',
             )}
-            style={{ left: pos }}
+            // The point's x as a property, not an inline left: the desktop card
+            // reads it, and the readout band (every phone, reading="band") pins
+            // the reading to the plot's left edge without an !important.
+            style={{ '--v3-chart-tip-x': pos } as CSSProperties}
             aria-hidden="true"
           >
             <p className="v3-chart__tip-tick">{col.tick}</p>

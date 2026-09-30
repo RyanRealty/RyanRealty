@@ -6,7 +6,10 @@
  * app/actions/market-reports.ts.
  *
  * No-poison: throws on Supabase error so makeResilientCached never caches
- * null/[] caused by a transient DB outage.
+ * null/[] caused by a transient DB outage. getMarketReportBySlug also THROWS
+ * when the read fails twice: returning null made the page call notFound() and
+ * ISR kept that 404 for its revalidate window (lib/data/blog/getBlogPostBySlug.ts
+ * has the same rule and the CI run that found it).
  */
 
 import { supabaseAnon } from '@/lib/data/client'
@@ -66,12 +69,22 @@ async function _getMarketReportBySlugUncached(slug: string): Promise<MarketRepor
 
 // v2 key: the data cache survives deploys, so without the bump the unscoped
 // bodies stay served for a full revalidate window after the fix ships.
-export const getMarketReportBySlug = makeResilientCached(
+/** What the resilient wrapper hands back when the read failed twice. Never cached. */
+const READ_FAILED: unique symbol = Symbol('market-report-read-failed')
+
+const getMarketReportBySlugCached = makeResilientCached<[string], MarketReportRow | null | typeof READ_FAILED>(
   _getMarketReportBySlugUncached,
   ['market-report-by-slug-v2'],
   { revalidate: CACHE_WINDOWS.marketReport, tags: [cacheTag.market] },
-  null,
+  READ_FAILED,
 )
+
+/** The report, or null when no report has this slug. Throws when the read failed. */
+export async function getMarketReportBySlug(slug: string): Promise<MarketReportRow | null> {
+  const report = await getMarketReportBySlugCached(slug)
+  if (report === READ_FAILED) throw new Error(`[getMarketReportBySlug] ${slug}: read failed twice; not a missing report`)
+  return report
+}
 
 async function _listMarketReportsUncached(limit: number): Promise<MarketReportListItem[]> {
   const sb = supabaseAnon()

@@ -1,9 +1,9 @@
 -- Report filters: property type (include condo/town, manufactured, acreage) and optional price range.
 -- App can now build reports for any location, any date range, and any sales data in the database.
 
-DROP FUNCTION IF EXISTS get_beacon_metrics(text, date, date, date, text);
+DROP FUNCTION IF EXISTS report_period_metrics_core(text, date, date, date, text);
 
-CREATE OR REPLACE FUNCTION get_beacon_metrics(
+CREATE OR REPLACE FUNCTION report_period_metrics_core(
   p_city text,
   p_period_start date,
   p_period_end date,
@@ -207,17 +207,17 @@ STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$
-  SELECT get_beacon_metrics(
+  SELECT report_period_metrics_core(
     p_city, p_period_start, p_period_end, p_as_of, p_subdivision,
     p_include_condo_town, p_include_manufactured, p_include_acreage,
     p_min_price, p_max_price
   );
 $$;
 
--- get_beacon_price_bands: add same optional params (drop existing 5-arg).
-DROP FUNCTION IF EXISTS get_beacon_price_bands(text, date, date, boolean, text);
+-- report_price_bands_core: add same optional params (drop existing 5-arg).
+DROP FUNCTION IF EXISTS report_price_bands_core(text, date, date, boolean, text);
 
-CREATE OR REPLACE FUNCTION get_beacon_price_bands(
+CREATE OR REPLACE FUNCTION report_price_bands_core(
   p_city text,
   p_period_start date,
   p_period_end date,
@@ -386,7 +386,7 @@ STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$
-  SELECT get_beacon_price_bands(
+  SELECT report_price_bands_core(
     p_city, p_period_start, p_period_end, p_sales_12mo, p_subdivision,
     p_include_condo_town, p_include_manufactured, p_include_acreage,
     p_min_price, p_max_price

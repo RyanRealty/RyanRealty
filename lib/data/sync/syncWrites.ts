@@ -12,6 +12,7 @@
 
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
+import type { HeldMedia } from '@/lib/sync/frozenMedia'
 
 export {
   selectNewExpiredListings,
@@ -32,6 +33,12 @@ export type ExistingListingRow = {
   StandardStatus: string | null
   ListPrice: number | null
   is_finalized: boolean | null
+  City: string | null
+  CloseDate: string | null
+  ClosePrice: number | null
+  property_sub_type: string | null
+  TotalLivingAreaSqFt: number | null
+  media_finalized: boolean | null
 }
 
 export type SyncState = {
@@ -82,11 +89,111 @@ export async function getExistingListingsByListNumbers(
 ): Promise<ExistingListingRow[]> {
   const sb = client()
   if (!sb || listNumbers.length === 0) return []
-  const { data } = await sb
-    .from('listings')
-    .select('ListNumber, ListingKey, StandardStatus, ListPrice, is_finalized')
-    .in('ListNumber', listNumbers.slice(0, 5000))
-  return (data ?? []) as ExistingListingRow[]
+  const unique = [...new Set(listNumbers)]
+  const out: ExistingListingRow[] = []
+  // Chunks of 500, under the API's 1,000-row response cap: a truncated read
+  // would look like "no existing row" for everything past the cap.
+  for (let i = 0; i < unique.length; i += 500) {
+    const { data, error } = await sb
+      .from('listings')
+      .select(
+        'ListNumber, ListingKey, StandardStatus, ListPrice, is_finalized, City, CloseDate, ClosePrice, property_sub_type, TotalLivingAreaSqFt, media_finalized',
+      )
+      .in('ListNumber', unique.slice(i, i + 500))
+    // A failed read must stop the tick (the cursor holds and the window retries),
+    // never read as "no existing rows": that would treat every listing as new,
+    // skip the finalized guard and emit a new_listing event for each.
+    if (error) throw new Error(`[getExistingListingsByListNumbers] ${error.message}`)
+    out.push(...((data ?? []) as ExistingListingRow[]))
+  }
+  return out
+}
+
+/**
+ * Set the freeze flags on listings by ListNumber with a plain UPDATE.
+ *
+ * Never through upsertListingRows: that merges broker admin_overrides, which
+ * adds details, ListPrice and StandardStatus to an overridden row, and a
+ * batched upsert writes NULL for every column a sibling row lacks. A flag-only
+ * batch with one overridden listing in it would blank those three columns on
+ * every other listing in the batch.
+ */
+export async function setListingFreezeFlags(
+  listNumbers: string[],
+  flags: { is_finalized: boolean; history_finalized: boolean; history_verified_full?: boolean },
+): Promise<{ ok: boolean; updated: number; error?: string }> {
+  const sb = client()
+  if (!sb) return { ok: false, updated: 0, error: 'Supabase not configured' }
+  const unique = [...new Set(listNumbers.filter(Boolean))]
+  let updated = 0
+  for (let i = 0; i < unique.length; i += 200) {
+    const chunk = unique.slice(i, i + 200)
+    const { error } = await sb.from('listings').update(flags).in('ListNumber', chunk)
+    if (error) return { ok: false, updated, error: error.message }
+    updated += chunk.length
+  }
+  return { ok: true, updated }
+}
+
+/** Which facts a broker has overridden on these listings (read only for the handful a sync reopens). */
+export async function getAdminOverrideFlags(
+  listNumbers: string[],
+): Promise<Map<string, { status: boolean; listPrice: boolean }>> {
+  const out = new Map<string, { status: boolean; listPrice: boolean }>()
+  const sb = client()
+  const unique = [...new Set(listNumbers.filter(Boolean))]
+  if (!sb || unique.length === 0) return out
+  for (let i = 0; i < unique.length; i += 50) {
+    const { data, error } = await sb
+      .from('listings')
+      .select('ListNumber, overrides:details->admin_overrides')
+      .in('ListNumber', unique.slice(i, i + 50))
+    if (error) throw new Error(`[getAdminOverrideFlags] ${error.message}`)
+    for (const r of (data ?? []) as { ListNumber: string; overrides: Record<string, unknown> | null }[]) {
+      const o = r.overrides
+      if (!o || typeof o !== 'object') continue
+      out.set(String(r.ListNumber), { status: o.standard_status_set === true, listPrice: o.list_price_set === true })
+    }
+  }
+  return out
+}
+
+/**
+ * The media we hold for frozen rows, by ListNumber: the primary photo, the
+ * tour flag, the open houses, and the media collections inside details. Read
+ * only for the handful of finalized rows a sync reopens, so a rewrite never
+ * shrinks a sold listing's gallery (lib/sync/frozenMedia.ts).
+ */
+export async function getHeldMediaByListNumbers(listNumbers: string[]): Promise<Map<string, HeldMedia>> {
+  const out = new Map<string, HeldMedia>()
+  const sb = client()
+  const unique = [...new Set(listNumbers.filter(Boolean))]
+  if (!sb || unique.length === 0) return out
+  for (let i = 0; i < unique.length; i += 50) {
+    const { data, error } = await sb
+      .from('listings')
+      .select(
+        'ListNumber, PhotoURL, has_virtual_tour, OpenHouses, Photos:details->Photos, FloorPlans:details->FloorPlans, Videos:details->Videos, VirtualTours:details->VirtualTours, Documents:details->Documents, DetailOpenHouses:details->OpenHouses',
+      )
+      .in('ListNumber', unique.slice(i, i + 50))
+    if (error) throw new Error(`[getHeldMediaByListNumbers] ${error.message}`)
+    for (const r of (data ?? []) as Record<string, unknown>[]) {
+      out.set(String(r.ListNumber), {
+        PhotoURL: typeof r.PhotoURL === 'string' ? r.PhotoURL : null,
+        has_virtual_tour: typeof r.has_virtual_tour === 'boolean' ? r.has_virtual_tour : null,
+        OpenHouses: r.OpenHouses ?? null,
+        details: {
+          Photos: r.Photos,
+          FloorPlans: r.FloorPlans,
+          Videos: r.Videos,
+          VirtualTours: r.VirtualTours,
+          Documents: r.Documents,
+          OpenHouses: r.DetailOpenHouses,
+        },
+      })
+    }
+  }
+  return out
 }
 
 /** Replace listing_history rows for a key: delete-all-then-insert. */

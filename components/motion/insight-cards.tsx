@@ -335,6 +335,7 @@ export function CompareCard({
       )}
       <div
         className="insight-chart-stage"
+        data-series-legend="card"
         onPointerDown={(event) => {
           setHoverIndex(chartIndexFromPointer(event, pointCount))
           onScrubProgress?.(chartProgressFromPointer(event))

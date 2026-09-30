@@ -43,6 +43,7 @@ function executeResult(over: Partial<ExecuteRunResult> = {}): ExecuteRunResult {
     historyRowsInserted: 0,
     photosFixed: 0,
     skippedFinalized: 0,
+    reopenedFinalized: 0,
     expired: null,
     ...over,
   }

@@ -29,6 +29,7 @@ import {
 } from '@/lib/seo/getSearchMatrixEntries'
 import { getOutOfAreaCitySitemapEntries } from '@/lib/data/geo/getOutOfAreaCities'
 import { getListingSitemapRows } from '@/lib/data/sitemap/getListingSitemapRows'
+import { listPublishedEditions, type EditionListItem } from '@/lib/data/market-report/editions'
 import { CO_EVENTS } from '@/data/co-events'
 import { CO_VENUES } from '@/data/co-venues'
 import { GOLF_COURSES } from '@/data/golf/courses'
@@ -654,6 +655,33 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
         changeFrequency: 'weekly',
         priority: 0.6,
       })
+    }
+
+    // Monthly market report: the archive and every published edition. Read
+    // through the DAL (published rows only), so a draft or held month is never
+    // submitted, and the archive is listed only once it has an edition (it is
+    // noindex while empty).
+    const editions = await leg(
+      'market-report-editions',
+      listPublishedEditions(),
+      [] as EditionListItem[],
+    )
+    if (editions.length > 0) {
+      const newest = editions[0]?.published_at
+      dynamicPages.push({
+        url: `${baseUrl}/housing-market/reports/monthly`,
+        lastModified: newest ? new Date(newest) : now,
+        changeFrequency: 'monthly',
+        priority: 0.7,
+      })
+      for (const e of editions) {
+        dynamicPages.push({
+          url: `${baseUrl}/housing-market/reports/monthly/${e.edition_month.slice(0, 7)}`,
+          lastModified: e.published_at ? new Date(e.published_at) : now,
+          changeFrequency: 'yearly',
+          priority: 0.5,
+        })
+      }
     }
   } catch (e) {
     console.error('[sitemap] Error generating dynamic pages:', e)

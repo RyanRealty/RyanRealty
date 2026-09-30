@@ -28,6 +28,11 @@ beforeAll(() => {
   process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co'
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'anon-test-key'
 })
+// The actions module is heavy: its first import can pass 5 s when the whole suite
+// shares the machine, which timed out the first case. Load it once, up front.
+beforeAll(async () => {
+  await import('./listings')
+}, 60_000)
 afterAll(() => {
   process.env.NEXT_PUBLIC_SUPABASE_URL = env.url
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = env.key

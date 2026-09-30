@@ -1,0 +1,214 @@
+/* ===========================================================================
+   The archive's first screen (ArchiveFront.tsx). Tokens only: every color,
+   size, rule and duration resolves from components/site/v3/tokens.css.
+
+   One column on a phone, in reading order: the name, the sentence, the two
+   doors, the year index, then the tile. From 64rem the tile stands beside the
+   text, so the whole job sits in the first screen at 1440 too.
+
+   Descendants carry the doubled block selector (.v3.archive-front) because the
+   barrel's atom rules are scoped `.v3 ` at (0,2,0), and a lede or a figure
+   here has to win over the atom's own spacing and size.
+   =========================================================================== */
+
+.v3.archive-front {
+  display: grid;
+  gap: var(--v3-space-xl);
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  /* The opening sits right under the trail: the page's job is the first
+     screen, not the section rhythm's full air. */
+  padding: var(--v3-space-lg) var(--v3-gutter) var(--v3-space-2xl);
+}
+
+@media (min-width: 64rem) {
+  .v3.archive-front--tile {
+    grid-template-columns: minmax(0, 1.45fr) minmax(19rem, 1fr);
+    align-items: start;
+    column-gap: var(--v3-space-2xl);
+    padding-top: var(--v3-space-2xl);
+  }
+}
+
+.v3.archive-front .archive-front__main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-md);
+  min-width: 0;
+}
+
+.v3.archive-front .archive-front__heading {
+  margin: 0;
+}
+
+.v3.archive-front .archive-front__lede {
+  margin: 0;
+  max-width: var(--v3-measure-text);
+}
+
+.v3.archive-front .archive-front__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--v3-space-xs) var(--v3-space-sm);
+}
+
+/* The year index: every year of the calendar as one wrapping line of doors,
+   each a jump to its row. */
+.v3.archive-front .archive-front__years {
+  margin-top: var(--v3-space-2xs);
+}
+
+.v3.archive-front .archive-front__years-label {
+  margin: 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+}
+
+.v3.archive-front .archive-front__years-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--v3-space-3xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.v3.archive-front .archive-front__year {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-3xs);
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  font-variant-numeric: tabular-nums;
+  text-decoration: underline;
+  text-decoration-color: var(--v3-edge);
+  text-underline-offset: var(--v3-underline-offset);
+  transition: text-decoration-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3.archive-front .archive-front__year:hover,
+.v3.archive-front .archive-front__year:focus-visible {
+  text-decoration-color: currentColor;
+}
+
+/* The tile: the latest edition's four figures at a glance, on the register's
+   raised panel, with the trace they carry. A glance, not a second hero, so
+   the numerals step down from the Instrument's display size. */
+.v3.archive-front .archive-front__tile {
+  display: grid;
+  gap: var(--v3-space-md);
+  min-width: 0;
+  padding: var(--v3-space-md) var(--v3-space-lg) var(--v3-space-sm);
+  background: var(--v3-panel-bg);
+  border: var(--v3-panel-border);
+}
+
+.v3.archive-front .archive-front__tile-heading {
+  margin: 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-eyebrow);
+  line-height: var(--v3-leading-body);
+  text-transform: uppercase;
+}
+
+.v3.archive-front .archive-front__figures {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--v3-space-md) var(--v3-space-lg);
+}
+
+.v3.archive-front .archive-front__figures .v3-figure__value {
+  font-size: var(--v3-size-display-2);
+}
+
+/* A figure that is a door: the number and its label, the Instrument's way
+   (V3Instrument.css .v3-instrument__door). */
+.v3.archive-front .archive-front__door {
+  display: block;
+  min-width: 0;
+  min-height: var(--v3-tap);
+  color: inherit;
+  text-decoration: none;
+  border-radius: var(--v3-radius-sm);
+  transition: color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3.archive-front .archive-front__door:hover .v3-figure__value,
+.v3.archive-front .archive-front__door:focus-visible .v3-figure__value {
+  text-decoration: underline;
+  text-underline-offset: var(--v3-underline-offset-display);
+}
+
+.v3.archive-front .archive-front__door:hover .v3-figure__label {
+  color: var(--v3-ink);
+}
+
+/* The median's stored months as one line under the figures, and the words it
+   stands for. The drawing stretches to the tile; the stroke keeps its weight
+   (non-scaling) and the end mark stays a circle (an element, not SVG). */
+.v3.archive-front .archive-front__spark {
+  display: grid;
+  gap: var(--v3-space-2xs);
+  margin: 0;
+  padding-top: var(--v3-space-sm);
+  border-top: var(--v3-rule-hairline);
+}
+
+.v3.archive-front .archive-front__spark-draw {
+  position: relative;
+  display: block;
+  height: 2.5rem;
+}
+
+.v3.archive-front .archive-front__spark-draw svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.v3.archive-front .archive-front__spark-draw path {
+  fill: none;
+  stroke: var(--v3-ink);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.v3.archive-front .archive-front__spark-end,
+.v3.archive-front .archive-front__spark-dot {
+  position: absolute;
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 50%;
+  background: var(--v3-ink);
+  transform: translate(-50%, -50%);
+}
+
+/* A lone published month: a point on the line, smaller than the newest
+   month's mark. */
+.v3.archive-front .archive-front__spark-dot {
+  width: 0.25rem;
+  height: 0.25rem;
+}
+
+.v3.archive-front .archive-front__spark-label {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  font-variant-numeric: tabular-nums;
+}
+
+.v3.archive-front .archive-front__source {
+  margin: 0;
+}

@@ -6,7 +6,12 @@
  * Returns null on a genuine miss (post not found or not published).
  *
  * No-poison: throws on Supabase error so makeResilientCached never caches a
- * null result caused by a transient DB outage.
+ * null result caused by a transient DB outage. A read that fails twice THROWS
+ * out of getBlogPostBySlug too: returning null there made the page call
+ * notFound(), and ISR kept that 404 for the page's whole revalidate window
+ * (86400 s), so a database blip could take a published post down for a day.
+ * A thrown render is never cached: a regeneration keeps the last good copy and
+ * a cold render is a transient 500 that the next request retries.
  */
 
 import { supabaseAnon } from '@/lib/data/client'
@@ -125,12 +130,22 @@ async function _getBlogPostBySlugUncached(slug: string): Promise<BlogPostFull | 
   }
 }
 
-export const getBlogPostBySlug = makeResilientCached(
+/** What the resilient wrapper hands back when the read failed twice. Never cached. */
+const READ_FAILED: unique symbol = Symbol('blog-post-read-failed')
+
+const getBlogPostBySlugCached = makeResilientCached<[string], BlogPostFull | null | typeof READ_FAILED>(
   _getBlogPostBySlugUncached,
   // v3 (design-audit #146): adds author_title so the "About the author" box
   // can say who this broker actually is instead of one hardcoded generic
   // sentence identical on every post — evicts v2 rows missing the field.
   ['blog-post-by-slug-v4'],
   { revalidate: CACHE_WINDOWS.blog, tags: [cacheTag.blog] },
-  null,
+  READ_FAILED,
 )
+
+/** The post, or null when no published post has this slug. Throws when the read failed. */
+export async function getBlogPostBySlug(slug: string): Promise<BlogPostFull | null> {
+  const post = await getBlogPostBySlugCached(slug)
+  if (post === READ_FAILED) throw new Error(`[getBlogPostBySlug] ${slug}: read failed twice; not a missing post`)
+  return post
+}

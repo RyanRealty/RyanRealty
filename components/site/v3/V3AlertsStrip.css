@@ -20,8 +20,6 @@
   max-width: var(--v3-measure);
   margin: 0 auto;
   padding: var(--v3-section-pad) var(--v3-gutter);
-  /* The chrome is sticky: a jump to #alerts lands under the mast otherwise. */
-  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
 }
 
 /* THE LOOK (Broadside): a section following content opens on the navy rule. */

@@ -185,10 +185,10 @@ rail and consumption.
    and dispatches `person-identified` (`PersonIdentityBridge.tsx:43-52`) · URL params +
    session id · identified session + cookie · failure: invalid/unknown id → no-op
    `{ok:false}`, page unaffected · any device.
-6. **Land + stitch (raw-HTML documents)** · browser beacon · `/cma/[slug]` + `/bpo/[slug]`
+6. **Land + stitch (raw-HTML documents)** · browser tracking ping · `/cma/[slug]` + `/bpo/[slug]`
    serve stored HTML where React bridges never run, so the injected
    `public/rr-doc-tracker.js` posts its page_view FIRST (creating the session row), then
-   beacons `/api/track/e/identify?_pid=&sid=` (`rr-doc-tracker.js:10-12,60-66`;
+   pings `/api/track/e/identify?_pid=&sid=` (`rr-doc-tracker.js:10-12,60-66`;
    injection: `app/cma/[slug]/route.ts:152,180`, `app/bpo/[slug]/route.ts:77`,
    `lib/cma/register-gate.ts:95`) → same server actions as step 5
    (`app/api/track/e/identify/route.ts:36-40`) · params · 204 always, even on a bad id
@@ -312,7 +312,7 @@ the "not opened" state); (f) preview prefetch on SMS — 302, zero writes (sibli
   `lib/crm/email-events.ts:165-194`), token TTL (newsletter only), and transport (Gmail
   DWD vs Resend). No split — the process is the open/click, and it does not diverge.
 - **Identity-backfill delivery variant:** React bridge on normal pages vs
-  `rr-doc-tracker.js` beacon on raw-HTML documents (§5 steps 5–6) — same server actions,
+  `rr-doc-tracker.js` tracking ping on raw-HTML documents (§5 steps 5–6) — same server actions,
   same trust model, different carrier. Not a separate process.
 - **Legacy variant:** pre-cutover FUB emails still in inboxes carry `?_fuid=` and
   non-expiring tokens; the `_fuid` → `fub_legacy_id` resolution path exists solely for
@@ -443,7 +443,7 @@ objective governs the routes' behavior and what they hand the destination page:
   attribution params intact through the redirect)."
 - `exits`: the compose-time-signed/stored target URL — any node in the site graph (the
   promised page IS the exit); the site root on a bad token/code; the 1x1 gif (no
-  navigation) for opens; a 204 for the identify beacon. A tracker has no chrome and no
+  navigation) for opens; a 204 for the identify ping. A tracker has no chrome and no
   other doors.
 
 **Data gaps blocking correctness:** none blocking — the chain (instrument → send →
@@ -492,7 +492,7 @@ CLI UAs (`BAD_BOT_RE` includes `curl/`, `middleware.ts:174-177`), so checks use
    double-entry. Companion on the spine:
    `SELECT recipient_email, subject, event, count(*) FROM email_events WHERE event IN ('open','click') GROUP BY 1,2,3 HAVING count(DISTINCT dedupe_key) > 1 LIMIT 20`.
    Target shape (§11.1) is proven when both return zero NEW rows post-fix.
-9. **Doc-beacon identity:** open a delivered `/cma/<slug>?_pid=<pid>` link → network log
+9. **Doc-ping identity:** open a delivered `/cma/<slug>?_pid=<pid>` link → network log
    shows `POST /api/visitors/track` then `GET /api/track/e/identify?...&sid=` returning
    204 (`rr-doc-tracker.js:60-66`); the session row stitches as in check 7.
 10. **Newsletter ledger:** after a queue-sent newsletter open (emailKey
