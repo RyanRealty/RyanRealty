@@ -6,15 +6,6 @@
  * moves the strip below HomeHomesRails. Wrapper pad and first-rail 2xs still
  * bind so photos, not only the H2, enter the fold.
  *
- * THE SHELVES ARE LISTING DIALS (Matt 2026-09-24, SITE-195). HomeHomesRails no
- * longer stacks carousels in `.home-rails`; it stacks V3ListingDials in
- * `.home-shelves` (app/_v3/home-shelves.css). The lock moved with it and keeps
- * its point: the wrapper opens on a short pad, never lg or taller, and the
- * first shelf is a dial, whose photograph starts at the dial's own top beside
- * its readout. Measured on the dial build at 1440x900: the first shelf's
- * photograph top at y=518, inside maxFirstPhotoTopPx (880); at 375x812 the
- * first ask at y=693.
- *
  * Source-scan, wired through ci:aeo-hub-guides (homepage guides gate).
  * Not a new rubric / taste-path field.
  */
@@ -27,8 +18,9 @@ export const HOME_FOLD_LOCK = Object.freeze({
   lockedAt: '2026-09-19',
   viewport: '1440x900',
   maxFirstPhotoTopPx: 880,
-  /** The shelves wrapper's top pad: 0, 2xs, sm or md. lg and up is the photos-below miss. */
-  shelvesPadTopTokens: Object.freeze(['0', '--v3-space-2xs', '--v3-space-sm', '--v3-space-md']),
+  railsWrapperPadTop: '0',
+  firstRailPadTopToken: '--v3-space-2xs',
+  firstRailHeadPadBottomToken: '--v3-space-2xs',
   stripPadToken: '--v3-space-2xs',
   stripHeadingSizeToken: '--v3-size-body-lg',
   stripDoorSizeToken: '--v3-size-body-sm',
@@ -37,12 +29,13 @@ export const HOME_FOLD_LOCK = Object.freeze({
 })
 
 const PATHS = Object.freeze({
-  shelvesCss: 'app/_v3/home-shelves.css',
-  shelves: 'app/_v3/HomeHomesRails.tsx',
+  railsCss: 'app/_v3/home-homes-rails.css',
   answersCss: 'components/site/v3/V3Answers.css',
   page: 'app/page.tsx',
   layout: 'app/layout.tsx',
 })
+
+const TALL_SPACE = '(?:sm|md|lg|xl|2xl|3xl)'
 
 function readRel(root, rel, override) {
   if (typeof override === 'string') return override
@@ -57,10 +50,14 @@ function cssBlocks(src, selector) {
   return [...src.matchAll(re)].map((m) => m[1])
 }
 
+function lastCssBlock(src, selector) {
+  const blocks = cssBlocks(src, selector)
+  return blocks[blocks.length - 1] ?? null
+}
+
 export function homepageFoldDensityProblems({ root = process.cwd(), files = {} } = {}) {
   const p = []
-  const shelvesCss = readRel(root, PATHS.shelvesCss, files.shelvesCss)
-  const shelves = readRel(root, PATHS.shelves, files.shelves)
+  const rails = readRel(root, PATHS.railsCss, files.railsCss)
   const answers = readRel(root, PATHS.answersCss, files.answersCss)
   const page = readRel(root, PATHS.page, files.page)
   const layout = readRel(root, PATHS.layout, files.layout)
@@ -85,36 +82,47 @@ export function homepageFoldDensityProblems({ root = process.cwd(), files = {} }
     p.push(`${PATHS.layout}: do not remount V3PhoneDock. Sticky Call/Text is refuse.`)
   }
 
-  if (shelves == null) {
-    p.push(`${PATHS.shelves}: missing.`)
-  } else if (!/<V3ListingDial/.test(shelves)) {
-    p.push(
-      `${PATHS.shelves}: each shelf must be a V3ListingDial (Matt 2026-09-24), whose photograph starts at the dial's top, so the first ask and photograph reach the fold.`,
-    )
-  }
-
-  if (shelvesCss == null) {
-    p.push(`${PATHS.shelvesCss}: missing.`)
+  if (rails == null) {
+    p.push(`${PATHS.railsCss}: missing.`)
   } else {
-    // Every `.v3.home-shelves` rule that sets a top pad (the base rule and the
-    // phone rule) is held, so a tall quiet cannot come back in either.
-    const tops = cssBlocks(shelvesCss, '.v3.home-shelves')
-      .map((block) => {
-        const padTop = /padding-top:\s*([^;]+);/.exec(block)?.[1]
-        const pad = /padding:\s*([^;]+);/.exec(block)?.[1]
-        const top = (padTop ?? pad?.trim().split(/\s+(?![^(]*\))/)[0] ?? '').trim()
-        return top ? (/^var\((--v3-space-[a-z0-9]+)\)$/.exec(top)?.[1] ?? top) : null
-      })
-      .filter((top) => top != null)
-    if (tops.length === 0) {
-      p.push(`${PATHS.shelvesCss}: shelves pad lock missing (.v3.home-shelves).`)
+    if (!/\.home-rails \{\s*padding-top:\s*0;/.test(rails) && !/\.home-rails \{\s*padding-top:\s*var\(--v3-space-2xs\);/.test(rails)) {
+      p.push(
+        `${PATHS.railsCss}: .home-rails padding-top must stay 0 (or 2xs). Wrapper xl/sm stacked on the first rail is the heading-in-fold / photos-below miss.`,
+      )
     }
-    for (const top of tops) {
-      if (!HOME_FOLD_LOCK.shelvesPadTopTokens.includes(top)) {
-        p.push(
-          `${PATHS.shelvesCss}: .home-shelves padding-top must stay 0, 2xs, sm or md (got ${top}). A taller quiet leaves the heading in the 900 fold and the photographs below it.`,
-        )
-      }
+    if (/\.home-rails \{\s*padding-top:\s*var\(--v3-space-(?:sm|md|lg|xl)/.test(rails)) {
+      p.push(
+        `${PATHS.railsCss}: .home-rails reintroduced tall quiet (sm+). Heading can stay in the 900 fold while first photos drop below.`,
+      )
+    }
+
+    const first = lastCssBlock(rails, '.home-rails > .home-rail:first-child')
+    if (!first) {
+      p.push(`${PATHS.railsCss}: first-rail pad lock missing.`)
+    } else if (!new RegExp(`padding-top:\\s*var\\(${HOME_FOLD_LOCK.firstRailPadTopToken}\\)`).test(first)) {
+      p.push(
+        `${PATHS.railsCss}: first rail padding-top must be var(${HOME_FOLD_LOCK.firstRailPadTopToken}). sm+ pushes photographs under the 900 fold.`,
+      )
+    }
+    if (first && new RegExp(`padding-top:\\s*var\\(--v3-space-${TALL_SPACE}\\)`).test(first)) {
+      p.push(`${PATHS.railsCss}: first rail reintroduced sm+ pad — heading-only fold.`)
+    }
+
+    if (
+      !/\.home-rails > \.home-rail:first-child \.home-rail__head \{\s*padding-bottom:\s*var\(--v3-space-2xs\);/.test(
+        rails,
+      )
+    ) {
+      p.push(
+        `${PATHS.railsCss}: first-rail head must tighten padding-bottom so card photos, not only the H2, enter the fold.`,
+      )
+    }
+    if (
+      /\.home-rails > \.home-rail:first-child \.home-rail__head \{\s*padding-bottom:\s*var\(--v3-space-(?:sm|md|lg|xl)/.test(
+        rails,
+      )
+    ) {
+      p.push(`${PATHS.railsCss}: first-rail head sm+ pad is the heading-in-fold / photos-below regression.`)
     }
   }
 

@@ -7,12 +7,10 @@ import {
   getReviews,
   attachListingCardExtras,
   loadRecentPriceDropEvents,
-  getResortCommunityBySlug,
 } from '@/lib/data'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-href'
 import { loadOpenHouseBadgeLabels } from '@/lib/listing/load-open-house-badge-labels'
-import { formatPrice } from '@/lib/format/money'
 import { toReviewQuotes } from '@/lib/reviews/review-quotes'
 import {
   V3_ROOT_CLASS,
@@ -31,11 +29,10 @@ import { homeGuideQaJsonLd, homeGuideQaQuestions } from './_v3/home-guide-qa'
 import { HomeHomesRails } from './_v3/HomeHomesRails'
 import { loadHomePulseBundle } from './_v3/home-pulse'
 import { HomeHeroSearch } from './_v3/HomeHeroSearch.client'
-import { homeHeroPlaceItems } from './_v3/home-hero-places'
 import { HomeBrowsePlaces } from './_v3/HomeBrowsePlaces'
 import { loadHomeNewConRun } from './_v3/home-new-construction'
 import { HomeFeaturedCommunity } from './_v3/HomeFeaturedCommunity.client'
-import { homeFeaturedBlurb, loadHomeFeaturedCommunitySlides } from './_v3/home-featured-communities'
+import { loadHomeFeaturedCommunitySlides } from './_v3/home-featured-communities'
 import { cityHero, communityImage, hasCuratedCityHero, preferPlaceHeroOrNull } from '@/lib/geo-images'
 import { homeRailRows, enrichHomeRailRows } from './_v3/home-rail-items'
 import { homeRailItemList } from './_v3/home-jsonld'
@@ -224,7 +221,6 @@ export default async function Home() {
   // so a null prints nothing rather than a zero (section 0). The resorts run
   // carries no figure because this page holds no per-resort read; /communities
   // owns those.
-  const featuredBySlug = new Map(featuredCommunitySlides.map((slide) => [slide.slug, slide]))
   const placeRuns = [
     ...(newConRun ? [newConRun] : []),
     {
@@ -253,30 +249,15 @@ export default async function Home() {
     },
     {
       name: 'Resorts and communities',
-      // A counted ledger, not a third card carousel: the featured communities
-      // above are the page's one run of community cards (2026-09-29).
-      // The same figure the featured-community slides above print for the
-      // same resort ("N homes for sale", registry resort public figures:
-      // every single-family listing filed under any of the community's
-      // subdivision names), read once by loadHomeFeaturedCommunitySlides.
-      unit: 'homes for sale',
+      layout: 'carousel' as const,
       seeAll: { label: 'Every community', href: '/communities' },
       doors: RESORT_DOORS.map((r) => {
         const photoSrc = communityImage(r.slug)
-        // Each resort says where it is and what it is, from its own authored
-        // copy (2026-09-25: four cards all read "Resort community";
-        // 2026-09-29: the registry line alone left three reading only their
-        // town). Authored copy only; a miss keeps the town.
-        const entry = getResortCommunityBySlug(r.slug)
-        const slide = featuredBySlug.get(r.slug)
-        const line = slide?.blurb?.trim() || (entry ? homeFeaturedBlurb(null, entry) : null)
-        const forSale = slide?.figures.find((f) => f.label === 'homes for sale' || f.label === 'home for sale')?.n
         return {
           label: r.label,
           href: r.href,
-          description: [entry?.city ?? slide?.city, line].filter(Boolean).join(' · ') || 'Resort community',
+          description: 'Resort community',
           ...(photoSrc ? { photoSrc } : {}),
-          ...(typeof forSale === 'number' && Number.isFinite(forSale) && forSale > 0 ? { count: forSale } : {}),
         }
       }),
     },
@@ -326,32 +307,11 @@ export default async function Home() {
         >
           <HomeHeroSearch
             valuationHref={valuationHref('/')}
-            // The places the opened search leads with, each with its live
-            // count: a city's is the Towns run's figure below, a community's
-            // the featured slide's own (2026-09-29: a static list of names).
-            places={homeHeroPlaceItems(
-              new Map(cities.map((c) => [c.slug, c.activeCount])),
-              new Map(
-                featuredCommunitySlides.map((slide) => [
-                  slide.slug,
-                  slide.figures.find((f) => f.label === 'homes for sale' || f.label === 'home for sale')?.n,
-                ]),
-              ),
-            )}
-            // Each home in the opened search names its ask and beds beside
-            // its town (2026-09-25: a bare list of streets), the card's own
-            // figures: a sale ask only, never a lease rate read as a price.
-            homes={railRows[0]?.cards.slice(0, 5).map((card) => {
-              const ask =
-                card.propertyType !== 'G' && card.price != null && card.price > 0 ? formatPrice(card.price) : null
-              return {
-                id: card.href,
-                title: card.addressLine,
-                description: [ask && /\$/.test(ask) ? ask : null, card.beds != null ? `${card.beds} bd` : null, card.cityLine]
-                  .filter(Boolean)
-                  .join(' · '),
-              }
-            })}
+            homes={railRows[0]?.cards.slice(0, 5).map((card) => ({
+              id: card.href,
+              title: card.addressLine,
+              description: card.cityLine,
+            }))}
           />
         </V3Stage>
 
@@ -359,7 +319,9 @@ export default async function Home() {
           rows={railRows}
           emptyMessage="No active homes with a photo and list price right now."
           forSaleCount={pulseBundle?.counts.forSale}
-          switched
+          // Held on the carousels until the homepage class reaches its taste
+          // mark with the listing dial (Matt 2026-09-25, "fix first, then ship").
+          layout="rails"
         />
 
         {/* SITE-160: guides below the first rail so a priced card clears the fold. */}

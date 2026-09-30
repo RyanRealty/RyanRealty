@@ -121,19 +121,16 @@ describe('chrome homepage H-fixes', () => {
     )
   })
 
-  it('pulls the first shelf photograph onto the 1440 fold, not only the heading', () => {
-    // The shelves are listing dials since Matt 2026-09-24 (HomeHomesRails +
-    // home-shelves.css). The stack opens on a medium pad, never the xl that put
-    // the carousel photographs under the 900 fold (SITE-125), so the first
-    // dial's photograph and thumbnail asks start inside it (measured y=518 at
-    // 1440x900 on the dial build).
-    const SHELVES = readFileSync(resolve('app/_v3/home-shelves.css'), 'utf8')
-    expect(SHELVES).toMatch(
-      /\.v3\.home-shelves \{[\s\S]*?padding: var\(--v3-space-md\) var\(--v3-gutter\) var\(--v3-space-xl\);/,
-    )
-    expect(SHELVES).not.toMatch(/\.v3\.home-shelves \{[\s\S]*?padding: var\(--v3-space-xl\)/)
+  it('pulls first house-rail photos onto the 1440 fold, not only the heading', () => {
     const RAILS = readFileSync(resolve('app/_v3/home-homes-rails.css'), 'utf8')
-    expect(RAILS).not.toMatch(/\.home-rails\b/)
+    expect(RAILS).toMatch(/\.home-rails \{\s*padding-top: 0;/)
+    expect(RAILS).toMatch(
+      /\.home-rails > \.home-rail:first-child \{\s*padding-top: var\(--v3-space-2xs\);/,
+    )
+    expect(RAILS).toMatch(
+      /\.home-rails > \.home-rail:first-child \.home-rail__head \{\s*padding-bottom: var\(--v3-space-2xs\);/,
+    )
+    expect(RAILS).not.toMatch(/\.home-rails > \.home-rail:first-child \{\s*padding-top: var\(--v3-space-sm\);/)
   })
 
   it('fits the phone bar without clipping it (SITE-155)', () => {

@@ -9,7 +9,7 @@ describe('SITE-129 community fold inventory', () => {
   it('imports page-local community-fold.css and hides the Atlas price range', () => {
     expect(PAGE).toMatch(/import '\.\/_v3\/community-fold\.css'/)
     expect(PAGE).toMatch(/className="community-fold"/)
-    expect(PAGE).toMatch(/className="place-one-map[ "]/)
+    expect(PAGE).toMatch(/className="place-one-map"/)
     expect(PAGE).toMatch(/<PlaceSubdivisionAtlas[\s\S]*?hidePriceScrubber/)
     expect(FOLD_CSS).toMatch(/\.community-atlas \.v3-atlas__scrub[\s\S]{0,200}display:\s*none/)
   })
@@ -24,13 +24,6 @@ describe('SITE-129 community fold inventory', () => {
     expect(PAGE).not.toMatch(/MorphingSearch|morphing-search/)
   })
 
-  it('never clamps the belonging facts mid-sentence at 375 (SITE-193)', () => {
-    // "$2,052 HOA a year from homes here. 3…" was a one-line clamp inside an
-    // 8rem photograph: the facts print whole and the photograph grows instead.
-    expect(FOLD_CSS).not.toMatch(/caption--belonging[\s\S]{0,200}line-clamp/)
-    expect(FOLD_CSS).toMatch(/place-opening--community\.place-opening--media \{\s*min-height: 6\.5rem;\s*max-height: none;/)
-  })
-
   it('clusters the Caldera island on first paint and hides unpinned plat cards', () => {
     expect(PAGE).toMatch(/clusterCellPx=\{COMMUNITY_FOLD_CLUSTER_CELL_PX\}/)
     expect(PAGE).toMatch(/clusterStageHint=\{COMMUNITY_FOLD_CLUSTER_STAGE\}/)
@@ -40,7 +33,7 @@ describe('SITE-129 community fold inventory', () => {
 })
 
 describe('community map', () => {
-  it('opens on one atlas with the subdivision list and the listing dials under it', () => {
+  it('opens on one atlas with the subdivision list and the homes carousel', () => {
     expect(PAGE).toMatch(/<PlaceSubdivisionAtlas[\s\S]*?id="atlas"/)
     expect(PAGE).toMatch(/<PlaceSubdivisionRail[\s\S]*?id="child-places"/)
     expect(PAGE).toMatch(/<PlaceSubdivisionHomes[\s\S]*?id="homes"/)

@@ -8,8 +8,7 @@ import { homepageFoldDensityProblems } from '../lib/homepage-fold-density.mjs'
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
 
 const live = {
-  shelvesCss: readFileSync(join(REPO, 'app/_v3/home-shelves.css'), 'utf8'),
-  shelves: readFileSync(join(REPO, 'app/_v3/HomeHomesRails.tsx'), 'utf8'),
+  railsCss: readFileSync(join(REPO, 'app/_v3/home-homes-rails.css'), 'utf8'),
   answersCss: readFileSync(join(REPO, 'components/site/v3/V3Answers.css'), 'utf8'),
   page: readFileSync(join(REPO, 'app/page.tsx'), 'utf8'),
   layout: readFileSync(join(REPO, 'app/layout.tsx'), 'utf8'),
@@ -20,26 +19,30 @@ describe('homepage fold density (SITE-125 photo peek)', () => {
     expect(homepageFoldDensityProblems({ root: REPO })).toEqual([])
   })
 
-  it('refuses a tall quiet over the shelves that leaves photos under the fold', () => {
-    const shelvesCss = live.shelvesCss.replace(
-      'padding: var(--v3-space-md) var(--v3-gutter) var(--v3-space-xl);',
-      'padding: var(--v3-space-xl) var(--v3-gutter) var(--v3-space-xl);',
-    )
-    expect(shelvesCss).not.toBe(live.shelvesCss)
+  it('refuses wrapper xl / first-child sm that leaves photos under the fold', () => {
+    const railsCss = live.railsCss
+      .replace('.home-rails {\n  padding-top: 0;\n}', '.home-rails {\n  padding-top: var(--v3-space-xl);\n}')
+      .replace(
+        '.home-rails > .home-rail:first-child {\n  padding-top: var(--v3-space-2xs);\n}',
+        '.home-rails > .home-rail:first-child {\n  padding-top: var(--v3-space-sm);\n}',
+      )
     const p = homepageFoldDensityProblems({
       root: REPO,
-      files: { ...live, shelvesCss },
+      files: { ...live, railsCss },
     })
-    expect(p.join('\n')).toMatch(/padding-top must stay 0, 2xs, sm or md/)
+    expect(p.join('\n')).toMatch(/photos-below|heading-only|photographs under the 900 fold|tall quiet/i)
   })
 
-  it('refuses shelves that are not listing dials (Matt 2026-09-24)', () => {
-    const shelves = live.shelves.replace(/<V3ListingDial\w*/g, '<HomeListingRail')
+  it('refuses heading-in-fold when first-rail head pad grows back to sm', () => {
+    const railsCss = live.railsCss.replace(
+      '.home-rails > .home-rail:first-child .home-rail__head {\n  padding-bottom: var(--v3-space-2xs);\n}',
+      '.home-rails > .home-rail:first-child .home-rail__head {\n  padding-bottom: var(--v3-space-sm);\n}',
+    )
     const p = homepageFoldDensityProblems({
       root: REPO,
-      files: { ...live, shelves },
+      files: { ...live, railsCss },
     })
-    expect(p.join('\n')).toMatch(/must be a V3ListingDial/)
+    expect(p.join('\n')).toMatch(/photos-below|padding-bottom must be/i)
   })
 
   it('refuses restoring the 22rem door stack or sticky Call/Text', () => {

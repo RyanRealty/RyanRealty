@@ -177,19 +177,14 @@ describe('homepage hero search uses the public search stack', () => {
     expect(css).toContain('html:has(.home-hero-search) .v3-chrome__search')
     expect(css).toMatch(/html:has\(\.home-hero-search\) \.v3-chrome__search \{\s*display:\s*none/)
     expect(css).toContain('.v3 .home-hero-search .v3-morph-search--live .v3-morph-search__catalog')
-    expect(css).toContain('width: 22rem')
+    expect(css).toContain('width: 18rem')
     // Sharp cream painters: nested .v3 + TabsList bg-card + V3Tabs track — gone on Stage.
     expect(css).toContain('.v3 .home-hero-search .v3,')
     expect(css).toContain('.v3 .home-hero-search .v3-tabs,')
     expect(css).toContain('.v3 .home-hero-search .v3-morph-search')
     expect(css).toContain('.v3 .home-hero-search .v3-tabs__list.bg-card')
     expect(css).toMatch(/\.v3 \.home-hero-search \.v3,[\s\S]*?background:\s*transparent\s*!important/)
-    // The track is a light wash on the photograph with a cream hairline, never
-    // the opaque cream box (2026-09-29: with no track the switch read as two
-    // loose words).
-    expect(css).toMatch(
-      /\.v3 \.home-hero-search \.v3-tabs__list\.bg-card \{[\s\S]*?background-color:\s*color-mix\(in srgb, var\(--v3-cream\) 16%, transparent\)\s*!important/,
-    )
+    expect(css).toMatch(/\.v3 \.home-hero-search \.v3-tabs__list\.bg-card \{[\s\S]*?background-color:\s*transparent\s*!important/)
     const stageCssForWrappers = readFileSync(resolve('components/site/v3/V3Stage.css'), 'utf8')
     expect(stageCssForWrappers).toContain('.v3.v3-stage .v3-stage-copy .v3')
     expect(stageCssForWrappers).toMatch(
@@ -356,12 +351,7 @@ describe('homepage house rails use SplitCardMedia cards', () => {
     expect(PAGE).not.toMatch(/<HomeHomesField/)
     expect(PAGE).not.toContain('homeFieldPool')
     expect(PAGE).toContain('homeRailRows')
-    // Matt 2026-09-24: the shelves are listing dials, not carousels. The same
-    // rows go through one converter, so each dial lists the rail's cards.
-    expect(RAILS).toContain('V3ListingDial')
-    expect(RAILS).toContain('listingRowFromRailCard')
-    expect(RAILS).not.toContain('HomeListingRail')
-    expect(RAILS).toContain('dialRailPositionAt(order)')
+    expect(RAILS).toContain('HomeListingRail')
     expect(RAIL_CLIENT).toContain('SplitCardMedia')
     expect(RAIL_CLIENT).toContain('href={card.href}')
     expect(RAIL_CLIENT).not.toContain('HeartIcon')
@@ -515,11 +505,9 @@ describe('homepage house rails use SplitCardMedia cards', () => {
     expect(PLACES).toMatch(/home-browse-places__runname/)
     expect(PLACES).toMatch(/home-browse-places__unit/)
     expect(PLACES).toMatch(/home-browse-places__count/)
-    // The resorts run's figure is the featured slide's own "homes for sale".
+    // The resorts run ships no inventory figure — this page holds no per-resort read.
     expect(PAGE).toMatch(/RESORT_DOORS\.map\(\(r\) =>/)
-    // One run of community cards on the page (the featured carousel); the
-    // resorts and new-construction runs are counted ledgers like the towns.
-    expect(PAGE).not.toContain("layout: 'carousel' as const")
+    expect(PAGE).toContain("layout: 'carousel' as const")
     expect(PAGE).toContain('communityImage(r.slug)')
     expect(PAGE).toContain('preferPlaceHeroOrNull')
     expect(PAGE).toContain('hasCuratedCityHero')

@@ -127,6 +127,19 @@ describe('HomeHomesRails on the dial', () => {
       'Nothing today.',
     )
   })
+
+  // Matt 2026-09-25, "fix first, then ship": the homepage and the /cities index
+  // keep their carousels until their class reaches its taste mark with the dial.
+  it('layout="rails" holds the stacked carousels, every card still a link', () => {
+    const held = renderToStaticMarkup(<HomeHomesRails rows={rows} emptyMessage="none" layout="rails" />)
+    expect(held).toContain('class="home-rails"')
+    expect(held).toContain('v3-carousel')
+    expect(held).not.toMatch(/class="[^"]*v3-dial /)
+    const links = hrefs(held)
+    for (const k of ['l1', 'l2', 'l3', 'c1', 'c2', 'c3']) {
+      expect(links).toContain(`/homes-for-sale/bend/${k}`)
+    }
+  })
 })
 
 describe('dialRailPositionAt (the primitive\'s own, from the barrel)', () => {

@@ -4,8 +4,6 @@ import {
   LEASE_PAGE_HEADING,
   leaseCityGroups,
   leaseCityLedgerRows,
-  leaseLedgerNote,
-  leaseTownReveal,
   leaseItemList,
   LEASE_META_MAX,
   leaseMetaDescription,
@@ -119,20 +117,13 @@ describe('leaseCityGroups', () => {
 describe('leaseCityLedgerRows', () => {
   it('draws each town\'s count as a share of the busiest town and links to its dial', () => {
     const rows = leaseCityLedgerRows(leaseCityGroups(TILES, UNITS))
-    const { reveal, media, ...rest } = rows[0]!
-    expect(rest).toEqual({
+    expect(rows[0]).toEqual({
       href: '#lease-bend',
       what: 'Bend',
       value: '4 for lease',
       weight: 1,
-      detail: '2 from $0.90 to $1.40 per sq ft per month\n1 at $985 per month\n1 rate not published',
+      detail: '2 from $0.90 to $1.40 per sq ft per month · 1 at $985 per month · 1 rate not published',
     })
-    // The hover line is the rows' own kinds and sizes (leaseTownReveal).
-    expect(reveal).toBe(leaseTownReveal(leaseCityGroups(TILES, UNITS)[0]!.rows) ?? undefined)
-    // The row's picture is one of the town's own photographed leases, or none.
-    const photos = leaseCityGroups(TILES, UNITS)[0]!.rows.map((r) => r.photoUrl).filter(Boolean)
-    if (photos.length > 0) expect(media?.src).toBeTruthy()
-    else expect(media).toBeUndefined()
     expect(rows[1]!.weight).toBe(0.25)
   })
 })
@@ -185,32 +176,5 @@ describe('leaseMetaDescription', () => {
   it('never uses an em dash', () => {
     expect(leaseMetaDescription(leaseCityGroups(TILES, UNITS))).not.toContain('\u2014')
     expect(leaseMetaDescription([])).not.toContain('\u2014')
-  })
-})
-
-describe('leaseTownReveal', () => {
-  const row = (propertySubType: string | null, sqft: number | null) =>
-    ({ propertySubType, sqft }) as unknown as Parameters<typeof leaseTownReveal>[0][number]
-  it('names the kinds of space, most first, and the span of listed sizes', () => {
-    expect(leaseTownReveal([row('Office', 1200), row('Retail', 800), row('Office', 12000)])).toBe(
-      'Office 2 · Retail 1; 800 to 12,000 sq ft',
-    )
-  })
-  it('says how many list a size when some do not, and nothing when none carry either', () => {
-    expect(leaseTownReveal([row('Office', 1500), row('Office', null)])).toBe('Office 2; 1,500 sq ft (1 lists a size)')
-    expect(leaseTownReveal([row(null, null)])).toBeNull()
-  })
-})
-
-describe('leaseLedgerNote', () => {
-  it('states the count, the towns and the bar the others are measured against', () => {
-    const groups = leaseCityGroups(TILES, UNITS)
-    const total = groups.reduce((n, g) => n + g.rows.length, 0)
-    const note = leaseLedgerNote(groups)!
-    expect(note.startsWith(`${total} spaces for lease in ${groups.length} towns.`)).toBe(true)
-    expect(note).toContain("the longest is Bend's 4.")
-  })
-  it('is null with nothing listed', () => {
-    expect(leaseLedgerNote([])).toBeNull()
   })
 })

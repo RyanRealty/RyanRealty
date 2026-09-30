@@ -19,7 +19,7 @@ vi.mock('@/components/site/v3/V3ListingDial.client', () => ({
   ),
 }))
 
-const { PlaceSubdivisionHomes, PlaceSubdivisionMap } = await import(
+const { PlaceSubdivisionHomes, PlaceSubdivisionMap, PlaceSubdivisionRail } = await import(
   '@/components/site/v3/PlaceSubdivisionMap.client'
 )
 const { V3PlaceInventory } = await import('@/components/site/v3/V3PlaceInventory')
@@ -137,5 +137,65 @@ describe('rail position by dial order (Matt 2026-09-24)', () => {
     const seen = rails(html)
     expect(seen[seen.length - 1]!.id).toBe('homes-lease')
     expectCycled(seen)
+  })
+})
+
+// Matt 2026-09-25, "fix first, then ship": a class below its taste mark with
+// the dial keeps what production showed, by one explicit prop.
+describe('held presentations', () => {
+  const RAIL = [
+    { id: 'heath', name: 'Heath', detail: '2 for sale' },
+    { id: 'the-ridge', name: 'The Ridge', detail: '1 for sale' },
+  ]
+  const KEYS = { heath: ['sfr-1', 'sfr-2'], 'the-ridge': ['condo-1'] }
+  const render = (layout?: 'rails') =>
+    renderToStaticMarkup(
+      <PlaceSubdivisionMap
+        placeName="Tetherow"
+        rail={RAIL}
+        homes={SECTIONS.flatMap((s) => s.rows)}
+        leases={LEASE.rows}
+        keysBySlug={KEYS}
+        source="regional MLS through Oregon Data Share"
+        layout={layout}
+      >
+        <PlaceSubdivisionRail id="child-places" nameOnly />
+        <PlaceSubdivisionHomes id="homes" />
+      </PlaceSubdivisionMap>,
+    )
+
+  it('PlaceSubdivisionMap layout="rails" (community pages): a carousel per buyer group, no dial, no rail bars', () => {
+    const html = render('rails')
+    expect(rails(html)).toEqual([])
+    expect(html).toContain('place-homes--rails')
+    expect(html).toContain('place-subdiv-rail--held')
+    expect(html.match(/class="place-homes__type[ "]/g)?.length).toBe(SECTIONS.length + 1)
+    expect(html).toContain('id="homes-lease"')
+    expect(html).toContain('>5 for sale<')
+    expect(html).not.toContain('place-subdiv-rail__bar')
+    expect(html).not.toContain('place-subdiv-rail__key')
+  })
+
+  it('PlaceSubdivisionMap default: the dials and the rail count bars', () => {
+    const html = render()
+    expect(rails(html).length).toBe(SECTIONS.length + 1)
+    expect(html).not.toContain('place-homes--rails')
+    expect(html).toContain('place-subdiv-rail__bar')
+  })
+
+  it('V3PlaceInventory dialRail="left" (/commercial-space-for-lease): every dial on the left', () => {
+    const html = renderToStaticMarkup(
+      <V3PlaceInventory
+        id="lease"
+        layout="dial"
+        dialRail="left"
+        placeName="Central Oregon"
+        sections={SECTIONS}
+        source="regional MLS through Oregon Data Share"
+      />,
+    )
+    const seen = rails(html)
+    expect(seen.length).toBeGreaterThan(2)
+    expect(seen.every((dial) => dial.rail === 'left')).toBe(true)
   })
 })

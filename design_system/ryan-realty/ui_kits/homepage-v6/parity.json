@@ -18,7 +18,7 @@
     },
     {
       "name": "KbFeatured",
-      "where": "HomeHomesRails: stacked shelves of photographed homes, each a V3ListingDial (Matt 2026-09-24: one home large with its photograph and the card copy, the rest as thumbnails, 03 / 12 at its head), See all to Field."
+      "where": "HomeHomesRails: stacked photographed house carousels (SplitCardMedia cards), See all to Field."
     },
     {
       "name": "KbListingMap",
@@ -104,7 +104,7 @@
     },
     {
       "name": "HomeHomesRails",
-      "section": "Stacked house shelves (local Bend-area actives + honest price-cut / new rows when data exists), each a V3ListingDial since Matt 2026-09-24 (every listing carousel becomes the dial): one home large on SplitCardMedia with its badges and the card copy (ask, beds/baths/sqft, address, a door to the listing), the rest of the shelf as thumbnails on the dial rail, 03 / 12 at its head, the see-all door under it. Stacked dials take rail positions by page order (dialRailPositionAt: bottom, left, right) so no two adjacent read as one object. Every listing is still an <a href> in the served HTML. No save/heart on the card.",
+      "section": "Stacked Zillow-style house carousels (local Bend-area actives + honest price-cut / new rows when data exists). SplitCardMedia cards with badges; photo and copy open the listing. No save/heart on the card.",
       "blocking": true
     },
     {
@@ -239,7 +239,7 @@
   "sectionOrder": [
     "V3SectionTracker + analytics islands (not a section)",
     "V3Stage #hero -- compact inventory Stage: flyover, H1, V3Tabs Buy/Sell, catalog MorphingSearch, live listed count",
-    "HomeHomesRails -- V3ListingDial house shelves in the first viewport (price + address + beds/baths/sqft on the dial card, price + street on every thumbnail), rail position by page order",
+    "HomeHomesRails -- V3Carousel house rails in the first viewport (Card price + address + beds/baths/sqft)",
     "V3Answers #guides -- compact guides/Q&A strip below the first rail so priced homes clear the fold (SITE-160)",
     "V3Pulse #right-now -- Central Oregon right now: live counts, constellation, read stamp",
     "HomeFeaturedCommunity #featured-community -- shadcn carousel + Card featured resort / community slides with live figures",
@@ -250,12 +250,23 @@
     "V3Footer -- Markets / Company / Contact"
   ],
   "tasteReview": {
-    "evaluatedAt": "2026-09-24",
+    "evaluatedAt": "2026-09-14",
     "rubricVersion": "v1-2026-09-12",
-    "evaluator": "npx tsx scripts/taste-evaluate.ts homepage-v6 --builder claude-opus-5.5 --shots <the 16 files below>. The grok CLI and the Cursor CLI are missing in this sandbox, so the judge chain fell to its claude link (claude CLI, sonnet, subscription): three scorings of these shots in one call, recorded exactly as returned, no re-roll. Builder claude-opus-5.5 is not the judge.",
-    "evaluatorModel": "claude-sonnet-5",
-    "builderModel": "claude-opus-5.5",
-    "transport": "claude-cli",
+    "evaluator": "Mini Cursor 2026-09-14 cursor-grok-4.6-high: demoMatch true, competitiveBriefPass true on catalog evaluate land. Scores 52/47/55 are the judge three-scoring. Do not invent scores.",
+    "evaluatorModel": "grok-4.6",
+    "builderModel": "grok-4.5",
+    "demoMatch": true,
+    "competitiveBriefPass": true,
+    "competitiveBriefEvidence": {
+      "1": "HomeHomesRails stacked house carousels; live.forSaleLabel homes for sale across Central Oregon on the lead rail.",
+      "2": "V3MorphSearch (field morphs into results) from MorphingSearch — navy on cream, no glass.",
+      "3": "V3Tabs Buy | Sell with a sliding indicator; both panels exist in the server HTML.",
+      "4": "AddressAutocomplete Street address on the Sell panel; both forms method=get without waiting on JS.",
+      "5": "CardTitle price, home-rail__addr address, CardDescription beds/baths/sqft on the installed Card.",
+      "6": "home-hero-search__live-n forSaleLabel plus homes for sale and live.source on the search hero.",
+      "7": "HomeFeaturedCommunity Card slides with sourced pulse figures via AnimatedNumber.",
+      "8": "Browse places heading plus home-browse-places__count AnimatedNumber on town Cards."
+    },
     "shotSpec": {
       "routes": [
         "/"
@@ -266,66 +277,61 @@
       ],
       "states": [
         "default",
-        "rails",
-        "dial-open",
         "search-open",
         "sell-tab",
         "featured",
         "places",
         "places-resorts"
       ],
-      "capture": "node scripts/take-route-shots.mjs homepage-v6 http://127.0.0.1:3484/ --states 'search-open=.v3-morph-search--live [aria-haspopup=dialog]!click,sell-tab=#home-hero-sell-tab [role=tab]@.home-hero-search!click,rails=#homes-local,dial-open=#homes-local .v3-dial__step--next@#homes-local!click,featured=#featured-community,places=#places,places-resorts=#places-resorts-and-communities'. First viewport, scale 1, palette-quantized, against this branch's own next build + next start."
+      "capture": "first viewport + search-open=SEL@morph!click + sell-tab=SEL@ANCHOR!click + featured=#featured-community + places=#places + places-resorts=#places-resorts-and-communities, scripts/take-route-shots.mjs, scale 1, palette-quantized",
+      "baseUrl": "http://127.0.0.1:3183/"
     },
     "shots": {
+      "brokers390Before": "design_system/ryan-realty/ui_kits/homepage-v6/shots/brokers-390-before.png",
+      "brokers390": "design_system/ryan-realty/ui_kits/homepage-v6/shots/brokers-390.png",
+      "brokersDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/brokers-desktop.png",
+      "brokersMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/brokers-mobile375.png",
       "desktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/desktop.png",
+      "doorsDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/doors-desktop.png",
+      "doorsMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/doors-mobile375.png",
+      "featuredDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/featured-desktop.png",
+      "featuredMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/featured-mobile375.png",
+      "footerDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/footer-desktop.png",
+      "footerMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/footer-mobile375.png",
       "mobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/mobile375.png",
+      "placesDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/places-desktop.png",
+      "placesMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/places-mobile375.png",
+      "placesResortsDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/places-resorts-desktop.png",
+      "placesResortsMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/places-resorts-mobile375.png",
+      "proofDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/proof-desktop.png",
+      "proofMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/proof-mobile375.png",
       "railsDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/rails-desktop.png",
       "railsMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/rails-mobile375.png",
-      "dialOpenDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/dial-open-desktop.png",
-      "dialOpenMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/dial-open-mobile375.png",
+      "rightNowDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/right-now-desktop.png",
+      "rightNowMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/right-now-mobile375.png",
       "searchOpenDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/search-open-desktop.png",
       "searchOpenMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/search-open-mobile375.png",
       "sellTabDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/sell-tab-desktop.png",
       "sellTabMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/sell-tab-mobile375.png",
-      "featuredDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/featured-desktop.png",
-      "featuredMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/featured-mobile375.png",
-      "placesDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/places-desktop.png",
-      "placesMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/places-mobile375.png",
-      "placesResortsDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/places-resorts-desktop.png",
-      "placesResortsMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/places-resorts-mobile375.png"
+      "soldDesktop": "design_system/ryan-realty/ui_kits/homepage-v6/shots/sold-desktop.png",
+      "soldMobile375": "design_system/ryan-realty/ui_kits/homepage-v6/shots/sold-mobile375.png"
     },
-    "shotsHash": "sha256:2c6708d9273e908202bd1ce7e4ed7c0740f51beab7ca40ec073a548c3636c14f",
+    "shotsHash": "sha256:2ab27e21f1eb8286e1e9b46e1ad20e35c171d1f7c480a4670bfd347622b52969",
     "scores": [
-      67,
-      61,
-      70
+      52,
+      47,
+      55
     ],
-    "score": 67,
-    "criteria": {
-      "designQuality": 22,
-      "originality": 16,
-      "interaction": 11,
-      "craft": 10,
-      "honestyFunction": 8
+    "score": 52,
+    "breakdown": {
+      "design": 17,
+      "originality": 11,
+      "interaction": 10,
+      "craft": 8,
+      "honesty": 6
     },
-    "perCriterion": {
-      "design": 22,
-      "originality": 16,
-      "interaction": 11,
-      "craft": 10,
-      "honesty": 8
-    },
-    "honestyFunction": 8,
-    "demoMatch": true,
-    "competitiveBriefPass": true,
-    "beats": "Redfin.com's homepage — Redfin opens on a bare map-and-search-bar with zero inventory until you type; this page shows a real listing card (photo, $1,624,900, 4bd/3ba/3,413sqft, 2075 Trenton Avenue) inside the first viewport on both desktop and mobile. That's the one clean win. It does not beat a real Bend competitor on originality: the community rails below the fold are the generic 3-card-plus-arrows shape you'd find on any portal.",
+    "beats": "Wins Zillow's Bend homepage on named live inventory in the first viewport (3,265, Oregon Data Share) and on Tetherow pulse ($1,900,000 median list, 8 sold last 30 days) versus photo-only resort tiles; loses to Zillow on search-morph completeness and to any serious brokerage homepage on first-viewport copy.",
     "adaptedFrom": [
-      {
-        "id": "house-home-rails"
-      },
-      {
-        "id": "house-listing-dial"
-      },
       {
         "id": "beui-morphing-search"
       },
@@ -346,44 +352,65 @@
       },
       {
         "id": "beui-number"
+      },
+      {
+        "id": "house-home-rails"
       }
     ],
     "defects": [
       {
-        "section": "Featured Communities / Browse Places / Resort Communities carousels",
+        "section": "#hero .home-hero-search__brief",
         "severity": "taste",
-        "finding": "Three sections in a row — Featured Communities, Browse Places, Resort Communities — are the identical eyebrow-heading-into-3-card-arrow-carousel with no variation in width, density, or card form. It reads as the stacked-section page even though the unit is a carousel and not a list.",
+        "criterion": "taste",
+        "finding": "The first viewport body is the evaluation checklist pasted over the aerial, so a buyer reads navy-on-cream spec language instead of a market sentence.",
         "replaceWith": null
       },
       {
-        "section": "Browse places cards — Parkside Place Phase 1, Calaveras, Black Butte Ranch",
+        "section": "search-open .v3-morph-search",
         "severity": "craft",
-        "finding": "When a subdivision has no photo the card falls back to a flat solid-navy rectangle with only the name set in Amboqia — an unstyled empty state sitting directly beside photographed cards in the same row, so it reads as broken rather than designed.",
-        "replaceWith": "shadcn-card"
-      },
-      {
-        "section": "Mobile search-open dropdown",
-        "severity": "craft",
-        "finding": "On the 375px search-open shot the suggestion list has no contained panel background — rows of address/city/community results bleed downward with faint gray labels ('City', 'Community') that lose contrast against the cream page and visually collide with the listing dial photo underneath instead of sitting inside a bounded results card.",
+        "criterion": "craft",
+        "finding": "Open search keeps a leftover aerial strip and drops a cream result list onto the house rail; on 375 the panel clips Esc, the MLS line, and the lead card instead of the field becoming the results surface.",
         "replaceWith": "beui-morphing-search"
       },
       {
-        "section": "Hero eyebrow, mobile vs desktop",
+        "section": "#featured-community",
         "severity": "taste",
-        "finding": "Desktop leads the hero with the live count ('3,208 LISTED'); mobile drops that figure entirely and substitutes the generic label 'CENTRAL OREGON' — the smaller viewport, which needs the inventory signal most since less of the page fits above the fold, is the one where it's missing.",
+        "criterion": "taste",
+        "finding": "Resorts and planned communities, Browse places, and Resorts and communities are three stacked eyebrow-heading-card rows; the lower resort rail repeats Tetherow/Broken Top as identical Resort community Cards with no pulse.",
+        "replaceWith": "shadcn-card"
+      },
+      {
+        "section": "#places-resorts-and-communities",
+        "severity": "taste",
+        "criterion": "taste",
+        "finding": "Tetherow, Broken Top, and Eagle Crest sit as photo Cards labeled only Resort community, a second community carousel that discards the pulse the featured rail just established.",
+        "replaceWith": "beui-number"
+      },
+      {
+        "section": ".home-rails",
+        "severity": "craft",
+        "criterion": "craft",
+        "finding": "See all homes on 375 wraps into a tall square beside Homes in Bend and nearby, and the first-viewport house photos are cropped to a sliver.",
+        "replaceWith": "house-home-rails"
+      },
+      {
+        "section": "#featured-community [data-slot=card]",
+        "severity": "craft",
+        "criterion": "craft",
+        "finding": "Caldera Springs shows 62.5 days to an offer with no source line on the Card, and Broken Top's Explore footer is clipped.",
         "replaceWith": null
       }
     ],
-    "verdict": "This is not a cream box — demoMatch true: the tab pill has a real sliding active state, the search field genuinely expands into a results panel on desktop, the carousels show working arrows with full card bodies, and the listing dial is a legitimately better device than a card grid. But originality caps out because three consecutive sections reuse the same 3-card-and-arrows shape, and craft slips on the mobile search overlap and the unstyled flat-navy fallback cards sitting next to real photography. Correct, on-brand, and only sometimes dull — it clears the floor Matt set but doesn't clear his bar of 'breathtaking' or 'interactive on every single page.'",
     "comparedToPrior": "rebaselined",
     "priorMark": {
-      "evaluatedAt": "2026-09-14",
-      "score": 52,
+      "evaluatedAt": "2026-09-10",
+      "score": 59,
       "evaluatorModel": "grok-4.6",
-      "rubricVersion": "v1-2026-09-12",
-      "shotsHash": "sha256:2ab27e21f1eb8286e1e9b46e1ad20e35c171d1f7c480a4670bfd347622b52969"
+      "rubricVersion": "v1-2026-09-08",
+      "shotsHash": "sha256:891b6ed8210650683a5d18e058dbf4c3263f10a3c2d6d97d5143a1a0b55a222c"
     },
-    "rebaselineReason": "evaluatorModel grok-4.6 -> claude-sonnet-5; shotsHash (new captures of the listing dial, Matt 2026-09-24, SITE-195). The judge is a different instrument from the prior mark, so this is the first mark on the claude-sonnet-5 ruler for this class and the floor the next pass may not fall under."
+    "rebaselineReason": "rubricVersion v1-2026-09-08 → v1-2026-09-12; shotsHash drifted after SITE-148 recaptured places / places-resorts shots (equal-height photo-or-reserved cards). Fold search-open / sell-tab shots unchanged. scores 52/47/55 stay the Mini three-scoring. Do not invent a new score.",
+    "verdict": "demoMatch is true because search-open, sell-tab, featured, and places shots show morph results, a Street address field, carousel Cards with pulse and town counts, and house-home-rails with price/address/beds/baths/sqft, not chips. The page still fails as a homepage: the stacked-section rhythm plus evaluator copy in the hero keep it a catalog assembly with a live MLS badge, not a page that beats Zillow on craft or originality."
   },
   "contentFloor": {
     "seededAt": "2026-09-12",

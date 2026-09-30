@@ -123,9 +123,10 @@ describe('place source lines: the whole trace in a reader’s words', () => {
         .replace(/^\s*\/\/.*$/gm, '')
     const INLINE =
       /read through the Market Truth|metric layer|Sold history is leftover|\(market_metric|\(lib\/mortgage\.ts\)|read from market_history_weekly|Active and Active Under Contract/
+    // The community page and its value ask are held at main's copy until the
+    // community class reaches its taste mark (Matt 2026-09-25, "fix first,
+    // then ship"); they rejoin this list when that class ships.
     for (const path of [
-      'app/communities/[slug]/page.tsx',
-      'app/communities/[slug]/_v3/place-value-actions.ts',
       'app/cities/[slug]/page.tsx',
       'app/cities/[slug]/[neighborhoodSlug]/page.tsx',
       'app/subdivisions/page.tsx',

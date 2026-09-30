@@ -1,7 +1,7 @@
 /**
  * Homepage new-construction primary run — live counts, SFR-first doors.
  */
-import { searchListingsAll, searchListingsAllCount } from '@/lib/data'
+import { searchListingsAllCount } from '@/lib/data'
 import {
   BEND_NEW_CON_HOME_NAV_NAMES,
   BEND_NEW_CON_STAGE_FALLBACK_POSTER,
@@ -29,36 +29,10 @@ async function liveCount(filter: Parameters<typeof searchListingsAllCount>[0]): 
   }
 }
 
-/**
- * A photograph of one of the subdivision's own new homes for sale, for a door
- * with no place photograph (2026-09-29: two of three doors were a navy plate
- * with a name on it). The newest photographed listing the same filter counts;
- * nothing when there is none, and the plate stays.
- */
-async function listedPhoto(filter: Parameters<typeof searchListingsAll>[0]): Promise<string | undefined> {
-  if (!dalReady()) return undefined
-  try {
-    const { rows } = await searchListingsAll({ ...filter, photosCountMin: 1, sort: 'newest', limit: 3 })
-    const url = rows.map((row) => row.photoUrl?.trim()).find((src): src is string => Boolean(src))
-    return url || undefined
-  } catch (err) {
-    console.error('[loadHomeNewConRun] photo', err)
-    return undefined
-  }
-}
-
 export async function loadHomeNewConRun(): Promise<HomePlaceRun> {
-  const placePhotos = BEND_NEW_CON_HOME_NAV_NAMES.map((name) => preferPlaceHeroOrNull(null, communityImage(slugify(name))))
-  const [[bendCount, ...navCounts], listedPhotos] = await Promise.all([
-    Promise.all([
-      liveCount(bendNewConSearchFilter()),
-      ...BEND_NEW_CON_HOME_NAV_NAMES.map((name) => liveCount(bendNewConSearchFilter(name))),
-    ]),
-    Promise.all(
-      BEND_NEW_CON_HOME_NAV_NAMES.map((name, i) =>
-        placePhotos[i] ? Promise.resolve(undefined) : listedPhoto(bendNewConSearchFilter(name)),
-      ),
-    ),
+  const [bendCount, ...navCounts] = await Promise.all([
+    liveCount(bendNewConSearchFilter()),
+    ...BEND_NEW_CON_HOME_NAV_NAMES.map((name) => liveCount(bendNewConSearchFilter(name))),
   ])
 
   const doors: HomePlaceDoor[] = [
@@ -66,19 +40,15 @@ export async function loadHomeNewConRun(): Promise<HomePlaceRun> {
       label: 'Bend new homes',
       href: '/new-construction',
       description: 'Single-family first · map and builder savings',
-      // The whole; the subdivisions under it are its parts and share a scale.
-      total: true,
       photoSrc: BEND_NEW_CON_STAGE_FALLBACK_POSTER,
       ...(bendCount != null ? { count: bendCount } : {}),
     },
     ...BEND_NEW_CON_HOME_NAV_NAMES.map((name, i) => {
-      const photoSrc = placePhotos[i] ?? listedPhotos[i] ?? null
+      const photoSrc = preferPlaceHeroOrNull(null, communityImage(slugify(name)))
       return {
         label: name,
         href: bendNewConSearchHref(name),
-        // Plain words, not the filter's name (2026-09-29: the judge read
-        // "Active-building subdivision" as internal jargon).
-        description: 'Bend subdivision, builder still selling',
+        description: 'Active-building subdivision',
         ...(photoSrc ? { photoSrc } : {}),
         ...(navCounts[i] != null ? { count: navCounts[i] } : {}),
       }
@@ -88,10 +58,7 @@ export async function loadHomeNewConRun(): Promise<HomePlaceRun> {
   return {
     name: 'New construction',
     unit: 'new homes for sale',
-    // A counted ledger like the towns under it (2026-09-29: three card
-    // carousels on one page, featured communities, new construction and the
-    // resorts, read as one module three times; at 375 each card was a
-    // half-empty box between two arrows).
+    layout: 'carousel',
     seeAll: { label: 'Bend new homes page', href: '/new-construction' },
     doors,
   }

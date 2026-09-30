@@ -22,18 +22,22 @@
  * lie under its card, the second's stand to the left, the third's to the
  * right. `railOffset` is the number of dials a page mounts above these, so the
  * cycle runs on across the whole page (/buy's lead shelf is its first dial).
+ *
+ * `layout="rails"` HOLDS THE CAROUSELS (Matt 2026-09-25, "fix first, then
+ * ship"): the stacked HomeListingRail carousels exactly as they shipped before
+ * the dial, for a page whose class is still below its taste mark with the
+ * dial (the homepage and the /cities index). The default is the dial.
  */
 import { cn } from '@/lib/utils'
 import {
   V3_ROOT_CLASS,
   V3Button,
   V3ListingDial,
-  V3ChartSwitch,
   dialRailPositionAt,
-  v3Text,
   type V3ListingDialItem,
 } from '@/components/site/v3'
 import { formatPrice } from '@/lib/format/money'
+import { HomeListingRail } from './HomeListingRail.client'
 import { listingRowFromRailCard, type HomeRailRow } from './home-rail-items'
 import './home-homes-rails.css'
 import './home-shelves.css'
@@ -97,7 +101,7 @@ export function HomeHomesRails({
   rows,
   emptyMessage,
   railOffset = 0,
-  switched = false,
+  layout = 'dial',
 }: {
   rows: HomeRailRow[]
   emptyMessage: string
@@ -105,13 +109,8 @@ export function HomeHomesRails({
   forSaleCount?: number | null
   /** How many dials the page mounts above these shelves (the rail cycle runs on). */
   railOffset?: number
-  /**
-   * One dial with a switch between the shelves instead of a stack (the
-   * homepage, 2026-09-25: three stacked dials read as one section pasted
-   * three times). The /price-drops fold's form: the set is chosen by a tab,
-   * one dial shows, and every shelf's homes stay in the served HTML.
-   */
-  switched?: boolean
+  /** 'dial' (default): the listing dials. 'rails': the held carousels (header). */
+  layout?: 'dial' | 'rails'
 }) {
   if (rows.length === 0) {
     return (
@@ -121,19 +120,12 @@ export function HomeHomesRails({
     )
   }
 
-  if (switched && rows.length > 1) {
+  if (layout === 'rails') {
     return (
-      <div className={cn(V3_ROOT_CLASS, 'home-shelves', 'home-shelves--switched')}>
-        <V3ChartSwitch
-          label={v3Text('Homes for sale')}
-          items={rows.map((row) => ({ key: row.id, label: v3Text(SHELF_TAB[row.id] ?? row.heading) }))}
-          className="home-shelves__switch"
-        >
-          {rows.map((row) => (
-            // One dial shows at a time, so each takes the default rail.
-            <HomeShelf key={row.id} row={row} order={0} />
-          ))}
-        </V3ChartSwitch>
+      <div className="home-rails">
+        {rows.map((row) => (
+          <HomeListingRail key={row.id} row={row} />
+        ))}
       </div>
     )
   }
@@ -145,11 +137,4 @@ export function HomeHomesRails({
       ))}
     </div>
   )
-}
-
-/** The switch's short names for the shelves; a shelf not named here keeps its heading. */
-const SHELF_TAB: Readonly<Record<string, string>> = {
-  'homes-local': 'Bend and nearby',
-  'homes-price-cuts': 'Price cuts',
-  'homes-new': 'New this week',
 }

@@ -8,8 +8,7 @@
  * only as the answer to an address the visitor typed (CommunityPlaceValue, SITE-01,
  * Matt 2026-09-07): an input-to-answer ask, not a number hero.
  * Eagle Crest does not seed an unreliable hull. Nested plats draw as Atlas
- * regions. Homes stay on this page as listing dials, one per buyer group
- * (Matt 2026-09-24: every place page shows listings the same way).
+ * regions. Homes stay on this page in the carousel.
  * Parity: design_system/ryan-realty/ui_kits/community/parity.json.
  *
  * leftoverHudKpis grain stays 'neighborhood', keyed by the bare community
@@ -129,7 +128,6 @@ import { CommunityPlaceValue } from './_v3/CommunityPlaceValue.client'
 import { regionsFromChildCells } from '@/lib/place/child-rings'
 import { placeStockSectionsFromTiles } from '@/lib/place/place-inventory-stock'
 import { loadPlaceLeaseSection } from '@/lib/place/place-lease-stock'
-import { placeBoundaryClause, placeInventorySource } from '@/lib/place/place-inventory-source'
 import { childListingKeys, slugFromPlaceHref, subdivisionRailEntries } from '@/lib/place/place-child-stock'
 import { slugify } from '@/lib/slug'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -492,9 +490,6 @@ async function renderCommunityDetail({ params }: Props) {
     grain: 'community',
     geoSlug: slug,
     asOf: mosAsOf,
-    // Detached houses, not every listing the map counts (townhomes and lots
-    // too): the bar names its population, as the neighborhood page's does.
-    homesName: 'Houses for sale',
   })
   const alertTypes = buildPlaceAlertTypes({
     placeName: publicName,
@@ -624,8 +619,7 @@ async function renderCommunityDetail({ params }: Props) {
   // Commercial leases in the community: shown last under the map, never
   // counted for sale and never a pin.
   const leaseSection = await loadPlaceLeaseSection(liveStockTiles)
-  // The reader's words for the same set (SITE-193): no MLS status names.
-  const inventorySource = placeInventorySource(placeBoundaryClause(publicName))
+  const inventorySource = `regional MLS through Oregon Data Share, every publicly active listing inside ${publicName}: Active and Active Under Contract, every property type. Coming Soon is excluded.`
   const hasMap =
     seedRing || drawAtlas || stockSections.length > 0 || leaseSection != null
   // The living map, scoped to this community (Matt 2026-09-01: heat maps on
@@ -964,10 +958,6 @@ async function renderCommunityDetail({ params }: Props) {
                 </>
               ) : null}
               <a href="#homes">{publicName} homes for sale</a>
-              {/* The alerts ask's door (2026-09-25); since 2026-09-29 the form
-                  itself sits right under the opening. */}
-              {' · '}
-              <a href="#alerts">Email me new {publicName} listings</a>
             </p>
             {belongingLine ? (
               <p
@@ -988,8 +978,11 @@ async function renderCommunityDetail({ params }: Props) {
           keysBySlug={homesByChild}
           source={inventorySource}
           asOf={leftoverStamp}
+          // Held on the carousel until this class reaches its taste mark with
+          // the listing dial (Matt 2026-09-25, "fix first, then ship").
+          layout="rails"
         >
-          <div className="place-one-map place-one-map--ask">
+          <div className="place-one-map">
             <PlaceSubdivisionRail id="child-places" nameOnly />
             <div className="community-atlas">
             <PlaceSubdivisionAtlas
@@ -1019,24 +1012,6 @@ async function renderCommunityDetail({ params }: Props) {
               clusterStageHintPhone={COMMUNITY_FOLD_CLUSTER_STAGE_PHONE}
             />
             </div>
-            {/* The alerts sentence beside the map, in the first screen (2026-09-29:
-                the lock is "a drawing and a figure beside the alerts sentence";
-                below the map it was two screens down, above it the map fell
-                out of the first screen). */}
-            <aside className="place-one-map__ask">
-              <CommunityAlertsStrip
-                id="alerts"
-                communityName={publicName}
-                city={cityName}
-                subdivision={community.subdivision}
-                geoSlug={neighborhoodSlug}
-                newCount30d={publicPace.newCount30d}
-                updatedAt={leftoverStamp}
-                browseHref={newestListingsHref}
-                matchNames={community.subdivision ? getSubdivisionMatchNames(community.subdivision) : []}
-                types={alertTypes}
-              />
-            </aside>
           </div>
           {fieldTypeIndex.length > 1 ? (
             <nav className="community-field-types" aria-label={`${publicName} listing types`}>
@@ -1052,24 +1027,36 @@ async function renderCommunityDetail({ params }: Props) {
               </ul>
             </nav>
           ) : null}
-          {/* Matt 2026-09-24: the homes below the map are listing dials, one
-              per buyer group (each type link above lands on its dial), the
-              same as every other place page, still filtered by the
-              subdivision chosen on the map. */}
           <PlaceSubdivisionHomes id="homes" />
         </PlaceSubdivisionMap>
-
-        <div className="community-fold">
-          <div className="community-fold__ask">
-            <CommunityPlaceValue slug={slug} placeName={publicName} activity={placeActivitySpark} />
-          </div>
-        </div>
 
         {amenityBoard ? (
           <V3Amenities id="amenities" heading={amenityBoard.heading} source={amenityBoard.source}>
             <CommunityAmenities board={amenityBoard} />
           </V3Amenities>
         ) : null}
+
+        <div className="community-fold">
+          <div className="community-fold__stage">
+            <aside className="community-fold__figure">
+              <CommunityAlertsStrip
+                id="alerts"
+                communityName={publicName}
+                city={cityName}
+                subdivision={community.subdivision}
+                geoSlug={neighborhoodSlug}
+                newCount30d={publicPace.newCount30d}
+                updatedAt={leftoverStamp}
+                browseHref={newestListingsHref}
+                matchNames={community.subdivision ? getSubdivisionMatchNames(community.subdivision) : []}
+                types={alertTypes}
+              />
+            </aside>
+          </div>
+          <div className="community-fold__ask">
+            <CommunityPlaceValue slug={slug} placeName={publicName} activity={placeActivitySpark} />
+          </div>
+        </div>
 
         {costChart && firstMarketFigure ? (
           <V3Instrument
@@ -1081,9 +1068,9 @@ async function renderCommunityDetail({ params }: Props) {
             chartFirst
             foldAfter={0}
             source={v3Text(
-              `regional MLS through Oregon Data Share: ` +
-                `detached single-family houses inside the recorded ${publicName} boundary. ` +
-                `The sold history is ${publicName}'s own closed sales, not a city chart. Months of supply and a buyer's or seller's verdict are not part of this section.`,
+              `regional MLS through Oregon Data Share, read through the Market Truth metric layer: ` +
+                `detached single-family houses assigned to ${publicName} by boundary membership. ` +
+                `Sold history is leftover, not a city monthly chart. Months of supply and a buyer's or seller's verdict stay off this grain.`,
             )}
             chart={costChart}
             updated={leftoverStamp ? v3Text(formatDate(leftoverStamp)) : undefined}

@@ -46,7 +46,6 @@ import {
   LEASE_PAGE_HEADING,
   leaseCityGroups,
   leaseCityLedgerRows,
-  leaseLedgerNote,
   leaseItemList,
   leaseMetaDescription,
 } from './_v3/lease-page'
@@ -82,8 +81,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function CommercialSpaceForLeasePage() {
-  const { tiles, rateOptions, leaseTerms } = await getCommercialLeaseListings()
-  const groups = leaseCityGroups(tiles, rateOptions, leaseTerms)
+  const { tiles, rateOptions } = await getCommercialLeaseListings()
+  const groups = leaseCityGroups(tiles, rateOptions)
   if (groups.length === 0) noStore()
 
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -114,8 +113,6 @@ export default async function CommercialSpaceForLeasePage() {
     value: v3Text(row.value),
     weight: row.weight,
     ...(row.detail ? { detail: v3Text(row.detail) } : {}),
-    ...(row.reveal ? { reveal: { line: v3Text(row.reveal) } } : {}),
-    ...(row.media ? { media: row.media } : {}),
   }))
   const [firstRow, ...restRows] = ledgerRows
 
@@ -147,10 +144,6 @@ export default async function CommercialSpaceForLeasePage() {
               heading={v3Text(LEASE_PAGE_HEADING)}
               headingLevel={1}
               encode="bar"
-              note={(() => {
-                const note = leaseLedgerNote(groups)
-                return note ? v3Text(note) : undefined
-              })()}
               rows={[firstRow, ...restRows]}
               source={v3Text(LEASE_TRACE)}
             />
@@ -159,6 +152,9 @@ export default async function CommercialSpaceForLeasePage() {
             <V3PlaceInventory
               id="lease"
               layout="dial"
+              // Held at the rail it shipped with until this class reaches its
+              // taste mark (Matt 2026-09-25, "fix first, then ship").
+              dialRail="left"
               placeName="Central Oregon"
               sections={groups.map((group) => ({
                 key: group.slug,

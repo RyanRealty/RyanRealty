@@ -12,11 +12,20 @@
  * so it is not counted "for sale" and it is not a pin. They arrive as their
  * own `leases` list and PlaceSubdivisionHomes shows them last, under
  * "Commercial space for lease", filtered by the same map selection.
+ *
+ * `layout="rails"` HOLDS THE CAROUSEL (Matt 2026-09-25, "fix first, then
+ * ship"): the map block exactly as it shipped before the listing dial, one
+ * card carousel per buyer group and a rail of names with no count bars. A
+ * page passes it while its class is below its taste mark with the dial
+ * (/communities/[slug]); the default is the dial.
  */
 import { createContext, useContext, useId, useMemo, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { formatCount } from '@/lib/format/count'
+import { formatPublishedSaleAsk } from '@/lib/listing/publish-listing-ask'
+import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
+import { publishListingLeaseFigure } from '@/lib/listing/publish-lease-rate'
 import { placeHomesCountLabel } from '@/lib/place/place-count-label'
 import {
   COMMERCIAL_LEASE_ALL_LABEL,
@@ -24,13 +33,15 @@ import {
   PLACE_LEASE_HEADING,
 } from '@/lib/place/place-lease-heading'
 import { SparkSafeImage } from '@/lib/listing/SparkSafeImage'
-import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
+import { LISTING_FIELD_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import type { SubdivisionRailEntry } from '@/lib/place/place-child-stock'
 import { firstListedPhoto } from '@/lib/place/rail-photo'
 import { V3_ROOT_CLASS, V3Button, V3Heading } from './atoms'
 import { V3Atlas, type V3AtlasProps } from './V3Atlas.client'
+import { V3Carousel } from './V3Carousel.client'
 import { V3ListingDial } from './V3ListingDial.client'
 import { dialRailPositionAt } from './V3ListingDial.logic'
+import { listingPhotoAlt } from './listing-photo-alt'
 import type { V3ListingRowData } from './V3ListingRow'
 import { V3SourceLine } from './V3SourceLine'
 import {
@@ -42,7 +53,11 @@ import {
 import './tokens.css'
 import './PlaceSubdivisionMap.css'
 
+/** 'dial' (default): the listing dials. 'rails': the held carousel (see the header). */
+export type PlaceSubdivisionMapLayout = 'dial' | 'rails'
+
 type PlaceMapState = {
+  layout: PlaceSubdivisionMapLayout
   placeName: string
   rail: readonly SubdivisionRailEntry[]
   homes: readonly V3ListingRowData[]
@@ -73,6 +88,7 @@ export function PlaceSubdivisionMap({
   keysBySlug,
   source,
   asOf = null,
+  layout = 'dial',
   children,
 }: {
   placeName: string
@@ -83,12 +99,14 @@ export function PlaceSubdivisionMap({
   keysBySlug: Readonly<Record<string, readonly string[]>>
   source: string
   asOf?: string | null
+  /** 'rails' holds the carousel-era map block (header); omit for the dial. */
+  layout?: PlaceSubdivisionMapLayout
   children: ReactNode
 }) {
   const [selectedId, setSelected] = useState<string | null>(null)
   const value = useMemo(
-    () => ({ placeName, rail, homes, leases, keysBySlug, source, asOf, selectedId, setSelected }),
-    [placeName, rail, homes, leases, keysBySlug, source, asOf, selectedId],
+    () => ({ layout, placeName, rail, homes, leases, keysBySlug, source, asOf, selectedId, setSelected }),
+    [layout, placeName, rail, homes, leases, keysBySlug, source, asOf, selectedId],
   )
   return <PlaceMapContext.Provider value={value}>{children}</PlaceMapContext.Provider>
 }
@@ -104,16 +122,22 @@ export function PlaceSubdivisionRail({
   /** Accessible name for the list. Defaults to "{place} subdivisions". */
   label?: string
 }) {
-  const { placeName, rail, homes, keysBySlug, selectedId, setSelected } = usePlaceMap()
+  const { layout, placeName, rail, homes, keysBySlug, selectedId, setSelected } = usePlaceMap()
+  // The held carousel layout keeps the rail it shipped with: names, no bars.
+  const bars = layout !== 'rails'
   const railMost = Math.max(1, ...rail.map((entry) => keysBySlug[entry.id]?.length ?? 0))
   const detailBase = useId()
   return (
     <nav
       id={id}
-      className={cn('place-subdiv-rail', nameOnly && 'place-subdiv-rail--names')}
+      className={cn(
+        'place-subdiv-rail',
+        nameOnly && 'place-subdiv-rail--names',
+        !bars && 'place-subdiv-rail--held',
+      )}
       aria-label={label ?? `${placeName} subdivisions`}
     >
-      {railMost > 1 ? (
+      {bars && railMost > 1 ? (
         // The key to the rows' bars, so the mark reads as a count.
         <p className="place-subdiv-rail__key">
           <span className="place-subdiv-rail__key-mark" aria-hidden="true" />
@@ -173,7 +197,7 @@ export function PlaceSubdivisionRail({
                       on one scale down the rail (2026-09-25: a column of names
                       and captions with nothing to compare). The figure is the
                       detail line's; the bar only draws it. */}
-                  {listed > 0 ? (
+                  {bars && listed > 0 ? (
                     <span className="place-subdiv-rail__bar" aria-hidden="true">
                       <span style={{ width: `${((listed / railMost) * 100).toFixed(1)}%` }} />
                     </span>
@@ -211,6 +235,64 @@ export function PlaceSubdivisionAtlas(props: V3AtlasProps) {
          selected district. */
       memberKeysBySlug={keysBySlug}
     />
+  )
+}
+
+function homeMeta(listing: V3ListingRowData): string {
+  const parts: string[] = []
+  if (listing.beds != null) parts.push(`${Math.round(listing.beds).toLocaleString('en-US')} bd`)
+  if (listing.baths != null) parts.push(`${Math.round(listing.baths).toLocaleString('en-US')} ba`)
+  if (listing.sqft != null) parts.push(`${Math.round(listing.sqft).toLocaleString('en-US')} sqft`)
+  return parts.join(' · ')
+}
+
+/** The held carousel's card (layout="rails"), as it shipped before the dial. */
+function PlaceHomeCard({ listing }: { listing: V3ListingRowData }) {
+  const ask = formatPublishedSaleAsk({
+    price: listing.price,
+    propertyType: listing.propertyType,
+  })
+  const share = publishListingShareKind({
+    propertySubType: listing.propertySubType,
+    subdivisionName: listing.subdivisionName,
+    city: listing.city,
+    listNumber: listing.listNumber,
+  })
+  // A commercial lease prints its rent with the unit (or "Lease rate not
+  // published") where a sale prints its ask, and "For lease" as its kind.
+  const lease = publishListingLeaseFigure({
+    price: listing.price,
+    propertyType: listing.propertyType,
+    leaseRateOption: listing.leaseRateOption ?? null,
+  })
+  const meta = homeMeta(listing)
+  return (
+    <Link href={listing.href} className="place-home-card">
+      <span className="place-home-card__media">
+        {listing.photoUrl ? (
+          <SparkSafeImage
+            src={listingRowPhotoSrc(listing.photoUrl, LISTING_FIELD_LEAD_PHOTO_SIZE)}
+            alt={listingPhotoAlt(listing)}
+            fill
+            sizes="(max-width: 48rem) 100vw, 280px"
+          />
+        ) : null}
+      </span>
+      {lease ? (
+        <span className={cn('place-home-card__price', !lease.rate && 'place-home-card__price--none')}>
+          {lease.text}
+        </span>
+      ) : ask ? (
+        <span className="place-home-card__price">{ask}</span>
+      ) : null}
+      {lease ? (
+        <span className="place-home-card__share">{lease.label}</span>
+      ) : share ? (
+        <span className="place-home-card__share">{share}</span>
+      ) : null}
+      <span className="place-home-card__addr">{listing.addressLine}</span>
+      {meta ? <span className="place-home-card__meta">{meta}</span> : null}
+    </Link>
   )
 }
 
@@ -252,9 +334,13 @@ function homesByBuyerGroup(listings: readonly V3ListingRowData[]): Array<{
  * same interaction). Each dial takes dialRailPositionAt(its order in this
  * block): the for-sale dials in buyer-group order, then the lease dial, so
  * two dials one above the other never stand their rails the same way.
+ *
+ * Under the map's `layout="rails"` (a class held below its taste mark) each
+ * buyer group is instead the card carousel it shipped as, counted "N for
+ * sale" as it was.
  */
 export function PlaceSubdivisionHomes({ id }: { id: string }) {
-  const { placeName, rail, homes, leases, keysBySlug, source, asOf, selectedId } = usePlaceMap()
+  const { layout, placeName, rail, homes, leases, keysBySlug, source, asOf, selectedId } = usePlaceMap()
   const selected = rail.find((entry) => entry.id === selectedId) ?? null
   const title = selected?.name ?? placeName
   const visible = useMemo(() => {
@@ -279,6 +365,73 @@ export function PlaceSubdivisionHomes({ id }: { id: string }) {
   const dialKey = selectedId ?? 'all'
   // The lease dial comes after every for-sale dial drawn above it.
   const leaseDialOrder = typed ? typeSections.length : visible.length > 0 ? 1 : 0
+
+  if (layout === 'rails') {
+    return (
+      <section
+        id={id}
+        className={cn(V3_ROOT_CLASS, 'place-homes', 'place-homes--rails')}
+        aria-labelledby={`${id}-heading`}
+      >
+        <V3Heading level={2} size="field" id={`${id}-heading`}>
+          {title}
+        </V3Heading>
+        {visible.length > 0 ? (
+          <p className="place-homes__count">{`${formatCount(visible.length)} for sale`}</p>
+        ) : null}
+        {visible.length > 0 ? (
+          typed ? (
+            typeSections.map((section) => (
+              <div key={section.key} id={`${id}-${section.key}`} className="place-homes__type">
+                <p className="place-homes__type-heading" id={`${id}-${section.key}-heading`}>
+                  {section.heading}
+                </p>
+                <p className="place-homes__type-count">{`${formatCount(section.rows.length)} for sale`}</p>
+                <V3Carousel mode="rail" label={`${section.heading} in ${title}`}>
+                  {section.rows.map((listing) => (
+                    <PlaceHomeCard key={listing.listingKey} listing={listing} />
+                  ))}
+                </V3Carousel>
+              </div>
+            ))
+          ) : (
+            <V3Carousel mode="rail" label={`Homes in ${title}`}>
+              {visible.map((listing) => (
+                <PlaceHomeCard key={listing.listingKey} listing={listing} />
+              ))}
+            </V3Carousel>
+          )
+        ) : visibleLeases.length > 0 ? (
+          <p className="place-homes__empty">Nothing for sale in {title} right now.</p>
+        ) : (
+          <p className="place-homes__empty">Nothing listed in {title} right now.</p>
+        )}
+        {/* COMMERCIAL SPACE FOR LEASE, last, apart from every for-sale count
+            above. Same selection, same card, the rent with its unit. */}
+        {leaseCount ? (
+          <div id={`${id}-lease`} className="place-homes__type place-homes__type--lease">
+            <p className="place-homes__type-heading" id={`${id}-lease-heading`}>
+              {PLACE_LEASE_HEADING}
+            </p>
+            <p className="place-homes__type-count">{leaseCount}</p>
+            <V3Carousel mode="rail" label={`${PLACE_LEASE_HEADING} in ${title}`}>
+              {visibleLeases.map((listing) => (
+                <PlaceHomeCard key={listing.listingKey} listing={listing} />
+              ))}
+            </V3Carousel>
+          </div>
+        ) : null}
+        {leaseCount ? (
+          <p className="place-homes__more">
+            <V3Button href={COMMERCIAL_LEASE_PATH} variant="ghost">
+              {COMMERCIAL_LEASE_ALL_LABEL}
+            </V3Button>
+          </p>
+        ) : null}
+        <V3SourceLine source={source} asOf={asOf} sourceName="Oregon Data Share" />
+      </section>
+    )
+  }
 
   return (
     <section id={id} className={cn(V3_ROOT_CLASS, 'place-homes')} aria-labelledby={`${id}-heading`}>

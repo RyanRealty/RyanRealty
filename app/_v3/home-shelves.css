@@ -55,19 +55,3 @@
     margin-top: var(--v3-space-sm);
   }
 }
-
-/* The switched shelves (the homepage): the tabs over one dial. On a phone the
-   tab row scrolls rather than wrapping a label onto a line of its own. */
-.home-shelves--switched .home-shelves__switch {
-  min-width: 0;
-}
-
-.home-shelves--switched .v3-chart-switch__seg {
-  max-width: 100%;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.home-shelves--switched .v3-chart-switch__tab {
-  white-space: nowrap;
-}

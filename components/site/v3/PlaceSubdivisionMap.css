@@ -209,7 +209,7 @@
    its card on its side at that width: the dial on the left, the photograph
    against it, the copy in a column on the right), ruled apart by a hairline.
    Commercial space for lease is the last dial, ruled apart the same way. */
-.place-homes .place-homes__count {
+.place-homes:not(.place-homes--rails) .place-homes__count {
   margin-bottom: var(--v3-space-lg);
 }
 
@@ -265,4 +265,98 @@
   width: 1.5rem;
   height: var(--v3-rule-weight-section);
   background: var(--v3-navy);
+}
+
+/* THE HELD CAROUSEL (PlaceSubdivisionMap layout="rails", Matt 2026-09-25
+   "fix first, then ship"): the map block as it shipped before the dial, for a
+   class still below its taste mark with the dial (/communities/[slug]). These
+   are its rules as they stood on main; nothing here reaches the dial. */
+@media (min-width: 64rem) {
+  /* The rail and the map sat level at their feet. */
+  .place-one-map:has(> .place-subdiv-rail--held) {
+    align-items: end;
+  }
+}
+
+/* Below 48rem one home fills the row. From 48rem several cards sit side by side. */
+.place-homes--rails .v3-carousel.v3-carousel--rail {
+  --v3-carousel-slide-w: 100cqi;
+  --v3-carousel-nav-top: calc((var(--v3-carousel-slide-w) - var(--v3-space-md)) * 1 / 3);
+}
+
+@media (min-width: 48rem) {
+  .place-homes--rails .v3-carousel.v3-carousel--rail {
+    --v3-carousel-slide-w: min(17.5rem, 42cqi);
+  }
+}
+
+.place-homes__type-count {
+  margin: 0 0 var(--v3-space-sm);
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+}
+
+.place-homes__type + .place-homes__type {
+  margin-top: var(--v3-space-md);
+}
+
+.place-homes__type-heading {
+  margin: 0 0 0.2rem;
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body);
+  font-weight: 600;
+}
+
+.place-home-card {
+  display: grid;
+  gap: 0.15rem;
+  align-content: start;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.place-home-card__media {
+  position: relative;
+  display: block;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--v3-navy) 6%, transparent);
+}
+
+.place-home-card__price {
+  margin-top: 0.35rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--v3-weight-medium);
+  font-size: var(--v3-size-body);
+}
+
+.place-home-card__share,
+.place-home-card__meta {
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-body);
+}
+
+.place-home-card__addr {
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+  overflow-wrap: break-word;
+}
+
+/* A lease with no publishable rate reads "Lease rate not published": a
+   withheld line, set quieter than a figure. */
+.place-home-card__price--none {
+  color: var(--v3-ink-muted);
+  font-weight: var(--v3-weight-body);
+  font-size: var(--v3-size-body-sm);
+}
+
+/* Commercial space for lease follows every for-sale group, ruled apart from
+   them, because it is not one of them. (0,2,0) and later in the file than
+   `.place-homes__type + .place-homes__type`, so it wins the margin. */
+.place-homes .place-homes__type--lease {
+  margin-top: var(--v3-space-xl);
+  padding-top: var(--v3-space-xl);
+  border-top: var(--v3-rule-hairline);
 }

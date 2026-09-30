@@ -652,9 +652,6 @@ describe('Bend new-construction snapshot', () => {
     expect(chips).toContain('BEND_NEW_CON_STATUS_LEGEND')
     expect(chips).toContain('id="savings"')
     expect(home).toContain("href: '/new-construction'")
-    // 2026-09-29: new construction is a counted ledger on the homepage (each
-    // subdivision's new-home count drawn as a bar); the featured carousel is
-    // the page's one run of cards.
-    expect(home).not.toContain("layout: 'carousel'")
+    expect(home).toContain("layout: 'carousel'")
   })
 })

@@ -11,11 +11,10 @@
  * (CLAUDE.md section 0). A lease is never an Offer: the ItemList names each listing and
  * its rent in words, with no price property.
  */
-import type { LeaseRateOptionsByKey, LeaseTermsByKey, ListingTile } from '@/lib/data'
+import type { LeaseRateOptionsByKey, ListingTile } from '@/lib/data'
 import type { V3ListingRowData } from '@/components/site/v3/V3ListingRow'
 import { CENTRAL_OREGON_CITY_SLUGS, SITE_CITY_SLUGS, citySlugForScope } from '@/lib/central-oregon'
 import { formatCount } from '@/lib/format/count'
-import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { listingPriceIsLeaseRate } from '@/lib/listing/publish-listing-figure'
 import {
   LEASE_RATE_NOT_PUBLISHED,
@@ -59,8 +58,6 @@ const CITY_PAGES: ReadonlySet<string> = new Set(SITE_CITY_SLUGS)
 export function leaseCityGroups(
   tiles: readonly ListingTile[],
   rateOptions: Readonly<LeaseRateOptionsByKey>,
-  /** The lease's terms (getLeaseTerms), printed on its dial card; absent prints none. */
-  leaseTerms: Readonly<LeaseTermsByKey> = {},
 ): LeaseCityGroup[] {
   const seen = new Set<string>()
   const byTown = new Map<string, { label: string; rows: V3ListingRowData[] }>()
@@ -69,10 +66,8 @@ export function leaseCityGroups(
     if (!listingPriceIsLeaseRate(tile.propertyType)) continue
     const label = tile.city?.trim()
     if (!label) continue
-    const base = placeLeaseRowFromTile(tile, rateOptions)
-    if (!base) continue
-    const terms = leaseTerms[tile.listingKey] ?? []
-    const row: V3ListingRowData = terms.length > 0 ? { ...base, leaseTerms: terms } : base
+    const row = placeLeaseRowFromTile(tile, rateOptions)
+    if (!row) continue
     seen.add(tile.listingKey)
     const slug = citySlugForScope(label)
     const town = byTown.get(slug) ?? { label, rows: [] }
@@ -105,45 +100,6 @@ export type LeaseLedgerRow = {
   /** This town's lease count over the largest town's, 0 to 1. */
   weight: number
   detail?: string
-  /** What a hover on the row reveals: the kinds of space and their sizes. */
-  reveal?: string
-  /** One of the town's own leases, photographed: the row's picture, named. */
-  media?: { src: string; alt: string }
-}
-
-/**
- * The line a hover on a town's row reveals (2026-09-29: "no hover on the
- * bars"): what kinds of space its leases are, most first, and the span of
- * their listed sizes. Every figure is a count or a size off the rows the dial
- * under it shows; a kind or a size a row does not carry is not guessed.
- */
-export function leaseTownReveal(rows: readonly V3ListingRowData[]): string | null {
-  const kinds = new Map<string, number>()
-  for (const row of rows) {
-    const kind = row.propertySubType?.trim()
-    if (kind) kinds.set(kind, (kinds.get(kind) ?? 0) + 1)
-  }
-  const kindLine = [...kinds.entries()]
-    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-    .map(([kind, n]) => `${kind} ${formatCount(n)}`)
-    .join(' · ')
-  const sizes = rows
-    .map((row) => row.sqft)
-    .filter((n): n is number => n != null && Number.isFinite(n) && n > 0)
-  let sizeLine = ''
-  if (sizes.length > 0) {
-    const lo = Math.min(...sizes)
-    const hi = Math.max(...sizes)
-    sizeLine =
-      lo === hi
-        ? `${formatCount(lo)} sq ft`
-        : `${formatCount(lo)} to ${formatCount(hi)} sq ft`
-    if (sizes.length < rows.length) {
-      sizeLine += ` (${formatCount(sizes.length)} ${sizes.length === 1 ? 'lists' : 'list'} a size)`
-    }
-  }
-  const line = [kindLine, sizeLine].filter(Boolean).join('; ')
-  return line || null
 }
 
 /** One row per town: its count as a length, its rate line (every lease in it) under the name. */
@@ -154,45 +110,8 @@ export function leaseCityLedgerRows(groups: readonly LeaseCityGroup[]): LeaseLed
     what: group.label,
     value: group.countLabel,
     weight: most > 0 ? group.rows.length / most : 0,
-    // One unit to a line (2026-09-25): a per-sq-ft span and a whole-space
-    // rent in one sentence asked the reader to convert between them. The
-    // figures and their counts are publishLeaseRateSummary's, unchanged.
-    ...(group.rateSummary ? { detail: group.rateSummary.split(' · ').join('\n') } : {}),
-    ...(() => {
-      const reveal = leaseTownReveal(group.rows)
-      return reveal ? { reveal } : {}
-    })(),
-    // The town's first photographed lease, at the row-thumb size, so the
-    // ledger that opens the page shows the space and not only its count
-    // (2026-09-29: a first screen of text and bars).
-    ...(() => {
-      const pictured = group.rows.find((row) => row.photoUrl?.trim())
-      const photo = pictured?.photoUrl?.trim()
-      return pictured && photo
-        ? {
-            media: {
-              src: listingRowPhotoSrc(photo),
-              alt: `${pictured.addressLine}, commercial space for lease in ${group.label}`,
-            },
-          }
-        : {}
-    })(),
+    ...(group.rateSummary ? { detail: group.rateSummary } : {}),
   }))
-}
-
-/**
- * The ledger's claim and its scale, in one sentence (2026-09-29: "the bars
- * carry no max-value reference"): how many leases in how many towns, and the
- * bar every other is measured against. Counts are the groups' own rows.
- */
-export function leaseLedgerNote(groups: readonly LeaseCityGroup[]): string | null {
-  if (groups.length === 0) return null
-  const total = leaseTotal(groups)
-  const top = [...groups].sort((a, b) => b.rows.length - a.rows.length || a.label.localeCompare(b.label))[0]!
-  const spaces = `${formatCount(total)} ${total === 1 ? 'space' : 'spaces'} for lease`
-  const towns = `${formatCount(groups.length)} ${groups.length === 1 ? 'town' : 'towns'}`
-  if (groups.length === 1) return `${spaces} in ${top.label}.`
-  return `${spaces} in ${towns}. Each bar is a town's count on one scale; the longest is ${top.label}'s ${formatCount(top.rows.length)}.`
 }
 
 /** How many leases the page lists, across every town. */

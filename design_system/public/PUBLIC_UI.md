@@ -213,6 +213,9 @@ thumbnail, previous/next, arrow keys, Home/End, or a swipe on the photograph.
   `publishListingTourLabel`), never "3D Walkthrough" for a video. The status word is
   `publicCardStatusLabel`: Active Under Contract is "Under contract" on every dial, the
   word the counts over it use.
+- **Held until their taste marks (Matt 2026-09-25, "fix first, then ship").** The homepage
+  and `/cities` shelves, community pages and `/commercial-space-for-lease` keep production's
+  presentation (their carousels; the lease towns' rails on the left) until each reaches its mark.
 
 **One shop, five place rhythms** (Matt 2026-08-14). Chrome, type, tokens, Field/Ledger
 row language, and the motion ladder are the same site. The first pattern names the grain.

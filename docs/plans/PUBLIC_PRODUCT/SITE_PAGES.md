@@ -63,7 +63,7 @@ Content is the point. **URLs** are what we cut.
 
 | Family | URLs | Why |
 |---|---|---|
-| Home | `/` | Door. Full-bleed search hero with Buy/Sell tabs, buyer H1, stacked house shelves on the listing dial, illustrated Buy/Sell/Work-with-us doors, brokers, places, proof. No Atlas on home. |
+| Home | `/` | Door. Full-bleed search hero with Buy/Sell tabs, buyer H1, Zillow-style house carousels, illustrated Buy/Sell/Work-with-us doors, brokers, places, proof. No Atlas on home. |
 | Search | `/homes-for-sale` and filtered paths | The buy job. One Field. |
 | New construction | `/new-construction` | Dated Bend-proper inventory + published builder financing (2026-09-16 snapshot). `/builders` 301s here. |
 | Listing | house URL | This house. |
@@ -162,11 +162,11 @@ A number belongs to a section or it does not print. Beat the competitor **and** 
 
 ### Home `/`
 
-**Beat:** Zillow-style door after Redfin compare. Full-bleed search, stacked house shelves, illustrated doors, sell/agent.
+**Beat:** Zillow-style door after Redfin compare. Full-bleed search, stacked house carousels, illustrated doors, sell/agent.
 **Lock 2026-09-06 (expanded):** No Atlas on home. No homepage map block, town ledger, or market essay — those live on `/homes-for-sale`, `/cities`, `/housing-market`.
 
 1. Full-bleed hero with Buy \| Sell tabs. Buyer H1 `Homes for sale in Central Oregon` (brand in metadata only). Plain copy.  
-2. Stacked house shelves (local Bend-area actives plus honest price-cut / new rows when data exists), each a `V3ListingDial` (Matt 2026-09-24: every listing carousel on the site becomes the dial): one home large with its photograph and the card copy, the rest as thumbnails, the shelf's see-all under it, and stacked dials take different rail positions so no two adjacent read as one object. Overlay badges via Field path. SplitCardMedia on the dial card. No fake personalization.  
+2. Stacked house carousels (local Bend-area actives plus honest price-cut / new rows when data exists). Overlay badges via Field path. Zillow card face via V3ListingRow / SplitCardMedia. No fake personalization.  
 3. Doors: Buy a home · Sell a home · Work with us with illustrations (art, not photos). Sell → valuation. Work with us → `/join`. No Invest door. Never “see what your home is worth.”  
 4. Talk to a broker (three faces → `/team/[slug]`)  
 5. Browse places (city/resort chips as doors, not a KPI grid)  

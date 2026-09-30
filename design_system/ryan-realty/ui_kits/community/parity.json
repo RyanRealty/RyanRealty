@@ -38,7 +38,7 @@
     },
     {
       "name": "PlaceSubdivisionMap",
-      "section": "Matt 2026-09-22. One map for the community. The subdivision list sits beside it and the listing dials sit below (Matt 2026-09-24, the carousel is gone).",
+      "section": "Matt 2026-09-22. One map for the community. The subdivision list sits beside it and a carousel of homes sits below.",
       "blocking": true
     },
     {
@@ -53,7 +53,7 @@
     },
     {
       "name": "PlaceSubdivisionHomes",
-      "section": "#homes, the listing dials (Matt 2026-09-24: every place page shows listings the same way; /subdivisions/northwest-crossing and /subdivisions/broken-top 301 here, which is where Matt still saw the carousel). Every publicly active home in the current map selection, one V3ListingDial per buyer group: one home large with its lead photograph and the card copy, the rest of the group as thumbnails on a vertical rail to its left (a strip under the card on a phone), an \"03 / 12\" readout heading the rail. The type links over it (community-field-types) land on each dial's #homes-<group> id. Commercial leases are the last dial, never in a for-sale dial or its count. Every listing stays an <a href> in the served HTML.",
+      "section": "#homes. Carousel of every publicly active home in the current selection.",
       "blocking": true
     },
     {
@@ -242,10 +242,10 @@
     "V3Heading (H1 `{Community} homes for sale`)",
     "PlaceSubdivisionRail #child-places -- subdivisions beside the one map. Name and property-type line. No sales bars.",
     "PlaceSubdivisionAtlas #atlas -- the one map. Selecting a subdivision zooms to it. No second map and no reach list.",
-    "CommunityAlertsStrip #alerts (the 30-day new-listing count and the email ask, beside the map in the first screen, 2026-09-29)",
-    "PlaceSubdivisionHomes #homes, listing dials -- one V3ListingDial per buyer group of every publicly active home in the place, or in the selected subdivision; commercial leases last.",
-    "CommunityPlaceValue (address in, verdict and pace out, then the email that delivers the written valuation)",
+    "PlaceSubdivisionHomes #homes -- carousel of every publicly active home in the place, or in the selected subdivision.",
     "V3Amenities #amenities -- each authored place and what it is. No share bar.",
+    "CommunityAlertsStrip #alerts (the 30-day new-listing count and the email ask, after the map)",
+    "CommunityPlaceValue (address in, verdict and pace out, then the email that delivers the written valuation)",
     "V3Instrument #market (this community's typical-price slope; never Bend's median) or V3Quiet (too few / stated absence)",
     "V3Quiet #belonging",
     "V3CourseMap #course (the community's own course, when the registry names one with a map)",
