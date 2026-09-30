@@ -66,34 +66,38 @@ function strip(over: Record<string, unknown> = {}) {
   )
 }
 
-describe('the price cut as two prices at rest', () => {
+describe('the price cut at rest, under one headline price', () => {
   const mark = { from: 1_075_000, to: 999_000, drop: 76_000, pct: 7.1, date: '2026-08-15' }
 
-  it('prints from, to, cut, percent and date without a hover', () => {
+  it('prints was, cut, percent and date without a hover, and the price once', () => {
     const html = strip({ dropMark: mark })
     expect(html).toContain('class="listing-drop"')
     expect(html).not.toContain('<line')
     expect(html).not.toContain('<circle')
-    expect(html).toContain('$1,075,000')
-    // Matt 2026-09-24: the line prints the new price too, not only the H1.
-    expect(html).toContain('<span class="listing-drop__to">$999,000</span>')
-    expect(html).toContain('Cut $76,000')
-    expect(html).toContain('−7.1%')
-    expect(html).toContain('Aug 15, 2026')
+    expect(html).toContain('Was <span class="listing-drop__from">$1,075,000</span>')
+    expect(html).toContain('Cut $76,000 (−7.1%)')
+    expect(html).toContain('on Aug 15, 2026')
+    // Matt 2026-09-25: the new price is the headline and is printed once. The
+    // 2026-09-24 line repeated it beside the old one ($486,000 twice on a phone).
+    expect(html).not.toContain('listing-drop__to')
+    const visible = html.replace(/aria-label="[^"]*"/g, '')
+    expect(visible.match(/\$999,000/g)).toHaveLength(1)
+    // The screen-reader reading still names both prices.
     expect(html).toMatch(/aria-label="Price drop \$76K: \$1,075,000 to \$999,000, 7\.1% on Aug 15, 2026"/)
   })
 
-  it('draws nothing once a later price change leaves the cut behind the H1 price', () => {
+  it('draws nothing once a later price change leaves the cut behind the headline price', () => {
     // Listed 1,195,000, cut to 999,000 on Aug 15, raised to 1,025,000 on Sep 1:
-    // the newest DROP still says 999,000, which is not today's price.
+    // the newest DROP still says 999,000, which is not today's price, and "Was
+    // $1,075,000" beside $1,025,000 would describe a cut that did not set it.
     const raised = strip({
       dropMark: mark,
       listing: { ...LISTING, listPrice: 1_025_000 },
     })
     expect(raised).not.toContain('listing-drop')
     expect(raised).not.toContain('$999,000')
-    // The mark still draws when the cut set the price in the H1.
-    expect(strip({ dropMark: mark })).toContain('listing-drop__to')
+    // The mark still draws when the cut set the headline price.
+    expect(strip({ dropMark: mark })).toContain('listing-drop__cut')
   })
 
   it('draws nothing without a dated mark, including off market', () => {
@@ -108,12 +112,14 @@ describe('the price cut as two prices at rest', () => {
     expect(sold).not.toContain('listing-drop')
   })
 
-  it('PriceDropMark alone: strikethrough from, exception cut, no slope', () => {
+  it('PriceDropMark alone: was, exception cut with its percent, date, no slope', () => {
     const html = renderToStaticMarkup(createElement(PriceDropMark, { mark, label: 'Price drop $76K' }))
-    expect(html).toContain('listing-drop__from')
-    expect(html).toContain('listing-drop__cut')
-    // Old price struck through, then the new price, then the cut.
-    expect(html).toMatch(/<s class="listing-drop__from">\$1,075,000<\/s><span class="listing-drop__to">\$999,000<\/span><span class="listing-drop__cut">Cut \$76,000<\/span>/)
+    // "Was $1,075,000 · Cut $76,000 (−7.1%) on Aug 15, 2026". The dot rides the
+    // old price (hidden from readers) so a phone wrap never leaves it hanging.
+    expect(html).toMatch(
+      /<span class="listing-drop__was">Was <span class="listing-drop__from">\$1,075,000<\/span> <span class="listing-drop__sep" aria-hidden="true">·<\/span><\/span><span class="listing-drop__cut">Cut \$76,000 \(−7\.1%\)<\/span><span class="listing-drop__meta">on Aug 15, 2026<\/span>/,
+    )
+    expect(html).not.toContain('$999,000<')
     expect(html).not.toContain('<svg')
     expect(html).not.toContain('<line')
   })
