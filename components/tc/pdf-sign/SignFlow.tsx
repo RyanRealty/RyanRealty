@@ -557,7 +557,7 @@ function FieldBox({
         type="button"
         id={id}
         style={{ ...style, color, boxShadow: `inset 0 0 0 1.5px ${color}`, ...ring }}
-        className={cn('flex items-center justify-start overflow-hidden rounded-sm px-0.5 text-[11px] font-medium', png ? 'bg-transparent' : 'bg-white/60 hover:bg-black/5')}
+        className={cn('flex items-center justify-start overflow-hidden rounded-none px-0.5 text-[11px] font-medium', png ? 'bg-transparent' : 'bg-white/60 hover:bg-black/5')}
         onClick={onSign}
         aria-label={field.type === 'initials' ? 'Initial here' : 'Sign here'}
       >
@@ -582,7 +582,7 @@ function FieldBox({
         aria-checked={checked}
         aria-label={field.label?.trim() || (field.group ? groupRuleText(field.group) : 'Check')}
         style={{ ...style, ...ring }}
-        className={cn('flex items-center justify-center rounded-sm font-bold leading-none', checked ? 'bg-primary text-primary-foreground' : 'bg-primary/10 ring-1 ring-primary/70')}
+        className={cn('flex items-center justify-center rounded-none font-bold leading-none', checked ? 'bg-primary text-primary-foreground' : 'bg-primary/10 ring-1 ring-primary/70')}
         onClick={() => onCheck(!checked)}
       >
         <span className="absolute left-1/2 top-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2" aria-hidden />
@@ -602,7 +602,7 @@ function FieldBox({
       id={id}
       style={{ ...style, fontSize: fit(shown), ...ring }}
       className={cn(
-        'flex justify-start rounded-sm px-1 text-left leading-tight',
+        'flex justify-start rounded-none px-1 text-left leading-tight',
         printedText ? 'overflow-visible' : 'overflow-hidden',
         oneLine ? 'items-center' : 'items-start',
         shownText ? 'bg-primary/5 text-foreground ring-1 ring-primary/30' : 'bg-primary/10 text-primary/80 ring-1 ring-primary/70',
