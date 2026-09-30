@@ -344,3 +344,13 @@
   color: var(--v3-ink-muted);
   font-size: var(--v3-size-body-sm);
 }
+
+/* On a phone the counts at each row's right edge stand clear of the Jax
+   button's mid-screen band (V3DogFloater: 4.25rem wide, --v3-space-md in from
+   the edge), the same clearance the charts take: at 375 it sat on "214 new
+   homes for sale" (2026-09-29). */
+@media (max-width: 39.99rem) {
+  .home-browse-places__ledger {
+    margin-inline-end: calc(4.25rem + var(--v3-space-md) - var(--v3-gutter));
+  }
+}
