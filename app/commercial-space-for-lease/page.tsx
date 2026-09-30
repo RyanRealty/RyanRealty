@@ -114,6 +114,7 @@ export default async function CommercialSpaceForLeasePage() {
     weight: row.weight,
     ...(row.detail ? { detail: v3Text(row.detail) } : {}),
     ...(row.reveal ? { reveal: { line: v3Text(row.reveal) } } : {}),
+    ...(row.media ? { media: row.media } : {}),
   }))
   const [firstRow, ...restRows] = ledgerRows
 

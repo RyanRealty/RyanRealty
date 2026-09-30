@@ -15,6 +15,7 @@ import type { LeaseRateOptionsByKey, LeaseTermsByKey, ListingTile } from '@/lib/
 import type { V3ListingRowData } from '@/components/site/v3/V3ListingRow'
 import { CENTRAL_OREGON_CITY_SLUGS, SITE_CITY_SLUGS, citySlugForScope } from '@/lib/central-oregon'
 import { formatCount } from '@/lib/format/count'
+import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { listingPriceIsLeaseRate } from '@/lib/listing/publish-listing-figure'
 import {
   LEASE_RATE_NOT_PUBLISHED,
@@ -106,6 +107,8 @@ export type LeaseLedgerRow = {
   detail?: string
   /** What a hover on the row reveals: the kinds of space and their sizes. */
   reveal?: string
+  /** One of the town's own leases, photographed: the row's picture, named. */
+  media?: { src: string; alt: string }
 }
 
 /**
@@ -158,6 +161,21 @@ export function leaseCityLedgerRows(groups: readonly LeaseCityGroup[]): LeaseLed
     ...(() => {
       const reveal = leaseTownReveal(group.rows)
       return reveal ? { reveal } : {}
+    })(),
+    // The town's first photographed lease, at the row-thumb size, so the
+    // ledger that opens the page shows the space and not only its count
+    // (2026-09-29: a first screen of text and bars).
+    ...(() => {
+      const pictured = group.rows.find((row) => row.photoUrl?.trim())
+      const photo = pictured?.photoUrl?.trim()
+      return pictured && photo
+        ? {
+            media: {
+              src: listingRowPhotoSrc(photo),
+              alt: `${pictured.addressLine}, commercial space for lease in ${group.label}`,
+            },
+          }
+        : {}
     })(),
   }))
 }

@@ -118,7 +118,7 @@ describe('leaseCityGroups', () => {
 describe('leaseCityLedgerRows', () => {
   it('draws each town\'s count as a share of the busiest town and links to its dial', () => {
     const rows = leaseCityLedgerRows(leaseCityGroups(TILES, UNITS))
-    const { reveal, ...rest } = rows[0]!
+    const { reveal, media, ...rest } = rows[0]!
     expect(rest).toEqual({
       href: '#lease-bend',
       what: 'Bend',
@@ -128,6 +128,10 @@ describe('leaseCityLedgerRows', () => {
     })
     // The hover line is the rows' own kinds and sizes (leaseTownReveal).
     expect(reveal).toBe(leaseTownReveal(leaseCityGroups(TILES, UNITS)[0]!.rows) ?? undefined)
+    // The row's picture is one of the town's own photographed leases, or none.
+    const photos = leaseCityGroups(TILES, UNITS)[0]!.rows.map((r) => r.photoUrl).filter(Boolean)
+    if (photos.length > 0) expect(media?.src).toBeTruthy()
+    else expect(media).toBeUndefined()
     expect(rows[1]!.weight).toBe(0.25)
   })
 })
