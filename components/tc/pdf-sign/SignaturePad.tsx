@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { ADOPT_METHOD_LABEL, type AdoptMethod } from '@/lib/tc/adopt-signature'
+import { inkBounds } from '@/lib/tc/ink-bounds'
 
 /**
  * Adopt a signature: draw, type, or upload a picture. Returns a transparent PNG.
@@ -99,7 +100,7 @@ export function SignaturePad({
       return
     }
     if (!dirtyRef.current) return
-    const png = canvasRef.current!.toDataURL('image/png')
+    const png = canvasInkPng(canvasRef.current!)
     onComplete(png)
     onOpenChange(false)
   }
@@ -123,7 +124,7 @@ export function SignaturePad({
       const w = img.width * scale
       const h = img.height * scale
       ctx.drawImage(img, (c.width - w) / 2, (c.height - h) / 2, w, h)
-      setUploadPng(c.toDataURL('image/png'))
+      setUploadPng(canvasInkPng(c))
       URL.revokeObjectURL(img.src)
     }
     img.onerror = () => setUploadError('That picture could not be read. Try another.')
@@ -211,5 +212,21 @@ export function scriptTextToPng(text: string): string | null {
   ctx.font = 'italic 64px "Brush Script MT","Snell Roundhand",cursive'
   ctx.textBaseline = 'middle'
   ctx.fillText(name, 16, 88)
-  return c.toDataURL('image/png')
+  return canvasInkPng(c)
+}
+
+/**
+ * A canvas cropped to its ink, as a PNG data URL. The sealer fits the whole
+ * image into the signature box, so blank canvas around a name printed it a
+ * third of the line's height (lib/tc/ink-bounds.ts).
+ */
+export function canvasInkPng(c: HTMLCanvasElement): string {
+  const ctx = c.getContext('2d')
+  const box = ctx ? inkBounds(ctx.getImageData(0, 0, c.width, c.height).data, c.width, c.height) : null
+  if (!box) return c.toDataURL('image/png')
+  const out = document.createElement('canvas')
+  out.width = box.w
+  out.height = box.h
+  out.getContext('2d')?.drawImage(c, box.x, box.y, box.w, box.h, 0, 0, box.w, box.h)
+  return out.toDataURL('image/png')
 }
