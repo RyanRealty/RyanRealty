@@ -71,7 +71,9 @@ function sub(over: Partial<ReportSubscriptionRecord> = {}): ReportSubscriptionRe
   }
 }
 
-function link(over: { subscription?: ReportSubscriptionRecord | null; preview?: boolean; emailKey?: string | null } = {}) {
+function link(
+  over: { subscription?: ReportSubscriptionRecord | null; preview?: boolean; emailKey?: string | null; deleted?: boolean } = {},
+) {
   return {
     ok: true,
     link: {
@@ -82,7 +84,7 @@ function link(over: { subscription?: ReportSubscriptionRecord | null; preview?: 
         emailKey: 'emailKey' in over ? over.emailKey : 'market-report:run1:64138',
         preview: over.preview ?? false,
       },
-      contact: CONTACT,
+      contact: { ...CONTACT, deleted: over.deleted ?? false },
       subscription: 'subscription' in over ? over.subscription : sub(),
     },
   }
@@ -178,6 +180,59 @@ describe('applyReportPreference: stop these reports (report-scoped)', () => {
   })
 })
 
+describe('applyReportPreference: her stop always lands on a report a broker stopped', () => {
+  it('her one-click replaces the broker stop with hers and records the unsubscribe', async () => {
+    m.resolveReportLink.mockResolvedValue(
+      link({ subscription: sub({ isActive: false, stoppedAt: '2026-09-25T00:00:00.000Z', stoppedVia: 'admin' }) }),
+    )
+    const out = await applyReportPreference('t', { kind: 'stop' }, 'one-click', NOW)
+    expect(out).toEqual({ ok: true, changed: true, done: 'stopped' })
+    expect(m.applyReportSubscriptionPatch.mock.calls[0][1]).toEqual({
+      is_active: false,
+      stopped_at: NOW.toISOString(),
+      stopped_via: 'one-click',
+    })
+    expect(m.recordEmailEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'unsubscribe', meta: { via: 'one-click', scope: 'market-report' } }),
+    )
+  })
+})
+
+describe('applyReportPreference: a link whose contact record was deleted', () => {
+  it('her one-click and her Stop still stop the report on that record', async () => {
+    m.resolveReportLink.mockResolvedValue(link({ deleted: true }))
+    expect(await applyReportPreference('t', { kind: 'stop' }, 'one-click', NOW)).toEqual({ ok: true, changed: true, done: 'stopped' })
+    expect(m.applyReportSubscriptionPatch.mock.calls[0][0]).toMatchObject({ id: 9016, personId: 64138 })
+    expect(m.recordEmailEvent).toHaveBeenCalledTimes(1)
+  })
+
+  it('"Stop all Ryan Realty email" still turns email off for her', async () => {
+    m.resolveReportLink.mockResolvedValue(link({ deleted: true }))
+    expect(await applyReportPreference('t', { kind: 'stop-all-email' }, 'email-link', NOW)).toEqual({
+      ok: true,
+      changed: true,
+      done: 'all-email-off',
+    })
+    expect(m.addSuppression).toHaveBeenCalledWith(expect.objectContaining({ personId: 64138, value: 'cybend61@gmail.com' }))
+  })
+
+  it('nothing else changes a deleted record: no resume, interval, area or email restart', async () => {
+    m.resolveReportLink.mockResolvedValue(link({ deleted: true, subscription: sub({ isActive: false, stoppedAt: NOW.toISOString(), stoppedVia: 'admin' }) }))
+    for (const action of [
+      { kind: 'resume' },
+      { kind: 'pause' },
+      { kind: 'frequency', frequency: 'weekly' },
+      { kind: 'add-area', slug: 'sisters' },
+      { kind: 'remove-area', slug: 'bend' },
+      { kind: 'restart-all-email' },
+    ] as const) {
+      expect(await applyReportPreference('t', action, 'email-link', NOW)).toEqual({ ok: false, error: 'closed' })
+    }
+    expect(m.applyReportSubscriptionPatch).not.toHaveBeenCalled()
+    expect(m.removeSuppression).not.toHaveBeenCalled()
+  })
+})
+
 describe('applyReportPreference: pause, resume, interval, areas', () => {
   it('a no-op words what IS true: pausing a stopped report says stopped', async () => {
     m.resolveReportLink.mockResolvedValue(link({ subscription: sub({ isActive: false, stoppedAt: '2026-09-20T00:00:00Z', stoppedVia: 'email-link' }) }))
@@ -222,7 +277,14 @@ describe('applyReportPreference: all Ryan Realty email', () => {
   it('"Stop all" writes the existing global suppression, logs it and records the unsubscribe', async () => {
     m.resolveReportLink.mockResolvedValue(link())
     expect(await applyReportPreference('t', { kind: 'stop-all-email' }, 'email-link', NOW)).toEqual({ ok: true, changed: true, done: 'all-email-off' })
-    expect(m.addSuppression).toHaveBeenCalledWith({ personId: 64138, channel: 'email', reason: 'unsubscribe', source: 'report-email-link' })
+    expect(m.addSuppression).toHaveBeenCalledWith({
+      personId: 64138,
+      channel: 'email',
+      reason: 'unsubscribe',
+      source: 'report-email-link',
+      // Keyed to her address too, so an address-keyed check honors it.
+      value: 'cybend61@gmail.com',
+    })
     expect(m.logReportTimeline).toHaveBeenCalledWith(64138, expect.objectContaining({ title: "All Ryan Realty email turned off from the report's email link" }))
     expect(m.recordEmailEvent).toHaveBeenCalledWith(expect.objectContaining({ event: 'unsubscribe', meta: { via: 'email-link', scope: 'all' } }))
   })

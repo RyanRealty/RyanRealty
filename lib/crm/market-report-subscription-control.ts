@@ -25,6 +25,14 @@
  * contact's new consent (a note of at least MIN_CONSENT_NOTE characters), which
  * is appended to consent_note with the date and the admin.
  *
+ * And its other half (review 2026-09-30): HER STOP ALWAYS LANDS. A stop from
+ * one of her doors on a report a broker had already stopped is not a no-op:
+ * it replaces the broker's stop with hers (stamp and door), so the unsubscribe
+ * is recorded and a broker restart needs her consent on record. Before, her
+ * one-click on a broker-stopped report changed nothing, recorded nothing, and
+ * any broker could turn it back on without a note. A broker's stop never
+ * replaces hers.
+ *
  * Pure: no I/O, `now` is injected.
  */
 
@@ -170,7 +178,20 @@ export function planReportChange(
       }
     }
     case 'stop': {
-      if (state === 'stopped') return { ok: true, noop: true, message: 'These reports are already stopped.' }
+      if (state === 'stopped') {
+        // Her own stop replaces a broker's (see the file comment); anything
+        // else on a stopped report changes nothing.
+        if (isContactStopVia(actor.via) && !isContactStopVia(rec.stoppedVia)) {
+          return {
+            ok: true,
+            noop: false,
+            patch: { is_active: false, stopped_at: nowIso, stopped_via: actor.via },
+            title: `Market report stopped ${via}`,
+            message: 'Your market report is stopped. Other email from Ryan Realty is not affected.',
+          }
+        }
+        return { ok: true, noop: true, message: 'These reports are already stopped.' }
+      }
       return {
         ok: true,
         noop: false,

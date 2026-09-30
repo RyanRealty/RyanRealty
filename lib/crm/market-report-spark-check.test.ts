@@ -505,6 +505,41 @@ describe('buildSparkChecks, end to end over a rendered email', () => {
     expect(headline.note).toContain('months of supply (not-reconciled)')
   })
 
+  it('rebuilds a COMPUTED six-month months of supply over the populations it used (the §0 fallback)', () => {
+    const { active, closed } = fixture()
+    const blocks = blocksFor(closed)
+    // Market Truth's 12 Bend actives over the cache polygon's 62 closes in
+    // March to August (the 60 monthly closes, the duplicate and the price
+    // typo, both of which the cache keeps).
+    const mos = 12 / (62 / 6)
+    blocks[1] = {
+      ...blocks[1]!,
+      monthsOfSupply: mos,
+      monthsOfSupplySource: 'computed-6mo',
+      monthsOfSupplyBasis: { closed: 62, from: '2026-03-01', through: '2026-08-31' },
+      marketVerdict: 'sellers',
+    }
+    const rendered = renderMarketReportEmail({ contactName: 'Cheryl', areas: blocks, unsubscribeUrl: 'https://ryan-realty.com/x' })
+    const checks = buildSparkChecks({ blocks, figures: rendered.figures, data: dataFor(active, closed) })
+    const row = checks.find((c) => c.area === 'bend' && c.figure === 'months of supply')!
+    expect(row.status).toBe('ok')
+    expect(row.spark).toBeCloseTo(mos, 10)
+    expect(row.note).toBe('Spark: 12 active / (62 closes / 6)')
+    expect(checks.find((c) => c.area === 'bend' && c.figure === 'market verdict')?.status).toBe('ok')
+    expect(earliestCloseDayNeeded(blocks, rendered.figures)).toBe('2025-09-29')
+
+    // A computed figure whose numerator is a historical end-of-period count cannot be rebuilt.
+    blocks[1] = { ...blocks[1]!, provenance: { ...blocks[1]!.provenance!, live: null } }
+    const again = buildSparkChecks({
+      blocks,
+      figures: renderMarketReportEmail({ contactName: 'Cheryl', areas: blocks, unsubscribeUrl: 'https://ryan-realty.com/x' }).figures,
+      data: dataFor(active, closed),
+    })
+    const unbuilt = again.find((c) => c.area === 'bend' && c.figure === 'months of supply')!
+    expect(unbuilt.status).toBe('not-reconciled')
+    expect(unbuilt.note).toContain('end-of-period')
+  })
+
   it('does not rebuild a neighborhood whose polygon did not load', () => {
     const { active, closed } = fixture()
     const blocks = blocksFor(closed)

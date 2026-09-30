@@ -189,3 +189,53 @@ export function reportEmailLinks(ctx: ReportLinkContext & { emailKey: string }):
     oneClickUrl: reportOneClickUrl(ctx),
   }
 }
+
+/**
+ * A report link inside stored copy: an optional origin, one of the three
+ * signed paths, then the token. The rest of the query (`&stop=1`, or its
+ * HTML-escaped `&amp;stop=1`) is left as it is.
+ */
+const STORED_REPORT_LINK = new RegExp(
+  `((?:https?://[^\\s"'<>/]+)?(?:${REPORT_VIEW_PATH}|${REPORT_PREFERENCES_PATH}|${REPORT_ONE_CLICK_PATH}))\\?t=([^&"'\\s<>]+)`,
+  'g',
+)
+
+/**
+ * Every report link in a stored copy, made safe for someone who is not the
+ * contact to click (Matt's decisions 2026-09-29; review of 2026-09-30).
+ *
+ * A stored report (crm_report_sends.html) carries the contact's LIVE links:
+ * her manage page, her report-scoped unsubscribe, her web view. Opened from
+ * the admin record, or from a broker's preview page, those links would let a
+ * broker press Resume as if she had (skipping the consent-note rule) or Stop
+ * as her opt-out. So whenever an admin view or a preview opens a stored copy,
+ * every such link is re-signed as a PREVIEW link for the same person, report
+ * and purpose: it opens the same page read-only, and nothing it posts changes
+ * anything. A link whose token does not verify here (signed under another
+ * secret, or damaged) is not guessed at: it becomes the preferences address
+ * with no token (`?error=link`), which opens nothing personal.
+ *
+ * Throws MissingSigningSecretError in production without a secret, like every
+ * sign and verify here; a caller showing the copy fails closed.
+ */
+export function previewReportLinks(content: string): string {
+  if (!content) return content
+  return content.replace(STORED_REPORT_LINK, (_match, base: string, rawToken: string) => {
+    let token: string
+    try {
+      token = decodeURIComponent(rawToken)
+    } catch {
+      token = rawToken
+    }
+    const payload = verifyReportLinkToken(token)
+    if (!payload) return `${SITE_URL}${REPORT_PREFERENCES_PATH}?error=link`
+    const signed = signReportLinkToken({
+      personId: payload.personId,
+      subscriptionId: payload.subscriptionId,
+      purpose: payload.purpose,
+      emailKey: payload.emailKey,
+      preview: true,
+    })
+    return `${base}?t=${encodeURIComponent(signed)}`
+  })
+}

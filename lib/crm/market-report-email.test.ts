@@ -115,6 +115,21 @@ const UNSUB = 'https://ryan-realty.com/email-preferences?t=abc.def&stop=1'
 const MANAGE = 'https://ryan-realty.com/email-preferences?t=abc.def'
 const VIEW = 'https://ryan-realty.com/email-preferences/report?t=view.tok'
 
+describe('months of supply at a verdict threshold (the printed number never contradicts the verdict)', () => {
+  it('a raw 4.003 prints 4.1 beside "Balanced market" in the kicker, the headline and the subject, and traces 4.003', () => {
+    const b = block({ monthsOfSupply: 4.003, marketVerdict: 'balanced', yoyPct: null })
+    const out = renderMarketReportEmail({ contactName: 'Cheryl', areas: [b], unsubscribeUrl: UNSUB })
+    expect(out.html).toContain('Balanced market &middot; 4.1 months of supply')
+    expect(out.html).not.toContain('4.00 months')
+    expect(out.subject).toBe('Bend is a balanced market with 4.1 months of supply')
+    expect(out.text).toContain('Balanced market with 4.1 months of supply')
+    const mos = out.figures.find((f) => f.label === 'months of supply')!
+    expect(mos.value).toBe(4.003)
+    expect(mos.display).toBe('4.1 months')
+    expect(out.figures.find((f) => f.label === 'market verdict')?.filter).toBe('months_of_supply=4.003')
+  })
+})
+
 describe('formatters return null for a missing value (never a dash)', () => {
   it('formatCurrencyRounded rounds to the nearest thousand', () => {
     expect(formatCurrencyRounded(721000)).toBe('$721,000')
@@ -138,16 +153,19 @@ describe('formatters return null for a missing value (never a dash)', () => {
     expect(formatYoy(0.04)).toBe('flat YoY')
     expect(formatYoy(null)).toBeNull()
   })
-  it('formatMonths keeps two decimals inside the verdict bands, inclusive of the edges', () => {
+  it('formatMonths prints the canonical one decimal (formatMonthsOfSupply), never crossing a verdict threshold', () => {
     expect(formatMonths(3.5)).toBe('3.5 months')
     expect(formatMonths(10.8)).toBe('10.8 months')
-    // 4.05 classifies balanced (> 4) but toFixed(1) rounds it DOWN to "4.0",
-    // which would print "Balanced market · 4.0 months" (Bend, 2026-07-16).
-    expect(formatMonths(4.05)).toBe('4.05 months')
-    expect(formatMonths(4.04)).toBe('4.04 months')
-    expect(formatMonths(3.95)).toBe('3.95 months')
-    expect(formatMonths(5.95)).toBe('5.95 months')
-    expect(formatMonths(6.05)).toBe('6.05 months')
+    // Balanced values (> 4, < 6) never print as 4.0 or 6.0, which read as the
+    // seller's and buyer's thresholds (Bend, 2026-07-16; review 2026-09-30).
+    expect(formatMonths(4.003)).toBe('4.1 months')
+    expect(formatMonths(4.05)).toBe('4.1 months')
+    expect(formatMonths(4.04)).toBe('4.1 months')
+    expect(formatMonths(5.95)).toBe('5.9 months')
+    expect(formatMonths(5.999)).toBe('5.9 months')
+    // A seller's 3.95 and a buyer's 6.04 print their own side of the line.
+    expect(formatMonths(3.95)).toBe('4.0 months')
+    expect(formatMonths(6.04)).toBe('6.0 months')
     expect(formatMonths(4.1)).toBe('4.1 months')
     expect(formatMonths(null)).toBeNull()
   })
@@ -404,6 +422,8 @@ describe('renderMarketReportEmail', () => {
     expect(out.html).toContain('25 days')
     expect(out.html).toContain("Seller's market &middot; 3.5 months of supply")
     expect(out.html).toContain('↓ 1.2% from a year ago')
+    // The trace keeps the raw figure the verdict was classified from.
+    expect(out.figures.find((f) => f.label === 'months of supply')).toMatchObject({ value: 3.5, display: '3.5 months' })
     expect(out.html).toContain(
       'https://ryan-realty.com/housing-market/bend?utm_source=crm&utm_medium=email&utm_campaign=market-report#market',
     )

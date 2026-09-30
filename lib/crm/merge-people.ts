@@ -108,33 +108,101 @@ const PLAIN_PERSON_TABLES = [
 // repointing until the parent drops the table.
 const PLAIN_CRMPERSON_TABLES = ['newsletter_subscribers', 'saved_searches', 'listing_alerts', 'visitor_identity_map', 'visitor_sessions']
 
+type ReportStopState = { is_active: boolean | null; stopped_at: string | null; stopped_via: string | null }
+
 /**
- * When the duplicate's market-report subscription was stopped by the contact
- * and the survivor's is not, stop the survivor's too (same stamp, same via).
- * Best-effort: a failure is an incident, never a lost merge.
+ * Whether a contact's own market-report stop on the duplicate must carry onto
+ * the survivor's row before the duplicate's row goes. Pure.
+ *
+ * Her stop (one-click, her email link, her account page) is her opt-out, not
+ * a duplicate's clutter. It carries whenever the survivor's row is on, paused,
+ * or stopped by a BROKER: her stop replaces a broker's, exactly as it does on
+ * her own page (lib/crm/market-report-subscription-control.ts). Only a
+ * survivor that already carries her own stop keeps its row as it is. Before
+ * 2026-09-30 a broker-stopped survivor skipped the carry, and the next broker
+ * could restart her reports without her consent on record.
+ */
+export function planReportStopCarry(dup: ReportStopState | null, survivor: ReportStopState | null): 'carry' | 'nothing' {
+  if (!dup || dup.is_active || !dup.stopped_at || !isContactStopVia(dup.stopped_via)) return 'nothing'
+  if (survivor && !survivor.is_active && survivor.stopped_at && isContactStopVia(survivor.stopped_via)) return 'nothing'
+  return 'carry'
+}
+
+/**
+ * Carry the duplicate's own stop onto the survivor (planReportStopCarry), and
+ * write a crm_timeline line on the survivor saying so. True when there was
+ * nothing to carry or the carry landed; false when a read or the write failed
+ * (the caller then keeps the duplicate's row, so her stop is never lost).
  */
 async function carryReportStop(
   sb: SupabaseClient,
   survivorId: number,
   mergedId: number,
   incidents: string[],
-): Promise<void> {
+): Promise<boolean> {
   try {
-    const [{ data: dup }, { data: surv }] = await Promise.all([
+    const [dupRes, survRes] = await Promise.all([
       sb.from('crm_report_subscriptions').select('is_active, stopped_at, stopped_via').eq('person_id', mergedId).maybeSingle(),
-      sb.from('crm_report_subscriptions').select('stopped_at').eq('person_id', survivorId).maybeSingle(),
+      sb.from('crm_report_subscriptions').select('is_active, stopped_at, stopped_via').eq('person_id', survivorId).maybeSingle(),
     ])
-    const d = dup as { is_active: boolean | null; stopped_at: string | null; stopped_via: string | null } | null
-    const sv = surv as { stopped_at: string | null } | null
-    if (!d || d.is_active || !d.stopped_at || !isContactStopVia(d.stopped_via)) return
-    if (sv?.stopped_at) return
+    if (dupRes.error) throw dupRes.error
+    if (survRes.error) throw survRes.error
+    const d = dupRes.data as ReportStopState | null
+    if (planReportStopCarry(d, survRes.data as ReportStopState | null) === 'nothing') return true
     const { error } = await sb
       .from('crm_report_subscriptions')
-      .update({ is_active: false, stopped_at: d.stopped_at, stopped_via: d.stopped_via, updated_at: new Date().toISOString() })
+      .update({ is_active: false, stopped_at: d!.stopped_at, stopped_via: d!.stopped_via, updated_at: new Date().toISOString() })
       .eq('person_id', survivorId)
     if (error) throw error
+    const { error: tlErr } = await sb.from('crm_timeline').insert({
+      person_id: survivorId,
+      kind: 'system',
+      title: `Market report stop carried over from merged contact ${mergedId} (the contact stopped it, ${d!.stopped_via}, ${String(d!.stopped_at).slice(0, 10)})`,
+      payload: { sendType: 'market-report', change: 'merge-carry-stop', from_person_id: mergedId, stopped_via: d!.stopped_via, stopped_at: d!.stopped_at },
+      source: 'app',
+    })
+    if (tlErr) incidents.push(`crm_report_subscriptions stop carry timeline: ${tlErr.message}`)
+    return true
   } catch (e) {
     incidents.push(`crm_report_subscriptions stop carry: ${(e as Error).message}`)
+    return false
+  }
+}
+
+/**
+ * Step 6 for crm_report_subscriptions (one row per person). The survivor's
+ * row stays; the duplicate's own stop carries onto it first. When that carry
+ * fails, the duplicate's row is KEPT (on the soft-deleted duplicate, where the
+ * sender never reads it), with an incident: deleting it would lose the only
+ * record of her opt-out. A survivor with no row takes the duplicate's.
+ */
+export async function mergeReportSubscriptionRows(
+  sb: SupabaseClient,
+  survivorId: number,
+  mergedId: number,
+  repointed: Record<string, number>,
+  incidents: string[],
+): Promise<void> {
+  const t = 'crm_report_subscriptions'
+  try {
+    const n = await countRows(sb, t, 'person_id', mergedId)
+    if (n === 0) return
+    const { count: survHas, error: survErr } = await sb.from(t).select('id', { count: 'exact', head: true }).eq('person_id', survivorId)
+    if (survErr) throw survErr
+    if ((survHas ?? 0) > 0) {
+      if (!(await carryReportStop(sb, survivorId, mergedId, incidents))) {
+        incidents.push(`${t}: kept the duplicate's row, because its stop could not be carried to the survivor`)
+        return
+      }
+      const { error } = await sb.from(t).delete().eq('person_id', mergedId)
+      if (error) throw error
+    } else {
+      const { error } = await sb.from(t).update({ person_id: survivorId }).eq('person_id', mergedId)
+      if (error) throw error
+    }
+    repointed[t] = n
+  } catch (e) {
+    incidents.push(`${t}: ${(e as Error).message}`)
   }
 }
 
@@ -261,26 +329,27 @@ export async function mergePeopleCore(
   }
 
   // 6) Unique-per-person tables — keep survivor's, drop the duplicate's.
-  for (const t of ['crm_conversation_state', 'crm_report_subscriptions']) {
-    try {
-      const n = await countRows(sb, t, 'person_id', mergedId)
-      if (n === 0) continue
+  try {
+    const t = 'crm_conversation_state'
+    const n = await countRows(sb, t, 'person_id', mergedId)
+    if (n > 0) {
       const { count: survHas } = await sb.from(t).select('id', { count: 'exact', head: true }).eq('person_id', survivorId)
       if ((survHas ?? 0) > 0) {
-        // A market-report opt-out the contact made on the duplicate is her
-        // choice, not a duplicate's clutter: it carries onto the survivor
-        // before the duplicate's row goes (Matt 2026-09-29).
-        if (t === 'crm_report_subscriptions') await carryReportStop(sb, survivorId, mergedId, incidents)
         await sb.from(t).delete().eq('person_id', mergedId)
       } else {
         const { error } = await sb.from(t).update({ person_id: survivorId }).eq('person_id', mergedId)
         if (error) throw error
       }
       repointed[t] = n
-    } catch (e) {
-      incidents.push(`${t}: ${(e as Error).message}`)
     }
+  } catch (e) {
+    incidents.push(`crm_conversation_state: ${(e as Error).message}`)
   }
+  // A market-report opt-out the contact made on the duplicate is her choice,
+  // not a duplicate's clutter: it carries onto the survivor before the
+  // duplicate's row goes, and a failed carry keeps the row (Matt 2026-09-29;
+  // review 2026-09-30).
+  await mergeReportSubscriptionRows(sb, survivorId, mergedId, repointed, incidents)
 
   // 7) crm_sequence_enrollments — repoint live ones, stop if survivor already enrolled.
   try {

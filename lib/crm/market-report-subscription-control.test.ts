@@ -121,6 +121,35 @@ describe('planReportChange: the one compliance rule (a contact-stopped report)',
   })
 })
 
+describe('planReportChange: her stop always lands, even on a report a broker stopped', () => {
+  const brokerStopped = rec({ isActive: false, stoppedAt: '2026-09-20T00:00:00Z', stoppedVia: 'admin' })
+
+  it('her one-click, her email link and her account page each replace a broker stop with hers', () => {
+    for (const actor of [ONE_CLICK, EMAIL, { via: 'self-serve' } as const]) {
+      const p = planReportChange(brokerStopped, { kind: 'stop' }, actor, NOW)
+      expect(p).toMatchObject({
+        ok: true,
+        noop: false,
+        patch: { is_active: false, stopped_at: NOW.toISOString(), stopped_via: actor.via },
+      })
+    }
+  })
+
+  it('after she replaces the stop, a broker restart needs her consent on record', () => {
+    const p = planReportChange(brokerStopped, { kind: 'stop' }, ONE_CLICK, NOW)
+    if (!p.ok || p.noop) throw new Error('expected a patch')
+    const after = withReportPatch(brokerStopped, p.patch)
+    expect(isContactStopped(after)).toBe(true)
+    expect(planReportChange(after, { kind: 'resume' }, ADMIN, NOW)).toMatchObject({ ok: false, code: 'consent-required' })
+  })
+
+  it('a broker stop never replaces hers, and her second stop is a no-op', () => {
+    const hers = rec({ isActive: false, stoppedAt: '2026-09-20T00:00:00Z', stoppedVia: 'one-click' })
+    expect(planReportChange(hers, { kind: 'stop' }, ADMIN, NOW)).toMatchObject({ ok: true, noop: true })
+    expect(planReportChange(hers, { kind: 'stop' }, EMAIL, NOW)).toMatchObject({ ok: true, noop: true })
+  })
+})
+
 describe('planReportChange: interval, areas, approval', () => {
   it('switches the interval', () => {
     expect(planReportChange(rec(), { kind: 'frequency', frequency: 'quarterly' }, EMAIL, NOW)).toMatchObject({

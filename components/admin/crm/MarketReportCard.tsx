@@ -52,6 +52,13 @@ const HOLD_LABEL: Record<string, string> = {
   suppressed: 'email is off for this contact',
   'no-email': 'no email address on file',
   'no-data': 'no verified market data',
+  'spark-stop': 'a figure differs from Spark by more than 1%',
+  'spark-unreconciled': 'a figure could not be checked against Spark',
+}
+
+/** A held row that stored the copy it would have sent (a Spark hold) opens like a sent one. */
+function hasStoredCopy(s: MarketReportCardSend): boolean {
+  return s.status !== 'held' || s.holdReason === 'spark-stop' || s.holdReason === 'spark-unreconciled'
 }
 
 const KIND_LABEL: Record<string, string> = { scheduled: 'Scheduled', manual: 'Sent by a broker', preview: 'Preview' }
@@ -68,7 +75,9 @@ function stateOf(card: CardData): { state: AdminState; word: string } {
 function statusCell(s: MarketReportCardSend): string {
   if (s.status === 'sent') return s.sentAt ? `Sent ${formatDateTime(s.sentAt)}` : 'Sent'
   if (s.status === 'held') return `Held: ${HOLD_LABEL[s.holdReason ?? ''] ?? s.holdReason ?? 'held'}`
-  return `Failed${s.error && s.error !== 'sending' ? `: ${s.error.slice(0, 120)}` : ''}`
+  // In flight (or the process died mid-send): treated as delivered, never sent again.
+  if (s.error === 'sending') return 'Sending, not confirmed'
+  return `Failed${s.error ? `: ${s.error.slice(0, 120)}` : ''}`
 }
 
 function yesNo(v: boolean): string {
@@ -190,12 +199,12 @@ export function MarketReportCard({
                 tracked ? String(s.engagement.opened) : '',
                 tracked ? String(s.engagement.clicked) : '',
                 tracked ? yesNo(s.engagement.bounced) : '',
-                s.status === 'held' ? (
-                  ''
-                ) : (
+                hasStoredCopy(s) ? (
                   <Link key="view" href={`/admin/people/${personId}/market-reports/${s.id}`}>
                     View
                   </Link>
+                ) : (
+                  ''
                 ),
               ],
             }

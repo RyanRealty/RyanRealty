@@ -3,8 +3,9 @@
  * email.
  *
  * Split out of market-report-email.ts (2026-07-29) so the renderer stays under
- * its size budget and the formatting rules live in one place with no imports
- * beyond a type. Every function here is pure and total.
+ * its size budget and the formatting rules live in one place, importing only a
+ * type and the canonical months-of-supply formatter. Every function here is
+ * pure and total.
  *
  * A MISSING VALUE IS NULL, NEVER A PLACEHOLDER (Matt 2026-09-29). These used to
  * return an em dash for an unavailable figure, so a neighborhood report printed
@@ -24,6 +25,7 @@
  */
 
 import type { MoSVerdict } from '@/lib/data/types/market'
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 
 function usable(value: number | null | undefined): value is number {
   return value != null && Number.isFinite(value)
@@ -73,19 +75,17 @@ export function formatMomPct(value: number | null | undefined, prevMonth: string
   return `${arrow} ${Math.abs(rounded).toFixed(1)}% vs ${prevMonth}`
 }
 
-/** Months of supply + " months". One decimal, except within the narrow bands
- *  around the 4.0 / 6.0 verdict thresholds, where a second decimal is shown so
- *  the printed number can never appear to contradict the verdict pill (a true
- *  4.04 shows "4.04 months" next to "balanced market", not "4.0 months").
- *  Null when unavailable. */
+/**
+ * Months of supply + " months", from the RAW figure, through the one
+ * boundary-safe display rule every market surface uses (formatMonthsOfSupply,
+ * lib/format/months-of-supply.ts; ci:market-formula holds it). One decimal,
+ * and the printed digits never cross a verdict threshold the raw value does
+ * not: a raw 4.003 is balanced and prints "4.1", never "4.0" or "4.00" beside
+ * "Balanced market" (review 2026-09-30). Null when unavailable.
+ */
 export function formatMonths(value: number | null | undefined): string | null {
   if (!usable(value)) return null
-  // INCLUSIVE band edges: a true 4.05 classifies balanced (4.05 > 4) but
-  // (4.05).toFixed(1) floating-point-rounds DOWN to "4.0" — printing
-  // "Balanced market · 4.0 months" is the exact verdict-vs-number
-  // contradiction §0 rule 5 bans. Bend hit this live on 2026-07-16.
-  const nearThreshold = (value >= 3.95 && value <= 4.05) || (value >= 5.95 && value <= 6.05)
-  return `${value.toFixed(nearThreshold ? 2 : 1)} months`
+  return `${formatMonthsOfSupply(value)} months`
 }
 
 /** Plain-language verdict phrase (sentence case, no hype). Null when unknown. */

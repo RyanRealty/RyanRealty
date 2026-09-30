@@ -32,7 +32,32 @@ describe('mapMarketReportSubscriberRow', () => {
       lastSentAt: '2026-06-01T09:00:00.000Z',
       lastAttemptAt: '2026-06-01T09:00:00.000Z',
       firstSendApprovedAt: '2026-05-30T17:00:00.000Z',
+      personDeleted: false,
     })
+  })
+
+  it('marks a deleted contact, and one missing from the people read, so the sender never mails them', () => {
+    const base = {
+      id: 9,
+      person_id: 9,
+      areas: ['bend'],
+      frequency: 'monthly',
+      is_active: true,
+      last_sent_at: null,
+      last_attempt_at: null,
+      first_send_approved_at: '2026-06-01T00:00:00Z',
+    }
+    const deleted = mapMarketReportSubscriberRow({
+      ...base,
+      crm_people: { name: 'Gone', first_name: null, last_name: null, assigned_broker: 'matt', fub_legacy_id: null, deleted: true },
+    })
+    expect(deleted.personDeleted).toBe(true)
+    expect(mapMarketReportSubscriberRow({ ...base, crm_people: null }).personDeleted).toBe(true)
+    const live = mapMarketReportSubscriberRow({
+      ...base,
+      crm_people: { name: 'Here', first_name: null, last_name: null, assigned_broker: 'matt', fub_legacy_id: null, deleted: false },
+    })
+    expect(live.personDeleted).toBe(false)
   })
 
   it('reads a missing first-send approval as null (the cadence holds it)', () => {

@@ -11,7 +11,9 @@ import EmailPreferencesPage from './page'
 function view(over: Partial<ReportPreferencesView> = {}): ReportPreferencesView {
   return {
     preview: false,
+    closed: false,
     state: 'on',
+    stoppedByContact: false,
     frequency: 'monthly',
     areas: [
       { slug: 'bend-larkspur', label: 'Larkspur' },
@@ -98,6 +100,40 @@ describe('/email-preferences', () => {
     expect(html).toContain('for a reason this page cannot clear')
   })
 
+  it('a report a BROKER stopped still offers her own stop, and her Unsubscribe opens on it', async () => {
+    readReportPreferences.mockResolvedValue({ ok: true, view: view({ state: 'stopped', stoppedByContact: false }), token: { preview: false } })
+    let html = await render({ t: 'm.tok' })
+    expect(html).toContain('>Resume<')
+    expect(html).toContain('>Stop these reports<')
+    expect(html).not.toContain('You stopped these reports')
+    html = await render({ t: 'm.tok', stop: '1' })
+    expect(html).toContain('Stop your market report?')
+    // Once SHE stopped it, the stop is not offered again.
+    readReportPreferences.mockResolvedValue({ ok: true, view: view({ state: 'stopped', stoppedByContact: true }), token: { preview: false } })
+    html = await render({ t: 'm.tok', stop: '1' })
+    expect(html).not.toContain('Stop your market report?')
+    expect(html).toContain('You stopped these reports')
+    expect(html).not.toContain('>Stop these reports<')
+  })
+
+  it('a deleted record opens, and offers only the ways to stop email', async () => {
+    readReportPreferences.mockResolvedValue({
+      ok: true,
+      view: view({ closed: true, state: 'stopped', stoppedByContact: false }),
+      token: { preview: false },
+    })
+    const html = await render({ t: 'm.tok' })
+    expect(html).toContain('Not sending')
+    expect(html).toContain('>Stop these reports<')
+    expect(html).toContain('>Stop all email<')
+    for (const label of ['Resume', 'Pause', 'Save', 'Add', 'Remove Larkspur', 'Start receiving Ryan Realty email again']) {
+      expect(html).not.toContain(`>${label}<`)
+    }
+    // The one-click footer link still opens on the stop question.
+    expect(await render({ t: 'm.tok', stop: '1' })).toContain('Stop your market report?')
+    expect(await render({ t: 'm.tok', error: 'closed' })).toContain('Only stopping email is possible from this link')
+  })
+
   it('words results from fixed copy only, never from the URL', async () => {
     readReportPreferences.mockResolvedValue({ ok: true, view: view({ state: 'stopped' }), token: { preview: false } })
     const html = await render({ t: 'm.tok', done: 'stopped' })
@@ -111,6 +147,11 @@ describe('/email-preferences', () => {
     readReportPreferences.mockResolvedValue({ ok: true, view: view(), token: { preview: false } })
     const cases: Array<Record<string, string>> = [{ t: 'm.tok' }, { t: 'm.tok', stop: '1' }, { t: 'm.tok', confirm: 'all-email' }, {}]
     for (const params of cases) {
+      expect(await render(params)).not.toContain('—')
+    }
+    readReportPreferences.mockResolvedValue({ ok: true, view: view({ closed: true, state: 'stopped' }), token: { preview: false } })
+    const closedCases: Array<Record<string, string>> = [{ t: 'm.tok' }, { t: 'm.tok', error: 'closed' }]
+    for (const params of closedCases) {
       expect(await render(params)).not.toContain('—')
     }
   })

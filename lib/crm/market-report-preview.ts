@@ -11,6 +11,10 @@
  *     (the acting admin's broker when there is no contact);
  *   - carries the report's own links, signed as a PREVIEW (they open the
  *     contact's preferences page read-only), or placeholders with no contact;
+ *   - carries NO "View this report online" link (review 2026-09-30): a
+ *     render-only preview stores no copy, so that link had nothing to open
+ *     and always failed. A sent preview ("Send a preview to me") stores its
+ *     copy and keeps the link;
  *   - runs through prepareDeliverableEmail with the body's own footer, the
  *     same call the send makes, and NOT through attributeOutbound: no person
  *     token, no open pixel, no click wraps, so nothing an admin clicks in a
@@ -65,6 +69,7 @@ export async function renderMarketReportPreview(input: {
   const heldNote = stale.length > 0 ? `A real send right now would be held: ${describeStaleSources(stale)}.` : null
 
   const personId = input.personId && input.personId > 0 ? input.personId : null
+  // No view link: this render stores no copy for one to open (see the file comment).
   const links = personId
     ? reportEmailLinks({
         personId,
@@ -73,7 +78,6 @@ export async function renderMarketReportPreview(input: {
         preview: true,
       })
     : {
-        viewUrl: `${SITE_URL}${REPORT_PREFERENCES_PATH}?preview=1`,
         manageUrl: `${SITE_URL}${REPORT_PREFERENCES_PATH}?preview=1`,
         unsubscribeUrl: `${SITE_URL}${REPORT_PREFERENCES_PATH}?preview=1&stop=1`,
         oneClickUrl: `${SITE_URL}${REPORT_PREFERENCES_PATH}?preview=1`,
@@ -84,7 +88,7 @@ export async function renderMarketReportPreview(input: {
     brokerSlug: input.brokerSlug,
     areas: blocks,
     unsubscribeUrl: links.unsubscribeUrl,
-    viewUrl: links.viewUrl,
+    viewUrl: null,
     manageUrl: links.manageUrl,
     senderBroker: shellBrokerFor(input.brokerSlug),
     asOf: now,

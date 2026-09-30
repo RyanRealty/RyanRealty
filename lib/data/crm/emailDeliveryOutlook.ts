@@ -1,6 +1,6 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
-import { CADENCE_WINDOW_MS, nextReportSendAt } from '@/lib/crm/market-report-cadence'
+import { CADENCE_WINDOW_MS, isDue, nextReportSendAt } from '@/lib/crm/market-report-cadence'
 import { reportAreaLabel } from '@/lib/crm/market-report-areas'
 import { normalizeReportFrequency } from '@/lib/data/crm/getContactReportSubscriptions'
 
@@ -22,10 +22,15 @@ export type SubscriptionOutlookRow = {
   active: boolean
   lastSentAtIso: string | null
   /**
-   * When the next send is expected (last send + cadence). Null when paused.
-   * An active, never-sent subscription is dueNow with a null timestamp.
+   * When the next send is expected. Null when nothing will send (off, or a
+   * market report waiting on its first-send approval).
    */
   nextExpectedAtIso: string | null
+  /**
+   * The cadence window has already elapsed: it goes at the next send run
+   * (for a market report, the first 8am to 8pm Pacific cron run, which is
+   * nextExpectedAtIso). An active, approved, never-sent market report is due.
+   */
   dueNow: boolean
   /** Honest caveat, e.g. listing alerts only send when new listings match. */
   note: string | null
@@ -65,6 +70,50 @@ function titleCaseFrequency(f: string): string {
 }
 
 const ALERT_NOTE = 'Alerts only go out when new listings match this search.'
+
+/** The market-report row's fields the outlook reads. */
+export type MarketReportOutlookInput = {
+  frequency: string | null
+  is_active: boolean
+  last_sent_at: string | null
+  first_send_approved_at: string | null
+  stopped_at: string | null
+  stopped_via: string | null
+}
+
+/**
+ * A market report's next send, whether it is due now, and the note. PURE.
+ *
+ * `nextExpectedAtIso` is the engine's own answer: the cadence window from the
+ * last send, then the first 8am to 8pm Pacific cron run (nextReportSendAt),
+ * which is never earlier than now. So "due now" cannot be read off it (a
+ * comparison with now was never true: review 2026-09-30); it is whether the
+ * cadence window has already elapsed (isDue, the check the sender itself
+ * makes), for a report that is on and approved.
+ */
+export function marketReportOutlook(
+  report: MarketReportOutlookInput,
+  now: Date,
+): { nextExpectedAtIso: string | null; dueNow: boolean; note: string | null } {
+  const frequency = normalizeReportFrequency(report.frequency ?? 'monthly')
+  const active = report.is_active === true
+  const approved = Boolean(report.first_send_approved_at)
+  const next = nextReportSendAt({ isActive: active, approved, frequency, lastSentAt: report.last_sent_at, now })
+  const note = !active
+    ? report.stopped_at
+      ? report.stopped_via === 'admin'
+        ? 'Stopped by a broker.'
+        : 'Stopped by the contact.'
+      : null
+    : !approved
+      ? 'Waits for a broker to approve the first send after a preview.'
+      : 'Goes out at the first 8am to 8pm Pacific run once due.'
+  return {
+    nextExpectedAtIso: next ? next.toISOString() : null,
+    dueNow: active && approved && isDue({ frequency, lastSentAt: report.last_sent_at, now }),
+    note,
+  }
+}
 
 /**
  * The person's subscriptions with their next-expected-send: the market report
@@ -116,35 +165,16 @@ export async function getPersonSubscriptionOutlook(
   if (report) {
     const freq = report.frequency ?? 'monthly'
     const areas = Array.isArray(report.areas) ? report.areas.filter((a): a is string => typeof a === 'string') : []
-    const active = report.is_active === true
-    const approved = Boolean(report.first_send_approved_at)
-    // The engine's own answer: the cadence window from the last send, then the
-    // first 8am to 8pm Pacific cron run; nothing while off or unapproved.
-    const next = nextReportSendAt({
-      isActive: active,
-      approved,
-      frequency: normalizeReportFrequency(freq),
-      lastSentAt: report.last_sent_at,
-      now: new Date(nowMs),
-    })
-    const note = !active
-      ? report.stopped_at
-        ? report.stopped_via === 'admin'
-          ? 'Stopped by a broker.'
-          : 'Stopped by the contact.'
-        : null
-      : !approved
-        ? 'Waits for a broker to approve the first send after a preview.'
-        : 'Goes out at the first 8am to 8pm Pacific run once due.'
+    const outlook = marketReportOutlook(report, new Date(nowMs))
     out.push({
       kind: 'market-report',
       label: `${titleCaseFrequency(freq)} market report${areas.length > 0 ? `: ${areas.map(reportAreaLabel).join(', ')}` : ''}`,
       cadence: freq,
-      active,
+      active: report.is_active === true,
       lastSentAtIso: report.last_sent_at,
-      nextExpectedAtIso: next ? next.toISOString() : null,
-      dueNow: Boolean(next && next.getTime() <= nowMs),
-      note,
+      nextExpectedAtIso: outlook.nextExpectedAtIso,
+      dueNow: outlook.dueNow,
+      note: outlook.note,
     })
   }
 

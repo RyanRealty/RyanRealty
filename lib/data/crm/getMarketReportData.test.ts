@@ -47,14 +47,16 @@ vi.mock('@/lib/data/market-truth/public-pace', async () => {
 })
 
 import {
-  computeMonthsOfSupply,
   classifyMarketVerdict,
+  reportMarketVerdict,
   resolveAreaGeoType,
   buildAreaBlock,
   buildTrendSummary,
   monthLabel,
   getMarketReportData,
+  sixMonthCloses,
 } from './getMarketReportData'
+import { formatMonths } from '@/lib/crm/market-report-format'
 import type { MarketTrendPoint } from '@/lib/data/market/getMarketTrend'
 
 describe('buildTrendSummary', () => {
@@ -112,27 +114,67 @@ describe('monthLabel', () => {
   })
 })
 
-describe('computeMonthsOfSupply', () => {
-  it('computes active / (sold12mo / 12) and rounds to one decimal', () => {
-    // 60 active, 120 sold/yr -> 10/mo -> 6.0 months
-    expect(computeMonthsOfSupply(60, 120)).toBe(6)
-    // 491 active, 1657 sold/yr (Bend rolling_365d) -> 1657/12 = 138.08/mo -> 3.6
-    expect(computeMonthsOfSupply(491, 1657)).toBe(3.6)
-    // 28 active, 31 sold/yr (Tetherow) -> 31/12 = 2.583/mo -> 10.8
-    expect(computeMonthsOfSupply(28, 31)).toBe(10.8)
+describe('sixMonthCloses (closed_last_6_months, CLAUDE.md §0)', () => {
+  const month = (periodStart: string, soldCount: number | null): MarketTrendPoint => ({
+    periodStart,
+    medianSalePrice: null,
+    soldCount,
+    medianDom: null,
+    endOfPeriodInventory: null,
+  })
+  const run = ['2026-03-01', '2026-04-01', '2026-05-01', '2026-06-01', '2026-07-01', '2026-08-01']
+
+  it('sums the last six completed months when they are consecutive and all counted', () => {
+    const points = [month('2026-02-01', 999), ...run.map((m, i) => month(m, 100 + i))]
+    expect(sixMonthCloses(points)).toEqual({ closed: 615, from: '2026-03-01', through: '2026-08-31' })
   })
 
-  it('returns null when inputs are missing or non-finite', () => {
-    expect(computeMonthsOfSupply(null, 100)).toBeNull()
-    expect(computeMonthsOfSupply(60, null)).toBeNull()
-    expect(computeMonthsOfSupply(undefined, undefined)).toBeNull()
-    expect(computeMonthsOfSupply(Number.NaN, 100)).toBeNull()
-    expect(computeMonthsOfSupply(60, Number.POSITIVE_INFINITY)).toBeNull()
+  it('is null on a gap, a missing count, or fewer than six months (never a partial total)', () => {
+    expect(sixMonthCloses(run.slice(1).map((m) => month(m, 10)))).toBeNull()
+    expect(sixMonthCloses([...run.slice(0, 5), '2026-09-01'].map((m) => month(m, 10)))).toBeNull()
+    expect(sixMonthCloses(run.map((m, i) => month(m, i === 2 ? null : 10)))).toBeNull()
+    expect(sixMonthCloses(null)).toBeNull()
+  })
+})
+
+describe('months of supply prints from the RAW figure, and the verdict is taken from the same raw figure', () => {
+  it('a raw 4.003 prints "4.1 months" beside "Balanced market", never 4.00 (the verdict the raw earns)', () => {
+    // 4.003 is balanced (> 4). Rounding it first printed "4.00 months" beside "Balanced market".
+    expect(reportMarketVerdict(4.003)).toBe('balanced')
+    expect(formatMonths(4.003)).toBe('4.1 months')
+    // At the edges the printed digits and the verdict agree the other way too.
+    expect(reportMarketVerdict(4)).toBe('sellers')
+    expect(formatMonths(4)).toBe('4.0 months')
+    expect(reportMarketVerdict(5.999)).toBe('balanced')
+    expect(formatMonths(5.999)).toBe('5.9 months')
+    expect(reportMarketVerdict(6)).toBe('buyers')
+    expect(formatMonths(6)).toBe('6.0 months')
   })
 
-  it('returns null on a zero close rate (never divides by zero, never fabricates)', () => {
-    expect(computeMonthsOfSupply(60, 0)).toBeNull()
-    expect(computeMonthsOfSupply(60, -5)).toBeNull()
+  it('agrees with the canonical classifier everywhere', () => {
+    for (const v of [0.4, 3.99, 4, 4.0001, 4.05, 5.5, 5.95, 5.9999, 6, 6.01, 12]) {
+      expect(reportMarketVerdict(v)).toBe(classifyMarketVerdict(v))
+    }
+    expect(reportMarketVerdict(null)).toBeNull()
+  })
+
+  it('a block keeps the raw live figure (no pre-rounding) and derives its verdict from it', () => {
+    const block = buildAreaBlock({
+      slug: 'bend',
+      geoType: 'city',
+      detail: {
+        medianSalePrice: 721000,
+        soldCount: 1657,
+        medianDom: 25,
+        yoyMedianPriceDeltaPct: -1.22,
+        marketHealthLabel: 'Warm',
+        endOfPeriodInventory: 491,
+        updatedAt: '2026-06-25T00:00:00Z',
+      },
+      pulse: { activeCount: 600, monthsOfSupply: 4.003, refreshedAt: '2026-06-25T12:00:00Z' },
+    })
+    expect(block!.monthsOfSupply).toBe(4.003)
+    expect(block!.marketVerdict).toBe('balanced')
   })
 })
 
@@ -296,6 +338,44 @@ describe('buildAreaBlock', () => {
         pulse: null,
       }),
     ).toBeNull()
+  })
+
+  it('the fallback is the §0 six-month formula: active / (closes in the last six completed months / 6)', () => {
+    const block = buildAreaBlock({
+      slug: 'bend',
+      geoType: 'city',
+      detail: FULL_DETAIL,
+      pulse: null,
+      closedSixMonths: { closed: 900, from: '2026-01-01', through: '2026-06-30' },
+    })
+    // 491 active / (900 / 6) = 3.2733..., never 491 / (1657 / 12) = 3.556 (twelve months of sales).
+    expect(block!.monthsOfSupply).toBeCloseTo(491 / 150, 10)
+    expect(block!.monthsOfSupplySource).toBe('computed-6mo')
+    expect(block!.monthsOfSupplyBasis).toEqual({ closed: 900, from: '2026-01-01', through: '2026-06-30' })
+    expect(block!.marketVerdict).toBe('sellers')
+    // No six-month base: no fallback at all (never twelve months of sales).
+    const none = buildAreaBlock({ slug: 'bend', geoType: 'city', detail: FULL_DETAIL, pulse: null })
+    expect(none!.monthsOfSupply).toBeNull()
+    expect(none!.marketVerdict).toBeNull()
+  })
+
+  it('the six-month fallback withholds below the Market Truth floor, and never at neighborhood grain', () => {
+    const thin = buildAreaBlock({
+      slug: 'terrebonne',
+      geoType: 'city',
+      detail: { ...FULL_DETAIL, soldCount: 40 },
+      pulse: null,
+      closedSixMonths: { closed: 29, from: '2026-01-01', through: '2026-06-30' },
+    })
+    expect(thin!.monthsOfSupply).toBeNull()
+    const hood = buildAreaBlock({
+      slug: 'tetherow',
+      geoType: 'neighborhood',
+      detail: FULL_DETAIL,
+      pulse: null,
+      closedSixMonths: { closed: 300, from: '2026-01-01', through: '2026-06-30' },
+    })
+    expect(hood!.monthsOfSupply).toBeNull()
   })
 
   it('the verdict in a built block always matches the canonical classifier output for its monthsOfSupply', () => {

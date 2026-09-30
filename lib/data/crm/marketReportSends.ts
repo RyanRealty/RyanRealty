@@ -9,9 +9,17 @@
  * (CLAUDE.md §0).
  *
  * email_key is UNIQUE: an insert on an existing key is a no-op (inserted:
- * false). The sender leans on that twice: a held row keyed per due cycle is
- * recorded once however many cron ticks see it, and a retried send never
- * writes a second row for the same attempt.
+ * false). The sender leans on that three times: a held row keyed per due
+ * cycle is recorded once however many cron ticks see it; a scheduled send is
+ * keyed per subscription per due CYCLE, so two overlapping cron runs claim the
+ * same row and only one of them sends (claimMarketReportSend); and a retry
+ * may take that row over only once the earlier attempt settled as a failure.
+ *
+ * A claimed row sits as status 'failed' with error 'sending' until the
+ * provider answers (SEND_CLAIM_MARK). That state is IN FLIGHT, and every
+ * reader treats it as delivered (review 2026-09-30): the earlier attempt may
+ * have reached the provider before the process died, and a report is never
+ * sent twice on a guess.
  *
  * DAL boundary (G1): every raw .from('crm_report_sends') lives here. Service
  * role; the table is RLS-on with no policy. Reads never throw (an unreadable
@@ -23,7 +31,35 @@ import { fetchPagedRows } from '@/lib/supabase/paginate'
 
 export type ReportSendKind = 'scheduled' | 'manual' | 'preview'
 export type ReportSendStatus = 'sent' | 'failed' | 'held'
-export type ReportHoldReason = 'awaiting-approval' | 'stale-data' | 'suppressed' | 'no-email' | 'no-data'
+export type ReportHoldReason =
+  | 'awaiting-approval'
+  | 'stale-data'
+  | 'suppressed'
+  | 'no-email'
+  | 'no-data'
+  /** A printed figure differs from Spark by more than 1% (CLAUDE.md §0 STOP). */
+  | 'spark-stop'
+  /** A printed figure could not be rebuilt from Spark, or the check could not run. */
+  | 'spark-unreconciled'
+
+/** The error a claimed row carries until the provider answers: in flight. */
+export const SEND_CLAIM_MARK = 'sending'
+
+/**
+ * How long an in-flight row may be another process's live attempt. A run is
+ * capped at 300 seconds (the cron route's maxDuration), so a row still
+ * 'sending' after this was left by a process that died: it is treated as
+ * delivered AND the cadence stamp moves on, or its cycle key would block the
+ * subscription forever. A younger one is left alone (no stamp), so if that
+ * attempt then fails, the next tick retries it.
+ */
+export const IN_FLIGHT_SETTLE_MS = 15 * 60 * 1000
+
+/** An in-flight row old enough that no live process can still be sending it. Pure. */
+export function inFlightAbandoned(attemptedAt: string, now: Date): boolean {
+  const t = Date.parse(attemptedAt)
+  return !Number.isFinite(t) || now.getTime() - t >= IN_FLIGHT_SETTLE_MS
+}
 
 export type ReportSendInsert = {
   subscriptionId: number | null
@@ -44,6 +80,8 @@ export type ReportSendInsert = {
   html?: string | null
   plainText?: string | null
   figures?: readonly unknown[]
+  /** The §0 Spark cross-check this send passed (or was held on): checks, queries, verdict. */
+  sparkCheck?: unknown | null
 }
 
 /** A send as the admin list and the web view read it (no html in the list). */
@@ -70,11 +108,12 @@ export type ReportSendRecord = ReportSendSummary & {
   html: string | null
   plainText: string | null
   figures: unknown[]
+  sparkCheck: unknown | null
 }
 
 const SUMMARY_COLS =
   'id, subscription_id, person_id, email_key, broker, kind, status, hold_reason, error, message_id, recipient_email, attempted_at, sent_at, frequency, areas, subject'
-const RECORD_COLS = `${SUMMARY_COLS}, html, plain_text, figures`
+const RECORD_COLS = `${SUMMARY_COLS}, html, plain_text, figures, spark_check`
 
 type Row = {
   id: number
@@ -96,6 +135,7 @@ type Row = {
   html?: string | null
   plain_text?: string | null
   figures?: unknown
+  spark_check?: unknown
 }
 
 function toSummary(r: Row): ReportSendSummary {
@@ -125,7 +165,58 @@ function toRecord(r: Row): ReportSendRecord {
     html: r.html ?? null,
     plainText: r.plain_text ?? null,
     figures: Array.isArray(r.figures) ? r.figures : [],
+    sparkCheck: r.spark_check ?? null,
   }
+}
+
+/** The fields that decide whether a send key is free, delivered, in flight or held. */
+export type ReportSendState = {
+  status: ReportSendStatus
+  error: string | null
+  sentAt: string | null
+  attemptedAt: string
+  holdReason: string | null
+}
+
+/** A claimed row the provider has not answered for yet (or never will: the process died). Pure. */
+export function isInFlightSend(s: Pick<ReportSendState, 'status' | 'error'>): boolean {
+  return s.status === 'failed' && s.error === SEND_CLAIM_MARK
+}
+
+/** An attempt that failed and settled: the only state a retry may take over. Pure. */
+export function isSettledFailure(s: Pick<ReportSendState, 'status' | 'error'>): boolean {
+  return s.status === 'failed' && s.error !== SEND_CLAIM_MARK
+}
+
+/**
+ * The person's latest delivery, from their send rows (any order): a sent row
+ * counts at its sent_at, and an IN-FLIGHT row counts as delivered at its
+ * attempted_at (the earlier attempt may have gone out), flagged `inFlight`.
+ * Previews, settled failures and holds never count. Null when none. Pure.
+ */
+export function latestDelivery(
+  rows: ReadonlyArray<Pick<ReportSendSummary, 'kind' | 'status' | 'error' | 'sentAt' | 'attemptedAt'>>,
+): { at: string; inFlight: boolean } | null {
+  let best: { at: string; inFlight: boolean } | null = null
+  let bestMs = -Infinity
+  for (const r of rows) {
+    if (r.kind === 'preview') continue
+    const inFlight = isInFlightSend(r)
+    const at = r.status === 'sent' ? r.sentAt ?? r.attemptedAt : inFlight ? r.attemptedAt : null
+    const ms = at ? Date.parse(at) : NaN
+    if (at && Number.isFinite(ms) && ms > bestMs) {
+      best = { at, inFlight }
+      bestMs = ms
+    }
+  }
+  return best
+}
+
+/** latestDelivery's time only. Pure. */
+export function latestDeliveredAt(
+  rows: ReadonlyArray<Pick<ReportSendSummary, 'kind' | 'status' | 'error' | 'sentAt' | 'attemptedAt'>>,
+): string | null {
+  return latestDelivery(rows)?.at ?? null
 }
 
 /**
@@ -134,6 +225,7 @@ function toRecord(r: Row): ReportSendRecord {
  */
 export async function insertMarketReportSend(
   row: ReportSendInsert,
+  opts: { refresh?: boolean } = {},
 ): Promise<{ ok: true; inserted: boolean } | { ok: false; error: string }> {
   try {
     const sb = createServiceClient()
@@ -157,14 +249,106 @@ export async function insertMarketReportSend(
         html: row.html ?? null,
         plain_text: row.plainText ?? null,
         figures: [...(row.figures ?? [])],
+        spark_check: row.sparkCheck ?? null,
       },
-      { onConflict: 'email_key', ignoreDuplicates: true, count: 'exact' },
+      // `refresh` rewrites an existing row under the same key (a held row
+      // re-checked on a later tick of the same cycle keeps the latest
+      // numbers); by default an existing key is left alone.
+      { onConflict: 'email_key', ignoreDuplicates: !opts.refresh, count: 'exact' },
     )
     if (error) return { ok: false, error: error.message }
     return { ok: true, inserted: (count ?? 0) > 0 }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : String(e) }
   }
+}
+
+/** The state of the row holding a send key. Null when there is none or it cannot be read. */
+async function readSendState(emailKey: string): Promise<ReportSendState | null> {
+  try {
+    const sb = createServiceClient()
+    const { data, error } = await sb
+      .from('crm_report_sends')
+      .select('status, error, sent_at, attempted_at, hold_reason')
+      .eq('email_key', emailKey)
+      .maybeSingle()
+    if (error || !data) return null
+    const r = data as { status: string; error: string | null; sent_at: string | null; attempted_at: string; hold_reason: string | null }
+    return {
+      status: r.status as ReportSendStatus,
+      error: r.error,
+      sentAt: r.sent_at,
+      attemptedAt: r.attempted_at,
+      holdReason: r.hold_reason,
+    }
+  } catch {
+    return null
+  }
+}
+
+export type ReportSendClaim =
+  | { ok: true; claimed: true; takeover: boolean }
+  | { ok: true; claimed: false; existing: ReportSendState }
+  | { ok: false; error: string }
+
+/**
+ * Claim a send key before the wire (review 2026-09-30: two overlapping runs
+ * could both send). The row is written in flight (status 'failed', error
+ * SEND_CLAIM_MARK) with the stored copy and the trace.
+ *
+ *   - A new key: inserted, claimed.
+ *   - A key already SENT, IN FLIGHT or HELD: not claimed; the caller gets the
+ *     existing state (and treats in flight as delivered).
+ *   - A key whose attempt SETTLED as a failure: a retry takes it over, in ONE
+ *     conditional update that matches only while the row is still a settled
+ *     failure, so two retries cannot both take it.
+ *
+ * Never throws.
+ */
+export async function claimMarketReportSend(
+  row: Omit<ReportSendInsert, 'status' | 'error' | 'holdReason' | 'messageId' | 'sentAt'>,
+): Promise<ReportSendClaim> {
+  const ins = await insertMarketReportSend({ ...row, status: 'failed', error: SEND_CLAIM_MARK })
+  if (!ins.ok) return ins
+  if (ins.inserted) return { ok: true, claimed: true, takeover: false }
+  const existing = await readSendState(row.emailKey)
+  if (!existing) return { ok: false, error: `the send key ${row.emailKey} exists but its row could not be read` }
+  if (!isSettledFailure(existing)) return { ok: true, claimed: false, existing }
+  try {
+    const sb = createServiceClient()
+    const { data, error } = await sb
+      .from('crm_report_sends')
+      .update({
+        subscription_id: row.subscriptionId,
+        broker: row.broker,
+        kind: row.kind,
+        status: 'failed',
+        error: SEND_CLAIM_MARK,
+        hold_reason: null,
+        message_id: null,
+        sent_at: null,
+        recipient_email: row.recipientEmail ?? null,
+        attempted_at: row.attemptedAt ?? new Date().toISOString(),
+        frequency: row.frequency ?? null,
+        areas: [...(row.areas ?? [])],
+        subject: row.subject ?? null,
+        html: row.html ?? null,
+        plain_text: row.plainText ?? null,
+        figures: [...(row.figures ?? [])],
+        spark_check: row.sparkCheck ?? null,
+      })
+      .eq('email_key', row.emailKey)
+      .eq('status', 'failed')
+      .or(`error.is.null,error.neq.${SEND_CLAIM_MARK}`)
+      .select('id')
+    if (error) return { ok: false, error: error.message }
+    if (data && data.length > 0) return { ok: true, claimed: true, takeover: true }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) }
+  }
+  // Another retry took it first: report what holds it now.
+  const now = await readSendState(row.emailKey)
+  return now ? { ok: true, claimed: false, existing: now } : { ok: false, error: `the send key ${row.emailKey} could not be read` }
 }
 
 /**
@@ -261,14 +445,24 @@ export async function listMarketReportSendsForPerson(
   }
 }
 
-/** When this person last actually received a report (scheduled or manual). Null when never. */
+/**
+ * When this person last received a report (scheduled or manual). Null when
+ * never. An in-flight row counts as delivered (latestDeliveredAt): the
+ * cadence backstop must not send again while an earlier attempt may have gone
+ * out (review 2026-09-30).
+ */
 export async function getLatestDeliveredReportAt(personId: number): Promise<string | null> {
-  const [latest] = await listMarketReportSendsForPerson(personId, {
+  return (await getLatestDeliveredReport(personId))?.at ?? null
+}
+
+/** getLatestDeliveredReportAt, saying whether that delivery is still in flight. */
+export async function getLatestDeliveredReport(personId: number): Promise<{ at: string; inFlight: boolean } | null> {
+  const rows = await listMarketReportSendsForPerson(personId, {
     kinds: ['scheduled', 'manual'],
-    statuses: ['sent'],
-    limit: 1,
+    statuses: ['sent', 'failed'],
+    limit: 25,
   })
-  return latest?.sentAt ?? null
+  return latestDelivery(rows)
 }
 
 /** The most recent preview that reached the broker's inbox for this person. */

@@ -4,9 +4,13 @@ import type { MarketReportSubscriber } from '@/lib/data/crm/getMarketReportSubsc
 // The send leaf's collaborators. The suppression chokepoint must run BEFORE
 // sendEmail, and a preview must never record an event against the contact.
 const isSuppressed = vi.fn()
+const isSuppressedByEmail = vi.fn()
 const sendEmail = vi.fn()
 const recordEmailEvent = vi.fn()
-vi.mock('@/lib/crm/suppressions', () => ({ isSuppressed: (...a: unknown[]) => isSuppressed(...a) }))
+vi.mock('@/lib/crm/suppressions', () => ({
+  isSuppressed: (...a: unknown[]) => isSuppressed(...a),
+  isSuppressedByEmail: (...a: unknown[]) => isSuppressedByEmail(...a),
+}))
 vi.mock('@/lib/resend', () => ({ sendEmail: (...a: unknown[]) => sendEmail(...a) }))
 vi.mock('@/lib/crm/email-events', () => ({ recordEmailEvent: (...a: unknown[]) => recordEmailEvent(...a) }))
 // Alerts page Matt on the ops channel; never let a unit run write one for real.
@@ -41,6 +45,7 @@ function sub(over: Partial<MarketReportSubscriber> = {}): MarketReportSubscriber
     lastSentAt: 'lastSentAt' in over ? (over.lastSentAt as string | null) : null,
     lastAttemptAt: over.lastAttemptAt ?? null,
     firstSendApprovedAt: 'firstSendApprovedAt' in over ? (over.firstSendApprovedAt as string | null) : '2026-06-01T17:00:00.000Z',
+    personDeleted: over.personDeleted ?? false,
   }
 }
 
@@ -62,6 +67,8 @@ function makeDeps(over: Partial<SendDeps> = {}): SendDeps & {
 
 beforeEach(() => {
   isSuppressed.mockReset()
+  isSuppressedByEmail.mockReset()
+  isSuppressedByEmail.mockResolvedValue({ suppressed: false, reasons: [] })
   sendEmail.mockReset()
   recordEmailEvent.mockReset()
   queueBrokerHealthAlert.mockClear()
@@ -105,14 +112,46 @@ describe('runMarketReportSend: cadence and approval', () => {
     expect(deps.stampAttempt).not.toHaveBeenCalled()
   })
 
-  it('delivers an approved, due contact from the assigned broker with a per-run email key', async () => {
+  it('delivers an approved, due contact from the assigned broker with the cycle\'s send key', async () => {
     const deps = makeDeps({ fetchSubscribers: vi.fn(async () => [sub({ assignedBroker: 'rebecca', personId: 42 })]) })
     const s = await runMarketReportSend({ now: IN_WINDOW, deps, runId: 'run1' })
     expect(s.sent).toBe(1)
     expect(deps.stampAttempt).toHaveBeenCalledWith(1, IN_WINDOW)
     expect(deps.deliver).toHaveBeenCalledWith(
-      expect.objectContaining({ email: 'jane@example.com', brokerSlug: 'rebecca', emailKey: 'market-report:run1:42', now: IN_WINDOW }),
+      expect.objectContaining({ email: 'jane@example.com', brokerSlug: 'rebecca', emailKey: 'market-report:scheduled:1:first', now: IN_WINDOW }),
     )
+  })
+
+  it('two overlapping runs claim the SAME send key for a subscription and cycle (never one per run)', async () => {
+    const lastSentAt = new Date(IN_WINDOW.getTime() - 8 * DAY).toISOString()
+    const a = makeDeps({ fetchSubscribers: vi.fn(async () => [sub({ subscriptionId: 9016, lastSentAt })]) })
+    const b = makeDeps({ fetchSubscribers: vi.fn(async () => [sub({ subscriptionId: 9016, lastSentAt })]) })
+    await Promise.all([
+      runMarketReportSend({ now: IN_WINDOW, deps: a, runId: 'run-a' }),
+      runMarketReportSend({ now: new Date(IN_WINDOW.getTime() + 60_000), deps: b, runId: 'run-b' }),
+    ])
+    const keyA = a.deliver.mock.calls[0][0].emailKey
+    const keyB = b.deliver.mock.calls[0][0].emailKey
+    expect(keyA).toBe(keyB)
+    expect(keyA).toBe(`market-report:scheduled:9016:${lastSentAt.replace(/[^0-9]/g, '').slice(0, 14)}`)
+  })
+
+  it('never mails a deleted contact, and does not count her as due', async () => {
+    const deps = makeDeps({ fetchSubscribers: vi.fn(async () => [sub({ personDeleted: true })]) })
+    const s = await runMarketReportSend({ now: IN_WINDOW, deps })
+    expect(s.skippedByReason['contact-deleted']).toBe(1)
+    expect(s.due).toBe(0)
+    expect(deps.deliver).not.toHaveBeenCalled()
+    expect(deps.stampAttempt).not.toHaveBeenCalled()
+    expect(deps.recordHold).not.toHaveBeenCalled()
+  })
+
+  it('stops starting deliveries past the time budget; the rest wait for the next run', async () => {
+    const many = Array.from({ length: 3 }, (_, i) => sub({ personId: i + 1, subscriptionId: i + 1 }))
+    const deps = makeDeps({ fetchSubscribers: vi.fn(async () => many) })
+    const s = await runMarketReportSend({ now: IN_WINDOW, deps, timeBudgetMs: 0 })
+    expect(deps.deliver).not.toHaveBeenCalled()
+    expect(s.deferred).toBe(3)
   })
 
   it("falls back to Matt's identity when no broker is assigned", async () => {
@@ -148,6 +187,22 @@ describe('runMarketReportSend: delivery outcomes', () => {
     })
     const s = await runMarketReportSend({ now: IN_WINDOW, deps })
     expect(s.skippedByReason['not-due']).toBe(1)
+    expect(s.sent).toBe(0)
+  })
+
+  it('counts a Spark hold and a cancelled delivery under their own reasons', async () => {
+    const deps = makeDeps({
+      fetchSubscribers: vi.fn(async () => [sub({ personId: 1 }), sub({ personId: 2, subscriptionId: 2 }), sub({ personId: 3, subscriptionId: 3 })]),
+      deliver: vi
+        .fn()
+        .mockResolvedValueOnce({ status: 'held', reason: 'spark-stop', detail: 'bend homes for sale 729 vs 741' })
+        .mockResolvedValueOnce({ status: 'held', reason: 'spark-unreconciled', detail: 'Spark down' })
+        .mockResolvedValueOnce({ status: 'cancelled', reason: 'stopped', detail: 'stopped during the run' }),
+    })
+    const s = await runMarketReportSend({ now: IN_WINDOW, deps })
+    expect(s.skippedByReason['spark-stop']).toBe(1)
+    expect(s.skippedByReason['spark-unreconciled']).toBe(1)
+    expect(s.skippedByReason.cancelled).toBe(1)
     expect(s.sent).toBe(0)
   })
 
@@ -204,6 +259,7 @@ describe('sendOneSubscriber: the one send call', () => {
     unsubscribeUrl: UNSUB,
     oneClickUrl: ONE_CLICK,
     emailKey: 'market-report:run:100',
+    contactEmail: 'jane@example.com',
   }
 
   it('does NOT send when the contact is suppressed (fail-closed)', async () => {
@@ -212,6 +268,32 @@ describe('sendOneSubscriber: the one send call', () => {
     expect(out).toMatchObject({ status: 'suppressed', detail: 'email:unsubscribe' })
     expect(sendEmail).not.toHaveBeenCalled()
     expect(recordEmailEvent).not.toHaveBeenCalled()
+  })
+
+  it('does NOT send when only her ADDRESS is suppressed (an address-only row the newsletter wrote)', async () => {
+    isSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
+    isSuppressedByEmail.mockResolvedValue({ suppressed: true, reasons: ['email:email:unsubscribe'] })
+    const out = await sendOneSubscriber(baseArgs)
+    expect(out).toMatchObject({ status: 'suppressed', detail: 'email:email:unsubscribe' })
+    expect(isSuppressedByEmail).toHaveBeenCalledWith('jane@example.com', 'email')
+    expect(sendEmail).not.toHaveBeenCalled()
+  })
+
+  it('a preview checks the CONTACT\'s address, never the broker mailbox it goes to', async () => {
+    isSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
+    isSuppressedByEmail.mockResolvedValue({ suppressed: true, reasons: ['email:email:unsubscribe'] })
+    const out = await sendOneSubscriber({ ...baseArgs, kind: 'preview', to: 'matt@ryan-realty.com', subject: '[Preview] Bend' })
+    expect(out.status).toBe('suppressed')
+    expect(isSuppressedByEmail).toHaveBeenCalledWith('jane@example.com', 'email')
+    expect(sendEmail).not.toHaveBeenCalled()
+  })
+
+  it('passes the send key to the provider as its idempotency key', async () => {
+    isSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
+    sendEmail.mockResolvedValue({ id: 'msg-3' })
+    recordEmailEvent.mockResolvedValue({ ok: true })
+    await sendOneSubscriber({ ...baseArgs, emailKey: 'market-report:scheduled:9016:first' })
+    expect(sendEmail.mock.calls[0][0].idempotencyKey).toBe('market-report:scheduled:9016:first')
   })
 
   it('checks suppression BEFORE sending, sends once with the broker identity and records the event', async () => {
@@ -226,9 +308,13 @@ describe('sendOneSubscriber: the one send call', () => {
     })
     recordEmailEvent.mockResolvedValue({ ok: true })
 
+    isSuppressedByEmail.mockImplementation(async () => {
+      order.push('isSuppressedByEmail')
+      return { suppressed: false, reasons: [] }
+    })
     const out = await sendOneSubscriber(baseArgs)
     expect(out).toMatchObject({ status: 'sent', messageId: 'msg-1' })
-    expect(order).toEqual(['isSuppressed', 'sendEmail'])
+    expect(order).toEqual(['isSuppressed', 'isSuppressedByEmail', 'sendEmail'])
     const sent = sendEmail.mock.calls[0][0]
     expect(sent.to).toBe('jane@example.com')
     expect(sent.from).toContain('Matt Ryan')

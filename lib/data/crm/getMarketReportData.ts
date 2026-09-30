@@ -40,9 +40,14 @@
  *     Unchanged by D27 (D17's carve-out: core inventory/MOS stay pulse/cache).
  *
  * Months of supply (CLAUDE.md §0): MoS = active / (closed_6mo / 6). Thresholds:
- * <= 4 sellers, 4-6 balanced, >= 6 buyers. The returned `marketVerdict` is
- * computed FROM the returned `monthsOfSupply`, so the verdict can never
- * contradict the number.
+ * <= 4 sellers, 4-6 balanced, >= 6 buyers. The block carries the RAW
+ * (unrounded) figure, and `marketVerdict` is computed from that raw value
+ * (monthsOfSupplyVerdict, lib/format/months-of-supply.ts), so the verdict can
+ * never contradict the number. Every surface prints it through
+ * formatMonthsOfSupply, the one boundary-safe display rule: a raw 4.003 prints
+ * "4.1" beside "Balanced market", never "4.00" (review 2026-09-30: the block
+ * used to round to two decimals first, and "4.00 months" printed beside the
+ * balanced verdict the raw 4.003 earns).
  *
  * W8.1a (Matt 2026-07-27: "switch resorts to 6mo"): cities and resorts both
  * prefer live pulse MoS (6-month base) when the row exists. `soldLast12mo`
@@ -52,10 +57,13 @@
  * 12-month sold count, or when the live numerator is not the count on the
  * block (`publishMonthsOfSupply`). Neighborhood MOS stays unpublished unless
  * that helper's source is market-truth — do not invent MOS from leftover
- * sold. When pulse MoS is null or withheld (sparse slow-turnover geos, or
- * impossible arithmetic), city grain may fall back to `rawMonthsOfSupply`
- * on the cache rolling_365d sold count so leftover closed is not a MOS
- * formula.
+ * sold. When the live MoS is null or withheld (sparse slow-turnover geos, or
+ * impossible arithmetic), city grain may fall back to the §0 formula itself:
+ * homes for sale / (closes in the last six completed months / 6), the closes
+ * summed from the monthly cache series (sixMonthCloses). Before 2026-09-30
+ * this fallback divided by twelve months of sales, a formula §0 does not
+ * allow. It withholds below MIN_MOS_SIX_MONTH_CLOSES closes, like the live
+ * figure.
  *
  * Slug resolution: the subscribable areas (lib/data/crm/getContactReportSubscriptions
  * buildMarketReportAreas) are the 7 Central Oregon cities + the 14 resort
@@ -90,7 +98,9 @@ import { hrefForNeighborhoodSlug } from '@/lib/neighborhood-areas'
 import { REPORT_CITY_SLUG_SET } from '@/lib/data/geo/report-cities'
 import { marketVerdict } from '@/lib/market/classify'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
-import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
+import { MIN_MOS_SIX_MONTH_CLOSES, publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
+import { monthsOfSupply as sixMonthMonthsOfSupply } from '@/lib/market/classify'
+import { monthsOfSupplyVerdict } from '@/lib/format/months-of-supply'
 import { isSoldAttributionTrusted } from '@/lib/market/geo-grain-trust'
 import type { MoSVerdict } from '@/lib/data/types/market'
 import { formatDate } from '@/lib/format/date'
@@ -199,18 +209,23 @@ export type MarketReportAreaBlock = {
   medianPrice: number | null
   /** Current active SFR listing count. */
   activeListings: number | null
-  /** Real closed-sale count over the trailing 12 months (the MoS close base). */
+  /** Real closed-sale count over the trailing 12 months. */
   soldLast12mo: number | null
-  /** Months of supply = active / (soldLast12mo / 12). Computed, not stored. */
+  /**
+   * Months of supply, RAW (unrounded): active / (closed_last_6_months / 6).
+   * Print it only through formatMonthsOfSupply (lib/format/months-of-supply.ts).
+   */
   monthsOfSupply: number | null
   /**
    * Which path produced `monthsOfSupply`: the live source's own figure
-   * (Market Truth / pulse, six-month absorption) or the trailing-12-month
-   * fallback computed from the cache sold count. Null when withheld. The
-   * figures trace names it, so a reviewer can tell the two formulas apart.
+   * (Market Truth, six-month absorption) or the §0 formula computed from the
+   * last six completed months of the monthly cache series. Null when
+   * withheld. The figures trace names it.
    */
-  monthsOfSupplySource?: 'live' | 'computed-12mo' | null
-  /** Verdict derived FROM monthsOfSupply against the §0 thresholds. */
+  monthsOfSupplySource?: 'live' | 'computed-6mo' | null
+  /** The six-month close base of a computed figure (null for a live one). */
+  monthsOfSupplyBasis?: SixMonthCloses | null
+  /** Verdict derived FROM the raw monthsOfSupply against the §0 thresholds. */
   marketVerdict: MoSVerdict | null
   /** Median days on market (closed), trailing 12 months. */
   domMedian: number | null
@@ -248,48 +263,55 @@ export type MarketReportAreaBlock = {
   provenance?: MarketReportProvenance | null
 }
 
-/**
- * Raw (UNROUNDED) months of supply from an active count and a trailing-12-month
- * close count, per the canonical absorption formula. Pure — exported for unit
- * tests. This is the value the verdict must classify from: rounding to one
- * decimal BEFORE classifying misbins a true 4.04 as a seller's market (4.0 <= 4)
- * and a true 5.96 as a buyer's market (6.0 >= 6). The display figure rounds; the
- * classification does not.
- *
- * Returns null when the inputs cannot produce a real figure (no active count,
- * no closes, or a zero close rate which would divide by zero). Never returns a
- * fabricated number to fill a gap.
- */
-export function rawMonthsOfSupply(
-  activeCount: number | null | undefined,
-  soldLast12mo: number | null | undefined,
-): number | null {
-  if (activeCount == null || soldLast12mo == null) return null
-  if (!Number.isFinite(activeCount) || !Number.isFinite(soldLast12mo)) return null
-  if (soldLast12mo <= 0) return null
-  const closesPerMonth = soldLast12mo / 12
-  if (closesPerMonth <= 0) return null
-  const mos = activeCount / closesPerMonth
-  if (!Number.isFinite(mos)) return null
-  return mos
+/** Closes over the last six completed calendar months, summed from the monthly series. */
+export type SixMonthCloses = {
+  closed: number
+  /** First day of the first month (YYYY-MM-DD). */
+  from: string
+  /** Last day of the last month (YYYY-MM-DD). */
+  through: string
+}
+
+function monthIndex(periodStart: string): number | null {
+  const y = Number(periodStart.slice(0, 4))
+  const m = Number(periodStart.slice(5, 7))
+  return Number.isInteger(y) && Number.isInteger(m) && m >= 1 && m <= 12 ? y * 12 + (m - 1) : null
 }
 
 /**
- * Compute months of supply, rounded to one decimal — the precision every market
- * surface renders. Pure — exported for unit tests. Wraps rawMonthsOfSupply so
- * the display value and the classification value derive from the same figure.
- *
- * Returns null when the inputs cannot produce a real figure. Never returns a
- * fabricated number to fill a gap.
+ * The closed_last_6_months of CLAUDE.md §0 from the monthly cache series
+ * (getMarketTrend: completed months only, oldest first): the last six points,
+ * when they are six CONSECUTIVE calendar months and every one carries a sold
+ * count. Null otherwise (a gap or a missing count is not a six-month total).
+ * Pure.
  */
-export function computeMonthsOfSupply(
-  activeCount: number | null | undefined,
-  soldLast12mo: number | null | undefined,
-): number | null {
-  const raw = rawMonthsOfSupply(activeCount, soldLast12mo)
-  if (raw == null) return null
-  // One decimal — matches the precision every market surface renders.
-  return Math.round(raw * 10) / 10
+export function sixMonthCloses(points: readonly MarketTrendPoint[] | null | undefined): SixMonthCloses | null {
+  if (!points || points.length < 6) return null
+  const last = points.slice(-6)
+  const idx = last.map((p) => monthIndex(p.periodStart))
+  if (idx.some((i) => i == null)) return null
+  for (let i = 1; i < 6; i++) if ((idx[i] as number) !== (idx[i - 1] as number) + 1) return null
+  let closed = 0
+  for (const p of last) {
+    const n = toNum(p.soldCount)
+    if (n == null || n < 0) return null
+    closed += n
+  }
+  const lastStart = last[5]!.periodStart
+  const through = new Date(Date.UTC(Number(lastStart.slice(0, 4)), Number(lastStart.slice(5, 7)), 0)).toISOString().slice(0, 10)
+  return { closed, from: `${last[0]!.periodStart.slice(0, 7)}-01`, through }
+}
+
+/**
+ * The §0 verdict for a RAW months-of-supply figure, from
+ * monthsOfSupplyVerdict (the pair of formatMonthsOfSupply, so the words and
+ * the printed digits come from one module). Null when unavailable. Pure.
+ */
+export function reportMarketVerdict(mos: number | null | undefined): MoSVerdict | null {
+  if (mos == null || !Number.isFinite(mos)) return null
+  const v = monthsOfSupplyVerdict(mos)
+  if (!v) return null
+  return v.key === 'seller' ? 'sellers' : v.key === 'buyer' ? 'buyers' : 'balanced'
 }
 
 /**
@@ -458,6 +480,8 @@ export function buildAreaBlock(args: {
   } | null
   /** From getPublicDetachedPace. Passed on the fetch path; miss omits 12-month close figures. */
   leftover?: Pick<PublicPaceRow, 'medianClose' | 'closedCount' | 'yoyMedian'> | null
+  /** The last six completed months' closes (sixMonthCloses), for the §0 fallback. */
+  closedSixMonths?: SixMonthCloses | null
 }): MarketReportAreaBlock | null {
   const { slug, geoType, detail, pulse, leftover } = args
   if (!detail) return null
@@ -486,14 +510,9 @@ export function buildAreaBlock(args: {
     return null
   }
 
-  // MoS: prefer the cache-computed live figure (cities + resorts; canonical
-  // 6-month absorption base per W8.1a). Fall back to trailing-12mo absorption
-  // only when pulse MoS is unavailable (sparse slow-turnover geos). Live
-  // 6-month MoS need not equal activeListings / (soldLast12mo / 12) — see the
-  // module docstring. The verdict derives from the RAW (unrounded) figure while
-  // the number shown is rounded to one decimal, so a true 4.04 bins as balanced
-  // (not seller's) and a true 5.96 as balanced (not buyer's) — the pill can
-  // never contradict the underlying absorption rate.
+  // MoS: prefer the live figure (Market Truth, six-month absorption, W8.1a).
+  // Live 6-month MoS need not equal activeListings / (soldLast12mo / 12) —
+  // see the module docstring.
   const liveMos = publishMonthsOfSupply({
     grain: geoType,
     pulseMos: pulse ? toNum(pulse.monthsOfSupply) : null,
@@ -501,21 +520,21 @@ export function buildAreaBlock(args: {
     displayedActiveCount: activeListings,
     soldCount12mo: soldLast12mo,
   })
-  // The trailing-12 absorption fallback reads cache sold, not leftover
-  // closedCount — leftover is not a MOS formula. An untrusted grain cannot
-  // reach it either: a resort-community report would otherwise mail a computed
-  // figure in place of the withheld one, off a sold count that finds a
-  // fraction of the sales.
-  const rawMos =
-    liveMos != null
-      ? liveMos
-      : isSoldAttributionTrusted(geoType)
-        ? rawMonthsOfSupply(activeListings, cacheSold)
-        : null
-  // Keep two-decimal precision so the display can stay consistent with the
-  // raw-derived verdict at the 4.0 / 6.0 boundaries (formatMonths shows the
-  // extra decimal only in the narrow boundary band). Verdict is from rawMos.
-  const monthsOfSupply = rawMos != null ? Math.round(rawMos * 100) / 100 : null
+  // The fallback is the §0 formula itself: homes for sale / (closes in the
+  // last six completed months / 6), the closes from the monthly cache series
+  // (never leftover closedCount, which is not a MOS formula), withheld below
+  // the Market Truth floor like the live figure. An untrusted grain cannot
+  // reach it: a resort-community report would otherwise mail a computed figure
+  // in place of the withheld one, off a sold count that finds a fraction of
+  // the sales.
+  const six = args.closedSixMonths ?? null
+  const computedMos =
+    liveMos == null && isSoldAttributionTrusted(geoType) && six && six.closed >= MIN_MOS_SIX_MONTH_CLOSES && activeListings != null
+      ? sixMonthMonthsOfSupply(activeListings, six.closed)
+      : null
+  // RAW, unrounded: the verdict classifies it, and every surface prints it
+  // through formatMonthsOfSupply (boundary-safe), never a pre-rounded copy.
+  const monthsOfSupply = liveMos ?? computedMos
 
   const source: MarketReportSource =
     liveMos != null || liveActive != null ? 'market_metric' : 'market_stats_cache:rolling_365d'
@@ -529,8 +548,9 @@ export function buildAreaBlock(args: {
     activeListings,
     soldLast12mo,
     monthsOfSupply,
-    monthsOfSupplySource: liveMos != null ? 'live' : rawMos != null ? 'computed-12mo' : null,
-    marketVerdict: classifyMarketVerdict(rawMos),
+    monthsOfSupplySource: liveMos != null ? 'live' : computedMos != null ? 'computed-6mo' : null,
+    monthsOfSupplyBasis: liveMos == null && computedMos != null ? six : null,
+    marketVerdict: reportMarketVerdict(monthsOfSupply),
     domMedian,
     yoyPct,
     marketHealthLabel: detail.marketHealthLabel ?? null,
@@ -649,6 +669,7 @@ export async function getMarketReportData(
       const block = buildAreaBlock({
         slug,
         geoType,
+        closedSixMonths: sixMonthCloses(trendPoints),
         detail: detail
           ? {
               medianSalePrice: detail.medianSalePrice,

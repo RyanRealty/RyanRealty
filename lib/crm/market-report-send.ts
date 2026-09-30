@@ -13,25 +13,35 @@
  *     0. Outside 8am to 8pm America/Los_Angeles: do nothing (no reads, no
  *        writes). The cron fires at 04, 10, 16 and 22 UTC; only the 16:00 and
  *        22:00 runs fall inside the window, year round.
- *     For each active subscriber (isDue from lib/crm/market-report-cadence):
- *     1. Not approved (first_send_approved_at null): record ONE held row per
+ *     For each active subscriber:
+ *     1. A deleted contact (or one missing from the people read) is never
+ *        mailed (review 2026-09-30).
+ *     2. Not due (isDue from lib/crm/market-report-cadence): skipped.
+ *     3. Not approved (first_send_approved_at null): record ONE held row per
  *        due cycle ('awaiting-approval'), send nothing. A broker approves
  *        after the preview reached their own inbox.
- *     2. No email on file: one held row per cycle ('no-email').
- *     3. deliverMarketReport (lib/crm/market-report-deliver.ts): fetch the §0
- *        figures, hold on stale data, render, claim the crm_report_sends row,
- *        then sendOneSubscriber, then settle the row, write the email_out
- *        timeline row and stamp last_sent_at.
+ *     4. No email on file: one held row per cycle ('no-email').
+ *     5. deliverMarketReport (lib/crm/market-report-deliver.ts): fetch the §0
+ *        figures, hold on stale data, render, run the §0 Spark gate (hold on a
+ *        STOP or an unreconciled figure), re-read the subscription, claim the
+ *        send key for this subscription's due CYCLE (scheduledSendKey: two
+ *        overlapping runs claim the same key, so only one sends), then
+ *        sendOneSubscriber, settle the row, write the email_out timeline row
+ *        and stamp last_sent_at.
+ *   The run stops starting new deliveries after RUN_TIME_BUDGET_MS (each one
+ *   pulls Spark); the rest wait for the next run, oldest attempt first.
  *
- * sendOneSubscriber, the leaf: isSuppressed('email') fail-closed BEFORE
- * sendEmail (ci:email-send-gated reads that order in this function) ->
- * prepareDeliverableEmail (multipart, one CAN-SPAM footer, RFC 8058 headers at
- * the report-scoped one-click endpoint) -> attributeOutbound (broker ?agent=,
- * the signed person token, open/click tracking with the broker on every event)
- * -> sendEmail -> recordEmailEvent('sent'). A PREVIEW goes to the broker's own
- * mailbox and carries none of the contact's tokens: no person token, no open
- * pixel, no click wraps, and no event row, so a broker opening it never counts
- * as the contact.
+ * sendOneSubscriber, the leaf: the suppression chokepoint fail-closed BEFORE
+ * sendEmail, on her record (isSuppressed; ci:email-send-gated reads that order
+ * in this function) and on her address (isSuppressedByEmail: the newsletter
+ * writes address-only rows) -> prepareDeliverableEmail (multipart, one
+ * CAN-SPAM footer, RFC 8058 headers at the report-scoped one-click endpoint)
+ * -> attributeOutbound (broker ?agent=, the signed person token, open/click
+ * tracking with the broker on every event) -> sendEmail, with the send key as
+ * the provider's idempotency key -> recordEmailEvent('sent'). A PREVIEW goes
+ * to the broker's own mailbox and carries none of the contact's tokens: no
+ * person token, no open pixel, no click wraps, and no event row, so a broker
+ * opening it never counts as the contact.
  *
  * Never throws to the caller — every contact's outcome is captured in the
  * returned summary so the cron always returns a clean JSON status.
@@ -43,7 +53,7 @@
 import 'server-only'
 
 import { inReportSendWindow, isDue } from '@/lib/crm/market-report-cadence'
-import { isSuppressed } from '@/lib/crm/suppressions'
+import { isSuppressed, isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { prepareDeliverableEmail } from '@/lib/email/prepare'
 import { attributeOutbound } from '@/lib/crm/attributed-links'
 import { brokerSendIdentity } from '@/lib/email/broker-identity'
@@ -56,18 +66,32 @@ import {
 import { getPersonPrimaryEmail } from '@/lib/data/crm/getPersonPrimaryEmail'
 import { stampMarketReportAttempt } from '@/lib/data/crm/stampMarketReportSent'
 import type { ReportSendKind } from '@/lib/data/crm/marketReportSends'
+import type { SparkGateMemo } from '@/lib/crm/market-report-spark-gate'
+import { scheduledSendKey } from '@/lib/crm/market-report-keys'
 
 /** The default broker a contact's reports attribute to when none is assigned. */
 const DEFAULT_BROKER = 'matt'
 
+/**
+ * How long a run keeps starting new deliveries. Each delivery pulls Spark for
+ * its §0 check (about 8 seconds for Bend and a neighborhood, measured
+ * 2026-09-30), and the route's maxDuration is 300 seconds; past this budget
+ * the rest wait for the next run, oldest attempt first.
+ */
+export const RUN_TIME_BUDGET_MS = 240_000
+
 /** Why a contact was not sent this run. */
 export type SkipReason =
   | 'not-due'
+  | 'contact-deleted'
   | 'awaiting-approval'
   | 'no-email'
   | 'no-areas' // all subscribed areas resolved unavailable in the cache
   | 'stale-data'
   | 'suppressed'
+  | 'spark-stop'
+  | 'spark-unreconciled'
+  | 'cancelled'
   | 'send-error'
 
 export type ContactSendOutcome =
@@ -81,6 +105,8 @@ export interface RunSendSummary {
   due: number
   sent: number
   skipped: number
+  /** Subscriptions left for the next run because the time budget ran out. */
+  deferred: number
   skippedByReason: Record<SkipReason, number>
   outcomes: ContactSendOutcome[]
   durationMs: number
@@ -93,8 +119,10 @@ export interface RunSendOptions {
   scanLimit?: number
   /** Evaluation moment for the cadence math, the window and the stamps. */
   now?: Date
-  /** A unique id for this run, used to make the attribution emailKey unique. */
+  /** A unique id for this run (logging only: the send key is per cycle, not per run). */
   runId?: string
+  /** Stop starting new deliveries after this many milliseconds (default RUN_TIME_BUDGET_MS). */
+  timeBudgetMs?: number
   /**
    * Injected dependencies — defaulted to the real implementations. Present so the
    * orchestration (window, approval, due filter, skip taxonomy, chunk cap) is
@@ -106,9 +134,15 @@ export interface RunSendOptions {
 /** What deliverMarketReport answers for one scheduled contact. */
 export type ScheduledDeliverOutcome =
   | { status: 'sent'; messageId: string | null }
-  | { status: 'held'; reason: 'stale-data' | 'no-data' | 'suppressed'; detail?: string }
-  /** The contact already received a report inside the window; the stamp was repaired. */
+  | {
+      status: 'held'
+      reason: 'stale-data' | 'no-data' | 'suppressed' | 'spark-stop' | 'spark-unreconciled'
+      detail?: string
+    }
+  /** The contact already received a report inside the window, or one is in flight (the stamp is repaired unless another run may still be sending it). */
   | { status: 'already-sent'; sentAt: string }
+  /** The subscription or the contact changed while the report was built; nothing went out. */
+  | { status: 'cancelled'; reason: 'stopped' | 'changed' | 'contact-deleted'; detail: string }
   | { status: 'failed'; detail: string }
 
 export type ScheduledDeliverInput = {
@@ -117,6 +151,8 @@ export type ScheduledDeliverInput = {
   brokerSlug: string
   emailKey: string
   now: Date
+  /** This run's shared Spark reads. */
+  sparkMemo?: SparkGateMemo
 }
 
 /** Held rows the cron records itself (before any data is fetched). */
@@ -161,11 +197,15 @@ const REAL_DEPS: SendDeps = {
 function emptyReasonCounts(): Record<SkipReason, number> {
   return {
     'not-due': 0,
+    'contact-deleted': 0,
     'awaiting-approval': 0,
     'no-email': 0,
     'no-areas': 0,
     'stale-data': 0,
     suppressed: 0,
+    'spark-stop': 0,
+    'spark-unreconciled': 0,
+    cancelled: 0,
     'send-error': 0,
   }
 }
@@ -178,6 +218,12 @@ export type SendOneInput = {
   brokerSlug: string
   /** The recipient: the contact, or the broker's own mailbox for a preview. */
   to: string
+  /**
+   * The CONTACT's own address, whatever `to` is: checked against the
+   * address-keyed suppression rows (the newsletter writes those without a
+   * person). Null when she has none on file.
+   */
+  contactEmail: string | null
   subject: string
   /** The rendered html/text (BEFORE prepare and attribution). */
   html: string
@@ -186,6 +232,7 @@ export type SendOneInput = {
   unsubscribeUrl: string
   /** The RFC 8058 one-click endpoint for the List-Unsubscribe header. */
   oneClickUrl: string
+  /** The send key: the email_events key and the provider's idempotency key. */
   emailKey: string
 }
 
@@ -195,11 +242,13 @@ export type SendOneOutcome =
   | { status: 'failed'; detail: string; preparedHtml: string; preparedText: string }
 
 /**
- * Send ONE already-rendered report. The suppression chokepoint (isSuppressed,
- * fail-closed, on the CONTACT) runs in THIS function immediately before
- * sendEmail, so ci:email-send-gated sees the gate in the same scope as the
- * send. A preview is gated on the contact too: a report the contact can never
- * receive has nothing to preview.
+ * Send ONE already-rendered report. The suppression chokepoint (fail-closed,
+ * on the CONTACT: her record through isSuppressed, and her address through
+ * isSuppressedByEmail, which also reads the address-only rows the newsletter
+ * writes) runs in THIS function immediately before sendEmail, so
+ * ci:email-send-gated sees the gate in the same scope as the send. A preview
+ * is gated on the contact too: a report the contact can never receive has
+ * nothing to preview.
  *
  * Returns the prepared html/text (still free of tracking) for the stored copy.
  * Never throws.
@@ -211,6 +260,13 @@ export async function sendOneSubscriber(input: SendOneInput): Promise<SendOneOut
   const gate = await isSuppressed(personId, 'email')
   if (gate.suppressed) {
     return { status: 'suppressed', detail: gate.reasons.join(', ') || 'suppressed' }
+  }
+  const address = (input.contactEmail ?? '').trim()
+  if (address) {
+    const byAddress = await isSuppressedByEmail(address, 'email')
+    if (byAddress.suppressed) {
+      return { status: 'suppressed', detail: byAddress.reasons.join(', ') || 'suppressed' }
+    }
   }
 
   // Multipart + ONE CAN-SPAM footer (the body already carries it) + the RFC
@@ -249,6 +305,10 @@ export async function sendOneSubscriber(input: SendOneInput): Promise<SendOneOut
     html: finalHtml,
     text: prepared.text,
     headers: prepared.headers,
+    // The send key: a repeat of the same send (an overlapping run, or a retry
+    // of an attempt the provider in fact accepted) is refused by the provider
+    // too, never delivered twice.
+    idempotencyKey: input.emailKey,
   })
 
   if (res.error) {
@@ -283,7 +343,7 @@ export async function runMarketReportSend(options: RunSendOptions = {}): Promise
   const now = options.now ?? new Date()
   const maxSends = Math.max(1, Math.trunc(options.maxSends ?? 200))
   const scanLimit = Math.max(maxSends, Math.trunc(options.scanLimit ?? 1000))
-  const runId = options.runId ?? now.toISOString().slice(0, 19).replace(/[-:T]/g, '')
+  const timeBudgetMs = Math.max(0, options.timeBudgetMs ?? RUN_TIME_BUDGET_MS)
 
   const summary: RunSendSummary = {
     outsideWindow: false,
@@ -291,6 +351,7 @@ export async function runMarketReportSend(options: RunSendOptions = {}): Promise
     due: 0,
     sent: 0,
     skipped: 0,
+    deferred: 0,
     skippedByReason: emptyReasonCounts(),
     outcomes: [],
     durationMs: 0,
@@ -338,14 +399,31 @@ export async function runMarketReportSend(options: RunSendOptions = {}): Promise
 
   summary.scanned = subscribers.length
   let staleAlerted = false
+  // One run's Spark reads, shared across its subscribers (a plain memo, see
+  // lib/crm/market-report-spark-gate.ts createSparkGateMemo): fresh every run.
+  const sparkMemo: SparkGateMemo = { pulls: new Map(), cityPolygons: new Map(), context: null }
 
-  for (const sub of subscribers) {
+  for (let i = 0; i < subscribers.length; i++) {
+    const sub = subscribers[i]!
     if (summary.sent >= maxSends) break
+
+    // A deleted contact is never mailed (review 2026-09-30), whatever her row says.
+    if (sub.personDeleted) {
+      recordSkip({ personId: sub.personId, status: 'skipped', reason: 'contact-deleted' })
+      continue
+    }
 
     // Cadence gate — not-due contacts are not even attempt-stamped (no work done).
     if (!isDue({ frequency: sub.frequency, lastSentAt: sub.lastSentAt, now })) {
       recordSkip({ personId: sub.personId, status: 'skipped', reason: 'not-due' })
       continue
+    }
+
+    // The time budget: the rest wait for the next run (they were not
+    // attempt-stamped, so they come first then).
+    if (Date.now() - startMs >= timeBudgetMs) {
+      summary.deferred = subscribers.slice(i).filter((s) => !s.personDeleted && isDue({ frequency: s.frequency, lastSentAt: s.lastSentAt, now })).length
+      break
     }
     summary.due += 1
 
@@ -374,11 +452,12 @@ export async function runMarketReportSend(options: RunSendOptions = {}): Promise
     }
 
     const brokerSlug = (sub.assignedBroker ?? '').trim() || DEFAULT_BROKER
-    const emailKey = `market-report:${runId}:${sub.personId}`
+    // One key per subscription per due cycle, never per run (review 2026-09-30).
+    const emailKey = scheduledSendKey(sub.subscriptionId, sub.lastSentAt)
 
     let outcome: ScheduledDeliverOutcome
     try {
-      outcome = await deps.deliver({ subscriber: sub, email, brokerSlug, emailKey, now })
+      outcome = await deps.deliver({ subscriber: sub, email, brokerSlug, emailKey, now, sparkMemo })
     } catch (e) {
       outcome = { status: 'failed', detail: 'deliver-threw: ' + (e instanceof Error ? e.message : String(e)) }
     }
@@ -392,9 +471,17 @@ export async function runMarketReportSend(options: RunSendOptions = {}): Promise
       recordSkip({ personId: sub.personId, status: 'skipped', reason: 'not-due', detail: `already sent ${outcome.sentAt}` })
       continue
     }
+    if (outcome.status === 'cancelled') {
+      recordSkip({
+        personId: sub.personId,
+        status: 'skipped',
+        reason: outcome.reason === 'contact-deleted' ? 'contact-deleted' : 'cancelled',
+        detail: outcome.detail,
+      })
+      continue
+    }
     if (outcome.status === 'held') {
-      const reason: SkipReason =
-        outcome.reason === 'stale-data' ? 'stale-data' : outcome.reason === 'no-data' ? 'no-areas' : 'suppressed'
+      const reason: SkipReason = outcome.reason === 'no-data' ? 'no-areas' : outcome.reason
       recordSkip({ personId: sub.personId, status: 'skipped', reason, detail: outcome.detail })
       if (outcome.reason === 'stale-data' && !staleAlerted) {
         staleAlerted = true

@@ -272,6 +272,8 @@ export async function adminSendReportPreview(input: {
     personId: input.personId,
     contactName: contact.firstName ?? contact.name,
     to,
+    // Her own address: a preview is checked against her suppression too.
+    contactEmail: contact.primaryEmail,
     brokerSlug: contact.assignedBroker ?? input.admin.brokerSlug ?? 'matt',
     subscription: { id: rec.id, frequency: rec.frequency, areas: rec.areas, lastSentAt: rec.lastSentAt },
     areaSlugs: rec.areas,
@@ -293,9 +295,12 @@ function previewResult(outcome: DeliverReportOutcome, to: string): AdminResult {
             ? 'This contact has email turned off, so there is no report to preview.'
             : outcome.reason === 'stale-data'
               ? `The market data is stale, so a report would be held. ${outcome.detail}`
-              : 'No verified market data for these areas right now.',
+              : outcome.reason === 'spark-stop' || outcome.reason === 'spark-unreconciled'
+                ? `The numbers did not pass the Spark check (CLAUDE.md §0), so the preview is held for Matt. ${outcome.detail}`
+                : 'No verified market data for these areas right now.',
       }
     case 'already-sent':
+    case 'cancelled':
       return { ok: false, error: 'Not sent.' }
     case 'failed':
       return { ok: false, error: `Preview not sent: ${outcome.detail}` }

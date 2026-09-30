@@ -19,19 +19,50 @@ import { revalidatePerson } from '@/lib/crm/revalidate-person'
  * rail, the assigned broker's identity), and a contact who stopped her own
  * reports is refused: a broker restarts them first, with her consent on
  * record, on the market report card.
+ *
+ * Like every send, a manual one runs the §0 Spark gate first (review
+ * 2026-09-30): a figure that differs from Spark by more than 1%, or one Spark
+ * cannot rebuild, holds it (recorded on the card, Matt paged), and the broker
+ * is told which figure. Her own stop made while it was being built refuses it.
  */
 
 import { revalidatePath } from 'next/cache'
 import { requireCrmAccess, requirePersonInScope, type CrmActionResult } from '@/app/actions/crm'
 import { sanitizeAdminAreas } from '@/lib/crm/market-report-admin'
 import { isContactStopped } from '@/lib/crm/market-report-subscription-control'
-import { deliverMarketReport } from '@/lib/crm/market-report-deliver'
+import { deliverMarketReport, type DeliverReportOutcome } from '@/lib/crm/market-report-deliver'
 import {
   getMarketReportContact,
   getReportSubscriptionRecord,
   type MarketReportContact,
   type ReportSubscriptionRecord,
 } from '@/lib/data/crm/marketReportSubscription'
+
+/** Why a manual send did not go out, in the broker's words. Pure. */
+function manualNotSentReason(outcome: Exclude<DeliverReportOutcome, { status: 'sent' }>): string {
+  switch (outcome.status) {
+    case 'held':
+      switch (outcome.reason) {
+        case 'suppressed':
+          return 'email is turned off for this contact'
+        case 'stale-data':
+          return `the market data is not fresh (${outcome.detail})`
+        case 'no-data':
+          return 'no verified market data for these areas right now'
+        case 'spark-stop':
+        case 'spark-unreconciled':
+          return `the numbers did not pass the Spark check, so the report is held for Matt. ${outcome.detail}`
+      }
+      break
+    case 'cancelled':
+      return outcome.detail
+    case 'failed':
+      return outcome.detail
+    case 'already-sent':
+      return 'already sent'
+  }
+  return 'not sent'
+}
 
 export async function sendMarketReportNowAction(
   personId: number,
@@ -82,6 +113,7 @@ export async function sendMarketReportNowAction(
     contactName: contact.firstName ?? contact.name,
     to: contact.primaryEmail,
     brokerSlug,
+    contactEmail: contact.primaryEmail,
     subscription: subscription
       ? {
           id: subscription.id,
@@ -95,19 +127,7 @@ export async function sendMarketReportNowAction(
     now,
   })
 
-  if (outcome.status !== 'sent') {
-    const why =
-      outcome.status === 'held'
-        ? outcome.reason === 'suppressed'
-          ? 'email is turned off for this contact'
-          : outcome.reason === 'stale-data'
-            ? `the market data is not fresh (${outcome.detail})`
-            : 'no verified market data for these areas right now'
-        : outcome.status === 'failed'
-          ? outcome.detail
-          : 'already sent'
-    return { ok: false, error: `Not sent: ${why}` }
-  }
+  if (outcome.status !== 'sent') return { ok: false, error: `Not sent: ${manualNotSentReason(outcome)}` }
 
   revalidatePath('/admin/crm')
   revalidatePerson(pid)

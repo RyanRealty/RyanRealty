@@ -19,6 +19,13 @@
  *     copy).
  * The footer's Unsubscribe link lands with `stop=1`: the page opens on one
  * clear "Stop these reports" button, with a way back to every other choice.
+ * Her stop is offered whenever the report is not already stopped BY HER: on
+ * a report a broker stopped, her stop replaces the broker's and is recorded
+ * (review 2026-09-30).
+ *
+ * A link whose contact record was deleted still opens (review 2026-09-30),
+ * with only the ways to stop email: these reports, and all of it. Nothing is
+ * scheduled for a deleted record, and nothing else can be changed there.
  *
  * PRIVATE ADDRESS. The link names a person, so the page is on the private-path
  * list (lib/analytics/private-paths.ts): no tag, no page tracker, and no
@@ -85,12 +92,17 @@ function statusItems(view: ReportPreferencesView): V3QuietItem[] {
   const state = view.state
   let value: string
   let detail: string
-  if (state === 'none') {
+  if (view.closed) {
+    value = 'Not sending'
+    detail = 'We are not sending market reports to this address. You can still record that you want them stopped.'
+  } else if (state === 'none') {
     value = 'Not signed up'
     detail = 'You got a market report once. There is no regular report to change.'
   } else if (state === 'stopped') {
     value = 'Stopped'
-    detail = 'You stopped these reports. Resume them here any time.'
+    detail = view.stoppedByContact
+      ? 'You stopped these reports. Resume them here any time.'
+      : 'No reports are going out. You can resume them, or stop them at your request.'
   } else if (state === 'paused') {
     value = 'Paused'
     detail = 'Nothing goes out until you resume it.'
@@ -105,10 +117,10 @@ function statusItems(view: ReportPreferencesView): V3QuietItem[] {
     detail = view.nextSendLabel ? `Next report on or after ${view.nextSendLabel}.` : 'It comes on the schedule below.'
   }
   items.push({ kind: 'fact', term: 'Your report', value, detail })
-  if (state !== 'none' && view.frequency) {
+  if (!view.closed && state !== 'none' && view.frequency) {
     items.push({ kind: 'fact', term: 'How often', value: FREQUENCY_LABEL[view.frequency] ?? view.frequency })
   }
-  if (view.areas.length > 0) {
+  if (!view.closed && view.areas.length > 0) {
     items.push({ kind: 'chips', term: view.areas.length === 1 ? 'Area' : 'Areas', labels: view.areas.map((a) => a.label) })
   }
   if (view.emailOff) {
@@ -116,12 +128,18 @@ function statusItems(view: ReportPreferencesView): V3QuietItem[] {
       kind: 'fact',
       term: 'All email from Ryan Realty',
       value: 'Off',
-      detail: view.emailRestartable
-        ? 'Off at your request. You can turn it back on below.'
-        : 'Off for a reason this page cannot clear. Reply to any of our emails and we will sort it out.',
+      detail:
+        view.emailRestartable && !view.closed
+          ? 'Off at your request. You can turn it back on below.'
+          : 'Off for a reason this page cannot clear. Reply to any of our emails and we will sort it out.',
     })
   }
   return items
+}
+
+/** Her own stop is offered unless the report is already stopped by her. */
+function offersStop(view: ReportPreferencesView): boolean {
+  return !view.stoppedByContact
 }
 
 function choiceRows(view: ReportPreferencesView, token: string): V3ControlsRow[] {
@@ -129,6 +147,31 @@ function choiceRows(view: ReportPreferencesView, token: string): V3ControlsRow[]
   const rows: V3ControlsRow[] = []
   const hidden = (op: string, extra: Record<string, string> = {}) => ({ t: token, op, ...extra })
   const { state } = view
+
+  if (view.closed) {
+    // A deleted record: only the ways to stop email.
+    if (offersStop(view)) {
+      rows.push({
+        id: 'stop-report',
+        term: 'Stop these reports',
+        detail: 'No more market reports. Other email from Ryan Realty is not affected.',
+        action: act,
+        submit: 'Stop these reports',
+        hidden: hidden('stop'),
+      })
+    }
+    if (!view.emailOff) {
+      rows.push({
+        id: 'all-email',
+        term: 'All email from Ryan Realty',
+        detail: 'Market reports and anything else we send. We ask you to confirm first.',
+        action: act,
+        submit: 'Stop all email',
+        hidden: hidden('confirm-all-email'),
+      })
+    }
+    return rows
+  }
 
   if (state === 'on') {
     rows.push({
@@ -149,7 +192,7 @@ function choiceRows(view: ReportPreferencesView, token: string): V3ControlsRow[]
       hidden: hidden('resume'),
     })
   }
-  if (state !== 'stopped') {
+  if (offersStop(view)) {
     rows.push({
       id: 'stop-report',
       term: 'Stop these reports',
@@ -246,7 +289,7 @@ export default async function EmailPreferencesPage({ searchParams }: { searchPar
         doneAlert(done, view) ??
         (view.preview ? doneAlert('preview', view) : null) ??
         undefined
-      const stopAsk = one(sp.stop) === '1' && view.state !== 'stopped'
+      const stopAsk = one(sp.stop) === '1' && offersStop(view)
       const confirmAll = one(sp.confirm) === 'all-email' && !view.emailOff
 
       body = (

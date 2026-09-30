@@ -3,6 +3,7 @@ import {
   REPORT_ONE_CLICK_PATH,
   REPORT_PREFERENCES_PATH,
   REPORT_VIEW_PATH,
+  previewReportLinks,
   reportEmailLinks,
   signReportLinkToken,
   verifyReportLinkToken,
@@ -79,5 +80,57 @@ describe('report link tokens (the no-login preferences page)', () => {
     expect(isPrivatePath(new URL(links.viewUrl).pathname)).toBe(true)
     expect(isPrivateLink(links.manageUrl)).toBe(true)
     expect(isPrivateLink(links.viewUrl)).toBe(true)
+  })
+})
+
+describe('previewReportLinks (a stored copy opened by anyone but the contact)', () => {
+  /** The stored copy's footer and text part, exactly as the shell and the renderer write them. */
+  function storedCopy(links: ReturnType<typeof reportEmailLinks>): string {
+    return [
+      `<a href="${links.viewUrl}" style="x">View this report online</a> &middot;`,
+      `<a href="${links.manageUrl}" style="x">Manage your report</a> &middot;`,
+      `<a href="${links.unsubscribeUrl}" style="x">Unsubscribe</a>.`,
+      `<a href="https://ryan-realty.com/housing-market/bend?utm_source=crm#market">SEE THE FULL BEND REPORT</a>`,
+      `Manage your report: ${links.manageUrl}`,
+      `Unsubscribe: ${links.unsubscribeUrl.replace('&stop=1', '&amp;stop=1')}`,
+      `One-click: ${links.oneClickUrl}`,
+    ].join('\n')
+  }
+  const hrefs = (s: string) => [...s.matchAll(/https:\/\/ryan-realty\.com\/[^\s"<]+/g)].map((m) => m[0])
+
+  it("re-signs every one of her live links as a preview link, same person, report and purpose", () => {
+    const live = reportEmailLinks({ personId: 64138, subscriptionId: 9016, emailKey: 'market-report:scheduled:9016:first' })
+    // Before: her real links. A broker pressing Resume or Stop behind one of them acts as her.
+    for (const url of [live.viewUrl, live.manageUrl, live.unsubscribeUrl, live.oneClickUrl]) {
+      expect(verifyReportLinkToken(tokenOf(url))?.preview).toBe(false)
+    }
+    const out = previewReportLinks(storedCopy(live))
+    const reportLinks = hrefs(out).filter((u) => !u.includes('/housing-market/'))
+    expect(reportLinks).toHaveLength(6)
+    for (const url of reportLinks) {
+      const payload = verifyReportLinkToken(tokenOf(url.replace('&amp;', '&')))
+      expect(payload).toMatchObject({ personId: 64138, subscriptionId: 9016, emailKey: 'market-report:scheduled:9016:first', preview: true })
+    }
+    // Each keeps its purpose, its path and the rest of its query.
+    const manage = reportLinks.find((u) => u.includes('/email-preferences?t=') && !u.includes('stop=1'))!
+    expect(verifyReportLinkToken(tokenOf(manage))?.purpose).toBe('manage')
+    expect(reportLinks.some((u) => u.endsWith('&stop=1'))).toBe(true)
+    expect(reportLinks.some((u) => u.endsWith('&amp;stop=1'))).toBe(true)
+    expect(verifyReportLinkToken(tokenOf(reportLinks.find((u) => u.includes('/email-preferences/report?'))!))?.purpose).toBe('view')
+    expect(verifyReportLinkToken(tokenOf(reportLinks.find((u) => u.includes('/api/email/report-unsubscribe?'))!))?.purpose).toBe('stop')
+    // Everything else in the copy is untouched.
+    expect(out).toContain('https://ryan-realty.com/housing-market/bend?utm_source=crm#market')
+    expect(out).toContain('View this report online')
+  })
+
+  it('leaves a preview copy a preview, and strips a link it cannot verify instead of guessing', () => {
+    const preview = reportEmailLinks({ personId: 5, subscriptionId: 6, emailKey: 'k', preview: true })
+    const again = previewReportLinks(`<a href="${preview.manageUrl}">m</a>`)
+    expect(verifyReportLinkToken(tokenOf(hrefs(again)[0]!))).toMatchObject({ personId: 5, preview: true, purpose: 'manage' })
+
+    const forged = 'https://ryan-realty.com/email-preferences?t=eyJ2IjoxLCJwIjo4fQ.AAAA&stop=1'
+    const stripped = previewReportLinks(`<a href="${forged}">Unsubscribe</a>`)
+    expect(stripped).toBe('<a href="https://ryan-realty.com/email-preferences?error=link&stop=1">Unsubscribe</a>')
+    expect(stripped).not.toContain('?t=')
   })
 })

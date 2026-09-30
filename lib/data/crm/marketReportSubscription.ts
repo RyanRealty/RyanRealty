@@ -302,27 +302,84 @@ export async function getMarketReportContact(personId: number): Promise<MarketRe
 }
 
 /** How many merges a link follows before giving up (a chain, never a loop). */
-const MAX_MERGE_HOPS = 5
+const MAX_MERGE_HOPS = 20
 
 /**
- * The live contact a report link names. A link minted before a contact merge
- * names the duplicate, which the merge soft-deleted with custom.merged_into
- * pointing at the survivor, and moved her subscription and past reports onto
- * that survivor. Follow that pointer (a few hops at most, never a loop) so
- * her old email's links keep working. Null when the chain ends at a missing
- * or deleted contact. Throws on a read error (fail closed).
+ * The contact a report link acts on (review 2026-09-30).
+ *
+ * A link minted before a contact merge names the duplicate, which the merge
+ * soft-deleted with custom.merged_into pointing at the survivor, and moved her
+ * subscription and past reports onto that survivor. So the link follows that
+ * pointer, never around a loop, and the chain ends at the first contact that
+ * was not merged away:
+ *   - a live contact: every choice on her page applies to her;
+ *   - a DELETED contact (deleted and not merged, or merged into a contact that
+ *     no longer exists, or a loop of deleted contacts): returned as it is,
+ *     `deleted: true`. Her stop, her one-click unsubscribe and her "stop all
+ *     email" still land on that record. Before, a deleted contact read as
+ *     "not found": Gmail's one-click got a 400 and her page could not open,
+ *     so she could not stop a report the cron kept sending.
+ * Null when the link's own contact does not exist, or the chain is longer
+ * than MAX_MERGE_HOPS (unresolvable: acting on a contact partway along it
+ * would stop the wrong record). Throws on a read error (fail closed).
  */
-export async function getLiveMarketReportContact(personId: number): Promise<MarketReportContact | null> {
+export async function resolveReportLinkContact(personId: number): Promise<MarketReportContact | null> {
   const seen = new Set<number>()
+  let reached: MarketReportContact | null = null
   let id = personId
   for (let hop = 0; hop <= MAX_MERGE_HOPS; hop++) {
-    if (seen.has(id)) return null
+    if (seen.has(id)) return reached
     seen.add(id)
     const contact = await getMarketReportContact(id)
-    if (!contact) return null
-    if (!contact.deleted) return contact
-    if (!contact.mergedInto) return null
+    if (!contact) return reached
+    reached = contact
+    if (!contact.deleted || !contact.mergedInto) return contact
     id = contact.mergedInto
   }
   return null
+}
+
+/**
+ * Stop the market report of contacts that were just deleted (review
+ * 2026-09-30: deleting a contact left her subscription on, and the cron kept
+ * sending to a record nobody could see). Only rows that are not already
+ * stopped change: a contact's own stop stays hers (a broker restart of it
+ * needs her consent on record), and an existing broker stop keeps its stamp.
+ * Each stopped row gets a crm_timeline line naming the admin. Returns the
+ * person ids whose report was stopped. Never throws; a failure is returned so
+ * the delete can report it.
+ */
+export async function stopReportSubscriptionsForDeletedPeople(
+  personIds: readonly number[],
+  actor: { email: string; brokerSlug?: string | null },
+  now: Date = new Date(),
+): Promise<{ ok: true; stopped: number[] } | { ok: false; error: string }> {
+  const ids = [...new Set(personIds.filter((n) => Number.isInteger(n) && n > 0))]
+  if (ids.length === 0) return { ok: true, stopped: [] }
+  try {
+    const sb = createServiceClient()
+    const nowIso = now.toISOString()
+    const stopped: number[] = []
+    for (let i = 0; i < ids.length; i += 200) {
+      const { data, error } = await sb
+        .from('crm_report_subscriptions')
+        .update({ is_active: false, stopped_at: nowIso, stopped_via: 'admin', updated_at: nowIso })
+        .in('person_id', ids.slice(i, i + 200))
+        .is('stopped_at', null)
+        .select('person_id')
+      if (error) return { ok: false, error: error.message }
+      for (const r of (data ?? []) as Array<{ person_id: number }>) stopped.push(Number(r.person_id))
+    }
+    for (const personId of stopped) {
+      await logReportTimeline(personId, {
+        title: `Market report stopped: the contact was deleted by ${actor.email}`,
+        payload: { via: 'admin', change: 'stop', reason: 'contact-deleted' },
+        broker: actor.brokerSlug ?? null,
+        source: 'app',
+      })
+    }
+    return { ok: true, stopped }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) }
+  }
 }

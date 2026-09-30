@@ -14,14 +14,22 @@
  * but are invisible in the CRM UI. If full deletion is ever needed, a separate
  * hard-delete path (with CRM API call) should be added.
  *
+ * A deleted contact's market report stops with her (review 2026-09-30): the
+ * cadence cron otherwise kept mailing records nobody could see. A contact's
+ * own stop stays hers (stopReportSubscriptionsForDeletedPeople only touches
+ * rows that are not already stopped). Counted as `report_stopped`, or
+ * `report_stop_failed` when that write fails (the cron skips deleted people
+ * either way).
+ *
  * Every id is accounted for (processed OR skipped) so the worker offset drains.
  */
 
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import type { BulkHandler, BulkResult } from '@/lib/crm/bulk-jobs'
+import { stopReportSubscriptionsForDeletedPeople } from '@/lib/data/crm/marketReportSubscription'
 
-export const deleteContactsHandler: BulkHandler = async (ids): Promise<Partial<BulkResult>> => {
+export const deleteContactsHandler: BulkHandler = async (ids, _params, ctx): Promise<Partial<BulkResult>> => {
   const result: BulkResult = { processed: 0, skipped: 0, breakdown: {} }
   const bump = (k: string, n = 1) => { result.breakdown[k] = (result.breakdown[k] ?? 0) + n }
   if (ids.length === 0) return result
@@ -65,5 +73,12 @@ export const deleteContactsHandler: BulkHandler = async (ids): Promise<Partial<B
 
   result.processed = toDelete.length
   bump('deleted', toDelete.length)
+
+  const reports = await stopReportSubscriptionsForDeletedPeople(toDelete, { email: ctx.actorEmail || 'a bulk delete' })
+  if (reports.ok) {
+    if (reports.stopped.length > 0) bump('report_stopped', reports.stopped.length)
+  } else {
+    bump('report_stop_failed', toDelete.length)
+  }
   return result
 }

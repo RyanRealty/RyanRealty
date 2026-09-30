@@ -22,6 +22,14 @@
  *     email link.
  *   - A broker PREVIEW link reaches the same page, and nothing it posts
  *     changes anything.
+ *   - A link whose contact record was DELETED (review 2026-09-30) still
+ *     stops: "Stop these reports", the one-click POST and "Stop all Ryan
+ *     Realty email" act on that record. Nothing else does (there is no report
+ *     to reschedule on a deleted record), and the answer is a code the page
+ *     words.
+ *   - Her stop always lands: on a report a broker had already stopped, it
+ *     replaces the broker's stop with hers and records the unsubscribe
+ *     (lib/crm/market-report-subscription-control.ts).
  *
  * Results are CODES, not sentences: the page maps a code to fixed copy, so a
  * crafted URL can never put words on our domain.
@@ -86,6 +94,8 @@ export type PreferenceError =
   | 'unknown-area'
   | 'restart-blocked'
   | 'no-subscription'
+  /** The contact record behind the link was deleted: only the stops apply. */
+  | 'closed'
 
 export type PreferenceResult =
   | { ok: true; changed: boolean; done: PreferenceDone }
@@ -138,16 +148,23 @@ export async function applyReportPreference(
   const { contact } = link
   const broker = contact.assignedBroker
   const actor = { via } as const
+  if (contact.deleted && action.kind !== 'stop' && action.kind !== 'stop-all-email') {
+    return { ok: false, error: 'closed' }
+  }
 
   try {
     if (action.kind === 'stop-all-email') {
       const { off } = await readEmailSignals(contact)
       if (off) return { ok: true, changed: false, done: 'all-email-off' }
+      // Keyed to her record AND her address (the newsletter unsubscribe does
+      // the same), so an address-keyed check honors it too: a deleted record,
+      // or a second record with the same address, still reads as opted out.
       await addSuppression({
         personId: contact.personId,
         channel: 'email',
         reason: 'unsubscribe',
         source: via === 'one-click' ? 'report-one-click' : 'report-email-link',
+        value: contact.primaryEmail ? contact.primaryEmail.trim().toLowerCase() : null,
       })
       await logReportTimeline(contact.personId, {
         title: `All Ryan Realty email turned off ${describeVia(actor)}`,

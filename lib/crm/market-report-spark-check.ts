@@ -42,6 +42,9 @@
  *                   serves, which no Spark pull can contain)
  *     year over year  the same window ending 12 months before period_end
  *     months of supply  active_count / (closes in (period_end - 180 days, period_end] / 6)
+ *   A city's COMPUTED months of supply (the §0 fallback when the live cell is
+ *   withheld): the live Market Truth active count / (the market_stats_cache
+ *   city population's closes over the six completed months it summed / 6).
  *   market_stats_cache (methodology v3-2026-05-07, public.cache_methodology_definitions),
  *   Single Family Residence, ClosePrice of at least 1000:
  *     city          inside the boundaries polygon keyed by the cache row's own
@@ -72,8 +75,13 @@
  *     rows as Spark's TotalRows on its first and last page. A listing that
  *     leaves the set while another re-enters it mid-pull can still slip past.
  *
- * Pure: no I/O. scripts/render-market-report.ts pulls the Spark rows, the
- * polygons and the alias labels, then calls buildSparkChecks.
+ * THE LIMIT IS §0's, STRICT (SPARK_DELTA_LIMIT_PCT): any |delta| over 1% is a
+ * STOP, with no tolerance for small counts (a printed 29 against Spark's 30 is
+ * 3.33% and STOPs). A looser rule is Matt's call, not this module's.
+ *
+ * Pure: no I/O. lib/crm/market-report-spark-gate.ts pulls the Spark rows, the
+ * polygons and the alias labels, then calls buildSparkChecks: the sender before
+ * every send (scheduled, manual, preview), and scripts/render-market-report.ts.
  */
 
 import type { MarketReportAreaBlock } from '@/lib/data/crm/getMarketReportData'
@@ -632,7 +640,10 @@ export function earliestCloseDayNeeded(blocks: readonly MarketReportAreaBlock[],
       days.push(cacheStart)
     }
     const mosEnd = area.provenance?.live?.periodEnd
-    if (mosEnd && (has('months of supply') || has('market verdict'))) days.push(addDays(mosEnd, -180))
+    const printsMos = has('months of supply') || has('market verdict')
+    if (printsMos && area.monthsOfSupplySource === 'computed-6mo' && area.monthsOfSupplyBasis) {
+      days.push(area.monthsOfSupplyBasis.from)
+    } else if (mosEnd && printsMos) days.push(addDays(mosEnd, -180))
     if (cacheStart && has('median days on market, last 12 months')) days.push(cacheStart)
     for (const f of printed) {
       const start = MONTH_FIGURE.test(f.label) ? periodStartOf(f) : null
@@ -782,23 +793,53 @@ export function buildSparkChecks(input: {
     }
 
     if (label === 'months of supply' || label === 'market verdict') {
-      const periodEnd = prov?.live?.periodEnd ?? null
-      if (area.monthsOfSupplySource !== 'live' || !prov?.live || area.geoType !== 'city' || !periodEnd) {
-        return notReconciled(area, label, f.value, 'months of supply here is not the live Market Truth city cell with a recorded period_end')
+      // Rebuild the ratio over the populations the printed figure used.
+      let rebuilt: { mos: number | null; closes: number; active: number; population: string } | null = null
+      if (area.monthsOfSupplySource === 'live') {
+        const periodEnd = prov?.live?.periodEnd ?? null
+        if (!prov?.live || area.geoType !== 'city' || !periodEnd) {
+          return notReconciled(area, label, f.value, 'months of supply here is not the live Market Truth city cell with a recorded period_end')
+        }
+        const pop = mtFor(area)
+        if ('unavailable' in pop) return notReconciled(area, label, f.value, pop.unavailable)
+        const w: Window = { after: addDays(periodEnd, -180), through: periodEnd }
+        const closes = inWindow(pop.closes, w).length
+        rebuilt = {
+          mos: closes > 0 ? pop.active.length / (closes / 6) : null,
+          closes,
+          active: pop.active.length,
+          population: `${pop.description}; StandardStatus 'Active' / (publishable closes in ${windowText(w)} / 6)`,
+        }
+      } else if (area.monthsOfSupplySource === 'computed-6mo') {
+        const basis = area.monthsOfSupplyBasis ?? null
+        if (!basis || area.geoType !== 'city') {
+          return notReconciled(area, label, f.value, 'a computed months of supply without its recorded six-month window')
+        }
+        if (!prov?.live) {
+          return notReconciled(area, label, f.value, 'its homes-for-sale numerator is a historical end-of-period count; Spark serves current status only')
+        }
+        const mtPop = mtFor(area)
+        if ('unavailable' in mtPop) return notReconciled(area, label, f.value, mtPop.unavailable)
+        const cachePop = cacheFor(area)
+        if ('unavailable' in cachePop) return notReconciled(area, label, f.value, cachePop.unavailable)
+        const closes = closedBetween(cachePop.closes, basis.from, basis.through).length
+        rebuilt = {
+          mos: closes > 0 ? mtPop.active.length / (closes / 6) : null,
+          closes,
+          active: mtPop.active.length,
+          population: `${mtPop.description}, StandardStatus 'Active' / (${cachePop.description}, closes in [${basis.from}, ${basis.through}] / 6)`,
+        }
+      } else {
+        return notReconciled(area, label, f.value, 'months of supply here has no recorded source')
       }
-      const pop = mtFor(area)
-      if ('unavailable' in pop) return notReconciled(area, label, f.value, pop.unavailable)
-      const w: Window = { after: addDays(periodEnd, -180), through: periodEnd }
-      const closes = inWindow(pop.closes, w).length
-      const mos = closes > 0 ? pop.active.length / (closes / 6) : null
       if (label === 'months of supply') {
-        return check(area, label, f.value, mos == null ? null : Math.round(mos * 100) / 100, `${pop.description}; StandardStatus 'Active' / (publishable closes in ${windowText(w)} / 6)`, {
-          sparkN: closes,
-          note: `Spark: ${pop.active.length} active / (${closes} closes / 6)`,
+        return check(area, label, f.value, rebuilt.mos, rebuilt.population, {
+          sparkN: rebuilt.closes,
+          note: `Spark: ${rebuilt.active} active / (${rebuilt.closes} closes / 6)`,
         })
       }
       const printed = area.marketVerdict ?? 'unknown'
-      const fromSpark = marketVerdict(mos).kind
+      const fromSpark = marketVerdict(rebuilt.mos).kind
       return {
         area: area.slug,
         figure: label,

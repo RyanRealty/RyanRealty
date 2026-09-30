@@ -20,7 +20,12 @@
 --      and the stop stamp.
 --   B. crm_report_sends: one row per send attempt (sent, failed, held), with the
 --      clean html/text as sent (no open pixel, no click wraps, so the web view
---      never fires tracking) and the figures trace as jsonb.
+--      never fires tracking), the figures trace as jsonb, and the CLAUDE.md §0
+--      Spark cross-check the sender ran before the send (spark_check). A
+--      scheduled send's email_key is one per subscription per due cycle
+--      (market-report:scheduled:<subscription>:<cycle>), so two overlapping
+--      cron runs cannot both send; a claimed row sits as failed / 'sending'
+--      until the provider answers, and every reader treats that as delivered.
 --   C. RLS: service-role only on both tables, the same posture as every crm_
 --      table (20260610010000_crm_core.sql). Every reader and writer is a
 --      lib/data module on the service client.
@@ -94,7 +99,9 @@ create table if not exists public.crm_report_sends (
   kind             text not null check (kind in ('scheduled', 'manual', 'preview')),
   status           text not null check (status in ('sent', 'failed', 'held')),
   -- Why a held row did not send: awaiting-approval, stale-data, suppressed,
-  -- no-email, no-data. NULL on sent and failed rows.
+  -- no-email, no-data, spark-stop (a printed figure differs from Spark by
+  -- more than 1%), spark-unreconciled (a printed figure could not be rebuilt
+  -- from Spark, or the check could not run). NULL on sent and failed rows.
   hold_reason      text,
   -- A failure's provider or render error, or a hold's detail (which source was
   -- stale and how old it was).
@@ -114,10 +121,19 @@ create table if not exists public.crm_report_sends (
   -- Every figure the email printed: {area, label, value, display, source,
   -- filter, as_of, n}. The §0 trace an admin audits a sent number against.
   figures          jsonb not null default '[]'::jsonb,
+  -- The CLAUDE.md §0 Spark cross-check run before this send, or the one it
+  -- was held on: {verdict, rule, checkedAt, since, checks[], queries[],
+  -- polygonGaps[], error}. Each check carries both values, the delta and the
+  -- population; the queries are the Spark filters behind them. NULL on a row
+  -- held before the check ran (approval, email, data, freshness holds).
+  spark_check      jsonb,
   created_at       timestamptz not null default now(),
   constraint crm_report_sends_sent_at_check check (status <> 'sent' or sent_at is not null),
   constraint crm_report_sends_hold_reason_check check (status <> 'held' or hold_reason is not null)
 );
+
+-- Idempotent for a database where an earlier draft of this table exists.
+alter table public.crm_report_sends add column if not exists spark_check jsonb;
 
 create index if not exists crm_report_sends_person_idx
   on public.crm_report_sends (person_id, attempted_at desc);
@@ -131,6 +147,8 @@ comment on table public.crm_report_sends is
   'One row per market-report send attempt (scheduled, manual, preview): status sent / failed / held, the clean html and text as sent, and the figures trace. Written only by lib/data/crm/marketReportSends.ts. Service-role only.';
 comment on column public.crm_report_sends.figures is
   'Every printed figure: {area, label, value, display, source, filter, as_of, n}. CLAUDE.md §0 trace.';
+comment on column public.crm_report_sends.spark_check is
+  'The CLAUDE.md §0 Spark cross-check the sender ran before this send (or held it on): verdict, rule (any |delta| > 1% is a STOP), each figure''s printed and Spark values with the delta and population, and the Spark queries.';
 
 -- ── C. RLS: service role only ───────────────────────────────────────────────
 

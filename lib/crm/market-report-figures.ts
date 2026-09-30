@@ -131,7 +131,11 @@ export function activeTrace(area: MarketReportAreaBlock): {
   }
 }
 
-/** Months of supply: the live figure, or the trailing-12-month fallback. */
+/**
+ * Months of supply: the live figure, or the §0 formula computed from the last
+ * six completed months of the monthly cache series. The trace's value is the
+ * RAW figure (the renderer stores it unrounded); the display is what printed.
+ */
 export function mosTrace(area: MarketReportAreaBlock): {
   source: string
   filter: string
@@ -139,13 +143,14 @@ export function mosTrace(area: MarketReportAreaBlock): {
   n: number | null
 } {
   const live = prov(area)?.live ?? null
-  const cache = prov(area)?.cache ?? null
-  if (area.monthsOfSupplySource === 'computed-12mo') {
+  if (area.monthsOfSupplySource === 'computed-6mo') {
+    const basis = area.monthsOfSupplyBasis ?? null
     return {
-      source: 'computed: homes for sale / (market_stats_cache rolling_365d sold_count / 12)',
-      filter: `${areaFilter(area)} active=${area.activeListings ?? 'n/a'} sold_count=${cache?.soldCount ?? 'n/a'}`,
-      as_of: cache?.periodEnd ?? cache?.updatedAt ?? null,
-      n: cache?.soldCount ?? null,
+      source:
+        'computed (CLAUDE.md §0): homes for sale / (closes in the last 6 completed months / 6), the closes summed from market_stats_cache monthly sold_count via getMarketTrend',
+      filter: `${areaFilter(area)} period_type=monthly months=${basis ? `${basis.from}..${basis.through}` : 'n/a'} active=${area.activeListings ?? 'n/a'} closed_6mo=${basis?.closed ?? 'n/a'}`,
+      as_of: basis?.through ?? null,
+      n: basis?.closed ?? null,
     }
   }
   if (live?.table === 'market_metric') {

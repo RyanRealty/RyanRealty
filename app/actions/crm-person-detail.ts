@@ -26,6 +26,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
 import { personIdsByEmailCi } from '@/lib/data/crm/personByEmailCi'
+import { stopReportSubscriptionsForDeletedPeople } from '@/lib/data/crm/marketReportSubscription'
 import { getCrmAccess, requirePersonInScope } from '@/app/actions/crm'
 
 export type PersonDetailResult = { ok: true } | { ok: false; error: string }
@@ -622,6 +623,10 @@ export async function assignPondAction(personId: number, pondId: number | null):
  * Soft delete (deleted=true + stage Trash), auditable and reversible via SQL,
  * matching the merge pattern above. Decision logged in CRM_BUILD_MISSION:
  * hard-erase is intentionally not implemented; reporting excludes deleted rows.
+ *
+ * A deleted contact's market report stops with her (review 2026-09-30): the
+ * subscription was left on, and the cadence cron kept mailing a record nobody
+ * could see. Her own stop, if she made one, is kept as hers.
  */
 export async function deleteCrmPersonAction(formData: FormData): Promise<void> {
   const personId = Number(formData.get('personId'))
@@ -642,5 +647,12 @@ export async function deleteCrmPersonAction(formData: FormData): Promise<void> {
     source: 'app',
     broker: access.brokerSlug ?? null,
   })
+  const reports = await stopReportSubscriptionsForDeletedPeople([personId], { email: access.email, brokerSlug: access.brokerSlug ?? null })
+  if (!reports.ok) {
+    // The cron also skips deleted people, so nothing sends meanwhile; the
+    // broker is told the stop did not save rather than left to assume it did.
+    console.error('[deleteCrmPersonAction] market report stop', reports.error)
+    redirect(`/admin/crm?flash=${encodeURIComponent('Person deleted. Their market report could not be stopped; turn it off on the record.')}`)
+  }
   redirect(`/admin/crm?flash=${encodeURIComponent('Person deleted.')}`)
 }

@@ -44,6 +44,12 @@ export type MarketReportSubscriber = {
    * Null = never approved: the sender holds the subscription and sends nothing.
    */
   firstSendApprovedAt: string | null
+  /**
+   * The contact record is deleted, or missing from a read that succeeded.
+   * The sender never mails one (review 2026-09-30: a deleted contact kept
+   * getting reports).
+   */
+  personDeleted: boolean
 }
 
 type RawJoinedRow = {
@@ -61,6 +67,7 @@ type RawJoinedRow = {
     last_name: string | null
     assigned_broker: string | null
     fub_legacy_id: number | string | null
+    deleted?: boolean | null
   } | null
 }
 
@@ -98,12 +105,13 @@ export function mapMarketReportSubscriberRow(row: RawJoinedRow): MarketReportSub
     lastSentAt: row.last_sent_at ?? null,
     lastAttemptAt: row.last_attempt_at ?? null,
     firstSendApprovedAt: row.first_send_approved_at ?? null,
+    personDeleted: !p || p.deleted === true,
   }
 }
 
 const SUB_SELECT =
   'id,person_id,areas,frequency,is_active,last_sent_at,last_attempt_at,first_send_approved_at'
-const PERSON_SELECT = 'id,name,first_name,last_name,assigned_broker,fub_legacy_id'
+const PERSON_SELECT = 'id,name,first_name,last_name,assigned_broker,fub_legacy_id,deleted'
 
 type RawSubRow = {
   id: number | string
@@ -123,6 +131,7 @@ type RawPersonRow = {
   last_name: string | null
   assigned_broker: string | null
   fub_legacy_id: number | string | null
+  deleted: boolean | null
 }
 
 /**
@@ -140,6 +149,7 @@ async function fetchPeopleByIds(
   sb: ReturnType<typeof createServiceClient>,
   ids: number[],
   assignedBrokerScope?: string | null,
+  opts: { throwOnError?: boolean } = {},
 ): Promise<Map<number, RawPersonRow>> {
   const map = new Map<number, RawPersonRow>()
   if (ids.length === 0) return map
@@ -148,6 +158,10 @@ async function fetchPeopleByIds(
   if (scope) q = q.eq('assigned_broker', scope)
   const { data, error } = await q
   if (error || !data) {
+    // The sender must not read a failed people read as "every contact is
+    // gone" (it would skip them all, silently): it throws, and the cron pages
+    // Matt through its subscriber-read alarm.
+    if (opts.throwOnError) throw new Error(`[getActiveMarketReportSubscriptions] people read failed: ${error?.message ?? 'no data'}`)
     if (error) console.error('[getMarketReportSubscribers] people', error.message)
     return map
   }
@@ -176,6 +190,7 @@ function toJoinedRow(sub: RawSubRow, person: RawPersonRow | null): RawJoinedRow 
           last_name: person.last_name,
           assigned_broker: person.assigned_broker,
           fub_legacy_id: person.fub_legacy_id,
+          deleted: person.deleted,
         }
       : null,
   }
@@ -196,6 +211,11 @@ function uniquePersonIds(subs: RawSubRow[]): number[] {
  *
  * `limit` bounds the scan so the cron never times out; pass a generous cap (the
  * cron then per-contact-rate-limits its actual sends).
+ *
+ * Each subscriber carries `personDeleted` (review 2026-09-30): a deleted
+ * contact, or one missing from the people read, is never mailed. A failed
+ * people read THROWS (fail closed, and the cron pages Matt) rather than
+ * reading every contact as gone.
  */
 export async function getActiveMarketReportSubscriptions(
   limit = 1000,
@@ -212,7 +232,7 @@ export async function getActiveMarketReportSubscriptions(
     return []
   }
   const subs = data as RawSubRow[]
-  const people = await fetchPeopleByIds(sb, uniquePersonIds(subs))
+  const people = await fetchPeopleByIds(sb, uniquePersonIds(subs), null, { throwOnError: true })
   return subs.map((s) =>
     mapMarketReportSubscriberRow(toJoinedRow(s, people.get(toInt(s.person_id) ?? -1) ?? null)),
   )

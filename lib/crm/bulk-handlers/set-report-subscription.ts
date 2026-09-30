@@ -30,6 +30,12 @@
  * job asks is left alone (counted `unchanged`, no timeline row), and turning
  * reports off with no areas picked keeps the areas already on the row.
  *
+ * The write is CONDITIONAL (review 2026-09-30): an existing row is updated
+ * only while it is still as the job read it (same on/off, same stop stamp),
+ * and a new row is inserted only while none exists. A stop (hers or a
+ * broker's), a pause, or a new row made between the read and the write is
+ * never overwritten; the contact is counted `changed_during_job` instead.
+ *
  * Every id is accounted for (processed OR skipped) so the worker offset drains.
  */
 
@@ -41,7 +47,7 @@ import {
 } from '@/lib/data/crm/getContactReportSubscriptions'
 import type { BulkHandler, BulkResult } from '@/lib/crm/bulk-jobs'
 import { getLatestDeliveredReportAt } from '@/lib/data/crm/marketReportSends'
-import { isContactStopVia } from '@/lib/crm/market-report-subscription-control'
+import { CONTACT_STOP_VIAS, isContactStopVia } from '@/lib/crm/market-report-subscription-control'
 
 /** Order-insensitive area comparison. */
 function sameAreaSet(a: readonly string[], b: readonly string[]): boolean {
@@ -140,11 +146,27 @@ export const setReportSubscriptionHandler: BulkHandler = async (ids, params): Pr
       // last report the contact actually received (never a same-day repeat).
       row.source = 'broker'
       row.last_sent_at = await getLatestDeliveredReportAt(id)
+      // Insert only while no row exists: one that appeared since the read
+      // (her one-click on a one-off report records a stopped row) is hers.
+      const { count, error: insErr } = await sb
+        .from('crm_report_subscriptions')
+        .upsert(row, { onConflict: 'person_id', ignoreDuplicates: true, count: 'exact' })
+      if (insErr) { result.skipped++; bump('upsert_failed'); continue }
+      if (!count) { result.skipped++; bump('changed_during_job'); continue }
+    } else {
+      // Update only while the row is as read: same on/off and same stop stamp.
+      // A stop or a pause made since the read keeps its place.
+      let update = sb
+        .from('crm_report_subscriptions')
+        .update(row)
+        .eq('person_id', id)
+        .eq('is_active', prev.is_active === true)
+      update = prev.stopped_at ? update.eq('stopped_at', prev.stopped_at) : update.is('stopped_at', null)
+      if (isActive) update = update.or(`stopped_via.is.null,stopped_via.not.in.(${CONTACT_STOP_VIAS.join(',')})`)
+      const { data: written, error: upErr } = await update.select('person_id')
+      if (upErr) { result.skipped++; bump('upsert_failed'); continue }
+      if (!written || written.length === 0) { result.skipped++; bump('changed_during_job'); continue }
     }
-    const { error: upErr } = await sb
-      .from('crm_report_subscriptions')
-      .upsert(row, { onConflict: 'person_id' })
-    if (upErr) { result.skipped++; bump('upsert_failed'); continue }
 
     await sb.from('crm_timeline').insert({
       person_id: id,

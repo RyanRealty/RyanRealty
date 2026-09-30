@@ -8,12 +8,24 @@
  *
  * Scope: a broker only opens reports for contacts in their own book
  * (requirePersonInScope), and the report must belong to this contact.
+ *
+ * The stored copy carries the contact's LIVE links (her manage page, her
+ * report unsubscribe, her web view). Framed here, every one of them is
+ * re-signed as a PREVIEW link first (previewReportLinks, review 2026-09-30):
+ * a broker clicking Resume or Stop in it changes nothing, and can never
+ * record a restart or an opt-out as hers.
+ *
+ * Beside the figures: the §0 Spark cross-check the sender ran before this
+ * send (or held it on), each figure with both values, the delta and the
+ * population, and the Spark queries behind them.
  */
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { requirePersonInScope } from '@/app/actions/crm'
 import { getMarketReportSendById } from '@/lib/data/crm/marketReportSends'
+import { previewReportLinks } from '@/lib/email/report-link-token'
+import type { SparkGateResult } from '@/lib/crm/market-report-spark-gate'
 import { EntityTitle, QuietRow, ReportGrid, SectionHead } from '@/components/admin/v2'
 import { formatDateTime } from '@/lib/format/date'
 
@@ -36,6 +48,19 @@ function text(v: unknown): string {
 }
 
 const KIND_LABEL: Record<string, string> = { scheduled: 'Scheduled', manual: 'Sent by a broker', preview: 'Preview' }
+
+/** The stored Spark check, read defensively (it is jsonb). */
+function sparkOf(v: unknown): SparkGateResult | null {
+  if (!v || typeof v !== 'object') return null
+  const r = v as Partial<SparkGateResult>
+  return Array.isArray(r.checks) && typeof r.verdict === 'string' ? (r as SparkGateResult) : null
+}
+
+const SPARK_VERDICT: Record<string, string> = {
+  ok: 'Every printed figure reconciled with Spark within 1%.',
+  STOP: 'STOP: a printed figure differs from Spark by more than 1%. Held for Matt.',
+  'not-reconciled': 'Not reconciled: a printed figure could not be rebuilt from Spark. Held for Matt.',
+}
 
 /** Links in the framed copy open in a new tab; the base goes inside <head> so the doctype still leads. */
 function framedDocument(html: string): string {
@@ -64,12 +89,24 @@ export default async function MarketReportSendPage({
   if (!send || send.personId !== pid) notFound()
 
   const figures = (Array.isArray(send.figures) ? send.figures : []) as StoredFigure[]
+  const spark = sparkOf(send.sparkCheck)
   const status =
     send.status === 'sent'
       ? `Sent ${send.sentAt ? formatDateTime(send.sentAt) : ''}`.trim()
       : send.status === 'held'
-        ? `Held (${send.holdReason ?? 'held'})`
-        : `Failed${send.error && send.error !== 'sending' ? `: ${send.error}` : ''}`
+        ? `Held (${send.holdReason ?? 'held'})${send.error ? `: ${send.error}` : ''}`
+        : send.error === 'sending'
+          ? 'Sending, not confirmed (treated as delivered: never sent again)'
+          : `Failed${send.error ? `: ${send.error}` : ''}`
+  // Her live links, re-signed as preview links before a broker can click them.
+  let framed: string | null = null
+  if (send.html) {
+    try {
+      framed = framedDocument(previewReportLinks(send.html))
+    } catch (e) {
+      console.error('[market-report send page] could not re-sign the stored links', e instanceof Error ? e.message : e)
+    }
+  }
 
   return (
     <div className="av2-scope" style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
@@ -89,16 +126,23 @@ export default async function MarketReportSendPage({
       </ul>
 
       <SectionHead>The email</SectionHead>
-      {send.html ? (
-        <iframe
-          title="The market report email as sent"
-          srcDoc={framedDocument(send.html)}
-          sandbox="allow-popups allow-popups-to-escape-sandbox"
-          style={{ width: '100%', height: 1400, border: '1px solid var(--a-border)', borderRadius: 10 }}
-        />
+      {framed ? (
+        <>
+          <p className="av2-sysnote" style={{ padding: '0 0 8px' }}>
+            Its links open as a broker preview: nothing clicked here changes the contact&apos;s settings.
+          </p>
+          <iframe
+            title="The market report email as sent"
+            srcDoc={framed}
+            sandbox="allow-popups allow-popups-to-escape-sandbox"
+            style={{ width: '100%', height: 1400, border: '1px solid var(--a-border)', borderRadius: 10 }}
+          />
+        </>
       ) : (
         <p className="av2-sysnote" style={{ padding: 12 }}>
-          No stored copy: this attempt was held before an email was built.
+          {send.html
+            ? 'The stored copy could not be shown safely here (its links could not be re-signed as a preview).'
+            : 'No stored copy: this attempt was held before an email was built.'}
         </p>
       )}
 
@@ -128,6 +172,52 @@ export default async function MarketReportSendPage({
         }))}
         empty="No figures recorded for this attempt."
       />
+
+      <SectionHead>Spark cross-check (CLAUDE.md §0)</SectionHead>
+      {spark ? (
+        <>
+          <p className="av2-sysnote" style={{ padding: '0 0 8px' }}>
+            {SPARK_VERDICT[spark.verdict] ?? spark.verdict}
+            {spark.error ? ` The check could not run: ${spark.error}` : ''} Rule: {spark.rule}
+          </p>
+          <ReportGrid
+            label="Each printed figure rebuilt from Spark"
+            columns={[
+              { key: 'status', label: 'Result' },
+              { key: 'figure', label: 'Figure' },
+              { key: 'printed', label: 'Printed', numeric: true },
+              { key: 'spark', label: 'Spark', numeric: true },
+              { key: 'delta', label: 'Delta', numeric: true },
+              { key: 'population', label: 'Population and note' },
+            ]}
+            template="110px minmax(160px,1.2fr) 100px 100px 90px minmax(300px,2.6fr)"
+            minWidth={960}
+            rows={spark.checks.map((c, i) => ({
+              key: `${c.area ?? 'report'}-${c.figure}-${i}`,
+              cells: [
+                c.status,
+                `${c.area ?? 'report'} · ${c.figure}`,
+                text(c.supabase),
+                text(c.spark),
+                c.deltaPoints != null ? `${c.deltaPoints} pts` : c.deltaPct != null ? `${c.deltaPct}%` : '',
+                [c.population, c.note].filter(Boolean).join(' · '),
+              ],
+            }))}
+            empty="No figure was checked (see the result above)."
+          />
+          {spark.queries.length > 0 ? (
+            <ul className="av2-quietlist">
+              {spark.queries.map((q, i) => (
+                <QuietRow key={`${q.kind}-${i}`} name={`${q.kind}, ${q.rows} of ${q.total_rows ?? 'n/a'} rows`} state={q.filter} />
+              ))}
+            </ul>
+          ) : null}
+        </>
+      ) : (
+        <p className="av2-sysnote" style={{ padding: 12 }}>
+          No Spark cross-check is recorded for this attempt (it was held before the check ran, or it predates the check).
+        </p>
+      )}
     </div>
   )
 }

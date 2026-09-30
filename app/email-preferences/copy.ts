@@ -76,6 +76,11 @@ export function errorAlert(code: string): V3QuietAlert | null {
       return { title: 'Nothing to change', description: 'You are not signed up for a regular market report.' }
     case 'input':
       return { title: 'Pick an option', description: 'Choose from the list, then press the button beside it.' }
+    case 'closed':
+      return {
+        title: 'Only stopping email is possible from this link',
+        description: 'You can stop these reports or all email from Ryan Realty here. To get reports again, reply to any of our emails.',
+      }
     default:
       return null
   }

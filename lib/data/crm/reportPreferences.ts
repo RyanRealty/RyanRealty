@@ -9,6 +9,12 @@
  * whether all Ryan Realty email is off (and whether she can turn it back on
  * herself), and her past reports, each with its own signed web-view link.
  *
+ * A BROKER PREVIEW never reaches the contact's live links (review
+ * 2026-09-30): a preview page signs every report link it lists as a preview,
+ * and a stored copy opened from a preview link has every link inside it
+ * re-signed as a preview (previewReportLinks), so nothing a broker clicks
+ * there acts as her.
+ *
  * The writes (pause, stop, stop all email, and so on) are
  * lib/crm/market-report-preferences.ts, which resolves links through here.
  *
@@ -17,6 +23,7 @@
 import 'server-only'
 
 import {
+  previewReportLinks,
   reportViewUrl,
   verifyReportLinkToken,
   type ReportLinkPayload,
@@ -24,8 +31,8 @@ import {
 } from '@/lib/email/report-link-token'
 import { MissingSigningSecretError } from '@/lib/email/signing-secret'
 import {
-  getLiveMarketReportContact,
   getReportSubscriptionRecord,
+  resolveReportLinkContact,
   type MarketReportContact,
   type ReportSubscriptionRecord,
 } from '@/lib/data/crm/marketReportSubscription'
@@ -33,6 +40,7 @@ import { getMarketReportSendByEmailKey, listMarketReportSendsForPerson } from '@
 import { getSuppressionSignals, type SuppressionSignal } from '@/lib/data/crm/getSuppressionSignals'
 import { canUserResubscribe, getEmailKeyedSuppressionSignals } from '@/lib/data/newsletter/perLead'
 import {
+  isContactStopped,
   reportSubscriptionState,
   type ReportSubscriptionState,
 } from '@/lib/crm/market-report-subscription-control'
@@ -55,9 +63,13 @@ export type ResolvedReportLink = {
  * does one job: a web-view link cannot open the preferences page, and only the
  * one-click link reaches the one-click stop.
  *
- * `contact` is the LIVE contact: when the link's contact was merged into
- * another, the survivor (getLiveMarketReportContact), whose subscription and
- * reports the merge carried over. Every read and write acts on that contact.
+ * `contact` is the contact the link acts on (resolveReportLinkContact): the
+ * link's own contact, or, when it was merged into another, the survivor whose
+ * subscription and reports the merge carried over. When that chain ends at a
+ * DELETED contact the link still resolves, with `contact.deleted` true: she
+ * can still stop her reports and all email (lib/crm/market-report-preferences
+ * allows nothing else on a deleted record). Every read and write acts on
+ * that contact.
  */
 export async function resolveReportLink(
   tokenStr: string | null | undefined,
@@ -72,7 +84,7 @@ export async function resolveReportLink(
   }
   if (!token || token.purpose !== purpose) return { ok: false, reason: 'invalid' }
   try {
-    const contact = await getLiveMarketReportContact(token.personId)
+    const contact = await resolveReportLinkContact(token.personId)
     if (!contact) return { ok: false, reason: 'not-found' }
     let subscription: ReportSubscriptionRecord | null = null
     if (token.subscriptionId > 0) {
@@ -116,8 +128,19 @@ export type ReportArchiveEntry = {
 
 export type ReportPreferencesView = {
   preview: boolean
+  /**
+   * The contact record behind the link was deleted. The page offers only the
+   * ways to stop email (these reports, or all of it); nothing is scheduled.
+   */
+  closed: boolean
   /** 'none' when the report went out without a subscription (a one-off send). */
   state: ReportSubscriptionState | 'none'
+  /**
+   * The report is stopped because SHE stopped it (one-click, this page, her
+   * account page). False while it is on, paused, or stopped by a broker: her
+   * own stop is still offered then, and it replaces the broker's.
+   */
+  stoppedByContact: boolean
   frequency: ReportFrequency | null
   areas: Array<{ slug: string; label: string }>
   /** Areas she can add (the registry minus the ones she has). */
@@ -156,7 +179,7 @@ export async function readReportPreferences(
       }),
     ])
     const chosen = new Set(subscription?.areas ?? [])
-    const next = subscription
+    const next = subscription && !contact.deleted
       ? nextReportSendAt({
           isActive: subscription.isActive,
           approved: Boolean(subscription.firstSendApprovedAt),
@@ -173,11 +196,13 @@ export async function readReportPreferences(
         sentAt: s.sentAt,
         dateLabel: formatDate(s.sentAt, { month: 'long' }),
         subject: s.subject,
+        // A preview page never hands out a real link: every copy it lists
+        // opens as a preview, with every link inside re-signed as one.
         viewUrl: reportViewUrl({
           personId: contact.personId,
           subscriptionId: subscription?.id ?? null,
           emailKey: s.emailKey,
-          preview: s.kind === 'preview',
+          preview: token.preview || s.kind === 'preview',
         }),
       })
     }
@@ -186,11 +211,15 @@ export async function readReportPreferences(
       token,
       view: {
         preview: token.preview,
+        closed: contact.deleted,
         state: subscription ? reportSubscriptionState(subscription) : 'none',
+        stoppedByContact: Boolean(subscription && isContactStopped(subscription)),
         frequency: subscription?.frequency ?? null,
         areas: (subscription?.areas ?? []).map((slug) => ({ slug, label: reportAreaLabel(slug) })),
         addable: reportAreaOptions().filter((a) => !chosen.has(a.slug)),
-        awaitingFirstReport: Boolean(subscription && !subscription.lastSentAt && !subscription.firstSendApprovedAt),
+        awaitingFirstReport: Boolean(
+          subscription && !contact.deleted && !subscription.lastSentAt && !subscription.firstSendApprovedAt,
+        ),
         nextSendLabel: next ? formatDate(next, { month: 'long' }) : null,
         emailOff: off,
         emailRestartable: off && canUserResubscribe(all, null).allowed,
@@ -206,6 +235,12 @@ export async function readReportPreferences(
  * The stored report a web-view link names, when it belongs to the link's
  * contact and actually went out. The html is the clean copy (no open pixel,
  * no click wraps), so reading it never counts as an open.
+ *
+ * Her own (real) link opens her real report as it was sent. A PREVIEW link
+ * (a broker's) opens a preview copy, or her real report with every report
+ * link inside it re-signed as a preview (previewReportLinks): the broker sees
+ * what she saw, and nothing clicked there acts as her. A real link never opens
+ * a broker's preview copy.
  */
 export async function readReportForView(
   tokenStr: string | null | undefined,
@@ -220,19 +255,25 @@ export async function readReportForView(
   if (!token || token.purpose !== 'view' || !token.emailKey) return { ok: false, reason: 'invalid' }
   const send = await getMarketReportSendByEmailKey(token.emailKey)
   if (!send || send.status !== 'sent' || !send.html) return { ok: false, reason: 'not-found' }
-  // A preview copy opens only from a preview link, and a real report only from a real one.
-  if ((send.kind === 'preview') !== token.preview) return { ok: false, reason: 'not-found' }
+  // A broker's preview copy opens only from a preview link.
+  if (send.kind === 'preview' && !token.preview) return { ok: false, reason: 'not-found' }
   if (send.personId !== token.personId) {
     // A contact merge moves her reports onto the survivor. The link still
     // opens her copy when the link's contact was merged into the one that
     // now holds it; any other mismatch is a bad link.
-    let live: Awaited<ReturnType<typeof getLiveMarketReportContact>>
+    let reached: Awaited<ReturnType<typeof resolveReportLinkContact>>
     try {
-      live = await getLiveMarketReportContact(token.personId)
+      reached = await resolveReportLinkContact(token.personId)
     } catch {
       return { ok: false, reason: 'unavailable' }
     }
-    if (!live || live.personId !== send.personId) return { ok: false, reason: 'not-found' }
+    if (!reached || reached.personId !== send.personId) return { ok: false, reason: 'not-found' }
   }
-  return { ok: true, html: send.html }
+  if (!token.preview) return { ok: true, html: send.html }
+  try {
+    return { ok: true, html: previewReportLinks(send.html) }
+  } catch (e) {
+    if (e instanceof MissingSigningSecretError) return { ok: false, reason: 'unavailable' }
+    throw e
+  }
 }

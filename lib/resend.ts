@@ -47,6 +47,14 @@ export type SendEmailOptions = {
   personId?: number
   emailKey?: string
   brokerSlug?: string
+  /**
+   * Resend's Idempotency-Key: a second request with the same key inside
+   * Resend's window is answered from the first and never sends twice. A
+   * caller that claims a send key before the wire (the market report) passes
+   * it, so an overlapping run or a retry of an attempt Resend in fact accepted
+   * cannot deliver the same email twice.
+   */
+  idempotencyKey?: string
 }
 
 function isRateLimited(error: { name?: string; message?: string; statusCode?: number | null }): boolean {
@@ -82,18 +90,22 @@ export async function sendEmail(options: SendEmailOptions): Promise<{ id?: strin
     })
   }
   try {
+    const idempotencyKey = options.idempotencyKey?.trim()
     const send = () =>
-      client.emails.send({
-        from,
-        to,
-        subject: options.subject,
-        html,
-        text: options.text,
-        replyTo: options.replyTo,
-        react: options.react,
-        ...(options.attachments?.length ? { attachments: options.attachments } : {}),
-        ...(options.headers ? { headers: options.headers } : {}),
-      })
+      client.emails.send(
+        {
+          from,
+          to,
+          subject: options.subject,
+          html,
+          text: options.text,
+          replyTo: options.replyTo,
+          react: options.react,
+          ...(options.attachments?.length ? { attachments: options.attachments } : {}),
+          ...(options.headers ? { headers: options.headers } : {}),
+        },
+        idempotencyKey ? { idempotencyKey: idempotencyKey.slice(0, 256) } : undefined,
+      )
     let { data, error } = await send()
     // Resend allows a few requests a second across the whole account, and the
     // live site shares it: a sealed envelope's copies go out back to back. A
