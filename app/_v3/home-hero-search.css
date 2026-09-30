@@ -122,11 +122,15 @@ html:has(.home-hero-search) .v3-chrome__search {
 
 .v3 .home-hero-search .v3-tabs__list,
 .v3 .home-hero-search .v3-tabs__list.bg-card {
-  background: transparent !important;
-  background-color: transparent !important;
-  border-color: transparent !important;
+  /* A visible track on the photograph (2026-09-29: with no track the switch
+     read as two loose words, and the navy indicator slid over nothing). A
+     light cream wash and a cream hairline, no blur, so the navy indicator reads
+     on it. */
+  background: color-mix(in srgb, var(--v3-cream) 16%, transparent) !important;
+  background-color: color-mix(in srgb, var(--v3-cream) 16%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--v3-cream) 50%, transparent) !important;
   box-shadow: none !important;
-  /* Beat V3Tabs.css radius-control: 0 so the track (when any fill leaks) stays pill. */
+  /* Beat V3Tabs.css radius-control: 0 so the track stays a pill. */
   border-radius: 999px !important;
 }
 
