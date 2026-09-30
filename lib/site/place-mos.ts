@@ -106,6 +106,13 @@ export function buildPlaceMosView(input: {
   grain: PlaceMosGrain
   geoSlug: string
   asOf: string | null
+  /**
+   * The homes bar's name when the page must say whose homes they are: a city's
+   * count is every house with its address (Market Truth city membership is
+   * the MLS city text), not the houses inside the city line its map draws
+   * (2026-09-29: "731" over a map's "685" read as a miscount).
+   */
+  homesName?: string
 }): PlaceMosView | null {
   const published = publishPlaceMos({ active: input.active, monthsSupply: input.monthsSupply })
   if (!published) return null
@@ -133,7 +140,7 @@ export function buildPlaceMosView(input: {
     salesValue: published.monthOfSales,
     homesLabel,
     salesLabel,
-    homesName: 'Homes for sale',
+    homesName: input.homesName ?? 'Homes for sale',
     salesName: 'A month of sales',
     caption: `About ${mosText} months of homes on the market.`,
     plainLabel: MOS_PLAIN_LABEL,

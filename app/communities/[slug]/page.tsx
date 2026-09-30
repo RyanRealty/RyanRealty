@@ -555,6 +555,9 @@ async function renderCommunityDetail({ params }: Props) {
     grain: 'community',
     geoSlug: slug,
     asOf: mosAsOf,
+    // Detached houses, not every listing the map counts (townhomes and lots
+    // too): the bar names its population, as the neighborhood page's does.
+    homesName: 'Houses for sale',
   })
   const alertTypes = buildPlaceAlertTypes({
     placeName: publicName,

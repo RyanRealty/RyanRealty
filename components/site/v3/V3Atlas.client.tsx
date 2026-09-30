@@ -2093,10 +2093,11 @@ export function V3Atlas({
     }
     const out: { kind: string; label: string }[] = []
     if (counts.forSale > 0) out.push({ kind: 'active', label: `${counts.forSale.toLocaleString('en-US')} for sale` })
-    // "Under contract", the word the homes under the map use, so the two counts
-    // read as one set and its showing part (2026-09-29: "218 pending" over "3
-    // under contract" read as a contradiction).
-    if (counts.pending > 0) out.push({ kind: 'pending', label: `${counts.pending.toLocaleString('en-US')} under contract` })
+    // The under-contract marks are named, not counted: the homes under the map
+    // count the part of them still showing, and two different "under
+    // contract" figures on one page read as a contradiction (2026-09-29: "216
+    // under contract" on the map over "3 under contract" in the homes).
+    if (counts.pending > 0) out.push({ kind: 'pending', label: 'under contract' })
     if (amenityParks.length > 0) {
       out.push({
         kind: 'park',

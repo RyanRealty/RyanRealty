@@ -517,6 +517,9 @@ async function renderCityDetail({ params }: Props) {
     grain: 'city',
     geoSlug: slug,
     asOf: mosAsOf,
+    // Detached houses by address, not every listing inside the city line the
+    // map under it counts: the bar says so.
+    homesName: `Houses with a ${cityName} address`,
   })
   const alertTypes = buildPlaceAlertTypes({
     placeName: cityName,
