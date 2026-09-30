@@ -127,6 +127,62 @@ describe('promoteInitialsBoxes', () => {
   })
 })
 
+describe('promoteInitialsBoxes from the printed labels', () => {
+  const xs = [0.127, 0.197, 0.266, 0.334, 0.672, 0.741, 0.81, 0.879]
+  const boxes = (only?: number[]) =>
+    xs.filter((_, i) => !only || only.includes(i)).map((x, i) => field({ label: `Text213.${i}`, x, y: 0.901, w: 0.051, h: 0.0164, page: 2 }))
+  const label = (str: string, x: number) => ({ str, x, y: 0.915, w: str.length * 0.0064 })
+  const blanks = '________ / ________ / ________ / ________'
+
+  it('puts each cluster on the principal printed before it, whatever order the form lists its signers (020)', () => {
+    const page = [label(`Buyer Initials ${blanks}`, 0.046), label('Seller In', 0.591), label(`itials ${blanks}`, 0.639)]
+    const out = promoteInitialsBoxes(boxes(), ['seller', 'buyer'], [[], page])
+    expect(out.slice(0, 4).map((f) => f.signerRole)).toEqual(['buyer', 'buyer', 'buyer', 'buyer'])
+    expect(out.slice(4).map((f) => f.signerRole)).toEqual(['seller', 'seller', 'seller', 'seller'])
+    // The nth box is the nth signer's; the first of each is required.
+    expect(out.slice(4).map((f) => [f.signerIndex, f.optional])).toEqual([
+      [0, false],
+      [1, true],
+      [2, true],
+      [3, true],
+    ])
+  })
+
+  it('reads Seller on the left and Buyer on the right when a form prints them that way', () => {
+    const page = [label(`Seller Initials ${blanks}`, 0.046), label(`Buyer Initials ${blanks}`, 0.591)]
+    const out = promoteInitialsBoxes(boxes(), ['buyer', 'seller'], [[], page])
+    expect(out[0]).toMatchObject({ type: 'initials', signerRole: 'seller' })
+    expect(out[7]).toMatchObject({ type: 'initials', signerRole: 'buyer' })
+  })
+
+  it('gives all four boxes to the one cluster a page prints (the 020’s last page: Seller Initials alone)', () => {
+    const page = [label(`Seller Initials ${blanks}`, 0.591)]
+    const out = promoteInitialsBoxes(boxes([4, 5, 6, 7]), ['buyer', 'seller'], [[], page])
+    expect(out.map((f) => f.signerRole)).toEqual(['seller', 'seller', 'seller', 'seller'])
+  })
+
+  it('leaves initials required only if an option is chosen optional (015 "required if option [a] is selected")', () => {
+    const page = [{ str: 'Seller(s) Initials ( required if option [a] is selected ) ___ / ___ / ___ / ___', x: 0.38, y: 0.915, w: 0.56 }]
+    const out = promoteInitialsBoxes(boxes([4, 5, 6, 7]), ['seller'], [[], page])
+    // conditional: the envelope never makes them required, whoever they go to.
+    expect(out.every((f) => f.type === 'initials' && f.signerRole === 'seller' && f.optional && f.conditional)).toBe(true)
+  })
+
+  it('splits a compact footer where a new label is printed between two boxes', () => {
+    const at = (x: number, i: number) => field({ label: `c${i}`, x, y: 0.901, w: 0.04, h: 0.0164, page: 2 })
+    const map = [0.2, 0.26, 0.44, 0.5].map(at)
+    const page = [label('Buyer Initials ___ / ___', 0.1), label('Seller Initials ___ / ___', 0.335)]
+    const out = promoteInitialsBoxes(map, ['buyer', 'seller'], [[], page])
+    expect(out.map((f) => f.signerRole)).toEqual(['buyer', 'buyer', 'seller', 'seller'])
+  })
+
+  it('names a lone initials box from its printed label ("By Seller (initials)")', () => {
+    const box = field({ type: 'initials', label: 'Initials1', x: 0.35, y: 0.474, w: 0.05, h: 0.016 })
+    const out = promoteInitialsBoxes([box], ['buyer', 'seller'], [[{ str: 'By Seller (initials)', x: 0.2, y: 0.489, w: 0.14 }]])
+    expect(out[0]).toMatchObject({ type: 'initials', signerRole: 'seller' })
+  })
+})
+
 describe('demoteImplausibleSignatureFields', () => {
   it('turns a tiny “signing below” pages-column widget back into text', () => {
     const map = [
@@ -194,9 +250,139 @@ describe('labelSignatureRowsFromPage (who signs an unnamed line, from the printe
     expect(out.every((f) => f.signerRole === null && f.signerIndex === undefined)).toBe(true)
   })
 
-  it('leaves a line its widget already names alone', async () => {
+  it('takes the printed word over the widget name (the 071 names its Buyer rows "Seller", "SWeller")', async () => {
     const { labelSignatureRowsFromPage } = await import('./lined-signature-fields')
     const out = labelSignatureRowsFromPage([line(0.549, 'Seller_5')], [[word('Buyer', 0.569)]])
+    expect(out[0]).toMatchObject({ signerRole: 'buyer', signerIndex: 0 })
+  })
+
+  it('keeps the widget name when the printed row names nobody', async () => {
+    const { labelSignatureRowsFromPage } = await import('./lined-signature-fields')
+    const out = labelSignatureRowsFromPage([line(0.549, 'Seller_5')], [[word('R A = ? 4', 0.569)]])
     expect(out[0]).toMatchObject({ label: 'Seller_5', signerRole: null, signerIndex: 0 })
+  })
+
+  it('reads a label printed in one run with its underline ("Buyer ______ Date/Time ___", the 020 and 071)', async () => {
+    const { labelSignatureRowsFromPage } = await import('./lined-signature-fields')
+    const row = (str: string, y: number) => ({ str, x: 0.088, y, w: 0.83 })
+    const underline = '_'.repeat(35)
+    const out = labelSignatureRowsFromPage(
+      [line(0.766, 'Text202'), line(0.804, 'Text204')],
+      [[row(`Buyer ${underline} Date / Time ${'_'.repeat(22)}`, 0.7875), row(`Seller ${underline} Date / Time ${'_'.repeat(22)}`, 0.8255)]],
+    )
+    expect(out.map((f) => f.signerRole)).toEqual(['buyer', 'seller'])
+  })
+
+  it('counts signers again at each block, so a second Seller block starts with the first seller', async () => {
+    const { labelSignatureRowsFromPage } = await import('./lined-signature-fields')
+    // OREF 020: a Seller block on page 1 (claiming an exclusion) and another on page 7.
+    const onPage = (page: number, y: number, ref: string) => ({ ...line(y, ref), page })
+    const map = [onPage(1, 0.594, 'Text186'), onPage(1, 0.625, 'Text188'), onPage(7, 0.432, 'Text247'), onPage(7, 0.469, 'Text249')]
+    const seller = (y: number) => word('Seller', y + 0.021)
+    const out = labelSignatureRowsFromPage(map, [[seller(0.594), seller(0.625)], [], [], [], [], [], [seller(0.432), seller(0.469)]])
+    expect(out.map((f) => [f.signerRole, f.signerIndex])).toEqual([
+      ['seller', 0],
+      ['seller', 1],
+      ['seller', 0],
+      ['seller', 1],
+    ])
+  })
+
+  it('reads "Buyer’s Agent" split into pieces as the buyer’s agent (the 021)', async () => {
+    const { labelSignatureRowsFromPage } = await import('./lined-signature-fields')
+    const pieces = [
+      { str: 'Buyer', x: 0.088, y: 0.177, w: 0.03 },
+      { str: '\u2019', x: 0.118, y: 0.177, w: 0.004 },
+      { str: 's Agent', x: 0.125, y: 0.177, w: 0.04 },
+      { str: '1', x: 0.17, y: 0.177, w: 0.005 },
+    ]
+    const out = labelSignatureRowsFromPage([{ ...line(0.157, 'Buyers Agent 1'), x: 0.18 }], [pieces])
+    expect(out[0]).toMatchObject({ signerRole: 'buyer_agent' })
+  })
+
+  it('gives a "Client" line to the form’s one principal, and to nobody on a form both principals sign', async () => {
+    const { labelSignatureRowsFromPage } = await import('./lined-signature-fields')
+    const page = [word('Client', 0.569)]
+    expect(labelSignatureRowsFromPage([line(0.549, 'Text8')], [page], ['buyer', 'buyer_agent'])[0]).toMatchObject({ signerRole: 'buyer' })
+    expect(labelSignatureRowsFromPage([line(0.549, 'Text8')], [page], ['buyer', 'seller'])[0]!.signerRole).toBeNull()
+  })
+})
+
+describe('labelSignatureRowsFromPage (review fixes, 2026-09-30)', () => {
+  const box = (y: number, ref: string, x = 0.126, w = 0.508) => ({ type: 'text' as const, page: 1, x, y, w, h: 0.021, dataRef: ref, signerRole: null, optional: false, label: ref })
+  const word = (str: string, y: number, x = 0.088) => ({ str, x, y, w: str.length * 0.0064 })
+
+  it('counts rows that alternate Buyer, Seller, Buyer, Seller as one block', async () => {
+    const { labelSignatureRowsFromPage } = await import('./lined-signature-fields')
+    const ys = [0.5, 0.54, 0.58, 0.62]
+    const who = ['Buyer', 'Seller', 'Buyer', 'Seller']
+    const out = labelSignatureRowsFromPage(ys.map((y, i) => box(y, `Text${i}`)), [ys.map((y, i) => word(who[i]!, y + 0.02))])
+    expect(out.map((f) => [f.signerRole, f.signerIndex])).toEqual([
+      ['buyer', 0],
+      ['seller', 0],
+      ['buyer', 1],
+      ['seller', 1],
+    ])
+  })
+
+  it('reads the OR forms’ two-column rows, each line with its own Dated blank (2.2 General Addendum)', async () => {
+    const { labelSignatureRowsFromPage, promoteLinedFormFields } = await import('./lined-signature-fields')
+    const y = 0.8323
+    const map = [
+      { ...box(y, 'Buyer_5', 0.105, 0.233), h: 0.0218 },
+      { ...box(y + 0.0054, 'Dated', 0.383, 0.071), h: 0.0164 },
+      { ...box(y, 'Seller_5', 0.53, 0.237), h: 0.0218 },
+      { ...box(y + 0.0054, 'Dated_2', 0.811, 0.071), h: 0.0164 },
+    ]
+    const row = [word('Buyer', 0.853, 0.06), word(':', 0.853, 0.1), word('Date', 0.853, 0.34), word('d:', 0.853, 0.37), word('Seller', 0.853, 0.49), word(':', 0.853, 0.52)]
+    const out = promoteLinedFormFields(labelSignatureRowsFromPage(map, [row]))
+    const by = (ref: string) => out.find((f) => f.dataRef === ref)!
+    expect(by('Buyer_5')).toMatchObject({ type: 'signature', signerRole: 'buyer', signerIndex: 0 })
+    expect(by('Dated')).toMatchObject({ type: 'date_signed', signerRole: 'buyer' })
+    expect(by('Seller_5')).toMatchObject({ type: 'signature', signerRole: 'seller', signerIndex: 0 })
+    expect(by('Dated_2')).toMatchObject({ type: 'date_signed', signerRole: 'seller' })
+  })
+
+  it('gives a Broker or Agent line to the form’s one agent (9.4 "Agent:", 9.3 "Broker [signing for Broker ...]:")', async () => {
+    const { labelSignatureRowsFromPage } = await import('./lined-signature-fields')
+    const agentRow = labelSignatureRowsFromPage([box(0.647, 'Agent', 0.106, 0.476)], [[word('133', 0.667, 0.02), word('Agent :', 0.667, 0.06)]], ['buyer', 'buyer_agent'])
+    expect(agentRow[0]).toMatchObject({ signerRole: 'buyer_agent' })
+    const right = { ...box(0.7472, 'Principal Broker_2_0_0_0', 0.552, 0.375), h: 0.0218 }
+    const brokerRow = labelSignatureRowsFromPage([right], [[word('Broker [signing for Broker, individually, and on behalf of Principal Broker] :', 0.767, 0.06)]], ['seller', 'listing_agent'])
+    expect(brokerRow[0]).toMatchObject({ type: 'signature', signerRole: 'listing_agent' })
+    // Two agents on the form: nobody can say whose.
+    const both = labelSignatureRowsFromPage([box(0.647, 'Agent', 0.106, 0.476)], [[word('Agent :', 0.667, 0.06)]], ['buyer', 'seller', 'buyer_agent', 'listing_agent'])
+    expect(both[0]!.signerRole).toBeNull()
+  })
+
+  it('leaves a "Client" line alone when the form’s signers are not known', async () => {
+    const { labelSignatureRowsFromPage } = await import('./lined-signature-fields')
+    expect(labelSignatureRowsFromPage([box(0.549, 'Text8')], [[word('Client', 0.569)]], [])[0]!.signerRole).toBeNull()
+  })
+
+  it('leaves a box the last-page stack placed as it is', async () => {
+    const { labelSignatureRowsFromPage } = await import('./lined-signature-fields')
+    const stacked = { ...box(0.78, 'BuyerSignature', 0.12, 0.38), type: 'signature' as const, h: 0.045, signerRole: 'buyer' as const, fromStack: true }
+    const out = labelSignatureRowsFromPage([stacked], [[word('Seller', 0.82)]])
+    expect(out[0]).toMatchObject({ signerRole: 'buyer' })
+    expect(out[0]!.signerIndex).toBeUndefined()
+  })
+})
+
+describe('printedRole (who a printed label names)', () => {
+  it.each([
+    ['Buyer', 'buyer'],
+    ['Seller Initials', 'seller'],
+    ['Buyer \u2019 s Agent 1', 'buyer_agent'],
+    ["Seller's Agent", 'listing_agent'],
+    ['Seller(s) Initials (required if option [a] is selected)', 'seller'],
+    ['Grantor (Seller)', 'seller'],
+    ['Your (Seller) Signature(s):', 'seller'],
+    ['Buyer Seller', null],
+    ['BUYER HEREBY ACKNOWLEDGES RECEIPT OF A COPY OF THIS SELLER', null],
+    ['R A = ? 4', null],
+  ])('%s -> %s', async (label, role) => {
+    const { printedRole } = await import('./lined-signature-fields')
+    expect(printedRole(label)).toBe(role)
   })
 })
