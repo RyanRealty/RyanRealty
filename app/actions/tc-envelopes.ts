@@ -6,11 +6,10 @@ import { TC_DOCUMENT_URL_TTL_SECONDS } from '@/lib/tc/document-urls'
 import { formBindingFactKey, formBlankIsReserved } from '@/lib/tc/oref-form-bindings'
 import { existingBlankIdForForm } from '@/lib/tc/document-dedupe'
 import { revalidatePath } from 'next/cache'
-import { getSession } from '@/app/actions/auth'
-import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { checkAdminAction, getAdminCapabilityContext } from '@/lib/admin/require-admin'
 import { hasCapability, type AdminCapabilityContext } from '@/lib/admin/capabilities'
-import { dealVisibleToBroker } from '@/lib/tc/deal-scope'
+import { dealFileInScope, dealVisibleToBroker } from '@/lib/tc/deal-scope'
+import { getCycleScope, getEnvelopeScope, getRecipientEnvelopeScope } from '@/lib/data/tc/envelope-scope'
 import { peopleEmailsByNames } from '@/lib/data/tc/deal-people'
 import { partyNamesForEnvelopeSeed } from '@/lib/tc/deal-people'
 import { getDealContacts } from '@/app/actions/tc-contacts'
@@ -114,15 +113,19 @@ function getServiceSupabase() {
   return createClient(url, key, { auth: { persistSession: false } })
 }
 
-async function requireBroker(): Promise<{ email: string } | { error: string }> {
-  const session = await getSession()
-  const email = session?.user?.email ?? null
-  const role = await getAdminRoleForEmail(email)
-  if (!email || !role || (role.role !== 'superuser' && role.role !== 'broker')) {
+/**
+ * The caller for an envelope write. Each write then checks the deal file is the
+ * caller's (dealFileInScope, the rule the reads below already apply): the
+ * principal broker acts on every file, a broker only on their own.
+ */
+async function requireBroker(): Promise<{ email: string; ctx: AdminCapabilityContext } | { error: string }> {
+  const ctx = await getAdminCapabilityContext()
+  if (!ctx?.email || (ctx.role !== 'superuser' && ctx.role !== 'broker')) {
     return { error: 'Not authorized' }
   }
-  return { email }
+  return { email: ctx.email, ctx }
 }
+
 
 /**
  * Read auth for getEnvelopeDetail / getEnvelopesForCycle / getEnvelopesOverview.
@@ -449,6 +452,7 @@ export async function createEnvelopeFromDocuments(
 ): Promise<{ ok: boolean; envelopeId?: string; error?: string }> {
   const auth = await requireBroker()
   if ('error' in auth) return { ok: false, error: auth.error }
+  if (!dealFileInScope(auth.ctx, await getCycleScope(cycleId))) return { ok: false, error: 'Cycle not found' }
   if (!documentIds.length) return { ok: false, error: 'Pick at least one document' }
 
   const supabase = getServiceSupabase()
@@ -576,6 +580,7 @@ export async function createEnvelopeFromTemplate(
 ): Promise<{ ok: boolean; envelopeId?: string; error?: string }> {
   const auth = await requireBroker()
   if ('error' in auth) return { ok: false, error: auth.error }
+  if (!dealFileInScope(auth.ctx, await getCycleScope(cycleId))) return { ok: false, error: 'Cycle not found' }
   if (!formVersionIds.length) return { ok: false, error: 'Pick at least one form' }
 
   const supabase = getServiceSupabase()
@@ -846,6 +851,7 @@ export async function saveEnvelopeRecipients(
 ): Promise<{ ok: boolean; error?: string; recipients?: EnvelopeRecipient[] }> {
   const auth = await requireBroker()
   if ('error' in auth) return { ok: false, error: auth.error }
+  if (!dealFileInScope(auth.ctx, await getEnvelopeScope(envelopeId))) return { ok: false, error: 'Envelope not found' }
 
   const supabase = getServiceSupabase()
   const env = await loadDraftEnvelope(supabase, envelopeId)
@@ -935,6 +941,7 @@ export async function saveEnvelopeFields(
 ): Promise<{ ok: boolean; error?: string }> {
   const auth = await requireBroker()
   if ('error' in auth) return { ok: false, error: auth.error }
+  if (!dealFileInScope(auth.ctx, await getEnvelopeScope(envelopeId))) return { ok: false, error: 'Envelope not found' }
 
   const supabase = getServiceSupabase()
   const env = await loadDraftEnvelope(supabase, envelopeId)
@@ -995,6 +1002,7 @@ export async function setEnvelopeReminders(
 ): Promise<{ ok: boolean; error?: string }> {
   const auth = await requireBroker()
   if ('error' in auth) return { ok: false, error: auth.error }
+  if (!dealFileInScope(auth.ctx, await getEnvelopeScope(envelopeId))) return { ok: false, error: 'Envelope not found' }
   const supabase = getServiceSupabase()
   const env = await loadDraftEnvelope(supabase, envelopeId)
   if ('error' in env) return { ok: false, error: env.error }
@@ -1017,6 +1025,7 @@ export async function setEnvelopeTextCode(
 ): Promise<{ ok: boolean; error?: string }> {
   const auth = await requireBroker()
   if ('error' in auth) return { ok: false, error: auth.error }
+  if (!dealFileInScope(auth.ctx, await getEnvelopeScope(envelopeId))) return { ok: false, error: 'Envelope not found' }
   if (enabled && !textCodesConfigured()) return { ok: false, error: 'Text codes are not set up on this site yet.' }
   const supabase = getServiceSupabase()
   const env = await loadDraftEnvelope(supabase, envelopeId)
@@ -1034,6 +1043,7 @@ export async function setEnvelopeInviteMessage(
 ): Promise<{ ok: boolean; error?: string }> {
   const auth = await requireBroker()
   if ('error' in auth) return { ok: false, error: auth.error }
+  if (!dealFileInScope(auth.ctx, await getEnvelopeScope(envelopeId))) return { ok: false, error: 'Envelope not found' }
   const supabase = getServiceSupabase()
   const env = await loadDraftEnvelope(supabase, envelopeId)
   if ('error' in env) return { ok: false, error: env.error }
@@ -1055,6 +1065,7 @@ export async function sendEnvelope(
 ): Promise<{ ok: boolean; error?: string }> {
   const gate = await checkAdminAction('esign.send')
   if (!gate.ok) return { ok: false, error: gate.error }
+  if (!dealFileInScope(gate.ctx, await getEnvelopeScope(envelopeId))) return { ok: false, error: 'Envelope not found' }
   const auth = { email: gate.ctx.email }
 
   const supabase = getServiceSupabase()
@@ -1275,6 +1286,7 @@ export async function sendEnvelope(
 export async function resendRecipientInvite(recipientId: string): Promise<{ ok: boolean; error?: string }> {
   const auth = await requireBroker()
   if ('error' in auth) return { ok: false, error: auth.error }
+  if (!dealFileInScope(auth.ctx, await getRecipientEnvelopeScope(recipientId))) return { ok: false, error: 'Recipient not found' }
 
   const supabase = getServiceSupabase()
   const { data: r } = await supabase
@@ -1339,6 +1351,7 @@ export async function resendRecipientInvite(recipientId: string): Promise<{ ok: 
 export async function voidEnvelope(envelopeId: string, reason: string): Promise<{ ok: boolean; error?: string }> {
   const auth = await requireBroker()
   if ('error' in auth) return { ok: false, error: auth.error }
+  if (!dealFileInScope(auth.ctx, await getEnvelopeScope(envelopeId))) return { ok: false, error: 'Envelope not found' }
   const supabase = getServiceSupabase()
   const { data: env } = await supabase.from('tc_envelopes').select('*').eq('id', envelopeId).maybeSingle()
   if (!env) return { ok: false, error: 'Envelope not found' }
