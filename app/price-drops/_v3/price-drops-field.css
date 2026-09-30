@@ -55,9 +55,8 @@
   flex-wrap: wrap;
 }
 
-/* At a phone's width the bands are one row of equal cells, and four are a
-   two-by-two, never three and a stray (2026-09-25: "10 and up" alone on a
-   second line; 2026-09-29: a week with no cut of 10% or more has three). */
+/* At a phone's width the bands are one row of equal cells, never three and a
+   stray (2026-09-25: "10 and up" alone on a second line). */
 @media (max-width: 40rem) {
   .pd-fold-stage.v3 .v3-chart-switch__seg {
     display: grid;
@@ -67,14 +66,14 @@
     border-radius: var(--v3-radius-card);
   }
 
-  .pd-fold-stage.v3 .v3-chart-switch__seg:has(> :nth-child(4)) {
-    grid-auto-flow: row;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
+  /* Four stay one row (2026-09-29: the two-by-two block took a fifth of the
+     phone's first screen): the label loses its tracking, the count sits
+     under it. */
   .pd-fold-stage.v3 .v3-chart-switch__seg > * {
     justify-content: center;
     text-align: center;
+    padding-inline: var(--v3-space-3xs);
+    letter-spacing: 0;
   }
 }
 

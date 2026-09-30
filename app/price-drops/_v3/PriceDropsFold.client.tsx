@@ -40,7 +40,9 @@ export function PriceDropsFold({
     <div className={cn(V3_ROOT_CLASS, 'pd-fold-stage')}>
       <V3ChartSwitch
         label={v3Text('Cut size')}
-        items={bands.map((band) => ({ key: band.key, label: v3Text(band.label) }))}
+        // Each band says how many cuts it holds (2026-09-29: "no count or
+        // preview per band").
+        items={bands.map((band) => ({ key: band.key, label: v3Text(band.label), count: band.items.length }))}
         className="pd-bands"
       >
         {bands.map((band, i) => (

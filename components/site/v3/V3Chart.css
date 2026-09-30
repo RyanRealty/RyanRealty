@@ -585,6 +585,22 @@
   color: var(--v3-ink-on-navy);
 }
 
+/* A tab that says how many its view holds: the label, the count under it. */
+.v3 .v3-chart-switch__tab:has(> .v3-chart-switch__count) {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.v3 .v3-chart-switch__count {
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-num);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
 .v3 .v3-chart-switch__panel {
   min-width: 0;
 }
