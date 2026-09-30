@@ -248,6 +248,7 @@
     "ci:tap-targets:baseline": "node scripts/check-tap-targets.mjs --write-baseline",
     "ci:route-content-floor": "node scripts/check-route-content-floor.mjs",
     "ci:route-content-floor:baseline": "node scripts/check-route-content-floor.mjs --seed https://ryan-realty.com",
+    "ci:listing-phone-fold": "node scripts/check-listing-phone-fold.mjs",
     "ci:runtime-gates": "sh scripts/run-runtime-gates.sh",
     "ci:tap-targets:start": "sh scripts/run-runtime-gates.sh",
     "smoke:search": "node scripts/smoke-search-renders.mjs",
