@@ -117,12 +117,15 @@ type V3LedgerRowBase = {
    */
   media?: { src: string; alt?: string }
   /**
-   * What a hover (desktop), a keyboard focus, or a tap-and-hold (phone) shows
-   * about this row that its resting text does not: the months-of-supply
-   * verdict, a small-n reason, a twelve-month run of closes as a line. From
-   * the caller's data, already formatted, with its trace in the list's
-   * `source`. Hidden at rest so the list stays a list, and drawn over the top
-   * of the next row rather than in the flow, so nothing moves under the cursor.
+   * What a hover, a keyboard focus, or a tap-and-hold (phone) shows about
+   * this row that its resting text does not: the months-of-supply verdict, a
+   * small-n reason, a twelve-month run of closes as a line. From the caller's
+   * data, already formatted, with its trace in the list's `source`. Hidden at
+   * rest so the list stays a list. In an `encode="bar"` list it sits in the
+   * figure column under the bar, in a slot the row holds, so a hover opens it
+   * without moving a row; in a list without bars it opens on its own line for
+   * keyboard focus or the hold only, never a hover (a shift a hover causes
+   * counts toward layout shift). V3Ledger.css has the whole rule.
    *
    * The evaluator's finding on the city index (taste table 2026-09-08):
    * "nothing in the visible fold rewards a hover, tap, scrub, or toggle with
@@ -265,9 +268,9 @@ type V3LedgerBase = {
    * One line under the note that tells a phone reader a row can be pressed
    * and held to open what it reveals ("Press and hold a market to see its
    * last 12 months."). Shown only where there is no hover (V3Ledger.css), and
-   * only when some row carries a reveal: a pointer finds the reveal by
-   * hovering, a finger has no way to know it is there (taste evaluator,
-   * 2026-09-29). Plain words, no em dash.
+   * only when some row carries a reveal: a finger has no way to know it is
+   * there (taste evaluator, 2026-09-29), while a pointer finds it by hovering
+   * in a bar list and by keyboard focus in any list. Plain words, no em dash.
    */
   holdHint?: V3Text
   /**

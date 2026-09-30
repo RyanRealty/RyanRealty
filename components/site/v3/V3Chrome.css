@@ -48,28 +48,35 @@
    under the bar from staying there (measured 2026-09-30). A target that
    wants more air adds only the remainder.
 
-   Scoped to a document that renders the chrome (it returns null on LP, admin
-   and account routes), so a page without this bar keeps its own scrolling.
-   The test is the one class only the header carries, so no other element's
-   classes enter it. */
-html:has(.v3-chrome) {
+   Scoped to a document whose body carries the chrome (the root layout mounts
+   it there, ahead of #main-content; it returns null on LP, admin and account
+   routes), so a page without this bar keeps its own scrolling. The child
+   combinators keep the test to the one real header: a prototype's copy of the
+   class inside a page never matches, and only body's own children can change
+   the answer. */
+html:has(> body > .v3-chrome) {
   scroll-padding-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
 }
 
-/* ...except while focus is in the bar itself. The bar never leaves the top,
-   and the top is the padded band, so a browser taking the padding at its word
-   scrolls the page to "reveal" a control that never moved: Shift+Tab back
-   into the header from mid-page, or the search focusing its input, jumped the
-   page up about 400px in Chromium, and again on each control (measured
-   2026-09-30). With focus in the bar there is nothing under it to clear. */
-html:has(.v3-chrome :focus) {
+/* ...except while keyboard focus is in the bar itself. The bar never leaves
+   the top, and the top is the padded band, so a browser taking the padding at
+   its word scrolls the page to "reveal" a control that never moved: Shift+Tab
+   back into the header from mid-page jumped the page up about 400px in
+   Chromium, and again on each control (measured 2026-09-30). A pointer's
+   focus never scrolls (measured the same day), so :focus-visible, and a
+   clicked control keeps the padding for any scroll that follows it. A link
+   followed out of the bar gives its focus up first (V3Chrome.tsx), so an
+   anchor it scrolls to still lands clear. */
+html:has(> body > .v3-chrome :focus-visible) {
   scroll-padding-top: 0;
 }
 
 /* An engine without :has() still lands a jump to a section clear of the bar:
-   every target in the page gets the margin the padding replaced. The layout
-   renders the header ahead of #main-content (app/layout.tsx), so this holds
-   only where the bar does. */
+   every id'd target in the page gets the bar's height plus one space as its
+   margin (the layout renders the header ahead of #main-content, so this holds
+   only where the bar does). It is the plain clearance, and on these engines
+   it replaces a target's own margin rather than adding to it: the extra air
+   some sections ask for is lost there, the bar never covers them. */
 @supports not selector(:has(*)) {
   .v3-chrome ~ #main-content [id] {
     scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));

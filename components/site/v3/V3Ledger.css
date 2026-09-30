@@ -322,17 +322,21 @@
    under the pointer, and a shift a hover causes counts toward Cumulative
    Layout Shift: only a click, a tap or a key press excuses one. So:
 
-   - An encoded row (the bar lists: the city index, a city's towns, the
-     monthly report's markets) keeps its reveal in the figure column, under
-     the bar, from 768 up. The name and its detail already make the row two or
-     three lines tall there and the column under the bar is empty, so the slot
-     is held at rest (visibility, not display): opening it moves nothing and
-     covers nothing. A hover, keyboard focus or the hold opens it.
-   - Everywhere else (a phone, or a list without bars) there is no empty
-     column, so the reveal opens on its own line and the rows below make room,
-     for keyboard focus or the phone's hold only (V3LedgerReveal.client.tsx
-     sets data-revealed on the item), both excused input. A hover there wears
-     the row's wash and opens nothing.
+   - An encoded row (the bar lists: the city index and the monthly report's
+     markets) keeps its reveal in the figure column, under the bar. From 768
+     up the name and its detail already make the row two or three lines tall
+     and the column under the bar is empty, so the slot is held at rest
+     (visibility, not display): opening it moves nothing and covers nothing.
+     A screen with a pointer holds the slot under 768 too, where it is a line
+     of its own under the bar: blank at rest, but only for a narrow desktop
+     window, and a hover then opens it without moving a row. A hover,
+     keyboard focus or the hold opens it.
+   - Everywhere else (a phone, or a list without bars) the reveal opens on
+     its own line and the rows below make room, for keyboard focus or the
+     phone's hold only (V3LedgerReveal.client.tsx sets data-revealed on the
+     item), both excused input. A hover there wears the row's wash and opens
+     nothing. The city index drops its bars only when no city published a
+     count at all, a feed outage.
 
    Keyboard focus is :focus-visible on the row's link, never :focus-within: a
    click leaves focus on the link, and a row a pointer clicked must not stay
@@ -376,7 +380,7 @@
   min-width: 0;
 }
 
-@media (min-width: 48rem) {
+@media (min-width: 48rem), (hover: hover) {
   .v3-ledger__figures .v3-ledger__reveal {
     display: flex;
     visibility: hidden;
@@ -397,7 +401,7 @@
 }
 
 /* Hover alone opens it, never a phone's sticky tap-hover. */
-@media (min-width: 48rem) and (hover: hover) {
+@media (hover: hover) {
   .v3-ledger__row:hover .v3-ledger__figures .v3-ledger__reveal {
     visibility: visible;
     opacity: 1;

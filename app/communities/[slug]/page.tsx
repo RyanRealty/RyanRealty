@@ -572,7 +572,7 @@ async function renderCommunityDetail({ params }: Props) {
           count: formatCount(activityCount),
           label: `sales in ${publicName} over 12 months`,
           asOf: mosAsOf,
-          spark: activitySpark ? { d: activitySpark.d, last: activitySpark.last } : null,
+          spark: activitySpark ? { d: activitySpark.d, last: activitySpark.last, dots: activitySpark.dots } : null,
         }
       : publicPace.newCount30d != null && publicPace.newCount30d > 0
         ? {

@@ -61,7 +61,16 @@
  * ./tokens.css resolves with no wrapper. It is `position: sticky`, so it holds
  * its own space in flow and a page needs no spacer under it.
  */
-import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type MouseEvent as ReactMouseEvent,
+} from 'react'
 import type { AuthUser } from '@/lib/auth/types'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -471,7 +480,8 @@ function V3ChromeDestination({
         if (event.key !== 'Escape' || !open) return
         event.stopPropagation()
         setOpenPath(null)
-        caretRef.current?.focus()
+        // The caret sits in the stuck bar, always on screen: nothing to scroll.
+        caretRef.current?.focus({ preventScroll: true })
       }}
     >
       <Link
@@ -622,6 +632,23 @@ export function V3Chrome({ currentPath, id, className, live }: V3ChromeProps) {
   // Closes on a same-path click too, which derivation alone cannot see: a link
   // to the page the visitor is already on changes nothing to compare against.
   const close = useCallback(() => setOpenPath(null), [])
+  // A link followed out of the chrome takes focus out of it. Keyboard focus in
+  // the bar drops the page's scroll padding (V3Chrome.css), and a link to an
+  // anchor (/sell#get-value) scrolls its target after the click: with focus
+  // still on the link, or handed back to the menu button, the target would
+  // land under the bar. Only a plain activation of a page link counts (a
+  // click or Enter); a modified click opens a tab and leaves this page and its
+  // focus alone.
+  const followedLinkRef = useRef(false)
+  const onChromeClickCapture = useCallback((event: ReactMouseEvent<HTMLElement>) => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+    const link = (event.target as Element | null)?.closest?.('a[href]')
+    if (!(link instanceof HTMLAnchorElement)) return
+    // A call link or a new tab leaves the reader on this page.
+    if (!/^https?:$/.test(link.protocol) || (link.target && link.target !== '_self')) return
+    followedLinkRef.current = true
+    if (link.hash) link.blur()
+  }, [])
   const menuHidden = open === false
   const hidden = currentPath == null && shouldHidePublicChrome(pathname)
 
@@ -637,6 +664,7 @@ export function V3Chrome({ currentPath, id, className, live }: V3ChromeProps) {
     const body = document.body
     const priorOverflow = body.style.overflow
     body.style.overflow = 'hidden'
+    followedLinkRef.current = false
     closeRef.current?.focus()
 
     const onKeyDown = (event: KeyboardEvent) => {
@@ -665,14 +693,19 @@ export function V3Chrome({ currentPath, id, className, live }: V3ChromeProps) {
     return () => {
       document.removeEventListener('keydown', onKeyDown)
       body.style.overflow = priorOverflow
-      opener?.focus()
+      // Back to the button that opened the menu, without moving the page (it
+      // sits in the stuck bar). Not after a followed link: the reader is going
+      // somewhere else, and focus parked in the bar would take the page's
+      // scroll padding away while the destination scrolls to its anchor.
+      if (!followedLinkRef.current) opener?.focus({ preventScroll: true })
+      followedLinkRef.current = false
     }
   }, [open])
 
   if (hidden) return null
 
   return (
-    <header id={id} className={cn(V3_ROOT_CLASS, 'v3-chrome', className)}>
+    <header id={id} className={cn(V3_ROOT_CLASS, 'v3-chrome', className)} onClickCapture={onChromeClickCapture}>
       <div className="v3-chrome__bar">
         <Link href="/" className="v3-chrome__mark" aria-label={NAME.home}>
           <Wordmark />
