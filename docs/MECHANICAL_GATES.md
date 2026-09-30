@@ -250,7 +250,7 @@ Everything mechanizable for the WEBSITE surface has been mechanized. Adding new 
    go in the secret-less chain — `quality.yml` (or the nightly lane) plus SKIP with exit 0 when
    credentials are absent. Either way `ci:gates-wired` must stay green.
 5. Add a row to the "Active gates" table above. **This table is the authority on G-numbers;
-   take the next free one.** As of 2026-09-30 the highest is G80.
+   take the next free one.** As of 2026-09-30 the highest is G81.
 6. Write break-tests at `scripts/__tests__/check-<thing>.test.mjs` that prove EVERY rule can
    fail. Copy the inspected files into a sandbox, break exactly one rule per case, assert a
    non-zero exit naming that rule — and assert the deliberately-safe shapes stay green, because
@@ -340,6 +340,12 @@ The seven production migration-history labels that carried the name were renamed
 (`supabase_migrations.schema_migrations.name`, versions unchanged). The SQL text each of
 those migrations ran (`statements`) still names the old functions: it is the record of
 what ran, not a live object, and is not rewritten. The gate reads the repo only.
+
+## An expired CMA under 80% of its last list never sends (added 2026-09-30)
+
+| Gate | npm | What it fails on |
+|---|---|---|
+| G81 `check-cma-send-floor.mjs` | `ci:cma-send-floor` | any send path losing Matt's 80% line (2026-09-30): an expired-listing CMA whose recommended list is under 80% of that listing's last list price never leaves the building and goes to Matt instead (`lib/cma/send-floor.ts`, read per CMA by `lib/data/cma/send-floor.ts`, fails closed). R1 the line stays 0.8; R2 `sendCmaToLead` checks it before the solicitation screen and delivery; R3 `approveCmaAction` before finalizing and `unarchiveCmaAction` before a page goes back up; R4 both prospecting intros refuse with `price-floor`; R5 `finalizeAndDeliverCma` before `sendEmail`; R6 the queue shows `held` and `approveAndDeliverCma` refuses it; R7 the drip dequeues `price-floor`; R8 any other file that mails or texts a `/cma/` link acts on the check; R9 any file that renders a CMA PDF for someone acts on it (the CRM composer, the Messages attach, the Gmail-draft route); R10 the public page shows a held client-ready CMA to no non-admin; R11 a held CMA never goes on a listing page. "Acts on" means `const x = await getCmaSendFloorBySlug(...)` then `if (x.held`, read with comments removed. Basis: the failed-ask backtest (`docs/research/cma-backtest-2026-08-05.json`, 3,394 pairs, 10th percentile close = 80.2% of the failed ask). Four CMAs went out that day at 72% to 79%, each priced off the wrong sales. A read error holds the CMA with `unreadable`, and the prospecting intros return `send-failed` for it so the drip keeps the owner queued. Break tests: `scripts/__tests__/check-cma-send-floor.test.mjs` (19). |
 
 ## Mail sent as a named sender (added 2026-09-30)
 

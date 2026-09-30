@@ -27,6 +27,17 @@ const h = vi.hoisted(() => ({
   sendCmaToLead: vi.fn(),
 }))
 
+// Matt's 80% line (lib/cma/send-floor.ts) reads the CMA row; not held unless a test says so.
+const floorMock = vi.hoisted(() => ({
+  getCmaSendFloorBySlug: vi.fn(async (_slug: string, _ctx?: unknown) => ({
+    held: false as boolean,
+    ratio: null as number | null,
+    reason: null as string | null,
+    unreadable: undefined as true | undefined,
+  })),
+}))
+vi.mock('@/lib/data/cma/send-floor', () => floorMock)
+
 vi.mock('next/cache', async (importOriginal) => ({
   ...(await importOriginal<typeof import('next/cache')>()),
   revalidatePath: vi.fn(),
@@ -81,7 +92,11 @@ vi.mock('@/lib/crm/suppressions', () => ({
 vi.mock('@/lib/crm/twilio', () => ({ sendSmsViaMessagingService: vi.fn(), toE164: vi.fn() }))
 vi.mock('@/app/actions/crm-template-test', () => ({ sendTemplateSelfTestAction: vi.fn() }))
 
-import { sendProspectingEmailIntro } from './prospecting'
+import { sendProspectingEmailIntro, sendProspectingIntro } from './prospecting'
+import { getSession } from '@/app/actions/auth'
+import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
+import { sendSmsViaMessagingService } from '@/lib/crm/twilio'
+import { claimProspectSend } from '@/lib/data/prospecting/send-claim'
 
 const OWNER = 'owner@example.com'
 const ID = '20260819192123649950000000'
@@ -170,5 +185,60 @@ describe('sendProspectingEmailIntro — rail failure', () => {
     expect(h.stampProspectEmailMessageId).toHaveBeenCalledWith('expired', ID, 'g-1')
     expect(h.finalizeProspectEmailSend).toHaveBeenCalledTimes(1)
     expect(h.releaseProspectEmailSend).not.toHaveBeenCalled()
+  })
+})
+
+describe("sendProspectingEmailIntro — Matt's 80% line (2026-09-30)", () => {
+  it("refuses a held CMA with code 'price-floor' before the owner's claim is taken, so the drip dequeues it", async () => {
+    floorMock.getCmaSendFloorBySlug.mockResolvedValueOnce({
+      held: true,
+      ratio: 0.727,
+      reason: 'Held for Matt: priced at $618,000, 72.7% of the last list of $849,000. Expired CMAs under 80% of the last list never send (Matt 2026-09-30).',
+      unreadable: undefined,
+    })
+    const out = await sendProspectingEmailIntro('expired', ID, ARGS)
+    expect(out).toMatchObject({ ok: false, code: 'price-floor' })
+    expect(floorMock.getCmaSendFloorBySlug).toHaveBeenCalledWith(
+      'cma-3153-cromwell',
+      expect.objectContaining({ prospectKind: 'expired' }),
+    )
+    expect(h.claimProspectEmailSend).not.toHaveBeenCalled()
+    expect(h.sendCmaToLead).not.toHaveBeenCalled()
+  })
+})
+
+describe("sendProspectingEmailIntro — a floor that could not be read", () => {
+  it("returns 'send-failed' (the drip keeps the owner queued), never 'price-floor'", async () => {
+    floorMock.getCmaSendFloorBySlug.mockResolvedValueOnce({
+      held: true,
+      ratio: null,
+      reason: 'The 80% line could not be checked because the CMA row could not be read (timeout).',
+      unreadable: true,
+    })
+    const out = await sendProspectingEmailIntro('expired', ID, ARGS)
+    expect(out).toMatchObject({ ok: false, code: 'send-failed' })
+    expect(h.claimProspectEmailSend).not.toHaveBeenCalled()
+    expect(h.sendCmaToLead).not.toHaveBeenCalled()
+  })
+})
+
+describe("sendProspectingIntro (text) — Matt's 80% line (2026-09-30)", () => {
+  it("refuses a held CMA with code 'price-floor' before a text is claimed or sent", async () => {
+    vi.mocked(getSession).mockResolvedValue({ user: { email: 'matt@ryan-realty.com' } } as never)
+    vi.mocked(getAdminRoleForEmail).mockResolvedValue({ role: 'superuser' } as never)
+    floorMock.getCmaSendFloorBySlug.mockResolvedValueOnce({
+      held: true,
+      ratio: 0.727,
+      reason: 'Held for Matt: priced at $618,000, 72.7% of the last list of $849,000.',
+      unreadable: undefined,
+    })
+    const out = await sendProspectingIntro('expired', ID, { idempotencyKey: 'sms-1' })
+    expect(out).toMatchObject({ ok: false, code: 'price-floor' })
+    expect(floorMock.getCmaSendFloorBySlug).toHaveBeenCalledWith(
+      'cma-3153-cromwell',
+      expect.objectContaining({ prospectKind: 'expired' }),
+    )
+    expect(vi.mocked(claimProspectSend)).not.toHaveBeenCalled()
+    expect(vi.mocked(sendSmsViaMessagingService)).not.toHaveBeenCalled()
   })
 })

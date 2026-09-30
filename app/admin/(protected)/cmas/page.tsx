@@ -44,6 +44,7 @@ const STATE_LABEL: Record<CmaQueueState, string> = {
   unvetted: 'Unvetted',
   flagged: 'Flagged',
   'audit-failed': 'Audit failed',
+  held: 'Held under 80%',
   failed: 'Build failed',
   building: 'Building',
   queued: 'In drip',
@@ -56,6 +57,7 @@ const STATE_TONE: Record<CmaQueueState, AdminState> = {
   unvetted: 'waiting',
   flagged: 'waiting',
   'audit-failed': 'down',
+  held: 'down',
   failed: 'down',
   building: 'waiting',
   queued: 'accent',
@@ -96,6 +98,7 @@ function whyLine(r: CmaQueueRow): string | null {
     const head = n > 0 ? `Audit failed. ${n} critical` : 'Audit failed'
     return r.auditSummary ? `${head}. ${r.auditSummary.slice(0, 140)}` : head
   }
+  if (r.state === 'held') return r.holdReason ? r.holdReason.slice(0, 160) : 'Held under the 80% line.'
   if (r.state === 'unvetted') return 'Audit did not run. Nothing has checked this one.'
   if (r.state === 'failed') return r.buildError ? `Build failed: ${r.buildError.slice(0, 140)}` : 'Build failed.'
   if (r.state === 'flagged') return r.reviewReason ? r.reviewReason.slice(0, 140) : 'Flagged for review.'
@@ -267,6 +270,7 @@ export default async function CmaQueuePage({
   const counts = {
     ready: rows.filter((r) => r.state === 'ready').length,
     auditFailed: rows.filter((r) => r.state === 'audit-failed').length,
+    held: rows.filter((r) => r.state === 'held').length,
     unvetted: rows.filter((r) => r.state === 'unvetted').length,
     queued: rows.filter((r) => r.state === 'queued').length,
     sent: rows.filter((r) => r.state === 'sent').length,
@@ -296,6 +300,7 @@ export default async function CmaQueuePage({
         {door(cmaQueueHref({ state: 'ready' }), String(counts.ready))} Ready ·{' '}
         {door(cmaQueueHref({ state: 'queued' }), String(counts.queued))} In drip ·{' '}
         {door(cmaQueueHref({ state: 'sent' }), String(counts.sent))} sent ·{' '}
+        {door(cmaQueueHref({ state: 'held' }), String(counts.held))} held under 80% ·{' '}
         {door(cmaQueueHref({ state: 'audit-failed' }), String(counts.auditFailed))} failed audit ·{' '}
         {door(cmaQueueHref({ state: 'unvetted' }), String(counts.unvetted))} unvetted ·{' '}
         {door(cmaQueueHref({ state: 'all' }), String(total))} CMAs.
@@ -387,7 +392,7 @@ export default async function CmaQueuePage({
                 </>
               }
               age={age(r.createdAt)}
-              hot={r.state === 'audit-failed' || r.state === 'failed'}
+              hot={r.state === 'audit-failed' || r.state === 'failed' || r.state === 'held'}
               action={
                 r.state === 'queued' ? (
                   <DripQueueActions slug={r.slug} />

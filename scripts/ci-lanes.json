@@ -16,6 +16,7 @@
     "ci:dal-internal-discipline",
     "ci:db-timeout-guard",
     "ci:deliverable-send-chokepoint",
+    "ci:cma-send-floor",
     "ci:email-link-tracking",
     "ci:email-send-gated",
     "ci:broker-reply-sender",

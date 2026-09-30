@@ -41,6 +41,7 @@ const ORIGIN_ORDER: CmaOrigin[] = [
 
 const STATE_ORDER: CmaQueueState[] = [
   'ready',
+  'held',
   'flagged',
   'unvetted',
   'audit-failed',

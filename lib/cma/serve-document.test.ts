@@ -10,6 +10,17 @@ const renderImmersiveCmaHtml = vi.fn(() => '<html><body>DRAFT CMA FROM RENDER_AR
 const getCmaCityClosedDuring = vi.fn(async () => [] as unknown[])
 const getLikeHomeSales = vi.fn(async () => [] as unknown[])
 
+// Matt's 80% line (lib/cma/send-floor.ts) reads the CMA row; not held unless a test says so.
+const floorMock = vi.hoisted(() => ({
+  getCmaSendFloorBySlug: vi.fn(async (_slug: string, _ctx?: unknown) => ({
+    held: false as boolean,
+    ratio: null as number | null,
+    reason: null as string | null,
+    unreadable: undefined as true | undefined,
+  })),
+}))
+vi.mock('@/lib/data/cma/send-floor', () => floorMock)
+
 vi.mock('@/lib/data', () => ({
   getCmaServeHead: (...args: unknown[]) => getCmaServeHead(...args),
   getCmaStoredHtmlBySlug: (...args: unknown[]) => getCmaStoredHtmlBySlug(...args),

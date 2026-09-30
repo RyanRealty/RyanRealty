@@ -16,6 +16,7 @@ export type CmaQueueViewState =
   | 'failed'
   | 'building'
   | 'audit-failed'
+  | 'held'
   | 'unvetted'
   | 'flagged'
   | 'ready'
@@ -56,6 +57,7 @@ export type CmaQueueViewRow = {
 
 const WORK_STATES: ReadonlySet<CmaQueueViewState> = new Set([
   'ready',
+  'held',
   'unvetted',
   'flagged',
   'audit-failed',
@@ -66,6 +68,7 @@ const WORK_STATES: ReadonlySet<CmaQueueViewState> = new Set([
 
 const STATE_ORDER: CmaQueueViewState[] = [
   'ready',
+  'held',
   'unvetted',
   'flagged',
   'audit-failed',

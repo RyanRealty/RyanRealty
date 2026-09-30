@@ -102,6 +102,11 @@ export async function approveAndDeliverCma(
         error: `This CMA failed its adversarial audit.${detail} Rebuild it before sending — a failed audit means the numbers or the narrative do not hold up.`,
       }
     }
+    // MATT'S 80% LINE (2026-09-30). Like a failed audit, nothing opens this:
+    // an expired CMA under 80% of its last list goes to Matt, not the owner.
+    if (row.state === 'held') {
+      return { ok: false, blocked: 'state', error: row.holdReason ?? 'Held under the 80% line. It goes to Matt, not the owner.' }
+    }
     // Send-now from an already-queued drip row is allowed (pulls it out of the
     // weekday queue and delivers via sendCmaToLead). Everything else still
     // requires a sendable Ready state. The one exception is a flagged row

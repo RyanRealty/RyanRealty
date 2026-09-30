@@ -384,6 +384,8 @@ export type SendGuardCode =
   | 'merge-unresolved'
   | 'send-failed'
   | 'not-found'
+  /** Expired CMA priced under 80% of its last list: never sends, goes to Matt (lib/cma/send-floor.ts). */
+  | 'price-floor'
 
 export type SendIntroResult =
   | { ok: true; sid: string; personId: number; sentAt: string }

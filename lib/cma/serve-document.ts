@@ -37,6 +37,7 @@ import { adminReviewBannerHtml, injectAdminReviewBanner } from '@/lib/cma/review
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { IDENTITY_LINK_PARAM, verifyPersonLinkToken } from '@/lib/identity/link-token'
 import { PERSON_COOKIE, signedPersonIdFromCookie } from '@/lib/identity/person-cookie'
+import { getCmaSendFloorBySlug } from '@/lib/data/cma/send-floor'
 
 /**
  * The recipient a request PROVES it is: the signed `?_pid=` token on the link we
@@ -56,6 +57,14 @@ const CMA_IMMERSIVE_MS = 12_000
 
 const CMA_RENDER_UNAVAILABLE_HTML =
   '<!doctype html><html><head><meta charset="utf-8"><title>Report</title></head><body><p>This report exists, but it did not finish rendering. Refresh to try again.</p></body></html>'
+
+/**
+ * A report pulled back after it went out (status archived). The owner's link
+ * says the report is being updated instead of "CMA not found" (Matt 2026-09-30,
+ * on four expired CMAs sent priced off the wrong sales). Brokers still open the
+ * archived document itself through their admin session.
+ */
+export const CMA_BEING_UPDATED_HTML = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>Report being updated | Ryan Realty</title><style>body{margin:0;background:#faf8f4;color:#102742;font-family:Geist,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.55}main{max-width:560px;margin:0 auto;padding:72px 24px}h1{font-size:28px;line-height:1.2;margin:0 0 16px}p{font-size:17px;margin:0 0 14px}a{color:#102742}.sig{margin-top:32px;font-size:15px}</style></head><body><main><h1>This report is being updated</h1><p>We're re-checking the numbers in this report, so it's offline for now.</p><p>Questions in the meantime? Call or text us at <a href="tel:+15417033095">541.703.3095</a>.</p><p class="sig">Ryan Realty<br>Bend, Oregon</p></main></body></html>`
 
 export const CMA_DOC_HEADERS = {
   'Content-Type': 'text/html',
@@ -248,6 +257,21 @@ async function serveCmaDocumentResult(opts: CmaServeOpts): Promise<CmaServeResul
 
   const head = await getCmaServeHead(safeSlug)
   if (!head) return { kind: 'json', status: 404, body: { error: 'CMA not found' } }
+
+  if (!opts.isAdmin) {
+    // Pulled from its link: archived by status or by stamp (the solicitation
+    // sweep stamps archived_at and leaves status alone), or rebuilt after it
+    // was delivered (a rebuild resets status to draft and needs approval again).
+    const pulled =
+      head.status === 'archived' || Boolean(head.archived_at) || (head.status === 'draft' && Boolean(head.delivered_at))
+    if (pulled) return { kind: 'html', status: 200, html: CMA_BEING_UPDATED_HTML, headers: CMA_DOC_HEADERS }
+    // MATT'S 80% LINE (2026-09-30). A client-ready expired CMA under the line
+    // (approved before the rule, or a link already texted) is not shown either.
+    if (isCmaClientReady(head.status)) {
+      const floor = await getCmaSendFloorBySlug(safeSlug)
+      if (floor.held) return { kind: 'html', status: 200, html: CMA_BEING_UPDATED_HTML, headers: CMA_DOC_HEADERS }
+    }
+  }
 
   if (!canBrokerReviewCma({ isAdmin: opts.isAdmin, status: head.status })) {
     return { kind: 'json', status: 404, body: { error: 'CMA not found' } }

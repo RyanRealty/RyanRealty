@@ -54,6 +54,7 @@ import { previewTextFromCustomBody } from '@/lib/cma/report-button'
 import { classifyCmaOrigin, type CmaOrigin } from '@/lib/cma/origin'
 import { resolveTheirPrice } from '@/lib/cma/queue-view'
 import { formatPublishedPhone } from '@/lib/cma/format-phone'
+import { getCmaSendFloorBySlug } from '@/lib/data/cma/send-floor'
 
 /**
  * The letter's own origin is the PRODUCTION origin, never the env host — the
@@ -374,6 +375,12 @@ export async function sendCmaToLead(
 ): Promise<SendCmaToLeadResult> {
   const { ctx, error } = await resolveSendContext(slug)
   if (!ctx) return { ok: false, error: error ?? 'CMA not sendable' }
+
+  // MATT'S 80% LINE (2026-09-30), ahead of everything else. An expired CMA
+  // priced under 80% of its last list never sends from any caller; it goes to
+  // Matt. Fails closed (lib/cma/send-floor.ts, held by ci:cma-send-floor).
+  const floor = await getCmaSendFloorBySlug(slug)
+  if (floor.held) return { ok: false, error: `Not sent. ${floor.reason}` }
 
   // SOLICITATION CHOKEPOINT, ahead of everything else (Matt 2026-09-09). A
   // for-sale-by-owner who has since listed with a broker, an expired owner who

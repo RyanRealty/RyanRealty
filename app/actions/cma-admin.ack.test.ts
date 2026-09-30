@@ -5,6 +5,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 let session: { user: { email: string } } | null = null
+// Matt's 80% line (lib/cma/send-floor.ts) reads the CMA row; not held unless a test says so.
+const floorMock = vi.hoisted(() => ({
+  getCmaSendFloorBySlug: vi.fn(async (_slug: string, _ctx?: unknown) => ({
+    held: false as boolean,
+    ratio: null as number | null,
+    reason: null as string | null,
+    unreadable: undefined as true | undefined,
+  })),
+}))
+vi.mock('@/lib/data/cma/send-floor', () => floorMock)
+
 vi.mock('@/app/actions/auth', () => ({
   getSession: () => Promise.resolve(session),
 }))
@@ -54,7 +65,7 @@ vi.mock('next/cache', () => ({
   revalidatePath: () => {},
 }))
 
-import { approveCmaAction } from '@/app/actions/cma-admin'
+import { approveCmaAction, unarchiveCmaAction } from '@/app/actions/cma-admin'
 
 const NOW = '2026-09-29T18:30:00.000Z'
 const REASON = 'Failed ask cap: recommended list was above the expired ask.'
@@ -92,6 +103,19 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers()
+})
+
+describe('approveCmaAction and the 80% line (Matt 2026-09-30)', () => {
+  it('never finalizes a held expired CMA, even with an acknowledgement', async () => {
+    getCmaAdminReviewRowBySlug.mockResolvedValue({ ...flaggedRow(), build_summary: {} })
+    floorMock.getCmaSendFloorBySlug.mockResolvedValue({ held: true, ratio: 0.727, reason: 'Held for Matt: priced at $618,000, 72.7% of the last list of $849,000. Expired CMAs under 80% of the last list never send (Matt 2026-09-30).', unreadable: undefined })
+    const plain = await approveCmaAction('cma-test')
+    const acked = await approveCmaAction('cma-test', { acknowledgeReview: true })
+    expect(plain.error).toContain('Held for Matt')
+    expect(acked.error).toContain('Held for Matt')
+    expect(updateCmaRowFieldsBySlug).not.toHaveBeenCalled()
+    floorMock.getCmaSendFloorBySlug.mockResolvedValue({ held: false, ratio: 0.94, reason: null, unreadable: undefined })
+  })
 })
 
 describe('approveCmaAction review acknowledgement', () => {
@@ -225,5 +249,49 @@ describe('approveCmaAction review acknowledgement', () => {
     expect(res.error).toMatch(/no built document/)
     expect(res.needsReviewAck).toBeUndefined()
     expect(updateCmaRowFieldsBySlug).not.toHaveBeenCalled()
+  })
+})
+
+describe('unarchiveCmaAction (Matt 2026-09-30)', () => {
+  const archived = {
+    slug: 'cma-test',
+    html_path: 'db:cmas.html_content:cma-test',
+    status: 'archived',
+    built_at: '2026-09-30T20:59:58.000+00:00',
+    finalized_at: '2026-09-30T21:10:00.000+00:00',
+    delivered_at: '2026-09-30T21:42:56.000+00:00',
+    build_summary: {},
+  }
+  beforeEach(() => {
+    floorMock.getCmaSendFloorBySlug.mockClear()
+    floorMock.getCmaSendFloorBySlug.mockResolvedValue({ held: false, ratio: 0.94, reason: null, unreadable: undefined })
+  })
+
+  it('keeps a held CMA archived', async () => {
+    getCmaAdminReviewRowBySlug.mockResolvedValue(archived)
+    floorMock.getCmaSendFloorBySlug.mockResolvedValueOnce({
+      held: true,
+      ratio: 0.727,
+      reason: 'Held for Matt: priced at $618,000, 72.7% of the last list of $849,000.',
+      unreadable: undefined,
+    })
+    const res = await unarchiveCmaAction('cma-test')
+    expect(res.error).toContain('stays archived')
+    expect(updateCmaRowFieldsBySlug).not.toHaveBeenCalled()
+  })
+
+  it('restores a delivered CMA as delivered when nothing was rebuilt since approval', async () => {
+    getCmaAdminReviewRowBySlug.mockResolvedValue(archived)
+    const res = await unarchiveCmaAction('cma-test')
+    expect(res).toEqual({ error: null })
+    expect(updateCmaRowFieldsBySlug).toHaveBeenCalledWith('cma-test', { status: 'delivered', archived_at: null })
+  })
+
+  it('restores a report rebuilt after approval as a draft, so it must be approved again', async () => {
+    getCmaAdminReviewRowBySlug.mockResolvedValue({ ...archived, built_at: '2026-09-30T23:30:00.000+00:00' })
+    const res = await unarchiveCmaAction('cma-test')
+    expect(res).toEqual({ error: null })
+    expect(updateCmaRowFieldsBySlug).toHaveBeenCalledWith('cma-test', { status: 'draft', archived_at: null })
+    expect(floorMock.getCmaSendFloorBySlug).not.toHaveBeenCalledWith('cma-test')
   })
 })

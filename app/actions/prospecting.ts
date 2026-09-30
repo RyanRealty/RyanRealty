@@ -52,6 +52,7 @@ import {
 } from '@/lib/cma/versions'
 import { buildCma } from '@/lib/cma/build'
 import { prepareCmaSendPreview, sendCmaToLead } from '@/lib/cma/send'
+import { getCmaSendFloorBySlug } from '@/lib/data/cma/send-floor'
 import { ensureNativeLead, enrichNativeLead } from '@/lib/data/crm/ensureNativeLead'
 import { searchPeopleByName } from '@/lib/data/crm/searchPeople'
 import { attachCmaToPerson } from '@/lib/data/cma/crm'
@@ -170,6 +171,19 @@ export async function sendProspectingIntro(
         ok: false,
         error: 'The audit for this address is not approved yet. Approve it first, otherwise the texted link would 404 as a draft.',
         code: 'no-doc',
+      }
+    }
+    // MATT'S 80% LINE (2026-09-30). A texted CMA link is a CMA send too. The
+    // prospect says whose listing this is, whatever version the chain serves.
+    const smsFloor = await getCmaSendFloorBySlug(clientReady.slug, {
+      prospectKind: kind,
+      lastListPrice: prospect.listPrice,
+    })
+    if (smsFloor.held) {
+      return {
+        ok: false,
+        error: `Not sent. ${smsFloor.reason}`,
+        code: smsFloor.unreadable ? 'send-failed' : 'price-floor',
       }
     }
     const docUrl = `${SITE_URL}/cma/${clientReady.slug}`
@@ -495,6 +509,20 @@ export async function sendProspectingEmailIntro(
         ok: false,
         error: 'The audit for this address is not approved yet. Approve it first, otherwise the emailed link would 404 as a draft.',
         code: 'no-doc',
+      }
+    }
+    // MATT'S 80% LINE (2026-09-30), before this owner's claim is taken. A held
+    // CMA leaves the drip on a terminal code; a floor that could not be read
+    // is transient (send-failed), so the owner stays queued for the next tick.
+    const emailFloor = await getCmaSendFloorBySlug(clientReady.slug, {
+      prospectKind: kind,
+      lastListPrice: prospect.listPrice,
+    })
+    if (emailFloor.held) {
+      return {
+        ok: false,
+        error: `Not sent. ${emailFloor.reason}`,
+        code: emailFloor.unreadable ? 'send-failed' : 'price-floor',
       }
     }
 

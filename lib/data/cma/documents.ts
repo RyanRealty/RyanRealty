@@ -26,6 +26,10 @@ export type CmaServeHead = {
   html_path: string | null
   status: string
   broker_slug: string | null
+  /** Pulled from its link (archive action, solicitation sweep) whatever its status. */
+  archived_at?: string | null
+  /** Set once the document reached its client; a later rebuild resets status to draft. */
+  delivered_at?: string | null
 }
 
 export type CmaRenderSource = {
@@ -139,7 +143,7 @@ export async function getCmaServeHead(slug: string): Promise<CmaServeHead | null
   if (!sb) return null
   const { data, error } = await sb
     .from('cmas')
-    .select('html_path, status, broker_slug')
+    .select('html_path, status, broker_slug, archived_at, delivered_at')
     .eq('slug', slug.trim().toLowerCase())
     .maybeSingle()
   if (error) {
