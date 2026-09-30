@@ -139,6 +139,15 @@ jobs:
           # evaluator is asked. Lower a floor only by hand, in the same commit.
           npm run ci:route-content-floor
 
+          # The listing page's first screen on a phone (PR #386, Matt
+          # 2026-09-25 "I hate all the wasted space"). Renders four live
+          # listings found in this server's own listings sitemap (a reel lead,
+          # a photo lead, the longest street address, a price cut) at 375x812
+          # and 390x844: address, price and beds / baths / sq ft inside the
+          # fold, a hero no taller than its photograph, no empty band, Jax
+          # clear of the price. Measured on the rendered page, so it runs here.
+          npm run ci:listing-phone-fold
+
       # Lighthouse CI — gates PRs on perf/a11y/BP/SEO regression against
       # lighthouserc.cjs thresholds. Uses start-server-and-test under the hood.
       # Skipped on push events (already run nightly via quality.yml).
