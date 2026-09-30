@@ -297,6 +297,34 @@ holds; these are the report's additional predicates. Definition id on every row:
   (`lib/sync/closingsReconcile.ts`) over the trailing 13 months, then refreshes the store and
   recomputes those months. `/api/cron/market-report-publish` (the 8th) publishes the month that
   ended. An edition is frozen when it publishes; its payload and citations are stored with it.
+- **The monthly email (Matt 2026-09-30, "Draft it for my OK").** When the newest month publishes,
+  `lib/market-report/edition-email-draft.ts` writes its email as a `newsletters` DRAFT
+  (`created_by` `cron:market-report-edition:<YYYY-MM>`, one live per month, unique index
+  `20260930130000`) and texts Matt the `/admin/newsletters/<id>` link. The email prints only the
+  edition's frozen figures, each cited as printed (a median to the whole dollar), and must pass the
+  R-2 figure check before it is written. Every citation carries the edition build it came from
+  (`generated_at`). A draft is never rewritten: every publish by any path (`publishEdition`) and
+  the daily refresh's backstop check each open email against its edition by the figures it prints
+  (each citation's payload path, value as printed, and printed direction; the prose labels can be
+  reworded without effect). The same figures from a new build keep the draft and everything Matt
+  did with it, and move its trace to the new build.
+  New figures replace it in one transaction (`replace_newsletter_draft`, migration
+  `20260930180000`): the old email is canceled, even if scheduled, and a new draft is written
+  under the same marker and audience; Matt is texted the new link, whether the old one had been
+  approved, and that edits to it are not carried over, and the old page links to the new one.
+  One already going out cannot be recalled: he is texted once per build (new figures, a report
+  taken down, or figures that cannot be checked) with the link to pause the rest. A new email that
+  cannot be built, or a report no longer published, still cancels the old one, and the backstop
+  drafts the month once it can. Every enqueue (the scheduled send, Send now, a one-off list)
+  checks a report email against its report first: one behind it is settled by the draft writer
+  on the spot (the same printed figures re-stamp it and it goes; new ones replace it and it is
+  held, `report_replaced`), and nothing unchecked goes out. What Matt reviews is what he approves; the editor's
+  Save writes only while the email is a draft. Deleting a draft cancels it, so a skipped month
+  stays skipped. Nothing goes to anyone until Matt approves that send, and a broker's one-click
+  newsletter send delivers only the current issue he sent to the list (`newsletters.list_send`,
+  in the last 45 days, not paused) or scheduled, never a draft or a one-off test, and never a
+  report email whose report was rebuilt after it went out (`lib/data/newsletter/current-issue.ts`).
+  The site's Market menu links the archive directly (Matt 2026-09-30, "Yes, add the link").
 
 **Closings drift, found 2026-09-25.** Across the whole feed (every property type, every city Spark
 serves), Spark held 1,093 closings from January 2024 to September 2026 that our `listings` copy
@@ -330,4 +358,18 @@ reconciliation). `prune_market_fact_sale` now drops sale facts whose listing is 
    (unpublishable, migration `20260925060000`); a key Spark serves again is released. Seeded with
    the three found on 2026-09-25 (15714 Tumble Weed Turn, Sisters; 18581 Couch Market, Bend; 717
    Larch, Redmond). Engines that read `listings` directly rather than `market_fact_sale` (the
-   older `market_stats_cache`, the CMA's `sale_pricing_facts`) do not read the table yet.
+   older `market_stats_cache`, the CMA's `sale_pricing_facts`, 29 paths in all) do not read the
+   table, so on 2026-09-30 Matt ruled the three **deleted from our copy** ("Yes, delete them
+   everywhere"): each whole row went to `listing_mls_repair_log` first (ids 3634 to 3636, source
+   `absent-from-mls-delete`; undo = re-insert `before_row`), then the `listings` rows and their
+   `market_fact_listing_span` rows were deleted and the report refresh pruned the three sale
+   facts. The CMA's comparable-sales table (`sale_pricing_facts`) only ever upserted, so it still
+   held them; `prune_sale_pricing_facts_batch` (migrations `20260930120000`, `20260930140000`,
+   `20260930150000`, in the 6-hourly pricing cron) removed them and one Redmond sale the MLS had
+   moved back to Pending, the only four stale rows in the whole table (migration `20260930170000`
+   is the current version). A listing the MLS is still changing gets a 48-hour clock first
+   (`sale_pricing_facts.stale_since`), and a run may remove 50: a batch past that removes nothing
+   and texts the owner, and a person approves a larger cleanup with `p_max_delete`. 717 Larch now counts once, under the number the MLS
+   re-entered it as (220220138). After the deletion the trailing 13 months matched Spark
+   exactly: 14,461 closings, 0 drifted, 0 absent. The three stay in `market_listing_absent_from_mls`, so if the delta sync ever brought
+   one back, Market Truth would still leave it out.

@@ -39,3 +39,31 @@ export async function existingDocumentIdByHash(
   const row = (data ?? [])[0]
   return row ? String(row.id) : null
 }
+
+/**
+ * The blank this library form version already put on this cycle, or null.
+ *
+ * For a blank the bytes are not the identity: two library forms can ship the
+ * same PDF. OREF's 020 serves the full disclosure and the exempt seller's
+ * from one file (sha256 52f8eac1…), so matching on bytes alone handed a full
+ * disclosure packet the document row, and the name, of an exempt one opened
+ * earlier on the same file. Re-opening a packet reuses its own form's blank;
+ * a different form on the same bytes gets a row of its own, named for itself.
+ */
+export async function existingBlankIdForForm(
+  sb: DocumentQuery,
+  cycleId: string,
+  sha256: string | null | undefined,
+  formVersionId: string | null | undefined,
+): Promise<string | null> {
+  if (!sha256?.trim() || !cycleId || !formVersionId) return null
+  const { data } = await sb
+    .from('tc_documents')
+    .select('id')
+    .eq('cycle_id', cycleId)
+    .eq('sha256', sha256)
+    .eq('classification->>form_version_id', formVersionId)
+    .limit(1)
+  const row = (data ?? [])[0]
+  return row ? String(row.id) : null
+}

@@ -172,3 +172,46 @@ describe('content-floor measurePage — SITE-119 aria-hidden decoration', () => 
     expect(decorated.floors.atlas.items).toBe(8)
   })
 })
+
+/** An <img> as a loaded browser image: jsdom loads none, so its size and box are set by hand. */
+function loadedImg(src, { natural, width = 400, top = 100 }) {
+  const img = document.createElement('img')
+  img.src = src
+  Object.defineProperty(img, 'complete', { value: true })
+  Object.defineProperty(img, 'naturalWidth', { value: natural })
+  img.getBoundingClientRect = () => ({ top, left: 0, width, height: width * 0.75, right: width, bottom: top + width * 0.75, x: 0, y: top, toJSON() {} })
+  return img
+}
+
+describe('content-floor measurePage — the hero image of a Spark MLS photo', () => {
+  afterEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  function hero(...imgs) {
+    document.body.innerHTML = '<main></main>'
+    const main = document.querySelector('main')
+    for (const img of imgs) main.appendChild(img)
+    return measurePage()
+  }
+
+  it('reads a lead photo by the bucket the page asked for: a 360-wide portrait from 800x600 is a lead, not a thumb', () => {
+    // /oregon/medford on 2026-09-30: a new listing's lead photo, 360x480 as the MLS holds it.
+    const m = hero(loadedImg('https://cdn.resize.sparkplatform.com/ore/800x600/true/20260930155732198306000000-o.jpg', { natural: 360 }))
+    expect(m.heroImageNatural).toBe(800)
+  })
+
+  it('still reads the banned 320x240 thumb bucket as 320, under the 420 floor', () => {
+    const m = hero(loadedImg('https://cdn.resize.sparkplatform.com/ore/320x240/true/20260930155732198306000000-o.jpg', { natural: 320 }))
+    expect(m.heroImageNatural).toBe(320)
+  })
+
+  it('reads the bucket inside a /_next/image wrapper too', () => {
+    const src = `/_next/image?url=${encodeURIComponent('https://cdn.resize.sparkplatform.com/ore/800x600/true/x-o.jpg')}&w=1080&q=75`
+    expect(hero(loadedImg(src, { natural: 496 })).heroImageNatural).toBe(800)
+  })
+
+  it('reads any other image by its pixels, as before', () => {
+    expect(hero(loadedImg('/images/brand/logo-horizontal-navy-transparent.png', { natural: 2271 })).heroImageNatural).toBe(2271)
+  })
+})

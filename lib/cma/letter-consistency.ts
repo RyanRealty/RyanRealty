@@ -159,9 +159,11 @@ export function evaluateLetterConsistencyContract(args: {
     valueHigh?: number | null
   }
   closedComps?: readonly { adjustedPrice?: number | null; closePrice?: number | null }[] | null
+  /** The addresses the letter prints (printedAddressesOf). Lets the owner-name check tell a street from a name. */
+  printedAddresses?: readonly (string | null | undefined)[] | null
 }): { pass: boolean; checks: ContractCheck[] } {
   const checks: ContractCheck[] = [
-    letterOwnerNameCheck(args.html, args.names),
+    letterOwnerNameCheck(args.html, args.names, { printedAddresses: args.printedAddresses }),
     letterLinkTrackingCheck(args.html, args.identity),
     highEndAtOrBelowBandCheck(args.pricing),
     letterRecommendDollarsCheck(args.html, args.pricing),

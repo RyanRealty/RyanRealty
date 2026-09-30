@@ -43,6 +43,61 @@ describe('computeSchedule', () => {
     const day3 = rows.find((r) => r.tier === 3 && r.day_index === 3)
     expect(day3!.cap).toBeLessThanOrEqual(4000) // warm ceiling for day 3, not 25000
   })
+
+  it('large warm-up: every queued recipient gets a day, and no ramp day is over its ceiling for the issue', () => {
+    // A first list send: some engaged, most new, and a large cold tier.
+    const counts = new Map([[1, 600], [2, 5340], [3, 100000]])
+    const rows = computeSchedule(counts, true, true)
+    for (const [tier, n] of counts) {
+      expect(rows.filter((r) => r.tier === tier).reduce((sum, r) => sum + r.cap, 0)).toBe(n)
+    }
+    // Per DAY, every tier on it together.
+    const ramp = [500, 1000, 2000, 4000, 8000]
+    const perDay = new Map<number, number>()
+    for (const r of rows) perDay.set(r.day_index, (perDay.get(r.day_index) ?? 0) + r.cap)
+    for (const [day, total] of perDay) if (day < ramp.length) expect(total).toBeLessThanOrEqual(ramp[day]!)
+    // Tier 1's extra 100 rides day 1, tier 2 fills what is left of days 1 and 2 and carries to day 3.
+    expect(rows.filter((r) => r.tier === 1)).toEqual([
+      { day_index: 0, tier: 1, cap: 500 },
+      { day_index: 1, tier: 1, cap: 100 },
+    ])
+    expect(rows.filter((r) => r.tier === 2)).toEqual([
+      { day_index: 1, tier: 2, cap: 900 },
+      { day_index: 2, tier: 2, cap: 2000 },
+      { day_index: 3, tier: 2, cap: 2440 },
+    ])
+    // Past the ramp a tier sends no more a day than its steady share (25,000 here): the tail
+    // spreads over the next days instead of landing on the last one.
+    expect(rows.filter((r) => r.tier === 3)).toEqual([
+      { day_index: 3, tier: 3, cap: 1560 },
+      { day_index: 4, tier: 3, cap: 8000 },
+      { day_index: 5, tier: 3, cap: 25000 },
+      { day_index: 6, tier: 3, cap: 25000 },
+      { day_index: 7, tier: 3, cap: 25000 },
+      { day_index: 8, tier: 3, cap: 15440 },
+    ])
+    // No day holds a tier twice, and nothing is scheduled with no one in it.
+    const keys = rows.map((r) => `${r.day_index}:${r.tier}`)
+    expect(new Set(keys).size).toBe(keys.length)
+    expect(rows.every((r) => r.cap > 0)).toBe(true)
+  })
+
+  it('large warm-up: a tier that fits its own days does not spill past them', () => {
+    // Day 1 is capped at 1,000; day 2 takes the other 1,500 under its 2,000.
+    expect(computeSchedule(new Map([[2, 2500]]), true, true)).toEqual([
+      { day_index: 1, tier: 2, cap: 1000 },
+      { day_index: 2, tier: 2, cap: 1500 },
+    ])
+  })
+
+  it('large steady send: the split covers everyone and adds no extra days', () => {
+    const counts = new Map([[1, 3001], [2, 4001], [3, 5001]])
+    const rows = computeSchedule(counts, true, false)
+    for (const [tier, n] of counts) {
+      expect(rows.filter((r) => r.tier === tier).reduce((sum, r) => sum + r.cap, 0)).toBeGreaterThanOrEqual(n)
+    }
+    expect(Math.max(...rows.map((r) => r.day_index))).toBe(6)
+  })
 })
 
 describe('renderForRecipient — per-broker sender identity + broker-stamped token', () => {

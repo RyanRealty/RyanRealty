@@ -2,16 +2,22 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { stampListingPricingReadsBatch } from '@/lib/pricing/stamp-listing-read'
+import { queueBrokerHealthAlert } from '@/lib/crm/broker-alerts'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
 
+/** Comps one run may remove; more means a listings read gone wrong (see the prune below). */
+const PRUNE_BUDGET = 50
+
 /**
  * GET /api/cron/refresh-sale-pricing-facts
  *
- * Incremental drain of sale_pricing_facts (all years, Central Oregon closed A)
- * plus a rebuild of pricing_market_index / pricing_subdivision_cells.
+ * Incremental drain of sale_pricing_facts (all years, Central Oregon closed A),
+ * a sweep that drops comps whose listing left the filter
+ * (prune_sale_pricing_facts_batch), plus a rebuild of pricing_market_index /
+ * pricing_subdivision_cells.
  * Schedule: every 6 hours via vercel.json.
  */
 export async function GET(request: Request) {
@@ -43,6 +49,59 @@ export async function GET(request: Request) {
       done = true
       break
     }
+  }
+  // The refresh above only upserts. A comp whose listing later left the filter
+  // (deleted because the MLS removed the sale, back to Pending, re-typed) stays
+  // until this sweep drops it; 3 x 20,000 keys a run covers the ~150,000-row
+  // table about every 18 hours. A listing the MLS is still changing gets a
+  // 48-hour clock first (a status correction can flip back). A run may remove
+  // PRUNE_BUDGET comps: a batch that would take it past that removes nothing
+  // (a listings read gone wrong, not a normal day, which held 4 in the whole
+  // table on 2026-09-30), the owner is texted, and the steps below still run.
+  // The sweep holds at a refused batch (migration 20260930190000): the next
+  // run reads it again with a whole budget, and a checked cleanup is approved
+  // by calling the function once with this batch size and a larger budget,
+  // prune_sale_pricing_facts_batch(20000, 'sale_pricing_facts_prune', <n>).
+  const pruned = {
+    deleted: 0,
+    scanned: 0,
+    settling: 0,
+    keys: [] as string[],
+    refused: null as string | null,
+    refusedKeys: [] as string[],
+    done: false,
+  }
+  for (let i = 0; i < 3; i++) {
+    const { data: prune, error: pruneErr } = await supabase.rpc('prune_sale_pricing_facts_batch', {
+      p_limit: 20000,
+      p_job: 'sale_pricing_facts_prune',
+      p_max_delete: PRUNE_BUDGET - pruned.deleted,
+    })
+    if (pruneErr) {
+      console.error('[refresh-sale-pricing-facts] prune', pruneErr.message)
+      return NextResponse.json({ ok: false, error: pruneErr.message, upserted }, { status: 500 })
+    }
+    pruned.deleted += Number(prune?.deleted ?? 0)
+    pruned.scanned += Number(prune?.scanned ?? 0)
+    pruned.settling += Number(prune?.settling ?? 0)
+    if (Array.isArray(prune?.keys)) pruned.keys.push(...prune.keys.map(String))
+    if (prune?.ok === false) {
+      pruned.refused = String(prune?.refused ?? 'refused')
+      if (Array.isArray(prune?.refused_keys)) pruned.refusedKeys.push(...prune.refused_keys.map(String))
+      break
+    }
+    if (prune?.done) {
+      pruned.done = true
+      break
+    }
+  }
+  if (pruned.refused) {
+    console.error('[refresh-sale-pricing-facts] prune refused', pruned.refused)
+    await queueBrokerHealthAlert({
+      key: 'comp-prune-refused',
+      body: `The CMA comp cleanup refused a batch: ${pruned.refused.slice(0, 150)} (${pruned.deleted} removed earlier this run). The listings read may be incomplete; the cleanup waits on that batch until someone checks it and approves it.`,
+      cooldownMinutes: 1440,
+    })
   }
   let concessionsUpdated = 0
   for (let i = 0; i < 8; i++) {
@@ -212,8 +271,9 @@ export async function GET(request: Request) {
     console.error('[refresh-sale-pricing-facts] listing_reads', err)
   }
   return NextResponse.json({
-    ok: true,
+    ok: pruned.refused == null,
     upserted,
+    pruned,
     concessionsUpdated,
     newConstructionStamped,
     waterReclassUpdated,

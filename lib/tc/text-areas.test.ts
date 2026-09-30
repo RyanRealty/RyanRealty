@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { PDFDocument, StandardFonts } from 'pdf-lib'
 import { Encodings, Font, FontNames } from '@pdf-lib/standard-fonts'
 import { HELVETICA_CHARS, HELVETICA_KERN, HELVETICA_WIDTHS } from './helvetica-metrics'
-import { areaSpace, findTextAreas, fitTextToBox, helveticaWidth, layoutAreaText, pdfSafeText, textSizeForBox, type AreaCandidate } from './text-areas'
+import { areaSpace, DOCUMENT_TEXT_PT, findTextAreas, fitTextToBox, helveticaWidth, layoutAreaText, pdfSafeText, textSizeForBox, type AreaCandidate } from './text-areas'
+import { DEFAULT_FIELD_SIZE, FORM_LINE_H } from './signing'
 
 const line = (y: number, x: number, w: number, label: string | null = null, h = 0.015, page = 1): AreaCandidate => ({ page, x, y, w, h, type: 'text', label })
 
@@ -179,17 +180,18 @@ describe('the Helvetica table', () => {
 })
 
 describe('fitTextToBox', () => {
-  const box = { w: 0.2 * 612, h: 0.035 * 792 } // the composer's default text box
+  const box = { w: 0.2 * 612, h: 0.035 * 792 } // a text box drawn two lines tall
   it('keeps the box size for a short value', () => {
     const r = fitTextToBox('Stays', box.w, box.h)
     expect(r).toMatchObject({ fits: true, lines: ['Stays'] })
     expect(r.size).toBeCloseTo(textSizeForBox(box.h), 6)
   })
   it('shrinks a longer value until every line fits the height', () => {
-    const r = fitTextToBox('Refrigerator and chest freezer stay with the home', box.w, box.h)
+    const note = 'Refrigerator and chest freezer stay with the home, and so do the garage shelves and the mounted TV'
+    const r = fitTextToBox(note, box.w, box.h)
     expect(r.fits).toBe(true)
     expect(r.size).toBeLessThan(textSizeForBox(box.h))
-    expect(r.lines.join(' ')).toBe('Refrigerator and chest freezer stay with the home')
+    expect(r.lines.join(' ')).toBe(note)
     expect(r.lines.length * (r.size + 1.2)).toBeLessThanOrEqual(box.h - 1 + 1e-6)
   })
   it('takes any character a signer types, and returns the lines as they print', () => {
@@ -202,5 +204,35 @@ describe('fitTextToBox', () => {
     expect(r.fits).toBe(false)
     expect(r.size).toBe(6)
     expect(r.lines.join(' ').split(' ')).toHaveLength(200)
+  })
+})
+
+describe('one type size for the whole document', () => {
+  it("prints a form line, a tall box and a lined section at the same size", () => {
+    // Matt's test packet, 2026-09-30: a 12 pt form line printed at 8.6 pt beside a 27.7 pt box at 11 pt.
+    expect(textSizeForBox(12)).toBe(DOCUMENT_TEXT_PT)
+    expect(textSizeForBox(27.7)).toBe(DOCUMENT_TEXT_PT)
+    expect(textSizeForBox(60)).toBe(DOCUMENT_TEXT_PT)
+    expect(areaSpace([{ w: 0.84, h: FORM_LINE_H }, { w: 0.84, h: FORM_LINE_H }], 612, 792).size).toBe(DOCUMENT_TEXT_PT)
+    expect(fitTextToBox('Matt Ryan', 0.508 * 612, FORM_LINE_H * 792).size).toBe(DOCUMENT_TEXT_PT)
+    expect(fitTextToBox('11/30/2026', 0.14 * 612, 0.035 * 792).size).toBe(DOCUMENT_TEXT_PT)
+  })
+  it('only a box too short for it gets smaller type, never below 7 pt to start', () => {
+    expect(textSizeForBox(9)).toBe(7)
+    expect(textSizeForBox(4)).toBe(7)
+  })
+})
+
+describe('a new field sits on one line of the form', () => {
+  it('starts every value box one form line tall, like the form\'s own fields', () => {
+    for (const t of ['text', 'date', 'time', 'full_name', 'date_signed', 'time_signed'] as const) {
+      expect(DEFAULT_FIELD_SIZE[t].h).toBeCloseTo(FORM_LINE_H, 6)
+      expect(textSizeForBox(DEFAULT_FIELD_SIZE[t].h * 792)).toBe(DOCUMENT_TEXT_PT)
+    }
+  })
+  it('starts a checkbox as a square in points, not a wide lozenge', () => {
+    const c = DEFAULT_FIELD_SIZE.checkbox
+    expect(c.w * 612).toBeCloseTo(c.h * 792, 6)
+    expect(c.h * 792).toBeCloseTo(10, 6)
   })
 })

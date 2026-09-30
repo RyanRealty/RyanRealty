@@ -65,7 +65,7 @@ export function ContactQuickActions(props: {
    */
   reportPanel: React.ReactNode
   /** The issue a one-off newsletter send delivers (subject shown before sending). */
-  latestNewsletter?: { subject: string; status: 'sent' | 'draft'; sentAt: string | null } | null
+  latestNewsletter?: { subject: string; status: 'sent' | 'scheduled'; sentAt: string | null } | null
   /** Send the latest newsletter issue to this contact right now. */
   newsletterSendAction?: () => Promise<Result>
 }) {
@@ -159,7 +159,7 @@ export function ContactQuickActions(props: {
                         {props.latestNewsletter.subject}
                       </p>
                       <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
-                        {props.latestNewsletter.status === 'sent' ? 'Latest sent issue' : 'Newest draft'}
+                        {props.latestNewsletter.status === 'sent' ? 'Latest sent issue' : 'Approved, scheduled to go out'}
                       </p>
                       <Button
                         type="button"

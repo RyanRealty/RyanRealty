@@ -1,12 +1,15 @@
 /**
  * Market report family doors — one hierarchy for nav + page closings + hub chooser.
  *
- * Five public products (Cos IA package):
+ * Six public products (Cos IA package, plus the monthly report 2026-09-30):
  *   1. Live market — /housing-market
- *   2. City pulse — /housing-market/[city] (+ hub #cities)
- *   3. Sales reports — /housing-market/reports (period / PDF cards)
- *   4. Weekly snapshots — /housing-market/reports (dated archive)
- *   5. Market stories — /blog (never titled as the live report)
+ *   2. Monthly market report — /housing-market/reports/monthly (every edition
+ *      since January 2006, each with its PDF; Matt asked for it in the Market
+ *      menu 2026-09-30)
+ *   3. City pulse — /housing-market/[city] (+ hub #cities)
+ *   4. Sales reports — /housing-market/reports (period / PDF cards)
+ *   5. Weekly snapshots — /housing-market/reports (dated archive)
+ *   6. Market stories — /blog (never titled as the live report)
  *
  * Supporting doors: region deep dive, MOS definition, method, closed-sales explorer, FAQ.
  * /housing-market/explore permanently redirects to the live hub (retired builder).
@@ -16,6 +19,7 @@
 
 export type MarketReportDoorId =
   | 'hub'
+  | 'monthly'
   | 'region'
   | 'mos'
   | 'method'
@@ -32,6 +36,7 @@ export type MarketReportDoor = {
 
 export const MARKET_REPORT_DOORS: readonly MarketReportDoor[] = [
   { id: 'hub', href: '/housing-market', label: 'Live market' },
+  { id: 'monthly', href: '/housing-market/reports/monthly', label: 'Monthly market report' },
   { id: 'region', href: '/housing-market/central-oregon', label: 'Region deep dive' },
   { id: 'mos', href: '/months-of-supply', label: 'Months of supply' },
   { id: 'method', href: '/how-we-get-our-numbers', label: 'How we get our numbers' },
@@ -83,6 +88,8 @@ function navLabel(id: MarketReportDoorId): string {
   switch (id) {
     case 'hub':
       return 'Live market'
+    case 'monthly':
+      return 'Monthly market report'
     case 'region':
       return 'Region deep dive'
     case 'mos':

@@ -507,4 +507,9 @@ describe('a couple sharing one email address', () => {
     expect(namesInSentence(['Ann', 'Jane', 'John'])).toBe('Ann, Jane and John')
     expect(namesInSentence([])).toBe('')
   })
+  it('names one person once, however many rows they hold at the address', () => {
+    // The 020 test packet: Matt as seller and copied as both agents, one mailbox.
+    expect(namesInSentence(['Matt Ryan', 'Matt Ryan', 'matt ryan'])).toBe('Matt Ryan')
+    expect(namesInSentence(['Jane', 'John', 'Jane'])).toBe('Jane and John')
+  })
 })

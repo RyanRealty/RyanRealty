@@ -397,6 +397,16 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
     setStatus(res.ok ? 'Reminder sent' : res.error ?? 'Could not send reminder')
   }
 
+  /** A draft emailed no one: discarding it voids it, so the file keeps the record. */
+  async function handleDiscard() {
+    if (!window.confirm('Discard this draft? Nothing has been sent.')) return
+    setBusy(true)
+    const res = await voidEnvelope(detail.id, 'Draft discarded')
+    setBusy(false)
+    if (res.ok) router.refresh()
+    else setStatus(res.error ?? 'Could not discard the draft')
+  }
+
   async function handleVoid() {
     const reason = window.prompt('Reason for voiding this envelope?') ?? ''
     setBusy(true)
@@ -443,6 +453,9 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
                         onDelete={() => deleteField(f.localId)}
                         onMove={(xf, yf) =>
                           setFields((fs) => fs.map((x) => (x.localId === f.localId ? { ...x, x: xf, y: yf } : x)))
+                        }
+                        onResize={(wf, hf) =>
+                          setFields((fs) => fs.map((x) => (x.localId === f.localId ? { ...x, w: wf, h: hf } : x)))
                         }
                         dragRef={dragRef}
                       />
@@ -757,6 +770,7 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
               <>
                 <Button variant="outline" className="w-full" onClick={handleSaveDraft} disabled={busy}>Save draft</Button>
                 <Button className="w-full" onClick={handleSend} disabled={busy || Boolean(detail.outdatedFormsMessage)}>Send for signature</Button>
+                <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={handleDiscard} disabled={busy}>Discard draft</Button>
               </>
             )}
           </CardContent>
@@ -803,6 +817,7 @@ function FieldChip({
   clickThrough = false,
   onDelete,
   onMove,
+  onResize,
   dragRef,
 }: {
   field: LocalField
@@ -814,6 +829,7 @@ function FieldChip({
   clickThrough?: boolean
   onDelete: () => void
   onMove: (xFrac: number, yFrac: number) => void
+  onResize: (wFrac: number, hFrac: number) => void
   dragRef: React.RefObject<{ localId: string; offsetX: number; offsetY: number } | null>
 }) {
   const style: React.CSSProperties = {
@@ -842,7 +858,7 @@ function FieldChip({
       data-field-chip
       style={style}
       className={cn(
-        'group flex rounded-sm border-2 text-[10px] font-semibold',
+        'group flex rounded-none border-2 text-[10px] font-semibold',
         emptyText ? 'items-center border-dashed bg-white/15' : tall ? 'items-start bg-white/70' : 'items-center justify-center bg-white/70',
         selected && 'ring-2 ring-ring ring-offset-1'
       )}
@@ -878,8 +894,39 @@ function FieldChip({
       >
         {emptyText ? '' : shownText || (field.type === 'checkbox' ? '' : SIGN_FIELD_LABEL[field.type])}
       </span>
-      {mine ? <Lock aria-label="Prints as you set it" className="pointer-events-none absolute bottom-0 right-0 h-2.5 w-2.5 opacity-70" /> : null}
-      {!readonly ? (
+      {mine && !(selected && !readonly) ? <Lock aria-label="Prints as you set it" className="pointer-events-none absolute bottom-0 right-0 h-2.5 w-2.5 opacity-70" /> : null}
+      {selected && !readonly ? (
+        // The corner handle: a box starts one form line tall and is dragged
+        // taller or wider for a longer value, as in DocuSign and DigiSign.
+        <span
+          role="presentation"
+          aria-hidden
+          className="absolute bottom-0 right-0 h-2.5 w-2.5 cursor-nwse-resize"
+          style={{ background: color }}
+          onPointerDown={(e) => {
+            e.stopPropagation()
+            e.preventDefault()
+            const parent = (e.currentTarget.parentElement!.parentElement as HTMLElement).getBoundingClientRect()
+            const start = { x: e.clientX, y: e.clientY, w: field.w, h: field.h }
+            // Never smaller than 6 pt on a Letter page, never past the page edge.
+            const minW = 6 / 612
+            const minH = 6 / 792
+            const onMoveEv = (ev: PointerEvent) => {
+              const w = start.w + (ev.clientX - start.x) / parent.width
+              const h = start.h + (ev.clientY - start.y) / parent.height
+              onResize(Math.max(minW, Math.min(1 - field.x, w)), Math.max(minH, Math.min(1 - field.y, h)))
+            }
+            const onUp = () => {
+              window.removeEventListener('pointermove', onMoveEv)
+              window.removeEventListener('pointerup', onUp)
+            }
+            window.addEventListener('pointermove', onMoveEv)
+            window.addEventListener('pointerup', onUp)
+          }}
+        />
+      ) : null}
+      {/* Selected, the corner is the resize handle and the panel has Remove field. */}
+      {!readonly && !selected ? (
         <button
           onClick={(e) => {
             e.stopPropagation()

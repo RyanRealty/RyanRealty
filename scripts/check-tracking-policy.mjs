@@ -27,6 +27,7 @@
  */
 import { readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
+import { middlewareMatcherNames } from './lib/middleware-matcher.mjs'
 
 const ROOT = process.cwd()
 
@@ -167,16 +168,9 @@ check('Offline-conversion uses system_generated action_source', /system_generate
 // the pieces.
 // TRACK-3: the retired /_next/image optimizer URL is answered in middleware, so
 // the matcher must name the path and the handler must use the shared mapping.
-// The invariant is a matcher entry that is exactly '/_next/image', not its
-// place in the list: this check first read "the LAST entry", and PR #391
-// (2026-09-30) legitimately appended the monthly-report edition path after it,
-// which failed every later branch touching app/** while the path stayed
-// answered. A line of `export const config` that is only that string is the
-// entry; the first pattern's `_next/image` exclusion is not.
-const mwConfigAt = mw.indexOf('export const config')
-const mwConfig = mwConfigAt >= 0 ? mw.slice(mwConfigAt) : ''
+// The entry may sit anywhere in the array (scripts/lib/middleware-matcher.mjs).
 check('Middleware answers the retired /_next/image URL',
-  /^\s*['"]\/_next\/image['"]\s*,?\s*$/m.test(mwConfig) && /resolveLegacyNextImage\(/.test(mw),
+  middlewareMatcherNames(mw, '/_next/image') && /resolveLegacyNextImage\(/.test(mw),
   "middleware.ts must keep '/_next/image' as its own matcher entry and call resolveLegacyNextImage() (lib/routing/legacy-next-image.ts). Without it every stale optimizer URL renders the ~143 KB HTML 404 page and pollutes RUM (TRACK-3).")
 // TRACK-3: RUM ingest validates through one module (FID dropped, >120 s dropped, no /_next or /api paths).
 const vitalsRoute = read('app/api/web-vitals/route.ts')
