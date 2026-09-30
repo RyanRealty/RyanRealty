@@ -27,6 +27,7 @@ import { listCmaQueue, isSendableQueueState, type CmaQueueRow } from '@/lib/data
 import { approveCmaAction, sendCmaToLeadAction } from '@/app/actions/cma-admin'
 import type { CmaSendOverride } from '@/lib/cma/send'
 import { saveCmaFirstContactOverride } from '@/lib/cma/first-contact-override'
+import { recommendationGapHold } from '@/lib/cma/gap-hold'
 
 export type ApproveAndDeliverResult =
   | { ok: true; outcome: 'sent'; transport: 'gmail' | 'resend' | null }
@@ -130,6 +131,11 @@ export async function approveAndDeliverCma(
         }
       }
       return { ok: false, blocked: 'state', error: why[row.state] ?? `Not sendable from state "${row.state}".` }
+    }
+
+    const gap = recommendationGapHold(row.recommendedList, row.theirPrice)
+    if (gap.hold) {
+      return { ok: false, blocked: 'state', error: gap.reason }
     }
 
     // 2. Finalize — the document link must be client-ready before any email
