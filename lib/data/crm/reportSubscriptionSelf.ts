@@ -141,18 +141,21 @@ export async function upsertSelfReportSubscription(
   // subscription (lib/crm/market-report-send.ts).
   const { data: existing, error: readErr } = await sb
     .from('crm_report_subscriptions')
-    .select('is_active, stopped_at, source')
+    .select('is_active, stopped_at, source, updated_at')
     .eq('person_id', personId)
     .maybeSingle()
   if (readErr) {
     console.error('[upsertSelfReportSubscription] read', readErr.message)
     return { data: null, error: 'We could not save your market report preferences. Try again.' }
   }
-  const prev = existing as { is_active: boolean | null; stopped_at: string | null; source: string | null } | null
+  const prev = existing as { is_active: boolean | null; stopped_at: string | null; source: string | null; updated_at: string | null } | null
   const consent: Record<string, unknown> = {}
   if (isActive) {
+    // Her own restart clears her stop and her pause.
     consent.stopped_at = null
     consent.stopped_via = null
+    consent.paused_at = null
+    consent.paused_via = null
     if (!prev?.is_active) consent.requested_at = nowIso
     if (!prev?.source) consent.source = 'self-serve'
   } else if (prev?.is_active) {
@@ -160,24 +163,45 @@ export async function upsertSelfReportSubscription(
     // report is already off records nothing new.
     consent.stopped_at = nowIso
     consent.stopped_via = 'self-serve'
+    consent.paused_at = null
+    consent.paused_via = null
   }
 
-  const { error: upErr } = await sb
-    .from('crm_report_subscriptions')
-    .upsert(
-      {
-        person_id: personId,
-        areas,
-        frequency,
-        is_active: isActive,
-        updated_at: nowIso,
-        ...consent,
-      },
-      { onConflict: 'person_id' },
-    )
-  if (upErr) {
-    console.error('[upsertSelfReportSubscription]', upErr.message)
-    return { data: null, error: 'We could not save your market report preferences. Try again.' }
+  // The write matches only the state it was decided from (review 2026-09-30):
+  // a stop, a pause or a broker change landing after the read is never
+  // overwritten by a write decided from the older state, and a row that
+  // appeared meanwhile is left alone.
+  const values = { person_id: personId, areas, frequency, is_active: isActive, updated_at: nowIso, ...consent }
+  let landed: boolean
+  if (!prev) {
+    const { count, error: insErr } = await sb
+      .from('crm_report_subscriptions')
+      .upsert(values, { onConflict: 'person_id', ignoreDuplicates: true, count: 'exact' })
+    if (insErr) {
+      console.error('[upsertSelfReportSubscription]', insErr.message)
+      return { data: null, error: 'We could not save your market report preferences. Try again.' }
+    }
+    landed = (count ?? 0) > 0
+  } else {
+    let q = sb
+      .from('crm_report_subscriptions')
+      .update(values)
+      .eq('person_id', personId)
+      .eq('is_active', prev.is_active === true)
+    q = prev.stopped_at == null ? q.is('stopped_at', null) : q.eq('stopped_at', prev.stopped_at)
+    q = prev.updated_at == null ? q.is('updated_at', null) : q.eq('updated_at', prev.updated_at)
+    const { data: written, error: upErr } = await q.select('id')
+    if (upErr) {
+      console.error('[upsertSelfReportSubscription]', upErr.message)
+      return { data: null, error: 'We could not save your market report preferences. Try again.' }
+    }
+    landed = Array.isArray(written) && written.length > 0
+  }
+  if (!landed) {
+    return {
+      data: null,
+      error: 'Your market report settings changed while you were saving. Reload the page to see them, then try again.',
+    }
   }
 
   const { error: tlErr } = await sb.from('crm_timeline').insert({

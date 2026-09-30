@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { notHeldByContactFilter } from '@/lib/crm/market-report-subscription-control'
 import { primaryEmailOf, signalsFor } from './add-newsletter'
 import { canSubscribe } from '@/lib/crm/membership-consent'
 
@@ -435,10 +436,36 @@ describe('setReportSubscriptionHandler', () => {
         ['eq', 'person_id', 1],
         ['eq', 'is_active', false],
         ['eq', 'stopped_at', '2026-09-20T00:00:00Z'],
-        ['or', 'expr', 'stopped_via.is.null,stopped_via.not.in.(one-click,email-link,self-serve)'],
+        // Neither her stop NOR her pause may have landed since the read (review 2026-09-30).
+        ['or', 'expr', notHeldByContactFilter()],
       ]),
     )
     expect(upserts).toHaveLength(0)
+  })
+
+  it('turning reports on skips a contact who PAUSED them herself: her pause holds like her stop (review 2026-09-30)', async () => {
+    alertPreCheckRow = {
+      is_active: false,
+      stopped_at: null,
+      stopped_via: null,
+      paused_at: '2026-09-20T00:00:00Z',
+      paused_via: 'email-link',
+      areas: ['bend'],
+      frequency: 'monthly',
+    }
+    const res = await setReportSubscriptionHandler([1], { areas: ['bend'], frequency: 'monthly', isActive: true }, ctxOwner)
+    expect(res.skipped).toBe(1)
+    expect(res.breakdown?.skipped_contact_paused).toBe(1)
+    expect(updates.filter((u) => u.table === 'crm_report_subscriptions')).toHaveLength(0)
+    accountedFor(res, 1)
+  })
+
+  it("a broker's bulk turn-off is recorded as the broker's pause, never as hers", async () => {
+    alertPreCheckRow = { is_active: true, stopped_at: null, stopped_via: null, areas: ['bend'], frequency: 'monthly' }
+    await setReportSubscriptionHandler([1], { areas: ['bend'], frequency: 'monthly', isActive: false }, ctxOwner)
+    const [w] = updates.filter((u) => u.table === 'crm_report_subscriptions')
+    expect(w.patch).toMatchObject({ is_active: false, paused_via: 'admin' })
+    expect(typeof w.patch.paused_at).toBe('string')
   })
 
   it('never overwrites a stop made between its read and its write (her one-click lands mid-job)', async () => {

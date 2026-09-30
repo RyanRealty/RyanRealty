@@ -14,7 +14,11 @@ vi.mock('@/lib/admin/require-admin', () => ({
   requireAdminPage: async () => ({ email: 'matt@ryan-realty.com', role: 'superuser', brokerSlug: 'matt' }),
 }))
 vi.mock('@/app/actions/crm', () => ({ requirePersonInScope: async () => ({ ok: true }) }))
-vi.mock('@/lib/data/crm/marketReportSends', () => ({ getMarketReportSendById: async () => h.send }))
+vi.mock('@/lib/data/crm/marketReportSends', () => ({
+  getMarketReportSendById: async () => h.send,
+  isInFlightSend: (s: { status: string; error: string | null }) =>
+    s.status === 'failed' && typeof s.error === 'string' && (s.error === 'sending' || s.error.startsWith('sending ')),
+}))
 vi.mock('next/navigation', () => ({
   notFound: () => {
     throw new Error('notFound')
@@ -76,6 +80,13 @@ describe('admin market report page', () => {
     const tokens = [...srcdoc.matchAll(/\?t=([^&"]+)/g)].map((m) => verifyReportLinkToken(decodeURIComponent(m[1]!)))
     expect(tokens).toHaveLength(3)
     for (const t of tokens) expect(t).toMatchObject({ personId: 64138, subscriptionId: 9016, preview: true })
+  })
+
+  it('an attempt whose provider answer never came reads as in flight, never as a failure (review 2026-09-30)', async () => {
+    h.send = { ...h.send!, status: 'failed', sentAt: null, error: 'sending (unknown outcome: Unable to fetch data.)' }
+    const html = await render()
+    expect(html).toContain('Sending, not confirmed')
+    expect(html).not.toContain('Failed')
   })
 
   it('shows the Spark cross-check the send passed, with both values and the query', async () => {

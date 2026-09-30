@@ -4,8 +4,8 @@ import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { reportAreaLabel } from '@/lib/crm/market-report-areas'
 import { UNMAPPED_OWN_BOOK } from '@/lib/crm/scope'
 import {
-  CONTACT_STOP_VIAS,
-  isContactStopped,
+  isContactHeld,
+  notHeldByContactFilter,
   planReportChanges,
   type ReportChange,
 } from '@/lib/crm/market-report-subscription-control'
@@ -227,6 +227,8 @@ export type AdminReportSubscriptionRow = {
   state: 'on' | 'paused' | 'stopped'
   /** Who stopped it: one-click, email-link, self-serve (the contact) or admin. */
   stoppedVia: string | null
+  /** Who paused it (email-link, self-serve: the contact; admin: a broker). */
+  pausedVia: string | null
   /** Null until a broker approves the first send after a preview. */
   firstSendApprovedAt: string | null
   lastSentAt: string | null
@@ -259,6 +261,7 @@ type ReportSubRow = {
   updated_at: string | null
   stopped_at?: string | null
   stopped_via?: string | null
+  paused_via?: string | null
   first_send_approved_at?: string | null
 }
 
@@ -281,7 +284,7 @@ function primaryEmail(emails: Array<{ value?: string, isPrimary?: number | boole
 const PERSON_ID_CHUNK = 200
 
 const REPORT_LIST_COLS =
-  'person_id, areas, frequency, is_active, last_sent_at, updated_at, stopped_at, stopped_via, first_send_approved_at'
+  'person_id, areas, frequency, is_active, last_sent_at, updated_at, stopped_at, stopped_via, paused_via, first_send_approved_at'
 
 /**
  * List market report subscriptions with the person's name/email/broker.
@@ -392,6 +395,7 @@ export async function listReportSubscriptionsAdmin(
       active: r.is_active,
       state: r.is_active ? 'on' : r.stopped_at ? 'stopped' : 'paused',
       stoppedVia: r.stopped_via ?? null,
+      pausedVia: r.paused_via ?? null,
       firstSendApprovedAt: r.first_send_approved_at ?? null,
       lastSentAt: r.last_sent_at,
       updatedAt: r.updated_at,
@@ -527,7 +531,7 @@ export async function filterPersonIdsInBrokerScope(
 export type BulkReportUpdateResult = {
   /** Subscriptions actually changed (already-so rows are not counted). */
   updated: number
-  /** Stopped by the contact herself: a bulk turn-on never restarts one. */
+  /** Stopped or paused by the contact herself: a bulk turn-on never restarts one. */
   skippedContactStopped: number
   /** No areas: a report cannot turn on with nothing to report on. */
   skippedNoAreas: number
@@ -583,7 +587,7 @@ export async function bulkUpdateReportSubscriptions(
   for (const rec of records) {
     const plan = planReportChanges(rec, changes, { via: 'admin', adminEmail: actor.email })
     if (!plan.ok) {
-      if (plan.code === 'consent-required' || isContactStopped(rec)) result.skippedContactStopped += 1
+      if (plan.code === 'consent-required' || isContactHeld(rec)) result.skippedContactStopped += 1
       else result.skippedNoAreas += 1
       continue
     }
@@ -607,7 +611,8 @@ export async function bulkUpdateReportSubscriptions(
         .update({ ...group.patch, updated_at: nowIso })
         .in('person_id', groupIds.slice(i, i + PERSON_ID_CHUNK))
       if (group.patch.is_active === true) {
-        update = update.or(`stopped_via.is.null,stopped_via.not.in.(${CONTACT_STOP_VIAS.join(',')})`)
+        // Neither her stop nor her pause may have landed since the read.
+        update = update.or(notHeldByContactFilter())
       }
       const { data, error } = await update.select('person_id')
       if (error) {

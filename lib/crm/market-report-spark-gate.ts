@@ -114,8 +114,14 @@ export function createSparkGateMemo(): SparkGateMemo {
   return { pulls: new Map(), cityPolygons: new Map(), context: null }
 }
 
-/** STOP when any check STOPs; not-reconciled when any could not be rebuilt; else ok. Pure. */
+/**
+ * STOP when any check STOPs; not-reconciled when any could not be rebuilt;
+ * else ok. An EMPTY list is a STOP (review 2026-09-30): a gate that checked
+ * nothing has verified nothing, and a report with printed figures never
+ * passes on zero checks. Pure.
+ */
 export function sparkGateVerdict(checks: readonly SparkCheck[]): SparkGateVerdict {
+  if (checks.length === 0) return 'STOP'
   if (checks.some((c) => c.status === 'STOP')) return 'STOP'
   if (checks.some((c) => c.status === 'not-reconciled')) return 'not-reconciled'
   return 'ok'
@@ -132,6 +138,9 @@ function valueText(v: number | null | undefined): string {
 export function describeSparkGate(result: Pick<SparkGateResult, 'verdict' | 'checks' | 'error'>, limit = 2000): string {
   if (result.verdict === 'ok') return 'Spark check passed: every printed figure reconciled within 1%.'
   if (result.error) return `Spark check could not run, so no figure is verified (CLAUDE.md §0): ${result.error}`.slice(0, limit)
+  if (result.checks.length === 0) {
+    return 'Spark check STOP: no printed figure was checked, so nothing is verified (CLAUDE.md §0).'.slice(0, limit)
+  }
   const bad = result.checks.filter((c) => c.status === (result.verdict === 'STOP' ? 'STOP' : 'not-reconciled'))
   const head =
     result.verdict === 'STOP'

@@ -19,7 +19,20 @@
  * provider answers (SEND_CLAIM_MARK). That state is IN FLIGHT, and every
  * reader treats it as delivered (review 2026-09-30): the earlier attempt may
  * have reached the provider before the process died, and a report is never
- * sent twice on a guess.
+ * sent twice on a guess. An answer that never came (the provider may have
+ * accepted it) keeps the row in flight with the reason after the mark
+ * ('sending (unknown outcome: …)'); it is never settled as a failure a retry
+ * would re-send.
+ *
+ * The claim stores the EXACT provider request (payload: the from, to,
+ * reply-to, subject, tracked html, text and headers, with the idempotency key
+ * derived from them). A retry of a settled failure inside REPLAY_WINDOW_MS
+ * replays that request byte for byte under the same key: Resend keeps a key
+ * 24 hours and answers a same-key, same-payload repeat with the first result,
+ * sending nothing twice. Past the window, a retry sends its own new render
+ * under its own key (the same key with a different payload is refused by
+ * Resend with a 409). The payload holds the contact's tracked links, so it is
+ * read only by the claim and the recovery here, never by a page.
  *
  * DAL boundary (G1): every raw .from('crm_report_sends') lives here. Service
  * role; the table is RLS-on with no policy. Reads never throw (an unreadable
@@ -45,13 +58,62 @@ export type ReportHoldReason =
 /** The error a claimed row carries until the provider answers: in flight. */
 export const SEND_CLAIM_MARK = 'sending'
 
+/** The error of a claimed row whose provider answer never came: still in flight. Pure. */
+export function unknownOutcomeError(detail: string): string {
+  return `${SEND_CLAIM_MARK} (unknown outcome: ${detail})`.slice(0, 2000)
+}
+
+/**
+ * How long a stored request may be replayed under its key: inside Resend's 24
+ * hours of idempotency, with an hour of margin. Past it the key is gone at
+ * Resend, so a replay would be a new send without the protection, and the
+ * retry sends its own fresh render under its own key instead.
+ */
+export const REPLAY_WINDOW_MS = 23 * 60 * 60 * 1000
+
+/** The exact request the provider received (lib/crm/market-report-send.ts builds it). */
+export type ReportEmailRequest = {
+  from: string
+  to: string
+  replyTo: string
+  subject: string
+  html: string
+  text: string
+  headers: Record<string, string>
+}
+
+/** The stored request with its idempotency key and when it was built. */
+export type ReportSendPayload = {
+  v: 1
+  idempotencyKey: string
+  builtAt: string
+  request: ReportEmailRequest
+}
+
+/** A stored request a retry may still replay byte for byte at `now`. Pure. */
+export function isReplayable(payload: ReportSendPayload | null | undefined, now: Date): payload is ReportSendPayload {
+  if (!payload || payload.v !== 1 || !payload.request || typeof payload.idempotencyKey !== 'string') return false
+  const built = Date.parse(payload.builtAt)
+  return Number.isFinite(built) && now.getTime() - built < REPLAY_WINDOW_MS
+}
+
+function parsePayload(v: unknown): ReportSendPayload | null {
+  if (!v || typeof v !== 'object') return null
+  const p = v as ReportSendPayload
+  return p.v === 1 && p.request && typeof p.idempotencyKey === 'string' ? p : null
+}
+
 /**
  * How long an in-flight row may be another process's live attempt. A run is
- * capped at 300 seconds (the cron route's maxDuration), so a row still
- * 'sending' after this was left by a process that died: it is treated as
- * delivered AND the cadence stamp moves on, or its cycle key would block the
- * subscription forever. A younger one is left alone (no stamp), so if that
- * attempt then fails, the next tick retries it.
+ * capped at 300 seconds (the cron route's maxDuration), so a row still in
+ * flight after this was left by a process that died, or its answer never
+ * came. It is ABANDONED, and settled from evidence, never presumed delivered
+ * or failed (review 2026-09-30; lib/crm/market-report-deliver.ts
+ * recoverAbandoned): Resend's id on record, else one run replays the stored
+ * request under its key inside REPLAY_WINDOW_MS, else Matt is paged and
+ * nothing is sent or stamped. A younger one is another run's live attempt:
+ * counted as delivered and left alone (no stamp), so if it then fails, the
+ * next tick retries it.
  */
 export const IN_FLIGHT_SETTLE_MS = 15 * 60 * 1000
 
@@ -82,6 +144,8 @@ export type ReportSendInsert = {
   figures?: readonly unknown[]
   /** The §0 Spark cross-check this send passed (or was held on): checks, queries, verdict. */
   sparkCheck?: unknown | null
+  /** The exact provider request, for a byte-for-byte replay under its key. */
+  payload?: ReportSendPayload | null
 }
 
 /** A send as the admin list and the web view read it (no html in the list). */
@@ -171,21 +235,27 @@ function toRecord(r: Row): ReportSendRecord {
 
 /** The fields that decide whether a send key is free, delivered, in flight or held. */
 export type ReportSendState = {
+  emailKey: string
   status: ReportSendStatus
   error: string | null
   sentAt: string | null
   attemptedAt: string
   holdReason: string | null
+  messageId: string | null
+  payload: ReportSendPayload | null
 }
 
-/** A claimed row the provider has not answered for yet (or never will: the process died). Pure. */
+/**
+ * A claimed row the provider has not answered for yet: in flight, or its
+ * answer never came (unknownOutcomeError), or the process died. Pure.
+ */
 export function isInFlightSend(s: Pick<ReportSendState, 'status' | 'error'>): boolean {
-  return s.status === 'failed' && s.error === SEND_CLAIM_MARK
+  return s.status === 'failed' && typeof s.error === 'string' && (s.error === SEND_CLAIM_MARK || s.error.startsWith(`${SEND_CLAIM_MARK} `))
 }
 
-/** An attempt that failed and settled: the only state a retry may take over. Pure. */
+/** An attempt that failed and settled: a state a retry may take over. Pure. */
 export function isSettledFailure(s: Pick<ReportSendState, 'status' | 'error'>): boolean {
-  return s.status === 'failed' && s.error !== SEND_CLAIM_MARK
+  return s.status === 'failed' && !isInFlightSend(s)
 }
 
 /**
@@ -195,9 +265,9 @@ export function isSettledFailure(s: Pick<ReportSendState, 'status' | 'error'>): 
  * Previews, settled failures and holds never count. Null when none. Pure.
  */
 export function latestDelivery(
-  rows: ReadonlyArray<Pick<ReportSendSummary, 'kind' | 'status' | 'error' | 'sentAt' | 'attemptedAt'>>,
-): { at: string; inFlight: boolean } | null {
-  let best: { at: string; inFlight: boolean } | null = null
+  rows: ReadonlyArray<Pick<ReportSendSummary, 'emailKey' | 'kind' | 'status' | 'error' | 'sentAt' | 'attemptedAt'>>,
+): { at: string; inFlight: boolean; emailKey: string } | null {
+  let best: { at: string; inFlight: boolean; emailKey: string } | null = null
   let bestMs = -Infinity
   for (const r of rows) {
     if (r.kind === 'preview') continue
@@ -205,7 +275,7 @@ export function latestDelivery(
     const at = r.status === 'sent' ? r.sentAt ?? r.attemptedAt : inFlight ? r.attemptedAt : null
     const ms = at ? Date.parse(at) : NaN
     if (at && Number.isFinite(ms) && ms > bestMs) {
-      best = { at, inFlight }
+      best = { at, inFlight, emailKey: r.emailKey }
       bestMs = ms
     }
   }
@@ -214,7 +284,7 @@ export function latestDelivery(
 
 /** latestDelivery's time only. Pure. */
 export function latestDeliveredAt(
-  rows: ReadonlyArray<Pick<ReportSendSummary, 'kind' | 'status' | 'error' | 'sentAt' | 'attemptedAt'>>,
+  rows: ReadonlyArray<Pick<ReportSendSummary, 'emailKey' | 'kind' | 'status' | 'error' | 'sentAt' | 'attemptedAt'>>,
 ): string | null {
   return latestDelivery(rows)?.at ?? null
 }
@@ -250,6 +320,7 @@ export async function insertMarketReportSend(
         plain_text: row.plainText ?? null,
         figures: [...(row.figures ?? [])],
         spark_check: row.sparkCheck ?? null,
+        payload: row.payload ?? null,
       },
       // `refresh` rewrites an existing row under the same key (a held row
       // re-checked on a later tick of the same cycle keeps the latest
@@ -263,23 +334,33 @@ export async function insertMarketReportSend(
   }
 }
 
-/** The state of the row holding a send key. Null when there is none or it cannot be read. */
-async function readSendState(emailKey: string): Promise<ReportSendState | null> {
+const STATE_COLS = 'email_key, status, error, sent_at, attempted_at, hold_reason, message_id, payload'
+
+/** The state of the row holding a send key (with its stored request). Null when there is none or it cannot be read. */
+export async function getMarketReportSendState(emailKey: string): Promise<ReportSendState | null> {
   try {
     const sb = createServiceClient()
-    const { data, error } = await sb
-      .from('crm_report_sends')
-      .select('status, error, sent_at, attempted_at, hold_reason')
-      .eq('email_key', emailKey)
-      .maybeSingle()
+    const { data, error } = await sb.from('crm_report_sends').select(STATE_COLS).eq('email_key', emailKey).maybeSingle()
     if (error || !data) return null
-    const r = data as { status: string; error: string | null; sent_at: string | null; attempted_at: string; hold_reason: string | null }
+    const r = data as {
+      email_key: string
+      status: string
+      error: string | null
+      sent_at: string | null
+      attempted_at: string
+      hold_reason: string | null
+      message_id: string | null
+      payload: unknown
+    }
     return {
+      emailKey: r.email_key,
       status: r.status as ReportSendStatus,
       error: r.error,
       sentAt: r.sent_at,
       attemptedAt: r.attempted_at,
       holdReason: r.hold_reason,
+      messageId: r.message_id ?? null,
+      payload: parsePayload(r.payload),
     }
   } catch {
     return null
@@ -287,38 +368,58 @@ async function readSendState(emailKey: string): Promise<ReportSendState | null> 
 }
 
 export type ReportSendClaim =
-  | { ok: true; claimed: true; takeover: boolean }
+  | {
+      ok: true
+      claimed: true
+      takeover: boolean
+      /** What the taken-over row was: a settled failure, or a held row (unexpected at a send key: page). */
+      from: 'failed' | 'held' | null
+      /** The stored request to replay byte for byte under its own key; null to send this render. */
+      replay: ReportSendPayload | null
+    }
   | { ok: true; claimed: false; existing: ReportSendState }
   | { ok: false; error: string }
 
+/** PostgREST filter: a row a retry may take over (a settled failure, or a held row). */
+const TAKEOVER_FILTER = `status.eq.held,error.is.null,error.not.like.${SEND_CLAIM_MARK}*`
+
 /**
- * Claim a send key before the wire (review 2026-09-30: two overlapping runs
- * could both send). The row is written in flight (status 'failed', error
- * SEND_CLAIM_MARK) with the stored copy and the trace.
+ * Claim a send key before the wire (reviews of 2026-09-30). The row is written
+ * in flight (status 'failed', error SEND_CLAIM_MARK) with the stored copy,
+ * the trace and the exact provider request.
  *
  *   - A new key: inserted, claimed.
- *   - A key already SENT, IN FLIGHT or HELD: not claimed; the caller gets the
- *     existing state (and treats in flight as delivered).
+ *   - A key already SENT or IN FLIGHT (an answer that never came included):
+ *     not claimed; the caller gets the existing state (and treats in flight
+ *     as delivered, or recovers an abandoned one from evidence).
  *   - A key whose attempt SETTLED as a failure: a retry takes it over, in ONE
- *     conditional update that matches only while the row is still a settled
- *     failure, so two retries cannot both take it.
+ *     conditional update that matches only while the row is still settled,
+ *     so two retries cannot both take it. Inside REPLAY_WINDOW_MS of the
+ *     stored request, the takeover keeps the stored copy and request and
+ *     hands the request back to REPLAY (same bytes, same key); past it, the
+ *     row takes this render and its request (a new key).
+ *   - A key HELD (holds use their own keys, so this is unexpected): nothing
+ *     went out under it, so it is taken over the same way, flagged `held` so
+ *     the caller pages.
  *
  * Never throws.
  */
 export async function claimMarketReportSend(
   row: Omit<ReportSendInsert, 'status' | 'error' | 'holdReason' | 'messageId' | 'sentAt'>,
+  now: Date = new Date(),
 ): Promise<ReportSendClaim> {
   const ins = await insertMarketReportSend({ ...row, status: 'failed', error: SEND_CLAIM_MARK })
   if (!ins.ok) return ins
-  if (ins.inserted) return { ok: true, claimed: true, takeover: false }
-  const existing = await readSendState(row.emailKey)
+  if (ins.inserted) return { ok: true, claimed: true, takeover: false, from: null, replay: null }
+  const existing = await getMarketReportSendState(row.emailKey)
   if (!existing) return { ok: false, error: `the send key ${row.emailKey} exists but its row could not be read` }
-  if (!isSettledFailure(existing)) return { ok: true, claimed: false, existing }
-  try {
-    const sb = createServiceClient()
-    const { data, error } = await sb
-      .from('crm_report_sends')
-      .update({
+  if (existing.status === 'sent' || isInFlightSend(existing)) return { ok: true, claimed: false, existing }
+  const from: 'failed' | 'held' = existing.status === 'held' ? 'held' : 'failed'
+  const replay = isReplayable(existing.payload, now) ? existing.payload : null
+  const attemptedAt = row.attemptedAt ?? now.toISOString()
+  const fields: Record<string, unknown> = replay
+    ? { status: 'failed', error: SEND_CLAIM_MARK, hold_reason: null, message_id: null, sent_at: null, attempted_at: attemptedAt }
+    : {
         subscription_id: row.subscriptionId,
         broker: row.broker,
         kind: row.kind,
@@ -328,7 +429,7 @@ export async function claimMarketReportSend(
         message_id: null,
         sent_at: null,
         recipient_email: row.recipientEmail ?? null,
-        attempted_at: row.attemptedAt ?? new Date().toISOString(),
+        attempted_at: attemptedAt,
         frequency: row.frequency ?? null,
         areas: [...(row.areas ?? [])],
         subject: row.subject ?? null,
@@ -336,24 +437,33 @@ export async function claimMarketReportSend(
         plain_text: row.plainText ?? null,
         figures: [...(row.figures ?? [])],
         spark_check: row.sparkCheck ?? null,
-      })
+        payload: row.payload ?? null,
+      }
+  try {
+    const sb = createServiceClient()
+    const { data, error } = await sb
+      .from('crm_report_sends')
+      .update(fields)
       .eq('email_key', row.emailKey)
-      .eq('status', 'failed')
-      .or(`error.is.null,error.neq.${SEND_CLAIM_MARK}`)
+      .in('status', ['failed', 'held'])
+      .or(TAKEOVER_FILTER)
       .select('id')
     if (error) return { ok: false, error: error.message }
-    if (data && data.length > 0) return { ok: true, claimed: true, takeover: true }
+    if (data && data.length > 0) return { ok: true, claimed: true, takeover: true, from, replay }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : String(e) }
   }
   // Another retry took it first: report what holds it now.
-  const now = await readSendState(row.emailKey)
-  return now ? { ok: true, claimed: false, existing: now } : { ok: false, error: `the send key ${row.emailKey} could not be read` }
+  const held = await getMarketReportSendState(row.emailKey)
+  return held ? { ok: true, claimed: false, existing: held } : { ok: false, error: `the send key ${row.emailKey} could not be read` }
 }
 
 /**
- * Settle a claimed send: the provider's answer (sent with a message id, or
- * failed with the error). Scoped by email_key. Never throws.
+ * Settle a claimed send with the provider's answer: sent with a message id,
+ * or a failure it answered. A delivery ('sent') always lands. A failure or a
+ * hold lands only on a row still in flight, so a late or duplicate settle can
+ * never turn a delivered report into a failure a retry would re-send. Scoped
+ * by email_key. Never throws.
  */
 export async function settleMarketReportSend(
   emailKey: string,
@@ -379,14 +489,83 @@ export async function settleMarketReportSend(
     }
     if (patch.html != null) fields.html = patch.html
     if (patch.plainText != null) fields.plain_text = patch.plainText
-    const { error } = await sb
-      .from('crm_report_sends')
-      .update(fields)
-      .eq('email_key', emailKey)
+    let q = sb.from('crm_report_sends').update(fields).eq('email_key', emailKey)
+    if (patch.status !== 'sent') q = q.eq('status', 'failed').like('error', `${SEND_CLAIM_MARK}%`)
+    const { error } = await q
     if (error) return { ok: false, error: error.message }
     return { ok: true }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : String(e) }
+  }
+}
+
+/**
+ * The provider's answer never came (it may have accepted the email): the row
+ * STAYS in flight, with the reason recorded after the mark. Only a row still
+ * in flight is touched. Never throws.
+ */
+export async function markMarketReportSendUnknown(emailKey: string, detail: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const sb = createServiceClient()
+    const { error } = await sb
+      .from('crm_report_sends')
+      .update({ error: unknownOutcomeError(detail) })
+      .eq('email_key', emailKey)
+      .eq('status', 'failed')
+      .like('error', `${SEND_CLAIM_MARK}%`)
+    if (error) return { ok: false, error: error.message }
+    return { ok: true }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) }
+  }
+}
+
+/**
+ * Take the recovery of an ABANDONED in-flight attempt: one conditional write
+ * of attempted_at that matches only while the row still carries the attempt
+ * time this run read, so of two runs recovering the same attempt, one wins.
+ * Never throws (a failed write is a lost race: false).
+ */
+export async function claimInFlightRecovery(emailKey: string, attemptedAt: string, nowIso: string): Promise<boolean> {
+  try {
+    const sb = createServiceClient()
+    const { data, error } = await sb
+      .from('crm_report_sends')
+      .update({ attempted_at: nowIso })
+      .eq('email_key', emailKey)
+      .eq('attempted_at', attemptedAt)
+      .eq('status', 'failed')
+      .like('error', `${SEND_CLAIM_MARK}%`)
+      .select('id')
+    return !error && Array.isArray(data) && data.length > 0
+  } catch {
+    return false
+  }
+}
+
+/**
+ * The evidence an attempt reached the provider: the 'sent' email_events row
+ * the send recorded with Resend's message id right after Resend accepted it.
+ * Null when there is none (or it cannot be read).
+ */
+export async function getMarketReportSentEvidence(emailKey: string): Promise<{ messageId: string; at: string } | null> {
+  const key = (emailKey ?? '').trim()
+  if (!key) return null
+  try {
+    const sb = createServiceClient()
+    const { data, error } = await sb
+      .from('email_events')
+      .select('message_id, occurred_at')
+      .eq('email_key', key)
+      .eq('event', 'sent')
+      .not('message_id', 'is', null)
+      .order('occurred_at', { ascending: false })
+      .limit(1)
+    if (error || !data || data.length === 0) return null
+    const r = data[0] as { message_id: string | null; occurred_at: string }
+    return r.message_id ? { messageId: r.message_id, at: r.occurred_at } : null
+  } catch {
+    return null
   }
 }
 
@@ -455,8 +634,8 @@ export async function getLatestDeliveredReportAt(personId: number): Promise<stri
   return (await getLatestDeliveredReport(personId))?.at ?? null
 }
 
-/** getLatestDeliveredReportAt, saying whether that delivery is still in flight. */
-export async function getLatestDeliveredReport(personId: number): Promise<{ at: string; inFlight: boolean } | null> {
+/** getLatestDeliveredReportAt, saying whether that delivery is still in flight, and its key. */
+export async function getLatestDeliveredReport(personId: number): Promise<{ at: string; inFlight: boolean; emailKey: string } | null> {
   const rows = await listMarketReportSendsForPerson(personId, {
     kinds: ['scheduled', 'manual'],
     statuses: ['sent', 'failed'],

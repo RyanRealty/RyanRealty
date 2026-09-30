@@ -23,7 +23,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { requirePersonInScope } from '@/app/actions/crm'
-import { getMarketReportSendById } from '@/lib/data/crm/marketReportSends'
+import { getMarketReportSendById, isInFlightSend } from '@/lib/data/crm/marketReportSends'
 import { previewReportLinks } from '@/lib/email/report-link-token'
 import type { SparkGateResult } from '@/lib/crm/market-report-spark-gate'
 import { EntityTitle, QuietRow, ReportGrid, SectionHead } from '@/components/admin/v2'
@@ -95,8 +95,8 @@ export default async function MarketReportSendPage({
       ? `Sent ${send.sentAt ? formatDateTime(send.sentAt) : ''}`.trim()
       : send.status === 'held'
         ? `Held (${send.holdReason ?? 'held'})${send.error ? `: ${send.error}` : ''}`
-        : send.error === 'sending'
-          ? 'Sending, not confirmed (treated as delivered: never sent again)'
+        : isInFlightSend(send)
+          ? `Sending, not confirmed (counted as delivered, and never sent twice)${send.error && send.error !== 'sending' ? `. ${send.error}` : ''}`
           : `Failed${send.error ? `: ${send.error}` : ''}`
   // Her live links, re-signed as preview links before a broker can click them.
   let framed: string | null = null

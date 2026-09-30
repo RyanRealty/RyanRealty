@@ -7,6 +7,7 @@ vi.mock('@/lib/data/crm/reportPreferences', () => ({ readReportPreferences }))
 vi.mock('./actions', () => ({ updateReportPreference: async () => undefined }))
 
 import EmailPreferencesPage from './page'
+import { errorAlert } from './copy'
 
 function view(over: Partial<ReportPreferencesView> = {}): ReportPreferencesView {
   return {
@@ -156,3 +157,21 @@ describe('/email-preferences', () => {
     }
   })
 })
+
+describe('the "Stop all" failure copy (review 2026-09-30)', () => {
+  it('says plainly that email is still on, and how to get it turned off', () => {
+    const alert = errorAlert('stop-all-failed')
+    expect(alert?.title).toBe('Email is still on')
+    expect(alert?.description).toContain('reply to any of our emails')
+    expect(`${alert?.title} ${alert?.description}`).not.toMatch(/\u2014/)
+  })
+})
+
+describe('the "changed" copy (review 2026-09-30)', () => {
+  it('asks her to look again rather than claiming a save', () => {
+    const alert = errorAlert('changed')
+    expect(alert?.title).toBe('Your report changed while this page was open')
+    expect(`${alert?.title} ${alert?.description}`).not.toMatch(/\u2014/)
+  })
+})
+

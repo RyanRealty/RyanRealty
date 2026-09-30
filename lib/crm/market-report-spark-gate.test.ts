@@ -63,6 +63,11 @@ describe('sparkGateVerdict and describeSparkGate', () => {
     expect(sparkGateVerdict([check({ status: 'not-reconciled' }), check({ status: 'STOP' })])).toBe('STOP')
   })
 
+  it('an empty check list is a STOP: a gate that checked nothing never passes (review 2026-09-30)', () => {
+    expect(sparkGateVerdict([])).toBe('STOP')
+    expect(describeSparkGate({ verdict: 'STOP', error: null, checks: [] })).toContain('no printed figure was checked')
+  })
+
   it('a STOP names each figure with both values, the delta and the population', () => {
     const text = describeSparkGate({
       verdict: 'STOP',

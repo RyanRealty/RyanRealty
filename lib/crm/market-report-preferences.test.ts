@@ -14,6 +14,7 @@ const m = vi.hoisted(() => ({
   addSuppression: vi.fn(),
   removeSuppression: vi.fn(),
   recordEmailEvent: vi.fn(),
+  queueBrokerHealthAlert: vi.fn(),
 }))
 
 vi.mock('@/lib/data/crm/reportPreferences', () => ({
@@ -35,6 +36,7 @@ vi.mock('@/lib/data/newsletter/perLead', () => ({
 }))
 vi.mock('@/lib/crm/suppressions', () => ({ addSuppression: m.addSuppression, removeSuppression: m.removeSuppression }))
 vi.mock('@/lib/crm/email-events', () => ({ recordEmailEvent: m.recordEmailEvent }))
+vi.mock('@/lib/crm/broker-alerts', () => ({ queueBrokerHealthAlert: m.queueBrokerHealthAlert, BROKER_ALERT_ORIGIN: 'https://ryan-realty.com' }))
 
 import { applyReportPreference } from './market-report-preferences'
 
@@ -67,6 +69,8 @@ function sub(over: Partial<ReportSubscriptionRecord> = {}): ReportSubscriptionRe
     consentNote: null,
     stoppedAt: null,
     stoppedVia: null,
+    pausedAt: null,
+    pausedVia: null,
     ...over,
   }
 }
@@ -102,7 +106,16 @@ beforeEach(() => {
   m.recordEmailEvent.mockResolvedValue({ ok: true })
   m.readEmailSignals.mockResolvedValue({ all: [], off: false })
   m.listMarketReportSendsForPerson.mockResolvedValue([])
+  m.addSuppression.mockResolvedValue({ ok: true })
+  m.queueBrokerHealthAlert.mockResolvedValue(true)
 })
+
+/** Her signals before "Stop all" (email on), then after it (her unsubscribe on record). */
+function stopAllLands() {
+  m.readEmailSignals
+    .mockResolvedValueOnce({ all: [], off: false })
+    .mockResolvedValueOnce({ all: [{ channel: 'email', reason: 'unsubscribe' }], off: true })
+}
 
 describe('applyReportPreference: the link', () => {
   it('a bad link changes nothing and says so', async () => {
@@ -208,6 +221,7 @@ describe('applyReportPreference: a link whose contact record was deleted', () =>
 
   it('"Stop all Ryan Realty email" still turns email off for her', async () => {
     m.resolveReportLink.mockResolvedValue(link({ deleted: true }))
+    stopAllLands()
     expect(await applyReportPreference('t', { kind: 'stop-all-email' }, 'email-link', NOW)).toEqual({
       ok: true,
       changed: true,
@@ -273,9 +287,19 @@ describe('applyReportPreference: pause, resume, interval, areas', () => {
   })
 })
 
+describe('applyReportPreference: a choice made on a page older than the row (review 2026-09-30)', () => {
+  it('a report that changed after the page was read is not overwritten, and the page says so', async () => {
+    m.resolveReportLink.mockResolvedValue(link())
+    m.applyReportSubscriptionPatch.mockResolvedValue({ ok: false, error: 'changed' })
+    expect(await applyReportPreference('t', { kind: 'frequency', frequency: 'weekly' }, 'email-link', NOW)).toEqual({ ok: false, error: 'changed' })
+    expect(m.recordEmailEvent).not.toHaveBeenCalled()
+  })
+})
+
 describe('applyReportPreference: all Ryan Realty email', () => {
   it('"Stop all" writes the existing global suppression, logs it and records the unsubscribe', async () => {
     m.resolveReportLink.mockResolvedValue(link())
+    stopAllLands()
     expect(await applyReportPreference('t', { kind: 'stop-all-email' }, 'email-link', NOW)).toEqual({ ok: true, changed: true, done: 'all-email-off' })
     expect(m.addSuppression).toHaveBeenCalledWith({
       personId: 64138,
@@ -287,6 +311,66 @@ describe('applyReportPreference: all Ryan Realty email', () => {
     })
     expect(m.logReportTimeline).toHaveBeenCalledWith(64138, expect.objectContaining({ title: "All Ryan Realty email turned off from the report's email link" }))
     expect(m.recordEmailEvent).toHaveBeenCalledWith(expect.objectContaining({ event: 'unsubscribe', meta: { via: 'email-link', scope: 'all' } }))
+  })
+
+  it('"Stop all" whose suppression did not save answers a real failure and pages Matt (review 2026-09-30)', async () => {
+    m.resolveReportLink.mockResolvedValue(link())
+    m.addSuppression.mockResolvedValue({ ok: false, error: 'permission denied for table crm_suppressions' })
+    // The re-read sees what is true: nothing turned email off.
+    m.readEmailSignals.mockResolvedValue({ all: [], off: false })
+    expect(await applyReportPreference('t', { kind: 'stop-all-email' }, 'email-link', NOW)).toEqual({ ok: false, error: 'stop-all-failed' })
+    expect(m.queueBrokerHealthAlert).toHaveBeenCalledTimes(1)
+    const alert = m.queueBrokerHealthAlert.mock.calls[0][0] as { key: string; body: string }
+    expect(alert.key).toContain('64138')
+    expect(alert.body).toContain('permission denied')
+    expect(alert.body).toContain('/admin/people/64138')
+    // No success is recorded anywhere.
+    expect(m.logReportTimeline).not.toHaveBeenCalled()
+    expect(m.recordEmailEvent).not.toHaveBeenCalled()
+  })
+
+  it('"Stop all" whose suppression write THREW is a failed write too: Matt is paged, the page says email is still on', async () => {
+    m.resolveReportLink.mockResolvedValue(link())
+    m.addSuppression.mockRejectedValue(new Error('fetch failed'))
+    m.readEmailSignals.mockResolvedValue({ all: [], off: false })
+    expect(await applyReportPreference('t', { kind: 'stop-all-email' }, 'email-link', NOW)).toEqual({ ok: false, error: 'stop-all-failed' })
+    expect(m.queueBrokerHealthAlert).toHaveBeenCalledTimes(1)
+    expect((m.queueBrokerHealthAlert.mock.calls[0][0] as { body: string }).body).toContain('fetch failed')
+    expect(m.logReportTimeline).not.toHaveBeenCalled()
+  })
+
+  it('"Stop all" answers all-email-off only when a re-read SEES email off, whatever the write said', async () => {
+    m.resolveReportLink.mockResolvedValue(link())
+    m.addSuppression.mockResolvedValue({ ok: true })
+    m.readEmailSignals.mockResolvedValue({ all: [], off: false })
+    expect(await applyReportPreference('t', { kind: 'stop-all-email' }, 'email-link', NOW)).toEqual({ ok: false, error: 'stop-all-failed' })
+    expect(m.queueBrokerHealthAlert).toHaveBeenCalledTimes(1)
+    expect(m.readEmailSignals).toHaveBeenCalledTimes(2)
+  })
+
+  it('a read that FAILED closed is not "already off": the suppression is still written, then verified', async () => {
+    m.resolveReportLink.mockResolvedValue(link())
+    m.readEmailSignals
+      // getSuppressionSignals' fail-closed stand-in, not a real opt-out on record.
+      .mockResolvedValueOnce({ all: [{ channel: 'all', reason: 'suppression-check-failed' }], off: true })
+      .mockResolvedValueOnce({ all: [{ channel: 'email', reason: 'unsubscribe' }], off: true })
+    expect(await applyReportPreference('t', { kind: 'stop-all-email' }, 'email-link', NOW)).toEqual({ ok: true, changed: true, done: 'all-email-off' })
+    expect(m.addSuppression).toHaveBeenCalledTimes(1)
+  })
+
+  it('a re-read that only fails closed is not proof: that is a failure too', async () => {
+    m.resolveReportLink.mockResolvedValue(link())
+    m.readEmailSignals
+      .mockResolvedValueOnce({ all: [], off: false })
+      .mockResolvedValueOnce({ all: [{ channel: 'all', reason: 'suppression-check-failed' }], off: true })
+    expect(await applyReportPreference('t', { kind: 'stop-all-email' }, 'email-link', NOW)).toEqual({ ok: false, error: 'stop-all-failed' })
+  })
+
+  it('email already off on her record is a no-op that says so, with no second write', async () => {
+    m.resolveReportLink.mockResolvedValue(link())
+    m.readEmailSignals.mockResolvedValue({ all: [{ channel: 'email', reason: 'unsubscribe' }], off: true })
+    expect(await applyReportPreference('t', { kind: 'stop-all-email' }, 'email-link', NOW)).toEqual({ ok: true, changed: false, done: 'all-email-off' })
+    expect(m.addSuppression).not.toHaveBeenCalled()
   })
 
   it('"Start receiving again" lifts only her own soft unsubscribe', async () => {

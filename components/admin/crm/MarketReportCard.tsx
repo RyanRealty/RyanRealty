@@ -23,6 +23,7 @@ import Link from 'next/link'
 import { Button, QuietRow, ReportGrid, SectionHead, StateWord, type AdminState } from '@/components/admin/v2'
 import ReportSubscriptionsPanel from '@/components/admin/crm/ReportSubscriptionsPanel'
 import type { MarketReportCard as CardData, MarketReportCardSend } from '@/lib/data/crm/getMarketReportCard'
+import { isInFlightSend } from '@/lib/data/crm/marketReportSends'
 import { formatDate, formatDateTime } from '@/lib/format/date'
 import {
   approveMarketReportForm,
@@ -67,7 +68,7 @@ function stateOf(card: CardData): { state: AdminState; word: string } {
   const sub = card.subscription
   if (!sub) return { state: 'waiting', word: 'Not set up' }
   if (card.state === 'stopped') return { state: 'down', word: card.contactStopped ? 'Stopped by the contact' : 'Stopped' }
-  if (card.state === 'paused') return { state: 'slow', word: 'Off' }
+  if (card.state === 'paused') return { state: 'slow', word: card.contactPaused ? 'Paused by the contact' : 'Off' }
   if (!sub.firstSendApprovedAt) return { state: 'waiting', word: 'On, waiting for your approval' }
   return { state: 'ok', word: 'On' }
 }
@@ -75,8 +76,10 @@ function stateOf(card: CardData): { state: AdminState; word: string } {
 function statusCell(s: MarketReportCardSend): string {
   if (s.status === 'sent') return s.sentAt ? `Sent ${formatDateTime(s.sentAt)}` : 'Sent'
   if (s.status === 'held') return `Held: ${HOLD_LABEL[s.holdReason ?? ''] ?? s.holdReason ?? 'held'}`
-  // In flight (or the process died mid-send): treated as delivered, never sent again.
-  if (s.error === 'sending') return 'Sending, not confirmed'
+  // In flight (or the process died mid-send, or the provider's answer never
+  // came): counted as delivered and never sent twice; an abandoned one is
+  // settled from evidence (lib/crm/market-report-deliver.ts).
+  if (isInFlightSend(s)) return 'Sending, not confirmed'
   return `Failed${s.error ? `: ${s.error.slice(0, 120)}` : ''}`
 }
 
@@ -169,7 +172,7 @@ export function MarketReportCard({
         current={sub ? { isActive: sub.isActive, areas: sub.areas, frequency: sub.frequency } : null}
         areaOptions={card.areaOptions}
         setAction={saveMarketReportForm.bind(null, personId, returnTo)}
-        consentRequired={card.contactStopped}
+        consentRequired={card.contactStopped || card.contactPaused}
       />
 
       <div style={{ marginTop: 16 }}>

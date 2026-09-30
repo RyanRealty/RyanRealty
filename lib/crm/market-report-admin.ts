@@ -27,6 +27,7 @@ import { getLatestDeliveredReportAt, getLatestReportPreview } from '@/lib/data/c
 import {
   planReportChange,
   planReportChanges,
+  sameAreaSet,
   type ReportChange,
 } from '@/lib/crm/market-report-subscription-control'
 import { deliverMarketReport, type DeliverReportOutcome } from '@/lib/crm/market-report-deliver'
@@ -34,6 +35,13 @@ import { isInternalOutboundRecipient } from '@/lib/email/auto-track'
 import { reportAreaLabel } from '@/lib/crm/market-report-areas'
 
 export type AdminResult = { ok: true; message: string } | { ok: false; error: string }
+
+/** A failed subscription write, in words a broker can act on. Pure. */
+function patchError(error: string): string {
+  return error === 'changed'
+    ? "This contact's market report changed since this page was opened (the contact or another broker). Nothing was overwritten. Reload the page and try again."
+    : error
+}
 
 /**
  * Validate + de-dupe area slugs. Unknown slugs are reported, never dropped.
@@ -99,7 +107,7 @@ async function applyChange(
     broker: admin.brokerSlug,
     source: 'app',
   })
-  return res.ok ? { ok: true, message: adminChangeMessage(change, rec) } : { ok: false, error: res.error }
+  return res.ok ? { ok: true, message: adminChangeMessage(change, rec) } : { ok: false, error: patchError(res.error) }
 }
 
 /**
@@ -200,16 +208,9 @@ export async function adminUpdateReportSubscription(input: {
     broker: input.admin.brokerSlug,
     source: 'app',
   })
-  if (!res.ok) return { ok: false, error: res.error }
+  if (!res.ok) return { ok: false, error: patchError(res.error) }
   const after = plan.after
   return { ok: true, message: plan.applied.map((c) => adminChangeMessage(c, after)).join(' ') }
-}
-
-/** Order-insensitive area comparison. */
-function sameAreaSet(a: readonly string[], b: readonly string[]): boolean {
-  if (a.length !== b.length) return false
-  const s = new Set(a)
-  return b.every((x) => s.has(x))
 }
 
 /**
@@ -304,5 +305,10 @@ function previewResult(outcome: DeliverReportOutcome, to: string): AdminResult {
       return { ok: false, error: 'Not sent.' }
     case 'failed':
       return { ok: false, error: `Preview not sent: ${outcome.detail}` }
+    case 'unknown':
+      return {
+        ok: false,
+        error: `The email provider did not answer, so the preview may have reached your inbox. It will not be sent twice. (${outcome.detail})`,
+      }
   }
 }

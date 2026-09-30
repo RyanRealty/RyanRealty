@@ -25,6 +25,12 @@
  * contact's new consent (a note of at least MIN_CONSENT_NOTE characters), which
  * is appended to consent_note with the date and the admin.
  *
+ * HER PAUSE HOLDS LIKE HER STOP (review 2026-09-30): her page promises
+ * "Nothing goes out until you resume it", so a pause records who paused and
+ * when (paused_at, paused_via), a broker resume of HER pause needs the same
+ * consent note as a restart of her stop, and every door that refuses a broker
+ * send or restart on her stop refuses it on her pause too (isContactHeld).
+ *
  * And its other half (review 2026-09-30): HER STOP ALWAYS LANDS. A stop from
  * one of her doors on a report a broker had already stopped is not a no-op:
  * it replaces the broker's stop with hers (stamp and door), so the unsubscribe
@@ -92,9 +98,38 @@ export function isContactStopVia(stoppedVia: string | null | undefined): boolean
   return typeof stoppedVia === 'string' && CONTACT_STOPS.has(stoppedVia)
 }
 
+/**
+ * The PostgREST guard a turn-on write carries (one `.or()`, an OR of AND
+ * groups): neither her stop nor her pause landed since the row was read.
+ * Written out in full because two `.or()` calls cannot be ANDed portably.
+ * Pure.
+ */
+export function notHeldByContactFilter(): string {
+  const list = `(${CONTACT_STOP_VIAS.join(',')})`
+  const stop = ['stopped_via.is.null', `stopped_via.not.in.${list}`]
+  const pause = ['paused_via.is.null', `paused_via.not.in.${list}`]
+  return stop.flatMap((a) => pause.map((b) => `and(${a},${b})`)).join(',')
+}
+
 /** True when the report is off because the contact stopped it herself. */
 export function isContactStopped(rec: Pick<ReportSubscriptionRecord, 'isActive' | 'stoppedVia'>): boolean {
   return !rec.isActive && isContactStopVia(rec.stoppedVia)
+}
+
+/** True when the report is off because the contact PAUSED it herself (and it is not stopped). */
+export function isContactPaused(rec: Pick<ReportSubscriptionRecord, 'isActive' | 'stoppedAt' | 'pausedVia'>): boolean {
+  return !rec.isActive && !rec.stoppedAt && isContactStopVia(rec.pausedVia)
+}
+
+/**
+ * True when the report is off by the CONTACT's own choice, a stop or a pause
+ * (review 2026-09-30: her page promises "Nothing goes out until you resume
+ * it", so her pause holds exactly like her stop). A broker cannot turn it
+ * back on without her consent on record, and a broker's manual send is
+ * refused while it holds.
+ */
+export function isContactHeld(rec: Pick<ReportSubscriptionRecord, 'isActive' | 'stoppedAt' | 'stoppedVia' | 'pausedVia'>): boolean {
+  return isContactStopped(rec) || isContactPaused(rec)
 }
 
 /** "from the report's email link" / "by the one-click unsubscribe" / "by matt@…". */
@@ -111,8 +146,24 @@ export function describeVia(actor: ReportChangeActor): string {
   }
 }
 
-function sameAreas(a: readonly string[], b: readonly string[]): boolean {
-  return a.length === b.length && a.every((v, i) => v === b[i])
+/**
+ * Two area lists name the same areas, in any order, repeats ignored (review
+ * 2026-09-30: four copies of this lived in the send path, the admin, the bulk
+ * handler and the card, and the planner's own compare was order-sensitive, so
+ * the same areas in another order read as a change). Every door compares with
+ * this one. Pure.
+ */
+export function sameAreaSet(a: readonly string[], b: readonly string[]): boolean {
+  const left = new Set(a)
+  const right = new Set(b)
+  if (left.size !== right.size) return false
+  for (const x of left) if (!right.has(x)) return false
+  return true
+}
+
+/** The patch that clears a pause stamp, when there is one. Pure. */
+function clearPause(rec: Pick<ReportSubscriptionRecord, 'pausedAt' | 'pausedVia'>): ReportSubscriptionPatch {
+  return rec.pausedAt || rec.pausedVia ? { paused_at: null, paused_via: null } : {}
 }
 
 function dateOnly(now: Date): string {
@@ -137,10 +188,11 @@ export function planReportChange(
   switch (change.kind) {
     case 'pause': {
       if (state !== 'on') return { ok: true, noop: true, message: state === 'stopped' ? 'These reports are stopped.' : 'These reports are already paused.' }
+      // Who paused, and when (review 2026-09-30): her pause holds like her stop.
       return {
         ok: true,
         noop: false,
-        patch: { is_active: false },
+        patch: { is_active: false, paused_at: nowIso, paused_via: actor.via },
         title: `Market report paused ${via}`,
         message: 'Your market report is paused.',
       }
@@ -151,23 +203,31 @@ export function planReportChange(
         return { ok: false, code: 'no-areas', error: 'Pick at least one area before turning the report back on.' }
       }
       const patch: ReportSubscriptionPatch = { is_active: true }
+      if (rec.pausedAt || rec.pausedVia) {
+        patch.paused_at = null
+        patch.paused_via = null
+      }
+      // Her own stop or pause: a broker restart needs her consent on record.
+      const heldByHer = state === 'stopped' ? isContactStopVia(rec.stoppedVia) : isContactStopVia(rec.pausedVia)
+      if (actor.via === 'admin' && heldByHer) {
+        const note = (actor.consentNote ?? '').trim()
+        if (note.length < MIN_CONSENT_NOTE) {
+          return {
+            ok: false,
+            code: 'consent-required',
+            error:
+              state === 'stopped'
+                ? 'This contact stopped these reports themselves. Record how they asked to restart them (a short consent note) before turning them back on.'
+                : 'This contact paused these reports themselves. Record how they asked to resume them (a short consent note) before turning them back on.',
+          }
+        }
+        const line = `${dateOnly(now)} restarted ${via}: ${note}`
+        patch.consent_note = [rec.consentNote, line].filter(Boolean).join('\n').slice(-2000)
+        patch.requested_at = nowIso
+      }
       if (state === 'stopped') {
         patch.stopped_at = null
         patch.stopped_via = null
-        if (actor.via === 'admin' && isContactStopVia(rec.stoppedVia)) {
-          const note = (actor.consentNote ?? '').trim()
-          if (note.length < MIN_CONSENT_NOTE) {
-            return {
-              ok: false,
-              code: 'consent-required',
-              error:
-                'This contact stopped these reports themselves. Record how they asked to restart them (a short consent note) before turning them back on.',
-            }
-          }
-          const line = `${dateOnly(now)} restarted ${via}: ${note}`
-          patch.consent_note = [rec.consentNote, line].filter(Boolean).join('\n').slice(-2000)
-          patch.requested_at = nowIso
-        }
       }
       return {
         ok: true,
@@ -185,7 +245,7 @@ export function planReportChange(
           return {
             ok: true,
             noop: false,
-            patch: { is_active: false, stopped_at: nowIso, stopped_via: actor.via },
+            patch: { is_active: false, stopped_at: nowIso, stopped_via: actor.via, ...clearPause(rec) },
             title: `Market report stopped ${via}`,
             message: 'Your market report is stopped. Other email from Ryan Realty is not affected.',
           }
@@ -195,7 +255,8 @@ export function planReportChange(
       return {
         ok: true,
         noop: false,
-        patch: { is_active: false, stopped_at: nowIso, stopped_via: actor.via },
+        // A stop of a paused report clears the pause stamp: the state is stopped.
+        patch: { is_active: false, stopped_at: nowIso, stopped_via: actor.via, ...clearPause(rec) },
         title: `Market report stopped ${via}`,
         message: 'Your market report is stopped. Other email from Ryan Realty is not affected.',
       }
@@ -214,7 +275,7 @@ export function planReportChange(
       if (change.areas.length === 0) {
         return { ok: false, code: 'last-area', error: 'Keep at least one area. To stop the report instead, use Stop these reports.' }
       }
-      if (sameAreas(change.areas, rec.areas)) return { ok: true, noop: true, message: 'Those areas are already on your report.' }
+      if (sameAreaSet(change.areas, rec.areas)) return { ok: true, noop: true, message: 'Those areas are already on your report.' }
       return {
         ok: true,
         noop: false,
@@ -256,6 +317,8 @@ export function withReportPatch(
   if (patch.consent_note !== undefined) next.consentNote = patch.consent_note
   if (patch.stopped_at !== undefined) next.stoppedAt = patch.stopped_at
   if (patch.stopped_via !== undefined) next.stoppedVia = patch.stopped_via
+  if (patch.paused_at !== undefined) next.pausedAt = patch.paused_at
+  if (patch.paused_via !== undefined) next.pausedVia = patch.paused_via
   return next
 }
 

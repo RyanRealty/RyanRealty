@@ -15,8 +15,10 @@
  *      whole report, named in the row. A report never mails old numbers.
  *   3. Scheduled only: a contact who already received a report inside the
  *      cadence window (a stamp write that failed after a send, a broker's
- *      manual send, or an attempt still IN FLIGHT, which counts as delivered)
- *      is not sent again; the stamp is repaired instead.
+ *      manual send, or a live attempt still IN FLIGHT, which counts as
+ *      delivered) is not sent again; the stamp is repaired for a delivery.
+ *      An attempt ABANDONED in flight (older than IN_FLIGHT_SETTLE_MS) is
+ *      never presumed delivered: it is settled from evidence (below).
  *   4. Scheduled only: suppressed contacts are held once per due cycle. Her
  *      record AND her address are checked (the newsletter writes address-only
  *      suppression rows). The send leaf re-checks both anyway; this keeps one
@@ -32,17 +34,37 @@
  *      a pause, a withdrawn approval, a deleted contact, a change of areas or
  *      interval, or another run's send made while this one was building
  *      cancels this send. (Manual: her own stop made meanwhile refuses it.)
- *   8. CLAIM the send key before the wire: the stored copy and the trace exist
- *      before the email does, so "View this report online" never points at
- *      nothing, and a row that cannot be written means no send (no trace, no
- *      ship). A scheduled key is one per subscription per due cycle, so two
- *      overlapping runs cannot both send; a retry takes over only an attempt
- *      that settled as a failure; an attempt in flight counts as delivered.
- *   9. sendOneSubscriber (the one gated send call; the send key is also the
- *      provider's idempotency key), then settle the row.
+ *      Then the latest delivery is read AGAIN, for a scheduled and a manual
+ *      send alike (review 2026-09-30): a report that went out, or is going
+ *      out, while this one was built wins, so a broker's "Send now" and the
+ *      cron never both send.
+ *   8. Build the exact provider request ONCE (prepareReportEmail) and CLAIM
+ *      the send key with it before the wire: the stored copy, the trace and
+ *      the request exist before the email does, so "View this report online"
+ *      never points at nothing, and a row that cannot be written means no
+ *      send (no trace, no ship). A scheduled key is one per subscription per
+ *      due cycle, so two overlapping runs cannot both send. A retry takes
+ *      over only an attempt that settled (a failure the provider answered, or
+ *      an unexpected held row, which pages Matt), and inside the replay
+ *      window it REPLAYS the stored request byte for byte under its own
+ *      idempotency key (Resend answers a same-key, same-payload repeat with
+ *      its first result and sends nothing twice); a new render gets a new key.
+ *   9. sendOneSubscriber (the one gated send call), then settle the row:
+ *      sent; a failure the provider answered; or, when no answer came, the
+ *      row STAYS in flight marked unknown and Matt is paged, never a failure a
+ *      retry would re-send. A suppression caught at the wire holds under the
+ *      cycle's own hold key and settles the send key as a settled failure, so
+ *      the subscription is never frozen on it.
  *  10. Sent (not a preview): the email_out timeline row with the message id,
  *      and last_sent_at stamped from the manual path too (a "Send now +
  *      subscribe" no longer double-sends).
+ *
+ * An in-flight attempt abandoned by a process that died is settled from
+ * evidence, never presumed: Resend's message id on record (the 'sent' event
+ * the send wrote), confirmed with Resend; else, inside the replay window, one
+ * run takes the recovery and replays the stored request under its key (Resend
+ * returns the first result if it was delivered, or sends it now); else Matt is
+ * paged and nothing is sent or stamped.
  *
  * Never throws; every path returns an outcome.
  */
@@ -50,14 +72,21 @@ import 'server-only'
 
 import { getMarketReportData, type MarketReportAreaBlock } from '@/lib/data/crm/getMarketReportData'
 import {
+  claimInFlightRecovery,
   claimMarketReportSend,
   getLatestDeliveredReport,
+  getMarketReportSendState,
+  getMarketReportSentEvidence,
   inFlightAbandoned,
   insertMarketReportSend,
   isInFlightSend,
+  isReplayable,
+  markMarketReportSendUnknown,
   settleMarketReportSend,
   type ReportHoldReason,
   type ReportSendKind,
+  type ReportSendPayload,
+  type ReportSendState,
 } from '@/lib/data/crm/marketReportSends'
 import {
   getMarketReportContact,
@@ -73,7 +102,7 @@ import { isSuppressed, isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { reportEmailLinks } from '@/lib/email/report-link-token'
 import { shellBrokerFor } from '@/lib/email/broker-identity'
 import { normalizeReportFrequency } from '@/lib/data/crm/getContactReportSubscriptions'
-import { isContactStopped } from '@/lib/crm/market-report-subscription-control'
+import { isContactHeld, isContactStopped, sameAreaSet } from '@/lib/crm/market-report-subscription-control'
 import { holdKey } from '@/lib/crm/market-report-keys'
 import {
   describeSparkGate,
@@ -84,10 +113,13 @@ import {
 } from '@/lib/crm/market-report-spark-gate'
 import { queueBrokerHealthAlert, BROKER_ALERT_ORIGIN } from '@/lib/crm/broker-alerts'
 import {
+  prepareReportEmail,
+  reportIdempotencyKey,
   sendOneSubscriber,
   type ScheduledDeliverInput,
   type ScheduledDeliverOutcome,
 } from '@/lib/crm/market-report-send'
+import { getSentEmail } from '@/lib/resend'
 
 export { holdKey, reportCycle, scheduledSendKey } from '@/lib/crm/market-report-keys'
 
@@ -180,12 +212,19 @@ export type DeliverReportInput = {
 export type DeliverHoldReason = 'stale-data' | 'no-data' | 'suppressed' | 'spark-stop' | 'spark-unreconciled'
 
 export type DeliverReportOutcome =
-  | { status: 'sent'; messageId: string | null; subject: string; figures: ReportFigure[]; spark: SparkGateResult }
+  /**
+   * `replayed`: the stored request of an earlier attempt of this key went out
+   * (a retry or a recovery), not this run's render; `figures` and `spark` are
+   * this run's, the replayed copy's own are on its row.
+   */
+  | { status: 'sent'; messageId: string | null; subject: string; figures: ReportFigure[]; spark: SparkGateResult; replayed: boolean }
   | { status: 'held'; reason: DeliverHoldReason; detail: string }
   | { status: 'already-sent'; sentAt: string }
   /** Nothing went out: the subscription or the contact changed while the report was built. */
   | { status: 'cancelled'; reason: 'stopped' | 'changed' | 'contact-deleted'; detail: string }
   | { status: 'failed'; detail: string }
+  /** The provider never answered: it may have gone out. Held in flight (never re-sent on a guess); Matt is paged. */
+  | { status: 'unknown'; detail: string }
 
 /** Injectable for the unit test; production uses the real modules. */
 export type DeliverDeps = {
@@ -204,6 +243,11 @@ export type DeliverDeps = {
   readSubscription: typeof getReportSubscriptionRecord
   readContact: typeof getMarketReportContact
   alert: typeof queueBrokerHealthAlert
+  markUnknown: typeof markMarketReportSendUnknown
+  sentEvidence: typeof getMarketReportSentEvidence
+  providerEmail: typeof getSentEmail
+  recoveryClaim: typeof claimInFlightRecovery
+  readSendState: typeof getMarketReportSendState
 }
 
 const REAL: DeliverDeps = {
@@ -222,16 +266,15 @@ const REAL: DeliverDeps = {
   readSubscription: getReportSubscriptionRecord,
   readContact: getMarketReportContact,
   alert: queueBrokerHealthAlert,
+  markUnknown: markMarketReportSendUnknown,
+  sentEvidence: getMarketReportSentEvidence,
+  providerEmail: getSentEmail,
+  recoveryClaim: claimInFlightRecovery,
+  readSendState: getMarketReportSendState,
 }
 
 function errText(e: unknown): string {
   return e instanceof Error ? e.message : String(e)
-}
-
-function sameSet(a: readonly string[], b: readonly string[]): boolean {
-  if (a.length !== b.length) return false
-  const s = new Set(a)
-  return b.every((x) => s.has(x))
 }
 
 function sameInstant(a: string | null, b: string | null): boolean {
@@ -260,7 +303,9 @@ export async function deliverMarketReport(
   const deps: DeliverDeps = { ...REAL, ...depsIn }
   const { kind, subscription, now } = input
   const scheduled = kind === 'scheduled'
-  const hold = async (reason: ReportHoldReason, detail: string) => {
+  const who = input.contactName ?? `contact ${input.personId}`
+  const review = `${BROKER_ALERT_ORIGIN}/admin/people/${input.personId}#market-report`
+  const hold = async (reason: ReportHoldReason, detail: string, copy?: HoldCopy) => {
     if (scheduled && subscription) {
       await recordReportHold(
         {
@@ -273,9 +318,18 @@ export async function deliverMarketReport(
           reason,
           detail,
           now,
+          copy,
         },
         deps.insertSend,
       )
+    }
+  }
+  /** Page Matt on the ops channel. Best-effort: the row is the record. */
+  const page = async (key: string, body: string, cooldownMinutes = 24 * 60) => {
+    try {
+      await deps.alert({ key, cooldownMinutes, body })
+    } catch {
+      // best-effort only
     }
   }
 
@@ -300,17 +354,179 @@ export async function deliverMarketReport(
     return { status: 'held', reason: 'stale-data', detail }
   }
 
+  const areaSlugs = blocks.map((b) => b.slug)
+  const areaNames = blocks.map((b) => b.areaLabel).join(', ')
+
+  /**
+   * A delivery is known (sent now, or settled from evidence): the thread's
+   * email_out row (deduped per key) and the stamps.
+   */
+  const recordDelivered = async (emailKey: string, messageId: string | null, sentIso: string, subject: string, stampAt: Date) => {
+    if (kind === 'preview') {
+      await deps.timeline(input.personId, {
+        kind: 'system',
+        title: `Market report preview sent to ${input.to}`,
+        body: `Preview of the ${areaNames} report. Not sent to the contact.`,
+        payload: { emailKey, messageId, kind },
+        broker: input.brokerSlug,
+        source: 'app',
+        dedupeKey: `market-report:${emailKey}`,
+      })
+      return
+    }
+    // (k) the thread shows every report that went out, with its message id.
+    await deps.timeline(input.personId, {
+      kind: 'email_out',
+      title: subject,
+      body: `Market report sent (${areaNames})`,
+      payload: { to: input.to, emailKey, messageId, kind, areas: areaSlugs },
+      broker: input.brokerSlug,
+      source: 'app',
+      dedupeKey: `market-report:${emailKey}`,
+    })
+    // (d) last_sent_at from every real send, manual included.
+    if (scheduled && subscription) {
+      const stamp = await deps.stampScheduled(subscription.id, stampAt)
+      if (!stamp.ok) {
+        console.error(
+          `[market-report-deliver] last_sent_at stamp FAILED for subscription ${subscription.id} after a real send (${stamp.error}); ` +
+            'the crm_report_sends backstop keeps the next tick from re-sending.',
+        )
+      }
+    } else if (kind === 'manual') {
+      await deps.stampManual(input.personId, sentIso)
+    }
+  }
+
+  /** Send one stored request under its key, and settle the row from the answer. */
+  const sendAndSettle = async (
+    emailKey: string,
+    payload: ReportSendPayload,
+    built: { figures: ReportFigure[]; spark: SparkGateResult },
+    replayed: boolean,
+  ): Promise<DeliverReportOutcome> => {
+    const out = await deps.sendOne({
+      kind,
+      personId: input.personId,
+      brokerSlug: input.brokerSlug,
+      contactEmail: input.contactEmail,
+      emailKey,
+      payload,
+    })
+    if (out.status === 'suppressed') {
+      if (scheduled && subscription) {
+        // Never a held row at the send key (review 2026-09-30): that froze the
+        // subscription, since no later run could take a held key over and the
+        // cycle key never changes. The key settles as a failure a later run
+        // takes over (and holds again, before any send, while the suppression
+        // stands); the hold is recorded under the cycle's own hold key.
+        await deps.settleSend(emailKey, { status: 'failed', error: `suppressed at send: ${out.detail}` })
+        await hold('suppressed', out.detail)
+      } else {
+        await deps.settleSend(emailKey, { status: 'held', holdReason: 'suppressed', error: out.detail })
+      }
+      return { status: 'held', reason: 'suppressed', detail: out.detail }
+    }
+    if (out.status === 'unknown') {
+      // It may have been delivered: stay in flight (counted as delivered),
+      // never a failure a retry would re-send on a guess.
+      await deps.markUnknown(emailKey, out.detail)
+      await page(
+        `market-report-send:unknown:${emailKey}`,
+        `Market report to ${who} may or may not have gone out: the email provider did not answer (${out.detail.slice(0, 160)}). ` +
+          `It is held so it is never sent twice; the next run asks Resend again with the same request and key. Review: ${review}`,
+      )
+      return { status: 'unknown', detail: out.detail }
+    }
+    if (out.status === 'failed') {
+      await deps.settleSend(emailKey, { status: 'failed', error: out.detail })
+      return { status: 'failed', detail: out.detail }
+    }
+    const sentIso = new Date().toISOString()
+    const settled = await deps.settleSend(emailKey, { status: 'sent', messageId: out.messageId, sentAt: sentIso })
+    if (!settled.ok) console.error('[deliverMarketReport] settle failed after a real send', emailKey, settled.error)
+    await recordDelivered(emailKey, out.messageId, sentIso, payload.request.subject, now)
+    return { status: 'sent', messageId: out.messageId, subject: payload.request.subject, figures: built.figures, spark: built.spark, replayed }
+  }
+
+  /**
+   * An attempt abandoned in flight (its process died): settled from evidence,
+   * never presumed delivered or failed (review 2026-09-30). 1) Resend's id on
+   * record, confirmed with Resend. 2) Inside the replay window, ONE run takes
+   * the recovery and replays the stored request under its key: Resend answers
+   * a delivered one with its first result and sends nothing, or sends it now.
+   * 3) Otherwise Matt is paged, and nothing is sent or stamped.
+   */
+  const recoverAbandoned = async (ex: ReportSendState, built: { figures: ReportFigure[]; spark: SparkGateResult }): Promise<DeliverReportOutcome> => {
+    let evidence: { messageId: string; at: string } | null = ex.messageId ? { messageId: ex.messageId, at: ex.sentAt ?? ex.attemptedAt } : null
+    if (!evidence) {
+      try {
+        evidence = await deps.sentEvidence(ex.emailKey)
+      } catch {
+        evidence = null
+      }
+    }
+    if (evidence) {
+      let sentIso = evidence.at
+      try {
+        const held = await deps.providerEmail(evidence.messageId)
+        if (held.ok) {
+          if (held.createdAt) sentIso = held.createdAt
+        } else if (held.notFound) {
+          await page(
+            `market-report-send:unresolved:${ex.emailKey}`,
+            `A market report attempt to ${who} (${ex.emailKey}) recorded Resend id ${evidence.messageId}, but Resend has no such email. ` +
+              `It is held and nothing is re-sent until someone checks Resend. Review: ${review}`,
+          )
+          return { status: 'failed', detail: `unresolved: Resend has no email ${evidence.messageId}` }
+        }
+      } catch {
+        // The id came from Resend's own acceptance; an unreachable Resend does not unmake it.
+      }
+      await deps.settleSend(ex.emailKey, { status: 'sent', messageId: evidence.messageId, sentAt: sentIso })
+      await recordDelivered(ex.emailKey, evidence.messageId, sentIso, ex.payload?.request.subject ?? `Market report (${areaNames})`, new Date(sentIso))
+      return { status: 'already-sent', sentAt: sentIso }
+    }
+    if (isReplayable(ex.payload, now)) {
+      const won = await deps.recoveryClaim(ex.emailKey, ex.attemptedAt, now.toISOString())
+      if (!won) return { status: 'already-sent', sentAt: ex.attemptedAt }
+      return sendAndSettle(ex.emailKey, ex.payload, built, true)
+    }
+    await page(
+      `market-report-send:unresolved:${ex.emailKey}`,
+      `A market report attempt to ${who} (${ex.emailKey}, ${ex.attemptedAt}) was left in flight and there is no record it reached Resend ` +
+        `${ex.payload ? 'and its stored request is past the replay window' : 'and no stored request to replay'}. ` +
+        `Nothing is re-sent or stamped until someone checks Resend for it. Review: ${review}`,
+    )
+    return { status: 'failed', detail: `unresolved: an abandoned attempt (${ex.emailKey}) has no evidence and cannot be replayed safely` }
+  }
+
+  const noneBuilt = { figures: [] as ReportFigure[], spark: null as unknown as SparkGateResult }
+
   if (scheduled && subscription) {
     // 3. Already received one inside the window (the durable backstop for a
-    //    last_sent_at stamp that failed after a real send, or an attempt in
-    //    flight: both count as delivered). The stamp is repaired, except for
-    //    an attempt another process may still be sending (IN_FLIGHT_SETTLE_MS):
-    //    if that one fails, the next tick must be free to retry it.
+    //    last_sent_at stamp that failed after a real send, or a live attempt
+    //    in flight: both count as delivered). The stamp is repaired for a
+    //    delivery. An attempt ABANDONED in flight is settled from evidence:
+    //    this key's own attempt at the claim below, another key's here.
     try {
       const latest = await deps.latestDelivered(input.personId)
       if (latest && !isDue({ frequency: normalizeReportFrequency(subscription.frequency), lastSentAt: latest.at, now })) {
-        if (!latest.inFlight || inFlightAbandoned(latest.at, now)) await deps.stampScheduled(subscription.id, new Date(latest.at))
-        return { status: 'already-sent', sentAt: latest.at }
+        if (!latest.inFlight) {
+          await deps.stampScheduled(subscription.id, new Date(latest.at))
+          return { status: 'already-sent', sentAt: latest.at }
+        }
+        if (!inFlightAbandoned(latest.at, now)) return { status: 'already-sent', sentAt: latest.at }
+        if (latest.emailKey && latest.emailKey !== input.emailKey) {
+          const other = await deps.readSendState(latest.emailKey)
+          if (other && isInFlightSend(other)) {
+            const resolved = await recoverAbandoned(other, noneBuilt)
+            if (resolved.status === 'sent') return { status: 'already-sent', sentAt: new Date().toISOString() }
+            if (resolved.status === 'already-sent' || resolved.status === 'unknown') return resolved
+            if (resolved.status === 'failed' && resolved.detail.startsWith('unresolved')) return resolved
+            // Settled as not delivered (a failure or a hold): go on with this cycle.
+          }
+        }
       }
     } catch {
       // The backstop is best-effort; the per-cycle claim below still refuses a repeat.
@@ -336,18 +552,23 @@ export async function deliverMarketReport(
   } catch (e) {
     return { status: 'failed', detail: 'link-signing-failed: ' + errText(e) }
   }
-  const rendered = renderMarketReportEmail({
-    contactName: input.contactName,
-    brokerSlug: input.brokerSlug,
-    areas: blocks,
-    unsubscribeUrl: links.unsubscribeUrl,
-    viewUrl: links.viewUrl,
-    manageUrl: links.manageUrl,
-    senderBroker: shellBrokerFor(input.brokerSlug),
-    asOf: now,
-  })
+  let rendered: ReturnType<typeof renderMarketReportEmail>
+  try {
+    rendered = renderMarketReportEmail({
+      contactName: input.contactName,
+      brokerSlug: input.brokerSlug,
+      areas: blocks,
+      unsubscribeUrl: links.unsubscribeUrl,
+      viewUrl: links.viewUrl,
+      manageUrl: links.manageUrl,
+      senderBroker: shellBrokerFor(input.brokerSlug),
+      asOf: now,
+    })
+  } catch (e) {
+    // The chart signs its values with the email secret: a missing secret refuses.
+    return { status: 'failed', detail: 'render-failed: ' + errText(e) }
+  }
   const subject = kind === 'preview' ? `[Preview] ${rendered.subject}` : rendered.subject
-  const areaSlugs = blocks.map((b) => b.slug)
   const rowAreas = kind === 'preview' && subscription ? subscription.areas : areaSlugs
 
   // 6. The §0 Spark gate, for every kind of send.
@@ -397,21 +618,13 @@ export async function deliverMarketReport(
       },
       deps.insertSend,
     )
-    try {
-      await deps.alert({
-        key: `market-report-send:spark-hold:${subscription ? `s${subscription.id}` : `p${input.personId}`}`,
-        cooldownMinutes: 24 * 60,
-        body: [
-          `Market report ${kind === 'preview' ? 'preview ' : ''}held for ${input.contactName ?? `contact ${input.personId}`}:`,
-          detail.slice(0, 300),
-          `Review: ${BROKER_ALERT_ORIGIN}/admin/people/${input.personId}#market-report`,
-        ].join(' '),
-      })
-    } catch {
-      // best-effort: the held row is the record
-    }
+    await page(
+      `market-report-send:spark-hold:${subscription ? `s${subscription.id}` : `p${input.personId}`}`,
+      [`Market report ${kind === 'preview' ? 'preview ' : ''}held for ${who}:`, detail.slice(0, 300), `Review: ${review}`].join(' '),
+    )
     return { status: 'held', reason, detail }
   }
+  const built = { figures: rendered.figures, spark }
 
   // 7. Re-read just before the wire: a change made while this report was
   //    being built cancels it. A preview goes to the broker and is not re-read.
@@ -441,58 +654,54 @@ export async function deliverMarketReport(
         // Another run sent this cycle's report while this one was building.
         return { status: 'already-sent', sentAt: fresh.lastSentAt ?? now.toISOString() }
       }
-      if (!sameSet(fresh.areas, subscription.areas) || fresh.frequency !== normalizeReportFrequency(subscription.frequency)) {
+      if (!sameAreaSet(fresh.areas, subscription.areas) || fresh.frequency !== normalizeReportFrequency(subscription.frequency)) {
         return {
           status: 'cancelled',
           reason: 'changed',
           detail: 'The areas or the interval changed while the report was being built; the next run sends the new one.',
         }
       }
-    } else if (fresh && isContactStopped(fresh)) {
-      return { status: 'cancelled', reason: 'stopped', detail: 'The contact stopped market reports while the report was being built.' }
-    }
-  }
-
-  // 8. Claim the send key before the wire.
-  const claim = await deps.claimSend({
-    subscriptionId: subscription?.id ?? null,
-    personId: input.personId,
-    emailKey: input.emailKey,
-    broker: input.brokerSlug,
-    kind,
-    recipientEmail: input.to,
-    attemptedAt: now.toISOString(),
-    frequency: subscription?.frequency ?? null,
-    areas: rowAreas,
-    subject,
-    html: rendered.html,
-    plainText: rendered.text,
-    figures: rendered.figures,
-    sparkCheck: spark,
-  })
-  if (!claim.ok) return { status: 'failed', detail: 'could not record the send, so it was not sent: ' + claim.error }
-  if (!claim.claimed) {
-    const ex = claim.existing
-    if (ex.status === 'sent' || isInFlightSend(ex)) {
-      // Delivered, or in flight (which may have gone out): never sent again.
-      // The stamp moves on for a delivery, or for an attempt no live process
-      // can still be sending; a younger in-flight attempt is left to settle.
-      const at = ex.sentAt ?? ex.attemptedAt
-      if (scheduled && subscription && (ex.status === 'sent' || inFlightAbandoned(ex.attemptedAt, now))) {
-        await deps.stampScheduled(subscription.id, new Date(at))
+    } else if (fresh && isContactHeld(fresh)) {
+      return {
+        status: 'cancelled',
+        reason: 'stopped',
+        detail: isContactStopped(fresh)
+          ? 'The contact stopped market reports while the report was being built.'
+          : 'The contact paused market reports while the report was being built.',
       }
-      return { status: 'already-sent', sentAt: at }
     }
-    return { status: 'failed', detail: `a send with this key is already recorded as ${ex.status}${ex.error ? ` (${ex.error})` : ''}` }
+
+    //    ...and the latest delivery AGAIN, right before the claim (review
+    //    2026-09-30): the Spark check takes seconds, and a broker's "Send now"
+    //    and the cron must never both send. Scheduled: a delivery inside the
+    //    window (or one in flight) wins. Manual: one in flight, or one begun
+    //    after this one began, wins; an earlier report does not (a broker may
+    //    send again on purpose).
+    let latest: Awaited<ReturnType<typeof getLatestDeliveredReport>> = null
+    try {
+      latest = await deps.latestDelivered(input.personId)
+    } catch {
+      latest = null
+    }
+    if (latest) {
+      const live = latest.inFlight && !inFlightAbandoned(latest.at, now)
+      if (scheduled && subscription) {
+        if (!isDue({ frequency: normalizeReportFrequency(subscription.frequency), lastSentAt: latest.at, now }) && (!latest.inFlight || live)) {
+          if (!latest.inFlight) await deps.stampScheduled(subscription.id, new Date(latest.at))
+          return { status: 'already-sent', sentAt: latest.at }
+        }
+      } else if (live || Date.parse(latest.at) >= now.getTime()) {
+        return { status: 'already-sent', sentAt: latest.at }
+      }
+    }
   }
 
-  // 9. The wire.
-  const out = await deps.sendOne({
+  // 8. The exact request, built once, then the claim with it stored.
+  const prepared = prepareReportEmail({
     kind,
     personId: input.personId,
     brokerSlug: input.brokerSlug,
     to: input.to,
-    contactEmail: input.contactEmail,
     subject,
     html: rendered.html,
     text: rendered.text,
@@ -500,69 +709,63 @@ export async function deliverMarketReport(
     oneClickUrl: links.oneClickUrl,
     emailKey: input.emailKey,
   })
-
-  if (out.status === 'suppressed') {
-    await deps.settleSend(input.emailKey, { status: 'held', holdReason: 'suppressed', error: out.detail })
-    return { status: 'held', reason: 'suppressed', detail: out.detail }
+  const payload: ReportSendPayload = {
+    v: 1,
+    idempotencyKey: reportIdempotencyKey(input.emailKey, prepared.request),
+    builtAt: now.toISOString(),
+    request: prepared.request,
   }
-  if (out.status === 'failed') {
-    await deps.settleSend(input.emailKey, {
-      status: 'failed',
-      error: out.detail,
-      html: out.preparedHtml,
-      plainText: out.preparedText,
-    })
-    return { status: 'failed', detail: out.detail }
-  }
-
-  const sentIso = new Date().toISOString()
-  const settled = await deps.settleSend(input.emailKey, {
-    status: 'sent',
-    messageId: out.messageId,
-    sentAt: sentIso,
-    html: out.preparedHtml,
-    plainText: out.preparedText,
-  })
-  if (!settled.ok) console.error('[deliverMarketReport] settle failed after a real send', input.emailKey, settled.error)
-
-  // 10. The record.
-  const areaNames = blocks.map((b) => b.areaLabel).join(', ')
-  if (kind === 'preview') {
-    await deps.timeline(input.personId, {
-      kind: 'system',
-      title: `Market report preview sent to ${input.to}`,
-      body: `Preview of the ${areaNames} report. Not sent to the contact.`,
-      payload: { emailKey: input.emailKey, messageId: out.messageId, kind },
+  const claim = await deps.claimSend(
+    {
+      subscriptionId: subscription?.id ?? null,
+      personId: input.personId,
+      emailKey: input.emailKey,
       broker: input.brokerSlug,
-      source: 'app',
-      dedupeKey: `market-report:${input.emailKey}`,
-    })
-  } else {
-    // (k) the thread shows every report that went out, with its message id.
-    await deps.timeline(input.personId, {
-      kind: 'email_out',
-      title: subject,
-      body: `Market report sent (${areaNames})`,
-      payload: { to: input.to, emailKey: input.emailKey, messageId: out.messageId, kind, areas: areaSlugs },
-      broker: input.brokerSlug,
-      source: 'app',
-      dedupeKey: `market-report:${input.emailKey}`,
-    })
-    // (d) last_sent_at from every real send, manual included.
-    if (scheduled && subscription) {
-      const stamp = await deps.stampScheduled(subscription.id, now)
-      if (!stamp.ok) {
-        console.error(
-          `[market-report-deliver] last_sent_at stamp FAILED for subscription ${subscription.id} after a real send (${stamp.error}); ` +
-            'the crm_report_sends backstop keeps the next tick from re-sending.',
-        )
-      }
-    } else if (kind === 'manual') {
-      await deps.stampManual(input.personId, sentIso)
+      kind,
+      recipientEmail: input.to,
+      attemptedAt: now.toISOString(),
+      frequency: subscription?.frequency ?? null,
+      areas: rowAreas,
+      subject,
+      html: prepared.cleanHtml,
+      plainText: prepared.cleanText,
+      figures: rendered.figures,
+      sparkCheck: spark,
+      payload,
+    },
+    now,
+  )
+  if (!claim.ok) return { status: 'failed', detail: 'could not record the send, so it was not sent: ' + claim.error }
+  if (!claim.claimed) {
+    const ex = claim.existing
+    if (ex.status === 'sent') {
+      const at = ex.sentAt ?? ex.attemptedAt
+      if (scheduled && subscription) await deps.stampScheduled(subscription.id, new Date(at))
+      return { status: 'already-sent', sentAt: at }
     }
+    if (isInFlightSend(ex)) {
+      // A live attempt is left to settle (no stamp: if it fails, the next run
+      // retries it); an abandoned one is settled from evidence.
+      if (!inFlightAbandoned(ex.attemptedAt, now)) return { status: 'already-sent', sentAt: ex.attemptedAt }
+      return recoverAbandoned(ex, built)
+    }
+    await page(
+      `market-report-send:unexpected:${input.emailKey}`,
+      `The market report send key ${input.emailKey} (${who}) is ${ex.status}${ex.error ? ` (${ex.error.slice(0, 120)})` : ''} and could not be claimed. Nothing was sent. Review: ${review}`,
+    )
+    return { status: 'failed', detail: `a send with this key is recorded as ${ex.status}${ex.error ? ` (${ex.error})` : ''}` }
+  }
+  if (claim.from === 'held') {
+    // Holds use their own keys, so a held send key is unexpected. Nothing went
+    // out under it, so it was taken over; a person should know it happened.
+    await page(
+      `market-report-send:unexpected:${input.emailKey}`,
+      `The market report send key ${input.emailKey} (${who}) was found held, which only holds under their own keys should be. It was taken over and sent (nothing had gone out under it). Review: ${review}`,
+    )
   }
 
-  return { status: 'sent', messageId: out.messageId, subject, figures: rendered.figures, spark }
+  // 9. The wire: this render, or the stored request a retry replays byte for byte.
+  return sendAndSettle(input.emailKey, claim.replay ?? payload, built, claim.replay != null)
 }
 
 /** The cron's per-contact call: a scheduled delivery for one due subscriber. */
@@ -585,5 +788,6 @@ export async function deliverScheduledReport(input: ScheduledDeliverInput): Prom
   if (outcome.status === 'held') return { status: 'held', reason: outcome.reason, detail: outcome.detail }
   if (outcome.status === 'already-sent') return { status: 'already-sent', sentAt: outcome.sentAt }
   if (outcome.status === 'cancelled') return { status: 'cancelled', reason: outcome.reason, detail: outcome.detail }
+  if (outcome.status === 'unknown') return { status: 'unknown', detail: outcome.detail }
   return { status: 'failed', detail: outcome.detail }
 }

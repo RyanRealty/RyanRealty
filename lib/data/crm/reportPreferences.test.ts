@@ -60,6 +60,8 @@ const SUB = {
   consentNote: null,
   stoppedAt: null,
   stoppedVia: null,
+  pausedAt: null,
+  pausedVia: null,
 }
 
 const manage = (over: Record<string, unknown> = {}) =>

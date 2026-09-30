@@ -2,12 +2,14 @@ import { describe, it, expect } from 'vitest'
 import {
   CONTACT_STOP_VIAS,
   describeVia,
+  isContactHeld,
   isContactStopped,
   isContactStopVia,
   MIN_CONSENT_NOTE,
   planReportChange,
   planReportChanges,
   reportSubscriptionState,
+  sameAreaSet,
   withReportPatch,
 } from './market-report-subscription-control'
 import type { ReportSubscriptionRecord } from '@/lib/data/crm/marketReportSubscription'
@@ -32,6 +34,8 @@ function rec(over: Partial<ReportSubscriptionRecord> = {}): ReportSubscriptionRe
     consentNote: 'Replied to a CMA email on 2026-09-28: "Yes please keep me in the loop on the market."',
     stoppedAt: null,
     stoppedVia: null,
+    pausedAt: null,
+    pausedVia: null,
     ...over,
   }
 }
@@ -177,6 +181,62 @@ describe('planReportChange: interval, areas, approval', () => {
     expect(planReportChange(rec({ firstSendApprovedAt: '2026-09-29T00:00:00Z' }), { kind: 'approve' }, ADMIN, NOW)).toMatchObject({
       noop: true,
     })
+  })
+})
+
+describe('her pause is recorded as hers, and holds like her stop (review 2026-09-30)', () => {
+  const HER_PAUSE = { isActive: false, pausedAt: '2026-09-20T00:00:00.000Z', pausedVia: 'email-link' }
+
+  it('a pause records when and from which door', () => {
+    const p = planReportChange(rec(), { kind: 'pause' }, EMAIL, NOW)
+    expect(p).toMatchObject({ ok: true, noop: false, patch: { is_active: false, paused_at: NOW.toISOString(), paused_via: 'email-link' } })
+  })
+
+  it('a broker cannot resume a report she paused without her consent on record', () => {
+    const refused = planReportChange(rec(HER_PAUSE), { kind: 'resume' }, ADMIN, NOW)
+    expect(refused).toMatchObject({ ok: false, code: 'consent-required' })
+    const ok = planReportChange(rec(HER_PAUSE), { kind: 'resume' }, { ...ADMIN, consentNote: 'She called on 2026-09-29 and asked to restart.' }, NOW)
+    expect(ok).toMatchObject({ ok: true, noop: false, patch: { is_active: true, paused_at: null, paused_via: null } })
+  })
+
+  it('her own resume clears her pause; a broker pause restarts without a note', () => {
+    expect(planReportChange(rec(HER_PAUSE), { kind: 'resume' }, EMAIL, NOW)).toMatchObject({
+      ok: true,
+      noop: false,
+      patch: { is_active: true, paused_at: null, paused_via: null },
+    })
+    expect(planReportChange(rec({ isActive: false, pausedAt: '2026-09-20T00:00:00.000Z', pausedVia: 'admin' }), { kind: 'resume' }, ADMIN, NOW)).toMatchObject({
+      ok: true,
+      noop: false,
+    })
+  })
+
+  it('a stop of a paused report clears the pause stamp (the state is stopped)', () => {
+    const p = planReportChange(rec(HER_PAUSE), { kind: 'stop' }, EMAIL, NOW)
+    expect(p).toMatchObject({ ok: true, noop: false, patch: { stopped_via: 'email-link', paused_at: null, paused_via: null } })
+  })
+
+  it('isContactHeld: her stop or her pause, only while the report is off', () => {
+    expect(isContactHeld(rec(HER_PAUSE))).toBe(true)
+    expect(isContactHeld(rec({ isActive: false, stoppedAt: NOW.toISOString(), stoppedVia: 'one-click' }))).toBe(true)
+    expect(isContactHeld(rec({ isActive: false, pausedAt: NOW.toISOString(), pausedVia: 'admin' }))).toBe(false)
+    expect(isContactHeld(rec({ isActive: false }))).toBe(false)
+    expect(isContactHeld(rec({ isActive: true, pausedVia: 'email-link' }))).toBe(false)
+  })
+})
+
+describe('sameAreaSet (one helper for every door, order-insensitive; review 2026-09-30)', () => {
+  it('compares areas as a set: order and repeats do not matter', () => {
+    expect(sameAreaSet(['bend', 'bend-larkspur'], ['bend-larkspur', 'bend'])).toBe(true)
+    expect(sameAreaSet(['bend', 'bend'], ['bend'])).toBe(true)
+    expect(sameAreaSet([], [])).toBe(true)
+    expect(sameAreaSet(['bend'], ['bend', 'redmond'])).toBe(false)
+    expect(sameAreaSet(['bend', 'redmond'], ['bend', 'sisters'])).toBe(false)
+  })
+
+  it('the planner reads the same areas in another order as already so, not as a change', () => {
+    const p = planReportChange(rec(), { kind: 'areas', areas: ['bend-larkspur', 'bend'], labels: ['Larkspur', 'Bend'] }, EMAIL, NOW)
+    expect(p).toMatchObject({ ok: true, noop: true })
   })
 })
 

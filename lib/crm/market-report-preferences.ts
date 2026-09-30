@@ -61,6 +61,7 @@ import {
   type ReportSubscriptionState,
 } from '@/lib/crm/market-report-subscription-control'
 import { reportAreaLabel, reportAreaOptions } from '@/lib/crm/market-report-areas'
+import { BROKER_ALERT_ORIGIN, queueBrokerHealthAlert } from '@/lib/crm/broker-alerts'
 
 /** One choice from the page or the one-click header. */
 export type PreferenceAction =
@@ -96,6 +97,14 @@ export type PreferenceError =
   | 'no-subscription'
   /** The contact record behind the link was deleted: only the stops apply. */
   | 'closed'
+  /**
+   * "Stop all Ryan Realty email" did not verifiably land: the suppression did
+   * not save, or a re-read did not show email off. Email is still on, and Matt
+   * was paged (review 2026-09-30).
+   */
+  | 'stop-all-failed'
+  /** The report changed after the page was read (her other door, or a broker): nothing was overwritten. */
+  | 'changed'
 
 export type PreferenceResult =
   | { ok: true; changed: boolean; done: PreferenceDone }
@@ -123,6 +132,20 @@ async function recordUnsubscribeEvent(link: ResolvedReportLink, via: 'email-link
     emailKey,
     meta: { via, scope },
   })
+}
+
+/**
+ * The reasons readEmailSignals' readers use as fail-closed stand-ins when a
+ * read FAILS (lib/data/crm/getSuppressionSignals.ts, getEmailKeyedSuppressionSignals).
+ * They make the page show email as off, which is the safe display, but they
+ * are not an opt-out on record, so they never prove that "Stop all" landed
+ * and never make it a no-op.
+ */
+const FAIL_CLOSED_SIGNAL_REASONS: ReadonlySet<string> = new Set(['suppression-check-failed', 'invalid-person', 'no-email'])
+
+/** Email is off by a real row or tag on her record or address, not a read that failed. Pure. */
+export function emailOffOnRecord(signals: ReadonlyArray<{ channel: string; reason: string }>): boolean {
+  return signals.some((s) => (s.channel === 'email' || s.channel === 'all') && !FAIL_CLOSED_SIGNAL_REASONS.has(s.reason))
 }
 
 /** The state word for a report change that turned out to be a no-op. */
@@ -154,18 +177,41 @@ export async function applyReportPreference(
 
   try {
     if (action.kind === 'stop-all-email') {
-      const { off } = await readEmailSignals(contact)
-      if (off) return { ok: true, changed: false, done: 'all-email-off' }
+      const before = await readEmailSignals(contact)
+      if (emailOffOnRecord(before.all)) return { ok: true, changed: false, done: 'all-email-off' }
       // Keyed to her record AND her address (the newsletter unsubscribe does
       // the same), so an address-keyed check honors it too: a deleted record,
       // or a second record with the same address, still reads as opted out.
-      await addSuppression({
+      // A write that throws is a write that failed: it goes to the same
+      // verify-then-page path, never to the generic error.
+      const written = await addSuppression({
         personId: contact.personId,
         channel: 'email',
         reason: 'unsubscribe',
         source: via === 'one-click' ? 'report-one-click' : 'report-email-link',
         value: contact.primaryEmail ? contact.primaryEmail.trim().toLowerCase() : null,
-      })
+      }).catch((e: unknown) => ({ ok: false as const, error: e instanceof Error ? e.message : String(e) }))
+      // "All email is off" is said only after a re-read SEES it off on her
+      // record (review 2026-09-30). Anything less is a real failure: the page
+      // says email is still on, and Matt is paged to turn it off by hand.
+      const after = await readEmailSignals(contact)
+      if (!emailOffOnRecord(after.all)) {
+        const why = written.ok ? 'the suppression saved but a re-read does not show email off' : written.error
+        try {
+          await queueBrokerHealthAlert({
+            key: `report-stop-all-failed:p${contact.personId}`,
+            cooldownMinutes: 60,
+            body: [
+              `${contact.name ?? `Contact ${contact.personId}`} asked to stop ALL Ryan Realty email from a market report link, and it did not save (${why.slice(0, 200)}).`,
+              'Email to them is still on. Turn it off by hand:',
+              `${BROKER_ALERT_ORIGIN}/admin/people/${contact.personId}`,
+            ].join(' '),
+          })
+        } catch {
+          // best-effort: the page already tells her email is still on
+        }
+        return { ok: false, error: 'stop-all-failed' }
+      }
       await logReportTimeline(contact.personId, {
         title: `All Ryan Realty email turned off ${describeVia(actor)}`,
         payload: { via, change: 'stop-all-email' },
@@ -269,7 +315,7 @@ export async function applyReportPreference(
       broker,
       source: via,
     })
-    if (!applied.ok) return { ok: false, error: 'save' }
+    if (!applied.ok) return { ok: false, error: applied.error === 'changed' ? 'changed' : 'save' }
     if (change.kind === 'stop') await recordUnsubscribeEvent(link, via, 'market-report')
     return { ok: true, changed: true, done }
   } catch (e) {

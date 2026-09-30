@@ -63,6 +63,8 @@ const MESSAGES: Record<string, string> = {
   outside_send_window: 'Bulk sends start between 8am and 8pm market time. Queue it when the window opens.',
   draft_failed: 'Could not write the draft.',
   enqueue_failed: 'The newsletter queue refused the send.',
+  spark_hold:
+    'Held: a figure in this issue differs from Spark by more than 1%, or could not be checked (CLAUDE.md §0). Nothing was queued, and Matt was paged.',
 }
 
 function message(error: string, detail?: string): string {

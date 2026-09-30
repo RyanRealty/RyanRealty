@@ -46,7 +46,7 @@ import {
   logReportTimeline,
 } from '@/lib/data/crm/marketReportSubscription'
 import { adminUpdateReportSubscription } from '@/lib/crm/market-report-admin'
-import { isContactStopped } from '@/lib/crm/market-report-subscription-control'
+import { isContactHeld, isContactStopped } from '@/lib/crm/market-report-subscription-control'
 import { renderMarketReportPreview } from '@/lib/crm/market-report-preview'
 import { reportAreaLabel } from '@/lib/crm/market-report-areas'
 import { scopeBroker } from '@/lib/crm/scope'
@@ -255,10 +255,14 @@ export async function deleteReportSubscriptionAction(
     if (!guard.ok) return { data: null, error: guard.error }
     const rec = await getReportSubscriptionRecord({ personId })
     if (!rec) return { data: null, error: 'Subscription not found' }
-    if (isContactStopped(rec)) {
+    // Her stop or her pause is her choice on record: deleting the row would
+    // let a later "subscribe" silently start the reports again.
+    if (isContactHeld(rec)) {
       return {
         data: null,
-        error: 'This contact stopped these reports themselves. Keep the stopped subscription: it is their opt-out on record.',
+        error: isContactStopped(rec)
+          ? 'This contact stopped these reports themselves. Keep the stopped subscription: it is their opt-out on record.'
+          : 'This contact paused these reports themselves. Keep the paused subscription: it is their choice on record.',
       }
     }
     const { ok, error } = await deleteReportSubscription(personId)

@@ -189,21 +189,44 @@ export async function removeSuppression(params: {
   await q
 }
 
+/**
+ * Write one suppression row. Returns whether it landed (review 2026-09-30: the
+ * insert result used to be ignored, so a caller could tell a contact "email is
+ * off" when no row was written). A write the database refused is returned and
+ * logged here, so it is visible even where a caller does not read the result;
+ * a write that throws (no client, a transport error) still throws, logged
+ * first, exactly as it always did, so no caller's behaviour changes.
+ */
 export async function addSuppression(params: {
   personId: number
   channel: 'all' | SendChannel
   reason: string
   source?: string
   value?: string | null
-}): Promise<void> {
-  const sb = createServiceClient()
-  await sb.from('crm_suppressions').insert({
-    person_id: params.personId,
-    channel: params.channel,
-    reason: params.reason,
-    source: params.source ?? 'app',
-    value: params.value ?? null,
-  })
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const failed = (error: string) =>
+    console.error(
+      `[suppressions] addSuppression failed (person ${params.personId}, ${params.channel}:${params.reason}, source ${params.source ?? 'app'})`,
+      error,
+    )
+  let res: { error: { message: string } | null }
+  try {
+    const sb = createServiceClient()
+    res = await sb.from('crm_suppressions').insert({
+      person_id: params.personId,
+      channel: params.channel,
+      reason: params.reason,
+      source: params.source ?? 'app',
+      value: params.value ?? null,
+    })
+  } catch (e) {
+    failed(e instanceof Error ? e.message : String(e))
+    throw e
+  }
+  if (res.error) {
+    failed(res.error.message)
+    return { ok: false, error: res.error.message }
+  }
 
   // Phase 8.4 — enqueue removal from the Meta CRM Custom Audience. A suppressed
   // contact must be DELETED from the audience, not just excluded from the next
@@ -219,4 +242,5 @@ export async function addSuppression(params: {
   } catch (e) {
     console.warn('[suppressions] audience-removal enqueue threw:', e instanceof Error ? e.message : String(e))
   }
+  return { ok: true }
 }

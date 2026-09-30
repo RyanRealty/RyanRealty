@@ -10,6 +10,7 @@ import type { MarketReportAreaBlock, MarketReportProvenance } from '@/lib/data/c
 import type { ReportSubscriptionRecord } from '@/lib/data/crm/marketReportSubscription'
 import type { SparkGateResult } from '@/lib/crm/market-report-spark-gate'
 import { verifyReportLinkToken } from '@/lib/email/report-link-token'
+import { reportIdempotencyKey } from '@/lib/crm/market-report-send'
 
 const NOW = new Date('2026-09-29T22:00:00.000Z')
 
@@ -89,6 +90,8 @@ function record(over: Partial<ReportSubscriptionRecord> = {}): ReportSubscriptio
     consentNote: null,
     stoppedAt: null,
     stoppedVia: null,
+    pausedAt: null,
+    pausedVia: null,
     ...over,
   }
 }
@@ -110,9 +113,14 @@ function deps(over: Partial<Mocks> = {}): Mocks {
     isSuppressed: vi.fn(async () => ({ suppressed: false, reasons: [] })),
     isSuppressedByEmail: vi.fn(async () => ({ suppressed: false, reasons: [] })),
     insertSend: vi.fn(async () => ({ ok: true, inserted: true })),
-    claimSend: vi.fn(async () => ({ ok: true, claimed: true, takeover: false })),
+    claimSend: vi.fn(async () => ({ ok: true, claimed: true, takeover: false, from: null, replay: null })),
     settleSend: vi.fn(async () => ({ ok: true })),
-    sendOne: vi.fn(async () => ({ status: 'sent', messageId: 'msg-1', preparedHtml: '<p>prepared</p>', preparedText: 'prepared' })),
+    sendOne: vi.fn(async () => ({ status: 'sent', messageId: 'msg-1' })),
+    markUnknown: vi.fn(async () => ({ ok: true })),
+    sentEvidence: vi.fn(async () => null),
+    providerEmail: vi.fn(async () => ({ ok: false, notFound: false, error: 'not called' })),
+    recoveryClaim: vi.fn(async () => true),
+    readSendState: vi.fn(async () => null),
     timeline: vi.fn(async () => true),
     stampScheduled: vi.fn(async () => ({ ok: true })),
     stampManual: vi.fn(async () => true),
@@ -203,15 +211,25 @@ describe('deliverMarketReport: holds', () => {
   it('an attempt still in flight counts as delivered for the cadence backstop', async () => {
     // Another process claimed it 30 seconds ago: never sent twice, and the
     // stamp is left alone so a failure there can still be retried next tick.
-    const live = deps({ latestDelivered: vi.fn(async () => ({ at: '2026-09-29T21:59:30.000Z', inFlight: true })) })
+    const live = deps({ latestDelivered: vi.fn(async () => ({ at: '2026-09-29T21:59:30.000Z', inFlight: true, emailKey: KEY })) })
     expect(await deliverMarketReport(input(), live as unknown as DeliverDeps)).toEqual({ status: 'already-sent', sentAt: '2026-09-29T21:59:30.000Z' })
     expect(live.sendOne).not.toHaveBeenCalled()
     expect(live.stampScheduled).not.toHaveBeenCalled()
-    // Left by a process that died six hours ago: treated as delivered, and the cadence moves on.
-    const dead = deps({ latestDelivered: vi.fn(async () => ({ at: '2026-09-29T16:00:00.000Z', inFlight: true })) })
-    expect(await deliverMarketReport(input(), dead as unknown as DeliverDeps)).toEqual({ status: 'already-sent', sentAt: '2026-09-29T16:00:00.000Z' })
-    expect(dead.sendOne).not.toHaveBeenCalled()
-    expect(dead.stampScheduled).toHaveBeenCalledWith(9016, new Date('2026-09-29T16:00:00.000Z'))
+  })
+
+  it('an abandoned attempt of ANOTHER key is resolved from evidence, never presumed delivered (review 2026-09-30)', async () => {
+    // A manual send whose process died six hours ago, with Resend's id on record: delivered, so the cadence moves on.
+    const other = 'market-report:manual:64138:1'
+    const d = deps({
+      latestDelivered: vi.fn(async () => ({ at: '2026-09-29T16:00:00.000Z', inFlight: true, emailKey: other })),
+      readSendState: vi.fn(async () => ({ emailKey: other, status: 'failed', error: 'sending', sentAt: null, attemptedAt: '2026-09-29T16:00:00.000Z', holdReason: null, messageId: null, payload: null })),
+      sentEvidence: vi.fn(async () => ({ messageId: 'msg-dead', at: '2026-09-29T16:00:02.000Z' })),
+      providerEmail: vi.fn(async () => ({ ok: true, id: 'msg-dead', createdAt: '2026-09-29T16:00:02.000Z', lastEvent: 'delivered' })),
+    })
+    expect(await deliverMarketReport(input(), d as unknown as DeliverDeps)).toEqual({ status: 'already-sent', sentAt: '2026-09-29T16:00:02.000Z' })
+    expect(d.settleSend).toHaveBeenCalledWith(other, expect.objectContaining({ status: 'sent', messageId: 'msg-dead' }))
+    expect(d.stampScheduled).toHaveBeenCalledWith(9016, new Date('2026-09-29T16:00:02.000Z'))
+    expect(d.sendOne).not.toHaveBeenCalled()
   })
 })
 
@@ -315,49 +333,63 @@ describe('deliverMarketReport: re-read just before the wire', () => {
 })
 
 describe('deliverMarketReport: one claim per subscription per cycle', () => {
-  it('a key already sent, or still in flight, is treated as delivered and never sent again', async () => {
-    const cases = [
-      // Sent (its stamp failed): repair the stamp.
-      { existing: { status: 'sent', error: null, sentAt: '2026-09-29T16:00:05.000Z', attemptedAt: '2026-09-29T16:00:00.000Z', holdReason: null }, stamps: true },
-      // An overlapping run's live attempt: leave its stamp to it.
-      { existing: { status: 'failed', error: 'sending', sentAt: null, attemptedAt: '2026-09-29T21:59:30.000Z', holdReason: null }, stamps: false },
-      // Abandoned by a process that died: the cadence moves on.
-      { existing: { status: 'failed', error: 'sending', sentAt: null, attemptedAt: '2026-09-29T16:00:00.000Z', holdReason: null }, stamps: true },
-    ]
-    for (const { existing, stamps } of cases) {
-      const d = deps({ claimSend: vi.fn(async () => ({ ok: true, claimed: false, existing })) })
-      const out = await deliverMarketReport(input(), d as unknown as DeliverDeps)
-      expect(out).toEqual({ status: 'already-sent', sentAt: existing.sentAt ?? existing.attemptedAt })
-      expect(d.sendOne).not.toHaveBeenCalled()
-      if (stamps) expect(d.stampScheduled).toHaveBeenCalledWith(9016, new Date(existing.sentAt ?? existing.attemptedAt))
-      else expect(d.stampScheduled).not.toHaveBeenCalled()
-    }
+  it('a key already sent is delivered: the stamp is repaired, nothing is sent', async () => {
+    const existing = { emailKey: KEY, status: 'sent', error: null, sentAt: '2026-09-29T16:00:05.000Z', attemptedAt: '2026-09-29T16:00:00.000Z', holdReason: null, messageId: 'msg-0', payload: null }
+    const d = deps({ claimSend: vi.fn(async () => ({ ok: true, claimed: false, existing })) })
+    expect(await deliverMarketReport(input(), d as unknown as DeliverDeps)).toEqual({ status: 'already-sent', sentAt: existing.sentAt })
+    expect(d.sendOne).not.toHaveBeenCalled()
+    expect(d.stampScheduled).toHaveBeenCalledWith(9016, new Date(existing.sentAt))
   })
 
-  it('a held key is not sent over', async () => {
-    const d = deps({
-      claimSend: vi.fn(async () => ({
-        ok: true,
-        claimed: false,
-        existing: { status: 'held', error: 'email:unsubscribe', sentAt: null, attemptedAt: '2026-09-29T16:00:00.000Z', holdReason: 'suppressed' },
-      })),
-    })
-    expect((await deliverMarketReport(input(), d as unknown as DeliverDeps)).status).toBe('failed')
+  it("an overlapping run's live attempt (in flight, young) is left to settle: no send, no stamp", async () => {
+    const existing = { emailKey: KEY, status: 'failed', error: 'sending', sentAt: null, attemptedAt: '2026-09-29T21:59:30.000Z', holdReason: null, messageId: null, payload: null }
+    const d = deps({ claimSend: vi.fn(async () => ({ ok: true, claimed: false, existing })) })
+    expect(await deliverMarketReport(input(), d as unknown as DeliverDeps)).toEqual({ status: 'already-sent', sentAt: existing.attemptedAt })
     expect(d.sendOne).not.toHaveBeenCalled()
+    expect(d.stampScheduled).not.toHaveBeenCalled()
+  })
+
+  it('a held key (unexpected: holds use their own keys) is taken over, since nothing went out under it, and Matt is paged', async () => {
+    const d = deps({ claimSend: vi.fn(async () => ({ ok: true, claimed: true, takeover: true, from: 'held', replay: null })) })
+    expect((await deliverMarketReport(input(), d as unknown as DeliverDeps)).status).toBe('sent')
+    expect(d.sendOne).toHaveBeenCalledTimes(1)
+    expect(d.alert).toHaveBeenCalledWith(expect.objectContaining({ key: expect.stringContaining('unexpected') }))
   })
 })
 
-describe('deliverMarketReport: a real send', () => {
-  it('claims the row with the clean copy and figures BEFORE the wire, then settles it', async () => {
+describe('deliverMarketReport: a suppression caught at send time never freezes the subscription (review 2026-09-30)', () => {
+  it('holds under its own hold key and settles the send key as a settled failure a later run can take over', async () => {
+    const d = deps({ sendOne: vi.fn(async () => ({ status: 'suppressed', detail: 'email:unsubscribe' })) })
+    const out = await deliverMarketReport(input(), d as unknown as DeliverDeps)
+    expect(out).toEqual({ status: 'held', reason: 'suppressed', detail: 'email:unsubscribe' })
+    // The send key: a settled failure (never 'held'), so the next run may take it over.
+    expect(d.settleSend).toHaveBeenCalledWith(KEY, expect.objectContaining({ status: 'failed', error: expect.stringContaining('suppressed at send') }))
+    expect(d.settleSend.mock.calls[0][1].status).not.toBe('held')
+    // The hold is recorded under the cycle's own hold key, where the admin card reads it.
+    expect(d.insertSend).toHaveBeenCalledWith(
+      expect.objectContaining({ emailKey: holdKey('suppressed', 9016, null), status: 'held', holdReason: 'suppressed' }),
+      expect.anything(),
+    )
+  })
+
+  it("a broker's one-off key (manual) is simply settled as held", async () => {
+    const d = deps({ sendOne: vi.fn(async () => ({ status: 'suppressed', detail: 'email:unsubscribe' })) })
+    await deliverMarketReport(input({ kind: 'manual', emailKey: 'market-report:manual:64138:1' }), d as unknown as DeliverDeps)
+    expect(d.settleSend).toHaveBeenCalledWith('market-report:manual:64138:1', expect.objectContaining({ status: 'held', holdReason: 'suppressed' }))
+  })
+})
+
+describe('deliverMarketReport: the exact request is stored, and a retry replays it byte for byte (review 2026-09-30)', () => {
+  it('claims the row with the clean copy, the figures AND the exact provider request BEFORE the wire, then settles it', async () => {
     const order: string[] = []
     const d = deps({
       claimSend: vi.fn(async () => {
         order.push('claim')
-        return { ok: true, claimed: true, takeover: false }
+        return { ok: true, claimed: true, takeover: false, from: null, replay: null }
       }),
       sendOne: vi.fn(async () => {
         order.push('send')
-        return { status: 'sent', messageId: 'msg-9', preparedHtml: '<p>prepared</p>', preparedText: 'prepared' }
+        return { status: 'sent', messageId: 'msg-9' }
       }),
       settleSend: vi.fn(async () => {
         order.push('settle')
@@ -378,21 +410,25 @@ describe('deliverMarketReport: a real send', () => {
       areas: ['bend-larkspur'],
     })
     expect(d.insertSend).not.toHaveBeenCalled()
+    // The stored copy is clean (no pixel, no wraps); the stored request is what goes to Resend.
     expect(claim.html).toContain('Larkspur')
     expect(claim.html).not.toContain('/api/track/e/')
     expect(claim.figures.length).toBeGreaterThan(3)
+    expect(claim.payload.request.to).toBe('cheryl@example.com')
+    expect(claim.payload.request.html).toContain('/api/track/e/')
+    expect(claim.payload.idempotencyKey).toBe(reportIdempotencyKey(KEY, claim.payload.request))
 
-    // The links it sent are signed for Cheryl, her subscription and this report.
+    // The leaf sends exactly the stored request.
     const one = d.sendOne.mock.calls[0][0]
-    const t = decodeURIComponent(new URL(one.oneClickUrl).searchParams.get('t') ?? '')
-    expect(verifyReportLinkToken(t)).toMatchObject({ personId: 64138, subscriptionId: 9016, purpose: 'stop', emailKey: KEY, preview: false })
-    // Her address rides to the leaf, which checks it against address-keyed suppression.
+    expect(one.payload).toBe(claim.payload)
     expect(one.contactEmail).toBe('cheryl@example.com')
-    expect(one.unsubscribeUrl).toContain('/email-preferences?t=')
-    expect(one.unsubscribeUrl).toContain('&stop=1')
+    // The links it sent are signed for Cheryl, her subscription and this report.
+    const oneClick = /<([^>]+)>/.exec(one.payload.request.headers['List-Unsubscribe'])?.[1] ?? ''
+    const t = decodeURIComponent(new URL(oneClick).searchParams.get('t') ?? '')
+    expect(verifyReportLinkToken(t)).toMatchObject({ personId: 64138, subscriptionId: 9016, purpose: 'stop', emailKey: KEY, preview: false })
+    expect(one.payload.request.html).toContain('/email-preferences?t=')
 
-    expect(d.settleSend).toHaveBeenCalledWith(KEY, expect.objectContaining({ status: 'sent', messageId: 'msg-9', html: '<p>prepared</p>' }))
-    // (k) the thread shows the report with its message id.
+    expect(d.settleSend).toHaveBeenCalledWith(KEY, expect.objectContaining({ status: 'sent', messageId: 'msg-9' }))
     expect(d.timeline).toHaveBeenCalledWith(
       64138,
       expect.objectContaining({
@@ -405,17 +441,32 @@ describe('deliverMarketReport: a real send', () => {
     expect(d.stampManual).not.toHaveBeenCalled()
   })
 
-  it('refuses to send when the row cannot be claimed (no trace, no ship)', async () => {
-    const d = deps({ claimSend: vi.fn(async () => ({ ok: false, error: 'relation does not exist' })) })
+  it('a takeover inside the replay window sends the STORED request under its own key, never the new render', async () => {
+    const stored = {
+      v: 1,
+      idempotencyKey: `${KEY}:0123456789abcdef`,
+      builtAt: '2026-09-29T16:00:00.000Z',
+      request: { from: 'Matt', to: 'cheryl@example.com', replyTo: 'matt@ryan-realty.com', subject: 'Earlier render', html: '<p>earlier</p>', text: 'earlier', headers: {} },
+    }
+    const d = deps({ claimSend: vi.fn(async () => ({ ok: true, claimed: true, takeover: true, from: 'failed', replay: stored })) })
     const out = await deliverMarketReport(input(), d as unknown as DeliverDeps)
-    expect(out.status).toBe('failed')
-    expect(d.sendOne).not.toHaveBeenCalled()
+    expect(out.status).toBe('sent')
+    expect(d.sendOne.mock.calls[0][0].payload).toBe(stored)
   })
 
-  it('settles a provider failure as failed with the error and the prepared copy', async () => {
-    const d = deps({
-      sendOne: vi.fn(async () => ({ status: 'failed', detail: 'Resend 500', preparedHtml: '<p>p</p>', preparedText: 'p' })),
-    })
+  it('an answer that never came is UNKNOWN: the row stays in flight, Matt is paged, and nothing is settled as a failure', async () => {
+    const d = deps({ sendOne: vi.fn(async () => ({ status: 'unknown', detail: 'Unable to fetch data. The request could not be resolved.' })) })
+    const out = await deliverMarketReport(input(), d as unknown as DeliverDeps)
+    expect(out).toMatchObject({ status: 'unknown' })
+    expect(d.markUnknown).toHaveBeenCalledWith(KEY, 'Unable to fetch data. The request could not be resolved.')
+    expect(d.settleSend).not.toHaveBeenCalled()
+    expect(d.alert).toHaveBeenCalledWith(expect.objectContaining({ key: `market-report-send:unknown:${KEY}` }))
+    expect(d.stampScheduled).not.toHaveBeenCalled()
+    expect(d.timeline).not.toHaveBeenCalled()
+  })
+
+  it('settles a refusal Resend answered as a failure (a later run may replay it)', async () => {
+    const d = deps({ sendOne: vi.fn(async () => ({ status: 'failed', detail: 'Resend 500' })) })
     const out = await deliverMarketReport(input(), d as unknown as DeliverDeps)
     expect(out).toEqual({ status: 'failed', detail: 'Resend 500' })
     expect(d.settleSend).toHaveBeenCalledWith(KEY, expect.objectContaining({ status: 'failed', error: 'Resend 500' }))
@@ -423,14 +474,112 @@ describe('deliverMarketReport: a real send', () => {
     expect(d.stampScheduled).not.toHaveBeenCalled()
   })
 
-  it('a manual send stamps last_sent_at on her subscription (no double send after "Send now + subscribe")', async () => {
-    const d = deps()
+  it('refuses to send when the row cannot be claimed (no trace, no ship)', async () => {
+    const d = deps({ claimSend: vi.fn(async () => ({ ok: false, error: 'relation does not exist' })) })
+    const out = await deliverMarketReport(input(), d as unknown as DeliverDeps)
+    expect(out.status).toBe('failed')
+    expect(d.sendOne).not.toHaveBeenCalled()
+  })
+})
+
+describe('deliverMarketReport: an abandoned in-flight attempt is settled from evidence, never presumed (review 2026-09-30)', () => {
+  const abandoned = (over: Record<string, unknown> = {}) => ({
+    emailKey: KEY,
+    status: 'failed',
+    error: 'sending',
+    sentAt: null,
+    attemptedAt: '2026-09-29T16:00:00.000Z',
+    holdReason: null,
+    messageId: null,
+    payload: null,
+    ...over,
+  })
+  const storedPayload = (builtAt: string) => ({
+    v: 1,
+    idempotencyKey: `${KEY}:fedcba9876543210`,
+    builtAt,
+    request: { from: 'Matt', to: 'cheryl@example.com', replyTo: 'matt@ryan-realty.com', subject: 'Earlier render', html: '<p>earlier</p>', text: 'earlier', headers: {} },
+  })
+
+  it("Resend's id on record: settled as sent from it, confirmed with Resend, the cadence moves on, nothing is sent", async () => {
+    const d = deps({
+      claimSend: vi.fn(async () => ({ ok: true, claimed: false, existing: abandoned() })),
+      sentEvidence: vi.fn(async () => ({ messageId: 'msg-7', at: '2026-09-29T16:00:04.000Z' })),
+      providerEmail: vi.fn(async () => ({ ok: true, id: 'msg-7', createdAt: '2026-09-29T16:00:03.000Z', lastEvent: 'delivered' })),
+    })
+    const out = await deliverMarketReport(input(), d as unknown as DeliverDeps)
+    expect(out).toEqual({ status: 'already-sent', sentAt: '2026-09-29T16:00:03.000Z' })
+    expect(d.providerEmail).toHaveBeenCalledWith('msg-7')
+    expect(d.settleSend).toHaveBeenCalledWith(KEY, expect.objectContaining({ status: 'sent', messageId: 'msg-7', sentAt: '2026-09-29T16:00:03.000Z' }))
+    expect(d.stampScheduled).toHaveBeenCalledWith(9016, new Date('2026-09-29T16:00:03.000Z'))
+    expect(d.sendOne).not.toHaveBeenCalled()
+  })
+
+  it('no id on record, inside the replay window: ONE run wins the recovery and replays the stored request under its key', async () => {
+    const payload = storedPayload('2026-09-29T16:00:00.000Z')
+    const d = deps({ claimSend: vi.fn(async () => ({ ok: true, claimed: false, existing: abandoned({ payload }) })) })
+    const out = await deliverMarketReport(input(), d as unknown as DeliverDeps)
+    expect(out).toMatchObject({ status: 'sent', messageId: 'msg-1' })
+    expect(d.recoveryClaim).toHaveBeenCalledWith(KEY, '2026-09-29T16:00:00.000Z', NOW.toISOString())
+    expect(d.sendOne.mock.calls[0][0].payload).toBe(payload)
+    expect(d.settleSend).toHaveBeenCalledWith(KEY, expect.objectContaining({ status: 'sent', messageId: 'msg-1' }))
+  })
+
+  it('another run won the recovery: this one leaves it', async () => {
+    const d = deps({
+      claimSend: vi.fn(async () => ({ ok: true, claimed: false, existing: abandoned({ payload: storedPayload('2026-09-29T16:00:00.000Z') }) })),
+      recoveryClaim: vi.fn(async () => false),
+    })
+    expect((await deliverMarketReport(input(), d as unknown as DeliverDeps)).status).toBe('already-sent')
+    expect(d.sendOne).not.toHaveBeenCalled()
+  })
+
+  it('no evidence and no replay possible (past the window, or no stored request): Matt is paged, nothing is sent, nothing is stamped', async () => {
+    for (const payload of [null, storedPayload('2026-09-27T16:00:00.000Z')]) {
+      const d = deps({ claimSend: vi.fn(async () => ({ ok: true, claimed: false, existing: abandoned({ payload, attemptedAt: '2026-09-27T16:00:00.000Z' }) })) })
+      const out = await deliverMarketReport(input(), d as unknown as DeliverDeps)
+      expect(out.status).toBe('failed')
+      expect(d.sendOne).not.toHaveBeenCalled()
+      expect(d.stampScheduled).not.toHaveBeenCalled()
+      expect(d.settleSend).not.toHaveBeenCalled()
+      expect(d.alert).toHaveBeenCalledWith(expect.objectContaining({ key: `market-report-send:unresolved:${KEY}` }))
+    }
+  })
+})
+
+describe("deliverMarketReport: a broker's manual send and the cron never both send (review 2026-09-30)", () => {
+  it('a manual send re-reads the latest delivery right before the claim: one in flight, or begun after it, wins', async () => {
+    for (const latest of [
+      { at: '2026-09-29T21:59:50.000Z', inFlight: true, emailKey: KEY },
+      { at: '2026-09-29T22:00:05.000Z', inFlight: false, emailKey: KEY },
+    ]) {
+      const d = deps({ latestDelivered: vi.fn(async () => latest) })
+      const out = await deliverMarketReport(input({ kind: 'manual', emailKey: 'market-report:manual:64138:1' }), d as unknown as DeliverDeps)
+      expect(out).toMatchObject({ status: 'already-sent' })
+      expect(d.claimSend).not.toHaveBeenCalled()
+      expect(d.sendOne).not.toHaveBeenCalled()
+    }
+  })
+
+  it('an earlier report does not block a manual send: a broker may send again on purpose', async () => {
+    const d = deps({ latestDelivered: vi.fn(async () => ({ at: '2026-09-20T16:00:00.000Z', inFlight: false, emailKey: KEY })) })
     const out = await deliverMarketReport(input({ kind: 'manual', emailKey: 'market-report:manual:64138:1' }), d as unknown as DeliverDeps)
     expect(out.status).toBe('sent')
     expect(d.stampManual).toHaveBeenCalledWith(64138, expect.any(String))
     expect(d.stampScheduled).not.toHaveBeenCalled()
-    // A manual send never short-circuits on the cadence backstop.
-    expect(d.latestDelivered).not.toHaveBeenCalled()
+  })
+
+  it('a scheduled send re-reads the latest delivery right before its claim too (a manual send landed during the Spark check)', async () => {
+    const d = deps({
+      latestDelivered: vi
+        .fn()
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ at: '2026-09-29T21:59:58.000Z', inFlight: false, emailKey: 'market-report:manual:64138:9' }),
+    })
+    const out = await deliverMarketReport(input(), d as unknown as DeliverDeps)
+    expect(out).toEqual({ status: 'already-sent', sentAt: '2026-09-29T21:59:58.000Z' })
+    expect(d.claimSend).not.toHaveBeenCalled()
+    expect(d.sendOne).not.toHaveBeenCalled()
   })
 
   it('a preview goes to the broker, says [Preview], writes a system note and stamps nothing', async () => {
@@ -439,14 +588,16 @@ describe('deliverMarketReport: a real send', () => {
       input({ kind: 'preview', to: 'matt@ryan-realty.com', emailKey: 'market-report:preview:64138:1' }),
       d as unknown as DeliverDeps,
     )
-    // A preview goes to the broker: no re-read of her subscription.
+    // A preview goes to the broker: no re-read of her subscription, no delivery race.
     expect(d.readSubscription).not.toHaveBeenCalled()
     expect(out.status).toBe('sent')
     if (out.status === 'sent') expect(out.subject.startsWith('[Preview] ')).toBe(true)
     const one = d.sendOne.mock.calls[0][0]
     expect(one.kind).toBe('preview')
-    expect(one.to).toBe('matt@ryan-realty.com')
-    const t = decodeURIComponent(new URL(one.oneClickUrl).searchParams.get('t') ?? '')
+    expect(one.payload.request.to).toBe('matt@ryan-realty.com')
+    expect(one.payload.request.html).not.toContain('/api/track/e/')
+    const oneClick = /<([^>]+)>/.exec(one.payload.request.headers['List-Unsubscribe'])?.[1] ?? ''
+    const t = decodeURIComponent(new URL(oneClick).searchParams.get('t') ?? '')
     expect(verifyReportLinkToken(t)?.preview).toBe(true)
     expect(d.timeline).toHaveBeenCalledWith(64138, expect.objectContaining({ kind: 'system', title: 'Market report preview sent to matt@ryan-realty.com' }))
     expect(d.stampScheduled).not.toHaveBeenCalled()

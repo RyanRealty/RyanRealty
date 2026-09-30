@@ -29,8 +29,10 @@ import {
 } from '@/lib/data/crm/marketReportSends'
 import { nextReportSendAt } from '@/lib/crm/market-report-cadence'
 import {
+  isContactPaused,
   isContactStopped,
   reportSubscriptionState,
+  sameAreaSet,
   type ReportSubscriptionState,
 } from '@/lib/crm/market-report-subscription-control'
 import { reportAreaLabel, reportAreaOptions } from '@/lib/crm/market-report-areas'
@@ -48,18 +50,14 @@ export type MarketReportCard = {
   areaOptions: Array<{ slug: string; label: string }>
   /** The contact stopped these reports herself; a restart needs a consent note. */
   contactStopped: boolean
+  /** Paused by the contact herself: holds like her stop (review 2026-09-30). */
+  contactPaused: boolean
   /** ISO time the next report can go out, or null (off, or not approved). */
   nextSendAt: string | null
   latestPreview: ReportSendSummary | null
   /** The latest preview covered the current areas and interval. */
   previewMatches: boolean
   sends: MarketReportCardSend[]
-}
-
-function sameSet(a: readonly string[], b: readonly string[]): boolean {
-  if (a.length !== b.length) return false
-  const s = new Set(a)
-  return b.every((x) => s.has(x))
 }
 
 export async function getMarketReportCard(personId: number, now: Date = new Date()): Promise<MarketReportCard> {
@@ -90,12 +88,13 @@ export async function getMarketReportCard(personId: number, now: Date = new Date
     areas: (subscription?.areas ?? []).map((slug) => ({ slug, label: reportAreaLabel(slug) })),
     areaOptions: reportAreaOptions(),
     contactStopped: Boolean(subscription && isContactStopped(subscription)),
+    contactPaused: Boolean(subscription && isContactPaused(subscription)),
     nextSendAt: next ? next.toISOString() : null,
     latestPreview,
     previewMatches: Boolean(
       subscription &&
         latestPreview &&
-        sameSet(latestPreview.areas, subscription.areas) &&
+        sameAreaSet(latestPreview.areas, subscription.areas) &&
         (latestPreview.frequency ?? '') === subscription.frequency,
     ),
     sends: sends.map((s) => ({

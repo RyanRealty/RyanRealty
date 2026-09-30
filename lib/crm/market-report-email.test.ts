@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest'
+import { verifyMarketChart } from '@/lib/email/market-chart-token'
 import {
   renderMarketReportEmail,
   buildSubject,
   buildHeadline,
-  chartImageUrl,
   chartableMonths,
   momMedianPair,
   orderAreasBySpecificity,
@@ -367,27 +367,29 @@ describe('the price chart (an unbroken, sampled run, pinned to its months)', () 
     pts[3] = { ...pts[3], soldCount: 3 }
     expect(chartableMonths(pts)).toBeNull() // only 4 qualifying months after the thin one
   })
-  it('builds an absolute URL with the months and the through month', () => {
-    const url = chartImageUrl({ geoType: 'city', slug: 'bend' }, 'median_price', { months: 12, through: '2026-08' })
-    expect(url).toMatch(/^https:\/\//)
-    expect(url).toContain('/api/email/market-chart?')
-    expect(url).toContain('geo=city')
-    expect(url).toContain('slug=bend')
-    expect(url).toContain('metric=median_price')
-    expect(url).toContain('through=2026-08')
-  })
-  it('renders the price chart and never the inventory chart', () => {
+  it('renders the price chart from the exact monthly values it prints and checks, signed into the URL (review 2026-09-30)', () => {
+    const pts = months(12, '2026-08')
     const out = renderMarketReportEmail({
       contactName: 'Jordan',
-      areas: [block({ trend: trend({ points: months(12, '2026-08') }) })],
+      areas: [block({ trend: trend({ points: pts }) })],
       unsubscribeUrl: UNSUB,
     })
-    expect(out.html).toContain('/api/email/market-chart?geo=city&slug=bend&metric=median_price')
-    expect(out.html).toContain('through=2026-08')
-    expect(out.html).not.toContain('metric=inventory')
+    const src = /<img src="([^"]*\/api\/email\/market-chart[^"]*)"/.exec(out.html)?.[1]
+    expect(src).toBeTruthy()
+    const url = new URL(src!.replace(/&amp;/g, '&'))
+    // Nothing the route could re-read market data by: no geo, slug, months or through.
+    expect([...url.searchParams.keys()].sort()).toEqual(['d', 's'])
+    expect(verifyMarketChart(url.searchParams.get('d'), url.searchParams.get('s'))).toEqual({
+      metric: 'median_price',
+      label: 'Bend',
+      points: pts.map((p) => ({ month: p.periodStart.slice(0, 7), value: p.medianSalePrice })),
+    })
     expect(out.html).toContain('alt="Line chart of the Bend median sale price by month over the last 12 months"')
     const chartFig = out.figures.find((f) => f.label.startsWith('median sale price chart'))
     expect(chartFig?.as_of).toBe('2026-08-31')
+    // The trace names every drawn value, so an auditor can match the image to the check.
+    expect(chartFig?.filter).toContain('2026-08:700000')
+    expect(chartFig?.source).toContain('never re-reads')
   })
 })
 

@@ -19,6 +19,8 @@ vi.mock('@/lib/crm/broker-alerts', () => ({ queueBrokerHealthAlert: (...a: unkno
 // prepare and attribution stay real: they are pure string transforms.
 
 import {
+  prepareReportEmail,
+  reportIdempotencyKey,
   runMarketReportSend,
   sendOneSubscriber,
   type ScheduledDeliverOutcome,
@@ -103,13 +105,16 @@ describe('runMarketReportSend: cadence and approval', () => {
     expect(deps.deliver).not.toHaveBeenCalled()
   })
 
-  it('holds a due subscription nobody has approved: one held row, nothing sent, no attempt stamp', async () => {
+  it('holds a due subscription nobody has approved: one held row, nothing sent, and the attempt is stamped so it rotates to the back of the scan', async () => {
     const deps = makeDeps({ fetchSubscribers: vi.fn(async () => [sub({ firstSendApprovedAt: null })]) })
     const s = await runMarketReportSend({ now: IN_WINDOW, deps })
     expect(s.skippedByReason['awaiting-approval']).toBe(1)
     expect(deps.recordHold).toHaveBeenCalledWith(expect.objectContaining({ subscriptionId: 1 }), 'awaiting-approval', IN_WINDOW)
     expect(deps.deliver).not.toHaveBeenCalled()
-    expect(deps.stampAttempt).not.toHaveBeenCalled()
+    // The scan reads never-attempted rows first (nulls first, oldest attempt
+    // next, limit 1000): an unstamped row that can never send would sit at the
+    // front of every run and starve the rows behind it (review 2026-09-30).
+    expect(deps.stampAttempt).toHaveBeenCalledWith(1, IN_WINDOW)
   })
 
   it('delivers an approved, due contact from the assigned broker with the cycle\'s send key', async () => {
@@ -142,8 +147,10 @@ describe('runMarketReportSend: cadence and approval', () => {
     expect(s.skippedByReason['contact-deleted']).toBe(1)
     expect(s.due).toBe(0)
     expect(deps.deliver).not.toHaveBeenCalled()
-    expect(deps.stampAttempt).not.toHaveBeenCalled()
     expect(deps.recordHold).not.toHaveBeenCalled()
+    // Stamped all the same, so a row that can never send does not hold the
+    // front of the scan (review 2026-09-30).
+    expect(deps.stampAttempt).toHaveBeenCalledWith(1, IN_WINDOW)
   })
 
   it('stops starting deliveries past the time budget; the rest wait for the next run', async () => {
@@ -179,6 +186,16 @@ describe('runMarketReportSend: delivery outcomes', () => {
     expect(s.skippedByReason['stale-data']).toBe(2)
     expect(queueBrokerHealthAlert).toHaveBeenCalledTimes(1)
     expect(queueBrokerHealthAlert).toHaveBeenCalledWith(expect.objectContaining({ key: 'market-report-send:stale-data' }))
+  })
+
+  it('an unknown provider outcome is a send error, never counted as sent (review 2026-09-30)', async () => {
+    const deps = makeDeps({
+      deliver: vi.fn(async (): Promise<ScheduledDeliverOutcome> => ({ status: 'unknown', detail: 'Resend did not answer; held in flight' })),
+    })
+    const s = await runMarketReportSend({ now: IN_WINDOW, deps })
+    expect(s.sent).toBe(0)
+    expect(s.skippedByReason['send-error']).toBe(1)
+    expect(s.outcomes[0]).toMatchObject({ status: 'skipped', reason: 'send-error', detail: expect.stringContaining('did not answer') })
   })
 
   it('treats "already sent inside the window" as not due', async () => {
@@ -243,13 +260,13 @@ describe('runMarketReportSend: delivery outcomes', () => {
   })
 })
 
-describe('sendOneSubscriber: the one send call', () => {
+describe('prepareReportEmail: the exact request, built once (review 2026-09-30)', () => {
   const MANAGE = 'https://ryan-realty.com/email-preferences?t=m.tok'
   const UNSUB = `${MANAGE}&stop=1`
   const ONE_CLICK = 'https://ryan-realty.com/api/email/report-unsubscribe?t=s.tok'
   const ADDRESS = 'Ryan Realty, 115 NW Oregon Ave #2, Bend, OR 97703'
-  const baseArgs: SendOneInput = {
-    kind: 'scheduled',
+  const args = {
+    kind: 'scheduled' as const,
     personId: 100,
     brokerSlug: 'matt',
     to: 'jane@example.com',
@@ -258,8 +275,64 @@ describe('sendOneSubscriber: the one send call', () => {
     text: `Hello\n\n--\n${ADDRESS}\nManage your report: ${MANAGE}\nUnsubscribe: ${UNSUB}`,
     unsubscribeUrl: UNSUB,
     oneClickUrl: ONE_CLICK,
-    emailKey: 'market-report:run:100',
+    emailKey: 'market-report:scheduled:9016:first',
+  }
+
+  it('builds the provider request: broker identity, RFC 8058 headers, one footer, tracking on a real send', () => {
+    const p = prepareReportEmail(args)
+    expect(p.request.to).toBe('jane@example.com')
+    expect(p.request.from).toContain('Matt Ryan')
+    expect(p.request.replyTo).toBeTruthy()
+    expect(p.request.headers['List-Unsubscribe']).toBe(`<${ONE_CLICK}>`)
+    expect(p.request.headers['List-Unsubscribe-Post']).toBe('List-Unsubscribe=One-Click')
+    expect(p.request.html.split(ADDRESS).length - 1).toBe(1)
+    expect(p.request.text.split(ADDRESS).length - 1).toBe(1)
+    expect(p.request.html).toContain('/api/track/e/open')
+    // The stored copy is the prepared html, still free of tracking.
+    expect(p.cleanHtml).not.toContain('/api/track/e/')
+    expect(p.cleanText.split(ADDRESS).length - 1).toBe(1)
+  })
+
+  it('never wraps or decorates the preferences links (a private address)', () => {
+    const { request } = prepareReportEmail(args)
+    expect(request.html).toContain(`href="${MANAGE}"`)
+    expect(request.html).toContain(`href="${UNSUB}"`)
+  })
+
+  it('a PREVIEW carries no person token, no pixel and no click wraps', () => {
+    const { request } = prepareReportEmail({ ...args, kind: 'preview', to: 'matt@ryan-realty.com', subject: '[Preview] Bend' })
+    expect(request.html).not.toContain('/api/track/e/')
+    expect(request.to).toBe('matt@ryan-realty.com')
+  })
+
+  it('the idempotency key follows the payload: the same bytes keep it, a new render gets a new one', () => {
+    const a = prepareReportEmail(args).request
+    const b = prepareReportEmail(args).request
+    expect(reportIdempotencyKey(args.emailKey, a)).toBe(reportIdempotencyKey(args.emailKey, b))
+    expect(reportIdempotencyKey(args.emailKey, a).startsWith(`${args.emailKey}:`)).toBe(true)
+    const changed = prepareReportEmail({ ...args, html: args.html.replace('Hello', 'Hello again') }).request
+    expect(reportIdempotencyKey(args.emailKey, changed)).not.toBe(reportIdempotencyKey(args.emailKey, a))
+  })
+})
+
+describe('sendOneSubscriber: the one send call, replaying a stored request', () => {
+  const REQUEST = {
+    from: '"Matt Ryan · Ryan Realty" <matt@mail.ryan-realty.com>',
+    to: 'jane@example.com',
+    replyTo: 'matt@ryan-realty.com',
+    subject: 'Bend home prices are down 1.2% from a year ago',
+    html: '<p>Hello</p><img src="https://ryan-realty.com/api/track/e/open?x=1">',
+    text: 'Hello',
+    headers: { 'List-Unsubscribe': '<https://ryan-realty.com/api/email/report-unsubscribe?t=s.tok>' },
+  }
+  const PAYLOAD = { v: 1 as const, idempotencyKey: 'market-report:scheduled:9016:first:abc123', builtAt: '2026-09-30T16:00:00.000Z', request: REQUEST }
+  const baseArgs: SendOneInput = {
+    kind: 'scheduled',
+    personId: 100,
+    brokerSlug: 'matt',
     contactEmail: 'jane@example.com',
+    emailKey: 'market-report:scheduled:9016:first',
+    payload: PAYLOAD,
   }
 
   it('does NOT send when the contact is suppressed (fail-closed)', async () => {
@@ -279,27 +352,23 @@ describe('sendOneSubscriber: the one send call', () => {
     expect(sendEmail).not.toHaveBeenCalled()
   })
 
-  it('a preview checks the CONTACT\'s address, never the broker mailbox it goes to', async () => {
+  it("a preview checks the CONTACT's address, never the broker mailbox it goes to", async () => {
     isSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
     isSuppressedByEmail.mockResolvedValue({ suppressed: true, reasons: ['email:email:unsubscribe'] })
-    const out = await sendOneSubscriber({ ...baseArgs, kind: 'preview', to: 'matt@ryan-realty.com', subject: '[Preview] Bend' })
+    const out = await sendOneSubscriber({ ...baseArgs, kind: 'preview', payload: { ...PAYLOAD, request: { ...REQUEST, to: 'matt@ryan-realty.com' } } })
     expect(out.status).toBe('suppressed')
     expect(isSuppressedByEmail).toHaveBeenCalledWith('jane@example.com', 'email')
     expect(sendEmail).not.toHaveBeenCalled()
   })
 
-  it('passes the send key to the provider as its idempotency key', async () => {
-    isSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
-    sendEmail.mockResolvedValue({ id: 'msg-3' })
-    recordEmailEvent.mockResolvedValue({ ok: true })
-    await sendOneSubscriber({ ...baseArgs, emailKey: 'market-report:scheduled:9016:first' })
-    expect(sendEmail.mock.calls[0][0].idempotencyKey).toBe('market-report:scheduled:9016:first')
-  })
-
-  it('checks suppression BEFORE sending, sends once with the broker identity and records the event', async () => {
+  it('checks suppression BEFORE sending, then sends the stored request byte for byte under its own idempotency key', async () => {
     const order: string[] = []
     isSuppressed.mockImplementation(async () => {
       order.push('isSuppressed')
+      return { suppressed: false, reasons: [] }
+    })
+    isSuppressedByEmail.mockImplementation(async () => {
+      order.push('isSuppressedByEmail')
       return { suppressed: false, reasons: [] }
     })
     sendEmail.mockImplementation(async () => {
@@ -307,65 +376,63 @@ describe('sendOneSubscriber: the one send call', () => {
       return { id: 'msg-1' }
     })
     recordEmailEvent.mockResolvedValue({ ok: true })
-
-    isSuppressedByEmail.mockImplementation(async () => {
-      order.push('isSuppressedByEmail')
-      return { suppressed: false, reasons: [] }
-    })
     const out = await sendOneSubscriber(baseArgs)
-    expect(out).toMatchObject({ status: 'sent', messageId: 'msg-1' })
+    expect(out).toEqual({ status: 'sent', messageId: 'msg-1' })
     expect(order).toEqual(['isSuppressed', 'isSuppressedByEmail', 'sendEmail'])
-    const sent = sendEmail.mock.calls[0][0]
-    expect(sent.to).toBe('jane@example.com')
-    expect(sent.from).toContain('Matt Ryan')
-    expect(sent.replyTo).toBeTruthy()
-    // RFC 8058 at the report-scoped one-click endpoint.
-    expect(sent.headers['List-Unsubscribe']).toBe(`<${ONE_CLICK}>`)
-    expect(sent.headers['List-Unsubscribe-Post']).toBe('List-Unsubscribe=One-Click')
-    // One footer: the body already carries it, so prepare adds none.
-    expect(sent.html.split(ADDRESS).length - 1).toBe(1)
-    expect(sent.text.split(ADDRESS).length - 1).toBe(1)
-    // Open and click tracking on a real send, with the broker on the event.
-    expect(sent.html).toContain('/api/track/e/open')
-    expect(recordEmailEvent).toHaveBeenCalledTimes(1)
+    // Exactly the stored request: nothing re-rendered, nothing re-instrumented.
+    expect(sendEmail).toHaveBeenCalledWith({ ...REQUEST, idempotencyKey: PAYLOAD.idempotencyKey, exact: true })
     expect(recordEmailEvent.mock.calls[0][0]).toMatchObject({
       sendType: 'market-report',
       event: 'sent',
       broker: 'matt',
-      emailKey: 'market-report:run:100',
+      emailKey: 'market-report:scheduled:9016:first',
       messageId: 'msg-1',
+      recipientEmail: 'jane@example.com',
     })
-    // The stored copy is the prepared html, still free of tracking.
-    if (out.status === 'sent') expect(out.preparedHtml).not.toContain('/api/track/e/')
   })
 
-  it('never wraps or decorates the preferences links (a private address)', async () => {
+  it('a request read back from its jsonb row (keys in another order) posts the same bytes as the first send', async () => {
+    // jsonb keeps object keys in its own order, not the order they were built
+    // in; a replay must still post what the first send posted, or Resend
+    // refuses the key (409).
     isSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
-    sendEmail.mockResolvedValue({ id: 'msg-2' })
+    isSuppressedByEmail.mockResolvedValue({ suppressed: false, reasons: [] })
+    sendEmail.mockResolvedValue({ id: 'msg-1' })
     recordEmailEvent.mockResolvedValue({ ok: true })
-    await sendOneSubscriber(baseArgs)
-    const html: string = sendEmail.mock.calls[0][0].html
-    expect(html).toContain(`href="${MANAGE}"`)
-    expect(html).toContain(`href="${UNSUB}"`)
+    const built = {
+      ...REQUEST,
+      headers: { 'List-Unsubscribe': '<https://ryan-realty.com/u>', 'X-Entity-Ref-ID': 'k', 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
+    }
+    const readBack = {
+      text: built.text,
+      headers: { 'X-Entity-Ref-ID': 'k', 'List-Unsubscribe': '<https://ryan-realty.com/u>', 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
+      subject: built.subject,
+      html: built.html,
+      to: built.to,
+      replyTo: built.replyTo,
+      from: built.from,
+    }
+    await sendOneSubscriber({ ...baseArgs, payload: { ...PAYLOAD, request: built } })
+    await sendOneSubscriber({ ...baseArgs, payload: { ...PAYLOAD, request: readBack } })
+    const [first, replay] = sendEmail.mock.calls.map((c) => JSON.stringify(c[0]))
+    expect(replay).toBe(first)
   })
 
-  it('a PREVIEW carries no person token, no pixel, no click wraps and records no event', async () => {
+  it('a PREVIEW records no event against the contact', async () => {
     isSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
     sendEmail.mockResolvedValue({ id: 'msg-p' })
-    const out = await sendOneSubscriber({ ...baseArgs, kind: 'preview', to: 'matt@ryan-realty.com', subject: '[Preview] Bend' })
+    const out = await sendOneSubscriber({ ...baseArgs, kind: 'preview', payload: { ...PAYLOAD, request: { ...REQUEST, to: 'matt@ryan-realty.com' } } })
     expect(out.status).toBe('sent')
-    const html: string = sendEmail.mock.calls[0][0].html
-    expect(html).not.toContain('/api/track/e/')
     expect(recordEmailEvent).not.toHaveBeenCalled()
-    // The preview is still gated on the contact: no report she cannot receive is previewed.
     expect(isSuppressed).toHaveBeenCalledWith(100, 'email')
   })
 
-  it('reports a provider failure without throwing and records no sent event', async () => {
+  it('a refusal the provider answered is a failure; an answer that never came is UNKNOWN, never a failure', async () => {
     isSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
-    sendEmail.mockResolvedValue({ error: 'Resend 500' })
-    const out = await sendOneSubscriber(baseArgs)
-    expect(out).toMatchObject({ status: 'failed', detail: 'Resend 500' })
+    sendEmail.mockResolvedValue({ error: 'Invalid `to` field', statusCode: 422 })
+    expect(await sendOneSubscriber(baseArgs)).toEqual({ status: 'failed', detail: 'Invalid `to` field' })
+    sendEmail.mockResolvedValue({ error: 'Unable to fetch data. The request could not be resolved.', statusCode: null, unknown: true })
+    expect(await sendOneSubscriber(baseArgs)).toEqual({ status: 'unknown', detail: 'Unable to fetch data. The request could not be resolved.' })
     expect(recordEmailEvent).not.toHaveBeenCalled()
   })
 })

@@ -76,6 +76,17 @@ export function errorAlert(code: string): V3QuietAlert | null {
       return { title: 'Nothing to change', description: 'You are not signed up for a regular market report.' }
     case 'input':
       return { title: 'Pick an option', description: 'Choose from the list, then press the button beside it.' }
+    case 'changed':
+      return {
+        title: 'Your report changed while this page was open',
+        description: 'Nothing was changed by that choice. Here is how your report stands now; make the choice again if you still want it.',
+      }
+    case 'stop-all-failed':
+      return {
+        title: 'Email is still on',
+        description:
+          'We could not save your request just now. Try again in a minute. If it still does not go through, reply to any of our emails and we will turn email off for you.',
+      }
     case 'closed':
       return {
         title: 'Only stopping email is possible from this link',

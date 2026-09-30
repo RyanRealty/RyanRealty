@@ -16,9 +16,9 @@ import { revalidatePerson } from '@/lib/crm/revalidate-person'
  * does not send the same report twice.
  *
  * The sender is the contact's assigned broker (Matt 2026-09-29: the report
- * rail, the assigned broker's identity), and a contact who stopped her own
- * reports is refused: a broker restarts them first, with her consent on
- * record, on the market report card.
+ * rail, the assigned broker's identity), and a contact who stopped or paused
+ * her own reports is refused: a broker restarts them first, with her consent
+ * on record, on the market report card.
  *
  * Like every send, a manual one runs the §0 Spark gate first (review
  * 2026-09-30): a figure that differs from Spark by more than 1%, or one Spark
@@ -29,7 +29,7 @@ import { revalidatePerson } from '@/lib/crm/revalidate-person'
 import { revalidatePath } from 'next/cache'
 import { requireCrmAccess, requirePersonInScope, type CrmActionResult } from '@/app/actions/crm'
 import { sanitizeAdminAreas } from '@/lib/crm/market-report-admin'
-import { isContactStopped } from '@/lib/crm/market-report-subscription-control'
+import { isContactHeld, isContactStopped } from '@/lib/crm/market-report-subscription-control'
 import { deliverMarketReport, type DeliverReportOutcome } from '@/lib/crm/market-report-deliver'
 import {
   getMarketReportContact,
@@ -59,7 +59,9 @@ function manualNotSentReason(outcome: Exclude<DeliverReportOutcome, { status: 's
     case 'failed':
       return outcome.detail
     case 'already-sent':
-      return 'already sent'
+      return 'a report already went out to this contact while this one was being built'
+    case 'unknown':
+      return `the email provider did not answer, so it may have gone out. It will not be sent twice, and Matt was paged. (${outcome.detail})`
   }
   return 'not sent'
 }
@@ -97,11 +99,14 @@ export async function sendMarketReportNowAction(
   }
   if (!contact || contact.deleted) return { ok: false, error: 'Person not found' }
   if (!contact.primaryEmail) return { ok: false, error: 'No email address on file' }
-  if (subscription && isContactStopped(subscription)) {
+  // Her own stop, or her own pause (review 2026-09-30: her page promises
+  // "Nothing goes out until you resume it"), holds a broker's send too.
+  if (subscription && isContactHeld(subscription)) {
     return {
       ok: false,
-      error:
-        'This contact stopped market reports themselves. Turn them back on from the market report card, with a note of how they asked, before sending one.',
+      error: isContactStopped(subscription)
+        ? 'This contact stopped market reports themselves. Turn them back on from the market report card, with a note of how they asked, before sending one.'
+        : 'This contact paused market reports themselves. Turn them back on from the market report card, with a note of how they asked, before sending one.',
     }
   }
 

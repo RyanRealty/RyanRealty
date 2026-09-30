@@ -35,11 +35,14 @@ export type ReportSubscriptionRecord = {
   consentNote: string | null
   stoppedAt: string | null
   stoppedVia: string | null
+  /** When the report was paused, and from which door (her pause holds like her stop). NULL while on or stopped. */
+  pausedAt: string | null
+  pausedVia: string | null
 }
 
 /** Every column a ReportSubscriptionRecord maps (mapReportSubscriptionRecord). */
 export const REPORT_SUBSCRIPTION_COLS =
-  'id, person_id, areas, frequency, is_active, last_sent_at, last_attempt_at, created_at, updated_at, first_send_approved_at, first_send_approved_by, source, requested_at, consent_note, stopped_at, stopped_via'
+  'id, person_id, areas, frequency, is_active, last_sent_at, last_attempt_at, created_at, updated_at, first_send_approved_at, first_send_approved_by, source, requested_at, consent_note, stopped_at, stopped_via, paused_at, paused_via'
 
 type SubRow = {
   id: number
@@ -58,6 +61,8 @@ type SubRow = {
   consent_note: string | null
   stopped_at: string | null
   stopped_via: string | null
+  paused_at?: string | null
+  paused_via?: string | null
 }
 
 /** Map a raw row to the record. Pure, exported for the unit test. */
@@ -79,6 +84,8 @@ export function mapReportSubscriptionRecord(r: SubRow): ReportSubscriptionRecord
     consentNote: r.consent_note ?? null,
     stoppedAt: r.stopped_at ?? null,
     stoppedVia: r.stopped_via ?? null,
+    pausedAt: r.paused_at ?? null,
+    pausedVia: r.paused_via ?? null,
   }
 }
 
@@ -107,6 +114,8 @@ export type ReportSubscriptionPatch = Partial<{
   consent_note: string | null
   stopped_at: string | null
   stopped_via: string | null
+  paused_at: string | null
+  paused_via: string | null
 }>
 
 export type ReportTimelineEntry = {
@@ -152,23 +161,32 @@ export async function logReportTimeline(personId: number, entry: ReportTimelineE
 
 /**
  * Apply a planned patch to one subscription and log the change. The update is
- * scoped by id AND person, so a patch can never land on another contact's row.
+ * scoped by id AND person, so a patch can never land on another contact's row,
+ * and it matches only while the row is still in the state the patch was
+ * planned from (review 2026-09-30): the same on/off, the same stop stamp and
+ * the same updated_at (every preference write sets it). A stop, a pause or a
+ * broker's change that landed after the read makes the write match nothing:
+ * it writes nothing and answers `changed`, and the caller asks for a reload
+ * instead of overwriting her newer choice with a plan made from the old state.
  */
 export async function applyReportSubscriptionPatch(
-  subscription: { id: number; personId: number },
+  subscription: Pick<ReportSubscriptionRecord, 'id' | 'personId' | 'isActive' | 'stoppedAt' | 'updatedAt'>,
   patch: ReportSubscriptionPatch,
   timeline: ReportTimelineEntry,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   if (Object.keys(patch).length === 0) return { ok: true }
   const sb = createServiceClient()
-  const { data, error } = await sb
+  let q = sb
     .from('crm_report_subscriptions')
     .update({ ...patch, updated_at: new Date().toISOString() })
     .eq('id', subscription.id)
     .eq('person_id', subscription.personId)
-    .select('id')
+    .eq('is_active', subscription.isActive)
+  q = subscription.stoppedAt == null ? q.is('stopped_at', null) : q.eq('stopped_at', subscription.stoppedAt)
+  q = subscription.updatedAt == null ? q.is('updated_at', null) : q.eq('updated_at', subscription.updatedAt)
+  const { data, error } = await q.select('id')
   if (error) return { ok: false, error: error.message }
-  if (!data || data.length === 0) return { ok: false, error: 'Subscription not found' }
+  if (!data || data.length === 0) return { ok: false, error: 'changed' }
   await logReportTimeline(subscription.personId, timeline)
   return { ok: true }
 }

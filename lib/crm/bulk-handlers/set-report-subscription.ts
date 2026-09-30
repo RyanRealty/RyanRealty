@@ -47,14 +47,7 @@ import {
 } from '@/lib/data/crm/getContactReportSubscriptions'
 import type { BulkHandler, BulkResult } from '@/lib/crm/bulk-jobs'
 import { getLatestDeliveredReportAt } from '@/lib/data/crm/marketReportSends'
-import { CONTACT_STOP_VIAS, isContactStopVia } from '@/lib/crm/market-report-subscription-control'
-
-/** Order-insensitive area comparison. */
-function sameAreaSet(a: readonly string[], b: readonly string[]): boolean {
-  if (a.length !== b.length) return false
-  const s = new Set(a)
-  return b.every((x) => s.has(x))
-}
+import { isContactStopVia, notHeldByContactFilter, sameAreaSet } from '@/lib/crm/market-report-subscription-control'
 
 /**
  * Validate + de-dupe submitted areas against the registry of valid options.
@@ -99,7 +92,7 @@ export const setReportSubscriptionHandler: BulkHandler = async (ids, params): Pr
   for (const id of ids) {
     const { data: existing, error: readErr } = await sb
       .from('crm_report_subscriptions')
-      .select('is_active, stopped_at, stopped_via, areas, frequency')
+      .select('is_active, stopped_at, stopped_via, paused_at, paused_via, areas, frequency')
       .eq('person_id', id)
       .maybeSingle()
     if (readErr) { result.skipped++; bump('read_failed'); continue }
@@ -107,12 +100,20 @@ export const setReportSubscriptionHandler: BulkHandler = async (ids, params): Pr
       is_active: boolean | null
       stopped_at: string | null
       stopped_via: string | null
+      paused_at?: string | null
+      paused_via?: string | null
       areas: string[] | null
       frequency: string | null
     } | null
     if (isActive && prev && !prev.is_active && isContactStopVia(prev.stopped_via)) {
       result.skipped++
       bump('skipped_contact_stopped')
+      continue
+    }
+    // Her pause holds like her stop (review 2026-09-30): no bulk turn-on.
+    if (isActive && prev && !prev.is_active && !prev.stopped_at && isContactStopVia(prev.paused_via)) {
+      result.skipped++
+      bump('skipped_contact_paused')
       continue
     }
     // Turning off with no areas picked keeps the row's areas (a paused report
@@ -140,6 +141,12 @@ export const setReportSubscriptionHandler: BulkHandler = async (ids, params): Pr
     if (isActive) {
       row.stopped_at = null
       row.stopped_via = null
+      row.paused_at = null
+      row.paused_via = null
+    } else if (prev?.is_active) {
+      // A broker's turn-off is the broker's pause, never read as hers.
+      row.paused_at = nowIso
+      row.paused_via = 'admin'
     }
     if (!prev) {
       // A first setup: say where it came from, and start the cadence from the
@@ -155,14 +162,16 @@ export const setReportSubscriptionHandler: BulkHandler = async (ids, params): Pr
       if (!count) { result.skipped++; bump('changed_during_job'); continue }
     } else {
       // Update only while the row is as read: same on/off and same stop stamp.
-      // A stop or a pause made since the read keeps its place.
+      // A stop or a pause made since the read keeps its place, and a turn-on
+      // re-checks in the same statement that neither her stop nor her pause
+      // landed meanwhile.
       let update = sb
         .from('crm_report_subscriptions')
         .update(row)
         .eq('person_id', id)
         .eq('is_active', prev.is_active === true)
       update = prev.stopped_at ? update.eq('stopped_at', prev.stopped_at) : update.is('stopped_at', null)
-      if (isActive) update = update.or(`stopped_via.is.null,stopped_via.not.in.(${CONTACT_STOP_VIAS.join(',')})`)
+      if (isActive) update = update.or(notHeldByContactFilter())
       const { data: written, error: upErr } = await update.select('person_id')
       if (upErr) { result.skipped++; bump('upsert_failed'); continue }
       if (!written || written.length === 0) { result.skipped++; bump('changed_during_job'); continue }

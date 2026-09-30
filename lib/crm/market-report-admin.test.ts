@@ -53,6 +53,8 @@ function sub(over: Partial<ReportSubscriptionRecord> = {}): ReportSubscriptionRe
     consentNote: null,
     stoppedAt: null,
     stoppedVia: null,
+    pausedAt: null,
+    pausedVia: null,
     ...over,
   }
 }
@@ -130,7 +132,17 @@ describe('adminUpdateReportSubscription', () => {
     const r = await adminUpdateReportSubscription({ personId: 64138, admin: ADMIN, areas: [], active: false })
     expect(r).toEqual({ ok: true, message: 'Market reports turned off.' })
     expect(m.applyReportSubscriptionPatch).toHaveBeenCalledTimes(1)
-    expect(m.applyReportSubscriptionPatch.mock.calls[0][1]).toEqual({ is_active: false })
+    // A broker's pause is recorded as the broker's (review 2026-09-30), so it
+    // never reads as the contact's own.
+    expect(m.applyReportSubscriptionPatch.mock.calls[0][1]).toEqual({ is_active: false, paused_at: expect.any(String), paused_via: 'admin' })
+  })
+
+  it('a report that changed after the card was read is refused in words a broker can act on (review 2026-09-30)', async () => {
+    m.getReportSubscriptionRecord.mockResolvedValue(sub({ isActive: true }))
+    m.applyReportSubscriptionPatch.mockResolvedValue({ ok: false, error: 'changed' })
+    const r = await adminUpdateReportSubscription({ personId: 64138, admin: ADMIN, active: false })
+    expect(r.ok).toBe(false)
+    expect((r as { error: string }).error).toContain('changed since this page was opened')
   })
 
   it('a contact-stopped report needs her consent note to restart', async () => {

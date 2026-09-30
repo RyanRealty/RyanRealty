@@ -81,6 +81,7 @@ import {
   type ReportFigure,
 } from './market-report-figures'
 import { cityMarketPath } from '@/lib/market/canonical-market-path'
+import { marketChartUrl } from '@/lib/email/market-chart-token'
 
 // Public surface preserved after the 2026-07-29 formatter extraction —
 // app/actions/generate-market-report.ts and the test suite import these from
@@ -375,25 +376,6 @@ export function chartableMonths(points: readonly MarketTrendPoint[] | null | und
   return run.length >= CHART_MIN_MONTHS ? run : null
 }
 
-/**
- * Absolute chart-image URL for an area + metric. `through` (YYYY-MM) pins the
- * chart to the months the email described, so a report opened next month (or
- * read again from the archive) still shows the chart that went out.
- */
-export function chartImageUrl(
-  area: Pick<MarketReportAreaBlock, 'geoType' | 'slug'>,
-  metric: 'median_price' | 'inventory' | 'dom',
-  opts: { months?: number; through?: string | null } = {},
-): string {
-  const params = new URLSearchParams({
-    geo: area.geoType,
-    slug: area.slug,
-    metric,
-    months: String(opts.months ?? 12),
-  })
-  if (opts.through) params.set('through', opts.through)
-  return `${SITE_URL}/api/email/market-chart?${params.toString()}`
-}
 
 /**
  * Where "SEE THE FULL REPORT" actually lands (conversion-audit 2026-07-15 #2).
@@ -506,20 +488,28 @@ function renderAreaBlock(area: MarketReportAreaBlock): AreaRender {
   }
 
   // ── Price chart: an unbroken, sampled run of completed months ─────────────
+  // The image draws exactly these values: they are signed into its URL, and
+  // the chart route draws a signed series without reading any data (review
+  // 2026-09-30), so the email, its web view and its archive all show the
+  // values printed here and verified by the Spark check.
   let priceChart = ''
   const run = chartableMonths(points)
-  if (run) {
+  const drawn = run
+    ? run.map((p) => ({ month: monthKey(p.periodStart), value: p.medianSalePrice }))
+    : []
+  if (run && drawn.every((p): p is { month: string; value: number } => typeof p.value === 'number' && Number.isFinite(p.value))) {
     const through = monthKey(run[run.length - 1].periodStart)
-    const url = chartImageUrl(area, 'median_price', { months: run.length, through })
-    priceChart = `<div style="margin:14px 0 4px;"><img src="${url}" alt="Line chart of the ${escapeHtml(area.areaLabel)} median sale price by month over the last ${run.length} months" width="532" style="display:block;width:100%;max-width:532px;height:auto;border:1px solid ${EMAIL_BORDER};border-radius:8px;"></div>`
+    const url = marketChartUrl({ metric: 'median_price', label: area.areaLabel, points: drawn as Array<{ month: string; value: number }> })
+    priceChart = `<div style="margin:14px 0 4px;"><img src="${escapeHtml(url)}" alt="Line chart of the ${escapeHtml(area.areaLabel)} median sale price by month over the last ${run.length} months" width="532" style="display:block;width:100%;max-width:532px;height:auto;border:1px solid ${EMAIL_BORDER};border-radius:8px;"></div>`
     figures.push({
       area: area.slug,
       areaLabel: area.areaLabel,
       label: `median sale price chart, ${run.length} completed months through ${through}`,
       value: null,
       display: 'chart',
-      source: 'market_stats_cache via getMarketTrend, drawn by /api/email/market-chart',
-      filter: `geo_type=${area.geoType} geo_slug=${area.slug} period_type=monthly months=${run.length} through=${through} each month n>=${MOM_MIN_MONTH_SALES}`,
+      source:
+        'market_stats_cache via getMarketTrend; the values below are signed into the image URL and /api/email/market-chart draws only them (it never re-reads data)',
+      filter: `geo_type=${area.geoType} geo_slug=${area.slug} period_type=monthly months=${run.length} through=${through} each month n>=${MOM_MIN_MONTH_SALES} drawn=${drawn.map((p) => `${p.month}:${p.value}`).join(',')}`,
       as_of: monthEnd(run[run.length - 1].periodStart),
       n: run.length,
     })

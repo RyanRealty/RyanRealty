@@ -60,7 +60,9 @@ function ReportStatus({ row }: { row: AdminReportSubscriptionRow }) {
   if (row.state === 'stopped') {
     return <StateWord state="down">{isContactStopVia(row.stoppedVia) ? 'Stopped by contact' : 'Stopped'}</StateWord>
   }
-  if (row.state === 'paused') return <StateWord state="waiting">Off</StateWord>
+  if (row.state === 'paused') {
+    return <StateWord state="waiting">{isContactStopVia(row.pausedVia) ? 'Paused by contact' : 'Off'}</StateWord>
+  }
   if (!row.firstSendApprovedAt) return <StateWord state="waiting">Waiting for approval</StateWord>
   return <StateWord state="ok">On</StateWord>
 }
@@ -171,7 +173,7 @@ export default function ReportSubscriptionsTab({
       toast.success(
         `${verb} ${n.toLocaleString('en-US')} ${n === 1 ? 'subscription' : 'subscriptions'}` +
           (stopped > 0
-            ? `. Skipped ${stopped.toLocaleString('en-US')} the contact stopped themselves; restart those one at a time with their consent note on the contact's market report card`
+            ? `. Skipped ${stopped.toLocaleString('en-US')} the contact stopped or paused themselves; restart those one at a time with their consent note on the contact's market report card`
             : '') +
           (noAreas > 0
             ? `. Skipped ${noAreas.toLocaleString('en-US')} with no areas; pick an area on each one first`

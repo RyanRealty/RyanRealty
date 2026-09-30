@@ -20,28 +20,37 @@
  *     3. Not approved (first_send_approved_at null): record ONE held row per
  *        due cycle ('awaiting-approval'), send nothing. A broker approves
  *        after the preview reached their own inbox.
+ *     A deleted or unapproved row is attempt-stamped all the same, so a row
+ *     that cannot send rotates to the back of the scan instead of holding its
+ *     front (the read is oldest attempt first, capped).
  *     4. No email on file: one held row per cycle ('no-email').
  *     5. deliverMarketReport (lib/crm/market-report-deliver.ts): fetch the §0
  *        figures, hold on stale data, render, run the §0 Spark gate (hold on a
- *        STOP or an unreconciled figure), re-read the subscription, claim the
- *        send key for this subscription's due CYCLE (scheduledSendKey: two
- *        overlapping runs claim the same key, so only one sends), then
+ *        STOP or an unreconciled figure), re-read the subscription, build the
+ *        exact request (prepareReportEmail), claim the send key for this
+ *        subscription's due CYCLE with that request stored (scheduledSendKey:
+ *        two overlapping runs claim the same key, so only one sends), then
  *        sendOneSubscriber, settle the row, write the email_out timeline row
  *        and stamp last_sent_at.
  *   The run stops starting new deliveries after RUN_TIME_BUDGET_MS (each one
  *   pulls Spark); the rest wait for the next run, oldest attempt first.
  *
+ * prepareReportEmail builds the request ONCE (review 2026-09-30):
+ * prepareDeliverableEmail (multipart, one CAN-SPAM footer, RFC 8058 headers at
+ * the report-scoped one-click endpoint) -> attributeOutbound (broker ?agent=,
+ * the signed person token, open/click tracking with the broker on every
+ * event) -> the broker's named identity. A PREVIEW goes to the broker's own
+ * mailbox and carries none of the contact's tokens: no person token, no open
+ * pixel, no click wraps, and no event row, so a broker opening it never counts
+ * as the contact. reportIdempotencyKey derives the provider key from the send
+ * key and the request's bytes.
+ *
  * sendOneSubscriber, the leaf: the suppression chokepoint fail-closed BEFORE
  * sendEmail, on her record (isSuppressed; ci:email-send-gated reads that order
  * in this function) and on her address (isSuppressedByEmail: the newsletter
- * writes address-only rows) -> prepareDeliverableEmail (multipart, one
- * CAN-SPAM footer, RFC 8058 headers at the report-scoped one-click endpoint)
- * -> attributeOutbound (broker ?agent=, the signed person token, open/click
- * tracking with the broker on every event) -> sendEmail, with the send key as
- * the provider's idempotency key -> recordEmailEvent('sent'). A PREVIEW goes
- * to the broker's own mailbox and carries none of the contact's tokens: no
- * person token, no open pixel, no click wraps, and no event row, so a broker
- * opening it never counts as the contact.
+ * writes address-only rows) -> sendEmail with the STORED request exactly
+ * (`exact`) under its idempotency key -> recordEmailEvent('sent'). An answer
+ * that never came is 'unknown', never 'failed': it may have been delivered.
  *
  * Never throws to the caller — every contact's outcome is captured in the
  * returned summary so the cron always returns a clean JSON status.
@@ -52,6 +61,7 @@
  */
 import 'server-only'
 
+import { createHash } from 'node:crypto'
 import { inReportSendWindow, isDue } from '@/lib/crm/market-report-cadence'
 import { isSuppressed, isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { prepareDeliverableEmail } from '@/lib/email/prepare'
@@ -65,7 +75,7 @@ import {
 } from '@/lib/data/crm/getMarketReportSubscribers'
 import { getPersonPrimaryEmail } from '@/lib/data/crm/getPersonPrimaryEmail'
 import { stampMarketReportAttempt } from '@/lib/data/crm/stampMarketReportSent'
-import type { ReportSendKind } from '@/lib/data/crm/marketReportSends'
+import type { ReportEmailRequest, ReportSendKind, ReportSendPayload } from '@/lib/data/crm/marketReportSends'
 import type { SparkGateMemo } from '@/lib/crm/market-report-spark-gate'
 import { scheduledSendKey } from '@/lib/crm/market-report-keys'
 
@@ -144,6 +154,8 @@ export type ScheduledDeliverOutcome =
   /** The subscription or the contact changed while the report was built; nothing went out. */
   | { status: 'cancelled'; reason: 'stopped' | 'changed' | 'contact-deleted'; detail: string }
   | { status: 'failed'; detail: string }
+  /** The provider never answered: it may have gone out, so it is held in flight and Matt is paged. */
+  | { status: 'unknown'; detail: string }
 
 export type ScheduledDeliverInput = {
   subscriber: MarketReportSubscriber
@@ -210,20 +222,14 @@ function emptyReasonCounts(): Record<SkipReason, number> {
   }
 }
 
-/** The input the one send call takes. */
-export type SendOneInput = {
+/** What the email is built from (the rendered report, before prepare and attribution). */
+export type PrepareReportInput = {
   kind: ReportSendKind
-  /** The contact the report is about. Previews still name the contact here (for the suppression check), never in the links. */
+  /** The contact the report is about. A preview names her here too, never in its links. */
   personId: number
   brokerSlug: string
   /** The recipient: the contact, or the broker's own mailbox for a preview. */
   to: string
-  /**
-   * The CONTACT's own address, whatever `to` is: checked against the
-   * address-keyed suppression rows (the newsletter writes those without a
-   * person). Null when she has none on file.
-   */
-  contactEmail: string | null
   subject: string
   /** The rendered html/text (BEFORE prepare and attribution). */
   html: string
@@ -232,29 +238,136 @@ export type SendOneInput = {
   unsubscribeUrl: string
   /** The RFC 8058 one-click endpoint for the List-Unsubscribe header. */
   oneClickUrl: string
-  /** The send key: the email_events key and the provider's idempotency key. */
+  /** The send key: the email_events key the tracking carries. */
   emailKey: string
 }
 
-export type SendOneOutcome =
-  | { status: 'sent'; messageId: string | null; preparedHtml: string; preparedText: string }
-  | { status: 'suppressed'; detail: string }
-  | { status: 'failed'; detail: string; preparedHtml: string; preparedText: string }
+export type PreparedReport = {
+  /** The exact request the provider receives (tracked html on a real send). */
+  request: ReportEmailRequest
+  /** The stored copy: prepared (one footer), with no pixel and no click wraps. */
+  cleanHtml: string
+  cleanText: string
+}
 
 /**
- * Send ONE already-rendered report. The suppression chokepoint (fail-closed,
+ * Build the exact provider request ONCE, before the claim (review 2026-09-30):
+ * multipart with ONE CAN-SPAM footer (the body already carries it), the RFC
+ * 8058 headers at the report-scoped one-click endpoint, broker attribution
+ * (?agent=) on every link, and on a real send the signed person token and
+ * open/click tracking with the broker on every event. A preview carries none
+ * of the contact's tokens: no person token, no pixel, no click wraps. The
+ * named broker sender with a monitored reply-to (lib/email/broker-identity).
+ * The claim stores this request, and every attempt of the send key (a retry,
+ * a recovery) replays it byte for byte. Pure (no I/O).
+ */
+export function prepareReportEmail(input: PrepareReportInput): PreparedReport {
+  const prepared = prepareDeliverableEmail({
+    subject: input.subject,
+    html: input.html,
+    text: input.text,
+    personId: input.personId,
+    unsubscribeUrl: input.unsubscribeUrl,
+    oneClickUnsubscribeUrl: input.oneClickUrl,
+    footer: 'from-body',
+  })
+  const isPreview = input.kind === 'preview'
+  const html = attributeOutbound(prepared.html, {
+    brokerSlug: input.brokerSlug,
+    personId: isPreview ? null : input.personId,
+    emailKey: input.emailKey,
+    label: input.subject,
+    broker: input.brokerSlug,
+  })
+  const identity = brokerSendIdentity(input.brokerSlug)
+  return {
+    request: {
+      from: identity.from,
+      to: input.to,
+      replyTo: identity.replyTo,
+      subject: prepared.subject,
+      html,
+      text: prepared.text,
+      headers: { ...prepared.headers },
+    },
+    cleanHtml: prepared.html,
+    cleanText: prepared.text,
+  }
+}
+
+/**
+ * The request as it goes on the wire, in ONE fixed order (headers sorted by
+ * name). The claim stores the request as jsonb, which keeps object keys in
+ * its own order (shortest first), not the order they were built in; the
+ * first send and every replay read back from the row go through this, so a
+ * replay posts the same bytes the first send did and Resend answers it from
+ * the key instead of refusing it (review 2026-09-30). Pure.
+ */
+export function wireRequest(request: ReportEmailRequest): ReportEmailRequest {
+  const source = request.headers ?? {}
+  const headers: Record<string, string> = {}
+  for (const name of Object.keys(source).sort()) headers[name] = source[name]!
+  return {
+    from: request.from,
+    to: request.to,
+    replyTo: request.replyTo,
+    subject: request.subject,
+    html: request.html,
+    text: request.text,
+    headers,
+  }
+}
+
+/**
+ * The provider idempotency key for one request: the send key plus a digest
+ * of the request's wire form. The same bytes keep the key (a replay is
+ * answered from Resend's first result, never sent twice); a new render gets a
+ * new key (Resend refuses the same key with a different payload). Pure.
+ */
+export function reportIdempotencyKey(emailKey: string, request: ReportEmailRequest): string {
+  const digest = createHash('sha256').update(JSON.stringify(wireRequest(request))).digest('hex').slice(0, 16)
+  return `${emailKey}:${digest}`.slice(0, 256)
+}
+
+/** The input the one send call takes: a stored request, replayed exactly. */
+export type SendOneInput = {
+  kind: ReportSendKind
+  /** The contact the report is about (her suppression is checked, a preview included). */
+  personId: number
+  brokerSlug: string
+  /**
+   * The CONTACT's own address, whatever the request's `to` is: checked
+   * against the address-keyed suppression rows (the newsletter writes those
+   * without a person). Null when she has none on file.
+   */
+  contactEmail: string | null
+  /** The send key: the email_events key of the 'sent' row. */
+  emailKey: string
+  /** The exact request and its idempotency key, as the claim stored them. */
+  payload: ReportSendPayload
+}
+
+export type SendOneOutcome =
+  | { status: 'sent'; messageId: string | null }
+  | { status: 'suppressed'; detail: string }
+  /** Resend answered with a refusal: nothing was sent. */
+  | { status: 'failed'; detail: string }
+  /** No answer came (or the key was already in use): it MAY have been delivered. */
+  | { status: 'unknown'; detail: string }
+
+/**
+ * Send ONE stored report request. The suppression chokepoint (fail-closed,
  * on the CONTACT: her record through isSuppressed, and her address through
  * isSuppressedByEmail, which also reads the address-only rows the newsletter
  * writes) runs in THIS function immediately before sendEmail, so
  * ci:email-send-gated sees the gate in the same scope as the send. A preview
  * is gated on the contact too: a report the contact can never receive has
- * nothing to preview.
- *
- * Returns the prepared html/text (still free of tracking) for the stored copy.
- * Never throws.
+ * nothing to preview. The request goes out exactly as stored (`exact`: no
+ * send-time instrumentation), in its one wire order (wireRequest), under its
+ * own idempotency key. Never throws.
  */
 export async function sendOneSubscriber(input: SendOneInput): Promise<SendOneOutcome> {
-  const { personId } = input
+  const { personId, payload } = input
 
   // ── Suppression chokepoint — fail-closed, BEFORE any send. ──────────────────
   const gate = await isSuppressed(personId, 'email')
@@ -269,68 +382,30 @@ export async function sendOneSubscriber(input: SendOneInput): Promise<SendOneOut
     }
   }
 
-  // Multipart + ONE CAN-SPAM footer (the body already carries it) + the RFC
-  // 8058 headers pointed at the report-scoped one-click endpoint.
-  const prepared = prepareDeliverableEmail({
-    subject: input.subject,
-    html: input.html,
-    text: input.text,
-    personId,
-    unsubscribeUrl: input.unsubscribeUrl,
-    oneClickUnsubscribeUrl: input.oneClickUrl,
-    footer: 'from-body',
-  })
-
-  // Broker attribution (?agent=) on every link. A real send also carries the
-  // signed person token and open/click tracking, with the broker on every
-  // event; a preview carries neither, so a broker opening their own preview
-  // never reads as the contact.
-  const isPreview = input.kind === 'preview'
-  const finalHtml = attributeOutbound(prepared.html, {
-    brokerSlug: input.brokerSlug,
-    personId: isPreview ? null : personId,
-    emailKey: input.emailKey,
-    label: input.subject,
-    broker: input.brokerSlug,
-  })
-
-  // Named broker sender + monitored reply-to (lib/email/broker-identity): a
-  // reply to a market report must reach the assigned broker, never noreply@.
-  const identity = brokerSendIdentity(input.brokerSlug)
-  const res = await sendEmail({
-    to: input.to,
-    from: identity.from,
-    replyTo: identity.replyTo,
-    subject: prepared.subject,
-    html: finalHtml,
-    text: prepared.text,
-    headers: prepared.headers,
-    // The send key: a repeat of the same send (an overlapping run, or a retry
-    // of an attempt the provider in fact accepted) is refused by the provider
-    // too, never delivered twice.
-    idempotencyKey: input.emailKey,
-  })
+  const res = await sendEmail({ ...wireRequest(payload.request), idempotencyKey: payload.idempotencyKey, exact: true })
 
   if (res.error) {
-    return { status: 'failed', detail: res.error, preparedHtml: prepared.html, preparedText: prepared.text }
+    return res.unknown ? { status: 'unknown', detail: res.error } : { status: 'failed', detail: res.error }
   }
 
   // Measurement — best-effort; a reporting write must never undo a real send.
   // A preview is the broker's own mail and records nothing against the contact.
-  if (!isPreview) {
+  // A replay Resend answers from its first result carries the same message id,
+  // and the event row dedupes on it.
+  if (input.kind !== 'preview') {
     await recordEmailEvent({
       messageId: res.id ?? null,
-      recipientEmail: input.to,
+      recipientEmail: payload.request.to,
       personId,
       broker: input.brokerSlug,
       sendType: 'market-report',
       event: 'sent',
       emailKey: input.emailKey,
-      subject: input.subject,
+      subject: payload.request.subject,
     })
   }
 
-  return { status: 'sent', messageId: res.id ?? null, preparedHtml: prepared.html, preparedText: prepared.text }
+  return { status: 'sent', messageId: res.id ?? null }
 }
 
 /**
@@ -407,9 +482,13 @@ export async function runMarketReportSend(options: RunSendOptions = {}): Promise
     const sub = subscribers[i]!
     if (summary.sent >= maxSends) break
 
-    // A deleted contact is never mailed (review 2026-09-30), whatever her row says.
+    // A deleted contact is never mailed (review 2026-09-30), whatever her row
+    // says. Her row is still attempt-stamped: the scan reads the oldest
+    // attempt first (never-attempted first), so a row that can never send
+    // would otherwise hold the front of every run and starve the rest.
     if (sub.personDeleted) {
       recordSkip({ personId: sub.personId, status: 'skipped', reason: 'contact-deleted' })
+      await deps.stampAttempt(sub.subscriptionId, now)
       continue
     }
 
@@ -433,6 +512,8 @@ export async function runMarketReportSend(options: RunSendOptions = {}): Promise
     if (!sub.firstSendApprovedAt) {
       await deps.recordHold(sub, 'awaiting-approval', now)
       recordSkip({ personId: sub.personId, status: 'skipped', reason: 'awaiting-approval' })
+      // Stamped so it rotates to the back of the scan (see the deleted case).
+      await deps.stampAttempt(sub.subscriptionId, now)
       continue
     }
 

@@ -214,8 +214,8 @@ function uniquePersonIds(subs: RawSubRow[]): number[] {
  *
  * Each subscriber carries `personDeleted` (review 2026-09-30): a deleted
  * contact, or one missing from the people read, is never mailed. A failed
- * people read THROWS (fail closed, and the cron pages Matt) rather than
- * reading every contact as gone.
+ * subscription read or people read THROWS (fail closed, and the cron pages
+ * Matt) rather than reading as nobody subscribed or every contact gone.
  */
 export async function getActiveMarketReportSubscriptions(
   limit = 1000,
@@ -227,11 +227,11 @@ export async function getActiveMarketReportSubscriptions(
     .eq('is_active', true)
     .order('last_attempt_at', { ascending: true, nullsFirst: true })
     .limit(Math.max(1, Math.trunc(limit)))
-  if (error || !data) {
-    if (error) console.error('[getActiveMarketReportSubscriptions]', error.message)
-    return []
-  }
-  const subs = data as RawSubRow[]
+  // Fail closed, like the people read below: an unreadable subscription table
+  // must reach the cron's alarm, never read as "nobody is subscribed" and a
+  // quiet, empty run (review 2026-09-30).
+  if (error) throw new Error(`[getActiveMarketReportSubscriptions] subscription read failed: ${error.message}`)
+  const subs = (data ?? []) as RawSubRow[]
   const people = await fetchPeopleByIds(sb, uniquePersonIds(subs), null, { throwOnError: true })
   return subs.map((s) =>
     mapMarketReportSubscriberRow(toJoinedRow(s, people.get(toInt(s.person_id) ?? -1) ?? null)),

@@ -29,10 +29,25 @@ function orFilter(expr: string): Filter {
     return (r) =>
       String(r.name ?? '').toLowerCase().includes(q) || JSON.stringify(r.emails ?? '').toLowerCase().includes(q)
   }
-  const stop = /^stopped_via\.is\.null,stopped_via\.not\.in\.\((.*)\)$/.exec(expr)
-  if (stop) {
-    const vias = stop[1].split(',')
-    return (r) => r.stopped_via == null || !vias.includes(String(r.stopped_via))
+  // The turn-on guard: an OR of and(...) groups over stopped_via / paused_via
+  // (neither her stop nor her pause may have landed since the read).
+  const groups = [...expr.matchAll(/and\(([^()]*(?:\([^()]*\)[^()]*)*)\)/g)].map((m) => m[1]!)
+  if (groups.length > 0 && groups.join('').length > 0) {
+    const cond = (c: string): Filter => {
+      const isNull = /^(\w+)\.is\.null$/.exec(c)
+      if (isNull) return (r) => r[isNull[1]!] == null
+      const notIn = /^(\w+)\.not\.in\.\((.*)\)$/.exec(c)
+      if (notIn) {
+        const vias = notIn[2]!.split(',')
+        return (r) => r[notIn[1]!] != null && !vias.includes(String(r[notIn[1]!]))
+      }
+      throw new Error(`unexpected condition: ${c}`)
+    }
+    const trees = groups.map((g) => {
+      const parts = g.split(/,(?![^()]*\))/).map(cond)
+      return (r: Row) => parts.every((p) => p(r))
+    })
+    return (r) => trees.some((t) => t(r))
   }
   throw new Error(`unexpected or(): ${expr}`)
 }
@@ -145,6 +160,8 @@ function subRow(personId: number, over: Row = {}): Row {
     consent_note: null,
     stopped_at: null,
     stopped_via: null,
+    paused_at: null,
+    paused_via: null,
     ...over,
   }
 }
@@ -209,14 +226,17 @@ describe('bulkUpdateReportSubscriptions (the hub bulk bar)', () => {
       subRow(3, { stopped_at: '2026-09-20T00:00:00Z', stopped_via: 'one-click' }),
       subRow(4, { areas: [] }),
       subRow(5, { is_active: true }),
+      // Paused by the contact herself: her pause holds like her stop (review 2026-09-30).
+      subRow(6, { paused_at: '2026-09-20T00:00:00Z', paused_via: 'email-link' }),
     ]
-    const res = await bulkUpdateReportSubscriptions([1, 2, 3, 4, 5], { active: true }, ACTOR)
-    expect(res).toEqual({ updated: 2, skippedContactStopped: 1, skippedNoAreas: 1, error: null })
+    const res = await bulkUpdateReportSubscriptions([1, 2, 3, 4, 5, 6], { active: true }, ACTOR)
+    expect(res).toEqual({ updated: 2, skippedContactStopped: 2, skippedNoAreas: 1, error: null })
     const byId = new Map(h.tables.crm_report_subscriptions.map((r) => [r.person_id, r]))
     expect(byId.get(1)).toMatchObject({ is_active: true })
     expect(byId.get(2)).toMatchObject({ is_active: true, stopped_at: null, stopped_via: null })
     expect(byId.get(3)).toMatchObject({ is_active: false, stopped_via: 'one-click' })
     expect(byId.get(4)).toMatchObject({ is_active: false })
+    expect(byId.get(6)).toMatchObject({ is_active: false, paused_via: 'email-link' })
     const timeline = h.tables.crm_timeline ?? []
     expect(timeline.map((t) => t.person_id).sort()).toEqual([1, 2])
     expect(timeline.find((t) => t.person_id === 1)?.title).toBe(
