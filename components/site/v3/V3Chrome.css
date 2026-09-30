@@ -58,20 +58,18 @@ html:has(> body > .v3-chrome) {
   scroll-padding-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
 }
 
-/* ...except while focus is in the bar itself. The bar never leaves the top,
-   and the top is the padded band, so a browser taking the padding at its word
-   scrolls the page to "reveal" a control that never moved: Shift+Tab back into
-   the header from mid-page jumped the page up about 400px in Chromium, and
-   again on each control (measured 2026-09-30). Any focus, not only keyboard
-   focus: a control that hands focus back after a click (the search closing
-   onto its icon, the menu onto its button) is focused by script, which a
-   browser scrolls for like a Tab. The one scroll that must keep the padding
-   while focus is in the bar is the one a followed link starts (an anchor it
-   points at), and V3Chrome.tsx takes focus out of the bar first. What this
-   gives up: a scroll some other script starts while focus rests in the bar
-   would put its target at the top edge. Every scrollIntoView on the public
-   site today runs from a control in the page, which holds the focus. */
-html:has(> body > .v3-chrome :focus) {
+/* ...except while keyboard focus is in the bar itself. The bar never leaves
+   the top, and the top is the padded band, so a browser taking the padding at
+   its word scrolls the page to "reveal" a control that never moved: Shift+Tab
+   back into the header from mid-page jumped the page up about 400px in
+   Chromium, and again on each control (measured 2026-09-30). Keyboard focus
+   only: a click or tap never scrolls the page to the control it focuses
+   (measured the same day), and every script focus back into the bar (the menu
+   onto its button, a mega panel onto its caret, the search onto its icon)
+   passes preventScroll. A scroll that follows while keyboard focus rests here
+   must still clear the bar, so a followed anchor link, Back, Forward and a
+   hash change each take focus out of the bar first (V3Chrome.tsx). */
+html:has(> body > .v3-chrome :focus-visible) {
   scroll-padding-top: 0;
 }
 

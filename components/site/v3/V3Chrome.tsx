@@ -87,6 +87,7 @@ import { chromeShowsSellerAsk } from '@/lib/site/chrome-seller-ask'
 import { chromeMegaColumnMarks, chromeMegaModel } from '@/lib/site/chrome-mega'
 import { shouldHidePublicChrome } from '@/lib/site/public-chrome-hide'
 import { V3Button, V3_ROOT_CLASS, v3Text, type V3Text } from './atoms'
+import { chromeLinkMove } from './V3Chrome.logic'
 import { V3ChromeSearch } from './V3ChromeSearch.client'
 import { V3Icon } from './V3Icon'
 import './tokens.css'
@@ -632,26 +633,41 @@ export function V3Chrome({ currentPath, id, className, live }: V3ChromeProps) {
   // Closes on a same-path click too, which derivation alone cannot see: a link
   // to the page the visitor is already on changes nothing to compare against.
   const close = useCallback(() => setOpenPath(null), [])
-  // A link followed out of the chrome takes focus out of it. Focus in the bar
-  // drops the page's scroll padding (V3Chrome.css), and a link to an anchor
-  // (/sell#get-value) scrolls its target after the click: with focus still on
-  // the link, or handed back to the menu button, the target would land under
-  // the bar. Only a plain activation (a click or Enter) of a link that moves
-  // the reader counts: to another page, or to an anchor. A modified click
-  // opens a tab, a call link dials, and a link to the page already showing
-  // changes nothing, so each of those leaves focus where the menu returns it.
+  // A link followed out of the chrome takes focus out of it. Keyboard focus in
+  // the bar drops the page's scroll padding (V3Chrome.css), and a link to an
+  // anchor (/sell#get-value) scrolls its target after the click: with focus
+  // still on the link, or handed back to the menu button, the target would
+  // land under the bar. Which activations move the reader is
+  // V3Chrome.logic.ts (chromeLinkMove); a link to the page already showing
+  // moves nobody, so the menu still hands focus back to its button.
   const followedLinkRef = useRef(false)
   const onChromeClickCapture = useCallback((event: ReactMouseEvent<HTMLElement>) => {
-    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
     const link = (event.target as Element | null)?.closest?.('a[href]')
     if (!(link instanceof HTMLAnchorElement)) return
-    if (!/^https?:$/.test(link.protocol) || (link.target && link.target !== '_self')) return
-    const here = window.location
-    const elsewhere =
-      link.origin !== here.origin || link.pathname !== here.pathname || link.search !== here.search
-    if (!elsewhere && !link.hash) return
+    const move = chromeLinkMove(event, link, window.location)
+    if (!move) return
     followedLinkRef.current = true
-    if (link.hash) link.blur()
+    if (move === 'anchor') link.blur()
+  }, [])
+
+  // Back, Forward and a hash change move the reader too, and the page they
+  // land on may scroll to an anchor itself (/how-we-get-our-numbers does, on
+  // mount and on hashchange). Focus resting in the bar then leaves it first,
+  // and the menu, if open, does not hand it back. The chrome mounts once and
+  // stays, so these listeners run ahead of any page's own.
+  useEffect(() => {
+    const release = () => {
+      const active = document.activeElement
+      if (!(active instanceof HTMLElement) || !active.closest('body > .v3-chrome')) return
+      followedLinkRef.current = true
+      active.blur()
+    }
+    window.addEventListener('popstate', release)
+    window.addEventListener('hashchange', release)
+    return () => {
+      window.removeEventListener('popstate', release)
+      window.removeEventListener('hashchange', release)
+    }
   }, [])
   const menuHidden = open === false
   const hidden = currentPath == null && shouldHidePublicChrome(pathname)
