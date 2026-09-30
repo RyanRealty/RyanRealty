@@ -6,6 +6,7 @@ import { hasAnalyticsConsent, hasMarketingConsent } from './CookieConsentBanner'
 import { pageTypeFromPath } from '@/lib/analytics/page-type'
 import { IS_NON_PRODUCTION_BUILD } from '@/lib/analytics/non-production-build'
 import { gtmBootstrapScript } from '@/lib/analytics/gtm-bootstrap'
+import { isPrivatePath } from '@/lib/analytics/private-paths'
 
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_CONTAINER_ID?.trim()
 
@@ -67,6 +68,8 @@ export default function GTMHead() {
   // production property from a dev server just as gtag does.
   if (IS_NON_PRODUCTION_BUILD) return null
   if (!GTM_ID) return null
+  // A signing link's address is its key: no tag ever sees it (private-paths.ts).
+  if (isPrivatePath(pathname)) return null
 
   return (
     <script

@@ -11,7 +11,7 @@
  */
 
 import { cache } from 'react'
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { z } from 'zod'
 import { supabaseAnon } from '@/lib/data/client'
 import { fetchPagedRows } from '@/lib/supabase/paginate'

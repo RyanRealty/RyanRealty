@@ -1,5 +1,5 @@
 import 'server-only'
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'

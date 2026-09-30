@@ -70,8 +70,17 @@ describe('publishBlogContextualCta', () => {
   it('sends place posts to that inventory door', () => {
     const place = matchBuyablePlaceForPost({ slug: 'brasada-ranch-central-oregon' })
     expect(publishBlogContextualCta(place)).toEqual({
-      label: 'See Brasada Ranch homes',
+      label: 'Brasada Ranch homes for sale',
       href: '/communities/brasada-ranch',
+    })
+  })
+
+  it('sends a city post to the city page under its real estate query', () => {
+    const place = matchBuyablePlaceForPost({ slug: 'bend-neighborhoods-guide' })
+    expect(place?.kind).toBe('city')
+    expect(publishBlogContextualCta(place)).toEqual({
+      label: 'Bend real estate',
+      href: '/cities/bend',
     })
   })
 

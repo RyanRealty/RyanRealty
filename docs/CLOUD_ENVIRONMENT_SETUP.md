@@ -403,11 +403,16 @@ and put its send, publish and spend tools in `ask`.
 Counts are `grep -rl` over `app/`, `lib/`, `scripts/`, `components/`,
 `middleware.ts`, `vercel.json` and `package.json` on 2026-09-24.
 
-**Plugins.** CLAUDE.md §9 makes `engineering:code-review` mandatory before ship
-and names `engineering:deploy-checklist`, `design:design-system` and `data:*`.
-None of them loads in a cloud session: the `engineering`, `design` and `data`
-plugins are in the org's plugin catalog but not enabled (checked 2026-09-24).
-Enable all three on claude.ai; the next session loads them.
+**Plugins: none needed (2026-09-24).** CLAUDE.md §9 used to name
+`engineering:code-review`, `engineering:deploy-checklist`, `design:design-system`
+and `data:*` from the claude.ai `engineering`, `design` and `data` plugins, which
+no cloud session loaded. Each of those plugins also registers 8 to 10 MCP servers
+the business doesn't use (Slack, Linear, Asana, Atlassian, Snowflake and others,
+per the `.mcp.json` files in `anthropics/knowledge-work-plugins`), and a repo's
+`enabledPlugins` from an external marketplace doesn't install them in a cloud
+session (code.claude.com/docs/en/discover-plugins). §9 now names what every
+session already has: the built-in `code-review` skill, `deploy:verify`,
+`design_system/ryan-realty/SKILL.md`, and §0 and §7.
 
 ## Related
 

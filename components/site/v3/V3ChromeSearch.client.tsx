@@ -19,7 +19,11 @@ const PLACE_SEEDS: MorphingSearchItem[] = [
   { id: '/homes-for-sale/bend', title: 'Bend', description: 'City' },
   { id: '/homes-for-sale/redmond', title: 'Redmond', description: 'City' },
   { id: '/homes-for-sale/sisters', title: 'Sisters', description: 'City' },
-  { id: '/homes-for-sale/sunriver', title: 'Sunriver', description: 'Community' },
+  // Sunriver is a registry resort community that is its own city: its one
+  // inventory page is /communities/sunriver, and /homes-for-sale/sunriver
+  // canonicals there (lib/communities/self-city-community.ts). A seed never
+  // opens a search that points its canonical somewhere else.
+  { id: '/communities/sunriver', title: 'Sunriver', description: 'Community' },
   { id: '/communities/tetherow', title: 'Tetherow', description: 'Bend' },
   { id: '/homes-for-sale/prineville', title: 'Prineville', description: 'City' },
   { id: '/homes-for-sale/la-pine', title: 'La Pine', description: 'City' },

@@ -303,6 +303,8 @@ export type {
 
 // Listings — videos (stub today; 3-tier MLS fallback in Wave 1.8)
 export { getListingVideos } from '@/lib/data/videos/getListingVideos'
+export { getListingCardVideo } from '@/lib/data/videos/getListingCardVideo'
+export type { ListingCardVideo } from '@/lib/data/videos/getListingCardVideo'
 export { getSubdivisionVideoTours } from '@/lib/data/videos/getSubdivisionVideoTours'
 export {
   getRecentListingVideoRows,
@@ -328,7 +330,8 @@ export { getSaleZoneCache, upsertSaleZoneCache } from '@/lib/data/cma/sale-zone-
 export type { SaleZoneCacheRow } from '@/lib/data/cma/sale-zone-cache'
 export type { SubdivisionRing, SubdivisionRingPlat } from '@/lib/data/geo/subdivision-ring'
 export type { BoundaryGeoJSONInput, BoundaryGeometry } from '@/lib/data/geo/getBoundaryGeoJSON'
-export { getResortBoundaryGeoJSON } from '@/lib/data/geo/getResortBoundaryGeoJSON'
+// A registry community's stored outline, keyed by its durable slug, gated by the trust rule.
+export { getCommunityOutlineGeoJSON } from '@/lib/data/geo/getCommunityOutline'
 
 // Geo — Bend westside neighborhood stats for homepage map section
 export { getBendNeighborhoodStats } from '@/lib/data/geo/getBendNeighborhoodStats'
@@ -651,8 +654,9 @@ export {
   getCmaAdminRowBySlug, getCmaAdminReviewRowBySlug, getCmaProspectAsk, getCmaServeHead,
   getCmaStoredHtmlBySlug, getCmaRenderSourceBySlug, getCmaHtmlBySlug,
   getCmaAccessIdentity, updateCmaRowFieldsBySlug, deleteCmaRowById, replaceCmaComps,
+  snapshotCmaVersion, getCmaBuildSummaryBySlug,
 } from '@/lib/data/cma/documents'
-export type { CmaAdminRow, CmaCompInsert, CmaServeHead, CmaRenderSource } from '@/lib/data/cma/documents'
+export type { CmaAdminRow, CmaCompInsert, CmaServeHead, CmaRenderSource, CmaVersionSnapshotResult } from '@/lib/data/cma/documents'
 export { listOpenCmaActions, listOpenCmaActionsForSlug, claimCmaAction, updateCmaActionRow, findOpenCmaActionBySlug, appendCmaActionNotify, getCmaActionPayload, mergeCmaActionContact } from '@/lib/data/cma/queue'
 // THE one CMA queue — every origin in a single list (Matt 2026-09-04).
 export { listCmaQueue, isSendableQueueState } from '@/lib/data/cma/unified-queue'

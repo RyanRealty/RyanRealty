@@ -126,6 +126,10 @@ export function composeBuildSummary(i: BuildSummaryInput): Record<string, unknow
       resolved: i.site.resolved,
     },
     // The LLM comparability judgment (or a note that it was unavailable).
+    // `judge_cache` is the reusable decision (checksum, N votes, kept keys).
+    // An identical rebuild reads it and does not call the model again.
+    // It lives on this JSONB column. No new table.
+    judge_cache: i.judgment?.decision ?? null,
     judgment: i.judgment
       ? {
           used_llm: true as const,
@@ -136,6 +140,10 @@ export function composeBuildSummary(i: BuildSummaryInput): Record<string, unknow
           excluded: i.judgment.verdicts.filter((v) => v.tier === 'exclude').length,
           narrative: i.judgment.narrative,
           verdicts: i.judgment.verdicts,
+          input_checksum: i.judgment.decision?.inputChecksum ?? i.judgment.inputChecksum ?? null,
+          judge_version: i.judgment.decision?.judgeVersion ?? null,
+          votes: i.judgment.decision?.votes ?? null,
+          cache_hit: i.judgment.cacheHit === true,
         }
       : {
           used_llm: false as const,

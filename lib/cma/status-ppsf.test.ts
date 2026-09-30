@@ -1,10 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
-  formatPpsfBand,
   listPriceForPpsf,
   ppsfBand,
   ppsfOf,
-  statusPpsfBoardHtml,
   statusPpsfCaptionHtml,
   statusPpsfSummaries,
 } from '@/lib/cma/status-ppsf'
@@ -164,34 +162,7 @@ describe('status ppsf summaries from the selected homes', () => {
   })
 })
 
-describe('status ppsf letter markup', () => {
-  it('prints list and sold columns and no months of supply', () => {
-    const html = statusPpsfBoardHtml(
-      statusPpsfSummaries({
-        closed: [
-          entry({ key: '1', family: 'closed', listPrice: 510400, closePrice: 505600, sqft: 1600 }),
-          entry({ key: '2', family: 'closed', listPrice: 528000, closePrice: 512000, sqft: 1600 }),
-        ],
-        active: [entry({ key: 'A', family: 'active', listPrice: 544000, sqft: 1600 })],
-      }),
-    )
-    expect(html).toContain('Dollars a square foot')
-    expect(html).toContain('List $/sf')
-    expect(html).toContain('Sold $/sf')
-    expect(html).toContain('>Sold<')
-    expect(html).toContain('>Active<')
-    expect(html).not.toContain('Expired')
-    expect(html).toContain('$319')
-    expect(html).toContain('$316')
-    expect(html).toContain('$340')
-    expect(html).not.toMatch(/months of supply/i)
-    expect(html).not.toMatch(/\bMOS\b/)
-    expect(html).not.toMatch(/\bcomp(s)?\b/i)
-    expect(formatPpsfBand({ n: 2, median: 318, low: 316, high: 330 })).toBe(
-      '$316–$330 · median $318',
-    )
-  })
-
+describe('status ppsf matrix captions', () => {
   it('captions each matrix from that status only', () => {
     const closed = statusPpsfCaptionHtml('closed', [
       entry({ key: '1', family: 'closed', listPrice: 512000, closePrice: 496000, sqft: 1600 }),

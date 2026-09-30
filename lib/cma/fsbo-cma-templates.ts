@@ -127,7 +127,7 @@ export function composeFsboCmaFirstTouchEmail(facts: FsboCmaMergeFacts): {
  body: string
  requiresPdfAttachment: true
 } {
- const first = trim(facts.ownerFirstName) ?? 'there'
+ const first = 'there'
  const address = trim(facts.propertyAddress) ?? 'your home'
  const street = trim(facts.propertyStreet) ?? address
  const lo = moneyOrNull(facts.priceRangeLow)
@@ -226,14 +226,7 @@ export function composeCmaCoverIntro(facts: FsboCmaMergeFacts): {
  const calendar = trim(facts.calendarLink)
 
  const title = `Pricing report for ${address}`
- const preparedLine =
- owner && reportDate
- ? `Prepared for ${owner} · ${reportDate}`
- : owner
- ? `Prepared for ${owner}`
- : reportDate
- ? reportDate
- : null
+ const preparedLine = reportDate ? `Prepared · ${reportDate}` : 'Prepared'
  const placeLine = city ? `${city}, Oregon` : null
 
  const body = 'This is a comparative market analysis based on recent nearby sales. It is not an appraisal.'

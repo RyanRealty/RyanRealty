@@ -14,8 +14,8 @@ import { buildPlaceAtlas, EMPTY_PLACE_ATLAS, type AtlasPopulation } from '@/lib/
 import { atlasRegionNames } from '@/lib/atlas/place-names'
 import {
   getBoundaryGeoJSON,
+  getCommunityOutlineGeoJSON,
   getCommunitySubdivisions,
-  getResortBoundaryGeoJSON,
   getTaxlotsNear,
   type Taxlot,
 } from '@/lib/data'
@@ -29,6 +29,7 @@ import {
   cityNeighborhoodHref,
   subdivisionHref,
 } from '@/lib/site/place-href'
+import { communityPath } from '@/lib/communities/community-public-pair'
 
 export type ListingAtlasScope = {
   /** The MLS City the home files under; scopes the population read. */
@@ -75,13 +76,15 @@ async function readPlaceBoundary(
   preferResort: boolean,
 ): Promise<GeoJSON.Polygon | GeoJSON.MultiPolygon | null> {
   if (preferResort) {
-    const resort = await withTimeoutFallback(
-      getResortBoundaryGeoJSON(slug).catch(() => null),
+    // A registry community's stored outline, keyed by its durable slug and
+    // gated by the one trust rule (lib/communities/community-outline.ts).
+    const community = await withTimeoutFallback(
+      getCommunityOutlineGeoJSON(slug).catch(() => null),
       null,
       READ_MS,
-      'listing:atlasResort',
+      'listing:atlasCommunity',
     )
-    if (resort) return resort
+    if (community) return community
   }
   const slugs = citySlug && citySlug !== slug ? [slug, `${citySlug}-${slug}`] : [slug]
   for (const geoSlug of slugs) {
@@ -128,7 +131,7 @@ export async function buildListingAtlas(scope: ListingAtlasScope): Promise<Listi
     grain === 'neighborhood'
       ? cityNeighborhoodHref(scope.citySlug, frameSlug)
       : grain === 'community' && frameSlug
-        ? `/communities/${frameSlug}`
+        ? communityPath(frameSlug)
         : cityHref(scope.citySlug)
 
   // No recorded boundary (a city outside the mapped set): the frame is the

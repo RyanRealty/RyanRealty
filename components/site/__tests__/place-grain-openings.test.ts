@@ -271,13 +271,24 @@ describe('neighborhood pace', () => {
 })
 
 describe('neighborhood daily life', () => {
-  it('opens Awbrey Butte on High Lakes, Cascade, and Summit, not golf or /parks stubs', async () => {
+  // Matt 2026-09-24: the schools are the Deschutes County attendance areas
+  // covering the neighborhood (getPlaceSchools), not names from the authored
+  // file. The authored file sent Awbrey Butte to Cascade Middle; the county
+  // attendance area is Pacific Crest Middle (measured 2026-09-25).
+  const AWBREY_BUTTE_SCHOOLS = [
+    { slug: 'north-star-elementary', name: 'North Star Elementary', level: 'elementary' as const, share: 0.725 },
+    { slug: 'high-lakes-elem', name: 'High Lakes Elem', level: 'elementary' as const, share: 0.275 },
+    { slug: 'pacific-crest-middle', name: 'Pacific Crest Middle', level: 'middle' as const, share: 0.999 },
+    { slug: 'summit-high', name: 'Summit High', level: 'high' as const, share: 0.999 },
+  ]
+
+  it('opens Awbrey Butte on its attendance-area schools, not golf or /parks stubs', async () => {
     const content = await getResortCommunityContent('bend-awbrey-butte')
-    const rows = dailyLifeRows(content, 'Bend')
+    const { schools, parks } = dailyLifeRows(content, 'Bend', AWBREY_BUTTE_SCHOOLS)
+    const rows = [...schools, ...parks]
     const names = rows.map((row) => String(row.what))
-    expect(names).toContain('High Lakes Elem')
-    expect(names).toContain('Cascade Middle')
-    expect(names).toContain('Summit High')
+    expect(names.slice(0, 4)).toEqual(['North Star Elementary', 'High Lakes Elem', 'Pacific Crest Middle', 'Summit High'])
+    expect(names).not.toContain('Cascade Middle')
     expect(names).not.toContain('Sylvan Park')
     expect(names).not.toContain('Summit Park')
     expect(names.some((name) => /golf|membership/i.test(name))).toBe(false)

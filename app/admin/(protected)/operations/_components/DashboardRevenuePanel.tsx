@@ -1,4 +1,4 @@
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { getRevenueDashboardData } from '@/app/actions/partnership-revenue'
 import { ReportNumbers, SectionHead } from '@/components/admin/v2'
 import { formatPriceExact } from '@/lib/format/money'

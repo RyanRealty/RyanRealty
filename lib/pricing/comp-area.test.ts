@@ -220,7 +220,7 @@ describe('buildCompArea — otherwise the radius the widest kept rung used', () 
 })
 
 describe('resolveCompetitionArea', () => {
-  it('is the neighborhood the subject sits in, even when the comps came from one subdivision', () => {
+  it('Bend: pocket first, then a radius ladder capped at 5 miles, never the neighborhood polygon or the city', () => {
     const compArea = buildCompArea({
       subject: { ...OLD_BEND, subdivision: 'Park Addition', city: 'Bend' },
       rungs: [rung('subdivision-6mo', 3)],
@@ -235,13 +235,13 @@ describe('resolveCompetitionArea', () => {
       subject: { ...OLD_BEND, city: 'Bend' },
       keptComps: [comp('Park Addition', 'subdivision-6mo', OLD_BEND)],
     })
-    // A mapped boundary never widens — there is exactly one ring to try.
-    expect(rings).toHaveLength(1)
-    expect(rings[0]!.kind).toBe('neighborhood')
-    expect(rings[0]!.names).toEqual(['Old Bend'])
+    expect(rings[0]!.kind).toBe('subdivision')
+    expect(rings[0]!.names).toEqual(['Park Addition'])
+    expect(rings.filter((r) => r.kind === 'radius').map((r) => r.radiusMiles)).toEqual([0.5, 1, 2, 5])
+    expect(rings.some((r) => r.kind === 'city' || r.kind === 'neighborhood')).toBe(false)
   })
 
-  it('is a single radius ring when the comp search itself never reached five miles', () => {
+  it('starts at the pocket and stops at the comp search reach when that reach is under five miles', () => {
     const compArea = buildCompArea({
       subject: { ...REDMOND, subdivision: 'Diamond Bar Ranch', city: 'Redmond' },
       rungs: [rung('subdivision-3mo', 3)],
@@ -262,12 +262,11 @@ describe('resolveCompetitionArea', () => {
         }),
       ],
     })
-    // The comp search's own reach here is one mile — under five, so the
-    // competition uses that one mile directly, nothing to widen into.
-    expect(rings).toHaveLength(1)
-    expect(rings[0]!.kind).toBe('radius')
-    expect(rings[0]!.radiusMiles).toBe(1)
-    expect(rings[0]!.centre).toEqual({ lat: REDMOND.latitude, lng: REDMOND.longitude })
+    expect(rings[0]!.kind).toBe('subdivision')
+    expect(rings[0]!.names).toEqual(['Diamond Bar Ranch'])
+    const radii = rings.filter((r) => r.kind === 'radius').map((r) => r.radiusMiles)
+    expect(radii).toEqual([0.5, 1])
+    expect(rings.every((r) => r.kind === 'subdivision' || r.centre)).toBe(true)
   })
 
   it('never proposes a ring past the comp search reach it measured', () => {
@@ -284,13 +283,12 @@ describe('resolveCompetitionArea', () => {
         comp(null, 'nearby-1mi-6mo', { latitude: REDMOND.latitude + 0.035, longitude: REDMOND.longitude }),
       ],
     })
-    // Comp search reach rounds up to 2.5 miles here — still under five, so a
-    // single ring at that reach, never widened past it.
-    expect(rings).toHaveLength(1)
-    expect(rings[0]!.radiusMiles).toBeGreaterThanOrEqual(2.5)
+    const radii = rings.map((r) => r.radiusMiles)
+    expect(radii).toEqual([0.5, 1, 2, 2.5])
+    expect(Math.max(...radii.filter((n): n is number => n != null))).toBeLessThanOrEqual(2.5)
   })
 
-  it('starts at five miles and widens toward ten, then the comp search reach, never past it', () => {
+  it('widens a rural reach through five and ten, then the comp search, and stops at 15', () => {
     const compArea = buildCompArea({
       subject: { ...REDMOND, subdivision: null, city: 'Redmond' },
       rungs: [rung('rural-15mi-24mo', 2)],
@@ -302,7 +300,7 @@ describe('resolveCompetitionArea', () => {
       subject: { ...REDMOND, city: 'Redmond' },
       keptComps: [comp(null, 'rural-15mi-24mo', REDMOND)],
     })
-    expect(rings.map((r) => r.radiusMiles)).toEqual([5, 10, 15])
+    expect(rings.map((r) => r.radiusMiles)).toEqual([0.5, 1, 2, 5, 10, 15])
     for (const r of rings) {
       expect(r.kind).toBe('radius')
       expect(r.centre).toEqual({ lat: REDMOND.latitude, lng: REDMOND.longitude })
@@ -323,7 +321,7 @@ describe('resolveCompetitionArea', () => {
         comp(null, 'nearby-2mi-6mo', { latitude: REDMOND.latitude + 0.1058, longitude: REDMOND.longitude }),
       ],
     })
-    expect(rings.map((r) => r.radiusMiles)).toEqual([5, 7.5])
+    expect(rings.map((r) => r.radiusMiles)).toEqual([0.5, 1, 2, 5, 7.5])
   })
 
   it('never widens to the whole city', () => {
@@ -338,11 +336,26 @@ describe('resolveCompetitionArea', () => {
       subject: { latitude: null, longitude: null, city: 'Redmond' },
       keptComps: [comp(null, 'broker-selected')],
     })
-    // With no coordinates there is no circle to draw, so the city is all that
-    // is left — and it says so rather than pretending to a radius. Exactly
-    // one ring: there is nothing to widen into.
-    expect(rings).toHaveLength(1)
-    expect(rings[0]!.kind).toBe('city')
+    // No coordinates, no circle. The city is not a substitute.
+    expect(rings).toEqual([])
+    expect(rings.some((r) => r.kind === 'city')).toBe(false)
+  })
+
+  it('Oakside shape: Bend cap is 5 miles, so a 25 mile active cannot be a comp', () => {
+    const compArea = buildCompArea({
+      subject: { latitude: 44.06, longitude: -121.31, subdivision: 'Meridian', city: 'Bend' },
+      rungs: [rung('subdivision-12mo', 4)],
+      keptComps: [comp('Meridian', 'subdivision-12mo', { latitude: 44.06, longitude: -121.31 })],
+    })!
+    const rings = resolveCompetitionArea({
+      compArea,
+      subject: { latitude: 44.06, longitude: -121.31, city: 'Bend' },
+      keptComps: [comp('Meridian', 'subdivision-12mo', { latitude: 44.061, longitude: -121.31 })],
+    })
+    const radii = rings.filter((r) => r.kind === 'radius').map((r) => r.radiusMiles)
+    expect(radii).toEqual([0.5, 1, 2, 5])
+    expect(Math.max(...(radii.filter((n): n is number => n != null)))).toBeLessThanOrEqual(5)
+    expect(rings.some((r) => r.kind === 'city')).toBe(false)
   })
 })
 

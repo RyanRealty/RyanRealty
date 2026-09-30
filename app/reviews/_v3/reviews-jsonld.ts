@@ -48,6 +48,8 @@ export function buildReviewsJsonLd(
         name: `${quotes.length} Google reviews of Ryan Realty`,
         url: `${siteUrl}/reviews`,
         description: `${quotes.length} verified Google reviews of Ryan Realty, each in full on this page.`,
+        isPartOf: { '@id': `${siteUrl}#website` },
+        about: { '@id': `${siteUrl}#organization` },
         primaryImageOfPage: {
           '@type': 'ImageObject',
           url: `${siteUrl}${REVIEW_BROKERS[0]!.src}`,
@@ -69,7 +71,10 @@ export function buildReviewsJsonLd(
         '@type': 'RealEstateAgent',
         '@id': `${siteUrl}#organization`,
         name: 'Ryan Realty',
-        url: `${siteUrl}/reviews`,
+        // The same url the root layout gives this @id. /reviews here told a
+        // parser the brand entity lives at /reviews, and /reviews outranked /
+        // for the bare brand query (SITE-198).
+        url: siteUrl,
         image: `${siteUrl}${REVIEW_BROKERS[0]!.src}`,
         employee: REVIEW_BROKERS.map((b) => ({
           '@type': 'Person',

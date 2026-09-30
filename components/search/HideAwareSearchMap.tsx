@@ -34,6 +34,7 @@ export default function HideAwareSearchMap({
   degraded = false,
   initialBounds,
   lockBounds = false,
+  fractionalZoom = false,
 }: {
   listings: ListingForMap[]
   savedListingKeys: string[]
@@ -46,6 +47,8 @@ export default function HideAwareSearchMap({
   degraded?: boolean
   initialBounds?: MapBounds | null
   lockBounds?: boolean
+  /** Fit the camera at fractional zoom. Same contract as SearchMapClustered. */
+  fractionalZoom?: boolean
 }) {
   const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(() => new Set())
   const router = useRouter()
@@ -109,6 +112,7 @@ export default function HideAwareSearchMap({
       className={cn('srch-map-field', className)}
       initialBounds={initialBounds}
       lockBounds={lockBounds}
+      fractionalZoom={fractionalZoom}
       onBoundsChanged={persistBbox}
     />
   )

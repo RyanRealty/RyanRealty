@@ -20,6 +20,29 @@ export function dropsTrace(place: string): string {
   return `live MLS through Oregon Data Share, asking-price cuts on active single-family homes in ${place} in the last 7 days`
 }
 
+/**
+ * The alert sheet's filters: the single-family population these pages list
+ * (property type A AND sub type Single Family Residence, MARKET_TRUTH D1), in
+ * the saved-search grammar the alert matcher reads. Property type A alone is
+ * every residential home, condos, townhomes and manufactured homes included.
+ */
+export const DROPS_ALERT_FILTERS: Readonly<Record<string, string>> = {
+  propertyType: 'A',
+  propertySubTypes: 'Single Family Residence',
+}
+
+/**
+ * The window's answer when the price-cut read did not answer (§0: unknown is
+ * not zero). The empty-window copy says no home cut its price; this says the
+ * page could not look, so a failed read never passes for a quiet week.
+ */
+export function dropsUnavailable(place: string): { term: string; body: string } {
+  return {
+    term: "Couldn't load right now",
+    body: `This week's price cuts in ${place} didn't load, so there's no count here. Refresh to try again.`,
+  }
+}
+
 export function cityLabel(slug: string): string {
   return (
     DROPS_CITY_LABEL[slug] ??

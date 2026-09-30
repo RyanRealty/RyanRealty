@@ -30,6 +30,8 @@
  * unscoped GIN prefix on "delaware" returned Closed 2018 Avenue addresses as
  * if they were live. Typeahead address hits must be current inventory
  * (PUBLIC_ON_MARKET_STATUSES = Active / Active Under Contract / Pending).
+ * Pending stays in the suggestions (Matt 2026-09-24, "Keep Pending"): a
+ * Pending home is still found by its address, and its page says Pending.
  * Coming Soon is already outside that set (never public). IDX opt-outs stay
  * excluded by the MV definition (20260627150000).
  *

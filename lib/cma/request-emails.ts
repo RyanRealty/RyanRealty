@@ -106,7 +106,6 @@ export async function sendLeadConfirmation(params: {
   const sup = await isSuppressedByEmail(params.leadEmail, 'email')
   if (sup.suppressed) return
 
-  const firstName = params.leadName?.split(/\s+/)[0] ?? 'there'
   const brokerFirst = params.brokerName?.split(/\s+/)[0] ?? 'one of our brokers'
   // The assigned broker signs and sends (locked directive, Matt 2026-08-04:
   // "CMAs sign as the lead's assigned broker — their mailbox sends via Gmail
@@ -127,7 +126,7 @@ export async function sendLeadConfirmation(params: {
       : null
   const subject = `Your home value request for ${params.subjectAddress}`
   const text = [
-    `Hi ${firstName},`,
+    `Hi there,`,
     '',
     `Thanks for requesting a Comparative Market Analysis for ${params.subjectAddress}.`,
     '',
@@ -154,7 +153,7 @@ export async function sendLeadConfirmation(params: {
 
   const html = `
 <div style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;font-size:15px;line-height:1.6;color:#102742;max-width:560px;margin:0 auto;padding:24px;">
-  <p>Hi ${escapeHtml(firstName)},</p>
+  <p>Hi there,</p>
   <p>Thanks for requesting a Comparative Market Analysis for <strong>${escapeHtml(params.subjectAddress)}</strong>.</p>
   <p>${escapeHtml(brokerFirst)} from Ryan Realty will pull recent comparable sales, apply the right adjustments for your property, and email you a personalized analysis within the next business day.</p>
   <p>If you have anything you'd like us to know upfront, like recent improvements, timing, or specific questions, just reply to this email.</p>
@@ -192,6 +191,12 @@ export async function sendLeadConfirmation(params: {
     brokerSlug: 'matt',
   })
   if (!gmailRes.ok) {
+    if (gmailRes.unconfirmed) {
+      // The send left and Gmail never answered: the lead may already have it,
+      // and a Resend copy now could arrive twice.
+      console.warn(`[cma-request] ${gmailRes.error} Not falling back to Resend.`)
+      return
+    }
     // Suppression chokepoint (fails closed) — re-checked in this scope so the
     // Resend fallback to the lead is gated independently of the early return.
     if ((await isSuppressedByEmail(params.leadEmail, 'email')).suppressed) return
@@ -247,7 +252,6 @@ export async function sendPlaceValueConfirmation(params: {
 }): Promise<{ ok: boolean; via: 'gmail' | 'skipped' | 'refused' | 'failed'; error?: string }> {
   if (params.personId == null) return { ok: false, via: 'skipped', error: 'no crm person for the lead' }
 
-  const firstName = params.leadName?.trim().split(/\s+/)[0] || 'there'
   const signName = params.brokerName?.trim() || 'Matt Ryan'
   const brokerFirst = signName.split(/\s+/)[0]
 
@@ -271,7 +275,7 @@ export async function sendPlaceValueConfirmation(params: {
 
   const subject = `Your ${params.subjectAddress} valuation is on its way`
   const bodyText = [
-    `Hi ${firstName},`,
+    `Hi there,`,
     '',
     `You asked what ${params.subjectAddress} would sell for. Here's what we can tell you right now, and the written valuation is on its way.`,
     '',

@@ -83,6 +83,19 @@ export function unitFromAddress(address: string | null | undefined): string | nu
 }
 
 /**
+ * A builder lot number ("Lot 33", "LOT 12"). Not a condo unit. "lot #79"
+ * does not match: the hash is an explicit unit marker and stays one.
+ */
+function isBuilderLotNumber(value: string | null | undefined): boolean {
+  return /^lot\s+\d+$/i.test(str(value))
+}
+
+function rawUnitNumber(r: CmaListingRow): string | null {
+  const v = (r as unknown as Record<string, unknown>).unit_number
+  return typeof v === 'string' ? v : null
+}
+
+/**
  * The rows that describe the SUBJECT's home, not its neighbours in the same
  * building. Returns 'ambiguous' when the address is multi-unit and the
  * subject's unit is unknown.
@@ -92,7 +105,7 @@ function narrowToUnit(
   subjectUnit: string | null,
   unitKnown: boolean,
 ): CmaListingRow[] | 'ambiguous' {
-  const unitOf = (r: CmaListingRow) => unitToken((r as unknown as Record<string, unknown>).unit_number as string | null)
+  const unitOf = (r: CmaListingRow) => unitToken(rawUnitNumber(r))
   const units = new Set(rows.map(unitOf).filter((u): u is string => Boolean(u)))
   const want = unitToken(subjectUnit)
   // THE SUBJECT'S OWN ROW SETTLES IT, including when it says "no unit". A
@@ -114,6 +127,12 @@ function narrowToUnit(
     return rows.filter((r) => unitOf(r) == null)
   }
   if (units.size === 0) return [...rows]
+  // One listing whose only unit text is a builder lot number is one house.
+  // "Lot 33" used to tokenize as "lot", so that single row looked unit-bearing
+  // and the screen refused. Two or more listings still refuse, lot numbers
+  // included, and so does one listing with a real unit ("Unit 4", "#A").
+  const only = rows.length === 1 ? rows[0] : null
+  if (only && isBuilderLotNumber(rawUnitNumber(only))) return [...rows]
   // Multi-unit address, unknown subject unit. A row recorded WITHOUT a unit
   // does not prove it is the subject's home: 57655 Aspen has an Active unit 2
   // and one older sale with no unit, and reading that sale as "the property"

@@ -17,7 +17,6 @@
     { "category": "Parks", "name": "Alpenglow Park", "description": "A 37-acre community park at 61049 SE 15th Street with a seasonal sprayground, a three-structure bouldering area, large and small off-leash dog sections, a covered stage, and 2.2 miles of ADA-accessible paths.", "access": "Open 5 AM to 10 PM" },
     { "category": "Parks", "name": "Big Sky Park and Luke Damon Sports Complex", "description": "A 97-acre complex at 21690 Neff Road with four multiuse fields, a grass-infield baseball diamond, the Big Sky Bike Park, and a 12-acre off-leash dog area.", "access": "Open 5 AM to 10 PM" },
     { "category": "Schools", "name": "Caldera High School", "description": "Bend-La Pine Schools' newest high school, opened fall 2021 at 60925 SE 15th Street within the neighborhood, the first new district high school in decades.", "access": "Bend-La Pine Schools" },
-    { "category": "Schools", "name": "Lava Ridge Elementary", "description": "A Bend-La Pine Schools K-5 at 20805 Cooley Road serving the southeast quadrant, feeding to Sky View Middle and Mountain View High.", "access": "Bend-La Pine Schools" },
     { "category": "Recreation", "name": "Bend Golf and Country Club", "description": "A private 18-hole golf course and athletic club at 61045 Country Club Drive, less than a mile east of US-97, with tennis, a year-round indoor pool, and a clubhouse.", "access": "Private membership" },
     { "category": "Shopping", "name": "Fred Meyer (S. Hwy 97)", "description": "A full-service Fred Meyer at 61535 S Hwy 97, the closest grocery and general-merchandise store, with pharmacy and fuel.", "access": "On US-97 at the western edge" }
   ],
@@ -30,7 +29,8 @@
     { "fact": "Southeast Bend district boundaries: south of Murphy Rd, east of US-97/BNRR, city limits east and south", "source_url": "http://bendredmondhabitat.org/wp-content/uploads/2018/01/City-of-Bend-Neighborhood-Association-Specifics.pdf" },
     { "fact": "Southeast Area Plan adopted April 21, 2021 (Ord. 2405); 446 developable acres near Knott Road; Easton, Bridges at Shadow Glen", "source_url": "https://www.bendoregon.gov/government/departments/growth-management/previous-projects/southeast-area-plan" },
     { "fact": "Alpenglow Park 37 ac; Big Sky Park 97.2 ac, 21690 Neff Rd, Big Sky Bike Park, 12-ac dog area", "source_url": "https://www.bendparksandrec.org/park/big-sky-park-luke-damon-sports-complex/" },
-    { "fact": "Caldera HS 60925 SE 15th St, opened fall 2021; Lava Ridge Elementary 20805 Cooley Rd", "source_url": "https://www.greatschools.org/oregon/bend/206-Lava-Ridge-Elementary-School/" }
+    { "fact": "Caldera HS 60925 SE 15th St, opened fall 2021", "source_url": "https://www.greatschools.org/oregon/bend/206-Lava-Ridge-Elementary-School/" },
+    { "fact": "Attendance areas covering Southeast Bend: R E Jewell Elementary (most) and Silver Rail Elementary, High Desert Middle, Caldera High (Deschutes County GIS school attendance areas, share of the neighborhood polygon, read 2026-09-25)", "source_url": "https://maps.deschutes.org/arcgis/rest/services/OpenData/BoundaryFD/MapServer/19" }
   ],
   "sources": [
     { "url": "https://www.bendoregon.gov/government/departments/growth-management/previous-projects/southeast-area-plan", "publisher": "City of Bend", "supports": "Southeast Area Plan adopted 2021, 446 developable acres near Knott Road" },
@@ -45,8 +45,8 @@
     { "url": "https://www.bendparksandrec.org/park/big-sky-park-luke-damon-sports-complex/", "publisher": "Bend Park and Recreation District", "supports": "Big Sky Park and Luke Damon Sports Complex is 97.2 acres with four multiuse fields, a grass-infield baseball diamond, and the Big Sky Bike Park" },
     { "url": "https://bendgolfclub.com/history", "publisher": "Bend Golf Club (official club site)", "supports": "Course laid out in 1925 by architect Chandler Egan, an Olympic silver medalist golfer, on land donated by the Brooks-Scanlon Lumber Company; long known as Bend Golf and Country Club" },
     { "url": "https://ktvz.com/news/bend/2025/11/03/city-of-bend-unveils-latest-design-details-for-long-awaited-reed-market-road-railroad-bridge/", "publisher": "KTVZ", "supports": "Reed Market Road crosses the BNSF line at grade; six to eight trains a day each hold traffic five to twenty minutes; funded by a 2020 voter-approved bond plus a $32 million federal rail grant; construction set to start 2027 and finish 2029" },
-    { "url": "https://www.greatschools.org/oregon/bend/206-Lava-Ridge-Elementary-School/", "publisher": "GreatSchools", "supports": "Caldera High School address and fall 2021 opening; Lava Ridge Elementary address" }
+    { "url": "https://www.greatschools.org/oregon/bend/206-Lava-Ridge-Elementary-School/", "publisher": "GreatSchools", "supports": "Caldera High School address and fall 2021 opening" }
   ],
   "source": "about_prose researched and rewritten 2026-08-03 as long-form editorial per Matt's directive (WEBSITE_AUDIT_2026-08-02.md); every fact traced to the sources array above, no market figures included; prior version's amenities/drive_times/citations fields left unchanged",
-  "last_modified": "2026-08-03T00:00:00Z"
+  "last_modified": "2026-09-25T00:00:00Z"
 }

@@ -30,6 +30,7 @@ import {
   resolveCityNeighborhoodCommunityPath,
 } from '@/lib/communities/canonical-community-slug'
 import { resolveLegacyReportGeoRedirect } from '@/lib/routing/legacy-report-geo'
+import { resolveMarketCommunityHop } from '@/lib/market/canonical-market-path'
 import {
   resolveNeighborhoodAliasRedirect,
   resolveSubdivisionAreaRedirect,
@@ -42,6 +43,8 @@ export type PreRenderHop = {
   readonly routes: readonly string[]
   /** Destination path for a request pathname, or null when it does not apply. */
   readonly resolve: (pathname: string) => string | null
+  /** Permanent status to send; 308 when omitted. */
+  readonly status?: 301 | 308
 }
 
 /** Decode one URL segment, falling back to the raw text on a malformed escape. */
@@ -107,6 +110,19 @@ export const PRE_RENDER_HOPS: readonly PreRenderHop[] = [
     routes: ['/reports/[slug]/[geoName]', '/housing-market/reports/[slug]/[geoName]'],
     resolve: resolveLegacyReportGeoRedirect,
   },
+  {
+    // One market URL per registry community (lib/market/canonical-market-path):
+    // /housing-market/black-butte-ranch and /housing-market/sisters/black-butte-
+    // ranch were two self-canonical, indexable pages for one place. The
+    // community grain under its registry city wins; a community that IS its
+    // city (Sunriver) keeps the one-segment URL. 301 on purpose: these two
+    // URLs were both indexed as documents, and a 301 is the consolidation
+    // signal the task and PAGE_OUTLINE name.
+    id: 'market-community-canonical',
+    routes: ['/housing-market/[...slug]'],
+    resolve: resolveMarketCommunityHop,
+    status: 301,
+  },
 ]
 
 /** Every app-router page path covered by a middleware-owned hop. */
@@ -122,4 +138,13 @@ export function resolvePreRenderHop(pathname: string): string | null {
     if (dest && dest !== pathname) return dest
   }
   return null
+}
+
+/** The status for the hop resolvePreRenderHop took on this pathname (308 unless the hop says 301). */
+export function resolvePreRenderHopStatus(pathname: string): 301 | 308 {
+  for (const hop of PRE_RENDER_HOPS) {
+    const dest = hop.resolve(pathname)
+    if (dest && dest !== pathname) return hop.status ?? 308
+  }
+  return 308
 }

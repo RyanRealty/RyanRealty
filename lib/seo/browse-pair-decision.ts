@@ -31,6 +31,16 @@
  *      rel=canonical to /communities/{slug}, indexable, not emitted. (The
  *      legacy map already 301s /homes-for-sale/bend/tetherow and
  *      /homes-for-sale/bend/northwest-crossing the same way.)
+ *   1b. city twin — the MLS name IS the city (the area slug equals the city
+ *      slug: /homes-for-sale/sisters/sisters, a subdivision field filed
+ *      "Sisters"): rel=canonical to the plain city search
+ *      /homes-for-sale/{city}, indexable, not emitted. The pair printed the
+ *      city winner's exact title ("Sisters homes for sale") on a self
+ *      canonical and sat in geo.xml, so it competed with the page PAGE_OUTLINE
+ *      names for "{City} homes for sale" (SITE-202, live 2026-09-24: six
+ *      sitemapped pairs, camp-sherman, culver, madras, metolius, prineville,
+ *      sisters; GSC 90d to 2026-09-21 shows sisters/sisters collecting
+ *      "homes for sale sisters" and "houses for sale sisters").
  *   2. plat twin — the slug is in the indexable plat set
  *      (getIndexableSubdivisions: GIS polygon + >= 10 lifetime closed sales)
  *      AND it is this pair's place (same city; same slug or the same letters
@@ -143,6 +153,7 @@ export type BrowsePairFacts = {
 
 export type BrowsePairKind =
   | 'community-twin'
+  | 'city-twin'
   | 'plat-twin'
   | 'withheld-name'
   | 'sold-history'
@@ -213,6 +224,16 @@ export function decideBrowsePair(facts: BrowsePairFacts): BrowsePairDecision {
 
   if (mlsName) {
     const published = publishBrowsePairName(mlsName)
+    if (facts.areaSlug.trim().toLowerCase() === facts.citySlug.trim().toLowerCase()) {
+      return {
+        kind: 'city-twin',
+        index: true,
+        emit: false,
+        canonicalPath: `/homes-for-sale/${facts.citySlug.trim().toLowerCase()}`,
+        publicName: published,
+        filterName: mlsName,
+      }
+    }
     if (isSameCityPlat(facts) && facts.platIndexable === true) {
       return {
         kind: 'plat-twin',

@@ -16,6 +16,7 @@ import {
   pricePathFromFinalCycle,
   pricePathFromListing,
   pricePathFromSale,
+  subjectPricePath,
   shortOrExactUsd,
   shortUsd,
   type PricePath,
@@ -82,6 +83,33 @@ describe('pricePathFromFinalCycle', () => {
   it('runs to list date plus the days it ran when no off-market date is on file', () => {
     const p = pricePathFromFinalCycle({ ...CYCLE, offMarketDate: null }, '2465 7th')!
     expect(p.endDate).toBe('2026-09-01')
+  })
+
+  it('ends on the resolver last ask when the cycle stopped one cut earlier', () => {
+    // Anonymized. The cycle's last dated step is not the ask the listing came off at.
+    const path = subjectPricePath({
+      cycle: {
+        listDate: '2026-02-01',
+        initialAsk: 775_000,
+        cuts: [{ date: '2026-04-01', ask: 760_000 }],
+        cutsDated: true,
+        finalAsk: 760_000,
+        offMarketDate: '2026-08-01',
+        status: 'Expired',
+        days: 180,
+      },
+      label: '12 Cedar Post',
+      lastListPrice: 745_000,
+      printableAsk: 745_000,
+    })!
+    expect(path.startPrice).toBe(775_000)
+    expect(path.cuts).toEqual([{ date: '2026-04-01', price: 760_000 }])
+    expect(path.undatedCutTo).toBe(745_000)
+    expect(finalAskOf(path)).toBe(745_000)
+    const svg = priceHistoryLineSvg(path)
+    expect(svg).toContain('stroke-dasharray="3 3"')
+    expect(priceHistoryEndLabel(path)).toContain('$745K')
+    expect(priceHistoryEndLabel(path)).not.toContain('$760K')
   })
 
   it('returns null with no list date or no ask', () => {

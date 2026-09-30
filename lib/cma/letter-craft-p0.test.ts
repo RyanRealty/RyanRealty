@@ -1,14 +1,14 @@
 /**
  * Tip Ready CMA letter craft P0 (Matt 2026-09-12).
  * Cover headline once, Pricing report mast, screen stack / print matrix,
- * sorry+earn close, draft banner never on finalized owner PDF.
+ * sorry close, draft banner never on finalized owner PDF.
  */
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { COVER_LIST_PRICE_HEADLINE, immersiveHeroNumberHtml, immersiveAnswerHtml } from './cover-value'
 import { OWNER_FACING_PRODUCT_NAME, cmaCoverLabelHtml } from './fsbo-cma-render'
-import { CLOSE_EARN_YOUR_BUSINESS, nextStepHeading, nextStepNoteHtml, assembleOpinionPages } from './opinion-pages'
+import { nextStepHeading, nextStepNoteHtml } from './opinion-pages'
 import { renderCmaHtml, type RenderCmaArgs } from './render'
 import { renderImmersiveCmaHtml } from './immersive'
 import { immersiveStylesheet } from './immersive-css'
@@ -212,7 +212,7 @@ describe('letter craft P0 — screen matrix / print matrix', () => {
 })
 
 describe('letter craft P0 — close voice', () => {
-  it('keeps sorry heading and adds earn-your-business line', () => {
+  it('says sorry plainly and offers to help if they relist', () => {
     const a = {
       subject,
       comps: five(),
@@ -222,16 +222,20 @@ describe('letter craft P0 — close voice', () => {
       generatedAtIso: '2026-09-12T00:00:00.000Z',
       expiredAudit: args().expiredAudit,
     }
-    expect(nextStepHeading(a as never)).toBe("We're sorry that your home did not sell this go-around.")
+    expect(nextStepHeading(a as never)).toBe("Sorry your home didn't sell.")
     const note = nextStepNoteHtml(a as never)
-    expect(note).toContain('earn your business')
+    expect(note).toContain('If you decide to list again, we&#39;re glad to help.')
     expect(note).toContain('here for any questions you have')
+    expect(note).not.toContain('earn your business')
+    expect(note).not.toContain('this go-around')
     expect(note).toContain('>Call<')
     expect(note).toContain('>Text<')
     expect(note).toContain('>Email<')
     const { html } = renderCmaHtml(args())
-    expect(html).toContain('did not sell this go-around')
-    expect(html).toContain('earn your business')
+    expect(html).toContain('Sorry your home didn&#39;t sell.')
+    expect(html).toContain('If you decide to list again, we&#39;re glad to help.')
+    expect(html).not.toContain('earn your business')
+    expect(html).not.toContain('this go-around')
   })
 })
 
@@ -243,9 +247,10 @@ describe('letter craft P0 — draft banner never on finalized owner PDF', () => 
     review: { severity: 'blocked', rendererNotice: BLOCKED },
   } as unknown as CmaPricing
 
-  it('still shows the band on a draft letter', () => {
+  it('never prints the broker-review banner on the owner letter, draft or not', () => {
     const { html } = renderCmaHtml(args({ pricing: reviewPricing, documentStatus: 'needs_review' }))
-    expect(html).toContain(BLOCKED)
+    expect(html).not.toContain(BLOCKED)
+    expect(html).not.toContain('under broker review')
   })
 
   it('suppresses the band when documentStatus is finalized or delivered', () => {
@@ -258,6 +263,14 @@ describe('letter craft P0 — draft banner never on finalized owner PDF', () => 
       )
       expect(immersive).not.toContain('under broker review')
     }
+  })
+})
+
+describe('letter craft: cover stays on one sheet', () => {
+  it('print CSS caps the cover stage so the prepared line cannot spill a blank page', () => {
+    const css = readFileSync(join(process.cwd(), 'lib/cma/render-css.ts'), 'utf8')
+    expect(css).toMatch(/\.cover-stage \{[\s\S]*max-height: 9\.7in/)
+    expect(css).toMatch(/\.hero-photo \{[\s\S]*max-height: 3\.8in/)
   })
 })
 
@@ -284,7 +297,7 @@ describe('letter craft Matt ADD 2026-09-12', () => {
     expect(html).toContain('Lot size')
   })
 
-  it('prints list $/sf and sold $/sf summaries by status from the selected homes', () => {
+  it('prints one status table with List, Sold and $/sqft from the selected homes', () => {
     const extras = {
       marketArea: {
         expiredPeers: [
@@ -341,20 +354,21 @@ describe('letter craft Matt ADD 2026-09-12', () => {
     const { html } = renderCmaHtml(a)
     const immersive = renderImmersiveCmaHtml({ ...a, broker }, 'https://ryan-realty.com')
     for (const doc of [html, immersive]) {
-      expect(doc).toContain('data-ppsf-status="board"')
-      expect(doc).toContain('Dollars a square foot')
-      expect(doc).toContain('List $/sf')
-      expect(doc).toContain('Sold $/sf')
-      expect(doc).toContain('>Sold<')
-      expect(doc).toContain('>Active<')
-      expect(doc).toContain('>Expired<')
-      // 510000/1580 list and 500000/1580 sold on the five closed sales.
-      expect(doc).toContain('$323')
-      expect(doc).toContain('$316')
+      // One status table, FlexMLS style (Matt 2026-09-24): the separate
+      // "Dollars a square foot" board is folded in as its $/sqft column.
+      expect(doc).toContain('data-status-price="board"')
+      expect(doc).not.toContain('data-ppsf-status="board"')
+      expect(doc).not.toContain('Dollars a square foot')
+      expect(doc).toMatch(/scope="col">List<\/th><th class="n" scope="col">Sold<\/th><th class="n" scope="col">\$\/sqft<\/th>/)
+      expect(doc).toContain('<tbody data-status="closed">')
+      expect(doc).toContain('<tbody data-status="active">')
+      expect(doc).toContain('<tbody data-status="expired">')
+      // 500000/1580 sold on the five closed sales = $316 a foot.
+      expect(doc).toMatch(/<tbody data-status="closed">[\s\S]*?<th scope="row">Median<\/th><td class="n">\$510,000<\/td><td class="n">\$500,000<\/td><td class="n">\$316<\/td>/)
       // Active 520000/1600 = 325; expired 540000/1500 = 360.
-      expect(doc).toContain('$325')
-      expect(doc).toContain('$360')
-      expect(doc).not.toMatch(/data-ppsf-status="board"[\s\S]{0,800}months of supply/i)
+      expect(doc).toMatch(/<tbody data-status="active">[\s\S]*?<td class="n">\$325<\/td>/)
+      expect(doc).toMatch(/<tbody data-status="expired">[\s\S]*?<td class="n">\$360<\/td>/)
+      expect(doc).not.toMatch(/data-status-price="board"[\s\S]{0,2400}months of supply/i)
     }
   })
 })

@@ -7,7 +7,6 @@
     "app/compare/page.tsx",
     "app/marketing/request/page.tsx",
     "app/our-homes/page.tsx",
-    "app/reviews/page.tsx",
     "app/sign/[token]/page.tsx"
   ]
 }

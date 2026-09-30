@@ -36,6 +36,7 @@ import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import type { StudioFormat } from '@/lib/studio/formats'
 import type { StudioSubject } from '@/lib/studio/produce'
 import resortCommunities from '@/data/resort-communities.json'
+import { communityPath } from '@/lib/communities/community-public-pair'
 
 const SITE = 'https://ryan-realty.com'
 
@@ -358,7 +359,7 @@ export async function resolveStudioSubject(
       place,
       figures: shaped.figures,
       citations: shaped.citations,
-      ctaUrl: community ? `${SITE}/communities/${community.slug}` : `${SITE}/housing-market`,
+      ctaUrl: community ? `${SITE}${communityPath(community.slug)}` : `${SITE}/housing-market`,
     }
   }
 

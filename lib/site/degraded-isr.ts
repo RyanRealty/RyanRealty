@@ -48,7 +48,7 @@
  * ci:degraded-isr refuses noStore in this file.
  */
 import { AsyncLocalStorage } from 'node:async_hooks'
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 
 export type DegradedIsrBag = {
   pageLabel: string

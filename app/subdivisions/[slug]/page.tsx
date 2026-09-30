@@ -138,6 +138,7 @@ import {
 import { nearbySubdivisionPeers, otherCommunitySubdivs } from '@/lib/explore/nearby-place-peers'
 import { childAliasesOf } from '@/lib/communities/community-own-names'
 import { getResortCommunityBySlug } from '@/lib/data/communities/registry'
+import { communityPath } from '@/lib/communities/community-public-pair'
 import { getSubdivisionRingCached } from '@/lib/data/geo/subdivision-ring-cached'
 import { getIndexableSubdivisions } from '@/lib/data/subdivisions/getIndexableSubdivisions'
 import { getPlatClosedCount, getPlatClosedCounts } from '@/lib/data/subdivisions/getPlatClosedCounts'
@@ -637,7 +638,9 @@ async function renderSubdivisionPage({ params }: Props) {
   if (refused) return <SubdivisionUnavailable />
 
   // THE NEIGHBOUR RING STARTS HERE, AND IS CACHED (P3 — DATA-6, SEO-2, EXP-7).
-  // cma_subdivision_ring is the slowest read on the page: 3.7 to 16.1 s uncached
+  // cma_subdivision_ring was the slowest read on the page until migration
+  // 20260925010237 put it on the GiST index (24 plat points: p50 206 ms, max
+  // 6.1 s through PostgREST): 3.7 to 16.1 s uncached
   // for the ten plats that 500'd on every live fetch on 2026-09-23, against the
   // 3.5 s it used to get, so elkai-woods, blakley-heights, saddleback and the
   // rest degraded on every render (which was an HTTP 500 until
@@ -1340,7 +1343,7 @@ async function renderSubdivisionPage({ params }: Props) {
   // because that is the market a resort buyer compares against.
   const widerPlace: { label: string; href: string; geoType: 'city' | 'neighborhood' } | null =
     resortSlug && resortLabel
-      ? { label: resortLabel, href: `/communities/${resortSlug}`, geoType: 'neighborhood' }
+      ? { label: resortLabel, href: communityPath(resortSlug), geoType: 'neighborhood' }
       : boundaryCity?.neighborhood?.label && boundaryCity.neighborhood.slug && citySlug
         ? {
             label: boundaryCity.neighborhood.label,
@@ -1406,13 +1409,13 @@ async function renderSubdivisionPage({ params }: Props) {
         { name: 'Home', url: '/' },
         { name: 'Communities', url: '/communities' },
         ...(trailResortSlug
-          ? [{ name: trailResortLabel ?? displayName, url: `/communities/${trailResortSlug}` }]
+          ? [{ name: trailResortLabel ?? displayName, url: communityPath(trailResortSlug) }]
           : citySlug
             ? [{ name: cityName, url: `/cities/${citySlug}` }]
             : []),
         // The family this phase belongs to, the same crumb the visible trail
         // carries (Matt 2026-09-23), unless the resort crumb already is it.
-        ...(familyUp && familyUp.href !== `/communities/${trailResortSlug ?? ''}`
+        ...(familyUp && (!trailResortSlug || familyUp.href !== communityPath(trailResortSlug))
           ? [{ name: familyUp.label, url: familyUp.href }]
           : []),
         { name: displayName, url: `/subdivisions/${slug}` },
@@ -1843,10 +1846,10 @@ async function renderSubdivisionPage({ params }: Props) {
                   {resortSlug ? (
                     <>
                       {' · '}
-                      <a href={`/communities/${resortSlug}`}>{resortLabel ?? 'Resort'} homes for sale</a>
+                      <a href={communityPath(resortSlug)}>{resortLabel ?? 'Resort'} homes for sale</a>
                     </>
                   ) : null}
-                  {familyUp && familyUp.href !== `/communities/${resortSlug ?? ''}` ? (
+                  {familyUp && (!resortSlug || familyUp.href !== communityPath(resortSlug)) ? (
                     <>
                       {' · '}
                       <a href={familyUp.href}>All of {familyUp.label}</a>
@@ -2149,11 +2152,11 @@ async function renderSubdivisionPage({ params }: Props) {
           sourceKey={platSourceKey}
           doors={[
             { label: 'Homes for sale here', href: '#homes' },
-            ...(familyUp && familyUp.href !== `/communities/${resortSlug ?? ''}`
+            ...(familyUp && (!resortSlug || familyUp.href !== communityPath(resortSlug))
               ? [{ label: `All of ${familyUp.label}`, href: familyUp.href }]
               : []),
             ...(resortSlug
-              ? [{ label: `${resortLabel ?? displayName} overview`, href: `/communities/${resortSlug}` }]
+              ? [{ label: `${resortLabel ?? displayName} overview`, href: communityPath(resortSlug) }]
               : citySlug
                 ? [{ label: `${cityName} overview`, href: `/cities/${citySlug}` }]
                 : []),

@@ -11,16 +11,20 @@
  * V3SectionTracker with pageType="price-drops", TrackSearchView, revalidate 1800,
  * getPriceDrops({ limit: 48, days: 7 }) with no .catch() empty swallow.
  *
- * EMPTY WINDOW: getPriceDrops is resilient-cached and can answer with an empty
- * array plus a now() stamp. noStore() opts this render out of ISR so a cold
- * cache cannot pin "no reductions this week" for 30 minutes. Dataset, updated
- * stamp, and any count figure are omitted when drops.length === 0.
+ * A READ THAT DID NOT ANSWER IS NOT AN EMPTY WEEK (§0). getPriceDrops never
+ * rejects; when its read fails it answers `degraded: true` with no rows. The
+ * page then says it could not load, publishes no count, Dataset or updated
+ * stamp, and refuseDegradedIsr cuts that copy's ISR lifetime from 1800 s to
+ * DEGRADED_ISR_REVALIDATE_S. A genuinely empty window is a real answer: it
+ * renders "Nothing in this window" and caches normally. Not noStore(): inside
+ * a runtime ISR render Next 16 throws on it (E550), so an empty week answered
+ * HTTP 500 (lib/site/degraded-isr.ts).
  */
 
 import type { Metadata } from 'next'
 import { formatDate } from '@/lib/format/date'
-import { unstable_noStore as noStore } from 'next/cache'
 import { getPriceDrops } from '@/lib/data'
+import { refuseDegradedIsr } from '@/lib/site/degraded-isr'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { listingsBrowsePath } from '@/lib/slug'
 import { formatPriceCompact } from '@/lib/format/money'
@@ -41,9 +45,11 @@ import { MetadataBlock } from '@/components/site/MetadataBlock'
 import TrackSearchView from '@/components/tracking/TrackSearchView'
 import { PriceDropAlertsSheet } from './_v3/PriceDropAlertsSheet.client'
 import {
+  DROPS_ALERT_FILTERS,
   DROPS_CITY_SLUGS,
   cityLabel,
   dropsTrace,
+  dropsUnavailable,
   medianPositive,
 } from './_v3/drops-constants'
 import { priceDropFieldItems } from './_v3/drops-field-items'
@@ -75,17 +81,19 @@ export const metadata: Metadata = pageMetadata({
  * The pull's row cap. Named because the page prints BOTH counts — "60 price
  * cuts this week · 48 shown below" — and a reader who sees two numbers and no
  * reason is owed one (evaluator, 2026-09-09: "the 60-vs-48 gap is stated three
- * times and never explained"). The drawing's trace now says the pull is capped
- * and how many cuts that leaves off the page.
+ * times and never explained"). The drawing's trace says the pull is capped
+ * and how many cuts that leaves off the page, from the `cap` the read reports.
  */
 const PRICE_DROPS_LIMIT = 48
 
 export default async function PriceDropsRegionPage() {
-  const { drops, total, fetchedAt } = await getPriceDrops({ limit: PRICE_DROPS_LIMIT, days: 7 })
+  const { drops, total, cap, fetchedAt, degraded } = await getPriceDrops({
+    limit: PRICE_DROPS_LIMIT,
+    days: 7,
+  })
 
-  if (drops.length === 0) {
-    noStore()
-  }
+  // Unknown is not empty: this copy stands for a minute, not the whole window.
+  if (degraded) await refuseDegradedIsr('price-drops', ['getPriceDrops'])
 
   const totalReduced = drops.reduce((sum, d) => sum + (d.lastDropAmount ?? 0), 0)
   const medianDropPct = medianPositive(drops.map((d) => d.lastDropPct))
@@ -95,7 +103,7 @@ export default async function PriceDropsRegionPage() {
   const distribution = priceDropDistribution({
     drops,
     total,
-    cap: PRICE_DROPS_LIMIT,
+    cap,
     placeLabel: 'Central Oregon',
     windowDays: 7,
     fetchedAt: fetchedAt ? formatDate(fetchedAt) : null,
@@ -121,15 +129,18 @@ export default async function PriceDropsRegionPage() {
         { name: 'Price drops', url: '/price-drops' },
       ],
     },
-    ...priceDropDatasetSchemas({
-      pageUrl,
-      placeName: 'Central Oregon',
-      total,
-      shownCount: drops.length,
-      totalReducedLabel,
-      medianDropPctLabel,
-      fetchedAt: drops.length > 0 ? fetchedAt : null,
-    }),
+    // A read that did not answer has no count to state and no freshness to stamp.
+    ...(degraded
+      ? []
+      : priceDropDatasetSchemas({
+          pageUrl,
+          placeName: 'Central Oregon',
+          total,
+          shownCount: drops.length,
+          totalReducedLabel,
+          medianDropPctLabel,
+          fetchedAt: drops.length > 0 ? fetchedAt : null,
+        })),
     ...(fieldItems.length > 0
       ? [
           {
@@ -168,12 +179,12 @@ export default async function PriceDropsRegionPage() {
     <>
       <main className={V3_ROOT_CLASS}>
         <V3SectionTracker />
-        <TrackSearchView resultsCount={total} />
+        <TrackSearchView resultsCount={degraded ? undefined : total} />
         <MetadataBlock schemas={schemas} />
 
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Price drops' }]} />
 
-        {captionCount > 0 ? (
+        {!degraded && captionCount > 0 ? (
           <>
             {/* THE COUNT IS THE FULL POPULATION (2026-08-27 audit: the page said
                 "48 price cuts this week" while its own Dataset told crawlers 60 —
@@ -232,11 +243,13 @@ export default async function PriceDropsRegionPage() {
             heading="Price drops in Central Oregon"
             headingLevel={1}
             items={[
-              {
-                kind: 'prose',
-                term: 'Nothing in this window',
-                body: 'No active single-family home in the Central Oregon service area has a documented asking-price cut in the last 7 days on this pull. The homes-for-sale list is still live.',
-              },
+              degraded
+                ? { kind: 'prose', ...dropsUnavailable('Central Oregon') }
+                : {
+                    kind: 'prose',
+                    term: 'Nothing in this window',
+                    body: 'No active single-family home in the Central Oregon service area has a documented asking-price cut in the last 7 days on this pull. The homes-for-sale list is still live.',
+                  },
               { label: 'All Central Oregon homes for sale', href: listingsBrowsePath() },
             ]}
           />
@@ -245,7 +258,7 @@ export default async function PriceDropsRegionPage() {
         <PriceDropAlertsSheet
           placeLabel="Central Oregon"
           city=""
-          extraFilters={{ propertyType: 'A' }}
+          extraFilters={DROPS_ALERT_FILTERS}
         />
 
         <V3Quiet id="edges" heading="Keep looking" items={edgeItems} />

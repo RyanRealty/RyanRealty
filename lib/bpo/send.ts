@@ -379,6 +379,12 @@ export async function sendBpoToLead(opts: {
     impersonateAs: brokerMailbox,
     attachments: [{ filename: attachName, content: pdf, mimeType: 'application/pdf' }],
   })
+  if (gmailRes.unconfirmed) {
+    // The send left and Gmail never answered: the contact may already have it.
+    // Resend now could deliver it twice, so stop and let the broker check Sent.
+    console.error(`[sendBpoToLead] ${slug}: ${gmailRes.error} Not falling back to Resend.`)
+    return { ok: false, error: gmailRes.error }
+  }
   const transport: 'gmail' | 'resend' = gmailRes.ok ? 'gmail' : 'resend'
   if (!gmailRes.ok) {
     console.error(`[sendBpoToLead] Gmail send from ${brokerMailbox} failed (${gmailRes.error ?? 'unknown'}); falling back to Resend`)

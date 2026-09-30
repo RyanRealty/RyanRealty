@@ -10,11 +10,18 @@
  *
  *   If the Gmail DWD send fails (auth/scope/outage), the send automatically
  *   falls back to Resend so the lead still gets the CMA — the timeline row
- *   records which transport carried it.
+ *   records which transport carried it. A send Gmail never confirmed does not
+ *   fall back: it may already be delivered, so the broker checks Sent first.
  *
  * Requires the cmas row to be finalized (Matt approved the draft).
  * The Gmail-DRAFT path was retired 2026-07-07 per Matt's directive: sends go
  * out through the CRM, not through a manual Gmail draft review.
+ *
+ * The owner's slot (2026-09-29): when the recipient is an expired or FSBO owner
+ * we track as a prospect, the send claims that owner's row, stamps it when the
+ * email leaves, and refuses a second first contact. Before this, "Send now"
+ * emailed six owners and left every prospect row reading "never emailed". See
+ * lib/cma/prospect-send-claim.ts for the sequence and why it lives in the rail.
  */
 
 import {
@@ -24,22 +31,26 @@ import {
   updateCmaRowFieldsBySlug,
   findCrmPersonIdByEmail,
   stampCmaLinkOnPerson,
+  stampCmaPersonId,
   logCmaTimelineEvent,
 } from '@/lib/data'
+import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
 import { CMA_DOC_ORIGIN } from '@/lib/cma/doc-links'
-import { wrapBrandedEmail, brandedTextFooter, escapeHtml } from '@/lib/email/shell'
+import { wrapBrandedEmail, brandedTextFooter } from '@/lib/email/shell'
 import { brokerSendIdentity } from '@/lib/email/broker-identity'
 import { attributeOutbound } from '@/lib/crm/attributed-links'
-import { isSuppressed, isSuppressedByEmail } from '@/lib/crm/suppressions'
+import { isSuppressed } from '@/lib/crm/suppressions'
 import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'
 import { sendEmail } from '@/lib/resend'
 import { sendGmailMessage } from '@/lib/gmail-draft'
-import { composeCmaFirstContact, cmaFirstContactFactsFromRow, streetOnly, type CmaFirstContactFacts } from '@/lib/cma/first-contact'
-import { resolveFirstContactPlace } from '@/lib/cma/first-contact-place'
+import { composeCmaFirstContact, type CmaFirstContactFacts } from '@/lib/cma/first-contact'
+import { acquireCmaProspectLease, type CmaProspectLease } from '@/lib/cma/prospect-send-claim'
+import { cmaFirstContactFactsForSend, cmaSendBrokerSlug } from '@/lib/cma/first-contact-for-send'
+import { paragraphsForLetterBody, paragraphsToPlain, renderCmaLetterBlock } from '@/lib/cma/first-contact-render'
 import { screenAddressForSolicitation } from '@/lib/cma/solicit-screen'
 import { buildSignature } from '@/lib/crm/email-signature'
 import { getBrokers } from '@/lib/data'
-import { cmaReportButtonHtml, previewTextFromCustomBody } from '@/lib/cma/report-button'
+import { previewTextFromCustomBody } from '@/lib/cma/report-button'
 import { classifyCmaOrigin, type CmaOrigin } from '@/lib/cma/origin'
 import { resolveTheirPrice } from '@/lib/cma/queue-view'
 import { formatPublishedPhone } from '@/lib/cma/format-phone'
@@ -58,9 +69,11 @@ import { formatPublishedPhone } from '@/lib/cma/format-phone'
 const SITE_URL = CMA_DOC_ORIGIN
 const MAX_PDF_BYTES = 25 * 1024 * 1024
 
-interface CmaSendContext {
+export interface CmaSendContext {
   slug: string
   subjectAddress: string
+  /** MLS ListingKey for this CMA. Null when the row has none. */
+  subjectListingKey: string | null
   clientName: string | null
   clientEmail: string
   brokerRow: {
@@ -113,18 +126,16 @@ async function resolveSendContext(
     await getCmaProspectAsk(String(row.id)),
   )
   const clientName = (row.client_name as string | null) ?? null
-  const facts = cmaFirstContactFactsFromRow(row as Record<string, unknown>, {
+  const facts = await cmaFirstContactFactsForSend(row as Record<string, unknown>, {
     brokerName: brokerRow.displayName,
-    firstName: (clientName ?? '').trim().split(/\s+/)[0] || null,
     lastListPrice,
+    brokerSlug: cmaSendBrokerSlug(brokerRow.email),
   })
-  // The place links are resolved here, not in the composer: a subdivision link
-  // goes in only when that plat page renders, with the counts the page prints.
-  facts.place = await resolveFirstContactPlace(facts)
   return {
     ctx: {
       slug,
       subjectAddress: (row.subject_address as string) ?? slug,
+      subjectListingKey: (row.subject_listing_key as string | null) ?? null,
       clientName,
       clientEmail,
       brokerRow,
@@ -170,30 +181,6 @@ export function linkifyHttp(html: string): string {
   })
 }
 
-function bodyParagraphsHtml(bodyText: string, address: string | null): string {
-  return bodyText
-    .split(/\n{2,}/)
-    .map((p) => `<p style="margin:0 0 16px 0;">${linkifyHttp(emphasizeAddress(p, address)).replace(/\n/g, '<br/>')}</p>`)
-    .join('')
-}
-
-function emphasizeAddress(text: string, address: string | null): string {
-  const named = address?.trim() || ''
-  const escaped = escapeHtml(text)
-  if (!named) return escaped
-  // The letter names the street ("2465 7th"), the row holds the full line
-  // ("2465 7th, Redmond, OR 97756"). Bold whichever form the paragraph uses,
-  // longest first so the full line never gets a nested tag.
-  const forms = [named, streetOnly(named)].filter((f): f is string => Boolean(f))
-  let out = escaped
-  for (const form of forms) {
-    const needle = escapeHtml(form)
-    if (!needle || out.includes(`<strong>${needle}</strong>`)) continue
-    out = out.split(needle).join(`<strong>${needle}</strong>`)
-  }
-  return out
-}
-
 /**
  * The broker's own signature, from the system (Matt 2026-09-09: "we will always
  * use my signature from the system"). Gmail-synced wins, then the signature they
@@ -214,63 +201,41 @@ async function signatureFor(email: string | null): Promise<{ html: string; plain
   }
 }
 
-function buildLeadBody(
+export function buildLeadBody(
   ctx: CmaSendContext,
   override?: CmaSendOverride,
   signature?: { html: string; plain: string } | null,
 ): { html: string; text: string; subject: string } {
   const copy = composeCmaFirstContact(ctx.origin, inboundFacts(ctx))
-  const brokerFirst = ctx.brokerRow.displayName.split(/\s+/)[0]
-  const viewUrl = `${SITE_URL}/cma/${ctx.slug}`
   const subject = override?.subject?.trim() || copy.subject
-
-  if (override?.bodyText?.trim()) {
-    const raw = override.bodyText.trim()
-    const paras = raw
-      .split(/\n{2,}/)
-      .map((p) => `<p style="margin:0 0 16px 0;">${escapeHtml(p).replace(/\n/g, '<br/>')}</p>`)
-      .join('')
-    const bodyHtml = `
-<div style="padding:32px 34px 8px;">
-  ${paras}
-  ${cmaReportButtonHtml(viewUrl)}
-  ${signature?.html ?? ''}
-</div>`
-    const text = `${raw}
-
-Read the full report: ${viewUrl}
-${signature?.plain ?? ''}${brandedTextFooter()}`
-    const html = wrapBrandedEmail({
-      bodyHtml,
-      // A broker-typed note previews as its own first sentence, not the
-      // composed line it replaced.
-      previewText: previewTextFromCustomBody(raw, copy.previewText),
-      mastheadLine: copy.mastheadLine,
-      heroUrl: null,
-      // One close: the broker's own signature, appended above. The navy
-      // "talk to" card would be a second sign-off under it (Matt 2026-09-09).
-      senderBroker: null,
-      unsubscribeUrl: null,
-      audienceLine: null,
-    })
-    return { html, text, subject }
-  }
-
+  const raw = override?.bodyText?.trim() ?? ''
+  const paragraphs = paragraphsForLetterBody({
+    bodyText: raw || copy.bodyText,
+    canonicalPlain: copy.bodyText,
+    canonicalMarkers: copy.bodyMarkers,
+    paragraphs: copy.paragraphs,
+  })
+  const letterPlain = paragraphsToPlain(paragraphs)
+  const uneditedBody = !raw || raw === copy.bodyText.trim() || raw === copy.bodyMarkers.trim()
+  const block = renderCmaLetterBlock({
+    paragraphs,
+    address: ctx.subjectAddress,
+    slug: ctx.slug,
+  })
   const bodyHtml = `
 <div style="padding:32px 34px 8px;">
-  ${bodyParagraphsHtml(copy.bodyText, ctx.subjectAddress)}
-  ${cmaReportButtonHtml(viewUrl)}
+  ${block}
   ${signature?.html ?? ''}
 </div>`
-
-  const text = `${copy.bodyText.replace(copy.close, `${copy.close} ${viewUrl}`)}
+  const text = `${letterPlain}
 ${signature?.plain ?? ''}${brandedTextFooter()}`
-
   const html = wrapBrandedEmail({
     bodyHtml,
-    previewText: copy.previewText,
+    previewText: uneditedBody ? copy.previewText : previewTextFromCustomBody(raw, copy.previewText),
     mastheadLine: copy.mastheadLine,
     heroUrl: null,
+    // One close: the broker's own signature, appended above. The navy
+    // "talk to" card would be a second sign-off under it (Matt 2026-09-09).
     senderBroker: null,
     unsubscribeUrl: null,
     audienceLine: null,
@@ -288,6 +253,19 @@ export interface SendCmaToLeadResult {
   gmailMessageId?: string
   resendId?: string
   personId?: number | null
+}
+
+export interface SendCmaToLeadOptions {
+  /**
+   * The caller already holds the owner's email claim on the prospect row and will
+   * stamp and finalize it itself. Set only by sendProspectingEmailIntro, which
+   * claims under its own idempotency key before its guard chain and calls this
+   * rail inside that claim. The rail then leaves the owner's row alone: a second
+   * claim on the same row comes back `claimed_elsewhere` and would refuse the
+   * caller's own send. No other caller may set it; lib/cma/prospect-send-claim.test.ts
+   * holds the list.
+   */
+  callerHoldsProspectClaim?: boolean
 }
 
 /**
@@ -342,6 +320,7 @@ export async function prepareCmaSendPreview(slug: string): Promise<
     const fakeCtx: CmaSendContext = {
       slug,
       subjectAddress: (row.subject_address as string) ?? slug,
+      subjectListingKey: (row.subject_listing_key as string | null) ?? null,
       clientName,
       clientEmail: ((row.client_email as string | null) ?? '').trim().toLowerCase() || 'pending@placeholder',
       brokerRow,
@@ -350,13 +329,12 @@ export async function prepareCmaSendPreview(slug: string): Promise<
       recommendedList: (row.recommended_list as number | null) ?? null,
       origin,
       lastListPrice,
-      facts: cmaFirstContactFactsFromRow(row as Record<string, unknown>, {
+      facts: await cmaFirstContactFactsForSend(row as Record<string, unknown>, {
         brokerName: brokerRow.displayName,
-        firstName: (clientName ?? '').trim().split(/\s+/)[0] || null,
         lastListPrice,
+        brokerSlug: cmaSendBrokerSlug(brokerRow.email),
       }),
     }
-    fakeCtx.facts.place = await resolveFirstContactPlace(fakeCtx.facts)
     const body = buildLeadBody(fakeCtx)
     return {
       ok: true,
@@ -380,7 +358,20 @@ export async function prepareCmaSendPreview(slug: string): Promise<
   }
 }
 
-export async function sendCmaToLead(slug: string, override?: CmaSendOverride): Promise<SendCmaToLeadResult> {
+/**
+ * Send the stored CMA to its client. Every caller comes through here, so this is
+ * where the guards live: solicitation screen, CRM contact, suppression, and the
+ * owner's email slot (lib/cma/prospect-send-claim.ts). When the recipient is an
+ * owner we track as a prospect, the send claims that owner's row before the PDF
+ * renders and refuses on anything but a clean claim, stamps the provider id the
+ * moment a rail takes the message, and finalizes after the delivered stamp. A
+ * send that fails before anything leaves releases the claim.
+ */
+export async function sendCmaToLead(
+  slug: string,
+  override?: CmaSendOverride,
+  options?: SendCmaToLeadOptions,
+): Promise<SendCmaToLeadResult> {
   const { ctx, error } = await resolveSendContext(slug)
   if (!ctx) return { ok: false, error: error ?? 'CMA not sendable' }
 
@@ -395,20 +386,106 @@ export async function sendCmaToLead(slug: string, override?: CmaSendOverride): P
       address: ctx.subjectAddress,
       city: ctx.facts.city ?? null,
       sinceIso: null,
+      // Without the subject's own listing, "Lot 33" on the only row at the
+      // address looks like an unknown unit and the screen refuses the send.
+      subjectListingKey: ctx.subjectListingKey ?? null,
     })
     if (!screen.ok) {
       return { ok: false, error: `Not sent. ${screen.detail}` }
     }
   }
 
+  // A send without a CRM contact is untracked (no pixel, no signed links, no
+  // timeline). Find or create the contact the same way the drip does, then
+  // fail closed if we still have no person.
+  let personId = await findCrmPersonIdByEmail(ctx.clientEmail)
+  const crmBrokerSlug = CRM_BROKER_BY_EMAIL[(ctx.brokerRow.email ?? '').toLowerCase()] ?? 'matt'
+  if (!personId) {
+    const lead = await ensureNativeLead({
+      name: ctx.clientName,
+      email: ctx.clientEmail,
+      source: ctx.origin === 'expired' ? 'expired-outreach-queue' : ctx.origin === 'fsbo' ? 'fsbo-outreach' : 'cma-send',
+      tags: [
+        'audience:seller',
+        ctx.origin === 'expired' ? 'intent:expired-listing' : ctx.origin === 'fsbo' ? 'intent:fsbo' : 'source:cma-send',
+        ctx.origin === 'expired' ? 'source:expired-outreach-queue' : ctx.origin === 'fsbo' ? 'source:fsbo-outreach' : 'source:cma-send',
+      ],
+      assignedBroker: crmBrokerSlug,
+    })
+    personId = lead.personId > 0 ? lead.personId : null
+  }
+  if (!personId) {
+    return {
+      ok: false,
+      error: 'Could not create a CRM contact for this email. The CMA was not sent — it would have gone out untracked.',
+    }
+  }
+  // Persist before the PDF renders. The create path already stamped; an
+  // existing CRM contact used to skip this, so the letter shipped without
+  // `_pid`. A failed write must stop the send — logging and continuing is
+  // how an untracked PDF left the shop.
+  const stamped = await stampCmaPersonId(slug, personId)
+  if (!stamped || stamped.ok !== true) {
+    return {
+      ok: false,
+      error:
+        stamped && stamped.ok === false
+          ? `Could not save the contact on this CMA (${stamped.error}). The CMA was not sent — it would have gone out untracked.`
+          : 'Could not save the contact on this CMA. The CMA was not sent — it would have gone out untracked.',
+    }
+  }
+  ctx.facts.personId = personId
+
   // Suppression chokepoint (fails closed).
-  const personId = await findCrmPersonIdByEmail(ctx.clientEmail)
-  const sup = personId
-    ? await isSuppressed(personId, 'email')
-    : await isSuppressedByEmail(ctx.clientEmail, 'email')
+  const sup = await isSuppressed(personId, 'email')
   if (sup.suppressed) {
     return { ok: false, error: `This contact has opted out of email (${sup.reasons.join(', ')}).` }
   }
+
+  // THE OWNER'S SLOT, before the PDF renders and after every refusal above.
+  // If this recipient is an owner we track as a prospect (expired or FSBO, by
+  // the build's link or, for a second CMA on the same house, by the MLS key),
+  // claim that owner's email slot now. Anything but a clean claim refuses and
+  // nothing leaves. Internal recipients, CMAs with no prospect row, and a
+  // caller that already holds the claim get a no-op lease and send as before.
+  // The finally settles it: released if nothing left, finalized if a rail took it.
+  const acquired = await acquireCmaProspectLease({
+    slug,
+    recipientEmail: ctx.clientEmail,
+    personId,
+    origin: ctx.origin,
+    callerHoldsClaim: options?.callerHoldsProspectClaim === true,
+  })
+  if (!acquired.ok) return { ok: false, error: acquired.error }
+  const lease = acquired.lease
+  try {
+    return await deliverCmaToLead(ctx, { personId, crmBrokerSlug, override, lease })
+  } finally {
+    await lease.settle()
+  }
+}
+
+/**
+ * Everything from the PDF render to the delivered stamp, run inside the owner's
+ * lease. A return before a rail is handed the message leaves the lease at its
+ * default (pre-send), so the caller's finally releases the claim. From the
+ * moment a rail is handed it the lease is in flight and the claim stays through
+ * anything (Gmail never answering, a thrown error) unless every rail refuses for
+ * certain. A rail taking the message marks it accepted the instant it returns,
+ * which stamps the provider id on the owner's row before any other bookkeeping
+ * can throw.
+ */
+async function deliverCmaToLead(
+  ctx: CmaSendContext,
+  args: {
+    personId: number
+    crmBrokerSlug: string
+    override: CmaSendOverride | undefined
+    lease: CmaProspectLease
+  },
+): Promise<SendCmaToLeadResult> {
+  const { slug } = ctx
+  const { personId, crmBrokerSlug, override, lease } = args
 
   // PDF. Dynamic import keeps puppeteer-core off admin page lambdas (NFT excludes it).
   let pdf: Buffer
@@ -424,8 +501,19 @@ export async function sendCmaToLead(slug: string, override?: CmaSendOverride): P
     return { ok: false, error: 'The rendered PDF exceeds the 25 MB attachment cap.' }
   }
 
+  // Suppression once more, right before the wire. The gate in sendCmaToLead ran
+  // ahead of a PDF render that can take a while, and an opt-out that lands in
+  // that window must still stop this email (the weekday drip re-checks before
+  // its own send for the same reason). It is also what keeps this function, the
+  // one that reaches the Resend rail below, carrying its own isSuppressed check,
+  // which is the invariant ci:email-send-gated holds every sender to. Fails
+  // closed; nothing has left, so the lease hands the owner's claim back.
+  const supNow = await isSuppressed(personId, 'email')
+  if (supNow.suppressed) {
+    return { ok: false, error: `This contact has opted out of email (${supNow.reasons.join(', ')}).` }
+  }
+
   const body = buildLeadBody(ctx, override, await signatureFor(ctx.brokerRow.email))
-  const crmBrokerSlug = CRM_BROKER_BY_EMAIL[(ctx.brokerRow.email ?? '').toLowerCase()] ?? 'matt'
   const emailKey = `cma:${slug}`
   const trackedHtml = attributeOutbound(body.html, {
     brokerSlug: crmBrokerSlug,
@@ -447,6 +535,9 @@ export async function sendCmaToLead(slug: string, override?: CmaSendOverride): P
     ctx.brokerRow.email && /@ryan-realty\.com$/i.test(ctx.brokerRow.email)
       ? ctx.brokerRow.email
       : 'matt@ryan-realty.com'
+  // From here a rail holds the message. Until a rail refuses for certain, any
+  // exit, a thrown error included, keeps the owner's claim: the email may be out.
+  lease.markSending()
   const gmailRes = await sendGmailMessage({
     to: ctx.clientEmail,
     subject: body.subject,
@@ -455,14 +546,23 @@ export async function sendCmaToLead(slug: string, override?: CmaSendOverride): P
     impersonateAs: brokerMailbox,
     attachments: [{ filename: `${slug}.pdf`, content: pdf, mimeType: 'application/pdf' }],
   })
+  if (gmailRes.unconfirmed) {
+    // The send left and Gmail never answered: the lead may already have the CMA.
+    // Resend now could deliver it twice, so stop and let the broker check Sent.
+    // The owner's claim is NOT released: the email may be out.
+    console.error(`[sendCmaToLead] ${slug}: ${gmailRes.error} Not falling back to Resend.`)
+    return { ok: false, error: gmailRes.error }
+  }
   const transport: 'gmail' | 'resend' = gmailRes.ok ? 'gmail' : 'resend'
   const gmailMessageId = gmailRes.ok ? gmailRes.messageId : undefined
+  const gmailThreadId = gmailRes.ok ? gmailRes.threadId : undefined
+  const rfcMessageId = gmailRes.ok ? gmailRes.rfcMessageId : undefined
   if (!gmailRes.ok) {
     // Fallback rail: Resend. The lead still gets the CMA; the timeline row
     // records the degraded transport so the outage is visible.
     console.error(`[sendCmaToLead] Gmail send from ${brokerMailbox} failed (${gmailRes.error ?? 'unknown'}); falling back to Resend`)
   }
-  // The suppression gate above covers this fallback too — same function scope.
+  // The suppression re-check above covers this fallback too — same function scope.
   // Named broker from (never the bare noreply@ default) so the fallback rail
   // matches the Gmail rail's identity — the lead sees the same sender either way.
   const fallbackIdentity = brokerSendIdentity(ctx.brokerRow.email)
@@ -476,9 +576,16 @@ export async function sendCmaToLead(slug: string, override?: CmaSendOverride): P
     attachments: [{ filename: `${slug}.pdf`, content: pdf }],
   })
   if (fallback?.error) {
+    // Both rails refused: nothing left, so the owner's claim goes back.
+    lease.markNotSent()
     return { ok: false, error: `Email send failed on both rails (Gmail: ${gmailRes.ok ? '' : gmailRes.error ?? 'unknown'}; Resend: ${fallback.error})` }
   }
   const resendId = fallback?.id
+
+  // A rail took the message: it is out. Stamp the provider id on the owner's row
+  // now, ahead of every other write below that could throw. A message-id-bearing
+  // row reads as already sent, so nothing after this can lead to a second email.
+  await lease.markAccepted({ messageId: gmailMessageId ?? resendId ?? null })
 
   const sentAt = new Date().toISOString()
 
@@ -508,7 +615,13 @@ export async function sendCmaToLead(slug: string, override?: CmaSendOverride): P
       emailKey,
       subject: body.subject,
       occurredAt: sentAt,
-      meta: { transport, slug, docType: 'cma' },
+      meta: {
+        transport,
+        slug,
+        docType: 'cma',
+        ...(gmailThreadId ? { gmailThreadId } : {}),
+        ...(rfcMessageId ? { rfcMessageId } : {}),
+      },
     })
     if (!rec.ok) console.warn('[sendCmaToLead] email_events sent row failed:', rec.error)
   } catch (e) {

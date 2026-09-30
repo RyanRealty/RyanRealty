@@ -23,3 +23,19 @@ export function sanitizeClientProse(s: string): string {
     .replace(/;\s*/g, '. ')
     .trim()
 }
+
+/**
+ * Letter render-time rewrite of a stored em dash.
+ *
+ * Old CMA rows keep `timeAdjustment.sentence` (and other method sentences)
+ * from the build that wrote them. A template change does not rewrite those
+ * rows. At print we replace " — " with a period and capitalize the next
+ * word so a re-render of an old packet is clean without a rebuild.
+ */
+export function sanitizeLetterEmDash(s: string): string {
+  return s
+    .replace(/(\d)\s*[—–]\s*(\$?\d)/g, '$1 to $2')
+    .replace(/\s+[—–]\s+([A-Za-z])/g, (_m, ch: string) => `. ${ch.toUpperCase()}`)
+    .replace(/\s+[—–]\s+/g, '. ')
+    .replace(/[—–]/g, '. ')
+}

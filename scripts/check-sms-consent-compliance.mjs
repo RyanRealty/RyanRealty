@@ -139,6 +139,9 @@ const EXEMPT_PREFIXES = [
 const EXEMPT_FILES = new Set([
   'app/team/[slug]/edit/page.tsx', // broker self-service profile edit (auth-gated)
   'components/site/SmsConsentDisclosure.tsx', // the disclosure component itself
+  // Admin envelope composer (rendered only under /admin/signing): the broker
+  // types a signer's mobile for a one-time signing code, never a lead form.
+  'components/tc/pdf-sign/EnvelopeComposer.tsx',
 ])
 function walkTsx(dir, out = []) {
   const abs = join(ROOT, dir)

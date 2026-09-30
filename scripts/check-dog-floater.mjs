@@ -4,8 +4,9 @@
  *
  * Refuse if the public layout drops V3DogFloater, remounts a sticky
  * phone dock, parks the FAB on the cookie bar, ships continuous idle,
- * a Close link, the wrong six doors, cover-crops the head, or ships a
- * circular pre-crop / edge-tight jax-head. Wired as ci:dog-floater.
+ * a Close link, the wrong six doors, cover-crops the head, ships a
+ * circular pre-crop / edge-tight jax-head, or leaves a finger's look
+ * standing on a phone (SITE-210). Wired as ci:dog-floater.
  *
  * Usage: node scripts/check-dog-floater.mjs
  */
@@ -23,5 +24,5 @@ if (failures.length) {
 }
 
 console.log(
-  `${DOG_FLOATER_GATE} OK: V3DogFloater mounted mid-end, brief flip/spin/invert, full-seal inner head with 4–8% pad, exact six doors, no Close link, sticky phone dock stays down.`,
+  `${DOG_FLOATER_GATE} OK: V3DogFloater mounted mid-end, brief flip/spin/invert, full-seal inner head with 4–8% pad, exact six doors, no Close link, a finger's look released on lift, sticky phone dock stays down.`,
 )

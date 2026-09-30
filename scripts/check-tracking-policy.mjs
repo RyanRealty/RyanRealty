@@ -187,6 +187,35 @@ check('GA4 ingestor stamps mirror-shaped rows and writes the health guard',
   /buildGa4DayRows\(/.test(ga4Cron) && /isGa4PageViewMirrorOn\(/.test(ga4Cron) && /healthRows\(/.test(ga4Cron),
   'app/api/cron/marketing-snapshot-ga4/route.ts must build rows with buildGa4DayRows (mirror stamp + exact browser counts) and write healthRows (the daily GA4 tracking-health verdict).')
 
+// ── Private pages: a signing link's address is its key ──────────────────────
+// 2026-09-24: a production /sign/<token> page sent its full address to the
+// Meta pixel (PageView dl=), Google Analytics and Sentry, because every tag in
+// the root layout loaded on every route. Every tag and page tracker skips a
+// private path (lib/analytics/private-paths.ts), the GTM loader checks it
+// before it runs, the signing page's CSP admits no third-party origin, and
+// every Sentry init scrubs secrets from its reports.
+const privatePaths = read('lib/analytics/private-paths.ts')
+check('Private-path list covers the signing link', /PRIVATE_PREFIXES\s*=\s*\[[^\]]*'sign'/.test(privatePaths) && /export function isPrivatePath/.test(privatePaths),
+  "lib/analytics/private-paths.ts must list 'sign' in PRIVATE_PREFIXES and export isPrivatePath().")
+for (const rel of ['components/GTMHead.tsx', 'components/GoogleAnalytics.tsx', 'components/MetaPixel.tsx', 'components/PageViewTracker.tsx', 'components/VisitTracker.tsx']) {
+  const src = read(rel)
+  check(`${rel} skips private pages`, /isPrivatePath\(/.test(src),
+    `${rel} must render nothing / send nothing when isPrivatePath(pathname) (lib/analytics/private-paths.ts): a signing link's address opens a client's documents.`)
+}
+check('GTM loader checks the private path before it runs', /if\(!\$\{PRIVATE_PATH_JS\}\)\(function\(w,d,s,l,i\)/.test(read('lib/analytics/gtm-bootstrap.ts')),
+  'lib/analytics/gtm-bootstrap.ts must guard the gtm.js loader with PRIVATE_PATH_JS.')
+check('Signing page CSP admits no third-party tag', (() => {
+  const cfg = read('next.config.ts')
+  const i = cfg.indexOf("source: '/sign/:path*',\n        headers: [")
+  if (i < 0) return false
+  const block = cfg.slice(i, cfg.indexOf(']', cfg.indexOf('Content-Security-Policy', i)))
+  return /Content-Security-Policy/.test(block) && !/googletagmanager|facebook|google-analytics|doubleclick/.test(block)
+})(), "next.config.ts must give '/sign/:path*' its own Content-Security-Policy with no Google, Meta or ad origin.")
+for (const rel of ['sentry.server.config.ts', 'sentry.edge.config.ts', 'lib/observability/sentry-browser.ts']) {
+  check(`${rel} scrubs secrets from reports`, /beforeSend:\s*\(event\)\s*=>\s*scrubDeep\(event\)/.test(read(rel)),
+    `${rel} must pass every report through scrubDeep() (lib/analytics/private-paths.ts).`)
+}
+
 // ── report ───────────────────────────────────────────────────────────────────
 if (failures.length) {
   console.error(`\n✗ tracking-policy: ${failures.length} invariant(s) regressed:\n`)
@@ -197,4 +226,4 @@ if (failures.length) {
   console.error('\n  See docs/TRACKING_POLICY.md for the rationale + research citations.')
   process.exit(1)
 }
-console.log('✓ tracking-policy: consent-mode v2 (4 params), consent-gated tags, CAPI PII-hashing, pixel/CAPI dedup, lead-path click-ID capture, the first-party rr_vid identity graph, and offline-conversion upload all intact.')
+console.log('✓ tracking-policy: consent-mode v2 (4 params), consent-gated tags, no tag or tracker on private pages (signing links), CAPI PII-hashing, pixel/CAPI dedup, lead-path click-ID capture, the first-party rr_vid identity graph, and offline-conversion upload all intact.')

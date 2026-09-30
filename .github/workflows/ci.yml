@@ -205,12 +205,13 @@ jobs:
       # The server needs to outlive the smoke step anyway so Lighthouse and
       # pa11y can reach it, and nothing after them needs port 3000.
 
-      # Build health tracking
-      - name: Record build health metrics
-        if: always()
-        run: |
-          npx tsx scripts/track-build-health.ts 2>/dev/null || true
-
+      # No build-health step (2026-09-25). `scripts/track-build-health.ts` ran
+      # under `if: always()` and re-ran the tests, two lints and a second full
+      # build after every run, cancelled runs included, then wrote a file the
+      # runner threw away. A superseded run held the concurrency queue while it
+      # rebuilt. Build cost is read from the Vercel build log by
+      # `npm run deploy:verify` (G70); `npm run health:record` still runs it
+      # locally.
 
       # Bundle size report. continue-on-error because this posts an informational
       # PR comment: if commenting is unavailable (org token policy, a fork PR

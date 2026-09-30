@@ -231,6 +231,33 @@ export function clampMarkNudge(
   return { nudgeX, nudgeY }
 }
 
+/**
+ * How far past the island edge a mark's point may project and still count as
+ * in the frame. clientWidth/Height round to whole pixels, so a home on the
+ * edge of the frame the rows were read for can land a pixel outside it.
+ */
+export const MARK_ANCHOR_TOLERANCE_PX = 2
+
+/**
+ * Whether a mark's point (a pill's home, a cluster's centroid) projects into
+ * the island. Only then does clampMarkNudge slide it in. The search clusterer
+ * works over the whole world, so marks for homes off the camera still draw,
+ * and clamping those pulled every one onto the edge: stacked, and pointing at
+ * homes that are not on the map. An off-island mark hides instead.
+ */
+export function markAnchorInIsland(
+  anchor: { x: number; y: number },
+  island: IslandBox,
+  tolerance = MARK_ANCHOR_TOLERANCE_PX,
+): boolean {
+  return (
+    anchor.x >= -tolerance &&
+    anchor.x <= island.width + tolerance &&
+    anchor.y >= -tolerance &&
+    anchor.y <= island.height + tolerance
+  )
+}
+
 /** Recorded ring as GeoJSON [lon, lat] outers for point-in-polygon. */
 export function subjectRingLonLat(paths: readonly (readonly RingPoint[])[]) {
   return paths.map((path) => path.map((p) => [p.lng, p.lat] as const))

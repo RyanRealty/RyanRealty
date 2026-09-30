@@ -488,6 +488,11 @@ export function buildJsonLd(input: SchemaInput): Record<string, unknown> {
         name: input.name,
         description: input.description,
         url: absoluteUrl(input.url),
+        // Every page belongs to the one WebSite node the root layout emits
+        // (components/JsonLd.tsx), whose publisher is #organization. The
+        // reference is what ties a page to the brand entity without a second
+        // Organization node (SITE-198: brand query split across pages).
+        isPartOf: { '@id': `${site}#website` },
         mainEntity: input.aboutOrganization
           ? organizationReference(site, input.organizationFacts, absoluteUrl)
           : undefined,

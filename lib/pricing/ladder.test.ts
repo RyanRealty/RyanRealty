@@ -4,7 +4,9 @@ import {
   isClusterPocket,
   isGeographyWidenTier,
   isPocketExclusiveTier,
+  keepTightestByClosePrice,
   pocketHoldsGeographyExclusive,
+  pocketStopsLaterRungs,
   pocketStarvedForYearQuality,
   POCKET_STARVE_BELOW,
   POCKET_TIGHT_SET_MIN,
@@ -153,6 +155,16 @@ describe('pricingTierLadder — the parent level (Matt 2026-09-09)', () => {
     expect(pocketHoldsGeographyExclusive(1, 1, true)).toBe(true)
     expect(pocketHoldsGeographyExclusive(2, 0, true)).toBe(true)
     expect(pocketHoldsGeographyExclusive(1, 0, true)).toBe(false)
+    // Two closed sales inside a quarter mile are a tight cluster and still
+    // short of the 3-sale floor. The ladder keeps walking. Three or more
+    // may stop, which is what keeps Canter off the mile rings.
+    expect(pocketStopsLaterRungs({ kept: 2, exclusiveClosed: 2, clusterPocket: true })).toBe(false)
+    expect(
+      pocketStopsLaterRungs({ kept: 2, exclusiveClosed: 2, exclusivePending: 1, clusterPocket: true }),
+    ).toBe(true)
+    expect(pocketStopsLaterRungs({ kept: 3, exclusiveClosed: 2, exclusivePending: 1, clusterPocket: true })).toBe(true)
+    expect(pocketStopsLaterRungs({ kept: 5, exclusiveClosed: 5 })).toBe(true)
+    expect(pocketStopsLaterRungs({ kept: 4, exclusiveClosed: 4 })).toBe(false)
   })
 
   it('marks the community rungs sameCommunity and nothing else', () => {
@@ -161,5 +173,33 @@ describe('pricingTierLadder — the parent level (Matt 2026-09-09)', () => {
       expect(!!t.likeCommunity).toBe(t.name.startsWith('like-community-'))
       expect(!!t.samePocket).toBe(t.name.startsWith('pocket-'))
     }
+  })
+})
+
+describe('keepTightestByClosePrice — as-of date (WP5 item d, back-dated CMA)', () => {
+  // Six candidates, five kept. E is the price outlier (10%+ off the $503,500
+  // median) but closed the same day as everyone else. F sits closest of all
+  // to the median but closed 24 months earlier. Same set, only the as-of
+  // date changes which one is "worst."
+  const comps = [
+    { key: 'A', closePrice: 500_000, closeDate: '2026-06-01' },
+    { key: 'B', closePrice: 505_000, closeDate: '2026-06-01' },
+    { key: 'C', closePrice: 495_000, closeDate: '2026-06-01' },
+    { key: 'D', closePrice: 510_000, closeDate: '2026-06-01' },
+    { key: 'E', closePrice: 560_000, closeDate: '2026-06-01' },
+    { key: 'F', closePrice: 502_000, closeDate: '2024-06-01' },
+  ]
+
+  it('drops the price outlier when no as-of date is given (no staleness penalty)', () => {
+    const kept = keepTightestByClosePrice(comps, 5)
+    expect(kept.map((c) => c.key).sort()).toEqual(['A', 'B', 'C', 'D', 'F'])
+  })
+
+  it('drops the stale close instead once an as-of date makes it 24 months old', () => {
+    // Same six comps, a CMA as-of date close to the fresh five. F is now
+    // measured against THAT date, not real-world today, so it reads as
+    // ~24 months stale and loses its slot to E instead.
+    const kept = keepTightestByClosePrice(comps, 5, '2026-06-15')
+    expect(kept.map((c) => c.key).sort()).toEqual(['A', 'B', 'C', 'D', 'E'])
   })
 })

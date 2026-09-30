@@ -56,6 +56,7 @@ import {
   medianListLabel,
   faqQuietItems,
 } from '@/app/central-oregon/_v3/nearby-field-items'
+import { communityPath } from '@/lib/communities/community-public-pair'
 
 export const dynamicParams = false
 export const revalidate = 3600
@@ -169,7 +170,7 @@ export default async function TrailDetailPage({ params }: Props) {
     quietItems.push({ label: 'Official trail and conditions', href: trail.officialUrl.trim() })
   }
   if (trail.communitySlug?.trim()) {
-    quietItems.push({ label: 'Community near this trail', href: `/communities/${trail.communitySlug.trim()}` })
+    quietItems.push({ label: 'Community near this trail', href: communityPath(trail.communitySlug) })
   }
   quietItems.push({ label: `${trail.city} market`, href: `/cities/${trail.geoSlug}` })
   for (const t of relatedTrails) {

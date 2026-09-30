@@ -51,6 +51,25 @@ describe('attributeSiteLinks — a link we send must identify who we sent it to'
     expect(attributeSiteLinks(LINK, null, null, null)).toBe(LINK)
   })
 
+  it('puts trailing sentence punctuation back outside the URL', () => {
+    const out = attributeSiteLinks('See https://ryan-realty.com/about.', 'matt', null, 7)
+    expect(out.endsWith('.')).toBe(true)
+    expect(out).not.toContain('about.')
+    const url = out.slice(out.indexOf('https'), -1)
+    const u = new URL(url)
+    expect(u.pathname).toBe('/about')
+    expect(u.searchParams.get('agent')).toBe('matt')
+    expect(u.searchParams.get('_pid')).toBe('7')
+  })
+
+  it('decorates hrefs in HTML and leaves a visible URL alone', () => {
+    const html = '<p>See https://ryan-realty.com/reviews. <a href="https://ryan-realty.com/about">who we are</a></p>'
+    const out = attributeSiteLinks(html, 'matt', null, 7)
+    expect(out).toContain('See https://ryan-realty.com/reviews. ')
+    expect(out).not.toContain('reviews?')
+    expect(out).toMatch(/href="https:\/\/ryan-realty\.com\/about\?/)
+  })
+
   it('adds crm/email + agent-<slug> UTMs when the destination has none', () => {
     const out = attributeSiteLinks(LINK, 'matt', null, 4242)
     expect(out).toContain('utm_source=crm')

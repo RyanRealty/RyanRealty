@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { getSearchConsoleSummary } from '@/app/actions/search-console-report'
 import { ReportNumbers, SectionHead } from '@/components/admin/v2'
 

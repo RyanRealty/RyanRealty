@@ -24,6 +24,9 @@
  */
 import 'server-only'
 import { attributeSiteLinks } from '@/lib/crm/merge'
+import { replaceOwnSiteLinks } from '@/lib/analytics/own-site-links'
+import { appendQueryParam, hasQueryParam } from '@/lib/analytics/visit-broker'
+import { isPrivateLink } from '@/lib/analytics/private-paths'
 import { signPersonLinkToken, type LinkChannel } from '@/lib/identity/link-token'
 
 export type DecorateOutboundOptions = {
@@ -37,7 +40,6 @@ export type DecorateOutboundOptions = {
   // (2026-09-23) because an unsigned id identifies nobody, so it is never stamped.
 }
 
-const OWN_LINK_RE = /https:\/\/(?:www\.)?ryan-realty\.com[^\s"'<)\]]*/g
 const UNSIGNED_IDENTITY_PART = /^_(?:pid|fuid)=\d+$/
 
 function validId(n: unknown): n is number {
@@ -56,13 +58,10 @@ const MEDIUM_BY_CHANNEL: Partial<Record<LinkChannel, string>> = {
 }
 
 function withMediumIfMissing(url: string, medium: string): string {
-  if (/[?&]utm_medium=/.test(url)) return url
+  if (hasQueryParam(url, 'utm_medium')) return url
   // Never on our own plumbing (admin, API, the /r/ short-link tracker).
   if (/ryan-realty\.com\/(?:admin|api\/|r\/)/.test(url)) return url
-  const hashAt = url.indexOf('#')
-  const base = hashAt === -1 ? url : url.slice(0, hashAt)
-  const fragment = hashAt === -1 ? '' : url.slice(hashAt)
-  return `${base}${base.includes('?') ? '&' : '?'}utm_medium=${medium}${fragment}`
+  return appendQueryParam(url, 'utm_medium', medium)
 }
 
 /**
@@ -96,7 +95,8 @@ export function decorateOutboundText(text: string, opts: DecorateOutboundOptions
   const personId = validId(opts.personId) ? opts.personId : null
   const token = personId ? signPersonLinkToken(personId, opts.channel) : null
   const medium = MEDIUM_BY_CHANNEL[opts.channel]
-  const cleaned = text.replace(OWN_LINK_RE, (u) => {
+  const cleaned = replaceOwnSiteLinks(text, (u) => {
+    if (isPrivateLink(u)) return u // a signing link is sent exactly as minted (private-paths.ts)
     const stripped = stripUnsignedIdentity(u)
     return medium ? withMediumIfMissing(stripped, medium) : stripped
   })

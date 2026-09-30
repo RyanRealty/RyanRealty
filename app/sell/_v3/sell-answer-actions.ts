@@ -47,6 +47,7 @@ import { slugify } from '@/lib/slug'
 import { buildAnswerFigures, salesPerMonthFrom } from '@/lib/site/answer-figures'
 import type { PlaceCompMark } from '@/lib/cma/place-comps'
 import { splitSellAddress, type SellAnswerData } from './sell-answer'
+import { cityMarketPath } from '@/lib/market/canonical-market-path'
 
 export type SellAnswerInput = {
   address: string
@@ -129,7 +130,7 @@ function grainCandidates(input: {
       geoType: 'city',
       geoSlug: ctx.city.slug,
       label: ctx.city.label,
-      href: `/housing-market/${ctx.city.slug}`,
+      href: cityMarketPath(ctx.city.slug),
     })
   } else if (input.city) {
     const slug = slugify(input.city)
@@ -138,7 +139,7 @@ function grainCandidates(input: {
         geoType: 'city',
         geoSlug: slug,
         label: input.city.trim(),
-        href: `/housing-market/${slug}`,
+        href: cityMarketPath(slug),
       })
     }
   }

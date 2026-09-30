@@ -230,6 +230,22 @@ export interface ProspectDetail extends ProspectRow {
   ownershipYears: number | null
   priceHistory: ProspectPriceCycle[]
   drip: ProspectDripState
+  /**
+   * First paint of the detail page, before price history, the live relist
+   * probe, and the doc lookup resolve. Email and live status are already set.
+   * Absent means this detail is final (the send path, and the streamed panel).
+   */
+  optionalPending?: boolean
+  /** Live MLS status read timed out or failed. The status string is the row's own. */
+  liveStatusLoadError?: string | null
+  /** Listing-history read timed out or failed. Empty history with this null is real. */
+  historyLoadError?: string | null
+  /** Doc lookup timed out or failed. Do not treat `doc.state === 'none'` as final. */
+  docLoadError?: string | null
+  /** Live compliance / relist probe timed out or failed. */
+  complianceLoadError?: string | null
+  /** Drip enrollment read timed out or failed. */
+  dripLoadError?: string | null
 }
 
 export type ProspectStatusFilter =

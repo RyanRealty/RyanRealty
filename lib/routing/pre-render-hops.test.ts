@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { PRE_RENDER_HOPS, PRE_RENDER_HOP_ROUTES, resolvePreRenderHop } from './pre-render-hops'
+import { PRE_RENDER_HOPS, PRE_RENDER_HOP_ROUTES, resolvePreRenderHop, resolvePreRenderHopStatus } from './pre-render-hops'
 import { enumerateCanonicalCommunityRedirects } from '@/lib/communities/canonical-community-slug'
 
 describe('resolvePreRenderHop', () => {
@@ -39,6 +39,24 @@ describe('resolvePreRenderHop', () => {
     expect(resolvePreRenderHop('/neighborhoods/awbrey-butte')).toBe('/cities/bend/awbrey-butte')
     expect(resolvePreRenderHop('/reports/city/Bend')).toBe('/housing-market/bend')
     expect(resolvePreRenderHop('/housing-market/reports/city/Bend')).toBe('/housing-market/bend')
+  })
+
+  it('gives every registry community one market URL, with a 301 (2026-09-24)', () => {
+    expect(resolvePreRenderHop('/housing-market/black-butte-ranch')).toBe('/housing-market/sisters/black-butte-ranch')
+    expect(resolvePreRenderHopStatus('/housing-market/black-butte-ranch')).toBe(301)
+    expect(resolvePreRenderHop('/housing-market/sisters/black-butte-ranch')).toBeNull()
+    expect(resolvePreRenderHop('/housing-market/eagle-crest')).toBe('/housing-market/redmond/eagle-crest')
+    expect(resolvePreRenderHop('/housing-market/sunriver/sunriver')).toBe('/housing-market/sunriver')
+    expect(resolvePreRenderHop('/housing-market/sunriver')).toBeNull()
+    expect(resolvePreRenderHop('/housing-market/bend/caldera-springs')).toBe('/housing-market/sunriver/caldera-springs')
+    expect(resolvePreRenderHop('/housing-market/redmond/juniper-preserve')).toBe('/housing-market/bend/pronghorn')
+    // A destination the legacy map folds away is followed, never a two-hop chain.
+    expect(resolvePreRenderHop('/housing-market/tetherow')).toBe('/communities/tetherow')
+    // Cities, plats and the section's own routes pass through.
+    for (const p of ['/housing-market/bend', '/housing-market/bend/broken-top', '/housing-market/bend/stevens-ranch', '/housing-market/reports/sunriver', '/housing-market/central-oregon']) {
+      expect(resolvePreRenderHop(p), p).toBeNull()
+    }
+    expect(resolvePreRenderHopStatus('/communities/bend-broken-top')).toBe(308)
   })
 
   it('decodes a percent-encoded segment', () => {

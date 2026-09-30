@@ -19,6 +19,7 @@
  * NorthWest Crossing, not fall through to city Bend.
  */
 import registry from '@/data/resort-communities.json'
+import { communityPath } from '@/lib/communities/community-public-pair'
 
 export type GeoLink = {
   slug: string
@@ -81,7 +82,7 @@ export function matchGeoLinksForPost(
       slug: c.slug,
       label: c.label,
       city: c.city,
-      href: `/communities/${c.slug}`,
+      href: communityPath(c.slug),
       anchor: `${c.label} homes for sale`,
     }))
 }

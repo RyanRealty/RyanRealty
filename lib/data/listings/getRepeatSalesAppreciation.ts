@@ -16,7 +16,7 @@
  *
  * All figures trace to closed MLS sales in `listings`. Cached 6h.
  */
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { createServiceClient } from '@/lib/data/client'
 
 export type RepeatSale = {

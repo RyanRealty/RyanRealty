@@ -22,7 +22,7 @@
  * the same key across photos/videos/history/agents/etc. pays one DB round-trip.
  */
 
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 

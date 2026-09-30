@@ -149,6 +149,25 @@ stated bound: a record older than `ROOM_HISTORY_MAX_AGE_YEARS` is reported but
 does not price the house, because bathrooms get added and a sixteen-year-old
 count is not evidence about the house today.
 
+**A broker-picked set is not capped (Matt 2026-09-24, "Keep uncapped").** An
+automatic search keeps the five tightest sales (`MAX_COMPS`,
+`keepTightestByClosePrice` in `lib/cma/comps.ts`). When a broker hands in the
+comps (`curatedKeys` in `lib/cma/build.ts`), every pick prices the house and
+the self-repair pass drops none of them: the broker chose them. The same path
+prices BPOs. Do not add a cap without asking Matt again.
+
+### 0.2 The status table in the letter (Matt 2026-09-24)
+
+One table, FlexMLS style (`lib/cma/status-price-summary.ts`): List, Sold and
+$/sqft across the top, Low, Avg, Median and High down each status (Closed,
+Pending, Active, Expired), from the homes already on the letter. $/sqft is the
+sold price over living area once closed and the list price before. It replaced
+two boards, one where list and sold shared a single set of columns and a
+separate "Dollars a square foot" board. A column that covers fewer homes than
+its status holds says so under the table. The locked contract is
+`split-closed-pending-active-summary-tables` in
+`lib/cma/canter-letter-flow.contract.test.ts`.
+
 ---
 
 ## 1. Scope

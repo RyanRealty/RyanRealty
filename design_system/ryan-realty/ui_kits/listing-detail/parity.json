@@ -135,6 +135,11 @@
       "blocking": true
     },
     {
+      "name": "V3PlaceIndex",
+      "section": "#other-subdivs — same-community sibling plats, name-only, when the atlas has any.",
+      "blocking": true
+    },
+    {
       "name": "MortgageCalculator",
       "section": "One payment: computeMonthlyPiti. Line items P&I, tax, HOA.",
       "blocking": true
@@ -245,10 +250,6 @@
     {
       "name": "LivePricingRead",
       "reason": "HouseMe / listing_pricing_reads is a second claim. The instrument uses leftover HUD plus this list price only."
-    },
-    {
-      "name": "SchoolsBlock",
-      "reason": "Long tail is a schools door with one live school name, not a mid-page ledger."
     },
     {
       "name": "ParksNearbyBlock",
@@ -540,7 +541,7 @@
     }
   },
   "foldDensity": {
-    "lockedAt": "2026-09-19",
+    "lockedAt": "2026-09-25",
     "crumbCollapseAt": 3,
     "crumbBelowNavPadToken": "--v3-space-2xs",
     "crumbOverlayOnListing": true,
@@ -550,6 +551,11 @@
     "mosaicWell": "navy",
     "stripWell": "navy",
     "mosaicHeightUsesViewport": true,
+    "phoneFrameAspect": "3 / 2",
+    "phoneFrameFit": "cover",
+    "phoneTabsInStrip": true,
+    "phoneCrumbInFlow": true,
+    "onePrice": true,
     "shellPadTopToken": "--v3-space-xs",
     "phoneShellPadTop": "0",
     "phoneFacePadTop": "0",
@@ -566,7 +572,10 @@
       "short mosaic well",
       "oversized filmstrip thumbs",
       "cream under the gallery",
-      "button row between price and beds"
+      "button row between price and beds",
+      "letterboxed phone frame",
+      "media tabs on the still",
+      "price printed twice"
     ]
   },
   "contentFloor": {

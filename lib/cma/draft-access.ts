@@ -36,9 +36,8 @@ export function canOpenCmaDocument(row: {
   if (row.html_content) return true
   if (cmaHasStoredHtml(row.html_path)) return true
   if (row.render_args && typeof row.render_args === 'object') return true
-  // built_at alone is not a document. recordBuildFailure stamps built_at while
-  // clearing html/render_args so a failed Rim View rebuild cannot reopen the
-  // prior Summit/Falcon/Hopper/Hunnell kept-set via Review CMA.
+  // built_at alone is not a document. A failed rebuild now keeps html /
+  // render_args and only stamps build_error + build_failed_at.
   void row.built_at
   return String(row.html_path ?? '').startsWith('public/cmas/')
 }

@@ -5,6 +5,7 @@ import {
   subdivisionAreaRedirectEntries,
 } from './subdivision-area-redirects'
 import resortRegistry from '@/data/resort-communities.json'
+import { communityPath } from '@/lib/communities/community-public-pair'
 import bendPolygons from '@/data/bend/bend-neighborhood-polygons.json'
 
 /**
@@ -53,9 +54,15 @@ describe('resolveSubdivisionAreaRedirect', () => {
     })
   })
 
-  describe('every registry community resolves to /communities/<slug>', () => {
+  describe('every registry community resolves to its live /communities door', () => {
+    // The PUBLIC slug, never the durable key: /communities/pronghorn is a 308
+    // (ci:community-href-canonical), so pronghorn resolves straight to
+    // /communities/juniper-preserve in one hop.
     it.each(registrySlugs.map((c) => c.slug))('%s', (slug) => {
-      expect(resolveSubdivisionAreaRedirect(slug)).toBe(`/communities/${slug}`)
+      expect(resolveSubdivisionAreaRedirect(slug)).toBe(communityPath(slug))
+    })
+    it('pronghorn skips the rebrand hop', () => {
+      expect(resolveSubdivisionAreaRedirect('pronghorn')).toBe('/communities/juniper-preserve')
     })
   })
 

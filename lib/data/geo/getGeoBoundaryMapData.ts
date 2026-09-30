@@ -19,7 +19,7 @@
  * this function (not a bespoke one-off query).
  */
 
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { supabaseAnon } from '@/lib/data/client'
 import { getBoundaryGeoJSON } from '@/lib/data/geo/getBoundaryGeoJSON'
 import type { BoundaryGeometry } from '@/lib/data/geo/getBoundaryGeoJSON'

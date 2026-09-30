@@ -20,7 +20,7 @@
  * through supabaseAnon so it is safe to call inside `unstable_cache`.
  */
 
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { z } from 'zod'
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'

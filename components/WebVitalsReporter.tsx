@@ -1,6 +1,7 @@
 'use client'
 
 import { useReportWebVitals } from 'next/web-vitals'
+import { scrubPrivateUrls } from '@/lib/analytics/private-paths'
 import { isNonPagePath } from '@/lib/analytics/web-vitals-sample'
 
 /**
@@ -34,7 +35,8 @@ export function WebVitalsReporter() {
       value: metric.value,
       rating: metric.rating,
       navigationType: metric.navigationType,
-      path: window.location.pathname,
+      // A signing link's token never rides along (private-paths.ts): /sign/[token].
+      path: scrubPrivateUrls(window.location.pathname),
       device,
     }
 

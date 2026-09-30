@@ -1,6 +1,6 @@
 'use server'
 
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { getListingsWithAdvanced, type ListingTileRow } from '@/app/actions/listings'
 import type { SearchShapes } from '@/lib/data'
 import {

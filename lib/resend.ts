@@ -49,6 +49,10 @@ export type SendEmailOptions = {
   brokerSlug?: string
 }
 
+function isRateLimited(error: { name?: string; message?: string; statusCode?: number | null }): boolean {
+  return error.statusCode === 429 || /rate_limit|too many requests/i.test(`${error.name ?? ''} ${error.message ?? ''}`)
+}
+
 export async function sendEmail(options: SendEmailOptions): Promise<{ id?: string; error?: string }> {
   const client = getClient()
   if (!client) {
@@ -78,17 +82,26 @@ export async function sendEmail(options: SendEmailOptions): Promise<{ id?: strin
     })
   }
   try {
-    const { data, error } = await client.emails.send({
-      from,
-      to,
-      subject: options.subject,
-      html,
-      text: options.text,
-      replyTo: options.replyTo,
-      react: options.react,
-      ...(options.attachments?.length ? { attachments: options.attachments } : {}),
-      ...(options.headers ? { headers: options.headers } : {}),
-    })
+    const send = () =>
+      client.emails.send({
+        from,
+        to,
+        subject: options.subject,
+        html,
+        text: options.text,
+        replyTo: options.replyTo,
+        react: options.react,
+        ...(options.attachments?.length ? { attachments: options.attachments } : {}),
+        ...(options.headers ? { headers: options.headers } : {}),
+      })
+    let { data, error } = await send()
+    // Resend allows a few requests a second across the whole account, and the
+    // live site shares it: a sealed envelope's copies go out back to back. A
+    // refused-for-rate send was not sent, so it is safe to try again.
+    for (let attempt = 1; error && isRateLimited(error) && attempt <= 2; attempt++) {
+      await new Promise((r) => setTimeout(r, 1100 * attempt))
+      ;({ data, error } = await send())
+    }
     if (error) {
       const g = globalThis as unknown as { captureException?: (e: unknown) => void }
       if (typeof g.captureException === 'function') g.captureException(new Error(`Resend: ${error.message}`))

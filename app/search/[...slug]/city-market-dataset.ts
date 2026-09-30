@@ -28,3 +28,27 @@ export function buildCityMarketDatasetSchema(args: {
     variableMeasured: cityMarketFaq.datasetVariables,
   }
 }
+
+/**
+ * The region's Dataset node for the bare /homes-for-sale (SITE-201). Same
+ * contract as the city node above: every variable is buildMarketFaq's
+ * `datasetVariables`, the array the visible band, FAQ and FAQPage node are
+ * drawn from. No variables, no node.
+ */
+export function buildRegionMarketDatasetSchema(args: {
+  regionName: string
+  pagePath: string
+  regionMarketFaq: MarketFaqResult | null
+}): SchemaInput | undefined {
+  const { regionName, pagePath, regionMarketFaq } = args
+  if (!regionMarketFaq || regionMarketFaq.datasetVariables.length === 0) return undefined
+  return {
+    type: 'dataset',
+    name: `${regionName}, Oregon real estate market statistics${regionMarketFaq.asOfLabel ? `, ${regionMarketFaq.asOfLabel}` : ''}`,
+    description: `Live single-family home market data across ${regionName}, Oregon. Includes active inventory, median list price, months of supply, and median days to pending. Sourced from the regional MLS via Ryan Realty.`,
+    url: pagePath,
+    dateModified: regionMarketFaq.asOfIso ?? undefined,
+    spatialCoverageName: `${regionName}, OR`,
+    variableMeasured: regionMarketFaq.datasetVariables,
+  }
+}

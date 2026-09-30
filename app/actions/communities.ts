@@ -2,7 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { cache } from 'react'
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { subdivisionEntityKey, slugify } from '@/lib/slug'
 import { getSubdivisionMatchNames } from '@/lib/subdivision-aliases'
 import { parseCommunitySlug } from '@/lib/community-slug'

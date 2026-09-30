@@ -29,7 +29,7 @@
  * site-nav.ts directly and this DAL has nothing data-grounded to add.
  */
 
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { marketVerdict } from '@/lib/market/classify'
 
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
@@ -50,6 +50,7 @@ import {
 } from '@/lib/popular-searches'
 import { homesForSalePath } from '@/lib/slug'
 import type { MoSVerdict } from '@/lib/data/types/market'
+import { communityPath } from '@/lib/communities/community-public-pair'
 
 // ───────────────────────── Types ─────────────────────────
 
@@ -328,7 +329,7 @@ async function buildCommunities(): Promise<MegaMenuCommunities> {
       return {
         name: entry.label,
         slug: entry.slug,
-        href: `/communities/${entry.slug}`,
+        href: communityPath(entry.slug),
         activeCount: positiveOrNull(snapshot?.activeSfrCount ?? null),
         medianListPrice: positiveOrNull(snapshot?.medianListPrice ?? null),
         imageSrc: GOLF_IMAGE_BY_SLUG[entry.slug] ?? null,

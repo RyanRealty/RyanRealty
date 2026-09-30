@@ -161,7 +161,7 @@ describe('V3Chart range rows', () => {
         ],
       }),
     )
-    expect(html).toContain('Bend: 18 days \u2014 small sample')
+    expect(html).toContain('Bend: 18 days, small sample')
   })
 })
 
@@ -224,7 +224,7 @@ describe('V3Chart marks and line bands', () => {
       }),
     )
     expect((html.match(/v3-chart__mark v3-chart__mark--/g) ?? []).length).toBe(3)
-    expect(html).toContain('<title>Spread — M2: 2.90%</title>')
+    expect(html).toContain('<title>Spread, M2: 2.90%</title>')
   })
 
   it('washes in-domain bands behind the line and lists the band key', () => {
@@ -321,7 +321,7 @@ describe('V3Chart range sample size', () => {
     expect(html).toContain('n 1,513')
     expect(html).toContain('n 4')
     // The reading a screen reader gets carries the same n.
-    expect(html).toContain('<li>Camp Sherman, $900K \u2014 n 4</li>')
+    expect(html).toContain('<li>Camp Sherman, $900K, n 4</li>')
   })
 
   it('writes a dumbbell sample as current then prior, matching the value pair', () => {
@@ -343,7 +343,7 @@ describe('V3Chart range sample size', () => {
       }),
     )
     expect(html).toContain('n 513 (574)')
-    expect(html).toContain('98.5% (97.8%) \u2014 n 513 (574)')
+    expect(html).toContain('98.5% (97.8%), n 513 (574)')
   })
 
   it('refuses a sample with no key, because an unnamed count names no population', () => {

@@ -42,13 +42,22 @@ export function zipLlmsLines(siteUrl: string): string[] {
   return LLMS_ZIPS.map((z) => `- ${z.zip} (${z.area}): ${base}/zip/${z.zip}`)
 }
 
+/**
+ * One line per market page. Each entry is a city slug (`bend`) or a full
+ * canonical market path (`/housing-market/sisters/black-butte-ranch`); the
+ * label names the place, which is the path's last segment.
+ */
 export function marketCityLlmsLines(
   siteUrl: string,
-  slugs: readonly string[],
+  slugsOrPaths: readonly string[],
   label: (slug: string) => string,
 ): string[] {
   const base = siteUrl.replace(/\/$/, '')
-  return slugs.map((slug) => `- ${label(slug)} housing market: ${base}/housing-market/${slug}`)
+  return slugsOrPaths.map((entry) => {
+    const path = entry.startsWith('/') ? entry : `/housing-market/${entry}`
+    const place = path.split('/').filter(Boolean).at(-1) ?? entry
+    return `- ${label(place)} housing market: ${base}${path}`
+  })
 }
 
 function capitalize(text: string): string {

@@ -62,6 +62,7 @@ import {
   formatRatioPct,
   formatWholeDollars,
 } from './annual-constants'
+import { cityMarketPath } from '@/lib/market/canonical-market-path'
 
 export const REGION_REPORT_PATH = '/housing-market/central-oregon'
 export const CITY_REPORTS_PATH = '/housing-market/reports'
@@ -288,7 +289,7 @@ export function buildInventoryLedger(
       continue
     }
     rows.push({
-      href: `/housing-market/${city.slug}`,
+      href: cityMarketPath(city.slug),
       when: v3Text(`${snapshot.active_count.toLocaleString('en-US')} active`),
       what: v3Text(city.label),
       detail:
@@ -591,7 +592,7 @@ export function buildYearLedger(
     ].filter((p): p is string => typeof p === 'string' && p.length > 0)
 
     rows.push({
-      href: `/housing-market/${city.slug}`,
+      href: cityMarketPath(city.slug),
       when: v3Text(sold ? `${sold} sold` : 'trailing 12 months'),
       what: v3Text(city.label),
       detail: parts.length > 0 ? v3Text(parts.join(' · ')) : undefined,

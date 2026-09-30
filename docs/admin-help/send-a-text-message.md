@@ -17,7 +17,7 @@ Texting a contact works the same way as email, and the CRM handles the complianc
 
 ## The guardrails working for you
 
-- **Quiet hours.** The CRM holds a text you try to send before 8am or after 9pm Pacific, unless you check the override. This keeps the brokerage on the right side of the rules.
+- **Quiet hours.** The CRM holds a text you try to send before 8am or after 8pm Pacific, unless you check the override. This keeps the brokerage on the right side of the rules.
 - **Opt-outs.** Anyone who has replied STOP or been marked do-not-text will not receive a message. If someone replies STOP, they are suppressed automatically.
 - **Delivery status.** Once the carrier confirms the message, its status shows on the text so you know it landed.
 

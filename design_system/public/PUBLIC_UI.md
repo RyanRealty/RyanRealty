@@ -223,6 +223,12 @@ navy or cream must be re-checked against this table before it ships.
   series the visitor caused are the product. Atlas and V3Chart are allowed to
   move when the motion *is* the reading. This is how we show we have the data.
   Grow those primitives. Do not add a second chart library.
+- **A listing card's reel (SITE-194, Matt 2026-09-24):** on the listing dial the photograph
+  paints first; after a second and a half on screen the card fades its walkthrough reel in
+  over the photograph (300ms entrance), muted, looping, no player chrome, inside the
+  photograph's own box so nothing moves, and unmounts it on a turn. One reel per page.
+  Reduced motion and Save-Data get a "Play video" control instead of autoplay. Never a
+  3D tour, never a host that would draw its own play button on the card.
 - **Banned:** parallax for its own sake, carousels as a default, entrance animations on
   every section, motion over live numbers while they load (the figure must not
   count up from zero as a trick). `prefers-reduced-motion` gets the same chart

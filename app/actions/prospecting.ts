@@ -345,6 +345,14 @@ export async function sendProspectingIntro(
       return { ok: false, error: `Suppressed for SMS: ${reasons}.`, code: 'suppressed' }
     }
 
+    // 12.6 Quiet hours again at the POST: step 8 ran before the lead upsert,
+    // compose, short-link and claim, so a 7:59pm pass could text after 8pm.
+    // Nothing has gone out yet, so release the claim.
+    if (inSmsQuietHours()) {
+      await releaseProspectSend(kind, id)
+      return { ok: false, error: 'Quiet hours (before 8am / after 8pm Pacific). Try again inside the window.', code: 'quiet-hours' }
+    }
+
     // 13. Send via the A2P messaging service. A failure HERE is before any text
     // left the building, so it is safe to release the claim and let a retry go.
     const sent = await sendSmsViaMessagingService({ to, body })
@@ -624,10 +632,17 @@ export async function sendProspectingEmailIntro(
     // inside the rail (fail-closed), tracking + timeline + attribution are the
     // rail's job (emailKey `cma:<slug>` — the engagement reader's key). A
     // failure here means NO email left the building → release and allow retry.
-    const sent = await sendCmaToLead(clientReady.slug, {
-      subject: args.subjectOverride?.trim() || undefined,
-      bodyText: args.bodyOverride?.trim() || undefined,
-    })
+    // This action already owns the owner's email claim (step 10), so the rail is
+    // told not to claim, stamp, finalize or release that row itself: a second
+    // claim would come back claimed_elsewhere and refuse this very send.
+    const sent = await sendCmaToLead(
+      clientReady.slug,
+      {
+        subject: args.subjectOverride?.trim() || undefined,
+        bodyText: args.bodyOverride?.trim() || undefined,
+      },
+      { callerHoldsProspectClaim: true },
+    )
     if (!sent.ok) {
       await releaseProspectEmailSend(kind, id)
       console.error('[sendProspectingEmailIntro] rail send failed, claim released:', sent.error)

@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { PdfPages } from './pdf-pages'
 import { Button } from '@/components/ui/button'
@@ -9,6 +9,14 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
+import { Textarea } from '@/components/ui/textarea'
+import { Switch } from '@/components/ui/switch'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Lock } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { applyPacketSectionText } from '@/app/actions/tc-envelope-text'
+import { areaSpace, fitTextToBox, layoutAreaText, textSizeForBox, type AreaLayout } from '@/lib/tc/text-areas'
+import { continuationFormFor, continuedMarker, layoutWithMarker } from '@/lib/tc/continuation'
 import {
   saveEnvelopeRecipients,
   saveEnvelopeFields,
@@ -16,6 +24,7 @@ import {
   voidEnvelope,
   setEnvelopeReminders,
   setEnvelopeInviteMessage,
+  setEnvelopeTextCode,
   resendRecipientInvite,
   type EnvelopeDetail,
   type RecipientInput,
@@ -34,12 +43,48 @@ import {
   coerceActionRequired,
   recipientRoleLabel,
   signingGroupLabel,
+  normalizeSignerPhone,
+  namesInSentence,
+  sharedAddressCosigners,
   type ActionRequired,
+  type FieldGroup,
   type SignFieldType,
+  type SignFieldValue,
 } from '@/lib/tc/signing'
 import { SIGNER_COMPLETED_TYPES } from '@/lib/tc/required-fields'
+import {
+  ANNOTATION_TYPES,
+  AUTO_STAMPED_TYPES,
+  FILLABLE_TYPES,
+  SIGNER_ONLY_TYPES,
+  dateValue,
+  groupFromRule,
+  signatureRowSiblings,
+  groupRule,
+  groupRuleText,
+  timeValue,
+  valueText,
+  type GroupRule,
+} from '@/lib/tc/field-rules'
 
-type LocalField = FieldInput & { localId: string }
+type LocalField = FieldInput & { localId: string; fieldId?: string }
+/** "Assign to" value for a field the broker fills: it prints locked, as set. */
+const ME = '__me__'
+type Section = EnvelopeDetail['sections'][number]
+const sectionId = (s: { documentId: string; key: string }) => `${s.documentId}|${s.key}`
+
+/**
+ * Lay a section's text the way the server will (lib/data/tc/continuation.ts):
+ * on its own printed lines, and when it does not fit, ending with the marker
+ * that names where it continues. The addendum number is settled on save.
+ */
+function layoutSection(sec: Section, text: string, pts: { w: number; h: number }, addendumNumber: number): AreaLayout {
+  const { space, size } = areaSpace(sec.lines, pts.w, pts.h)
+  const plain = layoutAreaText(text, space, size)
+  if (!plain.overflow) return plain
+  return layoutWithMarker(text, space, size, continuedMarker(continuationFormFor(sec.library), addendumNumber, '1'))
+}
+
 
 export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
   const router = useRouter()
@@ -53,11 +98,13 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
       name: r.name,
       email: r.email,
       signingOrder: r.signingOrder,
+      phone: r.phone ?? '',
     }))
   )
   const [fields, setFields] = useState<LocalField[]>(
     detail.fields.map((f, i) => ({
       localId: `${f.id}-${i}`,
+      fieldId: f.id,
       documentId: f.documentId,
       recipientId: f.recipientId,
       type: f.type,
@@ -68,18 +115,59 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
       h: f.h,
       required: f.required,
       value: f.value,
+      label: f.label ?? null,
+      group: f.group ?? null,
     }))
   )
   const [activeRecipientId, setActiveRecipientId] = useState<string | null>(
     detail.recipients.find((r) => isSignableRole(r.role, r.actionRequired))?.id ?? null
   )
   const [activeType, setActiveType] = useState<SignFieldType>('signature')
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [requireTextCode, setRequireTextCode] = useState(detail.requireTextCode)
+  const assigningToMe = activeRecipientId === ME
+  const selected = fields.find((f) => f.localId === selectedId) ?? null
   const [status, setStatus] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [remindersEnabled, setRemindersEnabled] = useState(detail.remindersEnabled !== false)
   const [inviteSubject, setInviteSubject] = useState(detail.inviteSubject ?? '')
   const [inviteBody, setInviteBody] = useState(detail.inviteBody ?? '')
   const dragRef = useRef<{ localId: string; offsetX: number; offsetY: number } | null>(null)
+
+  // --- lined sections: one text box each (Matt 2026-09-24) ---
+  const [sectionTexts, setSectionTexts] = useState<Record<string, string>>(() =>
+    Object.fromEntries(detail.sections.map((sec) => [sectionId(sec), sec.text]))
+  )
+  const [dirtySections, setDirtySections] = useState<Set<string>>(() => new Set())
+  const [editingSection, setEditingSection] = useState<string | null>(null)
+  // Page sizes in PDF points, reported by the viewer: text is measured in points.
+  const pagePts = useRef<Map<string, { w: number; h: number }>>(new Map())
+  const ptsOf = (documentId: string, page: number) => pagePts.current.get(`${documentId}:${page}`) ?? { w: 612, h: 792 }
+  const sectionLineIds = useMemo(() => new Set(detail.sections.flatMap((sec) => sec.fieldIds)), [detail.sections])
+  const continuationFor = (documentId: string) => detail.continuations.filter((c) => c.sourceDocumentId === documentId)
+  const nextAddendumGuess = (documentId: string) => continuationFor(documentId)[0]?.addendumNumber ?? 1
+
+  function setSectionText(sec: Section, text: string) {
+    const id = sectionId(sec)
+    setSectionTexts((t) => ({ ...t, [id]: text }))
+    setDirtySections((d) => new Set(d).add(id))
+    const laid = layoutSection(sec, text, ptsOf(sec.documentId, sec.page), nextAddendumGuess(sec.documentId))
+    const order = new Map(sec.fieldIds.map((fid, i) => [fid, i]))
+    setFields((fs) =>
+      fs.map((f) => {
+        const i = f.fieldId ? order.get(f.fieldId) : undefined
+        if (i === undefined) return f
+        const line = laid.lines[i] ?? ''
+        return {
+          ...f,
+          value:
+            line || i === 0
+              ? { kind: 'text' as const, text: line, size: laid.size, ...(i === 0 ? { area: { key: sec.key, text } } : {}) }
+              : null,
+        }
+      })
+    )
+  }
 
   const colorOf = (recipientId: string | null) => {
     if (!recipientId) return '#64748b'
@@ -139,6 +227,7 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
         name: r.name,
         email: r.email,
         signingOrder: r.signingOrder,
+        phone: r.phone ?? '',
       }))
     )
     if (!activeRecipientId) {
@@ -150,13 +239,17 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
   // --- field placement ---
   function placeField(documentId: string, page: number, xFrac: number, yFrac: number) {
     if (readonly || !activeRecipientId) return
+    if (assigningToMe && SIGNER_ONLY_TYPES.has(activeType)) return
     const size = DEFAULT_FIELD_SIZE[activeType]
+    const localId = crypto.randomUUID()
+    // The new field opens its panel, so a value or a rule is set right away.
+    setSelectedId(localId)
     setFields((fs) => [
       ...fs,
       {
-        localId: crypto.randomUUID(),
+        localId,
         documentId,
-        recipientId: activeRecipientId,
+        recipientId: assigningToMe ? null : activeRecipientId,
         type: activeType,
         page,
         x: Math.max(0, Math.min(1 - size.w, xFrac - size.w / 2)),
@@ -170,6 +263,36 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
   }
   function deleteField(localId: string) {
     setFields((fs) => fs.filter((f) => f.localId !== localId))
+    if (selectedId === localId) setSelectedId(null)
+  }
+  function patchField(localId: string, patch: Partial<LocalField>) {
+    setFields((fs) => fs.map((f) => (f.localId === localId ? { ...f, ...patch } : f)))
+  }
+  /** A signature line goes to a signer with its row: the date beside it and the print line beneath. */
+  function assignSignatureLine(localId: string, recipientId: string) {
+    setFields((fs) => {
+      const line = fs.find((f) => f.localId === localId)
+      if (!line) return fs
+      const row = line.type === 'signature' ? signatureRowSiblings(fs.map((f) => ({ ...f, value: f.value ?? null, key: f.localId })), line) : []
+      const byKey = new Map(row.map((r) => [r.key, r.type]))
+      return fs.map((f) => {
+        if (f.localId === localId) return { ...f, recipientId, required: true }
+        const type = byKey.get(f.localId)
+        return type ? { ...f, recipientId, type, required: true, value: null } : f
+      })
+    })
+  }
+  /** One rule for every box in a group. */
+  function setGroupRule(key: string, rule: GroupRule) {
+    const group = groupFromRule(key, rule)
+    setFields((fs) => fs.map((f) => (f.group?.key === key ? { ...f, group } : f)))
+  }
+  const groups: FieldGroup[] = [...new Map(fields.filter((f) => f.group?.key).map((f) => [f.group!.key, f.group!])).values()].sort((a, b) =>
+    a.key.localeCompare(b.key)
+  )
+  function pickAssignee(value: string) {
+    setActiveRecipientId(value)
+    if (value === ME && SIGNER_ONLY_TYPES.has(activeType)) setActiveType('text')
   }
 
   async function saveDraft(): Promise<boolean> {
@@ -177,6 +300,13 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
     if (!opt.ok) {
       setStatus(opt.error ?? 'Could not save reminders')
       return false
+    }
+    if (requireTextCode !== detail.requireTextCode) {
+      const code = await setEnvelopeTextCode(detail.id, requireTextCode)
+      if (!code.ok) {
+        setStatus(code.error ?? 'Could not save the text code setting')
+        return false
+      }
     }
     const msg = await setEnvelopeInviteMessage(detail.id, { subject: inviteSubject, body: inviteBody })
     if (!msg.ok) {
@@ -196,6 +326,7 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
         name: r.name,
         email: r.email,
         signingOrder: r.signingOrder,
+        phone: r.phone ?? '',
       }))
     )
     const fieldPayload: FieldInput[] = fields.map((f) => ({
@@ -209,11 +340,25 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
       h: f.h,
       required: f.required,
       value: f.value ?? null,
+      label: f.label ?? null,
+      group: f.group ?? null,
     }))
     const fRes = await saveEnvelopeFields(detail.id, fieldPayload)
     if (!fRes.ok) {
       setStatus(fRes.error ?? 'Could not save fields')
       return false
+    }
+    if (dirtySections.size) {
+      // The server lays every section out again and builds the continuation
+      // addenda, numbered next on the file, right after their forms.
+      const texts = detail.sections.map((sec) => ({ documentId: sec.documentId, areaKey: sec.key, text: sectionTexts[sectionId(sec)] ?? '' }))
+      const aRes = await applyPacketSectionText(detail.id, texts)
+      if (!aRes.ok) {
+        setStatus(aRes.error ?? 'Could not save the text boxes')
+        return false
+      }
+      setDirtySections(new Set())
+      router.refresh()
     }
     return true
   }
@@ -270,7 +415,9 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
             <p className="mb-2 text-sm font-medium text-foreground">{doc.name}</p>
             <PdfPages
               url={doc.url}
-              overlay={(pageNumber, size) => (
+              overlay={(pageNumber, size) => {
+                pagePts.current.set(`${doc.documentId}:${pageNumber}`, { w: size.ptsW, h: size.ptsH })
+                return (
                 <PageLayer
                   readonly={readonly}
                   toolActive={!!activeRecipientId}
@@ -278,6 +425,7 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
                 >
                   {fields
                     .filter((f) => f.documentId === doc.documentId && f.page === pageNumber)
+                    .filter((f) => !f.fieldId || !sectionLineIds.has(f.fieldId))
                     .map((f) => (
                       <FieldChip
                         key={f.localId}
@@ -285,6 +433,8 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
                         size={size}
                         color={colorOf(f.recipientId)}
                         readonly={readonly}
+                        selected={selectedId === f.localId}
+                        onSelect={() => setSelectedId(f.localId)}
                         clickThrough={
                           (activeType === 'signature' || activeType === 'initials') &&
                           f.type !== 'signature' &&
@@ -297,15 +447,54 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
                         dragRef={dragRef}
                       />
                     ))}
+                  {detail.sections
+                    .filter((sec) => sec.documentId === doc.documentId && sec.page === pageNumber)
+                    .map((sec) => (
+                      <SectionBox
+                        key={sectionId(sec)}
+                        section={sec}
+                        size={size}
+                        lines={sec.fieldIds.map((fid) => {
+                          const v = fields.find((f) => f.fieldId === fid)?.value
+                          return v && v.kind === 'text' ? v.text : ''
+                        })}
+                        typeSize={(() => {
+                          const v = fields.find((f) => f.fieldId === sec.fieldIds[0])?.value
+                          return v && v.kind === 'text' && v.size ? v.size : 9
+                        })()}
+                        active={editingSection === sectionId(sec)}
+                        readonly={readonly}
+                        onOpen={() => setEditingSection(sectionId(sec))}
+                      />
+                    ))}
                 </PageLayer>
-              )}
+                )
+              }}
             />
+            {continuationFor(doc.documentId).length ? (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Continues on {continuationFor(doc.documentId).map((c) => `Addendum No. ${c.addendumNumber}`).join(', ')}, right after this form.
+              </p>
+            ) : null}
           </div>
         ))}
       </div>
 
       {/* control panel */}
       <div className="space-y-4">
+        {detail.sections.length ? (
+          <SectionEditor
+            sections={detail.sections}
+            documents={detail.documents}
+            texts={sectionTexts}
+            editing={editingSection}
+            readonly={readonly}
+            dirty={dirtySections.size > 0}
+            layoutOf={(sec, text) => layoutSection(sec, text, ptsOf(sec.documentId, sec.page), nextAddendumGuess(sec.documentId))}
+            onEdit={setEditingSection}
+            onChange={setSectionText}
+          />
+        ) : null}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center justify-between text-sm">
@@ -356,6 +545,36 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
                   onChange={(e) => updateRecipient(i, { name: e.target.value })} />
                 <Input className="mt-1.5 h-8 text-xs" placeholder="email@example.com" value={r.email} disabled={readonly}
                   onChange={(e) => updateRecipient(i, { email: e.target.value })} />
+                {(() => {
+                  // A couple sharing one inbox: allowed, and each still gets their own email and link.
+                  const same = sharedAddressCosigners(
+                    recipients.map((x, j) => ({ ...x, id: x.id ?? `new-${j}` })),
+                    { id: r.id ?? `new-${i}`, email: r.email },
+                  )
+                  return same.length && isSignableRole(r.role, r.actionRequired) ? (
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      Shares this address with {namesInSentence(same.map((x) => x.name || recipientRoleLabel(x.role)))}. Each gets their own email and link.
+                    </p>
+                  ) : null
+                })()}
+                {requireTextCode && isSignableRole(r.role, r.actionRequired) ? (
+                  <>
+                    <Input
+                      className="mt-1.5 h-8 text-xs"
+                      type="tel"
+                      inputMode="tel"
+                      autoComplete="off"
+                      placeholder="Mobile, for the text code"
+                      aria-label={`Mobile for ${r.name || recipientRoleLabel(r.role)}`}
+                      value={r.phone ?? ''}
+                      disabled={readonly}
+                      onChange={(e) => updateRecipient(i, { phone: e.target.value })}
+                    />
+                    {r.phone && !normalizeSignerPhone(r.phone) ? (
+                      <p className="mt-1 text-[11px] text-foreground">Enter a 10-digit US mobile.</p>
+                    ) : null}
+                  </>
+                ) : null}
                 {isSignableRole(r.role, r.actionRequired) ? (
                   <div className="mt-1.5 flex items-center gap-2">
                     <Label className="text-[11px] text-muted-foreground">{signingGroupLabel(r.signingOrder)}</Label>
@@ -391,11 +610,14 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
             <CardContent className="space-y-3">
               <div>
                 <Label className="text-[11px] text-muted-foreground">Assign to</Label>
-                <Select value={activeRecipientId ?? ''} onValueChange={setActiveRecipientId}>
-                  <SelectTrigger className="mt-1 h-8 text-xs">
+                <Select value={activeRecipientId ?? ''} onValueChange={pickAssignee}>
+                  <SelectTrigger className="mt-1 h-8 text-xs" aria-label="Assign to">
                     <SelectValue placeholder={savedSignable.length ? 'Pick a signer' : 'Save recipients first'} />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value={ME} className="text-xs">
+                      Me (I fill it, it prints locked)
+                    </SelectItem>
                     {savedSignable.map((r) => (
                       <SelectItem key={r.id} value={r.id!} className="text-xs">
                         {r.name || recipientRoleLabel(r.role)}
@@ -407,19 +629,33 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
               <div>
                 <Label className="text-[11px] text-muted-foreground">Field type</Label>
                 <div className="mt-1 grid grid-cols-2 gap-1.5">
-                  {SIGN_FIELD_TYPES.map((t) => (
-                    <button
-                      key={t}
-                      onClick={() => setActiveType(t)}
-                      className={`rounded-md border px-2 py-1.5 text-xs ${activeType === t ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground'}`}
-                    >
-                      {SIGN_FIELD_LABEL[t]}
-                    </button>
-                  ))}
+                  {SIGN_FIELD_TYPES.map((t) => {
+                    const off = assigningToMe && SIGNER_ONLY_TYPES.has(t)
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        disabled={off}
+                        title={off ? 'Only a signer can complete this' : undefined}
+                        onClick={() => setActiveType(t)}
+                        className={cn(
+                          'rounded-md border px-2 py-1.5 text-xs',
+                          activeType === t ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground',
+                          off && 'cursor-not-allowed opacity-40'
+                        )}
+                      >
+                        {SIGN_FIELD_LABEL[t]}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
               <p className="text-[11px] text-muted-foreground">
-                {activeRecipientId ? 'Click on the document to drop a field. Drag to move, hover to delete.' : 'Save recipients, then pick who signs to start placing fields.'}
+                {activeRecipientId
+                  ? assigningToMe
+                    ? 'Click on the document to drop a field you fill. It prints as you set it and no signer can change it, unless you let one.'
+                    : 'Click on the document to drop a field. Click a field to set it up, drag to move.'
+                  : 'Save recipients, then pick who fills it to start placing fields.'}
               </p>
               {detail.formRead && detail.requiredSignersLabel ? (
                 <p className="text-[11px] text-foreground">
@@ -436,6 +672,21 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
               )}
             </CardContent>
           </Card>
+        ) : null}
+
+        {!readonly && selected ? (
+          <FieldPanel
+            key={selected.localId}
+            field={selected}
+            signers={savedSignable.map((r) => ({ id: r.id!, name: r.name || recipientRoleLabel(r.role) }))}
+            groups={groups}
+            ptsOf={ptsOf}
+            onChange={(patch) => patchField(selected.localId, patch)}
+            onAssignSigner={(recipientId) => assignSignatureLine(selected.localId, recipientId)}
+            onGroupRule={setGroupRule}
+            onDelete={() => deleteField(selected.localId)}
+            onClose={() => setSelectedId(null)}
+          />
         ) : null}
 
         <Card>
@@ -465,6 +716,18 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
               />
               <span>Enable automatic reminders on this envelope.</span>
             </label>
+            <div className="flex items-start justify-between gap-3">
+              <Label htmlFor="require-text-code" className="text-xs font-normal leading-snug text-muted-foreground">
+                Text each signer a code before the documents open.
+                {!detail.textCodesAvailable && !requireTextCode ? ' Not set up on this site yet.' : ''}
+              </Label>
+              <Switch
+                id="require-text-code"
+                checked={requireTextCode}
+                disabled={readonly || (!detail.textCodesAvailable && !requireTextCode)}
+                onCheckedChange={setRequireTextCode}
+              />
+            </div>
             {!readonly ? (
               <div className="space-y-2">
                 <Label className="text-[11px] text-muted-foreground">Outgoing email subject</Label>
@@ -535,6 +798,8 @@ function FieldChip({
   size,
   color,
   readonly,
+  selected = false,
+  onSelect,
   clickThrough = false,
   onDelete,
   onMove,
@@ -544,6 +809,8 @@ function FieldChip({
   size: { w: number; h: number }
   color: string
   readonly: boolean
+  selected?: boolean
+  onSelect?: () => void
   clickThrough?: boolean
   onDelete: () => void
   onMove: (xFrac: number, yFrac: number) => void
@@ -562,23 +829,28 @@ function FieldChip({
     boxSizing: 'border-box',
   }
   const shownText =
-    field.value && 'text' in field.value && field.value.text ? field.value.text : ''
+    field.type === 'checkbox'
+      ? field.value?.kind === 'checkbox' && field.value.checked
+        ? '✓'
+        : ''
+      : valueText(field.value)
   const emptyText = field.type === 'text' && !shownText
   const tall = field.h > 0.03
+  const mine = !field.recipientId && FILLABLE_TYPES.has(field.type)
   return (
     <div
       data-field-chip
       style={style}
-      className={`group flex rounded-sm border-2 text-[10px] font-semibold ${
-        emptyText
-          ? 'items-center border-dashed bg-white/15'
-          : tall
-            ? 'items-start bg-white/70'
-            : 'items-center justify-center bg-white/70'
-      }`}
+      className={cn(
+        'group flex rounded-sm border-2 text-[10px] font-semibold',
+        emptyText ? 'items-center border-dashed bg-white/15' : tall ? 'items-start bg-white/70' : 'items-center justify-center bg-white/70',
+        selected && 'ring-2 ring-ring ring-offset-1'
+      )}
+      title={field.label ?? undefined}
       onPointerDown={(e) => {
         if (readonly) return
         e.stopPropagation()
+        onSelect?.()
         const parent = (e.currentTarget.parentElement as HTMLElement).getBoundingClientRect()
         const box = e.currentTarget.getBoundingClientRect()
         dragRef.current = { localId: field.localId, offsetX: e.clientX - box.left, offsetY: e.clientY - box.top }
@@ -604,8 +876,9 @@ function FieldChip({
       <span
         className={`pointer-events-none px-0.5 ${tall ? 'whitespace-pre-wrap break-words' : 'truncate whitespace-nowrap'}`}
       >
-        {emptyText ? '' : shownText || SIGN_FIELD_LABEL[field.type]}
+        {emptyText ? '' : shownText || (field.type === 'checkbox' ? '' : SIGN_FIELD_LABEL[field.type])}
       </span>
+      {mine ? <Lock aria-label="Prints as you set it" className="pointer-events-none absolute bottom-0 right-0 h-2.5 w-2.5 opacity-70" /> : null}
       {!readonly ? (
         <button
           onClick={(e) => {
@@ -620,3 +893,451 @@ function FieldChip({
     </div>
   )
 }
+
+/**
+ * The selected field: who fills it, its value, and the rules a signer meets.
+ * Matt 2026-09-24: a field you fill is locked, with a per-field switch that
+ * lets a signer change it (your value is then where they start).
+ */
+function FieldPanel({
+  field,
+  signers,
+  groups,
+  ptsOf,
+  onChange,
+  onAssignSigner,
+  onGroupRule,
+  onDelete,
+  onClose,
+}: {
+  field: LocalField
+  signers: Array<{ id: string; name: string }>
+  groups: FieldGroup[]
+  ptsOf: (documentId: string, page: number) => { w: number; h: number }
+  onChange: (patch: Partial<LocalField>) => void
+  onAssignSigner: (recipientId: string) => void
+  onGroupRule: (key: string, rule: GroupRule) => void
+  onDelete: () => void
+  onClose: () => void
+}) {
+  const fillable = FILLABLE_TYPES.has(field.type)
+  const signerOnly = SIGNER_ONLY_TYPES.has(field.type)
+  const annotation = ANNOTATION_TYPES.has(field.type)
+  const assigned = Boolean(field.recipientId)
+  const rule = field.group ? groupRule(field.group) : null
+  const groupKeys = groups.map((g) => g.key)
+  const nextGroupKey = (() => {
+    for (let i = 0; i < 26 * 4; i++) {
+      const key = `Group ${String.fromCharCode(65 + (i % 26))}${i >= 26 ? Math.floor(i / 26) + 1 : ''}`
+      if (!groupKeys.includes(key)) return key
+    }
+    return `Group ${groupKeys.length + 1}`
+  })()
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center justify-between text-sm">
+          {SIGN_FIELD_LABEL[field.type]} · page {field.page}
+          <Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={onClose}>
+            Done
+          </Button>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {annotation ? (
+          <p className="text-[11px] text-muted-foreground">A mark on the page. It prints as placed and asks nothing of a signer.</p>
+        ) : null}
+
+        {signerOnly ? (
+          <div className="space-y-1">
+            <Label className="text-[11px] text-muted-foreground">
+              {AUTO_STAMPED_TYPES.has(field.type) ? 'Stamped for' : 'Completed by'}
+            </Label>
+            <Select value={field.recipientId ?? ''} onValueChange={onAssignSigner}>
+              <SelectTrigger className="h-8 text-xs" aria-label="Completed by"><SelectValue placeholder="Pick a signer" /></SelectTrigger>
+              <SelectContent>
+                {signers.map((r) => (
+                  <SelectItem key={r.id} value={r.id} className="text-xs">{r.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-muted-foreground">
+              {AUTO_STAMPED_TYPES.has(field.type)
+                ? 'Filled automatically when they sign, from our clock and their name.'
+                : field.type === 'signature'
+                  ? 'Only the signer can complete this. The date beside the line and the print line beneath go with it.'
+                  : 'Only the signer can complete this.'}
+            </p>
+          </div>
+        ) : null}
+
+        {fillable ? (
+          <>
+            <div className="space-y-1">
+              <Label htmlFor="field-value" className="text-[11px] text-muted-foreground">
+                {assigned ? 'Starting value (the signer can change it)' : 'Your value (prints locked)'}
+              </Label>
+              <FieldValueEditor field={field} pts={ptsOf(field.documentId, field.page)} onChange={(value) => onChange({ value })} />
+            </div>
+
+            <div className="flex items-start justify-between gap-3">
+              <Label htmlFor="field-signer-edits" className="text-xs font-normal leading-snug">
+                Let a signer change it
+              </Label>
+              <Switch
+                id="field-signer-edits"
+                checked={assigned}
+                disabled={!signers.length}
+                onCheckedChange={(on) =>
+                  onChange(on ? { recipientId: field.recipientId ?? signers[0]?.id ?? null } : { recipientId: null, group: null })
+                }
+              />
+            </div>
+            {assigned ? (
+              <Select value={field.recipientId ?? ''} onValueChange={(v) => onChange({ recipientId: v })}>
+                <SelectTrigger className="h-8 text-xs" aria-label="Signer who fills it"><SelectValue placeholder="Pick a signer" /></SelectTrigger>
+                <SelectContent>
+                  {signers.map((r) => (
+                    <SelectItem key={r.id} value={r.id} className="text-xs">{r.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : null}
+          </>
+        ) : null}
+
+        {!annotation && !AUTO_STAMPED_TYPES.has(field.type) ? (
+          <div className="flex items-start justify-between gap-3">
+            <Label htmlFor="field-required" className="text-xs font-normal leading-snug">
+              Required
+              <span className="block text-[11px] text-muted-foreground">
+                {assigned ? 'The signer cannot finish without it.' : 'You fill it before sending.'}
+              </span>
+            </Label>
+            <Switch id="field-required" checked={field.required === true} onCheckedChange={(on) => onChange({ required: on })} />
+          </div>
+        ) : null}
+
+        {assigned && !AUTO_STAMPED_TYPES.has(field.type) ? (
+          <div className="space-y-1">
+            <Label htmlFor="field-label" className="text-[11px] text-muted-foreground">What the signer sees</Label>
+            <Input
+              id="field-label"
+              className="h-8 text-xs"
+              maxLength={120}
+              placeholder={field.type === 'date' ? 'Possession date' : field.type === 'checkbox' ? 'Buyer waives inspection' : 'Describe what to enter'}
+              value={field.label ?? ''}
+              onChange={(e) => onChange({ label: e.target.value })}
+            />
+          </div>
+        ) : null}
+
+        {field.type === 'checkbox' && assigned ? (
+          <div className="space-y-1.5">
+            <Label className="text-[11px] text-muted-foreground">Linked boxes</Label>
+            <Select
+              value={field.group?.key ?? 'none'}
+              onValueChange={(v) => {
+                if (v === 'none') onChange({ group: null })
+                else if (v === 'new') onChange({ group: groupFromRule(nextGroupKey, { kind: 'exactly', n: 1 }) })
+                else {
+                  // Joining a group takes that group's rule.
+                  const other = groups.find((g) => g.key === v)
+                  if (other) onChange({ group: other })
+                }
+              }}
+            >
+              <SelectTrigger className="h-8 text-xs" aria-label="Linked boxes"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none" className="text-xs">Not linked</SelectItem>
+                {groupKeys.map((k) => (
+                  <SelectItem key={k} value={k} className="text-xs">{k}</SelectItem>
+                ))}
+                <SelectItem value="new" className="text-xs">New group ({nextGroupKey})</SelectItem>
+              </SelectContent>
+            </Select>
+            {field.group && rule ? (
+              <div className="flex items-center gap-2">
+                <Select
+                  value={rule.kind}
+                  onValueChange={(k) => onGroupRule(field.group!.key, { kind: k as GroupRule['kind'], n: rule.n })}
+                >
+                  <SelectTrigger className="h-8 flex-1 text-xs" aria-label="Group rule"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="exactly" className="text-xs">Select exactly</SelectItem>
+                    <SelectItem value="at_least" className="text-xs">Select at least</SelectItem>
+                    <SelectItem value="at_most" className="text-xs">Select up to</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input
+                  type="number"
+                  min={rule.kind === 'at_least' ? 0 : 1}
+                  max={20}
+                  className="h-8 w-16 text-xs"
+                  aria-label="How many boxes"
+                  value={rule.n}
+                  onChange={(e) => onGroupRule(field.group!.key, { kind: rule.kind, n: parseInt(e.target.value || '1', 10) })}
+                />
+              </div>
+            ) : null}
+            {field.group ? (
+              <p className="text-[11px] text-muted-foreground">
+                The signer sees &ldquo;{groupRuleText(field.group)}&rdquo;. Link every box that answers this question.
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
+        <Button type="button" variant="outline" size="sm" className="w-full" onClick={onDelete}>
+          Remove field
+        </Button>
+      </CardContent>
+    </Card>
+  )
+}
+
+/** The broker's value for a fillable field, with the same pickers a signer gets. */
+function FieldValueEditor({ field, pts, onChange }: { field: LocalField; pts: { w: number; h: number }; onChange: (value: SignFieldValue | null) => void }) {
+  const v = field.value ?? null
+  if (field.type === 'checkbox') {
+    return (
+      <label className="flex items-center gap-2 text-xs">
+        <Checkbox
+          id="field-value"
+          checked={v?.kind === 'checkbox' && v.checked}
+          onCheckedChange={(on) => onChange(on === true ? { kind: 'checkbox', checked: true } : null)}
+        />
+        Checked
+      </label>
+    )
+  }
+  if (field.type === 'date') {
+    return (
+      <Input
+        id="field-value"
+        type="date"
+        className="h-8 text-xs"
+        value={v?.kind === 'date' ? v.iso : ''}
+        onChange={(e) => onChange(e.target.value ? dateValue(e.target.value) : null)}
+      />
+    )
+  }
+  if (field.type === 'time') {
+    return (
+      <Input
+        id="field-value"
+        type="time"
+        className="h-8 text-xs"
+        value={v?.kind === 'time' ? v.hhmm : ''}
+        onChange={(e) => onChange(e.target.value ? timeValue(e.target.value) : null)}
+      />
+    )
+  }
+  const text = v?.kind === 'text' ? v.text : ''
+  // As the sealer prints it: the same fit (lib/tc/text-areas.ts fitTextToBox).
+  const fit = text.trim() ? fitTextToBox(text, field.w * pts.w, field.h * pts.h) : null
+  return (
+    <>
+      <Textarea
+        id="field-value"
+        rows={2}
+        className="text-xs"
+        maxLength={5000}
+        value={text}
+        onChange={(e) => onChange(e.target.value ? { kind: 'text', text: e.target.value } : null)}
+      />
+      {fit ? (
+        <p className={cn('text-[11px]', fit.fits ? 'text-muted-foreground' : 'text-destructive')}>
+          {!fit.fits
+            ? 'Too long for this box: it would run past it on the signed page. Shorten it or make the box bigger.'
+            : fit.size < textSizeForBox(field.h * pts.h)
+              ? `Fits in ${fit.size} pt type.`
+              : 'Fits the box.'}
+        </p>
+      ) : null}
+    </>
+  )
+}
+
+/**
+ * One lined section on the page: its laid-out text sits on the printed lines,
+ * exactly as the signed PDF will draw it; a click opens it for typing.
+ */
+function SectionBox({
+  section,
+  size,
+  lines,
+  typeSize,
+  active,
+  readonly,
+  onOpen,
+}: {
+  section: Section
+  size: { w: number; h: number; ptsW: number; ptsH: number }
+  lines: string[]
+  typeSize: number
+  active: boolean
+  readonly: boolean
+  onOpen: () => void
+}) {
+  const top = Math.min(...section.lines.map((l) => l.y))
+  const bottom = Math.max(...section.lines.map((l) => l.y + l.h))
+  const left = Math.min(...section.lines.map((l) => l.x))
+  const right = Math.max(...section.lines.map((l) => l.x + l.w))
+  const px = size.w / (size.ptsW || 612)
+  return (
+    <div
+      data-field-chip
+      role="button"
+      tabIndex={readonly ? -1 : 0}
+      aria-label={`Text box: ${sectionTitle(section)}, page ${section.page}`}
+      onClick={(e) => {
+        e.stopPropagation()
+        if (!readonly) onOpen()
+      }}
+      onKeyDown={(e) => {
+        if (!readonly && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault()
+          onOpen()
+        }
+      }}
+      className={cn(
+        'absolute rounded-sm border border-dashed',
+        active ? 'border-primary bg-primary/5' : 'border-primary/40 hover:border-primary hover:bg-primary/5',
+        readonly ? 'cursor-default' : 'cursor-text'
+      )}
+      style={{ left: left * size.w - 2, top: top * size.h - 2, width: (right - left) * size.w + 4, height: (bottom - top) * size.h + 4 }}
+    >
+      {section.lines.map((l, i) =>
+        lines[i] ? (
+          <span
+            key={i}
+            className="pointer-events-none absolute whitespace-nowrap text-foreground"
+            style={{
+              left: (l.x - left) * size.w + 2 + 2 * px,
+              top: (l.y - top) * size.h + 2,
+              height: l.h * size.h,
+              lineHeight: `${l.h * size.h}px`,
+              fontSize: typeSize * px,
+              fontFamily: 'Helvetica, Arial, sans-serif',
+            }}
+          >
+            {lines[i]}
+          </span>
+        ) : null
+      )}
+      {!lines.some(Boolean) && !readonly ? (
+        // On the first line, where typing starts, never over the printed label beside it.
+        <span
+          className="pointer-events-none absolute text-[10px] font-medium text-primary"
+          style={{ left: (section.lines[0].x - left) * size.w + 4, top: (section.lines[0].y - top) * size.h + 2, lineHeight: `${section.lines[0].h * size.h}px` }}
+        >
+          Type here
+        </span>
+      ) : null}
+    </div>
+  )
+}
+
+/** A section as the form prints it: "29. Additional Provisions". */
+function sectionTitle(sec: Section): string {
+  return sec.title ? (sec.number ? `${sec.number}. ${sec.title}` : sec.title) : 'Text box'
+}
+
+/** The text of the section being edited, and how it fits. */
+function SectionEditor({
+  sections,
+  documents,
+  texts,
+  editing,
+  readonly,
+  dirty,
+  layoutOf,
+  onEdit,
+  onChange,
+}: {
+  sections: Section[]
+  documents: EnvelopeDetail['documents']
+  texts: Record<string, string>
+  editing: string | null
+  readonly: boolean
+  dirty: boolean
+  layoutOf: (sec: Section, text: string) => AreaLayout
+  onEdit: (id: string | null) => void
+  onChange: (sec: Section, text: string) => void
+}) {
+  const current = sections.find((sec) => sectionId(sec) === editing) ?? null
+  const docName = (id: string) => documents.find((d) => d.documentId === id)?.name.replace(/\.pdf$/i, '') ?? 'Form'
+  const labelOf = (sec: Section) => {
+    const lines = sec.printedLines ? (sec.printedLines.includes('-') ? `lines ${sec.printedLines}` : `line ${sec.printedLines}`) : null
+    return `${sectionTitle(sec)} · ${[docName(sec.documentId), `page ${sec.page}`, lines].filter(Boolean).join(', ')}`
+  }
+  const text = current ? texts[sectionId(current)] ?? '' : ''
+  const laid = current ? layoutOf(current, text) : null
+  const used = laid ? laid.lines.filter(Boolean).length : 0
+  const form = current ? continuationFormFor(current.library) : null
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center justify-between text-sm">
+          Text boxes
+          <Badge variant="outline">{sections.length}</Badge>
+        </CardTitle>
+        <p className="text-[11px] font-normal text-muted-foreground">
+          Each lined section is one box. Text fills the printed lines; what does not fit continues on an addendum placed right after the form.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {current ? (
+          <div className="space-y-2">
+            <Label htmlFor="section-text" className="text-xs">
+              {labelOf(current)}
+            </Label>
+            <Textarea
+              id="section-text"
+              value={text}
+              rows={8}
+              disabled={readonly}
+              onChange={(e) => onChange(current, e.target.value)}
+              placeholder="Type or paste the text for this section."
+            />
+            <p className={cn('text-xs', laid?.overflow ? 'text-foreground' : 'text-muted-foreground')}>
+              {!text.trim()
+                ? `${current.lines.length} printed lines.`
+                : laid?.overflow
+                  ? `Fills all ${current.lines.length} lines. The rest continues on ${form?.title === 'General Addendum' ? 'a 2.2 General Addendum' : 'an OREF 002 Addendum'} right after this form, numbered next on the file when you save.`
+                  : `Fits on the form: ${used} of ${current.lines.length} lines.`}
+            </p>
+            <div className="flex items-center justify-between gap-2">
+              <Button size="sm" variant="outline" onClick={() => onEdit(null)}>
+                Done
+              </Button>
+              {dirty ? <span className="text-[11px] text-muted-foreground">Saved with the draft.</span> : null}
+            </div>
+          </div>
+        ) : (
+          <ul className="space-y-1">
+            {sections.map((sec) => {
+              const t = texts[sectionId(sec)] ?? ''
+              return (
+                <li key={sectionId(sec)}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-auto w-full flex-col items-start gap-0 whitespace-normal px-2 py-1.5 text-left text-xs font-normal"
+                    onClick={() => onEdit(sectionId(sec))}
+                  >
+                    <span className="block font-medium text-foreground">{labelOf(sec)}</span>
+                    <span className="block w-full truncate text-muted-foreground">{t.trim() ? t : 'Empty'}</span>
+                  </Button>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+

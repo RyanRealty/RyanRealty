@@ -9,7 +9,9 @@ describe('listing remainder composition', () => {
   it('does not start the listing hero on a 320 Spark thumb', () => {
     expect(HERO).toContain('preferListingMosaicPhotoUrl')
     expect(HERO).toMatch(/const live = preferListingMosaicPhotoUrl\(src\)/)
-    expect(HERO).toMatch(/<img src=\{live\}/)
+    // The still now carries a ref and an onLoad (it reports its shape to the
+    // phone frame, 2026-09-25), so src is no longer the first attribute.
+    expect(HERO).toMatch(/<img\s+ref=\{imgRef\}\s+src=\{live\}/)
     expect(HERO).not.toMatch(/listingRowPhotoSrc\(src, LISTING_FIELD_LEAD_PHOTO_SIZE\)/)
     expect(HERO).not.toContain('listing-strip__toggle')
     expect(HERO).not.toContain('stripOpen')
@@ -18,6 +20,9 @@ describe('listing remainder composition', () => {
     const CSS = readFileSync(resolve('components/site/listing-detail/listing-detail.css'), 'utf8')
     expect(CSS).toMatch(/\.listing-mosaic__slide img\s*\{[\s\S]*?object-fit:\s*contain/)
     expect(CSS).not.toMatch(/\.listing-mosaic__slide img,\s*\n\.listing-mosaic__slide video[\s\S]{0,120}object-fit:\s*cover/)
+    // Below 64rem the frame is the still's own shape, so the still covers it
+    // (Matt 2026-09-25); the wide well keeps contain above.
+    expect(CSS).toMatch(/@media \(max-width: 63\.99rem\)\s*\{\s*\.listing-mosaic__slide img\s*\{\s*object-fit:\s*cover/)
   })
 
   it('locks Save and Share on the listing page so they cannot silently vanish', () => {

@@ -70,6 +70,58 @@ const REPO_DUMP_TRACE_EXCLUDES = [
   './.artifacts/**',
 ] as const
 
+// The PDF render stack. Both packages are serverExternalPackages, so a
+// function loads them from node_modules at runtime and they MUST be in its
+// file trace. lib/cma/send.ts imports the renderer before the email is built,
+// so a CMA send from a function without them dies with "Failed to load
+// external module puppeteer-core-...: ERR_MODULE_NOT_FOUND" (every CMA send in
+// prod, 2026-09-16 to 2026-09-28, after they were put on the global '*'
+// exclude list). NEVER put these on outputFileTracingExcludes['*'].
+// ci:pdf-trace-guard enforces that.
+const PDF_RENDER_TRACE_INCLUDES = [
+  './node_modules/puppeteer-core/**',
+  './node_modules/@sparticuz/chromium-min/**',
+] as const
+
+// Every page or route whose import graph reaches sendCmaToLead or
+// sendProspectingEmailIntro, plus the PDF API routes. Each gets
+// PDF_RENDER_TRACE_INCLUDES on top of its natural trace.
+//
+// Key format matters under Turbopack (the production bundler). It matches
+// each key as a glob against "app" + the entry's original name, for example
+// "app/admin/(protected)/cmas/[slug]/page". A bare [slug] is a one-character
+// glob class and matches nothing, so dynamic segments are escaped: \\[slug\\].
+// ci:pdf-trace-guard walks the import graph and fails if a send-reaching
+// entry is missing here or a key would not match.
+//
+// Not listed on purpose: app/admin/(protected)/bpo/page. It reaches
+// sendCmaToLead through app/actions/send-deliverable.ts, but its lambda drops
+// the PDF stack via BPO_LAMBDA_TRACE_EXCLUDES (size cap). The guard carries
+// that as a known exception.
+const PDF_SEND_TRACE_ROUTES = [
+  'app/admin/(protected)/cmas/\\[slug\\]/page',
+  'app/admin/(protected)/cmas/page',
+  'app/admin/(protected)/cmas/new/page',
+  'app/admin/(protected)/people/\\[id\\]/page',
+  'app/admin/(protected)/people/\\[id\\]/tools/page',
+  'app/admin/(protected)/prospecting/page',
+  'app/admin/(protected)/prospecting/\\[kind\\]/\\[id\\]/page',
+  'app/api/cron/prospecting-first-touch-drip/route',
+  'app/api/cron/cma-build-worker/route',
+  'app/api/pdf/cma/route',
+  'app/api/cma/\\[slug\\]/pdf/route',
+  'app/api/cma/\\[slug\\]/gmail-draft/route',
+  'app/api/cma/\\[slug\\]/finalize-deliver/route',
+] as const
+
+function withPdfRenderIncludes(includes: Record<string, string[]>): Record<string, string[]> {
+  const out: Record<string, string[]> = { ...includes }
+  for (const key of PDF_SEND_TRACE_ROUTES) {
+    out[key] = [...new Set([...(out[key] ?? []), ...PDF_RENDER_TRACE_INCLUDES])]
+  }
+  return out
+}
+
 // PWA: Serwist requires webpack. Next 16 defaults to Turbopack; use `next build --webpack` to enable SW.
 // Manifest + offline page + InstallPrompt work without the service worker.
 const nextConfig: NextConfig = {
@@ -106,8 +158,9 @@ const nextConfig: NextConfig = {
     // external it is required from node_modules at runtime, where the right
     // platform build actually exists.
     '@ffmpeg-installer/ffmpeg',
-    // PDF render stack — must stay off admin page lambdas. Routes that need
-    // Chromium (CMA/BPO PDF APIs) load these at runtime via dynamic import.
+    // PDF render stack. Loaded at runtime via dynamic import, so every
+    // function that can render or send a CMA must trace them in. See
+    // PDF_RENDER_TRACE_INCLUDES and ci:pdf-trace-guard.
     'puppeteer-core',
     '@sparticuz/chromium-min',
   ],
@@ -221,6 +274,21 @@ const nextConfig: NextConfig = {
           //
           // *.ingest.us.sentry.io: browser error reports (lib/observability/client-errors.ts).
           { key: 'Content-Security-Policy', value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://*.googletagmanager.com https://www.googletagmanager.com https://*.google-analytics.com https://www.google-analytics.com https://www.google.com https://maps.googleapis.com https://maps.gstatic.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.adtrafficquality.google https://connect.facebook.net; style-src 'self' 'unsafe-inline' https://accounts.google.com https://fonts.googleapis.com; img-src 'self' data: blob: https:; media-src 'self' blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.ingest.us.sentry.io https://tiles.openfreemap.org https://elevation-tiles-prod.s3.amazonaws.com https://accounts.google.com https://*.supabase.co https://*.google-analytics.com https://www.google-analytics.com https://*.analytics.google.com https://www.google.com https://www.googletagmanager.com https://*.doubleclick.net https://*.adtrafficquality.google https://api.elevenlabs.io https://maps.googleapis.com https://maps.gstatic.com https://*.googleapis.com https://*.gstatic.com data: blob: https://pagead2.googlesyndication.com https://*.googlesyndication.com https://connect.facebook.net https://www.facebook.com https://*.facebook.com https://analytics.google.com; worker-src 'self' blob:; frame-src 'self' https://dwvlophlbvvygjfxcrhm.supabase.co https://accounts.google.com https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://*.aryeo.com https://*.matterport.com https://*.zillow.com https://drive.google.com https://*.cloudflarestream.com https://*.videodelivery.net https://googleads.g.doubleclick.net https://*.doubleclick.net https://www.google.com https://*.adtrafficquality.google;" },
+        ],
+      },
+      // A page whose address carries a secret (lib/analytics/private-paths.ts):
+      // no referrer ever carries its address anywhere, and the signing page's
+      // own policy admits no third-party origin at all, so a tag added by
+      // mistake is blocked by the browser, not just left out by the layout.
+      // Supabase serves the documents; Sentry takes scrubbed error reports.
+      ...['/sign/:path*', '/cma-drafts/:path*', '/alerts/unsubscribe', '/newsletter/unsubscribe'].map((source) => ({
+        source,
+        headers: [{ key: 'Referrer-Policy', value: 'no-referrer' }],
+      })),
+      {
+        source: '/sign/:path*',
+        headers: [
+          { key: 'Content-Security-Policy', value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://*.ingest.us.sentry.io data: blob:; worker-src 'self' blob:; frame-src 'self' https://*.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';" },
         ],
       },
       // CMA documents are embedded in a same-origin iframe on the admin review
@@ -505,7 +573,7 @@ const nextConfig: NextConfig = {
   // pdf.mjs (`webpackIgnore: true`) so NFT never sees it. Without this
   // include, assertPdfPageSafety dies on Vercel after the PDF has already
   // rendered ("Cannot find module .../pdf.worker.mjs").
-  outputFileTracingIncludes: {
+  outputFileTracingIncludes: withPdfRenderIncludes({
     // The living map's street tier: 877 tiles read from disk by
     // lib/geo/basemap-streets.ts. Traced for every route that draws a frame a
     // reader can walk; without this the tiles are absent at runtime and the
@@ -592,7 +660,7 @@ const nextConfig: NextConfig = {
     'app/api/cron/crm-gmail-sync/route': [
       './node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs',
     ],
-  },
+  }),
   // Keep media dumps + browser tooling out of every serverless function.
   // Found 2026-09-16: admin/analytics/action-required traced at 805.9mb
   // (limit 250mb) after the dangling public/proof symlink was removed and
@@ -614,8 +682,8 @@ const nextConfig: NextConfig = {
       './node_modules/playwright/**',
       './node_modules/playwright-core/**',
       './node_modules/@ffmpeg-installer/**',
-      './node_modules/puppeteer-core/**',
-      './node_modules/@sparticuz/chromium-min/**',
+      // puppeteer-core and @sparticuz/chromium-min must NOT be here. See
+      // PDF_RENDER_TRACE_INCLUDES above and ci:pdf-trace-guard.
       ...REPO_DUMP_TRACE_EXCLUDES,
     ],
     // Found 2026-09-16: admin/bpo/[slug] traced at 366.95mb (limit 250mb) after

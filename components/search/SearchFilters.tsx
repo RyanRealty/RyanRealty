@@ -57,7 +57,7 @@ import {
 } from '@/components/site/v3'
 import { REPORT_CITY_LABELS } from '@/lib/data/geo/report-cities'
 import { BEND_NEIGHBORHOOD_DISTRICTS } from '@/lib/data/geo/bend-neighborhood-districts'
-import { getAllResortCommunities } from '@/lib/data/communities/registry'
+import { getAllResortCommunitiesLite } from '@/lib/communities/registry-lite'
 import { getSchoolDistrictOptions } from '@/lib/data/schools/getSchools'
 import { SUBDIVISION_ALIASES } from '@/lib/subdivision-aliases'
 import { normalizeSearchKey } from '@/lib/search/neighborhood-match'
@@ -107,7 +107,7 @@ export type SearchFiltersInitial = {
 // ---------------------------------------------------------------------------
 
 
-const PLACE_COMMUNITY_OPTIONS = getAllResortCommunities()
+const PLACE_COMMUNITY_OPTIONS = getAllResortCommunitiesLite()
   .filter((c) => c.is_resort === true)
   .map((c) => ({ label: c.label, city: c.city, slug: c.slug }))
 

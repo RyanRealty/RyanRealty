@@ -12,7 +12,7 @@
  * with this one about which row is a hit or where it points.
  */
 
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { resolveCanonicalListingKey } from './resolveCanonicalListingKey'

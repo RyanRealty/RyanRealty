@@ -53,6 +53,33 @@ function padSales(seed: CmaAdjustedComp, n = 5): CmaAdjustedComp[] {
 }
 
 describe('renderCompMatrixHtml', () => {
+  it('ends the subject banner on the last ask, not the cycle step before it', () => {
+    const sub = {
+      ...subject,
+      streetAddress: '12 Cedar Post',
+      lastListPrice: 745_000,
+      lastListDate: '2026-07-01',
+      standardStatus: 'Expired',
+    } as CmaSubject
+    const html = renderCompMatrixHtml(sub, padSales(comp), '', null, undefined, undefined, {
+      finalCycle: {
+        listDate: '2026-02-01',
+        initialAsk: 775_000,
+        cuts: [{ date: '2026-04-01', ask: 760_000 }],
+        cutsDated: true,
+        finalAsk: 760_000,
+        offMarketDate: '2026-08-01',
+        status: 'Expired',
+        days: 180,
+        source: { table: 'test', filter: 'test', fetchedAt: '2026-08-01', query: 'test' },
+      },
+    })
+    expect(html).toContain('listed $745,000')
+    expect(html).not.toContain('listed $760,000')
+    expect(html).toContain('$775K')
+    expect(html).toContain('$745K')
+  })
+
   it('prints your home first, then one column per sale, with the blueprint rows', () => {
     const html = renderCompMatrixHtml(subject, padSales(comp))
     expect(html).toContain('The sales that set this price')
@@ -107,7 +134,10 @@ describe('renderCompMatrixHtml', () => {
     // the whole outcome sentence stays in the cell.
     expect(html).toContain('title="sold $495K · offer in 8 days"')
     expect(html).toContain('>sold $495K</span>')
-    expect(html).toContain('>offer in 8 days</span>')
+    // The day count is glued to its unit: a tail line may wrap under a wide
+    // font, and it must never leave "8" at the end of one line and "days"
+    // on the next.
+    expect(html).toContain('>offer in 8&nbsp;days</span>')
     expect(html).toContain('class="arc-asks">$499K</span>')
     expect(html).toContain('Jun 25, 2026')
     expect(html).not.toContain('Adjusted to subject')

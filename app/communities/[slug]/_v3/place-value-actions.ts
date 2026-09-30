@@ -39,6 +39,7 @@ import type {
   PlaceValueRequestInput,
   PlaceValueRequestResult,
 } from '@/lib/site/place-value'
+import { communityPath } from '@/lib/communities/community-public-pair'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -221,7 +222,7 @@ export async function requestPlaceValuation(input: PlaceValueRequestInput): Prom
 
   const attributed = await readAttributedAgentServer().catch(() => null)
   const brokerSlug = attributed?.broker ?? 'matt'
-  const pageUrl = `${SITE_ORIGIN}/communities/${place.slug}`
+  const pageUrl = `${SITE_ORIGIN}${communityPath(place.slug)}`
   const tags = ['audience:seller', 'source:place-page', `place:${place.slug}`, `broker:${brokerSlug}`]
 
   let personId: number | null = null
@@ -273,7 +274,7 @@ export async function requestPlaceValuation(input: PlaceValueRequestInput): Prom
       assignedBroker: brokerSlug,
       originNote: {
         title: 'Place page valuation request',
-        body: `Typed ${address} on /communities/${place.slug} and asked for the written valuation. Saw: ${answer?.verdict?.label ?? 'no verdict'}, ${compCount ?? 'unmatched'} comparable sales.`,
+        body: `Typed ${address} on ${communityPath(place.slug)} and asked for the written valuation. Saw: ${answer?.verdict?.label ?? 'no verdict'}, ${compCount ?? 'unmatched'} comparable sales.`,
       },
     }).catch((e: unknown) => console.warn('[place-value] enrich failed:', e))
     const { autoEnrollByPersonId } = await import('@/lib/crm/enroll')

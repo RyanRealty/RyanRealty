@@ -1,4 +1,5 @@
-import resortCommunities from '@/data/resort-communities.json'
+import { communityPath } from '@/lib/communities/community-public-pair'
+import { getAllResortCommunitiesLite } from '@/lib/communities/registry-lite'
 
 /**
  * Canonical neighborhood-area helpers — shared by the saved-search filter
@@ -36,13 +37,8 @@ export const BEND_DISTRICTS: ReadonlyArray<{ slug: string; label: string }> = [
   { slug: 'bend-summit-west', label: 'Summit West' },
 ] as const
 
-type RegistryCommunity = { slug?: unknown; label?: unknown }
-
 function registryLabel(slug: string): string | null {
-  const communities = Array.isArray((resortCommunities as { communities?: unknown }).communities)
-    ? ((resortCommunities as { communities: RegistryCommunity[] }).communities)
-    : []
-  const match = communities.find((c) => c.slug === slug)
+  const match = getAllResortCommunitiesLite().find((c) => c.slug === slug)
   return match && typeof match.label === 'string' ? match.label : null
 }
 
@@ -68,5 +64,5 @@ export function labelForNeighborhoodSlug(slug: string): string {
 export function hrefForNeighborhoodSlug(slug: string): string {
   const trimmed = slug.trim()
   if (trimmed.startsWith('bend-')) return `/cities/bend/${trimmed.slice('bend-'.length)}`
-  return `/communities/${trimmed}`
+  return communityPath(trimmed)
 }

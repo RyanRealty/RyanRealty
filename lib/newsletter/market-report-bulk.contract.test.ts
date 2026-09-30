@@ -29,6 +29,8 @@ import type { MarketReportAreaBlock } from '@/lib/data/crm/getMarketReportData'
 const BEFORE_WINDOW = new Date('2026-07-22T12:00:00.000Z')
 // 18:00 UTC is 11:00 Pacific — inside the window.
 const IN_WINDOW = new Date('2026-07-22T18:00:00.000Z')
+// 04:00 UTC Thursday is 21:00 Pacific Wednesday — after the 20:00 close.
+const AFTER_WINDOW = new Date('2026-07-23T04:00:00.000Z')
 
 function block(slug: string, over: Partial<MarketReportAreaBlock> = {}): MarketReportAreaBlock {
   return {
@@ -119,6 +121,21 @@ describe('audience descriptor (pure)', () => {
     const next = nextEmailSendWindow(BEFORE_WINDOW)
     expect(next.getTime()).toBeGreaterThan(BEFORE_WINDOW.getTime())
     expect(outsideEmailSendWindow(next)).toBe(false)
+  })
+
+  it('an evening send reopens the NEXT morning, not the one after', () => {
+    // 21:00 PDT is already 04:00Z the next UTC day, so 16:05Z that day (09:05 PDT) is next.
+    expect(outsideEmailSendWindow(AFTER_WINDOW)).toBe(true)
+    expect(nextEmailSendWindow(AFTER_WINDOW).toISOString()).toBe('2026-07-23T16:05:00.000Z')
+    // 23:00 PDT Wednesday → 09:05 PDT Thursday
+    expect(nextEmailSendWindow(new Date('2026-07-23T06:00:00.000Z')).toISOString()).toBe('2026-07-23T16:05:00.000Z')
+    // 20:00 PST in winter → 08:05 PST the next morning
+    expect(nextEmailSendWindow(new Date('2026-12-11T04:00:00.000Z')).toISOString()).toBe('2026-12-11T16:05:00.000Z')
+  })
+
+  it('a pre-dawn send reopens the same morning', () => {
+    // 05:00 PDT → 09:05 PDT the same day
+    expect(nextEmailSendWindow(BEFORE_WINDOW).toISOString()).toBe('2026-07-22T16:05:00.000Z')
   })
 })
 

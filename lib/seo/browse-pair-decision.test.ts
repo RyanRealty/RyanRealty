@@ -136,6 +136,50 @@ describe('decideBrowsePair — EXP-4 / SEO-6: one canonical per place', () => {
     expect(d.emit).toBe(false)
     expect(d.publicName).toBe('Tetherow')
   })
+
+  it('SITE-202: an MLS name that IS the city canonicalizes to the plain city search and is never emitted', () => {
+    const cityPlat = { slug: 'sisters', label: 'Sisters' }
+    const d = decideBrowsePair(
+      facts({
+        citySlug: 'sisters',
+        areaSlug: 'sisters',
+        inventory: { mlsName: 'Sisters', closedLifetime: 400, activeNow: 9 },
+        cityPlat,
+        platIndexable: true,
+      }),
+    )
+    expect(d.kind).toBe('city-twin')
+    expect(d.canonicalPath).toBe('/homes-for-sale/sisters')
+    expect(d.index).toBe(true)
+    expect(d.emit).toBe(false)
+    expect(d.filterName).toBe('Sisters')
+  })
+
+  it('SITE-202: a city slug with no MLS name behind it stays a refusal, not a city twin', () => {
+    const d = decideBrowsePair(facts({ citySlug: 'bend', areaSlug: 'bend', inventory: null, activeName: null }))
+    expect(d.kind).toBe('unresolved')
+  })
+
+  it('SITE-202: a self-city community keeps its community canonical ahead of the city twin', () => {
+    const d = decideBrowsePair(
+      facts({
+        citySlug: 'sunriver',
+        areaSlug: 'sunriver',
+        inventory: { mlsName: 'Sunriver', closedLifetime: 900, activeNow: 30 },
+        community: { publicSlug: 'sunriver', label: 'Sunriver' },
+      }),
+    )
+    expect(d.kind).toBe('community-twin')
+    expect(d.canonicalPath).toBe('/communities/sunriver')
+  })
+
+  it('SITE-202: a name that only starts with the city (culver-heights) is not a city twin', () => {
+    const d = decideBrowsePair(
+      facts({ citySlug: 'culver', areaSlug: 'culver-heights', inventory: { mlsName: 'Culver Heights', closedLifetime: 40, activeNow: 0 } }),
+    )
+    expect(d.kind).toBe('sold-history')
+    expect(d.emit).toBe(true)
+  })
 })
 
 describe('decideBrowsePair — EXP-2: only real content is indexed, decided on lifetime depth', () => {

@@ -37,3 +37,11 @@
     }
   }
 }
+
+/* SITE-201: the related-search doors below the map are tap targets. The
+   Ledger register's row minimum measured 32px here (ci:tap-targets, 390 and
+   1440); 2.75rem is the 44px WCAG 2.5.5 box. */
+#region-search-depth .v3-ledger__row,
+#city-search-depth .v3-ledger__row {
+  min-height: 2.75rem;
+}

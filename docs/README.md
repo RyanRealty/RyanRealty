@@ -68,8 +68,8 @@ Last curated: 2026-04-21 (governance purge ch.3). Obsolete/snapshot docs moved t
 - `CONTENT_ENGINE_TRIGGER_MAP.md` — MLS event → content type → platform map
 
 ### Transaction coordination (SkySlope / Oregon)
-- `skyslope-forms-principal-brief.docx` — regulatory principal broker brief
-- `skyslope-forms-transaction-workbook.xlsx` — transaction workbook
+- `npm run skyslope:forms-brief` — generates the regulatory principal broker brief (`docs/skyslope-forms-principal-brief.docx`, gitignored, not a checked-in file)
+- `npm run skyslope:forms-workbook` — generates the transaction workbook (`docs/skyslope-forms-transaction-workbook.xlsx`, gitignored, not a checked-in file)
 - `skyslope-pdf-ai-research.md` — PDF processing research
 - `prompts/skyslope-forms-pdf-and-brief-comprehensive-handoff.md` — active agent handoff prompt
 

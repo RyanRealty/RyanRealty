@@ -4,7 +4,10 @@ import {
   CRM_OUTBOUND_UTM_MEDIUM,
   CRM_OUTBOUND_UTM_SOURCE,
   agentUtmTag,
+  appendQueryParam,
   brokerSlugFromAgentUtm,
+  hasQueryParam,
+  queryParamValue,
   resolveVisitBrokerSlug,
   stampCrmOutboundUtms,
   visitBrokerGa4Fields,
@@ -64,6 +67,24 @@ describe('CRM outbound UTMs (attributeSiteLinks / attributeOutbound)', () => {
     const once = stampCrmOutboundUtms('https://ryan-realty.com/search', 'matt')
     expect(stampCrmOutboundUtms(once, 'matt')).toBe(once)
     expect([...once.matchAll(/utm_content=/g)]).toHaveLength(1)
+  })
+
+  it('treats &amp; as a separator and does not stack a second utm_medium', () => {
+    const existing =
+      'https://ryan-realty.com/reviews?utm_source=cma&amp;utm_medium=document&amp;utm_campaign=cma-62017-nate-s'
+    expect(hasQueryParam(existing, 'utm_medium')).toBe(true)
+    expect(hasQueryParam(existing, 'utm_content')).toBe(false)
+    expect(queryParamValue(existing, 'utm_medium')).toBe('document')
+    expect(queryParamValue(existing, 'utm_campaign')).toBe('cma-62017-nate-s')
+    const out = stampCrmOutboundUtms(existing, 'matt')
+    expect(out.match(/utm_medium=/g)).toHaveLength(1)
+    expect(out).toContain('utm_medium=document')
+    expect(out).not.toContain('utm_medium=email')
+    expect(out).toContain('&amp;utm_content=agent-matt')
+    expect(stampCrmOutboundUtms(out, 'matt')).toBe(out)
+    expect(appendQueryParam('https://ryan-realty.com/x?a=1&amp;b=2', 'utm_content', 'agent-matt')).toBe(
+      'https://ryan-realty.com/x?a=1&amp;b=2&amp;utm_content=agent-matt',
+    )
   })
 })
 

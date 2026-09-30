@@ -6,6 +6,7 @@ import { publicCommunitySlug as tsPublicCommunitySlug } from '../../lib/communit
 import { isSelfCityCommunity } from '../../lib/communities/self-city-community'
 import {
   areaTwinPathsFor,
+  isCitySlugOnlyEntry,
   isSelfCityEntry,
   loadCentralOregonCitySlugs,
   loadResortRegistry,
@@ -51,8 +52,17 @@ describe('registry-area-twins (SITE-183 / SITE-182)', () => {
     expect(twins['/homes-for-sale/sisters/black-butte-ranch']).toBe('/communities/black-butte-ranch')
     expect(twins['/homes-for-sale/terrebonne/crooked-river-ranch']).toBe('/communities/crooked-river-ranch')
     expect(twins['/homes-for-sale/crooked-river-ranch/crooked-river-ranch']).toBe('/communities/crooked-river-ranch')
-    // Never a listing URL, never a preset variant.
-    expect(Object.keys(twins).some((k) => k.split('/').length !== 4)).toBe(false)
+    // A city-slug-only community (self_city: false) also folds its bare city
+    // search, which finds none of its homes (Crooked River Ranch, 2026-09-24).
+    expect(twins['/homes-for-sale/crooked-river-ranch']).toBe('/communities/crooked-river-ranch')
+    expect(twins['/homes-for-sale/black-butte-ranch']).toBeUndefined()
+    expect(twins['/homes-for-sale/sunriver']).toBeUndefined()
+    // Never a listing URL, never a preset variant: two area segments, or the
+    // one bare city-slug-only search.
+    const bare = new Set(
+      registry.filter((e) => isCitySlugOnlyEntry(e, citySlugs)).map((e) => `/homes-for-sale/${e.slug}`),
+    )
+    expect(Object.keys(twins).some((k) => k.split('/').length !== 4 && !bare.has(k))).toBe(false)
   })
 
   it('every destination is a live public URL, never itself a redirect key', () => {

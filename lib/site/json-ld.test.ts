@@ -145,6 +145,12 @@ describe('buildJsonLd', () => {
     expect('description' in r).toBe(false)
   })
 
+  it('webPage belongs to the sitewide WebSite node by @id', () => {
+    const r = buildJsonLd({ type: 'webPage', name: 'Team', url: '/team', aboutOrganization: true })
+    expect(rec(r.isPartOf)?.['@id']).toMatch(/#website$/)
+    expect(rec(r.mainEntity)?.['@id']).toMatch(/#organization$/)
+  })
+
   it('already-absolute URLs pass through unchanged', () => {
     const r = buildJsonLd({ type: 'article', headline: 'H', url: 'https://example.com/x' })
     expect(r.url).toBe('https://example.com/x')

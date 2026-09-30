@@ -186,7 +186,7 @@ export function describeMarketReportAudience(audience: MarketReportAudience): st
  * mailbox provider's engagement model, so a bulk market-report send is never
  * STARTED outside 08:00-20:00 Pacific. Individual cadence sends are unaffected.
  *
- * Narrower than the SMS window on the late end (20:00 vs 21:00) on purpose: a
+ * The late end matches the SMS window (20:00) and goes no later on purpose: a
  * tranche that starts at 19:59 keeps delivering for minutes afterward.
  */
 export const EMAIL_WINDOW_START_HOUR = 8
@@ -204,14 +204,13 @@ export function outsideEmailSendWindow(now: Date = new Date(), timeZone: string 
  * 16:05 UTC is safely after 08:00 PT under both standard and daylight time (the
  * same DST-safe marker nextSmsWindow uses).
  */
-export function nextEmailSendWindow(now: Date = new Date(), timeZone: string = DEFAULT_SMS_TIMEZONE): Date {
-  const h = hourInTimeZone(now, timeZone)
+export function nextEmailSendWindow(now: Date = new Date()): Date {
   const next = new Date(now)
-  if (h >= EMAIL_WINDOW_END_HOUR) next.setUTCDate(next.getUTCDate() + 1)
   next.setUTCHours(16, 5, 0, 0)
-  // Guard the pre-dawn case: 02:00 PT is 09:00/10:00 UTC on the SAME UTC day, so
-  // 16:05 UTC today is still ahead. But 23:00 PT is already the NEXT UTC day, so
-  // after the +1 above the marker could land in the past; push one more day.
+  // 16:05 UTC on now's UTC date unless it has passed. 02:00 PT is 09:00/10:00 UTC
+  // on the SAME UTC day, so today's marker is still ahead. 21:00 PT is already
+  // the NEXT UTC day, so that day's marker is the next morning; an extra day for
+  // "after 20:00 PT" on top of that skipped a whole morning.
   if (next.getTime() <= now.getTime()) next.setUTCDate(next.getUTCDate() + 1)
   return next
 }

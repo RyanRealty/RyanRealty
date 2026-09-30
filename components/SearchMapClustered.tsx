@@ -39,6 +39,7 @@ import {
   clampMarkNudge,
   clampRingChip,
   listingsInsideSubjectRing,
+  markAnchorInIsland,
   ringLabelAnchor,
   SUBJECT_RING_CHIP_Z,
   SUBJECT_RING_HALO_Z,
@@ -715,6 +716,16 @@ function getPricePillOverlayClass(): PricePillOverlayCtor {
         return
       }
 
+      // The clusterer works over the whole world (SuperClusterAlgorithm asks
+      // for [-180, -90, 180, 90]), so a mark whose home or centroid is off the
+      // camera still draws here, and the clamp below pulled every one of them
+      // onto the frame edge, stacked and pointing at homes not on the map.
+      // Only a mark whose point is in the frame is placed and nudged in.
+      // visibility, not display: the box keeps its size for the next measure.
+      const inFrame = markAnchorInIsland(cp, { width: frame.clientWidth, height: frame.clientHeight })
+      div.style.visibility = inFrame ? '' : 'hidden'
+      if (!inFrame) return
+
       // Price pills hang above the point (caret on the house). Cluster discs
       // are centred on the centroid so a north-edge 7 is not half-sliced.
       // SITE-128 rematch: also clamp Y. Top-only flip still left $795k
@@ -1052,7 +1063,10 @@ const MARK_TAP_MARGIN_PX = 2
  */
 function fitMapMarkTaps(root: HTMLElement | null) {
   if (!root) return
+  // An off-frame mark is hidden, not removed (PricePillOverlay.draw). It paints
+  // nothing and takes no tap, so it is no neighbour's constraint.
   const els = Array.from(root.querySelectorAll<HTMLElement>('.rr-map-mark'))
+    .filter((el) => el.parentElement?.style.visibility !== 'hidden')
   if (els.length === 0) return
   // Read all geometry before writing anything: one layout pass, not one per mark.
   const marks = els.map((el, i) => {

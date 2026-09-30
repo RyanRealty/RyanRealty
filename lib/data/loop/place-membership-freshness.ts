@@ -85,3 +85,17 @@ export async function readPlaceMembershipFreshness(
     source: 'place_membership max(computed_at) by row read (no mv_refresh_state stamp yet)',
   }
 }
+
+/**
+ * One SCOREBOARD HEADLINE line (scripts/loop-brief.ts). A read failure and an
+ * unreadable stamp both read as UNKNOWN — never as 0h old or as fresh, which
+ * is what a careless `ageHours ?? 0` or an unhandled third state would print.
+ * STALE is capitalized like the brief's other problem words (FROZEN, PARKED).
+ */
+export function formatPlaceMembershipLine(f: PlaceMembershipFreshness): string {
+  if (f.status === 'unreadable' || f.freshness === 'unknown') return `UNKNOWN (${f.source})`
+  if (f.freshness === 'stale') {
+    return `STALE ${f.ageHours}h old, limit ${PLACE_MEMBERSHIP_STALE_HOURS}h (refreshed ${f.newestAt})`
+  }
+  return `fresh ${f.ageHours}h old (refreshed ${f.newestAt})`
+}

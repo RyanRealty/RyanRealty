@@ -1,17 +1,17 @@
 ---
 name: marketing-brain-snapshot-channels
-description: Pull daily analytics from every connected marketing channel into Supabase. Use when running the weekly marketing brain cycle, when backfilling historical data, when adding a new channel ingestor, or when diagnosing why a channel's metrics are missing. Ingestors live at app/api/cron/marketing-snapshot-* and write to public.marketing_channel_daily. Shared helpers in lib/marketing-brain/snapshot.ts. Idempotent by (date, channel, scope, scope_id, metric).
+description: Pull daily analytics from every connected marketing channel into Supabase. Use when backfilling historical data, when adding a new channel ingestor, or when diagnosing why a channel's metrics are missing. One daily cron, app/api/cron/snapshot-channels, calls the ingestors at app/api/cron/marketing-snapshot-*, which write to public.marketing_channel_daily. Shared helpers in lib/marketing-brain/snapshot.ts. Idempotent by (date, channel, scope, scope_id, metric).
 ---
 
 # marketing-brain: snapshot-channels
 
-The marketing brain's eyes. One ingestor per channel, each writing daily metrics to `marketing_channel_daily`. Every downstream skill (`diagnose-performance`, `generate-briefs`, the dashboard) reads from this table, not from the source APIs directly.
+The marketing brain's eyes. One ingestor per channel, each writing daily metrics to `marketing_channel_daily`. Readers (the admin analytics reads in `lib/data/analytics/`, the loop's reads in `lib/data/loop/`) use this table, not the source APIs.
 
 ---
 
 ## When to use this skill
 
-- The brain's weekly cycle runs and needs fresh metrics.
+- The daily roll-up (`/api/cron/snapshot-channels`) logged a channel as failed in `sync_logs`.
 - A new channel is connected and needs an ingestor.
 - A channel's metrics are stale and you need to backfill.
 - You're debugging why a number on the dashboard doesn't match the platform UI.
@@ -26,7 +26,7 @@ Every ingestor route follows the same shape:
 app/api/cron/marketing-snapshot-<channel>/route.ts
 ```
 
-1. **Auth.** `isAuthorizedCron(request)` checks `Authorization: Bearer $CRON_SECRET`.
+1. **Auth.** `requireCronAuth(request)` (`lib/auth/cron-auth.ts`) checks `Authorization: Bearer $CRON_SECRET`.
 2. **Date range.** `parseDateRange(request)` parses `?startDate=&endDate=` or defaults to yesterday.
 3. **Fetch.** Call the channel's existing helper library (`lib/<channel>.ts` or similar). One API call per day so per-day attribution is accurate.
 4. **Decompose.** Turn the API response into `MetricRow` tuples. Each row has `(date, channel, scope, scope_id, metric, value)` plus optional `metadata`.
@@ -39,21 +39,20 @@ app/api/cron/marketing-snapshot-<channel>/route.ts
 
 | Channel | Route | Helper lib | Status |
 |---|---|---|---|
-| GA4 (website analytics) | `/api/cron/marketing-snapshot-ga4` | `app/actions/ga4-report.ts` → `getGA4Summary` | **Live** |
-| Meta Page (FB organic) | `/api/cron/marketing-snapshot-meta-page` | `lib/meta-graph.ts` (TBD) | Pending |
-| Meta Ads (FB paid) | `/api/cron/marketing-snapshot-meta-ads` | `lib/meta-graph.ts` (TBD) | Pending |
-| Instagram | (rolled into Meta Page) | `lib/meta-graph.ts` | Pending |
-| CRM | `/api/cron/snapshot-channels` | CRM daily snapshot from `crm_people` | Live |
-| GSC (search console) | `/api/cron/marketing-snapshot-gsc` | `app/actions/search-console-report.ts` | Pending |
-| YouTube | `/api/cron/marketing-snapshot-youtube` | `lib/youtube.ts` | Pending |
-| LinkedIn | `/api/cron/marketing-snapshot-linkedin` | `lib/linkedin.ts` | Pending |
-| X | `/api/cron/marketing-snapshot-x` | `lib/x.ts` → `getXAnalytics`, `getXUserId` | **Live** |
-| TikTok | `/api/cron/marketing-snapshot-tiktok` | `lib/tiktok.ts` | Pending |
-| GBP | `/api/cron/marketing-snapshot-gbp` | `lib/google-business-profile.ts` | Pending |
-| Threads | `/api/cron/marketing-snapshot-threads` | `lib/threads.ts` | Skipped (no token yet) |
-| Nextdoor | `/api/cron/marketing-snapshot-nextdoor` | `lib/nextdoor.ts` | Skipped (no token yet) |
-| Pinterest | `/api/cron/marketing-snapshot-pinterest` | `lib/pinterest.ts` | Skipped (no dev app yet) |
-| Email (Resend) | `/api/cron/marketing-snapshot-email` | TBD | Pending |
+| GA4 (website analytics) | `/api/cron/marketing-snapshot-ga4` | `app/actions/ga4-report.ts` → `getGA4Summary` | Daily fan-out |
+| Meta Page (FB organic) | `/api/cron/marketing-snapshot-meta-page` | `lib/meta-graph.ts` | Daily fan-out |
+| Meta Ads (FB paid) | `/api/cron/marketing-snapshot-meta-ads` | `lib/meta-graph.ts` → `getMetaAdsInsights` | Daily fan-out |
+| Instagram | the Meta Page route writes it (`channel='instagram'`) | `lib/meta-graph.ts` | Daily fan-out |
+| GSC (search console) | `/api/cron/marketing-snapshot-gsc` | `app/actions/search-console-report.ts` | Daily fan-out |
+| YouTube | `/api/cron/marketing-snapshot-youtube` | `lib/youtube.ts` | Daily fan-out |
+| X | `/api/cron/marketing-snapshot-x` | `lib/x.ts` → `getXAnalytics` | Daily fan-out |
+| TikTok | `/api/cron/marketing-snapshot-tiktok` | `lib/tiktok.ts` | Daily fan-out |
+| GBP | `/api/cron/marketing-snapshot-gbp` | `lib/google-business-profile.ts` | Daily fan-out |
+| LinkedIn, Google Ads | none | | Parked until Matt reconnects (comment in `app/api/cron/snapshot-channels/route.ts`) |
+| Threads, Nextdoor, Pinterest, Email | none | | Not built |
+| CRM | none | | The FUB ingestor was removed 2026-07-09 |
+
+"Daily fan-out" means the route runs every day, not that it wrote rows. For that, read `sync_logs` (endpoint `snapshot-channels`) and `marketing_channel_daily`.
 
 ---
 
@@ -81,14 +80,10 @@ Every row is `(date, channel, scope, scope_id, metric, value, metadata, source)`
 
 ## Cron schedule
 
-All ingestors run daily at 06:30 UTC (the same window as the existing marketing-optimization-report cron). Schedule lives in `vercel.json`.
+One cron runs them all: `/api/cron/snapshot-channels`, daily at 12:20 UTC (`vercel.json`). It calls every route in its `PLATFORMS` list in parallel and logs the roll-up to `sync_logs`: 200, or 207 with the failed channels in `error_message`. The child routes have no schedule of their own; a new channel goes into `PLATFORMS`.
 
 ```json
-{
-  "crons": [
-    { "path": "/api/cron/marketing-snapshot-ga4", "schedule": "30 6 * * *" }
-  ]
-}
+{ "path": "/api/cron/snapshot-channels", "schedule": "20 12 * * *" }
 ```
 
 ---
@@ -137,6 +132,4 @@ Common failure modes:
 
 ## Related skills
 
-- `marketing-brain:diagnose-performance`.  reads from `marketing_channel_daily` to compute deltas.
-- `marketing-brain:weekly-cycle`.  invokes this skill as step 1 of the weekly pass.
 - `marketing-brain:competitor-recon`.  parallel skill that writes to `competitor_intel`, not this table.

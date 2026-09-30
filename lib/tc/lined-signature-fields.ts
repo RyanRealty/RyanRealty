@@ -86,6 +86,65 @@ export function wrapTextToWidth(text: string, maxWidth: number, measure: (s: str
   return lines
 }
 
+/** Text on a page, top-left fractions (lib/tc/pdf-page-text.ts readPdfTextRuns). */
+export type PageTextRun = { str: string; x: number; y: number; w: number }
+
+/** A signature line whose widget name does not say who signs it ("Text8"). */
+export function isUnnamedSignatureLine(f: MappedField): boolean {
+  return isSignatureLine(f) && !roleForLine(f) && !f.signerRole
+}
+
+function isPrintRowCandidate(f: MappedField): boolean {
+  return f.type === 'text' && f.w >= SIG_W_MIN && f.h <= 0.02 && /^(text[\d.]*)?$/i.test((f.label ?? f.dataRef ?? '').trim())
+}
+
+export function hasUnnamedSignatureLines(map: readonly MappedField[]): boolean {
+  return map.some(isUnnamedSignatureLine)
+}
+
+/** The words printed on a line's row, to its left ("26 Buyer"). */
+function rowLabel(f: MappedField, runs: readonly PageTextRun[]): string {
+  return runs
+    .filter((r) => r.y >= f.y - 0.004 && r.y <= f.y + f.h + 0.008 && r.x + r.w <= f.x + 0.015 && r.x >= f.x - 0.25)
+    .sort((a, b) => a.x - b.x)
+    .map((r) => r.str)
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/**
+ * Who signs each unnamed signature line, from the word printed beside it on
+ * the page: "Buyer", "Seller", "Buyer's Agent". The nth line of a role is for
+ * the nth signer of that role, so a second buyer gets the second Buyer line.
+ * A page whose text cannot be read (a font with no Unicode map prints
+ * "Buyer" as "R A = ? 4") names nobody, and those lines stay for the broker
+ * to assign.
+ */
+export function labelSignatureRowsFromPage(map: readonly MappedField[], pages: ReadonlyArray<readonly PageTextRun[]>): MappedField[] {
+  const out = map.map((f) => {
+    if (!isUnnamedSignatureLine(f)) {
+      // The line under a signature line, printed "Print": the signer's name.
+      if (isPrintRowCandidate(f) && /\bprint/i.test(rowLabel(f, pages[f.page - 1] ?? []))) return { ...f, label: 'Print name' }
+      return { ...f }
+    }
+    const label = rowLabel(f, pages[f.page - 1] ?? [])
+    const role = label ? deriveSignerRole(undefined, label) : null
+    return role ? { ...f, label: `${label.replace(/^\d+\s*/, '')} signature`, signerRole: role } : { ...f }
+  })
+  const seen = new Map<string, number>()
+  const lines = out
+    .map((f, i) => ({ f, i, role: f.signerRole ?? roleForLine(f) }))
+    .filter(({ f, role }) => isSignatureLine(f) && role)
+    .sort((a, b) => a.f.page - b.f.page || a.f.y - b.f.y || a.f.x - b.f.x)
+  for (const { i, role } of lines) {
+    const n = seen.get(role!) ?? 0
+    seen.set(role!, n + 1)
+    out[i] = { ...out[i]!, signerIndex: n }
+  }
+  return out
+}
+
 /** Promote printed signature / date / print-name lines. Leaves other widgets alone. */
 export function promoteLinedFormFields(map: readonly MappedField[]): MappedField[] {
   const out = map.map((f) => ({ ...f }))
@@ -98,6 +157,7 @@ export function promoteLinedFormFields(map: readonly MappedField[]): MappedField
     const first = !seen.has(key)
     if (role) seen.add(key)
     out[i] = { ...sig, type: 'signature', signerRole: role ?? sig.signerRole, optional: !first }
+    const index = sig.signerIndex != null ? { signerIndex: sig.signerIndex } : {}
     const date = out.find(
       (f) =>
         isDateLine(f) &&
@@ -112,6 +172,7 @@ export function promoteLinedFormFields(map: readonly MappedField[]): MappedField
         type: 'date_signed',
         signerRole: role ?? date.signerRole,
         optional: !first,
+        ...index,
       }
     }
     const print = out.find(
@@ -129,6 +190,7 @@ export function promoteLinedFormFields(map: readonly MappedField[]): MappedField
         type: 'full_name',
         signerRole: role ?? print.signerRole,
         optional: true,
+        ...index,
       }
     }
   }

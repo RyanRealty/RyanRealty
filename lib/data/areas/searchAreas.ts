@@ -1,5 +1,5 @@
 import 'server-only'
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
 import { createServiceClient } from '@/lib/supabase/service'
 import type { AreaShape } from '@/lib/data/areas/validation'

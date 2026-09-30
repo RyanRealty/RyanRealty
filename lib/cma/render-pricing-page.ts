@@ -8,6 +8,7 @@
  */
 
 import { cleanText, countWord, escapeHtml, int, usd } from '@/lib/cma/render-blocks'
+import { sanitizeLetterEmDash } from '@/lib/cma/voice-sanitize'
 import { pricingRangeDisplay } from '@/lib/cma/pricing'
 import { currentAskLine } from '@/lib/cma/cover-value'
 import { describeCompSearch } from '@/lib/pricing/search-story'
@@ -27,7 +28,8 @@ import { adjustedCloseRange } from '@/lib/cma/market-area-chapters'
 import { renderCompPinMapHtml } from '@/lib/cma/comp-pin-map'
 import { clampSentence, keptCompCount, setAsideCompIndexes, setAsideRows } from '@/lib/cma/set-aside'
 import { deRepeatRecommendDollars, isRecommendMark } from '@/lib/cma/recommend-once'
-import { listCeiling, readMeasure, readRangeRuleKept } from '@/lib/cma/render-contract'
+import { failedAskBelowRangeNote } from '@/lib/cma/expired-audit'
+import { listCeiling, readMeasure } from '@/lib/cma/render-contract'
 import { closedCompBand } from '@/lib/pricing/recommended-in-band'
 import { compSearchSentence } from '@/lib/cma/render-comp-search'
 import { newHomeRateParagraph } from '@/lib/cma/new-home-rate'
@@ -74,7 +76,7 @@ export function whatItsWorthHeading(input: {
       tiersUsed: input.tiersUsed ?? [],
     }).body,
   })
-  return sentencesOf(logic)[0] ?? 'What the sales say'
+  return sanitizeLetterEmDash(sentencesOf(logic)[0] ?? 'What the sales say')
 }
 
 /**
@@ -112,7 +114,12 @@ export function whatItsWorthLead(
   // to sit on the cover, which the blueprint gives one sentence.
   const ask = currentAskLine(pricing)
   const display = pricingRangeDisplay(pricing)
-  return [worth, listRange, display.outOfRange ? display.note : null, ask]
+  const failedAsk = failedSubjectAsk(subject, askCtx) ?? pricing.failedAsk ?? null
+  const belowRangeNote =
+    pricing.failedAskBelowRange && failedAsk != null && failedAsk > 0
+      ? failedAskBelowRangeNote(failedAsk)
+      : null
+  return [worth, listRange, display.outOfRange ? display.note : null, belowRangeNote, ask]
     .filter((b): b is string => Boolean(b && b.trim()))
     .join(' ')
 }
@@ -135,7 +142,7 @@ function pricingWithMeasure(pricing: CmaPricing): CmaPricing {
   const ta = (pricing as unknown as { timeAdjustment?: Record<string, unknown> | null })
     .timeAdjustment
   const measure = readMeasure(ta)
-  const sentence = typeof ta?.sentence === 'string' ? ta.sentence.trim() : ''
+  const sentence = typeof ta?.sentence === 'string' ? sanitizeLetterEmDash(ta.sentence.trim()) : ''
   if (!measure || !sentence) return pricing
   if (sentence.toLowerCase().includes(measure.toLowerCase())) return pricing
   return {
@@ -239,6 +246,17 @@ export function listRangeBounds(
  * Tip Ready: list-range prose band must equal the hero closed-comp band.
  * Refuse dual-tier (Canter: $686–716 list vs $675–705 hero).
  */
+/** The first "$X to $Y" in a range sentence, or null when the sentence names no pair. */
+export function dollarsInRangeSentence(sentence: string | null | undefined): { low: number; high: number } | null {
+  if (!sentence) return null
+  const match = sentence.match(/\$([\d,]+)\s+to\s+\$([\d,]+)/)
+  if (!match) return null
+  const low = Number(match[1]!.replace(/,/g, ''))
+  const high = Number(match[2]!.replace(/,/g, ''))
+  if (!(low > 0) || !(high > 0)) return null
+  return { low, high }
+}
+
 export function listRangeMatchesHeroBand(
   pricing: CmaPricing,
   failedAsk?: number | null,
@@ -246,7 +264,14 @@ export function listRangeMatchesHeroBand(
   const hero = closedCompBand(pricing)
   const list = listRangeBounds(pricing, failedAsk)
   if (!hero || !list) return false
-  return list.low === round1k(hero.low) && list.high === round1k(hero.high)
+  if (list.low !== round1k(hero.low) || list.high !== round1k(hero.high)) return false
+  // The method sentence is a second copy of the band. Slate printed
+  // "$594,000 to $623,000" under a hero band of $620k-$623k.
+  const said = dollarsInRangeSentence(
+    (pricing as { rangeRule?: { sentence?: string | null } | null }).rangeRule?.sentence,
+  )
+  if (!said) return true
+  return round1k(said.low) === round1k(hero.low) && round1k(said.high) === round1k(hero.high)
 }
 
 /**
@@ -268,16 +293,10 @@ export function keptSaleCount(
   pricing: CmaPricing,
   comps: readonly CmaAdjustedComp[],
 ): number {
-  const aside = setAsideCompIndexes(pricing, comps)
-  if (aside.size > 0) return keptCompCount(pricing, comps)
-  // Tip Ready P0 / Cos Falcon smoke: trimmed-one-each-end may refuse to trim
-  // when that would leave fewer than 5 kept sales. Do not honor a stale
-  // rangeRule.kept that assumed ends were set aside — that reprints "four"
-  // over a six-sale grid with no set-aside list (class E again).
-  const rule = (pricing as { rangeRule?: { rule?: string } } | null)?.rangeRule?.rule
-  if (rule === 'trimmed-one-each-end') return comps.length
-  const stated = readRangeRuleKept(pricing)
-  if (stated != null && stated > 0) return Math.min(stated, comps.length)
+  // The lead counts the rows in the printed grid. rangeRule.kept is how many
+  // sales set the range ends. Using it here printed "three closed sales" over
+  // a four-row grid, then called the extra row set aside when nothing in the
+  // grid was. A real set-aside list still subtracts.
   return keptCompCount(pricing, comps)
 }
 
@@ -344,22 +363,43 @@ function mapLegend(boundaryShown?: boolean, parentShown?: boolean): string {
  * this introduces no figure the seller cannot check, and no figure is computed
  * here — the adjusted sales and the recommend both arrive from lib/pricing.
  */
+const MOVE_MIN_DOLLARS = 1
+
+/** How many of these sales actually moved, by adjustment. Not "each" unless each did. */
+export function adjustmentMoveClause(comps: readonly CmaAdjustedComp[]): string {
+  const total = comps.length
+  if (total === 0) return ''
+  const groups: Array<{ label: string; n: number }> = []
+  const date = comps.filter((c) => Math.abs(c.timeAdjustment ?? 0) >= MOVE_MIN_DOLLARS).length
+  const size = comps.filter((c) => Math.abs(c.sizeAdjustment ?? 0) >= MOVE_MIN_DOLLARS).length
+  const story = comps.filter((c) => Math.abs(c.storyAdjustment ?? 0) >= MOVE_MIN_DOLLARS).length
+  if (size > 0) groups.push({ label: 'size', n: size })
+  if (date > 0) groups.push({ label: 'date', n: date })
+  if (story > 0) groups.push({ label: 'style', n: story })
+  if (groups.length === 0) return ''
+  const one = (g: { label: string; n: number }) => {
+    if (g.n === total) return `each moved for ${g.label}`
+    if (g.n === 1) return `one moved for ${g.label}`
+    return `${countWord(g.n)} of the ${countWord(total)} moved for ${g.label}`
+  }
+  if (groups.length === 1) return one(groups[0]!)
+  if (groups.every((g) => g.n === total)) {
+    const labels = groups.map((g) => g.label)
+    const label = labels.length === 2 ? `${labels[0]} and ${labels[1]}` : `${labels.slice(0, -1).join(', ')} and ${labels[labels.length - 1]}`
+    return `each moved for ${label}`
+  }
+  return groups.map(one).join(', and ')
+}
+
 function tableLead(input: { comps: CmaAdjustedComp[]; pricing: CmaPricing }): string {
   const adj = adjustedCloseRange(input.comps)
   if (!adj || !adj.adjustments || !(input.pricing.recommended > 0)) return ''
-  // ONE n FOR THIS CHAPTER. The strip's caption, this lead and the range
-  // sentence lib/pricing writes were 7, 7 and 5 on 19968 and 4, 6 and 4 on
-  // Concorde — three counts of one set inside one chapter (tasteReview round
-  // three, §2 item 2). The number that means something is the count of sales
-  // the price is over; the rest are shown, and said to be set aside.
-  const n = keptSaleCount(input.pricing, input.comps)
+  // ONE n FOR THIS CHAPTER. The count is the printed grid, less a sale the
+  // document actually sets aside. rangeRule.kept is not that count.
+  const asideIdx = setAsideCompIndexes(input.pricing, input.comps)
+  const kept = input.comps.filter((_, i) => !asideIdx.has(i))
+  const n = kept.length
   const aside = input.comps.length - n
-  // NO SECOND RANGE HERE. This line used to print the span of every adjusted
-  // sale to the dollar — the UNTRIMMED pair on a document whose cover, method
-  // sentence and strip were all printing the trimmed one (tasteReview round
-  // two, §3.F). The trimmed pair is the answer and it is stated once, in the
-  // lead above; the untrimmed span belongs to the method sentence lib/pricing
-  // writes, which says in its own words which sales it set aside.
   const asideWord = countWord(aside)
   const shown =
     aside > 0
@@ -367,9 +407,14 @@ function tableLead(input: { comps: CmaAdjustedComp[]; pricing: CmaPricing }): st
           aside === 1 ? 'is' : 'are'
         } shown below and set aside.`
       : ''
-  return `<p class="chart-read">${esc(
-    `The ${countWord(n)} closed ${n === 1 ? 'sale' : 'sales'} below set this number, each moved for ${adj.adjustments}.${shown}`,
-  )}</p>`
+  const move = adjustmentMoveClause(kept.length > 0 ? kept : input.comps)
+  const head = `The ${countWord(n)} closed ${n === 1 ? 'sale' : 'sales'} below set this number`
+  const moved = !move
+    ? `${head}.`
+    : move.startsWith('each ')
+      ? `${head}, ${move}.`
+      : `${head}. ${move.charAt(0).toUpperCase()}${move.slice(1)}.`
+  return `<p class="chart-read">${esc(`${moved}${shown}`)}</p>`
 }
 
 /**
@@ -482,13 +527,10 @@ export type PricingPageInput = {
   /** The seller's own failed listing, for their column's price path. */
   finalCycle?: import('@/lib/cma/expired-audit').ExpiredFinalCycle | null
   /**
-   * List $/sf and sold $/sf by status, from the homes on this letter.
-   * Built in salesThatSetItArgs so letter and immersive cannot drift.
-   */
-  statusPpsfBoard?: string
-  /**
-   * Closed / Pending / Active Low·Avg·Median·High (FlexMLS flow summaries).
-   * Same selected homes as the matrices; no MoS.
+   * Closed / Pending / Active / Expired: List, Sold and $/sqft, Low·Avg·
+   * Median·High under each status (FlexMLS style, Matt 2026-09-24). Same
+   * selected homes as the matrices; no MoS. Built in salesThatSetItArgs so
+   * letter and immersive cannot drift.
    */
   statusPriceBoard?: string
   /** When the letter was built. The new-home comparison reads the year from this. */
@@ -526,7 +568,7 @@ export function pricingPage(input: PricingPageInput): CmaPageDef {
     fallback: search.body,
   })
   const logic = sentencesOf(whichSales)
-  const heading = logic[0] ?? whatItsWorthHeading(input)
+  const heading = sanitizeLetterEmDash(logic[0] ?? whatItsWorthHeading(input))
   const methodTail = logic.slice(1).join(' ')
   // THE CLAMP, UNDER THE NUMBER IT MOVED. When the failed-ask clamp binds, the
   // printed price is not the one the method above it produces — Concorde
@@ -617,7 +659,6 @@ export function salesThatSetItPage(input: PricingPageInput): CmaPageDef | null {
     body: `
   <h2 class="section">${esc(SALES_THAT_SET_IT_HEADING)}</h2>
   ${input.statusPriceBoard ?? ''}
-  ${input.statusPpsfBoard ?? ''}
   ${matrix}
   ${renderSetAsideHtml(p, input.comps)}
   ${renderRejectedSalesHtml(p, input.comps)}

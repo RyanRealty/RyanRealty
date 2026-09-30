@@ -3,6 +3,8 @@ import {
   clampMarkNudge,
   clampRingChip,
   listingsInsideSubjectRing,
+  MARK_ANCHOR_TOLERANCE_PX,
+  markAnchorInIsland,
   ringLabelAnchor,
   SUBJECT_RING_CHIP_Z,
   SUBJECT_RING_HALO_WEIGHT,
@@ -153,6 +155,60 @@ describe('clampMarkNudge', () => {
     expect(topRight.nudgeY).toBeGreaterThan(0)
     expect(310 + topRight.nudgeX).toBeGreaterThanOrEqual(18)
     expect(360 + topRight.nudgeX).toBeLessThanOrEqual(island.width - 18)
+  })
+})
+
+describe('markAnchorInIsland', () => {
+  const island = { width: 1024, height: 640 }
+
+  it('keeps a mark whose point is inside the island, on its edge, or a hair past it', () => {
+    expect(markAnchorInIsland({ x: 512, y: 320 }, island)).toBe(true)
+    expect(markAnchorInIsland({ x: 0, y: 0 }, island)).toBe(true)
+    expect(markAnchorInIsland({ x: island.width, y: island.height }, island)).toBe(true)
+    // clientWidth/Height are rounded, so a point on the line can project a
+    // pixel past it. It is still a home in the frame.
+    const hair = MARK_ANCHOR_TOLERANCE_PX
+    expect(markAnchorInIsland({ x: -hair, y: 320 }, island)).toBe(true)
+    expect(markAnchorInIsland({ x: island.width + hair, y: 320 }, island)).toBe(true)
+    expect(markAnchorInIsland({ x: 512, y: -hair }, island)).toBe(true)
+    expect(markAnchorInIsland({ x: 512, y: island.height + hair }, island)).toBe(true)
+  })
+
+  it('drops a mark whose point is off the island on any side', () => {
+    const past = MARK_ANCHOR_TOLERANCE_PX + 1
+    expect(markAnchorInIsland({ x: -past, y: 320 }, island)).toBe(false)
+    expect(markAnchorInIsland({ x: island.width + past, y: 320 }, island)).toBe(false)
+    expect(markAnchorInIsland({ x: 512, y: -past }, island)).toBe(false)
+    expect(markAnchorInIsland({ x: 512, y: island.height + past }, island)).toBe(false)
+    expect(markAnchorInIsland({ x: Number.NaN, y: 320 }, island)).toBe(false)
+  })
+
+  it('is what keeps off-frame pills from piling on the edge; an in-frame pill still slides in', () => {
+    // A hanging $ pill at the search margin (SEARCH_MARK_EDGE_MARGIN_PX).
+    const w = 64
+    const h = 40
+    const margin = 72
+    const painted = (p: { x: number; y: number }) => ({
+      left: p.x - w / 2,
+      right: p.x + w / 2,
+      top: p.y - h,
+      bottom: p.y,
+    })
+    // Two homes east of the camera, one near and one far: clampMarkNudge
+    // alone paints both on the same slot inside the right edge.
+    const near = { x: island.width + 300, y: 300 }
+    const far = { x: island.width + 4000, y: 300 }
+    const a = clampMarkNudge(painted(near), island, margin)
+    const b = clampMarkNudge(painted(far), island, margin)
+    expect(near.x + a.nudgeX).toBe(far.x + b.nudgeX)
+    expect(markAnchorInIsland(near, island)).toBe(false)
+    expect(markAnchorInIsland(far, island)).toBe(false)
+    // A home inside the frame by the edge keeps its mark, nudged in.
+    const edge = { x: island.width - 10, y: 300 }
+    expect(markAnchorInIsland(edge, island)).toBe(true)
+    const nudge = clampMarkNudge(painted(edge), island, margin)
+    expect(nudge.nudgeX).toBeLessThan(0)
+    expect(painted(edge).right + nudge.nudgeX).toBe(island.width - margin)
   })
 })
 

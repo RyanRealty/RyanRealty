@@ -74,8 +74,6 @@ async function handleDraft(slug: string, body: DraftPayload) {
   }
 
   const subjectAddress = cma?.subject_address ?? safeSlug.replace(/^cma-/, '').replace(/-/g, ' ')
-  const firstName = (cma?.client_name ?? '').trim().split(/\s+/)[0] || 'there'
-
   // Recipient is the LEAD. The draft lands in the broker's Drafts for review.
   const to = body.to ?? cma?.client_email ?? null
   if (!to) {
@@ -116,7 +114,7 @@ async function handleDraft(slug: string, body: DraftPayload) {
 
   const bodyHtml = `
     <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#102742;max-width:600px;line-height:1.6;">
-      <p style="margin:0 0 14px 0;">Hi ${firstName},</p>
+      <p style="margin:0 0 14px 0;">Hi there,</p>
       <p style="margin:0 0 14px 0;">Thanks for reaching out. I put together a full market analysis for <strong>${subjectAddress}</strong>, and it's attached as a PDF.</p>
       ${numbersHtml}
       <p style="margin:0 0 14px 0;">The report walks through the comparable sales and where the Bend market sits right now. I'm happy to talk it through whenever works for you, no pressure.</p>
@@ -124,7 +122,7 @@ async function handleDraft(slug: string, body: DraftPayload) {
     </div>
   `.trim()
 
-  const bodyText = `Hi ${firstName},
+  const bodyText = `Hi there,
 
 Thanks for reaching out. I put together a full market analysis for ${subjectAddress}, and it's attached as a PDF.
 
@@ -159,6 +157,16 @@ Ryan Realty
       // auto-send to the lead, which would bypass the human review the draft
       // model exists for. Only a hard 502 if even the fallback fails.
       try {
+        // Same chokepoint as above, checked again in this scope. The fallback
+        // carries the lead's CMA and names the lead, so it never runs for a
+        // lead who is suppressed for email.
+        const fallbackGate = await isSuppressedByEmail(String(to), 'email')
+        if (fallbackGate.suppressed) {
+          return NextResponse.json(
+            { error: 'recipient is suppressed for email', recipient: to, reasons: fallbackGate.reasons },
+            { status: 409 },
+          )
+        }
         const { sendEmail } = await import('@/lib/resend')
         const fb = await sendEmail({
           to: impersonateAs,

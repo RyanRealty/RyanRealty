@@ -66,32 +66,135 @@ describe('status price bands', () => {
     expect(split.active.map((e) => e.key)).toEqual(['A', 'C'])
   })
 
-  it('builds Closed / Pending / Active summary rows from letter homes', () => {
+  it('builds Closed / Pending / Active / Expired rows from letter homes', () => {
     const closed = [
-      entry({ key: '1', family: 'closed', closePrice: 500000 }),
-      entry({ key: '2', family: 'closed', closePrice: 480000 }),
-      entry({ key: '3', family: 'closed', closePrice: 520000 }),
+      entry({ key: '1', family: 'closed', listPrice: 510000, closePrice: 500000, sqft: 1600 }),
+      entry({ key: '2', family: 'closed', listPrice: 490000, closePrice: 480000, sqft: 1600 }),
+      entry({ key: '3', family: 'closed', listPrice: 530000, closePrice: 520000, sqft: 1600 }),
     ]
     const active = [
-      entry({ key: 'A', family: 'active', status: 'active', listPrice: 530000 }),
-      entry({ key: 'B', family: 'active', status: 'pending', listPrice: 545000 }),
+      entry({ key: 'A', family: 'active', status: 'active', listPrice: 530000, sqft: 1600 }),
+      entry({ key: 'B', family: 'active', status: 'pending', listPrice: 545000, sqft: 1600 }),
     ]
-    const rows = statusPriceSummaries({ closed, active })
-    expect(rows.map((r) => r.key)).toEqual(['closed', 'pending', 'active'])
+    const unsold = [entry({ key: 'i', family: 'unsold', listPrice: 560000, sqft: 1600 })]
+    const rows = statusPriceSummaries({ closed, active, unsold })
+    expect(rows.map((r) => r.key)).toEqual(['closed', 'pending', 'active', 'expired'])
     expect(rows[0]).toMatchObject({
       label: 'Closed',
-      basis: 'sold',
-      band: { low: 480000, avg: 500000, median: 500000, high: 520000 },
+      homes: 3,
+      list: { low: 490000, avg: 510000, median: 510000, high: 530000 },
+      sold: { low: 480000, avg: 500000, median: 500000, high: 520000 },
+      // Sold price over living area once closed: 480000/1600 = 300.
+      ppsf: { low: 300, avg: 313, median: 313, high: 325 },
     })
-    expect(rows[1]).toMatchObject({ label: 'Pending', basis: 'list', homes: 1 })
-    expect(rows[2]).toMatchObject({ label: 'Active', basis: 'list', homes: 1 })
-    const html = statusPriceBoardHtml(rows)
-    expect(html).toContain('Closed · Pending · Active')
-    expect(html).toContain('Low')
-    expect(html).toContain('Avg')
-    expect(html).toContain('Median')
-    expect(html).toContain('High')
-    expect(html).toContain('data-status="pending"')
+    // Before a sale the rate is the ask over living area, and there is no Sold.
+    expect(rows[1]).toMatchObject({ label: 'Pending', homes: 1, sold: null, ppsf: { median: 341 } })
+    expect(rows[2]).toMatchObject({ label: 'Active', homes: 1, sold: null, ppsf: { median: 331 } })
+    expect(rows[3]).toMatchObject({ label: 'Expired', homes: 1, sold: null, ppsf: { median: 350 } })
+  })
+
+  it('prints one FlexMLS-style table: List, Sold, $/sqft across, the four figures down each status', () => {
+    const html = statusPriceBoardHtml(
+      statusPriceSummaries({
+        closed: [
+          entry({ key: '1', family: 'closed', listPrice: 510400, closePrice: 505600, sqft: 1600 }),
+          entry({ key: '2', family: 'closed', listPrice: 528000, closePrice: 512000, sqft: 1600 }),
+        ],
+        active: [entry({ key: 'A', family: 'active', status: 'active', listPrice: 544000, sqft: 1600 })],
+      }),
+    )
+    expect(html).toContain('<h3 class="subhead">Closed · Active</h3>')
+    expect(html).toMatch(/<th class="n" scope="col">List<\/th><th class="n" scope="col">Sold<\/th><th class="n" scope="col">\$\/sqft<\/th>/)
     expect(html).toContain('col class="sp-fig"')
+    expect(html).toContain('<tbody data-status="closed">')
+    expect(html).toContain('<tbody data-status="active">')
+    expect(html).toContain('Closed<span class="sp-count">2 homes</span>')
+    expect(html).toContain('Active<span class="sp-count">1 home</span>')
+    // Closed Low row: list 510,400, sold 505,600, 505600/1600 = 316.
+    expect(html).toContain(
+      '<tr><th scope="row">Low</th><td class="n">$510,400</td><td class="n">$505,600</td><td class="n">$316</td></tr>',
+    )
+    // Closed High row: 512000/1600 = 320.
+    expect(html).toContain(
+      '<tr><th scope="row">High</th><td class="n">$528,000</td><td class="n">$512,000</td><td class="n">$320</td></tr>',
+    )
+    // Active has no sale: the Sold cell is empty, $/sqft is the ask (544000/1600 = 340).
+    expect(html).toContain(
+      '<tr><th scope="row">Median</th><td class="n">$544,000</td><td class="n"></td><td class="n">$340</td></tr>',
+    )
+    for (const stat of ['Low', 'Avg', 'Median', 'High']) {
+      expect(html.match(new RegExp(`<th scope="row">${stat}</th>`, 'g'))).toHaveLength(2)
+    }
+    // The separate "Dollars a square foot" board is folded in, not repeated.
+    expect(html).not.toContain('Dollars a square foot')
+    expect(html).not.toContain('status-price-note')
+    expect(html).not.toMatch(/months of supply/i)
+    expect(html).not.toMatch(/\bMOS\b/)
+    expect(html).not.toMatch(/\bcomp(s)?\b/i)
+    expect(html).not.toContain('—')
+  })
+
+  it('says under the table when a column covers fewer homes than its status holds', () => {
+    const html = statusPriceBoardHtml(
+      statusPriceSummaries({
+        closed: [
+          entry({ key: '1', family: 'closed', listPrice: 510000, closePrice: 500000, sqft: 0 }),
+          entry({ key: '2', family: 'closed', listPrice: 490000, closePrice: 480000, sqft: 1600 }),
+        ],
+      }),
+    )
+    expect(html).toContain('Closed<span class="sp-count">2 homes</span>')
+    expect(html).toContain(
+      '<tr><th scope="row">Low</th><td class="n">$490,000</td><td class="n">$480,000</td><td class="n">$300</td></tr>',
+    )
+    expect(html).toContain('Closed $/sqft covers 1 of 2 homes (1 with no living area on record).')
+  })
+
+  it('rounds once, after the median, so the figure matches a recomputation from the rows', () => {
+    // 312.50 and 320.40 a foot: the exact median is 316.45, so $316. Rounding
+    // each rate first (313, 320) would have printed $317.
+    expect(priceBand([312.5, 320.4])).toMatchObject({ n: 2, low: 313, median: 316, avg: 316, high: 320 })
+  })
+
+  it('reads "one home" for a single home and drops the Sold column when nothing has sold', () => {
+    const one = statusPriceBoardHtml(
+      statusPriceSummaries({ closed: [entry({ key: '1', family: 'closed', listPrice: 510000, closePrice: 500000, sqft: 1600 })] }),
+    )
+    expect(one).toContain('The one home in this report, by status.')
+    expect(one).not.toContain('one homes')
+    const noSales = statusPriceBoardHtml(
+      statusPriceSummaries({ active: [entry({ key: 'A', family: 'active', status: 'active', listPrice: 544000, sqft: 1600 })] }),
+    )
+    expect(noSales).not.toContain('>Sold<')
+    expect(noSales).toContain('<tr><th scope="row">Low</th><td class="n">$544,000</td><td class="n">$340</td></tr>')
+    expect(noSales).toMatch(/List is the asking price\. \$\/sqft is each home(&#39;|&#x27;|')s list price over its own living area\./)
+    expect(noSales.match(/<col class="sp-fig">/g)).toHaveLength(2)
+  })
+
+  it('names the real gap when a $/sqft is missing for want of a price, not a living area', () => {
+    const html = statusPriceBoardHtml(
+      statusPriceSummaries({
+        closed: [
+          entry({ key: '1', family: 'closed', listPrice: 510000, closePrice: null, sqft: 1600 }),
+          entry({ key: '2', family: 'closed', listPrice: 490000, closePrice: 480000, sqft: 1600 }),
+        ],
+      }),
+    )
+    expect(html).toContain('Closed $/sqft covers 1 of 2 homes (1 with no sold price on record).')
+    expect(html).not.toContain('no living area')
+  })
+
+  it('never counts the subject', () => {
+    const rows = statusPriceSummaries({
+      closed: [
+        entry({ key: 'subject', family: 'subject', listPrice: 999999, closePrice: 999999, sqft: 1000 }),
+        entry({ key: '1', family: 'closed', listPrice: 510000, closePrice: 500000, sqft: 1600 }),
+      ],
+      active: [entry({ key: 'subject', family: 'subject', listPrice: 999999, sqft: 1000 })],
+      unsold: [entry({ key: 'subject', family: 'subject', listPrice: 999999, sqft: 1000 })],
+    })
+    expect(rows.map((r) => r.key)).toEqual(['closed'])
+    expect(rows[0]).toMatchObject({ homes: 1, sold: { high: 500000 } })
+    expect(statusPriceBoardHtml([])).toBe('')
   })
 })

@@ -14,6 +14,11 @@
  * adjusted values do not support, and mailing one of those to a homeowner is
  * exactly the §0 accuracy breach the audit exists to prevent. Rebuild it or
  * fix it; there is no "send anyway" here by design.
+ *
+ * Flagged is not that gate. A needs_review row can leave this action only
+ * when the caller passes acknowledgeReview. approveCmaAction records that
+ * decision on build_summary and does not clear the flag. Audit-failed,
+ * unvetted, and every other refusal stay closed.
  */
 
 import { checkAdminAction } from '@/lib/admin/require-admin'
@@ -27,7 +32,15 @@ export type ApproveAndDeliverResult =
   | { ok: true; outcome: 'sent'; transport: 'gmail' | 'resend' | null }
   | { ok: true; outcome: 'queued'; position: number }
   | { ok: true; outcome: 'approved-only'; reason: string }
-  | { ok: false; error: string; blocked?: 'audit' | 'state' | 'contact' }
+  | {
+      ok: false
+      error: string
+      blocked?: 'audit' | 'state' | 'contact'
+      /** Flagged row: the broker must acknowledge the recorded findings before send. */
+      needsReviewAck?: boolean
+      /** Recorded flag text (queue row reviewReason / build_summary.review_reason). */
+      reviewReason?: string | null
+    }
 
 /**
  * The queue row for a CMA slug.
@@ -47,6 +60,21 @@ async function findQueueRow(slug: string): Promise<CmaQueueRow | null> {
 }
 
 /**
+ * Flag text shown in the confirm and stored on an acknowledged send.
+ * Prefer the recorded review reason, then the audit summary. Never empty.
+ */
+function flagTextForRow(row: CmaQueueRow): string {
+  const recorded = row.reviewReason?.trim()
+  if (recorded) return recorded
+  const audit = row.auditSummary?.trim()
+  if (audit) return audit
+  if (row.auditVerdict === 'fail') return 'The adversarial audit returned a fail verdict.'
+  if (row.auditVerdict === 'pass') return 'The adversarial audit returned a pass verdict.'
+  if (row.auditVerdict === 'did-not-run') return 'The adversarial audit did not run.'
+  return 'The adversarial audit returned a review verdict.'
+}
+
+/**
  * Approve a CMA and put it on the right delivery lane.
  *
  * Returns which lane it took so the caller can say so plainly — "sent" and
@@ -55,7 +83,7 @@ async function findQueueRow(slug: string): Promise<CmaQueueRow | null> {
 export async function approveAndDeliverCma(
   slug: string,
   override?: CmaSendOverride,
-  opts?: { delivery?: 'now' | 'drip' },
+  opts?: { delivery?: 'now' | 'drip'; acknowledgeReview?: boolean },
 ): Promise<ApproveAndDeliverResult> {
   try {
     const auth = await checkAdminAction('prospecting.view')
@@ -75,10 +103,14 @@ export async function approveAndDeliverCma(
     }
     // Send-now from an already-queued drip row is allowed (pulls it out of the
     // weekday queue and delivers via sendCmaToLead). Everything else still
-    // requires a sendable Ready state.
+    // requires a sendable Ready state. The one exception is a flagged row
+    // whose caller has acknowledged the recorded findings on this call.
+    // Audit-failed was refused above. Unvetted, failed, building, sent,
+    // archived, and an unacknowledged flag stay refused.
     const forceNow = opts?.delivery === 'now'
     const alreadyQueued = row.state === 'queued'
-    if (!(forceNow && alreadyQueued) && !isSendableQueueState(row.state)) {
+    const acknowledgedFlag = opts?.acknowledgeReview === true && row.state === 'flagged'
+    if (!(forceNow && alreadyQueued) && !isSendableQueueState(row.state) && !acknowledgedFlag) {
       const why: Record<string, string> = {
         failed: 'The build failed. Rebuild it first.',
         building: 'It has no document yet. Wait for the build to finish.',
@@ -88,14 +120,44 @@ export async function approveAndDeliverCma(
         sent: 'Already delivered.',
         archived: 'This CMA is archived.',
       }
+      if (row.state === 'flagged') {
+        return {
+          ok: false,
+          blocked: 'state',
+          needsReviewAck: true,
+          reviewReason: flagTextForRow(row),
+          error: why.flagged,
+        }
+      }
       return { ok: false, blocked: 'state', error: why[row.state] ?? `Not sendable from state "${row.state}".` }
     }
 
     // 2. Finalize — the document link must be client-ready before any email
     // points at it, otherwise the recipient gets a 404 on a draft.
+    // sendCmaToLead and the drip enqueue do not re-check needs_review. They
+    // require a finalized row (and the drain's own compliance checks). The
+    // acknowledgement recorded by approveCmaAction is what lets this call
+    // through; it does not open any other gate.
     if (!alreadyQueued) {
-      const approved = await approveCmaAction(slug)
-      if (approved.error) return { ok: false, error: approved.error }
+      const approved = await approveCmaAction(slug, {
+        acknowledgeReview: opts?.acknowledgeReview,
+        // An audit verdict of review flags the row even when needs_review
+        // is false. Pass the text the broker saw so the acknowledgement
+        // is still recorded.
+        ...(acknowledgedFlag ? { flagReason: flagTextForRow(row) } : {}),
+      })
+      if (approved.error) {
+        if (approved.needsReviewAck) {
+          return {
+            ok: false,
+            blocked: 'state',
+            needsReviewAck: true,
+            reviewReason: flagTextForRow(row),
+            error: approved.error,
+          }
+        }
+        return { ok: false, error: approved.error }
+      }
     }
 
     // 3. Deliver on the lane the origin dictates (Review may force now/drip).

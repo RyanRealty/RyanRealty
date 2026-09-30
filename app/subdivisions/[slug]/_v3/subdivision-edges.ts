@@ -19,6 +19,7 @@ import type { PlaceContext, PlaceNode } from '@/lib/data/geo/resolvePlaceContext
 import type { LifestyleNearItem } from '@/lib/explore/lifestyle-near'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { resortQuietItems } from '@/app/communities/_v3/resort-doors'
+import { communityPath } from '@/lib/communities/community-public-pair'
 
 export type EdgeInput = {
   displayName: string
@@ -130,7 +131,7 @@ export function buildSubdivisionEdges(input: EdgeInput): V3QuietItem[] {
   for (const parent of placeContext.parents) {
     push(`${parent.label} ${PARENT_NOUN[parent.type]}`, parent.href)
   }
-  if (resortSlug && resortLabel) push(`${resortLabel} community`, `/communities/${resortSlug}`)
+  if (resortSlug && resortLabel) push(`${resortLabel} community`, communityPath(resortSlug))
   if (citySlug && cityName !== 'Central Oregon') push(`${cityName} homes`, `/cities/${citySlug}`)
 
   if (peerPlats.length > 0) {

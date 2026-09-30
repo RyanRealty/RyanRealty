@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CORE_CITY_SLUGS } from '@/app/housing-market/[...slug]/_v3/geo-constants'
+import { CORE_MARKET_PATHS } from '@/app/housing-market/[...slug]/_v3/geo-constants'
 import { CANONICAL_ZIPS, ZIP_AREA } from '@/app/zip/[zip]/_v3/zip-constants'
 import { PRIMARY_CITIES } from '@/lib/cities'
 import { PLACE_TYPE_PAGE_SLUGS } from '@/lib/place/publish-place-type-cards'
@@ -34,14 +34,17 @@ describe('LLMS_ZIPS', () => {
 })
 
 describe('marketCityLlmsLines', () => {
-  it('covers every CORE_CITY_SLUGS housing-market page', () => {
+  it('covers every CORE_MARKET_PATHS housing-market page at its canonical URL', () => {
     const label = (slug: string) =>
       slug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
-    const lines = marketCityLlmsLines('https://ryan-realty.com', CORE_CITY_SLUGS, label)
-    expect(lines).toHaveLength(CORE_CITY_SLUGS.length)
+    const lines = marketCityLlmsLines('https://ryan-realty.com', CORE_MARKET_PATHS, label)
+    expect(lines).toHaveLength(CORE_MARKET_PATHS.length)
     expect(lines[0]).toBe('- Bend housing market: https://ryan-realty.com/housing-market/bend')
-    for (const slug of CORE_CITY_SLUGS) {
-      expect(lines.some((l) => l.endsWith(`/housing-market/${slug}`))).toBe(true)
+    expect(lines).toContain(
+      '- Black Butte Ranch housing market: https://ryan-realty.com/housing-market/sisters/black-butte-ranch',
+    )
+    for (const path of CORE_MARKET_PATHS) {
+      expect(lines.some((l) => l.endsWith(path))).toBe(true)
     }
   })
 })

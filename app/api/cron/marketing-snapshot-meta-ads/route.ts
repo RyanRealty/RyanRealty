@@ -164,6 +164,10 @@ export async function GET(request: NextRequest) {
     errors,
     fetchedAt: new Date().toISOString(),
   }
+  // A day with no ad delivery is a success with no rows, not a failure (Matt
+  // 2026-09-24, "Keep success, no rows"): failing it would mark the snapshot
+  // failed on every day ads are off. The 2026-09-22 visibility audit found no
+  // Meta ads rows after 2026-06-19.
   if (genuineEmpty) {
     result.empty = true
     result.reason = 'insights succeeded with zero campaigns and zero spend'

@@ -981,12 +981,13 @@ export const CO_EVENTS: CoEvent[] = [
     lat: 44.2909,
     lng: -121.5493,
     recurrence: 'Annually, late September',
-    nextConfirmedDate: '2026-09-25',
-    endDate: '2026-09-27',
+    // 2026 festival has passed (Sep 25 to 27). 2027 dates are not published yet; null until the official site confirms them (G-FRESH).
+    nextConfirmedDate: null,
+    endDate: null,
     priceInfo: 'Ticketed',
     organizer: 'Sisters Folk Festival',
     officialUrl: 'https://www.sistersfolkfest.org/',
-    lastVerified: '2026-07-03',
+    lastVerified: '2026-09-27',
     blurb:
       'An Americana and roots festival across seven stages in downtown Sisters, with more than thirty artists over a weekend each fall.',
   },
@@ -1042,12 +1043,13 @@ export const CO_EVENTS: CoEvent[] = [
     lat: 44.058,
     lng: -121.313,
     recurrence: 'Recurring performances through the Tower Theatre season',
-    nextConfirmedDate: '2026-09-25',
-    endDate: '2026-09-26',
+    // Next program: Tentacle Tribe in PRISM, Oct 23 to 24, 2026 (balletbend.org 2026/27 season; towertheatre.org/series/ballet-bend).
+    nextConfirmedDate: '2026-10-23',
+    endDate: '2026-10-24',
     priceInfo: 'Ticketed',
     organizer: 'Ballet Bend',
     officialUrl: 'https://www.towertheatre.org/events',
-    lastVerified: '2026-07-03',
+    lastVerified: '2026-09-27',
     blurb:
       "Ballet Bend is a contemporary dance company that stages performances at the Tower Theatre through the season, from original works to guest companies on tour. Its shows bring a level of professional dance to Central Oregon that a town this size rarely supports.",
   },

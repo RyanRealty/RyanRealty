@@ -7,7 +7,7 @@ import { SITE_CITY_SLUGS } from '@/lib/central-oregon'
 import { PRIMARY_CITIES } from '@/lib/cities'
 import { GOLF_COURSES } from '@/data/golf/courses'
 import aiQueryMap from '@/lib/seo/ai-query-map.json' assert { type: 'json' }
-import { CORE_CITY_SLUGS } from '@/app/housing-market/[...slug]/_v3/geo-constants'
+import { CORE_MARKET_PATHS } from '@/app/housing-market/[...slug]/_v3/geo-constants'
 import { cityTypeLlmsLines, dedupeLlmsLines, marketCityLlmsLines, zipLlmsLines, LLMS_SUBDIVISIONS_PATH } from '@/lib/site/llms-geo'
 import { BRAND, CONTACT } from '@/lib/brand/contact'
 
@@ -87,7 +87,7 @@ export async function GET() {
     `- Housing market hub: ${SITE_URL}/housing-market`,
     `- Market reports: ${SITE_URL}/housing-market/reports`,
     ...reports.map((r) => `- ${r.title}: ${SITE_URL}/housing-market/reports/${r.slug}`),
-    ...marketCityLlmsLines(SITE_URL, CORE_CITY_SLUGS, cityLabel),
+    ...marketCityLlmsLines(SITE_URL, CORE_MARKET_PATHS, cityLabel),
   ])
   // Full geo index: the same three sources the sitemap emits from, so the AI
   // crawler map and the Google crawler map cannot disagree on which geo pages

@@ -29,9 +29,15 @@ import {
   type ConditionOp,
   type Step,
 } from '@/lib/crm/sequence-step-schema'
+import { QUIET_END_HOUR, QUIET_START_HOUR } from '@/lib/crm/quiet-hours'
 import { CHANNEL_CARD_LABELS } from './editor-shared'
 import type { PanelOptions } from './StepConfigPanel'
 import { EngineTruthRadios, TagMultiselect } from './step-config-bits'
+
+/** 8 → "8:00 am", 20 → "8:00 pm". The text window copy reads the rule's own hours so it cannot drift. */
+function clockHour(hour: number): string {
+  return `${hour % 12 || 12}:00 ${hour < 12 ? 'am' : 'pm'}`
+}
 
 const CONDITION_FIELD_LABELS: Record<ConditionField, string> = {
   stage: 'Stage',
@@ -244,13 +250,13 @@ export function StepChannelBody({
                   { value: 'office_hours', label: 'Send during company office hours', available: false },
                   { value: 'custom', label: 'Send at custom time', available: false },
                 ]}
-                footnote="Steps due outside the window queue for the next 7:00 am PT send window. Suppressed and unsubscribed contacts are never sent."
+                footnote="Steps due outside the window wait for the next morning's send. Suppressed and unsubscribed contacts are never sent."
               />
             </>
           ) : (
             <p className="rounded-lg p-2.5 text-xs" style={{ border: '1px solid var(--a-border)', background: 'var(--a-inset)', color: 'var(--a-text-2)' }}>
-              Texts send from the assigned broker&apos;s number, honor the 8:00 am – 9:00 pm quiet hours, and skip opted-out
-              contacts.
+              Texts send from the assigned broker&apos;s number, only between {clockHour(QUIET_START_HOUR)} and{' '}
+              {clockHour(QUIET_END_HOUR)} PT, and skip opted-out contacts.
             </p>
           )}
           {waitField}

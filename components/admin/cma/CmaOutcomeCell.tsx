@@ -2,10 +2,10 @@
 /**
  * What happened after we sent it, as one line a broker can read at a glance.
  *
- * Five stages, in the order they can only ever happen: sent → opened →
- * clicked → visited → replied. A stage that has not happened is dimmed rather
- * than hidden, because the SHAPE is the information — "opened, never visited"
- * and "never opened" are different problems and must not look the same.
+ * Stages, in the order they can only ever happen: sent → delivered → opened →
+ * clicked → visited → replied. Delivered is marked receipt (Resend) or inferred
+ * (Gmail: no bounce in 24h, or any open/click). A stage that has not happened
+ * is dimmed rather than hidden.
  *
  * Colour carries exactly one meaning here. Reached stages are ordinary text;
  * `var(--a-ok)` marks the reply, the one stage that is a lead; and
@@ -59,11 +59,41 @@ export function pageLabel(path: string): string {
   return address.replace(/-/g, ' ')
 }
 
+/** Receipt (Resend) vs inferred (Gmail: no bounce in 24h, or any open/click). */
+export function deliveredKind(inferred: boolean): 'inferred' | 'receipt' {
+  return inferred ? 'inferred' : 'receipt'
+}
+
+/** The broker-readable click line: "clicked: report, Diamond Bar Ranch, reviews". */
+export function clickedLine(links: CmaOutcome['clickedLinks'] | undefined): string | null {
+  if (!links?.length) return null
+  const labels: string[] = []
+  for (const l of links) {
+    if (!labels.includes(l.label)) labels.push(l.label)
+  }
+  return labels.length ? `clicked: ${labels.join(', ')}` : null
+}
+
 function stagesOf(o: CmaOutcome): Stage[] {
   return [
     { key: 'sent', label: 'sent', at: o.sentAt, count: null, done: o.sentAt != null },
+    {
+      key: 'delivered',
+      label: 'delivered',
+      at: o.deliveredAt,
+      count: null,
+      done: o.deliveredAt != null,
+      detail: o.deliveredAt ? deliveredKind(o.deliveredInferred) : null,
+    },
     { key: 'opened', label: 'opened', at: o.firstOpenAt, count: o.opens, done: o.opens > 0 },
-    { key: 'clicked', label: 'clicked', at: o.firstClickAt, count: o.clicks, done: o.clicks > 0 },
+    {
+      key: 'clicked',
+      label: 'clicked',
+      at: o.firstClickAt,
+      count: o.clicks,
+      done: o.clicks > 0,
+      detail: clickedLine(o.clickedLinks),
+    },
     {
       key: 'visited',
       label: 'visited',
@@ -139,6 +169,11 @@ export function CmaOutcomeCell({ outcome, variant = 'row' }: CmaOutcomeCellProps
             </span>
           </div>
         ))}
+        {clickedLine(outcome.clickedLinks) ? (
+          <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+            {clickedLine(outcome.clickedLinks)}
+          </p>
+        ) : null}
         {outcome.visitedPages.count > 0 ? (
           <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
             Opened from the document: {outcome.visitedPages.recent.map(pageLabel).join(' · ')}
@@ -185,10 +220,17 @@ export function CmaOutcomeCell({ outcome, variant = 'row' }: CmaOutcomeCellProps
             }}
           >
             {s.label}
+            {s.key === 'delivered' && s.done && s.detail ? ` (${s.detail})` : ''}
             {s.count != null && s.count > 1 ? ` ${s.count}` : ''}
           </span>
         </span>
       ))}
+      {clickedLine(outcome.clickedLinks) ? (
+        <span title={clickedLine(outcome.clickedLinks) ?? undefined} style={{ color: 'var(--a-text-2)' }}>
+          {' · '}
+          {clickedLine(outcome.clickedLinks)}
+        </span>
+      ) : null}
       {outcome.visitedPages.count > 0 ? (
         <span
           title={`Opened from the document: ${outcome.visitedPages.recent.map(pageLabel).join(' · ')}`}

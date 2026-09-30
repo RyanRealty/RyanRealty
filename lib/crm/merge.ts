@@ -24,7 +24,9 @@
  * Server send paths build the context via lib/crm/merge-context.ts
  * (buildMergeContext) so agent/sender/company always resolve from real data.
  */
-import { stampCrmOutboundUtms } from '@/lib/analytics/visit-broker'
+import { replaceOwnSiteLinks } from '@/lib/analytics/own-site-links'
+import { appendQueryParam, hasQueryParam, stampCrmOutboundUtms } from '@/lib/analytics/visit-broker'
+import { isPrivateLink } from '@/lib/analytics/private-paths'
 import { formatDate } from '@/lib/format/date'
 import { isRandomToken } from '@/lib/crm/lead-quality'
 
@@ -419,27 +421,29 @@ export function attributeSiteLinks(
       ? /^[A-Za-z0-9._-]{1,80}$/.test(crmPersonId) ? crmPersonId : ''
       : typeof crmPersonId === 'number' && Number.isInteger(crmPersonId) && crmPersonId > 0 ? String(crmPersonId) : ''
   if (!slug && !fuid && !pid) return text
-  return text.replace(/https:\/\/(?:www\.)?ryan-realty\.com[^\s"'<)\]]*/g, (url) => {
+  return replaceOwnSiteLinks(text, (url) => {
     if (url.includes('/admin')) return url
-    // Split off a #fragment so params land in the query string, not the hash —
-    // an anchor-carrying CTA (/housing-market/bend?utm=..#market-report) must
-    // not become ..#market-report&agent=.., which the server never sees.
+    // A signing link is sent exactly as minted: no identity, agent or UTM
+    // parameter rides on a page whose address is its key (private-paths.ts).
+    if (isPrivateLink(url)) return url
+    // Split off a #fragment so params land in the query string, not the hash.
+    // An anchor-carrying CTA must not become ..#market-report&agent=.., which
+    // the server never sees.
     const hashAt = url.indexOf('#')
     let out = hashAt === -1 ? url : url.slice(0, hashAt)
     const fragment = hashAt === -1 ? '' : url.slice(hashAt)
-    // Agent attribution — routes the lead to the broker whose email this is.
-    if (slug && !/[?&]agent=/.test(out)) out += (out.includes('?') ? '&' : '?') + 'agent=' + encodeURIComponent(slug)
-    // Recipient identity — every click on a link WE sent stamps ?_fuid=<id>, so
-    // FubIdentityBridge cookies this browser to the contact and backfills their
-    // anonymous sessions. This is what turns "Anonymous · Portland" into a name.
-    if (fuid && !/[?&]_fuid=/.test(out)) out += (out.includes('?') ? '&' : '?') + '_fuid=' + fuid
-    // Native identity — ?_pid=<crm_people.id> is the post-cutover counterpart:
-    // contacts created after the CRM decommission have no fub_legacy_id, so a
-    // send that only stamps _fuid can never stitch their web sessions.
-    // PersonIdentityBridge prefers _pid when both are present.
-    if (pid && !/[?&]_pid=/.test(out)) out += (out.includes('?') ? '&' : '?') + '_pid=' + pid
-    // GA channel + broker UTMs — only fill gaps. listing-alerts / market-report
-    // / CMA docs already carry their own source/medium/campaign.
+    // Agent attribution routes the lead to the broker whose email this is.
+    // appendQueryParam treats `&amp;` as a separator and appends with it, so
+    // an HTML href does not grow a second copy of a key it already has.
+    if (slug && !hasQueryParam(out, 'agent')) out = appendQueryParam(out, 'agent', slug)
+    // Retired vendor id. Still filled when a caller passes one. The decoration
+    // helper does not. An unsigned id identifies nobody.
+    if (fuid && !hasQueryParam(out, '_fuid')) out = appendQueryParam(out, '_fuid', fuid)
+    // Signed person token from decorateOutboundText. Send paths do not call
+    // this function, and they do not stamp _pid themselves.
+    if (pid && !hasQueryParam(out, '_pid')) out = appendQueryParam(out, '_pid', pid)
+    // GA channel + broker UTMs. Only fill gaps. A CMA email that already
+    // carries utm_source / utm_medium / utm_campaign keeps them.
     out = stampCrmOutboundUtms(out, slug || null)
     return out + fragment
   })

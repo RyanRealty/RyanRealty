@@ -11,10 +11,14 @@
  * 308s there. Do not invent a second live URL, and do not paint "Juniper
  * Preserve" on a `/communities/pronghorn` href (or the reverse).
  *
- * Edge-safe: committed JSON + string work only.
+ * Edge-safe: committed JSON + string work only. Reads the lite registry (naming
+ * fields only, data/resort-communities.lite.json), NOT the ~50 KB source
+ * registry: this module is reachable from client components, and the source
+ * JSON was being emitted into 26 client chunks. Regenerate the lite file with
+ * scripts/build-resort-communities-lite.mjs after editing the source.
  */
 
-import registry from '@/data/resort-communities.json' assert { type: 'json' }
+import registry from '@/data/resort-communities.lite.json' assert { type: 'json' }
 
 export type CommunityNamingEntry = {
   slug: string
@@ -117,6 +121,18 @@ export function resolvePublicCommunitySlug(raw: string): string {
   const key = raw.trim().toLowerCase()
   const entry = registryCommunityByAnyKey(key)
   return entry ? publicCommunitySlug(entry) : key
+}
+
+/**
+ * The live `/communities/<public slug>` path for any registry key (durable
+ * slug, public slug, label, alias). Build every community href through this,
+ * never `/communities/${durableSlug}`: the durable key of a rebrand is a 308
+ * (`/communities/pronghorn` -> `/communities/juniper-preserve`), and an
+ * internal link to a redirect costs a hop and splits link equity. Unknown
+ * input keeps its trimmed, lower-cased slug.
+ */
+export function communityPath(raw: string): string {
+  return `/communities/${resolvePublicCommunitySlug(raw)}`
 }
 
 /**

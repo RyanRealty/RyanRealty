@@ -2,16 +2,26 @@
  * /price-drops/[city] - city-scoped 7-day price cuts, on the v3 barrel.
  *
  * Same contract as the region page. Opening is Field of this city's cut
- * houses. Count is a caption. generateMetadata title still leads with
- * "Price Drops in". generateStaticParams over SITE_CITY_SLUGS.
- * dynamicParams stays false so an unknown city slug 404s.
+ * houses. Count is a caption: the city's whole window, with "N shown below"
+ * when the list is capped, and the drawing states the cap the read reports.
+ * generateMetadata title still leads with "Price Drops in".
+ * generateStaticParams over SITE_CITY_SLUGS. dynamicParams stays false so an
+ * unknown city slug 404s.
+ *
+ * A read that did not answer is not an empty week (§0): getPriceDrops never
+ * rejects, and a failed read comes back `degraded: true`. The page says it
+ * could not load, publishes no count, Dataset or updated stamp, and
+ * refuseDegradedIsr cuts that copy's ISR lifetime from 1800 s to
+ * DEGRADED_ISR_REVALIDATE_S. Not noStore(), which throws inside a runtime ISR
+ * render in Next 16 (an HTTP 500, lib/site/degraded-isr.ts), and not a
+ * .catch() into an empty result, which published "Nothing in {city}".
  */
 
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { formatDate } from '@/lib/format/date'
-import { unstable_noStore as noStore } from 'next/cache'
 import { getPriceDrops } from '@/lib/data'
+import { refuseDegradedIsr } from '@/lib/site/degraded-isr'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { homesForSalePath } from '@/lib/slug'
 import { formatPriceCompact } from '@/lib/format/money'
@@ -32,9 +42,11 @@ import { MetadataBlock } from '@/components/site/MetadataBlock'
 import TrackSearchView from '@/components/tracking/TrackSearchView'
 import { PriceDropAlertsSheet } from '../_v3/PriceDropAlertsSheet.client'
 import {
+  DROPS_ALERT_FILTERS,
   DROPS_CITY_SLUGS,
   cityLabel,
   dropsTrace,
+  dropsUnavailable,
   medianPositive,
 } from '../_v3/drops-constants'
 import { priceDropFieldItems } from '../_v3/drops-field-items'
@@ -77,15 +89,15 @@ export default async function PriceDropsCityPage({ params }: Props) {
   const cityName = cityLabel(citySlug)
   const path = `/price-drops/${citySlug}`
 
-  const { drops, total, fetchedAt } = await getPriceDrops({
+  // @prerender-db-ok getPriceDrops is makeResilientCached: it never rejects, a failed read is `degraded`.
+  const { drops, total, cap, fetchedAt, degraded } = await getPriceDrops({
     city: cityName,
     limit: 48,
     days: 7,
-  }).catch(() => ({ drops: [], total: 0, fetchedAt: new Date().toISOString() }))
+  })
 
-  if (drops.length === 0) {
-    noStore()
-  }
+  // Unknown is not empty: this copy stands for a minute, not the whole window.
+  if (degraded) await refuseDegradedIsr(`price-drops/${citySlug}`, ['getPriceDrops'])
 
   const totalReduced = drops.reduce((sum, d) => sum + (d.lastDropAmount ?? 0), 0)
   const medianDropPct = medianPositive(drops.map((d) => d.lastDropPct))
@@ -93,7 +105,7 @@ export default async function PriceDropsCityPage({ params }: Props) {
   const distribution = priceDropDistribution({
     drops,
     total,
-    cap: 48,
+    cap,
     placeLabel: cityName,
     windowDays: 7,
     fetchedAt: fetchedAt ? formatDate(fetchedAt) : null,
@@ -120,15 +132,18 @@ export default async function PriceDropsCityPage({ params }: Props) {
         { name: cityName, url: path },
       ],
     },
-    ...priceDropDatasetSchemas({
-      pageUrl,
-      placeName: cityName,
-      total,
-      shownCount: drops.length,
-      totalReducedLabel,
-      medianDropPctLabel,
-      fetchedAt: drops.length > 0 ? fetchedAt : null,
-    }),
+    // A read that did not answer has no count to state and no freshness to stamp.
+    ...(degraded
+      ? []
+      : priceDropDatasetSchemas({
+          pageUrl,
+          placeName: cityName,
+          total,
+          shownCount: drops.length,
+          totalReducedLabel,
+          medianDropPctLabel,
+          fetchedAt: drops.length > 0 ? fetchedAt : null,
+        })),
     ...(fieldItems.length > 0
       ? [
           {
@@ -168,7 +183,7 @@ export default async function PriceDropsCityPage({ params }: Props) {
     <>
       <main className={V3_ROOT_CLASS}>
         <V3SectionTracker />
-        <TrackSearchView city={cityName} resultsCount={total} />
+        <TrackSearchView city={cityName} resultsCount={degraded ? undefined : total} />
         <MetadataBlock schemas={schemas} />
 
         <V3Breadcrumb
@@ -179,13 +194,22 @@ export default async function PriceDropsCityPage({ params }: Props) {
           ]}
         />
 
-        {captionCount > 0 ? (
+        {!degraded && captionCount > 0 ? (
           <>
+            {/* The count is the city's whole window, as on the region page. It
+                printed the rendered cards, so a capped list read as the city's
+                total. When the list is capped, the label says so. */}
             <PriceDropsOpening
               heading={`Price drops in ${cityName}`}
               headline={`Price drops in ${cityName}`}
-              captionValue={captionCount.toLocaleString('en-US')}
-              captionLabel={captionCount === 1 ? `price cut in ${cityName}` : `price cuts in ${cityName}`}
+              captionValue={total.toLocaleString('en-US')}
+              captionLabel={
+                total === 1
+                  ? `price cut in ${cityName}`
+                  : total > captionCount
+                    ? `price cuts in ${cityName} · ${captionCount} shown below`
+                    : `price cuts in ${cityName}`
+              }
             />
             <div className="pd-fold">
               <V3Field
@@ -229,17 +253,23 @@ export default async function PriceDropsCityPage({ params }: Props) {
             heading={`Price drops in ${cityName}`}
             headingLevel={1}
             items={[
-              {
-                kind: 'prose',
-                term: `Nothing in ${cityName} this window`,
-                body: `No active single-family home in ${cityName} has a documented asking-price cut in the last 7 days on this pull.`,
-              },
+              degraded
+                ? { kind: 'prose', ...dropsUnavailable(cityName) }
+                : {
+                    kind: 'prose',
+                    term: `Nothing in ${cityName} this window`,
+                    body: `No active single-family home in ${cityName} has a documented asking-price cut in the last 7 days on this pull.`,
+                  },
               { label: 'All Central Oregon price drops', href: '/price-drops' },
             ]}
           />
         )}
 
-        <PriceDropAlertsSheet placeLabel={cityName} city={cityName} />
+        <PriceDropAlertsSheet
+          placeLabel={cityName}
+          city={cityName}
+          extraFilters={DROPS_ALERT_FILTERS}
+        />
 
         <V3Quiet id="edges" heading="Keep looking" items={edgeItems} />
       </main>

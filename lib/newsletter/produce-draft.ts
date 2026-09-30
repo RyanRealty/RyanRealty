@@ -35,6 +35,7 @@ import { getCommunityBySlug } from '@/app/actions/communities'
 import { createNewsletterDraft, listNewsletters, setNewsletterCitations, type NewsletterCitationEntry } from '@/lib/data'
 import { htmlToPlainText } from '@/lib/email/prepare'
 import { NEWSLETTER_MARKET_CITY_SLUGS } from '@/lib/data/geo/report-cities'
+import { communityPath } from '@/lib/communities/community-public-pair'
 
 const SITE = 'https://ryan-realty.com'
 
@@ -324,7 +325,7 @@ function communitySection(c: CommunityItem): string {
       <td align="right" style="font-family:${SERIF};font-size:30px;color:#eae6de;font-weight:700;line-height:.9;">COMMUNITIES</td>
     </tr></table>
     <div style="border-bottom:1px solid rgba(16,39,66,.22);margin:8px 0 18px;"></div>
-    <a href="${SITE}/communities/${escapeHtml(c.slug)}" style="text-decoration:none;">
+    <a href="${SITE}${escapeHtml(communityPath(c.slug))}" style="text-decoration:none;">
     ${hero}
     <table width="100%" style="margin-top:14px;"><tr>
       <td style="font-family:${SERIF};font-size:30px;color:${NAVY};">${escapeHtml(c.name)}</td>

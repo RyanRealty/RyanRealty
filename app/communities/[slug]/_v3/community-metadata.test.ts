@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { shareDescription } from '@/lib/share-metadata'
+import resortRegistry from '@/data/resort-communities.json'
+import { publicCommunitySlug } from '@/lib/communities/community-public-pair'
 import {
   buildCommunitySchemas,
   communityMetadataInput,
@@ -130,7 +132,7 @@ describe('SITE-177 community SERP copy', () => {
         city: 'Bend',
         listedCount: 8,
       }),
-    ).toBe('Mountain High: 8 homes for sale | Bend, OR')
+    ).toBe('Mountain High real estate | 8 Homes for Sale | Bend, OR')
     expect(
       communitySerpTitle({
         slug: 'mountain-high',
@@ -138,7 +140,20 @@ describe('SITE-177 community SERP copy', () => {
         city: 'Bend',
         listedCount: null,
       }),
-    ).toBe('Mountain High Homes for Sale | Bend, OR')
+    ).toBe('Mountain High real estate | Homes for Sale | Bend, OR')
+    // One listing reads as one home, in the title and the description.
+    expect(
+      communitySerpTitle({ slug: 'mountain-high', name: 'Mountain High', city: 'Bend', listedCount: 1 }),
+    ).toBe('Mountain High real estate | 1 Home for Sale | Bend, OR')
+    expect(
+      communitySerpDescription({
+        slug: 'mountain-high',
+        name: 'Mountain High',
+        city: 'Bend',
+        listedCount: 1,
+        types: ['homes'],
+      }),
+    ).toMatch(/^1 home for sale in Mountain High, Bend\./)
     expect(
       communitySerpDescription({
         slug: 'mountain-high',
@@ -187,10 +202,25 @@ describe('SITE-177 community SERP copy', () => {
     // and the setting clause gave them back (shareDescription caps at 155).
     expect(input.description).toMatch(/Live MLS inventory\.$/)
     expect(input.path).toBe('/communities/black-butte-ranch')
-    // A sibling under the same city still reads "{name} in {city}".
+    // A sibling under the same city opens on its own query (SITE-203).
     expect(
       communitySerpDescription({ slug: 'caldera-springs', name: 'Caldera Springs', city: 'Sunriver' }),
-    ).toMatch(/^Caldera Springs in Sunriver, Oregon\./)
+    ).toMatch(/^Caldera Springs homes for sale in Sunriver, Oregon\./)
+  })
+
+  it('every registered community description fits the 155 cap whole, with the mix or without it', () => {
+    const registry = resortRegistry as { communities: Array<{ slug: string; label: string; city: string }> }
+    for (const c of registry.communities) {
+      const description = communitySerpDescription({
+        slug: c.slug,
+        name: c.label,
+        city: c.city,
+        types: ['homes', 'attached', 'lots'],
+      })
+      expect(shareDescription(description), c.slug).toBe(description)
+      expect(description, c.slug).toMatch(/Live MLS inventory\.$/)
+      expect(description, c.slug).toMatch(/^\S.* (homes for sale|real estate)( in [^.]+)?\./)
+    }
   })
 
   it('Tetherow title and description say Tetherow real estate', () => {
@@ -208,13 +238,31 @@ describe('SITE-177 community SERP copy', () => {
     expect(shareDescription(input.description)).toBe(input.description)
   })
 
-  it('other communities keep the Homes for Sale title', () => {
+  it('every other registered community leads with "real estate" (Matt 2026-09-24)', () => {
     const input = communityMetadataInput({
       slug: 'broken-top',
       name: 'Broken Top',
       city: 'Bend',
       stock: { listedCount: 12, types: ['homes'] },
     })
-    expect(input.title).toBe('Broken Top Homes for Sale | Bend, OR')
+    expect(input.title).toBe('Broken Top real estate | Homes for Sale | Bend, OR')
+    // Sweep the registry: "real estate" everywhere but the two self-city
+    // communities, whose /cities/<slug> pages already carry that title.
+    const registry = (resortRegistry as { communities: Array<{ slug: string; label: string; city: string }> })
+      .communities
+    expect(registry.length).toBeGreaterThan(10)
+    // The route's slug is the public one (pronghorn is served as juniper-preserve).
+    const plain = registry
+      .map((e) => ({ ...e, slug: publicCommunitySlug(e) }))
+      .filter((e) => !/ real estate \| /.test(communitySerpTitle({ slug: e.slug, name: e.label, city: e.city })))
+      .map((e) => e.slug)
+      .sort()
+    expect(plain).toEqual(['black-butte-ranch', 'sunriver'])
+  })
+
+  it('a compound slug keeps the Homes for Sale title (noindex, not a registered community)', () => {
+    expect(
+      communitySerpTitle({ slug: 'bend-parks-at-broken-top', name: 'Parks at Broken Top', city: 'Bend' }),
+    ).toBe('Parks at Broken Top Homes for Sale | Bend, OR')
   })
 })

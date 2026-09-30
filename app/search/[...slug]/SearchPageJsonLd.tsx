@@ -36,6 +36,13 @@ type Props = {
   subdivisionBlurb: string | null
   cityMetaDescription: string | undefined
   bannerUrl: string | null
+  /**
+   * The page's lead image when it is not the place banner (the split branch
+   * leads with the first listing card's photo, never a banner). Takes
+   * precedence over bannerUrl; no width/height is claimed for it because the
+   * card photo's intrinsic size is the feed's, not ours.
+   */
+  primaryImageUrl?: string | null
   siteUrl: string
   listings: ListingRow[]
   /** Terminal preset crumb label (e.g. "Under $500K") so JSON-LD matches the visible breadcrumb. */
@@ -73,6 +80,7 @@ export default function SearchPageJsonLd({
   subdivisionBlurb,
   cityMetaDescription,
   bannerUrl,
+  primaryImageUrl,
   siteUrl,
   listings,
   presetLabel,
@@ -93,7 +101,9 @@ export default function SearchPageJsonLd({
     '@type': 'WebPage',
     name: name ?? placeHomesForSaleHeading(displayName),
     description,
-    ...(bannerUrl && { primaryImageOfPage: { '@type': 'ImageObject', url: bannerUrl, width: 1200, height: 336 } }),
+    ...(primaryImageUrl
+      ? { primaryImageOfPage: { '@type': 'ImageObject', url: primaryImageUrl } }
+      : bannerUrl && { primaryImageOfPage: { '@type': 'ImageObject', url: bannerUrl, width: 1200, height: 336 } }),
     ...(pageUrl && { url: pageUrl }),
   }
 

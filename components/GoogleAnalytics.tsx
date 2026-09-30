@@ -2,7 +2,9 @@
 
 import { useEffect } from 'react'
 import Script from 'next/script'
+import { usePathname } from 'next/navigation'
 import { IS_NON_PRODUCTION_BUILD } from '@/lib/analytics/non-production-build'
+import { isPrivatePath } from '@/lib/analytics/private-paths'
 import { hasAnalyticsConsent, hasMarketingConsent } from './CookieConsentBanner'
 
 const GA4_ID = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID?.trim()
@@ -51,6 +53,7 @@ const GOOGLE_ADS_ID = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID?.trim()
  *   - https://support.google.com/analytics/answer/9445345 (Google Signals)
  */
 export default function GoogleAnalytics() {
+  const pathname = usePathname()
   // Apply current consent state to gtag the moment the script is ready,
   // and whenever the user updates their preferences. Returns the cleanup.
   useEffect(() => {
@@ -83,6 +86,8 @@ export default function GoogleAnalytics() {
   if (!hasGA4 && !hasGoogleAds && !hasGTM) return null
   // Never load a Google tag from a dev server or a preview deploy.
   if (IS_NON_PRODUCTION_BUILD) return null
+  // A signing link's address is its key: no tag ever sees it (private-paths.ts).
+  if (isPrivatePath(pathname)) return null
 
   const gtagScriptId = hasGA4 ? GA4_ID! : (!hasGTM && hasGoogleAds ? GOOGLE_ADS_ID! : null)
 

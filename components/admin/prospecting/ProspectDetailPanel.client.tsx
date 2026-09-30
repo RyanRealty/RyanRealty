@@ -115,11 +115,16 @@ export function ProspectDetailPanel({
 
   // Display-only gating — the server action re-runs every guard at click time.
   // Relisted / off-market hard-skip matches Send (Aberdeen class).
-  const dripBlockedReason = prospectDripBlockedReason({
-    compliance: detail.compliance,
-    drip: detail.drip,
-    personId: detail.personId,
-  })
+  const optionalPending = detail.optionalPending === true
+  const actionBlock = detail.complianceLoadError || detail.dripLoadError || null
+  const dripBlockedReason = optionalPending
+    ? 'Still loading this prospect.'
+    : actionBlock ||
+      prospectDripBlockedReason({
+        compliance: detail.compliance,
+        drip: detail.drip,
+        personId: detail.personId,
+      })
   const hideEnroll = shouldHideProspectEnroll({
     compliance: detail.compliance,
     drip: detail.drip,
@@ -145,10 +150,13 @@ export function ProspectDetailPanel({
     detail.compliance.offMarket ||
     PROSPECT_CHANNELS.some((c) => detail.compliance.channels[c].blocked)
 
-  const canOpenSend = canOpenProspectSend({
-    compliance: detail.compliance,
-    personId: detail.personId,
-  })
+  const canOpenSend =
+    !optionalPending &&
+    !actionBlock &&
+    canOpenProspectSend({
+      compliance: detail.compliance,
+      personId: detail.personId,
+    })
 
   const hasEngagement =
     detail.engagement.reportViews > 0 ||
@@ -212,16 +220,31 @@ export function ProspectDetailPanel({
           {detail.listPrice != null ? `Was ${formatPrice(detail.listPrice)}` : null}
           {dateValue ? ` · ${dateLabel} ${formatDate(dateValue)}` : ''}
         </p>
-        {(detail.contactEmail?.trim() || detail.contactPhone?.trim()) ? (
-          <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text)', marginTop: 4 }}>
-            {[
-              detail.contactPhone?.trim() ? detail.contactPhone.trim() : null,
-              detail.contactEmail?.trim() ? detail.contactEmail.trim() : null,
-            ]
-              .filter(Boolean)
-              .join(' · ')}
-          </p>
-        ) : null}
+        <div className="space-y-2" style={{ paddingTop: 8 }}>
+          <div>
+            <div style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>Owner email</div>
+            <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text)', margin: 0 }}>
+              {detail.contactEmail?.trim() || 'No email on file'}
+            </p>
+          </div>
+          <div>
+            <div style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>Phone</div>
+            <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text)', margin: 0 }}>
+              {detail.contactPhone?.trim() || 'No phone on file'}
+            </p>
+          </div>
+          <div>
+            <div style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>Live status</div>
+            <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text)', margin: 0 }}>
+              {detail.standardStatus?.trim() || 'Unknown'}
+            </p>
+            {detail.liveStatusLoadError ? (
+              <p role="alert" style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-danger)', margin: '4px 0 0' }}>
+                {detail.liveStatusLoadError}
+              </p>
+            ) : null}
+          </div>
+        </div>
         {detail.personId == null ? (
           <div className="space-y-2" style={{ paddingTop: 8 }}>
             <p style={quietTextStyle}>
@@ -286,7 +309,11 @@ export function ProspectDetailPanel({
         ) : null}
       </div>
 
-      {showRibbon ? (
+      {optionalPending ? null : detail.complianceLoadError ? (
+        <p role="alert" style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-danger)', margin: 0 }}>
+          {detail.complianceLoadError}
+        </p>
+      ) : showRibbon ? (
         <ProspectComplianceRibbon
           compliance={detail.compliance}
           contactEmail={detail.contactEmail}
@@ -295,7 +322,15 @@ export function ProspectDetailPanel({
       ) : null}
 
       <div className="flex items-center gap-2">
-        <ProspectDocPill doc={detail.doc} />
+        {optionalPending ? (
+          <p style={quietTextStyle}>Loading audit status.</p>
+        ) : detail.docLoadError ? (
+          <p role="alert" style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-danger)', margin: 0 }}>
+            {detail.docLoadError}
+          </p>
+        ) : (
+          <ProspectDocPill doc={detail.doc} />
+        )}
         {/* Direct door to the audit itself (Matt 2026-08-05: "no way for me to
             immediately see the audits") — admin review page for the built doc. */}
         {detail.doc.state === 'ready' || detail.doc.state === 'sent' ? (
@@ -342,7 +377,15 @@ export function ProspectDetailPanel({
       {/* Price history */}
       <div className="space-y-2">
         <SectionLabel>Price history</SectionLabel>
-        <ProspectPriceHistory cycles={detail.priceHistory} />
+        {optionalPending ? (
+          <p style={quietTextStyle}>Loading listing history.</p>
+        ) : detail.historyLoadError ? (
+          <p role="alert" style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-danger)', margin: 0 }}>
+            {detail.historyLoadError}
+          </p>
+        ) : (
+          <ProspectPriceHistory cycles={detail.priceHistory} />
+        )}
       </div>
 
       {/* Engagement */}
@@ -378,8 +421,11 @@ export function ProspectDetailPanel({
       <div style={dividerStyle} />
 
       {/* Actions */}
+      {optionalPending ? (
+        <p style={quietTextStyle}>Loading audit, compliance, and listing history.</p>
+      ) : (
       <div className="flex flex-wrap gap-2">
-        {detail.doc.state === 'none' ? (
+        {detail.docLoadError ? null : detail.doc.state === 'none' ? (
           <Button variant="quiet" touch className="flex-1" onClick={() => onBuild(detail.id)}>
             Build audit
           </Button>
@@ -432,14 +478,17 @@ export function ProspectDetailPanel({
           </Link>
         ) : null}
       </div>
-      {hideEnroll ? (
+      )}
+      {optionalPending ? null : hideEnroll ? (
         <p style={quietTextStyle}>
           {detail.compliance.relisted
             ? 'Relisted or sold — enroll hidden (same hard-skip as send).'
             : 'Off market — enroll hidden (same hard-skip as send).'}
         </p>
       ) : dripBlockedReason ? (
-        <p style={quietTextStyle}>{dripBlockedReason}</p>
+        <p role={actionBlock ? 'alert' : undefined} style={quietTextStyle}>
+          {dripBlockedReason}
+        </p>
       ) : null}
 
       <Dialog

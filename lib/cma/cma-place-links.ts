@@ -11,6 +11,7 @@ import registry from '@/data/resort-communities.json' assert { type: 'json' }
 import { CENTRAL_OREGON_CITY_SLUGS } from '@/lib/central-oregon'
 import { resolveSubdivisionAreaRedirect } from '@/lib/subdivision-area-redirects'
 import { neighborhoodPagePath, slugify } from '@/lib/slug'
+import { communityPath } from '@/lib/communities/community-public-pair'
 
 /**
  * The production origin, hard-coded on purpose — the same reason
@@ -93,7 +94,7 @@ export function cmaCommunityHref(slug: string | null | undefined): string | null
   const key = slugify(s)
   if (!key || key === 'unknown') return null
   const entry = ENTRY_BY_NAME_SLUG.get(key)
-  return abs(`/communities/${entry?.slug ?? key}`)
+  return abs(communityPath(entry?.slug ?? key))
 }
 
 /**
@@ -107,7 +108,7 @@ export function cmaSubdivisionHref(subdivisionName: string | null | undefined): 
   const key = slugify(label)
   if (!key || key === 'unknown') return null
   const entry = ENTRY_BY_NAME_SLUG.get(key)
-  if (entry) return abs(`/communities/${entry.slug}`)
+  if (entry) return abs(communityPath(entry.slug))
   const redirected = resolveSubdivisionAreaRedirect(key)
   if (redirected) return abs(redirected)
   return abs(`/subdivisions/${key}`)

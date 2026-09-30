@@ -18,10 +18,12 @@ describe('listing envelope walk wiring', () => {
     expect(stack).toMatch(/promoteLinedFormFields/)
     expect(stack).toMatch(/promoteInitialsBoxes/)
     expect(src).toMatch(/signerOwnsMappedField/)
+    // Signers fill their own fields and see only finished values of anyone
+    // else's; the server checks every value by the field rules (Matt 2026-09-24).
     const sign = readFileSync(join(process.cwd(), 'app/actions/tc-sign.ts'), 'utf8')
-    expect(sign).toMatch(/signerOwnsMappedField/)
-    expect(sign).toMatch(/if \(!signerOwnsMappedField\(String\(f\.type/)
-    expect(sign).toMatch(/type === 'text' && !!text.trim/)
+    expect(sign).toMatch(/checkSubmission\(/)
+    expect(sign).toMatch(/fieldOwner\(/)
+    expect(sign).toMatch(/valueIsFilled\(/)
     const adopt = readFileSync(join(process.cwd(), 'lib/tc/adopt-signature.ts'), 'utf8')
     expect(adopt).toMatch(/stampPreparedSignerFields/)
     expect(src).toMatch(/getEnvelopeCycleKindAndDeal/)

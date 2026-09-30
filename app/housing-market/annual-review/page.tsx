@@ -187,6 +187,7 @@ import {
   overlayYearDetailWithLeftover,
   type MissingCity,
 } from './_v3/annual-sections'
+import { cityMarketPath } from '@/lib/market/canonical-market-path'
 
 export const revalidate = 86400
 
@@ -525,7 +526,7 @@ export default async function AnnualReviewPage() {
   for (const city of [...inventory.missing, ...year.missing] as MissingCity[]) {
     if (!city.slug || doored.has(city.slug)) continue
     doored.add(city.slug)
-    coverage.push({ label: `${city.label} market report`, href: `/housing-market/${city.slug}` })
+    coverage.push({ label: `${city.label} market report`, href: cityMarketPath(city.slug) })
   }
   coverage.push({ label: 'Oregon Data Share', href: 'https://www.oregondatashare.com' })
 

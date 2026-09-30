@@ -132,16 +132,45 @@ describe('isSuppressedByEmail', () => {
     expect(r.reasons).toContain('tag:contact:do-not-call')
   })
 
-  it('a protected compliance tag blocks regardless of channel (spec blocker 1)', async () => {
-    // contact:do-not-text is a protected compliance tag — per the contract it
-    // suppresses on ANY channel, even though TAG_CHANNEL maps it to sms only.
-    // The protected-tag scan is the belt-and-suspenders that makes a person who
-    // carries any protected tag un-mailable by this email-keyed check.
+  it('does not let contact:do-not-text block email', async () => {
     peopleResult = { data: [{ id: 3, tags: ['contact:do-not-text'] }], error: null }
     perPersonTags[3] = ['contact:do-not-text']
     const r = await isSuppressedByEmail('emailer@ok.com', 'email')
-    expect(r.suppressed).toBe(true)
-    expect(r.reasons).toContain('tag:contact:do-not-text')
+    expect(r.suppressed).toBe(false)
+    expect(r.reasons).not.toContain('tag:contact:do-not-text')
+  })
+
+  it('does not let contact:do-not-call block email, and does block call', async () => {
+    peopleResult = { data: [{ id: 8, tags: ['contact:do-not-call'] }], error: null }
+    perPersonTags[8] = ['contact:do-not-call']
+    const email = await isSuppressedByEmail('callable@ok.com', 'email')
+    expect(email.suppressed).toBe(false)
+    const call = await isSuppressedByEmail('callable@ok.com', 'call')
+    expect(call.suppressed).toBe(true)
+    expect(call.reasons).toContain('tag:contact:do-not-call')
+  })
+
+  it('hard-stop, unsubscribe, and bounce still block email', async () => {
+    peopleResult = { data: [{ id: 12, tags: ['unsubscribed'] }], error: null }
+    perPersonTags[12] = ['unsubscribed']
+    const unsub = await isSuppressedByEmail('unsub@ok.com', 'email')
+    expect(unsub.suppressed).toBe(true)
+    expect(unsub.reasons).toContain('tag:unsubscribed')
+
+    peopleResult = { data: [{ id: 13, tags: ['bounced'] }], error: null }
+    perPersonTags[13] = ['bounced']
+    const bounced = await isSuppressedByEmail('bounce-tag@ok.com', 'email')
+    expect(bounced.suppressed).toBe(true)
+    expect(bounced.reasons).toContain('tag:bounced')
+  })
+
+  it('a channel-all bounce row still blocks every channel', async () => {
+    peopleResult = { data: [], error: null }
+    emailSuppressionRows = { data: [{ channel: 'all', reason: 'bounced' }], error: null }
+    for (const channel of ['email', 'sms', 'call'] as const) {
+      const r = await isSuppressedByEmail('all-bounce@ok.com', channel)
+      expect(r.suppressed).toBe(true)
+    }
   })
 
   it('honors the channel for non-protected suppression sources (no false block)', async () => {

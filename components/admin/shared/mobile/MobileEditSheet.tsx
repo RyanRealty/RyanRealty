@@ -222,12 +222,10 @@ export default function MobileEditSheet({
           ))}
           <button
             type="button"
-            className="flex w-full items-center gap-2.5 px-4 py-3 text-left"
+            className="flex w-full items-center gap-2 px-4 py-3 text-left"
             onClick={() => setPhones((rows) => [...rows, { value: '', label: 'Mobile', bad: false, isPrimary: rows.length === 0 }])}
           >
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: 'var(--a-btn-bg)' }}>
-              <Plus size={14} strokeWidth={3} aria-hidden style={{ color: 'var(--a-btn-fg)' }} />
-            </span>
+            <Plus size={16} strokeWidth={2.5} style={{ color: 'var(--a-accent)' }} aria-hidden />
             <span className="text-[15px]" style={{ color: 'var(--a-accent)' }}>Add phone number</span>
           </button>
         </div>
@@ -263,12 +261,10 @@ export default function MobileEditSheet({
           ))}
           <button
             type="button"
-            className="flex w-full items-center gap-2.5 px-4 py-3 text-left"
+            className="flex w-full items-center gap-2 px-4 py-3 text-left"
             onClick={() => setEmails((rows) => [...rows, { prev: null, value: '' }])}
           >
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: 'var(--a-btn-bg)' }}>
-              <Plus size={14} strokeWidth={3} aria-hidden style={{ color: 'var(--a-btn-fg)' }} />
-            </span>
+            <Plus size={16} strokeWidth={2.5} style={{ color: 'var(--a-accent)' }} aria-hidden />
             <span className="text-[15px]" style={{ color: 'var(--a-accent)' }}>Add email</span>
           </button>
         </div>

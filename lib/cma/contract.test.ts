@@ -194,6 +194,32 @@ describe('evaluateAccuracyContract', () => {
     expect(contract.checks.find((c) => c.id === 'dispersion-within-limit')!.pass).toBe(false)
   })
 
+  it('grades dispersion on the final list, not a recommended dollar left in the review reason', () => {
+    const comps = tightSet()
+    const adjusted = adjustComps(subject(), comps, null)
+    const pricing = computePricing(subject(), adjusted, null)!
+    pricing.recommended = 544_000
+    pricing.conservative = 500_000
+    pricing.highEnd = 570_000
+    pricing.valueLow = 494_000
+    pricing.valueHigh = 570_000
+    pricing.needsReview = true
+    pricing.reviewReason =
+      'Comparable sales span a wide price-per-square-foot range. Recommended $561,000 sits inside the supported range.'
+    const contract = evaluateAccuracyContract({
+      audit: cleanAudit(),
+      comps: adjusted,
+      pricing,
+      judgment: judgmentFor(comps),
+      minComps: 6,
+      marketContextPresent: true,
+    })
+    const dispersion = contract.checks.find((c) => c.id === 'dispersion-within-limit')!
+    expect(dispersion.pass).toBe(false)
+    expect(dispersion.detail).toContain('$544,000')
+    expect(dispersion.detail).not.toContain('$561,000')
+  })
+
   it('a range wider than 8% of the recommended list on a side forces review (Matt 2026-09-09)', () => {
     const tight = [
       comp({ closePrice: 600000, sqft: 2000 }),
@@ -415,6 +441,64 @@ describe('evaluateAccuracyContract', () => {
       minComps: 6,
       marketContextPresent: true,
       failedAsk: 749_900,
+    })
+    expect(contract.pass).toBe(false)
+    expect(contract.checks.find((c) => c.id === 'expired-list-cap')!.pass).toBe(false)
+  })
+
+  it('Nugget shape: ask below the band, rec at valueLow passes expired-list-cap', () => {
+    const comps = tightSet()
+    const adjusted = adjustComps(subject(), comps, null)
+    const pricing = computePricing(subject(), adjusted, null)!
+    pricing.valueLow = 734_000
+    pricing.valueHigh = 1_285_000
+    pricing.conservative = 734_000
+    pricing.recommended = 734_000
+    pricing.highEnd = 1_285_000
+    pricing.failedAsk = 725_000
+    pricing.failedAskBelowRange = true
+    const contract = evaluateAccuracyContract({
+      audit: cleanAudit(),
+      comps: adjusted,
+      pricing,
+      judgment: judgmentFor(comps),
+      minComps: 6,
+      marketContextPresent: true,
+      failedAsk: 725_000,
+      priceAnchorPpsf: 400,
+      subjectSubType: 'Single Family Residence',
+      subjectBaths: 2,
+    })
+    const cap = contract.checks.find((c) => c.id === 'expired-list-cap')
+    expect(cap?.pass).toBe(true)
+    expect(cap?.detail).toMatch(/failedAskBelowRange/)
+    expect(cap?.detail).toMatch(/\$734,000/)
+    expect(contract.checks.filter((c) => c.severity === 'hard' && !c.pass)).toHaveLength(0)
+    expect(contract.pass).toBe(true)
+  })
+
+  it('Nugget shape: ask below the band, rec above valueLow fails expired-list-cap', () => {
+    const comps = tightSet()
+    const adjusted = adjustComps(subject(), comps, null)
+    const pricing = computePricing(subject(), adjusted, null)!
+    pricing.valueLow = 734_000
+    pricing.valueHigh = 1_285_000
+    pricing.conservative = 734_000
+    pricing.recommended = 1_036_000
+    pricing.highEnd = 1_285_000
+    pricing.failedAsk = 725_000
+    pricing.failedAskBelowRange = true
+    const contract = evaluateAccuracyContract({
+      audit: cleanAudit(),
+      comps: adjusted,
+      pricing,
+      judgment: judgmentFor(comps),
+      minComps: 6,
+      marketContextPresent: true,
+      failedAsk: 725_000,
+      priceAnchorPpsf: 400,
+      subjectSubType: 'Single Family Residence',
+      subjectBaths: 2,
     })
     expect(contract.pass).toBe(false)
     expect(contract.checks.find((c) => c.id === 'expired-list-cap')!.pass).toBe(false)

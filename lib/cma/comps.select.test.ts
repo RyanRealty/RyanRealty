@@ -32,6 +32,22 @@ vi.mock('@/lib/pricing/divides', async (importOriginal) => {
   }
 })
 
+// Wraps (not stubs) the real keepTightestByClosePrice so selectComps still
+// culls for real; this just records what asOf it was called with, to prove
+// the CMA's own as-of date (WP5 item d) reaches the final cull instead of
+// being dropped on the floor.
+const keepTightestSpy = vi.hoisted(() => vi.fn())
+vi.mock('@/lib/pricing/ladder', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/pricing/ladder')>()
+  return {
+    ...actual,
+    keepTightestByClosePrice: (...args: Parameters<typeof actual.keepTightestByClosePrice>) => {
+      keepTightestSpy(...args)
+      return actual.keepTightestByClosePrice(...args)
+    },
+  }
+})
+
 import { selectComps, selectCompsByKeys } from '@/lib/cma/comps'
 
 const subject = (over: Partial<CmaSubject> = {}): CmaSubject =>
@@ -107,6 +123,32 @@ describe('selectComps — SQL filter follows the subject product type', () => {
     expect(result.trace.some((t) => t.includes("property_sub_type='Single Family Residence'"))).toBe(false)
   })
 
+  it('drops a new build against an ordinary resale of the same subtype', async () => {
+    const year = new Date().getFullYear()
+    selectCmaCompsPool.mockResolvedValue([
+      closedRow({
+        ListingKey: 'new-build',
+        StreetNumber: '200',
+        property_sub_type: 'Townhouse',
+        year_built: year,
+        TotalLivingAreaSqFt: 1800,
+      }),
+      closedRow({
+        ListingKey: 'resale',
+        StreetNumber: '300',
+        property_sub_type: 'Townhouse',
+        year_built: year - 12,
+        TotalLivingAreaSqFt: 1800,
+      }),
+    ])
+    const result = await selectComps(
+      subject({ propertySubType: 'Townhouse', yearBuilt: year - 11, sqft: 1800 }),
+    )
+    expect(result.comps.map((c) => c.listingKey)).toContain('resale')
+    expect(result.comps.map((c) => c.listingKey)).not.toContain('new-build')
+    expect(result.diagnostics.excluded_totals.year_quality).toBeGreaterThan(0)
+  })
+
   it('still drops a townhouse row in JS when the pool is mixed', async () => {
     selectCmaCompsPool.mockResolvedValue([
       closedRow({ ListingKey: 'sfr', StreetNumber: '100', property_sub_type: 'Single Family Residence' }),
@@ -116,6 +158,30 @@ describe('selectComps — SQL filter follows the subject product type', () => {
     expect(result.comps.every((c) => c.propertySubType === 'Single Family Residence')).toBe(true)
     expect(result.comps.some((c) => c.listingKey === 'th')).toBe(false)
     expect(result.diagnostics.excluded_totals.product_type).toBeGreaterThan(0)
+  })
+})
+
+describe('selectComps — CMA as-of date reaches the final cull (WP5 item d)', () => {
+  beforeEach(() => {
+    selectCmaCompsPool.mockReset()
+    selectCmaCompsPool.mockResolvedValue([closedRow()])
+    selectCmaCompsByKeys.mockReset()
+    selectCmaCompsByKeys.mockResolvedValue([])
+    keepTightestSpy.mockClear()
+  })
+
+  it('passes opts.asOf through to keepTightestByClosePrice — a back-dated CMA ranks by its own date, not today', async () => {
+    await selectComps(subject(), { asOf: '2024-01-15' })
+    expect(keepTightestSpy).toHaveBeenCalled()
+    const lastArgs = keepTightestSpy.mock.calls.at(-1)!
+    expect(lastArgs[2]).toBe('2024-01-15')
+  })
+
+  it('leaves asOf undefined (today-shaped, current behavior) when the caller supplies none', async () => {
+    await selectComps(subject())
+    expect(keepTightestSpy).toHaveBeenCalled()
+    const lastArgs = keepTightestSpy.mock.calls.at(-1)!
+    expect(lastArgs[2]).toBeUndefined()
   })
 })
 

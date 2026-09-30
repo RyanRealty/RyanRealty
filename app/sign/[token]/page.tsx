@@ -4,17 +4,20 @@
 import { getSigningSession } from '@/app/actions/tc-sign'
 import { CONTACT } from '@/lib/brand/contact'
 import { SignFlow } from '@/components/tc/pdf-sign/SignFlow'
+import { SignCodeGate } from '@/components/tc/pdf-sign/SignCodeGate'
+import { ContinueAsSigner } from '@/components/tc/pdf-sign/ContinueAsSigner'
 
 // Reads request headers (IP/UA capture) so it always renders per request.
 export const revalidate = 0
 export const metadata = { title: 'Sign documents · Ryan Realty', robots: { index: false, follow: false } }
 
-function Centered({ title, body }: { title: string; body: string }) {
+function Centered({ title, body, children }: { title: string; body: string; children?: React.ReactNode }) {
   return (
     <div className="mx-auto max-w-md px-4 py-20 text-center">
       <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Ryan Realty</p>
       <h1 className="mt-2 font-display text-2xl font-bold text-foreground">{title}</h1>
       <p className="mt-3 text-sm text-muted-foreground">{body}</p>
+      {children}
       <p className="mt-8 text-xs text-muted-foreground">Questions? Call {CONTACT.phoneDirect} or reply to the email that sent you here.</p>
     </div>
   )
@@ -28,6 +31,13 @@ export default async function SignPage({ params }: { params: Promise<{ token: st
     return (
       <main className="min-h-screen bg-background">
         <SignFlow token={token} payload={session.data} />
+      </main>
+    )
+  }
+  if (session.status === 'verify') {
+    return (
+      <main className="min-h-screen bg-background">
+        <SignCodeGate token={token} recipientName={session.recipientName} propertyAddress={session.propertyAddress} maskedPhone={session.maskedPhone} canText={session.canText} />
       </main>
     )
   }
@@ -45,15 +55,18 @@ export default async function SignPage({ params }: { params: Promise<{ token: st
     return (
       <main className="min-h-screen bg-background">
         <Centered
-          title="Already signed"
-          body={`Your signature on ${session.propertyAddress} is recorded. A completed copy was emailed to you.`}
-        />
+          title="You have signed"
+          body={`Your signature on ${session.propertyAddress} is recorded. When everyone has signed, a completed copy is emailed to you.`}
+        >
+          {session.nextSigner ? <ContinueAsSigner token={token} name={session.nextSigner} /> : null}
+        </Centered>
       </main>
     )
   }
+  const title = session.status === 'declined' ? 'You declined' : session.status === 'voided' ? 'This request was canceled' : 'This link is not active'
   return (
     <main className="min-h-screen bg-background">
-      <Centered title="This link is not active" body={session.message} />
+      <Centered title={title} body={session.message} />
     </main>
   )
 }

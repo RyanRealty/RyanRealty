@@ -18,6 +18,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { composeCmaFirstContact } from '@/lib/cma/first-contact'
 import {
   immersiveHeroNumberHtml,
   letterCoverPayoffHtml,
@@ -145,6 +146,14 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
     expect(html).toContain('data-status="pending"')
     expect(html).toContain('data-status="active"')
     expect(html).toContain('data-status="closed"')
+    // Matt 2026-09-24, FlexMLS style: List, Sold and $/sqft across the top,
+    // the four figures down each status, one table (the $/sqft board folded in).
+    expect(html).toMatch(
+      /scope="col">List<\/th><th class="n" scope="col">Sold<\/th><th class="n" scope="col">\$\/sqft<\/th>/,
+    )
+    expect(html.match(/<tbody data-status=/g)).toHaveLength(3)
+    expect(html.match(/<th scope="row">Median<\/th>/g)).toHaveLength(3)
+    expect(html).not.toContain('data-ppsf-status="board"')
   })
 
   it('contract: recommend-low-high-recommended-once', () => {
@@ -208,6 +217,31 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
 
     expect(listRangeMatchesHeroBand(canter)).toBe(true)
     expect(listRangeBounds(canter)).toEqual({ low: 675_000, high: 705_000 })
+    const stale = {
+      ...canter,
+      rangeRule: {
+        rule: 'min-max' as const,
+        n: 5,
+        kept: 5,
+        adjustedLow: 594_000,
+        adjustedHigh: 623_000,
+        saleToAskRatio: null,
+        saleToAskSource: 'none' as const,
+        ratiosExcluded: 0,
+        sentence:
+          'The range is the spread of all five sale prices adjusted for date and size: $594,000 to $623,000.',
+      },
+    }
+    expect(listRangeMatchesHeroBand(stale as typeof pricing)).toBe(false)
+    const matched = {
+      ...stale,
+      rangeRule: {
+        ...stale.rangeRule,
+        sentence:
+          'The range is the spread of all five sale prices adjusted for date and size: $675,000 to $705,000.',
+      },
+    }
+    expect(listRangeMatchesHeroBand(matched as typeof pricing)).toBe(true)
 
     const hero = letterCoverPayoffHtml(canter)
     expect(hero).toContain('$675,000')
@@ -875,5 +909,44 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
     expect((body.match(/<h[23][^>]*>[^<]*The sales that set this price/g) ?? []).length).toBe(1)
   })
 
-
+  it('contract: first-contact-tracked-area-links', () => {
+    const letter = composeCmaFirstContact('expired', {
+      address: '1130 E Canter, Sisters, OR 97759',
+      firstName: 'Pat',
+      valueLow: 649_000,
+      valueHigh: 675_000,
+      recommendedList: 659_000,
+      brokerName: 'Matt Ryan',
+      city: 'Sisters',
+      closedSalesCount: 3,
+      salesScope: 'subdivision',
+      cmaSlug: 'cma-1130-e-canter',
+      brokerSlug: 'matt',
+      personId: 42,
+      place: {
+        subdivision: {
+          label: 'SaddleStone',
+          href: 'https://ryan-realty.com/subdivisions/saddlestone?utm_source=crm&utm_medium=doc&utm_campaign=cma-letter',
+          closed12mo: 3,
+          unsold12mo: null,
+          active: 1,
+          pending: null,
+          history: null,
+        },
+        wider: {
+          label: 'Sisters',
+          href: 'https://ryan-realty.com/cities/sisters?utm_source=crm&utm_medium=doc&utm_campaign=cma-letter',
+        },
+      },
+    })
+    expect(letter.bodyText).not.toContain('utm_')
+    expect(letter.bodyText).not.toMatch(/https?:/)
+    expect(letter.bodyText).toContain('Our SaddleStone page keeps the running picture')
+    expect(letter.bodyText).toContain('The Sisters page shows the wider market it sits in.')
+    const hrefs = letter.paragraphs.flat().flatMap((r) => (typeof r === 'string' ? [] : [r.href]))
+    expect(hrefs).toContain('https://ryan-realty.com/subdivisions/saddlestone')
+    expect(hrefs).toContain('https://ryan-realty.com/cities/sisters')
+    expect(hrefs).toContain('https://ryan-realty.com/cma/cma-1130-e-canter')
+    expect(hrefs.every((h) => !h.includes('utm_'))).toBe(true)
+  })
 })

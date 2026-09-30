@@ -3,7 +3,8 @@
  * Packet recruit-retain stops being UNKNOWN when the probe reads this DAL.
  * reachability: collectCompanyScoreboardSignals, /admin/today, contact form
  */
-import { revalidateTag, unstable_cache } from 'next/cache'
+import { revalidateTag } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const JOIN_CONVERT_EVENT = 'join_convert'

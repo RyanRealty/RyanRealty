@@ -10,7 +10,8 @@ import { revalidatePerson } from '@/lib/crm/revalidate-person'
  * deleted. Every mutation writes the native tables directly.
  */
 
-import { revalidatePath, unstable_cache } from 'next/cache'
+import { revalidatePath } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { createServiceClient } from '@/lib/supabase/service'
 import {
   CRM_STAGES,
@@ -749,6 +750,9 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
     const rawSlug = access.access.brokerSlug ?? 'matt'
     const rawFrom = await brokerTwilioNumber(rawSlug)
     for (const e164 of rawPhones) {
+      // Quiet hours again at the POST: the one check at the top ran before the
+      // group attempt and every 1:1 send, and these numbers have no guard of their own.
+      if (inSmsQuietHours() && !override) { lastError = QUIET_HOURS_ERROR; continue }
       const sent = rawFrom
         ? await sendSms({ from: rawFrom, to: e164, body, mediaUrls })
         : await sendSmsViaMessagingService({ to: e164, body, mediaUrls })

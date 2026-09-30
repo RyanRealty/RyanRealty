@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import legacyRedirects from '@/data/legacy-redirects.json'
-import { resolvePreRenderHop } from '@/lib/routing/pre-render-hops'
+import { resolvePreRenderHop, resolvePreRenderHopStatus } from '@/lib/routing/pre-render-hops'
 import { resolveBendNewConstructionSearchTwinHop } from '@/lib/routing/bend-new-construction-search-twin'
 import { shouldRefuseDevRoute, DEV_NOT_FOUND_HTML } from '@/lib/routing/dev-only'
 import { CENTRAL_OREGON_CITY_SLUGS, isCentralOregonCommunitySlug } from '@/lib/central-oregon'
@@ -556,7 +556,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       const redirectUrl = url.clone()
       redirectUrl.pathname = hopDest
       redirectUrl.search = ''
-      return NextResponse.redirect(redirectUrl, 308)
+      return NextResponse.redirect(redirectUrl, resolvePreRenderHopStatus(pathname))
     }
   }
 

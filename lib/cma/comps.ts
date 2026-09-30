@@ -83,7 +83,7 @@ import { ANCHOR_MIN_N, ANCHOR_RADIUS_MILES, ANCHOR_RURAL_RADII_MILES, sameStreet
 import { roomCountsUsable } from '@/lib/pricing/room-counts'
 import { SAME_NEIGHBORHOOD_TIER_RATIO, STARVED_TIER_WIDEN, SUBDIVISION_TIER_RATIO, normSubdivision } from '@/lib/pricing/classes'
 import { inferSubdivisionPocket, POCKET_RADIUS_MILES } from '@/lib/pricing/infer-pocket'
-import { isClusterPocket, pocketHoldsGeographyExclusive } from '@/lib/pricing/ladder'
+import { isClusterPocket, pocketStopsLaterRungs } from '@/lib/pricing/ladder'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
 import { crossesNamedRiver } from '@/lib/pricing/river-cross'
@@ -91,6 +91,8 @@ import {
   customBathCompatible,
   customLotCompatible,
   isCustomOrNewSubject,
+  isNewBuild,
+  newConstructionCompatible,
   type IrrigationClass,
 } from '@/lib/pricing/classes'
 
@@ -342,7 +344,14 @@ function saleKey(comp: { address: string; city?: string | null; closePrice: numb
 
 export async function selectComps(
   subject: CmaSubject,
-  opts: { subjectIrrigation?: IrrigationClass | null; subjectZoning?: string | null } = {},
+  opts: {
+    subjectIrrigation?: IrrigationClass | null
+    subjectZoning?: string | null
+    /** The CMA's own as-of date (lib/pricing/select.ts threads this through
+     *  from selectCompsPreferringFacts). Undefined keeps keepTightestByClosePrice's
+     *  no-asOf behavior (no staleness penalty) rather than assuming today. */
+    asOf?: string
+  } = {},
 ): Promise<CompSelection> {
   const sqft = subject.sqft ?? 0
   // Land is priced per ACRE, not per square foot, so a land subject legitimately
@@ -611,7 +620,13 @@ export async function selectComps(
       // THE WIDENING RUNS ONLY WHEN THE BOUNDED LADDER CAME UP SHORT.
       tier.whenStarved && byKey.size >= MIN_COMPS
         ? 'the bounded search already reached the minimum, so no widening was needed'
-        : tier.whenStarved && pocketHoldsGeographyExclusive(exclusiveCount, 0, clusterPocket)
+        : tier.whenStarved &&
+            pocketStopsLaterRungs({
+              kept: byKey.size,
+              exclusiveClosed: exclusiveCount,
+              clusterPocket,
+              minComps: MIN_COMPS,
+            })
           ? `the pocket already supplied a tight closed set (${exclusiveCount} closed), so the search stayed exclusive`
         : tier.sameCommunity && !subjectCommunity
         ? 'the subject is not inside a planned or golf community'
@@ -624,7 +639,12 @@ export async function selectComps(
         : tier.samePocket && pocketNeighborNorms.length === 0
         ? 'no nearby mapped pocket cluster sits inside a quarter mile'
         : isListingsGeographyWidenTier(tier) &&
-            pocketHoldsGeographyExclusive(exclusiveCount, 0, clusterPocket)
+            pocketStopsLaterRungs({
+              kept: byKey.size,
+              exclusiveClosed: exclusiveCount,
+              clusterPocket,
+              minComps: MIN_COMPS,
+            })
         ? `the pocket already supplied a tight closed set (${exclusiveCount} closed), so the search stayed exclusive`
         : tier.sameArea && !subjectArea
           ? 'the subject sits outside every mapped neighborhood polygon'
@@ -969,20 +989,35 @@ export async function selectComps(
       // HARD EXCLUSION at every tier for custom / new-construction subjects
       // (Matt 2026-09-03, 19365 Rim View). Year-built and quality outrank a
       // tight radius. Widen geography or time; do not pad TARGET_COMPS with
-      // a different construction generation. Ordinary resale subjects skip.
-      if (
-        !(isListingsPocketExclusiveTier(tier) && clusterPocket) &&
-        !yearQualityCompatible(
-          {
-            yearBuilt: subject.yearBuilt,
-            newConstructionYn: subject.newConstructionYn,
-            remarks: subject.publicRemarks,
-          },
-          { yearBuilt: comp.yearBuilt, remarks: comp.publicRemarks },
-        )
-      ) {
-        rung.excluded.year_quality++
-        continue
+      // a different construction generation. Ordinary resale subjects skip
+      // that band, and instead refuse a new build: the facts ladder already
+      // does, and a listings fallback must not price the new build the facts
+      // path dropped. An exclusive pocket still keeps the mix it was given.
+      if (!(isListingsPocketExclusiveTier(tier) && clusterPocket)) {
+        const asOfYear = Number((opts.asOf ?? new Date().toISOString().slice(0, 10)).slice(0, 4))
+        if (
+          !customOrNew &&
+          !newConstructionCompatible(
+            isNewBuild(subject.yearBuilt, asOfYear, subject.newConstructionYn),
+            isNewBuild(comp.yearBuilt, asOfYear, null),
+          )
+        ) {
+          rung.excluded.year_quality++
+          continue
+        }
+        if (
+          !yearQualityCompatible(
+            {
+              yearBuilt: subject.yearBuilt,
+              newConstructionYn: subject.newConstructionYn,
+              remarks: subject.publicRemarks,
+            },
+            { yearBuilt: comp.yearBuilt, remarks: comp.publicRemarks },
+          )
+        ) {
+          rung.excluded.year_quality++
+          continue
+        }
       }
 
       const compArea = resolveMarketArea(comp.latitude, comp.longitude)
@@ -1025,6 +1060,11 @@ export async function selectComps(
   if (x.product_type > 0) {
     trace.push(
       `Excluded ${x.product_type} comp(s) on product type. A townhome, condo, or manufactured home is not comparable to a detached house at any distance, per Fannie Mae B4-1.3-08.`,
+    )
+  }
+  if (x.year_quality > 0) {
+    trace.push(
+      `Excluded ${x.year_quality} sale(s) on construction generation. A new build does not price a resale, and a resale does not price a new build.`,
     )
   }
   if (x.bath_count > 0) {
@@ -1125,7 +1165,7 @@ export async function selectComps(
   // does not get to set the range.
   const rankBy = land ? (subject.lotAcres ?? 0) : sqft
   comps.sort((a, b) => similarityScore(rankBy, b, Boolean(land)) - similarityScore(rankBy, a, Boolean(land)))
-  comps = keepTightestByClosePrice(comps, MAX_COMPS)
+  comps = keepTightestByClosePrice(comps, MAX_COMPS, opts.asOf)
   // Present most recent first (matches the exemplar ordering).
   comps.sort((a, b) => b.closeDate.localeCompare(a.closeDate))
 

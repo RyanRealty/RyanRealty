@@ -24,6 +24,7 @@ import { ZipHomesMasonry } from './ZipHomesMasonry.client'
 import type { ZipMasonryItem } from './zip-constants'
 import { zipLeadItem } from './zip-constants'
 import './zip-opening.css'
+import { cityMarketPath } from '@/lib/market/canonical-market-path'
 
 export function ZipHomesField({
   zip,
@@ -107,7 +108,7 @@ export function ZipHomesField({
         {' · '}
         <a href={browseHref}>{zip} homes for sale</a>
         {' · '}
-        <a href={`/housing-market/${citySlug}`}>{city} market report</a>
+        <a href={cityMarketPath(citySlug)}>{city} market report</a>
         {' · '}
         <a href="/months-of-supply">Months of supply</a>
       </p>

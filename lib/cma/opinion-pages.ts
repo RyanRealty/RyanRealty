@@ -38,6 +38,7 @@ import {
   type DidNotSellArgs,
 } from '@/lib/cma/did-not-sell'
 import { FAILED_ASK_BACKTEST, resolveListingTimeline } from '@/lib/cma/expired-audit'
+import { preparedClosingLine } from '@/lib/cma/letter-privacy'
 import { listingTimelinePhoneSvg, listingTimelineSvg, listingMarketSlopesPhoneSvg, listingMarketSlopesSvg } from '@/lib/cma/market-charts'
 import {
   listingMarketSentence,
@@ -70,7 +71,6 @@ import {
 import { renderMatrixHtml, subjectListingFailed, subjectPrintableAsk } from '@/lib/cma/comp-matrix'
 import { compAreaSentence } from '@/lib/cma/matrix-sets'
 import { setAsideCompIndexes } from '@/lib/cma/set-aside'
-import { statusPpsfBoardHtml, statusPpsfSummaries } from '@/lib/cma/status-ppsf'
 import { statusPriceBoardHtml, statusPriceSummaries, splitActivePending } from '@/lib/cma/status-price-summary'
 import type { LikeHomeCredit } from '@/lib/cma/like-home-credits'
 import { sellerCostLines } from '@/lib/pricing/seller-net'
@@ -86,6 +86,7 @@ import type { CmaEquityPosition } from '@/lib/cma/equity'
 import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 import type { CmaParcelSet } from '@/lib/cma/parcel-shapes'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
+import { askStepped, resolveAskPosition } from '@/lib/cma/ask-position'
 import {
   PRICED_RIGHT_HEADING_OVERPRICED,
   askExposureSentence,
@@ -225,17 +226,20 @@ export function matrixEntriesFor(a: OpinionPageArgs): {
       finalCycle: a.expiredAudit?.finalCycle ?? null,
       domDays: subjectDomDays(a.subject),
       printableAsk: subjectPrintableAsk(a.subject, askCtx),
+      exposure: askExposureFor(a),
     }),
-    closed: closedEntries(a.comps, a.docLinks ?? null),
+    closed: closedEntries(a.comps, a.docLinks ?? null, a.subject),
     unsold: unsoldEntries(
       unsoldPeersFor({ subject: a.subject, peers: a.expiredPeers?.peers ?? a.extras?.marketArea?.expiredPeers }),
       a.docLinks ?? null,
       a.subject.city,
+      a.subject,
     ),
     active: activeEntries(
       activeRivalsFor(a.bandRivals?.rivals ?? a.extras?.band?.rivals),
       a.docLinks ?? null,
       a.subject.city,
+      a.subject,
     ),
   }
 }
@@ -283,17 +287,11 @@ export function salesThatSetItArgs(a: OpinionPageArgs): PricingPageInput {
       listPrice: r.listPrice,
       sqft: r.sqft ?? null,
     })),
-    statusPpsfBoard: statusPpsfBoardHtml(
-      statusPpsfSummaries({
-        closed: sets.closed,
-        unsold: sets.unsold,
-        active: sets.active,
-      }),
-    ),
     statusPriceBoard: statusPriceBoardHtml(
       statusPriceSummaries({
         closed: sets.closed,
         active: sets.active,
+        unsold: sets.unsold,
       }),
     ),
   }
@@ -565,12 +563,14 @@ export function failedAskBacktestHtml(a: OpinionPageArgs, doc: 'letter' | 'immer
   const val = doc === 'letter' ? 'val' : 'st-n'
   const lbl = doc === 'letter' ? 'lbl' : 'st-l'
   const small = doc === 'letter' ? 'small' : 'small r'
-  return `<div class="${strip}">
+  return `<div class="keep-note">
+  <div class="${strip}">
     <div class="${cell}"><div class="${val}">${int(b.pairs)}</div><div class="${lbl}">Central Oregon homes came off unsold and then sold, 2023 to 2026</div></div>
     <div class="${cell}"><div class="${val}">${(b.closeMedianRatio * 100).toFixed(1)}%</div><div class="${lbl}">of the asking price that failed is what the median one sold for</div></div>
     <div class="${cell}"><div class="${val}">${b.shareClosedAboveAskPct}%</div><div class="${lbl}">sold for more than that ask</div></div>
   </div>
-  <p class="${small}">${esc(FAILED_ASK_BACKTEST_SOURCE)}</p>`
+  <p class="${small}">${esc(FAILED_ASK_BACKTEST_SOURCE)}</p>
+  </div>`
 }
 
 /**
@@ -706,15 +706,24 @@ export function askExposureFor(a: OpinionPageArgs): AskExposure | null {
 export function whatHappenedHeading(a: OpinionPageArgs): string {
   const status = readSubjectStatus(a)
   const exposure = askExposureFor(a)
+  const position = resolveAskPosition({
+    lastListPrice: a.subject.lastListPrice,
+    exposure,
+  })
   if (status?.isActiveWithOtherBrokerage) {
-    const ask = exposure?.final ?? a.subject.lastListPrice ?? null
+    const ask = position.lastAsk
     return ask != null && ask > 0 ? `Your home is listed at ${usd(ask)}.` : 'Where your listing stands.'
   }
-  if (exposure && exposure.segments.length > 1) {
+  const lastSegmentAsk = exposure?.segments.length ? exposure.segments[exposure.segments.length - 1]?.ask : null
+  const exposureAgrees = position.lastAsk == null || lastSegmentAsk === position.lastAsk
+  if (exposure && exposure.segments.length > 1 && exposureAgrees) {
     const sentence = askExposureSentence(exposure.segments)
     if (sentence) return sentence
   }
-  const ask = exposure?.segments[0]?.ask ?? a.subject.lastListPrice
+  if (askStepped(position)) {
+    return `You first asked ${usd(position.originalAsk!)}. The last listing asked ${usd(position.lastAsk!)} and did not sell.`
+  }
+  const ask = position.lastAsk ?? position.originalAsk
   return ask != null && ask > 0
     ? `You asked ${usd(ask)} and did not sell.`
     : 'Your home came off the market without selling.'
@@ -751,23 +760,25 @@ export function pricedRightPage(a: OpinionPageArgs): CmaPageDef | null {
 }
 
 /**
- * THE ASK THAT FAILED, resolved the way chapter 1's drawing resolves it — the
- * last step of the final listing period, which is the cut the seller came off
- * the market at, not the price they opened on.
+ * The ask the gap sentence is measured against: the last ask, the price the
+ * listing came off at. The exposure heading still names every ask and how
+ * long it ran. Measuring the percent-above line off the original list (the
+ * price that ran the most days) disagreed with the email and the tables,
+ * which use the last ask.
  *
- * Null when there is no failed listing: on an asked origin there is no chapter
- * 1 and no ask of the seller's own for anything to be measured against.
+ * Null when there is no failed listing.
  */
 export function failedAskForStory(a: OpinionPageArgs): number | null {
   if ((a.expiredAudit?.findings.length ?? 0) === 0) return null
-  // THE DOMINANT ASK FIRST. The last cut is where the story used to start and
-  // it is the ask the market saw least (round-four class B): on the exemplar
-  // 152 of 187 days ran at a price $15,000 above the one this used to measure.
-  const dominant = askExposureFor(a)?.dominant ?? null
-  if (dominant != null && dominant > 0) return dominant
+  const exposure = askExposureFor(a)
+  const position = resolveAskPosition({
+    lastListPrice: a.subject.lastListPrice,
+    exposure: exposure ? { segments: exposure.segments, final: exposure.final } : null,
+  })
+  if (position.lastAsk != null && position.lastAsk > 0) return position.lastAsk
   const cycle = a.expiredAudit?.finalCycle ?? null
   const lastCut = [...(cycle?.cuts ?? [])].reverse().find((c) => c.ask > 0)?.ask ?? null
-  const ask = lastCut ?? cycle?.initialAsk ?? a.subject.lastListPrice ?? null
+  const ask = lastCut ?? cycle?.finalAsk ?? cycle?.initialAsk ?? null
   return ask != null && ask > 0 ? ask : null
 }
 
@@ -895,13 +906,21 @@ export function didNotSellBodyMatrixHtml(a: OpinionPageArgs): string {
     // A one-column matrix is not a comparison, so the chapter degrades to the
     // city's own count and the reader's own outcome rather than vanishing and
     // taking the ask that failed with it.
-    if (!subjectListingFailed(a.subject) || !sets.subject.outcome) return ''
+    const said = a.expiredPeers?.sentence?.trim()
+    const saidHtml = said ? `<p>${esc(said)}</p>` : ''
+    if (!subjectListingFailed(a.subject) || !sets.subject.outcome) {
+      // The search ran and found nothing. Say so. A letter with no peer set
+      // at all still omits the chapter.
+      return saidHtml
+    }
     const ask = sets.subject.lastAsk
     const own = `Your own listing ${
       ask != null && ask > 0 ? `asked ${usd(ask)} and ` : ''
     }${sets.subject.outcome.charAt(0).toLowerCase()}${sets.subject.outcome.slice(1)}.`
+    // The owner's own failed listing is not a substitute for an empty search.
     return `${lead0 ? `<p class="chart-read">${esc(lead0)}</p>` : ''}
-  <p>${esc(own)}</p>`
+  <p>${esc(own)}</p>
+  ${saidHtml}`
   }
   const range = pathRangeFor(a)
   const matrix = renderMatrixHtml({
@@ -1202,7 +1221,7 @@ export function cmaDisclosureProseHtml(a: OpinionPageArgs): string {
   <p><strong>Effective date.</strong> This opinion is effective ${esc(
     dateLong(a.generatedAtIso),
   )}. Every figure in it was pulled that day and reads the market as it stood then.</p>
-  <p><strong>What was looked at.</strong> This opinion reads the Oregon Data Share MLS record for your home and for every sale, listing and failed listing named in it — the recorded facts, the price history and the listing photographs${record}. Nobody walked through the inside of your home, or the inside of any home it is measured against. Facts you told us, where they are used, are labelled as yours and should be confirmed independently.</p>
+  <p><strong>What was looked at.</strong> This opinion reads the Oregon Data Share MLS record for your home and for every sale, listing and failed listing named in it: the recorded facts, the price history and the listing photographs${record}. Nobody walked through the inside of your home, or the inside of any home it is measured against. Facts you told us, where they are used, are labelled as yours and should be confirmed independently.</p>
   <p><strong>Condition was not adjusted for.</strong> The grid in the price chapter moves each sale ${esc(
     adjustmentsMadeClause(a.comps),
   )}. It moves none of them for condition, because the MLS record carries no condition rating. Where a sale was in better or worse shape than your home, that difference sits inside its sale price and is not broken out.</p>
@@ -1239,14 +1258,12 @@ export function nextStepPage(a: OpinionPageArgs): CmaPageDef | null {
 }
 
 /**
- * The close, in the owner's words (Matt 2026-09-22). Sorry about their home,
- * this time, and an invitation if they list again. Not a form letter about
- * "this listing."
+ * The close. Sorry it did not sell, glad to help if they relist. Plain
+ * broker voice, not a form letter about "this listing."
  */
-export const CLOSE_SORRY_HEADING = "We're sorry that your home did not sell this go-around."
+export const CLOSE_SORRY_HEADING = "Sorry your home didn't sell."
 
-export const CLOSE_EARN_YOUR_BUSINESS =
-  "If you're considering listing in the future, we'd love the opportunity to earn your business."
+export const CLOSE_EARN_YOUR_BUSINESS = "If you decide to list again, we're glad to help."
 
 export const CLOSE_HERE_FOR_QUESTIONS = "We're here for any questions you have."
 
@@ -1399,8 +1416,8 @@ export function nextStepSignatureHtml(a: OpinionPageArgs): string {
       ? b.photoUrl
       : `${site}${b.photoUrl}`
     : null
-  const client = cleanText(a.client?.name ?? null)
-  return `<div class="signature-page">
+  return `<div class="keep-close">
+  <div class="signature-page">
     ${headshot ? `<img class="portrait" src="${esc(headshot)}" alt="${esc(b.displayName)}" />` : '<div></div>'}
     <div class="sig-content">
       <div class="sig-name">${esc(b.displayName)}</div>
@@ -1415,8 +1432,12 @@ export function nextStepSignatureHtml(a: OpinionPageArgs): string {
     </div>
   </div>
   <p class="fine">${esc(
-    `Prepared ${dateLong(a.generatedAtIso)}${client ? ` for ${client}` : ''}. This is a comparative market analysis. It is not an appraisal.`,
-  )}</p>`
+    preparedClosingLine({
+      generatedAt: dateLong(a.generatedAtIso),
+      streetAddress: a.subject.streetAddress,
+    }),
+  )}</p>
+  </div>`
 }
 
 /**
@@ -1449,23 +1470,29 @@ export function competitionBodyMatrixHtml(a: OpinionPageArgs): string {
       ? renderMatrixHtml({
           id: 'competition-active',
           family: 'active',
-          heading: 'Active — asking in this range now',
+          heading: 'Active: asking in this range now',
           lead: activeMatrixLead(activeOnly, { lo: b.lo, hi: b.hi }),
           entries: [sets.subject, ...activeOnly],
           range,
         })
       : ''
+  const pendingClaimed = (b.pendingCount ?? 0) > 0
+  const pendingLead =
+    '<p class="chart-read">Under contract is not closed. These are still competing until they close.</p>'
   const pendingMatrix =
     pendingOnly.length > 0
       ? renderMatrixHtml({
           id: 'competition-pending',
           family: 'active',
-          heading: 'Pending — under contract in this range',
-          lead: '<p class="chart-read">Under contract is not closed. These are still competing until they close.</p>',
+          heading: 'Pending: under contract in this range',
+          lead: pendingLead,
           entries: [sets.subject, ...pendingOnly],
           range,
         })
-      : ''
+      : pendingClaimed
+        ? `<h3 class="subhead">Pending: under contract in this range</h3>
+  ${pendingLead}`
+        : ''
   const matrix = [activeMatrix, pendingMatrix].filter(Boolean).join('\n  ')
   const sentence =
     a.bandRivals?.sentence ??

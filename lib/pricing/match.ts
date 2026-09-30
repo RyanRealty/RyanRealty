@@ -53,7 +53,7 @@ import {
   isClusterPocket,
   isGeographyWidenTier,
   isPocketExclusiveTier,
-  pocketHoldsGeographyExclusive,
+  pocketStopsLaterRungs,
   pocketStarvedForYearQuality,
 } from '@/lib/pricing/ladder'
 import { outbuildingsCompatible, terrainCompatible, zoningClassCompatible, type RuralSplitCounts } from '@/lib/pricing/rural'
@@ -962,7 +962,12 @@ export function walkPricingLadder(
       tier.whenStarved && byKey.size >= PRICING_MIN_COMPS
         ? 'the bounded search already reached the minimum, so no widening was needed'
         : tier.whenStarved &&
-            pocketHoldsGeographyExclusive(exclusiveCount, exclusivePending, isClusterPocket(subject))
+            pocketStopsLaterRungs({
+              kept: byKey.size,
+              exclusiveClosed: exclusiveCount,
+              exclusivePending,
+              clusterPocket: isClusterPocket(subject),
+            })
           ? `the pocket already supplied a tight closed+pending set (${exclusiveCount} closed, ${exclusivePending} pending), so the search stayed exclusive`
         : tier.sameCommunity && !communitySlugForSubdivision(subject.subdivision)
         ? 'the subject is not inside a planned or golf community'
@@ -975,13 +980,25 @@ export function walkPricingLadder(
         : tier.samePocket && !(subject.pocketSubdivisionNorms?.length)
           ? 'no nearby mapped pocket cluster sits inside a quarter mile'
         : isGeographyWidenTier(tier) &&
-            pocketHoldsGeographyExclusive(exclusiveCount, exclusivePending, isClusterPocket(subject))
+            pocketStopsLaterRungs({
+              kept: byKey.size,
+              exclusiveClosed: exclusiveCount,
+              exclusivePending,
+              clusterPocket: isClusterPocket(subject),
+            })
           ? `the pocket already supplied a tight closed+pending set (${exclusiveCount} closed, ${exclusivePending} pending), so the search stayed exclusive`
         // Street-cluster: adjacent / community / similar are also wideners once
         // Canter+Horse Back already hold — do not open Black Butte via GIS ring.
+        // A cluster still short of the pricing minimum does not stop: that is
+        // how a quarter-mile pair failed the build instead of walking on.
         : isClusterPocket(subject) &&
             !isPocketExclusiveTier(tier) &&
-            pocketHoldsGeographyExclusive(exclusiveCount, exclusivePending, true)
+            pocketStopsLaterRungs({
+              kept: byKey.size,
+              exclusiveClosed: exclusiveCount,
+              exclusivePending,
+              clusterPocket: true,
+            })
           ? `the street-cluster pocket already supplied a tight closed+pending set (${exclusiveCount} closed, ${exclusivePending} pending), so the search stayed exclusive`
         : tier.adjacentSubdivision && !(subject.adjacentSubdivisionSlugs?.length)
           ? 'no plat next to the subject\'s is known'

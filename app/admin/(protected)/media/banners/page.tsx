@@ -20,7 +20,7 @@
 // explain. The 768px (48rem) page width is preserved as an inline maxWidth
 // instead of a Tailwind width token.
 import Link from 'next/link'
-import { unstable_cache } from 'next/cache'
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { listMissingBanners, generateAllMissingBanners } from '@/app/actions/banners'
 import {
   SectionHead,

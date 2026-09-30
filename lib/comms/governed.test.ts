@@ -205,6 +205,19 @@ describe('sendGovernedSms — guard order', () => {
     expect(h.sendSms).toHaveBeenCalledTimes(1)
   })
 
+  it('asks quiet hours again at the POST: a 7:59pm guard pass that reaches the send after 8pm refuses', async () => {
+    h.isSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
+    // The guard reads the clock before the target, merge and link reads; 8pm
+    // arrives while they run.
+    h.inSmsQuietHours.mockReturnValueOnce(false).mockReturnValue(true)
+    wireHappySmsPath()
+    const res = await sendGovernedSms(baseReq)
+    expect(res).toEqual({ ok: false, stage: 'quiet-hours', error: QUIET_HOURS_ERROR })
+    expect(h.sendSms).not.toHaveBeenCalled()
+    expect(h.sendSmsViaMessagingService).not.toHaveBeenCalled()
+    expect(h.inserts.filter((i) => i.table === 'crm_timeline')).toHaveLength(0)
+  })
+
   it('happy path: merge → tracked body to Twilio, readable body + exact row shape to the timeline', async () => {
     passAllGuards()
     wireHappySmsPath()
@@ -459,6 +472,17 @@ describe('sendGovernedGroupMms — one thread, same guards', () => {
     expect(h.sendGroupMms).not.toHaveBeenCalled()
     expect(h.inserts.filter((i) => i.table === 'crm_timeline')).toHaveLength(0)
     expect(h.fileCommsToVault).not.toHaveBeenCalled()
+  })
+
+  it('asks quiet hours again at the POST: 8pm arriving after the member guards refuses the thread', async () => {
+    passAllGuards()
+    // Both member guards pass at 7:59pm; the clock reads 8pm by the send.
+    h.inSmsQuietHours.mockReturnValueOnce(false).mockReturnValueOnce(false).mockReturnValue(true)
+    h.instrumentSmsLinks.mockImplementation(async (text: string) => `tracked:${text}`)
+    const res = await sendGovernedGroupMms(groupReq)
+    expect(res).toEqual({ ok: false, stage: 'quiet-hours', error: QUIET_HOURS_ERROR })
+    expect(h.sendGroupMms).not.toHaveBeenCalled()
+    expect(h.inserts.filter((i) => i.table === 'crm_timeline')).toHaveLength(0)
   })
 
   it('sends one group thread after every member clears guards', async () => {

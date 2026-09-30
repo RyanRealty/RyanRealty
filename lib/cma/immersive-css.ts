@@ -24,6 +24,7 @@ img{max-width:100%;display:block}
 .sc.pack{min-height:0;align-items:flex-start;padding-top:48px;padding-bottom:56px}
 .sc-cream{background:var(--cream)}
 .sc-navy{background:var(--navy);color:var(--cream)}
+.sc-navy.pack{padding:48px 36px 56px}
 .in{max-width:880px;margin:0 auto;width:100%;container-type:inline-size}
 .in.wide{max-width:1120px}
 .kick{font-size:13px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;opacity:.65;margin-bottom:18px}
@@ -386,18 +387,15 @@ table.comp-matrix .matrix-addr{display:block}
 .pin-badge{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--navy);color:var(--cream);font-size:11px;font-weight:700;line-height:1;margin-right:7px;flex:0 0 auto;vertical-align:middle}
 .addr-row{display:flex;align-items:center;justify-content:flex-end;flex-wrap:nowrap;gap:6px}
 .addr-row .pin-badge{margin-right:0}
-.addr-row .matrix-addr{min-width:0;overflow-wrap:normal;text-align:right}
+.addr-row .matrix-addr{min-width:0;overflow-wrap:break-word;text-align:right}
 .addr-row.is-card{justify-content:flex-start;gap:8px;margin:0 0 6px}
 .addr-row.is-card .pin-badge{margin-right:0}
 .addr-row.is-card .comp-stack-addr{margin:0;flex:1 1 auto;min-width:0}
 .small{font-size:13px;opacity:.65;line-height:1.45;margin-top:12px;max-width:720px}
 .chart-read{font-size:16px;line-height:1.5;margin-top:18px;max-width:720px}
-.status-price{margin:8px 0 22px}
+.status-price{margin:8px 0 28px;overflow-x:auto}
 .status-price .subhead{margin:0 0 10px}
 .status-price-table th.n,.status-price-table td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-.ppsf-status{margin:8px 0 28px}
-.ppsf-status .subhead{margin:0 0 10px}
-.ppsf-status-table th.n,.ppsf-status-table td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .ppsf-status-caption{margin:4px 0 14px}
 /* NO PAN BOX: every chart ships a 360-unit phone layout. */
 .median-phone{display:none}
@@ -415,7 +413,7 @@ table.comp-matrix .matrix-addr{display:block}
 .worth-lead+.worth-lead-note{margin-top:-18px}
 .worth-lead-note{font-size:clamp(15px,1.8vw,17px);max-width:640px;margin:0 0 26px;border-left:2px solid var(--navy);padding-left:12px}
 table.comp-matrix .matrix-sub{display:block;margin-top:4px;font-size:12px;font-weight:400;opacity:.65;white-space:nowrap;text-align:right}
-table.comp-matrix .arc-asks,table.comp-matrix .arc-tail{display:block;white-space:nowrap;text-align:right;line-height:1.35}
+table.comp-matrix .arc-asks,table.comp-matrix .arc-tail{display:block;white-space:normal;text-align:right;line-height:1.35}
 table.comp-matrix .arc-tail + .arc-tail{margin-top:1px}
 table.comp-matrix a.matrix-addr,.comp-stack-card a.comp-stack-addr{display:block;color:inherit;text-decoration:none;border-bottom:1px solid var(--ink12)}
 /* The price-path primitive (blueprint, Delta 1). Two layouts, one visible. */
@@ -546,28 +544,23 @@ table.realization tr.is-mine th,table.realization tr.is-mine td{border-bottom:2p
    the cream page shows through it. The picture and the address stay solid. */
 .letter-body table.kv.comp-matrix thead th{opacity:1}
 .letter-body table.kv td{padding:8px 0;border-bottom:1px solid var(--ink12)}
-/* The status boards are many columns, not a label and one figure. The 38%
-   rule above landed on every heading, so Low, Avg, Median and High stacked
-   on top of each other and the dollars read as one string. */
-.letter-body table.kv.status-price-table,
-.letter-body table.kv.ppsf-status-table{table-layout:fixed}
-.letter-body table.kv.status-price-table th,
-.letter-body table.kv.ppsf-status-table th{width:auto;padding:10px 0 10px 18px}
-.letter-body table.kv.status-price-table td,
-.letter-body table.kv.ppsf-status-table td{padding:10px 0 10px 18px}
-.letter-body table.kv.status-price-table th:first-child,
-.letter-body table.kv.ppsf-status-table th:first-child{padding-left:0;text-align:left}
-.letter-body table.kv.status-price-table tbody th,
-.letter-body table.kv.ppsf-status-table tbody th{opacity:1;font-weight:600}
-.letter-body table.kv.status-price-table col.sp-status,
-.letter-body table.kv.ppsf-status-table col.sp-status{width:16%}
-.letter-body table.kv.status-price-table col.sp-homes,
-.letter-body table.kv.ppsf-status-table col.sp-homes{width:10%}
-.letter-body table.kv.status-price-table col.sp-fig{width:18.5%}
-.letter-body table.kv.ppsf-status-table col.sp-band{width:37%}
-.status-price,.ppsf-status{overflow-x:auto}
-.letter-body table.kv.status-price-table{min-width:760px}
-.letter-body table.kv.ppsf-status-table{min-width:680px}
+/* The status table is FlexMLS style (Matt 2026-09-24): List, Sold and $/sqft
+   across, Low, Avg, Median and High down each status. The 38% rule above
+   would land on every heading and stack the figures, so the columns are set
+   here. On a phone the columns size to their figures (table-layout auto), and
+   a price too long for the screen scrolls inside the section instead of
+   running into the next column. */
+.letter-body table.kv.status-price-table{table-layout:fixed;max-width:760px}
+.letter-body table.kv.status-price-table th{width:auto;padding:8px 0 8px 12px}
+.letter-body table.kv.status-price-table th.n{text-align:right}
+.letter-body table.kv.status-price-table td{padding:8px 0 8px 12px}
+.letter-body table.kv.status-price-table th:first-child{padding-left:0;text-align:left}
+.letter-body table.kv.status-price-table col.sp-stat{width:22%}
+.letter-body table.kv.status-price-table col.sp-fig{width:26%}
+.letter-body table.kv.status-price-table tr.sp-group th{opacity:1;font-weight:600;padding-top:20px;border-bottom:1px solid var(--ink)}
+.letter-body table.kv.status-price-table tbody:first-of-type tr.sp-group th{padding-top:12px}
+.letter-body table.kv.status-price-table .sp-count{font-weight:400;opacity:.65;margin-left:10px}
+@media (max-width:480px){.letter-body table.kv.status-price-table{font-size:13px;table-layout:auto}}
 /* The net-at-list ledger, on screen. Same rows the letter prints, at reading
    size, with the money column right-aligned so the column adds up by eye. */
 .letter-body table.kv.netsheet th{width:62%;opacity:1;font-weight:500}
@@ -622,8 +615,15 @@ a.street-sale .n{font-variant-numeric:tabular-nums;font-weight:600}
 @media print{.comp-stack-card a.comp-stack-addr,a.dns-addr,.rival-card .rival-addr{min-height:0;padding:0}}
 @media print{
   .sc{min-height:0;padding:24px}
+  .sc-navy,.sc-navy.pack{padding:32px 36px 40px}
+  .sc:last-child{min-height:0;break-after:auto;page-break-after:auto}
   .cue{display:none}
   .hero{color:var(--navy)}
+  figure,.pin-map-wrap,.lot-tile,.keep-note,.keep-close{break-inside:avoid;page-break-inside:avoid}
+  table,.comp-matrix-wrap,.worth-strip,.status-price-wrap,.chart-block,.figure-block,.status-price{break-inside:auto!important;page-break-inside:auto!important}
+  .chart-read,h4.subhead,.matrix-group-h{break-after:avoid;page-break-after:avoid}
+  figcaption,caption,.ppsf-status-caption{break-before:avoid;page-break-before:avoid;break-after:auto;page-break-after:auto}
+  .stat-strip+.small,.stat-strip+p.small{break-before:avoid;page-break-before:avoid}
 }
 `
 }

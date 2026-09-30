@@ -44,6 +44,7 @@ import type { LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import type { KbYearSeries } from '@/lib/kb/year-series'
 import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
 import { bendLuxuryHomesDoor } from '@/lib/site/bend-luxury-homes'
+import { cityMarketPath } from '@/lib/market/canonical-market-path'
 
 /**
  * A place that has its own node: a neighborhood, a golf or master-planned
@@ -669,7 +670,7 @@ export function cityExploreItems(
 ): V3QuietItem[] {
   const items: V3QuietItem[] = [
     { label: placeHomesForSaleHeading(cityName), href: links.browse },
-    { label: `${cityName} market report`, href: `/housing-market/${slug}` },
+    { label: `${cityName} market report`, href: cityMarketPath(slug) },
     { label: `Open houses in ${cityName}`, href: `/open-houses/${slug}` },
     { label: 'Every Central Oregon city', href: '/cities' },
     { label: 'Value my home', href: links.valuation },

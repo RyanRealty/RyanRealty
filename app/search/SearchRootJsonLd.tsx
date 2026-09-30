@@ -1,4 +1,6 @@
 import { listingTileHref } from '@/lib/slug'
+import type { SchemaInput } from '@/lib/site/json-ld'
+import { MetadataBlock } from '@/components/site/MetadataBlock'
 
 /**
  * Structured data for the root search page (/homes-for-sale, unslugged
@@ -9,7 +11,11 @@ import { listingTileHref } from '@/lib/slug'
  * at the top of app/search/page.tsx — the two-item Home > self trail earns no
  * rich result and cost ~11% of the mobile viewport) and no fixed place name,
  * so the BreadcrumbList and Place nodes that component emits do not apply
- * here. This component emits only the two node types that do.
+ * here. This component emits only the node types that do.
+ *
+ * SITE-201: the bare, indexable URL also carries the region's market Dataset
+ * (buildRegionMarketDatasetSchema), from the same variables the visible band
+ * and FAQ below the map print. Absent on every other shape of the page.
  */
 type ListingRow = {
   ListingKey?: string | null
@@ -35,6 +41,10 @@ type Props = {
   listings: ListingRow[]
   /** Total result count across all pages, not just the rendered slice. */
   totalCount?: number
+  /** The image the page leads with (split: the first card's photo), or null. */
+  primaryImageUrl?: string | null
+  /** The region market Dataset node; omitted when its read missed. */
+  datasetSchema?: SchemaInput
 }
 
 export default function SearchRootJsonLd({
@@ -44,6 +54,8 @@ export default function SearchRootJsonLd({
   siteUrl,
   listings,
   totalCount,
+  primaryImageUrl,
+  datasetSchema,
 }: Props) {
   const webPage = {
     '@context': 'https://schema.org',
@@ -51,6 +63,7 @@ export default function SearchRootJsonLd({
     name: title,
     description,
     url: canonicalUrl,
+    ...(primaryImageUrl && { primaryImageOfPage: { '@type': 'ImageObject', url: primaryImageUrl } }),
   }
 
   const listingUrls = listings
@@ -115,6 +128,7 @@ export default function SearchRootJsonLd({
       {offerCatalog && (
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(offerCatalog) }} />
       )}
+      {datasetSchema ? <MetadataBlock schema={datasetSchema} /> : null}
     </>
   )
 }

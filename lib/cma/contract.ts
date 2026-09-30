@@ -23,6 +23,7 @@ import type { CompJudgment } from '@/lib/cma/judge'
 import type { CmaAudit } from '@/lib/cma/audit'
 import type { CmaSiteData } from '@/lib/cma/county'
 import { RANGE_REVIEW_SHARE, rangeWiderThanShare } from '@/lib/pricing/review'
+import { closedSaleLow } from '@/lib/cma/expired-audit'
 
 // Restrictive/resource base zones where buildability is NOT automatic — a
 // dwelling needs a verified current entitlement (SKILL §3.5).
@@ -137,14 +138,32 @@ export function evaluateAccuracyContract(args: {
   })
   const failedAsk = args.failedAsk ?? pricing.failedAsk ?? null
   if (failedAsk != null && failedAsk > 0) {
-    const over = pricing.recommended > failedAsk || pricing.highEnd > failedAsk
+    const bandLow = Math.min(pricing.valueLow, pricing.valueHigh)
+    // A minimum-width open can print a low under the sales. The pin is the
+    // sales, so the check uses that low when it sits above the printed one.
+    const salesLow = closedSaleLow(pricing) ?? bandLow
+    const belowRange = pricing.failedAskBelowRange === true && salesLow > 0
+    // The printed pin and the printed sales low are the same thousand.
+    // An off-grid sale of $849,416 prints as $849,000. No one-step slack.
+    const printedSalesLow = Math.round(salesLow / 1000) * 1000
+    const over = belowRange
+      ? pricing.recommended > printedSalesLow
+      : pricing.recommended > failedAsk || pricing.highEnd > failedAsk
+    const rec = pricing.recommended.toLocaleString()
+    const high = pricing.highEnd.toLocaleString()
+    const ask = failedAsk.toLocaleString()
+    const low = printedSalesLow.toLocaleString()
     checks.push({
       id: 'expired-list-cap',
       severity: 'hard',
       pass: !over,
-      detail: over
-        ? `Expired last list was $${failedAsk.toLocaleString()}. Recommended $${pricing.recommended.toLocaleString()} / high end $${pricing.highEnd.toLocaleString()} sits above the price that already failed to sell.`
-        : `Expired last list $${failedAsk.toLocaleString()} caps the printed list. Recommended $${pricing.recommended.toLocaleString()} and high end $${pricing.highEnd.toLocaleString()} sit at or below it.`,
+      detail: belowRange
+        ? over
+          ? `Last ask $${ask} sat below the sales band. Recommended $${rec} must sit at or below the band low $${low} (failedAskBelowRange).`
+          : `Last ask $${ask} sat below the sales band. Recommended $${rec} is pinned at the band low $${low} (failedAskBelowRange), not at the failed ask.`
+        : over
+          ? `Expired last list was $${ask}. Recommended $${rec} / high end $${high} sits above the price that already failed to sell.`
+          : `Expired last list $${ask} caps the printed list. Recommended $${rec} and high end $${high} sit at or below it.`,
     })
   }
   if (pricing.currentAsk != null && pricing.currentAsk > 0) {
@@ -274,12 +293,22 @@ export function evaluateAccuracyContract(args: {
       ? `Methods within ${pricing.convergenceSpreadPct}% (≤5% tolerance).`
       : `Methods ${pricing.convergenceSpreadPct}% apart — Method 3 governs; confidence lowered to ${pricing.confidence} accordingly.`,
   })
-  checks.push({
-    id: 'dispersion-within-limit',
-    severity: 'review',
-    pass: !pricing.needsReview || !pricing.reviewReason?.includes('price-per-square-foot'),
-    detail: pricing.needsReview ? (pricing.reviewReason ?? 'Dispersion flag raised.') : 'Comp set is one market tier.',
-  })
+  {
+    // The pass still reads the engine flag. The detail names the final list,
+    // not whatever earlier sentence was pasted into reviewReason.
+    const dispersion =
+      pricing.needsReview === true && (pricing.reviewReason?.includes('price-per-square-foot') ?? false)
+    checks.push({
+      id: 'dispersion-within-limit',
+      severity: 'review',
+      pass: !dispersion,
+      detail: dispersion
+        ? `Comparable sales span a wide price-per-square-foot range behind the recommended $${pricing.recommended.toLocaleString()}.`
+        : pricing.needsReview
+          ? 'Review was raised for a reason other than price-per-square-foot dispersion.'
+          : 'Comp set is one market tier.',
+    })
+  }
   // Matt 2026-09-09: a range wider than RANGE_REVIEW_SHARE on either side of
   // the recommended list is a broker's call, like an audit finding. The detail
   // carries "wider than" so lib/pricing/review.ts prints the seller sentence.

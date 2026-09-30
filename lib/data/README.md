@@ -15,7 +15,8 @@ See **[docs/DATA_ACCESS_LAYER.md](../../docs/DATA_ACCESS_LAYER.md)** for the ful
 ## Pattern (every function follows)
 
 ```ts
-import { unstable_cache } from 'next/cache'
+// Never from 'next/cache' directly (G79, ci:unstable-cache-door).
+import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { z } from 'zod'
 import { supabaseServer } from '@/lib/data/client'
 import type { ListingDetail } from '@/lib/data/types/listing'

@@ -14,11 +14,11 @@ import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import type { LeftoverHudKpis } from '@/lib/market/publish-leftover-hud'
 import { isSoldAttributionTrusted } from '@/lib/market/geo-grain-trust'
-import { CORE_CITY_SLUGS } from '@/app/housing-market/[...slug]/_v3/geo-constants'
+import { CORE_CITY_SLUGS, CORE_COMMUNITY_MARKET_PATHS } from '@/app/housing-market/[...slug]/_v3/geo-constants'
 import { v3Text, type V3InstrumentFigure, type V3InstrumentFigures } from '@/components/site/v3'
 
 const NO_DATE = /^[\s\u002D\u2010-\u2015\u2212]*$/
-const MARKET_SLUGS = new Set<string>(CORE_CITY_SLUGS)
+const MARKET_SLUGS = new Set<string>([...CORE_CITY_SLUGS, ...Object.keys(CORE_COMMUNITY_MARKET_PATHS)])
 /** What a reader sees as this instrument's source before opening the trace. */
 export const LISTING_ASK_SOURCE_NAME = 'live MLS through Oregon Data Share'
 
@@ -44,7 +44,7 @@ export type ListingAskClaim = {
 export function leftoverMarketReportHref(geoSlug: string | null | undefined): string | null {
   const slug = typeof geoSlug === 'string' ? geoSlug.trim().toLowerCase() : ''
   if (!slug || !MARKET_SLUGS.has(slug)) return null
-  return `/housing-market/${slug}`
+  return CORE_COMMUNITY_MARKET_PATHS[slug] ?? `/housing-market/${slug}`
 }
 
 export function publishAskVsMedianPct(ask: number, median: number): number | null {

@@ -94,6 +94,8 @@ export type CmaQueueRow = {
   address: string
   city: string | null
   subdivision: string | null
+  /** MLS ListingKey of the subject. Null when the document has none. */
+  subjectListingKey: string | null
 
   contactName: string | null
   contactEmail: string | null
@@ -140,7 +142,7 @@ export type CmaQueueRow = {
 type Row = Record<string, unknown>
 
 const CMA_COLUMNS =
-  'id, slug, doc_type, subject_address, subject_subdivision, subject_city, ' +
+  'id, slug, doc_type, subject_address, subject_subdivision, subject_city, subject_listing_key, ' +
   'client_name, client_email, broker_slug, value_low, value_high, recommended_list, ' +
   'comps_count, status, created_at, delivered_at, build_error, html_path, ' +
   'build_summary, request_source, archived_at'
@@ -329,7 +331,7 @@ async function fetchProspectContext(
  * (G1) holds either way. Nothing here writes.
  */
 const BPO_COLUMNS =
-  'id, slug, subject_address, subject_subdivision, subject_city, opinion_value, value_low, ' +
+  'id, slug, subject_address, subject_subdivision, subject_city, subject_listing_key, opinion_value, value_low, ' +
   'value_high, comps_count, broker_slug, purpose, status, requested_by, person_id, ' +
   'last_sent_at, sent_count, created_at, finalized_at, archived_at, build_error, ' +
   'html_path, build_summary'
@@ -380,6 +382,7 @@ export function mapBpoQueueRow(r: Record<string, unknown>): CmaQueueRow {
     address: String(r.subject_address ?? ''),
     city: str(r.subject_city),
     subdivision: str(r.subject_subdivision),
+    subjectListingKey: str(r.subject_listing_key),
 
     contactName: str(r.requested_by),
     contactEmail: null,
@@ -503,6 +506,7 @@ export async function listCmaQueue(options: {
       address: String(r.subject_address ?? ''),
       city: str(r.subject_city),
       subdivision: str(r.subject_subdivision),
+      subjectListingKey: str(r.subject_listing_key),
 
       // The prospect row is the better contact of record for cold origins —
       // it is what the send rail addresses — so it wins when both are set.

@@ -40,6 +40,7 @@ type Props = {
   geoName: string
   cityName: string
   citySlug: string
+  communitySlug?: string | null
   hud: LeftoverHudKpis | null
   mosText: string | null
   verdict: { kind: MarketKind; label: string }
@@ -58,6 +59,7 @@ export function CommunityMarketView({
   geoName,
   cityName,
   citySlug,
+  communitySlug = null,
   hud,
   mosText,
   verdict,
@@ -100,6 +102,7 @@ export function CommunityMarketView({
     citySlug,
     cityName,
     communityName: geoName,
+    communitySlug,
     footnotes: cityLedger.footnotes,
     posts: [],
   })
