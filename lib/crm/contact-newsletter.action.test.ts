@@ -43,27 +43,28 @@ vi.mock('@/lib/crm/merge', () => ({ attributeSiteLinks: (t: string) => t }))
 vi.mock('@/lib/email-tracking', () => ({ instrumentEmailHtml: (h: string) => h }))
 
 const subscribeToNewsletter = vi.fn()
-const getNewsletter = vi.fn()
 const recordRecipientSend = vi.fn()
 vi.mock('@/lib/data', () => ({
   subscribeToNewsletter: (...a: unknown[]) => subscribeToNewsletter(...a),
-  getNewsletter: (...a: unknown[]) => getNewsletter(...a),
   recordRecipientSend: (...a: unknown[]) => recordRecipientSend(...a),
 }))
 
-// Supabase stub: person + subscriber lookups + newsletters resolution + insert.
+// The issue a one-click send delivers: the newest one Matt approved (never a
+// draft). Its selection is tested in lib/data/newsletter/current-issue.test.ts.
+const getNewsletter = vi.fn()
+vi.mock('@/lib/data/newsletter/current-issue', () => ({
+  getCurrentNewsletterIssue: () => getNewsletter(),
+}))
+
+// Supabase stub: person + subscriber lookups + timeline insert.
 let personRow: unknown = null
 let subRow: unknown = null
-let sentNewsletterId: string | null = null
-/** Drafts newest first, as the fallback query reads them. */
-let draftRows: Array<{ id: string; created_by: string | null }> = []
 const insertSpy = vi.fn()
 function makeSb() {
   let table = ''
-  let statusFilter = ''
   const builder: Record<string, unknown> = {
     select: () => builder,
-    eq: (col: string, val: string) => { if (col === 'status') statusFilter = val; return builder },
+    eq: () => builder,
     ilike: () => builder,
     order: () => builder,
     limit: () => builder,
@@ -71,19 +72,11 @@ function makeSb() {
     maybeSingle: () => {
       if (table === 'crm_people') return Promise.resolve({ data: personRow })
       if (table === 'newsletter_subscribers') return Promise.resolve({ data: subRow })
-      if (table === 'newsletters' && statusFilter === 'sent') {
-        return Promise.resolve({ data: sentNewsletterId ? { id: sentNewsletterId } : null })
-      }
-      // A single-row draft read gets the newest draft, whoever wrote it.
-      if (table === 'newsletters' && statusFilter === 'draft') return Promise.resolve({ data: draftRows[0] ?? null })
       return Promise.resolve({ data: null })
     },
-    // The draft fallback awaits the list itself (no maybeSingle).
-    then: (resolve: (v: unknown) => unknown) =>
-      resolve({ data: table === 'newsletters' && statusFilter === 'draft' ? draftRows : [] }),
   }
   return {
-    from: (t: string) => { table = t; statusFilter = ''; return builder },
+    from: (t: string) => { table = t; return builder },
   }
 }
 vi.mock('@/lib/supabase/service', () => ({ createServiceClient: () => makeSb() }))
@@ -95,8 +88,7 @@ afterEach(() => {
   ledger.clear()
   personRow = null
   subRow = null
-  sentNewsletterId = null
-  draftRows = []
+  getNewsletter.mockReset()
 })
 
 describe('sendNewsletterToContactAction', () => {
@@ -119,50 +111,27 @@ describe('sendNewsletterToContactAction', () => {
     expect(sendEmail).not.toHaveBeenCalled()
   })
 
-  it('refuses when no newsletter is ready', async () => {
+  it('refuses when no newsletter is ready (no issue Matt approved)', async () => {
     getCrmAccess.mockResolvedValue({ email: 'matt@ryan-realty.com', role: 'superuser', brokerSlug: 'matt' })
     requirePersonInScope.mockResolvedValue({ ok: true })
     personRow = { id: 5, fub_legacy_id: 1, emails: [{ value: 'a@b.com', isPrimary: 1 }], name: 'A', assigned_broker: 'matt' }
     isSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
-    sentNewsletterId = null
-    draftRows = []
+    getNewsletter.mockResolvedValue(null)
     const r = await sendNewsletterToContactAction(5)
     expect(r.ok).toBe(false)
     if (!r.ok) expect(r.error).toBe('No newsletter is ready to send')
-  })
-
-  it('never sends a draft a cron wrote for Matt to approve', async () => {
-    getCrmAccess.mockResolvedValue({ email: 'paul@ryan-realty.com', role: 'broker', brokerSlug: 'paul' })
-    requirePersonInScope.mockResolvedValue({ ok: true })
-    personRow = { id: 5, fub_legacy_id: 1, emails: [{ value: 'a@b.com', isPrimary: 1 }], name: 'A', assigned_broker: 'paul' }
-    isSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
-    draftRows = [
-      { id: 'edition-draft', created_by: 'cron:market-report-edition:2026-08' },
-      { id: 'brief-draft', created_by: 'cron:newsletter-monthly-draft' },
-    ]
-    const r = await sendNewsletterToContactAction(5)
-    expect(r.ok).toBe(false)
-    if (!r.ok) expect(r.error).toBe('No newsletter is ready to send')
-    expect(getNewsletter).not.toHaveBeenCalled()
     expect(sendEmail).not.toHaveBeenCalled()
   })
 
-  it('falls back past the system drafts to the newest draft a person wrote', async () => {
+  it('a failed read of the current issue is an error, never a send', async () => {
     getCrmAccess.mockResolvedValue({ email: 'matt@ryan-realty.com', role: 'superuser', brokerSlug: 'matt' })
     requirePersonInScope.mockResolvedValue({ ok: true })
-    personRow = { id: 5, fub_legacy_id: 42, emails: [{ value: 'a@b.com', isPrimary: 1 }], name: 'A', assigned_broker: 'matt' }
+    personRow = { id: 5, fub_legacy_id: 1, emails: [{ value: 'a@b.com', isPrimary: 1 }], name: 'A', assigned_broker: 'matt' }
     isSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
-    subRow = { id: 'sub-1', status: 'active', unsubscribe_token: 'tok' }
-    draftRows = [
-      { id: 'edition-draft', created_by: 'cron:market-report-edition:2026-08' },
-      { id: 'matt-draft', created_by: 'matt@ryan-realty.com' },
-    ]
-    getNewsletter.mockResolvedValue({ id: 'matt-draft', subject: 'A note from Matt', preview_text: null, body_html: '<p>hi</p>', body_text: null })
-    sendEmail.mockResolvedValue({ id: 'm1' })
+    getNewsletter.mockRejectedValue(new Error('getCurrentNewsletterIssue: timeout'))
     const r = await sendNewsletterToContactAction(5)
-    expect(r.ok).toBe(true)
-    expect(getNewsletter).toHaveBeenCalledWith('matt-draft')
-    expect(sendEmail).toHaveBeenCalledTimes(1)
+    expect(r.ok).toBe(false)
+    expect(sendEmail).not.toHaveBeenCalled()
   })
 
   it('sends to exactly one contact, records tracking, and logs to the timeline', async () => {
@@ -170,7 +139,6 @@ describe('sendNewsletterToContactAction', () => {
     requirePersonInScope.mockResolvedValue({ ok: true })
     personRow = { id: 5, fub_legacy_id: 42, emails: [{ value: 'a@b.com', isPrimary: 1 }], name: 'A', assigned_broker: 'matt' }
     isSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
-    sentNewsletterId = 'nl-1'
     getNewsletter.mockResolvedValue({ id: 'nl-1', subject: 'June update', preview_text: null, body_html: '<p>hi</p>', body_text: null })
     subscribeToNewsletter.mockResolvedValue({ ok: true })
     // status is required now — the one-click path refuses to reactivate an opt-out
@@ -193,7 +161,6 @@ describe('sendNewsletterToContactAction', () => {
     requirePersonInScope.mockResolvedValue({ ok: true })
     personRow = { id: 5, fub_legacy_id: 42, emails: [{ value: 'a@b.com', isPrimary: 1 }], name: 'A', assigned_broker: 'matt' }
     isSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
-    sentNewsletterId = 'nl-1'
     getNewsletter.mockResolvedValue({ id: 'nl-1', subject: 'June update', preview_text: null, body_html: '<p>hi</p>', body_text: null })
     subRow = { id: 'sub-1', status: 'unsubscribed', unsubscribe_token: 'tok-1' }
 
@@ -214,7 +181,6 @@ describe('sendNewsletterToContactAction', () => {
     requirePersonInScope.mockResolvedValue({ ok: true })
     personRow = { id: 5, fub_legacy_id: 42, emails: [{ value: 'a@b.com', isPrimary: 1 }], name: 'A', assigned_broker: 'matt' }
     isSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
-    sentNewsletterId = 'nl-1'
     getNewsletter.mockResolvedValue({ id: 'nl-1', subject: 'June update', preview_text: null, body_html: '<p>hi</p>', body_text: null })
     subRow = { id: 'sub-1', status: 'active', unsubscribe_token: 'tok-1' }
     sendEmail.mockResolvedValue({ id: 'resend-1' })

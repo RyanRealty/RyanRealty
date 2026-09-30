@@ -32,22 +32,14 @@ import { wrapNewsletterHtml, newsletterTextFooter } from '@/lib/email-templates/
 import { decorateOutboundText } from '@/lib/identity/outbound-links'
 import { instrumentEmailHtml } from '@/lib/email-tracking'
 import { NEWSLETTER_FROM_ADDRESS } from '@/lib/newsletter/send-queue'
-import { isAutoDraft } from '@/lib/newsletter/auto-draft'
-import {
-  subscribeToNewsletter,
-  getNewsletter,
-  recordRecipientSend,
-  type NewsletterRow,
-} from '@/lib/data'
+import { getCurrentNewsletterIssue } from '@/lib/data/newsletter/current-issue'
+import { subscribeToNewsletter, recordRecipientSend } from '@/lib/data'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 // Bulk newsletter identity sends from the isolated news. subdomain (audit A4).
 const NEWSLETTER_FROM = `Ryan Realty <${NEWSLETTER_FROM_ADDRESS}>`
 /** One-click newsletter links live 180 days (T-5). */
 const ONE_CLICK_TTL_SECONDS = (180 * 24 * 60 * 60)
-
-/** Drafts read past the system drafts to the newest one a person wrote (mirrors getLatestNewsletterIssue). */
-const AUTO_DRAFT_SCAN = 25
 
 function unsubUrl(token: string): string {
   return `${SITE_URL}/newsletter/unsubscribe?token=${encodeURIComponent(token)}`
@@ -60,45 +52,6 @@ function unsubUrl(token: string): string {
  */
 function oneClickUnsubUrl(token: string): string {
   return `${SITE_URL}/api/newsletter/unsubscribe?token=${encodeURIComponent(token)}`
-}
-
-/**
- * Resolve the "current" newsletter to send: the most recently sent letter, or
- * if none has been sent yet, the most recent draft that has a body. We send the
- * letter that represents the brand's latest message, never an empty shell.
- * A draft a cron wrote for Matt's approval is never "current" (isAutoDraft):
- * it goes to no one until he approves it.
- */
-async function resolveCurrentNewsletter(): Promise<NewsletterRow | null> {
-  const sb = createServiceClient()
-  // Prefer the latest already-sent letter (the canonical "current" message).
-  const sent = await sb
-    .from('newsletters')
-    .select('id')
-    .eq('status', 'sent')
-    .order('sent_at', { ascending: false, nullsFirst: false })
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-  if (sent.data?.id) {
-    const letter = await getNewsletter(sent.data.id as string)
-    if (letter && (letter.body_html || letter.body_text)) return letter
-  }
-  // Fall back to the newest draft with content that a person wrote.
-  const drafts = await sb
-    .from('newsletters')
-    .select('id,created_by')
-    .eq('status', 'draft')
-    .order('created_at', { ascending: false })
-    .limit(AUTO_DRAFT_SCAN)
-  const draft = ((drafts.data ?? []) as Array<{ id: string; created_by: string | null }>).find(
-    (row) => !isAutoDraft(row.created_by),
-  )
-  if (draft?.id) {
-    const letter = await getNewsletter(draft.id)
-    if (letter && (letter.body_html || letter.body_text)) return letter
-  }
-  return null
 }
 
 export async function sendNewsletterToContactAction(personId: number, idempotencyKey?: string): Promise<CrmActionResult> {
@@ -151,7 +104,8 @@ async function sendNewsletterToContactCore(
     const gate = await isSuppressed(personId, 'email')
     if (gate.suppressed) return { ok: false, error: `Blocked by suppression (${gate.reasons.join(', ')})` }
 
-    const letter = await resolveCurrentNewsletter()
+    // The newest issue Matt approved (sent, or scheduled); never a draft.
+    const letter = await getCurrentNewsletterIssue()
     if (!letter) return { ok: false, error: 'No newsletter is ready to send' }
 
     // Never resurrect an opt-out (S-10). If this email is already a subscriber who

@@ -128,6 +128,21 @@ describe('buildEditionEmail', () => {
     expect(r2.checked).toBeGreaterThanOrEqual(15)
   })
 
+  it('cites a half-dollar median as printed, so its month still passes R-2', () => {
+    // Real: January 2026 Redmond 512,786.5; October 2025 region 628,497.5. A median
+    // of an even count can end in .5, and money() prints whole dollars.
+    const half = buildEditionEmail(
+      edition({
+        region: kpis({ ...REGION, median: fig(628497.5, 301) }),
+        monthly: [section('bend', 'Bend', 'city', BEND), section('redmond', 'Redmond', 'city', kpis({ ...REDMOND, median: fig(512786.5, 60) }))],
+      }),
+    )
+    expect(text(half.bodyHtml)).toContain('$628,498 median sale price')
+    expect(text(half.bodyHtml)).toContain('Redmond: 51 sales at a median of $512,787')
+    expect(checkCitations(half.bodyHtml, half.citations).failures).toEqual([])
+    expect(half.citations.find((c) => c.figure.startsWith('Central Oregon median sale price'))?.filter).toContain('628497.5')
+  })
+
   it('fails R-2 when a printed figure loses its citation (the check has teeth here)', () => {
     const withoutMedian = email.citations.filter((c) => c.value !== 640000)
     expect(checkCitations(email.bodyHtml, withoutMedian).ok).toBe(false)

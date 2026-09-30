@@ -1,60 +1,32 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-/**
- * The send panel shows the issue a one-click send would deliver. It must skip
- * a draft a cron wrote for Matt's approval, exactly as
- * resolveCurrentNewsletter does on the send side.
- */
-type Row = { id: string; subject: string; body_html: string | null; body_text: string | null; created_by: string | null; sent_at?: string | null }
-let sentRow: Row | null = null
-let draftRows: Row[] = []
-
-vi.mock('@/lib/supabase/service', () => ({
-  createServiceClient: () => {
-    let status = ''
-    const builder: Record<string, unknown> = {
-      from: () => builder,
-      select: () => builder,
-      eq: (col: string, val: string) => {
-        if (col === 'status') status = val
-        return builder
-      },
-      order: () => builder,
-      limit: () => builder,
-      maybeSingle: () => Promise.resolve({ data: status === 'sent' ? sentRow : (draftRows[0] ?? null) }),
-      then: (resolve: (v: unknown) => unknown) => resolve({ data: status === 'draft' ? draftRows : [] }),
-    }
-    return builder
-  },
+const getCurrentNewsletterIssue = vi.fn()
+vi.mock('@/lib/data/newsletter/current-issue', () => ({
+  getCurrentNewsletterIssue: () => getCurrentNewsletterIssue(),
 }))
 
 import { getLatestNewsletterIssue } from './getLatestNewsletterIssue'
 
-afterEach(() => {
-  sentRow = null
-  draftRows = []
-})
+afterEach(() => getCurrentNewsletterIssue.mockReset())
 
-describe('getLatestNewsletterIssue', () => {
-  it('shows the latest sent issue first', async () => {
-    sentRow = { id: 's1', subject: 'September', body_html: '<p>x</p>', body_text: null, created_by: 'matt@ryan-realty.com', sent_at: '2026-09-03T16:00:00Z' }
-    draftRows = [{ id: 'd1', subject: 'A draft', body_html: '<p>x</p>', body_text: null, created_by: 'matt@ryan-realty.com' }]
-    expect(await getLatestNewsletterIssue()).toEqual({ id: 's1', subject: 'September', status: 'sent', sentAt: '2026-09-03T16:00:00Z' })
+describe('getLatestNewsletterIssue (the send panel names what the one-click send delivers)', () => {
+  it('names a sent issue with the time it finished going out', async () => {
+    getCurrentNewsletterIssue.mockResolvedValue({ id: 's1', subject: 'September', status: 'sent', send_finished_at: '2026-09-03T16:10:00Z', sent_at: null })
+    expect(await getLatestNewsletterIssue()).toEqual({ id: 's1', subject: 'September', status: 'sent', sentAt: '2026-09-03T16:10:00Z' })
   })
 
-  it('never offers a draft a cron wrote for Matt to approve', async () => {
-    draftRows = [
-      { id: 'edition', subject: 'Central Oregon market report: August 2026', body_html: '<p>x</p>', body_text: null, created_by: 'cron:market-report-edition:2026-08' },
-      { id: 'brief', subject: 'The Bend Brief · September', body_html: '<p>x</p>', body_text: null, created_by: 'cron:newsletter-monthly-draft' },
-    ]
+  it('names a scheduled issue as scheduled', async () => {
+    getCurrentNewsletterIssue.mockResolvedValue({ id: 'o1', subject: 'October', status: 'scheduled', send_finished_at: null, sent_at: null })
+    expect(await getLatestNewsletterIssue()).toEqual({ id: 'o1', subject: 'October', status: 'scheduled', sentAt: null })
+  })
+
+  it('names nothing when there is no approved issue', async () => {
+    getCurrentNewsletterIssue.mockResolvedValue(null)
     expect(await getLatestNewsletterIssue()).toBeNull()
   })
 
-  it('offers the newest draft a person wrote, past the system drafts', async () => {
-    draftRows = [
-      { id: 'edition', subject: 'Central Oregon market report: August 2026', body_html: '<p>x</p>', body_text: null, created_by: 'cron:market-report-edition:2026-08' },
-      { id: 'mine', subject: 'A note from Matt', body_html: '<p>x</p>', body_text: null, created_by: 'matt@ryan-realty.com' },
-    ]
-    expect(await getLatestNewsletterIssue()).toEqual({ id: 'mine', subject: 'A note from Matt', status: 'draft', sentAt: null })
+  it('names nothing (the send stays disabled) when the read fails, instead of failing the person page', async () => {
+    getCurrentNewsletterIssue.mockRejectedValue(new Error('timeout'))
+    expect(await getLatestNewsletterIssue()).toBeNull()
   })
 })

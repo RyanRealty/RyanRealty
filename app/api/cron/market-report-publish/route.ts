@@ -76,10 +76,10 @@ export async function GET(request: Request) {
 
     // Matt 2026-09-30 ("Draft it for my OK"): the newest month's email becomes a
     // newsletter draft and Matt gets the review link by text. Nothing is sent to
-    // anyone until he approves it. A late re-run of an older month is not
-    // emailed; a ?force=1 republish rewrites a draft that is still a draft.
+    // anyone until he approves it. A re-run of an older month writes no email,
+    // but an open draft for the month republished here moves to its new figures.
     // Never throws, so a draft problem can never read as "did not publish".
-    const email = month === lastCompleteMonth() ? await draftEditionEmailAndTell(month, { refresh: force }) : null
+    const email = await draftEditionEmailAndTell(month, { create: month === lastCompleteMonth() })
     return NextResponse.json({ ok: true, month, outcome: { ...outcome, reconciliation: undefined }, email, log })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)

@@ -14,6 +14,7 @@ import { STAT_BY_ID, marketVerdict as registryVerdict } from '@/lib/data/market-
 import type { ReportBandRow, ReportSeriesRow } from '@/lib/data/market-report/series'
 import { monthsOfSupply } from '@/lib/market/classify'
 import { PRICE_BANDS, SUPPLY_TIERS } from './bands'
+import { citySentence } from './headline'
 import { addMonths, lastDayOf, monthLabel, money, count, days, mosText, pct, pctChange } from './format'
 import {
   BEND_DISTRICTS,
@@ -567,11 +568,8 @@ export function buildEdition(input: BuildEditionInput): EditionPayload {
 function buildHeadline(region: MarketSection, monthly: readonly MarketSection[]): string[] {
   const out = [...region.summary.slice(0, 2)]
   for (const s of monthly) {
-    const k = s.kpis
-    if (k.median.v == null) continue
-    const change = k.medianYoY != null ? ` (${pctChange(k.medianYoY)} from a year earlier)` : ''
-    const speed = k.dtc.v != null ? `, and the typical home went under contract in ${days(k.dtc.v)}` : ''
-    out.push(`${s.geo.label}: ${count(k.sales)} sales at a median of ${money(k.median.v)}${change}${speed}.`)
+    const line = citySentence(s)
+    if (line) out.push(line)
   }
   return out
 }

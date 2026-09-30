@@ -80,10 +80,11 @@ const VERDICT_LABELS: Array<{ pattern: RegExp; value: string; label: string }> =
 
 /**
  * A whole number as printed, thousands separators allowed ("1,261"), never a
- * tail of a longer one: without the lookbehind "1,261 homes for sale" was read
- * as 261 and a correct citation of 1,261 failed.
+ * tail of a longer token: without the lookbehind "1,261 homes for sale" was
+ * read as 261 and a correct citation of 1,261 failed. A letter before it keeps
+ * it out too, as the old word boundary did ("Q3 sales" is not a stat).
  */
-const WHOLE = String.raw`(?<![\d,.])(\d{1,3}(?:,\d{3})+|\d+)`
+const WHOLE = String.raw`(?<![\w,.])(\d{1,3}(?:,\d{3})+|\d+)`
 
 /**
  * R-2 pure checker: every stat token in bodyHtml must trace to a citation.
@@ -121,8 +122,13 @@ export function checkCitations(bodyHtml: string, citations: NewsletterCitationEn
   scan(/\$\d{1,3}(?:,\d{3})+/g, (m) => `"${m[0]}" (currency figure)`, (m) => toNumber(m[0]), { currency: true })
   // Percents: 2.1% or 12%
   scan(/\b\d+(?:\.\d+)?%/g, (m) => `"${m[0]}" (percent)`, (m) => toNumber(m[0]), { tolerance: 0.05 })
-  // Day counts: 38 days
-  scan(new RegExp(String.raw`${WHOLE}\s+days?\b`, 'gi'), (m) => `"${m[0]}" (day count)`, (m) => toNumber(m[1]!))
+  // Day counts: 38 days, 19.5 days (a half-day median is printed on the site)
+  scan(
+    new RegExp(String.raw`(?<![\w,.])((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?)\s+days?\b`, 'gi'),
+    (m) => `"${m[0]}" (day count)`,
+    (m) => toNumber(m[1]!),
+    { tolerance: 0.05 },
+  )
   // Months of supply: 4.3 months
   scan(/\b(\d{1,2}(?:\.\d+)?)\s+months?\b/gi, (m) => `"${m[0]}" (months of supply)`, (m) => Number(m[1]), { tolerance: 0.05 })
   // Labeled inventory counts: 16 homes for sale · 142 active listings · 1,882 sales

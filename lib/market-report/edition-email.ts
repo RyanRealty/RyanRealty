@@ -19,13 +19,15 @@
  * The body is section rows only; the newsletter shell (masthead, hero, broker
  * close, unsubscribe) wraps it at preview and send time.
  */
-import { editionPath, editionPdfHref, MONTHLY_REPORT_PATH } from '@/app/housing-market/reports/monthly/_v3/edition-keys'
+import { editionPath, editionPdfHref, hasPdf, MONTHLY_REPORT_PATH } from '@/app/housing-market/reports/monthly/_v3/edition-keys'
 import type { EditionRow } from '@/lib/data/market-report/editions'
 import type { NewsletterCitationEntry } from '@/lib/data/newsletter'
 import { EMAIL_BODY_MUTED, EMAIL_CREAM, EMAIL_INK, EMAIL_NAVY, EMAIL_SERIF } from '@/lib/email/brand'
 import { FIRST_EDITION_LABEL } from './edition-path-guard'
-import { count, days, money, monthLabel, monthName, mosText, pctChange } from './format'
-import type { Kpis, MarketSection, Verdict } from './types'
+import { count, days, money, monthLabel, monthName, mosText } from './format'
+import { citySentence } from './headline'
+import { NOUN_SFR } from './narrative'
+import type { Kpis, Verdict } from './types'
 
 /** Absolute links: an inbox cannot resolve a relative path, and R-3 checks this host. */
 export const EDITION_EMAIL_SITE = 'https://ryan-realty.com'
@@ -71,18 +73,6 @@ function changeWords(yoy: number, ago: string): { text: string; pct: number } {
 
 type Cell = { figure: string; caption: string }
 
-/**
- * The same sentence the edition's cover prints for a city
- * (buildHeadline, ./build-edition.ts), from the same helpers.
- */
-function cityLine(section: MarketSection): string | null {
-  const k = section.kpis
-  if (k.median.v == null) return null
-  const change = k.medianYoY != null ? ` (${pctChange(k.medianYoY)} from a year earlier)` : ''
-  const speed = k.dtc.v != null ? `, and the typical home went under contract in ${days(k.dtc.v)}` : ''
-  return `${section.geo.label}: ${count(k.sales)} sales at a median of ${money(k.median.v)}${change}${speed}.`
-}
-
 export function buildEditionEmail(edition: EditionInput, opts: { site?: string } = {}): EditionEmail {
   const site = (opts.site ?? EDITION_EMAIL_SITE).replace(/\/$/, '')
   const payload = edition.payload
@@ -105,7 +95,8 @@ export function buildEditionEmail(edition: EditionInput, opts: { site?: string }
   const cells: Cell[] = []
   if (k.median.v != null) {
     let caption = 'median sale price'
-    cite(`${place} median sale price, ${label}`, k.median.v, `payload.region.kpis.median.v (${k.median.n} sales)`)
+    // As printed: money() shows whole dollars, and a median of an even count can end in .5.
+    cite(`${place} median sale price, ${label}`, Math.round(k.median.v), `payload.region.kpis.median.v = ${k.median.v} (${k.median.n} sales)`)
     if (k.medianYoY != null) {
       const change = changeWords(k.medianYoY, ago)
       caption += `, ${change.text}`
@@ -145,12 +136,12 @@ export function buildEditionEmail(edition: EditionInput, opts: { site?: string }
   // ── The cities the report reads monthly (Bend, Redmond) ──────────────────
   const cities: string[] = []
   for (const section of payload.monthly) {
-    const line = cityLine(section)
+    const line = citySentence(section)
     if (!line) continue
     const c = section.kpis
     const at = `payload.monthly[${section.geo.slug}].kpis`
     cite(`${section.geo.label} homes sold, ${label}`, c.sales, `${at}.sales`)
-    cite(`${section.geo.label} median sale price, ${label}`, c.median.v!, `${at}.median.v (${c.median.n} sales)`)
+    cite(`${section.geo.label} median sale price, ${label}`, Math.round(c.median.v!), `${at}.median.v = ${c.median.v} (${c.median.n} sales)`)
     if (c.medianYoY != null) {
       cite(`${section.geo.label} median change from a year earlier (percent, as printed)`, Math.abs(Math.round(c.medianYoY * 100)), `${at}.medianYoY = ${c.medianYoY}`)
     }
@@ -163,15 +154,15 @@ export function buildEditionEmail(edition: EditionInput, opts: { site?: string }
 
   // ── Links ─────────────────────────────────────────────────────────────────
   const reportUrl = `${site}${editionPath(key)}`
-  const pdfUrl = edition.pdf_path ? `${site}${editionPdfHref(key)}` : null
+  const pdfUrl = hasPdf(edition) ? `${site}${editionPdfHref(key)}` : null
   const archiveUrl = `${site}${MONTHLY_REPORT_PATH}`
-  const segment = "Single-family homes on less than an acre, the report's main measure."
+  const segment = `${NOUN_SFR.many.charAt(0).toUpperCase()}${NOUN_SFR.many.slice(1)}, the report's main measure.`
 
   // ── Subject and preheader ─────────────────────────────────────────────────
   const subject = `${place} market report: ${label}`
   const lead =
     k.median.v != null
-      ? `The median single-family home on less than an acre in ${place} sold for ${money(k.median.v)} in ${month}.`
+      ? `The median ${NOUN_SFR.one} in ${place} sold for ${money(k.median.v)} in ${month}.`
       : `The ${place} market in ${month}, from our monthly report.`
   const previewText = supplyShown ? `${lead} ${mosText(k.mos)} months of supply: ${VERDICT_WORDS[k.verdict!]}.` : lead
 

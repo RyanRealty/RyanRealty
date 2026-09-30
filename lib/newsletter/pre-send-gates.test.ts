@@ -63,6 +63,19 @@ describe('R-2 checkCitations', () => {
     expect(checkCitations('<p>on the market 1,005 days</p>', [cite(1005)]).ok).toBe(true)
   })
 
+  it('keeps a digit glued to a letter out of the check, as the word boundary did', () => {
+    expect(checkCitations('<p>Q3 sales were the strongest since 2021. H1 sales, Top10 listings.</p>', []).ok).toBe(true)
+  })
+
+  it('checks a half-day median as the whole figure, never its tail or not at all', () => {
+    const body = '<p>homes went pending in a median 19.5 days</p>'
+    expect(checkCitations(body, [cite(19.5)]).ok).toBe(true)
+    const uncited = checkCitations(body, [])
+    expect(uncited.ok).toBe(false)
+    expect(uncited.failures).toEqual(['No citation for "19.5 days" (day count)'])
+    expect(checkCitations(body, [cite(5)]).ok).toBe(false)
+  })
+
   it('checks a verdict label the same way on every call (no global-regex state)', () => {
     const body = `<b>BALANCED</b>`
     for (let i = 0; i < 4; i++) {

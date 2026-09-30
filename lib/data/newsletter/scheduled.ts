@@ -1,5 +1,6 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/data/client'
+import type { NewsletterCitationEntry } from '@/lib/data/newsletter'
 
 /**
  * Scheduled-send support (spec §4.2 UC-R5 / §13 Phase 6). The admin "Schedule"
@@ -76,16 +77,41 @@ export async function findNewsletterIdBySubject(subject: string): Promise<string
  * one draft per edition month, whatever became of it. THROWS on a failed read:
  * "none" would draft the month a second time.
  */
-export async function findNewsletterByCreatedBy(createdBy: string): Promise<{ id: string; status: string } | null> {
+export type NewsletterByMarker = {
+  id: string
+  status: string
+  body_html: string | null
+  citations: NewsletterCitationEntry[]
+}
+
+export async function findNewsletterByCreatedBy(createdBy: string): Promise<NewsletterByMarker | null> {
   const sb = createServiceClient()
   const { data, error } = await sb
     .from('newsletters')
-    .select('id,status')
+    .select('id,status,body_html,citations')
     .eq('created_by', createdBy)
     .order('created_at', { ascending: true })
     .limit(1)
     .maybeSingle()
   if (error) throw new Error(`findNewsletterByCreatedBy: ${error.message}`)
-  const row = data as { id: string; status: string } | null
-  return row ? { id: row.id, status: row.status } : null
+  const row = data as NewsletterByMarker | null
+  return row ? { id: row.id, status: row.status, body_html: row.body_html, citations: row.citations ?? [] } : null
+}
+
+/**
+ * Every monthly market report email still open to change (draft or
+ * scheduled): the daily backstop re-checks each against its edition, so a
+ * report republished by any path cannot leave its email on old figures.
+ */
+export async function listOpenEditionEmailDrafts(prefix: string): Promise<Array<{ id: string; created_by: string }>> {
+  const sb = createServiceClient()
+  const { data, error } = await sb
+    .from('newsletters')
+    .select('id,created_by')
+    .like('created_by', `${prefix}%`)
+    .in('status', ['draft', 'scheduled'])
+    .order('created_at', { ascending: true })
+    .limit(24)
+  if (error) throw new Error(`listOpenEditionEmailDrafts: ${error.message}`)
+  return (data ?? []) as Array<{ id: string; created_by: string }>
 }

@@ -1,6 +1,7 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/data/client'
 import { personIdsByEmailCi } from '@/lib/data/crm/personByEmailCi'
+import { isEditionEmailMarker } from '@/lib/market-report/edition-email-marker'
 
 /**
  * DAL for the newsletter feature — public.newsletter_subscribers (the list) +
@@ -372,10 +373,54 @@ export async function getNewsletter(id: string): Promise<NewsletterRow | null> {
   return (data as NewsletterRow | null) ?? null
 }
 
+/**
+ * Delete a draft. A monthly market report email draft is CANCELED instead: its
+ * row is the record that the month was drafted, and without it the daily
+ * backstop (lib/market-report/edition-email-draft.ts) would write the month
+ * again the next morning, so a month Matt skipped would keep coming back.
+ */
 export async function deleteNewsletterDraft(id: string): Promise<{ ok: boolean }> {
   const sb = createServiceClient()
+  const { data: row, error: readError } = await sb
+    .from(LETTERS)
+    .select('created_by')
+    .eq('id', id)
+    .eq('status', 'draft')
+    .maybeSingle()
+  if (readError) return { ok: false }
+  if (row && isEditionEmailMarker((row as { created_by: string | null }).created_by)) {
+    const { error } = await sb
+      .from(LETTERS)
+      .update({ status: 'canceled', updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('status', 'draft')
+    return { ok: !error }
+  }
   const { error } = await sb.from(LETTERS).delete().eq('id', id).eq('status', 'draft')
   return { ok: !error }
+}
+
+/**
+ * Rewrite a draft's content only while it is still a draft, in one
+ * conditional update: a schedule or send that lands first wins, and the body
+ * it was checked against is never swapped underneath it. False when the row
+ * was no longer a draft.
+ */
+export async function updateNewsletterDraftContent(
+  id: string,
+  fields: Partial<Pick<NewsletterRow, 'subject' | 'preview_text' | 'body_html' | 'body_text'>> & {
+    citations?: NewsletterCitationEntry[]
+  },
+): Promise<boolean> {
+  const sb = createServiceClient()
+  const { data, error } = await sb
+    .from(LETTERS)
+    .update({ ...fields, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('status', 'draft')
+    .select('id')
+  if (error) throw new Error(`updateNewsletterDraftContent: ${error.message}`)
+  return (data?.length ?? 0) > 0
 }
 
 // ── Per-recipient tracking (opens / clicks / delivery) ──────────────────────

@@ -49,7 +49,9 @@ export async function GET(request: Request) {
   // The refresh above only upserts. A comp whose listing later left the filter
   // (deleted because the MLS removed the sale, back to Pending, re-typed) stays
   // until this sweep drops it; 3 x 20,000 keys a run covers the ~150,000-row
-  // table about every 18 hours. Fail closed like every step here.
+  // table about every 18 hours. A listing the MLS changed in the last 48 hours
+  // is left to settle (a status correction can flip back). Fail closed like
+  // every step here.
   const pruned = { deleted: 0, scanned: 0, keys: [] as string[], done: false }
   for (let i = 0; i < 3; i++) {
     const { data: prune, error: pruneErr } = await supabase.rpc('prune_sale_pricing_facts_batch', {
