@@ -185,6 +185,10 @@
   max-width: min(100%, 90rem);
   margin-inline: auto;
   padding: var(--v3-space-md) var(--v3-gutter) var(--v3-space-lg);
+  /* A jump to #homes parks the section flush under the sticky chrome, its own
+     top padding the gap (2026-09-29: the default left a sliver of the section
+     above showing between the chrome and the heading). */
+  scroll-margin-top: var(--v3-chrome-h);
 }
 
 @media (min-width: 48rem) {
