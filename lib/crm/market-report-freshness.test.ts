@@ -22,7 +22,7 @@ function block(provenance: MarketReportProvenance | null, over: Partial<MarketRe
     yoyPct: -1.2,
     marketHealthLabel: null,
     refreshedAt: null,
-    source: 'market_pulse_live',
+    source: 'market_metric',
     twelveMonthSource: 'market-truth',
     href: '/cities/bend',
     provenance,

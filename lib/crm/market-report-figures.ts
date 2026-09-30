@@ -98,19 +98,27 @@ export function activeTrace(area: MarketReportAreaBlock): {
   n: number | null
 } {
   const live = prov(area)?.live ?? null
-  if (area.source === 'market_pulse_live' && live?.table === 'market_metric') {
+  if (area.source === 'market_metric' && live) {
     return {
-      source: 'market_metric via getDetachedMarkets (Market Truth, segment detached)',
+      // Both grains print Market Truth's detached active_count. The pulse's
+      // own count (which includes Coming Soon) is never read for a report.
+      source:
+        area.geoType === 'city'
+          ? 'market_metric via getDetachedMarkets (Market Truth, segment detached, StandardStatus Active)'
+          : 'market_metric via getDetachedInventories (Market Truth, segment detached, StandardStatus Active, primary place membership)',
       filter: `stat_id=active_count ${areaFilter(area)}`,
       as_of: live.computedAt ?? live.completeThrough ?? null,
       n: null,
     }
   }
-  if (area.source === 'market_pulse_live') {
+  if (area.source === 'market_metric') {
+    // A block built without provenance (a hand-built fixture; the fetch path
+    // always attaches it): the count's source was not recorded, and a trace
+    // never guesses one.
     return {
-      source: 'market_pulse_live via getMarketPulse',
+      source: 'live count, source not recorded on this block',
       filter: `${areaFilter(area)} column=active_count`,
-      as_of: live?.computedAt ?? area.refreshedAt ?? null,
+      as_of: area.refreshedAt ?? null,
       n: null,
     }
   }
@@ -149,7 +157,7 @@ export function mosTrace(area: MarketReportAreaBlock): {
     }
   }
   return {
-    source: 'market_pulse_live via getMarketPulse (six-month absorption)',
+    source: 'live months of supply, source not recorded on this block (six-month absorption)',
     filter: `${areaFilter(area)} column=months_of_supply`,
     as_of: live?.computedAt ?? area.refreshedAt ?? null,
     n: null,

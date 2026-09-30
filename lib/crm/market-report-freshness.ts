@@ -20,19 +20,20 @@
  *     inventory and months of supply): computed once a day at about 06:21 UTC
  *     (the Bend detached active_count cell, 2026-09-19 through 2026-09-29),
  *     with an occasional extra run.
- *   - market_pulse_live (a neighborhood's live inventory): the post-sync
- *     pipeline, every 15 minutes when listings change.
+ *   - A neighborhood's live inventory is Market Truth's active_count too,
+ *     read directly (getDetachedInventories), so its clock is a market_metric
+ *     clock (daily, as above). The 15-minute pulse is not read for a report:
+ *     its own count includes Coming Soon.
  * The slowest source a report prints is therefore a DAILY job. A healthy row is
  * at most about 24 hours old at any send tick. 30 hours is one daily cycle plus
  * a 6-hour grace for a slow or re-run job, so an ordinary day never holds, and
  * a single missed daily run does: by the 16:00 UTC send tick after a missed
- * 07:00 run, the row is about 33 hours old. The same 30 hours applies to the
- * 15-minute pulse: it is a dead-pipeline detector, not a precision bound, and
- * a pulse row a day and a half old means the pipeline is down.
+ * 07:00 run, the row is about 33 hours old. It is a dead-job detector, not a
+ * precision bound.
  *
  * If the doc's six hours were used instead, every neighborhood report checked
- * after 20:00 UTC (13 hours past the 07:00 run) would read as stale on an
- * ordinary day.
+ * after 20:00 UTC (13 hours past the 07:00 cache run) would read as stale on
+ * an ordinary day.
  *
  * Pure: no I/O. The sender passes `now`.
  */
@@ -44,7 +45,7 @@ export const MARKET_DATA_MAX_AGE_HOURS = 30
 
 export type StaleSource = {
   area: string
-  source: 'market_stats_cache' | 'market_metric' | 'market_pulse_live'
+  source: 'market_stats_cache' | 'market_metric'
   asOf: string | null
   ageHours: number | null
 }

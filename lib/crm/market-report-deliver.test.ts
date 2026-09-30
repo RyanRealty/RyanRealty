@@ -9,7 +9,7 @@ function fresh(): MarketReportProvenance {
   const at = '2026-09-29T07:01:00.000Z'
   return {
     cache: { updatedAt: at, periodStart: '2025-09-29', periodEnd: '2026-09-28', soldCount: 61, methodologyVersion: 'v3-2026-05-07' },
-    live: { table: 'market_pulse_live', computedAt: '2026-09-29T21:45:00.000Z', completeThrough: null },
+    live: { table: 'market_metric', computedAt: '2026-09-29T21:45:00.000Z', completeThrough: null },
     twelveMonth: null,
   }
 }
@@ -28,7 +28,7 @@ function larkspur(over: Partial<MarketReportAreaBlock> = {}): MarketReportAreaBl
     yoyPct: 2.4,
     marketHealthLabel: null,
     refreshedAt: '2026-09-29T21:45:00.000Z',
-    source: 'market_pulse_live',
+    source: 'market_metric',
     twelveMonthSource: 'market_stats_cache',
     href: '/cities/bend/bend-larkspur',
     trend: null,

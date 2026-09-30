@@ -9,9 +9,9 @@ import { EMPTY_PUBLIC_PACE } from '@/lib/data/market-truth/public-pace'
 // vitest regardless of source position; vi.hoisted keeps the fn references
 // available inside the factory closures. Pattern mirrors
 // lib/data/market/getCityReportSnapshot.test.ts.
-const { detailMock, pulseMock, trendMock, detachedMock, leftoverMock } = vi.hoisted(() => ({
+const { detailMock, inventoryMock, trendMock, detachedMock, leftoverMock } = vi.hoisted(() => ({
   detailMock: vi.fn(),
-  pulseMock: vi.fn(),
+  inventoryMock: vi.fn(),
   trendMock: vi.fn(),
   detachedMock: vi.fn(),
   leftoverMock: vi.fn(),
@@ -19,9 +19,6 @@ const { detailMock, pulseMock, trendMock, detachedMock, leftoverMock } = vi.hois
 
 vi.mock('@/lib/data/market/getCityMarketDetail', () => ({
   getCityMarketDetail: (args: unknown) => detailMock(args),
-}))
-vi.mock('@/lib/data/market/getMarketPulse', () => ({
-  getMarketPulse: (args: unknown) => pulseMock(args),
 }))
 vi.mock('@/lib/data/market/getMarketTrend', () => ({
   getMarketTrend: (...args: unknown[]) => trendMock(...args),
@@ -33,6 +30,7 @@ vi.mock('@/lib/data/market-truth/getSellBendMarket', async () => {
   return {
     ...actual,
     getDetachedMarkets: (...args: unknown[]) => detachedMock(...args),
+    getDetachedInventories: (...args: unknown[]) => inventoryMock(...args),
   }
 })
 vi.mock('@/lib/data/market-truth/public-pace', async () => {
@@ -174,7 +172,7 @@ describe('buildAreaBlock', () => {
     expect(block!.activeListings).toBe(480) // live pulse, not historical 491
     expect(block!.monthsOfSupply).toBe(3.5) // cache-computed live MoS
     expect(block!.marketVerdict).toBe('sellers') // derived from 3.5
-    expect(block!.source).toBe('market_pulse_live')
+    expect(block!.source).toBe('market_metric')
     expect(block!.areaLabel).toBe('Bend')
     expect(block!.href).toBe('/cities/bend')
   })
@@ -228,7 +226,7 @@ describe('buildAreaBlock', () => {
     expect(block!.monthsOfSupply).toBeNull()
     expect(block!.soldLast12mo).toBe(31) // volume line stays rolling_365d
     expect(block!.marketVerdict).toBeNull()
-    expect(block!.source).toBe('market_pulse_live')
+    expect(block!.source).toBe('market_metric')
     expect(block!.href).toBe('/communities/tetherow')
   })
 
@@ -254,7 +252,7 @@ describe('buildAreaBlock', () => {
     expect(block!.monthsOfSupply).toBeNull()
     expect(block!.marketVerdict).toBeNull()
     // Live active still stamps pulse as source even when MoS is withheld.
-    expect(block!.source).toBe('market_pulse_live')
+    expect(block!.source).toBe('market_metric')
   })
 
   it('publishes no community MoS when there is no pulse row at all', () => {
@@ -374,7 +372,7 @@ describe('buildAreaBlock', () => {
     expect(block!.activeListings).toBe(480)
     expect(block!.activeListings).not.toBe(FULL_DETAIL.endOfPeriodInventory)
     expect(block!.monthsOfSupply).toBe(3.5)
-    expect(block!.source).toBe('market_pulse_live')
+    expect(block!.source).toBe('market_metric')
   })
 })
 
@@ -414,17 +412,18 @@ describe('getMarketReportData (D27 leftover fetch integration)', () => {
     medianListPrice: 799000,
     computedAt: '2026-06-25T12:00:00Z',
     completeThrough: '2026-06-25',
+    periodEnd: '2026-06-25',
   }
   const leftoverHit = { ...EMPTY_PUBLIC_PACE, medianClose: 760_000, closedCount: 2095, yoyMedian: -0.0194 }
 
   beforeEach(() => {
     detailMock.mockReset()
-    pulseMock.mockReset()
+    inventoryMock.mockReset()
     trendMock.mockReset()
     detachedMock.mockReset()
     leftoverMock.mockReset()
     detailMock.mockResolvedValue(detail)
-    pulseMock.mockResolvedValue(null)
+    inventoryMock.mockResolvedValue(new Map())
     trendMock.mockResolvedValue([])
     detachedMock.mockResolvedValue(new Map([['city:bend', detachedBend]]))
     leftoverMock.mockResolvedValue(leftoverHit)
@@ -510,13 +509,15 @@ describe('getMarketReportData (D27 leftover fetch integration)', () => {
       updatedAt: '2026-08-16T00:00:00Z',
     })
     detachedMock.mockResolvedValue(new Map())
-    pulseMock.mockResolvedValue({ activeCount: 35, monthsOfSupply: 4.6, refreshedAt: '2026-08-16T19:00:00Z' })
+    inventoryMock.mockResolvedValue(
+      new Map([['neighborhood:tetherow', { activeCount: 35, medianListPrice: null, computedAt: '2026-08-16T19:00:00Z' }]]),
+    )
     leftoverMock.mockResolvedValue({ ...EMPTY_PUBLIC_PACE, medianClose: 2_200_000, closedCount: 40, yoyMedian: 0.03 })
     const blocks = await getMarketReportData(['tetherow'])
     expect(blocks).toHaveLength(1)
     expect(blocks[0].medianPrice).toBe(2_200_000)
     expect(blocks[0].soldLast12mo).toBe(40)
-    expect(blocks[0].source).toBe('market_pulse_live')
+    expect(blocks[0].source).toBe('market_metric')
   })
 
   it('carries the provenance the sender checks for freshness and the figures trace names', async () => {
@@ -527,6 +528,9 @@ describe('getMarketReportData (D27 leftover fetch integration)', () => {
       table: 'market_metric',
       computedAt: '2026-06-25T12:00:00Z',
       completeThrough: '2026-06-25',
+      // The months_of_supply cell's period_end: the Spark reconciliation
+      // rebuilds its six-month closed window from it.
+      periodEnd: '2026-06-25',
     })
     // The rolling_365d row that carries median days on market.
     expect(bend.provenance?.cache?.updatedAt).toBe('2026-06-25T00:00:00Z')
@@ -534,11 +538,48 @@ describe('getMarketReportData (D27 leftover fetch integration)', () => {
     expect(bend.twelveMonthSource).toBe('market-truth')
   })
 
-  it("names market_pulse_live as a neighborhood's live source", async () => {
+  it("reads a neighborhood's live count from Market Truth directly and names market_metric", async () => {
+    // The pulse's own active_count includes Coming Soon; a report never reads it.
     detachedMock.mockResolvedValue(new Map())
-    pulseMock.mockResolvedValue({ activeCount: 32, monthsOfSupply: 5.1, refreshedAt: '2026-09-29T21:45:00Z' })
+    inventoryMock.mockResolvedValue(
+      new Map([['neighborhood:bend-larkspur', { activeCount: 29, medianListPrice: 629000, computedAt: '2026-09-30T00:40:03Z' }]]),
+    )
     const [hood] = await getMarketReportData(['bend-larkspur'])
+    expect(inventoryMock).toHaveBeenCalledWith([{ geoType: 'neighborhood', geoSlug: 'bend-larkspur' }])
     expect(hood.geoType).toBe('neighborhood')
-    expect(hood.provenance?.live).toMatchObject({ table: 'market_pulse_live', computedAt: '2026-09-29T21:45:00Z' })
+    expect(hood.activeListings).toBe(29)
+    // Months of supply never prints at neighborhood grain.
+    expect(hood.monthsOfSupply).toBeNull()
+    expect(hood.provenance?.live).toEqual({ table: 'market_metric', computedAt: '2026-09-30T00:40:03Z', completeThrough: null, periodEnd: null })
+  })
+
+  it('reads every neighborhood of a report in one call', async () => {
+    detachedMock.mockResolvedValue(new Map())
+    inventoryMock.mockResolvedValue(
+      new Map([
+        ['neighborhood:bend-larkspur', { activeCount: 29, medianListPrice: null, computedAt: '2026-09-30T00:40:03Z' }],
+        ['neighborhood:tetherow', { activeCount: 13, medianListPrice: null, computedAt: '2026-09-30T00:40:03Z' }],
+      ]),
+    )
+    const blocks = await getMarketReportData(['bend-larkspur', 'tetherow'])
+    expect(inventoryMock).toHaveBeenCalledTimes(1)
+    expect(inventoryMock).toHaveBeenCalledWith([
+      { geoType: 'neighborhood', geoSlug: 'bend-larkspur' },
+      { geoType: 'neighborhood', geoSlug: 'tetherow' },
+    ])
+    expect(blocks.map((b) => b.activeListings)).toEqual([29, 13])
+  })
+
+  it('records no live source when Market Truth has no count, or the read fails (the block falls back to the cache row)', async () => {
+    detachedMock.mockResolvedValue(new Map())
+    inventoryMock.mockResolvedValue(new Map())
+    const [missed] = await getMarketReportData(['bend-larkspur'])
+    expect(missed.provenance?.live).toBeNull()
+    expect(missed.source).toBe('market_stats_cache:rolling_365d')
+
+    inventoryMock.mockRejectedValue(new Error('market_metric timeout'))
+    const [failed] = await getMarketReportData(['bend-larkspur'])
+    expect(failed.provenance?.live).toBeNull()
+    expect(failed.activeListings).toBe(detail.endOfPeriodInventory)
   })
 })

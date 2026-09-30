@@ -47,7 +47,7 @@ function block(slug: string, over: Partial<MarketReportAreaBlock> = {}): MarketR
     yoyPct: 2.1,
     marketHealthLabel: 'Warm',
     refreshedAt: '2026-07-22T00:00:00.000Z',
-    source: 'market_pulse_live',
+    source: 'market_metric',
     href: `/cities/${slug}/market-report`,
     ...over,
   }

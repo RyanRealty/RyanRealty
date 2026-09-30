@@ -80,7 +80,7 @@ function block(overrides: Partial<MarketReportAreaBlock> = {}): MarketReportArea
     yoyPct: -1.22,
     marketHealthLabel: 'Warm',
     refreshedAt: '2026-06-25T12:00:00Z',
-    source: 'market_pulse_live',
+    source: 'market_metric',
     twelveMonthSource: 'market-truth',
     href: '/cities/bend',
     trend: trend(),
@@ -104,7 +104,7 @@ function hood(overrides: Partial<MarketReportAreaBlock> = {}): MarketReportAreaB
     domMedian: 30,
     yoyPct: 2.4,
     twelveMonthSource: 'market_stats_cache',
-    source: 'market_pulse_live',
+    source: 'market_metric',
     monthsOfSupplySource: 'live',
     trend: null,
     ...overrides,
@@ -511,10 +511,36 @@ describe('renderMarketReportEmail', () => {
     )
     const sources = out.traces.map((t) => t.source).join('\n')
     expect(sources).toContain('market_stats_cache via getCityMarketDetail · geo_type=city geo_slug=bend period_type=rolling_365d column=median_dom')
-    expect(sources).toContain('market_pulse_live via getMarketPulse')
+    // A hand-built block carries no provenance: its trace says so rather than
+    // guessing a source.
+    expect(sources).toContain('live count, source not recorded on this block')
+    expect(sources).not.toContain('market_pulse_live')
     expect(out.html).not.toContain('rolling_365d')
     expect(out.text).not.toContain('rolling_365d')
     expect(out.html).not.toContain('market_metric')
+  })
+
+  it('names the read that served a live Market Truth count, by grain, and never the pulse table', () => {
+    // A neighborhood's count is Market Truth's active_count read directly (the
+    // pulse's own count includes Coming Soon), so its trace names market_metric.
+    const provenance = {
+      cache: null,
+      live: { table: 'market_metric' as const, computedAt: '2026-09-30T00:40:03Z', completeThrough: null, periodEnd: null },
+      twelveMonth: null,
+    }
+    const out = renderMarketReportEmail({
+      contactName: 'Jordan',
+      areas: [block({ provenance }), hood({ provenance })],
+      unsubscribeUrl: UNSUB,
+    })
+    const active = out.figures.filter((f) => f.label === 'homes for sale')
+    expect(active.find((f) => f.area === 'bend')?.source).toBe(
+      'market_metric via getDetachedMarkets (Market Truth, segment detached, StandardStatus Active)',
+    )
+    expect(active.find((f) => f.area === 'bend-larkspur')?.source).toBe(
+      'market_metric via getDetachedInventories (Market Truth, segment detached, StandardStatus Active, primary place membership)',
+    )
+    expect(active.find((f) => f.area === 'bend-larkspur')?.as_of).toBe('2026-09-30T00:40:03Z')
   })
 
   it('dates each monthly figure at the end of its month', () => {

@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-09-30T04:30:28.763Z
+**Generated:** 2026-09-30T05:59:25.027Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -2674,6 +2674,16 @@ Companion files:
 
 ---
 
+### `lib/data/geo/getNeighborhoodAliasRows.ts`
+
+**Exports:** `getNeighborhoodAliasRows`
+
+**Tables:** `neighborhood_subdivisions`
+
+**Selected columns:** `neighborhood_slug`, `subdivision_label`
+
+---
+
 ### `lib/data/geo/getNeighborhoodYearPricing.ts`
 
 **Exports:** `MIN_CLOSINGS_PER_YEAR`, `ALL_BEND_DISTRICTS_SLUG`, `mapNeighborhoodYearPricingRow`, `filterNeighborhoodYearPricing`, `getAllNeighborhoodYearPricing`, `getNeighborhoodYearPricing`
@@ -3583,6 +3593,16 @@ Companion files:
 **Tables:** `market_metric`
 
 **Selected columns:** `stat_id`, `geo_type`, `geo_slug`, `value`, `value_text`, `is_publishable`, `complete_through`, `period_end`, `window_months`, `computed_at`
+
+---
+
+### `lib/data/market-truth/getServiceAreaCities.ts`
+
+**Exports:** `getServiceAreaCities`
+
+**Tables:** `market_service_area`
+
+**Selected columns:** `city_proper`
 
 ---
 
@@ -5375,6 +5395,7 @@ Companion files:
 | `market_narratives` | `generateAndStoreMarketNarrative()`, `generateNarrativesForReportGeos()` <br /> `lib/data/market/marketNarrativeWrites.int.test.ts` · `lib/data/market/marketNarrativeWrites.ts` |
 | `market_pulse_live` | `findCmaSubjectByMls()`, `findCmaSubjectByAddress()`, `getListingPhotosCount()`, `selectCmaCompsPool()`, `selectCmaCompsByKeys()`, `getCmaMarketStatsRow()`, `getCmaMarketPulseRow()`, `CMA_MARKET_TREND_MEASURE()`, `getCmaMarketTrendRows()`, `getCmaBrokerBySlugOrEmail()`, `listActiveBrokersForCma()`, `getCmaCityClosedSkinny()`, `getCmaCityClosedDuring()`, `getLikeHomeSales()`, `getCmaSubdivisionClosed()`, `getCmaSubdivisionHistory()`, `getCmaPriorSaleAtAddress()`, `WESTSIDE_NEIGHBORHOOD_SLUGS()`, `getBendNeighborhoodStats()`, `placeInventorySlugs()`, `overlayPublishedInventory()`, `getGeoSnapshot()`, `getAllCitySnapshots()`, `getAllCommunitySnapshots()`, `getCityCommunitySnapshots()`, `collectCompanyScoreboardSignals()`, `getMarketPulse()`, `getMarketPulseRegionSnapshot()`, `getMarketPulseCitySnapshots()`, `getMarketPulseAllCitySnapshots()`, `getMarketStatsCacheRowForGeo()`, `getReportingCacheMonthlyRows()`, `getMarketStatsCacheRowsByGeoType()`, `getMarketStatsCacheRowForPeriod()`, `getMarketPulseRowsByGeoType()`, `upsertMarketPulseLiveRow()`, `getMarketPulseRowForGeo()`, `getMarketStatsCacheRowsForGeos()`, `generateAndStoreMarketNarrative()`, `generateNarrativesForReportGeos()`, `getSyncState()`, `getSyncStateFields()`, `updateSyncStateLastDelta()`, `getExistingListingsByListNumbers()`, `replaceListingHistoryForKey()`, `upsertListingRows()`, `insertPriceHistoryRows()`, `insertStatusHistoryRows()`, `getActivityEvents()`, `insertActivityEventRows()`, `getListingPhotoUrl()`, `updateListingPhotoUrl()`, `upsertExpiredListingRow()`, `findCommunityIdByName()`, `findCommunityIdBySlug()`, `insertCommunityRowReturnId()`, `findPropertyIdByAddress()`, `insertPropertyAddressOnly()`, `insertPropertyFullRow()`, `updatePropertyById()`, `findListingBySnakeKey()`, `upsertListingSnakeRow()`, `insertStatusHistoryRow()`, `insertPriceHistoryRow()`, `replaceListingPhotosForKey()`, `deleteListingAgentsForKey()`, `insertListingAgentRow()`, `replaceListingVideosForKey()`, `upsertSyncState()`, `insertActivityEventRow()`, `updateListingByListNumber()`, `updateListingByListingKey()`, `insertListingHistoryRows()`, `deleteListingHistoryForKey()`, `getListingFieldsByListingKey()`, `getListingFieldsByListNumber()`, `selectHistorySyncCandidates()`, `getOpenHouseByIdAndListing()`, `insertOpenHouseRsvp()`, `bumpOpenHouseRsvpCount()`, `insertNotificationQueueRow()`, `insertStrictVerifyRun()`, `selectStrictVerifyCandidates()`, `getExpiredListingLookupAttempts()`, `findPropertiesByAddressFilter()`, `getPropertyById()`, `selectClosedListingsForCma()`, `getListingForCmaSubject()`, `findPropertiesByPostalAndStreet()`, `selectCmaSubjectListings()`, `insertValuationRequest()`, `listExpiredListingsForAdmin()`, `updateExpiredListingById()`, `updateExpiredListingByKey()`, `getCmaBySlug()`, `insertCmaRow()`, `upsertCmaRowBySlug()`, `listCmasForAdmin()`, `listCmasForLeadEmail()`, `countCmasInRange()`, `getBoundariesByGeoType()`, `upsertVideoToursCacheRow()`, `getExpiredListingsForDigest()`, `selectListingsAdmin()`, `getSyncCursor()`, `countListingsByOr()`, `countAllListingsByListingKey()`, `getLatestMarketPulseUpdatedAt()`, `countListingInquiriesSince()`, `countSavedSearchesSince()`, `insertOptimizationRun()`, `getAnyListingKey()`, `listingHistoryExistsForAnyKey()`, `countListingsByStatusOr()`, `countListingsByStatusOrAndFinalized()`, `countHistorySyncCandidates()` <br /> `lib/data/cma/builderReads.ts` · `lib/data/geo/getBendNeighborhoodStats.ts` · `lib/data/geo/getGeoSnapshot.ts` · `lib/data/loop/signals.ts` · `lib/data/market/getMarketPulse.ts` · `lib/data/market/getMarketPulseSnapshot.ts` · `lib/data/market/getMarketStatsCacheRows.ts` · `lib/data/market/marketNarrativeWrites.ts` · `lib/data/sync/syncWrites.ts` |
 | `market_reports` | `getMarketReportBySlug()`, `listMarketReports()`, `getReportImageUrl()` <br /> `lib/data/market/getMarketReports.ts` |
+| `market_service_area` | `getServiceAreaCities()` <br /> `lib/data/market-truth/getServiceAreaCities.ts` |
 | `market_stats_cache` | `findCmaSubjectByMls()`, `findCmaSubjectByAddress()`, `getListingPhotosCount()`, `selectCmaCompsPool()`, `selectCmaCompsByKeys()`, `getCmaMarketStatsRow()`, `getCmaMarketPulseRow()`, `CMA_MARKET_TREND_MEASURE()`, `getCmaMarketTrendRows()`, `getCmaBrokerBySlugOrEmail()`, `listActiveBrokersForCma()`, `getCmaCityClosedSkinny()`, `getCmaCityClosedDuring()`, `getLikeHomeSales()`, `getCmaSubdivisionClosed()`, `getCmaSubdivisionHistory()`, `getCmaPriorSaleAtAddress()`, `getCityMarketDetail()`, `getCityMarketDetailByTimeframe()`, `getCompleteMonthlyMarketDetail()`, `getMarketStats()`, `getMarketStatsCacheRowForGeo()`, `getReportingCacheMonthlyRows()`, `getMarketStatsCacheRowsByGeoType()`, `getMarketStatsCacheRowForPeriod()`, `getMarketPulseRowsByGeoType()`, `upsertMarketPulseLiveRow()`, `getMarketPulseRowForGeo()`, `getMarketStatsCacheRowsForGeos()`, `isCurrentMonth()`, `getMarketTrend()`, `getPriceHistory()`, `generateAndStoreMarketNarrative()`, `generateNarrativesForReportGeos()` <br /> `lib/data/cma/builderReads.ts` · `lib/data/market/city-archive-depth.int.test.ts` · `lib/data/market/getCityMarketDetail.ts` · `lib/data/market/getMarketStats.ts` · `lib/data/market/getMarketStatsCacheRows.ts` · `lib/data/market/getMarketTrend.ts` · `lib/data/market/getPriceHistory.ts` · `lib/data/market/market-history-depth.int.test.ts` · `lib/data/market/marketNarrativeWrites.int.test.ts` · `lib/data/market/marketNarrativeWrites.ts` · `lib/data/market/subdivision-stats.int.test.ts` |
 | `marketing_assignments` | `MARKETING_ASSIGNMENT_CONFLICT_TARGET()`, `buildMarketingAssignmentRow()`, `recordMarketingAssignment()` <br /> `lib/data/crm/recordMarketingAssignment.ts` |
 | `marketing_brain_actions` | `BROKER_ACTIVE_STATUSES()`, `createActionRow()`, `listBrokerJobs()`, `getActionForBroker()`, `appendChangeRequest()`, `approveAction()`, `unapproveAction()`, `setInProduction()`, `getBrokerAgentDigest()`, `listOpenCmaActions()`, `listOpenCmaActionsForSlug()`, `claimCmaAction()`, `findOpenCmaActionBySlug()`, `appendCmaActionNotify()`, `mergeCmaActionContact()`, `getCmaActionPayload()`, `updateCmaActionRow()`, `collectCompanyScoreboardSignals()`, `resolveDocsBatch()`, `resolveComplianceBatch()`, `verifyNotRelisted()`, `verifyFsboStillActive()`, `getBuiltDocForProspect()`, `findLiveListingForImagine()`, `insertImagineDraftPending()`, `storeImagineMedia()`, `markImagineDraftReady()`, `killImagineDraft()`, `insertStudioDraft()`, `storeStudioMedia()`, `markStudioDraftReady()`, `killStudioDraft()`, `approveStudioDraft()`, `listStudioDrafts()`, `countStudioDraftsByStatus()`, `countStudioDraftsSince()` <br /> `lib/data/agent/actions.ts` · `lib/data/agent/digest.ts` · `lib/data/cma/queue.ts` · `lib/data/loop/signals.ts` · `lib/data/prospecting/batch.ts` · `lib/data/prospecting/docs.ts` · `lib/data/social/imagine-drafts.ts` · `lib/data/studio/drafts.ts` |
@@ -5383,6 +5404,7 @@ Companion files:
 | `meta_audience_log` | `writeAudienceLedger()`, `CRM_AUDIENCE_ID()`, `WESTSIDE_AUDIENCE_ID()`, `META_AUDIENCE_HOLD_START()`, `META_AUDIENCE_HOLD_END()`, `META_AUDIENCE_HOLD_DAYS()`, `META_AUDIENCE_CURRENT_HOURS()`, `utcDay()`, `ageHoursSince()`, `isMetaAudienceCurrent()`, `computeAudienceHold()`, `readMetaAudienceHold()` <br /> `lib/data/crm/writeAudienceLedger.ts` · `lib/data/loop/meta-audience-hold.ts` |
 | `meta_audience_removal_queue` | `enqueueAudienceRemoval()`, `getPendingAudienceRemovals()`, `resolvePeopleForRemoval()`, `markAudienceRemovalsProcessed()` <br /> `lib/data/crm/enqueueAudienceRemoval.ts` · `lib/data/crm/metaAudienceQueue.ts` |
 | `mv_refresh_state` | `PLACE_MEMBERSHIP_STALE_HOURS()`, `classifyPlaceMembershipFreshness()`, `readPlaceMembershipFreshness()`, `formatPlaceMembershipLine()` <br /> `lib/data/loop/place-membership-freshness.ts` |
+| `neighborhood_subdivisions` | `getNeighborhoodAliasRows()` <br /> `lib/data/geo/getNeighborhoodAliasRows.ts` |
 | `neighborhood_year_pricing_mv` | `MIN_CLOSINGS_PER_YEAR()`, `ALL_BEND_DISTRICTS_SLUG()`, `mapNeighborhoodYearPricingRow()`, `filterNeighborhoodYearPricing()`, `getAllNeighborhoodYearPricing()`, `getNeighborhoodYearPricing()` <br /> `lib/data/geo/getNeighborhoodYearPricing.ts` |
 | `neighborhoods` | `getCityMetadataByNames()`, `getCityMetadataByName()`, `getCityBoundaryGeoJSON()`, `getAllCitiesForAdminUpload()`, `getAllNeighborhoodsForAdminUpload()`, `getAllCommunitiesForAdminUpload()`, `getCityHeroUrlsBySlug()`, `getCommunityHeroUrlsBySlug()`, `updateHeroEntityById()`, `insertHeroEntityRow()`, `getPageImageUrlsForPage()`, `insertPageImageRow()`, `updateCityById()`, `getCityIdByName()`, `getNeighborhoodsByCityId()`, `getNeighborhoodBySlugInCity()`, `getNeighborhoodDirectory()`, `getAllNeighborhoodsWithCity()`, `updateNeighborhoodById()`, `getNeighborhoodNameById()`, `getHeroPhotosByListingKeys()`, `getOpenHousesInRange()`, `getListingDetailPhotos()`, `getListingKeysForBrokerByLicense()`, `getListingKeysForBrokerByEmail()`, `getListingKeysByListAgentEmail()`, `getListingDetailAgents()`, `getOpenHouseById()`, `getListingDetailOpenHouses()`, `getListingDetailVideos()`, `getListingKeysWithPriceChangeSince()`, `seedListingDetailHistory()`, `getListingPriceHistory()`, `getListingDetailHistory()`, `resolveCommunityChainBySlug()`, `getSearchMatrixInventory()`, `getSubdivisionLifetimeCounts()`, `getSubdivisionDescriptionKeys()`, `getMatrixNeighborhoods()` <br /> `lib/data/cities/getCityMetadata.ts` · `lib/data/cities/getNeighborhoodMetadata.ts` · `lib/data/listings/getListingDetailBundles.ts` · `lib/data/listings/getSearchMatrixInventory.ts` |
 | `newsletter_subscribers` | `getAudienceCounts()`, `collectCompanyScoreboardSignals()`, `getBrokerNewsletterAnalytics()`, `getBrokerWarmList()` <br /> `lib/data/audiences/counts.ts` · `lib/data/loop/signals.ts` · `lib/data/newsletter/brokerAnalytics.ts` |
