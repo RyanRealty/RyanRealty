@@ -145,9 +145,11 @@ export const OREF_FORM_BINDINGS: Record<string, readonly FormFieldBinding[]> = {
    *   1  Property Address or Tax ID # ______   <- Text178, 210, 215, 221, 227, 234, 244, 260
    *   2  ______ ______ (the "Property")        <- a continuation line, left blank
    *
-   * Nothing else on the form is a deal fact: the seller answers it.
+   * and page 2 line 44 names it again: "... CONDITION OF THE PROPERTY
+   * LOCATED AT ______ (THE "PROPERTY")" <- Text212. Nothing else on the form
+   * is a deal fact: the seller answers it.
    */
-  '020': [{ fact: 'address', match: /^Text(178|210|215|221|227|234|244|260)$/ }],
+  '020': [{ fact: 'address', match: /^Text(178|210|212|215|221|227|234|244|260)$/ }],
   /**
    * OREF 020 is deliberately absent. Its header is one line — Property Address
    * or Tax ID — and, like the 015, that line carries no AcroForm widget on this

@@ -62,6 +62,7 @@ import {
 } from '@/lib/tc/skyslope-field-map'
 import { fieldMapFromAcroFormPdf } from '@/lib/tc/acroform-field-map'
 import { fallbackSigningStack, withFallbackSignatures } from '@/lib/tc/fallback-signing-stack'
+import { principalFirst } from '@/lib/tc/form-signing-profile'
 import { isOref001OverlayApplicable, oref001OverlayFieldMap } from '@/lib/tc/oref-001-field-map'
 import {
   missingRequiredSignerRoles,
@@ -533,6 +534,7 @@ export async function createEnvelopeFromDocuments(
     cycleKind,
     requiredRoles,
     ourRole,
+    principalFirst: principalFirst(formSources.map((f) => ({ formNumber: f.formNumber, name: f.documentName }))),
   })
   const withEmail = applyUniquePartyEmails(
     recipients,
@@ -627,6 +629,7 @@ export async function createEnvelopeFromTemplate(
       cycleKind: (cycle as DbRow).kind,
       requiredRoles,
       ourRole,
+      principalFirst: principalFirst((forms as DbRow[]).map((f) => ({ formNumber: f.form_number as string | null, name: f.name as string | null }))),
     }),
     await peopleEmailsByNames([...partyNames.buyers, ...partyNames.sellers]),
   )

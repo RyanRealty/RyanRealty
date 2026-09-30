@@ -49,3 +49,15 @@ export function formSigningProfile(formNumber: string | null | undefined, name: 
   }
   return null
 }
+
+/**
+ * The principal who signs first in a packet: the one who completes a form in
+ * it (the 020's seller). Undefined leaves the usual order, buyers first.
+ */
+export function principalFirst(forms: ReadonlyArray<{ formNumber?: string | null; name?: string | null }>): 'Buyer' | 'Seller' | undefined {
+  for (const f of forms) {
+    const role = formSigningProfile(f.formNumber, f.name)?.completedBy?.role
+    if (role) return role === 'seller' ? 'Seller' : 'Buyer'
+  }
+  return undefined
+}
