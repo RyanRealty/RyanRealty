@@ -64,9 +64,14 @@ export const CLOSED_POPULATION_CLAUSE =
   `${MIN_CLOSINGS_PER_YEAR} closings.`
 
 /** The §0 population clause the active-side card repeats. */
+// SITE-193 (2026-09-24): the read is getBendNeighborhoodPublicInventory, whose
+// count and median are the homes FOR SALE (status Active, publicCountState);
+// under contract is counted apart. The clause used to open with the view's
+// name and list MLS statuses, a shop's words in a reader's sentence.
 export const ACTIVE_POPULATION_CLAUSE =
-  'listing_boundary_xref_mv. Active and active-under-contract single-family listings inside the recorded ' +
-  'district polygon. The same read behind this page’s own count and median asking price.'
+  'Regional MLS through Oregon Data Share: single-family homes for sale inside the recorded district ' +
+  'boundary; homes already under contract are not counted. The same read behind this page’s own count ' +
+  'and median asking price.'
 
 export type NeighborhoodChartCard = {
   key: string

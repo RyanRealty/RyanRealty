@@ -978,6 +978,9 @@ async function renderCommunityDetail({ params }: Props) {
           keysBySlug={homesByChild}
           source={inventorySource}
           asOf={leftoverStamp}
+          // Held on the carousel until this class reaches its taste mark with
+          // the listing dial (Matt 2026-09-25, "fix first, then ship").
+          layout="rails"
         >
           <div className="place-one-map">
             <PlaceSubdivisionRail id="child-places" nameOnly />

@@ -79,6 +79,31 @@ export function publishListingVirtualTour(
   )
 }
 
+/**
+ * THE LISTING PAGE'S WORDS for a listing's two kinds of moving media, as its
+ * gallery pills print them (publishListingGalleryMobilePills): a walkthrough
+ * reel is a "Video Tour", a Matterport / Zillow 3D pano is "3D". A card's tour
+ * control prints the same two words, so a card never calls a walkthrough a 3D
+ * tour (2026-09-25: every dial card read "3D Walkthrough", Vimeo walkthroughs
+ * in the MLS VirtualTours field included).
+ */
+export const LISTING_VIDEO_TOUR_LABEL = 'Video Tour'
+export const LISTING_3D_TOUR_LABEL = '3D'
+
+/**
+ * The label for a card's tour control, read off the one tour URL a card
+ * carries (the listing's VirtualTours entry), or null when it carries none.
+ * The classifier is the listing page's: a walkthrough reel is never a 3D tour,
+ * and anything else in VirtualTours is one.
+ */
+export function publishListingTourLabel(url: string | null | undefined): string | null {
+  const trimmed = url?.trim() ?? ''
+  if (!trimmed) return null
+  return isListingVirtualTour({ url: trimmed, isVirtualTour: true })
+    ? LISTING_3D_TOUR_LABEL
+    : LISTING_VIDEO_TOUR_LABEL
+}
+
 export function publishListingHeroUnmute(video: VideoEmbed | null): boolean {
   return video?.embedType === 'video-tag'
 }

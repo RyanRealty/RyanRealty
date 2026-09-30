@@ -1,34 +1,37 @@
 import { NextResponse } from 'next/server'
-import { getListingCardVideo } from '@/lib/data'
-
-export const dynamic = 'force-dynamic'
+import { getListingCardVideo, LISTING_CARD_VIDEO_KEY } from '@/lib/data'
 
 /**
- * GET /api/listings/[listingKey]/card-video (SITE-194)
+ * GET /api/listings/[listingKey]/card-video
  *
- * The one reel a listing card may play after its photograph: the same
- * walkthrough the listing page leads with, resolved through the cached
- * per-listing videos read (getListingCardVideo), never a 3D tour. The dial
- * asks for it after a dwell on the card, so a place page's server render
- * carries no per-card video read.
+ * The one reel a listing card plays after the reader rests on it (the listing
+ * dial, Matt 2026-09-24): `{ video: { kind, embedType, url, posterUrl } }`,
+ * or `{ video: null }` when the listing has no reel a card can play silently.
+ * The reel is the one the listing page leads with (publishListingHeroVideo:
+ * walkthroughs only, never a 3D tour). One listing per request; pages never
+ * read a card's video on the server.
  *
- * Returns { listingKey, reel: null | { kind, src, posterUrl? } }. A found
- * answer is CDN-cached for the videos window; a read that failed is served
- * once with no-store so an empty fallback is never pinned at the edge (the
- * cached-empty-fallback class, app/api/search/suggestions).
+ * CACHING. The answer is CDN-cacheable for an hour and the browser keeps it
+ * ten minutes, so a reader turning back to a card, or the next reader on the
+ * same page, costs nothing. Behind the CDN, getListingCardVideo holds it in
+ * unstable_cache on the listing's tag. A failed read is `503` with no-store:
+ * an empty from an outage is never pinned at the edge as "no video".
  */
-export async function GET(_request: Request, context: { params: Promise<{ listingKey: string }> }) {
+
+const CACHEABLE = 'public, max-age=600, s-maxage=3600, stale-while-revalidate=86400'
+
+export async function GET(
+  _request: Request,
+  context: { params: Promise<{ listingKey: string }> },
+) {
   const { listingKey } = await context.params
   const key = String(listingKey ?? '').trim()
-  if (!key || key.length > 100) {
-    return NextResponse.json({ error: 'Missing listingKey' }, { status: 400 })
+  if (!LISTING_CARD_VIDEO_KEY.test(key)) {
+    return NextResponse.json({ video: null }, { status: 400, headers: { 'Cache-Control': 'no-store' } })
   }
-  try {
-    const body = await getListingCardVideo(key)
-    return NextResponse.json(body, {
-      headers: { 'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=86400' },
-    })
-  } catch {
-    return NextResponse.json({ listingKey: key, reel: null }, { headers: { 'Cache-Control': 'no-store' } })
+  const { video, degraded } = await getListingCardVideo(key)
+  if (degraded) {
+    return NextResponse.json({ video: null }, { status: 503, headers: { 'Cache-Control': 'no-store' } })
   }
+  return NextResponse.json({ video }, { headers: { 'Cache-Control': CACHEABLE } })
 }

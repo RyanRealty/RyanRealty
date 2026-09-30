@@ -15,6 +15,13 @@
   text-wrap: pretty;
 }
 
+/* A community's own line over the figures (its authored about prose): the
+   place in words before the place in numbers. */
+.place-type-claim--place {
+  color: var(--v3-ink-muted);
+  font-style: italic;
+}
+
 /* §0: every figure names where it came from, in the reader's words.
    Set as metadata, not as a second sentence of the claim: a hairline above it
    and a tracked, smaller face, so a reader's eye reads "claim, then citation"
@@ -58,6 +65,18 @@
   padding-inline: 0;
 }
 
+/* The opening box sits on the measure, its copy on the page's left edge
+   (2026-09-29: place-opening.css's `.place-opening { margin: 0; padding: 0 }`
+   loads later and won the tie, so at 1440 the H1 and the claim started at the
+   raw gutter while the breadcrumb and the map stood on the measure). The two
+   classes together outrank it; the copy's own gutter comes from the no-photo
+   opening rule. */
+.place-opening.place-type-opening {
+  max-width: var(--v3-measure);
+  margin-inline: auto;
+  padding-inline: 0;
+}
+
 .place-type-film {
   width: 100%;
   max-width: var(--v3-measure);
@@ -65,13 +84,6 @@
   margin: var(--v3-space-sm) auto 0;
   padding-inline: var(--v3-gutter);
   order: 3;
-}
-
-/* Official shadcn carousel stage: -left-12 / -right-12 plus 44px tap (--v3-tap). */
-.place-type-film__stage {
-  min-width: 0;
-  padding-inline: calc(3rem + var(--v3-tap));
-  overflow: visible;
 }
 
 .place-type-fold > .place-type-opening {
@@ -94,106 +106,10 @@
   text-transform: uppercase;
 }
 
-.place-type-film__carousel {
-  min-width: 0;
-}
-
-.place-type-film__step {
-  min-width: var(--v3-tap);
-  min-height: var(--v3-tap);
-  width: var(--v3-tap);
-  height: var(--v3-tap);
-}
-
-.place-type-film [data-slot='card'] {
-  --card: var(--v3-cream);
-  --card-foreground: var(--v3-navy);
-}
-
-.place-type-film__card-link {
-  display: block;
-  color: inherit;
-  text-decoration: none;
-}
-
-.place-type-film__card-link:focus-visible {
-  outline: var(--v3-focus-ring);
-  outline-offset: var(--v3-focus-offset);
-}
-
-.place-type-film__card-link.is-linked [data-slot='card'] {
-  box-shadow: inset 3px 0 0 var(--v3-navy);
-}
-
-.place-type-film__card {
-  min-width: 0;
-  padding-top: 0;
-}
-
-.place-type-film [data-slot='card-content'] {
-  display: grid;
-  gap: 1px;
-}
-
-.place-type-film__media {
-  position: relative;
-  display: block;
-  aspect-ratio: 4 / 3;
-  overflow: hidden;
-  background: color-mix(in srgb, var(--v3-ink) 8%, transparent);
-}
-
-.place-type-film__photo {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.place-type-film__body {
-  display: grid;
-  gap: 1px;
-  min-width: 0;
-  padding: var(--v3-space-xs) var(--v3-space-sm) var(--v3-space-sm);
-}
-
-.place-type-film__price {
-  font-size: var(--v3-size-body);
-  font-weight: var(--v3-weight-strong);
-  font-variant-numeric: tabular-nums;
-  line-height: var(--v3-leading-control);
-  color: var(--v3-ink);
-}
-
-.place-type-film__share {
-  font-size: var(--v3-size-body-sm);
-  line-height: var(--v3-leading-note);
-  color: var(--v3-ink-muted);
-}
-
-.place-type-film__addr,
-.place-type-film__specs {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: var(--v3-size-body-sm);
-  line-height: var(--v3-leading-note);
-  color: var(--v3-ink);
-}
-
-@media (max-width: 39.99rem) {
-  .place-type-film__addr,
-  .place-type-film__specs {
-    white-space: normal;
-    text-overflow: unset;
-    overflow: visible;
-  }
-}
-
-.place-type-film__specs {
-  font-variant-numeric: tabular-nums;
-  color: var(--v3-ink-muted);
+/* The film is a V3ListingDial (Matt 2026-09-24); the dial carries its own
+   look, this only lets it fill the film's measure. */
+.v3.v3-dial.place-type-film__dial {
+  max-width: none;
 }
 
 /* Type page already filtered — a lone House checkbox is leftover chrome. */
@@ -269,12 +185,6 @@
 
   .place-type-film {
     margin-top: var(--v3-space-sm);
-    padding-inline: 0;
-  }
-
-  /* Official -left-12 only — extra tap padding made the 375 card a stamp. */
-  .place-type-film__stage {
-    padding-inline: 3rem;
   }
 }
 

@@ -533,10 +533,10 @@ export function V3PlaceAffordability(props: V3PlaceAffordabilityProps) {
 
           <V3SourceDisclosure
             className="v3-afford__source"
-            source={`Your own numbers, run through the payment math this site uses everywhere (lib/mortgage.ts): ${termsSource} ${
+            source={`Your own numbers, run through the payment math this site uses everywhere: ${termsSource} ${
               rate
-                ? `The starting rate is the ${rate.sourceName} published for the week of ${rate.weekLabel}, read from market_history_weekly.`
-                : 'The starting rate is not a measured figure — we publish none this week — so it is an assumption you set.'
+                ? `The starting rate is the ${rate.sourceName} published for the week of ${rate.weekLabel}.`
+                : 'The starting rate is not a measured figure: we publish none this week, so it is an assumption you set.'
             } ${medianSource} Nothing here is a loan offer or an approval.`}
           />
         </div>

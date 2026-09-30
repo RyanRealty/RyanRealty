@@ -77,7 +77,7 @@ export function placeKnowledgeSource(input: {
         : `${publishers.slice(0, -1).join(', ')}, and ${publishers[publishers.length - 1]}`
   const authored = `The facts above come from ${input.name}'s recorded sources: ${list}.`
   const withHoa = input.hasMeasuredHoa
-    ? `${authored} The HOA figure is not authored — it comes from current listings here and carries its own basis on the row.`
+    ? `${authored} The HOA figure is not authored: it comes from current listings here and carries its own basis on the row.`
     : authored
   return schoolLine ? `${withHoa} ${schoolLine}` : withHoa
 }

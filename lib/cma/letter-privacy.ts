@@ -18,10 +18,27 @@
  *   - Trust words (trust, rev, revocable, liv, living, family) are none of
  *     those. They are scrubbed everywhere on purpose and the check refuses
  *     them everywhere.
- * A real printed name (a greeting, a sign-off, the full name) still fails.
+ *   - A street is not a name. A name word that only ever prints inside an
+ *     address or as a street ("20726 Russell Rd", "on Russell Road") is the
+ *     street, and a document has to print its comps. The three signals, and
+ *     what they refuse, are in street-context.ts. The addresses the document
+ *     prints can be handed in (printedAddresses): the word is then cleared by
+ *     the document's own record, and a house number before it or a suffix
+ *     after it clears only a word that is one of those street names. Leave
+ *     them out and that number or suffix clears any word.
+ * A real printed name (a greeting, a sign-off, the full name) still fails, and
+ * so does the same word anywhere off the street ("the Russell family",
+ * "Russell's home", "Russell called us").
  */
 
 import { BRAND, BROKERS } from '@/lib/brand/contact'
+import {
+  everyOccurrenceIsStreet,
+  printedAddressMatchers,
+  printedAddressSpans,
+  printedStreetWords,
+  type TextSpan,
+} from '@/lib/cma/street-context'
 
 const ROLE_WORDS = new Set([
   'the',
@@ -168,11 +185,20 @@ export function ownerContactNameTokens(source: LetterNameSource | null | undefin
 
 const NAME_TOKEN_RE = /[A-Za-z][A-Za-z'-]+/g
 
-function textOf(htmlOrText: string): string {
+/**
+ * What stands where a tag was in the copy the street rules read: U+2028, the
+ * line separator. The street rules (street-context.ts) match [ \t] between
+ * words and so stop at it: a house number in one table cell and a name in the
+ * next are not an address. Every other rule reads the plain copy, where a tag
+ * is a space, exactly as it always did.
+ */
+const NODE_BREAK = String.fromCharCode(0x2028)
+
+function textOf(htmlOrText: string, gap = ' '): string {
   return htmlOrText
-    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-    .replace(/<[^>]+>/g, ' ')
+    .replace(/<script[\s\S]*?<\/script>/gi, gap)
+    .replace(/<style[\s\S]*?<\/style>/gi, gap)
+    .replace(/<[^>]+>/g, gap)
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
 }
@@ -473,6 +499,24 @@ function withoutOurOwnIdentity(text: string, tokens: readonly string[]): string 
   return text.replace(re, ' ')
 }
 
+export type OwnerNameGradeOptions = {
+  /**
+   * The addresses the document itself prints: the subject, the comps, the
+   * unsold peers. A name word inside one of them is the street, and this is
+   * how the grader knows without guessing what a street looks like. A list,
+   * even an empty one, means the record is known: the house-number and suffix
+   * signals then clear only a street name from it, so a record that came back
+   * empty is strict. Leave it out and the record is unknown: those two signals
+   * clear any word, which is all there is to go on. Either way a street name of
+   * two words with no suffix ("20705 Snow Peaks") is cleared only by the list.
+   *
+   * They are not stored beside the letter, but the row's render_args holds them
+   * (printedAddressesOf in street-context.ts). Any recheck of a stored letter
+   * must pass them, or it grades the same letter more strictly than the build did.
+   */
+  printedAddresses?: readonly (string | null | undefined)[] | null
+}
+
 /**
  * Tokens that actually print. A real given name matches as a whole word.
  * An ordinary word (price, hill, stone, homes, llc) matches only in a
@@ -483,10 +527,18 @@ function withoutOurOwnIdentity(text: string, tokens: readonly string[]): string 
  * client named Ryan is not a hit on "Matt Ryan" or "Ryan Realty". This is the
  * one grader: letterOwnerNameCheck and letterContainsOwnerContactNames both
  * read it, so they cannot disagree.
+ *
+ * A name word that prints ONLY as a street is not a hit ("20726 Russell Rd" for
+ * an owner named Russell). One occurrence that is not a street (the Russell
+ * family, Russell's home, Russell called) is enough to hit. And name-shaped use
+ * always wins: a greeting, an honorific, a sign-off or a pair beside another
+ * name word is a hit whatever else the word is doing. This can only clear a
+ * token the older rule refused, never add one.
  */
 export function ownerNameTokenHits(
   htmlOrText: string,
   source: LetterNameSource | null | undefined,
+  opts?: OwnerNameGradeOptions,
 ): string[] {
   const tokens = ownerContactNameTokens(source)
   if (tokens.length === 0) return []
@@ -499,21 +551,45 @@ export function ownerNameTokenHits(
     // 's is dropped, so "don't" never reads as "don".
     if (w.endsWith("'s")) words.add(w.slice(0, -2))
   }
+  // The copy the street rules read, with the tag boundaries kept. Built on the
+  // first token that gets that far: most letters have no hit at all.
+  let streets: { text: string; spans: TextSpan[]; words: ReadonlySet<string> | null } | null = null
+  const onlyEverAStreet = (token: string): boolean => {
+    if (!streets) {
+      const streetText = withoutOurOwnIdentity(textOf(htmlOrText, NODE_BREAK), tokens)
+      const printed = opts?.printedAddresses
+      streets = {
+        text: streetText,
+        spans: printedAddressSpans(streetText, printedAddressMatchers(printed)),
+        // Addresses handed in, even none usable, mean the document's own record
+        // is known: the number and suffix signals may clear only a word that is
+        // one of its street names, so a record that came back empty is strict,
+        // not loose. No list at all means unknown, and then they clear any word.
+        words: printed ? printedStreetWords(printed) : null,
+      }
+    }
+    return everyOccurrenceIsStreet(streets.text, token, streets.spans, streets.words)
+  }
   const hits: string[] = []
   for (const token of tokens) {
     if (!words.has(token.toLowerCase())) continue
-    if (isCommonNameWord(token) && !commonWordInNamePosition(text, token, tokens)) continue
+    if (isCommonNameWord(token)) {
+      if (!commonWordInNamePosition(text, token, tokens)) continue
+    } else if (onlyEverAStreet(token) && !commonWordInNamePosition(text, token, tokens)) {
+      continue
+    }
     hits.push(token)
   }
   return hits
 }
 
-/** True when any owner/contact token appears as a whole word in the copy (ours excluded). */
+/** True when any owner/contact token appears as a whole word in the copy (ours excluded, streets excluded). */
 export function letterContainsOwnerContactNames(
   htmlOrText: string,
   source: LetterNameSource | null | undefined,
+  opts?: OwnerNameGradeOptions,
 ): boolean {
-  return ownerNameTokenHits(htmlOrText, source).length > 0
+  return ownerNameTokenHits(htmlOrText, source, opts).length > 0
 }
 
 /** Greeting used while the broker's name ruling is on hold. */
@@ -705,16 +781,16 @@ export function htmlWithoutAllowedPreparedNameLines(
  * Order matters. The two prepared sentences are set aside first (their
  * patterns read the literal "Ryan Realty"), then ownerNameTokenHits takes the
  * tags out, takes our own brokerage and broker names out, and grades what is
- * left.
+ * left, streets excluded.
  */
 export function letterOwnerNameCheck(
   htmlOrText: string,
   source: LetterNameSource | null | undefined,
-  opts?: { showOwnerName?: boolean },
+  opts?: { showOwnerName?: boolean } & OwnerNameGradeOptions,
 ): LetterNameCheck {
   const tokens = ownerContactNameTokens(source)
   const graded = htmlWithoutAllowedPreparedNameLines(htmlOrText, opts)
-  const hits = ownerNameTokenHits(graded, source)
+  const hits = ownerNameTokenHits(graded, source, opts)
   const allowed = showOwnerName(opts?.showOwnerName)
   return {
     id: 'letter-no-owner-names',

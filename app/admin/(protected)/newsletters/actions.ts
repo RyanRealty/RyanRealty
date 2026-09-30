@@ -82,8 +82,13 @@ export async function adminScheduleNewsletterAction(id: string, scheduledAtIso: 
     return { ok: false, error: 'gates_failed', report }
   }
 
-  const moved = await scheduleNewsletter(id, when.toISOString())
-  if (!moved) return { ok: false, error: 'not_a_draft' }
+  // Only the version the checks passed on is scheduled: a draft rebuilt in the
+  // meantime (its market report was republished) is refused for a fresh review.
+  const moved = await scheduleNewsletter(id, when.toISOString(), letter.updated_at)
+  if (!moved) {
+    const now = await getNewsletter(id)
+    return { ok: false, error: now?.status === 'draft' ? 'draft_changed' : 'not_a_draft' }
+  }
 
   revalidatePath('/admin/newsletters')
   revalidatePath(`/admin/newsletters/${id}`)

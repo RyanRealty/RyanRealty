@@ -392,3 +392,16 @@ export async function sendGmailMessage(
     }
   }
 }
+
+/**
+ * True for the error sendGmailMessage returns when Gmail took the message and
+ * never answered (`unconfirmed: true` above): the message may have gone out.
+ *
+ * sendCmaToLead passes that error text through without the flag, so a caller
+ * that only sees `{ ok: false, error }` tells "may have gone out" from
+ * "refused, nothing left" with this. lib/gmail-draft.test.ts pins it to the
+ * real message.
+ */
+export function isUnconfirmedGmailSendError(error: string | null | undefined): boolean {
+  return typeof error === 'string' && error.startsWith('Gmail did not confirm the send')
+}

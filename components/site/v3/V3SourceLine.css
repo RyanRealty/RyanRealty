@@ -36,8 +36,9 @@ main.v3 > details.v3-source {
    `list-style: none` plus the ::-webkit-details-marker reset kills the native
    triangle; the caret below is drawn instead, the same one V3Atlas.css and
    V3ChartCard.css draw, because a disclosure with no affordance reads as a
-   label. A caller may set `white-space: nowrap` on the line (V3Drawing does);
-   normal here so a clause can never push a row off a 375 viewport. */
+   label. White space stays normal here so a clause can never push a row off a
+   375 viewport (V3Drawing's nowrap on this line came out in SITE-193: it let a
+   long clause squeeze the drawing's reading to one word per line). */
 .v3 details.v3-source .v3-source__summary {
   display: flex;
   flex-wrap: wrap;

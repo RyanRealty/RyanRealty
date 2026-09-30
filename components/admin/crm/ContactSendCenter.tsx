@@ -134,7 +134,7 @@ export function ContactSendCenter(props: {
   bpoGenerateAction: () => Promise<void>
   newsletterSubscribed: boolean
   /** The issue a one-off newsletter send delivers (subject shown before sending). */
-  latestNewsletter: { subject: string; status: 'sent' | 'draft'; sentAt: string | null } | null
+  latestNewsletter: { subject: string; status: 'sent' | 'scheduled'; sentAt: string | null } | null
   /** Bound sendNewsletterToContactAction(personId) — takes the per-attempt
       idempotency key (A5: duplicate submit no-ops, failed send releases). */
   newsletterSendAction: (idempotencyKey: string) => Promise<{ ok: boolean; error?: string; message?: string }>
@@ -574,7 +574,7 @@ export function ContactSendCenter(props: {
                   {props.latestNewsletter.subject}
                 </p>
                 <p className="text-xs" style={{ color: 'var(--a-text-2)' }}>
-                  {props.latestNewsletter.status === 'sent' ? 'Latest sent issue' : 'Newest draft'}
+                  {props.latestNewsletter.status === 'sent' ? 'Latest sent issue' : 'Approved, scheduled to go out'}
                 </p>
               </div>
             ) : (

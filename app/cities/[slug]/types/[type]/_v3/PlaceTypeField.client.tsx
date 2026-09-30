@@ -28,7 +28,7 @@
  * already says so.
  */
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import {
   V3Atlas,
@@ -51,6 +51,14 @@ import './place-type-page.css'
 type LinkState = {
   linkedKey: string | null
   setLinkedKey: (key: string | null) => void
+  /**
+   * The home the dial is showing: what the map rings whenever no pointer is on
+   * a mark. The map reports "no mark" (null) when it mounts and whenever a
+   * pointer leaves one; that falls back to this key instead of clearing the
+   * ring (2026-09-29: the map streamed in after the dial and wiped its key, so
+   * the first home was never ringed).
+   */
+  setRestKey: (key: string | null) => void
   sort: PlaceTypeSort
   setSort: (sort: PlaceTypeSort) => void
 }
@@ -80,6 +88,10 @@ export function usePlaceTypeLink(): LinkState {
  */
 export function PlaceTypeField({ children }: { children: ReactNode }) {
   const [linkedKey, setLinkedKeyState] = useState<string | null>(null)
+  const restKey = useRef<string | null>(null)
+  const setRestKey = useCallback((key: string | null) => {
+    restKey.current = key
+  }, [])
   /* Server HTML is newest (static). After mount, match ?sort= so a shared
      price-asc URL does not light Newest over a reordered list. */
   const [sort, setSort] = useState<PlaceTypeSort>('newest')
@@ -87,11 +99,12 @@ export function PlaceTypeField({ children }: { children: ReactNode }) {
     setSort(placeTypeSortFromSearch(window.location.search))
   }, [])
   const setLinkedKey = useCallback((key: string | null) => {
-    setLinkedKeyState((prev) => (prev === key ? prev : key))
+    const next = key ?? restKey.current
+    setLinkedKeyState((prev) => (prev === next ? prev : next))
   }, [])
   const value = useMemo(
-    () => ({ linkedKey, setLinkedKey, sort, setSort }),
-    [linkedKey, setLinkedKey, sort],
+    () => ({ linkedKey, setLinkedKey, setRestKey, sort, setSort }),
+    [linkedKey, setLinkedKey, setRestKey, sort],
   )
   return <PlaceTypeLinkContext.Provider value={value}>{children}</PlaceTypeLinkContext.Provider>
 }

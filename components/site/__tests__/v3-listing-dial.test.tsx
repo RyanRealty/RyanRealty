@@ -82,30 +82,28 @@ function count(html: string, re: RegExp): number {
   return html.match(re)?.length ?? 0
 }
 
-describe('V3ListingDial rail position and reel (SITE-194)', () => {
+describe('V3ListingDial rail position and reel (SITE-194, one implementation)', () => {
   const dial = (railPosition?: 'left' | 'right' | 'bottom') =>
     renderToStaticMarkup(
       <V3ListingDial id="pv" heading="Homes" label="Homes in Porter James" listings={SFR.rows} railPosition={railPosition} />,
     )
 
-  it('the left rail is the default and carries no modifier; right and bottom do', () => {
-    expect(dial()).not.toMatch(/v3-dial--rail-/)
-    expect(dial('left')).not.toMatch(/v3-dial--rail-/)
-    expect(dial('right')).toContain('v3-dial--rail-right')
+  it('the bottom rail is the default (Matt 2026-09-24); left and right are named', () => {
+    expect(dial()).toContain('v3-dial--rail-bottom')
     expect(dial('bottom')).toContain('v3-dial--rail-bottom')
+    expect(dial('left')).toContain('v3-dial--rail-left')
+    expect(dial('right')).toContain('v3-dial--rail-right')
   })
 
-  it('a bottom rail is a horizontal tablist on every screen', () => {
+  it('a bottom rail is a horizontal tablist; a side rail is vertical', () => {
     expect(dial('bottom')).toContain('aria-orientation="horizontal"')
     expect(dial('right')).toContain('aria-orientation="vertical"')
   })
 
-  it('the served HTML carries the photograph only: no reel, no player, no play control', () => {
+  it('the served HTML carries the photograph only: no player', () => {
     const html = dial()
-    expect(html).not.toContain('v3-dial__reel')
     expect(html).not.toContain('<iframe')
     expect(html).not.toContain('<video')
-    expect(html).not.toContain('Play video')
   })
 })
 
@@ -142,7 +140,9 @@ describe('V3PlaceInventory layout="dial"', () => {
     expect(count(html, /role="tablist"/g)).toBe(1) // only the three-listing type has a dial
     expect(count(html, /role="tab"/g)).toBe(SFR.rows.length)
     expect(count(html, /role="tabpanel"/g)).toBe(SFR.rows.length)
-    expect(html).toContain('aria-orientation="vertical"')
+    // The default rail is the strip under the card (Matt 2026-09-24): it runs across.
+    expect(html).toContain('aria-orientation="horizontal"')
+    expect(html).toContain('v3-dial--rail-bottom')
     expect(html).toContain('aria-label="Single-family homes in Porter James"')
     for (let i = 0; i < SFR.rows.length; i += 1) {
       expect(html).toContain(`id="homes-sfr-tab-${i}"`)
@@ -234,9 +234,9 @@ describe('V3PlaceInventory layout="dial"', () => {
     for (const img of imgs) expect(img).toContain('loading="lazy"')
   })
 
-  it('prints the row’s facts and "Pending" for an under-contract listing', () => {
+  it('prints the row’s facts and "Under contract" for an Active Under Contract listing', () => {
     expect(html).toContain('3 bd · 2 ba · 1,800 sqft · $322/sqft')
-    expect(html).toContain('Pending')
+    expect(html).toContain('Under contract')
     expect(html).toContain('No photo published')
   })
 
@@ -245,17 +245,12 @@ describe('V3PlaceInventory layout="dial"', () => {
     expect(html).not.toContain('—')
   })
 
-  it('leaves rows and rails as they were', () => {
+  it('leaves the default rows as they were', () => {
     const rows = renderToStaticMarkup(
       <V3PlaceInventory placeName="Porter James" sections={SECTIONS} source="regional MLS" />,
     )
     expect(rows).toContain('v3-place-stock__rows')
     expect(rows).not.toContain('v3-dial')
-    const rails = renderToStaticMarkup(
-      <V3PlaceInventory layout="rails" placeName="Porter James" sections={SECTIONS} source="regional MLS" />,
-    )
-    expect(rails).toContain('home-rail')
-    expect(rails).not.toContain('v3-dial')
   })
 })
 
@@ -284,11 +279,41 @@ describe('V3ListingDial on its own', () => {
     expect(html).toContain('aria-label="Previous listing"')
     expect(html).toContain('aria-label="Next listing"')
   })
+
+  it('stands the dial where railPosition says, and orients the tablist with it (Matt 2026-09-24)', () => {
+    const at = (railPosition?: 'bottom' | 'left' | 'right') =>
+      renderToStaticMarkup(<V3ListingDial id="d" label="x" listings={SFR.rows} railPosition={railPosition} />)
+    expect(at()).toContain('v3-dial--rail-bottom')
+    expect(at()).toContain('aria-orientation="horizontal"')
+    expect(at('left')).toContain('v3-dial--rail-left')
+    expect(at('left')).toContain('aria-orientation="vertical"')
+    expect(at('right')).toContain('v3-dial--rail-right')
+    expect(at('right')).toContain('aria-orientation="vertical"')
+    // One listing has no dial to place.
+    const one = renderToStaticMarkup(
+      <V3ListingDial id="d" label="x" listings={SFR.rows.slice(0, 1)} railPosition="right" />,
+    )
+    expect(one).not.toContain('v3-dial--rail-')
+  })
+
+  it('serves no reel and no reel control: the photograph is the first paint, the reel is the browser’s', () => {
+    const html = renderToStaticMarkup(
+      <V3ListingDial
+        id="d"
+        label="x"
+        listings={SFR.rows.map((row, i) => ({ ...row, hasVideo: i === 0 ? true : null }))}
+      />,
+    )
+    expect(html).not.toContain('v3-dial__reel')
+    expect(html).not.toContain('<video')
+    expect(html).not.toContain('<iframe')
+    expect(html).not.toContain('Play video')
+  })
 })
 
-describe('PlaceSubdivisionHomes layout="dial" (neighborhood pages)', () => {
+describe('PlaceSubdivisionHomes (city, community and neighborhood pages)', () => {
   const homes = SECTIONS.flatMap((s) => s.rows)
-  const render = (layout?: 'rails' | 'dial') =>
+  const render = () =>
     renderToStaticMarkup(
       <PlaceSubdivisionMap
         placeName="River West"
@@ -297,22 +322,49 @@ describe('PlaceSubdivisionHomes layout="dial" (neighborhood pages)', () => {
         keysBySlug={{}}
         source="regional MLS through Oregon Data Share"
       >
-        <PlaceSubdivisionHomes id="homes" layout={layout} />
+        <PlaceSubdivisionHomes id="homes" />
       </PlaceSubdivisionMap>,
     )
 
   it('turns each buyer group into a dial with its own h3 and count', () => {
-    const html = render('dial')
-    expect(html).toContain('place-homes--dial')
-    expect(html).not.toContain('v3-carousel')
+    const html = render()
+    expect(html).toContain('place-homes__dial')
     expect(count(html, /<h3 /g)).toBeGreaterThan(1)
     expect(html).toContain('River West')
     for (const row of homes) expect(html).toContain(`href="${row.href}"`)
   })
 
-  it('keeps the carousel as the default for city and community pages', () => {
+  it('draws no carousel: the dial is the only layout (Matt 2026-09-24)', () => {
     const html = render()
-    expect(html).toContain('v3-carousel')
-    expect(html).not.toContain('v3-dial')
+    expect(html).toContain('v3-dial')
+    expect(html).not.toContain('v3-carousel')
+  })
+})
+
+describe('V3ListingDial on a wide strip: the homes near this price (2026-09-25)', () => {
+  const base = SFR.rows[0]!
+  const prices = [600_000, 1_400_000, 640_000, 590_000, 900_000]
+  const rows = prices.map((price, i) => ({
+    ...base,
+    listingKey: `near-${i}`,
+    href: `/homes-for-sale/bend/near-${i}`,
+    addressLine: `${10 + i} Near Street`,
+    price,
+  }))
+  const html = renderToStaticMarkup(<V3ListingDial id="near" heading="Houses" label="Houses" listings={rows} />)
+
+  it('lists the three asks nearest the home in front, nearest first, as buttons', () => {
+    expect(html).toContain('Near this price')
+    const shown = [...html.matchAll(/class="v3-dial__next-addr">([^<]+)</g)].map((m) => m[1])
+    // In front: $600,000. Nearest: $590,000, $640,000, $900,000.
+    expect(shown).toEqual(['13 Near Street', '12 Near Street', '14 Near Street'])
+    expect(count(html, /class="v3-dial__next-row"/g)).toBe(3)
+  })
+
+  it('draws no preview on a column dial, which lists its homes beside the card', () => {
+    const side = renderToStaticMarkup(
+      <V3ListingDial id="near-l" heading="Houses" label="Houses" listings={rows} railPosition="left" />,
+    )
+    expect(side).not.toContain('Near this price')
   })
 })

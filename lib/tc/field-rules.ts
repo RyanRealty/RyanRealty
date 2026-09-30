@@ -29,6 +29,24 @@ export const SIGNER_ONLY_TYPES: ReadonlySet<SignFieldType> = new Set(['signature
 /** Stamped at submit (the server's clock, the recipient's own name). */
 export const AUTO_STAMPED_TYPES: ReadonlySet<SignFieldType> = new Set(['full_name', 'date_signed', 'time_signed'])
 
+/**
+ * Types whose value the sealer prints as fitted text (lib/tc/seal-pdf.ts
+ * drawFieldValue: fitTextToBox, the same lines and baselines PrintedLines
+ * draws). The signing page shows them the same way, so a name, a date or a
+ * typed note reads on screen exactly as it prints.
+ */
+export const PRINTED_TEXT_TYPES: ReadonlySet<SignFieldType> = new Set(['text', 'date', 'time', 'full_name', 'date_signed', 'time_signed'])
+
+/**
+ * True when the signing page should draw this value as the sealer prints it.
+ * A line of a lined section (a text value that carries its own size) is
+ * already laid out and prints as-is, so it keeps its own rendering.
+ */
+export function drawsAsPrintedText(type: SignFieldType, value: SignFieldValue | null | undefined, text: string): boolean {
+  if (!PRINTED_TEXT_TYPES.has(type) || !text.trim()) return false
+  return !(value?.kind === 'text' && typeof value.size === 'number' && value.size > 0)
+}
+
 /** Sender marks on the page, never values. */
 export const ANNOTATION_TYPES: ReadonlySet<SignFieldType> = new Set(['strike', 'highlight'])
 
@@ -370,6 +388,44 @@ function preparedGroup(type: SignFieldType, group: FieldGroup | null): FieldGrou
   if (max != null && max < 1) return null
   if (min != null && max != null && min > max) return null
   return { key, min, max }
+}
+
+// ── a small box's tap target ────────────────────────────────────────────────
+
+/** The tap target a small box grows to on a phone, where room allows (px): Apple's and Google's minimum is 44 / 48, 32 keeps neighbours apart. */
+export const TAP_TARGET_PX = 32
+
+type Placed = Pick<EnvelopeField, 'x' | 'y' | 'w' | 'h'> & { id?: string; type?: string }
+
+/**
+ * How far a tap target around a small box may reach (px, the side of a square
+ * centred on the box). It never covers another field, and two checkboxes'
+ * targets meet halfway, so a tap always lands on the box it is nearest. The
+ * 020's Yes / No / Unknown boxes sit about 17 to 19 px apart on a phone: a
+ * fixed 32 px target over each one let a tap on "No" tick "Unknown". Never
+ * smaller than the box itself.
+ */
+export function tapTargetPx(field: Placed, others: ReadonlyArray<Placed>, page: { w: number; h: number }): number {
+  const cx = (field.x + field.w / 2) * page.w
+  const cy = (field.y + field.h / 2) * page.h
+  let half = TAP_TARGET_PX / 2
+  for (const o of others) {
+    if (o === field || (o.id != null && o.id === field.id)) continue
+    let reach: number
+    if (o.type === 'checkbox') {
+      // Both targets grow: squares this far apart (Chebyshev, centre to centre) meet halfway.
+      const ox = (o.x + o.w / 2) * page.w
+      const oy = (o.y + o.h / 2) * page.h
+      reach = Math.max(Math.abs(ox - cx), Math.abs(oy - cy)) / 2
+    } else {
+      // The other field keeps its own box: stop at its edge.
+      const dx = Math.max(o.x * page.w - cx, cx - (o.x + o.w) * page.w, 0)
+      const dy = Math.max(o.y * page.h - cy, cy - (o.y + o.h) * page.h, 0)
+      reach = Math.max(dx, dy)
+    }
+    half = Math.min(half, reach)
+  }
+  return Math.max(2 * half, field.w * page.w, field.h * page.h)
 }
 
 // ── a signature line's row ──────────────────────────────────────────────────

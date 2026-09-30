@@ -24,7 +24,15 @@
  *   images        — <img> with naturalWidth >= 800 that finished loading
  *   heroImageWidth — rendered CSS width of the widest <img> whose top is in
  *                    the first 1200px; 0 when there is none
- *   heroImageNatural — that image's naturalWidth (its resolution)
+ *   heroImageNatural — that image's naturalWidth (its resolution); for a
+ *                    Spark MLS photo, the width of the resize bucket the page
+ *                    asked for (its URL's WxH), which is what the floor means
+ *                    to catch: a portrait lead photo comes back 360 wide from
+ *                    the 800x600 lead bucket (2026-09-30, /oregon/medford),
+ *                    inside the 320 to 376 the banned 320x240 thumb bucket
+ *                    returns, so its pixels cannot tell a lead from a thumb.
+ *                    The resizer never enlarges, so the bucket is never below
+ *                    the pixels: no reading drops, and a thumb still reads 320.
  *   video         — <video> plus embedded players (youtube / vimeo / mux)
  *   jsonLd        — <script type="application/ld+json"> count
  *
@@ -402,6 +410,18 @@ export function measurePage() {
   const imgs = Array.from(document.images)
   const loaded = imgs.filter((i) => i.complete && i.naturalWidth > 0)
   const bigImages = loaded.filter((i) => i.naturalWidth >= 800).length
+  // A Spark MLS photo's requested resize bucket width (cdn.resize.sparkplatform.com/<board>/<W>x<H>/...),
+  // also inside a /_next/image?url= wrapper; null for anything else.
+  const sparkBucketWidth = (src) => {
+    let decoded = String(src || '')
+    try {
+      decoded = decodeURIComponent(decoded)
+    } catch {
+      // keep it as it was
+    }
+    const m = /cdn\.resize\.sparkplatform\.com\/[^/]+\/(\d+)x(\d+)\//.exec(decoded)
+    return m ? Number(m[1]) : null
+  }
   let heroImageWidth = 0
   let heroImageNatural = 0
   for (const i of loaded) {
@@ -409,7 +429,8 @@ export function measurePage() {
     const top = r.top + window.scrollY
     if (top < 1200 && r.width > heroImageWidth) {
       heroImageWidth = Math.round(r.width)
-      heroImageNatural = i.naturalWidth
+      const bucket = sparkBucketWidth(i.currentSrc || i.src)
+      heroImageNatural = bucket != null ? Math.max(bucket, i.naturalWidth) : i.naturalWidth
     }
   }
   const origin = location.origin

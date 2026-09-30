@@ -80,11 +80,24 @@ export type V3ListingRowData = {
   listNumber: string | null
   tourUrl?: string | null
   hasTour?: boolean
+  /**
+   * The card's tour control, in the listing page's words ("Video Tour" for a
+   * walkthrough reel, "3D" for a 3D tour). Omit it and the card reads it off
+   * `tourUrl` (publishListingTourLabel), so a walkthrough is never called a 3D tour.
+   */
+  tourLabel?: string | null
   badge?: { kind: V3ListingRowBadge; label: string }
   /** Overlay pills. When set, this is the whole set; `badge` is ignored. */
   badges?: Array<{ kind: V3ListingRowBadge; label: string }>
   /** "Pending" for an under-contract listing. Printed by the rail card, not the row. */
   statusLabel?: string | null
+  /**
+   * The MLS StandardStatus the row was read with. A place page's counts read it
+   * through publicCountState (lib/listing-status-public), the same classifier
+   * the place map draws its marks with, so "for sale" means one thing on the
+   * map and under it (SITE-193).
+   */
+  standardStatus?: string | null
   /**
    * A commercial lease's rent unit, the feed's own "Lease Rate Options" value
    * ("$/SF/Mo", "$ Amt/Mo", ...), read by getLeaseRateOptions. Only lease rows
@@ -93,6 +106,13 @@ export type V3ListingRowData = {
    * a sale listing prints its ask.
    */
   leaseRateOption?: string | null
+  /**
+   * A commercial lease's terms as the listing files them, already worded by
+   * publishLeaseTerms ("NNN lease", "Tenant pays taxes, insurance and
+   * utilities", "Zoned IL", "15 parking spaces"). Only lease rows carry it; the
+   * dial's card prints each one under the rent. Absent or empty prints nothing.
+   */
+  leaseTerms?: readonly string[] | null
   /**
    * SITE-194: whether the listing has a walkthrough reel a card can play.
    * An optional hint from data the page already holds; only an explicit
@@ -180,6 +200,11 @@ export function V3ListingRow({
   })
   const figure = lease ? lease.text : (ask ?? '—')
   const tagText = lease ? lease.label : shareKind
+  // A lease's terms as its listing files them (publishLeaseTerms' words), under
+  // the street, so a row does not drop what the dial's card prints (2026-09-30).
+  const leaseTerms = lease
+    ? (listing.leaseTerms ?? []).map((term) => term.trim()).filter(Boolean).join(' · ')
+    : ''
   const meta = metaParts(listing, showPricePerSqft)
   const splitThumb = typeof className === 'string' && className.includes('v3-lrow--split')
   const tags = listing.badges ?? (listing.badge ? [listing.badge] : [])
@@ -255,6 +280,7 @@ export function V3ListingRow({
           {compare}
           <span className="v3-lrow__addr">{listing.addressLine}</span>
           <span className="v3-lrow__city">{listing.cityLine}</span>
+          {leaseTerms ? <span className="v3-lrow__terms">{leaseTerms}</span> : null}
         </Link>
       </article>
     )
@@ -269,6 +295,7 @@ export function V3ListingRow({
       <span className="v3-lrow__body">
         <span className="v3-lrow__addr">{listing.addressLine}</span>
         <span className="v3-lrow__city">{listing.cityLine}</span>
+        {leaseTerms ? <span className="v3-lrow__terms">{leaseTerms}</span> : null}
       </span>
       <span className="v3-lrow__figures">
         <span className="v3-lrow__price">{figure}</span>

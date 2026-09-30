@@ -1,4 +1,4 @@
-import type { V3FieldItem } from '@/components/site/v3'
+import type { V3FieldItem, V3ListingRowData } from '@/components/site/v3'
 import { formatPrice } from '@/lib/format/money'
 import { isWeekendIso, openHouseWhen } from './oh-when'
 import type { OpenHouseListing } from './oh-listings'
@@ -9,6 +9,14 @@ export type OpenHouseFieldItem = V3FieldItem & {
   when?: string
   eventDate: string
   weekend: boolean
+  /**
+   * The same home as the listing dial's row (Matt 2026-09-24: the fold's
+   * carousel is V3ListingDial). Built here, from the same open house, in the
+   * same pass, so the dial can never hold a home, a figure or an order the
+   * Field list does not. The day and hours ride the photograph as the open
+   * badge, in the words the card printed (`when`).
+   */
+  listing: V3ListingRowData
 }
 
 function compareOpenHouseOrder(a: OpenHouseListing, b: OpenHouseListing): number {
@@ -52,6 +60,24 @@ export function openHouseFieldItems(houses: readonly OpenHouseListing[]): OpenHo
     if (!priceLabel || !/\$/.test(priceLabel)) continue
 
     const photoSrc = oh.photoUrl?.trim()
+    const listing: V3ListingRowData = {
+      listingKey: oh.listingKey,
+      href: oh.href,
+      photoUrl: photoSrc || null,
+      price: oh.listPrice,
+      addressLine: street,
+      cityLine: [cityName, oh.postalCode?.trim() || null].filter(Boolean).join(' '),
+      beds: oh.beds,
+      baths: oh.baths,
+      sqft: oh.sqft,
+      pricePerSqft: null,
+      propertyType: oh.propertyType ?? null,
+      propertySubType: oh.propertySubType ?? null,
+      subdivisionName: oh.subdivisionName,
+      city: cityName || null,
+      listNumber: oh.listNumber,
+      ...(when ? { badges: [{ kind: 'open' as const, label: when }] } : {}),
+    }
     items.push({
       id: oh.id,
       href: oh.href,
@@ -64,6 +90,7 @@ export function openHouseFieldItems(houses: readonly OpenHouseListing[]): OpenHo
       ...(photoSrc ? { photoSrc: listingRowPhotoSrc(photoSrc) } : {}),
       lat: oh.lat,
       lng: oh.lng,
+      listing,
     })
   }
   return items

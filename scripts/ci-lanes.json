@@ -18,6 +18,7 @@
     "ci:deliverable-send-chokepoint",
     "ci:email-link-tracking",
     "ci:email-send-gated",
+    "ci:broker-reply-sender",
     "ci:pdf-trace-guard",
     "ci:entity-scope",
     "ci:gates-wired",
@@ -1522,6 +1523,8 @@
       "app/housing-market/[...slug]/_v3/geo-figures.ts",
       "app/page.tsx",
       "app/_v3/home-homes-rails.css",
+      "app/_v3/home-shelves.css",
+      "app/_v3/HomeHomesRails.tsx",
       "components/site/v3/V3Answers.css",
       "scripts/check-aeo-hub-guides.mjs",
       "scripts/lib/homepage-fold-density.mjs"

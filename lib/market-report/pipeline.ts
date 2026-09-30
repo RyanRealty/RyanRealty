@@ -29,6 +29,7 @@ import {
 import { getReportBands, getReportSeries, type ReportBandRow, type ReportSeriesRow } from '@/lib/data/market-report/series'
 import { getEditionForWrite, upsertEdition, uploadEditionPdf } from '@/lib/data/market-report/editions'
 import { buildEdition, editionFetchWindow, editionSlug, editionTitle } from './build-edition'
+import { draftEditionEmailAndTell, type EditionEmailOutcome } from './edition-email-draft'
 import { zonedDateKey } from '@/lib/format/date'
 import { addMonths, lastDayOf } from './format'
 import { MONTHLY_CITIES, geoKey } from './geos'
@@ -161,6 +162,8 @@ export type PublishOutcome = {
   pdfPath: string | null
   pages: number | null
   bytes: number | null
+  /** The month's email draft after a publish (./edition-email-draft.ts); null when nothing was published. */
+  email?: EditionEmailOutcome | null
 }
 
 function pageCount(pdf: Buffer): number {
@@ -181,6 +184,11 @@ const HOLD_REASON_CHECKS = 12
  * builds, gates and renders but writes nothing (a deployment check that the
  * PDF renders in the function). A backfill passes one `sources` to every
  * edition so each month is pulled from Spark once.
+ *
+ * Every publish, by any path, then brings the month's open email draft to
+ * the new figures (Matt 2026-09-30, "Draft it for my OK"), so a republish can
+ * never leave a scheduled email on the old ones. `emailDraft: 'create'` (the
+ * monthly cron, newest month) also writes the draft when there is none.
  */
 export async function publishEdition(opts: {
   month: string
@@ -190,6 +198,8 @@ export async function publishEdition(opts: {
   sources?: ReconcileSources
   dryRun?: boolean
   log?: (line: string) => void
+  /** 'recheck' (default) keeps an open draft on the new figures; 'create' also writes a missing one. */
+  emailDraft?: 'create' | 'recheck'
 }): Promise<PublishOutcome> {
   const dryRun = opts.dryRun === true
   const log = opts.log ?? (() => {})
@@ -261,5 +271,8 @@ export async function publishEdition(opts: {
   const pdfPath = await uploadEditionPdf(month, pdf)
   await upsertEdition({ ...base, status, pdfPath, pdfBytes: pdf.length, pageCount: pages, holdReason: null })
   log(`${month}: ${pages} pages, ${(pdf.length / 1024).toFixed(0)} KB → ${status}`)
-  return { month, dryRun, status, holdReason: null, reconciliation, pdfPath, pages, bytes: pdf.length }
+  // Never throws: a draft problem is texted, and the edition stays published.
+  const email = status === 'published' ? await draftEditionEmailAndTell(month, { create: opts.emailDraft === 'create' }) : null
+  if (email) log(`${month}: email draft ${email.status}`)
+  return { month, dryRun, status, holdReason: null, reconciliation, pdfPath, pages, bytes: pdf.length, email }
 }

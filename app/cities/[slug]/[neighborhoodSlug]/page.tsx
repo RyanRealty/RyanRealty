@@ -73,6 +73,7 @@ import { nameOnlyChildEntries } from '@/lib/explore/nearby-place-peers'
 import { childListingKeys, subdivisionRailEntries } from '@/lib/place/place-child-stock'
 import { loadPlaceStockTiles, placeStockSectionsFromTiles } from '@/lib/place/place-inventory-stock'
 import { loadPlaceLeaseSection } from '@/lib/place/place-lease-stock'
+import { placeBoundaryClause, placeInventorySource } from '@/lib/place/place-inventory-source'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { pageMetadata, publishPlaceHomesTitle } from '@/lib/site/page-metadata'
 import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
@@ -612,7 +613,7 @@ async function renderNeighborhoodDetail({ params }: Props) {
       monthsOfSupply: hud.monthsSupply,
       monthsOfSupplyActiveCount: hud.active,
       activeCount: nbhAnswerActive,
-      activeCountTrace: `the recorded ${neighborhood.name} boundary, single-family homes in a publicly active MLS status at the last sync`,
+      activeCountTrace: `the recorded ${neighborhood.name} boundary, single-family homes for sale at the last sync (homes under contract are counted separately)`,
       // SAY WHY THE TWO COUNTS DIFFER, IN THE ANSWER (§0 rule 5), in plain
       // words: both numbers, both populations, no pipeline talk (AEO-5).
       activeCountNotes: (() => {
@@ -641,7 +642,7 @@ async function renderNeighborhoodDetail({ params }: Props) {
       // The list median comes off the SAME boundary read as the active count,
       // not off the metric layer, so it carries that read's clause and not the
       // page's default one (§0: one trace per query).
-      medianListPriceTrace: `the recorded ${neighborhood.name} boundary, the list prices of the single-family homes in a publicly active MLS status at the last sync`,
+      medianListPriceTrace: `the recorded ${neighborhood.name} boundary, the list prices of the single-family homes for sale at the last sync`,
     },
     // READER'S WORDS IN THE SENTENCE, MACHINE HANDLE IN THE ATTRIBUTE. This
     // clause used to open "market_metric ${metricKey} through the Market Truth
@@ -953,44 +954,10 @@ async function renderNeighborhoodDetail({ params }: Props) {
           </div>
         </div>
 
-        <PlaceSubdivisionMap
-          placeName={neighborhood.name}
-          rail={railEntries}
-          homes={placeHomes}
-          leases={leaseSection?.rows ?? []}
-          keysBySlug={homesByChild}
-          source={`regional MLS through Oregon Data Share, every publicly active listing inside the recorded ${neighborhood.name} boundary: Active and Active Under Contract, every property type. Coming Soon is excluded. This is a wider set than the detached count on the fold.`}
-          asOf={leftoverStamp}
-        >
-          <div className="place-one-map">
-            <PlaceSubdivisionRail id="child-places" nameOnly />
-            <PlaceSubdivisionAtlas
-              id="atlas"
-              headingLevel={2}
-              headline={v3Text(neighborhood.name)}
-              headlineTone="eyebrow"
-              dots={atlasProps.dots}
-              dotsSrc={atlasProps.dotsSrc}
-              dotsSummary={atlasProps.dotsSummary}
-              regions={atlasProps.regions}
-              childRegions={atlasProps.childRegions}
-              basemapSrc={atlasProps.basemapSrc}
-              fit="dots"
-              types={atlasView.types}
-              events={atlasView.events}
-              source={atlasView.source}
-              stamp={atlasView.stamp}
-              incomplete={!atlasView.complete}
-              amenities={atlasProps.amenities}
-              hidePriceScrubber
-            />
-          </div>
-          {/* Matt 2026-09-23: the homes below the map are the dial, one per
-              buyer group, still filtered by the subdivision chosen on the map.
-              City and community pages keep the carousel. */}
-          <PlaceSubdivisionHomes id="homes" layout="dial" />
-        </PlaceSubdivisionMap>
-
+        {/* The market figure and the alerts sentence open the page, under the
+            photograph (2026-09-29, the taste lock: "a place page opens with a
+            drawing and a figure beside the alerts sentence"). The map and its
+            homes follow. */}
         <div className="nbh-fold">
           <div className="nbh-fold__stage">
             <aside className="nbh-fold__figure nbh-fold__figure--insight">
@@ -1059,6 +1026,44 @@ async function renderNeighborhoodDetail({ params }: Props) {
             </aside>
           </div>
         </div>
+
+        <PlaceSubdivisionMap
+          placeName={neighborhood.name}
+          rail={railEntries}
+          homes={placeHomes}
+          leases={leaseSection?.rows ?? []}
+          keysBySlug={homesByChild}
+          source={`${placeInventorySource(placeBoundaryClause(neighborhood.name))} This is a wider set than the detached count on the fold.`}
+          asOf={leftoverStamp}
+        >
+          <div className="place-one-map">
+            <PlaceSubdivisionRail id="child-places" nameOnly />
+            <PlaceSubdivisionAtlas
+              id="atlas"
+              headingLevel={2}
+              headline={v3Text(neighborhood.name)}
+              headlineTone="eyebrow"
+              dots={atlasProps.dots}
+              dotsSrc={atlasProps.dotsSrc}
+              dotsSummary={atlasProps.dotsSummary}
+              regions={atlasProps.regions}
+              childRegions={atlasProps.childRegions}
+              basemapSrc={atlasProps.basemapSrc}
+              fit="dots"
+              types={atlasView.types}
+              events={atlasView.events}
+              source={atlasView.source}
+              stamp={atlasView.stamp}
+              incomplete={!atlasView.complete}
+              amenities={atlasProps.amenities}
+              hidePriceScrubber
+            />
+          </div>
+          {/* Matt 2026-09-23: the homes below the map are the dial, one per
+              buyer group, still filtered by the subdivision chosen on the map.
+              City and community pages draw the same dials (2026-09-24). */}
+          <PlaceSubdivisionHomes id="homes" />
+        </PlaceSubdivisionMap>
 
         <PlaceTypeSlider cards={typeCards} label={`${neighborhood.name} property types`} />
 

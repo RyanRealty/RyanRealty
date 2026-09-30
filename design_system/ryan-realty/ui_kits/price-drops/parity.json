@@ -79,7 +79,7 @@
     "V3SectionTracker + TrackSearchView + MetadataBlock (not sections)",
     "V3Breadcrumb",
     "PriceDropsOpening -- the H1 and the count of homes that cut price",
-    "V3Field #cuts -- installed shadcn carousel, one composed slide, cut-size switch + city doors (price, city, address, beds/baths/sqft)",
+    "V3Field #cuts -- the cut houses on V3ListingDial per cut-size band (Matt 2026-09-24, it was the shadcn carousel): one house large with its cut on the photograph in the card's own words, the rest as thumbnails, 03 / 12; cut-size switch + city doors (price, city, address, beds/baths/sqft)",
     "V3Drawing #spread -- distribution of this week's cuts (after photographs)",
     "V3SourceLine -- the trace and the stamp under the set",
     "PriceDropAlertsSheet -- the ask: tell me when a home cuts price",
@@ -88,12 +88,12 @@
   ],
   "competitiveTarget": "Beat Zillow's and Redfin's price-cut filters on a page a search engine can actually rank. Their reductions live behind a filter state with no indexable URL; this is a standing page for 'price reductions bend oregon' and 'price drops central oregon' that publishes the cut homes themselves, each one a door, with the source trace and the refresh stamp under the set. The answer -- how many homes cut price and by how much -- is in text, not only in the list.",
   "tasteReview": {
-    "evaluatedAt": "2026-09-16",
+    "evaluatedAt": "2026-09-30",
     "rubricVersion": "v1-2026-09-12",
-    "demoMatch": true,
-    "evaluator": "npx tsx scripts/taste-evaluate.ts price-drops --builder grok-4.5 — grok CLI missing; cursor-agent installed but not logged in (CURSOR_API_KEY unset); claude CLI present but exited 1 on workspace trust / not logged in. Separate claude-sonnet-5 evaluator scored the six take-route-shots captures against the official /tmp/taste-eval-prompt.txt instrument (rubric v1-2026-09-12). Three scorings, median. Builder ≠ judge.",
+    "evaluator": "npx tsx scripts/taste-evaluate.ts price-drops --builder claude-opus-5-5 --evaluator claude --url http://127.0.0.1:3311/price-drops --shots <the 8 files below>. The grok CLI and the Cursor CLI are missing in this sandbox, so the judge is the chain's claude link (claude CLI, sonnet, subscription): three scorings of these shots in one call, recorded exactly as returned, no re-roll. The builder (the listing-dial integration lane, claude-opus-5-5) is not the judge.",
     "evaluatorModel": "claude-sonnet-5",
-    "builderModel": "grok-4.5",
+    "builderModel": "claude-opus-5-5",
+    "transport": "claude-cli",
     "shotSpec": {
       "routes": [
         "/price-drops"
@@ -104,42 +104,46 @@
       ],
       "states": [
         "default",
-        "carousel-open",
-        "band-open"
+        "band-open",
+        "cities",
+        "dial-open"
       ],
-      "capture": "node scripts/take-route-shots.mjs price-drops http://127.0.0.1:3198 — catalog demoStates carousel-open=.pd-cuts-rail [data-slot=carousel-next]!click and band-open=.pd-bands [role=tab]:nth-child(2)!click. First viewport, scale 1, palette-quantized, against the lane's own next dev --webpack on http://127.0.0.1:3198."
+      "capture": "node scripts/take-route-shots.mjs price-drops http://127.0.0.1:3311/price-drops --states 'dial-open=.pd-cuts .v3-dial__thumbs > :nth-child(2)@.pd-fold-stage!click,band-open=.pd-bands [role=tab]:nth-child(2)!click,cities=.pd-cities'. First viewport, scale 1, palette-quantized, against the listing-dial fix tree's own next build + next start (2026-09-30)."
     },
     "shots": {
+      "bandOpenDesktop": "design_system/ryan-realty/ui_kits/price-drops/shots/band-open-desktop.png",
+      "bandOpenMobile375": "design_system/ryan-realty/ui_kits/price-drops/shots/band-open-mobile375.png",
+      "citiesDesktop": "design_system/ryan-realty/ui_kits/price-drops/shots/cities-desktop.png",
+      "citiesMobile375": "design_system/ryan-realty/ui_kits/price-drops/shots/cities-mobile375.png",
       "desktop": "design_system/ryan-realty/ui_kits/price-drops/shots/desktop.png",
-      "mobile375": "design_system/ryan-realty/ui_kits/price-drops/shots/mobile375.png",
-      "carousel-open-desktop": "design_system/ryan-realty/ui_kits/price-drops/shots/carousel-open-desktop.png",
-      "carousel-open-mobile375": "design_system/ryan-realty/ui_kits/price-drops/shots/carousel-open-mobile375.png",
-      "band-open-desktop": "design_system/ryan-realty/ui_kits/price-drops/shots/band-open-desktop.png",
-      "band-open-mobile375": "design_system/ryan-realty/ui_kits/price-drops/shots/band-open-mobile375.png"
+      "dialOpenDesktop": "design_system/ryan-realty/ui_kits/price-drops/shots/dial-open-desktop.png",
+      "dialOpenMobile375": "design_system/ryan-realty/ui_kits/price-drops/shots/dial-open-mobile375.png",
+      "mobile375": "design_system/ryan-realty/ui_kits/price-drops/shots/mobile375.png"
     },
-    "shotsHash": "sha256:3aa8f3bac356a99fe9fb076c1cbb4078f1627603a03e055ed554bea3e2d3b832",
+    "shotsHash": "sha256:5ff5fb726abe1d5b8f52852d108bf358b80e4f58bf336f1589e43a8f194990e5",
     "scores": [
-      58,
-      63,
-      67
+      64,
+      68,
+      72
     ],
-    "score": 63,
+    "score": 68,
     "criteria": {
-      "designQuality": 19,
-      "originality": 13,
-      "interaction": 11,
-      "craft": 12,
-      "honestyFunction": 8
+      "designQuality": 20,
+      "originality": 18,
+      "interaction": 12,
+      "craft": 9,
+      "honestyFunction": 9
     },
     "perCriterion": {
-      "design": 19,
-      "originality": 13,
-      "interaction": 11,
-      "craft": 12,
-      "honesty": 8
+      "design": 20,
+      "originality": 18,
+      "interaction": 12,
+      "craft": 9,
+      "honesty": 9
     },
-    "honestyFunction": 8,
-    "beats": "Zillow's Price Reduced filtered search grid — this page wins on interactivity: the dot-strip chart contextualizes every cut's size against the week's full range and surfaces the specific home and its dollar cut on hover, which Zillow's plain results grid never offers.",
+    "honestyFunction": 9,
+    "demoMatch": false,
+    "beats": "Redfin's 'Price Reduced' filtered list — this page wins on showing the actual shape of the week's cuts (the beeswarm dot plot, smallest to deepest, with a stated median) and a per-city bar breakdown a portal filter never surfaces; it loses on browsable depth, since only 48 of 191 cuts are shown and there's no map or further paging.",
     "adaptedFrom": [
       {
         "id": "shadcn-carousel",
@@ -154,35 +158,38 @@
     ],
     "defects": [
       {
-        "section": "opening carousel slide",
+        "section": "page opening / ListingDial hero",
         "severity": "taste",
-        "finding": "The layout lock promises the Field of cut houses, photographs first, but the opening is one house in a one-at-a-time carousel, not a field — a visitor sees a single photo and a 01/48 counter, not a sense of the week's volume.",
-        "primitive": "app/price-drops/_v3/PriceDropPhotos.client.tsx",
+        "finding": "The layout lock calls for the field of cut houses up front with count as a caption; instead the page opens straight into a single large house plus a comps sidebar (V3ListingDial), and a true field/mosaic of multiple cut-house photographs never appears anywhere across all eight captured states.",
         "replaceWith": "house-field"
       },
       {
-        "section": "ALL CUTS / 5 TO 10% / 10% AND UP toggle",
+        "section": "ALL CUTS / UNDER 5% / 5 TO 10% / 10% AND UP tabs",
         "severity": "taste",
-        "finding": "The segmented filter is a plain gray-and-navy pill with no counts on the inactive tabs, so it reads as a generic filter bar rather than a considered control that previews what each band contains before you tap it.",
-        "primitive": "app/price-drops/_v3/PriceDropsFold.client.tsx",
+        "finding": "The band selector is four gray tiles showing a bold count under a label with no sentence telling a buyer what a given band means for them — reads as a KPI grid even though the tiles are functional filters.",
         "replaceWith": null
       },
       {
-        "section": "city footer link row",
+        "section": "cities-mobile375, top of viewport",
+        "severity": "defect",
+        "finding": "Scrolled to the city-breakdown state at 375px, the prior section's comp row is sliced mid-line under the sticky header — a partial '-5.0% -4.9% -4.9%' fragment is visible with no spacing buffer above the tab bar.",
+        "replaceWith": null
+      },
+      {
+        "section": "NEAR THIS PRICE comp list",
         "severity": "taste",
-        "finding": "Bend / Sisters / La Pine / Redmond / Sunriver / Madras / Prineville render as seven identical underlined text links with no per-city cut count, making the one genuinely crafted page element (the dot-strip chart above it) trail off into an afterthought nav row.",
-        "primitive": "app/price-drops/_v3/PriceDropsFold.client.tsx",
+        "finding": "Three rows of tiny thumbnail plus price plus delta plus address is generic portal-sidebar furniture with no visual encoding beyond a small photo; it is the least distinctive element on the page.",
         "replaceWith": null
       }
     ],
-    "verdict": "Honesty holds at 8: every card still carries city, current price, prior price, percent off, address, and beds/baths/sqft, and the drawing names the week's cut range. The single composed slide with flanking Previous/Next is the shadcn Carousel object restyled navy-on-cream (demoMatch: true). The generic filter toggle and the flat city-door row keep this correct and on-brand rather than breathtaking, but it is a real rise over the recorded 59.",
+    "verdict": "This is a competently sourced, correctly-plumbed price-drop page (every figure traces to Oregon Data Share with a fetch date and a 'how we calculate this' disclosure) wearing a single-house ListingDial hero where the layout lock demands a field of cut houses — demoMatch is false because no catalog interaction is present at all, this is a bespoke component, and the mosaic the lock specifies never shows up. Inventory context (191 cuts, 48 shown, per-city counts, a real distribution chart) is a genuine information increment over a flat list, so honesty/function holds, but originality and design quality are capped by the KPI-tile band selector and a dull, un-encoded comps sidebar that any portal already ships. Fix the opening to an actual field of house photographs before this clears the taste floor.",
     "comparedToPrior": "rose",
     "priorMark": {
-      "evaluatedAt": "2026-09-15",
-      "score": 59,
+      "evaluatedAt": "2026-09-16",
+      "score": 63,
       "evaluatorModel": "claude-sonnet-5",
       "rubricVersion": "v1-2026-09-12",
-      "shotsHash": "sha256:24fb050b1efeb502a9fde98b2df0b3dd5e2964e412400143e88969edcf54467a"
+      "shotsHash": "sha256:3aa8f3bac356a99fe9fb076c1cbb4078f1627603a03e055ed554bea3e2d3b832"
     }
   },
   "contentFloor": {
@@ -203,7 +210,7 @@
     },
     "floors": {
       "h1": 1,
-      "words": 1267,
+      "words": 747,
       "headings": 1,
       "sections": 2,
       "internalLinks": 187,
@@ -213,6 +220,6 @@
       "video": 0,
       "jsonLd": 6
     },
-    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason. heroImageNatural LOWERED 648 -> 576 (2026-09-23, PR #352 blocker): the winner is a Spark MLS listing photo requested at the sanctioned 800x600 bucket; its delivered resolution is Spark's per-photo derivative, which PR #351 measured across 24 live assets at 640 to 853px, never under 640. The 2026-09-12 seed happened to read a 720px derivative; CI on 2026-09-23 read 640 on two runs. 576 = floor(640 * 0.9), the same floor PR #351 set for the same photo bucket on oregon-city and place-type-community. The banned 320x240 thumb would still read 320 and fail. heroImageNatural LOWERED 576 -> 420 (2026-09-23, PR #352): 576 assumed Spark never returns a lead photo under 640; CI run 35877907272 read 496 on /oregon/medford (a live listing's 800x600-bucket derivative). The floor exists to catch the banned 320x240 ledger thumb, which production /homes-for-sale?view=list served at 320 to 376 natural on 2026-09-23. Lead derivatives are now observed at 496 to 853. 420 sits between the two populations: a thumb still fails, a small lead does not. Set on all three classes whose winner is that same Spark lead bucket (oregon-city, place-type-community, price-drops)."
+    "note": "No-regression floor (ci:route-content-floor). A build under any number here fails before the evaluator runs. Lower a number only by hand, in the same commit, with the reason. heroImageNatural LOWERED 648 -> 576 (2026-09-23, PR #352 blocker): the winner is a Spark MLS listing photo requested at the sanctioned 800x600 bucket; its delivered resolution is Spark's per-photo derivative, which PR #351 measured across 24 live assets at 640 to 853px, never under 640. The 2026-09-12 seed happened to read a 720px derivative; CI on 2026-09-23 read 640 on two runs. 576 = floor(640 * 0.9), the same floor PR #351 set for the same photo bucket on oregon-city and place-type-community. The banned 320x240 thumb would still read 320 and fail. heroImageNatural LOWERED 576 -> 420 (2026-09-23, PR #352): 576 assumed Spark never returns a lead photo under 640; CI run 35877907272 read 496 on /oregon/medford (a live listing's 800x600-bucket derivative). The floor exists to catch the banned 320x240 ledger thumb, which production /homes-for-sale?view=list served at 320 to 376 natural on 2026-09-23. Lead derivatives are now observed at 496 to 853. 420 sits between the two populations: a thumb still fails, a small lead does not. Set on all three classes whose winner is that same Spark lead bucket (oregon-city, place-type-community, price-drops). words LOWERED 1267 -> 747 (2026-09-24, SITE-195, Matt: every listing carousel becomes the listing dial): the floor counts visible words in <main> (innerText), and the carousel it was seeded on kept every slide's copy visible-but-scrolled, so each of the fold's 48 houses counted its city, price, drop line, address and specs. V3ListingDial serves every house's card in the HTML (each still an <a href>, its copy intact) but hides the cards not showing, so innerText now reads the shown house plus a price and street per thumbnail. Measured on this branch's production build: HEAD 1906 words, the dial 1068, with 1849 words of card copy present in the served HTML inside the hidden cards (every band's dial). No house, figure or link left the page. 747 = floor(1068 * 0.7), the gate's own words tolerance."
   }
 }

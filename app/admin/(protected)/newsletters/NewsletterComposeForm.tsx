@@ -93,6 +93,14 @@ export default function NewsletterComposeForm({ id, initial, editOnly }: Props) 
         if (r.ok) {
           setMessage({ type: 'ok', text: 'Draft saved.' })
           router.refresh()
+        } else if (r.error === 'not_a_draft') {
+          // Scheduled, sent or replaced since this page loaded: nothing was
+          // written. No refresh here: the page drops this form once the email
+          // is not a draft, and the edits typed into it would go with it.
+          setMessage({
+            type: 'err',
+            text: 'Not saved: this email is no longer a draft (it was scheduled, sent or replaced after this page opened). Your edits are still in the form below; copy anything you want to keep, then reload the page.',
+          })
         } else {
           setMessage({ type: 'err', text: 'Could not save the draft.' })
         }

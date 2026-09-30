@@ -148,12 +148,12 @@ describe('placeStockSectionsFromTiles', () => {
     expect(placeStockIsForSale(null)).toBe(true)
   })
 
-  it('marks an under-contract listing Pending and leaves an active one unmarked', () => {
+  it('marks an Active Under Contract listing "Under contract" and leaves an active one unmarked (SITE-193)', () => {
     const [section] = placeStockSectionsFromTiles([
       tile({ listingKey: 'auc-1', status: 'Active Under Contract' }),
       tile({ listingKey: 'act-1', status: 'Active' }),
     ])
-    expect(section?.rows.map((row) => row.statusLabel)).toEqual(['Pending', null])
+    expect(section?.rows.map((row) => row.statusLabel)).toEqual(['Under contract', null])
   })
 
   it('dedupes unioned tiles by listing key', () => {

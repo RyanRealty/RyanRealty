@@ -748,26 +748,41 @@ export { V3PlaceInventory } from './V3PlaceInventory'
 export type { V3PlaceInventoryProps } from './V3PlaceInventory'
 
 /**
- * The dial (Matt 2026-09-23): one listing large, the rest of a set as
- * thumbnails on a dial to the left of it (a strip under it on a phone),
- * "03 / 12" at the dial's head. A master-detail
- * gallery modelled as tabs; every listing stays an <a href> in the served
- * HTML. The place inventory's `layout="dial"` and the map's homes
- * (PlaceSubdivisionHomes `layout="dial"`) mount it.
+ * The listing dial (Matt 2026-09-23 / 09-24): how every set of listings on the
+ * site is shown, in place of a carousel. One listing large (its photograph
+ * first, its own reel after a 1.5 s rest when it has one), the rest of the set
+ * as thumbnails on the dial's rail, "03 / 12" at the dial's head. A
+ * master-detail gallery modelled as tabs; every listing stays an <a href> in
+ * the served HTML.
+ *
+ * The rail stands under the card (`railPosition` 'bottom', DIAL_RAIL_DEFAULT)
+ * or in a column on its 'left' or 'right'; a page that stacks dials gives the
+ * i-th one dialRailPositionAt(i) (bottom, left, right), so the first dial on a
+ * page is at the bottom and no two adjacent dials match. A phone lays every
+ * rail as a strip under the card. `onIndexChange` reports each turn to what
+ * sits beside the dial; `priority` is for a dial that is the page's first
+ * large image above the fold. Mounted by the place pages (PlaceSubdivisionHomes,
+ * V3PlaceInventory `layout="dial"`) and by every other listing shelf (the
+ * homepage and /cities, /price-drops, /open-houses, /new-construction, the
+ * type pages, /commercial-space-for-lease).
  */
 export { V3ListingDial } from './V3ListingDial.client'
 
-export type { V3ListingDialProps } from './V3ListingDial.client'
-export type { DialRailPosition, DialReel } from './V3ListingDial.video'
+export type { V3ListingDialItem, V3ListingDialProps } from './V3ListingDial.client'
 
 export {
+  DIAL_RAIL_DEFAULT,
+  DIAL_VIDEO_DWELL_MS,
   dialKeyTarget,
   dialPosition,
+  dialRailPositionAt,
   dialStep,
   dialSwipeDelta,
+  dialThumbFact,
   dialThumbLabel,
   dialWrap,
 } from './V3ListingDial.logic'
+export type { DialPriceCut, DialRailPosition } from './V3ListingDial.logic'
 
 /* -------------------------------------------------------------------------- */
 /* CHROME: the persistent frame the six patterns sit inside                    */

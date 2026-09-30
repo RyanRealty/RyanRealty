@@ -157,13 +157,12 @@
     "SmoothScrollProvider, KbFooter, KbBreadcrumb, KbSectionTracker (chrome)"
   ],
   "tasteReview": {
-    "evaluatedAt": "2026-09-16",
+    "evaluatedAt": "2026-09-30",
     "rubricVersion": "v1-2026-09-12",
-    "evaluator": "A separate claude CLI sonnet through scripts/taste-evaluate.ts (neither the grok CLI nor cursor-agent is installed in this sandbox, so the judge chain fell to link 2). It scored these eight captures three times in one call and read no code.",
+    "evaluator": "npx tsx scripts/taste-evaluate.ts subdivision --builder claude-opus-5-5 --evaluator claude --url http://127.0.0.1:3311/subdivisions/ridge-at-eagle-crest --shots <the 8 files below>. The grok CLI and the Cursor CLI are missing in this sandbox, so the judge is the chain's claude link (claude CLI, sonnet, subscription): three scorings of these shots in one call, recorded exactly as returned, no re-roll. The builder (the listing-dial integration lane, claude-opus-5-5) is not the judge.",
     "evaluatorModel": "claude-sonnet-5",
-    "builderModel": "claude-opus-5",
+    "builderModel": "claude-opus-5-5",
     "transport": "claude-cli",
-    "comparedToPrior": "rebaselined",
     "shotSpec": {
       "routes": [
         "/subdivisions/ridge-at-eagle-crest"
@@ -174,39 +173,47 @@
       ],
       "states": [
         "default",
-        "insight-open",
-        "band-open",
-        "places-open"
+        "homes",
+        "homes-open",
+        "insight-open"
       ],
-      "capture": "first viewport, scripts/take-route-shots.mjs default, scale 1, palette-quantized"
+      "capture": "node scripts/take-route-shots.mjs subdivision http://127.0.0.1:3311/subdivisions/ridge-at-eagle-crest --states 'insight-open=#place-insight .insight-pager__btn[aria-label^='Next']!click,homes=#homes,homes-open=#homes .v3-dial__thumbs > :nth-child(2)@#homes!click'. First viewport, scale 1, palette-quantized, against the listing-dial fix tree's own next build + next start (2026-09-30)."
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/subdivision/shots/desktop.png",
-      "mobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/mobile375.png",
+      "homesDesktop": "design_system/ryan-realty/ui_kits/subdivision/shots/homes-desktop.png",
+      "homesMobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/homes-mobile375.png",
+      "homesOpenDesktop": "design_system/ryan-realty/ui_kits/subdivision/shots/homes-open-desktop.png",
+      "homesOpenMobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/homes-open-mobile375.png",
       "insightOpenDesktop": "design_system/ryan-realty/ui_kits/subdivision/shots/insight-open-desktop.png",
       "insightOpenMobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/insight-open-mobile375.png",
-      "bandOpenDesktop": "design_system/ryan-realty/ui_kits/subdivision/shots/band-open-desktop.png",
-      "bandOpenMobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/band-open-mobile375.png",
-      "placesOpenDesktop": "design_system/ryan-realty/ui_kits/subdivision/shots/places-open-desktop.png",
-      "placesOpenMobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/places-open-mobile375.png"
+      "mobile375": "design_system/ryan-realty/ui_kits/subdivision/shots/mobile375.png"
     },
-    "shotsHash": "sha256:411b73829c0af431fad84a19e83c024fce10ead25f0ab1a340673a739a7cb3c3",
+    "shotsHash": "sha256:328b3b13c9d4ccc20c9c16eef270ba20211dcd974620b6b6ab1e36f5de4e0762",
     "scores": [
-      61,
-      63,
-      66
+      66,
+      69,
+      71
     ],
-    "score": 63,
+    "score": 69,
+    "criteria": {
+      "designQuality": 20,
+      "originality": 20,
+      "interaction": 11,
+      "craft": 9,
+      "honestyFunction": 9
+    },
     "perCriterion": {
       "design": 20,
-      "originality": 14,
+      "originality": 20,
       "interaction": 11,
       "craft": 9,
       "honesty": 9
     },
     "honestyFunction": 9,
-    "beats": "A typical portal neighborhood page (e.g. Zillow's Ridge at Eagle Crest page) — this page wins on a drag-scrubbed 5-year sold trend and a live asking-price band histogram sitting on an actually-styled map with the real subdivision boundary traced, versus the portal's static value chart and unstyled pin map. It does not win on visual excitement: the portal's page and this one both read as a dashboard, not a page you'd screenshot.",
     "demoMatch": true,
+    "competitiveBriefPass": false,
+    "beats": "Zillow's own 'Ridge at Eagle Crest' neighborhood page: that page has no live sold-history chart, no drag-scrubbed running total, and no price ladder tying a subject listing to its neighbors by ask — this page wins on data depth and interactivity, though it does not beat it on raw inventory count or photo density.",
     "adaptedFrom": [
       {
         "id": "beautifului-insight"
@@ -226,34 +233,50 @@
     ],
     "defects": [
       {
-        "section": "another-subdivision combobox dropdown (places-open shots, desktop + 375)",
-        "severity": "craft",
-        "finding": "Sales-count labels wrap mid-value inside the dropdown rows — '456 sales' breaks into '456' then 'sales' on the next line for 'Greens at Redmond (the) Phase 1 & 2' — breaking the tabular alignment every other row keeps, at both 1440 and 375.",
+        "section": "header search field",
+        "severity": "taste",
+        "finding": "The nav search box renders as a static bordered field with a magnifier icon and placeholder text on every single shot, including the two -open captures where other controls demonstrably changed state. No shot shows it expand, suggest, or morph, so as presented it is a labeled cream field, not the catalog search object.",
+        "primitive": "components/SearchMapClustered.tsx",
+        "replaceWith": "beui-combobox"
+      },
+      {
+        "section": "new-listings count '12 houses'",
+        "severity": "taste",
+        "finding": "The '12 houses came on the market' figure sits as a flat static numeral in both insight-open shots — no digit-swap animation is implied by anything visible (no partial glyph, no motion blur, no reduced state marker), so a live, freshening count reads identically to a hardcoded label.",
+        "primitive": "app/subdivisions/[slug]/page.tsx",
+        "replaceWith": "beui-number"
+      },
+      {
+        "section": "mobile map / brand roundel",
+        "severity": "defect",
+        "finding": "On mobile375.png the Jax brand roundel sits directly on top of the '19 homes $649' cluster label on the right edge of the Atlas map, clipping the figure a visitor needs to read — an overlap, not a style choice.",
+        "primitive": "app/subdivisions/[slug]/page.tsx",
         "replaceWith": null
       },
       {
-        "section": "Other subdivisions in Redmond crawlable index",
-        "severity": "taste",
-        "finding": "\"Scrolling lists as the design\" — 24 rows of subdivision name + sale count past the six-row threshold with no real visual encoding: the underline beneath each row is a fixed decorative length regardless of value, so Eagle Crest's 3,973 sales and Valleyview's 277 sales get the identical hairline. A table wearing hairlines, not a chart.",
-        "replaceWith": "beui:infinite-masonry"
+        "section": "mobile insight sticky footer",
+        "severity": "defect",
+        "finding": "On insight-open-mobile375.png the link row under the chart reads '...homes for sale · Redmon' — the second word is truncated mid-character against the sticky banner's top edge, an orphaned label at 375px.",
+        "primitive": "app/subdivisions/[slug]/page.tsx",
+        "replaceWith": null
       },
       {
-        "section": "mobile sticky bottom bar duplicating the New Listings card",
-        "severity": "craft",
-        "finding": "On mobile the exact same '6 houses came on market... Email me each one' message and CTA appears twice — once as a full card mid-page, again as a persistent bottom bar over the fold — two asks for the identical action competing for the same thumb.",
+        "section": "eyebrow → heading → content → SOURCE rhythm",
+        "severity": "taste",
+        "finding": "All three visible sections (map/alerts, new-listings, sold-homes insight) open with the identical small-caps eyebrow line, drop into a bold serif sentence-headline, and close on a 'SOURCE' or 'how we calculate this' footer line — the content forms differ (map, list+toggle, chart) but the wrapper rhythm is one repeated mold, which flattens what should read as three distinct moments.",
+        "primitive": "app/subdivisions/[slug]/page.tsx",
         "replaceWith": null
       }
     ],
-    "verdict": "demoMatch is true — the combobox (search icon, chevron, checkmarked selected row) and the paged insight cards (drag scrubber, band selector, running-total toggle) read as the real catalog controls, not a cream box hiding them, and the Atlas map is genuinely house-styled rather than default Google chrome. But the three fold columns all run the identical eyebrow-label → bold Amboqia number → visual → SOURCE-line shape, so despite real interactivity nothing here would get screenshotted and shown to someone; add the combobox wrap fix and the scrolling subdivision index is dragging the page's craft and originality down from what the map and insight pager alone earn.",
+    "verdict": "This is a genuinely custom subdivision page — a styled Atlas map with clickable price/home-count clusters, a price-ladder scrubber tying a subject listing to its neighbors, and a paginated sold-homes chart with a drag scrubber and running-total toggle — not a portal clone, and the -open shots prove real state change rather than a static cream box, so demoMatch holds true. But two controls (the header search and the '12 houses' count) show no evidence of the interaction their catalog names promise, a brand-roundel clips a map figure on mobile, and mobile text truncates under the sticky footer; the page is also visually monotone in its section wrapper even where the content genuinely varies. Competent, sourced, and more ambitious than most place pages in this space, but not the 'stop scrolling' object the rubric is grading for, and not verified against a stated competitiveBrief checklist.",
+    "comparedToPrior": "rose",
     "priorMark": {
-      "evaluatedAt": "2026-09-11",
-      "score": 62,
-      "evaluatorModel": "grok-4.6",
-      "rubricVersion": "v1-2026-09-10",
-      "shotsHash": "sha256:7fc267b940e25beb28b8b80bc7745ec5b67dabd7ab17914ea85cc1f7281da972",
-      "honestyFunction": 8
-    },
-    "rebaselineReason": "All three identity keys differ, so the 62 is not a number this mark can be measured against. evaluatorModel: grok-4.6 -> claude-sonnet-5 (neither the grok CLI nor cursor-agent exists in this sandbox, so the judge chain fell to link 2, which the site-queue skill allows for a Claude lane building on Opus). rubricVersion: v1-2026-09-10 -> v1-2026-09-12, which added the blocking demoMatch verdict. shotsHash: the fold is a different page — three columns, the beautifului InsightCards pager over the counted set’s asking-price bands and the plat’s yearly closed counts, the beUI combobox over every subdivision in Redmond, the Atlas keeping its claim, type filter, zoom and price scrubber at 375 — and three states the prior set never carried (insight-open, band-open, places-open)."
+      "evaluatedAt": "2026-09-16",
+      "score": 63,
+      "evaluatorModel": "claude-sonnet-5",
+      "rubricVersion": "v1-2026-09-12",
+      "shotsHash": "sha256:411b73829c0af431fad84a19e83c024fce10ead25f0ab1a340673a739a7cb3c3"
+    }
   },
   "contentFloor": {
     "seededAt": "2026-09-12",

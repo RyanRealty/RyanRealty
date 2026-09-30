@@ -38,11 +38,14 @@ import { namesInSentence, signerBlockColor } from '@/lib/tc/signing'
 import {
   AUTO_STAMPED_TYPES,
   dateValue,
+  drawsAsPrintedText,
   fieldOwner,
   groupRuleText,
   nextChecklistItem,
   pacificStamp,
   signerChecklist,
+  TAP_TARGET_PX,
+  tapTargetPx,
   timeValue,
   valueText,
   type ChecklistItem,
@@ -276,11 +279,12 @@ export function SignFlow({ token, payload }: { token: string; payload: SigningPa
               <>
                 {payload.fields
                   .filter((f) => f.documentId === doc.documentId && f.page === pageNumber)
-                  .map((f) => (
+                  .map((f, _i, onPage) => (
                     <FieldBox
                       key={f.id}
                       field={f}
                       size={size}
+                      tapPx={f.type === 'checkbox' ? tapTargetPx(f, onPage, size) : undefined}
                       owner={fieldOwner(f, payload.recipientId)}
                       color={colorByRecipient.get(f.recipientId ?? '') ?? '#2563eb'}
                       value={fieldOwner(f, payload.recipientId) === 'mine' ? values.get(f.id) ?? null : f.value}
@@ -461,6 +465,7 @@ function FieldEditor({
 function FieldBox({
   field,
   size,
+  tapPx,
   owner,
   color,
   value,
@@ -473,6 +478,8 @@ function FieldBox({
 }: {
   field: EnvelopeField
   size: { w: number; h: number; ptsW?: number; ptsH?: number }
+  /** A checkbox's tap target (px): as large as its neighbours allow (tapTargetPx). */
+  tapPx?: number
   owner: 'mine' | 'locked' | 'theirs'
   color: string
   value: SignFieldValue | null
@@ -510,21 +517,22 @@ function FieldBox({
   const shownText = valueText(value)
   const isMark = field.type === 'signature' || field.type === 'initials'
   const png = value && (value.kind === 'signature' || value.kind === 'initials') ? value.png : null
-  // Typed text as the sealer prints it (PrintedLines): the same lines, size and
-  // baselines, in the box's own points.
+  // A value that prints as fitted text (a note, a date, a time, a name) is drawn
+  // as the sealer prints it (PrintedLines): the same lines, size and baselines,
+  // in the box's own points. Its box does not clip: a descender (the y in
+  // "Ryan") hangs below the line on paper, and a clipped one read "Rvan"
+  // on a phone (Matt's packet, 2026-09-30).
   const ptsW = size.ptsW || 612
   const ptsH = size.ptsH || 792
-  const printedText =
-    field.type === 'text' && shownText.trim() && !(value?.kind === 'text' && value.size) ? (
-      <PrintedLines text={shownText} widthPts={field.w * ptsW} heightPts={field.h * ptsH} />
-    ) : null
+  const printed = (text: string) => <PrintedLines text={text} widthPts={field.w * ptsW} heightPts={field.h * ptsH} />
+  const printedText = drawsAsPrintedText(field.type, value, shownText) ? printed(shownText) : null
 
   // The broker's locked fields and other signers' finished ones: as they will print.
   if (owner !== 'mine') {
     return (
       <div
         style={{ ...style, fontSize: fit(shownText) }}
-        className="pointer-events-none flex items-center overflow-hidden px-0.5 leading-none text-foreground"
+        className={cn('pointer-events-none flex items-center px-0.5 leading-none text-foreground', printedText ? 'overflow-visible' : 'overflow-hidden')}
         aria-hidden
       >
         {png ? (
@@ -543,8 +551,8 @@ function FieldBox({
   if (AUTO_STAMPED_TYPES.has(field.type)) {
     const preview = field.type === 'full_name' ? recipientName : field.type === 'date_signed' ? stamp?.date ?? '' : stamp?.time ?? ''
     return (
-      <div id={id} style={{ ...style, fontSize }} className="pointer-events-none flex items-center overflow-hidden px-1 leading-none text-foreground/70" title="Filled in when you finish">
-        {preview}
+      <div id={id} style={style} className="pointer-events-none overflow-visible text-foreground/70" title="Filled in when you finish">
+        {preview.trim() ? printed(preview) : null}
       </div>
     )
   }
@@ -555,7 +563,7 @@ function FieldBox({
         type="button"
         id={id}
         style={{ ...style, color, boxShadow: `inset 0 0 0 1.5px ${color}`, ...ring }}
-        className={cn('flex items-center justify-start overflow-hidden rounded-sm px-0.5 text-[11px] font-medium', png ? 'bg-transparent' : 'bg-white/60 hover:bg-black/5')}
+        className={cn('flex items-center justify-start overflow-hidden rounded-none px-0.5 text-[11px] font-medium', png ? 'bg-transparent' : 'bg-white/60 hover:bg-black/5')}
         onClick={onSign}
         aria-label={field.type === 'initials' ? 'Initial here' : 'Sign here'}
       >
@@ -580,10 +588,14 @@ function FieldBox({
         aria-checked={checked}
         aria-label={field.label?.trim() || (field.group ? groupRuleText(field.group) : 'Check')}
         style={{ ...style, ...ring }}
-        className={cn('flex items-center justify-center rounded-sm font-bold leading-none', checked ? 'bg-primary text-primary-foreground' : 'bg-primary/10 ring-1 ring-primary/70')}
+        className={cn('flex items-center justify-center rounded-none font-bold leading-none', checked ? 'bg-primary text-primary-foreground' : 'bg-primary/10 ring-1 ring-primary/70')}
         onClick={() => onCheck(!checked)}
       >
-        <span className="absolute left-1/2 top-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2" aria-hidden />
+        <span
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+          style={{ width: tapPx ?? TAP_TARGET_PX, height: tapPx ?? TAP_TARGET_PX }}
+          aria-hidden
+        />
         <span style={{ fontSize }}>{checked ? 'X' : ''}</span>
       </button>
     )
@@ -600,7 +612,8 @@ function FieldBox({
       id={id}
       style={{ ...style, fontSize: fit(shown), ...ring }}
       className={cn(
-        'flex justify-start overflow-hidden rounded-sm px-1 text-left leading-tight',
+        'flex justify-start rounded-none px-1 text-left leading-tight',
+        printedText ? 'overflow-visible' : 'overflow-hidden',
         oneLine ? 'items-center' : 'items-start',
         shownText ? 'bg-primary/5 text-foreground ring-1 ring-primary/30' : 'bg-primary/10 text-primary/80 ring-1 ring-primary/70',
       )}

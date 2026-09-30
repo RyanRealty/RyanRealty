@@ -319,6 +319,9 @@ export default async function Home() {
           rows={railRows}
           emptyMessage="No active homes with a photo and list price right now."
           forSaleCount={pulseBundle?.counts.forSale}
+          // Held on the carousels until the homepage class reaches its taste
+          // mark with the listing dial (Matt 2026-09-25, "fix first, then ship").
+          layout="rails"
         />
 
         {/* SITE-160: guides below the first rail so a priced card clears the fold. */}

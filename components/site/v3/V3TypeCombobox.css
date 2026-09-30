@@ -56,10 +56,12 @@
 
 /* The popover is portalled to <body>; it carries .v3 itself so the body font
    and the ink token apply, and the panel border is the same hairline. */
+/* The opened list wears the register's section rule in navy, so it reads as
+   the field's own panel over whatever sits under it (2026-09-25: a hairline
+   panel over the email card read as floating). No shadow in this register. */
 .city-typebox__content {
   border-radius: var(--v3-radius-card);
-  border: var(--v3-rule-hairline);
-  border-color: var(--v3-edge);
+  border: var(--v3-rule-weight-section) solid var(--v3-navy);
   background: var(--v3-surface-raised);
   color: var(--v3-ink);
   font-family: var(--v3-font-body);
@@ -136,3 +138,4 @@
   font-variant-numeric: tabular-nums;
   opacity: 0.72;
 }
+
