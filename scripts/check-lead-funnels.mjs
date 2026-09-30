@@ -13,9 +13,9 @@
  *      data renders a hollow market page with no signal.
  *
  * This gate asserts:
- *   (a) Each LP variant renders the lead-form island (stable markers from
- *       LeadLandingPage.tsx and LeadLandingForm.tsx that cannot change without
- *       a UI rebuild).
+ *   (a) Each LP variant renders its lead capture: the buy LP the lead-form
+ *       island (LeadLandingPage.tsx + LeadLandingForm.tsx), the sell leaf the
+ *       v3 home-value form (app/sell/_v3/SellValueForm.tsx).
  *   (b) The sales report renders at least one stat card (Closed sales count
  *       or Median sale price is visible in the HTML).
  *
@@ -85,6 +85,21 @@ const LP_MARKERS = [
 ]
 
 /**
+ * Sell-leaf capture markers (app/sell/_v3/SellLeafView.tsx + SellValueForm.tsx).
+ * The /sell leaves left LeadLandingPage for the v3 stage in the 2026-09 redesign,
+ * so the buy LP's markers are not theirs. Capture starts with the address, then
+ * name/email/phone, then submitSellerLPForm; the address step is server-rendered:
+ *   - <form id="get-value"> — the address step of the home-value form.
+ *   - id="get-value-address" — its address field.
+ *   - href="#get-value" — the stage's "Value my home" jump to that form.
+ */
+const SELL_MARKERS = [
+  { re: /<form[^>]*\bid="get-value"/i, label: 'home-value form (<form id="get-value">)' },
+  { re: /id="get-value-address"/i,     label: 'address field (id="get-value-address")' },
+  { re: /href="#get-value"/i,          label: '"Value my home" jump (href="#get-value")' },
+]
+
+/**
  * Sales report stat markers (app/reports/sales/[city]/[period]/page.tsx):
  *   - "Closed sales" — StatCard label always rendered, even if count = 0.
  *   - "Median sale price" — StatCard label, rendered when closed.length > 0.
@@ -147,7 +162,7 @@ async function main() {
     {
       label: `sell LP: /sell/${SELL_INTENT}`,
       path: `/sell/${SELL_INTENT}`,
-      markers: LP_MARKERS,
+      markers: SELL_MARKERS,
       minBodyBytes: 4_000,
     },
     {

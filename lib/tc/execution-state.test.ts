@@ -182,3 +182,26 @@ ${agentBlocks}`
     expect(downgradeUnreadDocument('unsigned')).toBe('unknown')
   })
 })
+
+describe("the form's own words about signing are not a signature", () => {
+  // The 2026 Oregon sale agreement prints both clauses; a buyer's offer carries
+  // DigiSign stamps on the buyer's initials, flattened onto one line by the text read.
+  const offerText = [
+    'Sale Agreement #______ FINAL AGENCY ACKNOWLEDGEMENT Property',
+    'OREGON RESIDENTIAL REAL ESTATE PURCHASE AND SALE AGREEMENT Buyer Initials ________ Seller Initials ________',
+    'reviewed and signed by Buyer, Seller and Agent(s). Buyer shall sign this Agreement.',
+    '100 House to be sold in as-is condition. DigiSign Verified - 00000000-0000-4000-8000-000000000000 PB',
+    'Seller may accept this offer or make a counter offer.',
+    'Any modification to the terms of this Agreement must be in writing, dated and signed by Buyer and Seller.',
+  ].join('\n')
+
+  it('a buyer-signed offer is not signed by the seller, and is never fully executed (1a0a2daebf52e487)', () => {
+    expect(signedRolesFromPdfText(offerText)).not.toContain('Seller')
+    expect(classifyFromFormAndText({ form: { documentName: 'PSA.pdf' }, pageText: offerText, ourRole: 'listing', textComplete: true })).not.toBe('fully_executed')
+  })
+
+  it('a stamp that names the signer still counts', () => {
+    const stamped = `${offerText}\nDocuSigned by: Lee Seller 3F2A9C Seller\n`
+    expect(signedRolesFromPdfText(stamped)).toContain('Seller')
+  })
+})

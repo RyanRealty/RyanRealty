@@ -247,14 +247,24 @@ jobs:
           LISTING_SMOKE_BASE: ${{ env.SITE_URL }}
           GEO_SMOKE_BASE: ${{ env.SITE_URL }}
           LEAD_SMOKE_BASE: ${{ env.SITE_URL }}
+          # Public (anon) keys: check-broker-sales reads the broker's active rows
+          # to know whether the page owes an "Active listings" section today.
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        # Every gate runs, then the step fails if any did. Under the default
+        # `bash -e` the first red gate hid the rest: a stale broker-sales marker
+        # kept listing-detail and lead-funnels from running, and when that was
+        # found (2026-09-30) both were stale too.
         run: |
-          node scripts/check-search-results.mjs
-          node scripts/check-broker-sales.mjs
-          node scripts/check-video-sections.mjs
-          node scripts/check-rental-calculator.mjs
-          node scripts/check-listing-detail.mjs
-          node scripts/check-geo-detail.mjs
-          node scripts/check-lead-funnels.mjs
+          rc=0
+          node scripts/check-search-results.mjs || rc=1
+          node scripts/check-broker-sales.mjs || rc=1
+          node scripts/check-video-sections.mjs || rc=1
+          node scripts/check-rental-calculator.mjs || rc=1
+          node scripts/check-listing-detail.mjs || rc=1
+          node scripts/check-geo-detail.mjs || rc=1
+          node scripts/check-lead-funnels.mjs || rc=1
+          exit $rc
 
       # Post-deploy Playwright E2E: feature specs + sampled crawl (CRAWL_LIMIT=60)
       # Runs against the live SITE_URL. Kept under ~8 min: feature specs are
