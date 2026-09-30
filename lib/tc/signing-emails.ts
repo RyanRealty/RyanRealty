@@ -4,6 +4,7 @@
  * cream, single prominent button, reply-to the sending broker.
  */
 import { sendEmail } from '@/lib/resend'
+import { sendIdentityFor } from '@/lib/email/send-identity'
 import { EMAIL_FONT_STACK, EMAIL_NAVY, EMAIL_CREAM } from '@/lib/email/brand'
 import { CONTACT } from '@/lib/brand/contact'
 import { namesInSentence, resolveSigningInviteCopy } from '@/lib/tc/signing'
@@ -41,7 +42,15 @@ export async function sendSigningInvite(params: {
   envelopeName: string
   propertyAddress: string
   signUrl: string
-  replyTo?: string
+  /**
+   * The broker sending the envelope (mailbox or broker key). The mail goes out
+   * as that broker, "Matt Ryan · Ryan Realty" <matt@mail.ryan-realty.com>, and
+   * replies reach their real inbox (sendIdentityFor: a broker onboarded since
+   * the static registry sends as themselves too). A bare noreply@ sender with a broker
+   * Reply-To went to Gmail spam (measured against matt@ 2026-09-30: every
+   * invite since 09-29; the broker identity landed in the inbox).
+   */
+  sender?: string | null
   reminder?: boolean
   customSubject?: string | null
   customBody?: string | null
@@ -68,15 +77,17 @@ export async function sendSigningInvite(params: {
   `
   const { resolveTrackablePersonId } = await import('@/lib/email/auto-track')
   const personId = await resolveTrackablePersonId(params.to)
+  const who = await sendIdentityFor(params.sender)
   return sendEmail({
     to: params.to,
+    from: who.from,
     subject: shared.length ? `${params.recipientName}: ${copy.subject}` : copy.subject,
     html: shell({
       heading: copy.heading,
       bodyHtml: body,
       cta: { label: shared.length ? `Review and sign as ${params.recipientName}` : 'Review and sign', url: params.signUrl },
     }),
-    replyTo: params.replyTo,
+    replyTo: who.replyTo,
     personId: personId ?? undefined,
     emailKey: personId != null ? `tc-sign:${personId}` : undefined,
   })
@@ -89,7 +100,8 @@ export async function sendCompletionCopy(params: {
   propertyAddress: string
   pdf: Buffer
   pdfName: string
-  replyTo?: string
+  /** The broker sending the envelope; see sendSigningInvite. */
+  sender?: string | null
   /** our_side: listing/buyer-side packet to the other broker. executed: fully signed copy. */
   packet?: 'executed' | 'our_side'
 }): Promise<{ id?: string; error?: string }> {
@@ -107,8 +119,10 @@ export async function sendCompletionCopy(params: {
   `
   const { resolveTrackablePersonId } = await import('@/lib/email/auto-track')
   const personId = await resolveTrackablePersonId(params.to)
+  const who = await sendIdentityFor(params.sender)
   return sendEmail({
     to: params.to,
+    from: who.from,
     subject: otherSide
       ? `Signed documents for ${params.propertyAddress}`
       : `Your signed documents for ${params.propertyAddress}`,
@@ -118,7 +132,7 @@ export async function sendCompletionCopy(params: {
         : `Your signed documents for ${params.propertyAddress}`,
       bodyHtml: body,
     }),
-    replyTo: params.replyTo,
+    replyTo: who.replyTo,
     attachments: [{ filename: params.pdfName, content: params.pdf }],
     personId: personId ?? undefined,
     emailKey: personId != null ? `tc-complete:${personId}` : undefined,

@@ -61,6 +61,32 @@ export function brokerSendIdentity(brokerKeyOrSlug: string | null | undefined): 
   }
 }
 
+/** True when the key, roster slug or mailbox names a broker in the static registry. */
+export function isRegistryBroker(brokerKeyOrSlug: string | null | undefined): boolean {
+  const wanted = (brokerKeyOrSlug ?? '').trim().toLowerCase()
+  if (!wanted) return false
+  return (
+    wanted in BROKERS ||
+    Object.values(BROKERS).some((b) => b.slug === wanted || b.email.toLowerCase() === wanted)
+  )
+}
+
+/**
+ * The same shape for a company mailbox the static registry does not know (a
+ * broker onboarded into public.brokers since, or a shared mailbox such as
+ * admin@): sends from that mailbox's local part on the send domain, named for
+ * the person when we have the name, and replies go to the mailbox itself.
+ */
+export function companyMailboxIdentity(mailbox: string, displayName?: string | null): BrokerSendIdentity {
+  const address = mailbox.trim().toLowerCase()
+  const local = address.split('@')[0]
+  const name = (displayName ?? '').replace(/["<>]/g, '').trim()
+  return {
+    from: name ? `"${name} · Ryan Realty" <${local}@${SEND_DOMAIN}>` : `"Ryan Realty" <${local}@${SEND_DOMAIN}>`,
+    replyTo: address,
+  }
+}
+
 /**
  * Resolve a broker key ('matt'), roster slug ('matthew-ryan'), or mailbox to
  * the branded close-card identity for wrapBrandedEmail. Falls back to Matt —
