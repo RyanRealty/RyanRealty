@@ -601,15 +601,19 @@
   white-space: nowrap;
 }
 
-.city-fold__places-row a {
-  color: var(--v3-ink);
-  text-decoration: underline;
-  text-decoration-color: var(--v3-ink-muted);
-  text-underline-offset: var(--v3-underline-offset);
-  transition: text-decoration-color var(--v3-dur-state) var(--v3-ease-out);
-}
+/* Element color rules sit in the base layer so a utility still wins
+   (ci:css-layers). */
+@layer base {
+  .city-fold__places-row a {
+    color: var(--v3-ink);
+    text-decoration: underline;
+    text-decoration-color: var(--v3-ink-muted);
+    text-underline-offset: var(--v3-underline-offset);
+    transition: text-decoration-color var(--v3-dur-state) var(--v3-ease-out);
+  }
 
-.city-fold__places-row a:hover,
-.city-fold__places-row a:focus-visible {
-  text-decoration-color: currentColor;
+  .city-fold__places-row a:hover,
+  .city-fold__places-row a:focus-visible {
+    text-decoration-color: currentColor;
+  }
 }
