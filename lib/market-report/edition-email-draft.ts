@@ -67,6 +67,7 @@ import {
   editionBuildStamp,
   editionEmailMarker,
   editionEmailMonth,
+  isLiveEditionEmailMarker,
   replacedEditionEmailMarker,
 } from './edition-email-marker'
 import { monthLabel } from './format'
@@ -178,6 +179,11 @@ function short(id: string): string {
   return id.slice(0, 8)
 }
 
+/** An error inside a text: short enough that the words around it (what to do) survive. */
+function brief(error: string): string {
+  return error.length > 140 ? `${error.slice(0, 139)}…` : error
+}
+
 /** A build as digits (20260925134804), for an alert key. */
 function buildTag(build: string): string {
   return build.replace(/\D/g, '').slice(0, 14) || build
@@ -215,7 +221,7 @@ export async function ensureEditionEmailDraft(
       if (edition.status !== 'published') return { status: 'skipped', reason: `the ${key} edition is ${edition.status}` }
       const build = editionBuildStamp(edition)
       const built = content(edition)
-      if ('error' in built) throw new EditionEmailError(`its email was not drafted: ${built.error}`, buildTag(build))
+      if ('error' in built) throw new EditionEmailError(`its email was not drafted: ${brief(built.error)}`, buildTag(build))
       const made = await deps.createDraft({
         subject: built.email.subject,
         preview_text: built.email.previewText,
@@ -278,7 +284,7 @@ export async function ensureEditionEmailDraft(
     if ('error' in built) {
       if (!(await deps.retireDraft(draft.id, status, retiredMarker))) continue
       throw new EditionEmailError(
-        `the report was republished and ${canceledWords(status)}, so it cannot go out with the earlier figures, but the new email could not be built: ${built.error}. The daily check drafts it once it can.`,
+        `the report was republished and ${canceledWords(status)}, so it cannot go out with the earlier figures, but the new email could not be built (${brief(built.error)}). The daily check drafts it once it can.`,
         `canceled-${short(draft.id)}`,
       )
     }
@@ -306,15 +312,15 @@ export async function ensureEditionEmailDraft(
       // It did not: the earlier figures still must not go out.
       if (await deps.retireDraft(draft.id, status, retiredMarker).catch(() => false)) {
         throw new EditionEmailError(
-          `the report was republished and ${canceledWords(status)}, so it cannot go out with the earlier figures, but the new email could not be written (${why}). The daily check drafts it.`,
+          `the report was republished and ${canceledWords(status)}, so it cannot go out with the earlier figures, but the new email could not be written (${brief(why)}). The daily check drafts it.`,
           `canceled-${short(draft.id)}`,
         )
       }
       const still = now?.status ?? status
       throw new EditionEmailError(
         still === 'scheduled'
-          ? `the report was republished with new figures, but its approved email could not be replaced (${why}) and is still scheduled with the earlier figures. Unschedule it here:`
-          : `the report was republished with new figures, but its email could not be replaced (${why}) and still has the earlier figures. Do not approve it; open it here:`,
+          ? `the report was republished with new figures, but its approved email could not be replaced (${brief(why)}) and is still scheduled with the earlier figures. Unschedule it here:`
+          : `the report was republished with new figures, but its email could not be replaced (${brief(why)}) and still has the earlier figures. Do not approve it; open it here:`,
         `replace-${short(draft.id)}-${buildTag(build)}`,
         newsletterReviewUrl(draft.id),
       )
@@ -331,7 +337,7 @@ export async function ensureEditionEmailDraft(
     // It moved (scheduled, unscheduled, claimed for sending, or replaced by
     // another run): the next pass checks what is there now.
   }
-  if (lastCreateError) throw new EditionEmailError(`its email was not drafted: ${lastCreateError}`, 'create')
+  if (lastCreateError) throw new EditionEmailError(`its email was not drafted: ${brief(lastCreateError)}`, 'create')
   throw new EditionEmailError('its email kept changing while it was checked; the daily check looks again', 'churn')
 }
 
@@ -379,7 +385,7 @@ export function editionEmailAlert(
           ? 'was taken down'
           : 'was republished, and its new figures could not be checked against the email,'
     return {
-      key: `market-report-email-sending-${short(result.id)}-${buildTag(result.build)}`,
+      key: `market-report-email-sending-${short(result.id)}-${buildTag(result.build)}-${result.reason}`,
       body: `The ${label(month)} market report ${what} while its email is going out to your list. What has gone out cannot be recalled. To keep the rest from going out with the earlier figures, pause it here: ${newsletterReviewUrl(result.id)}`,
       cooldownMinutes: 365 * 1440,
     }
@@ -407,7 +413,7 @@ async function tell(
     try {
       await queueBrokerHealthAlert({
         key: `market-report-email-failed-${month.slice(0, 7)}-${tag}`,
-        body: `The ${label(month)} market report email needs a look: ${error.slice(0, 280)}${link}`,
+        body: `The ${label(month)} market report email needs a look: ${error.slice(0, 400)}${link}`,
         cooldownMinutes: 7 * 1440,
       })
     } catch (alertErr) {
@@ -427,6 +433,21 @@ export async function draftEditionEmailAndTell(
   deps: EditionEmailDraftDeps = LIVE,
 ): Promise<EditionEmailOutcome> {
   return tell(month, () => ensureEditionEmailDraft(month, opts, deps), { remind: opts.create === true })
+}
+
+/**
+ * For the send path (lib/newsletter/send-queue.ts): a send found this month's
+ * email behind its report, so bring it up to the report now instead of at the
+ * writer's next run (re-stamped, replaced, or canceled, and Matt texted as
+ * usual). Null for anything but a live monthly report email. Never throws.
+ */
+export async function settleEditionEmailFor(
+  createdBy: string | null,
+  deps: EditionEmailDraftDeps = LIVE,
+): Promise<EditionEmailOutcome | null> {
+  if (!isLiveEditionEmailMarker(createdBy)) return null
+  const month = editionEmailMonth(createdBy)
+  return month ? draftEditionEmailAndTell(month, { create: false }, deps) : null
 }
 
 /**

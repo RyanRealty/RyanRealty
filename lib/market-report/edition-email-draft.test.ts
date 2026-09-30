@@ -16,6 +16,7 @@ import {
   editionEmailMarker,
   ensureEditionEmailDraft,
   EditionEmailError,
+  settleEditionEmailFor,
   type EditionEmailDraftDeps,
 } from './edition-email-draft'
 import type { EditionPayload, Kpis, MarketSection } from './types'
@@ -406,16 +407,17 @@ describe('texts to Matt', () => {
   })
 
   it('tells him once per build, with the pause link, when an email going out no longer matches its report', async () => {
-    const cases: Array<[EditionRow, string]> = [
-      [republished(), 'was republished with new figures while its email is going out'],
-      [unbuildable(), 'its new figures could not be checked against the email'],
-      [editionRow({ status: 'draft', build: BUILD_B }), 'was taken down while its email is going out'],
+    const cases: Array<[EditionRow, string, string]> = [
+      [republished(), 'was republished with new figures while its email is going out', 'new-figures'],
+      [unbuildable(), 'its new figures could not be checked against the email', 'unverifiable'],
+      [editionRow({ status: 'draft', build: BUILD_B }), 'was taken down while its email is going out', 'unpublished'],
     ]
-    for (const [edition, words] of cases) {
+    for (const [edition, words, reason] of cases) {
       queueBrokerHealthAlert.mockClear()
       await draftEditionEmailAndTell('2026-08', {}, deps({ getEdition: vi.fn(async () => edition), findDraft: vi.fn(async () => storedFrom(editionRow(), 'sending')) }))
       const alert = queueBrokerHealthAlert.mock.calls[0]![0]
-      expect(alert.key).toBe('market-report-email-sending-nl-0-20261002090000')
+      // One text per build and reason: learning later that "could not be checked" was new figures is its own text.
+      expect(alert.key).toBe(`market-report-email-sending-nl-0-20261002090000-${reason}`)
       expect(alert.cooldownMinutes).toBe(365 * 1440)
       expect(alert.body).toContain(words)
       expect(alert.body).toContain('cannot be recalled')
@@ -446,6 +448,16 @@ describe('texts to Matt', () => {
     const canceled = queueBrokerHealthAlert.mock.calls[0]![0]
     expect(canceled.key).toBe('market-report-email-failed-2026-08-canceled-nl-0')
     expect(canceled.body).toMatch(/^The August 2026 market report email needs a look: the report was republished and its email draft was canceled/)
+  })
+})
+
+describe('settleEditionEmailFor (the send path\'s recheck)', () => {
+  it('settles a live report email now, and leaves every other issue alone', async () => {
+    const d = deps({ getEdition: vi.fn(async () => editionRow({ build: BUILD_B })), findDraft: vi.fn(async () => storedFrom(editionRow(), 'scheduled')) })
+    expect(await settleEditionEmailFor(MARKER, d)).toMatchObject({ status: 'restamped', id: 'nl-0' })
+    expect(await settleEditionEmailFor(REPLACED, d)).toBeNull()
+    expect(await settleEditionEmailFor('matt@ryan-realty.com', d)).toBeNull()
+    expect(await settleEditionEmailFor(null, d)).toBeNull()
   })
 })
 

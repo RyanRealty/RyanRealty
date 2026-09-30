@@ -38,7 +38,7 @@ vi.mock('@/lib/data/client', () => ({
 }))
 vi.mock('@/lib/supabase/paginate', () => ({ fetchPagedRows: vi.fn(async () => ({ rows: [] })) }))
 
-import { anyNewsletterEverSent, claimNewsletterForSending, getEngagementSets, releaseNewsletterLock } from './queue'
+import { anyNewsletterEverSent, claimNewsletterForSending, getEngagementSets, queuedCountsByTier, releaseNewsletterLock } from './queue'
 
 afterEach(() => {
   updates.length = 0
@@ -78,5 +78,15 @@ describe('the list\'s send history', () => {
   it('engagement tiers read the last issues that went to the list', async () => {
     await getEngagementSets()
     expect(filters).toEqual([['status', 'sent'], ['list_send', true]])
+  })
+})
+
+describe('queuedCountsByTier', () => {
+  it('counts the queued rows of each tier as stored, leaving out an empty tier', async () => {
+    sentCount = 7
+    expect(await queuedCountsByTier('nl-1')).toEqual(new Map([[1, 7], [2, 7], [3, 7]]))
+    expect(filters.slice(0, 3)).toEqual([['newsletter_id', 'nl-1'], ['status', 'queued'], ['tier', 1]])
+    sentCount = 0
+    expect(await queuedCountsByTier('nl-1')).toEqual(new Map())
   })
 })

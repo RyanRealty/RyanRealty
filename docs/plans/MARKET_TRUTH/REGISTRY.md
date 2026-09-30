@@ -316,7 +316,9 @@ holds; these are the report's additional predicates. Definition id on every row:
   taken down, or figures that cannot be checked) with the link to pause the rest. A new email that
   cannot be built, or a report no longer published, still cancels the old one, and the backstop
   drafts the month once it can. Every enqueue (the scheduled send, Send now, a one-off list)
-  refuses a report email whose report changed after it was written (`report_changed`). What Matt reviews is what he approves; the editor's
+  checks a report email against its report first: one behind it is settled by the draft writer
+  on the spot (the same printed figures re-stamp it and it goes; new ones replace it and it is
+  held, `report_replaced`), and nothing unchecked goes out. What Matt reviews is what he approves; the editor's
   Save writes only while the email is a draft. Deleting a draft cancels it, so a skipped month
   stays skipped. Nothing goes to anyone until Matt approves that send, and a broker's one-click
   newsletter send delivers only the current issue he sent to the list (`newsletters.list_send`,

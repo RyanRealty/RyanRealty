@@ -284,15 +284,44 @@ export async function insertQueuedRecipients(
   return inserted
 }
 
-/** Write the per-issue tranche schedule (§6.5). Idempotent via onConflict. */
+/**
+ * Write the per-issue tranche schedule (§6.5). A row already there takes the
+ * new cap (its sent_count is kept): a schedule is written only by an enqueue
+ * that holds the send lock, so a row left by an earlier enqueue that failed
+ * and released the lock sent nothing, and its old cap would not match the
+ * recipients queued now.
+ */
 export async function writeSendSchedule(
   newsletterId: string,
   rows: Array<{ day_index: number; tier: number; cap: number }>,
 ): Promise<void> {
   const sb = createServiceClient()
   const payload = rows.map((r) => ({ newsletter_id: newsletterId, ...r }))
-  const { error } = await sb.from(SCHEDULE).upsert(payload, { onConflict: 'newsletter_id,day_index,tier', ignoreDuplicates: true })
+  const { error } = await sb.from(SCHEDULE).upsert(payload, { onConflict: 'newsletter_id,day_index,tier' })
   if (error) throw new Error(`writeSendSchedule: ${error.message}`)
+}
+
+/**
+ * Queued recipients of an issue by tier, as stored. The schedule is built from
+ * these, not from the tiers an enqueue just computed: a row left queued by an
+ * earlier enqueue that failed keeps the tier it was stored with (the insert
+ * ignores duplicates), and a schedule that disagrees with the stored rows
+ * leaves some of them with no day. THROWS on a failed read.
+ */
+export async function queuedCountsByTier(newsletterId: string): Promise<Map<number, number>> {
+  const sb = createServiceClient()
+  const out = new Map<number, number>()
+  for (const tier of [1, 2, 3]) {
+    const { count, error } = await sb
+      .from(RECIPIENTS)
+      .select('id', { count: 'exact', head: true })
+      .eq('newsletter_id', newsletterId)
+      .eq('status', 'queued')
+      .eq('tier', tier)
+    if (error) throw new Error(`queuedCountsByTier: ${error.message}`)
+    if ((count ?? 0) > 0) out.set(tier, count ?? 0)
+  }
+  return out
 }
 
 export async function getSendSchedule(newsletterId: string): Promise<ScheduleRow[]> {
