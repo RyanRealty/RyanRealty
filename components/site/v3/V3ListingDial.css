@@ -179,6 +179,11 @@
 /* The lead photograph: SplitCardMedia's box, sized for a lead. */
 .v3-dial__media {
   position: relative;
+  /* The box is the photograph's own height, never the stretched grid row's:
+     the cut stamp at its foot and a reel over it both measure this box
+     (2026-09-29: beside a taller copy column the stamp fell under the
+     photograph). */
+  align-self: start;
 }
 
 .v3-dial__media .v3-lrow__media {
