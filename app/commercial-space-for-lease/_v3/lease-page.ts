@@ -180,6 +180,21 @@ export function leaseCityLedgerRows(groups: readonly LeaseCityGroup[]): LeaseLed
   }))
 }
 
+/**
+ * The ledger's claim and its scale, in one sentence (2026-09-29: "the bars
+ * carry no max-value reference"): how many leases in how many towns, and the
+ * bar every other is measured against. Counts are the groups' own rows.
+ */
+export function leaseLedgerNote(groups: readonly LeaseCityGroup[]): string | null {
+  if (groups.length === 0) return null
+  const total = leaseTotal(groups)
+  const top = [...groups].sort((a, b) => b.rows.length - a.rows.length || a.label.localeCompare(b.label))[0]!
+  const spaces = `${formatCount(total)} ${total === 1 ? 'space' : 'spaces'} for lease`
+  const towns = `${formatCount(groups.length)} ${groups.length === 1 ? 'town' : 'towns'}`
+  if (groups.length === 1) return `${spaces} in ${top.label}.`
+  return `${spaces} in ${towns}. Each bar is a town's count on one scale; the longest is ${top.label}'s ${formatCount(top.rows.length)}.`
+}
+
 /** How many leases the page lists, across every town. */
 export function leaseTotal(groups: readonly LeaseCityGroup[]): number {
   return groups.reduce((sum, group) => sum + group.rows.length, 0)

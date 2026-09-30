@@ -46,6 +46,7 @@ import {
   LEASE_PAGE_HEADING,
   leaseCityGroups,
   leaseCityLedgerRows,
+  leaseLedgerNote,
   leaseItemList,
   leaseMetaDescription,
 } from './_v3/lease-page'
@@ -146,6 +147,10 @@ export default async function CommercialSpaceForLeasePage() {
               heading={v3Text(LEASE_PAGE_HEADING)}
               headingLevel={1}
               encode="bar"
+              note={(() => {
+                const note = leaseLedgerNote(groups)
+                return note ? v3Text(note) : undefined
+              })()}
               rows={[firstRow, ...restRows]}
               source={v3Text(LEASE_TRACE)}
             />

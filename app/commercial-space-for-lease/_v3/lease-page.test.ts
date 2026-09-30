@@ -4,6 +4,7 @@ import {
   LEASE_PAGE_HEADING,
   leaseCityGroups,
   leaseCityLedgerRows,
+  leaseLedgerNote,
   leaseTownReveal,
   leaseItemList,
   LEASE_META_MAX,
@@ -198,5 +199,18 @@ describe('leaseTownReveal', () => {
   it('says how many list a size when some do not, and nothing when none carry either', () => {
     expect(leaseTownReveal([row('Office', 1500), row('Office', null)])).toBe('Office 2; 1,500 sq ft (1 lists a size)')
     expect(leaseTownReveal([row(null, null)])).toBeNull()
+  })
+})
+
+describe('leaseLedgerNote', () => {
+  it('states the count, the towns and the bar the others are measured against', () => {
+    const groups = leaseCityGroups(TILES, UNITS)
+    const total = groups.reduce((n, g) => n + g.rows.length, 0)
+    const note = leaseLedgerNote(groups)!
+    expect(note.startsWith(`${total} spaces for lease in ${groups.length} towns.`)).toBe(true)
+    expect(note).toContain("the longest is Bend's 4.")
+  })
+  it('is null with nothing listed', () => {
+    expect(leaseLedgerNote([])).toBeNull()
   })
 })
