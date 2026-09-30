@@ -460,10 +460,12 @@
 }
 
 /* When a step changes, the sheet brings itself into view. The chrome is sticky,
-   so leave room for it or the new step's heading lands under the nav. */
+   so leave room for it or the new step's heading lands under the nav: the
+   page's scroll padding (V3Chrome.css) clears the chrome, and this keeps the
+   5.5rem landing the steps always had. */
 .place-opening__ask .v3.v3-sheet,
 .place-opening__ask .v3.v3-sheet * {
-  scroll-margin-top: 5.5rem;
+  scroll-margin-top: calc(5.5rem - var(--v3-chrome-h) - var(--v3-space-md));
 }
 
 .place-opening__ask .v3-place-value {
@@ -472,7 +474,7 @@
   text-shadow: none;
   /* The closing answer set links back to #value (SITE-08). The chrome is
      sticky, so the ask needs the same headroom the sheet's own steps take. */
-  scroll-margin-top: 5.5rem;
+  scroll-margin-top: calc(5.5rem - var(--v3-chrome-h) - var(--v3-space-md));
 }
 
 .place-opening--media .place-opening__ask .v3-place-value {

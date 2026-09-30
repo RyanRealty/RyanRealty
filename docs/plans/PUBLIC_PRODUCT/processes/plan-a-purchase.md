@@ -84,7 +84,7 @@ milestones to GA4 and `/api/visitors/track`
 | Lead identity | `public.crm_people` via `sendEvent` → `ensureNativeLead` (the FUB module is a native shim: FUB decommissioned 2026-06-24, `sendEvent` is the one live capture entry point returning the native personId) | `lib/crm/send-event.ts:2-34` (esp. `:27-29`); `app/actions/lead-landing.ts:84-99`; direct `ensureNativeLead` fallback `:106-124` |
 | Guest alert (path b) | `public.listing_alerts` via `upsertListingAlert` — the must-succeed write | `app/actions/search-alert-capture.ts:141-143` |
 | Broker follow-up | `public.crm_tasks` — written for alert signups only; LP submits notify by email with NO task row (an asymmetry, see §10) | `app/actions/search-alert-capture.ts:130-135`; `app/actions/lead-landing.ts:151-157` |
-| Behavioral trail + attribution | first-party `visitor_sessions`/`visitor_events` (section/scroll beacons) and the submit-time session stitch (`backfillSessionToFub`) that marks the session identified — what the Marketing ROI dashboard counts as "matched to a name" | `components/site/kb/KbSectionTracker.client.tsx:7-28`; `app/actions/lead-landing.ts:49-51,178-185` |
+| Behavioral trail + attribution | first-party `visitor_sessions`/`visitor_events` (section/scroll tracking pings) and the submit-time session stitch (`backfillSessionToFub`) that marks the session identified — what the Marketing ROI dashboard counts as "matched to a name" | `components/site/kb/KbSectionTracker.client.tsx:7-28`; `app/actions/lead-landing.ts:49-51,178-185` |
 | Page content | Code, not a DB: the entire intent-LP content model is the static `BUY_INTENT_PAGES` map; `/buy`'s FAQ/value-prop/process copy is in-file constants | `lib/lead-landing-content.ts:162-298`; `app/buy/page.tsx:55-157` |
 | Hero imagery | `/buy`: the approved asset library via `getSurfaceImage` (DAL); the three intent LPs: hotlinked Unsplash URLs — explicitly NOT the asset-library SoR (defect, §10) | `app/buy/page.tsx:28,160-164`; `lib/lead-landing-content.ts:172,218,263` |
 | **NOT a SoR** | GA4 (a mirror — `fireLeadGenerated`), Meta CAPI (a paid-attribution side effect), the form's client state, toasts | `app/actions/lead-landing.ts:126-149,192-202` |
@@ -104,7 +104,7 @@ milestones to GA4 and `/api/visitors/track`
    (`app/buy/page.tsx:91-98,232-241`) · none · failure: n/a — static links · both.
 3. **Learn the process** · visitor · reads value props ("the broker who walks the house
    writes the offer"), the 4-step walkthrough, and the 6-item FAQ (representation agreement,
-   earnest money, timelines, buyer-broker pay) · scroll · `section_view` beacons per section
+   earnest money, timelines, buyer-broker pay) · scroll · `section_view` tracking pings per section
    (`app/buy/page.tsx:101-157,246-324,358-405`) · visitor-track API · failure: tracking is
    fire-and-forget, never blocks (`KbSectionTracker.client.tsx:7-28`) · both.
 4. **Choose an intent** · visitor · opens one of the three guide cards → `/buy/[intent]`
@@ -115,7 +115,7 @@ milestones to GA4 and `/api/visitors/track`
 5. **Read the intent LP** · visitor · hero (title/subtitle + primary CTA anchoring to
    `#lead-form` + intent-specific secondary CTA), challenge bullets, process steps, trust
    bullets, three testimonials, FAQ with FAQPage JSON-LD emitted from the same visible Q&A ·
-   scroll · beacons (`components/landing/LeadLandingPage.tsx:67-95,100-133,150-197`;
+   scroll · tracking pings (`components/landing/LeadLandingPage.tsx:67-95,100-133,150-197`;
    JSON-LD `:171-177`) · none · failure: none — fully static content from config · both;
    desktop gets the form sticky in-viewport (`:233`), mobile reaches it via the hero anchor
    (`:87`).
@@ -276,7 +276,7 @@ hash; the guest-watch residual for return visits
   inside one surface; the P9 ratchet's target.
 - **Actions/API/crons**: `submitLeadLandingForm` (`app/actions/lead-landing.ts:54-209`),
   `submitSearchAlertSignup` (`app/actions/search-alert-capture.ts:35-158`), `/api/meta-capi`
-  (fired from the action, `:128`), `/api/visitors/track` (beacons), crons `crm-auto-enroll` /
+  (fired from the action, `:128`), `/api/visitors/track` (tracking pings), crons `crm-auto-enroll` /
   `crm-sequence-engine` / `crm-scheduled-sends` / `saved-search-alerts`
   (`vercel.json:25,57,53,213`).
 - **Known defects / duplicates that should die (P3/P5 input)**:
@@ -400,7 +400,7 @@ Prove the process end-to-end. Persist; never delete.
 10. **Exit wiring**: on `/buy`, the first hero chip links `/homes-for-sale` and renders as
     the single filled primary (`app/buy/page.tsx:92,236-240`); "Talk to a broker" lands on
     `/contact` with the Buying inquiry pre-selected (`app/contact/page.tsx:80-81`).
-11. **Telemetry**: load `/buy` in a browser, scroll; confirm `section_view` beacons POST to
+11. **Telemetry**: load `/buy` in a browser, scroll; confirm `section_view` tracking pings POST to
     `/api/visitors/track` with full URLs (`components/site/kb/KbSectionTracker.client.tsx:11-17`).
 12. **Cron wiring**: `grep -n 'crm-auto-enroll' vercel.json` → `4,19,34,49 * * * *`
     (`vercel.json:25`); `grep -n 'saved-search-alerts' vercel.json` → `0 * * * *`

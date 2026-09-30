@@ -1,0 +1,879 @@
+/**
+ * The monthly Central Oregon market report, turned into barrel props.
+ *
+ * PURE. Nothing here fetches, reads the clock, or computes a market figure.
+ * Every number on the two pages is read straight off an edition's frozen
+ * payload (lib/market-report/types.ts) or off its list row, and formatted with
+ * the same helpers the PDF uses (lib/market-report/format.ts), so the web page
+ * and the PDF of one edition cannot print a figure two ways (CLAUDE.md §0).
+ *
+ * A figure the payload withholds (`v: null`, a sample under the registry floor)
+ * prints as an en dash with the reason beside it. It is never estimated,
+ * never zero-filled, and never borrowed from another window.
+ *
+ * The one check this module makes on a payload value is the verdict: a
+ * months-of-supply verdict is printed only when it agrees with the house
+ * thresholds for the number beside it, called by the Market Truth registry's
+ * marketVerdict (lib/data/market-truth/registry.ts), the function the edition
+ * builder stored the verdict with. Both come from the same builder, so a
+ * mismatch means a corrupted row, and the page then prints the number without
+ * a call rather than a call the number contradicts.
+ */
+import type { EditionListItem } from '@/lib/data/market-report/editions'
+import {
+  MONTHLY_REPORT_PATH,
+  editionKey,
+  editionPath,
+  editionPdfFilename,
+  editionPdfHref,
+  hasPdf,
+  parseEditionMonth,
+} from './edition-keys'
+import { FLOORS } from '@/lib/market-report/build-edition'
+import {
+  addMonths,
+  count,
+  days,
+  money,
+  monthLabel,
+  monthName,
+  moneyShort,
+  mosText,
+  pctChange,
+} from '@/lib/market-report/format'
+import { VERDICT_LABEL, floorsRule } from '@/lib/market-report/narrative'
+import type { ReportGeo } from '@/lib/market-report/geos'
+import type { EditionPayload, Kpis, MarketSection, MonthlySeries, Pt, Verdict } from '@/lib/market-report/types'
+import {
+  VERDICT_BUYER_MIN,
+  VERDICT_SELLER_MAX,
+  marketVerdict as registryVerdict,
+} from '@/lib/data/market-truth/registry'
+import { formatFileSize } from '@/lib/format/bytes'
+import { homesForSalePath } from '@/lib/slug'
+import { SITE_CITY_SLUGS } from '@/lib/central-oregon'
+import { moneyTicks, spacedTicks } from '@/lib/charts/ticks'
+import type { StatValue } from '@/lib/site/json-ld'
+import {
+  v3Text,
+  type V3Text,
+  type V3ChartCallout,
+  type V3ChartPoint,
+  type V3ChartProps,
+  type V3InstrumentFigure,
+  type V3InstrumentFigures,
+  type V3LedgerFigureRow,
+  type V3SeasonCell,
+  type V3SeasonStripsProps,
+} from '@/components/site/v3'
+
+/* -------------------------------------------------------------------------- */
+/* Paths and names                                                             */
+/* -------------------------------------------------------------------------- */
+
+export {
+  MONTHLY_REPORT_PATH,
+  editionKey,
+  editionPath,
+  editionPdfFilename,
+  editionPdfHref,
+  hasPdf,
+  parseEditionMonth,
+}
+
+/** The page H1 of the archive, and the name the report goes by everywhere. */
+export const MONTHLY_REPORT_NAME = 'Central Oregon monthly market report'
+
+/** The source line the PDF prints on every page, word for word. */
+export const REPORT_SOURCE_NAME = 'Oregon Data Share MLS data; Ryan Realty analysis'
+
+/** Where the methods live: the archive page's questions. */
+export const METHODS_HREF = `${MONTHLY_REPORT_PATH}#methods`
+
+/** The archive, opened at the year an edition belongs to. */
+export function archiveYearHref(key: string): string {
+  return `${MONTHLY_REPORT_PATH}#${archiveYearId(Number(key.slice(0, 4)))}`
+}
+
+export function archiveYearId(year: number): string {
+  return `archive-${year}`
+}
+
+/** H1 of one edition. The stored title says the same thing in title case. */
+export function editionHeading(key: string): string {
+  return `Central Oregon market report, ${monthLabel(key)}`
+}
+
+/** "Aug 2026": a month tick short enough for a 375px axis. */
+function monthTickLabel(key: string): string {
+  return `${monthName(key).slice(0, 3)} ${key.slice(0, 4)}`
+}
+
+/** A month as one number, so a missing month keeps its gap on the x axis. */
+function monthIndex(key: string): number {
+  return Number(key.slice(0, 4)) * 12 + Number(key.slice(5, 7)) - 1
+}
+
+/**
+ * The x axis of a monthly run: each January the line crosses, labelled with
+ * its year. A four-digit label centred on its month fits inside the page gutter
+ * at the plot's ends, where a "Feb 2009" label pushed a 375px page sideways.
+ * The hover reading still names every month in full. Under two Januaries, the
+ * run's own spaced month labels.
+ */
+function yearStartTicks(
+  pts: readonly { k: string }[],
+  lines: Parameters<typeof spacedTicks>[0],
+): { at: number; label: V3Text }[] {
+  const januaries = pts.filter((p) => p.k.slice(5, 7) === '01')
+  if (januaries.length >= 2) {
+    return januaries.map((p) => ({ at: monthIndex(p.k), label: v3Text(p.k.slice(0, 4)) }))
+  }
+  return spacedTicks(lines, 3)
+}
+
+/* -------------------------------------------------------------------------- */
+/* The PDF, described                                                          */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The smallest size the house formatter would print as "1000 KB". The reports
+ * run just under a megabyte (1,032,165 bytes for August 2026), and
+ * lib/format/bytes switches to megabytes only at 1,024 KB, so the download
+ * label read "1008 KB". From here up this prints megabytes to one decimal, in
+ * the same binary units; below it, the house formatter as is.
+ */
+const PDF_MB_FROM_BYTES = 999.5 * 1024
+
+/** "1.0 MB", "293 KB", or '' when the row carries no size. */
+export function pdfSize(bytes: number | null | undefined): string {
+  if (typeof bytes === 'number' && Number.isFinite(bytes) && bytes >= PDF_MB_FROM_BYTES) {
+    return `${(bytes / 1_048_576).toFixed(1)} MB`
+  }
+  return formatFileSize(bytes)
+}
+
+/**
+ * "PDF, 19 pages, 1.0 MB". A page count or a size the row does not carry is
+ * left out rather than guessed; the word PDF is always there.
+ */
+export function pdfFacts(item: Pick<EditionListItem, 'page_count' | 'pdf_bytes'>): string {
+  const parts = ['PDF']
+  const pages = item.page_count
+  if (typeof pages === 'number' && Number.isFinite(pages) && pages > 0) {
+    parts.push(`${pages} ${pages === 1 ? 'page' : 'pages'}`)
+  }
+  const size = pdfSize(item.pdf_bytes)
+  if (size) parts.push(size)
+  return parts.join(', ')
+}
+
+/** "Download the August 2026 report (PDF, 19 pages, 1.0 MB)": the link says where it goes. */
+export function downloadLabel(key: string, item: Pick<EditionListItem, 'page_count' | 'pdf_bytes'>): string {
+  return `Download the ${monthLabel(key)} report (${pdfFacts(item)})`
+}
+
+/* -------------------------------------------------------------------------- */
+/* Verdicts and withheld figures                                               */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The call the house thresholds make on a months-of-supply figure (≤ 4
+ * seller's, 4 to 6 balanced, ≥ 6 buyer's): the Market Truth registry's
+ * marketVerdict, the same function the edition builder stored every verdict
+ * with (lib/market-report/build-edition.ts, verdictOf), so the page's check
+ * and the stored call cannot part on a boundary, and nothing here re-maps one
+ * vocabulary onto another. The registry calls any number, so a figure that is
+ * missing or not finite is guarded here and gets no call.
+ */
+export function supplyVerdict(mos: number | null | undefined): Verdict | null {
+  return mos == null || !Number.isFinite(mos) ? null : registryVerdict(mos)
+}
+
+/**
+ * The stored verdict, printed only when it matches the registry's call on the
+ * stored months of supply (≤ 4 seller's, 4 to 6 balanced, ≥ 6 buyer's).
+ */
+export function publishedVerdict(k: Pick<Kpis, 'mos' | 'verdict'>): Verdict | null {
+  if (k.mos == null || k.verdict == null) return null
+  return supplyVerdict(k.mos) === k.verdict ? k.verdict : null
+}
+
+/** The period a figure covers, the way the PDF's table heads it: "August", "Jun to Aug". */
+export function periodWord(k: Pick<Kpis, 'period'>): string {
+  const endKey = k.period.end.slice(0, 7)
+  if (k.period.kind === 'month') return monthName(endKey)
+  if (k.period.kind === 'trailing3') {
+    const startKey = addMonths(endKey, -2)
+    return `${monthName(startKey).slice(0, 3)} to ${monthName(endKey).slice(0, 3)}`
+  }
+  return '12 months'
+}
+
+/** What a year-over-year change is measured against: "August 2025", "the same months a year earlier". */
+function priorPeriod(k: Pick<Kpis, 'period'>): string {
+  const endKey = k.period.end.slice(0, 7)
+  if (k.period.kind === 'month') return `${monthName(endKey)} ${Number(endKey.slice(0, 4)) - 1}`
+  return 'the same months a year earlier'
+}
+
+function plural(n: number, one: string, many: string): string {
+  return `${count(n)} ${n === 1 ? one : many}`
+}
+
+/** "a, b and c" */
+function listJoin(items: readonly string[]): string {
+  if (items.length <= 1) return items.join('')
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`
+}
+
+/** The figures a row withholds, in the order the table prints them. */
+export function withheldFigures(k: Kpis): string[] {
+  const out: string[] = []
+  if (k.median.v == null && k.sales > 0) out.push('median')
+  if (k.medianYoY == null && k.sales > 0) out.push('change from a year ago')
+  if (k.dtc.v == null && k.sales > 0) out.push('days to pending')
+  if (k.mos == null) out.push('months of supply')
+  return out
+}
+
+/** "Median and months of supply withheld: too few sales to publish." */
+export function withheldClause(k: Kpis): string | null {
+  const names = withheldFigures(k)
+  if (names.length === 0) return null
+  const list = listJoin(names)
+  return `${list.charAt(0).toUpperCase()}${list.slice(1)} withheld: too few sales to publish`
+}
+
+/**
+ * The sentence under a table of these rows: what a dash means, in the floors
+ * the builder enforces (narrative.ts floorsRule, the PDF's own wording).
+ */
+export function floorsSentence(): string {
+  return floorsRule(FLOORS)
+}
+
+/* -------------------------------------------------------------------------- */
+/* Figures: the Instrument's supporting numbers                                */
+/* -------------------------------------------------------------------------- */
+
+const DASH = '–'
+
+export type FigureLinks = {
+  /** Where the price, sales and speed figures lead (the edition page). */
+  href?: string
+  /** Where the months-of-supply figure leads (the definition). */
+  supplyHref?: string
+}
+
+/**
+ * The four numbers the report leads with: median sale price with its change
+ * from a year ago, homes sold, median days to pending, and months of supply
+ * with its call. Four, because the Instrument sets four across at every width
+ * from 48rem, so a fifth would sit alone on a second row. A withheld number
+ * keeps its place as a dash, and its label says why.
+ */
+export function marketFigures(k: Kpis, links: FigureLinks = {}): V3InstrumentFigures {
+  const when = periodWord(k)
+  /** "median sale price in August", "median sale price, Jun to Aug" */
+  const during = (base: string) => (k.period.kind === 'month' ? `${base} in ${when}` : `${base}, ${when}`)
+  const figure = (value: string, label: string, href?: string): V3InstrumentFigure => ({
+    value: v3Text(value),
+    label: v3Text(label),
+    ...(href ? { href } : {}),
+  })
+
+  const change =
+    k.medianYoY != null
+      ? ` (${pctChange(k.medianYoY)} from ${priorPeriod(k)})`
+      : ` (change from ${priorPeriod(k)} withheld: needs ${FLOORS.yoy} sales in both)`
+  const median =
+    k.median.v != null
+      ? figure(money(k.median.v), `${during('median sale price')}${change}`, links.href)
+      : figure(
+          DASH,
+          `median sale price: ${plural(k.sales, 'sale', 'sales')}, under the ${FLOORS.median} a median needs`,
+        )
+
+  const sold = figure(count(k.sales), during('homes sold'), links.href)
+
+  const pending =
+    k.dtc.v != null
+      ? figure(days(k.dtc.v), 'median days to pending', links.href)
+      : figure(DASH, `days to pending: under ${FLOORS.dtc} sales with a pending date`)
+
+  const verdict = publishedVerdict(k)
+  const supply =
+    k.mos != null
+      ? figure(
+          mosText(k.mos),
+          verdict ? `months of supply, ${VERDICT_LABEL[verdict]}` : 'months of supply',
+          links.supplyHref,
+        )
+      : figure(DASH, `months of supply: ${plural(k.closed6, 'sale', 'sales')} in six months, under the ${FLOORS.mos} a reading needs`)
+
+  return [median, sold, pending, supply]
+}
+
+/* -------------------------------------------------------------------------- */
+/* Charts: the stored 36-month series                                          */
+/* -------------------------------------------------------------------------- */
+
+type Plotted = { k: string; v: number }
+
+/** The points that carry a value; a withheld month is a gap, never a zero. */
+function plotted(points: readonly Pt[]): Plotted[] {
+  const out: Plotted[] = []
+  for (const p of points) {
+    if (p.v != null && Number.isFinite(p.v)) out.push({ k: p.k, v: p.v })
+  }
+  return out
+}
+
+function extremes(points: readonly Plotted[]): { lo: Plotted; hi: Plotted } {
+  let lo = points[0]!
+  let hi = points[0]!
+  for (const p of points) {
+    if (p.v < lo.v) lo = p
+    if (p.v > hi.v) hi = p
+  }
+  return { lo, hi }
+}
+
+/**
+ * The median sale price, month by month, as the edition stored it. The claim
+ * names the last plotted month and the range the line itself spans, both read
+ * off the plotted points; it computes no change of its own.
+ */
+export function medianTrendChart(series: MonthlySeries | undefined, place: string): V3ChartProps | undefined {
+  if (!series) return undefined
+  const pts = plotted(series.median)
+  if (pts.length < 2) return undefined
+  const first = pts[0]!
+  const last = pts[pts.length - 1]!
+  const { lo, hi } = extremes(pts)
+  const points: V3ChartPoint[] = pts.map((p) => ({
+    value: p.v,
+    label: v3Text(money(p.v)),
+    tick: v3Text(monthTickLabel(p.k)),
+    at: monthIndex(p.k),
+  }))
+  const lines = [{ name: v3Text('Median sale price'), points }]
+  const yTicks = moneyTicks(lines)
+  const xTicks = yearStartTicks(pts, lines)
+  // The high and the low the claim names, marked where they sit on the line:
+  // the most recent month at each, when a value repeats. A flat run has no
+  // range to mark.
+  const latestAt = (v: number) => [...pts].reverse().find((p) => p.v === v)!
+  const callouts: V3ChartCallout[] =
+    hi.v > lo.v
+      ? [
+          { at: monthIndex(latestAt(hi.v).k), label: v3Text(`High ${money(hi.v)}`), place: 'above' },
+          { at: monthIndex(latestAt(lo.v).k), label: v3Text(`Low ${money(lo.v)}`), place: 'below' },
+        ]
+      : []
+  return {
+    caption: v3Text(`${place} median sale price by month, ${monthLabel(first.k)} to ${monthLabel(last.k)}`),
+    claim: v3Text(
+      `The median home sold for ${money(last.v)} in ${monthLabel(last.k)}, against a range of ${money(lo.v)} to ${money(hi.v)} since ${monthLabel(first.k)}.`,
+    ),
+    series: lines,
+    ...(yTicks.length ? { yTicks } : {}),
+    ...(xTicks.length ? { xTicks } : {}),
+    ...(callouts.length ? { callouts } : {}),
+    restingRead: 'last',
+    // The reading prints on the band above the plot at every width: a resting
+    // card beside the newest month covered the last six months of the line at
+    // 1440 (taste evaluator, 2026-09-29), the way it would on Bend and Redmond.
+    reading: 'band',
+    emptyReason: v3Text('Too few sales in these months to draw a median.'),
+  }
+}
+
+/**
+ * The archive tile's line: the stored monthly medians from the first plotted
+ * month to the last, oldest first, a month the edition withheld kept as a gap
+ * (null) rather than drawn, and the words the line stands for. The range is
+ * read off the same plotted points as the edition's chart claim, so the tile
+ * and the edition page name the same low and high.
+ */
+export function medianSpark(
+  series: MonthlySeries | undefined,
+): { values: (number | null)[]; label: string } | null {
+  if (!series) return null
+  const pts = plotted(series.median)
+  if (pts.length < 2) return null
+  const first = pts[0]!
+  const last = pts[pts.length - 1]!
+  const { lo, hi } = extremes(pts)
+  const from = series.median.findIndex((p) => p.k === first.k)
+  const to = series.median.findIndex((p) => p.k === last.k)
+  const values = series.median
+    .slice(from, to + 1)
+    .map((p) => (p.v != null && Number.isFinite(p.v) ? p.v : null))
+  const range = hi.v > lo.v ? `: low ${money(lo.v)}, high ${money(hi.v)}` : `: ${money(hi.v)} in each month with a median`
+  return {
+    values,
+    label: `Median sale price by month, ${monthTickLabel(first.k)} to ${monthTickLabel(last.k)}${range}`,
+  }
+}
+
+/** The column heads of a season strip, January first: a month's initial. */
+const MONTH_INITIALS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'] as const
+
+/** "April" for month index 3, through the report's own month names. */
+function monthNameAt(index: number): string {
+  return monthName(`2000-${String(index + 1).padStart(2, '0')}`)
+}
+
+/** Consecutive month indexes (0 to 11) as runs: [3, 4, 5, 7] is [[3, 5], [7, 7]]. */
+function monthRuns(months: readonly number[]): [number, number][] {
+  const runs: [number, number][] = []
+  for (const m of [...months].sort((a, b) => a - b)) {
+    const open = runs[runs.length - 1]
+    if (open && m === open[1] + 1) open[1] = m
+    else runs.push([m, m])
+  }
+  return runs
+}
+
+/** "in April", "from April to August", "in January, April to June and October". */
+function whenPhrase(runs: readonly [number, number][]): string {
+  const run = ([a, b]: [number, number]) => (a === b ? monthNameAt(a) : `${monthNameAt(a)} to ${monthNameAt(b)}`)
+  if (runs.length === 1) {
+    const [a, b] = runs[0]!
+    return a === b ? `in ${monthNameAt(a)}` : `from ${monthNameAt(a)} to ${monthNameAt(b)}`
+  }
+  return `in ${listJoin(runs.map(run))}`
+}
+
+type SupplyYear = { year: number; readings: readonly (number | null)[] }
+
+/**
+ * THE PATTERN THE STRIPS DRAW, IN WORDS. Which months of the newest year, and
+ * of the year before it, passed the line (a stored reading above `line`), the
+ * question the strips exist to answer. Every word follows from the stored
+ * readings: a month is named only when its reading is past the line, a year is
+ * called clear of it only when every month it shows is at or under the line,
+ * and a year the window shows in part says so. Never a repeat of the edition
+ * month's figure, which the Instrument above already prints.
+ */
+export function supplyPattern(years: readonly SupplyYear[], line: number): string | null {
+  const [newest, before] = years
+  if (!newest) return null
+  const has = (v: number | null | undefined): v is number => v != null && Number.isFinite(v)
+  const past = (y: SupplyYear) => y.readings.flatMap((v, i) => (has(v) && v > line ? [i] : []))
+  const shown = (y: SupplyYear) => y.readings.filter(has).length
+  const lastShown = (y: SupplyYear) => {
+    for (let i = y.readings.length - 1; i >= 0; i--) if (has(y.readings[i])) return i
+    return -1
+  }
+  const newestPast = monthRuns(past(newest))
+  // The newest year stops at the edition month, and "through August" names
+  // where it stops. It also vouches for every month before it, so it is said
+  // only when January to that month all carry a reading; a year with a
+  // withheld month in it is "the months shown", like the year before.
+  const last = lastShown(newest)
+  const unbroken = last >= 0 && newest.readings.slice(0, last + 1).every(has)
+  const newestSpan =
+    shown(newest) === 12
+      ? `all of ${newest.year}`
+      : unbroken
+        ? `${newest.year} through ${monthNameAt(last)}`
+        : `the months of ${newest.year} shown`
+  if (!before) {
+    return newestPast.length
+      ? `In ${newest.year} supply passed ${line} months ${whenPhrase(newestPast)}.`
+      : `Supply stayed at ${line} months or under in ${newestSpan}.`
+  }
+  const beforePast = monthRuns(past(before))
+  const beforeClear = shown(before) === 12 ? `all of ${before.year}` : `the months of ${before.year} shown`
+  if (newestPast.length && beforePast.length) {
+    return `In ${newest.year} supply passed ${line} months ${whenPhrase(newestPast)}; in ${before.year}, ${whenPhrase(beforePast)}.`
+  }
+  if (newestPast.length) {
+    return `In ${newest.year} supply passed ${line} months ${whenPhrase(newestPast)}, after staying at ${line} or under in ${beforeClear}.`
+  }
+  if (beforePast.length) {
+    return `Supply stayed at ${line} months or under in ${newestSpan}; in ${before.year} it passed ${line} ${whenPhrase(beforePast)}.`
+  }
+  return `Supply stayed at ${line} months or under in ${newestSpan} and in ${beforeClear}.`
+}
+
+/**
+ * Months of supply, month by month, as the edition stored it, folded into one
+ * strip per calendar year (newest first) against the balanced zone, with the
+ * part of a month past the 4-month line in full ink. A second LINE in the same
+ * frame as the median read as one shape twice (taste evaluator, 2026-09-25);
+ * supply is asked a different question from price, "which months crossed the
+ * line, and is each year crossing sooner", and the strips answer it.
+ *
+ * Every figure is the one the line printed: the stored value through mosText
+ * (formatMonthsOfSupply, which never lets the digits cross a threshold the
+ * value did not), the month named the way the line named it, and each month's
+ * call from supplyVerdict, the house thresholds' one source. The domain is zero
+ * (a column starts at zero) to the buyer's line or the run's own top, whichever
+ * is higher, so the whole balanced zone is always on the row. The claim is the
+ * pattern the strips draw (supplyPattern): which months of this year and last
+ * passed the 4-month line, read off the same stored readings.
+ */
+export function supplySeasons(series: MonthlySeries | undefined, place: string): V3SeasonStripsProps | undefined {
+  if (!series) return undefined
+  const pts = plotted(series.mos)
+  if (pts.length < 2) return undefined
+  const first = pts[0]!
+  const last = pts[pts.length - 1]!
+  const byYear = new Map<number, (V3SeasonCell | null)[]>()
+  for (const p of pts) {
+    const year = Number(p.k.slice(0, 4))
+    const month = Number(p.k.slice(5, 7))
+    if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) continue
+    const cells = byYear.get(year) ?? Array.from({ length: 12 }, (): V3SeasonCell | null => null)
+    const call = supplyVerdict(p.v)
+    cells[month - 1] = {
+      value: p.v,
+      tick: v3Text(monthTickLabel(p.k)),
+      label: v3Text(`${mosText(p.v)} months`),
+      ...(call ? { note: v3Text(VERDICT_LABEL[call]) } : {}),
+    }
+    byYear.set(year, cells)
+  }
+  const rows = [...byYear.entries()]
+    .sort((a, b) => b[0] - a[0])
+    .map(([year, cells]) => ({ name: v3Text(String(year)), cells }))
+  const top = Math.max(...pts.map((p) => p.v))
+  const claim = supplyPattern(
+    [...byYear.entries()]
+      .sort((a, b) => b[0] - a[0])
+      .map(([year, cells]) => ({ year, readings: cells.map((c) => (c ? c.value : null)) })),
+    VERDICT_SELLER_MAX,
+  )
+  return {
+    caption: v3Text(`${place} months of supply by month, ${monthLabel(first.k)} to ${monthLabel(last.k)}`),
+    ...(claim ? { claim: v3Text(claim) } : {}),
+    rows,
+    columns: MONTH_INITIALS.map((m) => v3Text(m)),
+    max: Math.max(VERDICT_BUYER_MIN, Math.ceil(top)),
+    bands: [
+      {
+        from: VERDICT_SELLER_MAX,
+        to: VERDICT_BUYER_MIN,
+        label: v3Text(`Balanced: above ${VERDICT_SELLER_MAX} and under ${VERDICT_BUYER_MIN} months`),
+      },
+    ],
+    threshold: VERDICT_SELLER_MAX,
+    emptyReason: v3Text('Too few sales in these months for a supply reading.'),
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Market by market: the overview table as a Ledger                           */
+/* -------------------------------------------------------------------------- */
+
+/** Where a market's row leads: its live page on this site. */
+export function marketHref(geo: ReportGeo): string {
+  if (geo.type === 'region') return '/housing-market'
+  if (geo.type === 'city' && SITE_CITY_SLUGS.includes(geo.slug)) return `/cities/${geo.slug}`
+  return homesForSalePath(geo.label)
+}
+
+/** The full section behind an overview row, for its twelve-month line and its run. */
+function sectionFor(payload: EditionPayload, geo: ReportGeo): MarketSection | undefined {
+  if (geo.type === 'region') return payload.region
+  return (
+    payload.monthly.find((s) => s.geo.slug === geo.slug) ?? payload.towns.find((s) => s.geo.slug === geo.slug)
+  )
+}
+
+/**
+ * A figure and its unit as one unbreakable word: "4.1 months of supply",
+ * "33 days", "602 for sale". A line may break between two figures, never
+ * inside one (a row's detail at 1440 wrapped "4.1" onto one line and "months
+ * of supply" onto the next, seven rows of ten; taste evaluator, 2026-09-29).
+ */
+function unit(text: string): string {
+  return text.replace(/ /g, '\u00a0')
+}
+
+/** "3.9 months of supply, a seller's market" or the bare number when the call is not printable. */
+function supplyClause(k: Kpis): string | null {
+  if (k.mos == null) return null
+  const verdict = publishedVerdict(k)
+  return `${unit(`${mosText(k.mos)} months of supply`)}${verdict ? `, ${VERDICT_LABEL[verdict]}` : ''}`
+}
+
+/**
+ * One row's second line: the window the row covers, every printable figure,
+ * then what is withheld and why. The window leads because the towns are read
+ * over three months and the region, Bend and Redmond by month, and a row must
+ * say which it is at every width (the Ledger hides its `when` column beside a
+ * bar). Each figure is bound to its unit (`unit`), so the line wraps between
+ * figures and never between a number and what it counts.
+ */
+export function marketDetail(k: Kpis): string {
+  const parts: string[] = []
+  if (k.medianYoY != null) parts.push(`${pctChange(k.medianYoY)} vs a year ago`)
+  parts.push(unit(`${count(k.sales)} sold`))
+  if (k.dtc.v != null) parts.push(`${unit(days(k.dtc.v))} to pending`)
+  parts.push(unit(`${count(k.active)} for sale`))
+  const supply = supplyClause(k)
+  if (supply) parts.push(supply)
+  const withheld = withheldClause(k)
+  if (withheld) parts.push(withheld)
+  return `${periodWord(k)}: ${parts.join(' · ')}`
+}
+
+/** The twelve months to the edition month, which the row does not print. */
+export function twelveMonthLine(k12: Kpis): string {
+  const median = k12.median.v != null ? ` at a median of ${money(k12.median.v)}` : ''
+  const change = k12.median.v != null && k12.medianYoY != null ? ` (${pctChange(k12.medianYoY)} on the 12 months before)` : ''
+  return `Last 12 months: ${plural(k12.sales, 'home', 'homes')} sold${median}${change}.`
+}
+
+/**
+ * Every market in the edition's overview, one row each, in the PDF's order:
+ * Central Oregon, Bend, Redmond, then the smaller towns. The median is drawn as
+ * a length on the list's one scale (the largest median at full ink); a row
+ * whose median is withheld draws no bar.
+ */
+export function marketLedgerRows(payload: EditionPayload): V3LedgerFigureRow[] {
+  const medians = payload.overview
+    .map((r) => r.kpis.median.v)
+    .filter((v): v is number => v != null && Number.isFinite(v) && v > 0)
+  const top = medians.length ? Math.max(...medians) : 0
+  return payload.overview.map((r) => {
+    const k = r.kpis
+    const section = sectionFor(payload, r.geo)
+    const run = section?.series?.median.map((p) => p.v) ?? undefined
+    const reveal = section
+      ? {
+          line: v3Text(twelveMonthLine(section.kpis12)),
+          ...(run ? { series: run, seriesLabel: v3Text('median sale price by month, last 36 months') } : {}),
+        }
+      : undefined
+    return {
+      id: `${r.geo.type}-${r.geo.slug}`,
+      href: marketHref(r.geo),
+      what: v3Text(r.geo.label),
+      detail: v3Text(marketDetail(k)),
+      value: v3Text(k.median.v != null ? money(k.median.v) : DASH),
+      ...(k.median.v != null && top > 0 ? { weight: k.median.v / top } : {}),
+      ...(reveal ? { reveal } : {}),
+    }
+  })
+}
+
+/** How each overview row is read, for the note over the table. */
+export function overviewNote(payload: EditionPayload): string | null {
+  const monthly = payload.overview.some((r) => r.kpis.period.kind === 'month')
+  const trailing = payload.overview.some((r) => r.kpis.period.kind === 'trailing3')
+  if (monthly && trailing) {
+    return 'Central Oregon, Bend and Redmond are read by month. The smaller towns sell fewer homes, so they are read over the last three months, which gives each median enough sales to stand on.'
+  }
+  return null
+}
+
+/** The trace under the table: which homes, which windows, which source. */
+export function overviewSource(payload: EditionPayload, completeThrough: string): string {
+  const anyLot = payload.overview.filter((r) => r.segment === 'detached').map((r) => r.geo.label)
+  const homes = anyLot.length
+    ? `Single-family homes on less than one acre, except ${listJoin(anyLot)} (any lot size)`
+    : 'Single-family homes on less than one acre'
+  return `${REPORT_SOURCE_NAME}, ${homes.charAt(0).toLowerCase()}${homes.slice(1)} · ${monthLabel(payload.editionMonth)} edition, MLS records as of ${completeThrough}`
+}
+
+/* -------------------------------------------------------------------------- */
+/* Traces and structured data                                                  */
+/* -------------------------------------------------------------------------- */
+
+/** The trace for one market's figures and chart. */
+export function sectionSource(place: string, key: string, completeThrough: string): string {
+  return `${REPORT_SOURCE_NAME}, ${place} single-family homes on less than one acre, ${monthLabel(key)} · the charts are the 36 months to ${monthLabel(key)} as this edition stored them · MLS records as of ${completeThrough}`
+}
+
+/**
+ * The same figures as the Instrument, as schema.org PropertyValues: one number
+ * per fact, the number the page prints. The counts are the page's own, the
+ * median and the days to pending are the whole units money() and days() print,
+ * and months of supply is mosText's figure (4.0202 is 4.1, one decimal kept
+ * off any threshold the value did not cross), the house rule every place page
+ * already follows (lib/site/market-faq.ts): the markup is the machine-readable
+ * copy of what a reader sees, never a finer reading beside it.
+ */
+export function datasetVariables(k: Kpis, key: string): StatValue[] {
+  const when = monthLabel(key)
+  const out: StatValue[] = []
+  if (k.median.v != null) out.push({ name: `Median sale price, ${when}`, value: Math.round(k.median.v), unitText: 'USD' })
+  out.push({ name: `Homes sold, ${when}`, value: k.sales })
+  if (k.dtc.v != null) out.push({ name: `Median days to pending, ${when}`, value: Math.round(k.dtc.v), unitText: 'days' })
+  out.push({ name: `Homes for sale at the end of ${when}`, value: k.active })
+  if (k.mos != null && Number.isFinite(k.mos)) out.push({ name: `Months of supply, ${when}`, value: Number(mosText(k.mos)) })
+  return out
+}
+
+/* -------------------------------------------------------------------------- */
+/* Descriptions                                                                */
+/* -------------------------------------------------------------------------- */
+
+const DESCRIPTION_BUDGET = 155
+
+function fitted(candidates: readonly string[]): string {
+  return candidates.find((c) => c.length <= DESCRIPTION_BUDGET) ?? candidates[candidates.length - 1]!
+}
+
+/** The snippet for one edition, quoting only figures the payload prints. */
+export function editionDescription(key: string, k: Kpis): string {
+  const when = monthLabel(key)
+  const median = k.median.v != null ? `median sale price ${money(k.median.v)}` : null
+  const change = k.median.v != null && k.medianYoY != null ? ` (${pctChange(k.medianYoY)} from a year ago)` : ''
+  const sold = `${plural(k.sales, 'home', 'homes')} sold`
+  const supply = k.mos != null ? `${mosText(k.mos)} months of supply` : null
+  const full = [median ? `${median}${change}` : null, sold, supply].filter(Boolean).join(', ')
+  const short = [median, sold].filter(Boolean).join(', ')
+  return fitted([
+    `Central Oregon market report, ${when}: ${full}. Read it here or download the free PDF.`,
+    `Central Oregon market report, ${when}: ${full}.`,
+    `Central Oregon market report, ${when}: ${short}.`,
+  ])
+}
+
+/** The archive's snippet: what it is, how far back it goes, and the latest numbers. */
+export function archiveDescription(oldestKey: string, latestKey: string, k: Kpis | null): string {
+  const since = monthLabel(oldestKey)
+  const head = `Every monthly Central Oregon market report since ${since}, free to read here or download as a PDF.`
+  if (!k || k.median.v == null) return fitted([head])
+  const latest = `${monthLabel(latestKey)}: median sale price ${money(k.median.v)}, ${plural(k.sales, 'home', 'homes')} sold.`
+  return fitted([
+    `${head} ${latest}`,
+    `Every Central Oregon monthly market report since ${since}, free to read or download. ${latest}`,
+    head,
+  ])
+}
+
+/**
+ * The archive front's one sentence, read off the list: how many reports, since
+ * when, and how many come as a PDF. `oldestKey` is the caller's, the same key
+ * the calendar's span and the page description are built from, so the three
+ * can never name different first months. A month with no stored file is web
+ * only, so "each one ... as a PDF" is said only when every edition has one.
+ */
+export function archiveSentence(list: readonly EditionListItem[], oldestKey: string): string {
+  if (!list.length || !oldestKey) return ''
+  const n = list.length
+  const withPdf = list.filter(hasPdf).length
+  const count = n === 1 ? 'one in all' : `${n.toLocaleString('en-US')} in all`
+  const each = n === 1 ? '' : 'each one '
+  const reach =
+    withPdf === n
+      ? `${each}to read here or download as a PDF`
+      : withPdf > 0
+        ? `${each}to read here and ${withPdf.toLocaleString('en-US')} to download as a PDF`
+        : `${each}to read here`
+  return `Every monthly report on Central Oregon's housing market since ${monthLabel(oldestKey)}, ${count}, ${reach}.`
+}
+
+/* -------------------------------------------------------------------------- */
+/* The archive, by year                                                         */
+/* -------------------------------------------------------------------------- */
+
+export type ArchiveCell = {
+  key: string
+  /** "Aug" */
+  short: string
+  /** "August 2026" */
+  label: string
+  href: string
+  pdfHref: string | null
+  /** "PDF, 19 pages, 1.0 MB" */
+  pdf: string | null
+  /** The edition's first headline sentence, shown on hover and focus. */
+  lead: string | null
+  latest: boolean
+  /** Central Oregon's median sale price that month, "$640K"; null when withheld or not stored. */
+  median: string | null
+  /**
+   * Where that median sits between the archive's lowest and highest, 0 to 1:
+   * the month's bar shade. Null when there is no median.
+   */
+  shade: number | null
+}
+
+export type ArchiveYear = {
+  year: number
+  /** Twelve slots, January first; null where no edition is published. */
+  slots: (ArchiveCell | null)[]
+  count: number
+}
+
+/**
+ * The first sentence of a stored summary. The summary is the edition's headline
+ * sentences joined with spaces (scripts/market-report-publish.ts), and every one
+ * of them ends in a period followed by the next capital or figure.
+ */
+export function firstSentence(summary: string | null | undefined): string | null {
+  const text = summary?.trim()
+  if (!text) return null
+  const [first] = text.split(/(?<=\.)\s+(?=[A-Z0-9$])/)
+  return first?.trim() || null
+}
+
+const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const
+
+export function monthShort(index: number): string {
+  return MONTHS_SHORT[index] ?? ''
+}
+
+/**
+ * Every published edition, grouped by calendar year, newest year first. Each
+ * month carries Central Oregon's median sale price as stored with the edition
+ * and a shade placing it between the lowest and highest median in the
+ * archive, so the calendar reads as the price cycle before a month is opened.
+ */
+export function archiveYears(list: readonly EditionListItem[]): ArchiveYear[] {
+  const latestKey = list.length ? list.map(editionKey).sort().at(-1) ?? null : null
+  const medians = list.flatMap((item) => {
+    const v = item.figures?.median
+    return typeof v === 'number' && Number.isFinite(v) ? [v] : []
+  })
+  const lo = medians.length ? Math.min(...medians) : 0
+  const hi = medians.length ? Math.max(...medians) : 0
+  const shadeOf = (v: number | null | undefined): number | null => {
+    if (typeof v !== 'number' || !Number.isFinite(v)) return null
+    return hi > lo ? (v - lo) / (hi - lo) : 1
+  }
+  const byYear = new Map<number, (ArchiveCell | null)[]>()
+  for (const item of list) {
+    const key = editionKey(item)
+    const year = Number(key.slice(0, 4))
+    const month = Number(key.slice(5, 7))
+    if (!Number.isInteger(year) || month < 1 || month > 12) continue
+    const slots = byYear.get(year) ?? Array.from({ length: 12 }, () => null)
+    slots[month - 1] = {
+      key,
+      short: monthShort(month - 1),
+      label: monthLabel(key),
+      href: editionPath(key),
+      pdfHref: hasPdf(item) ? editionPdfHref(key) : null,
+      pdf: hasPdf(item) ? pdfFacts(item) : null,
+      lead: firstSentence(item.summary),
+      latest: key === latestKey,
+      median: typeof item.figures?.median === 'number' ? moneyShort(item.figures.median) : null,
+      shade: shadeOf(item.figures?.median),
+    }
+    byYear.set(year, slots)
+  }
+  return [...byYear.entries()]
+    .sort((a, b) => b[0] - a[0])
+    .map(([year, slots]) => ({ year, slots, count: slots.filter(Boolean).length }))
+}
+
+/** The edition before and after one month, from the newest-first list. */
+export function editionNeighbors(
+  list: readonly EditionListItem[],
+  key: string,
+): { older: EditionListItem | null; newer: EditionListItem | null } {
+  const sorted = [...list].sort((a, b) => (a.edition_month < b.edition_month ? 1 : -1))
+  const i = sorted.findIndex((item) => editionKey(item) === key)
+  if (i < 0) return { older: null, newer: null }
+  return { older: sorted[i + 1] ?? null, newer: i > 0 ? sorted[i - 1]! : null }
+}

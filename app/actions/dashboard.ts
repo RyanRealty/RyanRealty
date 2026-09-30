@@ -58,7 +58,7 @@ export async function getDashboardLeadData(): Promise<DashboardLeadData> {
   const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString()
 
   // Repointed off the retired `visits` table to the live visitor_sessions
-  // pipeline (W1.5): `visits` now only takes a legacy WordPress-beacon trickle,
+  // pipeline (W1.5): `visits` now only takes a legacy WordPress tracking-pixel trickle,
   // while real traffic writes to visitor_sessions/visitor_events. Session-level
   // mapping: created_at -> first_seen_at, user_id -> crm_person_id (an
   // identified session = a "known user" visit). "Visits" here now counts

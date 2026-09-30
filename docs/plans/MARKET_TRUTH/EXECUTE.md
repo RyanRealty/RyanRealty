@@ -198,7 +198,7 @@ primary unique held. Report: `MEMBERSHIP_DISAGREEMENT.md`.
       audit may move** (`AUDIT.md` §2.4).
 - [x] Days on market = `purchase_contract_date − OnMarketDate`, named `days_to_contract` (D2),
       earliest **2006**. Note `market_stats_cache.median_dom` is ALREADY the correct list-to-pending
-      basis — the defect is the raw `"DaysOnMarket"` column and the video and beacon paths.
+      basis — the defect is the raw `"DaysOnMarket"` column and the video and legacy-RPC paths.
 - [x] Write to a **shadow store**. Nothing repointed.
 
 **Done when:** a reconciliation report lists every live figure beside its shadow value, the delta, and

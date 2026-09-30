@@ -23,7 +23,7 @@ GET /rest/v1/listings?StandardStatus=eq.Coming%20Soon   -> 52 rows,
 | `listing_search_mv` | 52 (via column-level grants) |
 | `listing_boundary_xref_mv` | 152 |
 | `listing_detail_mv` | 62 |
-| `beacon_comparable_listings_v` | 52 |
+| `comparable_listings_v` (dropped 2026-09-25) | 52 |
 | `similar_listings_mv` | 582 pairs recommending a Coming Soon listing |
 | `search_listings_advanced` RPC | full records incl. photo + lat/long |
 
@@ -55,7 +55,7 @@ Enforced by gate **G-COMINGSOON** (`ci:public-listing-status`, in `ci:gates`).
 - **`geo_snapshot_mv`** — Coming Soon sat inside aggregate `FILTER` clauses, so a
   row-filtering view could not fix it. Definition rebuilt. This was also a §0
   data-accuracy bug: public geo counts included listings we cannot show.
-- **`listing_detail_mv`, `beacon_comparable_listings_v`** — no application
+- **`listing_detail_mv`, `comparable_listings_v` (dropped 2026-09-25)** — no application
   reader at all; `anon` revoked outright.
 - **`search_listings_advanced`** — dead `coming_soon` branch neutralised.
 
@@ -68,7 +68,7 @@ listings                     LOCKED (empty)      listing_tile_mv_src           L
 listing_tile_mv              LOCKED (empty)      listing_search_mv_src         LOCKED (denied)
 listing_search_mv            LOCKED (empty)      listing_boundary_xref_mv_src  LOCKED (denied)
 listing_boundary_xref_mv     LOCKED (empty)      similar_listings_mv_src       LOCKED (denied)
-listing_detail_mv            LOCKED (denied)     beacon_comparable_listings_v  LOCKED (denied)
+listing_detail_mv            LOCKED (denied)     comparable_listings_v  LOCKED (denied), now DROPPED (2026-09-25)
 RPC p_status_filter=coming_soon                  LOCKED (empty)
 private_remarks column                           LOCKED (denied)
 ```

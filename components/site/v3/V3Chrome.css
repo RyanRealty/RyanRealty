@@ -36,6 +36,55 @@
      overflow on this box would also clip the open panel. */
 }
 
+/* THE PAGE KEEPS CLEAR OF THE STICKY BAR (WCAG 2.2 SC 2.4.11, focus not
+   obscured). Every scroll the browser makes on the reader's behalf, a Tab or
+   Shift+Tab onto a control, an anchor jump, find in page, scrollIntoView,
+   stops the bar's height plus one space under the top, so a focused control
+   or a landed heading is never behind the bar. Before this only some
+   sections carried their own scroll-margin, and a calendar door reached by
+   Shift+Tab sat fully under the bar (second taste evaluator, 2026-09-29).
+   It has to be the root's padding: Chromium's focus scroll ignores a target's
+   scroll-margin, and only the padding kept a control that was on screen but
+   under the bar from staying there (measured 2026-09-30). A target that
+   wants more air adds only the remainder.
+
+   Scoped to a document whose body carries the chrome (the root layout mounts
+   it there, ahead of #main-content; it returns null on LP, admin and account
+   routes), so a page without this bar keeps its own scrolling. The child
+   combinators keep the test to the one real header: a prototype's copy of the
+   class inside a page never matches, and only body's own children can change
+   the answer. */
+html:has(> body > .v3-chrome) {
+  scroll-padding-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
+}
+
+/* ...except while keyboard focus is in the bar itself. The bar never leaves
+   the top, and the top is the padded band, so a browser taking the padding at
+   its word scrolls the page to "reveal" a control that never moved: Shift+Tab
+   back into the header from mid-page jumped the page up about 400px in
+   Chromium, and again on each control (measured 2026-09-30). Keyboard focus
+   only: a click or tap never scrolls the page to the control it focuses
+   (measured the same day), and every script focus back into the bar (the menu
+   onto its button, a mega panel onto its caret, the search onto its icon)
+   passes preventScroll. A scroll that follows while keyboard focus rests here
+   must still clear the bar, so a followed anchor link, Back, Forward and a
+   hash change each take focus out of the bar first (V3Chrome.tsx). */
+html:has(> body > .v3-chrome :focus-visible) {
+  scroll-padding-top: 0;
+}
+
+/* An engine without :has() still lands a jump to a section clear of the bar:
+   every id'd target in the page gets the bar's height plus one space as its
+   margin (the layout renders the header ahead of #main-content, so this holds
+   only where the bar does). It is the plain clearance, and on these engines
+   it replaces a target's own margin rather than adding to it: the extra air
+   some sections ask for is lost there, the bar never covers them. */
+@supports not selector(:has(*)) {
+  .v3-chrome ~ #main-content [id] {
+    scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
+  }
+}
+
 /* The bar -------------------------------------------------------------------
    One row at every width. Flow order is wordmark, destinations, actions, and
    the actions push right on their own margin rather than on a spacer element. */

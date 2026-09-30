@@ -185,6 +185,32 @@ describe('V3Ledger reveal', () => {
     expect(html).not.toContain('v3-ledger--reveal')
   })
 
+  // Where the reveal opens decides what it costs (V3Ledger.css): in a bar list
+  // it lives in the figure column under the bar, a slot the row already holds,
+  // so opening it moves no row (a hover's shift counts toward CLS) and covers
+  // none; elsewhere it opens on its own line, for key or hold input only.
+  it('seats an encoded row\'s reveal in the figure column, under the bar', () => {
+    const reveal = { line: v3Text('Last 12 months: 1,969 sold'), series: twelve, seriesLabel: v3Text('closes by month') }
+    const html = render([row({ weight: 1, reveal }), row({ href: '/cities/redmond', weight: 0.5 })], 'bar')
+    expect(html.match(/class="v3-ledger__figures"/g)).toHaveLength(1)
+    expect(html).toMatch(
+      /<span class="v3-ledger__figures"><span class="v3-ledger__measure">[\s\S]*?<\/span><span class="v3-ledger__reveal">/,
+    )
+    // A row with nothing to reveal keeps the bare measure.
+    expect(html.match(/class="v3-ledger__measure"/g)).toHaveLength(2)
+    const plain = render([row({ reveal }), row({ href: '/cities/redmond' })])
+    expect(plain).not.toContain('v3-ledger__figures')
+    expect(plain).toContain('class="v3-ledger__reveal"')
+  })
+
+  it('marks a lone published month the run\'s path cannot paint', () => {
+    const lone = [40, 38, null, 52, null, 61, 70, 66, 58, 49, 44, 51]
+    const html = render([row({ reveal: { line: v3Text('x'), series: lone } })])
+    // One lone month (index 3) plus the end mark.
+    expect(html.match(/<circle /g)).toHaveLength(2)
+    expect(html).toContain('r="1.6"')
+  })
+
   it('draws no run under the small-n floor and never draws a null as zero', () => {
     const thin = [40, null, null, 61, null, null, 58, null, null, 51, null, null]
     const html = render([row({ reveal: { line: v3Text('No published months-of-supply reading'), series: thin } })])

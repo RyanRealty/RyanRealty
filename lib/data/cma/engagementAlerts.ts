@@ -6,7 +6,7 @@ import 'server-only'
  * `.from()` (§7.3 / G1).
  *
  * Each function fails to null / false rather than throwing: an alert rail runs
- * inside a webhook and a tracking beacon, and a lookup miss there must never
+ * inside a webhook and a tracking ping, and a lookup miss there must never
  * cost the inbound message or the 200.
  */
 

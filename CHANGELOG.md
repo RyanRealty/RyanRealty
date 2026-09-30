@@ -3504,7 +3504,7 @@
 ## v1.718.1 (2026-07-02)
 
 ### Maintenance
-- docs(crm): email-send audit — FUB/Beacon via Gmail is sending the 'archived' emails, not the CRM
+- docs(crm): email-send audit — FUB smart campaigns via Gmail is sending the 'archived' emails, not the CRM
 - docs(crm): log notes-ranking slice in mission PROGRESS + cross-agent handoff
 
 ### Other
@@ -20138,7 +20138,7 @@
 
 ### Other
 - Revert "fix: finalize past-year listings regardless of whether Spark returned history"
-- Beacon report: smart search (zip/broker), activity feed, market pulse carousel, reports page by city + time range
+- Market report: smart search (zip/broker), activity feed, market pulse carousel, reports page by city + time range
 - audit: resort amenities + schema, about CTAs, Popular Communities, sliders
 - build: full build prompt continue — listing videos, audit checklist
 - build: complete Phases 3-11 — master plan header, infra verified, go-live status

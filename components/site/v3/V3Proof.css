@@ -589,7 +589,9 @@
 
 /* A quote answers a pointer: its mark lights on the strip above it. */
 .v3-proof__item {
-  scroll-margin-top: calc(var(--v3-chrome-h) + 9rem);
+  /* Over the page's scroll padding (chrome + md, V3Chrome.css): still the
+     chrome plus 9rem, room for the strip above it. */
+  scroll-margin-top: calc(9rem - var(--v3-space-md));
 }
 
 .v3-proof__how {
@@ -1024,7 +1026,9 @@
   min-height: 6rem;
   padding: var(--v3-space-md) 0;
   border-top: var(--v3-rule-hairline);
-  scroll-margin-top: calc(var(--v3-chrome-h) + 9rem);
+  /* Over the page's scroll padding (chrome + md, V3Chrome.css): still the
+     chrome plus 9rem, room for the strip above it. */
+  scroll-margin-top: calc(9rem - var(--v3-space-md));
 }
 
 /* The lead reading pane (SITE-48): the same element, mounted above the strip

@@ -221,10 +221,19 @@ export function linePath(points: readonly PlottedPoint[]): string {
   return d.trim()
 }
 
-/** Straight segments. The line lifts across a gap. No spline. */
+/**
+ * Straight segments. The line lifts across a gap. No spline.
+ *
+ * `headroom` widens the value domain past the data's own top and bottom, as a
+ * fraction of the data's span (0.06 each side when omitted, the air every line
+ * has always had). A chart that labels its high above the line and its low
+ * below it (V3Chart `callouts`) asks for more on that side, so the label sits
+ * inside the drawing instead of over the reading band or the axis. Form only:
+ * the points and their values are unchanged, the scale gives them more room.
+ */
 export function buildLinePlot(
   series: readonly PlotSeriesIn[],
-  opts?: { bands?: readonly RangeBandIn[] },
+  opts?: { bands?: readonly RangeBandIn[]; headroom?: { top?: number; bottom?: number } },
 ): LinePlot | null {
   const useAt = series.some((s) => s.points.some((p) => p.at != null && isFiniteNumber(p.at)))
 
@@ -288,9 +297,10 @@ export function buildLinePlot(
   if (yMinLabel == null || yMaxLabel == null || xStart == null || xEnd == null) return null
 
   const ySpan = yMax - yMin || 1
-  const yPad = ySpan * 0.06
-  const y0 = yMin - yPad
-  const y1 = yMax + yPad
+  const padTop = ySpan * Math.max(0.06, opts?.headroom?.top ?? 0.06)
+  const padBottom = ySpan * Math.max(0.06, opts?.headroom?.bottom ?? 0.06)
+  const y0 = yMin - padBottom
+  const y1 = yMax + padTop
   const yRange = y1 - y0 || 1
   const xSpan = xMax - xMin || 1
   const plotW = VB_W - PAD.l - PAD.r
@@ -783,7 +793,10 @@ export function buildPairPlot(bars: readonly PairBarIn[]): PairPlot | null {
    and its trace. Null is a month the source did not publish; it BREAKS the
    line (the path lifts and restarts) rather than being drawn as zero, and a
    run with fewer published points than `minPoints` is not drawn at all
-   (DATA_GRAPHICS.md small-n rule: omit, do not pad).
+   (DATA_GRAPHICS.md small-n rule: omit, do not pad). A published point with
+   no published neighbour is a run of one, which a path cannot show (a lone
+   "M" paints nothing), so it comes back in `dots` for the caller to mark: a
+   caption that names a low or a high must be able to point at it.
 
    Absolute geometry in the caller's box, not percent: a spark is rendered at
    one fixed size so its endpoint mark stays a circle and its stroke a stroke.
@@ -795,6 +808,11 @@ export type SparkPlot = {
   d: string
   /** The last published point, for the endpoint mark. */
   last: { x: number; y: number } | null
+  /**
+   * Every other published point with no published neighbour on either side:
+   * the path draws nothing there, so the caller marks each one.
+   */
+  dots: { x: number; y: number }[]
   /** Published points drawn. */
   n: number
   min: number
@@ -833,7 +851,13 @@ export function buildSparkPlot(
     prev = p.i
   }
   const tail = points[points.length - 1]!
-  return { kind: 'spark', d, last: { x: x(tail.i), y: y(tail.v) }, n: points.length, min, max }
+  const dots: { x: number; y: number }[] = []
+  points.forEach((p, j) => {
+    if (j === points.length - 1) return
+    const joined = (j > 0 && points[j - 1]!.i === p.i - 1) || points[j + 1]!.i === p.i + 1
+    if (!joined) dots.push({ x: x(p.i), y: y(p.v) })
+  })
+  return { kind: 'spark', d, last: { x: x(tail.i), y: y(tail.v) }, dots, n: points.length, min, max }
 }
 
 /** One mark on a strip. `at` is the x value; every string is caller-formatted. */

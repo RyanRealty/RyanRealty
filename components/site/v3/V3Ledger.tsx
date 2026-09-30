@@ -44,6 +44,7 @@ import {
   V3Button,
   V3Eyebrow,
   V3Heading,
+  V3RunningHead,
   V3SourceLine,
   V3_ROOT_CLASS,
   type V3ButtonVariant,
@@ -116,12 +117,15 @@ type V3LedgerRowBase = {
    */
   media?: { src: string; alt?: string }
   /**
-   * What a hover (desktop), a keyboard focus, or a tap-and-hold (phone) shows
-   * about this row that its resting text does not: the months-of-supply
-   * verdict, a small-n reason, a twelve-month run of closes as a line. From
-   * the caller's data, already formatted, with its trace in the list's
-   * `source`. Hidden at rest so the list stays a list, and drawn over the top
-   * of the next row rather than in the flow, so nothing moves under the cursor.
+   * What a hover, a keyboard focus, or a tap-and-hold (phone) shows about
+   * this row that its resting text does not: the months-of-supply verdict, a
+   * small-n reason, a twelve-month run of closes as a line. From the caller's
+   * data, already formatted, with its trace in the list's `source`. Hidden at
+   * rest so the list stays a list. In an `encode="bar"` list it sits in the
+   * figure column under the bar, in a slot the row holds, so a hover opens it
+   * without moving a row; in a list without bars it opens on its own line for
+   * keyboard focus or the hold only, never a hover (a shift a hover causes
+   * counts toward layout shift). V3Ledger.css has the whole rule.
    *
    * The evaluator's finding on the city index (taste table 2026-09-08):
    * "nothing in the visible fold rewards a hover, tap, scrub, or toggle with
@@ -248,8 +252,27 @@ type V3LedgerBase = {
   headingLevel?: 1 | 2
   /** The context line above the heading: the place, the window, the filter. */
   eyebrow?: V3Text
+  /**
+   * Set the eyebrow as a KICKER on the heading's own line, at its far end,
+   * instead of on a line above it (2026-09-25). A ledger reads like a table,
+   * and a running head across the measure (the name at the left, the context
+   * at the right, the rows under both) reads like a table's head. A page uses
+   * it to break the eyebrow-then-heading beat that had every section of the
+   * monthly report open the same way (separate taste evaluator). On a narrow
+   * screen the kicker wraps under the heading. Does nothing without an eyebrow.
+   */
+  eyebrowInline?: boolean
   /** One sentence under the heading when the list needs a stated basis. */
   note?: V3Text
+  /**
+   * One line under the note that tells a phone reader a row can be pressed
+   * and held to open what it reveals ("Press and hold a market to see its
+   * last 12 months."). Shown only where there is no hover (V3Ledger.css), and
+   * only when some row carries a reveal: a finger has no way to know it is
+   * there (taste evaluator, 2026-09-29), while a pointer finds it by hovering
+   * in a bar list and by keyboard focus in any list. Plain words, no em dash.
+   */
+  holdHint?: V3Text
   /**
    * A drawing under the note, before the rows: the one place a list's headline
    * claim is drawn rather than said. The city index puts the region's months
@@ -409,7 +432,9 @@ export function V3Ledger(props: V3LedgerProps) {
     heading,
     headingLevel = 2,
     eyebrow,
+    eyebrowInline = false,
     note,
+    holdHint,
     drawing,
     source,
     updated,
@@ -485,11 +510,20 @@ export function V3Ledger(props: V3LedgerProps) {
       aria-label={headingId ? undefined : heading}
     >
       <div className="v3-ledger__head">
-        {eyebrow ? <V3Eyebrow>{eyebrow}</V3Eyebrow> : null}
-        <V3Heading level={headingLevel} id={headingId}>
-          {heading}
-        </V3Heading>
+        {eyebrow && eyebrowInline ? (
+          /* The running head: the name, then the context at the far end of the
+             same line (the barrel's one running-head atom). */
+          <V3RunningHead level={headingLevel} id={headingId} heading={heading} kicker={eyebrow} />
+        ) : (
+          <>
+            {eyebrow ? <V3Eyebrow>{eyebrow}</V3Eyebrow> : null}
+            <V3Heading level={headingLevel} id={headingId}>
+              {heading}
+            </V3Heading>
+          </>
+        )}
         {note ? <p className="v3-ledger__note">{note}</p> : null}
+        {holdHint && anyReveal ? <p className="v3-ledger__hint">{holdHint}</p> : null}
         {drawing ? <div className="v3-ledger__drawing">{drawing}</div> : null}
       </div>
 
@@ -515,6 +549,70 @@ export function V3Ledger(props: V3LedgerProps) {
                     minPoints: V3_LEDGER_SPARK_MIN,
                   })
                 : null
+            const figure = row.value ? (
+              encode === 'bar' ? (
+                <span className="v3-ledger__measure">
+                  {/* The bar is presentation only. The figure beside it is
+                      the accessible value and the one the source trace
+                      covers, so a screen reader is never read a length. */}
+                  <span className="v3-ledger__track" aria-hidden="true">
+                    {barWidth(row.weight) ? (
+                      <span
+                        className={cn(
+                          'v3-ledger__bar',
+                          row.weight === 1 && 'v3-ledger__bar--lead',
+                        )}
+                        style={{ width: barWidth(row.weight) }}
+                      />
+                    ) : null}
+                  </span>
+                  <span className="v3-ledger__value">{row.value}</span>
+                </span>
+              ) : (
+                <span className="v3-ledger__value">{row.value}</span>
+              )
+            ) : null
+            /* Hidden at rest. In an encoded row it sits in the figure column
+               under the bar, in a slot the row already holds, so opening it
+               moves nothing and covers nothing; elsewhere it opens on its own
+               line, by keyboard focus or the phone hold only (V3Ledger.css). */
+            const revealEl = row.reveal ? (
+              <span className="v3-ledger__reveal">
+                <span className="v3-ledger__reveal-line">{row.reveal.line}</span>
+                {spark ? (
+                  /* The run and what it counts, together: a squiggle with no
+                     words is a decoration, and the words are the accessible
+                     name, so the SVG is hidden. */
+                  <span className="v3-ledger__run">
+                    {row.reveal.seriesLabel ? (
+                      <span className="v3-ledger__run-label">{row.reveal.seriesLabel}</span>
+                    ) : null}
+                    <svg
+                      className="v3-ledger__spark"
+                      viewBox={`0 0 ${SPARK_W} ${SPARK_H}`}
+                      width={SPARK_W}
+                      height={SPARK_H}
+                      aria-hidden="true"
+                    >
+                      <path d={spark.d} />
+                      {/* A month with no published neighbour: the path
+                          alone paints nothing there. */}
+                      {spark.dots.map((dot) => (
+                        <circle
+                          key={`${dot.x.toFixed(1)}-${dot.y.toFixed(1)}`}
+                          cx={dot.x.toFixed(1)}
+                          cy={dot.y.toFixed(1)}
+                          r="1.6"
+                        />
+                      ))}
+                      {spark.last ? (
+                        <circle cx={spark.last.x.toFixed(1)} cy={spark.last.y.toFixed(1)} r="2.2" />
+                      ) : null}
+                    </svg>
+                  </span>
+                ) : null}
+              </span>
+            ) : null
             return (
               <li key={row.id ?? row.href} className="v3-ledger__item">
               <Link
@@ -575,63 +673,19 @@ export function V3Ledger(props: V3LedgerProps) {
                     ) : null}
                   </span>
                 </span>
-                {row.value ? (
-                  encode === 'bar' ? (
-                    <span className="v3-ledger__measure">
-                      {/* The bar is presentation only. The figure beside it is
-                          the accessible value and the one the source trace
-                          covers, so a screen reader is never read a length. */}
-                      <span className="v3-ledger__track" aria-hidden="true">
-                        {barWidth(row.weight) ? (
-                          <span
-                            className={cn(
-                              'v3-ledger__bar',
-                              row.weight === 1 && 'v3-ledger__bar--lead',
-                            )}
-                            style={{ width: barWidth(row.weight) }}
-                          />
-                        ) : null}
-                      </span>
-                      <span className="v3-ledger__value">{row.value}</span>
-                    </span>
-                  ) : (
-                    <span className="v3-ledger__value">{row.value}</span>
-                  )
-                ) : null}
-                {row.reveal ? (
-                  /* Out of the flow, over the top of the next row; hidden at
-                     rest, shown by :hover, :focus-within, or the phone hold
-                     (V3Ledger.css). */
-                  <span className="v3-ledger__reveal">
-                    {row.reveal ? (
-                      <>
-                        <span className="v3-ledger__reveal-line">{row.reveal.line}</span>
-                        {spark ? (
-                          /* The run and what it counts, together: a squiggle
-                             with no words is a decoration, and the words are
-                             the accessible name, so the SVG is hidden. */
-                          <span className="v3-ledger__run">
-                            {row.reveal.seriesLabel ? (
-                              <span className="v3-ledger__run-label">{row.reveal.seriesLabel}</span>
-                            ) : null}
-                            <svg
-                              className="v3-ledger__spark"
-                              viewBox={`0 0 ${SPARK_W} ${SPARK_H}`}
-                              width={SPARK_W}
-                              height={SPARK_H}
-                              aria-hidden="true"
-                            >
-                              <path d={spark.d} />
-                              {spark.last ? (
-                                <circle cx={spark.last.x.toFixed(1)} cy={spark.last.y.toFixed(1)} r="2.2" />
-                              ) : null}
-                            </svg>
-                          </span>
-                        ) : null}
-                      </>
-                    ) : null}
+                {encode === 'bar' && figure && revealEl ? (
+                  /* The figure column: the bar and figure, and the reveal's
+                     slot under them. */
+                  <span className="v3-ledger__figures">
+                    {figure}
+                    {revealEl}
                   </span>
-                ) : null}
+                ) : (
+                  <>
+                    {figure}
+                    {revealEl}
+                  </>
+                )}
               </Link>
             </li>
             )

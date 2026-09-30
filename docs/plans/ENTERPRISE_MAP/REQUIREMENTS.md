@@ -204,7 +204,7 @@
 | R-144 | Meta CAPI qualified-quality loop fires at qualifying stage; per-broker ?agent= attribution on ads | ADS_GO_LIVE; PAID_ADS | PARTIAL | G2 |
 | R-145 | Expired/FSBO outreach: sequences built, sends per-channel compliance, start gated on Matt | WESTSIDE; PROSPECT_TO_CMA | GATED | G17 + M-class |
 | R-146 | Referral desk /refer-a-client inbound-only: no outbound drip; hand-write agreement after real inbound; never contact client first | 2026-08-14 | LOCKED | — |
-| R-147 | Kill FUB/Beacon archived nurture emails still sending via connected Gmail; purge FUB vocabulary/keys | EMAIL_SEND_AUDIT; twilio-cutover | MISSING | G23 |
+| R-147 | Kill FUB-smart-campaign archived nurture emails still sending via connected Gmail; purge FUB vocabulary/keys | EMAIL_SEND_AUDIT; twilio-cutover | MISSING | G23 |
 | R-148 | NO native sponsorship, preferred lenders, title companies; AdSense informational surfaces only, never conversion surfaces | MASTER_SPEC (Matt 2026-04-25) | LOCKED | — |
 | R-149 | Newsletter is named buyer capture; signup stitches rr_vid; buyer opt-in gets listing mail not seller drips | BROKER-OS; PRODUCT | VERIFIED | — |
 | R-150 | West Side: target the list, measure it, exclude existing book; audience refresh runs and logs | MASTER-SPEC D2; W1.1 | PARTIAL | G7 done 2026-08-16 — backlog dispositioned. G11 2026-08-16 — hold DAL + 36h daily probe; last LIVE 2026-08-16T09:01Z. Residual: KEEP waits for 2026-08-22; live Meta push still flag-gated. |

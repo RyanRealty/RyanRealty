@@ -68,6 +68,13 @@ export type {
 
 export { V3Button, V3Figure, V3Eyebrow, V3Heading, V3Lede } from './atoms'
 
+/**
+ * A heading with its context on the heading's own line, at the far end,
+ * instead of an eyebrow over it: the beat that breaks eyebrow-then-heading.
+ * The Ledger's `eyebrowInline` renders it; a page section may too.
+ */
+export { V3RunningHead } from './atoms'
+
 export type {
   V3ButtonProps,
   V3ButtonVariant,
@@ -76,6 +83,7 @@ export type {
   V3HeadingProps,
   V3HeadingSize,
   V3LedeProps,
+  V3RunningHeadProps,
 } from './atoms'
 
 /**
@@ -114,6 +122,7 @@ export type {
   V3ChartPoint,
   V3ChartKind,
   V3ChartBand,
+  V3ChartCallout,
   V3ChartRangeRow,
   V3ChartSample,
 } from './V3Chart'
@@ -156,6 +165,23 @@ export type { V3MosBarsProps } from './V3MosBars'
  */
 export { V3MosCompare, V3_MOS_COMPARE_MAX } from './V3MosCompare.client'
 export type { V3MosCompareProps, V3MosCompareCity } from './V3MosCompare.client'
+
+/**
+ * A monthly run folded into one strip per calendar year, months in columns,
+ * against the caller's threshold bands, the part of a month past the threshold
+ * in full ink (2026-09-25, the monthly market report's supply). Interrogable on
+ * the V3ChartHover contract: pointer, finger, arrow keys, a live reading. Sits
+ * in an Instrument's `drawing` slot beside a line, so a second series is a
+ * second form, not the same frame twice.
+ */
+export { V3SeasonStrips } from './V3SeasonStrips.client'
+export type {
+  V3SeasonStripsProps,
+  V3SeasonRow,
+  V3SeasonCell,
+  V3SeasonBand,
+  V3SeasonPos,
+} from './V3SeasonStrips.client'
 
 /**
  * JSON-LD injector. New public pages import this as MetadataBlock so they
@@ -393,6 +419,17 @@ export type {
 export { V3_LEDGER_SPARK_MIN } from './V3Ledger'
 /** The Ledger's phone hold (SITE-52); mounted by V3Ledger itself, exported so the barrel gate sees one register. */
 export { V3LedgerRevealIsland, V3_LEDGER_HOLD_MS } from './V3LedgerReveal.client'
+/**
+ * The same tap-and-hold for any set of doors that reveal something on hover
+ * and focus (generalised 2026-09-25): the monthly report archive's months use
+ * it so a phone gets the reveal a pointer gets. The item's stylesheet reads
+ * `data-revealed="true"`; a plain tap still opens the door. The gesture itself
+ * (hold, swallow, the grace that stands a swallow down) is the pure controller
+ * in V3HoldReveal.logic.ts.
+ */
+export { V3HoldReveal } from './V3HoldReveal.client'
+export type { V3HoldRevealProps } from './V3HoldReveal.client'
+export { V3_HOLD_MS } from './V3HoldReveal.logic'
 
 /**
  * The listing unit for Ledger-register search surfaces: one live listing as a

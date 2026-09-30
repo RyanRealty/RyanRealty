@@ -4,7 +4,6 @@
   display: block;
   width: 100%;
   min-width: 0;
-  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
 }
 
 .zip-insight .insight-chart-stage {

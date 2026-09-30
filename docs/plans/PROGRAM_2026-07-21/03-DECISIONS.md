@@ -158,7 +158,7 @@ Veto any of these in one pass.
 
 ## Live defects I am fixing without discussion
 
-- **Closed-sale price bands** computed from `ListPrice` in `get_beacon_price_bands`, with a property-type filter that matches nothing. Porting the 2026-06-26 fix already applied to `get_beacon_metrics`. This is a live §0 violation in admin reports and CSV exports.
+- **Closed-sale price bands** computed from `ListPrice` in `report_price_bands_core`, with a property-type filter that matches nothing. Porting the 2026-06-26 fix already applied to `report_period_metrics_core`. This is a live §0 violation in admin reports and CSV exports.
 - **Broker CRM scoping fails open.** An unmapped broker email currently returns the whole company's clients and tasks. Changing to fail closed, and moving broker identity out of the three hardcoded email maps into the brokers table.
 - **The "Sold homes" links** in the footer, mega-menu, and `/sold` redirect all render active inventory. Pulling them until B3 is answered.
 - **`/lp/buyer-listing-alerts`** promises matches within 30 minutes and enrolls nobody. Wiring it to the existing alert creation path using criteria the form already collects.

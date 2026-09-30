@@ -9,9 +9,10 @@
  *                api.x.ai.
  *
  * Default is `xai` so /admin/cmas rebuilds and other studio surfaces keep working
- * on the existing key. Expired Auto-CMA (requestSource expired-listing-cron) forces
- * `cursor` for the build so judge/audit do not burn RyanRealtyApp — see
- * lib/cma/worker.ts. Override globally with GROK_TRANSPORT=cursor|xai.
+ * on the existing key. Expired Auto-CMA (requestSource expired-listing-cron) uses
+ * `cursor` for the build when the CLI is on the host and `xai` when it is not
+ * (Vercel has none); see lib/cma/build-transport.ts. Override globally with
+ * GROK_TRANSPORT=cursor|xai.
  *
  * Request-scoped via AsyncLocalStorage so a Cursor-forced expired build cannot
  * leak into a concurrent manual rebuild on the same isolate.

@@ -483,8 +483,8 @@ Every stat on the site that reads from `market_stats_cache` is currently wrong.
 | Issue | File | Fix |
 |-------|------|-----|
 | Weekly report uses `ListPrice` for closed sales | [app/actions/market-reports.ts](app/actions/market-reports.ts) `closedListingToReportListing` | Use `COALESCE(ClosePrice, details->>'ClosePrice', ListPrice)` |
-| Time series RPC uses `ListPrice` for medians | Migration `get_city_metrics_timeseries` | Use ClosePrice with fallback chain |
-| Beacon RPCs use `ListPrice` for some aggregates | Migration `get_city_period_metrics` / `get_city_price_bands` | Align with ClosePrice |
+| Time series RPC uses `ListPrice` for medians | Migration `get_city_metrics_timeseries` | **Fixed 2026-09-25** — switched to ClosePrice (`20260925030000_report_core_defect_fixes.sql`) |
+| Legacy report RPCs use `ListPrice` for some aggregates | `get_city_period_metrics` / `get_city_price_bands` (now backed by `report_period_metrics_core` / `report_price_bands_core`) | **Fixed** — `report_period_metrics_core` aligned 2026-06-26; `report_price_bands_core` aligned 2026-09-25 |
 | `guides.ts` column names don't match cache | [app/actions/guides.ts](app/actions/guides.ts) | Fix `avg_days_on_market` to `median_dom`, `geo_name` to `geo_slug` |
 
 ---

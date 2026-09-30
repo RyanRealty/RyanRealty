@@ -52,6 +52,7 @@ export async function GET(request: Request) {
       `${r.historyRowsInserted} history rows`,
       `${r.photosFixed} photos fixed`,
       r.skippedFinalized > 0 ? `${r.skippedFinalized} skipped (already finalized)` : null,
+      r.reopenedFinalized > 0 ? `${r.reopenedFinalized} reopened (the MLS changed a finalized listing)` : null,
       r.expired && r.expired.new_processed > 0
         ? `${r.expired.new_processed} expired listings processed (${r.expired.alert_emails_sent} alerts)`
         : null,
@@ -72,6 +73,7 @@ export async function GET(request: Request) {
       historyRowsInserted: r.historyRowsInserted,
       photosFixed: r.photosFixed,
       skippedFinalized: r.skippedFinalized,
+      reopenedFinalized: r.reopenedFinalized,
       pages: r.pages,
       sinceIso: r.sinceIso,
       expired: r.expired,

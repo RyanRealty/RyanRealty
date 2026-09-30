@@ -84,7 +84,7 @@ marketing-daily-digest, analytics-daily-digest, gbp-monthly-digest, marketing-we
 
 ### PROGRAM Tier-1 re-probe samples (2026-08-08)
 - **Bytespider / AEO:** `app/robots.ts` allows Bytespider; `middleware.ts` bot regex still includes `bytespider` (case-insensitive). **STILL CONFLICT** — allow in robots + block in middleware class not closed.
-- Other Tier-1 items (beacon price bands, CRM fail-open, sold-homes nav, LP enroll) **not re-verified this pass** — remain on next-session list.
+- Other Tier-1 items (report price bands, CRM fail-open, sold-homes nav, LP enroll) **not re-verified this pass** — remain on next-session list.
 
 ### CAP-015 refined (2026-08-08 later)
 - Full stage census file: P-crm-stage-dist.json — 22977 sampled, 6 stages only.
@@ -109,7 +109,7 @@ marketing-daily-digest, analytics-daily-digest, gbp-monthly-digest, marketing-we
 - CAP-024 shell: strengthen to **VERIFIED** for rule B; CAP-025 11F island purity still ACTIVE (inbox parallel).
 
 ### PROGRAM Tier-1 re-probes
-- **D7 price bands / §0:** Latest migration def `get_beacon_price_bands` (20260401120000) still bands **ListPrice** on rows with StandardStatus LIKE closed. **STILL OPEN** — closed sales banded by list price is license-adjacent.
+- **D7 price bands / §0:** **RESOLVED 2026-09-25** — the 2026-08-08 migration below was written to the repo but never actually applied to hosted Supabase (confirmed live via `pg_get_functiondef` before touching it: closed sales were still banded on **ListPrice**, matching the 20260401120000 definition, not the 08-08 file). Applied now in `20260925030000_report_core_defect_fixes.sql` alongside the property-type predicate fix; verified live (Bend/Awbrey Butte, Jul 2026).
 - **Buyer LP alerts:** `app/lp/buyer-listing-alerts/actions.ts` now creates lead + autoEnroll + **upsertListingAlert** filter sets (comment: funnel gap closed 2026-07-21). Historical "enrolls nobody" claim **likely SUPERSEDED** — re-spot-check live after next LP submit; code path present.
 - **CRM scope:** `lib/crm/scope.ts` has scopeBroker + isPersonInScope + tests; requirePersonInScope used widely. Fail-open class **partially mitigated** — entity-scope gate still flags some admin pages (people/[id]). Keep CAP-009 risk but not "unscoped everywhere."
 - **Bytespider:** still allow robots + middleware block (prior log).
@@ -117,8 +117,8 @@ marketing-daily-digest, analytics-daily-digest, gbp-monthly-digest, marketing-we
 ### Digests (clarified)
 - daily-broker-digest ≠ broker-agent-digest (different products). Both intended; daily CRM digest + weekly pipeline now on vercel schedule (prior commit).
 
-### S0 D7 migration authored 2026-08-08
-- `supabase/migrations/20260808181843_beacon_price_bands_close_price.sql` — closed sales bands use ClosePrice; active still ListPrice; return keys unchanged.
+### S0 D7 migration authored 2026-08-08, actually applied 2026-09-25
+- `supabase/migrations/20260808181843_report_price_bands_close_price.sql` — closed sales bands use ClosePrice; active still ListPrice; return keys unchanged. Written to the repo on 2026-08-08 but never reached hosted Supabase until `20260925030000_report_core_defect_fixes.sql` applied it live (see re-probe above).
 - Apply via db:push in same delivery as map commit.
 
 ### Bytespider alignment (2026-08-08)
