@@ -35,8 +35,9 @@ import 'server-only'
  *     audience. Matt is texted the new link, whether the old one had been
  *     approved, and that edits to it are not carried over. What he reviewed
  *     is therefore always what he approves;
- *   - an email already going out cannot be recalled: he is texted once to
- *     pause the rest;
+ *   - an email already going out cannot be recalled or rewritten, and Matt
+ *     approved it: he is texted once per build (new figures, a report taken
+ *     down, or figures that cannot be checked) with the link to pause the rest;
  *   - a new email that cannot be built (or a report no longer published):
  *     the old one is canceled all the same, the earlier figures never go out,
  *     and he is told; the backstop drafts the month once it can.
@@ -80,9 +81,12 @@ export type EditionEmailDraftResult =
   | { status: 'created'; id: string; subject: string }
   | { status: 'replaced'; id: string; replacedId: string; wasScheduled: boolean; touched: boolean }
   | { status: 'restamped'; id: string; newsletterStatus: string }
-  | { status: 'stale-sending'; id: string; build: string }
+  | { status: 'stale-sending'; id: string; build: string; reason: StaleReason }
   | { status: 'exists'; id: string; newsletterStatus: string }
   | { status: 'skipped'; reason: string }
+
+/** Why an email going out no longer matches its report: new figures, a report taken down, or figures that cannot be checked. */
+export type StaleReason = 'new-figures' | 'unpublished' | 'unverifiable'
 
 export type EditionEmailDraftDeps = {
   getEdition: (month: string) => Promise<EditionRow | null>
@@ -113,6 +117,8 @@ export class EditionEmailError extends Error {
   constructor(
     message: string,
     readonly tag: string,
+    /** The page Matt acts on, sent whole after the message (never cut off with it). */
+    readonly link?: string,
   ) {
     super(message)
     this.name = 'EditionEmailError'
@@ -132,13 +138,23 @@ function builtFrom(citations: NewsletterCitationEntry[]): string | null {
 }
 
 /**
- * The figures an email prints, as its trace records them: each citation's
- * figure (what was printed, with a change's direction) and value (as
- * printed). The filter is left out: it records unprinted detail (sample
- * sizes, raw precision) that a rebuild can move without changing a word.
+ * The figures an email prints, as its trace records them: for each citation,
+ * where in the edition it comes from (the filter's payload path, which no
+ * rewording of the figure's label moves), its value as printed, and, for a
+ * change, the direction it prints ("down 2%" and "up 2%" both cite 2; the
+ * filter records the signed value). Unprinted detail in the filter (sample
+ * sizes, raw precision) is left out: a rebuild can move it without changing
+ * a word.
  */
 function figures(citations: NewsletterCitationEntry[]): string {
-  return JSON.stringify(citations.map((c) => [c.figure, c.value]))
+  return JSON.stringify(
+    citations.map((c) => {
+      const path = c.filter.split(' · ')[0]!.split(' = ')[0]!.split(' (')[0]!.trim()
+      const raw = /YoY = (-?[\d.]+(?:e-?\d+)?)/.exec(c.filter)?.[1]
+      const direction = raw === undefined ? '' : Math.sign(Math.round(Number(raw) * 100))
+      return [path, c.value, direction]
+    }),
+  )
 }
 
 /** The checked email for an edition. Throws when a printed figure has no citation. */
@@ -164,7 +180,7 @@ function short(id: string): string {
 
 /** A build as digits (20260925134804), for an alert key. */
 function buildTag(build: string): string {
-  return build.replace(/\D/g, '').slice(0, 14)
+  return build.replace(/\D/g, '').slice(0, 14) || build
 }
 
 function canceledWords(status: 'draft' | 'scheduled'): string {
@@ -223,9 +239,8 @@ export async function ensureEditionEmailDraft(
       // The report the email quotes and links to is not published (a republish
       // held by the reconciliation gate, or withdrawn): it must not go out.
       const why = edition ? `the ${key} report is now ${edition.status}` : `the ${key} report is gone`
-      if (draft.status === 'sending') {
-        throw new EditionEmailError(`${why} while its email is going out. To stop the rest, pause it: ${newsletterReviewUrl(draft.id)}`, `unpublished-${short(draft.id)}`)
-      }
+      const build = edition ? editionBuildStamp(edition) : 'gone'
+      if (draft.status === 'sending') return { status: 'stale-sending', id: draft.id, build, reason: 'unpublished' }
       if (!OPEN.has(draft.status)) return { status: 'exists', id: draft.id, newsletterStatus: draft.status }
       const status = draft.status as 'draft' | 'scheduled'
       if (await deps.retireDraft(draft.id, status, replacedEditionEmailMarker(key, draft.id))) {
@@ -251,13 +266,9 @@ export async function ensureEditionEmailDraft(
     }
 
     if (draft.status === 'sending') {
-      if ('error' in built) {
-        throw new EditionEmailError(
-          `the report was republished while its email is going out, and the new figures could not be checked against it (${built.error}). If it should wait, pause it: ${newsletterReviewUrl(draft.id)}`,
-          `sending-${short(draft.id)}-${buildTag(build)}`,
-        )
-      }
-      return { status: 'stale-sending', id: draft.id, build }
+      // It cannot be recalled or rewritten. Matt approved this send, so he
+      // decides whether the rest goes out: he is told, once per build.
+      return { status: 'stale-sending', id: draft.id, build, reason: 'error' in built ? 'unverifiable' : 'new-figures' }
     }
     if (!OPEN.has(draft.status)) return { status: 'exists', id: draft.id, newsletterStatus: draft.status }
 
@@ -285,18 +296,27 @@ export async function ensureEditionEmailDraft(
         citations: built.email.citations,
       })
     } catch (err) {
-      // Nothing changed in that transaction. The earlier figures still must not go out.
       const why = err instanceof Error ? err.message : String(err)
-      const retired = await deps.retireDraft(draft.id, status, retiredMarker).catch(() => false)
-      if (retired) {
+      // The call may have committed with its answer lost: see what is there now.
+      const now = await deps.findDraft(marker).catch(() => null)
+      if (now && now.id !== draft.id) {
+        // Its answer was lost, so whether the old one had been edited is not known: the text says "if".
+        return { status: 'replaced', id: now.id, replacedId: draft.id, wasScheduled: status === 'scheduled', touched: true }
+      }
+      // It did not: the earlier figures still must not go out.
+      if (await deps.retireDraft(draft.id, status, retiredMarker).catch(() => false)) {
         throw new EditionEmailError(
-          `the report was republished and ${canceledWords(status)}, so it cannot go out with the earlier figures, but the new email could not be written: ${why}. The daily check drafts it.`,
+          `the report was republished and ${canceledWords(status)}, so it cannot go out with the earlier figures, but the new email could not be written (${why}). The daily check drafts it.`,
           `canceled-${short(draft.id)}`,
         )
       }
+      const still = now?.status ?? status
       throw new EditionEmailError(
-        `the report was republished with new figures, but its email could not be replaced (${why}) and is still ${status}. Do not approve it; open it here: ${newsletterReviewUrl(draft.id)}`,
+        still === 'scheduled'
+          ? `the report was republished with new figures, but its approved email could not be replaced (${why}) and is still scheduled with the earlier figures. Unschedule it here:`
+          : `the report was republished with new figures, but its email could not be replaced (${why}) and still has the earlier figures. Do not approve it; open it here:`,
         `replace-${short(draft.id)}-${buildTag(build)}`,
+        newsletterReviewUrl(draft.id),
       )
     }
     if (replaced.ok) {
@@ -325,7 +345,7 @@ function label(month: string): string {
  * per draft (keyed by its id, 30 days): the "drafted" text, or the
  * "replaced" text that introduced it, and `remind` (the newest month only)
  * asks for it again each morning so a text that failed to queue is retried.
- * An email going out on figures since revised is told once per build.
+ * An email going out whose report changed is told once per build.
  */
 export function editionEmailAlert(
   month: string,
@@ -352,9 +372,15 @@ export function editionEmailAlert(
     }
   }
   if (result.status === 'stale-sending') {
+    const what =
+      result.reason === 'new-figures'
+        ? 'was republished with new figures'
+        : result.reason === 'unpublished'
+          ? 'was taken down'
+          : 'was republished, and its new figures could not be checked against the email,'
     return {
       key: `market-report-email-sending-${short(result.id)}-${buildTag(result.build)}`,
-      body: `The ${label(month)} market report was republished with new figures while its email is going out. What has gone out cannot be recalled; to keep the rest from going out with the earlier figures, pause it: ${newsletterReviewUrl(result.id)}`,
+      body: `The ${label(month)} market report ${what} while its email is going out to your list. What has gone out cannot be recalled. To keep the rest from going out with the earlier figures, pause it here: ${newsletterReviewUrl(result.id)}`,
       cooldownMinutes: 365 * 1440,
     }
   }
@@ -377,16 +403,17 @@ async function tell(
     const error = err instanceof Error ? err.message : String(err)
     const tag = err instanceof EditionEmailError ? err.tag : 'error'
     console.error('[market-report email draft]', error)
+    const link = err instanceof EditionEmailError && err.link ? ` ${err.link}` : ''
     try {
       await queueBrokerHealthAlert({
         key: `market-report-email-failed-${month.slice(0, 7)}-${tag}`,
-        body: `The ${label(month)} market report email needs a look: ${error.slice(0, 320)}`,
+        body: `The ${label(month)} market report email needs a look: ${error.slice(0, 280)}${link}`,
         cooldownMinutes: 7 * 1440,
       })
     } catch (alertErr) {
       console.error('[market-report email draft] alert', alertErr)
     }
-    return { status: 'failed', error }
+    return { status: 'failed', error: `${error}${link}` }
   }
 }
 

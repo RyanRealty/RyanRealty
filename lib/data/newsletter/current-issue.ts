@@ -78,31 +78,35 @@ function toRef(row: CandidateRow): CurrentNewsletterIssueRef {
   }
 }
 
-type Db = ReturnType<typeof createServiceClient>
-
 /**
  * False for a monthly market report email whose report was rebuilt after it
- * (or is no longer published); true for every other issue. THROWS on a failed
- * read: an unchecked email is not offered.
+ * was written (or is no longer published); true for every other issue. The
+ * one check for every path that puts an issue in front of someone: this
+ * selection, and the list and one-off enqueues (lib/newsletter/send-queue.ts).
+ * A same-figures rebuild re-stamps an open email (the draft writer), so only an
+ * email that went out stays behind its report; its trace records what was
+ * checked when it went, and it is not sent again to someone new. THROWS on a
+ * failed read: an unchecked email is not sent.
  */
-async function figuresStillCurrent(sb: Db, row: CandidateRow): Promise<boolean> {
-  if (!isLiveEditionEmailMarker(row.created_by)) return true
-  const month = editionEmailMonth(row.created_by)
+export async function editionEmailFiguresCurrent(createdBy: string | null, stamp: string | null): Promise<boolean> {
+  if (!isLiveEditionEmailMarker(createdBy)) return true
+  const month = editionEmailMonth(createdBy)
   if (!month) return false
+  const sb = createServiceClient()
   const { data, error } = await sb
     .from('market_report_editions')
     .select('status,generated_at')
     .eq('edition_month', `${month}-01`)
     .maybeSingle()
-  if (error) throw new Error(`getCurrentNewsletterIssue: ${error.message}`)
+  if (error) throw new Error(`editionEmailFiguresCurrent: ${error.message}`)
   const edition = data as { status: string; generated_at: string } | null
   if (!edition || edition.status !== 'published') return false
-  return builtFromOrAfter(row.stamp, editionBuildStamp(edition))
+  return builtFromOrAfter(stamp, editionBuildStamp(edition))
 }
 
-async function firstCurrent(sb: Db, rows: CandidateRow[]): Promise<CurrentNewsletterIssueRef | null> {
+async function firstCurrent(rows: CandidateRow[]): Promise<CurrentNewsletterIssueRef | null> {
   for (const row of rows) {
-    if (await figuresStillCurrent(sb, row)) return toRef(row)
+    if (await editionEmailFiguresCurrent(row.created_by, row.stamp)) return toRef(row)
   }
   return null
 }
@@ -121,7 +125,7 @@ export async function getCurrentNewsletterIssueRef(now: Date = new Date()): Prom
     .order('send_started_at', { ascending: false })
     .limit(CANDIDATES)
   if (outError) throw new Error(`getCurrentNewsletterIssue: ${outError.message}`)
-  const sent = await firstCurrent(sb, (out ?? []) as unknown as CandidateRow[])
+  const sent = await firstCurrent((out ?? []) as unknown as CandidateRow[])
   if (sent) return sent
 
   const { data: next, error: nextError } = await sb
@@ -133,7 +137,7 @@ export async function getCurrentNewsletterIssueRef(now: Date = new Date()): Prom
     .order('scheduled_at', { ascending: true, nullsFirst: false })
     .limit(CANDIDATES)
   if (nextError) throw new Error(`getCurrentNewsletterIssue: ${nextError.message}`)
-  return firstCurrent(sb, (next ?? []) as unknown as CandidateRow[])
+  return firstCurrent((next ?? []) as unknown as CandidateRow[])
 }
 
 const APPROVED = new Set(['sent', 'sending', 'scheduled'])

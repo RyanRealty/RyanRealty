@@ -204,7 +204,7 @@ describe('getCurrentNewsletterIssueRef', () => {
   it('throws when a report email cannot be checked, rather than offering it unchecked', async () => {
     rows = [row('report', 'sent', { send_started_at: '2026-10-08T16:00:00Z', created_by: REPORT, stamp: BUILD })]
     failOn = 'editions'
-    await expect(getCurrentNewsletterIssueRef(NOW)).rejects.toThrow('getCurrentNewsletterIssue: editions timeout')
+    await expect(getCurrentNewsletterIssueRef(NOW)).rejects.toThrow('editionEmailFiguresCurrent: editions timeout')
   })
 })
 

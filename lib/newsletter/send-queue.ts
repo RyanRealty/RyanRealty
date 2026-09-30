@@ -10,6 +10,7 @@ import { wrapNewsletterHtml, newsletterTextFooter, type SenderBroker } from '@/l
 import { htmlToPlainText } from '@/lib/email/prepare'
 import { getLatestDeliverability, deliverabilityVerdict } from '@/lib/data/deliverability'
 import { getDueScheduledNewsletterIds } from '@/lib/data/newsletter/scheduled'
+import { editionEmailFiguresCurrent } from '@/lib/data/newsletter/current-issue'
 import { queueBrokerHealthAlert } from '@/lib/crm/broker-alerts'
 import {
   anyNewsletterEverSent,
@@ -130,6 +131,22 @@ export type EnqueueResult =
   | { ok: false; error: string }
 
 /**
+ * Null when the issue may go out; 'report_changed' for a monthly market report
+ * email whose report changed after it was written (CLAUDE.md §0: it never goes
+ * out on the earlier figures; the draft writer, lib/market-report/edition-email-draft.ts,
+ * replaces it with a draft on the current ones), 'report_check_failed' when
+ * that could not be checked. Every enqueue asks, whoever approved the send.
+ */
+async function reportEmailHold(letter: { created_by: string | null; citations: Array<{ fetched_at?: string }> | null }): Promise<string | null> {
+  try {
+    return (await editionEmailFiguresCurrent(letter.created_by, letter.citations?.[0]?.fetched_at ?? null)) ? null : 'report_changed'
+  } catch (err) {
+    console.error('[send-queue] report email check', err instanceof Error ? err.message : err)
+    return 'report_check_failed'
+  }
+}
+
+/**
  * Approve = ENQUEUE (spec §6 step 1). Wins the CAS lock, resolves the audience,
  * freezes each recipient's broker + engagement tier, inserts queued rows, and
  * writes the tranche schedule. The actual sending is the cron drain's job — this
@@ -139,6 +156,8 @@ export async function enqueueNewsletter(newsletterId: string): Promise<EnqueueRe
   const letter = await getNewsletter(newsletterId)
   if (!letter) return { ok: false, error: 'not_found' }
   if (!letter.body_html && !letter.body_text) return { ok: false, error: 'empty_body' }
+  const hold = await reportEmailHold(letter)
+  if (hold) return { ok: false, error: hold }
 
   // CAS lock — a second concurrent approve gets null and aborts (S-1).
   const token = await claimNewsletterForSending(newsletterId, { listSend: true })
@@ -216,6 +235,8 @@ export async function enqueueNewsletterToEmails(
   const letter = await getNewsletter(newsletterId)
   if (!letter) return { ok: false, error: 'not_found' }
   if (!letter.body_html && !letter.body_text) return { ok: false, error: 'empty_body' }
+  const hold = await reportEmailHold(letter)
+  if (hold) return { ok: false, error: hold }
 
   const deduped = [...new Set(emails.map((e) => e.trim().toLowerCase()).filter((e) => e.includes('@')))]
   if (deduped.length === 0) return { ok: false, error: 'no_recipients' }
@@ -296,7 +317,10 @@ export async function enqueueNewsletterToEmails(
  * Build the per-issue tranche plan (§6.5). Small sends: one day-0 row per tier
  * (everything goes immediately). Large sends: Tier 1 (engaged) day 0, Tier 2 (new)
  * days 1-2, Tier 3 (cold) days 3-6; a first-ever large send uses ramped warm-up
- * caps. Pure — unit-testable.
+ * caps. Every queued recipient gets a day: a warm-up cap below a tier's share
+ * carries the rest to the days after (the drain claims only against a row's cap,
+ * and an issue finalizes only when nothing is queued, so a recipient with no row
+ * would hold it at 'sending' forever). Pure — unit-testable.
  */
 export function computeSchedule(
   tierCounts: Map<number, number>,
@@ -310,13 +334,23 @@ export function computeSchedule(
   }
   const daysForTier: Record<number, number[]> = { 1: [0], 2: [1, 2], 3: [3, 4, 5, 6] }
   const warmCaps = [500, 1000, 2000, 4000, 8000] // per-day ceiling while warming the domain
+  const ceiling = (d: number, want: number) => (warmup && d < warmCaps.length ? Math.min(want, warmCaps[d]!) : want)
   for (const [tier, n] of tierCounts) {
     if (n <= 0) continue
     const days = daysForTier[tier] ?? [0]
     const per = Math.ceil(n / days.length)
+    let left = n
     for (const d of days) {
-      const cap = warmup && d < warmCaps.length ? Math.min(per, warmCaps[d]) : per
+      const cap = ceiling(d, per)
       out.push({ day_index: d, tier, cap })
+      left -= Math.min(cap, left)
+    }
+    // Held back by the warm-up: the next days take the rest, still under their
+    // ceilings (none past the ramp), so the tier finishes a day or two later.
+    for (let d = days[days.length - 1]! + 1; left > 0; d++) {
+      const cap = ceiling(d, left)
+      out.push({ day_index: d, tier, cap })
+      left -= cap
     }
   }
   return out

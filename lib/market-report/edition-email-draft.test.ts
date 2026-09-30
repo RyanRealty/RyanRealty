@@ -194,6 +194,16 @@ describe('a rebuild with the same printed figures', () => {
     }
   })
 
+  it('reads an email written before the figure labels carried a direction as the same email', async () => {
+    // The live August draft (ec196773) was written with labels like "median change from August 2025 (percent, as printed)".
+    const older = storedFrom(editionRow())
+    older.citations = older.citations.map((c) => ({ ...c, figure: c.figure.replace(/: (up|down|unchanged|more|fewer)/, '') }))
+    expect(older.citations.map((c) => c.figure)).toContain('Central Oregon median change from August 2025 (percent, as printed)')
+    const d = deps({ getEdition: vi.fn(async () => editionRow({ build: BUILD_B })), findDraft: vi.fn(async () => older) })
+    expect((await ensureEditionEmailDraft('2026-08', {}, d)).status).toBe('restamped')
+    expect(d.replaceDraft).not.toHaveBeenCalled()
+  })
+
   it('judges by what is printed: a sample size that moved without moving a printed figure is the same email', async () => {
     const moved = editionRow({ build: BUILD_B, dtcN: 281 })
     expect(buildEditionEmail(moved).citations.map((c) => c.filter)).not.toEqual(buildEditionEmail(editionRow()).citations.map((c) => c.filter))
@@ -270,17 +280,21 @@ describe('a rebuild with new figures', () => {
     expect(replaceDraft.mock.calls[1]![0]).toMatchObject({ id: 'nl-b', retiredCreatedBy: `${MARKER}:replaced:nl-b` })
   })
 
-  it('an email already going out cannot be recalled: flagged, nothing written', async () => {
+  it('an email already going out cannot be recalled: flagged for Matt, nothing written', async () => {
     const d = deps({ getEdition: vi.fn(async () => republished()), findDraft: vi.fn(async () => storedFrom(editionRow(), 'sending')) })
-    expect(await ensureEditionEmailDraft('2026-08', {}, d)).toEqual({ status: 'stale-sending', id: 'nl-0', build: BUILD_B })
+    expect(await ensureEditionEmailDraft('2026-08', {}, d)).toEqual({ status: 'stale-sending', id: 'nl-0', build: BUILD_B, reason: 'new-figures' })
     expect(wrote(d)).toBe(false)
   })
 
-  it('an email going out whose new figures cannot be built is a failure to check, not "new figures"', async () => {
+  it('an email going out whose new figures cannot be built is flagged as unchecked, not as "new figures"', async () => {
     const d = deps({ getEdition: vi.fn(async () => unbuildable()), findDraft: vi.fn(async () => storedFrom(editionRow(), 'sending')) })
-    const err = await ensureEditionEmailDraft('2026-08', {}, d).catch((e: unknown) => e)
-    expect(err).toBeInstanceOf(EditionEmailError)
-    expect((err as Error).message).toMatch(/^the report was republished while its email is going out, and the new figures could not be checked against it/)
+    expect(await ensureEditionEmailDraft('2026-08', {}, d)).toEqual({ status: 'stale-sending', id: 'nl-0', build: BUILD_B, reason: 'unverifiable' })
+    expect(wrote(d)).toBe(false)
+  })
+
+  it('an email going out whose report was taken down is flagged, nothing written', async () => {
+    const d = deps({ getEdition: vi.fn(async () => editionRow({ status: 'draft', build: BUILD_B })), findDraft: vi.fn(async () => storedFrom(editionRow(), 'sending')) })
+    expect(await ensureEditionEmailDraft('2026-08', {}, d)).toEqual({ status: 'stale-sending', id: 'nl-0', build: BUILD_B, reason: 'unpublished' })
     expect(wrote(d)).toBe(false)
   })
 
@@ -291,6 +305,20 @@ describe('a rebuild with new figures', () => {
     expect(d.replaceDraft).not.toHaveBeenCalled()
   })
 
+  it('when the replacement committed but its answer was lost, reads the new draft instead of reporting a failure', async () => {
+    const findDraft = vi.fn<EditionEmailDraftDeps['findDraft']>(async () => ({ id: 'nl-1', status: 'draft', citations: buildEditionEmail(republished()).citations }))
+    findDraft.mockResolvedValueOnce(storedFrom(editionRow(), 'scheduled'))
+    const d = deps({
+      getEdition: vi.fn(async () => republished()),
+      findDraft,
+      replaceDraft: vi.fn(async () => {
+        throw new Error('replaceNewsletterDraft: connection reset')
+      }),
+    })
+    expect(await ensureEditionEmailDraft('2026-08', {}, d)).toEqual({ status: 'replaced', id: 'nl-1', replacedId: 'nl-0', wasScheduled: true, touched: true })
+    expect(d.retireDraft).not.toHaveBeenCalled()
+  })
+
   it('when the replacement cannot be written, the old email is still canceled, and the failure says so', async () => {
     const d = deps({
       getEdition: vi.fn(async () => republished()),
@@ -299,25 +327,30 @@ describe('a rebuild with new figures', () => {
         throw new Error('replaceNewsletterDraft: timeout')
       }),
     })
-    await expect(ensureEditionEmailDraft('2026-08', {}, d)).rejects.toThrow(/its email draft was canceled, so it cannot go out with the earlier figures, but the new email could not be written: replaceNewsletterDraft: timeout/)
+    await expect(ensureEditionEmailDraft('2026-08', {}, d)).rejects.toThrow(/its email draft was canceled, so it cannot go out with the earlier figures, but the new email could not be written \(replaceNewsletterDraft: timeout\)/)
     expect(d.retireDraft).toHaveBeenCalledWith('nl-0', 'draft', REPLACED)
   })
 
-  it('when neither the replacement nor the cancel goes through, it says the old email is still open and not to approve it', async () => {
-    const d = deps({
-      getEdition: vi.fn(async () => republished()),
-      findDraft: vi.fn(async () => storedFrom(editionRow(), 'scheduled')),
-      replaceDraft: vi.fn(async () => {
-        throw new Error('down')
-      }),
-      retireDraft: vi.fn(async () => {
-        throw new Error('down')
-      }),
-    })
-    await expect(ensureEditionEmailDraft('2026-08', {}, d)).rejects.toThrow(/could not be replaced \(down\) and is still scheduled\. Do not approve it/)
+  it('when neither the replacement nor the cancel goes through, it says what to do with the email as it stands, link whole', async () => {
+    const failing = (status: string) =>
+      deps({
+        getEdition: vi.fn(async () => republished()),
+        findDraft: vi.fn(async () => storedFrom(editionRow(), status)),
+        replaceDraft: vi.fn(async () => {
+          throw new Error('down')
+        }),
+        retireDraft: vi.fn(async () => {
+          throw new Error('down')
+        }),
+      })
+    const scheduled = (await ensureEditionEmailDraft('2026-08', {}, failing('scheduled')).catch((e: unknown) => e)) as EditionEmailError
+    expect(scheduled.message).toMatch(/could not be replaced \(down\) and is still scheduled with the earlier figures\. Unschedule it here:$/)
+    expect(scheduled.link).toBe('https://ryan-realty.com/admin/newsletters/nl-0')
+    const draft = (await ensureEditionEmailDraft('2026-08', {}, failing('draft')).catch((e: unknown) => e)) as EditionEmailError
+    expect(draft.message).toMatch(/still has the earlier figures\. Do not approve it; open it here:$/)
   })
 
-  it('a report no longer published takes its open email out of reach', async () => {
+  it('a report no longer published takes its open draft or approved email out of reach', async () => {
     const d = deps({ getEdition: vi.fn(async () => editionRow({ status: 'draft', build: BUILD_B })), findDraft: vi.fn(async () => storedFrom(editionRow())) })
     await expect(ensureEditionEmailDraft('2026-08', {}, d)).rejects.toThrow('the 2026-08 report is now draft, so its email draft was canceled. A new one is drafted when the report publishes again.')
     expect(d.retireDraft).toHaveBeenCalledWith('nl-0', 'draft', REPLACED)
@@ -372,13 +405,35 @@ describe('texts to Matt', () => {
     expect(queueBrokerHealthAlert).not.toHaveBeenCalled()
   })
 
-  it('tells him once per build to pause an email going out on revised figures', async () => {
-    await draftEditionEmailAndTell('2026-08', {}, deps({ getEdition: vi.fn(async () => republished()), findDraft: vi.fn(async () => storedFrom(editionRow(), 'sending')) }))
-    const alert = queueBrokerHealthAlert.mock.calls[0]![0]
-    expect(alert.key).toBe('market-report-email-sending-nl-0-20261002090000')
-    expect(alert.cooldownMinutes).toBe(365 * 1440)
-    expect(alert.body).toContain('cannot be recalled')
-    expect(alert.body).toContain('pause it: https://ryan-realty.com/admin/newsletters/nl-0')
+  it('tells him once per build, with the pause link, when an email going out no longer matches its report', async () => {
+    const cases: Array<[EditionRow, string]> = [
+      [republished(), 'was republished with new figures while its email is going out'],
+      [unbuildable(), 'its new figures could not be checked against the email'],
+      [editionRow({ status: 'draft', build: BUILD_B }), 'was taken down while its email is going out'],
+    ]
+    for (const [edition, words] of cases) {
+      queueBrokerHealthAlert.mockClear()
+      await draftEditionEmailAndTell('2026-08', {}, deps({ getEdition: vi.fn(async () => edition), findDraft: vi.fn(async () => storedFrom(editionRow(), 'sending')) }))
+      const alert = queueBrokerHealthAlert.mock.calls[0]![0]
+      expect(alert.key).toBe('market-report-email-sending-nl-0-20261002090000')
+      expect(alert.cooldownMinutes).toBe(365 * 1440)
+      expect(alert.body).toContain(words)
+      expect(alert.body).toContain('cannot be recalled')
+      expect(alert.body).toMatch(/pause it here: https:\/\/ryan-realty\.com\/admin\/newsletters\/nl-0$/)
+    }
+  })
+
+  it('keeps a failure text\'s link whole however long the error', async () => {
+    const d = deps({
+      getEdition: vi.fn(async () => republished()),
+      findDraft: vi.fn(async () => storedFrom(editionRow(), 'scheduled')),
+      replaceDraft: vi.fn(async () => {
+        throw new Error(`PGRST202 ${'x'.repeat(400)}`)
+      }),
+      retireDraft: vi.fn(async () => false),
+    })
+    await draftEditionEmailAndTell('2026-08', {}, d)
+    expect(queueBrokerHealthAlert.mock.calls[0]![0].body).toMatch(/ https:\/\/ryan-realty\.com\/admin\/newsletters\/nl-0$/)
   })
 
   it('never throws: a failure comes back as failed and is texted on a key of its kind, so a new kind is never muted', async () => {

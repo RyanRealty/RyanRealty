@@ -43,6 +43,35 @@ describe('computeSchedule', () => {
     const day3 = rows.find((r) => r.tier === 3 && r.day_index === 3)
     expect(day3!.cap).toBeLessThanOrEqual(4000) // warm ceiling for day 3, not 25000
   })
+
+  it('large warm-up: every queued recipient still gets a day (the rest carries to the next days)', () => {
+    // The first list send on 2026-09-30's list: about 5,340 new subscribers, none engaged yet.
+    const counts = new Map([[1, 600], [2, 5340], [3, 100000]])
+    const rows = computeSchedule(counts, true, true)
+    for (const [tier, n] of counts) {
+      expect(rows.filter((r) => r.tier === tier).reduce((sum, r) => sum + r.cap, 0)).toBe(n)
+    }
+    // Tier 2: 1,000 on day 1 and 2,000 on day 2 (the ramp), the other 2,340 on day 3.
+    expect(rows.filter((r) => r.tier === 2)).toEqual([
+      { day_index: 1, tier: 2, cap: 1000 },
+      { day_index: 2, tier: 2, cap: 2000 },
+      { day_index: 3, tier: 2, cap: 2340 },
+    ])
+    // No day holds a tier twice, and no ramp day is over its ceiling.
+    const keys = rows.map((r) => `${r.day_index}:${r.tier}`)
+    expect(new Set(keys).size).toBe(keys.length)
+    const ramp = [500, 1000, 2000, 4000, 8000]
+    for (const r of rows) if (r.day_index < ramp.length) expect(r.cap).toBeLessThanOrEqual(ramp[r.day_index]!)
+  })
+
+  it('large steady send: the split covers everyone and adds no extra days', () => {
+    const counts = new Map([[1, 3001], [2, 4001], [3, 5001]])
+    const rows = computeSchedule(counts, true, false)
+    for (const [tier, n] of counts) {
+      expect(rows.filter((r) => r.tier === tier).reduce((sum, r) => sum + r.cap, 0)).toBeGreaterThanOrEqual(n)
+    }
+    expect(Math.max(...rows.map((r) => r.day_index))).toBe(6)
+  })
 })
 
 describe('renderForRecipient — per-broker sender identity + broker-stamped token', () => {

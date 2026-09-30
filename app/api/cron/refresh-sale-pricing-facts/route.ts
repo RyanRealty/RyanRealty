@@ -60,7 +60,8 @@ export async function GET(request: Request) {
   // table on 2026-09-30), the owner is texted, and the steps below still run.
   // The sweep holds at a refused batch (migration 20260930190000): the next
   // run reads it again with a whole budget, and a checked cleanup is approved
-  // by calling the function once with a larger p_max_delete.
+  // by calling the function once with this batch size and a larger budget,
+  // prune_sale_pricing_facts_batch(20000, 'sale_pricing_facts_prune', <n>).
   const pruned = {
     deleted: 0,
     scanned: 0,

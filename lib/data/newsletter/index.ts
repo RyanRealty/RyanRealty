@@ -404,7 +404,7 @@ export async function getNewsletter(id: string): Promise<NewsletterRow | null> {
  * backstop (lib/market-report/edition-email-draft.ts) would write the month
  * again the next morning, so a month Matt skipped would keep coming back.
  */
-export async function deleteNewsletterDraft(id: string): Promise<{ ok: boolean }> {
+export async function deleteNewsletterDraft(id: string): Promise<{ ok: boolean; error?: 'not_a_draft' }> {
   const sb = createServiceClient()
   const { data: row, error: readError } = await sb
     .from(LETTERS)
@@ -413,16 +413,16 @@ export async function deleteNewsletterDraft(id: string): Promise<{ ok: boolean }
     .eq('status', 'draft')
     .maybeSingle()
   if (readError) return { ok: false }
-  if (row && isEditionEmailMarker((row as { created_by: string | null }).created_by)) {
-    const { error } = await sb
-      .from(LETTERS)
-      .update({ status: 'canceled', updated_at: new Date().toISOString() })
-      .eq('id', id)
-      .eq('status', 'draft')
-    return { ok: !error }
-  }
-  const { error } = await sb.from(LETTERS).delete().eq('id', id).eq('status', 'draft')
-  return { ok: !error }
+  if (!row) return { ok: false, error: 'not_a_draft' }
+  // Both writes are conditional on 'draft' and say whether they took: a draft
+  // scheduled or replaced (a republished report) in between is not reported
+  // as deleted, so a month Matt meant to skip is never skipped only on screen.
+  const write = isEditionEmailMarker((row as { created_by: string | null }).created_by)
+    ? sb.from(LETTERS).update({ status: 'canceled', updated_at: new Date().toISOString() }).eq('id', id).eq('status', 'draft').select('id')
+    : sb.from(LETTERS).delete().eq('id', id).eq('status', 'draft').select('id')
+  const { data, error } = await write
+  if (error) return { ok: false }
+  return (data?.length ?? 0) > 0 ? { ok: true } : { ok: false, error: 'not_a_draft' }
 }
 
 // ── Per-recipient tracking (opens / clicks / delivery) ──────────────────────

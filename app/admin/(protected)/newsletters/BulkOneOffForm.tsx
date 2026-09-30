@@ -62,6 +62,8 @@ export default function BulkOneOffForm({ id }: { id: string }) {
           already_sending: 'This issue is already sending.',
           not_found: 'Newsletter not found.',
           unauthorized: 'You do not have access to send.',
+          report_changed: 'Not sent: its market report changed after this email was written. A draft with the current figures takes its place.',
+          report_check_failed: 'Not sent: its market report could not be checked just now. Try again in a minute.',
         }
         setMessage({ type: 'err', text: map[r.error ?? ''] ?? r.error ?? 'Send failed.' })
       }

@@ -161,9 +161,10 @@ export default async function NewsletterDetailPage({ params }: { params: Promise
   // the rendered newsletter, never raw HTML.
   const preview = letter.body_html ? await renderNewsletterPreview(id, 'matt') : null
 
-  // A monthly market report email replaced because its report was republished
-  // with new figures: point at the one that took its place (a link Matt was
-  // texted, or a tab left open, lands here).
+  // A monthly market report email taken out of use because its report changed
+  // (republished with new figures, or taken down): point at the one that took
+  // its place, if there is one yet (a link Matt was texted, or a tab left open,
+  // lands here).
   const replacedMonth =
     letter.status === 'canceled' && isEditionEmailMarker(letter.created_by) && !isLiveEditionEmailMarker(letter.created_by)
       ? editionEmailMonth(letter.created_by)
@@ -189,7 +190,8 @@ export default async function NewsletterDetailPage({ params }: { params: Promise
 
       {replacedMonth ? (
         <p style={{ margin: '10px 0 0', fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
-          This email was replaced when its market report was republished with new figures, so it will not go out.{' '}
+          This email was taken out of use because its market report changed after it was written (republished,
+          or taken down), so it will not go out.{' '}
           {replacement && replacement.id !== id ? (
             <>
               <Link href={`/admin/newsletters/${replacement.id}`} style={{ color: 'var(--a-accent)', fontWeight: 600 }}>
@@ -198,7 +200,7 @@ export default async function NewsletterDetailPage({ params }: { params: Promise
               ({replacement.status}).
             </>
           ) : (
-            'Its new email is drafted as soon as it can be built from the new figures.'
+            'A new email is drafted from the report once it is published and can be built.'
           )}
         </p>
       ) : null}
