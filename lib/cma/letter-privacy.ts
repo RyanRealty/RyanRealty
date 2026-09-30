@@ -81,16 +81,15 @@ const COMMON_NAME_WORDS = new Set([
   'bell',
   'bells',
   // Company and estate owners (assessor rows such as "QUILLFEATHER HOMES LLC",
-  // "ESTATE OF ..."). The real-estate nouns first.
+  // "ESTATE OF ..."). The real-estate nouns first. House and land are not
+  // here: both are surnames ("the House family"), so they stay strict.
   'home',
   'homes',
-  'house',
   'houses',
   'property',
   'properties',
   'estate',
   'estates',
-  'land',
   'realty',
   'rental',
   'rentals',
@@ -122,15 +121,13 @@ const COMMON_NAME_WORDS = new Set([
   'limited',
   // Street directionals. They print in every address, ours included ("115 NW
   // Oregon Ave", comp addresses), and a builder's name can end in one
-  // ("... Homes NW"). One-letter directionals never become tokens.
+  // ("... Homes NW"). One-letter directionals never become tokens. The bare
+  // cardinals (north, south, east, west) are not here: they are surnames too
+  // ("kept by the West family"), and a letter rarely prints one.
   'ne',
   'nw',
   'se',
   'sw',
-  'north',
-  'south',
-  'east',
-  'west',
   'northeast',
   'northwest',
   'southeast',
@@ -213,15 +210,30 @@ function phraseIsOnlyCommonWords(phrase: string): boolean {
 }
 
 /**
- * Greeting, "Prepared for", a sign-off, a to/cc line, or a capitalized
- * pair sitting next to another name token ("Ada Price").
+ * "Mr. Price", "Mrs Price", "MRS.PRICE": an honorific makes an ordinary word a
+ * surname. The token matches in any letter case; the honorific must start with
+ * a capital M, so "mr" inside a sentence is not one. Miss and Dr are left out:
+ * "don't miss Park Commons" and "Mirror Lake Dr. Lake access" are not titles.
+ */
+function honorificRegExp(token: string): RegExp {
+  return new RegExp(`\\b(mrs|mr|ms)(?:\\.\\s*|\\s+)${escapeRegExp(token)}\\b`, 'gi')
+}
+
+function isHonorific(title: string): boolean {
+  return title.startsWith('M')
+}
+
+/**
+ * Greeting, "Prepared for", a sign-off, a to/cc line, an honorific, or a
+ * capitalized pair sitting next to another name token ("Ada Price", "PRICE
+ * HILL"). The pair matches in any letter case, because the stored name and the
+ * printed text rarely share one (an assessor's "ROSE WEST" prints as "Rose
+ * West"); both printed words must start with a capital.
  */
 function commonWordInNamePosition(text: string, token: string, tokens: string[]): boolean {
   const t = escapeRegExp(token)
   if (new RegExp(`\\b(?:hi|hello|dear|hey),?\\s+${t}\\b`, 'i').test(text)) return true
-  // An honorific makes any word a surname: "Mr. North will consider offers"
-  // names the owner even though "north" is an ordinary word.
-  if (new RegExp(`\\b(?:mr|mrs|ms|miss|dr)\\.?\\s+${t}\\b`, 'i').test(text)) return true
+  for (const m of text.matchAll(honorificRegExp(token))) if (isHonorific(m[1]!)) return true
   if (new RegExp(`\\bprepared\\s+for\\s+(?!the\\s+owners\\b)(?:[A-Za-z][A-Za-z'-]*\\s+){0,3}${t}\\b`, 'i').test(text)) {
     return true
   }
@@ -230,7 +242,7 @@ function commonWordInNamePosition(text: string, token: string, tokens: string[])
   for (const other of tokens) {
     if (other.toLowerCase() === token.toLowerCase()) continue
     const o = escapeRegExp(other)
-    const pair = new RegExp(`\\b(${o})\\s+(${t})\\b|\\b(${t})\\s+(${o})\\b`, 'g')
+    const pair = new RegExp(`\\b(${o})\\s+(${t})\\b|\\b(${t})\\s+(${o})\\b`, 'gi')
     let match: RegExpExecArray | null
     while ((match = pair.exec(text))) {
       const left = match[1] ?? match[3]
@@ -247,7 +259,7 @@ function scrubCapitalizedNamePairs(text: string, tokens: string[]): string {
   for (const a of tokens) {
     for (const b of tokens) {
       if (a.toLowerCase() === b.toLowerCase()) continue
-      const re = new RegExp(`\\b(${escapeRegExp(a)})\\s+(${escapeRegExp(b)})\\b`, 'g')
+      const re = new RegExp(`\\b(${escapeRegExp(a)})\\s+(${escapeRegExp(b)})\\b`, 'gi')
       out = out.replace(re, (whole, left: string, right: string) =>
         /^[A-Z]/.test(left) && /^[A-Z]/.test(right) ? '' : whole,
       )
@@ -260,8 +272,8 @@ function scrubCommonWordNamePositions(text: string, token: string, tokens: strin
   const t = escapeRegExp(token)
   let out = text
   out = out.replace(new RegExp(`\\b(hi|hello|dear|hey),?\\s+${t}\\b`, 'gi'), '$1')
-  // "Mr. North" names the owner: drop the surname with its honorific.
-  out = out.replace(new RegExp(`\\b(?:mr|mrs|ms|miss|dr)\\.?\\s+${t}\\b`, 'gi'), '')
+  // "Mr. Price" names the owner: drop the surname with its honorific.
+  out = out.replace(honorificRegExp(token), (whole, title: string) => (isHonorific(title) ? '' : whole))
   out = out.replace(
     new RegExp(`\\b(prepared\\s+for\\s+(?!the\\s+owners\\b)(?:[A-Za-z][A-Za-z'-]*\\s+){0,3})${t}\\b`, 'gi'),
     '$1',
@@ -271,10 +283,10 @@ function scrubCommonWordNamePositions(text: string, token: string, tokens: strin
   for (const other of tokens) {
     if (other.toLowerCase() === token.toLowerCase()) continue
     const o = escapeRegExp(other)
-    out = out.replace(new RegExp(`\\b(${o})\\s+(${t})\\b`, 'g'), (whole, mate: string, word: string) =>
+    out = out.replace(new RegExp(`\\b(${o})\\s+(${t})\\b`, 'gi'), (whole, mate: string, word: string) =>
       /^[A-Z]/.test(mate) && /^[A-Z]/.test(word) ? mate : whole,
     )
-    out = out.replace(new RegExp(`\\b(${t})\\s+(${o})\\b`, 'g'), (whole, word: string, mate: string) =>
+    out = out.replace(new RegExp(`\\b(${t})\\s+(${o})\\b`, 'gi'), (whole, word: string, mate: string) =>
       /^[A-Z]/.test(word) && /^[A-Z]/.test(mate) ? mate : whole,
     )
   }
@@ -302,9 +314,10 @@ export function scrubMlsOwnerTokens(
     .filter((s) => s.length > 2)
     .sort((a, b) => b.length - a.length)
   for (const phrase of phrases) {
-    // "Price" alone must not wipe every "list price". A phrase that still
-    // contains a real given name ("Quincy Price") comes out whole.
-    if (phraseIsOnlyCommonWords(phrase)) continue
+    // "Price" alone must not wipe every "list price". A name of two or more
+    // words comes out whole in any letter case, even when every word in it is
+    // ordinary ("PRICE HILL", "STONE HOMES LLC"): the whole phrase is the name.
+    if (significantWords(phrase).length < 2 && phraseIsOnlyCommonWords(phrase)) continue
     out = out.replace(new RegExp(escapeRegExp(phrase), 'gi'), '')
   }
   // Reverse order ("Price Quincy") is not the stored phrase. Take the pair
@@ -409,9 +422,11 @@ function nameFromSlug(slug: string): string {
  */
 export function ourIdentityPhrases(): string[] {
   const phrases = new Set<string>()
+  // A full name only. A bare "Matt" would take "Hi Matt," out of the text
+  // before it is graded, and a client called Matt would print unrefused.
   const add = (phrase: string) => {
     const t = phrase.trim()
-    if (t) phrases.add(t)
+    if (significantWords(t).length >= 2) phrases.add(t)
   }
   add(BRAND.name)
   add(BRAND.legalName)
@@ -476,7 +491,14 @@ export function ownerNameTokenHits(
   const tokens = ownerContactNameTokens(source)
   if (tokens.length === 0) return []
   const text = withoutOurOwnIdentity(textOf(htmlOrText), tokens)
-  const words = new Set((text.match(NAME_TOKEN_RE) ?? []).map((w) => w.toLowerCase()))
+  const words = new Set<string>()
+  for (const word of text.match(NAME_TOKEN_RE) ?? []) {
+    const w = word.toLowerCase()
+    words.add(w)
+    // A possessive still carries the name ("Zzyzx's offer"). Only a trailing
+    // 's is dropped, so "don't" never reads as "don".
+    if (w.endsWith("'s")) words.add(w.slice(0, -2))
+  }
   const hits: string[] = []
   for (const token of tokens) {
     if (!words.has(token.toLowerCase())) continue

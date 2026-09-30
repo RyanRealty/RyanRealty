@@ -282,7 +282,6 @@ describe('the real letter, signed by each broker on the roster', () => {
 const REQUIRED_ENTITY_WORDS = [
   'home',
   'homes',
-  'house',
   'houses',
   'llc',
   'inc',
@@ -314,7 +313,6 @@ const SIBLING_ENTITY_WORDS = [
   'developments',
   'developers',
   'builder',
-  'land',
   'realty',
   'rental',
   'rentals',
@@ -377,17 +375,17 @@ describe('company and estate owner words count only in a name-shaped position', 
     }
   })
 
-  it('a land and capital partnership owner passes on prose that says land, capital, partners', () => {
-    const owner = { clientName: 'Zzyzx Land Capital Partners Lp' }
+  it('a capital partnership owner passes on prose that says capital, partners, limited', () => {
+    const owner = { clientName: 'Zzyzx Capital Partners Lp' }
     const prose =
-      '<p>Land value sits inside limited inventory. Capital improvements matter. Our partners in title ran the numbers.</p>'
+      '<p>Lot value sits inside limited inventory. Capital improvements matter. Our partners in title ran the numbers.</p>'
     expect(letterOwnerNameCheck(prose, owner).pass).toBe(true)
     expect(letterOwnerNameCheck(`${prose}<p>Hi Zzyzx, the range is ready.</p>`, owner).pass).toBe(false)
   })
 })
 
 /** Named in the request: the street directionals every address prints. One-letter ones never become tokens. */
-const DIRECTIONALS = ['ne', 'nw', 'se', 'sw', 'north', 'south', 'east', 'west']
+const DIRECTIONALS = ['ne', 'nw', 'se', 'sw']
 
 /** Same class, spelled out ("Northwest Crossing" is a Bend neighborhood that prints in letters). */
 const LONG_DIRECTIONALS = ['northeast', 'northwest', 'southeast', 'southwest']
@@ -450,23 +448,94 @@ describe('MLS remarks are kept as written unless the word is a name-shaped hit',
 })
 
 describe('an honorific makes an ordinary word a surname', () => {
-  const NORTH = { clientName: 'Quillfeather North Trust' }
+  const PRICE = { clientName: 'Quillfeather Price Trust' }
 
-  it('the check refuses "Mr. North" even though north is an ordinary word', () => {
-    expect(ownerNameTokenHits('Mr. North will consider offers.', NORTH)).toContain('North')
-    expect(ownerNameTokenHits('Mrs North asked for a call.', NORTH)).toContain('North')
-    expect(ownerNameTokenHits('Dr. North owns the lot next door.', NORTH)).toContain('North')
+  it('the check refuses "Mr. Price" in any letter case and spacing', () => {
+    expect(ownerNameTokenHits('Mr. Price will consider offers.', PRICE)).toContain('Price')
+    expect(ownerNameTokenHits('Mrs Price asked for a call.', PRICE)).toContain('Price')
+    expect(ownerNameTokenHits('Mrs.Price asked for a call.', PRICE)).toContain('Price')
+    expect(ownerNameTokenHits('CALL MS. PRICE FOR ACCESS.', PRICE)).toContain('Price')
   })
 
-  it('the check still passes the directional itself', () => {
-    expect(ownerNameTokenHits('Head north on Highway 97 to reach the home.', NORTH)).not.toContain('North')
-    expect(ownerNameTokenHits('The North Bend view from the deck.', { clientName: 'Ada West' })).toEqual([])
+  it('the check still passes the ordinary word itself', () => {
+    expect(ownerNameTokenHits('The list price held at $640,000.', PRICE)).toEqual([])
+  })
+
+  it('a lower-case "miss" and a street "Dr." are not titles', () => {
+    const PARK = { clientName: 'Quillfeather Park Trust' }
+    expect(ownerNameTokenHits("Don't miss Park Commons, a short walk away.", PARK)).toEqual([])
+    const LAKE = { clientName: 'Quillfeather Lake Trust' }
+    expect(ownerNameTokenHits('On Mirror Lake Dr. Lake access included.', LAKE)).toEqual([])
+    expect(scrubMlsOwnerTokens('On Mirror Lake Dr. Lake access included.', LAKE)).toBe(
+      'On Mirror Lake Dr. Lake access included.',
+    )
+    expect(scrubMlsOwnerTokens("Don't miss Park Commons, a short walk away.", PARK)).toBe(
+      "Don't miss Park Commons, a short walk away.",
+    )
   })
 
   it('the MLS scrub drops the honorific and surname and keeps the rest of the remark', () => {
-    const out = scrubMlsOwnerTokens('Mr. North will consider offers. Head north on 97.', NORTH)
-    expect(out).not.toMatch(/\bMr\.?\s+North\b/)
+    const out = scrubMlsOwnerTokens('Mr. Price will consider offers. The list price held.', PRICE)
+    expect(out).not.toMatch(/\bMr\.?\s*Price\b/i)
     expect(out).toContain('will consider offers.')
-    expect(out).toContain('Head north on 97.')
+    expect(out).toContain('The list price held.')
+  })
+})
+
+/**
+ * Review finding (2026-09-29): the stored name and the printed text rarely share a
+ * letter case. An assessor row stores "PRICE HILL"; a remark prints "Price Hill".
+ * When every word of a name is ordinary, the capitalized-pair rule is what catches
+ * it, so that rule matches in any case (both printed words still need a capital).
+ */
+describe('a name made only of ordinary words is caught in any letter case', () => {
+  const PRICE_HILL = { clientName: 'PRICE HILL' }
+  const STONE_HOMES = { clientName: 'Stone Homes Llc' }
+
+  it('the check refuses the printed pair whatever case it was stored in', () => {
+    expect(ownerNameTokenHits('<p>The offer from Price Hill was accepted.</p>', PRICE_HILL)).toEqual(['PRICE', 'HILL'])
+    expect(ownerNameTokenHits('<p>BUILT BY STONE HOMES LLC IN 2004.</p>', STONE_HOMES)).toEqual(['Stone', 'Homes', 'Llc'])
+    expect(letterOwnerNameCheck('<p>The offer from Price Hill was accepted.</p>', PRICE_HILL).pass).toBe(false)
+  })
+
+  it('the same words as ordinary lower-case prose still pass', () => {
+    expect(ownerNameTokenHits('<p>The list price on the hill lot held.</p>', PRICE_HILL)).toEqual([])
+    expect(ownerNameTokenHits('<p>Sales of stone homes like yours.</p>', STONE_HOMES)).toEqual([])
+  })
+
+  it('the MLS scrub takes the whole name out in any case', () => {
+    expect(scrubMlsOwnerTokens('Views of Price Hill from the deck.', PRICE_HILL)).toBe('Views of from the deck.')
+    expect(scrubMlsOwnerTokens('BUILT BY STONE HOMES LLC IN 2004.', STONE_HOMES)).toBe('BUILT BY IN 2004.')
+  })
+
+  it('a one-word ordinary name still never wipes the ordinary word', () => {
+    expect(scrubMlsOwnerTokens('The list price held.', { clientName: 'PRICE' })).toBe('The list price held.')
+  })
+})
+
+/** Review finding (2026-09-29): common surnames stay strict, as they are on main. */
+describe('surnames that are also words stay strict', () => {
+  it.each(['north', 'south', 'east', 'west', 'house', 'land'])('%s is not an ordinary word here', (word) => {
+    expect(isCommonNameWord(word)).toBe(false)
+  })
+
+  it('a family name in a remark is refused and scrubbed', () => {
+    const WEST = { clientName: 'Ada West' }
+    const remark = 'Lovingly kept by the West family since 1998.'
+    expect(ownerNameTokenHits(remark, WEST)).toContain('West')
+    expect(scrubMlsOwnerTokens(remark, WEST)).not.toMatch(/\bWest\b/)
+  })
+})
+
+describe('a possessive still carries the name', () => {
+  it("refuses Zzyzx's and never reads don't as Don", () => {
+    expect(ownerNameTokenHits("Zzyzx's offer stands.", { clientName: 'Ada Zzyzx' })).toContain('Zzyzx')
+    expect(ownerNameTokenHits("Don't wait on this one.", { clientName: 'Don Zzyzx' })).toEqual([])
+  })
+})
+
+describe('our identity is only ever a full name', () => {
+  it('every identity phrase has at least two words', () => {
+    for (const phrase of ourIdentityPhrases()) expect(phrase.split(/\s+/).length).toBeGreaterThanOrEqual(2)
   })
 })
