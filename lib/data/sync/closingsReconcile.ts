@@ -12,7 +12,7 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
-import { COMING_SOON_STATUS } from '@/lib/listing-status-public'
+import { MLS_ON_MARKET_STATUSES } from '@/lib/listing-status-public'
 
 export type ReconcileListingRow = {
   ListNumber: string
@@ -87,12 +87,11 @@ export async function getClosedListingKeysInWindow(from: string, to: string): Pr
 }
 
 /**
- * The statuses a listing is on the market in, as this MLS spells them (Spark's
- * enumeration, 2026-09-30, is these four plus Closed, Expired, Withdrawn and
- * Canceled). The sync tracks the pre-marketing one too; public pages filter it
- * through lib/listing-status-public.ts.
+ * The statuses a listing is on the market in: the one shared list
+ * (MLS_ON_MARKET_STATUSES, lib/listing-status-public.ts). The sync tracks the
+ * pre-marketing one too; public pages filter it through that same module.
  */
-export const ON_MARKET_STATUSES = ['Active', 'Active Under Contract', COMING_SOON_STATUS, 'Pending'] as const
+export const ON_MARKET_STATUSES = MLS_ON_MARKET_STATUSES
 
 /** The statuses a listing leaves the market in without selling. */
 export const UNSOLD_TERMINAL_STATUSES = ['Expired', 'Withdrawn', 'Canceled'] as const

@@ -349,6 +349,12 @@ export async function fetchSparkListingsPage(
     timeoutMs?: number
     /** Wait out one 429 and retry (default true). A send-path check fails closed instead. */
     retryOn429?: boolean
+    /**
+     * Throw on a 404 instead of answering "no listings" (default false). A
+     * search never 404s for an empty result, so a compliance check that must
+     * not read a broken endpoint as "nothing listed here" sets this.
+     */
+    notFoundAsError?: boolean
   } = {}
 ): Promise<SparkListingsResponse> {
   const { page = 1, limit = 100, filter, orderby, select, expand } = options
@@ -393,7 +399,7 @@ export async function fetchSparkListingsPage(
     res = await doFetch()
   }
 
-  if (res.status === 404) {
+  if (res.status === 404 && options.notFoundAsError !== true) {
     return { D: { Success: true, Results: [], Pagination: { TotalRows: 0, PageSize: limit, TotalPages: 0, CurrentPage: 1 } } }
   }
   if (!res.ok) {

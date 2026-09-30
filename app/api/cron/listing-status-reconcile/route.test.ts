@@ -80,6 +80,17 @@ describe('GET /api/cron/listing-status-reconcile', () => {
     expect(reconcileMock).toHaveBeenCalledWith(expect.objectContaining({ repair: false }))
   })
 
+  it('?repair=0 sends nothing either: no ops text on heavy drift, a refusal or a throw', async () => {
+    reconcileMock.mockResolvedValue(result({ drift: drift(40) }))
+    await GET(authed('?repair=0'))
+    reconcileMock.mockResolvedValue(result({ refused: 'Spark returned 0 on-market listings while we hold 8700' }))
+    await GET(authed('?repair=0'))
+    reconcileMock.mockRejectedValue(new Error('Spark API error 503'))
+    const res = await GET(authed('?repair=0'))
+    expect(res.status).toBe(500)
+    expect(alertMock).not.toHaveBeenCalled()
+  })
+
   it('reports the status pairs and texts the owner once when drift says the sync is losing updates', async () => {
     reconcileMock.mockResolvedValue(result({ drift: drift(40), repaired: 40, repairLogged: 40 }))
     const res = await GET(authed())

@@ -318,3 +318,95 @@ describe('verifyNotRelisted — FSBO Closed after detect + MLS relist', () => {
     expect(out.relisted).toBe(false)
   })
 })
+
+describe('verifyNotRelisted — what it tells the caller (2026-09-30 review)', () => {
+  it('hands Spark the prospect key as the prospect listing, the off-market day and the ZIP', async () => {
+    parcelRow = { parcel_number: null }
+    await verifyNotRelisted('expired', {
+      street_address: '20873 Greenmont',
+      city: 'Bend',
+      postal_code: '97702',
+      expiryComparator: '2026-07-05T05:00:00Z',
+      listing_key: '20250502014809455304000000',
+    })
+    expect(sparkRelistCheck).toHaveBeenCalledWith(
+      expect.objectContaining({
+        listingKey: '20250502014809455304000000',
+        keyIsProspectListing: true,
+        soldAfter: '2026-07-05T05:00:00Z',
+        postalCode: '97702',
+      }),
+    )
+    sparkRelistCheck.mockClear()
+    listingsCalls = 0
+    await verifyNotRelisted('fsbo', { street_address: '2804 NW 19th St', city: 'Redmond', expiryComparator: EXPIRE })
+    expect(sparkRelistCheck).toHaveBeenCalledWith(expect.objectContaining({ listingKey: null, keyIsProspectListing: false, soldAfter: EXPIRE }))
+  })
+
+  it('names the MLS status, listing and date that blocked', async () => {
+    parcelRow = { parcel_number: null }
+    sparkRelistCheck.mockResolvedValue({
+      relisted: true,
+      verifyFailed: false,
+      failureScope: null,
+      reason: 'Spark: 20873 Greenmont, Bend is Active since 2026-07-06 (listing 20260706204435299456000000)',
+      blockedStatus: 'Active',
+      blockedKey: '20260706204435299456000000',
+      blockedDate: '2026-07-06',
+      closeDate: null,
+    })
+    const out = await verifyNotRelisted('expired', {
+      street_address: '20873 Greenmont',
+      city: 'Bend',
+      expiryComparator: '2026-07-05T05:00:00Z',
+      listing_key: '20250502014809455304000000',
+    })
+    expect(out).toMatchObject({
+      relisted: true,
+      source: 'mls',
+      blockedStatus: 'Active',
+      blockedKey: '20260706204435299456000000',
+      blockedDate: '2026-07-06',
+    })
+  })
+
+  it('names what our table shows when the table blocks', async () => {
+    parcelRow = { parcel_number: null }
+    streetRows = [
+      { ListingKey: 'NEWKEY', StreetNumber: '123', StreetName: 'SMITH', City: 'Bend', StandardStatus: 'Pending', CloseDate: null, status_change_timestamp: '2026-07-01T00:00:00Z', parcel_number: null },
+    ]
+    const out = await verifyNotRelisted('expired', { street_address: '123 Smith St', city: 'Bend', expiryComparator: EXPIRE, listing_key: 'EXPIRED-KEY' })
+    expect(out).toMatchObject({ relisted: true, source: 'table', blockedStatus: 'Pending', blockedKey: 'NEWKEY', blockedDate: '2026-07-01' })
+  })
+
+  it('our table matches the city in any spelling ("LaPine" on the prospect, "La Pine" on the listing)', async () => {
+    parcelRow = { parcel_number: null }
+    streetRows = [
+      { ListingKey: 'LP', StreetNumber: '16111', StreetName: 'LAVA', City: 'La Pine', StandardStatus: 'Active', CloseDate: null, status_change_timestamp: '2026-07-01T00:00:00Z', parcel_number: null },
+    ]
+    const out = await verifyNotRelisted('expired', { street_address: '16111 Lava Dr', city: 'LaPine', expiryComparator: EXPIRE, listing_key: 'EXPIRED-KEY' })
+    expect(out).toMatchObject({ relisted: true, source: 'table' })
+  })
+
+  it("scopes a failure: the address's own problem is 'row'", async () => {
+    parcelRow = { parcel_number: null }
+    sparkRelistCheck.mockResolvedValue({ relisted: false, verifyFailed: true, failureScope: 'row', reason: 'Spark lists 1200 listings on the market at number 0' })
+    const out = await verifyNotRelisted('expired', { street_address: '0 Lava Dr', city: 'Bend', expiryComparator: EXPIRE, listing_key: 'K' })
+    expect(out).toMatchObject({ relisted: false, verifyFailed: true, failureScope: 'row' })
+  })
+
+  it("scopes a failure: Spark down, or our table unreadable, is 'global'", async () => {
+    parcelRow = { parcel_number: null }
+    sparkRelistCheck.mockResolvedValue({ relisted: false, verifyFailed: true, failureScope: 'global', reason: 'timed out' })
+    expect(
+      await verifyNotRelisted('expired', { street_address: '123 Smith St', city: 'Bend', expiryComparator: EXPIRE, listing_key: 'K' }),
+    ).toMatchObject({ verifyFailed: true, failureScope: 'global' })
+
+    listingsCalls = 0
+    streetError = { message: 'timeout' }
+    sparkRelistCheck.mockResolvedValue({ relisted: false, verifyFailed: true, failureScope: 'row', reason: 'overflow' })
+    expect(
+      await verifyNotRelisted('expired', { street_address: '123 Smith St', city: 'Bend', expiryComparator: EXPIRE, listing_key: 'K' }),
+    ).toMatchObject({ verifyFailed: true, failureScope: 'global' })
+  })
+})

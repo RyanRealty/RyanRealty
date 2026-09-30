@@ -12,15 +12,23 @@ vi.mock('@/lib/data', () => ({
 
 // The live MLS check (lib/prospecting/sparkRelist.ts), asked only when `live` is set.
 const sparkRelistCheck = vi.hoisted(() =>
-  vi.fn(async (..._a: unknown[]) => ({
-    relisted: false,
-    verifyFailed: false,
-    reason: null as string | null,
-    blockedStatus: null as string | null,
-    blockedKey: null as string | null,
-  })),
+  vi.fn(
+    async (..._a: unknown[]): Promise<import('@/lib/prospecting/sparkRelist').SparkRelistResult> => ({
+      relisted: false,
+      verifyFailed: false,
+      failureScope: null,
+      reason: null,
+      blockedStatus: null,
+      blockedKey: null,
+      blockedDate: null,
+      closeDate: null,
+    }),
+  ),
 )
-vi.mock('@/lib/prospecting/sparkRelist', () => ({ sparkRelistCheck }))
+vi.mock('@/lib/prospecting/sparkRelist', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/prospecting/sparkRelist')>()),
+  sparkRelistCheck,
+}))
 
 import { decideSolicitScreen, screenAddressForSolicitation, unitFromAddress, unitToken } from '@/lib/cma/solicit-screen'
 
@@ -309,6 +317,7 @@ describe('a builder lot number on one listing is not a second unit', () => {
       ok: false,
       reason: 'unverified',
       detail: AMBIGUOUS_DETAIL,
+      scope: 'row',
       listingKey: null,
       checked: 2,
     })
@@ -440,6 +449,7 @@ describe('a builder lot number on one listing is not a second unit', () => {
       ok: false,
       reason: 'unverified',
       detail: AMBIGUOUS_DETAIL,
+      scope: 'row',
       listingKey: null,
       checked: 4,
     })
@@ -450,7 +460,16 @@ describe('the send chokepoint also asks the MLS itself (live)', () => {
   // 15 NW Franklin, 2026-09-30: our table read Expired for a listing Spark had
   // put back on the market the evening it expired. The table-only screen
   // cleared it; the live check blocks it.
-  const CLEAR = { relisted: false, verifyFailed: false, reason: null, blockedStatus: null, blockedKey: null }
+  const CLEAR = {
+    relisted: false,
+    verifyFailed: false,
+    failureScope: null,
+    reason: null,
+    blockedStatus: null,
+    blockedKey: null,
+    blockedDate: null,
+    closeDate: null,
+  }
   const expiredHere = () => [
     { ListingKey: 'K15', StandardStatus: 'Expired', OnMarketDate: '2026-01-22', ListDate: '2026-01-22', CloseDate: null, unit_number: null },
   ]
@@ -471,7 +490,14 @@ describe('the send chokepoint also asks the MLS itself (live)', () => {
     const out = await screenAddressForSolicitation({ address: '15 NW Franklin Ave', city: 'Bend', subjectListingKey: 'K15', live: true })
     expect(out).toMatchObject({ ok: false, reason: 'listed', listingKey: 'K15' })
     if (!out.ok) expect(out.detail).toMatch(/K15 is Active/)
-    expect(sparkRelistCheck).toHaveBeenCalledWith({ listingKey: 'K15', streetAddress: '15 NW Franklin Ave', city: 'Bend' })
+    expect(sparkRelistCheck).toHaveBeenCalledWith({
+      listingKey: 'K15',
+      streetAddress: '15 NW Franklin Ave',
+      city: 'Bend',
+      postalCode: null,
+      soldAfter: null,
+    })
+    if (!out.ok) expect(out.detail).not.toMatch(/had not caught up/)
   })
 
   it('maps Pending to pending and Closed to sold', async () => {
@@ -505,5 +531,94 @@ describe('the send chokepoint also asks the MLS itself (live)', () => {
   it('never asks the MLS without live (the hourly sweep reads our table only)', async () => {
     await screenAddressForSolicitation({ address: '15 NW Franklin Ave', city: 'Bend' })
     expect(sparkRelistCheck).not.toHaveBeenCalled()
+  })
+})
+
+describe('the live screen after the 2026-09-30 review', () => {
+  const CLEAR = {
+    relisted: false,
+    verifyFailed: false,
+    failureScope: null,
+    reason: null,
+    blockedStatus: null,
+    blockedKey: null,
+    blockedDate: null,
+    closeDate: null,
+  }
+  const house = () => [
+    { ListingKey: 'OLD', StandardStatus: 'Closed', OnMarketDate: '2004-06-18', ListDate: '2004-06-18', CloseDate: '2004-10-20', unit_number: null },
+  ]
+
+  beforeEach(() => {
+    mls.findCmaSubjectByAddress.mockReset()
+    mls.findCmaSubjectByMls.mockReset()
+    mls.findCmaSubjectByAddress.mockResolvedValue(house())
+    mls.findCmaSubjectByMls.mockResolvedValue([])
+    sparkRelistCheck.mockReset()
+    sparkRelistCheck.mockResolvedValue({ ...CLEAR })
+  })
+
+  it('hands the MLS check the off-market day, so an old sale on the subject key is history', async () => {
+    await screenAddressForSolicitation({
+      address: '2804 NW 19th St',
+      city: 'Redmond',
+      postalCode: '97756',
+      sinceIso: '2026-08-01',
+      subjectListingKey: 'OLD',
+      live: true,
+    })
+    expect(sparkRelistCheck).toHaveBeenCalledWith(
+      expect.objectContaining({ listingKey: 'OLD', soldAfter: '2026-08-01', postalCode: '97756' }),
+    )
+  })
+
+  it('skips the Spark call when the send already has a clear live answer; our table still decides', async () => {
+    const clear = await screenAddressForSolicitation({ address: '2804 NW 19th St', city: 'Redmond', live: true, liveAlreadyClear: true })
+    expect(clear.ok).toBe(true)
+    expect(sparkRelistCheck).not.toHaveBeenCalled()
+
+    mls.findCmaSubjectByAddress.mockResolvedValue([
+      { ListingKey: 'LIVE', StandardStatus: 'Active', OnMarketDate: '2026-09-01', ListDate: '2026-09-01', CloseDate: null, unit_number: null },
+    ])
+    const listed = await screenAddressForSolicitation({ address: '2804 NW 19th St', city: 'Redmond', live: true, liveAlreadyClear: true })
+    expect(listed).toMatchObject({ ok: false, reason: 'listed', listingKey: 'LIVE' })
+  })
+
+  it('an MLS failure carries its scope; our table failing is global; an unscreenable address is the row', async () => {
+    sparkRelistCheck.mockResolvedValue({ ...CLEAR, verifyFailed: true, failureScope: 'row', reason: 'Spark lists 1200 listings' })
+    expect(await screenAddressForSolicitation({ address: '2804 NW 19th St', city: 'Redmond', live: true })).toMatchObject({
+      ok: false,
+      reason: 'unverified',
+      scope: 'row',
+    })
+    sparkRelistCheck.mockResolvedValue({ ...CLEAR, verifyFailed: true, failureScope: 'global', reason: 'timed out' })
+    expect(await screenAddressForSolicitation({ address: '2804 NW 19th St', city: 'Redmond', live: true })).toMatchObject({
+      ok: false,
+      reason: 'unverified',
+      scope: 'global',
+    })
+    mls.findCmaSubjectByAddress.mockRejectedValue(new Error('connection reset'))
+    expect(await screenAddressForSolicitation({ address: '2804 NW 19th St', city: 'Redmond' })).toMatchObject({
+      ok: false,
+      reason: 'unverified',
+      scope: 'global',
+    })
+    expect(await screenAddressForSolicitation({ address: '', city: 'Redmond' })).toMatchObject({ ok: false, scope: 'row' })
+  })
+
+  it('says what the MLS shows and claims nothing about our copy', async () => {
+    sparkRelistCheck.mockResolvedValue({
+      ...CLEAR,
+      relisted: true,
+      reason: 'Spark: listing K is Closed (closed 2026-09-12), on or after 2026-08-01 when this prospect came off the market',
+      blockedStatus: 'Closed',
+      blockedKey: 'K',
+    })
+    const out = await screenAddressForSolicitation({ address: '2804 NW 19th St', city: 'Redmond', sinceIso: '2026-08-01', live: true })
+    expect(out).toMatchObject({ ok: false, reason: 'sold', listingKey: 'K' })
+    if (!out.ok) {
+      expect(out.detail).toMatch(/closed 2026-09-12/)
+      expect(out.detail).not.toMatch(/had not caught up/)
+    }
   })
 })

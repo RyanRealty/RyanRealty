@@ -40,8 +40,10 @@ export type DriftReason =
   | 'sub_type'
   | 'sqft'
   /**
-   * Our copy is frozen (is_finalized) while its status is not terminal. Only
-   * the delta sync sets this: such a row is not frozen, whatever the MLS says.
+   * Our copy is frozen (is_finalized) while its status is not terminal: such a
+   * row is not frozen, whatever the MLS says. Not a fact driftReasons compares;
+   * the two callers that hold our row's freeze flag add it: the delta sync's
+   * reopen (computeDeltaPlan) and the reconcile's compareWithSpark.
    */
   | 'frozen_not_terminal'
 
@@ -126,4 +128,35 @@ export function driftReasons(ours: DriftFacts | null | undefined, mls: DriftFact
     out.push('sqft')
   }
   return out
+}
+
+/** Which facts a broker has overridden on a listing (lib/data/sync/syncWrites.ts getAdminOverrideFlags). */
+export type AdminOverrideFlags = { status: boolean; listPrice: boolean }
+
+/**
+ * True when a broker's override accounts for every drift reason, so the row is
+ * our copy on purpose and there is nothing to write: a repair or a reopen
+ * would only merge the override back (upsertListingRows re-applies it).
+ *
+ * A status override also accounts for frozen_not_terminal. Every admin edit
+ * stamps standard_status_set (lib/data/admin/listingEdit.ts), the freeze
+ * follows the MLS's terminal status while the stored status is the broker's,
+ * and until 2026-09-30 such a row reopened, re-merged and re-froze on every
+ * Spark touch, and the reconcile repaired it again every day. One rule for
+ * the delta sync and the reconcile, so the two cannot disagree.
+ */
+export function overrideExplainsDrift(reasons: readonly DriftReason[], o: AdminOverrideFlags | null | undefined): boolean {
+  if (!o || reasons.length === 0) return false
+  return reasons.every((r) => ((r === 'status' || r === 'frozen_not_terminal') && o.status) || (r === 'list_price' && o.listPrice))
+}
+
+/** The reasons a broker's override does not account for (the ones a write would still change). */
+export function reasonsLeftAfterOverride(reasons: readonly DriftReason[], o: AdminOverrideFlags | null | undefined): DriftReason[] {
+  if (!o) return [...reasons]
+  return reasons.filter((r) => !(((r === 'status' || r === 'frozen_not_terminal') && o.status) || (r === 'list_price' && o.listPrice)))
+}
+
+/** Reasons a broker override could account for: read the overrides only for these rows. */
+export function overridableReason(r: DriftReason): boolean {
+  return r === 'status' || r === 'list_price' || r === 'frozen_not_terminal'
 }

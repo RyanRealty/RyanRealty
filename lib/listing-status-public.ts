@@ -137,6 +137,30 @@ export const ADMIN_ACTIVE_STATUSES: ListingStatus[] = [
 ]
 
 /**
+ * THE statuses in which a broker holds a listing today, as this MLS spells
+ * them (Spark /standardfields/StandardStatus, 2026-09-30: these four, plus
+ * Closed, Expired, Withdrawn and Canceled). Pre-marketing is included: a home
+ * listed with a broker is off limits to solicitation before it is public.
+ *
+ * One list for every consumer that must not disagree (they were four copies
+ * until 2026-09-30, one of them missing Active Under Contract): the outreach
+ * relist checks (lib/prospecting/sparkRelist.ts,
+ * lib/data/prospecting/compliance.ts), the CMA solicitation screen
+ * (lib/cma/solicit-screen.ts) and the MLS status reconcile
+ * (lib/data/sync/closingsReconcile.ts, lib/sync/closingsReconcile.ts).
+ * It holds Coming Soon, so it is never a public predicate.
+ */
+export const MLS_ON_MARKET_STATUSES = ['Active', 'Active Under Contract', COMING_SOON_STATUS, 'Pending'] as const
+
+/** Of MLS_ON_MARKET_STATUSES, the one that means an accepted offer (the solicitation screen says "pending"). */
+export const MLS_PENDING_STATUS = 'Pending' as const
+
+/** True for any status in MLS_ON_MARKET_STATUSES (exact spelling). */
+export function isMlsOnMarketStatus(s: string | null | undefined): boolean {
+  return (MLS_ON_MARKET_STATUSES as readonly string[]).includes(String(s ?? ''))
+}
+
+/**
  * True when the status is Coming Soon in any casing/spacing the feed sends
  * ("Coming Soon", "ComingSoon", "coming soon").
  */

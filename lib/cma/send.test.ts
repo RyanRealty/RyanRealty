@@ -21,11 +21,13 @@ const h = vi.hoisted(() => ({
   recordEmailEvent: vi.fn(),
   ensureNativeLead: vi.fn(),
   stampCmaPersonId: vi.fn(),
-  screenAddressForSolicitation: vi.fn(async () => ({
-    ok: true as const,
-    checked: 1,
-    detail: 'clear',
-  })),
+  screenAddressForSolicitation: vi.fn(
+    async (): Promise<import('@/lib/cma/solicit-screen').SolicitScreen> => ({
+      ok: true as const,
+      checked: 1,
+      detail: 'clear',
+    }),
+  ),
   row: {
     id: 'row-1',
     status: 'finalized',
@@ -287,6 +289,7 @@ describe('sendCmaToLead', () => {
       sinceIso: null,
       subjectListingKey: 'ZZTESTKEYLOT33',
       live: true,
+      liveAlreadyClear: false,
     })
   })
 
@@ -307,5 +310,87 @@ describe('sendCmaToLead', () => {
     expect(h.screenAddressForSolicitation).toHaveBeenCalledWith(
       expect.objectContaining({ subjectListingKey: null, address: '4242 Example Lane, Bend, OR 97701' }),
     )
+  })
+})
+
+describe('sendCmaToLead — the screen after the 2026-09-30 review', () => {
+  const CLEAR = {
+    relisted: false,
+    verifyFailed: false,
+    failureScope: null,
+    reason: null,
+    blockedStatus: null,
+    blockedKey: null,
+    blockedDate: null,
+    source: null,
+  }
+  async function fsboRow() {
+    const { getCmaAdminRowBySlug } = await import('@/lib/data')
+    vi.mocked(getCmaAdminRowBySlug).mockResolvedValueOnce({
+      ...h.row,
+      request_source: 'fsbo-outreach',
+      doc_type: 'fsbo-audit',
+      subject_address: '2804 NW 19th St, Redmond, OR 97756',
+      subject_city: 'Redmond',
+      subject_listing_key: '20200227022945350309000000',
+    })
+  }
+
+  it("hands the screen the prospect's detect day, so the FSBO's 2004 sale on the subject key is history", async () => {
+    await fsboRow()
+    await sendCmaToLead(SLUG, undefined, { soldAfter: '2026-08-01T00:00:00Z' })
+    expect(h.screenAddressForSolicitation).toHaveBeenCalledWith(
+      expect.objectContaining({ sinceIso: '2026-08-01T00:00:00Z', subjectListingKey: '20200227022945350309000000', live: true }),
+    )
+  })
+
+  it('a fresh, clear, server-minted verdict skips the Spark call; a look-alike does not', async () => {
+    const { mintRelistProof } = await import('@/lib/prospecting/send-capability')
+    await fsboRow()
+    await sendCmaToLead(SLUG, undefined, { relistProof: mintRelistProof('fsbo', 'https://fsbo.example/1', CLEAR) })
+    expect(h.screenAddressForSolicitation).toHaveBeenLastCalledWith(expect.objectContaining({ liveAlreadyClear: true }))
+
+    await fsboRow()
+    const forged = { kind: 'fsbo', id: 'https://fsbo.example/1', verdict: CLEAR, checkedAt: Date.now() }
+    await sendCmaToLead(SLUG, undefined, { relistProof: forged as never })
+    expect(h.screenAddressForSolicitation).toHaveBeenLastCalledWith(expect.objectContaining({ liveAlreadyClear: false }))
+  })
+
+  it('a stale verdict, or one for the other kind of prospect, is asked again', async () => {
+    const { mintRelistProof, RELIST_PROOF_MAX_AGE_MS } = await import('@/lib/prospecting/send-capability')
+    await fsboRow()
+    await sendCmaToLead(SLUG, undefined, {
+      relistProof: mintRelistProof('fsbo', 'https://fsbo.example/1', CLEAR, Date.now() - RELIST_PROOF_MAX_AGE_MS - 1),
+    })
+    expect(h.screenAddressForSolicitation).toHaveBeenLastCalledWith(expect.objectContaining({ liveAlreadyClear: false }))
+    await fsboRow()
+    await sendCmaToLead(SLUG, undefined, { relistProof: mintRelistProof('expired', 'LK', CLEAR) })
+    expect(h.screenAddressForSolicitation).toHaveBeenLastCalledWith(expect.objectContaining({ liveAlreadyClear: false }))
+  })
+
+  it('a refusal says which kind it was, so the drip can tell listed from unanswerable from a failed send', async () => {
+    await fsboRow()
+    h.screenAddressForSolicitation.mockResolvedValueOnce({
+      ok: false,
+      reason: 'sold',
+      detail: 'The live MLS check blocks this send. Spark: listing K is Closed (closed 2026-09-12).',
+      listingKey: 'K',
+      checked: 1,
+    })
+    const sold = await sendCmaToLead(SLUG)
+    expect(sold).toMatchObject({ ok: false, screenRefusal: { code: 'relisted', reason: 'sold', scope: null } })
+    expect(h.gmailSend).not.toHaveBeenCalled()
+
+    await fsboRow()
+    h.screenAddressForSolicitation.mockResolvedValueOnce({
+      ok: false,
+      reason: 'unverified',
+      detail: 'The live MLS check could not answer',
+      listingKey: null,
+      checked: 1,
+      scope: 'row',
+    })
+    const unanswered = await sendCmaToLead(SLUG)
+    expect(unanswered).toMatchObject({ ok: false, screenRefusal: { code: 'verify-failed', reason: 'unverified', scope: 'row' } })
   })
 })

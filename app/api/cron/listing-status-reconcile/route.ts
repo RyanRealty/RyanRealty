@@ -29,7 +29,9 @@
  * never messages a client.
  *
  * Schedule: daily 10:41 UTC (vercel.json). Auth: requireCronAuth.
- * ?repair=0 reconciles without writing anything.
+ * ?repair=0 is a dry run: it reconciles and reports, and writes and sends
+ * nothing, the ops text included (a person running it by hand is reading the
+ * answer already).
  */
 import { NextResponse } from 'next/server'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
@@ -65,7 +67,9 @@ export async function GET(request: Request) {
       (r.refused ? `; refused: ${r.refused}` : '')
     console.log(`[listing-status-reconcile] ${summary}`)
 
-    if (r.refused) {
+    if (!repair) {
+      // A dry run sends nothing.
+    } else if (r.refused) {
       await queueBrokerHealthAlert({
         key: 'listing-status-reconcile-refused',
         body: `The MLS status check did not run today: ${r.refused.slice(0, 180)}. Spark may be down or answering empty.`,
@@ -100,11 +104,13 @@ export async function GET(request: Request) {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     console.error(`[listing-status-reconcile] failed: ${message}`)
-    await queueBrokerHealthAlert({
-      key: 'listing-status-reconcile',
-      body: `The MLS status check failed: ${message.slice(0, 180)}`,
-      cooldownMinutes: 1440,
-    })
+    if (repair) {
+      await queueBrokerHealthAlert({
+        key: 'listing-status-reconcile',
+        body: `The MLS status check failed: ${message.slice(0, 180)}`,
+        cooldownMinutes: 1440,
+      })
+    }
     return NextResponse.json({ ok: false, error: message }, { status: 500 })
   }
 }

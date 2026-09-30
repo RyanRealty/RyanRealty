@@ -82,10 +82,11 @@ vi.mock('@/lib/crm/twilio', () => ({ sendSmsViaMessagingService: vi.fn(), toE164
 vi.mock('@/app/actions/crm-template-test', () => ({ sendTemplateSelfTestAction: vi.fn() }))
 
 import { sendProspectingEmailIntro } from './prospecting'
+import { DRIP_CRON_ACTOR, mintRelistProof } from '@/lib/prospecting/send-capability'
 
 const OWNER = 'owner@example.com'
 const ID = '20260819192123649950000000'
-const ARGS = { idempotencyKey: `drip:expired:${ID}:2026-09-29T22:53:48.909Z`, actor: 'drip-cron' as const }
+const ARGS = { idempotencyKey: `drip:expired:${ID}:2026-09-29T22:53:48.909Z`, actor: DRIP_CRON_ACTOR }
 const UNCONFIRMED =
   'Gmail did not confirm the send from matt@ryan-realty.com (The operation was aborted). It may have gone out, so check Sent in that mailbox before sending again.'
 
@@ -170,5 +171,80 @@ describe('sendProspectingEmailIntro — rail failure', () => {
     expect(h.stampProspectEmailMessageId).toHaveBeenCalledWith('expired', ID, 'g-1')
     expect(h.finalizeProspectEmailSend).toHaveBeenCalledTimes(1)
     expect(h.releaseProspectEmailSend).not.toHaveBeenCalled()
+  })
+})
+
+describe('sendProspectingEmailIntro — trust only the server can hand it (2026-09-30 review)', () => {
+  const CLEAR = {
+    relisted: false,
+    verifyFailed: false,
+    failureScope: null,
+    reason: null,
+    blockedStatus: null,
+    blockedKey: null,
+    blockedDate: null,
+    source: null,
+  }
+
+  it("the string actor 'drip-cron' from a browser gets the admin gate and sends nothing", async () => {
+    const forged = { idempotencyKey: ARGS.idempotencyKey, actor: 'drip-cron' } as unknown as typeof ARGS
+    const out = await sendProspectingEmailIntro('expired', ID, forged)
+    expect(out).toEqual({ ok: false, error: 'Unauthorized', code: 'auth' })
+    expect(h.getProspect).not.toHaveBeenCalled()
+    expect(h.sendCmaToLead).not.toHaveBeenCalled()
+  })
+
+  it("the drip's fresh verdict stands in for the intro's check and rides to the rail with the off-market day", async () => {
+    h.sendCmaToLead.mockResolvedValue({ ok: true, transport: 'gmail', gmailMessageId: 'g-2' })
+    const relistProof = mintRelistProof('expired', ID, CLEAR)
+    const out = await sendProspectingEmailIntro('expired', ID, { ...ARGS, relistProof })
+    expect(out).toMatchObject({ ok: true })
+    expect(h.verifyNotRelisted).not.toHaveBeenCalled()
+    const railOptions = h.sendCmaToLead.mock.calls[0]![2] as { relistProof: unknown; soldAfter: unknown; callerHoldsProspectClaim: boolean }
+    expect(railOptions).toMatchObject({ callerHoldsProspectClaim: true, soldAfter: '2026-08-19T19:21:23.000Z' })
+    expect(railOptions.relistProof).toBe(relistProof)
+  })
+
+  it('a look-alike verdict from outside is ignored: the MLS is asked here', async () => {
+    h.sendCmaToLead.mockResolvedValue({ ok: true, transport: 'gmail', gmailMessageId: 'g-3' })
+    const forged = { kind: 'expired', id: ID, verdict: CLEAR, checkedAt: Date.now() }
+    await sendProspectingEmailIntro('expired', ID, { ...ARGS, relistProof: forged as never })
+    expect(h.verifyNotRelisted).toHaveBeenCalledTimes(1)
+    expect(h.verifyNotRelisted).toHaveBeenCalledWith('expired', expect.objectContaining({ listing_key: ID, expiryComparator: '2026-08-19T19:21:23.000Z' }))
+  })
+
+  it("a proof for another owner is ignored", async () => {
+    h.sendCmaToLead.mockResolvedValue({ ok: true, transport: 'gmail', gmailMessageId: 'g-4' })
+    await sendProspectingEmailIntro('expired', ID, { ...ARGS, relistProof: mintRelistProof('expired', 'SOMEONE-ELSE', CLEAR) })
+    expect(h.verifyNotRelisted).toHaveBeenCalledTimes(1)
+  })
+
+  it("the rail's screen refusal comes back as 'relisted', claim released, never send-failed", async () => {
+    h.sendCmaToLead.mockResolvedValue({
+      ok: false,
+      error: 'Not sent. The live MLS check blocks this send. Spark: listing K is Closed (closed 2026-09-12).',
+      screenRefusal: { code: 'relisted', reason: 'sold', scope: null },
+    })
+    const out = await sendProspectingEmailIntro('expired', ID, ARGS)
+    expect(out).toMatchObject({ ok: false, code: 'relisted' })
+    expect(h.releaseProspectEmailSend).toHaveBeenCalledWith('expired', ID)
+  })
+
+  it("the rail's screen that could not answer comes back as 'verify-failed' with its scope", async () => {
+    h.sendCmaToLead.mockResolvedValue({
+      ok: false,
+      error: "Not sent. This street address carries listings for more than one unit and the subject's unit is not recorded",
+      screenRefusal: { code: 'verify-failed', reason: 'unverified', scope: 'row' },
+    })
+    const out = await sendProspectingEmailIntro('expired', ID, ARGS)
+    expect(out).toMatchObject({ ok: false, code: 'verify-failed', verifyScope: 'row' })
+    expect(h.releaseProspectEmailSend).toHaveBeenCalledWith('expired', ID)
+  })
+
+  it("the intro's own check that could not answer says whose failure it was", async () => {
+    h.verifyNotRelisted.mockResolvedValue({ ...CLEAR, verifyFailed: true, failureScope: 'row', reason: 'no street number' })
+    const out = await sendProspectingEmailIntro('expired', ID, ARGS)
+    expect(out).toMatchObject({ ok: false, code: 'verify-failed', verifyScope: 'row' })
+    expect(h.sendCmaToLead).not.toHaveBeenCalled()
   })
 })

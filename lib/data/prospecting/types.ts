@@ -387,9 +387,17 @@ export type SendGuardCode =
   | 'send-failed'
   | 'not-found'
 
+/**
+ * On a 'verify-failed' refusal: 'global' when a source could not answer at all
+ * (the MLS, our listings table), 'row' when this owner's address cannot be
+ * answered. The drip holds the queue on the first and sets the row aside on
+ * the second (lib/data/prospecting/drip-drain.ts).
+ */
+export type VerifyScope = 'global' | 'row'
+
 export type SendIntroResult =
   | { ok: true; sid: string; personId: number; sentAt: string }
-  | { ok: false; error: string; code: SendGuardCode }
+  | { ok: false; error: string; code: SendGuardCode; verifyScope?: VerifyScope }
 
 /** Result of the guarded EMAIL cold intro (sendProspectingEmailIntro). */
 export type SendEmailIntroResult =
@@ -401,7 +409,7 @@ export type SendEmailIntroResult =
       sentAt: string
       transport: 'gmail' | 'resend' | null
     }
-  | { ok: false; error: string; code: SendGuardCode }
+  | { ok: false; error: string; code: SendGuardCode; verifyScope?: VerifyScope }
 
 /**
  * Merge the per-channel outreach stamps into the doc's sent-state fields.

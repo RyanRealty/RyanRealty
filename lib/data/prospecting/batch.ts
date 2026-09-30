@@ -13,7 +13,8 @@ import 'server-only'
 
 import { createServiceClient } from '@/lib/supabase/service'
 import { slugifyAddress } from '@/lib/cma/address-slug'
-import { sparkRelistCheck } from '@/lib/prospecting/sparkRelist'
+import { sparkRelistCheck, type SparkRelistResult, type VerifyFailureScope } from '@/lib/prospecting/sparkRelist'
+import { isClosedStatus } from '@/lib/listing-status'
 import { TAG_CHANNEL } from '@/lib/crm/suppressions'
 import {
   EXPIRED_OUTREACH_LISTING_SELECT,
@@ -542,37 +543,118 @@ export async function resolveComplianceBatch(
  * the market in Spark while our copy read Expired). sparkRelistCheck
  * (lib/prospecting/sparkRelist.ts) asks Spark, in parallel with the table read,
  * for the subject listing by key and for on-market listings at the same street
- * number, city and unit. A relist either source shows blocks; a failure of
- * either source, when neither shows a relist, fails closed.
+ * number, city (any spelling) or ZIP, street and unit. A relist either source
+ * shows blocks; a failure of either source, when neither shows a relist, fails
+ * closed, scoped 'global' (the MLS or our table could not answer at all) or
+ * 'row' (this address cannot be answered). The verdict names what blocked and
+ * since when, so a stopped sequence can say why.
  */
 export async function verifyNotRelisted(
   kind: ProspectKind,
   prospect: VerifyNotRelistedProspect,
-): Promise<{ relisted: boolean; verifyFailed: boolean; reason: string | null }> {
+): Promise<RelistVerdict> {
   const live = sparkRelistCheck({
     listingKey: prospect.listing_key ?? null,
+    // Every caller passes the expired prospect's OWN key: Spark showing it
+    // Closed means it sold after we saw it end, whatever the close date.
+    keyIsProspectListing: kind === 'expired' && Boolean(prospect.listing_key),
     streetAddress: prospect.street_address,
     city: prospect.city,
-  }).catch((e: unknown) => ({
-    relisted: false,
-    verifyFailed: true,
-    reason: `Spark relist check threw: ${e instanceof Error ? e.message : String(e)}`,
-  }))
+    postalCode: prospect.postal_code ?? null,
+    soldAfter: prospect.expiryComparator,
+  }).catch(
+    (e: unknown): SparkRelistResult => ({
+      relisted: false,
+      verifyFailed: true,
+      failureScope: 'global',
+      reason: `Spark relist check threw: ${e instanceof Error ? e.message : String(e)}`,
+      blockedStatus: null,
+      blockedKey: null,
+      blockedDate: null,
+      closeDate: null,
+    }),
+  )
   const [table, mls] = await Promise.all([verifyNotRelistedInTable(kind, prospect), live])
-  if (table.relisted || mls.relisted) {
-    if (mls.relisted && !table.relisted) console.warn('[prospecting] verifyNotRelisted: the MLS shows a relist our listings table does not:', mls.reason)
-    return { relisted: true, verifyFailed: false, reason: mls.relisted ? mls.reason : 'on the market or sold per our listings table' }
+  if (mls.relisted) {
+    if (!table.relisted) console.warn('[prospecting] verifyNotRelisted: the MLS shows a relist our listings table does not:', mls.reason)
+    return {
+      ...NOT_RELISTED,
+      relisted: true,
+      reason: mls.reason,
+      blockedStatus: mls.blockedStatus,
+      blockedKey: mls.blockedKey,
+      blockedDate: mls.blockedDate,
+      source: 'mls',
+    }
+  }
+  if (table.relisted) {
+    const hit = table.hit
+    const status = hit ? String(hit.StandardStatus ?? '') || null : null
+    const date = hit ? isoDay(isClosedStatus(status) ? (hit.CloseDate ?? hit.status_change_timestamp) : hit.status_change_timestamp) : null
+    const key = hit && typeof hit.ListingKey === 'string' ? hit.ListingKey : null
+    return {
+      ...NOT_RELISTED,
+      relisted: true,
+      reason: `our listings table shows the address ${status ?? 'on the market or sold'}${date ? ` since ${date}` : ''}${key ? ` (listing ${key})` : ''}`,
+      blockedStatus: status,
+      blockedKey: key,
+      blockedDate: date,
+      source: 'table',
+    }
   }
   if (table.verifyFailed || mls.verifyFailed) {
     if (mls.verifyFailed) console.error('[prospecting] verifyNotRelisted Spark check failed (fail-closed):', mls.reason)
-    return { relisted: false, verifyFailed: true, reason: mls.verifyFailed ? mls.reason : 'listings read failed' }
+    // A listings read failure is ours, not the row's: every row would fail.
+    const failureScope: VerifyFailureScope = table.verifyFailed || mls.failureScope !== 'row' ? 'global' : 'row'
+    return {
+      ...NOT_RELISTED,
+      verifyFailed: true,
+      failureScope,
+      reason: mls.verifyFailed ? mls.reason : 'listings read failed',
+    }
   }
-  return { relisted: false, verifyFailed: false, reason: null }
+  return { ...NOT_RELISTED }
 }
 
-type VerifyNotRelistedProspect = {
+/**
+ * The answer every outreach send path acts on. `relisted` blocks for good;
+ * `verifyFailed` blocks this attempt, and `failureScope` says whether the MLS
+ * or our table could not answer at all ('global': hold everything, drop
+ * nothing) or this address cannot be answered ('row': set it aside).
+ */
+export type RelistVerdict = {
+  relisted: boolean
+  verifyFailed: boolean
+  failureScope: VerifyFailureScope | null
+  reason: string | null
+  /** What blocked: the MLS status (or our table's), the listing, and since when (YYYY-MM-DD). */
+  blockedStatus: string | null
+  blockedKey: string | null
+  blockedDate: string | null
+  source: 'mls' | 'table' | null
+}
+
+const NOT_RELISTED: RelistVerdict = {
+  relisted: false,
+  verifyFailed: false,
+  failureScope: null,
+  reason: null,
+  blockedStatus: null,
+  blockedKey: null,
+  blockedDate: null,
+  source: null,
+}
+
+function isoDay(v: unknown): string | null {
+  const s = typeof v === 'string' ? v.trim() : ''
+  return /^\d{4}-\d{2}-\d{2}/.test(s) ? s.slice(0, 10) : null
+}
+
+export type VerifyNotRelistedProspect = {
   street_address: string | null
   city: string | null
+  /** The ZIP: settles "LaPine" against "La Pine" and a city our record names differently. */
+  postal_code?: string | null
   expiryComparator: string | null
   listing_key?: string | null
   parcel_number?: string | null
@@ -585,7 +667,7 @@ type VerifyNotRelistedProspect = {
 async function verifyNotRelistedInTable(
   kind: ProspectKind,
   prospect: VerifyNotRelistedProspect,
-): Promise<{ relisted: boolean; verifyFailed: boolean }> {
+): Promise<{ relisted: boolean; verifyFailed: boolean; hit?: ExpiredOutreachListing }> {
   if (!prospect.street_address) return { relisted: false, verifyFailed: false }
   try {
     const sb = createServiceClient()
@@ -641,7 +723,7 @@ async function verifyNotRelistedInTable(
       ...((streetRes.data ?? []) as ExpiredOutreachListing[]),
       ...((parcelRes.data ?? []) as ExpiredOutreachListing[]),
     ]
-    const relisted = rows.some((l) =>
+    const hit = rows.find((l) =>
       expiredOutreachListingHits({
         kind,
         listing: l,
@@ -651,7 +733,7 @@ async function verifyNotRelistedInTable(
         subjectParcel,
       }),
     )
-    return { relisted, verifyFailed: false }
+    return hit ? { relisted: true, verifyFailed: false, hit } : { relisted: false, verifyFailed: false }
   } catch (e) {
     console.error('[prospecting] verifyNotRelisted threw (fail-closed):', e instanceof Error ? e.message : e)
     return { relisted: false, verifyFailed: true }

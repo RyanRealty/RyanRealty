@@ -36,7 +36,15 @@
  */
 import { fetchSparkListingsPage } from '@/lib/spark'
 import { DELTA_SYNC, resolveRunMortgageRate, resultToMappedRow, type SparkDeltaResult } from '@/lib/sync/deltaSync'
-import { driftReasons, factsFromListingRow, factsFromSparkFields, type DriftFacts, type DriftReason } from '@/lib/sync/listingDrift'
+import {
+  driftReasons,
+  factsFromListingRow,
+  factsFromSparkFields,
+  overridableReason,
+  reasonsLeftAfterOverride,
+  type DriftFacts,
+  type DriftReason,
+} from '@/lib/sync/listingDrift'
 import { mergeFrozenMedia } from '@/lib/sync/frozenMedia'
 import { fetchAndInsertHistoryCore } from '@/lib/sync/fetchListingHistory'
 import { isTerminalStatus } from '@/lib/sync/terminalStatus'
@@ -216,13 +224,15 @@ async function compareWithSpark(
       ours: held ? snapshot(held) : null,
     })
   }
-  const overridable = drift.filter((d) => d.listNumber && (d.reasons.includes('status') || d.reasons.includes('list_price')))
+  const overridable = drift.filter((d) => d.listNumber && d.reasons.some(overridableReason))
   const overrides = overridable.length > 0 ? await getAdminOverrideFlags(overridable.map((d) => d.listNumber!)) : new Map()
+  // A status override also explains frozen_not_terminal: the repair re-freezes
+  // on the MLS's terminal status while the merge keeps the broker's, so without
+  // this the same row was "repaired" every day (overrideExplainsDrift).
   return drift
     .map((d) => {
       const o = d.listNumber ? overrides.get(d.listNumber) : undefined
-      if (!o) return d
-      return { ...d, reasons: d.reasons.filter((r) => !(r === 'status' && o.status) && !(r === 'list_price' && o.listPrice)) }
+      return o ? { ...d, reasons: reasonsLeftAfterOverride(d.reasons, o) } : d
     })
     .filter((d) => d.reasons.length > 0)
 }

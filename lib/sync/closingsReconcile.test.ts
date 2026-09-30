@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * The closings reconciliation against a fake Spark and a fake store: which
@@ -129,6 +129,7 @@ vi.mock('@/lib/sync/deltaSync', () => ({
 }))
 
 import { reconcileClosings, reconcileListingStatus } from './closingsReconcile'
+import { isMlsOnMarketStatus } from '@/lib/listing-status-public'
 
 function sparkClosing(key: string, over: Fields = {}): Fields {
   return {
@@ -545,5 +546,75 @@ describe('reconcileListingStatus', () => {
     expect(r.repairFailed).toEqual([])
     expect(store.upserted).toEqual([])
     expect(store.repairLog).toEqual([])
+  })
+})
+
+describe('a broker status override does not loop the reconcile (2026-09-30 review)', () => {
+  /**
+   * A stateful store for this block: an upsert merges the broker's pinned
+   * status back (as upsertListingRows does), a freeze write sets the flags,
+   * and "our on-market / recent terminal keys" are read off the rows. PIN is
+   * Expired in Spark while a broker's edit pins it Active here, and it is
+   * frozen (the finalize followed Spark's terminal status). REAL is the same
+   * shape without an override: frozen Active by mistake, Expired in Spark.
+   */
+  const pinned = new Map<string, string>()
+  const restore: Array<() => void> = []
+
+  afterEach(() => {
+    for (const r of restore.splice(0)) r()
+  })
+
+  beforeEach(async () => {
+    pinned.clear()
+    const dal = await import('@/lib/data/sync/closingsReconcile')
+    const writes = await import('@/lib/data/sync/syncWrites')
+    for (const fn of [dal.getOnMarketListingKeys, dal.getRecentUnsoldTerminalKeys, writes.upsertListingRows, writes.setListingFreezeFlags]) {
+      const m = vi.mocked(fn as (...a: never[]) => unknown)
+      const original = m.getMockImplementation()
+      restore.push(() => m.mockImplementation(original as never))
+    }
+    vi.mocked(dal.getOnMarketListingKeys).mockImplementation(async () =>
+      [...store.rows.values()].filter((r) => isMlsOnMarketStatus(String(r.StandardStatus))).map((r) => String(r.ListingKey)),
+    )
+    vi.mocked(dal.getRecentUnsoldTerminalKeys).mockImplementation(async () =>
+      [...store.rows.values()].filter((r) => ['Expired', 'Withdrawn', 'Canceled'].includes(String(r.StandardStatus))).map((r) => String(r.ListingKey)),
+    )
+    vi.mocked(writes.upsertListingRows).mockImplementation(async (rows: Record<string, unknown>[]) => {
+      for (const row of rows) {
+        const key = String(row.ListingKey)
+        const prev = store.rows.get(key) ?? {}
+        store.rows.set(key, { ...prev, ...row, StandardStatus: pinned.get(String(row.ListNumber)) ?? row.StandardStatus })
+        store.upserted.push(key)
+      }
+      return { ok: true }
+    })
+    vi.mocked(writes.setListingFreezeFlags).mockImplementation(async (listNumbers: string[], flags: Record<string, unknown>) => {
+      for (const r of store.rows.values()) if (listNumbers.includes(String(r.ListNumber))) Object.assign(r, flags)
+      return { ok: true, updated: listNumbers.length }
+    })
+  })
+
+  it('three runs, one change: the unexplained frozen row is repaired once, the pinned one never', async () => {
+    steadyMarket(3)
+    spark.byKey.set('PIN', sparkListing('PIN', { StandardStatus: 'Expired' }))
+    spark.byKey.set('REAL', sparkListing('REAL', { StandardStatus: 'Expired' }))
+    store.rows.set('PIN', ourListing('PIN', { StandardStatus: 'Active', is_finalized: true }))
+    store.rows.set('REAL', ourListing('REAL', { StandardStatus: 'Active', is_finalized: true }))
+    store.overrides.set('LPIN', { status: true, listPrice: true })
+    pinned.set('LPIN', 'Active')
+
+    const runs = []
+    for (let i = 0; i < 3; i++) runs.push(await reconcileListingStatus({ repair: true, terminalSinceDays: 120 }))
+
+    expect(runs.map((r) => r.drift.map((d) => `${d.key}:${d.reasons.join('+')}`))).toEqual([
+      ['REAL:status+frozen_not_terminal'],
+      [],
+      [],
+    ])
+    expect(store.upserted).toEqual(['REAL'])
+    expect(store.rows.get('REAL')).toMatchObject({ StandardStatus: 'Expired', is_finalized: true })
+    // The broker's pin stands, frozen, and nothing rewrites it.
+    expect(store.rows.get('PIN')).toMatchObject({ StandardStatus: 'Active', is_finalized: true })
   })
 })

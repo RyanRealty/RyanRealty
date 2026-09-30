@@ -29,7 +29,13 @@ import { isActiveStatus, isPendingStatus, isClosedStatus } from '@/lib/listing-s
 import { sparkToListingRow, extractPrivateDetails, type ListingMapperOptions } from '@/lib/listing-mapper'
 import { fetchSparkListingsPage } from '@/lib/spark'
 import { fetchAndInsertHistoryCore } from '@/lib/sync/fetchListingHistory'
-import { driftReasons, factsFromListingRow, type DriftReason } from '@/lib/sync/listingDrift'
+import {
+  driftReasons,
+  factsFromListingRow,
+  overridableReason,
+  overrideExplainsDrift,
+  type DriftReason,
+} from '@/lib/sync/listingDrift'
 import { mergeFrozenMedia } from '@/lib/sync/frozenMedia'
 import { getLiveMortgageRate } from '@/lib/data/market/getLiveMortgageRate'
 import { SCHEDULED_EXPIRED_CAPTURE } from '@/lib/expired-listing-select'
@@ -645,23 +651,18 @@ export async function runDeltaSync(opts: RunDeltaSyncOptions): Promise<ShadowRun
   }
 
   // 1a. Reopened finalized rows: drop any whose only drift is a broker
-  // override (our copy on purpose), keep the frozen gallery where we hold more
-  // than the MLS now serves, then upsert them as their own batch. Guarded: a
-  // failure here holds the cursor (the window retries next tick) and the rest
-  // of this tick still writes its history, events and finalizations.
+  // override (our copy on purpose; a status override also explains a frozen
+  // row whose stored status is not terminal, see overrideExplainsDrift), keep
+  // the frozen gallery where we hold more than the MLS now serves, then upsert
+  // them as their own batch. Guarded: a failure here holds the cursor (the
+  // window retries next tick) and the rest of this tick still writes its
+  // history, events and finalizations.
   if (plan.reopenedRows.length > 0) {
     try {
-      const overridable = plan.reopened.filter((r) => r.reasons.includes('status') || r.reasons.includes('list_price'))
+      const overridable = plan.reopened.filter((r) => r.reasons.some(overridableReason))
       const overrides = overridable.length > 0 ? await getAdminOverrideFlags(overridable.map((r) => r.listNumber)) : new Map()
       const explained = new Set(
-        plan.reopened
-          .filter((r) => {
-            const o = overrides.get(r.listNumber)
-            if (!o) return false
-            const left = r.reasons.filter((x) => !(x === 'status' && o.status) && !(x === 'list_price' && o.listPrice))
-            return left.length === 0
-          })
-          .map((r) => r.listingKey),
+        plan.reopened.filter((r) => overrideExplainsDrift(r.reasons, overrides.get(r.listNumber))).map((r) => r.listingKey),
       )
       if (explained.size > 0) dropFromPlan(plan, explained)
 

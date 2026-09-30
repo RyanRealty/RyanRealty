@@ -25,20 +25,38 @@
 import { findCmaSubjectByAddress, findCmaSubjectByMls } from '@/lib/data'
 import type { CmaListingRow } from '@/lib/data'
 import { parseCmaAddress } from '@/lib/cma/subject'
-import { sparkRelistCheck, type SparkRelistResult } from '@/lib/prospecting/sparkRelist'
+import { MLS_ON_MARKET_STATUSES, MLS_PENDING_STATUS } from '@/lib/listing-status-public'
+import {
+  RECENT_SALE_MONTHS,
+  sparkRelistCheck,
+  type SparkRelistResult,
+  type VerifyFailureScope,
+} from '@/lib/prospecting/sparkRelist'
+
+/** With no off-market date to measure against, a sale older than this is history (one number, lib/prospecting/sparkRelist.ts). */
+export { RECENT_SALE_MONTHS }
 
 export type SolicitBlockReason = 'sold' | 'listed' | 'pending' | 'unverified'
 
 export type SolicitScreen =
   | { ok: true; checked: number; detail: string }
-  | { ok: false; reason: SolicitBlockReason; detail: string; listingKey: string | null; checked: number }
+  | {
+      ok: false
+      reason: SolicitBlockReason
+      detail: string
+      listingKey: string | null
+      checked: number
+      /**
+       * For 'unverified' only: 'global' when a source could not answer at all
+       * (our listings read, the MLS), 'row' when this address cannot be
+       * screened (no address, no parse, a shared address with no unit).
+       */
+      scope?: VerifyFailureScope
+    }
 
-/** Statuses that mean a broker holds this listing right now. */
-const ON_MARKET = new Set(['Active', 'Active Under Contract', 'Coming Soon'])
-const UNDER_CONTRACT = new Set(['Pending'])
-
-/** With no off-market date to measure against, a sale older than this is history. */
-export const RECENT_SALE_MONTHS = 12
+/** Statuses that mean a broker holds this listing right now (the shared list, lib/listing-status-public.ts). */
+const UNDER_CONTRACT = new Set<string>([MLS_PENDING_STATUS])
+const ON_MARKET = new Set<string>(MLS_ON_MARKET_STATUSES.filter((s) => !UNDER_CONTRACT.has(s)))
 
 function isoMonthsAgo(months: number): string {
   const d = new Date()
@@ -183,6 +201,7 @@ export function decideSolicitScreen(
         'This street address carries listings for more than one unit and the subject\'s unit is not recorded, so its MLS state cannot be established.',
       listingKey: null,
       checked: rows.length,
+      scope: 'row',
     }
   }
   rows = narrowed
@@ -275,13 +294,22 @@ export async function screenAddressForSolicitation(input: {
    * read Expired. The send chokepoint (lib/cma/send.ts) sets this; the hourly
    * sweep does not (it only archives, and 500 rows an hour would spend the
    * shared Spark key). A relist the MLS shows blocks; an MLS that cannot
-   * answer blocks as unverified.
+   * answer blocks as unverified. `sinceIso` is the MLS check's "sold since"
+   * day too; without it only a sale inside RECENT_SALE_MONTHS blocks, so a
+   * CMA whose subject key is a 2004 sale (most FSBOs) is not refused for it.
    */
   live?: boolean
+  /**
+   * The live MLS answer this send already has (the prospecting intro checked
+   * seconds ago and found the address clear). The Spark call is skipped; the
+   * table half still runs. Only lib/cma/send.ts passes it, from a proof
+   * minted on the server (lib/prospecting/send-capability.ts).
+   */
+  liveAlreadyClear?: boolean
 }): Promise<SolicitScreen> {
   const raw = str(input.address)
   if (!raw) {
-    return { ok: false, reason: 'unverified', detail: 'No subject address to screen.', listingKey: null, checked: 0 }
+    return { ok: false, reason: 'unverified', detail: 'No subject address to screen.', listingKey: null, checked: 0, scope: 'row' }
   }
   const parsed = parseCmaAddress(raw, input.city ?? null, input.postalCode ?? null)
   if (!parsed) {
@@ -291,20 +319,26 @@ export async function screenAddressForSolicitation(input: {
       detail: `Could not parse "${raw}" into a street number and name, so its MLS state is unknown.`,
       listingKey: null,
       checked: 0,
+      scope: 'row',
     }
   }
-  if (input.live) {
+  if (input.live && !input.liveAlreadyClear) {
     const liveCheck = sparkRelistCheck({
       listingKey: str(input.subjectListingKey) || null,
       streetAddress: raw,
       city: input.city ?? null,
+      postalCode: input.postalCode ?? null,
+      soldAfter: input.sinceIso ?? null,
     }).catch(
       (e: unknown): SparkRelistResult => ({
         relisted: false,
         verifyFailed: true,
+        failureScope: 'global',
         reason: `the live MLS check threw: ${e instanceof Error ? e.message : String(e)}`,
         blockedStatus: null,
         blockedKey: null,
+        blockedDate: null,
+        closeDate: null,
       }),
     )
     const [table, mls] = await Promise.all([screenAddressInTable(raw, parsed, input), liveCheck])
@@ -326,7 +360,9 @@ function withLiveMls(table: SolicitScreen, mls: SparkRelistResult): SolicitScree
     return {
       ok: false,
       reason,
-      detail: `${mls.reason ?? 'The MLS shows this address on the market'}. Our listings copy had not caught up; the MLS decides.`,
+      // Say what the MLS shows, nothing more: whether our copy has it is
+      // not known here (the table screen may hold the row and read it as history).
+      detail: `The live MLS check blocks this send. ${mls.reason ?? 'The MLS shows this address on the market'}.`,
       listingKey: mls.blockedKey,
       checked: table.checked,
     }
@@ -339,6 +375,7 @@ function withLiveMls(table: SolicitScreen, mls: SparkRelistResult): SolicitScree
       detail: `The live MLS check could not answer, so this address could not be screened: ${mls.reason ?? 'no reason given'}`,
       listingKey: null,
       checked: table.checked,
+      scope: mls.failureScope ?? 'global',
     }
   }
   return table
@@ -382,11 +419,12 @@ async function screenAddressInTable(
         detail: `The MLS read failed, so this address could not be screened: ${e instanceof Error ? e.message : String(e)}`,
         listingKey: null,
         checked: 0,
+        scope: 'global',
       }
     }
   }
   if (!read) {
-    return { ok: false, reason: 'unverified', detail: 'The MLS read did not answer.', listingKey: null, checked: 0 }
+    return { ok: false, reason: 'unverified', detail: 'The MLS read did not answer.', listingKey: null, checked: 0, scope: 'global' }
   }
   // The unit, in order of reliability: what the caller passed, the subject's
   // own listing row, then an explicit unit written into the address.
