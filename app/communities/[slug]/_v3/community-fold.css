@@ -426,6 +426,12 @@
     padding: 0;
   }
 
+  /* A side column's heading, not a section's: the display size set it on
+     three lines and pushed the form below the first screen. */
+  .place-one-map__ask .v3.v3-alerts .v3-alerts__claim {
+    font-size: var(--v3-size-display-2);
+  }
+
   /* One column inside the side column: the sentence, the form, the new
      listings, in that order. */
   .place-one-map__ask .v3-alerts__grid {
@@ -445,5 +451,15 @@
   /* The places list under the map runs as a list, not a screen-tall column. */
   .place-one-map--ask > .place-subdiv-rail {
     max-height: none;
+  }
+}
+
+/* Where the 90rem map band runs to the window's right edge, the alerts column
+   stops short of the Jax button (V3DogFloater: 4.25rem wide, --v3-space-md in
+   from the edge, fixed mid-screen): at 1440 it sat on the alerts promise
+   (2026-09-29). Wider windows centre the band clear of it. */
+@media (min-width: 64rem) and (max-width: 102rem) {
+  .place-one-map.place-one-map--ask {
+    padding-inline-end: calc(4.25rem + var(--v3-space-md) + var(--v3-space-sm));
   }
 }
