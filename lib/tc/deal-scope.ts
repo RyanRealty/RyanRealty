@@ -28,6 +28,19 @@ export function brokerEmailFromSlug(slug: string | null | undefined): string | n
   return brokerEmailFromFileName(fileNameFromBrokerSlug(slug))
 }
 
+/**
+ * A deal file row, found by an envelope, cycle, recipient or document, is in
+ * the caller's reach: the principal broker's always, a broker's when it is
+ * their file. A missing row (null) is nobody's, so an action answers "not
+ * found" alike for a missing row and one outside the caller's scope.
+ */
+export function dealFileInScope(
+  caller: { role: string; brokerSlug: string | null | undefined },
+  file: { brokerName: string | null } | null,
+): boolean {
+  return !!file && dealVisibleToBroker({ role: caller.role, brokerSlug: caller.brokerSlug, dealBrokerName: file.brokerName })
+}
+
 export function fileDeadlineMatchesScope(input: {
   dealBrokerName: string | null | undefined
   assigneeEmail: string | null | undefined

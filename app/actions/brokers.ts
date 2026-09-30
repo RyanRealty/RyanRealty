@@ -5,6 +5,7 @@ import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { revalidatePath } from 'next/cache'
 import { unstable_cache } from '@/lib/data/cache/next-cache'
+import { supabaseAnon } from '@/lib/data/client'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { logAdminAction } from '@/app/actions/log-admin-action'
@@ -135,7 +136,13 @@ const CONFIRMED_LICENSES: Record<string, string> = {
 }
 
 export async function getBrokerBySlug(slug: string): Promise<BrokerRow | null> {
-  const supabase = await createServerClient()
+  // The public client: `brokers` is public (getBrokers reads it the same way).
+  // The cookie-bound server client made every page that shows a broker, the
+  // /team/<slug> profile included, render per request with no-store, so its
+  // half-hour revalidate never held and the first visit after a deploy waited
+  // on the whole page cold (16.9 s, post-deploy smoke 2026-09-30).
+  const supabase = supabaseAnon()
+  if (!supabase) return null
   const requested = slug.trim().toLowerCase()
   const canonical = BROKER_SLUG_ALIASES[requested]
   // Try the requested slug AND its canonical alias (if any) in one query, so a
