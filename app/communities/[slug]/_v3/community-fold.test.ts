@@ -9,7 +9,7 @@ describe('SITE-129 community fold inventory', () => {
   it('imports page-local community-fold.css and hides the Atlas price range', () => {
     expect(PAGE).toMatch(/import '\.\/_v3\/community-fold\.css'/)
     expect(PAGE).toMatch(/className="community-fold"/)
-    expect(PAGE).toMatch(/className="place-one-map"/)
+    expect(PAGE).toMatch(/className="place-one-map[ "]/)
     expect(PAGE).toMatch(/<PlaceSubdivisionAtlas[\s\S]*?hidePriceScrubber/)
     expect(FOLD_CSS).toMatch(/\.community-atlas \.v3-atlas__scrub[\s\S]{0,200}display:\s*none/)
   })

@@ -394,3 +394,56 @@
 .community-field-types + #homes {
   scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-tap) + var(--v3-space-lg));
 }
+
+/* The alerts beside the map (2026-09-29). A phone reads the map, the alerts,
+   then the places list; a wide screen puts the alerts in a column on the
+   map's right, the places list under the map. */
+.place-one-map.place-one-map--ask {
+  grid-template-areas: 'map' 'ask' 'list';
+}
+
+.place-one-map--ask > .place-one-map__ask {
+  grid-area: ask;
+  min-width: 0;
+}
+
+.place-one-map__ask .v3.v3-alerts {
+  max-width: none;
+  margin: 0;
+  padding: var(--v3-space-md) 0;
+}
+
+@media (min-width: 64rem) {
+  .place-one-map.place-one-map--ask {
+    grid-template-columns: minmax(0, 1fr) minmax(20rem, 26rem);
+    grid-template-areas:
+      'map ask'
+      'list ask';
+    column-gap: var(--v3-space-xl);
+  }
+
+  .place-one-map__ask .v3.v3-alerts {
+    padding: 0;
+  }
+
+  /* One column inside the side column: the sentence, the form, the new
+     listings, in that order. */
+  .place-one-map__ask .v3-alerts__grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'lead'
+      'ask'
+      'figure';
+    row-gap: var(--v3-space-md);
+  }
+
+  .place-one-map__ask .v3-alerts__ask {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  /* The places list under the map runs as a list, not a screen-tall column. */
+  .place-one-map--ask > .place-subdiv-rail {
+    max-height: none;
+  }
+}

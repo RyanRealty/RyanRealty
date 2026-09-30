@@ -1053,32 +1053,6 @@ async function renderCommunityDetail({ params }: Props) {
           </div>
         </div>
 
-        {/* The alerts sentence and the value ask open the page, under the
-            photograph (2026-09-29: the judge found neither in the first
-            screen; the caption's door pointed two screens down). The map and
-            its homes follow. */}
-        <div className="community-fold">
-          <div className="community-fold__stage">
-            <aside className="community-fold__figure">
-              <CommunityAlertsStrip
-                id="alerts"
-                communityName={publicName}
-                city={cityName}
-                subdivision={community.subdivision}
-                geoSlug={neighborhoodSlug}
-                newCount30d={publicPace.newCount30d}
-                updatedAt={leftoverStamp}
-                browseHref={newestListingsHref}
-                matchNames={community.subdivision ? getSubdivisionMatchNames(community.subdivision) : []}
-                types={alertTypes}
-              />
-            </aside>
-          </div>
-          <div className="community-fold__ask">
-            <CommunityPlaceValue slug={slug} placeName={publicName} activity={placeActivitySpark} />
-          </div>
-        </div>
-
         <PlaceSubdivisionMap
           placeName={publicName}
           rail={railEntries}
@@ -1088,7 +1062,7 @@ async function renderCommunityDetail({ params }: Props) {
           source={inventorySource}
           asOf={leftoverStamp}
         >
-          <div className="place-one-map">
+          <div className="place-one-map place-one-map--ask">
             <PlaceSubdivisionRail id="child-places" nameOnly />
             <div className="community-atlas">
             <PlaceSubdivisionAtlas
@@ -1118,6 +1092,24 @@ async function renderCommunityDetail({ params }: Props) {
               clusterStageHintPhone={COMMUNITY_FOLD_CLUSTER_STAGE_PHONE}
             />
             </div>
+            {/* The alerts sentence beside the map, in the first screen (2026-09-29:
+                the lock is "a drawing and a figure beside the alerts sentence";
+                below the map it was two screens down, above it the map fell
+                out of the first screen). */}
+            <aside className="place-one-map__ask">
+              <CommunityAlertsStrip
+                id="alerts"
+                communityName={publicName}
+                city={cityName}
+                subdivision={community.subdivision}
+                geoSlug={neighborhoodSlug}
+                newCount30d={publicPace.newCount30d}
+                updatedAt={leftoverStamp}
+                browseHref={newestListingsHref}
+                matchNames={community.subdivision ? getSubdivisionMatchNames(community.subdivision) : []}
+                types={alertTypes}
+              />
+            </aside>
           </div>
           {fieldTypeIndex.length > 1 ? (
             <nav className="community-field-types" aria-label={`${publicName} listing types`}>
@@ -1139,6 +1131,12 @@ async function renderCommunityDetail({ params }: Props) {
               subdivision chosen on the map. */}
           <PlaceSubdivisionHomes id="homes" />
         </PlaceSubdivisionMap>
+
+        <div className="community-fold">
+          <div className="community-fold__ask">
+            <CommunityPlaceValue slug={slug} placeName={publicName} activity={placeActivitySpark} />
+          </div>
+        </div>
 
         {amenityBoard ? (
           <V3Amenities id="amenities" heading={amenityBoard.heading} source={amenityBoard.source}>
