@@ -208,7 +208,7 @@ async function main() {
   const { getBoundaryGeoJSON } = await import('../lib/data/geo/getBoundaryGeoJSON')
   const { getCrmNeighborhoodOptions } = await import('../lib/data/crm/getCrmNeighborhoodOptions')
   const { getNeighborhoodAliasRows } = await import('../lib/data/geo/getNeighborhoodAliasRows')
-  const { getServiceAreaCities } = await import('../lib/data/market-truth/getServiceAreaCities')
+  const { getServiceAreaCities } = await import('../lib/data/market-report/reconcile')
   const { canonicalCityCacheSlug } = await import('../lib/market/city-cache-slug')
 
   // A failed read must never pass for "no polygon": getBoundaryGeoJSON answers
@@ -242,7 +242,7 @@ async function main() {
     .map((x) => ({ slug: x.slug, geometry: x.geometry, acres: polygonalAcres(x.geometry) }))
   const polygonGaps = shapes.filter((x) => x.geometry == null).map((x) => x.slug)
   const aliases = await getNeighborhoodAliasRows()
-  const serviceAreaCities = await getServiceAreaCities()
+  const serviceAreaCities = (await getServiceAreaCities()).map((c) => c.city)
   if (serviceAreaCities.length === 0) throw new Error('no service-area cities were read; refusing to rebuild Market Truth populations')
 
   // The pulls. Actives are detached only (the count is). Closes are EVERY

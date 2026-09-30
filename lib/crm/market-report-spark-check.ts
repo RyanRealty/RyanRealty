@@ -25,12 +25,21 @@
  *                   (supabase/migrations/20260923014500_place_membership_incremental_refresh.sql)
  *     active_count  StandardStatus 'Active'; a listing filed by alias label
  *                   counts only when its MLS City is in the service area
- *                   (measured, see lib/data/market-truth/getServiceAreaCities.ts)
+ *                   (market_service_area). Measured 2026-09-30, not read from
+ *                   the migration, which would count it: Klamath Falls listing
+ *                   20260529194642378805000000 (SubdivisionName "Tanglewood",
+ *                   a Bend subdivision label) holds a primary alias membership
+ *                   in bend-larkspur and the live cell's 29 leaves it out; a
+ *                   second Klamath Falls name match (bend-mountain-view) is
+ *                   left out the same way, while in-area alias listings
+ *                   (Broken Top, Crosswater) are counted.
  *     closed cells  publishable closes (MLS City in the service area, close
  *                   price of at least 1000, no price typo, one row per parcel,
  *                   close date and price, ranked over every close of every
  *                   property type) with close_date in (period_end - window, period_end]
- *                   (supabase/migrations/20260822233000_refresh_market_fact_sale.sql)
+ *                   (supabase/migrations/20260822233000_refresh_market_fact_sale.sql;
+ *                   20260925060000 adds absent_from_mls, a sale Spark no longer
+ *                   serves, which no Spark pull can contain)
  *     year over year  the same window ending 12 months before period_end
  *     months of supply  active_count / (closes in (period_end - 180 days, period_end] / 6)
  *   market_stats_cache (methodology v3-2026-05-07, public.cache_methodology_definitions),
