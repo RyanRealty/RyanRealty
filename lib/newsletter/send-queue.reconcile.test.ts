@@ -21,7 +21,8 @@ let queuedByTier = new Map<number, number>()
 let queued = 0
 let failFor: string | null = null
 const alerts: Array<{ key: string; body: string }> = []
-const releaseDeadEnqueue = vi.fn(async (_id: string) => true)
+const releaseDeadEnqueue = vi.fn(async (_id: string) => 'draft' as 'draft' | 'failed' | null)
+const finalizeNewsletter = vi.fn(async (_id: string) => null as null | { status: 'sent' | 'failed'; sent: number; failed: number; skipped: number; recipients: number })
 
 vi.mock('@/lib/crm/broker-alerts', () => ({
   queueBrokerHealthAlert: async (a: { key: string; body: string }) => {
@@ -33,7 +34,10 @@ vi.mock('@/lib/data/newsletter/queue', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/data/newsletter/queue')>()),
   getSendingNewsletters: vi.fn(async () => sending),
   requeueStaleClaims: vi.fn(async () => 0),
-  finalizeNewsletter: vi.fn(async () => null),
+  finalizeNewsletter: (id: string) => finalizeNewsletter(id),
+  claimNewsletterForSending: vi.fn(async () => 'tok'),
+  clearUnsentQueue: vi.fn(async () => {}),
+  releaseNewsletterLock: vi.fn(async () => {}),
   recipientStatusCounts: vi.fn(async () => ({ queued })),
   getSendSchedule: vi.fn(async (id: string) => {
     if (id === failFor) throw new Error('getSendSchedule: read failed')
@@ -55,6 +59,7 @@ const getNewsletter = vi.fn(async (_id: string) => null as unknown)
 vi.mock('@/lib/data/newsletter', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/data/newsletter')>()),
   getNewsletter: (id: string) => getNewsletter(id),
+  getActiveSubscribersForSend: vi.fn(async () => []),
 }))
 
 import { drainAllSending, enqueueDueScheduled, reconcileSending } from './send-queue'
@@ -69,7 +74,11 @@ afterEach(() => {
   alerts.length = 0
   failFor = null
   releaseDeadEnqueue.mockClear()
-  releaseDeadEnqueue.mockResolvedValue(true)
+  releaseDeadEnqueue.mockResolvedValue('draft')
+  finalizeNewsletter.mockReset()
+  finalizeNewsletter.mockResolvedValue(null)
+  getNewsletter.mockReset()
+  getNewsletter.mockResolvedValue(null)
 })
 
 describe('reconcileSending: an issue with no schedule', () => {
@@ -79,12 +88,39 @@ describe('reconcileSending: an issue with no schedule', () => {
     expect(releaseDeadEnqueue).not.toHaveBeenCalled()
   })
 
-  it('past the grace is an enqueue that died: back to draft, and Matt is told', async () => {
+  it('past the grace is an enqueue that died: a list send back to draft, and Matt is told, per attempt', async () => {
     schedule = []
-    expect((await reconcileSending(at(0, 1)))[0]).toMatchObject({ action: 'released' })
+    expect((await reconcileSending(at(0, 1)))[0]).toMatchObject({ action: 'released', detail: expect.stringContaining('now draft') })
     expect(releaseDeadEnqueue).toHaveBeenCalledWith('nl-0')
-    expect(alerts[0]!.key).toBe('newsletter-dead-enqueue:nl-0')
+    expect(alerts[0]!.key).toBe(`newsletter-dead-enqueue:nl-0:${STARTED}`)
     expect(alerts[0]!.body).toContain('back to draft')
+  })
+
+  it('a dead one-off is closed, and the text says why it was not reopened', async () => {
+    schedule = []
+    releaseDeadEnqueue.mockResolvedValue('failed')
+    expect((await reconcileSending(at(0, 1)))[0]).toMatchObject({ action: 'released', detail: expect.stringContaining('now failed') })
+    expect(alerts[0]!.body).toContain('cannot go to the whole list by mistake')
+  })
+})
+
+describe('closing a send', () => {
+  it('a send that reached nobody, or had failures, is told to Matt once', async () => {
+    schedule = [{ day_index: 0, tier: 1, cap: 600, sent_count: 0 }]
+    finalizeNewsletter.mockResolvedValue({ status: 'failed', sent: 0, failed: 598, skipped: 2, recipients: 600 })
+    expect((await reconcileSending(at(0, 1)))[0]).toMatchObject({ action: 'finalized', detail: 'failed' })
+    expect(alerts[0]!.key).toBe('newsletter-closed:nl-0')
+    expect(alerts[0]!.body).toContain('without reaching anyone (0 sent, 598 failed at the email service, 2 skipped')
+
+    alerts.length = 0
+    finalizeNewsletter.mockResolvedValue({ status: 'sent', sent: 590, failed: 10, skipped: 0, recipients: 600 })
+    await reconcileSending(at(0, 1))
+    expect(alerts[0]!.body).toContain('finished with failures (590 sent, 10 failed')
+
+    alerts.length = 0
+    finalizeNewsletter.mockResolvedValue({ status: 'sent', sent: 600, failed: 0, skipped: 0, recipients: 600 })
+    await reconcileSending(at(0, 1))
+    expect(alerts).toEqual([])
   })
 })
 
@@ -164,15 +200,23 @@ describe('drainAllSending', () => {
 })
 
 describe('enqueueDueScheduled', () => {
-  it('tells Matt when a scheduled send does not go out, and not when another path already took it', async () => {
-    getDueScheduledNewsletterIds.mockResolvedValueOnce(['nl-gone'])
-    expect(await enqueueDueScheduled()).toEqual({ enqueued: [], skipped: [{ id: 'nl-gone', error: 'not_found' }] })
-    expect(alerts[0]!.key).toBe('newsletter-scheduled-failed:nl-gone')
-    expect(alerts[0]!.body).toContain('did not go out (not_found)')
+  const scheduled = { id: 'nl-0', status: 'scheduled', scheduled_at: '2026-10-03T16:00:00Z', body_html: '<p>x</p>', body_text: null, created_by: 'matt@ryan-realty.com', citations: [] }
 
-    alerts.length = 0
+  it('tells Matt when a scheduled send was put back to draft, keyed by the schedule he set', async () => {
     getDueScheduledNewsletterIds.mockResolvedValueOnce(['nl-0'])
-    getNewsletter.mockResolvedValueOnce({ id: 'nl-0', status: 'sending', body_html: '<p>x</p>', body_text: null, created_by: null, citations: [] })
+    // The enqueue finds no recipients and releases it; the re-read shows it back in draft.
+    getNewsletter.mockResolvedValueOnce(scheduled).mockResolvedValueOnce({ ...scheduled, status: 'draft' })
+    expect(await enqueueDueScheduled()).toEqual({ enqueued: [], skipped: [{ id: 'nl-0', error: 'no_recipients' }] })
+    expect(alerts[0]!.key).toBe('newsletter-scheduled-failed:nl-0:2026-10-03T16:00:00Z')
+    expect(alerts[0]!.body).toContain('did not go out (no_recipients) and is back to draft')
+  })
+
+  it('says nothing while it is still scheduled (the next tick tries again), or another path took it', async () => {
+    getDueScheduledNewsletterIds.mockResolvedValueOnce(['nl-0'])
+    getNewsletter.mockResolvedValueOnce(null).mockResolvedValueOnce(scheduled)
+    expect((await enqueueDueScheduled()).skipped).toEqual([{ id: 'nl-0', error: 'not_found' }])
+    getDueScheduledNewsletterIds.mockResolvedValueOnce(['nl-0'])
+    getNewsletter.mockResolvedValueOnce({ ...scheduled, status: 'sending' })
     expect((await enqueueDueScheduled()).skipped).toEqual([{ id: 'nl-0', error: 'already_sending' }])
     expect(alerts).toEqual([])
   })

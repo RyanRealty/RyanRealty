@@ -38,6 +38,7 @@ import {
   clearUnsentQueue,
   releaseDeadEnqueue,
   ENQUEUE_GRACE_MS,
+  type FinalizeResult,
 } from '@/lib/data/newsletter/queue'
 
 // ── config ───────────────────────────────────────────────────────────────────
@@ -465,13 +466,17 @@ export async function enqueueDueScheduled(nowMs = Date.now()): Promise<{ enqueue
     }
     skipped.push({ id, error: r.error })
     if (SCHEDULED_HELD.has(r.error)) continue
-    // Anything else (no recipients, a deliverability block, an enqueue error,
-    // which puts it back to draft): an issue Matt approved did not go out, and
-    // nothing retries a draft. He is told, once a day at most per issue.
+    // Still scheduled (a refusal before the claim, such as a read that failed):
+    // the next tick tries again. Put back to draft (no recipients, a
+    // deliverability block, an enqueue error): an issue Matt approved did not
+    // go out, and nothing retries a draft. Keyed by the schedule he set, so a
+    // second failure after he schedules it again is told too.
+    const now = await getNewsletter(id).catch(() => null)
+    if (!now || now.status === 'scheduled') continue
     console.error(`[newsletter] scheduled send ${id} did not go out: ${r.error}`)
     await queueBrokerHealthAlert({
-      key: `newsletter-scheduled-failed:${id}`,
-      body: `A scheduled newsletter did not go out (${r.error.slice(0, 120)}). Open it: ${SITE_URL}/admin/newsletters/${id}`,
+      key: `newsletter-scheduled-failed:${id}:${now.scheduled_at ?? ''}`,
+      body: `A scheduled newsletter did not go out (${r.error.slice(0, 120)}) and is back to ${now.status}. Open it: ${SITE_URL}/admin/newsletters/${id}`,
       cooldownMinutes: 1440,
     })
   }
@@ -595,8 +600,30 @@ export async function drainNewsletter(newsletterId: string, sendStartedAt: strin
     if (processedThisRun >= DRAIN_BATCH) break
   }
 
-  report.finalized = await finalizeNewsletter(newsletterId)
+  report.finalized = (await closeAndTell(newsletterId))?.status ?? null
   return report
+}
+
+/**
+ * Close a send (finalizeNewsletter) and tell Matt when it did not reach
+ * everyone it was queued for: nobody at all, or some who failed at the email
+ * service (a rejected key, an unverified domain, a run of rate limits). Those
+ * rows are never retried, so this is the only word he gets. Once per issue.
+ */
+async function closeAndTell(newsletterId: string): Promise<FinalizeResult | null> {
+  const closed = await finalizeNewsletter(newsletterId)
+  if (closed && (closed.status === 'failed' || closed.failed > 0)) {
+    const tally = `${closed.sent} sent, ${closed.failed} failed at the email service, ${closed.skipped} skipped (unsubscribed or suppressed)`
+    await queueBrokerHealthAlert({
+      key: `newsletter-closed:${newsletterId}`,
+      body:
+        closed.status === 'failed'
+          ? `A newsletter send finished without reaching anyone (${tally}). Check ${SITE_URL}/admin/newsletters/${newsletterId}`
+          : `A newsletter send finished with failures (${tally}). Check ${SITE_URL}/admin/newsletters/${newsletterId}`,
+      cooldownMinutes: 7 * 1440,
+    })
+  }
+  return closed
 }
 
 /**
@@ -665,11 +692,16 @@ export async function reconcileSending(nowMs = Date.now()): Promise<ReconcileRep
       if (schedule.length === 0) {
         // Claimed with no schedule: still being queued, or the enqueue died
         // partway (a function timeout skips the catch that releases it).
-        if (nowMs - startMs > ENQUEUE_GRACE_MS && (await releaseDeadEnqueue(nl.id))) {
-          out.push({ newsletterId: nl.id, action: 'released', detail: 'its enqueue died before it was scheduled; back to draft' })
+        const released = nowMs - startMs > ENQUEUE_GRACE_MS ? await releaseDeadEnqueue(nl.id) : null
+        if (released) {
+          out.push({ newsletterId: nl.id, action: 'released', detail: `its enqueue died before it was scheduled; now ${released}` })
+          // Keyed by this attempt, so a second one after Matt approves it again is told too.
           await queueBrokerHealthAlert({
-            key: `newsletter-dead-enqueue:${nl.id}`,
-            body: `A newsletter send stopped before it started (its queueing did not finish), so nobody got it. It is back to draft; approve it again to send: ${SITE_URL}/admin/newsletters/${nl.id}`,
+            key: `newsletter-dead-enqueue:${nl.id}:${nl.send_started_at ?? ''}`,
+            body:
+              released === 'draft'
+                ? `A newsletter send to your list stopped before it started (its queueing did not finish), so nobody got it. It is back to draft; approve it again to send: ${SITE_URL}/admin/newsletters/${nl.id}`
+                : `A newsletter send to a chosen list stopped before it started (its queueing did not finish), so nobody got it. It was closed so it cannot go to the whole list by mistake; send it again as a new one-off: ${SITE_URL}/admin/newsletters/${nl.id}`,
             cooldownMinutes: 1440,
           })
         } else {
@@ -677,9 +709,9 @@ export async function reconcileSending(nowMs = Date.now()): Promise<ReconcileRep
         }
         continue
       }
-      const finalized = await finalizeNewsletter(nl.id)
+      const finalized = await closeAndTell(nl.id)
       if (finalized) {
-        out.push({ newsletterId: nl.id, action: 'finalized', detail: finalized })
+        out.push({ newsletterId: nl.id, action: 'finalized', detail: finalized.status })
         continue
       }
       // Paused (by Matt, or the deliverability breaker, which texts him itself):

@@ -10,14 +10,22 @@ type Db = {
   byStatus: Record<string, number>
   planned: number
   issueStatus: string
-  failCountFor: string | null
+  listSend: boolean
+  failCounts: boolean
 }
-const db: Db = { byStatus: {}, planned: 0, issueStatus: 'sending', failCountFor: null }
+const db: Db = { byStatus: {}, planned: 0, issueStatus: 'sending', listSend: true, failCounts: false }
 const writes: Array<{ table: string; op: string; payload?: Record<string, unknown>; filters: Array<[string, unknown]> }> = []
 
 vi.mock('@/lib/data/client', () => ({
   // One builder per query, as supabase-js does: parallel reads never share state.
   createServiceClient: () => ({
+    // One grouped count, one snapshot (newsletter_recipient_status_counts).
+    rpc: (name: string) => {
+      if (name !== 'newsletter_recipient_status_counts') throw new Error(`unexpected rpc ${name}`)
+      if (db.failCounts) return Promise.resolve({ data: null, error: { message: 'statement timeout' } })
+      const rows = Object.entries(db.byStatus).filter(([, n]) => n > 0).map(([status, n]) => ({ status, n: String(n) }))
+      return Promise.resolve({ data: rows, error: null })
+    },
     from: (table: string) => {
       const call: { table: string; op: string; payload?: Record<string, unknown>; filters: Array<[string, unknown]> } = { table, op: 'select', filters: [] }
       const builder: Record<string, unknown> = {
@@ -25,6 +33,7 @@ vi.mock('@/lib/data/client', () => ({
         update: (payload: Record<string, unknown>) => { call.op = 'update'; call.payload = payload; writes.push(call); return builder },
         delete: () => { call.op = 'delete'; writes.push(call); return builder },
         eq: (col: string, val: unknown) => { call.filters.push([col, val]); return builder },
+        maybeSingle: () => Promise.resolve({ data: { list_send: db.listSend }, error: null }),
         then: (resolve: (v: unknown) => unknown) => {
           const filter = (col: string) => call.filters.find(([c]) => c === col)?.[1]
           if (call.table === 'newsletter_send_schedule') {
@@ -36,9 +45,7 @@ vi.mock('@/lib/data/client', () => ({
               db.byStatus.queued = 0
               return resolve({ data: null, error: null })
             }
-            const status = filter('status') as string
-            if (status === db.failCountFor) return resolve({ count: null, error: { message: 'statement timeout' } })
-            return resolve({ count: db.byStatus[status] ?? 0, error: null })
+            return resolve({ count: db.byStatus[filter('status') as string] ?? 0, error: null })
           }
           // newsletters: a conditional update takes only while the issue is still 'sending'
           if (call.op === 'update') {
@@ -58,7 +65,7 @@ vi.mock('@/lib/supabase/paginate', () => ({ fetchPagedRows: vi.fn(async () => ({
 import { clearUnsentQueue, finalizeNewsletter, releaseDeadEnqueue, sentTotal } from './queue'
 
 afterEach(() => {
-  Object.assign(db, { byStatus: {}, planned: 0, issueStatus: 'sending', failCountFor: null })
+  Object.assign(db, { byStatus: {}, planned: 0, issueStatus: 'sending', listSend: true, failCounts: false })
   writes.length = 0
 })
 
@@ -77,10 +84,10 @@ describe('finalizeNewsletter', () => {
     expect(db.issueStatus).toBe('sending')
   })
 
-  it('never closes on a count it could not read', async () => {
+  it('never closes on counts it could not read (one grouped read, one snapshot)', async () => {
     db.planned = 3
     db.byStatus = { queued: 40000, sent: 100 }
-    db.failCountFor = 'queued'
+    db.failCounts = true
     await expect(finalizeNewsletter('nl-0')).rejects.toThrow('recipientStatusCounts: statement timeout')
     expect(db.issueStatus).toBe('sending')
   })
@@ -89,7 +96,7 @@ describe('finalizeNewsletter', () => {
     db.planned = 3
     // Most rows moved on to delivered/opened/clicked; the last tick's were all skipped.
     db.byStatus = { delivered: 800, opened: 60, clicked: 10, bounced: 3, skipped: 27 }
-    expect(await finalizeNewsletter('nl-0')).toBe('sent')
+    expect(await finalizeNewsletter('nl-0')).toEqual({ status: 'sent', sent: 873, failed: 0, skipped: 27, recipients: 900 })
     const close = writes.find((w) => w.table === 'newsletters')!
     expect(close.payload).toMatchObject({ status: 'sent', sent_count: 873, recipient_count: 900 })
     expect(close.payload).toHaveProperty('sent_at')
@@ -99,7 +106,7 @@ describe('finalizeNewsletter', () => {
   it('closes as failed only when no one was sent it', async () => {
     db.planned = 1
     db.byStatus = { failed: 2, skipped: 1 }
-    expect(await finalizeNewsletter('nl-0')).toBe('failed')
+    expect(await finalizeNewsletter('nl-0')).toMatchObject({ status: 'failed', sent: 0, failed: 2, skipped: 1 })
   })
 
   it('never closes while anything is queued or sending, and writes only over an issue still sending', async () => {
@@ -128,9 +135,17 @@ describe('clearUnsentQueue', () => {
 })
 
 describe('releaseDeadEnqueue', () => {
-  it('puts an issue whose enqueue died back to draft, with what it queued cleared', async () => {
+  it('closes a dead one-off instead: back in draft it would go to the whole list', async () => {
+    db.listSend = false
+    db.byStatus = { queued: 300 }
+    expect(await releaseDeadEnqueue('nl-0')).toBe('failed')
+    expect(db.issueStatus).toBe('failed')
+    expect(db.byStatus.queued).toBe(0)
+  })
+
+  it('puts a list send whose enqueue died back to draft, with what it queued cleared', async () => {
     db.byStatus = { queued: 2400 }
-    expect(await releaseDeadEnqueue('nl-0')).toBe(true)
+    expect(await releaseDeadEnqueue('nl-0')).toBe('draft')
     expect(db.issueStatus).toBe('draft')
     expect(db.byStatus.queued).toBe(0)
     const release = writes.find((w) => w.table === 'newsletters')!
@@ -140,7 +155,7 @@ describe('releaseDeadEnqueue', () => {
 
   it('leaves alone an issue that has a schedule (its enqueue finished)', async () => {
     db.planned = 2
-    expect(await releaseDeadEnqueue('nl-0')).toBe(false)
+    expect(await releaseDeadEnqueue('nl-0')).toBeNull()
     expect(writes).toEqual([])
   })
 })

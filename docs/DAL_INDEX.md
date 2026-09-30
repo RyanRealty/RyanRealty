@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-09-30T14:23:08.995Z
+**Generated:** 2026-09-30T14:55:46.088Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -4046,7 +4046,7 @@ Companion files:
 
 **Tables:** `crm_people`
 
-**Selected columns:** `id`, `email`, `event`, `assigned_broker`, `deleted`, `status`, `unsubscribe_token`, `crm_person_id`, `send_paused`, `day_index`, `tier`, `cap`, `sent_count`, `subscriber_id`, `broker`, `send_started_at`, `newsletter_id`
+**Selected columns:** `id`, `email`, `event`, `assigned_broker`, `deleted`, `status`, `unsubscribe_token`, `crm_person_id`, `send_paused`, `day_index`, `tier`, `cap`, `sent_count`, `subscriber_id`, `broker`, `send_started_at`, `newsletter_id`, `list_send`
 
 ---
 

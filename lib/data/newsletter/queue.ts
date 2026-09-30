@@ -418,23 +418,18 @@ const RECIPIENT_STATUSES = ['queued', 'sending', 'skipped', 'sent', 'delivered',
 const SENT_STATUSES = ['sent', 'delivered', 'opened', 'clicked', 'bounced', 'complained'] as const
 
 /**
- * Recipient rows of an issue by status, every status. THROWS on a failed
- * read: a count that failed is not a zero (a zero 'queued' would close a
- * send still going out).
+ * Recipient rows of an issue by status, every status (0 when none), in ONE
+ * snapshot (newsletter_recipient_status_counts, migration 20260930210000):
+ * read status by status, a drain claim moving rows from queued to sending
+ * between two reads was in neither, and a send still going out closed.
+ * THROWS on a failed read: a count that failed is not a zero.
  */
 export async function recipientStatusCounts(newsletterId: string): Promise<Record<string, number>> {
   const sb = createServiceClient()
-  const results = await Promise.all(
-    RECIPIENT_STATUSES.map((status) =>
-      sb.from(RECIPIENTS).select('id', { count: 'exact', head: true }).eq('newsletter_id', newsletterId).eq('status', status),
-    ),
-  )
-  const counts: Record<string, number> = {}
-  RECIPIENT_STATUSES.forEach((status, i) => {
-    const r = results[i]!
-    if (r.error) throw new Error(`recipientStatusCounts: ${r.error.message}`)
-    counts[status] = r.count ?? 0
-  })
+  const { data, error } = await sb.rpc('newsletter_recipient_status_counts', { p_newsletter_id: newsletterId })
+  if (error) throw new Error(`recipientStatusCounts: ${error.message}`)
+  const counts: Record<string, number> = Object.fromEntries(RECIPIENT_STATUSES.map((status) => [status, 0]))
+  for (const row of (data ?? []) as Array<{ status: string; n: number | string }>) counts[row.status] = Number(row.n)
   return counts
 }
 
@@ -497,7 +492,9 @@ export const ENQUEUE_GRACE_MS = 30 * 60 * 1000
  * sent it (sentTotal), and only over an issue still sending. THROWS when a
  * count cannot be read.
  */
-export async function finalizeNewsletter(newsletterId: string): Promise<'sent' | 'failed' | null> {
+export type FinalizeResult = { status: 'sent' | 'failed'; sent: number; failed: number; skipped: number; recipients: number }
+
+export async function finalizeNewsletter(newsletterId: string): Promise<FinalizeResult | null> {
   const sb = createServiceClient()
   const { count: planned, error: planError } = await sb
     .from(SCHEDULE)
@@ -509,6 +506,8 @@ export async function finalizeNewsletter(newsletterId: string): Promise<'sent' |
   if ((counts.queued ?? 0) > 0 || (counts.sending ?? 0) > 0) return null // still draining
   const sent = sentTotal(counts)
   const status = sent > 0 ? 'sent' : 'failed'
+  const recipients = Object.values(counts).reduce((a, b) => a + b, 0)
+  const failed = counts.failed ?? 0
   const now = new Date().toISOString()
   const { data: done, error } = await sb
     .from(LETTERS)
@@ -516,41 +515,52 @@ export async function finalizeNewsletter(newsletterId: string): Promise<'sent' |
       status,
       send_finished_at: now,
       ...(status === 'sent' ? { sent_at: now } : {}),
-      recipient_count: Object.values(counts).reduce((a, b) => a + b, 0),
+      recipient_count: recipients,
       sent_count: sent,
-      failed_count: counts.failed ?? 0,
+      failed_count: failed,
     })
     .eq('id', newsletterId)
     .eq('status', 'sending')
     .select('id')
   if (error) throw new Error(`finalizeNewsletter: ${error.message}`)
-  return (done?.length ?? 0) > 0 ? status : null
+  return (done?.length ?? 0) > 0 ? { status, sent, failed, skipped: counts.skipped ?? 0, recipients } : null
 }
 
 /**
  * An issue claimed for sending whose enqueue never wrote its schedule: the
  * enqueue died partway (a function timeout skips its catch, which would have
- * released the claim), and nothing will ever send it. Clear what it queued
- * and put it back to draft, the rule for a failed enqueue (S-2). True when
- * it did; only over 'sending' with no schedule. THROWS on a failed read.
+ * released the claim), and nothing will ever send it. What it queued is
+ * cleared. A send to the subscriber list (list_send) goes back to draft, the
+ * rule for a failed enqueue (S-2): approved again, it goes to the same list.
+ * A send to chosen addresses (a one-off, a market report bulk send) is closed
+ * 'failed' instead: its addresses were never stored on the issue, so a draft
+ * approved again would go to its audience column, the whole list. Returns
+ * what it did, or null (it has a schedule, or it moved). THROWS on a failed read.
  */
-export async function releaseDeadEnqueue(newsletterId: string): Promise<boolean> {
+export async function releaseDeadEnqueue(newsletterId: string): Promise<'draft' | 'failed' | null> {
   const sb = createServiceClient()
   const { count: planned, error } = await sb
     .from(SCHEDULE)
     .select('newsletter_id', { count: 'exact', head: true })
     .eq('newsletter_id', newsletterId)
   if (error) throw new Error(`releaseDeadEnqueue: ${error.message}`)
-  if (planned) return false
+  if (planned) return null
+  const { data: issue, error: readError } = await sb.from(LETTERS).select('list_send').eq('id', newsletterId).maybeSingle()
+  if (readError) throw new Error(`releaseDeadEnqueue: ${readError.message}`)
+  const toList = (issue as { list_send: boolean | null } | null)?.list_send === true
   await clearUnsentQueue(newsletterId)
   const { data, error: releaseError } = await sb
     .from(LETTERS)
-    .update({ status: 'draft', lock_token: null, send_started_at: null, list_send: false })
+    .update(
+      toList
+        ? { status: 'draft', lock_token: null, send_started_at: null, list_send: false }
+        : { status: 'failed', lock_token: null, send_finished_at: new Date().toISOString(), sent_count: 0 },
+    )
     .eq('id', newsletterId)
     .eq('status', 'sending')
     .select('id')
   if (releaseError) throw new Error(`releaseDeadEnqueue: ${releaseError.message}`)
-  return (data?.length ?? 0) > 0
+  return (data?.length ?? 0) > 0 ? (toList ? 'draft' : 'failed') : null
 }
 
 /** Ledger event vocabulary (spec §3.1). */
