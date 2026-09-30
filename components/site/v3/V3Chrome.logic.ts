@@ -42,3 +42,14 @@ export function chromeLinkMove(activation: Activation, link: LinkParts, here: Pl
   const elsewhere = link.origin !== here.origin || link.pathname !== here.pathname || link.search !== here.search
   return elsewhere ? 'page' : null
 }
+
+/**
+ * Whether a history step (Back, Forward, a hash change) moves the reader
+ * somewhere the page will scroll to: an anchor, or another page. A step that
+ * keeps the page and names no anchor (a search filter's query, a gallery's
+ * photo) scrolls nothing, so focus, and an open menu, stay where they are.
+ * `renderedPath` is the path the chrome last rendered, the page being left.
+ */
+export function historyStepMoves(here: { pathname: string; hash: string }, renderedPath: string): boolean {
+  return Boolean(here.hash) || here.pathname !== renderedPath
+}

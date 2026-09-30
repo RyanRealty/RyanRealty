@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { chromeLinkMove } from './V3Chrome.logic'
+import { chromeLinkMove, historyStepMoves } from './V3Chrome.logic'
 
 const click = { button: 0, metaKey: false, ctrlKey: false, shiftKey: false, altKey: false }
 const here = { origin: 'https://ryan-realty.com', pathname: '/sell', search: '' }
@@ -32,5 +32,18 @@ describe('chromeLinkMove', () => {
     expect(chromeLinkMove(click, link('tel:+15417033095'), here)).toBeNull()
     expect(chromeLinkMove(click, link('/sell#get-value', '_blank'), here)).toBeNull()
     expect(chromeLinkMove(click, link('/housing-market', '_self'), here)).toBe('page')
+  })
+})
+
+describe('historyStepMoves', () => {
+  it('moves the reader to an anchor or to another page', () => {
+    expect(historyStepMoves({ pathname: '/how-we-get-our-numbers', hash: '#months-of-supply' }, '/how-we-get-our-numbers')).toBe(true)
+    expect(historyStepMoves({ pathname: '/sell', hash: '#get-value' }, '/housing-market')).toBe(true)
+    expect(historyStepMoves({ pathname: '/housing-market', hash: '' }, '/sell')).toBe(true)
+  })
+
+  it('leaves focus and an open menu alone on a step that keeps the page and names no anchor', () => {
+    // A search filter's query or a gallery's ?photo= entry.
+    expect(historyStepMoves({ pathname: '/homes-for-sale/bend', hash: '' }, '/homes-for-sale/bend')).toBe(false)
   })
 })
