@@ -181,6 +181,37 @@ describe('getCmaOutcomes — one row-level answer per document', () => {
     })
   })
 
+  it('does not count a scanner\'s click_automated as a click', async () => {
+    // An email security scanner follows every link in the mail seconds after it
+    // lands. /api/track/e/click records that as email_events `click_automated`
+    // (docs/TRACKING_POLICY.md, "Automation"). The outcome row counts `click` and
+    // only `click`: a scanner is not the contact reading the report.
+    state.cmas = [
+      { id: 'c1', slug: 'cma-101-main', person_id: 7, client_email: 'a@b.com', delivered_at: '2026-09-01T10:00:00Z' },
+    ]
+    const scan = {
+      email_key: 'cma:cma-101-main',
+      event: 'click_automated',
+      meta: { url: 'https://ryan-realty.com/cma/cma-101-main?utm_campaign=cma-101-main', automation_reason: 'declared-crawler' },
+    }
+    state.emailEvents = [
+      { email_key: 'cma:cma-101-main', event: 'sent', occurred_at: '2026-09-01T10:00:00Z' },
+      { email_key: 'cma:cma-101-main', event: 'delivered', occurred_at: '2026-09-01T10:00:05Z' },
+      { ...scan, occurred_at: '2026-09-01T10:00:09Z' },
+    ]
+    const scanned = (await getCmaOutcomes(['c1'])).c1
+    expect(scanned).toMatchObject({ clicks: 0, firstClickAt: null, opens: 0, firstOpenAt: null, bounced: false })
+    expect(scanned.clickedLinks).toEqual([])
+
+    // A real click after the scan is the only click there is.
+    state.emailEvents = [
+      ...state.emailEvents,
+      { email_key: 'cma:cma-101-main', event: 'click', occurred_at: '2026-09-01T12:01:00Z', meta: { url: 'https://ryan-realty.com/cma/cma-101-main' } },
+    ]
+    const real = (await getCmaOutcomes(['c1'])).c1
+    expect(real).toMatchObject({ clicks: 1, firstClickAt: '2026-09-01T12:01:00Z' })
+  })
+
   it('never credits a document with a reply that predates its own send', async () => {
     // Same person, two documents. The conversation happened after the FIRST
     // send and before the second — only the first may claim it.

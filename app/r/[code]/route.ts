@@ -6,6 +6,12 @@
  * comes from OUR database (written when the text was composed), never from a
  * query param, so this can't be turned into an open redirect. Fails open to the
  * homepage on any unknown/invalid code so a mistyped link never dead-ends.
+ *
+ * A person tapping the link arrives with the destination re-signed for the
+ * contact the text went to. A link preview or any other automated fetch is
+ * redirected with no person token (withoutIdentityOnOwnSite): signed for it, a
+ * previewer or scanner that renders the page it was sent to was identified as the
+ * contact (review of 2026-09-30, the same rule as the email click redirect).
  */
 import { NextRequest, NextResponse } from 'next/server'
 import {
@@ -13,6 +19,7 @@ import {
   isLikelyBotUserAgent,
   stampIdentityOnOwnSite,
 } from '@/lib/data/crm/shortLinks'
+import { withoutIdentityOnOwnSite } from '@/app/api/visitors/track/strip-identity'
 
 export const runtime = 'nodejs'
 export const revalidate = 0
@@ -30,7 +37,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ code
     try {
       const resolved = await resolveAndLogShortLinkClick(clean, { log })
       if (resolved?.targetUrl && /^https?:\/\//i.test(resolved.targetUrl)) {
-        target = stampIdentityOnOwnSite(resolved.targetUrl, resolved.personId, resolved.broker)
+        target = log
+          ? stampIdentityOnOwnSite(resolved.targetUrl, resolved.personId, resolved.broker)
+          : withoutIdentityOnOwnSite(resolved.targetUrl)
       }
     } catch (err) {
       console.warn('[r/code] resolve error:', err)

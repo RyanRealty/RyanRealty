@@ -25,6 +25,7 @@ import { getAgentBySlug } from '@/app/actions/agents'
 import { getBrokerageSettings } from '@/app/actions/brokerage'
 import {
   getBrokerageListingTiles,
+  getBrokers,
   getReviews,
   getBrokerSales,
   getListingTiles,
@@ -100,6 +101,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export const revalidate = 1800
+
+/**
+ * Every active broker's page is built with the deploy and refreshed each half
+ * hour after, so no visitor waits on a cold render (16.9 s for
+ * /team/matthew-ryan after the 2026-09-30 17:58Z deploy). Another slug still
+ * renders on its first request.
+ */
+export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
+  const brokers = await getBrokers().catch(() => [])
+  return brokers.flatMap((b) => (b.slug ? [{ slug: b.slug }] : []))
+}
 
 export default async function TeamMemberPage({ params }: Props) {
   const { slug } = await params

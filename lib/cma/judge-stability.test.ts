@@ -463,6 +463,56 @@ describe('judgeComps stability', () => {
     }
   })
 
+  it('a cache hit throws on the replayed aggregate, not only on the stored flag (review of da8dce6)', async () => {
+    // A record an older aggregator wrote as stable, whose votes the current one
+    // reads as a split that decides the minimum. The replay must fail the build
+    // the way a fresh run of the same votes would.
+    const pool = [
+      comp({ listingKey: 'K1' }),
+      comp({ listingKey: 'K2', address: '22 Sample St' }),
+      comp({ listingKey: 'swing', address: '30 Sample St', lotAcres: 0.34, publicRemarks: '4 car garage.' }),
+    ]
+    let n = 0
+    const call: JudgeModelCall = async () => {
+      n += 1
+      const excludeSwing = n % 3 !== 1
+      return {
+        payload: judgment(
+          pool.map((c) =>
+            verdict({
+              listingKey: c.listingKey,
+              tier: c.listingKey === 'swing' && excludeSwing ? 'exclude' : c.listingKey === 'swing' ? 'weak' : 'strong',
+              basis: c.listingKey === 'swing' && excludeSwing ? 'lot' : undefined,
+              reason:
+                c.listingKey === 'swing' && excludeSwing
+                  ? '0.34 acre lot and 4-car garage versus 0.14 acre and 2-car.'
+                  : 'Comparable sale.',
+            }),
+          ),
+        ),
+        raw: '{}',
+        costUsd: 0,
+      }
+    }
+    let record: JudgeUnstableError['record'] | null = null
+    try {
+      await judgeComps(sub, pool, market, { callModel: call, minComps: 3 })
+    } catch (err) {
+      record = (err as JudgeUnstableError).record
+    }
+    expect(record?.unstable).toBe(true)
+    const writtenAsStable = { ...record!, unstable: false, message: null }
+    await expect(
+      judgeComps(sub, pool, market, {
+        callModel: async () => {
+          throw new Error('should not call')
+        },
+        minComps: 3,
+        priorCache: writtenAsStable,
+      }),
+    ).rejects.toMatchObject({ cacheHit: true, code: JUDGE_UNSTABLE })
+  })
+
   it('fails open when the model call errors', async () => {
     const result = await judgeComps(sub, comps, market, {
       callModel: async () => {

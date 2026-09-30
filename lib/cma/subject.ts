@@ -15,18 +15,9 @@ import type { CmaSubject } from '@/lib/cma/types'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatDate } from '@/lib/format/date'
 import { daysOnMarketFrom, listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
-
-const STREET_SUFFIXES = new Set([
-  'rd', 'road', 'st', 'street', 'ave', 'avenue', 'dr', 'drive', 'ln', 'lane',
-  'ct', 'court', 'pl', 'place', 'blvd', 'boulevard', 'hwy', 'highway',
-  'pkwy', 'parkway', 'cir', 'circle', 'way', 'trail', 'trl', 'ter', 'terrace', 'loop',
-])
-
-/** Leading directional tokens ("1204 NW Iowa" -> direction nw, name iowa). */
-const DIRECTIONALS = new Set([
-  'n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw',
-  'north', 'south', 'east', 'west', 'northeast', 'northwest', 'southeast', 'southwest',
-])
+// The suffix and directional words are shared with the owner-name check, so the
+// two never disagree on what a street word is (lib/cma/street-words.ts).
+import { STREET_DIRECTIONALS as DIRECTIONALS, STREET_SUFFIXES } from '@/lib/cma/street-words'
 
 import { assessorTrace, propertySubTypeFromStatClass, resolveAssessorFacts, type AssessorFacts } from '@/lib/cma/assessor'
 
@@ -249,6 +240,7 @@ export function rowToSubject(row: CmaListingRow): CmaSubject {
       if (fromCol != null) return fromCol
       return bool(row['new_construction_details'])
     })(),
+    seniorCommunityYn: bool(row['senior_community_yn']),
   }
 }
 
@@ -314,6 +306,7 @@ export function subjectFromAssessorFacts(
     sewerRaw: null,
     levelsRaw: facts.statClass,
     newConstructionYn: null,
+    seniorCommunityYn: null,
   }
 }
 

@@ -25,6 +25,17 @@ export const DRIP_WEEKDAY_START_MINUTES = 8 * 60
 export const DRIP_SPACING_MINUTES = 5
 
 /**
+ * Expired first-touch hard stop.
+ *
+ * While this is true, drainProspectingFirstTouchDrip must not send an expired
+ * CMA, even when a row is already queued or a later approve enqueues one. The
+ * row stays queued (not dequeued, not marked sent). FSBO first-touch is not
+ * covered by this stop. On because the email tracking gate is still closed
+ * (2026-09-30): no expired CMA may leave until that gate is open.
+ */
+export const EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP = true
+
+/**
  * The drip route's Vercel function limit, in seconds.
  *
  * One drip send is a whole CMA send: the live MLS relist check, the CRM lead,

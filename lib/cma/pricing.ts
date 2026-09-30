@@ -28,6 +28,7 @@ import type {
   CmaSubject,
 } from '@/lib/cma/types'
 import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { SAME_STREET_PREMIUM_MAX, sameStreetPeer } from '@/lib/pricing/price-anchor'
 import { landProduct, priceLandSubject } from '@/lib/cma/land-pricing'
 import type { CmaSiteData } from '@/lib/cma/county'
@@ -275,7 +276,9 @@ export function computePricing(
   if (market?.marketVerdict === 'buyer' && highEnd > recommended * 1.04) {
     highEnd = round5000(recommended * 1.04)
     notes.push(
-      `${market.geoLabel} is carrying ${market.monthsOfSupply} months of supply (buyer's market), so the High End tier is pulled in to 4% above the recommended list.`,
+      market.monthsOfSupply != null
+        ? `${market.geoLabel} is carrying ${formatMonthsOfSupply(market.monthsOfSupply)} months of supply (buyer's market), so the High End tier is pulled in to 4% above the recommended list.`
+        : `${market.geoLabel} is a buyer's market, so the High End tier is pulled in to 4% above the recommended list.`,
     )
   }
 

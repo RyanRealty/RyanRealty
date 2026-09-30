@@ -1611,3 +1611,88 @@ describe('year/quality outranks radius only when the pocket is starved', () => {
     expect(out.comps.map((c) => c.listingKey)).toEqual(['FAR_CUSTOM'])
   })
 })
+
+describe('a full plat is not replaced by a cheaper quarter-mile pocket', () => {
+  const asOf = '2026-09-28'
+
+  it('keeps the plat sales when the plat already has five and the pocket is cheaper', () => {
+    const plat = [770_000, 780_000, 790_000, 800_000, 810_000, 820_000].map((closePrice, i) =>
+      sale({
+        listingKey: `PLAT${i}`,
+        address: `${100 + i} Redtail`,
+        subdivision: 'Redtail Ridge',
+        subdivisionNorm: 'redtail ridge',
+        closePrice,
+        closeDate: '2026-06-01',
+        sqft: 2100,
+      }),
+    )
+    const pocket = [610_000, 615_000, 620_000, 625_000, 630_000, 635_000, 640_000, 645_000].map(
+      (closePrice, i) =>
+        sale({
+          listingKey: `POCKET${i}`,
+          address: `${200 + i} Badger`,
+          subdivision: 'North Trailside',
+          subdivisionNorm: 'north trailside',
+          closePrice,
+          closeDate: '2026-06-01',
+          sqft: 2000,
+        }),
+    )
+    const out = walkPricingLadder(
+      subject({
+        subdivision: 'Redtail Ridge',
+        subdivisionNorm: 'redtail ridge',
+        streetAddress: '3759 45th',
+        sqft: 2186,
+        pocketSubdivisionNorms: ['north trailside'],
+      }),
+      [...plat, ...pocket],
+      { asOf },
+    )
+    const keys = out.comps.map((c) => c.listingKey)
+    expect(keys.every((k) => k.startsWith('PLAT'))).toBe(true)
+    expect(keys.some((k) => k.startsWith('POCKET'))).toBe(false)
+    const pocketRung = out.rungs.find((r) => r.tier === 'pocket-9mo')
+    expect(pocketRung?.ran).toBe(false)
+    expect(pocketRung?.skippedReason).toMatch(/own plat already has/)
+  })
+
+  it('still uses the quarter-mile pocket when the plat has fewer than five sales', () => {
+    const plat = [770_000, 790_000].map((closePrice, i) =>
+      sale({
+        listingKey: `PLAT${i}`,
+        address: `${300 + i} Redtail`,
+        subdivision: 'Redtail Ridge',
+        subdivisionNorm: 'redtail ridge',
+        closePrice,
+        closeDate: '2026-06-01',
+        sqft: 2100,
+      }),
+    )
+    const pocket = [610_000, 620_000, 630_000].map((closePrice, i) =>
+      sale({
+        listingKey: `POCKET${i}`,
+        address: `${400 + i} Badger`,
+        subdivision: 'North Trailside',
+        subdivisionNorm: 'north trailside',
+        closePrice,
+        closeDate: '2026-06-01',
+        sqft: 2000,
+      }),
+    )
+    const out = walkPricingLadder(
+      subject({
+        subdivision: 'Redtail Ridge',
+        subdivisionNorm: 'redtail ridge',
+        sqft: 2186,
+        pocketSubdivisionNorms: ['north trailside'],
+      }),
+      [...plat, ...pocket],
+      { asOf },
+    )
+    const keys = out.comps.map((c) => c.listingKey)
+    expect(keys.some((k) => k.startsWith('POCKET'))).toBe(true)
+    expect(keys.some((k) => k.startsWith('PLAT'))).toBe(true)
+  })
+})

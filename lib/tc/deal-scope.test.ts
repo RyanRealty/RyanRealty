@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   brokerEmailFromFileName,
+  dealFileInScope,
   dealVisibleToBroker,
   fileDeadlineMatchesScope,
   fileNameFromBrokerSlug,
@@ -59,5 +60,24 @@ describe('fileDeadlineMatchesScope', () => {
         brokerScope: 'paul',
       }),
     ).toBe(false)
+  })
+})
+
+describe('dealFileInScope (envelope and packet writes)', () => {
+  const paul = { role: 'broker', brokerSlug: 'paul' }
+  it('lets the principal act on every file', () => {
+    expect(dealFileInScope({ role: 'superuser', brokerSlug: 'matt' }, { brokerName: 'Paul Stevenson' })).toBe(true)
+  })
+  it("lets a broker act on their own file and not another broker's", () => {
+    expect(dealFileInScope(paul, { brokerName: 'Paul Stevenson' })).toBe(true)
+    expect(dealFileInScope(paul, { brokerName: 'Matt Ryan' })).toBe(false)
+  })
+  it('treats a missing row as nobody\'s, the principal included', () => {
+    expect(dealFileInScope({ role: 'superuser', brokerSlug: 'matt' }, null)).toBe(false)
+    expect(dealFileInScope(paul, null)).toBe(false)
+  })
+  it('fail-closes an unmapped broker and a file with no broker', () => {
+    expect(dealFileInScope({ role: 'broker', brokerSlug: null }, { brokerName: 'Matt Ryan' })).toBe(false)
+    expect(dealFileInScope(paul, { brokerName: null })).toBe(false)
   })
 })

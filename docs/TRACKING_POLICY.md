@@ -8,6 +8,27 @@ live codebase. Load-bearing invariants are **locked by the `ci:tracking-policy`
 gate (G48)**. Outward changes that alter live ad/tracking behavior are a **backlog
 that ships only on Matt's explicit go** (Draft-First / ops-explicit).
 
+**Updated 2026-09-29 (Matt, the four tracked-email breaks):** the client-document
+tracker follows the same consent tiers and first-touch capture as every other page;
+sessions now end ("Sessions", below); and automation is never identified, never
+alerts a broker, and is never recorded as a click ("Automation", below).
+
+**Updated 2026-09-30 (the review of those fixes):** only an ARRIVAL can end a session on
+its campaign, and a session id from before the rule is never kept ("Sessions"); the
+browser's own `navigator.webdriver` reaches every identify call and every tracker post,
+and the browser back-stitch leaves flagged sessions out ("Automation"); Global Privacy
+Control is never read as a campaign-link grant, and a client document records nothing
+under it (the tier table).
+
+**Updated 2026-09-30 (the second review):** the session a record belongs to has a key of
+its own, so a tab still running the tracker deployed before the rule no longer splits a
+visit, and an arrival is judged on the address the page LOADED at ("Sessions"); the
+identity bridge identifies the session the tracker's first post landed in, and an
+automated click is redirected with no person token ("Automation"); under Global Privacy
+Control both trackers write no identifier and send only a notice, the search events and
+`trackUserEvent` refuse a decline and GPC, and the campaign-link grant goes through
+`arrivalConsent` (the tier table).
+
 ## The architecture (what we do, end to end)
 
 ```
@@ -78,15 +99,24 @@ head + body, Meta Pixel) return null on a non-production build via
 `lib/analytics/non-production-build.ts`, and `fireGa4Event` refuses a non-production
 `page_location` on the server path.
 
-## What we collect at each consent tier (updated 2026-09-23)
+## What we collect at each consent tier (updated 2026-09-29)
 
-The banner answer decides the tier. `components/VisitTracker.tsx` sends it and
-`app/api/visitors/track/route.ts` enforces it server-side; no client can widen it.
+The banner answer decides the tier, and ONE mapping reads it: `lib/identity/consent.ts`
+(`parseConsentCookie`, `trackingLevelFromConsent`, `isAdTrafficSearch`). It is followed
+by `components/VisitTracker.tsx`, which sends the tier for every page view and every
+interaction (`V3SectionTracker` sends the same value; until 2026-09-29 it sent none and
+the server dropped every event it posted), by the server's identify paths, and by the
+client-document tracker `public/rr-doc-tracker.js`, a plain file that cannot import it
+and so MIRRORS it. `app/api/visitors/track/doc-tracker.pin.test.ts` executes that script
+and the TypeScript over every cookie shape and campaign URL and fails when they
+disagree (until 2026-09-29 the script hard-coded `essential`, so a visitor who had
+declined was still recorded and identified on a CMA or BPO document).
+`app/api/visitors/track/route.ts` enforces the tier server-side; no client can widen it.
 
 | Tier | When | Recorded | Not recorded |
 |---|---|---|---|
-| **Declined** | banner answered with analytics AND marketing off, or an unreadable consent cookie | nothing: no session, no event, no identification, no GA4 mirror | everything |
-| **GPC** | `Sec-GPC: 1` or `navigator.globalPrivacyControl` | nothing; if the browser was already identified, a durable `channel='all'` suppression on that contact | everything |
+| **Declined** | banner answered with analytics AND marketing off, or an unreadable consent cookie | nothing: no session, no event, no identification, no GA4 mirror. On client documents (`/cma`, `/bpo`) as on every page: the script posts nothing and stores no session id | everything |
+| **GPC** | `Sec-GPC: 1` or `navigator.globalPrivacyControl` | nothing; if the browser was already identified, a durable `channel='all'` suppression on that contact. Both trackers, the site's and the client document's, write no identifier (no session id, no lifecycle record, no first-touch capture, no consent cookie: the campaign-link grant never applies) and post no event: once per page load they send a notice that carries the signal and nothing else (`{ gpc: true }`), and no identify ping. The route checks GPC before anything else, drops the request, and finds the contact from what the browser already carries on every request here: the signed `rr_pid` cookie, else its `rr_vid` in `visitor_identity_map` (a tracker from before 2026-09-30 still names its session). Until 2026-09-30 the site tracker minted a session id and posted every event with its address and campaign, while the document tracker sent nothing, so a known contact reading a report under GPC was never suppressed | everything |
 | **Essential** | no banner answer (99.5% of visitors), or marketing-only | browser session id, `rr_vid`, page URL (identity params stripped), page title and category, event type and time, referrer, landing page, campaign params (`utm_*`, `fbclid`, `gclid`), the automation class label (below), and **identification of a person who clicked a link we sent them, signed in, or submitted a form** (the session's `crm_person_id` and the signed `rr_pid` cookie); page views mirrored to GA4 under an anonymous client id | the user-agent string, IP geo, listing meta columns, scroll depth, dwell, the event metadata blob; no looking-at broker text |
 | **Analytics / all** | analytics granted | everything above, plus user agent, IP geo, listing meta, scroll, dwell, metadata; the looking-at broker text on a listing view | — |
 
@@ -95,12 +125,97 @@ contact us, or follow a link we send, we may recognize you on later visits using
 first-party cookie and associate the pages and listings you view with your contact
 record"). The code and that page must not drift apart.
 
+**The campaign-link grant (Matt 2026-06-02, `autoGrantConsentForAdTraffic`).** A visitor
+with NO banner answer who arrives on an ad or campaign link (any `utm_*`, `fbclid`,
+`gclid`, `msclkid`, `ttclid`) is treated as `all` for that visit and the grant is stored
+in the consent cookie, so their first page view scores and the campaign is attributed. An
+explicit answer, a decline included, is never overridden, and a browser sending Global
+Privacy Control is never granted anything: an opt-out of sale and sharing is not consent
+to marketing (`arrivalConsent`, `gpcFromNavigator`; until 2026-09-30 the grant wrote the
+`all` cookie for such a browser on every campaign link, report pages included). Every link we send a known
+contact carries `utm_*`, so an email arrival lands here on whichever page it opens,
+public page or client document: the client-document tracker follows the same rule
+(`isAdTrafficSearch`, and it writes the same cookie the banner does). The link judged is
+the one the page ARRIVED on (`pageArrival`, recorded at hydration), not the address a tap
+before the lazily loaded tracker mounts has put there since, and the banner decides
+through `arrivalConsent` itself (until 2026-09-30 it restated the rule by hand; `gpc` is
+now a required argument of it).
+
+**The other event writers follow the same tiers.** The search-funnel events
+(`fireSearchEvent`) and the `trackUserEvent` server action behind them (and behind a
+signed-in visitor's viewing history) record nothing, and write no session id, for a
+visitor who declined or whose browser sends Global Privacy Control; the action checks
+the consent cookie and `Sec-GPC` itself (`recordingAllowed`), so no client can widen it.
+Until 2026-09-30 neither had any check.
+
+**Section and scroll events (`V3SectionTracker`).** The section tracker used to post no
+consent field, and the track route drops an event that names none, so no `section_view` or
+`scroll_depth` it sent was ever recorded. It now posts the shared first-party context
+(consent included), and only for a visitor at the analytics or all tier: at essential the
+route strips the event metadata and the scroll depth, so a row would be an empty event: one
+write per section plus up to four scroll milestones, every page view. A decline records nothing and leaves no session id. The
+section id and the depth ride in `metadata`, the field the route reads. `scrollDepthPct` is
+deliberately not sent: `visitor_score_delta_for_event` scores a `scroll_depth` at 75 or more as
++5 engagement, twice a page (the 75 and 100 milestones), and turning that on across every public
+page moves the hot-lead count, which is a scoring decision and not a tracking fix.
+
 **The automation class is recorded at every storing tier from the request's user-agent
 HEADER and `navigator.webdriver`, and only the class label is stored**
 (`visitor_sessions.is_automated` / `automation_reason`: `declared-crawler`, `tool`,
 `headless`, `webdriver`, `empty-ua`; `lib/analytics/automation.ts`). Reading the header
 to classify is not keeping it. A UA-flagged session is still counted, but it is never
 identified to a contact, never shown in the known-people view, and never mirrored to GA4.
+Since 2026-09-29 the class is honored everywhere, not only by the track route:
+
+- **Never identified.** The identify server actions (`identifyPersonFromEmailClickNative`,
+  `identifyAuthenticatedSession`) refuse an automated request by its user agent, by the
+  browser's own `navigator.webdriver` sent with the call, AND by a session the track route
+  flagged as automation. A scripted browser with an ordinary user agent shows only in
+  `navigator.webdriver`, which no request header carries, so the flag goes with the call
+  (`PersonIdentityBridge` and `VisitTrackerWithSession` send it, and the document
+  tracker's identify ping adds `webdriver=1`). `PersonIdentityBridge` identifies the
+  session `VisitTracker`'s first post of the page landed in (`postedSession`), as the
+  document tracker's ping follows its own page view: the click can END the session in
+  storage (a new campaign, 30 minutes idle, an id from before the rule), and the lazily
+  loaded tracker starts the new one with that post. Until 2026-09-30 it asked at mount,
+  identified the visit before this one, read that session's automation flag, and skipped
+  the retry meant for the click's own session. On a page the tracker records nothing on,
+  it identifies with no session id after 10 seconds. With a session id, the action also
+  runs the session backfill first, and a flagged session ends it before the `rr_pid`
+  cookie, the GA4 `person_identified` event or the browser stitch.
+  `backfillSessionToFub` itself refuses a flagged session (no person on the session, no
+  `visitor_identity_map` row, no back-stitch of the browser's other sessions); so does the
+  form-submit stitch (`stitchFormSubmitIdentity`). The browser back-stitch
+  (`stitchVisitorIdentity`, run when a person identifies) leaves every flagged session on
+  the same `rr_vid` unidentified, and a back-stitch or identity-map write that fails is
+  logged, never skipped in silence; the provisional `contact-deep-link` shape is stitched
+  like any session. Which sessions automation blocks is ONE rule
+  (`lib/analytics/automation.ts`, `sessionBlocksIdentification` and the PostgREST filter
+  `IDENTIFIABLE_SESSION_FILTER` built from the same terms), read by the identify paths,
+  the back-stitch and the Known people view alike. The contact a form creates exists either way. Every tracker post
+  carries `navigator.webdriver` in the shared context, because the route flags a session
+  only from the event that creates it, and a section view can be that event (until
+  2026-09-30 `V3SectionTracker` sent none). `ci:identity-loop` holds each of these guards
+  at its call site.
+- **Never alerts a broker.** Neither the "they opened your report" text
+  (`queueCmaOpenedAlert`, from a client-document view or from the email's open pixel) nor
+  the "looking at this home" text (`queueReturnVisitAlert`) fires for an automated request.
+- **Never a click, and never a person token.** `/api/track/e/click` classifies the
+  request's user agent. An automated request is still redirected (a scanner that gets no
+  answer flags the link), to the destination with no person token on it
+  (`withoutIdentityOnOwnSite`): a mail security gateway resolves the link with a library
+  user agent and then renders the page it was sent to in a sandbox with an ordinary one,
+  and until 2026-09-30 that page carried a freshly signed `_pid`, so the sandbox was
+  identified as the contact, cookied, and a "they opened your report" text queued. The
+  SMS short link `/r/<code>` does the same for a link preview. A person clicking still
+  arrives with the destination re-signed. The automated click is
+  recorded ONCE as `email_events.event = 'click_automated'` with `meta.automation_reason`;
+  it writes no `crm_timeline` `email_click` row and no newsletter-ledger click. Every
+  report that counts engagement reads the exact value `click`, so `click_automated`
+  counts toward none of them. Writing it needs the `email_events_event_check` constraint
+  widened (`supabase/migrations/20260929170000_email_events_click_automated.sql`, applied
+  with the deploy); until it is applied the insert fails, is logged, and the visitor is
+  still redirected, so an automated click is recorded nowhere and never as a `click`.
 
 One behavioural reason is **provisional**: `contact-deep-link`, a brand-new session whose
 first page is `/contact?listingKey=<mls>` with no referrer, no campaign params and no
@@ -111,6 +226,142 @@ exists. Measured 2026-09-23T06:09Z over the 7 days from 2026-09-16T06:09Z
 one event. The UA classifier cannot see that crawler because the UA is not stored at
 essential. The flag is set at birth and **cleared by the session's next event**; it keeps
 that first view out of the GA4 mirror and the counts, and never blocks identification.
+
+## Sessions (Matt 2026-09-29)
+
+**A session ends after more than 30 minutes with no tracked activity, or when the visitor
+ARRIVES on a link carrying a campaign (`utm_source` or `utm_campaign`) different from the
+one the session began under. The next tracked event starts a new session.** That is
+Google Analytics' own rule: "[UA] How a web session is defined in Universal Analytics"
+(support.google.com/analytics/answer/2731565) ends a session after 30 minutes of
+inactivity and when a visitor arrives from a different campaign, and GA4 keeps the
+30-minute default ("About Analytics sessions", support.google.com/analytics/answer/9191807).
+We take those two conditions and not Universal Analytics' midnight cut. A link that
+carries no campaign (an ordinary internal link) never ends a session; campaign values
+compare trimmed and case-insensitively, on their first 100 characters.
+
+**An arrival** (`isExternalArrival`) is the first tracked event of a page load that the
+browser navigated to (Navigation Timing type `navigate`: not a reload, not the back or
+forward button; a browser that cannot say is not counted) from outside the site (no
+referrer, as from a mail or messaging app, or another site's). Every other event carries
+its page's address too, utm tags and all, for as long as the page is open, and is never
+compared. Until 2026-09-30 every event was: a CMA sent by text or by a sequence is linked
+with `utm_source=crm` and no campaign, and every comp in it with
+`utm_source=cma&utm_campaign=<slug>`, so each tap on the report and each comp page
+flipped the session. One reading (a view, four comp taps, each comp opened and come back
+from) was nine sessions (`doc-tracker.behavior.test.ts` drives that reading through both
+trackers and now finds one). A session that begins on an event that is not an arrival
+(30 minutes idle, then a tap) records the campaign on its page's address, the same one its
+first-touch capture sends.
+
+The first event of a page load is judged on how the page LOADED: its address, referrer and
+navigation type, recorded when the session module is first evaluated, at hydration
+(`pageArrival`; `lib/tracking.ts` is in every page's bundle and imports it). Its first-touch
+capture reads the same address. `VisitTracker` is loaded lazily, so a visitor who taps a
+link before it mounts sends the first event from the page they navigated to; until
+2026-09-30 that address was compared and captured, and the campaign they arrived on was
+never seen. The document tracker records the same three things when its script runs.
+
+**A session id this rule did not start is never kept.** A browser that last visited before
+2026-09-29 holds a months-old `rr_session_id` and either no `rr_visit_v1` or one written
+by TRACK-1 without a session id in it. Kept, the next email click landed in that old
+session, whose first-touch fields never change, and its campaign was lost. The first
+tracked event now starts a new session unless the lifecycle record names the stored id
+(its `sid`, in `rr_visit_sid_v1`); the visit count carries on. An id a search event
+minted before any tracked event (`getOrCreateSessionId`) is not kept either; nothing joins
+`user_events.session_id` to `visitor_sessions`.
+
+**The rollout.** A tab loaded before the deploy keeps running the tracker from before the
+rule until it reloads (a search page that changes its filters with `pushState` never
+does), and that tracker rewrites `rr_visit_v1` as `{ id, n, last }` on every event. While
+the session id sat in `rr_visit_v1`, each such rewrite erased it, and the next event in a
+new tab started a new session: five session ids in nine minutes of one visit, splitting
+the hot-lead score and letting the "looking at this home" text, which dedupes per session
+and listing, fire again. The session a record belongs to now lives in a key the old
+tracker never touches, `rr_visit_sid_v1`, so its events are simply activity in the same
+session (it posts under the same `rr_session_id`), and a browser from before the rule,
+which has no such key, is still not kept. What remains until those tabs reload: the old
+tracker never ends a session itself, so after 30 idle minutes an event in an old tab
+carries the same session on (as production did before the rule), and a `rotateSession`
+it answers is replaced by a new session at the next event in a new tab.
+`doc-tracker.pin.test.ts` runs both copies with the old tracker writing between their
+events (`test/deployed-visit-tracker.ts`).
+
+**Why.** `rr_session_id` lived in localStorage for the browser's life, and
+`visitor_sessions` keeps the first-touch fields (campaign, referrer, landing page, user
+agent) of the first event a session id ever sent and never updates them. A returning
+visitor carried the campaign of their first-ever visit for good: a tagged email clicked
+months later landed in that old session and its `utm_*` was lost. Now the next tagged
+arrival is a new session id, which is a new row with its own campaign.
+
+**How.** One module, `lib/analytics/visitor-session.ts`, holds the rule and the storage:
+`rr_session_id` (the id), the lifecycle record in two keys read and written as one
+(`rr_visit_v1`: the GA4 visit id and number and the last-activity time; `rr_visit_sid_v1`:
+the session the visit belongs to and the campaign it began under) and `rr_source_v1` (the
+tab's first-touch capture, cleared whenever a session ends so the new one captures ITS
+arrival). `components/VisitTracker.tsx` applies it to every tracked
+page view and interaction (`V3SectionTracker` posts through the same context), and
+`lib/tracking.ts` reads the id lead forms send. `public/rr-doc-tracker.js` mirrors it;
+`doc-tracker.pin.test.ts` runs the script and the TypeScript through the same timelines
+(the 30-minute boundary either side, campaign changes, re-cased and padded values, a
+session id with no record, a corrupt record) and fails when they disagree. A session
+and a GA4 visit are the same thing: a new session id always begins a new visit, so the
+mirror's `campaign_details` follows the campaign change. A session id a search event
+minted before any tracked event is replaced by the first tracked event, as above; a form
+never mints one (it sends the id the tracker left, `readRrSessionId`).
+
+**The client-document tracker sends what the site sends.** Before 2026-09-29 a report
+opened before any public page created the session without its campaign: the script posted
+the address and the landing page stripped of their query, and no `campaign`, `fbclid` or
+`gclid` fields at all (only the referrer survived), and `visitor_sessions` never updates
+first-touch fields, so the campaign on the email link was lost for good. It now posts the
+real address and the same fields the site's tracker sends, in the fields
+`/api/visitors/track` already reads (no new endpoint), so a session born on
+`/cma/<slug>` carries `utm_source=cma` and `utm_campaign=<slug>`.
+
+**Identity stitches across the break, exactly as before.** The track route identifies a
+NEW session by the signed `_pid` token on the link, else by the durable `rr_vid` carried
+in `visitor_identity_map` (`rr_vid_carryover`), else by the signed `rr_pid` cookie; a
+session owned by a different contact is never reassigned (`rotateSession`).
+`app/api/visitors/track/new-session-identity.test.ts` pins each path against the route
+with a new session id, and `doc-tracker.to-route.test.ts` drives the real script into the
+real route.
+
+**Storage that will not keep it.** The session lives in `localStorage`, shared by every
+tab, with a copy in the page's memory. When storage is blocked or refuses writes (a full
+quota, some private windows: `getItem` answers while `setItem` throws) the memory copy
+serves the page. The id and its record are read as one pair, and the page's pair wins when
+it is newer than storage's: a storage that still held an old id and refused writes used to
+answer that old id for every event after a session ended (fixed 2026-09-30). A browser
+like that keeps one session per page life instead of a new session on every event.
+
+**What ending sessions changes for everything keyed on a session id.** This is the
+intended effect of the rule, and it moves these readers; none was changed:
+
+- The "looking at this home" broker text dedupes per session and listing
+  (`lookingAtDedupeKind`, `lib/crm/broker-alerts.ts`). A known contact who looks at the same
+  home on Monday and again on Wednesday now earns a second text; before, one per browser
+  lifetime. That is the "return visit" the alert is named for.
+- The hot-lead cron fires once per session that reaches `engagement_score >= threshold`
+  (`app/api/cron/visitor-hot-lead-escalation/route.ts`, `hot_lead_fired_at`). Scores now
+  accumulate within a visit, not across a browser's life: a single strong visit still trips
+  it, and the slow accumulation of many small visits into one old session no longer does.
+  Whether the threshold should be re-tuned for per-visit sessions is Matt's call.
+  Measured 2026-09-30T06:20Z (supabase-js row reads, counted in a script): the 50 most
+  recent `visitor_sessions` rows with `hot_lead_fired_at >= 2026-08-01T06:20Z` (59 rows in
+  that window), every one of their `visitor_events` in `event_at` order, replayed with a
+  break at every gap over 30 minutes and the trigger's own `score_delta` (the sum equals
+  `engagement_score` on 50 of 50 rows). 45 still reach 100 inside one gap-free run, 5 do
+  not (their best runs: 50, 51, 53, 58 and 68), and 2 reach it in more than one run (one
+  twice, one three times), so 48 fires where there were 50; in 5 of the 45 the run that
+  reaches 100 is a later visit than the one the old rule fired in. Of the 30 identified
+  rows (the ones that make a call task: 24 people, every row resolving to a `crm_people`
+  row, none tagged `quality:suspect`), 27 still reach 100, 3 do not, and the same 2 repeat:
+  30 tasks where there were 30. 38 of the 50 were a single run already; the 12 that split
+  spanned 143 minutes to 82 days. Campaign arrivals could split runs further, so 45 is an
+  upper bound.
+- Anything else that reads `visitor_sessions.engagement_score` or `peak_score` per session
+  now reads a visit, not a browser's whole history.
 
 ## The known-contact identity loop (Matt 2026-09-23)
 
@@ -151,7 +402,10 @@ build when any part of it is broken.**
    `rotateSession` and the tracker starts a fresh session, so a shared laptop records
    each person's visit under the person who clicked.
 5. **Automation never identifies anyone** (an email security scanner opening a tracked
-   link must not read as the contact browsing).
+   link must not read as the contact browsing). Not on the track route, not in the identify
+   actions (`app/actions/identity-bridge.ts`), not in `backfillSessionToFub` or the
+   form-submit stitch; and it never fires a broker alert or records a click. The list of
+   places is under "Automation" above.
 6. **The view**: `/admin/visitors/live` opens on **Known people** (`?filter=people`,
    last 24 hours / 7 days / 30 days): every identified contact active in the window, most
    recent first, with each visit's source and the pages they viewed (title, the home's
@@ -217,7 +471,18 @@ screens them out.
 
 - A forwarded email identifies whoever clicks it as the recipient. Every CRM has this.
 - Email security scanners that render tracked links in a real browser with a spoofed
-  user agent are not caught by the automation class.
+  user agent are not caught by the automation class: the click redirect classifies the
+  user-agent header only (it cannot run `navigator.webdriver`), so such a scanner is
+  recorded as the recipient clicking, and the site's tracker records it as the visit.
+- Two tabs opened from different campaign links share one session record. The second
+  arrival starts a new session, and events in the first tab after it are recorded in that
+  new session (only an arrival compares campaigns, so the tabs no longer hand the session
+  back and forth). Google Analytics shares one session across tabs the same way.
+- A campaign is `utm_source` plus `utm_campaign`. An arrival that carries only a click id
+  (`fbclid` or `gclid` with no `utm_*`) inside 30 minutes of the visitor's last activity does
+  not end the session, so that click id is not captured for the session already running (a
+  session that is new for any other reason captures it). A link tagged with `utm_source`
+  or `utm_campaign` is unaffected.
 - A person who lands straight on `/contact?listingKey=<mls>` from a bookmark or a pasted
   URL and leaves after one view stays flagged `contact-deep-link`; they were anonymous
   and one page, so only the counts move. If they submit the form they are identified
@@ -229,12 +494,19 @@ screens them out.
 
 The track route mirrors essential-tier page views into GA4 (commit 416911b31, Matt's
 decision; kept). Since 2026-09-23 each mirrored hit carries a **per-visit numeric
-`session_id`** (the Unix second the visit began; a new visit after 30 minutes idle) and
+`session_id`** (the Unix second the visit began; a new visit after 30 minutes idle, and,
+since 2026-09-29, on a different campaign: a visit is a session, see "Sessions") and
 `session_number`, and the first hit of a visit is preceded by a **`campaign_details`**
 event with the source, medium, campaign, content and term the tracker captured (an
 untagged arrival is sent as `(direct) / (none)`). UA-flagged sessions are not mirrored,
 nor is the first view of a provisional `contact-deep-link` session. `visitor_sessions` / `visitor_events` remain the record of who visited; GA4 is
 a secondary view.
+
+The mirror skips a view only when the browser's own gtag is counting it: the analytics or
+all tier plus a `_ga` cookie. A raw-HTML client document (`/cma`, `/bpo`, page category
+`client-document`) runs no gtag, so its views are always mirrored, whatever the tier
+(`ga4-mirror.client-document.test.ts`). Before 2026-09-29 the document tracker always posted at
+essential and this held by accident; it now posts the visitor's real tier.
 
 ## Backlog — outward changes, ship only on Matt's go
 

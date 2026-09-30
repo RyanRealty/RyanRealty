@@ -66,7 +66,12 @@ jobs:
       - run: npm run build
         if: github.event_name == 'pull_request'
         env:
-          NODE_OPTIONS: --max-old-space-size=6144
+          # 10240, not 6144 (2026-09-30): Next's "Running TypeScript" phase
+          # outgrew 6144 on PR #401 (V8 heap limit, SIGABRT). The same job's
+          # ci:commit-compiles already runs the full tsc at 12288 on this
+          # runner. package.json's build script appends this value after its
+          # 6144 default, and the later flag wins.
+          NODE_OPTIONS: --max-old-space-size=10240
       # Post-build gates: bundle budget + route smoke. Bundle budget
       # parses .next/static after the build step above. Route smoke
       # starts the production server and hits the canonical route set,
@@ -331,7 +336,12 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          NODE_OPTIONS: --max-old-space-size=6144
+          # 10240, not 6144 (2026-09-30): Next's "Running TypeScript" phase
+          # outgrew 6144 on PR #401 (V8 heap limit, SIGABRT). The same job's
+          # ci:commit-compiles already runs the full tsc at 12288 on this
+          # runner. package.json's build script appends this value after its
+          # 6144 default, and the later flag wins.
+          NODE_OPTIONS: --max-old-space-size=10240
 
       # Install only chromium for speed
       - name: Install Playwright browsers

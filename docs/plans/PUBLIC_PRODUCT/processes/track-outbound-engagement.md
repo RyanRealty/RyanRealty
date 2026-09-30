@@ -55,10 +55,10 @@ Realty sent (never organic, paid, social, or internal-link). Three inceptions:
   When the destination is a site page, the URL it 302s to carries `?agent=` +
   `?_pid=`/`?_fuid=` (stamped before wrapping — `lib/crm/attributed-links.ts:76-81`),
   which fires the identity-backfill sub-inception on landing:
-  `components/PersonIdentityBridge.tsx:31-53` on normal pages (mounted site-wide via
+  `components/PersonIdentityBridge.tsx:51-97` on normal pages (mounted site-wide via
   `components/site/providers/IdentityBridges.tsx:22-23`), or the injected
-  `public/rr-doc-tracker.js:34-66` → `GET /api/track/e/identify`
-  (`app/api/track/e/identify/route.ts:29-45`) on raw-HTML client documents
+  `public/rr-doc-tracker.js:462-506` → `GET /api/track/e/identify`
+  (`app/api/track/e/identify/route.ts:35-52`) on raw-HTML client documents
   (`app/cma/[slug]/route.ts:152,180`, `app/bpo/[slug]/route.ts:77`,
   `lib/cma/register-gate.ts:95`).
 - **(C) SMS tap** — `GET /r/<code>` (`app/r/[code]/route.ts:18-33`) — absorbed sibling;
@@ -105,10 +105,17 @@ parallel OBSERVER rail for Resend-transported mail that writes the same stores (
   email opens/clicks happen wherever the recipient reads mail.
 - **Automated actors, human-impersonating:** mail-provider image proxies and Apple Mail
   Privacy Protection prefetch the pixel with generic browser UAs — the open route has NO
-  bot/prefetch filter (`app/api/track/e/open/route.ts:31-93` reads the UA only to log it,
-  `:51`), so a proxy prefetch records as an open (§10 defect 2). Security scanners that
-  follow links can record clicks the same way. Contrast: the SMS route filters preview
-  bots (`app/r/[code]/route.ts:23`; `lib/data/crm/shortLinks.ts:43-47`).
+  bot/prefetch filter on the RECORD (`app/api/track/e/open/route.ts:32-116` reads the UA
+  to log it, `:52`, and since 2026-09-29 to keep an automated fetch from firing the
+  CMA-opened broker alert, `:88-95`), so a proxy prefetch records as an open (§10 defect
+  2). Security scanners that follow links and declare themselves (a crawler, library or
+  headless user agent) are redirected with no person token on the destination and recorded
+  as `click_automated`, never as a click (`app/api/track/e/click/route.ts:42-46`; until
+  2026-09-30 the redirect re-signed `_pid` for them, and a gateway sandbox that rendered the
+  page was identified as the contact); one that renders the link with a generic browser
+  user agent still records as a click (`docs/TRACKING_POLICY.md`, "Known limits"). The SMS
+  route filters preview bots the same way: not recorded, and no person token
+  (`app/r/[code]/route.ts:34-42`; `lib/data/crm/shortLinks.ts:48-52`).
 - **Automated actors, filtered:** CLI/library automation is 403'd upstream by the
   middleware bot screen — `BAD_BOT_RE` includes `curl/` (`middleware.ts:174-177`), and the
   matcher covers every extension-less path including `/api/track/e/*` and `/r/*`
@@ -169,15 +176,22 @@ rail and consumption.
    `GET /api/track/e/click?t=` · verify token; target = signed-in URL if `^https?://`,
    else site root (`app/api/track/e/click/route.ts:18-19`) → upsert `crm_timeline`
    `email_click` (URL-grain dedupe: same link collapses, different link records, `:23-38`)
-   → `email_events` click (`:47-55`) → newsletter ledger (`:61-67`) → **302** (`:72`) ·
+   → `email_events` click (`:47-55`) → newsletter ledger (`:61-67`) → **302** (`:72`).
+   Since 2026-09-29 the request's user agent is classified first
+   (`lib/analytics/automation.ts`): an automated request (scanner, previewer, crawler) is
+   redirected the same way but recorded ONCE as `email_events` `click_automated` with
+   `meta.automation_reason`, with no timeline row and no ledger click, so no report
+   counts it as engagement (`docs/TRACKING_POLICY.md`, "Automation") ·
    token · redirect + three rows · failure: write errors never block the redirect
    (`:68-71`); but a missing prod secret THROWS outside the try (`:18` +
    `lib/email-tracking.ts:40-45`) → the recipient gets a 500, not their page (§10
    defect 3) · any device.
 5. **Land + stitch identity** · visitor's browser + server action · the destination URL
-   carries `?_pid=`/`?_fuid=` → `PersonIdentityBridge` calls
-   `identifyPersonFromEmailClick(Native)` with the client's `rr_session_id`
-   (`components/PersonIdentityBridge.tsx:36-42`) — id validated against `crm_people`
+   carries `?_pid=`/`?_fuid=` → `PersonIdentityBridge` waits for `VisitTracker`'s first
+   post of the page and calls `identifyPersonFromEmailClickNative` with the session that
+   post landed in (`components/PersonIdentityBridge.tsx:83-86`; `postedSession` in
+   `lib/analytics/visitor-session.ts`; until 2026-09-30 it asked at mount and identified the
+   session in storage before the click) — id validated against `crm_people`
    BEFORE cookying (`app/actions/identity-bridge.ts:71-74`; legacy `_fuid` resolved via
    `fub_legacy_id`, `:48-55`) → sets `rr_pid` (90d, `:83-90`), fires GA4
    `person_identified` (`:95-103`), backfills the anonymous session with one delayed
@@ -188,11 +202,11 @@ rail and consumption.
 6. **Land + stitch (raw-HTML documents)** · browser tracking ping · `/cma/[slug]` + `/bpo/[slug]`
    serve stored HTML where React bridges never run, so the injected
    `public/rr-doc-tracker.js` posts its page_view FIRST (creating the session row), then
-   pings `/api/track/e/identify?_pid=&sid=` (`rr-doc-tracker.js:10-12,60-66`;
+   pings `/api/track/e/identify?_pid=&sid=` (`rr-doc-tracker.js:28-32,492-506`;
    injection: `app/cma/[slug]/route.ts:152,180`, `app/bpo/[slug]/route.ts:77`,
    `lib/cma/register-gate.ts:95`) → same server actions as step 5
-   (`app/api/track/e/identify/route.ts:36-40`) · params · 204 always, even on a bad id
-   (`:41-44`) · any device.
+   (`app/api/track/e/identify/route.ts:43-47`) · params · 204 always, even on a bad id
+   (`:48-51`) · any device.
 7. **SMS tap — INCEPTION C** · CRM person · `/r/<code>`: middleware screen → sanitize →
    resolve from `crm_short_links` → record `sms_click` + counters (human UAs only) → 302
    to the DB-stored target; fail-open to the homepage on any unknown code or error ·
@@ -278,7 +292,9 @@ row in the email reporting log advancing sent → delivered → open → click
 (`lib/data/crm/getEmailReporting.ts:44-53`).
 
 Terminal states: (a) recorded human engagement (the done-whens above); (b) proxy/scanner
-phantom — recorded identically to a human (defect 2 — indistinguishable today);
+phantom — a pixel prefetch, or a scanner presenting a generic browser user agent, is
+recorded identically to a human (defect 2 — indistinguishable today); a click by a
+request that declares itself automated is `click_automated` since 2026-09-29;
 (c) forged/expired token — gif or homepage-302 served, zero writes; (d) CLI automation —
 403 at middleware, routes never run; (e) recipient never opens/clicks — zero rows anywhere,
 the email's lifecycle rests at sent/delivered (the pixel is stateless, absence of a row IS
@@ -494,7 +510,7 @@ CLI UAs (`BAD_BOT_RE` includes `curl/`, `middleware.ts:174-177`), so checks use
    Target shape (§11.1) is proven when both return zero NEW rows post-fix.
 9. **Doc-ping identity:** open a delivered `/cma/<slug>?_pid=<pid>` link → network log
    shows `POST /api/visitors/track` then `GET /api/track/e/identify?...&sid=` returning
-   204 (`rr-doc-tracker.js:60-66`); the session row stitches as in check 7.
+   204 (`rr-doc-tracker.js:492-506`); the session row stitches as in check 7.
 10. **Newsletter ledger:** after a queue-sent newsletter open (emailKey
     `newsletter:<uuid>`),
     `SELECT count(*) FROM newsletter_recipient_events WHERE newsletter_id = :id AND event = 'open' AND email = :email`
