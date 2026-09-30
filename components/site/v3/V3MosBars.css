@@ -129,6 +129,13 @@
     display: none;
   }
 
+  /* The bars' figures stand clear of the Jax button's mid-screen band
+     (V3DogFloater: 4.25rem wide, --v3-space-md in from the edge), the same
+     clearance V3Chart's y labels take: at 375 it sat on "203.2" (2026-09-29). */
+  .v3-mos__pair {
+    margin-inline-end: calc(4.25rem + var(--v3-space-md) - var(--v3-gutter));
+  }
+
   .v3-mos__caption {
     font-size: var(--v3-size-body-sm);
   }
