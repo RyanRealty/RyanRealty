@@ -341,7 +341,14 @@ describe('recoverStuckFirstTouchSends — cannot check: left untouched', () => {
     h.listStaleFirstTouchSends.mockResolvedValue([{ ...STUCK, contactEmail: null }])
     h.getProspect.mockResolvedValue({ ...PROSPECT, contactEmail: null })
     h.getLatestClientReadyCmaRowForBaseSlug.mockResolvedValue(null)
-    expectUntouched(await recoverStuckFirstTouchSends(NOW), /no email address/)
+    expectUntouched(await recoverStuckFirstTouchSends(NOW), /no owner email address/)
+  })
+
+  it('when the only address on file is one of our own', async () => {
+    h.listStaleFirstTouchSends.mockResolvedValue([{ ...STUCK, contactEmail: 'marketing+harness@ryan-realty.com' }])
+    h.getProspect.mockResolvedValue({ ...PROSPECT, contactEmail: null })
+    h.getLatestClientReadyCmaRowForBaseSlug.mockResolvedValue(null)
+    expectUntouched(await recoverStuckFirstTouchSends(NOW), /no owner email address/)
   })
 
   it('when the release write itself fails', async () => {
@@ -431,6 +438,31 @@ describe('decideStuckSend (pure)', () => {
     })
     expect(decideStuckSend({ baseSlug: base, recipients: [OWNER], events: [], sent: null })).toMatchObject({
       verdict: 'unknown',
+    })
+  })
+
+  // Review finding (2026-09-29): a test send of the same CMA to one of our own
+  // addresses after the claim must never mark the owner as emailed.
+  it('never counts a send to one of our own addresses as the owner email', () => {
+    const internalSent = event({ recipientEmail: 'marketing+harness@ryan-realty.com', messageId: 'test-msg' })
+    const absent = { status: 'absent' as const, searched: 3 }
+    expect(decideStuckSend({ baseSlug: base, recipients: [OWNER], events: [internalSent], sent: absent })).toEqual({
+      verdict: 'absent',
+    })
+    // An internal CMA client_email in the recipient list is ignored too.
+    expect(
+      decideStuckSend({
+        baseSlug: base,
+        recipients: [OWNER, 'matt@ryan-realty.com'],
+        events: [event({ emailKey: 'cma:cma-9-other', recipientEmail: 'matt@ryan-realty.com' })],
+        sent: absent,
+      }),
+    ).toEqual({ verdict: 'absent' })
+    // The owner's own send on the same key still counts.
+    expect(decideStuckSend({ baseSlug: base, recipients: [OWNER], events: [internalSent, event({})], sent: absent })).toMatchObject({
+      verdict: 'found',
+      via: 'email-events',
+      messageId: 'gmail-msg-1',
     })
   })
 })

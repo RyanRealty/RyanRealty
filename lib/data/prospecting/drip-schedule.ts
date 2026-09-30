@@ -49,6 +49,14 @@ export const DRIP_SPACING_MINUTES = 5
 export const DRIP_ROUTE_MAX_DURATION_S = 300
 
 /**
+ * The drip route's one-run-at-a-time lease (crm_try_cron_lease). It outlives
+ * DRIP_ROUTE_MAX_DURATION_S, so a run the platform killed keeps it until that
+ * run is certainly gone; a finished run releases it at once.
+ */
+export const DRIP_LEASE_NAME = 'prospecting-first-touch-drip'
+export const DRIP_LEASE_SECONDS = DRIP_ROUTE_MAX_DURATION_S + 30
+
+/**
  * B. A 'sending' claim younger than this may belong to a drain (or a manual
  * send) that is still running, so a new drain stands down. maxDuration plus one
  * cron tick: the platform stops the claimer by claim_at + maxDuration (the

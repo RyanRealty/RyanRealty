@@ -1,5 +1,5 @@
 -- The owner's email claim holds for 15 minutes, not 2 (prospecting drip fix,
--- 2026-09-29). Not applied in this delivery; file only.
+-- 2026-09-29. Apply BEFORE the drip fix code deploys (see the commit message).
 --
 -- prospect_email_send_claim reopened a 'sending' claim once it was two minutes
 -- old. That was safe while every claimer died within a minute. It is not now:

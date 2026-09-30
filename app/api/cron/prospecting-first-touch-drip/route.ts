@@ -18,11 +18,26 @@
  * to the literal below (Next reads it statically, so it cannot be imported).
  * The PDF render stack is traced into this function by next.config.ts
  * (PDF_SEND_TRACE_ROUTES, held by ci:pdf-trace-guard).
+ *
+ * One run at a time, by lease. The drain's in-flight read happens before this
+ * run's own claim, so two overlapping ticks could each pass it, and each email
+ * a different owner seconds apart with neither 5-minute gap honored (review of
+ * the 2026-09-29 fix). crm_try_cron_lease is an atomic upsert: exactly one
+ * caller gets true. The lease outlives maxDuration, so a run the platform
+ * killed still holds it until it is certainly gone. A lease read that fails
+ * sends nothing.
  */
 import { NextResponse } from 'next/server'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
+import { createServiceClient } from '@/lib/supabase/service'
 import { drainProspectingFirstTouchDrip } from '@/lib/data/prospecting/drip-drain'
-import { DRIP_SPACING_MINUTES, DRIP_TIMEZONE, DRIP_WEEKDAY_START_MINUTES } from '@/lib/data/prospecting/drip-schedule'
+import {
+  DRIP_LEASE_NAME,
+  DRIP_LEASE_SECONDS,
+  DRIP_SPACING_MINUTES,
+  DRIP_TIMEZONE,
+  DRIP_WEEKDAY_START_MINUTES,
+} from '@/lib/data/prospecting/drip-schedule'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -31,6 +46,18 @@ export const maxDuration = 300
 export async function GET(request: Request) {
   const denied = requireCronAuth(request)
   if (denied) return denied
+  const sb = createServiceClient()
+  const { data: gotLease, error: leaseError } = await sb.rpc('crm_try_cron_lease', {
+    p_name: DRIP_LEASE_NAME,
+    p_lease_seconds: DRIP_LEASE_SECONDS,
+  })
+  if (leaseError) {
+    console.error('[cron/prospecting-first-touch-drip] lease read failed, sending nothing:', leaseError.message)
+    return NextResponse.json({ ok: false, error: 'lease_failed' }, { status: 200 })
+  }
+  if (gotLease !== true) {
+    return NextResponse.json({ ok: true, action: 'busy', reason: 'lease' })
+  }
   try {
     const result = await drainProspectingFirstTouchDrip(new Date())
     const { ok: _ignored, ...rest } = result as { ok: boolean } & Record<string, unknown>
@@ -47,6 +74,13 @@ export async function GET(request: Request) {
     return NextResponse.json(
       { ok: false, error: err instanceof Error ? err.message : 'drain_failed' },
       { status: 200 },
+    )
+  } finally {
+    await sb.rpc('crm_release_cron_lease', { p_name: DRIP_LEASE_NAME }).then(
+      ({ error }) => {
+        if (error) console.error('[cron/prospecting-first-touch-drip] lease release failed:', error.message)
+      },
+      (e: unknown) => console.error('[cron/prospecting-first-touch-drip] lease release failed:', e),
     )
   }
 }

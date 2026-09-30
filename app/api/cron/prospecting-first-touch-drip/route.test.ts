@@ -17,8 +17,14 @@ vi.mock('@/lib/data/prospecting/drip-drain', () => ({
   drainProspectingFirstTouchDrip: (...a: unknown[]) => drain(...a),
 }))
 
+/** The lease RPCs, recorded in call order. */
+const rpc = vi.hoisted(() => vi.fn())
+vi.mock('@/lib/supabase/service', () => ({
+  createServiceClient: () => ({ rpc: (...a: unknown[]) => rpc(...a) }),
+}))
+
 import { GET, maxDuration } from './route'
-import { DRIP_ROUTE_MAX_DURATION_S } from '@/lib/data/prospecting/drip-schedule'
+import { DRIP_LEASE_NAME, DRIP_LEASE_SECONDS, DRIP_ROUTE_MAX_DURATION_S } from '@/lib/data/prospecting/drip-schedule'
 
 const ROUTE_SRC = readFileSync(join(process.cwd(), 'app/api/cron/prospecting-first-touch-drip/route.ts'), 'utf8')
 
@@ -73,9 +79,18 @@ describe('prospecting-first-touch-drip maxDuration', () => {
   })
 })
 
+const authed = () =>
+  new Request('https://ryan-realty.com/api/cron/prospecting-first-touch-drip', {
+    headers: { authorization: 'Bearer drip-route-test-secret' },
+  })
+
 describe('GET /api/cron/prospecting-first-touch-drip', () => {
   beforeEach(() => {
     drain.mockReset()
+    rpc.mockReset()
+    rpc.mockImplementation(async (name: string) =>
+      name === 'crm_try_cron_lease' ? { data: true, error: null } : { data: null, error: null },
+    )
     vi.stubEnv('CRON_SECRET', 'drip-route-test-secret')
   })
 
@@ -100,5 +115,35 @@ describe('GET /api/cron/prospecting-first-touch-drip', () => {
     const body = await res.json()
     expect(body).toMatchObject({ ok: true, action: 'busy', reason: 'in-flight', kind: 'expired', id: 'LK1' })
     expect(drain).toHaveBeenCalledTimes(1)
+  })
+
+  it('takes the lease before draining and releases it after, one run at a time', async () => {
+    drain.mockResolvedValue({ ok: true, action: 'idle', reason: 'empty' })
+    await GET(authed())
+    expect(rpc.mock.calls.map((c) => c[0])).toEqual(['crm_try_cron_lease', 'crm_release_cron_lease'])
+    expect(rpc.mock.calls[0]![1]).toEqual({ p_name: DRIP_LEASE_NAME, p_lease_seconds: DRIP_LEASE_SECONDS })
+    expect(DRIP_LEASE_SECONDS).toBeGreaterThan(maxDuration)
+  })
+
+  it('stands down without draining while another run holds the lease', async () => {
+    rpc.mockImplementation(async () => ({ data: false, error: null }))
+    const res = await GET(authed())
+    expect(await res.json()).toMatchObject({ ok: true, action: 'busy', reason: 'lease' })
+    expect(drain).not.toHaveBeenCalled()
+    expect(rpc.mock.calls.map((c) => c[0])).toEqual(['crm_try_cron_lease'])
+  })
+
+  it('sends nothing when the lease read fails', async () => {
+    rpc.mockImplementation(async () => ({ data: null, error: { message: 'boom' } }))
+    const res = await GET(authed())
+    expect(await res.json()).toMatchObject({ ok: false, error: 'lease_failed' })
+    expect(drain).not.toHaveBeenCalled()
+  })
+
+  it('releases the lease even when the drain throws', async () => {
+    drain.mockRejectedValue(new Error('drain blew up'))
+    const res = await GET(authed())
+    expect(await res.json()).toMatchObject({ ok: false, error: 'drain blew up' })
+    expect(rpc.mock.calls.map((c) => c[0])).toEqual(['crm_try_cron_lease', 'crm_release_cron_lease'])
   })
 })

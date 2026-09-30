@@ -43,6 +43,7 @@ import { getCrmMailboxes } from '@/lib/data/brokers/directory'
 import { getLatestClientReadyCmaRowForBaseSlug } from '@/lib/cma/versions'
 import { findSentMessageTo, SENT_LOOKUP_SKEW_MS, type SentLookupResult } from '@/lib/crm/gmail-sent-lookup'
 import { BROKER_ALERT_ORIGIN, queueBrokerHealthAlert } from '@/lib/crm/broker-alerts'
+import { isInternalRecipientEmail } from '@/lib/email/internal-recipient'
 import { prospectDetailHref } from './detail-href'
 import { isCmaEmailKeyForBase, prospectDocBaseSlug } from './doc-slug'
 import {
@@ -94,15 +95,19 @@ export function decideStuckSend(args: {
   events: StuckSendEmailEvent[]
   sent: SentLookupResult | null
 }): StuckSendVerdict {
-  const recipients = new Set(args.recipients.map((r) => r.trim().toLowerCase()))
+  const recipients = new Set(args.recipients.map((r) => r.trim().toLowerCase()).filter((r) => !isInternalRecipientEmail(r)))
   const isCmaKey = (key: string | null) => typeof key === 'string' && key.startsWith('cma:')
+  // A send to one of our own addresses (a harness alias, a broker test send of
+  // the same CMA) is never the owner's email: counting it would mark the owner
+  // sent when the owner was never emailed.
+  const external = (e: StuckSendEmailEvent) => !isInternalRecipientEmail(e.recipientEmail)
   // This prospect's own document first. Then any CMA email that reached the
   // owner: the rail claims this same row when it sends a second CMA built for
   // the same house (lib/cma/prospect-send-claim.ts), whose key carries that
   // document's slug, not this prospect's. Either way the owner got a first
   // contact after the claim, and a second one must not follow.
   const sentRow =
-    args.events.find((e) => e.event === 'sent' && isCmaEmailKeyForBase(e.emailKey, args.baseSlug)) ??
+    args.events.find((e) => e.event === 'sent' && external(e) && isCmaEmailKeyForBase(e.emailKey, args.baseSlug)) ??
     args.events.find((e) => e.event === 'sent' && isCmaKey(e.emailKey) && recipients.has(e.recipientEmail))
   if (sentRow) {
     return {
@@ -128,7 +133,7 @@ export function decideStuckSend(args: {
   // dies before the rail's own 'sent' row).
   const trace = args.events.find(
     (e) =>
-      isCmaEmailKeyForBase(e.emailKey, args.baseSlug) ||
+      (isCmaEmailKeyForBase(e.emailKey, args.baseSlug) && external(e)) ||
       (recipients.has(e.recipientEmail) && (e.emailKey == null || isCmaKey(e.emailKey))),
   )
   if (trace) {
@@ -173,9 +178,12 @@ async function examine(row: StaleFirstTouchSend): Promise<StuckSendVerdict> {
   const baseSlug = prospectDocBaseSlug(prospect)
   const clientReady = baseSlug ? await getLatestClientReadyCmaRowForBaseSlug(baseSlug) : null
   const cmaRow = (clientReady?.row ?? null) as Record<string, unknown> | null
-  const recipients = normalizedEmails([row.contactEmail, prospect.contactEmail, cmaRow?.client_email])
+  // Our own addresses are never the owner, and Gmail Sent is full of them.
+  const recipients = normalizedEmails([row.contactEmail, prospect.contactEmail, cmaRow?.client_email]).filter(
+    (email) => !isInternalRecipientEmail(email),
+  )
   if (recipients.length === 0) {
-    return { verdict: 'unknown', reason: 'no email address on the prospect or its CMA to check against' }
+    return { verdict: 'unknown', reason: 'no owner email address on the prospect or its CMA to check against' }
   }
 
   const since = new Date(Date.parse(row.claimAt) - SENT_LOOKUP_SKEW_MS)
