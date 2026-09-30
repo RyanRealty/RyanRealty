@@ -698,7 +698,13 @@ export default function InsightCards({
       <div className="insight-pager insight-cards__head" role="group" aria-label={`${l.title} pages`}>
         <span className="insight-pager__face insight-cards__face">
           <span className="insight-pager__title insight-cards__title">{l.title}</span>
-          <span className="insight-pager__count insight-cards__count tabular-nums">{pages.length}</span>
+          {/* Which page of how many: a bare "2" beside the title read as an
+              index leaking into the copy (2026-09-29). */}
+          {pages.length > 1 ? (
+            <span className="insight-pager__count insight-cards__count tabular-nums">
+              {safe + 1} of {pages.length}
+            </span>
+          ) : null}
         </span>
         <span className="insight-pager__controls">
           {(['M15 18l-6-6 6-6', 'M9 6l6 6-6 6'] as const).map((d, i) => (

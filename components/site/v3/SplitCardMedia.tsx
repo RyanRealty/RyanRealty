@@ -5,7 +5,11 @@ import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { SparkSafeImage } from '@/lib/listing/SparkSafeImage'
 import { LISTING_FIELD_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing/row-photo'
-import { publishTourEmbedFromUrl } from '@/lib/listing/publish-listing-hero-video'
+import {
+  LISTING_3D_TOUR_LABEL,
+  publishListingTourLabel,
+  publishTourEmbedFromUrl,
+} from '@/lib/listing/publish-listing-hero-video'
 import type { V3ListingRowBadge } from './V3ListingRow'
 import { listingPhotoAlt } from './listing-photo-alt'
 
@@ -38,7 +42,7 @@ export function SplitCardMedia({
   tourUrl,
   addressLine,
   priority,
-  tourLabel = '3D Walkthrough',
+  tourLabel: tourLabelProp,
   sizes = SPLIT_CARD_MEDIA_SIZES_DEFAULT,
   href,
 }: {
@@ -51,11 +55,17 @@ export function SplitCardMedia({
   tourUrl?: string | null
   addressLine: string
   priority?: boolean
+  /**
+   * The tour control's words. Omitted, it is read off `tourUrl` in the listing
+   * page's words (publishListingTourLabel: "Video Tour" for a walkthrough reel,
+   * "3D" for a 3D tour); a tour with no URL (the legacy overlay) reads "3D".
+   */
   tourLabel?: string
   sizes?: string
   /** Photo opens the listing detail page (same href as the card copy). */
   href?: string
 }) {
+  const tourLabel = tourLabelProp ?? publishListingTourLabel(tourUrl) ?? LISTING_3D_TOUR_LABEL
   const [index, setIndex] = useState(0)
   const [playing, setPlaying] = useState(false)
   const touchX = useRef<number | null>(null)

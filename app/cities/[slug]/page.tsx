@@ -5,8 +5,10 @@
  * fold where Atlas is the drawing and CityAlertsStrip (V3Number) is the figure.
  * H1 is "{city} homes for sale". One map: the city's children sit beside it
  * (Bend neighborhoods, recorded plats elsewhere), no taller than the map.
- * Choosing one zooms to that shape and the carousel below lists its publicly
- * active homes. The city name shows every publicly active home in the city.
+ * Choosing one zooms to that shape and the listing dials below hold its
+ * publicly active homes, one dial per buyer group (Matt 2026-09-24: every
+ * place page shows listings the same way). The city name shows every publicly
+ * active home in the city.
  * Do not write ?shapes= onto this URL. Type chips live on the map key and
  * PlaceTypeSlider, not as first-screen property-type H2s. One
  * typical-price slope sits after the child doors. MOS is two bars, never a
@@ -91,6 +93,7 @@ import { placeInventoryHref } from '@/lib/communities/self-city-community'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { pageMetadata, publishCityRealEstateTitle } from '@/lib/site/page-metadata'
 import { placeCityRealEstateHeading, placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
+import { placeBoundaryClause, placeInventorySource } from '@/lib/place/place-inventory-source'
 import { cityPageTrail } from '@/lib/site/place-trail'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import { appendPlaceFaqExtras, buildPlaceFaqExtras } from '@/lib/site/place-faq-extras'
@@ -489,6 +492,7 @@ async function renderCityDetail({ params }: Props) {
     sfrMos: hud.monthsSupply,
     segments: publicSegments,
     covers: { ...placeTypeCoverPhotos(tiles), ...typeCovers },
+    scope: `with a ${cityName} address`,
   })
   const trail = cityPageTrail(cityName)
   const headline = placeCityRealEstateHeading(cityName)
@@ -513,6 +517,9 @@ async function renderCityDetail({ params }: Props) {
     grain: 'city',
     geoSlug: slug,
     asOf: mosAsOf,
+    // Detached houses by address, not every listing inside the city line the
+    // map under it counts: the bar says so.
+    homesName: `Houses with a ${cityName} address`,
   })
   const alertTypes = buildPlaceAlertTypes({
     placeName: cityName,
@@ -864,7 +871,8 @@ async function renderCityDetail({ params }: Props) {
       return [bare, { geoType, geoSlug: isBend ? `${slug}-${bare}` : bare }]
     }),
   )
-  const inventorySource = `regional MLS through Oregon Data Share, every publicly active listing inside ${cityName}: Active and Active Under Contract, every property type. Coming Soon is excluded.`
+  // The reader's words for the same set (SITE-193): no MLS status names.
+  const inventorySource = placeInventorySource(placeBoundaryClause(cityName))
 
   // Dedupe the ledger against the rail by NAME, not href: the rail's hrefs are
   // city-prefixed index slugs while the ledger's are plain registry slugs for
@@ -1125,6 +1133,63 @@ async function renderCityDetail({ params }: Props) {
           </div>
         </div>
 
+        {/* The market figure and the alerts sentence open the page, under the
+            photograph (2026-09-29, the taste lock: "a place page opens with a
+            drawing and a figure beside the alerts sentence"; with the map
+            first the ask sat two screens down). The map and its homes follow. */}
+        <div className="city-fold">
+          <div className="city-fold__stage">
+            <aside className="city-fold__figure city-fold__figure--insight">
+              <CityInsight
+                id="place-insight"
+                board={insightBoard}
+                mos={foldMosProps}
+                latestSale={foldLatestSale}
+              />
+              {/* The places inside this city as doors, under the figure: the
+                  column with room at 1440 (2026-09-29: it stood ~400px empty
+                  beside the alerts), the same row the neighborhood page runs.
+                  Names only: their counts live on the rail by the map. */}
+              {railEntries.some((entry) => entry.href) ? (
+                <nav
+                  className="city-fold__places"
+                  aria-label={isBend ? `${cityName} neighborhoods` : `${cityName} subdivisions`}
+                >
+                  <p className="city-fold__places-label">
+                    {isBend ? `${cityName} neighborhoods` : `Places in ${cityName}`}
+                  </p>
+                  <p className="city-fold__places-row">
+                    {railEntries
+                      .filter((entry) => entry.href)
+                      .slice(0, 24)
+                      .map((entry) => (
+                        <span key={entry.id} className="city-fold__places-door">
+                          <a href={entry.href}>{entry.name}</a>{' '}
+                        </span>
+                      ))}
+                  </p>
+                </nav>
+              ) : null}
+            </aside>
+            <aside className="city-fold__figure city-fold__figure--ask">
+              <CityAlertsStrip
+                id="alerts"
+                cityName={cityName}
+                geoSlug={slug}
+                newCount30d={publicPace.newCount30d}
+                updatedAt={leftoverStamp}
+                browseHref={homesForSalePath(cityName)}
+                // ONE filled control in the first viewport, and never none: the
+                // strip steps down only when PlaceDoor rendered above. When MOS
+                // owns the inventory count, PlaceDoor is omitted and submit is
+                // primary (44×44 filled, not a hairline outline).
+                demote={placeDoor != null}
+                types={alertTypes}
+              />
+            </aside>
+          </div>
+        </div>
+
         <PlaceSubdivisionMap
           placeName={cityName}
           rail={railEntries}
@@ -1170,37 +1235,11 @@ async function renderCityDetail({ params }: Props) {
               />
             </div>
           </div>
+          {/* Matt 2026-09-24: the homes below the map are listing dials, one
+              per buyer group, the same as every other place page, still
+              filtered by the child place chosen on the map. */}
           <PlaceSubdivisionHomes id="homes" />
         </PlaceSubdivisionMap>
-
-        <div className="city-fold">
-          <div className="city-fold__stage">
-            <aside className="city-fold__figure city-fold__figure--insight">
-              <CityInsight
-                id="place-insight"
-                board={insightBoard}
-                mos={foldMosProps}
-                latestSale={foldLatestSale}
-              />
-            </aside>
-            <aside className="city-fold__figure city-fold__figure--ask">
-              <CityAlertsStrip
-                id="alerts"
-                cityName={cityName}
-                geoSlug={slug}
-                newCount30d={publicPace.newCount30d}
-                updatedAt={leftoverStamp}
-                browseHref={homesForSalePath(cityName)}
-                // ONE filled control in the first viewport, and never none: the
-                // strip steps down only when PlaceDoor rendered above. When MOS
-                // owns the inventory count, PlaceDoor is omitted and submit is
-                // primary (44×44 filled, not a hairline outline).
-                demote={placeDoor != null}
-                types={alertTypes}
-              />
-            </aside>
-          </div>
-        </div>
 
         {earlyNamedPlaces && firstGolf ? (
           <V3Ledger

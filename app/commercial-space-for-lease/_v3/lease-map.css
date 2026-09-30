@@ -1,0 +1,281 @@
+/* /commercial-space-for-lease: the lease map (LeaseMap.tsx). Navy marks on the
+   cream field, hairline highways and rivers, real type for the towns. Every
+   value is a v3 token; no raw color. */
+
+.lease-map {
+  margin: 0;
+  display: grid;
+  gap: var(--v3-space-xs);
+  min-width: 0;
+}
+
+.lease-map__frame {
+  position: relative;
+  width: 100%;
+  border: var(--v3-rule-hairline);
+  border-radius: var(--v3-radius-card);
+  background: var(--v3-surface);
+  overflow: visible;
+}
+
+.lease-map__ground {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.lease-map__road,
+.lease-map__river {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.lease-map__road {
+  stroke: var(--v3-navy-70);
+  stroke-width: 1.25;
+  opacity: 0.45;
+}
+
+.lease-map__river {
+  stroke: var(--v3-navy);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  opacity: 0.35;
+}
+
+.lease-map__dots,
+.lease-map__towns {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* A spot is a point: its box is zero, the dot and its tip hang from it. */
+.lease-map__spot {
+  position: absolute;
+  width: 0;
+  height: 0;
+  transition: opacity var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.lease-map__dot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: max(calc(var(--lease-dot-r) * 2), 1.5rem);
+  height: max(calc(var(--lease-dot-r) * 2), 1.5rem);
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  /* A map's point is round: the one circle in a square register, as the
+     Atlas's own dots are. */
+  border-radius: 50%;
+  text-decoration: none;
+}
+
+.lease-map__dot::before {
+  content: '';
+  width: calc(var(--lease-dot-r) * 2);
+  height: calc(var(--lease-dot-r) * 2);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--v3-navy) 78%, transparent);
+  box-shadow: 0 0 0 1.5px var(--v3-cream);
+  transition: transform var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.lease-map__dot--ring::before {
+  background: var(--v3-cream);
+  box-shadow:
+    inset 0 0 0 2px var(--v3-navy),
+    0 0 0 1.5px var(--v3-cream);
+}
+
+.lease-map__dot:hover::before,
+.lease-map__dot:focus-visible::before {
+  transform: scale(1.35);
+}
+
+.lease-map__dot:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+/* The dot's words: street, rent with its unit, size. Above the dot, and held
+   inside the frame by which side of the map the dot is on. */
+.lease-map__tip {
+  position: absolute;
+  bottom: calc(50% + var(--lease-dot-r) + var(--v3-space-2xs));
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 15rem;
+  padding: var(--v3-space-2xs) var(--v3-space-xs);
+  border-radius: var(--v3-radius-sm);
+  background: var(--v3-navy);
+  color: var(--v3-ink-on-navy);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  text-align: left;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.lease-map__spot--east .lease-map__tip {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+.lease-map__spot--west .lease-map__tip {
+  left: 0;
+  transform: none;
+}
+
+.lease-map__spot--north .lease-map__tip {
+  bottom: auto;
+  top: calc(50% + var(--lease-dot-r) + var(--v3-space-2xs));
+}
+
+.lease-map__spot:hover,
+.lease-map__spot:focus-within {
+  z-index: 3;
+}
+
+.lease-map__dot:hover .lease-map__tip,
+.lease-map__dot:focus-visible .lease-map__tip {
+  visibility: visible;
+}
+
+/* Towns: the name and the ledger's count, hung from the edge of the town's own
+   dots on the side lease-map.ts chose. The label is the same door the row is. */
+.lease-map__town {
+  position: absolute;
+  width: 0;
+  height: 0;
+  z-index: 2;
+}
+
+.lease-map__town-link {
+  position: absolute;
+  display: grid;
+  gap: 0;
+  min-height: var(--v3-tap);
+  align-content: center;
+  width: max-content;
+  padding: var(--v3-space-3xs) var(--v3-space-xs);
+  border-radius: var(--v3-radius-sm);
+  background: color-mix(in srgb, var(--v3-cream) 88%, transparent);
+  color: var(--v3-ink);
+  text-decoration: none;
+  line-height: var(--v3-leading-control);
+  transition:
+    background var(--v3-dur-state) var(--v3-ease-out),
+    color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.lease-map__town--right .lease-map__town-link {
+  left: var(--v3-space-2xs);
+  top: 0;
+  transform: translateY(-50%);
+}
+
+.lease-map__town--left .lease-map__town-link {
+  right: var(--v3-space-2xs);
+  top: 0;
+  transform: translateY(-50%);
+  text-align: right;
+}
+
+.lease-map__town--below .lease-map__town-link {
+  left: 0;
+  top: var(--v3-space-3xs);
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+.lease-map__town--above .lease-map__town-link {
+  left: 0;
+  bottom: var(--v3-space-3xs);
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+.lease-map__town-name {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-strong);
+}
+
+.lease-map__town-count {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-source);
+  color: var(--v3-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.lease-map__town-link:hover,
+.lease-map__town-link:focus-visible {
+  background: var(--v3-navy);
+  color: var(--v3-ink-on-navy);
+}
+
+.lease-map__town-link:hover .lease-map__town-count,
+.lease-map__town-link:focus-visible .lease-map__town-count {
+  color: var(--v3-ink-on-navy-muted);
+}
+
+.lease-map__town-link:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+/* The key: what a dot is, the size scale at its two real ends, the basemap's source. */
+.lease-map__key {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--v3-space-3xs) var(--v3-space-sm);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
+
+.lease-map__key-line {
+  flex: 1 1 100%;
+  color: var(--v3-ink);
+}
+
+.lease-map__scale {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--v3-space-2xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.lease-map__swatch {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: calc(var(--lease-dot-r, 5px) * 2);
+  height: calc(var(--lease-dot-r, 5px) * 2);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--v3-navy) 78%, transparent);
+}
+
+.lease-map__swatch--ring {
+  --lease-dot-r: 5px;
+  background: var(--v3-cream);
+  box-shadow: inset 0 0 0 2px var(--v3-navy);
+}
+
+.lease-map__source {
+  flex: 1 1 100%;
+}

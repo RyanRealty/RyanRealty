@@ -48,6 +48,61 @@ export const PUBLIC_ON_MARKET_STATUSES: ListingStatus[] = [
 ]
 
 /**
+ * WHAT A PUBLIC COUNT CALLS A LISTING (SITE-193, 2026-09-24).
+ *
+ * PUBLIC_ACTIVE_STATUSES answers "may a visitor SEE it", and it holds Active
+ * Under Contract, because that home still shows and still takes backup
+ * offers. It does not answer "is it FOR SALE" in a figure. A home with an
+ * accepted offer is under contract: the Market Truth active count is Active
+ * alone and puts Active Under Contract in pending_count (see
+ * lib/market/publish-place-door.ts), the homepage pulse counts it pending, and
+ * the place map draws it as a pending mark. When the homes under that map
+ * counted "for sale" off the visibility list instead, /cities/bend printed
+ * "700 for sale" on the map and "705 for sale" under it: the same 700 Active
+ * listings plus 5 under contract (read 2026-09-24, listing_boundary_xref_mv
+ * city/bend against getAtlasTiles(Bend) inside the recorded boundary; the 700
+ * listing keys were identical). Every public count that says "for sale" or
+ * "pending" reads this one classifier.
+ */
+export const PUBLIC_FOR_SALE_STATUSES: ListingStatus[] = ['Active']
+
+/** Under contract on a public count: an accepted offer, still showing or not. */
+export const PUBLIC_UNDER_CONTRACT_STATUSES: ListingStatus[] = ['Active Under Contract', 'Pending']
+
+export type PublicCountState = 'for-sale' | 'under-contract' | 'sold'
+
+/**
+ * The bucket a public count puts a listing in, or null when no public count
+ * holds it (Coming Soon, off market, an unknown string). Exact MLS strings, as
+ * the tiles carry them.
+ */
+export function publicCountState(status: string | null | undefined): PublicCountState | null {
+  const s = String(status ?? '').trim()
+  if ((PUBLIC_FOR_SALE_STATUSES as string[]).includes(s)) return 'for-sale'
+  if ((PUBLIC_UNDER_CONTRACT_STATUSES as string[]).includes(s)) return 'under-contract'
+  if (s === 'Closed') return 'sold'
+  return null
+}
+
+/**
+ * THE WORD A PUBLIC CARD PRINTS for a listing's status, or null for a home for
+ * sale (which prints none). One vocabulary for every listing card and dial on
+ * the site (2026-09-25): the homepage shelves called Active Under Contract
+ * "Pending" while the place cards and the counts over them called it "under
+ * contract". The bucket is publicCountState's, so a card never names a status
+ * the count beside it does not hold: Active Under Contract is "Under contract",
+ * Pending (the other under-contract status) keeps its MLS word, as the status
+ * badge on the photograph prints them (publishListingStatusBadge), and Closed
+ * is "Sold". Coming Soon and anything off market print nothing.
+ */
+export function publicCardStatusLabel(status: string | null | undefined): string | null {
+  const state = publicCountState(status)
+  if (state === 'under-contract') return String(status ?? '').trim() === 'Pending' ? 'Pending' : 'Under contract'
+  if (state === 'sold') return 'Sold'
+  return null
+}
+
+/**
  * OFF MARKET, for a PUBLIC surface (SITE-21).
  *
  * The list itself is SITE-20's, one file over

@@ -6,7 +6,7 @@
   "requiredComponents": [
     {
       "name": "PlaceTypeFilm",
-      "section": "Fold V3Carousel rail of photographed listings (mode=rail, prev/next, 800x600 plates, price+address+beds/baths/sqft).",
+      "section": "Fold set of photographed listings on V3ListingDial (Matt 2026-09-24, it was the shadcn carousel): one listing large on its 800x600 plate with price+address+beds/baths/sqft, the rest as thumbnails, 03 / 12; while the pointer or focus is in it the Atlas rings the home the dial shows.",
       "blocking": true
     },
     {
@@ -61,12 +61,12 @@
     }
   ],
   "tasteReview": {
-    "evaluatedAt": "2026-09-15",
+    "evaluatedAt": "2026-09-30",
     "rubricVersion": "v1-2026-09-12",
-    "evaluator": "npx tsx scripts/taste-evaluate.ts place-type --builder cursor-agent \u2014 grok-4.6 via cursor-cli (cursor-grok-4.6-high); grok CLI binary missing on Mini so link 1 skipped. Builder cursor-agent (tip 16b805141) did not grade the page.",
-    "evaluatorModel": "grok-4.6",
-    "builderModel": "cursor-agent",
-    "transport": "cursor-cli",
+    "evaluator": "npx tsx scripts/taste-evaluate.ts place-type --builder claude-opus-5-5 --evaluator claude --url http://127.0.0.1:3311/cities/bend/types/single-family --shots <the 6 files below>. The grok CLI and the Cursor CLI are missing in this sandbox, so the judge is the chain's claude link (claude CLI, sonnet, subscription): three scorings of these shots in one call, recorded exactly as returned, no re-roll. The builder (the listing-dial integration lane, claude-opus-5-5) is not the judge.",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "claude-opus-5-5",
+    "transport": "claude-cli",
     "shotSpec": {
       "routes": [
         "/cities/bend/types/single-family"
@@ -77,80 +77,46 @@
       ],
       "states": [
         "default",
-        "carousel-open"
+        "dial",
+        "dial-open"
       ],
-      "capture": "first viewport + carousel-open shots already in kit (tip 16b805141); evaluate read every PNG in shots/"
+      "capture": "node scripts/take-route-shots.mjs place-type http://127.0.0.1:3311/cities/bend/types/single-family --states 'dial=.place-type-film .v3-dial,dial-open=.place-type-film .v3-dial__thumbs > :nth-child(2)@.place-type-film!click'. First viewport, scale 1, palette-quantized, against the listing-dial fix tree's own next build + next start (2026-09-30)."
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/place-type/shots/desktop.png",
-      "mobile375": "design_system/ryan-realty/ui_kits/place-type/shots/mobile375.png",
-      "carouselOpenDesktop": "design_system/ryan-realty/ui_kits/place-type/shots/carousel-open-desktop.png",
-      "carouselOpenMobile375": "design_system/ryan-realty/ui_kits/place-type/shots/carousel-open-mobile375.png"
+      "dialDesktop": "design_system/ryan-realty/ui_kits/place-type/shots/dial-desktop.png",
+      "dialMobile375": "design_system/ryan-realty/ui_kits/place-type/shots/dial-mobile375.png",
+      "dialOpenDesktop": "design_system/ryan-realty/ui_kits/place-type/shots/dial-open-desktop.png",
+      "dialOpenMobile375": "design_system/ryan-realty/ui_kits/place-type/shots/dial-open-mobile375.png",
+      "mobile375": "design_system/ryan-realty/ui_kits/place-type/shots/mobile375.png"
     },
-    "shotsHash": "sha256:308ac8cb7c957fae51bc01dd4e980b8fd787956f7067441a7511b82d152cf334",
+    "shotsHash": "sha256:de25c383df4e80b47513fe3cbac68e7a809bcff3e7dcb596abe1f434b12c4ba7",
     "scores": [
-      54,
-      61,
-      57
+      62,
+      64,
+      66
     ],
-    "score": 57,
+    "score": 64,
     "criteria": {
-      "designQuality": 16,
+      "designQuality": 20,
       "originality": 14,
-      "interaction": 9,
-      "craft": 11,
-      "honestyFunction": 7
+      "interaction": 12,
+      "craft": 10,
+      "honestyFunction": 8
     },
     "perCriterion": {
-      "design": 16,
+      "design": 20,
       "originality": 14,
-      "interaction": 9,
-      "craft": 11,
-      "honesty": 7
+      "interaction": 12,
+      "craft": 10,
+      "honesty": 8
     },
-    "demoMatch": true,
-    "tells": [
-      "Carousel import \u2260 photo strip \u2014 the rest-fold ON THE MARKET strip hides arrows, card body, and title-under-photo; only sheared photo tops remain until the carousel-open shots."
-    ],
-    "defects": [
-      {
-        "section": "LISTINGS ON THE MAP",
-        "severity": "taste",
-        "finding": "Desktop Atlas is still a pale inset: Bend sits in a modest rectangle beside a deserted cream column whose only job is a skinny Up to any price slider. The fold's job is the map under one claim occupying the first viewport, not a dashboard widget with leftover chrome.",
-        "primitive": "app/cities/[slug]/types/[type]/_v3/PlaceTypeAtlasSection.tsx",
-        "replaceWith": "house-atlas"
-      },
-      {
-        "section": "ON THE MARKET",
-        "severity": "taste",
-        "finding": "In the rest fold the photographed rail is a 40-pixel crop of two rooftops. A visitor cannot read price, address, or specs without scrolling, so the first viewport does not carry the shadcn rail the open shots prove exists.",
-        "primitive": "app/cities/[slug]/types/[type]/_v3/PlaceTypeFilm.client.tsx",
-        "replaceWith": "shadcn-carousel"
-      },
-      {
-        "section": "carousel-open desktop",
-        "severity": "taste",
-        "finding": "The opened control matches shadcn carousel (side prev/next, photo, title-under-photo, card body) but only two cards float in unused cream. The rail should fill the track the way the catalog demo fills a row, not park two Cards in a void.",
-        "primitive": "app/cities/[slug]/types/[type]/_v3/PlaceTypeFilm.client.tsx",
-        "replaceWith": "shadcn-carousel"
-      },
-      {
-        "section": "first viewport",
-        "severity": "defect",
-        "finding": "SEO increment is not visible in these shots (no title or JSON-LD proof), so SEO is held. Broker reach is a header phone on desktop and missing at 375. Inventory facts on the open cards (price, address, beds, baths, sqft) are present; a held SEO line is a defect on this pass.",
-        "primitive": "app/cities/[slug]/types/[type]/page.tsx",
-        "replaceWith": null
-      }
-    ],
-    "dullest": "The desktop Atlas column: LISTINGS ON THE MAP and a hairline slider stranded in cream beside a washed-out density field, while the houses that would make this a place to shop are cropped into a photo sliver at the bottom.",
-    "beats": "Zillow Bend single-family search (zillow.com/bend-or/): we win the sourced nine-in-ten asking band in one sentence and navy Atlas marks instead of Google tiles; we lose map scale, listing density, and the ability to shop inventory from the first viewport. Not a beat of that page.",
-    "verdict": "This is a 57 on first v1-2026-09-12 mark: demoMatch is true because carousel-open shows the shadcn object (arrows, card body, title-under-photo, navy on cream), and the rest fold finally does H1 then one claim then Atlas instead of twin Amboqia titles. It is still a timid map widget over a cropped photo strip, so it does not beat Zillow Bend on the metrics that make a type page worth staying on. SEO is held, not improved; listing facts on the open cards are present, which is inventory held, not an increment the shots can prove.",
+    "honestyFunction": 8,
+    "demoMatch": false,
+    "beats": "Redfin/Zillow's Bend neighborhood pages, on linkage: dragging the price histogram, tapping a map cluster, and paging the listing filmstrip all move the same marker and the same detail card here, where a portal makes you bounce between a separate list view, a separate map view, and a separate detail page to do the equivalent work.",
     "adaptedFrom": [
       {
-        "id": "shadcn-carousel"
-      },
-      {
-        "id": "V3Carousel"
+        "id": "house-listing-dial"
       },
       {
         "id": "house-atlas"
@@ -159,15 +125,35 @@
         "id": "house-quiet"
       }
     ],
-    "comparedToPrior": "rebaselined",
+    "defects": [
+      {
+        "section": "LISTINGS ON THE MAP cluster pills",
+        "severity": "craft",
+        "finding": "every pill on the map reads 'N homes / $median' except one near the bottom-right cluster, which drops to a bare '$479k' with no count line, breaking the mark language the rest of the map teaches the reader in the first three seconds",
+        "replaceWith": null
+      },
+      {
+        "section": "dial thumbnail filmstrip, mobile (dial-mobile375.png)",
+        "severity": "taste",
+        "finding": "the mobile dial view ends in a large blank cream field below the 3-visible-thumbnail filmstrip, dead space on the one viewport where scroll real estate is scarce, reading as an unfinished layout rather than a deliberate pause",
+        "replaceWith": null
+      },
+      {
+        "section": "BD/BA/SQFT/$SQFT spec row + NEAR THIS PRICE comps list",
+        "severity": "taste",
+        "finding": "a bare number-over-label spec grid with no sentence telling the reader what it means (a KPI grid), sitting above a comps list that states price deltas but never says whether that gap buys more house, less land, or a worse street — this block is interchangeable with any national portal's listing card",
+        "replaceWith": null
+      }
+    ],
+    "verdict": "demoMatch is false: nothing on this page reproduces a named catalog demo, cream-box or otherwise — the map, the claim line, and the listing dial are all house-built, which is correct per the retired-carousel note but means the catalog UX bar was never actually cleared here. What's on screen is a competent, on-brand, MLS-honest listings summary with a genuinely linked map/histogram/dial interaction chain, but the card, spec row, and comps list are stock portal furniture (the KPI-grid tell) that a buyer would not screenshot to show a friend. It beats a static portal page on linkage and loses to nothing named in the taste brief on originality of form.",
+    "comparedToPrior": "held",
     "priorMark": {
-      "evaluatedAt": "2026-09-11",
-      "score": 55,
-      "evaluatorModel": "grok-4.6",
-      "rubricVersion": "v1-2026-09-10",
-      "shotsHash": "sha256:004dddc996bcbce1a3e506ab6df1e633e2b04483cf591c5a4c4b04039532d67b"
-    },
-    "rebaselineReason": "rubricVersion v1-2026-09-10 \u2192 v1-2026-09-12; shotsHash added carousel-open desktop/mobile evidence for Tip Ready open-state. Judge (grok-4.6) scored 57 with demoMatch true \u2014 do not invent demoMatch."
+      "evaluatedAt": "2026-09-24",
+      "score": 64,
+      "evaluatorModel": "claude-sonnet-5",
+      "rubricVersion": "v1-2026-09-12",
+      "shotsHash": "sha256:1fc3e744e56d17a9e5395b49bb05d65951621d6554976a32db2a57fe372c7712"
+    }
   },
   "sectionOrder": [
     "V3SectionTracker",
@@ -175,7 +161,7 @@
     "V3Breadcrumb",
     "V3Heading + claim sentence + source line",
     "PlaceTypeAtlasSection (#atlas, streamed, standin fallback)",
-    "PlaceTypeFilm (V3Carousel mode=rail)",
+    "PlaceTypeFilm (V3ListingDial, the Atlas rings the home it shows)",
     "PlaceTypeSortBar + PlaceTypeRows (#homes)",
     "V3Quiet",
     "V3Footer"

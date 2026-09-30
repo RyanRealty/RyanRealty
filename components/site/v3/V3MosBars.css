@@ -129,6 +129,13 @@
     display: none;
   }
 
+  /* The bars' figures stand clear of the Jax button's mid-screen band
+     (V3DogFloater: 4.25rem wide, --v3-space-md in from the edge), the same
+     clearance V3Chart's y labels take: at 375 it sat on "203.2" (2026-09-29). */
+  .v3-mos__pair {
+    margin-inline-end: calc(4.25rem + var(--v3-space-md) - var(--v3-gutter));
+  }
+
   .v3-mos__caption {
     font-size: var(--v3-size-body-sm);
   }
@@ -143,4 +150,21 @@
     transition: none;
     animation: none;
   }
+}
+
+/* The bar under the pointer is the one being read: a wash behind it, the
+   other bar stepped back (2026-09-25: the hover state drew the same picture
+   as rest). Transform and opacity only, per the motion band. */
+.v3-mos__barrow {
+  transition:
+    opacity var(--v3-dur-state) var(--v3-ease-out),
+    background var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-mos__pair:hover .v3-mos__barrow:not(:hover) {
+  opacity: 0.45;
+}
+
+.v3-mos__barrow:hover {
+  background: var(--v3-wash);
 }

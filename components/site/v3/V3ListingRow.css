@@ -131,6 +131,14 @@
   overflow-wrap: anywhere;
 }
 
+/* A lease's terms (NNN lease, who pays what, zoning, parking), under the town. */
+.v3-lrow__terms {
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+  overflow-wrap: anywhere;
+}
+
 /* Figure column: the ask and the working meta, right-aligned and tabular so a
    column of rows lines up on the digits. --v3-font-num is Geist Mono in the
    Ledger register — the register decides, the component only reads. */

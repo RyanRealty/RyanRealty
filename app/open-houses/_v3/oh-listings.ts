@@ -17,6 +17,9 @@ export type OpenHouseListing = {
   /** Carried so a fractional-interest ask can be LABELLED as a share rather
    *  than read as the price of the whole dwelling (section 0). Added 2026-08-27. */
   propertySubType?: string | null
+  /** The MLS type, carried so the listing dial's card can tell a sale ask
+   *  from a lease rate (publishListingCardFacts). Added 2026-09-24. */
+  propertyType?: string | null
   city: string | null
   state: string | null
   postalCode: string | null
@@ -92,6 +95,7 @@ export function assembleOpenHouses(
       sqft: tile?.sqft ?? null,
       subdivisionName: subdivision,
       propertySubType: tile?.propertySubType ?? null,
+      propertyType: tile?.propertyType ?? null,
       city,
       state: null,
       postalCode: tile?.postalCode ?? null,

@@ -88,7 +88,7 @@ const UNITS = {
 const SECTIONS = placeStockSectionsFromTiles(TILES)
 const LEASE = placeLeaseSectionFromTiles(TILES, UNITS)!
 
-function render(layout: 'rows' | 'rails' | 'dial') {
+function render(layout: 'rows' | 'dial') {
   return renderToStaticMarkup(
     <V3PlaceInventory
       id="homes"
@@ -101,7 +101,7 @@ function render(layout: 'rows' | 'rails' | 'dial') {
   )
 }
 
-describe.each(['rows', 'rails', 'dial'] as const)('V3PlaceInventory layout="%s" with leases', (layout) => {
+describe.each(['rows', 'dial'] as const)('V3PlaceInventory layout="%s" with leases', (layout) => {
   const html = render(layout)
 
   it('renders "Commercial space for lease" last, after "Commercial property"', () => {
@@ -167,7 +167,7 @@ describe('V3PlaceInventory with no leases', () => {
   it('renders no lease section', () => {
     const html = renderToStaticMarkup(
       <V3PlaceInventory
-        layout="rails"
+        layout="dial"
         placeName="Center Addition to Bend"
         sections={SECTIONS}
         lease={null}
@@ -199,7 +199,7 @@ describe('V3PlaceInventory with no leases', () => {
   })
 })
 
-describe.each(['rails', 'dial'] as const)('PlaceSubdivisionHomes layout="%s" with leases', (layout) => {
+describe('PlaceSubdivisionHomes (the place pages\' listing dials) with leases', () => {
   const homes = SECTIONS.flatMap((s) => s.rows)
   const html = renderToStaticMarkup(
     <PlaceSubdivisionMap
@@ -210,12 +210,23 @@ describe.each(['rails', 'dial'] as const)('PlaceSubdivisionHomes layout="%s" wit
       keysBySlug={{}}
       source="regional MLS through Oregon Data Share"
     >
-      <PlaceSubdivisionHomes id="homes" layout={layout} />
+      <PlaceSubdivisionHomes id="homes" />
     </PlaceSubdivisionMap>,
   )
 
   it('counts only the for-sale homes as for sale', () => {
     expect(html).toContain('2 for sale')
+  })
+
+  it('never puts a lease in a for-sale dial: every lease card and tab sits in the lease dial', () => {
+    const leaseDialAt = html.indexOf('id="homes-lease"')
+    expect(leaseDialAt).toBeGreaterThan(-1)
+    for (const row of LEASE.rows) {
+      const first = html.indexOf(`href="${row.href}"`)
+      expect(first).toBeGreaterThan(leaseDialAt)
+    }
+    // The for-sale dials' readouts count the two homes for sale, never five.
+    expect(html).not.toMatch(/v3-dial__pos-of">\s*\/\s*0?5</)
   })
 
   it('shows the leases last under their own heading, with the rate and the label', () => {
@@ -240,7 +251,7 @@ describe.each(['rails', 'dial'] as const)('PlaceSubdivisionHomes layout="%s" wit
         keysBySlug={{}}
         source="regional MLS through Oregon Data Share"
       >
-        <PlaceSubdivisionHomes id="homes" layout={layout} />
+        <PlaceSubdivisionHomes id="homes" />
       </PlaceSubdivisionMap>,
     )
     expect(onlyLeases).toContain('Nothing for sale in Downtown right now.')

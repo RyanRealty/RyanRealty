@@ -97,6 +97,16 @@
   padding-bottom: var(--v3-space-lg);
 }
 
+/* Where the 90rem fold runs to the window's right edge, its ask column stops
+   short of the Jax button (V3DogFloater: 4.25rem wide, --v3-space-md in from
+   the edge, fixed mid-screen): at 1440 it sat on the alerts sentence
+   (2026-09-29). Wider windows centre the fold clear of it. */
+@media (min-width: 64rem) and (max-width: 102rem) {
+  .plat-fold {
+    padding-inline-end: calc(4.25rem + var(--v3-space-md) + var(--v3-space-sm));
+  }
+}
+
 .plat-fold__doors {
   margin-top: var(--v3-space-2xs);
 }

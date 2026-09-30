@@ -265,8 +265,17 @@ export function publishPlaceTypeCards(input: {
   sfrMos: number | null
   segments: readonly PublicSegmentRow[]
   covers?: Readonly<Record<string, string | PlaceTypeCover>>
+  /**
+   * How a card's title scopes its count ("in Bend" by default). A city page
+   * passes "with a Bend address": its counts are the MLS city field's, while
+   * the map above counts the homes inside the city line, and the two read as
+   * a contradiction when both said "in Bend" (2026-09-25: 749 single-family
+   * "in Bend" under a map of 524 houses).
+   */
+  scope?: string
 }): PlaceTypeCard[] {
   const covers = input.covers ?? {}
+  const scope = input.scope?.trim() || `in ${input.placeName}`
   const cards: PlaceTypeCard[] = []
   const sfrFilter = {
     propertyType: 'A',
@@ -280,7 +289,7 @@ export function publishPlaceTypeCards(input: {
   cards.push({
     key: 'sfr',
     href: placeTypeSearchHref(input.browsePath, 'sfr', sfrFilter),
-    title: `Single-family in ${input.placeName}`,
+    title: `Single-family ${scope}`,
     count: input.sfrCount != null ? input.sfrCount.toLocaleString('en-US') : null,
     bits: sfrBits,
     photoUrl: sfrCover?.photoUrl ?? null,
@@ -299,7 +308,7 @@ export function publishPlaceTypeCards(input: {
     cards.push({
       key: row.segment,
       href: placeTypeSearchHref(input.browsePath, row.segment, filter),
-      title: `${noun.charAt(0).toUpperCase()}${noun.slice(1)} in ${input.placeName}`,
+      title: `${noun.charAt(0).toUpperCase()}${noun.slice(1)} ${scope}`,
       count: row.activeCount.toLocaleString('en-US'),
       bits: publicSegmentDisplayBits(row).slice(0, 3),
       photoUrl: cover?.photoUrl ?? null,

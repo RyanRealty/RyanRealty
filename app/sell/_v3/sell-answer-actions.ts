@@ -45,7 +45,7 @@ import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { formatDate } from '@/lib/format/date'
 import { slugify } from '@/lib/slug'
 import { buildAnswerFigures, salesPerMonthFrom } from '@/lib/site/answer-figures'
-import type { PlaceCompMark } from '@/lib/cma/place-comps'
+import { compsReaderSource, type PlaceCompMark } from '@/lib/cma/place-comps'
 import { splitSellAddress, type SellAnswerData } from './sell-answer'
 import { cityMarketPath } from '@/lib/market/canonical-market-path'
 
@@ -200,6 +200,7 @@ export async function answerSellValue(input: SellAnswerInput): Promise<SellAnswe
       answer: await getPlaceValueAnswer({
         geoType: candidate.geoType,
         geoSlug: candidate.geoSlug,
+        placeLabel: candidate.label,
       }).catch(() => null),
     })
   }
@@ -261,7 +262,7 @@ export async function answerSellValue(input: SellAnswerInput): Promise<SellAnswe
     return String(line)
       .replace(
         /market_metric\s+[a-z_]+:[a-z0-9-]+/gi,
-        `Market Truth metric layer, ${picked.label} detached homes`,
+        `detached homes in ${picked.label}`,
       )
       .replace(
         /median_days_to_contract_90d/gi,
@@ -284,15 +285,16 @@ export async function answerSellValue(input: SellAnswerInput): Promise<SellAnswe
   const trace: string[] = [...(answer?.trace ?? [])]
   if (salesPerMonth != null && activeCount != null && mos != null) {
     trace.push(
-      `homes under contract in a typical month ${Math.round(salesPerMonth)} — derived as homes for sale ÷ months of supply, which recovers the six-month close pace the months-of-supply formula divides by; market_metric ${picked.geoType}:${picked.geoSlug}`,
+      `homes under contract in a typical month ${Math.round(salesPerMonth)}: homes for sale divided by months of supply, which recovers the six-month close pace the months-of-supply formula divides by, for detached homes in ${picked.label}`,
     )
   }
+  // The reader's comps source (SITE-193): the resolver's own trace carries the
+  // query that matched the address and the ladder's tier names, and this list
+  // is printed on the page. Both address answers share compsReaderSource.
   if (subject) {
-    trace.push(
-      `comparable closes ${compCount ?? 'unmatched'} — Ryan Realty CMA comp ladder (the same ladder the written valuation runs), tiers ${selection?.tiersUsed?.join(' → ') || 'none'}; subject resolved from ${resolved?.trace ?? 'MLS history and county assessor facts'}`,
-    )
+    trace.push(`comparable closes ${compCount ?? 'unmatched'}: ${compsReaderSource(true)}`)
   } else {
-    trace.push(`comparable closes unmatched — ${resolved?.trace ?? 'the address did not resolve to a property record'}`)
+    trace.push(`comparable closes unmatched: ${compsReaderSource(false)}`)
   }
 
   // THE PACE RULE'S CONTEXT MARK. The city grain was already pulled above as a

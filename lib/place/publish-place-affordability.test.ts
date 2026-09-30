@@ -54,7 +54,9 @@ describe('publishPlaceAffordability · the calculator opens on this market', () 
     const props = publishPlaceAffordability(bend)!
     expect(props.medianSource).toContain('$947,000')
     expect(props.medianSource).toContain('664 single-family homes for sale in Bend')
-    expect(props.medianSource).toContain('median_list_active')
+    expect(props.medianSource).toContain("the same figure this page's market section prints")
+    // SITE-193: the reader's words, never the table and column behind them.
+    expect(props.medianSource).not.toMatch(/market_metric|median_list_active/)
     // VOICE-2: one comma at a time, never ",," and never ", ."
     expect(props.medianSource).not.toMatch(/,\s*[,.]/)
   })
@@ -132,6 +134,7 @@ describe('publishPlaceAffordability · the mix is a fact, not a down payment', (
     const props = publishPlaceAffordability(bend)!
     expect(props.mixSource).toContain('do not add to 100%')
     expect(props.mixSource).toContain('not a suggestion about your down payment')
+    expect(props.mixSource).not.toMatch(/market_metric|financing_mix/)
   })
 
   it('opens FINANCED where most sales carried a loan, whatever the cash share is', () => {

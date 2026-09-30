@@ -45,6 +45,14 @@
   min-width: 0;
 }
 
+/* The band's V3ListingDial on the section's gutter (the section itself runs
+   edge to edge and every child carries the gutter). */
+.v3.v3-dial.buy-shelf__dial {
+  width: auto;
+  max-width: none;
+  margin-inline: var(--v3-gutter);
+}
+
 .buy-shelf__see-all {
   margin: var(--v3-space-xs) var(--v3-gutter) 0;
 }
@@ -138,14 +146,6 @@
     flex: 0 0 auto;
   }
 
-  /* THE TRACK'S OWN SCROLL CUE. At 375 the shelf runs to the viewport edge, and
-     the judge read the peeking second card as "cropped hard at the right edge
-     ... simply cut off mid-character" rather than as a rail that continues.
-     A card that FADES at the edge is the difference between a crop and a cue;
-     currentColor, not a literal, because a mask reads only the alpha channel. */
-  .buy-shelf__track [data-slot='carousel-content'] {
-    mask-image: linear-gradient(to right, currentColor calc(100% - 2.5rem), transparent 100%);
-  }
 }
 
 /* ---------------------------------------------------------------------------

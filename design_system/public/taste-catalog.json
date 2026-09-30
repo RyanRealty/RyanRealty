@@ -3029,7 +3029,13 @@
           "id": "shadcn-carousel",
           "catalog": "shadcn",
           "url": "https://ui.shadcn.com/docs/components/carousel",
-          "job": "Inventory rails. Adapt into V3Carousel, do not paste a second kit."
+          "job": "Retired for inventory (Matt 2026-09-24): the shelves are V3ListingDial. Kept so the receipt that scored the carousel still resolves."
+        },
+        {
+          "id": "house-listing-dial",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3ListingDial.client.tsx",
+          "job": "The lead shelf per asking-price band, and the shelves under it, on the listing dial: one home large, the rest as thumbnails."
         }
       ]
     },
@@ -3062,7 +3068,7 @@
     "price-drops": {
       "layoutLock": "Opening is the Field of cut houses. Count is a caption. Do not open on a KPI of reductions this week with no photographs.",
       "demoStates": [
-        "carousel-open=.pd-cuts-rail [data-slot=carousel-next]!click",
+        "dial-open=.pd-cuts .v3-dial__step--next!click",
         "band-open=.pd-bands [role=tab]:nth-child(2)!click"
       ],
       "modules": [
@@ -3082,7 +3088,13 @@
           "id": "shadcn-carousel",
           "catalog": "shadcn",
           "url": "https://ui.shadcn.com/docs/components/carousel",
-          "job": "Photo rails of the week's cuts. Adapt into V3Carousel."
+          "job": "Retired for the cut houses (Matt 2026-09-24): they are on V3ListingDial. Kept so the receipt that scored the carousel still resolves."
+        },
+        {
+          "id": "house-listing-dial",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3ListingDial.client.tsx",
+          "job": "The week's cut houses per cut-size band on the listing dial: one house large with its cut on the photograph, the rest as thumbnails."
         }
       ]
     },
@@ -3236,7 +3248,7 @@
     "place-type": {
       "layoutLock": "H1 is the type in the place, then one plain sentence with the count and the price band, then Atlas. Do not say the type twice as two display lines with no fact. Count and band from the same listing-tile read as the map marks.",
       "demoStates": [
-        "carousel-open=[data-slot=\"carousel-next\"]!click"
+        "dial-open=.place-type-film .v3-dial__step--next!click"
       ],
       "modules": [
         {
@@ -3255,7 +3267,13 @@
           "id": "shadcn-carousel",
           "catalog": "shadcn",
           "url": "https://ui.shadcn.com/docs/components/carousel",
-          "job": "Photographed listings as a rail. Adapt into V3Carousel."
+          "job": "Retired for the film (Matt 2026-09-24): the photographed listings are on V3ListingDial. Kept so the receipt that scored the carousel still resolves."
+        },
+        {
+          "id": "house-listing-dial",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3ListingDial.client.tsx",
+          "job": "The photographed listings in the claim band on the listing dial, and the Atlas rings the home the dial shows."
         }
       ]
     },

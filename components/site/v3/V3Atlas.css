@@ -301,6 +301,8 @@
   height: 100%;
 }
 
+/* The zoom pair wears the map's own marks (navy plates, cream figures, the
+   median pills' register) rather than a stock white map control (2026-09-25). */
 .v3-atlas__zoom {
   position: absolute;
   right: var(--v3-space-sm);
@@ -308,8 +310,8 @@
   z-index: 4;
   display: flex;
   flex-direction: column;
-  border: var(--v3-rule-hairline);
-  background: var(--v3-surface);
+  border: 0;
+  background: var(--v3-navy);
 }
 
 .v3-atlas__zoom-btn {
@@ -320,24 +322,24 @@
   min-height: var(--v3-tap);
   padding: 0;
   border: 0;
-  background: var(--v3-surface);
-  color: var(--v3-ink);
-  font-size: var(--v3-size-body);
+  background: var(--v3-navy);
+  color: var(--v3-cream);
+  font-size: var(--v3-size-body-lg);
   line-height: 1;
   cursor: pointer;
 }
 
 .v3-atlas__zoom-btn:disabled {
-  color: var(--v3-ink-muted);
+  color: color-mix(in srgb, var(--v3-cream) 45%, var(--v3-navy));
   cursor: default;
 }
 
 .v3-atlas__zoom-btn:not(:disabled):hover {
-  background: color-mix(in srgb, var(--v3-navy) 6%, var(--v3-cream));
+  background: color-mix(in srgb, var(--v3-navy) 85%, var(--v3-cream));
 }
 
 .v3-atlas__zoom-btn + .v3-atlas__zoom-btn {
-  border-top: var(--v3-rule-hairline);
+  border-top: var(--v3-rule-weight-hairline) solid color-mix(in srgb, var(--v3-cream) 30%, var(--v3-navy));
 }
 
 .v3-atlas__svg {
@@ -545,6 +547,18 @@
   transform: translate(-50%, calc(-100% - 5px)) scale(1.14);
   outline: 2px solid var(--v3-cream);
   outline-offset: 1px;
+}
+
+/* The linked mark (a sibling list's or dial's home) wears a navy ring clear
+   of the pill, so it reads against the light basemap, not only a cream edge. */
+.v3-atlas__pin.is-linked {
+  z-index: 5;
+  outline: 2px solid var(--v3-navy);
+  outline-offset: 3px;
+  /* A cream mat between the pill and the ring, so the ring reads as a ring
+     over a crowded patch of pills (2026-09-29: the dial's home was one pill
+     among many). */
+  box-shadow: 0 0 0 3px var(--v3-cream);
 }
 
 /* SITE-127 — cluster face is a $ pill, not a bare count disc. UXLIVE-6: the
@@ -773,6 +787,52 @@
 .v3-atlas__scrub-value {
   color: var(--v3-ink);
   font-weight: var(--v3-weight-medium);
+}
+
+/* The scrubber's distribution: how many of the map's homes ask in each step
+   of the scale, the steps past the thumb faded. */
+.v3-atlas__hist {
+  display: flex;
+  align-items: flex-end;
+  gap: 1px;
+  height: 2rem;
+  /* The native thumb's half-width at each end, so a step sits over the price
+     the thumb stands on. */
+  padding-inline: 0.5rem;
+  border-bottom: var(--v3-rule-weight-hairline) solid var(--v3-hairline);
+}
+
+.v3-atlas__hist-bar {
+  flex: 1 1 0;
+  min-width: 0;
+  background: var(--v3-navy);
+  opacity: 0.55;
+  transition: opacity var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-atlas__hist-bar.is-out {
+  opacity: 0.14;
+}
+
+/* A few homes: one tick each on the scale, the ones past the thumb faded. */
+.v3-atlas__hist--ticks {
+  position: relative;
+  display: block;
+}
+
+.v3-atlas__hist-tick {
+  position: absolute;
+  bottom: 0;
+  width: var(--v3-rule-weight-section);
+  height: 70%;
+  margin-left: calc(var(--v3-rule-weight-section) / -2);
+  background: var(--v3-navy);
+  opacity: 0.6;
+  transition: opacity var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-atlas__hist-tick.is-out {
+  opacity: 0.14;
 }
 
 .v3-atlas__range {
@@ -1945,4 +2005,31 @@ a.v3-atlas__card-home {
     text-decoration: underline;
     text-underline-offset: var(--v3-underline-offset);
   }
+}
+
+/* The price faces' key, in the dock beside the sales legend. */
+.v3-atlas__pin-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--v3-space-2xs) var(--v3-space-xs);
+  margin: 0;
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-control);
+}
+
+.v3-atlas__pin-legend-mark {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--v3-space-2xs);
+  background: var(--v3-navy);
+  color: var(--v3-cream);
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-strong);
+  line-height: 1.5;
+}
+
+.v3-atlas__pin-legend-mark--cluster {
+  text-transform: lowercase;
 }

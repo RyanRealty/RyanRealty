@@ -237,3 +237,51 @@ describe('V3Ledger drawing slot', () => {
     expect(html).toContain('stub-drawing')
   })
 })
+
+describe('V3Ledger second measure (`also`) and key', () => {
+  function renderAlso(rows: readonly V3LedgerFigureRow[], withKey = true, bars = true) {
+    const encode = bars ? ('bar' as const) : undefined
+    const [first, ...rest] = rows
+    return renderToStaticMarkup(
+      createElement(V3Ledger, {
+        heading: v3Text('Commercial space for lease'),
+        source: v3Text('live MLS'),
+        rows: [first!, ...rest],
+        ...(encode ? { encode } : {}),
+        ...(withKey
+          ? { encodeKey: { value: v3Text('Spaces for lease'), also: v3Text('Square feet listed') } }
+          : {}),
+      }),
+    )
+  }
+  const alsoWidths = (html: string) =>
+    [...html.matchAll(/class="v3-ledger__bar v3-ledger__bar--also[^"]*"[^>]*style="width:([^"]+)"/g)].map((m) => m[1]!)
+
+  it('draws the second measure on its own scale, with its own figure, under the bar', () => {
+    const html = renderAlso([
+      row({ weight: 1, value: v3Text('13 for lease'), also: { weight: 1, value: v3Text('119,560 sq ft') } }),
+      row({ href: '/cities/madras', weight: 0.23, value: v3Text('3 for lease'), also: { weight: 0.33, value: v3Text('39,405 sq ft') } }),
+    ])
+    expect(alsoWidths(html)).toEqual(['100.00%', '33.00%'])
+    expect(html).toContain('119,560 sq ft')
+    expect(html).toContain('39,405 sq ft')
+    // The count stays first in each row's measure.
+    expect(html.indexOf('13 for lease')).toBeLessThan(html.indexOf('119,560 sq ft'))
+  })
+
+  it('refuses an out-of-range second weight rather than clamping it', () => {
+    const html = renderAlso([row({ weight: 1, also: { weight: 2, value: v3Text('9 sq ft') } })])
+    expect(alsoWidths(html)).toEqual([])
+    expect(html).toContain('v3-ledger__track--also')
+  })
+
+  it('keys both marks above the rows, and draws neither without encode="bar"', () => {
+    const html = renderAlso([row({ weight: 1, also: { weight: 1, value: v3Text('480 sq ft') } })])
+    expect(html).toContain('v3-ledger__key')
+    expect(html.indexOf('v3-ledger__key')).toBeLessThan(html.indexOf('v3-ledger__list'))
+    expect(html).toContain('Square feet listed')
+    const flat = renderAlso([row({ weight: 1, also: { weight: 1, value: v3Text('480 sq ft') } })], true, false)
+    expect(flat).not.toContain('v3-ledger__key')
+    expect(flat).not.toContain('480 sq ft')
+  })
+})

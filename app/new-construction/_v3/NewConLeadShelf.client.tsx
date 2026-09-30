@@ -1,36 +1,44 @@
 'use client'
 
 /**
- * Live Bend new-construction homes — catalog job `shadcn-carousel`.
+ * Live Bend new-construction homes on the listing dial.
  *
- * Imports the installed source (`@/components/ui/carousel`) and the same
- * house card face as /buy. One track of today's photographed homes, not a
- * three-community switch. A concession sits on the home when public remarks
- * or that builder's published page name one.
+ * WHAT IT WAS. Catalog job `shadcn-carousel`: the installed carousel with the
+ * /buy house card face, one track of today's photographed homes, each card
+ * carrying its builder concession under the copy.
+ *
+ * WHAT IT IS (Matt 2026-09-24, "Let's get all of those carousels in place").
+ * V3ListingDial: one home large with its photograph and the card's copy (the
+ * ask, beds, baths, sqft, the address, a door to the listing), the rest as
+ * thumbnails on the dial's rail, "03 / 12" at its head. The same homes in the
+ * same order (lowest ask first, from load-lead-shelf), the same see-all door.
+ *
+ * THE CONCESSION STAYS ON THE HOME (SITE-151). A concession sits on the home
+ * when public remarks or that builder's published page name one; otherwise
+ * the builder's name does. The dial's card has no slot for it, so it sits
+ * directly under the dial and turns with it: one note per home, all in the
+ * served HTML, only the one for the home the dial shows visible (the dial's
+ * onIndexChange says which one that is).
  */
-import { useEffect, useState } from 'react'
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-  type CarouselApi,
-} from '@/components/ui/carousel'
+import { useState } from 'react'
 import { cn } from '@/lib/utils'
-import { V3_ROOT_CLASS, V3Button } from '@/components/site/v3'
-import { HomeRailCardFace } from '@/app/_v3/HomeListingRail.client'
+import { V3_ROOT_CLASS, V3Button, V3ListingDial } from '@/components/site/v3'
+import { listingRowFromRailCard } from '@/app/_v3/home-rail-items'
 import type { NewConHomeCard } from './load-lead-shelf'
-import '@/components/site/v3/V3ListingRow.css'
-import '@/components/site/v3/V3Carousel.css'
-import '@/app/_v3/home-homes-rails.css'
 import './new-con-lead-shelf.css'
 
-function CardConcession({ card }: { card: NewConHomeCard }) {
+const DIAL_ID = 'newcon-lead-dial'
+
+function CardConcession({ card, index, shown }: { card: NewConHomeCard; index: number; shown: boolean }) {
   const concession = card.concession
   if (!concession && !card.builderName) return null
   return (
-    <div className="newcon-lead__card-offer">
+    <div
+      className="newcon-lead__card-offer"
+      hidden={!shown}
+      data-listing-key={card.listingKey}
+      data-dial-index={index}
+    >
       {concession ? (
         <>
           <p className="newcon-lead__card-whose">{concession.whose}</p>
@@ -62,68 +70,36 @@ export function NewConLeadShelf({
   cards: readonly NewConHomeCard[]
   seeAllHref: string
 }) {
-  const [api, setApi] = useState<CarouselApi>()
-  const [index, setIndex] = useState(0)
+  // The dial opens on its first home and reports every turn.
+  const [turned, setTurned] = useState(0)
+  const index = cards.length < 2 ? 0 : Math.min(turned, cards.length - 1)
   const headingId = 'newcon-lead-heading'
-
-  useEffect(() => {
-    if (!api) return
-    const read = () => setIndex(api.selectedScrollSnap())
-    read()
-    api.on('select', read)
-    api.on('reInit', read)
-    return () => {
-      api.off('select', read)
-      api.off('reInit', read)
-    }
-  }, [api])
 
   if (cards.length === 0) return null
 
   return (
     <section
       id="affordable"
-      className={cn(V3_ROOT_CLASS, 'home-rail', 'newcon-lead')}
+      className={cn(V3_ROOT_CLASS, 'newcon-lead')}
       aria-labelledby={headingId}
     >
-      <div className="home-rail__head newcon-lead__head">
-        <div className="home-rail__head-copy">
-          <h2 id={headingId} className="home-rail__title">
-            {heading}
-          </h2>
-          <p className="newcon-lead__note">{note}</p>
-        </div>
+      <div className="newcon-lead__head">
+        <h2 id={headingId} className="newcon-lead__title">
+          {heading}
+        </h2>
+        <p className="newcon-lead__note">{note}</p>
       </div>
-      <div className="newcon-lead__track">
-        <p className="newcon-lead__pos" aria-hidden="true">
-          {String(index + 1).padStart(2, '0')} / {String(cards.length).padStart(2, '0')}
-        </p>
-        <Carousel
-          setApi={setApi}
-          opts={{ align: 'start', containScroll: 'trimSnaps' }}
-          className={cn(V3_ROOT_CLASS, 'v3-carousel', 'v3-carousel--rail', 'home-rail__carousel')}
-          aria-label={heading}
-        >
-          <CarouselContent className="v3-carousel__track ml-0">
-            {cards.map((card, i) => (
-              <CarouselItem
-                key={card.listingKey}
-                className="v3-carousel__slide v3-carousel__slide--rail pl-0"
-              >
-                <div className="newcon-lead__card">
-                  <HomeRailCardFace card={card} priority={i < 2} />
-                  <CardConcession card={card} />
-                </div>
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-          {cards.length > 1 ? (
-            <>
-              <CarouselPrevious className="v3-carousel__step v3-carousel__step--prev" />
-              <CarouselNext className="v3-carousel__step v3-carousel__step--next" />
-            </>
-          ) : null}
-        </Carousel>
+      <V3ListingDial
+        id={DIAL_ID}
+        label={heading}
+        listings={cards.map(listingRowFromRailCard)}
+        onIndexChange={setTurned}
+        className="newcon-lead__dial"
+      />
+      <div className="newcon-lead__offers">
+        {cards.map((card, i) => (
+          <CardConcession key={card.listingKey} card={card} index={i} shown={i === index} />
+        ))}
       </div>
       <V3Button href={seeAllHref} variant="ghost" className="newcon-lead__see-all">
         See all Bend new construction

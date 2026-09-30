@@ -21,6 +21,7 @@
  */
 import { getListingTiles } from '@/lib/data/listings/getListingTiles'
 import { getLeaseRateOptions, type LeaseRateOptionsByKey } from '@/lib/data/listings/getLeaseRateOptions'
+import { getLeaseTerms, type LeaseTermsByKey } from '@/lib/data/listings/getLeaseTerms'
 import type { ListingTile } from '@/lib/data/types/listing'
 
 /** Above the whole feed's on-market lease count (239 on 2026-09-23). */
@@ -31,6 +32,8 @@ export type CommercialLeaseListings = {
   tiles: ListingTile[]
   /** ListingKey → the feed's "Lease Rate Options" value, or null. */
   rateOptions: LeaseRateOptionsByKey
+  /** ListingKey → the lease's terms as its listing files them, worded (getLeaseTerms). */
+  leaseTerms: LeaseTermsByKey
 }
 
 export async function getCommercialLeaseListings(): Promise<CommercialLeaseListings> {
@@ -41,7 +44,8 @@ export async function getCommercialLeaseListings(): Promise<CommercialLeaseListi
     sort: 'newest',
     limit: COMMERCIAL_LEASE_CAP,
   })
-  if (tiles.length === 0) return { tiles, rateOptions: {} }
-  const rateOptions = await getLeaseRateOptions(tiles.map((tile) => tile.listingKey))
-  return { tiles, rateOptions }
+  if (tiles.length === 0) return { tiles, rateOptions: {}, leaseTerms: {} }
+  const keys = tiles.map((tile) => tile.listingKey)
+  const [rateOptions, leaseTerms] = await Promise.all([getLeaseRateOptions(keys), getLeaseTerms(keys)])
+  return { tiles, rateOptions, leaseTerms }
 }

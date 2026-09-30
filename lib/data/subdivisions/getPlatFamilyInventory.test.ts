@@ -23,6 +23,24 @@ describe('rollupPlatFamilyInventory', () => {
     expect(out.readAt).toBe('2026-09-23T00:00:00.000Z')
   })
 
+  it('counts for sale as Active only and under contract apart, once per listing (SITE-193)', () => {
+    const sfr = { property_type: 'A', property_sub_type: 'Single Family Residence' }
+    const out = rollupPlatFamilyInventory(
+      [
+        { listing_key: 'a', geo_slug: 'x-11', ...sfr, list_price: 600000, standard_status: 'Active' },
+        { listing_key: 'b', geo_slug: 'x-12', ...sfr, list_price: 800000, standard_status: 'Active' },
+        // Under contract, inside a phase and its replat: counted once, apart.
+        { listing_key: 'c', geo_slug: 'x-12', ...sfr, list_price: 2000000, standard_status: 'Active Under Contract' },
+        { listing_key: 'c', geo_slug: 'x-12-replat', ...sfr, list_price: 2000000, standard_status: 'Active Under Contract' },
+      ],
+      '2026-09-24T00:00:00.000Z',
+    )
+    expect(out.activeCount).toBe(2)
+    expect(out.underContractCount).toBe(1)
+    expect(out.medianListPrice).toBe(700000)
+    expect(out.listingKeys).toEqual(['a', 'b', 'c'])
+  })
+
   it('is empty, not zero-priced, when nothing is listed', () => {
     const out = rollupPlatFamilyInventory([], '2026-09-23T00:00:00.000Z')
     expect(out).toMatchObject({ activeCount: 0, medianListPrice: null, listingKeys: [] })

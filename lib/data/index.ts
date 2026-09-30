@@ -182,6 +182,8 @@ export type { ListingRawRow } from '@/lib/data/listings/getListingRawRow'
 // Commercial leases (MLS 'G'): the unit of the rent, from the raw payload.
 export { getLeaseRateOptions } from '@/lib/data/listings/getLeaseRateOptions'
 export type { LeaseRateOptionsByKey } from '@/lib/data/listings/getLeaseRateOptions'
+export { getLeaseTerms } from '@/lib/data/listings/getLeaseTerms'
+export type { LeaseTermsByKey } from '@/lib/data/listings/getLeaseTerms'
 export {
   getCommercialLeaseListings,
   COMMERCIAL_LEASE_CAP,
@@ -303,8 +305,8 @@ export type {
 
 // Listings — videos (stub today; 3-tier MLS fallback in Wave 1.8)
 export { getListingVideos } from '@/lib/data/videos/getListingVideos'
-export { getListingCardVideo } from '@/lib/data/videos/getListingCardVideo'
-export type { ListingCardVideo } from '@/lib/data/videos/getListingCardVideo'
+export { getListingCardVideo, LISTING_CARD_VIDEO_KEY } from '@/lib/data/videos/getListingCardVideo'
+export type { ListingCardVideoResult } from '@/lib/data/videos/getListingCardVideo'
 export { getSubdivisionVideoTours } from '@/lib/data/videos/getSubdivisionVideoTours'
 export {
   getRecentListingVideoRows,
