@@ -227,12 +227,12 @@
     "items": []
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-16",
+    "evaluatedAt": "2026-09-30",
     "rubricVersion": "v1-2026-09-12",
-    "evaluator": "A separate claude CLI sonnet through `npx tsx scripts/taste-evaluate.ts neighborhood --builder claude-opus-5 --evaluator claude --url http://127.0.0.1:3204/cities/bend/awbrey-butte --shots <the eight below> --focus <the class option list, and what each opened state shows>`. Neither the grok CLI nor cursor-agent is installed in this sandbox, so the judge chain fell to link 2, which the site-queue skill allows for a Claude lane building on Opus. It scored these eight captures three times in one call, off a production `next build` served on 127.0.0.1:3204, and read no code.",
+    "evaluator": "npx tsx scripts/taste-evaluate.ts neighborhood --builder claude-opus-5-5 --evaluator claude --url http://127.0.0.1:3311/cities/bend/awbrey-butte --shots <the 12 files below>. The grok CLI and the Cursor CLI are missing in this sandbox, so the judge is the chain's claude link (claude CLI, sonnet, subscription): three scorings of these shots in one call, recorded exactly as returned, no re-roll. The builder (the listing-dial integration lane, claude-opus-5-5) is not the judge.",
     "evaluatorModel": "claude-sonnet-5",
-    "builderModel": "claude-opus-5",
-    "comparedToPrior": "rebaselined",
+    "builderModel": "claude-opus-5-5",
+    "transport": "claude-cli",
     "shotSpec": {
       "routes": [
         "/cities/bend/awbrey-butte"
@@ -243,45 +243,52 @@
       ],
       "states": [
         "default",
+        "homes",
+        "homes-open",
         "insight-open",
-        "types-open",
-        "mos-hover"
+        "mos-hover",
+        "types-open"
       ],
-      "capture": "first viewport, scripts/take-route-shots.mjs against the production server on 3204, scale 1, palette-quantized; --states \"insight-open=#place-insight .insight-pager__btn[aria-label^='Next']!click,types-open=#alerts .city-typebox__trigger!click,mos-hover=#place-insight .v3-mos__barrow!hover\""
+      "capture": "node scripts/take-route-shots.mjs neighborhood http://127.0.0.1:3311/cities/bend/awbrey-butte --states 'insight-open=#place-insight .insight-pager__btn[aria-label^='Next']!click,types-open=#alerts .city-typebox__trigger!click,mos-hover=#place-insight .v3-mos__barrow!hover,homes=#homes,homes-open=#homes .v3-dial__thumbs > :nth-child(2)@#homes!click'. First viewport, scale 1, palette-quantized, against the listing-dial fix tree's own next build + next start (2026-09-30)."
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/neighborhood/shots/desktop.png",
-      "mobile375": "design_system/ryan-realty/ui_kits/neighborhood/shots/mobile375.png",
+      "homesDesktop": "design_system/ryan-realty/ui_kits/neighborhood/shots/homes-desktop.png",
+      "homesMobile375": "design_system/ryan-realty/ui_kits/neighborhood/shots/homes-mobile375.png",
+      "homesOpenDesktop": "design_system/ryan-realty/ui_kits/neighborhood/shots/homes-open-desktop.png",
+      "homesOpenMobile375": "design_system/ryan-realty/ui_kits/neighborhood/shots/homes-open-mobile375.png",
       "insightOpenDesktop": "design_system/ryan-realty/ui_kits/neighborhood/shots/insight-open-desktop.png",
       "insightOpenMobile375": "design_system/ryan-realty/ui_kits/neighborhood/shots/insight-open-mobile375.png",
-      "typesOpenDesktop": "design_system/ryan-realty/ui_kits/neighborhood/shots/types-open-desktop.png",
-      "typesOpenMobile375": "design_system/ryan-realty/ui_kits/neighborhood/shots/types-open-mobile375.png",
+      "mobile375": "design_system/ryan-realty/ui_kits/neighborhood/shots/mobile375.png",
       "mosHoverDesktop": "design_system/ryan-realty/ui_kits/neighborhood/shots/mos-hover-desktop.png",
-      "mosHoverMobile375": "design_system/ryan-realty/ui_kits/neighborhood/shots/mos-hover-mobile375.png"
+      "mosHoverMobile375": "design_system/ryan-realty/ui_kits/neighborhood/shots/mos-hover-mobile375.png",
+      "typesOpenDesktop": "design_system/ryan-realty/ui_kits/neighborhood/shots/types-open-desktop.png",
+      "typesOpenMobile375": "design_system/ryan-realty/ui_kits/neighborhood/shots/types-open-mobile375.png"
     },
+    "shotsHash": "sha256:b68717bb99e09e107f5a7b81fcf821a88210853d9467c4631d58198b10c63e05",
     "scores": [
-      64,
+      72,
       66,
-      68
+      75
     ],
-    "score": 66,
-    "perCriterion": {
-      "design": 22,
-      "originality": 14,
-      "interaction": 10,
-      "craft": 11,
-      "honesty": 9
-    },
+    "score": 72,
     "criteria": {
-      "designQuality": 22,
-      "originality": 14,
-      "interaction": 10,
-      "craft": 11,
+      "designQuality": 21,
+      "originality": 19,
+      "interaction": 13,
+      "craft": 10,
       "honestyFunction": 9
     },
+    "perCriterion": {
+      "design": 21,
+      "originality": 19,
+      "interaction": 13,
+      "craft": 10,
+      "honesty": 9
+    },
     "honestyFunction": 9,
-    "demoMatch": true,
-    "beats": "Redfin's Awbrey Butte neighborhood page — this page wins on a live, price-filterable boundary map (not a static stat block) and a dated, scrubbable 13-month median-sale-price chart with a printed source and 'how we calculate this' trace; Redfin gives you a flat stats card with no drag, no per-lot boundary drawing, and no update timestamp.",
+    "demoMatch": false,
+    "beats": "Redfin's Awbrey Butte neighborhood page — Redfin shows a bare list-of-homes with no supply math and no price context per listing; this page reveals the supply-ratio arithmetic on hover (\"49 ÷ 12\") and puts every home on a priced axis against its neighbors (\"53 asks, low to high\", \"$25K less\"), which is a real transparency and interactivity win Redfin doesn't offer.",
     "adaptedFrom": [
       {
         "id": "beautifului-insight"
@@ -304,36 +311,36 @@
     ],
     "defects": [
       {
-        "section": "mos-hover supply bars",
-        "severity": "craft",
-        "finding": "Hovering the two named bars only appends a plain text sentence ('Supply ratio: 45 homes for sale ÷ 10 sales a month') below the chart — no highlighted segment, tick, or line appears on the bars themselves, so the hover reads as a caption swap rather than a data reveal.",
-        "replaceWith": null
-      },
-      {
-        "section": "Awbrey Butte boundary map (Atlas)",
-        "severity": "craft",
-        "finding": "Overlapping lot/parcel outlines at full opacity create a moiré of thin navy lines with no visual hierarchy between the neighborhood edge and interior parcels; at 375px the 'Awbrey Butte' label sits directly on top of the line noise and is barely legible.",
-        "replaceWith": null
-      },
-      {
-        "section": "THIS NEIGHBORHOOD insight pager",
+        "section": "property-type filter combobox (types-open-desktop.png, types-open-mobile375.png)",
         "severity": "taste",
-        "finding": "The pager is labeled '2' and exhausts itself in one click (supply bars, then the price-history chart) — a visitor who discovers the prior/next arrows gets one payoff and then a dead control, which undersells the scrubbable chart it's hiding behind a second click instead of leading with it.",
+        "finding": "The opened control is a plain static listbox — placeholder text, two rows, a checkmark on the selected item, no morph or motion visible — not the beui.dev combobox interaction the option list names. It reads as a bog-standard select wearing the catalog's name, the same cream-box failure pattern as a Sheet import that hides the demo's chrome.",
+        "primitive": "app/cities/[city]/[slug]/page.tsx",
+        "replaceWith": "beui-combobox"
+      },
+      {
+        "section": "Jax mascot badge over the hero/listing photo (homes-mobile375.png, mos-hover-mobile375.png)",
+        "severity": "craft",
+        "finding": "The circular Jax mark sits pinned over the primary listing photograph at the edge of the 375px viewport on every screen, half-cropped and floating on top of content instead of being composed into the layout — it reads as a sticker slapped on the photo rather than a considered brand placement.",
+        "primitive": "app/cities/[city]/[slug]/page.tsx",
         "replaceWith": null
+      },
+      {
+        "section": "\"New Listings\" alert sidebar thumbnail feed (desktop.png, homes-open-desktop.png)",
+        "severity": "taste",
+        "finding": "The lead-capture rail's four listing rows are a flat photo+price+specs list with no visual encoding beyond a thumbnail, and this exact hero+two-column+alert-rail shell is what a visitor will see on every one of the site's neighborhood pages — nothing here signals Awbrey Butte specifically versus any other Bend subdivision.",
+        "primitive": "app/cities/[city]/[slug]/page.tsx",
+        "replaceWith": "beautifului:insight-cards"
       }
     ],
-    "verdict": "This is a real data page, not a cream box: the price-filter slider, the scrubbable median-sale-price chart (beautifului-insight, demoMatch true), and the portalled property-type combobox with its checked row all function as their catalog demos promise, and every figure carries a source and a timestamp with no verdict/number contradiction. It stops short of breathtaking — the three-column hero-plus-sidebar composition is a familiar portal layout rather than a distinctive editorial gesture, the boundary map is visually noisy rather than elegant, and the MoS hover state is a text swap where a real graphic reveal was promised, so originality and interaction both land under half marks.",
+    "verdict": "This is a page that got the prescribed forms right — house-mos as two bars with a hover-revealed formula, a scrubber-driven price/volume chart, a custom Atlas map, and a genuinely original price-axis browsing view for homes with a \"near this price\" comp rail — but demoMatch is false because the one catalog interaction on screen, the property-type combobox, is a plain static select standing in for the beui.dev motion demo. The first viewport is dominated by a generic portal lead-capture box that any Bend brokerage site runs, and the Jax mark overlapping photos at 375px is sloppy rather than considered. It beats Redfin's neighborhood page on transparency and interactivity but stops short of the 'would screenshot to show someone' bar because the shell around its good ideas is the same stacked template repeated site-wide.",
+    "comparedToPrior": "rose",
     "priorMark": {
-      "evaluatedAt": "2026-09-10",
-      "score": 62,
-      "evaluatorModel": "grok-4.6",
-      "rubricVersion": "v1-2026-09-10",
-      "shotsHash": "sha256:87bddff3cda2588deeb161199e103d94d8fde270d02655993fe6e2486114b052",
-      "honestyFunction": 6
-    },
-    "rebaselineReason": "All three identity keys differ, so the 62 is not a number this mark can be measured against. evaluatorModel: grok-4.6 -> claude-sonnet-5 (neither the grok CLI nor cursor-agent is installed in this sandbox, so the judge chain fell to link 2). rubricVersion: v1-2026-09-10 -> v1-2026-09-12, which added the blocking demoMatch verdict. shotsHash: the fold is a different page - three columns, the InsightCards pager, the beUI combobox, the Atlas moved into the first viewport, four proof cards carrying their facts, the Atlas live rail and the #also-in-city door row - and two states the prior set never carried (insight-open, types-open), while alerts and alerts-toggle went away with the sheet and the toggles they captured. honestyFunction ROSE against the prior mark, 6 -> 9.",
-    "notes": "FOUR JUDGE CALLS ACROSS TWO BUILDS, ALL RECORDED, NONE RE-ROLLED.\nOn the PRE-MERGE build: (1) no --shots, no --focus — discarded before any scoring because two defects set replaceWith to house form names (\"dot strip\", \"small multiples\") that are not on this class option list. (2) the same call with --focus: scores [58, 61, 64], median 61, demoMatch false, honesty 4 — but the evaluator was handed all 38 PNGs in the kit directory, 30 of them captured at 10:21 from the PRE-SITE-104 page, and both of its blocking findings are artifacts of that: it read \"15 houses\" in a stale alerts-*.png against \"14 houses\" in the fresh desktop.png and called the page self-contradictory, and it scored a 60-chip subdivision wall and a leaked \"(neighborhood:bend-awbrey-butte)\" slug that the current fold does not render. (3) the same call scoped with --shots to the eight fresh captures: scores [61, 63, 66], median 63, demoMatch FALSE, honesty 9. Its stated reasons were that mos-hover was identical to the rest fold and the scrubber showed only an end dot.\nTHEN origin/main was merged. Its insight-cards.tsx derives the point gap (49/(n-1)) and takes an opt-in tickLabels, which replaced a hand-rolled formatTime that had been reverse-engineering each tick from the chart epoch at a fixed gap of 7 — so the chart went from ONE axis face to five sourced month faces, and from arithmetic that was wrong for any series that is not exactly eight points to labels handed straight from the rows.\n(4) THIS MARK, on the post-merge production build, same eight states re-captured: scores [64, 66, 68], median 66, demoMatch TRUE, honesty 9, and the CLI accepted it (exit 0). It is the mark this receipt records and the shotsHash covers.\nInstrument hazard for the next lane: scripts/taste-evaluate.ts sends EVERY png in the kit shots directory unless --shots names a subset. Thirty pre-SITE-104 section captures are still on disk here and they cost call (2) its honesty score. Scope the call or clear the directory.",
-    "shotsHash": "sha256:e4768cad3a1ff6ae32722c1ff0b05f5b704bcc4c37433dc06ed2a750aebc1c95"
+      "evaluatedAt": "2026-09-16",
+      "score": 66,
+      "evaluatorModel": "claude-sonnet-5",
+      "rubricVersion": "v1-2026-09-12",
+      "shotsHash": "sha256:e4768cad3a1ff6ae32722c1ff0b05f5b704bcc4c37433dc06ed2a750aebc1c95"
+    }
   },
   "contentFloor": {
     "seededAt": "2026-09-12",
