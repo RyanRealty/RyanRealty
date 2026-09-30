@@ -29,7 +29,7 @@ import { pickCoverPhoto } from '@/lib/cma/cover-photo'
 import { applySlugStreetDirectional, formatPersistedCmaAddress } from '@/lib/cma/address-slug'
 import { applyCmaClientIntent, isCmaClientIntent, parseCmaClientIntent } from '@/lib/cma/client-intent'
 import { brokerCompRefusal, selectCompsByKeys, MIN_COMPS } from '@/lib/cma/comps'
-import { pricingCompsAfterJudgment } from '@/lib/cma/judgment-prune'
+import { pricingCompsAfterJudgment, reviewWeightFactor } from '@/lib/cma/judgment-prune'
 import { selectCompsPreferringFacts } from '@/lib/pricing/select'
 import {
   adjustCmaCompAlongMarket,
@@ -57,7 +57,7 @@ import { getCmaMarketContext, yearMartCite, cmaMarketSources } from '@/lib/cma/m
 import { adjustComps, computePricing } from '@/lib/cma/pricing'
 import { judgeComps, readJudgeCache, repairNarrativeAgainstAudit, JudgeUnstableError } from '@/lib/cma/judge'
 import type { JudgeDecisionRecord } from '@/lib/cma/judge-vote'
-import { alignNarrativeToPricedSet, honestComparabilityLine } from '@/lib/cma/judge-consistency'
+import { alignNarrativeToFinalSet, claimTierOf, honestComparabilityLine } from '@/lib/cma/judge-consistency'
 import { checkNarrativeIntegrity } from '@/lib/cma/audit-narrative-integrity'
 import { hydratePhotoUrls } from '@/lib/cma/photos'
 import { hydrateClosedCompDaysOnMarket } from '@/lib/cma/hydrate-closed-comp-dom'
@@ -455,10 +455,10 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     if (!isCurated) {
       const keep = new Set(judgment?.keptKeys ?? [])
       const vetted = judgment ? selection.comps.filter((c) => keep.has(c.listingKey)) : selection.comps
-      // A price-tier keep below the document floor still prices the
-      // product-matched ladder (Falcon). A different product does not come
-      // back, even when the judge kept fewer than that floor. Zero
-      // product-matched sales is the existing comp shortage, not a price.
+      // The review's keep prices the house, and nothing it excluded comes
+      // back (the Falcon re-admission is retired, lib/cma/judgment-prune.ts).
+      // A different product, age-restricted housing included, never prices
+      // it. Fewer than the minimum is the existing comp shortage, not a price.
       const gated = pricingCompsAfterJudgment({
         selected: selection.comps,
         vetted,
@@ -467,9 +467,14 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           propertySubType: subject.propertySubType,
           yearBuilt: subject.yearBuilt,
           newConstructionYn: subject.newConstructionYn,
+          publicRemarks: subject.publicRemarks,
+          subdivision: subject.subdivision,
         },
         minComps: MIN_COMPS,
         exclusivePocket: selectionIsExclusivePocket(selection.tiersUsed),
+        ...(selection.ownPlatAgeRestrictedShare !== undefined
+          ? { ownPlatAgeRestrictedShare: selection.ownPlatAgeRestrictedShare }
+          : {}),
       })
       if (gated.shortage) {
         const err =
@@ -501,7 +506,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       // down-weight in the Method 3 reconciliation — it just does not drop a
       // comp the broker deliberately chose.
       const weak = judgment.verdicts.filter(
-        (v) => v.tier === 'weak' && compsForPricing.some((c) => c.listingKey === v.listingKey),
+        (v) => reviewWeightFactor(v.tier) < 1 && compsForPricing.some((c) => c.listingKey === v.listingKey),
       ).length
       selection.trace.push(
         `Broker-selected set of ${compsForPricing.length} comps priced as chosen. Comparability judgment (${judgment.model}) applied for the narrative${weak ? ` and down-weighted ${weak} comp(s) to bracket the range` : ''}; no selected comp was dropped.`,
@@ -514,7 +519,8 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
 
     // 4. Adjustments + pricing (on the vetted comp set). Judge verdicts feed
     // the Method 3 reconciliation weights: strong = full weight, weak = half
-    // (bracketing only). Excludes were dropped before the math above.
+    // (bracketing only). An automatic set dropped its excludes above; a
+    // broker-picked one carries them at half weight (reviewWeightFactor).
     const tierByKey = new Map(judgment?.verdicts.map((v) => [v.listingKey, v.tier]) ?? [])
     // ONE CITY, ONE BASIS (tasteReview round three, §1). This used to load the
     // index only on the facts path, so cma-1617-nw-8th — a Bend subject the
@@ -590,8 +596,8 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             )
           : adjustComps(subject, set, market)
       ).map((c) => {
-        const tier = tierByKey.get(c.listingKey)
-        return tier === 'weak' ? { ...c, weight: +(c.weight * 0.5).toFixed(4) } : c
+        const factor = reviewWeightFactor(tierByKey.get(c.listingKey))
+        return factor < 1 ? { ...c, weight: +(c.weight * factor).toFixed(4) } : c
       })
       const p = priceCmaSet({
         subject,
@@ -705,14 +711,36 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       }
       if (p && judgment) {
         const excludedCount = selection.comps.length - set.length
-        const weakCount = adj.filter((c) => tierByKey.get(c.listingKey) === 'weak').length
-        let narrative = alignNarrativeToPricedSet(set, judgment.narrative)
+        const weakCount = adj.filter((c) => reviewWeightFactor(tierByKey.get(c.listingKey)) < 1).length
+        // THE NARRATIVE AGAINST THE FINAL PRICED SET (2026-09-30). The judge
+        // wrote it about its own cut. Every sentence a count, a named drop or
+        // keep, a weight or a lot figure refutes comes out here, against the
+        // sales in `set`, and what is left is gated on the full integrity check
+        // the audit runs. A narrative with nothing true left is replaced by the
+        // honest count line. This runs whether or not the LLM audit can.
+        const aligned = alignNarrativeToFinalSet({
+          narrative: judgment.narrative,
+          priced: adj.map((c) => claimFacts(c)),
+          candidates: selection.comps.map((c) => claimFacts(c)),
+          subject: { streetAddress: subject.streetAddress, lotAcres: subject.lotAcres },
+        })
+        let narrative = aligned.narrative
+        if (aligned.removed.length > 0) {
+          const sentences = [...new Set(aligned.removed.map((f) => f.sentence))]
+          selection.trace.push(
+            `Comparability narrative checked against the ${set.length} priced sale(s): ${sentences.length} sentence(s) removed because the priced set refutes them (${[
+              ...new Set(aligned.removed.map((f) => f.kind)),
+            ].join(', ')}): ${sentences.map((t) => `"${t}"`).join(' ')}`,
+          )
+        }
         const integrity = checkNarrativeIntegrity({
           narrative,
           comps: adj,
           excluded: excludedForAudit(),
           subject,
           market,
+          candidates: selection.comps,
+          tierByKey,
         })
         if (!narrative.trim() || integrity.length > 0) {
           narrative = honestComparabilityLine({ keptCount: adj.length, excludedCount })
@@ -730,6 +758,14 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       judgment?.verdicts
         .filter((v) => v.tier === 'exclude')
         .map((v) => ({ listingKey: v.listingKey, reason: v.reason })) ?? []
+    // A comp in the shape the narrative claim checks read, with its review tier.
+    const claimFacts = (c: (typeof selection.comps)[number]) => ({
+      listingKey: c.listingKey,
+      address: c.address,
+      subdivision: c.subdivision,
+      lotAcres: c.lotAcres,
+      tier: claimTierOf(tierByKey.get(c.listingKey)),
+    })
 
     let { adj: adjusted, p: pricing } = priceSet(compsForPricing)
     if (!pricing) {
@@ -786,7 +822,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // job is to refute the finished analysis (Matt directive 2026-07-11:
     // every CMA must be adversarially audited). Builder and auditor share no
     // prompt. Anything but a clean pass forces broker review via the contract.
-    let audit = await auditCma({ subject, comps: adjusted, excluded: excludedForAudit(), pricing, judgment, market, site })
+    let audit = await auditCma({ subject, comps: adjusted, excluded: excludedForAudit(), pricing, judgment, market, site, candidates: selection.comps })
 
     // 4.45. Bounded self-repair: when the audit ties critical/major findings
     // to SPECIFIC comps, drop those comps, re-price, and re-audit ONCE. The
@@ -858,7 +894,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           settled = await settleRecommended(adjusted, pricing)
           competition = settled.competition
           pricing = settled.pricing
-          audit = await auditCma({ subject, comps: adjusted, excluded: excludedForAudit(), pricing, judgment, market, site })
+          audit = await auditCma({ subject, comps: adjusted, excluded: excludedForAudit(), pricing, judgment, market, site, candidates: selection.comps })
         }
       }
     }
@@ -904,6 +940,8 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           excluded: excludedForAudit(),
           subject,
           market,
+          candidates: selection.comps,
+          tierByKey,
         }
         const before = checkNarrativeIntegrity({ narrative: judgment.narrative, ...integrityArgs })
         const repair = await repairNarrativeAgainstAudit({
@@ -934,7 +972,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
               settled = await settleRecommended(adjusted, pricing)
               competition = settled.competition
               pricing = settled.pricing
-              audit = await auditCma({ subject, comps: adjusted, excluded: excludedForAudit(), pricing, judgment, market, site })
+              audit = await auditCma({ subject, comps: adjusted, excluded: excludedForAudit(), pricing, judgment, market, site, candidates: selection.comps })
               narrativeRepair = { model: repair.model, costUsd: repair.costUsd, accepted: true }
             }
           } else {

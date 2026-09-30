@@ -37,6 +37,7 @@
  */
 
 import type { CmaComp } from '@/lib/cma/types'
+import { stripRefutedSentences, type ClaimComp, type ClaimFinding } from '@/lib/cma/narrative-claims'
 import {
   isCustomOrNewSubject,
   yearQualityCompatible,
@@ -146,6 +147,48 @@ export function alignNarrativeToPricedSet(
   const cleaned = sentences.filter((s) => narrativeMismatches(comps, verdictByKey, s).length === 0)
   if (cleaned.length === 0) return ''
   return cleaned.join(' ')
+}
+
+/**
+ * THE NARRATIVE AGAINST THE SALES THAT ACTUALLY PRICED (2026-09-30).
+ *
+ * alignNarrativeToPricedSet above repairs a stale "were retained" count and
+ * drops a sentence that calls a priced sale excluded, by street name. That
+ * missed most of what reached homeowners on the 2026-09-29 expired batch: a
+ * "were kept" count, a subdivision named as dropped ("Prairie Crossing was
+ * dropped" beside the Prairie Crossing sale), "None were excluded" beside an
+ * exclusion, a weight or a lot range the priced sales do not carry. This runs
+ * the same claim checks the audit gates on (lib/cma/narrative-claims.ts)
+ * against the FINAL priced set, with each priced sale's review tier and every
+ * candidate the review saw, and takes out every sentence they refute. The
+ * caller replaces a narrative with nothing true left in it.
+ */
+export function alignNarrativeToFinalSet(args: {
+  narrative: string
+  priced: ReadonlyArray<ClaimComp>
+  candidates: ReadonlyArray<ClaimComp>
+  subject: { streetAddress: string | null | undefined; lotAcres?: number | null }
+}): { narrative: string; removed: ClaimFinding[] } {
+  const aligned = alignNarrativeToPricedSet(args.priced, args.narrative)
+  if (!aligned.trim()) return { narrative: '', removed: [] }
+  return stripRefutedSentences({
+    narrative: aligned,
+    priced: args.priced,
+    candidates: args.candidates,
+    subject: args.subject,
+  })
+}
+
+/**
+ * The review's weight class for a priced sale, in the shape the claim checks
+ * read: strong is full weight, weak half. A sale carrying an exclude verdict
+ * that prices anyway (a broker-picked set) is carried at half weight, never
+ * more than a sale the review called weak (build.ts reviewWeightFactor).
+ */
+export function claimTierOf(tier: string | null | undefined): 'strong' | 'weak' | null {
+  if (tier === 'strong') return 'strong'
+  if (tier === 'weak' || tier === 'exclude') return 'weak'
+  return null
 }
 
 /**

@@ -20,7 +20,7 @@ import { GROK_MODELS, generateGrokStructured, grokConfigured } from '@/lib/grok'
 import { setAuditUnavailableReason } from '@/lib/cma/llm-unavailable'
 import { checkNarrativeIntegrity } from '@/lib/cma/audit-narrative-integrity'
 import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
-import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
+import type { CmaAdjustedComp, CmaComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CompJudgment } from '@/lib/cma/judge'
 import type { CmaSiteData } from '@/lib/cma/county'
 
@@ -195,6 +195,12 @@ export async function auditCma(args: {
   }
   /** Authoritative zoning/water/septic — so the auditor can refute buildability/utility claims. */
   site?: CmaSiteData | null
+  /**
+   * Every candidate the comparability review saw, priced or not. The
+   * deterministic narrative check needs it to tell a dropped sale that is
+   * priced from one that is not (lib/cma/narrative-claims.ts).
+   */
+  candidates?: CmaComp[] | null
 }): Promise<CmaAudit | null> {
   setAuditUnavailableReason(null)
   if (!grokConfigured()) return null
@@ -220,7 +226,12 @@ export async function auditCma(args: {
       const tier = judgment?.verdicts.find((v) => v.listingKey === c.listingKey)?.tier ?? 'n/a'
       return (
         `${i + 1}. key=${c.listingKey} · ${c.address} (subdivision: ${c.subdivision ?? 'none'}) · beds ${c.beds ?? 'unknown'} · baths ${c.baths ?? 'unknown'} · ` +
-        `living area ${c.sqft} sqft · year built ${c.yearBuilt ?? 'unknown'} · ` +
+        // The lot was missing from this line until 2026-09-30, so the auditor
+        // called every lot range in the narrative "not shown in the data" even
+        // where the priced sales carried it (cma-60335-zuni: 0.55 to 0.86 acres
+        // over lots of 0.86, 0.55 and 0.84). The deterministic check reads the
+        // same field.
+        `living area ${c.sqft} sqft · lot ${c.lotAcres != null ? `${c.lotAcres} acres` : 'unknown'} · year built ${c.yearBuilt ?? 'unknown'} · ` +
         `closed $${Math.round(c.closePrice).toLocaleString()} on ${c.closeDate} · ` +
         `machine-adjusted value $${Math.round(c.adjustedPrice).toLocaleString()} · reconciliation weight ${c.weight} · comparability tier ${tier}` +
         (remarks(c.publicRemarks) ? `\n   remarks: ${remarks(c.publicRemarks)}` : '')
@@ -228,8 +239,18 @@ export async function auditCma(args: {
     })
     .join('\n')
 
+  // The excluded sale's address and plat, when the caller has the candidates.
+  // A key alone left the auditor unable to find "the 2020 Arena Acres sale on
+  // Matthew" anywhere in the report, so it called a true exclusion sentence
+  // fabricated (cma-3153-cromwell rebuild, 2026-09-30).
+  const candidateByKey = new Map((args.candidates ?? []).map((c) => [c.listingKey, c]))
   const excludedLines = excluded.length
-    ? excluded.map((e) => `- ${e.listingKey}: ${e.reason}`).join('\n')
+    ? excluded
+        .map((e) => {
+          const c = candidateByKey.get(e.listingKey)
+          return `- ${e.listingKey}${c ? ` · ${c.address} (subdivision: ${c.subdivision ?? 'none'})` : ''}: ${e.reason}`
+        })
+        .join('\n')
     : '(none)'
 
   const marketLine = market
@@ -331,7 +352,17 @@ export async function auditCma(args: {
     // Guarded on its own so a bug in the checker can never discard the LLM's
     // findings and turn a real audit into "audit unavailable".
     try {
-      findings.push(...checkNarrativeIntegrity({ narrative: judgment?.narrative, comps, excluded, subject, market }))
+      findings.push(
+        ...checkNarrativeIntegrity({
+          narrative: judgment?.narrative,
+          comps,
+          excluded,
+          subject,
+          market,
+          candidates: args.candidates ?? null,
+          tierByKey: judgment ? new Map(judgment.verdicts.map((v) => [v.listingKey, v.tier])) : null,
+        }),
+      )
     } catch (err) {
       console.warn('[cma/audit] narrative-integrity check failed:', err instanceof Error ? err.message : String(err))
     }

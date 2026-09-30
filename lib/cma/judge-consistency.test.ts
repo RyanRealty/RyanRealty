@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  alignNarrativeToFinalSet,
   alignNarrativeToPricedSet,
   checkJudgmentConsistency,
+  claimTierOf,
   honestComparabilityLine,
   restoreCustomYearQualityPeers,
   type CompVerdict,
@@ -346,5 +348,47 @@ describe('V6 — the stated retained count', () => {
     expect(out).toContain('priced from $420 to $478 per square foot')
     expect(out).toContain('The Karena sale was excluded.')
     expect(out).toContain('Three comparable sales were retained')
+  })
+})
+
+describe('alignNarrativeToFinalSet', () => {
+  const priced = [
+    { listingKey: 'A', address: '3886 Coyote', subdivision: 'Triple Ridge', lotAcres: 0.1, tier: 'strong' as const },
+    { listingKey: 'B', address: '3899 Coyote', subdivision: 'Triple Ridge', lotAcres: 0.11, tier: 'strong' as const },
+    { listingKey: 'PC', address: '4100 Coyote', subdivision: 'Prairie Crossing', lotAcres: 0.07, tier: 'weak' as const },
+  ]
+  const subject = { streetAddress: '4541 36th', lotAcres: 0.08 }
+
+  it('takes out every sentence the final priced set refutes and keeps the rest (cma-4541-36th)', () => {
+    const out = alignNarrativeToFinalSet({
+      narrative:
+        'Two Triple Ridge sales were kept between $236 and $256 per square foot. Prairie Crossing was dropped for community amenities named in its remarks. Subject condition is unknown beyond the listing remarks.',
+      priced,
+      candidates: priced,
+      subject,
+    })
+    expect(out.narrative).toBe(
+      'Two Triple Ridge sales were kept between $236 and $256 per square foot. Subject condition is unknown beyond the listing remarks.',
+    )
+    expect(out.removed.map((f) => f.kind)).toEqual(['dropped-but-priced'])
+  })
+
+  it('still repairs a stale "were retained" count before it checks', () => {
+    const out = alignNarrativeToFinalSet({ narrative: 'Two closed sales were retained.', priced, candidates: priced, subject })
+    expect(out.narrative).toBe('Three closed sales were retained.')
+    expect(out.removed).toEqual([])
+  })
+
+  it('returns nothing when every sentence is refuted, for the caller to replace', () => {
+    const out = alignNarrativeToFinalSet({ narrative: 'One closed sale was kept.', priced, candidates: priced, subject })
+    expect(out.narrative).toBe('')
+    expect(out.removed.map((f) => f.kind)).toEqual(['count'])
+  })
+
+  it('maps an exclude verdict on a priced sale to half weight', () => {
+    expect(claimTierOf('exclude')).toBe('weak')
+    expect(claimTierOf('weak')).toBe('weak')
+    expect(claimTierOf('strong')).toBe('strong')
+    expect(claimTierOf(undefined)).toBeNull()
   })
 })

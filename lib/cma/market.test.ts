@@ -10,6 +10,7 @@ import {
 import type { CmaMarketPulseRow, CmaMarketStatsRow } from '@/lib/data/cma/builderReads'
 import type { SellBendMarket } from '@/lib/data/market-truth/getSellBendMarket'
 import { EMPTY_PUBLIC_PACE, type PublicPaceRow } from '@/lib/data/market-truth/public-pace'
+import { formatMonthsOfSupply, monthsOfSupplyVerdict } from '@/lib/format/months-of-supply'
 
 const CACHE_STATS: CmaMarketStatsRow = {
   geo_type: 'city',
@@ -338,3 +339,45 @@ describe('D27 — the CMA citation names the store that produced each figure', (
   })
 })
 
+describe('months of supply is stored, printed and graded as one value (cma-5391-frank-redmond-97756)', () => {
+  // Redmond's raw figure sat just over 4. The CMA rounded it on its own to 4.0
+  // and took the verdict from the raw value, so the document printed "4.0
+  // months" beside "balanced" while CLAUDE.md §0 says 4 or less is a seller's
+  // market. The stored figure now comes from formatMonthsOfSupply and the
+  // verdict from monthsOfSupplyVerdict, on the same raw value.
+  it.each([
+    { raw: 4.02, kind: 'balanced' as const, stored: 4.1, printed: '4.1', verdict: 'balanced' },
+    { raw: 3.98, kind: 'sellers' as const, stored: 4, printed: '4.0', verdict: 'seller' },
+    { raw: 5.97, kind: 'balanced' as const, stored: 5.9, printed: '5.9', verdict: 'balanced' },
+    { raw: 6.01, kind: 'buyers' as const, stored: 6, printed: '6.0', verdict: 'buyer' },
+  ])('raw $raw stores $stored, prints $printed, and reads $verdict', ({ raw, kind, stored, printed, verdict }) => {
+    const row = assemble({
+      city: 'Redmond',
+      geoSlug: 'redmond',
+      detached: { ...CITY_DETACHED, monthsOfSupply: raw, verdictKind: kind },
+    })
+    expect(row.monthsOfSupply).toBe(stored)
+    expect(formatMonthsOfSupply(row.monthsOfSupply!)).toBe(printed)
+    expect(row.marketVerdict).toBe(verdict)
+    // The figure a reader sees grades to the verdict printed beside it.
+    expect(monthsOfSupplyVerdict(row.monthsOfSupply)?.key).toBe(row.marketVerdict)
+  })
+
+  it('no CMA or BPO sentence prints the figure without the helper', () => {
+    const files = [
+      'lib/cma/pricing.ts',
+      'lib/cma/market-area-chapters.ts',
+      'lib/cma/client-facing.ts',
+      'lib/bpo/opinion.ts',
+      'lib/bpo/narrative.ts',
+      'lib/bpo/offer.ts',
+      'lib/bpo/render.ts',
+    ]
+    for (const f of files) {
+      const src = readFileSync(resolve(f), 'utf8')
+      expect(src, f).not.toMatch(/\$\{market\.monthsOfSupply(?: \?\? [^}]+)?\}/)
+      expect(src, f).not.toMatch(/String\(market\.monthsOfSupply\)/)
+      expect(src, f).not.toMatch(/monthsOfSupply\.toFixed\(/)
+    }
+  })
+})

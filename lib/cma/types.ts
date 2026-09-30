@@ -124,6 +124,14 @@ export interface CmaComp {
    * it does not re-apply the wall the selector deliberately opened.
    */
   roomDifference?: Array<'beds' | 'baths'> | null
+  /**
+   * The selector's own-plat decision for this sale (lib/pricing/price-anchor.ts
+   * samePlat, or the street-cluster pocket), stamped by whichever ladder found
+   * it. A sale in the subject's own plat is exempt from price-tier grading, so
+   * the comparability judge restores one it excluded on price (lib/cma/judge.ts).
+   * Absent on a broker-picked comp, which no search admitted.
+   */
+  ownPlat?: boolean | null
 }
 
 export type CmaCompKeepTier = 'strong' | 'weak'

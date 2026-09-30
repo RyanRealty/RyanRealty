@@ -13,6 +13,7 @@
 import { pageContractCss } from '@/lib/pdf/page-contract'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatDate } from '@/lib/format/date'
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import type {
   CmaAdjustedComp,
   CmaBroker,
@@ -371,7 +372,7 @@ export function renderBpoHtml(args: RenderBpoArgs): { html: string; pageCount: n
     ? [
         ['Median sale', market.medianSalePrice != null ? usd(market.medianSalePrice) : '—'],
         ['Median days', market.medianDom != null ? `${Math.round(market.medianDom)}` : '—'],
-        ['Months supply', market.monthsOfSupply != null ? String(market.monthsOfSupply) : '—'],
+        ['Months supply', market.monthsOfSupply != null ? formatMonthsOfSupply(market.monthsOfSupply) : '—'],
         ['YoY price', market.yoyMedianPriceDeltaPct != null ? `${market.yoyMedianPriceDeltaPct >= 0 ? '↑' : '↓'} ${Math.abs(market.yoyMedianPriceDeltaPct).toFixed(1)}%` : '—'],
       ]
     : []

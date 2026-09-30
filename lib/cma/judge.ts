@@ -49,6 +49,7 @@ import { SAME_STREET_SIZE_BAND, sameStreetPeer } from '@/lib/pricing/price-ancho
 import {
   EXCLUSION_BASES,
   checkJudgmentConsistency,
+  claimTierOf,
   isPriceTierExclusion,
   narrativeMismatches,
   ppsf,
@@ -59,6 +60,7 @@ import {
   type ExclusionBasis,
 } from '@/lib/cma/judge-consistency'
 import { groundVote } from '@/lib/cma/judge-ground'
+import { stripRefutedSentences, type ClaimComp } from '@/lib/cma/narrative-claims'
 import {
   JUDGE_REASONING_EFFORT,
   JUDGE_RUNS,
@@ -121,9 +123,10 @@ export { checkJudgmentConsistency } from '@/lib/cma/judge-consistency'
 // lib/grok/client.ts (ci:grok-models); cost comes back per call from xAI.
 const MODEL = GROK_MODELS.text
 
-/** Below this many kept comps the deterministic resolver stops pruning.
- *  buildCma then applies JUDGMENT_PRUNE_FLOOR (5): a thinner Grok keep is
- *  discarded and the filled ladder is priced instead. */
+/** Below this many kept comps the deterministic band cut stops pruning. The
+ *  pricing minimum is the same three (MIN_COMPS), and buildCma prices only the
+ *  sales this review keeps (lib/cma/judgment-prune.ts): a keep under three is
+ *  a comp shortage, never a reason to price the excluded sales. */
 const RESOLVE_KEEP_FLOOR = 3
 
 export interface CompJudgment {
@@ -449,30 +452,6 @@ export function buildJudgeUserPrompt(
   )
 }
 
-function judgmentFromRecord(record: JudgeDecisionRecord, fromCache: boolean): CompJudgment {
-  return {
-    verdicts: record.verdicts.map((v) => ({ ...v })),
-    keptKeys: [...record.keptKeys],
-    confidence: record.confidence,
-    narrative: record.narrative,
-    ppsfFloor: record.ppsfFloor,
-    ppsfCeiling: record.ppsfCeiling,
-    exclusionRule: record.exclusionRule,
-    consistency: {
-      firstPassViolations: [],
-      repairRan: false,
-      postRepairViolations: [],
-      resolvedByCode: [fromCache ? 'Reused the stored comparability decision.' : `Majority of ${JUDGE_RUNS} passes.`],
-    },
-    costUsd: 0,
-    model: record.model,
-    usedLlm: true,
-    inputChecksum: record.inputChecksum,
-    cacheHit: fromCache,
-    decision: record,
-  }
-}
-
 /**
  * Judge which candidate comps are genuinely comparable to the subject.
  * Returns null (fail-open) when the model is unavailable or a call fails.
@@ -492,22 +471,40 @@ export async function judgeComps(
   const inputChecksum = judgePromptChecksum(user, MODEL)
   const minComps = options.minComps ?? 3
   const enforce = options.enforceKeepMinimum !== false
+  const candidateKeys = comps.map((c) => c.listingKey)
   const prior = options.priorCache && options.priorCache.model === MODEL && cacheHit(options.priorCache, inputChecksum)
     ? options.priorCache
     : null
-  if (prior) {
-    if (prior.unstable && enforce) {
-      throw new JudgeUnstableError(
-        prior.message ??
-          'JUDGE_UNSTABLE. The stored comparability review did not agree on enough kept sales. The build was not priced.',
-        prior,
-        true,
-      )
-    }
-    return judgmentFromRecord(prior, true)
-  }
 
   try {
+    if (prior) {
+      if (prior.unstable && enforce) {
+        throw new JudgeUnstableError(
+          prior.message ??
+            'JUDGE_UNSTABLE. The stored comparability review did not agree on enough kept sales. The build was not priced.',
+          prior,
+          true,
+        )
+      }
+      // THE STORED VOTES ARE THE EXPENSIVE PART; THE RESOLVER IS CODE (2026-09-30).
+      // The cache used to hand back the finalized verdicts as they were stored,
+      // so a change to the deterministic resolver below (a new restoration, a
+      // narrative check) never reached a row whose brief had not changed. The
+      // votes are replayed through the same majority and the same resolver
+      // instead: no model call, the same decision stability, the current rules.
+      const aggregate = aggregateJudgeVotes({ votes: prior.votes, minComps, candidateKeys })
+      return finalizeJudgment({
+        subject,
+        comps,
+        votes: prior.votes,
+        aggregate,
+        inputChecksum,
+        minComps,
+        costUsd: 0,
+        cacheHit: true,
+      })
+    }
+
     let costUsd = 0
     const votes: StoredVote[] = []
     for (let i = 0; i < JUDGE_RUNS; i++) {
@@ -530,11 +527,7 @@ export async function judgeComps(
         }),
       )
     }
-    const aggregate = aggregateJudgeVotes({
-      votes,
-      minComps,
-      candidateKeys: comps.map((c) => c.listingKey),
-    })
+    const aggregate = aggregateJudgeVotes({ votes, minComps, candidateKeys })
     if (aggregate.unstable && enforce) {
       const record = decisionRecord({
         model: MODEL,
@@ -545,219 +538,7 @@ export async function judgeComps(
       })
       throw new JudgeUnstableError(aggregate.message ?? 'JUDGE_UNSTABLE. The build was not priced.', record, false)
     }
-
-    const judged: RawJudgment = {
-      verdicts: aggregate.verdicts.map((v) => ({ ...v })),
-      confidence: aggregate.confidence,
-      narrative: aggregate.narrative,
-      ppsfFloor: aggregate.ppsfFloor,
-      ppsfCeiling: aggregate.ppsfCeiling,
-      exclusionRule: aggregate.exclusionRule,
-    }
-
-    const firstCheck = checkJudgmentConsistency({ comps, ...judged })
-    const firstPassViolations = firstCheck.violations
-    const check = firstCheck
-    const repairRan = false
-
-    // ── deterministic resolution of whatever survived ───────────────────────
-    const resolvedByCode: string[] = [`Majority of ${JUDGE_RUNS} passes. No single-sample repair turn.`]
-    for (const key of aggregate.protectedKeys) {
-      resolvedByCode.push(`${key}: exclusion ignored, the cited threshold is not supported by the fields`)
-    }
-    const byKey = new Map(comps.map((c) => [c.listingKey, c]))
-
-    // Any candidate with no verdict is kept at half weight with an honest
-    // reason, never dropped silently.
-    for (const c of comps) {
-      if (!judged.verdicts.some((v) => v.listingKey === c.listingKey)) {
-        judged.verdicts.push({
-          listingKey: c.listingKey,
-          tier: 'weak',
-          reason: 'No comparability verdict was returned for this sale, so it is carried at half weight to bracket the range rather than dropped without a stated reason.',
-        })
-        resolvedByCode.push(`${c.listingKey}: missing verdict, carried as weak`)
-      }
-    }
-
-    // Custom/new year-quality peers the model tossed as luxury come back.
-    const restored = restoreCustomYearQualityPeers({
-      subject: {
-        yearBuilt: subject.yearBuilt,
-        newConstructionYn: subject.newConstructionYn,
-        remarks: subject.publicRemarks,
-      },
-      comps,
-      verdicts: judged.verdicts,
-    })
-    judged.verdicts = restored.verdicts
-    const protectedKeys = new Set<string>([...restored.restoredKeys, ...aggregate.protectedKeys])
-    if (restored.restoredKeys.length > 0) {
-      for (const key of restored.restoredKeys) {
-        const c = byKey.get(key)
-        if (!c) continue
-        const p = ppsf(c)
-        if (p > 0) {
-          judged.ppsfFloor = Math.min(judged.ppsfFloor || p, p)
-          judged.ppsfCeiling = Math.max(judged.ppsfCeiling || 0, p)
-        }
-        resolvedByCode.push(`${key}: restored, custom/new year-quality peer cannot be dropped as luxury`)
-      }
-    }
-
-    // THE HOUSE NEXT DOOR IS NOT A DIFFERENT PRICE TIER (Matt 2026-09-10).
-    // On 23 Benaiah the judge excluded 31 Benaiah — the identical 2,080 sqft
-    // floorplan on the same street, an arm's-length sale that closed above its
-    // last ask — on the basis "sold at $246/sqft, outside the $305 to $362
-    // range this analysis prices the subject in". That band came from the OTHER
-    // comps, so the reasoning was circular: the one sale that would have moved
-    // the number was removed for disagreeing with the sales that set it. The
-    // deterministic selector already exempts a same-street, same-size peer from
-    // its own price cut (lib/pricing/price-anchor.ts); the judge is held to the
-    // same rule. A gap that wide between the twin next door and the wider
-    // neighborhood is the finding, not the noise, and the review page shows it.
-    for (const v of judged.verdicts) {
-      const c = byKey.get(v.listingKey)
-      if (!c) continue
-      if (
-        !sameStreetPeer(
-          { streetAddress: subject.streetAddress, city: subject.city, sqft: subject.sqft ?? 0 },
-          { address: c.address, city: c.city, sqft: c.sqft },
-        )
-      ) {
-        continue
-      }
-      protectedKeys.add(v.listingKey)
-      if (v.tier !== 'exclude') continue
-      // The street exempts the price cut only. A different product on a
-      // street that shares the first word stays excluded.
-      if (!isPriceTierExclusion(v)) continue
-      v.tier = 'strong'
-      delete v.basis
-      v.reason = `Same street as the subject and within ${Math.round(SAME_STREET_SIZE_BAND * 100)}% of its size. The closest sale there is to this house, so it prices it whatever the wider neighborhood runs at.`
-      resolvedByCode.push(`${v.listingKey}: restored, a same-street peer of the subject's size cannot be dropped on price`)
-    }
-
-    // Band and strand violators get excluded. Their reason is written after the
-    // band is re-anchored below, so the number in the reason is the number the
-    // shipped set actually supports. Never prune below the floor: buildCma
-    // would discard the whole judgment anyway. Custom year-quality peers stay.
-    const codeExcluded: string[] = []
-    const offending = check.offendingKeptKeys.filter((k) => !protectedKeys.has(k))
-    if (offending.length > 0) {
-      const keptCount = judged.verdicts.filter((v) => v.tier !== 'exclude').length
-      const wouldRemain = keptCount - offending.length
-      if (wouldRemain >= RESOLVE_KEEP_FLOOR) {
-        for (const key of offending) {
-          const v = judged.verdicts.find((x) => x.listingKey === key)
-          if (!v || v.tier === 'exclude' || !byKey.has(key)) continue
-          v.tier = 'exclude'
-          v.basis = 'price-tier'
-          v.reason = ''
-          codeExcluded.push(key)
-          resolvedByCode.push(`${key}: excluded, outside the declared band`)
-        }
-      } else {
-        resolvedByCode.push(
-          `${check.offendingKeptKeys.length} band violation(s) left in place: excluding them would leave fewer than ${RESOLVE_KEEP_FLOOR} comps.`,
-        )
-      }
-    }
-
-    // Re-anchor the published band on the set that actually shipped, so the
-    // numbers in the excluded reasons and the narrative describe reality.
-    const finalKept = judged.verdicts.filter((v) => v.tier !== 'exclude')
-    const finalKeptPpsf = finalKept.map((v) => (byKey.get(v.listingKey) ? ppsf(byKey.get(v.listingKey)!) : 0)).filter((p) => p > 0)
-    if (finalKeptPpsf.length > 0) {
-      judged.ppsfFloor = Math.min(judged.ppsfFloor || Infinity, ...finalKeptPpsf)
-      judged.ppsfCeiling = Math.max(judged.ppsfCeiling, ...finalKeptPpsf)
-    }
-
-    // Every price-tier exclusion that genuinely sits outside the final band
-    // carries the band in its reason, so the auditor reads one stated rule
-    // instead of inferring one. Code-excluded comps get the whole sentence.
-    const band = `$${judged.ppsfFloor} to $${judged.ppsfCeiling}/sqft`
-    for (const v of judged.verdicts) {
-      const c = byKey.get(v.listingKey)
-      if (!c) continue
-      const p = ppsf(c)
-      const outsideBand = p > 0 && (p < judged.ppsfFloor || p > judged.ppsfCeiling)
-      if (codeExcluded.includes(v.listingKey)) {
-        v.reason = `Sold at $${p}/sqft, outside the ${band} range this analysis prices the subject in.`
-        continue
-      }
-      if (!isPriceTierExclusion(v) || !outsideBand || v.reason.includes(band)) continue
-      v.reason = `${v.reason.replace(/\s*[.]?\s*$/, '')}. Sold at $${p}/sqft, outside the ${band} range this analysis prices the subject in.`
-    }
-
-    // Strip narrative sentences that still contradict a verdict, rather than
-    // shipping prose the auditor will correctly call unsupported.
-    let narrative = judged.narrative
-    const verdictByKey = new Map(judged.verdicts.map((v) => [v.listingKey, v]))
-    if (narrativeMismatches(comps, verdictByKey, narrative).length > 0) {
-      const sentences = splitSentences(narrative)
-      if (sentences.length >= 2) {
-        const cleaned = sentences.filter(
-          (s) => narrativeMismatches(comps, verdictByKey, s).length === 0,
-        )
-        if (cleaned.length > 0 && cleaned.length < sentences.length) {
-          narrative = cleaned.join(' ')
-          resolvedByCode.push('Removed narrative sentence(s) that contradicted a verdict.')
-        }
-      }
-    }
-    // The stated rule is what makes the exclusions checkable, so it has to
-    // reach the reader (and the independent auditor, which is shown only the
-    // narrative). Appended only when the narrative did not state the band
-    // itself, so the seller does not read the same sentence twice.
-    const narrativeStatesBand = /per square foot|\/sq\.?\s?ft|\/sqft/i.test(narrative)
-    if (judged.exclusionRule && !narrativeStatesBand && !narrative.includes(judged.exclusionRule)) {
-      narrative = `${narrative} ${judged.exclusionRule}`.trim()
-    }
-
-    const keptKeys = judged.verdicts.filter((v) => v.tier !== 'exclude').map((v) => v.listingKey)
-    // Brand-voice sanitize: the model can emit em/en-dashes and semicolons,
-    // which are banned in client prose. Numeric ranges become "to"; other
-    // dashes become commas; semicolons become periods.
-    const sanitize = sanitizeClientProse
-    const verdicts = judged.verdicts.map((v) => ({ ...v, reason: sanitize(v.reason) }))
-    const record = decisionRecord({
-      model: MODEL,
-      inputChecksum,
-      minComps,
-      votes,
-      aggregate,
-      finalized: {
-        verdicts,
-        keptKeys,
-        narrative: sanitize(narrative),
-        confidence: judged.confidence,
-        ppsfFloor: judged.ppsfFloor,
-        ppsfCeiling: judged.ppsfCeiling,
-        exclusionRule: sanitize(judged.exclusionRule),
-      },
-    })
-    return {
-      verdicts,
-      keptKeys,
-      confidence: judged.confidence,
-      narrative: sanitize(narrative),
-      ppsfFloor: judged.ppsfFloor,
-      ppsfCeiling: judged.ppsfCeiling,
-      exclusionRule: sanitize(judged.exclusionRule),
-      consistency: {
-        firstPassViolations,
-        repairRan,
-        postRepairViolations: check.violations,
-        resolvedByCode,
-      },
-      costUsd: +costUsd.toFixed(4),
-      model: MODEL,
-      usedLlm: true,
-      inputChecksum,
-      cacheHit: false,
-      decision: record,
-    }
+    return finalizeJudgment({ subject, comps, votes, aggregate, inputChecksum, minComps, costUsd, cacheHit: false })
   } catch (err) {
     if (err instanceof JudgeUnstableError) throw err
     const reason = err instanceof Error ? err.message : String(err)
@@ -767,6 +548,301 @@ export async function judgeComps(
   }
 }
 
+/** A comp and its review tier, in the shape the narrative claim checks read. */
+function claimComp(c: CmaComp, tier: CompTier | null): ClaimComp {
+  return {
+    listingKey: c.listingKey,
+    address: c.address,
+    subdivision: c.subdivision,
+    lotAcres: c.lotAcres,
+    tier: claimTierOf(tier),
+  }
+}
+
+/**
+ * The deterministic half of the judgment: everything after the majority vote.
+ * A fresh build and a cache hit both run it, on the same votes, so a stored
+ * decision always resolves under the current rules.
+ */
+function finalizeJudgment(args: {
+  subject: CmaSubject
+  comps: CmaComp[]
+  votes: StoredVote[]
+  aggregate: ReturnType<typeof aggregateJudgeVotes>
+  inputChecksum: string
+  minComps: number
+  costUsd: number
+  cacheHit: boolean
+}): CompJudgment {
+  const { subject, comps, votes, aggregate, inputChecksum, minComps, costUsd } = args
+  const judged: RawJudgment = {
+    verdicts: aggregate.verdicts.map((v) => ({ ...v })),
+    confidence: aggregate.confidence,
+    narrative: aggregate.narrative,
+    ppsfFloor: aggregate.ppsfFloor,
+    ppsfCeiling: aggregate.ppsfCeiling,
+    exclusionRule: aggregate.exclusionRule,
+  }
+
+  const firstCheck = checkJudgmentConsistency({ comps, ...judged })
+  const firstPassViolations = firstCheck.violations
+  const check = firstCheck
+  const repairRan = false
+
+  // ── deterministic resolution of whatever survived ───────────────────────
+  const resolvedByCode: string[] = [
+    args.cacheHit
+      ? `Reused the stored ${JUDGE_RUNS} passes (the brief is unchanged) and resolved them again under the current rules.`
+      : `Majority of ${JUDGE_RUNS} passes. No single-sample repair turn.`,
+  ]
+  for (const key of aggregate.protectedKeys) {
+    resolvedByCode.push(`${key}: exclusion ignored, the cited threshold is not supported by the fields`)
+  }
+  const byKey = new Map(comps.map((c) => [c.listingKey, c]))
+
+  // Any candidate with no verdict is kept at half weight with an honest
+  // reason, never dropped silently.
+  for (const c of comps) {
+    if (!judged.verdicts.some((v) => v.listingKey === c.listingKey)) {
+      judged.verdicts.push({
+        listingKey: c.listingKey,
+        tier: 'weak',
+        reason: 'No comparability verdict was returned for this sale, so it is carried at half weight to bracket the range rather than dropped without a stated reason.',
+      })
+      resolvedByCode.push(`${c.listingKey}: missing verdict, carried as weak`)
+    }
+  }
+
+  // Custom/new year-quality peers the model tossed as luxury come back.
+  const restored = restoreCustomYearQualityPeers({
+    subject: {
+      yearBuilt: subject.yearBuilt,
+      newConstructionYn: subject.newConstructionYn,
+      remarks: subject.publicRemarks,
+    },
+    comps,
+    verdicts: judged.verdicts,
+  })
+  judged.verdicts = restored.verdicts
+  const protectedKeys = new Set<string>([...restored.restoredKeys, ...aggregate.protectedKeys])
+  if (restored.restoredKeys.length > 0) {
+    for (const key of restored.restoredKeys) {
+      const c = byKey.get(key)
+      if (!c) continue
+      const p = ppsf(c)
+      if (p > 0) {
+        judged.ppsfFloor = Math.min(judged.ppsfFloor || p, p)
+        judged.ppsfCeiling = Math.max(judged.ppsfCeiling || 0, p)
+      }
+      resolvedByCode.push(`${key}: restored, custom/new year-quality peer cannot be dropped as luxury`)
+    }
+  }
+
+  // THE HOUSE NEXT DOOR IS NOT A DIFFERENT PRICE TIER (Matt 2026-09-10).
+  // On 23 Benaiah the judge excluded 31 Benaiah — the identical 2,080 sqft
+  // floorplan on the same street, an arm's-length sale that closed above its
+  // last ask — on the basis "sold at $246/sqft, outside the $305 to $362
+  // range this analysis prices the subject in". That band came from the OTHER
+  // comps, so the reasoning was circular: the one sale that would have moved
+  // the number was removed for disagreeing with the sales that set it. The
+  // deterministic selector already exempts a same-street, same-size peer from
+  // its own price cut (lib/pricing/price-anchor.ts); the judge is held to the
+  // same rule. A gap that wide between the twin next door and the wider
+  // neighborhood is the finding, not the noise, and the review page shows it.
+  for (const v of judged.verdicts) {
+    const c = byKey.get(v.listingKey)
+    if (!c) continue
+    if (
+      !sameStreetPeer(
+        { streetAddress: subject.streetAddress, city: subject.city, sqft: subject.sqft ?? 0 },
+        { address: c.address, city: c.city, sqft: c.sqft },
+      )
+    ) {
+      continue
+    }
+    protectedKeys.add(v.listingKey)
+    if (v.tier !== 'exclude') continue
+    // The street exempts the price cut only. A different product on a
+    // street that shares the first word stays excluded.
+    if (!isPriceTierExclusion(v)) continue
+    v.tier = 'strong'
+    delete v.basis
+    v.reason = `Same street as the subject and within ${Math.round(SAME_STREET_SIZE_BAND * 100)}% of its size. The closest sale there is to this house, so it prices it whatever the wider neighborhood runs at.`
+    resolvedByCode.push(`${v.listingKey}: restored, a same-street peer of the subject's size cannot be dropped on price`)
+  }
+
+  // THE SUBJECT'S OWN PLAT IS NOT A DIFFERENT PRICE TIER EITHER (Matt
+  // 2026-09-10: "two exemptions and only two", the plat and the same-street
+  // twin; held here 2026-09-30). Falcon 15991 is why: the judge cut near-acre
+  // peers inside the subject's own plat on price, kept three of eight, and the
+  // answer then was to price the whole candidate pool whenever the judge kept
+  // fewer than five (lib/cma/judgment-prune.ts, now retired). That brought back
+  // every excluded sale, at full weight. This brings back only the one the
+  // ruling exempts, at half weight, with its reason on record. `ownPlat` is the
+  // SELECTOR's own-plat decision (samePlat in lib/pricing/price-anchor.ts, or
+  // the street-cluster pocket), so the judge and the ladder cannot disagree
+  // about which sales are in the plat. Every own-plat sale is also protected
+  // from the band cut below, which is a price-tier cut by another name.
+  for (const v of judged.verdicts) {
+    const c = byKey.get(v.listingKey)
+    if (!c || c.ownPlat !== true) continue
+    protectedKeys.add(v.listingKey)
+    if (!isPriceTierExclusion(v)) continue
+    v.tier = 'weak'
+    delete v.basis
+    v.reason = `Inside the subject's own subdivision${c.subdivision ? `, ${c.subdivision}` : ''}. A sale there is this home's price tier, so price alone does not drop it. It is carried at half weight.`
+    resolvedByCode.push(`${v.listingKey}: restored, a sale in the subject's own plat cannot be dropped on price tier`)
+  }
+
+  // Band and strand violators get excluded. Their reason is written after the
+  // band is re-anchored below, so the number in the reason is the number the
+  // shipped set actually supports. Never prune below the floor: buildCma
+  // would discard the whole judgment anyway. Custom year-quality peers stay.
+  const codeExcluded: string[] = []
+  const offending = check.offendingKeptKeys.filter((k) => !protectedKeys.has(k))
+  if (offending.length > 0) {
+    const keptCount = judged.verdicts.filter((v) => v.tier !== 'exclude').length
+    const wouldRemain = keptCount - offending.length
+    if (wouldRemain >= RESOLVE_KEEP_FLOOR) {
+      for (const key of offending) {
+        const v = judged.verdicts.find((x) => x.listingKey === key)
+        if (!v || v.tier === 'exclude' || !byKey.has(key)) continue
+        v.tier = 'exclude'
+        v.basis = 'price-tier'
+        v.reason = ''
+        codeExcluded.push(key)
+        resolvedByCode.push(`${key}: excluded, outside the declared band`)
+      }
+    } else {
+      resolvedByCode.push(
+        `${check.offendingKeptKeys.length} band violation(s) left in place: excluding them would leave fewer than ${RESOLVE_KEEP_FLOOR} comps.`,
+      )
+    }
+  }
+
+  // Re-anchor the published band on the set that actually shipped, so the
+  // numbers in the excluded reasons and the narrative describe reality.
+  const finalKept = judged.verdicts.filter((v) => v.tier !== 'exclude')
+  const finalKeptPpsf = finalKept.map((v) => (byKey.get(v.listingKey) ? ppsf(byKey.get(v.listingKey)!) : 0)).filter((p) => p > 0)
+  if (finalKeptPpsf.length > 0) {
+    judged.ppsfFloor = Math.min(judged.ppsfFloor || Infinity, ...finalKeptPpsf)
+    judged.ppsfCeiling = Math.max(judged.ppsfCeiling, ...finalKeptPpsf)
+  }
+
+  // Every price-tier exclusion that genuinely sits outside the final band
+  // carries the band in its reason, so the auditor reads one stated rule
+  // instead of inferring one. Code-excluded comps get the whole sentence.
+  const band = `$${judged.ppsfFloor} to $${judged.ppsfCeiling}/sqft`
+  for (const v of judged.verdicts) {
+    const c = byKey.get(v.listingKey)
+    if (!c) continue
+    const p = ppsf(c)
+    const outsideBand = p > 0 && (p < judged.ppsfFloor || p > judged.ppsfCeiling)
+    if (codeExcluded.includes(v.listingKey)) {
+      v.reason = `Sold at $${p}/sqft, outside the ${band} range this analysis prices the subject in.`
+      continue
+    }
+    if (!isPriceTierExclusion(v) || !outsideBand || v.reason.includes(band)) continue
+    v.reason = `${v.reason.replace(/\s*[.]?\s*$/, '')}. Sold at $${p}/sqft, outside the ${band} range this analysis prices the subject in.`
+  }
+
+  // Strip narrative sentences that still contradict a verdict, rather than
+  // shipping prose the auditor will correctly call unsupported.
+  let narrative = judged.narrative
+  const verdictByKey = new Map(judged.verdicts.map((v) => [v.listingKey, v]))
+  if (narrativeMismatches(comps, verdictByKey, narrative).length > 0) {
+    const sentences = splitSentences(narrative)
+    if (sentences.length >= 2) {
+      const cleaned = sentences.filter(
+        (s) => narrativeMismatches(comps, verdictByKey, s).length === 0,
+      )
+      if (cleaned.length > 0 && cleaned.length < sentences.length) {
+        narrative = cleaned.join(' ')
+        resolvedByCode.push('Removed narrative sentence(s) that contradicted a verdict.')
+      }
+    }
+  }
+  // THE SAME CLAIM CHECKS THE BUILD RUNS AGAINST THE FINAL PRICED SET
+  // (lib/cma/narrative-claims.ts, 2026-09-30), run here against the set this
+  // review keeps: a count, a named drop or keep, a weight, or a lot figure the
+  // kept sales refute. The judge wrote the narrative before grounding and the
+  // restorations above moved the set, so it can describe a cut that no longer
+  // stands. buildCma runs them again against the sales that actually price
+  // (alignNarrativeToFinalSet in lib/cma/judge-consistency.ts), after the
+  // product walls and any audit repair.
+  {
+    const kept = finalKept
+      .map((v) => byKey.get(v.listingKey))
+      .filter((c): c is CmaComp => c != null)
+      .map((c) => claimComp(c, verdictByKey.get(c.listingKey)?.tier ?? null))
+    const stripped = stripRefutedSentences({
+      narrative,
+      priced: kept,
+      candidates: comps.map((c) => claimComp(c, verdictByKey.get(c.listingKey)?.tier ?? null)),
+      subject: { streetAddress: subject.streetAddress, lotAcres: subject.lotAcres },
+    })
+    if (stripped.removed.length > 0) {
+      narrative = stripped.narrative
+      resolvedByCode.push(
+        `Removed ${new Set(stripped.removed.map((f) => f.sentence)).size} narrative sentence(s) the kept set refutes (${[
+          ...new Set(stripped.removed.map((f) => f.kind)),
+        ].join(', ')}).`,
+      )
+    }
+  }
+  // The stated rule is what makes the exclusions checkable, so it has to
+  // reach the reader (and the independent auditor, which is shown only the
+  // narrative). Appended only when the narrative did not state the band
+  // itself, so the seller does not read the same sentence twice.
+  const narrativeStatesBand = /per square foot|\/sq\.?\s?ft|\/sqft/i.test(narrative)
+  if (judged.exclusionRule && !narrativeStatesBand && !narrative.includes(judged.exclusionRule)) {
+    narrative = `${narrative} ${judged.exclusionRule}`.trim()
+  }
+
+  const keptKeys = judged.verdicts.filter((v) => v.tier !== 'exclude').map((v) => v.listingKey)
+  // Brand-voice sanitize: the model can emit em/en-dashes and semicolons,
+  // which are banned in client prose. Numeric ranges become "to"; other
+  // dashes become commas; semicolons become periods.
+  const sanitize = sanitizeClientProse
+  const verdicts = judged.verdicts.map((v) => ({ ...v, reason: sanitize(v.reason) }))
+  const record = decisionRecord({
+    model: MODEL,
+    inputChecksum,
+    minComps,
+    votes,
+    aggregate,
+    finalized: {
+      verdicts,
+      keptKeys,
+      narrative: sanitize(narrative),
+      confidence: judged.confidence,
+      ppsfFloor: judged.ppsfFloor,
+      ppsfCeiling: judged.ppsfCeiling,
+      exclusionRule: sanitize(judged.exclusionRule),
+    },
+  })
+  return {
+    verdicts,
+    keptKeys,
+    confidence: judged.confidence,
+    narrative: sanitize(narrative),
+    ppsfFloor: judged.ppsfFloor,
+    ppsfCeiling: judged.ppsfCeiling,
+    exclusionRule: sanitize(judged.exclusionRule),
+    consistency: {
+      firstPassViolations,
+      repairRan,
+      postRepairViolations: check.violations,
+      resolvedByCode,
+    },
+    costUsd: +costUsd.toFixed(4),
+    model: MODEL,
+    usedLlm: true,
+    inputChecksum,
+    cacheHit: args.cacheHit,
+    decision: record,
+  }
+}
 
 /**
  * ONE targeted narrative repair, driven by the adversarial audit's findings.

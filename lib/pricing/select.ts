@@ -321,6 +321,7 @@ export function matchToCompSelection(
     trace: match.trace,
     pricingSource: 'facts',
     pricingSales: match.comps,
+    ownPlatAgeRestrictedShare: match.ownPlatAgeRestrictedShare ?? null,
     diagnostics: {
       market_area: marketAreaName(area),
       market_area_resolved: area != null,

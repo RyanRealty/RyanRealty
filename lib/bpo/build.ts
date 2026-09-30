@@ -32,6 +32,7 @@ import { adjustComps, computePricing } from '@/lib/cma/pricing'
 import { loadBpoEngineInputs, priceBpoAdjusted, bpoCompMap } from '@/lib/bpo/engine'
 import { judgeComps } from '@/lib/cma/judge'
 import { pricingCompsAfterJudgment } from '@/lib/cma/judgment-prune'
+import { alignNarrativeToFinalSet, claimTierOf, honestComparabilityLine } from '@/lib/cma/judge-consistency'
 import { selectionIsExclusivePocket } from '@/lib/pricing/exclusive-pocket-date-adj'
 import { auditCma } from '@/lib/cma/audit'
 import { resolveDevelopmentOpportunities } from '@/lib/cma/development'
@@ -42,7 +43,7 @@ import { deriveOpinion } from '@/lib/bpo/opinion'
 import { deriveOfferStrategy } from '@/lib/bpo/offer'
 import { buildBpoRationale } from '@/lib/bpo/narrative'
 import { renderBpoHtml } from '@/lib/bpo/render'
-import type { CmaBroker } from '@/lib/cma/types'
+import type { CmaBroker, CmaComp } from '@/lib/cma/types'
 import type { BpoBuildInput, BpoBuildResult } from '@/lib/bpo/types'
 
 export const BPO_BUILDER_VERSION = 'bpo-deterministic-v1 (2026-07-09)'
@@ -142,9 +143,14 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
           propertySubType: subject.propertySubType,
           yearBuilt: subject.yearBuilt,
           newConstructionYn: subject.newConstructionYn,
+          publicRemarks: subject.publicRemarks,
+          subdivision: subject.subdivision,
         },
         minComps: MIN_COMPS,
         exclusivePocket: selectionIsExclusivePocket(selection.tiersUsed),
+        ...(selection.ownPlatAgeRestrictedShare !== undefined
+          ? { ownPlatAgeRestrictedShare: selection.ownPlatAgeRestrictedShare }
+          : {}),
       })
       if (gated.shortage) {
         const err =
@@ -215,6 +221,31 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
       ]
         .filter(Boolean)
         .join(' · ')
+    // The judge's narrative against the sales that actually price, before each
+    // audit reads it and before the rationale prints it (the same pass the CMA
+    // runs, lib/cma/judge-consistency.ts alignNarrativeToFinalSet).
+    const alignNarrative = () => {
+      if (!judgment) return
+      const facts = (c: CmaComp) => ({
+        listingKey: c.listingKey,
+        address: c.address,
+        subdivision: c.subdivision,
+        lotAcres: c.lotAcres,
+        tier: claimTierOf(tierByKey.get(c.listingKey)),
+      })
+      const aligned = alignNarrativeToFinalSet({
+        narrative: judgment.narrative,
+        priced: compsForPricing.map(facts),
+        candidates: selection.comps.map(facts),
+        subject: { streetAddress: subject.streetAddress, lotAcres: subject.lotAcres },
+      })
+      judgment.narrative = aligned.narrative.trim()
+        ? aligned.narrative
+        : honestComparabilityLine({
+            keptCount: compsForPricing.length,
+            excludedCount: selection.comps.length - compsForPricing.length,
+          })
+    }
     const runAudit = () =>
       auditCma({
         subject,
@@ -232,7 +263,9 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
           confidence: opinion.confidence,
           context: opinionContext(),
         },
+        candidates: selection.comps,
       })
+    alignNarrative()
     let audit = await runAudit()
 
     // 4.45. Bounded self-repair — comp-selection/data-integrity findings tied
@@ -263,6 +296,7 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
           selection.trace.push(
             `Adversarial audit repair: ${flagged.length} comp(s) flagged by the independent audit were removed, the opinion re-derived on the ${remaining.length}-comp set, then re-audited.`,
           )
+          alignNarrative()
           audit = await runAudit()
         }
       }

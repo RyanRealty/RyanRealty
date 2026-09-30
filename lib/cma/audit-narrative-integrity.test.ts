@@ -234,3 +234,57 @@ describe('checkNarrativeIntegrity — output contract', () => {
     for (const finding of run('Brooklyn at $309/sqft.', SET)) expect(finding.compListingKey).toBeNull()
   })
 })
+
+describe('checkNarrativeIntegrity — the narrative against the final priced set (2026-09-30)', () => {
+  const priced = [
+    { ...comp('3886 Coyote', 475000, 'Triple Ridge'), lotAcres: 0.1 },
+    { ...comp('3899 Coyote', 492700, 'Triple Ridge'), lotAcres: 0.11 },
+    { ...comp('4100 Coyote', 520000, 'Prairie Crossing'), lotAcres: 0.07 },
+    { ...comp('3789 Coyote', 500000, 'Triple Ridge'), lotAcres: 0.07 },
+  ] as CmaAdjustedComp[]
+  const tiers = new Map([
+    ['3886 Coyote', 'strong'],
+    ['3899 Coyote', 'strong'],
+    ['4100 Coyote', 'weak'],
+    ['3789 Coyote', 'weak'],
+  ])
+  const check = (narrative: string, extra: Partial<Parameters<typeof checkNarrativeIntegrity>[0]> = {}) =>
+    checkNarrativeIntegrity({ narrative, comps: priced, excluded: [], subject, market: null, tierByKey: tiers, ...extra })
+
+  it('fails an UNDER-stated kept count, which the old check let through', () => {
+    const out = check('Three closed sales were kept between $236 and $256 per square foot.')
+    expect(out).toHaveLength(1)
+    expect(out[0]!.severity).toBe('critical')
+    expect(out[0]!.category).toBe('data-integrity')
+    expect(computeAuditVerdict(out)).toBe('fail')
+  })
+
+  it('fails a priced sale named as dropped when it knows the candidates', () => {
+    const out = check('Prairie Crossing was dropped for community amenities.', { candidates: priced })
+    expect(out.map((f) => f.claim).join(' ')).toContain('Prairie Crossing')
+    expect(computeAuditVerdict(out)).toBe('fail')
+  })
+
+  it('fails a weight claim against the tier and a lot range the priced lots refute', () => {
+    expect(computeAuditVerdict(check('3886 Coyote is half weight.'))).toBe('fail')
+    expect(computeAuditVerdict(check('The kept sales sit on lots of 0.1 to 0.11 acres.'))).toBe('fail')
+  })
+
+  it('passes the same narrative once it matches the priced set', () => {
+    expect(
+      check(
+        'Four closed sales were kept. 3886 Coyote is full weight. The kept sales sit on lots of 0.07 to 0.11 acres.',
+        { candidates: priced },
+      ),
+    ).toEqual([])
+  })
+
+  it('emits brand-voice-safe prose for the new findings too', () => {
+    const out = check('Six closed sales were kept. 3886 Coyote is half weight.')
+    expect(out.length).toBeGreaterThan(0)
+    for (const f of out) {
+      expect(`${f.claim} ${f.evidence}`).not.toMatch(/[—–;]/)
+      expect(f.compListingKey).toBeNull()
+    }
+  })
+})
