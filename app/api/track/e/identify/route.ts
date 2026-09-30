@@ -15,7 +15,10 @@
  * (identified_via tracked_link:<channel>). The track route already identified
  * the visit from the same token on the page_view; this is the second path.
  * `_fuid` (the retired vendor id) is refused: an unsigned id identifies nobody.
- * GPC and a cookie decline are honored inside the action.
+ * GPC and a cookie decline are honored inside the action, and so is automation:
+ * the action classifies the request's user agent, and the script adds
+ * `webdriver=1` when navigator.webdriver is set (an automated browser with an
+ * ordinary user agent, which no header of this GET shows), which it refuses.
  *
  * Response is 204 always (even on a bad id): this is a fire-and-forget tracking
  * ping and must never surface an error into the client document.
@@ -35,9 +38,10 @@ export async function GET(request: NextRequest) {
     const pid = params.get('_pid')?.trim()
     const fuid = params.get('_fuid')?.trim()
     const sid = params.get('sid')?.trim() || undefined
+    const webdriver = params.get('webdriver') === '1'
 
     if (pid) {
-      await identifyPersonFromEmailClickNative(pid, sid)
+      await identifyPersonFromEmailClickNative(pid, sid, { webdriver })
     } else if (fuid) {
       await identifyPersonFromEmailClick(fuid, sid)
     }

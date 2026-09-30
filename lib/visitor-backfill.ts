@@ -25,6 +25,7 @@
  * processed events.
  */
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { IDENTIFIABLE_SESSION_FILTER, sessionBlocksIdentification } from '@/lib/analytics/automation'
 
 // `tracked_link:<channel>` = a SIGNED person token on a link we sent
 // (lib/identity/link-token.ts, P7 identity loop 2026-09-23); `rr_pid_cookie` =
@@ -45,6 +46,13 @@ export type BackfillResult = {
   alreadyIdentified: boolean
   eventsBackfilled: number
   errors: string[]
+  /**
+   * The session is flagged as automation (visitor_sessions.is_automated: a
+   * crawler, scanner or headless browser). Nothing was identified, stamped or
+   * stitched for it, and a caller that would go on to stitch the browser itself
+   * must not (see stitchFormSubmitIdentity).
+   */
+  automated?: boolean
 }
 
 function getServiceSupabase(): SupabaseClient | null {
@@ -53,6 +61,15 @@ function getServiceSupabase(): SupabaseClient | null {
   if (!url?.trim() || !key?.trim()) return null
   return createClient(url, key)
 }
+
+/**
+ * PostgREST `or` filter for "not flagged as automation": unflagged, or flagged
+ * only by a provisional behavioural reason. The one rule (lib/analytics/automation.ts),
+ * the same one sessionIsAutomation reads on a row in hand.
+ */
+const NOT_AUTOMATION_FILTER = IDENTIFIABLE_SESSION_FILTER
+
+const MISSING_AUTOMATION_COLUMNS = /is_automated|automation_reason|does not exist|schema cache/i
 
 /**
  * Upsert the anon->known link in visitor_identity_map: rr_vid (the durable
@@ -115,10 +132,13 @@ export async function stitchVisitorIdentity(params: {
     sessionId: params.sessionId,
     source: params.source,
   })
+  // Never blocks the caller (sign-in / tracking) on a graph write, and never fails
+  // in silence: an unmapped browser is born anonymous on every later visit.
   try {
-    await supabase.from('visitor_identity_map').upsert(row, { onConflict: 'rr_vid' })
-  } catch {
-    /* never block the caller (sign-in / tracking) on a graph write */
+    const mapped = await supabase.from('visitor_identity_map').upsert(row, { onConflict: 'rr_vid' })
+    if (mapped?.error) console.warn('[visitor-backfill] identity map write failed:', mapped.error.message)
+  } catch (e) {
+    console.warn('[visitor-backfill] identity map write failed:', e instanceof Error ? e.message : String(e))
   }
 
   // Alerts plane: a known person + email must stamp listing_alerts.crm_person_id
@@ -139,6 +159,12 @@ export async function stitchVisitorIdentity(params: {
   // what turns a signed-in (Google / email / form) visitor's session from
   // anonymous to known in visitor_sessions + the /admin/visitors view. Only
   // fills a NULL identified_at so a re-identify keeps the original timestamp.
+  //
+  // A session the track route flagged as automation is left out: a crawler,
+  // scanner or scripted browser that used this browser id is never identified
+  // (docs/TRACKING_POLICY.md, identity loop rule 5), even when a person later
+  // identifies on the same rr_vid. The provisional contact-deep-link shape never
+  // blocks identification, so it is stitched like any other session.
   if (params.fubPersonId != null || params.email) {
     const sessionPatch: Record<string, unknown> = {
       identified_at: new Date().toISOString(),
@@ -153,14 +179,29 @@ export async function stitchVisitorIdentity(params: {
       sessionPatch.crm_person_id = params.fubPersonId
     }
     if (params.email) sessionPatch.identified_email = params.email.toLowerCase()
+    // Never blocks sign-in on a session-stitch write, and never fails in silence:
+    // until 2026-09-30 any error but a missing column skipped the whole back-stitch
+    // with no trace, and this browser's earlier sessions stayed anonymous.
     try {
-      await supabase
+      const stitched = await supabase
         .from('visitor_sessions')
         .update(sessionPatch)
         .eq('rr_vid', params.rrVid)
         .is('identified_at', null)
-    } catch {
-      /* never block sign-in on a session-stitch write */
+        .or(NOT_AUTOMATION_FILTER)
+      if (stitched?.error) {
+        if (MISSING_AUTOMATION_COLUMNS.test(stitched.error.message ?? '')) {
+          // A database from before migration 20260923120000 has no automation flag
+          // (and so no flagged session): stitch as before rather than not at all.
+          const unfiltered = await supabase.from('visitor_sessions').update(sessionPatch).eq('rr_vid', params.rrVid).is('identified_at', null)
+          if (unfiltered?.error) console.warn('[visitor-backfill] rr_vid back-stitch failed:', unfiltered.error.message)
+        } else {
+          // Not retried without the filter: that would identify the automation it leaves out.
+          console.warn('[visitor-backfill] rr_vid back-stitch failed:', stitched.error.message)
+        }
+      }
+    } catch (e) {
+      console.warn('[visitor-backfill] rr_vid back-stitch failed:', e instanceof Error ? e.message : String(e))
     }
   }
 }
@@ -193,6 +234,66 @@ type SessionRow = {
   session_id: string
   rr_vid: string | null
   identified_at: string | null
+  is_automated?: boolean | null
+  automation_reason?: string | null
+}
+
+/**
+ * Is this session automation that must never be identified? A session flagged
+ * from the request's user agent or navigator.webdriver (declared-crawler, tool,
+ * headless, webdriver, empty-ua) is. The provisional behavioural class
+ * (contact-deep-link) is not: a person who reads on clears it, and it never
+ * blocks identification (docs/TRACKING_POLICY.md). The one rule
+ * (lib/analytics/automation.ts), the same one NOT_AUTOMATION_FILTER sends the
+ * database. Exported for the unit test.
+ */
+export function sessionIsAutomation(row: { is_automated?: unknown; automation_reason?: unknown } | null | undefined): boolean {
+  return sessionBlocksIdentification(row)
+}
+
+// The columns read before anything is stamped. The second list is the schema
+// from before migration 20260923120000 (the automation flag): if a database
+// does not have those columns yet the read is retried without them rather than
+// failing every identification.
+const SESSION_READ_COLUMNS = [
+  'session_id, rr_vid, identified_at, is_automated, automation_reason',
+  'session_id, rr_vid, identified_at',
+] as const
+
+/** The session row the identify paths read before they stamp anything. */
+async function readSessionRows(
+  supabase: SupabaseClient,
+  sessionId: string,
+): Promise<{ rows: unknown[] | null; error: { message: string } | null }> {
+  let rows: unknown[] | null = null
+  let error: { message: string } | null = null
+  for (const columns of SESSION_READ_COLUMNS) {
+    const read = await supabase
+      .from('visitor_sessions')
+      .select(columns as string)
+      .eq('session_id', sessionId)
+      .limit(1)
+    rows = (read.data as unknown[] | null) ?? null
+    error = read.error
+    if (!error || !MISSING_AUTOMATION_COLUMNS.test(error.message)) break
+  }
+  return { rows, error }
+}
+
+/**
+ * Is this session flagged as automation (sessionIsAutomation)? For the identify
+ * actions, which must know BEFORE they cookie or stitch a browser: a scripted
+ * browser reports navigator.webdriver in the body of its tracker post, which no
+ * request header shows, so only the session row the track route flagged can say.
+ * False when it cannot be told (no service client, no such row, a read error):
+ * an unknown session is not refused here, the request-level checks have run.
+ */
+export async function isAutomatedSession(sessionId: string): Promise<boolean> {
+  const supabase = getServiceSupabase()
+  if (!supabase) return false
+  const { rows, error } = await readSessionRows(supabase, sessionId)
+  if (error) return false
+  return sessionIsAutomation((rows?.[0] ?? null) as SessionRow | null)
 }
 
 /**
@@ -239,11 +340,7 @@ export async function backfillSessionToFub(params: {
   // with a different provider in the same browser) does NOT overwrite the
   // original identification timestamp, which would mess up downstream timing
   // reports.
-  const { data: sessionRows, error: readErr } = await supabase
-    .from('visitor_sessions')
-    .select('session_id, rr_vid, identified_at')
-    .eq('session_id', params.sessionId)
-    .limit(1)
+  const { rows: sessionRows, error: readErr } = await readSessionRows(supabase, params.sessionId)
 
   if (readErr) {
     errors.push(`session read failed: ${readErr.message}`)
@@ -265,6 +362,17 @@ export async function backfillSessionToFub(params: {
   }
 
   const alreadyIdentified = !!session.identified_at
+
+  // AUTOMATION IS NEVER IDENTIFIED (docs/TRACKING_POLICY.md, identity loop rule
+  // 5). A session the track route flagged as a crawler, scanner or headless
+  // browser gets no person, no identity-map row, and no back-stitch of the
+  // anonymous sessions sharing its rr_vid: the stitch below would put the bot's
+  // browser in visitor_identity_map, and every later session on it would be
+  // born as that contact. The first-event flag is set at birth, so a session
+  // that has posted at all is covered.
+  if (sessionIsAutomation(session)) {
+    return { ok: true, sessionFound: true, alreadyIdentified, eventsBackfilled: 0, errors: [], automated: true }
+  }
 
   if (!alreadyIdentified) {
     const { error: updateErr } = await supabase
@@ -377,12 +485,16 @@ export async function stitchFormSubmitIdentity(params: {
   const sessionId =
     params.sessionId && FORM_SUBMIT_SESSION_RE.test(params.sessionId) ? params.sessionId : null
   if (sessionId) {
-    await backfillSessionToFub({
+    const backfill = await backfillSessionToFub({
       sessionId,
       fubPersonId: params.personId,
       email: params.email,
       identifiedVia: 'form_submit',
     })
+    // A flagged-automation session identifies nobody. The contact the form
+    // created exists either way; what is refused is putting a bot's browser
+    // in the identity map (the stitch below would identify the session anyway).
+    if (backfill.automated) return
   }
   await stitchVisitorIdentity({
     rrVid: params.rrVid,

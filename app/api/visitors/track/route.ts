@@ -193,8 +193,10 @@ type TrackBody = {
   /**
    * Global Privacy Control JS flag (navigator.globalPrivacyControl) forwarded
    * by the client. The Sec-GPC request header is read server-side; this is the
-   * parallel JS source. Either being a GPC opt-out drops the event and (for an
-   * identified visitor) records a durable suppression. Phase 8.1.
+   * parallel JS source. Either being a GPC opt-out drops the request and (for a
+   * contact the browser was already identified as) records a durable suppression.
+   * Phase 8.1. Since 2026-09-30 the trackers send it ALONE, as a notice with no
+   * session id (gpcKnownContact).
    */
   gpc?: boolean
   /**
@@ -227,6 +229,32 @@ function getSupabase() {
 }
 
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+/**
+ * The contact a browser sending Global Privacy Control was ALREADY identified as,
+ * from what it carries on every request to this site, or null. The trackers send
+ * nothing identifying under GPC (a notice of `{ gpc: true }`), so the contact is:
+ * the session a tracker from before 2026-09-30 still names in its post, else the
+ * signed rr_pid cookie, else the person the browser's rr_vid is mapped to in
+ * visitor_identity_map. Only a signed cookie names anyone. Read only to record the
+ * opt-out; nothing about the visit is written.
+ */
+async function gpcKnownContact(
+  request: NextRequest,
+  body: TrackBody,
+  sb: NonNullable<ReturnType<typeof getSupabase>>,
+): Promise<number | null> {
+  const sessionId = typeof body.sessionId === 'string' ? body.sessionId.trim() : ''
+  if (UUID_V4.test(sessionId)) {
+    const fromSession = (await readSessionIdentity(sb, sessionId))?.crmPersonId ?? null
+    if (fromSession) return fromSession
+  }
+  const fromCookie = signedPersonIdFromCookie(request.cookies.get(PERSON_COOKIE)?.value)
+  if (fromCookie) return fromCookie
+  const rrVid = request.cookies.get('rr_vid')?.value
+  if (rrVid && UUID_V4.test(rrVid)) return (await readIdentityMapForVid(sb, rrVid))?.personId ?? null
+  return null
+}
 
 // save_listing (2026-07-21): a consumer like/save mirrored onto the visitor
 // trail. Emitted server-side by lib/data/crm/recordSaveListingEvent (from the
@@ -287,6 +315,41 @@ export async function POST(request: NextRequest) {
     return jsonError(400, 'Invalid JSON', origin)
   }
 
+  // ─── GPC opt-out gate (server-side enforcement, before anything else) ────
+  // Global Privacy Control is a legally binding "do not sell / share" signal in
+  // CA/CO/CT. On a GPC opt-out we (1) STOP tracking entirely (no session/event
+  // writes), and (2) if the browser was already identified to a CRM person,
+  // record a durable channel='all' suppression so the opt-out sticks across every
+  // send path AND pulls them from the Meta audience. The suppression write is
+  // best-effort and never blocks the response. (Phase 8.1)
+  //
+  // First, before the session id and consent checks: since 2026-09-30 the
+  // trackers write no identifier under GPC and post only a notice, `{ gpc: true }`,
+  // with no session id in it (a decline does not cancel the opt-out either).
+  const gpcOptOut = isGpcOptOut({
+    secGpcHeader: request.headers.get('sec-gpc'),
+    jsFlag: typeof body.gpc === 'boolean' ? body.gpc : null,
+  })
+  if (gpcOptOut) {
+    let suppressionRecorded = false
+    try {
+      const gpcSb = getSupabase()
+      const crmPersonId = gpcSb ? await gpcKnownContact(request, body, gpcSb) : null
+      if (crmPersonId) {
+        const res = await recordGpcSuppression(crmPersonId)
+        suppressionRecorded = res.ok && res.recorded
+        if (!res.ok) console.warn('[visitors/track] gpc suppression failed:', res.error)
+      }
+    } catch (err) {
+      // Never let the suppression write break the tracking response.
+      console.warn('[visitors/track] gpc handling error:', err instanceof Error ? err.message : String(err))
+    }
+    return NextResponse.json(
+      { ok: true, dropped: true, reason: 'gpc_opt_out', suppressionRecorded },
+      { headers: corsHeaders(origin) },
+    )
+  }
+
   const sessionId = body.sessionId?.trim()
   if (!sessionId || !UUID_V4.test(sessionId)) {
     return jsonError(400, 'sessionId must be a uuid v4', origin)
@@ -326,41 +389,6 @@ export async function POST(request: NextRequest) {
     // Don't 500 — page load must not depend on this. Log and return success.
     console.warn('[visitors/track] Supabase service role not configured; event dropped')
     return NextResponse.json({ ok: true, dropped: true }, { headers: corsHeaders(origin) })
-  }
-
-  // ─── GPC opt-out gate (server-side enforcement) ─────────────────────────
-  // Global Privacy Control is a legally binding "do not sell / share" signal in
-  // CA/CO/CT. On a GPC opt-out we (1) STOP tracking this event entirely (no
-  // session/event writes), and (2) if the session is already identified to a
-  // CRM person, record a durable channel='all' suppression so the opt-out
-  // sticks across every send path AND pulls them from the Meta audience. The
-  // suppression write is best-effort and never blocks the response. (Phase 8.1)
-  const gpcOptOut = isGpcOptOut({
-    secGpcHeader: request.headers.get('sec-gpc'),
-    jsFlag: typeof body.gpc === 'boolean' ? body.gpc : null,
-  })
-  if (gpcOptOut) {
-    let suppressionRecorded = false
-    try {
-      const { data: gpcSess } = await supabase
-        .from('visitor_sessions')
-        .select('crm_person_id')
-        .eq('session_id', sessionId)
-        .maybeSingle()
-      const crmPersonId = gpcSess && typeof gpcSess.crm_person_id === 'number' ? gpcSess.crm_person_id : null
-      if (crmPersonId) {
-        const res = await recordGpcSuppression(crmPersonId)
-        suppressionRecorded = res.ok && res.recorded
-        if (!res.ok) console.warn('[visitors/track] gpc suppression failed:', res.error)
-      }
-    } catch (err) {
-      // Never let the suppression write break the tracking response.
-      console.warn('[visitors/track] gpc handling error:', err instanceof Error ? err.message : String(err))
-    }
-    return NextResponse.json(
-      { ok: true, dropped: true, reason: 'gpc_opt_out', suppressionRecorded },
-      { headers: corsHeaders(origin) },
-    )
   }
 
   const sourceDomain = resolveSourceDomain(pageUrl, body.sourceDomain)
@@ -598,7 +626,13 @@ export async function POST(request: NextRequest) {
       const gaCookie = request.cookies.get('_ga')?.value
       const fromCookie = clientIdFromGaCookie(gaCookie)
       const isView = eventType === 'page_view' || eventType === 'listing_view'
-      const clientHasGtag = isView && !minimalOnly && !!fromCookie
+      // A raw-HTML client document (/cma, /bpo) loads no gtag at all, so the
+      // premise of this guard, "the browser's own gtag is counting this view", is
+      // false there. Before 2026-09-29 the document tracker always posted at
+      // 'essential' and every report open was mirrored; it now posts the visitor's
+      // real tier, and a consented reader with a _ga cookie would have dropped out
+      // of GA4 entirely (the most engaged recipients).
+      const clientHasGtag = isView && !minimalOnly && !!fromCookie && body.pageCategory !== 'client-document'
       if (!clientHasGtag) {
         const pagePath = (() => {
           try {
@@ -712,8 +746,15 @@ export async function POST(request: NextRequest) {
   // so listingKey is empty and we skip. Unidentified = no SMS. Same rail —
   // queueReturnVisitAlert only inserts; it does not send. One ping per
   // person+listing per session.
+  //
+  // AUTOMATION NEVER ALERTS A BROKER (docs/TRACKING_POLICY.md, "The known-contact
+  // identity loop", rule 5). A crawler or scanner rendering a listing page must
+  // not read as the contact looking at that home, so a request the classifier
+  // above flagged fires neither this alert nor the one below.
   const crmPersonId =
-    !minimalOnly && session && typeof session.crm_person_id === 'number' ? session.crm_person_id : null
+    !minimalOnly && !automation.automated && session && typeof session.crm_person_id === 'number'
+      ? session.crm_person_id
+      : null
   if (crmPersonId && eventType === 'listing_view') {
     try {
       const { listingKeyFromPageUrl } = await import('@/lib/crm/looking-at')
@@ -744,13 +785,18 @@ export async function POST(request: NextRequest) {
   // `return-visit:` prefix so the broker's Return-visit switch governs it), one
   // alert per document per contact, ever.
   //
-  // Deliberately NOT gated on `minimalOnly`. Client documents post at
-  // 'essential' consent — there is no banner on a document — so the looking-at
-  // branch above can never fire here. The person id is not collected from this
-  // visitor: it comes from OUR OWN server-side identify backfill on a link WE
-  // emailed them, and telling the broker that the recipient opened the document
-  // we sent them is the purpose of the send. The real consent gate is GPC,
-  // which dropped this request fail-closed long before this line.
+  // Deliberately NOT gated on `minimalOnly`. Since 2026-09-29 a client document
+  // posts the reader's own tier (public/rr-doc-tracker.js reads the banner's
+  // answer the way VisitTracker does), and a recipient at 'essential' (no banner
+  // answer and no campaign on the link, or marketing only) opening the report is
+  // still the signal this alert exists for. The looking-at branch above fires
+  // only on a listing_view, which a document never sends. The person id is not
+  // collected from this visitor: it comes from OUR OWN server-side identify
+  // backfill on a link WE emailed them, and telling the broker that the
+  // recipient opened the document we sent them is the purpose of the send. The
+  // consent gates are a decline (the document posts nothing, and a declined post
+  // is dropped at the top of this route) and GPC, which dropped this request
+  // fail-closed long before this line.
   //
   // A TAP ON A COMP COUNTS TOO (2026-09-07). Every address, place and CTA the
   // document prints goes through `trackedDocLink`, which stamps
@@ -763,7 +809,12 @@ export async function POST(request: NextRequest) {
   // does not text the broker five times.
   // Both view kinds: a comp is a LISTING page, which fires `listing_view`, and
   // a page_view-only test would never alert on the tap that matters most.
-  if (eventType === 'page_view' || eventType === 'listing_view') {
+  //
+  // Not for automation. An email security scanner or link previewer that opens
+  // the tracked report link is the loudest false positive this alert has: the
+  // broker is told "they opened your report" about a bot. The classifier reads
+  // the request's user agent and navigator.webdriver (lib/analytics/automation.ts).
+  if (!automation.automated && (eventType === 'page_view' || eventType === 'listing_view')) {
     try {
       const { cmaSlugFromDocumentUrl, queueCmaOpenedAlert } = await import('@/lib/crm/cma-engagement')
       const { cmaCampaignFromUrl } = await import('@/lib/cma/doc-links')

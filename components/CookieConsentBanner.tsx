@@ -14,6 +14,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { cn } from '@/lib/utils'
+import { arrivalConsent, gpcFromNavigator, parseConsentCookie, type ConsentState } from '@/lib/identity/consent'
+import { pageArrival } from '@/lib/analytics/visitor-session'
 
 const COOKIE_CONSENT_KEY = 'ryan_realty_cookie_consent'
 const CONSENT_EXPIRY_YEARS = 1
@@ -23,7 +25,9 @@ export const COOKIE_NOTICE_FOLD_DELAY_MS = 3000
 /** First scroll past this reveals the legal bar. The visitor has seen the thing. */
 export const COOKIE_NOTICE_SCROLL_PX = 24
 
-export type ConsentState = { analytics: boolean; marketing: boolean }
+// The answer's shape and its reading live in lib/identity/consent.ts, the one
+// mapping every tracker and the server's identify paths share.
+export type { ConsentState }
 
 export type CookieNoticeSurface = 'hidden' | 'chip' | 'bar'
 
@@ -73,20 +77,17 @@ export function getStoredConsent(): ConsentState | null {
   return getConsent()
 }
 
-function getConsent(): ConsentState | null {
-  if (typeof document === 'undefined') return null
-  const raw = document.cookie
+/** The banner's cookie value as the browser holds it, undecoded; undefined when there is none. */
+function readConsentCookie(): string | undefined {
+  if (typeof document === 'undefined') return undefined
+  return document.cookie
     .split('; ')
     .find((row) => row.startsWith(COOKIE_CONSENT_KEY + '='))
     ?.split('=')[1]
-  if (!raw) return null
-  try {
-    const parsed = JSON.parse(decodeURIComponent(raw)) as ConsentState
-    return { analytics: Boolean(parsed.analytics), marketing: Boolean(parsed.marketing) }
-  } catch {
-    if (raw === 'all') return { analytics: true, marketing: true }
-    return { analytics: false, marketing: false }
-  }
+}
+
+function getConsent(): ConsentState | null {
+  return parseConsentCookie(readConsentCookie())
 }
 
 function setConsentState(state: ConsentState) {
@@ -116,17 +117,24 @@ export function hasMarketingConsent(): boolean {
  * who has NOT yet made an explicit consent choice gets analytics+marketing
  * auto-granted, so first-party behavioral intent tracking (visitor_events
  * scoring -> hot-lead alerts) fires on the same page load. Does NOT override an
- * explicit prior decision (essential-only / declined are respected). Returns
- * true if it just granted consent.
+ * explicit prior decision (essential-only / declined are respected), and never
+ * grants anything to a browser sending Global Privacy Control, a legally binding
+ * opt-out. Returns true if it just granted consent.
+ *
+ * The rule is lib/identity/consent.ts arrivalConsent, the one the document
+ * tracker mirrors; this only reads its inputs and writes the cookie. The link is
+ * the one the page ARRIVED on (pageArrival): VisitTracker, which calls this, is
+ * loaded lazily, and a visitor who taps a link before it mounts is no longer on
+ * the campaign link they arrived by.
  */
 export function autoGrantConsentForAdTraffic(): boolean {
   if (typeof window === 'undefined') return false
-  if (getConsent() !== null) return false // explicit prior choice — respect it
-  const qs = new URLSearchParams(window.location.search || '')
-  const fromAd =
-    qs.has('fbclid') || qs.has('gclid') || qs.has('msclkid') || qs.has('ttclid') ||
-    [...qs.keys()].some((k) => k.toLowerCase().startsWith('utm_'))
-  if (!fromAd) return false
+  const { grant } = arrivalConsent({
+    cookieValue: readConsentCookie(),
+    search: pageArrival()?.search ?? window.location.search,
+    gpc: gpcFromNavigator(typeof navigator !== 'undefined' ? navigator : undefined),
+  })
+  if (!grant) return false
   setConsentState({ analytics: true, marketing: true })
   try { window.dispatchEvent(new CustomEvent('cookie-consent', { detail: 'all' })) } catch {}
   return true

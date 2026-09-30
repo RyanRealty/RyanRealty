@@ -31,6 +31,22 @@ export type EmailEvent =
   | 'complaint'
   | 'unsubscribe'
 
+/**
+ * A click made by AUTOMATION: an email security scanner, link previewer or
+ * crawler that followed a tracked link (lib/analytics/automation.ts decides,
+ * from the request's user agent). Stored in email_events.event beside the
+ * lifecycle events so the volume stays measurable and `meta.automation_reason`
+ * says which class fired, but it is NOT a lifecycle event: it is deliberately
+ * left out of EmailEvent, so no reader that ranks, counts or reports engagement
+ * (they read `click`) can mistake a scanner for the recipient. Writing it needs
+ * the email_events_event_check constraint widened
+ * (supabase/migrations/20260929170000_email_events_click_automated.sql).
+ */
+export type AutomatedClickEvent = 'click_automated'
+
+/** Everything recordEmailEvent can store in email_events.event. */
+export type RecordedEmailEvent = EmailEvent | AutomatedClickEvent
+
 /** What kind of send produced the event (email_events.send_type). */
 export type EmailSendType =
   | 'newsletter'
@@ -69,7 +85,7 @@ export type RecordEmailEventInput = {
 }
 
 export type RecordEmailEventResult =
-  | { ok: true; inserted: boolean; event: EmailEvent; personId: number | null }
+  | { ok: true; inserted: boolean; event: RecordedEmailEvent; personId: number | null }
   | { ok: false; error: string }
 
 // ── Pure helpers ─────────────────────────────────────────────────────────────
@@ -91,7 +107,7 @@ const EVENT_VALUES: readonly EmailEvent[] = [
  * tracker names (`open`/`opened`, `click`/`clicked`), and already-normalized
  * values. Case-insensitive, whitespace-tolerant.
  */
-export function normalizeEvent(raw: string | null | undefined): EmailEvent | null {
+export function normalizeEvent(raw: string | null | undefined): RecordedEmailEvent | null {
   if (!raw) return null
   // Strip a provider namespace (`email.opened` -> `opened`) and lowercase.
   const key = String(raw).trim().toLowerCase().replace(/^email\./, '')
@@ -111,6 +127,8 @@ export function normalizeEvent(raw: string | null | undefined): EmailEvent | nul
     case 'click':
     case 'clicked':
       return 'click'
+    case 'click_automated':
+      return 'click_automated'
     case 'bounce':
     case 'bounced':
       return 'bounce'
@@ -171,10 +189,10 @@ export function normalizeClickUrl(url: string | null | undefined): string {
 export function buildDedupeKey(opts: {
   messageId?: string | null
   emailKey?: string | null
-  event: EmailEvent
+  event: RecordedEmailEvent
   recipientEmail?: string | null
   personId?: number | null
-  /** Destination URL — included for `click` so distinct links stay distinct. */
+  /** Destination URL — included for `click` and `click_automated` so distinct links stay distinct. */
   clickUrl?: string | null
 }): string {
   const anchor = (opts.messageId || opts.emailKey || 'none').trim()
@@ -184,7 +202,7 @@ export function buildDedupeKey(opts: {
   const target =
     recipient || (typeof opts.personId === 'number' && Number.isFinite(opts.personId) ? `p:${opts.personId}` : '')
   const base = `${anchor}:${opts.event}:${target}`
-  if (opts.event === 'click') {
+  if (opts.event === 'click' || opts.event === 'click_automated') {
     const url = normalizeClickUrl(opts.clickUrl)
     if (url) return `${base}:${url}`
   }
@@ -308,7 +326,7 @@ export async function recordEmailEvent(
 
   const occurredAt = toIso(input.occurredAt)
   const clickUrl =
-    event === 'click'
+    event === 'click' || event === 'click_automated'
       ? typeof input.meta?.url === 'string'
         ? input.meta.url
         : typeof input.meta?.clickUrl === 'string'
