@@ -684,8 +684,9 @@
      {
       "name": "Widgi Creek",
       "listings_geocoded": 148,
-      "inside_parent_polygon": 148,
-      "pct_inside": 100
+      "inside_parent_polygon": 33,
+      "pct_inside": 22.3,
+      "evidence": "33 of 148 geocoded 'Widgi Creek' listings sit inside the Widgi Creek plat union (the Elkai Woods phases); 113 sit on the Seventh Mountain Golf Village plat (CSNUM 09717), which the registry files with the Inn of the 7th Mountain under its other MLS name '7th Mtn Golf Village' (143 of 143 of those listings sit on it), and 2 on no plat. Kept: it is the community's own name. OPEN for Matt: which community the golf village belongs to (row read 2026-09-25)."
      },
      {
       "name": "PointsWest",
@@ -706,7 +707,8 @@
       "pct_inside": 100
      }
     ],
-    "verified_2026_08_26": "All 3 children confirmed 100% inside: PointsWest 136/136, Elkai Woods 58/58, Milepost 1 34/34, and the containment list holds Points West, Milepost 1 and Elkai Woods Townhomes Phases I-VI. CAVEAT: widgi-creek's polygon is the Deschutes County INN OF 7TH MOUNTAIN unincorporated-community polygon, shared with the separate inn-of-the-7th-mountain registry entry, so it also contains Seventh Mountain Golf Village and Inn Of The Seventh Mountain Phase IV. The three aliases above are the Widgi Creek golf-course plats; the polygon is wider than the community and should be narrowed to a Widgi plat union."
+    "verified_2026_08_26": "All 3 children confirmed 100% inside: PointsWest 136/136, Elkai Woods 58/58, Milepost 1 34/34, and the containment list holds Points West, Milepost 1 and Elkai Woods Townhomes Phases I-VI. CAVEAT: widgi-creek's polygon is the Deschutes County INN OF 7TH MOUNTAIN unincorporated-community polygon, shared with the separate inn-of-the-7th-mountain registry entry, so it also contains Seventh Mountain Golf Village and Inn Of The Seventh Mountain Phase IV. The three aliases above are the Widgi Creek golf-course plats; the polygon is wider than the community and should be narrowed to a Widgi plat union.",
+    "outline_2026_09_25": "The caveat above is resolved. boundaries.geo_slug='widgi-creek' is now the ST_Union of the nine recorded Widgi Creek plats, Points West, Milepost 1 and Elkai Woods Townhomes Phases I-VI (45.4 acres, migration 20260925031047), and the county INN OF 7TH MOUNTAIN community polygon it held is the Inn's own row, minus these plats. The confirmed counts above are re-measured against the new outline (2026-09-25)."
    }
   },
   {
@@ -878,22 +880,23 @@
    ],
    "child_count": 2,
    "verification": {
-    "method": "Deschutes County GIS plat containment (2026-08-26). Both aliases are recorded plats inside the Deschutes County Unincorporated Community polygon COMMUNITY=INN OF 7TH MOUNTAIN (stored as boundaries.geo_slug='widgi-creek'; that polygon covers this community, and community_subdivisions on it returns 'Seventh Mountain Golf Village' and 'Inn Of The Seventh Mountain (the) Phase IV'). No geo_slug='inn-of-the-7th-mountain' polygon exists, so the containment test runs against the polygon that does. Supersedes the prior '<0.5km from centroid' method.",
+    "method": "Deschutes County GIS plat containment against boundaries.geo_slug='inn-of-the-7th-mountain' (2026-09-25): the county Unincorporated Community polygon COMMUNITY=INN OF 7TH MOUNTAIN minus the Widgi Creek recorded plats, its largest part, 271.2 acres (migration 20260925031047). Until then the Inn had no row and was tested against the same county polygon stored as widgi-creek. Supersedes the prior '<0.5km from centroid' method.",
     "confirmed": [
      {
       "name": "Inn Of The 7th",
-      "listings_geocoded": 795,
-      "inside_parent_polygon": 722,
-      "pct_inside": 90.8
+      "listings_geocoded": 796,
+      "inside_parent_polygon": 711,
+      "pct_inside": 89.3
      },
      {
       "name": "7th Mtn Golf Village",
-      "listings_geocoded": 142,
-      "inside_parent_polygon": 142,
-      "pct_inside": 100.0
+      "listings_geocoded": 143,
+      "inside_parent_polygon": 143,
+      "pct_inside": 100
      }
     ],
-    "children_with_pct": []
+    "children_with_pct": [],
+    "outline_2026_09_25": "Re-measured against the Inn's own outline: 'Inn Of The 7th' 711 of 796 geocoded listings inside (12 more sit on the Points West and Milepost 1 plats, now Widgi Creek's; the rest outside both), '7th Mtn Golf Village' 143 of 143 (the Seventh Mountain Golf Village plat). The MLS also tags that plat 'Widgi Creek' (113 listings); which community owns it is open for Matt."
    }
   },
   {
@@ -974,13 +977,240 @@
     44.4268
    ],
    "subdivision_aliases": [
-    "Crooked River Ranch"
+    "Crooked River Ranch",
+    "Crr",
+    "Crr 1",
+    "Crr 2",
+    "Crr 3",
+    "Crr 4",
+    "Crr 6",
+    "Crr 7",
+    "Crr 8",
+    "Crr 10",
+    "Crr 16",
+    "Crr16",
+    "Crr_C",
+    "Crr1_C",
+    "Crr2_C",
+    "Crr3_C",
+    "Crr4_C",
+    "Crr5_C",
+    "Crr6_C",
+    "Crr7_C",
+    "Crr8_C",
+    "Crr9_C",
+    "Crr10_C",
+    "Crr11_C",
+    "Crr12_C",
+    "Crr13_C",
+    "Crr14_C",
+    "Crr15_C"
    ],
    "self_city": false,
    "self_city_evidence": "MLS files Crooked River Ranch homes under City 'Terrebonne' or 'Crooked River', never 'Crooked River Ranch' (listings row read 2026-09-24), so /homes-for-sale/crooked-river-ranch is not this community's own city search. The slug matching a site city slug does not make it one.",
    "verification": {
-    "method": "Exact MLS SubdivisionName match; centroid from listing coords (live MLS 2026-06-27). Large rural planned community (Terrebonne), not a resort (is_resort=false)."
-   }
+    "method": "MLS SubdivisionName spellings of the ranch, evidenced by MLS City, ZIP and distance from the registry centre (2026-09-25). No community polygon exists for Crooked River Ranch (Jefferson County publishes no recorded-plat layer), so this is a no-outline community: its page counts the listings the MLS files under these names in Terrebonne (Matt 2026-09-25, recorded plats where they exist, names only where they do not).",
+    "confirmed": [
+     {
+      "name": "Crooked River Ranch",
+      "listings_geocoded": 812,
+      "inside_parent_polygon": null,
+      "pct_inside": null,
+      "evidence": "No crooked-river-ranch polygon exists to test against: the ranch lies mostly in Jefferson County, which publishes no recorded-plat layer (Deschutes holds only Crooked River Ranch No. 4 and No. 5). Second query shape, listing_tile_mv row read 2026-09-25: 1188 listings, MLS City Terrebonne 601, Crooked River 586, elsewhere 1; ZIP 97760 on 1169; 756 of 812 geocoded within 8 km of the registry centre; 0 Active in Terrebonne that day."
+     },
+     {
+      "name": "Crr",
+      "listings_geocoded": 621,
+      "inside_parent_polygon": null,
+      "pct_inside": null,
+      "evidence": "No crooked-river-ranch polygon exists to test against: the ranch lies mostly in Jefferson County, which publishes no recorded-plat layer (Deschutes holds only Crooked River Ranch No. 4 and No. 5). Second query shape, listing_tile_mv row read 2026-09-25: 639 listings, MLS City Terrebonne 625, Crooked River 14; ZIP 97760 on 638; 619 of 621 geocoded within 8 km of the registry centre; 38 Active in Terrebonne that day."
+     },
+     {
+      "name": "Crr 1",
+      "listings_geocoded": 25,
+      "inside_parent_polygon": null,
+      "pct_inside": null,
+      "evidence": "No crooked-river-ranch polygon exists to test against: the ranch lies mostly in Jefferson County, which publishes no recorded-plat layer (Deschutes holds only Crooked River Ranch No. 4 and No. 5). Second query shape, listing_tile_mv row read 2026-09-25: 25 listings, MLS City Terrebonne 25, Crooked River 0; ZIP 97760 on 25; 25 of 25 geocoded within 8 km of the registry centre; 1 Active in Terrebonne that day."
+     },
+     {
+      "name": "Crr 2",
+      "listings_geocoded": 65,
+      "inside_parent_polygon": null,
+      "pct_inside": null,
+      "evidence": "No crooked-river-ranch polygon exists to test against: the ranch lies mostly in Jefferson County, which publishes no recorded-plat layer (Deschutes holds only Crooked River Ranch No. 4 and No. 5). Second query shape, listing_tile_mv row read 2026-09-25: 65 listings, MLS City Terrebonne 65, Crooked River 0; ZIP 97760 on 65; 64 of 65 geocoded within 8 km of the registry centre; 6 Active in Terrebonne that day."
+     },
+     {
+      "name": "Crr 3",
+      "listings_geocoded": 43,
+      "inside_parent_polygon": null,
+      "pct_inside": null,
+      "evidence": "No crooked-river-ranch polygon exists to test against: the ranch lies mostly in Jefferson County, which publishes no recorded-plat layer (Deschutes holds only Crooked River Ranch No. 4 and No. 5). Second query shape, listing_tile_mv row read 2026-09-25: 43 listings, MLS City Terrebonne 43, Crooked River 0; ZIP 97760 on 43; 43 of 43 geocoded within 8 km of the registry centre; 3 Active in Terrebonne that day."
+     },
+     {
+      "name": "Crr 4",
+      "listings_geocoded": 1,
+      "inside_parent_polygon": null,
+      "pct_inside": null,
+      "evidence": "No crooked-river-ranch polygon exists to test against: the ranch lies mostly in Jefferson County, which publishes no recorded-plat layer (Deschutes holds only Crooked River Ranch No. 4 and No. 5). Second query shape, listing_tile_mv row read 2026-09-25: 1 listings, MLS City Terrebonne 1, Crooked River 0; ZIP 97760 on 1; 1 of 1 geocoded within 8 km of the registry centre; 0 Active in Terrebonne that day."
+     },
+     {
+      "name": "Crr 6",
+      "listings_geocoded": 11,
+      "inside_parent_polygon": null,
+      "pct_inside": null,
+      "evidence": "No crooked-river-ranch polygon exists to test against: the ranch lies mostly in Jefferson County, which publishes no recorded-plat layer (Deschutes holds only Crooked River Ranch No. 4 and No. 5). Second query shape, listing_tile_mv row read 2026-09-25: 11 listings, MLS City Terrebonne 11, Crooked River 0; ZIP 97760 on 11; 11 of 11 geocoded within 8 km of the registry centre; 0 Active in Terrebonne that day."
+     },
+     {
+      "name": "Crr 7",
+      "listings_geocoded": 18,
+      "inside_parent_polygon": null,
+      "pct_inside": null,
+      "evidence": "No crooked-river-ranch polygon exists to test against: the ranch lies mostly in Jefferson County, which publishes no recorded-plat layer (Deschutes holds only Crooked River Ranch No. 4 and No. 5). Second query shape, listing_tile_mv row read 2026-09-25: 18 listings, MLS City Terrebonne 18, Crooked River 0; ZIP 97760 on 18; 18 of 18 geocoded within 8 km of the registry centre; 4 Active in Terrebonne that day."
+     },
+     {
+      "name": "Crr 8",
+      "listings_geocoded": 51,
+      "inside_parent_polygon": null,
+      "pct_inside": null,
+      "evidence": "No crooked-river-ranch polygon exists to test against: the ranch lies mostly in Jefferson County, which publishes no recorded-plat layer (Deschutes holds only Crooked River Ranch No. 4 and No. 5). Second query shape, listing_tile_mv row read 2026-09-25: 51 listings, MLS City Terrebonne 51, Crooked River 0; ZIP 97760 on 51; 51 of 51 geocoded within 8 km of the registry centre; 3 Active in Terrebonne that day."
+     },
+     {
+      "name": "Crr 10",
+      "listings_geocoded": 30,
+      "inside_parent_polygon": null,
+      "pct_inside": null,
+      "evidence": "No crooked-river-ranch polygon exists to test against: the ranch lies mostly in Jefferson County, which publishes no recorded-plat layer (Deschutes holds only Crooked River Ranch No. 4 and No. 5). Second query shape, listing_tile_mv row read 2026-09-25: 30 listings, MLS City Terrebonne 30, Crooked River 0; ZIP 97760 on 30; 30 of 30 geocoded within 8 km of the registry centre; 1 Active in Terrebonne that day."
+     },
+     {
+      "name": "Crr 16",
+      "listings_geocoded": 2,
+      "inside_parent_polygon": null,
+      "pct_inside": null,
+      "evidence": "No crooked-river-ranch polygon exists to test against: the ranch lies mostly in Jefferson County, which publishes no recorded-plat layer (Deschutes holds only Crooked River Ranch No. 4 and No. 5). Second query shape, listing_tile_mv row read 2026-09-25: 2 listings, MLS City Terrebonne 2, Crooked River 0; ZIP 97760 on 2; 2 of 2 geocoded within 8 km of the registry centre; 0 Active in Terrebonne that day."
+     },
+     {
+      "name": "Crr16",
+      "listings_geocoded": 88,
+      "inside_parent_polygon": null,
+      "pct_inside": null,
+      "evidence": "No crooked-river-ranch polygon exists to test against: the ranch lies mostly in Jefferson County, which publishes no recorded-plat layer (Deschutes holds only Crooked River Ranch No. 4 and No. 5). Second query shape, listing_tile_mv row read 2026-09-25: 138 listings, MLS City Terrebonne 72, Crooked River 66; ZIP 97760 on 133; 88 of 88 geocoded within 8 km of the registry centre; 0 Active in Terrebonne that day."
+     },
+     {
+      "name": "Crr_C",
+      "listings_geocoded": 72,
+      "inside_parent_polygon": null,
+      "pct_inside": null,
+      "evidence": "No crooked-river-ranch polygon exists to test against: the ranch lies mostly in Jefferson County, which publishes no recorded-plat layer (Deschutes holds only Crooked River Ranch No. 4 and No. 5). Second query shape, listing_tile_mv row read 2026-09-25: 74 listings, MLS City Terrebonne 72, Crooked River 2; ZIP 97760 on 74; 72 of 72 geocoded within 8 km of the registry centre; 0 Active in Terrebonne that day."
+     },
+     {
+      "name": "Crr1_C",
+      "listings_geocoded": 227,
+      "inside_parent_polygon": null,
+      "pct_inside": null,
+      "evidence": "No crooked-river-ranch polygon exists to test against: the ranch lies mostly in Jefferson County, which publishes no recorded-plat layer (Deschutes holds only Crooked River Ranch No. 4 and No. 5). Second query shape, listing_tile_mv row read 2026-09-25: 297 listings, MLS City Terrebonne 126, Crooked River 171; ZIP 97760 on 295; 209 of 227 geocoded within 8 km of the registry centre; 0 Active in Terrebonne that day."
+     },
+     {
+      "name": "Crr2_C",
+      "listings_geocoded": 455,
+      "inside_parent_polygon": null,
+      "pct_inside": null,
+      "evidence": "No crooked-river-ranch polygon exists to test against: the ranch lies mostly in Jefferson County, which publishes no recorded-plat layer (Deschutes holds only Crooked River Ranch No. 4 and No. 5). Second query shape, listing_tile_mv row read 2026-09-25: 647 listings, MLS City Terrebonne 254, Crooked River 393; ZIP 97760 on 633; 434 of 455 geocoded within 8 km of the registry centre; 0 Active in Terrebonne that day."
+     },
+     {
+      "name": "Crr3_C",
+      "listings_geocoded": 480,
+      "inside_parent_polygon": null,
+      "pct_inside": null,
+      "evidence": "No crooked-river-ranch polygon exists to test against: the ranch lies mostly in Jefferson County, which publishes no recorded-plat layer (Deschutes holds only Crooked River Ranch No. 4 and No. 5). Second query shape, listing_tile_mv row read 2026-09-25: 614 listings, MLS City Terrebonne 216, Crooked River 398; ZIP 97760 on 608; 433 of 480 geocoded within 8 km of the registry centre; 2 Active in Terrebonne that day."
+     },
+     {
+      "name": "Crr4_C",
+      "listings_geocoded": 75,
+      "inside_parent_polygon": null,
+      "pct_inside": null,
+      "evidence": "No crooked-river-ranch polygon exists to test against: the ranch lies mostly in Jefferson County, which publishes no recorded-plat layer (Deschutes holds only Crooked River Ranch No. 4 and No. 5). Second query shape, listing_tile_mv row read 2026-09-25: 85 listings, MLS City Terrebonne 51, Crooked River 34; ZIP 97760 on 84; 72 of 75 geocoded within 8 km of the registry centre; 0 Active in Terrebonne that day."
+     },
+     {
+      "name": "Crr5_C",
+      "listings_geocoded": 165,
+      "inside_parent_polygon": null,
+      "pct_inside": null,
+      "evidence": "No crooked-river-ranch polygon exists to test against: the ranch lies mostly in Jefferson County, which publishes no recorded-plat layer (Deschutes holds only Crooked River Ranch No. 4 and No. 5). Second query shape, listing_tile_mv row read 2026-09-25: 198 listings, MLS City Terrebonne 94, Crooked River 104; ZIP 97760 on 198; 163 of 165 geocoded within 8 km of the registry centre; 1 Active in Terrebonne that day."
+     },
+     {
+      "name": "Crr6_C",
+      "listings_geocoded": 112,
+      "inside_parent_polygon": null,
+      "pct_inside": null,
+      "evidence": "No crooked-river-ranch polygon exists to test against: the ranch lies mostly in Jefferson County, which publishes no recorded-plat layer (Deschutes holds only Crooked River Ranch No. 4 and No. 5). Second query shape, listing_tile_mv row read 2026-09-25: 159 listings, MLS City Terrebonne 61, Crooked River 98; ZIP 97760 on 153; 105 of 112 geocoded within 8 km of the registry centre; 0 Active in Terrebonne that day."
+     },
+     {
+      "name": "Crr7_C",
+      "listings_geocoded": 362,
+      "inside_parent_polygon": null,
+      "pct_inside": null,
+      "evidence": "No crooked-river-ranch polygon exists to test against: the ranch lies mostly in Jefferson County, which publishes no recorded-plat layer (Deschutes holds only Crooked River Ranch No. 4 and No. 5). Second query shape, listing_tile_mv row read 2026-09-25: 444 listings, MLS City Terrebonne 178, Crooked River 266; ZIP 97760 on 441; 348 of 362 geocoded within 8 km of the registry centre; 0 Active in Terrebonne that day."
+     },
+     {
+      "name": "Crr8_C",
+      "listings_geocoded": 432,
+      "inside_parent_polygon": null,
+      "pct_inside": null,
+      "evidence": "No crooked-river-ranch polygon exists to test against: the ranch lies mostly in Jefferson County, which publishes no recorded-plat layer (Deschutes holds only Crooked River Ranch No. 4 and No. 5). Second query shape, listing_tile_mv row read 2026-09-25: 552 listings, MLS City Terrebonne 195, Crooked River 357; ZIP 97760 on 544; 404 of 432 geocoded within 8 km of the registry centre; 0 Active in Terrebonne that day."
+     },
+     {
+      "name": "Crr9_C",
+      "listings_geocoded": 57,
+      "inside_parent_polygon": null,
+      "pct_inside": null,
+      "evidence": "No crooked-river-ranch polygon exists to test against: the ranch lies mostly in Jefferson County, which publishes no recorded-plat layer (Deschutes holds only Crooked River Ranch No. 4 and No. 5). Second query shape, listing_tile_mv row read 2026-09-25: 92 listings, MLS City Terrebonne 37, Crooked River 55; ZIP 97760 on 91; 55 of 57 geocoded within 8 km of the registry centre; 0 Active in Terrebonne that day."
+     },
+     {
+      "name": "Crr10_C",
+      "listings_geocoded": 436,
+      "inside_parent_polygon": null,
+      "pct_inside": null,
+      "evidence": "No crooked-river-ranch polygon exists to test against: the ranch lies mostly in Jefferson County, which publishes no recorded-plat layer (Deschutes holds only Crooked River Ranch No. 4 and No. 5). Second query shape, listing_tile_mv row read 2026-09-25: 546 listings, MLS City Terrebonne 177, Crooked River 369; ZIP 97760 on 543; 414 of 436 geocoded within 8 km of the registry centre; 2 Active in Terrebonne that day."
+     },
+     {
+      "name": "Crr11_C",
+      "listings_geocoded": 82,
+      "inside_parent_polygon": null,
+      "pct_inside": null,
+      "evidence": "No crooked-river-ranch polygon exists to test against: the ranch lies mostly in Jefferson County, which publishes no recorded-plat layer (Deschutes holds only Crooked River Ranch No. 4 and No. 5). Second query shape, listing_tile_mv row read 2026-09-25: 133 listings, MLS City Terrebonne 41, Crooked River 92; ZIP 97760 on 131; 80 of 82 geocoded within 8 km of the registry centre; 0 Active in Terrebonne that day."
+     },
+     {
+      "name": "Crr12_C",
+      "listings_geocoded": 144,
+      "inside_parent_polygon": null,
+      "pct_inside": null,
+      "evidence": "No crooked-river-ranch polygon exists to test against: the ranch lies mostly in Jefferson County, which publishes no recorded-plat layer (Deschutes holds only Crooked River Ranch No. 4 and No. 5). Second query shape, listing_tile_mv row read 2026-09-25: 191 listings, MLS City Terrebonne 77, Crooked River 114; ZIP 97760 on 188; 139 of 144 geocoded within 8 km of the registry centre; 2 Active in Terrebonne that day."
+     },
+     {
+      "name": "Crr13_C",
+      "listings_geocoded": 3,
+      "inside_parent_polygon": null,
+      "pct_inside": null,
+      "evidence": "No crooked-river-ranch polygon exists to test against: the ranch lies mostly in Jefferson County, which publishes no recorded-plat layer (Deschutes holds only Crooked River Ranch No. 4 and No. 5). Second query shape, listing_tile_mv row read 2026-09-25: 5 listings, MLS City Terrebonne 3, Crooked River 2; ZIP 97760 on 5; 3 of 3 geocoded within 8 km of the registry centre; 0 Active in Terrebonne that day."
+     },
+     {
+      "name": "Crr14_C",
+      "listings_geocoded": 94,
+      "inside_parent_polygon": null,
+      "pct_inside": null,
+      "evidence": "No crooked-river-ranch polygon exists to test against: the ranch lies mostly in Jefferson County, which publishes no recorded-plat layer (Deschutes holds only Crooked River Ranch No. 4 and No. 5). Second query shape, listing_tile_mv row read 2026-09-25: 117 listings, MLS City Terrebonne 45, Crooked River 72; ZIP 97760 on 117; 94 of 94 geocoded within 8 km of the registry centre; 0 Active in Terrebonne that day."
+     },
+     {
+      "name": "Crr15_C",
+      "listings_geocoded": 1,
+      "inside_parent_polygon": null,
+      "pct_inside": null,
+      "evidence": "No crooked-river-ranch polygon exists to test against: the ranch lies mostly in Jefferson County, which publishes no recorded-plat layer (Deschutes holds only Crooked River Ranch No. 4 and No. 5). Second query shape, listing_tile_mv row read 2026-09-25: 6 listings, MLS City Terrebonne 4, Crooked River 2; ZIP 97760 on 4; 1 of 1 geocoded within 8 km of the registry centre; 0 Active in Terrebonne that day."
+     }
+    ],
+    "aliases_added_2026_09_25": "The MLS stopped filing the ranch as 'Crooked River Ranch' (0 Active on 2026-09-25) and files it as 'Crr', 'Crr N' and 'CrrN_C' instead: every distinct spelling that starts with Crr in listing_tile_mv is listed above (27). /communities/crooked-river-ranch showed 0 homes while 63 were Active in Terrebonne under these spellings (getListingTiles city Terrebonne, status active, 2026-09-25: 121 publicly active, 63 of them Crr spellings, all 63 Active: Crr 38, Crr 2 6, Crr 7 4, Crr 3 3, Crr 8 3, Crr3_C 2, Crr10_C 2, Crr12_C 2, Crr 1 1, Crr 10 1, Crr5_C 1). The abbreviations are refused as display names (publishPlatDisplayName), so none prints as a subdivision of the ranch."
+   },
+   "child_count": 27
   }
  ]
 }

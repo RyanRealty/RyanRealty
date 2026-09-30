@@ -541,7 +541,7 @@
     }
   },
   "foldDensity": {
-    "lockedAt": "2026-09-19",
+    "lockedAt": "2026-09-25",
     "crumbCollapseAt": 3,
     "crumbBelowNavPadToken": "--v3-space-2xs",
     "crumbOverlayOnListing": true,
@@ -551,6 +551,11 @@
     "mosaicWell": "navy",
     "stripWell": "navy",
     "mosaicHeightUsesViewport": true,
+    "phoneFrameAspect": "3 / 2",
+    "phoneFrameFit": "cover",
+    "phoneTabsInStrip": true,
+    "phoneCrumbInFlow": true,
+    "onePrice": true,
     "shellPadTopToken": "--v3-space-xs",
     "phoneShellPadTop": "0",
     "phoneFacePadTop": "0",
@@ -567,7 +572,10 @@
       "short mosaic well",
       "oversized filmstrip thumbs",
       "cream under the gallery",
-      "button row between price and beds"
+      "button row between price and beds",
+      "letterboxed phone frame",
+      "media tabs on the still",
+      "price printed twice"
     ]
   },
   "contentFloor": {

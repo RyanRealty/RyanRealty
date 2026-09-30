@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-09-29T23:20:43.849Z
+**Generated:** 2026-09-30T04:20:13.928Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -2606,6 +2606,12 @@ Companion files:
 
 ---
 
+### `lib/data/geo/getCommunityOutline.ts`
+
+**Exports:** `getCommunityOutlineGeoJSON`
+
+---
+
 ### `lib/data/geo/getCommunitySubdivisions.ts`
 
 **Exports:** `getCommunitySubdivisions`
@@ -2671,16 +2677,6 @@ Companion files:
 **TTL windows:** `CACHE_WINDOWS.geoNeighborhood`
 
 **Cache tags:** `'boundaries'`
-
----
-
-### `lib/data/geo/getResortBoundaryGeoJSON.ts`
-
-**Exports:** `getResortBoundaryGeoJSON`
-
-**TTL windows:** `CACHE_WINDOWS.geoNeighborhood`
-
-**Cache tags:** `cacheTag.neighborhood(slug), 'boundaries'`
 
 ---
 

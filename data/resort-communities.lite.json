@@ -1,0 +1,323 @@
+{
+  "generated_from": "data/resort-communities.json by scripts/build-resort-communities-lite.mjs",
+  "communities": [
+    {
+      "slug": "tetherow",
+      "label": "Tetherow",
+      "city": "Bend",
+      "city_slug": "bend",
+      "is_resort": true,
+      "subdivision_aliases": [
+        "Tetherow",
+        "Triple"
+      ],
+      "sub_neighborhoods": [
+        {
+          "slug": "heath",
+          "name": "Heath",
+          "mls_aliases": [
+            "Tetherow"
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "broken-top",
+      "label": "Broken Top",
+      "city": "Bend",
+      "city_slug": "bend",
+      "is_resort": true,
+      "subdivision_aliases": [
+        "Broken Top"
+      ],
+      "sub_neighborhoods": []
+    },
+    {
+      "slug": "eagle-crest",
+      "label": "Eagle Crest",
+      "city": "Redmond",
+      "city_slug": "redmond",
+      "is_resort": true,
+      "subdivision_aliases": [
+        "Eagle Crest",
+        "Ridge At Eagle Crest"
+      ],
+      "sub_neighborhoods": []
+    },
+    {
+      "slug": "pronghorn",
+      "label": "Juniper Preserve",
+      "city": "Bend",
+      "city_slug": "bend",
+      "is_resort": true,
+      "subdivision_aliases": [
+        "Pronghorn"
+      ],
+      "former_labels": [
+        "Pronghorn"
+      ],
+      "sub_neighborhoods": []
+    },
+    {
+      "slug": "caldera-springs",
+      "label": "Caldera Springs",
+      "city": "Sunriver",
+      "city_slug": "sunriver",
+      "is_resort": true,
+      "subdivision_aliases": [
+        "Caldera Springs"
+      ],
+      "mls_cities": [
+        "Bend"
+      ],
+      "sub_neighborhoods": []
+    },
+    {
+      "slug": "sunriver",
+      "label": "Sunriver",
+      "city": "Sunriver",
+      "city_slug": "sunriver",
+      "is_resort": true,
+      "subdivision_aliases": [
+        "Sunriver",
+        "The Ridge",
+        "StoneTH",
+        "Deer Park",
+        "Mtn Village East",
+        "River Village",
+        "Fairway Crest Village",
+        "Forest Park",
+        "Meadow Village",
+        "Overlook Park",
+        "Mtn Village West",
+        "Tennis Village",
+        "Meadow House",
+        "Fairway Vill Condo",
+        "Fremont Crossing",
+        "Abbot House Condo",
+        "Kitty Hawk",
+        "Quelah Condos",
+        "WildflS",
+        "Polehouse",
+        "Aquila Lodges",
+        "Fairway Island",
+        "Cluster Court",
+        "Skypark",
+        "Mtn View Lodge",
+        "Ranch Cabins",
+        "SkylinC",
+        "Quelah Estates",
+        "Aspen Meadows",
+        "Camp Abbot Hangars",
+        "Sunriver Lodge"
+      ],
+      "mls_cities": [
+        "Sunriver",
+        "Bend"
+      ],
+      "sub_neighborhoods": []
+    },
+    {
+      "slug": "awbrey-glen",
+      "label": "Awbrey Glen",
+      "city": "Bend",
+      "city_slug": "bend",
+      "is_resort": true,
+      "subdivision_aliases": [
+        "Awbrey Glen"
+      ],
+      "sub_neighborhoods": []
+    },
+    {
+      "slug": "northwest-crossing",
+      "label": "NorthWest Crossing",
+      "city": "Bend",
+      "city_slug": "bend",
+      "is_resort": true,
+      "subdivision_aliases": [
+        "NorthWest Crossing"
+      ],
+      "sub_neighborhoods": []
+    },
+    {
+      "slug": "crosswater",
+      "label": "Crosswater",
+      "city": "Sunriver",
+      "city_slug": "sunriver",
+      "is_resort": true,
+      "subdivision_aliases": [
+        "Crosswater",
+        "Osprey Pointe Condo"
+      ],
+      "mls_cities": [
+        "Bend",
+        "Sunriver"
+      ],
+      "sub_neighborhoods": []
+    },
+    {
+      "slug": "black-butte-ranch",
+      "label": "Black Butte Ranch",
+      "city": "Sisters",
+      "city_slug": "sisters",
+      "is_resort": true,
+      "subdivision_aliases": [
+        "Black Butte Ranch",
+        "Bbr",
+        "South Meadow",
+        "Glaze Meadow Homesite Section",
+        "Country House Condo"
+      ],
+      "mls_cities": [
+        "Black Butte Ranch",
+        "Sisters"
+      ],
+      "sub_neighborhoods": []
+    },
+    {
+      "slug": "brasada-ranch",
+      "label": "Brasada Ranch",
+      "city": "Powell Butte",
+      "city_slug": "powell-butte",
+      "is_resort": true,
+      "subdivision_aliases": [
+        "Brasada Ranch"
+      ],
+      "sub_neighborhoods": []
+    },
+    {
+      "slug": "widgi-creek",
+      "label": "Widgi Creek",
+      "city": "Bend",
+      "city_slug": "bend",
+      "is_resort": true,
+      "subdivision_aliases": [
+        "Widgi Creek",
+        "PointsWest",
+        "Elkai Woods",
+        "Milepost 1"
+      ],
+      "sub_neighborhoods": []
+    },
+    {
+      "slug": "vandevert-ranch",
+      "label": "Vandevert Ranch",
+      "city": "Bend",
+      "city_slug": "bend",
+      "is_resort": true,
+      "subdivision_aliases": [
+        "Vandevert Ranch"
+      ],
+      "sub_neighborhoods": []
+    },
+    {
+      "slug": "three-rivers",
+      "label": "Three Rivers",
+      "city": "Bend",
+      "city_slug": "bend",
+      "is_resort": false,
+      "subdivision_aliases": [
+        "Oww",
+        "DrrhTrs",
+        "River Meadows",
+        "Sun Dance",
+        "Deschutes River Recreation Homesites",
+        "Drrh Trs",
+        "Deschutes Pines",
+        "Blissful Acres",
+        "Fountainbleau",
+        "Swarens Fancher",
+        "OWW2"
+      ],
+      "mls_cities": [
+        "Bend",
+        "La Pine"
+      ],
+      "sub_neighborhoods": []
+    },
+    {
+      "slug": "mt-bachelor-village",
+      "label": "Mt Bachelor Village",
+      "city": "Bend",
+      "city_slug": "bend",
+      "is_resort": true,
+      "subdivision_aliases": [
+        "Mt Bachelor Village"
+      ],
+      "sub_neighborhoods": []
+    },
+    {
+      "slug": "inn-of-the-7th-mountain",
+      "label": "Inn of the 7th Mountain",
+      "city": "Bend",
+      "city_slug": "bend",
+      "is_resort": true,
+      "subdivision_aliases": [
+        "Inn Of The 7th",
+        "7th Mtn Golf Village"
+      ],
+      "sub_neighborhoods": []
+    },
+    {
+      "slug": "rivers-edge",
+      "label": "Rivers Edge",
+      "city": "Bend",
+      "city_slug": "bend",
+      "is_resort": true,
+      "subdivision_aliases": [
+        "Rivers Edge Village",
+        "Phase 5 Rivers Edge"
+      ],
+      "sub_neighborhoods": []
+    },
+    {
+      "slug": "mountain-high",
+      "label": "Mountain High",
+      "city": "Bend",
+      "city_slug": "bend",
+      "is_resort": true,
+      "subdivision_aliases": [
+        "Mtn High"
+      ],
+      "sub_neighborhoods": []
+    },
+    {
+      "slug": "crooked-river-ranch",
+      "label": "Crooked River Ranch",
+      "city": "Terrebonne",
+      "city_slug": "terrebonne",
+      "is_resort": false,
+      "subdivision_aliases": [
+        "Crooked River Ranch",
+        "Crr",
+        "Crr 1",
+        "Crr 2",
+        "Crr 3",
+        "Crr 4",
+        "Crr 6",
+        "Crr 7",
+        "Crr 8",
+        "Crr 10",
+        "Crr 16",
+        "Crr16",
+        "Crr_C",
+        "Crr1_C",
+        "Crr2_C",
+        "Crr3_C",
+        "Crr4_C",
+        "Crr5_C",
+        "Crr6_C",
+        "Crr7_C",
+        "Crr8_C",
+        "Crr9_C",
+        "Crr10_C",
+        "Crr11_C",
+        "Crr12_C",
+        "Crr13_C",
+        "Crr14_C",
+        "Crr15_C"
+      ],
+      "sub_neighborhoods": []
+    }
+  ]
+}

@@ -169,6 +169,14 @@ function normalizeSlug(raw: string): string {
   return s.toLowerCase().trim()
 }
 
+/** The Ledger shows up to LEDGER_CARDS homes, taken from the newest LEDGER_READ
+ *  live rows after the price, lease, address and duplicate filters. Capping the
+ *  read at the card count let those filters eat the grid: on 2026-09-29 four
+ *  commercial leases at one Medford address ($0.85, rent per square foot) and a
+ *  duplicate address took 5 of the newest 12, and the page showed 7 homes of 712. */
+const LEDGER_CARDS = 12
+const LEDGER_READ = 36
+
 /** The home-market towns the honest block names. Dead text naming a linkable
  *  thing is a defect (PUBLIC-PRODUCT-OS), and pattern 6 is the block that carries
  *  the graph's outbound edges, so each town named in the prose is a door. Every
@@ -227,7 +235,7 @@ export default async function OutOfAreaCityPage({
     // Live inventory via the existing browse machinery (listing_tile_mv). The
     // explicit city predicate exempts the service-area allowlist by design.
     withTimeoutFallback(
-      getListingTiles({ city: city.name, status: 'active', limit: 12, sort: 'newest' }),
+      getListingTiles({ city: city.name, status: 'active', limit: LEDGER_READ, sort: 'newest' }),
       [] as Awaited<ReturnType<typeof getListingTiles>>,
       5000,
       'oregon-city:tiles',
@@ -325,6 +333,7 @@ export default async function OutOfAreaCityPage({
   const seenAddress = new Set<string>()
   const listingCards: OregonCityListingCard[] = []
   for (const tile of tiles) {
+    if (listingCards.length >= LEDGER_CARDS) break
     const price = tile.listPrice
     // §0: same guard as the ask-strip below — formatPrice rounds to the nearest
     // $1,000, so a genuine but tiny raw price (a land-listing placeholder under
@@ -403,10 +412,11 @@ export default async function OutOfAreaCityPage({
   const listingTrace = `live MLS listing feed, active listings in ${city.name}, newest first, one row per listing`
   // §0: this Ledger and the Instrument's "active listings" figure above are
   // two different reads of the same live feed — the Instrument is the
-  // pre-aggregated snapshot row, this Ledger is a fresh fetch capped at the
-  // newest 12 and then dropped for a missing price/address or folded for a
-  // shared street address. One sentence connects the two counts whenever
-  // they disagree, using the real numbers both queries returned.
+  // pre-aggregated snapshot row, this Ledger is a fresh fetch of the newest
+  // LEDGER_READ, dropped for a missing price/address or a lease or folded for
+  // a shared street address, then capped at LEDGER_CARDS. One sentence connects
+  // the two counts whenever they disagree, using the real numbers both queries
+  // returned.
   const listingsNote =
     listingCards.length > 0
       ? 'This spread is the newest priced, addressed homes, not the whole live book.'
@@ -489,7 +499,7 @@ export default async function OutOfAreaCityPage({
     schemas.push({
       type: 'itemList',
       name: `Newest ${city.name} listings`,
-      items: listingCards.slice(0, 12).map((card) => ({
+      items: listingCards.map((card) => ({
         name: buildOregonCityItemListName({
           address: card.address,
           price: card.price,
