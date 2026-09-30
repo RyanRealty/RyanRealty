@@ -777,6 +777,13 @@ export async function approveProspectDoc(
 ): Promise<{ ok: boolean; error?: string }> {
   try {
     if (!(await requireAdmin())) return { ok: false, error: 'Unauthorized' }
+    const { listCmaQueue } = await import('@/lib/data')
+    const { recommendationGapHold } = await import('@/lib/cma/gap-hold')
+    const safe = slug.trim().toLowerCase()
+    const { rows } = await listCmaQueue({ limit: 1000, includeArchived: true })
+    const queuedRow = rows.find((r) => r.docKind === 'cma' && r.slug.toLowerCase() === safe)
+    const gap = recommendationGapHold(queuedRow?.recommendedList ?? null, queuedRow?.theirPrice ?? null)
+    if (gap.hold) return { ok: false, error: gap.reason }
     const { approveCmaAction } = await import('@/app/actions/cma-admin')
     const res = await approveCmaAction(slug)
     if (res.error) return { ok: false, error: res.error }
