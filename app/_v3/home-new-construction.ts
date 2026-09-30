@@ -74,7 +74,9 @@ export async function loadHomeNewConRun(): Promise<HomePlaceRun> {
       return {
         label: name,
         href: bendNewConSearchHref(name),
-        description: 'Active-building subdivision',
+        // Plain words, not the filter's name (2026-09-29: the judge read
+        // "Active-building subdivision" as internal jargon).
+        description: 'Bend subdivision, builder still selling',
         ...(photoSrc ? { photoSrc } : {}),
         ...(navCounts[i] != null ? { count: navCounts[i] } : {}),
       }

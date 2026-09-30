@@ -184,7 +184,12 @@ describe('homepage hero search uses the public search stack', () => {
     expect(css).toContain('.v3 .home-hero-search .v3-morph-search')
     expect(css).toContain('.v3 .home-hero-search .v3-tabs__list.bg-card')
     expect(css).toMatch(/\.v3 \.home-hero-search \.v3,[\s\S]*?background:\s*transparent\s*!important/)
-    expect(css).toMatch(/\.v3 \.home-hero-search \.v3-tabs__list\.bg-card \{[\s\S]*?background-color:\s*transparent\s*!important/)
+    // The track is a light wash on the photograph with a cream hairline, never
+    // the opaque cream box (2026-09-29: with no track the switch read as two
+    // loose words).
+    expect(css).toMatch(
+      /\.v3 \.home-hero-search \.v3-tabs__list\.bg-card \{[\s\S]*?background-color:\s*color-mix\(in srgb, var\(--v3-cream\) 16%, transparent\)\s*!important/,
+    )
     const stageCssForWrappers = readFileSync(resolve('components/site/v3/V3Stage.css'), 'utf8')
     expect(stageCssForWrappers).toContain('.v3.v3-stage .v3-stage-copy .v3')
     expect(stageCssForWrappers).toMatch(
