@@ -20,7 +20,7 @@ This document is a complete reference for building applications against the Spar
 - **ListingKey** — Primary identifier for listings. Use this (not `ListingId` / MLS number) for lookups and joins.
 - **Pagination** — Use `_skiptoken` for large datasets; `_page`/`_skip` can miss records during sync. `_limit` 0–25 default; up to 1000 for replication.
 - **Incremental sync** — `_filter=ModificationTimestamp Ge {last_sync_timestamp}`. Update last_sync_timestamp only after a full cycle succeeds.
-- **Terminal statuses** (no re-sync after initial): Closed, Cancelled, Withdrawn, Expired.
+- **Terminal statuses:** Closed, Canceled, Withdrawn, Expired. **Terminal is not final.** The same ListingKey can go back on the market (an expired listing relisted the same day, a withdrawn one back on market). This MLS's StandardStatus values are Active, Active Under Contract, Coming Soon, Pending, Closed, Expired, Withdrawn, Canceled (`/v1/standardfields/StandardStatus`, 2026-09-30).
 - **403** — Log endpoint as inaccessible, skip permanently, do not retry.
 - **429** — Exponential backoff (e.g. 2s, 4s, 8s, 16s, 32s); then pause and allow manual retry.
 
@@ -159,7 +159,7 @@ Base: `/v1/listings/{ListingKey}/{sub-resource}`
 
 1. **Initial sync:** `_skiptoken` pagination, `_limit=1000`; store skiptoken per job for resumption.
 2. **Incremental:** `ModificationTimestamp Ge {last_sync_timestamp}`; update timestamp only after full cycle success.
-3. **Terminal listings:** Once closed/cancelled/withdrawn/expired and fully synced (including history), mark finalized and do not re-fetch.
+3. **Terminal listings:** Once closed/canceled/withdrawn/expired and fully synced (including history), mark finalized, but never skip a finalized row Spark modifies: reopen it when a fact a statistic reads changed (`lib/sync/deltaSync.ts` + `lib/sync/listingDrift.ts`). Until 2026-09-30 the delta sync skipped finalized rows outright and relisted homes kept reading Expired (97 of 359 sampled recent terminal rows disagreed with Spark). `lib/sync/closingsReconcile.ts` (`reconcileClosings`, `reconcileListingStatus`) repairs what the sync misses.
 4. **Upsert:** `ON CONFLICT (ListingKey)` or resource Id `DO UPDATE`; never hard-delete from API response.
 5. **Primary keys:** Listings = `ListingKey`; Contacts = `Id`; Photos = `Id`; etc.
 

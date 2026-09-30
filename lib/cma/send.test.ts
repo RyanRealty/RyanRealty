@@ -280,11 +280,13 @@ describe('sendCmaToLead', () => {
     const res = await sendCmaToLead(SLUG)
 
     expect(res.ok).toBe(true)
+    // live: the send chokepoint also asks the MLS itself, not only our listings copy.
     expect(h.screenAddressForSolicitation).toHaveBeenCalledWith({
       address: '4242 Example Lane, Bend, OR 97701',
       city: 'Bend',
       sinceIso: null,
       subjectListingKey: 'ZZTESTKEYLOT33',
+      live: true,
     })
   })
 

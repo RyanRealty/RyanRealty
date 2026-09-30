@@ -39,6 +39,11 @@ export type DriftReason =
   | 'city'
   | 'sub_type'
   | 'sqft'
+  /**
+   * Our copy is frozen (is_finalized) while its status is not terminal. Only
+   * the delta sync sets this: such a row is not frozen, whatever the MLS says.
+   */
+  | 'frozen_not_terminal'
 
 function text(v: unknown): string | null {
   if (typeof v !== 'string') return null

@@ -579,6 +579,10 @@ The boundary-map pins + "homes for sale" cards need the set of listings physical
 */10 * * * *   /api/cron/sync-delta           Spark → listings (incremental sync)
                                               + calls refresh_market_pulse() + refresh_community_market_pulse()
 */5 * * * *    /api/cron/sync-history-terminal Spark history sync for terminal listings
+41 10 * * *    /api/cron/listing-status-reconcile Spark × listings for everything on the market
+                                              (both sides) + our Expired/Withdrawn/Canceled rows
+                                              changed in 120 days; drift re-pulled from Spark
+                                              (repair log source 'status-reconcile'); ?repair=0 dry run
 0 2 * * 0      /api/cron/sync-full            Sunday 2am full re-sync
 0 */6 * * *    /api/cron/refresh-market-stats Every 6 hours — backfill_rolling for cities,
                                               + compute_and_cache_period_stats for every

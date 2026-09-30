@@ -25,6 +25,7 @@
 import { findCmaSubjectByAddress, findCmaSubjectByMls } from '@/lib/data'
 import type { CmaListingRow } from '@/lib/data'
 import { parseCmaAddress } from '@/lib/cma/subject'
+import { sparkRelistCheck, type SparkRelistResult } from '@/lib/prospecting/sparkRelist'
 
 export type SolicitBlockReason = 'sold' | 'listed' | 'pending' | 'unverified'
 
@@ -267,6 +268,16 @@ export async function screenAddressForSolicitation(input: {
    * "which home is this?" on a shared address — better than any address parse.
    */
   subjectListingKey?: string | null
+  /**
+   * Also ask the MLS itself (lib/prospecting/sparkRelist.ts), in parallel with
+   * the table read. Our table can lag the MLS: on 2026-09-30, 74 of 552
+   * expired-listing targets were back on the market in Spark while our copy
+   * read Expired. The send chokepoint (lib/cma/send.ts) sets this; the hourly
+   * sweep does not (it only archives, and 500 rows an hour would spend the
+   * shared Spark key). A relist the MLS shows blocks; an MLS that cannot
+   * answer blocks as unverified.
+   */
+  live?: boolean
 }): Promise<SolicitScreen> {
   const raw = str(input.address)
   if (!raw) {
@@ -282,6 +293,63 @@ export async function screenAddressForSolicitation(input: {
       checked: 0,
     }
   }
+  if (input.live) {
+    const liveCheck = sparkRelistCheck({
+      listingKey: str(input.subjectListingKey) || null,
+      streetAddress: raw,
+      city: input.city ?? null,
+    }).catch(
+      (e: unknown): SparkRelistResult => ({
+        relisted: false,
+        verifyFailed: true,
+        reason: `the live MLS check threw: ${e instanceof Error ? e.message : String(e)}`,
+        blockedStatus: null,
+        blockedKey: null,
+      }),
+    )
+    const [table, mls] = await Promise.all([screenAddressInTable(raw, parsed, input), liveCheck])
+    return withLiveMls(table, mls)
+  }
+  return screenAddressInTable(raw, parsed, input)
+}
+
+/**
+ * Fold the live MLS answer into the table's. A block the table already shows
+ * stands (its reason is the more specific one); otherwise a relist the MLS
+ * shows blocks, and an MLS that could not answer blocks as unverified.
+ */
+function withLiveMls(table: SolicitScreen, mls: SparkRelistResult): SolicitScreen {
+  if (!table.ok && table.reason !== 'unverified') return table
+  if (mls.relisted) {
+    const status = mls.blockedStatus ?? ''
+    const reason: SolicitBlockReason = status === 'Closed' ? 'sold' : UNDER_CONTRACT.has(status) ? 'pending' : 'listed'
+    return {
+      ok: false,
+      reason,
+      detail: `${mls.reason ?? 'The MLS shows this address on the market'}. Our listings copy had not caught up; the MLS decides.`,
+      listingKey: mls.blockedKey,
+      checked: table.checked,
+    }
+  }
+  if (!table.ok) return table
+  if (mls.verifyFailed) {
+    return {
+      ok: false,
+      reason: 'unverified',
+      detail: `The live MLS check could not answer, so this address could not be screened: ${mls.reason ?? 'no reason given'}`,
+      listingKey: null,
+      checked: table.checked,
+    }
+  }
+  return table
+}
+
+/** The table half of the screen: our listings copy at the subject's address. */
+async function screenAddressInTable(
+  raw: string,
+  parsed: NonNullable<ReturnType<typeof parseCmaAddress>>,
+  input: { sinceIso?: string | null; unit?: string | null; subjectListingKey?: string | null },
+): Promise<SolicitScreen> {
   const namePrefix = parsed.streetNameTokens.join(' ')
   const prefixes = [namePrefix]
   const first = parsed.streetNameTokens[0]

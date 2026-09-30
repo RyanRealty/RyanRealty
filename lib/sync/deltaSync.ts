@@ -235,7 +235,10 @@ export function computeDeltaPlan(
     maxProcessedTs: null,
     counters: { fetched: 0, newListings: 0, priceChanges: 0, statusChanges: 0, skippedFinalized: 0, reopenedFinalized: 0 },
   }
-  const queuedFinalize = new Set<string>()
+  // The row each listing is written with this window: the LAST one Spark sent.
+  // Finalization reads this, never an earlier row, so a listing Spark sends as
+  // Expired and then Active in one window is written Active and not frozen.
+  const lastWritten = new Map<string, FinalizeTarget>()
 
   for (const result of results) {
     plan.counters.fetched++
@@ -258,11 +261,22 @@ export function computeDeltaPlan(
     // reads (status, close date or price, list price, city, sub-type, living
     // area); then it reopens and runs the normal diff below, and a terminal
     // row re-freezes in the finalize pass. Until 2026-09-25 this skip was
-    // unconditional: a withdrawn listing that relisted and sold, or a close
-    // date corrected after the fact, never reached us.
+    // unconditional (live until the 2026-09-30 05:31Z deploy): a listing that
+    // expired and came back on the market under the same key, or a withdrawn
+    // one that relisted and sold, never reached us. On 2026-09-30, 97 of 359
+    // sampled recent Expired/Withdrawn/Canceled rows disagreed with Spark, 80
+    // of them on the market again, every one finalized.
+    //
+    // Only a terminal row is frozen. A finalized row whose status is not
+    // terminal (on the market, or blank) was frozen by mistake, by a race or
+    // by a writer that rewrote its status without unfreezing it; it reopens
+    // whatever the MLS says, or it would miss every later update (three of
+    // 260 sampled Active/Pending rows were frozen that way, each since
+    // withdrawn, canceled or expired in Spark).
     let reopened = false
     if (existing?.is_finalized) {
       const reasons = driftReasons(factsFromListingRow(existing as Record<string, unknown>), factsFromListingRow(row))
+      if (!isTerminalStatus(existing.StandardStatus)) reasons.push('frozen_not_terminal')
       if (reasons.length === 0) {
         plan.counters.skippedFinalized++
         continue
@@ -297,10 +311,6 @@ export function computeDeltaPlan(
           ListPrice: price,
         },
       })
-      if (nowTerminal && !queuedFinalize.has(listingKey)) {
-        queuedFinalize.add(listingKey)
-        plan.finalizeTargets.push({ listingKey, listNumber, status, sourceRow: row })
-      }
     } else {
       const oldStatus = existing.StandardStatus
       const oldPrice = existing.ListPrice
@@ -368,19 +378,20 @@ export function computeDeltaPlan(
           payload: { ListNumber: listNumber, previous_price: oldPrice, new_price: price },
         })
       }
-
-      // Queue finalize for ANY currently-terminal, non-finalized listing (not
-      // just fresh transitions) so a missed terminal on a prior run is caught.
-      if (nowTerminal && !queuedFinalize.has(listingKey)) {
-        queuedFinalize.add(listingKey)
-        plan.finalizeTargets.push({ listingKey, listNumber, status, sourceRow: row })
-      }
     }
 
+    lastWritten.set(listingKey, { listingKey, listNumber, status, sourceRow: row })
     if (reopened) {
       trimReopenedNews(plan, { eventsFrom, statusFrom, priceFrom }, row, nowIso)
       plan.reopenedRows.push(row)
     } else plan.rowsToUpsert.push(row)
+  }
+
+  // Queue finalize for ANY listing the window leaves terminal (not just fresh
+  // transitions, so a missed terminal on a prior run is caught), judged on the
+  // row actually written.
+  for (const t of lastWritten.values()) {
+    if (t.status && isTerminalStatus(t.status)) plan.finalizeTargets.push(t)
   }
 
   plan.rowsToUpsert = lastPerListNumber(plan.rowsToUpsert)
@@ -613,7 +624,7 @@ export async function runDeltaSync(opts: RunDeltaSyncOptions): Promise<ShadowRun
   const { plan, sinceIso, pagesProcessed, truncated, runStartedAt, nowIso, accessToken } = ctx
 
   if (opts.mode === 'shadow') {
-    const nextCursor = computeNextDeltaCursor({ upsertFailed: false, truncated, runStartedAt, maxProcessedTs: plan.maxProcessedTs })
+    const nextCursor = computeNextDeltaCursor({ upsertFailed: false, truncated, runStartedAt, maxProcessedTs: plan.maxProcessedTs, previousCursor: sinceIso })
     return { sinceIso, pages: pagesProcessed, truncated, maxProcessedTs: plan.maxProcessedTs, nextCursor, plan }
   }
 
@@ -759,7 +770,7 @@ export async function runDeltaSync(opts: RunDeltaSyncOptions): Promise<ShadowRun
   }
 
   // Cursor: advance only as far as safely drained (cursor-safety p0.1).
-  const nextCursor = computeNextDeltaCursor({ upsertFailed, truncated, runStartedAt, maxProcessedTs: plan.maxProcessedTs })
+  const nextCursor = computeNextDeltaCursor({ upsertFailed, truncated, runStartedAt, maxProcessedTs: plan.maxProcessedTs, previousCursor: sinceIso })
   if (nextCursor) await updateSyncStateLastDelta(nextCursor)
   if (upsertFailed) console.error('[deltaSync] upsert failure(s) — cursor NOT advanced; window retried next tick.')
   else if (truncated) console.warn(`[deltaSync] TRUNCATED at MAX_PAGES; cursor -> ${nextCursor ?? '(unchanged)'} (not now()).`)

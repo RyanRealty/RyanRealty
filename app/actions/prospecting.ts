@@ -211,7 +211,7 @@ export async function sendProspectingIntro(
       return { ok: false, error: 'This property is now active, pending, or sold after expire. Outreach is not allowed.', code: 'relisted' }
     }
     if (relistCheck.verifyFailed) {
-      return { ok: false, error: 'Could not verify the property is still off-market. Send blocked until MLS status is confirmed.', code: 'relisted' }
+      return { ok: false, error: 'Could not verify the property is still off-market. Send blocked until MLS status is confirmed.', code: 'verify-failed' }
     }
 
     // 7. Phone.
@@ -532,7 +532,7 @@ export async function sendProspectingEmailIntro(
       return { ok: false, error: 'This property is now active, pending, or sold after expire. Outreach is not allowed.', code: 'relisted' }
     }
     if (relistCheck.verifyFailed) {
-      return { ok: false, error: 'Could not verify the property is still off-market. Send blocked until MLS status is confirmed.', code: 'relisted' }
+      return { ok: false, error: 'Could not verify the property is still off-market. Send blocked until MLS status is confirmed.', code: 'verify-failed' }
     }
 
     // 7. Recipient (email twin of the SMS phone gate). Quiet hours deliberately

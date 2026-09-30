@@ -26,16 +26,21 @@ import {
   type ProspectKind,
 } from './types'
 
-/** On-market statuses the existing expired-outreach probe already used. */
-export const EXPIRED_OUTREACH_ON_MARKET = ['Active', 'Pending', 'Coming Soon'] as const
+/**
+ * Every on-market status this MLS uses (Spark /standardfields/StandardStatus,
+ * 2026-09-30: Active, Active Under Contract, Coming Soon, Pending). Active
+ * Under Contract was missing until 2026-09-30, so a home under contract with
+ * another broker did not block outreach.
+ */
+export const EXPIRED_OUTREACH_ON_MARKET = ['Active', 'Active Under Contract', 'Pending', 'Coming Soon'] as const
 
 /**
  * Same listings probe as the original relist check, plus Closed so a
  * post-expire sale at the address (or parcel) paints as relisted.
- * PostgREST `or` — Coming Soon needs quotes (space in the value).
+ * PostgREST `or` — values with a space need quotes.
  */
 export const EXPIRED_OUTREACH_STATUS_OR =
-  'StandardStatus.in.(Active,Pending,"Coming Soon"),StandardStatus.ilike.*Closed*'
+  'StandardStatus.in.(Active,"Active Under Contract",Pending,"Coming Soon"),StandardStatus.ilike.*Closed*'
 
 export const EXPIRED_OUTREACH_LISTING_SELECT =
   'StreetNumber, StreetName, City, status_change_timestamp, StandardStatus, CloseDate, parcel_number'

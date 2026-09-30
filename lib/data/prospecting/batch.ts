@@ -13,6 +13,7 @@ import 'server-only'
 
 import { createServiceClient } from '@/lib/supabase/service'
 import { slugifyAddress } from '@/lib/cma/address-slug'
+import { sparkRelistCheck } from '@/lib/prospecting/sparkRelist'
 import { TAG_CHANNEL } from '@/lib/crm/suppressions'
 import {
   EXPIRED_OUTREACH_LISTING_SELECT,
@@ -535,19 +536,55 @@ export async function resolveComplianceBatch(
  * Closed sales whose CloseDate (else status_change_timestamp) is newer than expire; for FSBO, any current on-market match AND Closed after
  * `detected_at`. Prefer `parcel_number` when present (expired: via listing_key;
  * FSBO: explicit parcel or taxlot from enrichment_notes).
+ *
+ * Our listings table can lag the MLS, so the MLS answers too (2026-09-30: 74 of
+ * the 552 expired-listing outreach targets had their own listing key back on
+ * the market in Spark while our copy read Expired). sparkRelistCheck
+ * (lib/prospecting/sparkRelist.ts) asks Spark, in parallel with the table read,
+ * for the subject listing by key and for on-market listings at the same street
+ * number, city and unit. A relist either source shows blocks; a failure of
+ * either source, when neither shows a relist, fails closed.
  */
 export async function verifyNotRelisted(
   kind: ProspectKind,
-  prospect: {
-    street_address: string | null
-    city: string | null
-    expiryComparator: string | null
-    listing_key?: string | null
-    parcel_number?: string | null
-    enrichment_notes?: string | null
-    /** FSBO natural key — loads parcel/taxlot from fsbo_listings when present. */
-    fsbo_url?: string | null
-  },
+  prospect: VerifyNotRelistedProspect,
+): Promise<{ relisted: boolean; verifyFailed: boolean; reason: string | null }> {
+  const live = sparkRelistCheck({
+    listingKey: prospect.listing_key ?? null,
+    streetAddress: prospect.street_address,
+    city: prospect.city,
+  }).catch((e: unknown) => ({
+    relisted: false,
+    verifyFailed: true,
+    reason: `Spark relist check threw: ${e instanceof Error ? e.message : String(e)}`,
+  }))
+  const [table, mls] = await Promise.all([verifyNotRelistedInTable(kind, prospect), live])
+  if (table.relisted || mls.relisted) {
+    if (mls.relisted && !table.relisted) console.warn('[prospecting] verifyNotRelisted: the MLS shows a relist our listings table does not:', mls.reason)
+    return { relisted: true, verifyFailed: false, reason: mls.relisted ? mls.reason : 'on the market or sold per our listings table' }
+  }
+  if (table.verifyFailed || mls.verifyFailed) {
+    if (mls.verifyFailed) console.error('[prospecting] verifyNotRelisted Spark check failed (fail-closed):', mls.reason)
+    return { relisted: false, verifyFailed: true, reason: mls.verifyFailed ? mls.reason : 'listings read failed' }
+  }
+  return { relisted: false, verifyFailed: false, reason: null }
+}
+
+type VerifyNotRelistedProspect = {
+  street_address: string | null
+  city: string | null
+  expiryComparator: string | null
+  listing_key?: string | null
+  parcel_number?: string | null
+  enrichment_notes?: string | null
+  /** FSBO natural key — loads parcel/taxlot from fsbo_listings when present. */
+  fsbo_url?: string | null
+}
+
+/** The listings-table half of verifyNotRelisted (fail-closed on any read error). */
+async function verifyNotRelistedInTable(
+  kind: ProspectKind,
+  prospect: VerifyNotRelistedProspect,
 ): Promise<{ relisted: boolean; verifyFailed: boolean }> {
   if (!prospect.street_address) return { relisted: false, verifyFailed: false }
   try {

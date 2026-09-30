@@ -55,13 +55,17 @@ export async function drainProspectingFirstTouchDrip(now: Date = new Date()): Pr
       listing_key: next.kind === 'expired' ? next.id : null,
       fsbo_url: next.kind === 'fsbo' ? next.id : null,
     })
-    if (relistCheck.relisted || relistCheck.verifyFailed) {
-      const reason = relistCheck.verifyFailed
-        ? 'verify-failed-fail-closed'
-        : 'relisted-active-pending-coming-soon-or-closed'
-      await hardSkipQueuedFirstTouch(next.kind, next.id, reason)
+    if (relistCheck.relisted) {
+      await hardSkipQueuedFirstTouch(next.kind, next.id, 'relisted-active-pending-coming-soon-or-closed')
       skipped++
       continue
+    }
+    // Fail closed without losing the row: the check could not answer (the MLS
+    // or our listings read failed or timed out), so nothing is sent and the row
+    // stays queued for the next tick. Dequeuing here would let one Spark outage
+    // empty the queue, 25 rows a minute.
+    if (relistCheck.verifyFailed) {
+      return { ok: false, error: 'relist check could not answer; left queued', kind: next.kind, id: next.id }
     }
     if (next.kind === 'fsbo') {
       const still = await verifyFsboStillActive(next.id)
@@ -100,8 +104,9 @@ export async function drainProspectingFirstTouchDrip(now: Date = new Date()): Pr
     })
     if (!sent.ok) {
       // Permanent hard-stops / already-sent: dequeue so the drip does not stall.
-      // Transient send-failed: leave queued (claim release restores queued when
-      // queued_at is set — see migration release RPC).
+      // Transient send-failed and verify-failed (the relist check could not
+      // answer): leave queued (claim release restores queued when queued_at is
+      // set — see migration release RPC).
       const dequeueCodes = new Set([
         'relisted',
         'hard-stop',

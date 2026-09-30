@@ -389,6 +389,9 @@ export async function sendCmaToLead(
       // Without the subject's own listing, "Lot 33" on the only row at the
       // address looks like an unknown unit and the screen refuses the send.
       subjectListingKey: ctx.subjectListingKey ?? null,
+      // Ask the MLS itself too: our listings copy can lag it (2026-09-30: 74
+      // of 552 expired targets were back on the market in Spark).
+      live: true,
     })
     if (!screen.ok) {
       return { ok: false, error: `Not sent. ${screen.detail}` }

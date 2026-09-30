@@ -368,6 +368,8 @@ export type SendGuardCode =
   | 'auth'
   | 'no-doc'
   | 'relisted'
+  /** The relist check (our listings table or the live MLS) could not answer: not sent, not dequeued. */
+  | 'verify-failed'
   | 'off-market'
   | 'hard-stop'
   | 'no-phone'

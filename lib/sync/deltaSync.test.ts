@@ -346,4 +346,93 @@ describe('computeDeltaPlan', () => {
     )
     expect(plan.finalizeTargets).toHaveLength(1)
   })
+
+  // 2026-09-30 relist drift: 20260120200524195349000000 (15 NW Franklin, Bend)
+  // expired 2026-08-06 and was finalized; Spark put the same key back on the
+  // market at 21:18Z that day. Until the reopen shipped, every later delta tick
+  // skipped it as finalized, so it still read Expired here in late September.
+  it('a finalized Expired listing Spark relists under the same key reopens as Active and is not re-frozen', () => {
+    const plan = computeDeltaPlan(
+      [
+        mkResult({
+          ListingKey: '20260120200524195349000000',
+          ListNumber: '220214135',
+          StandardStatus: 'Active',
+          ListPrice: 625000,
+          OnMarketDate: '2026-08-06T21:18:49Z',
+        }),
+      ],
+      mapOf(
+        existing({
+          ListingKey: '20260120200524195349000000',
+          ListNumber: '220214135',
+          StandardStatus: 'Expired',
+          ListPrice: 625000,
+          is_finalized: true,
+        }),
+      ),
+      { nowIso: NOW },
+    )
+    expect(plan.counters.skippedFinalized).toBe(0)
+    expect(plan.reopened.map((r) => r.reasons)).toEqual([['status']])
+    expect(plan.reopenedRows[0]).toMatchObject({ StandardStatus: 'Active', is_finalized: false })
+    expect(eventTypes(plan)).toEqual(['status_active'])
+    expect(plan.finalizeTargets).toHaveLength(0)
+  })
+
+  it('a finalized row that is not in a terminal status is not frozen: it is written and unfrozen even with no drift', () => {
+    // An on-market row carrying is_finalized (a race, or a writer that rewrote
+    // its status without unfreezing it) must still take every MLS update.
+    const plan = computeDeltaPlan(
+      [mkResult({ StandardStatus: 'Active', ListPrice: 500000 })],
+      mapOf(existing({ StandardStatus: 'Active', ListPrice: 500000, is_finalized: true })),
+      { nowIso: NOW },
+    )
+    expect(plan.counters.skippedFinalized).toBe(0)
+    expect(plan.reopened).toEqual([
+      { listNumber: '220000001', listingKey: 'KEY1', reasons: ['frozen_not_terminal'], preserveMedia: false },
+    ])
+    expect(plan.reopenedRows[0]).toMatchObject({ is_finalized: false, history_finalized: false })
+    expect(plan.rowsToUpsert).toHaveLength(0)
+    expect(plan.activityEvents).toHaveLength(0)
+  })
+
+  it('a finalized on-market row Spark now reports Canceled reopens and re-freezes as Canceled', () => {
+    const plan = computeDeltaPlan(
+      [mkResult({ StandardStatus: 'Canceled' })],
+      mapOf(existing({ StandardStatus: 'Active', is_finalized: true })),
+      { nowIso: NOW },
+    )
+    expect(plan.reopened[0]?.reasons).toEqual(['status', 'frozen_not_terminal'])
+    expect(plan.reopenedRows[0]).toMatchObject({ StandardStatus: 'Canceled', is_finalized: false })
+    expect(plan.finalizeTargets.map((t) => t.status)).toEqual(['Canceled'])
+  })
+
+  it('a listing Spark sends Expired then Active in one window is written Active and never finalized', () => {
+    const plan = computeDeltaPlan(
+      [
+        mkResult({ StandardStatus: 'Expired', ModificationTimestamp: '2026-07-19T10:00:00.000Z' }),
+        mkResult({ StandardStatus: 'Active', ModificationTimestamp: '2026-07-19T10:05:00.000Z' }),
+      ],
+      mapOf(existing({ StandardStatus: 'Active' })),
+      { nowIso: NOW },
+    )
+    expect(plan.rowsToUpsert).toHaveLength(1)
+    expect(plan.rowsToUpsert[0].StandardStatus).toBe('Active')
+    expect(plan.finalizeTargets).toHaveLength(0)
+  })
+
+  it('a listing Spark sends Active then Closed in one window is finalized from the Closed row', () => {
+    const plan = computeDeltaPlan(
+      [
+        mkResult({ StandardStatus: 'Active' }),
+        mkResult({ StandardStatus: 'Closed', CloseDate: '2026-07-18', ClosePrice: 510000 }),
+      ],
+      mapOf(existing({ StandardStatus: 'Pending' })),
+      { nowIso: NOW },
+    )
+    expect(plan.finalizeTargets).toHaveLength(1)
+    expect(plan.finalizeTargets[0].status).toBe('Closed')
+    expect(plan.finalizeTargets[0].sourceRow.ClosePrice).toBe(510000)
+  })
 })

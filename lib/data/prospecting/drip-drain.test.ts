@@ -128,4 +128,39 @@ describe('drainProspectingFirstTouchDrip — one-at-a-time', () => {
     expect(out).toEqual({ ok: true, action: 'sent', kind: 'expired', id: 'LK2' })
     expect(sendProspectingEmailIntro).toHaveBeenCalledTimes(1)
   })
+
+  it('a check that cannot answer (Spark down) sends nothing and leaves the row queued for the next tick', async () => {
+    getLastDripSentAt.mockResolvedValue(null)
+    peekOldestQueuedFirstTouch.mockResolvedValue({
+      kind: 'expired',
+      id: 'LK3',
+      queuedAt: '2026-09-03T14:00:00.000Z',
+      streetAddress: '15 Franklin',
+      city: 'Bend',
+      expiredAt: '2026-08-06T05:00:00.000Z',
+    })
+    verifyNotRelisted.mockResolvedValue({ relisted: false, verifyFailed: true, reason: 'Spark by-key read timed out after 8000 ms' })
+    const out = await drainProspectingFirstTouchDrip(THU_8AM_PT)
+    expect(out).toMatchObject({ ok: false, kind: 'expired', id: 'LK3' })
+    expect(hardSkipQueuedFirstTouch).not.toHaveBeenCalled()
+    expect(sendProspectingEmailIntro).not.toHaveBeenCalled()
+    expect(peekOldestQueuedFirstTouch).toHaveBeenCalledTimes(1)
+  })
+
+  it('a send refused because the check could not answer leaves the row queued', async () => {
+    getLastDripSentAt.mockResolvedValue(null)
+    peekOldestQueuedFirstTouch.mockResolvedValue({
+      kind: 'expired',
+      id: 'LK4',
+      queuedAt: '2026-09-03T14:00:00.000Z',
+      streetAddress: '10 Oak',
+      city: 'Bend',
+      expiredAt: '2026-08-15T00:00:00.000Z',
+    })
+    verifyNotRelisted.mockResolvedValue({ relisted: false, verifyFailed: false })
+    sendProspectingEmailIntro.mockResolvedValue({ ok: false, error: 'Could not verify', code: 'verify-failed' })
+    const out = await drainProspectingFirstTouchDrip(THU_8AM_PT)
+    expect(out).toMatchObject({ ok: false, kind: 'expired', id: 'LK4' })
+    expect(hardSkipQueuedFirstTouch).not.toHaveBeenCalled()
+  })
 })

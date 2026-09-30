@@ -55,6 +55,12 @@ vi.mock('@/lib/supabase/service', () => ({
   createServiceClient: () => ({ from: mockFrom }),
 }))
 
+// The live MLS check (lib/prospecting/sparkRelist.ts) answers alongside our table.
+const sparkRelistCheck = vi.hoisted(() => vi.fn())
+vi.mock('@/lib/prospecting/sparkRelist', () => ({
+  sparkRelistCheck: (...a: unknown[]) => sparkRelistCheck(...a),
+}))
+
 import { verifyNotRelisted } from './batch'
 
 const EXPIRE = '2026-06-01T00:00:00Z'
@@ -68,6 +74,74 @@ beforeEach(() => {
   parcelProbeRows = []
   parcelProbeError = null
   mockFrom.mockClear()
+  sparkRelistCheck.mockReset()
+  sparkRelistCheck.mockResolvedValue({ relisted: false, verifyFailed: false, reason: null })
+})
+
+describe('verifyNotRelisted — the live MLS answers too', () => {
+  it('blocks the proven case: our table shows nothing on the market at 15 Franklin, Spark has the listing Active again', async () => {
+    parcelRow = { parcel_number: null }
+    streetRows = []
+    sparkRelistCheck.mockResolvedValue({
+      relisted: true,
+      verifyFailed: false,
+      reason: 'Spark: listing 20260120200524195349000000 is Active',
+    })
+    const out = await verifyNotRelisted('expired', {
+      street_address: '15 Franklin',
+      city: 'Bend',
+      expiryComparator: '2026-08-06T05:00:00+00:00',
+      listing_key: '20260120200524195349000000',
+    })
+    expect(out).toMatchObject({ relisted: true, verifyFailed: false })
+    expect(sparkRelistCheck).toHaveBeenCalledWith(
+      expect.objectContaining({
+        listingKey: '20260120200524195349000000',
+        streetAddress: '15 Franklin',
+        city: 'Bend',
+      }),
+    )
+  })
+
+  it('fails closed when Spark cannot answer, even with our table clear', async () => {
+    parcelRow = { parcel_number: null }
+    sparkRelistCheck.mockResolvedValue({ relisted: false, verifyFailed: true, reason: 'Spark by-key read timed out after 8000 ms' })
+    const out = await verifyNotRelisted('expired', {
+      street_address: '123 Smith St',
+      city: 'Bend',
+      expiryComparator: EXPIRE,
+      listing_key: 'EXPIRED-KEY',
+    })
+    expect(out).toMatchObject({ relisted: false, verifyFailed: true })
+  })
+
+  it('fails closed when the Spark check throws', async () => {
+    parcelRow = { parcel_number: null }
+    sparkRelistCheck.mockRejectedValue(new Error('boom'))
+    const out = await verifyNotRelisted('fsbo', { street_address: '123 Smith St', city: 'Bend', expiryComparator: EXPIRE })
+    expect(out).toMatchObject({ relisted: false, verifyFailed: true })
+  })
+
+  it('a relist our table shows still blocks when Spark cannot answer', async () => {
+    parcelRow = { parcel_number: null }
+    streetRows = [
+      { StreetNumber: '123', StreetName: 'SMITH', City: 'Bend', StandardStatus: 'Active', CloseDate: null, status_change_timestamp: '2026-07-01T00:00:00Z', parcel_number: null },
+    ]
+    sparkRelistCheck.mockResolvedValue({ relisted: false, verifyFailed: true, reason: 'Spark address read failed: 429' })
+    const out = await verifyNotRelisted('expired', {
+      street_address: '123 Smith St',
+      city: 'Bend',
+      expiryComparator: EXPIRE,
+      listing_key: 'EXPIRED-KEY',
+    })
+    expect(out).toMatchObject({ relisted: true, verifyFailed: false })
+  })
+
+  it('still asks Spark by key when the address has no street number', async () => {
+    sparkRelistCheck.mockResolvedValue({ relisted: true, verifyFailed: false, reason: 'Spark: listing K is Pending' })
+    const out = await verifyNotRelisted('expired', { street_address: 'Ordway', city: 'Bend', expiryComparator: EXPIRE, listing_key: 'K' })
+    expect(out).toMatchObject({ relisted: true, verifyFailed: false })
+  })
 })
 
 describe('verifyNotRelisted — sold after expire', () => {
