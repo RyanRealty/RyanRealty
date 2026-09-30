@@ -37,6 +37,7 @@
  */
 
 import type { CmaComp } from '@/lib/cma/types'
+import { stripRefutedSentences, type ClaimComp, type ClaimFinding } from '@/lib/cma/narrative-claims'
 import {
   isCustomOrNewSubject,
   yearQualityCompatible,
@@ -128,7 +129,13 @@ const RETENTION_VERB_RE = /\b(kept|retain\w*|included|anchor\w*|relied on|form t
 /**
  * Seller notes append the judge narrative to the priced set. If the model
  * called a kept sale excluded, that sentence cannot print. Treat every priced
- * address as kept and drop the contradicting sentences.
+ * address as kept and drop the contradicting sentences. A stated count is
+ * never rewritten here: a count sentence the priced set refutes is removed by
+ * the claim checks (alignNarrativeToFinalSet). The rewrite that used to sit
+ * here read the FIRST "were retained" count as the whole set and turned
+ * "Three closed sales were retained at full weight" over three full-weight and
+ * two half-weight sales into "Five closed sales were retained at full weight",
+ * a false sentence that raised no finding (review of da8dce6, 2026-09-30).
  */
 export function alignNarrativeToPricedSet(
   priced: ReadonlyArray<{ listingKey: string; address: string }>,
@@ -139,13 +146,40 @@ export function alignNarrativeToPricedSet(
   const verdictByKey = new Map(
     priced.map((c) => [c.listingKey, { listingKey: c.listingKey, tier: 'strong' as const, reason: 'priced' }]),
   )
-  // Fix the stated count against the set that actually priced BEFORE excising
-  // sentences — the count describes the whole set, not the sentence it sits in.
-  const counted = repairRetainedCount(narrative, priced.length)
-  const sentences = splitSentences(counted)
+  const sentences = splitSentences(narrative)
   const cleaned = sentences.filter((s) => narrativeMismatches(comps, verdictByKey, s).length === 0)
   if (cleaned.length === 0) return ''
   return cleaned.join(' ')
+}
+
+/**
+ * THE NARRATIVE AGAINST THE SALES THAT ACTUALLY PRICED (2026-09-30).
+ *
+ * alignNarrativeToPricedSet above drops a sentence that calls a priced sale
+ * excluded, by street name. That
+ * missed most of what reached homeowners on the 2026-09-29 expired batch: a
+ * "were kept" count, a subdivision named as dropped ("Prairie Crossing was
+ * dropped" beside the Prairie Crossing sale), "None were excluded" beside an
+ * exclusion, a weight or a lot range the priced sales do not carry. This runs
+ * the same claim checks the audit gates on (lib/cma/narrative-claims.ts)
+ * against the FINAL priced set, with each priced sale's review tier and every
+ * candidate the review saw, and takes out every sentence they refute. The
+ * caller replaces a narrative with nothing true left in it.
+ */
+export function alignNarrativeToFinalSet(args: {
+  narrative: string
+  priced: ReadonlyArray<ClaimComp>
+  candidates: ReadonlyArray<ClaimComp>
+  subject: { streetAddress: string | null | undefined; lotAcres?: number | null }
+}): { narrative: string; removed: ClaimFinding[] } {
+  const aligned = alignNarrativeToPricedSet(args.priced, args.narrative)
+  if (!aligned.trim()) return { narrative: '', removed: [] }
+  return stripRefutedSentences({
+    narrative: aligned,
+    priced: args.priced,
+    candidates: args.candidates,
+    subject: args.subject,
+  })
 }
 
 /**
@@ -159,8 +193,11 @@ export function alignNarrativeToPricedSet(
  * it and calls it fabricated evidence, which is the correct read: a seller
  * would see the same thing.
  *
- * The count is not an opinion, so it is not left to the model. It is parsed,
- * compared, and rewritten from the set that actually priced.
+ * The count is not an opinion, so it is not left to the model. V6 reads it
+ * here against the judge's own keep, and the claim checks in
+ * lib/cma/narrative-claims.ts read every count against the FINAL priced set
+ * and remove the sentence when the set refutes it. Nothing rewrites it: a
+ * rewritten count can say a thing no sentence of the judge said.
  */
 const NUMBER_WORDS: ReadonlyArray<string> = [
   'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
@@ -179,16 +216,6 @@ function wordToInt(token: string): number | null {
   return i >= 0 ? i : null
 }
 
-function intToWord(n: number): string {
-  return n >= 0 && n < NUMBER_WORDS.length ? NUMBER_WORDS[n]! : String(n)
-}
-
-/** Match the casing of the token being replaced, so a sentence-opening word stays capitalised. */
-function matchCase(sample: string, replacement: string): string {
-  if (/^[A-Z]/.test(sample)) return replacement.charAt(0).toUpperCase() + replacement.slice(1)
-  return replacement
-}
-
 /** The retained count the narrative states, or null when it does not state one. */
 export function statedRetainedCount(narrative: string): number | null {
   const m = RETAINED_COUNT_RE.exec(narrative ?? '')
@@ -197,19 +224,28 @@ export function statedRetainedCount(narrative: string): number | null {
 }
 
 /**
- * Rewrite the stated retained count to `actual`. Returns the narrative
- * unchanged when it states no count, or already states the right one.
+ * Why each candidate that does not price is out, counted by the one step that
+ * took it out. The three reasons are disjoint and, with the kept count, add up
+ * to every candidate the review saw.
  */
-export function repairRetainedCount(narrative: string, actual: number): string {
-  const text = narrative ?? ''
-  const m = RETAINED_COUNT_RE.exec(text)
-  if (!m) return text
-  const token = m[1] ?? ''
-  const stated = wordToInt(token)
-  if (stated == null || stated === actual) return text
-  const replacement = /^\d{1,2}$/.test(token.trim()) ? String(actual) : matchCase(token, intToWord(actual))
-  const at = m.index + m[0].indexOf(token)
-  return text.slice(0, at) + replacement + text.slice(at + token.length)
+export type ComparabilityBreakdown = {
+  /** The sales that price. */
+  keptCount: number
+  /** Product-matched candidates the comparability review excluded. */
+  reviewExcluded: number
+  /**
+   * Candidates the product wall kept out before pricing: a different structure
+   * type, age-restricted housing against an ordinary home, new construction
+   * against resale (lib/cma/judgment-prune.ts).
+   */
+  differentProduct: number
+  /** Sales the review kept that the independent audit's findings removed afterwards. */
+  auditRemoved: number
+}
+
+function countWord(n: number): string {
+  const word = n < NUMBER_WORDS.length ? NUMBER_WORDS[n]! : String(n)
+  return word.charAt(0).toUpperCase() + word.slice(1)
 }
 
 /**
@@ -218,21 +254,29 @@ export function repairRetainedCount(narrative: string, actual: number): string {
  * The live fail pile is almost all fabricated judge prose (wrong retained
  * count, a kept sale called excluded, a ppsf bracket no priced sale reaches).
  * When the model sentence does not survive the integrity check, this is what
- * ships — count plus how many candidates were dropped. No street, no price.
+ * ships: the count, and how many candidates were left out, one sentence per
+ * reason. No street, no price. It used to put every candidate that did not
+ * price under one reason, "excluded as a different market segment", which
+ * also counted the different-product sales and the sales the audit repair
+ * removed (review of da8dce6, 2026-09-30).
  */
-export function honestComparabilityLine(args: { keptCount: number; excludedCount: number }): string {
-  const n = Math.max(0, Math.floor(args.keptCount))
-  const word = n < NUMBER_WORDS.length ? NUMBER_WORDS[n]! : String(n)
-  const cap = word.charAt(0).toUpperCase() + word.slice(1)
-  const sales = n === 1 ? 'sale was retained' : 'sales were retained'
-  const dropped = Math.max(0, Math.floor(args.excludedCount))
-  const drop =
-    dropped <= 0
-      ? ''
-      : dropped === 1
-        ? ' One candidate sale was excluded as a different market segment.'
-        : ` ${dropped} candidate sales were excluded as a different market segment.`
-  return `${cap} closed ${sales}.${drop}`
+export function honestComparabilityLine(args: ComparabilityBreakdown): string {
+  const whole = (v: number) => Math.max(0, Math.floor(Number.isFinite(v) ? v : 0))
+  const kept = whole(args.keptCount)
+  const parts = [`${countWord(kept)} closed ${kept === 1 ? 'sale was' : 'sales were'} retained.`]
+  const review = whole(args.reviewExcluded)
+  if (review > 0) {
+    parts.push(`${countWord(review)} candidate ${review === 1 ? 'sale was' : 'sales were'} excluded by the comparability review.`)
+  }
+  const product = whole(args.differentProduct)
+  if (product > 0) {
+    parts.push(`${countWord(product)} candidate ${product === 1 ? 'sale was' : 'sales were'} left out as a different product type.`)
+  }
+  const audit = whole(args.auditRemoved)
+  if (audit > 0) {
+    parts.push(`${countWord(audit)} ${audit === 1 ? 'sale was' : 'sales were'} removed on the independent audit's findings.`)
+  }
+  return parts.join(' ')
 }
 
 export function splitSentences(text: string): string[] {

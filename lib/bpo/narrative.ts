@@ -12,6 +12,7 @@
 import type { CmaAdjustedComp, CmaMarketContext } from '@/lib/cma/types'
 import type { BpoListingHistory, BpoOpinion, CmaSubject } from '@/lib/bpo/types'
 import { formatPriceExact } from '@/lib/format/money'
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 
 const usd = formatPriceExact
 
@@ -82,7 +83,7 @@ export function buildBpoRationale(args: {
           ? "a buyer's market"
           : 'a balanced market'
     paras.push(
-      `${market.geoLabel} is ${verdict}${market.monthsOfSupply != null ? ` at ${market.monthsOfSupply} months of supply` : ''}` +
+      `${market.geoLabel} is ${verdict}${market.monthsOfSupply != null ? ` at ${formatMonthsOfSupply(market.monthsOfSupply)} months of supply` : ''}` +
         `${market.medianDom != null ? `, with homes taking a median of ${Math.round(market.medianDom)} days to sell` : ''}. ` +
         `${opinion.confidenceReason} We hold this opinion at ${opinion.confidence.toLowerCase()} confidence.`,
     )

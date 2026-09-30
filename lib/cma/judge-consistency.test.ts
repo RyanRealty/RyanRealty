@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
+  alignNarrativeToFinalSet,
   alignNarrativeToPricedSet,
   checkJudgmentConsistency,
   honestComparabilityLine,
   restoreCustomYearQualityPeers,
   type CompVerdict,
   statedRetainedCount,
-  repairRetainedCount,
 } from '@/lib/cma/judge-consistency'
 import { checkNarrativeIntegrity } from '@/lib/cma/audit-narrative-integrity'
 import type { CmaComp } from '@/lib/cma/types'
@@ -257,9 +257,8 @@ describe('alignNarrativeToPricedSet', () => {
 
 describe('honestComparabilityLine', () => {
   it('states the priced count without naming a street or a price the set does not have', () => {
-    const line = honestComparabilityLine({ keptCount: 4, excludedCount: 2 })
-    expect(line.startsWith('Four closed sales were retained.')).toBe(true)
-    expect(line).toContain('2 candidate sales were excluded')
+    const line = honestComparabilityLine({ keptCount: 4, reviewExcluded: 2, differentProduct: 0, auditRemoved: 0 })
+    expect(line).toBe('Four closed sales were retained. Two candidate sales were excluded by the comparability review.')
     const findings = checkNarrativeIntegrity({
       narrative: line,
       comps: [
@@ -271,6 +270,65 @@ describe('honestComparabilityLine', () => {
       excluded: [],
       subject: { streetAddress: '9 Main', city: 'Bend', subdivision: null },
       market: null,
+    })
+    expect(findings).toEqual([])
+  })
+})
+
+describe('honestComparabilityLine splits the candidates left out by reason (review of da8dce6, 2026-09-30)', () => {
+  // The reviewer's case: the line said "{M} candidate sales were excluded as a
+  // different market segment" while M also counted the sales the audit repair
+  // removed and the different-product sales the wall kept out.
+  const priced = ['A', 'B', 'C', 'D'].map((k, i) => ({
+    listingKey: k,
+    address: `${i + 1} ${['Oak', 'Pine', 'Elm', 'Ash'][i]}`,
+    closePrice: 500000 + i * 10000,
+    sqft: 2000,
+    city: 'Bend',
+    subdivision: null,
+    lotAcres: 0.2,
+  }))
+  const out = ['R1', 'R2', 'P1', 'X1'].map((k, i) => ({
+    listingKey: k,
+    address: `${i + 10} ${['Fir', 'Cedar', 'Birch', 'Alder'][i]}`,
+    closePrice: 600000,
+    sqft: 2000,
+    city: 'Bend',
+    subdivision: null,
+    lotAcres: 0.2,
+  }))
+
+  it('gives each reason its own sentence and never calls a product or audit removal a market segment', () => {
+    const line = honestComparabilityLine({ keptCount: 4, reviewExcluded: 2, differentProduct: 1, auditRemoved: 1 })
+    expect(line).toBe(
+      "Four closed sales were retained. Two candidate sales were excluded by the comparability review. One candidate sale was left out as a different product type. One sale was removed on the independent audit's findings.",
+    )
+    expect(line).not.toMatch(/market segment/)
+    expect(line).not.toMatch(/\u2014|\u2013/)
+  })
+
+  it('states only the reasons that happened', () => {
+    expect(honestComparabilityLine({ keptCount: 3, reviewExcluded: 0, differentProduct: 0, auditRemoved: 2 })).toBe(
+      "Three closed sales were retained. Two sales were removed on the independent audit's findings.",
+    )
+    expect(honestComparabilityLine({ keptCount: 5, reviewExcluded: 0, differentProduct: 0, auditRemoved: 0 })).toBe(
+      'Five closed sales were retained.',
+    )
+  })
+
+  it('passes every claim check against the set it describes, candidates included', () => {
+    const line = honestComparabilityLine({ keptCount: 4, reviewExcluded: 2, differentProduct: 1, auditRemoved: 1 })
+    const findings = checkNarrativeIntegrity({
+      narrative: line,
+      comps: priced as never,
+      excluded: [
+        { listingKey: 'R1', reason: 'Larger lot.' },
+        { listingKey: 'R2', reason: 'Newer build.' },
+      ],
+      subject: { streetAddress: '9 Main', city: 'Bend', subdivision: null },
+      market: null,
+      candidates: [...priced, ...out] as never,
+      tierByKey: new Map([...priced.map((c) => [c.listingKey, 'strong'] as const), ['R1', 'exclude'], ['R2', 'exclude']]),
     })
     expect(findings).toEqual([])
   })
@@ -319,32 +377,57 @@ describe('V6 — the stated retained count', () => {
     expect(statedRetainedCount('')).toBeNull()
   })
 
-  it('rewrites the count to the set that actually priced', () => {
-    // The live failure: prose says three, the priced set holds four.
-    expect(
-      repairRetainedCount('Three closed sales were retained, priced from $254 to $314 per square foot.', 4),
-    ).toBe('Four closed sales were retained, priced from $254 to $314 per square foot.')
-  })
+})
 
-  it('keeps digits as digits and words as words', () => {
-    expect(repairRetainedCount('7 sales were retained.', 10)).toBe('10 sales were retained.')
-    expect(repairRetainedCount('Nine comparable sales were retained.', 10)).toBe('Ten comparable sales were retained.')
-  })
+describe('alignNarrativeToFinalSet', () => {
+  const priced = [
+    { listingKey: 'A', address: '3886 Coyote', subdivision: 'Triple Ridge', lotAcres: 0.1, tier: 'strong' as const },
+    { listingKey: 'B', address: '3899 Coyote', subdivision: 'Triple Ridge', lotAcres: 0.11, tier: 'strong' as const },
+    { listingKey: 'PC', address: '4100 Coyote', subdivision: 'Prairie Crossing', lotAcres: 0.07, tier: 'weak' as const },
+  ]
+  const subject = { streetAddress: '4541 36th', lotAcres: 0.08 }
 
-  it('leaves a correct or absent count alone', () => {
-    const ok = 'Four closed sales were retained.'
-    expect(repairRetainedCount(ok, 4)).toBe(ok)
-    const none = 'The retained sales cluster tightly.'
-    expect(repairRetainedCount(none, 4)).toBe(none)
-  })
-
-  it('does not touch the rest of the sentence', () => {
-    const out = repairRetainedCount(
-      'Two comparable sales were retained, priced from $420 to $478 per square foot. The Karena sale was excluded.',
-      3,
+  it('takes out every sentence the final priced set refutes and keeps the rest (cma-4541-36th)', () => {
+    const out = alignNarrativeToFinalSet({
+      narrative:
+        'Two Triple Ridge sales were kept between $236 and $256 per square foot. Prairie Crossing was dropped for community amenities named in its remarks. Subject condition is unknown beyond the listing remarks.',
+      priced,
+      candidates: priced,
+      subject,
+    })
+    expect(out.narrative).toBe(
+      'Two Triple Ridge sales were kept between $236 and $256 per square foot. Subject condition is unknown beyond the listing remarks.',
     )
-    expect(out).toContain('priced from $420 to $478 per square foot')
-    expect(out).toContain('The Karena sale was excluded.')
-    expect(out).toContain('Three comparable sales were retained')
+    expect(out.removed.map((f) => f.kind)).toEqual(['dropped-but-priced'])
+  })
+
+  it('strips a stale "were retained" count instead of rewriting it (review of da8dce6)', () => {
+    const out = alignNarrativeToFinalSet({ narrative: 'Two closed sales were retained.', priced, candidates: priced, subject })
+    expect(out.narrative).toBe('')
+    expect(out.removed.map((f) => f.kind)).toEqual(['count'])
+  })
+
+  it('never manufactures a count: two true weight sentences stay as written (review of da8dce6)', () => {
+    // The rewrite this replaced read the first "were retained" count as the
+    // whole set and turned "Three ... at full weight" into "Five ... at full
+    // weight", a false sentence that raised no finding and shipped.
+    const mixed = [
+      { listingKey: 'A', address: '3886 Coyote', subdivision: 'Triple Ridge', lotAcres: 0.1, tier: 'strong' as const },
+      { listingKey: 'B', address: '3899 Coyote', subdivision: 'Triple Ridge', lotAcres: 0.11, tier: 'strong' as const },
+      { listingKey: 'C', address: '3789 Coyote', subdivision: 'Triple Ridge', lotAcres: 0.07, tier: 'strong' as const },
+      { listingKey: 'D', address: '4100 Coyote', subdivision: 'Prairie Crossing', lotAcres: 0.07, tier: 'weak' as const },
+      { listingKey: 'E', address: '3876 Coyote', subdivision: 'Triple Ridge', lotAcres: 0.07, tier: 'weak' as const },
+    ]
+    const narrative =
+      'Three closed sales were retained at full weight. Two recent sales were retained at half weight to bracket the range.'
+    const out = alignNarrativeToFinalSet({ narrative, priced: mixed, candidates: mixed, subject })
+    expect(out.narrative).toBe(narrative)
+    expect(out.removed).toEqual([])
+  })
+
+  it('returns nothing when every sentence is refuted, for the caller to replace', () => {
+    const out = alignNarrativeToFinalSet({ narrative: 'One closed sale was kept.', priced, candidates: priced, subject })
+    expect(out.narrative).toBe('')
+    expect(out.removed.map((f) => f.kind)).toEqual(['count'])
   })
 })
