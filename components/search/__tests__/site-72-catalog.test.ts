@@ -53,6 +53,26 @@ describe('SITE-72 catalog wiring', () => {
     expect(mapOnly).toMatch(/readUrlSearchParams\(\)/)
   })
 
+  it('every filter write lands in the URL before the router push, so a bbox replace cannot drop it', () => {
+    // On the dynamic /homes-for-sale split a router.push alone left the URL
+    // store on the old query until the RSC landed; a map bbox replace in that
+    // window superseded the push and an All-filters max price vanished.
+    const filters = readSrc('components/search/SearchFilters.tsx')
+    const helper = filters.slice(filters.indexOf('const writeFilterHref'), filters.indexOf('const updateUrl'))
+    expect(helper).toMatch(
+      /navigateQuery\(router, href, \{ staticShell: true \}\)\s+if \(!staticShell\) navigateQuery\(router, href, \{ staticShell: false \}\)/,
+    )
+    for (const [name, end] of [
+      ['const updateUrl', 'const commitPrice'],
+      ['const commitPrice', 'const setFilter'],
+      ['function clearAll', '// Natural-language apply'],
+    ] as const) {
+      const body = filters.slice(filters.indexOf(name), filters.indexOf(end, filters.indexOf(name)))
+      expect(body, name).toMatch(/writeFilterHref\(/)
+      expect(body, name).not.toMatch(/navigateQuery\(/)
+    }
+  })
+
   it('the rail still opens on a claim sentence sourced from the visible set', () => {
     const view = readSrc('components/search/MapSearchView.tsx')
     expect(view).toMatch(/srch-claim/)

@@ -370,6 +370,23 @@ export default function SearchFilters({
   // URL helpers
   // ---------------------------------------------------------------------------
 
+  /**
+   * Every filter write lands in the address bar and the URL store at once;
+   * a dynamic page then router.pushes it so the server half re-renders. On a
+   * dynamic page a push alone left the store on the old query until the RSC
+   * round trip landed, and a map bbox replace fired in that window (the map
+   * settling after load) superseded the push with a URL that no longer held
+   * the filter: an All-filters max price vanished (SITE-72, the class
+   * commitPrice already closed for the price rail).
+   */
+  const writeFilterHref = useCallback(
+    (href: string) => {
+      navigateQuery(router, href, { staticShell: true })
+      if (!staticShell) navigateQuery(router, href, { staticShell: false })
+    },
+    [router, staticShell],
+  )
+
   const updateUrl = useCallback(
     (updates: Record<string, string | undefined>) => {
       // Event-time read so a map bbox replace that just published cannot be
@@ -392,7 +409,7 @@ export default function SearchFilters({
       ) {
         params.delete('bbox')
       }
-      navigateQuery(router, `${pathname ?? '/homes-for-sale'}?${params.toString()}`, { staticShell })
+      writeFilterHref(`${pathname ?? '/homes-for-sale'}?${params.toString()}`)
       // Instrumentation (Phase 0.5): EVERY filter mutation routes through this
       // one function — chip-bar dropdowns, the All-filters sheet apply, the
       // location picker, chip removes. One URL mutation = one event; a
@@ -400,31 +417,29 @@ export default function SearchFilters({
       const payload = buildFilterApplyPayload(updates, params)
       if (payload) fireSearchEvent('search_filter_apply', payload)
     },
-    [router, pathname, staticShell]
+    [pathname, writeFilterHref]
   )
 
   const commitPrice = useCallback(
     (low: number, high: number) => {
       const next = rangeToUrl(low, high, V3_PRICE_STOPS)
-      // Instant pushState so a map bbox replace cannot read a pre-price URL
-      // (SITE-72 race). Then router.push so the dynamic /homes-for-sale RSC
-      // re-renders list + pins with the new band.
+      // Instant write so a map bbox replace cannot read a pre-price URL
+      // (SITE-72 race); writeFilterHref then router.pushes the dynamic
+      // /homes-for-sale RSC to re-render list + pins with the new band.
       const params = new URLSearchParams(readUrlSearchParams())
       if (next.min) params.set('minPrice', next.min)
       else params.delete('minPrice')
       if (next.max) params.set('maxPrice', next.max)
       else params.delete('maxPrice')
       params.delete('page')
-      const href = `${pathname ?? '/homes-for-sale'}?${params.toString()}`
-      navigateQuery(router, href, { staticShell: true })
-      if (!staticShell) navigateQuery(router, href, { staticShell: false })
+      writeFilterHref(`${pathname ?? '/homes-for-sale'}?${params.toString()}`)
       const payload = buildFilterApplyPayload(
         { minPrice: next.min, maxPrice: next.max },
         params,
       )
       if (payload) fireSearchEvent('search_filter_apply', payload)
     },
-    [pathname, router, staticShell],
+    [pathname, writeFilterHref],
   )
 
   const setFilter = useCallback(
@@ -560,7 +575,7 @@ export default function SearchFilters({
   }
 
   function clearAll() {
-    navigateQuery(router, `${pathname ?? '/homes-for-sale'}?view=${view}`, { staticShell })
+    writeFilterHref(`${pathname ?? '/homes-for-sale'}?view=${view}`)
     setLocationQuery('')
   }
 

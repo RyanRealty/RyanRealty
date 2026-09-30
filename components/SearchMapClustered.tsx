@@ -54,6 +54,7 @@ import {
   subjectRingZoomFromMeasuredBox,
   subjectRingZoomFromPaths,
 } from '@/lib/maps/subject-ring'
+import { createPassMemo, divToContainer, divToContainerFromRefs, type DivToContainer } from '@/lib/maps/overlay-pass'
 import { publishWholePropertyAmount } from '@/lib/listing/publish-listing-figure'
 import './search/search-map-marks.css'
 
@@ -553,6 +554,41 @@ type PricePillOverlayCtor = new (opts: PricePillOverlayOptions) => PricePillOver
 let PricePillOverlayClass: PricePillOverlayCtor | null = null
 
 /**
+ * What every mark in one drawing pass shares: the frame's size and the map
+ * from overlay-pane pixels to frame pixels. Read once, before the pass's first
+ * write, so the marks drawn after it force no layout (lib/maps/overlay-pass.ts).
+ */
+type MarkFramePass = { toContainer: DivToContainer; width: number; height: number }
+const markFramePass = createPassMemo<HTMLElement, MarkFramePass>()
+
+function readMarkFramePass(
+  frame: HTMLElement,
+  proj: google.maps.MapCanvasProjection,
+  at: google.maps.LatLng,
+): MarkFramePass | null {
+  return markFramePass(frame, () => {
+    // A second point a degree away fixes the scale a zoom animation puts on
+    // the pane; the first alone fixes a pan.
+    const far = new google.maps.LatLng(Math.max(-84, Math.min(84, at.lat() + 1)), at.lng() + 1)
+    const divA = proj.fromLatLngToDivPixel(at)
+    const divB = proj.fromLatLngToDivPixel(far)
+    const containerA = proj.fromLatLngToContainerPixel(at)
+    const containerB = proj.fromLatLngToContainerPixel(far)
+    if (!divA || !divB || !containerA || !containerB) return null
+    return {
+      toContainer: divToContainerFromRefs(divA, containerA, divB, containerB),
+      width: frame.clientWidth,
+      height: frame.clientHeight,
+    }
+  })
+}
+
+/** Bumps when a web font lands, so a mark measured in the fallback face re-measures. */
+let markSizeEpoch = 0
+/** True while the measure batch redraws its marks; those redraws count against the retry cap. */
+let redrawingMeasuredMarks = false
+
+/**
  * Supercluster is constructed with one radius. MarkerClusterer then asks it
  * at `Math.round(zoom)`, so a static V3_CLUSTER_RADIUS_PX shrinks on screen
  * whenever the camera sits between integers. Rebuild the index when the
@@ -612,8 +648,9 @@ function getPricePillOverlayClass(): PricePillOverlayCtor {
     private listingKeyValue?: string
     private anchor: 'bottom' | 'center'
     private edgeMargin: number
-    private slideInFrame = 0
     private slideAttempts = 0
+    private size: { w: number; h: number } | null = null
+    private sizeEpoch = -1
 
     constructor(opts: PricePillOverlayOptions) {
       super()
@@ -658,18 +695,32 @@ function getPricePillOverlayClass(): PricePillOverlayCtor {
       this.getPanes()?.overlayMouseTarget.appendChild(div)
       this.container = div
       // First draw often runs at offset 0. Place with the fallback mark size
-      // now, then rAF once layout has a real box (SITE-143 edge pills).
+      // now, then measure on the next frame once layout has a real box
+      // (SITE-143 edge pills).
       this.draw()
       this.queueSlideIn()
     }
 
+    /** Measure on the next frame, batched with every other mark waiting on one. */
     private queueSlideIn() {
-      if (this.slideInFrame || this.slideAttempts >= 8) return
+      if (this.slideAttempts >= 8) return
       this.slideAttempts += 1
-      this.slideInFrame = requestAnimationFrame(() => {
-        this.slideInFrame = 0
-        this.draw()
-      })
+      scheduleMarkMeasure(this)
+    }
+
+    /** Read this mark's painted box. A read only: never call it between writes. */
+    measure() {
+      const div = this.container
+      if (!div) return
+      const w = div.offsetWidth
+      const h = div.offsetHeight
+      // A 0×0 box (the map still hidden, or no layout yet) is no size: keep
+      // the fallback and let the next draw ask again.
+      if (w > 0 && h > 0) {
+        this.size = { w, h }
+        this.sizeEpoch = markSizeEpoch
+        this.slideAttempts = 0
+      }
     }
 
     /**
@@ -684,8 +735,13 @@ function getPricePillOverlayClass(): PricePillOverlayCtor {
      * hang below its point with the caret pointing up. Nothing moves that does
      * not have to.
      *
-     * SITE-143: do not skip the slide when offsetWidth is 0. OverlayView's
-     * first draw is that frame. Use V3_MARK_* fallback, then rAF the real size.
+     * SITE-143: do not skip the slide when the mark is unmeasured. OverlayView's
+     * first draw is that frame. Use V3_MARK_* fallback, then measure next frame.
+     *
+     * Writes only, apart from the pass read: the frame and the pane offset come
+     * from readMarkFramePass (one layout for the whole pass) and the mark's own
+     * box from its cached measure. Reading them per mark after moving the mark
+     * forced a layout per mark and froze the page (lib/maps/overlay-pass.ts).
      */
     draw() {
       const div = this.container
@@ -694,24 +750,26 @@ function getPricePillOverlayClass(): PricePillOverlayCtor {
       if (!proj) return
       const pt = proj.fromLatLngToDivPixel(this.latLng)
       if (!pt) return
-      div.style.left = `${pt.x}px`
-      div.style.top = `${pt.y}px`
-
       const host = this.getMap()
       const frame = host && 'getDiv' in host ? (host as google.maps.Map).getDiv() : null
-      const cp = proj.fromLatLngToContainerPixel(this.latLng)
-      if (!frame || !cp) return
-      const measuredW = div.offsetWidth
-      const measuredH = div.offsetHeight
-      const unmeasured = measuredW === 0 || measuredH === 0
-      const w = unmeasured ? V3_MARK_WIDTH_PX : measuredW
-      const h = unmeasured ? V3_MARK_HEIGHT_PX : measuredH
-      if (unmeasured) this.queueSlideIn()
-      else this.slideAttempts = 0
+      const pass = frame ? readMarkFramePass(frame, proj, this.latLng) : null
+      div.style.left = `${pt.x}px`
+      div.style.top = `${pt.y}px`
+      if (!frame || !pass) return
+      const cp = divToContainer(pass.toContainer, pt)
+      // A camera draw starts the retries over (a mark that could not be
+      // measured while its map was hidden measures once it shows); only the
+      // measure batch's own redraws count against the cap.
+      if (!redrawingMeasuredMarks) this.slideAttempts = 0
+      const size = this.size
+      const unmeasured = size === null
+      const w = unmeasured ? V3_MARK_WIDTH_PX : size.w
+      const h = unmeasured ? V3_MARK_HEIGHT_PX : size.h
+      if (unmeasured || this.sizeEpoch !== markSizeEpoch) this.queueSlideIn()
 
       // A 0×0 getDiv() (first layout) would invert clampMarkNudge and push
       // the mark further off the frame. Wait for a real box.
-      if (frame.clientWidth < 8 || frame.clientHeight < 8) {
+      if (pass.width < 8 || pass.height < 8) {
         this.queueSlideIn()
         return
       }
@@ -722,7 +780,7 @@ function getPricePillOverlayClass(): PricePillOverlayCtor {
       // onto the frame edge, stacked and pointing at homes not on the map.
       // Only a mark whose point is in the frame is placed and nudged in.
       // visibility, not display: the box keeps its size for the next measure.
-      const inFrame = markAnchorInIsland(cp, { width: frame.clientWidth, height: frame.clientHeight })
+      const inFrame = markAnchorInIsland(cp, { width: pass.width, height: pass.height })
       div.style.visibility = inFrame ? '' : 'hidden'
       if (!inFrame) return
 
@@ -732,7 +790,7 @@ function getPricePillOverlayClass(): PricePillOverlayCtor {
       // hanging off the bottom of the 375 Bend island.
       const hanging = this.anchor !== 'center'
       const flip =
-        hanging && cp.y - h < this.edgeMargin && cp.y + h < frame.clientHeight
+        hanging && cp.y - h < this.edgeMargin && cp.y + h < pass.height
       const painted = hanging
         ? {
             left: cp.x - w / 2,
@@ -748,7 +806,7 @@ function getPricePillOverlayClass(): PricePillOverlayCtor {
           }
       const { nudgeX, nudgeY } = clampMarkNudge(
         painted,
-        { width: frame.clientWidth, height: frame.clientHeight },
+        { width: pass.width, height: pass.height },
         this.edgeMargin,
       )
 
@@ -773,10 +831,7 @@ function getPricePillOverlayClass(): PricePillOverlayCtor {
     }
 
     onRemove() {
-      if (this.slideInFrame) {
-        cancelAnimationFrame(this.slideInFrame)
-        this.slideInFrame = 0
-      }
+      pendingMarkMeasures.delete(this)
       this.container?.remove()
       this.container = null
     }
@@ -792,6 +847,8 @@ function getPricePillOverlayClass(): PricePillOverlayCtor {
       // replacement arrives without the nudge the old one was carrying — an
       // edge pill would jump back out of the frame the moment you pointed at
       // it. Re-place it now rather than waiting for the next projection change.
+      // The swap can change the box, so measure this one mark first.
+      this.measure()
       this.draw()
     }
     get zIndex(): number {
@@ -809,6 +866,32 @@ function getPricePillOverlayClass(): PricePillOverlayCtor {
     getVisible(): boolean {
       return true
     }
+  }
+
+  // Marks waiting on a measure, read and redrawn together on one frame: every
+  // read first, then every draw, so the batch costs one layout, not one each.
+  const pendingMarkMeasures = new Set<PricePillOverlay>()
+  let markMeasureFrame = 0
+  function scheduleMarkMeasure(waiting: PricePillOverlay) {
+    pendingMarkMeasures.add(waiting)
+    if (markMeasureFrame) return
+    markMeasureFrame = requestAnimationFrame(() => {
+      markMeasureFrame = 0
+      const batch = [...pendingMarkMeasures]
+      pendingMarkMeasures.clear()
+      for (const mark of batch) mark.measure()
+      redrawingMeasuredMarks = true
+      try {
+        for (const mark of batch) mark.draw()
+      } finally {
+        redrawingMeasuredMarks = false
+      }
+    })
+  }
+  if (typeof document !== 'undefined' && document.fonts) {
+    document.fonts.addEventListener('loadingdone', () => {
+      markSizeEpoch += 1
+    })
   }
 
   PricePillOverlayClass = PricePillOverlay as unknown as PricePillOverlayCtor

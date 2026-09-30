@@ -5,13 +5,14 @@ import { test, expect, type Locator, type Page } from '@playwright/test'
  *
  * Exercises SearchFilters (the regional Field chrome) on /homes-for-sale/bend.
  * City browse defaults to the same MapSearchView split as /homes-for-sale.
- *   - Price dropdown: set max price, Enter → URL param updates
- *   - Beds dropdown: pick 3+ → beds param in URL
- *   - URL-seeded filters are reflected back in the dropdown inputs
+ *   - All filters sheet: type a max price, apply → maxPrice in the URL
+ *   - Beds chip: pick 3+ → beds joins maxPrice in the URL (neither drops)
+ *   - URL-seeded filters are reflected back in the sheet's inputs
  *
- * Selectors are grounded in components/search/SearchFilters.tsx:
- *   - Price:   <Button>Price</Button> → input[name="maxPrice"]
- *   - Beds:    <Button>Beds</Button> → 3+ chip
+ * Selectors are grounded in components/search/SearchFilters.tsx and
+ * components/search/AllFiltersSheet.tsx:
+ *   - All filters: button "Open all filters" → dialog → spinbutton "Price maximum"
+ *   - Beds:        <Button>Beds</Button> → 3+ chip
  *
  * Note: /homes-for-sale/bend is rewritten to /search/bend in next.config.ts,
  * which renders app/search/[...slug]/page.tsx. Grid/list still uses
@@ -23,12 +24,22 @@ const SEARCH_URL = '/homes-for-sale/bend'
 
 /** Open the All filters sheet (components/search/AllFiltersSheet.tsx) and return it. */
 async function openAllFilters(page: Page): Promise<Locator> {
-  const open = page.getByRole('button', { name: /^all filters/i })
+  // Named for what it does: "Open all filters" (", N active" when filters are set).
+  const open = page.getByRole('button', { name: /^open all filters/i })
   await expect(open).toBeVisible({ timeout: DATA_TIMEOUT })
-  await open.click()
   const sheet = page.getByRole('dialog')
-  await expect(sheet).toBeVisible({ timeout: 10_000 })
+  // The sheet mounts on first open (a lazy chunk), and a click that lands before
+  // hydration does nothing: click until it is open.
+  await expect(async () => {
+    if (!(await sheet.isVisible())) await open.click()
+    await expect(sheet).toBeVisible({ timeout: 5_000 })
+  }).toPass({ timeout: DATA_TIMEOUT })
   return sheet
+}
+
+/** The sheet's typed maximum price (exact: "Previous list price maximum" also contains the words). */
+function maxPriceBox(sheet: Locator): Locator {
+  return sheet.getByRole('spinbutton', { name: 'Price maximum', exact: true })
 }
 
 /** The sheet's apply button ("Show N homes" or "Apply filters"), beside Reset in its footer. */
@@ -52,7 +63,7 @@ test.describe('Search filters', () => {
     // Price is typed in All filters: the bar's Price pill is sheet-only since
     // SITE-110 (.srch-chip--sheet), and the dock carries the price slider.
     const sheet = await openAllFilters(page)
-    const maxPriceInput = sheet.getByLabel('Price maximum')
+    const maxPriceInput = maxPriceBox(sheet)
     await expect(maxPriceInput).toBeVisible({ timeout: 10_000 })
     await maxPriceInput.fill('750000')
 
@@ -95,7 +106,7 @@ test.describe('Search filters', () => {
     await expect(page.locator('main').first()).toBeVisible({ timeout: DATA_TIMEOUT })
 
     const sheet = await openAllFilters(page)
-    const maxPriceInput = sheet.getByLabel('Price maximum')
+    const maxPriceInput = maxPriceBox(sheet)
     await expect(maxPriceInput).toBeVisible({ timeout: 10_000 })
     await expect(maxPriceInput).toHaveValue('1000000')
     await page.keyboard.press('Escape')
