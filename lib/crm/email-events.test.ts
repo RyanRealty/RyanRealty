@@ -382,3 +382,61 @@ describe('recordEmailEvent', () => {
     expect(row.subject).toBe('Hi Jane')
   })
 })
+
+describe('click_automated (a scanner or previewer following a tracked link)', () => {
+  beforeEach(() => {
+    mockInsert.mockReset()
+    mockGetSent.mockReset()
+    mockGetPersonIds.mockReset()
+    mockGetPrimaryEmail.mockReset()
+    mockGetSent.mockResolvedValue(null)
+  })
+
+  it('is a value recordEmailEvent stores, and never a spelling of click', () => {
+    expect(normalizeEvent('click_automated')).toBe('click_automated')
+    expect(normalizeEvent(' CLICK_AUTOMATED ')).toBe('click_automated')
+    expect(normalizeEvent('click')).toBe('click')
+    expect(normalizeEvent('clicked')).toBe('click')
+    expect(normalizeEvent('automated_click')).toBeNull()
+  })
+
+  it('keys on the person, the email and the link like a click does, but never collides with one', () => {
+    const args = {
+      emailKey: 'cma:deer',
+      personId: 7,
+      clickUrl: 'https://ryan-realty.com/reviews?_pid=tok&utm_campaign=cma-deer&agent=matt',
+    } as const
+    const auto = buildDedupeKey({ ...args, event: 'click_automated' })
+    expect(auto).toBe('cma:deer:click_automated:p:7:https://ryan-realty.com/reviews')
+    expect(auto).not.toBe(buildDedupeKey({ ...args, event: 'click' }))
+    // a different link is a different row; with no URL the key stays three-part
+    expect(buildDedupeKey({ ...args, event: 'click_automated', clickUrl: 'https://ryan-realty.com/about' })).not.toBe(auto)
+    expect(buildDedupeKey({ emailKey: 'cma:deer', personId: 7, event: 'click_automated' })).toBe('cma:deer:click_automated:p:7')
+  })
+
+  it('writes the row with the reason in meta and collapses a scanner that hits one link ten times', async () => {
+    mockGetPrimaryEmail.mockResolvedValue('lead@example.com')
+    mockInsert.mockResolvedValue({ ok: true, inserted: true })
+    const input = {
+      personId: 7,
+      broker: 'matt',
+      sendType: 'cma',
+      event: 'click_automated',
+      emailKey: 'cma:deer',
+      meta: { url: 'https://ryan-realty.com/reviews?utm_campaign=cma-deer', automation_reason: 'declared-crawler' },
+    } as const
+    const res = await recordEmailEvent(input)
+    await recordEmailEvent(input)
+    expect(res).toEqual({ ok: true, inserted: true, event: 'click_automated', personId: 7 })
+    const [first, second] = mockInsert.mock.calls.map((c) => c[0])
+    expect(first).toMatchObject({
+      event: 'click_automated',
+      person_id: 7,
+      send_type: 'cma',
+      email_key: 'cma:deer',
+      meta: { url: 'https://ryan-realty.com/reviews?utm_campaign=cma-deer', automation_reason: 'declared-crawler' },
+    })
+    expect(first.dedupe_key).toBe('cma:deer:click_automated:lead@example.com:https://ryan-realty.com/reviews')
+    expect(second.dedupe_key).toBe(first.dedupe_key)
+  })
+})

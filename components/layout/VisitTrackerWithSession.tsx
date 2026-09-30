@@ -9,8 +9,7 @@
 import { useEffect, useState } from 'react'
 import VisitTracker from '../VisitTracker'
 import { identifyAuthenticatedSession } from '@/app/actions/identity-bridge'
-
-const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+import { readRrSessionId } from '@/lib/tracking'
 
 export default function VisitTrackerWithSession() {
   const [userInfo, setUserInfo] = useState<{ id: string | null; email: string | null }>({
@@ -29,10 +28,16 @@ export default function VisitTrackerWithSession() {
           // "Continue with Google" (or email-link / password) sign-in matches
           // their identity to the activity they did while anonymous. Once per
           // browser session (idempotent server-side regardless).
+          //
+          // The session is the one this page's tracker is recording, read the way
+          // every tracker reads it (the id and its lifecycle record as one pair):
+          // straight out of localStorage, a storage that refuses writes answered the
+          // id of a session that had already ended here.
           try {
             if (sessionStorage.getItem('rr_session_bridged') !== '1') {
-              const sid = localStorage.getItem('rr_session_id')
-              void identifyAuthenticatedSession(sid && UUID_V4.test(sid) ? sid : undefined)
+              void identifyAuthenticatedSession(readRrSessionId(), {
+                webdriver: navigator.webdriver === true,
+              })
                 .then(() => { try { sessionStorage.setItem('rr_session_bridged', '1') } catch {} })
                 .catch(() => {})
             }

@@ -5,6 +5,7 @@
  * which calls were made.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { postgrestOrFilter } from '@/test/fake-visitor-db'
 
 type Row = Record<string, unknown>
 const db: Record<string, Row[]> = { visitor_sessions: [], visitor_identity_map: [] }
@@ -46,6 +47,10 @@ function builder(table: string) {
     },
     in(col: string, vals: unknown[]) {
       filters.push((r) => vals.includes(r[col]))
+      return b
+    },
+    or(expr: string) {
+      filters.push(postgrestOrFilter(expr))
       return b
     },
     maybeSingle() {
@@ -105,6 +110,8 @@ beforeEach(() => {
     { session_id: 's-other', rr_vid: VID, crm_person_id: 777, identified_at: '2026-09-01T00:00:00Z' },
     // A different browser entirely.
     { session_id: 's-stranger', rr_vid: 'vid-B', crm_person_id: null, identified_at: null },
+    // A scripted browser that used the same browser id: flagged, so never stitched.
+    { session_id: 's-scripted', rr_vid: VID, crm_person_id: null, identified_at: null, is_automated: true, automation_reason: 'webdriver' },
   ]
   db.visitor_identity_map = []
 })
@@ -122,9 +129,10 @@ describe('identifySessionAndBrowser — identify the visit and back-stitch the b
     expect(byId['s-now']).toMatchObject({ crm_person_id: 64115, fub_person_id: 64115, identified_via: 'tracked_link:email' })
     expect(byId['s-old-1']).toMatchObject({ crm_person_id: 64115, identified_via: 'tracked_link:email' })
     expect(byId['s-old-2']).toMatchObject({ crm_person_id: 64115 })
-    // Never moved: someone else's session, and another browser.
+    // Never moved: someone else's session, another browser, and automation on this one.
     expect(byId['s-other']).toMatchObject({ crm_person_id: 777 })
     expect(byId['s-stranger']).toMatchObject({ crm_person_id: null })
+    expect(byId['s-scripted']).toMatchObject({ crm_person_id: null, identified_at: null })
     // The browser is mapped, so its next session is born identified (carryover).
     expect(db.visitor_identity_map).toEqual([
       expect.objectContaining({ rr_vid: VID, crm_person_id: 64115, identify_source: 'tracked_link:email', session_id: 's-now' }),

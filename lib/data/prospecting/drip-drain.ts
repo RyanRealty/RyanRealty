@@ -27,14 +27,22 @@ import {
   type QueuedDripItem,
 } from '@/lib/data/prospecting/drip-queue'
 import { recoverStuckFirstTouchSends, type StuckSendOutcome } from '@/lib/data/prospecting/drip-recover'
-import { canSendDripNow, DRIP_SPACING_MINUTES } from '@/lib/data/prospecting/drip-schedule'
+import {
+  canSendDripNow,
+  DRIP_SPACING_MINUTES,
+  EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP,
+} from '@/lib/data/prospecting/drip-schedule'
 import { sendProspectingEmailIntro } from '@/app/actions/prospecting'
 import { getProspect } from '@/lib/data'
 import { loadCmaFirstContactOverride } from '@/lib/cma/first-contact-override'
 import type { SendGuardCode } from '@/lib/data/prospecting/types'
 
 export type DripDrainResult =
-  | { ok: true; action: 'idle'; reason: 'weekend' | 'before-window' | 'spacing' | 'empty' }
+  | {
+      ok: true
+      action: 'idle'
+      reason: 'weekend' | 'before-window' | 'spacing' | 'empty' | 'expired-hard-stop'
+    }
   | { ok: true; action: 'recovered'; recovered: StuckSendOutcome[] }
   | {
       ok: true
@@ -105,12 +113,28 @@ export async function drainProspectingFirstTouchDrip(now: Date = new Date()): Pr
   }
 
   // 4. Peek, verify, send.
+  // Expired hard stop: never send, dequeue, or mark an expired row. Ask the
+  // FIFO for FSBO only so a queued expired CMA cannot block an FSBO send.
+  // A peeked expired row (the filter was ignored, or a later code path) is
+  // refused here too, and left exactly as it was.
+  const peekArgs = EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP
+    ? { kinds: ['fsbo'] as const }
+    : undefined
   let skipped = 0
   for (let i = 0; i < MAX_HARD_SKIPS_PER_TICK; i++) {
-    const next = await peekOldestQueuedFirstTouch()
+    const next = await peekOldestQueuedFirstTouch(peekArgs)
     if (!next) {
       if (skipped > 0) return { ok: true, action: 'skipped-all', skipped }
+      if (EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP) {
+        const held = await peekOldestQueuedFirstTouch({ kinds: ['expired'] })
+        if (held?.kind === 'expired') {
+          return { ok: true, action: 'idle', reason: 'expired-hard-stop' }
+        }
+      }
       return { ok: true, action: 'idle', reason: 'empty' }
+    }
+    if (EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP && next.kind === 'expired') {
+      return { ok: true, action: 'idle', reason: 'expired-hard-stop' }
     }
 
     const relistCheck = await verifyNotRelisted(next.kind, {

@@ -105,32 +105,49 @@ export async function findProspectForCmaSlug(
   return null
 }
 
-/** Oldest queued first-touch across Expired + FSBO (FIFO). */
-export async function peekOldestQueuedFirstTouch(): Promise<QueuedDripItem | null> {
+/**
+ * Oldest queued first-touch across Expired + FSBO (FIFO).
+ *
+ * `kinds` restricts the read. The expired hard stop asks for fsbo only so an
+ * older expired row cannot block an FSBO send, and asks for expired only when
+ * it needs to report that a queued expired row is being held. Omitting `kinds`
+ * keeps the historical both-lanes FIFO. This function never writes.
+ */
+export async function peekOldestQueuedFirstTouch(opts?: {
+  kinds?: readonly ProspectKind[]
+}): Promise<QueuedDripItem | null> {
+  const kinds = opts?.kinds ?? (['expired', 'fsbo'] as const)
+  const wantExpired = kinds.includes('expired')
+  const wantFsbo = kinds.includes('fsbo')
   const sb = createServiceClient()
   const selectExpired =
     'listing_key, outreach_email_queued_at, street_address, city, expired_at, status_change_timestamp'
   const selectFsbo = 'fsbo_url, outreach_email_queued_at, street_address, city, detected_at'
+  const empty = Promise.resolve({ data: null, error: null as null })
 
   const [expRes, fsboRes] = await Promise.all([
-    sb
-      .from('expired_listings')
-      .select(selectExpired)
-      .eq('outreach_email_status', 'queued')
-      .not('outreach_email_queued_at', 'is', null)
-      .is('outreach_email_sent_at', null)
-      .order('outreach_email_queued_at', { ascending: true })
-      .limit(1)
-      .maybeSingle(),
-    sb
-      .from('fsbo_listings')
-      .select(selectFsbo)
-      .eq('outreach_email_status', 'queued')
-      .not('outreach_email_queued_at', 'is', null)
-      .is('outreach_email_sent_at', null)
-      .order('outreach_email_queued_at', { ascending: true })
-      .limit(1)
-      .maybeSingle(),
+    wantExpired
+      ? sb
+          .from('expired_listings')
+          .select(selectExpired)
+          .eq('outreach_email_status', 'queued')
+          .not('outreach_email_queued_at', 'is', null)
+          .is('outreach_email_sent_at', null)
+          .order('outreach_email_queued_at', { ascending: true })
+          .limit(1)
+          .maybeSingle()
+      : empty,
+    wantFsbo
+      ? sb
+          .from('fsbo_listings')
+          .select(selectFsbo)
+          .eq('outreach_email_status', 'queued')
+          .not('outreach_email_queued_at', 'is', null)
+          .is('outreach_email_sent_at', null)
+          .order('outreach_email_queued_at', { ascending: true })
+          .limit(1)
+          .maybeSingle()
+      : empty,
   ])
 
   if (expRes.error) throw new Error(`peek expired queue failed: ${expRes.error.message}`)

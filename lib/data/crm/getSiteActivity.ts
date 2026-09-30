@@ -31,7 +31,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createServiceClient } from '@/lib/supabase/service'
 import { resolveLeadSessionIds } from '@/lib/data/crm/getViewedListings'
 import { isMissingColumnError } from '@/lib/data/identity/sessionIdentity'
-import { PROVISIONAL_AUTOMATION_REASONS } from '@/lib/analytics/automation'
+import { IDENTIFIABLE_SESSION_FILTER } from '@/lib/analytics/automation'
 import {
   buildVisits,
   isSuspectContact,
@@ -97,9 +97,10 @@ const IN_CHUNK = 100
  * (lib/analytics/automation.ts): a session that became a known contact through
  * a form submit or a link is a person's, even when it landed on the crawler's
  * page shape and never posted a second event. Scripted form submits are screened
- * at the person level instead (isSuspectContact).
+ * at the person level instead (isSuspectContact). The same rule the identify paths
+ * and the browser back-stitch apply, from its one definition.
  */
-const HUMAN_SESSION_OR = `is_automated.eq.false,automation_reason.in.(${[...PROVISIONAL_AUTOMATION_REASONS].join(',')})`
+const HUMAN_SESSION_OR = IDENTIFIABLE_SESSION_FILTER
 
 type SessionRow = {
   session_id: string
