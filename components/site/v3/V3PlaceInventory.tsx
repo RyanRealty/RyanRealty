@@ -5,17 +5,18 @@
  * Matt 2026-09-18: the scrolling search / price scrubber is not the
  * inventory surface. Typed sections stay here. Empty types omit.
  *
- * `layout="rails"` (Matt 2026-09-23, subdivision pages: "carousels of all
- * available property types"): each type is the homepage's card carousel
- * instead of a ledger. Same sections, same rows, same source line: every
- * listing the ledger would list is a card, a type with one listing still
- * gets its carousel, and the count stays under the heading.
- *
  * `layout="dial"` (Matt 2026-09-23, "an alternative to a carousel ... a
  * primary card ... a smaller dial with thumbnails"): each type is one
  * V3ListingDial, one listing large with the rest of that type as thumbnails
- * on its left and "03 / 12" at their head. Same sections, same rows, same source
- * line, and every listing is still an <a href> in the served HTML.
+ * on the dial's rail and "03 / 12" at their head. Same sections, same rows,
+ * same source line, and every listing is still an <a href> in the served HTML.
+ * The rail's position moves from dial to dial (Matt 2026-09-24: not every
+ * dial is the same interaction): each takes dialRailPositionAt(its order),
+ * the lease dial counted last, so adjacent dials never match.
+ *
+ * The `layout="rails"` card carousel (2026-09-23) was deleted 2026-09-24:
+ * no place page draws a listing carousel any more (PLACE_PAGES.md, "Every
+ * place page shows its listings on the dial").
  *
  * COMMERCIAL SPACE FOR LEASE (Matt 2026-09-23). `lease` is the place's active
  * commercial leases (MLS 'G'), built by placeLeaseSectionFromTiles apart from
@@ -26,7 +27,7 @@
  * is an <a href> in the served HTML like every other row.
  */
 import { cn } from '@/lib/utils'
-import { Fragment } from 'react'
+import { Fragment, type ReactNode } from 'react'
 import { V3_LEDGER_CLASS, V3_ROOT_CLASS, V3Button, V3Heading } from './atoms'
 import { V3ListingRow, type V3ListingRowData } from './V3ListingRow'
 import { V3Quiet } from './V3Quiet'
@@ -34,9 +35,8 @@ import { V3SourceLine } from './V3SourceLine'
 import type { PlaceStockSection } from '@/lib/place/place-inventory-stock'
 import type { PlaceLeaseSection } from '@/lib/place/place-lease-stock'
 import { COMMERCIAL_LEASE_ALL_LABEL, COMMERCIAL_LEASE_PATH } from '@/lib/place/place-lease-heading'
-import { HomeListingRail } from '@/app/_v3/HomeListingRail.client'
-import { railCardFromListingRow } from '@/app/_v3/home-rail-items'
 import { V3ListingDial } from './V3ListingDial.client'
+import { dialRailPositionAt } from './V3ListingDial.logic'
 import './tokens.css'
 import './V3PlaceInventory.css'
 
@@ -51,12 +51,18 @@ export type V3PlaceInventoryProps = {
   source: string
   asOf?: string | null
   /**
-   * 'rows' (default): the ledger. 'rails': one card carousel per type.
-   * 'dial': one V3ListingDial per type.
+   * 'rows' (default): the ledger. 'dial': one V3ListingDial per type, the
+   * layout every place page uses.
    */
-  layout?: 'rows' | 'rails' | 'dial'
+  layout?: 'rows' | 'dial'
   /** Commercial space for lease: the final section, never counted for sale. */
   lease?: PlaceLeaseSection | null
+  /**
+   * More of the same listings in another form, inside this block and above its
+   * one source line (/commercial-space-for-lease: the drawer of the towns after
+   * the lead dial, 2026-09-30). The caller's node; this draws nothing into it.
+   */
+  after?: ReactNode
 }
 
 /** One section the inventory renders: a for-sale type, a town, or the leases. */
@@ -83,6 +89,7 @@ export function V3PlaceInventory({
   asOf,
   layout = 'rows',
   lease = null,
+  after = null,
 }: V3PlaceInventoryProps) {
   const forSale: InventorySection[] = sections.filter((section) => section.rows.length > 0)
   // The lease section goes last, after "Commercial property".
@@ -105,10 +112,11 @@ export function V3PlaceInventory({
   if (layout === 'dial') {
     return (
       <div id={id} className={cn(V3_ROOT_CLASS, 'v3-place-stock', 'v3-place-stock--dial')}>
-        {live.map((section) => (
+        {live.map((section, order) => (
           <Fragment key={section.key}>
             <V3ListingDial
               id={`${id}-${section.key}`}
+              railPosition={dialRailPositionAt(order)}
               heading={section.heading}
               headingLevel={2}
               countLabel={section.countLabel}
@@ -124,31 +132,8 @@ export function V3PlaceInventory({
             ) : null}
           </Fragment>
         ))}
+        {after}
         <V3SourceLine source={source} asOf={asOf ?? null} sourceName="Oregon Data Share" />
-      </div>
-    )
-  }
-
-  if (layout === 'rails') {
-    return (
-      <div id={id} className={cn(V3_ROOT_CLASS, 'v3-place-stock', 'v3-place-stock--rails')}>
-        {live.map((section) => (
-          <HomeListingRail
-            key={section.key}
-            row={{
-              id: `${id}-${section.key}`,
-              heading: section.heading,
-              countLabel: section.countLabel,
-              ...(section.more ? { seeAll: section.more } : {}),
-              // The inventory sits well below the fold on every place page.
-              priorityCount: 0,
-              cards: section.rows.map(railCardFromListingRow),
-            }}
-          />
-        ))}
-        <div className="v3-place-stock__source">
-          <V3SourceLine source={source} asOf={asOf ?? null} sourceName="Oregon Data Share" />
-        </div>
       </div>
     )
   }
@@ -185,6 +170,7 @@ export function V3PlaceInventory({
           ) : null}
         </section>
       ))}
+      {after}
       <V3SourceLine source={source} asOf={asOf ?? null} sourceName="Oregon Data Share" />
     </div>
   )

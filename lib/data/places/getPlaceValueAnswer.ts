@@ -16,6 +16,7 @@ import { getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
 import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import { marketVerdict, type MarketKind } from '@/lib/market/classify'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
+import { formatDate } from '@/lib/format/date'
 
 export type PlaceValueGeoType = 'neighborhood' | 'city'
 
@@ -41,9 +42,29 @@ export type PlaceValueAnswer = {
   trace: string[]
 }
 
+/** "Tetherow", or the slug's words when the caller did not name the place. */
+function placeLabelOf(label: string | null | undefined, geoSlug: string): string {
+  const named = label?.trim()
+  if (named) return named
+  return geoSlug
+    .split('-')
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
+
+/** ", updated Sep 20, 2026", or nothing when the stamp does not parse. */
+function updatedClause(asOf: string | null): string {
+  if (!asOf) return ''
+  const at = new Date(asOf)
+  return Number.isNaN(at.getTime()) ? '' : `, updated ${formatDate(at)}`
+}
+
 export async function getPlaceValueAnswer(input: {
   geoType: PlaceValueGeoType
   geoSlug: string
+  /** The place as a person says it ("Tetherow", "Bend"), for the trace a reader sees. */
+  placeLabel?: string | null
 }): Promise<PlaceValueAnswer> {
   const geoSlug = input.geoSlug.trim().toLowerCase()
   const key = `${input.geoType}:${geoSlug}`
@@ -73,15 +94,38 @@ export async function getPlaceValueAnswer(input: {
   const closedCount = pace?.closedCount ?? null
   const asOf = headlines?.computedAt ?? overlay?.inventory?.computedAt ?? null
 
+  // THE TRACE IS PRINTED BESIDE THE FIGURE, SO IT IS IN THE READER'S WORDS
+  // (SITE-193, 2026-09-24). It used to carry the cache key and the column
+  // ("days to pending 42 — market_metric neighborhood:tetherow,
+  // median_days_to_contract_90d"), and the community valuation answer printed
+  // it verbatim under its pace rule; /sell had been translating the same lines
+  // after the fact. The source, the population, the window and the date all
+  // stay; the table and column become the words they mean. Each line still
+  // opens with the figure's name ("months of supply", "days to pending"),
+  // which is how the callers find it.
+  const where = placeLabelOf(input.placeLabel, geoSlug)
+  const feed = `regional MLS through Oregon Data Share, detached homes in ${where}`
+  const updated = updatedClause(asOf)
   const trace: string[] = []
   if (monthsOfSupply != null) {
+    const active = headlines?.activeCount
     trace.push(
-      `months of supply ${formatMonthsOfSupply(monthsOfSupply)} (${verdict?.label ?? 'unknown'}) — market_metric ${key}, active ${headlines?.activeCount ?? '?'} over avg monthly closes, computed ${asOf ?? '?'}`,
+      `months of supply ${formatMonthsOfSupply(monthsOfSupply)} (${verdict?.label ?? 'no verdict'}): ${feed}${
+        active != null ? `, ${active.toLocaleString('en-US')} homes for sale` : ''
+      } divided by the average number that closed each month over the last six months${updated}`,
     )
   }
-  if (daysToPending != null) trace.push(`days to pending ${Math.round(daysToPending)} — market_metric ${key}, median_days_to_contract_90d`)
-  if (cashShare != null) trace.push(`cash share ${(cashShare * 100).toFixed(1)}% — market_metric ${key}, trailing 12 months`)
-  if (saleToOriginal != null) trace.push(`sale to original list ${(saleToOriginal * 100).toFixed(1)}% — market_metric ${key}`)
+  if (daysToPending != null) {
+    trace.push(
+      `days to pending ${Math.round(daysToPending)}: ${feed}, the median days from the listing date to a signed contract over the last 90 days${updated}`,
+    )
+  }
+  if (cashShare != null) {
+    trace.push(`cash share ${(cashShare * 100).toFixed(1)}%: ${feed}, closed sales paid in cash over the last 12 months${updated}`)
+  }
+  if (saleToOriginal != null) {
+    trace.push(`sale to original list ${(saleToOriginal * 100).toFixed(1)}%: ${feed}, the median sale price as a share of the first list price${updated}`)
+  }
 
   return {
     geoType: input.geoType,

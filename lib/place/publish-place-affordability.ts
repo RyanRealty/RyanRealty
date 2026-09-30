@@ -127,8 +127,10 @@ export function publishPlaceAffordability(
   // price $1,312,500,, market_metric …": a doubled comma, a table name, and a
   // fold that printed "$1". The shape every other trace here uses is "<feed>,
   // <population>", so this one does too, and it hands the name over
-  // explicitly as well. The machine handle stays in the full trace, in
-  // parentheses, where a reviewer auditing section 0 can find it.
+  // explicitly as well. The machine handle (market_metric median_list_active,
+  // detached; financing_mix for the mix below) lives in this comment, not in
+  // the reader's sentence: a table name in a public source line is the tell
+  // TASTE.md bans (SITE-193, 2026-09-24).
   const medianSourceName =
     median == null ? `${placeName} median asking price` : AFFORDABILITY_MEDIAN_SOURCE_NAME
   const medianSource =
@@ -138,7 +140,7 @@ export function publishPlaceAffordability(
           `${AFFORDABILITY_MEDIAN_SOURCE_NAME}, median asking price ${formatPriceExact(median)} across the`,
           activeCount != null ? ` ${activeCount}` : '',
           grain === 'city'
-            ? ` single-family homes for sale in ${placeName}, the same row this page's market section prints (market_metric median_list_active, detached)`
+            ? ` single-family homes for sale in ${placeName}, the same figure this page's market section prints`
             : ` single-family homes for sale inside ${placeName}'s recorded boundary, the same population this page's own count prints`,
           computedAt ? `, read ${formatDate(computedAt)}.` : ", read on this page's last refresh.",
         ].join('')
@@ -157,7 +159,7 @@ export function publishPlaceAffordability(
     slices.length > 0 ? AFFORDABILITY_MIX_SOURCE_NAME : `${placeName} financing mix`
   const mixSource =
     slices.length > 0
-      ? `${AFFORDABILITY_MIX_SOURCE_NAME}, how buyers paid for the detached single-family homes that closed in ${placeName} over the last 12 months, reaching further back where too few sold to publish (market_metric financing_mix). Shares under 5% are not published, so these do not add to 100%. This is how OTHER buyers paid; it is not a suggestion about your down payment.`
+      ? `${AFFORDABILITY_MIX_SOURCE_NAME}, how buyers paid for the detached single-family homes that closed in ${placeName} over the last 12 months, reaching further back where too few sold to publish. Shares under 5% are not published, so these do not add to 100%. This is how OTHER buyers paid; it is not a suggestion about your down payment.`
       : `${placeName} has not published a financing mix for detached sales.`
 
   return {

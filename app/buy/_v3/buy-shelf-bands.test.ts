@@ -104,21 +104,26 @@ describe('buyShelfBands', () => {
   })
 })
 
-describe('the carousel is the installed carousel (ci:catalog-install / --ship)', () => {
+describe('the lead shelf is the listing dial (Matt 2026-09-24)', () => {
   const SHELF = readFileSync('app/buy/_v3/BuyHomesShelf.client.tsx', 'utf8')
   const RAIL = readFileSync('app/_v3/HomeListingRail.client.tsx', 'utf8')
   const RAIL_CSS = readFileSync('app/_v3/home-homes-rails.css', 'utf8')
 
-  it('the route file imports the shadcn source itself, not a house wrapper', () => {
-    expect(SHELF).toMatch(/import\s*\{[\s\S]*?\}\s*from\s*'@\/components\/ui\/carousel'/)
+  it('each band is a V3ListingDial drawn from the rail cards, under the ladder', () => {
+    expect(SHELF).toContain('<V3ListingDial\n')
+    expect(SHELF).toContain('cards.map(listingRowFromRailCard)')
+    expect(SHELF).toContain('<BuyShelfLadderStrip cards={cards} shown={shown} />')
+    // The ladder follows the dial through its callback, not its DOM.
+    expect(SHELF).toContain('onIndexChange={setTurned}')
+    expect(SHELF).not.toContain('useListingDialIndex')
+    expect(SHELF).not.toContain('.shim')
+    expect(SHELF).not.toMatch(/from\s*'@\/components\/ui\/carousel'/)
   })
 
-  it('both shelves mount the chevrons as flanking children, never a static row', () => {
-    for (const src of [SHELF, RAIL]) {
-      expect(src).toContain('v3-carousel__step--prev')
-      expect(src).toContain('v3-carousel__step--next')
-      expect(src).not.toContain('home-rail__arrows')
-    }
+  it('the place-page rails keep their flanking chevrons, never a static row', () => {
+    expect(RAIL).toContain('v3-carousel__step--prev')
+    expect(RAIL).toContain('v3-carousel__step--next')
+    expect(RAIL).not.toContain('home-rail__arrows')
     /* The sheet still NAMES the old static row in the comment that records why
        it went; what may not come back is a rule for it. */
     expect(RAIL_CSS).not.toMatch(/\.home-rail__arrows\s*[,{[]/)
@@ -127,11 +132,6 @@ describe('the carousel is the installed carousel (ci:catalog-install / --ship)',
   it('the slide width stays a variable so the chevrons keep the media midline', () => {
     expect(RAIL_CSS).toContain('--v3-carousel-slide-w')
     expect(RAIL).not.toContain('basis-1/4')
-  })
-
-  it('the shelf does not re-implement the card face', () => {
-    expect(SHELF).toContain("from '@/app/_v3/HomeListingRail.client'")
-    expect(SHELF).toContain('HomeRailCardFace')
   })
 })
 

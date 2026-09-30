@@ -6,7 +6,11 @@
  * site copy, headers, or captions. Prefer colon, period, comma, or rewrite.
  * Plain ` -- ` used as a dash is the same refuse.
  *
- * Scope: public new-construction + home/search string literals, including
+ * Scope (widened SITE-193, 2026-09-24): every place page tree (cities,
+ * communities, subdivisions), both address answers (community ask and /sell),
+ * the v3 barrel, lib/site and lib/place, with a shrink-only baseline
+ * (scripts/no-public-em-dash-baseline.json) for the dashes those trees held
+ * when they came in; before that, public new-construction + home/search string literals, including
  * the "Central Oregon right now" pulse in app/_v3/home-pulse.ts, plus the
  * SITE-149 residual paths (root titles, brand suffix, $/sqft aria, Bend /
  * neighborhood claim strings, web manifest). Comments in other files,
@@ -69,26 +73,49 @@ const ROOTS = [
   'components/site/v3/V3Roll.tsx',
   'components/site/v3/V3Steps.tsx',
   'components/site/v3/V3Facts.tsx',
-  // Place documents (2026-09-25): the section's note printed "4 recorded
-  // documents for Mountain View — 2 declarations ..." live. The note, the
-  // count builder it shares with the neighborhood FAQ, and the FAQ answers.
-  'components/site/v3/V3PlaceDocuments.tsx',
-  'lib/data/places/place-document-view.ts',
-  'lib/site/place-faq-extras.ts',
+  // SITE-193 (2026-09-24): "5 comparable closes so far — too few to chart
+  // honestly" reached the community valuation answer because this gate walked
+  // a hand-kept list of files and neither the answer's shaper
+  // (lib/site/answer-figures.ts) nor the community route was on it. It was not
+  // a dynamic string the walker could not see: it was a template literal in a
+  // file nobody listed. So the scope is now the trees public place copy and
+  // the two address answers are written in, not files one at a time, and the
+  // dashes those trees already held sit on a shrink-only baseline
+  // (scripts/no-public-em-dash-baseline.json) instead of keeping them out of
+  // scope. A NEW dash anywhere in these trees fails. lib/market came in with
+  // the neighborhood door's trace ("listings — Active and Active Under
+  // Contract, Coming Soon excluded — inside ..."), the same miss one tree over.
+  'app/cities',
+  'app/communities',
+  'app/subdivisions',
+  'app/sell',
+  'components/site/v3',
+  'lib/site',
+  'lib/place',
+  'lib/data/places',
+  'lib/cma/place-comps.ts',
+  'lib/market',
   // The market report a contact receives (Matt 2026-09-29): every report had
   // printed "—" for a missing value, including months of supply on every
   // neighborhood report. The renderer, its formatters, the branded shell and
   // its footer, and the no-login preferences page, its report web view, its
-  // one-click answer, its controls primitive, and the account page's
-  // market-report block.
+  // one-click answer, and the account page's market-report block. Its
+  // controls primitive (components/site/v3/V3Controls.tsx) is walked with the
+  // v3 tree above.
   'lib/crm/market-report-email.ts',
   'lib/crm/market-report-format.ts',
   'lib/email/shell.ts',
   'app/email-preferences',
   'app/api/email/report-unsubscribe/route.ts',
-  'components/site/v3/V3Controls.tsx',
   'components/dashboard/DashboardNotificationPrefs.tsx',
 ]
+
+/**
+ * Dashes these trees held when they came into scope (SITE-193), per file. A
+ * file may hold this many and no more; fix one and lower its number (or drop
+ * the entry) in the same commit. Never raise a number to pass.
+ */
+const BASELINE_PATH = 'scripts/no-public-em-dash-baseline.json'
 
 /** JSON the visitor can read; not walked as TypeScript. */
 const JSON_FILES = ['public/manifest.json']
@@ -201,10 +228,32 @@ for (const file of JSON_FILES) {
 
 console.log('public em-dash gate (ci:no-public-em-dash)')
 console.log('=========================================')
-console.log(`Scanned ${files.length} NC/home/search/title/aria/claim source files + ${JSON_FILES.length} JSON`)
+console.log(`Scanned ${files.length} public source files + ${JSON_FILES.length} JSON`)
+
+// The shrink-only baseline: a file's hits up to its recorded count are the
+// debt it came into scope with; one more is a failure. A file under its count
+// is reported so the number can come down in the same commit.
+const baseline = existsSync(BASELINE_PATH) ? JSON.parse(readFileSync(BASELINE_PATH, 'utf8')).files ?? {} : {}
+const hitsByFile = new Map()
+for (const fail of fails) {
+  const file = /^(.+?\.(?:tsx|ts|mjs|json)):/.exec(fail)?.[1] ?? fail
+  hitsByFile.set(file, [...(hitsByFile.get(file) ?? []), fail])
+}
+const shrunk = []
+for (const [file, allowed] of Object.entries(baseline)) {
+  const now = hitsByFile.get(file)?.length ?? 0
+  if (now <= allowed) {
+    fails.splice(0, fails.length, ...fails.filter((f) => !f.startsWith(`${file}:`)))
+    if (now < allowed) shrunk.push(`${file}: ${now} now, baseline ${allowed}. Lower it in ${BASELINE_PATH}.`)
+  }
+}
+if (shrunk.length > 0) {
+  console.log(`\n${shrunk.length} baselined file(s) hold fewer dashes than recorded:`)
+  for (const line of shrunk) console.log(`  ${line}`)
+}
 
 if (fails.length === 0) {
-  console.log('\nOK: public NC/home/title/aria/claim string literals have no U+2014 and no ` -- ` dash.')
+  console.log('\nOK: public string literals in scope have no U+2014 and no ` -- ` dash beyond the baseline.')
   process.exit(0)
 }
 

@@ -147,7 +147,8 @@ async function fetchEventDetail(slug: string): Promise<EventDetail | null> {
  * refresh alongside the rest of the site's listing data.
  */
 export function getEventDetail(slug: string): Promise<EventDetail | null> {
-  return unstable_cache(() => fetchEventDetail(slug), ['event-detail-v3-full-set', slug], {
+  // v4 2026-09-25: tile Vimeo srcs keep the privacy hash (v3 could hold a hashless, unplayable src).
+  return unstable_cache(() => fetchEventDetail(slug), ['event-detail-v4-full-set', slug], {
     revalidate: CACHE_WINDOWS.listingsByGeo,
     tags: [cacheTag.listings, 'events'],
   })()

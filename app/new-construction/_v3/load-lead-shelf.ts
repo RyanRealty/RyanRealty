@@ -13,6 +13,11 @@ import { LISTING_FIELD_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing
 import { listingTileHref } from '@/lib/slug'
 import { publishListingSaleAsk } from '@/lib/listing/publish-listing-ask'
 import {
+  LISTING_3D_TOUR_LABEL,
+  publishListingTourLabel,
+} from '@/lib/listing/publish-listing-hero-video'
+import { publicCardStatusLabel } from '@/lib/listing-status-public'
+import {
   BEND_NEW_CON_STAGE_FALLBACK_POSTER,
   bendNewConHomeConcession,
   type NewConHomeConcession,
@@ -90,8 +95,8 @@ function tileToCard(tile: ListingTile): HomeRailCard | null {
     badges,
     hasTour: tile.hasVirtualTour === true || Boolean(tile.tourUrl),
     tourUrl: tile.tourUrl?.trim() || null,
-    tourLabel: '3D Walkthrough',
-    statusLabel: null,
+    tourLabel: publishListingTourLabel(tile.tourUrl) ?? LISTING_3D_TOUR_LABEL,
+    statusLabel: publicCardStatusLabel(tile.status),
   }
 }
 

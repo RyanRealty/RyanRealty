@@ -6,6 +6,7 @@ import { assertPdfPageSafety } from '@/lib/pdf/assert-page-safety'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import { sendEvent } from '@/lib/crm/send-event'
 import { sendEmail } from '@/lib/resend'
+import { brokerSendIdentity } from '@/lib/email/broker-identity'
 import { getCachedCMA, computeCMA } from '@/lib/cma'
 import { createServiceClient } from '@/lib/supabase/service'
 import { CMAPdfDocument } from '@/lib/pdf/cma-pdf'
@@ -338,8 +339,13 @@ async function runValuationFollowUp(ctx: {
           runningMarksInBody: true,
         })
         const greetingName = name ? ` ${name.split(/\s+/)[0]}` : ''
+        // "Reply to this email" has to reach a person: as Matt, replies to his
+        // inbox (a bare noreply@ swallowed them).
+        const sender = brokerSendIdentity('matt')
         const sent = await sendEmail({
           to: email,
+          from: sender.from,
+          replyTo: sender.replyTo,
           subject: `Your Home Valuation - ${fullAddress || 'Property'}`,
           text: `Hi${greetingName},\n\nAttached is your Comparative Market Analysis for ${fullAddress || 'your property'}.\n\nIf you have questions or want to discuss next steps, reply to this email or give us a call.\n\nBest,\nRyan Realty`,
           html: `<p>Hi${greetingName},</p><p>Attached is your Comparative Market Analysis for ${fullAddress || 'your property'}.</p><p>If you have questions or want to discuss next steps, reply to this email or give us a call.</p><p>Best,<br/>Ryan Realty<br/><a href="https://ryan-realty.com">ryan-realty.com</a></p>`,
@@ -367,9 +373,13 @@ async function runValuationFollowUp(ctx: {
     if (!(await isSuppressedByEmail(email, 'email')).suppressed) {
     const firstName = name.split(/\s+/)[0] || ''
     const greeting = firstName ? `Hi ${firstName},` : 'Hi there,'
+    // As Matt, never noreply@ with a broker Reply-To: that pairing lands in
+    // Gmail spam (lib/tc/signing-emails.test.ts, measured 2026-09-30).
+    const sender = brokerSendIdentity('matt')
     await sendEmail({
       to: email,
-      replyTo: 'matt@ryan-realty.com',
+      from: sender.from,
+      replyTo: sender.replyTo,
       subject: 'We have your home-value request',
       text: [
         greeting,

@@ -564,3 +564,56 @@
     font-size: var(--v3-size-body-lg);
   }
 }
+
+/* The places inside the city, as doors under the figure (2026-09-29). Only
+   where the figure's column has room beside the alerts: on a phone the rail
+   by the map is the same doors, one scroll on. */
+@media (max-width: 63.99rem) {
+  .city-fold__places {
+    display: none;
+  }
+}
+
+.city-fold__places {
+  margin-top: var(--v3-space-md);
+  padding-top: var(--v3-space-xs);
+  border-top: var(--v3-rule-hairline);
+}
+
+.city-fold__places-label {
+  margin: 0;
+  font-size: var(--v3-size-source);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.city-fold__places-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--v3-space-md);
+  margin: var(--v3-space-2xs) 0 0;
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-tap);
+}
+
+.city-fold__places-door {
+  white-space: nowrap;
+}
+
+/* Element color rules sit in the base layer so a utility still wins
+   (ci:css-layers). */
+@layer base {
+  .city-fold__places-row a {
+    color: var(--v3-ink);
+    text-decoration: underline;
+    text-decoration-color: var(--v3-ink-muted);
+    text-underline-offset: var(--v3-underline-offset);
+    transition: text-decoration-color var(--v3-dur-state) var(--v3-ease-out);
+  }
+
+  .city-fold__places-row a:hover,
+  .city-fold__places-row a:focus-visible {
+    text-decoration-color: currentColor;
+  }
+}

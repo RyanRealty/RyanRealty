@@ -62,6 +62,7 @@ function inv(
   return {
     geoSlug: `bend-${partial.slug}`,
     activeCount: 20,
+    underContractCount: 0,
     pricedCount: partial.activeCount ?? 20,
     medianListPrice: 700_000,
     listingKeys: [],
@@ -247,7 +248,8 @@ describe('buildAskingRankCard', () => {
   })
 
   it('separates asking from closed in the trace', () => {
-    expect(card.source).toContain('listing_boundary_xref_mv')
+    expect(card.source).toContain('single-family homes for sale inside the recorded district boundary')
+    expect(card.source).not.toMatch(/listing_boundary_xref_mv|Active Under Contract|active-under-contract/i)
     expect(card.source).toContain('what buyers paid')
   })
 

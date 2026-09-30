@@ -7,6 +7,7 @@ import { CENTRAL_OREGON_CITY_SLUGS, isCentralOregonCommunitySlug } from '@/lib/c
 import { isPresetSlug } from '@/lib/search-presets'
 import { isInvalidBlogIndexPath } from '@/lib/blog/index-path-guard'
 import { allowedCommunityUrlSlugs } from '@/lib/communities/community-public-pair'
+import { FIRST_EDITION_LABEL, isInvalidEditionPath } from '@/lib/market-report/edition-path-guard'
 import {
   LEGACY_NEXT_IMAGE_CACHE_SECONDS,
   LEGACY_NEXT_IMAGE_GONE_BODY,
@@ -385,6 +386,13 @@ const BLOG_NOT_FOUND_HTML =
   '<p style="opacity:.8;line-height:1.6;margin:0 0 1.5rem">There is no blog page at this address. The index has every post.</p>' +
   '<a href="/blog" style="color:#faf8f4;text-decoration:underline">Central Oregon market writing</a></div></body></html>'
 
+const REPORT_NOT_FOUND_HTML =
+  '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Page not found · Ryan Realty</title></head>' +
+  '<body style="font-family:Geist,system-ui,sans-serif;background:#102742;color:#faf8f4;margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center">' +
+  '<div style="max-width:32rem;padding:2rem"><h1 style="font-size:2rem;margin:0 0 .75rem">Page not found</h1>' +
+  `<p style="opacity:.8;line-height:1.6;margin:0 0 1.5rem">There is no monthly market report at this address. The archive has every edition since ${FIRST_EDITION_LABEL}.</p>` +
+  '<a href="/housing-market/reports/monthly" style="color:#faf8f4;text-decoration:underline">Every monthly report</a></div></body></html>'
+
 const GEO_NOT_FOUND_HTML =
   '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Page not found · Ryan Realty</title></head>' +
   '<body style="font-family:Geist,system-ui,sans-serif;background:#102742;color:#faf8f4;margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center">' +
@@ -604,6 +612,19 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     })
   }
 
+  // ─── (0b3) Invalid monthly report edition → REAL 404 (SEO-9) ────────────
+  // /housing-market/reports/monthly/<YYYY-MM> is the same soft-404 class: a
+  // month no edition can have (the wrong shape, before 2006-01, the current
+  // month or later) rendered a hollow 200 under app/loading.tsx. The edge
+  // knows the shape and the range (lib/market-report/edition-path-guard); a
+  // month in range without a published edition stays the route's own.
+  if (!pathname.startsWith('/api/') && isInvalidEditionPath(pathname)) {
+    return new NextResponse(REPORT_NOT_FOUND_HTML, {
+      status: 404,
+      headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' },
+    })
+  }
+
   // ─── (0c) Invalid geo slug → REAL 404 (kills soft-404 sprawl) ──────────
   // Unknown /communities/* slugs would otherwise render a hollow 200
   // (soft-404). Emit a hard 404 with a noindex body so Google drops them.
@@ -740,5 +761,9 @@ export const config = {
   matcher: [
     '/((?!_next/static|_next/image|_next/data|favicon.ico|robots.txt|sitemap.xml|manifest.json|.*\\..*).*)',
     '/_next/image',
+    // The first pattern skips any path with a dot, so a dotted edition segment
+    // (/2099-01.html) would never reach the edition guard and would render a
+    // hollow 200 (lib/market-report/edition-path-guard.ts).
+    '/housing-market/reports/monthly/:month',
   ],
 }

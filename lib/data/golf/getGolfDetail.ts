@@ -122,7 +122,8 @@ async function fetchGolfDetail(slug: string): Promise<GolfDetail | null> {
 }
 
 export function getGolfDetail(slug: string): Promise<GolfDetail | null> {
-  return unstable_cache(() => fetchGolfDetail(slug), ['golf-detail-v4-full-set', slug], {
+  // v5 2026-09-25: tile Vimeo srcs keep the privacy hash (v4 could hold a hashless, unplayable src).
+  return unstable_cache(() => fetchGolfDetail(slug), ['golf-detail-v5-full-set', slug], {
     revalidate: CACHE_WINDOWS.listingsByGeo,
     tags: [cacheTag.listings, 'golf'],
   })()

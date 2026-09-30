@@ -325,7 +325,7 @@ export function buildCutsCard(input: CityRankInput): CityChartCard | null {
       'under-contract listings the share divides by. A town with fewer than ' +
       `${SMALL_ACTIVE_FLOOR} active listings is marked as a small active inventory.` +
       (regionPct != null && input.region && input.region.active_count != null && townActive > 0
-        ? ` The region rule is all Central Oregon single-family — ${input.region.active_count.toLocaleString('en-US')} actives, ` +
+        ? ` The region rule is all Central Oregon single-family: ${input.region.active_count.toLocaleString('en-US')} actives, ` +
           `broader than the ${townActive.toLocaleString('en-US')} actives across the ${rows.length} towns charted.`
         : ''),
     updatedAt: maxUpdatedAt(rows.map((r) => r.town)),
@@ -371,7 +371,7 @@ export function buildStoCard(
     sampleKey: `detached closes, Q${q} ${cur} (Q${q} ${prior})`,
     source:
       `sale_pricing_facts detached closes, aggregated by the city_quarter_sale_to_ask function. ` +
-      `Median sale price as a share of the original ask, Q${q} ${prior} vs Q${q} ${cur} — ` +
+      `Median sale price as a share of the original ask, Q${q} ${prior} vs Q${q} ${cur}, ` +
       `the latest quarter complete in both years. Towns with at least ` +
       `${MIN_CLOSINGS_PER_QUARTER} closings on each side; close price 0.1–10x of last ask, 300+ sqft. ` +
       `The n beside each row is the closings that median was computed over, current quarter first. ` +

@@ -339,3 +339,9 @@ The seven production migration-history labels that carried the name were renamed
 (`supabase_migrations.schema_migrations.name`, versions unchanged). The SQL text each of
 those migrations ran (`statements`) still names the old functions: it is the record of
 what ran, not a live object, and is not rewritten. The gate reads the repo only.
+
+## Mail sent as a named sender (added 2026-09-30)
+
+| Gate | npm | What it fails on |
+|---|---|---|
+| `check-broker-reply-sender.mjs` | `ci:broker-reply-sender` | a `sendEmail({ ... })` whose `replyTo` names one of our mailboxes (a literal `@ryan-realty.com` address, or an expression about a broker, the signed-in user or an envelope's creator) with no `from`. Without `from` the mail goes out as the bare `RESEND_FROM` (`Ryan Realty <noreply@mail.ryan-realty.com>`), and that sender with a broker Reply-To went to Gmail spam: measured against matt@ on 2026-09-30, every signing invite and reminder since 09-29 sat in spam while Resend reported "delivered", and the same invite as `"Matt Ryan · Ryan Realty" <matt@mail.ryan-realty.com>` landed in the inbox twice. Fix with `brokerSendIdentity` (`lib/email/broker-identity.ts`), which sets both. A Reply-To of the lead (an internal alert to a broker) delivers and is not flagged. The signing wrapper passes its sender through a parameter the gate cannot judge; `lib/tc/signing-emails.test.ts` holds it. |

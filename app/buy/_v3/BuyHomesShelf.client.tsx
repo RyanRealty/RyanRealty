@@ -1,79 +1,61 @@
 'use client'
 
 /**
- * THE /buy FOLD SHELF — catalog job `shadcn-carousel`, owned by this route.
+ * THE /buy FOLD SHELF, on the listing dial.
  *
- * This file imports the installed source itself (`@/components/ui/carousel`,
- * `npx shadcn add carousel`) and composes it: the official track and the
- * official prev/next buttons flanking it, 44x44 and centred on the media
- * midline. A house rail wrapper is not the install — `ci:catalog-install`'s
- * requireRouteImport and `taste-receipt --ship` both read THIS directory for
- * the specifier. The demo's position readout ("Slide 1 of 5") is here too, in
- * the form the data earns: a ladder of one mark per listing along the shelf's
- * own asking-price range, the on-screen cards filled — see BuyShelfLadderStrip.
- * The shelves below the fold carry the plain `01 / 09` twin
- * (`HomeRailPosition`).
+ * WHAT IT WAS (SITE-91). The installed shadcn carousel with its flanking
+ * chevrons, sorted cheapest first and brushed by asking-price band on the
+ * house segmented control (V3ChartSwitch), with a ladder over the track: one
+ * mark per listing along the shelf's own asking-price range, the on-screen
+ * cards filled.
  *
- * WHAT IT ADDS OVER THE SHELVES BELOW IT. `HomeListingRail` is the editorial
- * shelf: one claim ("Price cuts", "New this week"), one track, scroll it. This
- * is the buyer's instrument, and it exists because /buy has one job the
- * homepage does not — a visitor who has not told us anything yet wants to know
- * what their number buys. So the fold shelf is sorted cheapest first and
- * brushed by asking-price band on the house segmented control (V3ChartSwitch),
- * whose hidden panels stay in the DOM: every listing href on this page is
- * crawlable whichever band is open, and the rail ItemList JSON-LD still
- * describes all of them.
+ * WHAT IT IS (Matt 2026-09-24, "Let's get all of those carousels in place").
+ * Each band is a V3ListingDial: one home large with its photograph and the
+ * card's copy, the rest of the band as thumbnails on the dial's rail, "03 /
+ * 12" at its head. The shelf is otherwise unchanged: the same lead row, the
+ * same cheapest-first order, the same bands, the switch's hidden panels still
+ * in the DOM so every listing href on the page is crawlable whichever band is
+ * open, the same see-all door. The ladder stays the shelf's one drawing and
+ * now fills the mark of the home the dial is showing, so it moves when the
+ * dial turns (the dial's onIndexChange says which home that is).
  *
- * The card face and the chrome classes are IMPORTED from the rail, not copied:
- * two shelves doing the same job on two pages are the same object here, down to
- * the stylesheet (TASTE.md, "Consistency is a taste rule"). Only the
- * composition around them belongs to this route.
+ * NOTE: /buy 301s to /homes-for-sale (next.config.ts, since 2026-09-23), so no
+ * visitor reaches this shelf; it is converted so the route's code matches the
+ * rest of the site if the redirect is ever lifted.
  */
-import { useEffect, useState } from 'react'
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-  type CarouselApi,
-} from '@/components/ui/carousel'
+import { useState } from 'react'
 import { cn } from '@/lib/utils'
-import { V3_ROOT_CLASS, V3Button, V3ChartSwitch, v3Text } from '@/components/site/v3'
-import { HomeRailCardFace } from '@/app/_v3/HomeListingRail.client'
+import {
+  V3_ROOT_CLASS,
+  V3Button,
+  V3ChartSwitch,
+  V3ListingDial,
+  dialRailPositionAt,
+  v3Text,
+} from '@/components/site/v3'
 import { formatPublishedSaleAsk } from '@/lib/listing/publish-listing-ask'
 import { publishListingShareKind } from '@/lib/listing/publish-listing-share'
-import type { HomeRailCard, HomeRailRow } from '@/app/_v3/home-rail-items'
+import { listingRowFromRailCard, type HomeRailCard, type HomeRailRow } from '@/app/_v3/home-rail-items'
 import { buyShelfBands, buyShelfLadder, sortByAsk } from './buy-shelf-bands'
-import '@/components/site/v3/V3ListingRow.css'
-import '@/components/site/v3/V3Carousel.css'
 import '@/app/_v3/home-homes-rails.css'
 import './buy-homes-shelf.css'
 
 /**
- * THE LADDER — the shelf's position indicator, and its one drawing.
- *
- * `01 / 09` would have answered the judge's "no position indicator" on its own.
- * This answers it with the data instead: one mark per listing, placed along the
- * shelf's own asking-price range, the visible cards' marks filled. It says how
- * deep the set goes AND where each house sits in it, it names both ends so the
- * marks are readable rather than decorative, and it moves when a chevron is
- * clicked or the track is dragged.
- *
- * The marks are not controls: a strip of twelve 44x44 hit areas across 1112px
- * would overlap, and WCAG 2.5.8 is not satisfied by "they are small but there
- * are lots of them". The chevrons, the drag and the band chips are the
- * controls; this is the readout they move.
+ * THE LADDER: one mark per listing, placed along the shelf's own asking-price
+ * range, the mark of the home the dial shows filled. It names both ends so
+ * the marks are readable rather than decorative. The marks are not controls:
+ * the dial's thumbnails, its previous and next, and the band chips are; this
+ * is the readout they move.
  */
 function BuyShelfLadderStrip({
   cards,
-  inView,
+  shown,
 }: {
   cards: readonly HomeRailCard[]
-  inView: readonly number[]
+  shown: number
 }) {
   /* A fractional-share ask is the price of a slice, not of the house, so it
-     keeps its card (with its share label) and loses its mark — otherwise the
+     keeps its card (with its share label) and loses its mark; otherwise the
      strip's low end would be a number that buys nobody a home
      (ci:listing-figure-publish, 735 Purcell / Eagle Crest). */
   const ladder = buyShelfLadder(cards, (card) =>
@@ -85,7 +67,6 @@ function BuyShelfLadderStrip({
     }) != null,
   )
   if (!ladder) return null
-  const visible = new Set(inView)
   const low = formatPublishedSaleAsk({ price: ladder.low, propertyType: 'A' })
   const high = formatPublishedSaleAsk({ price: ladder.high, propertyType: 'A' })
   if (!low || !high) return null
@@ -97,7 +78,7 @@ function BuyShelfLadderStrip({
         {ladder.marks.map((mark) => (
           <span
             key={mark.listingKey}
-            className={cn('buy-ladder__mark', visible.has(mark.index) && 'is-on')}
+            className={cn('buy-ladder__mark', mark.index === shown && 'is-on')}
             style={{ ['--buy-ladder-x' as string]: `${mark.pct * 100}%` }}
           />
         ))}
@@ -107,67 +88,31 @@ function BuyShelfLadderStrip({
   )
 }
 
-/** One band's track: the installed carousel, its flanking chevrons, its ladder. */
+/** One band: its ladder over its dial. */
 function BuyShelfTrack({
+  id,
   cards,
   label,
-  priority,
 }: {
+  id: string
   cards: readonly HomeRailCard[]
   label: string
-  priority: boolean
 }) {
-  const [api, setApi] = useState<CarouselApi>()
-  /* Embla reports which slides are on screen; before the first layout that is
-     empty, and an empty strip would flash as twelve unfilled marks, so the
-     opening state assumes the four the desktop track shows. */
-  const [inView, setInView] = useState<number[]>([0, 1, 2, 3])
-
-  useEffect(() => {
-    if (!api) return
-    const read = () => {
-      const next = api.slidesInView()
-      if (next.length > 0) setInView(next)
-    }
-    read()
-    api.on('select', read)
-    api.on('reInit', read)
-    api.on('scroll', read)
-    api.on('settle', read)
-    return () => {
-      api.off('select', read)
-      api.off('reInit', read)
-      api.off('scroll', read)
-      api.off('settle', read)
-    }
-  }, [api])
-
+  // The dial opens on its first home and reports every turn.
+  const [turned, setTurned] = useState(0)
+  const shown = cards.length < 2 ? 0 : Math.min(turned, cards.length - 1)
   return (
     <div className="buy-shelf__track">
-      <BuyShelfLadderStrip cards={cards} inView={inView} />
-      <Carousel
-        setApi={setApi}
-        opts={{ align: 'start', containScroll: 'trimSnaps' }}
-        className={cn(V3_ROOT_CLASS, 'v3-carousel', 'v3-carousel--rail', 'home-rail__carousel')}
-        aria-label={label}
-      >
-        <CarouselContent className="v3-carousel__track ml-0">
-          {cards.map((card, i) => (
-            <CarouselItem
-              key={card.listingKey}
-              className="v3-carousel__slide v3-carousel__slide--rail pl-0"
-            >
-              <HomeRailCardFace card={card} priority={priority && i < 4} />
-            </CarouselItem>
-          ))}
-        </CarouselContent>
-        {cards.length > 1 ? (
-          <>
-            <CarouselPrevious className="v3-carousel__step v3-carousel__step--prev" />
-            <CarouselNext className="v3-carousel__step v3-carousel__step--next" />
-          </>
-        ) : null}
-      </Carousel>
+      <BuyShelfLadderStrip cards={cards} shown={shown} />
+      {/* The page's first dial (the shelves under it carry the order on). */}
+      <V3ListingDial
+        id={id}
+        label={label}
+        listings={cards.map(listingRowFromRailCard)}
+        railPosition={dialRailPositionAt(0)}
+        onIndexChange={setTurned}
+        className="buy-shelf__dial"
+      />
     </div>
   )
 }
@@ -185,10 +130,9 @@ export function BuyHomesShelf({ row }: { row: HomeRailRow }) {
       {/* THREE SIBLINGS, NOT A HEAD ROW WITH EVERYTHING IN IT. From 64rem the
           section is a grid and the switch is `display: contents`, so the
           heading, the band chips and the see-all share ONE line and the open
-          track sits under all three — a second chrome row would have cost the
-          1440x900 fold the address and the specs under the first ask. Below
-          64rem the same three fall into flow in reading order: what the shelf
-          is, how to narrow it, the shelf, then the way out of the page. */}
+          band sits under all three. Below 64rem the same three fall into flow
+          in reading order: what the shelf is, how to narrow it, the shelf,
+          then the way out of the page. */}
       <div className="home-rail__head buy-shelf__head">
         <div className="home-rail__head-copy">
           <h2 id={headingId} className="home-rail__title">
@@ -202,17 +146,17 @@ export function BuyHomesShelf({ row }: { row: HomeRailRow }) {
           items={bands.map((band) => ({ key: band.key, label: v3Text(band.label) }))}
           className="buy-shelf__switch"
         >
-          {bands.map((band, i) => (
+          {bands.map((band) => (
             <BuyShelfTrack
               key={band.key}
+              id={`${row.id}-${band.key}`}
               cards={band.cards}
               label={`${row.heading} · ${band.label}`}
-              priority={i === 0}
             />
           ))}
         </V3ChartSwitch>
       ) : (
-        <BuyShelfTrack cards={sortByAsk(row.cards)} label={row.heading} priority />
+        <BuyShelfTrack id={`${row.id}-all`} cards={sortByAsk(row.cards)} label={row.heading} />
       )}
       {row.seeAll ? (
         <V3Button href={row.seeAll.href} variant="ghost" className="buy-shelf__see-all">

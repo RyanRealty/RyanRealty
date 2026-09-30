@@ -585,6 +585,22 @@
   color: var(--v3-ink-on-navy);
 }
 
+/* A tab that says how many its view holds: the label, the count under it. */
+.v3 .v3-chart-switch__tab:has(> .v3-chart-switch__count) {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.v3 .v3-chart-switch__count {
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-num);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
 .v3 .v3-chart-switch__panel {
   min-width: 0;
 }
@@ -986,6 +1002,17 @@
 .v3 .v3-chart__y--ends {
   margin-top: var(--v3-chart-readout);
   height: calc(var(--v3-chart-plot) - var(--v3-chart-readout));
+}
+
+/* The y labels stand clear of the Jax button (V3DogFloater: 4.25rem wide,
+   --v3-space-md in from the right edge, fixed at mid-screen) on a phone, where
+   the rail runs to the gutter: at 375 the button sat on "$1,500,000" and left
+   "$1," (2026-09-25). The gutter already gives part of the band. */
+@media (max-width: 47.99rem) {
+  .v3 .v3-chart__y--ticks,
+  .v3 .v3-chart__y--ends {
+    margin-inline-end: calc(4.25rem + var(--v3-space-md) - var(--v3-gutter));
+  }
 }
 
 /* The desktop card: a small cream panel beside the point, flipping sides past

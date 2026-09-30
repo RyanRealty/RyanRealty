@@ -54,13 +54,15 @@ describe('V3Chrome catalog Search', () => {
     expect(search).toContain('return typed.length > 0 ? typed : PLACE_SEEDS')
   })
 
-  it('loads house morph CSS on chrome search and densifies phone typeahead rows', () => {
+  it('loads house morph CSS on chrome search and keeps phone typeahead rows whole tap targets', () => {
     expect(search).toContain("import './V3MorphSearch.css'")
+    // 2026-09-29: each phone row is a whole 44px tap target (rows cut to 29px
+    // to fit five places read as a squeezed list, under the tap-target floor).
     expect(morphCss).toMatch(
-      /@media \(max-width: 40rem\)[\s\S]*\[data-v3-morph='dialog'\] \[role='option'\][\s\S]{0,160}padding-block:\s*0;/,
+      /@media \(max-width: 40rem\)[\s\S]*\[data-v3-morph='dialog'\] \[role='option'\][\s\S]{0,160}min-height:\s*var\(--v3-tap\);/,
     )
     expect(morphCss).toMatch(
-      /@media \(max-width: 40rem\)[\s\S]*\[data-v3-morph='dialog'\] \[role='listbox'\][\s\S]{0,80}padding:\s*0\.125rem/,
+      /@media \(max-width: 40rem\)[\s\S]*\[data-v3-morph='dialog'\] \[role='listbox'\][\s\S]{0,80}padding:\s*0\.25rem/,
     )
     expect(morph).toContain('px-3 py-2.5')
     expect(morph).toContain('className="overscroll-contain overflow-y-auto p-2"')

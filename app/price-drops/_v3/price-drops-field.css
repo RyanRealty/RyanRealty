@@ -31,12 +31,16 @@
   padding-bottom: var(--v3-space-sm);
 }
 
+/* The fold stands at the page measure, wider than the text over it
+   (2026-09-25): at the text measure the dial stood its card upright with
+   three thumbnails beside the readout; at 72rem the card lies on its side and
+   the rail shows the band as homes to compare. */
 .pd-fold-stage.v3 {
   display: flex;
   flex-direction: column;
   gap: var(--v3-space-sm);
   width: 100%;
-  max-width: var(--v3-measure-text);
+  max-width: var(--v3-measure);
   min-width: 0;
   margin-inline: auto;
   padding-inline: var(--v3-gutter);
@@ -51,26 +55,89 @@
   flex-wrap: wrap;
 }
 
+/* At a phone's width the bands are one row of equal cells, never three and a
+   stray (2026-09-25: "10 and up" alone on a second line). */
+@media (max-width: 40rem) {
+  .pd-fold-stage.v3 .v3-chart-switch__seg {
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    width: 100%;
+    border-radius: var(--v3-radius-card);
+  }
+
+  /* Four stay one row (2026-09-29: the two-by-two block took a fifth of the
+     phone's first screen): the label loses its tracking, the count sits
+     under it. */
+  .pd-fold-stage.v3 .v3-chart-switch__seg > * {
+    justify-content: center;
+    text-align: center;
+    padding-inline: var(--v3-space-3xs);
+    letter-spacing: 0;
+  }
+}
+
+/* The cities with cuts: each door a name, a bar on one scale, and its count. */
 .pd-cities {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--v3-space-xs) var(--v3-space-md);
+  display: grid;
+  /* Two ranked columns on a wide screen, the bars long enough to compare
+     (2026-09-29: four to a row left 21 cuts and 7 as two slivers). */
+  grid-template-columns: repeat(auto-fill, minmax(min(24rem, 100%), 1fr));
+  gap: 0 var(--v3-space-lg);
+  padding-top: var(--v3-space-sm);
+  border-top: var(--v3-rule-weight-hairline) solid var(--v3-hairline);
 }
 
 .pd-cities__link {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--v3-space-sm);
+  min-height: var(--v3-tap);
   color: var(--v3-ink);
   font-size: var(--v3-size-body-sm);
   line-height: var(--v3-leading-control);
-  min-height: var(--v3-tap);
-  display: inline-flex;
-  align-items: center;
-  text-decoration: underline;
-  text-underline-offset: 0.15em;
+  text-decoration: none;
 }
 
-.pd-cities__link:hover,
-.pd-cities__link:focus-visible {
-  color: var(--v3-navy);
+.pd-cities__name {
+  text-decoration: underline;
+  text-decoration-thickness: var(--v3-rule-weight-hairline);
+  text-underline-offset: var(--v3-underline-offset);
+}
+
+.pd-cities__bar {
+  position: relative;
+  display: block;
+  height: var(--v3-space-xs);
+  background: var(--v3-hairline);
+}
+
+.pd-cities__bar > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--v3-navy);
+  transition: opacity var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.pd-cities__link--rest .pd-cities__name {
+  color: var(--v3-ink-muted);
+  text-decoration: none;
+}
+
+.pd-cities__count {
+  color: var(--v3-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.pd-cities__link:hover .pd-cities__count,
+.pd-cities__link:focus-visible .pd-cities__count {
+  color: var(--v3-ink);
+}
+
+.pd-cities__link:hover .pd-cities__bar > span,
+.pd-cities__link:focus-visible .pd-cities__bar > span {
+  opacity: 0.8;
 }
 
 /* One photographed Field. The slot is in flow (slotSurface=photos) so the
@@ -117,116 +184,15 @@
   height: auto;
 }
 
-/* Installed shadcn carousel — one composed slide, flanking Previous / Next.
-   The demo object is a modest card (ui.shadcn.com carousel is max-w-xs),
-   not a full-bleed 16/10 plate that pushes price and address off 1440x900. */
+/* The cut houses on the listing dial (V3ListingDial). The dial carries its
+   own look; this only gives it the fold stage's width. */
 .pd-cuts {
-  display: flex;
-  flex-direction: column;
-  gap: var(--v3-space-2xs);
-  width: min(100%, 28rem);
-  min-width: 0;
-  margin-inline: auto;
-}
-
-.pd-cuts-rail.v3.v3-carousel {
   width: 100%;
   min-width: 0;
-  padding-inline: var(--v3-tap);
 }
 
-.pd-cuts__pos {
-  margin: 0;
-  color: var(--v3-ink-muted);
-  font-size: var(--v3-size-body-sm);
-  font-variant-numeric: tabular-nums;
-  text-align: center;
-}
-
-.pd-slide {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-width: 0;
-  color: var(--v3-ink);
-  text-decoration: none;
-  background: var(--v3-surface);
-}
-
-.pd-slide:focus-visible {
-  outline: var(--v3-focus-ring);
-  outline-offset: var(--v3-focus-offset);
-}
-
-.pd-slide__media {
-  position: relative;
-  display: block;
-  aspect-ratio: 16 / 10;
-  max-height: var(--v3-carousel-h);
-  overflow: hidden;
-  background: color-mix(in srgb, var(--v3-ink) 8%, transparent);
-}
-
-.pd-slide__photo {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.pd-slide__body {
-  display: grid;
-  gap: var(--v3-space-3xs);
-  padding: var(--v3-space-sm) 0 var(--v3-space-xs);
-  min-width: 0;
-}
-
-.pd-slide__city {
-  color: var(--v3-ink-muted);
-  font-size: var(--v3-size-label);
-  font-weight: var(--v3-weight-medium);
-  letter-spacing: var(--v3-track-label);
-  text-transform: uppercase;
-}
-
-.pd-slide__price {
-  font-size: var(--v3-size-body);
-  font-weight: var(--v3-weight-strong);
-  font-variant-numeric: tabular-nums;
-  line-height: var(--v3-leading-control);
-}
-
-.pd-slide__drop {
-  color: var(--v3-ink);
-  font-size: var(--v3-size-body-sm);
-  font-variant-numeric: tabular-nums;
-  line-height: var(--v3-leading-control);
-}
-
-.pd-slide__cut {
-  display: block;
-  height: 3px;
-  max-width: 12rem;
-  background: color-mix(in srgb, var(--v3-ink) 14%, transparent);
-}
-
-.pd-slide__cut > span {
-  display: block;
-  height: 100%;
-  background: var(--v3-ink);
-}
-
-.pd-slide__addr {
-  font-size: var(--v3-size-body-sm);
-  line-height: var(--v3-leading-control);
-  overflow-wrap: anywhere;
-}
-
-.pd-slide__specs {
-  color: var(--v3-ink-muted);
-  font-size: var(--v3-size-body-sm);
-  font-variant-numeric: tabular-nums;
-  line-height: var(--v3-leading-control);
+.v3.v3-dial.pd-cuts-dial {
+  max-width: none;
 }
 
 /* Drawing under the photographed Field. Keep the idle reading — hiding it

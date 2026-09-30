@@ -66,6 +66,8 @@ import {
   PlaceTypeSortBar,
 } from '@/app/cities/[slug]/types/[type]/_v3/PlaceTypeField.client'
 import { PlaceTypeFilm } from './_v3/PlaceTypeFilm.client'
+import { homeFeaturedBlurb } from '@/app/_v3/home-featured-communities'
+import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { PlaceTypeAtlasSection } from '@/app/cities/[slug]/types/[type]/_v3/PlaceTypeAtlasSection'
 import { PlaceTypeAtlasStandin } from '@/app/cities/[slug]/types/[type]/_v3/PlaceTypeAtlasStandin'
 import '@/components/search/search-ledger.css'
@@ -169,6 +171,12 @@ async function renderCommunityPlaceTypePage({ params }: Props) {
   const registry = getResortCommunityBySlug(slug)
   const publicName = registry?.label ?? community.name
   const cityName = community.city
+  // The place's own line (2026-09-25: past the stat sentence nothing on the
+  // page was about Tetherow): the first sentence of its authored about prose,
+  // the same line the homepage's featured card prints. Authored copy from
+  // data/resort-community-<slug>.json or the registry; a miss prints nothing.
+  const placeContent = registry ? await getResortCommunityContent(slug).catch(() => null) : null
+  const placeLine = registry ? homeFeaturedBlurb(placeContent, registry) : null
   const placeHref = `/communities/${slug}`
   const pagePath = `/communities/${slug}/types/${spec.slug}`
   const cityHref = community.citySlug ? `/cities/${community.citySlug}` : placeHref
@@ -266,7 +274,10 @@ async function renderCommunityPlaceTypePage({ params }: Props) {
     ? {
         sentence:
           activeCount != null && lowAsk != null && bandHigh != null
-            ? `${activeCount.toLocaleString('en-US')} homes ask ${formatPriceExact(lowAsk)} to ${formatPriceExact(bandHigh)} for nine in ten.`
+            ? // Two plain sentences, the count and then the band (2026-09-29:
+              // "13 homes ask $1,499,000 to $3,999,900 for nine in ten" read
+              // as a formula). The same figures, the city page's wording.
+              `${activeCount.toLocaleString('en-US')} ${activeCount === 1 ? 'home' : 'homes'} for sale in ${publicName}. Nine in ten ask between ${formatPriceExact(lowAsk)} and ${formatPriceExact(bandHigh)}.`
             : claimBase.sentence,
         source: claimBase.source,
       }
@@ -276,6 +287,14 @@ async function renderCommunityPlaceTypePage({ params }: Props) {
   const copy = placeTypeMetadataCopy({ spec, placeName: publicName, count: activeCount })
   const listOk = listRead.ok
   const rows = listOk ? placeTypeListingRows(listRead.value) : []
+  /* The homes at the claim's two ends (the lowest ask, and the ask at nine in
+     ten), so the film's strip runs between the same two prices the sentence
+     names (2026-09-29: the newest 120 did not hold the $379,500 floor, and the
+     strip began at $449K under a claim that began at $379,500). */
+  const bandEndRows = placeTypeListingRows([
+    ...(lowRead.ok ? lowRead.value.slice(0, 1) : []),
+    ...(p90Read.ok ? p90Read.value.slice(-1) : []),
+  ])
   /* H1 already named the type. Atlas eyebrow is a section marker, not a
      second "Single-family…" Amboqia line (SITE-107 / taste table). */
   const eyebrow = placeTypeAtlasEyebrow(spec, false)
@@ -298,8 +317,11 @@ async function renderCommunityPlaceTypePage({ params }: Props) {
         <V3SectionTracker />
         <MetadataBlock schemas={schemas} />
         <V3Breadcrumb
+          // The community is a step on the way (2026-09-29: "Bend / For sale"
+          // over a Tetherow page named nothing of Tetherow).
           trail={[
             { label: cityName, href: cityHref },
+            { label: publicName, href: placeHref },
             { label: 'For sale' },
           ]}
         />
@@ -310,6 +332,7 @@ async function renderCommunityPlaceTypePage({ params }: Props) {
                 <V3Heading level={1} size="field">
                   {headline}
                 </V3Heading>
+                {placeLine ? <p className="place-type-claim place-type-claim--place">{placeLine}</p> : null}
                 {claim ? (
                   <>
                     <p className="place-type-claim">{claim.sentence}</p>
@@ -355,6 +378,8 @@ async function renderCommunityPlaceTypePage({ params }: Props) {
                 label={`${spec.nounMany} in ${publicName}`}
                 bandLow={lowAsk}
                 bandHigh={bandHigh}
+                bandEndRows={bandEndRows}
+                total={activeCount}
               />
             ) : null}
           </div>

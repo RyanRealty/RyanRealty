@@ -218,7 +218,8 @@ export const ATLAS_PIN_PILL = { w: 56, h: 26 }
  * A cluster pill is two lines: the word "median" over the figure (UXLIVE-6,
  * 2026-09-23), so it stands taller than a lone ask. Same width budget.
  */
-export const ATLAS_CLUSTER_PILL = { w: 56, h: 34 }
+// 60 wide: the kicker is the count ("124 homes"), wider than "median" was.
+export const ATLAS_CLUSTER_PILL = { w: 60, h: 34 }
 
 /** SITE-127 caret hang: `translate(-50%, calc(-100% - 5px))`. */
 export const ATLAS_PIN_HANG_PX = 5

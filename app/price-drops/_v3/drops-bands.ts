@@ -14,6 +14,8 @@ export type PriceDropCityDoor = {
   slug: string
   label: string
   href: string
+  /** How many of the listed cuts are in this city: a count of the rows on the page, nothing more. */
+  count: number
 }
 
 const BANDS: ReadonlyArray<{
@@ -58,17 +60,21 @@ export function priceDropBands(items: readonly PriceDropFieldItem[]): PriceDropB
  * the Field already uses (first seen = deepest remaining).
  */
 export function priceDropCityDoors(items: readonly PriceDropFieldItem[]): PriceDropCityDoor[] {
-  const seen = new Set<string>()
-  const doors: PriceDropCityDoor[] = []
+  const bySlug = new Map<string, PriceDropCityDoor>()
   for (const item of items) {
     const slug = item.citySlug?.trim()
-    if (!slug || seen.has(slug) || !DROPS_CITY_SLUGS.includes(slug)) continue
-    seen.add(slug)
-    doors.push({
+    if (!slug || !DROPS_CITY_SLUGS.includes(slug)) continue
+    const door = bySlug.get(slug)
+    if (door) {
+      door.count += 1
+      continue
+    }
+    bySlug.set(slug, {
       slug,
       label: item.city?.trim() || cityLabel(slug),
       href: `/price-drops/${slug}`,
+      count: 1,
     })
   }
-  return doors
+  return [...bySlug.values()]
 }

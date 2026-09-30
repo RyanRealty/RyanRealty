@@ -236,21 +236,23 @@ export default async function BuyPage() {
         </div>
 
         {/* THE HOUSES, FIRST THING AFTER THE STAGE (SITE-91, 2026-09-16).
-            The lead shelf is this route's own composition of the installed
-            shadcn carousel — flanking chevrons on the media midline and the
+            The lead shelf is this route's own composition: the listing dial
+            (Matt 2026-09-24, it was the shadcn carousel) under the
             asking-price brush that answers the question a buyer arrives with.
             Cheapest first, because the
             shelf opened on $1,875,000 and a fold that answers "what can I
             buy" with the top of the market answers it wrong.
             The remaining shelves (price cuts, new this week) stay on
-            HomeHomesRails, the same primitive the homepage mounts, so the two
-            pages show inventory the same way. */}
+            HomeHomesRails, the same dials the homepage mounts, so the two
+            pages show inventory the same way; railOffset carries the page's
+            dial order on, so no two adjacent dials share a rail position. */}
         {leadRow ? <BuyHomesShelf row={leadRow} /> : null}
         {/* With a lead shelf on screen and no second row to show, this would
             print "no photographed home returned" under twelve of them. */}
         {restRows.length > 0 || !leadRow ? (
           <HomeHomesRails
             rows={restRows}
+            railOffset={leadRow ? 1 : 0}
             emptyMessage="No photographed active single-family home with a list price and a street address returned on this refresh."
           />
         ) : null}

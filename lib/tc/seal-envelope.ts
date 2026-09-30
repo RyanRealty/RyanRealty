@@ -126,7 +126,7 @@ export async function advanceOrSeal(supabase: Sb, envelopeId: string): Promise<b
   if (toNotify.length) {
     const { data: env } = await supabase
       .from('tc_envelopes')
-      .select('name, cycle_id, invite_subject, invite_body')
+      .select('name, cycle_id, created_by, invite_subject, invite_body')
       .eq('id', envelopeId)
       .maybeSingle()
     const { data: cycle } = await supabase
@@ -147,6 +147,7 @@ export async function advanceOrSeal(supabase: Sb, envelopeId: string): Promise<b
         envelopeName: (env as DbRow)?.name ?? 'documents',
         propertyAddress: address,
         signUrl: `${siteUrl()}/sign/${token}`,
+        sender: (env as DbRow)?.created_by ?? null,
         customSubject: (env as DbRow)?.invite_subject ?? null,
         customBody: (env as DbRow)?.invite_body ?? null,
         sharedWith: sharedAddressCosigners(signable as Array<DbRow & { id: string }>, r as DbRow & { id: string }).map((o) => o.name || 'another signer'),
@@ -327,6 +328,7 @@ export async function sealAndCompleteEnvelope(
         propertyAddress: address,
         pdf: pdfBuf,
         pdfName,
+        sender: env.created_by,
         packet: 'our_side',
       })
     }
@@ -388,6 +390,7 @@ export async function sealAndCompleteEnvelope(
       propertyAddress: address,
       pdf: pdfBuf,
       pdfName,
+      sender: env.created_by,
     })
     // A party who never got their copy is on the deal's activity, not lost.
     if (sent.error) {

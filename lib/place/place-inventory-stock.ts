@@ -15,6 +15,8 @@ import {
 import { getListingTiles, type ListingTile } from '@/lib/data'
 import type { V3ListingRowData } from '@/components/site/v3/V3ListingRow'
 import { formatCount } from '@/lib/format/count'
+import { placeHomesCountLabel } from '@/lib/place/place-count-label'
+import { publicCardStatusLabel } from '@/lib/listing-status-public'
 import { publishStreetLine } from '@/lib/listing/publish-street-line'
 import { displaySubdivision, listingTileHref } from '@/lib/slug'
 import { placeTypeKey } from '@/lib/place/place-type-style'
@@ -88,11 +90,17 @@ export function unionListingTiles(...groups: ReadonlyArray<readonly ListingTile[
   return out
 }
 
-/** 'Pending' for an under-contract listing, the word the rails print; else null. */
+/**
+ * The word a place card prints for a listing with an accepted offer, or null
+ * for one for sale. "Under contract" for Active Under Contract, the words the
+ * homes block counts it by ("533 for sale · 5 under contract",
+ * placeHomesCountLabel); "Pending" for Pending. Before SITE-193 both read
+ * "Pending", which sat inside a "for sale" count. The site's one card
+ * vocabulary (publicCardStatusLabel); a place inventory holds no closed sale.
+ */
 export function placeStockStatusLabel(status: ListingTile['status']): string | null {
-  const t = String(status ?? '').toLowerCase()
-  if (t.includes('pending') || t.includes('under contract')) return 'Pending'
-  return null
+  const label = publicCardStatusLabel(status)
+  return label === 'Sold' ? null : label
 }
 
 export function placeStockRowFromTile(tile: ListingTile): V3ListingRowData | null {
@@ -131,6 +139,7 @@ export function placeStockRowFromTile(tile: ListingTile): V3ListingRowData | nul
     tourUrl: tile.tourUrl,
     hasTour: tile.hasVirtualTour === true || Boolean(tile.tourUrl),
     statusLabel: placeStockStatusLabel(tile.status),
+    standardStatus: tile.status ?? null,
   }
 }
 
@@ -158,7 +167,9 @@ export function placeStockSectionsFromTiles(tiles: readonly ListingTile[]): Plac
       {
         key,
         heading: PLACE_STOCK_HEADINGS[key],
-        countLabel: `${formatCount(rows.length)} for sale`,
+        // Active is for sale, Active Under Contract is under contract: the
+        // place map's own buckets (placeHomesCountLabel, SITE-193).
+        countLabel: placeHomesCountLabel(rows) ?? `${formatCount(rows.length)} for sale`,
         rows,
       },
     ]

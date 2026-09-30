@@ -122,7 +122,7 @@ export async function GET(request: Request) {
         envelopeName: c.envelopeName,
         propertyAddress: c.propertyAddress,
         signUrl: `${siteUrl()}/sign/${token}`,
-        replyTo: c.createdBy?.includes('@') ? c.createdBy : undefined,
+        sender: c.createdBy,
         reminder: true,
         customSubject: (envRow?.invite_subject as string | null) ?? null,
         customBody: (envRow?.invite_body as string | null) ?? null,

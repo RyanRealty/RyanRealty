@@ -18,6 +18,11 @@ export type V3AlertsStickyState = {
   footerVisible: boolean
   /** The visitor closed the strip this session. */
   dismissed: boolean
+  /**
+   * A listing dial's card is on screen (2026-09-25): the strip never covers a
+   * card's ask and facts, where it once hid the $/sqft on a plat's homes.
+   */
+  listingsVisible?: boolean
 }
 
 export const V3_ALERTS_STICKY_INITIAL: V3AlertsStickyState = {
@@ -37,6 +42,7 @@ export function stickyVisible(state: V3AlertsStickyState, status: V3AlertsStatus
   if (!stickyEligible(state, status)) return false
   if (state.calloutVisible) return false
   if (state.footerVisible) return false
+  if (state.listingsVisible) return false
   return true
 }
 

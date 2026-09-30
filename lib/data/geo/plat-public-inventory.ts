@@ -15,9 +15,14 @@
  * required `listings.City` spelling. South Meadow files as City="Black
  * Butte Ranch" while the registry city is Sisters.
  * Property is SFR (`property_type='A'` AND
- * `property_sub_type='Single Family Residence'`). Status is
+ * `property_sub_type='Single Family Residence'`). The read is
  * PUBLIC_ACTIVE_STATUSES (Active + Active Under Contract). Coming Soon is
  * excluded (R-025).
+ *
+ * "FOR SALE" IS ACTIVE (SITE-193, 2026-09-24): activeCount and the median are
+ * the Active listings, by publicCountState, the classifier the plat's map and
+ * the homes block under it read. Active Under Contract is underContractCount
+ * and stays in listingKeys (still shown). See neighborhood-public-inventory.ts.
  *
  * `geo_snapshot_mv` is Active-only and has no listing keys, so it cannot
  * drive the list. `listings_in_boundary` is all property types and Ridge
@@ -31,7 +36,7 @@ import { makeResilientCached } from '@/lib/data/cache/resilient'
 import { supabaseAnon } from '@/lib/data/client'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { cacheTag } from '@/lib/data/cache/unstable-cache'
-import { PUBLIC_ACTIVE_STATUSES } from '@/lib/listing-status-public'
+import { PUBLIC_ACTIVE_STATUSES, publicCountState } from '@/lib/listing-status-public'
 import { looksLikeMlsAbbreviation } from '@/lib/market/publish-plat-display-name'
 import { slugify } from '@/lib/slug'
 import { resolveSubdivisionAreaRedirect } from '@/lib/subdivision-area-redirects'
@@ -61,9 +66,13 @@ export type PlatPublicInventory = {
   slug: string
   city: string
   citySlug: string
-  /** SFR + PUBLIC_ACTIVE with this MLS SubdivisionName in this city. */
+  /** SFR FOR SALE (status Active) with this MLS SubdivisionName in this city. */
   activeCount: number
+  /** SFR under contract and still showing (Active Under Contract), same match. */
+  underContractCount: number
+  /** Median list price of the for-sale listings with a usable price. */
   medianListPrice: number | null
+  /** Every SFR listing still showing: for sale and under contract. */
   listingKeys: string[]
   href: string
   /**
@@ -88,6 +97,8 @@ export type PlatInventoryRow = {
   list_price: number | null
   subdivision_lower: string | null
   city_lower: string | null
+  /** MLS status. Under contract by publicCountState, else for sale (as placeHomesCount). */
+  standard_status?: string | null
 }
 
 export function platInventoryKey(citySlug: string, platSlug: string): string {
@@ -154,9 +165,11 @@ export function rollupPlatPublicInventory(
    */
   readAt: string = new Date().toISOString(),
 ): PlatPublicInventory[] {
-  const byKey = new Map<string, { keys: string[]; prices: number[] }>()
+  type Bucket = { keys: string[]; forSale: number; underContract: number; prices: number[] }
+  const empty = (): Bucket => ({ keys: [], forSale: 0, underContract: 0, prices: [] })
+  const byKey = new Map<string, Bucket>()
   for (const plat of plats) {
-    byKey.set(platInventoryKey(plat.citySlug, plat.slug), { keys: [], prices: [] })
+    byKey.set(platInventoryKey(plat.citySlug, plat.slug), empty())
   }
   for (const row of rows) {
     const cityLower = row.city_lower
@@ -166,17 +179,22 @@ export function rollupPlatPublicInventory(
       matches.find((p) => p.citySlug === slugify(cityLower)) ?? matches[0] ?? null
     if (!plat) continue
     const key = platInventoryKey(plat.citySlug, plat.slug)
-    const bucket = byKey.get(key) ?? { keys: [], prices: [] }
+    const bucket = byKey.get(key) ?? empty()
     bucket.keys.push(row.listing_key)
-    if (row.list_price != null && Number.isFinite(Number(row.list_price)) && Number(row.list_price) > 0) {
-      bucket.prices.push(Number(row.list_price))
+    if (publicCountState(row.standard_status) === 'under-contract') {
+      bucket.underContract += 1
+    } else {
+      bucket.forSale += 1
+      if (row.list_price != null && Number.isFinite(Number(row.list_price)) && Number(row.list_price) > 0) {
+        bucket.prices.push(Number(row.list_price))
+      }
     }
     byKey.set(key, bucket)
   }
 
   return plats.map((p) => {
     const key = platInventoryKey(p.citySlug, p.slug)
-    const bucket = byKey.get(key) ?? { keys: [], prices: [] }
+    const bucket = byKey.get(key) ?? empty()
     const priced = [...bucket.prices].sort((a, b) => a - b)
     return {
       key,
@@ -184,7 +202,8 @@ export function rollupPlatPublicInventory(
       slug: p.slug,
       city: p.city,
       citySlug: p.citySlug,
-      activeCount: bucket.keys.length,
+      activeCount: bucket.forSale,
+      underContractCount: bucket.underContract,
       medianListPrice: medianListPrice(priced),
       listingKeys: bucket.keys,
       href: `/subdivisions/${p.slug}`,
@@ -214,7 +233,7 @@ async function fetchRegistryPlatPublicInventory(): Promise<PlatPublicInventory[]
       (from, to) =>
         sb
           .from('listing_tile_mv')
-          .select('listing_key, list_price, subdivision_lower, city_lower')
+          .select('listing_key, list_price, subdivision_lower, city_lower, standard_status')
           .in('subdivision_lower', chunk)
           .in('standard_status', PUBLIC_ACTIVE_STATUSES)
           .eq('property_type', 'A')
@@ -240,7 +259,8 @@ async function fetchRegistryPlatPublicInventory(): Promise<PlatPublicInventory[]
  */
 export const getRegistryPlatPublicInventory = makeResilientCached(
   fetchRegistryPlatPublicInventory,
-  ['registry-plat-public-inventory-v3'],
+  // v4 (SITE-193): activeCount is for sale only and underContractCount is new.
+  ['registry-plat-public-inventory-v4'],
   {
     revalidate: 900,
     tags: [cacheTag.market, cacheTag.listings],
