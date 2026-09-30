@@ -294,7 +294,7 @@ export async function adminSendNewsletterAction(
   // engagement tier, writes the queue + tranche schedule, and returns at once;
   // the approver is recorded only on a send that queued. The send cron drains it,
   // re-checking suppression + active per recipient (S-8). No per-recipient loop here.
-  const result = await enqueueNewsletter(id)
+  const result = await enqueueNewsletter(id, { settle: true })
   if (!result.ok) return { ok: false, error: result.error }
   await updateNewsletter(id, { sent_by: gate.email })
 
@@ -327,7 +327,7 @@ export async function adminBulkOneOffSendAction(
   const emails = [...new Set([...pasted, ...tagged])]
   if (emails.length === 0) return { ok: false, error: 'no_recipients' }
 
-  const result = await enqueueNewsletterToEmails(newsletterId, emails)
+  const result = await enqueueNewsletterToEmails(newsletterId, emails, { settle: true })
   if (!result.ok) return { ok: false, error: result.error }
   await updateNewsletter(newsletterId, { sent_by: gate.email })
 

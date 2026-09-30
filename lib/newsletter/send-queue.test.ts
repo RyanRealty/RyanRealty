@@ -44,7 +44,7 @@ describe('computeSchedule', () => {
     expect(day3!.cap).toBeLessThanOrEqual(4000) // warm ceiling for day 3, not 25000
   })
 
-  it('large warm-up: every queued recipient gets a day, and no ramp day is over its ceiling for the whole domain', () => {
+  it('large warm-up: every queued recipient gets a day, and no ramp day is over its ceiling for the issue', () => {
     // A first list send: some engaged, most new, and a large cold tier.
     const counts = new Map([[1, 600], [2, 5340], [3, 100000]])
     const rows = computeSchedule(counts, true, true)
@@ -65,6 +65,16 @@ describe('computeSchedule', () => {
       { day_index: 1, tier: 2, cap: 900 },
       { day_index: 2, tier: 2, cap: 2000 },
       { day_index: 3, tier: 2, cap: 2440 },
+    ])
+    // Past the ramp a tier sends no more a day than its steady share (25,000 here): the tail
+    // spreads over the next days instead of landing on the last one.
+    expect(rows.filter((r) => r.tier === 3)).toEqual([
+      { day_index: 3, tier: 3, cap: 1560 },
+      { day_index: 4, tier: 3, cap: 8000 },
+      { day_index: 5, tier: 3, cap: 25000 },
+      { day_index: 6, tier: 3, cap: 25000 },
+      { day_index: 7, tier: 3, cap: 25000 },
+      { day_index: 8, tier: 3, cap: 15440 },
     ])
     // No day holds a tier twice, and nothing is scheduled with no one in it.
     const keys = rows.map((r) => `${r.day_index}:${r.tier}`)

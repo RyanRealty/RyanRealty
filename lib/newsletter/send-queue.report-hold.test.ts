@@ -76,26 +76,48 @@ describe('the report email hold at every enqueue', () => {
     expect(claimNewsletterForSending).toHaveBeenCalledTimes(1)
   })
 
-  it('sends an email the writer re-stamped (the same printed figures from a new build)', async () => {
+  it('the scheduled-send cron holds an email behind its report, without running the writer', async () => {
+    behindUntilRestamped()
+    expect(await enqueueNewsletter('nl-0')).toEqual({ ok: false, error: 'report_changed' })
+    expect(settleEditionEmailFor).not.toHaveBeenCalled()
+    expect(claimNewsletterForSending).not.toHaveBeenCalled()
+  })
+
+  it('a click sends an email the writer re-stamped (the same printed figures from a new build)', async () => {
     behindUntilRestamped()
     getNewsletter.mockResolvedValueOnce(letter()).mockResolvedValueOnce(letter({ citations: [{ fetched_at: NEW }] }))
     settleEditionEmailFor.mockResolvedValue({ status: 'restamped' })
-    expect(await enqueueNewsletter('nl-0')).toEqual({ ok: false, error: 'already_sending' })
+    expect(await enqueueNewsletter('nl-0', { settle: true })).toEqual({ ok: false, error: 'already_sending' })
     expect(claimNewsletterForSending).toHaveBeenCalledTimes(1)
   })
 
   it('holds an email the writer replaced, and says so', async () => {
     behindUntilRestamped()
     settleEditionEmailFor.mockResolvedValue({ status: 'replaced' })
-    expect(await enqueueNewsletter('nl-0')).toEqual({ ok: false, error: 'report_replaced' })
-    expect(await enqueueNewsletterToEmails('nl-0', ['a@example.invalid'])).toEqual({ ok: false, error: 'report_replaced' })
+    expect(await enqueueNewsletter('nl-0', { settle: true })).toEqual({ ok: false, error: 'report_replaced' })
+    expect(await enqueueNewsletterToEmails('nl-0', ['a@example.invalid'], { settle: true })).toEqual({ ok: false, error: 'report_replaced' })
     expect(claimNewsletterForSending).not.toHaveBeenCalled()
   })
 
-  it('holds an email the writer could not settle (a report taken down, or a failure it texted)', async () => {
+  it('holds an email the writer could not settle (a failure it texted)', async () => {
     behindUntilRestamped()
-    expect(await enqueueNewsletter('nl-0')).toEqual({ ok: false, error: 'report_changed' })
+    expect(await enqueueNewsletter('nl-0', { settle: true })).toEqual({ ok: false, error: 'report_changed' })
     expect(claimNewsletterForSending).not.toHaveBeenCalled()
+  })
+
+  it('holds an email the writer canceled (its report taken down), not "already sending"', async () => {
+    behindUntilRestamped()
+    getNewsletter.mockResolvedValueOnce(letter()).mockResolvedValueOnce(
+      letter({ status: 'canceled', created_by: 'cron:market-report-edition:2026-08:replaced:nl-0' }),
+    )
+    expect(await enqueueNewsletter('nl-0', { settle: true })).toEqual({ ok: false, error: 'report_changed' })
+    expect(claimNewsletterForSending).not.toHaveBeenCalled()
+  })
+
+  it('a one-off checks its list before the report: an empty list never runs the writer', async () => {
+    behindUntilRestamped()
+    expect(await enqueueNewsletterToEmails('nl-0', ['not-an-email'], { settle: true })).toEqual({ ok: false, error: 'no_recipients' })
+    expect(settleEditionEmailFor).not.toHaveBeenCalled()
   })
 
   it('holds when the report cannot be read, rather than sending unchecked', async () => {

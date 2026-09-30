@@ -284,29 +284,41 @@ export async function insertQueuedRecipients(
   return inserted
 }
 
-/**
- * Write the per-issue tranche schedule (§6.5). A row already there takes the
- * new cap (its sent_count is kept): a schedule is written only by an enqueue
- * that holds the send lock, so a row left by an earlier enqueue that failed
- * and released the lock sent nothing, and its old cap would not match the
- * recipients queued now.
- */
+/** Write the per-issue tranche schedule (§6.5). Idempotent via onConflict. */
 export async function writeSendSchedule(
   newsletterId: string,
   rows: Array<{ day_index: number; tier: number; cap: number }>,
 ): Promise<void> {
   const sb = createServiceClient()
   const payload = rows.map((r) => ({ newsletter_id: newsletterId, ...r }))
-  const { error } = await sb.from(SCHEDULE).upsert(payload, { onConflict: 'newsletter_id,day_index,tier' })
+  const { error } = await sb.from(SCHEDULE).upsert(payload, { onConflict: 'newsletter_id,day_index,tier', ignoreDuplicates: true })
   if (error) throw new Error(`writeSendSchedule: ${error.message}`)
 }
 
 /**
- * Queued recipients of an issue by tier, as stored. The schedule is built from
- * these, not from the tiers an enqueue just computed: a row left queued by an
- * earlier enqueue that failed keeps the tier it was stored with (the insert
- * ignores duplicates), and a schedule that disagrees with the stored rows
- * leaves some of them with no day. THROWS on a failed read.
+ * Clear what an earlier enqueue of this issue left behind: its queued rows
+ * and its schedule. Called by an enqueue right after it wins the send lock,
+ * so each enqueue starts from nothing. Safe by construction: the lock is won
+ * only from draft or scheduled, so no drain is working this issue; an enqueue
+ * that got as far as a schedule moved the issue to 'sending' for good, so
+ * what is here is from one that failed (and released the lock) or died
+ * before its schedule, and a queued row was never sent. Without this, a
+ * retry's schedule (built from the tiers it computed) disagreed with the
+ * rows it left, which kept their old tiers, and those recipients never got a
+ * day. THROWS on a failed write.
+ */
+export async function clearUnsentQueue(newsletterId: string): Promise<void> {
+  const sb = createServiceClient()
+  const rows = await sb.from(RECIPIENTS).delete().eq('newsletter_id', newsletterId).eq('status', 'queued')
+  if (rows.error) throw new Error(`clearUnsentQueue: ${rows.error.message}`)
+  const plan = await sb.from(SCHEDULE).delete().eq('newsletter_id', newsletterId)
+  if (plan.error) throw new Error(`clearUnsentQueue: ${plan.error.message}`)
+}
+
+/**
+ * Queued recipients of an issue by tier, as stored (the stall check: a
+ * schedule row is behind only while its tier has someone queued). THROWS on a
+ * failed read.
  */
 export async function queuedCountsByTier(newsletterId: string): Promise<Map<number, number>> {
   const sb = createServiceClient()
@@ -434,23 +446,43 @@ export async function requeueStaleClaims(newsletterId: string, staleMs: number):
 }
 
 /** The newsletters currently mid-send (status='sending'), oldest first. */
-export async function getSendingNewsletters(): Promise<Array<{ id: string; send_started_at: string | null }>> {
+export async function getSendingNewsletters(): Promise<Array<{ id: string; send_started_at: string | null; send_paused: boolean | null }>> {
   const sb = createServiceClient()
   const { data } = await sb
     .from(LETTERS)
-    .select('id, send_started_at')
+    .select('id, send_started_at, send_paused')
     .eq('status', 'sending')
     .order('send_started_at', { ascending: true })
-  return (data ?? []) as Array<{ id: string; send_started_at: string | null }>
+  return (data ?? []) as Array<{ id: string; send_started_at: string | null; send_paused: boolean | null }>
 }
 
 /** Finalize a fully-drained newsletter to sent|failed (§6 step 3). */
-export async function finalizeNewsletter(newsletterId: string): Promise<'sent' | 'failed' | null> {
+/** How long an enqueue may take before a claimed issue with no schedule counts as an enqueue that died. */
+export const ENQUEUE_GRACE_MS = 30 * 60 * 1000
+
+export async function finalizeNewsletter(newsletterId: string, nowMs: number = Date.now()): Promise<'sent' | 'failed' | null> {
   const counts = await recipientStatusCounts(newsletterId)
   if ((counts.queued ?? 0) > 0 || (counts.sending ?? 0) > 0) return null // still draining
   const sb = createServiceClient()
+  // An enqueue claims the issue ('sending') first and writes its schedule
+  // last. Claimed with no schedule and nothing queued yet is an enqueue still
+  // reading its audience: the hourly reconcile and every drain tick land here,
+  // and finalizing then marked an issue about to go out 'failed' with no one
+  // sent (a send scheduled for 9:00 and the reconcile at :00 meet exactly).
+  // Past ENQUEUE_GRACE_MS it is an enqueue that died, and 'failed' is true.
+  const { count: planned, error: planError } = await sb
+    .from(SCHEDULE)
+    .select('newsletter_id', { count: 'exact', head: true })
+    .eq('newsletter_id', newsletterId)
+  if (planError) return null
+  if (!planned) {
+    const { data } = await sb.from(LETTERS).select('send_started_at').eq('id', newsletterId).maybeSingle()
+    const started = Date.parse((data as { send_started_at: string | null } | null)?.send_started_at ?? '')
+    if (!Number.isFinite(started) || nowMs - started < ENQUEUE_GRACE_MS) return null
+  }
   const status = (counts.sent ?? 0) > 0 ? 'sent' : 'failed'
-  await sb
+  // Only an issue still sending: never over a claim released back to draft.
+  const { data: done } = await sb
     .from(LETTERS)
     .update({
       status,
@@ -459,7 +491,9 @@ export async function finalizeNewsletter(newsletterId: string): Promise<'sent' |
       failed_count: counts.failed ?? 0,
     })
     .eq('id', newsletterId)
-  return status
+    .eq('status', 'sending')
+    .select('id')
+  return (done?.length ?? 0) > 0 ? status : null
 }
 
 /** Ledger event vocabulary (spec §3.1). */

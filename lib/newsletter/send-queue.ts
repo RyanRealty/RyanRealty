@@ -35,6 +35,7 @@ import {
   setNewsletterPaused,
   writeSendSchedule,
   queuedCountsByTier,
+  clearUnsentQueue,
 } from '@/lib/data/newsletter/queue'
 
 // ── config ───────────────────────────────────────────────────────────────────
@@ -133,26 +134,43 @@ export type EnqueueResult =
 
 type HoldLetter = { id: string; created_by: string | null; citations: Array<{ fetched_at?: string }> | null }
 
+/** How an enqueue treats a monthly report email found behind its report. */
+export type EnqueueOptions = {
+  /**
+   * A person clicked send (Send now, a one-off list): have the draft writer
+   * (lib/market-report/edition-email-draft.ts) settle the email on the spot.
+   * The scheduled-send cron leaves it off and holds the email instead: it
+   * retries every 2 minutes, and the writer runs at every publish and each
+   * morning anyway.
+   */
+  settle?: boolean
+}
+
 /**
  * Null when the issue may go out. A monthly market report email whose report
  * was rebuilt after it was written never goes out on the earlier figures
- * (CLAUDE.md §0), whoever approved the send: the draft writer
- * (lib/market-report/edition-email-draft.ts) settles it at once, rather than
- * at its next run. The same printed figures re-stamp it and it goes;
- * new ones replace it with a draft on the current figures ('report_replaced',
- * and Matt is texted the new link); anything else ('report_changed': its
- * report taken down, or the writer could not settle it and texted why) holds
- * it. 'report_check_failed' when the report could not be read.
+ * (CLAUDE.md §0), whoever approved the send ('report_changed'). With `settle`,
+ * the draft writer brings it up to its report first: the same printed figures
+ * re-stamp it and it goes; new ones replace it with a draft on the current
+ * figures ('report_replaced', and Matt is texted the new link); a report
+ * taken down, or one the writer could not settle (it texts why), holds it.
+ * 'report_check_failed' when the report could not be read.
  */
-async function reportEmailHold(letter: HoldLetter): Promise<string | null> {
+async function reportEmailHold(letter: HoldLetter, opts: EnqueueOptions): Promise<string | null> {
   try {
     if (await editionEmailFiguresCurrent(letter.created_by, letter.citations?.[0]?.fetched_at ?? null)) return null
+    if (!opts.settle) {
+      console.warn(`[send-queue] held report email ${letter.id}: its report was rebuilt after it was written`)
+      return 'report_changed'
+    }
     const { settleEditionEmailFor } = await import('@/lib/market-report/edition-email-draft')
     const outcome = await settleEditionEmailFor(letter.created_by)
     if (outcome?.status === 'replaced') return 'report_replaced'
+    // Read it again: re-stamped, it goes; canceled (its report taken down, or
+    // no new email could be built), it is no longer a live report email at all.
     const now = await getNewsletter(letter.id)
-    if (now && (await editionEmailFiguresCurrent(now.created_by, now.citations?.[0]?.fetched_at ?? null))) return null
-    console.warn(`[send-queue] held report email ${letter.id}: ${outcome?.status ?? 'not a report email'}`)
+    if (now && !notSendable(now.status) && (await editionEmailFiguresCurrent(now.created_by, now.citations?.[0]?.fetched_at ?? null))) return null
+    console.warn(`[send-queue] held report email ${letter.id}: ${outcome?.status ?? 'not settled'}`)
     return 'report_changed'
   } catch (err) {
     console.error('[send-queue] report email check', err instanceof Error ? err.message : err)
@@ -172,13 +190,13 @@ function notSendable(status: string): string | null {
  * writes the tranche schedule. The actual sending is the cron drain's job — this
  * returns immediately, so no 5,000-send in-request loop can time out (G-NL-9).
  */
-export async function enqueueNewsletter(newsletterId: string): Promise<EnqueueResult> {
+export async function enqueueNewsletter(newsletterId: string, opts: EnqueueOptions = {}): Promise<EnqueueResult> {
   const letter = await getNewsletter(newsletterId)
   if (!letter) return { ok: false, error: 'not_found' }
   if (!letter.body_html && !letter.body_text) return { ok: false, error: 'empty_body' }
   const closed = notSendable(letter.status)
   if (closed) return { ok: false, error: closed }
-  const hold = await reportEmailHold(letter)
+  const hold = await reportEmailHold(letter, opts)
   if (hold) return { ok: false, error: hold }
 
   // CAS lock — a second concurrent approve gets null and aborts (S-1).
@@ -186,6 +204,8 @@ export async function enqueueNewsletter(newsletterId: string): Promise<EnqueueRe
   if (!token) return { ok: false, error: 'already_sending' }
 
   try {
+    // Start from nothing: what a failed earlier enqueue queued is not this one's.
+    await clearUnsentQueue(newsletterId)
     const segment = letter.audience?.startsWith('segment:')
       ? (letter.audience.slice('segment:'.length) as 'general' | 'buyer' | 'seller' | 'past-client')
       : undefined
@@ -226,8 +246,9 @@ export async function enqueueNewsletter(newsletterId: string): Promise<EnqueueRe
     // Tranche schedule (§6.5): small sends go out day 0; large sends tier across days.
     // `large` was computed above (audience.length) for the reputation gate.
     const warmup = !(await anyNewsletterEverSent())
-    // From the rows as stored: one left queued by a failed earlier enqueue keeps its old tier.
-    await writeSendSchedule(newsletterId, computeSchedule(await queuedCountsByTier(newsletterId), large, warmup))
+    const tierCounts = new Map<number, number>()
+    for (const r of rows) tierCounts.set(r.tier, (tierCounts.get(r.tier) ?? 0) + 1)
+    await writeSendSchedule(newsletterId, computeSchedule(tierCounts, large, warmup))
 
     return { ok: true, queued, brokerSplit, large }
   } catch (err) {
@@ -252,25 +273,28 @@ export async function enqueueNewsletter(newsletterId: string): Promise<EnqueueRe
 export async function enqueueNewsletterToEmails(
   newsletterId: string,
   emails: string[],
+  opts: EnqueueOptions = {},
 ): Promise<{ ok: boolean; queued?: number; error?: string }> {
   const letter = await getNewsletter(newsletterId)
   if (!letter) return { ok: false, error: 'not_found' }
   if (!letter.body_html && !letter.body_text) return { ok: false, error: 'empty_body' }
   const closed = notSendable(letter.status)
   if (closed) return { ok: false, error: closed }
-  const hold = await reportEmailHold(letter)
-  if (hold) return { ok: false, error: hold }
 
   const deduped = [...new Set(emails.map((e) => e.trim().toLowerCase()).filter((e) => e.includes('@')))]
   if (deduped.length === 0) return { ok: false, error: 'no_recipients' }
   if (deduped.length > ONE_OFF_MAX) return { ok: false, error: 'too_many_recipients' }
   const list = deduped
+  const hold = await reportEmailHold(letter, opts)
+  if (hold) return { ok: false, error: hold }
 
   // CAS lock — a concurrent send/one-off gets null and aborts (S-1).
   const token = await claimNewsletterForSending(newsletterId)
   if (!token) return { ok: false, error: 'already_sending' }
 
   try {
+    // Start from nothing: what a failed earlier enqueue queued is not this one's.
+    await clearUnsentQueue(newsletterId)
     // Compliance step (S-10): NEVER resurrect an opt-out. subscribeToNewsletter
     // reactivates any existing row to status='active', so we must exclude every
     // address that previously unsubscribed / bounced / complained BEFORE enrolling.
@@ -325,8 +349,9 @@ export async function enqueueNewsletterToEmails(
     // Small one-off → day-0 (goes immediately). Large one-off → the SAME tranche +
     // warm-up ramp as the audience send, so a big pasted list doesn't blast the domain.
     const warmup = !(await anyNewsletterEverSent())
-    // From the rows as stored: one left queued by a failed earlier enqueue keeps its old tier.
-    await writeSendSchedule(newsletterId, computeSchedule(await queuedCountsByTier(newsletterId), large, warmup))
+    const tierCounts = new Map<number, number>()
+    for (const r of rows) tierCounts.set(r.tier, (tierCounts.get(r.tier) ?? 0) + 1)
+    await writeSendSchedule(newsletterId, computeSchedule(tierCounts, large, warmup))
 
     return { ok: true, queued }
   } catch (err) {
@@ -339,10 +364,10 @@ export async function enqueueNewsletterToEmails(
  * Build the per-issue tranche plan (§6.5). Small sends: one day-0 row per tier
  * (everything goes immediately). Large sends: Tier 1 (engaged) day 0, Tier 2 (new)
  * days 1-2, Tier 3 (cold) days 3-6; a first-ever large send uses ramped warm-up
- * caps, a ceiling per day for the whole domain. Every queued recipient gets a
- * day: what a ramp day cannot take carries to the days after (the drain claims
- * only against a row's cap, and an issue finalizes only when nothing is queued,
- * so a recipient with no row would hold it at 'sending' forever). Pure —
+ * caps, a ceiling per day for the issue. Every queued recipient gets a day:
+ * what a ramp day cannot take carries to the days after (the drain claims only
+ * against a row's cap, and an issue finalizes only when nothing is queued, so
+ * a recipient with no row would hold it at 'sending' forever). Pure —
  * unit-testable.
  */
 export function computeSchedule(
@@ -365,10 +390,15 @@ export function computeSchedule(
     }
     return out
   }
-  // Warm-up: each ramp day's ceiling is for the whole domain, every tier on it
-  // together. Tiers are laid out in order (engaged first); each takes its even
-  // share of its own days, its last day takes what fits, and what is left
-  // carries to the next days with room, so every queued recipient has a day.
+  // Warm-up: each ramp day's ceiling is for the whole issue, every tier on it
+  // together (the ramp belongs to the issue: a second large issue sent in the
+  // same week has its own). Tiers are laid out in order, engaged first. A tier
+  // takes its even share of each of its days; its last day inside the ramp
+  // also takes what the capped days before it could not, up to that day's
+  // ceiling; and what is left carries to the following days, at most the
+  // tier's even share a day past the ramp, as a steady send would. Every
+  // queued recipient gets a day. (During a first warm-up nobody is engaged
+  // yet, so the first sends go out on day 1.)
   const warmCaps = [500, 1000, 2000, 4000, 8000] // per-day ceiling while warming the domain
   const used = new Map<number, number>()
   const room = (d: number) => (d < warmCaps.length ? warmCaps[d]! - (used.get(d) ?? 0) : Number.POSITIVE_INFINITY)
@@ -384,12 +414,13 @@ export function computeSchedule(
     const per = Math.ceil(n / days.length)
     let left = n
     days.forEach((d, i) => {
-      const cap = Math.min(i === days.length - 1 ? left : Math.min(left, per), room(d))
+      const absorbs = i === days.length - 1 && d < warmCaps.length
+      const cap = Math.min(left, room(d), absorbs ? Number.POSITIVE_INFINITY : per)
       put(d, tier, cap)
       left -= Math.max(cap, 0)
     })
     for (let d = days[days.length - 1]! + 1; left > 0; d++) {
-      const cap = Math.min(left, room(d))
+      const cap = Math.min(left, room(d), per)
       put(d, tier, cap)
       left -= Math.max(cap, 0)
     }
@@ -587,33 +618,46 @@ export async function reconcileSending(nowMs = Date.now()): Promise<ReconcileRep
   const sending = await getSendingNewsletters()
   const out: ReconcileReport[] = []
   for (const nl of sending) {
-    await requeueStaleClaims(nl.id, STALE_CLAIM_MS)
-    const finalized = await finalizeNewsletter(nl.id)
-    if (finalized) {
-      out.push({ newsletterId: nl.id, action: 'finalized', detail: finalized })
-      continue
-    }
-    // Still draining. Is it a stall? Queued rows whose tranche day has passed.
-    const counts = await recipientStatusCounts(nl.id)
-    const schedule = await getSendSchedule(nl.id)
-    const queuedByTier = await queuedCountsByTier(nl.id)
-    const startMs = nl.send_started_at ? Date.parse(nl.send_started_at) : nowMs
-    const currentDay = Math.max(0, Math.floor((nowMs - startMs) / DAY_MS))
-    // A row is behind only while its tier still has someone queued: a skipped
-    // or failed recipient never counts toward sent_count, so a row sized to
-    // its tier can end below its cap with nobody left to send.
-    const overdue = schedule.some((s) => s.day_index <= currentDay && s.sent_count < s.cap && (queuedByTier.get(s.tier) ?? 0) > 0)
-    if ((counts.queued ?? 0) > 0 && overdue) {
-      out.push({ newsletterId: nl.id, action: 'stalled', detail: `${counts.queued} queued rows past their tranche day` })
-      console.error(`[newsletter] STALL: ${nl.id} has ${counts.queued} queued rows past their tranche day but none sent.`)
-      // S-15: a real stuck drain pages Matt (deduped by cooldown), not just a log line.
-      await queueBrokerHealthAlert({
-        key: `newsletter-stall:${nl.id}`,
-        body: `Newsletter send stalled: ${counts.queued} queued rows past their tranche day. Check ${SITE_URL}/admin/newsletters/${nl.id}`,
-        cooldownMinutes: 360,
-      })
-    } else {
-      out.push({ newsletterId: nl.id, action: 'draining', detail: `${counts.queued ?? 0} queued, waiting for the next tranche day` })
+    // One issue's failed read never stops the check of the others.
+    try {
+      await requeueStaleClaims(nl.id, STALE_CLAIM_MS)
+      const finalized = await finalizeNewsletter(nl.id, nowMs)
+      if (finalized) {
+        out.push({ newsletterId: nl.id, action: 'finalized', detail: finalized })
+        continue
+      }
+      // Paused (by Matt, or the deliverability breaker, which texts him itself):
+      // waiting on a person, not stalled.
+      if (nl.send_paused) {
+        out.push({ newsletterId: nl.id, action: 'draining', detail: 'paused' })
+        continue
+      }
+      // Still draining. Is it a stall? A row from a day already over, with room
+      // under its cap, while its tier still has someone queued. Today's rows are
+      // mid-drain (about 100 a tick), and a skipped or failed recipient never
+      // counts toward sent_count, so a row sized to its tier can end below its
+      // cap with nobody left to send.
+      const counts = await recipientStatusCounts(nl.id)
+      const schedule = await getSendSchedule(nl.id)
+      const queuedByTier = await queuedCountsByTier(nl.id)
+      const startMs = nl.send_started_at ? Date.parse(nl.send_started_at) : nowMs
+      const currentDay = Math.max(0, Math.floor((nowMs - startMs) / DAY_MS))
+      const overdue = schedule.some((s) => s.day_index < currentDay && s.sent_count < s.cap && (queuedByTier.get(s.tier) ?? 0) > 0)
+      if ((counts.queued ?? 0) > 0 && overdue) {
+        out.push({ newsletterId: nl.id, action: 'stalled', detail: `${counts.queued} queued rows past their tranche day` })
+        console.error(`[newsletter] STALL: ${nl.id} has ${counts.queued} queued rows past their tranche day but none sent.`)
+        // S-15: a real stuck drain pages Matt (deduped by cooldown), not just a log line.
+        await queueBrokerHealthAlert({
+          key: `newsletter-stall:${nl.id}`,
+          body: `Newsletter send stalled: ${counts.queued} queued rows past their tranche day. Check ${SITE_URL}/admin/newsletters/${nl.id}`,
+          cooldownMinutes: 360,
+        })
+      } else {
+        out.push({ newsletterId: nl.id, action: 'draining', detail: `${counts.queued ?? 0} queued, waiting for the next tranche day` })
+      }
+    } catch (err) {
+      console.error(`[newsletter] reconcile ${nl.id}`, err instanceof Error ? err.message : err)
+      out.push({ newsletterId: nl.id, action: 'draining', detail: `check failed: ${err instanceof Error ? err.message : String(err)}` })
     }
   }
   return out
