@@ -371,7 +371,13 @@ export function seedVendorEnvelopeRecipients(input: {
 
 /** A list of names as a sentence: "Jane", "Jane and John", "Ann, Jane and John". */
 export function namesInSentence(names: readonly string[]): string {
-  const list = names.map((n) => n.trim()).filter(Boolean)
+  // One person on several rows at one address (a broker who is also the
+  // seller, copied as both agents) is named once: "Hi Matt Ryan", never
+  // "Hi Matt Ryan, Matt Ryan and Matt Ryan" (the 020 test packet, 2026-09-30).
+  const seen = new Set<string>()
+  const list = names
+    .map((n) => n.trim())
+    .filter((n) => n && !seen.has(n.toLowerCase()) && seen.add(n.toLowerCase()))
   if (list.length <= 1) return list[0] ?? ''
   return `${list.slice(0, -1).join(', ')} and ${list[list.length - 1]}`
 }
