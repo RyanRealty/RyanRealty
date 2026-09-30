@@ -471,12 +471,13 @@ export async function enqueueDueScheduled(nowMs = Date.now()): Promise<{ enqueue
     // deliverability block, an enqueue error): an issue Matt approved did not
     // go out, and nothing retries a draft. Keyed by the schedule he set, so a
     // second failure after he schedules it again is told too.
+    // A re-read that fails tells anyway: silence would leave a draft nobody retries.
     const now = await getNewsletter(id).catch(() => null)
-    if (!now || now.status === 'scheduled') continue
+    if (now?.status === 'scheduled') continue
     console.error(`[newsletter] scheduled send ${id} did not go out: ${r.error}`)
     await queueBrokerHealthAlert({
-      key: `newsletter-scheduled-failed:${id}:${now.scheduled_at ?? ''}`,
-      body: `A scheduled newsletter did not go out (${r.error.slice(0, 120)}) and is back to ${now.status}. Open it: ${SITE_URL}/admin/newsletters/${id}`,
+      key: `newsletter-scheduled-failed:${id}:${now?.scheduled_at ?? ''}`,
+      body: `A scheduled newsletter did not go out (${r.error.slice(0, 120)})${now ? ` and is back to ${now.status}` : ''}. Open it: ${SITE_URL}/admin/newsletters/${id}`,
       cooldownMinutes: 1440,
     })
   }

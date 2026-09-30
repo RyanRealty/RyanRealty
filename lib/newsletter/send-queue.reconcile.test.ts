@@ -211,6 +211,13 @@ describe('enqueueDueScheduled', () => {
     expect(alerts[0]!.body).toContain('did not go out (no_recipients) and is back to draft')
   })
 
+  it('tells anyway when the re-read fails: silence would leave a draft nobody retries', async () => {
+    getDueScheduledNewsletterIds.mockResolvedValueOnce(['nl-0'])
+    getNewsletter.mockResolvedValueOnce(scheduled).mockResolvedValueOnce(null)
+    await enqueueDueScheduled()
+    expect(alerts[0]!.body).toContain('did not go out (no_recipients). Open it:')
+  })
+
   it('says nothing while it is still scheduled (the next tick tries again), or another path took it', async () => {
     getDueScheduledNewsletterIds.mockResolvedValueOnce(['nl-0'])
     getNewsletter.mockResolvedValueOnce(null).mockResolvedValueOnce(scheduled)
