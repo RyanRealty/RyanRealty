@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isSendableQueueState, type CmaQueueState } from '@/lib/data/cma/unified-queue'
+import { isSendableQueueState, resolveCmaQueueState, type CmaQueueState } from '@/lib/data/cma/unified-queue'
 
 /**
  * §0 guard. On 2026-09-04 the adversarial audit failed 210 of 418 live CMAs
@@ -28,10 +28,43 @@ describe('isSendableQueueState', () => {
       'audit-failed',
       'unvetted',
       'flagged',
+      'held',
       'queued',
       'sent',
       'archived',
     ]
     for (const s of notSendable) expect(isSendableQueueState(s)).toBe(false)
+  })
+})
+
+describe("resolveCmaQueueState and Matt's 80% line (2026-09-30)", () => {
+  const base = {
+    status: 'draft',
+    archivedAt: null,
+    buildError: null,
+    hasDocument: true,
+    needsReview: false,
+    auditVerdict: 'pass' as const,
+    deliveredAt: null,
+    emailSentAt: null,
+    queuedAt: null,
+  }
+
+  it('a clean expired CMA under the line is held, never ready', () => {
+    expect(resolveCmaQueueState({ ...base, belowFloor: true })).toBe('held')
+    expect(resolveCmaQueueState({ ...base, belowFloor: false })).toBe('ready')
+  })
+
+  it('a queued row under the line shows as held', () => {
+    expect(resolveCmaQueueState({ ...base, queuedAt: '2026-09-30T20:00:00Z', belowFloor: true })).toBe('held')
+  })
+
+  it('sent and archived stay what they are', () => {
+    expect(resolveCmaQueueState({ ...base, deliveredAt: '2026-09-30T21:00:00Z', belowFloor: true })).toBe('sent')
+    expect(resolveCmaQueueState({ ...base, archivedAt: '2026-09-30T22:48:00Z', belowFloor: true })).toBe('archived')
+  })
+
+  it('a failed build is still failed, not held', () => {
+    expect(resolveCmaQueueState({ ...base, buildError: 'boom', belowFloor: true })).toBe('failed')
   })
 })

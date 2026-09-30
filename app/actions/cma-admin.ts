@@ -16,6 +16,7 @@ import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { buildCma } from '@/lib/cma/build'
 import { sendCmaToLead, prepareCmaSendPreview, type CmaSendOverride } from '@/lib/cma/send'
 import { saveCmaFirstContactOverride } from '@/lib/cma/first-contact-override'
+import { getCmaSendFloorBySlug } from '@/lib/data/cma/send-floor'
 import { resolveCmaSubject } from '@/lib/cma/subject'
 import { createCmaRequest } from '@/lib/cma-request'
 import { applySlugStreetDirectional } from '@/lib/cma/address-slug'
@@ -273,6 +274,11 @@ export async function approveCmaAction(
     if (!htmlPath.startsWith('db:cmas.html_content:') && !htmlPath.startsWith('public/cmas/')) {
       return { error: 'This CMA has no built document yet. Build it before approving.' }
     }
+    // MATT'S 80% LINE (2026-09-30). An expired CMA under 80% of its last list is
+    // never approved for a client, so no page and no link to it can go out. No
+    // acknowledgement opens this one (lib/cma/send-floor.ts, ci:cma-send-floor).
+    const floor = await getCmaSendFloorBySlug(safeSlug)
+    if (floor.held) return { error: floor.reason }
     // Accuracy gate (mirrors app/actions/bpo-admin.ts finalizeBpoAction): a
     // build flagged needs_review (unvetted comps, disputed audit, non-converged
     // methods) cannot approve silently — the broker must explicitly acknowledge
@@ -354,6 +360,12 @@ export async function unarchiveCmaAction(slug: string): Promise<{ error: string 
     if (!row) return { error: 'CMA not found' }
     // Restore the pre-archive status from the row's own lifecycle timestamps.
     const status = row.delivered_at ? 'delivered' : row.finalized_at ? 'finalized' : 'draft'
+    // MATT'S 80% LINE (2026-09-30). Unarchiving a delivered or finalized row
+    // puts its page back in front of the owner, so a held CMA stays archived.
+    if (status !== 'draft') {
+      const floor = await getCmaSendFloorBySlug(safeSlug)
+      if (floor.held) return { error: `${floor.reason} It stays archived. Rebuild it instead.` }
+    }
     const res = await updateCmaRowFieldsBySlug(safeSlug, { status, archived_at: null })
     if (!res.ok) return { error: res.error ?? 'Unarchive failed' }
     refresh(safeSlug)

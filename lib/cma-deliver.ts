@@ -196,6 +196,14 @@ export async function finalizeAndDeliverCma(
     }
   }
 
+  // MATT'S 80% LINE (2026-09-30). An expired CMA under 80% of its last list
+  // never sends from any path (lib/cma/send-floor.ts, ci:cma-send-floor).
+  {
+    const { getCmaSendFloorBySlug } = await import('@/lib/data/cma/send-floor')
+    const floor = await getCmaSendFloorBySlug(safeSlug)
+    if (floor.held) return { ok: false, warnings, error: `Not sent. ${floor.reason}` }
+  }
+
   // ── 2. Resolve broker email + name ────────────────────────────────────────
   try {
     const supabase = createServiceClient()

@@ -81,6 +81,9 @@ const DEQUEUE_CODES: ReadonlySet<SendGuardCode> = new Set<SendGuardCode>([
   'already-sent',
   'no-doc',
   'not-found',
+  // Under Matt's 80% line (2026-09-30). Rebuilding the CMA is what clears it,
+  // and a rebuild re-enters the queue through approve, so it leaves the drip.
+  'price-floor',
 ])
 
 export async function drainProspectingFirstTouchDrip(now: Date = new Date()): Promise<DripDrainResult> {

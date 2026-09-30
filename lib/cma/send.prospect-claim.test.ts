@@ -51,6 +51,12 @@ const h = vi.hoisted(() => ({
   },
 }))
 
+// Matt's 80% line (lib/cma/send-floor.ts) reads the CMA row; not held unless a test says so.
+const floorMock = vi.hoisted(() => ({
+  getCmaSendFloorBySlug: vi.fn(async (_slug: string) => ({ held: false as boolean, ratio: null as number | null, reason: null as string | null })),
+}))
+vi.mock('@/lib/data/cma/send-floor', () => floorMock)
+
 vi.mock('googleapis', () => ({
   google: {
     auth: {

@@ -115,3 +115,46 @@ describe('GET /cma/[slug] draft row', () => {
     expect(res.headers.get('content-type')).toMatch(/text\/html/)
   })
 })
+
+describe('GET /cma/[slug] archived row (a report pulled back after it went out, Matt 2026-09-30)', () => {
+  const archivedHead = { ...draftHead, status: 'archived' }
+  beforeEach(() => {
+    getAdminContext.mockReset()
+    getCmaServeHead.mockReset()
+    getCmaRenderSourceBySlug.mockReset()
+    renderImmersiveCmaHtml.mockClear()
+    getCmaServeHead.mockResolvedValue(archivedHead)
+    getCmaRenderSourceBySlug.mockResolvedValue({
+      ...archivedHead,
+      render_args: { comps: [], subject: { streetAddress: '3711 Purcell', city: 'Bend' } },
+      build_summary: null,
+    })
+    getCmaStoredHtmlBySlug.mockResolvedValue(null)
+    getCmaAccessIdentity.mockResolvedValue(null)
+  })
+
+  it('tells the owner the report is being updated and never renders the pulled document', async () => {
+    getAdminContext.mockResolvedValue(null)
+    const res = await GET(new Request(`https://ryan-realty.com/cma/${SLUG}`), {
+      params: Promise.resolve({ slug: SLUG }),
+    })
+    expect(res.status).toBe(200)
+    const html = await res.text()
+    expect(html).toContain('This report is being updated')
+    expect(html).not.toContain('3711 Purcell draft report')
+    expect(html).not.toContain('—')
+    expect(res.headers.get('x-robots-tag')).toMatch(/noindex/)
+    expect(renderImmersiveCmaHtml).not.toHaveBeenCalled()
+  })
+
+  it('still opens the archived document for an authenticated admin', async () => {
+    getAdminContext.mockResolvedValue({ email: 'matt@ryan-realty.com', role: 'superuser', brokerId: 'b1' })
+    const res = await GET(new Request(`https://ryan-realty.com/cma/${SLUG}`), {
+      params: Promise.resolve({ slug: SLUG }),
+    })
+    expect(res.status).toBe(200)
+    const html = await res.text()
+    expect(html).toContain('3711 Purcell draft report')
+    expect(html).not.toContain('This report is being updated')
+  })
+})

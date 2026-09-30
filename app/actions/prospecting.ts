@@ -52,6 +52,7 @@ import {
 } from '@/lib/cma/versions'
 import { buildCma } from '@/lib/cma/build'
 import { prepareCmaSendPreview, sendCmaToLead } from '@/lib/cma/send'
+import { getCmaSendFloorBySlug } from '@/lib/data/cma/send-floor'
 import { ensureNativeLead, enrichNativeLead } from '@/lib/data/crm/ensureNativeLead'
 import { searchPeopleByName } from '@/lib/data/crm/searchPeople'
 import { attachCmaToPerson } from '@/lib/data/cma/crm'
@@ -172,6 +173,9 @@ export async function sendProspectingIntro(
         code: 'no-doc',
       }
     }
+    // MATT'S 80% LINE (2026-09-30). A texted CMA link is a CMA send too.
+    const smsFloor = await getCmaSendFloorBySlug(clientReady.slug)
+    if (smsFloor.held) return { ok: false, error: `Not sent. ${smsFloor.reason}`, code: 'price-floor' }
     const docUrl = `${SITE_URL}/cma/${clientReady.slug}`
 
     // 4–6. Non-negotiable exclusions, from the live-computed compliance state.
@@ -497,6 +501,10 @@ export async function sendProspectingEmailIntro(
         code: 'no-doc',
       }
     }
+    // MATT'S 80% LINE (2026-09-30), before this owner's claim is taken, so a
+    // held CMA leaves the drip on a terminal code instead of retrying.
+    const emailFloor = await getCmaSendFloorBySlug(clientReady.slug)
+    if (emailFloor.held) return { ok: false, error: `Not sent. ${emailFloor.reason}`, code: 'price-floor' }
 
     // 4–6. Non-negotiable exclusions (mirrors SMS steps 4–6, fail-closed relist).
     // Still FSBO? Live re-read fail-closed — scraper may have marked gone since the drawer loaded.

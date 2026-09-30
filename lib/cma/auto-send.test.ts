@@ -79,6 +79,7 @@ function queueRow(over: Partial<CmaQueueRow> = {}): CmaQueueRow {
     reviewReason: null,
     auditSummary: null,
     auditCriticalCount: 0,
+    holdReason: null,
     createdAt: '2026-09-01T00:00:00.000Z',
     deliveredAt: null,
     queuedAt: null,

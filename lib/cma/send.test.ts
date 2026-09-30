@@ -50,6 +50,12 @@ const h = vi.hoisted(() => ({
   },
 }))
 
+// Matt's 80% line (lib/cma/send-floor.ts) reads the CMA row; not held unless a test says so.
+const floorMock = vi.hoisted(() => ({
+  getCmaSendFloorBySlug: vi.fn(async (_slug: string) => ({ held: false as boolean, ratio: null as number | null, reason: null as string | null })),
+}))
+vi.mock('@/lib/data/cma/send-floor', () => floorMock)
+
 vi.mock('googleapis', () => ({
   google: {
     auth: {
@@ -132,6 +138,19 @@ afterEach(() => {
 })
 
 describe('sendCmaToLead', () => {
+  it('refuses an expired CMA held under the 80% line before any screen, contact, claim or PDF work (Matt 2026-09-30)', async () => {
+    floorMock.getCmaSendFloorBySlug.mockResolvedValueOnce({ held: true, ratio: 0.727, reason: 'Held for Matt: priced at $618,000, 72.7% of the last list of $849,000. Expired CMAs under 80% of the last list never send (Matt 2026-09-30).' })
+    const res = await sendCmaToLead(SLUG)
+    expect(res.ok).toBe(false)
+    expect(res.ok ? '' : res.error).toContain('Held for Matt')
+    expect(floorMock.getCmaSendFloorBySlug).toHaveBeenCalledWith(SLUG)
+    expect(h.screenAddressForSolicitation).not.toHaveBeenCalled()
+    expect(h.ensureNativeLead).not.toHaveBeenCalled()
+    expect(h.stampCmaPersonId).not.toHaveBeenCalled()
+    expect(h.gmailSend).not.toHaveBeenCalled()
+    expect(h.sendEmail).not.toHaveBeenCalled()
+  })
+
   it('sends from the broker mailbox and marks the CMA delivered (happy path)', async () => {
     const res = await sendCmaToLead(SLUG)
 

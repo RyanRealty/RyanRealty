@@ -169,6 +169,19 @@ its status holds says so under the table. The locked contract is
 `split-closed-pending-active-summary-tables` in
 `lib/cma/canter-letter-flow.contract.test.ts`.
 
+### 0.3 The 80% line (Matt 2026-09-30)
+
+An expired-listing CMA whose recommended list is under 80% of the price that
+listing last asked never goes to the owner by any path. It goes to Matt. Nine in
+ten Central Oregon listings that came off the market unsold later closed at 80%
+of the failed ask or more (`docs/research/cma-backtest-2026-08-05.json`, 3,394
+pairs, 10th percentile 0.802), so a number under that is far more likely an
+engine miss than a finding. On 2026-09-30 four CMAs went out at 72% to 79% of
+their last list, each priced off the wrong sales, and their pages were taken
+down. The rule is `lib/cma/send-floor.ts` (fails closed: no readable price or
+last list holds the CMA too); the queue shows it as `held`, and there is no
+acknowledgement that sends one. Held by `ci:cma-send-floor` (G81).
+
 ---
 
 ## 1. Scope

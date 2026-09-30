@@ -26,6 +26,7 @@ import {
   type CmaSendMode,
 } from '@/lib/cma/origin'
 import { theirPriceFromBuildSummary } from '@/lib/cma/queue-view'
+import { expiredSendFloor } from '@/lib/cma/send-floor'
 
 function client() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -48,6 +49,7 @@ export type CmaQueueState =
   | 'failed'       // build blew up — nothing to send
   | 'building'     // no document yet
   | 'audit-failed' // audit ran and failed — NOT sendable
+  | 'held'         // expired CMA under Matt's 80% line (2026-09-30) — NOT sendable, goes to Matt
   | 'unvetted'     // audit could not run — a human must read it before it goes
   | 'flagged'      // built, needs_review for some other reason
   | 'ready'        // built, audited, clean
@@ -127,6 +129,8 @@ export type CmaQueueRow = {
   auditSummary: string | null
   /** How many findings the audit raised as critical. */
   auditCriticalCount: number
+  /** Why a `held` row is held (lib/cma/send-floor.ts). Null on every other row. */
+  holdReason: string | null
 
   createdAt: string | null
   deliveredAt: string | null
@@ -178,9 +182,14 @@ export function resolveCmaQueueState(args: {
   deliveredAt: string | null
   emailSentAt: string | null
   queuedAt: string | null
+  /** Expired CMA under Matt's 80% line (lib/cma/send-floor.ts). */
+  belowFloor?: boolean
 }): CmaQueueState {
   if (args.archivedAt || args.status === 'archived') return 'archived'
   if (args.deliveredAt || args.emailSentAt || args.status === 'delivered') return 'sent'
+  // Ahead of queued: a row already in the drip that sits under the line shows
+  // as held, and the send rail refuses it when the drain reaches it.
+  if (args.belowFloor && args.hasDocument && !args.buildError) return 'held'
   if (args.queuedAt) return 'queued'
   if (args.buildError) return 'failed'
   if (!args.hasDocument) return 'building'
@@ -405,6 +414,7 @@ export function mapBpoQueueRow(r: Record<string, unknown>): CmaQueueRow {
     reviewReason: str(summary?.review_reason ?? null),
     auditSummary: audit.auditSummary,
     auditCriticalCount: audit.criticalCount,
+    holdReason: null,
 
     createdAt: str(r.created_at),
     deliveredAt: null,
@@ -481,6 +491,12 @@ export async function listCmaQueue(options: {
     const deliveredAt = str(r.delivered_at)
     const emailSentAt = ctx?.emailSentAt ?? null
     const queuedAt = ctx?.queuedAt ?? null
+    // Matt's 80% line, the same answer the send rail gives (lib/data/cma/send-floor.ts).
+    const floor = expiredSendFloor({
+      isExpired: origin === 'expired' || ctx?.kind === 'expired',
+      price: recommendedList,
+      lastListPrice: theirPrice,
+    })
 
     return {
       id,
@@ -499,6 +515,7 @@ export async function listCmaQueue(options: {
         deliveredAt,
         emailSentAt,
         queuedAt,
+        belowFloor: floor.held,
       }),
       origin,
       sendMode: sendModeForOrigin(origin),
@@ -534,6 +551,7 @@ export async function listCmaQueue(options: {
       reviewReason: str(summary?.review_reason ?? null),
       auditSummary: audit.auditSummary,
       auditCriticalCount: audit.criticalCount,
+      holdReason: floor.held ? floor.reason : null,
 
       createdAt: str(r.created_at),
       deliveredAt,
