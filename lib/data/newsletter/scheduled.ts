@@ -24,15 +24,20 @@ export async function getDueScheduledNewsletterIds(nowIso: string): Promise<stri
 /**
  * Promote a draft to scheduled in ONE conditional update (never read-then-write,
  * same posture as the CAS send lock). Returns false when the newsletter was not
- * a draft — a concurrent send/schedule already moved it.
+ * a draft — a concurrent send/schedule already moved it — or, given
+ * `expectedUpdatedAt`, when the draft changed after it was read: the pre-send
+ * checks passed on that version, so another is never scheduled in its place
+ * (a monthly report email is rebuilt when its report is republished).
  */
-export async function scheduleNewsletter(id: string, scheduledAtIso: string): Promise<boolean> {
+export async function scheduleNewsletter(id: string, scheduledAtIso: string, expectedUpdatedAt?: string): Promise<boolean> {
   const sb = createServiceClient()
-  const { data, error } = await sb
+  let query = sb
     .from('newsletters')
     .update({ status: 'scheduled', scheduled_at: scheduledAtIso, updated_at: new Date().toISOString() })
     .eq('id', id)
     .eq('status', 'draft')
+  if (expectedUpdatedAt) query = query.eq('updated_at', expectedUpdatedAt)
+  const { data, error } = await query
     .select('id')
   if (error) throw new Error(`scheduleNewsletter: ${error.message}`)
   return (data?.length ?? 0) > 0
@@ -99,9 +104,9 @@ export async function findNewsletterByCreatedBy(createdBy: string): Promise<News
 }
 
 /**
- * Every monthly market report email still open to change (draft or
- * scheduled): the daily backstop re-checks each against its edition, so a
- * report republished by any path cannot leave its email on old figures.
+ * Monthly market report emails still open to change (draft or scheduled),
+ * newest first: the daily backstop re-checks each against its edition. The
+ * newest 24 months are plenty; an email older than that is not going out.
  */
 export async function listOpenEditionEmailDrafts(prefix: string): Promise<Array<{ id: string; created_by: string }>> {
   const sb = createServiceClient()
@@ -110,7 +115,7 @@ export async function listOpenEditionEmailDrafts(prefix: string): Promise<Array<
     .select('id,created_by')
     .like('created_by', `${prefix}%`)
     .in('status', ['draft', 'scheduled'])
-    .order('created_at', { ascending: true })
+    .order('created_by', { ascending: false })
     .limit(24)
   if (error) throw new Error(`listOpenEditionEmailDrafts: ${error.message}`)
   return (data ?? []) as Array<{ id: string; created_by: string }>

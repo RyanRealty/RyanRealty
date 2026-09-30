@@ -31,7 +31,6 @@ import { queueBrokerHealthAlert } from '@/lib/crm/broker-alerts'
 import { cacheTag } from '@/lib/data/cache/unstable-cache'
 import { getEditionForWrite } from '@/lib/data/market-report/editions'
 import { monthLabel } from '@/lib/market-report/format'
-import { draftEditionEmailAndTell } from '@/lib/market-report/edition-email-draft'
 import { lastCompleteMonth, publishEdition } from '@/lib/market-report/pipeline'
 
 export const runtime = 'nodejs'
@@ -60,7 +59,13 @@ export async function GET(request: Request) {
       return NextResponse.json({ ok: true, month, skipped: 'already published' })
     }
 
-    const outcome = await publishEdition({ month, log: (l) => log.push(l) })
+    // The newest month's email is drafted for Matt's OK as it publishes; a re-run
+    // of an older month only brings an open draft to the new figures.
+    const outcome = await publishEdition({
+      month,
+      log: (l) => log.push(l),
+      emailDraft: month === lastCompleteMonth() ? 'create' : 'recheck',
+    })
     if (outcome.status === 'held') {
       await queueBrokerHealthAlert({
         key: `market-report-hold-${month}`,
@@ -73,14 +78,7 @@ export async function GET(request: Request) {
     revalidateTag(cacheTag.market, 'max')
     revalidatePath('/housing-market/reports/monthly')
     revalidatePath(`/housing-market/reports/monthly/${month}`)
-
-    // Matt 2026-09-30 ("Draft it for my OK"): the newest month's email becomes a
-    // newsletter draft and Matt gets the review link by text. Nothing is sent to
-    // anyone until he approves it. A re-run of an older month writes no email,
-    // but an open draft for the month republished here moves to its new figures.
-    // Never throws, so a draft problem can never read as "did not publish".
-    const email = await draftEditionEmailAndTell(month, { create: month === lastCompleteMonth() })
-    return NextResponse.json({ ok: true, month, outcome: { ...outcome, reconciliation: undefined }, email, log })
+    return NextResponse.json({ ok: true, month, outcome: { ...outcome, reconciliation: undefined }, log })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     // A dry run is a deployment check: its failure is the response, not a text to the owner.

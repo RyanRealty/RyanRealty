@@ -7,38 +7,38 @@ import 'server-only'
  *
  * Nothing here sends to anyone. The draft waits on /admin/newsletters/<id>,
  * where Matt previews, edits and approves the send (Approve & Schedule runs
- * the R-2 and R-3 pre-send checks; the newsletter-send drain delivers). A
- * broker's one-click send never picks a draft
- * (lib/data/newsletter/current-issue.ts). The only message this module causes
- * is the ops text to Matt on the broker-alert rail (queueBrokerHealthAlert).
+ * the R-2 and R-3 pre-send checks and refuses a draft that changed while it
+ * was being checked; the newsletter-send drain delivers). A broker's one-click
+ * send never picks a draft (lib/data/newsletter/current-issue.ts). The only
+ * message this module causes is the ops text to Matt on the broker-alert rail
+ * (queueBrokerHealthAlert).
  *
  * Who calls it:
- *   - /api/cron/market-report-publish, right after a month publishes (and for
- *     any month it republishes, so an open draft follows the new figures);
- *   - /api/cron/market-report-refresh every morning, the backstop: it writes
- *     the newest month's draft if the publish run did not, and re-checks every
- *     open edition draft against its edition, so a report republished by any
- *     path (the cron, scripts/market-report-publish.ts) cannot leave its email
- *     on old figures.
+ *   - publishEdition (lib/market-report/pipeline.ts), on every publish by any
+ *     path (the monthly cron, scripts/market-report-publish.ts): the newest
+ *     month's draft is written, and an open draft of a republished month is
+ *     brought to the new figures at once;
+ *   - /api/cron/market-report-refresh every morning, the backstop: the newest
+ *     month's draft exists once it is published, and every open edition draft
+ *     is re-checked against its edition.
  *
  * One draft per month: created_by 'cron:market-report-edition:<YYYY-MM>'
  * (./edition-email-marker.ts), held by a unique index (migration
  * 20260930130000). Deleting it cancels it (deleteNewsletterDraft), so a month
- * Matt skips stays skipped. When the edition's figures change under an open
- * draft:
- *   - a draft Matt has not edited is rebuilt from the edition;
- *   - a draft he edited keeps his words, and gets the new edition's citations,
- *     so the figure check on the review page names every number that no
- *     longer matches and blocks scheduling until he fixes it;
- *   - a scheduled one first goes back to draft, so it cannot go out with the
- *     old figures; he re-approves it.
- * Edits are detected by a fingerprint of the body as built, stored as the
- * last entry of the draft's citations (the provenance line of its §0 trace).
+ * Matt skips stays skipped.
+ *
+ * Accuracy outranks edits (CLAUDE.md §0). Every citation of a draft carries
+ * the edition build it came from (fetched_at = payload.generatedAt). When the
+ * edition is rebuilt and its figures differ, the draft is rebuilt from it,
+ * all of it: subject, preheader, both bodies and the trace. A scheduled draft
+ * first goes back to draft (its approval was for the old figures), and Matt
+ * is texted that it was rebuilt and that any edits he made were replaced. If
+ * the new email cannot be built, a scheduled draft is still taken back, so it
+ * cannot go out on figures nobody re-checked.
  *
  * Before anything is written, the email passes the R-2 check the schedule
  * button runs: every printed figure has a citation.
  */
-import { createHash } from 'node:crypto'
 import type { EditionRow } from '@/lib/data/market-report/editions'
 import { getEditionForWrite } from '@/lib/data/market-report/editions'
 import {
@@ -67,7 +67,6 @@ export function newsletterReviewUrl(id: string): string {
 export type EditionEmailDraftResult =
   | { status: 'created'; id: string; subject: string }
   | { status: 'refreshed'; id: string; subject: string; wasScheduled: boolean }
-  | { status: 'stale-edited'; id: string; wasScheduled: boolean }
   | { status: 'exists'; id: string; newsletterStatus: string }
   | { status: 'skipped'; reason: string }
 
@@ -90,72 +89,38 @@ const LIVE: EditionEmailDraftDeps = {
 /** A draft in one of these is out of reach: already going or gone out, or canceled. */
 const CLOSED = new Set(['sending', 'sent', 'failed', 'canceled'])
 
-const PROVENANCE_FIGURE = 'Email draft source'
-
-export function bodyFingerprint(bodyHtml: string): string {
-  return createHash('sha256').update(bodyHtml).digest('hex').slice(0, 16)
+/** The edition build a trace came from. */
+function builtFrom(citations: NewsletterCitationEntry[]): string | null {
+  return citations[0]?.fetched_at ?? null
 }
 
-/** The trace as stored: the figures, then one provenance line with the body fingerprint. */
-function storedCitations(email: EditionEmail, key: string, generatedAt: string): NewsletterCitationEntry[] {
-  return [
-    ...email.citations,
-    {
-      figure: PROVENANCE_FIGURE,
-      source: 'lib/market-report/edition-email.ts',
-      filter: `built from the ${key} edition, figures computed ${generatedAt} · value is the body as built (sha-256, first 16 hex)`,
-      value: `body ${bodyFingerprint(email.bodyHtml)}`,
-      fetched_at: generatedAt,
-    },
-  ]
+/** The printed figures in the order the builder cites them. Labels are prose and may be reworded; values are the figures. */
+function figureValues(citations: NewsletterCitationEntry[]): string {
+  return JSON.stringify(citations.map((c) => c.value))
 }
 
-function builtFingerprint(citations: NewsletterCitationEntry[]): string | null {
-  const line = citations.find((c) => c.figure === PROVENANCE_FIGURE)
-  const m = typeof line?.value === 'string' ? /^body ([0-9a-f]{16})$/.exec(line.value) : null
-  return m ? m[1]! : null
-}
-
-/** The figures a trace carries, ignoring the provenance line: equal means the report did not change them. */
-function sameFigures(a: NewsletterCitationEntry[], b: NewsletterCitationEntry[]): boolean {
-  const key = (list: NewsletterCitationEntry[]) =>
-    JSON.stringify(
-      list
-        .filter((c) => c.figure !== PROVENANCE_FIGURE)
-        .map((c) => [c.figure, c.value])
-        .sort((x, y) => String(x[0]).localeCompare(String(y[0]))),
-    )
-  return key(a) === key(b)
-}
-
-function buildChecked(edition: EditionRow, key: string, when: 'create' | 'rebuild'): EditionEmail {
+/** The checked email for an edition. Throws when a printed figure has no citation. */
+export function editionEmailContent(edition: EditionRow): EditionEmail {
   const email = buildEditionEmail(edition)
   const r2 = checkCitations(email.bodyHtml, email.citations)
-  if (!r2.ok) {
-    const why = `a printed figure has no citation (${r2.failures.slice(0, 3).join('; ')})`
-    throw new Error(
-      when === 'create'
-        ? `the ${key} email draft was not written: ${why}`
-        : `the ${key} report changed, but its email draft could not be rebuilt: ${why}; the draft still shows the earlier figures`,
-    )
-  }
+  if (!r2.ok) throw new Error(`a printed figure has no citation (${r2.failures.slice(0, 3).join('; ')})`)
   return email
 }
 
-/** What a draft for this edition holds: the checked email and its stored trace (figures, then the provenance line). */
-export function editionEmailDraftContent(
-  edition: EditionRow,
-  when: 'create' | 'rebuild' = 'create',
-): { email: EditionEmail; citations: NewsletterCitationEntry[] } {
-  const key = edition.edition_month.slice(0, 7)
-  const email = buildChecked(edition, key, when)
-  return { email, citations: storedCitations(email, key, edition.payload.generatedAt ?? edition.generated_at) }
+function content(email: EditionEmail) {
+  return {
+    subject: email.subject,
+    preview_text: email.previewText,
+    body_html: email.bodyHtml,
+    body_text: email.bodyText,
+    citations: email.citations,
+  }
 }
 
 /**
  * Make sure `month`'s published edition has its email draft, on its current
- * figures. `create: false` only re-checks a draft that exists (an older month
- * is not news to email).
+ * figures. `create: false` only re-checks a draft that exists (an older
+ * month is not news to email).
  */
 export async function ensureEditionEmailDraft(
   month: string,
@@ -168,21 +133,18 @@ export async function ensureEditionEmailDraft(
   if (edition.status !== 'published') return { status: 'skipped', reason: `the ${key} edition is ${edition.status}` }
 
   const marker = editionEmailMarker(key)
-  const draft = await deps.findDraft(marker)
+  let draft = await deps.findDraft(marker)
   if (draft && CLOSED.has(draft.status)) return { status: 'exists', id: draft.id, newsletterStatus: draft.status }
 
   if (!draft) {
     if (opts.create === false) return { status: 'skipped', reason: `no ${key} email draft to re-check` }
-    const { email, citations } = editionEmailDraftContent(edition, 'create')
-    const created = await deps.createDraft({
-      subject: email.subject,
-      preview_text: email.previewText,
-      body_html: email.bodyHtml,
-      body_text: email.bodyText,
-      audience: 'all',
-      created_by: marker,
-      citations,
-    })
+    let email: EditionEmail
+    try {
+      email = editionEmailContent(edition)
+    } catch (err) {
+      throw new Error(`the ${key} email draft was not written: ${err instanceof Error ? err.message : String(err)}`)
+    }
+    const created = await deps.createDraft({ ...content(email), audience: 'all', created_by: marker })
     if (created.ok && created.id) return { status: 'created', id: created.id, subject: email.subject }
     // Another run inserted this month first (the unique index refused ours).
     const raced = await deps.findDraft(marker)
@@ -190,56 +152,64 @@ export async function ensureEditionEmailDraft(
     throw new Error(`the ${key} email draft was not written: ${created.error ?? 'no id returned'}`)
   }
 
-  // An open draft (draft or scheduled): is it still on the edition's figures?
-  const { email, citations } = editionEmailDraftContent(edition, 'rebuild')
-  if (sameFigures(draft.citations, email.citations)) {
+  // An open draft (draft or scheduled) of an edition that has not been rebuilt since.
+  const current = edition.payload.generatedAt ?? edition.generated_at
+  if (builtFrom(draft.citations) === current) return { status: 'exists', id: draft.id, newsletterStatus: draft.status }
+
+  let email: EditionEmail
+  try {
+    email = editionEmailContent(edition)
+  } catch (err) {
+    // The new figures cannot be checked: never leave it scheduled on the old ones.
+    const back = draft.status === 'scheduled' && (await deps.unschedule(draft.id))
+    throw new Error(
+      `the ${key} report was rebuilt, but its email could not be: ${err instanceof Error ? err.message : String(err)}; ` +
+        (back ? 'it is back to a draft so it cannot go out with the earlier figures' : 'the draft still shows the earlier figures'),
+    )
+  }
+
+  if (figureValues(draft.citations) === figureValues(email.citations)) {
+    // Rebuilt, same figures: carry the build stamp forward on a draft (a scheduled one keeps its approved content).
+    if (draft.status === 'draft') await deps.rewriteDraft(draft.id, { citations: email.citations })
     return { status: 'exists', id: draft.id, newsletterStatus: draft.status }
   }
 
+  // New figures. Two tries: a schedule that lands between the read and the
+  // write makes the conditional rewrite miss, and is taken back on the retry.
   let wasScheduled = false
-  if (draft.status === 'scheduled') {
-    // Its approval was for the old figures. If the send cron took it first, it is out of reach.
-    if (!(await deps.unschedule(draft.id))) return { status: 'exists', id: draft.id, newsletterStatus: 'sending' }
-    wasScheduled = true
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (draft.status === 'scheduled') {
+      if (!(await deps.unschedule(draft.id))) return { status: 'exists', id: draft.id, newsletterStatus: 'sending' }
+      wasScheduled = true
+    }
+    if (await deps.rewriteDraft(draft.id, content(email))) {
+      return { status: 'refreshed', id: draft.id, subject: email.subject, wasScheduled }
+    }
+    const again = await deps.findDraft(marker)
+    if (!again || CLOSED.has(again.status)) return { status: 'exists', id: draft.id, newsletterStatus: again?.status ?? 'gone' }
+    draft = again
   }
-
-  const edited = builtFingerprint(draft.citations) !== bodyFingerprint(draft.body_html ?? '')
-  if (!edited) {
-    const ok = await deps.rewriteDraft(draft.id, {
-      subject: email.subject,
-      preview_text: email.previewText,
-      body_html: email.bodyHtml,
-      body_text: email.bodyText,
-      citations,
-    })
-    if (!ok) return { status: 'exists', id: draft.id, newsletterStatus: 'not a draft' }
-    return { status: 'refreshed', id: draft.id, subject: email.subject, wasScheduled }
-  }
-
-  // Matt edited it: keep his words, trace the new figures so the check names the stale ones.
-  const ok = await deps.rewriteDraft(draft.id, { citations })
-  if (!ok) return { status: 'exists', id: draft.id, newsletterStatus: 'not a draft' }
-  return { status: 'stale-edited', id: draft.id, wasScheduled }
+  throw new Error(`the ${key} report changed, but its email draft kept changing under the rewrite; it still shows the earlier figures`)
 }
 
-/** One month in the text. */
+/** One month in a text. */
 function label(month: string): string {
   return monthLabel(month.slice(0, 7))
 }
 
 /**
- * The text to Matt for a result, or null. The "drafted" text uses a 30-day
- * cooldown and is asked for again on every run while the draft sits unsent:
- * the alert queue dedupes it, so he gets it once, and a text that failed to
+ * The text to Matt for a result, or null. `remind` (the newest month only)
+ * asks for the "drafted" text again while the draft sits unsent: the alert
+ * queue dedupes it for 30 days, so he gets it once, and a text that failed to
  * queue is retried the next morning.
  */
 export function editionEmailAlert(
   month: string,
   result: EditionEmailDraftResult,
+  opts: { remind?: boolean } = {},
 ): { key: string; body: string; cooldownMinutes: number } | null {
   const key = month.slice(0, 7)
-  const back = ' It had been scheduled, so it is back to a draft and cannot go out with the old figures; schedule it again when it looks right.'
-  if (result.status === 'created' || (result.status === 'exists' && result.newsletterStatus === 'draft')) {
+  if (result.status === 'created' || (opts.remind && result.status === 'exists' && result.newsletterStatus === 'draft')) {
     return {
       key: `market-report-email-${key}`,
       body: `The ${label(month)} market report email is drafted and waiting for your OK: ${newsletterReviewUrl(result.id)} Nothing goes out until you approve it.`,
@@ -247,28 +217,28 @@ export function editionEmailAlert(
     }
   }
   if (result.status === 'refreshed') {
+    const back = result.wasScheduled
+      ? ' It had been scheduled, so it is back to a draft; schedule it again when it looks right.'
+      : ''
     return {
       key: `market-report-email-refresh-${key}`,
-      body: `The ${label(month)} market report was republished with new figures, so its email draft was rebuilt from it: ${newsletterReviewUrl(result.id)}${result.wasScheduled ? back : ''} Nothing goes out until you approve it.`,
-      cooldownMinutes: 1440,
-    }
-  }
-  if (result.status === 'stale-edited') {
-    return {
-      key: `market-report-email-stale-${key}`,
-      body: `The ${label(month)} market report was republished with new figures after you edited its email. Your edits are kept, and the figure check on the draft lists each number that no longer matches the report: ${newsletterReviewUrl(result.id)}${result.wasScheduled ? back : ''}`,
+      body: `The ${label(month)} market report was republished with new figures, so its email draft was rebuilt from it and any edits you had made to it were replaced: ${newsletterReviewUrl(result.id)}${back} Nothing goes out until you approve it.`,
       cooldownMinutes: 1440,
     }
   }
   return null
 }
 
-type Outcome = EditionEmailDraftResult | { status: 'failed'; error: string }
+export type EditionEmailOutcome = EditionEmailDraftResult | { status: 'failed'; error: string }
 
-async function tell(month: string, run: () => Promise<EditionEmailDraftResult>): Promise<Outcome> {
+async function tell(
+  month: string,
+  run: () => Promise<EditionEmailDraftResult>,
+  opts: { remind?: boolean } = {},
+): Promise<EditionEmailOutcome> {
   try {
     const result = await run()
-    const alert = editionEmailAlert(month, result)
+    const alert = editionEmailAlert(month, result, opts)
     if (alert) await queueBrokerHealthAlert(alert)
     return result
   } catch (err) {
@@ -277,7 +247,7 @@ async function tell(month: string, run: () => Promise<EditionEmailDraftResult>):
     try {
       await queueBrokerHealthAlert({
         key: `market-report-email-failed-${month.slice(0, 7)}`,
-        body: `The ${label(month)} market report email needs a look: ${error.slice(0, 200)}. The daily refresh tries again each morning.`,
+        body: `The ${label(month)} market report email needs a look: ${error.slice(0, 220)}. The daily refresh tries again each morning.`,
         cooldownMinutes: 7 * 1440,
       })
     } catch (alertErr) {
@@ -288,30 +258,29 @@ async function tell(month: string, run: () => Promise<EditionEmailDraftResult>):
 }
 
 /**
- * The publish cron's entry point: after `month` publishes, write its draft
- * (only the newest month, `create`) or bring an open one to the new figures.
- * Never throws.
+ * After `month` publishes: write its draft when it is the newest month
+ * (`create`), or bring an open draft to the new figures. Never throws.
  */
 export async function draftEditionEmailAndTell(
   month: string,
   opts: { create?: boolean } = {},
   deps: EditionEmailDraftDeps = LIVE,
-): Promise<Outcome> {
-  return tell(month, () => ensureEditionEmailDraft(month, opts, deps))
+): Promise<EditionEmailOutcome> {
+  return tell(month, () => ensureEditionEmailDraft(month, opts, deps), { remind: opts.create === true })
 }
 
 /**
  * The daily backstop: the newest month's draft exists once it is published,
- * and every open edition draft is on its edition's current figures. Never
- * throws; one outcome per month it touched.
+ * and every open edition draft (newest first) is on its edition's current
+ * figures. Never throws; one outcome per month it touched.
  */
 export async function backstopEditionEmails(
   newestMonth: string,
   deps: EditionEmailDraftDeps & { listOpen?: typeof listOpenEditionEmailDrafts } = LIVE,
-): Promise<Record<string, Outcome>> {
-  const out: Record<string, Outcome> = {}
+): Promise<Record<string, EditionEmailOutcome>> {
+  const out: Record<string, EditionEmailOutcome> = {}
   const newest = newestMonth.slice(0, 7)
-  out[newest] = await tell(newest, () => ensureEditionEmailDraft(newest, { create: true }, deps))
+  out[newest] = await tell(newest, () => ensureEditionEmailDraft(newest, { create: true }, deps), { remind: true })
   let open: Array<{ id: string; created_by: string }> = []
   try {
     open = await (deps.listOpen ?? listOpenEditionEmailDrafts)(EDITION_EMAIL_MARKER_PREFIX)

@@ -736,17 +736,18 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 // Run on everything that isn't a Next.js internal or static asset.
 // (Static files with extensions skip middleware — significant perf win.)
 //
-// The second entry matches the retired /_next/image optimizer path ONLY
+// The '/_next/image' entry matches the retired optimizer path ONLY
 // (exact, no suffix), which the first pattern still excludes. Next runs
 // middleware before its filesystem check, so a matcher entry is all it takes
 // for middleware to answer that path (TRACK-3, see branch (000) above).
 export const config = {
   matcher: [
     '/((?!_next/static|_next/image|_next/data|favicon.ico|robots.txt|sitemap.xml|manifest.json|.*\\..*).*)',
-    '/_next/image',
     // The first pattern skips any path with a dot, so a dotted edition segment
     // (/2099-01.html) would never reach the edition guard and would render a
     // hollow 200 (lib/market-report/edition-path-guard.ts).
     '/housing-market/reports/monthly/:month',
+    // Last, where ci:tracking-policy looks for it (TRACK-3).
+    '/_next/image',
   ],
 }

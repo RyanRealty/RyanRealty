@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { stampListingPricingReadsBatch } from '@/lib/pricing/stamp-listing-read'
+import { queueBrokerHealthAlert } from '@/lib/crm/broker-alerts'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -49,10 +50,11 @@ export async function GET(request: Request) {
   // The refresh above only upserts. A comp whose listing later left the filter
   // (deleted because the MLS removed the sale, back to Pending, re-typed) stays
   // until this sweep drops it; 3 x 20,000 keys a run covers the ~150,000-row
-  // table about every 18 hours. A listing the MLS changed in the last 48 hours
-  // is left to settle (a status correction can flip back). Fail closed like
-  // every step here.
-  const pruned = { deleted: 0, scanned: 0, keys: [] as string[], done: false }
+  // table about every 18 hours. A listing the MLS is still changing gets a
+  // 48-hour clock first (a status correction can flip back). A batch with more
+  // than 200 to drop is refused and deletes nothing (a listings read gone
+  // wrong, not a normal day): the owner is texted and the steps below still run.
+  const pruned = { deleted: 0, scanned: 0, settling: 0, keys: [] as string[], refused: null as string | null, done: false }
   for (let i = 0; i < 3; i++) {
     const { data: prune, error: pruneErr } = await supabase.rpc('prune_sale_pricing_facts_batch', {
       p_limit: 20000,
@@ -64,11 +66,24 @@ export async function GET(request: Request) {
     }
     pruned.deleted += Number(prune?.deleted ?? 0)
     pruned.scanned += Number(prune?.scanned ?? 0)
+    pruned.settling += Number(prune?.settling ?? 0)
     if (Array.isArray(prune?.keys)) pruned.keys.push(...prune.keys.map(String))
+    if (prune?.ok === false) {
+      pruned.refused = String(prune?.refused ?? 'refused')
+      break
+    }
     if (prune?.done) {
       pruned.done = true
       break
     }
+  }
+  if (pruned.refused) {
+    console.error('[refresh-sale-pricing-facts] prune refused', pruned.refused)
+    await queueBrokerHealthAlert({
+      key: 'comp-prune-refused',
+      body: `The CMA comp cleanup refused a batch and removed nothing: ${pruned.refused.slice(0, 160)}. The listings read may be incomplete.`,
+      cooldownMinutes: 1440,
+    })
   }
   let concessionsUpdated = 0
   for (let i = 0; i < 8; i++) {

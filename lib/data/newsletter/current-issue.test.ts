@@ -1,10 +1,20 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 /**
- * The newest issue Matt approved is what a broker's one-click send delivers
- * and what the send panel names. A draft never qualifies, whoever wrote it.
+ * The current issue Matt approved is what a broker's one-click send delivers
+ * and what the send panel names: sent (or going out) in the last 45 days,
+ * newest send first, else the next scheduled; never a draft.
  */
-type Row = { id: string; status: string; subject: string; body_html: string | null; body_text: string | null; created_by: string | null }
+type Row = {
+  id: string
+  status: string
+  subject: string
+  body_html: string | null
+  body_text: string | null
+  send_started_at: string | null
+  send_finished_at: string | null
+  scheduled_at: string | null
+}
 let rows: Row[] = []
 let failOn: string | null = null
 const statusesAsked: string[][] = []
@@ -12,64 +22,109 @@ const statusesAsked: string[][] = []
 vi.mock('@/lib/data/client', () => ({
   createServiceClient: () => {
     let statuses: string[] = []
+    let since: string | null = null
+    let orderCol = ''
+    let ascending = true
     const builder: Record<string, unknown> = {
-      from: () => builder,
+      // Each query starts clean.
+      from: () => { statuses = []; since = null; orderCol = ''; ascending = true; return builder },
       select: () => builder,
       in: (_col: string, vals: string[]) => { statuses = vals; statusesAsked.push(vals); return builder },
       eq: (_col: string, val: string) => { statuses = [val]; statusesAsked.push([val]); return builder },
-      order: () => builder,
+      gte: (_col: string, val: string) => { since = val; return builder },
+      or: () => builder,
+      order: (col: string, opts: { ascending: boolean }) => { orderCol = col; ascending = opts.ascending; return builder },
       limit: () => builder,
-      then: (resolve: (v: unknown) => unknown) =>
-        resolve(
-          failOn && statuses.includes(failOn)
-            ? { data: null, error: { message: 'timeout' } }
-            : { data: rows.filter((r) => statuses.includes(r.status)), error: null },
-        ),
+      maybeSingle: () => {
+        if (failOn && statuses.includes(failOn)) return Promise.resolve({ data: null, error: { message: 'timeout' } })
+        const hits = rows
+          .filter((r) => statuses.includes(r.status))
+          .filter((r) => r.body_html || r.body_text)
+          .filter((r) => !since || (r.send_started_at != null && r.send_started_at >= since))
+          .sort((a, b) => {
+            const x = String((a as Record<string, unknown>)[orderCol] ?? '')
+            const y = String((b as Record<string, unknown>)[orderCol] ?? '')
+            return ascending ? x.localeCompare(y) : y.localeCompare(x)
+          })
+        return Promise.resolve({ data: hits[0] ?? null, error: null })
+      },
     }
     return builder
   },
 }))
 
-import { getCurrentNewsletterIssue } from './current-issue'
+const getNewsletter = vi.fn(async (id: string) => ({ id, full: true }))
+vi.mock('@/lib/data/newsletter', () => ({ getNewsletter: (id: string) => getNewsletter(id) }))
 
+import { CURRENT_DAYS, getCurrentNewsletterIssue, getCurrentNewsletterIssueRef } from './current-issue'
+
+const NOW = new Date('2026-10-10T12:00:00Z')
 const row = (id: string, status: string, over: Partial<Row> = {}): Row => ({
-  id, status, subject: id, body_html: '<p>x</p>', body_text: null, created_by: 'matt@ryan-realty.com', ...over,
+  id, status, subject: id, body_html: '<p>x</p>', body_text: null,
+  send_started_at: null, send_finished_at: null, scheduled_at: null, ...over,
 })
 
 afterEach(() => {
   rows = []
   failOn = null
   statusesAsked.length = 0
+  getNewsletter.mockClear()
 })
 
-describe('getCurrentNewsletterIssue', () => {
-  it('is the newest issue that went to the list', async () => {
-    rows = [row('september', 'sent'), row('october', 'scheduled')]
-    expect((await getCurrentNewsletterIssue())?.id).toBe('september')
-  })
-
-  it('is the scheduled issue when nothing has gone out yet', async () => {
-    rows = [row('october', 'scheduled')]
-    expect((await getCurrentNewsletterIssue())?.id).toBe('october')
-  })
-
-  it('is never a draft, a cron draft or one written under Matt\'s name', async () => {
+describe('getCurrentNewsletterIssueRef', () => {
+  it('is the newest issue that went out in the last 45 days', async () => {
     rows = [
-      row('edition', 'draft', { created_by: 'cron:market-report-edition:2026-08' }),
-      row('brief', 'draft', { created_by: 'cron:newsletter-monthly-draft' }),
-      row('generated', 'draft', { created_by: 'matt@ryan-realty.com' }),
+      row('september', 'sent', { send_started_at: '2026-09-03T16:00:00Z', send_finished_at: '2026-09-09T16:00:00Z' }),
+      row('october', 'scheduled', { scheduled_at: '2026-10-12T16:00:00Z' }),
     ]
-    expect(await getCurrentNewsletterIssue()).toBeNull()
+    expect((await getCurrentNewsletterIssueRef(NOW))?.id).toBe('september')
+  })
+
+  it('puts an issue still going out ahead of last month\'s finished one', async () => {
+    rows = [
+      row('september', 'sent', { send_started_at: '2026-09-03T16:00:00Z', send_finished_at: '2026-09-09T16:00:00Z' }),
+      row('october', 'sending', { send_started_at: '2026-10-08T16:00:00Z' }),
+    ]
+    expect(await getCurrentNewsletterIssueRef(NOW)).toMatchObject({ id: 'october', status: 'sending' })
+  })
+
+  it('does not count a send older than the window (the July 2026 sends to Matt\'s own inboxes), and falls to the next scheduled issue', async () => {
+    expect(CURRENT_DAYS).toBe(45)
+    rows = [
+      row('july', 'sent', { send_started_at: '2026-07-10T14:48:43Z', send_finished_at: '2026-07-10T14:50:00Z' }),
+      row('october', 'scheduled', { scheduled_at: '2026-10-12T16:00:00Z' }),
+    ]
+    expect(await getCurrentNewsletterIssueRef(NOW)).toMatchObject({ id: 'october', status: 'scheduled' })
+    rows = [row('july', 'sent', { send_started_at: '2026-07-10T14:48:43Z' })]
+    expect(await getCurrentNewsletterIssueRef(NOW)).toBeNull()
+  })
+
+  it('is never a draft, whoever wrote it', async () => {
+    rows = [row('edition', 'draft'), row('brief', 'draft'), row('generated', 'draft')]
+    expect(await getCurrentNewsletterIssueRef(NOW)).toBeNull()
     expect(statusesAsked.flat()).not.toContain('draft')
   })
 
   it('skips an issue with no body', async () => {
-    rows = [row('empty', 'sent', { body_html: null, body_text: null }), row('real', 'sent')]
-    expect((await getCurrentNewsletterIssue())?.id).toBe('real')
+    rows = [
+      row('empty', 'sent', { body_html: null, send_started_at: '2026-10-01T10:00:00Z' }),
+      row('real', 'sent', { send_started_at: '2026-09-20T10:00:00Z' }),
+    ]
+    expect((await getCurrentNewsletterIssueRef(NOW))?.id).toBe('real')
   })
 
   it('throws on a failed read rather than reading as "no issue"', async () => {
     failOn = 'sent'
-    await expect(getCurrentNewsletterIssue()).rejects.toThrow('getCurrentNewsletterIssue: timeout')
+    await expect(getCurrentNewsletterIssueRef(NOW)).rejects.toThrow('getCurrentNewsletterIssue: timeout')
+  })
+})
+
+describe('getCurrentNewsletterIssue', () => {
+  it('loads the whole row of the current issue for the send, and nothing when there is none', async () => {
+    rows = [row('september', 'sent', { send_started_at: '2026-09-03T16:00:00Z' })]
+    expect(await getCurrentNewsletterIssue(NOW)).toEqual({ id: 'september', full: true })
+    rows = []
+    expect(await getCurrentNewsletterIssue(NOW)).toBeNull()
+    expect(getNewsletter).toHaveBeenCalledTimes(1)
   })
 })

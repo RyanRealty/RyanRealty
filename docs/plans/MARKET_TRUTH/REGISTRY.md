@@ -300,16 +300,17 @@ holds; these are the report's additional predicates. Definition id on every row:
 - **The monthly email (Matt 2026-09-30, "Draft it for my OK").** When the newest month publishes,
   `lib/market-report/edition-email-draft.ts` writes its email as a `newsletters` DRAFT
   (`created_by` `cron:market-report-edition:<YYYY-MM>`, one per month, unique index
-  `20260930130000`) and texts Matt the `/admin/newsletters/<id>` link; the daily refresh is the
-  backstop and re-checks every open draft against its edition, so a republish by any path moves
-  the email to the new figures (an unedited draft is rebuilt; one Matt edited keeps his words and
-  gets the new trace, so the figure check names each stale number; a scheduled one goes back to
-  draft for his re-approval). Deleting the draft cancels it, so a skipped month stays skipped.
-  The email prints only the edition's frozen figures, each cited as printed (a median to the
-  whole dollar), and must pass the R-2 figure check before it is written. Nothing goes to anyone
-  until Matt approves that send, and a broker's one-click newsletter send delivers only an issue
-  he approved, never a draft (`lib/data/newsletter/current-issue.ts`). The site's Market menu
-  links the archive directly (Matt 2026-09-30, "Yes, add the link").
+  `20260930130000`) and texts Matt the `/admin/newsletters/<id>` link. The email prints only the
+  edition's frozen figures, each cited as printed (a median to the whole dollar), and must pass the
+  R-2 figure check before it is written. Accuracy outranks edits: every publish, by any path
+  (`publishEdition`), and the daily refresh's backstop re-check each open draft against its
+  edition, and when the figures changed the whole draft is rebuilt (a scheduled one first goes
+  back to draft for his re-approval; he is texted that any edits were replaced). Approve &
+  Schedule refuses a draft that changed while its checks ran. Deleting the draft cancels it, so a
+  skipped month stays skipped. Nothing goes to anyone until Matt approves that send, and a
+  broker's one-click newsletter send delivers only the current issue he approved (sent in the
+  last 45 days, else the next scheduled), never a draft (`lib/data/newsletter/current-issue.ts`).
+  The site's Market menu links the archive directly (Matt 2026-09-30, "Yes, add the link").
 
 **Closings drift, found 2026-09-25.** Across the whole feed (every property type, every city Spark
 serves), Spark held 1,093 closings from January 2024 to September 2026 that our `listings` copy
@@ -349,10 +350,11 @@ reconciliation). `prune_market_fact_sale` now drops sale facts whose listing is 
    `absent-from-mls-delete`; undo = re-insert `before_row`), then the `listings` rows and their
    `market_fact_listing_span` rows were deleted and the report refresh pruned the three sale
    facts. The CMA's comparable-sales table (`sale_pricing_facts`) only ever upserted, so it still
-   held them; `prune_sale_pricing_facts_batch` (migrations `20260930120000` and `20260930140000`,
-   now in the 6-hourly pricing cron; a listing the MLS changed in the last 48 hours is left to
-   settle) removed them and one Redmond sale the MLS had moved back to Pending, the only four
-   stale rows in the whole table. 717 Larch now counts once, under the number the MLS
+   held them; `prune_sale_pricing_facts_batch` (migrations `20260930120000`, `20260930140000`,
+   `20260930150000`, in the 6-hourly pricing cron) removed them and one Redmond sale the MLS had
+   moved back to Pending, the only four stale rows in the whole table. A listing the MLS is still
+   changing gets a 48-hour clock first (`sale_pricing_facts.stale_since`), and a batch with more
+   than 200 to remove deletes nothing and texts the owner. 717 Larch now counts once, under the number the MLS
    re-entered it as (220220138). After the deletion the trailing 13 months matched Spark
    exactly: 14,461 closings, 0 drifted, 0 absent. The three stay in `market_listing_absent_from_mls`, so if the delta sync ever brought
    one back, Market Truth would still leave it out.

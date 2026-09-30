@@ -129,6 +129,7 @@ export default function NewsletterScheduleControls({ id, status, scheduledAt, se
           invalid_date: 'Pick a valid date and time.',
           date_in_past: 'The scheduled time is in the past.',
           not_a_draft: 'Only a draft can be scheduled.',
+          draft_changed: 'This draft changed while it was being checked (its report was republished). Review it again, then schedule.',
           empty_body: 'Add a body before scheduling.',
           unauthorized: 'You do not have access to schedule.',
         }
