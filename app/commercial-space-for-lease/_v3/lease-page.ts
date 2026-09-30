@@ -19,6 +19,8 @@ import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { listingPriceIsLeaseRate } from '@/lib/listing/publish-listing-figure'
 import {
   LEASE_RATE_NOT_PUBLISHED,
+  leaseRateOption,
+  publishLeaseRate,
   publishLeaseRateSummary,
   publishListingLeaseFigure,
 } from '@/lib/listing/publish-lease-rate'
@@ -98,7 +100,7 @@ export function leaseCityGroups(
       slug,
       label: town.label,
       anchor: `lease-${slug}`,
-      rows: leaseRowsRatesFirst(town.rows),
+      rows: leaseRowsLargestFirst(town.rows),
       countLabel: `${formatCount(town.rows.length)} for lease`,
       rateSummary: publishLeaseRateSummary(
         town.rows.map((row) => ({ listPrice: row.price, rateOption: row.leaseRateOption ?? null })),
@@ -106,6 +108,155 @@ export function leaseCityGroups(
       cityHref: CITY_PAGES.has(slug) ? `/cities/${slug}` : null,
       places: town.places,
     }))
+}
+
+/** A row's listed size, or null when it lists none. */
+function listedSqft(row: V3ListingRowData): number | null {
+  return row.sqft != null && Number.isFinite(row.sqft) && row.sqft > 0 ? row.sqft : null
+}
+
+/**
+ * The order a town's leases are shown in (2026-09-30, "the lead photo is a grey,
+ * rain-soaked parking lot"): the leases whose rent publishes first (a lead card
+ * that reads "Lease rate not published" tells a reader less), and within each
+ * group the largest listed space first, the ones that list no size last. So
+ * every dial opens on the biggest space whose rent it can print, a rule that
+ * holds as listings come and go, never a hand-picked listing. Ties keep the
+ * read's order (newest first).
+ */
+export function leaseRowsLargestFirst<T extends V3ListingRowData>(rows: readonly T[]): T[] {
+  const bySize = (list: T[]): T[] =>
+    list
+      .map((row, i) => ({ row, i, size: listedSqft(row) }))
+      .sort((a, b) => {
+        if (a.size != null && b.size != null) return b.size - a.size || a.i - b.i
+        if (a.size != null) return -1
+        if (b.size != null) return 1
+        return a.i - b.i
+      })
+      .map(({ row }) => row)
+  // leaseRowsRatesFirst's own split (the place page's lease section uses it),
+  // then size inside each half.
+  const ordered = leaseRowsRatesFirst(rows)
+  const priced = ordered.filter(leaseRentPublishes)
+  const withheld = ordered.filter((row) => !leaseRentPublishes(row))
+  return [...bySize(priced), ...bySize(withheld)]
+}
+
+/** The same test leaseRowsRatesFirst applies: the card prints a rent with its unit. */
+function leaseRentPublishes(row: V3ListingRowData): boolean {
+  return Boolean(
+    publishListingLeaseFigure({
+      price: row.price,
+      propertyType: row.propertyType,
+      leaseRateOption: row.leaseRateOption ?? null,
+    })?.rate,
+  )
+}
+
+/** The square feet a town's leases list between them, and how many list a size. */
+export function leaseTownSize(rows: readonly V3ListingRowData[]): { sqft: number; sized: number } {
+  let sqft = 0
+  let sized = 0
+  for (const row of rows) {
+    const size = listedSqft(row)
+    if (size == null) continue
+    sqft += size
+    sized += 1
+  }
+  return { sqft, sized }
+}
+
+/**
+ * A town's largest listed space, by the size its listing files, or null when
+ * none lists a size: the drawer row's picture and its "largest space" line.
+ */
+export function leaseTownLargest(
+  group: LeaseCityGroup,
+): { row: V3ListingRowData; sqft: number; photo: string | null } | null {
+  let best: { row: V3ListingRowData; sqft: number } | null = null
+  for (const row of group.rows) {
+    const size = listedSqft(row)
+    if (size == null) continue
+    if (!best || size > best.sqft) best = { row, sqft: size }
+  }
+  if (!best) return null
+  const photo = best.row.photoUrl?.trim()
+  return { ...best, photo: photo ? listingRowPhotoSrc(photo) : null }
+}
+
+/** The one rent unit the drawer's strips plot: a monthly rate per square foot. */
+export const LEASE_STRIP_UNIT = '$/SF/Mo' as const
+
+export type LeaseStripDot = {
+  key: string
+  /** The rent, per sq ft per month, as the listing files it. */
+  rate: number
+  /** Position on the shared axis, 0 to 100 (percent of the strip). */
+  x: number
+  /** Diameter in rem: the listed size, by area; null when it lists none (a ring). */
+  d: number | null
+}
+
+export type LeaseStripModel = {
+  /** The axis end, dollars per sq ft per month (the largest plotted rent, up to the next half dollar). */
+  max: number
+  /** Whole-dollar ticks inside the axis, with their position. */
+  ticks: Array<{ value: number; x: number; label: string }>
+  /** Each town's plotted leases, by the town's slug. */
+  dots: Record<string, LeaseStripDot[]>
+}
+
+/** The strip's dot, in rem: the smallest listed space and the largest. */
+export const LEASE_STRIP_D_MIN = 0.5
+export const LEASE_STRIP_D_MAX = 1.25
+export const LEASE_STRIP_D_UNSIZED = 0.625
+
+/**
+ * The drawer's rent strips (2026-09-30, "the drawer rows read as one repeated
+ * shape"): every town in the drawer on ONE axis of asking rent per sq ft per
+ * month, each lease a dot at its own rent, drawn to its listed size by area
+ * (the map's encoding), a ring when it lists none. Only rents filed per sq ft
+ * per month and that publish are plotted; a monthly amount for a whole space,
+ * a yearly rate, or a rate that does not publish is never converted onto the
+ * axis. The words beside the strip (the town's rate line) count every lease.
+ * Null when no town has a rent to plot.
+ */
+export function leaseRentStrips(groups: readonly LeaseCityGroup[]): LeaseStripModel | null {
+  const plotted: Array<{ slug: string; key: string; rate: number; sqft: number | null }> = []
+  for (const group of groups) {
+    for (const row of group.rows) {
+      if (leaseRateOption(row.leaseRateOption) !== LEASE_STRIP_UNIT) continue
+      if (publishLeaseRate({ listPrice: row.price, rateOption: row.leaseRateOption ?? null }) == null) continue
+      plotted.push({ slug: group.slug, key: row.listingKey, rate: row.price as number, sqft: listedSqft(row) })
+    }
+  }
+  if (plotted.length === 0) return null
+  const top = Math.max(...plotted.map((p) => p.rate))
+  const max = Math.max(0.5, Math.ceil(top * 2) / 2)
+  const sizes = plotted.map((p) => p.sqft).filter((n): n is number => n != null)
+  const lo = sizes.length > 0 ? Math.min(...sizes) : 0
+  const hi = sizes.length > 0 ? Math.max(...sizes) : 0
+  const diameter = (sqft: number | null): number | null => {
+    if (sqft == null) return null
+    if (hi <= lo) return (LEASE_STRIP_D_MIN + LEASE_STRIP_D_MAX) / 2
+    const t = (Math.sqrt(sqft) - Math.sqrt(lo)) / (Math.sqrt(hi) - Math.sqrt(lo))
+    return Number((LEASE_STRIP_D_MIN + t * (LEASE_STRIP_D_MAX - LEASE_STRIP_D_MIN)).toFixed(3))
+  }
+  const dots: Record<string, LeaseStripDot[]> = {}
+  for (const p of plotted) {
+    ;(dots[p.slug] ??= []).push({
+      key: p.key,
+      rate: p.rate,
+      x: Number(((p.rate / max) * 100).toFixed(2)),
+      d: diameter(p.sqft),
+    })
+  }
+  const ticks: LeaseStripModel['ticks'] = []
+  for (let value = 1; value < max; value += 1) {
+    ticks.push({ value, x: Number(((value / max) * 100).toFixed(2)), label: `$${value}` })
+  }
+  return { max, ticks, dots }
 }
 
 /**
@@ -142,22 +293,7 @@ export function leaseCompactNote(groups: readonly LeaseCityGroup[]): string {
   const total = leaseTotal(groups)
   const spaces = `${formatCount(total)} ${total === 1 ? 'space' : 'spaces'}`
   if (groups.length === 1) return `${spaces} in ${groups[0]!.label}, each with its rent and its terms.`
-  return `${spaces} in ${formatCount(groups.length)} more towns, busiest first. Open a town for its spaces, each with its rent and its terms.`
-}
-
-/** Up to four of a town's own photographs, for its drawer row. */
-export function leaseTownThumbs(
-  group: LeaseCityGroup,
-  max = 4,
-): Array<{ key: string; src: string; alt: string }> {
-  const out: Array<{ key: string; src: string; alt: string }> = []
-  for (const row of group.rows) {
-    const photo = row.photoUrl?.trim()
-    if (!photo) continue
-    out.push({ key: row.listingKey, src: listingRowPhotoSrc(photo), alt: '' })
-    if (out.length >= max) break
-  }
-  return out
+  return `${spaces} in ${formatCount(groups.length)} more towns, busiest first. Each dot is one space's asking rent per sq ft per month, drawn to its size, on one scale for every town. Open a town for its spaces, each with its rent and its terms.`
 }
 
 /** The rent as a card prints it, unit and all, or "Lease rate not published". */
@@ -220,6 +356,8 @@ export type LeaseLedgerRow = {
   reveal?: string
   /** One of the town's own leases, photographed: the row's picture, named. */
   media?: { src: string; alt: string }
+  /** The square feet its leases list, as a share of the town that lists the most (the line under the bar). */
+  also?: { weight: number; value: string }
 }
 
 /**
@@ -260,11 +398,22 @@ export function leaseTownReveal(rows: readonly V3ListingRowData[]): string | nul
 /** One row per town: its count as a length, its rate line (every lease in it) under the name. */
 export function leaseCityLedgerRows(groups: readonly LeaseCityGroup[]): LeaseLedgerRow[] {
   const most = Math.max(0, ...groups.map((g) => g.rows.length))
+  const sizes = new Map(groups.map((group) => [group.slug, leaseTownSize(group.rows)]))
+  const mostSqft = Math.max(0, ...[...sizes.values()].map((size) => size.sqft))
   return groups.map((group) => ({
     href: `#${group.anchor}`,
     what: group.label,
     value: group.countLabel,
     weight: most > 0 ? group.rows.length / most : 0,
+    // The second measure (2026-09-30, "the bars are flat"): the square feet
+    // the town's spaces list, on its own scale. A town none of whose spaces
+    // lists a size draws no line and prints no figure, never a zero.
+    ...(() => {
+      const size = sizes.get(group.slug)!
+      return size.sized > 0 && mostSqft > 0
+        ? { also: { weight: size.sqft / mostSqft, value: `${formatCount(size.sqft)} sq ft` } }
+        : {}
+    })(),
     // One unit to a line (2026-09-25): a per-sq-ft span and a whole-space
     // rent in one sentence asked the reader to convert between them. The
     // figures and their counts are publishLeaseRateSummary's, unchanged.
@@ -302,8 +451,29 @@ export function leaseLedgerNote(groups: readonly LeaseCityGroup[]): string | nul
   const top = [...groups].sort((a, b) => b.rows.length - a.rows.length || a.label.localeCompare(b.label))[0]!
   const spaces = `${formatCount(total)} ${total === 1 ? 'space' : 'spaces'} for lease`
   const towns = `${formatCount(groups.length)} ${groups.length === 1 ? 'town' : 'towns'}`
-  if (groups.length === 1) return `${spaces} in ${top.label}.`
-  return `${spaces} in ${towns}. Each bar is a town's count on one scale; the longest is ${top.label}'s ${formatCount(top.rows.length)}.`
+  const where = groups.length === 1 ? top.label : towns
+  // The floor the spaces list between them, and how many list none, so the
+  // sum never reads as every space's size (2026-09-30: the second measure).
+  const size = leaseTownSize(groups.flatMap((group) => group.rows))
+  const unsized = total - size.sized
+  const floor =
+    size.sized > 0
+      ? `, ${formatCount(size.sqft)} sq ft listed between them${
+          unsized > 0 ? ` (${formatCount(unsized)} ${unsized === 1 ? 'lists' : 'list'} no size)` : ''
+        }`
+      : ''
+  return `${spaces} in ${where}${floor}.`
+}
+
+/**
+ * The key over the town bars: the count is the bar, the listed square feet the
+ * line under it, each on its own scale. No line, no second key.
+ */
+export function leaseLedgerKey(groups: readonly LeaseCityGroup[]): { value: string; also?: string } {
+  const anySized = groups.some((group) => leaseTownSize(group.rows).sized > 0)
+  return anySized
+    ? { value: 'Spaces for lease', also: 'Square feet listed' }
+    : { value: 'Spaces for lease' }
 }
 
 /** How many leases the page lists, across every town. */

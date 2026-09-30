@@ -318,6 +318,61 @@
   background: var(--v3-ink);
 }
 
+/* The second measure (`also`): a thinner line under the bar on its own scale,
+   its figure under the first figure, one step quieter. The measure's grid gives
+   it a second row, so the two lengths share a left edge and read as a pair. */
+.v3-ledger__measure:has(.v3-ledger__track--also) {
+  row-gap: var(--v3-space-3xs);
+}
+
+.v3-ledger__track--also {
+  height: 0.1875rem;
+}
+
+.v3-ledger__bar--also {
+  background: color-mix(in srgb, var(--v3-ink) 38%, transparent);
+}
+
+.v3-ledger__bar--also.v3-ledger__bar--lead {
+  background: color-mix(in srgb, var(--v3-ink) 80%, transparent);
+}
+
+.v3-ledger__value--also {
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  color: var(--v3-ink-muted);
+}
+
+/* The key over an encoded list: each mark beside what it measures. */
+.v3-ledger__key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-3xs) var(--v3-space-lg);
+  margin: 0 0 var(--v3-space-sm);
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
+
+.v3-ledger__key-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--v3-space-xs);
+}
+
+.v3-ledger__key-mark {
+  display: inline-block;
+  width: 1.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--v3-ink);
+}
+
+.v3-ledger__key-mark--also {
+  height: 0.1875rem;
+  background: color-mix(in srgb, var(--v3-ink) 80%, transparent);
+}
+
 /* Reveal ---------------------------------------------------------------------
    One line the row's text does not carry, and an optional twelve-point run as
    a line (SITE-52). HIDDEN at rest and shown by hover, by keyboard focus, and

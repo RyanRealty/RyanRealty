@@ -16,6 +16,11 @@ import {
   leaseMapPoints,
   leaseMapTowns,
   leaseTownTiers,
+  leaseRowsLargestFirst,
+  leaseRentStrips,
+  leaseTownLargest,
+  leaseTownSize,
+  leaseLedgerKey,
 } from './lease-page'
 import { leaseMapModel } from './lease-map'
 
@@ -126,7 +131,11 @@ describe('leaseCityGroups', () => {
 describe('leaseCityLedgerRows', () => {
   it('draws each town\'s count as a share of the busiest town and links to its dial', () => {
     const rows = leaseCityLedgerRows(leaseCityGroups(TILES, UNITS))
-    const { reveal, media, ...rest } = rows[0]!
+    const { reveal, media, also, ...rest } = rows[0]!
+    // The line under the bar: the square feet Bend's four leases list, the
+    // most of any town, so the longest line (2026-09-30, "no second encoding").
+    expect(also).toEqual({ weight: 1, value: '1,920 sq ft' })
+    expect(rows[1]!.also).toEqual({ weight: 0.25, value: '480 sq ft' })
     expect(rest).toEqual({
       href: '#lease-bend',
       what: 'Bend',
@@ -210,15 +219,96 @@ describe('leaseTownReveal', () => {
 })
 
 describe('leaseLedgerNote', () => {
-  it('states the count, the towns and the bar the others are measured against', () => {
+  it('states the count, the towns and the square feet listed between them', () => {
     const groups = leaseCityGroups(TILES, UNITS)
-    const total = groups.reduce((n, g) => n + g.rows.length, 0)
-    const note = leaseLedgerNote(groups)!
-    expect(note.startsWith(`${total} spaces for lease in ${groups.length} towns.`)).toBe(true)
-    expect(note).toContain("the longest is Bend's 4.")
+    expect(leaseLedgerNote(groups)).toBe('6 spaces for lease in 3 towns, 2,880 sq ft listed between them.')
+  })
+  it('says how many list no size, so the sum never reads as every space', () => {
+    const tiles = [tile({ listingKey: 'a', sqft: 1000 }), tile({ listingKey: 'b', sqft: null, streetNumber: '2' })]
+    expect(leaseLedgerNote(leaseCityGroups(tiles, {}))).toBe(
+      '2 spaces for lease in Bend, 1,000 sq ft listed between them (1 lists no size).',
+    )
+    const none = [tile({ listingKey: 'c', sqft: null })]
+    expect(leaseLedgerNote(leaseCityGroups(none, {}))).toBe('1 space for lease in Bend.')
   })
   it('is null with nothing listed', () => {
     expect(leaseLedgerNote([])).toBeNull()
+  })
+})
+
+describe('leaseLedgerKey', () => {
+  it('keys the bar and, when any space lists a size, the line under it', () => {
+    expect(leaseLedgerKey(leaseCityGroups(TILES, UNITS))).toEqual({
+      value: 'Spaces for lease',
+      also: 'Square feet listed',
+    })
+    expect(leaseLedgerKey(leaseCityGroups([tile({ listingKey: 'n', sqft: null })], {}))).toEqual({
+      value: 'Spaces for lease',
+    })
+  })
+})
+
+describe('leaseRowsLargestFirst (2026-09-30: the lead card by a rule, never a hand-picked listing)', () => {
+  const units = { s: '$/SF/Mo', m: '$/SF/Mo', l: '$/SF/Mo', u: '$/SF/Mo', w: undefined as unknown as string }
+  const tiles = [
+    tile({ listingKey: 's', sqft: 480, streetNumber: '1' }),
+    tile({ listingKey: 'w', sqft: 53_874, streetNumber: '2' }),
+    tile({ listingKey: 'u', sqft: null, streetNumber: '3' }),
+    tile({ listingKey: 'l', sqft: 11_250, streetNumber: '4' }),
+    tile({ listingKey: 'm', sqft: 3_578, streetNumber: '5' }),
+  ]
+  it('opens on the largest space whose rent publishes; unsized after; unpublished rents last', () => {
+    const [bend] = leaseCityGroups(tiles, units)
+    expect(bend!.rows.map((r) => r.listingKey)).toEqual(['l', 'm', 's', 'u', 'w'])
+  })
+  it('keeps the given order between equal sizes', () => {
+    const rows = leaseCityGroups(tiles, units)[0]!.rows
+    const same = rows.map((r) => ({ ...r, sqft: 1000 }))
+    expect(leaseRowsLargestFirst(same).map((r) => r.listingKey)).toEqual(['l', 'm', 's', 'u', 'w'])
+  })
+})
+
+describe('leaseTownSize and leaseTownLargest', () => {
+  const tiles = [
+    tile({ listingKey: 'a', sqft: 1200, streetNumber: '10', streetName: 'Main' }),
+    tile({ listingKey: 'b', sqft: 36_000, streetNumber: '330', streetName: 'Evergreen', photoUrl: null }),
+    tile({ listingKey: 'c', sqft: null, streetNumber: '12' }),
+  ]
+  const [town] = leaseCityGroups(tiles, { a: '$/SF/Mo', b: '$/SF/Mo', c: '$/SF/Mo' })
+  it('sums the sizes the leases list and counts them', () => {
+    expect(leaseTownSize(town!.rows)).toEqual({ sqft: 37_200, sized: 2 })
+  })
+  it('names the largest listed space, with no photograph when it has none', () => {
+    const largest = leaseTownLargest(town!)!
+    expect(largest.sqft).toBe(36_000)
+    expect(largest.row.listingKey).toBe('b')
+    expect(largest.photo).toBeNull()
+  })
+  it('is null when no lease lists a size', () => {
+    const [none] = leaseCityGroups([tile({ listingKey: 'z', sqft: null })], {})
+    expect(leaseTownLargest(none!)).toBeNull()
+  })
+})
+
+describe('leaseRentStrips', () => {
+  it('plots only rents filed and published per sq ft per month, on one axis for every town', () => {
+    const model = leaseRentStrips(leaseCityGroups(TILES, UNITS))!
+    // 3.33 is the top rent, so the axis ends at the next half dollar.
+    expect(model.max).toBe(3.5)
+    expect(model.ticks.map((t) => t.label)).toEqual(['$1', '$2', '$3'])
+    // Bend: 0.90 and 1.40 plot; $985 per month and the contradicted 3000 do not.
+    expect(model.dots.bend!.map((d) => d.rate).sort()).toEqual([0.9, 1.4])
+    expect(model.dots['powell-butte']!.map((d) => d.x)).toEqual([95.14])
+  })
+  it('draws a lease that lists no size as a ring (no diameter)', () => {
+    const tiles = [tile({ listingKey: 'a', sqft: null }), tile({ listingKey: 'b', sqft: 5000, streetNumber: '2' })]
+    const model = leaseRentStrips(leaseCityGroups(tiles, { a: '$/SF/Mo', b: '$/SF/Mo' }))!
+    const byKey = Object.fromEntries(model.dots.bend!.map((d) => [d.key, d]))
+    expect(byKey.a!.d).toBeNull()
+    expect(byKey.b!.d).toBeGreaterThan(0)
+  })
+  it('is null when nothing plots', () => {
+    expect(leaseRentStrips(leaseCityGroups([tile({ listingKey: 'x', listPrice: 985 })], { x: '$ Amt/Mo' }))).toBeNull()
   })
 })
 
@@ -254,7 +344,7 @@ describe('leaseTownTiers (2026-09-30: every town the same dial block)', () => {
     const { rest } = leaseTownTiers(leaseCityGroups(tiles, units(tiles)))
     expect(leaseCompactHeading(rest)).toBe('Also for lease in Sisters and Madras')
     expect(leaseCompactNote(rest)).toBe(
-      '4 spaces in 2 more towns, busiest first. Open a town for its spaces, each with its rent and its terms.',
+      "4 spaces in 2 more towns, busiest first. Each dot is one space's asking rent per sq ft per month, drawn to its size, on one scale for every town. Open a town for its spaces, each with its rent and its terms.",
     )
   })
 })

@@ -219,9 +219,15 @@ thumbnail, previous/next, arrow keys, Home/End, or a swipe on the photograph.
 - **A set of towns is not a stack of dials (2026-09-30).** `/commercial-space-for-lease`
   leads with the busiest town on a full dial; every other town is one row of a drawer
   (a `<details>` each, busiest first, the first open) that opens to its own dial, or to its
-  rows under five leases. The town ledger that opens the page stands beside a server-drawn
-  lease map (every lease a dot at its own coordinates; hover a row to light its town). Six
-  identical dial blocks read as one section repeated.
+  rows under five leases. The drawer's rows are one drawing, not a repeated block: each
+  town's rents on one shared axis (a dot per lease at its rent per sq ft per month, sized
+  by its listed square feet), its rate line, and its largest space photographed. The town
+  ledger that opens the page carries two measures (the count as the bar, the square feet
+  listed as a line under it, each on its own scale, keyed) and stands beside a
+  server-drawn lease map (every lease a dot at its own coordinates; hover a row to light
+  its town); on a phone the rows come first and the map follows them. Every dial on the
+  page opens on its largest space whose rent publishes, a rule, never a picked listing.
+  Six identical dial blocks read as one section repeated.
 
 **One shop, five place rhythms** (Matt 2026-08-14). Chrome, type, tokens, Field/Ledger
 row language, and the motion ladder are the same site. The first pattern names the grain.

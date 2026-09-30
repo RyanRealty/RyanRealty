@@ -198,6 +198,19 @@ export type V3LedgerFigureRow = V3LedgerRowBase & {
    * whose length was guessed is worse than no bar.
    */
   weight?: number
+  /**
+   * A second measure of the same row, drawn under the first as a thinner
+   * length on ITS OWN scale, with its own figure beside it (encode="bar" only).
+   * The lease page's towns: the count of spaces is the bar, the square feet
+   * those spaces list is the line under it (2026-09-30: "the bars are flat,
+   * with no second encoding").
+   *
+   * Two figures in two units are never drawn on one scale and never summed:
+   * `weight` is this measure's share of the largest value OF THIS MEASURE, the
+   * caller's arithmetic, exactly as the row's own `weight` is. Name both scales
+   * with the ledger's `encodeKey` so the reader knows which line is which.
+   */
+  also?: { weight: number; value: V3Text }
 }
 
 /**
@@ -207,6 +220,7 @@ export type V3LedgerFigureRow = V3LedgerRowBase & {
  */
 export type V3LedgerPlainRow = V3LedgerRowBase & {
   value?: never
+  also?: never
 }
 
 export type V3LedgerRow = V3LedgerFigureRow | V3LedgerPlainRow
@@ -336,6 +350,12 @@ type V3LedgerBase = {
    * nine copies of a bar on nine pages.
    */
   encode?: 'bar'
+  /**
+   * The key over an encoded list: what the bar measures and, when rows carry
+   * an `also`, what the thin line under it measures. One line above the rows,
+   * a swatch of each mark beside its words. Drawn only with encode="bar".
+   */
+  encodeKey?: { value: V3Text; also?: V3Text }
 }
 
 /**
@@ -421,6 +441,7 @@ export function V3Ledger(props: V3LedgerProps) {
     layout = 'list',
     media = 'mark',
     encode,
+    encodeKey,
   } = props
 
   /**
@@ -492,6 +513,21 @@ export function V3Ledger(props: V3LedgerProps) {
         {note ? <p className="v3-ledger__note">{note}</p> : null}
         {drawing ? <div className="v3-ledger__drawing">{drawing}</div> : null}
       </div>
+
+      {!isEmpty && encode === 'bar' && encodeKey ? (
+        <p className="v3-ledger__key">
+          <span className="v3-ledger__key-item">
+            <span className="v3-ledger__key-mark" aria-hidden="true" />
+            {encodeKey.value}
+          </span>
+          {encodeKey.also ? (
+            <span className="v3-ledger__key-item">
+              <span className="v3-ledger__key-mark v3-ledger__key-mark--also" aria-hidden="true" />
+              {encodeKey.also}
+            </span>
+          ) : null}
+        </p>
+      ) : null}
 
       {isEmpty ? (
         <p className="v3-ledger__empty">{emptyMessage}</p>
@@ -593,6 +629,25 @@ export function V3Ledger(props: V3LedgerProps) {
                         ) : null}
                       </span>
                       <span className="v3-ledger__value">{row.value}</span>
+                      {row.also ? (
+                        <>
+                          {/* The second measure on its own scale: a thinner
+                              line under the bar, its figure under the first. */}
+                          <span className="v3-ledger__track v3-ledger__track--also" aria-hidden="true">
+                            {barWidth(row.also.weight) ? (
+                              <span
+                                className={cn(
+                                  'v3-ledger__bar',
+                                  'v3-ledger__bar--also',
+                                  row.also.weight === 1 && 'v3-ledger__bar--lead',
+                                )}
+                                style={{ width: barWidth(row.also.weight) }}
+                              />
+                            ) : null}
+                          </span>
+                          <span className="v3-ledger__value v3-ledger__value--also">{row.also.value}</span>
+                        </>
+                      ) : null}
                     </span>
                   ) : (
                     <span className="v3-ledger__value">{row.value}</span>

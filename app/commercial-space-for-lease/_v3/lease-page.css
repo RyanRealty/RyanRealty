@@ -2,12 +2,38 @@
    sets the lease map beside the town ledger; the towns below LEASE_DIAL_MIN
    sit side by side as small multiples. Every value is a v3 token. */
 
-/* THE FOLD. On a phone the map sits under the ledger's sentence, before the
-   rows (V3Ledger's drawing slot). From 64rem the ledger's head opens up
-   (display: contents) so its heading, sentence, rows and source stack in the
+/* THE FOLD. The headline sentence describes the bars, so the bars come first.
+   On a phone and a tablet the ledger's head opens up (display: contents) and
+   the map (V3Ledger's drawing slot) follows the rows, their source and the ask
+   (2026-09-30: "the 375 fold shows the map, not the bars the sentence
+   describes"). From 64rem the heading, sentence, rows and source stack in the
    first column and the map stands in the second, the height of the section. */
 .lease-towns .v3-ledger__drawing {
   margin-top: var(--v3-space-sm);
+}
+
+@media (max-width: 63.99rem) {
+  .v3.v3-ledger.lease-towns {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .lease-towns > .v3-ledger__head {
+    display: contents;
+  }
+
+  .lease-towns > .v3-ledger__head > .v3-heading {
+    margin-bottom: var(--v3-space-xs);
+  }
+
+  .lease-towns > .v3-ledger__head > .v3-ledger__note {
+    margin-bottom: var(--v3-space-md);
+  }
+
+  .lease-towns > .v3-ledger__head > .v3-ledger__drawing {
+    order: 1;
+    margin-top: var(--v3-space-xl);
+  }
 }
 
 @media (min-width: 64rem) {
@@ -17,7 +43,8 @@
     padding-top: var(--v3-space-2xl);
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
-    grid-template-rows: auto auto auto auto 1fr;
+    /* heading, sentence, key, rows, source, ask */
+    grid-template-rows: auto auto auto auto auto 1fr;
     column-gap: var(--v3-space-2xl);
     align-items: start;
   }
@@ -43,6 +70,39 @@
     position: sticky;
     top: calc(var(--v3-chrome-h) + var(--v3-space-md));
   }
+}
+
+/* THE TOWN BARS as a chart, not a progress meter (2026-09-30: "the bar reads
+   as a generic settings-panel progress bar"): no pill track, square ends (the
+   Broadside radius), every bar and line standing on one shared zero rule at
+   its left edge, the count bar heavier and the square-feet line under it. */
+.lease-towns .v3-ledger__track {
+  height: 0.75rem;
+  border-radius: 0;
+  background: none;
+  border-left: 1px solid var(--v3-ink);
+}
+
+.lease-towns .v3-ledger__track--also {
+  height: 0.25rem;
+}
+
+.lease-towns .v3-ledger__bar,
+.lease-towns .v3-ledger__key-mark {
+  border-radius: 0;
+}
+
+.lease-towns .v3-ledger__key-mark {
+  height: 0.75rem;
+  width: 1.25rem;
+}
+
+.lease-towns .v3-ledger__key-mark--also {
+  height: 0.25rem;
+}
+
+.lease-towns .v3-ledger__measure:has(.v3-ledger__track--also) {
+  row-gap: 0;
 }
 
 /* On a phone the counts and rate lines keep one more step of air from the Jax
@@ -378,10 +438,10 @@
   list-style: none;
   cursor: pointer;
   display: grid;
-  grid-template-columns: minmax(9rem, 13rem) minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(8rem, 11rem) minmax(12rem, 1fr) minmax(0, 17rem) auto;
   grid-template-areas:
-    'name rates thumbs toggle'
-    'count rates thumbs toggle';
+    'name strip largest toggle'
+    'count rates largest toggle';
   align-items: center;
   gap: var(--v3-space-3xs) var(--v3-space-lg);
   min-height: var(--v3-tap);
@@ -432,6 +492,7 @@
 
 .lease-drawer__rates {
   grid-area: rates;
+  align-self: start;
   display: grid;
   gap: 0;
   min-width: 0;
@@ -442,29 +503,126 @@
   font-variant-numeric: tabular-nums;
 }
 
-.lease-drawer__thumbs {
-  grid-area: thumbs;
+/* THE RENT STRIP. One axis for every town in the drawer (asking rent per sq ft
+   per month, 0 at the left edge), a hairline at each whole dollar, every
+   plotted lease a dot at its own rent, sized by its listed square feet (the
+   map's encoding), a ring when it lists none. The margin keeps a dot at either
+   end whole. */
+.lease-drawer__strip {
+  grid-area: strip;
+  align-self: end;
+  position: relative;
+  display: block;
+  height: 2.5rem;
+  min-width: 0;
+  margin-inline: 0.625rem;
+}
+
+.lease-drawer__axis {
+  position: absolute;
+  top: 0.875rem;
+  left: -0.625rem;
+  right: -0.625rem;
+  height: 1px;
+  background: var(--v3-edge);
+}
+
+.lease-drawer__tick {
+  position: absolute;
+  top: 0.125rem;
+  width: 1px;
+  height: 1.5rem;
+  background: var(--v3-hairline);
+}
+
+.lease-drawer__tick-label {
+  position: absolute;
+  top: 1.625rem;
+  left: 0;
+  transform: translateX(-50%);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-source);
+  line-height: 1;
+  color: var(--v3-ink-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.lease-drawer__dot {
+  position: absolute;
+  top: 0.875rem;
+  width: var(--lease-dot-d);
+  height: var(--lease-dot-d);
+  border-radius: var(--v3-radius-mark);
+  border: 1px solid var(--v3-cream);
+  background: color-mix(in srgb, var(--v3-navy) 62%, transparent);
+  transform: translate(-50%, -50%);
+  transition: background var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.lease-drawer__dot--ring {
+  border: 2px solid var(--v3-navy);
+  background: var(--v3-cream);
+}
+
+/* The row the reader is on, or the one standing open, draws its leases at
+   full ink against the others' tint. */
+.lease-drawer__row:hover .lease-drawer__dot:not(.lease-drawer__dot--ring),
+.lease-drawer__row:focus-visible .lease-drawer__dot:not(.lease-drawer__dot--ring),
+.lease-drawer__details[open] > .lease-drawer__row .lease-drawer__dot:not(.lease-drawer__dot--ring) {
+  background: var(--v3-navy);
+}
+
+/* The town's largest listed space: its photograph, its size, its street. */
+.lease-drawer__largest {
+  grid-area: largest;
   display: flex;
-  gap: var(--v3-space-2xs);
+  align-items: center;
+  gap: var(--v3-space-sm);
+  min-width: 0;
 }
 
 /* The navy tile the ledger's thumbs use: a photograph that has not arrived
-   reads as a mark, never as a torn-image icon (V3Ledger.css). Larger than the
-   ledger's stamps: here the photographs are what a row offers to open. */
-.lease-drawer__thumb {
-  position: relative;
+   reads as a mark, never as an empty box (V3Ledger.css). */
+.lease-drawer__photo {
+  flex: none;
   display: block;
-  width: 6.5rem;
-  height: 4.875rem;
+  width: 6rem;
+  height: 4.5rem;
   object-fit: cover;
   background: var(--v3-navy);
 }
 
-.lease-drawer__thumb::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--v3-navy);
+.lease-drawer__largest-text {
+  display: grid;
+  gap: 0;
+  min-width: 0;
+}
+
+.lease-drawer__largest-label {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-source);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.lease-drawer__largest-size {
+  font-family: var(--v3-font-num);
+  font-size: var(--v3-size-body-lg);
+  font-weight: var(--v3-weight-num);
+  line-height: var(--v3-leading-heading);
+  color: var(--v3-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.lease-drawer__largest-street {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+  overflow-wrap: anywhere;
 }
 
 .lease-drawer__toggle {
@@ -506,22 +664,24 @@
   scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
 }
 
-/* On a phone the row stacks: name and toggle, the rate line, the photographs;
-   nothing it says runs under the Jax button's lane. */
+/* On a phone the row stacks: name and toggle, the strip, the rate line, the
+   largest space; nothing it says runs under the Jax button's lane. */
 @media (max-width: 47.99rem) {
   .lease-drawer__row {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
       'name toggle'
       'count toggle'
+      'strip strip'
       'rates rates'
-      'thumbs thumbs';
+      'largest largest';
+    row-gap: var(--v3-space-xs);
     padding-right: calc(var(--v3-dog-clear) - var(--v3-gutter));
   }
 
-  .lease-drawer__thumb {
-    width: 4rem;
-    height: 3rem;
+  .lease-drawer__photo {
+    width: 4.5rem;
+    height: 3.375rem;
   }
 
   .lease-drawer__rows {

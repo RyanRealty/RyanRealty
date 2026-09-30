@@ -8,15 +8,18 @@
  * each a door to its own listing, with the rent in its own unit.
  *
  * RHYTHM (2026-09-30, "every town is the same dial block"; "no map on a page
- * about geography"). Ledger (the towns, each a count drawn as a length, opens
- * the page with the H1) beside the lease map (every lease a dot at its own
- * coordinates, each town named with its count; hovering a row lights its town
- * on the map and the other way round); then the busiest town on its own full
- * V3ListingDial (the same primitive a place page's "Commercial space for
- * lease" section is); then every other town as one row of a drawer, busiest
- * first, each opening to its own dial (or its rows, under LEASE_DIAL_MIN) on
- * demand; then Quiet (the towns' own pages). Chrome exempt. A town with no
- * lease is absent.
+ * about geography"). Ledger (the towns, each a count drawn as a length with
+ * the square feet its spaces list as a line under it, opens the page with the
+ * H1) beside the lease map (every lease a dot at its own coordinates, each town
+ * named with its count; hovering a row lights its town on the map and the
+ * other way round; on a phone the rows come first and the map follows them);
+ * then the busiest town on its own full V3ListingDial (the same primitive a
+ * place page's "Commercial space for lease" section is), opening on its
+ * largest space whose rent publishes; then every other town as one row of a
+ * drawer, busiest first, the rows one drawing of rents on a shared axis, each
+ * opening to its own dial (or its rows, under LEASE_DIAL_MIN) on demand; then
+ * Quiet (the towns' own pages). Chrome exempt. A town with no lease is
+ * absent.
  *
  * THE FIGURES (CLAUDE.md section 0). One read, getCommercialLeaseListings:
  * listing_tile_mv PropertyType 'G', Active and Active Under Contract, MLS City
@@ -55,6 +58,7 @@ import {
   leaseCityLedgerRows,
   leaseCompactHeading,
   leaseCompactNote,
+  leaseLedgerKey,
   leaseLedgerNote,
   leaseItemList,
   leaseMapPoints,
@@ -139,7 +143,9 @@ export default async function CommercialSpaceForLeasePage() {
     ...(row.detail ? { detail: v3Text(row.detail) } : {}),
     ...(row.reveal ? { reveal: { line: v3Text(row.reveal) } } : {}),
     ...(row.media ? { media: row.media } : {}),
+    ...(row.also ? { also: { weight: row.also.weight, value: v3Text(row.also.value) } } : {}),
   }))
+  const ledgerKey = leaseLedgerKey(groups)
   const [firstRow, ...restRows] = ledgerRows
 
   // The map: every lease at its own coordinates, each town beside its dots,
@@ -180,6 +186,10 @@ export default async function CommercialSpaceForLeasePage() {
               heading={v3Text(LEASE_PAGE_HEADING)}
               headingLevel={1}
               encode="bar"
+              encodeKey={{
+                value: v3Text(ledgerKey.value),
+                ...(ledgerKey.also ? { also: v3Text(ledgerKey.also) } : {}),
+              }}
               note={(() => {
                 const note = leaseLedgerNote(groups)
                 return note ? v3Text(note) : undefined

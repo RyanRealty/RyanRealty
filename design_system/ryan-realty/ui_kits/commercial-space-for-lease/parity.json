@@ -26,12 +26,12 @@
     },
     {
       "name": "V3Ledger",
-      "section": "#towns: the opening and the H1. One row per town with a lease, its count drawn as a length (encode='bar'), its rate line under the name (publishLeaseRateSummary: one span per rent unit with how many leases use it, and how many rates are not published, so the line covers every lease the count does), a hover that reveals its kinds of space and sizes, one of its own leases pictured, each row a door to that town's leases. The lease map is its drawing (beside the rows from 64rem), and its one action is the page's ask: 'Tell a broker the space you need', the contact form filed as a commercial-lease inquiry.",
+      "section": "#towns: the opening and the H1. One row per town with a lease, its count drawn as a length (encode='bar') and the square feet its spaces list drawn as a line under it on its own scale (the row's `also`, keyed over the rows by `encodeKey`; the sentence says how many list no size), its rate line under the name (publishLeaseRateSummary: one span per rent unit with how many leases use it, and how many rates are not published, so the line covers every lease the count does), a hover that reveals its sizes, one of its own leases pictured, each row a door to that town's leases. The lease map is its drawing (beside the rows from 64rem, after the rows below it, so a phone's first screen shows the bars its sentence describes), and its one action is the page's ask: 'Tell a broker the space you need', the contact form filed as a commercial-lease inquiry.",
       "blocking": true
     },
     {
       "name": "V3PlaceInventory",
-      "section": "#lease: the busiest town on its own full V3ListingDial (leaseTownTiers' lead), then the drawer of every other town (its `after` slot), then the block's one source line. The lease card: rent with its unit, 'For lease', terms; every lease an <a href> in the served HTML.",
+      "section": "#lease: the busiest town on its own full V3ListingDial (leaseTownTiers' lead), then the drawer of every other town (its `after` slot), then the block's one source line. Every dial opens on the largest space whose rent publishes (leaseRowsLargestFirst: rents that publish first, then by listed size, largest first), a rule that holds as listings change, never a picked listing. The lease card: rent with its unit, 'For lease', terms; every lease an <a href> in the served HTML.",
       "blocking": true
     },
     {
@@ -41,7 +41,7 @@
     },
     {
       "name": "LeaseTownDrawer",
-      "section": "#lease-more, inside #lease: every other town, busiest first, each a <section> named by its <h2>, its row a <details> (the first open) showing count, rate line one unit to a line, a strip of its own photographs and a toggle, opening on demand to its own V3ListingDial (5 leases or more) or its leases as V3ListingRow cards (rent with its unit, 'For lease', size, street, terms). A link to a town's anchor opens its row. Every lease is an <a href> in the served HTML, open or not.",
+      "section": "#lease-more, inside #lease: every other town, busiest first, each a <section> named by its <h2>, its row a <details> (the first open). The rows are one drawing: each town's rents on ONE shared axis of asking rent per sq ft per month (leaseRentStrips: a dot per lease filed and published in that unit, sized by its listed square feet, a ring when it lists none; no other unit is converted onto it), its rate line one unit to a line (every lease it counts), and its largest listed space photographed with its size and street (leaseTownLargest), then a toggle, opening on demand to its own V3ListingDial (5 leases or more) or its leases as V3ListingRow cards (rent with its unit, 'For lease', size, street, terms). A link to a town's anchor opens its row. Every lease is an <a href> in the served HTML, open or not.",
       "blocking": true
     },
     {
@@ -84,34 +84,26 @@
     "V3Footer"
   ],
   "openDefects": {
-    "_": "Opened 2026-09-24 when the class was registered (taste-classes.json, taste-catalog.json, a taste-table row) and its content floor seeded. Measured, not suspected.",
+    "_": "Opened 2026-09-24 when the class was registered; re-read 2026-09-30 against the receipt below (69: 69 · 66 · 72, claude-sonnet-5, rubric v1-2026-09-12). The 2026-09-24 process item (the receipt still the 2026-09-23 mark) is closed by that receipt. The Jax button no longer covers a count at 375: the phone fold is now the H1, the sentence, the key and the Bend and Redmond rows, and the button sits beside the Bend row's name, clear of its bars and figures. Measured, not suspected.",
     "items": [
       {
         "route": "/commercial-space-for-lease",
-        "section": "tasteReview",
-        "severity": "process",
-        "finding": "tasteReview below is still the 2026-09-23 mark (66: 60 · 66 · 72) on shots taken before 49cd5082e (each town's rate line covers every lease it counts) and 5d7ee4d83 (the dial's thumbnail rail moved to the left). Re-scored 2026-09-24 on the same instrument (claude-sonnet-5 through the claude CLI via scripts/taste-evaluate.ts --evaluator claude --builder claude-opus-5-5, rubric v1-2026-09-12, fresh 1440 and 375 shots from agent/lease-floor's dev server): 54 (50 · 54 · 59) with the turned state framed on the Redmond dial, then 59 (59 · 63 · 55) on the prior mark's own capture spec. Both fall 3 or more under 66 on the same evaluatorModel, rubricVersion and committed shotsHash, which ci:taste-canon refuses as a regression (and refuses as 'rebaselined', the instrument being the same), so the receipt and its shots were left as committed. The judges named the Jax floater over the Bend count at 375 and the ledger's lack of a hover or tap reveal; the first is already in the 2026-09-23 mobile375 shot. The class's taste-table row (a separate first-viewport capture) is 51 (46 · 51 · 53), demoMatch false."
+        "section": "#lease dials at 375 (V3DogFloater)",
+        "severity": "craft",
+        "finding": "The fixed Jax button (top 50%, right 1rem) sits over the lower right corner of a dial card's photograph at 375 (lease-mobile375 and turned-mobile375 shots). It covers no figure or control, and it is the site chrome, not this page's markup."
       },
       {
         "route": "/commercial-space-for-lease",
-        "section": "#towns at 375 (V3DogFloater)",
+        "section": "#lease-redmond, 423 6th Street photograph",
         "severity": "craft",
-        "finding": "The fixed Jax button (top 50%, right 1rem) covers the Bend row's '13 for lease' in the first 375px viewport, so the figure reads '13 f'. Present in the 2026-09-23 and 2026-09-24 mobile375 shots; named by both 2026-09-24 route judges and by the table row. It is the site chrome, not this page's markup."
-      },
-      {
-        "route": "/commercial-space-for-lease",
-        "section": "#lease-redmond, 423 6th Street lead photograph",
-        "severity": "craft",
-        "finding": "The listing's first MLS photograph is a Google Street View frame with a red outline drawn on the storefront and a '2025 Google' mark at its foot. It shows when the Redmond dial turns to 02 / 12; the 2026-09-24 judge that saw it framed scored the page 54 and named it first."
+        "finding": "The listing's first MLS photograph is a Google Street View frame with a red outline drawn on the storefront. Since 2026-09-30 every dial opens on its largest space whose rent publishes, so it is no longer Redmond's lead or its second card; it still shows when a reader turns the Redmond dial to it."
       }
     ]
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-23",
+    "evaluatedAt": "2026-09-30",
     "rubricVersion": "v1-2026-09-12",
-    "demoMatch": true,
-    "competitiveBriefPass": false,
-    "evaluator": "Separate agent: claude CLI headless (claude -p --model claude-sonnet-5 --allowedTools Read), run from the lane worktree on 2026-09-23 with design_system/public/taste-evaluator.v1-2026-09-12.md verbatim and the six shots below, which it opened with Read (7 turns). Builder is claude-opus-5-5; the judge chain's grok CLI and cursor-agent are not installed in this sandbox, so the claude link answered. Three scorings in one call, median recorded.",
+    "evaluator": "npx tsx scripts/taste-evaluate.ts commercial-space-for-lease --builder claude-opus-5-5 --evaluator claude --url http://127.0.0.1:3311/commercial-space-for-lease --shots <the 8 files below>. The grok CLI and the Cursor CLI are missing in this sandbox, so the judge is the chain's claude link (claude CLI, sonnet, subscription): three scorings of these shots in one call, recorded exactly as returned, no re-roll. The builder (the listing-dial integration lane, claude-opus-5-5) is not the judge.",
     "evaluatorModel": "claude-sonnet-5",
     "builderModel": "claude-opus-5-5",
     "transport": "claude-cli",
@@ -125,42 +117,46 @@
       ],
       "states": [
         "default",
+        "bars-hover",
         "lease",
         "turned"
       ],
-      "capture": "node scripts/take-route-shots.mjs commercial-space-for-lease http://127.0.0.1:3457 --states 'lease=#lease-bend,turned=#lease-redmond .v3-dial__step--next!click'. First viewport, scale 1, palette-quantized, against the lane's own next dev --webpack on :3457 reading the live project."
+      "capture": "node scripts/take-route-shots.mjs commercial-space-for-lease http://127.0.0.1:3311/commercial-space-for-lease --states 'bars-hover=#towns .v3-ledger__item:nth-child(2) .v3-ledger__row!hover,lease=#lease-bend,turned=#lease-redmond .v3-dial__thumbs > :nth-child(2)!click'. First viewport, scale 1, palette-quantized, against the listing-dial fix tree's own next build + next start (2026-09-30)."
     },
     "shots": {
+      "barsHoverDesktop": "design_system/ryan-realty/ui_kits/commercial-space-for-lease/shots/bars-hover-desktop.png",
+      "barsHoverMobile375": "design_system/ryan-realty/ui_kits/commercial-space-for-lease/shots/bars-hover-mobile375.png",
       "desktop": "design_system/ryan-realty/ui_kits/commercial-space-for-lease/shots/desktop.png",
+      "leaseDesktop": "design_system/ryan-realty/ui_kits/commercial-space-for-lease/shots/lease-desktop.png",
+      "leaseMobile375": "design_system/ryan-realty/ui_kits/commercial-space-for-lease/shots/lease-mobile375.png",
       "mobile375": "design_system/ryan-realty/ui_kits/commercial-space-for-lease/shots/mobile375.png",
-      "lease-desktop": "design_system/ryan-realty/ui_kits/commercial-space-for-lease/shots/lease-desktop.png",
-      "lease-mobile375": "design_system/ryan-realty/ui_kits/commercial-space-for-lease/shots/lease-mobile375.png",
-      "turned-desktop": "design_system/ryan-realty/ui_kits/commercial-space-for-lease/shots/turned-desktop.png",
-      "turned-mobile375": "design_system/ryan-realty/ui_kits/commercial-space-for-lease/shots/turned-mobile375.png"
+      "turnedDesktop": "design_system/ryan-realty/ui_kits/commercial-space-for-lease/shots/turned-desktop.png",
+      "turnedMobile375": "design_system/ryan-realty/ui_kits/commercial-space-for-lease/shots/turned-mobile375.png"
     },
-    "shotsHash": "sha256:23e7f31694261faff684fd9590818386d36d138cad920e2520dbb5ddbb06ffbe",
+    "shotsHash": "sha256:07c2ce29e8e793cef9cc78a5ee71844c4ab56c83cae778aaab8d2fdbd2b6c731",
     "scores": [
-      60,
+      69,
       66,
       72
     ],
-    "score": 66,
+    "score": 69,
     "criteria": {
-      "designQuality": 22,
-      "originality": 17,
-      "interaction": 12,
-      "craft": 8,
-      "honestyFunction": 7
+      "designQuality": 20,
+      "originality": 20,
+      "interaction": 9,
+      "craft": 12,
+      "honestyFunction": 8
     },
     "perCriterion": {
-      "design": 22,
-      "originality": 17,
-      "interaction": 12,
-      "craft": 8,
-      "honesty": 7
+      "design": 20,
+      "originality": 20,
+      "interaction": 9,
+      "craft": 12,
+      "honesty": 8
     },
-    "honestyFunction": 7,
-    "beats": "Beats a single Bend commercial brokerage's own leasing page (e.g. a local commercial firm's listings page) on breadth and pricing honesty: this page aggregates every active MLS commercial lease across six Central Oregon towns with a stated $/sq ft/mo for every unit up front, where a single-broker site shows only its own book and portals like LoopNet routinely gate rent behind an inquiry form instead of a number.",
+    "honestyFunction": 8,
+    "demoMatch": false,
+    "beats": "LoopNet's Central Oregon commercial search — this page wins on honest per-town rate ranges stated in plain sentences and free unauthenticated browsing, but LoopNet still beats it on raw inventory breadth, saved-search alerts, and live map filtering by space type.",
     "adaptedFrom": [
       {
         "id": "house-ledger"
@@ -172,35 +168,35 @@
         "id": "house-quiet"
       }
     ],
-    "tells": [
-      "\"The stacked-section page\" — the Bend, Redmond, and Sisters dial sections repeat the identical eyebrow(town)->count->hero-photo->thumbnail-rail shape one after another with no variation in form, density, or media between them."
-    ],
     "defects": [
       {
-        "section": "Per-town listing dial sections (Bend / Redmond / Sisters / Madras / Prineville / Powell Butte)",
+        "section": "town ledger rows (desktop.png / bars-hover-desktop.png, the Bend/Redmond/Sisters/Madras/Prineville/Powell Butte list)",
+        "severity": "blocking",
+        "finding": "The layout lock requires leases by town, each one an <a href> with its own rate unit, on the same page as the ledger — but every viewport shown, including the scrolled bars-hover-desktop state, only ever renders town-aggregate rows (count + bar + sq ft). No individual lease address or per-space rate appears until a visitor clicks into a separate town page (lease-desktop.png). The ledger and the actual leases-by-town list need to coexist on one page.",
+        "replaceWith": "house-listing"
+      },
+      {
+        "section": "lease detail photo strip (lease-desktop.png, the '01/13' numbered gallery with thumbnails under the hero photo)",
         "severity": "taste",
-        "finding": "Every town gets the exact same dial shape regardless of how many listings it holds (13 for Bend vs. 1 for Powell Butte), so the page reads as one component copy-pasted six times instead of a composition that responds to its own data.",
-        "primitive": "components/site/v3/V3PlaceInventory.tsx",
-        "replaceWith": "small multiples"
+        "finding": "This reads as a Carousel import hiding the catalog chrome: no visible prev/next affordance matching the shadcn rail, no card body around each slide, just a bespoke numbered index and a thumbnail row with price stamped underneath. It functions but doesn't read as the demo interaction — it reads as a photo strip wearing a carousel's data.",
+        "replaceWith": "house-listing"
       },
       {
-        "section": "Sisters dial, first listing hero photo",
-        "severity": "defect",
-        "finding": "The hero image for 620 Three Peaks Drive is a marketing flyer screenshot with baked-in ad copy (\"THREE PEAKS INDUSTRIAL / PREMIUM INDUSTRIAL SUITES...\") rather than a clean property photo, which reads as unvetted asset QA on a page that is otherwise data-clean.",
-        "primitive": "components/site/v3/V3ListingDial.client.tsx",
-        "replaceWith": null
-      },
-      {
-        "section": "Mobile dial thumbnail rail (375px, turned state)",
-        "severity": "defect",
-        "finding": "At 375px the thumbnail row plus price label is cramped enough that the third listing's price is clipped mid-string (\"$1.00/\"), an orphaned label at the phone breakpoint.",
-        "primitive": "components/site/v3/V3ListingDial.client.tsx",
-        "replaceWith": null
+        "section": "page footer / close (bars-hover-desktop.png bottom: 'how we calculate this' link + single 'Tell a broker the space you need' button)",
+        "severity": "taste",
+        "finding": "The page ends on a collapsed methodology disclosure and one CTA button with no path back into the towns' own pages or into homes-for-sale — a visitor who isn't ready to message a broker has nowhere else to go from the close of the page.",
+        "replaceWith": "house-quiet"
       }
     ],
-    "dullest": "The top-of-page town ledger — six rows of a rent range plus a flat gray bar and a count — is a bar chart wearing a hairline-list skin; it's correct and legible but it's the least distinctive thing on the page next to the photographic dial below it.",
-    "verdict": "This is a real working instance of both named primitives — the ledger's bars encode actual per-town lease counts and price bands, and the turned-state capture proves the dial's photo, price, address, and thumbnail selection all advance together on one press, so demoMatch is true, not a cream box. What holds it back from breathtaking is repetition: the six town sections share one identical dial shape regardless of inventory depth (the stacked-section tell), and the Sisters hero photo undercuts the page's otherwise clean data presentation with a raw marketing-flyer image. It's correct, on-brand, and functional, but the originality a 'stop scrolling here' page needs isn't there yet.",
-    "comparedToPrior": "first"
+    "verdict": "demoMatch is false: the carousel on the lease detail page is a house-rolled photo strip, not the shadcn Carousel demo, and no other catalog control (search, sheet, avatar group) is visible anywhere in these eight shots. The ledger-plus-map opener and the price-by-town dot strip are the real strengths here — sourced, honestly unitized, genuinely linked on hover — but the page is still a dashboard wearing editorial type rather than something breathtaking, and it never actually surfaces the individual leases the layout lock demands on the same page as the ledger. Correct, on-brand, and quiet; not yet the page that beats a commercial portal on inventory depth.",
+    "comparedToPrior": "rose",
+    "priorMark": {
+      "evaluatedAt": "2026-09-23",
+      "score": 66,
+      "evaluatorModel": "claude-sonnet-5",
+      "rubricVersion": "v1-2026-09-12",
+      "shotsHash": "sha256:23e7f31694261faff684fd9590818386d36d138cad920e2520dbb5ddbb06ffbe"
+    }
   },
   "contentFloor": {
     "seededAt": "2026-09-24",
