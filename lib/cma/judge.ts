@@ -49,7 +49,6 @@ import { SAME_STREET_SIZE_BAND, sameStreetPeer } from '@/lib/pricing/price-ancho
 import {
   EXCLUSION_BASES,
   checkJudgmentConsistency,
-  claimTierOf,
   isPriceTierExclusion,
   narrativeMismatches,
   ppsf,
@@ -60,7 +59,8 @@ import {
   type ExclusionBasis,
 } from '@/lib/cma/judge-consistency'
 import { groundVote } from '@/lib/cma/judge-ground'
-import { stripRefutedSentences, type ClaimComp } from '@/lib/cma/narrative-claims'
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
+import { claimCompOf, narrativeClaimFindings, stripRefutedSentences, type ClaimComp } from '@/lib/cma/narrative-claims'
 import {
   JUDGE_REASONING_EFFORT,
   JUDGE_RUNS,
@@ -405,6 +405,17 @@ export function judgePromptChecksum(user: string, model: string = MODEL): string
 }
 
 /**
+ * Months of supply as the judge prompt prints it: the display value
+ * (formatMonthsOfSupply, so a threshold never reads wrong) in the number shape
+ * the prompt always carried ("3.6", "4"). The prompt text is the judge cache
+ * key (judgePromptChecksum), so a raw 3.6213 here would re-run the model on
+ * every stored decision for no change in the decision.
+ */
+function mosForPrompt(mos: number | null): string {
+  return mos == null ? 'unknown' : String(Number(formatMonthsOfSupply(mos)))
+}
+
+/**
  * The subject/comps/market brief the judge reasons over.
  *
  * Extracted from judgeComps so the audit-driven narrative repair below can hand
@@ -441,7 +452,7 @@ export function buildJudgeUserPrompt(
     : 'SUBJECT CONDITION EVIDENCE: none. No remarks, photos, or condition fields are on file for the subject. Any claim about its condition, finish level, or quality would be invented. State that the analysis assumes average condition for its vintage and that condition is unverified.'
 
   const marketLine = market
-    ? `Market: ${market.geoLabel}, ${market.marketVerdict}, ${market.monthsOfSupply} months supply, median $${market.medianPpsf ?? '?'}/sqft, ${market.yoyMedianPriceDeltaPct ?? '?'}% YoY.`
+    ? `Market: ${market.geoLabel}, ${market.marketVerdict}, ${mosForPrompt(market.monthsOfSupply)} months supply, median $${market.medianPpsf ?? '?'}/sqft, ${market.yoyMedianPriceDeltaPct ?? '?'}% YoY.`
     : 'Market: no cache row for this geography.'
 
   return (
@@ -493,6 +504,21 @@ export async function judgeComps(
       // votes are replayed through the same majority and the same resolver
       // instead: no model call, the same decision stability, the current rules.
       const aggregate = aggregateJudgeVotes({ votes: prior.votes, minComps, candidateKeys })
+      // The replay is held to the same stability rule as a fresh run, not only
+      // to the flag the record was stored with: a record an older aggregator
+      // wrote as stable, whose votes the current one reads as a split that
+      // decides the minimum, fails the build exactly as those votes would fresh
+      // (review of da8dce6, 2026-09-30).
+      if (aggregate.unstable && enforce) {
+        const record = decisionRecord({
+          model: MODEL,
+          inputChecksum,
+          minComps,
+          votes: prior.votes,
+          aggregate,
+        })
+        throw new JudgeUnstableError(aggregate.message ?? 'JUDGE_UNSTABLE. The build was not priced.', record, true)
+      }
       return finalizeJudgment({
         subject,
         comps,
@@ -550,13 +576,7 @@ export async function judgeComps(
 
 /** A comp and its review tier, in the shape the narrative claim checks read. */
 function claimComp(c: CmaComp, tier: CompTier | null): ClaimComp {
-  return {
-    listingKey: c.listingKey,
-    address: c.address,
-    subdivision: c.subdivision,
-    lotAcres: c.lotAcres,
-    tier: claimTierOf(tier),
-  }
+  return claimCompOf(c, tier)
 }
 
 /**
@@ -625,6 +645,8 @@ function finalizeJudgment(args: {
   })
   judged.verdicts = restored.verdicts
   const protectedKeys = new Set<string>([...restored.restoredKeys, ...aggregate.protectedKeys])
+  // Same-street and own-plat restorations below; a restoration retires the declared rule.
+  let restoredByRule = 0
   if (restored.restoredKeys.length > 0) {
     for (const key of restored.restoredKeys) {
       const c = byKey.get(key)
@@ -669,6 +691,7 @@ function finalizeJudgment(args: {
     delete v.basis
     v.reason = `Same street as the subject and within ${Math.round(SAME_STREET_SIZE_BAND * 100)}% of its size. The closest sale there is to this house, so it prices it whatever the wider neighborhood runs at.`
     resolvedByCode.push(`${v.listingKey}: restored, a same-street peer of the subject's size cannot be dropped on price`)
+    restoredByRule++
   }
 
   // THE SUBJECT'S OWN PLAT IS NOT A DIFFERENT PRICE TIER EITHER (Matt
@@ -692,6 +715,7 @@ function finalizeJudgment(args: {
     delete v.basis
     v.reason = `Inside the subject's own subdivision${c.subdivision ? `, ${c.subdivision}` : ''}. A sale there is this home's price tier, so price alone does not drop it. It is carried at half weight.`
     resolvedByCode.push(`${v.listingKey}: restored, a sale in the subject's own plat cannot be dropped on price tier`)
+    restoredByRule++
   }
 
   // Band and strand violators get excluded. Their reason is written after the
@@ -770,16 +794,18 @@ function finalizeJudgment(args: {
   // stands. buildCma runs them again against the sales that actually price
   // (alignNarrativeToFinalSet in lib/cma/judge-consistency.ts), after the
   // product walls and any audit repair.
+  const keptClaims = finalKept
+    .map((v) => byKey.get(v.listingKey))
+    .filter((c): c is CmaComp => c != null)
+    .map((c) => claimComp(c, verdictByKey.get(c.listingKey)?.tier ?? null))
+  const candidateClaims = comps.map((c) => claimComp(c, verdictByKey.get(c.listingKey)?.tier ?? null))
+  const claimSubject = { streetAddress: subject.streetAddress, lotAcres: subject.lotAcres }
   {
-    const kept = finalKept
-      .map((v) => byKey.get(v.listingKey))
-      .filter((c): c is CmaComp => c != null)
-      .map((c) => claimComp(c, verdictByKey.get(c.listingKey)?.tier ?? null))
     const stripped = stripRefutedSentences({
       narrative,
-      priced: kept,
-      candidates: comps.map((c) => claimComp(c, verdictByKey.get(c.listingKey)?.tier ?? null)),
-      subject: { streetAddress: subject.streetAddress, lotAcres: subject.lotAcres },
+      priced: keptClaims,
+      candidates: candidateClaims,
+      subject: claimSubject,
     })
     if (stripped.removed.length > 0) {
       narrative = stripped.narrative
@@ -790,13 +816,40 @@ function finalizeJudgment(args: {
       )
     }
   }
+  // A RESTORATION RETIRES THE DECLARED RULE (review of da8dce6, 2026-09-30).
+  // The model states its exclusion rule and band about its own cut. When a
+  // restoration above puts back a sale it cut, that rule stops describing the
+  // sales that price: on the judge-restore fixture it kept printing "Priced on
+  // closed sales from $350 to $420 per square foot" over a restored $278 sale.
+  // So the rule is dropped, and the band and exclusion sentences in the
+  // narrative are held to the kept set by the claim checks just above.
+  if (judged.exclusionRule && (restoredByRule > 0 || restored.restoredKeys.length > 0)) {
+    resolvedByCode.push(
+      'Dropped the declared exclusion rule: a restoration put a sale it excluded back in the kept set, so the rule no longer describes the sales that price.',
+    )
+    judged.exclusionRule = ''
+  }
   // The stated rule is what makes the exclusions checkable, so it has to
   // reach the reader (and the independent auditor, which is shown only the
   // narrative). Appended only when the narrative did not state the band
-  // itself, so the seller does not read the same sentence twice.
+  // itself, so the seller does not read the same sentence twice, and only
+  // when the kept set does not refute it (a band the re-anchoring widened).
   const narrativeStatesBand = /per square foot|\/sq\.?\s?ft|\/sqft/i.test(narrative)
   if (judged.exclusionRule && !narrativeStatesBand && !narrative.includes(judged.exclusionRule)) {
-    narrative = `${narrative} ${judged.exclusionRule}`.trim()
+    const refuted = narrativeClaimFindings({
+      narrative: judged.exclusionRule,
+      priced: keptClaims,
+      candidates: candidateClaims,
+      subject: claimSubject,
+    })
+    if (refuted.length > 0) {
+      resolvedByCode.push(
+        `Did not append the declared exclusion rule: the kept set refutes it (${[...new Set(refuted.map((f) => f.kind))].join(', ')}).`,
+      )
+      judged.exclusionRule = ''
+    } else {
+      narrative = `${narrative} ${judged.exclusionRule}`.trim()
+    }
   }
 
   const keptKeys = judged.verdicts.filter((v) => v.tier !== 'exclude').map((v) => v.listingKey)

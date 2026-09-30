@@ -8,8 +8,7 @@
  */
 
 import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
-import { narrativeClaimFindings, type ClaimComp } from '@/lib/cma/narrative-claims'
-import { claimTierOf } from '@/lib/cma/judge-consistency'
+import { claimCompOf, narrativeClaimFindings, type ClaimComp } from '@/lib/cma/narrative-claims'
 import type { AuditFinding } from '@/lib/cma/audit'
 import type { CmaAdjustedComp, CmaComp, CmaMarketContext, CmaSubject } from '@/lib/cma/types'
 
@@ -391,13 +390,7 @@ export function checkNarrativeIntegrity(args: {
   }
 
   // ── 4 to 7. counts, named sales, weights and lots against the priced set ───
-  const toClaim = (c: CmaComp): ClaimComp => ({
-    listingKey: c.listingKey,
-    address: c.address,
-    subdivision: c.subdivision,
-    lotAcres: c.lotAcres,
-    tier: args.tierByKey ? claimTierOf(args.tierByKey.get(c.listingKey)) : null,
-  })
+  const toClaim = (c: CmaComp): ClaimComp => claimCompOf(c, args.tierByKey?.get(c.listingKey))
   const seen = new Set(findings.map((f) => f.claim))
   for (const f of narrativeClaimFindings({
     narrative,

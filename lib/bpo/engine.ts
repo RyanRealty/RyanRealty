@@ -12,7 +12,7 @@ import type { CmaAdjustedComp, CmaComp, CmaMarketContext, CmaPricing, CmaSubject
 import { getPricingMarketIndex } from '@/lib/data/pricing/facts'
 import { citySlug } from '@/lib/pricing/classes'
 import { priceCmaSet } from '@/lib/pricing/estimate'
-import { reviewWeightFactor } from '@/lib/cma/judgment-prune'
+import { reviewWeightFactor } from '@/lib/cma/review-weight'
 import { selectCompsPreferringFacts } from '@/lib/pricing/select'
 import type { MarketIndexPoint } from '@/lib/pricing/market-path'
 

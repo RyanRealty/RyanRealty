@@ -102,6 +102,8 @@ export type PricingSubject = {
   /** Zoning of record. Hard cut only when both sides have a non-empty string. */
   zoning?: string | null
   publicRemarks?: string | null
+  /** The MLS SeniorCommunityYN field. True is age-restriction evidence; false or null is not evidence. */
+  seniorCommunityYn?: boolean | null
   /**
    * Share of the sales in this home's own plat that are age-restricted,
    * measured once over the ladder's pool (walkPricingLadder). Above half, the
@@ -160,6 +162,11 @@ export type PricingSale = {
   closePpsf: number
   photoUrl: string | null
   publicRemarks: string | null
+  /**
+   * The MLS SeniorCommunityYN field, read from listings (sale_pricing_facts
+   * does not carry it). True is age-restriction evidence; false or null is not.
+   */
+  seniorCommunityYn?: boolean | null
   marketArea?: string | null
   /** County plat the sale sits in (boundaries.geo_slug); set by the selector for the adjacency rung. */
   subdivisionSlug?: string | null
@@ -316,10 +323,12 @@ function applesOk(
   // 2026-09-30). A 55+ sale off the subject's own plat walls on every rung
   // unless the subject is 55+ itself. Inside the plat it passes here, and the
   // build decides once it can see how much of the plat is 55+.
+  // The subject and the sale go in as the records the walk holds, so each is
+  // read once per walk however many rungs grade it (isAgeRestricted's memo).
   if (
     ageRestrictedMismatch({
-      subject: { publicRemarks: subject.publicRemarks, subdivision: subject.subdivision },
-      sale: { publicRemarks: sale.publicRemarks, subdivision: sale.subdivision },
+      subject,
+      sale,
       saleInOwnPlat: inSubjectPlat(subject, sale),
       ownPlatShare: subject.ownPlatAgeRestrictedShare,
     })

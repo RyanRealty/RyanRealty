@@ -8,7 +8,15 @@
  * named only to place two sales already named).
  */
 import { describe, expect, it } from 'vitest'
-import { narrativeClaimFindings, parseAddress, splitNarrativeSentences, stripRefutedSentences, type ClaimComp } from '@/lib/cma/narrative-claims'
+import {
+  claimCompOf,
+  narrativeClaimFindings,
+  parseAddress,
+  splitNarrativeSentences,
+  stripRefutedSentences,
+  type ClaimComp,
+} from '@/lib/cma/narrative-claims'
+import { reviewWeightFactor } from '@/lib/cma/review-weight'
 
 const c = (
   listingKey: string,
@@ -53,8 +61,13 @@ describe('count claims', () => {
 
   it('passes a count that matches, and "retained" and "are kept" forms', () => {
     expect(narrativeClaimFindings({ narrative: 'Five closed sales were kept.', priced: five, subject })).toEqual([])
-    expect(narrativeClaimFindings({ narrative: 'Five closed sales are kept at half weight.', priced: five, subject })).toEqual([])
+    expect(narrativeClaimFindings({ narrative: 'Five closed sales are kept.', priced: five, subject })).toEqual([])
     expect(narrativeClaimFindings({ narrative: 'Five sales were retained.', priced: five, subject })).toEqual([])
+    // A weight on the count makes it a count of that weight: one sale here is
+    // at half weight, not five.
+    expect(kinds(narrativeClaimFindings({ narrative: 'Five closed sales are kept at half weight.', priced: five, subject }))).toEqual([
+      'count',
+    ])
   })
 
   it('checks a proper-noun count against the sales that noun covers (cma-4541-36th)', () => {
@@ -128,6 +141,313 @@ describe('count claims', () => {
 
   it('does not read a room count as a sale count', () => {
     expect(narrativeClaimFindings({ narrative: 'The 3 bed 2 bath homes were kept at full weight.', priced: five, subject })).toEqual([])
+  })
+})
+
+describe('qualified counts: a weight is exact, any other qualifier is a ceiling (review of da8dce6, 2026-09-30)', () => {
+  const mixed = [
+    c('A', '3886 Coyote', 'Triple Ridge', 0.1, 'strong'),
+    c('B', '3899 Coyote', 'Triple Ridge', 0.11, 'strong'),
+    c('C', '3789 Coyote', 'Triple Ridge', 0.07, 'strong'),
+    c('D', '4100 Coyote', 'Prairie Crossing', 0.07, 'weak'),
+    c('E', '3876 Coyote', 'Triple Ridge', 0.07, 'weak'),
+  ]
+
+  it.each([
+    'Three strong sales were kept.',
+    'Two weak sales were kept.',
+    'Three closed sales were retained at full weight.',
+    'Two recent sales were retained at half weight to bracket the range.',
+    'Two older sales were kept.',
+    'Two additional sales were retained.',
+    'Five closed sales were kept.',
+  ])('passes the true sentence %j', (narrative) => {
+    expect(narrativeClaimFindings({ narrative, priced: mixed, candidates: mixed, subject })).toEqual([])
+  })
+
+  it.each([
+    'Four strong sales were kept.',
+    'Two sales were kept at full weight.',
+    'Six older sales were kept.',
+    'One sale was retained at half weight.',
+  ])('flags the refuted count %j', (narrative) => {
+    expect(kinds(narrativeClaimFindings({ narrative, priced: mixed, candidates: mixed, subject }))).toEqual(['count'])
+  })
+
+  it('refutes a qualified exclusion when the final set excludes fewer sales than it claims', () => {
+    const narrative = 'One lower-priced sale was set aside as a different price tier.'
+    // Nothing is set aside: the restored own-plat sale prices.
+    expect(kinds(narrativeClaimFindings({ narrative, priced: mixed, candidates: mixed, subject }))).toEqual(['excluded-count'])
+    // One candidate really is out: the claim stands.
+    const out = c('X', '4200 Coyote', 'Prairie Crossing')
+    expect(narrativeClaimFindings({ narrative, priced: mixed, candidates: [...mixed, out], subject })).toEqual([])
+    expect(
+      kinds(narrativeClaimFindings({ narrative: 'Two older candidates were dropped.', priced: mixed, candidates: [...mixed, out], subject })),
+    ).toEqual(['excluded-count'])
+  })
+})
+
+describe('lot wording read as bounds, fractions and approximations (review of da8dce6, 2026-09-30)', () => {
+  const lots = (...acres: number[]) => acres.map((a, i) => c(`L${i}`, `${100 + i} Pine Needle`, 'Woods', a))
+  const s = { streetAddress: '9 Main', lotAcres: 3 }
+  it.each([
+    [[0.8, 0.9, 0.95], 'All three sit on less than an acre.'],
+    [[0.45, 0.5, 0.55], 'The kept sales sit on about half an acre.'],
+    [[0.3, 0.4], 'The kept sales sit on under 0.5 acres.'],
+    [[0.5, 0.5], 'Both sit on 1/2 acre lots.'],
+    [[0.25, 0.26], 'Both sit on quarter-acre lots.'],
+    [[1.5, 2], 'The kept sales sit on an acre or more.'],
+    [[0.46, 0.6], 'The kept sales sit on at least 0.45 acres.'],
+  ] as Array<[number[], string]>)('passes %j with %j', (acres, narrative) => {
+    expect(narrativeClaimFindings({ narrative, priced: lots(...acres), subject: s })).toEqual([])
+  })
+
+  it.each([
+    [[0.3, 0.4], 'The kept sales sit on at least 0.45 acres.'],
+    [[1.2, 0.9], 'They sit on less than an acre.'],
+    [[0.2, 0.25], 'Both sit on 1/2 acre lots.'],
+  ] as Array<[number[], string]>)('flags %j under %j', (acres, narrative) => {
+    expect(kinds(narrativeClaimFindings({ narrative, priced: lots(...acres), subject: s }))).toEqual(['lot'])
+  })
+})
+
+describe('price band claims: a stated $/sqft range must be the priced set\'s own (review of da8dce6, 2026-09-30)', () => {
+  const p = (listingKey: string, address: string, subdivision: string, closePrice: number, sqft: number): ClaimComp => ({
+    listingKey,
+    address,
+    subdivision,
+    lotAcres: 0.1,
+    tier: 'strong',
+    closePrice,
+    sqft,
+  })
+  // $277.78, $388.89 and $391.67 per square foot.
+  const set = [p('P', '3940 Coyote', 'Triple Ridge', 500000, 1800), p('A', '3886 Coyote', 'Triple Ridge', 700000, 1800), p('B', '3899 Coyote', 'Triple Ridge', 705000, 1800)]
+
+  it('flags the band the judge declared before a restoration moved the set (judge-restore fixture)', () => {
+    const out = narrativeClaimFindings({ narrative: 'Priced on closed sales from $350 to $420 per square foot.', priced: set, subject })
+    expect(kinds(out)).toEqual(['band'])
+    expect(out[0]!.claim).toContain('run $278 to $392')
+    expect(out[0]!.evidence).toContain('3940 Coyote at $278')
+  })
+
+  it.each([
+    'Three closed sales were kept between $278 and $392 per square foot.',
+    'Three closed sales were kept from $277 to $391/sqft.',
+    'Priced on closed sales from $278 to $392 per square foot.',
+  ])('passes %j (whole-dollar rounding either way)', (narrative) => {
+    expect(narrativeClaimFindings({ narrative, priced: set, subject })).toEqual([])
+  })
+
+  it('flags a range end off by more than rounding', () => {
+    expect(kinds(narrativeClaimFindings({ narrative: 'Three closed sales were kept from $276 to $392 per square foot.', priced: set, subject }))).toEqual([
+      'band',
+    ])
+  })
+
+  it('reads window wording as a window: every sale inside it, not its ends (cma-51599-ash)', () => {
+    // $236, $257 and $268: the judge quoting its declared $230 to $270 band.
+    const ash = [p('L', '52315 Lechner', 'Wickiup', 354000, 1500), p('N', '14561 Nuthatch', 'Wickiup', 402000, 1500), p('M', '52711 Meadow', 'Wickiup', 385500, 1500)]
+    for (const narrative of [
+      'Three closed sales were kept between $230 and $270 per square foot.',
+      'Three closed sales were kept inside $230 to $270 per square foot.',
+      'Three closed sales were kept in the $230 to $270 per square foot band.',
+    ]) {
+      expect(narrativeClaimFindings({ narrative, priced: ash, subject })).toEqual([])
+    }
+    // A priced sale outside the window still refutes it, as the restored $278 sale does.
+    expect(kinds(narrativeClaimFindings({ narrative: 'Three closed sales were kept between $240 and $270 per square foot.', priced: ash, subject }))).toEqual([
+      'band',
+    ])
+    expect(kinds(narrativeClaimFindings({ narrative: 'Three closed sales were kept between $350 and $420 per square foot.', priced: set, subject }))).toEqual([
+      'band',
+    ])
+  })
+
+  it('reads a list of named sales as long as its count as the set the band describes (cma-1195-remarkable)', () => {
+    const four = [
+      { ...p('C', '2521 Coe', 'Awbrey', 412000, 1000), tier: 'strong' as const },
+      { ...p('Y', '925 Yosemite', 'Awbrey', 468000, 1000), tier: 'strong' as const },
+      { ...p('K', '1255 Constellation', 'Awbrey', 284000, 1000), tier: 'weak' as const },
+      { ...p('L', '2359 Lakeside', 'Awbrey', 510000, 1000), tier: 'weak' as const },
+    ]
+    expect(
+      narrativeClaimFindings({
+        narrative: 'Two closed sales were kept at full weight, Coe and Yosemite, from $412 to $468 per square foot.',
+        priced: four,
+        subject,
+      }),
+    ).toEqual([])
+    // A name that is a street and a plat at once (cma-429-irving: Quiet Canyon is both).
+    const irving = [
+      p('QC', '3022 Quiet Canyon', 'Quiet Canyon', 331000, 1000),
+      p('T', '1407 Talon', 'Falcon Ridge', 355000, 1000),
+      p('F', '775 Franklin', 'Center Addition to Bend', 507000, 1000),
+      p('QR', '1512 Quiet Ridge', 'Quiet Canyon', 413000, 1000),
+    ]
+    expect(
+      kinds(
+        narrativeClaimFindings({
+          narrative: 'Three sales were kept between $331 and $413 per square foot: Quiet Canyon, Talon, and Quiet Ridge.',
+          priced: irving,
+          subject,
+        }),
+      ),
+    ).toEqual(['count'])
+    // Named, but the band is not theirs.
+    expect(
+      kinds(
+        narrativeClaimFindings({
+          narrative: 'Two closed sales were kept at full weight, Coe and Yosemite, from $400 to $468 per square foot.',
+          priced: four,
+          subject,
+        }),
+      ),
+    ).toEqual(['band'])
+  })
+
+  it('checks a proper-noun band against the sales that noun covers (cma-4541-36th)', () => {
+    const tr = [p('A', '3886 Coyote', 'Triple Ridge', 475000, 2010), p('B', '3899 Coyote', 'Triple Ridge', 492700, 1921), p('PC', '4100 Coyote', 'Prairie Crossing', 520000, 1600)]
+    expect(narrativeClaimFindings({ narrative: 'Two Triple Ridge sales were kept from $236 to $256 per square foot.', priced: tr, subject })).toEqual([])
+    expect(kinds(narrativeClaimFindings({ narrative: 'Two Triple Ridge sales were kept from $236 to $300 per square foot.', priced: tr, subject }))).toEqual([
+      'band',
+    ])
+  })
+
+  it('leaves a band on a subset it cannot resolve, and a drop threshold, alone', () => {
+    expect(narrativeClaimFindings({ narrative: 'The strongest comps sold between $290 and $312/sqft.', priced: set, subject })).toEqual([])
+    expect(narrativeClaimFindings({ narrative: 'Sales above $400 per square foot were excluded.', priced: set, subject })).toEqual([])
+  })
+})
+
+describe('a count whose own words name a range is exact against the sales in it (claims-precision rerun, 2026-09-30)', () => {
+  const r = (listingKey: string, address: string, closePrice: number, sqft: number, yearBuilt: number, tier: 'strong' | 'weak' = 'strong'): ClaimComp => ({
+    listingKey,
+    address,
+    subdivision: null,
+    lotAcres: 0.5,
+    tier,
+    closePrice,
+    sqft,
+    yearBuilt,
+  })
+  // cma-15461-federal-la-pine: all five priced sales sit in $242 to $271.
+  const federal = [
+    r('A', '51974 Wickiup', 378700, 1493, 2022),
+    r('B', '52025 Noble Fir', 450000, 1680, 2020, 'weak'),
+    r('C', '15360 Bear', 380000, 1568, 2021),
+    r('D', '52267 Caribou', 405000, 1493, 2025),
+    r('E', '15387 Bear', 350000, 1351, 2025, 'weak'),
+  ]
+  // cma-15935-woodchip-la-pine: three of five sit in $303 to $382.
+  const woodchip = [
+    r('A', '15884 Yellowood', 445000, 1558, 1981, 'weak'),
+    r('B', '15905 Pine', 484000, 1598, 2004, 'weak'),
+    r('C', '15969 Green Forest', 380000, 1344, 1977),
+    r('D', '15670 Sunrise', 580000, 1695, 2001, 'weak'),
+    r('E', '15876 Sunrise', 595000, 1557, 2003, 'weak'),
+  ]
+  // cma-120-sisemore: all five built 1917 to 1930, one at $442.
+  const sisemore = [
+    r('A', '213 Riverside', 1041000, 1440, 1918, 'weak'),
+    r('B', '621 Delaware', 1015000, 1794, 1930, 'weak'),
+    r('C', '440 Riverfront', 1000000, 1753, 1920),
+    r('D', '232 Congress', 1094000, 1527, 1917, 'weak'),
+    r('E', '54 Gilchrist', 793500, 1796, 1918, 'weak'),
+  ]
+
+  it('flags a band-qualified count the band does not bear out (cma-15461-federal-la-pine)', () => {
+    const out = narrativeClaimFindings({ narrative: 'Four closed sales from $242 to $271 per square foot were kept.', priced: federal, subject })
+    expect(kinds(out)).toEqual(['count'])
+    expect(out[0]!.claim).toContain('5 priced sales match $242 to $271 per square foot')
+  })
+
+  it('passes a band-qualified count that names a true subset (cma-15935-woodchip, cma-16932-upland)', () => {
+    expect(narrativeClaimFindings({ narrative: 'Three closed sales from $303 to $382 per square foot were kept.', priced: woodchip, subject })).toEqual([])
+  })
+
+  it('flags a build-year count the years do not bear out, and the window beside it (cma-120-sisemore)', () => {
+    const out = narrativeClaimFindings({
+      narrative: 'Four closed sales from 1917 to 1930 were kept between $566 and $723 per square foot.',
+      priced: sisemore,
+      subject,
+    })
+    expect(kinds(out).sort()).toEqual(['band', 'count'])
+    expect(out.find((f) => f.kind === 'count')!.claim).toContain('5 priced sales match built 1917 to 1930')
+  })
+
+  it('reads a recent year as a build year only when the words say built', () => {
+    const recent = [r('A', '1 Oak', 500000, 2000, 2021), r('B', '2 Oak', 510000, 2000, 2022), r('C', '3 Oak', 520000, 2000, 2015)]
+    // Could be close years: a ceiling, not a refutation.
+    expect(narrativeClaimFindings({ narrative: 'Two 2025 sales were kept.', priced: recent, subject })).toEqual([])
+    expect(narrativeClaimFindings({ narrative: 'Two closed sales built 2021 to 2022 were kept.', priced: recent, subject })).toEqual([])
+    expect(kinds(narrativeClaimFindings({ narrative: 'Three closed sales built 2021 to 2022 were kept.', priced: recent, subject }))).toEqual(['count'])
+  })
+
+  it('never reads a square footage as a year', () => {
+    const three = [r('A', '1 Oak', 500000, 2000, 1990), r('B', '2 Oak', 510000, 2000, 1991), r('C', '3 Oak', 520000, 2400, 1992)]
+    expect(narrativeClaimFindings({ narrative: 'Two 2000 sqft homes were kept.', priced: three, subject })).toEqual([])
+  })
+
+  it('leaves a range it cannot resolve as a ceiling', () => {
+    // No living area on one sale: the band cannot be resolved.
+    const partial = [...woodchip.slice(0, 4), { ...woodchip[4]!, sqft: null }]
+    expect(narrativeClaimFindings({ narrative: 'Three closed sales from $303 to $382 per square foot were kept.', priced: partial, subject })).toEqual([])
+    expect(kinds(narrativeClaimFindings({ narrative: 'Six closed sales from $303 to $382 per square foot were kept.', priced: partial, subject }))).toEqual([
+      'count',
+    ])
+  })
+
+  it('reads the sale noun as the noun, not a qualifier (cma-24166-dodds)', () => {
+    const dodds = [r('A', '10934 Fleming', 1558750, 3348, 1998), r('B', '60485 Billadeau', 1495000, 4449, 1996), r('C', '10401 Powell Butte', 1725000, 4349, 2003)]
+    expect(kinds(narrativeClaimFindings({ narrative: 'Zero of three candidate sales were kept.', priced: dodds, subject }))).toEqual(['count'])
+  })
+})
+
+describe('one mapper, and the weight it reads is the weight applied (second review of da8dce6, 2026-09-30)', () => {
+  const sale = (listingKey: string, address: string) => ({
+    listingKey,
+    address,
+    subdivision: 'Triple Ridge',
+    lotAcres: 0.1,
+    closePrice: 500000,
+    sqft: 2000,
+    yearBuilt: 2005,
+  })
+
+  it('reads every verdict as the weight reviewWeightFactor applies, and no verdict as no tier', () => {
+    for (const tier of ['strong', 'weak', 'exclude']) {
+      expect(claimCompOf(sale('A', '1 Oak'), tier).tier).toBe(reviewWeightFactor(tier) < 1 ? 'weak' : 'strong')
+    }
+    expect(claimCompOf(sale('A', '1 Oak'), undefined).tier).toBeNull()
+    expect(claimCompOf(sale('A', '1 Oak'), null).tier).toBeNull()
+  })
+
+  it('carries every field a check reads, so no path is blind to one', () => {
+    expect(claimCompOf(sale('A', '1 Oak'), 'strong')).toEqual({
+      listingKey: 'A',
+      address: '1 Oak',
+      subdivision: 'Triple Ridge',
+      lotAcres: 0.1,
+      tier: 'strong',
+      closePrice: 500000,
+      sqft: 2000,
+      yearBuilt: 2005,
+    })
+  })
+
+  it('on a curated set, an excluded sale priced at full weight is described as full weight', () => {
+    // A broker-picked set prices its exclude verdict at full weight
+    // (reviewWeightFactor), so "full weight" is true of it and "half" is not.
+    const priced = [
+      claimCompOf(sale('A', '3886 Coyote'), 'strong'),
+      claimCompOf(sale('X', '3899 Coyote'), 'exclude'),
+      claimCompOf(sale('W', '3789 Coyote'), 'weak'),
+    ]
+    expect(narrativeClaimFindings({ narrative: 'Two closed sales were retained at full weight.', priced, subject })).toEqual([])
+    expect(narrativeClaimFindings({ narrative: '3899 Coyote carries full weight.', priced, subject })).toEqual([])
+    expect(kinds(narrativeClaimFindings({ narrative: '3899 Coyote was kept at half weight.', priced, subject }))).toEqual(['weight'])
+    expect(kinds(narrativeClaimFindings({ narrative: 'One closed sale was retained at full weight.', priced, subject }))).toEqual(['count'])
   })
 })
 

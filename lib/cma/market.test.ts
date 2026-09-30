@@ -11,6 +11,7 @@ import type { CmaMarketPulseRow, CmaMarketStatsRow } from '@/lib/data/cma/builde
 import type { SellBendMarket } from '@/lib/data/market-truth/getSellBendMarket'
 import { EMPTY_PUBLIC_PACE, type PublicPaceRow } from '@/lib/data/market-truth/public-pace'
 import { formatMonthsOfSupply, monthsOfSupplyVerdict } from '@/lib/format/months-of-supply'
+import { renderInventoryBoardHtml } from '@/lib/cma/market-area-chapters'
 
 const CACHE_STATS: CmaMarketStatsRow = {
   geo_type: 'city',
@@ -213,7 +214,9 @@ describe('assembleCmaMarketContext neighborhood MOS', () => {
       detached: SUNRIVER_DETACHED,
       leftover: { ...EMPTY_PUBLIC_PACE, pendingCount: 16, medianClose: 875000 },
     })
-    expect(row.monthsOfSupply).toBe(7.5)
+    // The raw Market Truth figure stays in the data; every print site formats it.
+    expect(row.monthsOfSupply).toBe(7.47)
+    expect(formatMonthsOfSupply(row.monthsOfSupply!)).toBe('7.5')
     expect(row.marketVerdict).toBe('buyer')
     expect(row.activeCount).toBe(56)
     expect(row.mosFormula).toMatch(/market-truth/)
@@ -339,28 +342,45 @@ describe('D27 — the CMA citation names the store that produced each figure', (
   })
 })
 
-describe('months of supply is stored, printed and graded as one value (cma-5391-frank-redmond-97756)', () => {
+describe('months of supply is stored raw, printed through one helper, and graded on the raw value (cma-5391-frank-redmond-97756)', () => {
   // Redmond's raw figure sat just over 4. The CMA rounded it on its own to 4.0
   // and took the verdict from the raw value, so the document printed "4.0
   // months" beside "balanced" while CLAUDE.md §0 says 4 or less is a seller's
-  // market. The stored figure now comes from formatMonthsOfSupply and the
-  // verdict from monthsOfSupplyVerdict, on the same raw value.
+  // market. The data keeps the RAW value (the citation and every figure
+  // derived from it read it), each print site formats it with
+  // formatMonthsOfSupply, and the verdict is monthsOfSupplyVerdict(raw), so
+  // the printed digits and the verdict cannot disagree.
   it.each([
-    { raw: 4.02, kind: 'balanced' as const, stored: 4.1, printed: '4.1', verdict: 'balanced' },
-    { raw: 3.98, kind: 'sellers' as const, stored: 4, printed: '4.0', verdict: 'seller' },
-    { raw: 5.97, kind: 'balanced' as const, stored: 5.9, printed: '5.9', verdict: 'balanced' },
-    { raw: 6.01, kind: 'buyers' as const, stored: 6, printed: '6.0', verdict: 'buyer' },
-  ])('raw $raw stores $stored, prints $printed, and reads $verdict', ({ raw, kind, stored, printed, verdict }) => {
+    { raw: 4.02, kind: 'balanced' as const, printed: '4.1', verdict: 'balanced' },
+    { raw: 3.98, kind: 'sellers' as const, printed: '4.0', verdict: 'seller' },
+    { raw: 5.97, kind: 'balanced' as const, printed: '5.9', verdict: 'balanced' },
+    { raw: 6.01, kind: 'buyers' as const, printed: '6.0', verdict: 'buyer' },
+  ])('raw $raw stays $raw in the data, prints $printed, and reads $verdict', ({ raw, kind, printed, verdict }) => {
     const row = assemble({
       city: 'Redmond',
       geoSlug: 'redmond',
       detached: { ...CITY_DETACHED, monthsOfSupply: raw, verdictKind: kind },
     })
-    expect(row.monthsOfSupply).toBe(stored)
+    expect(row.monthsOfSupply).toBe(raw)
     expect(formatMonthsOfSupply(row.monthsOfSupply!)).toBe(printed)
     expect(row.marketVerdict).toBe(verdict)
     // The figure a reader sees grades to the verdict printed beside it.
-    expect(monthsOfSupplyVerdict(row.monthsOfSupply)?.key).toBe(row.marketVerdict)
+    expect(monthsOfSupplyVerdict(Number(formatMonthsOfSupply(row.monthsOfSupply!)))?.key).toBe(row.marketVerdict)
+  })
+
+  it('prints the pace off the raw figure: 201 for sale at a raw 4.02 is 50 a month, not 49', () => {
+    // The review of da8dce6: storing the display value (4.1) made the letter
+    // print "about 49 sell in a typical month" where the source pace is
+    // 201 / 4.02 = 50.0 (it printed 50 before that change).
+    const row = assemble({
+      city: 'Redmond',
+      geoSlug: 'redmond',
+      detached: { ...CITY_DETACHED, monthsOfSupply: 4.02, verdictKind: 'balanced', activeCount: 201 },
+    })
+    const html = renderInventoryBoardHtml(row)
+    expect(html).toContain('about 50 sell in a typical month')
+    expect(html).toContain('it would take 4.1 months')
+    expect(html).toContain('balanced market territory')
   })
 
   it('no CMA or BPO sentence prints the figure without the helper', () => {
@@ -368,6 +388,8 @@ describe('months of supply is stored, printed and graded as one value (cma-5391-
       'lib/cma/pricing.ts',
       'lib/cma/market-area-chapters.ts',
       'lib/cma/client-facing.ts',
+      'lib/cma/audit.ts',
+      'lib/cma/judge.ts',
       'lib/bpo/opinion.ts',
       'lib/bpo/narrative.ts',
       'lib/bpo/offer.ts',
@@ -379,5 +401,9 @@ describe('months of supply is stored, printed and graded as one value (cma-5391-
       expect(src, f).not.toMatch(/String\(market\.monthsOfSupply\)/)
       expect(src, f).not.toMatch(/monthsOfSupply\.toFixed\(/)
     }
+    // The admin BPO page prints the stored build_summary.market figure.
+    const admin = readFileSync(resolve('app/admin/(protected)/bpo/[slug]/page.tsx'), 'utf8')
+    expect(admin).not.toMatch(/String\(market\.months_of_supply\)/)
+    expect(admin).toMatch(/formatMonthsOfSupply\(/)
   })
 })

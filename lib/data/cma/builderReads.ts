@@ -87,6 +87,9 @@ const LISTING_CMA_COLUMNS = [
   'new_construction_yn',
   // Fallback when the typed column is null but Spark details still flag it.
   'new_construction_details:details->>NewConstructionYN',
+  // MLS SeniorCommunityYN. True is age-restriction evidence for the CMA's
+  // 55+ wall (lib/pricing/age-restricted.ts); false and null are not.
+  'senior_community_yn',
 ].join(', ')
 
 export type CmaListingRow = Record<string, unknown>

@@ -36,20 +36,6 @@ import { isCustomOrNewSubject, isNewBuild, newConstructionCompatible } from '@/l
 import { productTypeCompatible } from '@/lib/cma/market-area'
 import { ageRestrictedMismatch, ownPlatAgeRestrictedShare } from '@/lib/pricing/age-restricted'
 
-/**
- * THE REVIEW'S WEIGHT ON A PRICED SALE in the Method 3 reconciliation: strong
- * at full weight, weak at half (bracketing only). An automatic set never prices
- * a sale the review excluded. A broker-picked set does (the broker chose it,
- * SKILL.md 0.1), and there an exclude verdict may not carry MORE weight than a
- * sale the review called weak. Until 2026-09-30 only `weak` was halved, so an
- * excluded sale in the priced set counted in full, often as the heaviest sale
- * in it (557 Tyee at 0.54 on cma-714-wrangler-sisters). The CMA and the BPO
- * both read this one rule.
- */
-export function reviewWeightFactor(tier: string | null | undefined): number {
-  return tier === 'weak' || tier === 'exclude' ? 0.5 : 1
-}
-
 const PRODUCT_REASON =
   /\b(product type|different product|townhomes?|townhouses?|condominiums?|condos?|rowhouses?|row houses?|manufactured|duplex|triplex|quadruplex|lodges?|shared wall|common wall|structure type)\b/i
 
@@ -75,6 +61,8 @@ type ProductComp = {
   subdivision?: string | null
   /** The selector's own-plat decision (lib/cma/types.ts CmaComp.ownPlat). */
   ownPlat?: boolean | null
+  /** MLS SeniorCommunityYN (lib/cma/types.ts CmaComp.seniorCommunityYn). */
+  seniorCommunityYn?: boolean | null
 }
 
 type ProductSubject = {
@@ -83,6 +71,7 @@ type ProductSubject = {
   newConstructionYn?: boolean | null
   publicRemarks?: string | null
   subdivision?: string | null
+  seniorCommunityYn?: boolean | null
 }
 
 export function pricingCompsAfterJudgment<T extends ProductComp>(args: {
@@ -116,14 +105,20 @@ export function pricingCompsAfterJudgment<T extends ProductComp>(args: {
     args.ownPlatAgeRestrictedShare !== undefined
       ? args.ownPlatAgeRestrictedShare
       : ownPlatAgeRestrictedShare(args.selected.filter((c) => c.ownPlat === true))
+  // Built once, so the subject is read once for the whole set (isAgeRestricted's memo).
+  const subjectEvidence = {
+    publicRemarks: args.subject.publicRemarks,
+    subdivision: args.subject.subdivision,
+    seniorCommunityYn: args.subject.seniorCommunityYn,
+  }
   const hard = (comp: T): boolean => {
     if (!productTypeCompatible(args.subject.propertySubType, comp.propertySubType ?? null)) return true
     const verdict = byVerdict.get(comp.listingKey)
     if (verdict && isHardProductExclusion(verdict)) return true
     if (
       ageRestrictedMismatch({
-        subject: { publicRemarks: args.subject.publicRemarks, subdivision: args.subject.subdivision },
-        sale: { publicRemarks: comp.publicRemarks, subdivision: comp.subdivision },
+        subject: subjectEvidence,
+        sale: comp,
         saleInOwnPlat: comp.ownPlat === true,
         ownPlatShare: platShare,
       })

@@ -7,7 +7,7 @@
 import { describe, expect, it } from 'vitest'
 import { judgeComps, type JudgeModelCall } from '@/lib/cma/judge'
 import type { CmaComp, CmaMarketContext, CmaSubject } from '@/lib/cma/types'
-import type { CompVerdict } from '@/lib/cma/judge-consistency'
+import { alignNarrativeToFinalSet, type CompVerdict } from '@/lib/cma/judge-consistency'
 
 function subject(overrides: Partial<CmaSubject> = {}): CmaSubject {
   return {
@@ -165,6 +165,55 @@ describe('the own-plat restoration (Matt 2026-09-10, two exemptions and only two
     const peer = { ...platPeer(true), publicRemarks: 'Duplex with two units, each rented.' }
     const result = await judgeComps(subject(), [...cluster, peer], market, { callModel: productCut, minComps: 3 })
     expect(result!.verdicts.find((x) => x.listingKey === 'PLAT')!.tier).toBe('exclude')
+  })
+})
+
+describe('a restoration retires the band and the exclusion the judge stated (review of da8dce6, 2026-09-30)', () => {
+  it('drops "One lower-priced sale was set aside" and the $350 to $420 rule once the $278 own-plat sale is restored', async () => {
+    const call: JudgeModelCall = async (args) => {
+      const turn = await priceCut(args)
+      return {
+        ...turn,
+        payload: {
+          ...(turn.payload as Record<string, unknown>),
+          narrative:
+            'Subject condition is unknown beyond the listing remarks. One lower-priced sale was set aside as a different price tier.',
+        },
+      }
+    }
+    const comps = [...cluster, platPeer(true)]
+    const result = await judgeComps(subject(), comps, market, { callModel: call, minComps: 3 })
+    expect(result!.keptKeys).toContain('PLAT')
+    // Nothing was set aside, and the kept set runs $278 to $392 per square foot.
+    expect(result!.narrative).not.toMatch(/set aside/)
+    expect(result!.narrative).not.toMatch(/\$350 to \$420/)
+    expect(result!.narrative).toBe('Subject condition is unknown beyond the listing remarks.')
+    expect(result!.exclusionRule).toBe('')
+    expect(result!.consistency!.resolvedByCode.join(' ')).toMatch(/declared exclusion rule/)
+    // And the final-set pass the build runs finds nothing left to remove.
+    const priced = comps.map((c) => ({
+      listingKey: c.listingKey,
+      address: c.address,
+      subdivision: c.subdivision,
+      lotAcres: c.lotAcres,
+      tier: (c.listingKey === 'PLAT' ? 'weak' : 'strong') as 'strong' | 'weak',
+      closePrice: c.closePrice,
+      sqft: c.sqft,
+    }))
+    expect(alignNarrativeToFinalSet({ narrative: result!.narrative, priced, candidates: priced, subject: { streetAddress: '4541 36th', lotAcres: 0.08 } }).removed).toEqual([])
+  })
+
+  it('does not append a declared band the kept set refutes, even with no restoration', async () => {
+    // Four sales near $389/sqft; the model declares $350 to $420 and writes no band sentence itself.
+    const call: JudgeModelCall = async () => ({
+      payload: payload(cluster.map((c) => ({ listingKey: c.listingKey, tier: 'strong' as const, reason: 'Same plat.' })), {
+        narrative: 'Four sales set the range.',
+      }),
+      raw: '{}',
+      costUsd: 0,
+    })
+    const result = await judgeComps(subject(), cluster, market, { callModel: call, minComps: 3 })
+    expect(result!.narrative).not.toMatch(/\$350 to \$420/)
   })
 })
 

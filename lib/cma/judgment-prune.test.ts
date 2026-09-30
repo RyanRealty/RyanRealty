@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { MIN_COMPS } from '@/lib/cma/comps'
 import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
-import { isHardProductExclusion, pricingCompsAfterJudgment, reviewWeightFactor } from '@/lib/cma/judgment-prune'
+import { isHardProductExclusion, pricingCompsAfterJudgment } from '@/lib/cma/judgment-prune'
+import { reviewWeightFactor } from '@/lib/cma/review-weight'
 import { isPriceTierExclusion } from '@/lib/cma/judge-consistency'
 
 const sale = (listingKey: string, yearBuilt: number, propertySubType = 'Townhouse') => ({
@@ -285,6 +286,55 @@ describe('age-restricted housing is a different product at the backstop', () => 
     expect(gated.comps).toHaveLength(3)
   })
 
+  it('walls a sale whose MLS SeniorCommunityYN is true, with no remarks at all, from an ordinary subject', () => {
+    const flagged = sfr('flagged', { publicRemarks: null, subdivision: 'Brookside', seniorCommunityYn: true })
+    const selected = [flagged, ...ordinary]
+    const gated = pricingCompsAfterJudgment({
+      selected,
+      vetted: selected,
+      verdicts: selected.map((c) => kept(c.listingKey)),
+      subject: SFR_SUBJECT,
+      minComps: MIN_COMPS,
+      asOfYear: 2026,
+    })
+    expect(gated.droppedProduct).toBe(1)
+    expect(gated.comps.map((c) => c.listingKey)).not.toContain('flagged')
+  })
+
+  it('treats a subject whose MLS SeniorCommunityYN is true as 55+, so a 55+ sale prices it', () => {
+    const selected = [waverly, ...ordinary]
+    const gated = pricingCompsAfterJudgment({
+      selected,
+      vetted: selected,
+      verdicts: selected.map((c) => kept(c.listingKey)),
+      subject: { ...SFR_SUBJECT, seniorCommunityYn: true },
+      minComps: MIN_COMPS,
+      asOfYear: 2026,
+    })
+    expect(gated.droppedProduct).toBe(0)
+    expect(gated.comps).toHaveLength(4)
+  })
+
+  it('counts flagged own-plat sales toward the plat-majority share', () => {
+    // Two of three own-plat sales carry the flag and no 55+ remarks: the plat
+    // is a 55+ community, so its flagged sales price the subject.
+    const plat = [
+      sfr('w-1', { publicRemarks: 'Single level.', subdivision: 'Waverly', ownPlat: true, seniorCommunityYn: true }),
+      sfr('w-2', { publicRemarks: 'Single level.', subdivision: 'Waverly', ownPlat: true, seniorCommunityYn: true }),
+      sfr('w-3', { publicRemarks: 'Single level.', subdivision: 'Waverly', ownPlat: true, seniorCommunityYn: false }),
+    ]
+    const gated = pricingCompsAfterJudgment({
+      selected: plat,
+      vetted: plat,
+      verdicts: plat.map((c) => kept(c.listingKey)),
+      subject: { ...SFR_SUBJECT, publicRemarks: 'Single level home.', subdivision: 'Waverly' },
+      minComps: MIN_COMPS,
+      asOfYear: 2026,
+    })
+    expect(gated.droppedProduct).toBe(0)
+    expect(gated.comps).toHaveLength(3)
+  })
+
   it('reads the facts ladder\'s plat share over the candidates when it has one', () => {
     const falls = sfr('falls', {
       publicRemarks: 'Home in The Falls, a 55+ Active Adult Community at Eagle Crest.',
@@ -312,10 +362,14 @@ describe('age-restricted housing is a different product at the backstop', () => 
 })
 
 describe('reviewWeightFactor', () => {
-  it('carries weak at half, never carries an exclude above weak, and strong at full', () => {
+  it('halves weak only: strong, an exclude on a broker-picked set, and no verdict all carry full weight', () => {
+    // A broker-picked set prices as chosen (SKILL.md 0.1). Halving an exclude
+    // there changed the price on curated CMAs the 2026-09-29 defect never
+    // touched, and no ruling asked for it (review of da8dce6, 2026-09-30). An
+    // automatic set never prices an exclude, so the factor never meets one.
     expect(reviewWeightFactor('strong')).toBe(1)
     expect(reviewWeightFactor('weak')).toBe(0.5)
-    expect(reviewWeightFactor('exclude')).toBe(0.5)
+    expect(reviewWeightFactor('exclude')).toBe(1)
     expect(reviewWeightFactor(undefined)).toBe(1)
     expect(reviewWeightFactor(null)).toBe(1)
   })

@@ -270,6 +270,45 @@ export async function getPricingSubdivisionCells(citySlug: string): Promise<Map<
   return out
 }
 
+/**
+ * The pool sales the MLS flags as a senior community (listings.senior_community_yn
+ * = true). sale_pricing_facts does not carry the field, and the CMA's age wall
+ * reads it as evidence (lib/pricing/age-restricted.ts). Only TRUE is returned:
+ * false and null are the MLS default an agent leaves in place, not evidence.
+ * Bounded by ListingKey, in chunks, so a 3,000-sale pool stays a few small reads.
+ */
+export async function selectSeniorCommunityListingKeys(listingKeys: readonly string[]): Promise<Set<string>> {
+  const out = new Set<string>()
+  const sb = client()
+  if (!sb || listingKeys.length === 0) return out
+  const keys = [...new Set(listingKeys.filter((k) => typeof k === 'string' && k.trim()))]
+  const CHUNK = 150
+  const chunks: string[][] = []
+  for (let i = 0; i < keys.length; i += CHUNK) chunks.push(keys.slice(i, i + CHUNK))
+  const PARALLEL = 4
+  for (let i = 0; i < chunks.length; i += PARALLEL) {
+    const results = await Promise.all(
+      chunks.slice(i, i + PARALLEL).map((chunk) =>
+        // @canonical-key — the keys are sale_pricing_facts.listing_key, which the
+        // facts refresh copies from listings."ListingKey" (migration 20260814020000).
+        sb.from('listings').select('ListingKey').in('ListingKey', chunk).eq('senior_community_yn', true),
+      ),
+    )
+    for (const { data, error } of results) {
+      if (error) {
+        // Fail open: a missed flag leaves the text and plat rules in charge,
+        // which is the behavior before the flag was read at all.
+        console.error('[selectSeniorCommunityListingKeys]', error.message)
+        continue
+      }
+      for (const r of (data ?? []) as Array<{ ListingKey?: unknown }>) {
+        if (typeof r.ListingKey === 'string') out.add(r.ListingKey)
+      }
+    }
+  }
+  return out
+}
+
 /** One-row WaterSource read. Safe: bounded by ListingKey. */
 export async function getListingWaterSource(listingKey: string): Promise<unknown> {
   const sb = client()

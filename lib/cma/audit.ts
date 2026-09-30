@@ -17,6 +17,7 @@
  */
 
 import { GROK_MODELS, generateGrokStructured, grokConfigured } from '@/lib/grok'
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { setAuditUnavailableReason } from '@/lib/cma/llm-unavailable'
 import { checkNarrativeIntegrity } from '@/lib/cma/audit-narrative-integrity'
 import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
@@ -254,7 +255,7 @@ export async function auditCma(args: {
     : '(none)'
 
   const marketLine = market
-    ? `${market.geoLabel}: ${market.marketVerdict}, ${market.monthsOfSupply} MoS, median $${market.medianSalePrice?.toLocaleString?.() ?? market.medianSalePrice}, median $${market.medianPpsf}/sqft, ${market.yoyMedianPriceDeltaPct}% YoY, sale-to-list ${market.saleToListRatio}.`
+    ? `${market.geoLabel}: ${market.marketVerdict}, ${market.monthsOfSupply != null ? formatMonthsOfSupply(market.monthsOfSupply) : 'unknown'} MoS, median $${market.medianSalePrice?.toLocaleString?.() ?? market.medianSalePrice}, median $${market.medianPpsf}/sqft, ${market.yoyMedianPriceDeltaPct}% YoY, sale-to-list ${market.saleToListRatio}.`
     : 'No verified market context (no time adjustment applied).'
 
   const system =

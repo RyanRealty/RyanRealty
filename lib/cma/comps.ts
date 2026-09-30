@@ -221,6 +221,8 @@ function rowToComp(row: CmaListingRow, tier: string, land = false): CmaComp | nu
     garageSpaces: num(row['garage_spaces']),
     photoUrl: str(row['PhotoURL']),
     publicRemarks: str(row['public_remarks']),
+    // MLS SeniorCommunityYN: only TRUE is age-restriction evidence.
+    seniorCommunityYn: row['senior_community_yn'] === true ? true : row['senior_community_yn'] === false ? false : null,
     viewDescription: mlsText(row['view_description']),
     taxAnnual: num(row['tax_annual_amount']),
     listPrice: num(row['ListPrice']),
@@ -635,7 +637,10 @@ export async function selectComps(
   // that rung is graded. Undefined until an own-plat rung has returned rows: an
   // own-plat sale is let through until then, and the build decides with the
   // final share (selection.ownPlatAgeRestrictedShare).
-  const ownPlatRows = new Map<string, { publicRemarks: string | null; subdivision: string | null }>()
+  const ownPlatRows = new Map<
+    string,
+    { listingKey: string; publicRemarks: string | null; subdivision: string | null; seniorCommunityYn: boolean | null }
+  >()
   let ownPlatAgeShare: number | null | undefined = undefined
   for (const tier of tiers) {
     const skip =
@@ -744,7 +749,14 @@ export async function selectComps(
     if (isOwnPlatRung(tier.name) && rows.length > 0) {
       for (const r of rows) {
         const key = str(r['ListingKey'])
-        if (key) ownPlatRows.set(key, { publicRemarks: str(r['public_remarks']), subdivision: str(r['SubdivisionName']) })
+        if (key) {
+          ownPlatRows.set(key, {
+            listingKey: key,
+            publicRemarks: str(r['public_remarks']),
+            subdivision: str(r['SubdivisionName']),
+            seniorCommunityYn: r['senior_community_yn'] === true ? true : null,
+          })
+        }
       }
       ownPlatAgeShare = ownPlatAgeRestrictedShare([...ownPlatRows.values()])
     }
@@ -999,9 +1011,11 @@ export async function selectComps(
       // plat it walls unless the subject is 55+ itself; inside the plat the build
       // decides once it can see how much of the plat is 55+.
       if (
+        // The records themselves: the subject is read once per walk, and a
+        // sale that comes back on a later rung by its ListingKey.
         ageRestrictedMismatch({
-          subject: { publicRemarks: subject.publicRemarks, subdivision: subject.subdivision },
-          sale: { publicRemarks: comp.publicRemarks, subdivision: comp.subdivision },
+          subject,
+          sale: comp,
           saleInOwnPlat: inOwnPlat,
           ownPlatShare: ownPlatAgeShare,
         })

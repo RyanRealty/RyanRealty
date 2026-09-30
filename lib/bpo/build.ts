@@ -32,7 +32,7 @@ import { adjustComps, computePricing } from '@/lib/cma/pricing'
 import { loadBpoEngineInputs, priceBpoAdjusted, bpoCompMap } from '@/lib/bpo/engine'
 import { judgeComps } from '@/lib/cma/judge'
 import { pricingCompsAfterJudgment } from '@/lib/cma/judgment-prune'
-import { alignNarrativeToFinalSet, claimTierOf, honestComparabilityLine } from '@/lib/cma/judge-consistency'
+import { comparabilityNarrativeGate } from '@/lib/cma/narrative-final'
 import { selectionIsExclusivePocket } from '@/lib/pricing/exclusive-pocket-date-adj'
 import { auditCma } from '@/lib/cma/audit'
 import { resolveDevelopmentOpportunities } from '@/lib/cma/development'
@@ -43,7 +43,7 @@ import { deriveOpinion } from '@/lib/bpo/opinion'
 import { deriveOfferStrategy } from '@/lib/bpo/offer'
 import { buildBpoRationale } from '@/lib/bpo/narrative'
 import { renderBpoHtml } from '@/lib/bpo/render'
-import type { CmaBroker, CmaComp } from '@/lib/cma/types'
+import type { CmaBroker } from '@/lib/cma/types'
 import type { BpoBuildInput, BpoBuildResult } from '@/lib/bpo/types'
 
 export const BPO_BUILDER_VERSION = 'bpo-deterministic-v1 (2026-07-09)'
@@ -132,6 +132,8 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
     // Vets every candidate comp on the full feature set before any math.
     const judgment = await judgeComps(subject, selection.comps, market)
     let compsForPricing = selection.comps
+    // Candidates the product wall kept out before pricing (see the CMA build).
+    let differentProduct = 0
     {
       const keep = new Set(judgment?.keptKeys ?? [])
       const vetted = judgment ? selection.comps.filter((c) => keep.has(c.listingKey)) : selection.comps
@@ -145,6 +147,7 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
           newConstructionYn: subject.newConstructionYn,
           publicRemarks: subject.publicRemarks,
           subdivision: subject.subdivision,
+          seniorCommunityYn: subject.seniorCommunityYn,
         },
         minComps: MIN_COMPS,
         exclusivePocket: selectionIsExclusivePocket(selection.tiersUsed),
@@ -161,6 +164,7 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
         return { ok: false, error: err, slug }
       }
       compsForPricing = gated.comps
+      differentProduct = gated.droppedProduct
       if (judgment) {
         selection.trace.push(
           `Comparability judgment (${judgment.model}): kept ${judgment.keptKeys.length} of ${selection.comps.length} candidates, excluded ${judgment.verdicts.filter((v) => v.tier === 'exclude').length} as non-comparable, down-weighted ${judgment.verdicts.filter((v) => v.tier === 'weak').length}. ${gated.trace}`,
@@ -174,6 +178,21 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
       }
     }
     const tierByKey = new Map(judgment?.verdicts.map((v) => [v.listingKey, v.tier]) ?? [])
+    const reviewExclusions = () =>
+      judgment?.verdicts.filter((v) => v.tier === 'exclude').map((v) => ({ listingKey: v.listingKey, reason: v.reason })) ?? []
+    // The judge's narrative, held apart from whatever a pass prints, and gated
+    // again on every set this opinion prices (the same gate as the CMA,
+    // lib/cma/narrative-final.ts). `gatedKeys` is the set the review and the
+    // product wall let through, before any audit repair.
+    const narrativeGate = comparabilityNarrativeGate(judgment?.narrative, {
+      candidates: selection.comps,
+      excluded: reviewExclusions(),
+      subject,
+      market,
+      tierByKey,
+      gatedKeys: new Set(compsForPricing.map((c) => c.listingKey)),
+      differentProduct,
+    })
 
     // 3. Listing history — all MLS cycles at the address.
     const split = splitStreet(subject.streetAddress)
@@ -222,36 +241,36 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
         .filter(Boolean)
         .join(' · ')
     // The judge's narrative against the sales that actually price, before each
-    // audit reads it and before the rationale prints it (the same pass the CMA
-    // runs, lib/cma/judge-consistency.ts alignNarrativeToFinalSet).
+    // audit reads it and before the rationale prints it. The same gate the CMA
+    // runs (lib/cma/narrative-final.ts): refuted sentences come out, the full
+    // integrity check runs on what is left, and the honest count line prints
+    // when nothing true is left OR a finding remains. The BPO used to fall back
+    // only on an empty narrative, so a named sale that is not in the report
+    // still printed in the rationale (review of da8dce6, 2026-09-30).
     const alignNarrative = () => {
       if (!judgment) return
-      const facts = (c: CmaComp) => ({
-        listingKey: c.listingKey,
-        address: c.address,
-        subdivision: c.subdivision,
-        lotAcres: c.lotAcres,
-        tier: claimTierOf(tierByKey.get(c.listingKey)),
-      })
-      const aligned = alignNarrativeToFinalSet({
-        narrative: judgment.narrative,
-        priced: compsForPricing.map(facts),
-        candidates: selection.comps.map(facts),
-        subject: { streetAddress: subject.streetAddress, lotAcres: subject.lotAcres },
-      })
-      judgment.narrative = aligned.narrative.trim()
-        ? aligned.narrative
-        : honestComparabilityLine({
-            keptCount: compsForPricing.length,
-            excludedCount: selection.comps.length - compsForPricing.length,
-          })
+      const final = narrativeGate.gate(adjusted)
+      if (final.removed.length > 0) {
+        selection.trace.push(
+          `Comparability narrative checked against the ${compsForPricing.length} priced sale(s): ${
+            new Set(final.removed.map((f) => f.sentence)).size
+          } sentence(s) removed because the priced set refutes them (${[...new Set(final.removed.map((f) => f.kind))].join(', ')}).`,
+        )
+      }
+      if (final.fellBack) {
+        selection.trace.push(
+          final.integrity.length > 0
+            ? `Comparability narrative replaced by the count line: ${final.integrity.length} integrity finding(s) remained after the refuted sentences came out.`
+            : 'Comparability narrative replaced by the count line: no sentence of it survived the priced set.',
+        )
+      }
+      judgment.narrative = final.narrative
     }
     const runAudit = () =>
       auditCma({
         subject,
         comps: adjusted,
-        excluded:
-          judgment?.verdicts.filter((v) => v.tier === 'exclude').map((v) => ({ listingKey: v.listingKey, reason: v.reason })) ?? [],
+        excluded: reviewExclusions(),
         pricing,
         judgment,
         market,
@@ -344,7 +363,10 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
       rationale += ` Comparable review: ${compsForPricing.length} of ${selection.comps.length} candidate sales kept after a per-comp comparability review. ${judgment.narrative}`
     }
     if (repairedKeys.length) {
-      rationale += ` ${repairedKeys.length} comp(s) referenced by the initial review were subsequently removed on an independent audit's findings and the opinion re-derived.`
+      // What happened, and nothing the gate made untrue: the narrative above
+      // was checked again against the remaining set, so it does not describe
+      // an initial review that still names the removed sales.
+      rationale += ` The independent audit's findings removed ${repairedKeys.length} comp(s). The opinion was re-derived on the remaining set, and the comparability narrative was checked again against it.`
     }
     rationale += audit
       ? audit.verdict === 'pass'

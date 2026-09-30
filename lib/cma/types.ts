@@ -54,6 +54,11 @@ export interface CmaSubject {
   /** MLS NewConstructionYN. Null means the feed did not say. */
   newConstructionYn?: boolean | null
   /**
+   * MLS SeniorCommunityYN. True is evidence the home is in an age-restricted
+   * community (lib/pricing/age-restricted.ts); false and null are not evidence.
+   */
+  seniorCommunityYn?: boolean | null
+  /**
    * Who holds the subject's newest listing cycle. Read for the compliance
    * carve-out (CmaSubjectStatus): a document may not solicit a listing that is
    * live with another brokerage. Optional so existing fixtures keep compiling.
@@ -132,6 +137,12 @@ export interface CmaComp {
    * Absent on a broker-picked comp, which no search admitted.
    */
   ownPlat?: boolean | null
+  /**
+   * MLS SeniorCommunityYN for this sale. True walls it out of an ordinary
+   * subject's pricing (lib/pricing/age-restricted.ts); false and null are not
+   * evidence either way.
+   */
+  seniorCommunityYn?: boolean | null
 }
 
 export type CmaCompKeepTier = 'strong' | 'weak'

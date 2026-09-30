@@ -29,7 +29,8 @@ import { pickCoverPhoto } from '@/lib/cma/cover-photo'
 import { applySlugStreetDirectional, formatPersistedCmaAddress } from '@/lib/cma/address-slug'
 import { applyCmaClientIntent, isCmaClientIntent, parseCmaClientIntent } from '@/lib/cma/client-intent'
 import { brokerCompRefusal, selectCompsByKeys, MIN_COMPS } from '@/lib/cma/comps'
-import { pricingCompsAfterJudgment, reviewWeightFactor } from '@/lib/cma/judgment-prune'
+import { pricingCompsAfterJudgment } from '@/lib/cma/judgment-prune'
+import { reviewWeightFactor } from '@/lib/cma/review-weight'
 import { selectCompsPreferringFacts } from '@/lib/pricing/select'
 import {
   adjustCmaCompAlongMarket,
@@ -57,8 +58,7 @@ import { getCmaMarketContext, yearMartCite, cmaMarketSources } from '@/lib/cma/m
 import { adjustComps, computePricing } from '@/lib/cma/pricing'
 import { judgeComps, readJudgeCache, repairNarrativeAgainstAudit, JudgeUnstableError } from '@/lib/cma/judge'
 import type { JudgeDecisionRecord } from '@/lib/cma/judge-vote'
-import { alignNarrativeToFinalSet, claimTierOf, honestComparabilityLine } from '@/lib/cma/judge-consistency'
-import { checkNarrativeIntegrity } from '@/lib/cma/audit-narrative-integrity'
+import { comparabilityNarrativeGate } from '@/lib/cma/narrative-final'
 import { hydratePhotoUrls } from '@/lib/cma/photos'
 import { hydrateClosedCompDaysOnMarket } from '@/lib/cma/hydrate-closed-comp-dom'
 import { resolveCmaSiteData } from '@/lib/cma/county'
@@ -452,6 +452,10 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       throw err
     }
     let compsForPricing = selection.comps
+    // Candidates the product wall kept out before pricing. With the set the
+    // review let through (the narrative gate's gatedKeys, below) it splits
+    // every candidate that does not price by the one step that took it out.
+    let differentProduct = 0
     if (!isCurated) {
       const keep = new Set(judgment?.keptKeys ?? [])
       const vetted = judgment ? selection.comps.filter((c) => keep.has(c.listingKey)) : selection.comps
@@ -469,6 +473,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           newConstructionYn: subject.newConstructionYn,
           publicRemarks: subject.publicRemarks,
           subdivision: subject.subdivision,
+          seniorCommunityYn: subject.seniorCommunityYn,
         },
         minComps: MIN_COMPS,
         exclusivePocket: selectionIsExclusivePocket(selection.tiersUsed),
@@ -485,6 +490,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         return { ok: false, error: err, slug }
       }
       compsForPricing = gated.comps
+      differentProduct = gated.droppedProduct
       if (judgment) {
         const excluded = judgment.verdicts.filter((v) => v.tier === 'exclude').length
         const weak = judgment.verdicts.filter((v) => v.tier === 'weak').length
@@ -520,7 +526,8 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // 4. Adjustments + pricing (on the vetted comp set). Judge verdicts feed
     // the Method 3 reconciliation weights: strong = full weight, weak = half
     // (bracketing only). An automatic set dropped its excludes above; a
-    // broker-picked one carries them at half weight (reviewWeightFactor).
+    // broker-picked one prices every pick as chosen, an exclude verdict
+    // included, and only `weak` is halved (reviewWeightFactor).
     const tierByKey = new Map(judgment?.verdicts.map((v) => [v.listingKey, v.tier]) ?? [])
     // ONE CITY, ONE BASIS (tasteReview round three, §1). This used to load the
     // index only on the facts path, so cma-1617-nw-8th — a Bend subject the
@@ -710,46 +717,48 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         })
       }
       if (p && judgment) {
-        const excludedCount = selection.comps.length - set.length
+        const breakdown = narrativeGate.breakdown(set)
         const weakCount = adj.filter((c) => reviewWeightFactor(tierByKey.get(c.listingKey)) < 1).length
         // THE NARRATIVE AGAINST THE FINAL PRICED SET (2026-09-30). The judge
         // wrote it about its own cut. Every sentence a count, a named drop or
-        // keep, a weight or a lot figure refutes comes out here, against the
-        // sales in `set`, and what is left is gated on the full integrity check
-        // the audit runs. A narrative with nothing true left is replaced by the
-        // honest count line. This runs whether or not the LLM audit can.
-        const aligned = alignNarrativeToFinalSet({
-          narrative: judgment.narrative,
-          priced: adj.map((c) => claimFacts(c)),
-          candidates: selection.comps.map((c) => claimFacts(c)),
-          subject: { streetAddress: subject.streetAddress, lotAcres: subject.lotAcres },
-        })
-        let narrative = aligned.narrative
-        if (aligned.removed.length > 0) {
-          const sentences = [...new Set(aligned.removed.map((f) => f.sentence))]
+        // keep, a weight, a lot figure or a $/sqft band refutes comes out here,
+        // against the sales in `set`, and what is left is gated on the full
+        // integrity check the audit runs. A narrative with nothing true left,
+        // or with a finding left, is replaced by the honest count line, split
+        // by reason. This runs whether or not the LLM audit can, and again on
+        // every set this build prices, always from the judge's own narrative
+        // (or an adopted rewrite), never from what an earlier pass printed
+        // (comparabilityNarrativeGate, lib/cma/narrative-final.ts).
+        const final = narrativeGate.gate(adj)
+        if (final.removed.length > 0) {
+          const sentences = [...new Set(final.removed.map((f) => f.sentence))]
           selection.trace.push(
             `Comparability narrative checked against the ${set.length} priced sale(s): ${sentences.length} sentence(s) removed because the priced set refutes them (${[
-              ...new Set(aligned.removed.map((f) => f.kind)),
+              ...new Set(final.removed.map((f) => f.kind)),
             ].join(', ')}): ${sentences.map((t) => `"${t}"`).join(' ')}`,
           )
         }
-        const integrity = checkNarrativeIntegrity({
-          narrative,
-          comps: adj,
-          excluded: excludedForAudit(),
-          subject,
-          market,
-          candidates: selection.comps,
-          tierByKey,
-        })
-        if (!narrative.trim() || integrity.length > 0) {
-          narrative = honestComparabilityLine({ keptCount: adj.length, excludedCount })
+        if (final.fellBack) {
+          selection.trace.push(
+            final.integrity.length > 0
+              ? `Comparability narrative replaced by the count line: ${final.integrity.length} integrity finding(s) remained after the refuted sentences came out.`
+              : 'Comparability narrative replaced by the count line: no sentence of it survived the priced set.',
+          )
         }
-        judgment.narrative = narrative
+        judgment.narrative = final.narrative
+        // Every candidate that does not price, by the one step that took it
+        // out. This used to call all of them "excluded as a different market
+        // segment", the different-product sales and the audit removals included.
+        const reasons = [
+          breakdown.reviewExcluded ? `${breakdown.reviewExcluded} excluded by the review` : null,
+          breakdown.differentProduct ? `${breakdown.differentProduct} left out as a different product type` : null,
+          breakdown.auditRemoved ? `${breakdown.auditRemoved} removed on the independent audit's findings` : null,
+          weakCount ? `${weakCount} down-weighted to bracket the range` : null,
+        ].filter((r): r is string => r != null)
         p.notes.push(
           `Comparable review: ${set.length} of ${selection.comps.length} candidate sales kept after a per-comp comparability review${
-            excludedCount ? `, ${excludedCount} excluded as a different market segment` : ''
-          }${weakCount ? `, ${weakCount} down-weighted to bracket the range` : ''}.${narrative ? ` ${narrative}` : ''}`,
+            reasons.length ? `, ${reasons.join(', ')}` : ''
+          }.${final.narrative ? ` ${final.narrative}` : ''}`,
         )
       }
       return { adj, p }
@@ -758,13 +767,18 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       judgment?.verdicts
         .filter((v) => v.tier === 'exclude')
         .map((v) => ({ listingKey: v.listingKey, reason: v.reason })) ?? []
-    // A comp in the shape the narrative claim checks read, with its review tier.
-    const claimFacts = (c: (typeof selection.comps)[number]) => ({
-      listingKey: c.listingKey,
-      address: c.address,
-      subdivision: c.subdivision,
-      lotAcres: c.lotAcres,
-      tier: claimTierOf(tierByKey.get(c.listingKey)),
+    // The judge's narrative, held apart from whatever a pass prints, and gated
+    // again on every set this build prices. `gatedKeys` is the set the review
+    // and the product wall let through, before any audit repair: a kept sale
+    // missing from a later priced set was removed on the audit's findings.
+    const narrativeGate = comparabilityNarrativeGate(judgment?.narrative, {
+      candidates: selection.comps,
+      excluded: excludedForAudit(),
+      subject,
+      market,
+      tierByKey,
+      gatedKeys: new Set(compsForPricing.map((c) => c.listingKey)),
+      differentProduct,
     })
 
     let { adj: adjusted, p: pricing } = priceSet(compsForPricing)
@@ -888,9 +902,6 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           selection.trace.push(
             `Adversarial audit repair: ${flagged.length} comp(s) flagged by the independent audit were removed and the analysis re-priced on the ${remaining.length}-comp set, then re-audited.`,
           )
-          pricing.notes.push(
-            `The comparability narrative reflects the initial review. The ${flagged.length} comp(s) it references were subsequently removed on the independent audit's findings, and the pricing recomputed on the remaining set.`,
-          )
           settled = await settleRecommended(adjusted, pricing)
           competition = settled.competition
           pricing = settled.pricing
@@ -935,15 +946,6 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         .map((f) => `${f.claim} ${f.evidence}`.trim())
         .filter(Boolean)
       if (proseFindings.length > 0) {
-        const integrityArgs = {
-          comps: adjusted,
-          excluded: excludedForAudit(),
-          subject,
-          market,
-          candidates: selection.comps,
-          tierByKey,
-        }
-        const before = checkNarrativeIntegrity({ narrative: judgment.narrative, ...integrityArgs })
         const repair = await repairNarrativeAgainstAudit({
           subject,
           comps: compsForPricing,
@@ -952,11 +954,20 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           findings: proseFindings,
         })
         if (repair) {
-          const after = checkNarrativeIntegrity({ narrative: repair.narrative, ...integrityArgs })
-          if (after.length <= before.length) {
-            judgment.narrative = repair.narrative
+          // The rewrite is held to the gate the narrative it would replace
+          // already passed, against the same priced set: its refuted sentences
+          // come out first, then the integrity check runs on what is left.
+          // This used to compare the RAW rewrite with a narrative the gate had
+          // already cleaned, so a rewrite lost to sentences the same gate would
+          // have taken out of it (review of da8dce6, 2026-09-30). It is taken
+          // only when true prose survives: a rewrite the gate reduces to the
+          // count line says less than the narrative the audit read.
+          const gatedRepair = narrativeGate.adopt(repair.narrative, adjusted)
+          if (gatedRepair.adopted) {
             const rebuilt = priceSet(compsForPricing)
-            if (rebuilt.p) {
+            if (!rebuilt.p) {
+              narrativeGate.revert()
+            } else {
               adjusted = rebuilt.adj
               pricing = rebuilt.p
               if (lastCycleFailed) {
@@ -967,7 +978,11 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
                 })
               }
               selection.trace.push(
-                `Adversarial audit narrative repair: ${proseFindings.length} finding(s) about the prose were returned to the comparability model, the corrected narrative passed the deterministic integrity check, and the analysis was re-audited on it. No comp and no price changed.`,
+                `Adversarial audit narrative repair: ${proseFindings.length} finding(s) about the prose were returned to the comparability model, the corrected narrative passed the same final-set gate as the narrative it replaced${
+                  gatedRepair.removed.length > 0
+                    ? ` after ${new Set(gatedRepair.removed.map((f) => f.sentence)).size} sentence(s) the priced set refutes came out`
+                    : ''
+                }, and the analysis was re-audited on it. No comp and no price changed.`,
               )
               settled = await settleRecommended(adjusted, pricing)
               competition = settled.competition
@@ -991,6 +1006,17 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       }
     }
 
+    // Pushed here, on the pricing that ships, and not beside the re-price: a
+    // narrative repair re-prices once more and would drop a note pushed there.
+    // It says what happened. The note it replaces said the narrative "reflects
+    // the initial review" and still named the removed sales, which stopped
+    // being true once every priced set re-gated the narrative (review of
+    // da8dce6, 2026-09-30).
+    if (repairedKeys.length > 0) {
+      pricing.notes.push(
+        `The independent audit's findings removed ${repairedKeys.length} comp(s). The pricing was recomputed on the remaining set, and the comparability narrative was checked again against it.`,
+      )
+    }
     pricing.notes.push(
       audit
         ? audit.verdict === 'pass'
@@ -1006,13 +1032,13 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
 
     // The repair is part of the accuracy trace, so it is recorded whether it was
     // taken or not. A rejected repair is the more interesting record of the two:
-    // it says the model was asked to correct the prose and could not do it
-    // without making the integrity check worse.
+    // it says the model was asked to correct the prose and its rewrite did not
+    // survive the final-set gate.
     if (narrativeRepair) {
       selection.trace.push(
         narrativeRepair.accepted
           ? `Narrative repair accepted (${narrativeRepair.model}, $${narrativeRepair.costUsd}).`
-          : `Narrative repair rejected (${narrativeRepair.model}, $${narrativeRepair.costUsd}): the rewrite did not survive the deterministic integrity check, so the audited narrative was kept and the review flag stands.`,
+          : `Narrative repair rejected (${narrativeRepair.model}, $${narrativeRepair.costUsd}): the rewrite did not survive the final-set gate (nothing true was left, or an integrity finding remained), so the audited narrative was kept and the review flag stands.`,
       )
     }
 
