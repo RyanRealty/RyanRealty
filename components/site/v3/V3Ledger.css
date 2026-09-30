@@ -784,7 +784,10 @@
    "13 for lease" printed as "13 fo" at 375. The same clearance the chart's
    y labels take. */
 @media (max-width: 40rem) {
-  .v3-ledger--encoded .v3-ledger__measure {
+  .v3-ledger--encoded .v3-ledger__measure,
+  .v3-ledger--encoded .v3-ledger__what {
+    /* The name and its detail lines too (2026-09-29: a lease town's rate
+       line wrapped under the button, "per sq ft per / month"). */
     margin-inline-end: calc(4.25rem + var(--v3-space-md) - var(--v3-gutter));
   }
 }
