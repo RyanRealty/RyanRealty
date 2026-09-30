@@ -36,6 +36,7 @@ import { resortSlugForSubdivision } from '@/lib/cma/resort-guard'
 import { getCmaMarketBoardYear } from '@/lib/cma/market-board-mart'
 import type { CmaMarketContext } from '@/lib/cma/types'
 import { isSoldAttributionTrusted, publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
+import { monthsOfSupplyVerdict } from '@/lib/format/months-of-supply'
 
 export { yearMartCite } from '@/lib/cma/market-board-mart'
 
@@ -149,22 +150,27 @@ export function assembleCmaMarketContext(input: CmaMarketAssembleInput): CmaMark
           displayedActiveCount: detached.activeCount,
         })
       : null
-  const monthsOfSupply = publishedMos != null ? +publishedMos.toFixed(1) : null
+  // THE RAW FIGURE IN THE DATA, ONE HELPER AT EVERY PRINT SITE (2026-09-30).
+  // This rounded the raw figure on its own while the verdict came from the raw
+  // value, so Redmond's raw 4.02 stored and printed "4.0 months" beside
+  // "balanced", and CLAUDE.md §0 says 4 or less is a seller's market
+  // (cma-5391-frank-redmond-97756, build_summary.market = { months_of_supply:
+  // 4, verdict: 'balanced' }). The data, the citation and every figure derived
+  // from it (the letter's monthly pace is active / months) keep the RAW value.
+  // Each print site formats it with formatMonthsOfSupply, which never lets the
+  // rounding cross a threshold the raw value does not (4.02 prints 4.1, 5.97
+  // prints 5.9), and the verdict is monthsOfSupplyVerdict on the same raw
+  // value, so the printed digits and the verdict cannot disagree. Storing the
+  // display value instead moved the printed pace (201 for sale at 4.02 printed
+  // 49 a month, not 50).
+  const monthsOfSupply = publishedMos
   const mosFormula =
     publishedMos != null
       ? geoType === 'city'
         ? 'getMetric months_of_supply mt-v1 detached MLS-city (same path as /sell)'
         : 'getMetric months_of_supply mt-v1 detached (source market-truth)'
       : 'withheld: detached cell missing (no pulse fallback)'
-  let verdict: CmaMarketContext['marketVerdict'] = null
-  if (detached && publishedMos != null) {
-    verdict =
-      detached.verdictKind === 'sellers'
-        ? 'seller'
-        : detached.verdictKind === 'buyers'
-          ? 'buyer'
-          : 'balanced'
-  }
+  const verdict: CmaMarketContext['marketVerdict'] = monthsOfSupplyVerdict(publishedMos)?.key ?? null
 
   const periodEnd = stats?.period_end ?? detached?.completeThrough ?? pulse?.updated_at?.slice(0, 10) ?? ''
   const periodStart = stats?.period_start ?? (periodEnd ? shiftUtcMonths(periodEnd, -12) : '')

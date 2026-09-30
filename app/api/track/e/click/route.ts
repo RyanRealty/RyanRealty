@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyEmailToken } from '@/lib/email-tracking'
+import { verifyEmailToken, type EmailTrackContext } from '@/lib/email-tracking'
 import { createServiceClient } from '@/lib/supabase/service'
 import { recordEmailEvent, sendTypeFromEmailKey } from '@/lib/crm/email-events'
 import { recordNewsletterEngagement } from '@/lib/newsletter/track-ledger'
 import { channelFromEmailKey, decorateOutboundUrl } from '@/lib/identity/outbound-links'
-import { stripIdentityParams } from '@/app/api/visitors/track/strip-identity'
+import { stripIdentityParams, withoutIdentityOnOwnSite } from '@/app/api/visitors/track/strip-identity'
+import { classifyAutomation } from '@/lib/analytics/automation'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -15,6 +16,21 @@ const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com')
  * Email click tracker. The destination URL is signed INSIDE the token (never a
  * separate query param), so it cannot be tampered into an open redirect. Logs an
  * `email_click` row to crm_timeline, then 302-redirects to the real target.
+ *
+ * A click by AUTOMATION is not a click. Email security scanners, link previewers
+ * and crawlers follow every link in a message the moment it lands, and each one
+ * used to put a "clicked" mark on the recipient: a crm_timeline row, an
+ * email_events `click` and a newsletter-ledger click, all read as the contact
+ * engaging. The request's user agent is classified (lib/analytics/automation.ts,
+ * the classifier the site's own tracker applies). An automated request is still
+ * redirected, but it is recorded once, as email_events `click_automated` with
+ * meta.automation_reason, and writes no timeline row and no newsletter click. Its
+ * redirect carries no person token (withoutIdentityOnOwnSite): a gateway that
+ * resolves the link with a library user agent renders the page it was sent to in a
+ * sandbox with an ordinary one, and a freshly signed `_pid` there identified the
+ * sandbox as the contact (review of 2026-09-30). Scanners that render the link in a
+ * real browser with a spoofed user agent are not caught (docs/TRACKING_POLICY.md,
+ * "Known limits").
  */
 export async function GET(req: NextRequest) {
   const ctx = verifyEmailToken(req.nextUrl.searchParams.get('t'))
@@ -23,6 +39,11 @@ export async function GET(req: NextRequest) {
   // already about, and a stored URL is read, exported and joined everywhere).
   const logged = stripIdentityParams(target) ?? target
   if (ctx && Number.isFinite(ctx.personId)) {
+    const automation = classifyAutomation({ userAgent: req.headers.get('user-agent') })
+    if (automation.automated) {
+      await recordAutomatedClick(ctx, logged, automation.reason)
+      return NextResponse.redirect(withoutIdentityOnOwnSite(target), 302)
+    }
     try {
       const sb = createServiceClient()
       // De-duped (edge case T-4): the dedupe_key includes the target URL, so
@@ -78,6 +99,29 @@ export async function GET(req: NextRequest) {
     }
   }
   return NextResponse.redirect(ctx ? identityCarryingTarget(target, ctx) : target, 302)
+}
+
+/**
+ * The one record an automated click leaves: email_events `click_automated`,
+ * keyed like a click (person, email, link) so a scanner that hits the same link
+ * ten times is one row. No crm_timeline row, no newsletter click. Never throws:
+ * the redirect must fire whatever the reporting side does.
+ */
+async function recordAutomatedClick(ctx: EmailTrackContext, logged: string, reason: string | null): Promise<void> {
+  try {
+    const res = await recordEmailEvent({
+      personId: ctx.personId,
+      broker: ctx.broker ?? null,
+      sendType: sendTypeFromEmailKey(ctx.emailKey),
+      event: 'click_automated',
+      emailKey: ctx.emailKey || null,
+      subject: ctx.label || null,
+      meta: { url: logged, automation_reason: reason },
+    })
+    if (!res.ok) console.warn('[track/click] automated click not recorded:', res.error)
+  } catch (err) {
+    console.warn('[track/click] automated click log failed:', err)
+  }
 }
 
 /**

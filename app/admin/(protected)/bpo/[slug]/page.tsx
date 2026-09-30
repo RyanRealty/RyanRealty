@@ -50,6 +50,7 @@ import { StateWord, type AdminState } from '@/components/admin/v2/StateWord'
 import { BpoReviewActions } from '@/app/admin/(protected)/bpo/_components/BpoReviewActions'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatDate } from '@/lib/format/date'
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 
 export const dynamic = 'force-dynamic'
 
@@ -227,7 +228,7 @@ export default async function AdminBpoReviewPage({ params }: { params: Promise<{
       {market ? (
         <p style={{ marginTop: 16, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
           {String(market.geo_label ?? '')}
-          {market.months_of_supply != null ? ` · ${String(market.months_of_supply)} months of supply` : ''}
+          {market.months_of_supply != null ? ` · ${formatMonthsOfSupply(Number(market.months_of_supply))} months of supply` : ''}
           {market.median_dom != null ? ` · median ${Math.round(Number(market.median_dom))} days` : ''}
         </p>
       ) : null}

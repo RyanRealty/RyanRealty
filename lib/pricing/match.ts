@@ -5,7 +5,8 @@
 
 import { resortCommunityCompatible } from '@/lib/cma/resort-guard'
 import { communitySlugForSubdivision, isResortCommunity } from '@/lib/cma/resort-guard'
-import { resolvePriceAnchor, sameStreetPeer, streetKey, type PriceAnchor } from '@/lib/pricing/price-anchor'
+import { resolvePriceAnchor, samePlat, sameStreetPeer, streetKey, type PriceAnchor } from '@/lib/pricing/price-anchor'
+import { ageRestrictedMismatch, ownPlatAgeRestrictedShare } from '@/lib/pricing/age-restricted'
 import { bathCountCompatible, distanceMiles, proximityLabel, resolveMarketArea } from '@/lib/cma/market-area'
 import { roomCountsUsable } from '@/lib/pricing/room-counts'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
@@ -101,6 +102,15 @@ export type PricingSubject = {
   /** Zoning of record. Hard cut only when both sides have a non-empty string. */
   zoning?: string | null
   publicRemarks?: string | null
+  /** The MLS SeniorCommunityYN field. True is age-restriction evidence; false or null is not evidence. */
+  seniorCommunityYn?: boolean | null
+  /**
+   * Share of the sales in this home's own plat that are age-restricted,
+   * measured once over the ladder's pool (walkPricingLadder). Above half, the
+   * plat IS a 55+ community and its 55+ sales price this home
+   * (lib/pricing/age-restricted.ts). Undefined outside the ladder walk.
+   */
+  ownPlatAgeRestrictedShare?: number | null
   /** Subject irrigation from remarks and/or OWRD. Sales use remarks only. */
   irrigationClass?: IrrigationClass | null
   /**
@@ -152,6 +162,11 @@ export type PricingSale = {
   closePpsf: number
   photoUrl: string | null
   publicRemarks: string | null
+  /**
+   * The MLS SeniorCommunityYN field, read from listings (sale_pricing_facts
+   * does not carry it). True is age-restriction evidence; false or null is not.
+   */
+  seniorCommunityYn?: boolean | null
   marketArea?: string | null
   /** County plat the sale sits in (boundaries.geo_slug); set by the selector for the adjacency rung. */
   subdivisionSlug?: string | null
@@ -175,6 +190,13 @@ export type SelectedPricingComp = PricingSale & {
    * the wall the selector deliberately opened.
    */
   roomDifference?: Array<'beds' | 'baths'> | null
+  /**
+   * True when the sale sits in the subject's own plat by the same-subdivision
+   * rung's own test (inSubjectPlat), whichever rung admitted it. The comparability
+   * judge reads it: a sale in the subject's own plat may not be dropped on price
+   * tier (Matt 2026-09-10, the first of the two exemptions).
+   */
+  ownPlat?: boolean
 }
 
 /**
@@ -219,6 +241,8 @@ export type PricingMatchResult = {
   ruralSplits?: RuralSplitCounts
   /** Present when a blank SubdivisionName was filled, or a named tract collected its street cluster. */
   inferredPocket?: InferredPocket | null
+  /** The own-plat age-restricted share the walk graded against (PricingSubject). */
+  ownPlatAgeRestrictedShare?: number | null
   /**
    * Closed sales held from own-street / own-plat / street-cluster rungs.
    * Geography widening is skipped when closed+pending is a tight set.
@@ -295,6 +319,22 @@ function applesOk(
   ownPlat = false,
 ): boolean {
   if (!productCompatible(subject.productClass, sale.productClass)) return false
+  // AGE-RESTRICTED HOUSING IS A DIFFERENT PRODUCT (lib/pricing/age-restricted.ts,
+  // 2026-09-30). A 55+ sale off the subject's own plat walls on every rung
+  // unless the subject is 55+ itself. Inside the plat it passes here, and the
+  // build decides once it can see how much of the plat is 55+.
+  // The subject and the sale go in as the records the walk holds, so each is
+  // read once per walk however many rungs grade it (isAgeRestricted's memo).
+  if (
+    ageRestrictedMismatch({
+      subject,
+      sale,
+      saleInOwnPlat: inSubjectPlat(subject, sale),
+      ownPlatShare: subject.ownPlatAgeRestrictedShare,
+    })
+  ) {
+    return false
+  }
   const customOrNew = isCustomOrNewSubject(
     {
       yearBuilt: subject.yearBuilt,
@@ -435,13 +475,7 @@ function passesTier(
   // Street-cluster subjects: "same subdivision" means the exclusive Canter /
   // Horse Back / Ranch pocket, not every Black Butte home that shares the
   // catch-all SaddleStone MLS name (Matt Flex HARD LOCK 2026-09-15).
-  if (tier.sameSubdivision) {
-    if (isClusterPocket(subject)) {
-      if (!saleInExclusivePocket(subject, sale)) return { ok: false, miles: null }
-    } else if (!samePlat(subject, sale)) {
-      return { ok: false, miles: null }
-    }
-  }
+  if (tier.sameSubdivision && !inSubjectPlat(subject, sale)) return { ok: false, miles: null }
   // THE PARENT LEVEL IS A WALL (Matt 2026-09-09): a plat inside a planned or
   // golf community is priced from that community until the community itself is
   // exhausted. Only the like-community rung and a boundary-exit rung may look
@@ -647,6 +681,7 @@ function toSelected(subject: PricingSubject, sale: PricingSale, asOf: string, ti
   return {
     ...sale,
     selectionTier: tierName,
+    ownPlat: inSubjectPlat(subject, sale),
     proximity: proximityLabel(
       { lat: subject.latitude, lng: subject.longitude },
       { lat: sale.latitude, lng: sale.longitude },
@@ -675,27 +710,15 @@ function saleMiles(subject: PricingSubject, sale: PricingSale): number {
 const BRACKET_MAX_AGE_MONTHS = 24
 
 /**
- * IS THIS SALE IN THE SUBJECT'S OWN PLAT? (Matt 2026-09-10: "location is the
- * primary thing... within the subdivision, that's the truest sense of comp.")
- *
- * The RECORDED plat polygon first, from the county boundary both the subject
- * and the sale were resolved against, and the MLS SubdivisionName only as a
- * fallback. The MLS field is typed by a listing agent and 31 of 330 priced
- * subjects carry a placeholder or a blank in it.
- *
- * MEASURED, because the first version of this comment guessed and was wrong.
- * Recorded-plat coverage over the queue's own subjects on 2026-09-10: 120 of
- * the 299 that name a subdivision also sit inside a recorded plat, and 5 of
- * the 31 that name none do. So the polygon rescues five documents, not the
- * hundred the ladder's skip counter suggested. It is still the better key
- * where both are known — a polygon does not depend on how someone typed a
- * tract name — and it costs nothing, because select.ts already resolves these
- * slugs for the adjacent-plat rung.
+ * THE SAME-SUBDIVISION RUNG'S MEMBERSHIP TEST, as one function. A street-cluster
+ * subject's "same subdivision" is its exclusive pocket (Canter / Horse Back /
+ * Ranch, not every Black Butte home under the catch-all MLS name); everyone
+ * else's is its own plat (samePlat in lib/pricing/price-anchor.ts, the recorded
+ * polygon first and the MLS name as the fallback). The rung, the age-restricted
+ * wall, and the `ownPlat` stamp every selected sale carries all read this.
  */
-function samePlat(subject: PricingSubject, sale: PricingSale): boolean {
-  if (subject.subdivisionSlug && sale.subdivisionSlug) return sale.subdivisionSlug === subject.subdivisionSlug
-  if (subject.subdivisionNorm) return sale.subdivisionNorm === subject.subdivisionNorm
-  return false
+function inSubjectPlat(subject: PricingSubject, sale: PricingSale): boolean {
+  return isClusterPocket(subject) ? saleInExclusivePocket(subject, sale) : samePlat(subject, sale)
 }
 
 /** Which room counts differ, on a sale the plat rung took regardless. */
@@ -878,6 +901,9 @@ export function walkPricingLadder(
 ): PricingMatchResult {
   const inferred = inferPocketForPricingWalk(rawSubject, pool)
   const subject = applyInferredPocket({ ...rawSubject }, inferred)
+  // Whether this home's own plat is a 55+ community, read off the plat's own
+  // sales in the pool, once, before any rung grades a sale against it.
+  subject.ownPlatAgeRestrictedShare = ownPlatAgeRestrictedShare(pool.filter((s) => inSubjectPlat(subject, s)))
   const asOf = opts.asOf.slice(0, 10)
   const cells = opts.cells ?? new Map()
   // The subject's price tier, resolved once. Only consulted where its own plat
@@ -1090,6 +1116,7 @@ export function walkPricingLadder(
     rungs,
     priceAnchor,
     inferredPocket: subject.inferredPocket ?? null,
+    ownPlatAgeRestrictedShare: subject.ownPlatAgeRestrictedShare ?? null,
     exclusiveCount,
     pocketStarved,
     ...(ruralSplits ? { ruralSplits } : {}),

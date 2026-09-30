@@ -182,6 +182,57 @@ export function streetKey(address: string | null | undefined): string | null {
   return tokens[0] ?? null
 }
 
+/**
+ * THE OTHER EXEMPTION: THE SUBJECT'S OWN PLAT (Matt 2026-09-10, "two
+ * exemptions and only two"). A sale inside it IS the subject's price tier. An
+ * adjacent plat is a different plat and is graded like anything else.
+ *
+ * Keys, not names: `subdivisionSlug` is the RECORDED plat polygon both homes
+ * were resolved against, and `subdivisionNorm` the MLS SubdivisionName
+ * (normSubdivision, placeholders like "N/A" already null) as the fallback.
+ */
+export type PlatKeys = {
+  subdivisionSlug?: string | null
+  subdivisionNorm?: string | null
+}
+
+/**
+ * IS THIS SALE IN THE SUBJECT'S OWN PLAT? (Matt 2026-09-10: "location is the
+ * primary thing... within the subdivision, that's the truest sense of comp.")
+ *
+ * The RECORDED plat polygon first, from the county boundary both the subject
+ * and the sale were resolved against, and the MLS SubdivisionName only as a
+ * fallback. The MLS field is typed by a listing agent and 31 of 330 priced
+ * subjects carry a placeholder or a blank in it.
+ *
+ * MEASURED, because the first version of this comment guessed and was wrong.
+ * Recorded-plat coverage over the queue's own subjects on 2026-09-10: 120 of
+ * the 299 that name a subdivision also sit inside a recorded plat, and 5 of
+ * the 31 that name none do. So the polygon rescues five documents, not the
+ * hundred the ladder's skip counter suggested. It is still the better key
+ * where both are known — a polygon does not depend on how someone typed a
+ * tract name — and it costs nothing, because select.ts already resolves these
+ * slugs for the adjacent-plat rung.
+ *
+ * Moved here from lib/pricing/match.ts on 2026-09-30 so both exemptions live in
+ * one file: the ladder's same-subdivision rung and the comparability judge's
+ * own-plat restoration (lib/cma/judge.ts) read the same definition.
+ */
+export function samePlat(subject: PlatKeys, sale: PlatKeys): boolean {
+  if (subject.subdivisionSlug && sale.subdivisionSlug) return sale.subdivisionSlug === subject.subdivisionSlug
+  if (subject.subdivisionNorm) return sale.subdivisionNorm === subject.subdivisionNorm
+  return false
+}
+
+/**
+ * The ladders' own-plat rungs. Both the facts ladder (lib/pricing/ladder.ts) and
+ * the listings ladder (lib/cma/comp-tiers.ts) name them `subdivision-*`, and a
+ * sale admitted there skipped the price-tier cut by that rung's own rule.
+ */
+export function isOwnPlatRung(tier: string | null | undefined): boolean {
+  return /^subdivision-/.test(tier ?? '')
+}
+
 /** True when the sale is the same size on the same street as the subject. */
 export function sameStreetPeer(
   subject: { streetAddress: string | null | undefined; city?: string | null; sqft: number },

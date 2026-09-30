@@ -88,6 +88,53 @@ export const PROVISIONAL_AUTOMATION_REASONS: ReadonlySet<AutomationReason> = new
   'contact-deep-link',
 ])
 
+/**
+ * THE rule for which sessions automation keeps unidentified, stated once. A session
+ * may be identified when it is not flagged (visitor_sessions.is_automated), or is
+ * flagged only for a provisional behavioural reason (PROVISIONAL_AUTOMATION_REASONS:
+ * a person who reads on clears it, and it never blocks identification). Anything
+ * else flagged (from the user agent or navigator.webdriver, or a flag with no reason)
+ * never is (docs/TRACKING_POLICY.md, "Automation").
+ *
+ * Written once, as the PostgREST terms of an `or` filter, and read two ways:
+ * IDENTIFIABLE_SESSION_FILTER sends the terms to the database (the browser
+ * back-stitch selects the sessions it may identify with it), and
+ * sessionBlocksIdentification evaluates the same terms on a row already in hand (the
+ * identify paths). lib/visitor-backfill.test.ts runs the filter and the function over
+ * every shape of row and fails when they disagree. Until 2026-09-30 the filter was a
+ * string written out by hand beside the function (review of 2026-09-30).
+ */
+type IdentifiableTerm =
+  | { column: 'is_automated'; op: 'is'; value: null }
+  | { column: 'is_automated'; op: 'eq'; value: false }
+  | { column: 'automation_reason'; op: 'in'; value: readonly string[] }
+
+const IDENTIFIABLE_SESSION: readonly IdentifiableTerm[] = [
+  { column: 'is_automated', op: 'is', value: null },
+  { column: 'is_automated', op: 'eq', value: false },
+  { column: 'automation_reason', op: 'in', value: [...PROVISIONAL_AUTOMATION_REASONS] },
+]
+
+/** The rule as a PostgREST `or` filter: the sessions automation does not block. */
+export const IDENTIFIABLE_SESSION_FILTER = IDENTIFIABLE_SESSION.map((t) =>
+  t.op === 'in' ? `${t.column}.in.(${t.value.join(',')})` : `${t.column}.${t.op}.${String(t.value)}`,
+).join(',')
+
+function termHolds(t: IdentifiableTerm, row: Record<string, unknown>): boolean {
+  const v = row[t.column]
+  if (t.op === 'is') return v === null || v === undefined
+  if (t.op === 'eq') return v === t.value
+  return typeof v === 'string' && t.value.includes(v)
+}
+
+/** The rule on a row in hand: is this session automation that must never be identified? */
+export function sessionBlocksIdentification(
+  row: { is_automated?: unknown; automation_reason?: unknown } | null | undefined,
+): boolean {
+  if (!row) return false
+  return !IDENTIFIABLE_SESSION.some((t) => termHolds(t, row as Record<string, unknown>))
+}
+
 export function classifyArrivalShape(args: {
   /** The session's first page, as the tracker captured it (full URL, query intact). */
   landingPage: string | null | undefined

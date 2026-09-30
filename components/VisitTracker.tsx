@@ -8,49 +8,27 @@ import { hasAnalyticsConsent, getStoredConsent, autoGrantConsentForAdTraffic } f
 import { lastThingFromHouse, lastThingFromSearch, writeLastThing } from '@/lib/site/arrival-intent'
 import { listingMlsFromPath, visitorPageCategoryFromPath } from '@/lib/analytics/page-type'
 import { resolveClientVisitBroker } from '@/lib/analytics/visit-broker'
-
-
-// localStorage key for the source-agnostic uuid that lets us stitch a visitor
-// across Ryan Realty surfaces (Vercel + WP). Matches the WP snippet config.
-const RR_SESSION_ID_KEY = 'rr_session_id'
-
-function uuidv4(): string {
-  const bytes = new Uint8Array(16)
-  if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
-    crypto.getRandomValues(bytes)
-  } else {
-    for (let i = 0; i < 16; i++) bytes[i] = Math.floor(Math.random() * 256)
-  }
-  bytes[6] = (bytes[6] & 0x0f) | 0x40 // version 4
-  bytes[8] = (bytes[8] & 0x3f) | 0x80 // variant 10
-  const h: string[] = []
-  for (let j = 0; j < 16; j++) {
-    const s = bytes[j].toString(16)
-    h.push(s.length === 1 ? '0' + s : s)
-  }
-  return `${h[0]}${h[1]}${h[2]}${h[3]}-${h[4]}${h[5]}-${h[6]}${h[7]}-${h[8]}${h[9]}-${h[10]}${h[11]}${h[12]}${h[13]}${h[14]}${h[15]}`
-}
+import { gpcFromNavigator, trackingLevelFromConsent, type TrackingConsentLevel } from '@/lib/identity/consent'
+import type { VisitContext } from '@/lib/analytics/ga4-visit'
+import {
+  advanceSession,
+  captureSource,
+  currentSessionId,
+  forceNewSession,
+  notePostedSession,
+  takeGpcNotice,
+  type CapturedSource,
+} from '@/lib/analytics/visitor-session'
 
 /** Exported so other client trackers (search-events.client.ts) stitch the SAME
- *  rr_session_id the page_view pipeline uses — one visitor, one session key. */
+ *  rr_session_id the page_view pipeline uses — one visitor, one session key.
+ *  Reads (or mints) the id; it is not a tracked event, so it never advances the
+ *  session clock. The session RULE (30 minutes idle, an arrival on a new
+ *  campaign, an id no lifecycle record names) lives in
+ *  lib/analytics/visitor-session.ts and is applied by firstPartyEventContext; an
+ *  id minted here before any tracked event is not kept by it. */
 export function getOrCreateSessionId(): string | null {
-  if (typeof window === 'undefined') return null
-  try {
-    const existing = localStorage.getItem(RR_SESSION_ID_KEY)
-    const id =
-      existing && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(existing)
-        ? existing
-        : uuidv4()
-    if (id !== existing) localStorage.setItem(RR_SESSION_ID_KEY, id)
-    try {
-      sessionStorage.setItem(RR_SESSION_ID_KEY, id)
-    } catch {
-      /* sessionStorage may be blocked; localStorage still stitches */
-    }
-    return id
-  } catch {
-    return uuidv4()
-  }
+  return currentSessionId() // hydration-safe: callers are event/effect code (search fires), never render
 }
 
 /**
@@ -77,133 +55,39 @@ function categorizePage(pathname: string): string {
   return visitorPageCategoryFromPath(pathname)
 }
 
-function consentLevel(): 'all' | 'analytics' | 'essential' | 'declined' {
+/**
+ * The tier this visitor is recorded at, from the banner's cookie
+ * (lib/identity/consent.ts holds the mapping: one rule for every tracker).
+ * Exported so every tracker that posts to /api/visitors/track sends the SAME
+ * value this one does: V3SectionTracker sent none and the server dropped all of
+ * its events (found 2026-09-29).
+ *
+ * No banner answer yet -> 'essential': the track endpoint stores a functional
+ * record — session_id, page URL, REFERRER and CAMPAIGN PARAMS. Geo, user agent
+ * and listing meta are stripped server-side; an explicit decline is still
+ * declined, and the server honors GPC opt-outs before any write.
+ *
+ * Referrer was never stripped, despite what this comment claimed until
+ * 2026-08-26. Verified against the data: 11,197 of the last 90 days' sessions
+ * carry a referrer and only 357 carry a user agent. The claim mattered because
+ * anyone "fixing" the code to match it would have destroyed the only source
+ * attribution that works for 99.5% of visitors.
+ *
+ * Campaign params joined it on 2026-08-26 (Matt's call). They describe the link
+ * that was clicked, not the person, so they are treated like the referrer. Before
+ * that, 99.5% of arrivals — everyone who ignores the banner — landed with their
+ * campaign tag already discarded: 357 of 79,220 sessions in 90 days carried one,
+ * which made tagging links pointless. This is a privacy-policy position, not a
+ * code detail, and it is disclosed in app/privacy/page.tsx under Cookies.
+ *
+ * Treating "no choice" as declined made every visitor who ignored the banner
+ * invisible (2 sessions/day sitewide, and email-click leads never created the
+ * session their identity param was supposed to stitch — found in the 2026-07-10
+ * E2E pass).
+ */
+export function currentConsentLevel(): TrackingConsentLevel {
   if (typeof window === 'undefined') return 'declined'
-  const stored = getStoredConsent()
-  // No banner answer yet -> 'essential': the track endpoint stores a functional
-  // record — session_id, page URL, REFERRER and CAMPAIGN PARAMS. Geo, user agent
-  // and listing meta are stripped server-side; an explicit decline is still
-  // declined, and the server honors GPC opt-outs before any write.
-  //
-  // Referrer was never stripped, despite what this comment claimed until
-  // 2026-08-26. Verified against the data: 11,197 of the last 90 days' sessions
-  // carry a referrer and only 357 carry a user agent. The claim mattered because
-  // anyone "fixing" the code to match it would have destroyed the only source
-  // attribution that works for 99.5% of visitors.
-  //
-  // Campaign params joined it on 2026-08-26 (Matt's call). They describe the link
-  // that was clicked, not the person, so they are treated like the referrer. Before
-  // that, 99.5% of arrivals — everyone who ignores the banner — landed with their
-  // campaign tag already discarded: 357 of 79,220 sessions in 90 days carried one,
-  // which made tagging links pointless. This is a privacy-policy position, not a
-  // code detail, and it is disclosed in app/privacy/page.tsx under Cookies.
-  //
-  // Treating "no choice" as declined made every visitor who ignored the banner
-  // invisible (2 sessions/day sitewide, and email-click leads never created the
-  // session their identity param was supposed to stitch — found in the 2026-07-10
-  // E2E pass).
-  if (stored === null) return 'essential'
-  if (stored.analytics && stored.marketing) return 'all'
-  if (stored.analytics) return 'analytics'
-  if (stored.marketing) return 'essential'
-  return 'declined'
-}
-
-/**
- * Best-effort UTM + fbclid + referrer capture once per session (sessionStorage). Mirrors
- * the WP snippet's captureSource so we get consistent first-touch attribution
- * regardless of which surface the visitor landed on first.
- */
-function captureSource(): { campaign?: { source?: string; medium?: string; campaign?: string; content?: string; term?: string }; referrer?: string; landingPage?: string; fbclid?: string; gclid?: string } {
-  if (typeof window === 'undefined') return {}
-  const STORAGE_KEY = 'rr_source_v1'
-  try {
-    const stored = sessionStorage.getItem(STORAGE_KEY)
-    if (stored) return JSON.parse(stored)
-  } catch {}
-  const params = new URLSearchParams(window.location.search || '')
-  const src: Record<string, string | undefined> = {
-    utm_source: params.get('utm_source') ?? undefined,
-    utm_medium: params.get('utm_medium') ?? undefined,
-    utm_campaign: params.get('utm_campaign') ?? undefined,
-    utm_content: params.get('utm_content') ?? undefined,
-    utm_term: params.get('utm_term') ?? undefined,
-  }
-  // Meta click-id — present when visitor arrives from a Facebook/Instagram ad.
-  // Captured once at session start (first-touch) and stored so we don't lose
-  // it on SPA navigation (the param disappears after the initial landing).
-  const fbclid = params.get('fbclid') ?? undefined
-  // Google click-id — same first-touch treatment for Google Ads clicks.
-  const gclid = params.get('gclid') ?? undefined
-  const referrer = (typeof document !== 'undefined' ? document.referrer : '') || undefined
-  // Auto-infer source from referrer host when no UTM
-  if (!src.utm_source && referrer) {
-    try {
-      const host = new URL(referrer).hostname.toLowerCase()
-      if (/facebook|fb\.com/.test(host))   { src.utm_source = 'facebook';  src.utm_medium ||= 'social' }
-      else if (/instagram/.test(host))     { src.utm_source = 'instagram'; src.utm_medium ||= 'social' }
-      else if (/\bgoogle\./.test(host))    { src.utm_source = 'google';    src.utm_medium ||= 'organic' }
-      else if (/bing|duckduckgo/.test(host)) { src.utm_source = host.split('.')[0]; src.utm_medium ||= 'organic' }
-      else if (/youtube/.test(host))       { src.utm_source = 'youtube';   src.utm_medium ||= 'social' }
-      else if (/linkedin/.test(host))      { src.utm_source = 'linkedin';  src.utm_medium ||= 'social' }
-      else if (/tiktok/.test(host))        { src.utm_source = 'tiktok';    src.utm_medium ||= 'social' }
-      else if (/zillow|realtor|trulia/.test(host)) { src.utm_source = host.replace(/^www\./, '').split('.')[0]; src.utm_medium ||= 'portal' }
-      else if (host && host !== window.location.hostname) { src.utm_source = host; src.utm_medium ||= 'referral' }
-    } catch {}
-  }
-  if (!src.utm_source) { src.utm_source = 'direct'; src.utm_medium ||= 'none' }
-  const result = {
-    campaign: {
-      source: src.utm_source,
-      medium: src.utm_medium,
-      campaign: src.utm_campaign,
-      content: src.utm_content,
-      term: src.utm_term,
-    },
-    fbclid,
-    gclid,
-    referrer,
-    landingPage: window.location.href,
-  }
-  try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(result)) } catch {}
-  return result
-}
-
-/**
- * The visit this event belongs to (TRACK-1). A visit is a run of activity with
- * no gap longer than 30 minutes (GA4's default session timeout); its id is the
- * Unix second it began, so the GA4 mirror can send a numeric, per-visit
- * session_id instead of the browser-lifetime rr_session_id. Kept in
- * localStorage so tabs share the visit; falls back to memory when storage is
- * blocked.
- */
-const VISIT_KEY = 'rr_visit_v1'
-const VISIT_IDLE_MS = 30 * 60 * 1000
-let memoryVisit: { id: number; n: number; last: number } | null = null
-function nextVisitContext(): { id: number; number: number; start: boolean } {
-  const now = Date.now() // hydration-safe: runs only inside fireFirstPartyEvent (an effect-driven POST), never during render
-  let stored: { id: number; n: number; last: number } | null = memoryVisit
-  try {
-    const raw = localStorage.getItem(VISIT_KEY)
-    if (raw) stored = JSON.parse(raw)
-  } catch {
-    /* storage blocked: memory fallback */
-  }
-  const fresh =
-    !stored ||
-    typeof stored.id !== 'number' ||
-    typeof stored.last !== 'number' ||
-    now - stored.last > VISIT_IDLE_MS
-  const next = fresh
-    ? { id: Math.floor(now / 1000), n: (stored && typeof stored.n === 'number' ? stored.n : 0) + 1, last: now }
-    : { id: stored!.id, n: stored!.n, last: now }
-  memoryVisit = next
-  try {
-    localStorage.setItem(VISIT_KEY, JSON.stringify(next))
-  } catch {
-    /* memory fallback already set */
-  }
-  return { id: next.id, number: next.n, start: fresh }
+  return trackingLevelFromConsent(getStoredConsent())
 }
 
 /**
@@ -225,21 +109,20 @@ function takeArrivalToken(): string | undefined {
   }
 }
 
-/** Start a fresh browser session id (the server asked: the old one belongs to someone else). */
-function rotateSessionId(): string | null {
-  try {
-    localStorage.removeItem(RR_SESSION_ID_KEY)
-    sessionStorage.removeItem(RR_SESSION_ID_KEY)
-    sessionStorage.removeItem('rr_source_v1')
-  } catch {
-    /* fall through: getOrCreateSessionId still mints one */
-  }
-  return getOrCreateSessionId()
-}
-
 type TrackResponse = { rotateSession?: boolean; identity?: { identifiedNow?: boolean } }
 
+/**
+ * POST one event. Once it has settled, the session it was recorded under is noted
+ * (notePostedSession): PersonIdentityBridge waits for it, because the click that
+ * brought the visitor here may have ended the session in storage and this post is
+ * what starts the new one. A rotateSession answer re-sends once under a fresh id, and
+ * that re-send is the one noted. A post that fails is noted too: its session is still
+ * this page's, and the bridge must not wait for a post that will never answer.
+ */
 function postTrack(payload: Record<string, unknown>, allowRotate: boolean) {
+  const settled = () => {
+    if (typeof payload.sessionId === 'string') notePostedSession(payload.sessionId)
+  }
   try {
     fetch('/api/visitors/track', {
       method: 'POST',
@@ -249,19 +132,23 @@ function postTrack(payload: Record<string, unknown>, allowRotate: boolean) {
     })
       .then((r) => (r.ok ? (r.json() as Promise<TrackResponse>) : null))
       .then((json) => {
-        if (!json) return
-        if (json.rotateSession && allowRotate) {
-          const fresh = rotateSessionId()
-          if (fresh) postTrack({ ...payload, sessionId: fresh }, false)
-          return
+        if (json?.rotateSession && allowRotate) {
+          const fresh = forceNewSession() // hydration-safe: runs in the fetch callback, never in render
+          if (fresh) {
+            postTrack({ ...payload, sessionId: fresh }, false)
+            return
+          }
         }
-        if (json.identity?.identifiedNow) {
+        settled()
+        if (json?.identity?.identifiedNow) {
           // The analytics bridge re-reads /api/identity/me (hashed ids only).
           window.dispatchEvent(new CustomEvent('person-identified'))
         }
       })
-      .catch(() => {})
-  } catch {}
+      .catch(settled)
+  } catch {
+    settled()
+  }
 }
 
 /** Event types client surfaces may fire into the first-party visitor store.
@@ -294,6 +181,96 @@ export type FirstPartyEventOptions = {
 }
 
 /**
+ * What every first-party event carries, whichever tracker sends it: the session
+ * this event belongs to (the session rule has been applied: lib/analytics/
+ * visitor-session.ts), the tier it may be recorded at, and the arrival
+ * attribution the server needs if THIS event is the one that creates the session
+ * (visitor_sessions keeps the first-touch fields of the first event a session id
+ * ever sends and never updates them).
+ *
+ * Returns null when nothing may be posted: a visitor who declined leaves no
+ * trace, not even a session id in storage, and neither does a browser sending
+ * Global Privacy Control (fireFirstPartyEvent sends its notice instead). Call it
+ * once per event, only when you are about to post. fireFirstPartyEvent is the
+ * normal way; V3SectionTracker, which posts with sendBeacon so a scroll milestone
+ * survives a navigation, calls this and posts the result itself. It used to build
+ * its own body with no consent field, and the server dropped every section_view
+ * and scroll_depth it sent.
+ *
+ * The automation signal rides here too, so every event carries it whichever
+ * tracker sends it: the track route classifies a session as automation only from
+ * the event that CREATES it, and a section view can be that event (review of
+ * 2026-09-30: V3SectionTracker's body had no webdriver, so a scripted browser
+ * whose first post was a section view was never flagged).
+ */
+export type FirstPartyEventContext = {
+  sessionId: string
+  sourceDomain: string
+  campaign: CapturedSource['campaign']
+  fbclid: string | undefined
+  gclid: string | undefined
+  referrer: string | undefined
+  landingPage: string | undefined
+  consent: TrackingConsentLevel
+  /** TRACK-1: the per-visit GA4 session (`start` on the event that begins it). */
+  visit: VisitContext
+  /** navigator.webdriver: an automation signal (lib/analytics/automation.ts), not personal data. */
+  webdriver: true | undefined
+}
+
+/** navigator.globalPrivacyControl, as the page sees it (lib/identity/consent.ts). */
+function gpcOn(): boolean {
+  return gpcFromNavigator(typeof navigator !== 'undefined' ? navigator : undefined)
+}
+
+export function firstPartyEventContext(): FirstPartyEventContext | null {
+  if (typeof window === 'undefined') return null
+  // Global Privacy Control: no identifier is written and nothing identifying is
+  // sent (docs/TRACKING_POLICY.md, the GPC tier). Checked before the session is
+  // advanced, which is what writes one.
+  if (gpcOn()) return null
+  const consent = currentConsentLevel()
+  if (consent === 'declined') return null
+  const advanced = advanceSession() // hydration-safe: effect/event code only (fireFirstPartyEvent, V3SectionTracker's effect), never render
+  if (!advanced) return null
+  // The first touch is captured from the address the event is judged on: the page's
+  // arrival for the first event of a page load, whatever address is current by then.
+  const { campaign, referrer, landingPage, fbclid, gclid } = captureSource(advanced.pageHref) // hydration-safe: same, effect/event code only
+  return {
+    sessionId: advanced.sessionId,
+    sourceDomain: window.location.hostname.toLowerCase().replace(/^www\./, ''),
+    campaign,
+    fbclid,
+    gclid,
+    referrer,
+    landingPage,
+    consent,
+    visit: advanced.visit,
+    webdriver: typeof navigator !== 'undefined' && navigator.webdriver === true ? true : undefined,
+  }
+}
+
+/**
+ * Under Global Privacy Control no event is posted: once per page load, a notice
+ * that carries the signal and nothing else (no session id, address or campaign).
+ * The track route drops it before any write, and records a durable suppression for
+ * a contact the browser was already identified as, from what the browser carries
+ * on every request here (its signed rr_pid cookie, its rr_vid). The document
+ * tracker sends the same notice (public/rr-doc-tracker.js).
+ */
+function sendGpcNotice(): void {
+  if (!takeGpcNotice()) return
+  try {
+    fetch('/api/visitors/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gpc: true }),
+      keepalive: true,
+    }).catch(() => {})
+  } catch {}
+}
+
+/**
  * Fire a same-origin POST to /api/visitors/track. The endpoint upserts the
  * session and inserts the event; the DB trigger updates engagement_score and
  * intent_tags. Server-side consent gate refuses 'declined' events even if
@@ -305,11 +282,12 @@ export type FirstPartyEventOptions = {
  */
 export function fireFirstPartyEvent(eventType: FirstPartyEventType, opts: FirstPartyEventOptions = {}) {
   if (typeof window === 'undefined') return
-  const sessionId = getOrCreateSessionId()
-  if (!sessionId) return
-  const consent = consentLevel()
-  if (consent === 'declined') return
-  const { campaign, referrer, landingPage, fbclid, gclid } = captureSource()
+  if (gpcOn()) {
+    sendGpcNotice()
+    return
+  }
+  const ctx = firstPartyEventContext()
+  if (!ctx) return
   const pathname = window.location.pathname
   try {
     if (eventType === 'listing_view') {
@@ -328,8 +306,7 @@ export function fireFirstPartyEvent(eventType: FirstPartyEventType, opts: FirstP
     /* memory must never break tracking */
   }
   const payload = {
-    sessionId,
-    sourceDomain: window.location.hostname.toLowerCase().replace(/^www\./, ''),
+    ...ctx,
     eventType,
     pageUrl: window.location.href,
     pageTitle: typeof document !== 'undefined' ? document.title.slice(0, 200) : undefined,
@@ -339,22 +316,12 @@ export function fireFirstPartyEvent(eventType: FirstPartyEventType, opts: FirstP
     listing: opts.listingMls ? { mlsNumber: opts.listingMls } : undefined,
     scrollDepthPct: typeof opts.scrollDepthPct === 'number' ? opts.scrollDepthPct : undefined,
     metadata: opts.metadata,
-    campaign,
-    fbclid,
-    gclid,
-    referrer,
-    landingPage,
-    consent,
     // Canonical short slug when ?agent= / cookie is known — server MP page_view
     // uses the same assigned_broker / broker_slug names as generate_lead.
     // Only runs inside fireFirstPartyEvent (client POST / keepalive), never in JSX render.
     agent: resolveClientVisitBroker() ?? undefined, // hydration-safe
     // P7 identity loop: the signed token from the link that brought them here.
     identityToken: takeArrivalToken(),
-    // Automation signal (lib/analytics/automation.ts). Not personal data.
-    webdriver: typeof navigator !== 'undefined' && navigator.webdriver === true ? true : undefined,
-    // TRACK-1: the per-visit GA4 session.
-    visit: nextVisitContext(),
   }
   // keepalive=true so the POST survives a fast navigation away. The response
   // may ask for a fresh session (the old one belongs to another contact) or
@@ -405,7 +372,7 @@ export default function VisitTracker({ userId }: Props) {
     // with no banner answer the event goes out at 'essential' and the server
     // stores the minimal record. Fired once per pathname (firedVisitorPath) so
     // the userId resolution does not double-count the view.
-    if (consentLevel() !== 'declined' && firedVisitorPath.current !== pathname) {
+    if (currentConsentLevel() !== 'declined' && firedVisitorPath.current !== pathname) {
       firedVisitorPath.current = pathname
       const det = detectListing(pathname)
       fireVisitorEvent(pathname, det.isListing ? 'listing_view' : 'page_view', det.mls)
@@ -414,8 +381,9 @@ export default function VisitTracker({ userId }: Props) {
     // user_events (the real source /account/history reads — before, that page read
     // user_activities, which nothing wrote, so it was always empty). Own ref +
     // userId gate so it fires on the null→id re-render, once per pathname. Honors a
-    // cookie decline (compliance) like the visitor_events write above.
-    if (userId && consentLevel() !== 'declined' && firedUserViewPath.current !== pathname) {
+    // cookie decline and Global Privacy Control like the visitor_events write above
+    // (and trackUserEvent refuses both server-side).
+    if (userId && currentConsentLevel() !== 'declined' && !gpcOn() && firedUserViewPath.current !== pathname) {
       const detU = detectListing(pathname)
       if (detU.isListing && detU.mls) {
         firedUserViewPath.current = pathname
