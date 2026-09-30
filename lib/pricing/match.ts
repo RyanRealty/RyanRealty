@@ -970,7 +970,34 @@ export function walkPricingLadder(
     }
   }
 
+  // How many sales the plat and the street had before any quarter-mile pocket
+  // rung. 3759 SW 45th (Redtail Ridge), rebuilt 2026-09-28: the plat already
+  // held 7 sales, then pocket-9mo and pocket-12mo added 17 cheaper sales in
+  // other subdivisions. keepTightestByClosePrice then kept the cheap cluster
+  // and dropped every Redtail Ridge sale, including 3499 SW 44th at $790,000.
+  // The Sep 7 build, before that cut, still had the plat sale. A pocket rung
+  // is wider than a plat that has already filled. It must not be mixed in.
+  let countBeforePocket: number | null = null
+
   for (const tier of tiers) {
+    if (tier.samePocket && countBeforePocket == null) countBeforePocket = byKey.size
+    if (
+      tier.samePocket &&
+      !tier.sameSubdivision &&
+      countBeforePocket != null &&
+      countBeforePocket >= PRICING_TARGET_COMPS
+    ) {
+      rungs.push({
+        tier: tier.name,
+        ran: false,
+        skippedReason: `the subject's own plat already has ${countBeforePocket} sales, so the quarter-mile pocket was not mixed into the price`,
+        monthsBack: tier.monthsBack,
+        scanned: 0,
+        added: 0,
+        runningTotal: byKey.size,
+      })
+      continue
+    }
     if (byKey.size >= PRICING_TARGET_COMPS && !isPocketExclusiveTier(tier)) {
       rungs.push({
         tier: tier.name,
