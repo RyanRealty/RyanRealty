@@ -8,7 +8,10 @@ import {
   demoteImplausibleSignatureFields,
   labelSignatureRowsFromPage,
   promoteInitialsBoxes,
+  joinRuns,
+  printedRow,
   promoteLinedFormFields,
+  rowLabel,
   type PageTextRun,
 } from './lined-signature-fields'
 import { groupAnswerRows } from './answer-rows'
@@ -121,7 +124,10 @@ export function withFallbackSignatures(
   const principals = side ? [side, ...known.filter((r) => r !== 'buyer' && r !== 'seller')] : known
   const profile = formSigningProfile(input.formNumber, input.documentName)
   const promoted = promoteInitialsBoxes(promoteLinedFormFields(labelSignatureRowsFromPage(typed, pages, principals)), [...allowed], pages)
-  const shaped = withProfile(groupAnswerRows(promoted, pages, { answerEveryQuestion: profile?.answerEveryQuestion }), profile)
+  const shaped = withMustComplete(
+    withProfile(groupAnswerRows(promoted, pages, { answerEveryQuestion: profile?.answerEveryQuestion }), profile),
+    pages,
+  )
   // A signer the form prints no line for gets the last-page stack, only where
   // it covers nothing printed: laid over the form it put a Seller box on a
   // printed Buyer row (2.15, 5.1). A role it cannot place is the broker's to
@@ -182,6 +188,26 @@ function withProfile(map: readonly MappedField[], profile: FormSigningProfile | 
       return { ...f, signerRole: answers.role, signerIndex: 0, signerFills: true }
     }
     return { ...f }
+  })
+}
+
+const MUST_COMPLETE = /\bcomplete\s+even\s+if\s+(zero|none)\b/i
+
+/**
+ * A box its signer fills whose printed label says to complete it whatever the
+ * answer ("Total number of pages attached ... (complete even if zero)", the
+ * 020's line 230) is required of that signer: left blank, the disclosure does
+ * not say how many pages go with it. Its printed line is the signer's prompt.
+ * Of the 298 library blanks only the 020 prints this beside a box.
+ */
+function withMustComplete(map: readonly MappedField[], pages: ReadonlyArray<readonly PageTextRun[]>): MappedField[] {
+  return map.map((f) => {
+    const runs = pages[f.page - 1] ?? []
+    if (!f.signerFills || f.type !== 'text' || !MUST_COMPLETE.test(rowLabel(f, runs))) return f
+    // The words before the box, without the line number in the margin, up to the instruction.
+    const row = joinRuns(printedRow(f, runs).filter((r) => r.x < f.x && !/^\d+$/.test(r.str.trim())))
+    const prompt = /^(.*?\bcomplete\s+even\s+if\s+(?:zero|none)\b\s*\)?)/i.exec(row)?.[1]?.replace(/\s+/g, ' ').trim()
+    return { ...f, mustComplete: true, ...(prompt ? { prompt } : {}) }
   })
 }
 
