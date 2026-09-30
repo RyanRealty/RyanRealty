@@ -200,6 +200,11 @@ export function V3ListingRow({
   })
   const figure = lease ? lease.text : (ask ?? '—')
   const tagText = lease ? lease.label : shareKind
+  // A lease's terms as its listing files them (publishLeaseTerms' words), under
+  // the street, so a row does not drop what the dial's card prints (2026-09-30).
+  const leaseTerms = lease
+    ? (listing.leaseTerms ?? []).map((term) => term.trim()).filter(Boolean).join(' · ')
+    : ''
   const meta = metaParts(listing, showPricePerSqft)
   const splitThumb = typeof className === 'string' && className.includes('v3-lrow--split')
   const tags = listing.badges ?? (listing.badge ? [listing.badge] : [])
@@ -275,6 +280,7 @@ export function V3ListingRow({
           {compare}
           <span className="v3-lrow__addr">{listing.addressLine}</span>
           <span className="v3-lrow__city">{listing.cityLine}</span>
+          {leaseTerms ? <span className="v3-lrow__terms">{leaseTerms}</span> : null}
         </Link>
       </article>
     )
@@ -289,6 +295,7 @@ export function V3ListingRow({
       <span className="v3-lrow__body">
         <span className="v3-lrow__addr">{listing.addressLine}</span>
         <span className="v3-lrow__city">{listing.cityLine}</span>
+        {leaseTerms ? <span className="v3-lrow__terms">{leaseTerms}</span> : null}
       </span>
       <span className="v3-lrow__figures">
         <span className="v3-lrow__price">{figure}</span>

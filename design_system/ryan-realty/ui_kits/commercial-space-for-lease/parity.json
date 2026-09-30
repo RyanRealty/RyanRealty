@@ -2,7 +2,7 @@
   "route": "app/commercial-space-for-lease/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md patterns, built from components/site/v3. No KB-era mockup: the pattern set is the target, the same basis as every post-2026-08-27 page. Broadside register (a page that shows, not a search surface).",
   "competitiveTarget": "Beat the portals and the local commercial brokers on a page a search engine can rank for 'commercial space for lease Bend'. The consumer portals are built for homes; the commercial listing sites file leases behind search state, and a local commercial broker's site shows that broker's own. This page lists every active commercial lease on the regional MLS in Central Oregon, grouped by town, each one a door to its own page, with the asking rent in its own unit (per sq ft per month, per month, per year) and never a bare number, and a Ryan Realty broker one tap away.",
-  "note": "Matt 2026-09-23 approved the lease section on place pages and this page with it. One read, getCommercialLeaseListings: listing_tile_mv PropertyType G, Active and Active Under Contract, MLS City in the service-area allowlist, plus each lease's rent unit from listings.details 'Lease Rate Options' (getLeaseRateOptions). Counted 2026-09-23: 36 leases, Bend 13, Redmond 12, Prineville 4, Madras 3, Sisters 3, Powell Butte 1. The rent prints through publishLeaseRate: with its unit, or 'Lease rate not published' when the unit is missing, unknown, or contradicted by the number (a per sq ft rate of $100 or more, a whole-space amount under $100; the feed has nothing between $36 and $325). A lease is never an Offer: the ItemList names each lease and its rent in words and has no price property. The per-town dials are V3PlaceInventory layout='dial', the same primitive and card as the 'Commercial space for lease' section on a place page (TASTE: two sections doing one job are one primitive). An empty pull opts out of ISR and says 'Nothing listed on this refresh', never that no space exists.",
+  "note": "Matt 2026-09-23 approved the lease section on place pages and this page with it. One read, getCommercialLeaseListings: listing_tile_mv PropertyType G, Active and Active Under Contract, MLS City in the service-area allowlist, plus each lease's rent unit from listings.details 'Lease Rate Options' (getLeaseRateOptions). Counted 2026-09-23: 36 leases, Bend 13, Redmond 12, Prineville 4, Madras 3, Sisters 3, Powell Butte 1. The rent prints through publishLeaseRate: with its unit, or 'Lease rate not published' when the unit is missing, unknown, or contradicted by the number (a per sq ft rate of $100 or more, a whole-space amount under $100; the feed has nothing between $36 and $325). A lease is never an Offer: the ItemList names each lease and its rent in words and has no price property. The dials are V3PlaceInventory layout='dial', the same primitive and card as the 'Commercial space for lease' section on a place page (TASTE: two sections doing one job are one primitive); since 2026-09-30 only the busiest town leads on a full dial and every other town is a drawer row that opens to its own dial or rows, so the page reads as a market browsed from its biggest town down and not six identical blocks. An empty pull opts out of ISR and says 'Nothing listed on this refresh', never that no space exists.",
   "requiredComponents": [
     {
       "name": "V3SectionTracker",
@@ -26,12 +26,22 @@
     },
     {
       "name": "V3Ledger",
-      "section": "#towns: the opening and the H1. One row per town with a lease, its count drawn as a length (encode='bar'), its rate line under the name (publishLeaseRateSummary: one span per rent unit with how many leases use it, and how many rates are not published, so the line covers every lease the count does), each row a door to that town's dial.",
+      "section": "#towns: the opening and the H1. One row per town with a lease, its count drawn as a length (encode='bar'), its rate line under the name (publishLeaseRateSummary: one span per rent unit with how many leases use it, and how many rates are not published, so the line covers every lease the count does), a hover that reveals its kinds of space and sizes, one of its own leases pictured, each row a door to that town's leases. The lease map is its drawing (beside the rows from 64rem), and its one action is the page's ask: 'Tell a broker the space you need', the contact form filed as a commercial-lease inquiry.",
       "blocking": true
     },
     {
       "name": "V3PlaceInventory",
-      "section": "#lease: one V3ListingDial per town, the lease card (rent with its unit, 'For lease'), every lease an <a href> in the served HTML.",
+      "section": "#lease: the busiest town on its own full V3ListingDial (leaseTownTiers' lead), then the drawer of every other town (its `after` slot), then the block's one source line. The lease card: rent with its unit, 'For lease', terms; every lease an <a href> in the served HTML.",
+      "blocking": true
+    },
+    {
+      "name": "LeaseMap",
+      "section": "#lease-map, the ledger's drawing (2026-09-30, 'no map on a page about geography'): server-drawn, no client code. Every lease a dot at its listing's own coordinates, sized by its listed square feet (a ring when it lists none), a door to its page with the card's rent line on hover or focus; each town's name and count beside its dots, the same door as its ledger row; highways and rivers from the repo's TIGER/Line 2024 basemap. Hovering a row lights its town here and the other way round (lease-page.css). Not V3Atlas: the Atlas counts 'for sale' and prints price pills and medians, which a rent in four units cannot be.",
+      "blocking": true
+    },
+    {
+      "name": "LeaseTownDrawer",
+      "section": "#lease-more, inside #lease: every other town, busiest first, each a <section> named by its <h2>, its row a <details> (the first open) showing count, rate line one unit to a line, a strip of its own photographs and a toggle, opening on demand to its own V3ListingDial (5 leases or more) or its leases as V3ListingRow cards (rent with its unit, 'For lease', size, street, terms). A link to a town's anchor opens its row. Every lease is an <a href> in the served HTML, open or not.",
       "blocking": true
     },
     {

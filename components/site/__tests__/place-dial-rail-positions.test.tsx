@@ -182,20 +182,4 @@ describe('held presentations', () => {
     expect(html).not.toContain('place-homes--rails')
     expect(html).toContain('place-subdiv-rail__bar')
   })
-
-  it('V3PlaceInventory dialRail="left" (/commercial-space-for-lease): every dial on the left', () => {
-    const html = renderToStaticMarkup(
-      <V3PlaceInventory
-        id="lease"
-        layout="dial"
-        dialRail="left"
-        placeName="Central Oregon"
-        sections={SECTIONS}
-        source="regional MLS through Oregon Data Share"
-      />,
-    )
-    const seen = rails(html)
-    expect(seen.length).toBeGreaterThan(2)
-    expect(seen.every((dial) => dial.rail === 'left')).toBe(true)
-  })
 })

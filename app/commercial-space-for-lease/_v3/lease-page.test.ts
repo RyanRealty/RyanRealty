@@ -4,11 +4,20 @@ import {
   LEASE_PAGE_HEADING,
   leaseCityGroups,
   leaseCityLedgerRows,
+  leaseLedgerNote,
+  leaseTownReveal,
   leaseItemList,
   LEASE_META_MAX,
   leaseMetaDescription,
   leaseTotal,
+  LEASE_DIAL_MIN,
+  leaseCompactHeading,
+  leaseCompactNote,
+  leaseMapPoints,
+  leaseMapTowns,
+  leaseTownTiers,
 } from './lease-page'
+import { leaseMapModel } from './lease-map'
 
 function tile(over: Partial<ListingTile> & Pick<ListingTile, 'listingKey'>): ListingTile {
   return {
@@ -117,13 +126,20 @@ describe('leaseCityGroups', () => {
 describe('leaseCityLedgerRows', () => {
   it('draws each town\'s count as a share of the busiest town and links to its dial', () => {
     const rows = leaseCityLedgerRows(leaseCityGroups(TILES, UNITS))
-    expect(rows[0]).toEqual({
+    const { reveal, media, ...rest } = rows[0]!
+    expect(rest).toEqual({
       href: '#lease-bend',
       what: 'Bend',
       value: '4 for lease',
       weight: 1,
-      detail: '2 from $0.90 to $1.40 per sq ft per month · 1 at $985 per month · 1 rate not published',
+      detail: '2 from $0.90 to $1.40 per sq ft per month\n1 at $985 per month\n1 rate not published',
     })
+    // The hover line is the rows' own kinds and sizes (leaseTownReveal).
+    expect(reveal).toBe(leaseTownReveal(leaseCityGroups(TILES, UNITS)[0]!.rows) ?? undefined)
+    // The row's picture is one of the town's own photographed leases, or none.
+    const photos = leaseCityGroups(TILES, UNITS)[0]!.rows.map((r) => r.photoUrl).filter(Boolean)
+    if (photos.length > 0) expect(media?.src).toBeTruthy()
+    else expect(media).toBeUndefined()
     expect(rows[1]!.weight).toBe(0.25)
   })
 })
@@ -176,5 +192,117 @@ describe('leaseMetaDescription', () => {
   it('never uses an em dash', () => {
     expect(leaseMetaDescription(leaseCityGroups(TILES, UNITS))).not.toContain('\u2014')
     expect(leaseMetaDescription([])).not.toContain('\u2014')
+  })
+})
+
+describe('leaseTownReveal', () => {
+  const row = (propertySubType: string | null, sqft: number | null) =>
+    ({ propertySubType, sqft }) as unknown as Parameters<typeof leaseTownReveal>[0][number]
+  it('names the kinds of space, most first, and the span of listed sizes', () => {
+    expect(leaseTownReveal([row('Office', 1200), row('Retail', 800), row('Office', 12000)])).toBe(
+      'Office 2 · Retail 1; 800 to 12,000 sq ft',
+    )
+  })
+  it('says how many list a size when some do not, and nothing when none carry either', () => {
+    expect(leaseTownReveal([row('Office', 1500), row('Office', null)])).toBe('Office 2; 1,500 sq ft (1 lists a size)')
+    expect(leaseTownReveal([row(null, null)])).toBeNull()
+  })
+})
+
+describe('leaseLedgerNote', () => {
+  it('states the count, the towns and the bar the others are measured against', () => {
+    const groups = leaseCityGroups(TILES, UNITS)
+    const total = groups.reduce((n, g) => n + g.rows.length, 0)
+    const note = leaseLedgerNote(groups)!
+    expect(note.startsWith(`${total} spaces for lease in ${groups.length} towns.`)).toBe(true)
+    expect(note).toContain("the longest is Bend's 4.")
+  })
+  it('is null with nothing listed', () => {
+    expect(leaseLedgerNote([])).toBeNull()
+  })
+})
+
+describe('leaseTownTiers (2026-09-30: every town the same dial block)', () => {
+  const many = (city: string, n: number, prefix: string) =>
+    Array.from({ length: n }, (_, i) =>
+      tile({ listingKey: `${prefix}${i}`, city, streetNumber: String(100 + i), lat: 44.2 + i / 1000, lng: -121.1 }),
+    )
+  const units = (tiles: ListingTile[]) => Object.fromEntries(tiles.map((t) => [t.listingKey, '$/SF/Mo']))
+
+  it('the busiest town leads; the rest follow busiest first, ties in the page order', () => {
+    const tiles = [
+      ...many('Sisters', 3, 's'),
+      ...many('Redmond', LEASE_DIAL_MIN, 'r'),
+      ...many('Bend', 6, 'b'),
+      ...many('Madras', 3, 'm'),
+      ...many('Powell Butte', 1, 'p'),
+    ]
+    const groups = leaseCityGroups(tiles, units(tiles))
+    const { lead, rest } = leaseTownTiers(groups)
+    expect(lead!.label).toBe('Bend')
+    expect(rest.map((g) => g.label)).toEqual(
+      ['Redmond', ...groups.filter((g) => g.rows.length === 3).map((g) => g.label), 'Powell Butte'],
+    )
+  })
+
+  it('nothing listed, nothing to lead', () => {
+    expect(leaseTownTiers([])).toEqual({ lead: null, rest: [] })
+  })
+
+  it('names the other towns and counts their spaces', () => {
+    const tiles = [...many('Sisters', 3, 's'), ...many('Madras', 1, 'm'), ...many('Bend', 9, 'b')]
+    const { rest } = leaseTownTiers(leaseCityGroups(tiles, units(tiles)))
+    expect(leaseCompactHeading(rest)).toBe('Also for lease in Sisters and Madras')
+    expect(leaseCompactNote(rest)).toBe(
+      '4 spaces in 2 more towns, busiest first. Open a town for its spaces, each with its rent and its terms.',
+    )
+  })
+})
+
+describe('the lease map (2026-09-30: no map on a page about geography)', () => {
+  const groups = leaseCityGroups(TILES, UNITS)
+  const points = leaseMapPoints(groups)
+
+  it('every lease with coordinates is one dot, labelled with its rent in its unit', () => {
+    expect(points.map((p) => p.key).sort()).toEqual(['b1', 'b2', 'b3', 'b4', 'pb1', 'r1'])
+    const b1 = points.find((p) => p.key === 'b1')!
+    expect(b1.label).toContain('/sq ft/mo')
+    expect(b1.label).toContain('480 sq ft')
+    // 65315 Highway 97: a whole-space amount filed per sq ft is never printed as a rate.
+    expect(points.find((p) => p.key === 'b4')!.label).toContain('Lease rate not published')
+    for (const p of points) expect(p.label).not.toMatch(/\$\d[\d,.]*(?!\/)(\s|$)/)
+  })
+
+  it('pairs each dot and town with its ledger row by order', () => {
+    const towns = leaseMapTowns(groups)
+    const ledger = leaseCityLedgerRows(groups)
+    towns.forEach((town, i) => {
+      expect(town.row).toBe(i + 1)
+      expect(town.href).toBe(ledger[i]!.href)
+      expect(town.countLabel).toBe(ledger[i]!.value)
+    })
+    for (const p of points) expect(towns.find((t) => t.slug === p.town)!.row).toBe(p.row)
+  })
+
+  it('projects inside the frame, sizes by square feet, and draws a ring for a lease with no size', () => {
+    const withUnsized = [...TILES, tile({ listingKey: 'b9', sqft: null, streetNumber: '90', lat: 44.1, lng: -121.25 })]
+    const g = leaseCityGroups(withUnsized, { ...UNITS, b9: '$/SF/Mo' })
+    const model = leaseMapModel(leaseMapPoints(g), leaseMapTowns(g), null)!
+    expect(model.dots).toHaveLength(7)
+    for (const dot of model.dots) {
+      expect(dot.x).toBeGreaterThanOrEqual(0)
+      expect(dot.x).toBeLessThanOrEqual(100)
+      expect(dot.y).toBeGreaterThanOrEqual(0)
+      expect(dot.y).toBeLessThanOrEqual(100)
+    }
+    expect(model.dots.find((d) => d.key === 'b9')!.unsized).toBe(true)
+    expect(model.unsizedCount).toBe(1)
+    expect(model.sizeRange).toEqual(expect.objectContaining({ min: 480, max: 480 }))
+    expect(model.towns.map((t) => t.label)).toEqual(g.map((x) => x.label))
+  })
+
+  it('draws no map when no lease carries coordinates', () => {
+    const g = leaseCityGroups([tile({ listingKey: 'x', lat: null, lng: null })], { x: '$/SF/Mo' })
+    expect(leaseMapModel(leaseMapPoints(g), leaseMapTowns(g), null)).toBeNull()
   })
 })

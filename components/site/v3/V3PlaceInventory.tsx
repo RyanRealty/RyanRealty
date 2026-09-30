@@ -14,12 +14,6 @@
  * dial is the same interaction): each takes dialRailPositionAt(its order),
  * the lease dial counted last, so adjacent dials never match.
  *
- * `dialRail` HOLDS ONE RAIL POSITION (Matt 2026-09-25, "fix first, then
- * ship"): every dial takes that one position instead of the cycle, the
- * arrangement the dial layout shipped with before it (the rail on the card's
- * left). /commercial-space-for-lease passes 'left' while its class is below
- * its taste mark; omit it for the cycle.
- *
  * The `layout="rails"` card carousel (2026-09-23) was deleted 2026-09-24:
  * no place page draws a listing carousel any more (PLACE_PAGES.md, "Every
  * place page shows its listings on the dial").
@@ -33,7 +27,7 @@
  * is an <a href> in the served HTML like every other row.
  */
 import { cn } from '@/lib/utils'
-import { Fragment } from 'react'
+import { Fragment, type ReactNode } from 'react'
 import { V3_LEDGER_CLASS, V3_ROOT_CLASS, V3Button, V3Heading } from './atoms'
 import { V3ListingRow, type V3ListingRowData } from './V3ListingRow'
 import { V3Quiet } from './V3Quiet'
@@ -42,7 +36,7 @@ import type { PlaceStockSection } from '@/lib/place/place-inventory-stock'
 import type { PlaceLeaseSection } from '@/lib/place/place-lease-stock'
 import { COMMERCIAL_LEASE_ALL_LABEL, COMMERCIAL_LEASE_PATH } from '@/lib/place/place-lease-heading'
 import { V3ListingDial } from './V3ListingDial.client'
-import { dialRailPositionAt, type DialRailPosition } from './V3ListingDial.logic'
+import { dialRailPositionAt } from './V3ListingDial.logic'
 import './tokens.css'
 import './V3PlaceInventory.css'
 
@@ -61,10 +55,14 @@ export type V3PlaceInventoryProps = {
    * layout every place page uses.
    */
   layout?: 'rows' | 'dial'
-  /** Every dial at this one rail position (header); omitted, they cycle. */
-  dialRail?: DialRailPosition
   /** Commercial space for lease: the final section, never counted for sale. */
   lease?: PlaceLeaseSection | null
+  /**
+   * More of the same listings in another form, inside this block and above its
+   * one source line (/commercial-space-for-lease: the drawer of the towns after
+   * the lead dial, 2026-09-30). The caller's node; this draws nothing into it.
+   */
+  after?: ReactNode
 }
 
 /** One section the inventory renders: a for-sale type, a town, or the leases. */
@@ -90,8 +88,8 @@ export function V3PlaceInventory({
   source,
   asOf,
   layout = 'rows',
-  dialRail,
   lease = null,
+  after = null,
 }: V3PlaceInventoryProps) {
   const forSale: InventorySection[] = sections.filter((section) => section.rows.length > 0)
   // The lease section goes last, after "Commercial property".
@@ -118,7 +116,7 @@ export function V3PlaceInventory({
           <Fragment key={section.key}>
             <V3ListingDial
               id={`${id}-${section.key}`}
-              railPosition={dialRail ?? dialRailPositionAt(order)}
+              railPosition={dialRailPositionAt(order)}
               heading={section.heading}
               headingLevel={2}
               countLabel={section.countLabel}
@@ -134,6 +132,7 @@ export function V3PlaceInventory({
             ) : null}
           </Fragment>
         ))}
+        {after}
         <V3SourceLine source={source} asOf={asOf ?? null} sourceName="Oregon Data Share" />
       </div>
     )
@@ -171,6 +170,7 @@ export function V3PlaceInventory({
           ) : null}
         </section>
       ))}
+      {after}
       <V3SourceLine source={source} asOf={asOf ?? null} sourceName="Oregon Data Share" />
     </div>
   )

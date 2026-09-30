@@ -214,8 +214,14 @@ thumbnail, previous/next, arrow keys, Home/End, or a swipe on the photograph.
   `publicCardStatusLabel`: Active Under Contract is "Under contract" on every dial, the
   word the counts over it use.
 - **Held until their taste marks (Matt 2026-09-25, "fix first, then ship").** The homepage
-  and `/cities` shelves, community pages and `/commercial-space-for-lease` keep production's
-  presentation (their carousels; the lease towns' rails on the left) until each reaches its mark.
+  and `/cities` shelves and community pages keep production's presentation (their
+  carousels) until each reaches its mark.
+- **A set of towns is not a stack of dials (2026-09-30).** `/commercial-space-for-lease`
+  leads with the busiest town on a full dial; every other town is one row of a drawer
+  (a `<details>` each, busiest first, the first open) that opens to its own dial, or to its
+  rows under five leases. The town ledger that opens the page stands beside a server-drawn
+  lease map (every lease a dot at its own coordinates; hover a row to light its town). Six
+  identical dial blocks read as one section repeated.
 
 **One shop, five place rhythms** (Matt 2026-08-14). Chrome, type, tokens, Field/Ledger
 row language, and the motion ladder are the same site. The first pattern names the grain.
