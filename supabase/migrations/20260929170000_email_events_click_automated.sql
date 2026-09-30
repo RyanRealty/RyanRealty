@@ -21,8 +21,8 @@
 -- Splitting ADD ... NOT VALID from VALIDATE shortens the lock only when the two run
 -- in separate transactions; here they do not, so the lock lasts as long as the scan.
 --
--- Do not apply this file from the agent session. Hosted apply is a separate
--- delivery step.
+-- Applied to production 2026-09-30, before the code deployed (safe in either
+-- order: see above). Per CLAUDE.md section 8 the shipping session applies it.
 
 ALTER TABLE public.email_events DROP CONSTRAINT IF EXISTS email_events_event_check;
 ALTER TABLE public.email_events ADD CONSTRAINT email_events_event_check
