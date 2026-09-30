@@ -2,12 +2,14 @@
 
 /**
  * previewMarketReportEmail — the admin one-click preview for the market-report
- * subscription email (Wave 8).
+ * email on the settings page (Wave 8; rebuilt 2026-09-29).
  *
- * Renders the EXACT html a recipient gets: same data path (getMarketReportData,
- * §0 cache-only figures), same renderer (renderMarketReportEmail), same shell.
- * The only differences from a real send: the unsubscribe link is a preview
- * placeholder (no real token minted) and no suppression/send machinery runs.
+ * Renders the email a recipient gets for these areas: same data path
+ * (getMarketReportData, §0 figures), same renderer, same shell, and the same
+ * prepareDeliverableEmail footer pass the send makes (lib/crm/market-report-
+ * preview.ts). There is no contact here, so the close card is the ACTING
+ * broker's (not always Matt's) and the report's links are placeholders. It
+ * says when a real send would be held for stale data.
  *
  * Returns { data, error } — never throws. Gated on CRM access (broker or
  * superuser); the returned `traces` are the §0 audit trail the preview surface
@@ -15,14 +17,9 @@
  */
 
 import { getCrmAccess } from '@/app/actions/crm'
-import { getMarketReportData } from '@/lib/data/crm/getMarketReportData'
-import {
-  renderMarketReportEmail,
-  type EmailFigureTrace,
-} from '@/lib/crm/market-report-email'
-import { shellBrokerFor } from '@/lib/email/broker-identity'
-
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+import type { EmailFigureTrace } from '@/lib/crm/market-report-email'
+import { renderMarketReportPreview } from '@/lib/crm/market-report-preview'
+import { reportAreaLabel } from '@/lib/crm/market-report-areas'
 
 export type MarketReportEmailPreview = {
   subject: string
@@ -33,6 +30,10 @@ export type MarketReportEmailPreview = {
   renderedAreas: string[]
   /** Subscribed slugs that had NO cache data and were honestly omitted. */
   omittedAreas: string[]
+  /** Display label per slug ("bend-larkspur" -> "Larkspur"). */
+  areaLabels: Record<string, string>
+  /** A real send right now would be held (stale data), in plain words. Null when fresh. */
+  heldNote: string | null
 }
 
 export async function previewMarketReportEmail(input: {
@@ -48,32 +49,28 @@ export async function previewMarketReportEmail(input: {
       : []
     if (requested.length === 0) return { data: null, error: 'Pick at least one area' }
 
-    const blocks = await getMarketReportData(requested)
-    if (blocks.length === 0) {
-      return { data: null, error: 'No cache data for the selected areas, nothing to preview' }
-    }
-
-    const rendered = renderMarketReportEmail({
+    const res = await renderMarketReportPreview({
+      areaSlugs: requested,
       contactName: input.contactName ?? null,
-      areas: blocks,
-      // Preview placeholder — a real send mints a per-person token instead.
-      unsubscribeUrl: `${SITE_URL}/api/email/unsubscribe?preview=1`,
-      // Mirror production: a real send always carries a close card (Matt by
-      // default) — the preview must show the same email (audit #14).
-      senderBroker: shellBrokerFor(null),
+      brokerSlug: access.brokerSlug ?? 'matt',
+      personId: null,
+      subscriptionId: null,
     })
-
-    const renderedAreas = blocks.map((b) => b.slug)
-    const omittedAreas = requested.filter((s) => !renderedAreas.includes(s.trim()))
+    if (!res.ok) return { data: null, error: res.error }
+    const p = res.preview
+    const areaLabels: Record<string, string> = {}
+    for (const slug of [...p.renderedAreas, ...p.omittedAreas]) areaLabels[slug] = reportAreaLabel(slug)
 
     return {
       data: {
-        subject: rendered.subject,
-        html: rendered.html,
-        text: rendered.text,
-        traces: rendered.traces,
-        renderedAreas,
-        omittedAreas,
+        subject: p.subject,
+        html: p.html,
+        text: p.text,
+        traces: p.traces,
+        renderedAreas: p.renderedAreas,
+        omittedAreas: p.omittedAreas,
+        areaLabels,
+        heldNote: p.heldNote,
       },
       error: null,
     }

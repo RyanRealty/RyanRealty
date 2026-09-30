@@ -77,9 +77,11 @@ import {
 } from '@/lib/data/market-truth/getSellBendMarket'
 import {
   EMPTY_PUBLIC_PACE,
-  getPublicDetachedPace,
+  getPublicDetachedPaceDetailed,
+  type PublicPaceProvenance,
   type PublicPaceRow,
 } from '@/lib/data/market-truth/public-pace'
+import type { MetricProvenance } from '@/lib/data/market-truth/getMetric'
 import { buildMarketReportAreas } from '@/lib/data/crm/getContactReportSubscriptions'
 import { hrefForNeighborhoodSlug } from '@/lib/neighborhood-areas'
 import { REPORT_CITY_SLUG_SET } from '@/lib/data/geo/report-cities'
@@ -132,6 +134,41 @@ export type MarketTrendSummary = {
 }
 
 /**
+ * Where each group of a block's figures came from, with the clock and the
+ * sample behind it. The email's figures trace (lib/crm/market-report-figures)
+ * prints `as_of` and `n` from here, and the sender's freshness hold
+ * (lib/crm/market-report-freshness) reads the clocks. Attached on the fetch
+ * path only; a block built without it simply carries no trace clocks.
+ */
+export type MarketReportProvenance = {
+  /**
+   * The market_stats_cache rolling_365d row: median days on market, and the
+   * row whose existence keeps an area in the report.
+   */
+  cache: {
+    updatedAt: string | null
+    periodStart: string | null
+    periodEnd: string | null
+    soldCount: number | null
+    methodologyVersion: string | null
+  } | null
+  /** The live inventory (and, for a city, months of supply) source. */
+  live: {
+    table: 'market_metric' | 'market_pulse_live'
+    /** When the row was computed or refreshed. */
+    computedAt: string | null
+    /** Market Truth only: the last day the underlying data is complete through. */
+    completeThrough: string | null
+  } | null
+  /** The Market Truth leftover twelve-month cells (median, closed count, YoY). */
+  twelveMonth: {
+    medianClose: MetricProvenance | null
+    closedCount: MetricProvenance | null
+    yoyMedian: MetricProvenance | null
+  } | null
+}
+
+/**
  * One subscribed area's verified market figures. Every numeric field is sourced
  * from the cache; a field is `null` when the cache row does not carry it (never
  * a fabricated stand-in).
@@ -151,6 +188,13 @@ export type MarketReportAreaBlock = {
   soldLast12mo: number | null
   /** Months of supply = active / (soldLast12mo / 12). Computed, not stored. */
   monthsOfSupply: number | null
+  /**
+   * Which path produced `monthsOfSupply`: the live source's own figure
+   * (Market Truth / pulse, six-month absorption) or the trailing-12-month
+   * fallback computed from the cache sold count. Null when withheld. The
+   * figures trace names it, so a reviewer can tell the two formulas apart.
+   */
+  monthsOfSupplySource?: 'live' | 'computed-12mo' | null
   /** Verdict derived FROM monthsOfSupply against the §0 thresholds. */
   marketVerdict: MoSVerdict | null
   /** Median days on market (closed), trailing 12 months. */
@@ -185,6 +229,8 @@ export type MarketReportAreaBlock = {
    * when the geo has no monthly cache series.
    */
   trend?: MarketTrendSummary | null
+  /** Clocks and samples behind the figures (fetch path only). */
+  provenance?: MarketReportProvenance | null
 }
 
 /**
@@ -324,11 +370,11 @@ function toNum(v: unknown): number | null {
 async function readAreaLeftover(
   geoType: 'city' | 'neighborhood',
   geoSlug: string,
-): Promise<PublicPaceRow> {
+): Promise<{ row: PublicPaceRow; provenance: PublicPaceProvenance }> {
   try {
-    return await getPublicDetachedPace({ geoType, geoSlug })
+    return await getPublicDetachedPaceDetailed({ geoType, geoSlug })
   } catch {
-    return { ...EMPTY_PUBLIC_PACE }
+    return { row: { ...EMPTY_PUBLIC_PACE }, provenance: {} }
   }
 }
 
@@ -445,6 +491,7 @@ export function buildAreaBlock(args: {
     activeListings,
     soldLast12mo,
     monthsOfSupply,
+    monthsOfSupplySource: liveMos != null ? 'live' : rawMos != null ? 'computed-12mo' : null,
     marketVerdict: classifyMarketVerdict(rawMos),
     domMedian,
     yoyPct,
@@ -510,7 +557,7 @@ export async function getMarketReportData(
             detached.get(`city:${cityDetachedSlug(cacheSlug)}`)
           : undefined
 
-      const [detail, pulse, trendPoints, leftover] = await Promise.all([
+      const [detail, pulse, trendPoints, leftoverRead] = await Promise.all([
         getCityMarketDetail({ geoType, geoSlug: cacheSlug, periodType: 'rolling_365d' }),
         geoType === 'neighborhood'
           ? getMarketPulse({ geoType, geoSlug: cacheSlug })
@@ -518,6 +565,7 @@ export async function getMarketReportData(
         getMarketTrend(geoType, cacheSlug, 12),
         readAreaLeftover(geoType, slug),
       ])
+      const leftover = leftoverRead.row
 
       const live = mt
         ? {
@@ -532,6 +580,28 @@ export async function getMarketReportData(
               refreshedAt: pulse.refreshedAt,
             }
           : null
+
+      const provenance: MarketReportProvenance = {
+        cache: detail
+          ? {
+              updatedAt: detail.updatedAt ?? null,
+              periodStart: detail.periodStart ?? null,
+              periodEnd: detail.periodEnd ?? null,
+              soldCount: toNum(detail.soldCount),
+              methodologyVersion: detail.methodologyVersion ?? null,
+            }
+          : null,
+        live: mt
+          ? { table: 'market_metric', computedAt: mt.computedAt ?? null, completeThrough: mt.completeThrough ?? null }
+          : pulse
+            ? { table: 'market_pulse_live', computedAt: pulse.refreshedAt ?? null, completeThrough: null }
+            : null,
+        twelveMonth: {
+          medianClose: leftoverRead.provenance.median_close ?? null,
+          closedCount: leftoverRead.provenance.closed_count ?? null,
+          yoyMedian: leftoverRead.provenance.yoy_median_price ?? null,
+        },
+      }
 
       const block = buildAreaBlock({
         slug,
@@ -551,7 +621,7 @@ export async function getMarketReportData(
         leftover,
       })
       if (!block) return null
-      return { ...block, trend: buildTrendSummary(trendPoints) }
+      return { ...block, trend: buildTrendSummary(trendPoints), provenance }
     }),
   )
 

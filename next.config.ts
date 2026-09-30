@@ -281,7 +281,14 @@ const nextConfig: NextConfig = {
       // own policy admits no third-party origin at all, so a tag added by
       // mistake is blocked by the browser, not just left out by the layout.
       // Supabase serves the documents; Sentry takes scrubbed error reports.
-      ...['/sign/:path*', '/cma-drafts/:path*', '/alerts/unsubscribe', '/newsletter/unsubscribe'].map((source) => ({
+      ...[
+        '/sign/:path*',
+        '/cma-drafts/:path*',
+        '/alerts/unsubscribe',
+        '/newsletter/unsubscribe',
+        '/email-preferences',
+        '/email-preferences/:path*',
+      ].map((source) => ({
         source,
         headers: [{ key: 'Referrer-Policy', value: 'no-referrer' }],
       })),

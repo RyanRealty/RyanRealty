@@ -22,15 +22,23 @@ import {
 } from '@/lib/data/crm/getContactReportSubscriptions'
 import {
   findPersonIdByEmail,
+  getSelfEmailStatus,
   getSelfReportSubscription,
   upsertSelfReportSubscription,
 } from '@/lib/data/crm/reportSubscriptionSelf'
+import { removeSoftEmailUnsubscribeByEmailValue } from '@/lib/data/newsletter/perLead'
+import { logReportTimeline } from '@/lib/data/crm/marketReportSubscription'
+import { removeSuppression } from '@/lib/crm/suppressions'
 
 export type MyReportSubscriptionData = {
   /** Null when the user has never been subscribed (render the off default). */
   subscription: ContactReportSubscription | null
   /** The valid area options for the picker (registry cities + resort communities). */
   areas: MarketReportArea[]
+  /** All email from Ryan Realty is off for this address, so no report arrives. */
+  emailOff: boolean
+  /** Only her own unsubscribe is in the way: she can turn email back on herself. */
+  emailRestartable: boolean
 }
 
 export type SetMyReportSubscriptionInput = {
@@ -49,11 +57,17 @@ export async function getMyReportSubscriptionAction(): Promise<{
     if (!session?.user) return { data: null, error: 'Sign in to manage market report emails.' }
     const email = session.user.email?.trim()
     const areas = buildMarketReportAreas()
-    if (!email) return { data: { subscription: null, areas }, error: null }
+    if (!email) return { data: { subscription: null, areas, emailOff: false, emailRestartable: false }, error: null }
 
     const personId = await findPersonIdByEmail(email)
-    const subscription = personId ? await getSelfReportSubscription(personId) : null
-    return { data: { subscription, areas }, error: null }
+    const [subscription, status] = await Promise.all([
+      personId ? getSelfReportSubscription(personId) : Promise.resolve(null),
+      getSelfEmailStatus(personId, email),
+    ])
+    return {
+      data: { subscription, areas, emailOff: status.off, emailRestartable: status.restartable },
+      error: null,
+    }
   } catch (err) {
     console.error('[getMyReportSubscriptionAction]', err)
     return { data: null, error: 'We could not load your market report preferences.' }
@@ -104,5 +118,44 @@ export async function setMyReportSubscriptionAction(
   } catch (err) {
     console.error('[setMyReportSubscriptionAction]', err)
     return { data: null, error: 'We could not save your market report preferences. Try again.' }
+  }
+}
+
+/**
+ * "Start receiving Ryan Realty email again" on the account page: the signed-in
+ * person's own consent, which lifts ONLY her own soft `unsubscribe`
+ * suppression (her person row and her address). A bounce, a complaint, a
+ * do-not-email tag or a compliance hard stop stays, and the answer says so.
+ * Writes a crm_timeline row naming the account page.
+ */
+export async function restartMyEmailAction(): Promise<{ data: { emailOff: boolean } | null; error: string | null }> {
+  try {
+    const session = await getSession()
+    if (!session?.user) return { data: null, error: 'Sign in to manage your email.' }
+    const email = session.user.email?.trim()
+    if (!email) return { data: null, error: 'Add an email to your account first.' }
+    const personId = await findPersonIdByEmail(email)
+    const status = await getSelfEmailStatus(personId, email)
+    if (!status.off) return { data: { emailOff: false }, error: null }
+    if (!status.restartable) {
+      return {
+        data: null,
+        error: 'Email to this address is off for a reason we cannot clear here. Reply to any of our emails and we will sort it out.',
+      }
+    }
+    if (personId) await removeSuppression({ personId, channel: 'email', reason: 'unsubscribe' })
+    await removeSoftEmailUnsubscribeByEmailValue(email)
+    if (personId) {
+      await logReportTimeline(personId, {
+        title: "Email turned back on from the account page (the contact's own request)",
+        payload: { via: 'self-serve', change: 'restart-all-email' },
+        source: 'self-serve',
+      })
+    }
+    const after = await getSelfEmailStatus(personId, email)
+    return { data: { emailOff: after.off }, error: null }
+  } catch (err) {
+    console.error('[restartMyEmailAction]', err)
+    return { data: null, error: 'We could not turn email back on. Try again.' }
   }
 }

@@ -1,26 +1,31 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { MarketReportSubscriber } from '@/lib/data/crm/getMarketReportSubscribers'
-import type { MarketReportAreaBlock } from '@/lib/data/crm/getMarketReportData'
 
-// Mock the send-leaf collaborators so sendOneSubscriber can be tested in
-// isolation: the suppression chokepoint must run BEFORE sendEmail.
+// The send leaf's collaborators. The suppression chokepoint must run BEFORE
+// sendEmail, and a preview must never record an event against the contact.
 const isSuppressed = vi.fn()
 const sendEmail = vi.fn()
 const recordEmailEvent = vi.fn()
 vi.mock('@/lib/crm/suppressions', () => ({ isSuppressed: (...a: unknown[]) => isSuppressed(...a) }))
 vi.mock('@/lib/resend', () => ({ sendEmail: (...a: unknown[]) => sendEmail(...a) }))
 vi.mock('@/lib/crm/email-events', () => ({ recordEmailEvent: (...a: unknown[]) => recordEmailEvent(...a) }))
-// The fetch-failure path pages Matt through queueBrokerHealthAlert. Unmocked, it
-// wrote a real crm_broker_alerts row on every run with production keys and
-// texted him "(db down)" (2026-09-20..24); test/unit-no-live-services.ts now
-// blanks those keys for every unit file, and this mock asserts the page.
-const queueBrokerHealthAlert = vi.fn(async (..._a: unknown[]) => true)
+// Alerts page Matt on the ops channel; never let a unit run write one for real.
+const queueBrokerHealthAlert = vi.fn<(...a: unknown[]) => Promise<boolean>>(async () => true)
 vi.mock('@/lib/crm/broker-alerts', () => ({ queueBrokerHealthAlert: (...a: unknown[]) => queueBrokerHealthAlert(...a) }))
-// Keep prepare / attribution real but cheap — they are pure string transforms.
+// prepare and attribution stay real: they are pure string transforms.
 
-import { runMarketReportSend, sendOneSubscriber, type SendDeps } from './market-report-send'
+import {
+  runMarketReportSend,
+  sendOneSubscriber,
+  type ScheduledDeliverOutcome,
+  type SendDeps,
+  type SendOneInput,
+} from './market-report-send'
 
-const NOW = new Date('2026-06-25T12:00:00.000Z')
+/** 3pm Pacific (22:00 UTC): inside the 8am to 8pm window. */
+const IN_WINDOW = new Date('2026-06-25T22:00:00.000Z')
+/** 5am Pacific (12:00 UTC): outside it. */
+const OUT_OF_WINDOW = new Date('2026-06-25T12:00:00.000Z')
 const DAY = 24 * 60 * 60 * 1000
 
 function sub(over: Partial<MarketReportSubscriber> = {}): MarketReportSubscriber {
@@ -28,192 +33,253 @@ function sub(over: Partial<MarketReportSubscriber> = {}): MarketReportSubscriber
     subscriptionId: over.subscriptionId ?? 1,
     personId: over.personId ?? 100,
     personName: over.personName ?? 'Test Contact',
-    assignedBroker: over.assignedBroker ?? 'matt',
+    assignedBroker: 'assignedBroker' in over ? (over.assignedBroker as string | null) : 'matt',
     fubPersonId: over.fubPersonId ?? null,
     areas: over.areas ?? ['bend'],
     frequency: over.frequency ?? 'weekly',
     isActive: over.isActive ?? true,
     lastSentAt: 'lastSentAt' in over ? (over.lastSentAt as string | null) : null,
     lastAttemptAt: over.lastAttemptAt ?? null,
+    firstSendApprovedAt: 'firstSendApprovedAt' in over ? (over.firstSendApprovedAt as string | null) : '2026-06-01T17:00:00.000Z',
   }
 }
 
-const BLOCK: MarketReportAreaBlock = {
-  twelveMonthSource: 'market-truth',
-  slug: 'bend',
-  areaLabel: 'Bend',
-  geoType: 'city',
-  medianPrice: 750000,
-  activeListings: 420,
-  soldLast12mo: 1200,
-  monthsOfSupply: 4.2,
-  marketVerdict: 'balanced',
-  domMedian: 38,
-  yoyPct: 2.1,
-  marketHealthLabel: 'Warm',
-  refreshedAt: '2026-06-24T00:00:00.000Z',
-  source: 'market_pulse_live',
-  href: '/cities/bend',
-}
-
-function makeDeps(over: Partial<SendDeps> = {}): SendDeps {
+function makeDeps(over: Partial<SendDeps> = {}): SendDeps & {
+  deliver: ReturnType<typeof vi.fn>
+  recordHold: ReturnType<typeof vi.fn>
+  stampAttempt: ReturnType<typeof vi.fn>
+  resolveEmail: ReturnType<typeof vi.fn>
+} {
   return {
     fetchSubscribers: vi.fn(async () => [sub()]),
     resolveEmail: vi.fn(async () => 'jane@example.com'),
-    fetchAreas: vi.fn(async () => [BLOCK]),
-    sendOne: vi.fn(async ({ personId }) => ({ personId, status: 'sent' as const, messageId: 'm1' })),
+    deliver: vi.fn(async (): Promise<ScheduledDeliverOutcome> => ({ status: 'sent', messageId: 'msg-1' })),
+    recordHold: vi.fn(async () => undefined),
     stampAttempt: vi.fn(async () => ({ ok: true as const })),
-    stampSent: vi.fn(async () => ({ ok: true as const })),
     ...over,
-  }
+  } as never
 }
 
 beforeEach(() => {
   isSuppressed.mockReset()
   sendEmail.mockReset()
   recordEmailEvent.mockReset()
+  queueBrokerHealthAlert.mockClear()
 })
 
-describe('runMarketReportSend — cadence + skip taxonomy', () => {
-  it('signs a due report as the assigned broker, web slug included', async () => {
-    const deps = makeDeps({
-      fetchSubscribers: vi.fn(async () => [sub({ assignedBroker: 'paul-stevenson', personName: 'Casey' })]),
-    })
-    const s = await runMarketReportSend({ now: NOW, deps })
-    expect(s.sent).toBe(1)
-    const arg = vi.mocked(deps.sendOne).mock.calls[0]?.[0]
-    expect(arg?.brokerSlug).toBe('paul-stevenson')
-    expect(arg?.html).toContain('Paul Stevenson')
-    expect(arg?.html).toContain('541.502.3436')
-    expect(arg?.html).not.toContain('977-6841')
-    expect(arg?.html).not.toContain('Matt Ryan')
-  })
-
-  it('an unassigned subscriber is signed by Matt', async () => {
-    const deps = makeDeps({
-      fetchSubscribers: vi.fn(async () => [sub({ assignedBroker: null })]),
-    })
-    await runMarketReportSend({ now: NOW, deps })
-    const arg = vi.mocked(deps.sendOne).mock.calls[0]?.[0]
-    expect(arg?.brokerSlug).toBe('matt')
-    expect(arg?.html).toContain('Matt Ryan')
-    expect(arg?.html).toContain('541.703.3095')
-  })
-
-  it('sends a due, never-sent subscriber and stamps last_sent_at', async () => {
+describe('runMarketReportSend: the window', () => {
+  it('does nothing outside 8am to 8pm Pacific (no reads, no writes)', async () => {
     const deps = makeDeps()
-    const s = await runMarketReportSend({ now: NOW, deps })
-    expect(s.scanned).toBe(1)
-    expect(s.due).toBe(1)
-    expect(s.sent).toBe(1)
-    expect(s.skipped).toBe(0)
-    expect(deps.stampAttempt).toHaveBeenCalledTimes(1)
-    expect(deps.stampSent).toHaveBeenCalledTimes(1)
-    expect(deps.sendOne).toHaveBeenCalledTimes(1)
+    const s = await runMarketReportSend({ now: OUT_OF_WINDOW, deps })
+    expect(s.outsideWindow).toBe(true)
+    expect(deps.fetchSubscribers).not.toHaveBeenCalled()
+    expect(deps.deliver).not.toHaveBeenCalled()
+    expect(s.sent).toBe(0)
   })
 
-  it('skips a not-due subscriber without stamping or sending', async () => {
-    // weekly cadence, sent 2 days ago → not due.
-    const recent = new Date(NOW.getTime() - 2 * DAY).toISOString()
-    const deps = makeDeps({ fetchSubscribers: vi.fn(async () => [sub({ lastSentAt: recent })]) })
-    const s = await runMarketReportSend({ now: NOW, deps })
-    expect(s.due).toBe(0)
-    expect(s.sent).toBe(0)
+  it('runs inside the window', async () => {
+    const deps = makeDeps()
+    const s = await runMarketReportSend({ now: IN_WINDOW, deps })
+    expect(s.outsideWindow).toBe(false)
+    expect(s.sent).toBe(1)
+  })
+})
+
+describe('runMarketReportSend: cadence and approval', () => {
+  it('skips a contact that is not due, without stamping an attempt', async () => {
+    const deps = makeDeps({
+      fetchSubscribers: vi.fn(async () => [sub({ lastSentAt: new Date(IN_WINDOW.getTime() - DAY).toISOString() })]),
+    })
+    const s = await runMarketReportSend({ now: IN_WINDOW, deps })
     expect(s.skippedByReason['not-due']).toBe(1)
     expect(deps.stampAttempt).not.toHaveBeenCalled()
-    expect(deps.sendOne).not.toHaveBeenCalled()
+    expect(deps.deliver).not.toHaveBeenCalled()
   })
 
-  it('skips a due subscriber with no email on file (stamps attempt, not sent)', async () => {
+  it('holds a due subscription nobody has approved: one held row, nothing sent, no attempt stamp', async () => {
+    const deps = makeDeps({ fetchSubscribers: vi.fn(async () => [sub({ firstSendApprovedAt: null })]) })
+    const s = await runMarketReportSend({ now: IN_WINDOW, deps })
+    expect(s.skippedByReason['awaiting-approval']).toBe(1)
+    expect(deps.recordHold).toHaveBeenCalledWith(expect.objectContaining({ subscriptionId: 1 }), 'awaiting-approval', IN_WINDOW)
+    expect(deps.deliver).not.toHaveBeenCalled()
+    expect(deps.stampAttempt).not.toHaveBeenCalled()
+  })
+
+  it('delivers an approved, due contact from the assigned broker with a per-run email key', async () => {
+    const deps = makeDeps({ fetchSubscribers: vi.fn(async () => [sub({ assignedBroker: 'rebecca', personId: 42 })]) })
+    const s = await runMarketReportSend({ now: IN_WINDOW, deps, runId: 'run1' })
+    expect(s.sent).toBe(1)
+    expect(deps.stampAttempt).toHaveBeenCalledWith(1, IN_WINDOW)
+    expect(deps.deliver).toHaveBeenCalledWith(
+      expect.objectContaining({ email: 'jane@example.com', brokerSlug: 'rebecca', emailKey: 'market-report:run1:42', now: IN_WINDOW }),
+    )
+  })
+
+  it("falls back to Matt's identity when no broker is assigned", async () => {
+    const deps = makeDeps({ fetchSubscribers: vi.fn(async () => [sub({ assignedBroker: null })]) })
+    await runMarketReportSend({ now: IN_WINDOW, deps })
+    expect(deps.deliver).toHaveBeenCalledWith(expect.objectContaining({ brokerSlug: 'matt' }))
+  })
+
+  it('holds a contact with no email on file', async () => {
     const deps = makeDeps({ resolveEmail: vi.fn(async () => null) })
-    const s = await runMarketReportSend({ now: NOW, deps })
-    expect(s.due).toBe(1)
-    expect(s.sent).toBe(0)
+    const s = await runMarketReportSend({ now: IN_WINDOW, deps })
     expect(s.skippedByReason['no-email']).toBe(1)
-    expect(deps.stampAttempt).toHaveBeenCalledTimes(1)
-    expect(deps.stampSent).not.toHaveBeenCalled()
-    expect(deps.sendOne).not.toHaveBeenCalled()
+    expect(deps.recordHold).toHaveBeenCalledWith(expect.anything(), 'no-email', IN_WINDOW)
+    expect(deps.deliver).not.toHaveBeenCalled()
   })
+})
 
-  it('skips a due subscriber whose areas all resolve unavailable (no fabricated email)', async () => {
-    const deps = makeDeps({ fetchAreas: vi.fn(async () => []) })
-    const s = await runMarketReportSend({ now: NOW, deps })
-    expect(s.due).toBe(1)
-    expect(s.sent).toBe(0)
-    expect(s.skippedByReason['no-areas']).toBe(1)
-    expect(deps.sendOne).not.toHaveBeenCalled()
-    expect(deps.stampSent).not.toHaveBeenCalled()
-  })
-
-  it('honors the maxSends chunk cap', async () => {
-    const many = Array.from({ length: 5 }, (_, i) => sub({ subscriptionId: i + 1, personId: 200 + i }))
-    const deps = makeDeps({ fetchSubscribers: vi.fn(async () => many) })
-    const s = await runMarketReportSend({ now: NOW, maxSends: 2, deps })
-    expect(s.sent).toBe(2)
-    expect(deps.sendOne).toHaveBeenCalledTimes(2)
-  })
-
-  it('never throws when the subscriber fetch fails', async () => {
+describe('runMarketReportSend: delivery outcomes', () => {
+  it('counts a stale-data hold and pages the ops channel once per run', async () => {
     const deps = makeDeps({
-      fetchSubscribers: vi.fn(async () => {
-        throw new Error('db down')
-      }),
+      fetchSubscribers: vi.fn(async () => [sub({ personId: 1 }), sub({ personId: 2, subscriptionId: 2 })]),
+      deliver: vi.fn(async (): Promise<ScheduledDeliverOutcome> => ({ status: 'held', reason: 'stale-data', detail: 'market_stats_cache 41h old' })),
     })
-    const s = await runMarketReportSend({ now: NOW, deps })
+    const s = await runMarketReportSend({ now: IN_WINDOW, deps })
+    expect(s.skippedByReason['stale-data']).toBe(2)
+    expect(queueBrokerHealthAlert).toHaveBeenCalledTimes(1)
+    expect(queueBrokerHealthAlert).toHaveBeenCalledWith(expect.objectContaining({ key: 'market-report-send:stale-data' }))
+  })
+
+  it('treats "already sent inside the window" as not due', async () => {
+    const deps = makeDeps({
+      deliver: vi.fn(async (): Promise<ScheduledDeliverOutcome> => ({ status: 'already-sent', sentAt: '2026-06-24T22:00:00.000Z' })),
+    })
+    const s = await runMarketReportSend({ now: IN_WINDOW, deps })
+    expect(s.skippedByReason['not-due']).toBe(1)
     expect(s.sent).toBe(0)
+  })
+
+  it('maps a suppressed hold and a failure to their reasons', async () => {
+    const deps = makeDeps({
+      fetchSubscribers: vi.fn(async () => [sub({ personId: 1 }), sub({ personId: 2, subscriptionId: 2 })]),
+      deliver: vi
+        .fn()
+        .mockResolvedValueOnce({ status: 'held', reason: 'suppressed', detail: 'email:unsubscribe' })
+        .mockResolvedValueOnce({ status: 'failed', detail: 'Resend 500' }),
+    })
+    const s = await runMarketReportSend({ now: IN_WINDOW, deps })
+    expect(s.skippedByReason.suppressed).toBe(1)
     expect(s.skippedByReason['send-error']).toBe(1)
-    expect(s.outcomes[0]).toMatchObject({ reason: 'send-error' })
+  })
+
+  it('never throws when a delivery throws', async () => {
+    const deps = makeDeps({ deliver: vi.fn(async () => { throw new Error('boom') }) })
+    const s = await runMarketReportSend({ now: IN_WINDOW, deps })
+    expect(s.skippedByReason['send-error']).toBe(1)
+  })
+
+  it('caps sends per run', async () => {
+    const many = Array.from({ length: 5 }, (_, i) => sub({ personId: i + 1, subscriptionId: i + 1 }))
+    const deps = makeDeps({ fetchSubscribers: vi.fn(async () => many) })
+    const s = await runMarketReportSend({ now: IN_WINDOW, deps, maxSends: 2 })
+    expect(s.sent).toBe(2)
+    expect(deps.deliver).toHaveBeenCalledTimes(2)
+  })
+
+  it('pages Matt when the subscriber list cannot be read', async () => {
+    const deps = makeDeps({ fetchSubscribers: vi.fn(async () => { throw new Error('db down') }) })
+    const s = await runMarketReportSend({ now: IN_WINDOW, deps })
+    expect(s.skippedByReason['send-error']).toBe(1)
     expect(queueBrokerHealthAlert).toHaveBeenCalledWith(
       expect.objectContaining({ key: 'market-report-send:fetch-subscribers-failed' }),
     )
   })
 })
 
-describe('sendOneSubscriber — suppression chokepoint', () => {
-  const baseArgs = {
+describe('sendOneSubscriber: the one send call', () => {
+  const MANAGE = 'https://ryan-realty.com/email-preferences?t=m.tok'
+  const UNSUB = `${MANAGE}&stop=1`
+  const ONE_CLICK = 'https://ryan-realty.com/api/email/report-unsubscribe?t=s.tok'
+  const ADDRESS = 'Ryan Realty, 115 NW Oregon Ave #2, Bend, OR 97703'
+  const baseArgs: SendOneInput = {
+    kind: 'scheduled',
     personId: 100,
-    fubPersonId: null,
     brokerSlug: 'matt',
-    email: 'jane@example.com',
-    subject: 'Bend market update',
-    html: '<p>Hello</p>',
-    text: 'Hello',
-    unsubscribeUrl: 'https://ryan-realty.com/api/email/unsubscribe?t=tok',
+    to: 'jane@example.com',
+    subject: 'Bend home prices are down 1.2% from a year ago',
+    html: `<p>Hello</p><p><a href="https://ryan-realty.com/housing-market/bend?utm_source=crm#market">See it</a></p><p>${ADDRESS} &middot; <a href="${MANAGE}">Manage your report</a> &middot; <a href="${UNSUB}">Unsubscribe</a>.</p>`,
+    text: `Hello\n\n--\n${ADDRESS}\nManage your report: ${MANAGE}\nUnsubscribe: ${UNSUB}`,
+    unsubscribeUrl: UNSUB,
+    oneClickUrl: ONE_CLICK,
     emailKey: 'market-report:run:100',
   }
 
   it('does NOT send when the contact is suppressed (fail-closed)', async () => {
-    isSuppressed.mockResolvedValue({ suppressed: true, reasons: ['tag:unsubscribed'] })
+    isSuppressed.mockResolvedValue({ suppressed: true, reasons: ['email:unsubscribe'] })
     const out = await sendOneSubscriber(baseArgs)
-    expect(out).toMatchObject({ status: 'skipped', reason: 'suppressed' })
+    expect(out).toMatchObject({ status: 'suppressed', detail: 'email:unsubscribe' })
     expect(sendEmail).not.toHaveBeenCalled()
     expect(recordEmailEvent).not.toHaveBeenCalled()
   })
 
-  it('checks suppression BEFORE sending, then sends + records on a clean contact', async () => {
-    const callOrder: string[] = []
+  it('checks suppression BEFORE sending, sends once with the broker identity and records the event', async () => {
+    const order: string[] = []
     isSuppressed.mockImplementation(async () => {
-      callOrder.push('isSuppressed')
+      order.push('isSuppressed')
       return { suppressed: false, reasons: [] }
     })
     sendEmail.mockImplementation(async () => {
-      callOrder.push('sendEmail')
+      order.push('sendEmail')
       return { id: 'msg-1' }
     })
     recordEmailEvent.mockResolvedValue({ ok: true })
 
     const out = await sendOneSubscriber(baseArgs)
     expect(out).toMatchObject({ status: 'sent', messageId: 'msg-1' })
-    expect(callOrder).toEqual(['isSuppressed', 'sendEmail'])
+    expect(order).toEqual(['isSuppressed', 'sendEmail'])
+    const sent = sendEmail.mock.calls[0][0]
+    expect(sent.to).toBe('jane@example.com')
+    expect(sent.from).toContain('Matt Ryan')
+    expect(sent.replyTo).toBeTruthy()
+    // RFC 8058 at the report-scoped one-click endpoint.
+    expect(sent.headers['List-Unsubscribe']).toBe(`<${ONE_CLICK}>`)
+    expect(sent.headers['List-Unsubscribe-Post']).toBe('List-Unsubscribe=One-Click')
+    // One footer: the body already carries it, so prepare adds none.
+    expect(sent.html.split(ADDRESS).length - 1).toBe(1)
+    expect(sent.text.split(ADDRESS).length - 1).toBe(1)
+    // Open and click tracking on a real send, with the broker on the event.
+    expect(sent.html).toContain('/api/track/e/open')
     expect(recordEmailEvent).toHaveBeenCalledTimes(1)
-    expect(recordEmailEvent.mock.calls[0][0]).toMatchObject({ sendType: 'market-report', event: 'sent' })
+    expect(recordEmailEvent.mock.calls[0][0]).toMatchObject({
+      sendType: 'market-report',
+      event: 'sent',
+      broker: 'matt',
+      emailKey: 'market-report:run:100',
+      messageId: 'msg-1',
+    })
+    // The stored copy is the prepared html, still free of tracking.
+    if (out.status === 'sent') expect(out.preparedHtml).not.toContain('/api/track/e/')
   })
 
-  it('reports a send-error without throwing and does not record a sent event', async () => {
+  it('never wraps or decorates the preferences links (a private address)', async () => {
+    isSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
+    sendEmail.mockResolvedValue({ id: 'msg-2' })
+    recordEmailEvent.mockResolvedValue({ ok: true })
+    await sendOneSubscriber(baseArgs)
+    const html: string = sendEmail.mock.calls[0][0].html
+    expect(html).toContain(`href="${MANAGE}"`)
+    expect(html).toContain(`href="${UNSUB}"`)
+  })
+
+  it('a PREVIEW carries no person token, no pixel, no click wraps and records no event', async () => {
+    isSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
+    sendEmail.mockResolvedValue({ id: 'msg-p' })
+    const out = await sendOneSubscriber({ ...baseArgs, kind: 'preview', to: 'matt@ryan-realty.com', subject: '[Preview] Bend' })
+    expect(out.status).toBe('sent')
+    const html: string = sendEmail.mock.calls[0][0].html
+    expect(html).not.toContain('/api/track/e/')
+    expect(recordEmailEvent).not.toHaveBeenCalled()
+    // The preview is still gated on the contact: no report she cannot receive is previewed.
+    expect(isSuppressed).toHaveBeenCalledWith(100, 'email')
+  })
+
+  it('reports a provider failure without throwing and records no sent event', async () => {
     isSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
     sendEmail.mockResolvedValue({ error: 'Resend 500' })
     const out = await sendOneSubscriber(baseArgs)
-    expect(out).toMatchObject({ status: 'skipped', reason: 'send-error' })
+    expect(out).toMatchObject({ status: 'failed', detail: 'Resend 500' })
     expect(recordEmailEvent).not.toHaveBeenCalled()
   })
 })

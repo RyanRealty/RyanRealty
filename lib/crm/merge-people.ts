@@ -32,6 +32,7 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { isContactStopVia } from '@/lib/crm/market-report-subscription-control'
 
 export type MergeActor = { email: string; brokerSlug: string | null }
 
@@ -98,11 +99,44 @@ const PLAIN_PERSON_TABLES = [
   'meta_audience_removal_queue',
   'cma_deliveries',
   'email_events',
+  // One row per market-report send attempt (migration 20260929230000): the
+  // stored copy and figures trace follow the person.
+  'crm_report_sends',
 ]
 // crm_person_id-keyed denormalized caches. listing_alerts is the unified
 // alert table (2026-07-07); saved_searches stays listed so LEGACY rows keep
 // repointing until the parent drops the table.
 const PLAIN_CRMPERSON_TABLES = ['newsletter_subscribers', 'saved_searches', 'listing_alerts', 'visitor_identity_map', 'visitor_sessions']
+
+/**
+ * When the duplicate's market-report subscription was stopped by the contact
+ * and the survivor's is not, stop the survivor's too (same stamp, same via).
+ * Best-effort: a failure is an incident, never a lost merge.
+ */
+async function carryReportStop(
+  sb: SupabaseClient,
+  survivorId: number,
+  mergedId: number,
+  incidents: string[],
+): Promise<void> {
+  try {
+    const [{ data: dup }, { data: surv }] = await Promise.all([
+      sb.from('crm_report_subscriptions').select('is_active, stopped_at, stopped_via').eq('person_id', mergedId).maybeSingle(),
+      sb.from('crm_report_subscriptions').select('stopped_at').eq('person_id', survivorId).maybeSingle(),
+    ])
+    const d = dup as { is_active: boolean | null; stopped_at: string | null; stopped_via: string | null } | null
+    const sv = surv as { stopped_at: string | null } | null
+    if (!d || d.is_active || !d.stopped_at || !isContactStopVia(d.stopped_via)) return
+    if (sv?.stopped_at) return
+    const { error } = await sb
+      .from('crm_report_subscriptions')
+      .update({ is_active: false, stopped_at: d.stopped_at, stopped_via: d.stopped_via, updated_at: new Date().toISOString() })
+      .eq('person_id', survivorId)
+    if (error) throw error
+  } catch (e) {
+    incidents.push(`crm_report_subscriptions stop carry: ${(e as Error).message}`)
+  }
+}
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // Count rows on any table WITHOUT assuming an `id` column — westside_parcels is
@@ -233,6 +267,10 @@ export async function mergePeopleCore(
       if (n === 0) continue
       const { count: survHas } = await sb.from(t).select('id', { count: 'exact', head: true }).eq('person_id', survivorId)
       if ((survHas ?? 0) > 0) {
+        // A market-report opt-out the contact made on the duplicate is her
+        // choice, not a duplicate's clutter: it carries onto the survivor
+        // before the duplicate's row goes (Matt 2026-09-29).
+        if (t === 'crm_report_subscriptions') await carryReportStop(sb, survivorId, mergedId, incidents)
         await sb.from(t).delete().eq('person_id', mergedId)
       } else {
         const { error } = await sb.from(t).update({ person_id: survivorId }).eq('person_id', mergedId)

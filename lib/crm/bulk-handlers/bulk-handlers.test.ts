@@ -24,7 +24,9 @@ let stageReadError: string | null = null
 let peopleReadError: string | null = null
 // SS-3 resurrection pre-check: null = no prior opt-out (row is created active);
 // { is_active: false } simulates a search the lead unsubscribed (stays muted).
-let alertPreCheckRow: { is_active: boolean } | null = null
+// The market-report handler's existing-row read (.eq(person_id).maybeSingle())
+// is served from the same slot, with the report columns.
+let alertPreCheckRow: Record<string, unknown> | null = null
 
 const updates: Array<{ table: string; id: number; patch: Record<string, unknown> }> = []
 const inserts: Array<{ table: string; row: Record<string, unknown> }> = []
@@ -114,6 +116,9 @@ vi.mock('@/lib/crm/enroll', () => ({
     )
   },
 }))
+
+// A first setup starts its cadence from the last report the contact received.
+vi.mock('@/lib/data/crm/marketReportSends', () => ({ getLatestDeliveredReportAt: async () => null }))
 
 // report-subscription sanitizer needs the area registry + frequency normalizer.
 vi.mock('@/lib/data/crm/getContactReportSubscriptions', () => ({
@@ -380,6 +385,35 @@ describe('setReportSubscriptionHandler', () => {
     const res = await setReportSubscriptionHandler([1], { areas: [], frequency: 'monthly', isActive: false }, ctxOwner)
     expect(res.processed).toBe(1)
     expect(upserts[0].row.is_active).toBe(false)
+    accountedFor(res, 1)
+  })
+
+  it('turning OFF with no areas keeps the areas already on the row', async () => {
+    alertPreCheckRow = { is_active: true, stopped_at: null, stopped_via: null, areas: ['bend'], frequency: 'monthly' }
+    const res = await setReportSubscriptionHandler([1], { areas: [], frequency: 'monthly', isActive: false }, ctxOwner)
+    expect(res.processed).toBe(1)
+    expect(upserts).toHaveLength(1)
+    expect(upserts[0].row.is_active).toBe(false)
+    expect(upserts[0].row).not.toHaveProperty('areas')
+    accountedFor(res, 1)
+  })
+
+  it('leaves a contact who is already exactly so alone: no write, no timeline row', async () => {
+    alertPreCheckRow = { is_active: true, stopped_at: null, stopped_via: null, areas: ['redmond', 'bend'], frequency: 'weekly' }
+    const res = await setReportSubscriptionHandler([1], { areas: ['bend', 'redmond'], frequency: 'weekly', isActive: true }, ctxOwner)
+    expect(res.processed).toBe(1)
+    expect(res.breakdown?.unchanged).toBe(1)
+    expect(upserts).toHaveLength(0)
+    expect(inserts.filter((i) => i.table === 'crm_timeline')).toHaveLength(0)
+    accountedFor(res, 1)
+  })
+
+  it('never turns on a report the contact stopped herself', async () => {
+    alertPreCheckRow = { is_active: false, stopped_at: '2026-09-30T00:00:00Z', stopped_via: 'one-click', areas: ['bend'], frequency: 'monthly' }
+    const res = await setReportSubscriptionHandler([1], { areas: ['bend'], frequency: 'monthly', isActive: true }, ctxOwner)
+    expect(res.skipped).toBe(1)
+    expect(res.breakdown?.skipped_contact_stopped).toBe(1)
+    expect(upserts).toHaveLength(0)
     accountedFor(res, 1)
   })
 })

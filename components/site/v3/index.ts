@@ -551,6 +551,15 @@ export type {
   V3QuietMark,
 } from './V3Quiet'
 
+/**
+ * CONTROLS: a quiet set of one-step choices, each row a real form posting to a
+ * server action (the market-report preferences page, Matt 2026-09-29). The
+ * working half of a Quiet block: same measure, same hairline rhythm.
+ */
+export { V3Controls } from './V3Controls'
+
+export type { V3ControlsProps, V3ControlsRow, V3ControlsSelect } from './V3Controls'
+
 /* -------------------------------------------------------------------------- */
 /* Pattern 8 — ANSWERS: a question set the reader opens                        */
 /* -------------------------------------------------------------------------- */

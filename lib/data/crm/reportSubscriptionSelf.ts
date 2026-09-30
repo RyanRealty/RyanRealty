@@ -26,6 +26,8 @@ import {
   normalizeReportFrequency,
   type ContactReportSubscription,
 } from '@/lib/data/crm/getContactReportSubscriptions'
+import { getSuppressionSignals } from '@/lib/data/crm/getSuppressionSignals'
+import { canUserResubscribe, getEmailKeyedSuppressionSignals } from '@/lib/data/newsletter/perLead'
 
 export type SelfReportSubscriptionInput = {
   areas: string[]
@@ -129,6 +131,37 @@ export async function upsertSelfReportSubscription(
   const sb = createServiceClient()
   const nowIso = new Date().toISOString()
 
+  // Her own on/off is her consent record (Matt's decisions 2026-09-29):
+  //   - turning reports OFF here is a report-scoped STOP by the contact
+  //     (stopped_via 'self-serve'), so a broker cannot quietly turn them back
+  //     on without recording her new consent;
+  //   - turning them ON clears any stop and stamps when she asked
+  //     (requested_at), with the source when none is recorded yet.
+  // The first report still waits for a broker's first-send approval like every
+  // subscription (lib/crm/market-report-send.ts).
+  const { data: existing, error: readErr } = await sb
+    .from('crm_report_subscriptions')
+    .select('is_active, stopped_at, source')
+    .eq('person_id', personId)
+    .maybeSingle()
+  if (readErr) {
+    console.error('[upsertSelfReportSubscription] read', readErr.message)
+    return { data: null, error: 'We could not save your market report preferences. Try again.' }
+  }
+  const prev = existing as { is_active: boolean | null; stopped_at: string | null; source: string | null } | null
+  const consent: Record<string, unknown> = {}
+  if (isActive) {
+    consent.stopped_at = null
+    consent.stopped_via = null
+    if (!prev?.is_active) consent.requested_at = nowIso
+    if (!prev?.source) consent.source = 'self-serve'
+  } else if (prev?.is_active) {
+    // Only her own switch from on to off is a stop; editing areas while the
+    // report is already off records nothing new.
+    consent.stopped_at = nowIso
+    consent.stopped_via = 'self-serve'
+  }
+
   const { error: upErr } = await sb
     .from('crm_report_subscriptions')
     .upsert(
@@ -138,6 +171,7 @@ export async function upsertSelfReportSubscription(
         frequency,
         is_active: isActive,
         updated_at: nowIso,
+        ...consent,
       },
       { onConflict: 'person_id' },
     )
@@ -157,4 +191,31 @@ export async function upsertSelfReportSubscription(
   if (tlErr) console.error('[upsertSelfReportSubscription] timeline', tlErr.message)
 
   return { data: { isActive, areas, frequency }, error: null }
+}
+
+/**
+ * Is all email from Ryan Realty off for this signed-in person, and can they
+ * turn it back on themselves? A market report she switches on still never
+ * arrives while a global email suppression stands (the send chokepoint holds
+ * it), so the account page says so plainly and offers "Start receiving Ryan
+ * Realty email again" when the only thing in the way is her own unsubscribe
+ * (canUserResubscribe: never a bounce, a complaint, a do-not-email tag or a
+ * compliance hard stop). A read failure reads as off and not restartable.
+ */
+export async function getSelfEmailStatus(
+  personId: number | null,
+  email: string,
+): Promise<{ off: boolean; restartable: boolean }> {
+  try {
+    const [personSignals, emailKeyed] = await Promise.all([
+      personId && personId > 0 ? getSuppressionSignals(personId) : Promise.resolve([]),
+      getEmailKeyedSuppressionSignals(email),
+    ])
+    const all = [...personSignals, ...emailKeyed]
+    const off = all.some((s) => s.channel === 'email' || s.channel === 'all')
+    return { off, restartable: off && canUserResubscribe(all, null).allowed }
+  } catch (e) {
+    console.error('[getSelfEmailStatus]', e instanceof Error ? e.message : e)
+    return { off: true, restartable: false }
+  }
 }

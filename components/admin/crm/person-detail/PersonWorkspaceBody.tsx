@@ -583,7 +583,6 @@ export async function PersonWorkspaceBody(props: PersonWorkspaceIdentity) {
                   primaryEmail={primaryEmail}
                   contactMemberships={contactMemberships}
                   reportSub={reportSub}
-                  reportAreas={reportAreas}
                 />
               </Suspense>
             </div>

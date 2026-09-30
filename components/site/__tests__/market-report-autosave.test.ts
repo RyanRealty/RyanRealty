@@ -44,10 +44,11 @@ const setSpy = vi.fn(async (input: SetInput) => ({
 
 vi.mock('@/app/actions/market-report-optin', () => ({
   getMyReportSubscriptionAction: async () => ({
-    data: { subscription: currentSubscription, areas: AREAS },
+    data: { subscription: currentSubscription, areas: AREAS, emailOff: false, emailRestartable: false },
     error: null,
   }),
   setMyReportSubscriptionAction: (input: SetInput) => setSpy(input),
+  restartMyEmailAction: async () => ({ data: { emailOff: false }, error: null }),
 }))
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: () => {} }) }))
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }))

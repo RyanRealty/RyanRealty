@@ -10,6 +10,8 @@
  *   slug   — geo slug, e.g. bend, tetherow
  *   metric — median_price | inventory | dom
  *   months — window of completed months (6–24, default 12)
+ *   through — optional YYYY-MM: the last month drawn (the market-report
+ *             email pins it to the month its text describes)
  *
  * Unauthenticated by design (Gmail/Outlook image proxies fetch it) — it only
  * exposes aggregate public market stats already published on the site's market
@@ -107,8 +109,18 @@ export async function GET(req: Request): Promise<Response> {
   const metric = METRICS[metricParam]
   if (!metric) return new Response('Unknown metric', { status: 400 })
   const months = Number.isFinite(monthsParam) ? Math.min(24, Math.max(6, monthsParam)) : 12
+  // `through=YYYY-MM` pins the chart to the months an email described, so a
+  // report opened a month later, or read again from the archive, draws the
+  // chart that went out instead of whatever the latest months are by then.
+  const throughParam = (url.searchParams.get('through') ?? '').trim()
+  if (throughParam && !/^\d{4}-(0[1-9]|1[0-2])$/.test(throughParam)) {
+    return new Response('Bad through', { status: 400 })
+  }
 
-  const trend = await getMarketTrend(geoParam as GeoType, slug, months)
+  const series = await getMarketTrend(geoParam as GeoType, slug, throughParam ? 36 : months)
+  const trend = throughParam
+    ? series.filter((p) => p.periodStart.slice(0, 7) <= throughParam).slice(-months)
+    : series
   const points: ChartPoint[] = trend
     .map((p) => {
       const v = metric.pick(p)

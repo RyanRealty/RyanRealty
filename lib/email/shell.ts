@@ -60,6 +60,12 @@ export type EmailShellArgs = {
   unsubscribeUrl?: string | null
   /** Optional "Manage preferences" URL rendered next to Unsubscribe. */
   manageUrl?: string | null
+  /** Visible text of the manage link. Defaults to "Manage preferences". */
+  manageLabel?: string | null
+  /** Optional web-view URL ("View this report online"), first in the link row. */
+  viewOnlineUrl?: string | null
+  /** Visible text of the web-view link. Defaults to "View this email online". */
+  viewOnlineLabel?: string | null
   /**
    * Footer line naming the list, for opt-in mail. Omitted when absent — do NOT
    * use it to narrate why the reader is reading ("You're receiving this
@@ -77,6 +83,25 @@ export function wrapBrandedEmail(args: EmailShellArgs): string {
   // onto surfaces where it was also plainly untrue. A caller that wants a line
   // passes one; everything else omits it (Matt 2026-08-03).
   const audience = (args.audienceLine ?? '').trim()
+  // ONE footer link row: web view, manage, unsubscribe, in that order, each
+  // optional, joined with a middle dot and closed with a period.
+  const footerLinks: string[] = []
+  if (args.viewOnlineUrl) {
+    footerLinks.push(
+      `<a href="${args.viewOnlineUrl}" style="color:${MUTED};text-decoration:underline;">${escapeHtml((args.viewOnlineLabel ?? '').trim() || 'View this email online')}</a>`,
+    )
+  }
+  if (args.manageUrl) {
+    footerLinks.push(
+      `<a href="${args.manageUrl}" style="color:${MUTED};text-decoration:underline;">${escapeHtml((args.manageLabel ?? '').trim() || 'Manage preferences')}</a>`,
+    )
+  }
+  if (args.unsubscribeUrl) {
+    footerLinks.push(`<a href="${args.unsubscribeUrl}" style="color:${MUTED};text-decoration:underline;">Unsubscribe</a>`)
+  }
+  const footerSecondLine = [escapeHtml(audience), footerLinks.length ? `${footerLinks.join(' &middot;\n      ')}.` : '']
+    .filter(Boolean)
+    .join(' ')
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"></head>
 <body style="margin:0;padding:0;background:${CANVAS};font-family:${SANS};">
 ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;">${escapeHtml(preheader)}</div>` : ''}
@@ -104,10 +129,8 @@ ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;"
   <!-- FOOTER -->
   <tr><td style="padding:26px 34px 32px;">
     <div style="color:${MUTED};font-size:12px;line-height:1.6;text-align:center;">
-      ${escapeHtml(BROKERAGE_POSTAL_ADDRESS)} &middot; <a href="https://ryan-realty.com" style="color:${MUTED};">ryan-realty.com</a>${audience || args.manageUrl || args.unsubscribeUrl ? '<br>' : ''}
-      ${escapeHtml(audience)}${args.manageUrl ? `
-      <a href="${args.manageUrl}" style="color:${MUTED};text-decoration:underline;">Manage preferences</a>${args.unsubscribeUrl ? ' &middot;' : '.'}` : ''}${args.unsubscribeUrl ? `
-      <a href="${args.unsubscribeUrl}" style="color:${MUTED};text-decoration:underline;">Unsubscribe</a>.` : ''}
+      ${escapeHtml(BROKERAGE_POSTAL_ADDRESS)} &middot; <a href="https://ryan-realty.com" style="color:${MUTED};">ryan-realty.com</a>${footerSecondLine ? `<br>
+      ${footerSecondLine}` : ''}
     </div>
   </td></tr>
 

@@ -28,7 +28,7 @@
  *    one-primary-action rule.
  */
 import { useState, useTransition } from 'react'
-import { Button, SelectField, Switch, ToolbarCheck } from '@/components/admin/v2'
+import { Button, SelectField, Switch, TextAreaField, ToolbarCheck } from '@/components/admin/v2'
 import { cn } from '@/lib/utils'
 
 export type ReportFrequency = 'weekly' | 'monthly' | 'quarterly'
@@ -51,6 +51,13 @@ export type ReportSubscriptionsPanelProps = {
   setAction: (fd: FormData) => Promise<void>
   /** One-off immediate send of the selected areas to this contact (no cadence). */
   sendNowAction?: (fd: FormData) => Promise<{ ok: true } | { ok: false; error: string }>
+  /**
+   * The contact stopped these reports herself (one-click, her email link, or
+   * her account page). Turning them back on then needs her new consent on
+   * record: a note field appears, posted as `consentNote`, and the server
+   * refuses a restart without it (lib/crm/market-report-subscription-control).
+   */
+  consentRequired?: boolean
   className?: string
 }
 
@@ -59,6 +66,7 @@ export default function ReportSubscriptionsPanel({
   areaOptions,
   setAction,
   sendNowAction,
+  consentRequired,
   className,
 }: ReportSubscriptionsPanelProps) {
   const [isActive, setIsActive] = useState(current?.isActive ?? false)
@@ -165,6 +173,19 @@ export default function ReportSubscriptionsPanel({
               ))}
             </SelectField>
           </div>
+
+          {consentRequired && isActive ? (
+            <TextAreaField
+              label="How did they ask to restart?"
+              hint="They stopped these reports themselves. Record their request before turning reports back on."
+              name="consentNote"
+              rows={3}
+              minLength={10}
+              maxLength={500}
+              required
+              disabled={pending}
+            />
+          ) : null}
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <Button type="submit" touch disabled={pending} className="w-full sm:w-auto">

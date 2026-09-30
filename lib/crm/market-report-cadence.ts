@@ -22,8 +22,30 @@
  */
 
 import type { ReportFrequency } from '@/lib/data/crm/getContactReportSubscriptions'
+import { outsideEmailSendWindow } from '@/lib/newsletter/market-report-audience'
 
 const DAY_MS = 24 * 60 * 60 * 1000
+const HOUR_MS = 60 * 60 * 1000
+
+/**
+ * The UTC hours the send cron fires (vercel.json: `0 4,10,16,22 * * *` for
+ * /api/cron/crm-market-report-send). A unit test pins this against
+ * vercel.json so the "next send" a broker is shown cannot drift from the
+ * schedule that actually runs.
+ */
+export const MARKET_REPORT_CRON_HOURS_UTC: readonly number[] = [4, 10, 16, 22]
+
+/**
+ * Is `now` inside the email send window (8am to 8pm America/Los_Angeles)?
+ * The same window the bulk market-report path enforces
+ * (lib/newsletter/market-report-audience.ts). A report that lands at 3am reads
+ * as spam to a person and to a mailbox provider's engagement model; before
+ * 2026-09-29 the cadence path had no window and sent at 10:00 UTC (3am
+ * Pacific) on 2026-09-05 and 2026-09-16.
+ */
+export function inReportSendWindow(now: Date = new Date()): boolean {
+  return !outsideEmailSendWindow(now)
+}
 
 /** Minimum elapsed window per cadence, in milliseconds. */
 export const CADENCE_WINDOW_MS: Record<ReportFrequency, number> = {
@@ -72,4 +94,51 @@ export function isDue(input: IsDueInput): boolean {
 
   const nowMs = (input.now ?? new Date()).getTime()
   return nowMs - lastMs >= window
+}
+
+/** When a subscription next becomes due (last send + its window). Null when never sent (due now). */
+export function dueAt(frequency: ReportFrequency, lastSentAt: string | Date | null | undefined): Date | null {
+  const window = CADENCE_WINDOW_MS[frequency]
+  const lastMs = toMs(lastSentAt)
+  if (window == null || lastMs == null) return null
+  return new Date(lastMs + window)
+}
+
+/**
+ * The first cron run at or after `from` that falls inside the send window:
+ * the moment a due report can actually go out. Walks the cron's UTC hours
+ * forward (at most 8 days, which always finds one). Pure.
+ */
+export function nextCronRunInWindow(from: Date): Date | null {
+  const start = from.getTime()
+  const day0 = Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate())
+  for (let d = 0; d <= 8; d++) {
+    for (const h of MARKET_REPORT_CRON_HOURS_UTC) {
+      const t = day0 + d * DAY_MS + h * HOUR_MS
+      if (t < start) continue
+      const at = new Date(t)
+      if (inReportSendWindow(at)) return at
+    }
+  }
+  return null
+}
+
+/**
+ * When the next report is expected to go out, for the admin card and the
+ * delivery panel. Basis, named: the later of now and (last send + the
+ * cadence window), then the first cron run inside 8am to 8pm Pacific. Null
+ * when nothing will send (off, or waiting on the first-send approval).
+ */
+export function nextReportSendAt(input: {
+  isActive: boolean
+  approved: boolean
+  frequency: ReportFrequency
+  lastSentAt: string | Date | null | undefined
+  now?: Date
+}): Date | null {
+  if (!input.isActive || !input.approved) return null
+  const now = input.now ?? new Date()
+  const due = dueAt(input.frequency, input.lastSentAt)
+  const from = due && due.getTime() > now.getTime() ? due : now
+  return nextCronRunInWindow(from)
 }

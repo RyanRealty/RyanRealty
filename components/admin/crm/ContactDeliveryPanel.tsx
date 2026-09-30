@@ -86,7 +86,12 @@ export default async function ContactDeliveryPanel({
                         {sub.active ? 'Active' : 'Paused'}
                       </StateWord>
                     </span>
-                    <span className="truncate" style={{ fontSize: 'var(--a-text-md)', color: 'var(--a-text)' }}>{sub.label}</span>
+                    <span className="flex min-w-0 flex-col">
+                      <span className="truncate" style={{ fontSize: 'var(--a-text-md)', color: 'var(--a-text)' }}>{sub.label}</span>
+                      {sub.kind === 'market-report' && sub.note ? (
+                        <span style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>{sub.note}</span>
+                      ) : null}
+                    </span>
                   </div>
                   <div className="flex shrink-0 items-center gap-3" style={{ fontSize: 'var(--a-text-md)' }}>
                     {/* RelativeTime/ExpectedTime take only a className, so the

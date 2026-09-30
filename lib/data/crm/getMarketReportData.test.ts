@@ -42,6 +42,9 @@ vi.mock('@/lib/data/market-truth/public-pace', async () => {
   return {
     ...actual,
     getPublicDetachedPace: (...args: unknown[]) => leftoverMock(...args),
+    // The fetch path reads the row WITH its per-cell provenance (the send's
+    // freshness check and figure trace use the computed_at stamps).
+    getPublicDetachedPaceDetailed: async (...args: unknown[]) => ({ row: await leftoverMock(...args), provenance: {} }),
   }
 })
 
@@ -514,5 +517,28 @@ describe('getMarketReportData (D27 leftover fetch integration)', () => {
     expect(blocks[0].medianPrice).toBe(2_200_000)
     expect(blocks[0].soldLast12mo).toBe(40)
     expect(blocks[0].source).toBe('market_pulse_live')
+  })
+
+  it('carries the provenance the sender checks for freshness and the figures trace names', async () => {
+    const [bend] = await getMarketReportData(['bend'])
+    // A city's live inventory and months of supply come from Market Truth.
+    expect(bend.monthsOfSupplySource).toBe('live')
+    expect(bend.provenance?.live).toEqual({
+      table: 'market_metric',
+      computedAt: '2026-06-25T12:00:00Z',
+      completeThrough: '2026-06-25',
+    })
+    // The rolling_365d row that carries median days on market.
+    expect(bend.provenance?.cache?.updatedAt).toBe('2026-06-25T00:00:00Z')
+    expect(bend.provenance?.cache?.soldCount).toBe(1657)
+    expect(bend.twelveMonthSource).toBe('market-truth')
+  })
+
+  it("names market_pulse_live as a neighborhood's live source", async () => {
+    detachedMock.mockResolvedValue(new Map())
+    pulseMock.mockResolvedValue({ activeCount: 32, monthsOfSupply: 5.1, refreshedAt: '2026-09-29T21:45:00Z' })
+    const [hood] = await getMarketReportData(['bend-larkspur'])
+    expect(hood.geoType).toBe('neighborhood')
+    expect(hood.provenance?.live).toMatchObject({ table: 'market_pulse_live', computedAt: '2026-09-29T21:45:00Z' })
   })
 })

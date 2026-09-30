@@ -11,6 +11,7 @@ describe('mapMarketReportSubscriberRow', () => {
       is_active: true,
       last_sent_at: '2026-06-01T09:00:00.000Z',
       last_attempt_at: '2026-06-01T09:00:00.000Z',
+      first_send_approved_at: '2026-05-30T17:00:00.000Z',
       crm_people: {
         name: 'Jane Buyer',
         first_name: 'Jane',
@@ -30,7 +31,22 @@ describe('mapMarketReportSubscriberRow', () => {
       isActive: true,
       lastSentAt: '2026-06-01T09:00:00.000Z',
       lastAttemptAt: '2026-06-01T09:00:00.000Z',
+      firstSendApprovedAt: '2026-05-30T17:00:00.000Z',
     })
+  })
+
+  it('reads a missing first-send approval as null (the cadence holds it)', () => {
+    const out = mapMarketReportSubscriberRow({
+      id: 9016,
+      person_id: 64138,
+      areas: ['bend', 'bend-larkspur'],
+      frequency: 'monthly',
+      is_active: false,
+      last_sent_at: null,
+      last_attempt_at: null,
+      crm_people: { name: 'Cheryl Younger', first_name: 'Cheryl', last_name: 'Younger', assigned_broker: 'matt', fub_legacy_id: null },
+    })
+    expect(out.firstSendApprovedAt).toBeNull()
   })
 
   it('derives name from first/last when name is blank', () => {

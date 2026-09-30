@@ -39,6 +39,11 @@ export type MarketReportSubscriber = {
   lastSentAt: string | null
   /** ISO timestamp of the last send attempt, or null when never attempted. */
   lastAttemptAt: string | null
+  /**
+   * When a broker approved the first send after the preview (Matt 2026-09-29).
+   * Null = never approved: the sender holds the subscription and sends nothing.
+   */
+  firstSendApprovedAt: string | null
 }
 
 type RawJoinedRow = {
@@ -49,6 +54,7 @@ type RawJoinedRow = {
   is_active: unknown
   last_sent_at: string | null
   last_attempt_at: string | null
+  first_send_approved_at?: string | null
   crm_people: {
     name: string | null
     first_name: string | null
@@ -91,11 +97,12 @@ export function mapMarketReportSubscriberRow(row: RawJoinedRow): MarketReportSub
     isActive: row.is_active === true,
     lastSentAt: row.last_sent_at ?? null,
     lastAttemptAt: row.last_attempt_at ?? null,
+    firstSendApprovedAt: row.first_send_approved_at ?? null,
   }
 }
 
 const SUB_SELECT =
-  'id,person_id,areas,frequency,is_active,last_sent_at,last_attempt_at'
+  'id,person_id,areas,frequency,is_active,last_sent_at,last_attempt_at,first_send_approved_at'
 const PERSON_SELECT = 'id,name,first_name,last_name,assigned_broker,fub_legacy_id'
 
 type RawSubRow = {
@@ -106,6 +113,7 @@ type RawSubRow = {
   is_active: unknown
   last_sent_at: string | null
   last_attempt_at: string | null
+  first_send_approved_at?: string | null
 }
 
 type RawPersonRow = {
@@ -160,6 +168,7 @@ function toJoinedRow(sub: RawSubRow, person: RawPersonRow | null): RawJoinedRow 
     is_active: sub.is_active,
     last_sent_at: sub.last_sent_at,
     last_attempt_at: sub.last_attempt_at,
+    first_send_approved_at: sub.first_send_approved_at ?? null,
     crm_people: person
       ? {
           name: person.name,

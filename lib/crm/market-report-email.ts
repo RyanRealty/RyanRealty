@@ -1,36 +1,48 @@
 /**
  * renderMarketReportEmail — the per-contact market-report email (Wave 8,
- * chart + context rebuild).
+ * chart + context rebuild; the 2026-09-29 accuracy and footer rebuild).
  *
  * PURE render. The caller fetches the §0-accurate data (getMarketReportData,
- * which now attaches a monthly trend summary per area) and passes the blocks
- * in; this module turns them into a brand-clean, email-safe
- * { subject, html, text, traces }. No data access, no send.
+ * which attaches the monthly trend and the provenance of every figure) and
+ * passes the blocks in; this module turns them into a brand-clean, email-safe
+ * { subject, html, text, figures }. No data access, no send.
  *
- * What the rebuild adds over the v1 text-only stat sheet:
- *   - A hero headline carrying the ONE story of the period (biggest verified
- *     signal across the subscribed areas — YoY move, market verdict, or the
- *     median itself). Never an invented narrative, and never a YoY move drawn
- *     from a sample too thin to mean anything (see HEADLINE_MIN_SOLD_COUNT).
- *   - Every stat ships WITH context: vs the prior month (from the monthly
- *     cache series), vs last year (the cache's own YoY column), and a
- *     plain-English "what this means for you" line driven by the canonical
- *     months-of-supply thresholds (≤4 sellers, 4–6 balanced, ≥6 buyers).
- *   - Charts as email-safe images: <img> tags pointing at
- *     /api/email/market-chart (satori PNG, navy on cream). An image is only
- *     embedded when the area's trend series actually has enough points, and
- *     every img carries alt text.
- *   - `traces`: one { figure, source } entry per displayed figure so the
- *     admin preview can audit the §0 trace. Traces are NEVER rendered into
- *     the recipient email.
+ * WHAT THE 2026-09-29 REBUILD CHANGED, and why (Matt's review of a real render):
+ *   - ONE INSTRUMENT PER COMPARISON. Bend printed "Homes for sale 739" beside
+ *     "August ended 21 fewer than July". The 739 is the live Market Truth count;
+ *     the 21 came from market_stats_cache monthly end-of-period inventory
+ *     (455 to 434), a different instrument that counts a different set of
+ *     homes. A comparison now prints only when it comes from the same
+ *     instrument as the figure it sits beside, so the inventory and
+ *     days-on-market month-over-month lines and the inventory chart (whose
+ *     big number read 434 beside the 739) are gone. The year-over-year move
+ *     stays: it is the same Market Truth cell family as the median it
+ *     qualifies. The month-over-month median sentence stays as its own line:
+ *     both of its months come from the monthly cache.
+ *   - A MONTHLY MEDIAN NEEDS A SAMPLE. Larkspur printed "↓ 19.1% vs July" from
+ *     5 August sales against 4 July sales. See MOM_MIN_MONTH_SALES.
+ *   - NO PLACEHOLDERS. A missing figure drops its row; months of supply is
+ *     dropped at neighborhood grain entirely (it is withheld there, so the row
+ *     read "Months of supply —" on every neighborhood report). No em dash
+ *     anywhere in the email (Matt 2026-09-20).
+ *   - THE MOST SPECIFIC AREA FIRST. A contact's neighborhood leads; her city
+ *     follows. See orderAreasBySpecificity.
+ *   - ONE FOOTER, and it carries "View this report online", "Manage your
+ *     report" and a report-scoped Unsubscribe (all to the no-login page). The
+ *     old "You are receiving this market update because you subscribed…"
+ *     line broke the shell rule against narrating the send (shell.ts).
+ *   - The CTA anchor is #market, the id the destination sections carry
+ *     (app/cities/[slug]/[neighborhoodSlug]/page.tsx and
+ *     app/housing-market/[...slug]/_v3/city-view.tsx). #market-report matched
+ *     nothing, so the click landed at the top of the page.
+ *   - `figures`: one structured trace per printed number (area, label, value,
+ *     display, source, filter, as_of, n), stored with the send so an admin can
+ *     audit anything that went out. Never rendered into the email.
  *
  * Email-client constraints: table-based layout, inline styles only, max-width
- * 640 shell (lib/email/shell.ts), no flexbox/grid, no external CSS. Brand
- * voice (CLAUDE.md §3): sentence case, currency rounded to the nearest
- * thousand, "38 days", signed-arrow one-decimal percents, tabular numerals,
- * no em-dash or semicolon in prose, no banned words, no hyphens or colons in
- * user-facing headlines. Every number here came from the cache via the data
- * block; this module only formats it. It never invents a figure.
+ * 640 shell (lib/email/shell.ts), no flexbox/grid, no external CSS. Every
+ * number here came from the data block; this module only formats it. It never
+ * invents a figure.
  */
 
 import {
@@ -41,24 +53,33 @@ import {
   EMAIL_BORDER,
   EMAIL_SERIF,
 } from '@/lib/email/brand'
+import { BROKERAGE_POSTAL_ADDRESS } from '@/lib/email/prepare'
 import { wrapBrandedEmail, type ShellBroker } from '@/lib/email/shell'
 import { formatDate } from '@/lib/format/date'
-import type {
-  MarketReportAreaBlock,
-  MarketTrendSummary,
-} from '@/lib/data/crm/getMarketReportData'
+import type { MarketReportAreaBlock } from '@/lib/data/crm/getMarketReportData'
+import type { MarketTrendPoint } from '@/lib/data/market/getMarketTrend'
 import {
-  domDeltaPhrase,
   formatCount,
   formatCurrencyRounded,
   formatDays,
   formatMomPct,
   formatMonths,
   formatYoy,
-  inventoryDeltaPhrase,
+  formatYoyPlain,
   meaningLine,
   verdictLabel,
 } from './market-report-format'
+import {
+  activeTrace,
+  domTrace,
+  figuresToTraces,
+  monthEnd,
+  monthlyTrace,
+  mosTrace,
+  twelveMonthTrace,
+  type EmailFigureTrace,
+  type ReportFigure,
+} from './market-report-figures'
 import { cityMarketPath } from '@/lib/market/canonical-market-path'
 
 // Public surface preserved after the 2026-07-29 formatter extraction —
@@ -73,9 +94,20 @@ export {
   verdictLabel,
   meaningLine,
 }
+export type { EmailFigureTrace, ReportFigure }
 
 const MUTED = EMAIL_BODY_MUTED
 const SITE_URL = 'https://ryan-realty.com'
+
+/** The links one report carries. All optional so a pure render can omit them. */
+export type MarketReportEmailLinks = {
+  /** "View this report online": the stored copy on the no-login page. */
+  viewUrl?: string | null
+  /** "Manage your report": the no-login preferences page. */
+  manageUrl?: string | null
+  /** The report-scoped Unsubscribe (the preferences page, opened on "Stop"). */
+  unsubscribeUrl: string
+}
 
 export interface RenderMarketReportEmailInput {
   /** Recipient first name (or full name); blank/absent uses a neutral greeting. */
@@ -84,20 +116,24 @@ export interface RenderMarketReportEmailInput {
   brokerSlug?: string | null
   /** The verified market blocks, already fetched + filtered by getMarketReportData. */
   areas: MarketReportAreaBlock[]
-  /** One-click unsubscribe URL embedded in the footer. */
+  /** The report-scoped Unsubscribe. Kept top-level for existing callers. */
   unsubscribeUrl: string
+  /** "View this report online" and "Manage your report". */
+  viewUrl?: string | null
+  manageUrl?: string | null
   /** The subscription's assigned broker — renders the close card when set. */
   senderBroker?: ShellBroker | null
+  /** When the report was assembled; drives "as of". Defaults to now. */
+  asOf?: Date | string | null
 }
-
-/** One displayed figure's audit trace (admin preview only, never in the email). */
-export type EmailFigureTrace = { figure: string; source: string }
 
 export interface RenderedMarketReportEmail {
   subject: string
   html: string
   text: string
-  /** §0 audit trail — one entry per figure shown in the html. */
+  /** §0 trace, structured: one entry per printed figure. Stored with the send. */
+  figures: ReportFigure[]
+  /** The same trace as one-line strings, for the admin preview dialog. */
   traces: EmailFigureTrace[]
 }
 
@@ -117,20 +153,17 @@ function firstName(name: string | null | undefined): string {
 }
 
 /**
- * Build the subject line. The subject carries the period's ONE verified story
- * (the same deterministic headline the hero shows) — "Bend home prices are
- * down 1.2% from a year ago" earns the open that "Bend market update" never
- * did (2026-07-15 conversion audit: static subjects on a data product bury
- * the very numbers that make it worth opening). When the headline engine has
- * no story to tell (the "Where … stands" fallbacks), the plain area framing
- * is honest and stays.
+ * Most specific first: a neighborhood (a resort community or a Bend district)
+ * before a city. A contact who lives in Larkspur and also follows Bend reads
+ * about her street first and the city second (Matt 2026-09-29). Stable within
+ * a grain, so two cities keep the order the subscription stores. Pure.
  */
-export function buildSubject(areas: MarketReportAreaBlock[]): string {
-  const base =
-    areas.length === 1 ? `${areas[0].areaLabel} market update` : 'Your Central Oregon market update'
-  const headline = buildHeadline(areas)
-  if (headline.startsWith('Where')) return base
-  return headline
+export function orderAreasBySpecificity<T extends Pick<MarketReportAreaBlock, 'geoType'>>(areas: readonly T[]): T[] {
+  const rank = (a: T) => (a.geoType === 'neighborhood' ? 0 : 1)
+  return areas
+    .map((a, i) => ({ a, i }))
+    .sort((x, y) => rank(x.a) - rank(y.a) || x.i - y.i)
+    .map((x) => x.a)
 }
 
 /**
@@ -168,6 +201,27 @@ export function buildSubject(areas: MarketReportAreaBlock[]): string {
 export const HEADLINE_MIN_SOLD_COUNT = 30
 
 /**
+ * Minimum closed sales in EACH of two months before a month-over-month median
+ * change prints, and in every month a price chart draws.
+ *
+ * WHY THIS EXISTS. On 2026-09-29 Cheryl Younger's Larkspur report printed
+ * "↓ 19.1% vs July": August's median rested on 5 sales and July's on 4. With
+ * five sales the median IS the third house to close, so the 19.1% said which
+ * three houses happened to close, not where Larkspur prices went.
+ *
+ * WHY 10. It is a third of the 30-sale floor HEADLINE_MIN_SOLD_COUNT applies
+ * to a full year, scaled to one month: at ten sales the median is the average
+ * of the fifth and sixth closes, so one unusual house moves it by one position
+ * instead of deciding it. Bend's thinnest month in the last year was 87 sales,
+ * so the floor never touches a city; it removes the figure only where a monthly
+ * median is a handful of houses.
+ */
+export const MOM_MIN_MONTH_SALES = 10
+
+/** Minimum consecutive qualifying months for a price chart (the chart route's own floor is 6). */
+export const CHART_MIN_MONTHS = 6
+
+/**
  * Whether an area's YoY median move is solid enough to be the one story of the
  * period. Pure, exported for tests.
  */
@@ -179,21 +233,32 @@ export function yoyCanCarryHeadline(
   return area.soldLast12mo >= HEADLINE_MIN_SOLD_COUNT
 }
 
+/** Months of supply prints only at city grain; a neighborhood's is withheld. */
+function showsMonthsOfSupply(area: MarketReportAreaBlock): boolean {
+  return area.geoType === 'city' && area.monthsOfSupply != null && Number.isFinite(area.monthsOfSupply)
+}
+
+/** The verdict prints only beside the months-of-supply figure it derives from. */
+function showsVerdict(area: MarketReportAreaBlock): boolean {
+  return showsMonthsOfSupply(area) && area.marketVerdict != null
+}
+
 /**
  * The hero headline — the ONE story of the period. Deterministic priority over
- * verified figures only (never an invented narrative): the area with the
- * largest YoY median move tells the price story, PROVIDED its sample clears
- * HEADLINE_MIN_SOLD_COUNT; else the market verdict; else the median itself.
+ * verified figures only (never an invented narrative), in area order (most
+ * specific first):
+ *   1. the largest YoY median move among areas whose sample clears
+ *      HEADLINE_MIN_SOLD_COUNT;
+ *   2. else the first area with a months-of-supply verdict (city grain);
+ *   3. else the first area with a twelve-month median;
+ *   4. else "Where your market stands".
  * Sentence case, no colon, no hyphen (brand headline rule).
  */
-export function buildHeadline(areas: MarketReportAreaBlock[]): string {
+export function buildHeadline(areasIn: readonly MarketReportAreaBlock[]): string {
+  const areas = orderAreasBySpecificity(areasIn)
   if (areas.length === 0) return 'Where your market stands'
 
-  // The area with the largest verified YoY move carries the story — but only
-  // among areas whose closed-sale count clears the floor. A thin-sample area is
-  // treated exactly as an area with no YoY at all: skipped for the price story,
-  // still rendered in full in the body below.
-  let lead: MarketReportAreaBlock = areas[0]
+  let lead: MarketReportAreaBlock | null = null
   let leadYoyMagnitude: number | null = null
   for (const a of areas) {
     if (!yoyCanCarryHeadline(a)) continue
@@ -203,10 +268,9 @@ export function buildHeadline(areas: MarketReportAreaBlock[]): string {
       leadYoyMagnitude = cand
     }
   }
-
   // leadYoyMagnitude is null (not falsy-checked) because a flat 0.0% move is a
   // real, reportable story.
-  if (leadYoyMagnitude != null) {
+  if (lead && leadYoyMagnitude != null) {
     const yoy = Math.round((lead.yoyPct as number) * 10) / 10
     if (Math.abs(yoy) >= 0.1) {
       const dir = yoy > 0 ? 'up' : 'down'
@@ -215,259 +279,278 @@ export function buildHeadline(areas: MarketReportAreaBlock[]): string {
     return `${lead.areaLabel} home prices are holding steady year over year`
   }
 
-  // No area's price move is headline-grade. Fall through to the next priority
-  // against the first subscribed area, exactly as this function already did
-  // when no area carried a YoY at all.
-  if (lead.marketVerdict != null && lead.monthsOfSupply != null) {
-    const v = verdictLabel(lead.marketVerdict).toLowerCase()
-    return `${lead.areaLabel} is a ${v} with ${formatMonths(lead.monthsOfSupply)} of supply`
+  const verdictArea = areas.find(showsVerdict)
+  if (verdictArea) {
+    const v = (verdictLabel(verdictArea.marketVerdict) ?? '').toLowerCase()
+    const mos = formatMonths(verdictArea.monthsOfSupply)
+    if (v && mos) return `${verdictArea.areaLabel} is a ${v} with ${mos} of supply`
   }
-  if (lead.medianPrice != null) {
-    return `The ${lead.areaLabel} median sale price now sits at ${formatCurrencyRounded(lead.medianPrice)}`
+
+  const priced = areas.find((a) => formatCurrencyRounded(a.medianPrice) != null)
+  if (priced) {
+    return `${priced.areaLabel} homes sold for a median ${formatCurrencyRounded(priced.medianPrice)} over the last 12 months`
   }
-  return `Where the ${lead.areaLabel} market stands`
+  return `Where the ${areas[0].areaLabel} market stands`
 }
 
-/** How many points in the trend carry a non-null value for the metric. */
-function trendPointCount(
-  trend: MarketTrendSummary | null | undefined,
-  pick: (p: MarketTrendSummary['points'][number]) => number | null,
-): number {
-  if (!trend) return 0
-  return trend.points.filter((p) => {
-    const v = pick(p)
-    return v != null && Number.isFinite(v)
-  }).length
+/**
+ * Build the subject line. The subject carries the period's ONE verified story
+ * (the same deterministic headline the hero shows) — "Bend home prices are
+ * down 1.2% from a year ago" earns the open that "Bend market update" never
+ * did (2026-07-15 conversion audit). When the headline engine has no story to
+ * tell (the "Where … stands" fallbacks), the plain area framing stays.
+ */
+export function buildSubject(areasIn: readonly MarketReportAreaBlock[]): string {
+  const areas = orderAreasBySpecificity(areasIn)
+  const base =
+    areas.length === 1 ? `${areas[0].areaLabel} market update` : 'Your Central Oregon market update'
+  const headline = buildHeadline(areas)
+  if (headline.startsWith('Where')) return base
+  return headline
 }
 
-/** Absolute chart-image URL for an area + metric (12 completed months). */
+/** "YYYY-MM" of a period start. */
+function monthKey(periodStart: string): string {
+  return periodStart.slice(0, 7)
+}
+
+/** True when `later` is the calendar month right after `earlier` (period starts). */
+export function isNextMonth(earlier: string, later: string): boolean {
+  const a = new Date(`${monthKey(earlier)}-01T00:00:00Z`)
+  const b = new Date(`${monthKey(later)}-01T00:00:00Z`)
+  if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime())) return false
+  const next = new Date(Date.UTC(a.getUTCFullYear(), a.getUTCMonth() + 1, 1))
+  return next.getTime() === b.getTime()
+}
+
+function monthName(periodStart: string): string {
+  // formatDate prints a dash for an unparseable date; never let that reach the
+  // email. An unparseable period start falls back to its YYYY-MM key.
+  const at = new Date(`${monthKey(periodStart)}-01T12:00:00Z`)
+  if (Number.isNaN(at.getTime())) return monthKey(periodStart)
+  return formatDate(at, { month: 'long', day: undefined, year: undefined, timeZone: 'UTC' })
+}
+
+function qualifiesMonth(p: MarketTrendPoint): boolean {
+  return (
+    p.medianSalePrice != null &&
+    Number.isFinite(p.medianSalePrice) &&
+    p.soldCount != null &&
+    p.soldCount >= MOM_MIN_MONTH_SALES
+  )
+}
+
+/**
+ * The month-over-month median pair, or null when it must not print: the two
+ * most recent completed months must be consecutive calendar months and each
+ * must rest on MOM_MIN_MONTH_SALES closed sales. Pure, exported for tests.
+ */
+export function momMedianPair(
+  points: readonly MarketTrendPoint[] | null | undefined,
+): { latest: MarketTrendPoint; prev: MarketTrendPoint; pct: number } | null {
+  if (!points || points.length < 2) return null
+  const latest = points[points.length - 1]
+  const prev = points[points.length - 2]
+  if (!isNextMonth(prev.periodStart, latest.periodStart)) return null
+  if (!qualifiesMonth(latest) || !qualifiesMonth(prev)) return null
+  const pct = Math.round((((latest.medianSalePrice as number) - (prev.medianSalePrice as number)) / (prev.medianSalePrice as number)) * 1000) / 10
+  if (!Number.isFinite(pct)) return null
+  return { latest, prev, pct }
+}
+
+/**
+ * The run of months a price chart may draw: the most recent consecutive
+ * completed months, each qualifying, at least CHART_MIN_MONTHS long, at most 12.
+ * Null when the series is gapped or thin. Pure, exported for tests.
+ */
+export function chartableMonths(points: readonly MarketTrendPoint[] | null | undefined): MarketTrendPoint[] | null {
+  if (!points || points.length === 0) return null
+  const run: MarketTrendPoint[] = []
+  for (let i = points.length - 1; i >= 0 && run.length < 12; i--) {
+    const p = points[i]
+    if (!qualifiesMonth(p)) break
+    if (run.length > 0 && !isNextMonth(p.periodStart, run[0].periodStart)) break
+    run.unshift(p)
+  }
+  return run.length >= CHART_MIN_MONTHS ? run : null
+}
+
+/**
+ * Absolute chart-image URL for an area + metric. `through` (YYYY-MM) pins the
+ * chart to the months the email described, so a report opened next month (or
+ * read again from the archive) still shows the chart that went out.
+ */
 export function chartImageUrl(
   area: Pick<MarketReportAreaBlock, 'geoType' | 'slug'>,
   metric: 'median_price' | 'inventory' | 'dom',
+  opts: { months?: number; through?: string | null } = {},
 ): string {
   const params = new URLSearchParams({
     geo: area.geoType,
     slug: area.slug,
     metric,
-    months: '12',
+    months: String(opts.months ?? 12),
   })
+  if (opts.through) params.set('through', opts.through)
   return `${SITE_URL}/api/email/market-chart?${params.toString()}`
 }
 
-/** Where each core figure in a block traces to (per-figure, per the block's source tag). */
-function cacheSource(area: MarketReportAreaBlock): string {
-  return `market_stats_cache geo_type=${area.geoType} geo=${area.slug} period=rolling_365d`
-}
-
-/**
- * Audit trace for the three trailing-12-month figures (median sale price, YoY,
- * sold count). D27 moved them onto leftover detached membership on the fetch
- * path, but legacy callers that pass no `leftover` still get cache values — so
- * the block reports which store actually produced them and the trace follows.
- *
- * Naming the wrong store on a document a client reads is a §0 defect: the trace
- * is the thing a reviewer audits the number against, so a trace that always said
- * `market_stats_cache` would make a leftover figure unverifiable.
- */
-function twelveMonthSource(area: MarketReportAreaBlock): string {
-  return area.twelveMonthSource === 'market-truth'
-    ? `market-truth leftover detached membership geo_type=${area.geoType} geo=${area.slug} window=12mo`
-    : cacheSource(area)
-}
-
-function pulseOrCacheSource(area: MarketReportAreaBlock): string {
-  return area.source === 'market_pulse_live'
-    ? `market_pulse_live geo_type=${area.geoType} geo=${area.slug}`
-    : cacheSource(area)
-}
-
-function monthlySource(area: MarketReportAreaBlock): string {
-  return `market_stats_cache geo_type=${area.geoType} geo=${area.slug} period_type=monthly`
-}
-
-type AreaRender = { html: string; text: string; traces: EmailFigureTrace[] }
-
-/**
- * One area's editorial section: verdict kicker, serif area name, the median
- * price moment with YoY + month-over-month context, the price trend chart,
- * context-carrying stat rows, the "what this means for you" line, the
- * inventory chart, and the CTA. Also returns the plain-text mirror and the
- * per-figure traces.
- */
 /**
  * Where "SEE THE FULL REPORT" actually lands (conversion-audit 2026-07-15 #2).
- * The email promises a report; the /cities and /communities heroes sell buyer
- * search. City areas land on /housing-market/<city> — a hero that literally
- * reads "<City> market report", straight into the market HUD. Neighborhood and
- * community areas land on their geo page AT the market section (#market-report
- * anchor), skipping the for-sale hero. GA4 UTMs ride along (audit #8) so the
- * click stops landing as direct/(none); the first-party agent/_pid/_fuid params
- * are stamped by attributeOutbound at send time (fragment-aware since today).
+ * City areas land on /housing-market/<city>, a hero that reads "<City> market
+ * report". Neighborhood and community areas land on their geo page AT the
+ * market section. The anchor is #market: that is the id the market section
+ * carries on both destinations (the old #market-report matched nothing). GA4
+ * UTMs ride along (audit #8); the first-party agent and person-token params
+ * are stamped by attributeOutbound at send time (fragment-aware).
  * Exported for tests.
  */
 export function reportCtaUrl(area: Pick<MarketReportAreaBlock, 'slug' | 'geoType' | 'href'>): string {
   const path = area.geoType === 'city' ? cityMarketPath(area.slug) : area.href
-  return `${SITE_URL}${path}?utm_source=crm&utm_medium=email&utm_campaign=market-report#market-report`
+  return `${SITE_URL}${path}?utm_source=crm&utm_medium=email&utm_campaign=market-report#market`
 }
 
+type AreaRender = { html: string; text: string; figures: ReportFigure[] }
+
+function fig(
+  area: MarketReportAreaBlock,
+  label: string,
+  value: number | null,
+  display: string,
+  trace: { source: string; filter: string; as_of: string | null; n: number | null },
+): ReportFigure {
+  return {
+    area: area.slug,
+    areaLabel: area.areaLabel,
+    label,
+    value,
+    display,
+    source: trace.source,
+    filter: trace.filter,
+    as_of: trace.as_of,
+    n: trace.n,
+  }
+}
+
+/**
+ * One area's editorial section: verdict kicker (city only), serif area name,
+ * the twelve-month median with its year-over-year move, the month-over-month
+ * median line (when both months carry a sample), the price chart (when the
+ * series is unbroken and sampled), the stat rows that have a value, the
+ * "market read" (city only), and the CTA. Also the plain-text mirror and the
+ * figures trace for everything printed.
+ */
 function renderAreaBlock(area: MarketReportAreaBlock): AreaRender {
-  const traces: EmailFigureTrace[] = []
+  const figures: ReportFigure[] = []
   const textLines: string[] = []
-  const verdict = verdictLabel(area.marketVerdict)
-  const hasVerdict = area.marketVerdict != null
   const href = reportCtaUrl(area)
-  const trend = area.trend ?? null
+  const points = area.trend?.points ?? null
 
-  // ── Kicker ────────────────────────────────────────────────────────────────
-  const kicker = hasVerdict
-    ? `<div style="font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:${MUTED};margin-bottom:8px;font-variant-numeric:tabular-nums;">${escapeHtml(verdict)} &middot; ${formatMonths(area.monthsOfSupply)} of supply</div>`
-    : ''
-  if (hasVerdict && area.monthsOfSupply != null) {
-    traces.push({
-      figure: `${area.areaLabel} months of supply ${formatMonths(area.monthsOfSupply)}`,
-      source:
-        area.source === 'market_pulse_live'
-          ? `${pulseOrCacheSource(area)} (months_of_supply)`
-          : `computed active / (sold_12mo / 12) from ${cacheSource(area)}`,
-    })
-    traces.push({
-      figure: `${area.areaLabel} verdict ${verdict}`,
-      source: `derived from months of supply ${formatMonths(area.monthsOfSupply)} against the canonical thresholds (4 or less sellers, 4 to 6 balanced, 6 or more buyers)`,
-    })
+  // ── Kicker: the verdict beside the months-of-supply figure it derives from ─
+  let kicker = ''
+  let kickerText: string | null = null
+  const mosDisplay = showsMonthsOfSupply(area) ? formatMonths(area.monthsOfSupply) : null
+  const verdict = showsVerdict(area) ? verdictLabel(area.marketVerdict) : null
+  if (verdict && mosDisplay) {
+    kicker = `<div style="font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:${MUTED};margin-bottom:8px;font-variant-numeric:tabular-nums;">${escapeHtml(verdict)} &middot; ${escapeHtml(mosDisplay)} of supply</div>`
+    kickerText = `${verdict} with ${mosDisplay} of supply`
+    // The kicker prints both numbers; each carries its trace.
+    figures.push(fig(area, 'months of supply', area.monthsOfSupply, mosDisplay, mosTrace(area)))
+    figures.push(
+      fig(area, 'market verdict', null, verdict, {
+        source: 'derived from months of supply against the canonical thresholds (4 or less sellers, 4 to 6 balanced, 6 or more buyers)',
+        filter: `months_of_supply=${area.monthsOfSupply}`,
+        as_of: mosTrace(area).as_of,
+        n: null,
+      }),
+    )
   }
 
-  // ── Median price moment + context ─────────────────────────────────────────
-  const priceLine = formatCurrencyRounded(area.medianPrice)
-  if (area.medianPrice != null) {
-    traces.push({
-      figure: `${area.areaLabel} median sale price ${priceLine} (trailing 12 months)`,
-      source: `${twelveMonthSource(area)} (median_sale_price)`,
-    })
-  }
-  if (area.yoyPct != null && Number.isFinite(area.yoyPct)) {
-    traces.push({
-      figure: `${area.areaLabel} median price ${formatYoy(area.yoyPct)}`,
-      source: `${twelveMonthSource(area)} (yoy_median_price_delta_pct)`,
-    })
+  // ── Twelve-month median + its year-over-year move (same instrument) ───────
+  const priceDisplay = formatCurrencyRounded(area.medianPrice)
+  const yoyDisplay = formatYoyPlain(area.yoyPct)
+  let priceHtml = ''
+  if (priceDisplay) {
+    figures.push(fig(area, 'median sale price, last 12 months', area.medianPrice, priceDisplay, twelveMonthTrace(area, 'median_close')))
+    if (yoyDisplay) {
+      figures.push(fig(area, 'median sale price change from a year ago', area.yoyPct, yoyDisplay, twelveMonthTrace(area, 'yoy_median_price')))
+    }
+    const caption = yoyDisplay ? `Median sale price, last 12 months &middot; ${escapeHtml(yoyDisplay)}` : 'Median sale price, last 12 months'
+    priceHtml = `<div style="font-family:${EMAIL_SERIF};font-size:42px;line-height:1.05;color:${EMAIL_NAVY};font-variant-numeric:tabular-nums;">${escapeHtml(priceDisplay)}</div>
+    <div style="font-size:13px;color:${MUTED};margin:6px 0 12px;font-variant-numeric:tabular-nums;">${caption}</div>`
+    textLines.push(`Median sale price, last 12 months ${priceDisplay}${yoyDisplay ? ` (${yoyDisplay})` : ''}`)
   }
 
-  // Month-over-month median context from the monthly cache series.
+  // ── Month-over-month median: its own line, both months from the monthly cache
   let momHtml = ''
-  let momText = ''
-  if (
-    trend &&
-    trend.latestMedianPrice != null &&
-    trend.prevMedianPrice != null &&
-    trend.momPricePct != null &&
-    trend.latestMonthLabel &&
-    trend.prevMonthLabel
-  ) {
-    const latestStr = formatCurrencyRounded(trend.latestMedianPrice)
-    const prevStr = formatCurrencyRounded(trend.prevMedianPrice)
-    const momStr = formatMomPct(trend.momPricePct, trend.prevMonthLabel)
-    const sentence = `${trend.latestMonthLabel} closed at a ${latestStr} median, ${momStr} (${prevStr}).`
+  const mom = momMedianPair(points)
+  if (mom) {
+    const latestStr = formatCurrencyRounded(mom.latest.medianSalePrice) as string
+    const prevStr = formatCurrencyRounded(mom.prev.medianSalePrice) as string
+    const latestName = monthName(mom.latest.periodStart)
+    const prevName = monthName(mom.prev.periodStart)
+    const momStr = formatMomPct(mom.pct, prevName) as string
+    const sentence = `${latestName} closed at a ${latestStr} median, ${momStr} (${prevStr}).`
     momHtml = `<p style="margin:0 0 4px;font-size:14px;line-height:1.6;color:${EMAIL_INK};font-variant-numeric:tabular-nums;">${escapeHtml(sentence)}</p>`
-    momText = sentence
-    traces.push({
-      figure: `${area.areaLabel} ${trend.latestMonthLabel} median ${latestStr} vs ${trend.prevMonthLabel} ${prevStr} (${momStr})`,
-      source: `${monthlySource(area)} (median_sale_price, two most recent completed months)`,
+    textLines.push(sentence)
+    figures.push(fig(area, `${latestName} median sale price`, mom.latest.medianSalePrice, latestStr, monthlyTrace(area, mom.latest, 'median_sale_price')))
+    figures.push(fig(area, `${prevName} median sale price`, mom.prev.medianSalePrice, prevStr, monthlyTrace(area, mom.prev, 'median_sale_price')))
+    figures.push(
+      fig(area, `median sale price change ${prevName} to ${latestName}`, mom.pct, momStr, {
+        source: 'computed from the two monthly market_stats_cache rows above',
+        filter: `(${mom.latest.medianSalePrice} - ${mom.prev.medianSalePrice}) / ${mom.prev.medianSalePrice}`,
+        as_of: monthEnd(mom.latest.periodStart),
+        n: Math.min(mom.latest.soldCount ?? 0, mom.prev.soldCount ?? 0),
+      }),
+    )
+  }
+
+  // ── Price chart: an unbroken, sampled run of completed months ─────────────
+  let priceChart = ''
+  const run = chartableMonths(points)
+  if (run) {
+    const through = monthKey(run[run.length - 1].periodStart)
+    const url = chartImageUrl(area, 'median_price', { months: run.length, through })
+    priceChart = `<div style="margin:14px 0 4px;"><img src="${url}" alt="Line chart of the ${escapeHtml(area.areaLabel)} median sale price by month over the last ${run.length} months" width="532" style="display:block;width:100%;max-width:532px;height:auto;border:1px solid ${EMAIL_BORDER};border-radius:8px;"></div>`
+    figures.push({
+      area: area.slug,
+      areaLabel: area.areaLabel,
+      label: `median sale price chart, ${run.length} completed months through ${through}`,
+      value: null,
+      display: 'chart',
+      source: 'market_stats_cache via getMarketTrend, drawn by /api/email/market-chart',
+      filter: `geo_type=${area.geoType} geo_slug=${area.slug} period_type=monthly months=${run.length} through=${through} each month n>=${MOM_MIN_MONTH_SALES}`,
+      as_of: monthEnd(run[run.length - 1].periodStart),
+      n: run.length,
     })
   }
 
-  // ── Charts (only when the series is real) ─────────────────────────────────
-  const priceChartOk = trendPointCount(trend, (p) => p.medianSalePrice) >= 3
-  const inventoryChartOk = trendPointCount(trend, (p) => p.endOfPeriodInventory) >= 3
-
-  const priceChart = priceChartOk
-    ? `<div style="margin:14px 0 4px;"><img src="${chartImageUrl(area, 'median_price')}" alt="Line chart of the ${escapeHtml(area.areaLabel)} median sale price by month over the last 12 months" width="532" style="display:block;width:100%;max-width:532px;height:auto;border:1px solid ${EMAIL_BORDER};border-radius:8px;"></div>`
-    : ''
-  if (priceChartOk) {
-    traces.push({
-      figure: `${area.areaLabel} median sale price trend chart (12 completed months)`,
-      source: `/api/email/market-chart geo=${area.geoType} slug=${area.slug} metric=median_price — ${monthlySource(area)}`,
-    })
-  }
-
-  const inventoryChart = inventoryChartOk
-    ? `<div style="margin:16px 0 4px;"><img src="${chartImageUrl(area, 'inventory')}" alt="Bar chart of homes for sale in ${escapeHtml(area.areaLabel)} by month over the last 12 months" width="532" style="display:block;width:100%;max-width:532px;height:auto;border:1px solid ${EMAIL_BORDER};border-radius:8px;"></div>`
-    : ''
-  if (inventoryChartOk) {
-    traces.push({
-      figure: `${area.areaLabel} homes for sale trend chart (12 completed months)`,
-      source: `/api/email/market-chart geo=${area.geoType} slug=${area.slug} metric=inventory — ${monthlySource(area)}`,
-    })
-  }
-
-  // ── Stat rows with context sub-lines ──────────────────────────────────────
+  // ── Stat rows: only the ones with a value, no context line from another
+  // instrument. Months of supply is not a row: the kicker above the area name
+  // already prints it beside the verdict it decides (city grain only).
   type StatRow = { label: string; value: string; context: string | null }
   const rows: StatRow[] = []
 
-  const invContext = trend
-    ? inventoryDeltaPhrase(trend.momInventoryDelta, trend.prevMonthLabel)
-    : null
-  const invContextFull =
-    invContext && trend?.latestMonthLabel ? `${trend.latestMonthLabel} ended ${invContext}` : null
-  rows.push({
-    label: 'Homes for sale',
-    value: formatCount(area.activeListings),
-    context: invContextFull,
-  })
-  if (area.activeListings != null) {
-    traces.push({
-      figure: `${area.areaLabel} homes for sale ${formatCount(area.activeListings)}`,
-      source:
-        area.source === 'market_pulse_live'
-          ? `${pulseOrCacheSource(area)} (active_count)`
-          : `${cacheSource(area)} (end_of_period_inventory)`,
-    })
-  }
-  if (invContextFull && trend) {
-    traces.push({
-      figure: `${area.areaLabel} inventory ${trend.latestMonthLabel} ended ${invContext}`,
-      source: `${monthlySource(area)} (end_of_period_inventory, two most recent completed months)`,
-    })
+  const activeDisplay = formatCount(area.activeListings)
+  if (activeDisplay) {
+    rows.push({ label: 'Homes for sale', value: activeDisplay, context: null })
+    figures.push(fig(area, 'homes for sale', area.activeListings, activeDisplay, activeTrace(area)))
+    textLines.push(`Homes for sale ${activeDisplay}`)
   }
 
-  const domContext = trend ? domDeltaPhrase(trend.momDomDelta, trend.prevMonthLabel) : null
-  const domContextFull =
-    domContext && trend?.latestMonthLabel && trend.latestDom != null
-      ? `${formatDays(trend.latestDom)} in ${trend.latestMonthLabel}, ${domContext}`
-      : null
-  rows.push({
-    label: 'Median days on market',
-    value: formatDays(area.domMedian),
-    context: domContextFull,
-  })
-  if (area.domMedian != null) {
-    traces.push({
-      figure: `${area.areaLabel} median days on market ${formatDays(area.domMedian)} (trailing 12 months)`,
-      source: `${cacheSource(area)} (median_dom)`,
-    })
-  }
-  if (domContextFull && trend) {
-    traces.push({
-      figure: `${area.areaLabel} DOM ${formatDays(trend.latestDom)} in ${trend.latestMonthLabel}, ${domContext}`,
-      source: `${monthlySource(area)} (median_dom, two most recent completed months)`,
-    })
+  const domDisplay = formatDays(area.domMedian)
+  if (domDisplay) {
+    rows.push({ label: 'Median days on market, last 12 months', value: domDisplay, context: null })
+    figures.push(fig(area, 'median days on market, last 12 months', area.domMedian, domDisplay, domTrace(area)))
+    textLines.push(`Median days on market, last 12 months ${domDisplay}`)
   }
 
-  rows.push({
-    label: 'Homes sold, last 12 months',
-    value: formatCount(area.soldLast12mo),
-    context: null,
-  })
-  if (area.soldLast12mo != null) {
-    traces.push({
-      figure: `${area.areaLabel} homes sold last 12 months ${formatCount(area.soldLast12mo)}`,
-      source: `${twelveMonthSource(area)} (sold_count)`,
-    })
+  const soldDisplay = formatCount(area.soldLast12mo)
+  if (soldDisplay) {
+    rows.push({ label: 'Homes sold, last 12 months', value: soldDisplay, context: null })
+    figures.push(fig(area, 'homes sold, last 12 months', area.soldLast12mo, soldDisplay, twelveMonthTrace(area, 'closed_count')))
+    textLines.push(`Homes sold, last 12 months ${soldDisplay}`)
   }
-
-  rows.push({
-    label: 'Months of supply',
-    value: formatMonths(area.monthsOfSupply),
-    context: hasVerdict ? verdict : null,
-  })
 
   const rowHtml = (r: StatRow): string => {
     const contextLine = r.context
@@ -475,12 +558,17 @@ function renderAreaBlock(area: MarketReportAreaBlock): AreaRender {
       : ''
     return `<tr>
       <td style="padding:10px 0;font-size:14px;color:${MUTED};border-top:1px solid ${EMAIL_BORDER};vertical-align:top;">${escapeHtml(r.label)}</td>
-      <td style="padding:10px 0;font-size:14px;color:${EMAIL_INK};text-align:right;font-weight:600;font-variant-numeric:tabular-nums;border-top:1px solid ${EMAIL_BORDER};vertical-align:top;">${r.value}${contextLine}</td>
+      <td style="padding:10px 0;font-size:14px;color:${EMAIL_INK};text-align:right;font-weight:600;font-variant-numeric:tabular-nums;border-top:1px solid ${EMAIL_BORDER};vertical-align:top;">${escapeHtml(r.value)}${contextLine}</td>
     </tr>`
   }
+  const rowsHtml = rows.length
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-variant-numeric:tabular-nums;margin-top:10px;">
+      ${rows.map(rowHtml).join('')}
+    </table>`
+    : ''
 
-  // ── "Market read" (interpretation of the market verdict) ───────────────────
-  const meaning = meaningLine(area.marketVerdict)
+  // ── "Market read": only beside the verdict it interprets (city grain) ──────
+  const meaning = verdict ? meaningLine(area.marketVerdict) : null
   const meaningHtml = meaning
     ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:18px;"><tr><td style="background:rgba(16,39,66,0.05);padding:14px 16px;border-left:3px solid ${EMAIL_NAVY};">
         <div style="font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:${MUTED};margin-bottom:6px;">Market read</div>
@@ -491,34 +579,32 @@ function renderAreaBlock(area: MarketReportAreaBlock): AreaRender {
   const html = `<tr><td style="padding:34px 34px 0;">
     ${kicker}
     <div style="font-family:${EMAIL_SERIF};font-size:26px;line-height:1.2;color:${EMAIL_NAVY};margin-bottom:16px;">${escapeHtml(area.areaLabel)}</div>
-    <div style="font-family:${EMAIL_SERIF};font-size:42px;line-height:1.05;color:${EMAIL_NAVY};font-variant-numeric:tabular-nums;">${priceLine}</div>
-    <div style="font-size:13px;color:${MUTED};margin:6px 0 12px;font-variant-numeric:tabular-nums;">Median sale price, trailing 12 months &middot; ${formatYoy(area.yoyPct)}</div>
+    ${priceHtml}
     ${momHtml}
     ${priceChart}
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-variant-numeric:tabular-nums;margin-top:10px;">
-      ${rows.map(rowHtml).join('')}
-    </table>
+    ${rowsHtml}
     ${meaningHtml}
-    ${inventoryChart}
     <div style="margin-top:20px;padding-bottom:6px;">
       <a href="${href}" style="display:inline-block;background:${EMAIL_NAVY};color:${EMAIL_CREAM};font-size:13px;font-weight:700;letter-spacing:.08em;text-decoration:none;padding:12px 26px;">SEE THE FULL ${escapeHtml(area.areaLabel.toUpperCase())} REPORT &rarr;</a>
     </div>
   </td></tr>`
 
   // ── Plain-text mirror ─────────────────────────────────────────────────────
-  textLines.push(area.areaLabel.toUpperCase())
-  if (hasVerdict) {
-    textLines.push(`${verdict} with ${formatMonths(area.monthsOfSupply)} of supply`)
-  }
-  textLines.push(`Median sale price (trailing 12 months) ${priceLine} (${formatYoy(area.yoyPct)})`)
-  if (momText) textLines.push(momText)
-  textLines.push(`Homes for sale now ${formatCount(area.activeListings)}${invContextFull ? ` (${invContextFull})` : ''}`)
-  textLines.push(`Median days on market ${formatDays(area.domMedian)}${domContextFull ? ` (${domContextFull})` : ''}`)
-  textLines.push(`Homes sold last 12 months ${formatCount(area.soldLast12mo)}`)
-  if (meaning) textLines.push(`Market read. ${meaning}`)
-  textLines.push(`Full report ${href}`)
+  const text = [
+    area.areaLabel.toUpperCase(),
+    ...(kickerText ? [kickerText] : []),
+    ...textLines,
+    ...(meaning ? [`Market read. ${meaning}`] : []),
+    `Full report ${href}`,
+  ].join('\n')
 
-  return { html, text: textLines.join('\n'), traces }
+  return { html, text, figures }
+}
+
+/** "Larkspur", "Larkspur and Bend", "Larkspur, Bend and Sisters". */
+function areaList(labels: readonly string[]): string {
+  if (labels.length <= 1) return labels[0] ?? ''
+  return `${labels.slice(0, -1).join(', ')} and ${labels[labels.length - 1]}`
 }
 
 /**
@@ -532,23 +618,34 @@ export function renderMarketReportEmail(
 ): RenderedMarketReportEmail {
   const fn = firstName(input.contactName)
   const greeting = fn ? `Hi ${escapeHtml(fn)},` : 'Hi,'
-  const areas = Array.isArray(input.areas) ? input.areas : []
+  const areas = orderAreasBySpecificity(Array.isArray(input.areas) ? input.areas : [])
   const subject = buildSubject(areas)
-  const asOf = formatDate(areas[0]?.refreshedAt ?? new Date())
+  const asOfDate = input.asOf != null ? new Date(input.asOf) : new Date()
+  const asOf = formatDate(Number.isNaN(asOfDate.getTime()) ? new Date() : asOfDate, { month: 'long' })
   const mastheadArea = areas.length === 1 ? areas[0].areaLabel : 'Central Oregon'
   const headline = buildHeadline(areas)
-  const traces: EmailFigureTrace[] = []
+  const figures: ReportFigure[] = []
 
-  traces.push({
-    figure: `Headline "${headline}"`,
-    source: `derived from the verified area blocks below (largest YoY move leads, only among areas with at least ${HEADLINE_MIN_SOLD_COUNT} closed sales in the trailing 12 months), no independent figure`,
+  figures.push({
+    area: null,
+    areaLabel: null,
+    label: 'headline',
+    value: null,
+    display: headline,
+    source: `derived from the area figures below: the largest year-over-year move among areas with at least ${HEADLINE_MIN_SOLD_COUNT} closed sales in the last 12 months, else the first city verdict, else the first twelve-month median`,
+    filter: areas.map((a) => a.slug).join(','),
+    as_of: null,
+    n: null,
   })
 
   // Raw for the preheader (the shell escapes it), escaped inline for the body.
+  const labels = areas.map((a) => a.areaLabel)
   const introRaw =
     areas.length === 1
-      ? `Here is where the ${areas[0].areaLabel} market stands as of ${asOf}.`
-      : `Here is where your Central Oregon markets stand as of ${asOf}.`
+      ? `Here is where the ${labels[0]} market stands as of ${asOf}.`
+      : areas.length <= 3
+        ? `Here is where ${areaList(labels)} stand as of ${asOf}.`
+        : `Here is where your Central Oregon markets stand as of ${asOf}.`
   const introLine = escapeHtml(introRaw)
 
   const headerHtml = `<tr><td style="padding:30px 34px 0;">
@@ -559,10 +656,12 @@ export function renderMarketReportEmail(
 
   const rendered = areas.map(renderAreaBlock)
   const blocksHtml = rendered.map((r) => r.html).join('')
-  for (const r of rendered) traces.push(...r.traces)
+  for (const r of rendered) figures.push(...r.figures)
 
+  const methodology =
+    'Every figure here comes from closed and active Central Oregon MLS data for single family homes. Month names refer to completed calendar months. Reply to this email if you want a pricing read on a specific home.'
   const methodologyHtml = `<tr><td style="padding:28px 34px 6px;">
-    <p style="margin:0;font-size:13px;line-height:1.6;color:${MUTED};border-top:1px solid ${EMAIL_BORDER};padding-top:16px;">Every figure here comes from closed and active Central Oregon MLS data for single family homes, refreshed daily. Month labels refer to completed calendar months. Reply to this email if you want a pricing read on a specific home.</p>
+    <p style="margin:0;font-size:13px;line-height:1.6;color:${MUTED};border-top:1px solid ${EMAIL_BORDER};padding-top:16px;">${escapeHtml(methodology)}</p>
   </td></tr>`
 
   const html = wrapBrandedEmail({
@@ -571,27 +670,33 @@ export function renderMarketReportEmail(
     mastheadLine: `MARKET REPORT · ${mastheadArea}`,
     senderBroker: input.senderBroker ?? null,
     unsubscribeUrl: input.unsubscribeUrl,
-    audienceLine: 'You are receiving this market update because you subscribed to Ryan Realty reports.',
+    manageUrl: input.manageUrl ?? null,
+    manageLabel: 'Manage your report',
+    viewOnlineUrl: input.viewUrl ?? null,
+    viewOnlineLabel: 'View this report online',
   })
 
-  const textParts: string[] = []
-  textParts.push(fn ? `Hi ${fn},` : 'Hi,')
-  textParts.push('')
-  textParts.push(introRaw)
-  textParts.push('')
-  textParts.push(headline)
-  textParts.push('')
+  // One plain-text footer: the postal address and the same three links. prepare
+  // (footer: 'from-body') sees both and adds nothing.
+  const textParts: string[] = [
+    fn ? `Hi ${fn},` : 'Hi,',
+    '',
+    introRaw,
+    '',
+    headline,
+    '',
+  ]
   for (const r of rendered) {
     textParts.push(r.text)
     textParts.push('')
   }
-  textParts.push(
-    'Every figure here comes from closed and active Central Oregon MLS data for single family homes, refreshed daily. Month labels refer to completed calendar months. Reply to this email if you want a pricing read on a specific home.',
-  )
+  textParts.push(methodology)
   textParts.push('')
   textParts.push('--')
-  textParts.push('Ryan Realty - Bend, Oregon - ryan-realty.com')
+  textParts.push(`${BROKERAGE_POSTAL_ADDRESS} · ryan-realty.com`)
+  if (input.viewUrl) textParts.push(`View this report online: ${input.viewUrl}`)
+  if (input.manageUrl) textParts.push(`Manage your report: ${input.manageUrl}`)
   textParts.push(`Unsubscribe: ${input.unsubscribeUrl}`)
 
-  return { subject, html, text: textParts.join('\n'), traces }
+  return { subject, html, text: textParts.join('\n'), figures, traces: figuresToTraces(figures) }
 }

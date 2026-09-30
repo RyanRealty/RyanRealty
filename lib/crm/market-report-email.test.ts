@@ -4,6 +4,9 @@ import {
   buildSubject,
   buildHeadline,
   chartImageUrl,
+  chartableMonths,
+  momMedianPair,
+  orderAreasBySpecificity,
   reportCtaUrl,
   formatCurrencyRounded,
   formatDays,
@@ -14,11 +17,14 @@ import {
   verdictLabel,
   yoyCanCarryHeadline,
   HEADLINE_MIN_SOLD_COUNT,
+  MOM_MIN_MONTH_SALES,
+  CHART_MIN_MONTHS,
 } from './market-report-email'
 import type {
   MarketReportAreaBlock,
   MarketTrendSummary,
 } from '@/lib/data/crm/getMarketReportData'
+import type { MarketTrendPoint } from '@/lib/data/market/getMarketTrend'
 
 /** A realistic monthly trend fixture (chronological completed months). */
 function trend(overrides: Partial<MarketTrendSummary> = {}): MarketTrendSummary {
@@ -43,6 +49,23 @@ function trend(overrides: Partial<MarketTrendSummary> = {}): MarketTrendSummary 
   }
 }
 
+/** A consecutive run of months ending with `last` (YYYY-MM), each with `sold` closes. */
+function months(count: number, last: string, sold = 40): MarketTrendPoint[] {
+  const [y, m] = last.split('-').map(Number)
+  const out: MarketTrendPoint[] = []
+  for (let i = count - 1; i >= 0; i--) {
+    const d = new Date(Date.UTC(y, m - 1 - i, 1))
+    out.push({
+      periodStart: d.toISOString().slice(0, 10),
+      medianSalePrice: 700000 + i * 1000,
+      soldCount: sold,
+      medianDom: 20,
+      endOfPeriodInventory: 400,
+    } as MarketTrendPoint)
+  }
+  return out
+}
+
 function block(overrides: Partial<MarketReportAreaBlock> = {}): MarketReportAreaBlock {
   return {
     slug: 'bend',
@@ -61,86 +84,104 @@ function block(overrides: Partial<MarketReportAreaBlock> = {}): MarketReportArea
     twelveMonthSource: 'market-truth',
     href: '/cities/bend',
     trend: trend(),
+    monthsOfSupplySource: 'live',
     ...overrides,
   }
 }
 
-describe('formatCurrencyRounded (nearest thousand)', () => {
-  it('rounds to the nearest thousand and adds the comma separator', () => {
+/** A neighborhood block (Larkspur-shaped): no months of supply ever prints at this grain. */
+function hood(overrides: Partial<MarketReportAreaBlock> = {}): MarketReportAreaBlock {
+  return block({
+    slug: 'bend-larkspur',
+    areaLabel: 'Larkspur',
+    geoType: 'neighborhood',
+    href: '/cities/bend/bend-larkspur',
+    medianPrice: 612000,
+    activeListings: 32,
+    soldLast12mo: 61,
+    monthsOfSupply: 5.1,
+    marketVerdict: 'balanced',
+    domMedian: 30,
+    yoyPct: 2.4,
+    twelveMonthSource: 'market_stats_cache',
+    source: 'market_pulse_live',
+    monthsOfSupplySource: 'live',
+    trend: null,
+    ...overrides,
+  })
+}
+
+const UNSUB = 'https://ryan-realty.com/email-preferences?t=abc.def&stop=1'
+const MANAGE = 'https://ryan-realty.com/email-preferences?t=abc.def'
+const VIEW = 'https://ryan-realty.com/email-preferences/report?t=view.tok'
+
+describe('formatters return null for a missing value (never a dash)', () => {
+  it('formatCurrencyRounded rounds to the nearest thousand', () => {
     expect(formatCurrencyRounded(721000)).toBe('$721,000')
     expect(formatCurrencyRounded(894750)).toBe('$895,000')
     expect(formatCurrencyRounded(894499)).toBe('$894,000')
     expect(formatCurrencyRounded(2463500)).toBe('$2,464,000')
+    expect(formatCurrencyRounded(null)).toBeNull()
+    expect(formatCurrencyRounded(undefined)).toBeNull()
+    expect(formatCurrencyRounded(Number.NaN)).toBeNull()
   })
-  it('renders the em-dash data placeholder when unavailable', () => {
-    expect(formatCurrencyRounded(null)).toBe('—')
-    expect(formatCurrencyRounded(undefined)).toBe('—')
-    expect(formatCurrencyRounded(Number.NaN)).toBe('—')
-  })
-})
-
-describe('formatDays', () => {
-  it('renders integer + " days"', () => {
+  it('formatDays renders whole days', () => {
     expect(formatDays(38)).toBe('38 days')
     expect(formatDays(25.4)).toBe('25 days')
     expect(formatDays(47.5)).toBe('48 days')
+    expect(formatDays(null)).toBeNull()
   })
-  it('em-dash when unavailable', () => {
-    expect(formatDays(null)).toBe('—')
-  })
-})
-
-describe('formatYoy (signed arrow, one decimal)', () => {
-  it('renders an up arrow for positive', () => {
+  it('formatYoy renders a signed arrow', () => {
     expect(formatYoy(2.14)).toBe('↑ 2.1% YoY')
-  })
-  it('renders a down arrow for negative', () => {
     expect(formatYoy(-1.22)).toBe('↓ 1.2% YoY')
-  })
-  it('renders flat for zero', () => {
     expect(formatYoy(0)).toBe('flat YoY')
-    expect(formatYoy(0.04)).toBe('flat YoY') // rounds to 0.0
+    expect(formatYoy(0.04)).toBe('flat YoY')
+    expect(formatYoy(null)).toBeNull()
   })
-  it('em-dash when unavailable', () => {
-    expect(formatYoy(null)).toBe('—')
-  })
-})
-
-describe('formatMonths', () => {
-  it('one decimal + " months"', () => {
+  it('formatMonths keeps two decimals inside the verdict bands, inclusive of the edges', () => {
     expect(formatMonths(3.5)).toBe('3.5 months')
     expect(formatMonths(10.8)).toBe('10.8 months')
-  })
-  it('two decimals inside the verdict-threshold bands, INCLUSIVE of the edges', () => {
-    // 4.05 classifies balanced (> 4) but toFixed(1) floating-point-rounds it
-    // DOWN to "4.0" — which would print "Balanced market · 4.0 months", the
-    // verdict-vs-number contradiction §0 bans. Bend hit this live 2026-07-16.
+    // 4.05 classifies balanced (> 4) but toFixed(1) rounds it DOWN to "4.0",
+    // which would print "Balanced market · 4.0 months" (Bend, 2026-07-16).
     expect(formatMonths(4.05)).toBe('4.05 months')
     expect(formatMonths(4.04)).toBe('4.04 months')
     expect(formatMonths(3.95)).toBe('3.95 months')
     expect(formatMonths(5.95)).toBe('5.95 months')
     expect(formatMonths(6.05)).toBe('6.05 months')
     expect(formatMonths(4.1)).toBe('4.1 months')
+    expect(formatMonths(null)).toBeNull()
   })
-  it('em-dash when unavailable', () => {
-    expect(formatMonths(null)).toBe('—')
-  })
-})
-
-describe('verdictLabel', () => {
-  it('maps each verdict to a sentence-case phrase', () => {
+  it('verdictLabel maps each verdict and null when unknown', () => {
     expect(verdictLabel('sellers')).toBe("Seller's market")
     expect(verdictLabel('balanced')).toBe('Balanced market')
     expect(verdictLabel('buyers')).toBe("Buyer's market")
-    expect(verdictLabel(null)).toBe('—')
+    expect(verdictLabel(null)).toBeNull()
+  })
+  it('formatMomPct renders a signed one-decimal arrow vs the prior month', () => {
+    expect(formatMomPct(2.18, 'May')).toBe('↑ 2.2% vs May')
+    expect(formatMomPct(-0.5, 'May')).toBe('↓ 0.5% vs May')
+    expect(formatMomPct(0.01, 'May')).toBe('flat vs May')
+    expect(formatMomPct(null, 'May')).toBeNull()
+    expect(formatMomPct(2.2, null)).toBeNull()
+  })
+  it('meaningLine maps each verdict to an implication and null when unknown', () => {
+    expect(meaningLine('sellers')).toContain('sellers hold the leverage')
+    expect(meaningLine('balanced')).toContain('realistic pricing')
+    expect(meaningLine('buyers')).toContain('room to negotiate')
+    expect(meaningLine(null)).toBeNull()
+  })
+})
+
+describe('orderAreasBySpecificity (the specific area first)', () => {
+  it('puts neighborhoods ahead of cities and keeps the order within each', () => {
+    const out = orderAreasBySpecificity([block(), hood(), block({ slug: 'redmond', areaLabel: 'Redmond' })])
+    expect(out.map((a) => a.slug)).toEqual(['bend-larkspur', 'bend', 'redmond'])
   })
 })
 
 describe('buildSubject', () => {
   it('carries the verified headline story for a single area', () => {
-    expect(buildSubject([block({ areaLabel: 'Tetherow' })])).toBe(
-      'Tetherow home prices are down 1.2% from a year ago',
-    )
+    expect(buildSubject([block({ areaLabel: 'Tetherow' })])).toBe('Tetherow home prices are down 1.2% from a year ago')
   })
   it('leads with the biggest verified story across several areas', () => {
     expect(buildSubject([block(), block({ slug: 'redmond', areaLabel: 'Redmond' })])).toBe(
@@ -156,47 +197,25 @@ describe('buildSubject', () => {
   })
 })
 
-describe('formatMomPct', () => {
-  it('renders a signed one-decimal arrow vs the prior month', () => {
-    expect(formatMomPct(2.18, 'May')).toBe('↑ 2.2% vs May')
-    expect(formatMomPct(-0.5, 'May')).toBe('↓ 0.5% vs May')
-    expect(formatMomPct(0.01, 'May')).toBe('flat vs May')
-  })
-  it('em-dash when unavailable', () => {
-    expect(formatMomPct(null, 'May')).toBe('—')
-    expect(formatMomPct(2.2, null)).toBe('—')
-  })
-})
-
-describe('meaningLine', () => {
-  it('maps each verdict to a plain-English implication and null when unknown', () => {
-    expect(meaningLine('sellers')).toContain('sellers hold the leverage')
-    expect(meaningLine('balanced')).toContain('realistic pricing')
-    expect(meaningLine('buyers')).toContain('room to negotiate')
-    expect(meaningLine(null)).toBeNull()
-  })
-})
-
 describe('buildHeadline', () => {
   it('leads with the largest YoY move', () => {
-    const h = buildHeadline([
-      block({ yoyPct: -1.22 }),
-      block({ slug: 'redmond', areaLabel: 'Redmond', yoyPct: 4.25 }),
-    ])
+    const h = buildHeadline([block({ yoyPct: -1.22 }), block({ slug: 'redmond', areaLabel: 'Redmond', yoyPct: 4.25 })])
     expect(h).toBe('Redmond home prices are up 4.3% from a year ago')
   })
-  it('falls back to the verdict when no YoY exists', () => {
-    const h = buildHeadline([block({ yoyPct: null })])
-    expect(h).toBe("Bend is a seller's market with 3.5 months of supply")
+  it('falls back to a city verdict when no YoY exists', () => {
+    expect(buildHeadline([block({ yoyPct: null })])).toBe("Bend is a seller's market with 3.5 months of supply")
   })
-  it('falls back to the median when neither exists', () => {
-    const h = buildHeadline([
-      block({ yoyPct: null, marketVerdict: null, monthsOfSupply: null }),
-    ])
-    expect(h).toBe('The Bend median sale price now sits at $721,000')
+  it('never headlines a neighborhood verdict (months of supply is city grain only)', () => {
+    const h = buildHeadline([hood({ yoyPct: null })])
+    expect(h).not.toContain('months of supply')
+    expect(h).toBe('Larkspur homes sold for a median $612,000 over the last 12 months')
+  })
+  it('falls back to the twelve-month median when neither exists', () => {
+    const h = buildHeadline([block({ yoyPct: null, marketVerdict: null, monthsOfSupply: null })])
+    expect(h).toBe('Bend homes sold for a median $721,000 over the last 12 months')
   })
   it('contains no colon or hyphen (headline rule)', () => {
-    for (const areas of [[block()], [block({ yoyPct: null })]]) {
+    for (const areas of [[block()], [block({ yoyPct: null })], [hood({ yoyPct: null })]]) {
       const h = buildHeadline(areas)
       expect(h).not.toContain(':')
       expect(h).not.toContain(' - ')
@@ -225,6 +244,7 @@ function thinArea(overrides: Partial<MarketReportAreaBlock> = {}): MarketReportA
     yoyPct: -17.0558,
     source: 'market_stats_cache:rolling_365d',
     twelveMonthSource: 'market_stats_cache',
+    trend: null,
     ...overrides,
   })
 }
@@ -233,227 +253,275 @@ describe('headline sample floor (§0 judgment, not §0 citation)', () => {
   it('exposes a floor of 30 trailing-12-month closed sales', () => {
     expect(HEADLINE_MIN_SOLD_COUNT).toBe(30)
   })
-
   it('rejects a YoY move drawn from too few closes', () => {
     expect(yoyCanCarryHeadline({ yoyPct: -17.0558, soldLast12mo: 15 })).toBe(false)
     expect(yoyCanCarryHeadline({ yoyPct: -17.0558, soldLast12mo: 29 })).toBe(false)
   })
-
   it('accepts a YoY move at or above the floor', () => {
     expect(yoyCanCarryHeadline({ yoyPct: -17.0558, soldLast12mo: 30 })).toBe(true)
     expect(yoyCanCarryHeadline({ yoyPct: -1.22, soldLast12mo: 1657 })).toBe(true)
   })
-
   it('rejects an area with no YoY or no close count at all', () => {
     expect(yoyCanCarryHeadline({ yoyPct: null, soldLast12mo: 1657 })).toBe(false)
     expect(yoyCanCarryHeadline({ yoyPct: Number.NaN, soldLast12mo: 1657 })).toBe(false)
     expect(yoyCanCarryHeadline({ yoyPct: -17.0558, soldLast12mo: null })).toBe(false)
   })
-
-  it('a thin-sample area cannot take the headline, even alone, and falls to the verdict', () => {
+  it('a thin-sample neighborhood cannot take the headline, even alone, and falls to its median', () => {
     const h = buildHeadline([thinArea()])
     expect(h).not.toContain('17.1%')
-    expect(h).not.toContain('from a year ago')
-    expect(h).toBe("Old Bend is a buyer's market with 7.2 months of supply")
+    expect(h).toBe('Old Bend homes sold for a median $985,000 over the last 12 months')
   })
-
   it('a thin-sample area cannot take the headline from a well-sampled one', () => {
-    // Old Bend's -17.1% is 14x Bend's -1.2%, so the pre-floor engine handed it
-    // the headline on magnitude alone.
-    const h = buildHeadline([block(), thinArea()])
-    expect(h).toBe('Bend home prices are down 1.2% from a year ago')
+    expect(buildHeadline([block(), thinArea()])).toBe('Bend home prices are down 1.2% from a year ago')
   })
-
   it('the subject line inherits the floor', () => {
-    // The thin price claim never reaches the inbox. The subject falls to the
-    // next priority the headline engine already defines (the verdict), not to
-    // any new copy.
     const solo = buildSubject([thinArea()])
     expect(solo).not.toContain('17.1%')
-    expect(solo).not.toContain('from a year ago')
-    expect(solo).toBe("Old Bend is a buyer's market with 7.2 months of supply")
-    // And with no verdict either, it degrades to the plain area framing.
+    expect(solo).toBe('Old Bend homes sold for a median $985,000 over the last 12 months')
     expect(buildSubject([thinArea({ marketVerdict: null, monthsOfSupply: null, medianPrice: null })])).toBe(
       'Old Bend market update',
     )
-    expect(buildSubject([block(), thinArea()])).toBe(
-      'Bend home prices are down 1.2% from a year ago',
-    )
+    expect(buildSubject([block(), thinArea()])).toBe('Bend home prices are down 1.2% from a year ago')
   })
-
   it('a well-sampled area still carries a large YoY move', () => {
     const h = buildHeadline([block({ areaLabel: 'Redmond', yoyPct: -17.0558, soldLast12mo: 412 })])
     expect(h).toBe('Redmond home prices are down 17.1% from a year ago')
   })
-
   it('the floor is exactly inclusive at 30 closes', () => {
     expect(buildHeadline([thinArea({ soldLast12mo: 29 })])).not.toContain('17.1%')
-    expect(buildHeadline([thinArea({ soldLast12mo: 30 })])).toBe(
-      'Old Bend home prices are down 17.1% from a year ago',
-    )
+    expect(buildHeadline([thinArea({ soldLast12mo: 30 })])).toBe('Old Bend home prices are down 17.1% from a year ago')
   })
-
   it('a flat 0.0% move from a well-sampled area is still a story', () => {
-    expect(buildHeadline([block({ yoyPct: 0 })])).toBe(
-      'Bend home prices are holding steady year over year',
+    expect(buildHeadline([block({ yoyPct: 0 })])).toBe('Bend home prices are holding steady year over year')
+  })
+  it('falls all the way through to Where when a thin area has no verdict or median either', () => {
+    expect(buildHeadline([thinArea({ marketVerdict: null, monthsOfSupply: null, medianPrice: null })])).toBe(
+      'Where the Old Bend market stands',
     )
   })
-
-  it('falls all the way through to Where when a thin area has no verdict or median either', () => {
-    const h = buildHeadline([
-      thinArea({ marketVerdict: null, monthsOfSupply: null, medianPrice: null }),
-    ])
-    expect(h).toBe('Where the Old Bend market stands')
-  })
-
-  it('a thin area is still reported in full in the body, it just does not headline', () => {
-    const out = renderMarketReportEmail({
-      contactName: 'Jordan',
-      areas: [block(), thinArea()],
-      unsubscribeUrl: 'https://ryan-realty.com/api/email/unsubscribe?t=abc.def',
-    })
+  it('a thin area is still reported in the body, it just does not headline', () => {
+    const out = renderMarketReportEmail({ contactName: 'Jordan', areas: [block(), thinArea()], unsubscribeUrl: UNSUB })
     expect(out.subject).toBe('Bend home prices are down 1.2% from a year ago')
-    // Old Bend's own block still carries its verified figures and its trace.
     expect(out.html).toContain('Old Bend')
     expect(out.html).toContain('$985,000')
-    expect(out.html).toContain('↓ 17.1% YoY')
-    expect(out.text).toContain('Homes sold last 12 months 15')
+    expect(out.html).toContain('↓ 17.1% from a year ago')
+    expect(out.text).toContain('Homes sold, last 12 months 15')
     const figures = out.traces.map((t) => t.figure).join('\n')
-    expect(figures).toContain('Old Bend median price ↓ 17.1% YoY')
+    expect(figures).toContain('Old Bend median sale price change from a year ago ↓ 17.1% from a year ago')
     // The headline trace states the floor so an auditor sees why it did not lead.
-    const headlineTrace = out.traces.find((t) => t.figure.startsWith('Headline '))
+    const headlineTrace = out.traces.find((t) => t.figure.startsWith('headline '))
     expect(headlineTrace?.source).toContain('at least 30 closed sales')
   })
 })
 
-describe('chartImageUrl', () => {
-  it('builds an absolute URL against the site origin', () => {
-    const url = chartImageUrl({ geoType: 'city', slug: 'bend' }, 'median_price')
+describe('month over month (same instrument, sampled months only)', () => {
+  it(`needs ${MOM_MIN_MONTH_SALES} closed sales in BOTH months`, () => {
+    expect(MOM_MIN_MONTH_SALES).toBe(10)
+    // Larkspur, 2026-09: August 5 sales vs July 4. A 19.1% "move" on that is noise.
+    const thin = [
+      { periodStart: '2026-07-01', medianSalePrice: 700000, soldCount: 4 },
+      { periodStart: '2026-08-01', medianSalePrice: 566000, soldCount: 5 },
+    ] as MarketTrendPoint[]
+    expect(momMedianPair(thin)).toBeNull()
+    const ok = [
+      { periodStart: '2026-07-01', medianSalePrice: 700000, soldCount: 10 },
+      { periodStart: '2026-08-01', medianSalePrice: 714000, soldCount: 12 },
+    ] as MarketTrendPoint[]
+    expect(momMedianPair(ok)).toMatchObject({ pct: 2 })
+  })
+  it('needs consecutive calendar months', () => {
+    const gapped = [
+      { periodStart: '2026-06-01', medianSalePrice: 700000, soldCount: 40 },
+      { periodStart: '2026-08-01', medianSalePrice: 720000, soldCount: 40 },
+    ] as MarketTrendPoint[]
+    expect(momMedianPair(gapped)).toBeNull()
+  })
+})
+
+describe('the price chart (an unbroken, sampled run, pinned to its months)', () => {
+  it(`draws only a run of at least ${CHART_MIN_MONTHS} consecutive qualifying months`, () => {
+    expect(chartableMonths(months(5, '2026-08'))).toBeNull()
+    expect(chartableMonths(months(6, '2026-08'))?.length).toBe(6)
+    expect(chartableMonths(months(14, '2026-08'))?.length).toBe(12)
+  })
+  it('stops the run at a thin month', () => {
+    const pts = months(8, '2026-08')
+    pts[3] = { ...pts[3], soldCount: 3 }
+    expect(chartableMonths(pts)).toBeNull() // only 4 qualifying months after the thin one
+  })
+  it('builds an absolute URL with the months and the through month', () => {
+    const url = chartImageUrl({ geoType: 'city', slug: 'bend' }, 'median_price', { months: 12, through: '2026-08' })
     expect(url).toMatch(/^https:\/\//)
     expect(url).toContain('/api/email/market-chart?')
     expect(url).toContain('geo=city')
     expect(url).toContain('slug=bend')
     expect(url).toContain('metric=median_price')
+    expect(url).toContain('through=2026-08')
+  })
+  it('renders the price chart and never the inventory chart', () => {
+    const out = renderMarketReportEmail({
+      contactName: 'Jordan',
+      areas: [block({ trend: trend({ points: months(12, '2026-08') }) })],
+      unsubscribeUrl: UNSUB,
+    })
+    expect(out.html).toContain('/api/email/market-chart?geo=city&slug=bend&metric=median_price')
+    expect(out.html).toContain('through=2026-08')
+    expect(out.html).not.toContain('metric=inventory')
+    expect(out.html).toContain('alt="Line chart of the Bend median sale price by month over the last 12 months"')
+    const chartFig = out.figures.find((f) => f.label.startsWith('median sale price chart'))
+    expect(chartFig?.as_of).toBe('2026-08-31')
   })
 })
 
-describe('reportCtaUrl (conversion-audit #2/#8 — seller-framed destination + UTMs)', () => {
-  it('sends a city area to /housing-market/<city>, not the buyer storefront', () => {
-    const url = reportCtaUrl({ slug: 'bend', geoType: 'city', href: '/cities/bend' })
-    expect(url).toBe(
-      'https://ryan-realty.com/housing-market/bend?utm_source=crm&utm_medium=email&utm_campaign=market-report#market-report',
+describe('reportCtaUrl (lands on the market section)', () => {
+  it('sends a city area to /housing-market/<city> at #market', () => {
+    expect(reportCtaUrl({ slug: 'bend', geoType: 'city', href: '/cities/bend' })).toBe(
+      'https://ryan-realty.com/housing-market/bend?utm_source=crm&utm_medium=email&utm_campaign=market-report#market',
     )
   })
-  it('sends a neighborhood/community area to its geo page AT the market section', () => {
-    const url = reportCtaUrl({ slug: 'tetherow', geoType: 'neighborhood', href: '/communities/tetherow' })
-    expect(url).toBe(
-      'https://ryan-realty.com/communities/tetherow?utm_source=crm&utm_medium=email&utm_campaign=market-report#market-report',
+  it('sends a neighborhood/community area to its geo page at #market', () => {
+    expect(reportCtaUrl({ slug: 'tetherow', geoType: 'neighborhood', href: '/communities/tetherow' })).toBe(
+      'https://ryan-realty.com/communities/tetherow?utm_source=crm&utm_medium=email&utm_campaign=market-report#market',
     )
   })
 })
 
 describe('renderMarketReportEmail', () => {
-  const UNSUB = 'https://ryan-realty.com/api/email/unsubscribe?t=abc.def'
-
-  it('renders a single-area email with the contact greeting and verified numbers', () => {
+  it('renders a single-area email with the greeting, the verified numbers and the CTA', () => {
     const out = renderMarketReportEmail({
       contactName: 'Jordan Avery',
-      brokerSlug: 'matt-ryan',
+      brokerSlug: 'matt',
       areas: [block()],
       unsubscribeUrl: UNSUB,
+      manageUrl: MANAGE,
+      viewUrl: VIEW,
+      asOf: new Date('2026-09-29T18:00:00Z'),
     })
     expect(out.subject).toBe('Bend home prices are down 1.2% from a year ago')
     expect(out.html).toContain('Hi Jordan,')
+    expect(out.html).toContain('as of September 29, 2026')
     expect(out.html).toContain('$721,000')
     expect(out.html).toContain('25 days')
-    expect(out.html).toContain("Seller's market")
-    expect(out.html).toContain('3.5 months of supply')
-    expect(out.html).toContain('↓ 1.2% YoY')
-    // The CTA lands on the seller-framed report page, never the buyer
-    // storefront at /cities/bend (conversion-audit 2026-07-15 #2), and
-    // carries GA4 UTMs (#8) plus the market-section anchor.
+    expect(out.html).toContain("Seller's market &middot; 3.5 months of supply")
+    expect(out.html).toContain('↓ 1.2% from a year ago')
     expect(out.html).toContain(
-      'https://ryan-realty.com/housing-market/bend?utm_source=crm&utm_medium=email&utm_campaign=market-report#market-report',
+      'https://ryan-realty.com/housing-market/bend?utm_source=crm&utm_medium=email&utm_campaign=market-report#market',
     )
+    expect(out.html).not.toContain('#market-report')
     expect(out.html).not.toContain('https://ryan-realty.com/cities/bend')
-    expect(out.html).toContain(UNSUB)
-    // The one branded frame (lib/email/shell.ts): masthead + navy + 640px sheet.
+    // The one branded frame (lib/email/shell.ts).
     expect(out.html).toContain('MARKET REPORT · BEND')
     expect(out.html).toContain('#102742')
     expect(out.html).toContain('max-width:640px')
     expect(out.html).toContain('name="color-scheme"')
-    // text part carries the same figures
     expect(out.text).toContain('$721,000')
-    expect(out.text).toContain('Median days on market 25 days')
-    expect(out.text).toContain(`Unsubscribe: ${UNSUB}`)
+    expect(out.text).toContain('Median days on market, last 12 months 25 days')
   })
 
-  it('renders the hero headline, month-over-month context, meaning line, and chart images', () => {
+  it('carries one footer: the address once, and View online, Manage and Unsubscribe links', () => {
     const out = renderMarketReportEmail({
       contactName: 'Jordan',
       areas: [block()],
       unsubscribeUrl: UNSUB,
+      manageUrl: MANAGE,
+      viewUrl: VIEW,
     })
-    // Hero headline — the one story (largest YoY move).
-    expect(out.html).toContain('Bend home prices are down 1.2% from a year ago')
-    // MoM context sentence from the monthly cache series.
-    expect(out.html).toContain('June closed at a $748,000 median, ↑ 2.2% vs May ($732,000).')
-    // Inventory + DOM context sub-lines.
-    expect(out.html).toContain('June ended 12 more than May')
-    expect(out.html).toContain('22 days in June, 2 days faster than May')
-    // Threshold-driven meaning line.
-    expect(out.html).toContain('Market read')
-    expect(out.html).toContain('sellers hold the leverage')
-    // Chart images with alt text, absolute URLs.
-    expect(out.html).toContain('/api/email/market-chart?geo=city&slug=bend&metric=median_price')
-    expect(out.html).toContain('metric=inventory')
-    expect(out.html).toContain('alt="Line chart of the Bend median sale price by month over the last 12 months"')
-    expect(out.html).toContain('alt="Bar chart of homes for sale in Bend by month over the last 12 months"')
+    const address = 'Ryan Realty, 115 NW Oregon Ave #2, Bend, OR 97703'
+    expect(out.html.split(address).length - 1).toBe(1)
+    expect(out.text.split(address).length - 1).toBe(1)
+    expect(out.html).toContain(`href="${VIEW}"`)
+    expect(out.html).toContain(`href="${MANAGE}"`)
+    expect(out.html).toContain(`href="${UNSUB}"`)
+    expect(out.html).toContain('View this report online')
+    expect(out.html).toContain('Manage your report')
+    expect(out.text).toContain(`View this report online: ${VIEW}`)
+    expect(out.text).toContain(`Manage your report: ${MANAGE}`)
+    expect(out.text).toContain(`Unsubscribe: ${UNSUB}`)
+    // No narration of why the reader got it (defect h).
+    expect(out.html).not.toContain('You are receiving')
+    expect(out.text).not.toContain('You are receiving')
   })
 
-  it('omits charts and MoM context when the area has no trend series', () => {
-    const out = renderMarketReportEmail({
-      contactName: 'Jordan',
-      areas: [block({ trend: null })],
-      unsubscribeUrl: UNSUB,
-    })
+  it('renders the month-over-month line on the same instrument and no inventory or DOM month context', () => {
+    const out = renderMarketReportEmail({ contactName: 'Jordan', areas: [block()], unsubscribeUrl: UNSUB })
+    expect(out.html).toContain('June closed at a $748,000 median, ↑ 2.2% vs May ($732,000).')
+    expect(out.html).not.toContain('June ended 12 more than May')
+    expect(out.html).not.toContain('faster than May')
+    expect(out.html).toContain('Market read')
+    expect(out.html).toContain('sellers hold the leverage')
+  })
+
+  it('omits charts and month-over-month when the area has no trend series', () => {
+    const out = renderMarketReportEmail({ contactName: 'Jordan', areas: [block({ trend: null })], unsubscribeUrl: UNSUB })
     expect(out.html).not.toContain('/api/email/market-chart')
     expect(out.html).not.toContain('vs May')
   })
 
-  it('returns a §0 trace for every displayed figure and none leak into the html', () => {
-    const out = renderMarketReportEmail({
-      contactName: 'Jordan',
-      areas: [block()],
-      unsubscribeUrl: UNSUB,
-    })
-    const figures = out.traces.map((t) => t.figure).join('\n')
-    expect(figures).toContain('median sale price $721,000')
-    expect(figures).toContain('homes for sale 480')
-    expect(figures).toContain('median days on market 25 days')
-    expect(figures).toContain('homes sold last 12 months 1,657')
-    expect(figures).toContain('months of supply 3.5 months')
-    const sources = out.traces.map((t) => t.source).join('\n')
-    expect(sources).toContain('market_stats_cache geo_type=city geo=bend period=rolling_365d')
-    expect(sources).toContain('market_pulse_live geo_type=city geo=bend')
-    // Traces are admin-only — the trace source strings never render in the email.
-    expect(out.html).not.toContain('rolling_365d')
-    expect(out.text).not.toContain('rolling_365d')
+  it('prints no months of supply, verdict or market read for a neighborhood', () => {
+    const out = renderMarketReportEmail({ contactName: 'Cheryl', areas: [hood()], unsubscribeUrl: UNSUB })
+    expect(out.html).toContain('Larkspur')
+    expect(out.html).toContain('$612,000')
+    expect(out.html).not.toContain('months of supply')
+    expect(out.html).not.toContain('Months of supply')
+    expect(out.html).not.toContain('Balanced market')
+    expect(out.html).not.toContain('Market read')
+    expect(out.figures.some((f) => f.label === 'months of supply')).toBe(false)
   })
 
-  it('renders a multi-area email', () => {
+  it('puts the specific area first: Larkspur before Bend', () => {
+    const out = renderMarketReportEmail({ contactName: 'Cheryl', areas: [block(), hood()], unsubscribeUrl: UNSUB })
+    expect(out.html.indexOf('>Larkspur<')).toBeGreaterThan(-1)
+    expect(out.html.indexOf('>Larkspur<')).toBeLessThan(out.html.indexOf('>Bend<'))
+    expect(out.html).toContain('Here is where Larkspur and Bend stand')
+    expect(out.html).toContain('MARKET REPORT · CENTRAL OREGON')
+  })
+
+  it('drops a row with no value instead of printing a dash or a fabricated zero', () => {
     const out = renderMarketReportEmail({
-      contactName: null,
-      areas: [block(), block({ slug: 'tetherow', areaLabel: 'Tetherow', href: '/communities/tetherow', geoType: 'neighborhood', marketVerdict: 'buyers', monthsOfSupply: 10.8, medianPrice: 1700000 })],
+      contactName: 'Sam',
+      areas: [block({ yoyPct: null, domMedian: null, activeListings: null })],
       unsubscribeUrl: UNSUB,
     })
-    expect(out.subject).toBe('Bend home prices are down 1.2% from a year ago')
-    expect(out.html).toContain('Hi,') // no name -> neutral greeting
-    expect(out.html).toContain('Bend')
-    expect(out.html).toContain('Tetherow')
-    expect(out.html).toContain('$1,700,000')
-    expect(out.html).toContain("Buyer's market")
-    expect(out.html).toContain('MARKET REPORT · CENTRAL OREGON')
+    expect(out.html).not.toContain('—')
+    expect(out.text).not.toContain('—')
+    expect(out.html).not.toContain('Median days on market')
+    expect(out.html).not.toContain('Homes for sale')
+    expect(out.html).not.toContain('from a year ago')
+    expect(out.html).not.toContain('0.0%')
+  })
+
+  it('returns a figure for every printed number, and no trace leaks into the email', () => {
+    const out = renderMarketReportEmail({ contactName: 'Jordan', areas: [block()], unsubscribeUrl: UNSUB })
+    // Every figure's display string is what the reader saw (the text part is unescaped).
+    for (const f of out.figures) {
+      if (f.display === 'chart') continue
+      expect(out.text).toContain(f.display)
+    }
+    const labels = out.figures.map((f) => f.label)
+    expect(labels).toEqual(
+      expect.arrayContaining([
+        'median sale price, last 12 months',
+        'median sale price change from a year ago',
+        'homes for sale',
+        'median days on market, last 12 months',
+        'homes sold, last 12 months',
+        'months of supply',
+        'market verdict',
+      ]),
+    )
+    const sources = out.traces.map((t) => t.source).join('\n')
+    expect(sources).toContain('market_stats_cache via getCityMarketDetail · geo_type=city geo_slug=bend period_type=rolling_365d column=median_dom')
+    expect(sources).toContain('market_pulse_live via getMarketPulse')
+    expect(out.html).not.toContain('rolling_365d')
+    expect(out.text).not.toContain('rolling_365d')
+    expect(out.html).not.toContain('market_metric')
+  })
+
+  it('dates each monthly figure at the end of its month', () => {
+    const out = renderMarketReportEmail({ contactName: 'Jordan', areas: [block()], unsubscribeUrl: UNSUB })
+    const june = out.figures.find((f) => f.label === 'June median sale price')
+    expect(june?.as_of).toBe('2026-06-30')
+    expect(june?.n).toBe(151)
   })
 
   it('renders the broker close card when a senderBroker is passed', () => {
@@ -480,90 +548,80 @@ describe('renderMarketReportEmail', () => {
     expect(out.html).not.toContain('TALK TO')
   })
 
-  it('renders the em-dash placeholder for an unavailable field rather than a fabricated number', () => {
-    const out = renderMarketReportEmail({
-      contactName: 'Sam',
-      areas: [block({ yoyPct: null, domMedian: null })],
-      unsubscribeUrl: UNSUB,
-    })
-    // em-dash data placeholder is allowed; no fabricated 0% / 0 days
-    expect(out.html).toContain('—')
-    expect(out.html).not.toContain('0.0% YoY')
-  })
-
-  // --- Brand-voice cleanliness (CLAUDE.md §3) ---
+  // --- Voice (VOICE.md; no em dashes in public copy, ci:no-public-em-dash) ---
 
   const sampleEmail = () =>
     renderMarketReportEmail({
       contactName: 'Jordan',
-      areas: [
-        block(),
-        block({ slug: 'tetherow', areaLabel: 'Tetherow', href: '/communities/tetherow', geoType: 'neighborhood', marketVerdict: 'buyers', monthsOfSupply: 10.8 }),
-      ],
-      unsubscribeUrl: 'https://ryan-realty.com/api/email/unsubscribe?t=abc.def',
+      areas: [block(), hood(), thinArea({ yoyPct: null, domMedian: null })],
+      unsubscribeUrl: UNSUB,
+      manageUrl: MANAGE,
+      viewUrl: VIEW,
     })
 
-  it('contains no em-dash or en-dash in body prose (the U+2014 data placeholder is the only allowed dash, used only for unavailable cells)', () => {
+  it('contains no em dash or en dash anywhere', () => {
     const out = sampleEmail()
-    // Strip out the legitimate data-placeholder em-dashes, then assert none remain.
-    // (No field is unavailable in this fixture, so there should be zero anyway.)
     expect(out.subject).not.toMatch(/[–—]/)
-    expect(out.html.replace(/—/g, '')).not.toContain('–') // no en-dash
-    expect(out.text.replace(/—/g, '')).not.toContain('–')
-    // The greeting/intro prose specifically uses no dash punctuation.
-    expect(out.html).toContain('Here is where')
+    expect(out.html).not.toMatch(/[–—]/)
+    expect(out.text).not.toMatch(/[–—]/)
   })
 
-  it('contains no semicolons in subject, html, or text', () => {
+  it('contains no semicolons in the subject or the text part', () => {
     const out = sampleEmail()
-    // HTML entities like &middot; legitimately contain a semicolon; check the
-    // visible text + subject, which carry no entities.
     expect(out.subject).not.toContain(';')
     expect(out.text).not.toContain(';')
   })
 
-  it('contains no exclamation marks in body copy', () => {
+  it('contains no exclamation marks', () => {
     const out = sampleEmail()
     expect(out.subject).not.toContain('!')
     expect(out.text).not.toContain('!')
   })
 })
 
-describe('D27 — the audit trace names the store that produced the figure', () => {
-  const traceFor = (area: MarketReportAreaBlock, needle: string) => {
-    const out = renderMarketReportEmail({
-      contactName: 'Jordan',
-      areas: [area],
-      unsubscribeUrl: 'https://ryan-realty.com/api/email/unsubscribe?t=abc.def',
-    })
-    return out.traces.find((t) => t.source.includes(needle))?.source ?? ''
+describe('the trace names the store that produced the figure', () => {
+  const traceFor = (area: MarketReportAreaBlock, label: string) => {
+    const out = renderMarketReportEmail({ contactName: 'Jordan', areas: [area], unsubscribeUrl: UNSUB })
+    const f = out.figures.find((x) => x.label === label)
+    return f ? `${f.source} · ${f.filter}` : ''
   }
 
-  // The defect this closes: all three of these were hardcoded to market_stats_cache,
-  // so a leftover figure on a client's document carried a trace pointing at a store
-  // that did not produce it. A trace an auditor cannot follow is a §0 failure.
-  for (const needle of ['median_sale_price', 'yoy_median_price_delta_pct', 'sold_count']) {
-    it(`traces ${needle} to market-truth when the block is a leftover overlay`, () => {
-      const t = traceFor(block({ twelveMonthSource: 'market-truth' }), needle)
-      expect(t).toContain('market-truth leftover detached membership')
+  const twelveMonth: Array<[string, string, string]> = [
+    ['median sale price, last 12 months', 'stat_id=median_close', 'column=median_sale_price'],
+    ['median sale price change from a year ago', 'stat_id=yoy_median_price', 'column=yoy_median_price_delta_pct'],
+    ['homes sold, last 12 months', 'stat_id=closed_count', 'column=sold_count'],
+  ]
+  for (const [label, truth, cache] of twelveMonth) {
+    it(`traces "${label}" to Market Truth when the block is a leftover overlay`, () => {
+      const t = traceFor(block({ twelveMonthSource: 'market-truth' }), label)
+      expect(t).toContain('market_metric via getPublicDetachedPace')
+      expect(t).toContain(truth)
       expect(t).not.toContain('market_stats_cache')
     })
-
-    it(`traces ${needle} to the cache when the block is not an overlay`, () => {
-      const t = traceFor(block({ twelveMonthSource: 'market_stats_cache' }), needle)
+    it(`traces "${label}" to the cache when the block is not an overlay`, () => {
+      const t = traceFor(block({ twelveMonthSource: 'market_stats_cache' }), label)
       expect(t).toContain('market_stats_cache')
-      expect(t).not.toContain('leftover detached membership')
+      expect(t).toContain(cache)
+      expect(t).not.toContain('getPublicDetachedPace')
     })
   }
 
-  // D17's carve-out: these three legitimately stay cache no matter the overlay,
-  // so they must NOT follow the twelve-month source.
-  for (const needle of ['median_dom', 'end_of_period_inventory']) {
-    it(`keeps ${needle} on the cache trace even for a leftover overlay block`, () => {
-      const t = traceFor(block({ twelveMonthSource: 'market-truth' }), needle)
-      expect(t).toContain('market_stats_cache')
-      expect(t).not.toContain('leftover detached membership')
+  it('keeps median days on market on the cache even for a leftover overlay block (D17)', () => {
+    const t = traceFor(block({ twelveMonthSource: 'market-truth' }), 'median days on market, last 12 months')
+    expect(t).toContain('market_stats_cache')
+    expect(t).toContain('column=median_dom')
+  })
+
+  it('names Market Truth for a city active count read from market_metric', () => {
+    const area = block({
+      provenance: {
+        cache: null,
+        live: { table: 'market_metric', computedAt: '2026-09-29T06:21:00Z', completeThrough: '2026-09-28' },
+        twelveMonth: null,
+      },
     })
-  }
+    const t = traceFor(area, 'homes for sale')
+    expect(t).toContain('market_metric via getDetachedMarkets')
+    expect(t).toContain('stat_id=active_count')
+  })
 })
-

@@ -290,9 +290,9 @@ export function ContactSendCenter(props: {
       if (subscribe) {
         const sub = await setReportSubscriptionAction(props.personId, { areas, frequency: 'monthly', isActive: true })
         if (!sub.ok) {
-          return { ok: true, message: 'Market report sent, but the monthly subscription could not be set. Try the subscription again.' }
+          return { ok: true, message: `Market report sent, but the monthly subscription was not set: ${sub.error}` }
         }
-        return { ok: true, message: 'Market report sent and monthly subscription set.' }
+        return { ok: true, message: `Market report sent. ${sub.message ?? 'Monthly subscription set.'}` }
       }
       return { ok: true, message: 'Market report sent.' }
     })

@@ -1,17 +1,26 @@
 /**
  * Pages whose address carries a secret. A signing link (/sign/<token>) opens a
  * person's documents to whoever holds it; a CMA review link (/cma-drafts/<id>?
- * token=) lets its holder send the CMA; an unsubscribe link names the person.
+ * token=) lets its holder send the CMA; an unsubscribe link names the person;
+ * a market-report preferences link (/email-preferences?t=, and its stored
+ * report web view /email-preferences/report?t=) lets its holder change or stop
+ * that contact's reports and read the reports they were sent.
  *
  * On 2026-09-24 a production signing page sent its full address, token
  * included, to the Meta pixel (PageView `dl=`), Google Analytics and Sentry,
  * because every tag in the root layout loads on every route. So: no
  * third-party tag (Google Tag Manager, GA4, the Meta pixel) and no page
  * tracker runs on these pages, and every error report scrubs the secret out
- * first. Held by scripts/check-private-path-tracking.mjs.
+ * first. Held by scripts/check-tracking-policy.mjs.
  */
 
-const PRIVATE_PREFIXES = ['sign', 'cma-drafts', 'alerts/unsubscribe', 'newsletter/unsubscribe'] as const
+const PRIVATE_PREFIXES = [
+  'sign',
+  'cma-drafts',
+  'alerts/unsubscribe',
+  'newsletter/unsubscribe',
+  'email-preferences',
+] as const
 
 /** The first path segment(s) of a page whose address carries a secret. */
 export const PRIVATE_PATH_RE = new RegExp(`^/(${PRIVATE_PREFIXES.map((p) => p.replace(/\//g, '\\/')).join('|')})(/|$)`)

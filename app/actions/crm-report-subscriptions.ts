@@ -4,118 +4,66 @@ import { revalidatePerson } from '@/lib/crm/revalidate-person'
 /**
  * Market-report subscription actions (Stream 1, write side).
  *
- * The CRM contact record card lets a broker turn market reports on/off for a
- * contact, pick which geo AREAS the contact gets reports for, and set the
- * CADENCE. These two admin-guarded server actions persist that to
- * crm_report_subscriptions (one row per contact, upserted on person_id).
+ * The CRM lets a broker turn market reports on/off for a contact, pick which
+ * geo AREAS the contact gets reports for, and set the CADENCE. This action is
+ * what the send center's "Send now + subscribe" and the legacy lead form call.
  *
- * Every action:
- *   1. Is admin-guarded the same way app/actions/crm.ts is (getCrmAccess) and
- *      scope-checked (requirePersonInScope) so a restricted broker only touches
- *      their own contacts.
- *   2. Writes a crm_timeline 'system' row so the change is audited on the contact.
- *   3. Revalidates the contact record path.
+ * Rebuilt 2026-09-29 on lib/crm/market-report-admin.ts, the one planner every
+ * door shares (Matt's decisions 2026-09-29):
+ *   1. Session- and ownership-checked (getCrmAccess + requirePersonInScope):
+ *      a restricted broker only touches their own contacts.
+ *   2. Every change writes a crm_timeline row naming the admin and saying what
+ *      changed (areas, interval, on/off), through the DAL.
+ *   3. A contact who stopped her own reports (one-click, her email link, her
+ *      account page) is only turned back on with a consent note recording how
+ *      she asked (`consentNote`).
+ *   4. A new subscription starts NOT approved: nothing sends until a broker
+ *      previews the report and approves the first send on the market report
+ *      card. Its last_sent_at starts at the last report she actually received,
+ *      so "Send now + subscribe" never sends the same report twice.
  *
- * Market reports are NOT a per-contact send channel that bypasses consent — the
- * report delivery itself is suppression-gated at send time (the same chokepoint
- * governs newsletter/sms). Turning the subscription on here records a preference;
- * it does not send anything, so there is no compliance hard-stop gate at this
- * layer (mirrors the listing-alerts toggle, which is a plain state flip).
+ * Turning the subscription on records a preference; delivery itself is
+ * suppression-gated at send time (lib/crm/market-report-send.ts).
  *
- * DAL boundary (G1): mutations live in this 'use server' module and write through
- * the service client; the typed reader lives in lib/data/crm.
+ * DAL boundary (G1): no raw .from() here; writes go through lib/data/crm.
  */
 
 import { revalidatePath } from 'next/cache'
-import { createServiceClient } from '@/lib/supabase/service'
 import { getCrmAccess, requirePersonInScope } from '@/app/actions/crm'
-import {
-  normalizeReportFrequency,
-  buildMarketReportAreas,
-  type ReportFrequency,
-} from '@/lib/data/crm/getContactReportSubscriptions'
+import { normalizeReportFrequency, type ReportFrequency } from '@/lib/data/crm/getContactReportSubscriptions'
+import { adminUpdateReportSubscription } from '@/lib/crm/market-report-admin'
 
 export type CrmReportSubscriptionResult = { ok: true; message?: string } | { ok: false; error: string }
 
-function revalidateContact(personId: number) {
-  // The contact record card lives at /admin/people/[id]/tools; /admin/crm/[id]
-  // is a redirect bridge. Revalidate both the bridge and the real page so the
-  // toggle action (which has no redirect mask) refreshes the card.
-  revalidatePerson(personId)
-}
-
 /**
- * Validate + de-dupe the submitted areas against the registry of valid options.
- * An unknown slug is dropped (never persisted) so a stale UI or a typo cannot
- * write a junk area that no report can ever be produced for. Returns the cleaned,
- * ordered, de-duped list.
- */
-function sanitizeAreas(areas: unknown): string[] {
-  const valid = new Set(buildMarketReportAreas().map((a) => a.slug))
-  const input = Array.isArray(areas) ? areas : []
-  const seen = new Set<string>()
-  const out: string[] = []
-  for (const raw of input) {
-    if (typeof raw !== 'string') continue
-    const slug = raw.trim()
-    if (!slug || seen.has(slug) || !valid.has(slug)) continue
-    seen.add(slug)
-    out.push(slug)
-  }
-  return out
-}
-
-/**
- * Upsert a contact's market-report subscription: the chosen areas, cadence, and
- * active flag. One row per contact (conflict on person_id). Persists exactly what
- * the broker chose, after validating the areas against the registry.
+ * Set a contact's market-report subscription: the chosen areas, cadence, and
+ * on/off. Creates the row on a first setup. Areas are validated against the
+ * live registry; an unknown slug is refused by name.
  */
 export async function setReportSubscriptionAction(
   personId: number,
-  input: { areas: string[]; frequency: ReportFrequency; isActive: boolean },
+  input: { areas: string[]; frequency: ReportFrequency; isActive: boolean; consentNote?: string | null },
 ): Promise<CrmReportSubscriptionResult> {
   const access = await getCrmAccess()
   if (!access) return { ok: false, error: 'Unauthorized' }
+  if (access.role === 'report_viewer') return { ok: false, error: 'Your role can read the CRM but not change it.' }
   const id = Number(personId)
   if (!Number.isFinite(id) || id <= 0) return { ok: false, error: 'A contact is required' }
   const scoped = await requirePersonInScope(id, access)
   if (!scoped.ok) return scoped
 
-  const areas = sanitizeAreas(input.areas)
-  const frequency = normalizeReportFrequency(input.frequency)
-  const isActive = input.isActive === true
-
-  // An active subscription with no areas can never produce a report. Refuse so
-  // the broker does not leave the contact in a silently-empty "on" state.
-  if (isActive && areas.length === 0) {
-    return { ok: false, error: 'Pick at least one area to turn market reports on' }
-  }
-
-  const sb = createServiceClient()
-  const { error } = await sb
-    .from('crm_report_subscriptions')
-    .upsert(
-      {
-        person_id: id,
-        areas,
-        frequency,
-        is_active: isActive,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'person_id' },
-    )
-  if (error) return { ok: false, error: error.message }
-
-  await sb.from('crm_timeline').insert({
-    person_id: id,
-    kind: 'system',
-    title: isActive
-      ? `Market reports set to ${frequency} for ${areas.length} ${areas.length === 1 ? 'area' : 'areas'} by ${access.email}`
-      : `Market reports turned off by ${access.email}`,
-    source: 'app',
-    broker: access.brokerSlug,
+  const r = await adminUpdateReportSubscription({
+    personId: id,
+    admin: { email: access.email, brokerSlug: access.brokerSlug },
+    areas: Array.isArray(input.areas) ? input.areas : [],
+    frequency: normalizeReportFrequency(input.frequency),
+    active: input.isActive === true,
+    consentNote: input.consentNote ?? null,
+    createIfMissing: true,
   })
+  if (!r.ok) return r
 
-  revalidateContact(id)
-  return { ok: true, message: isActive ? 'Market reports updated' : 'Market reports turned off' }
+  revalidatePerson(id)
+  revalidatePath('/admin/crm')
+  return { ok: true, message: r.message }
 }

@@ -19,6 +19,17 @@
  *
  * Scope is applied at id-resolution (worker), matching requirePersonInScope.
  *
+ * Consent (Matt's decisions 2026-09-29): a contact who stopped her own reports
+ * (one-click, her email link, her account page) is SKIPPED when the job turns
+ * reports on, and counted (`skipped_contact_stopped`): restarting one needs her
+ * new consent on record, one contact at a time, on the market report card. An
+ * admin-stopped or paused one turns on and its stop stamp is cleared. A new
+ * row starts NOT approved, like every subscription: nothing sends until a
+ * broker previews and approves the first send. Its last_sent_at starts at the
+ * last report the contact actually received. A contact already exactly as the
+ * job asks is left alone (counted `unchanged`, no timeline row), and turning
+ * reports off with no areas picked keeps the areas already on the row.
+ *
  * Every id is accounted for (processed OR skipped) so the worker offset drains.
  */
 
@@ -29,6 +40,15 @@ import {
   buildMarketReportAreas,
 } from '@/lib/data/crm/getContactReportSubscriptions'
 import type { BulkHandler, BulkResult } from '@/lib/crm/bulk-jobs'
+import { getLatestDeliveredReportAt } from '@/lib/data/crm/marketReportSends'
+import { isContactStopVia } from '@/lib/crm/market-report-subscription-control'
+
+/** Order-insensitive area comparison. */
+function sameAreaSet(a: readonly string[], b: readonly string[]): boolean {
+  if (a.length !== b.length) return false
+  const s = new Set(a)
+  return b.every((x) => s.has(x))
+}
 
 /**
  * Validate + de-dupe submitted areas against the registry of valid options.
@@ -71,18 +91,59 @@ export const setReportSubscriptionHandler: BulkHandler = async (ids, params): Pr
   const nowIso = new Date().toISOString()
 
   for (const id of ids) {
+    const { data: existing, error: readErr } = await sb
+      .from('crm_report_subscriptions')
+      .select('is_active, stopped_at, stopped_via, areas, frequency')
+      .eq('person_id', id)
+      .maybeSingle()
+    if (readErr) { result.skipped++; bump('read_failed'); continue }
+    const prev = existing as {
+      is_active: boolean | null
+      stopped_at: string | null
+      stopped_via: string | null
+      areas: string[] | null
+      frequency: string | null
+    } | null
+    if (isActive && prev && !prev.is_active && isContactStopVia(prev.stopped_via)) {
+      result.skipped++
+      bump('skipped_contact_stopped')
+      continue
+    }
+    // Turning off with no areas picked keeps the row's areas (a paused report
+    // with areas is harmless, and a later turn-on needs them).
+    const keepAreas = !isActive && areas.length === 0 && prev !== null
+    if (
+      prev &&
+      (prev.is_active === true) === isActive &&
+      prev.frequency === frequency &&
+      (keepAreas || sameAreaSet(Array.isArray(prev.areas) ? prev.areas : [], areas)) &&
+      (!isActive || !prev.stopped_at)
+    ) {
+      result.processed++
+      bump('unchanged')
+      continue
+    }
+
+    const row: Record<string, unknown> = {
+      person_id: id,
+      frequency,
+      is_active: isActive,
+      updated_at: nowIso,
+    }
+    if (!keepAreas) row.areas = areas
+    if (isActive) {
+      row.stopped_at = null
+      row.stopped_via = null
+    }
+    if (!prev) {
+      // A first setup: say where it came from, and start the cadence from the
+      // last report the contact actually received (never a same-day repeat).
+      row.source = 'broker'
+      row.last_sent_at = await getLatestDeliveredReportAt(id)
+    }
     const { error: upErr } = await sb
       .from('crm_report_subscriptions')
-      .upsert(
-        {
-          person_id: id,
-          areas,
-          frequency,
-          is_active: isActive,
-          updated_at: nowIso,
-        },
-        { onConflict: 'person_id' },
-      )
+      .upsert(row, { onConflict: 'person_id' })
     if (upErr) { result.skipped++; bump('upsert_failed'); continue }
 
     await sb.from('crm_timeline').insert({

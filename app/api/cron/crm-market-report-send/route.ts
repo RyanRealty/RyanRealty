@@ -3,18 +3,19 @@
  * (Wave 8).
  *
  * A thin auth + invoke shell over runMarketReportSend() (lib/crm/market-report-send),
- * which owns the whole per-contact path: cadence gate (isDue) -> §0-accurate data
- * (getMarketReportData, cache-only) -> render -> suppression chokepoint
- * (isSuppressed, fail-closed) -> prepare (multipart + List-Unsubscribe + CAN-SPAM)
- * -> attribute (broker + tracking) -> send -> record 'market-report' event ->
- * stamp last_sent_at so the contact is not re-sent inside their window.
+ * which owns the whole per-contact path: the 8am to 8pm Pacific window ->
+ * cadence gate (isDue) -> the first-send approval (held until a broker approves
+ * after a preview) -> §0-accurate data (getMarketReportData) -> the freshness
+ * hold -> render -> claim the crm_report_sends row -> suppression chokepoint
+ * (isSuppressed, fail-closed) -> prepare (multipart + List-Unsubscribe + one
+ * CAN-SPAM footer) -> attribute (broker + tracking) -> send -> record
+ * 'market-report' event + the email_out timeline row -> stamp last_sent_at.
  *
- * Wiring (vercel.json): this runs as a DAILY tick. It is cadence-aware — each
- * contact is only sent when their own weekly/monthly/quarterly window has elapsed
- * (per crm_report_subscriptions.frequency + last_sent_at), so a daily tick emits
- * each contact's report exactly on their chosen cadence and no more often. A
- * separate monthly entry is optional; the daily tick alone is sufficient and the
- * one that guarantees weekly subscribers go out on time.
+ * Wiring (vercel.json): `0 4,10,16,22 * * *` UTC. Only the 16:00 and 22:00 runs
+ * fall inside 8am to 8pm America/Los_Angeles (9am/3pm PDT, 8am/2pm PST); the
+ * other two return outside_window without reading anything. It is
+ * cadence-aware — each contact is only sent when their own
+ * weekly/monthly/quarterly window has elapsed.
  *
  * Bounded per run (MAX_SENDS) so it never times out; never throws to the caller —
  * every outcome is a JSON status so a Vercel retry never hits a 500.
@@ -49,6 +50,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       ok: true,
       runId,
+      outside_window: summary.outsideWindow,
       scanned: summary.scanned,
       due: summary.due,
       sent: summary.sent,

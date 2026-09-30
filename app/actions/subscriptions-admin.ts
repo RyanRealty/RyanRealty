@@ -8,10 +8,18 @@
  * Access: any CRM admin (getCrmAccess). These manage delivery PREFERENCES.
  * Actual sends stay suppression-gated at the cron chokepoints, and every
  * outbound email carries open/click tracking via attributeOutbound.
+ *
+ * Market reports (Matt's decisions 2026-09-29): every report-subscription
+ * action here is ownership-checked (requirePersonInScope; a scoped broker only
+ * lists and touches their own contacts), a report viewer changes nothing, and
+ * every change writes a crm_timeline row naming the admin, through the same
+ * planner the contact's own preferences page and the CRM record use
+ * (lib/crm/market-report-admin.ts). Reassigning a contact's broker is an owner
+ * operation, as it is on the person page.
  */
 
 import { getAlertManageUrl } from '@/lib/alerts/manage-url'
-import { getCrmAccess } from '@/app/actions/crm'
+import { getCrmAccess, requirePersonInScope, type CrmAccess } from '@/app/actions/crm'
 import {
   listGuestAlertSubscriptions,
   listUserSavedSearches,
@@ -19,12 +27,10 @@ import {
   bulkDeleteAlertSubscriptions,
   listReportSubscriptionsAdmin,
   bulkUpdateReportSubscriptions,
+  filterPersonIdsInBrokerScope,
   getAlertSubscriptionById,
   updateAlertSubscription,
-  getReportSubscriptionByPersonId,
-  updateReportSubscription,
   deleteReportSubscription,
-  setPersonAssignedBroker,
   type ListAlertSubscriptionsOptions,
   type ListAlertSubscriptionsResult,
   type ListReportSubscriptionsOptions,
@@ -34,10 +40,17 @@ import {
 import { getGlobalDeliverySummary, type GlobalDeliverySummary } from '@/lib/data/crm/emailDelivery'
 import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
 import { getCrmReportAreas } from '@/lib/data/crm/getCrmReportAreas'
-import { getMarketReportData } from '@/lib/data/crm/getMarketReportData'
-import { renderMarketReportEmail } from '@/lib/crm/market-report-email'
-import { buildUnsubscribeUrl } from '@/lib/email/unsubscribe-token'
-import { shellBrokerFor } from '@/lib/email/broker-identity'
+import {
+  getMarketReportContact,
+  getReportSubscriptionRecord,
+  logReportTimeline,
+} from '@/lib/data/crm/marketReportSubscription'
+import { adminUpdateReportSubscription } from '@/lib/crm/market-report-admin'
+import { isContactStopped } from '@/lib/crm/market-report-subscription-control'
+import { renderMarketReportPreview } from '@/lib/crm/market-report-preview'
+import { reportAreaLabel } from '@/lib/crm/market-report-areas'
+import { scopeBroker } from '@/lib/crm/scope'
+import { createServiceClient } from '@/lib/supabase/service'
 import { buildListingAlertEmail, type ListingAlertListing } from '@/lib/crm/listing-alert-email'
 import { getCachedSearchListings } from '@/app/actions/search-cache'
 import type { ListingTileRow } from '@/app/actions/listings'
@@ -55,6 +68,19 @@ const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com')
 function cleanIds(ids: unknown): string[] {
   if (!Array.isArray(ids)) return []
   return [...new Set(ids.filter((v): v is string => typeof v === 'string' && v.trim().length > 0))].slice(0, MAX_BULK_IDS)
+}
+
+/** A report-subscription write: signed in, not a read-only role, and the contact is in the caller's book. */
+async function reportWriteGuard(
+  personId: number,
+): Promise<{ ok: true; access: CrmAccess } | { ok: false; error: string }> {
+  const access = await getCrmAccess()
+  if (!access) return { ok: false, error: 'Unauthorized' }
+  if (access.role === 'report_viewer') return { ok: false, error: 'Your role can read the CRM but not change it.' }
+  if (!Number.isInteger(personId) || personId <= 0) return { ok: false, error: 'Missing contact' }
+  const scoped = await requirePersonInScope(personId, access)
+  if (!scoped.ok) return scoped
+  return { ok: true, access }
 }
 
 export async function listAlertSubscriptionsAction(
@@ -120,7 +146,8 @@ export async function listReportSubscriptionsAdminAction(
   try {
     const access = await getCrmAccess()
     if (!access) return { data: null, error: 'Unauthorized' }
-    const data = await listReportSubscriptionsAdmin(opts)
+    // A scoped broker lists only their own contacts; the owner lists every one.
+    const data = await listReportSubscriptionsAdmin({ ...opts, scopeBroker: scopeBroker(access) })
     return { data, error: null }
   } catch (err) {
     console.error('[listReportSubscriptionsAdminAction]', err)
@@ -171,29 +198,43 @@ export async function updateAlertSubscriptionAction(
 
 export async function updateReportSubscriptionAction(
   personId: number,
-  patch: { areas?: string[], frequency?: 'weekly' | 'monthly' | 'quarterly', active?: boolean },
+  patch: { areas?: string[], frequency?: 'weekly' | 'monthly' | 'quarterly', active?: boolean, consentNote?: string | null },
 ): Promise<{ data: { ok: true } | null, error: string | null }> {
   try {
-    const access = await getCrmAccess()
-    if (!access) return { data: null, error: 'Unauthorized' }
-    if (!Number.isInteger(personId) || personId <= 0) return { data: null, error: 'Missing contact' }
+    const guard = await reportWriteGuard(personId)
+    if (!guard.ok) return { data: null, error: guard.error }
 
-    const sanitized: { areas?: string[], frequency?: 'weekly' | 'monthly' | 'quarterly', active?: boolean } = {}
+    let areas: string[] | undefined
+    let validAreas: ReadonlySet<string> | undefined
     if (Array.isArray(patch?.areas)) {
-      // Only known report-area keys survive (the config table is the registry).
-      const valid = new Set((await getCrmReportAreas()).map((a) => a.key))
-      const areas = [...new Set(patch.areas.filter((a) => typeof a === 'string' && valid.has(a)))]
+      areas = patch.areas.filter((a): a is string => typeof a === 'string' && a.trim().length > 0)
       if (areas.length === 0) return { data: null, error: 'Pick at least one area' }
-      sanitized.areas = areas
+      // This dialog offers the crm_report_areas config table, so that list is
+      // the authority here (an unknown key is refused by name, never dropped).
+      // An unreadable table reads as empty: fall back to the report registry.
+      const configured = new Set((await getCrmReportAreas()).map((a) => a.key))
+      validAreas = configured.size > 0 ? configured : undefined
     }
-    if (patch?.frequency === 'weekly' || patch?.frequency === 'monthly' || patch?.frequency === 'quarterly') {
-      sanitized.frequency = patch.frequency
-    }
-    if (typeof patch?.active === 'boolean') sanitized.active = patch.active
-    if (Object.keys(sanitized).length === 0) return { data: null, error: 'Nothing to change' }
+    const frequency =
+      patch?.frequency === 'weekly' || patch?.frequency === 'monthly' || patch?.frequency === 'quarterly'
+        ? patch.frequency
+        : undefined
+    const active = typeof patch?.active === 'boolean' ? patch.active : undefined
+    if (!areas && !frequency && active === undefined) return { data: null, error: 'Nothing to change' }
 
-    const { ok, error } = await updateReportSubscription(personId, sanitized)
-    if (!ok) return { data: null, error: error ?? 'Could not save those changes' }
+    // The shared planner: every change in one write with one timeline row
+    // naming the admin, and a contact who stopped her own reports only
+    // restarts with a consent note.
+    const r = await adminUpdateReportSubscription({
+      personId,
+      admin: { email: guard.access.email, brokerSlug: guard.access.brokerSlug },
+      areas,
+      validAreas,
+      frequency,
+      active,
+      consentNote: patch?.consentNote ?? null,
+    })
+    if (!r.ok) return { data: null, error: r.error }
     return { data: { ok: true }, error: null }
   } catch (err) {
     console.error('[updateReportSubscriptionAction]', err)
@@ -201,15 +242,34 @@ export async function updateReportSubscriptionAction(
   }
 }
 
+/**
+ * Delete a contact's market report subscription. Refused when the contact
+ * stopped the reports herself: the stopped row IS her opt-out on record, and
+ * deleting it would let a later "subscribe" silently start them again.
+ */
 export async function deleteReportSubscriptionAction(
   personId: number,
 ): Promise<{ data: { ok: true } | null, error: string | null }> {
   try {
-    const access = await getCrmAccess()
-    if (!access) return { data: null, error: 'Unauthorized' }
-    if (!Number.isInteger(personId) || personId <= 0) return { data: null, error: 'Missing contact' }
+    const guard = await reportWriteGuard(personId)
+    if (!guard.ok) return { data: null, error: guard.error }
+    const rec = await getReportSubscriptionRecord({ personId })
+    if (!rec) return { data: null, error: 'Subscription not found' }
+    if (isContactStopped(rec)) {
+      return {
+        data: null,
+        error: 'This contact stopped these reports themselves. Keep the stopped subscription: it is their opt-out on record.',
+      }
+    }
     const { ok, error } = await deleteReportSubscription(personId)
     if (!ok) return { data: null, error: error ?? 'Could not delete that subscription' }
+    await logReportTimeline(personId, {
+      title: `Market report subscription deleted by ${guard.access.email}`,
+      body: rec.areas.length ? `Areas were ${rec.areas.map(reportAreaLabel).join(', ')}, ${rec.frequency}.` : null,
+      payload: { via: 'admin', change: 'delete' },
+      broker: guard.access.brokerSlug,
+      source: 'app',
+    })
     return { data: { ok: true }, error: null }
   } catch (err) {
     console.error('[deleteReportSubscriptionAction]', err)
@@ -229,12 +289,21 @@ export async function assignSubscriptionBrokerAction(
   try {
     const access = await getCrmAccess()
     if (!access) return { data: null, error: 'Unauthorized' }
+    // Reassigning a contact is an OWNER operation, as on the person page
+    // (app/actions/crm.ts assignCrmBrokerAction): a scoped broker is refused,
+    // so no one can move another broker's contact into their own book.
+    if (scopeBroker(access) !== null) return { data: null, error: 'Only an owner can reassign a contact' }
     if (!Number.isInteger(personId) || personId <= 0) return { data: null, error: 'This subscription has no linked contact' }
     const slug = String(brokerSlug ?? '').trim()
     const roster = await getCrmBrokers()
     if (!roster.some((b) => b.slug === slug && b.crmActive)) return { data: null, error: 'Unknown broker' }
-    const { ok, error } = await setPersonAssignedBroker(personId, slug)
-    if (!ok) return { data: null, error: error ?? 'Could not assign that broker' }
+    // The canonical setter: cascades open tasks and deals and records the move.
+    const { setPersonAssignedBroker } = await import('@/lib/crm/assigned-broker')
+    const result = await setPersonAssignedBroker(createServiceClient(), personId, slug, {
+      actorEmail: access.email ?? null,
+      source: 'app',
+    })
+    if (!result.ok) return { data: null, error: result.error ?? 'Could not assign that broker' }
     return { data: { ok: true }, error: null }
   } catch (err) {
     console.error('[assignSubscriptionBrokerAction]', err)
@@ -337,9 +406,11 @@ export async function previewAlertEmailAction(
 }
 
 /**
- * Render the ACTUAL market-report email for one subscription's current areas —
- * the same renderMarketReportEmail + getMarketReportData pair the send engine
- * uses, so what Matt sees is what the contact receives.
+ * Render the market-report email one contact would get for her current areas,
+ * built exactly as a send builds it (lib/crm/market-report-preview.ts): her
+ * assigned broker's card and identity, her greeting, the report's own links
+ * signed as a read-only preview, the same prepare footer pass, and no
+ * tracking. Says when a real send would be held for stale data.
  */
 export async function previewReportEmailAction(
   personId: number,
@@ -349,26 +420,30 @@ export async function previewReportEmailAction(
     const access = await getCrmAccess()
     if (!access) return { data: null, error: 'Unauthorized' }
     if (!Number.isInteger(personId) || personId <= 0) return { data: null, error: 'Missing contact' }
-    const sub = await getReportSubscriptionByPersonId(personId)
+    const scoped = await requirePersonInScope(personId, access)
+    if (!scoped.ok) return { data: null, error: scoped.error }
+    const [sub, contact] = await Promise.all([
+      getReportSubscriptionRecord({ personId }),
+      getMarketReportContact(personId),
+    ])
     if (!sub) return { data: null, error: 'Subscription not found' }
 
-    const areas = await getMarketReportData(sub.areas)
-    if (areas.length === 0) {
-      return { data: null, error: 'No verified market data is available for the subscribed areas, so there is no email to preview (a real send skips too)' }
-    }
-    const rendered = renderMarketReportEmail({
-      contactName: typeof personName === 'string' ? personName : null,
-      areas,
-      unsubscribeUrl: buildUnsubscribeUrl(personId),
-      // Mirror production: a real send always carries a close card (Matt by
-      // default) — the preview must show the same email (audit #14).
-      senderBroker: shellBrokerFor(null),
+    const res = await renderMarketReportPreview({
+      areaSlugs: sub.areas,
+      contactName: contact?.firstName ?? contact?.name ?? (typeof personName === 'string' ? personName : null),
+      brokerSlug: contact?.assignedBroker ?? access.brokerSlug ?? 'matt',
+      personId,
+      subscriptionId: sub.id,
     })
-    const omitted = sub.areas.length - areas.length
-    const note = omitted > 0
-      ? `${omitted} subscribed ${omitted === 1 ? 'area has' : 'areas have'} no verified cache data right now and ${omitted === 1 ? 'is' : 'are'} omitted, exactly as a real send would.`
-      : null
-    return { data: { subject: rendered.subject, html: rendered.html, note }, error: null }
+    if (!res.ok) return { data: null, error: res.error }
+    const omitted = res.preview.omittedAreas.length
+    const notes = [
+      omitted > 0
+        ? `${omitted} subscribed ${omitted === 1 ? 'area has' : 'areas have'} no verified data right now and ${omitted === 1 ? 'is' : 'are'} omitted, exactly as a real send would.`
+        : null,
+      res.preview.heldNote,
+    ].filter(Boolean)
+    return { data: { subject: res.preview.subject, html: res.preview.html, note: notes.length ? notes.join(' ') : null }, error: null }
   } catch (err) {
     console.error('[previewReportEmailAction]', err)
     return { data: null, error: 'Could not render the email preview' }
@@ -378,19 +453,32 @@ export async function previewReportEmailAction(
 export async function bulkUpdateReportSubscriptionsAction(
   personIds: number[],
   patch: { active?: boolean, frequency?: 'weekly' | 'monthly' | 'quarterly' },
-): Promise<{ data: { updated: number } | null, error: string | null }> {
+): Promise<{
+  data: { updated: number, skippedContactStopped: number, skippedNoAreas: number } | null
+  error: string | null
+}> {
   try {
     const access = await getCrmAccess()
     if (!access) return { data: null, error: 'Unauthorized' }
-    const clean = [...new Set((Array.isArray(personIds) ? personIds : []).filter((n) => Number.isInteger(n) && n > 0))].slice(0, MAX_BULK_IDS)
-    if (clean.length === 0) return { data: null, error: 'Select at least one contact' }
+    if (access.role === 'report_viewer') return { data: null, error: 'Your role can read the CRM but not change it.' }
+    const requested = [...new Set((Array.isArray(personIds) ? personIds : []).filter((n) => Number.isInteger(n) && n > 0))].slice(0, MAX_BULK_IDS)
+    if (requested.length === 0) return { data: null, error: 'Select at least one contact' }
     const sanitized: { active?: boolean, frequency?: 'weekly' | 'monthly' | 'quarterly' } = {}
     if (typeof patch?.active === 'boolean') sanitized.active = patch.active
     if (patch?.frequency === 'weekly' || patch?.frequency === 'monthly' || patch?.frequency === 'quarterly') sanitized.frequency = patch.frequency
     if (Object.keys(sanitized).length === 0) return { data: null, error: 'Nothing to change' }
-    const { updated, error } = await bulkUpdateReportSubscriptions(clean, sanitized)
+    // Ownership: a scoped broker's bulk change only reaches their own book
+    // (the requirePersonInScope rule, checked for the whole selection at once).
+    const scoped = await filterPersonIdsInBrokerScope(requested, scopeBroker(access))
+    if (scoped.error) return { data: null, error: scoped.error }
+    if (scoped.ids.length === 0) return { data: null, error: 'None of those contacts are in your book' }
+    const { updated, skippedContactStopped, skippedNoAreas, error } = await bulkUpdateReportSubscriptions(
+      scoped.ids,
+      sanitized,
+      { email: access.email, brokerSlug: access.brokerSlug },
+    )
     if (error) return { data: null, error }
-    return { data: { updated }, error: null }
+    return { data: { updated, skippedContactStopped, skippedNoAreas }, error: null }
   } catch (err) {
     console.error('[bulkUpdateReportSubscriptionsAction]', err)
     return { data: null, error: 'Could not update those subscriptions' }

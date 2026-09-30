@@ -75,6 +75,19 @@ const ROOTS = [
   'components/site/v3/V3PlaceDocuments.tsx',
   'lib/data/places/place-document-view.ts',
   'lib/site/place-faq-extras.ts',
+  // The market report a contact receives (Matt 2026-09-29): every report had
+  // printed "—" for a missing value, including months of supply on every
+  // neighborhood report. The renderer, its formatters, the branded shell and
+  // its footer, and the no-login preferences page, its report web view, its
+  // one-click answer, its controls primitive, and the account page's
+  // market-report block.
+  'lib/crm/market-report-email.ts',
+  'lib/crm/market-report-format.ts',
+  'lib/email/shell.ts',
+  'app/email-preferences',
+  'app/api/email/report-unsubscribe/route.ts',
+  'components/site/v3/V3Controls.tsx',
+  'components/dashboard/DashboardNotificationPrefs.tsx',
 ]
 
 /** JSON the visitor can read; not walked as TypeScript. */

@@ -57,6 +57,7 @@ import { HomesSection } from './HomesSection'
 import { SiteActivitySection } from './SiteActivitySection'
 import { SendSection } from './SendSection'
 import { TasksSection } from './TasksSection'
+import { MarketReportSection } from '@/components/admin/crm/MarketReportSection'
 
 export type PersonWorkspaceSearch = {
   intent?: string
@@ -421,6 +422,19 @@ export async function PersonWorkspace({
           }
         >
           <SiteActivitySection personId={idNum} personEmails={personEmails} assignedBroker={card.assignedBroker} />
+        </Suspense>
+
+        {/* The market report she gets, its controls, and every report sent
+            (Matt 2026-09-29): the same report and controls she has. */}
+        <Suspense
+          fallback={
+            <section aria-label="Market report">
+              <SectionHead>Market report</SectionHead>
+              <div className="av2-sysnote" style={{ padding: 12 }}>Loading market report…</div>
+            </section>
+          }
+        >
+          <MarketReportSection personId={idNum} returnTo={`/admin/people/${idNum}`} />
         </Suspense>
 
       </>
