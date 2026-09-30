@@ -305,7 +305,9 @@
   position: relative;
   display: block;
   width: 100%;
-  height: var(--v3-rule-weight-section);
+  /* A bar thick enough to compare, not a rule (2026-09-29: at 2px the
+     resorts' 22 and 101 read as the same dash). */
+  height: var(--v3-space-xs);
   background: var(--v3-hairline);
 }
 
