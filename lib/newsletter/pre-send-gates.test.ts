@@ -51,6 +51,27 @@ describe('R-2 checkCitations', () => {
     expect(bad.ok).toBe(false)
   })
 
+  it('reads a count with a thousands separator as the whole number, never its tail', () => {
+    const body = '<p>1,261 homes for sale against 1,882 sales over the past six months</p>'
+    expect(checkCitations(body, [cite(1261), cite(1882)]).ok).toBe(true)
+    // Before the fix these were read as 261 and 882: a correct trace failed and
+    // a trace of the tails passed.
+    const tails = checkCitations(body, [cite(261), cite(882)])
+    expect(tails.ok).toBe(false)
+    expect(tails.failures).toContain('No citation for "1,261 homes for sale" (inventory count)')
+    expect(tails.failures).toContain('No citation for "1,882 sales" (inventory count)')
+    expect(checkCitations('<p>on the market 1,005 days</p>', [cite(1005)]).ok).toBe(true)
+  })
+
+  it('checks a verdict label the same way on every call (no global-regex state)', () => {
+    const body = `<b>BALANCED</b>`
+    for (let i = 0; i < 4; i++) {
+      const r = checkCitations(body, [cite('sellers')])
+      expect(r.ok).toBe(false)
+      expect(r.failures[0]).toContain('BALANCED')
+    }
+  })
+
   it('ignores prose numerals, event dates, and phone digits', () => {
     const body = `<p>Across the 6 cities we cover, no two are the same market.</p>
       <div>JUN 4-8 · BEND</div>

@@ -55,7 +55,8 @@ vi.mock('@/lib/data', () => ({
 let personRow: unknown = null
 let subRow: unknown = null
 let sentNewsletterId: string | null = null
-let draftNewsletterId: string | null = null
+/** Drafts newest first, as the fallback query reads them. */
+let draftRows: Array<{ id: string; created_by: string | null }> = []
 const insertSpy = vi.fn()
 function makeSb() {
   let table = ''
@@ -70,12 +71,16 @@ function makeSb() {
     maybeSingle: () => {
       if (table === 'crm_people') return Promise.resolve({ data: personRow })
       if (table === 'newsletter_subscribers') return Promise.resolve({ data: subRow })
-      if (table === 'newsletters') {
-        const id = statusFilter === 'sent' ? sentNewsletterId : draftNewsletterId
-        return Promise.resolve({ data: id ? { id } : null })
+      if (table === 'newsletters' && statusFilter === 'sent') {
+        return Promise.resolve({ data: sentNewsletterId ? { id: sentNewsletterId } : null })
       }
+      // A single-row draft read gets the newest draft, whoever wrote it.
+      if (table === 'newsletters' && statusFilter === 'draft') return Promise.resolve({ data: draftRows[0] ?? null })
       return Promise.resolve({ data: null })
     },
+    // The draft fallback awaits the list itself (no maybeSingle).
+    then: (resolve: (v: unknown) => unknown) =>
+      resolve({ data: table === 'newsletters' && statusFilter === 'draft' ? draftRows : [] }),
   }
   return {
     from: (t: string) => { table = t; statusFilter = ''; return builder },
@@ -91,7 +96,7 @@ afterEach(() => {
   personRow = null
   subRow = null
   sentNewsletterId = null
-  draftNewsletterId = null
+  draftRows = []
 })
 
 describe('sendNewsletterToContactAction', () => {
@@ -120,10 +125,44 @@ describe('sendNewsletterToContactAction', () => {
     personRow = { id: 5, fub_legacy_id: 1, emails: [{ value: 'a@b.com', isPrimary: 1 }], name: 'A', assigned_broker: 'matt' }
     isSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
     sentNewsletterId = null
-    draftNewsletterId = null
+    draftRows = []
     const r = await sendNewsletterToContactAction(5)
     expect(r.ok).toBe(false)
     if (!r.ok) expect(r.error).toBe('No newsletter is ready to send')
+  })
+
+  it('never sends a draft a cron wrote for Matt to approve', async () => {
+    getCrmAccess.mockResolvedValue({ email: 'paul@ryan-realty.com', role: 'broker', brokerSlug: 'paul' })
+    requirePersonInScope.mockResolvedValue({ ok: true })
+    personRow = { id: 5, fub_legacy_id: 1, emails: [{ value: 'a@b.com', isPrimary: 1 }], name: 'A', assigned_broker: 'paul' }
+    isSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
+    draftRows = [
+      { id: 'edition-draft', created_by: 'cron:market-report-edition:2026-08' },
+      { id: 'brief-draft', created_by: 'cron:newsletter-monthly-draft' },
+    ]
+    const r = await sendNewsletterToContactAction(5)
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.error).toBe('No newsletter is ready to send')
+    expect(getNewsletter).not.toHaveBeenCalled()
+    expect(sendEmail).not.toHaveBeenCalled()
+  })
+
+  it('falls back past the system drafts to the newest draft a person wrote', async () => {
+    getCrmAccess.mockResolvedValue({ email: 'matt@ryan-realty.com', role: 'superuser', brokerSlug: 'matt' })
+    requirePersonInScope.mockResolvedValue({ ok: true })
+    personRow = { id: 5, fub_legacy_id: 42, emails: [{ value: 'a@b.com', isPrimary: 1 }], name: 'A', assigned_broker: 'matt' }
+    isSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
+    subRow = { id: 'sub-1', status: 'active', unsubscribe_token: 'tok' }
+    draftRows = [
+      { id: 'edition-draft', created_by: 'cron:market-report-edition:2026-08' },
+      { id: 'matt-draft', created_by: 'matt@ryan-realty.com' },
+    ]
+    getNewsletter.mockResolvedValue({ id: 'matt-draft', subject: 'A note from Matt', preview_text: null, body_html: '<p>hi</p>', body_text: null })
+    sendEmail.mockResolvedValue({ id: 'm1' })
+    const r = await sendNewsletterToContactAction(5)
+    expect(r.ok).toBe(true)
+    expect(getNewsletter).toHaveBeenCalledWith('matt-draft')
+    expect(sendEmail).toHaveBeenCalledTimes(1)
   })
 
   it('sends to exactly one contact, records tracking, and logs to the timeline', async () => {

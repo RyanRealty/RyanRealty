@@ -313,6 +313,8 @@ export async function createNewsletterDraft(input: {
   body_text?: string | null
   audience?: string
   created_by?: string | null
+  /** The §0 trace, written with the row so a draft never exists without it. */
+  citations?: NewsletterCitationEntry[]
 }): Promise<{ ok: boolean; id?: string; error?: string }> {
   const sb = createServiceClient()
   const { data, error } = await sb
@@ -324,6 +326,7 @@ export async function createNewsletterDraft(input: {
       body_text: input.body_text ?? null,
       audience: input.audience ?? 'all',
       created_by: input.created_by ?? null,
+      ...(input.citations ? { citations: input.citations } : {}),
     })
     .select('id')
     .maybeSingle()

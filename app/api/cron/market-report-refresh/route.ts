@@ -14,6 +14,9 @@
  *   2. refreshReportWindow over the same 13 months (lib/market-report/pipeline.ts):
  *      sale facts pruned and refreshed, on-market episodes rebuilt, report
  *      attributes and compact copies refreshed, every period recomputed.
+ *   3. The backstop for the newest edition's email draft
+ *      (lib/market-report/edition-email-draft.ts): written for Matt's OK once
+ *      that month is published, if the publish run did not write it.
  *
  * Any repair is logged in the response; more than REPAIR_ALERT_AT repairs in one
  * run means the delta sync is losing closings again, and queues ONE deduped ops
@@ -28,6 +31,7 @@ import { NextResponse } from 'next/server'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { queueBrokerHealthAlert } from '@/lib/crm/broker-alerts'
 import { addMonths } from '@/lib/market-report/format'
+import { draftEditionEmailAndTell } from '@/lib/market-report/edition-email-draft'
 import { lastCompleteMonth, refreshReportWindow } from '@/lib/market-report/pipeline'
 import { reconcileClosings } from '@/lib/sync/closingsReconcile'
 
@@ -99,6 +103,12 @@ export async function GET(request: Request) {
       log: say,
     })
 
+    // Backstop for the month's email draft (Matt 2026-09-30, "Draft it for my
+    // OK"): once the newest month is published, it has its draft, even if the
+    // publish run's own draft step failed. Never throws; a no-op otherwise.
+    const email = await draftEditionEmailAndTell(lastMonth)
+    say(`email draft ${lastMonth}: ${email.status}${'reason' in email ? ` (${email.reason})` : ''}`)
+
     return NextResponse.json({
       ok: refreshed.periodErrors.length === 0,
       window: { from: fromMonth, to: lastMonth },
@@ -113,6 +123,7 @@ export async function GET(request: Request) {
         notInSpark: recon.notInSpark,
       },
       refreshed,
+      email,
       log,
     })
   } catch (err) {

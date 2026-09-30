@@ -10,8 +10,10 @@ export const maxDuration = 300
 /**
  * GET /api/cron/refresh-sale-pricing-facts
  *
- * Incremental drain of sale_pricing_facts (all years, Central Oregon closed A)
- * plus a rebuild of pricing_market_index / pricing_subdivision_cells.
+ * Incremental drain of sale_pricing_facts (all years, Central Oregon closed A),
+ * a sweep that drops comps whose listing left the filter
+ * (prune_sale_pricing_facts_batch), plus a rebuild of pricing_market_index /
+ * pricing_subdivision_cells.
  * Schedule: every 6 hours via vercel.json.
  */
 export async function GET(request: Request) {
@@ -41,6 +43,28 @@ export async function GET(request: Request) {
     upserted += Number(data?.upserted ?? 0)
     if (data?.done) {
       done = true
+      break
+    }
+  }
+  // The refresh above only upserts. A comp whose listing later left the filter
+  // (deleted because the MLS removed the sale, back to Pending, re-typed) stays
+  // until this sweep drops it; 3 x 20,000 keys a run covers the ~150,000-row
+  // table about every 18 hours. Fail closed like every step here.
+  const pruned = { deleted: 0, scanned: 0, keys: [] as string[], done: false }
+  for (let i = 0; i < 3; i++) {
+    const { data: prune, error: pruneErr } = await supabase.rpc('prune_sale_pricing_facts_batch', {
+      p_limit: 20000,
+      p_job: 'sale_pricing_facts_prune',
+    })
+    if (pruneErr) {
+      console.error('[refresh-sale-pricing-facts] prune', pruneErr.message)
+      return NextResponse.json({ ok: false, error: pruneErr.message, upserted }, { status: 500 })
+    }
+    pruned.deleted += Number(prune?.deleted ?? 0)
+    pruned.scanned += Number(prune?.scanned ?? 0)
+    if (Array.isArray(prune?.keys)) pruned.keys.push(...prune.keys.map(String))
+    if (prune?.done) {
+      pruned.done = true
       break
     }
   }
@@ -214,6 +238,7 @@ export async function GET(request: Request) {
   return NextResponse.json({
     ok: true,
     upserted,
+    pruned,
     concessionsUpdated,
     newConstructionStamped,
     waterReclassUpdated,

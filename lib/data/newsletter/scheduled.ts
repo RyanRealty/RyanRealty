@@ -69,3 +69,23 @@ export async function findNewsletterIdBySubject(subject: string): Promise<string
     .maybeSingle()
   return ((data as { id: string } | null)?.id) ?? null
 }
+
+/**
+ * Any-status lookup by producer marker (created_by, which no admin form edits,
+ * unlike the subject). The monthly market report email's idempotency check:
+ * one draft per edition month, whatever became of it. THROWS on a failed read:
+ * "none" would draft the month a second time.
+ */
+export async function findNewsletterByCreatedBy(createdBy: string): Promise<{ id: string; status: string } | null> {
+  const sb = createServiceClient()
+  const { data, error } = await sb
+    .from('newsletters')
+    .select('id,status')
+    .eq('created_by', createdBy)
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle()
+  if (error) throw new Error(`findNewsletterByCreatedBy: ${error.message}`)
+  const row = data as { id: string; status: string } | null
+  return row ? { id: row.id, status: row.status } : null
+}

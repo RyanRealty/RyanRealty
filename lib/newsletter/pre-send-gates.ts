@@ -69,11 +69,21 @@ function citedStrings(citations: NewsletterCitationEntry[]): Set<string> {
   return out
 }
 
+// No /g flag: these are only ever .test()ed, and a module-level global regex
+// keeps lastIndex between calls, so the second body checked in a warm process
+// could start past its label and skip the check.
 const VERDICT_LABELS: Array<{ pattern: RegExp; value: string; label: string }> = [
-  { pattern: /SELLER'S/g, value: 'sellers', label: "SELLER'S verdict" },
-  { pattern: /BUYER'S/g, value: 'buyers', label: "BUYER'S verdict" },
-  { pattern: /BALANCED/g, value: 'balanced', label: 'BALANCED verdict' },
+  { pattern: /SELLER'S/, value: 'sellers', label: "SELLER'S verdict" },
+  { pattern: /BUYER'S/, value: 'buyers', label: "BUYER'S verdict" },
+  { pattern: /BALANCED/, value: 'balanced', label: 'BALANCED verdict' },
 ]
+
+/**
+ * A whole number as printed, thousands separators allowed ("1,261"), never a
+ * tail of a longer one: without the lookbehind "1,261 homes for sale" was read
+ * as 261 and a correct citation of 1,261 failed.
+ */
+const WHOLE = String.raw`(?<![\d,.])(\d{1,3}(?:,\d{3})+|\d+)`
 
 /**
  * R-2 pure checker: every stat token in bodyHtml must trace to a citation.
@@ -112,14 +122,17 @@ export function checkCitations(bodyHtml: string, citations: NewsletterCitationEn
   // Percents: 2.1% or 12%
   scan(/\b\d+(?:\.\d+)?%/g, (m) => `"${m[0]}" (percent)`, (m) => toNumber(m[0]), { tolerance: 0.05 })
   // Day counts: 38 days
-  scan(/\b(\d{1,4})\s+days?\b/gi, (m) => `"${m[0]}" (day count)`, (m) => Number(m[1]))
+  scan(new RegExp(String.raw`${WHOLE}\s+days?\b`, 'gi'), (m) => `"${m[0]}" (day count)`, (m) => toNumber(m[1]!))
   // Months of supply: 4.3 months
   scan(/\b(\d{1,2}(?:\.\d+)?)\s+months?\b/gi, (m) => `"${m[0]}" (months of supply)`, (m) => Number(m[1]), { tolerance: 0.05 })
-  // Labeled inventory counts: 16 homes for sale · 142 active listings · 188 sales
+  // Labeled inventory counts: 16 homes for sale · 142 active listings · 1,882 sales
   scan(
-    /\b(\d{1,6})\s+(?:homes?\s+for\s+sale|for\s+sale|active\s+listings?|homes?\s+sold|closed\s+sales|sales|listings)\b/gi,
+    new RegExp(
+      String.raw`${WHOLE}\s+(?:homes?\s+for\s+sale|for\s+sale|active\s+listings?|homes?\s+sold|closed\s+sales|sales|listings)\b`,
+      'gi',
+    ),
     (m) => `"${m[0].trim()}" (inventory count)`,
-    (m) => Number(m[1]),
+    (m) => toNumber(m[1]!),
   )
 
   // Market-verdict pills — each label used must trace to a verdict citation.

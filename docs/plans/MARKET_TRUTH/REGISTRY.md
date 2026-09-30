@@ -297,6 +297,15 @@ holds; these are the report's additional predicates. Definition id on every row:
   (`lib/sync/closingsReconcile.ts`) over the trailing 13 months, then refreshes the store and
   recomputes those months. `/api/cron/market-report-publish` (the 8th) publishes the month that
   ended. An edition is frozen when it publishes; its payload and citations are stored with it.
+- **The monthly email (Matt 2026-09-30, "Draft it for my OK").** When the newest month publishes,
+  `lib/market-report/edition-email-draft.ts` writes its email as a `newsletters` DRAFT
+  (`created_by` `cron:market-report-edition:<YYYY-MM>`, one per month, unique index
+  `20260930130000`) and texts Matt the `/admin/newsletters/<id>` link; the daily refresh is the
+  backstop. The email prints only the edition's frozen figures, each cited in the units printed,
+  and must pass the R-2 figure check before the draft is written. Nothing goes to anyone until
+  Matt approves that send; the CRM one-click send skips a cron's drafts
+  (`lib/newsletter/auto-draft.ts`). The site's Market menu links the archive directly (Matt
+  2026-09-30, "Yes, add the link").
 
 **Closings drift, found 2026-09-25.** Across the whole feed (every property type, every city Spark
 serves), Spark held 1,093 closings from January 2024 to September 2026 that our `listings` copy
@@ -330,4 +339,15 @@ reconciliation). `prune_market_fact_sale` now drops sale facts whose listing is 
    (unpublishable, migration `20260925060000`); a key Spark serves again is released. Seeded with
    the three found on 2026-09-25 (15714 Tumble Weed Turn, Sisters; 18581 Couch Market, Bend; 717
    Larch, Redmond). Engines that read `listings` directly rather than `market_fact_sale` (the
-   older `market_stats_cache`, the CMA's `sale_pricing_facts`) do not read the table yet.
+   older `market_stats_cache`, the CMA's `sale_pricing_facts`, 29 paths in all) do not read the
+   table, so on 2026-09-30 Matt ruled the three **deleted from our copy** ("Yes, delete them
+   everywhere"): each whole row went to `listing_mls_repair_log` first (ids 3634 to 3636, source
+   `absent-from-mls-delete`; undo = re-insert `before_row`), then the `listings` rows and their
+   `market_fact_listing_span` rows were deleted and the report refresh pruned the three sale
+   facts. The CMA's comparable-sales table (`sale_pricing_facts`) only ever upserted, so it still
+   held them; `prune_sale_pricing_facts_batch` (migration `20260930120000`, now in the 6-hourly
+   pricing cron) removed them and one Redmond sale the MLS had moved back to Pending, the only
+   four stale rows in the whole table. 717 Larch now counts once, under the number the MLS
+   re-entered it as (220220138). After the deletion the trailing 13 months matched Spark
+   exactly: 14,461 closings, 0 drifted, 0 absent. The three stay in `market_listing_absent_from_mls`, so if the delta sync ever brought
+   one back, Market Truth would still leave it out.
