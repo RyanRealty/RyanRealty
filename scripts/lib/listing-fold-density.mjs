@@ -15,8 +15,19 @@ import { join } from 'node:path'
 export const LISTING_FOLD_DENSITY_GATE = 'ci:listing-fold-density'
 export const LISTING_FOLD_DENSITY_SCRIPT = 'scripts/check-listing-fold-density.mjs'
 
+/*
+ * 2026-09-25 (Matt, a phone screenshot of 61390 Merriewood Court: "I hate all
+ * the wasted space"). The 2026-09-19 lock required the phone frame to be
+ * min(62dvh, 28rem) tall, which at 375 is a 448px navy box around a 250px
+ * photograph: 99px of empty navy above it and 99px below. That rule was the
+ * defect. The phone frame is now the photograph's shape (aspect-ratio, cover
+ * fit), the media tabs ride in the strip row instead of on the still's
+ * corner marks, the phone crumb is one navy line above the photo, the phone
+ * H1 really is display-2, and the price prints once. Desktop keeps the
+ * viewport-tall well (mosaicHeightUsesViewport).
+ */
 export const FOLD_LOCK = Object.freeze({
-  lockedAt: '2026-09-19',
+  lockedAt: '2026-09-25',
   crumbCollapseAt: 3,
   crumbBelowNavPadToken: '--v3-space-2xs',
   crumbOverlayOnListing: true,
@@ -26,6 +37,11 @@ export const FOLD_LOCK = Object.freeze({
   mosaicWell: 'navy',
   stripWell: 'navy',
   mosaicHeightUsesViewport: true,
+  phoneFrameAspect: '3 / 2',
+  phoneFrameFit: 'cover',
+  phoneTabsInStrip: true,
+  phoneCrumbInFlow: true,
+  onePrice: true,
   shellPadTopToken: '--v3-space-xs',
   phoneShellPadTop: '0',
   phoneFacePadTop: '0',
@@ -43,6 +59,8 @@ const PATHS = Object.freeze({
   page: 'app/listing/[listingKey]/page.tsx',
   listingCss: 'components/site/listing-detail/listing-detail.css',
   priceCta: 'components/site/listing-detail/PriceCtaStrip.tsx',
+  priceDrop: 'components/site/listing-detail/PriceDropMark.tsx',
+  hero: 'components/site/listing-detail/ListingHero.tsx',
   parity: 'design_system/ryan-realty/ui_kits/listing-detail/parity.json',
   cityPage: 'app/cities/[slug]/page.tsx',
   communityPage: 'app/communities/[slug]/page.tsx',
@@ -281,13 +299,27 @@ export function listingHeroFoldDensityProblems({ root = process.cwd(), files = {
         p.push(`${PATHS.listingCss}: .listing-strip well must be navy. A cream filmstrip under the mosaic is refuse.`)
       }
     }
-    if (
-      !/--v3-mosaic-h:\s*min\(calc\(100dvh/.test(css) ||
-      !/--v3-carousel-h:\s*min\(62dvh/.test(css)
-    ) {
+    if (!/--v3-mosaic-h:\s*min\(calc\(100dvh/.test(css)) {
       p.push(
-        `${PATHS.listingCss}: listing mosaic/carousel height must use the viewport (100dvh / 62dvh), not the short 28.75rem token. A postage-stamp aerial in navy gutters is refuse.`,
+        `${PATHS.listingCss}: the desktop listing well must use the viewport (100dvh), not the short 28.75rem token. A postage-stamp aerial in navy gutters is refuse.`,
       )
+    }
+    // Matt 2026-09-25: the phone frame is the photograph's shape, never a
+    // fixed-height navy box with the still letterboxed inside it.
+    const media = cssBlock(css, '.listing-frame__media')
+    const frameAspectRe = /aspect-ratio:\s*var\(--listing-frame-aspect,\s*3 \/ 2\)/
+    if (!media || !frameAspectRe.test(media) || /(?:^|[;\s])height:\s*var\(--v3-carousel-h\)/.test(media)) {
+      p.push(
+        `${PATHS.listingCss}: phone .listing-frame__media must be aspect-ratio: var(--listing-frame-aspect, ${FOLD_LOCK.phoneFrameAspect}), not a fixed height. A 448px navy box around a 250px photo is the "wasted space" Matt refused 2026-09-25.`,
+      )
+    }
+    if (!/@media \(max-width: 63\.99rem\)\s*\{\s*\.listing-mosaic__slide img\s*\{\s*object-fit:\s*cover/.test(css)) {
+      p.push(
+        `${PATHS.listingCss}: below 64rem the still must cover the frame (object-fit: ${FOLD_LOCK.phoneFrameFit}). Contain in a phone frame is a letterbox.`,
+      )
+    }
+    if (!/@media \(min-width: 64rem\)\s*\{[\s\S]{0,160}\.listing-frame__media\s*\{\s*height:\s*var\(--v3-mosaic-h\);\s*aspect-ratio:\s*auto;/.test(css)) {
+      p.push(`${PATHS.listingCss}: at 64rem and up the frame must stay the viewport-tall well (height: var(--v3-mosaic-h); aspect-ratio: auto).`)
     }
     const slides = cssBlocks(css, '.listing-mosaic__slide')
     const slideHasZero = slides.some((b) => /padding:\s*0/.test(b))
@@ -304,11 +336,30 @@ export function listingHeroFoldDensityProblems({ root = process.cwd(), files = {
     if (/\.listing-hero-bleed\s*\{[^}]*padding-top\s*:\s*var\(--v3-space-(?:md|lg|xl)/.test(css)) {
       p.push(`${PATHS.listingCss}: listing-hero-bleed must not grow vertical cream.`)
     }
-    if (!/@media \(max-width: 40rem\)\s*\{\s*\.listing-frame__tabs[\s\S]{0,120}bottom:\s*0/.test(css)) {
-      p.push(`${PATHS.listingCss}: phone Photos/Map tabs must sit flush on the strip (bottom: 0).`)
+    // Matt 2026-09-25: one 44px row of media controls on a phone, off the
+    // still (its corner marks), the counter in Jax's lane at the right edge.
+    if (!/@media \(max-width: 63\.99rem\)[\s\S]{0,900}\.listing-strip > \.listing-frame__tabs\s*\{\s*position:\s*static/.test(css)) {
+      p.push(`${PATHS.listingCss}: below 64rem the media tabs must ride in the strip row (.listing-strip > .listing-frame__tabs position: static), not on the photograph.`)
     }
-    if (!/@media \(max-width: 40rem\)\s*\{\s*\.listing-ask[\s\S]{0,80}--v3-size-display-2/.test(css)) {
-      p.push(`${PATHS.listingCss}: phone listing-ask must use display-2, not display-1 air.`)
+    if (!/\.listing-strip__counter\s*\{[^}]*min-width:\s*var\(--v3-dog-clear\)/.test(css)) {
+      p.push(`${PATHS.listingCss}: the phone strip counter must hold Jax's lane (min-width: var(--v3-dog-clear)) so no control sits under him.`)
+    }
+    if (!/\.listing-strip \.listing-frame__tabs \[role='tab'\]\s*\{\s*min-height:\s*var\(--v3-tap\)/.test(css)) {
+      p.push(`${PATHS.listingCss}: phone media tabs must be 44px targets (min-height: var(--v3-tap)).`)
+    }
+    const hero = readRel(root, PATHS.hero, files.hero)
+    if (hero != null) {
+      const stripAt = hero.indexOf('className="listing-strip"')
+      const tabsAt = hero.indexOf('{mediaTabs}')
+      if (stripAt < 0 || tabsAt < stripAt) {
+        p.push(`${PATHS.hero}: the media tabs must render inside .listing-strip ({mediaTabs} after the strip opens).`)
+      }
+    }
+    if (!/@media \(max-width: 63\.99rem\)[\s\S]{0,1200}\.listing-detail > \.v3\.v3-breadcrumb\.v3-breadcrumb--overlay\s*\{\s*position:\s*relative/.test(css)) {
+      p.push(`${PATHS.listingCss}: below 64rem the listing crumb must be one line above the photograph (position: relative), not a wash over the still's top-left mark.`)
+    }
+    if (!/@media \(max-width: 40rem\)\s*\{\s*h1\.listing-ask[\s\S]{0,80}--v3-size-display-2/.test(css)) {
+      p.push(`${PATHS.listingCss}: phone h1.listing-ask must use display-2 (a bare .listing-ask loses to the desktop h1.listing-ask rule and draws display-1).`)
     }
     const askType = cssBlocks(css, '.listing-ask').find((b) => /font-family|font-synthesis/.test(b))
     if (!askType || !/font-weight:\s*400/.test(askType)) {
@@ -363,6 +414,13 @@ export function listingHeroFoldDensityProblems({ root = process.cwd(), files = {
     if (!/\.listing-face__facts[\s\S]{0,80}margin-top:\s*0/.test(css)) {
       p.push(`${PATHS.listingCss}: beds line (.listing-face__facts) must not grow cream (margin-top: 0).`)
     }
+  }
+
+  // Matt 2026-09-25: the headline price prints once. The cut line under it
+  // says "Was" and the cut, never the new price a second time.
+  const dropSrc = readRel(root, PATHS.priceDrop, files.priceDrop)
+  if (dropSrc != null && (/listing-drop__to/.test(dropSrc) || />\s*\{to\}|\{to\}\s*</.test(dropSrc))) {
+    p.push(`${PATHS.priceDrop}: the cut line must not print the new price; it is the headline directly above ("Was $X · Cut $Y").`)
   }
 
   const stripSrc = readRel(root, 'components/site/listing-detail/PriceCtaStrip.tsx', files.priceCta)
@@ -432,6 +490,14 @@ export function listingHeroFoldDensityProblems({ root = process.cwd(), files = {
       }
       if (lock.phoneHeroToFaceGapCancel !== true) {
         p.push(`${PATHS.parity}: foldDensity.phoneHeroToFaceGapCancel must stay true.`)
+      }
+      if (lock.phoneFrameAspect !== FOLD_LOCK.phoneFrameAspect || lock.phoneFrameFit !== FOLD_LOCK.phoneFrameFit) {
+        p.push(
+          `${PATHS.parity}: foldDensity.phoneFrameAspect / phoneFrameFit must stay ${FOLD_LOCK.phoneFrameAspect} / ${FOLD_LOCK.phoneFrameFit} (Matt 2026-09-25).`,
+        )
+      }
+      for (const key of ['phoneTabsInStrip', 'phoneCrumbInFlow', 'onePrice']) {
+        if (lock[key] !== true) p.push(`${PATHS.parity}: foldDensity.${key} must stay true (Matt 2026-09-25).`)
       }
     }
   }

@@ -11,10 +11,14 @@
  * 308s there. Do not invent a second live URL, and do not paint "Juniper
  * Preserve" on a `/communities/pronghorn` href (or the reverse).
  *
- * Edge-safe: committed JSON + string work only.
+ * Edge-safe: committed JSON + string work only. Reads the lite registry (naming
+ * fields only, data/resort-communities.lite.json), NOT the ~50 KB source
+ * registry: this module is reachable from client components, and the source
+ * JSON was being emitted into 26 client chunks. Regenerate the lite file with
+ * scripts/build-resort-communities-lite.mjs after editing the source.
  */
 
-import registry from '@/data/resort-communities.json' assert { type: 'json' }
+import registry from '@/data/resort-communities.lite.json' assert { type: 'json' }
 
 export type CommunityNamingEntry = {
   slug: string

@@ -103,8 +103,12 @@ describe('resolvePlaceContextFromListing', () => {
       subdivisionSlug: 'crr-1',
     })
     expect(ctx.subdivision).toBeNull()
-    expect(ctx.identityLine).toBe('Bend')
+    // 'Crr 1' is a registry spelling of Crooked River Ranch (aliases added
+    // 2026-09-25), so the listing climbs to the community, named in full;
+    // the abbreviation itself never prints.
+    expect(ctx.identityLine).toBe('Crooked River Ranch · Bend')
     expect(ctx.breadcrumb.map((b) => b.label).join(' ')).not.toMatch(/Crr/i)
+    expect(ctx.breadcrumb.some((b) => b.type === 'community' && b.slug === 'crooked-river-ranch')).toBe(true)
   })
 
   it('keeps Forked Horn Butte when that is the listing plat', () => {

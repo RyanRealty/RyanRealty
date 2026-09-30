@@ -6,18 +6,15 @@
  * listedCount is the length of that set, or omitted.
  */
 import { formatCount } from '@/lib/format/count'
+import { getCommunityPopulation } from '@/lib/place/community-population'
 import { placeHomesCountLabel } from '@/lib/place/place-count-label'
-import { getSubdivisionMatchNames } from '@/lib/subdivision-aliases'
 import {
   PLACE_BUYER_GROUP_HEADING,
   PLACE_BUYER_GROUPS,
   placeBuyerGroup,
   type PlaceBuyerGroup,
 } from '@/lib/place/place-type-style'
-import {
-  loadPlaceStockTiles,
-  placeStockSectionsFromTiles,
-} from '@/lib/place/place-inventory-stock'
+import { placeStockSectionsFromTiles } from '@/lib/place/place-inventory-stock'
 
 export type { PlaceBuyerGroup }
 
@@ -113,25 +110,21 @@ export function communityStockMixSentence(types: readonly PlaceBuyerGroup[]): st
 }
 
 /**
- * The listed set generateMetadata and the Field type index must agree with.
- * Same DAL as the page body: boundary keys plus subdivision aliases, every
- * publicly active type. A timeout at the caller must omit the count.
+ * The listed set generateMetadata and the Field type index must agree with:
+ * the community's for-sale population, the one set the page body lists and
+ * the map draws (lib/place/community-population.ts). Every publicly active
+ * type. A population that did not read completely THROWS, so the caller's
+ * guarded read omits the count instead of printing a short one; a timeout at
+ * the caller omits it the same way.
  */
 export async function loadCommunitySerpStock(input: {
   slug: string
-  city: string
-  subdivision: string
-  childAliases?: readonly string[]
 }): Promise<{ listedCount: number; types: PlaceBuyerGroup[] }> {
-  const tiles = await loadPlaceStockTiles({
-    subdivisionNames: [
-      ...getSubdivisionMatchNames(input.subdivision),
-      ...(input.childAliases ?? []),
-    ],
-    city: input.city,
-    boundary: { geoType: 'neighborhood', geoSlug: input.slug },
-  })
-  const rows = placeStockSectionsFromTiles(tiles).flatMap((section) => section.rows)
+  const population = await getCommunityPopulation(input.slug)
+  if (!population || !population.complete) {
+    throw new Error(`[loadCommunitySerpStock] ${input.slug}: population read did not complete`)
+  }
+  const rows = placeStockSectionsFromTiles(population.tiles).flatMap((section) => section.rows)
   return {
     listedCount: rows.length,
     types: communityStockTypesFromListings(rows),

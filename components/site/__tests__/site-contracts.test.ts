@@ -515,11 +515,15 @@ describe('design directive contracts', () => {
 
   it('D96 — community resort count + listings are ALIAS-AWARE (Widgi shows ~48, not 0) (§0)', () => {
     const src = readSrc('app/communities/[slug]/page.tsx')
+    // The page lists its for-sale population (2026-09-25); the population owns
+    // the alias-aware wiring (lib/place/community-population.ts).
+    expect(src).toMatch(/getCommunityPopulation\(slug\)/)
+    const population = readSrc('lib/place/community-population.ts')
     // count matches the city ledger via the same alias-aware helper
-    expect(src).toMatch(/resortActiveSfrCounts\(citySlug, citySfrTiles\)/)
+    expect(population).toMatch(/resortActiveSfrCounts\(citySlug, citySfrTiles\)/)
     // the map/featured/ticker use the resort's alias-matched tiles, not the empty literal-name set
-    expect(src).toMatch(/resortTilesForSlug\(citySlug, resortSlug, citySfrTiles\)/)
-    expect(src).toMatch(/const useResortTiles = resortTiles\.length > 0/)
+    expect(population).toMatch(/resortTilesForSlug\(citySlug, resortSlug, citySfrTiles\)/)
+    expect(population).toMatch(/const useResortTiles = resortTiles\.length > 0/)
     // A compound resort slug still canonicalizes to the bare slug (no duplicate
     // undercounted page) — but NOT from the page body. A redirect thrown after
     // the loading.tsx boundary flushed served 200 with no <h1> for 91 of the 104
@@ -534,11 +538,17 @@ describe('design directive contracts', () => {
   })
 
   it('D97 — community page preserves boundary reliability (no oversized polygon / count)', () => {
+    // One trust rule (lib/communities/community-outline.ts) gates the map AND
+    // the homes list; the outline is the stored row keyed by the registry.
     const src = readSrc('app/communities/[slug]/page.tsx')
-    expect(src).toMatch(/UNRELIABLE_BOUNDARY_SLUGS/)
-    expect(src).toMatch(/isBoundaryReliable\(slug\)/)
-    expect(src).toMatch(/boundaryReliable/)
-    expect(src).toMatch(/resortBoundary \?\? \(boundaryReliable \? boundaryMapData\.polygon : null\)/)
+    expect(src).toMatch(/communityOutlineRef\(registryEntry\.slug\)/)
+    expect(src).toMatch(/const mapPolygon = population\.outline/)
+    const population = readSrc('lib/place/community-population.ts')
+    expect(population).toMatch(/communityOutlineRef\(registryEntry\.slug\)/)
+    expect(population).toMatch(/outlineRef\?\.trusted/)
+    const outline = readSrc('lib/communities/community-outline.ts')
+    expect(outline).toMatch(/boundary-sanity-baseline\.json/)
+    expect(outline).toMatch(/export function isCommunityOutlineTrusted/)
   })
 
   it('D104 — Field photo caps print price, beds/baths/sqft, and street', () => {

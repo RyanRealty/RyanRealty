@@ -73,8 +73,8 @@
     },
 
     {
-      "name": "loadPlaceStockTiles",
-      "section": "All-type active tiles for this community (boundary keys + subdivision aliases). Market HUD stays leftover SFR.",
+      "name": "getCommunityPopulation",
+      "section": "All-type active tiles for this community: THE one population the homes list, the Atlas's for-sale dots, the head's count and the Atlas dots route read (lib/place/community-population.ts). Recorded plats only (Matt 2026-09-25): inside the trusted outline, MLS names only where there is no outline. Market HUD stays leftover SFR.",
       "blocking": true
     },
     {
@@ -219,8 +219,9 @@
     "getGeoSnapshot": "geo_type='community', geoKey='<city>:<subdivision>' lowercase. The always-present fallback pair (count and median computed from one active set by the same view) and the JSON-LD's fallback stamp.",
     "getMarketPulse": "geo_type='neighborhood', geo_slug = the bare community slug. market_pulse_live carries no neighborhood rows today, so this is normally null and the page is built for that: it supplies months of supply and days to pending only when a row exists.",
     "getMarketStats": "geo_type='neighborhood', periodType='rolling_365d'. market_stats_cache. Median sale price, sold count, and median days on market \u2014 the level-2 Instrument's whole figure set and the DOM and sold-count FAQ answers.",
-    "getGeoBoundaryMapData": "listings_in_boundary + boundary_geojson. Supplies the in-boundary listing keys and the stored polygon. The keys are re-fetched as tiles with propertyType 'A' so the published count matches the label.",
-    "getResortBoundaryGeoJSON": "the county plat union. ALWAYS draws when present, even for a slug in the oversized-hull baseline, because the baseline gates only the STORED hull.",
+    "getCommunityPopulation": "lib/place/community-population.ts (2026-09-25). Reads getGeoBoundaryMapData on the stored outline keyed by the registry's durable slug (juniper-preserve reads pronghorn), only when the one trust rule allows it (lib/communities/community-outline.ts), then the listed tiles through loadPlaceStockTiles. The map and the homes list both consume it; its switch is COMMUNITY_FOR_SALE_SCOPE ('outline').",
+    "getGeoBoundaryMapData": "listings_in_boundary + boundary_geojson, read inside getCommunityPopulation on the TRUSTED stored outline only. Supplies the in-boundary listing keys and the polygon the map draws.",
+    "getResortBoundaryGeoJSON": "DELETED 2026-09-25. The county-plat LABEL union ('%broken top%' drew Tetherow into Broken Top) is replaced by the stored outline (getCommunityOutlineGeoJSON) for every caller.",
     "getListingTiles": "listing_tile_mv. Three shapes: by in-boundary listing keys, by city (then narrowed by MLS subdivision name), or replaced entirely by the alias-matched resort set. status 'active', propertyType 'A' in every shape.",
     "getCommunityListings": "app/actions/communities. The MLS subdivision-name listings, used to narrow the city pull when the stored hull is oversized or empty.",
     "fetchAllCityActiveSfr": "lib/kb/city-active-sfr. Uncapped active SFR tiles for every MLS city this community lists under (registry mls_cities), because Caldera lists under Bend and the registry-city-only pull once rendered 0 of its 31 real homes.",
