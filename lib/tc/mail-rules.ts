@@ -14,7 +14,7 @@
 
 import { BROKERS } from '@/lib/brand/contact'
 
-export const MAIL_RULES_VERSION = 'mail-rules-v4-2026-09-24'
+export const MAIL_RULES_VERSION = 'mail-rules-v4.1-2026-09-30'
 
 const HOUSE_DOMAINS = new Set(['ryan-realty.com', 'mail.ryan-realty.com'])
 
@@ -108,6 +108,13 @@ const TRANSACTION_SENDER_DOMAINS: readonly string[] = [
   'showingtime.com',
   'flexmls.com',
   'listtrac.com',
+  // The Central Oregon Association of REALTORS runs our MLS: a note to its
+  // help desk to set 363 SW Bluff Dr back to "coming soon" is the listing's
+  // business, not marketing that happens to say "coming soon". RMLS keeps our
+  // Sunstone listing's in-progress record ("scheduled to be deleted").
+  'coar.com',
+  'rmls.com',
+  'rmlsweb.com',
 ]
 
 /** Platforms that give every file its own inbound address ("BeaumontDrive2070260b4@skyslope.com"). */
@@ -305,6 +312,11 @@ export type ParsedDealAddress = {
   directional: string | null
   /** The word after the street name on the file ("house" in School House Rd), null when none. */
   next: string | null
+  /**
+   * A three-word name's last word ("redmond" in Old Bend Redmond Hwy), null
+   * when none: "Old Bend" alone is a Bend neighbourhood, not that highway.
+   */
+  third?: string | null
   city: string | null
 }
 
@@ -313,7 +325,7 @@ export function parseDealAddress(address: string, city?: string | null): ParsedD
   const first = String(address ?? '').split(',')[0]?.trim() ?? ''
   // A doubled directional ("2354 NW NW Drouillard", as SkySlope exports some) reads once.
   const m = first.match(
-    new RegExp(`^(\\d{2,6})\\s+(?:(${DIRECTIONAL})\\s+(?:\\2\\s+)?)?([a-z0-9][a-z0-9'-]*)(?:\\s+([a-z][a-z'-]*))?`, 'i'),
+    new RegExp(`^(\\d{2,6})\\s+(?:(${DIRECTIONAL})\\s+(?:\\2\\s+)?)?([a-z0-9][a-z0-9'-]*)(?:\\s+([a-z][a-z'-]*))?(?:\\s+([a-z][a-z'-]*))?`, 'i'),
   )
   if (!m) return null
   const cityPart = (city ?? String(address).split(',')[1] ?? '').trim().toLowerCase() || null
@@ -321,11 +333,14 @@ export function parseDealAddress(address: string, city?: string | null): ParsedD
   if (m[2] && m[2].length > 2 && STREET_SUFFIX_WORD.test(m[3])) {
     return { number: m[1], directional: null, street: m[2].toLowerCase(), next: m[3].toLowerCase(), city: cityPart }
   }
+  const next = m[4] ? m[4].toLowerCase() : null
+  const third = next && !STREET_SUFFIX_WORD.test(next) && m[5] && !STREET_SUFFIX_WORD.test(m[5]) ? m[5].toLowerCase() : null
   return {
     number: m[1],
     directional: m[2] ? shortDirectional(m[2]) : null,
     street: m[3].toLowerCase(),
-    next: m[4] ? m[4].toLowerCase() : null,
+    next,
+    third,
     city: cityPart,
   }
 }
@@ -365,7 +380,10 @@ export function mentionsDealStreet(text: string, parsed: ParsedDealAddress): boo
   }
   if (/^\d/.test(parsed.street) || !parsed.next || parsed.street.length < 4) return false
   // A two-word name ("School House") is also written as one ("Schoolhouse Rd.").
-  if (!STREET_SUFFIX_WORD.test(parsed.next)) return streetStandsAlone(new RegExp(`\\b${compoundRe(parsed.street, parsed.next)}\\b`, 'gi'), text, parsed)
+  if (!STREET_SUFFIX_WORD.test(parsed.next)) {
+    const third = parsed.third ? `\\s+${escapeRe(parsed.third)}` : ''
+    return streetStandsAlone(new RegExp(`\\b${compoundRe(parsed.street, parsed.next)}${third}\\b`, 'gi'), text, parsed)
+  }
   const next = SUFFIX_VARIANTS[parsed.next] ?? escapeRe(parsed.next)
   return streetStandsAlone(new RegExp(`\\b${splitRe(parsed.street)}\\s+(?:${next})\\b`, 'gi'), text, parsed)
 }
@@ -380,7 +398,11 @@ export function mentionsDealStreet(text: string, parsed: ParsedDealAddress): boo
 function streetStandsAlone(re: RegExp, text: string, parsed: ParsedDealAddress): boolean {
   for (const m of text.matchAll(re)) {
     const before = text.slice(Math.max(0, (m.index ?? 0) - 24), m.index ?? 0)
-    const num = before.match(new RegExp(`(?<![\\d$,.#/-])\\b(\\d{2,6})\\s+(?:${DIRECTIONAL}\\s+)?$`, 'i'))?.[1]
+    // A range ("936-946 NW Delaware", "936946 NW Delaware Rent Roll.pdf") is
+    // other house numbers too: the income property down the street, not 909.
+    const hit = before.match(new RegExp(`(?<![\\d$,.#/-])\\b(\\d{2,6})(?:\\s*[-–]\\s*(\\d{2,6}))?\\s+(?:${DIRECTIONAL}\\s+)?$`, 'i'))
+    // The number right before the street is the one that names it ("Unit 208 - 363 SW Bluff" is 363).
+    const num = hit ? (hit[2] ?? hit[1]) : undefined
     if (!num || nearHouseNumber(num, parsed.number)) return true
   }
   return false
@@ -419,7 +441,7 @@ const GENERIC_STREET_WORDS: ReadonlySet<string> = new Set([
  */
 export function bareStreetName(parsed: ParsedDealAddress): string | null {
   if (/^\d/.test(parsed.street)) return null
-  if (parsed.next && !STREET_SUFFIX_WORD.test(parsed.next)) return `${parsed.street} ${parsed.next}`
+  if (parsed.next && !STREET_SUFFIX_WORD.test(parsed.next)) return [parsed.street, parsed.next, parsed.third].filter(Boolean).join(' ')
   if (parsed.street.length < 4 || GENERIC_STREET_WORDS.has(parsed.street)) return null
   return parsed.street
 }
@@ -428,8 +450,9 @@ export function bareStreetName(parsed: ParsedDealAddress): string | null {
 export function mentionsBareStreet(text: string, parsed: ParsedDealAddress): boolean {
   const name = bareStreetName(parsed)
   if (!name) return false
-  const [first, second] = name.split(' ')
-  return streetStandsAlone(new RegExp(`\\b${second ? compoundRe(first, second) : splitRe(first)}\\b`, 'gi'), text, parsed)
+  const [first, second, third] = name.split(' ')
+  const re = second ? `${compoundRe(first, second)}${third ? `\\s+${escapeRe(third)}` : ''}` : splitRe(first)
+  return streetStandsAlone(new RegExp(`\\b${re}\\b`, 'gi'), text, parsed)
 }
 
 /**
@@ -822,6 +845,19 @@ function attachmentBlob(a: MailAttachmentFacts): string {
 }
 
 /**
+ * A counter offer, by its file name, or by what its text read as when its
+ * name does not call it the sale agreement itself. The 2026 Oregon sale
+ * agreement talks about counter offers, and the buyer's "PSA.pdf" in "Offer on
+ * Tumalo Reservoir" read as a Counter Offer: the offer would have been logged
+ * as their counter (the 2026-09-30 re-decide dry run).
+ */
+function isCounterDoc(a: MailAttachmentFacts): boolean {
+  const name = (a.name ?? '').replace(/[_.-]+/g, ' ')
+  if (COUNTER_NAME.test(name)) return true
+  return !SALE_AGREEMENT_NAME.test(name) && COUNTER_NAME.test((a.formName ?? '').replace(/[_.-]+/g, ' '))
+}
+
+/**
  * Oregon's Initial Agency Disclosure Pamphlet: every broker hands it to every
  * buyer or seller at first contact (OAR 863-015-0215), before there is any
  * property. It names no transaction; a buyer tour list carrying it is not
@@ -1038,18 +1074,25 @@ export function categorizeMail(input: {
   // Reminder" names a client and her address; it is no mail about her file).
   if (input.fromHouseSystem || SYSTEM_ALERT_SUBJECT.test(subject.trim()) || REMINDER_DIGEST_SUBJECT.test(subject)) return 'system_alert'
   const attachments = input.attachments ?? []
-  // Fully executed by its read, or by its file name ("… Fully Executed.pdf",
-  // SkySlope's "_X_" executed marker).
+  // Fully executed by its read, by its file name ("… Fully Executed.pdf",
+  // SkySlope's "_X_" executed marker), or by the subject announcing the
+  // contract with the agreement attached ("Congratulations! You're Under
+  // Contract! | 19496 Tumalo Reservoir Rd" carries the sale agreement and the
+  // counters that made it; DigiSign's stamps leave no signature in the text).
+  const underContract = /\bunder\s+contract\b|\bmutual(?:ly)?\s+accept/i.test(subject)
   const executedSale = attachments.find(
     (a) =>
       isSaleAgreementDoc(a) &&
-      (a.executionState === 'fully_executed' || /fully[\s_-]*(?:executed|signed)/i.test(a.name ?? '') || /(?:^|[\s_-])X_(?=[A-Z0-9])/.test(a.name ?? '')),
+      (a.executionState === 'fully_executed' ||
+        underContract ||
+        /fully[\s_-]*(?:executed|signed)/i.test(a.name ?? '') ||
+        /(?:^|[\s_-])X_(?=[A-Z0-9])/.test(a.name ?? '')),
   )
   if (executedSale) return 'executed_agreement'
   if (ESIGN_SUBJECT.test(subject)) return 'signing_notice'
   // A transaction form attached is never a listing alert.
   if (LISTING_ALERT_SUBJECT.test(subject) && !attachments.some(isTransactionFormAttachment)) return 'listing_alert'
-  if (attachments.some((a) => COUNTER_NAME.test(attachmentBlob(a))) || /counter[\s-]?offer|\bcounter\b/i.test(subject)) {
+  if (attachments.some(isCounterDoc) || /counter[\s-]?offer|\bcounter\b/i.test(subject)) {
     return 'counter'
   }
   if (attachments.some(isSaleAgreementDoc) || /\boffers?\b/i.test(subject)) {
@@ -1166,6 +1209,33 @@ export function dealMaybeOpenAt(deal: DealFacts, sentAt: string): boolean {
   return at >= first - 365 * DAY && at <= first
 }
 
+const isCancelledCycle = (c: DealCycleFacts): boolean => /cancel|dead|terminat|withdrawn|expired/i.test(c.status ?? '')
+
+/**
+ * Was every contract on this file over before this moment? A file whose
+ * contracts all died, with no listing of ours open then, is no longer the
+ * clients' purchase or sale: the clients' first purchase fell through on
+ * 2025-07-08, and their "Balance of Down Payment" a month later, and the
+ * loan officer's thanks in September, are the purchase that went on to close.
+ * Its own termination paperwork (a release, the refund) still finds it for
+ * 30 days. A file with no dated death is never over.
+ */
+function fileOverAt(deal: DealFacts, at: number, termination: boolean): boolean {
+  const sales = deal.cycles.filter((c) => c.kind === 'sale')
+  if (!sales.length || !sales.every(isCancelledCycle)) return false
+  const listingOpen = deal.cycles.some((c) => {
+    if (c.kind !== 'listing' || (c.listingDate == null && c.closeDate == null && c.deadDate == null)) return false
+    const w = cycleWindow(c)
+    return (w.start == null || at >= w.start) && (w.end == null || at <= w.end)
+  })
+  if (listingOpen) return false
+  const died = sales.map((c) => t(c.deadDate) ?? t(c.closeDate))
+  if (died.some((d) => d == null)) return false
+  const last = Math.max(...(died as number[]))
+  if (at <= last + DAY) return false
+  return !(termination && at <= last + TERMINATION_TAIL_DAYS * DAY)
+}
+
 /** "Pat Client" and "Patricia Client": the same last name, one first name the start of the other. */
 function looseSameName(a: string, b: string): boolean {
   const x = nameTokens(a)
@@ -1242,6 +1312,10 @@ function escrowShapeRe(escrow: string | null | undefined): RegExp | null {
  * The names on this cycle's contract and on no other cycle of the file (the
  * sellers of a relisted home are on every cycle; the buyers of each contract
  * are not). A full name in the message is strong; a last name alone is weak.
+ * One person under two spellings ("Pat" and "Patricia") is on both cycles:
+ * the clients who bought 3480 SW 45th in 2025 and sold it in 2026 pulled
+ * eleven messages of the 2026 escrow back to the 2025 purchase (the
+ * 2026-09-30 re-decide dry run).
  */
 function cycleNameScore(c: DealCycleFacts, cycles: readonly DealCycleFacts[], text: string): number {
   if (!text) return 0
@@ -1249,7 +1323,8 @@ function cycleNameScore(c: DealCycleFacts, cycles: readonly DealCycleFacts[], te
   const otherTokens = new Set(others.flatMap((o) => nameTokens(o)))
   let best = 0
   for (const name of [...(c.buyers ?? []), ...(c.sellers ?? [])]) {
-    if (others.some((o) => personNameMatches(o, name) || personNameMatches(name, o))) continue
+    // "Pat Client" on the 2025 purchase is "Patricia Client" selling it in 2026: one person, on both.
+    if (others.some((o) => personNameMatches(o, name) || personNameMatches(name, o) || looseSameName(o, name))) continue
     const toks = nameTokens(name)
     if (toks.length < 2) continue
     const first = escapeRe(toks[0])
@@ -1759,6 +1834,7 @@ export function decideMailFiling(input: {
   if (!located.length && clientFiles.length > 1 && (!thread || clientFiles.some((d) => d.dealId === thread.dealId))) {
     const scoreOf = (d: DealFacts) => scored.find((c) => c.dealId === d.dealId)?.score ?? W.party
     const at = t(facts.sentAt) ?? 0
+    const termination = isTerminationMail(facts)
     const onEmail = (facts.people ?? []).map((p) => p.name).filter((n): n is string => !!n)
     const peopleOf = (d: DealFacts) => [...(d.partyNames ?? []), ...(d.contactNames ?? [])]
     // The clients: the party names on more than one of these files.
@@ -1814,11 +1890,15 @@ export function decideMailFiling(input: {
         break
       }
       // A side word picks only the one file on that side: an investor's four
-      // purchases, or a purchase that fell through and the next, stay for a person.
+      // purchases stay for a person. A purchase that fell through before the
+      // email is over (fileOverAt): the side word names the one still going.
       const onSide = side ? clientFiles.filter((d) => fileSideAt(d, at, clientNames) === side) : []
-      if (side && onSide.length === 1) {
-        reasons.push(`our clients are on ${clientFiles.length} open files; ${label} is about their ${side}`)
-        return finish('filed', onSide[0].dealId, 'party', scoreOf(onSide[0]))
+      const going = onSide.length > 1 ? onSide.filter((d) => !fileOverAt(d, at, termination)) : onSide
+      if (side && going.length === 1) {
+        reasons.push(
+          `our clients are on ${clientFiles.length} open files; ${label} is about their ${side}${going.length < onSide.length ? ' (the other one on that side had died before it)' : ''}`,
+        )
+        return finish('filed', going[0].dealId, 'party', scoreOf(going[0]))
       }
       if (side || byPerson.length) break
     }

@@ -49,6 +49,15 @@ function roleFromLabel(raw: string): RecipientRole | null {
   return null
 }
 
+/**
+ * The form's own words about signing ("must be in writing, dated and signed by
+ * Buyer and Seller", "reviewed and signed by Buyer, Seller and Agent(s)") are
+ * printed on every Oregon sale agreement. They are not a signature. A real
+ * stamp reads "Signed by:" and a name.
+ */
+const FORM_SIGNED_BY_CLAUSE =
+  /\bsigned\s+by\s+(?:the\s+)?(?:buyers?|sellers?|both|all|each|agents?|brokers?|licensees?|part(?:y|ies))\b(?:(?:\s*,\s*|\s+(?:and|or|&)\s+|\s*,\s*(?:and|or)\s+)(?:the\s+)?(?:buyers?|sellers?|agents?(?:\s*\(s\))?|brokers?|licensees?|part(?:y|ies)))*/gi
+
 /** Roles that actually signed, from DigiSign / DocuSign text. Overlay-only stamps may be invisible — then this is empty, not a guess. */
 export function signedRolesFromPdfText(text: string | null | undefined): RecipientRole[] {
   if (!text?.trim()) return []
@@ -62,12 +71,18 @@ export function signedRolesFromPdfText(text: string | null | undefined): Recipie
       if (role) found.add(role)
     }
   }
-  const near = text.match(SIGNATURE_MARKERS)
+  // Without role lines, the stamps and the words near them decide, never the
+  // form's printed clause: a buyer's offer on the 2026 Oregon form, stamped
+  // "DigiSign Verified" on the buyer's initials, read as signed by both sides
+  // (the 2026-09-30 re-decide dry run: "Offer on Tumalo Reservoir" became a
+  // fully executed agreement, so no offer was logged from it).
+  const own = text.replace(FORM_SIGNED_BY_CLAUSE, ' ')
+  const near = own.match(SIGNATURE_MARKERS)
   if (near?.length && !found.size) {
-    if (/\bbuyer\s*agent\b/i.test(text)) found.add('BuyerAgent')
-    else if (/\bbuyer\b/i.test(text) && /signed\s+by[\s:].{0,80}buyer|\bbuyer\n/i.test(text)) found.add('Buyer')
-    if (/\bseller\s*agent\b|\blisting\s*agent\b/i.test(text)) found.add('SellerAgent')
-    else if (/\bseller\b/i.test(text) && /signed\s+by[\s:].{0,80}seller|\bseller\n/i.test(text)) found.add('Seller')
+    if (/\bbuyer\s*agent\b/i.test(own)) found.add('BuyerAgent')
+    else if (/\bbuyer\b/i.test(own) && /signed\s+by[\s:].{0,80}buyer|\bbuyer\n/i.test(own)) found.add('Buyer')
+    if (/\bseller\s*agent\b|\blisting\s*agent\b/i.test(own)) found.add('SellerAgent')
+    else if (/\bseller\b/i.test(own) && /signed\s+by[\s:].{0,80}seller|\bseller\n/i.test(own)) found.add('Seller')
   }
   return [...found]
 }

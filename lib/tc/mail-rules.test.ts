@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { queuedRowAfterRedecide, worthFullRead } from './mail-index'
+import { classifyFromFormAndText } from './execution-state'
 import {
   bareStreetName,
   categorizeMail,
@@ -2168,7 +2169,12 @@ describe('re-decide dry run: our clients on two files, the conversation and the 
     expect(d.dealId).toBe('client-sale')
   })
 
-  it('the down payment is the purchase, but two purchase files are still two: a person picks (1983a1a8a41c4150)', () => {
+  it('the down payment is the purchase; two purchases both still going are two: a person picks', () => {
+    // The first purchase is still in contract on the day: both are going.
+    const stillGoing: DealFacts = {
+      ...failedPurchase,
+      cycles: [cycle({ id: 'fp-sale', status: 'Canceled/App', acceptanceDate: '2025-06-01', deadDate: '2025-09-01', buyers: CLIENT_NAMES })],
+    }
     const d = decideMailFiling({
       facts: mail({
         from: ['pat.client@gmail.com'],
@@ -2176,7 +2182,7 @@ describe('re-decide dry run: our clients on two files, the conversation and the 
         subject: 'Fwd: Income Review & Next Steps',
         body: 'FYI it looks like we are close. I have thought of an equity credit line to get that down payment higher.',
       }),
-      deals,
+      deals: [...DEALS, clientSale, clientPurchase, stillGoing],
       thread: null,
     })
     expect(d.status).toBe('ambiguous')
@@ -2187,6 +2193,41 @@ describe('re-decide dry run: our clients on two files, the conversation and the 
       thread: null,
     })
     expect(two.dealId).toBe('client-purchase')
+  })
+
+  it('a purchase that fell through before the email is over: the down payment is the purchase still going (1983a1a8a41c4150, 1988619f74312500, 19950c64cefa703b)', () => {
+    // The first purchase died 2025-08-01; the email is four weeks later.
+    const d = decideMailFiling({
+      facts: mail({
+        from: ['pat.client@gmail.com'],
+        sentAt: '2025-08-28T01:44:00Z',
+        subject: 'Fwd: Income Review & Next Steps',
+        body: 'FYI it looks like we are close. I have thought of an equity credit line to get that down payment higher.',
+      }),
+      deals,
+      thread: null,
+    })
+    expect(d.status).toBe('filed')
+    expect(d.dealId).toBe('client-purchase')
+    // A SkySlope record with no dates but its death is over the same way.
+    const undated: DealFacts = {
+      ...failedPurchase,
+      address: '(blank)',
+      cycles: [cycle({ id: 'fp-sale', status: 'Canceled/App', deadDate: '2025-07-08', buyers: CLIENT_NAMES })],
+    }
+    const loan = decideMailFiling({
+      facts: mail({ from: ['pat.client@gmail.com'], sentAt: '2025-09-16T04:26:00Z', subject: 'Loan officer', body: 'The mortgage company sold our loan already.' }),
+      deals: [...DEALS, clientSale, clientPurchase, undated],
+      thread: null,
+    })
+    expect(loan.dealId).toBe('client-purchase')
+    // Its own termination paperwork, two weeks after it died, still finds it among the purchases: a person picks.
+    const release = decideMailFiling({
+      facts: mail({ from: ['pat.client@gmail.com'], sentAt: '2025-08-14T17:00:00Z', subject: 'Termination and release of earnest money', body: 'Signed release for our purchase attached.' }),
+      deals,
+      thread: null,
+    })
+    expect(release.status).toBe('ambiguous')
   })
 
   it('what the sender wrote naming both sides stops there, whatever the quote says', () => {
@@ -2445,5 +2486,180 @@ describe('re-decide dry run: a neighbour on our street, and a contact before the
       thread: null,
     })
     expect(tc.reasons.join(' / ')).not.toContain('exactly one open deal')
+  })
+})
+
+describe('re-decide dry run 2026-09-30: the MLS is part of the listing', () => {
+  it('our note to the MLS help desk about the listing\'s status is the listing\'s business, not marketing (1979e74655e2728f)', () => {
+    const d = decide4(
+      mail({
+        from: ['matt@ryan-realty.com'],
+        to: ['support.person@coar.com'],
+        sentAt: '2026-05-20T20:21:00Z',
+        subject: 'I need help with a listing.',
+        body: 'I need some help setting a listing back to coming soon. It is 20702 Beaumont Drive. It needs to be coming soon, I had thought I would have had photos today. I will have it active by this Wednesday.',
+      }),
+    )
+    expect(d.status, d.reasons.join(' / ')).toBe('filed')
+    expect(d.dealId).toBe('beaumont')
+    // The same words to the neighbours are still our marketing.
+    const blast = decide4(
+      mail({
+        from: ['matt@ryan-realty.com'],
+        to: ['neighbour@gmail.com'],
+        sentAt: '2026-05-20T20:21:00Z',
+        subject: 'Coming soon: 20702 Beaumont Drive',
+        body: 'Coming soon to your neighborhood: 20702 Beaumont Drive. Call today for a private showing.',
+      }),
+    )
+    expect(blast.status).toBe('not_deal')
+  })
+})
+
+describe("re-decide dry run 2026-09-30: an offer is an offer, whatever the form's printed clauses say", () => {
+  it('a buyer-signed sale agreement categorizes as an offer and goes to the open listing\'s offer log (1a0a2daebf52e487)', () => {
+    const text = [
+      'Sale Agreement #______ FINAL AGENCY ACKNOWLEDGEMENT Property',
+      'OREGON RESIDENTIAL REAL ESTATE PURCHASE AND SALE AGREEMENT Buyer Initials ________ Seller Initials ________',
+      'reviewed and signed by Buyer, Seller and Agent(s). Buyer shall sign this Agreement.',
+      '100 House to be sold in as-is condition. DigiSign Verified - 00000000-0000-4000-8000-000000000000 PB',
+      'Seller may accept this offer or make a counter offer.',
+      'Any modification to the terms of this Agreement must be in writing, dated and signed by Buyer and Seller.',
+    ].join('\n')
+    const executionState = classifyFromFormAndText({ form: { documentName: 'PSA.pdf' }, pageText: text, ourRole: 'unknown', textComplete: true })
+    const category = categorizeMail({
+      subject: 'Offer on Tumalo Reservoir',
+      body: 'We are excited to present an offer. Please confirm receipt.',
+      // The text read of this form calls it a Counter Offer (it talks about counter offers).
+      attachments: [{ name: 'PSA.pdf', text, executionState, formName: 'Counter Offer' }],
+      autoReply: false,
+      fromHouseSystem: false,
+    })
+    expect(category).toBe('offer')
+    // A counter by its own name is still a counter.
+    const counter = categorizeMail({
+      subject: 'Revised terms',
+      body: 'See attached.',
+      attachments: [{ name: '2.1_Counteroffer_to_Real_Estate_Purchase_and_Sale_Agreement__1__-_OR.pdf', formName: 'Counter Offer' }, { name: 'PSA.pdf', formName: 'Counter Offer' }],
+      autoReply: false,
+      fromHouseSystem: false,
+    })
+    expect(counter).toBe('counter')
+    const cycles = [
+      cycle({ id: 'listing', kind: 'listing', status: 'Transaction', listingDate: '2026-04-03' }),
+      cycle({ id: 'sale', status: 'Pending', acceptanceDate: '2026-09-19', closeDate: '2026-11-30' }),
+    ]
+    // Four days before the acceptance it became: the listing's offer log.
+    expect(pickCycleForMail(cycles, '2026-09-15T02:17:00Z', category)).toBe('listing')
+  })
+})
+
+describe('re-decide dry run 2026-09-30: streets, ranges and the MLS', () => {
+  const delaware: DealFacts = {
+    dealId: 'delaware',
+    address: '909 NW Delaware Avenue, Bend, OR, 97703',
+    city: 'Bend',
+    stage: 'dead',
+    cycles: [cycle({ id: 'de-sale', status: 'Expired', acceptanceDate: '2026-09-01', closeDate: '2026-09-18' })],
+    partyEmails: [],
+    contactEmails: [],
+  }
+
+  it('a range of house numbers on our street is the property down the street, not our file (1a0ba9a3182c5039)', () => {
+    const d = decideMailFiling({
+      facts: mail({
+        from: ['matt@ryan-realty.com'],
+        to: ['past.client@gmail.com'],
+        sentAt: '2026-09-19T16:57:00Z',
+        subject: 'Fwd: 936-946 NW Delaware Ave',
+        body: 'Here are the answers to the questions I got on Delaware.',
+        attachments: [{ name: '936946 NW Delaware  Rent Roll.pdf' }, { name: '936-946 NW Delaware - Income and Expenses.pdf' }],
+      }),
+      deals: [...DEALS, delaware],
+      thread: null,
+    })
+    expect(d.dealId, d.reasons.join(' / ')).toBeNull()
+    // Our own number on the street is still ours, even after another number on the line.
+    const p = parseDealAddress('363 SW Bluff Dr, Bend')!
+    expect(mentionsDealStreet('Unit 208 - 363 SW Bluff Dr', p)).toBe(true)
+  })
+
+  it('"Old Bend" is a neighbourhood; 64350 Old Bend Redmond Hwy is called by all three words (1a0542d529db6c10)', () => {
+    const p = parseDealAddress(oldBend.address)!
+    expect(bareStreetName(p)).toBe('old bend redmond')
+    expect(mentionsBareStreet('Buyers looking for a 3-bed in River West, West Hills, or Old Bend', p)).toBe(false)
+    expect(mentionsBareStreet('Water on Old Bend Redmond', p)).toBe(true)
+    const d = decide4(
+      mail({
+        from: ['matt@ryan-realty.com'],
+        to: ['matt@ryan-realty.com', 'paul@ryan-realty.com'],
+        sentAt: '2025-09-01T19:37:00Z',
+        subject: 'Re: Buyers looking for a 3-bed in River West, West Hills, or Old Bend',
+        body: 'hey we have a home',
+      }),
+    )
+    expect(d.dealId).not.toBe('old-bend')
+    // The file's own SkySlope mailbox still names it.
+    const toFile = decide4(
+      mail({
+        from: ['matt@ryan-realty.com'],
+        to: ['buyer.agent@brokerage.example', 'OldBendRedmondHwy643501@skyslope.com'],
+        sentAt: '2025-08-06T18:40:00Z',
+        subject: 'Water Quality Tests',
+        body: 'The pump company is scheduled to be out on the 13th to do a flow test and pull the water samples.',
+      }),
+    )
+    expect(toFile.dealId).toBe('old-bend')
+  })
+
+  it("the MLS's notice about our listing's record is the listing's (19d85a3f8bd3236a)", () => {
+    const d = decide4(
+      mail({
+        from: ['noreply@rmls.com'],
+        sentAt: '2026-04-13T07:00:00Z',
+        subject: 'Alert: In-Progress Listing is Scheduled to be Deleted in 7 Days!',
+        body: 'The following in-progress listing is scheduled to be deleted in 7 days due to inactivity: MLS#724446291 at 20702 BEAUMONT DRIVE, BEND, OR 97701',
+      }),
+    )
+    expect(d.dealId, d.reasons.join(' / ')).toBe('beaumont')
+  })
+})
+
+describe('re-decide dry run 2026-09-30: the contract announced is the contract', () => {
+  it('"You\'re Under Contract!" with the sale agreement and its counters is the executed agreement, and goes to the contract (1a0c5115fd476f8a)', () => {
+    const category = categorizeMail({
+      subject: "Congratulations! You're Under Contract! | 19496 Tumalo Reservoir Rd",
+      body: 'Congratulations, we are officially under contract! Mutual Acceptance: Saturday, September 19, 2026',
+      attachments: [{ name: 'Counter- Buyer 2.pdf' }, { name: 'Sale Agreement.pdf', executionState: 'unsigned' }, { name: 'Counter- Seller 2.pdf' }],
+      autoReply: false,
+      fromHouseSystem: false,
+    })
+    expect(category).toBe('executed_agreement')
+    const cycles = [
+      cycle({ id: 'listing', kind: 'listing', status: 'Transaction', listingDate: '2026-04-03' }),
+      cycle({ id: 'sale', status: 'Pending', acceptanceDate: '2026-09-19', closeDate: '2026-11-30' }),
+    ]
+    expect(pickCycleForMail(cycles, '2026-09-21T17:43:00Z', category)).toBe('sale')
+    // The buyer's offer the morning it was accepted is still the listing's offer log.
+    const offer = categorizeMail({
+      subject: '3480 SW 45th St- Sale Agreement',
+      body: 'Attached is an offer from my clients.',
+      attachments: [{ name: 'Buyers 3480 SW 45th- Sale Agreement.pdf', executionState: 'unsigned' }],
+      autoReply: false,
+      fromHouseSystem: false,
+    })
+    expect(offer).toBe('offer')
+  })
+})
+
+describe('re-decide dry run 2026-09-30: one person under two spellings is on both contracts', () => {
+  it('the 2026 escrow\'s mail stays on the 2026 contract when the clients bought as "Pat" and sell as "Patricia" (19f8abad665b2b97)', () => {
+    const cycles = [
+      cycle({ id: 'listing-2026', kind: 'listing', status: 'Transaction', listingDate: '2026-07-19', sellers: ['Lee Client', 'Patricia Client'] }),
+      cycle({ id: 'bought-2025', status: 'Closed', escrowNumber: 'DE24656', acceptanceDate: '2025-07-06', closeDate: '2025-08-14', buyers: ['Pat Client', 'Lee Client'] }),
+      cycle({ id: 'sold-2026', status: 'Closed', acceptanceDate: '2026-07-21', closeDate: '2026-09-01', buyers: ['Robin Next'], sellers: ['Lee Client', 'Patricia Client'] }),
+    ]
+    const text = 'What is the commission amount for the listing side?\nFrom: TC\nTo: Pat Client, Lee Client\nSellers: Pat & Lee Client. Purchase Price: $665,000'
+    expect(pickCycleForMail(cycles, '2026-07-22T16:48:00Z', 'general', { text })).toBe('sold-2026')
   })
 })
