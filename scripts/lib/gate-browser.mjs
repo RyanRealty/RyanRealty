@@ -57,10 +57,14 @@ import { installRemoteMediaProxy } from './remote-media-proxy.mjs'
  * @param {{width:number,height:number}} [options.viewport]
  * @param {string} [options.userAgent]
  * @param {number} [options.deviceScaleFactor]
+ * @param {boolean} [options.isMobile]  Phone emulation: the meta viewport is
+ *   honoured and scrollbars overlay instead of taking width, so a 375px
+ *   viewport lays out 375px of page (check-listing-phone-fold.mjs).
+ * @param {boolean} [options.hasTouch]  A coarse pointer, as on a phone.
  * @returns {Promise<{context: import('playwright').BrowserContext, mediaStats: {served:number}}>}
  */
 export async function openGateContext(browser, options = {}) {
-  const { baseUrl, viewport, userAgent, deviceScaleFactor } = options
+  const { baseUrl, viewport, userAgent, deviceScaleFactor, isMobile, hasTouch } = options
   if (!baseUrl) {
     throw new Error('openGateContext requires { baseUrl } — it scopes the media proxy to cross-origin requests.')
   }
@@ -69,6 +73,8 @@ export async function openGateContext(browser, options = {}) {
   if (viewport) contextOptions.viewport = viewport
   if (userAgent) contextOptions.userAgent = userAgent
   if (deviceScaleFactor !== undefined) contextOptions.deviceScaleFactor = deviceScaleFactor
+  if (isMobile !== undefined) contextOptions.isMobile = isMobile
+  if (hasTouch !== undefined) contextOptions.hasTouch = hasTouch
   // See WHY #1 above. A machine with no proxy configured never sets this.
   if (process.env.HTTPS_PROXY || process.env.https_proxy) {
     contextOptions.ignoreHTTPSErrors = true
