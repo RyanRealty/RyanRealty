@@ -77,6 +77,12 @@ export interface MappedField {
   leaveForBroker?: boolean
   /** Placed by the last-page stack (fallback-signing-stack.ts), not a line printed on the form. */
   fromStack?: boolean
+  /**
+   * The form says to fill this box whatever the answer: the 020's line 230,
+   * "Total number of pages attached ... (complete even if zero)". Required of
+   * the signer who fills it.
+   */
+  mustComplete?: boolean
 }
 
 const TYPE_MAP: Record<string, MappedFieldType> = {

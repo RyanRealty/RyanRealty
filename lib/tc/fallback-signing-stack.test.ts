@@ -227,6 +227,10 @@ describe('withFallbackSignatures on the OREF 020 Seller Property Disclosure Stat
     line(7, 0.4315, 'Text247'),
     line(7, 0.4694, 'Text249'),
     line(8, 0.1929, 'Text262'),
+    // Line 230, "Total number of pages attached ... (complete even if zero) ____".
+    { type: 'text' as const, page: 7, x: 0.7376, y: 0.3991, w: 0.0438, h: 0.0164, dataRef: 'Text246', signerRole: null, optional: false, label: 'Text246' },
+    // A seller answer box on page 7 with no such instruction.
+    { type: 'text' as const, page: 7, x: 0.3, y: 0.3, w: 0.4, h: 0.0164, dataRef: 'Text240', signerRole: null, optional: false, label: 'Text240' },
   ]
   const pages = [
     [signRow('Seller', 0.615), signRow('Buyer', 0.7875)],
@@ -239,7 +243,14 @@ describe('withFallbackSignatures on the OREF 020 Seller Property Disclosure Stat
       run(`Seller Initials ${blanks}`, 0.591, 0.915),
     ],
     [], [], [], [],
-    [signRow('Seller', 0.4525), signRow('Seller', 0.49)],
+    [
+      run('230', 0.0371, 0.4137),
+      run('Total number of pages attached, including all addenda, reports, or any other documents. (', 0.0882, 0.4137),
+      run('complete even if zero', 0.6057, 0.4137),
+      run(') ______', 0.7299, 0.4137),
+      signRow('Seller', 0.4525),
+      signRow('Seller', 0.49),
+    ],
     [signRow('Buyer', 0.2125)],
   ]
   const out = withFallbackSignatures(map, {
@@ -266,6 +277,17 @@ describe('withFallbackSignatures on the OREF 020 Seller Property Disclosure Stat
     expect(new Set(answers.map((f) => f.group!.key)).size).toBe(1)
     expect(answers[0]!.prompt).toBe('A. Do you have legal authority to sell the Property?')
     expect(by('Text212')).toMatchObject({ signerRole: 'seller', signerFills: true })
+  })
+
+  it('makes the seller complete the page count, as line 230 says ("complete even if zero")', () => {
+    expect(by('Text246')).toMatchObject({
+      signerRole: 'seller',
+      signerFills: true,
+      mustComplete: true,
+      prompt: 'Total number of pages attached, including all addenda, reports, or any other documents. (complete even if zero)',
+    })
+    expect(by('Text240')).toMatchObject({ signerRole: 'seller', signerFills: true })
+    expect(by('Text240').mustComplete).toBeUndefined()
   })
 
   it('puts Buyer Initials on the left of the footer and Seller Initials on the right', () => {

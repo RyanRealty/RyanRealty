@@ -4,7 +4,7 @@ import { getPacketSections, type PacketContinuation, type PacketSection } from '
 import { createClient } from '@supabase/supabase-js'
 import { TC_DOCUMENT_URL_TTL_SECONDS } from '@/lib/tc/document-urls'
 import { formBindingFactKey, formBlankIsReserved } from '@/lib/tc/oref-form-bindings'
-import { existingDocumentIdByHash } from '@/lib/tc/document-dedupe'
+import { existingBlankIdForForm } from '@/lib/tc/document-dedupe'
 import { revalidatePath } from 'next/cache'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
@@ -666,8 +666,10 @@ export async function createEnvelopeFromTemplate(
     if (up.error) return { ok: false, error: `storage: ${up.error.message}` }
 
     // Re-opening a packet on the same cycle must not stack another copy of the
-    // same blank onto the file.
-    const existingId = await existingDocumentIdByHash(supabase, cycleId, sha256)
+    // same blank onto the file. The form version, not the bytes alone, is a
+    // blank's identity: two library forms can share one PDF (the 020 and its
+    // exempt version), and each keeps its own name.
+    const existingId = await existingBlankIdForForm(supabase, cycleId, sha256, String(form.id))
     let documentId = existingId
     if (!documentId) {
       const { data: doc, error: docErr } = await supabase
@@ -789,6 +791,8 @@ export async function createEnvelopeFromTemplate(
           // A row given to a particular signer is theirs to sign, whichever line it
           // is. An answer box is not required alone: its question's group rule is.
           ((f.signerIndex != null && recipientId != null && signerOwnsMappedField(type) && type !== 'full_name') ||
+            // "(complete even if zero)": the signer who fills it owes it.
+            (f.mustComplete === true && recipientId != null) ||
             mapFieldIsRequired({
               type,
               optional: f.optional,
