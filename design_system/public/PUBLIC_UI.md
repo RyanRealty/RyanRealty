@@ -201,6 +201,13 @@ thumbnail, previous/next, arrow keys, Home/End, or a swipe on the photograph.
 - **First paint** (`priority`). Only a dial that is the page's first large image above
   the fold (/price-drops, /open-houses: the open band) loads its first photograph
   eagerly; a dial under a hero never does.
+- **The set on one axis, and the card's relations (2026-09-29).** Every priced home in the
+  set is a tick on one price axis over the rail (the asks strip; its hit area is the 44px
+  tap token), and a type page's film holds the claim's own band ends, low to high, and
+  says when it is a spread ("12 of 732, across the band"). A cut is stamped on the
+  photograph ("11.6% off"), and each "near this price" row says its ask against the home
+  in front ("$95K more"). The media box is the photograph's height, so a stamp or a reel
+  never falls under it.
 - **The card's words.** The tour control names the listing's own tour in the listing
   page's words ("Video Tour" for a walkthrough reel, "3D" for a 3D tour,
   `publishListingTourLabel`), never "3D Walkthrough" for a video. The status word is
