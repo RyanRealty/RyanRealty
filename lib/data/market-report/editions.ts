@@ -110,12 +110,31 @@ async function _listPublishedEditionsUncached(): Promise<EditionListItem[]> {
   return out
 }
 
-export const listPublishedEditions = makeResilientCached(
+/**
+ * What the resilient wrapper hands back when a read failed twice. Never
+ * cached, never mistaken for "none": an empty archive or a missing edition is
+ * a real answer the pages act on, a failed read is not (below).
+ */
+const READ_FAILED: unique symbol = Symbol('market-report-edition-read-failed')
+
+const listPublishedEditionsCached = makeResilientCached<[], EditionListItem[] | typeof READ_FAILED>(
   _listPublishedEditionsUncached,
   ['market-report-editions-list-v1'],
   { revalidate: CACHE_WINDOWS.marketReport, tags: [cacheTag.market] },
-  [],
+  READ_FAILED,
 )
+
+/**
+ * Every published edition, newest first. THROWS when the read failed twice:
+ * an empty list made the archive render its empty, noindex state and the PDF
+ * route answer 404, and ISR or the CDN kept that for its window. PR #385 set
+ * the rule for the blog and the weekly reports; the monthly pages follow it.
+ */
+export async function listPublishedEditions(): Promise<EditionListItem[]> {
+  const list = await listPublishedEditionsCached()
+  if (list === READ_FAILED) throw new Error('[listPublishedEditions] read failed twice; not an empty archive')
+  return list
+}
 
 async function _getPublishedEditionUncached(editionMonth: string): Promise<EditionRow | null> {
   const sb = supabaseAnon()
@@ -131,12 +150,25 @@ async function _getPublishedEditionUncached(editionMonth: string): Promise<Editi
   return (data as EditionRow | null) ?? null
 }
 
-export const getPublishedEdition = makeResilientCached(
+const getPublishedEditionCached = makeResilientCached<[string], EditionRow | null | typeof READ_FAILED>(
   _getPublishedEditionUncached,
   ['market-report-edition-v1'],
   { revalidate: CACHE_WINDOWS.marketReport, tags: [cacheTag.market] },
-  null,
+  READ_FAILED,
 )
+
+/**
+ * One published edition, or null when no edition of that month is published.
+ * THROWS when the read failed twice: null made the edition page call
+ * notFound(), and ISR kept that 404 for its revalidate window.
+ */
+export async function getPublishedEdition(editionMonth: string): Promise<EditionRow | null> {
+  const row = await getPublishedEditionCached(editionMonth)
+  if (row === READ_FAILED) {
+    throw new Error(`[getPublishedEdition] ${editionMonth}: read failed twice; not a missing edition`)
+  }
+  return row
+}
 
 /** Service read of any edition (draft included), for the cron and scripts. */
 export async function getEditionForWrite(editionMonth: string): Promise<EditionRow | null> {
