@@ -546,6 +546,70 @@ export function V3Ledger(props: V3LedgerProps) {
                     minPoints: V3_LEDGER_SPARK_MIN,
                   })
                 : null
+            const figure = row.value ? (
+              encode === 'bar' ? (
+                <span className="v3-ledger__measure">
+                  {/* The bar is presentation only. The figure beside it is
+                      the accessible value and the one the source trace
+                      covers, so a screen reader is never read a length. */}
+                  <span className="v3-ledger__track" aria-hidden="true">
+                    {barWidth(row.weight) ? (
+                      <span
+                        className={cn(
+                          'v3-ledger__bar',
+                          row.weight === 1 && 'v3-ledger__bar--lead',
+                        )}
+                        style={{ width: barWidth(row.weight) }}
+                      />
+                    ) : null}
+                  </span>
+                  <span className="v3-ledger__value">{row.value}</span>
+                </span>
+              ) : (
+                <span className="v3-ledger__value">{row.value}</span>
+              )
+            ) : null
+            /* Hidden at rest. In an encoded row it sits in the figure column
+               under the bar, in a slot the row already holds, so opening it
+               moves nothing and covers nothing; elsewhere it opens on its own
+               line, by keyboard focus or the phone hold only (V3Ledger.css). */
+            const revealEl = row.reveal ? (
+              <span className="v3-ledger__reveal">
+                <span className="v3-ledger__reveal-line">{row.reveal.line}</span>
+                {spark ? (
+                  /* The run and what it counts, together: a squiggle with no
+                     words is a decoration, and the words are the accessible
+                     name, so the SVG is hidden. */
+                  <span className="v3-ledger__run">
+                    {row.reveal.seriesLabel ? (
+                      <span className="v3-ledger__run-label">{row.reveal.seriesLabel}</span>
+                    ) : null}
+                    <svg
+                      className="v3-ledger__spark"
+                      viewBox={`0 0 ${SPARK_W} ${SPARK_H}`}
+                      width={SPARK_W}
+                      height={SPARK_H}
+                      aria-hidden="true"
+                    >
+                      <path d={spark.d} />
+                      {/* A month with no published neighbour: the path
+                          alone paints nothing there. */}
+                      {spark.dots.map((dot) => (
+                        <circle
+                          key={`${dot.x.toFixed(1)}-${dot.y.toFixed(1)}`}
+                          cx={dot.x.toFixed(1)}
+                          cy={dot.y.toFixed(1)}
+                          r="1.6"
+                        />
+                      ))}
+                      {spark.last ? (
+                        <circle cx={spark.last.x.toFixed(1)} cy={spark.last.y.toFixed(1)} r="2.2" />
+                      ) : null}
+                    </svg>
+                  </span>
+                ) : null}
+              </span>
+            ) : null
             return (
               <li key={row.id ?? row.href} className="v3-ledger__item">
               <Link
@@ -606,63 +670,19 @@ export function V3Ledger(props: V3LedgerProps) {
                     ) : null}
                   </span>
                 </span>
-                {row.value ? (
-                  encode === 'bar' ? (
-                    <span className="v3-ledger__measure">
-                      {/* The bar is presentation only. The figure beside it is
-                          the accessible value and the one the source trace
-                          covers, so a screen reader is never read a length. */}
-                      <span className="v3-ledger__track" aria-hidden="true">
-                        {barWidth(row.weight) ? (
-                          <span
-                            className={cn(
-                              'v3-ledger__bar',
-                              row.weight === 1 && 'v3-ledger__bar--lead',
-                            )}
-                            style={{ width: barWidth(row.weight) }}
-                          />
-                        ) : null}
-                      </span>
-                      <span className="v3-ledger__value">{row.value}</span>
-                    </span>
-                  ) : (
-                    <span className="v3-ledger__value">{row.value}</span>
-                  )
-                ) : null}
-                {row.reveal ? (
-                  /* In the row, under its figures: hidden at rest, and opened
-                     by :hover, :focus-within or the phone hold, when it takes
-                     its own line and the rows below make room (V3Ledger.css). */
-                  <span className="v3-ledger__reveal">
-                    {row.reveal ? (
-                      <>
-                        <span className="v3-ledger__reveal-line">{row.reveal.line}</span>
-                        {spark ? (
-                          /* The run and what it counts, together: a squiggle
-                             with no words is a decoration, and the words are
-                             the accessible name, so the SVG is hidden. */
-                          <span className="v3-ledger__run">
-                            {row.reveal.seriesLabel ? (
-                              <span className="v3-ledger__run-label">{row.reveal.seriesLabel}</span>
-                            ) : null}
-                            <svg
-                              className="v3-ledger__spark"
-                              viewBox={`0 0 ${SPARK_W} ${SPARK_H}`}
-                              width={SPARK_W}
-                              height={SPARK_H}
-                              aria-hidden="true"
-                            >
-                              <path d={spark.d} />
-                              {spark.last ? (
-                                <circle cx={spark.last.x.toFixed(1)} cy={spark.last.y.toFixed(1)} r="2.2" />
-                              ) : null}
-                            </svg>
-                          </span>
-                        ) : null}
-                      </>
-                    ) : null}
+                {encode === 'bar' && figure && revealEl ? (
+                  /* The figure column: the bar and figure, and the reveal's
+                     slot under them. */
+                  <span className="v3-ledger__figures">
+                    {figure}
+                    {revealEl}
                   </span>
-                ) : null}
+                ) : (
+                  <>
+                    {figure}
+                    {revealEl}
+                  </>
+                )}
               </Link>
             </li>
             )

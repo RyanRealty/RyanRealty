@@ -86,7 +86,7 @@ export function ArchiveSections({ editions, edition, completeThrough }: ArchiveS
       <ArchiveFront
         id="latest"
         heading={MONTHLY_REPORT_NAME}
-        sentence={archiveSentence(editions)}
+        sentence={archiveSentence(editions, oldestKey)}
         latest={{
           readLabel: `Read the ${latestLabel} report`,
           href: latestHref,

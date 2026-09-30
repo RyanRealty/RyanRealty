@@ -313,20 +313,30 @@
 
 /* Reveal ---------------------------------------------------------------------
    One line the row's text does not carry, and an optional twelve-point run as
-   a line (SITE-52). HIDDEN at rest and shown by hover, by keyboard focus, and
-   by the phone's tap-and-hold (V3LedgerReveal.client.tsx sets data-revealed
-   on the item).
+   a line (SITE-52). HIDDEN at rest.
 
-   It opens IN the row, on its own line under the row's figures: the row grows
-   and the rows below make room (2026-09-29). It used to lie over the top of
-   the next row, and the second taste evaluator found what that costs: the
-   next row's name hidden while its detail showed through, a line of text cut
-   in half at 375, and the footnote under the last row covered. At rest it
-   takes no space at all (display: none), so no row carries a dead strip.
-   Growing downward never moves what is under the pointer: the row being read
-   keeps its place and only the rows below it move, so a pointer crossing a
-   boundary opens the row it lands on and the list settles there. The row's
-   own hover wash covers the line, so it reads as the row continuing. */
+   Where it opens decides what it costs (2026-09-30). Laid over the next row
+   (to 09-29) it hid that row's name while its detail showed, cut a line of
+   text in half at 375 and covered the footnote under the last row (second
+   taste evaluator). Grown into the flow on hover (09-29) it moved every row
+   under the pointer, and a shift a hover causes counts toward Cumulative
+   Layout Shift: only a click, a tap or a key press excuses one. So:
+
+   - An encoded row (the bar lists: the city index, a city's towns, the
+     monthly report's markets) keeps its reveal in the figure column, under
+     the bar, from 768 up. The name and its detail already make the row two or
+     three lines tall there and the column under the bar is empty, so the slot
+     is held at rest (visibility, not display): opening it moves nothing and
+     covers nothing. A hover, keyboard focus or the hold opens it.
+   - Everywhere else (a phone, or a list without bars) there is no empty
+     column, so the reveal opens on its own line and the rows below make room,
+     for keyboard focus or the phone's hold only (V3LedgerReveal.client.tsx
+     sets data-revealed on the item), both excused input. A hover there wears
+     the row's wash and opens nothing.
+
+   Keyboard focus is :focus-visible on the row's link, never :focus-within: a
+   click leaves focus on the link, and a row a pointer clicked must not stay
+   open beside the next one it hovers. */
 .v3-ledger__reveal {
   grid-column: 1 / -1;
   display: none;
@@ -349,33 +359,49 @@
   margin-left: auto;
 }
 
-.v3-ledger__item:hover .v3-ledger__reveal,
-.v3-ledger__item:focus-within .v3-ledger__reveal,
+.v3-ledger__row:focus-visible .v3-ledger__reveal,
 .v3-ledger__item[data-revealed='true'] .v3-ledger__reveal {
   display: flex;
   animation: v3-ledger-reveal var(--v3-dur-state) var(--v3-ease-out);
 }
 
-/* HOVER INTENT. A row that grows moves the rows under it, so a pointer that
-   only crosses the list on its way somewhere else opens nothing: the line
-   stays out of the flow (display: none, held by a zero-length animation's
-   backward fill) until the pointer has rested on the row for half a state
-   beat, and goes the moment it leaves. Focus and the phone's hold open at
-   once, and a row already open by either is never closed by a hover. A browser
-   that cannot animate display simply opens the row on hover. Reduced motion
-   collapses the duration token, and the delay with it. */
-@media (hover: hover) {
-  .v3-ledger__item:hover:not(:focus-within):not([data-revealed='true']) .v3-ledger__reveal {
-    animation:
-      v3-ledger-intent 0s linear calc(var(--v3-dur-state) / 2) backwards,
-      v3-ledger-reveal var(--v3-dur-state) var(--v3-ease-out) calc(var(--v3-dur-state) / 2) backwards;
+/* The figure column of an encoded row that reveals: the bar and figure on top,
+   the reveal's slot under them. Its first baseline is the figure's, so the row
+   aligns exactly as it does around a bare measure. */
+.v3-ledger__figures {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  justify-self: stretch;
+  min-width: 0;
+}
+
+@media (min-width: 48rem) {
+  .v3-ledger__figures .v3-ledger__reveal {
+    display: flex;
+    visibility: hidden;
+    opacity: 0;
+    animation: none;
+    transition:
+      opacity var(--v3-dur-state) var(--v3-ease-out),
+      visibility 0s linear var(--v3-dur-state);
+  }
+
+  .v3-ledger__row:focus-visible .v3-ledger__figures .v3-ledger__reveal,
+  .v3-ledger__item[data-revealed='true'] .v3-ledger__figures .v3-ledger__reveal {
+    visibility: visible;
+    opacity: 1;
+    animation: none;
+    transition: opacity var(--v3-dur-state) var(--v3-ease-out);
   }
 }
 
-@keyframes v3-ledger-intent {
-  from,
-  to {
-    display: none;
+/* Hover alone opens it, never a phone's sticky tap-hover. */
+@media (min-width: 48rem) and (hover: hover) {
+  .v3-ledger__row:hover .v3-ledger__figures .v3-ledger__reveal {
+    visibility: visible;
+    opacity: 1;
+    transition: opacity var(--v3-dur-state) var(--v3-ease-out);
   }
 }
 
@@ -386,9 +412,9 @@
   box-shadow: 0 0 0 var(--v3-space-sm) var(--v3-wash);
 }
 
-/* The line fades in where it opens; the space it takes arrives at once, so
-   nothing under the pointer slides. Reduced motion collapses the duration
-   token (tokens.css), which leaves the finished state. */
+/* A line opened in the flow fades in where it opens; the space it takes
+   arrives at once. Reduced motion collapses the duration token (tokens.css),
+   which leaves the finished state. */
 @keyframes v3-ledger-reveal {
   from {
     opacity: 0;
@@ -453,8 +479,12 @@
    is two columns, so the measure spans the full width under the name rather
    than fighting it for a few pixels. */
 @media (max-width: 47.99rem) {
-  .v3-ledger--encoded .v3-ledger__measure {
+  .v3-ledger--encoded .v3-ledger__measure,
+  .v3-ledger--encoded .v3-ledger__figures {
     grid-column: 1 / -1;
+  }
+
+  .v3-ledger--encoded .v3-ledger__measure {
     margin-top: var(--v3-space-3xs);
   }
 }

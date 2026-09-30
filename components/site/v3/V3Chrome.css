@@ -43,12 +43,37 @@
    or a landed heading is never behind the bar. Before this only some
    sections carried their own scroll-margin, and a calendar door reached by
    Shift+Tab sat fully under the bar (second taste evaluator, 2026-09-29).
-   One rule for every target replaces those margins; a target that wants more
-   air adds only the remainder. Scoped to a document that renders the chrome
-   (it returns null on LP, admin and account routes), so a page without this
-   bar keeps its own scrolling. */
-html:has(.v3.v3-chrome) {
+   It has to be the root's padding: Chromium's focus scroll ignores a target's
+   scroll-margin, and only the padding kept a control that was on screen but
+   under the bar from staying there (measured 2026-09-30). A target that
+   wants more air adds only the remainder.
+
+   Scoped to a document that renders the chrome (it returns null on LP, admin
+   and account routes), so a page without this bar keeps its own scrolling.
+   The test is the one class only the header carries, so no other element's
+   classes enter it. */
+html:has(.v3-chrome) {
   scroll-padding-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
+}
+
+/* ...except while focus is in the bar itself. The bar never leaves the top,
+   and the top is the padded band, so a browser taking the padding at its word
+   scrolls the page to "reveal" a control that never moved: Shift+Tab back
+   into the header from mid-page, or the search focusing its input, jumped the
+   page up about 400px in Chromium, and again on each control (measured
+   2026-09-30). With focus in the bar there is nothing under it to clear. */
+html:has(.v3-chrome :focus) {
+  scroll-padding-top: 0;
+}
+
+/* An engine without :has() still lands a jump to a section clear of the bar:
+   every target in the page gets the margin the padding replaced. The layout
+   renders the header ahead of #main-content (app/layout.tsx), so this holds
+   only where the bar does. */
+@supports not selector(:has(*)) {
+  .v3-chrome ~ #main-content [id] {
+    scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
+  }
 }
 
 /* The bar -------------------------------------------------------------------

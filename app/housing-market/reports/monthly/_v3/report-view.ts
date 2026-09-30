@@ -461,17 +461,26 @@ type SupplyYear = { year: number; readings: readonly (number | null)[] }
 export function supplyPattern(years: readonly SupplyYear[], line: number): string | null {
   const [newest, before] = years
   if (!newest) return null
-  const past = (y: SupplyYear) =>
-    y.readings.flatMap((v, i) => (v != null && Number.isFinite(v) && v > line ? [i] : []))
-  const shown = (y: SupplyYear) => y.readings.filter((v) => v != null && Number.isFinite(v)).length
+  const has = (v: number | null | undefined): v is number => v != null && Number.isFinite(v)
+  const past = (y: SupplyYear) => y.readings.flatMap((v, i) => (has(v) && v > line ? [i] : []))
+  const shown = (y: SupplyYear) => y.readings.filter(has).length
   const lastShown = (y: SupplyYear) => {
-    for (let i = y.readings.length - 1; i >= 0; i--) if (y.readings[i] != null) return i
+    for (let i = y.readings.length - 1; i >= 0; i--) if (has(y.readings[i])) return i
     return -1
   }
   const newestPast = monthRuns(past(newest))
-  // The newest year stops at the edition month: "so far" names where it stops.
+  // The newest year stops at the edition month, and "through August" names
+  // where it stops. It also vouches for every month before it, so it is said
+  // only when January to that month all carry a reading; a year with a
+  // withheld month in it is "the months shown", like the year before.
+  const last = lastShown(newest)
+  const unbroken = last >= 0 && newest.readings.slice(0, last + 1).every(has)
   const newestSpan =
-    shown(newest) === 12 ? `all of ${newest.year}` : `${newest.year} through ${monthNameAt(lastShown(newest))}`
+    shown(newest) === 12
+      ? `all of ${newest.year}`
+      : unbroken
+        ? `${newest.year} through ${monthNameAt(last)}`
+        : `the months of ${newest.year} shown`
   if (!before) {
     return newestPast.length
       ? `In ${newest.year} supply passed ${line} months ${whenPhrase(newestPast)}.`
@@ -683,29 +692,13 @@ export function sectionSource(place: string, key: string, completeThrough: strin
 }
 
 /**
- * Months of supply for structured data: the stored value to two decimals
- * (4.020191... is 4.02), the true figure rather than the screen's one-decimal
- * reading. The screen prints 4.1 for 4.02 because one decimal would round it
- * to 4.0, a seller's reading beside a balanced call; two decimals keep the
- * value itself, and only where two decimals would land exactly on a threshold
- * the value did not reach (4.001 to 4.00, 5.996 to 6.00) does the figure step
- * one hundredth off it, so the number never contradicts its own call.
- */
-export function supplyValue(mos: number): number {
-  const hundredths = Math.round(mos * 100) / 100
-  if (hundredths === VERDICT_SELLER_MAX && mos > VERDICT_SELLER_MAX) return VERDICT_SELLER_MAX + 0.01
-  if (hundredths === VERDICT_BUYER_MIN && mos < VERDICT_BUYER_MIN) return VERDICT_BUYER_MIN - 0.01
-  return hundredths
-}
-
-/**
- * The same figures as the Instrument, as schema.org PropertyValues. The
- * counts are the page's own numbers, and the median and the days to pending
- * are the whole units the page prints (money() and days() round to them).
- * Months of supply is the one figure the markup carries more finely than the
- * screen: the stored value to two decimals (supplyValue, 4.02), where the
- * screen shows one decimal kept off any threshold the value did not cross
- * (4.1). Both are the same stored value; neither is a second computation.
+ * The same figures as the Instrument, as schema.org PropertyValues: one number
+ * per fact, the number the page prints. The counts are the page's own, the
+ * median and the days to pending are the whole units money() and days() print,
+ * and months of supply is mosText's figure (4.0202 is 4.1, one decimal kept
+ * off any threshold the value did not cross), the house rule every place page
+ * already follows (lib/site/market-faq.ts): the markup is the machine-readable
+ * copy of what a reader sees, never a finer reading beside it.
  */
 export function datasetVariables(k: Kpis, key: string): StatValue[] {
   const when = monthLabel(key)
@@ -714,7 +707,7 @@ export function datasetVariables(k: Kpis, key: string): StatValue[] {
   out.push({ name: `Homes sold, ${when}`, value: k.sales })
   if (k.dtc.v != null) out.push({ name: `Median days to pending, ${when}`, value: Math.round(k.dtc.v), unitText: 'days' })
   out.push({ name: `Homes for sale at the end of ${when}`, value: k.active })
-  if (k.mos != null && Number.isFinite(k.mos)) out.push({ name: `Months of supply, ${when}`, value: supplyValue(k.mos) })
+  if (k.mos != null && Number.isFinite(k.mos)) out.push({ name: `Months of supply, ${when}`, value: Number(mosText(k.mos)) })
   return out
 }
 
@@ -759,12 +752,13 @@ export function archiveDescription(oldestKey: string, latestKey: string, k: Kpis
 
 /**
  * The archive front's one sentence, read off the list: how many reports, since
- * when, and how many come as a PDF. A month with no stored file is web only,
- * so "each one ... as a PDF" is said only when every edition has one.
+ * when, and how many come as a PDF. `oldestKey` is the caller's, the same key
+ * the calendar's span and the page description are built from, so the three
+ * can never name different first months. A month with no stored file is web
+ * only, so "each one ... as a PDF" is said only when every edition has one.
  */
-export function archiveSentence(list: readonly EditionListItem[]): string {
-  const oldest = list.length ? list.map(editionKey).sort()[0]! : null
-  if (!oldest) return ''
+export function archiveSentence(list: readonly EditionListItem[], oldestKey: string): string {
+  if (!list.length || !oldestKey) return ''
   const n = list.length
   const withPdf = list.filter(hasPdf).length
   const count = n === 1 ? 'one in all' : `${n.toLocaleString('en-US')} in all`
@@ -775,7 +769,7 @@ export function archiveSentence(list: readonly EditionListItem[]): string {
       : withPdf > 0
         ? `${each}to read here and ${withPdf.toLocaleString('en-US')} to download as a PDF`
         : `${each}to read here`
-  return `Every monthly report on Central Oregon's housing market since ${monthLabel(oldest)}, ${count}, ${reach}.`
+  return `Every monthly report on Central Oregon's housing market since ${monthLabel(oldestKey)}, ${count}, ${reach}.`
 }
 
 /* -------------------------------------------------------------------------- */

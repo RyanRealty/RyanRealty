@@ -117,18 +117,36 @@ export const VERDICT_RULE = `${MOS_THRESHOLD_CLAUSE} Months of supply is homes f
 
 /**
  * What a dash means, in the floors the builder actually enforces
- * (build-edition.ts, FLOORS): a median needs `median` sales in its period; a
- * change from a year ago needs `yoy` sales in the period in each of the two
- * years (the median change and the homes-sold change alike); a market call
- * (months of supply, and the verdict it carries) needs `mos` sales in the six
- * months that feed it. One wording for the web page and the PDF, so the two
- * can never state the rule two ways. The floors are passed in, not imported:
- * build-edition imports this module.
+ * (build-edition.ts, FLOORS), one clause per figure the tables print:
+ *   median         a median needs `median` sales in its period
+ *   dtc            days to pending needs `dtc` of those sales to carry a
+ *                  pending date (it is counted on dtc_n, not on sales)
+ *   yoy, yoyCount  a change from a year ago needs that many sales in the
+ *                  period in each of the two years: `yoy` for the median's
+ *                  change, `yoyCount` for the homes-sold change. They are
+ *                  separate registry stats, so while they agree the sentence
+ *                  states one number and the moment they differ it states two
+ *   mos            a market call (months of supply, and the verdict it
+ *                  carries) needs `mos` sales in the six months that feed it
+ * One wording for the web page and the PDF, so the two can never state the
+ * rule two ways. The floors are passed in, not imported: build-edition
+ * imports this module.
  */
-export function floorsRule(floors: { median: number; yoy: number; mos: number }): string {
+export function floorsRule(floors: {
+  median: number
+  dtc: number
+  yoy: number
+  yoyCount: number
+  mos: number
+}): string {
+  const change =
+    floors.yoy === floors.yoyCount
+      ? `a change from a year ago needs ${floors.yoy} sales in each year`
+      : `a change in the median from a year ago needs ${floors.yoy} sales in each year, ` +
+        `and a change in homes sold needs ${floors.yoyCount} in each year`
   return (
-    `A dash means too few sales to publish. A median needs ${floors.median} sales; ` +
-    `a change from a year ago needs ${floors.yoy} sales in each year; ` +
-    `a market call needs ${floors.mos} sales in the last six months.`
+    `A dash means too few sales to publish. A median needs ${floors.median} sales, ` +
+    `and days to pending needs ${floors.dtc} sales with a pending date; ` +
+    `${change}; a market call needs ${floors.mos} sales in the last six months.`
   )
 }

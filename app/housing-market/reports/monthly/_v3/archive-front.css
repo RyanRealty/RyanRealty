@@ -185,13 +185,21 @@
   stroke-linecap: round;
 }
 
-.v3.archive-front .archive-front__spark-end {
+.v3.archive-front .archive-front__spark-end,
+.v3.archive-front .archive-front__spark-dot {
   position: absolute;
   width: 0.35rem;
   height: 0.35rem;
   border-radius: 50%;
   background: var(--v3-ink);
   transform: translate(-50%, -50%);
+}
+
+/* A lone published month: a point on the line, smaller than the newest
+   month's mark. */
+.v3.archive-front .archive-front__spark-dot {
+  width: 0.25rem;
+  height: 0.25rem;
 }
 
 .v3.archive-front .archive-front__spark-label {

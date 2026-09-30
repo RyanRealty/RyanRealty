@@ -29,11 +29,11 @@ import {
   publishedVerdict,
   supplyPattern,
   supplySeasons,
-  supplyValue,
   supplyVerdict,
   withheldClause,
 } from './report-view'
 import { marketVerdict as registryVerdict } from '@/lib/data/market-truth/registry'
+import { floorsRule } from '@/lib/market-report/narrative'
 
 /* -------------------------------------------------------------------------- */
 /* A real payload, built by the same builder the monthly cron runs            */
@@ -402,6 +402,11 @@ describe('charts', () => {
     expect(supplyPattern([year(2026, through), year(2025, partial)], 4)).toBe(
       'Supply stayed at 4 months or under in 2026 through August and in the months of 2025 shown.',
     )
+    // A withheld month inside the newest year: "through August" would vouch for it.
+    const gap = [null, ...full(3.5).slice(1, 8), null, null, null, null]
+    expect(supplyPattern([year(2026, gap), year(2025, full(3))], 4)).toBe(
+      'Supply stayed at 4 months or under in the months of 2026 shown and in all of 2025.',
+    )
     // One year only.
     expect(supplyPattern([year(2026, some(3, { 2: 4.2 }))], 4)).toBe('In 2026 supply passed 4 months in March.')
     expect(supplyPattern([], 4)).toBeNull()
@@ -468,31 +473,43 @@ describe('descriptions and structured data', () => {
     expect(vars.find((v) => v.name.startsWith('Months of supply'))!.value).toBe(4)
   })
 
-  it('carries months of supply as the stored value to two decimals, never a float and never across a line', () => {
-    // The stored value the edition page shows as 4.1 (one decimal kept off the line).
+  it('carries months of supply as the figure the page prints, never a finer reading beside it', () => {
+    // Stored 4.0202: the tile, the ledger and the PDF print 4.1, so the markup says 4.1.
     const vars = datasetVariables({ ...payload.region.kpis, mos: 4.020191285866099 }, EDITION)
-    expect(vars.find((v) => v.name.startsWith('Months of supply'))!.value).toBe(4.02)
-    expect(supplyValue(3.3456)).toBe(3.35)
-    expect(supplyValue(4)).toBe(4)
-    expect(supplyValue(6)).toBe(6)
-    // Two decimals would print a threshold the value did not reach: step off it.
-    expect(supplyValue(4.001)).toBe(4.01)
-    expect(supplyValue(5.996)).toBe(5.99)
-    for (const mos of [4.001, 4.004, 5.995, 5.996, 5.999]) {
-      expect(supplyVerdict(supplyValue(mos)), String(mos)).toBe(supplyVerdict(mos))
+    const mos = vars.find((v) => v.name.startsWith('Months of supply'))!.value
+    expect(mos).toBe(4.1)
+    expect(String(mos)).toBe(mosText(4.020191285866099))
+    // Never a value the data did not have on the far side of a line.
+    for (const raw of [4.001, 4.004, 4.049, 5.95, 5.996, 5.999, 3.3456]) {
+      const v = datasetVariables({ ...payload.region.kpis, mos: raw }, EDITION).find((x) =>
+        x.name.startsWith('Months of supply'),
+      )!.value as number
+      expect(v, String(raw)).toBe(Number(mosText(raw)))
+      expect(supplyVerdict(v), String(raw)).toBe(supplyVerdict(raw))
     }
   })
 })
 
 describe('floorsSentence', () => {
-  it('states the floors the builder enforces, the median, the change and the call each on its own terms', () => {
-    const s = floorsSentence()
-    expect(s).toBe(
-      `A dash means too few sales to publish. A median needs ${FLOORS.median} sales; a change from a year ago needs ${FLOORS.yoy} sales in each year; a market call needs ${FLOORS.mos} sales in the last six months.`,
+  it('is the floors the builder enforces, in the one wording the PDF also prints', () => {
+    expect(floorsSentence()).toBe(floorsRule(FLOORS))
+    expect(floorsSentence()).not.toMatch(/—/)
+  })
+})
+
+describe('floorsRule', () => {
+  it('names the median, days to pending, the change and the call, each on its own count', () => {
+    expect(floorsRule({ median: 10, dtc: 10, yoy: 30, yoyCount: 30, mos: 30 })).toBe(
+      'A dash means too few sales to publish. A median needs 10 sales, and days to pending needs 10 sales with a pending date; a change from a year ago needs 30 sales in each year; a market call needs 30 sales in the last six months.',
     )
-    // One floor governs both year-ago changes (median and homes sold), so one number can say both.
-    expect(FLOORS.yoyCount).toBe(FLOORS.yoy)
-    expect(s).not.toMatch(/—/)
+  })
+
+  it('states the two year-ago floors apart the moment the registry lets them differ', () => {
+    const s = floorsRule({ median: 10, dtc: 12, yoy: 30, yoyCount: 40, mos: 30 })
+    expect(s).toContain('days to pending needs 12 sales with a pending date')
+    expect(s).toContain(
+      'a change in the median from a year ago needs 30 sales in each year, and a change in homes sold needs 40 in each year',
+    )
   })
 })
 
@@ -553,17 +570,17 @@ describe('the archive', () => {
 
   it('says what the archive holds, and calls a month a PDF only when it has a file', () => {
     // One of the four is web only, so "each one ... as a PDF" would be false.
-    expect(archiveSentence(list)).toBe(
+    expect(archiveSentence(list, '2006-01')).toBe(
       "Every monthly report on Central Oregon's housing market since January 2006, 4 in all, each one to read here and 3 to download as a PDF.",
     )
     const all = [item('2026-08'), item('2026-07')]
-    expect(archiveSentence(all)).toBe(
+    expect(archiveSentence(all, '2026-07')).toBe(
       "Every monthly report on Central Oregon's housing market since July 2026, 2 in all, each one to read here or download as a PDF.",
     )
-    expect(archiveSentence([item('2026-08', { pdf_path: null })])).toBe(
+    expect(archiveSentence([item('2026-08', { pdf_path: null })], '2026-08')).toBe(
       "Every monthly report on Central Oregon's housing market since August 2026, one in all, to read here.",
     )
-    expect(archiveSentence([])).toBe('')
+    expect(archiveSentence([], '')).toBe('')
   })
 })
 
@@ -577,7 +594,7 @@ describe('voice', () => {
       editionDescription(EDITION, payload.region.kpis),
       archiveYears([item('2026-08')]),
       medianSpark(payload.region.series),
-      archiveSentence([item('2026-08'), item('2026-07', { pdf_path: null })]),
+      archiveSentence([item('2026-08'), item('2026-07', { pdf_path: null })], '2026-07'),
     ])
     expect(out.length).toBeGreaterThan(20)
     for (const s of out) expect(s).not.toContain('—')

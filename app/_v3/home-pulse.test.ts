@@ -192,7 +192,7 @@ describe('the band is mounted on the homepage, under the hero search', () => {
   it('reserves the sticky chrome when the band is the scroll target', () => {
     const chrome = readFileSync(resolve('components/site/v3/V3Chrome.css'), 'utf8')
     expect(chrome).toMatch(
-      /html:has\(\.v3\.v3-chrome\)\s*\{\s*scroll-padding-top:\s*calc\(var\(--v3-chrome-h\) \+ var\(--v3-space-md\)\);/,
+      /html:has\(\.v3-chrome\)\s*\{\s*scroll-padding-top:\s*calc\(var\(--v3-chrome-h\) \+ var\(--v3-space-md\)\);/,
     )
     const css = readFileSync(resolve('components/site/v3/V3Pulse.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
     expect(css).not.toContain('scroll-margin-top')

@@ -148,6 +148,21 @@ export function ArchiveFront({ id, heading, sentence, latest, years, tile }: Arc
                 <svg viewBox={`0 0 ${SPARK_W} ${SPARK_H}`} preserveAspectRatio="none" focusable="false">
                   <path d={spark.d} vectorEffect="non-scaling-stroke" />
                 </svg>
+                {spark.dots.map((dot) => (
+                  /* A month with no published neighbour, which the path
+                     alone would not paint: the caption's low or high may be
+                     this month, so it gets a mark the reader can find. */
+                  <span
+                    key={`${dot.x.toFixed(1)}-${dot.y.toFixed(1)}`}
+                    className="archive-front__spark-dot"
+                    style={
+                      {
+                        left: `${((dot.x / SPARK_W) * 100).toFixed(2)}%`,
+                        top: `${((dot.y / SPARK_H) * 100).toFixed(2)}%`,
+                      } as CSSProperties
+                    }
+                  />
+                ))}
                 {spark.last ? (
                   /* The newest month's mark, placed in the box's own
                      fractions, so it stays a circle however wide the tile

@@ -793,7 +793,10 @@ export function buildPairPlot(bars: readonly PairBarIn[]): PairPlot | null {
    and its trace. Null is a month the source did not publish; it BREAKS the
    line (the path lifts and restarts) rather than being drawn as zero, and a
    run with fewer published points than `minPoints` is not drawn at all
-   (DATA_GRAPHICS.md small-n rule: omit, do not pad).
+   (DATA_GRAPHICS.md small-n rule: omit, do not pad). A published point with
+   no published neighbour is a run of one, which a path cannot show (a lone
+   "M" paints nothing), so it comes back in `dots` for the caller to mark: a
+   caption that names a low or a high must be able to point at it.
 
    Absolute geometry in the caller's box, not percent: a spark is rendered at
    one fixed size so its endpoint mark stays a circle and its stroke a stroke.
@@ -805,6 +808,11 @@ export type SparkPlot = {
   d: string
   /** The last published point, for the endpoint mark. */
   last: { x: number; y: number } | null
+  /**
+   * Every other published point with no published neighbour on either side:
+   * the path draws nothing there, so the caller marks each one.
+   */
+  dots: { x: number; y: number }[]
   /** Published points drawn. */
   n: number
   min: number
@@ -843,7 +851,13 @@ export function buildSparkPlot(
     prev = p.i
   }
   const tail = points[points.length - 1]!
-  return { kind: 'spark', d, last: { x: x(tail.i), y: y(tail.v) }, n: points.length, min, max }
+  const dots: { x: number; y: number }[] = []
+  points.forEach((p, j) => {
+    if (j === points.length - 1) return
+    const joined = (j > 0 && points[j - 1]!.i === p.i - 1) || points[j + 1]!.i === p.i + 1
+    if (!joined) dots.push({ x: x(p.i), y: y(p.v) })
+  })
+  return { kind: 'spark', d, last: { x: x(tail.i), y: y(tail.v) }, dots, n: points.length, min, max }
 }
 
 /** One mark on a strip. `at` is the x value; every string is caller-formatted. */

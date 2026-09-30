@@ -125,11 +125,18 @@ describe('V3Atlas chips: wrapped at every width, folded on a phone', () => {
 
   // The page's scroll padding clears the sticky chrome for every target at
   // once (V3Chrome.css, WCAG 2.2 SC 2.4.11); a section that also carried the
-  // chrome's height as its own margin would land twice as far down.
+  // chrome's height as its own margin would land twice as far down. Focus in
+  // the bar itself drops the padding, or Chromium scrolls the page to reveal
+  // a control that never moved; an engine without :has() gets the margin back
+  // on every target instead.
   it('lands its hash under the sticky chrome, not beneath it', () => {
     const chrome = stripComments(readFileSync(resolve('components/site/v3/V3Chrome.css'), 'utf8'))
-    expect(rulesFor(chrome, 'html:has(.v3.v3-chrome)').join('\n')).toMatch(
+    expect(rulesFor(chrome, 'html:has(.v3-chrome)').join('\n')).toMatch(
       /scroll-padding-top:\s*calc\(var\(--v3-chrome-h\) \+ var\(--v3-space-md\)\)/,
+    )
+    expect(rulesFor(chrome, 'html:has(.v3-chrome :focus)').join('\n')).toMatch(/scroll-padding-top:\s*0/)
+    expect(chrome).toMatch(
+      /@supports not selector\(:has\(\*\)\)\s*\{\s*\.v3-chrome ~ #main-content \[id\]\s*\{\s*scroll-margin-top:\s*calc\(var\(--v3-chrome-h\) \+ var\(--v3-space-md\)\)/,
     )
     expect(css).not.toMatch(/scroll-margin-top/)
   })
