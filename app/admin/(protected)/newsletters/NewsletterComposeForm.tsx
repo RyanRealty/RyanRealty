@@ -93,6 +93,11 @@ export default function NewsletterComposeForm({ id, initial, editOnly }: Props) 
         if (r.ok) {
           setMessage({ type: 'ok', text: 'Draft saved.' })
           router.refresh()
+        } else if (r.error === 'not_a_draft') {
+          // Scheduled, sent or replaced since this page loaded: nothing was
+          // written. Show what is there now.
+          setMessage({ type: 'err', text: 'Not saved: this is no longer a draft. The page shows it as it is now.' })
+          router.refresh()
         } else {
           setMessage({ type: 'err', text: 'Could not save the draft.' })
         }

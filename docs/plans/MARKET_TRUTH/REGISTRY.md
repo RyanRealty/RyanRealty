@@ -302,16 +302,24 @@ holds; these are the report's additional predicates. Definition id on every row:
   (`created_by` `cron:market-report-edition:<YYYY-MM>`, one live per month, unique index
   `20260930130000`) and texts Matt the `/admin/newsletters/<id>` link. The email prints only the
   edition's frozen figures, each cited as printed (a median to the whole dollar), and must pass the
-  R-2 figure check before it is written. A draft is never rewritten: every publish by any path
-  (`publishEdition`) and the daily refresh's backstop check each open email against its edition,
-  and when the figures changed (compared with their signs, from each citation's filter) the old
-  email is canceled, even if scheduled, and a new draft is written and texted; one already going
-  out is flagged for him to pause. What Matt reviews is what he approves. Deleting a draft cancels
-  it, so a skipped month stays skipped. Nothing goes to anyone until Matt approves that send, and
-  a broker's one-click newsletter send delivers only the current issue he sent to the list
-  (`newsletters.list_send`, in the last 45 days) or scheduled, never a draft or a one-off test
-  (`lib/data/newsletter/current-issue.ts`). The site's Market menu links the archive directly
-  (Matt 2026-09-30, "Yes, add the link").
+  R-2 figure check before it is written. Every citation carries the edition build it came from
+  (`generated_at`). A draft is never rewritten: every publish by any path (`publishEdition`) and
+  the daily refresh's backstop check each open email against its edition by the figures it prints
+  (each citation's figure, which carries a change's direction, and value). The same figures from a
+  new build keep the draft and everything Matt did with it, and move its trace to the new build.
+  New figures replace it in one transaction (`replace_newsletter_draft`, migration
+  `20260930180000`): the old email is canceled, even if scheduled, and a new draft is written
+  under the same marker and audience; Matt is texted the new link, whether the old one had been
+  approved, and that edits to it are not carried over, and the old page links to the new one.
+  One already going out cannot be recalled: he is texted once per build to pause the rest. A new
+  email that cannot be built, or a report no longer published, still cancels the old one, and
+  the backstop drafts the month once it can. What Matt reviews is what he approves; the editor's
+  Save writes only while the email is a draft. Deleting a draft cancels it, so a skipped month
+  stays skipped. Nothing goes to anyone until Matt approves that send, and a broker's one-click
+  newsletter send delivers only the current issue he sent to the list (`newsletters.list_send`,
+  in the last 45 days, not paused) or scheduled, never a draft or a one-off test, and never a
+  report email whose report was rebuilt after it went out (`lib/data/newsletter/current-issue.ts`).
+  The site's Market menu links the archive directly (Matt 2026-09-30, "Yes, add the link").
 
 **Closings drift, found 2026-09-25.** Across the whole feed (every property type, every city Spark
 serves), Spark held 1,093 closings from January 2024 to September 2026 that our `listings` copy

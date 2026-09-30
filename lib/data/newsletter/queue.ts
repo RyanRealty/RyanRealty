@@ -47,8 +47,13 @@ export async function claimNewsletterForSending(
   const token = crypto.randomUUID()
   const { data, error } = await sb
     .from(LETTERS)
-    // list_send marks a send to the subscriber list, the only kind the CRM's
-    // one-click send may offer as the current issue (migration 20260930160000).
+    // list_send marks a send to the subscriber list or a segment of it
+    // (enqueueNewsletter), the only kind the CRM's one-click send may offer as
+    // the current issue, and the only kind that counts as the list's history
+    // below (migration 20260930160000). A send to chosen addresses
+    // (enqueueNewsletterToEmails: the admin one-off, a test, a market report
+    // sent to report subscribers or a CRM tag) is not one: its people were
+    // picked for it, so its issue is not offered to anyone else.
     .update({
       status: 'sending',
       lock_token: token,
@@ -80,18 +85,20 @@ export async function releaseNewsletterLock(
 
 /**
  * The engagement inputs for tier assignment (§6.5 rule 2): the set of subscriber
- * emails that OPENED or CLICKED any of the last `lookback` sent issues (Tier 1),
- * and the set of emails that have EVER been sent to (to tell new/Tier 2 from
- * cold/Tier 3). Emails are lowercased. One query each, so tiering a 12k list is
- * two reads, not 12k.
+ * emails that OPENED or CLICKED any of the last `lookback` issues sent to the
+ * list (Tier 1), and the set of emails that have EVER been sent to (to tell
+ * new/Tier 2 from cold/Tier 3). Emails are lowercased. One query each, so
+ * tiering a 12k list is two reads, not 12k.
  */
 export async function getEngagementSets(lookback = 2): Promise<{ engaged: Set<string>; everSent: Set<string> }> {
   const sb = createServiceClient()
-  // The last N newsletters that actually sent, newest first.
+  // The last N issues that went out to the list, newest first: a one-off to a
+  // few chosen inboxes (the July 2026 tests) says nothing about the list.
   const { data: recent } = await sb
     .from(LETTERS)
     .select('id')
     .eq('status', 'sent')
+    .eq('list_send', true)
     .order('sent_at', { ascending: false })
     .limit(lookback)
   const recentIds = (recent ?? []).map((r) => (r as { id: string }).id)
@@ -221,10 +228,20 @@ export async function bulkActivateSubscribers(
   return total
 }
 
-/** True if any newsletter has ever been sent (used to decide warm-up ramp vs steady caps). */
+/**
+ * True once an issue has gone out to the subscriber list (used to decide the
+ * warm-up ramp vs steady caps). One-offs to chosen addresses do not count:
+ * on 2026-09-30 the only sent issues were three July tests to a few inboxes,
+ * which warm nothing, and counting them would send the first real list issue
+ * at steady caps.
+ */
 export async function anyNewsletterEverSent(): Promise<boolean> {
   const sb = createServiceClient()
-  const { count } = await sb.from(LETTERS).select('id', { count: 'exact', head: true }).eq('status', 'sent')
+  const { count } = await sb
+    .from(LETTERS)
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'sent')
+    .eq('list_send', true)
   return (count ?? 0) > 0
 }
 

@@ -93,7 +93,8 @@ function edition(over: { region?: Kpis; monthly?: MarketSection[]; pdf_path?: st
     edition_month: '2026-08-01',
     payload,
     pdf_path: over.pdf_path === undefined ? 'central-oregon/2026/ryan-realty-central-oregon-market-report-2026-08.pdf' : over.pdf_path,
-    published_at: '2026-09-25T02:49:18.911Z',
+    // As PostgREST returns a timestamptz; every citation records it as an ISO instant.
+    generated_at: '2026-09-25T13:48:04.422+00:00',
   }
 }
 
@@ -193,6 +194,15 @@ describe('buildEditionEmail', () => {
       expect(s).not.toContain('—')
       expect(s).not.toMatch(/ -- /)
     }
+  })
+
+  it('puts the printed direction of every change in its figure, so a sign flip is a different figure', () => {
+    const figures = email.citations.map((c) => `${c.figure} = ${c.value}`)
+    expect(figures).toContain('Central Oregon median change from August 2025: down (percent, as printed) = 2')
+    expect(figures).toContain('Central Oregon change in homes sold from August 2025: fewer = 38')
+    expect(figures).toContain('Bend median change from a year earlier: down (percent, as printed) = 6')
+    const up = buildEditionEmail(edition({ region: kpis({ ...REGION, medianYoY: 0.0229 }) }))
+    expect(up.citations.map((c) => c.figure)).toContain('Central Oregon median change from August 2025: up (percent, as printed)')
   })
 
   it('stamps every citation with the edition it came from', () => {

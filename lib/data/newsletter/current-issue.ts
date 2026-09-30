@@ -1,6 +1,12 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/data/client'
 import { getNewsletter, type NewsletterRow } from '@/lib/data/newsletter'
+import {
+  builtFromOrAfter,
+  editionBuildStamp,
+  editionEmailMonth,
+  isLiveEditionEmailMarker,
+} from '@/lib/market-report/edition-email-marker'
 
 /**
  * The issue a broker's one-click "send the newsletter" delivers, and the one
@@ -8,14 +14,21 @@ import { getNewsletter, type NewsletterRow } from '@/lib/data/newsletter'
  *
  * Approved means it went out to the subscriber list (sent, or sending now,
  * with list_send: a one-off test to a few inboxes does not count) or he
- * scheduled it. A draft never qualifies, whoever wrote it: the monthly Bend
- * Brief and the
- * monthly market report email draft themselves for his per-issue approval,
- * the admin Generate button writes one under his name, and none of them is
- * the brokerage's message until he approves it (CLAUDE.md §1; Matt
- * 2026-09-30 on the report email: nothing goes to anyone until he approves
- * that send). Before 2026-09-30 this fell back to the newest draft, and the
- * newest "sent" issue was a July integration-test probe.
+ * scheduled it, and it is not paused (a send he or the deliverability breaker
+ * paused is on hold). A draft never qualifies, whoever wrote it: the monthly
+ * Bend Brief and the monthly market report email draft themselves for his
+ * per-issue approval, the admin Generate button writes one under his name,
+ * and none of them is the brokerage's message until he approves it
+ * (CLAUDE.md §1; Matt 2026-09-30 on the report email: nothing goes to anyone
+ * until he approves that send). Before 2026-09-30 this fell back to the
+ * newest draft, and the newest "sent" issue was a July integration-test probe.
+ *
+ * A monthly market report email qualifies only while its report is still the
+ * build its figures came from (every citation's fetched_at against the
+ * edition's generated_at, lib/market-report/edition-email-marker.ts): once the
+ * report is republished, an email that already went out keeps the figures it
+ * was sent with, so it is not sent again to someone new. Its open draft is
+ * replaced or re-stamped by the draft writer (lib/market-report/edition-email-draft.ts).
  *
  * Current means it went out in the last CURRENT_DAYS: both issues are
  * monthly (the Bend Brief on the 1st, the market report on the 8th), and an
@@ -31,6 +44,9 @@ import { getNewsletter, type NewsletterRow } from '@/lib/data/newsletter'
  */
 export const CURRENT_DAYS = 45
 
+/** Candidates read per query: the newest ones, some of which may be passed over. */
+const CANDIDATES = 5
+
 export type CurrentNewsletterIssueRef = {
   id: string
   subject: string
@@ -39,18 +55,56 @@ export type CurrentNewsletterIssueRef = {
   sendFinishedAt: string | null
 }
 
-const REF_COLUMNS = 'id,subject,status,send_started_at,send_finished_at'
+type CandidateRow = {
+  id: string
+  subject: string | null
+  status: string
+  send_started_at: string | null
+  send_finished_at: string | null
+  created_by: string | null
+  stamp: string | null
+}
+
+const REF_COLUMNS = 'id,subject,status,send_started_at,send_finished_at,created_by,stamp:citations->0->>fetched_at'
 const HAS_BODY = 'body_html.not.is.null,body_text.not.is.null'
 
-function toRef(row: Record<string, unknown> | null): CurrentNewsletterIssueRef | null {
-  if (!row) return null
+function toRef(row: CandidateRow): CurrentNewsletterIssueRef {
   return {
     id: String(row.id),
     subject: String(row.subject ?? ''),
     status: row.status as CurrentNewsletterIssueRef['status'],
-    sendStartedAt: (row.send_started_at as string | null) ?? null,
-    sendFinishedAt: (row.send_finished_at as string | null) ?? null,
+    sendStartedAt: row.send_started_at ?? null,
+    sendFinishedAt: row.send_finished_at ?? null,
   }
+}
+
+type Db = ReturnType<typeof createServiceClient>
+
+/**
+ * False for a monthly market report email whose report was rebuilt after it
+ * (or is no longer published); true for every other issue. THROWS on a failed
+ * read: an unchecked email is not offered.
+ */
+async function figuresStillCurrent(sb: Db, row: CandidateRow): Promise<boolean> {
+  if (!isLiveEditionEmailMarker(row.created_by)) return true
+  const month = editionEmailMonth(row.created_by)
+  if (!month) return false
+  const { data, error } = await sb
+    .from('market_report_editions')
+    .select('status,generated_at')
+    .eq('edition_month', `${month}-01`)
+    .maybeSingle()
+  if (error) throw new Error(`getCurrentNewsletterIssue: ${error.message}`)
+  const edition = data as { status: string; generated_at: string } | null
+  if (!edition || edition.status !== 'published') return false
+  return builtFromOrAfter(row.stamp, editionBuildStamp(edition))
+}
+
+async function firstCurrent(sb: Db, rows: CandidateRow[]): Promise<CurrentNewsletterIssueRef | null> {
+  for (const row of rows) {
+    if (await figuresStillCurrent(sb, row)) return toRef(row)
+  }
+  return null
 }
 
 export async function getCurrentNewsletterIssueRef(now: Date = new Date()): Promise<CurrentNewsletterIssueRef | null> {
@@ -61,36 +115,38 @@ export async function getCurrentNewsletterIssueRef(now: Date = new Date()): Prom
     .select(REF_COLUMNS)
     .in('status', ['sent', 'sending'])
     .eq('list_send', true)
+    .eq('send_paused', false)
     .gte('send_started_at', since)
     .or(HAS_BODY)
     .order('send_started_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
+    .limit(CANDIDATES)
   if (outError) throw new Error(`getCurrentNewsletterIssue: ${outError.message}`)
-  if (out) return toRef(out as Record<string, unknown>)
+  const sent = await firstCurrent(sb, (out ?? []) as unknown as CandidateRow[])
+  if (sent) return sent
 
   const { data: next, error: nextError } = await sb
     .from('newsletters')
     .select(REF_COLUMNS)
     .eq('status', 'scheduled')
+    .eq('send_paused', false)
     .or(HAS_BODY)
     .order('scheduled_at', { ascending: true, nullsFirst: false })
-    .limit(1)
-    .maybeSingle()
+    .limit(CANDIDATES)
   if (nextError) throw new Error(`getCurrentNewsletterIssue: ${nextError.message}`)
-  return toRef(next as Record<string, unknown> | null)
+  return firstCurrent(sb, (next ?? []) as unknown as CandidateRow[])
 }
 
 const APPROVED = new Set(['sent', 'sending', 'scheduled'])
 
 /**
  * The whole row of the current issue, for the send. It is read again by id,
- * so it is checked again: a scheduled issue pulled back to draft between the
- * two reads (its report was republished) is not sent.
+ * so it is checked again: an issue canceled or paused between the two reads
+ * (a scheduled report email replaced because its report was republished, or
+ * a send put on hold) is not sent.
  */
 export async function getCurrentNewsletterIssue(now: Date = new Date()): Promise<NewsletterRow | null> {
   const ref = await getCurrentNewsletterIssueRef(now)
   if (!ref) return null
   const letter = await getNewsletter(ref.id)
-  return letter && APPROVED.has(letter.status) ? letter : null
+  return letter && APPROVED.has(letter.status) && !letter.send_paused ? letter : null
 }

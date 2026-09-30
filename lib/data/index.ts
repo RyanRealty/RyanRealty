@@ -867,6 +867,7 @@ export {
   markSubscribersSent,
   createNewsletterDraft,
   updateNewsletter,
+  updateNewsletterDraft,
   setNewsletterCitations,
   listNewsletters,
   getNewsletter,

@@ -24,6 +24,7 @@ import type { EditionRow } from '@/lib/data/market-report/editions'
 import type { NewsletterCitationEntry } from '@/lib/data/newsletter'
 import { EMAIL_BODY_MUTED, EMAIL_CREAM, EMAIL_INK, EMAIL_NAVY, EMAIL_SERIF } from '@/lib/email/brand'
 import { FIRST_EDITION_LABEL } from './edition-path-guard'
+import { editionBuildStamp } from './edition-email-marker'
 import { count, days, money, monthLabel, monthName, mosText } from './format'
 import { citySentence } from './headline'
 import { NOUN_SFR } from './narrative'
@@ -40,7 +41,7 @@ export type EditionEmail = {
   citations: NewsletterCitationEntry[]
 }
 
-type EditionInput = Pick<EditionRow, 'edition_month' | 'payload' | 'pdf_path' | 'published_at'>
+type EditionInput = Pick<EditionRow, 'edition_month' | 'payload' | 'pdf_path' | 'generated_at'>
 
 const VERDICT_WORDS: Record<Verdict, string> = {
   seller: "a seller's market",
@@ -71,6 +72,17 @@ function changeWords(yoy: number, ago: string): { text: string; pct: number } {
   return { text: `${r > 0 ? 'up' : 'down'} ${Math.abs(r)}% from ${ago}`, pct: Math.abs(r) }
 }
 
+/**
+ * The direction a printed whole-percent change reads, for its citation's
+ * figure: the value is unsigned (R-2 matches the printed digits), so the
+ * figure carries the sign, and a draft's figures are compared by figure and
+ * value (./edition-email-draft.ts).
+ */
+function direction(yoy: number): 'up' | 'down' | 'unchanged' {
+  const r = Math.round(yoy * 100)
+  return r > 0 ? 'up' : r < 0 ? 'down' : 'unchanged'
+}
+
 type Cell = { figure: string; caption: string }
 
 export function buildEditionEmail(edition: EditionInput, opts: { site?: string } = {}): EditionEmail {
@@ -82,8 +94,9 @@ export function buildEditionEmail(edition: EditionInput, opts: { site?: string }
   const ago = monthLabel(`${Number(key.slice(0, 4)) - 1}-${key.slice(5, 7)}`)
   const k: Kpis = payload.region.kpis
   const place = payload.region.geo.label
-  // When the payload's figures were computed (a republish recomputes them).
-  const fetchedAt = payload.generatedAt ?? edition.published_at ?? ''
+  // The build the figures came from (a republish is a new build): the draft
+  // writer keys the email to it (./edition-email-draft.ts).
+  const fetchedAt = editionBuildStamp(edition)
   const source = `Supabase public.market_report_editions, edition ${key} (payload frozen at publish, after the Spark reconciliation gate)`
   const defn = `definition ${payload.definitionId}`
 
@@ -100,7 +113,7 @@ export function buildEditionEmail(edition: EditionInput, opts: { site?: string }
     if (k.medianYoY != null) {
       const change = changeWords(k.medianYoY, ago)
       caption += `, ${change.text}`
-      cite(`${place} median change from ${ago} (percent, as printed)`, change.pct, `payload.region.kpis.medianYoY = ${k.medianYoY}`)
+      cite(`${place} median change from ${ago}: ${direction(k.medianYoY)} (percent, as printed)`, change.pct, `payload.region.kpis.medianYoY = ${k.medianYoY}`)
     }
     cells.push({ figure: money(k.median.v), caption })
   }
@@ -111,7 +124,7 @@ export function buildEditionEmail(edition: EditionInput, opts: { site?: string }
       const diff = k.sales - k.salesPrior
       caption += diff === 0 ? `, the same number as ${ago}` : `, ${count(Math.abs(diff))} ${diff > 0 ? 'more' : 'fewer'} than ${ago}`
       cite(`${place} homes sold, ${ago}`, k.salesPrior, 'payload.region.kpis.salesPrior')
-      if (diff !== 0) cite(`${place} change in homes sold from ${ago}`, Math.abs(diff), 'payload.region.kpis.sales - salesPrior')
+      if (diff !== 0) cite(`${place} change in homes sold from ${ago}: ${diff > 0 ? 'more' : 'fewer'}`, Math.abs(diff), 'payload.region.kpis.sales - salesPrior')
     }
     cells.push({ figure: count(k.sales), caption })
   }
@@ -143,7 +156,7 @@ export function buildEditionEmail(edition: EditionInput, opts: { site?: string }
     cite(`${section.geo.label} homes sold, ${label}`, c.sales, `${at}.sales`)
     cite(`${section.geo.label} median sale price, ${label}`, Math.round(c.median.v!), `${at}.median.v = ${c.median.v} (${c.median.n} sales)`)
     if (c.medianYoY != null) {
-      cite(`${section.geo.label} median change from a year earlier (percent, as printed)`, Math.abs(Math.round(c.medianYoY * 100)), `${at}.medianYoY = ${c.medianYoY}`)
+      cite(`${section.geo.label} median change from a year earlier: ${direction(c.medianYoY)} (percent, as printed)`, Math.abs(Math.round(c.medianYoY * 100)), `${at}.medianYoY = ${c.medianYoY}`)
     }
     if (c.dtc.v != null) {
       cite(`${section.geo.label} median days to pending, ${label}`, Math.round(c.dtc.v), `${at}.dtc.v = ${c.dtc.v} (${c.dtc.n} sales)`)

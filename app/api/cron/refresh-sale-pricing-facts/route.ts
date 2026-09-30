@@ -58,6 +58,9 @@ export async function GET(request: Request) {
   // PRUNE_BUDGET comps: a batch that would take it past that removes nothing
   // (a listings read gone wrong, not a normal day, which held 4 in the whole
   // table on 2026-09-30), the owner is texted, and the steps below still run.
+  // The sweep holds at a refused batch (migration 20260930190000): the next
+  // run reads it again with a whole budget, and a checked cleanup is approved
+  // by calling the function once with a larger p_max_delete.
   const pruned = {
     deleted: 0,
     scanned: 0,
@@ -95,7 +98,7 @@ export async function GET(request: Request) {
     console.error('[refresh-sale-pricing-facts] prune refused', pruned.refused)
     await queueBrokerHealthAlert({
       key: 'comp-prune-refused',
-      body: `The CMA comp cleanup refused a batch: ${pruned.refused.slice(0, 150)} (${pruned.deleted} removed earlier this run). The listings read may be incomplete; that batch stays refused until someone checks it and approves the cleanup.`,
+      body: `The CMA comp cleanup refused a batch: ${pruned.refused.slice(0, 150)} (${pruned.deleted} removed earlier this run). The listings read may be incomplete; the cleanup waits on that batch until someone checks it and approves it.`,
       cooldownMinutes: 1440,
     })
   }

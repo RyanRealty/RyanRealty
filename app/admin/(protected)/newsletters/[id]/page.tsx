@@ -34,6 +34,13 @@ import {
   type NewsletterRecipient,
 } from '@/lib/data'
 import type { NewsletterStatus } from '@/lib/data/newsletter'
+import { findNewsletterByCreatedBy } from '@/lib/data/newsletter/scheduled'
+import {
+  editionEmailMarker,
+  editionEmailMonth,
+  isEditionEmailMarker,
+  isLiveEditionEmailMarker,
+} from '@/lib/market-report/edition-email-marker'
 import { countUnsubscribedRecipients } from '@/lib/data/newsletter/tracking'
 import { renderNewsletterPreview } from '@/lib/newsletter/preview'
 import { formatDateTime } from '@/lib/format/date'
@@ -154,6 +161,15 @@ export default async function NewsletterDetailPage({ params }: { params: Promise
   // the rendered newsletter, never raw HTML.
   const preview = letter.body_html ? await renderNewsletterPreview(id, 'matt') : null
 
+  // A monthly market report email replaced because its report was republished
+  // with new figures: point at the one that took its place (a link Matt was
+  // texted, or a tab left open, lands here).
+  const replacedMonth =
+    letter.status === 'canceled' && isEditionEmailMarker(letter.created_by) && !isLiveEditionEmailMarker(letter.created_by)
+      ? editionEmailMonth(letter.created_by)
+      : null
+  const replacement = replacedMonth ? await findNewsletterByCreatedBy(editionEmailMarker(replacedMonth)).catch(() => null) : null
+
   return (
     <div className="av2-scope" style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
       <nav style={{ margin: '0 0 10px', fontSize: 'var(--a-text-xs)' }}>
@@ -170,6 +186,22 @@ export default async function NewsletterDetailPage({ params }: { params: Promise
         <StateWord state={STATUS_STATE[letter.status] ?? 'waiting'}>{letter.status}</StateWord>
         {letter.send_paused ? <StateWord state="slow">paused</StateWord> : null}
       </div>
+
+      {replacedMonth ? (
+        <p style={{ margin: '10px 0 0', fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+          This email was replaced when its market report was republished with new figures, so it will not go out.{' '}
+          {replacement && replacement.id !== id ? (
+            <>
+              <Link href={`/admin/newsletters/${replacement.id}`} style={{ color: 'var(--a-accent)', fontWeight: 600 }}>
+                Open the current one
+              </Link>{' '}
+              ({replacement.status}).
+            </>
+          ) : (
+            'Its new email is drafted as soon as it can be built from the new figures.'
+          )}
+        </p>
+      ) : null}
 
       <SectionHead>Preview</SectionHead>
       <NewsletterPreviewPanel

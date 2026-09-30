@@ -341,6 +341,31 @@ export async function updateNewsletter(id: string, fields: Partial<Pick<Newslett
   return { ok: !error }
 }
 
+/**
+ * The review page's Save: the form's fields, written only while the issue is
+ * still a draft. A tab left open on an issue that was since scheduled, sent,
+ * or replaced (a monthly report email whose report was republished) gets
+ * 'not_a_draft' and writes nothing: approved content is never edited after
+ * its checks, and an edit never lands on a canceled row.
+ */
+export async function updateNewsletterDraft(
+  id: string,
+  fields: Pick<NewsletterRow, 'subject' | 'preview_text' | 'body_html' | 'body_text' | 'audience'>,
+): Promise<{ ok: boolean; error?: 'not_a_draft' | 'persist_failed' }> {
+  const sb = createServiceClient()
+  const { data, error } = await sb
+    .from(LETTERS)
+    .update({ ...fields, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('status', 'draft')
+    .select('id')
+  if (error) {
+    console.error('[updateNewsletterDraft]', error.message)
+    return { ok: false, error: 'persist_failed' }
+  }
+  return (data?.length ?? 0) > 0 ? { ok: true } : { ok: false, error: 'not_a_draft' }
+}
+
 /** One §8 verification-trace entry stored in newsletters.citations (jsonb array). */
 export type NewsletterCitationEntry = {
   figure: string

@@ -20,6 +20,7 @@ import {
   setSubscriberStatus,
   createNewsletterDraft,
   updateNewsletter,
+  updateNewsletterDraft,
   deleteNewsletterDraft,
   getNewsletter,
   type NewsletterSegment,
@@ -243,10 +244,11 @@ export async function adminCreateNewsletterAction(formData: FormData): Promise<{
   })
 }
 
-export async function adminUpdateNewsletterAction(id: string, formData: FormData): Promise<{ ok: boolean }> {
+export async function adminUpdateNewsletterAction(id: string, formData: FormData): Promise<{ ok: boolean; error?: string }> {
   const gate = await requireSuperuser()
-  if (!gate.ok) return { ok: false }
-  return updateNewsletter(id, {
+  if (!gate.ok) return { ok: false, error: 'unauthorized' }
+  // Only a draft is edited: approved, sent and replaced issues are not.
+  return updateNewsletterDraft(id, {
     subject: cleanSubject(formData.get('subject')),
     preview_text: String(formData.get('preview_text') ?? '').trim() || null,
     body_html: String(formData.get('body_html') ?? '') || null,
