@@ -1,6 +1,7 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/data/client'
 import { personIdsByEmailCi } from '@/lib/data/crm/personByEmailCi'
+import { isEditionEmailMarker } from '@/lib/market-report/edition-email-marker'
 
 /**
  * DAL for the newsletter feature — public.newsletter_subscribers (the list) +
@@ -313,6 +314,8 @@ export async function createNewsletterDraft(input: {
   body_text?: string | null
   audience?: string
   created_by?: string | null
+  /** The §0 trace, written with the row so a draft never exists without it. */
+  citations?: NewsletterCitationEntry[]
 }): Promise<{ ok: boolean; id?: string; error?: string }> {
   const sb = createServiceClient()
   const { data, error } = await sb
@@ -324,6 +327,7 @@ export async function createNewsletterDraft(input: {
       body_text: input.body_text ?? null,
       audience: input.audience ?? 'all',
       created_by: input.created_by ?? null,
+      ...(input.citations ? { citations: input.citations } : {}),
     })
     .select('id')
     .maybeSingle()
@@ -335,6 +339,31 @@ export async function updateNewsletter(id: string, fields: Partial<Pick<Newslett
   const sb = createServiceClient()
   const { error } = await sb.from(LETTERS).update({ ...fields, updated_at: new Date().toISOString() }).eq('id', id)
   return { ok: !error }
+}
+
+/**
+ * The review page's Save: the form's fields, written only while the issue is
+ * still a draft. A tab left open on an issue that was since scheduled, sent,
+ * or replaced (a monthly report email whose report was republished) gets
+ * 'not_a_draft' and writes nothing: approved content is never edited after
+ * its checks, and an edit never lands on a canceled row.
+ */
+export async function updateNewsletterDraft(
+  id: string,
+  fields: Pick<NewsletterRow, 'subject' | 'preview_text' | 'body_html' | 'body_text' | 'audience'>,
+): Promise<{ ok: boolean; error?: 'not_a_draft' | 'persist_failed' }> {
+  const sb = createServiceClient()
+  const { data, error } = await sb
+    .from(LETTERS)
+    .update({ ...fields, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('status', 'draft')
+    .select('id')
+  if (error) {
+    console.error('[updateNewsletterDraft]', error.message)
+    return { ok: false, error: 'persist_failed' }
+  }
+  return (data?.length ?? 0) > 0 ? { ok: true } : { ok: false, error: 'not_a_draft' }
 }
 
 /** One §8 verification-trace entry stored in newsletters.citations (jsonb array). */
@@ -369,10 +398,31 @@ export async function getNewsletter(id: string): Promise<NewsletterRow | null> {
   return (data as NewsletterRow | null) ?? null
 }
 
-export async function deleteNewsletterDraft(id: string): Promise<{ ok: boolean }> {
+/**
+ * Delete a draft. A monthly market report email draft is CANCELED instead: its
+ * row is the record that the month was drafted, and without it the daily
+ * backstop (lib/market-report/edition-email-draft.ts) would write the month
+ * again the next morning, so a month Matt skipped would keep coming back.
+ */
+export async function deleteNewsletterDraft(id: string): Promise<{ ok: boolean; error?: 'not_a_draft' }> {
   const sb = createServiceClient()
-  const { error } = await sb.from(LETTERS).delete().eq('id', id).eq('status', 'draft')
-  return { ok: !error }
+  const { data: row, error: readError } = await sb
+    .from(LETTERS)
+    .select('created_by')
+    .eq('id', id)
+    .eq('status', 'draft')
+    .maybeSingle()
+  if (readError) return { ok: false }
+  if (!row) return { ok: false, error: 'not_a_draft' }
+  // Both writes are conditional on 'draft' and say whether they took: a draft
+  // scheduled or replaced (a republished report) in between is not reported
+  // as deleted, so a month Matt meant to skip is never skipped only on screen.
+  const write = isEditionEmailMarker((row as { created_by: string | null }).created_by)
+    ? sb.from(LETTERS).update({ status: 'canceled', updated_at: new Date().toISOString() }).eq('id', id).eq('status', 'draft').select('id')
+    : sb.from(LETTERS).delete().eq('id', id).eq('status', 'draft').select('id')
+  const { data, error } = await write
+  if (error) return { ok: false }
+  return (data?.length ?? 0) > 0 ? { ok: true } : { ok: false, error: 'not_a_draft' }
 }
 
 // ── Per-recipient tracking (opens / clicks / delivery) ──────────────────────

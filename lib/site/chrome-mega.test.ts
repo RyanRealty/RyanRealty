@@ -92,6 +92,13 @@ describe('chromeMegaModel — all five chrome menus', () => {
     expect(models.Market.now?.heading).toBe('Now')
     expect(models.Market.caption).toBe('Central Oregon detached homes right now')
     expect(models.Market.colCount).toBe(4)
+    expect(
+      models.Market.sections.map((section) => [section.heading, section.links.map((link) => link.href)]),
+    ).toEqual([
+      ['Pulse', ['/housing-market', '/housing-market/central-oregon', '/months-of-supply']],
+      ['Sales', ['/housing-market/reports/monthly', '/housing-market/history', '/housing-market/reports']],
+      ['Reading', ['/how-we-get-our-numbers', '/blog', '/faq']],
+    ])
     expect(models.Sell.sections).toHaveLength(1)
     expect(models.Sell.now?.facts[0]?.figure).toBe('501')
     expect(models.About.sections.map((section) => section.heading)).toEqual(['Firm', 'Reach'])

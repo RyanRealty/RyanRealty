@@ -37,14 +37,29 @@ export type ScheduleRow = { day_index: number; tier: number; cap: number; sent_c
  * only if THIS call won. A second concurrent approve sees status='sending' and
  * gets null → it must abort. Never a read-then-write.
  */
-export async function claimNewsletterForSending(newsletterId: string): Promise<string | null> {
+export async function claimNewsletterForSending(
+  newsletterId: string,
+  opts: { listSend?: boolean } = {},
+): Promise<string | null> {
   const sb = createServiceClient()
   // Web-Crypto global (Node 18+ and edge runtime) — avoids importing node:crypto,
   // which breaks the edge /api/og route that pulls this in via the @/lib/data barrel.
   const token = crypto.randomUUID()
   const { data, error } = await sb
     .from(LETTERS)
-    .update({ status: 'sending', lock_token: token, send_started_at: new Date().toISOString() })
+    // list_send marks a send to the subscriber list or a segment of it
+    // (enqueueNewsletter), the only kind the CRM's one-click send may offer as
+    // the current issue, and the only kind that counts as the list's history
+    // below (migration 20260930160000). A send to chosen addresses
+    // (enqueueNewsletterToEmails: the admin one-off, a test, a market report
+    // sent to report subscribers or a CRM tag) is not one: its people were
+    // picked for it, so its issue is not offered to anyone else.
+    .update({
+      status: 'sending',
+      lock_token: token,
+      send_started_at: new Date().toISOString(),
+      ...(opts.listSend ? { list_send: true } : {}),
+    })
     .eq('id', newsletterId)
     .in('status', ['draft', 'scheduled'])
     .select('id')
@@ -62,26 +77,29 @@ export async function releaseNewsletterLock(
   // M4: when the caller holds a token, only release IF it still owns the lock. Without
   // this, a late error handler from a crashed enqueue could reset a newsletter that a
   // newer send has since re-locked, orphaning its queued rows.
-  let q = sb.from(LETTERS).update({ status, lock_token: null, send_started_at: null }).eq('id', newsletterId)
+  // A released claim sent nothing, so it is not a list send either.
+  let q = sb.from(LETTERS).update({ status, lock_token: null, send_started_at: null, list_send: false }).eq('id', newsletterId)
   if (expectedToken) q = q.eq('lock_token', expectedToken)
   await q
 }
 
 /**
  * The engagement inputs for tier assignment (§6.5 rule 2): the set of subscriber
- * emails that OPENED or CLICKED any of the last `lookback` sent issues (Tier 1),
- * and the set of emails that have EVER been sent to (to tell new/Tier 2 from
- * cold/Tier 3). Emails are lowercased. One query each, so tiering a 12k list is
- * two reads, not 12k.
+ * emails that OPENED or CLICKED any of the last `lookback` issues sent to the
+ * list (Tier 1), and the set of emails that have EVER been sent to (to tell
+ * new/Tier 2 from cold/Tier 3). Emails are lowercased. One query each, so
+ * tiering a 12k list is two reads, not 12k.
  */
 export async function getEngagementSets(lookback = 2): Promise<{ engaged: Set<string>; everSent: Set<string> }> {
   const sb = createServiceClient()
-  // The last N newsletters that actually sent, newest first.
+  // The last N issues that went out to the list, newest first: a one-off to a
+  // few chosen inboxes (the July 2026 tests) says nothing about the list.
   const { data: recent } = await sb
     .from(LETTERS)
     .select('id')
     .eq('status', 'sent')
-    .order('sent_at', { ascending: false })
+    .eq('list_send', true)
+    .order('send_finished_at', { ascending: false, nullsFirst: false })
     .limit(lookback)
   const recentIds = (recent ?? []).map((r) => (r as { id: string }).id)
 
@@ -210,10 +228,20 @@ export async function bulkActivateSubscribers(
   return total
 }
 
-/** True if any newsletter has ever been sent (used to decide warm-up ramp vs steady caps). */
+/**
+ * True once an issue has gone out to the subscriber list (used to decide the
+ * warm-up ramp vs steady caps). One-offs to chosen addresses do not count:
+ * on 2026-09-30 the only sent issues were three July tests to a few inboxes,
+ * which warm nothing, and counting them would send the first real list issue
+ * at steady caps.
+ */
 export async function anyNewsletterEverSent(): Promise<boolean> {
   const sb = createServiceClient()
-  const { count } = await sb.from(LETTERS).select('id', { count: 'exact', head: true }).eq('status', 'sent')
+  const { count } = await sb
+    .from(LETTERS)
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'sent')
+    .eq('list_send', true)
   return (count ?? 0) > 0
 }
 
@@ -267,9 +295,52 @@ export async function writeSendSchedule(
   if (error) throw new Error(`writeSendSchedule: ${error.message}`)
 }
 
+/**
+ * Clear what an earlier enqueue of this issue left behind: its queued rows
+ * and its schedule. Called by an enqueue right after it wins the send lock,
+ * so each enqueue starts from nothing. Safe by construction: the lock is won
+ * only from draft or scheduled, so no drain is working this issue; an enqueue
+ * that got as far as a schedule moved the issue to 'sending' for good, so
+ * what is here is from one that failed (and released the lock) or died
+ * before its schedule, and a queued row was never sent. Without this, a
+ * retry's schedule (built from the tiers it computed) disagreed with the
+ * rows it left, which kept their old tiers, and those recipients never got a
+ * day. THROWS on a failed write.
+ */
+export async function clearUnsentQueue(newsletterId: string): Promise<void> {
+  const sb = createServiceClient()
+  const rows = await sb.from(RECIPIENTS).delete().eq('newsletter_id', newsletterId).eq('status', 'queued')
+  if (rows.error) throw new Error(`clearUnsentQueue: ${rows.error.message}`)
+  const plan = await sb.from(SCHEDULE).delete().eq('newsletter_id', newsletterId)
+  if (plan.error) throw new Error(`clearUnsentQueue: ${plan.error.message}`)
+}
+
+/**
+ * Queued recipients of an issue by tier, as stored (the stall check: a
+ * schedule row is behind only while its tier has someone queued). THROWS on a
+ * failed read.
+ */
+export async function queuedCountsByTier(newsletterId: string): Promise<Map<number, number>> {
+  const sb = createServiceClient()
+  const out = new Map<number, number>()
+  for (const tier of [1, 2, 3]) {
+    const { count, error } = await sb
+      .from(RECIPIENTS)
+      .select('id', { count: 'exact', head: true })
+      .eq('newsletter_id', newsletterId)
+      .eq('status', 'queued')
+      .eq('tier', tier)
+    if (error) throw new Error(`queuedCountsByTier: ${error.message}`)
+    if ((count ?? 0) > 0) out.set(tier, count ?? 0)
+  }
+  return out
+}
+
+/** An issue's tranche schedule. THROWS on a failed read: an empty plan reads as "nothing to send". */
 export async function getSendSchedule(newsletterId: string): Promise<ScheduleRow[]> {
   const sb = createServiceClient()
-  const { data } = await sb.from(SCHEDULE).select('day_index, tier, cap, sent_count').eq('newsletter_id', newsletterId)
+  const { data, error } = await sb.from(SCHEDULE).select('day_index, tier, cap, sent_count').eq('newsletter_id', newsletterId)
+  if (error) throw new Error(`getSendSchedule: ${error.message}`)
   return (data ?? []) as ScheduleRow[]
 }
 
@@ -342,18 +413,33 @@ export async function finalizeRecipient(
 }
 
 /** Count remaining rows per status for a newsletter — drives finalize + stall detection. */
+/** Every recipient status the table allows (its CHECK); a row past 'sending' was sent. */
+const RECIPIENT_STATUSES = ['queued', 'sending', 'skipped', 'sent', 'delivered', 'opened', 'clicked', 'bounced', 'complained', 'failed'] as const
+const SENT_STATUSES = ['sent', 'delivered', 'opened', 'clicked', 'bounced', 'complained'] as const
+
+/**
+ * Recipient rows of an issue by status, every status (0 when none), in ONE
+ * snapshot (newsletter_recipient_status_counts, migration 20260930210000):
+ * read status by status, a drain claim moving rows from queued to sending
+ * between two reads was in neither, and a send still going out closed.
+ * THROWS on a failed read: a count that failed is not a zero.
+ */
 export async function recipientStatusCounts(newsletterId: string): Promise<Record<string, number>> {
   const sb = createServiceClient()
-  const counts: Record<string, number> = {}
-  for (const status of ['queued', 'sending', 'sent', 'failed', 'skipped']) {
-    const { count } = await sb
-      .from(RECIPIENTS)
-      .select('id', { count: 'exact', head: true })
-      .eq('newsletter_id', newsletterId)
-      .eq('status', status)
-    counts[status] = count ?? 0
-  }
+  const { data, error } = await sb.rpc('newsletter_recipient_status_counts', { p_newsletter_id: newsletterId })
+  if (error) throw new Error(`recipientStatusCounts: ${error.message}`)
+  const counts: Record<string, number> = Object.fromEntries(RECIPIENT_STATUSES.map((status) => [status, 0]))
+  for (const row of (data ?? []) as Array<{ status: string; n: number | string }>) counts[row.status] = Number(row.n)
   return counts
+}
+
+/**
+ * Rows that were sent, whatever the delivery webhooks have said since: a
+ * row moves on from 'sent' to delivered, opened, clicked, bounced or
+ * complained within seconds, so 'sent' alone counts only the last few.
+ */
+export function sentTotal(counts: Record<string, number>): number {
+  return SENT_STATUSES.reduce((sum, status) => sum + (counts[status] ?? 0), 0)
 }
 
 /** Reset rows stuck in 'sending' longer than `staleMs` back to 'queued' (crash recovery). */
@@ -377,32 +463,104 @@ export async function requeueStaleClaims(newsletterId: string, staleMs: number):
 }
 
 /** The newsletters currently mid-send (status='sending'), oldest first. */
-export async function getSendingNewsletters(): Promise<Array<{ id: string; send_started_at: string | null }>> {
+export async function getSendingNewsletters(): Promise<Array<{ id: string; send_started_at: string | null; send_paused: boolean | null }>> {
   const sb = createServiceClient()
   const { data } = await sb
     .from(LETTERS)
-    .select('id, send_started_at')
+    .select('id, send_started_at, send_paused')
     .eq('status', 'sending')
     .order('send_started_at', { ascending: true })
-  return (data ?? []) as Array<{ id: string; send_started_at: string | null }>
+  return (data ?? []) as Array<{ id: string; send_started_at: string | null; send_paused: boolean | null }>
 }
 
 /** Finalize a fully-drained newsletter to sent|failed (§6 step 3). */
-export async function finalizeNewsletter(newsletterId: string): Promise<'sent' | 'failed' | null> {
+/**
+ * How long an enqueue may take: a claimed issue with no schedule after this
+ * is an enqueue that died (the reconcile releases it, releaseDeadEnqueue).
+ * Every enqueue runs inside one function call, far shorter than this.
+ */
+export const ENQUEUE_GRACE_MS = 30 * 60 * 1000
+
+/**
+ * Close a send once nothing is queued or sending. The schedule is read first:
+ * an enqueue claims the issue ('sending') first and writes its schedule last,
+ * after every recipient row, so with no schedule the issue is still being
+ * queued (the hourly reconcile at :00 and a send scheduled for 9:00 meet
+ * exactly) or its enqueue died, which the reconcile handles. Read in the
+ * other order, rows inserted between the reads looked like nothing to send,
+ * and the send closed 'failed' as it began. Closes as 'sent' when anyone was
+ * sent it (sentTotal), and only over an issue still sending. THROWS when a
+ * count cannot be read.
+ */
+export type FinalizeResult = { status: 'sent' | 'failed'; sent: number; failed: number; skipped: number; recipients: number }
+
+export async function finalizeNewsletter(newsletterId: string): Promise<FinalizeResult | null> {
+  const sb = createServiceClient()
+  const { count: planned, error: planError } = await sb
+    .from(SCHEDULE)
+    .select('newsletter_id', { count: 'exact', head: true })
+    .eq('newsletter_id', newsletterId)
+  if (planError) throw new Error(`finalizeNewsletter: ${planError.message}`)
+  if (!planned) return null
   const counts = await recipientStatusCounts(newsletterId)
   if ((counts.queued ?? 0) > 0 || (counts.sending ?? 0) > 0) return null // still draining
-  const sb = createServiceClient()
-  const status = (counts.sent ?? 0) > 0 ? 'sent' : 'failed'
-  await sb
+  const sent = sentTotal(counts)
+  const status = sent > 0 ? 'sent' : 'failed'
+  const recipients = Object.values(counts).reduce((a, b) => a + b, 0)
+  const failed = counts.failed ?? 0
+  const now = new Date().toISOString()
+  const { data: done, error } = await sb
     .from(LETTERS)
     .update({
       status,
-      send_finished_at: new Date().toISOString(),
-      sent_count: counts.sent ?? 0,
-      failed_count: counts.failed ?? 0,
+      send_finished_at: now,
+      ...(status === 'sent' ? { sent_at: now } : {}),
+      recipient_count: recipients,
+      sent_count: sent,
+      failed_count: failed,
     })
     .eq('id', newsletterId)
-  return status
+    .eq('status', 'sending')
+    .select('id')
+  if (error) throw new Error(`finalizeNewsletter: ${error.message}`)
+  return (done?.length ?? 0) > 0 ? { status, sent, failed, skipped: counts.skipped ?? 0, recipients } : null
+}
+
+/**
+ * An issue claimed for sending whose enqueue never wrote its schedule: the
+ * enqueue died partway (a function timeout skips its catch, which would have
+ * released the claim), and nothing will ever send it. What it queued is
+ * cleared. A send to the subscriber list (list_send) goes back to draft, the
+ * rule for a failed enqueue (S-2): approved again, it goes to the same list.
+ * A send to chosen addresses (a one-off, a market report bulk send) is closed
+ * 'failed' instead: its addresses were never stored on the issue, so a draft
+ * approved again would go to its audience column, the whole list. Returns
+ * what it did, or null (it has a schedule, or it moved). THROWS on a failed read.
+ */
+export async function releaseDeadEnqueue(newsletterId: string): Promise<'draft' | 'failed' | null> {
+  const sb = createServiceClient()
+  const { count: planned, error } = await sb
+    .from(SCHEDULE)
+    .select('newsletter_id', { count: 'exact', head: true })
+    .eq('newsletter_id', newsletterId)
+  if (error) throw new Error(`releaseDeadEnqueue: ${error.message}`)
+  if (planned) return null
+  const { data: issue, error: readError } = await sb.from(LETTERS).select('list_send').eq('id', newsletterId).maybeSingle()
+  if (readError) throw new Error(`releaseDeadEnqueue: ${readError.message}`)
+  const toList = (issue as { list_send: boolean | null } | null)?.list_send === true
+  await clearUnsentQueue(newsletterId)
+  const { data, error: releaseError } = await sb
+    .from(LETTERS)
+    .update(
+      toList
+        ? { status: 'draft', lock_token: null, send_started_at: null, list_send: false }
+        : { status: 'failed', lock_token: null, send_finished_at: new Date().toISOString(), sent_count: 0 },
+    )
+    .eq('id', newsletterId)
+    .eq('status', 'sending')
+    .select('id')
+  if (releaseError) throw new Error(`releaseDeadEnqueue: ${releaseError.message}`)
+  return (data?.length ?? 0) > 0 ? (toList ? 'draft' : 'failed') : null
 }
 
 /** Ledger event vocabulary (spec §3.1). */
@@ -499,7 +657,9 @@ export async function getNewsletterStatsFromLedger(newsletterId: string): Promis
       .eq('event', event)
     return count ?? 0
   }
-  const counts = await recipientStatusCounts(newsletterId)
+  // A display: a failed read shows zeros rather than failing the review page
+  // (the counts that close a send or trip the breaker are read strictly).
+  const counts = await recipientStatusCounts(newsletterId).catch(() => ({}) as Record<string, number>)
   const sent = (counts.sent ?? 0) + (counts.delivered ?? 0) + (counts.opened ?? 0) + (counts.clicked ?? 0)
   const [delivered, opened, clicked, bounced, complained] = await Promise.all([
     countEvent('delivered'),
@@ -594,5 +754,7 @@ export async function sendWindowHealth(newsletterId: string): Promise<{ sent: nu
   }
   const [bounced, complained] = await Promise.all([one('bounce'), one('complaint')])
   const counts = await recipientStatusCounts(newsletterId)
-  return { sent: counts.sent ?? 0, bounced, complained }
+  // Every row that was sent: 'sent' alone shrinks as webhooks move rows on,
+  // which inflated the bounce and complaint rates and tripped the breaker.
+  return { sent: sentTotal(counts), bounced, complained }
 }

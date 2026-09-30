@@ -6,6 +6,7 @@ vi.mock('@/lib/data/market-report/series', () => ({}))
 vi.mock('@/lib/data/market-report/editions', () => ({}))
 vi.mock('./reconcile', () => ({}))
 vi.mock('./pdf/render', () => ({}))
+vi.mock('./edition-email-draft', () => ({ draftEditionEmailAndTell: vi.fn() }))
 
 import { lastCompleteMonth, monthRange } from './pipeline'
 

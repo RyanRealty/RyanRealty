@@ -14,6 +14,11 @@
  *   2. refreshReportWindow over the same 13 months (lib/market-report/pipeline.ts):
  *      sale facts pruned and refreshed, on-market episodes rebuilt, report
  *      attributes and compact copies refreshed, every period recomputed.
+ *   First of all, the backstop for the monthly email drafts
+ *      (lib/market-report/edition-email-draft.ts), so a failed or timed-out
+ *      refresh never skips it: the newest month's draft is written for Matt's
+ *      OK once that month is published, if the publish run did not write it,
+ *      and every open draft is re-checked against its edition's figures.
  *
  * Any repair is logged in the response; more than REPAIR_ALERT_AT repairs in one
  * run means the delta sync is losing closings again, and queues ONE deduped ops
@@ -28,6 +33,7 @@ import { NextResponse } from 'next/server'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { queueBrokerHealthAlert } from '@/lib/crm/broker-alerts'
 import { addMonths } from '@/lib/market-report/format'
+import { backstopEditionEmails } from '@/lib/market-report/edition-email-draft'
 import { lastCompleteMonth, refreshReportWindow } from '@/lib/market-report/pipeline'
 import { reconcileClosings } from '@/lib/sync/closingsReconcile'
 
@@ -68,6 +74,17 @@ export async function GET(request: Request) {
   const fromMonth = addMonths(lastMonth, -(WINDOW_MONTHS - 1))
   const windowStart = `${fromMonth}-01`
 
+  // Backstop for the monthly email drafts (Matt 2026-09-30, "Draft it for my
+  // OK"), first, so it runs even when the reconciliation or the refresh below
+  // fails or runs out of time: the newest month has its draft once it is
+  // published, and every open draft is on its edition's current figures.
+  // Never throws. It reads only published editions, which the refresh below
+  // does not change.
+  const email = await backstopEditionEmails(lastMonth)
+  for (const [month, outcome] of Object.entries(email)) {
+    say(`email draft ${month}: ${outcome.status}${'reason' in outcome ? ` (${outcome.reason})` : ''}${'error' in outcome ? ` (${outcome.error})` : ''}`)
+  }
+
   try {
     const recon = await reconcileClosings({ from: windowStart, to: isoDay(new Date()), repair, maxRepairs: MAX_REPAIRS })
     say(
@@ -99,6 +116,7 @@ export async function GET(request: Request) {
       log: say,
     })
 
+
     return NextResponse.json({
       ok: refreshed.periodErrors.length === 0,
       window: { from: fromMonth, to: lastMonth },
@@ -113,6 +131,7 @@ export async function GET(request: Request) {
         notInSpark: recon.notInSpark,
       },
       refreshed,
+      email,
       log,
     })
   } catch (err) {
@@ -123,6 +142,6 @@ export async function GET(request: Request) {
       body: `The market report refresh failed: ${message.slice(0, 180)}`,
       cooldownMinutes: 1440,
     })
-    return NextResponse.json({ ok: false, error: message, log }, { status: 500 })
+    return NextResponse.json({ ok: false, error: message, email, log }, { status: 500 })
   }
 }

@@ -20,6 +20,7 @@ import {
   setSubscriberStatus,
   createNewsletterDraft,
   updateNewsletter,
+  updateNewsletterDraft,
   deleteNewsletterDraft,
   getNewsletter,
   type NewsletterSegment,
@@ -243,10 +244,11 @@ export async function adminCreateNewsletterAction(formData: FormData): Promise<{
   })
 }
 
-export async function adminUpdateNewsletterAction(id: string, formData: FormData): Promise<{ ok: boolean }> {
+export async function adminUpdateNewsletterAction(id: string, formData: FormData): Promise<{ ok: boolean; error?: string }> {
   const gate = await requireSuperuser()
-  if (!gate.ok) return { ok: false }
-  return updateNewsletter(id, {
+  if (!gate.ok) return { ok: false, error: 'unauthorized' }
+  // Only a draft is edited: approved, sent and replaced issues are not.
+  return updateNewsletterDraft(id, {
     subject: cleanSubject(formData.get('subject')),
     preview_text: String(formData.get('preview_text') ?? '').trim() || null,
     body_html: String(formData.get('body_html') ?? '') || null,
@@ -287,14 +289,14 @@ export async function adminSendNewsletterAction(
   if (!letter.body_html && !letter.body_text) return { ok: false, error: 'empty_body' }
 
   // Approve = ENQUEUE (spec §6, gate G-NL-9). The old path sent up to 5,000 emails
-  // in this request — a Vercel timeout stranded status='sending' forever. Now this
-  // records the approver, then enqueueNewsletter() wins a CAS lock, freezes each
-  // recipient's broker + engagement tier, writes the queue + tranche schedule, and
-  // returns immediately. The send cron drains it, re-checking suppression + active
-  // per recipient (S-8). No synchronous per-recipient loop in the request path.
-  await updateNewsletter(id, { sent_by: gate.email })
-  const result = await enqueueNewsletter(id)
+  // in this request — a Vercel timeout stranded status='sending' forever. Now
+  // enqueueNewsletter() wins a CAS lock, freezes each recipient's broker +
+  // engagement tier, writes the queue + tranche schedule, and returns at once;
+  // the approver is recorded only on a send that queued. The send cron drains it,
+  // re-checking suppression + active per recipient (S-8). No per-recipient loop here.
+  const result = await enqueueNewsletter(id, { settle: true })
   if (!result.ok) return { ok: false, error: result.error }
+  await updateNewsletter(id, { sent_by: gate.email })
 
   revalidatePath('/admin/newsletters')
   return { ok: true, queued: result.queued, brokerSplit: result.brokerSplit, large: result.large }
@@ -325,9 +327,9 @@ export async function adminBulkOneOffSendAction(
   const emails = [...new Set([...pasted, ...tagged])]
   if (emails.length === 0) return { ok: false, error: 'no_recipients' }
 
-  await updateNewsletter(newsletterId, { sent_by: gate.email })
-  const result = await enqueueNewsletterToEmails(newsletterId, emails)
+  const result = await enqueueNewsletterToEmails(newsletterId, emails, { settle: true })
   if (!result.ok) return { ok: false, error: result.error }
+  await updateNewsletter(newsletterId, { sent_by: gate.email })
 
   revalidatePath('/admin/newsletters')
   return { ok: true, queued: result.queued }
