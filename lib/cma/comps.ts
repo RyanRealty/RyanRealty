@@ -79,7 +79,16 @@ import {
 import { outbuildingsCompatible, terrainCompatible, zoningClassCompatible } from '@/lib/pricing/rural'
 import { resolveSaleZones } from '@/lib/pricing/sale-zoning'
 import { communitySlugForSubdivision, isResortCommunity, resortCommunityCompatible } from '@/lib/cma/resort-guard'
-import { ANCHOR_MIN_N, ANCHOR_RADIUS_MILES, ANCHOR_RURAL_RADII_MILES, sameStreetPeer, streetKey } from '@/lib/pricing/price-anchor'
+import {
+  ANCHOR_MIN_N,
+  ANCHOR_RADIUS_MILES,
+  ANCHOR_RURAL_RADII_MILES,
+  isOwnPlatRung,
+  samePlat,
+  sameStreetPeer,
+  streetKey,
+} from '@/lib/pricing/price-anchor'
+import { ageRestrictedMismatch, ownPlatAgeRestrictedShare } from '@/lib/pricing/age-restricted'
 import { roomCountsUsable } from '@/lib/pricing/room-counts'
 import { SAME_NEIGHBORHOOD_TIER_RATIO, STARVED_TIER_WIDEN, SUBDIVISION_TIER_RATIO, normSubdivision } from '@/lib/pricing/classes'
 import { inferSubdivisionPocket, POCKET_RADIUS_MILES } from '@/lib/pricing/infer-pocket'
@@ -212,6 +221,8 @@ function rowToComp(row: CmaListingRow, tier: string, land = false): CmaComp | nu
     garageSpaces: num(row['garage_spaces']),
     photoUrl: str(row['PhotoURL']),
     publicRemarks: str(row['public_remarks']),
+    // MLS SeniorCommunityYN: only TRUE is age-restriction evidence.
+    seniorCommunityYn: row['senior_community_yn'] === true ? true : row['senior_community_yn'] === false ? false : null,
     viewDescription: mlsText(row['view_description']),
     taxAnnual: num(row['tax_annual_amount']),
     listPrice: num(row['ListPrice']),
@@ -282,6 +293,12 @@ export interface CompSelection {
   pricingSource?: 'facts' | 'listings'
   /** Fact-row comps, kept so the builder can walk the monthly market path. */
   pricingSales?: import('@/lib/pricing/match').SelectedPricingComp[]
+  /**
+   * Share of the subject's own-plat sales that are age-restricted, measured by
+   * the facts ladder over its pool. Absent on the listings ladder, where the
+   * build measures it over the candidates (lib/cma/judgment-prune.ts).
+   */
+  ownPlatAgeRestrictedShare?: number | null
 }
 
 function emptyDiagnostics(
@@ -615,6 +632,16 @@ export async function selectComps(
     }
   }
 
+  // Whether this home's own plat is a 55+ community (lib/pricing/age-restricted.ts),
+  // measured over every own-plat rung's rows as they arrive, before any sale on
+  // that rung is graded. Undefined until an own-plat rung has returned rows: an
+  // own-plat sale is let through until then, and the build decides with the
+  // final share (selection.ownPlatAgeRestrictedShare).
+  const ownPlatRows = new Map<
+    string,
+    { listingKey: string; publicRemarks: string | null; subdivision: string | null; seniorCommunityYn: boolean | null }
+  >()
+  let ownPlatAgeShare: number | null | undefined = undefined
   for (const tier of tiers) {
     const skip =
       // THE WIDENING RUNS ONLY WHEN THE BOUNDED LADDER CAME UP SHORT.
@@ -719,6 +746,20 @@ export async function selectComps(
       propertyType: segment,
     })
     rung.rows_returned = rows.length
+    if (isOwnPlatRung(tier.name) && rows.length > 0) {
+      for (const r of rows) {
+        const key = str(r['ListingKey'])
+        if (key) {
+          ownPlatRows.set(key, {
+            listingKey: key,
+            publicRemarks: str(r['public_remarks']),
+            subdivision: str(r['SubdivisionName']),
+            seniorCommunityYn: r['senior_community_yn'] === true ? true : null,
+          })
+        }
+      }
+      ownPlatAgeShare = ownPlatAgeRestrictedShare([...ownPlatRows.values()])
+    }
     // Delta 4: on acreage the rows' county zones, nearest first, through the cache.
     const ruralSubject = ruralAcreage || (subject.lotAcres ?? 0) >= 1
     const rowZones = ruralSubject
@@ -854,7 +895,16 @@ export async function selectComps(
       // Containment orders the search; it does not exempt what the search finds
       // from being graded on price. The facts ladder already drew the line
       // here (`tier.sameSubdivision` in lib/pricing/match.ts).
-      const tightRung = tier.name.startsWith('subdivision')
+      const tightRung = isOwnPlatRung(tier.name)
+      // THE SUBJECT'S OWN PLAT on this ladder: the plat rung itself, or the same
+      // MLS subdivision name the rung searched (samePlat's fallback key; this
+      // ladder resolves no recorded-plat slug per row).
+      const inOwnPlat =
+        tightRung ||
+        samePlat(
+          { subdivisionNorm: normSubdivision(subdivisionIlike) },
+          { subdivisionNorm: normSubdivision(comp.subdivision) },
+        )
       const ownStreetPeer = sameStreetPeer(
         { streetAddress: subject.streetAddress, city: subject.city, sqft: subject.sqft ?? 0 },
         { address: comp.address, city: comp.city, sqft: comp.sqft },
@@ -956,6 +1006,23 @@ export async function selectComps(
         rung.excluded.product_type++
         continue
       }
+      // AGE-RESTRICTED HOUSING IS A DIFFERENT PRODUCT (lib/pricing/age-restricted.ts,
+      // 2026-09-30), counted with the other product walls. Off the subject's own
+      // plat it walls unless the subject is 55+ itself; inside the plat the build
+      // decides once it can see how much of the plat is 55+.
+      if (
+        // The records themselves: the subject is read once per walk, and a
+        // sale that comes back on a later rung by its ListingKey.
+        ageRestrictedMismatch({
+          subject,
+          sale: comp,
+          saleInOwnPlat: inOwnPlat,
+          ownPlatShare: ownPlatAgeShare,
+        })
+      ) {
+        rung.excluded.product_type++
+        continue
+      }
 
       // Custom/new: ±1 whole bath (Perspective 3 vs Rim View 4).
       if (customOrNew) {
@@ -1037,6 +1104,7 @@ export async function selectComps(
       // Disclose a competing market area rather than quietly blending it in.
       comp.competingArea =
         tier.competing && compArea && compArea !== subjectArea ? marketAreaName(compArea) : null
+      comp.ownPlat = inOwnPlat
 
       byKey.set(comp.listingKey, comp)
       bySale.add(saleKey(comp))
@@ -1222,7 +1290,15 @@ export async function selectComps(
   diagnostics.starved_reason = diagnoseStarvation(diagnostics)
   if (diagnostics.starved_reason && comps.length < MIN_COMPS) trace.push(diagnostics.starved_reason)
   comps = await hydrateClosedCompDaysOnMarket(comps)
-  return { comps, excludedOutliers, tiersUsed, trace, diagnostics, pricingSource: 'listings' }
+  return {
+    comps,
+    excludedOutliers,
+    tiersUsed,
+    trace,
+    diagnostics,
+    pricingSource: 'listings',
+    ...(ownPlatAgeShare !== undefined ? { ownPlatAgeRestrictedShare: ownPlatAgeShare } : {}),
+  }
 }
 
 /**

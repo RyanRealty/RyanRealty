@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { auditCma, computeAuditVerdict, type AuditFinding } from '@/lib/cma/audit'
-import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
+import type { CmaAdjustedComp, CmaComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CompJudgment } from '@/lib/cma/judge'
 
 const createMock = vi.fn()
@@ -173,6 +173,39 @@ describe('auditCma — deterministic narrative check is wired into the findings'
     const audit = await auditCma({ subject, comps, excluded: [], pricing, judgment, market: null })
     expect(audit!.findings).toEqual([])
     expect(audit!.verdict).toBe('pass')
+  })
+
+  it('shows the auditor each excluded sale by address and plat, and each priced sale by lot', async () => {
+    // A key alone left the auditor unable to find "the 2020 Arena Acres sale
+    // on Matthew", so it called a true exclusion sentence fabricated
+    // (cma-3153-cromwell, 2026-09-30). A missing lot made every lot range read
+    // as "not shown" (cma-60335-zuni).
+    createMock.mockResolvedValue(respond([], 'pass'))
+    const judgment = { narrative: 'Hawkview, Black Oak and Evelyn bracket the subject.', verdicts: [] } as unknown as CompJudgment
+    const withLot = [{ ...comps[0], lotAcres: 0.15 }, ...comps.slice(1)] as unknown as CmaAdjustedComp[]
+    const candidates = [
+      ...withLot,
+      { listingKey: 'K9', address: '20944 Matthew', subdivision: 'Arena Acres', lotAcres: 0.2 },
+    ] as unknown as CmaComp[]
+    await auditCma({
+      subject,
+      comps: withLot,
+      excluded: [
+        { listingKey: 'K9', reason: 'a later construction generation' },
+        { listingKey: 'K404', reason: 'not among the candidates' },
+      ],
+      pricing,
+      judgment,
+      market: null,
+      candidates,
+    })
+    const prompt = (createMock.mock.calls[0][0] as { prompt: string }).prompt
+    expect(prompt).toContain('- K9 · 20944 Matthew (subdivision: Arena Acres): a later construction generation')
+    // A key the candidates do not carry still prints, bare, never dropped.
+    expect(prompt).toContain('- K404: not among the candidates')
+    expect(prompt).toContain('62719 Hawkview (subdivision: Oakview)')
+    expect(prompt).toMatch(/62719 Hawkview[^\n]*lot 0\.15 acres/)
+    expect(prompt).toMatch(/21336 Evelyn[^\n]*lot unknown/)
   })
 
   it('fails OPEN: returns null and never throws when the API call errors', async () => {

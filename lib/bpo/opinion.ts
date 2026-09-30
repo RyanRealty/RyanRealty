@@ -16,6 +16,7 @@
 import type { CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { BpoListingHistory, BpoOpinion } from '@/lib/bpo/types'
 import { formatPriceExact } from '@/lib/format/money'
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 
 const usd = formatPriceExact
 
@@ -146,7 +147,7 @@ export function deriveOpinion(
 
   if (market?.marketVerdict) {
     reasoning.push(
-      `${market.geoLabel} is a ${market.marketVerdict === 'seller' ? "seller's" : market.marketVerdict === 'buyer' ? "buyer's" : 'balanced'} market at ${market.monthsOfSupply ?? '—'} months of supply.`,
+      `${market.geoLabel} is a ${market.marketVerdict === 'seller' ? "seller's" : market.marketVerdict === 'buyer' ? "buyer's" : 'balanced'} market${market.monthsOfSupply != null ? ` at ${formatMonthsOfSupply(market.monthsOfSupply)} months of supply` : ''}.`,
     )
   }
 

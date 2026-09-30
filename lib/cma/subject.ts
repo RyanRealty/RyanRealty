@@ -240,6 +240,7 @@ export function rowToSubject(row: CmaListingRow): CmaSubject {
       if (fromCol != null) return fromCol
       return bool(row['new_construction_details'])
     })(),
+    seniorCommunityYn: bool(row['senior_community_yn']),
   }
 }
 
@@ -305,6 +306,7 @@ export function subjectFromAssessorFacts(
     sewerRaw: null,
     levelsRaw: facts.statClass,
     newConstructionYn: null,
+    seniorCommunityYn: null,
   }
 }
 

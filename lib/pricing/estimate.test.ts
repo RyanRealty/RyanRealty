@@ -1356,3 +1356,60 @@ describe('preserveHydratedClosedCompDom', () => {
     expect(rebuilt.domTotal).toBe(41)
   })
 })
+
+describe('priceCmaSet: the sale-to-ask share comes from the sales that price (review of da8dce6, 2026-09-30)', () => {
+  // selection.pricingSales is the selector's whole pool. The sales the review
+  // excluded are still in it, and when neither the city index nor the market
+  // context carries a sale-to-original share, the median of the pool's
+  // close-to-original-ask ratios is the share every list tier is carried by.
+  const pricedSale = (listingKey: string, closePrice: number) => ({
+    ...sale({ listingKey, closePrice, originalAsk: closePrice, lastAsk: closePrice, sqft: 2000 }),
+    monthsSinceClose: 1,
+    timeAdjustment: 0,
+    timeAdjustedPrice: closePrice,
+    ppsfTimeAdjusted: closePrice / 2000,
+    sizeAdjustment: 0,
+    adjustedPrice: closePrice,
+    weight: 1,
+    listPrice: closePrice,
+    mlsNumber: null,
+    propertySubType: 'Single Family Residence',
+    photoUrl: null,
+    publicRemarks: null,
+    viewDescription: null,
+    taxAnnual: null,
+    domTotal: 10,
+  })
+  const kept = [pricedSale('K1', 490_000), pricedSale('K2', 500_000), pricedSale('K3', 510_000)]
+  // Closed at 80% of their original ask, and excluded by the review: not priced.
+  const excluded = ['X1', 'X2', 'X3', 'X4'].map((listingKey) =>
+    sale({ listingKey, closePrice: 400_000, originalAsk: 500_000, lastAsk: 500_000 }),
+  )
+  const build = (pricingSales: SelectedPricingComp[]) =>
+    priceCmaSet({
+      subject: { ...subject, standardStatus: 'Closed', lastListPrice: null },
+      adjusted: kept as never,
+      market: null,
+      input: { priceOverride: null },
+      selection: { pricingSales, tiersUsed: ['subdivision-3mo'] },
+      marketIndex: [],
+      asOf: '2026-01-15',
+    })!
+
+  it('a judge-excluded sale in the pool does not move the share, the list tiers or the sentence', () => {
+    const keptOnly = build(kept.map((c) => sale({ listingKey: c.listingKey, closePrice: c.closePrice, originalAsk: c.closePrice })))
+    const withPool = build([
+      ...kept.map((c) => sale({ listingKey: c.listingKey, closePrice: c.closePrice, originalAsk: c.closePrice })),
+      ...excluded,
+    ])
+    expect(keptOnly.rangeRule?.saleToAskSource).toBe('these-sales')
+    expect(keptOnly.rangeRule?.saleToAskRatio).toBe(1)
+    expect(withPool.rangeRule?.saleToAskRatio).toBe(1)
+    expect([withPool.conservative, withPool.recommended, withPool.highEnd]).toEqual([
+      keptOnly.conservative,
+      keptOnly.recommended,
+      keptOnly.highEnd,
+    ])
+    expect(withPool.rangeRule?.sentence).toContain('closing at 100.0 percent')
+  })
+})

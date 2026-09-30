@@ -54,6 +54,11 @@ export interface CmaSubject {
   /** MLS NewConstructionYN. Null means the feed did not say. */
   newConstructionYn?: boolean | null
   /**
+   * MLS SeniorCommunityYN. True is evidence the home is in an age-restricted
+   * community (lib/pricing/age-restricted.ts); false and null are not evidence.
+   */
+  seniorCommunityYn?: boolean | null
+  /**
    * Who holds the subject's newest listing cycle. Read for the compliance
    * carve-out (CmaSubjectStatus): a document may not solicit a listing that is
    * live with another brokerage. Optional so existing fixtures keep compiling.
@@ -124,6 +129,20 @@ export interface CmaComp {
    * it does not re-apply the wall the selector deliberately opened.
    */
   roomDifference?: Array<'beds' | 'baths'> | null
+  /**
+   * The selector's own-plat decision for this sale (lib/pricing/price-anchor.ts
+   * samePlat, or the street-cluster pocket), stamped by whichever ladder found
+   * it. A sale in the subject's own plat is exempt from price-tier grading, so
+   * the comparability judge restores one it excluded on price (lib/cma/judge.ts).
+   * Absent on a broker-picked comp, which no search admitted.
+   */
+  ownPlat?: boolean | null
+  /**
+   * MLS SeniorCommunityYN for this sale. True walls it out of an ordinary
+   * subject's pricing (lib/pricing/age-restricted.ts); false and null are not
+   * evidence either way.
+   */
+  seniorCommunityYn?: boolean | null
 }
 
 export type CmaCompKeepTier = 'strong' | 'weak'
