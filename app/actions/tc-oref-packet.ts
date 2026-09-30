@@ -22,6 +22,10 @@ import {
 import { getDealParties } from '@/lib/data/tc/deal-people'
 import { revalidatePath } from 'next/cache'
 import { checkAdminAction } from '@/lib/admin/require-admin'
+import type { AdminCapabilityContext } from '@/lib/admin/capabilities'
+import { dealFileInScope } from '@/lib/tc/deal-scope'
+import { getCycleScope } from '@/lib/data/tc/envelope-scope'
+import { getDocumentDealScope } from '@/lib/data/tc/mail-reads'
 import { sendGovernedEmail } from '@/lib/comms/sendGovernedEmail'
 import {
   coverRowsFromFacts,
@@ -44,13 +48,15 @@ function getServiceSupabase(): Sb | null {
   }
 }
 
-async function requireEditor(): Promise<{ email: string } | { error: string }> {
+/** The caller for a packet action; each then checks the deal file is theirs (dealFileInScope). */
+async function requireEditor(): Promise<{ email: string; ctx: AdminCapabilityContext } | { error: string }> {
   const gate = await checkAdminAction('transactions.edit')
   if (!gate.ok) return { error: gate.error }
   const email = gate.ctx.email?.trim()
   if (!email) return { error: 'Admin sign-in required.' }
-  return { email }
+  return { email, ctx: gate.ctx }
 }
+
 
 function asString(v: unknown): string {
   return v == null ? '' : String(v)
@@ -90,6 +96,7 @@ export async function fillOrefSaleAgreementFromDeal(
     const sb = getServiceSupabase()
     if (!sb) return { data: null, error: 'Database is not configured.' }
     if (!cycleId.trim()) return { data: null, error: 'Cycle is required.' }
+    if (!dealFileInScope(auth.ctx, await getCycleScope(cycleId))) return { data: null, error: 'Cycle not found.' }
 
     const form = await loadPreferredOrefForm()
     if (!form?.blankPath) return { data: null, error: 'No OREF sale agreement blank is on file.' }
@@ -230,6 +237,7 @@ export async function emailOrefPacketToMatt(
     const sb = getServiceSupabase()
     if (!sb) return { error: 'Database is not configured.' }
     if (!documentId.trim()) return { error: 'Document is required.' }
+    if (!dealFileInScope(auth.ctx, await getDocumentDealScope(documentId))) return { error: 'Document not found.' }
 
     const docRes = await getOrefDocumentRow(documentId)
     if (docRes.error) return { error: docRes.error }
@@ -289,6 +297,7 @@ export async function sealOrefPacket(
     const sb = getServiceSupabase()
     if (!sb) return { data: null, error: 'Database is not configured.' }
     if (!documentId.trim()) return { data: null, error: 'Document is required.' }
+    if (!dealFileInScope(auth.ctx, await getDocumentDealScope(documentId))) return { data: null, error: 'Document not found.' }
 
     const docRes = await getOrefDocumentRow(documentId)
     if (docRes.error) return { data: null, error: docRes.error }
