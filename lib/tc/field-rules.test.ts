@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   checkSubmission,
   dateValue,
+  drawsAsPrintedText,
   fieldOwner,
   formatFieldDate,
   formatFieldTime,
@@ -204,5 +205,25 @@ describe('signatureRowSiblings (a signature line takes its row)', () => {
   it('leaves boxes that already belong to someone, or a print line with text in it', () => {
     const fields = [f('date', 'date_signed', 0.555, 0.72, { recipientId: 'r2' }), f('print', 'text', 0.570, 0.126, { value: { kind: 'text', text: 'Jane' } })]
     expect(signatureRowSiblings(fields, { documentId: 'd', page: 1, x: 0.126, y: 0.549 })).toEqual([])
+  })
+})
+
+describe('values drawn as they print on the signing page', () => {
+  it('draws a name, a date, a time and a typed note as the sealer prints them', () => {
+    // "Matt Ryan" read "Matt Rvan" on a phone: the stamped preview was a clipped span.
+    expect(drawsAsPrintedText('full_name', null, 'Matt Ryan')).toBe(true)
+    expect(drawsAsPrintedText('date_signed', null, '09/30/2026')).toBe(true)
+    expect(drawsAsPrintedText('time_signed', null, '12:48 AM')).toBe(true)
+    expect(drawsAsPrintedText('date', { kind: 'date', iso: '2026-11-15', text: '11/15/2026' }, '11/15/2026')).toBe(true)
+    expect(drawsAsPrintedText('time', { kind: 'time', hhmm: '10:30', text: '10:30 AM' }, '10:30 AM')).toBe(true)
+    expect(drawsAsPrintedText('text', { kind: 'text', text: 'Gray fridge stays' }, 'Gray fridge stays')).toBe(true)
+  })
+
+  it('leaves marks, boxes, empty values and laid-out lined text to their own drawing', () => {
+    expect(drawsAsPrintedText('signature', null, 'Matt Ryan')).toBe(false)
+    expect(drawsAsPrintedText('initials', null, 'MR')).toBe(false)
+    expect(drawsAsPrintedText('checkbox', null, 'X')).toBe(false)
+    expect(drawsAsPrintedText('full_name', null, '   ')).toBe(false)
+    expect(drawsAsPrintedText('text', { kind: 'text', text: 'one line of a section', size: 8.5 }, 'one line of a section')).toBe(false)
   })
 })

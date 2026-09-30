@@ -38,6 +38,7 @@ import { namesInSentence, signerBlockColor } from '@/lib/tc/signing'
 import {
   AUTO_STAMPED_TYPES,
   dateValue,
+  drawsAsPrintedText,
   fieldOwner,
   groupRuleText,
   nextChecklistItem,
@@ -510,21 +511,22 @@ function FieldBox({
   const shownText = valueText(value)
   const isMark = field.type === 'signature' || field.type === 'initials'
   const png = value && (value.kind === 'signature' || value.kind === 'initials') ? value.png : null
-  // Typed text as the sealer prints it (PrintedLines): the same lines, size and
-  // baselines, in the box's own points.
+  // A value that prints as fitted text (a note, a date, a time, a name) is drawn
+  // as the sealer prints it (PrintedLines): the same lines, size and baselines,
+  // in the box's own points. Its box does not clip: a descender (the y in
+  // "Ryan") hangs below the line on paper, and a clipped one read "Rvan"
+  // on a phone (Matt's packet, 2026-09-30).
   const ptsW = size.ptsW || 612
   const ptsH = size.ptsH || 792
-  const printedText =
-    field.type === 'text' && shownText.trim() && !(value?.kind === 'text' && value.size) ? (
-      <PrintedLines text={shownText} widthPts={field.w * ptsW} heightPts={field.h * ptsH} />
-    ) : null
+  const printed = (text: string) => <PrintedLines text={text} widthPts={field.w * ptsW} heightPts={field.h * ptsH} />
+  const printedText = drawsAsPrintedText(field.type, value, shownText) ? printed(shownText) : null
 
   // The broker's locked fields and other signers' finished ones: as they will print.
   if (owner !== 'mine') {
     return (
       <div
         style={{ ...style, fontSize: fit(shownText) }}
-        className="pointer-events-none flex items-center overflow-hidden px-0.5 leading-none text-foreground"
+        className={cn('pointer-events-none flex items-center px-0.5 leading-none text-foreground', printedText ? 'overflow-visible' : 'overflow-hidden')}
         aria-hidden
       >
         {png ? (
@@ -543,8 +545,8 @@ function FieldBox({
   if (AUTO_STAMPED_TYPES.has(field.type)) {
     const preview = field.type === 'full_name' ? recipientName : field.type === 'date_signed' ? stamp?.date ?? '' : stamp?.time ?? ''
     return (
-      <div id={id} style={{ ...style, fontSize }} className="pointer-events-none flex items-center overflow-hidden px-1 leading-none text-foreground/70" title="Filled in when you finish">
-        {preview}
+      <div id={id} style={style} className="pointer-events-none overflow-visible text-foreground/70" title="Filled in when you finish">
+        {preview.trim() ? printed(preview) : null}
       </div>
     )
   }
@@ -600,7 +602,8 @@ function FieldBox({
       id={id}
       style={{ ...style, fontSize: fit(shown), ...ring }}
       className={cn(
-        'flex justify-start overflow-hidden rounded-sm px-1 text-left leading-tight',
+        'flex justify-start rounded-sm px-1 text-left leading-tight',
+        printedText ? 'overflow-visible' : 'overflow-hidden',
         oneLine ? 'items-center' : 'items-start',
         shownText ? 'bg-primary/5 text-foreground ring-1 ring-primary/30' : 'bg-primary/10 text-primary/80 ring-1 ring-primary/70',
       )}
