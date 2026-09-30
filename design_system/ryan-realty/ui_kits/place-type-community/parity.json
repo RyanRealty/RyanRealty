@@ -61,11 +61,11 @@
     }
   ],
   "tasteReview": {
-    "evaluatedAt": "2026-09-24",
+    "evaluatedAt": "2026-09-30",
     "rubricVersion": "v1-2026-09-12",
-    "evaluator": "npx tsx scripts/taste-evaluate.ts place-type-community --builder claude-opus-5.5 --shots <the 4 files below>. The grok CLI and the Cursor CLI are missing in this sandbox, so the judge chain fell to its claude link (claude CLI, sonnet, subscription): three scorings of these shots in one call, recorded exactly as returned, no re-roll. Builder claude-opus-5.5 is not the judge.",
+    "evaluator": "npx tsx scripts/taste-evaluate.ts place-type-community --builder claude-opus-5-5 --evaluator claude --url http://127.0.0.1:3311/communities/tetherow/types/single-family --shots <the 6 files below>. The grok CLI and the Cursor CLI are missing in this sandbox, so the judge is the chain's claude link (claude CLI, sonnet, subscription): three scorings of these shots in one call, recorded exactly as returned, no re-roll. The builder (the listing-dial integration lane, claude-opus-5-5) is not the judge.",
     "evaluatorModel": "claude-sonnet-5",
-    "builderModel": "claude-opus-5.5",
+    "builderModel": "claude-opus-5-5",
     "transport": "claude-cli",
     "shotSpec": {
       "routes": [
@@ -77,40 +77,43 @@
       ],
       "states": [
         "default",
+        "dial",
         "dial-open"
       ],
-      "capture": "node scripts/take-route-shots.mjs place-type-community http://127.0.0.1:3484/communities/tetherow/types/single-family --states 'dial-open=.place-type-film .v3-dial__step--next@.place-type-film!click'. First viewport, scale 1, palette-quantized, against this branch's own next build + next start."
+      "capture": "node scripts/take-route-shots.mjs place-type-community http://127.0.0.1:3311/communities/tetherow/types/single-family --states 'dial-open=.place-type-film .v3-dial__step--next@.place-type-film!click'. First viewport, scale 1, palette-quantized, against the listing-dial fix tree's own next build + next start (2026-09-30)."
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/place-type-community/shots/desktop.png",
-      "mobile375": "design_system/ryan-realty/ui_kits/place-type-community/shots/mobile375.png",
+      "dialDesktop": "design_system/ryan-realty/ui_kits/place-type-community/shots/dial-desktop.png",
+      "dialMobile375": "design_system/ryan-realty/ui_kits/place-type-community/shots/dial-mobile375.png",
       "dialOpenDesktop": "design_system/ryan-realty/ui_kits/place-type-community/shots/dial-open-desktop.png",
-      "dialOpenMobile375": "design_system/ryan-realty/ui_kits/place-type-community/shots/dial-open-mobile375.png"
+      "dialOpenMobile375": "design_system/ryan-realty/ui_kits/place-type-community/shots/dial-open-mobile375.png",
+      "mobile375": "design_system/ryan-realty/ui_kits/place-type-community/shots/mobile375.png"
     },
-    "shotsHash": "sha256:e1fea3329f44f5999ef4629c3f4094acd9042e1b8ce195a75699269fabd21a56",
+    "shotsHash": "sha256:2e67e6a99e50e0ddc8a4004d341987cbc7b06925437d5d2a1da9a1893755edc3",
     "scores": [
-      64,
-      62,
-      68
+      65,
+      69,
+      72
     ],
-    "score": 64,
+    "score": 69,
     "criteria": {
-      "designQuality": 19,
-      "originality": 17,
+      "designQuality": 20,
+      "originality": 18,
       "interaction": 11,
-      "craft": 9,
+      "craft": 12,
       "honestyFunction": 8
     },
     "perCriterion": {
-      "design": 19,
-      "originality": 17,
+      "design": 20,
+      "originality": 18,
       "interaction": 11,
-      "craft": 9,
+      "craft": 12,
       "honesty": 8
     },
     "honestyFunction": 8,
-    "demoMatch": true,
-    "beats": "Redfin's Tetherow neighborhood page — this page wins on data depth (per-cluster median price pills tied to a live price-band slider, not just a pin drop) and on getting a buyer to a broker in one path, but Redfin still beats it on raw listing count density and saved-search tooling.",
+    "demoMatch": false,
+    "beats": "Zillow community pages — Zillow drops you into a flat, unstyled address list with no price-position sense; this page wins on inventory legibility (a price-clustered custom map showing where the 13 asks sit geographically) and on inventory navigation (a scrubbable listing dial that shows a home's position in the $1.5M–$4.3M range, not just a row in a list).",
     "adaptedFrom": [
       {
         "id": "house-listing-dial"
@@ -124,34 +127,33 @@
     ],
     "defects": [
       {
-        "section": "atlas map price pills (bottom cluster)",
+        "section": "ON THE MARKET / NEAR THIS PRICE comp rows",
+        "severity": "taste",
+        "finding": "The three comp rows (thumbnail, price, delta, specs, address) sit as a flat list disconnected from the price scrubber directly above them — 'near this price' is asserted in a label but never shown as a position on the same scale the dial already draws, so the page's own best idea (price-as-position) isn't reused where it would do the most work.",
+        "replaceWith": "house-listing-dial"
+      },
+      {
+        "section": "LISTINGS ON THE MAP legend/slider block",
         "severity": "craft",
-        "finding": "the median $1.4M, $1.4M, and $2.5M tags crowd into the same corner of the polygon at both 1440 and 375 and nearly overlap, so the map is unreadable exactly where the cheapest homes sit",
+        "finding": "On mobile the legend and 'up to any price' filter render below the map instead of above it as on desktop, reversing the explain-then-see order into see-then-explain and pushing the one interactive filter control past the fold.",
         "replaceWith": null
       },
       {
-        "section": "left rail below the price slider (desktop)",
+        "section": "ON THE MARKET hero photo (dial-desktop / dial-mobile375)",
         "severity": "taste",
-        "finding": "at 1440px the column under 'Up to any price' sits empty for roughly 400px before the listing dial begins, so the first fold reads unfinished instead of composed",
-        "replaceWith": null
-      },
-      {
-        "section": "listing-dial thumbnail rail",
-        "severity": "taste",
-        "finding": "the thumbnail strip under the big photo is a row of undifferentiated postage-stamp images with no visible price or spec distinction between them, functioning as a scroll list wearing thumbnails instead of a real filmstrip",
+        "finding": "The lead image for the featured listing is a generic deck-view-of-a-mountain real-estate photo with no data overlay, caption treatment, or typographic moment — it's the largest single element on the second fold and the least original thing on the page.",
         "replaceWith": null
       }
     ],
-    "verdict": "This is the prescribed house kit (Atlas map, quiet claim line, listing dial) executed correctly and dully: the claim sentence is honest and sourced, the map is genuinely custom cartography with median pills rather than a raw Google map, and the dial's big serif '01/12' is the one moment with real personality. But the pills collide at the one cluster a buyer actually cares about, the desktop fold wastes a third of its width on empty space, and nothing here is a section a person would screenshot to show someone — it is competent, on-brand, and stops well short of breathtaking. demoMatch is true only because no catalog control was cream-boxed here; the house forms themselves just aren't earning the score their execution implies.",
-    "comparedToPrior": "rebaselined",
+    "verdict": "This is a real fix of the mark-44 problem: the eight-row hairline ledger is gone, replaced by a claim-first sentence, a custom price-clustered map, and a scrubbable listing dial that visibly changes state between the open shots — inventory legibility (count, price band, per-cluster ask) is genuinely richer than the flat list it replaced. But demoMatch is false because nothing here is a catalog control at all — it's house-built (Atlas, Quiet, ListingDial) — and design quality stays capped by a conservative navy-on-grey map and a stock deck photo that never lands a breathtaking moment; SEO signals (JSON-LD, crawlable comp links) aren't verifiable from pixels and should be confirmed separately before calling this pass complete on that axis.",
+    "comparedToPrior": "rose",
     "priorMark": {
-      "evaluatedAt": "2026-09-15",
-      "score": 55,
-      "evaluatorModel": "grok-4.6",
+      "evaluatedAt": "2026-09-24",
+      "score": 64,
+      "evaluatorModel": "claude-sonnet-5",
       "rubricVersion": "v1-2026-09-12",
-      "shotsHash": "sha256:41d8e1c0485ee4cf004997bf3f30f0141d899fb934810c0e18284f846d12c211"
-    },
-    "rebaselineReason": "evaluatorModel grok-4.6 -> claude-sonnet-5; shotsHash (new captures of the listing dial, Matt 2026-09-24, SITE-195). The judge is a different instrument from the prior mark, so this is the first mark on the claude-sonnet-5 ruler for this class and the floor the next pass may not fall under."
+      "shotsHash": "sha256:e1fea3329f44f5999ef4629c3f4094acd9042e1b8ce195a75699269fabd21a56"
+    }
   },
   "sectionOrder": [
     "V3SectionTracker",
