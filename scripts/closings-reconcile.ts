@@ -8,13 +8,20 @@
  *   --from / --to YYYY-MM-DD   close-date window, inclusive
  *   --repair                   re-pull every drifted listing from Spark and write it back
  *   --max <n>                  repair at most n listings (default 2000)
+ *   --delete-removed           with --repair, also delete the sales the MLS removed once due
+ *                              (three daily sightings), whole row kept first, and text the
+ *                              owner; the daily cron does this for the trailing 13 months.
+ *                              For an older window, recompute that window's report periods
+ *                              afterwards: nothing else recomputes them.
  *   --json <file>              write the full result (every drifted key and why) to a file
  *
  * Without --repair nothing is written. With it, each drifted listing's old
  * values are kept in listing_mls_repair_log before it is re-pulled, and
  * closings Spark no longer serves at all are recorded in
  * market_listing_absent_from_mls (left out of every Market Truth statistic,
- * Matt 2026-09-25). See lib/sync/closingsReconcile.ts.
+ * Matt 2026-09-25). A held batch of MLS-removed sales is approved by name, not
+ * here: see docs/DATABASE_FOR_AI_AGENTS.md (the listings row).
+ * See lib/sync/closingsReconcile.ts.
  */
 import { config as loadEnv } from 'dotenv'
 loadEnv({ path: '.env.local' })
@@ -33,18 +40,21 @@ async function main() {
   const from = flag('from')
   const to = flag('to')
   if (!from || !to || !/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
-    throw new Error('usage: --from YYYY-MM-DD --to YYYY-MM-DD [--repair] [--max n] [--json file]')
+    throw new Error('usage: --from YYYY-MM-DD --to YYYY-MM-DD [--repair [--delete-removed]] [--max n] [--json file]')
   }
   const max = flag('max')
   if (max !== undefined && !(Number.isInteger(Number(max)) && Number(max) > 0)) {
     throw new Error('--max takes a positive whole number')
   }
+  const removeAbsent = argv.includes('--delete-removed')
+  if (removeAbsent && !argv.includes('--repair')) throw new Error('--delete-removed needs --repair')
   const t0 = Date.now()
   const r = await reconcileClosings({
     from,
     to,
     repair: argv.includes('--repair'),
     maxRepairs: max !== undefined ? Number(max) : undefined,
+    removeAbsent,
   })
   const byReason = new Map<string, number>()
   for (const d of r.drift) for (const reason of d.reasons) byReason.set(reason, (byReason.get(reason) ?? 0) + 1)
@@ -56,6 +66,13 @@ async function main() {
         ? ` (recorded as absent from the MLS: ${r.absentFromMls.recorded}; back in the MLS and released: ${r.absentFromMls.cleared}${r.absentFromMls.refused ? `; NOT recorded: ${r.absentFromMls.refused}` : ''})`
         : ' (reported only)'),
   )
+  if (removeAbsent) {
+    const a = r.absentFromMls
+    console.log(
+      `deleted as removed from the MLS: ${a.removed.length}${a.removalHeld ? ` (none: ${a.removalHeld})` : ''}; held for approval: ${a.held}; not due yet: ${a.waiting}; texted: ${a.told}${a.removalFailed ? `; deletion FAILED: ${a.removalFailed}` : ''}`,
+    )
+    for (const s of a.removed) console.log(`  ${s.listingKey} MLS ${s.listNumber ?? '?'}, closed ${s.closeDate ?? '?'}: whole row in listing_mls_repair_log ${s.logId}`)
+  }
   if (argv.includes('--repair')) {
     console.log(
       `repaired ${r.repaired} (old values kept in listing_mls_repair_log: ${r.repairLogged}), history replaced ${r.historyRefreshed}, re-frozen ${r.refinalized}, membership rows rebuilt ${r.membershipRows}, failed ${r.repairFailed.length}`,

@@ -371,5 +371,41 @@ reconciliation). `prune_market_fact_sale` now drops sale facts whose listing is 
    (`sale_pricing_facts.stale_since`), and a run may remove 50: a batch past that removes nothing
    and texts the owner, and a person approves a larger cleanup with `p_max_delete`. 717 Larch now counts once, under the number the MLS
    re-entered it as (220220138). After the deletion the trailing 13 months matched Spark
-   exactly: 14,461 closings, 0 drifted, 0 absent. The three stay in `market_listing_absent_from_mls`, so if the delta sync ever brought
-   one back, Market Truth would still leave it out.
+   exactly: 14,461 closings, 0 drifted, 0 absent. The three stay in `market_listing_absent_from_mls`,
+   and the daily check still looks each one up by key: if the MLS ever serves one again, the
+   record is released and the reconciliation re-pulls the sale (a Spark closing with no row of
+   ours is drift, reason `missing`). Their place membership and report listing rows were left;
+   with their sale facts and episodes gone they count nowhere.
+
+   **Future removals are deleted automatically** (Matt 2026-09-30, asked what should happen the
+   next time: "Delete it automatically. The daily check deletes it after saving the full record,
+   and texts you what it removed."). Each daily closings check counts a sighting of every sale
+   it confirms missing (`record_absent_from_mls`, one per 12 hours at most), and passes those
+   keys to `delete_mls_removed_sales` (migrations `20260930220000` to `20260930250000`), which
+   deletes a sale on its third sighting, 36 hours or more after the first: one bad answer from
+   Spark, or a day the check did not run, never deletes anything. In one transaction the whole
+   row goes to `listing_mls_repair_log` first (source `absent-from-mls-delete`, the shape of
+   3634 to 3636), then the listing, its Market Truth sale fact and on-market episodes, the
+   monthly report's listing, sale and episode copies, its CMA comp and its place membership. A
+   code sweep that day found these are the rows that keep counting a sale once its listing is
+   gone: place membership joined to a sale fact the prune no longer reaches (it prunes only the
+   trailing 13 months) feeds the `market_metric` closed counts, and the report's listing row
+   joined to never-pruned episodes feeds each edition's homes for sale, new listings and
+   pendings. The listing's MLS history, its activity events and the CMA zone cache are read only
+   through the listing, so they stay. Matt is texted each removed sale's address, MLS number,
+   close date and price, from the log (`reported_at`), so a deletion whose answer was lost is
+   still told. A Bend calendar day may delete 10: more due at once deletes nothing, holds them
+   (`held_at`) and is texted, and while a held sale is still ours and still found missing the
+   check deletes nothing on its own until an agent checks them and approves them by name (how:
+   `docs/DATABASE_FOR_AI_AGENTS.md`, the `listings` row). A failed deletion is texted and never
+   stops the day's report refresh. Only the daily cron deletes (its window is the one the
+   refresh recomputes); `scripts/closings-reconcile.ts --delete-removed` does it for an older
+   window, whose report periods must then be recomputed. If the MLS ever serves a deleted sale
+   again, the delta sync, the full Spark sync and the closings repair put its saved row back
+   before they write, frozen as saved, and rebuild its membership, episodes, report attributes,
+   sale fact and CMA comp (`restore_mls_removed_sales`, `lib/sync/mlsRemovedRestore.ts`), so it
+   returns with its frozen gallery, broker overrides and counters, and Matt is told. A test
+   (`lib/sync/mlsRemovedRestore.test.ts`) fails if the deletion ever clears a table the restore
+   does not rebuild, and `delete_mls_removed_sales_selftest()` runs the whole cycle on synthetic
+   rows and rolls back (the integration suite calls it). A published monthly edition keeps the figures it was published
+   with; the next edition's comparisons read the corrected data.

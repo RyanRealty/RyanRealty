@@ -273,7 +273,7 @@ export async function queueCmaReadyAlert(params: {
  * run while still re-paging once the cooldown lapses (the problem is still live).
  *
  * Health alerts always route to Matt — they are operational, not lead-routing.
- * Returns true when an alert was queued, false when deduped or unconfigured.
+ * Returns true when an alert was queued, false when deduped, unconfigured or not written.
  */
 export async function queueBrokerHealthAlert(params: {
   key: string

@@ -46,6 +46,7 @@ import {
   updateListingPhotoUrl,
   updateSyncStateLastDelta,
 } from '@/lib/data/sync/syncWrites'
+import { restoreServedAgain } from '@/lib/sync/mlsRemovedRestore'
 import { syncAuxiliaryTablesForFinalization } from '@/app/api/admin/sync/_shared/listing-completeness'
 import { processNewExpiredListings } from '@/lib/expired-listing-processor'
 import { createServiceClient } from '@/lib/supabase/service'
@@ -497,6 +498,38 @@ async function loadExistingByNum(listNumbers: string[]): Promise<Map<string, Exi
   return map
 }
 
+/**
+ * What we hold for this page of Spark results, keyed by ListNumber, for the
+ * plan. With `restore` (execute mode), a sale we deleted because the MLS
+ * stopped serving it (Matt 2026-09-30), which the MLS now serves again, first
+ * gets its saved row back (lib/sync/mlsRemovedRestore.ts): the plan then sees
+ * it as a listing we hold, so this run updates our full record (frozen gallery,
+ * broker overrides, counters) instead of inserting a bare new one and
+ * announcing an old sale as news. A failed restore never stops the sync.
+ */
+export async function loadExistingForPlan(
+  results: SparkDeltaResult[],
+  opts: { restore: boolean },
+): Promise<Map<string, ExistingListingLite>> {
+  if (opts.restore) {
+    const keys = results
+      .map((r) => (r.StandardFields as Record<string, unknown> | undefined)?.ListingKey)
+      .filter((k): k is string => typeof k === 'string' && k.length > 0)
+    try {
+      await restoreServedAgain(keys)
+    } catch (err) {
+      console.error('[deltaSync] restoring MLS-removed sales failed', err)
+    }
+  }
+  // Derive the existing-lookup keys through resultToMappedRow — the SAME mapping
+  // computeDeltaPlan uses for its lookup (see resultToMappedRow). The rate is
+  // irrelevant to ListNumber, so this pass deliberately does not resolve one.
+  const listNumbers = results
+    .map((r) => String(resultToMappedRow(r).ListNumber ?? '').trim())
+    .filter(Boolean)
+  return loadExistingByNum(listNumbers)
+}
+
 /** Live 30-yr rate (percent) every row in one run is priced at; null → the
  *  mapper's DEFAULT_PITI_RATE, never a failed sync. Shared with the closings
  *  reconciliation repair (lib/sync/closingsReconcile.ts). */
@@ -520,8 +553,9 @@ type PlanContext = {
 }
 
 /**
- * Shared fetch + existing-lookup + plan computation. Read-only. Used by both
- * shadow and execute. `since` = sinceOverride, else the stored delta cursor
+ * Shared fetch + existing-lookup + plan computation. Used by both shadow and
+ * execute; read-only except that execute first puts back any MLS-removed sale
+ * the MLS serves again (loadExistingForPlan), so the plan sees it as held. `since` = sinceOverride, else the stored delta cursor
  * (last_delta_sync_at), else the hardened default window — MUST honor the stored
  * cursor or a behind sync would silently skip the gap.
  */
@@ -562,13 +596,9 @@ async function fetchAndPlan(opts: RunDeltaSyncOptions): Promise<PlanContext> {
     page++
   }
 
-  // Derive the existing-lookup keys through resultToMappedRow — the SAME mapping
-  // computeDeltaPlan uses for its lookup (see resultToMappedRow). The rate is
-  // irrelevant to ListNumber, so this pass deliberately does not resolve one.
-  const listNumbers = results
-    .map((r) => String(resultToMappedRow(r).ListNumber ?? '').trim())
-    .filter(Boolean)
-  const existingByNum = await loadExistingByNum(listNumbers)
+  // Execute mode puts back any MLS-removed sale the MLS serves again first;
+  // shadow mode stays read-only.
+  const existingByNum = await loadExistingForPlan(results, { restore: opts.mode === 'execute' })
 
   // ONE rate read per run, not per listing. A null degrades to the mapper's
   // default and the sync proceeds — a stale payment estimate is recoverable,

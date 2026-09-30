@@ -6,8 +6,10 @@
  * listing keys (the facts a market statistic reads, plus the freeze flags), and
  * the keys we hold as closed inside the window (the reverse direction: a row we
  * count that Spark no longer places there). Plus its writes: the closings the
- * MLS no longer serves (market_listing_absent_from_mls) and the before-image
- * of every repair (listing_mls_repair_log).
+ * MLS no longer serves (market_listing_absent_from_mls), their deletion once
+ * due (delete_mls_removed_sales) and restore if the MLS serves one again
+ * (restore_mls_removed_sales), and the before-image of every repair or
+ * deletion (listing_mls_repair_log), with which of them the owner was told.
  */
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
@@ -106,23 +108,18 @@ export async function rebuildPlaceMembershipForKeys(keys: string[]): Promise<num
 /**
  * Closed sales we hold that the MLS no longer serves at all (Matt 2026-09-25:
  * left out of every statistic). Market Truth reads this table when it builds
- * sale facts (refresh_market_fact_sale marks them absent_from_mls).
+ * sale facts (refresh_market_fact_sale marks them absent_from_mls). Each call
+ * is a sighting: record_absent_from_mls counts the daily checks that found a
+ * sale missing (one per 12 hours at most), and deletion needs three.
  */
 export async function recordAbsentFromMls(
   rows: { listingKey: string; listNumber: string | null; closeDate: string | null }[],
 ): Promise<number> {
   if (rows.length === 0) return 0
   const sb = createServiceClient()
-  const now = new Date().toISOString()
-  const { error } = await sb.from('market_listing_absent_from_mls').upsert(
-    rows.map((r) => ({
-      listing_key: r.listingKey,
-      list_number: r.listNumber,
-      close_date: r.closeDate,
-      last_confirmed_at: now,
-    })),
-    { onConflict: 'listing_key' },
-  )
+  const { error } = await sb.rpc('record_absent_from_mls', {
+    p_rows: rows.map((r) => ({ listing_key: r.listingKey, list_number: r.listNumber, close_date: r.closeDate })),
+  })
   if (error) throw new Error(`[recordAbsentFromMls] ${error.message}`)
   return rows.length
 }
@@ -141,6 +138,250 @@ export async function getAbsentFromMlsKeys(window?: { from: string; to: string }
   })
   if (error) throw new Error(`[getAbsentFromMlsKeys] ${error.message}`)
   return rows.map((r) => r.listing_key)
+}
+
+/** A closed sale deleted from our copy because the MLS no longer serves it. */
+export type RemovedSale = {
+  /** listing_mls_repair_log id holding the whole row (undo: re-insert before_row). */
+  logId: number
+  listingKey: string
+  listNumber: string | null
+  streetNumber: string | null
+  streetName: string | null
+  city: string | null
+  closeDate: string | null
+  closePrice: number | null
+  firstDetectedAt: string | null
+}
+
+export type RemovedSalesResult = {
+  removed: RemovedSale[]
+  /**
+   * Why nothing was deleted although sales were due: 'budget' (more due than
+   * the day may delete) or 'hold' (an earlier hold still waits for a person).
+   * Either way the due sales are now held.
+   */
+  refused: 'budget' | 'hold' | null
+  /** Due this call. */
+  due: number
+  /** Sales held for a person's approval (still Closed rows of ours), after this call. */
+  held: number
+  /** Recorded missing and still a Closed row of ours, but not due yet. */
+  waiting: number
+  /** Deletions left in today's budget (Bend calendar day). */
+  budget: number | null
+}
+
+type RemovedRow = {
+  log_id: number
+  listing_key: string
+  list_number: string | null
+  street_number: string | null
+  street_name: string | null
+  city: string | null
+  close_date: string | null
+  close_price: number | string | null
+  first_detected_at: string | null
+}
+
+/**
+ * Delete the closed sales the MLS no longer serves (Matt 2026-09-30, "Delete it
+ * automatically"), from keys the caller just confirmed missing. The SQL function
+ * (migrations 20260930220000, 20260930230000) holds every rule: a key is due
+ * when it is still Closed, was found missing on three daily checks, the first 36
+ * hours or more ago, and was confirmed missing in the last 26 hours; each whole
+ * row goes to listing_mls_repair_log first, in the same transaction as the
+ * delete of the listing and its derived rows. More due than today's budget
+ * (maxDelete), or any earlier hold still standing, deletes nothing and holds
+ * the due sales until a person approves them by name (approve: true).
+ */
+export async function deleteMlsRemovedSales(
+  keys: string[],
+  opts: { maxDelete: number; window?: { from: string; to: string }; approve?: boolean },
+): Promise<RemovedSalesResult> {
+  // An empty list still calls: the answer carries the standing hold and the day's budget.
+  const unique = [...new Set(keys.filter(Boolean))]
+  const sb = createServiceClient()
+  const { data, error } = await sb.rpc('delete_mls_removed_sales', {
+    p_keys: unique,
+    p_max_delete: opts.maxDelete,
+    p_window_from: opts.window?.from ?? null,
+    p_window_to: opts.window?.to ?? null,
+    p_approve: opts.approve === true,
+  })
+  if (error) throw new Error(`[deleteMlsRemovedSales] ${error.message}`)
+  const r = (data ?? {}) as {
+    refused?: boolean
+    reason?: 'budget' | 'hold' | null
+    due?: number
+    held?: number
+    waiting?: number
+    budget?: number | null
+    rows?: RemovedRow[]
+  }
+  const removed = r.refused
+    ? []
+    : (r.rows ?? []).map((row) => ({
+        logId: Number(row.log_id),
+        listingKey: row.listing_key,
+        listNumber: row.list_number,
+        streetNumber: row.street_number,
+        streetName: row.street_name,
+        city: row.city,
+        closeDate: row.close_date,
+        closePrice: row.close_price == null ? null : Number(row.close_price),
+        firstDetectedAt: row.first_detected_at,
+      }))
+  return {
+    removed,
+    refused: r.refused ? (r.reason === 'hold' ? 'hold' : 'budget') : null,
+    due: Number(r.due ?? 0),
+    held: Number(r.held ?? 0),
+    waiting: Number(r.waiting ?? 0),
+    budget: r.budget ?? null,
+  }
+}
+
+export type RestoredSales = {
+  /** Put back from the saved row, frozen as saved, with the sale's close date (YYYY-MM-DD). */
+  restored: { listingKey: string; closeDate: string | null }[]
+  /** Saved rows that could not go back (each key is restored on its own). */
+  failed: { listingKey: string; error: string }[]
+}
+
+/**
+ * Put back the saved row of each key the MLS serves again that we deleted as
+ * removed (restore_mls_removed_sales): the write from Spark that follows then
+ * updates our full record, frozen gallery, broker overrides and counters kept,
+ * instead of inserting a bare new one. Keys with no deletion on record, or with
+ * a row of ours, are left alone. The derived rows are the caller's to rebuild
+ * (lib/sync/mlsRemovedRestore.ts).
+ */
+export async function restoreMlsRemovedSales(keys: string[]): Promise<RestoredSales> {
+  const unique = [...new Set(keys.filter(Boolean))]
+  if (unique.length === 0) return { restored: [], failed: [] }
+  const sb = createServiceClient()
+  const { data, error } = await sb.rpc('restore_mls_removed_sales', { p_keys: unique })
+  if (error) throw new Error(`[restoreMlsRemovedSales] ${error.message}`)
+  const d = (data ?? {}) as {
+    restored?: { listing_key: string; close_date: string | null }[]
+    failed?: { listing_key: string; error: string }[]
+  }
+  return {
+    restored: (d.restored ?? []).map((r) => ({ listingKey: r.listing_key, closeDate: r.close_date })),
+    failed: (d.failed ?? []).map((f) => ({ listingKey: f.listing_key, error: f.error })),
+  }
+}
+
+/**
+ * Rebuild the CMA comp (sale_pricing_facts, with its price steps) of these keys
+ * now (refresh_sale_pricing_facts_for_keys): the same batch the 6-hourly sweep
+ * runs, for one key at a time. A key the comp filter leaves out comes back in
+ * skipped.
+ */
+export async function refreshSalePricingFactsForKeys(keys: string[]): Promise<{ refreshed: string[]; skipped: string[] }> {
+  const unique = [...new Set(keys.filter(Boolean))]
+  if (unique.length === 0) return { refreshed: [], skipped: [] }
+  const sb = createServiceClient()
+  const { data, error } = await sb.rpc('refresh_sale_pricing_facts_for_keys', { p_keys: unique })
+  if (error) throw new Error(`[refreshSalePricingFactsForKeys] ${error.message}`)
+  const d = (data ?? {}) as { refreshed?: string[]; skipped?: string[] }
+  return { refreshed: d.refreshed ?? [], skipped: d.skipped ?? [] }
+}
+
+/** A deletion or restore of an MLS-removed sale the owner has not been texted about yet. */
+export type MlsRemovalNotice = {
+  logId: number
+  kind: 'removed' | 'restored'
+  listingKey: string
+  listNumber: string | null
+  streetNumber: string | null
+  streetName: string | null
+  city: string | null
+  /** YYYY-MM-DD (close dates are stored as midnight UTC). */
+  closeDate: string | null
+  closePrice: number | null
+}
+
+type NoticeRow = {
+  id: number
+  source: string
+  listing_key: string
+  list_number: string | null
+  b_street_number: string | null
+  b_street_name: string | null
+  b_city: string | null
+  b_close_date: string | null
+  b_close_price: string | null
+  m_street_number: string | null
+  m_street_name: string | null
+  m_city: string | null
+  m_close_date: string | null
+  m_close_price: string | null
+}
+
+const REMOVED_SOURCE = 'absent-from-mls-delete'
+const RESTORED_SOURCE = 'absent-from-mls-restore'
+
+/**
+ * Deletions and restores of MLS-removed sales not yet texted to the owner
+ * (reported_at null), oldest first. Read from the log rather than from the
+ * call that deleted them, so a deletion whose response was lost is still told.
+ * The limit is far above a day's deletions (10) and a held batch approved at
+ * once, so a text's count is the whole count.
+ */
+export async function getUnreportedMlsRemovalNotices(limit = 1000): Promise<MlsRemovalNotice[]> {
+  const sb = createServiceClient()
+  const { data, error } = await sb
+    .from('listing_mls_repair_log')
+    .select(
+      'id, source, listing_key, list_number, ' +
+        'b_street_number:before_row->>StreetNumber, b_street_name:before_row->>StreetName, b_city:before_row->>City, ' +
+        'b_close_date:before_row->>CloseDate, b_close_price:before_row->>ClosePrice, ' +
+        'm_street_number:mls->>streetNumber, m_street_name:mls->>streetName, m_city:mls->>city, ' +
+        'm_close_date:mls->>closeDate, m_close_price:mls->>closePrice',
+    )
+    .in('source', [REMOVED_SOURCE, RESTORED_SOURCE])
+    .is('reported_at', null)
+    .order('id')
+    .limit(limit)
+  if (error) throw new Error(`[getUnreportedMlsRemovalNotices] ${error.message}`)
+  const num = (v: string | null) => (v == null || v === '' || Number.isNaN(Number(v)) ? null : Number(v))
+  // The saved row's CloseDate carries the offset of the session that saved it:
+  // read the calendar day in UTC, the zone close dates are stored in.
+  const utcDay = (v: string | null) => {
+    if (!v) return null
+    const t = Date.parse(v)
+    return Number.isNaN(t) ? v.slice(0, 10) : new Date(t).toISOString().slice(0, 10)
+  }
+  return ((data ?? []) as unknown as NoticeRow[]).map((r) => {
+    const restored = r.source === RESTORED_SOURCE
+    const closeDate = utcDay(restored ? r.m_close_date : r.b_close_date)
+    return {
+      logId: Number(r.id),
+      kind: restored ? 'restored' : 'removed',
+      listingKey: r.listing_key,
+      listNumber: r.list_number,
+      streetNumber: restored ? r.m_street_number : r.b_street_number,
+      streetName: restored ? r.m_street_name : r.b_street_name,
+      city: restored ? r.m_city : r.b_city,
+      closeDate,
+      closePrice: num(restored ? r.m_close_price : r.b_close_price),
+    }
+  })
+}
+
+/** Mark notices as texted to the owner. */
+export async function markMlsRemovalNoticesReported(ids: number[]): Promise<number> {
+  if (ids.length === 0) return 0
+  const sb = createServiceClient()
+  const { error } = await sb
+    .from('listing_mls_repair_log')
+    .update({ reported_at: new Date().toISOString() })
+    .in('id', ids)
+    .is('reported_at', null)
+  if (error) throw new Error(`[markMlsRemovalNoticesReported] ${error.message}`)
+  return ids.length
 }
 
 /** Remove keys the MLS serves again. */

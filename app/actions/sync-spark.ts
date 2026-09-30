@@ -187,6 +187,13 @@ export async function syncSparkListings(options?: {
       const rows = D.Results.map((r) => unifiedSparkToRow(r, { mortgageRate }))
       totalFetched += rows.length
 
+      // A sale deleted because the MLS stopped serving it (Matt 2026-09-30),
+      // which the MLS serves again, gets its saved row back before this write,
+      // so its record is updated rather than replaced by a bare new one and
+      // Matt is told it came back. Never throws.
+      const { restoreServedAgain } = await import('@/lib/sync/mlsRemovedRestore')
+      await restoreServedAgain(rows.map((r) => String(r.ListingKey ?? '')).filter(Boolean))
+
       const { upsertListingRows } = await import('@/lib/data')
       const ignoreDuplicates = options?.insertOnly === true
       for (let i = 0; i < rows.length; i += UPSERT_CHUNK_SIZE) {

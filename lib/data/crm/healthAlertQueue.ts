@@ -23,13 +23,18 @@ export async function recentHealthAlertExists(marker: string, sinceIso: string):
   return (data ?? []).length > 0
 }
 
-/** Insert a non-person-scoped health alert row (always routed to Matt — operational, not lead-routing). */
+/**
+ * Insert a non-person-scoped health alert row (always routed to Matt — operational, not lead-routing).
+ * Throws when the row is not written, so queueBrokerHealthAlert reports false: a caller that marks
+ * something as told (tellMlsRemovals) must never mark a text that was not queued.
+ */
 export async function insertHealthAlert(params: { toPhone: string; body: string }): Promise<void> {
   const sb = createServiceClient()
-  await sb.from('crm_broker_alerts').insert({
+  const { error } = await sb.from('crm_broker_alerts').insert({
     broker: 'matt',
     to_phone: params.toPhone,
     body: params.body.slice(0, 600),
     person_id: null,
   })
+  if (error) throw new Error(`[insertHealthAlert] ${error.message}`)
 }
