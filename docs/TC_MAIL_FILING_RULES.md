@@ -121,7 +121,10 @@ purchase of 3480 SW 45th is not an offer on the listing they opened on it in
    Beaumont's first contract fell through are the listing's again (its
    termination paperwork still finds it, rule 3).
 5. A tie goes to the cycle nearest the date: a January listing appointment,
-   before any cycle, is the listing's, not the latest contract's.
+   before any cycle, is the listing's, not the latest contract's. Then a
+   cycle with dates over one without (an undated duplicate of 2680 NW Nordic's
+   first contract took a forward of its refund request on recency alone), then
+   the newest.
 
 After close, closing mail (recorded deed, final statement) and general mail are
 labeled "After closing"; a forwarded "Open Escrow" keeps its own label.

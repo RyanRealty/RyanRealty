@@ -1313,7 +1313,7 @@ export function pickCycleForMail(
   // cancelled cycle under the one-week lead.
   const listingOpen = cycles.some((c) => c.kind === 'listing' && (c.listingDate != null || c.closeDate != null || c.deadDate != null) && inWindow(c))
   const leadDays = listingOpen ? CONTRACT_LEAD_DAYS : PRE_OPEN_DAYS
-  let best: { id: string; score: number; gap: number; recency: number } | null = null
+  let best: { id: string; score: number; gap: number; dated: number; recency: number } | null = null
   for (const c of cycles) {
     const w = cycleWindow(c)
     let score = 0
@@ -1354,15 +1354,19 @@ export function pickCycleForMail(
     }
     // A tie goes to the cycle nearest the send date: mail before every cycle
     // (the January listing appointment on 19496 Tumalo) is the first one's,
-    // not the latest contract's; among cycles that hold the date, the newest.
+    // not the latest contract's. Then a cycle with dates over one without (an
+    // undated duplicate of 2680 NW Nordic's first contract took its refund
+    // request on recency alone); then the newest.
     const gap = holds ? 0 : start != null && at < start ? start - at : w.end != null && at > w.end ? at - w.end : 0
+    const dated = accepted != null || t(c.listingDate) != null ? 1 : 0
     const recency = accepted ?? t(c.listingDate) ?? t(c.createdAt) ?? 0
     if (
       !best ||
       score > best.score ||
-      (score === best.score && (gap < best.gap || (gap === best.gap && recency > best.recency)))
+      (score === best.score &&
+        (gap < best.gap || (gap === best.gap && (dated > best.dated || (dated === best.dated && recency > best.recency)))))
     ) {
-      best = { id: c.id, score, gap, recency }
+      best = { id: c.id, score, gap, dated, recency }
     }
   }
   return best?.id ?? cycles[0].id

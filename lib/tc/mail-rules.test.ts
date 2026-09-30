@@ -2350,6 +2350,16 @@ describe('re-decide dry run: cycles when a property comes back', () => {
     expect(pickCycleForMail(relisted, '2026-04-27T17:00:00Z', 'escrow_title', { termination: true })).toBe('fell-through')
     expect(pickCycleForMail(relisted, '2026-05-12T17:00:00Z', 'escrow_title')).toBe('closed')
   })
+
+  it('an undated duplicate of a contract never wins a tie against the dated record (19e46be500db5296)', () => {
+    const purchases = [
+      cycle({ id: 'undated-dup', status: 'Canceled/App', closeDate: '2025-07-14', deadDate: '2025-07-08', createdAt: '2026-05-01T00:00:00Z' }),
+      cycle({ id: 'second', status: 'Closed', acceptanceDate: '2025-08-26', closeDate: '2025-10-10' }),
+      cycle({ id: 'first', status: 'Canceled/App', acceptanceDate: '2025-04-12', closeDate: '2025-07-14', deadDate: '2025-07-18' }),
+    ]
+    // A forward of the first contract's refund request, ten months on.
+    expect(pickCycleForMail(purchases, '2026-05-20T18:55:00Z', 'escrow_title', { termination: true })).toBe('first')
+  })
 })
 
 describe('re-decide dry run: a neighbour on our street, and a contact before the contract', () => {
