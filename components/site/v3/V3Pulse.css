@@ -21,13 +21,10 @@
   padding: clamp(2rem, 4.5vw, 3.25rem) 0 clamp(2rem, 4vw, 3rem);
   background: var(--v3-surface);
   color: var(--v3-ink);
-  /* The band carries an id, so it is a scroll target, and the chrome is sticky:
-     without this an anchor scroll parks the claim's ascenders under the header
-     and "More" reads as "Wore" at 375 (2026-09-08 evaluator, right-now-mobile375).
-     Every sibling pattern that owns an id reserves the chrome the same way —
-     V3AlertsStrip's exact formula, because the height being cleared is the
-     chrome's, not a section rhythm. */
-  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
+  /* The band carries an id, so it is a scroll target under a sticky chrome:
+     an anchor scroll once parked the claim's ascenders under the header and
+     "More" read as "Wore" at 375 (2026-09-08 evaluator). The page's scroll
+     padding clears the chrome for every target now (V3Chrome.css). */
 }
 
 /* A band that follows the Stage closes the photograph with the navy rule the

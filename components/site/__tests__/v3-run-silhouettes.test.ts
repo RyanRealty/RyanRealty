@@ -123,8 +123,15 @@ describe('V3Atlas chips: wrapped at every width, folded on a phone', () => {
     expect(phone).toMatch(/\.v3-atlas__pin\s*\{[^}]*top:\s*clamp\(/)
   })
 
+  // The page's scroll padding clears the sticky chrome for every target at
+  // once (V3Chrome.css, WCAG 2.2 SC 2.4.11); a section that also carried the
+  // chrome's height as its own margin would land twice as far down.
   it('lands its hash under the sticky chrome, not beneath it', () => {
-    expect(rulesFor(css, '.v3.v3-atlas[id]').join('\n')).toMatch(/scroll-margin-top:\s*calc\(var\(--v3-chrome-h\)/)
+    const chrome = stripComments(readFileSync(resolve('components/site/v3/V3Chrome.css'), 'utf8'))
+    expect(rulesFor(chrome, 'html:has(.v3.v3-chrome)').join('\n')).toMatch(
+      /scroll-padding-top:\s*calc\(var\(--v3-chrome-h\) \+ var\(--v3-space-md\)\)/,
+    )
+    expect(css).not.toMatch(/scroll-margin-top/)
   })
 })
 

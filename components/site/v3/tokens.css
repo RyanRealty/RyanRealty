@@ -108,8 +108,13 @@
   --v3-scrim-soft: color-mix(in srgb, var(--v3-navy) 16%, transparent);
   --v3-media-shadow: 0 2px 24px color-mix(in srgb, var(--v3-navy) 55%, transparent);
 
-  /* Focus. Warm stone, never navy on navy (WCAG 2.2 section 2.4.11). */
-  --v3-focus: #b9ab97;
+  /* Focus. Warm stone, never navy on navy (WCAG 2.2 section 2.4.11). The
+     stone is taken down to 76% (color-mix toward black, same hue) because the
+     plain #b9ab97 ring read 2.12:1 on cream and 2.25:1 on white, under the 3:1
+     a focus indicator needs (WCAG 1.4.11; second taste evaluator, 2026-09-29).
+     This one reads 3.55:1 on cream, 3.77:1 on white, 3.16:1 on the 6% navy
+     wash and 4.01:1 on navy, so it holds on every surface a ring sits on. */
+  --v3-focus: color-mix(in srgb, #b9ab97 76%, #000);
 
   /* -- Semantic roles. Components reference these, not the raw brand names. -- */
   --v3-surface: var(--v3-cream);

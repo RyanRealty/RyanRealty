@@ -127,9 +127,9 @@
  *     every state shot on this site showed a section with its first line
  *     sliced. That is not what a visitor following the anchor sees, and it
  *     cost the 2026-09-08 homepage pass a defect report against a page that
- *     was correct. The scroll now reserves the target's own
- *     `scroll-margin-top`, or the pinned chrome's height plus 24 when it
- *     declares none.
+ *     was correct. The scroll now reserves what the browser reserves, the
+ *     page's `scroll-padding-top` plus the target's own `scroll-margin-top`,
+ *     or the pinned chrome's height plus 24 when both are zero.
  * 12. Streamed sections. A place page streams: at domcontentloaded the
  *     document holds one section and the rest land over the next two seconds
  *     as their reads resolve. A `--states` selector for a late section came
@@ -992,9 +992,9 @@ async function main() {
         // heading is sliced and the evaluator reads a live defect the page does
         // not have (2026-09-08: #right-now's claim read "Wore than one in five"
         // in right-now-mobile375.png while an actual anchor scroll landed it
-        // 14px clear). Reserve what a real anchor scroll reserves: the
-        // element's own scroll-margin-top when it declares one — that IS the
-        // page's answer — else the height of whatever is pinned at the top of
+        // 14px clear). Reserve what a real anchor scroll reserves: the page's
+        // scroll-padding-top plus the element's own scroll-margin-top when
+        // either is set — that IS the page's answer — else the height of whatever is pinned at the top of
         // the viewport, plus the 24px this tool has always used. With no sticky
         // chrome and no declared margin the number is 24, exactly as before.
         const measure = (sel) =>
@@ -1005,7 +1005,12 @@ async function main() {
               const top =
                 el.getBoundingClientRect().top +
                 (window.scrollY || document.documentElement.scrollTop || 0)
-              const declared = Number.parseFloat(getComputedStyle(el).scrollMarginTop) || 0
+              // A real anchor scroll stops the page's scroll-padding-top (the
+              // sticky chrome's clearance, V3Chrome.css) plus the target's own
+              // scroll-margin-top over the top edge; either can be zero.
+              const declared =
+                (Number.parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0) +
+                (Number.parseFloat(getComputedStyle(el).scrollMarginTop) || 0)
               let chrome = 0
               for (const node of document.elementsFromPoint(Math.round(window.innerWidth / 2), 4)) {
                 const cs = getComputedStyle(node)

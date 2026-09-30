@@ -24,6 +24,12 @@
  * components/site/v3/tokens.css alone, the way the region supply ladder is
  * (app/housing-market/central-oregon/_v3/region-city-mos.css).
  *
+ * A PHONE IS TOLD THE HOLD EXISTS (second taste evaluator, 2026-09-29): a
+ * finger has no hover, so under the legend one line says a month can be
+ * pressed and held, on a screen with no hover only (monthly-archive.css). The
+ * year index moved up into the page's first screen (ArchiveFront), so a reader
+ * reaches any year before scrolling; every year row here keeps its anchor.
+ *
  * Server component. Every anchor is in the served HTML, every year is an
  * anchor target, and nothing but the phone's hold needs JavaScript. The PDF
  * doors are plain anchors on purpose: they lead to a route handler that
@@ -49,8 +55,14 @@ export type MonthlyArchiveProps = {
   eyebrow: string
   heading: string
   lede: string
-  /** What the month bars and figures show; printed under the year jump when any month carries one. */
+  /** What the month bars and figures show; printed under the heading when any month carries one. */
   legend?: string
+  /**
+   * One line under the legend telling a phone reader that a month can be
+   * pressed and held to open its first line. Shown only where there is no
+   * hover, and only when some month has a line to open.
+   */
+  holdHint?: string
   years: readonly ArchiveYear[]
   /** The §0 trace for the sentences the months reveal. */
   source: string
@@ -58,7 +70,17 @@ export type MonthlyArchiveProps = {
   sourceName: string
 }
 
-export function MonthlyArchive({ id, eyebrow, heading, lede, legend, years, source, sourceName }: MonthlyArchiveProps) {
+export function MonthlyArchive({
+  id,
+  eyebrow,
+  heading,
+  lede,
+  legend,
+  holdHint,
+  years,
+  source,
+  sourceName,
+}: MonthlyArchiveProps) {
   if (years.length === 0) return null
   const headingId = `${id}-heading`
   const anyLead = years.some((y) => y.slots.some((cell) => Boolean(cell?.lead)))
@@ -80,25 +102,22 @@ export function MonthlyArchive({ id, eyebrow, heading, lede, legend, years, sour
         <V3Lede className="monthly-archive__lede">{lede}</V3Lede>
       </div>
 
-      {years.length > 1 ? (
-        <nav className="monthly-archive__jump" aria-label="Jump to a year">
-          <ul className="monthly-archive__jump-list">
-            {years.map((y) => (
-              <li key={y.year}>
-                <a className="monthly-archive__jump-link" href={`#${archiveYearId(y.year)}`}>
-                  {y.year}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      ) : null}
+      {/* The year index lives in the page's first screen (ArchiveFront), so
+          a reader can reach any year before scrolling; every year row below
+          keeps its anchor. */}
 
       {legend && years.some((y) => y.slots.some((c) => c?.median)) ? (
         <p className="monthly-archive__legend">
           <span className="monthly-archive__legend-scale" aria-hidden="true" />
           {legend}
         </p>
+      ) : null}
+
+      {holdHint && anyLead ? (
+        /* A finger has no hover and no way to know a month opens its first
+           line: this says so, on a screen with no hover only
+           (monthly-archive.css). */
+        <p className="monthly-archive__hint">{holdHint}</p>
       ) : null}
 
       {anyLead ? (

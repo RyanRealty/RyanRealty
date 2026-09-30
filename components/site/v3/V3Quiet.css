@@ -174,7 +174,9 @@
 
 /* Hash landings from a `?` on another page. Sticky chrome sits above the row. */
 .v3.v3-quiet .v3-quiet__item[id] {
-  scroll-margin-top: calc(var(--v3-space-3xl) + var(--v3-tap));
+  /* Over the page's scroll padding (chrome + md, V3Chrome.css): the row
+     still lands 3xl + tap under the top, where it always has. */
+  scroll-margin-top: calc(var(--v3-space-3xl) + var(--v3-tap) - var(--v3-chrome-h) - var(--v3-space-md));
 }
 
 .v3-quiet__item:last-child {

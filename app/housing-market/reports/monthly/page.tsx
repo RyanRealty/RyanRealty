@@ -8,7 +8,7 @@
  * MACHINE OBJECTIVE: CollectionPage + ItemList of editions, a Dataset of the
  * latest figures, FAQPage for the methods, BreadcrumbList; canonical here.
  *
- * The sections (Instrument → Doors → archive calendar → Answers) live in
+ * The sections (the archive's front → archive calendar → Answers) live in
  * ./_v3/ArchiveSections.tsx; this file owns the reads, the metadata, the
  * structured data, the trail and the footer.
  *

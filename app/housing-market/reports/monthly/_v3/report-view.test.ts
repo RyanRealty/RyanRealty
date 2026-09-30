@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import type { EditionListItem } from '@/lib/data/market-report/editions'
 import type { ReportSeriesRow } from '@/lib/data/market-report/series'
-import { buildEdition } from '@/lib/market-report/build-edition'
+import { FLOORS, buildEdition } from '@/lib/market-report/build-edition'
 import { addMonths, count, days, lastDayOf, money, mosText, pctChange } from '@/lib/market-report/format'
 import type { EditionPayload } from '@/lib/market-report/types'
 import {
   archiveDescription,
+  archiveSentence,
   archiveYears,
   datasetVariables,
   downloadLabel,
@@ -14,17 +15,21 @@ import {
   editionNeighbors,
   editionPdfHref,
   firstSentence,
+  floorsSentence,
   marketDetail,
   marketFigures,
   marketHref,
   marketLedgerRows,
+  medianSpark,
   medianTrendChart,
   overviewSource,
   parseEditionMonth,
   pdfFacts,
   pdfSize,
   publishedVerdict,
+  supplyPattern,
   supplySeasons,
+  supplyValue,
   supplyVerdict,
   withheldClause,
 } from './report-view'
@@ -265,11 +270,22 @@ describe('market by market', () => {
     expect(bendRow.value).toBe(money(bend.median.v))
     expect(bendRow.detail).toBe(marketDetail(bend))
     expect(bendRow.detail?.startsWith('August: ')).toBe(true)
-    expect(bendRow.detail).toContain(`${count(bend.sales)} sold`)
-    expect(bendRow.detail).toContain("4.0 months of supply, a seller's market")
+    expect(bendRow.detail).toContain(`${count(bend.sales)}\u00a0sold`)
+    expect(bendRow.detail).toContain("4.0\u00a0months\u00a0of\u00a0supply, a seller's market")
     const sisters = rows.find((r) => r.what === 'Sisters')!
     expect(sisters.detail?.startsWith('Jun to Aug: ')).toBe(true)
-    expect(sisters.detail).toContain("6.0 months of supply, a buyer's market")
+    expect(sisters.detail).toContain("6.0\u00a0months\u00a0of\u00a0supply, a buyer's market")
+  })
+
+  it('never lets a line break fall between a figure and its unit', () => {
+    const bend = payload.overview.find((r) => r.geo.slug === 'bend')!.kpis
+    const detail = marketDetail(bend)
+    // Every number is followed by a no-break space and its unit, never a plain space.
+    for (const m of detail.matchAll(/(\d[\d,.]*)( |\u00a0)(sold|days|for|months)/g)) {
+      expect(m[2], m[0]).toBe('\u00a0')
+    }
+    // The line still breaks between figures, at the separators.
+    expect(detail).toContain(' · ')
   })
 
   it('reveals the last twelve months and, for a monthly market, its 36-month run', () => {
@@ -301,14 +317,23 @@ describe('charts', () => {
       'The median home sold for $730,000 in August 2026, against a range of $665,000 to $730,000 since September 2023.',
     )
     expect(chart.caption).toBe('Central Oregon median sale price by month, September 2023 to August 2026')
+    // The reading prints on the band above the plot, never a card on the line.
+    expect(chart.reading).toBe('band')
+    // The high and the low the claim names are marked on the line, keyed like its points.
+    const at = (tick: string) => points.find((p) => p.tick === tick)!.at
+    expect(chart.callouts).toEqual([
+      { at: at('Aug 2026'), label: 'High $730,000', place: 'above' },
+      { at: at('Sep 2023'), label: 'Low $665,000', place: 'below' },
+    ])
   })
 
-  it('draws months of supply against the balanced zone and calls the edition month', () => {
-    const strips = supplySeasons(payload.region.series, 'Central Oregon', payload.region.kpis)!
+  it('draws months of supply against the balanced zone and claims the pattern, not the figure', () => {
+    const strips = supplySeasons(payload.region.series, 'Central Oregon')!
     expect(strips.caption).toBe('Central Oregon months of supply by month, September 2023 to August 2026')
     expect(strips.bands).toEqual([{ from: 4, to: 6, label: 'Balanced: above 4 and under 6 months' }])
     expect(strips.threshold).toBe(4)
-    expect(strips.claim).toBe("4.0 months of supply at the end of August 2026: a seller's market by our measure.")
+    // Every stored month is 4.0, on the line and never past it.
+    expect(strips.claim).toBe('Supply stayed at 4 months or under in 2026 through August and in all of 2025.')
     // The newest month is the edition month, printed the way the line printed it.
     const newest = strips.rows[0]!.cells[7]!
     expect(newest.tick).toBe('Aug 2026')
@@ -317,7 +342,7 @@ describe('charts', () => {
   })
 
   it('keeps every stored month, one strip per calendar year, newest first, January in the first column', () => {
-    const strips = supplySeasons(payload.region.series, 'Central Oregon', payload.region.kpis)!
+    const strips = supplySeasons(payload.region.series, 'Central Oregon')!
     expect(strips.rows.map((r) => String(r.name))).toEqual(['2026', '2025', '2024', '2023'])
     for (const row of strips.rows) expect(row.cells).toHaveLength(12)
     const readings = strips.rows.flatMap((r) => r.cells.filter((c) => c != null))
@@ -333,7 +358,7 @@ describe('charts', () => {
     const months = Array.from({ length: 12 }, (_, i) => addMonths('2025-09', i))
     const mos = [2.1, 3.96, 4.0, 4.04, 5.97, 6.0, 6.8, 4.4, 3.9, 3.1, 2.6, 2.2]
     const series = { ...payload.region.series!, months, mos: months.map((k, i) => ({ k, v: mos[i]!, n: 300 })) }
-    const strips = supplySeasons(series, 'Central Oregon', payload.region.kpis)!
+    const strips = supplySeasons(series, 'Central Oregon')!
     const byTick = new Map(
       strips.rows.flatMap((r) => r.cells.flatMap((c) => (c ? [[String(c.tick), c] as const] : []))),
     )
@@ -348,13 +373,44 @@ describe('charts', () => {
     expect(byTick.get('Feb 2026')!.note).toBe("a buyer's market")
     // The domain holds the whole balanced zone and the run's own top.
     expect(strips.max).toBe(7)
-    expect(supplySeasons(payload.region.series, 'Central Oregon', payload.region.kpis)!.max).toBe(6)
+    expect(supplySeasons(payload.region.series, 'Central Oregon')!.max).toBe(6)
+    // The claim names the months past the line, read off the same readings:
+    // 4.0 is on the line, 4.04 and 5.97 are past it, 3.9 is back under.
+    expect(strips.claim).toBe('In 2026 supply passed 4 months from January to April; in 2025, in December.')
+  })
+
+  it('says which months passed the line, in each of the two newest years, from the readings alone', () => {
+    const year = (y: number, v: readonly (number | null)[]) => ({ year: y, readings: v })
+    const full = (v: number) => Array.from({ length: 12 }, () => v)
+    const some = (base: number, past: Record<number, number>) =>
+      Array.from({ length: 12 }, (_, i) => (i in past ? past[i]! : base))
+    // Both years crossed, one run each.
+    expect(supplyPattern([year(2026, some(3, { 3: 4.2, 4: 4.5, 5: 4.6, 6: 4.3, 7: 4.1 })), year(2025, some(3, { 4: 4.4, 5: 4.5, 6: 4.2 }))], 4)).toBe(
+      'In 2026 supply passed 4 months from April to August; in 2025, from May to July.',
+    )
+    // Several runs read as a list; a lone month reads as "in".
+    expect(supplyPattern([year(2026, some(3, { 0: 4.3, 3: 4.2, 4: 4.5, 5: 4.1, 9: 4.4 })), year(2025, full(3))], 4)).toBe(
+      'In 2026 supply passed 4 months in January, April to June and October, after staying at 4 or under in all of 2025.',
+    )
+    // Only last year crossed; this year stops at the edition month.
+    const through = [...full(3.5).slice(0, 8), null, null, null, null]
+    expect(supplyPattern([year(2026, through), year(2025, some(3, { 5: 4.4 }))], 4)).toBe(
+      'Supply stayed at 4 months or under in 2026 through August; in 2025 it passed 4 in June.',
+    )
+    // Exactly 4 is on the line, not past it; a year the window shows in part says so.
+    const partial = [null, null, null, null, null, null, null, null, 4, 4, 3.9, 3.8]
+    expect(supplyPattern([year(2026, through), year(2025, partial)], 4)).toBe(
+      'Supply stayed at 4 months or under in 2026 through August and in the months of 2025 shown.',
+    )
+    // One year only.
+    expect(supplyPattern([year(2026, some(3, { 2: 4.2 }))], 4)).toBe('In 2026 supply passed 4 months in March.')
+    expect(supplyPattern([], 4)).toBeNull()
   })
 
   it('draws no strips from a missing or one-month series', () => {
-    expect(supplySeasons(undefined, 'Central Oregon', payload.region.kpis)).toBeUndefined()
+    expect(supplySeasons(undefined, 'Central Oregon')).toBeUndefined()
     const one = { ...payload.region.series!, mos: [{ k: '2026-08', v: 4, n: 300 }] }
-    expect(supplySeasons(one, 'Central Oregon', payload.region.kpis)).toBeUndefined()
+    expect(supplySeasons(one, 'Central Oregon')).toBeUndefined()
   })
 
   it('labels the x axis with the year at each January, not a month name at the edge', () => {
@@ -364,6 +420,27 @@ describe('charts', () => {
 
   it('draws nothing from a missing series', () => {
     expect(medianTrendChart(undefined, 'Central Oregon')).toBeUndefined()
+  })
+
+  it('gives the archive tile the stored medians as one line, and the range the edition chart names', () => {
+    const spark = medianSpark(payload.region.series)!
+    const stored = payload.region.series!.median.map((p) => p.v)
+    expect(spark.values).toEqual(stored)
+    expect(spark.label).toBe('Median sale price by month, Sep 2023 to Aug 2026: low $665,000, high $730,000')
+    // The same low and high the chart's claim names, off the same points.
+    expect(medianTrendChart(payload.region.series, 'Central Oregon')!.claim).toContain('$665,000 to $730,000')
+  })
+
+  it('keeps a withheld month as a gap in the tile line, and starts and ends on a published month', () => {
+    const base = payload.region.series!
+    const median = base.median.map((p, i) => (i === 0 || i === 5 || i === base.median.length - 1 ? { ...p, v: null } : p))
+    const spark = medianSpark({ ...base, median })!
+    expect(spark.values).toHaveLength(base.median.length - 2)
+    expect(spark.values[0]).toBe(base.median[1]!.v)
+    expect(spark.values[4]).toBeNull()
+    expect(spark.label).toMatch(/^Median sale price by month, Oct 2023 to Jul 2026: /)
+    expect(medianSpark(undefined)).toBeNull()
+    expect(medianSpark({ ...base, median: base.median.map((p) => ({ ...p, v: null })) })).toBeNull()
   })
 })
 
@@ -389,6 +466,33 @@ describe('descriptions and structured data', () => {
     const vars = datasetVariables(payload.region.kpis, EDITION)
     expect(vars.find((v) => v.name.startsWith('Median sale price'))!.value).toBe(730_000)
     expect(vars.find((v) => v.name.startsWith('Months of supply'))!.value).toBe(4)
+  })
+
+  it('carries months of supply as the stored value to two decimals, never a float and never across a line', () => {
+    // The stored value the edition page shows as 4.1 (one decimal kept off the line).
+    const vars = datasetVariables({ ...payload.region.kpis, mos: 4.020191285866099 }, EDITION)
+    expect(vars.find((v) => v.name.startsWith('Months of supply'))!.value).toBe(4.02)
+    expect(supplyValue(3.3456)).toBe(3.35)
+    expect(supplyValue(4)).toBe(4)
+    expect(supplyValue(6)).toBe(6)
+    // Two decimals would print a threshold the value did not reach: step off it.
+    expect(supplyValue(4.001)).toBe(4.01)
+    expect(supplyValue(5.996)).toBe(5.99)
+    for (const mos of [4.001, 4.004, 5.995, 5.996, 5.999]) {
+      expect(supplyVerdict(supplyValue(mos)), String(mos)).toBe(supplyVerdict(mos))
+    }
+  })
+})
+
+describe('floorsSentence', () => {
+  it('states the floors the builder enforces, the median, the change and the call each on its own terms', () => {
+    const s = floorsSentence()
+    expect(s).toBe(
+      `A dash means too few sales to publish. A median needs ${FLOORS.median} sales; a change from a year ago needs ${FLOORS.yoy} sales in each year; a market call needs ${FLOORS.mos} sales in the last six months.`,
+    )
+    // One floor governs both year-ago changes (median and homes sold), so one number can say both.
+    expect(FLOORS.yoyCount).toBe(FLOORS.yoy)
+    expect(s).not.toMatch(/—/)
   })
 })
 
@@ -446,6 +550,21 @@ describe('the archive', () => {
     expect(newer && editionKey(newer)).toBe('2026-08')
     expect(editionNeighbors(list, '2026-08').newer).toBeNull()
   })
+
+  it('says what the archive holds, and calls a month a PDF only when it has a file', () => {
+    // One of the four is web only, so "each one ... as a PDF" would be false.
+    expect(archiveSentence(list)).toBe(
+      "Every monthly report on Central Oregon's housing market since January 2006, 4 in all, each one to read here and 3 to download as a PDF.",
+    )
+    const all = [item('2026-08'), item('2026-07')]
+    expect(archiveSentence(all)).toBe(
+      "Every monthly report on Central Oregon's housing market since July 2026, 2 in all, each one to read here or download as a PDF.",
+    )
+    expect(archiveSentence([item('2026-08', { pdf_path: null })])).toBe(
+      "Every monthly report on Central Oregon's housing market since August 2026, one in all, to read here.",
+    )
+    expect(archiveSentence([])).toBe('')
+  })
 })
 
 describe('voice', () => {
@@ -454,9 +573,11 @@ describe('voice', () => {
       marketFigures(payload.region.kpis),
       marketLedgerRows(payload),
       medianTrendChart(payload.region.series, 'Central Oregon'),
-      supplySeasons(payload.region.series, 'Central Oregon', payload.region.kpis),
+      supplySeasons(payload.region.series, 'Central Oregon'),
       editionDescription(EDITION, payload.region.kpis),
       archiveYears([item('2026-08')]),
+      medianSpark(payload.region.series),
+      archiveSentence([item('2026-08'), item('2026-07', { pdf_path: null })]),
     ])
     expect(out.length).toBeGreaterThan(20)
     for (const s of out) expect(s).not.toContain('—')

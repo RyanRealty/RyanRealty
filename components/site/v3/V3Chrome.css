@@ -36,6 +36,21 @@
      overflow on this box would also clip the open panel. */
 }
 
+/* THE PAGE KEEPS CLEAR OF THE STICKY BAR (WCAG 2.2 SC 2.4.11, focus not
+   obscured). Every scroll the browser makes on the reader's behalf, a Tab or
+   Shift+Tab onto a control, an anchor jump, find in page, scrollIntoView,
+   stops the bar's height plus one space under the top, so a focused control
+   or a landed heading is never behind the bar. Before this only some
+   sections carried their own scroll-margin, and a calendar door reached by
+   Shift+Tab sat fully under the bar (second taste evaluator, 2026-09-29).
+   One rule for every target replaces those margins; a target that wants more
+   air adds only the remainder. Scoped to a document that renders the chrome
+   (it returns null on LP, admin and account routes), so a page without this
+   bar keeps its own scrolling. */
+html:has(.v3.v3-chrome) {
+  scroll-padding-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
+}
+
 /* The bar -------------------------------------------------------------------
    One row at every width. Flow order is wordmark, destinations, actions, and
    the actions push right on their own margin rather than on a spacer element. */

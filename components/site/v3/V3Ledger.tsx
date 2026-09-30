@@ -262,6 +262,15 @@ type V3LedgerBase = {
   /** One sentence under the heading when the list needs a stated basis. */
   note?: V3Text
   /**
+   * One line under the note that tells a phone reader a row can be pressed
+   * and held to open what it reveals ("Press and hold a market to see its
+   * last 12 months."). Shown only where there is no hover (V3Ledger.css), and
+   * only when some row carries a reveal: a pointer finds the reveal by
+   * hovering, a finger has no way to know it is there (taste evaluator,
+   * 2026-09-29). Plain words, no em dash.
+   */
+  holdHint?: V3Text
+  /**
    * A drawing under the note, before the rows: the one place a list's headline
    * claim is drawn rather than said. The city index puts the region's months
    * of supply here as V3Drawing's two bars (homes for sale against a month of
@@ -422,6 +431,7 @@ export function V3Ledger(props: V3LedgerProps) {
     eyebrow,
     eyebrowInline = false,
     note,
+    holdHint,
     drawing,
     source,
     updated,
@@ -510,6 +520,7 @@ export function V3Ledger(props: V3LedgerProps) {
           </>
         )}
         {note ? <p className="v3-ledger__note">{note}</p> : null}
+        {holdHint && anyReveal ? <p className="v3-ledger__hint">{holdHint}</p> : null}
         {drawing ? <div className="v3-ledger__drawing">{drawing}</div> : null}
       </div>
 
@@ -619,9 +630,9 @@ export function V3Ledger(props: V3LedgerProps) {
                   )
                 ) : null}
                 {row.reveal ? (
-                  /* Out of the flow, over the top of the next row; hidden at
-                     rest, shown by :hover, :focus-within, or the phone hold
-                     (V3Ledger.css). */
+                  /* In the row, under its figures: hidden at rest, and opened
+                     by :hover, :focus-within or the phone hold, when it takes
+                     its own line and the rows below make room (V3Ledger.css). */
                   <span className="v3-ledger__reveal">
                     {row.reveal ? (
                       <>

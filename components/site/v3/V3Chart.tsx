@@ -115,6 +115,20 @@ export type V3ChartRangeRow = {
   sample?: V3ChartSample
 }
 
+/**
+ * One named point on a line: a ringed mark on the point and its words beside
+ * it. For the points a claim names (a run's high and low), so the reader finds
+ * on the line what the sentence states. `at` keys the point the way the first
+ * series keys it; the value is read from that series, never passed, so a
+ * callout cannot mark a value the line does not have.
+ */
+export type V3ChartCallout = {
+  at: number
+  label: V3Text
+  /** Above for a high (nothing on the line is higher), below for a low. */
+  place: 'above' | 'below'
+}
+
 export type V3ChartKind = 'line' | 'bars' | 'mix' | 'range'
 
 /** The categorical slots tokens.css defines. More series than this cannot keep identity. */
@@ -157,6 +171,15 @@ export type V3ChartProps = {
   barLabels?: 'ends' | 'all'
   /** Per-point dots with a native <title> reading. Lines only. */
   marks?: boolean
+  /**
+   * Named points on the first series (V3ChartCallout): the high and low a
+   * claim names, marked and labelled on the line. Lines only. The domain
+   * gains room on the labelled side so a label above the high or below the
+   * low sits inside the drawing, clear of the reading band and the axis; a
+   * callout whose point is not on the line is dropped. The labels repeat the
+   * claim's figures, so they are hidden from assistive technology.
+   */
+  callouts?: readonly V3ChartCallout[]
   /**
    * The claim: one formatted sentence the chart exists to show, under the
    * caption ("Median sale price $666K in Aug, up 3% from Aug 2025"). The
@@ -297,7 +320,51 @@ function buildAnyPlot(props: V3ChartProps): AnyPlot | null {
     })
   }
   if (kind === 'mix') return buildMixPlot(series)
-  return buildLinePlot(series, { bands: toPlotBands(props.bands) })
+  // A callout above the high, or below the low, needs a label's height of air
+  // inside the drawing on that side (V3ChartCallout).
+  const above = props.callouts?.some((c) => c.place === 'above') ?? false
+  const below = props.callouts?.some((c) => c.place === 'below') ?? false
+  return buildLinePlot(series, {
+    bands: toPlotBands(props.bands),
+    ...(above || below ? { headroom: { top: above ? CALLOUT_HEADROOM : 0.06, bottom: below ? CALLOUT_HEADROOM : 0.06 } } : {}),
+  })
+}
+
+/**
+ * The share of the data's span added on a labelled side: enough that a label
+ * (one line at eyebrow size and its gap) fits between the high and the
+ * drawing's top on the shortest plot a phone gets (148px of drawing).
+ */
+const CALLOUT_HEADROOM = 0.24
+
+/** A callout's place over the plot, as fractions of the whole plot box, or null when its point is not drawn. */
+function placeCallouts(
+  plot: AnyPlot,
+  series: readonly V3ChartSeries[] | undefined,
+  callouts: readonly V3ChartCallout[] | undefined,
+): { key: string; label: string; place: 'above' | 'below'; x: number; y: number; align: 'start' | 'center' | 'end' }[] {
+  if (plot.kind !== 'line' || !callouts || callouts.length === 0) return []
+  const first = series?.[0]
+  if (!first) return []
+  const { l, t, w, h, y0, y1, xMin, xMax, useAt } = plot.scale
+  const xSpan = xMax - xMin || 1
+  const yRange = y1 - y0 || 1
+  const out: ReturnType<typeof placeCallouts> = []
+  for (const c of callouts) {
+    // Keyed the way the points are: by `at` when the series carries it, by
+    // order when it does not.
+    const index = useAt ? first.points.findIndex((p) => p.at === c.at) : c.at
+    const point = Number.isInteger(index) && index >= 0 ? first.points[index] : undefined
+    if (!point || !Number.isFinite(point.value)) continue
+    const xKey = useAt && point.at != null ? point.at : index
+    const x = (l + ((xKey - xMin) / xSpan) * w) / plot.vbW
+    const y = (t + (1 - (point.value - y0) / yRange) * h) / plot.vbH
+    if (!(x >= 0 && x <= 1 && y >= 0 && y <= 1)) continue
+    // A label near an edge hangs inward from its point instead of centring on it.
+    const align = x < 0.14 ? 'start' : x > 0.86 ? 'end' : 'center'
+    out.push({ key: `${c.place}-${c.at}`, label: c.label, place: c.place, x, y, align })
+  }
+  return out
 }
 
 /**
@@ -409,6 +476,7 @@ export function V3Chart({
   refValue,
   refLabel,
   marks,
+  callouts,
   claim,
   yTicks,
   xTicks,
@@ -475,7 +543,10 @@ export function V3Chart({
     // reached the builder and the fix for TEAM-MATT-1 never took effect —
     // round six measured the same four bars for a twelve-year record.
     run,
+    // The same list for the callouts: the builder reads them for headroom.
+    callouts,
   })
+  const placedCallouts = plot ? placeCallouts(plot, series, callouts) : []
   const captionId = id ? `${id}-caption` : undefined
   const yoy = overlay === 'yoy'
   const lineCount = plot && plot.kind === 'line' ? plot.lines.length : 0
@@ -810,6 +881,29 @@ export function V3Chart({
               <span>{plot.xEnd}</span>
             </div>
           )
+        /* The named points (callouts), over the drawing in HTML so the type
+           never stretches with the SVG. The layer takes the reading layer's
+           geometry (V3Chart.css), so a fraction of the plot lands on the same
+           pixel the line does. Hidden from assistive technology: the claim
+           above the chart already says these figures in words. */
+        const calloutLayer =
+          placedCallouts.length > 0 ? (
+            <div className="v3-chart__callouts" aria-hidden="true">
+              {placedCallouts.map((c) => (
+                <span
+                  key={c.key}
+                  className={cn(
+                    'v3-chart__callout',
+                    `v3-chart__callout--${c.place}`,
+                    `v3-chart__callout--${c.align}`,
+                  )}
+                  style={{ left: `${(c.x * 100).toFixed(3)}%`, top: `${(c.y * 100).toFixed(3)}%` }}
+                >
+                  <span className="v3-chart__callout-label">{c.label}</span>
+                </span>
+              ))}
+            </div>
+          ) : null
         if (liveKeys) {
           // The reading layer composes the frame when the legend is live, because the
           // pressed state that hides a line is the same state that has to filter the
@@ -821,7 +915,16 @@ export function V3Chart({
               initial={restingIndex}
               keys={keys}
               keyClasses={keys.map((_, i) => cn(keyClass(i)))}
-              frame={{ axis: yAxis, plot: svg, xTicks: xAxis }}
+              frame={{
+                axis: yAxis,
+                plot: (
+                  <>
+                    {svg}
+                    {calloutLayer}
+                  </>
+                ),
+                xTicks: xAxis,
+              }}
               yearPages={yearPages === true}
             />
           )
@@ -831,6 +934,7 @@ export function V3Chart({
             {yAxis}
             <div className="v3-chart__plot">
               {svg}
+              {calloutLayer}
               {hoverColumns.length > 0 ? (
                 <V3ChartHover columns={hoverColumns} label={caption} initial={restingIndex} />
               ) : null}

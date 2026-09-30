@@ -125,6 +125,45 @@
   max-width: min(18rem, 52vw);
 }
 
+/* ONE LINE, CUT WITH AN ELLIPSIS, ANCESTOR FIRST (second taste evaluator,
+   2026-09-29). At 320 the trail's first crumb broke onto two lines and the
+   current one was sliced mid-letter by the list's clip ("Monthly repor",
+   "August 202"): its ellipsis never drew, because an inline-flex box is not a
+   block container and text-overflow only ends a block's line. Every crumb of
+   a surface trail is now a one-line block that ends in an ellipsis when it
+   has to. An ancestor gives up the width; the current page gives up none (a
+   shrink factor would still take a fraction of a pixel from it, and a
+   fraction is enough to draw the ellipsis), and only its own cap above
+   (18rem, or 52vw on a phone) shortens a long page name. The line box is the
+   tap height, so the text still sits in the middle of its 44px. The overlay
+   trails keep their own rules below. */
+/* Nothing in the list overflows it any more (the crumbs give up width
+   themselves), so the list stops clipping: the clip cut the focus ring of every
+   crumb down to its right edge, since a 44px crumb in a 44px list has its
+   ring's top, bottom and left outside the list (WCAG 2.4.7, 2026-09-29). */
+.v3.v3-breadcrumb:not(.v3-breadcrumb--overlay) .v3-breadcrumb__list {
+  overflow: visible;
+}
+
+.v3.v3-breadcrumb:not(.v3-breadcrumb--overlay) .v3-breadcrumb__item {
+  flex: 0 1 auto;
+}
+
+.v3.v3-breadcrumb:not(.v3-breadcrumb--overlay) .v3-breadcrumb__item--more,
+.v3.v3-breadcrumb:not(.v3-breadcrumb--overlay) .v3-breadcrumb__item:last-child {
+  flex: 0 0 auto;
+}
+
+.v3.v3-breadcrumb:not(.v3-breadcrumb--overlay) .v3-breadcrumb__link,
+.v3.v3-breadcrumb:not(.v3-breadcrumb--overlay) .v3-breadcrumb__text {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: var(--v3-tap);
+}
+
 .v3.v3-breadcrumb .v3-breadcrumb__collapse {
   /* The ellipsis is one glyph; without a width floor the control measured
      31px wide against the 44px tap target (any trail of three or more). */

@@ -221,10 +221,19 @@ export function linePath(points: readonly PlottedPoint[]): string {
   return d.trim()
 }
 
-/** Straight segments. The line lifts across a gap. No spline. */
+/**
+ * Straight segments. The line lifts across a gap. No spline.
+ *
+ * `headroom` widens the value domain past the data's own top and bottom, as a
+ * fraction of the data's span (0.06 each side when omitted, the air every line
+ * has always had). A chart that labels its high above the line and its low
+ * below it (V3Chart `callouts`) asks for more on that side, so the label sits
+ * inside the drawing instead of over the reading band or the axis. Form only:
+ * the points and their values are unchanged, the scale gives them more room.
+ */
 export function buildLinePlot(
   series: readonly PlotSeriesIn[],
-  opts?: { bands?: readonly RangeBandIn[] },
+  opts?: { bands?: readonly RangeBandIn[]; headroom?: { top?: number; bottom?: number } },
 ): LinePlot | null {
   const useAt = series.some((s) => s.points.some((p) => p.at != null && isFiniteNumber(p.at)))
 
@@ -288,9 +297,10 @@ export function buildLinePlot(
   if (yMinLabel == null || yMaxLabel == null || xStart == null || xEnd == null) return null
 
   const ySpan = yMax - yMin || 1
-  const yPad = ySpan * 0.06
-  const y0 = yMin - yPad
-  const y1 = yMax + yPad
+  const padTop = ySpan * Math.max(0.06, opts?.headroom?.top ?? 0.06)
+  const padBottom = ySpan * Math.max(0.06, opts?.headroom?.bottom ?? 0.06)
+  const y0 = yMin - padBottom
+  const y1 = yMax + padTop
   const yRange = y1 - y0 || 1
   const xSpan = xMax - xMin || 1
   const plotW = VB_W - PAD.l - PAD.r

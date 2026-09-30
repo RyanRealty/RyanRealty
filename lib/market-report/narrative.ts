@@ -114,3 +114,21 @@ export function tierSentence(tiers: readonly TierRowOut[]): string | null {
 
 /** The threshold sentence that rides with every printed verdict. */
 export const VERDICT_RULE = `${MOS_THRESHOLD_CLAUSE} Months of supply is homes for sale at month end divided by the average monthly sales of the last six months.`
+
+/**
+ * What a dash means, in the floors the builder actually enforces
+ * (build-edition.ts, FLOORS): a median needs `median` sales in its period; a
+ * change from a year ago needs `yoy` sales in the period in each of the two
+ * years (the median change and the homes-sold change alike); a market call
+ * (months of supply, and the verdict it carries) needs `mos` sales in the six
+ * months that feed it. One wording for the web page and the PDF, so the two
+ * can never state the rule two ways. The floors are passed in, not imported:
+ * build-edition imports this module.
+ */
+export function floorsRule(floors: { median: number; yoy: number; mos: number }): string {
+  return (
+    `A dash means too few sales to publish. A median needs ${floors.median} sales; ` +
+    `a change from a year ago needs ${floors.yoy} sales in each year; ` +
+    `a market call needs ${floors.mos} sales in the last six months.`
+  )
+}

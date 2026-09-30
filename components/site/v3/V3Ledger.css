@@ -25,13 +25,9 @@
   padding: var(--v3-section-pad) var(--v3-gutter);
 }
 
-/* Hash landing (#towns, #activity, #open-houses, #guides). The chrome is
-   sticky at --v3-chrome-h, so the section opens one space under it: the same
-   offset the atlas, the alerts strip and the pulse use (SITE-07, 2026-09-09;
-   the older space-3xl + tap sum left a blank band between chrome and rule). */
-.v3.v3-ledger[id] {
-  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
-}
+/* Hash landing (#towns, #activity, #open-houses, #guides): the section opens
+   one space under the sticky chrome (SITE-07, 2026-09-09) through the page's
+   scroll padding (V3Chrome.css), which clears it for every target at once. */
 
 /* THE LOOK (Broadside): rule weight is the hierarchy — a section following
    content opens on the 2px navy section rule. See V3Instrument.css. */
@@ -319,45 +315,33 @@
    One line the row's text does not carry, and an optional twelve-point run as
    a line (SITE-52). HIDDEN at rest and shown by hover, by keyboard focus, and
    by the phone's tap-and-hold (V3LedgerReveal.client.tsx sets data-revealed
-   on the item). It OVERLAYS the top of the next row rather than taking a
-   band in the flow: a reserved band left a dead strip under every row at
-   rest (the first capture, 2026-09-09), and a band that appears in the flow
-   moves the rows under the cursor, which oscillates at every row boundary.
-   Opaque, wash-tinted cream, the same horizontal bleed as the row's hover
-   wash, so it reads as the hovered row continuing, not a tooltip. The list
-   stays a list; the reveal is the reward for asking. */
-.v3-ledger__item {
-  position: relative;
-}
+   on the item).
 
+   It opens IN the row, on its own line under the row's figures: the row grows
+   and the rows below make room (2026-09-29). It used to lie over the top of
+   the next row, and the second taste evaluator found what that costs: the
+   next row's name hidden while its detail showed through, a line of text cut
+   in half at 375, and the footnote under the last row covered. At rest it
+   takes no space at all (display: none), so no row carries a dead strip.
+   Growing downward never moves what is under the pointer: the row being read
+   keeps its place and only the rows below it move, so a pointer crossing a
+   boundary opens the row it lands on and the list settles there. The row's
+   own hover wash covers the line, so it reads as the row continuing. */
 .v3-ledger__reveal {
-  position: absolute;
-  top: 100%;
-  left: calc(-1 * var(--v3-space-sm));
-  right: calc(-1 * var(--v3-space-sm));
-  z-index: 1;
-  display: flex;
+  grid-column: 1 / -1;
+  display: none;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--v3-space-2xs) var(--v3-space-md);
-  padding: var(--v3-space-2xs) var(--v3-space-sm) var(--v3-space-xs);
-  visibility: hidden;
-  background: color-mix(in srgb, var(--v3-navy) 6%, var(--v3-cream));
+  margin-top: var(--v3-space-2xs);
   font-size: var(--v3-size-source);
   line-height: var(--v3-leading-note);
   color: var(--v3-ink-muted);
-  pointer-events: none;
-}
-
-.v3-ledger__item:hover,
-.v3-ledger__item:focus-within,
-.v3-ledger__item[data-revealed='true'] {
-  z-index: 2;
 }
 
 /* The run and its words stay together, and sit at the right edge under the
-   figure when the band has room for both. */
+   figure when the line has room for both. */
 .v3-ledger__run {
   display: inline-flex;
   align-items: center;
@@ -368,7 +352,67 @@
 .v3-ledger__item:hover .v3-ledger__reveal,
 .v3-ledger__item:focus-within .v3-ledger__reveal,
 .v3-ledger__item[data-revealed='true'] .v3-ledger__reveal {
-  visibility: visible;
+  display: flex;
+  animation: v3-ledger-reveal var(--v3-dur-state) var(--v3-ease-out);
+}
+
+/* HOVER INTENT. A row that grows moves the rows under it, so a pointer that
+   only crosses the list on its way somewhere else opens nothing: the line
+   stays out of the flow (display: none, held by a zero-length animation's
+   backward fill) until the pointer has rested on the row for half a state
+   beat, and goes the moment it leaves. Focus and the phone's hold open at
+   once, and a row already open by either is never closed by a hover. A browser
+   that cannot animate display simply opens the row on hover. Reduced motion
+   collapses the duration token, and the delay with it. */
+@media (hover: hover) {
+  .v3-ledger__item:hover:not(:focus-within):not([data-revealed='true']) .v3-ledger__reveal {
+    animation:
+      v3-ledger-intent 0s linear calc(var(--v3-dur-state) / 2) backwards,
+      v3-ledger-reveal var(--v3-dur-state) var(--v3-ease-out) calc(var(--v3-dur-state) / 2) backwards;
+  }
+}
+
+@keyframes v3-ledger-intent {
+  from,
+  to {
+    display: none;
+  }
+}
+
+/* A held row wears the hover wash a pointer gives it, so the finger sees
+   which row opened. */
+.v3-ledger__item[data-revealed='true'] .v3-ledger__row {
+  background: var(--v3-wash);
+  box-shadow: 0 0 0 var(--v3-space-sm) var(--v3-wash);
+}
+
+/* The line fades in where it opens; the space it takes arrives at once, so
+   nothing under the pointer slides. Reduced motion collapses the duration
+   token (tokens.css), which leaves the finished state. */
+@keyframes v3-ledger-reveal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* The hold's hint, for a screen with no hover only: a pointer finds the
+   reveal by hovering, a finger has no way to know it is there. */
+.v3-ledger__hint {
+  display: none;
+  margin: 0;
+  max-width: var(--v3-measure-text);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-muted);
+}
+
+@media (hover: none) {
+  .v3-ledger__hint {
+    display: block;
+  }
 }
 
 .v3-ledger__reveal-line {

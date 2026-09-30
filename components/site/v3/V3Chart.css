@@ -975,7 +975,8 @@
    band every dot floated up to 20px above the point it read (measured on the
    monthly report at 375, 2026-09-25). The tip is lifted back into the band by
    its own top, which reads the same property. */
-.v3 .v3-chart__plot > .v3-chart__hover {
+.v3 .v3-chart__plot > .v3-chart__hover,
+.v3 .v3-chart__plot > .v3-chart__callouts {
   top: var(--v3-chart-readout);
 }
 
@@ -1034,6 +1035,79 @@
     justify-content: space-between;
     gap: var(--v3-space-sm);
   }
+}
+
+/* ---------------------------------------------------------------------------
+   CALLOUTS. The points a claim names (a run's high and its low), marked on
+   the line with an open ring and labelled beside it: the high above its ring,
+   the low below. Nothing on the line is higher than the high or lower than the
+   low, so neither label can sit on the line; the domain carries a label's
+   height of air on the labelled side (V3Chart CALLOUT_HEADROOM), so neither
+   reaches the reading band or the axis either. The layer takes the reading
+   layer's box (THE READOUT BAND, above), so a point's fraction of the drawing
+   lands on the pixel the line does. The reading layer paints over it.
+   --------------------------------------------------------------------------- */
+
+.v3 .v3-chart__callouts {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.v3 .v3-chart__callout {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+/* Open, so the line reads through it and the resting dot still shows when the
+   newest month is the high or the low. */
+.v3 .v3-chart__callout::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0.55rem;
+  height: 0.55rem;
+  border: 1.5px solid var(--v3-ink);
+  border-radius: 50%;
+  background: var(--v3-cream);
+  transform: translate(-50%, -50%);
+}
+
+.v3 .v3-chart__callout-label {
+  position: absolute;
+  padding: 0 var(--v3-space-3xs);
+  background: color-mix(in srgb, var(--v3-cream) 90%, transparent);
+  color: var(--v3-ink);
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-medium);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--v3-track-label);
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.v3 .v3-chart__callout--above .v3-chart__callout-label {
+  bottom: 0.45rem;
+}
+
+.v3 .v3-chart__callout--below .v3-chart__callout-label {
+  top: 0.45rem;
+}
+
+.v3 .v3-chart__callout--center .v3-chart__callout-label {
+  left: 0;
+  transform: translateX(-50%);
+}
+
+/* Near an edge the label hangs inward from its point. */
+.v3 .v3-chart__callout--start .v3-chart__callout-label {
+  left: calc(-1 * var(--v3-space-2xs));
+}
+
+.v3 .v3-chart__callout--end .v3-chart__callout-label {
+  right: calc(-1 * var(--v3-space-2xs));
 }
 
 /* Year ticks on a phone: six four-digit labels do not fit a 242px plot

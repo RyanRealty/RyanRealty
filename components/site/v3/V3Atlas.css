@@ -13,13 +13,10 @@
   background: var(--v3-surface);
 }
 
-/* Hash landing (#atlas). The chrome is sticky at --v3-chrome-h, and without
-   this the section's H2 landed under it with only its descenders showing
-   (three evaluators, 2026-09-09). Same offset the alerts strip and the pulse
-   use. */
-.v3.v3-atlas[id] {
-  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
-}
+/* Hash landing (#atlas): the section's H2 landed under the sticky chrome with
+   only its descenders showing (three evaluators, 2026-09-09). The page's
+   scroll padding clears the chrome now, for every target at once
+   (V3Chrome.css), so the section carries no margin of its own. */
 
 /* The grid. Phone: head, map, legend, aside. From 64rem: head, legend and
    aside in a left column, the map a tall panel on the right (the basin is

@@ -22,9 +22,9 @@
   border-top: var(--v3-rule-section);
 }
 
-.v3.monthly-archive[id] {
-  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
-}
+/* No scroll margin of its own: the sticky chrome's clearance is the page's
+   scroll padding (V3Chrome.css), which every anchor and every focus lands
+   under. */
 
 .monthly-archive__head {
   display: grid;
@@ -40,42 +40,6 @@
   max-width: var(--v3-measure-text);
 }
 
-/* The year index: every year as one wrapping line of doors. ---------------- */
-.monthly-archive__jump {
-  margin: 0 0 var(--v3-space-lg);
-}
-
-.monthly-archive__jump-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 var(--v3-space-2xs);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.monthly-archive__jump-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: var(--v3-tap);
-  min-height: var(--v3-tap);
-  padding: 0 var(--v3-space-3xs);
-  color: var(--v3-ink);
-  font-size: var(--v3-size-body-sm);
-  font-weight: var(--v3-weight-medium);
-  font-variant-numeric: tabular-nums;
-  text-decoration: underline;
-  text-decoration-color: var(--v3-edge);
-  text-underline-offset: var(--v3-underline-offset);
-  transition: text-decoration-color var(--v3-dur-state) var(--v3-ease-out);
-}
-
-.monthly-archive__jump-link:hover,
-.monthly-archive__jump-link:focus-visible {
-  text-decoration-color: currentColor;
-}
-
 /* The years. --------------------------------------------------------------- */
 .monthly-archive__years {
   margin: 0;
@@ -89,7 +53,6 @@
   gap: var(--v3-space-xs) var(--v3-space-xl);
   padding: var(--v3-space-md) 0 var(--v3-space-lg);
   border-top: var(--v3-rule-hairline);
-  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
 }
 
 .monthly-archive__yearhead {
@@ -211,6 +174,23 @@
   );
 }
 
+/* The hold's hint, for a screen with no hover only: a pointer finds a month's
+   first line by hovering, a finger has no way to know it is there. */
+.monthly-archive__hint {
+  display: none;
+  margin: 0 0 var(--v3-space-sm);
+  max-width: var(--v3-measure-text);
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+}
+
+@media (hover: none) {
+  .monthly-archive__hint {
+    display: block;
+  }
+}
+
 /* The gap between two months belongs half to each: a month's doors reach into
    it, so a target is the cell plus one column gap wide. At 320px a sixth of
    the row is 42px, under the tap floor; with the gap it is 47.6px. The text
@@ -280,11 +260,15 @@
   font-size: var(--v3-size-body);
 }
 
-.monthly-archive__read:focus-visible,
-.monthly-archive__pdf:focus-visible,
-.monthly-archive__jump-link:focus-visible {
+/* The ring sits INSIDE a door, not around it. A month's doors fill their cell
+   edge to edge (half a column gap each side), so a ring drawn outside cut into
+   the median figure under the month and clipped the neighbour's PDF door
+   (taste evaluator, 2026-09-29). Inset by its own width, it stays in the
+   door's box and still reads all the way round. */
+.monthly-archive__month .monthly-archive__read:focus-visible,
+.monthly-archive__month .monthly-archive__pdf:focus-visible {
   outline: var(--v3-focus-width) solid var(--v3-focus);
-  outline-offset: var(--v3-focus-offset);
+  outline-offset: calc(-1 * var(--v3-focus-width));
 }
 
 /* The reveal: the edition's first headline sentence, over the row below.

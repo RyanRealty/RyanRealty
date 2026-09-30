@@ -197,12 +197,16 @@
 
 /* The part of the month past the threshold, in full ink: the crossing is the
    thing a reader should see first. Full ink on a column means THIS and
-   nothing else. */
+   nothing else. Never thinner than 2px: a month a few hundredths past the
+   line drew a cap under a pixel, and a month that crossed read as one that
+   had not (taste evaluator, 2026-09-29). A month on the line or under it
+   gets no cap at all, so the floor marks only a real crossing. */
 .v3 .v3-seasons__cap {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
+  min-height: 2px;
   background: var(--v3-ink);
 }
 

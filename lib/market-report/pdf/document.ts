@@ -25,9 +25,9 @@ import {
   ratioPct,
   addMonths,
 } from '../format'
-import { VERDICT_LABEL, VERDICT_RULE } from '../narrative'
+import { VERDICT_LABEL, VERDICT_RULE, floorsRule } from '../narrative'
 import type { EditionPayload, Kpis, MarketSection, MonthlySeries, Pt, SegmentKey, TableRow, Verdict } from '../types'
-import { DTC_EARLIEST } from '../build-edition'
+import { DTC_EARLIEST, FLOORS } from '../build-edition'
 import type { ReportAssets } from './assets'
 import { barChart, dotRows, esc, lineChart, monthXTick, quarterXTickSparse, type DotRow } from './charts'
 
@@ -347,7 +347,7 @@ function overviewPage(p: EditionPayload): string {
   <h2>Central Oregon at a glance</h2>
   <p class="claim">Bend and Redmond are read by month. The smaller towns sell fewer homes, so they are read over the last three months, which gives each median enough sales to stand on.</p>
   ${marketTable(p.overview, { period: true })}
-  <p class="src">${esc(`Single-family homes on less than one acre except Terrebonne, Culver, Powell Butte and Camp Sherman (any lot size). A dash means too few sales to publish: medians need 10, changes and market calls need 30. ${VERDICT_RULE}`)}</p>
+  <p class="src">${esc(`Single-family homes on less than one acre except Terrebonne, Culver, Powell Butte and Camp Sherman (any lot size). ${floorsRule(FLOORS)} ${VERDICT_RULE}`)}</p>
   <div class="pair">
     ${figure('Central Oregon median sale price', '', lineChart({ series: [{ name: 'Median', points: s.median, style: 'subject' }], unit: 'money', xTick: monthXTick, heightIn: 1.45 }), `monthly, ${span36(s)}`, 'half')}
     ${figure('Central Oregon homes sold', '', barChart({ points: s.sales, unit: 'count', xTick: monthXTick, heightIn: 1.45 }), `monthly, ${span36(s)}`, 'half')}

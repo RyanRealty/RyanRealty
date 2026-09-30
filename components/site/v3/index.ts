@@ -122,6 +122,7 @@ export type {
   V3ChartPoint,
   V3ChartKind,
   V3ChartBand,
+  V3ChartCallout,
   V3ChartRangeRow,
   V3ChartSample,
 } from './V3Chart'

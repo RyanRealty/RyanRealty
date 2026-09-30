@@ -112,7 +112,7 @@ export function EditionSections({ editionMonth: key, edition, editions, complete
   const cityRun = namesJoined(cities.map((s) => s.geo.label))
   const [firstDoor, ...restDoors] = editionDoors(key, edition, editions)
   const note = overviewNote(payload)
-  const supply = supplySeasons(payload.region.series, 'Central Oregon', k)
+  const supply = supplySeasons(payload.region.series, 'Central Oregon')
 
   return (
     <>
@@ -140,6 +140,7 @@ export function EditionSections({ editionMonth: key, edition, editions, complete
           eyebrowInline
           heading={v3Text('Market by market')}
           {...(note ? { note: v3Text(note) } : {})}
+          holdHint={v3Text('Press and hold a market to see its last 12 months.')}
           rows={[firstRow, ...restRows]}
           encode="bar"
           source={v3Text(overviewSource(payload, completeThrough))}
