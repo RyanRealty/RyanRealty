@@ -8,6 +8,21 @@ function item(over: Partial<PriceDropFieldItem> & Pick<PriceDropFieldItem, 'id'>
     href: `/homes-for-sale/listing/${over.id}`,
     priceLabel: '$500,000',
     title: '1 Test St',
+    listing: {
+      listingKey: `${over.id}`,
+      href: `/homes-for-sale/listing/${over.id}`,
+      price: 500_000,
+      addressLine: '1 Test St',
+      cityLine: 'Bend',
+      beds: null,
+      baths: null,
+      sqft: null,
+      propertyType: 'A',
+      propertySubType: null,
+      subdivisionName: null,
+      city: 'Bend',
+      listNumber: null,
+    },
     ...over,
   }
 }
@@ -34,7 +49,7 @@ describe('priceDropBands', () => {
 })
 
 describe('priceDropCityDoors', () => {
-  it('emits one crawlable door per city we pre-render, first-seen order', () => {
+  it('emits one crawlable door per city we pre-render, first-seen order, with its count of listed cuts', () => {
     const doors = priceDropCityDoors([
       item({ id: 'a', city: 'Bend', citySlug: 'bend' }),
       item({ id: 'b', city: 'Redmond', citySlug: 'redmond' }),
@@ -42,17 +57,20 @@ describe('priceDropCityDoors', () => {
       item({ id: 'd', city: 'Medford', citySlug: 'medford' }),
     ])
     expect(doors).toEqual([
-      { slug: 'bend', label: 'Bend', href: '/price-drops/bend' },
-      { slug: 'redmond', label: 'Redmond', href: '/price-drops/redmond' },
+      { slug: 'bend', label: 'Bend', href: '/price-drops/bend', count: 2 },
+      { slug: 'redmond', label: 'Redmond', href: '/price-drops/redmond', count: 1 },
     ])
   })
 })
 
-describe('price-drops catalog install', () => {
-  it('imports the installed shadcn carousel from the route v3 files', () => {
+describe('price-drops fold, on the listing dial (Matt 2026-09-24)', () => {
+  it('draws each cut-size band on V3ListingDial from the Field rows', () => {
     const photos = readFileSync(new URL('./PriceDropPhotos.client.tsx', import.meta.url), 'utf8')
     const fold = readFileSync(new URL('./PriceDropsFold.client.tsx', import.meta.url), 'utf8')
-    expect(photos).toContain("from '@/components/ui/carousel'")
+    expect(photos).toContain('<V3ListingDial')
+    expect(photos).toContain('rail.map((item) => item.listing)')
+    expect(photos).not.toContain("from '@/components/ui/carousel'")
     expect(fold).toContain('PriceDropPhotos')
+    expect(fold).toContain('id={`pd-cuts-${band.key}`}')
   })
 })

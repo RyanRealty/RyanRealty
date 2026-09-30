@@ -24,7 +24,7 @@ import { z } from 'zod'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
 import { supabaseAnon } from '@/lib/data/client'
-import { normalizeEmbed } from '@/lib/video-embed'
+import { normalizeEmbed, preferPlayableCopy } from '@/lib/video-embed'
 import type { VideoEmbed, VideoSource } from '@/lib/data/types/video'
 import { isListingVirtualTour } from '@/lib/listing/publish-listing-hero-video'
 
@@ -139,6 +139,17 @@ function deriveRawUrl(vid: Record<string, unknown>): string | null {
   return null
 }
 
+/**
+ * The uncached read behind getListingVideos, for a caller that wraps it in its
+ * own cache (getListingCardVideo caches only the one reel a card plays). It
+ * THROWS on a transient error, so a wrapper can tell a genuine "no video" from
+ * a failed read instead of caching the empty. One listing per call: every
+ * listings read below is narrowed by ListNumber or ListingKey (TOAST discipline).
+ */
+export async function fetchListingVideosUncached(listingKey: string): Promise<VideoEmbed[]> {
+  return fetchVideos(listingKey)
+}
+
 async function fetchVideos(listingKey: string): Promise<VideoEmbed[]> {
   InputSchema.parse({ listingKey })
   const supabase = supabaseAnon()
@@ -182,15 +193,17 @@ async function fetchVideos(listingKey: string): Promise<VideoEmbed[]> {
   if (resolved?.media_suppressed === true) return []
 
   const out: VideoEmbed[] = []
-  const seen = new Set<string>()
+  /** media identity -> its index in `out` */
+  const seen = new Map<string, number>()
 
   // Dedup by media IDENTITY (the embed URL without query/hash), NOT the raw
   // string. The MLS frequently lists the SAME Vimeo/YouTube/Matterport as both a
   // Video and a VirtualTour — and the two copies often differ by a query param
   // (e.g. the video iframe carries Vimeo's privacy `?h=` hash but the tour URL
   // does not, so the tour copy embeds a dead/private player). Keying on the
-  // path-level identity shows that media once (the first, hash-bearing tier
-  // wins) instead of a working video plus a broken duplicate "tour".
+  // path-level identity shows that media once instead of a working video plus
+  // a broken duplicate "tour". The first copy keeps its place and tags; it
+  // takes the later copy's src only when the later one alone carries the hash.
   const mediaKey = (u: string) => u.split('?')[0].split('#')[0]
   const pushEmbed = (
     raw: string | null | undefined,
@@ -201,8 +214,13 @@ async function fetchVideos(listingKey: string): Promise<VideoEmbed[]> {
     const norm = normalizeEmbed(raw, hint)
     if (!norm) return
     const key = mediaKey(norm.url)
-    if (seen.has(key)) return
-    seen.add(key)
+    const at = seen.get(key)
+    if (at !== undefined) {
+      const url = preferPlayableCopy(out[at].url, norm.url)
+      if (url !== out[at].url) out[at] = { ...out[at], url }
+      return
+    }
+    seen.set(key, out.length)
     out.push({
       source: classifyVideo(norm.url, hint ?? undefined).source,
       embedType: norm.embedType,
@@ -343,7 +361,10 @@ export const getListingVideos = (listingKey: string): Promise<VideoEmbed[]> =>
     // so Trailmere's walkthrough never got a Video tab.
     // v14 bump 2026-09-22 — zillow.com/view-3d-home is an iframe tour (same as
     // view-imx). v13 cached it as embedType link, which dropped the 3D tab.
-    ['listing-videos-v14', listingKey],
+    // v15 bump 2026-09-25 — Vimeo srcs keep the unlisted-video privacy hash
+    // (vimeo.com/<id>/<hash> or ?h=). v14 entries hold hashless player srcs,
+    // which Vimeo answers with "this video does not exist".
+    ['listing-videos-v15', listingKey],
     {
       revalidate: CACHE_WINDOWS.videos,
       tags: [cacheTag.listing(listingKey), cacheTag.videos],

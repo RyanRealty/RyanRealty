@@ -52,7 +52,10 @@
   .place-one-map {
     grid-template-columns: minmax(16rem, 22rem) minmax(0, 1fr);
     grid-template-areas: 'list map';
-    align-items: end;
+    /* The rail heads its column from the section's top, level with the map's
+       legend (2026-09-29: bottom-aligned, it left a screen-high blank over
+       the list on /cities/bend at 1440). */
+    align-items: start;
   }
 }
 
@@ -182,42 +185,31 @@
   max-width: min(100%, 90rem);
   margin-inline: auto;
   padding: var(--v3-space-md) var(--v3-gutter) var(--v3-space-lg);
-}
-
-/* Below 48rem one home fills the row. From 48rem several cards sit side by side. */
-.place-homes .v3-carousel.v3-carousel--rail {
-  --v3-carousel-slide-w: 100cqi;
-  --v3-carousel-nav-top: calc((var(--v3-carousel-slide-w) - var(--v3-space-md)) * 1 / 3);
+  /* A jump to #homes parks the section flush under the sticky chrome, its own
+     top padding the gap (2026-09-29: the default left a sliver of the section
+     above showing between the chrome and the heading). */
+  scroll-margin-top: var(--v3-chrome-h);
 }
 
 @media (min-width: 48rem) {
   .place-subdiv-rail__button:has(.place-subdiv-rail__photo) {
     grid-template-columns: 4.5rem minmax(0, 1fr);
   }
-
-  .place-homes .v3-carousel.v3-carousel--rail {
-    --v3-carousel-slide-w: min(17.5rem, 42cqi);
-  }
 }
 
 .place-homes__count,
-.place-homes__empty,
-.place-homes__type-count {
+.place-homes__empty {
   margin: 0 0 var(--v3-space-sm);
   color: var(--v3-ink-muted);
   font-size: var(--v3-size-body-sm);
 }
 
-.place-homes__type + .place-homes__type {
-  margin-top: var(--v3-space-md);
-}
-
-/* The dial layout (neighborhood pages): each buyer group is one
-   V3ListingDial across the whole band the map above it spans (the dial
-   lays its card on its side at that width: the dial on the left, the
-   photograph against it, the copy in a column on the right), ruled apart by
-   a hairline. */
-.place-homes--dial .place-homes__count {
+/* Every place page (city, community, neighborhood): each buyer group is one
+   V3ListingDial across the whole band the map above it spans (the dial lays
+   its card on its side at that width: the dial on the left, the photograph
+   against it, the copy in a column on the right), ruled apart by a hairline.
+   Commercial space for lease is the last dial, ruled apart the same way. */
+.place-homes:not(.place-homes--rails) .place-homes__count {
   margin-bottom: var(--v3-space-lg);
 }
 
@@ -234,6 +226,78 @@
   margin-top: var(--v3-space-xl);
   padding-top: var(--v3-space-xl);
   border-top: var(--v3-rule-hairline);
+}
+
+/* The door to every lease in Central Oregon, under the lease dial. */
+.place-homes__more {
+  margin: var(--v3-space-sm) 0 0;
+}
+
+/* The rail's count bar: each place's homes on the map, on one scale down the
+   rail, under its detail line. */
+.place-subdiv-rail__bar {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 10rem;
+  height: var(--v3-rule-weight-section);
+  margin-top: var(--v3-space-2xs);
+  background: var(--v3-hairline);
+}
+
+.place-subdiv-rail__bar > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--v3-navy);
+}
+
+.place-subdiv-rail__key {
+  display: flex;
+  align-items: center;
+  gap: var(--v3-space-xs);
+  margin: 0 0 var(--v3-space-2xs);
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-source);
+}
+
+.place-subdiv-rail__key-mark {
+  display: inline-block;
+  width: 1.5rem;
+  height: var(--v3-rule-weight-section);
+  background: var(--v3-navy);
+}
+
+/* THE HELD CAROUSEL (PlaceSubdivisionMap layout="rails", Matt 2026-09-25
+   "fix first, then ship"): the map block as it shipped before the dial, for a
+   class still below its taste mark with the dial (/communities/[slug]). These
+   are its rules as they stood on main; nothing here reaches the dial. */
+@media (min-width: 64rem) {
+  /* The rail and the map sat level at their feet. */
+  .place-one-map:has(> .place-subdiv-rail--held) {
+    align-items: end;
+  }
+}
+
+/* Below 48rem one home fills the row. From 48rem several cards sit side by side. */
+.place-homes--rails .v3-carousel.v3-carousel--rail {
+  --v3-carousel-slide-w: 100cqi;
+  --v3-carousel-nav-top: calc((var(--v3-carousel-slide-w) - var(--v3-space-md)) * 1 / 3);
+}
+
+@media (min-width: 48rem) {
+  .place-homes--rails .v3-carousel.v3-carousel--rail {
+    --v3-carousel-slide-w: min(17.5rem, 42cqi);
+  }
+}
+
+.place-homes__type-count {
+  margin: 0 0 var(--v3-space-sm);
+  color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body-sm);
+}
+
+.place-homes__type + .place-homes__type {
+  margin-top: var(--v3-space-md);
 }
 
 .place-homes__type-heading {
@@ -295,9 +359,4 @@
   margin-top: var(--v3-space-xl);
   padding-top: var(--v3-space-xl);
   border-top: var(--v3-rule-hairline);
-}
-
-/* The same door under the map's lease block. */
-.place-homes__more {
-  margin: var(--v3-space-sm) 0 0;
 }

@@ -49,6 +49,21 @@ export type PlaceCompCount = {
   trace: string
 }
 
+/**
+ * The comparable-sales source a READER sees beside the comps figure (SITE-193,
+ * 2026-09-24). `trace` above is the resolver's audit line, and it carries the
+ * query that matched the address ("StreetName ILIKE 'alianna%'") and the
+ * ladder's tier names: a broker's provenance, not a visitor's source. The
+ * community valuation answer printed it verbatim. Both address answers (the
+ * community ask and /sell) print this instead; the audit line stays on the
+ * result for the broker-facing paths that already carry it.
+ */
+export function compsReaderSource(subjectFound: boolean): string {
+  return subjectFound
+    ? 'regional MLS through Oregon Data Share: closed sales the Ryan Realty comparable-sales engine matched to the address you entered, the same engine the written valuation runs'
+    : 'regional MLS through Oregon Data Share: the address you entered did not match a sales record on the first pass, so a broker matches it by hand for the written valuation'
+}
+
 export async function countCompsForAddress(input: {
   rawAddress: string
   city: string

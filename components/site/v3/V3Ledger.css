@@ -232,6 +232,9 @@
 
 .v3-ledger__detail {
   display: block;
+  /* A detail that lists several things one to a line (the lease page's rents,
+     one unit per line) carries its own line breaks. */
+  white-space: pre-line;
   margin-top: var(--v3-space-3xs);
   font-size: var(--v3-size-body-sm);
   font-weight: var(--v3-weight-body);
@@ -309,6 +312,61 @@
    the maximum and styling it as one would be a lie about the data. */
 .v3-ledger__bar--lead {
   background: var(--v3-ink);
+}
+
+/* The second measure (`also`): a thinner line under the bar on its own scale,
+   its figure under the first figure, one step quieter. The measure's grid gives
+   it a second row, so the two lengths share a left edge and read as a pair. */
+.v3-ledger__measure:has(.v3-ledger__track--also) {
+  row-gap: var(--v3-space-3xs);
+}
+
+.v3-ledger__track--also {
+  height: 0.1875rem;
+}
+
+.v3-ledger__bar--also {
+  background: color-mix(in srgb, var(--v3-ink) 38%, transparent);
+}
+
+.v3-ledger__bar--also.v3-ledger__bar--lead {
+  background: color-mix(in srgb, var(--v3-ink) 80%, transparent);
+}
+
+.v3-ledger__value--also {
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  color: var(--v3-ink-muted);
+}
+
+/* The key over an encoded list: each mark beside what it measures. */
+.v3-ledger__key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-3xs) var(--v3-space-lg);
+  margin: 0 0 var(--v3-space-sm);
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
+
+.v3-ledger__key-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--v3-space-xs);
+}
+
+.v3-ledger__key-mark {
+  display: inline-block;
+  width: 1.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--v3-ink);
+}
+
+.v3-ledger__key-mark--also {
+  height: 0.1875rem;
+  background: color-mix(in srgb, var(--v3-ink) 80%, transparent);
 }
 
 /* Reveal ---------------------------------------------------------------------
@@ -850,5 +908,19 @@
   }
   .v3-ledger--pulse .v3-ledger__item:first-child .v3-ledger__thumb {
     height: 18rem;
+  }
+}
+
+/* An encoded row's figure stands clear of the Jax button on a phone, where
+   the value column runs to the gutter under the button's mid-screen band
+   (V3DogFloater: 4.25rem wide, --v3-space-md in from the edge). 2026-09-25:
+   "13 for lease" printed as "13 fo" at 375. The same clearance the chart's
+   y labels take. */
+@media (max-width: 40rem) {
+  .v3-ledger--encoded .v3-ledger__measure,
+  .v3-ledger--encoded .v3-ledger__what {
+    /* The name and its detail lines too (2026-09-29: a lease town's rate
+       line wrapped under the button, "per sq ft per / month"). */
+    margin-inline-end: calc(4.25rem + var(--v3-space-md) - var(--v3-gutter));
   }
 }

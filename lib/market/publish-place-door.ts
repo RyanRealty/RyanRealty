@@ -134,8 +134,13 @@ export function placeDoorCountLabel(faceLabel: string): string {
  * "homes for sale" over a trace that never said which statuses it counted let
  * the two describe two populations, so the Market Truth bodies say it: homes
  * already under contract are counted separately. The neighborhood body is a
- * different read (the polygon set includes Active Under Contract) and says so
- * in its own words.
+ * different read (the recorded polygon, not membership), and since SITE-193
+ * (2026-09-24) it counts the same status set: getNeighborhoodPublicInventory's
+ * activeCount is Active only, by publicCountState, the classifier the map and
+ * the homes block under the door read. It used to say "Active and Active Under
+ * Contract, Coming Soon excluded ... the same counted set the map below
+ * plots": MLS status names in a reader's sentence, two em dashes, and a claim
+ * the map (every property type, under contract drawn as pending) never met.
  */
 export function placeDoorTrace(input: { grain: PlaceFaceGrain; placeName: string }): string {
   const feed = 'regional MLS through Oregon Data Share'
@@ -152,9 +157,8 @@ export function placeDoorTrace(input: { grain: PlaceFaceGrain; placeName: string
 
   if (input.grain === 'neighborhood') {
     return (
-      `${feed}: active detached single-family listings — Active and Active Under Contract, ` +
-      `Coming Soon excluded — inside the recorded ${input.placeName} boundary polygon, the same ` +
-      `counted set the map below plots.`
+      `${feed}: detached single-family homes for sale inside the recorded ${input.placeName} ` +
+      `boundary. ${statusSet}`
     )
   }
 

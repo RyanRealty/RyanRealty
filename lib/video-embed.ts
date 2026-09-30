@@ -7,7 +7,50 @@
 const YOUTUBE_REGEX =
   /(?:youtube\.com\/watch\?[^#]*v=|youtube\.com\/(?:embed\/|shorts\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
 
-const VIMEO_REGEX = /vimeo\.com\/(?:video\/)?(\d+)/
+/**
+ * A Vimeo video id, and the privacy hash when the path carries one. An
+ * unlisted Vimeo video is shared as vimeo.com/<id>/<hash> and embedded as
+ * player.vimeo.com/video/<id>?h=<hash>; asked for without the hash, the player
+ * shows "Sorry, this video does not exist" instead of the video.
+ */
+const VIMEO_REGEX = /vimeo\.com\/(?:video\/)?(\d+)(?:\/([0-9a-f]{6,})(?![0-9a-z]))?/i
+/** The `h` query form. A src pulled out of MLS iframe markup can still read `&amp;h=`. */
+const VIMEO_HASH_PARAM = /[?&](?:amp;)?h=([0-9a-f]{6,})(?![0-9a-z])/i
+
+export type VimeoRef = {
+  id: string
+  /** The unlisted-video privacy hash, or null for a public video. */
+  hash: string | null
+}
+
+/** The Vimeo video a URL points at, with its privacy hash from either shape. Pure. */
+export function parseVimeoRef(url: string): VimeoRef | null {
+  if (!url || typeof url !== 'string') return null
+  const m = VIMEO_REGEX.exec(url)
+  if (!m) return null
+  return { id: m[1], hash: m[2] ?? VIMEO_HASH_PARAM.exec(url)?.[1] ?? null }
+}
+
+/**
+ * The player src for a Vimeo video. The hash goes first as `h`, where Vimeo's
+ * own embed code puts it, then `params` in order. Every Vimeo src this repo
+ * builds comes through here, so none can drop the hash again. Pure.
+ */
+export function vimeoPlayerSrc(ref: VimeoRef, params: Readonly<Record<string, string>> = {}): string {
+  const u = new URL(`https://player.vimeo.com/video/${ref.id}`)
+  if (ref.hash) u.searchParams.set('h', ref.hash)
+  for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v)
+  return u.toString()
+}
+
+/**
+ * Two srcs for the same media (one path, different query): the one that
+ * carries Vimeo's privacy hash is the one that plays, so it wins over a
+ * hashless `kept`. Otherwise `kept` stands. Pure.
+ */
+export function preferPlayableCopy(kept: string, next: string): string {
+  return !parseVimeoRef(kept)?.hash && parseVimeoRef(next)?.hash ? next : kept
+}
 
 export type ListingTileVideoEmbed = {
   kind: 'youtube' | 'vimeo' | 'matterport'
@@ -66,12 +109,11 @@ export function parseListingVideoEmbedForTile(urlOrHtml: string): ListingTileVid
       posterUrl: `https://img.youtube.com/vi/${id}/hqdefault.jpg`,
     }
   }
-  const vimeo = trimmed.match(VIMEO_REGEX)
+  const vimeo = parseVimeoRef(trimmed)
   if (vimeo) {
-    const id = vimeo[1]
     return {
       kind: 'vimeo',
-      src: `https://player.vimeo.com/video/${id}?autoplay=1&muted=1`,
+      src: vimeoPlayerSrc(vimeo, { autoplay: '1', muted: '1' }),
     }
   }
   const low = trimmed.toLowerCase()
@@ -90,10 +132,9 @@ export function getVideoEmbedHtml(url: string, autoplay = true): string | null {
     const src = `https://www.youtube.com/embed/${id}?rel=0${autoplay ? '&autoplay=1&mute=1' : ''}`
     return `<iframe src="${escapeAttr(src)}" title="YouTube video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen class="absolute inset-0 h-full w-full"></iframe>`
   }
-  const vimeo = trimmed.match(VIMEO_REGEX)
+  const vimeo = parseVimeoRef(trimmed)
   if (vimeo) {
-    const id = vimeo[1]
-    const src = `https://player.vimeo.com/video/${id}${autoplay ? '?autoplay=1' : ''}`
+    const src = vimeoPlayerSrc(vimeo, autoplay ? { autoplay: '1' } : {})
     return `<iframe src="${escapeAttr(src)}" title="Vimeo video" allow="fullscreen; picture-in-picture; autoplay" allowfullscreen class="absolute inset-0 h-full w-full"></iframe>`
   }
   return null
@@ -202,11 +243,16 @@ export function toBackgroundEmbed(url: string): string {
     const u = new URL(url)
     const host = u.hostname.toLowerCase()
     if (host.includes('vimeo.com')) {
-      u.searchParams.set('background', '1')
-      u.searchParams.set('autoplay', '1')
-      u.searchParams.set('muted', '1')
-      u.searchParams.set('loop', '1')
-      return u.toString()
+      // A vimeo.com/<id>/<hash> page URL is rebuilt as the player URL, whose
+      // hash rides as ?h=; a player URL keeps its own params (the hash with them).
+      const ref = parseVimeoRef(url)
+      const out = ref && host !== 'player.vimeo.com' ? new URL(vimeoPlayerSrc(ref)) : u
+      if (ref?.hash && !out.searchParams.get('h')) out.searchParams.set('h', ref.hash)
+      out.searchParams.set('background', '1')
+      out.searchParams.set('autoplay', '1')
+      out.searchParams.set('muted', '1')
+      out.searchParams.set('loop', '1')
+      return out.toString()
     }
     if (host.includes('youtube.com') || host.includes('youtube-nocookie.com')) {
       const id = u.pathname.split('/embed/')[1]?.split('/')[0]

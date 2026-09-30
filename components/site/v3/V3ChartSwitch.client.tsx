@@ -26,6 +26,11 @@ export type V3ChartSwitchItem = {
   key: string
   /** The control's visible + accessible name, e.g. "5Y", "Supply". */
   label: V3Text
+  /**
+   * How many things the view holds, printed under the label ("Under 5%", 21)
+   * so a reader sees what a tab opens before opening it. Optional.
+   */
+  count?: number
 }
 
 export type V3ChartSwitchProps = {
@@ -104,7 +109,14 @@ export function V3ChartSwitch({ label, items, children, defaultKey, className }:
             onClick={() => select(i)}
             onKeyDown={(event) => onKeyDown(event, i)}
           >
-            {it.label}
+            {it.count != null ? (
+              <>
+                <span className="v3-chart-switch__label">{it.label}</span>
+                <span className="v3-chart-switch__count">{it.count.toLocaleString('en-US')}</span>
+              </>
+            ) : (
+              it.label
+            )}
           </button>
         ))}
       </div>

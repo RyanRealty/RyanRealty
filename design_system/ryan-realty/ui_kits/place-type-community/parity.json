@@ -6,7 +6,7 @@
   "requiredComponents": [
     {
       "name": "PlaceTypeFilm",
-      "section": "Fold V3Carousel rail of photographed listings (mode=rail, prev/next, 800x600 plates, price+address+beds/baths/sqft).",
+      "section": "Fold set of photographed listings on V3ListingDial (Matt 2026-09-24, it was the shadcn carousel): one listing large on its 800x600 plate with price+address+beds/baths/sqft, the rest as thumbnails, 03 / 12; while the pointer or focus is in it the Atlas rings the home the dial shows.",
       "blocking": true
     },
     {
@@ -61,11 +61,12 @@
     }
   ],
   "tasteReview": {
-    "evaluatedAt": "2026-09-15",
+    "evaluatedAt": "2026-09-30",
     "rubricVersion": "v1-2026-09-12",
-    "evaluator": "npx tsx scripts/taste-evaluate.ts place-type-community --builder cursor-agent \u2014 grok-4.6 via cursor-cli, three scorings of tip shots at /communities/tetherow/types/single-family including carousel-open; Mini Tip Ready judge on Matthews Mini.",
-    "evaluatorModel": "grok-4.6",
-    "builderModel": "cursor-agent",
+    "evaluator": "npx tsx scripts/taste-evaluate.ts place-type-community --builder claude-opus-5-5 --evaluator claude --url http://127.0.0.1:3311/communities/tetherow/types/single-family --shots <the 6 files below>. The grok CLI and the Cursor CLI are missing in this sandbox, so the judge is the chain's claude link (claude CLI, sonnet, subscription): three scorings of these shots in one call, recorded exactly as returned, no re-roll. The builder (the listing-dial integration lane, claude-opus-5-5) is not the judge.",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "claude-opus-5-5",
+    "transport": "claude-cli",
     "shotSpec": {
       "routes": [
         "/communities/tetherow/types/single-family"
@@ -76,34 +77,46 @@
       ],
       "states": [
         "default",
-        "carousel-open"
+        "dial",
+        "dial-open"
       ],
-      "capture": "first viewport + carousel-open via scripts/take-route-shots.mjs against tip c2b2de83a next dev :3027; scale 1, palette-quantized"
+      "capture": "node scripts/take-route-shots.mjs place-type-community http://127.0.0.1:3311/communities/tetherow/types/single-family --states 'dial-open=.place-type-film .v3-dial__step--next@.place-type-film!click'. First viewport, scale 1, palette-quantized, against the listing-dial fix tree's own next build + next start (2026-09-30)."
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/place-type-community/shots/desktop.png",
-      "mobile375": "design_system/ryan-realty/ui_kits/place-type-community/shots/mobile375.png",
-      "carouselOpenDesktop": "design_system/ryan-realty/ui_kits/place-type-community/shots/carousel-open-desktop.png",
-      "carouselOpenMobile375": "design_system/ryan-realty/ui_kits/place-type-community/shots/carousel-open-mobile375.png"
+      "dialDesktop": "design_system/ryan-realty/ui_kits/place-type-community/shots/dial-desktop.png",
+      "dialMobile375": "design_system/ryan-realty/ui_kits/place-type-community/shots/dial-mobile375.png",
+      "dialOpenDesktop": "design_system/ryan-realty/ui_kits/place-type-community/shots/dial-open-desktop.png",
+      "dialOpenMobile375": "design_system/ryan-realty/ui_kits/place-type-community/shots/dial-open-mobile375.png",
+      "mobile375": "design_system/ryan-realty/ui_kits/place-type-community/shots/mobile375.png"
     },
-    "shotsHash": "sha256:41d8e1c0485ee4cf004997bf3f30f0141d899fb934810c0e18284f846d12c211",
+    "shotsHash": "sha256:2e67e6a99e50e0ddc8a4004d341987cbc7b06925437d5d2a1da9a1893755edc3",
     "scores": [
-      52,
-      58,
-      55
+      65,
+      69,
+      72
     ],
-    "score": 55,
+    "score": 69,
     "criteria": {
-      "designQuality": 16,
-      "originality": 14,
-      "interaction": 9,
-      "craft": 8,
+      "designQuality": 20,
+      "originality": 18,
+      "interaction": 11,
+      "craft": 12,
       "honestyFunction": 8
     },
-    "beats": "Tetherow.com (https://tetherow.com/) \u2014 this page wins on a live MLS count, asking-price band, and a named Oregon Data Share timestamp; it loses photography and place character. Zillow community pages still beat the first viewport on photographed listings.",
+    "perCriterion": {
+      "design": 20,
+      "originality": 18,
+      "interaction": 11,
+      "craft": 12,
+      "honesty": 8
+    },
+    "honestyFunction": 8,
+    "demoMatch": false,
+    "beats": "Zillow community pages — Zillow drops you into a flat, unstyled address list with no price-position sense; this page wins on inventory legibility (a price-clustered custom map showing where the 13 asks sit geographically) and on inventory navigation (a scrubbable listing dial that shows a home's position in the $1.5M–$4.3M range, not just a row in a list).",
     "adaptedFrom": [
       {
-        "id": "shadcn-carousel"
+        "id": "house-listing-dial"
       },
       {
         "id": "house-atlas"
@@ -114,64 +127,33 @@
     ],
     "defects": [
       {
-        "section": "LISTINGS ON THE MAP",
+        "section": "ON THE MARKET / NEAR THIS PRICE comp rows",
         "severity": "taste",
-        "finding": "The canvas is a pale gray plat: boundary, streets, and listing dots are the same cream-on-gray, so 18 for-sale marks do not read as a price story at 1440 or 375.",
-        "primitive": "components/site/v3/V3Atlas.client.tsx",
-        "replaceWith": "house-atlas"
+        "finding": "The three comp rows (thumbnail, price, delta, specs, address) sit as a flat list disconnected from the price scrubber directly above them — 'near this price' is asserted in a label but never shown as a position on the same scale the dial already draws, so the page's own best idea (price-as-position) isn't reused where it would do the most work.",
+        "replaceWith": "house-listing-dial"
       },
       {
-        "section": "Up to any price",
-        "severity": "taste",
-        "finding": "The $1,350,000\u2013$3,999,995 band lives only in the claim sentence; the slider sits at the ceiling with no histogram, so scrubbing is chrome instead of the data.",
-        "primitive": "components/site/v3/V3Atlas.client.tsx",
-        "replaceWith": "house-atlas"
-      },
-      {
-        "section": "ON THE MARKET / carousel-open",
-        "severity": "taste",
-        "finding": "Rest fold clips the rail to photo fragments; the open shots are two (desktop) or one (375) listing cards then a cream void, with no peek of the next plate and no 1 of N, so the shadcn rail never fills the viewport the demo occupies.",
-        "primitive": "app/cities/[slug]/types/[type]/_v3/PlaceTypeFilm.client.tsx",
-        "replaceWith": "shadcn-carousel"
-      },
-      {
-        "section": "18 homes ask \u2026 for nine in ten",
-        "severity": "taste",
-        "finding": "Nine in ten is unexplained next to a count of 18; a visitor cannot tell whether that is a percentile, a close rate, or leftover methodology.",
-        "primitive": "app/communities/[slug]/types/[type]/page.tsx",
-        "replaceWith": "house-quiet"
-      },
-      {
-        "section": "mobile 375 header / first viewport",
-        "severity": "defect",
-        "finding": "Desktop exposes 541.703.3095; at 375 the fold has Sign in and a menu only, so call is not a one-path job from what is visible.",
-        "primitive": "app/communities/[slug]/types/[type]/page.tsx",
+        "section": "LISTINGS ON THE MAP legend/slider block",
+        "severity": "craft",
+        "finding": "On mobile the legend and 'up to any price' filter render below the map instead of above it as on desktop, reversing the explain-then-see order into see-then-explain and pushing the one interactive filter control past the fold.",
         "replaceWith": null
       },
       {
-        "section": "SEO and JSON-LD",
-        "severity": "defect",
-        "finding": "Title, canonical, and ItemList are not in these pixels, so SEO cannot be credited as improved; a prettier fold that only holds crawlables is not a rise.",
-        "primitive": "app/communities/[slug]/types/[type]/page.tsx",
+        "section": "ON THE MARKET hero photo (dial-desktop / dial-mobile375)",
+        "severity": "taste",
+        "finding": "The lead image for the featured listing is a generic deck-view-of-a-mountain real-estate photo with no data overlay, caption treatment, or typographic moment — it's the largest single element on the second fold and the least original thing on the page.",
         "replaceWith": null
       }
     ],
-    "demoMatch": true,
-    "tells": [
-      "Missing states. \u2014 the LISTINGS ON THE MAP price scrubber is parked at Up to any price with no distribution, ticks, or filtered remainder, so the only visible state is the unfiltered set.",
-      "The stacked-section page. \u2014 first viewport is still claim block, then atlas block, then a clipped ON THE MARKET strip, three stacked regions with no change in density once the map eats the fold."
-    ],
-    "dullest": "LISTINGS ON THE MAP: most of the first viewport is a washed-out plat whose dots you have to hunt for, while the actual houses are a clipped sliver under ON THE MARKET. That is choosing a faint GIS outline over the inventory.",
-    "verdict": "demoMatch is true: carousel-open shows the shadcn prev/next rail with photographed cards, price, address, and specs, not a cream box that hid the control. The rest fold is still a pale Atlas occupying the screen, a ceiling-parked scrubber, and a clipped ON THE MARKET strip, which is why the tells are missing states and a stacked page. SEO is not evidenced in the shots so it is held, not risen; inventory facts exist on the open rail and in the claim but the first viewport still hides most listing plates.",
+    "verdict": "This is a real fix of the mark-44 problem: the eight-row hairline ledger is gone, replaced by a claim-first sentence, a custom price-clustered map, and a scrubbable listing dial that visibly changes state between the open shots — inventory legibility (count, price band, per-cluster ask) is genuinely richer than the flat list it replaced. But demoMatch is false because nothing here is a catalog control at all — it's house-built (Atlas, Quiet, ListingDial) — and design quality stays capped by a conservative navy-on-grey map and a stock deck photo that never lands a breathtaking moment; SEO signals (JSON-LD, crawlable comp links) aren't verifiable from pixels and should be confirmed separately before calling this pass complete on that axis.",
+    "comparedToPrior": "rose",
     "priorMark": {
-      "evaluatedAt": "2026-09-10",
-      "score": 57,
-      "evaluatorModel": "grok-4.6",
-      "rubricVersion": "v1-2026-09-10",
-      "shotsHash": "sha256:33505f7d2a4b6413a9852791a9b6d2d7ebc6a63e4b92c1d6f0decb48f53c65e2"
-    },
-    "comparedToPrior": "rebaselined",
-    "rebaselineReason": "rubricVersion differs (v1-2026-09-10 \u2192 v1-2026-09-12) and shotsHash differs (new carousel-open tip shots on SITE-107 tip c2b2de83a). First v1-2026-09-12 mark on open-state evidence; demoMatch true from judge."
+      "evaluatedAt": "2026-09-24",
+      "score": 64,
+      "evaluatorModel": "claude-sonnet-5",
+      "rubricVersion": "v1-2026-09-12",
+      "shotsHash": "sha256:e1fea3329f44f5999ef4629c3f4094acd9042e1b8ce195a75699269fabd21a56"
+    }
   },
   "sectionOrder": [
     "V3SectionTracker",
@@ -179,7 +161,7 @@
     "V3Breadcrumb",
     "V3Heading + claim sentence + source line",
     "PlaceTypeAtlasSection (#atlas, streamed, standin fallback)",
-    "PlaceTypeFilm (V3Carousel mode=rail)",
+    "PlaceTypeFilm (V3ListingDial, the Atlas rings the home it shows)",
     "PlaceTypeSortBar + PlaceTypeRows (#homes)",
     "V3Quiet",
     "V3Footer"

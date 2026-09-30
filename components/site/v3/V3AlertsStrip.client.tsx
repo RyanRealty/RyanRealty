@@ -279,7 +279,21 @@ export function V3AlertsStrip({
     // would leave `passed` true with the callout back on screen. The observer
     // gives the initial state and every crossing; a passive, frame-throttled
     // scroll read keeps it honest across jumps.
+    // A listing dial's card on screen keeps the strip down, so it never sits on
+    // a card's ask and facts. Read on the same frame as "passed": the dials
+    // mount and stream in after this effect, so they are found, not observed.
+    const readListings = () => {
+      const h = window.innerHeight
+      let on = false
+      document.querySelectorAll('.v3-dial__stage').forEach((el) => {
+        if (on) return
+        const r = el.getBoundingClientRect()
+        on = r.bottom > 0 && r.top < h && r.height > 0
+      })
+      setSticky((s) => (s.listingsVisible === on ? s : { ...s, listingsVisible: on }))
+    }
     const readPassed = () => {
+      readListings()
       if (!anchor) return
       const rect = anchor.getBoundingClientRect()
       const intersecting = rect.bottom > 0 && rect.top < window.innerHeight
@@ -299,8 +313,8 @@ export function V3AlertsStrip({
       })
       io.observe(anchor)
       observers.push(io)
-      window.addEventListener('scroll', onScroll, { passive: true })
     }
+    window.addEventListener('scroll', onScroll, { passive: true })
     if (section) {
       const io = new IntersectionObserver(([entry]) => {
         if (entry) setSticky((s) => ({ ...s, calloutVisible: entry.isIntersecting }))

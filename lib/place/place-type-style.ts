@@ -84,7 +84,10 @@ export const PLACE_BUYER_GROUPS = [
 export type PlaceBuyerGroup = (typeof PLACE_BUYER_GROUPS)[number]
 
 export const PLACE_BUYER_GROUP_HEADING: Record<PlaceBuyerGroup, string> = {
-  homes: 'Homes',
+  // "Houses", not "Homes" (2026-09-25): under a map header of every home for
+  // sale, a dial named "Homes" with fewer of them read as a second, smaller
+  // count of the same thing; the group is the detached houses.
+  homes: 'Houses',
   cabins: 'Cabins',
   attached: 'Townhomes and condos',
   multifamily: 'Multifamily',

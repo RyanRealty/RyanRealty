@@ -338,17 +338,29 @@
 /* ── the footer: what this mark says, and where the figure came from ──────── */
 
 /* One footer band per figure, the same height on each, so a reading appearing
-   under one drawing never pushes the next one down the page. */
+   under one drawing never pushes the next one down the page.
+
+   A WRAPPING ROW, NOT A TWO-COLUMN GRID (SITE-193, 2026-09-24). The grid gave
+   the source an `auto` column that would not wrap, so on the community
+   valuation answer (a figure roughly 30rem wide) a long source clause took
+   the row and the reading's 1fr column shrank to one word: "Hover, / tap / or
+   / tab / the / mark ..." down ten lines. Now the reading keeps at least a
+   readable measure, the source sits beside it when both fit and drops under
+   it when they do not, and the source's own clause wraps rather than running
+   past the edge. */
 .v3 .v3-drawing__foot {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  column-gap: var(--v3-space-md);
+  justify-content: space-between;
+  gap: var(--v3-space-3xs) var(--v3-space-md);
   min-block-size: 2.6em;
   margin-block-start: var(--v3-space-sm);
 }
 
 .v3 .v3-drawing__reading {
+  flex: 1 1 18rem;
+  min-inline-size: 0;
   margin: 0;
   max-width: var(--v3-measure-text);
   font-size: var(--v3-size-body-sm);
@@ -374,9 +386,10 @@
 }
 
 .v3 .v3-drawing__source {
+  flex: 0 1 auto;
+  min-inline-size: 0;
+  max-inline-size: 100%;
   margin-block-start: 0;
-  justify-self: end;
-  white-space: nowrap;
 }
 
 /* EXCEPTION INK. Only a figure the caller declared a real decline, drawdown or
@@ -396,18 +409,16 @@
      the row sizes to its content, so the trace sits against the drawing rather
      than under an empty band. */
   .v3 .v3-drawing__foot {
-    grid-template-columns: minmax(0, 1fr);
-    row-gap: var(--v3-space-3xs);
     min-block-size: 0;
+  }
+
+  .v3 .v3-drawing__reading {
+    flex-basis: 100%;
   }
 
   /* The axis reads at the narrow measure without crowding the rule above it. */
   .v3 .v3-drawing__axis {
     font-size: var(--v3-size-eyebrow);
-  }
-
-  .v3 .v3-drawing__source {
-    justify-self: start;
   }
 
   .v3 .v3-drawing__barrow {

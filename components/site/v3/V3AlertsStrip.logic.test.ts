@@ -27,6 +27,11 @@ describe('stickyVisible', () => {
     expect(stickyVisible({ ...past, footerVisible: true }, 'idle')).toBe(false)
   })
 
+  it("never covers a listing dial's card, and stays eligible so the page keeps its room", () => {
+    expect(stickyVisible({ ...past, listingsVisible: true }, 'idle')).toBe(false)
+    expect(stickyEligible({ ...past, listingsVisible: true }, 'idle')).toBe(true)
+  })
+
   it('stays closed for the session once dismissed', () => {
     expect(stickyVisible({ ...past, dismissed: true }, 'idle')).toBe(false)
   })

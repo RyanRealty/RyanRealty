@@ -162,6 +162,73 @@ What this does not license: repeating a pattern because two unrelated sections h
 suit it; or a run whose members a person chose. An enumeration counts once for the
 adjacency rule, exactly like any other section.
 
+**The listing dial (`V3ListingDial`, Matt 2026-09-23 / 09-24) is how a set of listings is
+shown, in place of a carousel.** One listing large (its lead photograph, then the rail
+card's copy: ask, facts, address, a door), the rest of the set as thumbnails on a dial,
+"03 / 12" with a filling rule at the dial's head, no scrollbar, a caption the dial's edge
+would cut hidden rather than shown cut. It is Ledger content (every listing is an
+`<a href>` in the served HTML) drawn as a master-detail: WAI-ARIA tabs, turned by
+thumbnail, previous/next, arrow keys, Home/End, or a swipe on the photograph.
+- **Where the dial stands** (`railPosition`): under the card as a strip (`bottom`, the
+  default), or a column on the card's `left` or `right`. Matt does not want every dial to
+  turn the same way, so a page stacking several dials gives the i-th one
+  `dialRailPositionAt(i)` (bottom, left, right, ...): no two adjacent dials share a
+  position. On a phone every position is a strip under the card. A right-hand column
+  measures the Jax button (fixed at the right edge, mid-screen) and stops short of it, and
+  so does every control along the dial's right edge wherever the dial runs under the
+  button (the strip's next step, the phone's "01 / 12", the reel's controls).
+- **Weight.** Every listing is in the served HTML as its door (the `<a href>` with the ask,
+  the facts and the street) and its thumbnail; a card that is not showing carries nothing
+  else (its photograph, badges and tour mount when it turns up). About 1 KB of HTML per
+  listing, held by `components/site/__tests__/v3-listing-dial-weight.test.tsx` (1,024 B).
+- **The card's reel.** The photograph comes in first, always. When the reader rests on a
+  card for 1.5 s (`DIAL_VIDEO_DWELL_MS`) with the dial on screen and the tab in front, the
+  dial asks `/api/listings/[listingKey]/card-video` for that listing's reel (the listing
+  page's own hero reel, `publishListingHeroVideo`: a walkthrough, never a 3D tour) and, if
+  there is one a card can play silently (a file, YouTube, Vimeo or Cloudflare Stream),
+  fades it in over the photograph once it is actually playing: muted, inline, looping, no
+  player chrome. The photograph stays underneath; a reel that errors, whose player is not
+  ready in 8 s, or that has not started 4 s after its player is ready leaves it as it was. A turn stops and unmounts the reel at once. One reel plays on
+  the page. A playing reel carries "Pause" (back to the photograph) and, for a native
+  video only, a sound toggle; reduced motion, Save-Data and 2G never autoplay and offer
+  "Play video" instead. The reel is decoration for the panel (aria-hidden, inert); the
+  card's link and copy do not change. Pages never read a card's video on the server; a
+  caller that knows a listing has none passes `hasVideo: false` and the dial never asks.
+- **Beside the dial** (`onIndexChange`). A figure for one listing that sits outside its
+  card (a builder's concession, the Atlas ring on a type page, the /buy ladder's mark)
+  follows the dial through the callback, which fires with the new index on every turn.
+  Nothing reads the dial's DOM to find out.
+- **First paint** (`priority`). Only a dial that is the page's first large image above
+  the fold (/price-drops, /open-houses: the open band) loads its first photograph
+  eagerly; a dial under a hero never does.
+- **The set on one axis, and the card's relations (2026-09-29).** Every priced home in the
+  set is a tick on one price axis over the rail (the asks strip; its hit area is the 44px
+  tap token), and a type page's film holds the claim's own band ends, low to high, and
+  says when it is a spread ("12 of 732, across the band"). A cut is stamped on the
+  photograph ("11.6% off"), and each "near this price" row says its ask against the home
+  in front ("$95K more"). The media box is the photograph's height, so a stamp or a reel
+  never falls under it.
+- **The card's words.** The tour control names the listing's own tour in the listing
+  page's words ("Video Tour" for a walkthrough reel, "3D" for a 3D tour,
+  `publishListingTourLabel`), never "3D Walkthrough" for a video. The status word is
+  `publicCardStatusLabel`: Active Under Contract is "Under contract" on every dial, the
+  word the counts over it use.
+- **Held until their taste marks (Matt 2026-09-25, "fix first, then ship").** The homepage
+  and `/cities` shelves and community pages keep production's presentation (their
+  carousels) until each reaches its mark.
+- **A set of towns is not a stack of dials (2026-09-30).** `/commercial-space-for-lease`
+  leads with the busiest town on a full dial; every other town is one row of a drawer
+  (a `<details>` each, busiest first, the first open) that opens to its own dial, or to its
+  rows under five leases. The drawer's rows are one drawing, not a repeated block: each
+  town's rents on one shared axis (a dot per lease at its rent per sq ft per month, sized
+  by its listed square feet), its rate line, and its largest space photographed. The town
+  ledger that opens the page carries two measures (the count as the bar, the square feet
+  listed as a line under it, each on its own scale, keyed) and stands beside a
+  server-drawn lease map (every lease a dot at its own coordinates; hover a row to light
+  its town); on a phone the rows come first and the map follows them. Every dial on the
+  page opens on its largest space whose rent publishes, a rule, never a picked listing.
+  Six identical dial blocks read as one section repeated.
+
 **One shop, five place rhythms** (Matt 2026-08-14). Chrome, type, tokens, Field/Ledger
 row language, and the motion ladder are the same site. The first pattern names the grain.
 A city, a neighborhood, a master-plan, a plat, and a listing that wear the same first
@@ -223,12 +290,10 @@ navy or cream must be re-checked against this table before it ships.
   series the visitor caused are the product. Atlas and V3Chart are allowed to
   move when the motion *is* the reading. This is how we show we have the data.
   Grow those primitives. Do not add a second chart library.
-- **A listing card's reel (SITE-194, Matt 2026-09-24):** on the listing dial the photograph
-  paints first; after a second and a half on screen the card fades its walkthrough reel in
-  over the photograph (300ms entrance), muted, looping, no player chrome, inside the
-  photograph's own box so nothing moves, and unmounts it on a turn. One reel per page.
-  Reduced motion and Save-Data get a "Play video" control instead of autoplay. Never a
-  3D tour, never a host that would draw its own play button on the card.
+- **Listing reels (Matt 2026-09-24):** a listing card's own walkthrough may play in the
+  listing dial after the reader rests on the card (photograph first, the reel only after
+  the dwell, on screen, one per page, faded in on `--v3-dur-rise` once frames move).
+  Reduced motion and Save-Data get the photograph and a "Play video" control.
 - **Banned:** parallax for its own sake, carousels as a default, entrance animations on
   every section, motion over live numbers while they load (the figure must not
   count up from zero as a trick). `prefers-reduced-motion` gets the same chart
@@ -347,3 +412,8 @@ Why each rule is the way it is, so a dead one is not reintroduced as a new idea.
 - **2026-08-28** — Place Stage prefers the registered Imagine still
   (`imagine-place-*`) over a leftover live crop. Area-guide video stays off
   Stage. Official city slugs pin `hero_image_url` to the matching file.
+- **2026-09-24** — The listing dial is the set-of-listings form (§3). Its rail stands under
+  the card by default, or on the left or right; stacked dials vary by
+  `dialRailPositionAt`. A card plays its listing's walkthrough reel after a 1.5 s dwell,
+  photograph first (Matt: "have the primary photo come in first; after a second or two,
+  play the video associated with it if there is one").

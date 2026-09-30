@@ -40,7 +40,6 @@ import { buildPpsfBand } from '@/components/search/ppsf-band'
 import { formatCount } from '@/lib/format/count'
 import { formatPriceCompact } from '@/lib/format/money'
 import { SplitListingCard } from '@/components/search/SplitListingCard'
-import { isListingVirtualTour } from '@/lib/listing/publish-listing-hero-video'
 import { publishListingCardBadges } from '@/lib/listing/publish-listing-card-badges'
 import { publishWholePropertyAmount } from '@/lib/listing/publish-listing-figure'
 import { publishListingSharePricePerSqft } from '@/lib/listing/publish-listing-share'
@@ -1381,11 +1380,8 @@ export default function MapSearchView({
                   badges={badges}
                   hasTour={l.has_virtual_tour === true || Boolean(l.tourUrl)}
                   tourUrl={l.tourUrl ?? null}
-                  tourLabel={
-                    l.tourUrl && !isListingVirtualTour({ url: l.tourUrl, isVirtualTour: true })
-                      ? 'Video tour'
-                      : '3D Walkthrough'
-                  }
+                  // No tourLabel: the card reads it off tourUrl in the listing
+                  // page's words (publishListingTourLabel), as every dial does.
                   ppsfBand={viewClaim.band}
                   priority={cardIndex === 0}
                   className={cn(isSelected && 'is-active', !isSelected && isHovered && 'is-hot')}

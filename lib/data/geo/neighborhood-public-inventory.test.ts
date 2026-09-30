@@ -52,6 +52,25 @@ describe('neighborhood public inventory rollup', () => {
     expect(awbrey.pricedCount).toBeLessThanOrEqual(awbrey.activeCount)
   })
 
+  it('counts for sale as Active only and under contract apart (SITE-193)', () => {
+    // The map over the homes draws Active Under Contract as pending, and the
+    // homes block counts it as under contract (publicCountState). The door
+    // count this rollup feeds says "homes for sale", so it holds Active only,
+    // and the median is taken over that same for-sale set.
+    const rows = rollupNeighborhoodPublicInventory([
+      { geo_slug: 'bend-awbrey-butte', listing_key: 'a', list_price: 1_000_000, standard_status: 'Active' },
+      { geo_slug: 'bend-awbrey-butte', listing_key: 'b', list_price: 1_200_000, standard_status: 'Active' },
+      { geo_slug: 'bend-awbrey-butte', listing_key: 'c', list_price: 3_000_000, standard_status: 'Active Under Contract' },
+    ])
+    const awbrey = rows.find((r) => r.slug === 'awbrey-butte')!
+    expect(awbrey.activeCount).toBe(2)
+    expect(awbrey.underContractCount).toBe(1)
+    expect(awbrey.pricedCount).toBe(2)
+    expect(awbrey.medianListPrice).toBe(1_100_000)
+    // Still shown: the under-contract home stays in the set the page lists.
+    expect(awbrey.listingKeys).toEqual(['a', 'b', 'c'])
+  })
+
   it('does not mix a second district into Awbrey Butte', () => {
     const rows = rollupNeighborhoodPublicInventory([
       { geo_slug: 'bend-southern-crossing', listing_key: 'x', list_price: 500_000 },
