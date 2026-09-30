@@ -24,6 +24,88 @@ export const DRIP_WEEKDAY_START_MINUTES = 8 * 60
  */
 export const DRIP_SPACING_MINUTES = 5
 
+/**
+ * The drip route's Vercel function limit, in seconds.
+ *
+ * One drip send is a whole CMA send: the live MLS relist check, the CRM lead,
+ * the suppression checks, the claim, a Chromium PDF render and a ~7 MB Gmail
+ * message. It does not fit in 60 seconds (2026-09-29 22:54 UTC: the first real
+ * run hit "Task timed out after 60 seconds" and left its owner stuck in
+ * 'sending'). 300 is what every other CMA send already runs under: the prospect
+ * page that hosts the manual send dialog and the prospecting worklist export
+ * `maxDuration = 300`, and the CMA review page's Send now runs at the project's
+ * Fluid default, also 300.
+ *
+ * Next reads `maxDuration` from the route file statically, so the route keeps
+ * its own literal. route.test.ts pins that literal to this constant.
+ *
+ * Every function that can take an owner's email claim must run at or under this
+ * limit, or the two windows below stop meaning "the claimer is dead": this
+ * route and the prospect page (sendProspectingEmailIntro), and every page or
+ * route that reaches sendCmaToLead, whose rail claims the owner's row itself
+ * (lib/cma/prospect-send-claim.ts). route.test.ts pins all of them against
+ * next.config.ts PDF_SEND_TRACE_ROUTES.
+ */
+export const DRIP_ROUTE_MAX_DURATION_S = 300
+
+/**
+ * The drip route's one-run-at-a-time lease (crm_try_cron_lease). It outlives
+ * DRIP_ROUTE_MAX_DURATION_S, so a run the platform killed keeps it until that
+ * run is certainly gone; a finished run releases it at once.
+ */
+export const DRIP_LEASE_NAME = 'prospecting-first-touch-drip'
+export const DRIP_LEASE_SECONDS = DRIP_ROUTE_MAX_DURATION_S + 30
+
+/**
+ * B. A 'sending' claim younger than this may belong to a drain (or a manual
+ * send) that is still running, so a new drain stands down. maxDuration plus one
+ * cron tick: the platform stops the claimer by claim_at + maxDuration (the
+ * claim is taken after the function starts), and the extra minute covers cron
+ * jitter and clock skew between Vercel and Postgres.
+ */
+export const DRIP_BUSY_WINDOW_MS = (DRIP_ROUTE_MAX_DURATION_S + 60) * 1000
+
+/**
+ * D. A 'sending' claim older than this, with no message id, belongs to a
+ * function that died mid-send, and the drain works out whether its email left.
+ * maxDuration so the claimer is certainly gone, plus five minutes so anything
+ * it did in its last second has landed where the check looks: Gmail indexes a
+ * sent message for search, and the rail's email_events 'sent' row is written.
+ * A check run earlier could read "absent" for an email that did leave, and
+ * absent means the drain sends it again.
+ */
+export const DRIP_STUCK_SEND_STALE_MS = (DRIP_ROUTE_MAX_DURATION_S + 5 * 60) * 1000
+
+/** Age of a claim in ms at `now`, or null when the stamp is missing or unreadable. */
+export function firstTouchClaimAgeMs(claimAt: string | null | undefined, now: Date): number | null {
+  if (!claimAt) return null
+  const t = Date.parse(claimAt)
+  if (!Number.isFinite(t)) return null
+  return now.getTime() - t
+}
+
+/** True while a claim is young enough that its owner may still be running (busy guard). */
+export function isFirstTouchClaimInFlight(claimAt: string | null | undefined, now: Date): boolean {
+  const age = firstTouchClaimAgeMs(claimAt, now)
+  return age != null && age < DRIP_BUSY_WINDOW_MS
+}
+
+/** True once a claim is strictly older than the stale threshold (stuck-send recovery). */
+export function isFirstTouchClaimStale(claimAt: string | null | undefined, now: Date): boolean {
+  const age = firstTouchClaimAgeMs(claimAt, now)
+  return age != null && age > DRIP_STUCK_SEND_STALE_MS
+}
+
+/** Claims stamped AFTER this instant are in flight (the busy guard's cutoff). */
+export function dripBusyCutoff(now: Date): Date {
+  return new Date(now.getTime() - DRIP_BUSY_WINDOW_MS)
+}
+
+/** Claims stamped BEFORE this instant are stale (the recovery's cutoff). */
+export function dripStaleCutoff(now: Date): Date {
+  return new Date(now.getTime() - DRIP_STUCK_SEND_STALE_MS)
+}
+
 const WEEKDAYS = new Set(['Mon', 'Tue', 'Wed', 'Thu', 'Fri'])
 
 export type DripScheduleDecision =

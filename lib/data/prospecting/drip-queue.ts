@@ -11,6 +11,7 @@
 import 'server-only'
 
 import { createServiceClient } from '@/lib/supabase/service'
+import { dripBusyCutoff } from './drip-schedule'
 import type { ProspectKind } from './types'
 
 export type QueuedDripItem = {
@@ -163,6 +164,67 @@ export async function peekOldestQueuedFirstTouch(): Promise<QueuedDripItem | nul
   if (candidates.length === 0) return null
   candidates.sort((a, b) => a.queuedAt.localeCompare(b.queuedAt))
   return candidates[0]
+}
+
+/** A first-touch email claim that may still belong to a running function. */
+export type InFlightFirstTouch = {
+  kind: ProspectKind
+  id: string
+  claimAt: string
+}
+
+/**
+ * The busy guard's read (one drain at a time). The freshest email claim across
+ * Expired + FSBO still inside the busy window (DRIP_BUSY_WINDOW_MS), or null.
+ *
+ * The cron ticks every minute and a CMA send runs longer than that, so without
+ * this a second drain starts while the first is mid-send. Any claimer counts:
+ * a manual send from the prospect page holds the drip too, which keeps sends
+ * one at a time. Throws on a read error so the drain fails closed and sends
+ * nothing.
+ */
+export async function findInFlightFirstTouchSend(now: Date): Promise<InFlightFirstTouch | null> {
+  const sb = createServiceClient()
+  const cutoff = dripBusyCutoff(now).toISOString()
+  const [expRes, fsboRes] = await Promise.all([
+    sb
+      .from('expired_listings')
+      .select('listing_key, outreach_email_claim_at')
+      .eq('outreach_email_status', 'sending')
+      .gt('outreach_email_claim_at', cutoff)
+      .order('outreach_email_claim_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    sb
+      .from('fsbo_listings')
+      .select('fsbo_url, outreach_email_claim_at')
+      .eq('outreach_email_status', 'sending')
+      .gt('outreach_email_claim_at', cutoff)
+      .order('outreach_email_claim_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ])
+  if (expRes.error) throw new Error(`in-flight read (expired) failed: ${expRes.error.message}`)
+  if (fsboRes.error) throw new Error(`in-flight read (fsbo) failed: ${fsboRes.error.message}`)
+
+  const hits: InFlightFirstTouch[] = []
+  if (expRes.data?.outreach_email_claim_at) {
+    hits.push({
+      kind: 'expired',
+      id: String(expRes.data.listing_key),
+      claimAt: String(expRes.data.outreach_email_claim_at),
+    })
+  }
+  if (fsboRes.data?.outreach_email_claim_at) {
+    hits.push({
+      kind: 'fsbo',
+      id: String(fsboRes.data.fsbo_url),
+      claimAt: String(fsboRes.data.outreach_email_claim_at),
+    })
+  }
+  if (hits.length === 0) return null
+  hits.sort((a, b) => Date.parse(b.claimAt) - Date.parse(a.claimAt))
+  return hits[0]
 }
 
 /** Dequeue after a fail-closed live-status hard-skip (relisted / verify failed). */
