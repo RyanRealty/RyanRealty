@@ -186,17 +186,18 @@ export function signingGroupLabel(order: number): string {
 /**
  * Compact signer groups from the live SkySlope sequence: buyers, then sellers,
  * then agents. Roles that are not signing this envelope are dropped so a
- * listing form starts at group 1, not group 2.
+ * listing form starts at group 1, not group 2. A packet carrying a form one
+ * principal completes (the seller's disclosure, lib/tc/form-signing-profile.ts)
+ * goes to that principal first: a buyer cannot acknowledge a disclosure the
+ * seller has not filled in.
  */
 export function signingGroupForRole(
   role: RecipientRole,
   whoSigns: readonly RecipientRole[],
+  principalFirst?: 'Buyer' | 'Seller',
 ): number {
-  const buckets: RecipientRole[][] = [
-    ['Buyer'],
-    ['Seller'],
-    ['BuyerAgent', 'SellerAgent', 'Broker'],
-  ]
+  const principals: RecipientRole[][] = principalFirst === 'Seller' ? [['Seller'], ['Buyer']] : [['Buyer'], ['Seller']]
+  const buckets: RecipientRole[][] = [...principals, ['BuyerAgent', 'SellerAgent', 'Broker']]
   const live = buckets.map((b) => b.filter((r) => whoSigns.includes(r))).filter((b) => b.length)
   const i = live.findIndex((b) => b.includes(role))
   return i >= 0 ? i + 1 : Math.max(1, live.length)
@@ -236,6 +237,8 @@ export function seedPartyEnvelopeRecipients(input: {
   requiredRoles?: readonly RecipientRole[]
   /** Listing vs buyer file. Other-side principals are never NeedsToSign. */
   ourRole?: BrokerRole
+  /** The principal who completes a form in the packet signs first (signingGroupForRole). */
+  principalFirst?: 'Buyer' | 'Seller'
 }): Array<{
   envelope_id: string
   role: string
@@ -279,7 +282,7 @@ export function seedPartyEnvelopeRecipients(input: {
       role: 'Buyer',
       name: n.trim(),
       email: '',
-      signing_order: signingGroupForRole('Buyer', whoSigns),
+      signing_order: signingGroupForRole('Buyer', whoSigns, input.principalFirst),
       action_required: mustSign('Buyer'),
     })
   }
@@ -290,7 +293,7 @@ export function seedPartyEnvelopeRecipients(input: {
       role: 'Seller',
       name: n.trim(),
       email: '',
-      signing_order: signingGroupForRole('Seller', whoSigns),
+      signing_order: signingGroupForRole('Seller', whoSigns, input.principalFirst),
       action_required: mustSign('Seller'),
     })
   }
@@ -304,7 +307,7 @@ export function seedPartyEnvelopeRecipients(input: {
         role,
         name: input.brokerName.trim(),
         email: input.brokerEmail,
-        signing_order: input.brokerSigningOrder ?? signingGroupForRole(role, whoSigns),
+        signing_order: input.brokerSigningOrder ?? signingGroupForRole(role, whoSigns, input.principalFirst),
         action_required: mustSign(role),
       })
     }
@@ -368,7 +371,13 @@ export function seedVendorEnvelopeRecipients(input: {
 
 /** A list of names as a sentence: "Jane", "Jane and John", "Ann, Jane and John". */
 export function namesInSentence(names: readonly string[]): string {
-  const list = names.map((n) => n.trim()).filter(Boolean)
+  // One person on several rows at one address (a broker who is also the
+  // seller, copied as both agents) is named once: "Hi Matt Ryan", never
+  // "Hi Matt Ryan, Matt Ryan and Matt Ryan" (the 020 test packet, 2026-09-30).
+  const seen = new Set<string>()
+  const list = names
+    .map((n) => n.trim())
+    .filter((n) => n && !seen.has(n.toLowerCase()) && seen.add(n.toLowerCase()))
   if (list.length <= 1) return list[0] ?? ''
   return `${list.slice(0, -1).join(', ')} and ${list[list.length - 1]}`
 }

@@ -44,6 +44,8 @@ import {
   nextChecklistItem,
   pacificStamp,
   signerChecklist,
+  TAP_TARGET_PX,
+  tapTargetPx,
   timeValue,
   valueText,
   type ChecklistItem,
@@ -277,11 +279,12 @@ export function SignFlow({ token, payload }: { token: string; payload: SigningPa
               <>
                 {payload.fields
                   .filter((f) => f.documentId === doc.documentId && f.page === pageNumber)
-                  .map((f) => (
+                  .map((f, _i, onPage) => (
                     <FieldBox
                       key={f.id}
                       field={f}
                       size={size}
+                      tapPx={f.type === 'checkbox' ? tapTargetPx(f, onPage, size) : undefined}
                       owner={fieldOwner(f, payload.recipientId)}
                       color={colorByRecipient.get(f.recipientId ?? '') ?? '#2563eb'}
                       value={fieldOwner(f, payload.recipientId) === 'mine' ? values.get(f.id) ?? null : f.value}
@@ -462,6 +465,7 @@ function FieldEditor({
 function FieldBox({
   field,
   size,
+  tapPx,
   owner,
   color,
   value,
@@ -474,6 +478,8 @@ function FieldBox({
 }: {
   field: EnvelopeField
   size: { w: number; h: number; ptsW?: number; ptsH?: number }
+  /** A checkbox's tap target (px): as large as its neighbours allow (tapTargetPx). */
+  tapPx?: number
   owner: 'mine' | 'locked' | 'theirs'
   color: string
   value: SignFieldValue | null
@@ -585,7 +591,11 @@ function FieldBox({
         className={cn('flex items-center justify-center rounded-none font-bold leading-none', checked ? 'bg-primary text-primary-foreground' : 'bg-primary/10 ring-1 ring-primary/70')}
         onClick={() => onCheck(!checked)}
       >
-        <span className="absolute left-1/2 top-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2" aria-hidden />
+        <span
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+          style={{ width: tapPx ?? TAP_TARGET_PX, height: tapPx ?? TAP_TARGET_PX }}
+          aria-hidden
+        />
         <span style={{ fontSize }}>{checked ? 'X' : ''}</span>
       </button>
     )

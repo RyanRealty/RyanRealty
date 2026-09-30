@@ -62,7 +62,7 @@ import {
 } from '@/lib/tc/skyslope-field-map'
 import { fieldMapFromAcroFormPdf } from '@/lib/tc/acroform-field-map'
 import { fallbackSigningStack, withFallbackSignatures } from '@/lib/tc/fallback-signing-stack'
-import { hasUnnamedSignatureLines, labelSignatureRowsFromPage } from '@/lib/tc/lined-signature-fields'
+import { principalFirst } from '@/lib/tc/form-signing-profile'
 import { isOref001OverlayApplicable, oref001OverlayFieldMap } from '@/lib/tc/oref-001-field-map'
 import {
   missingRequiredSignerRoles,
@@ -534,6 +534,7 @@ export async function createEnvelopeFromDocuments(
     cycleKind,
     requiredRoles,
     ourRole,
+    principalFirst: principalFirst(formSources.map((f) => ({ formNumber: f.formNumber, name: f.documentName }))),
   })
   const withEmail = applyUniquePartyEmails(
     recipients,
@@ -628,6 +629,7 @@ export async function createEnvelopeFromTemplate(
       cycleKind: (cycle as DbRow).kind,
       requiredRoles,
       ourRole,
+      principalFirst: principalFirst((forms as DbRow[]).map((f) => ({ formNumber: f.form_number as string | null, name: f.name as string | null }))),
     }),
     await peopleEmailsByNames([...partyNames.buyers, ...partyNames.sellers]),
   )
@@ -689,6 +691,7 @@ export async function createEnvelopeFromTemplate(
     await supabase
       .from('tc_envelope_documents')
       .insert({ envelope_id: env.id, document_id: doc.id, sort_order: sortOrder++, form_version_id: form.id })
+    const docNo = sortOrder
 
     const dealRow = (cycle as DbRow).tc_deals ?? {}
     const facts = mergePartyNamesIntoFacts(dealFactsFromRows(dealRow, cycle as DbRow), dealParties)
@@ -736,17 +739,16 @@ export async function createEnvelopeFromTemplate(
         documentName: form.name,
       })
     }
-    if (hasUnnamedSignatureLines(map)) {
-      // "Text8" says nothing about who signs; the word printed beside the
-      // line does, when the page text can be read.
-      const runs = await readPdfTextRuns(new Uint8Array(bytes)).catch(() => [])
-      map = labelSignatureRowsFromPage(map, runs)
-    }
+    // Who signs a line is the word printed beside it ("Buyer", "Seller
+    // Initials"), and which boxes answer one question is the words beside
+    // them: read the page text whenever it can be read.
+    const pages = await readPdfTextRuns(new Uint8Array(bytes)).catch(() => [])
     map = withFallbackSignatures(map, {
       pageCount: Number(form.page_count) || 1,
       formNumber: form.form_number,
       signerProfile: form.signer_profile,
       documentName: form.name,
+      pages,
     })
     const { filled } = mapDealFactsToFillValues(facts, map, form.form_number as string | null)
     const textByFact = new Map(filled.map((v) => [v.factKey, v.value]))
@@ -759,13 +761,17 @@ export async function createEnvelopeFromTemplate(
           ? null
           : resolveFactKey(f.dataRef ?? ''))
       const filledText = factKey ? textByFact.get(factKey) : undefined
-      const recipientId = signerOwnsMappedField(type)
-        ? recipientByRole(f.signerRole ?? deriveSignerRole(f.dataRef ?? undefined, f.label ?? undefined), f.signerIndex)
-        : null
+      // A signature, initials or stamp is its signer's; so is a box the form
+      // has its signer fill (the 020 seller's answers, form-signing-profile.ts),
+      // unless a deal fact fills it (the address and names on every page).
+      const owned = signerOwnsMappedField(type) || (f.signerFills === true && !factKey)
+      // A line the form leaves unsigned on this version is nobody's, whatever its name says.
+      const role = f.leaveForBroker ? null : (f.signerRole ?? deriveSignerRole(f.dataRef ?? undefined, f.label ?? undefined))
+      const recipientId = owned ? recipientByRole(role, f.signerIndex) : null
       // Nobody cannot be required to sign. A mapped blank naming a role this
       // envelope has no recipient for still gets its box — a broker can assign
       // it — but marking it required would block the send with no way out.
-      const ownedButUnassigned = signerOwnsMappedField(type) && !recipientId
+      const ownedButUnassigned = owned && !recipientId
       fieldRows.push({
         envelope_id: env.id,
         document_id: doc.id,
@@ -778,8 +784,11 @@ export async function createEnvelopeFromTemplate(
         h: clamp01(f.h),
         required:
           !ownedButUnassigned &&
-          // A row given to a particular signer is theirs to sign, whichever line it is.
-          ((f.signerIndex != null && recipientId != null && type !== 'full_name') ||
+          // "Required if option [a] is selected": nobody owes it until then.
+          f.conditional !== true &&
+          // A row given to a particular signer is theirs to sign, whichever line it
+          // is. An answer box is not required alone: its question's group rule is.
+          ((f.signerIndex != null && recipientId != null && signerOwnsMappedField(type) && type !== 'full_name') ||
             mapFieldIsRequired({
               type,
               optional: f.optional,
@@ -791,6 +800,11 @@ export async function createEnvelopeFromTemplate(
           type === 'text' && filledText
             ? { kind: 'text', text: filledText }
             : null,
+        label: f.prompt ?? null,
+        // Groups are keyed across the whole envelope: two copies of one form never share a question.
+        group_key: type === 'checkbox' && f.group ? `d${docNo}:${f.group.key}` : null,
+        group_min: type === 'checkbox' ? (f.group?.min ?? null) : null,
+        group_max: type === 'checkbox' ? (f.group?.max ?? null) : null,
       })
     }
   }

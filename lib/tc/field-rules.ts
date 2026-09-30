@@ -390,6 +390,44 @@ function preparedGroup(type: SignFieldType, group: FieldGroup | null): FieldGrou
   return { key, min, max }
 }
 
+// ── a small box's tap target ────────────────────────────────────────────────
+
+/** The tap target a small box grows to on a phone, where room allows (px): Apple's and Google's minimum is 44 / 48, 32 keeps neighbours apart. */
+export const TAP_TARGET_PX = 32
+
+type Placed = Pick<EnvelopeField, 'x' | 'y' | 'w' | 'h'> & { id?: string; type?: string }
+
+/**
+ * How far a tap target around a small box may reach (px, the side of a square
+ * centred on the box). It never covers another field, and two checkboxes'
+ * targets meet halfway, so a tap always lands on the box it is nearest. The
+ * 020's Yes / No / Unknown boxes sit about 17 to 19 px apart on a phone: a
+ * fixed 32 px target over each one let a tap on "No" tick "Unknown". Never
+ * smaller than the box itself.
+ */
+export function tapTargetPx(field: Placed, others: ReadonlyArray<Placed>, page: { w: number; h: number }): number {
+  const cx = (field.x + field.w / 2) * page.w
+  const cy = (field.y + field.h / 2) * page.h
+  let half = TAP_TARGET_PX / 2
+  for (const o of others) {
+    if (o === field || (o.id != null && o.id === field.id)) continue
+    let reach: number
+    if (o.type === 'checkbox') {
+      // Both targets grow: squares this far apart (Chebyshev, centre to centre) meet halfway.
+      const ox = (o.x + o.w / 2) * page.w
+      const oy = (o.y + o.h / 2) * page.h
+      reach = Math.max(Math.abs(ox - cx), Math.abs(oy - cy)) / 2
+    } else {
+      // The other field keeps its own box: stop at its edge.
+      const dx = Math.max(o.x * page.w - cx, cx - (o.x + o.w) * page.w, 0)
+      const dy = Math.max(o.y * page.h - cy, cy - (o.y + o.h) * page.h, 0)
+      reach = Math.max(dx, dy)
+    }
+    half = Math.min(half, reach)
+  }
+  return Math.max(2 * half, field.w * page.w, field.h * page.h)
+}
+
 // ── a signature line's row ──────────────────────────────────────────────────
 
 /**

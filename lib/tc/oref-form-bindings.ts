@@ -138,6 +138,19 @@ export const OREF_FORM_BINDINGS: Record<string, readonly FormFieldBinding[]> = {
     { fact: 'address', match: /^Text5$/ },
   ],
   /**
+   * OREF 020 Seller's Property Disclosure Statement (Released 01/2026) repeats
+   * its header on all eight pages, read off the blank's widgets and page text
+   * (2026-09-30):
+   *
+   *   1  Property Address or Tax ID # ______   <- Text178, 210, 215, 221, 227, 234, 244, 260
+   *   2  ______ ______ (the "Property")        <- a continuation line, left blank
+   *
+   * and page 2 line 44 names it again: "... CONDITION OF THE PROPERTY
+   * LOCATED AT ______ (THE "PROPERTY")" <- Text212. Nothing else on the form
+   * is a deal fact: the seller answers it.
+   */
+  '020': [{ fact: 'address', match: /^Text(178|210|212|215|221|227|234|244|260)$/ }],
+  /**
    * OREF 020 is deliberately absent. Its header is one line — Property Address
    * or Tax ID — and, like the 015, that line carries no AcroForm widget on this
    * blank. Everything else on the form is the seller's own answers about the

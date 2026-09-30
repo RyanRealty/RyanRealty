@@ -397,6 +397,16 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
     setStatus(res.ok ? 'Reminder sent' : res.error ?? 'Could not send reminder')
   }
 
+  /** A draft emailed no one: discarding it voids it, so the file keeps the record. */
+  async function handleDiscard() {
+    if (!window.confirm('Discard this draft? Nothing has been sent.')) return
+    setBusy(true)
+    const res = await voidEnvelope(detail.id, 'Draft discarded')
+    setBusy(false)
+    if (res.ok) router.refresh()
+    else setStatus(res.error ?? 'Could not discard the draft')
+  }
+
   async function handleVoid() {
     const reason = window.prompt('Reason for voiding this envelope?') ?? ''
     setBusy(true)
@@ -760,6 +770,7 @@ export function EnvelopeComposer({ detail }: { detail: EnvelopeDetail }) {
               <>
                 <Button variant="outline" className="w-full" onClick={handleSaveDraft} disabled={busy}>Save draft</Button>
                 <Button className="w-full" onClick={handleSend} disabled={busy || Boolean(detail.outdatedFormsMessage)}>Send for signature</Button>
+                <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={handleDiscard} disabled={busy}>Discard draft</Button>
               </>
             )}
           </CardContent>

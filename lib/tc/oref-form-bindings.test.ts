@@ -132,3 +132,12 @@ describe('the repair addendums', () => {
     expect(formBlankIsReserved('022B', 'Text95')).toBe(false)
   })
 })
+
+describe('OREF 020 header binding', () => {
+  it('binds the address line of every page header, and nothing else', async () => {
+    const { formBindingFactKey } = await import('./oref-form-bindings')
+    for (const ref of ['Text178', 'Text210', 'Text212', 'Text215', 'Text221', 'Text227', 'Text234', 'Text244', 'Text260']) expect(formBindingFactKey('020', ref)).toBe('address')
+    // The header's continuation line and the seller's answers are not facts.
+    for (const ref of ['Text179', 'Text211', 'Text65', 'Text246', 'Text186']) expect(formBindingFactKey('020', ref)).toBeNull()
+  })
+})

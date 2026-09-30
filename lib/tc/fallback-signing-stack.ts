@@ -6,9 +6,13 @@
 import { deriveSignerRole, mappedFieldTypeFromName, type MappedField, type SignerRole } from './skyslope-field-map'
 import {
   demoteImplausibleSignatureFields,
+  labelSignatureRowsFromPage,
   promoteInitialsBoxes,
   promoteLinedFormFields,
+  type PageTextRun,
 } from './lined-signature-fields'
+import { groupAnswerRows } from './answer-rows'
+import { formSigningProfile, type FormSigningProfile } from './form-signing-profile'
 import { readRequiredSigners } from './required-signers'
 import type { RecipientRole } from './signing'
 
@@ -50,6 +54,7 @@ export function fallbackSigningStack(input: {
         signerRole,
         optional: false,
         label: `${role} signature`,
+        fromStack: true,
       },
       {
         type: 'date_signed' as const,
@@ -62,16 +67,23 @@ export function fallbackSigningStack(input: {
         signerRole,
         optional: false,
         label: `${role} date`,
+        fromStack: true,
       },
     ]
   })
 }
 
 /**
- * Licensed OREF blanks often have hundreds of AcroForm text widgets and no
- * PDFSignature widgets. Name-mapping catches BuyerSignature; 001 does not
- * name those lines. Append the last-page stack for any required role that
- * still has no signature box.
+ * A licensed blank's AcroForm map, ready to place: who signs each printed
+ * line and initials box (the word printed beside it, lib/tc/lined-signature-fields.ts),
+ * which checkbox rows answer one question (lib/tc/answer-rows.ts), and what the
+ * form's instructions say about who completes it (lib/tc/form-signing-profile.ts).
+ *
+ * A form with no signature line of its own (text widgets only) gets the
+ * last-page stack for its signers. A form that prints its own lines never
+ * does: a role it has no line for either does not sign it or is placed by the
+ * broker (send refuses a signer with no signature box). A stack at fixed page
+ * positions put a Seller box on a printed Buyer row of the 2.15 and the 5.1.
  */
 export function withFallbackSignatures(
   map: readonly MappedField[],
@@ -80,8 +92,11 @@ export function withFallbackSignatures(
     formNumber?: string | null
     signerProfile?: string | null
     documentName?: string | null
+    /** The blank's page text (lib/tc/pdf-page-text.ts readPdfTextRuns); [] when it cannot be read. */
+    pages?: ReadonlyArray<readonly PageTextRun[]>
   },
 ): MappedField[] {
+  const pages = input.pages ?? []
   const typed = demoteImplausibleSignatureFields(
     map.map((f) => ({
       ...f,
@@ -98,15 +113,76 @@ export function withFallbackSignatures(
       .map((r) => ROLE_TO_SIGNER[r])
       .filter((r): r is SignerRole => Boolean(r)),
   )
-  const promoted = promoteInitialsBoxes(promoteLinedFormFields(typed), [...allowed])
-  const have = new Set(promoted.filter((f) => f.type === 'signature').map((f) => f.signerRole))
-  // Printed signature lines whose signer the form does not name are the
-  // missing roles' lines: the broker assigns them in the composer (and send
-  // refuses until every signer has one). A stack at fixed page positions put
-  // the buyer's box on a Seller row of the 002 (found 2026-09-24).
-  const unnamedLines = promoted.some((f) => f.type === 'signature' && !f.signerRole)
-  const extra = unnamedLines ? [] : fallbackSigningStack(input).filter((f) => !have.has(f.signerRole))
-  return withNoUnsignableRequirement([...promoted, ...extra], allowed)
+  // Only roles the form is known to be signed by name a "Client" or "Broker" line; the Seller default above is a guess.
+  // A version named for one side is that side's ("Advisory Regarding Lead Based Paint - Seller - 018": its
+  // "Client" lines are the seller's, though the blank names them "Backup Buyer").
+  const known = read.roles.map((r) => ROLE_TO_SIGNER[r]).filter((r): r is SignerRole => Boolean(r))
+  const side = versionSide(input.documentName)
+  const principals = side ? [side, ...known.filter((r) => r !== 'buyer' && r !== 'seller')] : known
+  const profile = formSigningProfile(input.formNumber, input.documentName)
+  const promoted = promoteInitialsBoxes(promoteLinedFormFields(labelSignatureRowsFromPage(typed, pages, principals)), [...allowed], pages)
+  const shaped = withProfile(groupAnswerRows(promoted, pages, { answerEveryQuestion: profile?.answerEveryQuestion }), profile)
+  // A signer the form prints no line for gets the last-page stack, only where
+  // it covers nothing printed: laid over the form it put a Seller box on a
+  // printed Buyer row (2.15, 5.1). A role it cannot place is the broker's to
+  // place; send refuses a signer with no signature box.
+  // Printed lines nobody could name (a page whose text cannot be read) are
+  // the signers' own lines: the broker assigns them, and no stack goes on top.
+  const sigs = shaped.filter((f) => f.type === 'signature' && !f.leaveForBroker)
+  const unnamed = sigs.some((f) => !f.signerRole)
+  const have = new Set(sigs.map((f) => f.signerRole))
+  const lastPage = Math.max(1, Math.round(input.pageCount) || 1)
+  const taken = [...shaped.filter((f) => f.page === lastPage), ...(pages[lastPage - 1] ?? []).filter((r) => r.str.trim()).map(runBox)]
+  const stack = unnamed ? [] : fallbackSigningStack(input).filter((f) => !have.has(f.signerRole))
+  const placed = new Set(stack.filter((f) => f.type === 'signature' && fits(f, taken)).map((f) => f.signerRole))
+  const extra = stack.filter((f) => placed.has(f.signerRole) && fits(f, taken))
+  return withNoUnsignableRequirement([...shaped, ...extra], allowed)
+}
+
+/** The side a library version is named for: "... - Buyer - 018 OREF", "(Seller)". Null when it names both or neither. */
+function versionSide(name: string | null | undefined): 'buyer' | 'seller' | null {
+  const m = (name ?? '').match(/(?:\s-\s|\()\s*(Buyer|Seller)s?\s*(?:\s-\s|\))/i)
+  return m ? (m[1]!.toLowerCase() as 'buyer' | 'seller') : null
+}
+
+/** A text run's box on the page: its baseline is y, its type sits above. */
+function runBox(r: PageTextRun): { x: number; y: number; w: number; h: number } {
+  return { x: r.x, y: r.y - 0.01, w: r.w, h: 0.01 }
+}
+
+/** A stack box fits where it covers no field or printed text and stays on the page. */
+function fits(f: MappedField, taken: ReadonlyArray<{ x: number; y: number; w: number; h: number }>): boolean {
+  if (f.y + f.h > 0.97) return false
+  return !taken.some((t) => t.x < f.x + f.w && f.x < t.x + t.w && t.y < f.y + f.h && f.y < t.y + t.h)
+}
+
+const ROW_TYPES = new Set(['signature', 'date_signed', 'time_signed', 'full_name'])
+const ANSWER_TYPES = new Set(['checkbox', 'text', 'date', 'time'])
+
+/**
+ * Apply what the form's instructions say. Signature rows outside the pages
+ * this version signs, and initials outside the pages it initials, are left
+ * for the broker (the 020's page 1 exclusion blocks on a disclosure that is
+ * completed; the exempt 020's pages 2 to 8). The questions on the answering
+ * pages go to the principal who answers them, not the broker (a box a deal
+ * fact fills stays the broker's: app/actions/tc-envelopes.ts).
+ */
+function withProfile(map: readonly MappedField[], profile: FormSigningProfile | null): MappedField[] {
+  if (!profile) return map.map((f) => ({ ...f }))
+  return map.map((f) => {
+    const offRow = ROW_TYPES.has(f.type) && !profile.signingPages.includes(f.page)
+    const offInitials = f.type === 'initials' && !profile.initialsPages.includes(f.page)
+    if (offRow || offInitials) {
+      const off: MappedField = { ...f, signerRole: null, optional: true, leaveForBroker: true }
+      delete off.signerIndex
+      return off
+    }
+    const answers = profile.completedBy
+    if (answers && ANSWER_TYPES.has(f.type) && answers.pages.includes(f.page) && f.y >= answers.below) {
+      return { ...f, signerRole: answers.role, signerIndex: 0, signerFills: true }
+    }
+    return { ...f }
+  })
 }
 
 /**
