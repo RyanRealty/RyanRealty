@@ -73,11 +73,19 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
     expect(market?.children.find((l) => l.href === '/housing-market/reports')?.label).toBe(
       'Sales and weekly reports',
     )
+    // Matt 2026-09-30: a direct door to the monthly report, second in the panel.
+    expect(market?.children[1]).toEqual({
+      href: '/housing-market/reports/monthly',
+      label: 'Monthly market report',
+    })
     const menuMarket = KB_MENU_GROUPS.find((g) => g.title === 'Market')
     const menuHrefs = menuMarket?.links.map((l) => l.href) ?? []
     for (const href of doors.map((d) => d.href)) {
       expect(menuHrefs).toContain(href)
     }
+    expect(menuMarket?.links.find((l) => l.href === '/housing-market/reports/monthly')?.label).toBe(
+      'Monthly market report',
+    )
     expect(menuHrefs).not.toContain('/activity')
   })
 

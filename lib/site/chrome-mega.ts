@@ -147,7 +147,10 @@ function bucketsFor(key: ChromeMegaGroupKey): Bucket[] {
         },
         {
           heading: 'Sales',
-          test: (path) => path === '/housing-market/history' || path === '/housing-market/reports',
+          test: (path) =>
+            path === '/housing-market/reports/monthly' ||
+            path === '/housing-market/history' ||
+            path === '/housing-market/reports',
         },
         {
           heading: 'Reading',

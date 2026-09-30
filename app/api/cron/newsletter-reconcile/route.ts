@@ -22,7 +22,8 @@ export async function GET(request: Request) {
   try {
     const reports = await reconcileSending()
     const stalled = reports.filter((r) => r.action === 'stalled')
-    return NextResponse.json({ ok: true, checked: reports.length, stalled: stalled.length, reports })
+    const checkFailed = reports.filter((r) => r.action === 'check-failed')
+    return NextResponse.json({ ok: checkFailed.length === 0, checked: reports.length, stalled: stalled.length, checkFailed: checkFailed.length, reports })
   } catch (err) {
     console.error('[cron/newsletter-reconcile]', err)
     return NextResponse.json({ ok: false, error: err instanceof Error ? err.message : 'reconcile_failed' }, { status: 200 })

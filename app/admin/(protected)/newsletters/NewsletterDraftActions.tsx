@@ -71,6 +71,11 @@ export default function NewsletterDraftActions({ id }: { id: string }) {
           already_sending: 'This newsletter is already sending.',
           not_found: 'Newsletter not found.',
           unauthorized: 'You do not have access to send.',
+          report_replaced: 'Not sent: its market report changed after this email was written, so a draft with the current figures has replaced it. Review that draft; this one will not go out.',
+          report_changed: 'Not sent: its market report changed after this email was written. Reload the page to see where it stands.',
+          report_check_failed: 'Not sent: its market report could not be checked just now. Try again in a minute.',
+          canceled: 'Not sent: this email was canceled (replaced, or skipped).',
+          failed: 'Not sent: this email already failed to send. Make a new draft to send it again.',
         }
         setMessage({ type: 'err', text: map[r.error ?? ''] ?? r.error ?? 'Send failed.' })
       }
@@ -84,6 +89,10 @@ export default function NewsletterDraftActions({ id }: { id: string }) {
       const r = await adminDeleteNewsletterAction(id)
       if (r.ok) {
         router.push('/admin/newsletters')
+      } else if (r.error === 'not_a_draft' || r.error === 'not_deletable') {
+        // Scheduled, sent or replaced (its report was republished) since this
+        // page opened: nothing was deleted. Reload to see what is there now.
+        setMessage({ type: 'err', text: 'Not deleted: this is no longer a draft (it was scheduled, sent or replaced). Reload the page to see it as it is now.' })
       } else {
         setMessage({ type: 'err', text: 'Could not delete the draft.' })
       }

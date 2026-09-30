@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   checkSubmission,
   dateValue,
+  drawsAsPrintedText,
   fieldOwner,
   formatFieldDate,
   formatFieldTime,
@@ -204,5 +205,57 @@ describe('signatureRowSiblings (a signature line takes its row)', () => {
   it('leaves boxes that already belong to someone, or a print line with text in it', () => {
     const fields = [f('date', 'date_signed', 0.555, 0.72, { recipientId: 'r2' }), f('print', 'text', 0.570, 0.126, { value: { kind: 'text', text: 'Jane' } })]
     expect(signatureRowSiblings(fields, { documentId: 'd', page: 1, x: 0.126, y: 0.549 })).toEqual([])
+  })
+})
+
+describe('values drawn as they print on the signing page', () => {
+  it('draws a name, a date, a time and a typed note as the sealer prints them', () => {
+    // "Matt Ryan" read "Matt Rvan" on a phone: the stamped preview was a clipped span.
+    expect(drawsAsPrintedText('full_name', null, 'Matt Ryan')).toBe(true)
+    expect(drawsAsPrintedText('date_signed', null, '09/30/2026')).toBe(true)
+    expect(drawsAsPrintedText('time_signed', null, '12:48 AM')).toBe(true)
+    expect(drawsAsPrintedText('date', { kind: 'date', iso: '2026-11-15', text: '11/15/2026' }, '11/15/2026')).toBe(true)
+    expect(drawsAsPrintedText('time', { kind: 'time', hhmm: '10:30', text: '10:30 AM' }, '10:30 AM')).toBe(true)
+    expect(drawsAsPrintedText('text', { kind: 'text', text: 'Gray fridge stays' }, 'Gray fridge stays')).toBe(true)
+  })
+
+  it('leaves marks, boxes, empty values and laid-out lined text to their own drawing', () => {
+    expect(drawsAsPrintedText('signature', null, 'Matt Ryan')).toBe(false)
+    expect(drawsAsPrintedText('initials', null, 'MR')).toBe(false)
+    expect(drawsAsPrintedText('checkbox', null, 'X')).toBe(false)
+    expect(drawsAsPrintedText('full_name', null, '   ')).toBe(false)
+    expect(drawsAsPrintedText('text', { kind: 'text', text: 'one line of a section', size: 8.5 }, 'one line of a section')).toBe(false)
+  })
+})
+
+describe('a checkbox tap target never covers its neighbour', () => {
+  // OREF 020 page 2: Yes / No / Unknown at x 0.707 / 0.760 / 0.808, 10 pt boxes, on an iPhone page 358 px wide.
+  const page = { w: 358, h: 463 }
+  const box = (id: string, x: number, y = 0.6314) => ({ id, type: 'checkbox', x, y, w: 0.014, h: 0.0107 })
+  const centre = (b: { x: number; w: number }) => (b.x + b.w / 2) * page.w
+
+  it('meets its neighbours halfway, so a tap on "No" never ticks "Unknown"', async () => {
+    const { tapTargetPx } = await import('./field-rules')
+    const row = [box('yes', 0.707), box('no', 0.76), box('unknown', 0.808)]
+    const [yes, no, unknown] = row.map((b) => tapTargetPx(b, row, page))
+    expect(centre(row[1]!) + no! / 2).toBeLessThanOrEqual(centre(row[2]!) - unknown! / 2 + 1e-9)
+    expect(centre(row[0]!) + yes! / 2).toBeLessThanOrEqual(centre(row[1]!) - no! / 2 + 1e-9)
+    // Still well past the 5 px box itself.
+    expect(no).toBeGreaterThan(15)
+  })
+
+  it('stops at the edge of a field that is not a checkbox', async () => {
+    const { tapTargetPx } = await import('./field-rules')
+    const b = box('b', 0.4)
+    const text = { id: 't', type: 'text', x: 0.4 + 0.014 + 0.01, y: 0.62, w: 0.3, h: 0.03 }
+    const t = tapTargetPx(b, [b, text], page)
+    expect(centre(b) + t / 2).toBeLessThanOrEqual(text.x * page.w + 1e-9)
+  })
+
+  it('grows to 32 px where the box stands alone, and never below the box itself', async () => {
+    const { tapTargetPx, TAP_TARGET_PX } = await import('./field-rules')
+    expect(tapTargetPx(box('a', 0.4), [box('a', 0.4)], page)).toBe(TAP_TARGET_PX)
+    const big = { id: 'big', type: 'checkbox', x: 0.1, y: 0.1, w: 0.2, h: 0.02 }
+    expect(tapTargetPx(big, [big, box('c', 0.305, 0.1)], page)).toBeGreaterThanOrEqual(0.2 * 358)
   })
 })

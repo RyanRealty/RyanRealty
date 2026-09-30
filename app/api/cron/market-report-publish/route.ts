@@ -9,7 +9,10 @@
  * more than 1% off stops the edition), renders the PDF under THE
  * PAGE CONTRACT, stores it and publishes it. A held edition is stored as a
  * draft with the reason, and ONE deduped ops text goes to the owner through
- * queueBrokerHealthAlert. Nothing is sent to a client or posted anywhere.
+ * queueBrokerHealthAlert. A published month's email is written as a newsletter
+ * DRAFT for the owner's approval and he is texted the review link
+ * (lib/market-report/edition-email-draft.ts). Nothing is sent to a client or
+ * posted anywhere.
  *
  * Idempotent: a month already published is left alone unless ?force=1.
  * ?month=YYYY-MM publishes a specific month (a late re-run). ?dry=1 builds,
@@ -56,7 +59,13 @@ export async function GET(request: Request) {
       return NextResponse.json({ ok: true, month, skipped: 'already published' })
     }
 
-    const outcome = await publishEdition({ month, log: (l) => log.push(l) })
+    // The newest month's email is drafted for Matt's OK as it publishes; a re-run
+    // of an older month only brings an open draft to the new figures.
+    const outcome = await publishEdition({
+      month,
+      log: (l) => log.push(l),
+      emailDraft: month === lastCompleteMonth() ? 'create' : 'recheck',
+    })
     if (outcome.status === 'held') {
       await queueBrokerHealthAlert({
         key: `market-report-hold-${month}`,

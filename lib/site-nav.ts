@@ -225,6 +225,7 @@ export const KB_TOP_NAV: TopNavGroup[] = [
     href: '/housing-market',
     children: [
       { href: '/housing-market', label: 'Live market' },
+      { href: '/housing-market/reports/monthly', label: 'Monthly market report' },
       { href: '/housing-market/central-oregon', label: 'Region deep dive' },
       { href: '/months-of-supply', label: 'Months of supply' },
       { href: '/how-we-get-our-numbers', label: 'How we get our numbers' },
@@ -310,6 +311,7 @@ export const KB_MENU_GROUPS: { title: string; links: NavLink[] }[] = [
     title: 'Market',
     links: [
       { href: '/housing-market', label: 'Live market' },
+      { href: '/housing-market/reports/monthly', label: 'Monthly market report' },
       { href: '/housing-market/central-oregon', label: 'Region deep dive' },
       { href: '/months-of-supply', label: 'Months of supply' },
       { href: '/how-we-get-our-numbers', label: 'How we get our numbers' },

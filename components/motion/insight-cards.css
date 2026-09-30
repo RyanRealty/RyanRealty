@@ -96,9 +96,11 @@
    name (pa11y on /zip/97703, 2026-09-30; intermittent because the row fades
    in over 0.4 s). The toggles duplicate the legend, so they leave the page and
    the accessibility tree. This stage mounts no other Liveline button: no
-   windows, no mode switch. */
+   windows, no mode switch. Liveline sets display: flex inline on each button,
+   and an inline style beats any rule without !important: the plain rule never
+   took, and pa11y kept failing /zip/97703 (CI, 2026-09-30 11:57Z). */
 .insight-chart-stage[data-series-legend='card'] button {
-  display: none;
+  display: none !important;
 }
 
 .insight-tooltip {

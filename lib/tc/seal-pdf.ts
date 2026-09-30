@@ -14,6 +14,7 @@ import { createHash } from 'node:crypto'
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from 'pdf-lib'
 import type { EnvelopeField, SignFieldValue } from './signing'
 import { fitTextToBox, pdfSafeText } from './text-areas'
+import { inkBounds, markPlacement } from './ink-bounds'
 
 export type SealRecipientSummary = {
   name: string
@@ -84,6 +85,24 @@ export function fieldRectToPdf(
   }
 }
 
+/** A mark's PNG cropped to its ink; the original when it cannot be read or has nothing to crop. */
+async function inkOnly(bytes: Uint8Array): Promise<Uint8Array> {
+  try {
+    const { createCanvas, loadImage } = await import('@napi-rs/canvas')
+    const img = await loadImage(Buffer.from(bytes))
+    const c = createCanvas(img.width, img.height)
+    const ctx = c.getContext('2d')
+    ctx.drawImage(img, 0, 0)
+    const box = inkBounds(ctx.getImageData(0, 0, img.width, img.height).data, img.width, img.height)
+    if (!box || (box.w === img.width && box.h === img.height)) return bytes
+    const cut = createCanvas(box.w, box.h)
+    cut.getContext('2d').drawImage(c, box.x, box.y, box.w, box.h, 0, 0, box.w, box.h)
+    return new Uint8Array(cut.toBuffer('image/png'))
+  } catch {
+    return bytes
+  }
+}
+
 async function drawFieldValue(
   out: PDFDocument,
   page: PDFPage,
@@ -97,12 +116,10 @@ async function drawFieldValue(
     const bytes = dataUrlToBytes(value.png)
     if (!bytes) return
     try {
-      const img = await out.embedPng(bytes)
-      // contain within the box, preserve aspect
-      const scale = Math.min(fw / img.width, fh / img.height)
-      const dw = img.width * scale
-      const dh = img.height * scale
-      page.drawImage(img, { x: fx + 1, y: fy + (fh - dh) / 2, width: dw, height: dh })
+      // The ink alone, as large as the box allows, sitting on its line (ink-bounds.ts).
+      const img = await out.embedPng(await inkOnly(bytes))
+      const p = markPlacement({ w: img.width, h: img.height }, { x: fx, y: fy, w: fw, h: fh })
+      page.drawImage(img, { x: p.x, y: p.y, width: p.w, height: p.h })
     } catch {
       /* skip unembeddable image */
     }

@@ -54,6 +54,35 @@ export interface MappedField {
    * second), when the printed rows say so (lined-signature-fields.ts).
    */
   signerIndex?: number
+  /**
+   * The form has its signer fill this box (the 020 seller answers its
+   * questions), so it goes to the signer of `signerRole`, not the broker.
+   */
+  signerFills?: boolean
+  /** Checkboxes that answer one printed question, and the rule (lib/tc/answer-rows.ts). */
+  group?: { key: string; min: number | null; max: number | null }
+  /** The question the box answers, as printed: the signer's prompt. */
+  prompt?: string
+  /**
+   * Required only when a condition printed on the form holds ("Seller(s)
+   * Initials (required if option [a] is selected)"): never required by
+   * default, whoever it goes to.
+   */
+  conditional?: boolean
+  /**
+   * The form's instructions leave this line unsigned on this version (the 020's
+   * page 1 exclusion blocks on a completed disclosure): nobody's until the
+   * broker gives it to someone, whatever its name says.
+   */
+  leaveForBroker?: boolean
+  /** Placed by the last-page stack (fallback-signing-stack.ts), not a line printed on the form. */
+  fromStack?: boolean
+  /**
+   * The form says to fill this box whatever the answer: the 020's line 230,
+   * "Total number of pages attached ... (complete even if zero)". Required of
+   * the signer who fills it.
+   */
+  mustComplete?: boolean
 }
 
 const TYPE_MAP: Record<string, MappedFieldType> = {

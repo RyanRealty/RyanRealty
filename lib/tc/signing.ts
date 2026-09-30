@@ -186,17 +186,18 @@ export function signingGroupLabel(order: number): string {
 /**
  * Compact signer groups from the live SkySlope sequence: buyers, then sellers,
  * then agents. Roles that are not signing this envelope are dropped so a
- * listing form starts at group 1, not group 2.
+ * listing form starts at group 1, not group 2. A packet carrying a form one
+ * principal completes (the seller's disclosure, lib/tc/form-signing-profile.ts)
+ * goes to that principal first: a buyer cannot acknowledge a disclosure the
+ * seller has not filled in.
  */
 export function signingGroupForRole(
   role: RecipientRole,
   whoSigns: readonly RecipientRole[],
+  principalFirst?: 'Buyer' | 'Seller',
 ): number {
-  const buckets: RecipientRole[][] = [
-    ['Buyer'],
-    ['Seller'],
-    ['BuyerAgent', 'SellerAgent', 'Broker'],
-  ]
+  const principals: RecipientRole[][] = principalFirst === 'Seller' ? [['Seller'], ['Buyer']] : [['Buyer'], ['Seller']]
+  const buckets: RecipientRole[][] = [...principals, ['BuyerAgent', 'SellerAgent', 'Broker']]
   const live = buckets.map((b) => b.filter((r) => whoSigns.includes(r))).filter((b) => b.length)
   const i = live.findIndex((b) => b.includes(role))
   return i >= 0 ? i + 1 : Math.max(1, live.length)
@@ -236,6 +237,8 @@ export function seedPartyEnvelopeRecipients(input: {
   requiredRoles?: readonly RecipientRole[]
   /** Listing vs buyer file. Other-side principals are never NeedsToSign. */
   ourRole?: BrokerRole
+  /** The principal who completes a form in the packet signs first (signingGroupForRole). */
+  principalFirst?: 'Buyer' | 'Seller'
 }): Array<{
   envelope_id: string
   role: string
@@ -279,7 +282,7 @@ export function seedPartyEnvelopeRecipients(input: {
       role: 'Buyer',
       name: n.trim(),
       email: '',
-      signing_order: signingGroupForRole('Buyer', whoSigns),
+      signing_order: signingGroupForRole('Buyer', whoSigns, input.principalFirst),
       action_required: mustSign('Buyer'),
     })
   }
@@ -290,7 +293,7 @@ export function seedPartyEnvelopeRecipients(input: {
       role: 'Seller',
       name: n.trim(),
       email: '',
-      signing_order: signingGroupForRole('Seller', whoSigns),
+      signing_order: signingGroupForRole('Seller', whoSigns, input.principalFirst),
       action_required: mustSign('Seller'),
     })
   }
@@ -304,7 +307,7 @@ export function seedPartyEnvelopeRecipients(input: {
         role,
         name: input.brokerName.trim(),
         email: input.brokerEmail,
-        signing_order: input.brokerSigningOrder ?? signingGroupForRole(role, whoSigns),
+        signing_order: input.brokerSigningOrder ?? signingGroupForRole(role, whoSigns, input.principalFirst),
         action_required: mustSign(role),
       })
     }
@@ -368,7 +371,13 @@ export function seedVendorEnvelopeRecipients(input: {
 
 /** A list of names as a sentence: "Jane", "Jane and John", "Ann, Jane and John". */
 export function namesInSentence(names: readonly string[]): string {
-  const list = names.map((n) => n.trim()).filter(Boolean)
+  // One person on several rows at one address (a broker who is also the
+  // seller, copied as both agents) is named once: "Hi Matt Ryan", never
+  // "Hi Matt Ryan, Matt Ryan and Matt Ryan" (the 020 test packet, 2026-09-30).
+  const seen = new Set<string>()
+  const list = names
+    .map((n) => n.trim())
+    .filter((n) => n && !seen.has(n.toLowerCase()) && seen.add(n.toLowerCase()))
   if (list.length <= 1) return list[0] ?? ''
   return `${list.slice(0, -1).join(', ')} and ${list[list.length - 1]}`
 }
@@ -502,19 +511,30 @@ export function hashSigningToken(token: string): string {
   return createHash('sha256').update(token).digest('hex')
 }
 
-/** Default field sizes (page fractions) when the composer drops a new field. */
+/**
+ * One ruled line of an OREF form: every widget the form itself carries is 12 pt
+ * tall on a Letter page (measured on the 002, 2026-09-30).
+ */
+export const FORM_LINE_H = 12 / 792
+
+/**
+ * Default field sizes (page fractions) when the composer drops a new field. A
+ * value sits on one line of the form, as the form's own fields do: a box two
+ * lines tall covered the printed row under it and printed larger than the rest
+ * (Matt's test packet, 2026-09-30). A checkbox is a 10 pt square.
+ */
 export const DEFAULT_FIELD_SIZE: Record<SignFieldType, { w: number; h: number }> = {
-  signature: { w: 0.22, h: 0.05 },
-  initials: { w: 0.08, h: 0.045 },
-  full_name: { w: 0.22, h: 0.035 },
-  date_signed: { w: 0.14, h: 0.035 },
-  time_signed: { w: 0.12, h: 0.035 },
-  date: { w: 0.14, h: 0.035 },
-  time: { w: 0.12, h: 0.035 },
-  text: { w: 0.2, h: 0.035 },
-  checkbox: { w: 0.03, h: 0.022 },
+  signature: { w: 0.22, h: 0.024 },
+  initials: { w: 0.06, h: 0.024 },
+  full_name: { w: 0.22, h: FORM_LINE_H },
+  date_signed: { w: 0.14, h: FORM_LINE_H },
+  time_signed: { w: 0.12, h: FORM_LINE_H },
+  date: { w: 0.14, h: FORM_LINE_H },
+  time: { w: 0.12, h: FORM_LINE_H },
+  text: { w: 0.2, h: FORM_LINE_H },
+  checkbox: { w: 10 / 612, h: 10 / 792 },
   strike: { w: 0.22, h: 0.018 },
-  highlight: { w: 0.28, h: 0.028 },
+  highlight: { w: 0.28, h: FORM_LINE_H },
 }
 
 /** DigiSign Edit Message. Empty custom fields keep the brokerage default. */
