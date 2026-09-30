@@ -108,13 +108,13 @@ afterEach(() => {
 describe('approveCmaAction and the 80% line (Matt 2026-09-30)', () => {
   it('never finalizes a held expired CMA, even with an acknowledgement', async () => {
     getCmaAdminReviewRowBySlug.mockResolvedValue({ ...flaggedRow(), build_summary: {} })
-    floorMock.getCmaSendFloorBySlug.mockResolvedValue({ held: true, ratio: 0.727, reason: 'Held for Matt: priced at $618,000, 72.7% of the last list of $849,000. Expired CMAs under 80% of the last list never send (Matt 2026-09-30).' })
+    floorMock.getCmaSendFloorBySlug.mockResolvedValue({ held: true, ratio: 0.727, reason: 'Held for Matt: priced at $618,000, 72.7% of the last list of $849,000. Expired CMAs under 80% of the last list never send (Matt 2026-09-30).', unreadable: undefined })
     const plain = await approveCmaAction('cma-test')
     const acked = await approveCmaAction('cma-test', { acknowledgeReview: true })
     expect(plain.error).toContain('Held for Matt')
     expect(acked.error).toContain('Held for Matt')
     expect(updateCmaRowFieldsBySlug).not.toHaveBeenCalled()
-    floorMock.getCmaSendFloorBySlug.mockResolvedValue({ held: false, ratio: 0.94, reason: null })
+    floorMock.getCmaSendFloorBySlug.mockResolvedValue({ held: false, ratio: 0.94, reason: null, unreadable: undefined })
   })
 })
 

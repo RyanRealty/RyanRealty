@@ -27,6 +27,8 @@ import { expiredSendFloor, type ExpiredSendFloor } from '@/lib/cma/send-floor'
 
 export type CmaSendFloorRead = ExpiredSendFloor & { unreadable?: true }
 
+type ExpiredPriceRow = { list_price?: unknown; original_list_price?: unknown }
+
 /** Origins where the owner asked for the valuation themselves. */
 const OWNER_ASKED: ReadonlySet<CmaOrigin> = new Set<CmaOrigin>(['seller-valuation', 'place-page', 'lead-form'])
 
@@ -81,20 +83,23 @@ export async function getCmaSendFloorBySlug(
     .eq('cma_id', String(r.id))
     .limit(1)
   if (linkErr) return unreadable(`the expired listing could not be read (${linkErr.message})`)
-  let expRow = (linked ?? [])[0] as { list_price?: unknown; original_list_price?: unknown } | undefined
+  let expRow: ExpiredPriceRow | undefined = (linked ?? [])[0] as ExpiredPriceRow | undefined
 
   // A version no expired row points at, for an address whose MLS listing did
   // expire: a broker-built or legacy version still goes to that owner. Only a
   // valuation the owner asked for themselves is not cold outreach.
   const listingKey = String(r.subject_listing_key ?? '').trim()
   if (!expRow && listingKey && !OWNER_ASKED.has(origin)) {
+    // cmas.subject_listing_key is written from the subject's listings."ListingKey"
+    // at build, the same RETS key expired_listings carries.
     const { data: byKey, error: keyErr } = await sb
       .from('expired_listings')
       .select('list_price, original_list_price')
+      // @canonical-key
       .eq('listing_key', listingKey)
       .limit(1)
     if (keyErr) return unreadable(`the expired listing could not be read (${keyErr.message})`)
-    expRow = (byKey ?? [])[0] as typeof expRow
+    expRow = (byKey ?? [])[0] as ExpiredPriceRow | undefined
   }
 
   const isExpired = context?.prospectKind === 'expired' || Boolean(expRow) || origin === 'expired'

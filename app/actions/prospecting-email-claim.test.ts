@@ -194,6 +194,7 @@ describe("sendProspectingEmailIntro — Matt's 80% line (2026-09-30)", () => {
       held: true,
       ratio: 0.727,
       reason: 'Held for Matt: priced at $618,000, 72.7% of the last list of $849,000. Expired CMAs under 80% of the last list never send (Matt 2026-09-30).',
+      unreadable: undefined,
     })
     const out = await sendProspectingEmailIntro('expired', ID, ARGS)
     expect(out).toMatchObject({ ok: false, code: 'price-floor' })
