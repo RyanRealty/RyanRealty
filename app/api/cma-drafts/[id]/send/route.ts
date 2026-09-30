@@ -15,6 +15,7 @@ import { NextResponse } from 'next/server'
 
 import { createServiceClient } from '@/lib/supabase/service'
 import { sendEmail } from '@/lib/resend'
+import { sendIdentityFor } from '@/lib/email/send-identity'
 import { verifyDeliveryToken } from '@/lib/cma-delivery-tokens'
 import { isSuppressedByEmail } from '@/lib/crm/suppressions'
 
@@ -116,13 +117,16 @@ export async function POST(
   })
 
   // Send.
+  // As the broker, never noreply@ with a broker Reply-To: that pairing lands
+  // in Gmail spam (lib/tc/signing-emails.test.ts, measured 2026-09-30).
+  const sender = await sendIdentityFor((row.assigned_broker_email as string | null) ?? 'matt@ryan-realty.com')
   const result = await sendEmail({
     to: row.lead_email as string,
+    from: sender.from,
     subject: row.email_subject as string,
     html: trackedHtml,
     text: (row.email_body_text as string) ?? undefined,
-    replyTo:
-      (row.assigned_broker_email as string | null) ?? 'matt@ryan-realty.com',
+    replyTo: sender.replyTo,
     attachments: [
       { filename: 'home-valuation.pdf', content: pdfBuffer },
     ],

@@ -18,6 +18,7 @@
     "ci:deliverable-send-chokepoint",
     "ci:email-link-tracking",
     "ci:email-send-gated",
+    "ci:broker-reply-sender",
     "ci:pdf-trace-guard",
     "ci:entity-scope",
     "ci:gates-wired",

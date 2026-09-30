@@ -40,6 +40,7 @@ import { prepareDeliverableEmail } from '@/lib/email/prepare'
 import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'
 import { isSuppressed, isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { sendEmail } from '@/lib/resend'
+import { sendIdentityFor } from '@/lib/email/send-identity'
 
 const STORAGE_BUCKET = 'cma-deliveries'
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -333,13 +334,17 @@ async function sendLegacyCmaDelivery(
     text: (row.email_body_text as string) ?? null,
     personId: crmPersonId,
   })
+  // As the broker, never noreply@ with a broker Reply-To: that pairing lands
+  // in Gmail spam (lib/tc/signing-emails.test.ts, measured 2026-09-30).
+  const sender = await sendIdentityFor((row.assigned_broker_email as string | null) ?? 'matt@ryan-realty.com')
   const result = await sendEmail({
     to: row.lead_email as string,
+    from: sender.from,
     subject: prepared.subject,
     html: prepared.html,
     text: prepared.text,
     headers: prepared.headers,
-    replyTo: (row.assigned_broker_email as string | null) ?? 'matt@ryan-realty.com',
+    replyTo: sender.replyTo,
     attachments: [{ filename: 'home-valuation.pdf', content: pdfBuffer }],
   })
   if (result.error) {
