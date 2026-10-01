@@ -30,6 +30,7 @@ import {
   sewerCompatible,
   customSalePriceFloorOk,
   SAME_NEIGHBORHOOD_TIER_RATIO,
+  SUBDIVISION_TIER_RATIO,
   similarPerformingSubdivision,
   untieredSalePriceTierOk,
   waterCompatible,
@@ -676,6 +677,13 @@ function passesTier(
 }
 
 const GLA_BRACKET_BAND = 0.25
+/**
+ * A GLA swap may replace a same-plat sale with a different plat inside the
+ * one-mile ring, which is the gap the bracket exists to close. It may not
+ * reach the two-mile ring to do it. 4570 Yew is 1.89 miles from 3028 Indian;
+ * that swap dropped same-plat 2834 Indian.
+ */
+const BRACKET_OFF_PLAT_MAX_MILES = 1
 
 function toSelected(subject: PricingSubject, sale: PricingSale, asOf: string, tierName: string): SelectedPricingComp {
   return {
@@ -839,14 +847,14 @@ function bracketGla(
     if (size !== 0) return size
     return b.closeDate.localeCompare(a.closeDate)
   })
-  const incoming = candidates[0]!
-
   const outgoing = comps.reduce((worst, c) => {
     const size = Math.abs(c.sqft - subject.sqft) - Math.abs(worst.sqft - subject.sqft)
     if (size > 0) return c
     if (size < 0) return worst
     return saleMiles(subject, c) > saleMiles(subject, worst) ? c : worst
   })
+  const incoming = candidates.find((sale) => bracketMayReplace(subject, outgoing, sale))
+  if (!incoming) return { comps, note: null }
 
   const next = comps.filter((c) => c.listingKey !== outgoing.listingKey)
   next.push(toSelected(subject, incoming, asOf, 'gla-bracket'))
@@ -854,6 +862,42 @@ function bracketGla(
     comps: next,
     note: `GLA bracket: replaced ${outgoing.address} (${outgoing.sqft} sqft) with ${incoming.address} (${incoming.sqft} sqft) so the set is not all ${allLarger ? 'larger' : 'smaller'} than the subject.`,
   }
+}
+
+/** A different plat may take the place of a same-plat sale only inside a mile. */
+function bracketMayReplace(subject: PricingSubject, outgoing: SelectedPricingComp, incoming: PricingSale): boolean {
+  if (!outgoing.ownPlat) return true
+  if (inSubjectPlat(subject, incoming)) return true
+  return saleMiles(subject, incoming) <= BRACKET_OFF_PLAT_MAX_MILES
+}
+
+function medianClose(values: readonly number[]): number | null {
+  const sorted = values.filter((n) => n > 0).sort((a, b) => a - b)
+  if (sorted.length === 0) return null
+  const mid = Math.floor(sorted.length / 2)
+  return sorted.length % 2 === 1 ? sorted[mid]! : (sorted[mid - 1]! + sorted[mid]!) / 2
+}
+
+/**
+ * A neighbor plat can clear the subdivision-median tier and still close far
+ * from this home's own sales. The plat set is those sales. No plat sale yet
+ * fails open. The band is the subdivision tier (30%): a close about 32% off
+ * that set is a different house, not a size gap the pocket's 20% band explains.
+ */
+function closeNearOwnPlat(
+  subject: PricingSubject,
+  sale: PricingSale,
+  kept: Iterable<PricingSale>,
+): boolean {
+  const closes: number[] = []
+  for (const row of kept) {
+    if (inSubjectPlat(subject, row)) closes.push(row.closePrice)
+  }
+  const mid = medianClose(closes)
+  if (mid == null) return true
+  if (!(sale.closePrice > 0)) return true
+  const gap = sale.closePrice / mid
+  return gap >= 1 / SUBDIVISION_TIER_RATIO && gap <= SUBDIVISION_TIER_RATIO
 }
 
 function similarity(subject: PricingSubject, sale: PricingSale, asOf: string, pocketStarved: boolean): number {
@@ -1089,6 +1133,11 @@ export function walkPricingLadder(
       if (bySale.has(saleKey)) continue
       const { ok, roomDifference } = passesTier(subject, sale, tier, asOf, cells, priceAnchor)
       if (!ok) continue
+      // The subdivision-median tier does not see this close. Once the plat has
+      // a sale, a different plat has to land on that set's own prices.
+      if (!customLadder && !inSubjectPlat(subject, sale) && !closeNearOwnPlat(subject, sale, byKey.values())) {
+        continue
+      }
       byKey.set(sale.listingKey, {
         ...toSelected(subject, sale, asOf, tier.name),
         roomDifference: roomDifference ?? null,

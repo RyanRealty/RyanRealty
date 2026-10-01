@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import { distanceMiles } from '@/lib/cma/market-area'
+import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
 import { walkPricingLadder, type PricingSale, type PricingSubject } from '@/lib/pricing/match'
+import { crossesNamedRiver } from '@/lib/pricing/river-cross'
 
 function subject(over: Partial<PricingSubject> = {}): PricingSubject {
   return {
@@ -1694,5 +1697,202 @@ describe('a full plat is not replaced by a cheaper quarter-mile pocket', () => {
     const keys = out.comps.map((c) => c.listingKey)
     expect(keys.some((k) => k.startsWith('POCKET'))).toBe(true)
     expect(keys.some((k) => k.startsWith('PLAT'))).toBe(true)
+  })
+})
+
+describe('a comp from the wrong house', () => {
+  const asOf = '2026-08-01'
+  const here = { latitude: 44.06, longitude: -121.3 }
+  const at = (milesNorth: number, milesEast = 0) => ({
+    latitude: here.latitude + milesNorth / 69.093,
+    longitude: here.longitude + milesEast / (69.093 * Math.cos((here.latitude * Math.PI) / 180)),
+  })
+
+  it('does not let the GLA bracket replace a same-plat sale with a different plat almost two miles away', () => {
+    // 3028 Indian, Juniper Glen, 2526 sqft. Every kept sale is smaller, so the
+    // bracket wants one larger house inside ±25% GLA. 2834 Indian is the
+    // farthest of those. 4570 Yew is Forked Horn Butte, 1.89 mi, on the same
+    // side of the river and the highway, and its $/sqft sits inside the tier.
+    const smallPlat = sale({
+      listingKey: 'INDIAN-2834',
+      address: '2834 Indian',
+      subdivision: 'Juniper Glen',
+      subdivisionNorm: 'juniper glen',
+      sqft: 1668,
+      closePrice: 497_000,
+      closePpsf: 497_000 / 1668,
+      closeDate: '2026-06-01',
+      ...at(0.04),
+    })
+    const plat = [740_000, 760_000, 780_000, 800_000].map((closePrice, i) =>
+      sale({
+        listingKey: `GLEN${i}`,
+        address: `${2800 + i} Glen`,
+        subdivision: 'Juniper Glen',
+        subdivisionNorm: 'juniper glen',
+        sqft: 2200,
+        closePrice,
+        closePpsf: closePrice / 2200,
+        closeDate: '2026-06-01',
+        ...at(0.05 + i * 0.01),
+      }),
+    )
+    const yew = sale({
+      listingKey: 'YEW-4570',
+      address: '4570 Yew',
+      subdivision: 'Forked Horn Butte',
+      subdivisionNorm: 'forked horn butte',
+      sqft: 2800,
+      closePrice: 789_000,
+      closePpsf: 789_000 / 2800,
+      closeDate: '2026-05-01',
+      ...at(0, 1.89),
+    })
+    const yewPoint = { lat: yew.latitude, lng: yew.longitude }
+    const origin = { lat: here.latitude, lng: here.longitude }
+    const miles = distanceMiles(origin, yewPoint)
+    expect(miles).toBeGreaterThan(1.8)
+    expect(miles).toBeLessThan(2)
+    expect(crossesNamedRiver(origin, yewPoint)).toBe(false)
+    expect(crossesUs97(origin, yewPoint) || differentUs97Bank(origin, yewPoint)).toBe(false)
+    const out = walkPricingLadder(
+      subject({
+        streetAddress: '3028 Indian',
+        city: 'Redmond',
+        citySlug: 'redmond',
+        subdivision: 'Juniper Glen',
+        subdivisionNorm: 'juniper glen',
+        sqft: 2526,
+        ...here,
+      }),
+      [smallPlat, ...plat, yew].map((row) => ({ ...row, city: 'Redmond', citySlug: 'redmond' })),
+      { asOf },
+    )
+    const keys = out.comps.map((c) => c.listingKey)
+    expect(keys).toContain('INDIAN-2834')
+    expect(keys).not.toContain('YEW-4570')
+    expect(out.tiersUsed).not.toContain('gla-bracket')
+  })
+
+  it('does not let a quarter-mile pocket rung add a close whose price is far from the plat set', () => {
+    // Both pocket plats have a median $/sqft inside the subject's tier, which
+    // is the check the ladder already runs. The sale's own close is not. Vine
+    // Maple at $1,510,000 is about 32% over the Fairway Crest closes. 3331
+    // Juniper at $475,000 is far under the middle of Juniper Glen, and the one
+    // small plat close does not pull that middle down to meet it.
+    const crest = [1_100_000, 1_184_000].map((closePrice, i) =>
+      sale({
+        listingKey: `CREST${i}`,
+        address: `${18010 + i} Tan Oak`,
+        subdivision: 'Fairway Crest Village',
+        subdivisionNorm: 'fairway crest village',
+        sqft: 1980,
+        closePrice,
+        closePpsf: closePrice / 1980,
+        closeDate: '2026-06-01',
+        ...at(0.03 + i * 0.01),
+      }),
+    )
+    const near = sale({
+      listingKey: 'POCKET-NEAR',
+      address: '18100 Cedar',
+      subdivision: 'Forest Park',
+      subdivisionNorm: 'forest park',
+      sqft: 1900,
+      closePrice: 1_200_000,
+      closePpsf: 1_200_000 / 1900,
+      closeDate: '2026-07-01',
+      ...at(0.12),
+    })
+    const vine = sale({
+      listingKey: 'VINE-MAPLE',
+      address: '57692 Vine Maple',
+      subdivision: 'Meadow Village',
+      subdivisionNorm: 'meadow village',
+      sqft: 1920,
+      closePrice: 1_510_000,
+      closePpsf: 1_510_000 / 1920,
+      closeDate: '2026-07-02',
+      ...at(0.16),
+    })
+    const highCells = new Map([
+      ['sunriver:fairway crest village', { medianPpsf: 570, n: 20 }],
+      ['sunriver:forest park', { medianPpsf: 580, n: 12 }],
+      ['sunriver:meadow village', { medianPpsf: 590, n: 12 }],
+    ])
+    const high = walkPricingLadder(
+      subject({
+        streetAddress: '18004 Tan Oak',
+        city: 'Sunriver',
+        citySlug: 'sunriver',
+        subdivision: 'Fairway Crest Village',
+        subdivisionNorm: 'fairway crest village',
+        sqft: 2000,
+        ...here,
+      }),
+      [near, vine, ...crest].map((row) => ({ ...row, city: 'Sunriver', citySlug: 'sunriver' })),
+      { asOf, cells: highCells },
+    )
+    expect(high.comps.map((c) => c.listingKey)).toContain('POCKET-NEAR')
+    expect(high.comps.map((c) => c.listingKey)).not.toContain('VINE-MAPLE')
+    expect(high.comps.find((c) => c.listingKey === 'POCKET-NEAR')?.selectionTier.startsWith('pocket-')).toBe(true)
+
+    const glen = [497_000, 740_000, 780_000].map((closePrice, i) => {
+      const sqft = i === 0 ? 1668 : 2200
+      return sale({
+        listingKey: `GLEN${i}`,
+        address: `${2830 + i} Glen`,
+        subdivision: 'Juniper Glen',
+        subdivisionNorm: 'juniper glen',
+        sqft,
+        closePrice,
+        closePpsf: closePrice / sqft,
+        closeDate: '2026-06-01',
+        ...at(0.04 + i * 0.01),
+      })
+    })
+    const juniper = sale({
+      listingKey: 'JUNIPER-3331',
+      address: '3331 Juniper',
+      subdivision: 'Willow Springs',
+      subdivisionNorm: 'willow springs',
+      sqft: 2400,
+      closePrice: 475_000,
+      closePpsf: 475_000 / 2400,
+      closeDate: '2026-07-01',
+      ...at(0.19),
+    })
+    const willowNear = sale({
+      listingKey: 'WILLOW-NEAR',
+      address: '3340 Willow',
+      subdivision: 'Willow Springs',
+      subdivisionNorm: 'willow springs',
+      sqft: 2400,
+      closePrice: 760_000,
+      closePpsf: 760_000 / 2400,
+      closeDate: '2026-07-02',
+      ...at(0.18),
+    })
+    const lowCells = new Map([
+      ['redmond:juniper glen', { medianPpsf: 320, n: 15 }],
+      ['redmond:willow springs', { medianPpsf: 300, n: 10 }],
+    ])
+    const low = walkPricingLadder(
+      subject({
+        streetAddress: '3028 Indian',
+        city: 'Redmond',
+        citySlug: 'redmond',
+        subdivision: 'Juniper Glen',
+        subdivisionNorm: 'juniper glen',
+        sqft: 2526,
+        ...here,
+      }),
+      [juniper, willowNear, ...glen].map((row) => ({ ...row, city: 'Redmond', citySlug: 'redmond' })),
+      { asOf, cells: lowCells },
+    )
+    expect(low.comps.map((c) => c.listingKey)).toContain('WILLOW-NEAR')
+    expect(low.comps.map((c) => c.listingKey)).toContain('GLEN0')
+    expect(low.comps.map((c) => c.listingKey)).not.toContain('JUNIPER-3331')
+    expect(low.comps.find((c) => c.listingKey === 'WILLOW-NEAR')?.selectionTier.startsWith('pocket-')).toBe(true)
   })
 })
