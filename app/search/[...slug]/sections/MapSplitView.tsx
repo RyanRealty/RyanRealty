@@ -153,7 +153,8 @@ export async function renderMapSplitView(props: {
     initialPolygon,
   } = props
   // prefs: still accepted from page.tsx for call-site stability.
-  // MapSearchView does not consume buying prefs or draw the price-drop badge.
+  // MapSearchView does not consume buying prefs. Its cards print dated price
+  // drops from their own read (getViewportListings, attachListingCardExtras).
 
   // Finest place ring: neighborhood district → community/subdivision → city.
   // Path-resolved Southern Crossing / Bend districts must draw the district

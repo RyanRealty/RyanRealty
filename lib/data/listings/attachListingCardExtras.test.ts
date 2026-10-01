@@ -174,5 +174,6 @@ describe('currentPriceDrop (the badge shows a drop only while it is current)', (
     expect(currentPriceDrop(undefined, 480000)).toBeNull()
     expect(currentPriceDrop(drop, null)).toBeNull()
     expect(currentPriceDrop(drop, 'call for price')).toBeNull()
+    expect(currentPriceDrop(drop, 0)).toBeNull()
   })
 })

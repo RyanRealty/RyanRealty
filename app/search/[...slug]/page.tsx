@@ -254,7 +254,8 @@ export default async function SearchPage({
             cityDepth: loadCitySplitDepth({ city, relatedCitySlug: splitCityRelatedSlug, searchPagePath }),
           }
         : null
-    // No price-drop read here: MapSplitView does not draw the badge.
+    // No shared price-drop read here: the split view prints dated drops from
+    // its own per-card read (getViewportListings, attachListingCardExtras).
     const session = await withTimeout(getSession(), null, 600)
     const [savedKeys, likedKeys, prefs] =
       session?.user

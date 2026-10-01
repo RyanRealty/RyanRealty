@@ -136,9 +136,12 @@ async function readRecentPriceDrops(
 
 async function fetchRecentPriceDropEntries(days: number): Promise<Array<[string, ListingCardPriceDrop]>> {
   const { drops, error } = await readRecentPriceDrops(days)
-  // Thrown, never cached as "no drops" (makeResilientCached falls back to []
-  // for this call only).
-  if (error) throw new Error(`[getRecentPriceDropEntries] price drops not read: ${error}`)
+  if (error) {
+    // Logged here: makeResilientCached swallows the throw. Thrown, never cached
+    // as "no drops" (it falls back to [] for this call only).
+    console.error('[getRecentPriceDropEntries] price drops not read', error)
+    throw new Error(`[getRecentPriceDropEntries] price drops not read: ${error}`)
+  }
   return [...drops.entries()]
 }
 
@@ -167,14 +170,16 @@ export async function loadRecentPriceDropEvents(
  * A drop event still describes the listing only while its previous price is
  * above today's ask: a cut followed by a raise (a price_increase event, which
  * this read does not see) is not a price drop any more. The homepage rail
- * (currentDrop) and /price-drops make the same test.
+ * (currentDrop) makes the same test; /price-drops makes it too, inside its own
+ * narrower set (single-family, $50K and up, the last 7 days). No ask, or a
+ * zero one, says nothing.
  */
 export function currentPriceDrop(
   drop: ListingCardPriceDrop | null | undefined,
   listPrice: number | string | null | undefined,
 ): ListingCardPriceDrop | null {
   const ask = listPrice == null ? NaN : Number(listPrice)
-  if (!drop || !Number.isFinite(ask)) return null
+  if (!drop || !Number.isFinite(ask) || ask <= 0) return null
   return drop.previousPrice > ask ? drop : null
 }
 
