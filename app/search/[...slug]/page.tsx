@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 import {
-  getListingKeysWithRecentPriceChange,
+  getListingKeysWithRecentPriceDrop,
   getListingsWithAdvanced,
 } from '../../actions/listings'
 import { getSession } from '../../actions/auth'
@@ -259,7 +259,7 @@ export default async function SearchPage({
     const [priceChangeKeys, session] = await Promise.all([
       IS_PRODUCTION_BUILD
         ? Promise.resolve(new Set<string>())
-        : withTimeout(getListingKeysWithRecentPriceChange(), new Set<string>()),
+        : withTimeout(getListingKeysWithRecentPriceDrop(), new Set<string>()),
       withTimeout(getSession(), null, 600),
     ])
     const [savedKeys, likedKeys, prefs] =
@@ -322,7 +322,7 @@ export default async function SearchPage({
     ),
     IS_PRODUCTION_BUILD
       ? Promise.resolve(new Set<string>())
-      : withTimeout(getListingKeysWithRecentPriceChange(), new Set<string>()),
+      : withTimeout(getListingKeysWithRecentPriceDrop(), new Set<string>()),
     withTimeout(getSession(), null, 600),
     withTimeout(getResortEntityKeys(), new Set<string>()),
     isPlainCityBrowse && city ? loadCitySfrTilesForSearch(city) : Promise.resolve([]),

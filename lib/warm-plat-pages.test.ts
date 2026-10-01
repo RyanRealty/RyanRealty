@@ -5,7 +5,7 @@ import {
   PLAT_WARM_PASS_GAP_LEASE,
   PLAT_WARM_PASS_GAP_S,
   PLAT_WARM_SLICE,
-  isPlatPassStart,
+  platPassMarkerName,
   platSliceLeaseName,
   platWarmPaths,
   platWarmSlices,
@@ -66,10 +66,10 @@ describe('invocation budget', () => {
 })
 
 describe('the pass gap (SITE-212)', () => {
-  it('only the first slice starts a pass, so only its claim takes the gap lease', () => {
-    expect(isPlatPassStart(0)).toBe(true)
-    expect(isPlatPassStart(1)).toBe(false)
-    expect(isPlatPassStart(17)).toBe(false)
+  it('marks a deployment\'s pass by its sha alone, so a resized plat set does not restart the gap', () => {
+    expect(platPassMarkerName('abcdef123456')).toBe('warm-plats-pass:abcdef123456')
+    expect(platPassMarkerName('abcdef123456')).not.toContain('-n2617')
+    expect(platPassMarkerName('abcdef123456')).not.toBe(platPassMarkerName('0123456789ab'))
   })
 
   it('allows at most four passes a day, the deploy count the tier was sized for', () => {
@@ -77,9 +77,13 @@ describe('the pass gap (SITE-212)', () => {
     expect((24 * 3600) / PLAT_WARM_PASS_GAP_S).toBeLessThanOrEqual(4)
   })
 
-  it('names the gap lease apart from every per-deployment slice lease', () => {
+  it('names the gap lease and the pass marker apart from every per-deployment slice lease', () => {
     const slice = platSliceLeaseName('abcdef123456', 2617, 0)
-    expect(PLAT_WARM_PASS_GAP_LEASE).not.toBe(slice)
-    expect(slice.startsWith(PLAT_WARM_PASS_GAP_LEASE)).toBe(false)
+    for (const name of [PLAT_WARM_PASS_GAP_LEASE, platPassMarkerName('abcdef123456')]) {
+      expect(name).not.toBe(slice)
+      expect(slice.startsWith(name)).toBe(false)
+      expect(name.startsWith(slice)).toBe(false)
+    }
+    expect(PLAT_WARM_PASS_GAP_LEASE).not.toBe(platPassMarkerName('abcdef123456'))
   })
 })

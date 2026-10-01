@@ -10,7 +10,7 @@ import {
   PLAT_WARM_HARD_STOP_MS,
   PLAT_WARM_PASS_GAP_LEASE,
   PLAT_WARM_PASS_GAP_S,
-  isPlatPassStart,
+  platPassMarkerName,
   platSliceLeaseName,
   platWarmPaths,
   platWarmSlices,
@@ -50,9 +50,10 @@ import {
  * sitemap class as well.
  *
  * SITE-212 (2026-10-01): a deployment starts a plat pass only when none began
- * inside PLAT_WARM_PASS_GAP_S (lib/warm-plat-pages.ts, "ONE PASS PER GAP"):
- * 21 deploys on 2026-09-30 meant 21 passes of ~2,750 cold renders, and the
- * database's statement timeouts tracked them hour by hour.
+ * inside PLAT_WARM_PASS_GAP_S (lib/warm-plat-pages.ts, "ONE PASS PER GAP",
+ * decided by crm_cron_pass_gate): 21 deploys on 2026-09-30 meant 21 passes of
+ * ~2,750 cold renders, and the database's statement timeouts tracked them hour
+ * by hour.
  *
  * The fetch UA is the same string ci:probe-ua pins against middleware's
  * BAD_BOT_RE (scripts/lib/ci-probe-ua.mjs) — any middleware change that would
@@ -101,6 +102,34 @@ async function warmPlatTier(sb: Sb, sha: string, t0: number) {
   const paths = platWarmPaths(plats)
   const slices = platWarmSlices(paths)
 
+  // ONE PASS PER GAP (lib/warm-plat-pages.ts): one statement says whether this
+  // deployment's pass starts now, is already under way, or waits for the gap.
+  const { data: gate, error: gateError } = await sb.rpc('crm_cron_pass_gate', {
+    p_marker: platPassMarkerName(sha),
+    p_marker_seconds: LEASE_SECONDS,
+    p_gap: PLAT_WARM_PASS_GAP_LEASE,
+    p_gap_seconds: PLAT_WARM_PASS_GAP_S,
+  })
+  if (gateError || (gate !== 'start' && gate !== 'continue' && gate !== 'throttled')) {
+    return {
+      ok: false,
+      tier: 'plats',
+      status: 'skipped',
+      reason: `pass gate did not answer (${gateError?.message ?? `got ${String(gate)}`}); nothing warmed`,
+    }
+  }
+  if (gate === 'throttled') {
+    return {
+      ok: true,
+      tier: 'plats',
+      status: 'throttled',
+      reason: `a plat pass began under ${PLAT_WARM_PASS_GAP_S / 3600} h ago (${PLAT_WARM_PASS_GAP_LEASE} held); deployment ${sha} waits`,
+      plats: paths.length,
+      slices: slices.length,
+      ms: Date.now() - t0,
+    }
+  }
+
   let warmed = 0
   let notFound = 0
   let serverErrors = 0
@@ -112,32 +141,11 @@ async function warmPlatTier(sb: Sb, sha: string, t0: number) {
 
   for (let k = 0; k < slices.length; k += 1) {
     if (Date.now() - t0 > PLAT_WARM_CLAIM_UNTIL_MS) break
-    const sliceLease = platSliceLeaseName(sha, paths.length, k)
     const { data: got } = await sb.rpc('crm_try_cron_lease', {
-      p_name: sliceLease,
+      p_name: platSliceLeaseName(sha, paths.length, k),
       p_lease_seconds: LEASE_SECONDS,
     })
     if (!got) continue
-    if (isPlatPassStart(k)) {
-      const { data: gap } = await sb.rpc('crm_try_cron_lease', {
-        p_name: PLAT_WARM_PASS_GAP_LEASE,
-        p_lease_seconds: PLAT_WARM_PASS_GAP_S,
-      })
-      if (!gap) {
-        // Give the first slice back so the next invocation asks again once
-        // the gap has passed; nothing else is claimed for this deployment.
-        await sb.rpc('crm_release_cron_lease', { p_name: sliceLease })
-        return {
-          ok: true,
-          tier: 'plats',
-          status: 'throttled',
-          reason: `a plat pass began under ${PLAT_WARM_PASS_GAP_S / 3600} h ago (${PLAT_WARM_PASS_GAP_LEASE} held); deployment ${sha} waits`,
-          plats: paths.length,
-          slices: slices.length,
-          ms: Date.now() - t0,
-        }
-      }
-    }
     claimed.push(k)
     const slice = slices[k]
     for (let i = 0; i < slice.length; i += PLAT_WARM_CONCURRENCY) {

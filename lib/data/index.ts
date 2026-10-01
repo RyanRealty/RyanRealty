@@ -170,6 +170,7 @@ export { getListingDetail } from '@/lib/data/listings/getListingDetail'
 export { getListingPhotos, getListingFloorPlans } from '@/lib/data/listings/getListingPhotos'
 export {
   attachListingCardExtras,
+  getRecentPriceDropKeys,
   loadRecentPriceDropEvents,
   parseActivityPriceDrop,
 } from '@/lib/data/listings/attachListingCardExtras'
@@ -212,7 +213,6 @@ export {
   getOpenHouseById,
   getListingDetailVideos,
   getListingDetailHistory,
-  getListingKeysWithPriceChangeSince,
   getHeroPhotosByListingKeys,
   getOpenHousesInRange,
   resolveCommunityChainBySlug,

@@ -5,18 +5,19 @@
 -- production EXPLAIN 2026-10-01 00:30Z showed a BitmapAnd over
 -- idx_listings_standard_status_btree x idx_listings_close_price, a heap scan
 -- of 190,627 closed rows, 101,558 blocks read from disk (800 MB) and 26.1 s to
--- return 17 rows. pg_stat_statements 22:08Z to 00:20Z: 30 calls, mean 46.3 s,
--- 92,374 blocks read per call, the largest single IO source on the instance.
--- Each call evicted a fifth of shared_buffers (1 GB) for every other read.
+-- return 17 rows. pg_stat_statements, 2026-09-30 22:08Z to 2026-10-01 04:01Z:
+-- 69 calls, mean 51 s, 150,362 blocks a call, 6,875,804 of them read from disk
+-- (52 GiB), the largest IO source on the instance; every call pushed
+-- most of shared_buffers (1 GB) out from under every other read. The read is
+-- cached six hours, but every market-stats refresh revalidates its tag.
 --
--- A trigram GIN index on "ListOfficeName" serves ILIKE '%...%' with any
--- parameter (a partial index would not survive PostgREST's generic plans).
--- pg_trgm is already installed (idx_listings_city_trgm).--
--- PRODUCTION: listings is 13 GB and listing_history 9.8 GB, both written every
--- minute by the MLS sync, so build this CONCURRENTLY first (a one-shot pg_cron
--- job, the SITE-211 pattern: schedule `create index concurrently if not exists
--- ...` as its own single-statement job, wait for cron.job_run_details, then
--- unschedule) and let this file's IF NOT EXISTS no-op under `npm run db:push`.
--- Run as written, this file holds writes out for the whole build.
+-- A trigram GIN index on "ListOfficeName" serves ILIKE '%...%' for any
+-- pattern. pg_trgm is already installed (idx_listings_city_trgm).
+--
+-- PRODUCTION: built CONCURRENTLY on 2026-10-01 at 04:11Z by a one-shot pg_cron
+-- job (37 MB, 36 s); under `npm run db:push` this file's IF NOT EXISTS is a
+-- no-op. After it, the track-record read is a bitmap scan of this index:
+-- 17 rows, 241 buffers, 4.1 ms (EXPLAIN (ANALYZE, BUFFERS)). Run as written on
+-- a fresh database it takes a write lock on listings for the build.
 CREATE INDEX IF NOT EXISTS idx_listings_list_office_name_trgm
   ON public.listings USING gin ("ListOfficeName" gin_trgm_ops);

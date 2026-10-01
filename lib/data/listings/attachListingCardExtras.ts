@@ -8,7 +8,10 @@
  * signal is activity_events (event_type = 'price_drop'). See getPriceDrops.ts.
  */
 import { supabaseAnon } from '@/lib/data/client'
+import { makeResilientCached } from '@/lib/data/cache/resilient'
+import { cacheTag } from '@/lib/data/cache/unstable-cache'
 import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
+import { fetchPagedRows } from '@/lib/supabase/paginate'
 
 const PHOTO_CAP = 8
 const ROW_CAP = 60
@@ -97,32 +100,75 @@ async function latestPriceDropsForKeys(
   return out
 }
 
+/**
+ * Every current price drop in the last N days, the newest event per listing.
+ * Paged in (event_at, id) order, newest first: 30 days held 2,180 price_drop
+ * events on 2026-10-01, and the single read this replaces stopped at
+ * PostgREST's 1,000, so every drop older than about two weeks fell off the
+ * homepage and /buy cards (SITE-212 review).
+ */
+async function readRecentPriceDrops(
+  days: number,
+): Promise<{ drops: Map<string, ListingCardPriceDrop>; error: string | null }> {
+  const drops = new Map<string, ListingCardPriceDrop>()
+  const sb = supabaseAnon()
+  if (!sb) return { drops, error: 'no Supabase client' }
+  const window = Math.min(Math.max(days, 1), 45)
+  const windowStart = new Date(Date.now() - window * 86_400_000).toISOString()
+  const { rows, error } = await fetchPagedRows<ActivityDropRow>((from, to) =>
+    sb
+      .from('activity_events')
+      .select('listing_key, event_at, payload')
+      .eq('event_type', 'price_drop')
+      .gte('event_at', windowStart)
+      .order('event_at', { ascending: false })
+      .order('id', { ascending: false })
+      .range(from, to),
+  )
+  for (const row of rows) {
+    const key = row.listing_key?.trim()
+    if (!key || drops.has(key)) continue
+    const drop = parseActivityPriceDrop(row.payload, row.event_at)
+    if (drop) drops.set(key, drop)
+  }
+  return { drops, error: error?.message ?? null }
+}
+
 /** Latest current price-drop events in the last N days (homepage rails). */
 export async function loadRecentPriceDropEvents(
   days = RECENT_DROP_DAYS,
 ): Promise<Map<string, ListingCardPriceDrop>> {
-  const out = new Map<string, ListingCardPriceDrop>()
-  const sb = supabaseAnon()
-  if (!sb) return out
-  const window = Math.min(Math.max(days, 1), 45)
-  const windowStart = new Date(Date.now() - window * 86_400_000).toISOString()
-  const { data, error } = await sb
-    .from('activity_events')
-    .select('listing_key, event_at, payload')
-    .eq('event_type', 'price_drop')
-    .gte('event_at', windowStart)
-    .order('event_at', { ascending: false })
-    .limit(1000)
-  if (error) console.error('[loadRecentPriceDropEvents] price drops not read', error.message)
-  if (error || !data) return out
-  for (const row of data as ActivityDropRow[]) {
-    const key = row.listing_key?.trim()
-    if (!key || out.has(key)) continue
-    const drop = parseActivityPriceDrop(row.payload, row.event_at)
-    if (drop) out.set(key, drop)
+  const { drops, error } = await readRecentPriceDrops(days)
+  if (error) {
+    console.error('[loadRecentPriceDropEvents] price drops not read', error)
+    return new Map()
   }
-  return out
+  return drops
 }
+
+async function fetchRecentPriceDropKeys(days: number): Promise<string[]> {
+  const { drops, error } = await readRecentPriceDrops(days)
+  // Thrown, never cached as "no drops" (makeResilientCached falls back to []
+  // for this render only).
+  if (error) throw new Error(`[getRecentPriceDropKeys] price drops not read: ${error}`)
+  return [...drops.keys()]
+}
+
+/**
+ * Keys of listings with a current price drop in the last N days: the search
+ * results' "Price drop" badge. The same events, and the same test of a drop
+ * (new price below the previous one), as /price-drops and the homepage cards.
+ * The badge used to read listing_history price_change, which also carries
+ * list-price raises and every sale's close-to-list difference, so a raised
+ * ask was badged "Price drop" (SITE-212 review). One read serves every search
+ * path for ten minutes.
+ */
+export const getRecentPriceDropKeys = makeResilientCached(
+  fetchRecentPriceDropKeys,
+  ['recent-price-drop-keys-v1'],
+  { revalidate: 600, tags: [cacheTag.listings] },
+  [],
+)
 
 export async function attachListingCardExtras(
   keys: string[],

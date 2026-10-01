@@ -1,0 +1,16 @@
+-- SITE-212 review: idx_listing_history_price_change_cover (20261001030400)
+-- has no reader any more.
+--
+-- It was built for the search page's "Price drop" badge, which read
+-- listing_history WHERE price_change IS NOT NULL. Review found that column
+-- carries every list-price change in both directions and every sale's
+-- close-to-list difference ("MlsStatus: Pending → Closed", -0.2 to +0.26 in
+-- the last 30 days), so raised asks were badged "Price drop". The badge now
+-- reads the price_drop activity events that /price-drops and the homepage
+-- cards read (getRecentPriceDropKeys, lib/data/listings/attachListingCardExtras.ts),
+-- and nothing else filters listing_history by event_date and price_change.
+-- An unused index on a table written every minute is only write cost.
+--
+-- PRODUCTION: dropped CONCURRENTLY on 2026-10-01 at 05:12Z by a one-shot
+-- pg_cron job; under `npm run db:push` this file is a no-op.
+DROP INDEX IF EXISTS public.idx_listing_history_price_change_cover;

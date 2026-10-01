@@ -3,6 +3,8 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { createServiceClient } from '@/lib/supabase/service'
 import { unstable_cache } from '@/lib/data/cache/next-cache'
+import { makeResilientCached } from '@/lib/data/cache/resilient'
+import { readActiveSubdivisionRowsInCity } from '@/lib/data/subdivisions/readActiveSubdivisionRowsInCity'
 import { after } from 'next/server'
 import { listingTileHref, neighborhoodPagePath, reportsExploreYtdPath } from '../../lib/slug'
 import { HOME_TILE_SELECT } from '@/lib/listing-tile-projections'
@@ -22,7 +24,7 @@ import {
 import { listedWithinDaysCeiling, resolveLegacyPropertySubType } from '@/lib/data/listings/searchPredicates'
 import { resolveViewContainsValues, viewContainsAsViewTypes } from '@/lib/search-presets'
 import type { ListingTile, SearchFeatureFilters, SearchListingsAllFilter } from '@/lib/data'
-import { PUBLIC_ACTIVE_OR_PREDICATE, PUBLIC_ACTIVE_OR_PREDICATE_EXACT, PUBLIC_ON_MARKET_OR_PREDICATE_WIDE, PUBLIC_SEARCH_STATUS_FILTERS, isPubliclyDisplayableStatus } from '@/lib/listing-status-public'
+import { PUBLIC_ACTIVE_OR_PREDICATE, PUBLIC_ON_MARKET_OR_PREDICATE_WIDE, PUBLIC_SEARCH_STATUS_FILTERS, isPubliclyDisplayableStatus } from '@/lib/listing-status-public'
 import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import { searchTileSort } from '@/lib/search/search-sort-order'
 
@@ -2356,14 +2358,10 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): nu
 
 /** Communities in a city with listing counts (for city page "Communities in {city}").
  * Perf: pre-filters via PUBLIC_ACTIVE_OR_PREDICATE_EXACT (see its doc comment — 2026-08-02 fix for /admin/media/banners's 60s+ cold load). */
-async function getSubdivisionsInCityUncached(city: string): Promise<SubdivisionInCity[]> {
-  const supabase = getAnonSupabase()
-  if (!supabase || !city?.trim()) return []
-  const { fetchAllRows: fetchAll } = await import('@/lib/supabase/paginate')
-  const rows = await fetchAll<{ SubdivisionName?: string | null; StandardStatus?: string | null }>(
-    supabase, 'listings', 'SubdivisionName, StandardStatus',
-    (q: any) => q.eq('"City"', city).or(PUBLIC_ACTIVE_OR_PREDICATE_EXACT),
-  )
+async function fetchSubdivisionsInCity(city: string): Promise<SubdivisionInCity[]> {
+  if (!city?.trim()) return []
+  // Throws on a failed page, so the cache below never stores a partial list.
+  const rows = await readActiveSubdivisionRowsInCity(city)
   const bySub = new Map<string, number>()
   for (const row of rows) {
     const name = (row.SubdivisionName ?? '').trim()
@@ -2378,18 +2376,21 @@ async function getSubdivisionsInCityUncached(city: string): Promise<SubdivisionI
 
 /**
  * SITE-212 (2026-10-01): this read ran uncached on every call and timed out
- * 22 times on 2026-09-30. Each 1,000-row page is ~1,200 random heap blocks on
- * a 13 GB table (EXPLAIN, Bend), so a cold page waits on disk past anon's 3 s.
- * The index idx_listings_city_status_subdivision_cover makes the page an
- * index-only scan; this cache makes the slug resolver, the content-refresh
- * cron and the banners page share one read per city per hour. The active set
- * of a city changes by the hour, not the minute: the counts feed a sort and
- * a slug match, never a published figure.
+ * 22 times on 2026-09-30. Each 1,000-row page is about 1,000 random heap
+ * blocks (EXPLAIN, Bend: 992 for the first page), so a cold page waits on disk
+ * past anon's 3 s. No index helps: the status test is an OR, so the plan is a
+ * bitmap and visits the heap whatever the index carries. This cache makes the
+ * slug resolver, the content-refresh cron and the banners page share one read
+ * per city per hour. The active set of a city changes by the hour, not the
+ * minute: the counts feed a sort and a slug match, never a published figure.
+ * Resilient: a failed read is never cached (it falls back to [] for that call
+ * only and is read again on the next).
  */
-export const getSubdivisionsInCity = unstable_cache(
-  getSubdivisionsInCityUncached,
-  ['subdivisions-in-city-v1'],
+export const getSubdivisionsInCity = makeResilientCached(
+  fetchSubdivisionsInCity,
+  ['subdivisions-in-city-v2'],
   { revalidate: 60 * 60, tags: ['listings'] },
+  [],
 )
 
 const subdivisionSlugify = (s: string) =>
@@ -2589,12 +2590,15 @@ export type ListingHistoryRow = {
   created_at?: string
 }
 
-/** Listing keys that have a price-change event in the last N days (for "Price reduced" badges). */
-const PRICE_CHANGE_BADGE_DAYS = 30
+/**
+ * Listing keys with a current price drop in the last N days, for the search
+ * results' "Price drop" badge: the price_drop events /price-drops and the
+ * homepage cards read, cached ten minutes for every search path
+ * (getRecentPriceDropKeys).
+ */
+const PRICE_DROP_BADGE_DAYS = 30
 
-export async function getListingKeysWithRecentPriceChange(withinDays = PRICE_CHANGE_BADGE_DAYS): Promise<Set<string>> {
-  void getAnonSupabase
-  const { getListingKeysWithPriceChangeSince } = await import('@/lib/data')
-  const since = new Date(Date.now() - withinDays * 24 * 60 * 60 * 1000).toISOString()
-  return getListingKeysWithPriceChangeSince(since)
+export async function getListingKeysWithRecentPriceDrop(withinDays = PRICE_DROP_BADGE_DAYS): Promise<Set<string>> {
+  const { getRecentPriceDropKeys } = await import('@/lib/data')
+  return new Set(await getRecentPriceDropKeys(withinDays))
 }

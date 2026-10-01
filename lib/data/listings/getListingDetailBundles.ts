@@ -312,23 +312,6 @@ export async function getListingDetailVideos(listingKey: string): Promise<Listin
 // live signal is `listings.pending_timestamp` —
 // lib/data/listings/getWentPendingInWindow.ts. Do not reinstate this filter.
 
-/** Return the set of listing_keys that have a price-change event since the given ISO timestamp. */
-export async function getListingKeysWithPriceChangeSince(sinceIso: string): Promise<Set<string>> {
-  const sb = supabaseAnon()
-  if (!sb) return new Set()
-  const { data } = await sb
-    .from('listing_history')
-    .select('listing_key')
-    .gte('event_date', sinceIso)
-    .not('price_change', 'is', null)
-  const keys = new Set<string>()
-  for (const row of data ?? []) {
-    const k = (row as { listing_key?: string }).listing_key
-    if (typeof k === 'string' && k.trim()) keys.add(k.trim())
-  }
-  return keys
-}
-
 export type ListingHistorySeed = {
   onMarketDate?: string | null
   listPrice?: number | null
