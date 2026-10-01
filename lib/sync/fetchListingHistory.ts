@@ -7,6 +7,7 @@ import { sparkHistoryItemToRow } from '@/lib/listing-mapper'
 import {
   fetchSparkListingHistory,
   fetchSparkPriceHistory,
+  priceHistoryMayStandIn,
   type SparkListingHistoryItem,
 } from '@/lib/spark'
 import { replaceListingHistoryForKey } from '@/lib/data/sync/syncWrites'
@@ -16,11 +17,10 @@ export async function fetchAndInsertHistoryCore(
   listingKey: string,
 ): Promise<{ inserted: number; ok: boolean; items: SparkListingHistoryItem[]; status?: number }> {
   let response = await fetchSparkListingHistory(accessToken, listingKey)
-  // The price history stands in only when the full history has nothing to give:
-  // it answered empty, or this listing's history is not ours to read (403/404).
-  // It carries no status changes, so a rate limit or an outage must not swap it
+  // The price history stands in only on a standing answer (priceHistoryMayStandIn):
+  // it carries no status changes, so a rate limit or an outage must not swap it
   // in for the whole history the replace below would then delete.
-  if (response.items.length === 0 && (response.ok || response.status === 403 || response.status === 404)) {
+  if (priceHistoryMayStandIn(response)) {
     const fallback = await fetchSparkPriceHistory(accessToken, listingKey)
     if (fallback.items.length > 0) response = fallback
   }

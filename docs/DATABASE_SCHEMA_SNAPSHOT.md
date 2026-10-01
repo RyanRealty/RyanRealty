@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-10-01T20:48:27.951Z
+**Generated:** 2026-10-01T21:32:24.124Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -16,7 +16,7 @@ Companion files:
 
 ## Listings — core
 
-### `listing_history` · **rows ≈ 3,915,462**
+### `listing_history` · **rows ≈ 4,191,982**
 
 One row per MLS-history event for a listing. snake_case columns; `listing_key` references `listings.ListingKey`. UI-facing PropertyHistory filters out `event=Photo` and empty `FieldChange` noise.
 
@@ -242,7 +242,7 @@ Source-of-truth RETS-style listings table (~589K rows). **Quotable mixed-case co
 
 ## Listings — derived (materialized views)
 
-### `listing_tile_mv` · **rows ≈ 597,700**
+### `listing_tile_mv` · **rows ≈ 597,718**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. A view over the table listing_tile_mv_src, kept current every minute by pg_cron `listing-mv-drain` (20260924173000; a matview refreshed every 30 minutes before that). The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -630,7 +630,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `pulled_at` | timestamp with time zone | yes |  |
 | `north_star_attributed_buyer_leads` | integer | no | 0 |
 
-### `expired_listings` · **rows ≈ 595**
+### `expired_listings` · **rows ≈ 597**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|

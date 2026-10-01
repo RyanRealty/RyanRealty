@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fetchSparkListingHistory, SPARK_DEFAULT_PAGE_SIZE, SPARK_HISTORY_PAGE_SIZE } from './spark'
+import { fetchSparkListingHistory, fetchSparkListingsPage, priceHistoryMayStandIn, SPARK_DEFAULT_PAGE_SIZE, SPARK_HISTORY_PAGE_SIZE } from './spark'
 
 type Page = { results: { Id: string }[]; pagination?: { TotalPages: number; PageSize: number; CurrentPage: number } }
 
@@ -78,5 +78,43 @@ describe('fetchSparkListingHistory', () => {
     stubPages([{ results: items(0, 3) }])
     const r = await fetchSparkListingHistory('token', 'k4')
     expect(r).toMatchObject({ ok: true, partial: false })
+  })
+})
+
+describe('priceHistoryMayStandIn', () => {
+  it('lets the price history stand in on a standing answer only', () => {
+    expect(priceHistoryMayStandIn({ ok: true, items: [] })).toBe(true)
+    for (const status of [400, 403, 404, 200]) expect(priceHistoryMayStandIn({ ok: false, items: [], status })).toBe(true)
+  })
+
+  it('never on a temporary failure, a partial read or a history that has events', () => {
+    for (const status of [401, 429, 500, 502, 503]) expect(priceHistoryMayStandIn({ ok: false, items: [], status })).toBe(false)
+    expect(priceHistoryMayStandIn({ ok: false, items: [] })).toBe(false)
+    expect(priceHistoryMayStandIn({ ok: false, items: [], partial: true })).toBe(false)
+    expect(priceHistoryMayStandIn({ ok: false, items: items(0, 10) as never, partial: true, status: 200 })).toBe(false)
+    expect(priceHistoryMayStandIn({ ok: true, items: items(0, 2) as never })).toBe(false)
+  })
+})
+
+describe('fetchSparkListingsPage by skip token', () => {
+  it('asks by skip token, without page or pagination, and passes the token back', async () => {
+    const urls: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        urls.push(url)
+        return new Response(JSON.stringify({ D: { Success: true, Results: [], SkipToken: 'k9' } }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      }),
+    )
+    const r = await fetchSparkListingsPage('token', { limit: 1000, filter: "StandardStatus Eq 'Active'", skiptoken: 'k5' })
+    const q = new URL(urls[0]!).searchParams
+    expect(q.get('_skiptoken')).toBe('k5')
+    expect(q.get('_page')).toBeNull()
+    expect(q.get('_pagination')).toBeNull()
+    expect(q.get('_limit')).toBe('1000')
+    expect(r.D?.SkipToken).toBe('k9')
   })
 })

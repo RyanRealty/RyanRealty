@@ -132,6 +132,8 @@ export type SparkListingsResponse = {
       TotalPages: number
       CurrentPage: number
     }
+    /** Present when the request paged by `_skiptoken`: the last key this page returned. */
+    SkipToken?: string
     Errors?: unknown[]
   }
 }
@@ -335,6 +337,12 @@ export async function getSparkDataRange(): Promise<{
 
 /**
  * Fetch one page of listings from Spark API.
+ *
+ * With `skiptoken` (pass '' for the first page, then each answer's
+ * D.SkipToken) the page starts after the last key the previous one returned,
+ * in key order, and an empty page ends the read. `_page` counts positions, so a
+ * listing that leaves the filtered set mid-read shifts the next one onto a page
+ * already read and it is never returned (docs/SPARK_API_REFERENCE.md).
  */
 export async function fetchSparkListingsPage(
   accessToken: string,
@@ -345,13 +353,18 @@ export async function fetchSparkListingsPage(
     orderby?: string
     select?: string
     expand?: string
+    skiptoken?: string
   } = {}
 ): Promise<SparkListingsResponse> {
-  const { page = 1, limit = 100, filter, orderby, select, expand } = options
+  const { page = 1, limit = 100, filter, orderby, select, expand, skiptoken } = options
   const params = new URLSearchParams()
-  params.set('_pagination', '1')
   params.set('_limit', String(limit))
-  params.set('_page', String(page))
+  if (skiptoken !== undefined) {
+    params.set('_skiptoken', skiptoken)
+  } else {
+    params.set('_pagination', '1')
+    params.set('_page', String(page))
+  }
   if (orderby) params.set('_orderby', orderby)
   if (select) params.set('_select', select)
   if (expand) params.set('_expand', expand)
@@ -467,6 +480,27 @@ export type SparkListingHistoryResponse = {
   status?: number
   /** Response body when !ok (for 400/403 diagnosis) */
   errorBody?: string
+}
+
+/**
+ * Whether the price history may stand in for this full-history answer. Only
+ * when the answer is a standing one: Spark answered that the listing's full
+ * history is empty, or refused it (400, 403, 404, or a 200 whose body says
+ * D.Success false, as Code 1500 permission denied does). A rate limit (429), a
+ * server error (5xx), a refused token (401), a lost connection or a partial
+ * read is temporary: try again later. The price history carries no status
+ * changes, and every history writer replaces the stored history with what it
+ * gets, so standing it in on a temporary failure deletes the status events the
+ * on-market episodes are built from. One rule for every writer.
+ */
+export function priceHistoryMayStandIn(
+  answer: Pick<SparkListingHistoryResponse, 'ok' | 'items' | 'partial' | 'status'>,
+): boolean {
+  if (answer.partial === true) return false
+  if (answer.ok) return answer.items.length === 0
+  const status = answer.status
+  if (status === undefined) return false
+  return status !== 401 && status !== 429 && status < 500
 }
 
 function parseHistoryItems(data: unknown): SparkListingHistoryItem[] {

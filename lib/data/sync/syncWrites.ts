@@ -57,6 +57,20 @@ export async function getSyncState(): Promise<SyncState | null> {
   return (data ?? null) as SyncState | null
 }
 
+/**
+ * The delta sync's cursor (sync_state.last_delta_sync_at), or null when no run
+ * has stored one. Unlike getSyncState, a failed read throws: a caller that
+ * hands recent changes to the delta sync must not mistake an error for "no
+ * cursor yet" and take listings the delta sync has not reached.
+ */
+export async function getDeltaSyncCursor(): Promise<string | null> {
+  const sb = client()
+  if (!sb) throw new Error('[getDeltaSyncCursor] Supabase not configured')
+  const { data, error } = await sb.from('sync_state').select('last_delta_sync_at').eq('id', 'default').maybeSingle()
+  if (error) throw new Error(`[getDeltaSyncCursor] ${error.message}`)
+  return (data as SyncState | null)?.last_delta_sync_at ?? null
+}
+
 /** Read arbitrary fields from the sync_state singleton. */
 export async function getSyncStateFields<T extends Record<string, unknown>>(
   columns: string

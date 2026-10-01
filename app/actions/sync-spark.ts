@@ -6,7 +6,7 @@ import {
   fetchSparkListingsPage,
   fetchSparkListingHistory,
   fetchSparkPriceHistory,
-  fetchSparkHistoricalListings,
+  priceHistoryMayStandIn,
 } from '../../lib/spark'
 import { syncAuxiliaryTablesForFinalization } from '@/app/api/admin/sync/_shared/listing-completeness'
 import { sparkToListingRow, sparkHistoryItemToRow as unifiedHistoryItemToRow, type ListingMapperOptions } from '@/lib/listing-mapper'
@@ -791,16 +791,24 @@ export async function syncListingHistory(options?: {
 
       let items: Awaited<ReturnType<typeof fetchSparkListingHistory>>['items'] = []
       let hadSuccessfulHistoryFetch = false
+      // A failure that is only temporary (rate limit, outage, partial read) holds the
+      // listing for a later run: the price history stands in only on a standing answer
+      // (priceHistoryMayStandIn), or it would replace the status events and freeze.
+      let temporaryFailure = false
       // Try keys in order; accept the first OK response (including empty) and stop.
       // Only fall through to the next key if the call errored entirely.
       for (const key of keysToTry) {
         const result = await fetchSparkListingHistory(accessToken, key)
-        if (!result.ok) continue
+        if (!result.ok) {
+          if (!priceHistoryMayStandIn(result)) temporaryFailure = true
+          continue
+        }
+        temporaryFailure = false
         if (result.partial !== true) hadSuccessfulHistoryFetch = true
         items = result.items
         break
       }
-      if (items.length === 0) {
+      if (items.length === 0 && !temporaryFailure) {
         for (const key of keysToTry) {
           const result = await fetchSparkPriceHistory(accessToken, key)
           if (!result.ok) continue

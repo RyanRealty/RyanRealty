@@ -15,7 +15,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 type Fields = Record<string, unknown>
 type RemovedSale = import('@/lib/data/sync/closingsReconcile').RemovedSale
 type MlsRemovalNotice = import('@/lib/data/sync/closingsReconcile').MlsRemovalNotice
-const spark = { window: [] as Fields[], byKey: new Map<string, Fields>() }
+const spark = { window: [] as Fields[], byKey: new Map<string, Fields>(), windowRequests: [] as (string | undefined)[] }
 const store = {
   closedInWindow: [] as string[],
   rows: new Map<string, Record<string, unknown>>(),
@@ -47,11 +47,22 @@ const store = {
 const alerts: { key: string; body: string }[] = []
 let alertQueues = true
 
+/** Spark's skip-token paging: key order, after the token, an empty page at the end. */
+function skipPage(rows: Fields[], opts: { limit?: number; skiptoken?: string }) {
+  const after = opts.skiptoken ?? ''
+  const page = [...rows]
+    .sort((a, b) => String(a.ListingKey).localeCompare(String(b.ListingKey)))
+    .filter((f) => String(f.ListingKey) > after)
+    .slice(0, opts.limit ?? 1000)
+  return { D: { Results: page.map((f) => ({ StandardFields: f })), SkipToken: page.length > 0 ? String(page[page.length - 1]!.ListingKey) : after } }
+}
+
 vi.mock('@/lib/spark', () => ({
-  fetchSparkListingsPage: vi.fn(async (_token: string, opts: { filter?: string }) => {
+  fetchSparkListingsPage: vi.fn(async (_token: string, opts: { filter?: string; limit?: number; skiptoken?: string }) => {
     const filter = opts.filter ?? ''
     if (filter.startsWith("StandardStatus Eq 'Closed'")) {
-      return { D: { Results: spark.window.map((f) => ({ StandardFields: f })), Pagination: { TotalPages: 1 } } }
+      spark.windowRequests.push(opts.skiptoken)
+      return skipPage(spark.window, opts)
     }
     const keys = [...filter.matchAll(/ListingKey Eq '([^']+)'/g)].map((m) => m[1]!)
     const hits = keys.flatMap((k) => (spark.byKey.has(k) ? [{ StandardFields: spark.byKey.get(k)! }] : []))
@@ -159,7 +170,7 @@ vi.mock('@/lib/sync/deltaSync', () => ({
   })),
 }))
 
-import { reconcileClosings, tellMlsRemovals } from './closingsReconcile'
+import { fetchSparkClosingsInWindow, reconcileClosings, repairListingsFromSpark, tellMlsRemovals } from './closingsReconcile'
 import { heldSalesText } from './mlsRemovedText'
 
 function sparkClosing(key: string, over: Fields = {}): Fields {
@@ -198,6 +209,7 @@ beforeEach(() => {
   process.env.SPARK_API_KEY = 'test-key'
   spark.window = []
   spark.byKey = new Map()
+  spark.windowRequests = []
   store.closedInWindow = []
   store.rows = new Map()
   store.absent = new Set()
@@ -252,6 +264,33 @@ function notice(over: Partial<MlsRemovalNotice> = {}): MlsRemovalNotice {
     ...over,
   }
 }
+
+describe('fetchSparkClosingsInWindow', () => {
+  it('reads by skip token, each page after the last key, until an empty page', async () => {
+    spark.window = Array.from({ length: 2500 }, (_, i) => sparkClosing(`K${String(i).padStart(5, '0')}`))
+    const got = await fetchSparkClosingsInWindow('2026-03-01', '2026-03-31')
+    expect(got.size).toBe(2500)
+    expect(spark.windowRequests).toEqual(['', 'K00999', 'K01999', 'K02499'])
+  })
+})
+
+describe('repairListingsFromSpark', () => {
+  it('leaves to the delta sync a listing the MLS changed after the cutoff, and repairs the rest', async () => {
+    spark.byKey.set('OLD', sparkClosing('OLD', { ModificationTimestamp: '2026-05-12T18:14:43Z' }))
+    spark.byKey.set('NEW', sparkClosing('NEW', { ModificationTimestamp: '2026-10-01T10:30:00Z' }))
+    store.rows.set('OLD', ourRow('OLD'))
+    store.rows.set('NEW', ourRow('NEW'))
+    const r = await repairListingsFromSpark(
+      ['OLD', 'NEW'],
+      { window: { from: '2026-10-01', to: '2026-10-01' }, reasons: new Map([['OLD', ['status']], ['NEW', ['status']]]) },
+      { leaveModifiedFrom: Date.parse('2026-10-01T09:00:00Z') },
+    )
+    expect(r.leftToDeltaSync).toEqual(['NEW'])
+    expect(r.repairedKeys).toEqual(['OLD'])
+    expect(store.upserted).toEqual(['OLD'])
+    expect(store.repairLog.map((e) => e.listingKey)).toEqual(['OLD'])
+  })
+})
 
 describe('reconcileClosings', () => {
   it('reports a close price the MLS corrected as drift, with both values kept', async () => {

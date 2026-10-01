@@ -50,7 +50,10 @@ async function main() {
   )
   for (const [k, n] of [...pairs.entries()].sort((a, b) => b[1] - a[1])) console.log(`  ${k}: ${n}`)
   if (r.notInSpark.length) console.log(`not served: ${r.notInSpark.map((x) => `${x.key} (${x.status})`).join(', ')}`)
-  if (repair) console.log(`repaired ${r.repaired} (before-images logged ${r.repairLogged}), failed ${r.repairFailed.length}${r.repairFailed.length ? `: ${r.repairFailed.join(', ')}` : ''}`)
+  if (repair) {
+    console.log(`repaired ${r.repaired} (before-images logged ${r.repairLogged}), failed ${r.repairFailed.length}${r.repairFailed.length ? `: ${r.repairFailed.join(', ')}` : ''}`)
+    if (r.leftAtRepair.length) console.log(`changed in the MLS since the cutoff when re-pulled, left to the delta sync: ${r.leftAtRepair.join(', ')}`)
+  }
   console.log(`${((Date.now() - t0) / 1000).toFixed(0)}s`)
   const out = flag('json')
   if (out) {

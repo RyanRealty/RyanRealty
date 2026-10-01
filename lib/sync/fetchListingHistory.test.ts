@@ -16,7 +16,8 @@ const state = {
   replaceFails: false,
 }
 
-vi.mock('@/lib/spark', () => ({
+vi.mock('@/lib/spark', async (importOriginal) => ({
+  priceHistoryMayStandIn: (await importOriginal<typeof import('@/lib/spark')>()).priceHistoryMayStandIn,
   fetchSparkListingHistory: vi.fn(async () => state.history),
   fetchSparkPriceHistory: vi.fn(async () => state.price),
 }))
@@ -62,15 +63,19 @@ describe('fetchAndInsertHistoryCore', () => {
   })
 
   it('falls back to the price history when the full history is not ours to read', async () => {
-    state.history = { items: [], ok: false, status: 403 }
-    state.price = { items: [1, 2], ok: true, partial: false }
-    const r = await fetchAndInsertHistoryCore('t', 'k')
-    expect(state.replaced).toEqual([{ key: 'k', rows: 2 }])
-    expect(r).toMatchObject({ ok: true })
+    // 403/404/400, and Spark's 200 whose body refuses (Code 1500 permission denied).
+    for (const status of [403, 404, 400, 200]) {
+      state.history = { items: [], ok: false, status }
+      state.price = { items: [1, 2], ok: true, partial: false }
+      state.replaced = []
+      const r = await fetchAndInsertHistoryCore('t', 'k')
+      expect(state.replaced).toEqual([{ key: 'k', rows: 2 }])
+      expect(r).toMatchObject({ ok: true })
+    }
   })
 
   it('never swaps in the price history when the full history failed for a while', async () => {
-    for (const status of [429, 500, undefined]) {
+    for (const status of [401, 429, 500, 503, undefined]) {
       state.history = { items: [], ok: false, status, partial: status === undefined ? true : undefined }
       state.price = { items: [1, 2], ok: true, partial: false }
       state.replaced = []

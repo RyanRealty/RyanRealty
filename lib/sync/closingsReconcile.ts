@@ -45,6 +45,7 @@ import {
   recordRepairLog,
   setRepairLogNote,
   setRepairLogOutcome,
+  type ReconcileListingRow,
   type RemovedSale,
 } from '@/lib/data/sync/closingsReconcile'
 import {
@@ -175,23 +176,40 @@ export function liteFrom(result: { StandardFields?: unknown }): SparkLite | null
   return { key, listNumber: ln, fields: f }
 }
 
-/** Every closing Spark holds with a close date in [from, to], all property types. */
-export async function fetchSparkClosingsInWindow(from: string, to: string): Promise<Map<string, SparkLite>> {
+/**
+ * Every listing Spark holds that matches `filter`, as lite records, all
+ * property types. Read by skip token, 1,000 at a time: each page starts after
+ * the last key the previous one returned, so a listing that leaves the set
+ * mid-read never pushes an unread one onto a page already read, as `_page`
+ * would (docs/SPARK_API_REFERENCE.md). An empty page ends the read; more than
+ * `maxPages` full pages throws with `tooMany`.
+ */
+export async function fetchSparkLiteWhere(filter: string, maxPages: number, tooMany: string): Promise<Map<string, SparkLite>> {
   const out = new Map<string, SparkLite>()
-  const filter = `StandardStatus Eq 'Closed' And CloseDate Ge ${from} And CloseDate Le ${to}`
-  for (let page = 1; ; page++) {
-    const res = await fetchSparkListingsPage(token(), { page, limit: 1000, filter, select: LITE_SELECT, orderby: '+ListingKey' })
-    for (const r of res.D?.Results ?? []) {
+  let skiptoken = ''
+  for (let request = 1; ; request++) {
+    const res = await fetchSparkListingsPage(token(), { limit: 1000, filter, select: LITE_SELECT, skiptoken })
+    const results = res.D?.Results ?? []
+    if (results.length === 0) break
+    if (request > maxPages) throw new Error(tooMany)
+    for (const r of results) {
       const lite = liteFrom(r)
       if (lite) out.set(lite.key, lite)
     }
-    const pages = res.D?.Pagination?.TotalPages ?? 1
-    if (page >= pages) break
-    if (page >= MAX_WINDOW_PAGES) {
-      throw new Error(`[closingsReconcile] ${from}..${to} runs past ${MAX_WINDOW_PAGES} pages of closings; narrow the window`)
-    }
+    const next = res.D?.SkipToken
+    if (!next || next === skiptoken) throw new Error(`[fetchSparkLiteWhere] Spark gave no next skip token after ${out.size} listings`)
+    skiptoken = next
   }
   return out
+}
+
+/** Every closing Spark holds with a close date in [from, to], all property types. */
+export async function fetchSparkClosingsInWindow(from: string, to: string): Promise<Map<string, SparkLite>> {
+  return fetchSparkLiteWhere(
+    `StandardStatus Eq 'Closed' And CloseDate Ge ${from} And CloseDate Le ${to}`,
+    MAX_WINDOW_PAGES,
+    `[closingsReconcile] ${from}..${to} runs past ${MAX_WINDOW_PAGES} pages of closings; narrow the window`,
+  )
 }
 
 function keyFilter(keys: string[]): string {
@@ -238,8 +256,13 @@ export async function findClosingsDrift(
  * copy on purpose, not drift (the delta sync keeps both the same way), so that
  * reason is dropped where the listing carries one.
  */
-export async function driftAgainstOurs(candidates: ReadonlyMap<string, SparkLite>): Promise<ClosingDrift[]> {
-  const ours = await getListingsForReconcile([...candidates.keys()])
+export async function driftAgainstOurs(
+  candidates: ReadonlyMap<string, SparkLite>,
+  /** Our rows the caller already read; only the other candidates are read here. */
+  held: ReadonlyMap<string, ReconcileListingRow> = new Map(),
+): Promise<ClosingDrift[]> {
+  const unread = [...candidates.keys()].filter((k) => !held.has(k))
+  const ours = new Map<string, ReconcileListingRow>([...held, ...(unread.length > 0 ? await getListingsForReconcile(unread) : [])])
   const drift: ClosingDrift[] = []
   for (const [key, lite] of candidates) {
     const row = ours.get(key)
@@ -313,8 +336,16 @@ export type RepairLogContext = {
  * written. Each chunk's rows move to repaired or failed as soon as its upsert
  * answers, so an interrupted run leaves only its unconfirmed chunk pending; a
  * repaired listing whose history or re-freeze did not land gets a note.
+ *
+ * With `leaveModifiedFrom`, a listing whose fresh record the MLS changed at or
+ * after that instant is not written: the delta sync takes it and records the
+ * status, price and new-listing events a repair does not (leftToDeltaSync).
  */
-export async function repairListingsFromSpark(keys: string[], log: RepairLogContext): Promise<{
+export async function repairListingsFromSpark(
+  keys: string[],
+  log: RepairLogContext,
+  opts: { leaveModifiedFrom?: number } = {},
+): Promise<{
   repaired: number
   repairedKeys: string[]
   repairLogged: number
@@ -322,10 +353,12 @@ export async function repairListingsFromSpark(keys: string[], log: RepairLogCont
   historyRefreshed: number
   refinalized: number
   membershipRows: number
+  leftToDeltaSync: string[]
 }> {
   const unique = [...new Set(keys)]
+  const leftToDeltaSync: string[] = []
   if (unique.length === 0) {
-    return { repaired: 0, repairedKeys: [], repairLogged: 0, failed: [], historyRefreshed: 0, refinalized: 0, membershipRows: 0 }
+    return { repaired: 0, repairedKeys: [], repairLogged: 0, failed: [], historyRefreshed: 0, refinalized: 0, membershipRows: 0, leftToDeltaSync }
   }
   const mortgageRate = await resolveRunMortgageRate()
   const existing = await getListingsForReconcile(unique)
@@ -366,6 +399,13 @@ export async function repairListingsFromSpark(keys: string[], log: RepairLogCont
       if (!r) {
         failed.push(key)
         continue
+      }
+      if (opts.leaveModifiedFrom !== undefined) {
+        const modified = Date.parse(String((r.StandardFields as Record<string, unknown> | undefined)?.ModificationTimestamp ?? ''))
+        if (Number.isFinite(modified) && modified >= opts.leaveModifiedFrom) {
+          leftToDeltaSync.push(key)
+          continue
+        }
       }
       const row = resultToMappedRow(r, { mortgageRate })
       const listNumber = String(row.ListNumber ?? '').trim()
@@ -476,7 +516,7 @@ export async function repairListingsFromSpark(keys: string[], log: RepairLogCont
     const spans = await refreshMarketFactSpansForKeys(repairedKeys)
     if (spans.missed.length > 0) console.warn(`[closingsReconcile] episodes not rebuilt for ${spans.missed.join(', ')}`)
   }
-  return { repaired, repairedKeys, repairLogged: logId.size, failed, historyRefreshed, refinalized, membershipRows }
+  return { repaired, repairedKeys, repairLogged: logId.size, failed, historyRefreshed, refinalized, membershipRows, leftToDeltaSync }
 }
 
 /** Absences one window may record before the pull is treated as an outage: 10, or 0.5% of our closings. */
@@ -647,6 +687,7 @@ export async function reconcileClosings(opts: {
     historyRefreshed: 0,
     refinalized: 0,
     membershipRows: 0,
+    leftToDeltaSync: [],
   }
   if (opts.repair && found.drift.length > 0) {
     const toRepair = found.drift.slice(0, opts.maxRepairs ?? 2000)
