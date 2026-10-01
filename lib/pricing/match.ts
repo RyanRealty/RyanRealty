@@ -898,14 +898,18 @@ function medianClose(values: readonly number[]): number | null {
 
 /**
  * A neighbor plat can clear the subdivision-median tier and still close far
- * from this home's own sales. The plat set is those sales. No plat sale yet
- * fails open. The band is the subdivision tier (30%): a close about 32% off
+ * from this home's own sales. The plat set is those sales. While an own-plat
+ * sale is in the set, the band is their median (30%): a close about 32% off
  * that set is a different house, not a size gap the pocket's 20% band explains.
+ * No own-plat sale yet still returns true here, so the first comp can enter.
+ * A different-plat pocket sale does not stay on that opening. After the set is
+ * built it has to sit with the comps that were kept, and a close under every
+ * one of them is dropped. That is not an 80% floor and not a new minimum price.
  *
  * The walk applies this while the set is accumulating. The GLA bracket applies
  * it again to a different-plat replacement, and the median has to be read on
  * the kept set that still includes the own-plat sale being replaced. Removing
- * that sale first makes this fail open, and the cheap off-plat sale stays.
+ * that sale first leaves this median check with nothing to measure.
  */
 function closeNearOwnPlat(
   subject: PricingSubject,
@@ -921,6 +925,33 @@ function closeNearOwnPlat(
   if (!(sale.closePrice > 0)) return true
   const gap = sale.closePrice / mid
   return gap >= 1 / SUBDIVISION_TIER_RATIO && gap <= SUBDIVISION_TIER_RATIO
+}
+
+/**
+ * No own-plat close was kept, so the 1.3 own-plat band has nothing to read.
+ * A different-plat pocket sale still has to sit with the comps that were
+ * kept. One that closes under every one of them is a cheaper house. Same-plat
+ * sales are not in this pass. Custom and new subjects skip it, as they skip
+ * the plat check on the walk. When an own-plat sale is kept, the caller does
+ * not use this: that case stays the 1.3 own-plat median.
+ */
+function pocketSalesSitWithKept(
+  comps: SelectedPricingComp[],
+  customLadder: boolean,
+): SelectedPricingComp[] {
+  if (customLadder || comps.length === 0) return comps
+  if (comps.some((c) => c.ownPlat)) return comps
+  return comps.filter((sale) => {
+    if (!sale.selectionTier.startsWith('pocket-') || !(sale.closePrice > 0)) return true
+    const others = comps.filter((row) => row.listingKey !== sale.listingKey && row.closePrice > 0)
+    if (others.length === 0) return true
+    const cheapestOther = Math.min(...others.map((row) => row.closePrice))
+    if (sale.closePrice < cheapestOther) return false
+    const mid = medianClose(others.map((row) => row.closePrice))
+    if (mid == null) return true
+    const gap = sale.closePrice / mid
+    return gap >= 1 / SUBDIVISION_TIER_RATIO && gap <= SUBDIVISION_TIER_RATIO
+  })
 }
 
 function similarity(subject: PricingSubject, sale: PricingSale, asOf: string, pocketStarved: boolean): number {
@@ -1193,13 +1224,19 @@ export function walkPricingLadder(
   const ranked = [...byKey.values()].sort(
     (a, b) => similarity(subject, b, asOf, pocketStarved) - similarity(subject, a, asOf, pocketStarved),
   )
-  const sliced = keepTightestByClosePrice(ranked, PRICING_MAX_COMPS, asOf)
+  // An own-plat sale still in this set keeps the 1.3 median, including the
+  // bracket read below, which runs before that sale is removed. The pocket
+  // pass runs only when that median was never there.
+  const hadOwnPlat = ranked.some((c) => c.ownPlat)
+  const sitting = hadOwnPlat ? ranked : pocketSalesSitWithKept(ranked, customLadder)
+  const sliced = keepTightestByClosePrice(sitting, PRICING_MAX_COMPS, asOf)
   const bracketed = bracketGla(subject, sliced, pool, asOf, priceAnchor, cells, customLadder)
   if (bracketed.note) {
     if (!tiersUsed.includes('gla-bracket')) tiersUsed.push('gla-bracket')
     trace.push(bracketed.note)
   }
-  const comps = [...bracketed.comps].sort((a, b) => b.closeDate.localeCompare(a.closeDate))
+  const priced = hadOwnPlat ? bracketed.comps : pocketSalesSitWithKept([...bracketed.comps], customLadder)
+  const comps = [...priced].sort((a, b) => b.closeDate.localeCompare(a.closeDate))
   const reachedTarget = comps.length >= PRICING_TARGET_COMPS
   if (comps.length < PRICING_MIN_COMPS) {
     trace.push(`Only ${comps.length} comparable sale(s) after the full ladder. The estimate needs broker review.`)

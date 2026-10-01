@@ -500,6 +500,24 @@ function monthsBefore(asOf: string | undefined, closeDate: string | null | undef
  */
 export const LOCAL_POOL_RADIUS_MILES = 3
 /**
+ * How far back the facts pool is loaded, in calendar months. Ordinary rungs
+ * stop at 24, so the pool stops there too: an 18-month floor never loaded a
+ * sale one day older than that, and a 24-month rung could not see it. Custom
+ * and new rungs also stop at 24, but the pool stays at 30 so a sale the
+ * 24-month rung should see is not lost to the calendar-month versus 30.44-day
+ * mismatch. Do not shrink the custom window. Do not pull ordinary sales past 24.
+ */
+export const ORDINARY_FACTS_POOL_MONTHS = 24
+export const CUSTOM_FACTS_POOL_MONTHS = 30
+
+export function factsPoolCloseAfter(asOf: string, customOrNew: boolean): string {
+  const closeAfter = new Date(asOf.slice(0, 10))
+  closeAfter.setMonth(
+    closeAfter.getMonth() - (customOrNew ? CUSTOM_FACTS_POOL_MONTHS : ORDINARY_FACTS_POOL_MONTHS),
+  )
+  return closeAfter.toISOString().slice(0, 10)
+}
+/**
  * The last-resort rung's size band (Matt 2026-09-10). Was 45%, which let a
  * sale half again the subject's size price it while only half the gap was
  * adjusted back. See WIDENED_SQFT_BAND in lib/cma/comp-tiers.ts.

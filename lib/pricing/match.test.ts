@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { distanceMiles } from '@/lib/cma/market-area'
 import { SUBDIVISION_TIER_RATIO } from '@/lib/pricing/classes'
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
+import { CUSTOM_FACTS_POOL_MONTHS, factsPoolCloseAfter, ORDINARY_FACTS_POOL_MONTHS } from '@/lib/pricing/ladder'
 import { walkPricingLadder, type PricingSale, type PricingSubject } from '@/lib/pricing/match'
 import { crossesNamedRiver } from '@/lib/pricing/river-cross'
 
@@ -1975,8 +1976,8 @@ describe('a comp from the wrong house', () => {
     // bracket would drop. The only larger sale inside a mile is off-plat and
     // fails the 1.3 close check against that own-plat close. 3331 Juniper is
     // the cheap Willow Springs sale in the quarter-mile pocket. It clears the
-    // subdivision-median tier, so it stays out only while the own-plat sale is
-    // still in the set. Delete that sale first and the check fails open.
+    // subdivision-median tier, so it stays out while that own-plat sale is
+    // still in the set. The 1.3 band is read before any swap removes it.
     const ownClose = 740_000
     const ownPlat = sale({
       listingKey: 'INDIAN-2834',
@@ -2051,5 +2052,170 @@ describe('a comp from the wrong house', () => {
     expect(keys).toContain('INDIAN-2834')
     expect(keys).not.toContain('JUNIPER-3331')
     expect(keys).not.toContain('FIELDSTONE-388')
+  })
+
+  it('drops a cheap different-plat pocket sale when no own-plat sale is kept', () => {
+    // 3028 Indian. 2834 Indian is outside the wide plat size band, so it never
+    // anchors an own-plat median, and this check must not pull it back in.
+    // 3331 Juniper at $475,000 is the quarter-mile pocket sale. 1216 SW 32nd,
+    // Hayden View, at $550,000 is in the pool. Juniper is inside 30% of that
+    // close, so the own-plat 1.3 band is not what removes it. It still has to
+    // sit with the comps that were kept, and it loses to Hayden.
+    const subjectSqft = 2526
+    const tooSmall = sale({
+      listingKey: 'INDIAN-2834',
+      address: '2834 Indian',
+      subdivision: 'Copper Ridge',
+      subdivisionNorm: 'copper ridge',
+      sqft: 1400,
+      closePrice: 497_000,
+      closePpsf: 497_000 / 1400,
+      closeDate: '2026-06-01',
+      city: 'Redmond',
+      citySlug: 'redmond',
+      ...at(0.04),
+    })
+    const juniperClose = 475_000
+    const juniper = sale({
+      listingKey: 'JUNIPER-3331',
+      address: '3331 Juniper',
+      subdivision: 'Willow Springs',
+      subdivisionNorm: 'willow springs',
+      sqft: 2400,
+      closePrice: juniperClose,
+      closePpsf: juniperClose / 2400,
+      closeDate: '2026-07-01',
+      city: 'Redmond',
+      citySlug: 'redmond',
+      ...at(0.19),
+    })
+    const haydenClose = 550_000
+    const haydenSqft = 2386
+    const hayden = sale({
+      listingKey: 'HAYDEN-1216',
+      address: '1216 SW 32nd',
+      subdivision: 'Hayden View',
+      subdivisionNorm: 'hayden view',
+      sqft: haydenSqft,
+      closePrice: haydenClose,
+      closePpsf: haydenClose / haydenSqft,
+      closeDate: '2026-07-02',
+      city: 'Redmond',
+      citySlug: 'redmond',
+      ...at(0.17),
+    })
+    const origin = { lat: here.latitude, lng: here.longitude }
+    const haydenMiles = distanceMiles(origin, { lat: hayden.latitude, lng: hayden.longitude })
+    expect(haydenMiles).not.toBeNull()
+    expect(haydenMiles!).toBeGreaterThan(0.15)
+    expect(haydenMiles!).toBeLessThan(0.2)
+    expect(juniperClose / haydenClose).toBeGreaterThan(1 / SUBDIVISION_TIER_RATIO)
+    expect(tooSmall.sqft).toBeLessThan(subjectSqft * (1 - 0.35))
+    const cells = new Map([
+      ['redmond:copper ridge', { medianPpsf: 230, n: 15 }],
+      ['redmond:willow springs', { medianPpsf: 220, n: 12 }],
+      ['redmond:hayden view', { medianPpsf: 230, n: 10 }],
+    ])
+    const out = walkPricingLadder(
+      subject({
+        streetAddress: '3028 Indian',
+        city: 'Redmond',
+        citySlug: 'redmond',
+        subdivision: 'Copper Ridge',
+        subdivisionNorm: 'copper ridge',
+        sqft: subjectSqft,
+        ...here,
+      }),
+      [tooSmall, juniper, hayden],
+      { asOf, cells },
+    )
+    const keys = out.comps.map((c) => c.listingKey)
+    expect(keys).toContain('HAYDEN-1216')
+    expect(keys).not.toContain('JUNIPER-3331')
+    expect(keys).not.toContain('INDIAN-2834')
+  })
+})
+
+describe('the facts pool reaches the rung that names it', () => {
+  it('loads a sale one day outside 18 months, and does not load one past 24', () => {
+    const asOf = '2026-10-01'
+    const ordinary = factsPoolCloseAfter(asOf, false)
+    const custom = factsPoolCloseAfter(asOf, true)
+    expect(ORDINARY_FACTS_POOL_MONTHS).toBe(24)
+    expect(CUSTOM_FACTS_POOL_MONTHS).toBe(30)
+    // 1367 Milwaukee closed 2025-03-31, one day before the old 18-month floor.
+    expect(ordinary <= '2025-03-31').toBe(true)
+    // 1125 Columbia closed about 24.6 months out.
+    expect(ordinary > '2024-09-13').toBe(true)
+    // Custom/new still reaches past the ordinary floor. Do not shrink it.
+    expect(custom < ordinary).toBe(true)
+    expect(custom <= '2024-09-13').toBe(true)
+  })
+
+  it('keeps a sale one day outside 18 months on a 24-month rung, and a shorter rung does not', () => {
+    const asOf = '2026-10-01'
+    const milwaukee = sale({
+      listingKey: 'MILWAUKEE',
+      address: '1367 Milwaukee',
+      city: 'Jacksonville',
+      citySlug: 'jacksonville',
+      subdivision: 'Northwest Townsite',
+      subdivisionNorm: 'northwest townsite',
+      sqft: 923,
+      closePrice: 280_000,
+      closePpsf: 280_000 / 923,
+      closeDate: '2025-03-31',
+    })
+    const out = walkPricingLadder(
+      subject({
+        streetAddress: '1400 Jacksonville',
+        city: 'Jacksonville',
+        citySlug: 'jacksonville',
+        subdivision: 'Northwest Townsite',
+        subdivisionNorm: 'northwest townsite',
+        sqft: 923,
+      }),
+      [milwaukee],
+      { asOf },
+    )
+    expect(out.comps.map((c) => c.listingKey)).toEqual(['MILWAUKEE'])
+    expect(out.comps[0]!.selectionTier).toBe('subdivision-24mo')
+    const eighteen = out.rungs.find((r) => r.tier === 'subdivision-18mo')
+    expect(eighteen?.ran).toBe(true)
+    expect(eighteen?.added).toBe(0)
+    expect(out.rungs.find((r) => r.tier === 'subdivision-12mo')?.added).toBe(0)
+  })
+
+  it('does not keep a sale past 24 months', () => {
+    const asOf = '2026-10-01'
+    const columbia = sale({
+      listingKey: 'COLUMBIA',
+      address: '1125 Columbia',
+      city: 'Jacksonville',
+      citySlug: 'jacksonville',
+      subdivision: 'Northwest Townsite',
+      subdivisionNorm: 'northwest townsite',
+      sqft: 923,
+      baths: 1,
+      closePrice: 250_000,
+      closePpsf: 250_000 / 923,
+      closeDate: '2024-09-13',
+    })
+    const out = walkPricingLadder(
+      subject({
+        streetAddress: '1400 Jacksonville',
+        city: 'Jacksonville',
+        citySlug: 'jacksonville',
+        subdivision: 'Northwest Townsite',
+        subdivisionNorm: 'northwest townsite',
+        sqft: 923,
+        baths: 2,
+      }),
+      [columbia],
+      { asOf },
+    )
+    expect(factsPoolCloseAfter(asOf, false) > columbia.closeDate).toBe(true)
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('COLUMBIA')
+    expect(out.rungs.find((r) => r.tier === 'subdivision-24mo')?.added).toBe(0)
   })
 })

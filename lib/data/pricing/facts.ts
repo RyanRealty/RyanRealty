@@ -160,7 +160,7 @@ export async function selectPricingFactsPool(opts: {
  *
  * Why this exists (Matt 2026-09-10, 23 Benaiah). `selectPricingFactsPool`
  * orders by close date and caps the read, so for a Bend subject the pool
- * reaches back about SIX months, not the eighteen it asks for: 2,471 Bend
+ * reaches back about SIX months, not the eighteen it asked for that day: 2,471 Bend
  * sales matched that window on 2026-09-10 and the read returned 800, the
  * oldest closing 2026-03-10. Every rung below that line — the 9-, 12-, 18- and
  * 24-month subdivision rungs, the adjacent-plat rungs, the community rungs —
