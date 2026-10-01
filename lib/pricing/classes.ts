@@ -261,9 +261,8 @@ export function productCompatible(a: ProductKey, b: ProductKey): boolean {
 }
 
 /**
- * Custom / new peers often differ by one whole bath (3 vs 4) without leaving
- * the buyer pool. Ordinary subjects still use exact whole-bath matching via
- * bathCountCompatible in market-area.ts.
+ * ±1 whole bath with no own-ground test. Not the CMA room wall. Beds and
+ * baths on a priced sale go through roomCountsDecision (skill 0.1).
  */
 export function customBathCompatible(subjectBaths: number | null, compBaths: number | null): boolean {
   if (subjectBaths == null || !Number.isFinite(subjectBaths) || subjectBaths <= 0) return true

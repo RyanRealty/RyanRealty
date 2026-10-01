@@ -31,9 +31,10 @@
  *    honest short list beats a long one padded with facts dressed as reasons.
  */
 
-import { bathCountCompatible, productTypeCompatible } from '@/lib/cma/market-area'
+import { productTypeCompatible } from '@/lib/cma/market-area'
 import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
 import { crossesUs97 } from '@/lib/pricing/highway-cross'
+import { roomCountsDecision } from '@/lib/pricing/room-ground'
 
 const MAX_REJECTED = 8
 
@@ -55,20 +56,29 @@ export interface RejectedCandidate {
   address: string
   sqft?: number | null
   yearBuilt?: number | null
+  beds?: number | null
   baths?: number | null
   propertySubType?: string | null
   closeDate?: string | null
   latitude?: number | null
   longitude?: number | null
+  city?: string | null
+  subdivision?: string | null
+  ownPlat?: boolean | null
+  roomDifference?: Array<'beds' | 'baths'> | null
 }
 
 export interface RejectionSubject {
   sqft?: number | null
   yearBuilt?: number | null
+  beds?: number | null
   baths?: number | null
   propertySubType?: string | null
   latitude?: number | null
   longitude?: number | null
+  streetAddress?: string | null
+  city?: string | null
+  subdivision?: string | null
 }
 
 /**
@@ -202,10 +212,30 @@ export function rejectionReason(
       .toLowerCase()}`
   }
 
-  const subjectBaths = num(subject.baths)
-  const saleBaths = num(sale.baths)
-  if (subjectBaths != null && saleBaths != null && !bathCountCompatible(subjectBaths, saleBaths)) {
-    return `${bathLabel(saleBaths)} baths against your ${bathLabel(subjectBaths)}`
+  const rooms = roomCountsDecision(
+    {
+      beds: subject.beds,
+      baths: subject.baths,
+      streetAddress: subject.streetAddress,
+      city: subject.city,
+      subdivision: subject.subdivision,
+      latitude: subject.latitude,
+      longitude: subject.longitude,
+      sqft: subject.sqft,
+    },
+    sale,
+  )
+  if (!rooms.ok) {
+    const saleBaths = num(sale.baths)
+    const subjectBaths = num(subject.baths)
+    if (saleBaths != null && subjectBaths != null && Math.floor(saleBaths) !== Math.floor(subjectBaths)) {
+      return `${bathLabel(saleBaths)} baths against your ${bathLabel(subjectBaths)}`
+    }
+    const saleBeds = num(sale.beds)
+    const subjectBeds = num(subject.beds)
+    if (saleBeds != null && subjectBeds != null && Math.floor(saleBeds) !== Math.floor(subjectBeds)) {
+      return `${Math.floor(saleBeds)} beds against your ${Math.floor(subjectBeds)}`
+    }
   }
 
   if (

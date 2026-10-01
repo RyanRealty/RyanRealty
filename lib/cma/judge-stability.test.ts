@@ -250,7 +250,7 @@ describe('exclusion grounding', () => {
     expect(result.verdict.tier).toBe('exclude')
   })
 
-  it('keeps a real lot gap and a real bed difference', () => {
+  it('keeps a real lot gap and a room gap the one-room rule refuses', () => {
     const lot = comp({ listingKey: 'lot', lotAcres: 0.34, publicRemarks: '4 car garage with RV space.' })
     const lotResult = groundVerdict(
       sub,
@@ -265,7 +265,31 @@ describe('exclusion grounding', () => {
     )
     expect(lotResult.grounded).toBe(true)
 
-    const beds = comp({ listingKey: 'beds', beds: 2 })
+    const beds = comp({
+      listingKey: 'beds',
+      beds: 1,
+      subdivision: 'Other Park',
+      ownPlat: false,
+      address: '99 Other St',
+    })
+    const bedResult = groundVerdict(
+      sub,
+      beds,
+      verdict({
+        listingKey: 'beds',
+        tier: 'exclude',
+        basis: 'other',
+        reason: '1 bed versus the subject 3 bed.',
+      }),
+      [beds],
+    )
+    expect(bedResult.grounded).toBe(true)
+    expect(bedResult.rule).toBe('rooms')
+    expect(bedResult.verdict.tier).toBe('exclude')
+  })
+
+  it('does not ground a one-bed own-plat gap the one-room rule allows', () => {
+    const beds = comp({ listingKey: 'beds', beds: 2, ownPlat: true })
     const bedResult = groundVerdict(
       sub,
       beds,
@@ -277,8 +301,8 @@ describe('exclusion grounding', () => {
       }),
       [beds],
     )
-    expect(bedResult.grounded).toBe(true)
-    expect(bedResult.rule).toBe('rooms')
+    expect(bedResult.verdict.tier).not.toBe('exclude')
+    expect(bedResult.grounded).toBe(false)
   })
 
   it('drops a structure-type claim the remarks do not support', () => {

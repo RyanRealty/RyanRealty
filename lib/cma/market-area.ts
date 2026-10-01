@@ -350,10 +350,9 @@ export function compPoolPropertySubType(subjectSubType: string | null): string |
 }
 
 /**
- * Whole bathroom count must match. A one-bath house and a two-bath house
- * are different buyers. Half baths do not change the whole count (1.0 and
- * 1.5 both count as one). Unknown on the sale fails closed when the
- * subject count is known.
+ * Exact whole-bath match. Not the CMA picker or review wall — that is the
+ * one-room rule in lib/pricing/room-counts.ts. Kept for market-area stats
+ * that ask for the same whole count (90-day same-bed/bath band).
  */
 export function bathCountCompatible(subjectBaths: number | null, compBaths: number | null): boolean {
   if (subjectBaths == null || !Number.isFinite(subjectBaths) || subjectBaths <= 0) return true
