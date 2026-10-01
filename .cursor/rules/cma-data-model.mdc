@@ -1,5 +1,5 @@
 ---
-description: CMA and closed-sale price source of truth (ClosePrice column + JSON fallback).
+description: CMA close price, and the locked rules for an expired rebuild, recommended price, gap hold, and owner email.
 alwaysApply: false
 ---
 
@@ -63,3 +63,13 @@ Pricing comps: `sale_pricing_facts.close_price` (typed `"ClosePrice" > 0`). Neve
 - Never compute stats from `listing_history.price` alone — it may be a mid-timeline snapshot
 - For median-style reporting in comp analytics, use `percentile_cont` (true median), not `avg()`.
 - Always carry concessions next to close price when the field is known. Close and seller net are different numbers.
+
+## Locked CMA rules
+
+For an expired CMA, check live listing status before any rebuild. If the home is active, pending, or otherwise on the market, do not build a CMA and do not send one. Skip it. This is not optional and not expired-only in the sense of "only sometimes": at least every expired rebuild must do this. Do not loosen it.
+
+Recommended price is the house from comps only. No ADU, second-lot, or rental-income dollars in the price. Those stay letter notes.
+
+Gap hold: a recommendation more than 15% under the last ask, or any amount over the last ask, is refused before approve, enqueue, or send. Exactly 15% under is not a hold. Missing ask or missing rec is not a hold. The row stays built.
+
+Do not send, enqueue, or approve owner email unless the task explicitly says to, and never from a rebuild.

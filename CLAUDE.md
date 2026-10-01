@@ -215,18 +215,7 @@ Retired, do not reintroduce: `--rr-navy-deep` (use `rgba(16,39,66,0.85)` for hov
 `--rr-sand` (use `rgba(16,39,66,0.08)` for borders/dividers), `--rr-fir`, `--rr-sky`, and both
 retired golds plus the retired v1 cream — see the migration table below.
 
-**Type decision tree.** Wordmark or section hero stamp → use the pre-rendered image from
-`design_system/ryan-realty/assets/brand/`, do not re-typeset. Display moment (hero H1, pull
-quote, testimonial, yard-sign text, postcard headline, slide title) → **Amboqia Boriango**,
-navy on cream, tracking `-0.01em` to `0.08em` for all-caps signage. Arched ribbon sub-label →
-**Azo Sans Medium**, uppercase, tracked `0.12em` (its only surviving use). Body, UI, market
-data, forms, nav, video captions → **Geist** (400/500/600/700); Geist Mono for code.
-
-**Radii** base 10px: `sm 6 · md 8 · lg 10` (button/input) `· xl 14` (card) `· 2xl 18 · 3xl 22`.
-Badge = pill. **Shadows** navy-tinted only, `rgb(16 39 66 / opacity)`. **Focus ring** 3px warm
-stone, never navy, always visible. **Motion ladder** 200ms fades · 300ms entrances · 400ms
-fade-up · 2s loops · 20s Ken Burns; ease-out entrances, ≤16px travel, always respect
-`prefers-reduced-motion`.
+**Type, radii, shadow, focus, motion:** [`design_system/ryan-realty/SKILL.md`](design_system/ryan-realty/SKILL.md).
 
 ## The component library IS the design system
 
@@ -564,9 +553,19 @@ else fires on trigger match.
 | Any PDF a person receives | [`docs/PAGE_CONTRACT.md`](docs/PAGE_CONTRACT.md) |
 | Supabase market-data tables | §7 and the three docs it names |
 | Asset library | manifest at `data/asset-library/manifest.json`, CLI at [`lib/asset-library.mjs`](lib/asset-library.mjs). Photos carry vision grades — search the `vision_*` fields. |
-| CMA / valuation | Comp search + count: [`lib/pricing/`](lib/pricing/) `ladder.ts`, `match.ts`; cover price `estimate.ts`. Letter: [`lib/cma/`](lib/cma/) chapters `opinion-*.ts`, evidence tables `status-*.ts`, market chapter `listing-window-*.ts` + `market-charts.ts`. Rulings: [`SKILL.md`](marketing_brain_skills/producers/cma/SKILL.md) (long: grep it). Recorded in `public.cmas` + `cma_comps`. |
+| CMA / valuation | Comp search + count: [`lib/pricing/`](lib/pricing/) `ladder.ts`, `match.ts`; cover price `estimate.ts`. Letter: [`lib/cma/`](lib/cma/) chapters `opinion-*.ts`, evidence tables `status-*.ts`, market chapter `listing-window-*.ts` + `market-charts.ts`. Rulings: [`SKILL.md`](marketing_brain_skills/producers/cma/SKILL.md) §0.3. Recorded in `public.cmas` + `cma_comps`. |
 | Public site pages (menu, keep/cut, sections, LPs) | [`docs/plans/PUBLIC_PRODUCT/SITE_PAGES.md`](docs/plans/PUBLIC_PRODUCT/SITE_PAGES.md) then [`PLACE_PAGES.md`](docs/plans/PUBLIC_PRODUCT/PLACE_PAGES.md). Those override leftover-HUD tests and `/lp` skills. Page-grade is **KILLED**. Do not scaffold `/lp/*`. |
 | Place page code | Sections: [`lib/site/`](lib/site/) `place-*.ts`, [`lib/place/`](lib/place/). Route-only: `app/<route>/[slug]/_v3/`. `page.tsx` is wiring: grep it. |
 | Listings, search box, map | Reads: [`lib/data/listings/`](lib/data/listings/). Map + price badges: [`components/SearchMapClustered.tsx`](components/SearchMapClustered.tsx). |
+
+**Locked CMA rules.**
+
+For an expired CMA, check live listing status before any rebuild. If the home is active, pending, or otherwise on the market, do not build a CMA and do not send one. Skip it. This is not optional and not expired-only in the sense of "only sometimes": at least every expired rebuild must do this. Do not loosen it.
+
+Recommended price is the house from comps only. No ADU, second-lot, or rental-income dollars in the price. Those stay letter notes.
+
+Gap hold: a recommendation more than 15% under the last ask, or any amount over the last ask, is refused before approve, enqueue, or send. Exactly 15% under is not a hold. Missing ask or missing rec is not a hold. The row stays built.
+
+Do not send, enqueue, or approve owner email unless the task explicitly says to, and never from a rebuild.
 
 **CRM is in-house** `public.crm_people` via `sendEvent()` in [`lib/crm/send-event.ts`](lib/crm/send-event.ts). Review at `/admin/crm`.
