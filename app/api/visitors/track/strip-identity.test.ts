@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { stripClickDestination, stripIdentityParams, visitorEventMetadata } from './strip-identity'
+import { stripClickDestination, stripIdentityParams, visitorEventMetadata, withoutIdentityOnOwnSite } from './strip-identity'
 import { trackedDocLink } from '@/lib/cma/doc-links'
 import { cmaCampaignFromUrl } from '@/lib/cma/doc-links'
 
@@ -81,5 +81,20 @@ describe('stripIdentityParams', () => {
     const stored = stripIdentityParams(link)!
     expect(stored).not.toContain('_pid')
     expect(cmaCampaignFromUrl(stored)).toBe('cma-1975-harriman')
+  })
+})
+
+describe('withoutIdentityOnOwnSite (where a redirect sends automation)', () => {
+  it('takes every person token off one of our links and keeps what describes the click', () => {
+    expect(withoutIdentityOnOwnSite('https://ryan-realty.com/cma/cma-1?utm_source=cma&agent=matt&_pid=7.document.sig&_fuid=9')).toBe(
+      'https://ryan-realty.com/cma/cma-1?utm_source=cma&agent=matt',
+    )
+    expect(withoutIdentityOnOwnSite('https://www.ryan-realty.com/?_pid=7.email.sig')).toBe('https://www.ryan-realty.com/')
+  })
+
+  it('leaves another site\'s link, a link with nothing to take, and a string that is not a URL exactly as they are', () => {
+    expect(withoutIdentityOnOwnSite('https://example.org/listing?_pid=theirs')).toBe('https://example.org/listing?_pid=theirs')
+    expect(withoutIdentityOnOwnSite('https://ryan-realty.com/sell?utm_source=crm')).toBe('https://ryan-realty.com/sell?utm_source=crm')
+    expect(withoutIdentityOnOwnSite('not a url')).toBe('not a url')
   })
 })

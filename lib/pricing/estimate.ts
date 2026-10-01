@@ -1010,6 +1010,8 @@ export function pricingSaleToCmaComp(sale: SelectedPricingComp): CmaComp {
     selectionTier: sale.selectionTier,
     proximity: sale.proximity,
     roomDifference: sale.roomDifference ?? null,
+    ownPlat: sale.ownPlat ?? null,
+    seniorCommunityYn: sale.seniorCommunityYn ?? null,
   }
 }
 
@@ -1511,7 +1513,12 @@ export function priceCmaSet(args: {
   /** Parcel record. Land uses it for the infrastructure schedule; homes ignore it. */
   site?: CmaSiteData | null
   selection: {
-    pricingSales?: Array<{ closePrice: number; originalAsk: number | null; selectionTier?: string }>
+    /**
+     * The selector's whole pool. Only the sales in `adjusted` (the set that
+     * prices) feed the sale-to-ask share; a pool sale with no listing key
+     * cannot be matched to that set and is left out of it.
+     */
+    pricingSales?: Array<{ listingKey?: string | null; closePrice: number; originalAsk: number | null; selectionTier?: string }>
     tiersUsed: string[]
   }
   marketIndex: MarketIndexPoint[]
@@ -1596,12 +1603,26 @@ export function priceCmaSet(args: {
   // and the engine cover below re-derives every tier from the range rule, so
   // it has to run again after. applyStreetAnchor is idempotent and keeps the
   // first `before`, so the sentence names the whole distance once.
+  // THE SHARE COMES FROM THE SALES THAT PRICE (review of da8dce6, 2026-09-30).
+  // selection.pricingSales is the selector's whole pool: the sales the
+  // comparability review excluded, the product wall kept out and the audit
+  // removed are all still in it. When neither the city index nor the market
+  // context carries a sale-to-original share, the median of these ratios is
+  // the share every list tier is carried by and the "closing at X percent"
+  // sentence prints, so an excluded sale moved the printed list. Four excluded
+  // sales at 80 percent of their ask over three priced ones at 100 percent
+  // moved a $490,000 / $500,000 / $510,000 list to $510,000 on all three
+  // tiers (lib/pricing/estimate.test.ts). The ratios are held to `adjusted`.
+  const pricedKeys = new Set(args.adjusted.map((c) => c.listingKey))
+  const pricedSales = (args.selection.pricingSales ?? []).filter(
+    (s) => s.listingKey != null && pricedKeys.has(s.listingKey),
+  )
   const covered = applyEngineCoverToCmaPricing(pricing, {
     subjectSqft: args.subject.sqft ?? 0,
     lastAsk: currentListAsk(args.subject),
     failedAsk: failedListAsk(args.subject),
     adjusted: args.adjusted,
-    pricingSales: args.selection.pricingSales ?? [],
+    pricingSales: pricedSales,
     marketIndex: args.marketIndex,
     asOf: args.asOf,
     usedTiers: args.selection.tiersUsed,

@@ -8,8 +8,9 @@
  */
 
 import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
+import { claimCompOf, narrativeClaimFindings, type ClaimComp } from '@/lib/cma/narrative-claims'
 import type { AuditFinding } from '@/lib/cma/audit'
-import type { CmaAdjustedComp, CmaMarketContext, CmaSubject } from '@/lib/cma/types'
+import type { CmaAdjustedComp, CmaComp, CmaMarketContext, CmaSubject } from '@/lib/cma/types'
 
 // ─── Deterministic narrative-integrity check ────────────────────────────────
 //
@@ -63,8 +64,29 @@ import type { CmaAdjustedComp, CmaMarketContext, CmaSubject } from '@/lib/cma/ty
 // Known limits, stated honestly: recall is partial. A name introduced with a
 // long descriptor before its noun ("the Sandy riverfront custom log home
 // ($950k)") is not in a frame and is missed; so is a phantom comp the
-// narrative never prices. Under-counting ("four comps remain" over five) is NOT
-// flagged — it asserts no absent evidence, so it stays the LLM's `major`.
+// narrative never prices.
+//
+// FOUR MORE, 2026-09-30 (lib/cma/narrative-claims.ts, which owns their rules
+// and their near misses). The narrative is written about the judge's own cut,
+// and until then nothing read the FINAL narrative against the FINAL priced set:
+// 12 of 20 expired CMAs about to reach homeowners said "three closed sales were
+// kept" over five priced, named a priced sale as dropped, or claimed a weight or
+// a lot range the priced sales do not carry, and the audit filed each as an
+// advisory narrative major. Each now lands as critical + data-integrity:
+//
+//   4. a kept or retained count that is not the priced count, UNDER-stating as
+//      well as over-stating it ("Three closed sales were kept" over four), and
+//      an excluded count the candidates do not bear out ("None were excluded");
+//   5. a sale named in a drop clause that is priced, and one named as kept that
+//      is not;
+//   6. "full weight" or "half weight" against the sale's reconciliation tier;
+//   7. a lot or acreage figure for the kept sales their own lot data does not
+//      support, including a sale with no lot size on record.
+//
+// 5 and the excluded count need the candidates the review saw (`candidates`);
+// 6 needs the tiers (`tierByKey`). Without them those checks stay quiet. An
+// under-count phrased "N comps remain strong" is still not read as a whole-set
+// count: that is a subset, not the priced set.
 
 const NAME_STOP = new Set(
   (
@@ -235,8 +257,12 @@ export function checkNarrativeIntegrity(args: {
   narrative: string | null | undefined
   comps: CmaAdjustedComp[]
   excluded: Array<{ listingKey: string; reason: string }>
-  subject: Pick<CmaSubject, 'streetAddress' | 'city' | 'subdivision'>
+  subject: Pick<CmaSubject, 'streetAddress' | 'city' | 'subdivision'> & { lotAcres?: number | null }
   market: Pick<CmaMarketContext, 'geoLabel'> | null
+  /** Every candidate the comparability review saw, priced or not. */
+  candidates?: ReadonlyArray<CmaComp> | null
+  /** The review's tier per listing key (judgment verdicts). */
+  tierByKey?: ReadonlyMap<string, string> | null
 }): AuditFinding[] {
   const narrative = args.narrative?.trim()
   // The cap is insurance, not a real limit: a comparability narrative runs a few
@@ -361,6 +387,21 @@ export function checkNarrativeIntegrity(args: {
       `Stated ${bad}. The priced comps closed between $${lo.toLocaleString()} and $${hi.toLocaleString()}.`,
     )
     break
+  }
+
+  // ── 4 to 7. counts, named sales, weights and lots against the priced set ───
+  const toClaim = (c: CmaComp): ClaimComp => claimCompOf(c, args.tierByKey?.get(c.listingKey))
+  const seen = new Set(findings.map((f) => f.claim))
+  for (const f of narrativeClaimFindings({
+    narrative,
+    priced: args.comps.map(toClaim),
+    candidates: args.candidates ? args.candidates.map(toClaim) : null,
+    subject: { streetAddress: args.subject.streetAddress, lotAcres: args.subject.lotAcres ?? null },
+  })) {
+    const claim = sanitizeClientProse(f.claim)
+    if (seen.has(claim)) continue
+    seen.add(claim)
+    emit(f.claim, f.evidence)
   }
 
   return findings

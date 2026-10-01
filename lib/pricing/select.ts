@@ -28,6 +28,7 @@ import {
   getPricingSubdivisionCells,
   selectPricingFactsNear,
   selectPricingFactsPool,
+  selectSeniorCommunityListingKeys,
 } from '@/lib/data/pricing/facts'
 import { estimateClosePrice, pricingSaleToCmaComp } from '@/lib/pricing/estimate'
 import type { SelectedPricingComp } from '@/lib/pricing/match'
@@ -78,6 +79,7 @@ export function cmaSubjectToPricing(
     propertySubType: subject.propertySubType,
     zoning: extras.zoning ?? zoningFromSubject ?? null,
     publicRemarks: subject.publicRemarks,
+    seniorCommunityYn: subject.seniorCommunityYn ?? null,
     irrigationClass: extras.irrigationClass ?? null,
   }
 }
@@ -184,9 +186,16 @@ export async function selectPricingComps(
   const byKey = new Map(pool.map((s) => [s.listingKey, s]))
   for (const s of localPool) if (!byKey.has(s.listingKey)) byKey.set(s.listingKey, s)
   for (const s of ruralPool) if (!byKey.has(s.listingKey)) byKey.set(s.listingKey, s)
+  // AGE-RESTRICTED EVIDENCE THE FACTS TABLE DOES NOT CARRY. sale_pricing_facts
+  // has no SeniorCommunityYN, and the age wall and the plat-majority share read
+  // it (lib/pricing/age-restricted.ts), so the pool's true flags come from
+  // listings. Only TRUE is read: false and null are the MLS default and are not
+  // evidence either way.
+  const seniorKeys = await selectSeniorCommunityListingKeys([...byKey.keys()])
   const sales = [...byKey.values()].map((s) => ({
     ...s,
     marketArea: s.marketArea ?? resolveMarketArea(s.latitude, s.longitude),
+    seniorCommunityYn: seniorKeys.has(s.listingKey) ? true : null,
   }))
   // Containment (Matt 2026-09-08): the subject's plat and the plats next to it
   // inside its boundary, and each sale's plat, so the adjacent rung can run.
@@ -321,6 +330,7 @@ export function matchToCompSelection(
     trace: match.trace,
     pricingSource: 'facts',
     pricingSales: match.comps,
+    ownPlatAgeRestrictedShare: match.ownPlatAgeRestrictedShare ?? null,
     diagnostics: {
       market_area: marketAreaName(area),
       market_area_resolved: area != null,

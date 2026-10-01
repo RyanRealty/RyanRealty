@@ -1,29 +1,43 @@
 /**
- * Judgment may thin a priced set only when Matt's document floor still holds.
+ * WHAT PRICES THE HOUSE AFTER THE COMPARABILITY REVIEW.
  *
- * Falcon 15991: the ladder reached 8 closed sales; judgeComps kept 3 because
- * near-acre same-plat peers had already been cut. buildCma then accepted that
- * prune because the floor was MIN_COMPS (3). FACTS_STANDALONE_MIN /
- * BOUNDARY_EXIT_BELOW is the document floor (≥5). Grok cannot starve a filled
- * ladder below that.
+ * When the judge ran and the broker did not curate the set, the priced set is
+ * the product-matched comps the judge KEPT, strong and weak. A comp it
+ * excluded is never priced. Fewer than the pricing minimum is a comp shortage,
+ * and the build fails with the existing shortage message rather than printing
+ * a number off sales the review threw out.
  *
- * A different product is not that case. Structure-type exclusions, and a new
- * build priced against an ordinary resale, are dropped even when the keep
- * list is shorter than the floor. If that leaves fewer than the pricing
- * minimum, the build is a comp shortage, not a price off the mismatches.
+ * THE FALCON RE-ADMISSION IS RETIRED (2026-09-30). On Falcon 15991 the judge
+ * kept 3 of 8 closed sales because it had cut near-acre peers in the subject's
+ * own plat on price. The answer then was a second floor, FACTS_STANDALONE_MIN
+ * (5): a keep under five priced the WHOLE product-matched pool instead. That
+ * re-admitted every sale the judge excluded, at full weight (only `weak` is
+ * halved), under a narrative that still described the judge's own cut. On the
+ * 2026-09-29 expired batch it put the excluded sale in the priced set with the
+ * largest or second-largest reconciliation weight (557 Tyee at 0.54 on
+ * cma-714-wrangler-sisters, the 2020 Arena Acres sale at 0.35 on
+ * cma-3153-cromwell) beside prose saying four sales were kept. It also broke
+ * two of Matt's recorded rulings (marketing_brain_skills/producers/cma/SKILL.md
+ * 0.1): ONE comp floor of 3 across both ladders, and "two exemptions and only
+ * two" from price-tier grading. The case Falcon was compensating for, the judge
+ * cutting the subject's own-plat peers on price, is now a deterministic
+ * restoration inside lib/cma/judge.ts, next to the same-street one. That puts
+ * the sale back as a kept comp with a reason, instead of putting every excluded
+ * sale back with none.
+ *
+ * A different product never prices the house, whatever the review said and
+ * whether or not the review ran: a structure-type exclusion, a sub-type the
+ * product class rejects, age-restricted housing the subject is not part of
+ * (lib/pricing/age-restricted.ts), and a new build against an ordinary resale.
+ * When the review did not run, the product-matched pool prices with the
+ * dispersion guard and the contract's review flag as the backstop.
  */
-import { FACTS_STANDALONE_MIN } from '@/lib/pricing/ladder'
 import { isCustomOrNewSubject, isNewBuild, newConstructionCompatible } from '@/lib/pricing/classes'
 import { productTypeCompatible } from '@/lib/cma/market-area'
-
-export const JUDGMENT_PRUNE_FLOOR = FACTS_STANDALONE_MIN
+import { ageRestrictedMismatch, ownPlatAgeRestrictedShare } from '@/lib/pricing/age-restricted'
 
 const PRODUCT_REASON =
   /\b(product type|different product|townhomes?|townhouses?|condominiums?|condos?|rowhouses?|row houses?|manufactured|duplex|triplex|quadruplex|lodges?|shared wall|common wall|structure type)\b/i
-
-export function pricedSetAfterJudgment<T>(selected: readonly T[], vetted: readonly T[]): T[] {
-  return vetted.length >= JUDGMENT_PRUNE_FLOOR ? [...vetted] : [...selected]
-}
 
 export type ProductVerdict = {
   listingKey: string
@@ -43,22 +57,39 @@ type ProductComp = {
   listingKey: string
   propertySubType?: string | null
   yearBuilt?: number | null
+  publicRemarks?: string | null
+  subdivision?: string | null
+  /** The selector's own-plat decision (lib/cma/types.ts CmaComp.ownPlat). */
+  ownPlat?: boolean | null
+  /** MLS SeniorCommunityYN (lib/cma/types.ts CmaComp.seniorCommunityYn). */
+  seniorCommunityYn?: boolean | null
 }
 
 type ProductSubject = {
   propertySubType: string | null
   yearBuilt?: number | null
   newConstructionYn?: boolean | null
+  publicRemarks?: string | null
+  subdivision?: string | null
+  seniorCommunityYn?: boolean | null
 }
 
 export function pricingCompsAfterJudgment<T extends ProductComp>(args: {
+  /** Every candidate the review saw. */
   selected: readonly T[]
+  /** The candidates the review kept (strong and weak). Ignored when it did not run. */
   vetted: readonly T[]
   verdicts: readonly ProductVerdict[]
   subject: ProductSubject
   minComps: number
   exclusivePocket?: boolean
   asOfYear?: number
+  /**
+   * Share of the subject's own-plat sales that are age-restricted, measured by
+   * the facts ladder over its whole pool. Absent on the listings ladder, where
+   * it is measured over the candidates' own-plat sales instead.
+   */
+  ownPlatAgeRestrictedShare?: number | null
 }): { comps: T[]; shortage: boolean; droppedProduct: number; trace: string } {
   const year = args.asOfYear ?? new Date().getFullYear()
   const byVerdict = new Map(args.verdicts.map((v) => [v.listingKey, v]))
@@ -70,10 +101,30 @@ export function pricingCompsAfterJudgment<T extends ProductComp>(args: {
     },
     year,
   )
+  const platShare =
+    args.ownPlatAgeRestrictedShare !== undefined
+      ? args.ownPlatAgeRestrictedShare
+      : ownPlatAgeRestrictedShare(args.selected.filter((c) => c.ownPlat === true))
+  // Built once, so the subject is read once for the whole set (isAgeRestricted's memo).
+  const subjectEvidence = {
+    publicRemarks: args.subject.publicRemarks,
+    subdivision: args.subject.subdivision,
+    seniorCommunityYn: args.subject.seniorCommunityYn,
+  }
   const hard = (comp: T): boolean => {
     if (!productTypeCompatible(args.subject.propertySubType, comp.propertySubType ?? null)) return true
     const verdict = byVerdict.get(comp.listingKey)
     if (verdict && isHardProductExclusion(verdict)) return true
+    if (
+      ageRestrictedMismatch({
+        subject: subjectEvidence,
+        sale: comp,
+        saleInOwnPlat: comp.ownPlat === true,
+        ownPlatShare: platShare,
+      })
+    ) {
+      return true
+    }
     if (args.exclusivePocket || subjectNew) return false
     return !newConstructionCompatible(
       isNewBuild(args.subject.yearBuilt, year, args.subject.newConstructionYn),
@@ -82,27 +133,42 @@ export function pricingCompsAfterJudgment<T extends ProductComp>(args: {
   }
   const pool = args.selected.filter((c) => !hard(c))
   const droppedProduct = args.selected.length - pool.length
-  const poolKeys = new Set(pool.map((c) => c.listingKey))
-  const vettedPool = args.vetted.filter((c) => poolKeys.has(c.listingKey))
   const judged = args.verdicts.length > 0
-  // A keep under the pricing minimum is not a thin price-tier cut of a
-  // filled ladder. The excluded sales do not come back. Zero kept is the
-  // case a widened search prices after the judge has already rejected it.
-  if (judged && vettedPool.length < args.minComps) {
+  if (!judged) {
+    // No review to hold to: the product-matched pool prices, and the contract's
+    // llm-judgment-ran check forces broker review.
+    const shortage = pool.length < args.minComps
     return {
-      comps: vettedPool,
-      shortage: true,
+      comps: pool,
+      shortage,
       droppedProduct,
-      trace: `Comparability judgment kept ${vettedPool.length} sale(s), under the ${args.minComps}-sale minimum. The excluded sales are not priced.`,
+      trace:
+        droppedProduct > 0
+          ? `Excluded ${droppedProduct} different-product sale(s) before pricing. ${pool.length} product-matched sale(s) remain.`
+          : `Priced on the ${pool.length} product-matched sale(s).`,
     }
   }
-  const comps = vettedPool.length >= JUDGMENT_PRUNE_FLOOR ? vettedPool : pool
-  const shortage = comps.length < args.minComps
-  const trace =
-    droppedProduct > 0
-      ? `Excluded ${droppedProduct} different-product sale(s) before pricing. ${comps.length} product-matched sale(s) remain.`
-      : vettedPool.length >= JUDGMENT_PRUNE_FLOOR
-        ? `Priced on the ${vettedPool.length}-comp vetted set.`
-        : `Comparability judgment would keep only ${vettedPool.length} comps, below the ${JUDGMENT_PRUNE_FLOOR}-comp floor, so the ${pool.length}-comp product-matched set was priced instead.`
-  return { comps, shortage, droppedProduct, trace }
+  const poolKeys = new Set(pool.map((c) => c.listingKey))
+  const kept = args.vetted.filter((c) => poolKeys.has(c.listingKey))
+  // Review exclusions among the product-matched sales, so a structure-type
+  // exclusion is counted once, as a different product.
+  const excluded = args.verdicts.filter((v) => v.tier === 'exclude' && poolKeys.has(v.listingKey)).length
+  if (kept.length < args.minComps) {
+    return {
+      comps: kept,
+      shortage: true,
+      droppedProduct,
+      trace: `Comparability judgment kept ${kept.length} product-matched sale(s), under the ${args.minComps}-sale minimum. The excluded sales are not priced.`,
+    }
+  }
+  const dropped = [
+    excluded > 0 ? `${excluded} excluded by the comparability review` : null,
+    droppedProduct > 0 ? `${droppedProduct} different-product sale(s)` : null,
+  ].filter(Boolean)
+  return {
+    comps: kept,
+    shortage: false,
+    droppedProduct,
+    trace: `Priced on the ${kept.length} sale(s) the comparability review kept${dropped.length ? `. Not priced: ${dropped.join(', ')}` : ''}.`,
+  }
 }

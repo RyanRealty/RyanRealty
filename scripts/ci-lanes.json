@@ -623,7 +623,10 @@
       "app/api/**/*newsletter*",
       "lib/email/**",
       "lib/email-templates/**",
-      "lib/digest-email-templates.tsx"
+      "lib/digest-email-templates.tsx",
+      "lib/email-tracking.ts",
+      "app/api/track/e/**",
+      "scripts/check-email-tracking.mjs"
     ],
     "ci:embed-csp-parity": [
       "next.config.*",
