@@ -3,12 +3,11 @@
 -- WHY. warm-geo-pages may start a plat pass (about 2,750 cold renders) only
 -- when no pass began in the last six hours (lib/warm-plat-pages.ts, "ONE PASS
 -- PER GAP"). The first form treated "slice 0 was claimable" as "a pass is
--- starting" and gave slice 0 back when the gap was held. Two ways it failed:
--- the slice names carry the plat count, so when the indexable set changed size
--- mid-pass the renamed slice 0 asked for the gap again, found it held by its
--- own pass, and stopped the rest of that pass for up to six hours; and when the
--- claim or the give-back call failed, later slices were claimed with no gap
--- check at all.
+-- starting" and gave slice 0 back when the gap was held, so when the claim or
+-- the give-back call failed, later slices were claimed with no gap check at
+-- all. The marker names the pass by deployment and plat count, as the slice
+-- leases do: a plat set resized mid-pass is a new pass and waits for the gap
+-- (lib/warm-plat-pages.ts says why).
 --
 -- THE GATE. crm_cron_pass_gate(marker, marker_seconds, gap, gap_seconds),
 -- under one advisory lock so two runs cannot both start:

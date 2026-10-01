@@ -7,10 +7,10 @@
 -- "PropertyType" = 'A' literal proves the predicate.
 --
 -- PRODUCTION: built CONCURRENTLY on 2026-10-01 at 04:20Z by a one-shot pg_cron
--- job (35 MB, 31 s); under `npm run db:push` this file's IF NOT EXISTS is a
--- no-op. Bend / Deschutes RiverWoods is now an index-only scan: 3,387 rows,
--- 169 buffers, 5.9 ms. Run as written on a fresh database it takes a write
--- lock on listings for the build.
+-- job (35 MB, 31 s); recorded in the migration history under this file's
+-- version, so `supabase db push` skips it. Bend / Deschutes RiverWoods is now
+-- an index-only scan: 3,387 rows, 169 buffers, 5.9 ms. Run as written on a
+-- fresh database it takes a write lock on listings for the build.
 CREATE INDEX IF NOT EXISTS idx_listings_subdivision_schools_cover
   ON public.listings ("City", "SubdivisionName")
   INCLUDE (elementary_school, middle_school, high_school, school_district)

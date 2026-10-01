@@ -28,16 +28,16 @@ import { resolveSubdivisionAreaRedirect } from '@/lib/subdivision-area-redirects
  * every deploy cleared the ISR cache and this tier re-rendered ~2,750 pages
  * on a 4 GB IO-bound instance. So a deployment may START a plat pass only
  * when no pass began inside PLAT_WARM_PASS_GAP_S. One statement decides it,
- * crm_cron_pass_gate (migration 20261001030900): if this deployment's pass
- * marker (platPassMarkerName) is held, the pass is under way and continues;
- * else if PLAT_WARM_PASS_GAP_LEASE is held, the deployment waits
- * (`throttled`); else it takes both and starts. The marker carries no path
- * count, so a pass whose slice names change mid-way (the indexable set
- * resized) keeps going, and nothing is ever taken and given back, so no
- * failed release can leave a pass running past the gap. A gate that does not
- * answer warms nothing. Tier 1 (~137 registry pages) stays per deployment.
- * Cost of the trade: a plat first fetched between passes pays the cold
- * render it paid before 2026-09-23.
+ * crm_cron_pass_gate: if this pass's marker (platPassMarkerName) is held, the
+ * pass is under way and continues; else if PLAT_WARM_PASS_GAP_LEASE is held,
+ * it waits (`throttled`); else it takes both and starts. Nothing is taken and
+ * given back, so no failed call can let a pass run past the gap, and a gate
+ * that does not answer warms nothing. The marker carries the path count, like
+ * the slice leases: when the indexable set changes size mid-pass the slices
+ * are renamed, which is a new pass, and it waits for the gap like any other
+ * (the plats not yet warmed render cold on demand until then). Tier 1 (~137
+ * registry pages) stays per deployment. Cost of the trade: a plat first
+ * fetched between passes pays the cold render it paid before 2026-09-23.
  */
 
 /** URLs per claimed slice. At concurrency 6 and 2.4 to 8.6 s per cold render, one slice fits well inside a 300 s invocation. */
@@ -59,12 +59,13 @@ export const PLAT_WARM_PASS_GAP_S = 6 * 3600
 export const PLAT_WARM_PASS_GAP_LEASE = 'warm-plats-pass-gap'
 
 /**
- * The crm_cron_leases name that marks this deployment's pass as started. No
- * path count in it (unlike the slice leases), so it survives the indexable
- * set changing size mid-pass.
+ * The crm_cron_leases name that marks this pass as started: the deployment and
+ * the path count, the same pass the slice leases (platSliceLeaseName) name.
+ * A resized set is a new pass, so it goes through the gap again rather than
+ * re-warming every plat inside it.
  */
-export function platPassMarkerName(sha: string): string {
-  return `warm-plats-pass:${sha}`
+export function platPassMarkerName(sha: string, pathCount: number): string {
+  return `warm-plats-pass:${sha}:n${pathCount}`
 }
 
 /**

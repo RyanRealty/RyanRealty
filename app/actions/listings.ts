@@ -2590,15 +2590,3 @@ export type ListingHistoryRow = {
   created_at?: string
 }
 
-/**
- * Listing keys with a current price drop in the last N days, for the search
- * results' "Price drop" badge: the price_drop events /price-drops and the
- * homepage cards read, cached ten minutes for every search path
- * (getRecentPriceDropKeys).
- */
-const PRICE_DROP_BADGE_DAYS = 30
-
-export async function getListingKeysWithRecentPriceDrop(withinDays = PRICE_DROP_BADGE_DAYS): Promise<Set<string>> {
-  const { getRecentPriceDropKeys } = await import('@/lib/data')
-  return new Set(await getRecentPriceDropKeys(withinDays))
-}

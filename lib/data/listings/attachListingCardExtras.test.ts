@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { parseActivityPriceDrop } from './attachListingCardExtras'
+import { currentPriceDrop, parseActivityPriceDrop } from './attachListingCardExtras'
 
 describe('parseActivityPriceDrop', () => {
   it('keeps a current cut with a date', () => {
@@ -152,5 +152,27 @@ describe('loadRecentPriceDropEvents pages the price_drop events (SITE-212 review
     expect(drops.get('K5')?.newPrice).toBe(480000) // the newest drop wins
     expect(drops.size).toBe(1399 + 99)
     vi.doUnmock('@/lib/data/client')
+  })
+})
+
+describe('currentPriceDrop (the badge shows a drop only while it is current)', () => {
+  const drop = { previousPrice: 500000, newPrice: 480000, at: '2026-09-20T17:00:00.000Z' }
+
+  it('keeps a drop while the ask is still below the previous price', () => {
+    expect(currentPriceDrop(drop, 480000)).toBe(drop)
+    expect(currentPriceDrop(drop, '475000')).toBe(drop)
+  })
+
+  it('drops it once the ask was raised back to or above the previous price', () => {
+    // A cut followed by a raise: deltaSync writes the raise as price_increase,
+    // which the drop read never sees, so the ask is the only witness.
+    expect(currentPriceDrop(drop, 520000)).toBeNull()
+    expect(currentPriceDrop(drop, 500000)).toBeNull()
+  })
+
+  it('says nothing without a drop or a usable ask', () => {
+    expect(currentPriceDrop(undefined, 480000)).toBeNull()
+    expect(currentPriceDrop(drop, null)).toBeNull()
+    expect(currentPriceDrop(drop, 'call for price')).toBeNull()
   })
 })

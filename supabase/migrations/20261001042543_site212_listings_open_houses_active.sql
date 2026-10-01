@@ -7,12 +7,12 @@
 -- holds exactly those, in the query's own order.
 --
 -- PRODUCTION: built CONCURRENTLY on 2026-10-01 at 04:22Z by a one-shot pg_cron
--- job (32 kB, 26 s); under `npm run db:push` this file's IF NOT EXISTS is a
--- no-op. The service-area read is now an index scan of this index: 254
--- candidates, 117 kept, 257 buffers, 1.9 ms. Usable because PostgREST now
--- plans with the values (20261001030700): a parameter cannot prove this
--- WHERE. Run as written on a fresh database it takes a write lock on
--- listings for the build.
+-- job (32 kB, 26 s); recorded in the migration history under this file's
+-- version, so `supabase db push` skips it. The service-area read is now an
+-- index scan of this index: 254 candidates, 117 kept, 257 buffers, 1.9 ms.
+-- Usable because PostgREST now plans with the values (20261001040235): a
+-- parameter cannot prove this WHERE. Run as written on a fresh database it
+-- takes a write lock on listings for the build.
 CREATE INDEX IF NOT EXISTS idx_listings_open_houses_active
   ON public.listings ("ListingKey")
   INCLUDE ("City")

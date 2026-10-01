@@ -12,10 +12,10 @@
 -- range read with no sort.
 --
 -- PRODUCTION: built CONCURRENTLY on 2026-10-01 at 04:24Z by a one-shot pg_cron
--- job (67 MB, 67 s), then dropped at 05:12Z by 20261001031000 when review
--- moved the badge to the price_drop events: price_change also carries raises
--- and every sale's close-to-list difference. Kept so the history reads in
--- order; replayed, this file builds an index the next one drops.
+-- job (67 MB, 67 s), then dropped at 05:12Z by 20261001051242 when review moved
+-- the badge to the price_drop events: price_change also carries raises and
+-- every sale's close-to-list difference. Kept so the history reads in order;
+-- replayed, this file builds an index the next one drops.
 CREATE INDEX IF NOT EXISTS idx_listing_history_price_change_cover
   ON public.listing_history (event_date, id)
   INCLUDE (listing_key)

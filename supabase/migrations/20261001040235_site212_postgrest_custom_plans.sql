@@ -22,16 +22,20 @@
 -- plan still chose the 8,095-block bitmap.
 --
 -- THE CHANGE. plan_cache_mode = force_custom_plan for PostgREST's login role
--- and the three roles it impersonates (it applies an impersonated role's
--- settings on each request, the way anon's 3 s statement_timeout reaches
--- every anon read). Every execution is planned with its values; planning these
--- statements measured 2 to 3 ms. Undo with ALTER ROLE <role> RESET
--- plan_cache_mode and the same NOTIFY.
+-- (every pool connection opened after this carries it) and the three roles it
+-- impersonates (it applies an impersonated role's settings on each request,
+-- the way anon's 3 s statement_timeout reaches every anon read, re-read on
+-- NOTIFY pgrst, 'reload config'). Every execution is planned with its values;
+-- planning these statements measured 2 to 3 ms. Measured on production traffic
+-- from 04:01Z to 05:40Z: the neighborhood rail read 51 blocks a call (3,449
+-- before), its sub-type form 50 (3,154), the new-listings count 102 (2,279).
+-- Undo: ALTER ROLE <role> RESET plan_cache_mode for the four, NOTIFY pgrst,
+-- 'reload config', and let the pool recycle its connections.
 
 ALTER ROLE authenticator SET plan_cache_mode = 'force_custom_plan';
 ALTER ROLE anon SET plan_cache_mode = 'force_custom_plan';
 ALTER ROLE authenticated SET plan_cache_mode = 'force_custom_plan';
 ALTER ROLE service_role SET plan_cache_mode = 'force_custom_plan';
 
--- PostgREST reads the impersonated roles' settings with its schema cache.
-NOTIFY pgrst, 'reload schema';
+-- PostgREST re-reads the impersonated roles' settings with its configuration.
+NOTIFY pgrst, 'reload config';

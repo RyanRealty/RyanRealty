@@ -15,9 +15,10 @@
 -- pattern. pg_trgm is already installed (idx_listings_city_trgm).
 --
 -- PRODUCTION: built CONCURRENTLY on 2026-10-01 at 04:11Z by a one-shot pg_cron
--- job (37 MB, 36 s); under `npm run db:push` this file's IF NOT EXISTS is a
--- no-op. After it, the track-record read is a bitmap scan of this index:
--- 17 rows, 241 buffers, 4.1 ms (EXPLAIN (ANALYZE, BUFFERS)). Run as written on
--- a fresh database it takes a write lock on listings for the build.
+-- job (37 MB, 36 s); recorded in the migration history under this file's
+-- version, so `supabase db push` skips it. After it, the track-record read is a
+-- bitmap scan of this index: 17 rows, 241 buffers, 4.1 ms (EXPLAIN (ANALYZE,
+-- BUFFERS)). Run as written on a fresh database it takes a write lock on
+-- listings for the build.
 CREATE INDEX IF NOT EXISTS idx_listings_list_office_name_trgm
   ON public.listings USING gin ("ListOfficeName" gin_trgm_ops);

@@ -105,7 +105,7 @@ async function warmPlatTier(sb: Sb, sha: string, t0: number) {
   // ONE PASS PER GAP (lib/warm-plat-pages.ts): one statement says whether this
   // deployment's pass starts now, is already under way, or waits for the gap.
   const { data: gate, error: gateError } = await sb.rpc('crm_cron_pass_gate', {
-    p_marker: platPassMarkerName(sha),
+    p_marker: platPassMarkerName(sha, paths.length),
     p_marker_seconds: LEASE_SECONDS,
     p_gap: PLAT_WARM_PASS_GAP_LEASE,
     p_gap_seconds: PLAT_WARM_PASS_GAP_S,

@@ -134,41 +134,49 @@ async function readRecentPriceDrops(
   return { drops, error: error?.message ?? null }
 }
 
+async function fetchRecentPriceDropEntries(days: number): Promise<Array<[string, ListingCardPriceDrop]>> {
+  const { drops, error } = await readRecentPriceDrops(days)
+  // Thrown, never cached as "no drops" (makeResilientCached falls back to []
+  // for this call only).
+  if (error) throw new Error(`[getRecentPriceDropEntries] price drops not read: ${error}`)
+  return [...drops.entries()]
+}
+
+/**
+ * The newest price drop per listing over the last N days, one read shared by
+ * the homepage and /buy rails (loadRecentPriceDropEvents) and the search
+ * results' "Price drop" badge, cached ten minutes. A card shows it only while
+ * the drop is still current (currentPriceDrop): /price-drops applies the same
+ * test, previous price above today's ask.
+ */
+export const getRecentPriceDropEntries = makeResilientCached(
+  fetchRecentPriceDropEntries,
+  ['recent-price-drop-entries-v1'],
+  { revalidate: 600, tags: [cacheTag.listings] },
+  [],
+)
+
 /** Latest current price-drop events in the last N days (homepage rails). */
 export async function loadRecentPriceDropEvents(
   days = RECENT_DROP_DAYS,
 ): Promise<Map<string, ListingCardPriceDrop>> {
-  const { drops, error } = await readRecentPriceDrops(days)
-  if (error) {
-    console.error('[loadRecentPriceDropEvents] price drops not read', error)
-    return new Map()
-  }
-  return drops
-}
-
-async function fetchRecentPriceDropKeys(days: number): Promise<string[]> {
-  const { drops, error } = await readRecentPriceDrops(days)
-  // Thrown, never cached as "no drops" (makeResilientCached falls back to []
-  // for this render only).
-  if (error) throw new Error(`[getRecentPriceDropKeys] price drops not read: ${error}`)
-  return [...drops.keys()]
+  return new Map(await getRecentPriceDropEntries(days))
 }
 
 /**
- * Keys of listings with a current price drop in the last N days: the search
- * results' "Price drop" badge. The same events, and the same test of a drop
- * (new price below the previous one), as /price-drops and the homepage cards.
- * The badge used to read listing_history price_change, which also carries
- * list-price raises and every sale's close-to-list difference, so a raised
- * ask was badged "Price drop" (SITE-212 review). One read serves every search
- * path for ten minutes.
+ * A drop event still describes the listing only while its previous price is
+ * above today's ask: a cut followed by a raise (a price_increase event, which
+ * this read does not see) is not a price drop any more. The homepage rail
+ * (currentDrop) and /price-drops make the same test.
  */
-export const getRecentPriceDropKeys = makeResilientCached(
-  fetchRecentPriceDropKeys,
-  ['recent-price-drop-keys-v1'],
-  { revalidate: 600, tags: [cacheTag.listings] },
-  [],
-)
+export function currentPriceDrop(
+  drop: ListingCardPriceDrop | null | undefined,
+  listPrice: number | string | null | undefined,
+): ListingCardPriceDrop | null {
+  const ask = listPrice == null ? NaN : Number(listPrice)
+  if (!drop || !Number.isFinite(ask)) return null
+  return drop.previousPrice > ask ? drop : null
+}
 
 export async function attachListingCardExtras(
   keys: string[],

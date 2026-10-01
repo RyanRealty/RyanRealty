@@ -240,7 +240,6 @@
     "app/reports/sales/[city]/[period]/page.tsx :: getSession <- @/app/actions/auth",
     "app/search/[...slug]/page.tsx :: getBuyingPreferences <- ../../actions/buying-preferences",
     "app/search/[...slug]/page.tsx :: getLikedListingKeys <- ../../actions/likes",
-    "app/search/[...slug]/page.tsx :: getListingKeysWithRecentPriceChange <- ../../actions/listings",
     "app/search/[...slug]/page.tsx :: getListingsWithAdvanced <- ../../actions/listings",
     "app/search/[...slug]/page.tsx :: getResortEntityKeys <- ../../actions/subdivision-flags",
     "app/search/[...slug]/page.tsx :: getSavedListingKeys <- ../../actions/saved-listings",

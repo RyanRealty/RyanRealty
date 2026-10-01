@@ -9,14 +9,14 @@
 -- answers it index-only.
 --
 -- PRODUCTION: built CONCURRENTLY on 2026-10-01 at 03:57Z by a one-shot pg_cron
--- job (28 MB, 4 s); under `npm run db:push` this file's IF NOT EXISTS is a
--- no-op. The same 3 km Bend box is now an index-only scan: 6,672 rows, 702
--- buffers, 53 ms cold. Proof of the equality: no status in the table but
--- 'Closed' matches ILIKE '%closed%', nor lower() LIKE '%clos%' or '%sold%'
--- (EXCEPT, production 2026-10-01). The read sends 'Closed' as a parameter, so
--- this WHERE is provable only in a plan made with the value: 20261001030700.
--- Run as written on a fresh database it takes a write lock on
--- listing_tile_mv_src for the build.
+-- job (28 MB, 4 s); recorded in the migration history under this file's
+-- version, so `supabase db push` skips it. The same 3 km Bend box is now an
+-- index-only scan: 6,672 rows, 702 buffers, 53 ms cold. Proof of the equality:
+-- no status in the table but 'Closed' matches ILIKE '%closed%', nor lower()
+-- LIKE '%clos%' or '%sold%' (EXCEPT, production 2026-10-01). The read sends
+-- 'Closed' as a parameter, so this WHERE is provable only in a plan made with
+-- the value: 20261001040235. Run as written on a fresh database it takes a
+-- write lock on listing_tile_mv_src for the build.
 CREATE INDEX IF NOT EXISTS listing_tile_mv_closed_latlng_cover
   ON public.listing_tile_mv_src (lat, lng)
   INCLUDE (listing_key, close_date)

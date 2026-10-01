@@ -66,10 +66,11 @@ describe('invocation budget', () => {
 })
 
 describe('the pass gap (SITE-212)', () => {
-  it('marks a deployment\'s pass by its sha alone, so a resized plat set does not restart the gap', () => {
-    expect(platPassMarkerName('abcdef123456')).toBe('warm-plats-pass:abcdef123456')
-    expect(platPassMarkerName('abcdef123456')).not.toContain('-n2617')
-    expect(platPassMarkerName('abcdef123456')).not.toBe(platPassMarkerName('0123456789ab'))
+  it('names a pass by its deployment and path count, the same pass its slices name', () => {
+    expect(platPassMarkerName('abcdef123456', 2617)).toBe('warm-plats-pass:abcdef123456:n2617')
+    // A resized set is a new pass, so it asks for the gap again.
+    expect(platPassMarkerName('abcdef123456', 2618)).not.toBe(platPassMarkerName('abcdef123456', 2617))
+    expect(platPassMarkerName('0123456789ab', 2617)).not.toBe(platPassMarkerName('abcdef123456', 2617))
   })
 
   it('allows at most four passes a day, the deploy count the tier was sized for', () => {
@@ -77,13 +78,13 @@ describe('the pass gap (SITE-212)', () => {
     expect((24 * 3600) / PLAT_WARM_PASS_GAP_S).toBeLessThanOrEqual(4)
   })
 
-  it('names the gap lease and the pass marker apart from every per-deployment slice lease', () => {
+  it('names the gap lease and the pass marker apart from every slice lease', () => {
     const slice = platSliceLeaseName('abcdef123456', 2617, 0)
-    for (const name of [PLAT_WARM_PASS_GAP_LEASE, platPassMarkerName('abcdef123456')]) {
+    for (const name of [PLAT_WARM_PASS_GAP_LEASE, platPassMarkerName('abcdef123456', 2617)]) {
       expect(name).not.toBe(slice)
       expect(slice.startsWith(name)).toBe(false)
       expect(name.startsWith(slice)).toBe(false)
     }
-    expect(PLAT_WARM_PASS_GAP_LEASE).not.toBe(platPassMarkerName('abcdef123456'))
+    expect(PLAT_WARM_PASS_GAP_LEASE).not.toBe(platPassMarkerName('abcdef123456', 2617))
   })
 })

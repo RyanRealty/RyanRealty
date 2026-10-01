@@ -170,7 +170,8 @@ export { getListingDetail } from '@/lib/data/listings/getListingDetail'
 export { getListingPhotos, getListingFloorPlans } from '@/lib/data/listings/getListingPhotos'
 export {
   attachListingCardExtras,
-  getRecentPriceDropKeys,
+  currentPriceDrop,
+  getRecentPriceDropEntries,
   loadRecentPriceDropEvents,
   parseActivityPriceDrop,
 } from '@/lib/data/listings/attachListingCardExtras'
