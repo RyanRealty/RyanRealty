@@ -18,6 +18,7 @@ const state = {
 
 vi.mock('@/lib/spark', async (importOriginal) => ({
   priceHistoryMayStandIn: (await importOriginal<typeof import('@/lib/spark')>()).priceHistoryMayStandIn,
+  historyRefused: (await importOriginal<typeof import('@/lib/spark')>()).historyRefused,
   fetchSparkListingHistory: vi.fn(async () => state.history),
   fetchSparkPriceHistory: vi.fn(async () => state.price),
 }))
@@ -90,5 +91,20 @@ describe('fetchAndInsertHistoryCore', () => {
     state.replaceFails = true
     const r = await fetchAndInsertHistoryCore('t', 'k')
     expect(r).toMatchObject({ inserted: 0, ok: false })
+  })
+
+  it('reports not saved when the full history is empty and the price history failed for a while', async () => {
+    state.history = { items: [], ok: true, partial: false }
+    state.price = { items: [], ok: false, status: 429 }
+    const r = await fetchAndInsertHistoryCore('t', 'k')
+    expect(state.replaced).toEqual([])
+    expect(r).toMatchObject({ inserted: 0, ok: false, status: 429 })
+  })
+
+  it('settles an empty history when the price history refuses for good', async () => {
+    state.history = { items: [], ok: true, partial: false }
+    state.price = { items: [], ok: false, status: 403 }
+    const r = await fetchAndInsertHistoryCore('t', 'k')
+    expect(r).toMatchObject({ inserted: 0, ok: true })
   })
 })

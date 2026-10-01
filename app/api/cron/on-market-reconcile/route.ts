@@ -41,7 +41,8 @@ export const maxDuration = 800
  * one expanded Spark read per 20 listings, a history fetch, a membership
  * rebuild and an episode rebuild. Basis: the first sweep on 2026-10-01
  * repaired 1,129 listings in 675 s from a cloud session, about 0.6 s each, so a
- * batch of REPAIR_BATCH (40) took about 24 s and 400 about 240 s. A batch that
+ * batch of REPAIR_BATCH (40, lib/sync/closingsReconcile.ts) takes about 24 s
+ * and 400 about 240 s. A batch that
  * starts at the budget and runs five times slower still ends before the
  * function's 800 s. The cap also leaves the Spark key's rate window to the
  * delta sync that shares it.
@@ -95,11 +96,15 @@ export async function GET(request: Request) {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     console.error('[on-market-reconcile] failed', err)
-    await queueBrokerHealthAlert({
-      key: 'on-market-reconcile',
-      body: `The daily listings check against the MLS failed: ${message.slice(0, 180)}`,
-      cooldownMinutes: DAILY_ALERT_COOLDOWN_MINUTES,
-    })
+    // A ?repair=0 check is read-only and quiet: its failure must not spend the
+    // dedupe that the scheduled run's failure text needs.
+    if (repair) {
+      await queueBrokerHealthAlert({
+        key: 'on-market-reconcile',
+        body: `The daily listings check against the MLS failed: ${message.slice(0, 180)}`,
+        cooldownMinutes: DAILY_ALERT_COOLDOWN_MINUTES,
+      })
+    }
     return NextResponse.json({ ok: false, error: message }, { status: 500 })
   }
 }

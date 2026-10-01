@@ -525,7 +525,7 @@ export type { NeighborhoodLite, NeighborhoodFull, NeighborhoodDirectoryRow } fro
 
 // Sync pipeline writes (Spark delta + history backfill)
 export {
-  getSyncState,
+  getDeltaSyncCursor,
   getSyncStateFields,
   updateSyncStateLastDelta,
   getExistingListingsByListNumbers,

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fetchSparkListingHistory, fetchSparkListingsPage, priceHistoryMayStandIn, SPARK_DEFAULT_PAGE_SIZE, SPARK_HISTORY_PAGE_SIZE } from './spark'
+import { skipPage } from '@/test/spark-skip-token-fake'
+import { fetchSparkListingHistory, fetchSparkListingsPage, fetchSparkListingsWhere, historyRefused, priceHistoryMayStandIn, SPARK_DEFAULT_PAGE_SIZE, SPARK_HISTORY_PAGE_SIZE } from './spark'
 
 type Page = { results: { Id: string }[]; pagination?: { TotalPages: number; PageSize: number; CurrentPage: number } }
 
@@ -88,7 +89,7 @@ describe('priceHistoryMayStandIn', () => {
   })
 
   it('never on a temporary failure, a partial read or a history that has events', () => {
-    for (const status of [401, 429, 500, 502, 503]) expect(priceHistoryMayStandIn({ ok: false, items: [], status })).toBe(false)
+    for (const status of [401, 408, 409, 422, 425, 429, 500, 502, 503]) expect(priceHistoryMayStandIn({ ok: false, items: [], status })).toBe(false)
     expect(priceHistoryMayStandIn({ ok: false, items: [] })).toBe(false)
     expect(priceHistoryMayStandIn({ ok: false, items: [], partial: true })).toBe(false)
     expect(priceHistoryMayStandIn({ ok: false, items: items(0, 10) as never, partial: true, status: 200 })).toBe(false)
@@ -116,5 +117,51 @@ describe('fetchSparkListingsPage by skip token', () => {
     expect(q.get('_pagination')).toBeNull()
     expect(q.get('_limit')).toBe('1000')
     expect(r.D?.SkipToken).toBe('k9')
+  })
+})
+
+describe('historyRefused', () => {
+  it('is a refusal only for the exact answers that refuse for good', () => {
+    for (const status of [200, 400, 403, 404]) expect(historyRefused({ ok: false, status })).toBe(true)
+    for (const status of [401, 408, 409, 429, 500]) expect(historyRefused({ ok: false, status })).toBe(false)
+    expect(historyRefused({ ok: true, status: 200 })).toBe(false)
+    expect(historyRefused({ ok: false, partial: true, status: 403 })).toBe(false)
+    expect(historyRefused({ ok: false })).toBe(false)
+  })
+})
+
+describe('fetchSparkListingsWhere', () => {
+  function stubSkipToken(rows: Record<string, unknown>[], tokens: string[] = []) {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        const q = new URL(url).searchParams
+        const token = q.get('_skiptoken') ?? ''
+        tokens.push(token)
+        return new Response(JSON.stringify(skipPage(rows, { limit: Number(q.get('_limit')), skiptoken: token })), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      }),
+    )
+    return tokens
+  }
+  const rows = (n: number) => Array.from({ length: n }, (_, i) => ({ ListingKey: `k${String(i).padStart(4, '0')}` }))
+
+  it('reads every page after the last key until an empty page', async () => {
+    const tokens = stubSkipToken(rows(2500))
+    const got = await fetchSparkListingsWhere('token', { filter: "StandardStatus Eq 'Active'", maxPages: 5, tooMany: 'too many' })
+    expect(got).toHaveLength(2500)
+    expect(tokens).toEqual(['', 'k0999', 'k1999', 'k2499'])
+  })
+
+  it('throws past maxPages, and when Spark gives no next token', async () => {
+    stubSkipToken(rows(2500))
+    await expect(fetchSparkListingsWhere('token', { filter: 'x', maxPages: 2, tooMany: 'past two pages' })).rejects.toThrow('past two pages')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify({ D: { Success: true, Results: [{ StandardFields: { ListingKey: 'a' } }] } }), { status: 200 })),
+    )
+    await expect(fetchSparkListingsWhere('token', { filter: 'x', maxPages: 5, tooMany: 'too many' })).rejects.toThrow(/no next skip token/)
   })
 })

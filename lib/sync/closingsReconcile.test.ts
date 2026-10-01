@@ -15,7 +15,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 type Fields = Record<string, unknown>
 type RemovedSale = import('@/lib/data/sync/closingsReconcile').RemovedSale
 type MlsRemovalNotice = import('@/lib/data/sync/closingsReconcile').MlsRemovalNotice
-const spark = { window: [] as Fields[], byKey: new Map<string, Fields>(), windowRequests: [] as (string | undefined)[] }
+const spark = { window: [] as Fields[], byKey: new Map<string, Fields>(), windowRequests: [] as string[] }
 const store = {
   closedInWindow: [] as string[],
   rows: new Map<string, Record<string, unknown>>(),
@@ -47,28 +47,21 @@ const store = {
 const alerts: { key: string; body: string }[] = []
 let alertQueues = true
 
-/** Spark's skip-token paging: key order, after the token, an empty page at the end. */
-function skipPage(rows: Fields[], opts: { limit?: number; skiptoken?: string }) {
-  const after = opts.skiptoken ?? ''
-  const page = [...rows]
-    .sort((a, b) => String(a.ListingKey).localeCompare(String(b.ListingKey)))
-    .filter((f) => String(f.ListingKey) > after)
-    .slice(0, opts.limit ?? 1000)
-  return { D: { Results: page.map((f) => ({ StandardFields: f })), SkipToken: page.length > 0 ? String(page[page.length - 1]!.ListingKey) : after } }
-}
-
-vi.mock('@/lib/spark', () => ({
-  fetchSparkListingsPage: vi.fn(async (_token: string, opts: { filter?: string; limit?: number; skiptoken?: string }) => {
-    const filter = opts.filter ?? ''
-    if (filter.startsWith("StandardStatus Eq 'Closed'")) {
-      spark.windowRequests.push(opts.skiptoken)
-      return skipPage(spark.window, opts)
-    }
-    const keys = [...filter.matchAll(/ListingKey Eq '([^']+)'/g)].map((m) => m[1]!)
-    const hits = keys.flatMap((k) => (spark.byKey.has(k) ? [{ StandardFields: spark.byKey.get(k)! }] : []))
-    return { D: { Results: hits, Pagination: { TotalPages: 1 } } }
-  }),
-}))
+vi.mock('@/lib/spark', async () => {
+  const { allPages } = await import('@/test/spark-skip-token-fake')
+  return {
+    fetchSparkListingsWhere: vi.fn(async (_token: string, opts: { filter: string }) => {
+      spark.windowRequests.push(opts.filter)
+      return opts.filter.startsWith("StandardStatus Eq 'Closed'") ? allPages(spark.window) : []
+    }),
+    fetchSparkListingsPage: vi.fn(async (_token: string, opts: { filter?: string }) => {
+      const filter = opts.filter ?? ''
+      const keys = [...filter.matchAll(/ListingKey Eq '([^']+)'/g)].map((m) => m[1]!)
+      const hits = keys.flatMap((k) => (spark.byKey.has(k) ? [{ StandardFields: spark.byKey.get(k)! }] : []))
+      return { D: { Results: hits, Pagination: { TotalPages: 1 } } }
+    }),
+  }
+})
 vi.mock('@/lib/data/sync/closingsReconcile', () => ({
   getClosedListingKeysInWindow: vi.fn(async () => store.closedInWindow),
   getListingsForReconcile: vi.fn(async (keys: string[]) => {
@@ -170,8 +163,11 @@ vi.mock('@/lib/sync/deltaSync', () => ({
   })),
 }))
 
-import { fetchSparkClosingsInWindow, reconcileClosings, repairListingsFromSpark, tellMlsRemovals } from './closingsReconcile'
+import { fetchSparkClosingsInWindow, reconcileClosings, REPAIR_BATCH, repairListingsFromSpark, tellMlsRemovals } from './closingsReconcile'
 import { heldSalesText } from './mlsRemovedText'
+import { rebuildPlaceMembershipForKeys } from '@/lib/data/sync/closingsReconcile'
+import { refreshMarketFactSpansForKeys } from '@/lib/data/market-report/compute'
+import type { DriftReason } from './listingDrift'
 
 function sparkClosing(key: string, over: Fields = {}): Fields {
   return {
@@ -266,11 +262,11 @@ function notice(over: Partial<MlsRemovalNotice> = {}): MlsRemovalNotice {
 }
 
 describe('fetchSparkClosingsInWindow', () => {
-  it('reads by skip token, each page after the last key, until an empty page', async () => {
+  it('reads the window through the skip-token reader, past a page of 1,000', async () => {
     spark.window = Array.from({ length: 2500 }, (_, i) => sparkClosing(`K${String(i).padStart(5, '0')}`))
     const got = await fetchSparkClosingsInWindow('2026-03-01', '2026-03-31')
     expect(got.size).toBe(2500)
-    expect(spark.windowRequests).toEqual(['', 'K00999', 'K01999', 'K02499'])
+    expect(spark.windowRequests).toEqual(["StandardStatus Eq 'Closed' And CloseDate Ge 2026-03-01 And CloseDate Le 2026-03-31"])
   })
 })
 
@@ -289,6 +285,50 @@ describe('repairListingsFromSpark', () => {
     expect(r.repairedKeys).toEqual(['OLD'])
     expect(store.upserted).toEqual(['OLD'])
     expect(store.repairLog.map((e) => e.listingKey)).toEqual(['OLD'])
+  })
+
+  const many = (n: number) => {
+    const keys = Array.from({ length: n }, (_, i) => `R${String(i).padStart(3, '0')}`)
+    for (const k of keys) {
+      spark.byKey.set(k, sparkClosing(k, { ClosePrice: 93588 }))
+      store.rows.set(k, ourRow(k, { ClosePrice: 93588000 }))
+    }
+    return keys
+  }
+  const ctx = (keys: string[]) => ({ window: { from: '2026-03-01', to: '2026-03-31' }, reasons: new Map(keys.map((k) => [k, ['close_price'] as DriftReason[]])) })
+
+  it('repairs REPAIR_BATCH at a time, each batch rebuilding its own membership and episodes', async () => {
+    const keys = many(90)
+    const membership = vi.mocked(rebuildPlaceMembershipForKeys)
+    const spans = vi.mocked(refreshMarketFactSpansForKeys)
+    membership.mockClear()
+    spans.mockClear()
+    const r = await repairListingsFromSpark(keys, ctx(keys))
+    expect(r.repaired).toBe(90)
+    expect(membership.mock.calls.map((c) => (c[0] as string[]).length)).toEqual([REPAIR_BATCH, REPAIR_BATCH, 90 - 2 * REPAIR_BATCH])
+    expect(spans.mock.calls.map((c) => (c[0] as string[]).length)).toEqual([REPAIR_BATCH, REPAIR_BATCH, 90 - 2 * REPAIR_BATCH])
+    expect(r.unreached).toEqual([])
+  })
+
+  it('starts no batch past the deadline and returns the keys it did not reach', async () => {
+    const keys = many(90)
+    const membership = vi.mocked(rebuildPlaceMembershipForKeys)
+    membership.mockClear()
+    vi.useFakeTimers({ toFake: ['Date'] })
+    try {
+      vi.setSystemTime(Date.parse('2026-10-01T10:47:00Z'))
+      const deadline = Date.parse('2026-10-01T10:56:00Z')
+      membership.mockImplementationOnce(async () => {
+        vi.setSystemTime(deadline)
+        return 0
+      })
+      const r = await repairListingsFromSpark(keys, ctx(keys), { deadline })
+      expect(r.repaired).toBe(REPAIR_BATCH)
+      expect(r.unreached).toEqual(keys.slice(REPAIR_BATCH))
+      expect(store.upserted).toHaveLength(REPAIR_BATCH)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
 

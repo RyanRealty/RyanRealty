@@ -7,6 +7,7 @@ import { sparkHistoryItemToRow } from '@/lib/listing-mapper'
 import {
   fetchSparkListingHistory,
   fetchSparkPriceHistory,
+  historyRefused,
   priceHistoryMayStandIn,
   type SparkListingHistoryItem,
 } from '@/lib/spark'
@@ -23,6 +24,9 @@ export async function fetchAndInsertHistoryCore(
   if (priceHistoryMayStandIn(response)) {
     const fallback = await fetchSparkPriceHistory(accessToken, listingKey)
     if (fallback.items.length > 0) response = fallback
+    // Nothing from the full history, and the price history failed for a while:
+    // not settled, so not saved; a later run asks again.
+    else if (!fallback.ok && !historyRefused(fallback)) return { inserted: 0, ok: false, items: [], status: fallback.status }
   }
   const hadSuccessfulFetch = response.ok && response.partial !== true
   // A partial history (a later page failed) never replaces the stored one: the

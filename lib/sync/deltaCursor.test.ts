@@ -1,14 +1,15 @@
 import { describe, it, expect } from 'vitest'
-import { computeNextDeltaCursor } from './deltaCursor'
+import { computeNextDeltaCursor, DELTA_CURSOR_OVERLAP_MS } from './deltaCursor'
 
 const RUN_START = '2026-06-20T10:00:00.000Z'
 const MAX_TS = '2026-06-20T09:58:30.000Z'
 
 describe('computeNextDeltaCursor (audit p0.1 — no silent data loss)', () => {
-  it('clean full drain → advances to runStartedAt', () => {
+  it('clean full drain → resumes the overlap before runStartedAt (whole-second stamps, clock skew)', () => {
+    expect(DELTA_CURSOR_OVERLAP_MS).toBe(60_000)
     expect(
       computeNextDeltaCursor({ upsertFailed: false, truncated: false, runStartedAt: RUN_START, maxProcessedTs: MAX_TS }),
-    ).toBe(RUN_START)
+    ).toBe('2026-06-20T09:59:00.000Z')
   })
 
   it('truncated (overflow) → advances only to the newest processed row, NOT now()', () => {

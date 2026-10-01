@@ -34,7 +34,7 @@ import {
   getServiceAreaCities,
   type ReportSaleRow,
 } from '@/lib/data/market-report/reconcile'
-import { fetchSparkListingsPage } from '@/lib/spark'
+import { fetchSparkListingsWhere } from '@/lib/spark'
 import { dateOnly, factsFromSparkFields } from '@/lib/sync/listingDrift'
 import { bandIdx, PRICE_BANDS } from './bands'
 import { addMonths, lastDayOf } from './format'
@@ -443,18 +443,18 @@ async function fetchSparkMonth(month: string, serviceArea: ServiceAreaIndex): Pr
     `CloseDate Ge ${monthStart(month)}`,
     `CloseDate Le ${lastDayOf(month)}`,
   ].join(' And ')
+  // By skip token: a sale corrected mid-read never pushes an unread one onto a
+  // page already read and out of the gate's count.
+  const results = await fetchSparkListingsWhere(sparkToken(), {
+    filter,
+    select: SPARK_SELECT,
+    maxPages: MAX_PAGES_PER_MONTH,
+    tooMany: `[reconcileEdition] ${month} runs past ${MAX_PAGES_PER_MONTH} pages of closings`,
+  })
   const out: GateSale[] = []
-  for (let page = 1; ; page++) {
-    const res = await fetchSparkListingsPage(sparkToken(), { page, limit: 1000, filter, select: SPARK_SELECT, orderby: '+ListingKey' })
-    for (const r of res.D?.Results ?? []) {
-      const sale = sparkSale((r.StandardFields ?? {}) as unknown as Record<string, unknown>, serviceArea)
-      if (sale) out.push(sale)
-    }
-    const pages = res.D?.Pagination?.TotalPages ?? 1
-    if (page >= pages) break
-    if (page >= MAX_PAGES_PER_MONTH) {
-      throw new Error(`[reconcileEdition] ${month} runs past ${MAX_PAGES_PER_MONTH} pages of closings`)
-    }
+  for (const r of results) {
+    const sale = sparkSale((r.StandardFields ?? {}) as unknown as Record<string, unknown>, serviceArea)
+    if (sale) out.push(sale)
   }
   return out
 }

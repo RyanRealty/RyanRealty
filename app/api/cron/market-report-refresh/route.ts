@@ -33,7 +33,8 @@
  *
  * Schedule: daily 11:17 UTC (vercel.json), ahead of the monthly publish run.
  * Auth: Authorization: Bearer ${CRON_SECRET} (requireCronAuth).
- * ?repair=0 reconciles without writing repairs.
+ * ?repair=0 reconciles without writing repairs or texting about drift; it
+ * still refreshes the report store.
  */
 import { NextResponse } from 'next/server'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
@@ -105,7 +106,9 @@ export async function GET(request: Request) {
         cooldownMinutes: DAILY_ALERT_COOLDOWN_MINUTES,
       })
     }
-    if (recon.drift.length > REPAIR_ALERT_AT) {
+    // Only a repairing run texts about drift: a ?repair=0 run would spend the
+    // day's dedupe and silence the scheduled run's count.
+    if (repair && recon.drift.length > REPAIR_ALERT_AT) {
       await queueBrokerHealthAlert({
         key: 'closings-drift',
         body: `Closings drift: ${recon.drift.length} closed sales in the last ${WINDOW_MONTHS} months disagreed with the MLS today (${recon.repaired} repaired). The listing sync may be missing updates.`,

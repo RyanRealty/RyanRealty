@@ -417,6 +417,31 @@ export async function fetchSparkListingsPage(
   return data
 }
 
+/**
+ * Every listing Spark holds that matches `filter`, read by skip token
+ * (fetchSparkListingsPage), `limit` at a time. An empty page ends the read; a
+ * page past `maxPages` throws `tooMany`. Use it for any pull over a set that
+ * changes while it is read.
+ */
+export async function fetchSparkListingsWhere(
+  accessToken: string,
+  opts: { filter: string; select?: string; maxPages: number; tooMany: string; limit?: number },
+): Promise<SparkListingResult[]> {
+  const out: SparkListingResult[] = []
+  let skiptoken = ''
+  for (let request = 1; ; request++) {
+    const res = await fetchSparkListingsPage(accessToken, { limit: opts.limit ?? 1000, filter: opts.filter, select: opts.select, skiptoken })
+    const results = res.D?.Results ?? []
+    if (results.length === 0) break
+    if (request > opts.maxPages) throw new Error(opts.tooMany)
+    out.push(...results)
+    const next = res.D?.SkipToken
+    if (!next || next === skiptoken) throw new Error(`[fetchSparkListingsWhere] Spark gave no next skip token after ${out.length} listings`)
+    skiptoken = next
+  }
+  return out
+}
+
 const LISTING_EXPAND =
   'Photos,FloorPlans,Videos,VirtualTours,OpenHouses,Documents'
 
@@ -483,24 +508,32 @@ export type SparkListingHistoryResponse = {
 }
 
 /**
- * Whether the price history may stand in for this full-history answer. Only
- * when the answer is a standing one: Spark answered that the listing's full
- * history is empty, or refused it (400, 403, 404, or a 200 whose body says
- * D.Success false, as Code 1500 permission denied does). A rate limit (429), a
- * server error (5xx), a refused token (401), a lost connection or a partial
- * read is temporary: try again later. The price history carries no status
- * changes, and every history writer replaces the stored history with what it
- * gets, so standing it in on a temporary failure deletes the status events the
- * on-market episodes are built from. One rule for every writer.
+ * The answers that refuse a listing's history for good: Spark's 200 whose body
+ * says D.Success false (Code 1500 permission denied), 400, 403 and 404.
+ * Anything else that fails (401, 408, 409, 429, 5xx, a lost connection, a
+ * partial read) is temporary: try again later.
+ */
+const HISTORY_REFUSALS = new Set([200, 400, 403, 404])
+
+/** Whether Spark refused this listing's history in a way a retry will not change. */
+export function historyRefused(answer: Pick<SparkListingHistoryResponse, 'ok' | 'partial' | 'status'>): boolean {
+  return !answer.ok && answer.partial !== true && answer.status !== undefined && HISTORY_REFUSALS.has(answer.status)
+}
+
+/**
+ * Whether the price history may stand in for this full-history answer: only
+ * when Spark answered that the full history is empty, or refused it
+ * (historyRefused). The price history carries no status changes, and every
+ * history writer replaces the stored history with what it gets, so standing it
+ * in on a temporary failure deletes the status events the on-market episodes
+ * are built from. One rule for every writer.
  */
 export function priceHistoryMayStandIn(
   answer: Pick<SparkListingHistoryResponse, 'ok' | 'items' | 'partial' | 'status'>,
 ): boolean {
   if (answer.partial === true) return false
   if (answer.ok) return answer.items.length === 0
-  const status = answer.status
-  if (status === undefined) return false
-  return status !== 401 && status !== 429 && status < 500
+  return historyRefused(answer)
 }
 
 function parseHistoryItems(data: unknown): SparkListingHistoryItem[] {

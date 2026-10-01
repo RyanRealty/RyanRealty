@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * The on-market reconciliation against a fake Spark and a fake store: which
@@ -20,31 +20,27 @@ const store = {
   cursorFails: false,
   restoreCalls: [] as string[][],
   repairCalls: [] as { keys: string[]; source?: string; reasons: [string, string[]][] }[],
-  repairOpts: [] as { leaveModifiedFrom?: number }[],
+  repairOpts: [] as { leaveModifiedFrom?: number; deadline?: number }[],
   freshAtRepair: new Set<string>(),
-  afterRepairCall: null as null | (() => void),
+  unreachedAtRepair: new Set<string>(),
 }
 
-/** Spark's skip-token paging: key order, after the token, an empty page at the end. */
-function skipPage(rows: Fields[], opts: { limit?: number; skiptoken?: string }) {
-  const after = opts.skiptoken ?? ''
-  const page = [...rows]
-    .sort((a, b) => String(a.ListingKey).localeCompare(String(b.ListingKey)))
-    .filter((f) => String(f.ListingKey) > after)
-    .slice(0, opts.limit ?? 1000)
-  return { D: { Results: page.map((f) => ({ StandardFields: f })), SkipToken: page.length > 0 ? String(page[page.length - 1]!.ListingKey) : after } }
-}
-
-vi.mock('@/lib/spark', () => ({
-  fetchSparkListingsPage: vi.fn(async (_token: string, opts: { filter?: string; limit?: number; skiptoken?: string }) => {
-    const filter = opts.filter ?? ''
-    spark.filters.push(filter)
-    if (filter.startsWith('StandardStatus Eq ')) return skipPage(spark.onMarket, opts)
-    const keys = [...filter.matchAll(/ListingKey Eq '([^']+)'/g)].map((m) => m[1]!)
-    const hits = keys.flatMap((k) => (spark.byKey.has(k) ? [{ StandardFields: spark.byKey.get(k)! }] : []))
-    return { D: { Results: hits, Pagination: { TotalPages: 1 } } }
-  }),
-}))
+vi.mock('@/lib/spark', async () => {
+  const { allPages } = await import('@/test/spark-skip-token-fake')
+  return {
+    fetchSparkListingsWhere: vi.fn(async (_token: string, opts: { filter: string }) => {
+      spark.filters.push(opts.filter)
+      return opts.filter.startsWith('StandardStatus Eq ') ? allPages(spark.onMarket) : []
+    }),
+    fetchSparkListingsPage: vi.fn(async (_token: string, opts: { filter?: string }) => {
+      const filter = opts.filter ?? ''
+      spark.filters.push(filter)
+      const keys = [...filter.matchAll(/ListingKey Eq '([^']+)'/g)].map((m) => m[1]!)
+      const hits = keys.flatMap((k) => (spark.byKey.has(k) ? [{ StandardFields: spark.byKey.get(k)! }] : []))
+      return { D: { Results: hits, Pagination: { TotalPages: 1 } } }
+    }),
+  }
+})
 vi.mock('@/lib/data/sync/closingsReconcile', () => ({
   getOnMarketListingRows: vi.fn(async () =>
     store.onMarket.map((o) => ({ ...(store.rows.get(o.key) ?? {}), ListingKey: o.key, StandardStatus: o.status })),
@@ -73,13 +69,16 @@ vi.mock('@/lib/sync/closingsReconcile', async (importOriginal) => {
   return {
     ...real,
     repairListingsFromSpark: vi.fn(
-      async (keys: string[], log: { source?: string; reasons: Map<string, string[]> }, opts: { leaveModifiedFrom?: number } = {}) => {
+      async (keys: string[], log: { source?: string; reasons: Map<string, string[]> }, opts: { leaveModifiedFrom?: number; deadline?: number } = {}) => {
         store.repairCalls.push({ keys, source: log.source, reasons: [...log.reasons.entries()] })
         store.repairOpts.push(opts)
         const left = keys.filter((k) => store.freshAtRepair.has(k))
-        const done = keys.filter((k) => !store.freshAtRepair.has(k))
-        store.afterRepairCall?.()
-        return { repaired: done.length, repairedKeys: done, repairLogged: done.length, failed: [], historyRefreshed: 0, refinalized: 0, membershipRows: 0, leftToDeltaSync: left }
+        const unreached = keys.filter((k) => store.unreachedAtRepair.has(k))
+        const done = keys.filter((k) => !store.freshAtRepair.has(k) && !store.unreachedAtRepair.has(k))
+        return {
+          repaired: done.length, repairedKeys: done, repairLogged: done.length, failed: [], historyRefreshed: 0,
+          refinalized: 0, membershipRows: 0, leftToDeltaSync: left, unreached,
+        }
       },
     ),
   }
@@ -91,7 +90,7 @@ vi.mock('@/lib/sync/fetchListingHistory', () => ({ fetchAndInsertHistoryCore: vi
 vi.mock('@/lib/sync/deltaSync', () => ({ DELTA_SYNC: { EXPAND: '', UPSERT_CHUNK: 50 }, resolveRunMortgageRate: vi.fn(), resultToMappedRow: vi.fn() }))
 
 import { COMING_SOON_STATUS, LIVE_INVENTORY_STATUSES } from '@/lib/listing-status-public'
-import { findOnMarketDrift, keysToLookUp, planOnMarketRepair, reconcileOnMarket, REPAIR_BATCH } from './onMarketReconcile'
+import { findOnMarketDrift, keysToLookUp, planOnMarketRepair, reconcileOnMarket } from './onMarketReconcile'
 
 function mls(key: string, status: string, extra: Fields = {}): Fields {
   return {
@@ -116,7 +115,7 @@ beforeEach(() => {
   store.repairCalls = []
   store.repairOpts = []
   store.freshAtRepair = new Set()
-  store.afterRepairCall = null
+  store.unreachedAtRepair = new Set()
   process.env.SPARK_API_KEY = 'test-token'
 })
 
@@ -196,11 +195,10 @@ describe('findOnMarketDrift, the hand-off to the delta sync', () => {
     await expect(findOnMarketDrift()).rejects.toThrow(/getDeltaSyncCursor/)
   })
 
-  it('reads the whole Spark set by skip token, past a page of 1,000', async () => {
+  it('reads the whole Spark set through the skip-token reader, past a page of 1,000', async () => {
     spark.onMarket = Array.from({ length: 1500 }, (_, i) => mls(`k${String(i).padStart(4, '0')}`, 'Active'))
     const r = await findOnMarketDrift()
     expect(r.sparkOnMarket).toBe(1500)
-    expect(spark.filters.filter((f) => f.startsWith('StandardStatus'))).toHaveLength(3)
   })
 })
 
@@ -249,11 +247,7 @@ describe('reconcileOnMarket arguments', () => {
   })
 })
 
-describe('reconcileOnMarket in batches, under a deadline', () => {
-  afterEach(() => {
-    vi.useRealTimers()
-  })
-
+describe('reconcileOnMarket hands the repair its cutoff and deadline', () => {
   function drifted(n: number) {
     for (let i = 0; i < n; i++) {
       const k = `e${String(i).padStart(3, '0')}`
@@ -263,31 +257,22 @@ describe('reconcileOnMarket in batches, under a deadline', () => {
     }
   }
 
-  it('repairs REPAIR_BATCH at a time, each batch handed the delta-sync cutoff', async () => {
-    drifted(90)
-    const r = await reconcileOnMarket({ repair: true, maxRepairs: 400, today: '2026-10-01' })
-    expect(store.repairCalls.map((c) => c.keys.length)).toEqual([REPAIR_BATCH, REPAIR_BATCH, 90 - 2 * REPAIR_BATCH])
-    expect(store.repairOpts.every((o) => o.leaveModifiedFrom === Date.parse('2026-10-01T08:00:00Z'))).toBe(true)
-    expect(r).toMatchObject({ repaired: 90, stoppedForTime: false, leftAtRepair: [] })
-  })
-
-  it('starts no batch past the deadline; the rest is drift on the next run', async () => {
-    drifted(90)
-    vi.useFakeTimers({ toFake: ['Date'] })
-    vi.setSystemTime(Date.parse('2026-10-01T10:47:00Z'))
+  it('passes the delta-sync cutoff and the deadline in one call', async () => {
+    drifted(3)
     const deadline = Date.parse('2026-10-01T10:56:00Z')
-    store.afterRepairCall = () => vi.setSystemTime(deadline)
     const r = await reconcileOnMarket({ repair: true, maxRepairs: 400, today: '2026-10-01', deadline })
     expect(store.repairCalls).toHaveLength(1)
-    expect(r).toMatchObject({ repaired: REPAIR_BATCH, stoppedForTime: true })
-    expect(r.drift).toHaveLength(90)
+    expect(store.repairOpts).toEqual([{ leaveModifiedFrom: Date.parse('2026-10-01T08:00:00Z'), deadline }])
+    expect(r).toMatchObject({ repaired: 3, stoppedForTime: false, leftAtRepair: [] })
   })
 
-  it('reports a listing the MLS changed again by the time it was re-pulled as left to the delta sync', async () => {
+  it('reports a stop at the deadline, and a listing the MLS changed again by the time it was re-pulled', async () => {
     drifted(3)
     store.freshAtRepair = new Set(['e001'])
-    const r = await reconcileOnMarket({ repair: true, maxRepairs: 400, today: '2026-10-01' })
+    store.unreachedAtRepair = new Set(['e002'])
+    const r = await reconcileOnMarket({ repair: true, maxRepairs: 400, today: '2026-10-01', deadline: Date.now() + 60_000 })
     expect(r.leftAtRepair).toEqual(['e001'])
-    expect(r.repairedKeys).toEqual(['e000', 'e002'])
+    expect(r.repairedKeys).toEqual(['e000'])
+    expect(r.stoppedForTime).toBe(true)
   })
 })

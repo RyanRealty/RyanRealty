@@ -6,6 +6,7 @@ import {
   fetchSparkListingsPage,
   fetchSparkListingHistory,
   fetchSparkPriceHistory,
+  historyRefused,
   priceHistoryMayStandIn,
 } from '../../lib/spark'
 import { syncAuxiliaryTablesForFinalization } from '@/app/api/admin/sync/_shared/listing-completeness'
@@ -803,7 +804,8 @@ export async function syncListingHistory(options?: {
           if (!priceHistoryMayStandIn(result)) temporaryFailure = true
           continue
         }
-        temporaryFailure = false
+        // Only a history with events from the other id outweighs a temporary failure.
+        if (result.items.length > 0) temporaryFailure = false
         if (result.partial !== true) hadSuccessfulHistoryFetch = true
         items = result.items
         break
@@ -811,7 +813,10 @@ export async function syncListingHistory(options?: {
       if (items.length === 0 && !temporaryFailure) {
         for (const key of keysToTry) {
           const result = await fetchSparkPriceHistory(accessToken, key)
-          if (!result.ok) continue
+          if (!result.ok) {
+            if (!historyRefused(result)) temporaryFailure = true
+            continue
+          }
           if (result.partial !== true) hadSuccessfulHistoryFetch = true
           items = result.items
           break
@@ -835,7 +840,7 @@ export async function syncListingHistory(options?: {
           localInsertError = ins.error
         }
       }
-      if (items.length === 0 && hadSuccessfulHistoryFetch) {
+      if (items.length === 0 && hadSuccessfulHistoryFetch && !temporaryFailure) {
         shouldFinalizeTerminal = true
       }
       const auxSync = await syncAuxiliaryTablesForFinalization(
