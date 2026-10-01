@@ -13,6 +13,7 @@
     "ci:csp",
     "ci:dal-boundary",
     "ci:dal-column-quoting",
+    "ci:listings-select-columns",
     "ci:dal-internal-discipline",
     "ci:db-timeout-guard",
     "ci:deliverable-send-chokepoint",

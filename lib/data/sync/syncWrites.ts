@@ -1074,29 +1074,6 @@ export async function getSyncCursor(): Promise<{
   } | null
 }
 
-/** Count rows in `listings` matching a flexible OR + null-check (admin health). */
-export async function countListingsByOr(
-  statusOr: string,
-  photoColumnIsNull?: string
-): Promise<number> {
-  const sb = client()
-  if (!sb) return 0
-  let q = sb.from('listings').select('listing_key', { count: 'exact', head: true }).or(statusOr)
-  if (photoColumnIsNull) q = q.is(photoColumnIsNull, null)
-  const { count } = await q
-  return count ?? 0
-}
-
-/** Count all listings (admin health). */
-export async function countAllListingsByListingKey(): Promise<number> {
-  const sb = client()
-  if (!sb) return 0
-  const { count } = await sb
-    .from('listings')
-    .select('listing_key', { count: 'exact', head: true })
-  return count ?? 0
-}
-
 /** Most-recent market_pulse_live updated_at. */
 export async function getLatestMarketPulseUpdatedAt(): Promise<string | null> {
   const sb = client()

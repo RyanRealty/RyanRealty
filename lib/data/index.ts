@@ -594,8 +594,6 @@ export {
   getExpiredListingsForDigest,
   selectListingsAdmin,
   getSyncCursor,
-  countListingsByOr,
-  countAllListingsByListingKey,
   getLatestMarketPulseUpdatedAt,
   countListingInquiriesSince,
   countSavedSearchesSince,
