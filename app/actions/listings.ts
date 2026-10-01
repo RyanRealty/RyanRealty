@@ -2356,7 +2356,7 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): nu
 
 /** Communities in a city with listing counts (for city page "Communities in {city}").
  * Perf: pre-filters via PUBLIC_ACTIVE_OR_PREDICATE_EXACT (see its doc comment — 2026-08-02 fix for /admin/media/banners's 60s+ cold load). */
-export async function getSubdivisionsInCity(city: string): Promise<SubdivisionInCity[]> {
+async function getSubdivisionsInCityUncached(city: string): Promise<SubdivisionInCity[]> {
   const supabase = getAnonSupabase()
   if (!supabase || !city?.trim()) return []
   const { fetchAllRows: fetchAll } = await import('@/lib/supabase/paginate')
@@ -2375,6 +2375,22 @@ export async function getSubdivisionsInCity(city: string): Promise<SubdivisionIn
     .map(([subdivisionName, count]) => ({ subdivisionName, count }))
     .sort((a, b) => b.count - a.count || a.subdivisionName.localeCompare(b.subdivisionName))
 }
+
+/**
+ * SITE-212 (2026-10-01): this read ran uncached on every call and timed out
+ * 22 times on 2026-09-30. Each 1,000-row page is ~1,200 random heap blocks on
+ * a 13 GB table (EXPLAIN, Bend), so a cold page waits on disk past anon's 3 s.
+ * The index idx_listings_city_status_subdivision_cover makes the page an
+ * index-only scan; this cache makes the slug resolver, the content-refresh
+ * cron and the banners page share one read per city per hour. The active set
+ * of a city changes by the hour, not the minute: the counts feed a sort and
+ * a slug match, never a published figure.
+ */
+export const getSubdivisionsInCity = unstable_cache(
+  getSubdivisionsInCityUncached,
+  ['subdivisions-in-city-v1'],
+  { revalidate: 60 * 60, tags: ['listings'] },
+)
 
 const subdivisionSlugify = (s: string) =>
   s
