@@ -426,6 +426,7 @@ export type {
   SellBendMarket,
   DetachedInventory,
   DetachedOverlay,
+  SupplyFloor,
 } from '@/lib/data/market-truth/getSellBendMarket'
 export { getRegionPulse } from '@/lib/data/market/getRegionPulse'
 export type { RegionPulse } from '@/lib/data/market/getRegionPulse'

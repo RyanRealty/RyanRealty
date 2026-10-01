@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-10-01T22:41:49.410Z
+**Generated:** 2026-10-01T22:51:50.562Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -3604,7 +3604,7 @@ Companion files:
 
 ### `lib/data/market-truth/getMetric.ts`
 
-**Exports:** `staleReason`, `getMetrics`, `getMetric`
+**Exports:** `METRIC_PRIMARY_KEY`, `orderByPrimaryKey`, `staleReason`, `getMetrics`, `getMetric`
 
 **Tables:** `market_metric`
 
@@ -3612,11 +3612,11 @@ Companion files:
 
 ### `lib/data/market-truth/getSellBendMarket.ts`
 
-**Exports:** `cityDetachedSlug`, `getDetachedMarkets`, `getDetachedInventories`, `getDetachedOverlays`, `getDetachedMarket`, `getCityDetachedMarket`, `getCityDetachedInventory`, `getSellBendMarket`, `applyDetachedOverlay`, `withholdDetachedHeadlines`, `overlayDetachedLayers`, `overlayDetachedMarket`
+**Exports:** `cityDetachedSlug`, `assembleSupplyFloor`, `getDetachedMarkets`, `getDetachedInventories`, `getDetachedOverlays`, `getDetachedMarket`, `getCityDetachedMarket`, `getCityDetachedInventory`, `getSellBendMarket`, `applyDetachedOverlay`, `withholdDetachedHeadlines`, `overlayDetachedLayers`, `overlayDetachedMarket`
 
 **Tables:** `market_metric`
 
-**Selected columns:** `stat_id`, `geo_type`, `geo_slug`, `value`, `value_text`, `is_publishable`, `complete_through`, `period_end`, `window_months`, `computed_at`
+**Selected columns:** `stat_id`, `geo_type`, `geo_slug`, `value`, `value_text`, `is_publishable`, `sample_n`, `withheld_reason`, `complete_through`, `period_end`, `window_months`, `computed_at`
 
 ---
 
@@ -5500,7 +5500,7 @@ Companion files:
 | `market_fact_sale` | `getReportSalesInWindow()`, `getFactSaleStatus()`, `getServiceAreaCities()` <br /> `lib/data/market-report/reconcile.ts` · `lib/data/proof/getProofBlock.int.test.ts` |
 | `market_history_weekly` | `getLiveMortgageRate()`, `getMarketHistoryWeekly()` <br /> `lib/data/market/getLiveMortgageRate.ts` · `lib/data/market/getMarketHistoryWeekly.ts` |
 | `market_listing_absent_from_mls` | `getListingsForReconcile()`, `getClosedListingKeysInWindow()`, `rebuildPlaceMembershipForKeys()`, `recordAbsentFromMls()`, `getAbsentFromMlsKeys()`, `deleteMlsRemovedSales()`, `restoreMlsRemovedSales()`, `refreshSalePricingFactsForKeys()`, `getPendingMlsRestores()`, `markMlsRestoresRebuilt()`, `getDeletedMlsSaleKeys()`, `getUnreportedMlsRemovalNotices()`, `markMlsRemovalNoticesReported()`, `clearAbsentFromMls()`, `recordRepairLog()`, `getListingRowsForRepairLog()`, `setRepairLogNote()`, `setRepairLogOutcome()` <br /> `lib/data/sync/closingsReconcile.ts` |
-| `market_metric` | `getCitySegmentBoard()`, `staleReason()`, `getMetrics()`, `getMetric()`, `cityDetachedSlug()`, `getDetachedMarkets()`, `getDetachedInventories()`, `getDetachedOverlays()`, `getDetachedMarket()`, `getCityDetachedMarket()`, `getCityDetachedInventory()`, `getSellBendMarket()`, `applyDetachedOverlay()`, `withholdDetachedHeadlines()`, `overlayDetachedLayers()`, `overlayDetachedMarket()`, `getCityLeaderboard()`, `resolveNeighborhoodMetricSlug()` <br /> `lib/data/market-truth/city-segments.ts` · `lib/data/market-truth/getMetric.ts` · `lib/data/market-truth/getSellBendMarket.ts` · `lib/data/market-truth/leaderboards.ts` · `lib/data/market-truth/neighborhood-metric-slug.ts` |
+| `market_metric` | `getCitySegmentBoard()`, `METRIC_PRIMARY_KEY()`, `orderByPrimaryKey()`, `staleReason()`, `getMetrics()`, `getMetric()`, `cityDetachedSlug()`, `assembleSupplyFloor()`, `getDetachedMarkets()`, `getDetachedInventories()`, `getDetachedOverlays()`, `getDetachedMarket()`, `getCityDetachedMarket()`, `getCityDetachedInventory()`, `getSellBendMarket()`, `applyDetachedOverlay()`, `withholdDetachedHeadlines()`, `overlayDetachedLayers()`, `overlayDetachedMarket()`, `getCityLeaderboard()`, `resolveNeighborhoodMetricSlug()` <br /> `lib/data/market-truth/city-segments.ts` · `lib/data/market-truth/getMetric.ts` · `lib/data/market-truth/getSellBendMarket.ts` · `lib/data/market-truth/leaderboards.ts` · `lib/data/market-truth/neighborhood-metric-slug.ts` |
 | `market_narratives` | `generateAndStoreMarketNarrative()`, `generateNarrativesForReportGeos()` <br /> `lib/data/market/marketNarrativeWrites.int.test.ts` · `lib/data/market/marketNarrativeWrites.ts` |
 | `market_pulse_live` | `findCmaSubjectByMls()`, `findCmaSubjectByAddress()`, `getListingPhotosCount()`, `selectCmaCompsPool()`, `selectCmaCompsByKeys()`, `getCmaMarketStatsRow()`, `getCmaMarketPulseRow()`, `CMA_MARKET_TREND_MEASURE()`, `getCmaMarketTrendRows()`, `getCmaBrokerBySlugOrEmail()`, `listActiveBrokersForCma()`, `getCmaCityClosedSkinny()`, `getCmaCityClosedDuring()`, `getLikeHomeSales()`, `getCmaSubdivisionClosed()`, `getCmaSubdivisionHistory()`, `getCmaPriorSaleAtAddress()`, `WESTSIDE_NEIGHBORHOOD_SLUGS()`, `getBendNeighborhoodStats()`, `placeInventorySlugs()`, `overlayPublishedInventory()`, `getGeoSnapshot()`, `getAllCitySnapshots()`, `getAllCommunitySnapshots()`, `getCityCommunitySnapshots()`, `collectCompanyScoreboardSignals()`, `getMarketPulse()`, `getMarketPulseRegionSnapshot()`, `getMarketPulseCitySnapshots()`, `getMarketPulseAllCitySnapshots()`, `getMarketStatsCacheRowForGeo()`, `getReportingCacheMonthlyRows()`, `getMarketStatsCacheRowsByGeoType()`, `getMarketStatsCacheRowForPeriod()`, `getMarketPulseRowsByGeoType()`, `upsertMarketPulseLiveRow()`, `getMarketPulseRowForGeo()`, `getMarketStatsCacheRowsForGeos()`, `generateAndStoreMarketNarrative()`, `generateNarrativesForReportGeos()`, `getSyncState()`, `getSyncStateFields()`, `updateSyncStateLastDelta()`, `getExistingListingsByListNumbers()`, `setListingFreezeFlags()`, `getAdminOverrideFlags()`, `getHeldMediaByListNumbers()`, `replaceListingHistoryForKey()`, `upsertListingRows()`, `insertPriceHistoryRows()`, `insertStatusHistoryRows()`, `getActivityEvents()`, `insertActivityEventRows()`, `getListingPhotoUrl()`, `updateListingPhotoUrl()`, `upsertExpiredListingRow()`, `replaceListingVideosForKey()`, `upsertSyncState()`, `insertActivityEventRow()`, `updateListingByListNumber()`, `updateListingByListingKey()`, `insertListingHistoryRows()`, `deleteListingHistoryForKey()`, `getListingFieldsByListingKey()`, `getListingFieldsByListNumber()`, `selectHistorySyncCandidates()`, `getOpenHouseByIdAndListing()`, `insertOpenHouseRsvp()`, `bumpOpenHouseRsvpCount()`, `insertNotificationQueueRow()`, `insertStrictVerifyRun()`, `selectStrictVerifyCandidates()`, `getExpiredListingLookupAttempts()`, `findPropertiesByAddressFilter()`, `getPropertyById()`, `selectClosedListingsForCma()`, `getListingForCmaSubject()`, `findPropertiesByPostalAndStreet()`, `selectCmaSubjectListings()`, `insertValuationRequest()`, `listExpiredListingsForAdmin()`, `updateExpiredListingById()`, `updateExpiredListingByKey()`, `getCmaBySlug()`, `insertCmaRow()`, `upsertCmaRowBySlug()`, `listCmasForAdmin()`, `listCmasForLeadEmail()`, `countCmasInRange()`, `getBoundariesByGeoType()`, `upsertVideoToursCacheRow()`, `getExpiredListingsForDigest()`, `selectListingsAdmin()`, `getSyncCursor()`, `getLatestMarketPulseUpdatedAt()`, `countListingInquiriesSince()`, `countSavedSearchesSince()`, `insertOptimizationRun()`, `getAnyListingKey()`, `listingHistoryExistsForAnyKey()`, `countListingsByStatusOr()`, `countListingsByStatusOrAndFinalized()`, `countHistorySyncCandidates()` <br /> `lib/data/cma/builderReads.ts` · `lib/data/geo/getBendNeighborhoodStats.ts` · `lib/data/geo/getGeoSnapshot.ts` · `lib/data/loop/signals.ts` · `lib/data/market/getMarketPulse.ts` · `lib/data/market/getMarketPulseSnapshot.ts` · `lib/data/market/getMarketStatsCacheRows.ts` · `lib/data/market/marketNarrativeWrites.ts` · `lib/data/sync/syncWrites.ts` |
 | `market_report_band` | `getReportSeries()`, `getReportBands()` <br /> `lib/data/market-report/series.ts` |

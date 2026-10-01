@@ -4,11 +4,18 @@
  * caption on the still, not a KPI Instrument. One map, subdivisions beside it.
  * The amenity section names each place and what it is.
  * Choosing a subdivision zooms the map and loads its homes below.
- * MOS / sold / verdict / DTP stay off the face as a strip. They appear on the face
- * only as the answer to an address the visitor typed (CommunityPlaceValue, SITE-01,
- * Matt 2026-09-07): an input-to-answer ask, not a number hero.
+ * MOS / sold / verdict / DTP stay off the face as a strip. The fold under the
+ * photograph is the place-page class opener (2026-10-01): the paged figure
+ * (CommunityInsight, page one the supply read) beside the alerts sentence, then
+ * the map and its listing dials. The supply read is the community's own months
+ * of supply where Market Truth publishes it; where Market Truth withholds it
+ * under its 30-sale floor, the six-month count it rests on drawn against that
+ * floor, with the parent city named in words and offered as a door, never drawn
+ * as bars (_v3/community-insight.ts). The address ask (CommunityPlaceValue,
+ * SITE-01, Matt 2026-09-07) follows the map.
  * Eagle Crest does not seed an unreliable hull. Nested plats draw as Atlas
- * regions. Homes stay on this page in the carousel.
+ * regions. Homes stay on this page as listing dials, one per buyer group
+ * (Matt 2026-09-24: every place page shows listings the same way).
  * Parity: design_system/ryan-realty/ui_kits/community/parity.json.
  *
  * leftoverHudKpis grain stays 'neighborhood', keyed by the bare community
@@ -76,7 +83,9 @@ import {
 import { getPlatFamilies } from '@/lib/data/subdivisions/getPlatFamilies'
 import { nameOnlyChildEntries } from '@/lib/explore/nearby-place-peers'
 import { leftoverHudKpis } from '@/lib/market/publish-leftover-hud'
-import { buildPlaceMosView } from '@/lib/site/place-mos'
+import { buildPlaceMosView, type PlaceMosView } from '@/lib/site/place-mos'
+import { marketVerdict } from '@/lib/market/classify'
+import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import { buildPlaceAlertTypes } from '@/lib/site/place-alerts'
 import { isTrendSeriesTooSparse } from '@/lib/kb/place-sections'
 import { buildYearSeries } from '@/lib/kb/year-series'
@@ -108,6 +117,7 @@ import {
   V3Amenities,
   V3SectionTracker,
   type V3InstrumentFigure,
+  type V3MosBarsProps,
 } from '@/components/site/v3'
 import {
   PlaceSubdivisionAtlas,
@@ -128,11 +138,14 @@ import { CommunityPlaceValue } from './_v3/CommunityPlaceValue.client'
 import { regionsFromChildCells } from '@/lib/place/child-rings'
 import { placeStockSectionsFromTiles } from '@/lib/place/place-inventory-stock'
 import { loadPlaceLeaseSection } from '@/lib/place/place-lease-stock'
+import { placeBoundaryClause, placeInventorySource } from '@/lib/place/place-inventory-source'
 import { childListingKeys, slugFromPlaceHref, subdivisionRailEntries } from '@/lib/place/place-child-stock'
 import { slugify } from '@/lib/slug'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import CommunityPageTracker from '@/components/community/CommunityPageTracker'
 import { CommunityAlertsStrip } from './_v3/CommunityAlertSheet.client'
+import { CommunityInsight } from './_v3/CommunityInsight.client'
+import { buildCommunityInsightBoard } from './_v3/community-insight'
 import { buildCommunitySchemas, communityMetadataInput } from './_v3/community-metadata'
 import {
   communityFieldTypeIndex,
@@ -184,6 +197,24 @@ export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
 }
 export const dynamicParams = true
 export const revalidate = 900
+
+/** The two named bars from a place's months-of-supply view, as the city and neighborhood folds pass them. */
+function mosBarsProps(view: PlaceMosView): V3MosBarsProps {
+  return {
+    caption: view.caption,
+    plainLabel: view.plainLabel,
+    homesName: view.homesName,
+    homesLabel: view.homesLabel,
+    homesValue: view.homesValue,
+    salesName: view.salesName,
+    salesLabel: view.salesLabel,
+    salesValue: view.salesValue,
+    source: view.source,
+    asOf: view.asOf,
+    sourceName: 'Oregon Data Share',
+    tooltip: view.tooltip,
+  }
+}
 
 type Props = {
   params: Promise<{ slug: string }>
@@ -410,7 +441,13 @@ async function renderCommunityDetail({ params }: Props) {
       'comm:leftoverNeighborhoodMonthly',
     ),
     withTimeoutFallback(
-      getDetachedOverlays([{ geoType: 'neighborhood', geoSlug: neighborhoodSlug }]),
+      // The community's own cells, and the parent city's: the city is the
+      // place a withheld community figure is offered against (REGISTRY D4),
+      // never a figure under this community's name.
+      getDetachedOverlays([
+        { geoType: 'neighborhood', geoSlug: neighborhoodSlug },
+        ...(citySlug ? [{ geoType: 'city' as const, geoSlug: citySlug }] : []),
+      ]),
       new Map(),
       3000,
       'comm:detachedOverlay',
@@ -490,7 +527,35 @@ async function renderCommunityDetail({ params }: Props) {
     grain: 'community',
     geoSlug: slug,
     asOf: mosAsOf,
+    // Detached houses, not every listing the map counts (townhomes and lots
+    // too): the bar names its population, as the neighborhood page's does.
+    homesName: 'Houses for sale',
   })
+  /* THE SUPPLY READ (2026-10-01). Market Truth computes this community's
+     months of supply on one membership (place_membership is_primary on both
+     sides) and publishes it when its 180-day closes clear the registry floor of
+     30 (Sunriver, Eagle Crest, Northwest Crossing, Three Rivers on 2026-10-01).
+     Below the floor (Tetherow: 13 for sale, 23 sold) the figure is withheld,
+     and the page says so with the count it rests on, draws that count against
+     the floor, and offers the parent city by name and by a door to its report
+     (_v3/community-insight.ts). The city's bars are NOT drawn here: under this
+     community's heading a reader takes them for this community's (judge,
+     2026-10-01). The floor is the registry's and is never lowered here. */
+  const supplyFloor = placeMos == null ? (commMt?.supplyFloor ?? null) : null
+  const cityHeadlines = citySlug
+    ? (commOverlays.get(`city:${cityDetachedSlug(citySlug)}`)?.headlines ?? null)
+    : null
+  const cityMosRaw = cityHeadlines
+    ? publishMonthsOfSupply({
+        grain: 'city',
+        source: 'market-truth',
+        pulseMos: cityHeadlines.monthsOfSupply,
+        pulseActiveCount: cityHeadlines.activeCount,
+        displayedActiveCount: cityHeadlines.activeCount,
+      })
+    : null
+  const cityVerdictLabel =
+    supplyFloor && cityMosRaw != null ? marketVerdict(cityMosRaw).label : null
   const alertTypes = buildPlaceAlertTypes({
     placeName: publicName,
     scopeName: community.subdivision ? publicName : cityName,
@@ -597,6 +662,41 @@ async function renderCommunityDetail({ params }: Props) {
   const closedN = leftoverClosedCount(hud, chartIsCityLevel ? [] : chartMonths.months)
   const costChart = chartIsCityLevel ? undefined : placeCostChart(closedN, medianChart)
 
+  // The fold's paged figure. Page two is the community's own monthly closes,
+  // never a city fallback under this community's heading (§0).
+  const insightBoard = buildCommunityInsightBoard({
+    placeName: publicName,
+    cityName,
+    marketHref: cityReportHref,
+    verdictProse:
+      placeMos && hud.monthsSupply != null ? `A ${marketVerdict(hud.monthsSupply).label}.` : null,
+    floor: supplyFloor
+      ? {
+          closedSixMonths: supplyFloor.closedSixMonths,
+          minN: supplyFloor.minN,
+          asOf: formatDate(supplyFloor.computedAt),
+        }
+      : null,
+    cityVerdictLabel,
+    months: chartIsCityLevel ? [] : chartMonths.months,
+    // The houses the map and the dials show, priced: one set with the
+    // supply page's homes bar only when the two counts agree (community-insight.ts).
+    askingPrices: population.tiles
+      .filter(
+        (tile) =>
+          tile.propertyType === 'A' &&
+          tile.propertySubType === 'Single Family Residence' &&
+          tile.status === 'Active' &&
+          tile.listPrice != null &&
+          tile.listPrice > 0,
+      )
+      .map((tile) => Number(tile.listPrice)),
+    activeCount: hud.active,
+    medianListPrice: hud.medianList,
+    inventoryAsOf: mosAsOf,
+  })
+  const foldMosProps = placeMos ? mosBarsProps(placeMos) : null
+
   // The trusted stored outline, or nothing. The one trust rule already
   // decided it for the homes list too, so an outline the map refuses can no
   // longer put its listings in the homes list (Widgi Creek, 2026-09-25).
@@ -619,7 +719,8 @@ async function renderCommunityDetail({ params }: Props) {
   // Commercial leases in the community: shown last under the map, never
   // counted for sale and never a pin.
   const leaseSection = await loadPlaceLeaseSection(liveStockTiles)
-  const inventorySource = `regional MLS through Oregon Data Share, every publicly active listing inside ${publicName}: Active and Active Under Contract, every property type. Coming Soon is excluded.`
+  // The reader's words for the same set (SITE-193): no MLS status names.
+  const inventorySource = placeInventorySource(placeBoundaryClause(publicName))
   const hasMap =
     seedRing || drawAtlas || stockSections.length > 0 || leaseSection != null
   // The living map, scoped to this community (Matt 2026-09-01: heat maps on
@@ -758,13 +859,14 @@ async function renderCommunityDetail({ params }: Props) {
      One array feeds the visible rows AND the FAQPage JSON-LD (answersFaqItems),
      so the markup cannot describe a sentence the page does not print.
 
-     THE VERDICT IS WITHHELD HERE ON PURPOSE. publishMonthsOfSupply refuses this
-     grain's supply ratio (lib/market/geo-grain-trust.ts: a community's actives
-     and its closes are attributed by two different writers), so hud.monthsSupply
-     is null and the question is still ASKED — answered with the closed count and
-     the same sentence SITE-01 put on the address answer, rather than dropped.
-     A place page that skips the question a seller came to ask has not answered
-     it; it has hidden that it cannot. */
+     THE VERDICT FOLLOWS MARKET TRUTH. hud.monthsSupply is the community's own
+     Market Truth figure (one membership on both sides of the ratio; the pulse
+     ratio stays untrusted at this grain, lib/market/geo-grain-trust.ts), and it
+     is set only when its 180-day closes clear the registry floor of 30. Where it
+     is withheld (Tetherow, 23 sales) the question is still ASKED, answered with
+     the closed count and the same sentence SITE-01 put on the address answer,
+     rather than dropped. A place page that skips the question a seller came to
+     ask has not answered it; it has hidden that it cannot. */
   const { answers: placeAnswers, traces: answerTraces, sourceKey: answerSourceKey } = buildPlaceAnswers({
     placeName: publicName,
     cityName,
@@ -936,9 +1038,11 @@ async function renderCommunityDetail({ params }: Props) {
               : 'place-opening place-opening--community'
           }
         >
-          {/* SITE-87: photograph + MOS overlay when leftover HUD publishes;
-              Atlas is the interactive drawing in the fold stage below. */}
-          <PlaceAreaHero posterSrc={stagePosterSrc} mos={placeMos} />
+          {/* The photograph is H1 + doors. Months of supply comes OFF it
+              (2026-10-01, as SITE-104 did on the neighborhood): the bars are
+              page one of the fold's paged figure below, where the claim can
+              wrap and the bars keep their hover. */}
+          <PlaceAreaHero posterSrc={stagePosterSrc} />
           {stagePosterSrc ? <div className="place-opening__scrim" aria-hidden="true" /> : null}
           <V3Breadcrumb
             trail={trail}
@@ -978,11 +1082,36 @@ async function renderCommunityDetail({ params }: Props) {
           keysBySlug={homesByChild}
           source={inventorySource}
           asOf={leftoverStamp}
-          // Held on the carousel until this class reaches its taste mark with
-          // the listing dial (Matt 2026-09-25, "fix first, then ship").
-          layout="rails"
         >
-          <div className="place-one-map">
+          {/* ONE COMPOSED FOLD under the photograph (2026-10-01, the place-page
+              layout lock: "a place page opens with a drawing and a figure
+              beside the alerts sentence"). The paged figure leads the wide
+              column with the map right under it, the alerts sentence stands
+              beside both, and the places list runs under the map. A phone
+              reads the figure, the alerts, the map, then the list. */}
+          <div className="place-one-map place-one-map--fold">
+            <div className="place-one-map__insight">
+              <CommunityInsight
+                id="place-insight"
+                placeName={publicName}
+                board={insightBoard}
+                mos={foldMosProps}
+              />
+            </div>
+            <aside className="place-one-map__ask">
+              <CommunityAlertsStrip
+                id="alerts"
+                communityName={publicName}
+                city={cityName}
+                subdivision={community.subdivision}
+                geoSlug={neighborhoodSlug}
+                newCount30d={publicPace.newCount30d}
+                updatedAt={leftoverStamp}
+                browseHref={newestListingsHref}
+                matchNames={community.subdivision ? getSubdivisionMatchNames(community.subdivision) : []}
+                types={alertTypes}
+              />
+            </aside>
             <PlaceSubdivisionRail id="child-places" nameOnly />
             <div className="community-atlas">
             <PlaceSubdivisionAtlas
@@ -1027,36 +1156,24 @@ async function renderCommunityDetail({ params }: Props) {
               </ul>
             </nav>
           ) : null}
+          {/* Matt 2026-09-24: the homes below the map are listing dials, one
+              per buyer group (each type link above lands on its dial), the
+              same as every other place page, still filtered by the
+              subdivision chosen on the map. */}
           <PlaceSubdivisionHomes id="homes" />
         </PlaceSubdivisionMap>
+
+        <div className="community-fold">
+          <div className="community-fold__ask">
+            <CommunityPlaceValue slug={slug} placeName={publicName} activity={placeActivitySpark} />
+          </div>
+        </div>
 
         {amenityBoard ? (
           <V3Amenities id="amenities" heading={amenityBoard.heading} source={amenityBoard.source}>
             <CommunityAmenities board={amenityBoard} />
           </V3Amenities>
         ) : null}
-
-        <div className="community-fold">
-          <div className="community-fold__stage">
-            <aside className="community-fold__figure">
-              <CommunityAlertsStrip
-                id="alerts"
-                communityName={publicName}
-                city={cityName}
-                subdivision={community.subdivision}
-                geoSlug={neighborhoodSlug}
-                newCount30d={publicPace.newCount30d}
-                updatedAt={leftoverStamp}
-                browseHref={newestListingsHref}
-                matchNames={community.subdivision ? getSubdivisionMatchNames(community.subdivision) : []}
-                types={alertTypes}
-              />
-            </aside>
-          </div>
-          <div className="community-fold__ask">
-            <CommunityPlaceValue slug={slug} placeName={publicName} activity={placeActivitySpark} />
-          </div>
-        </div>
 
         {costChart && firstMarketFigure ? (
           <V3Instrument
@@ -1068,9 +1185,9 @@ async function renderCommunityDetail({ params }: Props) {
             chartFirst
             foldAfter={0}
             source={v3Text(
-              `regional MLS through Oregon Data Share, read through the Market Truth metric layer: ` +
-                `detached single-family houses assigned to ${publicName} by boundary membership. ` +
-                `Sold history is leftover, not a city monthly chart. Months of supply and a buyer's or seller's verdict stay off this grain.`,
+              `regional MLS through Oregon Data Share: ` +
+                `detached single-family houses inside the recorded ${publicName} boundary. ` +
+                `The sold history is ${publicName}'s own closed sales, not a city chart. The supply read is at the top of this page.`,
             )}
             chart={costChart}
             updated={leftoverStamp ? v3Text(formatDate(leftoverStamp)) : undefined}

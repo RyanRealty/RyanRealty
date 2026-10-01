@@ -32,22 +32,20 @@
 }
 
 @media (max-width: 39.99rem) {
+  /* The photograph is as tall as its copy and no taller. It used to be capped
+     at 8rem with the belonging facts clamped to one line to fit, and the clamp
+     cut the sentence mid-fact at 375 ("$2,052 HOA a year from homes here.
+     3…", SITE-193): a figure cut off is not a figure. Now every fact prints
+     whole and the photograph grows by the line it needs; the floor stays. */
   .place-opening.place-opening--community.place-opening--media {
     min-height: 6.5rem;
-    max-height: 8rem;
+    max-height: none;
   }
 
   /* Clear the absolute breadcrumb so the H1 is not clipped. */
   .place-opening--community.place-opening--media .place-opening__copy {
     padding-top: calc(var(--v3-tap) + var(--v3-space-2xs));
     padding-bottom: var(--v3-space-2xs);
-  }
-
-  .place-opening--community .place-opening__caption--belonging {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 1;
-    overflow: hidden;
   }
 }
 
@@ -388,4 +386,142 @@
   padding: 0.35rem 0.85rem;
   text-decoration: none;
   border-bottom: var(--v3-rule-hairline);
+}
+
+/* A reader sent to #homes (the opening's "homes for sale" door, the alerts
+   door's neighbour) lands with the type row over the dials in view, not cut
+   under the site header (2026-09-25: the row was half hidden at 1440 and 375). */
+.community-field-types + #homes {
+  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-tap) + var(--v3-space-lg));
+}
+
+/* THE OPENING FOLD (2026-10-01): one composed grid under the photograph. The
+   paged figure (CommunityInsight, page one the supply read) leads the wide
+   column with the map right under it, the alerts sentence stands beside both
+   on one hairline, and the places list runs under the map. A phone reads the
+   figure, the alerts, the map, then the list. Before this the figure and the
+   alerts sat in a band of their own over the map, which left a screen-tall
+   void under the figure at 1440 and pushed the map out of the first screen. */
+.place-one-map.place-one-map--fold {
+  grid-template-areas:
+    'insight'
+    'ask'
+    'map'
+    'list';
+  row-gap: var(--v3-space-lg);
+  padding-top: var(--v3-space-md);
+}
+
+.place-one-map--fold > .place-one-map__insight {
+  grid-area: insight;
+  min-width: 0;
+}
+
+.place-one-map--fold > .place-one-map__ask {
+  grid-area: ask;
+  min-width: 0;
+}
+
+.place-one-map__ask .v3.v3-alerts {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* One column inside the ask: the sentence, the form, the new listings. */
+.place-one-map__ask .v3.v3-alerts .v3-alerts__grid {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    'lead'
+    'ask'
+    'figure';
+  row-gap: var(--v3-space-md);
+}
+
+.place-one-map__ask .v3.v3-alerts .v3-alerts__ask {
+  padding-left: 0;
+  border-left: 0;
+}
+
+/* Compact proof rows: price, address, beds, baths, sqft beside a small still,
+   so the email field stays in the first viewport. */
+.place-one-map__ask .v3-alerts__strip {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--v3-space-xs);
+}
+
+.place-one-map__ask .v3-alerts__thumb {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  align-items: start;
+  column-gap: var(--v3-space-xs);
+  min-width: 0;
+  max-width: none;
+}
+
+.place-one-map__ask .v3-alerts__thumb img {
+  width: 5.5rem;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+@media (min-width: 64rem) {
+  .place-one-map.place-one-map--fold {
+    grid-template-columns: minmax(0, 1fr) minmax(20rem, 26rem);
+    grid-template-areas:
+      'insight ask'
+      'map ask'
+      'list ask';
+    column-gap: var(--v3-space-xl);
+    row-gap: var(--v3-space-md);
+  }
+
+  /* Two columns, one rule: the register's separator, not a panel. */
+  .place-one-map--fold > .place-one-map__ask {
+    align-self: start;
+    border-left: var(--v3-rule-hairline);
+    padding-left: var(--v3-space-lg);
+  }
+
+  /* A side column's heading, not a section's: the display size set it on
+     three lines and pushed the form below the first screen (2026-09-29). */
+  .place-one-map__ask .v3.v3-alerts .v3-alerts__claim {
+    font-size: var(--v3-size-display-2);
+  }
+
+  /* Two new listings in the column; the rest are one door away. */
+  .place-one-map__ask .v3-alerts__strip > li:nth-child(n + 3) {
+    display: none;
+  }
+
+  /* The places list under the map runs as a list, not a screen-tall column. */
+  .place-one-map--fold > .place-subdiv-rail {
+    max-height: none;
+  }
+}
+
+/* Where the 90rem band runs to the window's right edge, the ask column stops
+   short of the Jax button (V3DogFloater: 4.25rem wide, --v3-space-md in from
+   the edge, fixed mid-screen). Wider windows centre the band clear of it. */
+@media (min-width: 64rem) and (max-width: 102rem) {
+  .place-one-map.place-one-map--fold {
+    padding-inline-end: calc(4.25rem + var(--v3-space-md) + var(--v3-space-sm));
+  }
+}
+
+@media (max-width: 63.99rem) {
+  /* One proof card on a phone: price and facts stay with the claim. */
+  .place-one-map__ask .v3-alerts__strip > li:nth-child(n + 2) {
+    display: none;
+  }
+}
+
+@media (max-width: 39.99rem) {
+  /* Jax sits on the right of the 375 fold: keep the figure's sentence and
+     the alerts claim out from under the dog. */
+  .place-one-map__insight .insight-cards__prose,
+  .place-one-map__ask .v3-alerts__claim {
+    padding-right: 5.5rem;
+  }
 }

@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import {
   applyDetachedOverlay,
+  assembleSupplyFloor,
   cityDetachedSlug,
   overlayDetachedLayers,
   overlayDetachedMarket,
@@ -204,5 +205,44 @@ describe('getSellBendMarket', () => {
     expect(formatMonthsOfSupply(mos)).toBe('4.5')
     expect(marketVerdict(mos)).toEqual({ kind: 'balanced', label: 'balanced market' })
     expect(marketVerdict(3.54)).toEqual({ kind: 'sellers', label: "seller's market" })
+  })
+})
+
+describe('supply floor (a withheld months of supply, said with its count)', () => {
+  const row = (over: Record<string, unknown>) => ({
+    stat_id: 'months_of_supply',
+    geo_type: 'neighborhood',
+    geo_slug: 'tetherow',
+    value: 3.39130434782609,
+    value_text: null,
+    is_publishable: false,
+    sample_n: 23,
+    withheld_reason: 'below_min_n',
+    complete_through: '2026-09-30',
+    period_end: '2026-10-01',
+    window_months: 6,
+    computed_at: '2026-10-01T18:40:04.679987+00:00',
+    ...over,
+  })
+  const read = (over: Record<string, unknown>) =>
+    assembleSupplyFloor('neighborhood', 'tetherow', new Map([['neighborhood:tetherow:months_of_supply', row(over) as never]]))
+
+  it('neighborhood:tetherow 2026-10-01: 23 six-month closes under the floor of 30, never the ratio', () => {
+    const floor = read({})
+    expect(floor).toEqual({
+      closedSixMonths: 23,
+      minN: 30,
+      completeThrough: '2026-09-30',
+      computedAt: '2026-10-01T18:40:04.679987+00:00',
+    })
+    expect(Object.keys(floor ?? {})).not.toContain('value')
+  })
+
+  it('a published figure, another withhold reason, a stale cell or a count at the floor is not a floor', () => {
+    expect(read({ is_publishable: true })).toBeNull()
+    expect(read({ withheld_reason: 'mixed_method' })).toBeNull()
+    expect(read({ complete_through: '2026-09-20' })).toBeNull()
+    expect(read({ sample_n: 30 })).toBeNull()
+    expect(assembleSupplyFloor('neighborhood', 'tetherow', new Map())).toBeNull()
   })
 })
