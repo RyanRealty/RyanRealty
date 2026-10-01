@@ -829,6 +829,7 @@ function bracketGla(
   asOf: string,
   anchor: PriceAnchor | null = null,
   cells: Map<string, SubdivisionCell> = new Map(),
+  customLadder = false,
 ): { comps: SelectedPricingComp[]; note: string | null } {
   if (comps.length === 0) return { comps, note: null }
   const allLarger = comps.every((c) => c.sqft > subject.sqft)
@@ -853,7 +854,10 @@ function bracketGla(
     if (size < 0) return worst
     return saleMiles(subject, c) > saleMiles(subject, worst) ? c : worst
   })
-  const incoming = candidates.find((sale) => bracketMayReplace(subject, outgoing, sale))
+  // Price the replacement against the set that still holds `outgoing`. A
+  // different plat that fails does not take the seat, so the last own-plat
+  // sale cannot be deleted and then leave the check with nothing to measure.
+  const incoming = candidates.find((sale) => bracketMayReplace(subject, outgoing, sale, comps, customLadder))
   if (!incoming) return { comps, note: null }
 
   const next = comps.filter((c) => c.listingKey !== outgoing.listingKey)
@@ -864,11 +868,25 @@ function bracketGla(
   }
 }
 
-/** A different plat may take the place of a same-plat sale only inside a mile. */
-function bracketMayReplace(subject: PricingSubject, outgoing: SelectedPricingComp, incoming: PricingSale): boolean {
-  if (!outgoing.ownPlat) return true
-  if (inSubjectPlat(subject, incoming)) return true
-  return saleMiles(subject, incoming) <= BRACKET_OFF_PLAT_MAX_MILES
+/**
+ * A different plat may take the place of a same-plat sale only inside a mile,
+ * and only when its close is inside the own-plat band. The band is read before
+ * the outgoing sale is removed. A same-plat replacement is not distance-blocked
+ * and skips the band. Custom and new subjects skip the band, as they do on the walk.
+ */
+function bracketMayReplace(
+  subject: PricingSubject,
+  outgoing: SelectedPricingComp,
+  incoming: PricingSale,
+  kept: readonly PricingSale[],
+  customLadder: boolean,
+): boolean {
+  const samePlatIncoming = inSubjectPlat(subject, incoming)
+  if (outgoing.ownPlat && !samePlatIncoming && saleMiles(subject, incoming) > BRACKET_OFF_PLAT_MAX_MILES) {
+    return false
+  }
+  if (samePlatIncoming || customLadder) return true
+  return closeNearOwnPlat(subject, incoming, kept)
 }
 
 function medianClose(values: readonly number[]): number | null {
@@ -883,6 +901,11 @@ function medianClose(values: readonly number[]): number | null {
  * from this home's own sales. The plat set is those sales. No plat sale yet
  * fails open. The band is the subdivision tier (30%): a close about 32% off
  * that set is a different house, not a size gap the pocket's 20% band explains.
+ *
+ * The walk applies this while the set is accumulating. The GLA bracket applies
+ * it again to a different-plat replacement, and the median has to be read on
+ * the kept set that still includes the own-plat sale being replaced. Removing
+ * that sale first makes this fail open, and the cheap off-plat sale stays.
  */
 function closeNearOwnPlat(
   subject: PricingSubject,
@@ -1171,7 +1194,7 @@ export function walkPricingLadder(
     (a, b) => similarity(subject, b, asOf, pocketStarved) - similarity(subject, a, asOf, pocketStarved),
   )
   const sliced = keepTightestByClosePrice(ranked, PRICING_MAX_COMPS, asOf)
-  const bracketed = bracketGla(subject, sliced, pool, asOf, priceAnchor, cells)
+  const bracketed = bracketGla(subject, sliced, pool, asOf, priceAnchor, cells, customLadder)
   if (bracketed.note) {
     if (!tiersUsed.includes('gla-bracket')) tiersUsed.push('gla-bracket')
     trace.push(bracketed.note)
