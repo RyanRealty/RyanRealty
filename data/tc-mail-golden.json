@@ -3081,10 +3081,11 @@
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19959e2013e3d02d",
     "expect": "file",
-    "deal_id": "880b5387-ddc0-4cde-8919-615e184506ca",
+    "deal_id": "3e1e54a4-79b9-4f25-a988-30d272a31f6b",
     "deal_not_in_vault": false,
     "slice": "queue",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-10-01 after reading the message: Matt's reply in the \"SPDS questions\" thread, which is the Jacklight purchase's (accepted 2025-09-14, three days before; the other agent is on that file only; the thread's other three rows are labeled Jacklight); the Beaumont file had no contract until 2026-03-28"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -6502,11 +6503,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19e1e3c557de2ace",
-    "expect": "file",
-    "deal_id": "880b5387-ddc0-4cde-8919-615e184506ca",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "filed-matt",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-10-01 after reading the message: an empty, never-sent draft to a title officer who is a contact on 19 files; it names no property, and no Beaumont contract was open that day; its sibling draft 90 seconds later names School House"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -6547,11 +6549,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19e28a9f11e2c224",
-    "expect": "file",
-    "deal_id": "ca50ab4a-7764-4d8e-93ea-a237df8259db",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "filed-matt",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-10-01 after reading the message: the marketing line's automatic reply to an untagged \"TEST:\" request; the MLS number it names is on no file (the test fixture's is different) and test aliases are never evidence untagged"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -8334,11 +8337,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1a05ddbabdb38eb8",
-    "expect": "queue",
-    "deal_id": null,
-    "deal_not_in_vault": true,
+    "expect": "file",
+    "deal_id": "71f04c3b-e391-44d8-a3d3-e7619ef44668",
+    "deal_not_in_vault": false,
     "slice": "queue",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-10-01 after reading the message: it names the 909 NW Delaware purchase and was sent inside that file's sale cycle (accepted 2026-09-01, escrow closing 2026-09-18); the label was written before the file was opened (2026-09-24 22:11 UTC), see docs/TC_MAIL_FILING_RULES.md \"Dry run of v4.1\""
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -8352,20 +8356,22 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1a05f35e6cbc48c4",
-    "expect": "queue",
-    "deal_id": null,
-    "deal_not_in_vault": true,
+    "expect": "file",
+    "deal_id": "71f04c3b-e391-44d8-a3d3-e7619ef44668",
+    "deal_not_in_vault": false,
     "slice": "queue",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-10-01 after reading the message: it names the 909 NW Delaware purchase and was sent inside that file's sale cycle (accepted 2026-09-01, escrow closing 2026-09-18); the label was written before the file was opened (2026-09-24 22:11 UTC), see docs/TC_MAIL_FILING_RULES.md \"Dry run of v4.1\""
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1a05f4fc4d198a65",
-    "expect": "queue",
-    "deal_id": null,
-    "deal_not_in_vault": true,
+    "expect": "file",
+    "deal_id": "71f04c3b-e391-44d8-a3d3-e7619ef44668",
+    "deal_not_in_vault": false,
     "slice": "queue",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-10-01 after reading the message: it names the 909 NW Delaware purchase and was sent inside that file's sale cycle (accepted 2026-09-01, escrow closing 2026-09-18); the label was written before the file was opened (2026-09-24 22:11 UTC), see docs/TC_MAIL_FILING_RULES.md \"Dry run of v4.1\""
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -8379,29 +8385,32 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1a05f5f645337ce8",
-    "expect": "queue",
-    "deal_id": null,
-    "deal_not_in_vault": true,
+    "expect": "file",
+    "deal_id": "71f04c3b-e391-44d8-a3d3-e7619ef44668",
+    "deal_not_in_vault": false,
     "slice": "queue",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-10-01 after reading the message: it names the 909 NW Delaware purchase and was sent inside that file's sale cycle (accepted 2026-09-01, escrow closing 2026-09-18); the label was written before the file was opened (2026-09-24 22:11 UTC), see docs/TC_MAIL_FILING_RULES.md \"Dry run of v4.1\""
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1a05fa003b84ee13",
-    "expect": "queue",
-    "deal_id": null,
-    "deal_not_in_vault": true,
+    "expect": "file",
+    "deal_id": "71f04c3b-e391-44d8-a3d3-e7619ef44668",
+    "deal_not_in_vault": false,
     "slice": "queue",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-10-01 after reading the message: it names the 909 NW Delaware purchase and was sent inside that file's sale cycle (accepted 2026-09-01, escrow closing 2026-09-18); the label was written before the file was opened (2026-09-24 22:11 UTC), see docs/TC_MAIL_FILING_RULES.md \"Dry run of v4.1\""
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1a0607f18eeeb4c9",
-    "expect": "queue",
-    "deal_id": null,
-    "deal_not_in_vault": true,
+    "expect": "file",
+    "deal_id": "71f04c3b-e391-44d8-a3d3-e7619ef44668",
+    "deal_not_in_vault": false,
     "slice": "queue",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-10-01 after reading the message: it names the 909 NW Delaware purchase and was sent inside that file's sale cycle (accepted 2026-09-01, escrow closing 2026-09-18); the label was written before the file was opened (2026-09-24 22:11 UTC), see docs/TC_MAIL_FILING_RULES.md \"Dry run of v4.1\""
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -8415,11 +8424,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1a06282121f9cbfd",
-    "expect": "queue",
-    "deal_id": null,
-    "deal_not_in_vault": true,
+    "expect": "file",
+    "deal_id": "71f04c3b-e391-44d8-a3d3-e7619ef44668",
+    "deal_not_in_vault": false,
     "slice": "queue",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-10-01 after reading the message: it names the 909 NW Delaware purchase and was sent inside that file's sale cycle (accepted 2026-09-01, escrow closing 2026-09-18); the label was written before the file was opened (2026-09-24 22:11 UTC), see docs/TC_MAIL_FILING_RULES.md \"Dry run of v4.1\""
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -8433,29 +8443,32 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1a0636feae692ab7",
-    "expect": "queue",
-    "deal_id": null,
-    "deal_not_in_vault": true,
+    "expect": "file",
+    "deal_id": "71f04c3b-e391-44d8-a3d3-e7619ef44668",
+    "deal_not_in_vault": false,
     "slice": "queue",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-10-01 after reading the message: it names the 909 NW Delaware purchase and was sent inside that file's sale cycle (accepted 2026-09-01, escrow closing 2026-09-18); the label was written before the file was opened (2026-09-24 22:11 UTC), see docs/TC_MAIL_FILING_RULES.md \"Dry run of v4.1\""
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1a063962ba591e7b",
-    "expect": "queue",
-    "deal_id": null,
-    "deal_not_in_vault": true,
+    "expect": "file",
+    "deal_id": "71f04c3b-e391-44d8-a3d3-e7619ef44668",
+    "deal_not_in_vault": false,
     "slice": "queue",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-10-01 after reading the message: it names the 909 NW Delaware purchase and was sent inside that file's sale cycle (accepted 2026-09-01, escrow closing 2026-09-18); the label was written before the file was opened (2026-09-24 22:11 UTC), see docs/TC_MAIL_FILING_RULES.md \"Dry run of v4.1\""
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1a063bc287e439b5",
-    "expect": "queue",
-    "deal_id": null,
-    "deal_not_in_vault": true,
+    "expect": "file",
+    "deal_id": "71f04c3b-e391-44d8-a3d3-e7619ef44668",
+    "deal_not_in_vault": false,
     "slice": "queue",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-10-01 after reading the message: it names the 909 NW Delaware purchase and was sent inside that file's sale cycle (accepted 2026-09-01, escrow closing 2026-09-18); the label was written before the file was opened (2026-09-24 22:11 UTC), see docs/TC_MAIL_FILING_RULES.md \"Dry run of v4.1\""
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -8469,11 +8482,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1a06978dac4d4774",
-    "expect": "queue",
-    "deal_id": null,
-    "deal_not_in_vault": true,
+    "expect": "file",
+    "deal_id": "71f04c3b-e391-44d8-a3d3-e7619ef44668",
+    "deal_not_in_vault": false,
     "slice": "queue",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-10-01 after reading the message: it names the 909 NW Delaware purchase and was sent inside that file's sale cycle (accepted 2026-09-01, escrow closing 2026-09-18); the label was written before the file was opened (2026-09-24 22:11 UTC), see docs/TC_MAIL_FILING_RULES.md \"Dry run of v4.1\""
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -8542,11 +8556,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1a08c08baf12aa71",
-    "expect": "queue",
-    "deal_id": null,
-    "deal_not_in_vault": true,
+    "expect": "file",
+    "deal_id": "71f04c3b-e391-44d8-a3d3-e7619ef44668",
+    "deal_not_in_vault": false,
     "slice": "queue",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-10-01 after reading the message: it names the 909 NW Delaware purchase and was sent inside that file's sale cycle (accepted 2026-09-01, escrow closing 2026-09-18); the label was written before the file was opened (2026-09-24 22:11 UTC), see docs/TC_MAIL_FILING_RULES.md \"Dry run of v4.1\""
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -8561,11 +8576,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1a08c7e85d8c86a1",
-    "expect": "queue",
-    "deal_id": null,
-    "deal_not_in_vault": true,
+    "expect": "file",
+    "deal_id": "71f04c3b-e391-44d8-a3d3-e7619ef44668",
+    "deal_not_in_vault": false,
     "slice": "queue",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-10-01 after reading the message: it names the 909 NW Delaware purchase and was sent inside that file's sale cycle (accepted 2026-09-01, escrow closing 2026-09-18); the label was written before the file was opened (2026-09-24 22:11 UTC), see docs/TC_MAIL_FILING_RULES.md \"Dry run of v4.1\""
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -8624,20 +8640,22 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1a09db5117175f6b",
-    "expect": "queue",
-    "deal_id": null,
-    "deal_not_in_vault": true,
+    "expect": "file",
+    "deal_id": "71f04c3b-e391-44d8-a3d3-e7619ef44668",
+    "deal_not_in_vault": false,
     "slice": "queue",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-10-01 after reading the message: it names the 909 NW Delaware purchase and was sent inside that file's sale cycle (accepted 2026-09-01, escrow closing 2026-09-18); the label was written before the file was opened (2026-09-24 22:11 UTC), see docs/TC_MAIL_FILING_RULES.md \"Dry run of v4.1\""
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1a09fb3b50a94710",
-    "expect": "queue",
-    "deal_id": null,
-    "deal_not_in_vault": true,
+    "expect": "file",
+    "deal_id": "71f04c3b-e391-44d8-a3d3-e7619ef44668",
+    "deal_not_in_vault": false,
     "slice": "queue",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-10-01 after reading the message: it names the 909 NW Delaware purchase and was sent inside that file's sale cycle (accepted 2026-09-01, escrow closing 2026-09-18); the label was written before the file was opened (2026-09-24 22:11 UTC), see docs/TC_MAIL_FILING_RULES.md \"Dry run of v4.1\""
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -8651,29 +8669,32 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1a0a0b00b2648181",
-    "expect": "queue",
-    "deal_id": null,
-    "deal_not_in_vault": true,
+    "expect": "file",
+    "deal_id": "71f04c3b-e391-44d8-a3d3-e7619ef44668",
+    "deal_not_in_vault": false,
     "slice": "queue",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-10-01 after reading the message: it names the 909 NW Delaware purchase and was sent inside that file's sale cycle (accepted 2026-09-01, escrow closing 2026-09-18); the label was written before the file was opened (2026-09-24 22:11 UTC), see docs/TC_MAIL_FILING_RULES.md \"Dry run of v4.1\""
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1a0a0c82c8746149",
-    "expect": "queue",
-    "deal_id": null,
-    "deal_not_in_vault": true,
+    "expect": "file",
+    "deal_id": "71f04c3b-e391-44d8-a3d3-e7619ef44668",
+    "deal_not_in_vault": false,
     "slice": "queue",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-10-01 after reading the message: it names the 909 NW Delaware purchase and was sent inside that file's sale cycle (accepted 2026-09-01, escrow closing 2026-09-18); the label was written before the file was opened (2026-09-24 22:11 UTC), see docs/TC_MAIL_FILING_RULES.md \"Dry run of v4.1\""
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1a0a0d0a62c34d92",
-    "expect": "queue",
-    "deal_id": null,
-    "deal_not_in_vault": true,
+    "expect": "file",
+    "deal_id": "71f04c3b-e391-44d8-a3d3-e7619ef44668",
+    "deal_not_in_vault": false,
     "slice": "queue",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-10-01 after reading the message: it names the 909 NW Delaware purchase and was sent inside that file's sale cycle (accepted 2026-09-01, escrow closing 2026-09-18); the label was written before the file was opened (2026-09-24 22:11 UTC), see docs/TC_MAIL_FILING_RULES.md \"Dry run of v4.1\""
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -8687,11 +8708,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1a0a2465ff134dac",
-    "expect": "queue",
-    "deal_id": null,
-    "deal_not_in_vault": true,
+    "expect": "file",
+    "deal_id": "71f04c3b-e391-44d8-a3d3-e7619ef44668",
+    "deal_not_in_vault": false,
     "slice": "queue",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-10-01 after reading the message: it names the 909 NW Delaware purchase and was sent inside that file's sale cycle (accepted 2026-09-01, escrow closing 2026-09-18); the label was written before the file was opened (2026-09-24 22:11 UTC), see docs/TC_MAIL_FILING_RULES.md \"Dry run of v4.1\""
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -8759,38 +8781,42 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1a0a5b0c4ee539c4",
-    "expect": "queue",
-    "deal_id": null,
-    "deal_not_in_vault": true,
+    "expect": "file",
+    "deal_id": "71f04c3b-e391-44d8-a3d3-e7619ef44668",
+    "deal_not_in_vault": false,
     "slice": "queue",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-10-01 after reading the message: it names the 909 NW Delaware purchase and was sent inside that file's sale cycle (accepted 2026-09-01, escrow closing 2026-09-18); the label was written before the file was opened (2026-09-24 22:11 UTC), see docs/TC_MAIL_FILING_RULES.md \"Dry run of v4.1\""
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1a0a5b4a8192f85d",
-    "expect": "queue",
-    "deal_id": null,
-    "deal_not_in_vault": true,
+    "expect": "file",
+    "deal_id": "71f04c3b-e391-44d8-a3d3-e7619ef44668",
+    "deal_not_in_vault": false,
     "slice": "queue",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-10-01 after reading the message: it names the 909 NW Delaware purchase and was sent inside that file's sale cycle (accepted 2026-09-01, escrow closing 2026-09-18); the label was written before the file was opened (2026-09-24 22:11 UTC), see docs/TC_MAIL_FILING_RULES.md \"Dry run of v4.1\""
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1a0a5e88d3bdcf56",
-    "expect": "queue",
-    "deal_id": null,
-    "deal_not_in_vault": true,
+    "expect": "file",
+    "deal_id": "71f04c3b-e391-44d8-a3d3-e7619ef44668",
+    "deal_not_in_vault": false,
     "slice": "queue",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-10-01 after reading the message: it names the 909 NW Delaware purchase and was sent inside that file's sale cycle (accepted 2026-09-01, escrow closing 2026-09-18); the label was written before the file was opened (2026-09-24 22:11 UTC), see docs/TC_MAIL_FILING_RULES.md \"Dry run of v4.1\""
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1a0a5f39403c54f5",
-    "expect": "queue",
-    "deal_id": null,
-    "deal_not_in_vault": true,
+    "expect": "file",
+    "deal_id": "71f04c3b-e391-44d8-a3d3-e7619ef44668",
+    "deal_not_in_vault": false,
     "slice": "queue",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-10-01 after reading the message: it names the 909 NW Delaware purchase and was sent inside that file's sale cycle (accepted 2026-09-01, escrow closing 2026-09-18); the label was written before the file was opened (2026-09-24 22:11 UTC), see docs/TC_MAIL_FILING_RULES.md \"Dry run of v4.1\""
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -8903,20 +8929,22 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1a0b50f022bde3ae",
-    "expect": "queue",
-    "deal_id": null,
-    "deal_not_in_vault": true,
+    "expect": "file",
+    "deal_id": "71f04c3b-e391-44d8-a3d3-e7619ef44668",
+    "deal_not_in_vault": false,
     "slice": "queue",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-10-01 after reading the message: it names the 909 NW Delaware purchase and was sent inside that file's sale cycle (accepted 2026-09-01, escrow closing 2026-09-18); the label was written before the file was opened (2026-09-24 22:11 UTC), see docs/TC_MAIL_FILING_RULES.md \"Dry run of v4.1\""
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1a0b5305a8217f96",
-    "expect": "queue",
-    "deal_id": null,
-    "deal_not_in_vault": true,
+    "expect": "file",
+    "deal_id": "71f04c3b-e391-44d8-a3d3-e7619ef44668",
+    "deal_not_in_vault": false,
     "slice": "queue",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-10-01 after reading the message: it names the 909 NW Delaware purchase and was sent inside that file's sale cycle (accepted 2026-09-01, escrow closing 2026-09-18); the label was written before the file was opened (2026-09-24 22:11 UTC), see docs/TC_MAIL_FILING_RULES.md \"Dry run of v4.1\""
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -10273,11 +10301,12 @@
   {
     "mailbox": "paul@ryan-realty.com",
     "gmail_id": "19e2c0963e2501d2",
-    "expect": "file",
-    "deal_id": "ca50ab4a-7764-4d8e-93ea-a237df8259db",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "filed-rp",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "relabeled 2026-10-01 after reading the message: the marketing line's automatic reply to an untagged \"TEST:\" request; the MLS number it names is on no file (the test fixture's is different) and test aliases are never evidence untagged"
   },
   {
     "mailbox": "paul@ryan-realty.com",
