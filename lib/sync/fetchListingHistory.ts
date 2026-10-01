@@ -7,6 +7,8 @@ import { sparkHistoryItemToRow } from '@/lib/listing-mapper'
 import {
   fetchSparkListingHistory,
   fetchSparkPriceHistory,
+  historyRefused,
+  priceHistoryMayStandIn,
   type SparkListingHistoryItem,
 } from '@/lib/spark'
 import { replaceListingHistoryForKey } from '@/lib/data/sync/syncWrites'
@@ -14,21 +16,30 @@ import { replaceListingHistoryForKey } from '@/lib/data/sync/syncWrites'
 export async function fetchAndInsertHistoryCore(
   accessToken: string,
   listingKey: string,
-): Promise<{ inserted: number; ok: boolean; items: SparkListingHistoryItem[] }> {
+): Promise<{ inserted: number; ok: boolean; items: SparkListingHistoryItem[]; status?: number }> {
   let response = await fetchSparkListingHistory(accessToken, listingKey)
-  if (response.items.length === 0) {
+  // The price history stands in only on a standing answer (priceHistoryMayStandIn):
+  // it carries no status changes, so a rate limit or an outage must not swap it
+  // in for the whole history the replace below would then delete.
+  if (priceHistoryMayStandIn(response)) {
     const fallback = await fetchSparkPriceHistory(accessToken, listingKey)
     if (fallback.items.length > 0) response = fallback
+    // Nothing from the full history, and the price history failed for a while:
+    // not settled, so not saved; a later run asks again.
+    else if (!fallback.ok && !historyRefused(fallback)) return { inserted: 0, ok: false, items: [], status: fallback.status }
   }
   const hadSuccessfulFetch = response.ok && response.partial !== true
-  if (response.items.length > 0) {
+  // A partial history (a later page failed) never replaces the stored one: the
+  // replace deletes every event it does not carry.
+  if (response.items.length > 0 && hadSuccessfulFetch) {
     const rows = response.items.map((item) => sparkHistoryItemToRow(listingKey, item))
     const result = await replaceListingHistoryForKey(listingKey, rows)
     if (!result.ok) {
+      // Not saved: callers must not freeze the listing as if it were.
       console.error(`[fetchListingHistory] listing_history replace error for ${listingKey}.`, result.error)
-      return { inserted: 0, ok: hadSuccessfulFetch, items: response.items }
+      return { inserted: 0, ok: false, items: response.items, status: response.status }
     }
-    return { inserted: result.inserted, ok: hadSuccessfulFetch, items: response.items }
+    return { inserted: result.inserted, ok: hadSuccessfulFetch, items: response.items, status: response.status }
   }
-  return { inserted: 0, ok: hadSuccessfulFetch, items: response.items }
+  return { inserted: 0, ok: hadSuccessfulFetch, items: response.items, status: response.status }
 }

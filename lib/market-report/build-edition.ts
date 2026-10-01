@@ -139,6 +139,34 @@ function share(numerator: number, denominator: number, min: number): Fig {
   return { v: denominator >= min ? numerator / denominator : null, n: denominator }
 }
 
+/**
+ * Seller concessions print only where the MLS reported its Yes/No concessions
+ * field for nearly every sale in the period. Before mid-2023 the field was
+ * filled almost only when a concession was given, so the share of reporting
+ * sales that had one read 100% for years: August 2016, 46 of 46 reporting
+ * Central Oregon sales, while Spark serves the field on 1 of that month's 461
+ * sales today, so the figure cannot be checked either. A month still being
+ * backfilled read from part of its sales (April 2026 when its edition was
+ * built: 188 of 282). Measured 2026-10-01 (CLAUDE.md §0: a figure that cannot
+ * be verified does not ship). 0.9 keeps every month from 2024 on (99% or more
+ * reported) and withholds 2023's partial months (75% to 82%).
+ */
+export const CONCESSION_COVERAGE_MIN = 0.9
+
+/** The concession share and median, or both withheld when the field covers too few of the period's sales. */
+export function concessionFigs(
+  row: Pick<ReportSeriesRow, 'closed_n' | 'concession_reported_n' | 'concession_with_n' | 'median_concession'>,
+): { share: Fig; median: Fig } {
+  const covered = row.closed_n > 0 && row.concession_reported_n >= CONCESSION_COVERAGE_MIN * row.closed_n
+  if (!covered) {
+    return { share: { v: null, n: row.concession_reported_n }, median: { v: null, n: row.concession_with_n } }
+  }
+  return {
+    share: share(row.concession_with_n, row.concession_reported_n, FLOORS.share),
+    median: fig(row.median_concession, row.concession_with_n, FLOORS.concession),
+  }
+}
+
 function verdictOf(mos: number | null): Verdict | null {
   return mos == null ? null : registryVerdict(mos)
 }
@@ -189,6 +217,7 @@ export function buildKpis(
   const closed6 = closedSix(idx, endKey, geo, segment)
   const mos = mosFor(row.active_end_n, closed6)
   const dtcAllowed = end >= DTC_EARLIEST
+  const concessions = concessionFigs(row)
   return {
     period: { kind, start: row.period_start, end },
     median,
@@ -203,8 +232,8 @@ export function buildKpis(
     stl: fig(row.median_stl, row.stl_n, FLOORS.stl),
     stol: fig(row.median_stol, row.stol_n, FLOORS.stol),
     priceCutShare: share(row.price_cut_n, row.stol_n, FLOORS.priceCut),
-    concessionShare: share(row.concession_with_n, row.concession_reported_n, FLOORS.share),
-    concessionMedian: fig(row.median_concession, row.concession_with_n, FLOORS.concession),
+    concessionShare: concessions.share,
+    concessionMedian: concessions.median,
     cashShare: share(row.fin_cash_n, row.fin_known_n, FLOORS.share),
     active: row.active_end_n,
     activeAssumed: row.active_end_assumed_n,
@@ -250,7 +279,7 @@ export function buildMonthlySeries(idx: SeriesIndex, endKey: string, geo: string
     push('government', share(row.fin_government_n, row.fin_known_n, FLOORS.share))
     push('stl', fig(row.median_stl, row.stl_n, FLOORS.stl))
     push('priceCutShare', share(row.price_cut_n, row.stol_n, FLOORS.priceCut))
-    push('concessionShare', share(row.concession_with_n, row.concession_reported_n, FLOORS.share))
+    push('concessionShare', concessionFigs(row).share)
   }
   return out
 }

@@ -1,7 +1,7 @@
 // cron: manual-only operator curl (not registered in vercel.json; drains strict verification backlog)
 import { NextResponse } from 'next/server'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import { fetchSparkListingHistory, fetchSparkPriceHistory, type SparkListingHistoryItem } from '@/lib/spark'
+import { fetchSparkListingHistory, fetchSparkPriceHistory, historyRefused, priceHistoryMayStandIn, type SparkListingHistoryItem } from '@/lib/spark'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { isTerminalStatus } from '@/lib/sync/terminalStatus'
 
@@ -62,6 +62,9 @@ async function verifyOneListing(
 
   let items: SparkListingHistoryItem[] = []
   let hadStrictSuccess = false
+  // The price history stands in only on standing answers (priceHistoryMayStandIn);
+  // after a temporary failure the listing waits for a later run, unverified.
+  let temporaryFailure = false
 
   try {
     for (const key of keys) {
@@ -71,6 +74,11 @@ async function verifyOneListing(
         items = h.items
         break
       }
+      if (!priceHistoryMayStandIn(h)) temporaryFailure = true
+    }
+
+    if (items.length === 0 && temporaryFailure) {
+      return { processed: 1, markedVerified: 0, historyRowsInserted: 0, fetchFailures: 1 }
     }
 
     if (items.length === 0) {
@@ -81,6 +89,10 @@ async function verifyOneListing(
           items = p.items
           break
         }
+        if (!p.ok && !historyRefused(p)) temporaryFailure = true
+      }
+      if (items.length === 0 && temporaryFailure) {
+        return { processed: 1, markedVerified: 0, historyRowsInserted: 0, fetchFailures: 1 }
       }
     }
 

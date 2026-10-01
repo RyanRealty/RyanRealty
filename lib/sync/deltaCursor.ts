@@ -9,10 +9,26 @@
  *   2. Failed upserts — chunks that errored were logged and skipped, but the
  *      cursor still advanced, so those rows were never re-fetched.
  *
- * Spark delta is fetched `_orderby=+ModificationTimestamp` (ASCENDING), so the
- * newest row we processed is a safe resume point: everything not yet seen has a
- * modification time >= maxProcessedTs.
+ * Spark delta is fetched `ModificationTimestamp Ge cursor`, ascending, page by
+ * page from the last timestamp read (fetchDeltaWindow), so the newest row we
+ * processed is a safe resume point: everything not yet seen has a modification
+ * time >= maxProcessedTs, and Ge re-reads the rest of its second.
+ *
+ * A clean drain resumes DELTA_CURSOR_OVERLAP_MS before the run started. Spark
+ * stamps a change to the whole second (2026-10-01: '2026-10-01T19:06:52Z',
+ * three listings that second), and the run's start is our clock, not Spark's:
+ * a change stamped just before our start time can land after our read of that
+ * second, and Gt the start time then skipped it for good.
  */
+
+/**
+ * How far before the run's start a clean drain resumes. Basis: changes on
+ * 2026-10-01 ran about one a minute (202 in the three hours before 22:07Z), so
+ * the overlap re-reads about one listing a run; it covers the whole-second
+ * stamp and clock skew between our servers and Spark's with room. Re-reading a
+ * listing already applied writes nothing new.
+ */
+export const DELTA_CURSOR_OVERLAP_MS = 60_000
 export interface DeltaCursorInput {
   /** any chunk failed to persist this run */
   upsertFailed: boolean
@@ -35,6 +51,6 @@ export function computeNextDeltaCursor(i: DeltaCursorInput): string | null {
   // Overflow: advance only to the newest row we actually processed, so the
   // remaining pages are picked up next tick instead of being skipped forever.
   if (i.truncated) return i.maxProcessedTs
-  // Clean full drain: safe to jump the cursor to the run-start high-water mark.
-  return i.runStartedAt
+  // Clean full drain: resume a little before the run started (see above).
+  return new Date(Date.parse(i.runStartedAt) - DELTA_CURSOR_OVERLAP_MS).toISOString()
 }

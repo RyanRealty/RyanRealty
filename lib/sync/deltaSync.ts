@@ -34,7 +34,7 @@ import { mergeFrozenMedia } from '@/lib/sync/frozenMedia'
 import { getLiveMortgageRate } from '@/lib/data/market/getLiveMortgageRate'
 import { SCHEDULED_EXPIRED_CAPTURE } from '@/lib/expired-listing-select'
 import {
-  getSyncState,
+  getDeltaSyncCursor,
   getExistingListingsByListNumbers,
   getAdminOverrideFlags,
   getHeldMediaByListNumbers,
@@ -569,32 +569,14 @@ async function fetchAndPlan(opts: RunDeltaSyncOptions): Promise<PlanContext> {
 
   let sinceIso = opts.sinceOverride
   if (!sinceIso) {
-    const state = await getSyncState()
-    sinceIso = state?.last_delta_sync_at ?? new Date(Date.now() - DELTA_SYNC.DEFAULT_WINDOW_MS).toISOString()
+    // A failed read throws (the tick retries with the cursor where it was). Read
+    // as "no cursor yet", it started from the last half hour and the clean drain
+    // then moved the cursor past every change in between, unread.
+    sinceIso = (await getDeltaSyncCursor()) ?? new Date(Date.now() - DELTA_SYNC.DEFAULT_WINDOW_MS).toISOString()
   }
 
   const runStartedAt = new Date().toISOString()
-  const filter = `ModificationTimestamp Gt ${sinceIso}`
-
-  const results: SparkDeltaResult[] = []
-  let page = 1
-  let totalPages = 1
-  let pagesProcessed = 0
-  while (page <= totalPages && pagesProcessed < maxPages) {
-    const res = await fetchSparkListingsPage(accessToken, {
-      page,
-      limit: pageSize,
-      filter,
-      orderby: '+ModificationTimestamp',
-      expand: DELTA_SYNC.EXPAND,
-    })
-    const pageResults = (res.D?.Results ?? []) as SparkDeltaResult[]
-    if (pageResults.length === 0) break
-    results.push(...pageResults)
-    totalPages = res.D?.Pagination?.TotalPages ?? page
-    pagesProcessed++
-    page++
-  }
+  const { results, pagesProcessed, truncated } = await fetchDeltaWindow(accessToken, sinceIso, { pageSize, maxPages })
 
   // Execute mode puts back any MLS-removed sale the MLS serves again first;
   // shadow mode stays read-only.
@@ -606,8 +588,101 @@ async function fetchAndPlan(opts: RunDeltaSyncOptions): Promise<PlanContext> {
   const mortgageRate = await resolveRunMortgageRate()
 
   const plan = computeDeltaPlan(results, existingByNum, { nowIso, mortgageRate })
-  const truncated = pagesProcessed >= maxPages && page <= totalPages
   return { plan, sinceIso, pagesProcessed, truncated, runStartedAt, nowIso, accessToken }
+}
+
+function modifiedMs(r: SparkDeltaResult): number {
+  const t = Date.parse(String((r.StandardFields as Record<string, unknown> | undefined)?.ModificationTimestamp ?? ''))
+  return Number.isFinite(t) ? t : -Infinity
+}
+
+/**
+ * Every listing Spark changed at or after `sinceIso`, ascending, each request
+ * starting from the last timestamp the previous page returned.
+ *
+ * Paging by `_page` lost rows two ways. A listing read on page 1 and changed
+ * again mid-read moves to the end, so every later row shifts one place earlier
+ * and the first row of the next page lands on a page already read. And Spark
+ * stamps changes to the whole second and orders a second's listings
+ * differently from one request to the next (2026-10-01: three listings at
+ * 19:06:52Z came back in two orders), so a second split across two pages could
+ * skip some and repeat others. A clean drain then moved the cursor past every
+ * skipped row.
+ *
+ * Here each request is `ModificationTimestamp Ge <last stamp read>`: the
+ * second already begun comes back whole and the rows already held are dropped
+ * (a listing changed again mid-read keeps its newer record). A full page that
+ * is all one second (more listings than a page share it) is read by skip token
+ * instead, `Eq` that second in key order, and the read goes on after it.
+ * `truncated` means maxPages ran out before the window did.
+ */
+export async function fetchDeltaWindow(
+  accessToken: string,
+  sinceIso: string,
+  opts: { pageSize: number; maxPages: number },
+): Promise<{ results: SparkDeltaResult[]; pagesProcessed: number; truncated: boolean }> {
+  const results: SparkDeltaResult[] = []
+  const at = new Map<string, number>()
+  const take = (page: SparkDeltaResult[]) => {
+    for (const r of page) {
+      const key = (r.StandardFields as Record<string, unknown> | undefined)?.ListingKey
+      if (typeof key !== 'string' || !key) {
+        results.push(r)
+        continue
+      }
+      const i = at.get(key)
+      if (i === undefined) {
+        at.set(key, results.length)
+        results.push(r)
+      } else if (modifiedMs(r) > modifiedMs(results[i]!)) {
+        results[i] = r
+      }
+    }
+  }
+  const stampOf = (r: SparkDeltaResult | undefined) =>
+    String((r?.StandardFields as Record<string, unknown> | undefined)?.ModificationTimestamp ?? '')
+
+  let pagesProcessed = 0
+  let filter = `ModificationTimestamp Ge ${sinceIso}`
+  while (pagesProcessed < opts.maxPages) {
+    const res = await fetchSparkListingsPage(accessToken, {
+      page: 1,
+      limit: opts.pageSize,
+      filter,
+      orderby: '+ModificationTimestamp',
+      expand: DELTA_SYNC.EXPAND,
+    })
+    pagesProcessed++
+    const page = (res.D?.Results ?? []) as SparkDeltaResult[]
+    take(page)
+    if (page.length < opts.pageSize) return { results, pagesProcessed, truncated: false }
+    const last = stampOf(page[page.length - 1])
+    if (!last) throw new Error('[deltaSync] a Spark change came back without its ModificationTimestamp')
+    if (stampOf(page[0]) !== last) {
+      filter = `ModificationTimestamp Ge ${last}`
+      continue
+    }
+    // One second fills the page: read that second whole, by skip token.
+    let skiptoken = ''
+    for (;;) {
+      if (pagesProcessed >= opts.maxPages) return { results, pagesProcessed, truncated: true }
+      const tie = await fetchSparkListingsPage(accessToken, {
+        limit: opts.pageSize,
+        filter: `ModificationTimestamp Eq ${last}`,
+        expand: DELTA_SYNC.EXPAND,
+        skiptoken,
+      })
+      pagesProcessed++
+      const tiePage = (tie.D?.Results ?? []) as SparkDeltaResult[]
+      if (tiePage.length === 0) break
+      take(tiePage)
+      const next = tie.D?.SkipToken
+      if (!next || next === skiptoken) throw new Error(`[deltaSync] Spark gave no next skip token reading the changes stamped ${last}`)
+      skiptoken = next
+    }
+    filter = `ModificationTimestamp Gt ${last}`
+  }
+  return { results, pagesProcessed, truncated: true }
 }
 
 /** Ported from the cron lane: single-listing photo fetch for the photo-fix pass. */

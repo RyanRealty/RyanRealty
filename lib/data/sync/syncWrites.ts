@@ -45,16 +45,19 @@ export type SyncState = {
   last_delta_sync_at: string | null
 }
 
-/** Read sync_state singleton row (always id = 'default'). */
-export async function getSyncState(): Promise<SyncState | null> {
+/**
+ * The delta sync's cursor (sync_state.last_delta_sync_at), or null when no run
+ * has stored one. A failed read throws: read as "no cursor yet", the delta sync
+ * started from the last half hour and its clean drain moved the cursor past
+ * every change in between, unread; and the daily on-market check would take
+ * listings the delta sync has not reached.
+ */
+export async function getDeltaSyncCursor(): Promise<string | null> {
   const sb = client()
-  if (!sb) return null
-  const { data } = await sb
-    .from('sync_state')
-    .select('last_delta_sync_at')
-    .eq('id', 'default')
-    .maybeSingle()
-  return (data ?? null) as SyncState | null
+  if (!sb) throw new Error('[getDeltaSyncCursor] Supabase not configured')
+  const { data, error } = await sb.from('sync_state').select('last_delta_sync_at').eq('id', 'default').maybeSingle()
+  if (error) throw new Error(`[getDeltaSyncCursor] ${error.message}`)
+  return (data as SyncState | null)?.last_delta_sync_at ?? null
 }
 
 /** Read arbitrary fields from the sync_state singleton. */
