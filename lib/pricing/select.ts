@@ -34,7 +34,13 @@ import { estimateClosePrice, pricingSaleToCmaComp } from '@/lib/pricing/estimate
 import type { SelectedPricingComp } from '@/lib/pricing/match'
 import type { CompSelection } from '@/lib/cma/comps'
 import { emptyExclusions } from '@/lib/cma/comp-trace'
-import { FACTS_STANDALONE_MIN, LOCAL_POOL_RADIUS_MILES, PRICING_MIN_COMPS, PRICING_TARGET_COMPS } from '@/lib/pricing/ladder'
+import {
+  FACTS_STANDALONE_MIN,
+  factsPoolCloseAfter,
+  LOCAL_POOL_RADIUS_MILES,
+  PRICING_MIN_COMPS,
+  PRICING_TARGET_COMPS,
+} from '@/lib/pricing/ladder'
 import { walkPricingLadder, type PricingMatchResult, type PricingSubject } from '@/lib/pricing/match'
 import type { CmaMarketContext, CmaPricing } from '@/lib/cma/types'
 import type { MarketIndexPoint } from '@/lib/pricing/market-path'
@@ -131,14 +137,14 @@ export async function selectPricingComps(
     },
     asOfYear,
   )
-  // Custom/new: pull 30 months so the 24-month custom rungs have a pool.
-  const closeAfter = new Date(asOf)
-  closeAfter.setMonth(closeAfter.getMonth() - (customOrNew ? 30 : 18))
+  // Ordinary: 24 months, the longest ordinary rung, and no further. Custom/new
+  // stays at 30 so those 24-month rungs still have a pool. Do not shrink the 30.
+  const closeAfterIso = factsPoolCloseAfter(asOf, customOrNew)
   const sqft = pricingSubject.sqft
   // THE SUBJECT'S OWN GROUND, COMPLETE, ALONGSIDE THE CITYWIDE READ (Matt
   // 2026-09-10). The citywide pool below is ordered newest-first and capped at
   // 800 rows, so for a Bend subject it reaches back about six months against
-  // the eighteen it asks for — 2,471 sales matched, 800 came back. Every rung
+  // the eighteen it asked for that day — 2,471 sales matched, 800 came back. Every rung
   // under that line walked an empty older pool, so the ladder left the
   // neighborhood while the report said the neighborhood was exhausted. This
   // read covers the rungs containment actually depends on — the plat, the
@@ -151,7 +157,7 @@ export async function selectPricingComps(
           longitude: pricingSubject.longitude,
           radiusMiles: LOCAL_POOL_RADIUS_MILES,
           closeBefore: asOf,
-          closeAfter: closeAfter.toISOString().slice(0, 10),
+          closeAfter: closeAfterIso,
           sqftMin: Math.round(sqft * 0.6),
           sqftMax: Math.round(sqft * 1.4),
           productClass: pricingSubject.productClass,
@@ -161,7 +167,7 @@ export async function selectPricingComps(
     selectPricingFactsPool({
       citySlug: pricingSubject.citySlug,
       closeBefore: asOf,
-      closeAfter: closeAfter.toISOString().slice(0, 10),
+      closeAfter: closeAfterIso,
       sqftMin: Math.round(sqft * 0.6),
       sqftMax: Math.round(sqft * 1.4),
       productClass: pricingSubject.productClass,
@@ -173,7 +179,7 @@ export async function selectPricingComps(
           citySlug: null,
           ignoreCity: true,
           closeBefore: asOf,
-          closeAfter: closeAfter.toISOString().slice(0, 10),
+          closeAfter: closeAfterIso,
           sqftMin: Math.round(sqft * 0.6),
           sqftMax: Math.round(sqft * 1.4),
           productClass: pricingSubject.productClass,

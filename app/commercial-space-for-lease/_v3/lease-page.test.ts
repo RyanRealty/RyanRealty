@@ -266,6 +266,34 @@ describe('leaseRowsLargestFirst (2026-09-30: the lead card by a rule, never a ha
     const same = rows.map((r) => ({ ...r, sqft: 1000 }))
     expect(leaseRowsLargestFirst(same).map((r) => r.listingKey)).toEqual(['l', 'm', 's', 'u', 'w'])
   })
+  it('puts a space with no photograph of it after the photographed ones in its rent group (2026-10-01)', () => {
+    // 'l' (the largest priced space) files no photograph: the dial opens on 'm'.
+    const [bend] = leaseCityGroups(tiles, units, {}, { l: null })
+    expect(bend!.rows.map((r) => r.listingKey)).toEqual(['m', 's', 'u', 'l', 'w'])
+  })
+})
+
+describe('the lead photograph (getLeaseLeadPhotos, 2026-10-01)', () => {
+  const tiles = [
+    tile({ listingKey: 'plan', sqft: 36_000, photoUrl: 'https://cdn.example/lot-lines.jpg' }),
+    tile({ listingKey: 'suite', sqft: 9_600, photoUrl: 'https://cdn.example/aerial.jpg' }),
+    tile({ listingKey: 'unread', sqft: 1_200, photoUrl: 'https://cdn.example/front.jpg' }),
+  ]
+  const units = { plan: '$/SF/Mo', suite: '$/SF/Mo', unread: '$/SF/Mo' }
+  const [town] = leaseCityGroups(tiles, units, {}, { plan: null, suite: 'https://cdn.example/suite-203.jpg' })
+  const byKey = new Map(town!.rows.map((r) => [r.listingKey, r]))
+  it('replaces the tile photo with the lead photograph, or none when the listing files none', () => {
+    expect(byKey.get('plan')!.photoUrl).toBeNull()
+    expect(byKey.get('suite')!.photoUrl).toBe('https://cdn.example/suite-203.jpg')
+  })
+  it('keeps the tile photo for a lease the photo read did not return', () => {
+    expect(byKey.get('unread')!.photoUrl).toBe('https://cdn.example/front.jpg')
+  })
+  it('names the largest space without a picture when it files no photograph of itself', () => {
+    const largest = leaseTownLargest(town!)!
+    expect(largest.row.listingKey).toBe('plan')
+    expect(largest.photo).toBeNull()
+  })
 })
 
 describe('leaseTownSize and leaseTownLargest', () => {

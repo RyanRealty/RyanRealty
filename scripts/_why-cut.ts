@@ -28,18 +28,27 @@ async function main() {
   const { selectPricingFactsPool, selectPricingFactsNear, getPricingSubdivisionCells } = await import('@/lib/data')
   const { cmaSubjectToPricing } = await import('@/lib/pricing/select')
   const { walkPricingLadder } = await import('@/lib/pricing/match')
-  const { LOCAL_POOL_RADIUS_MILES } = await import('@/lib/pricing/ladder')
+  const { LOCAL_POOL_RADIUS_MILES, factsPoolCloseAfter } = await import('@/lib/pricing/ladder')
+  const { isCustomOrNewSubject } = await import('@/lib/pricing/classes')
   const { resolveMarketArea } = await import('@/lib/cma/market-area')
   const { resolvePriceAnchor } = await import('@/lib/pricing/price-anchor')
   const ps = cmaSubjectToPricing(subject, {})
   const asOf = new Date().toISOString().slice(0, 10)
-  const after = new Date(asOf)
-  after.setMonth(after.getMonth() - 18)
+  const customOrNew = isCustomOrNewSubject(
+    {
+      yearBuilt: ps.yearBuilt,
+      newConstructionYn: ps.newConstruction,
+      remarks: ps.publicRemarks,
+      propertySubType: ps.propertySubType,
+    },
+    Number(asOf.slice(0, 4)),
+  )
+  const closeAfter = factsPoolCloseAfter(asOf, customOrNew)
   const [pool, near] = await Promise.all([
     selectPricingFactsPool({
       citySlug: ps.citySlug,
       closeBefore: asOf,
-      closeAfter: after.toISOString().slice(0, 10),
+      closeAfter,
       sqftMin: Math.round(ps.sqft * 0.6),
       sqftMax: Math.round(ps.sqft * 1.4),
       productClass: ps.productClass,
@@ -51,7 +60,7 @@ async function main() {
           longitude: ps.longitude,
           radiusMiles: LOCAL_POOL_RADIUS_MILES,
           closeBefore: asOf,
-          closeAfter: after.toISOString().slice(0, 10),
+          closeAfter,
           sqftMin: Math.round(ps.sqft * 0.6),
           sqftMax: Math.round(ps.sqft * 1.4),
           productClass: ps.productClass,

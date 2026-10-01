@@ -149,10 +149,25 @@ export function V3MosCompare({
                     keywords={[city.name, city.mosLabel ?? '', city.verdictLabel ?? '']}
                     textValue={city.name}
                   >
-                    <span className="v3-mos-compare__option-name">{city.name}</span>
-                    <span className="v3-mos-compare__option-meta">
-                      {city.mosLabel} mo · {city.verdictLabel}
-                      {city.activeLabel ? ` · ${city.activeLabel}` : ''}
+                    {/* Each city on the same banded rule the overlay draws
+                        (2026-10-01: three rows of words with nothing keyed to
+                        the seller's / balanced / buyer's bands). The mark is
+                        the city's own figure; the words stay beside it. */}
+                    <span className="v3-mos-compare__option-grid">
+                      <span className="v3-mos-compare__option-name">{city.name}</span>
+                      <span className="v3-mos-compare__option-rule" aria-hidden="true">
+                        <span className="v3-mos-compare__option-band" />
+                        <span className="v3-mos-compare__option-band v3-mos-compare__option-band--balanced" />
+                        <span className="v3-mos-compare__option-band" />
+                        <span
+                          className="v3-mos-compare__option-dot"
+                          style={{ left: `${((clampMos(city.mos ?? 0) / V3_MOS_COMPARE_MAX) * 100).toFixed(1)}%` }}
+                        />
+                      </span>
+                      <span className="v3-mos-compare__option-meta">
+                        {city.mosLabel} mo · {city.verdictLabel}
+                        {city.activeLabel ? ` · ${city.activeLabel}` : ''}
+                      </span>
                     </span>
                   </ComboboxItem>
                 ))}

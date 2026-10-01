@@ -28,6 +28,8 @@
   cursor: pointer;
   perspective: 32rem;
   animation: v3-dog-notice-disc 1.35s ease-in-out 1;
+  /* Stepping aside from a listing photograph (V3DogFloater: data-jax-clear). */
+  transition: translate var(--v3-dur-state) var(--v3-ease-out);
 }
 
 /* Keep the dog above the scrim so a second tap closes (DialogTrigger). */
@@ -152,6 +154,10 @@
   .v3-dog-floater__head,
   .v3-dog-floater__dog--navy {
     animation: none;
+  }
+
+  .v3-dog-floater {
+    transition: none;
   }
 
   .v3-dog-floater__aim {
