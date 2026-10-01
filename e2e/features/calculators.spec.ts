@@ -33,8 +33,9 @@ test.describe('Mortgage calculator', () => {
     const count = await inputs.count()
     expect(count, 'Mortgage calculator should have at least 3 inputs').toBeGreaterThanOrEqual(3)
 
-    // Monthly payment should be formatted as a currency string
-    const paymentEl = page.locator('text=/\\$[0-9,]+/').first()
+    // The monthly total ("$3,053/month"). Scoped to the calculator: the first "$" in
+    // the document is the header's market panel, hidden until opened.
+    const paymentEl = page.locator('#calculator p', { hasText: '/month' }).first()
     await expect(paymentEl).toBeVisible({ timeout: 10_000 })
     const paymentText = await paymentEl.textContent()
     expect(paymentText).toMatch(/\$[\d,]+/)
@@ -47,37 +48,20 @@ test.describe('Mortgage calculator', () => {
     })
     await expect(page.locator('main').first()).toBeVisible()
 
-    // Capture initial monthly payment
-    const paymentEl = page.locator('text=/\\$[0-9,]+/').first()
+    const paymentEl = page.locator('#calculator p', { hasText: '/month' }).first()
     await expect(paymentEl).toBeVisible({ timeout: 10_000 })
-    const before = await paymentEl.textContent()
+    const before = (await paymentEl.textContent()) ?? ''
+    expect(before).toMatch(/\$[\d,]+/)
 
-    // Find a range slider (MortgageCalculator uses range sliders for home price)
-    const rangeSlider = page.locator('input[type="range"]').first()
-    const hasSlider = await rangeSlider.count() > 0
+    // Home price is a number box (#home-price, default 500,000). A higher price is
+    // a higher loan, so the monthly total must change.
+    const homePrice = page.locator('#home-price')
+    await expect(homePrice).toBeVisible()
+    await homePrice.fill('800000')
+    await homePrice.press('Tab')
 
-    if (hasSlider) {
-      // Move slider to a different position
-      const box = await rangeSlider.boundingBox()
-      if (box) {
-        // Click at 80% of the slider width
-        await page.mouse.click(box.x + box.width * 0.8, box.y + box.height / 2)
-        await page.waitForTimeout(300)
-      }
-    } else {
-      // Fall back to filling a number input
-      const numInput = page.locator('input[type="number"], input[inputmode="numeric"]').first()
-      if (await numInput.count() > 0) {
-        await numInput.fill('800000')
-        await numInput.press('Tab')
-        await page.waitForTimeout(300)
-      }
-    }
-
-    // Payment value should still be a currency string (may or may not have changed
-    // depending on slider default position — we just verify it didn't break)
-    const after = await paymentEl.textContent()
-    expect(after, 'Monthly payment should still render as a currency string after slider move').toMatch(/\$[\d,]+/)
+    await expect(paymentEl).not.toHaveText(before, { timeout: 10_000 })
+    expect(await paymentEl.textContent()).toMatch(/\$[\d,]+/)
   })
 })
 

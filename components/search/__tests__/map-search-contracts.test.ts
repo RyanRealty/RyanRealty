@@ -1032,6 +1032,27 @@ describe('map craft: selection + zoom storytelling + basemap', () => {
     expect(map).toMatch(/SEARCH_MARK_EDGE_MARGIN_PX/)
   })
 
+  it('draws every mark without a layout read of its own', () => {
+    // Each mark's draw() used to read fromLatLngToContainerPixel (a
+    // getBoundingClientRect) and its own offsetWidth after moving itself, so
+    // every mark forced a full layout: ~4,000 on a Bend search load, and the
+    // page took no input for most of a minute (production profile 2026-09-30).
+    const map = readSrc('components/SearchMapClustered.tsx')
+    const start = map.indexOf('    draw() {')
+    expect(start).toBeGreaterThan(-1)
+    const draw = map.slice(start, map.indexOf('    onRemove() {', start))
+    for (const read of ['fromLatLngToContainerPixel', 'getBoundingClientRect', 'offsetWidth', 'offsetHeight', 'clientWidth', 'clientHeight']) {
+      expect(draw, read).not.toContain(read)
+    }
+    // The pass read (once per pass, lib/maps/overlay-pass.ts) comes before the
+    // mark's first write, so it never lands between writes.
+    expect(draw).toMatch(/readMarkFramePass\(frame, proj, this\.latLng\)/)
+    expect(draw.indexOf('readMarkFramePass(')).toBeLessThan(draw.indexOf('div.style.left'))
+    expect(map).toMatch(/const markFramePass = createPassMemo<HTMLElement, MarkFramePass>\(\)/)
+    // Sizes are measured in one batch per frame: every read, then every draw.
+    expect(map).toMatch(/for \(const mark of batch\) mark\.measure\(\)\s+redrawingMeasuredMarks = true[\s\S]*?for \(const mark of batch\) mark\.draw\(\)/)
+  })
+
   it('hides a mark whose point is off the frame instead of clamping it onto the edge', () => {
     const map = readSrc('components/SearchMapClustered.tsx')
     // SuperClusterAlgorithm clusters the whole world, so marks for homes off
@@ -1039,7 +1060,7 @@ describe('map craft: selection + zoom storytelling + basemap', () => {
     const start = map.indexOf('    draw() {')
     expect(start).toBeGreaterThan(-1)
     const draw = map.slice(start, map.indexOf('    onRemove() {', start))
-    expect(draw).toMatch(/const inFrame = markAnchorInIsland\(cp, \{ width: frame\.clientWidth, height: frame\.clientHeight \}\)/)
+    expect(draw).toMatch(/const inFrame = markAnchorInIsland\(cp, \{ width: pass\.width, height: pass\.height \}\)/)
     expect(draw).toMatch(/div\.style\.visibility = inFrame \? '' : 'hidden'/)
     expect(draw).toMatch(/if \(!inFrame\) return/)
     // Only an anchor inside the frame is nudged in, never one outside it.
