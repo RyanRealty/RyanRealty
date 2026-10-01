@@ -188,6 +188,18 @@ its status holds says so under the table. The locked contract is
 `split-closed-pending-active-summary-tables` in
 `lib/cma/canter-letter-flow.contract.test.ts`.
 
+### 0.3 Locked CMA rules (do not loosen)
+
+For an expired CMA, check live listing status before any rebuild. If the home is active, pending, or otherwise on the market, do not build a CMA and do not send one. Skip it. This is not optional and not expired-only in the sense of "only sometimes": at least every expired rebuild must do this. Do not loosen it.
+
+Recommended price is the house from comps only. No ADU, second-lot, or rental-income dollars in the price. Those stay letter notes.
+
+Gap hold: a recommendation more than 15% under the last ask, or any amount over the last ask, is refused before approve, enqueue, or send. Exactly 15% under is not a hold. Missing ask or missing rec is not a hold. The row stays built.
+
+Do not send, enqueue, or approve owner email unless the task explicitly says to, and never from a rebuild.
+
+The delivery steps later in this skill do not override the send rule: a rebuild does not enqueue or send owner email.
+
 ---
 
 ## 1. Scope
