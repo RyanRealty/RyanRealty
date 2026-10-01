@@ -880,7 +880,7 @@ production filed the "SPDS questions" thread on 20473 Jacklight, so its
 replies follow it; SkySlope added the clients as buyers on their dead first
 purchase on 2026-09-26 (fix 5 recovers the three rows it cost).
 
-**Labels in the golden set that disagree with the message** (not edited):
+**Labels in the golden set that disagree with the message** (corrected 2026-10-01, with the evidence for each, in the next subsection):
 
 - 19959e2013e3d02d, labeled 20702 Beaumont Drive: Matt's reply in the "SPDS
   questions" thread ("I spoke with the seller and have an addendum out now to
@@ -894,3 +894,104 @@ purchase on 2026-09-26 (fix 5 recovers the three rows it cost).
 - 19e28a9f11e2c224 (matt@) and 19e2c0963e2501d2 (paul@), labeled filed on
   2840 NE Sedalia Loop: "TEST: listing reel for MLS 220189422", the Studio's
   test mail, untagged, on a test fixture. Not deal mail.
+
+### Golden labels corrected, "Home Warranty" read, and the signing-envelope watch (2026-10-01)
+
+Read-only throughout: Gmail through the eval's own `getGmailFor` with the
+readonly scope, the database through row reads (`-- audit:`). Nothing was
+written to either.
+
+**The golden file** (`data/tc-mail-golden.json`): 29 rows changed, each after
+reading the message and the file's rows. The schema is as it was; a changed row
+carries `confidence: "verified"` and a dated `note` (no names, no addresses),
+the way the 2026-09-24 relabels do. `scripts/tc-mail-eval-baseline.json` is not
+regenerated: it stays the v4 run, so the next rule change still measures
+against what shipped.
+
+| Rows | Label was | Now | Evidence |
+|---|---|---|---|
+| The 25 "queue" rows, 1a05ddbabdb38eb8 through 1a0b5305a8217f96 | queue (no file) | file on 909 NW Delaware Avenue (`71f04c3b`) | All 25 read in full (bodies and subjects). They are one purchase, from "Offer to purchase 909 Delaware" on 2026-09-01 (the accepted sale agreement came back at 4:02 pm that day) to "CLOSING TODAY!! 909 NW Delaware Avenue" on 2026-09-18: the offer thread with the other agent and the transaction coordinator, the inspector's confirmation, First American's "Escrow/Title Opened" and its escrow number 4416459, the earnest money receipt, the preliminary title report, the buyers' question about its exceptions and the one about extended coverage, the property disclosure addendum, the closing-day notices. Every one names 909 (NW) Delaware in its subject or thread; none contains "936", "946" or "Rent Roll" (the neighbour's range, fix 3). The file's one cycle is a sale, MLS 220222734, accepted 2026-09-01, closing 2026-09-18; the file was created 2026-09-24 22:11:30 UTC, after these labels were written, which is why they said "no file". Production v4.1 files all 25 on it. |
+| 19959e2013e3d02d | file on 20702 Beaumont Drive (`880b5387`) | file on 20473 Jacklight Lane (`3e1e54a4`) | Matt's reply of 2025-09-17 in "SPDS questions" ("I have an addendum out now to the buyers that corrects line 201"), to the TC. The thread was opened by the other agent on Jacklight's sale cycle; her surname appears on no other file's contacts (Jacklight alone carries her and two other-party contacts of that name). Jacklight's sale was accepted 2025-09-14, three days before; the Beaumont file's first contract was accepted 2026-03-28 (a listing cycle only before it). The set already labels the thread's opener and two replies Jacklight. Production v4.1 files the row on Jacklight by thread. |
+| 19e28a9f11e2c224 (matt@), 19e2c0963e2501d2 (paul@) | file on 2840 NE Sedalia Loop (`ca50ab4a`) | not filed | Both are the marketing line's automatic replies ("Adding this to the brain queue now", "Working on this now") to a "TEST:" request, from marketing@ to Matt and to Paul. The MLS numbers in the subjects (220189422, 220189999) are on no `tc_cycles` row; the fixture's is 220227583. The rules say a test fixture takes only mail tagged "[TC TEST <run>]" and the test aliases are never evidence untagged (section "Addresses that are never evidence"). Production v4.1: not_deal, "no deal evidence". |
+| 19e1e3c557de2ace ("Home Warranty") | file on 20702 Beaumont Drive | not filed | Below. |
+
+**"Home Warranty" (19e1e3c557de2ace) is a label error, and v4.1 is right.**
+The message is an empty draft: Gmail label DRAFT, subject only, no body, no
+attachment, started 2026-05-12 22:08:50 UTC to Western Title's title officer.
+She is a title or escrow contact on 19 files, Beaumont among them. Ninety
+seconds later, 22:10:24 UTC, Matt began a second draft to her, "Home warranty on
+school house" (19e1e3dc363ccdf3), which production files on 56111 School House
+Rd by its street name; her mail with Matt that week (05-10 to 05-14) is the
+School House closing, which was 05-15. Beaumont had no
+contract open that day: its previous one was canceled 2026-04-24 and the next
+was accepted 2026-05-13. So nothing supports Beaumont, and what is nearest
+points at School House. v4.1 decided "not_deal: general mail from someone on 9
+open deals, naming none", which is what the message says; the label is now
+`not_filed`. If the rules should file it, its file is School House, not
+Beaumont.
+
+*A possible rule gap, described and not changed:* v4.1 reads a never-sent
+draft as correspondence. The sibling draft above carries no body and was never
+sent, yet it is filed on School House as mail ("street name of one deal"). A
+rule that skips a message whose only label is DRAFT would keep unsent drafts out
+of a file's mail. How many filed rows are drafts is not counted here.
+
+**Golden eval** (`npm run tc:mail-eval`, 1,522 rows, dry run, 0 errors), the
+same production decisions both times (no row's status or deal differs between
+the two runs; only the labels moved):
+
+| Run | Filed right | Wrong file | Filed, should not be | Safe queue | Missed | Precision | Recall |
+|---|---|---|---|---|---|---|---|
+| 2026-10-01 before, labels as committed | 1,060 | 1 | 29 | 23 | 10 | 97.2% | 97.2% |
+| 2026-10-01 after, 29 labels corrected | 1,086 | 0 | 4 | 23 | 7 | 99.6% | 97.6% |
+
+Outcomes that moved: 25 FALSE_FILE to TP (Delaware), 1 WRONG to TP (SPDS), 3 MISS
+to TN (the two TEST replies and Home Warranty; TN 369 to 372). TP_QUEUE is 30 in
+both runs: the committed v4 baseline has 55, the 25 more being the Delaware rows,
+which v4 queued correctly while the file did not exist and v4.1 files. Against
+the committed v4 baseline: 16 rows better, 3 worse, 1,474 unchanged. The 3 worse:
+two `deal-recall` rows (classifier-confidence labels, 19ebc627dd43eb5e and
+19ec0de81fc28e1c, filed under v4 and now `not_deal`) and one paul@ row
+(19e0967b64b0243c, a `missed-bulk` label of not filed that v4.1 now files). The
+remaining 4 "filed, should not be" are 19cc437e704fa1f5, 19dc7e836dd19e73,
+19f493c215743389 and 19e0967b64b0243c; none was read in this pass. The 09-30
+"final" row above (1,062 / 1 / 31 / 23 / 8) differs from this run's "before"
+by two rows in each of three columns: production applied the v4.1 re-decide on
+the evening of 2026-09-30 and the eval's thread anchors come from the live index.
+That was not traced row by row.
+
+**Signing-envelope watch (since 2026-09-30 09:51 UTC).** PR #396 stopped the
+sale agreement's printed "signed by Buyer and Seller" from reading as a
+signature in `lib/tc/execution-state.ts`; the same reader decides when a
+returned PDF closes an envelope waiting on the other side
+(`lib/tc/file-comms-write.ts`: status `awaiting_other_side` to `completed`,
+event `envelope_completed_from_return`). Read-only SQL on `tc_envelopes`,
+`tc_envelope_recipients`, `tc_events` and `tc_documents`, with a second-shape
+check (the newest 40 envelopes of any status, to see the window filter missed
+none):
+
+| Count | Result |
+|---|---|
+| Envelopes closed or touched in the window | 7: 2 completed, 5 voided |
+| Still open (`sent`, `partially_signed`, `awaiting_other_side`) with every signer signed | **0** (no envelope in the table is open at all) |
+| Closed `completed` with a signer missing | **0** |
+| Closed by a returned PDF (`envelope_completed_from_return`, ever) | 0 events; `envelope_sent_to_other_side` has 1 event ever, 2026-08-24 |
+
+The rows (all on the test fixture 99001 Alias Test Loop, none a client's):
+
+| Envelope | Status | Sent | Closed | Signers (NeedsToSign) |
+|---|---|---|---|---|
+| 20efae33 SPD 020 | completed | 09-30 10:57 | completed 11:12:34 | Seller 11:10:19, Buyer 11:11:47 |
+| 37a0f3a6 SPD 020 | completed | 09-30 13:33 | completed 13:42:35 | Seller 13:39:36, Buyer 13:42:31 |
+| 0c871437 Addendum 1 - 002 | voided | 09-30 07:58 | voided 10:43:40, "Superseded test packet" | none signed (Buyer viewed) |
+| 15d45522, 33a04ee3, 012a48c3, 560e0142 SPD 020 | voided | never sent | voided 10:44 to 15:16, "Draft discarded" | none signed |
+
+Both completions are our own in-house seal (`envelope_completed`; 4 recipients
+each, 2 of them NeedsToSign and both of those completed, the other 2
+ReceivesACopy), not the reader. No code change: neither count is non-zero. One side note on 20efae33's
+sealed copy: the document reader's first read of it (11:22 UTC) was "Needs
+review" with `execution_state: unknown` (its form check saw no signatures or
+initials on a document whose envelope record has both signers complete); the
+13:42 envelope's copy read "Fully executed". That is the document reader and
+the form check on a test fixture, a different path from `execution-state.ts`;
+not looked into further.

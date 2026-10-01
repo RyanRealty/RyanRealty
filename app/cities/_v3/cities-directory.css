@@ -115,8 +115,15 @@
   display: none;
 }
 
+/* Below 64rem every card is the same height (cities-fold.css sets the photograph
+   to 6.5rem), so rows sit one pitch apart whatever the column count: 164.8px of
+   card and a 10px gap. The box is two rows, the gap, and 2.15rem of the third
+   row's photograph: its edge falls on a photograph, never through a name or a
+   count, and the photograph is what says the box scrolls. The old 20.5rem edge
+   fell through the second row's counts ("50 for sale" printed half-cut at 375).
+   The frame below reserves the same height, so the two move together. */
 .cities-directory__masonry {
-  height: 20.5rem;
+  height: 24rem;
   overflow-x: hidden;
   overflow-y: auto;
   border-radius: 0;
@@ -124,6 +131,18 @@
   background: transparent;
   padding: 0;
   scrollbar-gutter: auto;
+}
+
+/* A scroll that stops between rows would cut a count the same way, so at rest
+   the rows snap to the top edge and the geometry above holds at every stop. */
+@media (max-width: 63.99rem) {
+  .cities-directory__masonry {
+    scroll-snap-type: y mandatory;
+  }
+
+  .cities-directory__masonry .cities-directory__card {
+    scroll-snap-align: start;
+  }
 }
 
 @media (min-width: 64rem) {
@@ -159,7 +178,7 @@
 
 .cities-directory.is-masonry .cities-directory__masonry-frame {
   display: block;
-  min-height: 20.5rem;
+  min-height: 24rem;
 }
 
 @media (min-width: 64rem) {
