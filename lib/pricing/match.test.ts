@@ -1753,8 +1753,12 @@ describe('a comp from the wrong house', () => {
     const miles = distanceMiles(origin, yewPoint)
     expect(miles).toBeGreaterThan(1.8)
     expect(miles).toBeLessThan(2)
-    expect(crossesNamedRiver(origin, yewPoint)).toBe(false)
-    expect(crossesUs97(origin, yewPoint) || differentUs97Bank(origin, yewPoint)).toBe(false)
+    if (yew.latitude == null || yew.longitude == null) {
+      throw new Error('4570 Yew has no coordinates')
+    }
+    const yewLatLng = { lat: yew.latitude, lng: yew.longitude }
+    expect(crossesNamedRiver(origin, yewLatLng)).toBe(false)
+    expect(crossesUs97(origin, yewLatLng) || differentUs97Bank(origin, yewLatLng)).toBe(false)
     const out = walkPricingLadder(
       subject({
         streetAddress: '3028 Indian',
