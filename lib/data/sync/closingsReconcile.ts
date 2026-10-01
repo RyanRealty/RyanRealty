@@ -14,6 +14,7 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
+import { LIVE_INVENTORY_STATUSES } from '@/lib/listing-status-public'
 
 export type ReconcileListingRow = {
   ListNumber: string
@@ -45,6 +46,26 @@ export async function getListingsForReconcile(keys: string[]): Promise<Map<strin
     }
   }
   return out
+}
+
+/**
+ * Every listing we hold at an on-market or under-contract status, as key and
+ * status (lib/sync/onMarketReconcile.ts sets them against the MLS). Paged in
+ * ListingKey order, a total order (G48). Throws on a failed page: a partial
+ * list would read as listings the MLS no longer serves.
+ */
+export async function getOnMarketListingKeys(): Promise<{ key: string; status: string }[]> {
+  const sb = createServiceClient()
+  const { rows, error } = await fetchPagedRows<{ ListingKey: string | null; StandardStatus: string | null }>((from, to) =>
+    sb
+      .from('listings')
+      .select('ListingKey, StandardStatus')
+      .in('StandardStatus', LIVE_INVENTORY_STATUSES)
+      .order('ListingKey')
+      .range(from, to),
+  )
+  if (error) throw new Error(`[getOnMarketListingKeys] ${error.message}`)
+  return rows.flatMap((r) => (r.ListingKey && r.StandardStatus ? [{ key: r.ListingKey, status: r.StandardStatus }] : []))
 }
 
 function nextDay(d: string): string {

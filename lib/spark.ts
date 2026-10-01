@@ -498,6 +498,24 @@ function parseSparkPagination(data: Record<string, unknown>): SparkPagination | 
   }
 }
 
+/**
+ * Events asked for per history page. Spark answers a history request that
+ * names no page size with its default of 10 events and no pagination block,
+ * which read as a complete history: a listing with 57 events came back with
+ * its newest 10, and fetchAndInsertHistoryCore replaced the stored history with
+ * them (measured 2026-10-01). Asking with _pagination=1 returns the pagination
+ * block; 200 is a page Spark serves whole (57 events, one page).
+ */
+export const SPARK_HISTORY_PAGE_SIZE = 200
+
+/** The page Spark serves when a request names no _limit. */
+export const SPARK_DEFAULT_PAGE_SIZE = 10
+
+/** The URL of one page of a listing's history. */
+export function sparkHistoryPageUrl(baseUrl: string, page: number): string {
+  return `${baseUrl}?_pagination=1&_limit=${SPARK_HISTORY_PAGE_SIZE}&_page=${page}`
+}
+
 async function fetchSparkHistoryEndpoint(
   accessToken: string,
   listingKey: string,
@@ -511,7 +529,7 @@ async function fetchSparkHistoryEndpoint(
   }
 
   try {
-    const firstRes = await fetch(baseUrl, {
+    const firstRes = await fetch(sparkHistoryPageUrl(baseUrl, 1), {
       headers,
       next: { revalidate: 0 },
     })
@@ -528,15 +546,18 @@ async function fetchSparkHistoryEndpoint(
     const firstRaw = firstD?.Results ?? firstD ?? firstData.Results ?? firstData
     const allItems = parseHistoryItems(firstRaw)
     const pagination = parseSparkPagination(firstData)
+    // No pagination block and exactly Spark's default page: the shape of the
+    // truncated answer this request now avoids. Never call it whole.
+    if (!pagination && allItems.length === SPARK_DEFAULT_PAGE_SIZE) {
+      return { items: allItems, ok: false, partial: true, status: firstRes.status }
+    }
     const totalPages = pagination?.TotalPages ?? 1
     if (totalPages <= 1) {
       return { items: allItems, ok: true, partial: false, status: firstRes.status }
     }
 
-    const pageSize = pagination?.PageSize && pagination.PageSize > 0 ? pagination.PageSize : 200
     for (let page = 2; page <= totalPages; page++) {
-      const url = `${baseUrl}?_pagination=1&_limit=${pageSize}&_page=${page}`
-      const pageRes = await fetch(url, {
+      const pageRes = await fetch(sparkHistoryPageUrl(baseUrl, page), {
         headers,
         next: { revalidate: 0 },
       })

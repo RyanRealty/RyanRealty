@@ -64,7 +64,7 @@ import { rebuildRestoredSales, restoreServedAgain } from '@/lib/sync/mlsRemovedR
  */
 const REPAIR_HISTORY_CONCURRENCY = 2
 
-const LITE_SELECT =
+export const LITE_SELECT =
   'ListingKey,ListingId,StandardStatus,MlsStatus,CloseDate,ClosePrice,ListPrice,City,PropertyType,PropertySubType,TotalLivingAreaSqFt,BuildingAreaTotal,LivingArea,ModificationTimestamp'
 
 /** Pages of 1,000 a window may take before the pull refuses to guess (200,000 closings). */
@@ -157,15 +157,17 @@ const NO_ABSENT_WORK: AbsentFromMlsResult = {
   removalFailed: null,
 }
 
-type SparkLite = { key: string; listNumber: string | null; fields: Record<string, unknown> }
+export type SparkLite = { key: string; listNumber: string | null; fields: Record<string, unknown> }
 
-function token(): string {
+/** The Spark key both reconciliations read with. */
+export function sparkToken(): string {
   const t = (process.env.SPARK_API_KEY ?? '').trim()
   if (!t) throw new Error('[closingsReconcile] SPARK_API_KEY is not set')
   return t
 }
+const token = sparkToken
 
-function liteFrom(result: { StandardFields?: unknown }): SparkLite | null {
+export function liteFrom(result: { StandardFields?: unknown }): SparkLite | null {
   const f = (result.StandardFields ?? {}) as Record<string, unknown>
   const key = typeof f.ListingKey === 'string' ? f.ListingKey : null
   if (!key) return null
@@ -225,7 +227,18 @@ export async function findClosingsDrift(
   const reverse = reverseKeys.length > 0 ? await fetchSparkLiteByKeys(reverseKeys) : new Map<string, SparkLite>()
   const notInSpark = reverseKeys.filter((k) => !reverse.has(k))
 
-  const candidates = new Map<string, SparkLite>([...spark, ...reverse])
+  const kept = await driftAgainstOurs(new Map<string, SparkLite>([...spark, ...reverse]))
+  return { window: { from, to }, sparkClosings: spark.size, ourClosedInWindow: ourClosed.length, drift: kept, notInSpark }
+}
+
+/**
+ * Each Spark record set against our row on the facts a statistic reads
+ * (lib/sync/listingDrift.ts), in ListingKey order: the drift both
+ * reconciliations repair. A broker's override of status or list price is our
+ * copy on purpose, not drift (the delta sync keeps both the same way), so that
+ * reason is dropped where the listing carries one.
+ */
+export async function driftAgainstOurs(candidates: ReadonlyMap<string, SparkLite>): Promise<ClosingDrift[]> {
   const ours = await getListingsForReconcile([...candidates.keys()])
   const drift: ClosingDrift[] = []
   for (const [key, lite] of candidates) {
@@ -245,18 +258,21 @@ export async function findClosingsDrift(
       ours: held ? snapshot(held) : null,
     })
   }
-  // A broker override of status is our copy on purpose, not drift: drop that
-  // reason where the listing carries one (read only for the few candidates).
-  const statusDrift = drift.filter((d) => d.reasons.includes('status') && d.listNumber)
-  const overrides = statusDrift.length > 0 ? await getAdminOverrideFlags(statusDrift.map((d) => d.listNumber!)) : new Map()
+  // Overrides are read only for the few candidates that could carry one.
+  const overridable = drift.filter((d) => (d.reasons.includes('status') || d.reasons.includes('list_price')) && d.listNumber)
+  const overrides = overridable.length > 0 ? await getAdminOverrideFlags(overridable.map((d) => d.listNumber!)) : new Map()
   const kept = drift
-    .map((d) => (d.listNumber && overrides.get(d.listNumber)?.status ? { ...d, reasons: d.reasons.filter((r) => r !== 'status') } : d))
+    .map((d) => {
+      const o = d.listNumber ? overrides.get(d.listNumber) : undefined
+      if (!o) return d
+      return { ...d, reasons: d.reasons.filter((r) => !(r === 'status' && o.status) && !(r === 'list_price' && o.listPrice)) }
+    })
     .filter((d) => d.reasons.length > 0)
   kept.sort((a, b) => a.key.localeCompare(b.key))
-  return { window: { from, to }, sparkClosings: spark.size, ourClosedInWindow: ourClosed.length, drift: kept, notInSpark }
+  return kept
 }
 
-function snapshot(f: DriftFacts): DriftSnapshot {
+export function snapshot(f: DriftFacts): DriftSnapshot {
   return {
     status: f.status,
     city: f.city,
@@ -282,6 +298,8 @@ export type RepairLogContext = {
   window: { from: string; to: string }
   /** Why each key was picked: the drift reasons that selected it. */
   reasons: Map<string, DriftReason[]>
+  /** The sweep that found the drift, as the repair log records it (default 'closings-reconcile'). */
+  source?: string
 }
 
 /**
@@ -390,6 +408,7 @@ export async function repairListingsFromSpark(keys: string[], log: RepairLogCont
           windowTo: log.window.to,
         }
       }),
+      log.source,
     )
     for (const [k, id] of ids) logId.set(k, id)
 

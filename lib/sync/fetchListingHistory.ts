@@ -21,7 +21,9 @@ export async function fetchAndInsertHistoryCore(
     if (fallback.items.length > 0) response = fallback
   }
   const hadSuccessfulFetch = response.ok && response.partial !== true
-  if (response.items.length > 0) {
+  // A partial history (a later page failed) never replaces the stored one: the
+  // replace deletes every event it does not carry.
+  if (response.items.length > 0 && hadSuccessfulFetch) {
     const rows = response.items.map((item) => sparkHistoryItemToRow(listingKey, item))
     const result = await replaceListingHistoryForKey(listingKey, rows)
     if (!result.ok) {

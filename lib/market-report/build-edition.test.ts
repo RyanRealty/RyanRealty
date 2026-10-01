@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ReportBandRow, ReportSeriesRow } from '@/lib/data/market-report/series'
-import { buildBands, buildEdition, buildKpis, BandIndex, quarterEnds, SeriesIndex } from './build-edition'
+import { buildBands, buildEdition, buildKpis, BandIndex, concessionFigs, CONCESSION_COVERAGE_MIN, quarterEnds, SeriesIndex } from './build-edition'
 import { addMonths, lastDayOf } from './format'
 import { marketSummary, NOUN_SFR } from './narrative'
 
@@ -207,5 +207,46 @@ describe('buildEdition', () => {
   it('names the edition by its data month', () => {
     expect(payload.title).toBe('Central Oregon Market Report: July 2026')
     expect(payload.editionMonth).toBe('2026-07')
+  })
+})
+
+describe('concessionFigs: printed only where the MLS reported the field for nearly every sale', () => {
+  it('withholds an era when the field was filled only for sales that had one (August 2016: 46 of 461 reported, all Yes)', () => {
+    expect(concessionFigs({ closed_n: 461, concession_reported_n: 46, concession_with_n: 46, median_concession: 4401.5 })).toEqual({
+      share: { v: null, n: 46 },
+      median: { v: null, n: 46 },
+    })
+  })
+
+  it('withholds a month still being backfilled (April 2026 at build: 188 of 282 reported)', () => {
+    expect(concessionFigs({ closed_n: 282, concession_reported_n: 188, concession_with_n: 86, median_concession: 9772.5 }).share.v).toBeNull()
+  })
+
+  it('prints a month the field covers (August 2025: 329 of 329 reported, 144 with one)', () => {
+    const f = concessionFigs({ closed_n: 329, concession_reported_n: 329, concession_with_n: 144, median_concession: 10000 })
+    expect(f.share).toEqual({ v: 144 / 329, n: 329 })
+    expect(f.median).toEqual({ v: 10000, n: 144 })
+  })
+
+  it('counts the coverage line itself as covered, and withholds a period with no sales', () => {
+    expect(CONCESSION_COVERAGE_MIN).toBe(0.9)
+    expect(concessionFigs({ closed_n: 100, concession_reported_n: 90, concession_with_n: 40, median_concession: 8000 }).share.v).toBe(40 / 90)
+    expect(concessionFigs({ closed_n: 100, concession_reported_n: 89, concession_with_n: 40, median_concession: 8000 }).share.v).toBeNull()
+    expect(concessionFigs({ closed_n: 0, concession_reported_n: 0, concession_with_n: 0, median_concession: null }).share.v).toBeNull()
+  })
+
+  it('reaches the edition: a month with too few reporting sales prints no concession figure', () => {
+    const end = '2016-08-31'
+    const k = buildKpis(
+      new SeriesIndex([
+        row({ period_kind: 'month', period_end: end, geo_type: 'region', geo_slug: 'central-oregon', closed_n: 461, median_close: 400000, concession_reported_n: 46, concession_with_n: 46, median_concession: 4401.5 }),
+      ]),
+      'month',
+      end,
+      'region:central-oregon',
+      'sfr',
+    )
+    expect(k?.concessionShare.v ?? null).toBeNull()
+    expect(k?.concessionMedian.v ?? null).toBeNull()
   })
 })
