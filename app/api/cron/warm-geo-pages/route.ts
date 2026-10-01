@@ -8,6 +8,9 @@ import {
   PLAT_WARM_CLAIM_UNTIL_MS,
   PLAT_WARM_CONCURRENCY,
   PLAT_WARM_HARD_STOP_MS,
+  PLAT_WARM_PASS_GAP_LEASE,
+  PLAT_WARM_PASS_GAP_S,
+  platPassMarkerName,
   platSliceLeaseName,
   platWarmPaths,
   platWarmSlices,
@@ -45,6 +48,12 @@ import {
  * inside that window lose their reads to the 8 s statement timeout. Each run
  * logs every 5xx it saw, which makes it the standing 5xx sweep of the plat
  * sitemap class as well.
+ *
+ * SITE-212 (2026-10-01): a deployment starts a plat pass only when none began
+ * inside PLAT_WARM_PASS_GAP_S (lib/warm-plat-pages.ts, "ONE PASS PER GAP",
+ * decided by crm_cron_pass_gate): 21 deploys on 2026-09-30 meant 21 passes of
+ * ~2,750 cold renders, and the database's statement timeouts tracked them hour
+ * by hour.
  *
  * The fetch UA is the same string ci:probe-ua pins against middleware's
  * BAD_BOT_RE (scripts/lib/ci-probe-ua.mjs) — any middleware change that would
@@ -92,6 +101,34 @@ async function warmPlatTier(sb: Sb, sha: string, t0: number) {
   }
   const paths = platWarmPaths(plats)
   const slices = platWarmSlices(paths)
+
+  // ONE PASS PER GAP (lib/warm-plat-pages.ts): one statement says whether this
+  // deployment's pass starts now, is already under way, or waits for the gap.
+  const { data: gate, error: gateError } = await sb.rpc('crm_cron_pass_gate', {
+    p_marker: platPassMarkerName(sha, paths.length),
+    p_marker_seconds: LEASE_SECONDS,
+    p_gap: PLAT_WARM_PASS_GAP_LEASE,
+    p_gap_seconds: PLAT_WARM_PASS_GAP_S,
+  })
+  if (gateError || (gate !== 'start' && gate !== 'continue' && gate !== 'throttled')) {
+    return {
+      ok: false,
+      tier: 'plats',
+      status: 'skipped',
+      reason: `pass gate did not answer (${gateError?.message ?? `got ${String(gate)}`}); nothing warmed`,
+    }
+  }
+  if (gate === 'throttled') {
+    return {
+      ok: true,
+      tier: 'plats',
+      status: 'throttled',
+      reason: `a plat pass began under ${PLAT_WARM_PASS_GAP_S / 3600} h ago (${PLAT_WARM_PASS_GAP_LEASE} held); deployment ${sha} waits`,
+      plats: paths.length,
+      slices: slices.length,
+      ms: Date.now() - t0,
+    }
+  }
 
   let warmed = 0
   let notFound = 0

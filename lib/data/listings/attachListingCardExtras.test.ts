@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { parseActivityPriceDrop } from './attachListingCardExtras'
+import { currentPriceDrop, parseActivityPriceDrop } from './attachListingCardExtras'
 
 describe('parseActivityPriceDrop', () => {
   it('keeps a current cut with a date', () => {
@@ -98,5 +98,82 @@ describe('attachListingCardExtras when one of its two reads fails', () => {
     expect(k1?.photoUrls).toHaveLength(2)
     expect(k1?.priceDrop).toBeNull()
     vi.doUnmock('@/lib/data/client')
+  })
+})
+
+describe('loadRecentPriceDropEvents pages the price_drop events (SITE-212 review)', () => {
+  it('reads past 1,000 rows in (event_at, id) order, keeps only drops, newest per listing', async () => {
+    // 1,500 events, newest first: K0..K1399 each dropped once; K5 also has an
+    // older drop; K7's newest event is a raise logged as price_drop.
+    const rows: Array<{ listing_key: string; event_at: string; payload: unknown }> = []
+    for (let i = 0; i < 1400; i += 1) {
+      const at = new Date(Date.UTC(2026, 8, 30) - i * 60_000).toISOString()
+      rows.push(
+        i === 7
+          ? { listing_key: 'K7', event_at: at, payload: { previous_price: 500000, new_price: 525000 } }
+          : { listing_key: `K${i}`, event_at: at, payload: { previous_price: 500000, new_price: 480000 } },
+      )
+    }
+    for (let i = 0; i < 100; i += 1) {
+      const at = new Date(Date.UTC(2026, 8, 20) - i * 60_000).toISOString()
+      rows.push({ listing_key: i === 0 ? 'K5' : `OLD${i}`, event_at: at, payload: { previous_price: 600000, new_price: 590000 } })
+    }
+    const calls: Array<{ orders: string[]; range: [number, number] }> = []
+    vi.resetModules()
+    vi.doMock('@/lib/data/client', () => ({
+      supabaseAnon: () => ({
+        from: () => {
+          const call = { orders: [] as string[], range: [0, 0] as [number, number] }
+          const b: Record<string, unknown> = {}
+          for (const m of ['select', 'eq', 'gte']) b[m] = () => b
+          b.order = (column: string) => {
+            call.orders.push(column)
+            return b
+          }
+          b.range = (from: number, to: number) => {
+            call.range = [from, to]
+            calls.push(call)
+            return { then: (resolve: (v: unknown) => unknown) => resolve({ data: rows.slice(from, to + 1), error: null }) }
+          }
+          return b
+        },
+      }),
+    }))
+    const { loadRecentPriceDropEvents } = await import('./attachListingCardExtras')
+    const drops = await loadRecentPriceDropEvents(30)
+    expect(calls.map((c) => c.range)).toEqual([
+      [0, 999],
+      [1000, 1999],
+    ])
+    expect(calls.every((c) => c.orders.join(',') === 'event_at,id')).toBe(true)
+    expect(drops.has('K1399')).toBe(true) // only on the second page
+    expect(drops.has('OLD99')).toBe(true)
+    expect(drops.has('K7')).toBe(false) // a raise is not a drop
+    expect(drops.get('K5')?.newPrice).toBe(480000) // the newest drop wins
+    expect(drops.size).toBe(1399 + 99)
+    vi.doUnmock('@/lib/data/client')
+  })
+})
+
+describe('currentPriceDrop (the badge shows a drop only while it is current)', () => {
+  const drop = { previousPrice: 500000, newPrice: 480000, at: '2026-09-20T17:00:00.000Z' }
+
+  it('keeps a drop while the ask is still below the previous price', () => {
+    expect(currentPriceDrop(drop, 480000)).toBe(drop)
+    expect(currentPriceDrop(drop, '475000')).toBe(drop)
+  })
+
+  it('drops it once the ask was raised back to or above the previous price', () => {
+    // A cut followed by a raise: deltaSync writes the raise as price_increase,
+    // which the drop read never sees, so the ask is the only witness.
+    expect(currentPriceDrop(drop, 520000)).toBeNull()
+    expect(currentPriceDrop(drop, 500000)).toBeNull()
+  })
+
+  it('says nothing without a drop or a usable ask', () => {
+    expect(currentPriceDrop(undefined, 480000)).toBeNull()
+    expect(currentPriceDrop(drop, null)).toBeNull()
+    expect(currentPriceDrop(drop, 'call for price')).toBeNull()
+    expect(currentPriceDrop(drop, 0)).toBeNull()
   })
 })

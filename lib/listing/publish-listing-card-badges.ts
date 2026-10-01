@@ -10,6 +10,7 @@
  * or "Open" without those facts does not ship.
  */
 import { publishListingStatusBadge } from '@/lib/search/publish-search-status'
+import { isPublicOffMarketStatus } from '@/lib/listing-status-public'
 import { formatPriceCompact } from '@/lib/format/money'
 import { formatDate } from '@/lib/format/date'
 
@@ -140,7 +141,9 @@ export function publishListingCardBadges(input: {
     listPrice: input.listPrice,
     originalListPrice: input.originalListPrice,
   })
-  if (dropLabel) {
+  // A cut on a home that can no longer be bought (Canceled, Withdrawn,
+  // Expired, Closed) is not a price drop anyone can act on (SITE-212 review).
+  if (dropLabel && !isPublicOffMarketStatus(input.standardStatus)) {
     badges.push({ kind: 'drop', label: dropLabel })
   }
 

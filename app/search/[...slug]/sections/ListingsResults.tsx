@@ -1,6 +1,9 @@
 import { type V3ListingRowData } from '@/components/site/v3'
 import HideAwareListingGrid, { type HideAwareItem } from '@/components/search/HideAwareListingGrid'
 import { publishListingStatusBadge } from '@/lib/search/publish-search-status'
+import { publishListingDropBadge } from '@/lib/listing/publish-listing-card-badges'
+import { isPublicOffMarketStatus } from '@/lib/listing-status-public'
+import { currentPriceDrop, type ListingCardPriceDrop } from '@/lib/data'
 import { CTAButton } from '@/components/site/primitives'
 import SearchListingsToolbar from '../../../../components/SearchListingsToolbar'
 import { listingTileHref } from '../../../../lib/slug'
@@ -9,6 +12,32 @@ import { type SearchParams } from '../page-filters'
 import { listingsResultsKind } from './listings-results-kind'
 
 export { listingsResultsKind } from './listings-results-kind'
+
+/**
+ * The grid's price-drop badge, through the card publisher's dated label
+ * (Matt lock 2026-09-15: the change and the date, never a bare "Price drop"):
+ * a current drop (currentPriceDrop: the previous price is still above today's
+ * ask) on a home that can still be bought. Drops are keyed by ListingKey; the
+ * card's own key is the MLS number.
+ */
+function gridPriceDropBadge(
+  status: string | null | undefined,
+  listingKey: string | null | undefined,
+  listPrice: number | string | null | undefined,
+  priceDrops: ReadonlyMap<string, ListingCardPriceDrop>,
+): { kind: 'drop'; label: string } | undefined {
+  if (!listingKey || isPublicOffMarketStatus(status)) return undefined
+  const drop = currentPriceDrop(priceDrops.get(listingKey.trim()), listPrice)
+  if (!drop) return undefined
+  const ask = Number(listPrice)
+  const label = publishListingDropBadge({
+    lastPriceChangeTimestamp: drop.at,
+    priceDropAmount: drop.previousPrice - ask,
+    listPrice: ask,
+    originalListPrice: drop.previousPrice,
+  })
+  return label ? { kind: 'drop', label } : undefined
+}
 
 /** Listings grid (design-system ListingCard) + sort/pagination toolbar, with
  *  the no-scope / timeout / zero-result empty states (see page.tsx call site). */
@@ -23,7 +52,7 @@ export function ListingsResults({
   perPageParam,
   sp,
   searchPagePath,
-  priceChangeKeys,
+  priceDrops,
   degraded = false,
   emptyNote,
 }: {
@@ -37,7 +66,8 @@ export function ListingsResults({
   perPageParam: string
   sp: SearchParams
   searchPagePath: string
-  priceChangeKeys: Set<string>
+  /** Newest price drop per ListingKey (getRecentPriceDropEntries); shown only while current. */
+  priceDrops: ReadonlyMap<string, ListingCardPriceDrop>
   /** Timeout or data-layer error — do not paint as an empty market. */
   degraded?: boolean
   /**
@@ -137,7 +167,7 @@ export function ListingsResults({
             listNumber: listing.ListNumber ?? null,
             badge:
               publishListingStatusBadge(listing.StandardStatus) ??
-              (key && priceChangeKeys.has(key) ? { kind: 'drop' as const, label: 'Price drop' } : undefined),
+              gridPriceDropBadge(listing.StandardStatus, listing.ListingKey, listing.ListPrice, priceDrops),
           }
           return { card, ListingKey: listing.ListingKey ?? null, ListNumber: listing.ListNumber ?? null }
         })}

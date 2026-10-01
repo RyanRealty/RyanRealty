@@ -78,6 +78,29 @@ describe('publishListingCardBadges', () => {
     expect(badges.some((b) => b.kind === 'open')).toBe(true)
   })
 
+  it('publishes no price drop on a home that can no longer be bought', () => {
+    for (const standardStatus of ['Canceled', 'Withdrawn', 'Expired']) {
+      const badges = publishListingCardBadges({
+        nowMs,
+        standardStatus,
+        lastPriceChangeTimestamp: '2026-09-11',
+        priceDropAmount: 20000,
+        originalListPrice: 529000,
+        listPrice: 509000,
+      })
+      expect(badges.find((b) => b.kind === 'drop')).toBeUndefined()
+    }
+    const active = publishListingCardBadges({
+      nowMs,
+      standardStatus: 'Active',
+      lastPriceChangeTimestamp: '2026-09-11',
+      priceDropAmount: 20000,
+      originalListPrice: 529000,
+      listPrice: 509000,
+    })
+    expect(active.find((b) => b.kind === 'drop')?.label).toMatch(/−\$20K .* · Sep 11/)
+  })
+
   it('does not publish a drop from a stale count alone', () => {
     const badges = publishListingCardBadges({
       nowMs,

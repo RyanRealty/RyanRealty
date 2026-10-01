@@ -131,7 +131,6 @@ export async function renderMapSplitView(props: {
   searchBreadcrumbItems: { label: string; href?: string }[]
   savedKeys: string[]
   likedKeys: string[]
-  priceChangeKeys: Set<string>
   session: Awaited<ReturnType<typeof getSession>> | null
   prefs: Awaited<ReturnType<typeof getBuyingPreferences>> | null
   effectiveStatusFilter: string
@@ -153,8 +152,9 @@ export async function renderMapSplitView(props: {
     effectiveStatusFilter,
     initialPolygon,
   } = props
-  // priceChangeKeys + prefs: still accepted from page.tsx for call-site stability.
-  // MapSearchView does not consume buying prefs or price-change badge keys.
+  // prefs: still accepted from page.tsx for call-site stability.
+  // MapSearchView does not consume buying prefs. Its cards print dated price
+  // drops from their own read (getViewportListings, attachListingCardExtras).
 
   // Finest place ring: neighborhood district → community/subdivision → city.
   // Path-resolved Southern Crossing / Bend districts must draw the district

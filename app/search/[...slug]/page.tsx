@@ -2,10 +2,8 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
-import {
-  getListingKeysWithRecentPriceChange,
-  getListingsWithAdvanced,
-} from '../../actions/listings'
+import { getListingsWithAdvanced } from '../../actions/listings'
+import { getRecentPriceDropEntries, type ListingCardPriceDrop } from '@/lib/data'
 import { getSession } from '../../actions/auth'
 import { SearchAlertCapture } from '../../../components/search/SearchAlertCapture'
 import { getCityContent, getSubdivisionBlurb } from '../../../lib/city-content'
@@ -256,12 +254,9 @@ export default async function SearchPage({
             cityDepth: loadCitySplitDepth({ city, relatedCitySlug: splitCityRelatedSlug, searchPagePath }),
           }
         : null
-    const [priceChangeKeys, session] = await Promise.all([
-      IS_PRODUCTION_BUILD
-        ? Promise.resolve(new Set<string>())
-        : withTimeout(getListingKeysWithRecentPriceChange(), new Set<string>()),
-      withTimeout(getSession(), null, 600),
-    ])
+    // No shared price-drop read here: the split view prints dated drops from
+    // its own per-card read (getViewportListings, attachListingCardExtras).
+    const session = await withTimeout(getSession(), null, 600)
     const [savedKeys, likedKeys, prefs] =
       session?.user
         ? await Promise.all([
@@ -291,7 +286,6 @@ export default async function SearchPage({
       searchBreadcrumbItems,
       savedKeys,
       likedKeys,
-      priceChangeKeys,
       session,
       prefs,
       effectiveStatusFilter,
@@ -303,9 +297,10 @@ export default async function SearchPage({
   }
 
   // Fetch the independent data the clean results page renders in one parallel batch:
-  //   listings (grid + pagination), recent price-change keys, session
-  //   (save-search), resort entity keys (JSON-LD + breadcrumb resort flag).
-  const [listingsResult, priceChangeKeys, session, resortEntityKeys, citySfrTiles] = await Promise.all([
+  //   listings (grid + pagination), recent price drops (the "Price drop"
+  //   badge), session (save-search), resort entity keys (JSON-LD + breadcrumb
+  //   resort flag).
+  const [listingsResult, priceDrops, session, resortEntityKeys, citySfrTiles] = await Promise.all([
     // Route through getListingsWithAdvanced: it serves the common city + base-
     // filter case from the slim, resilient-cached listing_tile_mv (sub-second,
     // with an EXACT count so pagination/header stay right) and only falls back
@@ -321,8 +316,11 @@ export default async function SearchPage({
       LISTINGS_FETCH_TIMEOUT_MS,
     ),
     IS_PRODUCTION_BUILD
-      ? Promise.resolve(new Set<string>())
-      : withTimeout(getListingKeysWithRecentPriceChange(), new Set<string>()),
+      ? Promise.resolve(new Map<string, ListingCardPriceDrop>())
+      : withTimeout(
+          getRecentPriceDropEntries(30).then((entries) => new Map(entries)),
+          new Map<string, ListingCardPriceDrop>(),
+        ),
     withTimeout(getSession(), null, 600),
     withTimeout(getResortEntityKeys(), new Set<string>()),
     isPlainCityBrowse && city ? loadCitySfrTilesForSearch(city) : Promise.resolve([]),
@@ -664,7 +662,7 @@ export default async function SearchPage({
         perPageParam={perPageParam}
         sp={sp}
         searchPagePath={searchPagePath}
-        priceChangeKeys={priceChangeKeys}
+        priceDrops={priceDrops}
         degraded={Boolean(listingsResult.degraded)}
         emptyNote={
           areaHistory && !shouldNoIndexSearchVariant(sp)

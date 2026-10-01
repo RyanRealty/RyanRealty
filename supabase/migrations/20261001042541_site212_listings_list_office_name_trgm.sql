@@ -1,0 +1,24 @@
+-- SITE-212 (statement timeouts, the IO class). The brokerage track-record read
+-- (lib/data/track-record.ts) and the proof block's closings read
+-- (lib/data/proof/getProofBlock.ts) filter listings by
+-- "ListOfficeName" ILIKE '%ryan realty%'. No index served that infix match:
+-- production EXPLAIN 2026-10-01 00:30Z showed a BitmapAnd over
+-- idx_listings_standard_status_btree x idx_listings_close_price, a heap scan
+-- of 190,627 closed rows, 101,558 blocks read from disk (800 MB) and 26.1 s to
+-- return 17 rows. pg_stat_statements, 2026-09-30 22:08Z to 2026-10-01 04:01Z:
+-- 69 calls, mean 51 s, 150,362 blocks a call, 6,875,804 of them read from disk
+-- (52 GiB), the largest IO source on the instance; every call pushed
+-- most of shared_buffers (1 GB) out from under every other read. The read is
+-- cached six hours, but every market-stats refresh revalidates its tag.
+--
+-- A trigram GIN index on "ListOfficeName" serves ILIKE '%...%' for any
+-- pattern. pg_trgm is already installed (idx_listings_city_trgm).
+--
+-- PRODUCTION: built CONCURRENTLY on 2026-10-01 at 04:11Z by a one-shot pg_cron
+-- job (37 MB, 36 s); recorded in the migration history under this file's
+-- version, so `supabase db push` skips it. After it, the track-record read is a
+-- bitmap scan of this index: 17 rows, 241 buffers, 4.1 ms (EXPLAIN (ANALYZE,
+-- BUFFERS)). Run as written on a fresh database it takes a write lock on
+-- listings for the build.
+CREATE INDEX IF NOT EXISTS idx_listings_list_office_name_trgm
+  ON public.listings USING gin ("ListOfficeName" gin_trgm_ops);

@@ -8,7 +8,10 @@
  * signal is activity_events (event_type = 'price_drop'). See getPriceDrops.ts.
  */
 import { supabaseAnon } from '@/lib/data/client'
+import { makeResilientCached } from '@/lib/data/cache/resilient'
+import { cacheTag } from '@/lib/data/cache/unstable-cache'
 import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
+import { fetchPagedRows } from '@/lib/supabase/paginate'
 
 const PHOTO_CAP = 8
 const ROW_CAP = 60
@@ -97,31 +100,87 @@ async function latestPriceDropsForKeys(
   return out
 }
 
+/**
+ * Every current price drop in the last N days, the newest event per listing.
+ * Paged in (event_at, id) order, newest first: 30 days held 2,180 price_drop
+ * events on 2026-10-01, and the single read this replaces stopped at
+ * PostgREST's 1,000, so every drop older than about two weeks fell off the
+ * homepage and /buy cards (SITE-212 review).
+ */
+async function readRecentPriceDrops(
+  days: number,
+): Promise<{ drops: Map<string, ListingCardPriceDrop>; error: string | null }> {
+  const drops = new Map<string, ListingCardPriceDrop>()
+  const sb = supabaseAnon()
+  if (!sb) return { drops, error: 'no Supabase client' }
+  const window = Math.min(Math.max(days, 1), 45)
+  const windowStart = new Date(Date.now() - window * 86_400_000).toISOString()
+  const { rows, error } = await fetchPagedRows<ActivityDropRow>((from, to) =>
+    sb
+      .from('activity_events')
+      .select('listing_key, event_at, payload')
+      .eq('event_type', 'price_drop')
+      .gte('event_at', windowStart)
+      .order('event_at', { ascending: false })
+      .order('id', { ascending: false })
+      .range(from, to),
+  )
+  for (const row of rows) {
+    const key = row.listing_key?.trim()
+    if (!key || drops.has(key)) continue
+    const drop = parseActivityPriceDrop(row.payload, row.event_at)
+    if (drop) drops.set(key, drop)
+  }
+  return { drops, error: error?.message ?? null }
+}
+
+async function fetchRecentPriceDropEntries(days: number): Promise<Array<[string, ListingCardPriceDrop]>> {
+  const { drops, error } = await readRecentPriceDrops(days)
+  if (error) {
+    // Logged here: makeResilientCached swallows the throw. Thrown, never cached
+    // as "no drops" (it falls back to [] for this call only).
+    console.error('[getRecentPriceDropEntries] price drops not read', error)
+    throw new Error(`[getRecentPriceDropEntries] price drops not read: ${error}`)
+  }
+  return [...drops.entries()]
+}
+
+/**
+ * The newest price drop per listing over the last N days, one read shared by
+ * the homepage and /buy rails (loadRecentPriceDropEvents) and the search
+ * results' "Price drop" badge, cached ten minutes. A card shows it only while
+ * the drop is still current (currentPriceDrop): /price-drops applies the same
+ * test, previous price above today's ask.
+ */
+export const getRecentPriceDropEntries = makeResilientCached(
+  fetchRecentPriceDropEntries,
+  ['recent-price-drop-entries-v1'],
+  { revalidate: 600, tags: [cacheTag.listings] },
+  [],
+)
+
 /** Latest current price-drop events in the last N days (homepage rails). */
 export async function loadRecentPriceDropEvents(
   days = RECENT_DROP_DAYS,
 ): Promise<Map<string, ListingCardPriceDrop>> {
-  const out = new Map<string, ListingCardPriceDrop>()
-  const sb = supabaseAnon()
-  if (!sb) return out
-  const window = Math.min(Math.max(days, 1), 45)
-  const windowStart = new Date(Date.now() - window * 86_400_000).toISOString()
-  const { data, error } = await sb
-    .from('activity_events')
-    .select('listing_key, event_at, payload')
-    .eq('event_type', 'price_drop')
-    .gte('event_at', windowStart)
-    .order('event_at', { ascending: false })
-    .limit(1000)
-  if (error) console.error('[loadRecentPriceDropEvents] price drops not read', error.message)
-  if (error || !data) return out
-  for (const row of data as ActivityDropRow[]) {
-    const key = row.listing_key?.trim()
-    if (!key || out.has(key)) continue
-    const drop = parseActivityPriceDrop(row.payload, row.event_at)
-    if (drop) out.set(key, drop)
-  }
-  return out
+  return new Map(await getRecentPriceDropEntries(days))
+}
+
+/**
+ * A drop event still describes the listing only while its previous price is
+ * above today's ask: a cut followed by a raise (a price_increase event, which
+ * this read does not see) is not a price drop any more. The homepage rail
+ * (currentDrop) makes the same test; /price-drops makes it too, inside its own
+ * narrower set (single-family, $50K and up, the last 7 days). No ask, or a
+ * zero one, says nothing.
+ */
+export function currentPriceDrop(
+  drop: ListingCardPriceDrop | null | undefined,
+  listPrice: number | string | null | undefined,
+): ListingCardPriceDrop | null {
+  const ask = listPrice == null ? NaN : Number(listPrice)
+  if (!drop || !Number.isFinite(ask) || ask <= 0) return null
+  return drop.previousPrice > ask ? drop : null
 }
 
 export async function attachListingCardExtras(

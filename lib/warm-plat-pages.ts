@@ -21,6 +21,23 @@ import { resolveSubdivisionAreaRedirect } from '@/lib/subdivision-area-redirects
  * 900 s ISR window (60 s for a degraded copy) a fetch triggers a background
  * regeneration, and 2,642 of those every ten minutes would be a load the
  * database cannot spare.
+ *
+ * ONE PASS PER GAP (SITE-212, 2026-10-01). "Once per deployment" assumed ~4
+ * deploys a day. 2026-09-30 had 21, and Postgres statement timeouts (2,382
+ * that day, 2,379 through PostgREST) rose and fell hour by hour with them:
+ * every deploy cleared the ISR cache and this tier re-rendered ~2,750 pages
+ * on a 4 GB IO-bound instance. So a deployment may START a plat pass only
+ * when no pass began inside PLAT_WARM_PASS_GAP_S. One statement decides it,
+ * crm_cron_pass_gate: if this pass's marker (platPassMarkerName) is held, the
+ * pass is under way and continues; else if PLAT_WARM_PASS_GAP_LEASE is held,
+ * it waits (`throttled`); else it takes both and starts. Nothing is taken and
+ * given back, so no failed call can let a pass run past the gap, and a gate
+ * that does not answer warms nothing. The marker carries the path count, like
+ * the slice leases: when the indexable set changes size mid-pass the slices
+ * are renamed, which is a new pass, and it waits for the gap like any other
+ * (the plats not yet warmed render cold on demand until then). Tier 1 (~137
+ * registry pages) stays per deployment. Cost of the trade: a plat first
+ * fetched between passes pays the cold render it paid before 2026-09-23.
  */
 
 /** URLs per claimed slice. At concurrency 6 and 2.4 to 8.6 s per cold render, one slice fits well inside a 300 s invocation. */
@@ -34,6 +51,22 @@ export const PLAT_WARM_CLAIM_UNTIL_MS = 150_000
 
 /** Never start a fetch batch after this point, so the invocation ends inside maxDuration. */
 export const PLAT_WARM_HARD_STOP_MS = 255_000
+
+/** A new plat pass may start only this long after the previous one began: at most four a day, the deploy count the tier was sized for. */
+export const PLAT_WARM_PASS_GAP_S = 6 * 3600
+
+/** The crm_cron_leases name held for PLAT_WARM_PASS_GAP_S from the moment any deployment's pass starts. */
+export const PLAT_WARM_PASS_GAP_LEASE = 'warm-plats-pass-gap'
+
+/**
+ * The crm_cron_leases name that marks this pass as started: the deployment and
+ * the path count, the same pass the slice leases (platSliceLeaseName) name.
+ * A resized set is a new pass, so it goes through the gap again rather than
+ * re-warming every plat inside it.
+ */
+export function platPassMarkerName(sha: string, pathCount: number): string {
+  return `warm-plats-pass:${sha}:n${pathCount}`
+}
 
 /**
  * The plat URLs to warm, in priority order: redirect slugs dropped (middleware
