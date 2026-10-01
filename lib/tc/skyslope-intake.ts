@@ -25,8 +25,15 @@
  *      approval must clear the Vault's review queue).
  *   4. Deal stage follows the newest cycle the way the migration derived it,
  *      and only while the Vault stage still equals the previous derivation.
+ *   5. A close the MLS recorded is the Vault's (lib/tc/mls-close.ts): a
+ *      cycle's status and actual_closing_date stamped 'mls' in term_provenance
+ *      are never taken back from SkySlope, and the stage derivation reads that
+ *      cycle as closed. The run ends by applying the MLS close rule to every
+ *      deal it touched (lib/data/tc/mls-close.ts).
  */
 import { parseDealAddress } from './mail-rules'
+import { CLOSED_STATUS } from './mls-close'
+import { CLOSE_COLUMNS, closedByMls, parseProvenance, type CloseColumn } from './terms/provenance'
 import {
   brokerFromAgentGuid,
   date10,
@@ -225,9 +232,16 @@ export type FieldDecision =
 export function decideField(
   spec: CycleFieldSpec,
   input: { vault: unknown; before: unknown; now: unknown },
+  opts: { vaultOwned?: boolean } = {},
 ): FieldDecision {
   const { vault, before, now } = input
   if (sameFieldValue(spec.type, vault, now)) return { kind: 'same' }
+  // A value the Vault owns outright (a close the MLS recorded) is never "what
+  // the previous import wrote", even when SkySlope later sent the same value.
+  if (opts.vaultOwned) {
+    if (sameFieldValue(spec.type, before, now)) return { kind: 'vault_edit' }
+    return { kind: 'drift', vault, skyslopeBefore: before, skyslopeNow: now }
+  }
   const lastWritten: unknown[] = [before]
   if (!spec.migrationCarried) lastWritten.push(null)
   if (lastWritten.some((w) => sameFieldValue(spec.type, vault, w))) return { kind: 'update', from: vault, to: now }
@@ -385,6 +399,23 @@ export function stageFactsFromDetail(kind: SkySlopeFolderKind, guid: string, det
     actualClosingDate: date10(detail.actualClosingDate),
     expirationDate: date10(detail.expirationDate),
   }
+}
+
+/**
+ * A cycle's stage facts with the Vault's MLS close laid over SkySlope's: when
+ * the MLS close rule recorded the cycle closed (term_provenance.status by
+ * 'mls'), it reads as closed on that date whatever its SkySlope payload says.
+ * Applied to the previous and the current payload alike, so the stage the
+ * MLS close wrote is what the intake compares against.
+ */
+export function withVaultClose(
+  facts: StageCycleFacts,
+  cycle: { fields: Partial<Record<CycleField, unknown>>; termProvenance?: unknown },
+): StageCycleFacts {
+  const p = parseProvenance(cycle.termProvenance)
+  const actual = date10(cycle.fields.actual_closing_date)
+  if (!closedByMls(p, 'status') || !actual) return facts
+  return { ...facts, status: CLOSED_STATUS, actualClosingDate: actual }
 }
 
 function summaryForStage(f: StageCycleFacts): SkySlopeFolderSummary {
@@ -684,6 +715,8 @@ export type VaultCycleSnapshot = {
   /** status is the Vault's checklist status; absent in a snapshot that did not read it. */
   items: ReadonlyArray<{ id: string; sourceActivityId: number | null; status?: string | null }>
   assignments: ReadonlyArray<{ itemId: string; documentId: string }>
+  /** tc_cycles.term_provenance: a close stamped 'mls' is the Vault's (rule 5). */
+  termProvenance?: unknown
 }
 
 export type VaultContactSnapshot = {
@@ -790,8 +823,10 @@ export function planCycleIntake(input: {
   // fields: only an existing cycle has a Vault value to protect
   if (vault) {
     const before = cycleFieldsFromDetail(vault.raw)
+    const provenance = parseProvenance(vault.termProvenance)
     for (const spec of CYCLE_FIELD_SPECS) {
-      const d = decideField(spec, { vault: vault.fields[spec.column] ?? null, before: before[spec.column], now: now[spec.column] })
+      const vaultOwned = (CLOSE_COLUMNS as readonly string[]).includes(spec.column) && closedByMls(provenance, spec.column as CloseColumn)
+      const d = decideField(spec, { vault: vault.fields[spec.column] ?? null, before: before[spec.column], now: now[spec.column] }, { vaultOwned })
       if (d.kind === 'update') plan.fieldUpdates.push({ field: spec.column, from: d.from ?? null, to: d.to ?? null })
       else if (d.kind === 'drift')
         plan.drift.push({ field: spec.column, vault: d.vault ?? null, skyslopeBefore: d.skyslopeBefore ?? null, skyslopeNow: d.skyslopeNow ?? null })

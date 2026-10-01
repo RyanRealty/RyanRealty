@@ -36,6 +36,7 @@ import {
   loginSkySlopeInbound,
 } from '@/lib/tc/skyslope-inbound'
 import { skySlopePropertyKey, type SkySlopeFolderKind } from '@/lib/tc/skyslope-mirror-shape'
+import { runMlsCloseSweep, type MlsCloseSweepResult } from '@/lib/data/tc/mls-close'
 import {
   CYCLE_FIELD_SPECS,
   SKYSLOPE_INTAKE_ACTOR,
@@ -52,6 +53,7 @@ import {
   propertyPriority,
   skySlopeIntakeEnabled,
   stageFactsFromDetail,
+  withVaultClose,
   type CycleField,
   type CyclePlan,
   type SkySlopeDocument,
@@ -131,6 +133,12 @@ export type SkySlopeIntakeResult = {
   complete: boolean
   totals: IntakeTotals
   properties: IntakePropertyReport[]
+  /**
+   * The MLS close rule (lib/tc/mls-close.ts) run over every deal this pass
+   * touched, after its writes: a sale the MLS shows closed is closed in the
+   * Vault whatever SkySlope's status says. Null when nothing was touched.
+   */
+  mlsCloses: MlsCloseSweepResult | null
   ms: number
 }
 
@@ -274,6 +282,7 @@ async function loadCycleSnapshot(sb: SB, cycle: VaultCycleRow): Promise<VaultCyc
       status: i.status == null ? null : String(i.status),
     })),
     assignments,
+    termProvenance: cycle.termProvenance,
   }
 }
 
@@ -413,6 +422,7 @@ export async function runSkySlopeVaultIntake(opts: SkySlopeIntakeOptions): Promi
     complete: false,
     totals: emptyTotals(),
     properties: [],
+    mlsCloses: null,
     ms: 0,
   }
   if (!base.enabled && opts.apply) {
@@ -464,7 +474,8 @@ export async function runSkySlopeVaultIntake(opts: SkySlopeIntakeOptions): Promi
   )
   base.propertiesTotal = ordered.length
 
-  const ctx = { sb, session, deals, cycles, cycleByGuid, opts, log, totals: base.totals, paceMs: opts.paceMs ?? SKYSLOPE_PACE_MS }
+  const touchedDealIds = new Set<string>()
+  const ctx = { sb, session, deals, cycles, cycleByGuid, opts, log, totals: base.totals, paceMs: opts.paceMs ?? SKYSLOPE_PACE_MS, touchedDealIds }
   let stopped = false
   for (const [key, group] of ordered) {
     if (pastDeadline(opts.deadline)) {
@@ -495,6 +506,12 @@ export async function runSkySlopeVaultIntake(opts: SkySlopeIntakeOptions): Promi
       break
     }
   }
+  // The MLS close rule on every deal this pass touched (cheap: a few reads per
+  // deal). Plan mode decides without writing. /api/cron/tc-mls-close covers
+  // every other deal, and keeps running after the SkySlope cutover.
+  if (touchedDealIds.size) {
+    base.mlsCloses = await runMlsCloseSweep({ apply: opts.apply, dealIds: [...touchedDealIds], log, sb })
+  }
   return { ...base, ok: true, complete: !stopped, ms: Date.now() - t0 }
 }
 
@@ -508,6 +525,8 @@ type Ctx = {
   log: (line: string) => void
   totals: IntakeTotals
   paceMs: number
+  /** Every deal this pass read or wrote, for the MLS close rule at the end. */
+  touchedDealIds: Set<string>
 }
 
 async function intakeProperty(
@@ -631,14 +650,16 @@ async function intakeProperty(
     if (createStage) report.stages.push({ dealId: null, decision: { kind: 'create', ...createStage } })
   }
   const touchedDeals = [...new Set([...siblingDealIds, ...(targetDealId ? [targetDealId] : [])])]
+  for (const dealId of touchedDeals) ctx.touchedDealIds.add(dealId)
   for (const dealId of touchedDeals) {
     const deal = ctx.deals.find((d) => d.id === dealId)
     if (!deal) continue
     const kindOf = (c: VaultCycleRow): SkySlopeFolderKind => (c.kind === 'listing' ? 'listings' : 'sales')
     const onDeal = ctx.cycles.filter((c) => c.deal_id === dealId)
-    const before: StageCycleFacts[] = onDeal.map((c) => stageFactsFromDetail(kindOf(c), c.source_guid, c.raw))
-    const now: StageCycleFacts[] = onDeal.map(
-      (c) => freshByGuid.get(c.source_guid.toLowerCase())?.stageFacts ?? stageFactsFromDetail(kindOf(c), c.source_guid, c.raw),
+    // A close the MLS recorded reads as closed on both sides (rule 5).
+    const before: StageCycleFacts[] = onDeal.map((c) => withVaultClose(stageFactsFromDetail(kindOf(c), c.source_guid, c.raw), c))
+    const now: StageCycleFacts[] = onDeal.map((c) =>
+      withVaultClose(freshByGuid.get(c.source_guid.toLowerCase())?.stageFacts ?? stageFactsFromDetail(kindOf(c), c.source_guid, c.raw), c),
     )
     for (const p of plans) if (p.plan.mode === 'add' && p.dealId === dealId) now.push(p.plan.stageFacts)
     const decision = decideDealStage({ vaultStage: deal.stage, vaultStageDetail: deal.stage_detail, before, now })
@@ -675,6 +696,7 @@ async function intakeProperty(
       return report
     }
     targetDealId = String(dealRow.id)
+    ctx.touchedDealIds.add(targetDealId)
     report.deal = { ...report.deal, dealId: targetDealId }
     ctx.deals.push({ id: targetDealId, property_key: property.propertyKey, address: property.address, city: property.city, stage: stage.stage, stage_detail: stage.stageDetail })
     totals.dealsAdded++

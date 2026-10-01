@@ -1243,7 +1243,9 @@
       "lib/data/tc/**",
       "app/api/cron/skyslope-mirror-refresh/**",
       "app/api/cron/skyslope-vault-intake/**",
+      "app/api/cron/tc-mls-close/**",
       "scripts/tc-skyslope-intake.ts",
+      "scripts/tc-mls-close.ts",
       "lib/data/loop/**"
     ],
     "ci:sms-link-tracking": [
