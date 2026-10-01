@@ -50,7 +50,6 @@ import {
   lotCharacterCompatible,
   productTypeCompatible,
   keepSameProductType,
-  bathCountCompatible,
   yearQualityCompatible,
   acreageInfrastructureCompatible,
   marketAreaBounds,
@@ -89,7 +88,7 @@ import {
   streetKey,
 } from '@/lib/pricing/price-anchor'
 import { ageRestrictedMismatch, ownPlatAgeRestrictedShare } from '@/lib/pricing/age-restricted'
-import { roomCountsUsable } from '@/lib/pricing/room-counts'
+import { roomCountsDecision } from '@/lib/pricing/room-ground'
 import { SAME_NEIGHBORHOOD_TIER_RATIO, STARVED_TIER_WIDEN, SUBDIVISION_TIER_RATIO, normSubdivision } from '@/lib/pricing/classes'
 import { inferSubdivisionPocket, POCKET_RADIUS_MILES } from '@/lib/pricing/infer-pocket'
 import { isClusterPocket, pocketStopsLaterRungs } from '@/lib/pricing/ladder'
@@ -97,7 +96,6 @@ import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divi
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
 import { crossesNamedRiver } from '@/lib/pricing/river-cross'
 import {
-  customBathCompatible,
   customLotCompatible,
   isCustomOrNewSubject,
   isNewBuild,
@@ -1024,34 +1022,18 @@ export async function selectComps(
         continue
       }
 
-      // Custom/new: ±1 whole bath (Perspective 3 vs Rim View 4).
-      if (customOrNew) {
-        if (!customBathCompatible(subject.baths, comp.baths)) {
-          rung.excluded.bath_count++
-          continue
-        }
-      } else {
-        // ONE ROOM RULE for beds and baths alike (Matt 2026-09-10). Same whole
-        // count travels anywhere; one room apart is used only on your home's
-        // own ground — its plat, its mapped neighborhood or its street — and
-        // is disclosed on the sale; two or more apart is refused everywhere.
-        const localComp =
-          (subdivisionIlike != null &&
-            comp.subdivision != null &&
-            comp.subdivision.trim().toLowerCase() === subdivisionIlike.trim().toLowerCase()) ||
-          (subjectArea != null && resolveMarketArea(comp.latitude, comp.longitude) === subjectArea) ||
-          ownStreetPeer
-        const rooms = roomCountsUsable(
-          { beds: subject.beds, baths: subject.baths },
-          { beds: comp.beds, baths: comp.baths },
-          { local: localComp },
-        )
-        if (!rooms.ok) {
-          rung.excluded.bath_count++
-          continue
-        }
-        comp.roomDifference = rooms.notes.length > 0 ? rooms.notes : null
+      // ONE ROOM RULE for beds and baths alike, custom/new included
+      // (Matt 2026-09-10, skill 0.1). Same function the comparability review uses.
+      const rooms = roomCountsDecision(subject, {
+        ...comp,
+        ownPlat: inOwnPlat,
+        subdivision: comp.subdivision,
+      })
+      if (!rooms.ok) {
+        rung.excluded.bath_count++
+        continue
       }
+      comp.roomDifference = rooms.notes.length > 0 ? rooms.notes : null
 
       // HARD EXCLUSION at every tier for custom / new-construction subjects
       // (Matt 2026-09-03, 19365 Rim View). Year-built and quality outrank a
@@ -1332,11 +1314,7 @@ export async function selectCompsByKeys(subject: CmaSubject, keys: string[]): Pr
     // test (Matt 2026-09-10). The broker vetted this sale, so a one-room
     // difference is used and disclosed rather than silently dropped; two or
     // more rooms apart is still refused, and now says so.
-    const rooms = roomCountsUsable(
-      { beds: subject.beds, baths: subject.baths },
-      { beds: comp.beds, baths: comp.baths },
-      { local: true },
-    )
+    const rooms = roomCountsDecision(subject, { ...comp, selectionTier: 'broker-selected' })
     if (!rooms.ok) {
       refused.push(
         `${comp.address} is ${comp.beds ?? '?'} bed / ${comp.baths ?? '?'} bath against your home's ${subject.beds ?? '?'} / ${subject.baths ?? '?'}, two or more rooms apart`,

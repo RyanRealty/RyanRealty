@@ -34,13 +34,17 @@
  *  9. Location: a place word in the reason (fairway, golf, resort, highway)
  *     must be in the comp remarks or view and not in the subject's.
  * 10. Condition: a condition word in the reason must appear in the comp remarks.
- * 11. Beds or baths: cited counts must match the fields and must differ.
+ * 11. Beds or baths: the one-room rule (lib/pricing/room-counts.ts, skill 0.1)
+ *     is the only room wall. Cited counts must match the fields. An exclusion
+ *     for a gap that rule allows (same whole count, or one apart on own ground)
+ *     is ignored. An exclusion for a gap that rule refuses (one apart off
+ *     ground, or two or more anywhere) stays.
  * 12. Basis `other` with no checkable claim is kept. An exclusion we cannot
  *     disprove is not thrown out. An exclusion we can disprove is.
  *
  * Legitimate exclusions stay: a real duplex in the remarks, a living area gap
  * of 35% or more, a $/sqft outlier of 20% or more, a doubled lot, a 15-year
- * age gap, a real bed-count difference, a fairway the remarks actually name.
+ * age gap, a room gap the one-room rule refuses, a fairway the remarks actually name.
  */
 
 import type { CmaComp, CmaSubject } from '@/lib/cma/types'
@@ -51,6 +55,8 @@ import {
   type CompVerdict,
   type ExclusionBasis,
 } from '@/lib/cma/judge-consistency'
+import { roomCountsDecision } from '@/lib/pricing/room-ground'
+import { roomDifferenceSentence } from '@/lib/pricing/room-counts'
 
 /** Past the selector's widest living-area band. A floor inside that band is invented. */
 export const SIZE_FLOOR_GAP = 0.35
@@ -324,7 +330,27 @@ function tokenSupported(reason: string, tokens: readonly string[], subject: CmaS
   return tokens.some((t) => reasonL.includes(t) && texts.comp.includes(t) && !texts.subject.includes(t))
 }
 
+const ROOMISH = /\b(bed(?:room)?s?|bath(?:room)?s?|bd|br|ba)\b/i
+
+export function isRoomishReason(reason: string | null | undefined): boolean {
+  return ROOMISH.test(reason ?? '')
+}
+
+/**
+ * True when this exclude is a room-count cut the one-room rule is allowed to
+ * decide. Condition, structure, lot, vintage, size, location, recency, and
+ * price-tier keep their own bases.
+ */
+export function isRoomCountExclusion(v: CompVerdict): boolean {
+  if (v.tier !== 'exclude') return false
+  if (v.basis && v.basis !== 'other') return false
+  return isRoomishReason(v.reason)
+}
+
 function roomsSupported(reason: string, subject: CmaSubject, comp: CmaComp): boolean {
+  const rooms = roomCountsDecision(subject, comp)
+  // The rule allows this sale. The review may not exclude it for the room gap.
+  if (rooms.ok) return false
   const beds = nums(/(\d)\s*-?\s*(?:bed|bd|br)\b/gi, reason)
   const baths = nums(/(\d(?:\.\d)?)\s*-?\s*(?:bath|ba)\b/gi, reason)
   const bedOk =
@@ -339,7 +365,22 @@ function roomsSupported(reason: string, subject: CmaSubject, comp: CmaComp): boo
     comp.baths != null &&
     subject.baths !== comp.baths &&
     baths.every((n) => n === subject.baths || n === comp.baths)
-  return bedOk || bathOk
+  return bedOk || bathOk || isRoomishReason(reason)
+}
+
+function keepForAllowedRoomGap(verdict: CompVerdict, notes: Array<'beds' | 'baths'>): GroundResult {
+  return {
+    verdict: {
+      listingKey: verdict.listingKey,
+      tier: 'strong',
+      reason:
+        roomDifferenceSentence(notes) ??
+        'Room counts follow the one-room rule. This sale stays.',
+    },
+    grounded: false,
+    modelTier: 'exclude',
+    rule: 'rooms',
+  }
 }
 
 function weakKeep(verdict: CompVerdict, rule: GroundRule): GroundResult {
@@ -375,6 +416,11 @@ export function groundVerdict(
 
   const basis: ExclusionBasis | 'price-like' | undefined =
     verdict.basis === 'other' && isPriceTierExclusion(verdict) ? 'price-tier' : verdict.basis
+
+  const rooms = roomCountsDecision(subject, comp)
+  if (rooms.ok && isRoomishReason(reason) && (basis == null || basis === 'other')) {
+    return keepForAllowedRoomGap(verdict, rooms.notes)
+  }
 
   const priceRead = readPriceClaims(reason)
   const priceCited = priceRead.floors.length > 0 || priceRead.ceilings.length > 0

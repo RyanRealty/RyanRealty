@@ -402,7 +402,7 @@ export function matchToCompSelection(
  * Facts win when they produced a priceable set. Under 3 sales, ordinary resale
  * falls back to the listings ladder.
  *
- * Custom/new must NOT fall back: the listings ladder still uses exact baths and
+ * Custom/new must NOT fall back: the listings ladder still uses
  * unmappedCrossesKnownBank, which re-starves Perspective-class peers and can
  * pad TARGET_COMPS with 1970s stock the facts year-quality gate already refused
  * (live Rim View after a8ab9ded). Stay on facts even at 1–2 comps so the build
@@ -414,8 +414,8 @@ export function pickCompSource(match: {
   customOrNew?: boolean
 }): 'facts' | 'listings' {
   // Custom/new NEVER falls back to listings — even when facts are not ready.
-  // The listings ladder still uses exact baths + unmappedCrossesKnownBank and
-  // can pad TARGET_COMPS with 1970s stock (live Rim View 144→2, 47/34/33).
+  // The listings ladder still uses unmappedCrossesKnownBank and can pad
+  // TARGET_COMPS with 1970s stock (live Rim View 144→2, 47/34/33).
   // Stay on facts and fail clean so recordBuildFailure clears the stale draft.
   if (match.customOrNew) return 'facts'
   if (!match.factsReady) return 'listings'

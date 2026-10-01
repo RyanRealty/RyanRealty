@@ -7,14 +7,13 @@ import { resortCommunityCompatible } from '@/lib/cma/resort-guard'
 import { communitySlugForSubdivision, isResortCommunity } from '@/lib/cma/resort-guard'
 import { resolvePriceAnchor, samePlat, sameStreetPeer, streetKey, type PriceAnchor } from '@/lib/pricing/price-anchor'
 import { ageRestrictedMismatch, ownPlatAgeRestrictedShare } from '@/lib/pricing/age-restricted'
-import { bathCountCompatible, distanceMiles, proximityLabel, resolveMarketArea } from '@/lib/cma/market-area'
-import { roomCountsUsable } from '@/lib/pricing/room-counts'
+import { distanceMiles, proximityLabel, resolveMarketArea } from '@/lib/cma/market-area'
+import { roomCountsDecision } from '@/lib/pricing/room-ground'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
 import { crossesNamedRiver } from '@/lib/pricing/river-cross'
 import {
   classifyAgeBand,
-  customBathCompatible,
   customLotCompatible,
   hoaCompatible,
   horseInfrastructureCompatible,
@@ -306,18 +305,6 @@ function applesOk(
    * treats both as walls.
    */
   allowFeatureCross = false,
-  /**
-   * True when the sale sits on the subject's OWN GROUND — its plat, its mapped
-   * neighborhood, or its street. A room-count difference is usable only there
-   * (lib/pricing/room-counts.ts).
-   */
-  local = false,
-  /**
-   * True on the subject's OWN recorded plat. Location is the comp there
-   * (Matt 2026-09-10), so the room rule does not run — the size band and the
-   * hard product, water, sewer, lot and resort walls are the whole test.
-   */
-  ownPlat = false,
 ): boolean {
   if (!productCompatible(subject.productClass, sale.productClass)) return false
   // AGE-RESTRICTED HOUSING IS A DIFFERENT PRODUCT (lib/pricing/age-restricted.ts,
@@ -345,24 +332,12 @@ function applesOk(
     },
     asOfYear,
   )
-  // Custom/new: ±1 whole bath (Perspective 3ba vs Rim View 4ba). Exact floor
-  // match still holds for ordinary resale.
+  // ONE ROOM RULE for beds and baths alike, custom/new included
+  // (Matt 2026-09-10, skill 0.1). Same function the comparability review uses.
+  if (!roomCountsDecision(subject, sale).ok) return false
   if (customOrNew) {
-    if (!customBathCompatible(subject.baths, sale.baths)) return false
     if (!customLotCompatible(subject.lotAcres, sale.lotAcres)) return false
   } else {
-    // ONE ROOM RULE for beds and baths alike (Matt 2026-09-10). Same whole
-    // count travels anywhere; one room apart is used only on this home's own
-    // ground and is disclosed; wider is refused. It does not run on the
-    // subject's own plat, where location is the comp and the size band is the
-    // whole test.
-    if (
-      !ownPlat &&
-      !roomCountsUsable({ beds: subject.beds, baths: subject.baths }, { beds: sale.beds, baths: sale.baths }, { local })
-        .ok
-    ) {
-      return false
-    }
     if (!lotCompatible(subject.lotAcres, sale.lotAcres)) return false
   }
   if (!resortCommunityCompatible(subject.subdivision, sale.subdivision)) return false
@@ -522,43 +497,23 @@ function passesTier(
 
   const asOfYear = Number(asOf.slice(0, 4))
   const allowFeatureCross = Boolean(tier.whenStarved) && subject.marketArea == null
-  // THIS HOME'S OWN GROUND: its plat, its mapped neighborhood, or its street.
-  // The room rule opens by one room here and nowhere else (Matt 2026-09-10).
-  const saleArea = sale.marketArea ?? resolveMarketArea(sale.latitude, sale.longitude) ?? null
-  const localSale =
-    (subject.subdivisionNorm != null && sale.subdivisionNorm === subject.subdivisionNorm) ||
-    (subject.marketArea != null && saleArea === subject.marketArea) ||
-    sameStreetPeer(
-      { streetAddress: subject.streetAddress, city: subject.city, sqft: subject.sqft },
-      { address: sale.address, city: sale.city, sqft: sale.sqft },
-    )
-  if (!applesOk(subject, sale, tier.apples, asOfYear, allowFeatureCross, localSale, ownPlat)) {
+  if (!applesOk(subject, sale, tier.apples, asOfYear, allowFeatureCross)) {
     return { ok: false, miles: null }
   }
-  // LOCATION IS THE COMP, INSIDE THE PLAT (Matt 2026-09-10). "Within the
-  // subdivision, that's the truest sense of comp... we might even comp it out
-  // against a 4-bedroom." A sale in the subject's own recorded plat, inside the
-  // size band, is used whatever its bed count, bath count, vintage or story
-  // count, and the adjustments and the comparability notes carry the rest.
-  // Product type, water, sewer, lot character and the resort wall are hard
-  // everywhere and stay hard here.
-  const rooms = ownPlat
-    ? { ok: true, notes: roomDifferenceNotes(subject, sale) }
-    : roomCountsUsable(
-        { beds: subject.beds, baths: subject.baths },
-        { beds: sale.beds, baths: sale.baths },
-        { local: localSale },
-      )
+  // ONE ROOM RULE (skill 0.1). Same function the review uses. Own-plat is own
+  // ground, so one room apart is noted; two or more is refused everywhere.
+  const rooms = roomCountsDecision(subject, { ...sale, ownPlat: ownPlat || inSubjectPlat(subject, sale) })
+  if (!rooms.ok) return { ok: false, miles: null }
   if (!ownPlat && !ageOk(subject.yearBuilt, sale.yearBuilt, asOfYear, tier.ageYears)) {
     return { ok: false, miles: null }
   }
   if (!ownPlat && !storyOk(subject.storyClass, sale.storyClass, tier.sameStory)) {
     return { ok: false, miles: null }
   }
-  // Beds and baths are decided by the ONE ROOM RULE inside applesOk above. The
-  // per-tier bedSlop/bathSlop numbers no longer gate anything: a rung cannot be
-  // looser than the room rule, and a rung that was tighter (bedSlop 1 on a
-  // faraway rung) was re-imposing the wall the rule deliberately opened.
+  // Beds and baths are decided by the ONE ROOM RULE above. The per-tier
+  // bedSlop/bathSlop numbers no longer gate anything: a rung cannot be looser
+  // than the room rule, and a rung that was tighter (bedSlop 1 on a faraway
+  // rung) was re-imposing the wall the rule deliberately opened.
 
   const customOrNew = isCustomOrNewSubject(
     {
@@ -727,20 +682,6 @@ const BRACKET_MAX_AGE_MONTHS = 24
  */
 function inSubjectPlat(subject: PricingSubject, sale: PricingSale): boolean {
   return isClusterPocket(subject) ? saleInExclusivePocket(subject, sale) : samePlat(subject, sale)
-}
-
-/** Which room counts differ, on a sale the plat rung took regardless. */
-function roomDifferenceNotes(subject: PricingSubject, sale: PricingSale): Array<'beds' | 'baths'> {
-  const notes: Array<'beds' | 'baths'> = []
-  const w = (n: number | null | undefined) =>
-    n == null || !Number.isFinite(n) || n <= 0 ? null : Math.floor(n)
-  const sb = w(subject.beds)
-  const cb = w(sale.beds)
-  if (sb != null && cb != null && sb !== cb) notes.push('beds')
-  const sa = w(subject.baths)
-  const ca = w(sale.baths)
-  if (sa != null && ca != null && sa !== ca) notes.push('baths')
-  return notes
 }
 
 function bracketEligible(

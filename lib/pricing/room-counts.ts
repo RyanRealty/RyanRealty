@@ -25,7 +25,8 @@
  * size, disclose the rest.
  *
  * Baths are compared on the WHOLE count, so a half bath never decides whether a
- * sale is usable — the same convention `bathCountCompatible` has always used.
+ * sale is usable. Picker and review both call `roomCountsDecision`
+ * (lib/pricing/room-ground.ts), which is this function plus own-ground.
  */
 
 /** How far apart two room counts may be on the subject's own ground. */

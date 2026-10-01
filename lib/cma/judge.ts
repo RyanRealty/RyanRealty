@@ -46,6 +46,8 @@ import type { CmaComp, CmaMarketContext, CmaSubject } from '@/lib/cma/types'
 import { setJudgeUnavailableReason } from '@/lib/cma/llm-unavailable'
 import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
 import { SAME_STREET_SIZE_BAND, sameStreetPeer } from '@/lib/pricing/price-anchor'
+import { roomCountsDecision } from '@/lib/pricing/room-ground'
+import { roomDifferenceSentence } from '@/lib/pricing/room-counts'
 import {
   EXCLUSION_BASES,
   checkJudgmentConsistency,
@@ -58,7 +60,7 @@ import {
   type CompVerdict,
   type ExclusionBasis,
 } from '@/lib/cma/judge-consistency'
-import { groundVote } from '@/lib/cma/judge-ground'
+import { groundVote, isRoomCountExclusion } from '@/lib/cma/judge-ground'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { claimCompOf, narrativeClaimFindings, stripRefutedSentences, type ClaimComp } from '@/lib/cma/narrative-claims'
 import {
@@ -177,6 +179,9 @@ function describeComp(c: CmaComp): string {
     c.address,
     c.subdivision ? `subdiv=${c.subdivision}` : null,
     `${c.beds ?? '?'}bd/${c.baths ?? '?'}ba`,
+    c.roomDifference?.length
+      ? `room-note: one ${c.roomDifference.map((n) => (n === 'beds' ? 'bedroom' : 'bathroom')).join(' and ')} different on own ground, $0 on the room`
+      : null,
     `${c.sqft}sqft`,
     c.lotAcres != null ? `${c.lotAcres}ac lot` : null,
     c.yearBuilt ? `built ${c.yearBuilt}` : null,
@@ -291,6 +296,12 @@ const SYSTEM =
   'CUSTOM AND NEW CONSTRUCTION: do not exclude a same-generation custom or new-construction peer as too luxury, ' +
   'too expensive, or a premium tier. Year and quality outrank price. A 2022 custom sale is a peer to a 2024 custom ' +
   'subject even when it sold higher. ' +
+  'THE ONE ROOM RULE (locked, beds and baths, same decision). Same whole count travels anywhere. ONE whole room ' +
+  'apart is used only on the subject\'s own ground — its plat, its mapped neighborhood, or its own street — and is ' +
+  'disclosed on the sale. Do not exclude that sale for the room gap, and apply no dollar value to the room. Two or ' +
+  'more whole rooms apart is refused everywhere: exclude those. A half bath never decides usability. A candidate ' +
+  'with a room-note is already on the subject\'s own ground; keep it. Code holds you to this rule the same way it ' +
+  'holds the $/sqft band. ' +
   // ── narrative discipline ───────────────────────────────────────────────────
   'THE NARRATIVE IS EVIDENCE, NOT SALES COPY. A seller reads it and an independent reviewer checks every clause ' +
   'against the data in this prompt. State what IS known: how many sales you kept, the $/sqft band, the rule that ' +
@@ -716,6 +727,34 @@ function finalizeJudgment(args: {
     v.reason = `Inside the subject's own subdivision${c.subdivision ? `, ${c.subdivision}` : ''}. A sale there is this home's price tier, so price alone does not drop it. It is carried at half weight.`
     resolvedByCode.push(`${v.listingKey}: restored, a sale in the subject's own plat cannot be dropped on price tier`)
     restoredByRule++
+  }
+
+  // THE ONE ROOM RULE IS NOT A JUDGE CALL (Matt 2026-09-10, skill 0.1).
+  // The picker and this review share roomCountsDecision. A one-room gap on
+  // own ground that the picker kept cannot be dropped for the room; a gap
+  // the rule refuses cannot stay, whatever the model said.
+  for (const v of judged.verdicts) {
+    const c = byKey.get(v.listingKey)
+    if (!c) continue
+    const rooms = roomCountsDecision(subject, c)
+    if (!rooms.ok) {
+      if (v.tier === 'exclude') continue
+      v.tier = 'exclude'
+      v.basis = 'other'
+      v.reason =
+        'Room counts are two or more whole rooms apart, or one apart off this home\'s own ground.'
+      resolvedByCode.push(`${v.listingKey}: excluded, one-room rule refuses this sale`)
+      continue
+    }
+    if (!isRoomCountExclusion(v)) continue
+    v.tier = 'strong'
+    delete v.basis
+    v.reason =
+      roomDifferenceSentence(rooms.notes) ??
+      'Room counts follow the one-room rule. This sale stays.'
+    protectedKeys.add(v.listingKey)
+    restoredByRule++
+    resolvedByCode.push(`${v.listingKey}: restored, one-room rule keeps this sale`)
   }
 
   // Band and strand violators get excluded. Their reason is written after the

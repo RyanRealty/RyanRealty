@@ -387,7 +387,7 @@ Default filter (matches the 21042 Robin exemplar):
 - `SubdivisionName = '<subject subdivision>'`
 - `PropertyType = 'A'` (MLS residential bucket, not "detached house")
 - `property_sub_type` exact match to the subject. **Same product type only.** A townhouse, condo, manufactured home, or TIC is never a comp for a Single Family Residence, and a townhouse is never a condo. Unknown subtype fails closed on priced comps, band rivals, and market-area chapters. `PropertyType='A'` mixed 14% attached/manufactured into Bend closed sales and that is how Santorini townhomes appeared next to an SFR.
-- Whole bathroom count must match the subject. A one-bath house is never priced from a two-bath sale. Unknown bath count on the sale fails closed when the subject count is known.
+- Beds and baths follow the one-room rule (§0.1, `lib/pricing/room-counts.ts`, `roomCountsDecision` in `lib/pricing/room-ground.ts`). Same whole count travels anywhere. ONE whole room apart is used only on the subject's own ground (its plat, mapped neighborhood, or own street) and is disclosed; two or more apart is refused everywhere. A half bath never decides. Unknown count is a data gap, not a mismatch. The comparability review calls the same function: it cannot exclude a sale the picker kept for a room gap this rule allows, and it cannot keep a sale this rule refuses. The retired exact-bath wall (whole bathroom count must match; a one-bath house is never priced from a two-bath sale) is not the rule.
 - `StandardStatus = 'Closed'`
 - `CloseDate >= now() - interval '24 months'`
 - `TotalLivingAreaSqFt BETWEEN <subject_sqft × 0.77> AND <subject_sqft × 1.23>` (±25%)

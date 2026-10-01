@@ -153,6 +153,37 @@ describe('the own-plat restoration (Matt 2026-09-10, two exemptions and only two
     expect(result!.keptKeys).not.toContain('PLAT')
   })
 
+  it('restores an own-plat one-bath gap the review cut for rooms (3028 vs 2834 shape)', async () => {
+    const peer = comp({
+      listingKey: '2834',
+      address: '2834 Indian',
+      baths: 2,
+      ownPlat: true,
+      closePrice: 700000,
+    })
+    const bathCut: JudgeModelCall = async () => ({
+      payload: payload([
+        ...cluster.map((c) => ({ listingKey: c.listingKey, tier: 'strong' as const, reason: 'Same plat.' })),
+        {
+          listingKey: '2834',
+          tier: 'exclude',
+          basis: 'other',
+          reason: '2 bath versus the subject 3 bath.',
+        },
+      ]),
+      raw: '{}',
+      costUsd: 0,
+    })
+    const result = await judgeComps(subject({ baths: 3, streetAddress: '3028 Indian' }), [...cluster, peer], market, {
+      callModel: bathCut,
+      minComps: 3,
+    })
+    const v = result!.verdicts.find((x) => x.listingKey === '2834')!
+    expect(v.tier).not.toBe('exclude')
+    expect(result!.keptKeys).toContain('2834')
+    expect(v.reason).toMatch(/No dollar value is applied to the room|one-room rule/i)
+  })
+
   it('does not restore an own-plat sale excluded for something other than price', async () => {
     const productCut: JudgeModelCall = async () => ({
       payload: payload([

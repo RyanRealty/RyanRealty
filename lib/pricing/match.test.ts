@@ -166,14 +166,10 @@ describe('walkPricingLadder', () => {
     expect(out.comps.map((c) => c.listingKey)).not.toContain('AWAY')
   })
 
-  // Matt 2026-09-10 opened the subject's OWN plat: "location is the primary
-  // thing... we might even comp it out against a 4-bedroom." The room rule
-  // still holds everywhere else.
-  it('takes two whole baths apart inside the subject’s own plat, and records it', () => {
+  it('refuses two whole baths apart even inside the subject’s own plat', () => {
     const pool = [sale({ listingKey: 'FOUR', baths: 4, address: '16 Kenwood' })]
     const out = walkPricingLadder(subject({ baths: 2 }), pool, { asOf })
-    expect(out.comps.map((c) => c.listingKey)).toEqual(['FOUR'])
-    expect(out.comps[0]!.roomDifference).toEqual(['baths'])
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('FOUR')
   })
 
   it('still refuses two whole baths apart outside the plat', () => {
@@ -827,12 +823,15 @@ describe('walkPricingLadder', () => {
       }),
     ]
     // Live starve: Rim View is outside Bend GIS (null mesh) while same-gen
-    // North Rim peers resolve into Awbrey Butte. Perspective is 3 baths.
+    // North Rim peers resolve into Awbrey Butte. Whole-bath match: a 3-bath
+    // Perspective sale is one off this 4-bath subject and off its ground, which
+    // the one-room rule refuses. This test is year/quality, not the retired
+    // custom ±1 bath window.
     const perspective = sale({
       listingKey: 'PERSPECTIVE',
       address: '2060 NW Perspective Dr',
       beds: 4,
-      baths: 3,
+      baths: 4,
       yearBuilt: 2023,
       subdivision: 'Bend North Rim',
       subdivisionNorm: 'bend north rim',
@@ -872,7 +871,7 @@ describe('walkPricingLadder', () => {
       listingKey: 'NORTH_RIM_2021',
       address: '1900 NW North Rim',
       beds: 4,
-      baths: 3,
+      baths: 4,
       yearBuilt: 2021,
       subdivision: 'Bend North Rim',
       subdivisionNorm: 'bend north rim',
@@ -956,7 +955,7 @@ describe('walkPricingLadder', () => {
       listingKey: 'PERSPECTIVE',
       address: '2060 NW Perspective Dr',
       beds: 4,
-      baths: 3,
+      baths: 4,
       yearBuilt: 2023,
       subdivision: 'Bend North Rim',
       subdivisionNorm: 'bend north rim',
@@ -994,7 +993,7 @@ describe('walkPricingLadder', () => {
       listingKey: 'NORTH_RIM_2021',
       address: '1900 NW North Rim',
       beds: 4,
-      baths: 3,
+      baths: 4,
       yearBuilt: 2021,
       subdivision: 'Bend North Rim',
       subdivisionNorm: 'bend north rim',
@@ -1378,7 +1377,7 @@ describe('your own street comes first', () => {
       address: '31 Benaiah',
       sqft: 2080,
       beds: 4,
-      baths: 4,
+      baths: 2,
       closeDate: '2025-07-08',
       closePrice: 512_000,
       lastAsk: 499_000,
