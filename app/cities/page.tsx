@@ -653,9 +653,6 @@ async function renderCitiesIndex() {
             <HomeHomesRails
               rows={railRows}
               emptyMessage="No photographed homes with a published price on this refresh."
-              // The homepage's shelves, held on the carousels with it
-              // (Matt 2026-09-25, "fix first, then ship").
-              layout="rails"
             />
           </div>
         ) : null}

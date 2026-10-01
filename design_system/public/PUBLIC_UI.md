@@ -214,8 +214,12 @@ thumbnail, previous/next, arrow keys, Home/End, or a swipe on the photograph.
   `publicCardStatusLabel`: Active Under Contract is "Under contract" on every dial, the
   word the counts over it use.
 - **Held until their taste marks (Matt 2026-09-25, "fix first, then ship").** The homepage
-  and `/cities` shelves and community pages keep production's presentation (their
-  carousels) until each reaches its mark.
+  shelves (`HomeHomesRails layout="rails"`) and community pages (`PlaceSubdivisionMap
+  layout="rails"`) keep production's presentation (their carousels) until each reaches its
+  mark. On 2026-10-01 the dial scored 59 and 58 against the homepage's 67, and the community
+  class 66 then 55 against its 64 with honesty 6 and 7 against its receipt's 8 (a community
+  has no months-of-supply read to open on). The `/cities` index shelves reached theirs (64
+  against 62) and are dials.
 - **A set of towns is not a stack of dials (2026-09-30).** `/commercial-space-for-lease`
   leads with the busiest town on a full dial; every other town is one row of a drawer
   (a `<details>` each, busiest first, the first open) that opens to its own dial, or to its

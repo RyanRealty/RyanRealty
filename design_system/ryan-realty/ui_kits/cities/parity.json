@@ -30,6 +30,11 @@
       "blocking": true
     },
     {
+      "name": "HomeHomesRails",
+      "section": ".cities-fold__homes -- the homepage shelves under the fold (homes in Bend and nearby, new this week), each a V3ListingDial (Matt 2026-09-24; held on the carousels 2026-09-25 until the /cities class reached its taste mark with the dial, 2026-10-01): one home large, the rest as thumbnails, rail positions by page order. Every listing an <a href> in the served HTML.",
+      "blocking": true
+    },
+    {
       "name": "V3Ledger",
       "section": "Ledger — every city A–Z. Every row a door, the live count in the value column. Caption, not a five-number Instrument.",
       "blocking": true
@@ -92,6 +97,7 @@
     "V3Breadcrumb",
     "CitiesDirectory #city-directory -- photo + name + live count in the first viewport",
     "V3Atlas #atlas -- the drawing",
+    "HomeHomesRails .cities-fold__homes -- the shelves on listing dials (bottom, left)",
     "V3Ledger #featured-cities -- EVERY city A–Z in one ledger, live count on the row, each row a door",
     "V3Quiet #city-doors -- deep filter doors per featured city; ci:westside-backlog pins the Bend luxury door here",
     "RegionalAlertSheet -- the ask",
@@ -103,13 +109,12 @@
     "items": []
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-21",
+    "evaluatedAt": "2026-10-01",
     "rubricVersion": "v1-2026-09-12",
-    "demoMatch": false,
-    "evaluator": "npx tsx scripts/taste-evaluate.ts cities --builder grok-4.5 --evaluator auto --url http://127.0.0.1:3463/cities --shots desktop.png,mobile375.png,combo-open-desktop.png,combo-open-mobile375.png. Judge grok-4.6 through cursor-agent (cursor-grok-4.6-high). Three scorings of the four PNGs. The builder did not grade the page.",
-    "evaluatorModel": "grok-4.6",
-    "builderModel": "grok-4.5",
-    "transport": "cursor-cli",
+    "evaluator": "npx tsx scripts/taste-evaluate.ts cities --builder claude-opus-5-5 --evaluator claude --url http://127.0.0.1:3311/cities --shots <the 8 files below>. The grok CLI and the Cursor CLI are missing in this sandbox, so the judge is the chain's claude link (claude CLI, the sonnet alias pinned to claude-sonnet-5, subscription): three scorings of these shots in one call, recorded exactly as returned, no re-roll. The builder (the dial-finish lane, claude-opus-5-5) is not the judge.",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "claude-opus-5-5",
+    "transport": "claude-cli",
     "shotSpec": {
       "routes": [
         "/cities"
@@ -120,38 +125,46 @@
       ],
       "states": [
         "default",
-        "combo-open"
+        "combo-open",
+        "homes",
+        "homes-open"
       ],
-      "capture": "first viewport, 1440×900 and 375×812, scale 1, palette-quantized. combo-open = [data-taste=city-combo] input click. Lane next dev --webpack :3463."
+      "capture": "node scripts/take-route-shots.mjs cities http://127.0.0.1:3311/cities --states 'combo-open=[data-taste=city-combo] input!click,homes=.cities-fold__homes,homes-open=.cities-fold__homes .v3-dial__thumbs > :nth-child(2)@.cities-fold__homes!click'. First viewport, scale 1, palette-quantized, against the dial-finish tree's own next build + next start (2026-10-01, build b2). The mark this receipt is held to is main's /cities judged on the same ruler the same day, same states with the carousel's own turn (.v3-carousel__step--next) for homes-open: [63, 57, 62], median 62."
     },
     "shots": {
-      "desktop": "design_system/ryan-realty/ui_kits/cities/shots/desktop.png",
-      "mobile375": "design_system/ryan-realty/ui_kits/cities/shots/mobile375.png",
       "comboOpenDesktop": "design_system/ryan-realty/ui_kits/cities/shots/combo-open-desktop.png",
-      "comboOpenMobile375": "design_system/ryan-realty/ui_kits/cities/shots/combo-open-mobile375.png"
+      "comboOpenMobile375": "design_system/ryan-realty/ui_kits/cities/shots/combo-open-mobile375.png",
+      "desktop": "design_system/ryan-realty/ui_kits/cities/shots/desktop.png",
+      "homesDesktop": "design_system/ryan-realty/ui_kits/cities/shots/homes-desktop.png",
+      "homesMobile375": "design_system/ryan-realty/ui_kits/cities/shots/homes-mobile375.png",
+      "homesOpenDesktop": "design_system/ryan-realty/ui_kits/cities/shots/homes-open-desktop.png",
+      "homesOpenMobile375": "design_system/ryan-realty/ui_kits/cities/shots/homes-open-mobile375.png",
+      "mobile375": "design_system/ryan-realty/ui_kits/cities/shots/mobile375.png"
     },
-    "shotsHash": "sha256:e93c0dc3a611d689f81653f2a9086caadc47389ebba552c935305b7a36dc1b49",
+    "shotsHash": "sha256:767d36707fc1b25a66c2fb9f409a28a35e272082aed0bd56184a2d61b58dc7b2",
     "scores": [
-      51,
-      59,
-      54
+      62,
+      64,
+      67
     ],
-    "score": 54,
+    "score": 64,
     "criteria": {
-      "designQuality": 16,
-      "originality": 15,
-      "interaction": 8,
-      "craft": 7,
-      "honestyFunction": 8
+      "designQuality": 19,
+      "originality": 18,
+      "interaction": 10,
+      "craft": 8,
+      "honestyFunction": 9
     },
     "perCriterion": {
-      "design": 16,
-      "originality": 15,
-      "interaction": 8,
-      "craft": 7,
-      "honesty": 8
+      "design": 19,
+      "originality": 18,
+      "interaction": 10,
+      "craft": 8,
+      "honesty": 9
     },
-    "beats": "Versus Zillow Bend homes (https://www.zillow.com/bend-or/): desktop has sourced 4.4-month named-bar MOS and a non-Google Atlas. Versus Visit Bend: photography now leads the INDEX fold (photo + name + live count). Versus NYT Upshot: bars encode leftover inventory on the row. First-viewport named cities are tappable at 1440 and 375.",
+    "honestyFunction": 9,
+    "demoMatch": false,
+    "beats": "Zillow Bend homes directory (https://www.zillow.com/bend-or/) — this page wins on market depth: the MOS overlay panel gives a seller's/buyer's-market read per city in one control, something Zillow's plain city list doesn't attempt. It does not win on map density or saved-search tooling, and the directory grid itself is still a weaker version of Zillow's own tile-with-count pattern, not a clear beat.",
     "adaptedFrom": [
       {
         "id": "beui-infinite-masonry"
@@ -175,60 +188,58 @@
         "id": "house-alerts"
       }
     ],
-    "tells": [
-      "Cream box. — combo-open: Overlay a city is a labeled hairline field whose cream popover is not the beUI combobox object (options restyled into a jammed grid, list inverted over the photographs, no visible check).",
-      "Cream box. — Directory / Tap a city: InfiniteMasonry is a clipped six-up photo strip (desktop) and a 2×2 tile grid (375), not the masonry demo (no load-more, no stacked columns, Bend's tall cell reads as a layout break)."
-    ],
-    "dullest": "The opened Overlay a city list: three cream rows parked on top of the new city photographs, with names jammed into the months (Bend3.4 mo), so the only compare on the page hides the only original move.",
-    "verdict": "SITE-161 put photographed city doors (Bend, Redmond, Sisters, Sunriver, and two more) with live for-sale counts in the first viewport at 1440 and 375. That is the class job. The table-instrument judge (grok-4.6) scored median 54 with demoMatch false: combobox open is still a cream popover, masonry is a clipped strip not the load-more demo, alerts clip under Jax at 375, Atlas $ pills smear (SITE-159 exclusive — not retouched). Finish line 70 not reached. Node stays in_progress.",
     "defects": [
       {
-        "section": "Directory / Tap a city (cities-directory)",
-        "severity": "taste",
-        "finding": "The first viewport is a cropped photo row, not beUI infinite-masonry: six uneven tiles, Bend's taller cell looks broken, no load-more or stacked columns, and the navy underlines are too thin to feel magnitude before the numeral.",
-        "replaceWith": "beui:infinite-masonry"
-      },
-      {
-        "section": "Overlay a city against the region (combo-open)",
-        "severity": "taste",
-        "finding": "Opened control is a cream rectangle of three jammed rows covering the new photographs; city name runs into the months (Bend3.4 mo); search sits below the list; a person opening the beUI combobox demo would not recognize this as the same object.",
+        "section": "combo-open (Search a city combobox)",
+        "severity": "defect",
+        "finding": "The opened panel is a static cream list with per-city sliders, not the catalog combobox's morphing/filtering interaction — nothing in the shot suggests type-to-filter or a focus morph, just a dropdown that happens to carry the combobox label.",
+        "primitive": "app/cities/page.tsx",
         "replaceWith": "beui:combobox"
       },
       {
-        "section": "NEW LISTINGS / Hear about (CitiesAlertsStrip)",
+        "section": "Atlas map, mobile combo-open",
         "severity": "defect",
-        "finding": "Even in the resting desktop fold the ask is truncated to Hear about, and at 375 it reads Hear about new listings in Oregon the day they hit th — Jax and Cookies sit on the sentence.",
-        "replaceWith": "house-alerts"
+        "finding": "At 375px the pin labels collide — \"Powell Butte\" overlaps the \"650 homes $430k\" tag, and the floating Jax badge sits directly on top of the \"8 homes $1.3M\" pin, making both unreadable.",
+        "primitive": "components/site/v3/V3Atlas.client.tsx",
+        "replaceWith": null
       },
       {
-        "section": "Atlas / Cities on the map",
+        "section": "Tap a city directory grid",
         "severity": "taste",
-        "finding": "Navy marks and $K labels collide into a smear over the Bend–Redmond–Sisters cluster, so the drawing does not read as distinct places. SITE-159 owns Atlas chips — not retouched here.",
-        "replaceWith": "house-atlas"
+        "finding": "The underline bar beneath each city name is too thin and too close in length across cards to actually let a visitor compare 725 vs. 259 vs. 48 at a glance — you still have to read the numeral, so the \"shared-scale mark instead of a bare numeral\" fix from the reference file only half-landed.",
+        "primitive": "components/site/v3/V3PlaceIndex.tsx",
+        "replaceWith": "beui-infinite-masonry"
       },
       {
-        "section": "mobile375 first viewport",
+        "section": "Section rhythm (Central Oregon / Directory / Cities on the Map / Overlay)",
         "severity": "taste",
-        "finding": "The 375 fold is directory plus combobox plus a clipped ask — no Atlas drawing and no months-of-supply bars — which breaks the place-page lock that a drawing and a figure sit beside the alerts sentence.",
-        "replaceWith": "house-atlas"
+        "finding": "Four consecutive section openers use the same eyebrow-caps-then-bold-heading beat with no variation in width, density, or type scale, so the page reads as one long form repeated rather than four distinct moments.",
+        "primitive": "app/cities/page.tsx",
+        "replaceWith": null
       },
       {
-        "section": "months-of-supply scale (right column, desktop)",
-        "severity": "defect",
-        "finding": "Balanced is said three times in one column (Seller ≤4 · balanced 4–6 · buyer ≥6, the SELLER'S/BALANCED/BUYER'S labels, and Balanced market at 4.4 months), which is padding, not one claim.",
-        "replaceWith": "house-mos"
+        "section": "Homes-in-Bend-and-nearby price ladder",
+        "severity": "taste",
+        "finding": "The price-ladder scrubber and \"Near this price\" comp list are the strongest section on the page but the thumbnail rail beneath it is a plain 6-up photo strip with price/bd captions — no card-body detail (sqft, $/sqft) visible until you click into the big card, so the rail itself still reads as a generic carousel.",
+        "primitive": "app/cities/page.tsx",
+        "replaceWith": "beautifului:insight-cards"
       }
     ],
+    "verdict": "This is a page that genuinely tried to answer Matt's 'wall of text, scrolling lists' complaint — it has a real styled map, a seller/buyer MOS overlay, and a price-ladder scrubber with comps, which is more interaction than the 2026-09-08 mark (30) implies existed before. But demoMatch is false: the combobox is a cream panel, not the catalog's morphing search, and craft slips at mobile width where map labels and the floating Jax badge collide. The directory grid at the top — the section most visitors see first — is still the dullest thing on the page, and the eyebrow-heading rhythm repeats enough times down the fold to read as one stacked form rather than four considered sections.",
     "comparedToPrior": "rebaselined",
-    "rebaselineReason": "evaluatorModel claude-sonnet-5 to grok-4.6 (table instrument via cursor-cli). shotsHash changed with SITE-161 directory fold (photo + name + live count in the first viewport).",
     "priorMark": {
-      "evaluatedAt": "2026-09-16",
-      "score": 60,
-      "evaluatorModel": "claude-sonnet-5",
+      "evaluatedAt": "2026-09-21",
+      "score": 54,
+      "evaluatorModel": "grok-4.6",
       "rubricVersion": "v1-2026-09-12",
-      "shotsHash": "sha256:3682c41cc154e9c842ac1c31e2e0faba97d3f3c742f42f6b234477469f61cad8"
+      "shotsHash": "sha256:e93c0dc3a611d689f81653f2a9086caadc47389ebba552c935305b7a36dc1b49"
     },
-    "notes": "honestyFunction 8, equal to the prior mark. SEO: crawlable /cities/{slug} anchors in the served HTML of #city-directory plus CollectionPage ItemList. Information: each fold card carries a live for-sale count from leftover Market Truth / snapshot / index. UX: directory in the first viewport at 1440 and 375. demoMatch false — node stays in_progress. Atlas CSS not edited (SITE-159)."
+    "tells": [
+      "The stacked-section page. — \"Central Oregon\" / \"Directory\" / \"Cities on the Map\" / \"Overlay a City Against the Region\" all open with the identical small-caps eyebrow + bold-heading beat, varying only what sits underneath.",
+      "Cream box. — the \"Search a city…\" control opens into a flat, bordered cream panel of static rows (Bend / La Pine / Madras, each with a slider); there is no morph, no match-highlighting, nothing that reads as the catalog combobox interaction — it is a restyled dropdown wearing the name."
+    ],
+    "dullest": "The 'Tap a city' photo grid: six same-size thumbnails with a caption and a count underneath. Even with the new underline bar it is still functionally Zillow's city picker — pretty photos standing in for data, not a real encoding of magnitude.",
+    "rebaselineReason": "evaluatorModel grok-4.6 to claude-sonnet-5 (the chain's claude link; the grok links are missing in this sandbox) and shotsHash (the shelves under the fold are listing dials, 2026-10-01). Same-ruler mark: main's /cities on claude-sonnet-5 the same day scored [63, 57, 62], median 62; this tree scores 64."
   },
   "contentFloor": {
     "seededAt": "2026-09-12",
