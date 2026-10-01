@@ -436,7 +436,10 @@ was shown the causes below and ruled:
 5. **Every edition is rebuilt and republished from the corrected data** ("Republish all 248").
    Homes for sale on a past day count `Active` only (§2.2): an Active listing with a Contingency
    (this MLS's Active Under Contract) is under contract, not for sale; 22 of the 1,258 homes the
-   August 2026 edition counted on 2026-08-31 were. Seller concessions print only where the Yes/No
+   August 2026 edition counted on 2026-08-31 were. The episode builder reads it that way from migration
+   `20261001222207_span_under_contract` (a Contingency set while Active ends the episode as
+   under contract; cleared while Active, the home is back on the market). In the 9,201 full
+   histories pulled that day: 479 set, 167 cleared, none in the same edit as a return to Active. Seller concessions print only where the Yes/No
    field covers 90% of the period's sales (`CONCESSION_COVERAGE_MIN`): before mid-2023 the field
    was filled almost only when a concession was given, so the printed share read 100% (261 notes
    in 117 PDFs), and Spark serves it on 1 of August 2016's 461 sales today.
