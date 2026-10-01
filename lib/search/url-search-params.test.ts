@@ -4,10 +4,13 @@
  * hook and the bridge are React and run in the browser; the store under them
  * is plain state and is what these tests pin.
  */
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   navigateQuery,
   normalizeSearch,
+  publishFromRouter,
   publishUrlSearchParams,
   readUrlSearchParams,
   resetUrlSearchParamsForTests,
@@ -60,5 +63,41 @@ describe('navigateQuery', () => {
     const router = { push: vi.fn(), replace: vi.fn() }
     navigateQuery(router, '/cities/bend?beds=3', { staticShell: true })
     expect(router.push).toHaveBeenCalledWith('/cities/bend?beds=3', { scroll: false })
+  })
+})
+
+describe('the root bridge', () => {
+  beforeEach(() => resetUrlSearchParamsForTests())
+  afterEach(() => {
+    resetUrlSearchParamsForTests()
+    vi.unstubAllGlobals()
+  })
+
+  it('publishes the address bar, not a router copy still waiting on the server', () => {
+    // A filter write put maxPrice in the address bar and the store; the
+    // router's useSearchParams() still holds the old empty query.
+    vi.stubGlobal('window', { location: { search: '?maxPrice=750000' } })
+    publishUrlSearchParams('?maxPrice=750000')
+    publishFromRouter('')
+    expect(readUrlSearchParams()).toBe('maxPrice=750000')
+  })
+
+  it('carries a navigation the router made into the store', () => {
+    vi.stubGlobal('window', { location: { search: '?beds=3' } })
+    publishUrlSearchParams('?maxPrice=750000')
+    publishFromRouter('beds=3')
+    expect(readUrlSearchParams()).toBe('beds=3')
+  })
+
+  it("uses the router's query where there is no window", () => {
+    publishFromRouter('beds=4')
+    expect(readUrlSearchParams()).toBe('beds=4')
+  })
+
+  it('is what the bridge calls', () => {
+    const src = readFileSync(resolve('lib/search/url-search-params.client.tsx'), 'utf8')
+    const bridge = src.slice(src.indexOf('function Bridge()'), src.indexOf('export function UrlSearchParamsBridge'))
+    expect(bridge).toMatch(/publishFromRouter\(search\)/)
+    expect(bridge).not.toMatch(/publishUrlSearchParams\(/)
   })
 })

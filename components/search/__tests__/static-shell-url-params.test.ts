@@ -52,7 +52,8 @@ describe('static shell: the split view client tree reads the URL through the sto
     const src = read('lib/search/url-search-params.client.tsx')
     expect(src).toMatch(/import \{[^}]*\buseSearchParams\b[^}]*\} from 'next\/navigation'/)
     expect(src).toMatch(/<Suspense fallback=\{null\}>\s*<Bridge \/>\s*<\/Suspense>/)
-    expect(src).toMatch(/useLayoutEffect\(\(\) => \{\s*publishUrlSearchParams\(search\)/)
+    // It publishes the address bar, which never lags the router (publishFromRouter).
+    expect(src).toMatch(/useLayoutEffect\(\(\) => \{\s*publishFromRouter\(search\)/)
   })
 
   it('the root mounts the bridge once', () => {

@@ -123,13 +123,29 @@ export function useUrlSearchParams(): ReadonlyURLSearchParams {
   return useMemo(() => new ReadonlyURLSearchParams(new URLSearchParams(search)), [search])
 }
 
+/**
+ * What the root bridge publishes when it mounts or the router's query changes:
+ * the address bar, not the router's copy. A filter write on a dynamic page
+ * lands in the address bar at once and then router.pushes; Next discards the
+ * RESTORE that the pushState raised, so useSearchParams() keeps the old query
+ * until the server round trip lands. A bridge mounting in that window (its
+ * Suspense boundary hydrating after the visitor's first click, as on a slow
+ * runner) published the old query over the store, and the next filter write
+ * dropped the price (Post-Deploy Smoke, 2026-10-01). Next writes the address
+ * bar in the same commit that changes its query, before layout effects run,
+ * so the address bar is never behind it. With no window it is the router's.
+ */
+export function publishFromRouter(routerSearch: string): void {
+  publishUrlSearchParams(typeof window === 'undefined' ? routerSearch : readLocation())
+}
+
 function Bridge() {
   const searchParams = useSearchParams()
   const search = searchParams?.toString() ?? ''
   // Layout effect: publish before paint so a navigation never paints a frame
   // whose chips read a stale query beside fresh server props.
   useLayoutEffect(() => {
-    publishUrlSearchParams(search)
+    publishFromRouter(search)
   }, [search])
   return null
 }
