@@ -1,5 +1,131 @@
 # Current — 2026-09-30 (listing dial live via PR #392; G80 listing phone-fold gate via PR #394; Vault mail rules v4.1 in the PR after #394, re-decide apply pending; monthly market report live via PRs #376 and #391; its monthly email drafts, Market menu door and the MLS-removal cleanup via PR #400; CMA rebuild safety on `tip/cma-rebuild-safety`, unmerged)
 
+## CMA comp selection: HANDOFF (2026-09-30 evening, session_01G97LyABEBbzktDiCgMFAYp, stood down)
+
+**Read this first if you are taking over the CMA engine.** Matt asked for a handoff to a stronger agent. This session has stopped: no pushes, merges or rebuilds after this block.
+
+### What happened
+Six expired-listing CMAs went to owners on 2026-09-30. Four were priced 21% to 28% under the last list, and all four are wrong:
+- They were priced off the wrong sales.
+- The listing's own features were never read.
+
+At Matt's call, their pages were taken down (`status='archived'`, `archived_at` 2026-09-30T22:48:59Z, with a timeline note on each owner):
+- `cma-3759-45th-redmond-97756`
+- `cma-3573-47th-redmond-97756`
+- `cma-714-wrangler-sisters`
+- `cma-2955-bentwood-redmond-97756`
+
+### The root cause, in Matt's words: "It's not the prices that make the comp"
+**The engine chooses comps by their sale prices.** Comps must be chosen by the home: location, size, age, lot and features. The price is the output. Four steps pick or cut comps by price:
+
+| Commit | Date | What it does | Where |
+|---|---|---|---|
+| `27380850c` | 2026-09-10 | Grades every comp against the subject's "price tier" (`resolvePriceAnchor`, the 30% subdivision $/sqft tier gap). | `passesTier` in `lib/pricing/match.ts` |
+| `6369cb440` | 2026-09-15 | The quarter-mile "pocket" of other plats counts as the subject's own ground, and its rungs keep running after five sales. | `if (byKey.size >= PRICING_TARGET_COMPS && !isPocketExclusiveTier(tier))` in `lib/pricing/match.ts` |
+| `7842575df` | 2026-09-22 | "price from five tight sales." `keepTightestByClosePrice` (`lib/pricing/ladder.ts:453`) cuts the gathered set to five by dropping the sale farthest from the pooled **median close price**, repeatedly. This is the regression Matt felt: when neighboring tracts outnumber the plat, their prices set the median and the home's own sales are cut. | `lib/pricing/ladder.ts:453` |
+| `e172fe758` | 2026-09-29 | The comp-review judge excludes by price band. The 45th narrative says: "Sales below that band were excluded as a cheaper price tier." | `lib/cma/judge.ts` |
+
+Other defects in the same path:
+- `similarity()` (`lib/pricing/match.ts` ~859) has no tier priority. Distance is weight 0.18 of `1/(1+mi/2)`.
+- `bracketGla` can swap an own-plat sale for any pool sale.
+- The own-street rung matches a same-named street across town. For 3759 45th (Redtail Ridge) it admitted 2457 45th (Emerald View Estates).
+- The subject's MLS remarks (`listings.public_remarks`) are never read for an ADU, an extra tax lot, acreage, view, RV/shop or a short-term rental. They are never matched in comps, and never adjusted for.
+
+**Scope:** 92 of 171 CMAs built since 2026-09-29 dropped own-street or own-subdivision sales while pricing sales from other tracts. The metric: `comps_added` summed over the ladder's `own-street*` and `subdivision*` rungs, against those tiers in `build_summary.comp_selection.final_tier_counts`.
+
+### Evidence (queried 2026-09-30 from `cmas`, `cma_comps` and `listings`; re-verify before using)
+
+**3759 45th, Redtail Ridge.** Subject: 2,186 sf, built 2020, custom Malace home, corner lot. Sent at $618,000 against a last list of $849,000.
+- The ladder found 8 own-street and own-subdivision sales plus 18 pocket sales. The priced set holds none from Redtail Ridge:
+
+  | Sale | Tract | Close | Date |
+  |---|---|---|---|
+  | 2457 45th | Emerald View Estates | $629,000 | 2026-07-30 |
+  | 4733 Badger | North Trailside | $619,000 | 2026-07-17 |
+  | 4119 Badger | Prairie Crossing | $633,500 | 2026-04-09 |
+  | 4701 Coyote | North Trailside | $625,315 | 2025-11-13 |
+  | 4255 Badger | Kampstra | $625,000 | 2025-10-30 |
+
+- Redtail Ridge's own closed sales:
+
+  | Sale | Close | Date | Size |
+  |---|---|---|---|
+  | 3638 45th | $770,000 | 2026-06-03 | 1,806 sf |
+  | 3499 44th | $790,000 | 2026-06-18 | 2,054 sf |
+  | 3769 43rd | $895,000 | 2026-02-25 | 2,580 sf |
+  | 4469 Antelope | $930,000 | 2026-03-02 | 2,519 sf |
+  | 3573 44th | $878,500 | 2025-09-04 | 2,188 sf |
+
+**3573 47th, Forked Horn Butte.** Sent at $791,000 against a last list of $1,098,000.
+- The remarks describe the 2,117 sf main house plus "an attached 712-square-foot accessory dwelling with private access". The letter never mentions the ADU.
+- The comps have no ADUs: 4530 Yew $810,000, 4570 Yew $789,000, 3533 47th $825,000, 3633 47th $740,000.
+- The same subdivision's ADU sale: 4660 Antelope, $945,000, 2025-04-30, 1,819 sf plus a two-bedroom attached ADU.
+
+**714 Wrangler, Sisters.** Sent at $755,000 against a last list of $999,900.
+- The remarks say it is a short-term rental and "includes a fully developable 2nd tax lot". The letter never mentions either.
+- Comps: 410 Timber Creek $725,000, 801 Wrangler $795,000, 405 Timber Creek $720,000, 355 Timber Creek $780,000.
+
+**2955 Bentwood.** Sent at $652,000 against a last list of $825,000.
+- Subject: 0.55 ac with RV room (remarks).
+- Every comp sits on 0.11 to 0.23 ac.
+- Nearest similar lot: 4019 Umatilla (Sunset Summit, 0.24 mi), 2,543 sf, 0.54 ac, detached shop, $890,000 on 2025-08-01.
+
+**Still live:**
+- 4337 Salmon at 90.6% of its last list ($670,000 against $739,900). It kept 1 of 3 own-plat sales, so re-check it.
+- 3400 11th at 93.8% ($516,000 against $550,000).
+
+**Backtest** (`docs/research/cma-backtest-2026-08-05.json`, 3,394 failed-then-sold pairs): close over failed ask is p10 0.802, p25 0.886, median 0.942.
+
+### What another session already changed (on main, `69884e11a`, 2026-09-30 23:07Z, author "Matt")
+- **Pocket rungs:** they no longer run once the plat has 5 sales. What is still wrong:
+  - `keepTightestByClosePrice` still cuts inside the plat by price.
+  - A plat with fewer than 5 sales still mixes in the pocket and trims the result by price.
+  - The price-tier grading and the judge's price-band exclusions are untouched.
+- **Gap hold:** `lib/cma/gap-hold.ts` holds a recommendation that is more than 15% under the last ask, or any amount above it, on approve, the queue and the prospecting intros. It fails open: a missing price is not held.
+
+### Production and branches at handoff
+- **Main:** `69884e11a`. It includes #401 (only the review's kept sales price, narrative claim checks) and #405 (tracked email visits). Both are deployed and `deploy:verify` is green.
+- **Nothing sends:**
+  - Matt's `EXPIRED_FIRST_TOUCH_DRIP_HARD_STOP = true` (`lib/data/prospecting/drip-schedule.ts`, `3e65261fc`).
+  - The expired and FSBO outreach queue is empty (queued 0, sending 0).
+  - The bulk rebuild is stopped at 198 of 261. Do not restart it on this engine.
+- **54440 Huntington** (`cma-54440-huntington`) is finalized at 56.3% of its last list ($662,000 against $1,175,000) and was never sent. Its page stays live until a serve-side hold ships.
+- **PR #408 `claude/cma-send-floor`** (head `4bc3d1bdd`; pushed at handoff, so if the remote still shows `faf9638f3` the review fixes did not land). It holds Matt's 80% line on every path:
+  - The line: an expired CMA under 80% of its last list never sends. Answered in chat 2026-09-30, "Under 80%". It fails closed.
+  - Send paths covered: the `sendCmaToLead` rail, approve, unarchive, both prospecting intros (code `price-floor`), `finalizeAndDeliverCma`, the CRM composer and Messages attach, the Gmail-draft route, listing publish, and the public page ("This report is being updated").
+  - Gate `ci:cma-send-floor` (G81, 19 break tests).
+  - Unarchive restores a report rebuilt since its approval as a draft.
+  - An adversarial review's findings are all fixed in `56eecc3f3` and `4bc3d1bdd`.
+  - **It overlaps `69884e11a`.** Matt must pick one number: 80% fail-closed on every path, or 15% under/above-ask fail-open on approve (or both, strictest wins). He must also say whether above-ask holds. Re-merge main before merging; expect conflicts in `app/actions/cma-queue.ts`, `app/actions/prospecting.ts` and `docs/DAL_INDEX.md`.
+- **PR #403 `claude/mls-relist-sync`** (head `9628fdd67`, main merged, CI pending). MLS relists now reach `listings`, and every outreach send asks the MLS first. After merge: a reconcile dry run. Ask Matt how saved-search subscribers see repaired rows before `--repair`.
+- **PR #404 `claude/market-report-subscription`** (head `bf09e8691`, CI pending). Cheryl Younger's market report. Subscription 9016 stays off until Matt approves a preview.
+- **Every merge to main makes the others conflict on `docs/DAL_INDEX.md`.** Regenerate with `node scripts/index-dal.mjs`, and use `node scripts/check-data-access.mjs --refresh` for the schema snapshot.
+- **Local only, this container:** `.claude/worktrees/own-plat` holds an uncommitted WIP from a stopped agent (22 files, about 800 lines). Its spec still chose fill sales by $/sqft closeness, so do not ship it. `lib/pricing/listing-features.ts` in it may be reusable.
+
+### The fix to build: select by the home, price by adjustment
+1. **Choose the geography first; stop at five inside the tightest geography that has them.**
+   - Order: own street segment (same name and same directional, inside the plat or within 0.25 mi), then own plat, then adjacent plats in the same neighborhood, then the pocket, then rings.
+   - Widen time before geography: Matt 2026-09-08, 12 months inside the boundary before leaving it. Matt's Murphy ruling (2026-09-22, "five then stop") is about wider rungs stretching the range. Meet it by geography and time, not by price.
+2. **Rank inside that geography by the home only:**
+   - GLA ratio, year/quality/condition, stories, beds/baths, lot class and recency.
+   - Features: ADU, extra lot, acreage, view, RV/shop, short-term rental.
+   - **Never by sale price or $/sqft.**
+3. **Remove price as a selection input:**
+   - `keepTightestByClosePrice` in selection.
+   - Price-tier and anchor exclusions in `passesTier`.
+   - The judge's price-band and price-cluster exclusion rules. The judge may exclude on evidence about the home (condition, non-arm's-length, a different product), never on price.
+4. **Price by adjusting each comp to the subject:** time, GLA, lot, ADU and second lot, features. Dispersion after adjustment is a confidence output and a review flag, never a selection input.
+5. **Features gate:** if the subject's remarks show an ADU, an extra lot, acreage (at least 2x the comps' lots and at least 0.4 ac) or short-term-rental income, and no priced comp shares it, set `needs_review` with a plain reason. Nothing auto-sends.
+6. **Tests:** build fixtures from the four homes above; each must fail on current code. Keep Matt's ruling tests green, or bring a conflict to Matt; do not choose.
+7. **Verify read-only before any rebuild.** Show before and after for the six sent homes and a sample of the 92. Matt reviews. Rebuild and send only on his explicit approval of the list.
+
+### Do not
+- Restart the bulk rebuild.
+- Send, queue or unarchive any expired CMA without Matt approving that exact list.
+- Flip the drip hard stop.
+- Use sale prices to choose comps.
+
+
 **Listing dial, phone fold gate, mail rules v4.1 (session_01EXDXy6wCdS3sTJFvcQyGQs, 2026-09-24 to 09-30).** Matt: every listing carousel becomes the listing dial (primary card, photo then video at about 1.5 s, thumbnail rail bottom by default, left or right varied across stacked dials); "fix first, then ship", no page ships a taste regression; 2026-09-29 "make decisions that optimize responsiveness and get the score" (dial design and ship calls delegated). **Shipped:** PR #392 (`7edb01006`, live in `dpl_9SoopBBoQSSQGszycgPpgmENKJVU`): the dial on `/price-drops` 68 (prior 63), city 69 (63), neighborhood 72 (66), subdivision 69 (63), place type 64 (held), place type in a community 69 (64), `/commercial-space-for-lease` 69 (66; lease map, town bars with a square-feet second measure, drawer of towns on one rent axis, dials open on the largest priced space). **Held at main's carousels** (below their marks on the dial): the homepage, the `/cities` shelves, community pages, via `layout="rails"` on `HomeHomesRails` / `PlaceSubdivisionMap`; raising them to their marks is the next dial work. SITE-193 and SITE-195 done. PR #394 (`060feef55`): G80 `ci:listing-phone-fold`, runtime gate on four live listings at 375x812 and 390x844 (address, price, facts in the fold; hero no taller than its photo; no empty band; Jax clear), wired into `ci:runtime-gates` and the ci.yml production-server step; fails 26 times with #386's phone CSS reverted. **Mail rules v4.1** (`mail-rules-v4.1-2026-09-30`, the PR after #394): eight class fixes from three read-only re-decide dry runs over all three mailboxes (73,276 rows, 0 errors), including a shared change in `lib/tc/execution-state.ts` (the sale agreement's printed "signed by Buyer and Seller" is no longer read as a signature; stricter, fewer false fully-executed reads). Golden eval 1,062 right, 1 wrong (a label error), recall 97.3%; the 25 "false files" are queue labels for 909 NW Delaware written before that file opened (09-24 22:11Z). **Next:** after the v4.1 deploy, run `npx tsx scripts/tc-mail-backfill.ts redecide --apply` in `--max-minutes 35` pieces (dry run reviewed class by class in `docs/TC_MAIL_FILING_RULES.md` "Dry run of v4.1"). Sandbox note: headless Chromium through the agent proxy drops random `/_next/static` chunks with 502, so a live check can show an error boundary that production does not serve; confirm with server HTML and Vercel logs before calling a page broken.
 
 
