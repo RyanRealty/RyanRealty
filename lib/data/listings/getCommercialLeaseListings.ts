@@ -15,6 +15,11 @@
  * from `listings.details` for exactly these keys. A lease the unit read misses
  * still lists, and its card reads "Lease rate not published".
  *
+ * THE LEAD PHOTO. getLeaseLeadPhotos reads the names and captions each lease
+ * files with its photos and picks the first photograph of the space (a map
+ * capture, a plan or a render never leads a card). A lease it did not read
+ * keeps its tile photo.
+ *
  * Tile fields come from getListingTiles (the one tile projection every card
  * reads), so the page's cards and a place page's lease section are the same
  * row.
@@ -22,6 +27,7 @@
 import { getListingTiles } from '@/lib/data/listings/getListingTiles'
 import { getLeaseRateOptions, type LeaseRateOptionsByKey } from '@/lib/data/listings/getLeaseRateOptions'
 import { getLeaseTerms, type LeaseTermsByKey } from '@/lib/data/listings/getLeaseTerms'
+import { getLeaseLeadPhotos, type LeaseLeadPhotosByKey } from '@/lib/data/listings/getLeaseLeadPhotos'
 import type { ListingTile } from '@/lib/data/types/listing'
 
 /** Above the whole feed's on-market lease count (239 on 2026-09-23). */
@@ -34,6 +40,8 @@ export type CommercialLeaseListings = {
   rateOptions: LeaseRateOptionsByKey
   /** ListingKey → the lease's terms as its listing files them, worded (getLeaseTerms). */
   leaseTerms: LeaseTermsByKey
+  /** ListingKey → its lead photograph's URL, or null when it files none (getLeaseLeadPhotos). */
+  leadPhotos: LeaseLeadPhotosByKey
 }
 
 export async function getCommercialLeaseListings(): Promise<CommercialLeaseListings> {
@@ -44,8 +52,12 @@ export async function getCommercialLeaseListings(): Promise<CommercialLeaseListi
     sort: 'newest',
     limit: COMMERCIAL_LEASE_CAP,
   })
-  if (tiles.length === 0) return { tiles, rateOptions: {}, leaseTerms: {} }
+  if (tiles.length === 0) return { tiles, rateOptions: {}, leaseTerms: {}, leadPhotos: {} }
   const keys = tiles.map((tile) => tile.listingKey)
-  const [rateOptions, leaseTerms] = await Promise.all([getLeaseRateOptions(keys), getLeaseTerms(keys)])
-  return { tiles, rateOptions, leaseTerms }
+  const [rateOptions, leaseTerms, leadPhotos] = await Promise.all([
+    getLeaseRateOptions(keys),
+    getLeaseTerms(keys),
+    getLeaseLeadPhotos(keys),
+  ])
+  return { tiles, rateOptions, leaseTerms, leadPhotos }
 }

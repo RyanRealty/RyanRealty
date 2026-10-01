@@ -22,6 +22,7 @@ import { CONTACT } from '@/lib/brand/contact'
 import { shouldHidePublicChrome } from '@/lib/site/public-chrome-hide'
 import { trackEvent } from '@/lib/tracking'
 import { aimAtPointer, headAimTransform, HEAD_AT_REST, type HeadAim } from '@/lib/geo/aim-at-pointer'
+import { jaxStepAside } from '@/lib/site/jax-step-aside'
 import {
   Dialog,
   DialogContent,
@@ -79,6 +80,55 @@ export function V3DogFloater() {
      Listeners capture on window, so a component that stops a touch from
      bubbling cannot hide the finger from him. */
   const [aim, setAim] = useState<HeadAim>(HEAD_AT_REST)
+  /* 2026-10-01: he steps aside from a listing photograph. On a phone the
+     dial's photograph runs the screen's width, and his mid-screen disc came to
+     rest over its corner as the page scrolled. Every photograph marked
+     `data-jax-clear` is measured on scroll and resize (one read per frame);
+     while his resting disc would cover one, he stands just past its nearer
+     edge (lib/site/jax-step-aside.ts), and back at rest when it has gone by.
+     The move is the CSS `translate` property, so the notice animation on the
+     disc composes with it; reduced motion drops the glide, not the move. */
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const [stepY, setStepY] = useState(0)
+
+  useEffect(() => {
+    if (hidden || typeof window === 'undefined') return
+    let rafId = 0
+    const place = () => {
+      rafId = 0
+      const el = buttonRef.current
+      if (!el) return
+      // offsetTop/offsetLeft of a fixed element ignore its translate: this is
+      // where he rests, not where he stands now.
+      const disc = {
+        top: el.offsetTop,
+        bottom: el.offsetTop + el.offsetHeight,
+        left: el.offsetLeft,
+        right: el.offsetLeft + el.offsetWidth,
+      }
+      const photos: Array<{ top: number; bottom: number; left: number; right: number }> = []
+      document.querySelectorAll<HTMLElement>('[data-jax-clear]').forEach((node) => {
+        const r = node.getBoundingClientRect()
+        if (r.width > 0 && r.height > 0) photos.push({ top: r.top, bottom: r.bottom, left: r.left, right: r.right })
+      })
+      const next = jaxStepAside(disc, photos, window.innerHeight)
+      setStepY((prev) => (prev === next ? prev : next))
+    }
+    const schedule = () => {
+      if (!rafId) rafId = window.requestAnimationFrame(place)
+    }
+    const listen = { passive: true } as const
+    window.addEventListener('scroll', schedule, listen)
+    window.addEventListener('resize', schedule, listen)
+    window.addEventListener('load', schedule, listen)
+    schedule()
+    return () => {
+      window.removeEventListener('scroll', schedule)
+      window.removeEventListener('resize', schedule)
+      window.removeEventListener('load', schedule)
+      if (rafId) window.cancelAnimationFrame(rafId)
+    }
+  }, [hidden])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -228,8 +278,10 @@ export function V3DogFloater() {
       <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
         <DialogTrigger asChild>
           <button
+            ref={buttonRef}
             type="button"
             className={cn('v3-dog-floater', open && 'v3-dog-floater--open')}
+            style={stepY !== 0 ? { translate: `0 ${stepY}px` } : undefined}
             data-v3-dog-head="inner"
             data-v3-dog-place="mid-end"
             aria-haspopup="dialog"

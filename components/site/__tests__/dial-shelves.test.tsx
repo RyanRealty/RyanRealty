@@ -9,6 +9,8 @@
  * carousel did. Server markup only; turning the dial is exercised against a
  * running page.
  */
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import type { PriceDrop } from '@/lib/data'
@@ -128,8 +130,9 @@ describe('HomeHomesRails on the dial', () => {
     )
   })
 
-  // Matt 2026-09-25, "fix first, then ship": the homepage and the /cities index
-  // keep their carousels until their class reaches its taste mark with the dial.
+  // Matt 2026-09-25, "fix first, then ship": the homepage keeps its carousels
+  // until its class reaches its taste mark with the dial. The /cities index
+  // shelves reached theirs on 2026-10-01 and mount the dial (below).
   it('layout="rails" holds the stacked carousels, every card still a link', () => {
     const held = renderToStaticMarkup(<HomeHomesRails rows={rows} emptyMessage="none" layout="rails" />)
     expect(held).toContain('class="home-rails"')
@@ -139,6 +142,20 @@ describe('HomeHomesRails on the dial', () => {
     for (const k of ['l1', 'l2', 'l3', 'c1', 'c2', 'c3']) {
       expect(links).toContain(`/homes-for-sale/bend/${k}`)
     }
+  })
+})
+
+describe('which page holds the carousels (2026-10-01)', () => {
+  const page = (path: string) => readFileSync(resolve(path), 'utf8')
+  it('the /cities index shelves are listing dials: no held layout on its HomeHomesRails', () => {
+    const cities = page('app/cities/page.tsx')
+    expect(cities).toMatch(/<HomeHomesRails\b/)
+    expect(cities).not.toMatch(/layout="rails"/)
+  })
+  it('the homepage holds its shelves on the carousels by the one explicit prop', () => {
+    const home = page('app/page.tsx')
+    expect(home).toMatch(/<HomeHomesRails[\s\S]*?layout="rails"/)
+    expect(home.match(/layout="rails"/g) ?? []).toHaveLength(1)
   })
 })
 

@@ -101,9 +101,9 @@
     ]
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-30",
+    "evaluatedAt": "2026-10-01",
     "rubricVersion": "v1-2026-09-12",
-    "evaluator": "npx tsx scripts/taste-evaluate.ts commercial-space-for-lease --builder claude-opus-5-5 --evaluator claude --url http://127.0.0.1:3311/commercial-space-for-lease --shots <the 8 files below>. The grok CLI and the Cursor CLI are missing in this sandbox, so the judge is the chain's claude link (claude CLI, sonnet, subscription): three scorings of these shots in one call, recorded exactly as returned, no re-roll. The builder (the listing-dial integration lane, claude-opus-5-5) is not the judge.",
+    "evaluator": "npx tsx scripts/taste-evaluate.ts commercial-space-for-lease --builder claude-opus-5-5 --evaluator claude --url http://127.0.0.1:3311/commercial-space-for-lease --shots <the 8 files below>. The grok CLI and the Cursor CLI are missing in this sandbox, so the judge is the chain's claude link (claude CLI, the sonnet alias pinned to claude-sonnet-5, subscription): three scorings of these shots in one call, recorded exactly as returned, no re-roll. The builder (the dial-finish lane, claude-opus-5-5) is not the judge.",
     "evaluatorModel": "claude-sonnet-5",
     "builderModel": "claude-opus-5-5",
     "transport": "claude-cli",
@@ -121,7 +121,7 @@
         "lease",
         "turned"
       ],
-      "capture": "node scripts/take-route-shots.mjs commercial-space-for-lease http://127.0.0.1:3311/commercial-space-for-lease --states 'bars-hover=#towns .v3-ledger__item:nth-child(2) .v3-ledger__row!hover,lease=#lease-bend,turned=#lease-redmond .v3-dial__thumbs > :nth-child(2)!click'. First viewport, scale 1, palette-quantized, against the listing-dial fix tree's own next build + next start (2026-09-30)."
+      "capture": "node scripts/take-route-shots.mjs commercial-space-for-lease http://127.0.0.1:3311/commercial-space-for-lease --states 'bars-hover=#towns .v3-ledger__item:nth-child(2) .v3-ledger__row!hover,lease=#lease-bend,turned=#lease-redmond .v3-dial__thumbs > :nth-child(2)!click'. First viewport, scale 1, palette-quantized, against the dial-finish tree's own next build + next start (2026-10-01, build b1: each lease's lead photograph, Jax stepping aside from a dial photograph at 375). The lease page's files did not change after that build."
     },
     "shots": {
       "barsHoverDesktop": "design_system/ryan-realty/ui_kits/commercial-space-for-lease/shots/bars-hover-desktop.png",
@@ -133,30 +133,30 @@
       "turnedDesktop": "design_system/ryan-realty/ui_kits/commercial-space-for-lease/shots/turned-desktop.png",
       "turnedMobile375": "design_system/ryan-realty/ui_kits/commercial-space-for-lease/shots/turned-mobile375.png"
     },
-    "shotsHash": "sha256:07c2ce29e8e793cef9cc78a5ee71844c4ab56c83cae778aaab8d2fdbd2b6c731",
+    "shotsHash": "sha256:e82cfacae084ac440b376467a4f3ddacda45a858ffb1bba3b37952aba4b2498e",
     "scores": [
-      69,
-      66,
-      72
+      76,
+      79,
+      82
     ],
-    "score": 69,
+    "score": 79,
     "criteria": {
-      "designQuality": 20,
-      "originality": 20,
-      "interaction": 9,
-      "craft": 12,
-      "honestyFunction": 8
+      "designQuality": 24,
+      "originality": 23,
+      "interaction": 12,
+      "craft": 11,
+      "honestyFunction": 9
     },
     "perCriterion": {
-      "design": 20,
-      "originality": 20,
-      "interaction": 9,
-      "craft": 12,
-      "honesty": 8
+      "design": 24,
+      "originality": 23,
+      "interaction": 12,
+      "craft": 11,
+      "honesty": 9
     },
-    "honestyFunction": 8,
-    "demoMatch": false,
-    "beats": "LoopNet's Central Oregon commercial search — this page wins on honest per-town rate ranges stated in plain sentences and free unauthenticated browsing, but LoopNet still beats it on raw inventory breadth, saved-search alerts, and live map filtering by space type.",
+    "honestyFunction": 9,
+    "demoMatch": true,
+    "beats": "LoopNet's Central Oregon commercial-lease search: this page wins on data depth (per-town rate ranges, total sq ft, a sourced map with size-coded dots, honest 'rate not published' / 'size not listed' labeling) and on clarity (town-as-unit instead of an unsorted listing grid). LoopNet still wins on raw inventory count and saved-search/alert tooling.",
     "adaptedFrom": [
       {
         "id": "house-ledger"
@@ -170,33 +170,37 @@
     ],
     "defects": [
       {
-        "section": "town ledger rows (desktop.png / bars-hover-desktop.png, the Bend/Redmond/Sisters/Madras/Prineville/Powell Butte list)",
-        "severity": "blocking",
-        "finding": "The layout lock requires leases by town, each one an <a href> with its own rate unit, on the same page as the ledger — but every viewport shown, including the scrolled bars-hover-desktop state, only ever renders town-aggregate rows (count + bar + sq ft). No individual lease address or per-space rate appears until a visitor clicks into a separate town page (lease-desktop.png). The ledger and the actual leases-by-town list need to coexist on one page.",
-        "replaceWith": "house-listing"
+        "section": "town ledger rows (bars view + turned dot-strip view)",
+        "severity": "taste",
+        "finding": "The same six towns and the same facts (lease count, rate range, sq ft) are rendered twice at full length down the page — once as horizontal bars on the fold, again as per-town dot strips in the 'turned' section. The second pass adds no new fact, just a different mark, so it reads as two chart ideas shipped side by side rather than one confident view with a toggle.",
+        "primitive": "app/commercial-space-for-lease/page.tsx",
+        "replaceWith": "house-ledger"
       },
       {
-        "section": "lease detail photo strip (lease-desktop.png, the '01/13' numbered gallery with thumbnails under the hero photo)",
+        "section": "ledger row thumbnails",
         "severity": "taste",
-        "finding": "This reads as a Carousel import hiding the catalog chrome: no visible prev/next affordance matching the shadcn rail, no card body around each slide, just a bespoke numbered index and a thumbnail row with price stamped underneath. It functions but doesn't read as the demo interaction — it reads as a photo strip wearing a carousel's data.",
-        "replaceWith": "house-listing"
+        "finding": "Listing thumbnails inside each town row vary wildly in crop, light, and quality (a tight blue-sky warehouse exterior next to a dim near-black interior sliver for Redmond, a flat daylight shot for Sisters), which undercuts the editorial consistency the hairlines, tabular numerals, and sourced captions otherwise earn.",
+        "primitive": "app/commercial-space-for-lease/page.tsx",
+        "replaceWith": null
       },
       {
-        "section": "page footer / close (bars-hover-desktop.png bottom: 'how we calculate this' link + single 'Tell a broker the space you need' button)",
+        "section": "turned view per-town chevron dropdown",
         "severity": "taste",
-        "finding": "The page ends on a collapsed methodology disclosure and one CTA button with no path back into the towns' own pages or into homes-for-sale — a visitor who isn't ready to message a broker has nowhere else to go from the close of the page.",
-        "replaceWith": "house-quiet"
+        "finding": "Each town header in the dot-strip view repeats an identical chevron-dropdown box six times down the page with no visible state difference between rows beyond the label, especially at 375px where four near-identical chevron boxes stack with little to distinguish one town's control from the next — it reads as decoration until an open state proves otherwise.",
+        "primitive": "app/commercial-space-for-lease/page.tsx",
+        "replaceWith": null
       }
     ],
-    "verdict": "demoMatch is false: the carousel on the lease detail page is a house-rolled photo strip, not the shadcn Carousel demo, and no other catalog control (search, sheet, avatar group) is visible anywhere in these eight shots. The ledger-plus-map opener and the price-by-town dot strip are the real strengths here — sourced, honestly unitized, genuinely linked on hover — but the page is still a dashboard wearing editorial type rather than something breathtaking, and it never actually surfaces the individual leases the layout lock demands on the same page as the ledger. Correct, on-brand, and quiet; not yet the page that beats a commercial portal on inventory depth.",
+    "verdict": "This is the house-ledger and house-listing forms built correctly with real interaction — hover links a bar to its map pin and reveals a size range, a toggle swaps bar length for a price dot-strip, and the per-listing dial carries a working filmstrip — so demoMatch is true and nothing here is a cream box. It clears the banned tells (a custom-styled map, no KPI grid, sourced captions, no wall of text) and the honesty bar is genuinely strong, but it spends a full second section re-stating the same six facts in a different mark instead of adding one, and the row thumbnails are inconsistent enough to dent the editorial polish. Competent, original data journalism for a commercial-lease page — rare for this category — but not yet the one idea confident enough to screenshot.",
     "comparedToPrior": "rose",
     "priorMark": {
-      "evaluatedAt": "2026-09-23",
-      "score": 66,
+      "evaluatedAt": "2026-09-30",
+      "score": 69,
       "evaluatorModel": "claude-sonnet-5",
       "rubricVersion": "v1-2026-09-12",
-      "shotsHash": "sha256:23e7f31694261faff684fd9590818386d36d138cad920e2520dbb5ddbb06ffbe"
-    }
+      "shotsHash": "sha256:07c2ce29e8e793cef9cc78a5ee71844c4ab56c83cae778aaab8d2fdbd2b6c731"
+    },
+    "dullest": "The per-town rows themselves — thumbnail, three lines of rate copy, a bar — repeated six times, then repeated again forty pixels later as a dot cluster on the same axis. Once you've read 'Bend: 13 for lease' as a bar, the second reading as a dot strip tells you nothing new."
   },
   "contentFloor": {
     "seededAt": "2026-09-24",

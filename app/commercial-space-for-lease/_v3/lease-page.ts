@@ -11,7 +11,7 @@
  * (CLAUDE.md section 0). A lease is never an Offer: the ItemList names each listing and
  * its rent in words, with no price property.
  */
-import type { LeaseRateOptionsByKey, LeaseTermsByKey, ListingTile } from '@/lib/data'
+import type { LeaseLeadPhotosByKey, LeaseRateOptionsByKey, LeaseTermsByKey, ListingTile } from '@/lib/data'
 import type { V3ListingRowData } from '@/components/site/v3/V3ListingRow'
 import { CENTRAL_OREGON_CITY_SLUGS, SITE_CITY_SLUGS, citySlugForScope } from '@/lib/central-oregon'
 import { formatCount } from '@/lib/format/count'
@@ -60,12 +60,19 @@ const CITY_PAGES: ReadonlySet<string> = new Set(SITE_CITY_SLUGS)
 /**
  * The leases grouped by MLS City, towns in the site's own order (Bend first),
  * each lease once. A town with no lease is absent, never an empty section.
+ *
+ * Each lease's picture is its lead photograph (getLeaseLeadPhotos: the first
+ * photo the listing files that is a photograph of the space, never a Street
+ * View frame, an aerial, a plan or a render), or none when it files none; a
+ * lease the photo read missed keeps its tile photo.
  */
 export function leaseCityGroups(
   tiles: readonly ListingTile[],
   rateOptions: Readonly<LeaseRateOptionsByKey>,
   /** The lease's terms (getLeaseTerms), printed on its dial card; absent prints none. */
   leaseTerms: Readonly<LeaseTermsByKey> = {},
+  /** The lease's lead photograph (getLeaseLeadPhotos): a URL, null for none, absent keeps the tile's. */
+  leadPhotos: Readonly<LeaseLeadPhotosByKey> = {},
 ): LeaseCityGroup[] {
   const seen = new Set<string>()
   const byTown = new Map<
@@ -80,7 +87,9 @@ export function leaseCityGroups(
     const base = placeLeaseRowFromTile(tile, rateOptions)
     if (!base) continue
     const terms = leaseTerms[tile.listingKey] ?? []
-    const row: V3ListingRowData = terms.length > 0 ? { ...base, leaseTerms: terms } : base
+    const termed: V3ListingRowData = terms.length > 0 ? { ...base, leaseTerms: terms } : base
+    const row: V3ListingRowData =
+      tile.listingKey in leadPhotos ? { ...termed, photoUrl: leadPhotos[tile.listingKey] ?? null } : termed
     seen.add(tile.listingKey)
     const slug = citySlugForScope(label)
     const town = byTown.get(slug) ?? { label, rows: [], places: [] }
@@ -118,11 +127,13 @@ function listedSqft(row: V3ListingRowData): number | null {
 /**
  * The order a town's leases are shown in (2026-09-30, "the lead photo is a grey,
  * rain-soaked parking lot"): the leases whose rent publishes first (a lead card
- * that reads "Lease rate not published" tells a reader less), and within each
+ * that reads "Lease rate not published" tells a reader less), within each of
+ * those the ones with a photograph of the space before the ones with none
+ * (2026-10-01: a card with no photograph tells less too), and within each
  * group the largest listed space first, the ones that list no size last. So
- * every dial opens on the biggest space whose rent it can print, a rule that
- * holds as listings come and go, never a hand-picked listing. Ties keep the
- * read's order (newest first).
+ * every dial opens on the biggest photographed space whose rent it can print,
+ * a rule that holds as listings come and go, never a hand-picked listing. Ties
+ * keep the read's order (newest first).
  */
 export function leaseRowsLargestFirst<T extends V3ListingRowData>(rows: readonly T[]): T[] {
   const bySize = (list: T[]): T[] =>
@@ -140,7 +151,12 @@ export function leaseRowsLargestFirst<T extends V3ListingRowData>(rows: readonly
   const ordered = leaseRowsRatesFirst(rows)
   const priced = ordered.filter(leaseRentPublishes)
   const withheld = ordered.filter((row) => !leaseRentPublishes(row))
-  return [...bySize(priced), ...bySize(withheld)]
+  const pictured = (row: T): boolean => Boolean(row.photoUrl?.trim())
+  const photosFirst = (list: T[]): T[] => [
+    ...bySize(list.filter(pictured)),
+    ...bySize(list.filter((row) => !pictured(row))),
+  ]
+  return [...photosFirst(priced), ...photosFirst(withheld)]
 }
 
 /** The same test leaseRowsRatesFirst applies: the card prints a rent with its unit. */

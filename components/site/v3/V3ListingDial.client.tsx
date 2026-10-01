@@ -718,7 +718,9 @@ const DialCard = memo(function DialCard({
       inert={leaving || undefined}
       className={cn('v3-dial__card', leaving && 'is-leaving')}
     >
-      <div className="v3-dial__media" onClickCapture={onMediaClickCapture}>
+      {/* data-jax-clear: the Jax button steps aside rather than rest on the
+          photograph (V3DogFloater, lib/site/jax-step-aside.ts). */}
+      <div className="v3-dial__media" data-jax-clear="" onClickCapture={onMediaClickCapture}>
         <SplitCardMedia
           urls={photo ? [photo] : []}
           tags={tags}

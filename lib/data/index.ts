@@ -186,6 +186,8 @@ export { getLeaseRateOptions } from '@/lib/data/listings/getLeaseRateOptions'
 export type { LeaseRateOptionsByKey } from '@/lib/data/listings/getLeaseRateOptions'
 export { getLeaseTerms } from '@/lib/data/listings/getLeaseTerms'
 export type { LeaseTermsByKey } from '@/lib/data/listings/getLeaseTerms'
+export { getLeaseLeadPhotos } from '@/lib/data/listings/getLeaseLeadPhotos'
+export type { LeaseLeadPhotosByKey } from '@/lib/data/listings/getLeaseLeadPhotos'
 export {
   getCommercialLeaseListings,
   COMMERCIAL_LEASE_CAP,
