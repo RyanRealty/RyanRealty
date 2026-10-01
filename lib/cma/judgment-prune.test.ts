@@ -361,6 +361,78 @@ describe('age-restricted housing is a different product at the backstop', () => 
   })
 })
 
+describe('cheap pocket sale after bath and size review', () => {
+  it('drops Juniper once the review removes the last own-plat sale, and does not add 2834 or 1216', () => {
+    const indian = sfr('INDIAN-2834', {
+      ownPlat: true,
+      closePrice: 740_000,
+      selectionTier: 'subdivision-12mo',
+      baths: 2,
+    })
+    const juniper = sfr('JUNIPER-3331', {
+      ownPlat: false,
+      closePrice: 475_000,
+      selectionTier: 'pocket-12mo',
+    })
+    const glen = ['GLEN-A', 'GLEN-B', 'GLEN-C'].map((key, i) =>
+      sfr(key, {
+        ownPlat: false,
+        closePrice: 740_000 + i * 40_000,
+        selectionTier: 'nearby-1mi-12mo',
+      }),
+    )
+    const selected = [indian, juniper, ...glen]
+    const gated = pricingCompsAfterJudgment({
+      selected,
+      vetted: selected.filter((c) => c.listingKey !== 'INDIAN-2834'),
+      verdicts: [
+        { listingKey: 'INDIAN-2834', tier: 'exclude', basis: 'baths', reason: '2 baths against the subject 3.' },
+        kept('JUNIPER-3331'),
+        ...glen.map((c) => kept(c.listingKey)),
+      ],
+      subject: SFR_SUBJECT,
+      minComps: MIN_COMPS,
+      asOfYear: 2026,
+    })
+    const keys = gated.comps.map((c) => c.listingKey)
+    expect(keys).toEqual(['GLEN-A', 'GLEN-B', 'GLEN-C'])
+    expect(keys).not.toContain('JUNIPER-3331')
+    expect(keys).not.toContain('INDIAN-2834')
+    expect(keys).not.toContain('HAYDEN-1216')
+    expect(gated.shortage).toBe(false)
+    expect(gated.trace).toContain('1 pocket sale(s) under every remaining kept comp')
+  })
+
+  it('leaves the pocket sale when an own-plat sale is still in the reviewed set', () => {
+    const indian = sfr('INDIAN-2834', {
+      ownPlat: true,
+      closePrice: 740_000,
+      selectionTier: 'subdivision-12mo',
+    })
+    const juniper = sfr('JUNIPER-3331', {
+      ownPlat: false,
+      closePrice: 475_000,
+      selectionTier: 'pocket-12mo',
+    })
+    const glen = ['GLEN-A', 'GLEN-B'].map((key, i) =>
+      sfr(key, { ownPlat: false, closePrice: 760_000 + i * 20_000, selectionTier: 'nearby-1mi-12mo' }),
+    )
+    const selected = [indian, juniper, ...glen]
+    const gated = pricingCompsAfterJudgment({
+      selected,
+      vetted: selected,
+      verdicts: selected.map((c) => kept(c.listingKey)),
+      subject: SFR_SUBJECT,
+      minComps: MIN_COMPS,
+      asOfYear: 2026,
+    })
+    const keys = gated.comps.map((c) => c.listingKey)
+    expect(keys).toContain('INDIAN-2834')
+    expect(keys).toContain('JUNIPER-3331')
+    expect(keys).not.toContain('HAYDEN-1216')
+  })
+})
+
 describe('reviewWeightFactor', () => {
   it('halves weak only: strong, an exclude on a broker-picked set, and no verdict all carry full weight', () => {
     // A broker-picked set prices as chosen (SKILL.md 0.1). Halving an exclude

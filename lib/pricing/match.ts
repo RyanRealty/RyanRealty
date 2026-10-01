@@ -476,7 +476,7 @@ function passesTier(
   // Street-cluster subjects: "same subdivision" means the exclusive Canter /
   // Horse Back / Ranch pocket, not every Black Butte home that shares the
   // catch-all SaddleStone MLS name (Matt Flex HARD LOCK 2026-09-15).
-  if (tier.sameSubdivision && !inSubjectPlat(subject, sale)) return { ok: false, miles: null }
+  if (tier.sameSubdivision && !subdivisionRungSamePlat(subject, sale)) return { ok: false, miles: null }
   // THE PARENT LEVEL IS A WALL (Matt 2026-09-09): a plat inside a planned or
   // golf community is priced from that community until the community itself is
   // exhausted. Only the like-community rung and a boundary-exit rung may look
@@ -722,11 +722,53 @@ const BRACKET_MAX_AGE_MONTHS = 24
  * subject's "same subdivision" is its exclusive pocket (Canter / Horse Back /
  * Ranch, not every Black Butte home under the catch-all MLS name); everyone
  * else's is its own plat (samePlat in lib/pricing/price-anchor.ts, the recorded
- * polygon first and the MLS name as the fallback). The rung, the age-restricted
- * wall, and the `ownPlat` stamp every selected sale carries all read this.
+ * polygon first and the MLS name as the fallback). The age-restricted wall and
+ * the `ownPlat` stamp on every other rung read that exact test. A subdivision
+ * rung also counts a longer normalized plat that starts with the subject's
+ * name (subdivisionRungSamePlat). That leading name is not a fuzzy match and
+ * it is not the rule for pocket, adjacent, or mile rungs.
  */
 function inSubjectPlat(subject: PricingSubject, sale: PricingSale): boolean {
   return isClusterPocket(subject) ? saleInExclusivePocket(subject, sale) : samePlat(subject, sale)
+}
+
+/**
+ * The sale's normalized plat starts with the subject's full normalized plat
+ * name, and the next character is the end or a space. "northwest townsite co
+ * 2nd addt" extends "northwest townsite". "townsite" does not extend "town".
+ * A hyphen is not a space. A shared word in the middle is not this.
+ */
+function salePlatNormExtendsSubject(
+  subjectNorm: string | null | undefined,
+  saleNorm: string | null | undefined,
+): boolean {
+  const subjectName = (subjectNorm ?? '').trim()
+  const saleName = (saleNorm ?? '').trim()
+  if (!subjectName || !saleName) return false
+  if (!saleName.startsWith(subjectName)) return false
+  const next = saleName.charAt(subjectName.length)
+  return next === '' || next === ' '
+}
+
+/**
+ * Subdivision rungs only. Equal recorded slugs still match. A longer MLS plat
+ * name that starts with the subject's name is the same plat on these rungs
+ * even when the recorded polygons differ. Two different polygons whose names
+ * do not have that leading-name relationship stay different. A street-cluster
+ * pocket still uses its exclusive names, not this prefix.
+ */
+function subdivisionRungSamePlat(subject: PricingSubject, sale: PricingSale): boolean {
+  if (isClusterPocket(subject)) return inSubjectPlat(subject, sale)
+  if (subject.subdivisionSlug && sale.subdivisionSlug && sale.subdivisionSlug === subject.subdivisionSlug) {
+    return true
+  }
+  return salePlatNormExtendsSubject(subject.subdivisionNorm, sale.subdivisionNorm)
+}
+
+/** A kept sale stamped own-plat counts, including one a subdivision rung took on a leading name. */
+function countsAsOwnPlat(subject: PricingSubject, sale: PricingSale): boolean {
+  if ((sale as { ownPlat?: boolean | null }).ownPlat === true) return true
+  return inSubjectPlat(subject, sale)
 }
 
 /** Which room counts differ, on a sale the plat rung took regardless. */
@@ -918,7 +960,7 @@ function closeNearOwnPlat(
 ): boolean {
   const closes: number[] = []
   for (const row of kept) {
-    if (inSubjectPlat(subject, row)) closes.push(row.closePrice)
+    if (countsAsOwnPlat(subject, row)) closes.push(row.closePrice)
   }
   const mid = medianClose(closes)
   if (mid == null) return true
@@ -932,8 +974,10 @@ function closeNearOwnPlat(
  * A different-plat pocket sale still has to sit with the comps that were
  * kept. One that closes under every one of them is a cheaper house. Same-plat
  * sales are not in this pass. Custom and new subjects skip it, as they skip
- * the plat check on the walk. When an own-plat sale is kept, the caller does
- * not use this: that case stays the 1.3 own-plat median.
+ * the plat check on the walk. When an own-plat sale is still in the set this
+ * function sees, the caller does not use this: that case stays the 1.3
+ * own-plat median. A later bath or size rejection that removes the last
+ * own-plat sale is not this pass. That check reads the set that remains.
  */
 function pocketSalesSitWithKept(
   comps: SelectedPricingComp[],
@@ -952,6 +996,46 @@ function pocketSalesSitWithKept(
     const gap = sale.closePrice / mid
     return gap >= 1 / SUBDIVISION_TIER_RATIO && gap <= SUBDIVISION_TIER_RATIO
   })
+}
+
+/**
+ * The set after bath and size rejection, when no own-plat sale survived.
+ * A different-plat pocket sale that closes under every remaining kept comp
+ * is a cheaper house. Not an 80% floor and not a minimum beyond that
+ * comparison. Same-plat sales are not in this pass. Custom and new subjects
+ * skip it. An own-plat sale that is still here is the 1.3 median, and this
+ * returns the set unchanged. Rejected sales are not pulled back.
+ */
+export function dropPocketClosingUnderEveryKept<
+  T extends {
+    listingKey: string
+    closePrice?: number | null
+    selectionTier?: string | null
+    ownPlat?: boolean | null
+  },
+>(comps: readonly T[], customOrNew: boolean): T[] {
+  if (customOrNew || comps.length === 0) return [...comps]
+  if (comps.some((c) => c.ownPlat === true)) return [...comps]
+  let kept = [...comps]
+  let changed = true
+  while (changed) {
+    changed = false
+    kept = kept.filter((sale) => {
+      if (!sale.selectionTier?.startsWith('pocket-')) return true
+      if (!(typeof sale.closePrice === 'number' && sale.closePrice > 0)) return true
+      const others = kept.filter(
+        (row) => row.listingKey !== sale.listingKey && typeof row.closePrice === 'number' && row.closePrice > 0,
+      )
+      if (others.length === 0) return true
+      const cheapestOther = Math.min(...others.map((row) => row.closePrice as number))
+      if (sale.closePrice < cheapestOther) {
+        changed = true
+        return false
+      }
+      return true
+    })
+  }
+  return kept
 }
 
 function similarity(subject: PricingSubject, sale: PricingSale, asOf: string, pocketStarved: boolean): number {
@@ -1192,8 +1276,12 @@ export function walkPricingLadder(
       if (!customLadder && !inSubjectPlat(subject, sale) && !closeNearOwnPlat(subject, sale, byKey.values())) {
         continue
       }
+      const selected = toSelected(subject, sale, asOf, tier.name)
+      // A subdivision rung that took a leading plat name stamps the sale as
+      // this home's plat. Pocket and mile rungs keep the exact samePlat stamp.
+      if (tier.sameSubdivision) selected.ownPlat = true
       byKey.set(sale.listingKey, {
-        ...toSelected(subject, sale, asOf, tier.name),
+        ...selected,
         roomDifference: roomDifference ?? null,
       })
       bySale.add(saleKey)
@@ -1225,8 +1313,9 @@ export function walkPricingLadder(
     (a, b) => similarity(subject, b, asOf, pocketStarved) - similarity(subject, a, asOf, pocketStarved),
   )
   // An own-plat sale still in this set keeps the 1.3 median, including the
-  // bracket read below, which runs before that sale is removed. The pocket
-  // pass runs only when that median was never there.
+  // bracket read below, which runs before that sale is removed. This pass
+  // does not run while that sale is still here. A later bath or size
+  // rejection can remove it; the cheap-pocket check then runs on what remains.
   const hadOwnPlat = ranked.some((c) => c.ownPlat)
   const sitting = hadOwnPlat ? ranked : pocketSalesSitWithKept(ranked, customLadder)
   const sliced = keepTightestByClosePrice(sitting, PRICING_MAX_COMPS, asOf)

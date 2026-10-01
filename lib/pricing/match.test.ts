@@ -2218,4 +2218,118 @@ describe('the facts pool reaches the rung that names it', () => {
     expect(out.comps.map((c) => c.listingKey)).not.toContain('COLUMBIA')
     expect(out.rungs.find((r) => r.tier === 'subdivision-24mo')?.added).toBe(0)
   })
+
+  it('treats a leading plat name as the same plat on a subdivision rung, and leaves Columbia outside 24 months', () => {
+    const asOf = '2026-10-01'
+    const milwaukee = sale({
+      listingKey: '220195465',
+      address: '1367 Milwaukee',
+      city: 'Jacksonville',
+      citySlug: 'jacksonville',
+      subdivision: 'Northwest Townsite Co 2nd Addt',
+      subdivisionNorm: 'northwest townsite co 2nd addt',
+      subdivisionSlug: 'northwest-townsite-co-2nd-addt',
+      sqft: 923,
+      baths: 2,
+      closePrice: 645_000,
+      closePpsf: 645_000 / 923,
+      closeDate: '2025-03-31',
+    })
+    const glued = sale({
+      listingKey: 'GLUED',
+      address: '1401 Milwaukee',
+      city: 'Jacksonville',
+      citySlug: 'jacksonville',
+      subdivision: 'Northwest Townsiteroad',
+      subdivisionNorm: 'northwest townsiteroad',
+      subdivisionSlug: 'northwest-townsiteroad',
+      sqft: 923,
+      baths: 2,
+      closePrice: 640_000,
+      closePpsf: 640_000 / 923,
+      closeDate: '2026-06-01',
+    })
+    const middle = sale({
+      listingKey: 'MIDDLE',
+      address: '1402 Milwaukee',
+      city: 'Jacksonville',
+      citySlug: 'jacksonville',
+      subdivision: 'Old Northwest Townsite',
+      subdivisionNorm: 'old northwest townsite',
+      subdivisionSlug: 'old-northwest-townsite',
+      sqft: 923,
+      baths: 2,
+      closePrice: 630_000,
+      closePpsf: 630_000 / 923,
+      closeDate: '2026-06-02',
+    })
+    const columbia = sale({
+      listingKey: '220189960',
+      address: '1125 Columbia',
+      city: 'Jacksonville',
+      citySlug: 'jacksonville',
+      subdivision: 'Northwest Townsite',
+      subdivisionNorm: 'northwest townsite',
+      subdivisionSlug: 'northwest-townsite',
+      sqft: 923,
+      baths: 1,
+      closePrice: 250_000,
+      closePpsf: 250_000 / 923,
+      closeDate: '2024-09-13',
+    })
+    const out = walkPricingLadder(
+      subject({
+        streetAddress: '1400 Jacksonville',
+        city: 'Jacksonville',
+        citySlug: 'jacksonville',
+        subdivision: 'Northwest Townsite',
+        subdivisionNorm: 'northwest townsite',
+        subdivisionSlug: 'northwest-townsite',
+        sqft: 923,
+        baths: 2,
+      }),
+      [milwaukee, glued, middle, columbia],
+      { asOf },
+    )
+    const kept = out.comps.find((c) => c.listingKey === '220195465')
+    expect(kept).toBeTruthy()
+    expect(kept!.selectionTier.startsWith('subdivision-')).toBe(true)
+    expect(kept!.ownPlat).toBe(true)
+    expect(out.comps.find((c) => c.listingKey === 'GLUED')?.selectionTier.startsWith('subdivision-') ?? false).toBe(false)
+    expect(out.comps.find((c) => c.listingKey === 'MIDDLE')?.selectionTier.startsWith('subdivision-') ?? false).toBe(false)
+    expect(factsPoolCloseAfter(asOf, false) > columbia.closeDate).toBe(true)
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('220189960')
+    expect(out.rungs.find((r) => r.tier === 'subdivision-24mo')?.added).toBe(1)
+  })
+
+  it('does not treat a short plat fragment as a leading name', () => {
+    const asOf = '2026-10-01'
+    const townsite = sale({
+      listingKey: 'TOWNSITE',
+      address: '10 Townsite',
+      city: 'Jacksonville',
+      citySlug: 'jacksonville',
+      subdivision: 'Townsite',
+      subdivisionNorm: 'townsite',
+      subdivisionSlug: 'townsite',
+      sqft: 923,
+      closePrice: 280_000,
+      closePpsf: 280_000 / 923,
+      closeDate: '2026-06-01',
+    })
+    const out = walkPricingLadder(
+      subject({
+        streetAddress: '1 Town',
+        city: 'Jacksonville',
+        citySlug: 'jacksonville',
+        subdivision: 'Town',
+        subdivisionNorm: 'town',
+        subdivisionSlug: 'town',
+        sqft: 923,
+      }),
+      [townsite],
+      { asOf },
+    )
+    expect(out.comps.find((c) => c.listingKey === 'TOWNSITE')?.selectionTier.startsWith('subdivision-') ?? false).toBe(false)
+  })
 })

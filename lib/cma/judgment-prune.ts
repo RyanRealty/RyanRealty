@@ -35,6 +35,7 @@
 import { isCustomOrNewSubject, isNewBuild, newConstructionCompatible } from '@/lib/pricing/classes'
 import { productTypeCompatible } from '@/lib/cma/market-area'
 import { ageRestrictedMismatch, ownPlatAgeRestrictedShare } from '@/lib/pricing/age-restricted'
+import { dropPocketClosingUnderEveryKept } from '@/lib/pricing/match'
 
 const PRODUCT_REASON =
   /\b(product type|different product|townhomes?|townhouses?|condominiums?|condos?|rowhouses?|row houses?|manufactured|duplex|triplex|quadruplex|lodges?|shared wall|common wall|structure type)\b/i
@@ -61,6 +62,10 @@ type ProductComp = {
   subdivision?: string | null
   /** The selector's own-plat decision (lib/cma/types.ts CmaComp.ownPlat). */
   ownPlat?: boolean | null
+  /** House close only. The cheap-pocket check after bath and size rejection reads it. */
+  closePrice?: number | null
+  /** Ladder rung. A different-plat pocket sale is `pocket-*`. */
+  selectionTier?: string | null
   /** MLS SeniorCommunityYN (lib/cma/types.ts CmaComp.seniorCommunityYn). */
   seniorCommunityYn?: boolean | null
 }
@@ -149,7 +154,14 @@ export function pricingCompsAfterJudgment<T extends ProductComp>(args: {
     }
   }
   const poolKeys = new Set(pool.map((c) => c.listingKey))
-  const kept = args.vetted.filter((c) => poolKeys.has(c.listingKey))
+  const reviewKept = args.vetted.filter((c) => poolKeys.has(c.listingKey))
+  // Bath and size cuts are already in reviewKept. The cheap-pocket check
+  // reads this set, not the ranked set from before those cuts. An own-plat
+  // sale that is still here keeps the ladder's 1.3 median. None left: a
+  // different-plat pocket close under every remaining comp drops. Under the
+  // minimum is the same shortage. Rejected sales are not pulled back.
+  const kept = dropPocketClosingUnderEveryKept(reviewKept, subjectNew)
+  const pocketDropped = reviewKept.length - kept.length
   // Review exclusions among the product-matched sales, so a structure-type
   // exclusion is counted once, as a different product.
   const excluded = args.verdicts.filter((v) => v.tier === 'exclude' && poolKeys.has(v.listingKey)).length
@@ -164,6 +176,7 @@ export function pricingCompsAfterJudgment<T extends ProductComp>(args: {
   const dropped = [
     excluded > 0 ? `${excluded} excluded by the comparability review` : null,
     droppedProduct > 0 ? `${droppedProduct} different-product sale(s)` : null,
+    pocketDropped > 0 ? `${pocketDropped} pocket sale(s) under every remaining kept comp` : null,
   ].filter(Boolean)
   return {
     comps: kept,
