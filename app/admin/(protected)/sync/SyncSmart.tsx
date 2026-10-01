@@ -159,13 +159,6 @@ export default function SyncSmart({ initialStatus, sparkConfigured = true, compa
         const remainingPages = Math.max(0, totalPages - pagesDone)
         remainingChunks = Math.ceil(remainingPages / LISTING_PAGES_PER_RUN)
       }
-    } else if (cursor.phase === 'refresh_active_pending') {
-      const totalPages = cursor.totalListingPages
-      if (totalPages && totalPages > 0) {
-        const currentPage = cursor.nextListingPage ?? 1
-        const remainingPages = Math.max(0, totalPages - currentPage + 1)
-        remainingChunks = remainingPages
-      }
     } else if (cursor.phase === 'history') {
       if (lastResult?.totalListings != null && lastResult.totalListings > 0) {
         totalHistoryListingsRef.current = lastResult.totalListings
@@ -325,26 +318,19 @@ export default function SyncSmart({ initialStatus, sparkConfigured = true, compa
                 style={spinnerStyle}
                 aria-hidden
               />
-              {status?.cursor?.phase === 'refresh_active_pending'
-                ? 'Refresh active & pending in progress'
-                : 'Sync in progress'}
+              Sync in progress
             </span>
             <span suppressHydrationWarning>
               Elapsed: {mounted && nowMs != null && status?.cursor?.runStartedAt ? formatElapsed(status.cursor.runStartedAt, nowMs) : syncing ? '…' : '—'}
             </span>
-            <span title={status?.cursor?.phase === 'refresh_active_pending' ? 'Listings refreshed so far (active & pending only).' : 'Listings upserted in this run (Listings phase only).'}>
-              {status?.cursor?.phase === 'refresh_active_pending' ? 'Listings refreshed: ' : 'Listings this run: '}
-              {status?.cursor?.runListingsUpserted?.toLocaleString() ?? '…'}
+            <span title="Listings upserted in this run (Listings phase only).">
+              Listings this run: {status?.cursor?.runListingsUpserted?.toLocaleString() ?? '…'}
             </span>
-            {status?.cursor?.phase === 'refresh_active_pending' ? (
-              <span style={{ fontSize: 'var(--a-text-xs)' }}>History not used for this run</span>
-            ) : (
-              <span title="History rows inserted in this run.">
-                History this run: {status?.cursor?.runHistoryRows?.toLocaleString() ?? '…'}
-              </span>
-            )}
+            <span title="History rows inserted in this run.">
+              History this run: {status?.cursor?.runHistoryRows?.toLocaleString() ?? '…'}
+            </span>
             <span style={{ fontSize: 'var(--a-text-xs)', fontWeight: 500 }}>
-              Phase: {status?.cursor?.phase === 'listings' ? 'Listings' : status?.cursor?.phase === 'history' ? 'History' : status?.cursor?.phase === 'refresh_active_pending' ? 'Refresh active & pending' : '…'}
+              Phase: {status?.cursor?.phase === 'listings' ? 'Listings' : status?.cursor?.phase === 'history' ? 'History' : '…'}
             </span>
             <span style={{ fontSize: 'var(--a-text-xs)', fontWeight: 500 }}>
               Est. time remaining: {etaLabel ?? 'Calculating…'}
@@ -401,14 +387,12 @@ export default function SyncSmart({ initialStatus, sparkConfigured = true, compa
           {syncing
             ? 'Running…'
             : runInProgress
-              ? status?.cursor?.phase === 'refresh_active_pending'
-                ? 'Refreshing active & pending…'
-                : 'Sync in progress…'
+              ? 'Sync in progress…'
               : !sparkConfigured
                 ? 'Smart Sync (key required)'
                 : 'Smart Sync'}
         </Button>
-        {status?.cursor?.phase !== 'idle' && status?.cursor?.phase !== 'refresh_active_pending' && !runInProgress && !paused && (
+        {status?.cursor?.phase !== 'idle' && !runInProgress && !paused && (
           <span style={quietMetaStyle}>
             Next run will resume from {status?.cursor?.phase === 'listings' ? `listings page ${status?.cursor?.nextListingPage}` : 'history'}.
           </span>

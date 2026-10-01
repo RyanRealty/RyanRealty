@@ -7,7 +7,7 @@ Sync runs **in the background** with no manual steps:
 - **Delta sync (every 2 min)** — Inngest fetches listings changed in the last 2 minutes and upserts them. Keeps active and pending listings up to date.
 - **Full sync (every 10 min)** — Vercel cron calls `GET /api/cron/sync-full`. Each run does one chunk: 5 listing pages **or** 30 history listings. Newer listing pages are processed first; then history is backfilled for non-finalized listings. Once a closed listing’s history is finalized, it is never synced again.
 
-**Admin → Sync** is the **status page**: Spark API vs database, last sync times, by-city breakdown. Manual controls (Smart Sync, Refresh active & pending, delta trigger, history buttons) are under **Advanced / override** for one-off runs or troubleshooting. No buttons are required for normal operation.
+**Admin → Sync** is the **status page**: Spark API vs database, last sync times, by-city breakdown. Manual controls (Smart Sync, delta trigger, history buttons) are under **Advanced / override** for one-off runs or troubleshooting. No buttons are required for normal operation.
 
 **Cron is on by default.** The `sync_cursor` row has `cron_enabled = true` (see migration `20260415120000_sync_cron_always_on.sql`). To disable background full sync, set `cron_enabled` to `false` in the database or via the Advanced section.
 
@@ -26,7 +26,7 @@ Sync runs **in the background** with no manual steps:
 
 ### Option A: Admin UI (Advanced)
 
-Open **Admin → Sync**, expand **Advanced / override**, and use **Full sync (Smart Sync)**, **Refresh active & pending**, **Trigger delta sync**, or **Sync history** as needed. Use only for troubleshooting or one-off backfills; background sync handles normal updates.
+Open **Admin → Sync**, expand **Advanced / override**, and use **Full sync (Smart Sync)**, **Trigger delta sync**, or **Sync history** as needed. (Refresh active & pending was removed 2026-10-01 on Matt's call: it wrote a listings row the table never had, so it saved nothing; the delta sync refreshes active and pending listings every 15 minutes.) Use only for troubleshooting or one-off backfills; background sync handles normal updates.
 
 ### Option B: Script (local hands-off)
 

@@ -224,7 +224,7 @@ export default function SyncHeavyStatusSections({ totalListings, syncStatus, run
           </div>
         )}
         <div className="mt-4">
-          <SyncPageAdvanced syncStatus={syncStatus} runInProgress={runInProgress} sparkConfigured={sparkSyncCount != null && !sparkSyncCount.error} />
+          <SyncPageAdvanced syncStatus={syncStatus} sparkConfigured={sparkSyncCount != null && !sparkSyncCount.error} />
         </div>
       </section>
 

@@ -348,7 +348,7 @@ export default function SyncLiveStatusAndTerminal({ initialCursor, initialTermin
               <div>
                 <p style={labelStyle}>Phase</p>
                 <p className="mt-0.5" style={figureStyle}>
-                  {cursor.phase === 'listings' ? 'Listings' : cursor.phase === 'history' ? 'History' : cursor.phase === 'refresh_active_pending' ? 'Refresh active & pending' : 'Idle'}
+                  {cursor.phase === 'listings' ? 'Listings' : cursor.phase === 'history' ? 'History' : 'Idle'}
                 </p>
               </div>
               <div>

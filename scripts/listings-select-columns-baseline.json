@@ -1,9 +1,4 @@
 {
   "_doc": "Shrink-only. Each entry is a known read or write that names a column listings does not have, keyed file|method|column, with why it is not fixed yet. ci:listings-select-columns fails on a new one and on an entry that no longer matches.",
-  "entries": {
-    "lib/data/sync/syncWrites.ts|select|id": "findListingBySnakeKey and upsertListingSnakeRow, the admin sync page's Refresh active & pending (lib/listing-processor.ts processSparkListing): they write a snake_case listings row the table has never had, so every record fails. Held for Matt's call (remove the button or rebuild it on the delta sync's writer), 2026-10-01.",
-    "lib/data/sync/syncWrites.ts|select|standard_status": "Same as lib/data/sync/syncWrites.ts|select|id.",
-    "lib/data/sync/syncWrites.ts|select|list_price": "Same as lib/data/sync/syncWrites.ts|select|id.",
-    "lib/data/sync/syncWrites.ts|eq|listing_key": "Same as lib/data/sync/syncWrites.ts|select|id."
-  }
+  "entries": {}
 }
