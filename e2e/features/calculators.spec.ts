@@ -57,10 +57,16 @@ test.describe('Mortgage calculator', () => {
     // a higher loan, so the monthly total must change.
     const homePrice = page.locator('#home-price')
     await expect(homePrice).toBeVisible()
-    await homePrice.fill('800000')
-    await homePrice.press('Tab')
-
-    await expect(paymentEl).not.toHaveText(before, { timeout: 10_000 })
+    // The box is server-rendered, so it takes typing before the calculator
+    // hydrates, and React never sees those keystrokes (the post-deploy run of
+    // 2026-10-01 typed 800000 and the total stayed $3,053). Type again until
+    // the page answers; each try clears first so React sees a real change.
+    await expect(async () => {
+      await homePrice.fill('')
+      await homePrice.fill('800000')
+      await homePrice.press('Tab')
+      await expect(paymentEl).not.toHaveText(before, { timeout: 2_000 })
+    }).toPass({ timeout: 30_000 })
     expect(await paymentEl.textContent()).toMatch(/\$[\d,]+/)
   })
 })
