@@ -29,8 +29,11 @@
  *      listing_mls_repair_log first, row re-pulled in full, history replaced,
  *      terminal rows re-frozen, membership and on-market episodes rebuilt.
  *
- * A listing the MLS no longer serves is reported, never changed: what an
- * on-market listing that left the feed should become is the owner's ruling.
+ * A listing the MLS no longer serves is reported, never changed, here. Matt
+ * ruled 2026-10-01 that it follows the removed-sales rule (whole row saved,
+ * deleted on the third daily sighting, texted); that step is not built yet.
+ * The daily cron is /api/cron/on-market-reconcile (Matt 2026-10-01, "Fix now
+ * and check daily").
  */
 import { fetchSparkListingsPage } from '@/lib/spark'
 import { type DriftReason } from '@/lib/sync/listingDrift'

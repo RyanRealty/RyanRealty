@@ -411,3 +411,32 @@ reconciliation). `prune_market_fact_sale` now drops sale facts whose listing is 
    does not rebuild, and `delete_mls_removed_sales_selftest()` runs the whole cycle on synthetic
    rows and rolls back (the integration suite calls it). A published monthly edition keeps the figures it was published
    with; the next edition's comparisons read the corrected data.
+
+**Matt's rulings, 2026-10-01 (after the published reports were audited against the MLS).**
+The audit re-checked every published figure Spark can reproduce (127,207 across the 248 editions,
+none over 1%) and recomputed the per-sale figures from Spark's own fields in seven sample months
+(168 of 168 exact), then found what the cross-check cannot see. Asked "How does this happen", he
+was shown the causes below and ruled:
+
+3. **Our listings copy is set against the MLS every morning and corrected to it** ("Fix now and
+   check daily"). A statewide check found 1,143 of the 8,918 listings Spark holds as for sale or
+   under contract out of step with ours (392 in Central Oregon): 672 back on the market that we
+   held as Expired, Withdrawn or Canceled, because the delta sync skipped every finalized row
+   until the evening of 2026-09-29 (60 of 60 sampled were finalized, every MLS change dated
+   before the fix); 334 we held on the market that had expired, been canceled or withdrawn,
+   most changed in the MLS from 2026-03-20 to 2026-05-26 and never applied (the window whose
+   closings were repaired 2026-09-25; the sync run log stops 2026-03-16, so why it missed that
+   window cannot be shown from our records); 19 we lacked; 101 with a wrong price, home type or
+   size. `lib/sync/onMarketReconcile.ts` repairs them through the closings repair (before-images
+   in `listing_mls_repair_log`, source `on-market-reconcile`), daily from
+   `/api/cron/on-market-reconcile`.
+4. **A for-sale listing the MLS no longer serves follows the removed-sales rule** ("Treat like
+   removed sales"): whole row saved, deleted on the third daily sighting, Matt texted each one.
+   21 on 2026-10-01 (19 Active, 2 Coming Soon, last changed March to July 2026).
+5. **Every edition is rebuilt and republished from the corrected data** ("Republish all 248").
+   Homes for sale on a past day count `Active` only (§2.2): an Active listing with a Contingency
+   (this MLS's Active Under Contract) is under contract, not for sale; 22 of the 1,258 homes the
+   August 2026 edition counted on 2026-08-31 were. Seller concessions print only where the Yes/No
+   field covers 90% of the period's sales (`CONCESSION_COVERAGE_MIN`): before mid-2023 the field
+   was filled almost only when a concession was given, so the printed share read 100% (261 notes
+   in 117 PDFs), and Spark serves it on 1 of August 2016's 461 sales today.

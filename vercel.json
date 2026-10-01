@@ -151,6 +151,10 @@
       "schedule": "0 14 * * 0"
     },
     {
+      "path": "/api/cron/on-market-reconcile",
+      "schedule": "47 10 * * *"
+    },
+    {
       "path": "/api/cron/market-report-refresh",
       "schedule": "17 11 * * *"
     },

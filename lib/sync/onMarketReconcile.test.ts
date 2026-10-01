@@ -67,6 +67,7 @@ vi.mock('@/lib/data/market-report/compute', () => ({ refreshMarketFactSpansForKe
 vi.mock('@/lib/sync/fetchListingHistory', () => ({ fetchAndInsertHistoryCore: vi.fn() }))
 vi.mock('@/lib/sync/deltaSync', () => ({ DELTA_SYNC: { EXPAND: '', UPSERT_CHUNK: 50 }, resolveRunMortgageRate: vi.fn(), resultToMappedRow: vi.fn() }))
 
+import { COMING_SOON_STATUS, LIVE_INVENTORY_STATUSES } from '@/lib/listing-status-public'
 import { findOnMarketDrift, keysToLookUp, planOnMarketRepair, reconcileOnMarket } from './onMarketReconcile'
 
 function mls(key: string, status: string, extra: Fields = {}): Fields {
@@ -106,7 +107,7 @@ describe('findOnMarketDrift', () => {
     store.rows.set('same', ours('same', 'Active'))
     store.rows.set('canceled', ours('canceled', 'Active'))
     const r = await findOnMarketDrift()
-    expect(spark.filters[0]).toBe("StandardStatus Eq 'Active','Coming Soon','Active Under Contract','Pending'")
+    expect(spark.filters[0]).toBe(`StandardStatus Eq ${LIVE_INVENTORY_STATUSES.map((x) => `'${x}'`).join(',')}`)
     expect(spark.filters.slice(1)).toEqual(["ListingKey Eq 'canceled'"])
     expect(r.drift.map((d) => [d.key, d.reasons])).toEqual([['canceled', ['status']]])
     expect(r.drift[0]).toMatchObject({ ours: { status: 'Active' }, mls: { status: 'Canceled', propertyType: 'A' } })
@@ -125,10 +126,10 @@ describe('findOnMarketDrift', () => {
   })
 
   it('reports a listing the MLS no longer serves and does not call it drift', async () => {
-    store.onMarket = [{ key: 'gone', status: 'Coming Soon' }]
-    store.rows.set('gone', ours('gone', 'Coming Soon'))
+    store.onMarket = [{ key: 'gone', status: COMING_SOON_STATUS }]
+    store.rows.set('gone', ours('gone', COMING_SOON_STATUS))
     const r = await findOnMarketDrift()
-    expect(r.notInSpark).toEqual([{ key: 'gone', status: 'Coming Soon' }])
+    expect(r.notInSpark).toEqual([{ key: 'gone', status: COMING_SOON_STATUS }])
     expect(r.drift).toEqual([])
   })
 

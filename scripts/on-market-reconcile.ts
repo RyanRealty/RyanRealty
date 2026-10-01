@@ -15,8 +15,8 @@
  * is kept in listing_mls_repair_log (source 'on-market-reconcile') before it is
  * re-pulled. A listing the MLS changed since the delta-sync cursor is left to
  * the delta sync, and one the MLS no longer serves is listed, never changed.
- * Nothing runs this on a schedule yet (2026-10-01: the first repair and a daily
- * run wait for the owner's go-ahead). See lib/sync/onMarketReconcile.ts.
+ * The daily cron /api/cron/on-market-reconcile runs the same sweep with repair
+ * (Matt 2026-10-01, "Fix now and check daily"). See lib/sync/onMarketReconcile.ts.
  */
 import { config as loadEnv } from 'dotenv'
 loadEnv({ path: '.env.local' })
