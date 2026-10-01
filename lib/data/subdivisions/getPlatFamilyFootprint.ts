@@ -187,7 +187,13 @@ async function fetchPlatFamilyClosedSales(
       .lte('lat', box.maxLat)
       .gte('lng', box.minLng)
       .lte('lng', box.maxLng)
-      .ilike('standard_status', '%closed%')
+      // Exact status, not ILIKE '%closed%': the tile table holds one closed
+      // status ('Closed', 381,295 rows and no other closed-like value on
+      // 2026-10-01), and the equality lets the partial covering index
+      // listing_tile_mv_closed_latlng_cover answer this read index-only
+      // (SITE-212: the ILIKE form fetched every heap row in the latitude
+      // band, 8,980 buffers for a 3 km box, 41.9 s at its worst).
+      .eq('standard_status', 'Closed')
       // listing_key is the MV's unique key: a total order, so no page skips or
       // repeats a row (G48 / ci:row-cap).
       .order('listing_key', { ascending: true })

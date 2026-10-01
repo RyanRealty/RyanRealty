@@ -21,6 +21,20 @@ import { resolveSubdivisionAreaRedirect } from '@/lib/subdivision-area-redirects
  * 900 s ISR window (60 s for a degraded copy) a fetch triggers a background
  * regeneration, and 2,642 of those every ten minutes would be a load the
  * database cannot spare.
+ *
+ * ONE PASS PER GAP (SITE-212, 2026-10-01). "Once per deployment" assumed ~4
+ * deploys a day. 2026-09-30 had 21, and Postgres statement timeouts (2,382
+ * that day, 2,379 through PostgREST) rose and fell hour by hour with them:
+ * every deploy cleared the ISR cache and this tier re-rendered ~2,750 pages
+ * on a 4 GB IO-bound instance. So a deployment may START a plat pass only
+ * when no pass began inside PLAT_WARM_PASS_GAP_S: the invocation that claims
+ * the first slice also claims PLAT_WARM_PASS_GAP_LEASE for that long, and a
+ * later deployment whose first-slice claim cannot take the gap lease gives
+ * the slice back and reports `throttled`. A pass already under way keeps
+ * claiming its remaining slices unthrottled (its first slice is held, so it
+ * never asks for the gap again). Tier 1 (~137 registry pages) stays per
+ * deployment. Cost of the trade: a plat first fetched between passes pays
+ * the cold render it paid before 2026-09-23.
  */
 
 /** URLs per claimed slice. At concurrency 6 and 2.4 to 8.6 s per cold render, one slice fits well inside a 300 s invocation. */
@@ -34,6 +48,21 @@ export const PLAT_WARM_CLAIM_UNTIL_MS = 150_000
 
 /** Never start a fetch batch after this point, so the invocation ends inside maxDuration. */
 export const PLAT_WARM_HARD_STOP_MS = 255_000
+
+/** A new plat pass may start only this long after the previous one began: at most four a day, the deploy count the tier was sized for. */
+export const PLAT_WARM_PASS_GAP_S = 6 * 3600
+
+/** The crm_cron_leases name that marks a pass as begun; held for PLAT_WARM_PASS_GAP_S. */
+export const PLAT_WARM_PASS_GAP_LEASE = 'warm-plats-pass-gap'
+
+/**
+ * True when claiming slice `index` begins a deployment's pass. Slices are
+ * claimed in order, so the first slice's claim is the pass start: the only
+ * claim that must also take the gap lease.
+ */
+export function isPlatPassStart(index: number): boolean {
+  return index === 0
+}
 
 /**
  * The plat URLs to warm, in priority order: redirect slugs dropped (middleware

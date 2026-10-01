@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest'
 import {
   PLAT_WARM_CLAIM_UNTIL_MS,
   PLAT_WARM_HARD_STOP_MS,
+  PLAT_WARM_PASS_GAP_LEASE,
+  PLAT_WARM_PASS_GAP_S,
   PLAT_WARM_SLICE,
+  isPlatPassStart,
   platSliceLeaseName,
   platWarmPaths,
   platWarmSlices,
@@ -59,5 +62,24 @@ describe('invocation budget', () => {
   it('stops claiming well before it stops fetching, and both sit inside maxDuration 300', () => {
     expect(PLAT_WARM_CLAIM_UNTIL_MS).toBeLessThan(PLAT_WARM_HARD_STOP_MS)
     expect(PLAT_WARM_HARD_STOP_MS).toBeLessThan(300_000 - 20_000)
+  })
+})
+
+describe('the pass gap (SITE-212)', () => {
+  it('only the first slice starts a pass, so only its claim takes the gap lease', () => {
+    expect(isPlatPassStart(0)).toBe(true)
+    expect(isPlatPassStart(1)).toBe(false)
+    expect(isPlatPassStart(17)).toBe(false)
+  })
+
+  it('allows at most four passes a day, the deploy count the tier was sized for', () => {
+    expect(PLAT_WARM_PASS_GAP_S).toBe(6 * 3600)
+    expect((24 * 3600) / PLAT_WARM_PASS_GAP_S).toBeLessThanOrEqual(4)
+  })
+
+  it('names the gap lease apart from every per-deployment slice lease', () => {
+    const slice = platSliceLeaseName('abcdef123456', 2617, 0)
+    expect(PLAT_WARM_PASS_GAP_LEASE).not.toBe(slice)
+    expect(slice.startsWith(PLAT_WARM_PASS_GAP_LEASE)).toBe(false)
   })
 })
