@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-09-30T23:52:47.105Z
+**Generated:** 2026-10-01T00:52:18.175Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -242,7 +242,7 @@ Source-of-truth RETS-style listings table (~589K rows). **Quotable mixed-case co
 
 ## Listings — derived (materialized views)
 
-### `listing_tile_mv` · **rows ≈ 603,838**
+### `listing_tile_mv` · **rows ≈ 597,074**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. A view over the table listing_tile_mv_src, kept current every minute by pg_cron `listing-mv-drain` (20260924173000; a matview refreshed every 30 minutes before that). The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -539,7 +539,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `dom_total` | smallint | yes |  |
 | `price_per_sqft` | numeric | yes |  |
 
-### `cmas` · **rows ≈ 572**
+### `cmas` · **rows ≈ 573**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -630,7 +630,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `pulled_at` | timestamp with time zone | yes |  |
 | `north_star_attributed_buyer_leads` | integer | no | 0 |
 
-### `expired_listings` · **rows ≈ 560**
+### `expired_listings` · **rows ≈ 561**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -979,6 +979,8 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `buy_agent_mls_id` | text | yes |  |
 | `is_dual_office` | boolean | yes |  |
 | `is_dual_agent` | boolean | yes |  |
+| `close_ts` | timestamp with time zone | yes |  |
+| `city_key` | text | yes |  |
 
 ### `asset_library`
 

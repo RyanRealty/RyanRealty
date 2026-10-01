@@ -13,15 +13,19 @@
 -- get bought" off the page after it waits out a cached try and an uncached
 -- retry.
 --
--- THE SAME ROWS, BY INDEX. Every predicate of the view stays, word for word;
--- two are added or rewritten so an index can serve them:
+-- THE SAME ROWS, BY INDEX. Every predicate of the view stays, except that the
+-- one-city branch leaves out the view's service-area join: the unknown-city
+-- early return stands in for it (city_lower is unique, so a known city's rows
+-- are exactly lower("City") = the city). Two are added or rewritten so an index
+-- can serve them (20261001010000 later moved this read back through the view,
+-- which now carries the two index columns, so the join gates every branch):
 --   * the window: "CloseDate"::date >= current_date - N and <= current_date
 --     become a range on the raw column, "CloseDate" >= (current_date - N)
 --     and < (current_date + 1) as timestamptz. A date cast to timestamptz is
 --     midnight in the session time zone, the same zone the ::date cast used,
 --     so a sale is inside one exactly when it is inside the other.
 --   * one city: lower(trim(coalesce("City", ''))) = the city is added in front
---     of the view's own lower("City") = the city. It is the key of
+--     of the old function's lower("City") = the city. It is the key of
 --     idx_listings_closed_city_recent_sold (partial on the view's
 --     "StandardStatus" ILIKE '%Closed%'), and it adds nothing: the city is
 --     trimmed before the call, so any row whose lower("City") equals it has no

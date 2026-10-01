@@ -14,6 +14,7 @@
     "ci:dal-boundary",
     "ci:dal-column-quoting",
     "ci:listings-select-columns",
+    "ci:close-date-window",
     "ci:dal-internal-discipline",
     "ci:db-timeout-guard",
     "ci:deliverable-send-chokepoint",
