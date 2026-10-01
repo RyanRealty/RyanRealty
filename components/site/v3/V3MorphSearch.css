@@ -233,3 +233,79 @@
     line-height: 1.25;
   }
 }
+
+/* The front-door panel (panelMaxWidth past the demo's 448). The page dims
+   under it so the field reads as having become the results surface: a navy
+   scrim, never a blur (no glass). The overlay is portaled with the .v3 root
+   class, so these resolve against the tokens. */
+.v3 .v3-morph-search__scrim {
+  background: var(--v3-scrim-mid) !important;
+}
+
+.v3 [data-v3-morph='dialog'] [data-v3-morph='group-label'] {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-label);
+  letter-spacing: var(--v3-track-label);
+  color: var(--v3-ink-muted);
+}
+
+.v3 [data-v3-morph='dialog'] [data-v3-morph='meta'] {
+  font-family: var(--v3-font-body);
+  font-variant-numeric: tabular-nums;
+  color: var(--v3-ink);
+}
+
+.v3 [data-v3-morph='dialog'] [data-v3-morph='preview'] {
+  background: var(--v3-surface-raised);
+}
+
+.v3 [data-v3-morph='dialog'] [data-v3-morph='preview-title'] {
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-2);
+  font-weight: var(--v3-weight-display);
+  line-height: var(--v3-leading-heading);
+  color: var(--v3-ink);
+}
+
+.v3 [data-v3-morph='dialog'] [data-v3-morph='preview-figure'] {
+  font-family: var(--v3-font-body);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--v3-size-body-lg);
+  font-weight: var(--v3-weight-strong);
+  color: var(--v3-ink);
+}
+
+.v3 [data-v3-morph='dialog'] [data-v3-morph='footer'] {
+  background: var(--v3-surface);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v3 .v3-morph-search__scrim {
+    transition: none;
+  }
+}
+
+/* The open panel's field. The panel itself says where focus is (it is the
+   dialog, with the caret in its one input), so the field drops the global
+   focus box that drew a second frame inside it, and its row takes a navy rule
+   instead. */
+.v3 [data-v3-morph='dialog'] [data-v3-morph='input']:focus,
+.v3 [data-v3-morph='dialog'] [data-v3-morph='input']:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.v3 [data-v3-morph='dialog'] > div:first-child:focus-within {
+  border-bottom-color: var(--v3-ink);
+}
+
+.v3 [data-v3-morph='dialog'] [data-v3-morph='thumb-plate'] {
+  background: var(--v3-wash);
+}
+
+/* A front-door panel's field reads at body size: it is the closed field grown. */
+.v3.home-hero-search-overlay [data-v3-morph='input'] {
+  font-size: var(--v3-size-body);
+}

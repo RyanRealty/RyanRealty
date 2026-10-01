@@ -26,9 +26,10 @@
  * `layout="rails"` HOLDS THE CAROUSELS (Matt 2026-09-25, "fix first, then
  * ship"): the stacked HomeListingRail carousels exactly as they shipped before
  * the dial, for a page whose class is still below its taste mark with the
- * dial (the homepage: 59 and 58 against its 67 on 2026-10-01). The default is
- * the dial, which the /cities index shelves take since 2026-10-01 (64 against
- * its 62).
+ * dial. No page holds them now: the /cities index shelves took the dial on
+ * 2026-10-01 (64 against its 62), and the homepage the same day, after its
+ * search, community and place sections were redesigned (see the homepage-v6
+ * receipt).
  */
 import { cn } from '@/lib/utils'
 import {

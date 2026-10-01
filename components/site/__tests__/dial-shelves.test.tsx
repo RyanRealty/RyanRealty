@@ -130,9 +130,10 @@ describe('HomeHomesRails on the dial', () => {
     )
   })
 
-  // Matt 2026-09-25, "fix first, then ship": the homepage keeps its carousels
-  // until its class reaches its taste mark with the dial. The /cities index
-  // shelves reached theirs on 2026-10-01 and mount the dial (below).
+  // Matt 2026-09-25, "fix first, then ship": a page keeps its carousels until
+  // its class reaches its taste mark with the dial. The /cities index shelves
+  // reached theirs on 2026-10-01, the homepage's the same day (below); the
+  // held layout stays a prop for a page that has not.
   it('layout="rails" holds the stacked carousels, every card still a link', () => {
     const held = renderToStaticMarkup(<HomeHomesRails rows={rows} emptyMessage="none" layout="rails" />)
     expect(held).toContain('class="home-rails"')
@@ -145,17 +146,18 @@ describe('HomeHomesRails on the dial', () => {
   })
 })
 
-describe('which page holds the carousels (2026-10-01)', () => {
+describe('which page holds the carousels (2026-10-01): none', () => {
   const page = (path: string) => readFileSync(resolve(path), 'utf8')
   it('the /cities index shelves are listing dials: no held layout on its HomeHomesRails', () => {
     const cities = page('app/cities/page.tsx')
     expect(cities).toMatch(/<HomeHomesRails\b/)
     expect(cities).not.toMatch(/layout="rails"/)
   })
-  it('the homepage holds its shelves on the carousels by the one explicit prop', () => {
+  it('the homepage shelves are listing dials: no held layout on its HomeHomesRails', () => {
     const home = page('app/page.tsx')
-    expect(home).toMatch(/<HomeHomesRails[\s\S]*?layout="rails"/)
-    expect(home.match(/layout="rails"/g) ?? []).toHaveLength(1)
+    expect(home).toMatch(/<HomeHomesRails\b/)
+    expect(home).not.toMatch(/layout="rails"/)
+    expect(home).not.toMatch(/layout=\{?'rails'/)
   })
 })
 

@@ -24,6 +24,7 @@ import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-
 import { markAskSource } from '@/lib/ask-source'
 import { trackEvent } from '@/lib/tracking'
 import type { HomeHeroLive } from './home-hero-inventory'
+import { homeHeroTypedItem } from './home-hero-search-items'
 import './home-hero-search.css'
 
 /** Where a no-JS Buy submit lands: the regional inventory page. */
@@ -47,10 +48,22 @@ export function HomeHeroSearch({
   valuationHref,
   live,
   homes,
+  items: frontDoor,
+  forSaleCount,
 }: {
   valuationHref: string
   live?: HomeHeroLive
+  /** Legacy: plain home rows ahead of the place seeds (no figures). */
   homes?: readonly MorphingSearchItem[]
+  /**
+   * What the search opens onto before a query (homeHeroSearchItems): towns
+   * and communities with their live counts, the lead shelf's homes with their
+   * photographs and asks. The panel then opens wide, over a scrim, with a
+   * preview of the row under the cursor.
+   */
+  items?: readonly MorphingSearchItem[]
+  /** The page's own "listings for sale" figure, for the panel's search-everything door. */
+  forSaleCount?: number | null
 }) {
   const router = useRouter()
   const uid = useId()
@@ -69,7 +82,25 @@ export function HomeHeroSearch({
       ),
     [suggestions],
   )
+  const known = useMemo(() => {
+    const map = new Map<string, MorphingSearchItem>()
+    for (const item of frontDoor ?? []) {
+      if (item.group === 'Towns' || item.group === 'Resorts and communities') {
+        map.set(item.title.trim().toLowerCase(), item)
+      }
+    }
+    return map
+  }, [frontDoor])
   const morphItems = useMemo<V3MorphSearchItem[]>(() => {
+    if (frontDoor?.length) {
+      const typed = items.map((item) => homeHeroTypedItem(item, known))
+      if (typed.length > 0) {
+        // One row per place: a typed city and a typed subdivision can name the same door.
+        const seen = new Set<string>()
+        return typed.filter((row) => (seen.has(row.id) ? false : (seen.add(row.id), true)))
+      }
+      return [...frontDoor]
+    }
     const typed = items.map((item) => ({
       id: item.href,
       title: item.label,
@@ -78,7 +109,21 @@ export function HomeHeroSearch({
     if (typed.length > 0) return typed
     const listed = homes?.length ? [...homes, ...PLACE_SEEDS] : PLACE_SEEDS
     return listed
-  }, [items, homes])
+  }, [items, homes, frontDoor, known])
+  const wide = Boolean(frontDoor?.length)
+  const regionalHref = publishRegionalSearchHref()
+  const footer = wide ? (
+    <>
+      <a href={regionalHref} className="home-hero-search__all">
+        {typeof forSaleCount === 'number' && Number.isFinite(forSaleCount) && forSaleCount > 0
+          ? `Search all ${forSaleCount.toLocaleString('en-US')} listings for sale`
+          : 'Search every listing for sale'}
+      </a>
+      <span className="home-hero-search__keys" aria-hidden="true">
+        Arrow keys to move, Enter to open
+      </span>
+    </>
+  ) : undefined
 
   const go = useCallback(
     (href: string) => {
@@ -199,6 +244,15 @@ export function HomeHeroSearch({
           items={morphItems}
           onQueryChange={setQuery}
           onSelect={(item) => go(item.id)}
+          {...(wide
+            ? {
+                panelMaxWidth: 1040,
+                resultsMaxHeight: 500,
+                scrim: true,
+                footer,
+                overlayClassName: 'home-hero-search-overlay',
+              }
+            : {})}
         >
           <div className="v3-morph-search__field">
             <input

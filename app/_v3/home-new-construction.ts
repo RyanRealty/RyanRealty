@@ -4,12 +4,9 @@
 import { searchListingsAllCount } from '@/lib/data'
 import {
   BEND_NEW_CON_HOME_NAV_NAMES,
-  BEND_NEW_CON_STAGE_FALLBACK_POSTER,
   bendNewConSearchFilter,
   bendNewConSearchHref,
 } from '@/lib/site/bend-new-construction'
-import { communityImage, preferPlaceHeroOrNull } from '@/lib/geo-images'
-import { slugify } from '@/lib/slug'
 import type { HomePlaceDoor, HomePlaceRun } from './HomeBrowsePlaces'
 
 function dalReady(): boolean {
@@ -35,31 +32,29 @@ export async function loadHomeNewConRun(): Promise<HomePlaceRun> {
     ...BEND_NEW_CON_HOME_NAV_NAMES.map((name) => liveCount(bendNewConSearchFilter(name))),
   ])
 
-  const doors: HomePlaceDoor[] = [
-    {
-      label: 'Bend new homes',
-      href: '/new-construction',
-      description: 'Single-family first · map and builder savings',
-      photoSrc: BEND_NEW_CON_STAGE_FALLBACK_POSTER,
-      ...(bendCount != null ? { count: bendCount } : {}),
-    },
-    ...BEND_NEW_CON_HOME_NAV_NAMES.map((name, i) => {
-      const photoSrc = preferPlaceHeroOrNull(null, communityImage(slugify(name)))
-      return {
-        label: name,
-        href: bendNewConSearchHref(name),
-        description: 'Active-building subdivision',
-        ...(photoSrc ? { photoSrc } : {}),
-        ...(navCounts[i] != null ? { count: navCounts[i] } : {}),
-      }
-    }),
-  ]
+  // The Bend total leads as the run's figure ("216 new homes for sale in
+  // Bend"); each building subdivision is a counted row under it, its count a
+  // length on the run's one scale (2026-10-01: the cards read as the third
+  // run of one card shape, and "Active-building subdivision" as jargon).
+  const lead: HomePlaceDoor = {
+    label: 'in Bend',
+    href: '/new-construction',
+    description: 'Counted from the listings the MLS marks as new construction in Bend, by subdivision.',
+    ...(bendCount != null ? { count: bendCount } : {}),
+  }
+  const doors: HomePlaceDoor[] = BEND_NEW_CON_HOME_NAV_NAMES.map((name, i) => ({
+    label: name,
+    href: bendNewConSearchHref(name),
+    ...(navCounts[i] != null ? { count: navCounts[i] } : {}),
+  }))
 
   return {
     name: 'New construction',
     unit: 'new homes for sale',
-    layout: 'carousel',
-    seeAll: { label: 'Bend new homes page', href: '/new-construction' },
+    unitOne: 'new home for sale',
+    layout: 'ledger',
+    seeAll: { label: 'Every new home in Bend', href: '/new-construction' },
+    lead,
     doors,
   }
 }
