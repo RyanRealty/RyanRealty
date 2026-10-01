@@ -21,6 +21,14 @@ describe('HomeListingRail in-card gallery', () => {
     expect(rowCss).toContain('.v3-lrow__media:hover .v3-lrow__nav')
   })
 
+  it('gives each 28px chevron a 44 by 44 tap area without moving it (ci:tap-targets)', () => {
+    const hit = rowCss.match(/\.v3-lrow__nav::before\s*\{[^}]*\}/)?.[0] ?? ''
+    expect(hit).toMatch(/position:\s*absolute/)
+    expect(hit).toMatch(/width:\s*2\.75rem/)
+    expect(hit).toMatch(/height:\s*2\.75rem/)
+    expect(hit).not.toMatch(/pointer-events:\s*none/)
+  })
+
   it('keeps street and city from gluing (LoopRedmond)', () => {
     expect(rail).toContain('home-rail__addr')
     expect(rail).toContain('home-rail__city')

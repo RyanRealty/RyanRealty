@@ -1,0 +1,8 @@
+{
+  "_doc": "Shrink-only. Functions and views whose newest definition windows on \"CloseDate\"::date with no raw \"CloseDate\" bound, held with the reason they are not fixed yet. ci:close-date-window fails on a new one and on an entry that no longer offends.",
+  "entries": {
+    "compute_and_cache_period_stats": "The market_stats_cache period builder (20260425090000), run by the cache crons and on demand from lib/data. Pre-dates the gate (2026-10-01); the timeout sources still open are in SITE-212.",
+    "compute_reporting_cache_payload": "The reporting cache payload builder (20260425090000; anon EXECUTE revoked in 20260530180000). Pre-dates the gate (2026-10-01).",
+    "report_period_metrics_core": "The report period metrics core (20260626140000). Pre-dates the gate (2026-10-01); the timeout sources still open are in SITE-212."
+  }
+}

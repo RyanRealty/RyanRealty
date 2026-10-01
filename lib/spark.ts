@@ -381,8 +381,8 @@ export async function fetchSparkListingsPage(
     }
   }
   let res = await doFetch()
-  // One 429 backoff, mirroring lib/spark-odata.ts fetchWithRetry. A transient
-  // rate-limit must not abort a multi-thousand-page full/delta sync run.
+  // One 429 backoff. A transient rate-limit must not abort a
+  // multi-thousand-page full/delta sync run.
   if (res.status === 429) {
     console.warn('[spark] HTTP 429 rate limited. waiting 60s then retrying once')
     await new Promise((r) => setTimeout(r, 60_000))

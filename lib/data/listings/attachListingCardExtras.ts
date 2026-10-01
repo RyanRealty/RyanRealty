@@ -86,6 +86,7 @@ async function latestPriceDropsForKeys(
     .in('listing_key', keys) // @canonical-key — keys come from listing_tile_mv ListingKey on the same card row
     .order('event_at', { ascending: false })
     .limit(Math.min(keys.length * 4, 500))
+  if (error) console.error('[attachListingCardExtras] price drops not read', error.message)
   if (error || !data) return out
   for (const row of data as ActivityDropRow[]) {
     const key = row.listing_key?.trim()
@@ -112,6 +113,7 @@ export async function loadRecentPriceDropEvents(
     .gte('event_at', windowStart)
     .order('event_at', { ascending: false })
     .limit(1000)
+  if (error) console.error('[loadRecentPriceDropEvents] price drops not read', error.message)
   if (error || !data) return out
   for (const row of data as ActivityDropRow[]) {
     const key = row.listing_key?.trim()
@@ -132,18 +134,24 @@ export async function attachListingCardExtras(
   const [{ data, error }, drops] = await Promise.all([
     sb
       .from('listings')
-      .select('ListingKey, original_list_price, virtual_tour_url, ListOfficeName, PhotoURL, details')
+      // OriginalListPrice is mixed case, passed bare to supabase-js. From 2026-09-21
+      // to 09-30 this read named original_list_price, which listings does not have,
+      // and failed on every call with nothing logged: cards went without their extra
+      // photos, tour, office and original price, and search cards without their drop
+      // badge. ci:listings-select-columns now fails a column listings does not have.
+      // Photos is only the photo list out of details (the whole raw MLS payload).
+      .select('ListingKey, OriginalListPrice, virtual_tour_url, ListOfficeName, PhotoURL, Photos:details->Photos')
       .in('ListingKey', slice), // @canonical-key — keys come from listing_tile_mv ListingKey on the same card row
     latestPriceDropsForKeys(slice),
   ])
-  if (error || !data) return out
-  for (const raw of data as Array<{
+  if (error) console.error('[attachListingCardExtras] listings read failed', error.message)
+  for (const raw of (data ?? []) as Array<{
     ListingKey?: string | null
-    original_list_price?: number | null
+    OriginalListPrice?: number | string | null
     virtual_tour_url?: string | null
     ListOfficeName?: string | null
     PhotoURL?: string | null
-    details?: { Photos?: DetailsPhotoJson[] } | null
+    Photos?: DetailsPhotoJson[] | null
   }>) {
     const key = raw.ListingKey?.trim()
     if (!key) continue
@@ -156,14 +164,14 @@ export async function attachListingCardExtras(
       photos.push(next)
     }
     // Prefer sized detail photos (large) over a possibly tiny PhotoURL lead.
-    for (const photo of raw.details?.Photos ?? []) {
+    for (const photo of Array.isArray(raw.Photos) ? raw.Photos : []) {
       if (photos.length >= PHOTO_CAP) break
       push(bestUri(photo))
     }
     if (photos.length === 0) push(raw.PhotoURL ? listingRowPhotoSrc(raw.PhotoURL) : raw.PhotoURL)
     const original =
-      raw.original_list_price != null && Number.isFinite(Number(raw.original_list_price))
-        ? Number(raw.original_list_price)
+      raw.OriginalListPrice != null && Number.isFinite(Number(raw.OriginalListPrice))
+        ? Number(raw.OriginalListPrice)
         : null
     const priceDrop = drops.get(key) ?? null
     out.set(key, {
@@ -173,6 +181,12 @@ export async function attachListingCardExtras(
       photoUrls: photos,
       priceDrop,
     })
+  }
+  // A drop is its own read (activity_events): a failed or partial listings read keeps it.
+  for (const [key, priceDrop] of drops) {
+    if (!out.has(key)) {
+      out.set(key, { originalListPrice: null, tourUrl: null, listOfficeName: null, photoUrls: [], priceDrop })
+    }
   }
   return out
 }

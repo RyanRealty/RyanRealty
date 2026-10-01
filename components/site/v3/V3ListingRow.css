@@ -277,6 +277,18 @@
 .v3-lrow__media:focus-within .v3-lrow__nav {
   opacity: 1;
 }
+/* The chevron stays a 28px square; its tap area is 44 by 44 (WCAG 2.5.8,
+   ci:tap-targets), transparent and centred on it, so the photo does not move.
+   Cards show these only when they carry more than one photo. */
+.v3-lrow__nav::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2.75rem;
+  height: 2.75rem;
+  transform: translate(-50%, -50%);
+}
 .v3-lrow__nav--prev { left: var(--v3-space-2xs); }
 .v3-lrow__nav--next { right: var(--v3-space-2xs); }
 .v3-lrow__dots {

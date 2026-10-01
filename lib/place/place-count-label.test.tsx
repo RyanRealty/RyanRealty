@@ -77,7 +77,11 @@ const POPULATION: ListingTile[] = [
 /** What the homes block holds: the publicly active slice of the same population (listing_boundary_xref_mv). */
 const HOMES_POPULATION = POPULATION.filter((t) => (PUBLIC_ACTIVE_STATUSES as string[]).includes(t.status))
 
-describe('the map and the homes under it count "for sale" the same way', () => {
+// These tests import the page's atlas and component tree inside the test.
+// Alone they take about 2 s; in a pre-commit run of 200+ test files on four
+// cores the first import alone passed the default 5 s and the commit failed
+// on time, not on a count (2026-09-30).
+describe('the map and the homes under it count "for sale" the same way', { timeout: 30_000 }, () => {
   it('holds the map key and the homes block count equal over one population', async () => {
     const { atlasDotsFromTiles } = await import('@/lib/atlas/build-place-atlas')
     const { placeStockSectionsFromTiles } = await import('./place-inventory-stock')

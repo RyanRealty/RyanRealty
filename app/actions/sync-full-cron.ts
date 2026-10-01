@@ -1,7 +1,7 @@
 'use server'
 
 import { createServiceClient } from '@/lib/supabase/service'
-import { syncSparkListings, syncListingHistory, runOnePageActivePendingSync, syncSparkListingsDelta } from './sync-spark'
+import { syncSparkListings, syncListingHistory, syncSparkListingsDelta } from './sync-spark'
 import { recordSyncRun, refreshListingsBreakdown } from './sync-history'
 
 const CURSOR_ID = 'default'
@@ -9,7 +9,7 @@ const LISTING_PAGES_PER_RUN = 5
 const HISTORY_BATCH_LIMIT = 30
 
 export type SyncCursor = {
-  phase: 'listings' | 'history' | 'idle' | 'refresh_active_pending'
+  phase: 'listings' | 'history' | 'idle'
   nextListingPage: number
   totalListingPages: number | null
   nextHistoryOffset: number
@@ -70,7 +70,7 @@ export async function getSyncCursor(): Promise<SyncCursor | null> {
   } | null
   if (!row) return null
 
-  const phase = (row.phase === 'history' || row.phase === 'idle' || row.phase === 'refresh_active_pending' ? row.phase : 'listings') as SyncCursor['phase']
+  const phase = (row.phase === 'history' || row.phase === 'idle' ? row.phase : 'listings') as SyncCursor['phase']
   return {
     phase,
     nextListingPage: row.next_listing_page ?? 1,
@@ -100,7 +100,7 @@ export async function runOneFullSyncChunk(): Promise<RunOneChunkResult> {
 
   const { data: cursorRow } = await supabase
     .from('sync_cursor')
-    .select('phase, next_listing_page, total_listing_pages, next_history_offset, run_started_at, run_listings_upserted, run_history_rows, paused, abort_requested, refresh_next_url')
+    .select('phase, next_listing_page, total_listing_pages, next_history_offset, run_started_at, run_listings_upserted, run_history_rows, paused, abort_requested')
     .eq('id', CURSOR_ID)
     .maybeSingle()
 
@@ -114,21 +114,16 @@ export async function runOneFullSyncChunk(): Promise<RunOneChunkResult> {
     run_history_rows?: number
     paused?: boolean
     abort_requested?: boolean
-    refresh_next_url?: string | null
   } | null
 
   if (row?.abort_requested) {
     await supabase.from('sync_cursor').upsert(
       {
         id: CURSOR_ID,
-        phase: row.phase === 'refresh_active_pending' ? 'idle' : undefined,
-        next_listing_page: row.phase === 'refresh_active_pending' ? 1 : undefined,
-        total_listing_pages: row.phase === 'refresh_active_pending' ? null : undefined,
         run_started_at: null,
         run_listings_upserted: 0,
         run_history_rows: 0,
         abort_requested: false,
-        refresh_next_url: row.phase === 'refresh_active_pending' ? null : undefined,
         updated_at: new Date().toISOString(),
       },
       { onConflict: 'id' }
@@ -145,86 +140,6 @@ export async function runOneFullSyncChunk(): Promise<RunOneChunkResult> {
       { onConflict: 'id' }
     )
     return { ok: true, phase: 'listings', done: true, paused: true, message: 'Paused.' }
-  }
-
-  // Refresh active & pending (chunked): one page per chunk, same Pause/Stop as full sync
-  if (row?.phase === 'refresh_active_pending') {
-    const refreshNextUrl = row.refresh_next_url ?? null
-    const nextListingPage = row.next_listing_page ?? 1
-    const runStartedAt = row.run_started_at ?? new Date().toISOString()
-    let runListingsUpserted = row.run_listings_upserted ?? 0
-
-    const result = await runOnePageActivePendingSync({
-      refreshNextUrl: refreshNextUrl === 'v1' ? 'v1' : refreshNextUrl,
-      nextListingPage,
-    })
-
-    runListingsUpserted += result.totalUpserted
-
-    if (!result.success) {
-      await supabase.from('sync_cursor').upsert(
-        {
-          id: CURSOR_ID,
-          phase: 'idle',
-          run_started_at: null,
-          run_listings_upserted: 0,
-          refresh_next_url: null,
-          error: result.error ?? result.message,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'id' }
-      )
-      return { ok: false, phase: 'listings', done: true, message: result.message, error: result.error }
-    }
-
-    if (!result.hasMore) {
-      await supabase.from('sync_cursor').upsert(
-        {
-          id: CURSOR_ID,
-          phase: 'idle',
-          next_listing_page: 1,
-          total_listing_pages: null,
-          run_started_at: null,
-          run_listings_upserted: 0,
-          run_history_rows: 0,
-          refresh_next_url: null,
-          error: null,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'id' }
-      )
-      return {
-        ok: true,
-        phase: 'listings',
-        done: true,
-        message: `Refresh active & pending complete. ${runListingsUpserted} listings upserted.`,
-        upserted: result.totalUpserted,
-      }
-    }
-
-    await supabase.from('sync_cursor').upsert(
-      {
-        id: CURSOR_ID,
-        phase: 'refresh_active_pending',
-        next_listing_page: result.nextListingPage,
-        total_listing_pages: result.totalListingPages,
-        run_started_at: runStartedAt,
-        run_listings_upserted: runListingsUpserted,
-        refresh_next_url: result.nextUrl,
-        error: null,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'id' }
-    )
-    return {
-      ok: true,
-      phase: 'listings',
-      done: false,
-      message: result.message ?? `Refreshing: ${runListingsUpserted} upserted so far.`,
-      nextListingPage: result.nextListingPage,
-      totalListingPages: result.totalListingPages ?? undefined,
-      upserted: result.totalUpserted,
-    }
   }
 
   let phase: 'listings' | 'history' = (row?.phase === 'history' ? 'history' : 'listings') as 'listings' | 'history'
@@ -494,34 +409,6 @@ export async function getSyncStatus(): Promise<SyncStatus> {
 /** Run a single sync chunk. Used by the admin UI so it can show live progress and respect Pause/Stop between chunks. */
 export async function runOneSyncChunk(): Promise<RunOneChunkResult> {
   return runOneFullSyncChunk()
-}
-
-/** Start refresh active & pending (chunked). Sets phase to refresh_active_pending; UI then runs runOneSyncChunk in a loop until done. Same Stop/Pause as full sync. */
-export async function startRefreshActivePending(): Promise<{ ok: boolean; error?: string }> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!supabaseUrl?.trim() || !serviceKey?.trim()) return { ok: false, error: 'Supabase not configured' }
-  const supabase = createServiceClient()
-  const now = new Date().toISOString()
-  const { error } = await supabase.from('sync_cursor').upsert(
-    {
-      id: CURSOR_ID,
-      phase: 'refresh_active_pending',
-      next_listing_page: 1,
-      total_listing_pages: null,
-      run_started_at: now,
-      run_listings_upserted: 0,
-      run_history_rows: 0,
-      refresh_next_url: null,
-      paused: false,
-      abort_requested: false,
-      error: null,
-      updated_at: now,
-    },
-    { onConflict: 'id' }
-  )
-  if (error) return { ok: false, error: error.message }
-  return { ok: true }
 }
 
 /** Set sync pause flag. When true, cron and Smart Sync will not run chunks until resumed. */

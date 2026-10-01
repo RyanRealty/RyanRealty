@@ -5,8 +5,11 @@
  *
  * 11F: taken off shadcn and onto the LOCKED admin v2 language
  * (design_system/admin/ADMIN_UI.md). Presentation only — the open state, the
- * children (SyncSmart, RefreshActivePendingButton, TriggerDeltaSyncButton,
- * SyncSinceDateButton, SyncHistoryButtons), and every string are untouched.
+ * children (SyncSmart, TriggerDeltaSyncButton, SyncSinceDateButton,
+ * SyncHistoryButtons), and every string are untouched. The Refresh active &
+ * pending button was removed 2026-10-01 (Matt): it wrote a listings row the
+ * table never had, so every listing it touched failed, and the delta sync
+ * refreshes active and pending listings every 15 minutes.
  *
  * Collapsible/CollapsibleTrigger/CollapsibleContent are gone: the v2 barrel has
  * no Collapsible primitive. Same pattern as ListingsCsvExport / ActionCard —
@@ -20,18 +23,15 @@ import SyncSmart from './SyncSmart'
 import SyncHistoryButtons from './SyncHistoryButtons'
 import TriggerDeltaSyncButton from './TriggerDeltaSyncButton'
 import SyncSinceDateButton from './SyncSinceDateButton'
-import RefreshActivePendingButton from './RefreshActivePendingButton'
 import type { SyncStatus } from '@/app/actions/sync-full-cron'
 
 type Props = {
   syncStatus: SyncStatus | null
-  runInProgress: boolean
   sparkConfigured: boolean
 }
 
 export default function SyncPageAdvanced({
   syncStatus,
-  runInProgress,
   sparkConfigured,
 }: Props) {
   const [open, setOpen] = useState(false)
@@ -78,7 +78,6 @@ export default function SyncPageAdvanced({
           </p>
           <div className="flex flex-wrap items-center gap-3">
             <SyncSmart initialStatus={syncStatus} sparkConfigured={sparkConfigured} compact />
-            <RefreshActivePendingButton runInProgress={runInProgress} syncPhase={syncStatus?.cursor?.phase ?? null} />
           </div>
           <div>
             <TriggerDeltaSyncButton />

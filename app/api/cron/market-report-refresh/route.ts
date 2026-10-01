@@ -25,6 +25,12 @@
  * text to the owner through queueBrokerHealthAlert (the internal channel
  * crm-health-check and crawl-probe use). It never messages a client.
  *
+ * A closed sale the MLS no longer serves is recorded missing on the first run
+ * and deleted from our copy on the third daily run that finds it missing,
+ * whole row saved first; the owner is texted what was removed. More due in a
+ * day than MLS_REMOVED_DAILY_BUDGET are held for a person instead (Matt
+ * 2026-09-30, "Delete it automatically"; lib/sync/closingsReconcile.ts).
+ *
  * Schedule: daily 11:17 UTC (vercel.json), ahead of the monthly publish run.
  * Auth: Authorization: Bearer ${CRON_SECRET} (requireCronAuth).
  * ?repair=0 reconciles without writing repairs.
@@ -35,7 +41,7 @@ import { queueBrokerHealthAlert } from '@/lib/crm/broker-alerts'
 import { addMonths } from '@/lib/market-report/format'
 import { backstopEditionEmails } from '@/lib/market-report/edition-email-draft'
 import { lastCompleteMonth, refreshReportWindow } from '@/lib/market-report/pipeline'
-import { reconcileClosings } from '@/lib/sync/closingsReconcile'
+import { DAILY_ALERT_COOLDOWN_MINUTES, reconcileClosings } from '@/lib/sync/closingsReconcile'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -86,22 +92,24 @@ export async function GET(request: Request) {
   }
 
   try {
-    const recon = await reconcileClosings({ from: windowStart, to: isoDay(new Date()), repair, maxRepairs: MAX_REPAIRS })
+    // removeAbsent: the refresh below recomputes this same window, so a sale
+    // deleted here leaves every period it counted in (Matt 2026-09-30).
+    const recon = await reconcileClosings({ from: windowStart, to: isoDay(new Date()), repair, maxRepairs: MAX_REPAIRS, removeAbsent: repair })
     say(
-      `closings ${windowStart}..today: Spark ${recon.sparkClosings}, ours ${recon.ourClosedInWindow}, drifted ${recon.drift.length}, repaired ${recon.repaired} (before-images logged ${recon.repairLogged}), failed ${recon.repairFailed.length}, not in Spark ${recon.notInSpark.length} (absent from the MLS: ${recon.absentFromMls.recorded} recorded, ${recon.absentFromMls.cleared} released${recon.absentFromMls.refused ? `; refused: ${recon.absentFromMls.refused}` : ''})`,
+      `closings ${windowStart}..today: Spark ${recon.sparkClosings}, ours ${recon.ourClosedInWindow}, drifted ${recon.drift.length}, repaired ${recon.repaired} (before-images logged ${recon.repairLogged}), failed ${recon.repairFailed.length}, not in Spark ${recon.notInSpark.length} (absent from the MLS: ${recon.absentFromMls.recorded} recorded, ${recon.absentFromMls.cleared} released${recon.absentFromMls.refused ? `; refused: ${recon.absentFromMls.refused}` : ''}; deleted ${recon.absentFromMls.removed.length}${recon.absentFromMls.removalHeld ? ` (held: ${recon.absentFromMls.removalHeld})` : ''}, held for approval ${recon.absentFromMls.held}, not due yet ${recon.absentFromMls.waiting}, told ${recon.absentFromMls.told}, restores rebuilt ${recon.absentFromMls.restoresRebuilt}${recon.absentFromMls.removalFailed ? `; deletion failed: ${recon.absentFromMls.removalFailed}` : ''})`,
     )
     if (recon.absentFromMls.refused) {
       await queueBrokerHealthAlert({
         key: 'closings-absent-refused',
         body: `The MLS check did not record missing sales today: ${recon.absentFromMls.refused.slice(0, 200)}. Spark may be down or answering empty.`,
-        cooldownMinutes: 1440,
+        cooldownMinutes: DAILY_ALERT_COOLDOWN_MINUTES,
       })
     }
     if (recon.drift.length > REPAIR_ALERT_AT) {
       await queueBrokerHealthAlert({
         key: 'closings-drift',
         body: `Closings drift: ${recon.drift.length} closed sales in the last ${WINDOW_MONTHS} months disagreed with the MLS today (${recon.repaired} repaired). The listing sync may be missing updates.`,
-        cooldownMinutes: 1440,
+        cooldownMinutes: DAILY_ALERT_COOLDOWN_MINUTES,
       })
     }
 
@@ -129,6 +137,7 @@ export async function GET(request: Request) {
         membershipRows: recon.membershipRows,
         repairFailed: recon.repairFailed,
         notInSpark: recon.notInSpark,
+        absentFromMls: recon.absentFromMls,
       },
       refreshed,
       email,
@@ -140,7 +149,7 @@ export async function GET(request: Request) {
     await queueBrokerHealthAlert({
       key: 'market-report-refresh',
       body: `The market report refresh failed: ${message.slice(0, 180)}`,
-      cooldownMinutes: 1440,
+      cooldownMinutes: DAILY_ALERT_COOLDOWN_MINUTES,
     })
     return NextResponse.json({ ok: false, error: message, email, log }, { status: 500 })
   }

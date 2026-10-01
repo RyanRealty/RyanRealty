@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-09-30T20:28:29.923Z
+**Generated:** 2026-10-01T00:52:18.175Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -242,7 +242,7 @@ Source-of-truth RETS-style listings table (~589K rows). **Quotable mixed-case co
 
 ## Listings — derived (materialized views)
 
-### `listing_tile_mv` · **rows ≈ 603,782**
+### `listing_tile_mv` · **rows ≈ 597,074**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. A view over the table listing_tile_mv_src, kept current every minute by pg_cron `listing-mv-drain` (20260924173000; a matview refreshed every 30 minutes before that). The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -356,7 +356,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `methodology_version` | text | yes |  |
 | `methodology` | jsonb | yes |  |
 
-### `market_stats_cache` · **rows ≈ 19,512**
+### `market_stats_cache` · **rows ≈ 19,742**
 
 6-hour freshness. Per-geo + per-window aggregated stats. **DAL:** `getMarketStats(...)`. **Known issue 2026-05-28:** column list in the current DAL does not match the cache schema — fix deferred.
 
@@ -539,7 +539,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `dom_total` | smallint | yes |  |
 | `price_per_sqft` | numeric | yes |  |
 
-### `cmas` · **rows ≈ 569**
+### `cmas` · **rows ≈ 573**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -630,7 +630,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `pulled_at` | timestamp with time zone | yes |  |
 | `north_star_attributed_buyer_leads` | integer | no | 0 |
 
-### `expired_listings` · **rows ≈ 557**
+### `expired_listings` · **rows ≈ 561**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -689,8 +689,9 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `outreach_email_claim_at` | timestamp with time zone | yes |  |
 | `outreach_email_idempotency_key` | text | yes |  |
 | `outreach_email_queued_at` | timestamp with time zone | yes |  |
+| `outreach_email_verify_attempts` | integer | no | 0 |
 
-### `marketing_brain_actions` · **rows ≈ 1,035**
+### `marketing_brain_actions` · **rows ≈ 1,039**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -978,6 +979,8 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `buy_agent_mls_id` | text | yes |  |
 | `is_dual_office` | boolean | yes |  |
 | `is_dual_agent` | boolean | yes |  |
+| `close_ts` | timestamp with time zone | yes |  |
+| `city_key` | text | yes |  |
 
 ### `asset_library`
 
@@ -2004,6 +2007,33 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `created_at` | timestamp with time zone | no | now() |
 | `updated_at` | timestamp with time zone | no | now() |
 
+### `crm_report_sends`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | bigint | no |  |
+| `subscription_id` | bigint | yes |  |
+| `person_id` | bigint | no |  |
+| `email_key` | text | no |  |
+| `broker` | text | yes |  |
+| `kind` | text | no |  |
+| `status` | text | no |  |
+| `hold_reason` | text | yes |  |
+| `error` | text | yes |  |
+| `message_id` | text | yes |  |
+| `recipient_email` | text | yes |  |
+| `attempted_at` | timestamp with time zone | no | now() |
+| `sent_at` | timestamp with time zone | yes |  |
+| `frequency` | text | yes |  |
+| `areas` | ARRAY | no | '{}'::text[] |
+| `subject` | text | yes |  |
+| `html` | text | yes |  |
+| `plain_text` | text | yes |  |
+| `figures` | jsonb | no | '[]'::jsonb |
+| `spark_check` | jsonb | yes |  |
+| `payload` | jsonb | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
+
 ### `crm_report_subscriptions`
 
 | Column | Type | Nullable | Default |
@@ -2017,6 +2047,15 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `updated_at` | timestamp with time zone | no | now() |
 | `last_sent_at` | timestamp with time zone | yes |  |
 | `last_attempt_at` | timestamp with time zone | yes |  |
+| `first_send_approved_at` | timestamp with time zone | yes |  |
+| `first_send_approved_by` | text | yes |  |
+| `source` | text | yes |  |
+| `requested_at` | timestamp with time zone | yes |  |
+| `consent_note` | text | yes |  |
+| `stopped_at` | timestamp with time zone | yes |  |
+| `stopped_via` | text | yes |  |
+| `paused_at` | timestamp with time zone | yes |  |
+| `paused_via` | text | yes |  |
 
 ### `crm_round_robin_state`
 
@@ -2402,6 +2441,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `outreach_email_claim_at` | timestamp with time zone | yes |  |
 | `outreach_email_idempotency_key` | text | yes |  |
 | `outreach_email_queued_at` | timestamp with time zone | yes |  |
+| `outreach_email_verify_attempts` | integer | no | 0 |
 
 ### `fub_person_geo`
 
@@ -2840,6 +2880,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `outcome` | text | no | 'pending'::text |
 | `note` | text | yes |  |
 | `before_row` | jsonb | yes |  |
+| `reported_at` | timestamp with time zone | yes |  |
 
 ### `listing_mv_errors`
 
@@ -3652,6 +3693,8 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `first_detected_at` | timestamp with time zone | no | now() |
 | `last_confirmed_at` | timestamp with time zone | no | now() |
 | `note` | text | yes |  |
+| `confirmations` | integer | no | 1 |
+| `held_at` | timestamp with time zone | yes |  |
 
 ### `market_metric`
 

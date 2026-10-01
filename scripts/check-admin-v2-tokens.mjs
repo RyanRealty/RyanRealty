@@ -695,7 +695,6 @@ const SCAN_DIRS = [
   'app/admin/(protected)/site-pages/SitePageEditor.tsx',
   'app/admin/(protected)/sync/SyncPageAdvanced.tsx',
 
-  'app/admin/(protected)/sync/RefreshActivePendingButton.tsx',
   'app/admin/(protected)/sync/SyncHistoryButtons.tsx',
   'app/admin/(protected)/sync/SyncSinceDateButton.tsx',
   'app/admin/(protected)/sync/SyncSmart.tsx',

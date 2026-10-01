@@ -1,0 +1,4 @@
+{
+  "_doc": "Shrink-only. Each entry is a known read or write that names a column listings does not have, keyed file|method|column, with why it is not fixed yet. ci:listings-select-columns fails on a new one and on an entry that no longer matches.",
+  "entries": {}
+}

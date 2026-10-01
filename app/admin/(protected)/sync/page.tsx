@@ -8,7 +8,7 @@
  *
  * MUST NOT BREAK:
  *  - the `runInProgress` expression is the cursor-freshness read the panels
- *    below key off (SyncPageAdvanced enable/disable, RefreshActivePendingButton).
+ *    below key off (SyncHeavyStatusSections' request timeouts).
  *    It is READ by the lead sentence and otherwise untouched.
  *  - `zeroTerminal` stays all-zero: SyncLiveStatusAndTerminal overwrites it from
  *    /api/admin/sync/live within 5s, and a non-zero seed would paint a figure

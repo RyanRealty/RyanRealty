@@ -33,7 +33,10 @@ import { fetchAndInsertHistoryCore } from '@/lib/sync/fetchListingHistory'
 import { isTerminalStatus } from '@/lib/sync/terminalStatus'
 import {
   clearAbsentFromMls,
+  deleteMlsRemovedSales,
   getAbsentFromMlsKeys,
+  getUnreportedMlsRemovalNotices,
+  markMlsRemovalNoticesReported,
   getClosedListingKeysInWindow,
   getListingRowsForRepairLog,
   getListingsForReconcile,
@@ -42,6 +45,7 @@ import {
   recordRepairLog,
   setRepairLogNote,
   setRepairLogOutcome,
+  type RemovedSale,
 } from '@/lib/data/sync/closingsReconcile'
 import {
   getAdminOverrideFlags,
@@ -50,6 +54,9 @@ import {
   upsertListingRows,
 } from '@/lib/data/sync/syncWrites'
 import { refreshMarketFactSpansForKeys } from '@/lib/data/market-report/compute'
+import { queueBrokerHealthAlert } from '@/lib/crm/broker-alerts'
+import { heldSalesText, noticeText, removalFailedText } from '@/lib/sync/mlsRemovedText'
+import { rebuildRestoredSales, restoreServedAgain } from '@/lib/sync/mlsRemovedRestore'
 
 /**
  * History fetches run two at a time. The delta sync shares this Spark key every
@@ -91,17 +98,14 @@ export type ClosingsReconcileResult = {
   drift: ClosingDrift[]
   /**
    * Keys we hold as closed in the window that Spark returns nothing for, even
-   * looked up by key. Never deleted; in repair mode they are recorded in
+   * looked up by key. In repair mode they are recorded in
    * market_listing_absent_from_mls, which leaves them out of every Market
-   * Truth statistic (Matt 2026-09-25).
+   * Truth statistic (Matt 2026-09-25); with removal on, a sale found missing
+   * on three daily checks is deleted from our copy (Matt 2026-09-30).
    */
   notInSpark: string[]
-  /**
-   * Repair mode only: absences recorded this run, earlier ones the MLS serves
-   * again (released), and why recording was refused when the pull looked like
-   * an outage rather than a few removed listings.
-   */
-  absentFromMls: { recorded: number; cleared: number; refused: string | null }
+  /** Repair mode only: see AbsentFromMlsResult. */
+  absentFromMls: AbsentFromMlsResult
   repaired: number
   /** Keys actually rewritten (their membership and episodes are rebuilt too). */
   repairedKeys: string[]
@@ -111,6 +115,46 @@ export type ClosingsReconcileResult = {
   historyRefreshed: number
   refinalized: number
   membershipRows: number
+}
+
+/**
+ * What repair mode did with the closings Spark no longer serves: absences
+ * recorded this run, earlier ones the MLS serves again (released), and why
+ * recording was refused when the pull looked like an outage rather than a few
+ * removed listings. Then, with removal on, the deletion (Matt 2026-09-30,
+ * "Delete it automatically").
+ */
+export type AbsentFromMlsResult = {
+  recorded: number
+  cleared: number
+  refused: string | null
+  /** Sales deleted this run, each whole row kept first (listing_mls_repair_log). */
+  removed: RemovedSale[]
+  /** Why nothing was deleted although sales were due: over the day's budget, or an earlier hold. */
+  removalHeld: 'budget' | 'hold' | null
+  /** Sales held for a person's approval after this run. */
+  held: number
+  /** Recorded missing but not due yet (fewer than three daily sightings, or inside the 36-hour clock). */
+  waiting: number
+  /** Deletions and restores texted to the owner this run. */
+  told: number
+  /** Restored sales whose rows the daily check rebuilt this run (after the day's writes). */
+  restoresRebuilt: number
+  /** The deletion step's error; the run goes on, and the next one tries again. */
+  removalFailed: string | null
+}
+
+const NO_ABSENT_WORK: AbsentFromMlsResult = {
+  recorded: 0,
+  cleared: 0,
+  refused: null,
+  removed: [],
+  removalHeld: null,
+  held: 0,
+  waiting: 0,
+  told: 0,
+  restoresRebuilt: 0,
+  removalFailed: null,
 }
 
 type SparkLite = { key: string; listNumber: string | null; fields: Record<string, unknown> }
@@ -416,11 +460,18 @@ export async function repairListingsFromSpark(keys: string[], log: RepairLogCont
   return { repaired, repairedKeys, repairLogged: logId.size, failed, historyRefreshed, refinalized, membershipRows }
 }
 
-/** Find drift in the window and, when asked, repair it (capped). */
 /** Absences one window may record before the pull is treated as an outage: 10, or 0.5% of our closings. */
 export function absentRecordLimit(ourClosedInWindow: number): number {
   return Math.max(10, Math.ceil(ourClosedInWindow * 0.005))
 }
+
+/**
+ * Closed sales the daily check may delete in one Bend calendar day (the SQL
+ * function counts every deletion since midnight). The trailing 13 months held
+ * three on 2026-09-30, found after a year of drift; more due at once looks like
+ * a bad Spark answer, not removals, and is held for a person.
+ */
+export const MLS_REMOVED_DAILY_BUDGET = 10
 
 /**
  * Record the window's closings Spark no longer serves, and release any key
@@ -434,11 +485,20 @@ export function absentRecordLimit(ourClosedInWindow: number): number {
  * drop every sale from every statistic. So nothing is recorded when Spark
  * returned no closings for the window, or when more go missing than a few
  * removed listings explain (absentRecordLimit); the caller alerts instead.
+ *
+ * With removal on (the daily cron), the keys just confirmed missing then go to
+ * deleteMlsRemovedSales (Matt 2026-09-30: "The daily check deletes it after
+ * saving the full record, and texts you what it removed"). It deletes a sale
+ * found missing on three daily checks, the first 36 hours or more ago, so one
+ * bad answer from Spark never deletes anything; a day's budget, or an earlier
+ * hold, holds the due sales for a person instead. Then the owner is texted
+ * every deletion and restore not told yet (tellMlsRemovals).
  */
 async function syncAbsentFromMls(
   notInSpark: string[],
   window: { from: string; to: string; sparkClosings: number; ourClosedInWindow: number },
-): Promise<{ recorded: number; cleared: number; refused: string | null }> {
+  removal: { remove: boolean; maxRemovals: number },
+): Promise<AbsentFromMlsResult> {
   let refused: string | null = null
   if (notInSpark.length > 0 && window.sparkClosings === 0) {
     refused = `Spark returned no closings for the window while we hold ${window.ourClosedInWindow}`
@@ -461,32 +521,129 @@ async function syncAbsentFromMls(
   const held = (await getAbsentFromMlsKeys({ from: window.from, to: window.to })).filter((k) => !missing.has(k))
   const back = held.length > 0 ? [...(await fetchSparkLiteByKeys(held)).keys()] : []
   const cleared = await clearAbsentFromMls(back)
-  return { recorded, cleared, refused }
+
+  const out: AbsentFromMlsResult = { ...NO_ABSENT_WORK, recorded, cleared, refused }
+  if (!removal.remove) return out
+
+  // Called even with no key: the answer carries a standing hold. A failed
+  // deletion must not stop the day's report refresh: the sales stay recorded
+  // (out of Market Truth), Matt is told, and tomorrow's run tries again.
+  try {
+    const r = await deleteMlsRemovedSales(toRecord, { maxDelete: removal.maxRemovals, window: { from: window.from, to: window.to } })
+    Object.assign(out, { removed: r.removed, removalHeld: r.refused, held: r.held, waiting: r.waiting })
+    if (r.refused) {
+      await queueBrokerHealthAlert({
+        key: 'mls-removed-held',
+        body: heldSalesText({ reason: r.refused, due: r.due, held: r.held, budget: r.budget }),
+        cooldownMinutes: DAILY_ALERT_COOLDOWN_MINUTES,
+      })
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    console.error('[closingsReconcile] deleting MLS-removed sales failed', err)
+    await queueBrokerHealthAlert({ key: 'mls-removed-failed', body: removalFailedText(message), cooldownMinutes: DAILY_ALERT_COOLDOWN_MINUTES })
+    out.removalFailed = message
+  }
+  out.told = await tellMlsRemovals()
+  return out
 }
 
+/**
+ * Once a day at most, for a check that runs once a day: shorter than 24 hours,
+ * so a run that reaches the same step a few seconds earlier than yesterday's
+ * still texts (a 1,440-minute cooldown swallowed about every other day's).
+ * The daily report refresh cron uses it for its own texts too.
+ */
+export const DAILY_ALERT_COOLDOWN_MINUTES = 20 * 60
+
+/**
+ * Text the owner every deletion and restore of an MLS-removed sale not told yet
+ * (listing_mls_repair_log.reported_at), one text per kind, then mark them told.
+ * Read from the log rather than from the call that deleted them, so a deletion
+ * whose response was lost, or one a person approved by hand, is still told on
+ * the next run; a text that did not queue stays unmarked and is tried again.
+ * Never throws. Returns how many notices were told.
+ */
+export async function tellMlsRemovals(): Promise<number> {
+  try {
+    const notices = await getUnreportedMlsRemovalNotices()
+    let told = 0
+    for (const kind of ['removed', 'restored'] as const) {
+      const batch = notices.filter((n) => n.kind === kind)
+      if (batch.length === 0) continue
+      const queued = await queueBrokerHealthAlert({
+        key: `mls-${kind}-${batch[0]!.logId}`,
+        body: noticeText(kind, batch),
+        cooldownMinutes: DAILY_ALERT_COOLDOWN_MINUTES,
+      })
+      if (!queued) continue
+      await markMlsRemovalNoticesReported(batch.map((n) => n.logId))
+      told += batch.length
+    }
+    return told
+  } catch (err) {
+    console.error('[closingsReconcile] telling MLS-removed sales failed', err)
+    return 0
+  }
+}
+
+/**
+ * Find drift in the window and, when asked, repair it (capped). Repair mode
+ * also records the closings Spark no longer serves and deletes the ones due.
+ */
 export async function reconcileClosings(opts: {
   from: string
   to: string
   repair: boolean
   maxRepairs?: number
+  /**
+   * Delete the sales the MLS removed once due, and text the owner (Matt
+   * 2026-09-30). On for the daily cron, whose window the report refresh then
+   * recomputes; off by default, so a repair of an older window never deletes
+   * sales in periods nothing recomputes (scripts/closings-reconcile.ts
+   * --delete-removed turns it on).
+   */
+  removeAbsent?: boolean
+  /** Deletions a Bend calendar day may take (MLS_REMOVED_DAILY_BUDGET). */
+  maxRemovals?: number
 }): Promise<ClosingsReconcileResult> {
   const found = await findClosingsDrift(opts.from, opts.to)
   const absentFromMls = opts.repair
-    ? await syncAbsentFromMls(found.notInSpark, {
-        from: opts.from,
-        to: opts.to,
-        sparkClosings: found.sparkClosings,
-        ourClosedInWindow: found.ourClosedInWindow,
-      })
-    : { recorded: 0, cleared: 0, refused: null }
-  if (!opts.repair || found.drift.length === 0) {
-    return { ...found, absentFromMls, repaired: 0, repairedKeys: [], repairLogged: 0, repairFailed: [], historyRefreshed: 0, refinalized: 0, membershipRows: 0 }
+    ? await syncAbsentFromMls(
+        found.notInSpark,
+        {
+          from: opts.from,
+          to: opts.to,
+          sparkClosings: found.sparkClosings,
+          ourClosedInWindow: found.ourClosedInWindow,
+        },
+        { remove: opts.removeAbsent === true, maxRemovals: opts.maxRemovals ?? MLS_REMOVED_DAILY_BUDGET },
+      )
+    : { ...NO_ABSENT_WORK }
+  let r: Awaited<ReturnType<typeof repairListingsFromSpark>> = {
+    repaired: 0,
+    repairedKeys: [],
+    repairLogged: 0,
+    failed: [],
+    historyRefreshed: 0,
+    refinalized: 0,
+    membershipRows: 0,
   }
-  const toRepair = found.drift.slice(0, opts.maxRepairs ?? 2000)
-  const r = await repairListingsFromSpark(
-    toRepair.map((d) => d.key),
-    { window: { from: opts.from, to: opts.to }, reasons: new Map(toRepair.map((d) => [d.key, d.reasons])) },
-  )
+  if (opts.repair && found.drift.length > 0) {
+    const toRepair = found.drift.slice(0, opts.maxRepairs ?? 2000)
+    // A closing Spark has and we do not may be one we deleted as removed and the
+    // MLS now serves again: put the saved row back first, so the repair updates
+    // our full record (frozen gallery, broker overrides, counters) and logs it.
+    const missingKeys = toRepair.filter((d) => d.reasons.includes('missing')).map((d) => d.key)
+    if (missingKeys.length > 0) await restoreServedAgain(missingKeys)
+    r = await repairListingsFromSpark(
+      toRepair.map((d) => d.key),
+      { window: { from: opts.from, to: opts.to }, reasons: new Map(toRepair.map((d) => [d.key, d.reasons])) },
+    )
+  }
+  // After the day's writes, including the repair above: every restored sale
+  // still pending gets its rows rebuilt from the listing as it stands now.
+  if (opts.repair && opts.removeAbsent === true) absentFromMls.restoresRebuilt = await rebuildRestoredSales()
   return {
     ...found,
     absentFromMls,
