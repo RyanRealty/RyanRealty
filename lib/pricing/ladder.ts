@@ -130,7 +130,7 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
     similarSubdivision: false,
     adjacentSubdivision: true,
     apples,
-    sqftBand: 0.2,
+    sqftBand: PLAT_WIDE_SQFT_BAND,
     ageYears: apples === 'strict' ? 15 : 25,
     sameStory: apples === 'strict',
     bedSlop: apples === 'strict' ? 1 : 2,
@@ -221,7 +221,7 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
     similarSubdivision: false,
     sameCommunity: true,
     apples,
-    sqftBand: 0.25,
+    sqftBand: PLAT_WIDE_SQFT_BAND,
     ageYears: null,
     sameStory: false,
     bedSlop: 1,
@@ -268,6 +268,9 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
     // 2026-09-09: exhaust the boundary out to 24 months before leaving it).
     sub(18),
     sub(24),
+    // Still the plat. The 35% cutoff, out to two years, before any other place.
+    sub(18, PLAT_WIDE_SQFT_BAND, '-wide'),
+    sub(24, PLAT_WIDE_SQFT_BAND, '-wide'),
     // Same subdiv + ~0.25 mi street cluster, before adjacent plats or mile rings
     // (Matt 2026-09-15: named SaddleStone stays exclusive when Horse Back / Ranch exist).
     pocket(3, 'strict'),

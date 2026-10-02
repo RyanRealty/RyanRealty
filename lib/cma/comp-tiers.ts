@@ -129,19 +129,23 @@ export function realSubdivision(value: string | null | undefined): string | null
  * falls short fail rather than print a wide guess.
  */
 export const WIDENED_SQFT_BAND = 0.25
+/** The picker's one living-area cutoff. About 35%. Location rungs use this. */
+export const LOCATION_SQFT_BAND = 0.35
 
 export function compTierLadder(subdivisionIlike: string | null): CompTier[] {
+    const band = LOCATION_SQFT_BAND
     const tiers: CompTier[] = [
-    // 1-2. The subject's own subdivision, exhausted across the full 12 months
-    // BEFORE any geographic widening.
-    { name: 'subdivision-6mo', subdivisionIlike, monthsBack: 6, sqftBand: 0.25, sameArea: false, competing: false, maxMiles: null },
-    { name: 'subdivision-12mo', subdivisionIlike, monthsBack: 12, sqftBand: 0.25, sameArea: false, competing: false, maxMiles: null },
-    // Same subdiv + ~0.25 mi street cluster before adjacent plats or mile rings
-    // (Matt 2026-09-15: named SaddleStone stays exclusive when Horse Back / Ranch exist).
+    // Same subdivision. Dates widen here, through two years, before the search
+    // leaves the plat for an adjacent plat, the neighborhood, or the zip.
+    { name: 'subdivision-6mo', subdivisionIlike, monthsBack: 6, sqftBand: band, sameArea: false, competing: false, maxMiles: null },
+    { name: 'subdivision-12mo', subdivisionIlike, monthsBack: 12, sqftBand: band, sameArea: false, competing: false, maxMiles: null },
+    { name: 'subdivision-18mo', subdivisionIlike, monthsBack: 18, sqftBand: band, sameArea: false, competing: false, maxMiles: null },
+    { name: 'subdivision-24mo', subdivisionIlike, monthsBack: 24, sqftBand: band, sameArea: false, competing: false, maxMiles: null },
+    // Quarter-mile pocket after the plat's own dates are exhausted, before adjacent plats.
     {
       name: 'pocket-6mo',
       monthsBack: 6,
-      sqftBand: 0.25,
+      sqftBand: band,
       sameArea: false,
       competing: false,
       maxMiles: POCKET_RADIUS_MILES,
@@ -152,7 +156,7 @@ export function compTierLadder(subdivisionIlike: string | null): CompTier[] {
     {
       name: 'pocket-12mo',
       monthsBack: 12,
-      sqftBand: 0.25,
+      sqftBand: band,
       sameArea: false,
       competing: false,
       maxMiles: POCKET_RADIUS_MILES,
@@ -160,27 +164,30 @@ export function compTierLadder(subdivisionIlike: string | null): CompTier[] {
       disclosure:
         'These sales are in the mapped pockets next to this home, inside a quarter mile, walked before any mile ring.',
     },
-    // 2a-2b. The plats that TOUCH the subject's, inside the same neighborhood
-    // or community (Matt 2026-09-08 containment): the most adjacent
-    // subdivisions before the whole polygon, and never a plat across the
-    // boundary. Unmapped cities (Redmond, Sisters) still get the ring — it is
-    // tighter than any distance rung — bounded by the city.
-    { name: 'adjacent-subdivision-6mo', monthsBack: 6, sqftBand: 0.25, sameArea: false, competing: false, maxMiles: 2, adjacentSubdivisions: true },
-    { name: 'adjacent-subdivision-12mo', monthsBack: 12, sqftBand: 0.25, sameArea: false, competing: false, maxMiles: 2, adjacentSubdivisions: true },
-    // 3-4. The neighborhood — the group of subdivisions around the subject, as
-    // the City of Bend GIS mesh draws it. Same widen-time-first order.
-    { name: 'neighborhood-6mo', monthsBack: 6, sqftBand: 0.25, sameArea: true, competing: false, maxMiles: null },
-    { name: 'neighborhood-12mo', monthsBack: 12, sqftBand: 0.25, sameArea: true, competing: false, maxMiles: null },
-    // 2c. TIME INSIDE THE PLAT AND ITS RING, ALL THE WAY TO TWO YEARS (Matt
-    // 2026-09-09: exhaust the boundary before leaving it).
-    { name: 'subdivision-24mo', subdivisionIlike, monthsBack: 24, sqftBand: 0.25, sameArea: false, competing: false, maxMiles: null },
-    { name: 'adjacent-subdivision-24mo', monthsBack: 24, sqftBand: 0.25, sameArea: false, competing: false, maxMiles: 2, adjacentSubdivisions: true },
-    // 2d. THE COMMUNITY THE PLAT SITS INSIDE, before any ring or polygon rung.
-    { name: 'community-6mo', monthsBack: 6, sqftBand: 0.25, sameArea: false, competing: true, maxMiles: 5, sameCommunity: true },
-    { name: 'community-12mo', monthsBack: 12, sqftBand: 0.25, sameArea: false, competing: true, maxMiles: 5, sameCommunity: true },
-    { name: 'community-24mo', monthsBack: 24, sqftBand: 0.3, sameArea: false, competing: true, maxMiles: 5, sameCommunity: true },
-    // 4b. The neighborhood polygon, to two years, before the search leaves it.
-    { name: 'neighborhood-24mo', monthsBack: 24, sqftBand: 0.3, sameArea: true, competing: false, maxMiles: null },
+    {
+      name: 'pocket-24mo',
+      monthsBack: 24,
+      sqftBand: band,
+      sameArea: false,
+      competing: false,
+      maxMiles: POCKET_RADIUS_MILES,
+      samePocket: true,
+      disclosure:
+        'These sales are in the mapped pockets next to this home, inside a quarter mile, walked before any mile ring.',
+    },
+    // Adjacent subdivisions, dates widened before the rest of the neighborhood.
+    { name: 'adjacent-subdivision-6mo', monthsBack: 6, sqftBand: band, sameArea: false, competing: false, maxMiles: 2, adjacentSubdivisions: true },
+    { name: 'adjacent-subdivision-12mo', monthsBack: 12, sqftBand: band, sameArea: false, competing: false, maxMiles: 2, adjacentSubdivisions: true },
+    { name: 'adjacent-subdivision-18mo', monthsBack: 18, sqftBand: band, sameArea: false, competing: false, maxMiles: 2, adjacentSubdivisions: true },
+    { name: 'adjacent-subdivision-24mo', monthsBack: 24, sqftBand: band, sameArea: false, competing: false, maxMiles: 2, adjacentSubdivisions: true },
+    // The neighborhood or community. Same date widening. The city and the zip come after this.
+    { name: 'neighborhood-6mo', monthsBack: 6, sqftBand: band, sameArea: true, competing: false, maxMiles: null },
+    { name: 'neighborhood-12mo', monthsBack: 12, sqftBand: band, sameArea: true, competing: false, maxMiles: null },
+    { name: 'neighborhood-18mo', monthsBack: 18, sqftBand: band, sameArea: true, competing: false, maxMiles: null },
+    { name: 'neighborhood-24mo', monthsBack: 24, sqftBand: band, sameArea: true, competing: false, maxMiles: null },
+    { name: 'community-6mo', monthsBack: 6, sqftBand: band, sameArea: false, competing: true, maxMiles: 5, sameCommunity: true },
+    { name: 'community-12mo', monthsBack: 12, sqftBand: band, sameArea: false, competing: true, maxMiles: 5, sameCommunity: true },
+    { name: 'community-24mo', monthsBack: 24, sqftBand: band, sameArea: false, competing: true, maxMiles: 5, sameCommunity: true },
     // 4c. The community is spent: its peers are other communities of its kind.
     {
       name: 'like-community-24mo',
