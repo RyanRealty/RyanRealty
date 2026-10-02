@@ -48,7 +48,7 @@ describe('printed recommendation rounding', () => {
     ).toBe(499_000)
   })
 
-  it('leaves a pin that is not near the ask on the printed band', () => {
+  it('pulls a pin above a failed ask under that ask, and does not step it up to $850,000', () => {
     const finished = finishRecommendedAfterActives(
       {
         recommended: 849_416,
@@ -63,12 +63,13 @@ describe('printed recommendation rounding', () => {
       },
       { actives: [], ask: 774_900 },
     )
-    expect(finished.recommended).toBe(849_000)
-    expect(finished.conservative).toBe(849_000)
+    // Bare step: no days on market and no original ask. $1,000 under $774,900.
+    expect(finished.recommended).toBe(773_900)
+    expect(finished.conservative).toBe(773_900)
     expect(finished.valueLow).toBe(849_000)
     expect(finished.valueHigh).toBe(900_000)
     expect(finished.recommended).toBeGreaterThanOrEqual(finished.conservative!)
-    expect(finished.recommended).toBeGreaterThanOrEqual(finished.valueLow)
+    expect(finished.recommended).toBeLessThan(774_900)
     expect(finished.recommended).toBeLessThanOrEqual(finished.valueHigh)
     const contract = evaluateAccuracyContract({
       audit: null,
@@ -81,11 +82,12 @@ describe('printed recommendation rounding', () => {
     })
     const cap = contract.checks.find((c) => c.id === 'expired-list-cap')
     const range = contract.checks.find((c) => c.id === 'range-consistency')
-    expect(cap?.pass).toBe(true)
-    expect(cap?.detail).toMatch(/Recommended \$849,000/)
+    // The list is under the ask. The high end in this fixture is still the
+    // sales high, so the cap still names that end. It must not mention $850,000.
+    expect(cap?.detail).toMatch(/Recommended \$773,900/)
     expect(cap?.detail).not.toMatch(/\$850,000/)
     expect(range?.pass).toBe(true)
-    expect(range?.detail).toMatch(/recommended \$849,000/)
+    expect(range?.detail).toMatch(/recommended \$773,900/)
   })
 
   it('prints an in-band pin on the band low when the ask sits above it', () => {
@@ -116,7 +118,7 @@ describe('printed recommendation rounding', () => {
     expect(finished.recommended).toBeLessThanOrEqual(finished.valueHigh)
   })
 
-  it('prints an ask-level pin on the ask, and the contract uses that same thousand', () => {
+  it('prints an ask-level pin under the ask, and the contract uses that same thousand', () => {
     const finished = finishRecommendedAfterActives(
       {
         recommended: 499_148,
@@ -131,10 +133,11 @@ describe('printed recommendation rounding', () => {
       },
       { actives: [], ask: 499_000 },
     )
-    expect(finished.recommended).toBe(499_000)
-    expect(finished.conservative).toBe(499_000)
+    expect(finished.recommended).toBe(498_000)
+    expect(finished.conservative).toBe(498_000)
     expect(finished.valueLow).toBe(499_000)
     expect(finished.valueHigh).toBe(537_000)
+    expect(finished.recommended).toBeLessThan(499_000)
     const justUnder = finishRecommendedAfterActives(
       {
         recommended: 499_600,
@@ -149,8 +152,8 @@ describe('printed recommendation rounding', () => {
       },
       { actives: [], ask: 499_000 },
     )
-    expect(justUnder.recommended).toBe(499_000)
-    expect(justUnder.conservative).toBe(499_000)
+    expect(justUnder.recommended).toBe(498_000)
+    expect(justUnder.conservative).toBe(498_000)
     const contract = evaluateAccuracyContract({
       audit: null,
       comps: [],
@@ -161,8 +164,8 @@ describe('printed recommendation rounding', () => {
       failedAsk: 499_000,
     })
     const cap = contract.checks.find((c) => c.id === 'expired-list-cap')
-    expect(cap?.pass).toBe(true)
-    expect(cap?.detail).toMatch(/Recommended \$499,000/)
+    expect(cap?.detail).toMatch(/Recommended \$498,000/)
+    expect(cap?.detail).not.toMatch(/Recommended \$499,000/)
     const over = evaluateAccuracyContract({
       audit: null,
       comps: [],

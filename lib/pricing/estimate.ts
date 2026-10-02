@@ -170,11 +170,22 @@ export function roundPrintedRecommendation(
   if (low != null && next < low) next = low
   if (high != null && next > high) next = high
   const ask = bounds.ask
-  if (ask != null && Number.isFinite(ask) && ask > 0 && next >= ask && rec <= ask) {
-    const capped = Math.floor((ask - 1) / step) * step
-    const fits = (n: number) => n > 0 && n < ask && (low == null || n >= low) && (high == null || n <= high)
-    if (fits(capped)) next = capped
-    else if (rec < ask) next = rec
+  if (ask != null && Number.isFinite(ask) && ask > 0) {
+    // Already under the ask. A band clamp must not lift that pin back onto
+    // or above the price that failed. $773,900 stays $773,900.
+    if (rec < ask && next >= ask) {
+      const capped = Math.floor((ask - 1) / step) * step
+      const fits = (n: number) => n > 0 && n < ask && (low == null || n >= low) && (high == null || n <= high)
+      if (fits(capped)) next = capped
+      else next = rec
+    } else if (Math.abs(rec - ask) <= step && next > ask) {
+      // Within one thousand of the ask, nearest-thousand must not step above it.
+      // $499,600 against $499,000 prints $499,000, not $500,000.
+      const onAsk = Math.floor(ask / step) * step
+      const fitsOnAsk = (n: number) => n > 0 && (low == null || n >= low) && (high == null || n <= high)
+      if (fitsOnAsk(onAsk) && onAsk <= ask) next = onAsk
+      else if (low != null && fitsOnAsk(low) && low <= ask) next = low
+    }
   }
   return next
 }
