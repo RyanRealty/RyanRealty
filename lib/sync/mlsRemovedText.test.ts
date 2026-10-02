@@ -122,6 +122,30 @@ describe('listings the MLS removed while for sale or under contract (Matt 2026-1
     ])
   })
 
+  it('names the number the MLS has at the address when there is one', () => {
+    expect(listingLine({ ...listing(), servedAs: { listNumber: '220226053', status: 'Active', listPrice: 550000, closePrice: null } })).toBe(
+      '61010 Ridge Rd, Bend, MLS 220205521, Active, listed $899,000; the MLS has this address as MLS 220226053, Active, listed $550,000',
+    )
+    // A sold twin shows what it sold for, never its list price.
+    expect(listingLine({ ...listing(), servedAs: { listNumber: '220221210', status: 'Closed', listPrice: 425000, closePrice: 415000 } })).toBe(
+      '61010 Ridge Rd, Bend, MLS 220205521, Active, listed $899,000; the MLS has this address as MLS 220221210, Closed, sold $415,000',
+    )
+    expect(listingLine({ ...listing(), servedAs: { listNumber: '220226053', status: null, listPrice: null, closePrice: null } })).toBe(
+      '61010 Ridge Rd, Bend, MLS 220205521, Active, listed $899,000; the MLS has this address as MLS 220226053',
+    )
+    expect(listingLine({ ...listing(), servedAs: null })).toBe('61010 Ridge Rd, Bend, MLS 220205521, Active, listed $899,000')
+  })
+
+  it('counts, when several go at once, how many the MLS has under another number at the same address', () => {
+    const twin = { listNumber: '220226053', status: 'Active', listPrice: 550000, closePrice: null }
+    const three = [listing({ logId: 1 }), listing({ logId: 2 }), listing({ logId: 3 })]
+    expect(noticeText('removed', [{ ...three[0]!, servedAs: twin }, { ...three[1]!, servedAs: twin }, three[2]!], 'listing').split('\n')[0]).toBe(
+      'The MLS no longer has 3 listings that were for sale or under contract, so they were removed from our site and reports; 2 of them are at an address the MLS has under another MLS number. Full records saved (repair log ids 1, 2, 3).',
+    )
+    expect(noticeText('removed', three.map((x) => ({ ...x, servedAs: twin })), 'listing').split('\n')[0]).toContain('; all of them are at an address')
+    expect(noticeText('removed', [{ ...three[0]!, servedAs: twin }], 'listing').split('\n')[0]).not.toContain('of them')
+  })
+
   it('words the hold and the failure for listings', () => {
     expect(heldSalesText({ reason: 'budget', due: 2, held: 2, budget: 0 }, 'listing')).toMatch(/^2 listings that were for sale or under contract the MLS no longer has are due/)
     expect(removalFailedText('boom', 'listing')).toMatch(/removing the for-sale and under-contract listings the MLS no longer has: boom/)

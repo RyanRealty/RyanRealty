@@ -31,6 +31,7 @@ import { driftReasons, factsFromListingRow, factsFromSparkFields, type DriftFact
 import { mergeFrozenMedia } from '@/lib/sync/frozenMedia'
 import { fetchAndInsertHistoryCore } from '@/lib/sync/fetchListingHistory'
 import { isTerminalStatus } from '@/lib/sync/terminalStatus'
+import { LIVE_INVENTORY_STATUSES } from '@/lib/listing-status-public'
 import {
   clearAbsentFromMls,
   deleteMlsRemovedSales,
@@ -45,6 +46,7 @@ import {
   recordRepairLog,
   setRepairLogNote,
   setRepairLogOutcome,
+  type MlsRemovalNotice,
   type ReconcileListingRow,
   type RemovedSale,
 } from '@/lib/data/sync/closingsReconcile'
@@ -56,7 +58,7 @@ import {
 } from '@/lib/data/sync/syncWrites'
 import { refreshMarketFactSpansForKeys } from '@/lib/data/market-report/compute'
 import { queueBrokerHealthAlert } from '@/lib/crm/broker-alerts'
-import { heldSalesText, noticeKind, noticeText, removalFailedText, type RemovedKind } from '@/lib/sync/mlsRemovedText'
+import { heldSalesText, noticeKind, noticeText, removalFailedText, type RemovedKind, type SameAddress } from '@/lib/sync/mlsRemovedText'
 import { rebuildRestoredSales, restoreServedAgain } from '@/lib/sync/mlsRemovedRestore'
 
 /**
@@ -718,6 +720,65 @@ async function syncAbsentFromMls(
  */
 export const DAILY_ALERT_COOLDOWN_MINUTES = 20 * 60
 
+/** Street names compared as the MLS spells them, case and punctuation aside. */
+function streetKey(s: string | null | undefined): string {
+  return String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '')
+}
+
+/** How far back a same-address listing counts: the duplicates of 2026-10-01 were all entered within months of their twins. */
+const SAME_ADDRESS_WINDOW_MS = 548 * 24 * 60 * 60 * 1000
+
+/**
+ * Another MLS number the MLS serves at a removed listing's address, for the
+ * owner's text. The 21 listings removed on 2026-10-04 were duplicate entries
+ * the MLS deleted, each address served under another number (Matt 2026-10-02:
+ * "Flex usually keeps everything"); a line that names that number answers the
+ * question before it is asked. Counted: the same street number, street name
+ * and city under another number, listed in the last 18 months (an older
+ * listing of the house is its history, not its twin), or on the market now
+ * with no listing date. One to three of them: the one listed last. More is a
+ * building of units, and naming one would mislead. Never throws: no answer is
+ * no line.
+ */
+export async function sameAddressListing(
+  n: Pick<MlsRemovalNotice, 'listNumber' | 'streetNumber' | 'streetName' | 'city'>,
+  now = Date.now(),
+): Promise<SameAddress | null> {
+  const number = String(n.streetNumber ?? '').replace(/'/g, '').trim()
+  const city = String(n.city ?? '').replace(/'/g, '').trim()
+  if (!number || number === '0' || !city || !streetKey(n.streetName)) return null
+  try {
+    const res = await fetchSparkListingsPage(token(), {
+      page: 1,
+      limit: 50,
+      filter: `StreetNumber Eq '${number}' And City Eq '${city}'`,
+      select: 'ListingId,StandardStatus,ListPrice,ClosePrice,StreetName,OnMarketDate,ListingContractDate',
+    })
+    assertSparkSuccess(res, '[sameAddressListing]')
+    const live = new Set<string>(LIVE_INVENTORY_STATUSES)
+    const others = (res.D?.Results ?? [])
+      .map((r) => r.StandardFields as Record<string, unknown>)
+      .filter((f) => streetKey(f.StreetName as string) === streetKey(n.streetName) && typeof f.ListingId === 'string' && f.ListingId !== n.listNumber)
+      .map((f) => ({ f, listed: Date.parse(String(f.OnMarketDate ?? f.ListingContractDate ?? '')) }))
+      .filter(({ f, listed }) => (Number.isFinite(listed) ? listed >= now - SAME_ADDRESS_WINDOW_MS : live.has(String(f.StandardStatus))))
+    if (others.length === 0 || others.length > 3) return null
+    const { f } = others.sort((a, b) => (Number.isFinite(b.listed) ? b.listed : now) - (Number.isFinite(a.listed) ? a.listed : now))[0]!
+    const amount = (v: unknown) => {
+      const x = Number(v)
+      return Number.isFinite(x) && x > 0 ? x : null
+    }
+    return {
+      listNumber: String(f.ListingId),
+      status: typeof f.StandardStatus === 'string' ? f.StandardStatus : null,
+      listPrice: amount(f.ListPrice),
+      closePrice: amount(f.ClosePrice),
+    }
+  } catch (err) {
+    console.error('[closingsReconcile] same-address lookup failed', err)
+    return null
+  }
+}
+
 /**
  * Text the owner every deletion and restore of an MLS-removed listing not told yet
  * (listing_mls_repair_log.reported_at), one text per kind, then mark them told.
@@ -734,8 +795,14 @@ export async function tellMlsRemovals(): Promise<number> {
     // listings that were for sale or under contract (Matt 2026-10-01).
     for (const kind of ['removed', 'restored'] as const) {
       for (const what of ['sale', 'listing'] as const) {
-        const batch = notices.filter((n) => n.kind === kind && noticeKind(n) === what)
+        let batch: (MlsRemovalNotice & { servedAs?: SameAddress | null })[] = notices.filter((n) => n.kind === kind && noticeKind(n) === what)
         if (batch.length === 0) continue
+        // A removed listing's line names the number the MLS has at its address, if any.
+        if (kind === 'removed' && what === 'listing') {
+          const named: typeof batch = []
+          for (const n of batch) named.push({ ...n, servedAs: await sameAddressListing(n) })
+          batch = named
+        }
         const queued = await queueBrokerHealthAlert({
           key: what === 'sale' ? `mls-${kind}-${batch[0]!.logId}` : `mls-${kind}-listing-${batch[0]!.logId}`,
           body: noticeText(kind, batch, what),

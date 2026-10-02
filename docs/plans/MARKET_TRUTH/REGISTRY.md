@@ -437,7 +437,15 @@ was shown the causes below and ruled:
    now"**: a listing the daily check records as no longer served gets no on-market episodes from
    that day (builder `20261002010534`), as a removed sale already left the sale facts, and is
    deleted on the third sighting (`20261002010548`, the deletion by status class). First recorded
-   2026-10-02 01:13Z.
+   2026-10-02 01:13Z. **What they are** (checked a second way 2026-10-02, after Matt's "Flex
+   usually keeps everything"): MLS-deleted duplicate entries. Each one's MLS number is served
+   neither by key nor by number, while the same address is served under another number. Flex keeps
+   every real listing (the feed held 129,663 Expired, 76,906 Canceled and 426 Withdrawn that day),
+   but a deleted entry never reaches our copy as a delete. Examples: 3778 Lava, Redmond, 220226052
+   (deleted; Coming Soon $560,000 on our site) beside 220226053 (Active $550,000); 728 Brookstone,
+   Prineville, 220219363 (deleted; Active $449,000 on our site) while the home sold 2026-09-02 for
+   $415,000 as 220221210. Matt 2026-10-02, **"Yes, remove them Sunday"**: the 21 go on Sunday
+   2026-10-04 after the third daily check, approved by name, since 21 at once is over the daily 10.
 5. **Every edition is rebuilt and republished from the corrected data** ("Republish all 248").
    Homes for sale on a past day count `Active` only (§2.2): an Active listing with a Contingency
    (this MLS's Active Under Contract) is under contract, not for sale; 22 of the 1,258 homes the

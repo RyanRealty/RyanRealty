@@ -20,6 +20,13 @@ export const TEXT_BUDGET = 550
 /** What a removal is about: a closed sale, or a listing for sale or under contract. */
 export type RemovedKind = 'sale' | 'listing'
 
+/**
+ * Another MLS number the MLS serves at a removed listing's address (found by
+ * sameAddressListing in ./closingsReconcile.ts): what shows the owner the
+ * removed one was a duplicate entry the MLS deleted.
+ */
+export type SameAddress = { listNumber: string; status: string | null; listPrice: number | null; closePrice: number | null }
+
 function sales(n: number): string {
   return n === 1 ? '1 closed sale' : `${n} closed sales`
 }
@@ -52,13 +59,30 @@ export function saleLine(n: Pick<MlsRemovalNotice, 'listingKey' | 'listNumber' |
   return parts.filter(Boolean).join(', ')
 }
 
-/** "61010 Ridge Rd, Bend, MLS 220205521, Active, listed $899,000" */
-export function listingLine(n: Pick<MlsRemovalNotice, 'listingKey' | 'listNumber' | 'streetNumber' | 'streetName' | 'city' | 'status' | 'listPrice'>): string {
+/**
+ * "3778 Lava, Redmond, MLS 220226052, Coming Soon, listed $560,000; the MLS has
+ * this address as MLS 220226053, Active, listed $550,000" (a sold one: "sold $415,000")
+ */
+export function listingLine(
+  n: Pick<MlsRemovalNotice, 'listingKey' | 'listNumber' | 'streetNumber' | 'streetName' | 'city' | 'status' | 'listPrice'> & {
+    servedAs?: SameAddress | null
+  },
+): string {
   const street = publishStreetLine({ streetNumber: n.streetNumber, streetName: n.streetName })
   const where = [street, n.city?.trim() || null].filter(Boolean).join(', ') || `listing ${n.listingKey}`
   const parts = [where, n.listNumber ? `MLS ${n.listNumber}` : null, n.status?.trim() || null]
   if (n.listPrice != null && n.listPrice > 0) parts.push(`listed ${formatPriceExact(n.listPrice)}`)
-  return parts.filter(Boolean).join(', ')
+  const line = parts.filter(Boolean).join(', ')
+  const s = n.servedAs
+  if (!s) return line
+  const price =
+    s.status === 'Closed' && s.closePrice != null && s.closePrice > 0
+      ? `sold ${formatPriceExact(s.closePrice)}`
+      : s.listPrice != null && s.listPrice > 0
+        ? `listed ${formatPriceExact(s.listPrice)}`
+        : null
+  const other = [`MLS ${s.listNumber}`, s.status?.trim() || null, price]
+  return `${line}; the MLS has this address as ${other.filter(Boolean).join(', ')}`
 }
 
 /** The log ids, never as a range: other repair rows sit between them. */
@@ -87,12 +111,22 @@ function fit(head: string, lines: string[]): string {
  * The text for one kind of notice about one kind of listing: deleted, or
  * deleted and served by the MLS again. Sales and listings are told apart.
  */
-export function noticeText(kind: MlsRemovalNotice['kind'], notices: MlsRemovalNotice[], what: RemovedKind = 'sale'): string {
+export function noticeText(
+  kind: MlsRemovalNotice['kind'],
+  notices: (MlsRemovalNotice & { servedAs?: SameAddress | null })[],
+  what: RemovedKind = 'sale',
+): string {
   const n = notices.length
   const where = what === 'sale' ? 'our site, reports and CMAs' : 'our site and reports'
+  // Several at once: how many the MLS has under another number at the same address (one says it on its own line).
+  const twins = notices.filter((x) => x.servedAs).length
+  const twinNote =
+    n > 1 && twins > 0
+      ? `; ${twins === n ? 'all' : twins} of them ${twins === 1 ? 'is' : 'are'} at an address the MLS has under another MLS number`
+      : ''
   const head =
     kind === 'removed'
-      ? `The MLS no longer has ${things(what, n)}, so ${n === 1 ? 'it was' : 'they were'} removed from ${where}. Full records saved (repair log ${logIds(notices)}).`
+      ? `The MLS no longer has ${things(what, n)}, so ${n === 1 ? 'it was' : 'they were'} removed from ${where}${twinNote}. Full records saved (repair log ${logIds(notices)}).`
       : `The MLS has ${things(what, n)} again that ${n === 1 ? 'was' : 'were'} removed as gone, so ${n === 1 ? 'it is' : 'they are'} back on our site from the saved record${n === 1 ? '' : 's'} (repair log ${logIds(notices)}).`
   return fit(head, notices.map(what === 'sale' ? saleLine : listingLine))
 }
