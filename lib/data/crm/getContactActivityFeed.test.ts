@@ -71,6 +71,8 @@ describe('getContactActivityFeed pure helpers (2.1)', () => {
     })
     it('classifies new email_in / web_event / lead_created kinds', () => {
       expect(classifyTimelineKind('email_in')).toEqual({ category: 'email', direction: 'in', label: 'Email received' })
+      // Someone else's email the contact was copied on: neither ours nor theirs.
+      expect(classifyTimelineKind('email_cc')).toEqual({ category: 'email', direction: null, label: 'Copied on an email' })
       expect(classifyTimelineKind('web_event')).toEqual({ category: 'web', direction: null, label: 'Website activity' })
       expect(classifyTimelineKind('lead_created')).toEqual({ category: 'milestone', direction: 'in', label: 'New lead' })
     })

@@ -1054,8 +1054,8 @@ per-user quota and is discarded):
 Row by row against the v4.1 run: 19 better (each a draft, FALSE_FILE to TN),
 0 worse, 1,503 unchanged; 0 errors either run.
 
-**CRM timeline repair** (`scripts/crm-timeline-drafts.ts`, dry run 2026-10-02
-00:16Z): of 13,918 Gmail email rows, 13,710 are messages that exist and are not
+**CRM timeline repair** (`scripts/crm-timeline-mail-repair.ts`, first dry run
+2026-10-02 00:16Z, drafts only): of 13,918 Gmail email rows, 13,710 are messages that exist and are not
 drafts, **143 are drafts (65 people)**, 0 were written from an autosave the send
 replaced, and 65 point at a message gone from Gmail with nothing of its
 Message-ID left in its thread (a discarded draft, or mail deleted for good: not
@@ -1069,4 +1069,34 @@ conversation left with no message (0 of the 55; read with paging, since a
 the way `recompute_conversation_rollups()` does
 (`lib/crm/conversation-rollups.ts`, tested), without touching any other
 conversation. Every row it changes or removes is written whole to
-`tmp/crm-timeline-drafts/<run>/before.json` first.
+`tmp/crm-timeline-mail-repair/<run>/before.json` first.
+
+### Copied on an email: `email_cc` (Matt 2026-10-02)
+
+The CRM sync wrote every CRM person on an email's To or Cc as `email_out`,
+whoever sent it. Of the latest 400 Gmail `email_out` rows on 2026-10-01, 174
+were outside senders' mail copying 10 clients (Western Title 52, First American
+35, Bridgetown 26), and every one counted as a broker touching that client
+(`isHumanTouch`, speed-to-lead, contact attempts, the first-broker-action stamp).
+Asked whether to leave them off the timeline or show them as their own entry,
+Matt chose **"Copied on an email"**.
+
+- `lib/crm/gmail-timeline-kind.ts`: `email_in` when the person sent it;
+  `email_out` only when one of our brokers did (the mailbox holds it as SENT, or
+  its From is ours by `isHouseAddress`: our domains and Matt's own Gmail alias);
+  otherwise `email_cc`, with the sender in `payload.from`.
+- Migration `20261002011238_crm_timeline_email_cc_kind` adds `email_cc` to
+  `crm_timeline_kind_check` (applied 2026-10-02 before the code, so the sync's
+  batch never meets the old constraint; the live definition matched
+  `20260713140100` before it).
+- `email_cc` is on the contact's activity feed ("Copied on an email"), the
+  person page's Emails tab with a "Copied on" chip, and the global activity
+  feed's email filter. It is in no human-touch, conversation, inbox, deal
+  conversation or broker-activity report kind list.
+- `scripts/crm-timeline-mail-repair.ts` recasts the existing rows: an
+  `email_out` row whose message is not SENT in its mailbox and not From us
+  becomes `email_cc`, its `crm_message` copy (the July backfill's "our outbound
+  email") leaves the conversation model, and a first-broker-action stamp taken
+  from it, or from a draft, is recomputed from the rows left through
+  `isHumanTouch` (cleared when none is left). A journey stage that stamp
+  advanced is not moved back.

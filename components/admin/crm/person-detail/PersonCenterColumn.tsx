@@ -141,7 +141,7 @@ const TABS = [
 ] as const
 
 const TAB_KINDS: Record<string, string[]> = {
-  emails: ['email_in', 'email_out'],
+  emails: ['email_in', 'email_out', 'email_cc'],
   texts: ['text_in', 'text_out', 'sms_in', 'sms_out'],
   calls: ['call', 'voicemail'],
   notes: ['note'],
@@ -391,6 +391,7 @@ function EventCard({ item }: { item: TimelineItem }) {
             {isAutomationEmail ? (
               <TimelineChip className="ml-2 uppercase">Archived</TimelineChip>
             ) : null}
+            {item.kind === 'email_cc' ? <TimelineChip className="ml-2">Copied on</TimelineChip> : null}
             {item.bounced ? (
               <TimelineChip tone="danger" className="ml-2">
                 Bounced

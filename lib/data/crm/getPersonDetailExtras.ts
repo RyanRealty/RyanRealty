@@ -69,7 +69,7 @@ export type PersonDetailExtras = {
 
 /** Timeline kinds that feed each §07b filter tab. */
 export const TIMELINE_TAB_KINDS: Record<string, string[]> = {
-  emails: ['email_in', 'email_out'],
+  emails: ['email_in', 'email_out', 'email_cc'],
   texts: ['text_in', 'text_out', 'sms_in', 'sms_out'],
   calls: ['call', 'voicemail'],
   notes: ['note'],
