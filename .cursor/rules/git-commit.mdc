@@ -32,11 +32,11 @@ chore: update supabase-js to 2.98.0
 ```
 
 ## Workflow
-1. Make changes
+1. Make changes on a branch from current `origin/main`.
 2. `git add -A` (or stage intentionally — never commit secrets)
 3. `git commit -m "type: description"`
-4. **`git push origin main` in the same session** — do not leave `main` ahead of `origin/main` with finished work. Matt uses Claude Code and Cursor interchangeably; unpushed commits are invisible to the other tool and are not “shipped.”
-5. If the push is non-fast-forward: `git pull --rebase origin main`, resolve, push again.
+4. **Push that branch to GitHub in the same session** with `npm run push`. All code work is pushed to GitHub as a branch right away. Do not leave finished work only on a local branch. Matt uses Claude Code and Cursor interchangeably; unpushed commits are invisible to the other tool and are not “shipped.”
+5. Main lands only by fast-forward from the Mini after the push gate. No rebase, force-push, or reset. Do not land `main` yourself. If the remote branch moved and the push is rejected, stop and report.
 
 Pre-commit runs `npm test`. Pre-push runs the full quality gate.
 
@@ -47,13 +47,16 @@ SKIP_DB_GUARD=1 git push         # skip migration drift check only
 ```
 
 ## Branch strategy
-- **Production is `main`.** Pushing to `main` triggers a Vercel production deploy (docs-only commits may skip via `ignoreCommand`).
-- **Worktrees allowed** for parallel agents / experiments — name `wt/<topic>-YYYYMMDD`, merge back to `main` or record in `CROSS_AGENT_HANDOFF.md` before stopping. See `.cursor/rules/always-merge-to-main.mdc` and **AGENTS.md → Worktrees**.
-- Prefer not pushing `wt/*` to `origin` (preview deploys cost Build CPU) unless another machine must continue the branch.
+- **Production is `main`.** Main lands only by fast-forward from the Mini after the push gate. Pushing `main` triggers a Vercel production deploy (docs-only commits may skip via `ignoreCommand`).
+- **Worktrees allowed** for parallel agents / experiments — name `wt/<topic>-YYYYMMDD`, push the branch right away, or record it in `CROSS_AGENT_HANDOFF.md` before stopping. See `.cursor/rules/always-merge-to-main.mdc` and **AGENTS.md → Worktrees**.
+- Push the branch to GitHub right away. Do not keep the only copy local.
 - No PRs for routine agent work.
+- No rebase, force-push, or reset.
 
 ## Do NOT
 - Commit `.env.local` or any file containing secrets
-- Force push to `main`
+- Force-push
+- Rebase or reset
+- Land `main` yourself
 - Leave valued work only on an unpushed worktree with no handoff entry
 - Leave the working tree dirty before switching tasks — always commit or stash

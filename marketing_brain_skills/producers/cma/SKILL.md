@@ -11,7 +11,7 @@ action_types:
   - content:cma
 output_type: document
 target_platforms: ["email"]
-asset_destination: public/cmas/<slug>/ + Gmail-draft delivery (Resend fallback)
+asset_destination: public/cmas/<slug>/. Owner email follows section 0.3, not a Gmail draft or a Resend fallback.
 auto_inputs: ["comparable listings from Spark", "broker resolved from public.brokers"]
 required_inputs: ["mls_id OR address"]
 optional_inputs: ["comp_count", "methodology_override"]
@@ -95,7 +95,7 @@ floorplan next door had sold for $512,000.
 
 **The one room rule — "adjust inside, wall outside."** Beds and baths obey the
 same rule (`lib/pricing/room-counts.ts`). The same whole count travels anywhere.
-ONE room apart is used only on the subject's own ground — its plat, its mapped
+One whole room apart is used only on the subject's own ground — its plat, its mapped
 neighborhood, or its own street — and is disclosed on the sale. Two or more
 apart is refused everywhere. It replaced an exact-bath wall that cut 438 nearby
 sales on one home and pushed the search into four other neighborhoods.
@@ -136,7 +136,7 @@ false or empty is not evidence against. A "55" in remarks counts only with
 restriction evidence beside it (a community or restriction word, HOPA, the
 subdivision's own name); a pitch ("ideal for 55+ living", "perfect for 55+ or
 first-time buyers") and a number ("over 55 years", "over 55 homes") never do.
-It is a wall on every rung of both ladders and at the pricing backstop, never a
+It is a wall on every rung of the one CMA path and at the pricing backstop, never a
 judge call: on the 2026-09-29 batch the judge excluded 2933 Hemlock (Waverly)
 and 2221 Indigo (Holliday Park), grounding could not verify the reason, and both
 priced ordinary homes.
@@ -157,9 +157,8 @@ the gap is ever adjusted back, and that one number was behind most of the ranges
 printing wider than 1.2x. A document that now falls short fails rather than
 prints a wide guess.
 
-**One comp floor across both ladders.** `MIN_COMPS` and `PRICING_MIN_COMPS` are
-both 3. They were 5 and 3, and the difference was drift: the same home priced or
-failed depending on which ladder `pickCompSource` sent it down.
+**One comp floor. One path.** `MIN_COMPS` and `PRICING_MIN_COMPS` are
+both 3. There is no second ladder. Price on current main only. No 80% send floor.
 
 **Conflicting MLS facts — "flag it, use the history"**
 (`lib/cma/subject-room-conflict.ts`). When the current listing's bed or bath
@@ -188,17 +187,26 @@ its status holds says so under the table. The locked contract is
 `split-closed-pending-active-summary-tables` in
 `lib/cma/canter-letter-flow.contract.test.ts`.
 
-### 0.3 Locked CMA rules (do not loosen)
+### 0.3 Locked CMA process rules (do not loosen)
 
-For an expired CMA, check live listing status before any rebuild. If the home is active, pending, or otherwise on the market, do not build a CMA and do not send one. Skip it. This is not optional and not expired-only in the sense of "only sometimes": at least every expired rebuild must do this. Do not loosen it.
+**Locked CMA process rules. Do not loosen these.**
 
-Recommended price is the house from comps only. No ADU, second-lot, or rental-income dollars in the price. Those stay letter notes.
+1. One CMA path. Price on current main only. No second ladder. No 80% send floor. Do not merge PR 408 or any 80% floor. PR 401 stays. Do not revert 770a4fd1.
+2. Recommended price is the house from comps only. ADU, second lot, and rental income are letter notes, not dollars, until Matt says otherwise.
+3. Hold for Matt if the rec is more than 15% under last ask, or any amount over it. Exactly 15% under is not a hold. Missing ask or missing rec is not a hold.
+4. One room rule: same whole bed or bath count anywhere. One whole room apart only on the subject's own plat, mapped neighborhood, or own street, kept and disclosed, zero dollars. Two or more apart refused everywhere. The picker and the review call the same decision. The review must not exclude a sale the picker kept for a room gap this rule allows.
+5. Pocket rungs are skipped when the plat and the street already have five sales before the first quarter-mile pocket rung. A cheap different-plat pocket sale drops when no own-plat sale remains in the set that is actually priced. Do not check only the pre-review set.
+6. Do not build or send a CMA if the home is listed again. Live status first. Active, pending, or otherwise on the market means skip.
+7. A rebuild does not send, enqueue, or approve.
+8. Minimum 3 good comp sales. No 2-comp letters. Comp-shortage stays build-failed.
+9. Nothing enters the send queue without Matt's review.
+10. No owner email until a real owner-path send to matt@ryan-realty.com shows, on that contact, sent, delivered, opened, each link click, and the sell-page visit, with timestamps. Tests must use that production path, not a separate test sender. Every outbound email link is click-tracked. Links are short linked words, never raw tracking URLs. Approved CMA email wording does not change without Matt's sign-off.
+11. Approved CMAs send only in the weekday 9:03 AM PT window.
+12. Never use buyer or seller names in social, email, or public copy.
+13. No em dashes in public site copy.
+14. All code work is pushed to GitHub as a branch right away. Main lands only by fast-forward from the Mini after the push gate. No rebase, force-push, or reset.
 
-Gap hold: a recommendation more than 15% under the last ask, or any amount over the last ask, is refused before approve, enqueue, or send. Exactly 15% under is not a hold. Missing ask or missing rec is not a hold. The row stays built.
-
-Do not send, enqueue, or approve owner email unless the task explicitly says to, and never from a rebuild.
-
-The delivery steps later in this skill do not override the send rule: a rebuild does not enqueue or send owner email.
+The delivery steps later in this skill do not override these rules.
 
 ---
 
@@ -219,7 +227,7 @@ The delivery steps later in this skill do not override the send rule: a rebuild 
 - Formal appraisal. The CMA is priced and labeled throughout as an estimate. The last page carries an explicit disclaimer that it is not a USPAP appraisal
 - Listing agreement, seller net sheet, transaction coordination.  those are separate producers
 - Marketing flyer for the subject after it's listed.  that's `flyer-design` for `content:just_listed_flyer` etc.
-- Email delivery of the finalized PDF.  on finalization the canonical delivery is a **Gmail DRAFT** created via `POST /api/cma/[slug]/gmail-draft` (addressed to the lead, CMA PDF attached, no vendor BCC; the CRM already has the lead). The signing broker reviews the draft in Gmail and sends it personally.  keeps a human on the pricing numbers (CLAUDE.md §0) and lands the email from a real mailbox instead of a no-reply. The Resend path (`ops-email-send` / `/api/cma/[slug]/email`) is the fallback when the `gmail.modify` DWD scope is unavailable. (This also satisfies the old "wire delivery to the CRM" item.)
+- Email delivery of the finalized PDF. Send follows §0.3 only. A Gmail draft, a Resend fallback, and a personal send are not the owner path. Nothing enters the send queue without Matt's review. A rebuild does not send, enqueue, or approve. No owner email until the owner-path proof. Approved CMAs send only in the weekday 9:03 AM PT window. Approved CMA email wording does not change without Matt's sign-off.
 
 ---
 
@@ -606,7 +614,7 @@ Step 7b (2026-06-04) fixed zoning + entitlement. The full rebuild that followed 
 
 10. **QA.  fact-check every figure against the source yourself. A subagent's self-report is not verification.** When a sub-pass rebuilds the analytical pages it WILL miss things (this rebuild left "no water" remnants, mis-placed every map pin, and introduced 78 em-dashes while reporting "done"). Re-grep the rendered HTML for every old/wrong figure (must be 0) and every new figure (must be present), re-measure pagination after ANY edit (each `.page` fits one sheet.  `overflow:hidden` silently CLIPS, so the Step 7a page-fit check is mandatory again), and confirm the map renders with correct pins. **Brand voice on a client doc: em-dashes are banned in prose** (period or comma); the ONLY allowed em-dash is the data-placeholder for an unavailable value in a stats cell. Scan and fix before surfacing.
 
-11. **Delivery reality.  the broker often sends the final client message himself.** A land-CMA lead frequently arrives by text and the broker answers by text. The canonical delivery is still the Gmail draft (Step 15), but the broker may prefer to text the lead a link to the CMA in his own voice. Stage a reviewable draft (a CRM note + task on the lead's record), present the exact wording for review, and let him send it. **A text the broker sends from his phone logs into the CRM timeline but does NOT appear in a vendor text API**.  so "the API shows no sent text" does not mean it was not sent. Read the person's timeline before assuming, and never send a duplicate.
+11. **Delivery reality.** A land-CMA lead frequently arrives by text. Do not treat a Gmail draft, a Resend fallback, a personal send, or a text as the owner path. §0.3 is the send rule. Do not send it. Approved CMA email wording does not change without Matt's sign-off. A CRM note may hold the exact wording for review. **A text the broker sends from his phone logs into the CRM timeline but does NOT appear in a vendor text API**.  so "the API shows no sent text" does not mean it was not sent. Read the person's timeline before assuming, and never send a duplicate.
 
 **Step 8.  Build the comp location map endpoint**
 
@@ -773,14 +781,16 @@ VALUES...
 ```
 
 4. Git commit + push the `public/cmas/<slug>/` files. Do not commit the `public/drafts/cma-<slug>/` version.  that's the draft scratch space.
-5. Set `marketing_brain_actions.status = 'approved'` then `'executed'` once the push completes.
-6. **Immediately after the git push (step 4 above), call the finalize-deliver endpoint** (Step 15 below) to fire the Gmail draft + Matt notification. Do not wait for a separate manual trigger.
+5. Do not set the action to approved or executed. A rebuild does not send, enqueue, or approve. Nothing enters the send queue without Matt's review.
+6. Do not call the finalize-deliver endpoint from a build or a rebuild. §0.3 is the send rule. Step 15 does not override it.
 
 ---
 
 **Step 15.  Fire Gmail draft + Matt notification (the delivery wiring)**
 
-Once the HTML is at `public/cmas/<slug>/cma.html` and the git push is done, call:
+Do not run this step. It does not override §0.3. A rebuild does not send, enqueue, or approve. Nothing enters the send queue without Matt's review. No owner email until the owner-path proof in §0.3. Approved CMAs send only in the weekday 9:03 AM PT window. A Gmail draft, a Resend fallback, and a personal send are not that production path, and they are not a test sender.
+
+The call shape below is recorded so it is not mistaken for the owner path. Do not call it from a build or a rebuild.
 
 ```bash
 curl -X POST https://ryan-realty.com/api/cma/<slug>/finalize-deliver \
@@ -789,7 +799,7 @@ curl -X POST https://ryan-realty.com/api/cma/<slug>/finalize-deliver \
   -d '{}'
 ```
 
-Or, from within the same agent session that just did the push:
+Historical call shape, not a step to run:
 
 ```typescript
 import { finalizeAndDeliverCma } from '@/lib/cma-deliver'
@@ -799,7 +809,7 @@ const result = await finalizeAndDeliverCma({ slug: 'cma-<slug>' })
 **What this does (in order, all best-effort):**
 
 1. Renders the CMA HTML to a PDF buffer via `renderCmaPdfBuffer(slug)` (puppeteer + @sparticuz/chromium-min, same engine as `/api/cma/<slug>/pdf`). Errors if the PDF exceeds the 25 MB Gmail cap.
-2. Creates a **Gmail DRAFT** in the signing broker's mailbox (`matt@ryan-realty.com` by default, or the broker resolved from `public.cmas.broker_slug` if they're on the `@ryan-realty.com` domain) via `createGmailDraft` (Google DWD / `gmail.modify` scope, verified live 2026-05-29). The draft is addressed to the lead, has the CMA PDF attached, No vendor BCC. The CRM already has the lead. **Matt reviews and sends personally.** This is a DRAFT, never an auto-send to the lead.
+2. Creates a **Gmail DRAFT** in the signing broker's mailbox (`matt@ryan-realty.com` by default, or the broker resolved from `public.cmas.broker_slug` if they're on the `@ryan-realty.com` domain) via `createGmailDraft` (Google DWD / `gmail.modify` scope, verified live 2026-05-29). The draft is addressed to the lead, has the CMA PDF attached, No vendor BCC. The CRM already has the lead. This draft is not the owner path in §0.3. Do not send it.
 3. **Fallback:** if the Gmail DWD scope is unavailable, Resend delivers the PDF to the broker (not the lead) with context to forward manually. The response field `fellBackToResend: true` signals this.
 4. Notifies Matt via Resend (`MATT_ALERT_EMAIL` env var, defaults to `matt@ryan-realty.com`) that the CMA is ready: Gmail-draft confirmation, recommended list price, PDF link at `/api/cma/<slug>/pdf`.
 
