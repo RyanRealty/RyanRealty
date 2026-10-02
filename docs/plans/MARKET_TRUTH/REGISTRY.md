@@ -446,7 +446,7 @@ was shown the causes below and ruled:
    Prineville, 220219363 (deleted; Active $449,000 on our site) while the home sold 2026-09-02 for
    $415,000 as 220221210. Matt 2026-10-02, **"Yes, remove them Sunday"**: the 21 go on Sunday
    2026-10-04 after the third daily check, approved by name, since 21 at once is over the daily 10.
-5. **Every edition is rebuilt and republished from the corrected data** ("Republish all 248").
+5. **Every edition is rebuilt and republished from the corrected data** ("Republish all 248"). After the off-market repair of 2026-10-02 (652 rows), a full recompute from 1997-01 changed 66 editions: 35 from 2006-01 to 2008-11, whose 36-month charts read periods before 2006 that an earlier recompute from 2006-01 had left on older data, and 31 from 2024-02 to 2026-08 by a listing or a few (July 2026 homes for sale 1,307 to 1,308); all 66 republished through the gate, none held. A full recompute now starts at 1997-01, where the record starts (`scripts/market-report-compute.ts` refuses `--facts` with a later `--from`).
    Homes for sale on a past day count `Active` only (§2.2): an Active listing with a Contingency
    (this MLS's Active Under Contract) is under contract, not for sale; 22 of the 1,258 homes the
    August 2026 edition counted on 2026-08-31 were. The episode builder reads it that way from migration
