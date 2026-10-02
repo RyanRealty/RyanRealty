@@ -25,7 +25,7 @@
  * no status-history rows: these sales are weeks or months old, and an event
  * would announce an old sale as news.
  */
-import { fetchSparkListingsPage } from '@/lib/spark'
+import { fetchSparkListingsPage, fetchSparkListingsWhere } from '@/lib/spark'
 import { DELTA_SYNC, resolveRunMortgageRate, resultToMappedRow, type SparkDeltaResult } from '@/lib/sync/deltaSync'
 import { driftReasons, factsFromListingRow, factsFromSparkFields, type DriftFacts, type DriftReason } from '@/lib/sync/listingDrift'
 import { mergeFrozenMedia } from '@/lib/sync/frozenMedia'
@@ -45,6 +45,7 @@ import {
   recordRepairLog,
   setRepairLogNote,
   setRepairLogOutcome,
+  type ReconcileListingRow,
   type RemovedSale,
 } from '@/lib/data/sync/closingsReconcile'
 import {
@@ -64,7 +65,7 @@ import { rebuildRestoredSales, restoreServedAgain } from '@/lib/sync/mlsRemovedR
  */
 const REPAIR_HISTORY_CONCURRENCY = 2
 
-const LITE_SELECT =
+export const LITE_SELECT =
   'ListingKey,ListingId,StandardStatus,MlsStatus,CloseDate,ClosePrice,ListPrice,City,PropertyType,PropertySubType,TotalLivingAreaSqFt,BuildingAreaTotal,LivingArea,ModificationTimestamp'
 
 /** Pages of 1,000 a window may take before the pull refuses to guess (200,000 closings). */
@@ -157,15 +158,17 @@ const NO_ABSENT_WORK: AbsentFromMlsResult = {
   removalFailed: null,
 }
 
-type SparkLite = { key: string; listNumber: string | null; fields: Record<string, unknown> }
+export type SparkLite = { key: string; listNumber: string | null; fields: Record<string, unknown> }
 
-function token(): string {
+/** The Spark key both reconciliations read with. */
+export function sparkToken(): string {
   const t = (process.env.SPARK_API_KEY ?? '').trim()
   if (!t) throw new Error('[closingsReconcile] SPARK_API_KEY is not set')
   return t
 }
+const token = sparkToken
 
-function liteFrom(result: { StandardFields?: unknown }): SparkLite | null {
+export function liteFrom(result: { StandardFields?: unknown }): SparkLite | null {
   const f = (result.StandardFields ?? {}) as Record<string, unknown>
   const key = typeof f.ListingKey === 'string' ? f.ListingKey : null
   if (!key) return null
@@ -173,23 +176,28 @@ function liteFrom(result: { StandardFields?: unknown }): SparkLite | null {
   return { key, listNumber: ln, fields: f }
 }
 
-/** Every closing Spark holds with a close date in [from, to], all property types. */
-export async function fetchSparkClosingsInWindow(from: string, to: string): Promise<Map<string, SparkLite>> {
+/**
+ * Every listing Spark holds that matches `filter`, as lite records, all
+ * property types, read by skip token (fetchSparkListingsWhere): a listing that
+ * leaves the set mid-read never pushes an unread one onto a page already read,
+ * as `_page` would (docs/SPARK_API_REFERENCE.md).
+ */
+export async function fetchSparkLiteWhere(filter: string, maxPages: number, tooMany: string): Promise<Map<string, SparkLite>> {
   const out = new Map<string, SparkLite>()
-  const filter = `StandardStatus Eq 'Closed' And CloseDate Ge ${from} And CloseDate Le ${to}`
-  for (let page = 1; ; page++) {
-    const res = await fetchSparkListingsPage(token(), { page, limit: 1000, filter, select: LITE_SELECT, orderby: '+ListingKey' })
-    for (const r of res.D?.Results ?? []) {
-      const lite = liteFrom(r)
-      if (lite) out.set(lite.key, lite)
-    }
-    const pages = res.D?.Pagination?.TotalPages ?? 1
-    if (page >= pages) break
-    if (page >= MAX_WINDOW_PAGES) {
-      throw new Error(`[closingsReconcile] ${from}..${to} runs past ${MAX_WINDOW_PAGES} pages of closings; narrow the window`)
-    }
+  for (const r of await fetchSparkListingsWhere(token(), { filter, select: LITE_SELECT, maxPages, tooMany })) {
+    const lite = liteFrom(r)
+    if (lite) out.set(lite.key, lite)
   }
   return out
+}
+
+/** Every closing Spark holds with a close date in [from, to], all property types. */
+export async function fetchSparkClosingsInWindow(from: string, to: string): Promise<Map<string, SparkLite>> {
+  return fetchSparkLiteWhere(
+    `StandardStatus Eq 'Closed' And CloseDate Ge ${from} And CloseDate Le ${to}`,
+    MAX_WINDOW_PAGES,
+    `[closingsReconcile] ${from}..${to} runs past ${MAX_WINDOW_PAGES} pages of closings; narrow the window`,
+  )
 }
 
 function keyFilter(keys: string[]): string {
@@ -225,8 +233,24 @@ export async function findClosingsDrift(
   const reverse = reverseKeys.length > 0 ? await fetchSparkLiteByKeys(reverseKeys) : new Map<string, SparkLite>()
   const notInSpark = reverseKeys.filter((k) => !reverse.has(k))
 
-  const candidates = new Map<string, SparkLite>([...spark, ...reverse])
-  const ours = await getListingsForReconcile([...candidates.keys()])
+  const kept = await driftAgainstOurs(new Map<string, SparkLite>([...spark, ...reverse]))
+  return { window: { from, to }, sparkClosings: spark.size, ourClosedInWindow: ourClosed.length, drift: kept, notInSpark }
+}
+
+/**
+ * Each Spark record set against our row on the facts a statistic reads
+ * (lib/sync/listingDrift.ts), in ListingKey order: the drift both
+ * reconciliations repair. A broker's override of status or list price is our
+ * copy on purpose, not drift (the delta sync keeps both the same way), so that
+ * reason is dropped where the listing carries one.
+ */
+export async function driftAgainstOurs(
+  candidates: ReadonlyMap<string, SparkLite>,
+  /** Our rows the caller already read; only the other candidates are read here. */
+  preRead: ReadonlyMap<string, ReconcileListingRow> = new Map(),
+): Promise<ClosingDrift[]> {
+  const unread = [...candidates.keys()].filter((k) => !preRead.has(k))
+  const ours = new Map<string, ReconcileListingRow>([...preRead, ...(unread.length > 0 ? await getListingsForReconcile(unread) : [])])
   const drift: ClosingDrift[] = []
   for (const [key, lite] of candidates) {
     const row = ours.get(key)
@@ -245,18 +269,21 @@ export async function findClosingsDrift(
       ours: held ? snapshot(held) : null,
     })
   }
-  // A broker override of status is our copy on purpose, not drift: drop that
-  // reason where the listing carries one (read only for the few candidates).
-  const statusDrift = drift.filter((d) => d.reasons.includes('status') && d.listNumber)
-  const overrides = statusDrift.length > 0 ? await getAdminOverrideFlags(statusDrift.map((d) => d.listNumber!)) : new Map()
+  // Overrides are read only for the few candidates that could carry one.
+  const overridable = drift.filter((d) => (d.reasons.includes('status') || d.reasons.includes('list_price')) && d.listNumber)
+  const overrides = overridable.length > 0 ? await getAdminOverrideFlags(overridable.map((d) => d.listNumber!)) : new Map()
   const kept = drift
-    .map((d) => (d.listNumber && overrides.get(d.listNumber)?.status ? { ...d, reasons: d.reasons.filter((r) => r !== 'status') } : d))
+    .map((d) => {
+      const o = d.listNumber ? overrides.get(d.listNumber) : undefined
+      if (!o) return d
+      return { ...d, reasons: d.reasons.filter((r) => !(r === 'status' && o.status) && !(r === 'list_price' && o.listPrice)) }
+    })
     .filter((d) => d.reasons.length > 0)
   kept.sort((a, b) => a.key.localeCompare(b.key))
-  return { window: { from, to }, sparkClosings: spark.size, ourClosedInWindow: ourClosed.length, drift: kept, notInSpark }
+  return kept
 }
 
-function snapshot(f: DriftFacts): DriftSnapshot {
+export function snapshot(f: DriftFacts): DriftSnapshot {
   return {
     status: f.status,
     city: f.city,
@@ -282,6 +309,8 @@ export type RepairLogContext = {
   window: { from: string; to: string }
   /** Why each key was picked: the drift reasons that selected it. */
   reasons: Map<string, DriftReason[]>
+  /** The sweep that found the drift, as the repair log records it (default 'closings-reconcile'). */
+  source?: string
 }
 
 /**
@@ -295,8 +324,57 @@ export type RepairLogContext = {
  * written. Each chunk's rows move to repaired or failed as soon as its upsert
  * answers, so an interrupted run leaves only its unconfirmed chunk pending; a
  * repaired listing whose history or re-freeze did not land gets a note.
+ *
+ * With `leaveModifiedFrom`, a listing whose fresh record the MLS changed at or
+ * after that instant is not written: the delta sync takes it and records the
+ * status, price and new-listing events a repair does not (leftToDeltaSync).
+ *
+ * REPAIR_BATCH listings at a time, each batch finishing its rows, history,
+ * re-freeze, membership and episodes before the next starts: a run its host
+ * cuts off leaves at most one batch without its rebuilds, where one pass over
+ * every key left them all (the next run no longer sees a rewritten row as
+ * drift). No batch starts at or after `deadline` (epoch ms); its keys come back
+ * as `unreached`.
  */
-export async function repairListingsFromSpark(keys: string[], log: RepairLogContext): Promise<{
+export async function repairListingsFromSpark(
+  keys: string[],
+  log: RepairLogContext,
+  opts: { leaveModifiedFrom?: number; deadline?: number } = {},
+): Promise<RepairResult> {
+  const unique = [...new Set(keys)]
+  const total: RepairResult = {
+    repaired: 0,
+    repairedKeys: [],
+    repairLogged: 0,
+    failed: [],
+    historyRefreshed: 0,
+    refinalized: 0,
+    membershipRows: 0,
+    leftToDeltaSync: [],
+    unreached: [],
+  }
+  if (unique.length === 0) return total
+  const mortgageRate = await resolveRunMortgageRate()
+  for (let i = 0; i < unique.length; i += REPAIR_BATCH) {
+    if (opts.deadline !== undefined && Date.now() >= opts.deadline) {
+      total.unreached = unique.slice(i)
+      break
+    }
+    const r = await repairBatch(unique.slice(i, i + REPAIR_BATCH), log, opts.leaveModifiedFrom, mortgageRate)
+    total.repaired += r.repaired
+    total.repairedKeys.push(...r.repairedKeys)
+    total.repairLogged += r.repairLogged
+    total.failed.push(...r.failed)
+    total.historyRefreshed += r.historyRefreshed
+    total.refinalized += r.refinalized
+    total.membershipRows += r.membershipRows
+    total.leftToDeltaSync.push(...r.leftToDeltaSync)
+  }
+  return total
+}
+
+/** What repairListingsFromSpark did, summed over its batches. */
+export type RepairResult = {
   repaired: number
   repairedKeys: string[]
   repairLogged: number
@@ -304,12 +382,23 @@ export async function repairListingsFromSpark(keys: string[], log: RepairLogCont
   historyRefreshed: number
   refinalized: number
   membershipRows: number
-}> {
-  const unique = [...new Set(keys)]
-  if (unique.length === 0) {
-    return { repaired: 0, repairedKeys: [], repairLogged: 0, failed: [], historyRefreshed: 0, refinalized: 0, membershipRows: 0 }
-  }
-  const mortgageRate = await resolveRunMortgageRate()
+  /** Re-pulled, but the MLS changed them at or after leaveModifiedFrom: the delta sync's. */
+  leftToDeltaSync: string[]
+  /** Not reached before the deadline: still drift on the next run. */
+  unreached: string[]
+}
+
+/** Listings per repair batch (repairListingsFromSpark). */
+export const REPAIR_BATCH = 40
+
+/** One batch of repairListingsFromSpark, start to finish. */
+async function repairBatch(
+  unique: string[],
+  log: RepairLogContext,
+  leaveModifiedFrom: number | undefined,
+  mortgageRate: Awaited<ReturnType<typeof resolveRunMortgageRate>>,
+): Promise<Omit<RepairResult, 'unreached'>> {
+  const leftToDeltaSync: string[] = []
   const existing = await getListingsForReconcile(unique)
   const failed: string[] = []
   let repaired = 0
@@ -348,6 +437,13 @@ export async function repairListingsFromSpark(keys: string[], log: RepairLogCont
       if (!r) {
         failed.push(key)
         continue
+      }
+      if (leaveModifiedFrom !== undefined) {
+        const modified = Date.parse(String((r.StandardFields as Record<string, unknown> | undefined)?.ModificationTimestamp ?? ''))
+        if (Number.isFinite(modified) && modified >= leaveModifiedFrom) {
+          leftToDeltaSync.push(key)
+          continue
+        }
       }
       const row = resultToMappedRow(r, { mortgageRate })
       const listNumber = String(row.ListNumber ?? '').trim()
@@ -390,6 +486,7 @@ export async function repairListingsFromSpark(keys: string[], log: RepairLogCont
           windowTo: log.window.to,
         }
       }),
+      log.source,
     )
     for (const [k, id] of ids) logId.set(k, id)
 
@@ -457,7 +554,7 @@ export async function repairListingsFromSpark(keys: string[], log: RepairLogCont
     const spans = await refreshMarketFactSpansForKeys(repairedKeys)
     if (spans.missed.length > 0) console.warn(`[closingsReconcile] episodes not rebuilt for ${spans.missed.join(', ')}`)
   }
-  return { repaired, repairedKeys, repairLogged: logId.size, failed, historyRefreshed, refinalized, membershipRows }
+  return { repaired, repairedKeys, repairLogged: logId.size, failed, historyRefreshed, refinalized, membershipRows, leftToDeltaSync }
 }
 
 /** Absences one window may record before the pull is treated as an outage: 10, or 0.5% of our closings. */
@@ -628,6 +725,8 @@ export async function reconcileClosings(opts: {
     historyRefreshed: 0,
     refinalized: 0,
     membershipRows: 0,
+    leftToDeltaSync: [],
+    unreached: [],
   }
   if (opts.repair && found.drift.length > 0) {
     const toRepair = found.drift.slice(0, opts.maxRepairs ?? 2000)

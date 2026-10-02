@@ -132,6 +132,8 @@ export type SparkListingsResponse = {
       TotalPages: number
       CurrentPage: number
     }
+    /** Present when the request paged by `_skiptoken`: the last key this page returned. */
+    SkipToken?: string
     Errors?: unknown[]
   }
 }
@@ -335,6 +337,12 @@ export async function getSparkDataRange(): Promise<{
 
 /**
  * Fetch one page of listings from Spark API.
+ *
+ * With `skiptoken` (pass '' for the first page, then each answer's
+ * D.SkipToken) the page starts after the last key the previous one returned,
+ * in key order, and an empty page ends the read. `_page` counts positions, so a
+ * listing that leaves the filtered set mid-read shifts the next one onto a page
+ * already read and it is never returned (docs/SPARK_API_REFERENCE.md).
  */
 export async function fetchSparkListingsPage(
   accessToken: string,
@@ -345,13 +353,18 @@ export async function fetchSparkListingsPage(
     orderby?: string
     select?: string
     expand?: string
+    skiptoken?: string
   } = {}
 ): Promise<SparkListingsResponse> {
-  const { page = 1, limit = 100, filter, orderby, select, expand } = options
+  const { page = 1, limit = 100, filter, orderby, select, expand, skiptoken } = options
   const params = new URLSearchParams()
-  params.set('_pagination', '1')
   params.set('_limit', String(limit))
-  params.set('_page', String(page))
+  if (skiptoken !== undefined) {
+    params.set('_skiptoken', skiptoken)
+  } else {
+    params.set('_pagination', '1')
+    params.set('_page', String(page))
+  }
   if (orderby) params.set('_orderby', orderby)
   if (select) params.set('_select', select)
   if (expand) params.set('_expand', expand)
@@ -402,6 +415,31 @@ export async function fetchSparkListingsPage(
     throw new Error(`Spark API errors: ${JSON.stringify(data.D.Errors)}`)
   }
   return data
+}
+
+/**
+ * Every listing Spark holds that matches `filter`, read by skip token
+ * (fetchSparkListingsPage), `limit` at a time. An empty page ends the read; a
+ * page past `maxPages` throws `tooMany`. Use it for any pull over a set that
+ * changes while it is read.
+ */
+export async function fetchSparkListingsWhere(
+  accessToken: string,
+  opts: { filter: string; select?: string; maxPages: number; tooMany: string; limit?: number },
+): Promise<SparkListingResult[]> {
+  const out: SparkListingResult[] = []
+  let skiptoken = ''
+  for (let request = 1; ; request++) {
+    const res = await fetchSparkListingsPage(accessToken, { limit: opts.limit ?? 1000, filter: opts.filter, select: opts.select, skiptoken })
+    const results = res.D?.Results ?? []
+    if (results.length === 0) break
+    if (request > opts.maxPages) throw new Error(opts.tooMany)
+    out.push(...results)
+    const next = res.D?.SkipToken
+    if (!next || next === skiptoken) throw new Error(`[fetchSparkListingsWhere] Spark gave no next skip token after ${out.length} listings`)
+    skiptoken = next
+  }
+  return out
 }
 
 const LISTING_EXPAND =
@@ -469,6 +507,35 @@ export type SparkListingHistoryResponse = {
   errorBody?: string
 }
 
+/**
+ * The answers that refuse a listing's history for good: Spark's 200 whose body
+ * says D.Success false (Code 1500 permission denied), 400, 403 and 404.
+ * Anything else that fails (401, 408, 409, 429, 5xx, a lost connection, a
+ * partial read) is temporary: try again later.
+ */
+const HISTORY_REFUSALS = new Set([200, 400, 403, 404])
+
+/** Whether Spark refused this listing's history in a way a retry will not change. */
+export function historyRefused(answer: Pick<SparkListingHistoryResponse, 'ok' | 'partial' | 'status'>): boolean {
+  return !answer.ok && answer.partial !== true && answer.status !== undefined && HISTORY_REFUSALS.has(answer.status)
+}
+
+/**
+ * Whether the price history may stand in for this full-history answer: only
+ * when Spark answered that the full history is empty, or refused it
+ * (historyRefused). The price history carries no status changes, and every
+ * history writer replaces the stored history with what it gets, so standing it
+ * in on a temporary failure deletes the status events the on-market episodes
+ * are built from. One rule for every writer.
+ */
+export function priceHistoryMayStandIn(
+  answer: Pick<SparkListingHistoryResponse, 'ok' | 'items' | 'partial' | 'status'>,
+): boolean {
+  if (answer.partial === true) return false
+  if (answer.ok) return answer.items.length === 0
+  return historyRefused(answer)
+}
+
 function parseHistoryItems(data: unknown): SparkListingHistoryItem[] {
   if (Array.isArray(data)) return data as SparkListingHistoryItem[]
   if (data && typeof data === 'object') {
@@ -498,6 +565,24 @@ function parseSparkPagination(data: Record<string, unknown>): SparkPagination | 
   }
 }
 
+/**
+ * Events asked for per history page. Spark answers a history request that
+ * names no page size with its default of 10 events and no pagination block,
+ * which read as a complete history: a listing with 57 events came back with
+ * its newest 10, and fetchAndInsertHistoryCore replaced the stored history with
+ * them (measured 2026-10-01). Asking with _pagination=1 returns the pagination
+ * block; 200 is a page Spark serves whole (57 events, one page).
+ */
+export const SPARK_HISTORY_PAGE_SIZE = 200
+
+/** The page Spark serves when a request names no _limit. */
+export const SPARK_DEFAULT_PAGE_SIZE = 10
+
+/** The URL of one page of a listing's history. */
+export function sparkHistoryPageUrl(baseUrl: string, page: number): string {
+  return `${baseUrl}?_pagination=1&_limit=${SPARK_HISTORY_PAGE_SIZE}&_page=${page}`
+}
+
 async function fetchSparkHistoryEndpoint(
   accessToken: string,
   listingKey: string,
@@ -511,7 +596,7 @@ async function fetchSparkHistoryEndpoint(
   }
 
   try {
-    const firstRes = await fetch(baseUrl, {
+    const firstRes = await fetch(sparkHistoryPageUrl(baseUrl, 1), {
       headers,
       next: { revalidate: 0 },
     })
@@ -528,15 +613,18 @@ async function fetchSparkHistoryEndpoint(
     const firstRaw = firstD?.Results ?? firstD ?? firstData.Results ?? firstData
     const allItems = parseHistoryItems(firstRaw)
     const pagination = parseSparkPagination(firstData)
+    // No pagination block and exactly Spark's default page: the shape of the
+    // truncated answer this request now avoids. Never call it whole.
+    if (!pagination && allItems.length === SPARK_DEFAULT_PAGE_SIZE) {
+      return { items: allItems, ok: false, partial: true, status: firstRes.status }
+    }
     const totalPages = pagination?.TotalPages ?? 1
     if (totalPages <= 1) {
       return { items: allItems, ok: true, partial: false, status: firstRes.status }
     }
 
-    const pageSize = pagination?.PageSize && pagination.PageSize > 0 ? pagination.PageSize : 200
     for (let page = 2; page <= totalPages; page++) {
-      const url = `${baseUrl}?_pagination=1&_limit=${pageSize}&_page=${page}`
-      const pageRes = await fetch(url, {
+      const pageRes = await fetch(sparkHistoryPageUrl(baseUrl, page), {
         headers,
         next: { revalidate: 0 },
       })

@@ -14,6 +14,7 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
+import { LIVE_INVENTORY_STATUSES } from '@/lib/listing-status-public'
 
 export type ReconcileListingRow = {
   ListNumber: string
@@ -43,6 +44,41 @@ export async function getListingsForReconcile(keys: string[]): Promise<Map<strin
     for (const r of (data ?? []) as ReconcileListingRow[]) {
       if (r.ListingKey) out.set(r.ListingKey, r)
     }
+  }
+  return out
+}
+
+/** Rows per page of the on-market read. */
+const ON_MARKET_PAGE = 1000
+
+/**
+ * Every listing we hold at an on-market or under-contract status, with the
+ * columns the drift comparison reads (lib/sync/onMarketReconcile.ts sets them
+ * against the MLS, so they are read once). Read 1,000 at a time after the last
+ * key read: the delta sync writes every 15 minutes, and with offset pages a
+ * row leaving the set mid-read would push an unread one onto a page already
+ * read. One page plans on the status index, about 120 ms (EXPLAIN ANALYZE,
+ * 2026-10-01). Throws on a failed page: a partial list would read as listings
+ * the MLS no longer serves.
+ */
+export async function getOnMarketListingRows(): Promise<ReconcileListingRow[]> {
+  const sb = createServiceClient()
+  const out: ReconcileListingRow[] = []
+  let after = ''
+  for (;;) {
+    const { data, error } = await sb
+      .from('listings')
+      .select(RECONCILE_COLUMNS)
+      .in('StandardStatus', LIVE_INVENTORY_STATUSES)
+      .gt('ListingKey', after)
+      .order('ListingKey')
+      .limit(ON_MARKET_PAGE)
+    if (error) throw new Error(`[getOnMarketListingRows] ${error.message}`)
+    const rows = (data ?? []) as ReconcileListingRow[]
+    for (const r of rows) if (r.ListingKey && r.StandardStatus) out.push(r)
+    const last = rows[rows.length - 1]?.ListingKey
+    if (rows.length < ON_MARKET_PAGE || !last) break
+    after = last
   }
   return out
 }

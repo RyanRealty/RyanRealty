@@ -137,6 +137,13 @@ export const ADMIN_ACTIVE_STATUSES: ListingStatus[] = [
 ]
 
 /**
+ * Every status a listing holds while it is on the market or under contract:
+ * the live inventory a sync must keep current (lib/sync/onMarketReconcile.ts
+ * sets our copy of these against the MLS). Not a public list: Coming Soon is in it.
+ */
+export const LIVE_INVENTORY_STATUSES: ListingStatus[] = [...ADMIN_ACTIVE_STATUSES, ...PUBLIC_PENDING_STATUSES]
+
+/**
  * True when the status is Coming Soon in any casing/spacing the feed sends
  * ("Coming Soon", "ComingSoon", "coming soon").
  */
