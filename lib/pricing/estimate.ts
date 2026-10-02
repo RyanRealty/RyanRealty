@@ -170,11 +170,11 @@ export function roundPrintedRecommendation(
   if (low != null && next < low) next = low
   if (high != null && next > high) next = high
   const ask = bounds.ask
-  if (ask != null && Number.isFinite(ask) && ask > 0 && Math.abs(rec - ask) <= step && next > ask) {
-    const capped = Math.floor(ask / step) * step
-    const fits = (n: number) => n > 0 && (low == null || n >= low) && (high == null || n <= high)
+  if (ask != null && Number.isFinite(ask) && ask > 0 && next >= ask && rec <= ask) {
+    const capped = Math.floor((ask - 1) / step) * step
+    const fits = (n: number) => n > 0 && n < ask && (low == null || n >= low) && (high == null || n <= high)
     if (fits(capped)) next = capped
-    else if (low != null && fits(low) && low <= ask) next = low
+    else if (rec < ask) next = rec
   }
   return next
 }

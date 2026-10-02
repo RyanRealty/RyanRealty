@@ -248,21 +248,22 @@ describe('the failed-ask ceiling (applyFailedAskCap)', () => {
     return { ...pricing, notes: [] as string[], needsReview: false, reviewReason: null, ...over }
   }
 
-  it('clamps list tiers to the backtest quantiles of a recently failed ask', async () => {
+  it('pulls list tiers under a recently failed ask instead of onto the backtest quantiles', async () => {
     const { applyFailedAskCap } = await import('./expired-audit')
     const x = p({ conservative: 2100000, recommended: 2275000, highEnd: 2455000 })
     const r = applyFailedAskCap(x, { lastFailedListPrice: 1675000, offMarketDate: recentOff })
     expect(r.applied).toBe(true)
-    // 0.942 and 0.982 of the $1,675,000 failed ask, rounded to $1K. The high
-    // end takes the SAME 0.982 ceiling as the recommendation — one list
-    // ceiling, never the ask that failed (round four, class E).
-    expect(x.conservative).toBe(1578000)
-    expect(x.recommended).toBe(1645000)
-    expect(x.highEnd).toBe(1645000)
+    // No days on market and no original ask: one thousand under, not the
+    // 0.942 / 0.982 quantiles. Every tier that sat on or above the ask
+    // takes that same step. The ask itself is not a list price.
+    expect(x.conservative).toBe(1674000)
+    expect(x.recommended).toBe(1674000)
+    expect(x.highEnd).toBe(1674000)
+    expect(x.recommended).toBeLessThan(1675000)
     expect(x.highEnd).toBeLessThan(1675000)
     expect(x.conservative).toBeLessThanOrEqual(x.recommended)
     expect(x.recommended).toBeLessThanOrEqual(x.highEnd)
-    expect(r.cappedTo).toBe(1645000)
+    expect(r.cappedTo).toBe(1674000)
     expect(x.needsReview).toBe(true)
     expect(x.reviewReason).toContain('$2,275,000')
     expect(x.notes.join(' ')).toContain('Your last listing asked $1,675,000 and did not sell.')
@@ -301,12 +302,13 @@ describe('the failed-ask ceiling (applyFailedAskCap)', () => {
     })
     const r = applyFailedAskCap(x, { lastFailedListPrice: 600000, offMarketDate: staleOff })
     expect(r.applied).toBe(true)
-    expect(x.recommended).toBe(600000)
-    expect(x.highEnd).toBe(600000)
-    expect(x.conservative).toBe(600000)
+    expect(x.recommended).toBe(599000)
+    expect(x.highEnd).toBe(599000)
+    expect(x.conservative).toBe(599000)
+    expect(x.recommended).toBeLessThan(600000)
   })
 
-  it('missing date still caps at the failed ask; missing ask does nothing', async () => {
+  it('missing date still comes out under the failed ask; missing ask does nothing', async () => {
     const { applyFailedAskCap } = await import('./expired-audit')
     expect(applyFailedAskCap(p(), { lastFailedListPrice: null, offMarketDate: recentOff }).applied).toBe(false)
     const x = p({
@@ -318,8 +320,9 @@ describe('the failed-ask ceiling (applyFailedAskCap)', () => {
     })
     const r = applyFailedAskCap(x, { lastFailedListPrice: 500000, offMarketDate: null })
     expect(r.applied).toBe(true)
-    expect(x.recommended).toBe(500000)
-    expect(x.highEnd).toBe(500000)
+    expect(x.recommended).toBe(499000)
+    expect(x.highEnd).toBe(499000)
+    expect(x.recommended).toBeLessThan(500000)
   })
 })
 

@@ -71,7 +71,7 @@ const MURPHY = {
 } as const
 
 describe('failed-ask haircut vs the hero band', () => {
-  it('Nugget shape: ask below the range, rec pins to the band low (not midpoint, not $712k)', () => {
+  it('Nugget shape: ask below the range, rec comes out under the ask (not the band low, not $712k)', () => {
     const x = pricing({
       conservative: NUGGET.conservative,
       recommended: NUGGET.recommended,
@@ -87,14 +87,15 @@ describe('failed-ask haircut vs the hero band', () => {
     // Old path: 725_000 × 0.982 → 712_000. That is the haircut bug.
     const oldHaircut = Math.round((NUGGET.lastAsk * FAILED_ASK_BACKTEST.closeP75Ratio) / 1000) * 1000
     expect(oldHaircut).toBe(712_000)
-    expect(r.applied).toBe(false)
+    expect(r.applied).toBe(true)
     expect(r.belowRange).toBe(true)
     expect(x.failedAskBelowRange).toBe(true)
-    expect(x.recommended).toBe(NUGGET.valueLow)
-    expect(x.recommended).toBe(734_000)
+    expect(x.recommended).toBe(724_000)
+    expect(x.recommended).toBeLessThan(NUGGET.lastAsk)
+    expect(x.recommended).not.toBe(NUGGET.valueLow)
     expect(x.recommended).not.toBe(803_000)
     expect(x.recommended).not.toBe(712_000)
-    expect(x.clamp).toBeNull()
+    expect(x.clamp).not.toBeNull()
     expect(x.notes.join(' ')).toContain(failedAskBelowRangeNote(NUGGET.lastAsk))
     expect(failedAskBelowRangeNote(NUGGET.lastAsk)).not.toMatch(/[—–]/)
   })
@@ -115,12 +116,14 @@ describe('failed-ask haircut vs the hero band', () => {
       offMarketDate: recentOff,
     })
     expect(x.failedAskBelowRange).toBe(true)
-    expect(x.recommended).toBe(734_000)
+    expect(x.recommended).toBe(724_000)
+    expect(x.recommended).toBeLessThan(725_000)
+    expect(x.recommended).not.toBe(734_000)
     expect(x.recommended).not.toBe(midpoint)
     expect(x.notes.join(' ')).toContain(failedAskBelowRangeNote(725_000))
   })
 
-  it('Murphy shape: ask inside the range, recommended stays $716k', () => {
+  it('Murphy shape: ask inside the range, comps above the ask come out just under it', () => {
     const x = pricing({
       conservative: MURPHY.conservative,
       recommended: MURPHY.recommended,
@@ -136,15 +139,16 @@ describe('failed-ask haircut vs the hero band', () => {
     expect(r.applied).toBe(true)
     expect(r.belowRange).toBeFalsy()
     expect(x.failedAskBelowRange).toBe(false)
-    expect(x.recommended).toBe(716_000)
-    expect(x.recommended).toBeGreaterThanOrEqual(MURPHY.valueLow)
-    expect(x.recommended).toBeLessThanOrEqual(MURPHY.valueHigh)
-    expect(x.recommended).toBe(
+    expect(x.recommended).toBe(728_000)
+    expect(x.recommended).toBeLessThan(MURPHY.lastAsk)
+    expect(x.recommended).not.toBe(
       Math.round((MURPHY.lastAsk * FAILED_ASK_BACKTEST.closeP75Ratio) / 1000) * 1000,
     )
+    expect(x.recommended).toBeGreaterThanOrEqual(MURPHY.valueLow)
+    expect(x.recommended).toBeLessThanOrEqual(MURPHY.valueHigh)
   })
 
-  it('ask above the range: existing p75 haircut still binds', () => {
+  it('ask above the range: comps at or above the ask come out under it, not at the old p75 cut', () => {
     const x = pricing({
       conservative: 693_000,
       recommended: 850_000,
@@ -158,7 +162,8 @@ describe('failed-ask haircut vs the hero band', () => {
     expect(expected).toBe(786_000)
     expect(r.applied).toBe(true)
     expect(x.failedAskBelowRange).toBe(false)
-    expect(x.recommended).toBe(786_000)
+    expect(x.recommended).toBe(799_000)
+    expect(x.recommended).not.toBe(expected)
     expect(x.recommended).toBeLessThan(ask)
   })
 
@@ -181,8 +186,9 @@ describe('failed-ask haircut vs the hero band', () => {
       },
       { failedAsk: NUGGET.lastAsk },
     )
-    expect(cover.recommended).toBe(NUGGET.valueLow)
-    expect(cover.recommended).toBe(734_000)
+    expect(cover.recommended).toBe(724_000)
+    expect(cover.recommended).toBeLessThan(NUGGET.lastAsk)
+    expect(cover.recommended).not.toBe(NUGGET.valueLow)
     expect(cover.failedAskBelowRange).toBe(true)
     expect(cover.failedAskCapped).toBe(true)
   })

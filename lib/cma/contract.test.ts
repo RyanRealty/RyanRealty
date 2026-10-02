@@ -468,15 +468,15 @@ describe('evaluateAccuracyContract', () => {
     expect(contract.checks.find((c) => c.id === 'expired-list-cap')!.pass).toBe(false)
   })
 
-  it('Nugget shape: ask below the band, rec at valueLow passes expired-list-cap', () => {
+  it('Nugget shape: ask below the band, rec under that ask passes expired-list-cap', () => {
     const comps = tightSet()
     const adjusted = adjustComps(subject(), comps, null)
     const pricing = computePricing(subject(), adjusted, null)!
     pricing.valueLow = 734_000
     pricing.valueHigh = 1_285_000
-    pricing.conservative = 734_000
-    pricing.recommended = 734_000
-    pricing.highEnd = 1_285_000
+    pricing.conservative = 724_000
+    pricing.recommended = 724_000
+    pricing.highEnd = 724_000
     pricing.failedAsk = 725_000
     pricing.failedAskBelowRange = true
     const contract = evaluateAccuracyContract({

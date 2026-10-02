@@ -142,7 +142,7 @@ describe('floor, minimum width, failed-ask cap, and the nudge', () => {
       rangeRule: rule(args.saleLow, args.valueHigh, evidenceLow),
     }
     applyFailedAskCap(pricing, { lastFailedListPrice: args.ask, offMarketDate: recentOff })
-    const finished = finishRecommendedAfterActives(pricing, { actives: SITTING })
+    const finished = finishRecommendedAfterActives(pricing, { actives: SITTING, ask: args.ask })
     return { pricing, finished }
   }
 
@@ -163,10 +163,11 @@ describe('floor, minimum width, failed-ask cap, and the nudge', () => {
     expect(finished.failedAskBelowRange).not.toBe(true)
   })
 
-  it('pins an ask under the real sales to that sale low, not to an opened print and not to a haircut', () => {
+  it('an ask under the real sales still comes out under that ask, not pinned up to the sale', () => {
     // Five adjusted sales already span more than the minimum width.
-    // The ask sits a few thousand under the lowest one. The pin is that
-    // sale, which is above the ask. A 1.8 percent haircut is not applied.
+    // The ask sits a few thousand under the lowest one. The comps are
+    // above the ask, so the recommendation comes out under the ask.
+    // It is not pinned up to the sale, and it is not a 1.8 percent haircut.
     const { finished } = presentThenCapThenNudge({
       conservative: 970_000,
       recommended: 970_000,
@@ -177,14 +178,15 @@ describe('floor, minimum width, failed-ask cap, and the nudge', () => {
       ask: 885_000,
     })
     expect(finished.valueLow).toBe(889_000)
-    expect(finished.recommended).toBe(889_000)
+    expect(finished.recommended).toBe(884_000)
     expect(finished.failedAskBelowRange).toBe(true)
-    expect(finished.recommended).toBeGreaterThan(885_000)
+    expect(finished.recommended).toBeLessThan(885_000)
+    expect(finished.recommended).not.toBe(889_000)
     expect(finished.recommended).not.toBe(Math.round((885_000 * 0.982) / 1000) * 1000)
     expect(finished.conservative).toBeLessThanOrEqual(finished.recommended)
   })
 
-  it('pins the million-dollar twin the same way when the ask is under the lowest sale', () => {
+  it('the million-dollar twin also comes out under the ask when the ask is under the lowest sale', () => {
     const { finished } = presentThenCapThenNudge({
       conservative: 1_930_000,
       recommended: 1_930_000,
@@ -194,9 +196,10 @@ describe('floor, minimum width, failed-ask cap, and the nudge', () => {
       saleLow: 1_880_000,
       ask: 1_849_000,
     })
-    expect(finished.recommended).toBe(1_880_000)
+    expect(finished.recommended).toBe(1_848_000)
     expect(finished.failedAskBelowRange).toBe(true)
-    expect(finished.recommended).toBeGreaterThan(1_849_000)
+    expect(finished.recommended).toBeLessThan(1_849_000)
+    expect(finished.recommended).not.toBe(1_880_000)
     expect(finished.valueLow).toBe(1_880_000)
   })
 
@@ -217,15 +220,16 @@ describe('floor, minimum width, failed-ask cap, and the nudge', () => {
     }
     applyFailedAskCap(pricing, { lastFailedListPrice: 615_000, offMarketDate: recentOff })
     expect(pricing.failedAskBelowRange).toBe(true)
-    expect(pricing.recommended).toBe(624_900)
-    expect(pricing.conservative).toBe(624_900)
+    expect(pricing.recommended).toBe(614_000)
+    expect(pricing.recommended).toBeLessThan(615_000)
+    expect(pricing.recommended).not.toBe(624_900)
     expect(pricing.recommended).not.toBe(609_000)
-    const finished = finishRecommendedAfterActives(pricing, { actives: SITTING })
-    // The pin is still that sale. The printed list and the printed floor are
-    // the nearest thousand, inside the opened band. The ask is not within
-    // one step, so the list is not pulled down to it.
-    expect(finished.recommended).toBe(625_000)
-    expect(finished.conservative).toBe(625_000)
+    const finished = finishRecommendedAfterActives(pricing, { actives: SITTING, ask: 615_000 })
+    // The band clamp must not lift the list back onto the sale, which is
+    // above the ask that failed.
+    expect(finished.recommended).toBe(614_000)
+    expect(finished.recommended).toBeLessThan(615_000)
+    expect(finished.conservative).toBeLessThanOrEqual(finished.recommended)
     expect(finished.recommended).toBeGreaterThanOrEqual(finished.conservative)
     const contract = evaluateAccuracyContract({
       audit: null,

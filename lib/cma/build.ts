@@ -93,6 +93,7 @@ import {
   BUYER_BROKER_ASSUMPTION_PCT,
   type ExpiredAuditData,
 } from '@/lib/cma/expired-audit'
+import { subjectDomDays } from '@/lib/cma/comp-matrix'
 import { resolveDevelopmentOpportunities } from '@/lib/cma/development'
 import { resolveRentalPotential } from '@/lib/cma/rental-potential'
 import { buildCmaMapDataUri } from '@/lib/cma/map'
@@ -798,6 +799,8 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       applyFailedAskCap(pricing, {
         lastFailedListPrice: subject.lastListPrice,
         offMarketDate: offDate,
+        daysOnMarket: subjectDomDays(subject),
+        originalListPrice: Number(row0['OriginalListPrice']) || null,
       })
     }
 
@@ -902,6 +905,8 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             applyFailedAskCap(pricing, {
               lastFailedListPrice: subject.lastListPrice,
               offMarketDate: String(row0['off_market_date'] ?? row0['status_change_timestamp'] ?? '') || null,
+              daysOnMarket: subjectDomDays(subject),
+              originalListPrice: Number(row0['OriginalListPrice']) || null,
             })
           }
           selection.trace.push(
@@ -980,6 +985,8 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
                 applyFailedAskCap(pricing, {
                   lastFailedListPrice: subject.lastListPrice,
                   offMarketDate: String(row0['off_market_date'] ?? row0['status_change_timestamp'] ?? '') || null,
+                  daysOnMarket: subjectDomDays(subject),
+                  originalListPrice: Number(row0['OriginalListPrice']) || null,
                 })
               }
               selection.trace.push(
