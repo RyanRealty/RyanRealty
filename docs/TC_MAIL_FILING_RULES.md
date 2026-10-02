@@ -1100,3 +1100,43 @@ Matt chose **"Copied on an email"**.
   from it, or from a draft, is recomputed from the rows left through
   `isHumanTouch` (cleared when none is left). A journey stage that stamp
   advanced is not moved back.
+
+### v4.2 and copied-on mail applied to production (2026-10-02)
+
+PR #419 merged `3333337302` and deployed (`dpl_7UZHk8b5GK28zN8c4ng5TFaS6dSo`,
+deploy:verify clean) before either repair, so no old code wrote behind them.
+Run one Gmail job at a time.
+
+**Re-decide under v4.2** (`redecide --apply`, 02:11Z to 04:09Z, 73,683 rows,
+one piece, COMPLETE, 0 errors), the same as its dry run: 140 messages unfiled
+(139 drafts), 7 dequeued, 7 relabeled (all drafts), 1 filed (`19a7e8a7fddeec36`
+on 2354 NW Drouillard, its hand label), 72,982 unchanged, 46 kept for a person,
+42 protected, 5 gone. Documents: 3 archived (restorable), 31 kept (another
+email or a person uses them), 0 offers touched, 0 moves; one message's leftover
+documents (2) stayed on its deal, kept, none archived.
+
+**Five drafts the re-decide could not reach.** The model stage had decided
+them, and the re-decide never overrides a model or person decision: three
+filed (`1935aacbac642705` "2129 Seller Counter" and `19379a5c18ead6e6`
+"Property disclosures" on 2129 35th Street, Redmond; `197fbcbc7df35fe6` "Re:
+FW: 3235 Closing" on 3235 NW Cedar Ave) and two queued (`193d2967cbaa1ffd`,
+`1975675d9618f041`). Gmail still labeled each DRAFT on 2026-10-02. Corrected
+through `unfileMailFromDeal` and the queue's dismiss path, actor
+`system:mail-v4.2-drafts` (one document archived, restorable). v4.2 stops a
+draft before the model stage, so the class cannot recur.
+
+**After:** of the 152 Vault rows that were drafts on 2026-10-01, 0 are filed or
+queued; every one is dismissed.
+
+**CRM repair** (`scripts/crm-timeline-mail-repair.ts --apply`, 04:17Z, the
+same as its dry run): 143 draft rows deleted, 1,748 copied-on rows recast to
+`email_cc` (112 people), 1,629 conversation copies removed (none replied to),
+16 conversations deleted (their only messages were drafts or copied-on mail),
+103 recomputed, 65 rows gone from Gmail left alone. Three first-broker-action
+stamps had come from these rows; none of those people has a human touch left,
+so the stamps were cleared. Before-image:
+`tmp/crm-timeline-mail-repair/apply-2026-10-02T04-17-47-404Z/before.json`.
+**After:** 0 timeline rows point at a current draft; 1,748 `email_cc` rows.
+No Gmail mail had matched a CRM person between the deploy and 04:20Z, so the
+sync's live `email_cc` write was not yet observed in production (the kind
+logic is tested; the constraint accepts it).
