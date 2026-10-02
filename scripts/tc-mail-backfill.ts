@@ -76,12 +76,13 @@ const has = (name: string) => process.argv.includes(name)
 
 async function walk(since: string) {
   const { CRM_MAILBOXES, getGmailFor } = await import('@/lib/crm/gmail')
+  const { withoutDrafts } = await import('@/lib/crm/gmail-drafts')
   const { indexGmailMessage, loadMailUniverse } = await import('@/lib/tc/mail-index')
   const { createServiceClient } = await import('@/lib/supabase/service')
   const sb = createServiceClient()
   const universe = await loadMailUniverse(sb)
   const decisions = new Map<string, { status: string; dealId: string | null; subject: string | null; mailbox: string; gmailId: string; category: string | null; method: string | null }>()
-  const q = `after:${since.replace(/-/g, '/')} -in:spam -in:trash`
+  const q = withoutDrafts(`after:${since.replace(/-/g, '/')} -in:spam -in:trash`)
   for (const mb of CRM_MAILBOXES) {
     const gmail = getGmailFor(mb.email, ['https://www.googleapis.com/auth/gmail.readonly'])
     if (!gmail) continue

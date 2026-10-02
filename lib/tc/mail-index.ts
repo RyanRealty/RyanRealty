@@ -20,6 +20,7 @@ import { createHash } from 'node:crypto'
 import type { gmail_v1 } from 'googleapis'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getGmailFor } from '@/lib/crm/gmail'
+import { isUnsentDraft, withoutDrafts } from '@/lib/crm/gmail-drafts'
 import { brokerByEmail } from '@/lib/brokers/directory'
 import { ensureBrokerDirectory, getCrmMailboxes } from '@/lib/data/brokers/directory'
 import { getSubdivisionNamesByMlsNumbers } from '@/lib/data/tc/deal-subdivisions'
@@ -319,6 +320,7 @@ function factsFromHeaders(msg: gmail_v1.Schema$Message, body: string, attachment
     attachments,
     bulkHeaders: bulk,
     autoReply,
+    draft: isUnsentDraft(msg.labelIds),
   }
 }
 
@@ -443,8 +445,10 @@ async function computeIndexResult(input: IndexInput): Promise<IndexResult> {
       modelStage,
     })
 
-    // Pass 1: headers + snippet. Bulk mail stops here.
+    // Pass 1: headers + snippet. Bulk mail stops here, and an unsent draft
+    // stops before its attachments are read or the model stage sees it.
     const d1 = decideMailFiling({ facts: base, deals: universe.deals, thread: anchor })
+    if (base.draft) return empty(d1, 'not_deal')
     if (d1.status === 'bulk') return empty(d1, 'bulk')
     if (!worthFullRead(d1, looksMultipartMixed(headers))) return empty(d1, 'not_deal')
 
@@ -1139,7 +1143,7 @@ export async function sweepQuery(input: {
         res.complete = false
         return res
       }
-      const list = await gmail.users.messages.list({ userId: 'me', q: input.query, maxResults: 100, pageToken })
+      const list = await gmail.users.messages.list({ userId: 'me', q: withoutDrafts(input.query), maxResults: 100, pageToken })
       const page = (list.data.messages ?? [])
         .filter((m): m is gmail_v1.Schema$Message & { id: string } => !!m.id)
         .slice(0, Math.max(0, max - count))
