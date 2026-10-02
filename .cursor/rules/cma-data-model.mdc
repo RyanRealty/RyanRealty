@@ -1,5 +1,5 @@
 ---
-description: CMA close price, and the locked rules for an expired rebuild, recommended price, gap hold, and owner email.
+description: CMA close price, and the locked CMA process rules. Apply on any CMA, pricing, comp, letter, or owner-email task.
 alwaysApply: false
 ---
 
@@ -64,12 +64,21 @@ Pricing comps: `sale_pricing_facts.close_price` (typed `"ClosePrice" > 0`). Neve
 - For median-style reporting in comp analytics, use `percentile_cont` (true median), not `avg()`.
 - Always carry concessions next to close price when the field is known. Close and seller net are different numbers.
 
-## Locked CMA rules
+## Locked CMA process rules
 
-For an expired CMA, check live listing status before any rebuild. If the home is active, pending, or otherwise on the market, do not build a CMA and do not send one. Skip it. This is not optional and not expired-only in the sense of "only sometimes": at least every expired rebuild must do this. Do not loosen it.
+**Locked CMA process rules. Do not loosen these.**
 
-Recommended price is the house from comps only. No ADU, second-lot, or rental-income dollars in the price. Those stay letter notes.
-
-Gap hold: a recommendation more than 15% under the last ask, or any amount over the last ask, is refused before approve, enqueue, or send. Exactly 15% under is not a hold. Missing ask or missing rec is not a hold. The row stays built.
-
-Do not send, enqueue, or approve owner email unless the task explicitly says to, and never from a rebuild.
+1. One CMA path. Price on current main only. No second ladder. No 80% send floor. Do not merge PR 408 or any 80% floor. PR 401 stays. Do not revert 770a4fd1.
+2. Recommended price is the house from comps only. ADU, second lot, and rental income are letter notes, not dollars, until Matt says otherwise.
+3. Hold for Matt if the rec is more than 15% under last ask, or any amount over it. Exactly 15% under is not a hold. Missing ask or missing rec is not a hold.
+4. One room rule: same whole bed or bath count anywhere. One whole room apart only on the subject's own plat, mapped neighborhood, or own street, kept and disclosed, zero dollars. Two or more apart refused everywhere. The picker and the review call the same decision. The review must not exclude a sale the picker kept for a room gap this rule allows.
+5. Pocket rungs are skipped when the plat and the street already have five sales before the first quarter-mile pocket rung. A cheap different-plat pocket sale drops when no own-plat sale remains in the set that is actually priced. Do not check only the pre-review set.
+6. Do not build or send a CMA if the home is listed again. Live status first. Active, pending, or otherwise on the market means skip.
+7. A rebuild does not send, enqueue, or approve.
+8. Minimum 3 good comp sales. No 2-comp letters. Comp-shortage stays build-failed.
+9. Nothing enters the send queue without Matt's review.
+10. No owner email until a real owner-path send to matt@ryan-realty.com shows, on that contact, sent, delivered, opened, each link click, and the sell-page visit, with timestamps. Tests must use that production path, not a separate test sender. Every outbound email link is click-tracked. Links are short linked words, never raw tracking URLs. Approved CMA email wording does not change without Matt's sign-off.
+11. Approved CMAs send only in the weekday 9:03 AM PT window.
+12. Never use buyer or seller names in social, email, or public copy.
+13. No em dashes in public site copy.
+14. All code work is pushed to GitHub as a branch right away. Main lands only by fast-forward from the Mini after the push gate. No rebase, force-push, or reset.

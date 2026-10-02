@@ -15,15 +15,22 @@ Every session — Claude Code, Cursor, or Grok — starts here:
 2. **`npx tsx scripts/loop-brief.ts`** — durable work graph + ship class. That is next work. Not `orchestrate.ts`. Not `docs/SITE_SPEC.md`. When Matt says "run the loop", follow **`docs/RUN_LOOP.md`**.
 3. **`docs/DATA_ACCESS_LAYER.md`** when the task touches listings/stats — every page calls `@/lib/data/*`; raw `.from('listings')` outside `lib/data/` is banned.
 
-**CMA, locked. Do not loosen these.**
+**Locked CMA process rules. Do not loosen these.**
 
-For an expired CMA, check live listing status before any rebuild. If the home is active, pending, or otherwise on the market, do not build a CMA and do not send one. Skip it. This is not optional and not expired-only in the sense of "only sometimes": at least every expired rebuild must do this. Do not loosen it.
-
-Recommended price is the house from comps only. No ADU, second-lot, or rental-income dollars in the price. Those stay letter notes.
-
-Gap hold: a recommendation more than 15% under the last ask, or any amount over the last ask, is refused before approve, enqueue, or send. Exactly 15% under is not a hold. Missing ask or missing rec is not a hold. The row stays built.
-
-Do not send, enqueue, or approve owner email unless the task explicitly says to, and never from a rebuild.
+1. One CMA path. Price on current main only. No second ladder. No 80% send floor. Do not merge PR 408 or any 80% floor. PR 401 stays. Do not revert 770a4fd1.
+2. Recommended price is the house from comps only. ADU, second lot, and rental income are letter notes, not dollars, until Matt says otherwise.
+3. Hold for Matt if the rec is more than 15% under last ask, or any amount over it. Exactly 15% under is not a hold. Missing ask or missing rec is not a hold.
+4. One room rule: same whole bed or bath count anywhere. One whole room apart only on the subject's own plat, mapped neighborhood, or own street, kept and disclosed, zero dollars. Two or more apart refused everywhere. The picker and the review call the same decision. The review must not exclude a sale the picker kept for a room gap this rule allows.
+5. Pocket rungs are skipped when the plat and the street already have five sales before the first quarter-mile pocket rung. A cheap different-plat pocket sale drops when no own-plat sale remains in the set that is actually priced. Do not check only the pre-review set.
+6. Do not build or send a CMA if the home is listed again. Live status first. Active, pending, or otherwise on the market means skip.
+7. A rebuild does not send, enqueue, or approve.
+8. Minimum 3 good comp sales. No 2-comp letters. Comp-shortage stays build-failed.
+9. Nothing enters the send queue without Matt's review.
+10. No owner email until a real owner-path send to matt@ryan-realty.com shows, on that contact, sent, delivered, opened, each link click, and the sell-page visit, with timestamps. Tests must use that production path, not a separate test sender. Every outbound email link is click-tracked. Links are short linked words, never raw tracking URLs. Approved CMA email wording does not change without Matt's sign-off.
+11. Approved CMAs send only in the weekday 9:03 AM PT window.
+12. Never use buyer or seller names in social, email, or public copy.
+13. No em dashes in public site copy.
+14. All code work is pushed to GitHub as a branch right away. Main lands only by fast-forward from the Mini after the push gate. No rebase, force-push, or reset.
 
 `docs/EXECUTION_PLAN.md` and `docs/SITE_SPEC.md` are 2026-05-22 fossils (SITE_SPEC still describes an AgentFire WordPress cutover that already shipped). Do not execute them.
 
@@ -49,39 +56,39 @@ Matt alternates between **Claude Code** and **Cursor**. Both are the same repo a
 
 ### Start of every session (any tool)
 
-1. `git fetch origin && git pull --rebase origin main` so work always sits on current remote `main`.
+1. `git fetch origin` and branch from current `origin/main`. Do not rebase, force-push, or reset. All code work is pushed to GitHub as a branch right away (locked process rule 14).
 2. If you are picking up mid-thread from the other surface, read the newest `~/.claude/plans/HANDOFF-*.md` when one exists (narrative); otherwise **`git log origin/main -5`** is enough.
 
 ### Ship discipline (non-negotiable)
 
-1. **Production truth is `origin/main`.** Finished work must land on `main` and be pushed in the same session (resolve rebase/stash conflicts yourself). Do not end with valued work only on a local branch/worktree unless it is recorded in `docs/plans/CROSS_AGENT_HANDOFF.md`. Network failure is the only excuse for “not live yet” — say that explicitly.
+1. **Production truth is `origin/main`.** All code work is pushed to GitHub as a branch right away. Main lands only by fast-forward from the Mini after the push gate. No rebase, force-push, or reset. Do not merge to `main` yourself. Unfinished work still gets a line in `docs/plans/CROSS_AGENT_HANDOFF.md`. Network failure is the only excuse for the branch not being on origin yet. Say that explicitly.
 2. **Production follows Git.** Pushing `main` triggers Vercel production when the diff affects the Next app; “shipped” means remote `main` is updated and, when app code changed, the production deploy is **READY** (see `.cursor/rules/deploy-verify-before-done.mdc`). Docs/skills/changelog-only pushes are skipped by `scripts/vercel-ignore-build.mjs` (`vercel.json` → `ignoreCommand`).
 3. **No hanging migrations.** New files under `supabase/migrations/` are not real until they run on **hosted** Supabase. Apply them in the **same delivery effort** as the code that needs them — never “commit now, migrate later” (`.cursor/rules/supabase-migrations-auto.mdc`, `.cursor/rules/production-parity.mdc`).
-4. **Default on `main`; worktrees allowed with anti-strand rules.** Day-to-day edits stay on `main` in the primary checkout. Use linked worktrees for parallel agents, long experiments, or cloud isolation — never as a silent parking lot. Do not open PRs for routine work. See **Worktrees** below.
+4. **Branch, then push.** Day-to-day edits go on a branch from current `origin/main` and that branch is pushed to GitHub right away. Use linked worktrees for parallel agents, not as a silent parking lot. Do not merge to `main` yourself. See **Worktrees** below.
 
 ### Cost-aware push (main + worktrees)
 
 July 2026 Pro spend was dominated by **Build CPU Minutes**, not traffic. Change *when* and *what* you push:
 
-1. **Runtime changes** (`app/`, `components/`, `lib/`, `public/` used by the app, `package.json` / lockfile, `next.config.*`, `vercel.json`, `supabase/migrations/`) → finish the task, **one commit on `main`**, `NODE_OPTIONS=--max-old-space-size=8192 npm run push`, then `npm run deploy:verify` when the user-facing app changed.
+1. **Runtime changes** (`app/`, `components/`, `lib/`, `public/` used by the app, `package.json` / lockfile, `next.config.*`, `vercel.json`, `supabase/migrations/`) → finish the task, **one commit on the branch**, `NODE_OPTIONS=--max-old-space-size=8192 npm run push` (pushes that branch, not `main`), then `npm run deploy:verify` when the user-facing app changed and `main` has the fast-forward.
 2. **Docs / skills / rules / plans / handoffs only** → **batch into one commit**, then push once. Local `npm run push` already skips `next build` for non-buildable diffs; Vercel skips the remote build via `ignoreCommand`. Do not drip many docs commits that each burn local `ci:gates`.
 3. **Do not push mid-thought.** Commit locally while iterating if you need a restore point; push when the unit of work is coherent.
 4. **Ship class (fleet / loop):** same-category bot findings share one isolated verify + one production deploy. `loop-brief` prints the class. Do not run `npm run push` after each finding.
 5. **R-221 — do not poll GitHub Actions.** One `ci:gates` per ship. After a green local stamp + push, stop. Do not `gh run view` in a loop. Do not rematch `origin/main` unless GitHub says CONFLICTING. Live-DB int tests are nightly (`test:int`), not a reason to sit idle.
 6. **Release / changelog:** GitHub Releases carry the notes. Do not recreate a `chore: update changelog` commit on `main` — that path burned hundreds of full production builds.
-7. **Worktree branches:** keep them **local** until merge time. Pushing `wt/*` to `origin` creates Vercel **preview** builds (extra Build CPU) unless previews are disabled in the project dashboard. Prefer merge → push `main` only.
+7. **Worktree branches:** push them to GitHub right away. Do not keep the only copy local. Do not merge them to `main` yourself. Main lands only by fast-forward from the Mini after the push gate.
 
 ### Worktrees (allowed — design against stranded work)
 
-**When to stay on `main`:** single-agent bugfix, small feature, docs, anything that should be production within the hour.
+**When to branch from current `origin/main`:** single-agent bugfix, small feature, docs, anything that should be on GitHub right away.
 
 **When to use a worktree:** two agents editing disjoint areas; a long experiment that would block `main`; Cursor ↔ Claude Code isolation; cloud agent checkouts.
 
 **Anti-strand rules (mandatory):**
 
-1. Branch name: `wt/<topic>-YYYYMMDD` (or harness names like `claude/…` — still merge or handoff before stop).
+1. Branch name: `wt/<topic>-YYYYMMDD` (or harness names like `claude/…`). Push the branch before stop, or write the handoff.
 2. Path: sibling dir such as `../RyanRealty-wt-<topic>` — not nested inside the primary tree.
-3. Session end: **merge/rebase into `main` + `npm run push`**, **or** write branch + absolute path + next step into `docs/plans/CROSS_AGENT_HANDOFF.md` Current block (and push that handoff on `main`).
+3. Session end: push the branch to origin with `npm run push`. Do not merge, rebase, force-push, or reset onto `main`. If work is unfinished, also write branch + absolute path + next step into `docs/plans/CROSS_AGENT_HANDOFF.md` Current block on that branch.
 4. Cleanup when merged: delete branch, `git worktree remove <path>`, `git worktree prune`. Run `node scripts/worktree-hygiene.mjs` at session start/end.
 5. Never leave the only copy of valued commits in an unpushed worktree with no handoff line.
 
@@ -101,7 +108,7 @@ July 2026 Pro spend was dominated by **Build CPU Minutes**, not traffic. Change 
 
 ### Cross-agent handoff (mandatory when work spans tools)
 
-1. **Push `main` first** (nothing handoff-worthy should be unpushed).
+1. **Push the branch to origin first** (nothing handoff-worthy should be unpushed). Do not merge it to `main`.
 2. Open **`docs/plans/CROSS_AGENT_HANDOFF.md`** and replace the **Current** block (exactly one; never stack a second, `ci:handoff-current` fails it; carry any still-open Matt directive forward): surface, time, commit SHA, what finished, what is next, blockers, which **`SKILL.md` files you actually read**.
 3. Optionally also write narrative under **`~/.claude/plans/HANDOFF-*.md`** for Claude Desktop-only context (paths on disk, local-only experiments)—still assume the other agent only **pulls git** and reads **`CROSS_AGENT_HANDOFF.md`**.
 
@@ -369,28 +376,28 @@ If UI or routes changed, the matching `ci:*` members are already in `ci:gates`. 
 ## How to Complete
 
 ```bash
-NODE_OPTIONS=--max-old-space-size=8192 npm run push   # from main
+NODE_OPTIONS=--max-old-space-size=8192 npm run push   # the branch, not main
 ```
 
 `orchestrate.ts complete` is retired. The work graph updates from loop/sentinel, not from that CLI.
 
-## CRITICAL: Ship on `main` (worktrees are temporary)
+## CRITICAL: Push the branch. Do not land `main` yourself.
 
-**Production deploys from `main` only.** Routine work: commit on `main` and `npm run push`. Worktrees/branches are fine for isolation — merge them before you stop, or hand them off in `CROSS_AGENT_HANDOFF.md`. Do not open PRs for routine work. Do not leave unfinished valued work only on a local branch.
+**Production deploys from `main` only, and `main` lands only by fast-forward from the Mini after the push gate.** Routine work: commit on a branch from current `origin/main` and `npm run push` that branch. Do not merge, rebase, force-push, or reset. Do not leave the only copy of valued work unpushed. Unfinished work gets a line in `CROSS_AGENT_HANDOFF.md`.
 
 ```bash
-# DEFAULT
-NODE_OPTIONS=--max-old-space-size=8192 npm run push   # from main
+# DEFAULT: push the branch, not main
+NODE_OPTIONS=--max-old-space-size=8192 npm run push
 
-# WORKTREE (isolation) — then merge back
-git worktree add -b wt/crm-mobile-20260726 ../RyanRealty-wt-crm-mobile main
+# WORKTREE: branch from current origin/main, push the branch, do not merge it
+git fetch origin
+git worktree add -b wt/crm-mobile-20260726 ../RyanRealty-wt-crm-mobile origin/main
 # …work in the other checkout…
-# on main: git merge wt/crm-mobile-20260726 && npm run push
-# git worktree remove ../RyanRealty-wt-crm-mobile && git branch -d wt/crm-mobile-20260726
+# npm run push of that branch. Do not merge it to main.
 
-# WRONG — strand work
-# push a long-lived feature branch and walk away with no handoff
-# open a PR for routine agent work and forget it
+# WRONG
+# merge, rebase, force-push, or reset onto main yourself
+# leave the only copy of the work unpushed, with no handoff
 ```
 
 ## Production parity (code + database + Vercel)

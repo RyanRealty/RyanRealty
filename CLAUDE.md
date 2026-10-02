@@ -467,9 +467,10 @@ and silently returns nothing. Enforced by `check-dal-column-quoting.mjs`.
   verified by reading the relevant code. Every fix must be tested before it's reported done.
 - **Truthful and accurate, always.** If you're not sure, say so. Never state something as fact
   unless you've confirmed it.
-- **Every ask ends live on production (Matt 2026-09-24).** Merge your own PR once CI is green,
-  confirm the deploy, apply its held migrations, leave no branch, worktree or loose end. Worktrees
-  only for parallel work; merge or hand off in `CROSS_AGENT_HANDOFF.md` before stop. See
+- **All code work is pushed to GitHub as a branch right away (locked process rule 14).**
+  Main lands only by fast-forward from the Mini after the push gate. No rebase, force-push, or
+  reset. Do not merge to `main` yourself. Worktrees only for parallel work; push the branch, or
+  hand off in `CROSS_AGENT_HANDOFF.md` before stop. See
   [`AGENTS.md`](AGENTS.md). **R-221:** do not poll GitHub Actions.
 - **Never ask Matt to run anything, and never queue found work for him (Matt 2026-09-25).**
   Git, terminal and deploys are yours; a defect found on the way ships this session, not as a
@@ -558,14 +559,21 @@ else fires on trigger match.
 | Place page code | Sections: [`lib/site/`](lib/site/) `place-*.ts`, [`lib/place/`](lib/place/). Route-only: `app/<route>/[slug]/_v3/`. `page.tsx` is wiring: grep it. |
 | Listings, search box, map | Reads: [`lib/data/listings/`](lib/data/listings/). Map + price badges: [`components/SearchMapClustered.tsx`](components/SearchMapClustered.tsx). |
 
-**Locked CMA rules.**
+**Locked CMA process rules. Do not loosen these.**
 
-For an expired CMA, check live listing status before any rebuild. If the home is active, pending, or otherwise on the market, do not build a CMA and do not send one. Skip it. This is not optional and not expired-only in the sense of "only sometimes": at least every expired rebuild must do this. Do not loosen it.
-
-Recommended price is the house from comps only. No ADU, second-lot, or rental-income dollars in the price. Those stay letter notes.
-
-Gap hold: a recommendation more than 15% under the last ask, or any amount over the last ask, is refused before approve, enqueue, or send. Exactly 15% under is not a hold. Missing ask or missing rec is not a hold. The row stays built.
-
-Do not send, enqueue, or approve owner email unless the task explicitly says to, and never from a rebuild.
+1. One CMA path. Price on current main only. No second ladder. No 80% send floor. Do not merge PR 408 or any 80% floor. PR 401 stays. Do not revert 770a4fd1.
+2. Recommended price is the house from comps only. ADU, second lot, and rental income are letter notes, not dollars, until Matt says otherwise.
+3. Hold for Matt if the rec is more than 15% under last ask, or any amount over it. Exactly 15% under is not a hold. Missing ask or missing rec is not a hold.
+4. One room rule: same whole bed or bath count anywhere. One whole room apart only on the subject's own plat, mapped neighborhood, or own street, kept and disclosed, zero dollars. Two or more apart refused everywhere. The picker and the review call the same decision. The review must not exclude a sale the picker kept for a room gap this rule allows.
+5. Pocket rungs are skipped when the plat and the street already have five sales before the first quarter-mile pocket rung. A cheap different-plat pocket sale drops when no own-plat sale remains in the set that is actually priced. Do not check only the pre-review set.
+6. Do not build or send a CMA if the home is listed again. Live status first. Active, pending, or otherwise on the market means skip.
+7. A rebuild does not send, enqueue, or approve.
+8. Minimum 3 good comp sales. No 2-comp letters. Comp-shortage stays build-failed.
+9. Nothing enters the send queue without Matt's review.
+10. No owner email until a real owner-path send to matt@ryan-realty.com shows, on that contact, sent, delivered, opened, each link click, and the sell-page visit, with timestamps. Tests must use that production path, not a separate test sender. Every outbound email link is click-tracked. Links are short linked words, never raw tracking URLs. Approved CMA email wording does not change without Matt's sign-off.
+11. Approved CMAs send only in the weekday 9:03 AM PT window.
+12. Never use buyer or seller names in social, email, or public copy.
+13. No em dashes in public site copy.
+14. All code work is pushed to GitHub as a branch right away. Main lands only by fast-forward from the Mini after the push gate. No rebase, force-push, or reset.
 
 **CRM is in-house** `public.crm_people` via `sendEvent()` in [`lib/crm/send-event.ts`](lib/crm/send-event.ts). Review at `/admin/crm`.
