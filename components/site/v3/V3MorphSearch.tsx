@@ -32,6 +32,16 @@ export type V3MorphSearchProps = {
   /** Legacy results slot (unused when `items` is set). */
   results?: ReactNode
   className?: string
+  /** Front-door search: the open panel's width cap in px (the demo's 448 by default). */
+  panelMaxWidth?: number
+  /** The open panel's results height cap in px. */
+  resultsMaxHeight?: number
+  /** Dim the page behind the open panel. */
+  scrim?: boolean
+  /** A row under the results (a "search everything" door). */
+  footer?: ReactNode
+  /** Extra classes on the portaled overlay (a host lays out its own panel). */
+  overlayClassName?: string
 }
 
 export function V3MorphSearch({
@@ -44,6 +54,11 @@ export function V3MorphSearch({
   children,
   results,
   className,
+  panelMaxWidth,
+  resultsMaxHeight,
+  scrim,
+  footer,
+  overlayClassName,
 }: V3MorphSearchProps) {
   const catalogItems = items ? [...items] : []
   const useCatalog = catalogItems.length > 0 || onQueryChange != null || onSelect != null
@@ -73,6 +88,11 @@ export function V3MorphSearch({
             shortcut="f"
             emptyMessage="No places match that."
             className="v3-morph-search__catalog"
+            {...(panelMaxWidth != null ? { panelMaxWidth } : {})}
+            {...(resultsMaxHeight != null ? { resultsMaxHeight } : {})}
+            {...(scrim ? { scrim } : {})}
+            {...(footer != null ? { footer } : {})}
+            {...(overlayClassName ? { overlayClassName: `z-[150] ${overlayClassName}` } : {})}
           />
         </div>
       ) : null}

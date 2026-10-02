@@ -652,6 +652,8 @@ describe('Bend new-construction snapshot', () => {
     expect(chips).toContain('BEND_NEW_CON_STATUS_LEGEND')
     expect(chips).toContain('id="savings"')
     expect(home).toContain("href: '/new-construction'")
-    expect(home).toContain("layout: 'carousel'")
+    // 2026-10-01: the homepage run is a counted ledger with the Bend total as its lead.
+    expect(home).toContain("layout: 'ledger'")
+    expect(home).toMatch(/BEND_NEW_CON_HOME_NAV_NAMES\.map/)
   })
 })

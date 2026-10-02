@@ -9,10 +9,12 @@
  * class: no place page route draws a listing carousel of its own, and each one
  * mounts the dial host.
  *
- * ONE HELD CLASS (Matt 2026-09-25, "fix first, then ship"): the community
- * pages scored below their taste mark with the dial, so they ship the
- * carousel they had until they reach it. The hold is one explicit prop on the
- * map (PlaceSubdivisionMap layout="rails"), never a carousel in the route.
+ * HELD CLASSES (Matt 2026-09-25, "fix first, then ship"): a class that
+ * scores below its taste mark with the dial ships the carousel it had until it
+ * reaches the mark, by one explicit prop on the map (PlaceSubdivisionMap
+ * layout="rails"), never a carousel in the route. The community pages were
+ * held from 2026-09-30 and took the dial on 2026-10-01, once they opened on a
+ * supply read; no place class is held today.
  */
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -29,8 +31,8 @@ const PLACE_ROUTES = {
 
 const HOMES_BLOCK = 'components/site/v3/PlaceSubdivisionMap.client.tsx'
 
-/** The classes held on the carousel until they reach their taste mark. */
-const HELD = new Set(['community'])
+/** The classes held on the carousel until they reach their taste mark (none on 2026-10-01). */
+const HELD = new Set<string>()
 
 describe('place pages show listings on the dial, never a carousel', () => {
   it.each(Object.entries(PLACE_ROUTES))('%s page draws no listing carousel of its own', (_grain, path) => {
@@ -54,10 +56,11 @@ describe('place pages show listings on the dial, never a carousel', () => {
     },
   )
 
-  it('the community page holds the carousel by the one explicit map prop', () => {
+  it('the community page takes the dial: its map carries no held layout', () => {
     const src = read(PLACE_ROUTES.community)
-    expect(src).toMatch(/<PlaceSubdivisionMap[^>]*?layout="rails"/)
-    expect(src.match(/layout="rails"/g) ?? []).toHaveLength(1)
+    expect(src).toMatch(/<PlaceSubdivisionMap\b/)
+    expect(src).not.toMatch(/<PlaceSubdivisionMap[^>]*?layout=/)
+    expect(src).toMatch(/<PlaceSubdivisionHomes[\s\S]*?id="homes"/)
   })
 
   it('the plat inventory is the dial', () => {

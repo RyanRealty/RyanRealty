@@ -353,7 +353,9 @@ describe('master-plan opening', () => {
     const page = readFileSync(resolve('app/communities/[slug]/page.tsx'), 'utf8')
     expect(page).toMatch(/buildPlaceMosView\(\{/)
     expect(page).toMatch(/grain: 'community'/)
-    expect(page).toMatch(/mos=\{placeMos\}/)
+    // 2026-10-01: the bars are page one of the fold figure, not the photograph.
+    expect(page).toMatch(/foldMosProps = placeMos \? mosBarsProps\(placeMos\)/)
+    expect(page).toMatch(/<CommunityInsight[\s\S]*?mos=\{foldMosProps\}/)
     expect(page).toMatch(/activity=\{placeActivitySpark\}/)
     expect(page).toMatch(/buildSparkPlot/)
   })

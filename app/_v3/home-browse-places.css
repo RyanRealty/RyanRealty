@@ -1,4 +1,5 @@
-/* Homepage Browse places: catalog Card doors + resort Carousel. Tokens only. */
+/* Homepage Browse places (2026-10-01): the towns as a photograph mosaic, new
+   construction as a counted ledger with a lead figure. Tokens only. */
 
 .v3.home-browse-places {
   max-width: var(--v3-measure);
@@ -21,13 +22,14 @@
   margin: 0;
 }
 
-.home-browse-places__unit {
-  font-weight: var(--v3-weight-body);
-  color: var(--v3-ink-muted);
+.home-browse-places__run {
+  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
 }
 
 .home-browse-places__run + .home-browse-places__run {
-  margin-top: var(--v3-space-lg);
+  margin-top: var(--v3-space-2xl);
+  padding-top: var(--v3-space-lg);
+  border-top: var(--v3-rule-hairline);
 }
 
 .home-browse-places__runhead {
@@ -51,6 +53,10 @@
   color: var(--v3-ink-muted);
 }
 
+.home-browse-places__runfoot {
+  margin: var(--v3-space-sm) 0 0;
+}
+
 .v3 .home-browse-places__all {
   display: inline-flex;
   align-items: center;
@@ -61,163 +67,368 @@
   text-underline-offset: var(--v3-underline-offset);
 }
 
-.home-browse-places__cards {
+/* ── Towns: the mosaic ─────────────────────────────────────────────────
+   Phone: the busiest town across the measure, the rest two to a row (an odd
+   last one across). From 48rem: three columns, the busiest two by two. */
+.home-places__mosaic {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--v3-space-md);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--v3-space-xs);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-@media (min-width: 40rem) {
-  .home-browse-places__cards {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 64rem) {
-  .home-browse-places__cards {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-.home-browse-places__item {
-  margin: 0;
-  padding: 0;
-  border: 0;
-  min-width: 0;
-  height: 100%;
-}
-
-.home-browse-places__link {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 100%;
-  min-width: 0;
-  color: inherit;
-  text-decoration: none;
-  min-height: var(--v3-tap);
-}
-
-.home-browse-places__link:focus-visible {
-  outline: 2px solid var(--v3-navy);
-  outline-offset: 2px;
-}
-
-.home-browse-places [data-slot='card'] {
-  --card: var(--v3-cream);
-  --card-foreground: var(--v3-navy);
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  width: 100%;
-  min-width: 0;
-  height: 100%;
-}
-
-.home-browse-places [data-slot='card-footer'] {
-  margin-top: auto;
-}
-
-/* One 4:3 plate on every card — photo or reserved navy field. Never a short stub.
-   Name/img are out of flow so min-content type cannot widen a bald card. */
-.home-browse-places__media {
+.home-places__tile {
   position: relative;
-  flex: 0 0 auto;
-  width: 100%;
   min-width: 0;
+  aspect-ratio: 4 / 5;
+  background: var(--v3-ink);
   overflow: hidden;
-  background: var(--v3-navy);
-  aspect-ratio: 4 / 3;
 }
 
-.home-browse-places__media::before {
-  content: '';
-  display: block;
-  padding-top: 75%;
+.home-places__tile--lead {
+  grid-column: 1 / -1;
+  aspect-ratio: 16 / 10;
 }
 
-.home-browse-places__media img,
-.home-browse-places__media-name {
+.home-places__tile:not(.home-places__tile--lead):nth-child(even):last-child {
+  grid-column: 1 / -1;
+  aspect-ratio: 16 / 9;
+}
+
+.v3 .home-places__tile-link {
   position: absolute;
   inset: 0;
   display: block;
-  width: 100%;
-  height: 100%;
+  color: var(--v3-ink-on-media);
+  text-decoration: none;
 }
 
-.home-browse-places__media img {
+.v3 .home-places__tile-link:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: calc(-1 * var(--v3-focus-width));
+}
+
+.home-places__tile-photo {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.home-places__tile-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
 }
 
-.home-browse-places__media--reserved {
-  background: var(--v3-navy);
+/* Legibility for the words on the photograph: a navy scrim from the foot. */
+.home-places__tile-photo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, var(--v3-scrim-strong) 0%, var(--v3-scrim-soft) 48%, transparent 72%);
 }
 
-.home-browse-places__media-name {
-  display: grid;
-  place-items: center;
-  padding: var(--v3-space-md);
-  overflow: hidden;
-  color: var(--v3-cream);
-  text-align: center;
-  overflow-wrap: anywhere;
+.home-places__tile-copy {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-3xs);
+  padding: var(--v3-space-sm);
+  color: var(--v3-ink-on-media);
+}
+
+.home-places__tile--plate .home-places__tile-copy {
+  color: var(--v3-ink-on-navy);
+}
+
+.home-places__tile-name {
   font-family: var(--v3-font-display);
   font-size: var(--v3-size-display-2);
   font-weight: var(--v3-weight-display);
-  letter-spacing: var(--v3-track-display);
   line-height: var(--v3-leading-heading);
+  text-shadow: var(--v3-media-shadow);
 }
 
-.home-browse-places [data-slot='card-header'] {
-  min-height: 3.5rem;
+.home-places__tile-count,
+.home-places__tile-reveal {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-control);
+  text-shadow: var(--v3-media-shadow);
 }
 
-.home-browse-places__count-slot {
-  min-height: 2.6rem;
+.home-places__tile-n {
+  font-weight: var(--v3-weight-strong);
+  font-variant-numeric: tabular-nums;
 }
 
-.home-browse-places__stage {
-  min-width: 0;
-  padding-inline: 3rem;
-  overflow: visible;
+.home-places__tile-unit {
+  font-weight: var(--v3-weight-body);
 }
 
-.home-browse-places__carousel {
-  min-width: 0;
+/* The one line a tile does not print at rest: shown on a pointer's rest or
+   focus. Touch screens (no hover) print it on the lead tile only. */
+.home-places__tile-reveal {
+  display: none;
 }
 
-.home-browse-places__track {
-  align-items: stretch;
+@media (hover: hover) {
+  .home-places__tile-reveal {
+    display: block;
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition:
+      max-height var(--v3-dur-state) var(--v3-ease-out),
+      opacity var(--v3-dur-state) var(--v3-ease-out);
+  }
+
+  .home-places__tile-link:hover .home-places__tile-reveal,
+  .home-places__tile-link:focus-visible .home-places__tile-reveal {
+    max-height: 2.5em;
+    opacity: 1;
+  }
 }
 
-.home-browse-places [data-slot='carousel-item'].home-browse-places__slide {
-  display: flex;
-  align-items: stretch;
-  min-width: 0;
+@media (hover: none) {
+  .home-places__tile--lead .home-places__tile-reveal {
+    display: block;
+  }
 }
 
-.home-browse-places__slide-inner {
+@media (min-width: 48rem) {
+  .home-places__mosaic {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-auto-rows: 13.5rem;
+  }
+
+  .home-places__tile,
+  .home-places__tile:not(.home-places__tile--lead):nth-child(even):last-child {
+    grid-column: auto;
+    aspect-ratio: auto;
+  }
+
+  .home-places__tile--lead {
+    grid-column: 1 / span 2;
+    grid-row: span 2;
+    aspect-ratio: auto;
+  }
+
+  .home-places__tile-copy {
+    padding: var(--v3-space-md);
+  }
+
+  .home-places__tile--lead .home-places__tile-name {
+    font-size: var(--v3-size-display-1);
+  }
+
+  .home-places__tile--lead .home-places__tile-count,
+  .home-places__tile--lead .home-places__tile-reveal {
+    font-size: var(--v3-size-body-lg);
+  }
+}
+
+/* ── New construction: its own navy band, a lead figure and a counted ledger.
+   The full width in navy (the footer's surface), so the page changes colour
+   and width after the places, not only the furniture under a number. ─────── */
+.v3.home-places-band {
+  width: 100%;
+  background: var(--v3-surface-inverse);
+  color: var(--v3-ink-on-navy);
+  scroll-margin-top: var(--v3-chrome-h);
+}
+
+.home-places-band__inner {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: var(--v3-space-3xl) var(--v3-gutter);
+}
+
+.home-places__ledger {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--v3-space-lg);
+}
+
+.home-places__lead {
   display: flex;
   flex-direction: column;
-  flex: 1 1 auto;
-  width: 100%;
+  gap: var(--v3-space-xs);
   min-width: 0;
-  padding: 0.25rem;
 }
 
-.home-browse-places__count {
-  color: var(--v3-ink);
-  font-family: var(--v3-font-display);
-  font-size: var(--v3-size-num);
+.home-places__lead-eyebrow {
+  margin: 0;
+  color: var(--v3-ink-on-navy-muted);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-eyebrow);
+  line-height: var(--v3-leading-control);
+  text-transform: uppercase;
+}
+
+.home-places__lead-figure {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-3xs);
+  margin: 0;
+  color: var(--v3-ink-on-navy);
+}
+
+.home-places__lead-n {
+  font-family: var(--v3-font-num);
+  font-size: var(--v3-size-num-lead);
   font-weight: var(--v3-weight-display);
   font-variant-numeric: tabular-nums;
-  letter-spacing: var(--v3-track-display);
-  line-height: var(--v3-leading-heading);
+  line-height: var(--v3-leading-display);
 }
 
-.home-browse-places__count--empty {
-  visibility: hidden;
+.home-places__lead-unit {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-lg);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-control);
+}
+
+.home-places__lead-note {
+  margin: 0;
+  max-width: 24rem;
+  color: var(--v3-ink-on-navy-muted);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+}
+
+.v3 .home-places__lead-door {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  min-height: var(--v3-tap);
+  color: var(--v3-ink-on-navy);
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-strong);
+  text-decoration: underline;
+  text-underline-offset: var(--v3-underline-offset);
+}
+
+.home-places__rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 2px solid var(--v3-ink-on-navy);
+}
+
+.home-places__row {
+  border-bottom: 1px solid color-mix(in srgb, var(--v3-cream) 22%, transparent);
+}
+
+.v3 .home-places__row-link {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  column-gap: var(--v3-space-md);
+  row-gap: var(--v3-space-2xs);
+  min-height: var(--v3-tap);
+  padding: var(--v3-space-sm) var(--v3-space-xs);
+  color: var(--v3-ink-on-navy);
+  text-decoration: none;
+  transition: background-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 .home-places__row-link:hover {
+  background: var(--v3-pressed);
+}
+
+.v3 .home-places__row-link:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: calc(-1 * var(--v3-focus-width));
+}
+
+.home-places__row-name {
+  min-width: 0;
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-control);
+}
+
+.home-places__row-count {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-control);
+  white-space: nowrap;
+}
+
+.home-places__row-n {
+  font-weight: var(--v3-weight-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.home-places__row-unit {
+  color: var(--v3-ink-on-navy-muted);
+}
+
+/* The count as a length on the run's one scale (the largest at full ink). */
+.home-places__row-rule {
+  grid-column: 1 / -1;
+  position: relative;
+  display: block;
+  height: 4px;
+  background: color-mix(in srgb, var(--v3-cream) 18%, transparent);
+}
+
+.home-places__row-rule > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--v3-ink-on-navy);
+}
+
+/* The row's share of the lead figure: on a pointer's rest or focus, and
+   always on a touch screen, where there is no rest. */
+.home-places__row-reveal {
+  grid-column: 1 / -1;
+  color: var(--v3-ink-on-navy);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--v3-leading-control);
+}
+
+@media (hover: hover) {
+  .home-places__row-reveal {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition:
+      max-height var(--v3-dur-state) var(--v3-ease-out),
+      opacity var(--v3-dur-state) var(--v3-ease-out);
+  }
+
+  .home-places__row-link:hover .home-places__row-reveal,
+  .home-places__row-link:focus-visible .home-places__row-reveal {
+    max-height: 2em;
+    opacity: 1;
+  }
+}
+
+@media (min-width: 48rem) {
+  .home-places__ledger {
+    grid-template-columns: minmax(0, 20rem) minmax(0, 1fr);
+    gap: var(--v3-space-2xl);
+    align-items: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-places__tile-reveal,
+  .home-places__row-reveal,
+  .v3 .home-places__row-link {
+    transition: none;
+  }
 }

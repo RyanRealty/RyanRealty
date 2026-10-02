@@ -13,6 +13,8 @@
  *             person accepted the contract's value.
  *   import    the SkySlope import or its daily intake wrote it.
  *   mail      read from an email (escrow facts).
+ *   mls       the MLS shows the cycle's own sale closed (lib/tc/mls-close.ts).
+ *             Only the close columns carry it.
  *
  * A column with no stamp predates provenance. Every writer that a person
  * drives stamps, and the backfill (migration 20260924190000) stamped what a
@@ -31,9 +33,24 @@ export const TERM_COLUMNS = [
   'buyers',
   'sellers',
 ] as const
-export type ProvenanceColumn = (typeof TERM_COLUMNS)[number]
+export type TermColumnName = (typeof TERM_COLUMNS)[number]
 
-export type ProvenanceBy = 'person' | 'contract' | 'import' | 'mail'
+/**
+ * A cycle's close: its status and actual closing date. Stamped only by the
+ * MLS close rule (lib/tc/mls-close.ts, stampCloseProvenance), never by
+ * stampProvenance, so the other writers keep stamping only terms. Kept by
+ * parseProvenance so a later term write never drops the MLS stamp, and read by
+ * the SkySlope intake: a close the MLS recorded is the Vault's, not the import's.
+ */
+export const CLOSE_COLUMNS = ['status', 'actual_closing_date'] as const
+export type CloseColumn = (typeof CLOSE_COLUMNS)[number]
+
+export type ProvenanceColumn = TermColumnName | CloseColumn
+
+export type ProvenanceBy = 'person' | 'contract' | 'import' | 'mail' | 'mls'
+
+/** The MLS facts a close stamped by 'mls' rests on. */
+export type MlsCloseSource = { listNumber: string; closeDate: string; closePrice: number | null }
 
 export type ColumnProvenance = {
   by: ProvenanceBy
@@ -47,21 +64,25 @@ export type ColumnProvenance = {
    * The same contract value is not flagged again; a different one is.
    */
   keptAgainst?: string | null
+  /** Set on a close stamped by 'mls': the MLS row it came from. */
+  mls?: MlsCloseSource | null
 }
 
 export type TermProvenance = Partial<Record<ProvenanceColumn, ColumnProvenance>>
 
-const isColumn = (k: string): k is ProvenanceColumn => (TERM_COLUMNS as readonly string[]).includes(k)
+const isColumn = (k: string): k is TermColumnName => (TERM_COLUMNS as readonly string[]).includes(k)
+const isCloseColumn = (k: string): k is CloseColumn => (CLOSE_COLUMNS as readonly string[]).includes(k)
+const BY: readonly ProvenanceBy[] = ['person', 'contract', 'import', 'mail', 'mls']
 
 /** Read tc_cycles.term_provenance defensively: anything unrecognized is dropped. */
 export function parseProvenance(raw: unknown): TermProvenance {
   const out: TermProvenance = {}
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out
   for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
-    if (!isColumn(k) || !v || typeof v !== 'object') continue
+    if ((!isColumn(k) && !isCloseColumn(k)) || !v || typeof v !== 'object') continue
     const by = (v as { by?: unknown }).by
-    if (by !== 'person' && by !== 'contract' && by !== 'import' && by !== 'mail') continue
-    out[k] = { ...(v as ColumnProvenance), by }
+    if (!BY.includes(by as ProvenanceBy)) continue
+    out[k] = { ...(v as ColumnProvenance), by: by as ProvenanceBy }
   }
   return out
 }
@@ -89,6 +110,29 @@ export function stampProvenance(
     next[column] = { by, at, actor: meta.actor ?? null, document: meta.document ?? null, page: meta.page ?? null, keptAgainst: null }
   }
   return next
+}
+
+/**
+ * The provenance after the MLS close rule wrote a cycle's close columns. Only
+ * the close columns are stamped; everything else is kept as it was.
+ */
+export function stampCloseProvenance(
+  current: unknown,
+  written: Partial<Record<CloseColumn, unknown>>,
+  meta: { at?: string; actor?: string | null; mls: MlsCloseSource },
+): TermProvenance {
+  const next = parseProvenance(current)
+  const at = meta.at ?? new Date().toISOString()
+  for (const [column, value] of Object.entries(written)) {
+    if (!isCloseColumn(column) || value == null || value === '') continue
+    next[column] = { by: 'mls', at, actor: meta.actor ?? null, document: null, page: null, keptAgainst: null, mls: meta.mls }
+  }
+  return next
+}
+
+/** The MLS recorded this close column's current value (see CLOSE_COLUMNS). */
+export function closedByMls(p: TermProvenance, column: CloseColumn): boolean {
+  return p[column]?.by === 'mls'
 }
 
 /** A person typed this column's current value. */

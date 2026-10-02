@@ -13,9 +13,11 @@ vi.mock('@/lib/data/client', () => ({
 }))
 
 import {
+  METRIC_PRIMARY_KEY,
   UnknownStatError,
   getMetric,
   getMetrics,
+  orderByPrimaryKey,
   staleReason,
 } from '@/lib/data/market-truth/getMetric'
 
@@ -89,6 +91,7 @@ function mockMetricRows(rows: Record<string, unknown>[]) {
   builder.in = vi.fn(self)
   builder.order = vi.fn(self)
   builder.limit = vi.fn(self)
+  builder.range = vi.fn(self)
   builder.then = (resolve: (v: unknown) => void) => resolve({ data: rows, error: null })
   fromImpl.mockReturnValue(builder)
 }
@@ -211,3 +214,75 @@ describe('getMetric / getMetrics', () => {
     expect(row?.value).toBe(750000)
   })
 })
+
+describe('getMetrics reads every page, newest first (2026-10-01)', () => {
+  beforeEach(() => {
+    fromImpl.mockReset()
+  })
+
+  it('pages past the 1,000-row cap so the newest cell is never cut off', async () => {
+    const page1 = Array.from({ length: 1000 }, (_, i) =>
+      metricRow({
+        stat_id: 'median_close',
+        window_months: 12,
+        value: 500000 + i,
+        computed_at: `2026-09-${String(10 + (i % 15)).padStart(2, '0')}T06:40:00Z`,
+        period_end: `2026-09-${String(10 + (i % 15)).padStart(2, '0')}`,
+        complete_through: `2026-09-${String(9 + (i % 15)).padStart(2, '0')}`,
+      }),
+    )
+    const page2 = [
+      metricRow({
+        stat_id: 'new_listings_30d',
+        geo_type: 'neighborhood',
+        geo_slug: 'tetherow',
+        value: 5,
+        period_end: '2026-09-30',
+        complete_through: '2026-09-30',
+        computed_at: '2026-10-01T18:23:08Z',
+      }),
+    ]
+    const pages = [page1, page2]
+    const ranges: Array<[number, number]> = []
+    fromImpl.mockImplementation(() => {
+      const builder: Record<string, unknown> = {}
+      let pageIndex = 0
+      const self = () => builder
+      builder.select = vi.fn(self)
+      builder.eq = vi.fn(self)
+      builder.in = vi.fn(self)
+      builder.order = vi.fn(self)
+      builder.range = vi.fn((from: number, to: number) => {
+        ranges.push([from, to])
+        pageIndex = from / 1000
+        return builder
+      })
+      builder.then = (resolve: (v: unknown) => void) => resolve({ data: pages[pageIndex] ?? [], error: null })
+      return builder
+    })
+    const [cell] = await getMetrics([
+      { stat: 'new_listings_30d', geoType: 'neighborhood', geoSlug: 'tetherow', segment: 'detached', windowMonths: 0 },
+    ])
+    expect(ranges).toEqual([
+      [0, 999],
+      [1000, 1999],
+    ])
+    expect(cell?.value).toBe(5)
+  })
+})
+
+describe('orderByPrimaryKey (stable pages over a shared computed_at)', () => {
+  it('appends the whole primary key, in key order, after the caller\'s order', () => {
+    const calls: Array<[string, { ascending?: boolean } | undefined]> = []
+    const query = {
+      order(column: string, options?: { ascending?: boolean }) {
+        calls.push([column, options])
+        return query
+      },
+    }
+    orderByPrimaryKey(query.order('computed_at', { ascending: false }))
+    expect(calls.map(([c]) => c)).toEqual(['computed_at', ...METRIC_PRIMARY_KEY])
+    expect(METRIC_PRIMARY_KEY).toEqual(['stat_id', 'geo_type', 'geo_slug', 'segment', 'period_end', 'window_months', 'definition_id'])
+  })
+})
+

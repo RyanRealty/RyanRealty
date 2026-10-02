@@ -8,8 +8,8 @@
  * week, and sold 30d stay on the pulse series. /sell never falls back.
  */
 import { createServiceClient } from '@/lib/data/client'
-import { DEFINITION_ID } from '@/lib/data/market-truth/registry'
-import { staleReason } from '@/lib/data/market-truth/getMetric'
+import { DEFINITION_ID, STAT_BY_ID } from '@/lib/data/market-truth/registry'
+import { orderByPrimaryKey, staleReason } from '@/lib/data/market-truth/getMetric'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { marketVerdict, type MarketKind } from '@/lib/market/classify'
 
@@ -30,6 +30,28 @@ export type SellBendMarket = {
   medianListPrice: number | null
   computedAt: string
   completeThrough: string
+}
+
+/**
+ * WHY A PLACE HAS NO MONTHS OF SUPPLY, in a count a reader can check.
+ *
+ * Market Truth withholds months of supply below its floor (min_n 30 six-month
+ * closes, docs/plans/MARKET_TRUTH/REGISTRY.md section 2.3, D4) and leaves the
+ * surface to "offer the parent place". The withheld cell still carries the
+ * count it rests on: its method is `active / (closed_180d / 6)` and its
+ * sample_n IS that 180-day closed count (neighborhood:tetherow on 2026-10-01:
+ * 13 active, sample_n 23, value 3.391 = 13 * 6 / 23). A closed count is a
+ * count, and counts publish at min_n 1 (`closed_count`), so a page may say
+ * "23 houses sold here in six months, and a read needs 30" in place of a
+ * figure it cannot print. Never the withheld ratio, never a verdict.
+ */
+export type SupplyFloor = {
+  /** Detached houses closed in the 180 days the withheld months of supply divides by. */
+  closedSixMonths: number
+  /** The Market Truth floor months of supply needs (registry min_n). */
+  minN: number
+  completeThrough: string
+  computedAt: string
 }
 
 /** Inventory-only snapshot. MOS/verdict may be below min_n; active can still publish. */
@@ -65,6 +87,8 @@ type MetricRow = {
   value: number | null
   value_text: string | null
   is_publishable: boolean
+  sample_n: number | null
+  withheld_reason: string | null
   complete_through: string
   period_end: string
   window_months: number
@@ -102,6 +126,37 @@ function assemble(geoType: string, geoSlug: string, byKey: Map<string, MetricRow
     medianListPrice: publishable(medianList) ? Number(medianList!.value) : null,
     computedAt: mos!.computed_at,
     completeThrough: mos!.complete_through,
+  }
+}
+
+/**
+ * The withheld months-of-supply cell's closed count, or null when the figure
+ * published, was withheld for any reason but its sample floor, or is stale.
+ */
+export function assembleSupplyFloor(
+  geoType: string,
+  geoSlug: string,
+  byKey: Map<string, MetricRow>,
+): SupplyFloor | null {
+  const mos = byKey.get(metricKey(geoType, geoSlug, 'months_of_supply'))
+  if (!mos || mos.is_publishable || mos.withheld_reason !== 'below_min_n') return null
+  if (
+    staleReason({
+      completeThrough: mos.complete_through,
+      periodEnd: mos.period_end,
+      windowMonths: Number(mos.window_months),
+    })
+  ) {
+    return null
+  }
+  const minN = STAT_BY_ID.get('months_of_supply')?.minN
+  const closed = Number(mos.sample_n)
+  if (minN == null || !Number.isInteger(closed) || closed < 0 || closed >= minN) return null
+  return {
+    closedSixMonths: closed,
+    minN,
+    completeThrough: mos.complete_through,
+    computedAt: mos.computed_at,
   }
 }
 
@@ -151,10 +206,10 @@ async function loadOverlayRows(
   // old is not "right now"); the range loop finishes any page the cap cut.
   const since = new Date(Date.now() - OVERLAY_LOOKBACK_DAYS * 86_400_000).toISOString()
   for (let from = 0; ; from += OVERLAY_PAGE) {
-    const { data, error } = await sb
+    const query = sb
       .from('market_metric')
       .select(
-        'stat_id, geo_type, geo_slug, value, value_text, is_publishable, complete_through, period_end, window_months, computed_at',
+        'stat_id, geo_type, geo_slug, value, value_text, is_publishable, sample_n, withheld_reason, complete_through, period_end, window_months, computed_at',
       )
       .eq('definition_id', DEFINITION_ID)
       .eq('segment', 'detached')
@@ -168,8 +223,12 @@ async function loadOverlayRows(
       )
       .in('stat_id', [...OVERLAY_STATS])
       .gte('computed_at', since)
-      .order('computed_at', { ascending: false })
-      .range(from, from + OVERLAY_PAGE - 1)
+    // One compute run stamps every row it writes with the same computed_at,
+    // so the primary key breaks the tie and no row moves between pages.
+    const { data, error } = await orderByPrimaryKey(query.order('computed_at', { ascending: false })).range(
+      from,
+      from + OVERLAY_PAGE - 1,
+    )
     if (error) throw new Error(`getDetachedMarkets: ${error.message}`)
 
     const rows = (data ?? []) as MetricRow[]
@@ -210,6 +269,8 @@ export async function getDetachedInventories(
 export type DetachedOverlay = {
   headlines: SellBendMarket | null
   inventory: DetachedInventory | null
+  /** Set only when months of supply was withheld under its sample floor. */
+  supplyFloor: SupplyFloor | null
 }
 
 /** One loadOverlayRows. Headlines may miss while inventory still publishes. */
@@ -222,6 +283,7 @@ export async function getDetachedOverlays(
     out.set(`${k.geoType}:${k.geoSlug}`, {
       headlines: assemble(k.geoType, k.geoSlug, latest),
       inventory: assembleInventory(k.geoType, k.geoSlug, latest),
+      supplyFloor: assembleSupplyFloor(k.geoType, k.geoSlug, latest),
     })
   }
   return out

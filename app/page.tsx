@@ -33,7 +33,9 @@ import { HomeBrowsePlaces } from './_v3/HomeBrowsePlaces'
 import { loadHomeNewConRun } from './_v3/home-new-construction'
 import { HomeFeaturedCommunity } from './_v3/HomeFeaturedCommunity.client'
 import { loadHomeFeaturedCommunitySlides } from './_v3/home-featured-communities'
-import { cityHero, communityImage, hasCuratedCityHero, preferPlaceHeroOrNull } from '@/lib/geo-images'
+import { cityHero, hasCuratedCityHero, preferPlaceHeroOrNull } from '@/lib/geo-images'
+import { formatPriceExact } from '@/lib/format/money'
+import { homeHeroSearchItems } from './_v3/home-hero-search-items'
 import { homeRailRows, enrichHomeRailRows } from './_v3/home-rail-items'
 import { homeRailItemList } from './_v3/home-jsonld'
 import {
@@ -110,14 +112,6 @@ const TOWN_LABEL: Record<(typeof TOWN_ORDER)[number], string> = {
   sisters: 'Sisters',
   terrebonne: 'Terrebonne',
 }
-
-/** Resort doors on home. Photos from communityImage; counts live on /communities. */
-const RESORT_DOORS = [
-  { label: 'Tetherow', slug: 'tetherow', href: '/communities/tetherow' },
-  { label: 'Broken Top', slug: 'broken-top', href: '/communities/broken-top' },
-  { label: 'Black Butte Ranch', slug: 'black-butte-ranch', href: '/communities/black-butte-ranch' },
-  { label: 'Eagle Crest', slug: 'eagle-crest', href: '/communities/eagle-crest' },
-] as const
 
 export default async function Home() {
   const [cities, tiles, brokers, openHouseLabels, recentPriceDrops, reviewSummary, featuredCommunitySlides, pulseBundle, newConRun] =
@@ -215,53 +209,68 @@ export default async function Home() {
     },
   ] as const
 
-  // Two labelled runs, not twelve identical boxes (2026-09-08 evaluator). The
-  // town chips carry the live active count from getCitiesForIndex — `activeCount`
-  // is null when that city's inventory is unmeasured and 0 is a measured empty,
-  // so a null prints nothing rather than a zero (section 0). The resorts run
-  // carries no figure because this page holds no per-resort read; /communities
-  // owns those.
+  // The towns as a photograph mosaic, then new construction as a counted
+  // ledger (2026-10-01): two forms, not three runs of one card. Each town
+  // carries the live count from getCitiesForIndex (`activeCount`: the city
+  // snapshot overlaid by market_metric mt-v1, segment detached, active_count,
+  // the detached houses for sale, the same figure and read /cities publishes)
+  // with its unit beside it, and on hover or focus the same overlay's
+  // median_list_active. A null count prints nothing rather than a zero
+  // (section 0). The resorts and communities moved into the
+  // featured-community spotlight, the page's one place for community figures.
+  const townRows = TOWN_ORDER.map((slug) => {
+    const live = cityBySlug.get(slug)
+    const photo = preferPlaceHeroOrNull(
+      live?.heroImageUrl,
+      hasCuratedCityHero(slug) ? cityHero(slug).src : null,
+    )
+    return {
+      slug,
+      name: live?.name ?? TOWN_LABEL[slug],
+      activeCount: typeof live?.activeCount === 'number' ? live.activeCount : null,
+      medianPrice: typeof live?.medianPrice === 'number' ? live.medianPrice : null,
+      photo,
+    }
+  })
   const placeRuns = [
-    ...(newConRun ? [newConRun] : []),
     {
       name: 'Towns',
-      // What the figures count, said once for the run: `activeCount` is
-      // geo_snapshot_mv's active_sfr_count, the detached single-family actives,
-      // which is the same figure and the same read /cities publishes per city.
       unit: 'houses for sale',
+      unitOne: 'house for sale',
+      layout: 'mosaic' as const,
       seeAll: { label: 'Every city', href: '/cities' },
-      doors: TOWN_ORDER.map((slug) => {
-        const live = cityBySlug.get(slug)
-        const active = live?.activeCount
-        const photoSrc = preferPlaceHeroOrNull(
-          live?.heroImageUrl,
-          hasCuratedCityHero(slug) ? cityHero(slug).src : null,
-        )
-        return {
-          label: live?.name ?? TOWN_LABEL[slug],
-          href: `/cities/${slug}`,
-          ...(photoSrc ? { photoSrc } : {}),
-          ...(typeof active === 'number' && Number.isFinite(active) && active > 0
-            ? { count: active }
-            : {}),
-        }
-      }),
+      doors: townRows.map((town) => ({
+        label: town.name,
+        href: `/cities/${town.slug}`,
+        ...(town.photo ? { photoSrc: town.photo } : {}),
+        ...(town.activeCount != null && Number.isFinite(town.activeCount) && town.activeCount > 0
+          ? { count: town.activeCount }
+          : {}),
+        ...(town.medianPrice != null && Number.isFinite(town.medianPrice) && town.medianPrice > 0
+          ? { reveal: { label: 'Median list price', value: formatPriceExact(town.medianPrice) } }
+          : {}),
+      })),
     },
-    {
-      name: 'Resorts and communities',
-      layout: 'carousel' as const,
-      seeAll: { label: 'Every community', href: '/communities' },
-      doors: RESORT_DOORS.map((r) => {
-        const photoSrc = communityImage(r.slug)
-        return {
-          label: r.label,
-          href: r.href,
-          description: 'Resort community',
-          ...(photoSrc ? { photoSrc } : {}),
-        }
-      }),
-    },
+    ...(newConRun ? [newConRun] : []),
   ]
+
+  // What the search opens onto (2026-10-01): the same towns with the same
+  // counts as the mosaic, the featured communities with their slides' own
+  // figures, and the lead shelf's first homes. Nothing here is read twice.
+  const heroSearchItems = homeHeroSearchItems({
+    towns: townRows,
+    communities: featuredCommunitySlides.map((slide) => ({
+      slug: slide.slug,
+      name: slide.name,
+      city: slide.city,
+      href: slide.href,
+      photo: slide.photoSrc,
+      forSale: slide.figures.find((f) => f.label === 'homes for sale' || f.label === 'home for sale')?.n,
+      medianList: slide.figures.find((f) => f.label === 'median list price')?.n,
+    })),
+    homes: railRows[0]?.cards ?? [],
+    homesHeading: railRows[0]?.heading ?? 'Homes for sale',
+  })
 
   // Live Bend place-row hero wins over the static Old Mill poster (G30).
   const heroPosterSrc = preferPlaceHero(cityBySlug.get('bend')?.heroImageUrl, HERO_POSTER)
@@ -307,11 +316,8 @@ export default async function Home() {
         >
           <HomeHeroSearch
             valuationHref={valuationHref('/')}
-            homes={railRows[0]?.cards.slice(0, 5).map((card) => ({
-              id: card.href,
-              title: card.addressLine,
-              description: card.cityLine,
-            }))}
+            items={heroSearchItems}
+            forSaleCount={pulseBundle?.counts.forSale ?? null}
           />
         </V3Stage>
 
@@ -319,9 +325,6 @@ export default async function Home() {
           rows={railRows}
           emptyMessage="No active homes with a photo and list price right now."
           forSaleCount={pulseBundle?.counts.forSale}
-          // Held on the carousels until the homepage class reaches its taste
-          // mark with the listing dial (Matt 2026-09-25, "fix first, then ship").
-          layout="rails"
         />
 
         {/* SITE-160: guides below the first rail so a priced card clears the fold. */}

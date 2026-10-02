@@ -213,13 +213,17 @@ thumbnail, previous/next, arrow keys, Home/End, or a swipe on the photograph.
   `publishListingTourLabel`), never "3D Walkthrough" for a video. The status word is
   `publicCardStatusLabel`: Active Under Contract is "Under contract" on every dial, the
   word the counts over it use.
-- **Held until their taste marks (Matt 2026-09-25, "fix first, then ship").** The homepage
-  shelves (`HomeHomesRails layout="rails"`) and community pages (`PlaceSubdivisionMap
-  layout="rails"`) keep production's presentation (their carousels) until each reaches its
-  mark. On 2026-10-01 the dial scored 59 and 58 against the homepage's 67, and the community
-  class 66 then 55 against its 64 with honesty 6 and 7 against its receipt's 8 (a community
-  has no months-of-supply read to open on). The `/cities` index shelves reached theirs (64
-  against 62) and are dials.
+- **Held until their taste marks, then shipped (Matt 2026-09-25, "fix first, then ship").**
+  Every listing shelf is a dial. Measured 2026-10-01: the homepage shelves scored 59 and 58
+  against the homepage's 67 with the dial alone; the judge praised the dial and marked down
+  the rest of the page, so the rest was redesigned the same day (the search opens into a
+  results surface, featured communities one spotlight, Browse places a towns mosaic and a
+  new-construction ledger) and the page with its shelves on the dial scored [70, 74, 78],
+  median 74. Community pages were held (`PlaceSubdivisionMap layout="rails"`, 66 then 55
+  against 64, honesty 6 and 7 against the receipt's 8) until they opened on a supply read and
+  took the dial at 68, honesty 9. The `/cities` index shelves reached theirs (64 against 62).
+  `layout="rails"` stays a supported prop on `HomeHomesRails` and `PlaceSubdivisionMap`; no
+  page passes it.
 - **A set of towns is not a stack of dials (2026-09-30).** `/commercial-space-for-lease`
   leads with the busiest town on a full dial; every other town is one row of a drawer
   (a `<details>` each, busiest first, the first open) that opens to its own dial, or to its
@@ -421,3 +425,9 @@ Why each rule is the way it is, so a dead one is not reintroduced as a new idea.
   `dialRailPositionAt`. A card plays its listing's walkthrough reel after a 1.5 s dwell,
   photograph first (Matt: "have the primary photo come in first; after a second or two,
   play the video associated with it if there is one").
+- **2026-10-01** — The homepage shelves are listing dials. The rest of the page was recomposed
+  around them so no card shape runs twice: the search opens into a results surface (places
+  with their counts on one scale, the first shelf's homes, a preview of the row under the
+  cursor, over a navy scrim), featured communities are one spotlight on the installed Card
+  with a counted index, Browse places is a towns photograph mosaic, and new construction is
+  its own navy band with a counted ledger. Separate judge: 74 against the homepage's 67.
