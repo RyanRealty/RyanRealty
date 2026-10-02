@@ -1,29 +1,65 @@
 /**
- * Matt 2026-09-17: Recommended is weighted toward more recent / more similar
- * closed comps. Market cool / no false hope: heavy recent weight so earlier
- * hotter closeds (e.g. March) do not overstate when similar homes sit.
- * Still clamped inside Low/High. Pending/Active never enter this weight.
+ * Recommended price weights the sales the picker kept. A closer match weighs
+ * more. A looser match stays in the set. It is not dropped because it weighs
+ * less.
  *
- * Recency half-life ~3 months (was ~12): a 6-month-old sale carries ~¼ the
- * recency of a fresh close. Size proximity unchanged.
+ * Location is the primary order, and it has been the search order for a long
+ * time. It is not a new rule. Heaviest first:
+ *   1. same subdivision
+ *   2. adjacent subdivisions
+ *   3. the neighborhood or community
+ * Size and bedrooms come after that. Recency comes after those. Each of those
+ * adds less than one location step, so a same-subdivision sale outweighs a
+ * similar-size sale from only the neighborhood, and an adjacent-subdivision
+ * sale sits between those two.
+ *
+ * Recency half-life is still ~3 months when location is the same: a 6-month-old
+ * sale carries about a quarter of the recency of a fresh close. Pending and
+ * active sales never enter this weight.
  */
+
+import { normSubdivision } from '@/lib/pricing/classes'
 
 export type ClosedCompWeightInput = {
   subjectSqft: number
   saleSqft: number
   monthsSinceClose: number
+  subjectBeds?: number | null
+  saleBeds?: number | null
+  subjectSubdivision?: string | null
+  saleSubdivision?: string | null
+  selectionTier?: string | null
+  ownPlat?: boolean | null
+  /** Set when the caller already classified the sale. Wins over the fields above. */
+  locationMatch?: LocationMatch | null
 }
 
-/** Months for recency to halve — heavy recent weight for market cool. */
+/** Months for recency to halve, inside one location step. */
 export const CLOSED_COMP_RECENCY_HALF_LIFE_MONTHS = 3
 
 /**
  * No single closed sale may carry more than this share of the weighted
  * recommendation after renormalization. Nugget / Marshmallow shapes hit
  * 75%+ on one recent similar sale; 40% still prefers the recent sale
- * without letting it own the number.
+ * without letting it own the number. The cap never drops a sale.
  */
 export const CLOSED_COMP_WEIGHT_SHARE_CAP = 0.4
+
+/**
+ * Location steps. Size, bedrooms, and recency are scaled into the open
+ * interval below 1, so they cannot reorder these three.
+ */
+export const LOCATION_MATCH_WEIGHT = {
+  'same-subdivision': 3,
+  'adjacent-subdivision': 2,
+  'neighborhood-or-community': 1,
+  wider: 0,
+} as const
+
+export type LocationMatch = keyof typeof LOCATION_MATCH_WEIGHT
+
+/** Less than one location step. A perfect secondary match cannot cross a class. */
+export const LOCATION_SECONDARY_SPAN = 0.99
 
 /** Cap raw shares, then renormalize. Equal shares when nothing is usable. */
 export function capClosedCompShares(raw: readonly number[]): number[] {
@@ -36,7 +72,7 @@ export function capClosedCompShares(raw: readonly number[]): number[] {
   if (n === 1) return [1]
   // Two sales cannot share a 40% cap without inverting rank. Nugget and
   // Marshmallow concentrated at 4+ sales; the two-sale contract still pulls
-  // toward the recent similar close.
+  // toward the closer match.
   if (n < 3) {
     const sum = shares.reduce((a, b) => a + b, 0)
     return sum > 0 ? shares.map((s) => s / sum) : shares.map(() => 1 / n)
@@ -68,14 +104,75 @@ export function capClosedCompShares(raw: readonly number[]): number[] {
   return sum > 0 ? shares.map((s) => s / sum) : shares.map(() => 1 / n)
 }
 
-/** size proximity × heavy recency — higher when closer in size and more recent. */
+/**
+ * Same subdivision, then adjacent subdivisions, then the neighborhood or
+ * community. A pocket sale in another plat is the adjacent step: the ladder
+ * walks that street cluster after the subject's own plat and before the
+ * neighborhood. Anything past the community is wider and weighs less.
+ */
+export function resolveLocationMatch(input: {
+  subjectSubdivision?: string | null
+  saleSubdivision?: string | null
+  selectionTier?: string | null
+  ownPlat?: boolean | null
+  locationMatch?: LocationMatch | null
+}): LocationMatch {
+  if (input.locationMatch) return input.locationMatch
+  const tier = (input.selectionTier ?? '').trim().toLowerCase()
+  const subjectName = normSubdivision(input.subjectSubdivision)
+  const saleName = normSubdivision(input.saleSubdivision)
+  const sameName = subjectName != null && saleName != null && subjectName === saleName
+  if (input.ownPlat === true || sameName || tier.startsWith('subdivision-')) {
+    return 'same-subdivision'
+  }
+  if (tier.startsWith('adjacent-subdivision') || tier.startsWith('pocket-')) {
+    return 'adjacent-subdivision'
+  }
+  if (
+    tier.startsWith('neighborhood-') ||
+    tier.startsWith('community-') ||
+    tier.startsWith('like-community')
+  ) {
+    return 'neighborhood-or-community'
+  }
+  return 'wider'
+}
+
+function bedProximity(subjectBeds: number | null | undefined, saleBeds: number | null | undefined): number {
+  if (subjectBeds == null || saleBeds == null) return 1
+  if (!Number.isFinite(subjectBeds) || !Number.isFinite(saleBeds)) return 1
+  const gap = Math.abs(Math.floor(subjectBeds) - Math.floor(saleBeds))
+  if (gap === 0) return 1
+  if (gap === 1) return 0.85
+  return 0.7
+}
+
+function locationFieldsPresent(input: ClosedCompWeightInput): boolean {
+  return (
+    input.locationMatch != null ||
+    input.ownPlat != null ||
+    (input.selectionTier != null && input.selectionTier !== '') ||
+    input.subjectSubdivision != null ||
+    input.saleSubdivision != null ||
+    input.subjectBeds != null ||
+    input.saleBeds != null
+  )
+}
+
+/**
+ * Location step, then size, bedrooms, and recency inside that step.
+ * Callers that pass only size and recency keep the prior size-times-recency
+ * product, so a number with no location class does not grow a false step.
+ */
 export function closedCompWeight(input: ClosedCompWeightInput): number {
   const months = Math.max(0, Number(input.monthsSinceClose) || 0)
   const subjectSqft = Number(input.subjectSqft) || 0
   const saleSqft = Number(input.saleSqft) || 0
   const sizeProximity =
     subjectSqft > 0 ? 1 / (1 + Math.abs(subjectSqft - saleSqft) / subjectSqft) : 1
-  // Heavy recent: half-life CLOSED_COMP_RECENCY_HALF_LIFE_MONTHS (Matt cool).
   const recency = Math.pow(0.5, months / CLOSED_COMP_RECENCY_HALF_LIFE_MONTHS)
-  return +(sizeProximity * recency).toFixed(4)
+  const secondary = sizeProximity * bedProximity(input.subjectBeds, input.saleBeds) * recency
+  if (!locationFieldsPresent(input)) return +(sizeProximity * recency).toFixed(4)
+  const base = LOCATION_MATCH_WEIGHT[resolveLocationMatch(input)]
+  return +(base + LOCATION_SECONDARY_SPAN * secondary).toFixed(4)
 }

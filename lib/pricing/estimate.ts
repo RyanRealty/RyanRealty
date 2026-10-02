@@ -1078,11 +1078,17 @@ export function adjustCmaCompAlongMarket(opts: {
   // Matt 2026-09-17: storyAdjustment is permanently 0 (kill story-adj entirely).
   const storyAdj = storyAdjustment(opts.subjectStory, opts.saleStory, timeAdjustedPrice)
   const adjustedPrice = timeAdjustedPrice + sizeAdjustment + storyAdj
-  // Matt 2026-09-17: Recommended weighted toward more recent/similar closeds.
+  // Closer match weighs more. Location first, then size and bedrooms, then recency.
   const weight = closedCompWeight({
     subjectSqft,
     saleSqft: sale.sqft,
     monthsSinceClose,
+    subjectBeds: opts.subject.beds,
+    saleBeds: sale.beds,
+    subjectSubdivision: opts.subject.subdivision,
+    saleSubdivision: sale.subdivision,
+    selectionTier: sale.selectionTier,
+    ownPlat: sale.ownPlat,
   })
   const proximity =
     (sale.proximity ?? '').trim() ||

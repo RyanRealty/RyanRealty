@@ -31,6 +31,7 @@ Every session — Claude Code, Cursor, or Grok — starts here:
 12. Never use buyer or seller names in social, email, or public copy.
 13. No em dashes in public site copy.
 14. All code work is pushed to GitHub as a branch right away. Main lands only by fast-forward from the Mini after the push gate. No rebase, force-push, or reset.
+15. Recommended price is the weighted price of the sales the picker kept. A closer match weighs more. A looser match stays. Location order, heaviest first, is the long-standing search order: same subdivision (weight 3), adjacent subdivisions (weight 2), the neighborhood or community (weight 1). Size and bedrooms come after that and cannot reorder it. A same-subdivision sale outweighs a similar-size neighborhood sale. An adjacent-subdivision sale sits between those two. One size cutoff, the picker's, about 35% living area. The review does not drop a picker-kept sale for a tighter size gap or a 15-year vintage wall. When the first location search is short of 3 comps, widen the closed-sale age and date range. Do not return a short set.
 
 `docs/EXECUTION_PLAN.md` and `docs/SITE_SPEC.md` are 2026-05-22 fossils (SITE_SPEC still describes an AgentFire WordPress cutover that already shipped). Do not execute them.
 
