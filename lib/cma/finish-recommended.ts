@@ -29,6 +29,7 @@ import {
   type ActiveDomNudgeRival,
 } from '@/lib/pricing/active-dom-nudge'
 import { clampRecommendedToClosedBand } from '@/lib/pricing/recommended-in-band'
+import { priceUnderFailedAsk } from '@/lib/pricing/failed-ask-under'
 import { closedSaleLow, rewriteFailedAskClampAfterRec } from '@/lib/cma/expired-audit'
 import { reanchorSellerNet } from '@/lib/pricing/seller-net'
 import { roundPrintedPrices, type PricingRangeRule } from '@/lib/pricing/estimate'
@@ -91,7 +92,16 @@ export function finishRecommendedAfterActives<T extends FinishRecommendedPricing
       }
     }
   }
+  const beforeBand = next.recommended
   next = clampRecommendedToClosedBand(next)
+  const ask = input.ask
+  if (ask != null && Number.isFinite(ask) && ask > 0) {
+    if (beforeBand < ask && next.recommended >= ask) {
+      next = { ...next, recommended: beforeBand }
+    } else if (next.recommended >= ask) {
+      next = { ...next, recommended: priceUnderFailedAsk(ask) }
+    }
+  }
   next = roundPrintedPrices(next, input.ask)
   next = rewriteFailedAskClampAfterRec(next)
   // The net sheet is anchored to recommended at the moment attachSellerNet

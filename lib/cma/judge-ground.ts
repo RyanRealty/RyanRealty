@@ -15,8 +15,9 @@
  *     band). A smaller gap is the invented 1600 sqft floor: the sale is a bit
  *     smaller, not a different size class.
  *  3. A direct size comparison that names the real sqft, with no floor, needs
- *     a gap of at least SIZE_DIRECT_GAP (20%, the same bar lib/pricing/rejected.ts
- *     uses before it will call size a reason).
+ *     the same gap as a floor: SIZE_FLOOR_GAP (35%, the picker's living-area
+ *     band). A tighter cut dropped sales the picker kept. There is one size
+ *     cutoff, and it is the picker's.
  *  4. A $/sqft floor, ceiling, or band is supported only when the comp's actual
  *     $/sqft is outside it. "Below $419" when the sale is at $430 is ignored.
  *  5. A price-tier cut that does clear the cited number is still ignored when
@@ -26,8 +27,10 @@
  *  6. Lot: the cited acres must match, and the lots must actually differ
  *     (ratio at least 2, or at least 0.15 acres). A 0.34 acre lot against a
  *     0.14 acre lot is a real difference. A "1 acre floor" both lots miss is not.
- *  7. Vintage: the year built must match when the reason names one, and the
- *     homes must be at least VINTAGE_YEARS (15) apart.
+ *  7. Vintage is not a second cut. The picker already applied year built, and
+ *     it widens closed-sale age and date when the first location search is
+ *     short of 3. A 15-year wall here dropped sales the picker kept, so a
+ *     vintage exclusion is kept.
  *  8. Structure type: a different MLS sub-type, or remarks that name a
  *     different product (duplex, condo, townhouse, manufactured). "Split-level"
  *     is a story, not a different product.
@@ -43,8 +46,9 @@
  *     disprove is not thrown out. An exclusion we can disprove is.
  *
  * Legitimate exclusions stay: a real duplex in the remarks, a living area gap
- * of 35% or more, a $/sqft outlier of 20% or more, a doubled lot, a 15-year
- * age gap, a room gap the one-room rule refuses, a fairway the remarks actually name.
+ * of 35% or more, a $/sqft outlier of 20% or more, a doubled lot, a room gap
+ * the one-room rule refuses, a fairway the remarks actually name. Year built
+ * does not drop a sale the picker kept.
  */
 
 import type { CmaComp, CmaSubject } from '@/lib/cma/types'
@@ -58,13 +62,10 @@ import {
 import { roomCountsDecision } from '@/lib/pricing/room-ground'
 import { roomDifferenceSentence } from '@/lib/pricing/room-counts'
 
-/** Past the selector's widest living-area band. A floor inside that band is invented. */
+/** Past the selector's widest living-area band. The only size cutoff. */
 export const SIZE_FLOOR_GAP = 0.35
-/** A direct "1,991 versus 1,607" size exclusion. Same bar as pricing/rejected.ts. */
-export const SIZE_DIRECT_GAP = 0.2
 /** Share off the other candidates' median $/sqft before a price tier is real. */
 export const PRICE_TIER_OUTLIER = 0.2
-export const VINTAGE_YEARS = 15
 export const LOT_RATIO = 2
 export const LOT_ACRES = 0.15
 
@@ -246,12 +247,11 @@ function sizeSupported(reason: string, subject: CmaSubject, comp: CmaComp): Grou
     const below = /below|under/i.test(reason)
     const above = /above|over/i.test(reason)
     const onSide = (below && comp.sqft < floor) || (above && comp.sqft > floor) || (!below && !above)
-    const nearSubject = subject.sqft != null && subject.sqft > 0 && close(floor, subject.sqft, 40, 0.05)
-    const need = nearSubject ? SIZE_DIRECT_GAP : SIZE_FLOOR_GAP
-    if (!onSide || gap == null || gap < need) return null
+    const onBand = gap != null && gap >= SIZE_FLOOR_GAP
+    if (!onSide || !onBand) return null
     return 'size-floor'
   }
-  if (gap != null && gap >= SIZE_DIRECT_GAP) return 'size-gap'
+  if (gap != null && gap >= SIZE_FLOOR_GAP) return 'size-gap'
   return null
 }
 
@@ -290,16 +290,6 @@ function lotSupported(reason: string, subject: CmaSubject, comp: CmaComp): boole
     (n) =>
       close(n, comp.lotAcres!, 0.02, 0.1) || close(n, subject.lotAcres!, 0.02, 0.1),
   )
-}
-
-function vintageSupported(reason: string, subject: CmaSubject, comp: CmaComp): boolean {
-  if (subject.yearBuilt == null || comp.yearBuilt == null) return false
-  if (Math.abs(subject.yearBuilt - comp.yearBuilt) < VINTAGE_YEARS) return false
-  const after = reason.match(/\bafter\s+((?:19|20)\d{2})\b/i)
-  if (after && comp.yearBuilt <= Number(after[1])) return false
-  const before = reason.match(/\bbefore\s+((?:19|20)\d{2})\b/i)
-  if (before && comp.yearBuilt >= Number(before[1])) return false
-  return true
 }
 
 function textOf(subject: CmaSubject, comp: CmaComp): { comp: string; subject: string } {
@@ -450,8 +440,8 @@ export function groundVerdict(
     return { verdict: { ...verdict }, grounded: true, modelTier: 'exclude', rule: 'lot' }
   }
   if (basis === 'vintage') {
-    if (!vintageSupported(reason, subject, comp)) return weakKeep(verdict, 'vintage')
-    return { verdict: { ...verdict }, grounded: true, modelTier: 'exclude', rule: 'vintage' }
+    // The picker owns year built. This pass does not drop the sale.
+    return weakKeep(verdict, 'vintage')
   }
   if (basis === 'structure-type') {
     if (!structureSupported(reason, subject, comp)) return weakKeep(verdict, 'structure')
@@ -485,8 +475,8 @@ export function groundVerdict(
   if (lotSupported(reason, subject, comp) && /\b(lot|acre)/i.test(reason)) {
     return { verdict: { ...verdict }, grounded: true, modelTier: 'exclude', rule: 'lot' }
   }
-  if (vintageSupported(reason, subject, comp) && /\b(built|vintage|year)\b/i.test(reason)) {
-    return { verdict: { ...verdict }, grounded: true, modelTier: 'exclude', rule: 'vintage' }
+  if (/\b(built|vintage|year built)\b/i.test(reason) && /\b(19|20)\d{2}\b/.test(reason)) {
+    return weakKeep(verdict, 'vintage')
   }
   const hasNumber = /\d/.test(reason)
   if (!hasNumber) {

@@ -117,7 +117,7 @@ record reading "N/A" — the anchor is the neighborhood median $/sqft, then the
 mile around the home, then 2, 3, 5 and 8 miles on rural ground, always at
 `ANCHOR_MIN_N` sales or no anchor at all. Two exemptions and only two: a sale
 inside the subject's OWN plat, and a same-street sale of the subject's own size.
-An adjacent plat is a different plat and is graded like anything else. The LLM
+An adjacent plat is not graded like any other sale. Location order, heaviest first: same subdivision, then adjacent subdivisions, then the neighborhood or community. Size and bedrooms come after that. A same-subdivision sale outweighs a similar-size neighborhood sale. An adjacent-subdivision sale sits between those two. The recommended price is the weighted price of the sales the picker kept. A looser match stays. An expired, canceled, or withdrawn home that did not sell comes out under its last ask. Comps already under that ask are not cut again. The LLM
 judge is held to both exemptions: it once excluded the identical house next
 door for sitting "outside the range this analysis prices the subject in", which
 is the band the other comps set, and on Falcon 15991 it cut near-acre peers in
@@ -205,6 +205,8 @@ its status holds says so under the table. The locked contract is
 12. Never use buyer or seller names in social, email, or public copy.
 13. No em dashes in public site copy.
 14. All code work is pushed to GitHub as a branch right away. Main lands only by fast-forward from the Mini after the push gate. No rebase, force-push, or reset.
+15. Recommended price is the weighted price of the sales the picker kept. A closer match weighs more. A looser match stays. Location order, heaviest first, is the long-standing search order: same subdivision (weight 3), adjacent subdivisions (weight 2), the neighborhood or community (weight 1). Size and bedrooms come after that and cannot reorder it. A same-subdivision sale outweighs a similar-size neighborhood sale. An adjacent-subdivision sale sits between those two. One size cutoff, the picker's, about 35% living area. The review does not drop a picker-kept sale for a tighter size gap or a 15-year vintage wall. When the first location search is short of 3 comps, widen the closed-sale age and date range. Do not return a short set. The pull walks same subdivision, then adjacent subdivisions, then the neighborhood or community, and widens the closed-sale age and date inside each before the next. Do not fall back to same-zip while a closer place still has sales.
+16. An expired, canceled, or withdrawn home that did not sell was overpriced. The recommended price must come out under the last ask. A number that matches the ask, or sits over it, is wrong. The comps still set the price. Location weights stay same subdivision 3, adjacent 2, neighborhood 1, and size and bedrooms cannot reorder that. If the weighted comp price is already under the last ask, leave it. Do not add a second discount. If it is at the last ask or above it, pull it under. With no days on market and no original ask, the pull is $1,000, not a percent. When days on market or an original ask is already on the subject, start at 1% under and deepen with days on market toward 120 days. No price cut, when the original ask is known and did not come down, adds up to 2% more, so 3% at 120 days. A known price cut, or no original ask to judge a cut by, adds at most 0.5% more, so 1.5% at 120 days. The pull floors to the thousand and stays inside 3%. This is only for a home that failed to sell. Do not apply it to a normal comp sale. The hold is separate and unchanged: a rec more than 15% under last ask, or any amount over last ask, is a hold. Exactly 15% under is not a hold. Recommended price is still the house from comps only. ADU, second lot, and rental stay notes, not dollars.
 
 The delivery steps later in this skill do not override these rules.
 
@@ -215,7 +217,7 @@ The delivery steps later in this skill do not override these rules.
 ### In scope
 - Single-property Comparative Market Analysis.  for a specific subject address
 - 15-page HTML deliverable, print-ready at 8.5×11" letter, exported as PDF via browser ⌘P
-- Subdivision-first comp set (last 24 months), with broader same-zip fallback if subdivision is sparse
+- Subdivision-first comp set. Stay in the subdivision, then adjacent subdivisions, then the neighborhood or community. If that first location search is short of 3 closed sales, widen the closed-sale age and date range before leaving the place. Do not fall back to same-zip, and do not return a short set.
 - One-page flyer per comp (hero photo + 6-photo grid + MLS public_remarks + key features)
 - Branded location map via `/api/maps/cma-<slug>` showing subject + all comps with numbered pins matching flyer order
 - Pricing range with **two methods** (per-sqft tier + un-renovated baseline + improvement value-add) that converge on a recommended list price
@@ -401,7 +403,7 @@ Default filter (matches the 21042 Robin exemplar):
 - `TotalLivingAreaSqFt BETWEEN <subject_sqft × 0.77> AND <subject_sqft × 1.23>` (±25%)
 - `lot_size_acres BETWEEN <subject_acres − 1.0> AND <subject_acres + 1.5>` (geography-dependent)
 
-Target 6-10 comps. If subdivision returns fewer than 6, expand to same-zip + same property class. Exclude obvious outliers (off-market arms-length sales, $/sqft >2 std deviations from cluster).
+Target at least 3 closed sales, and keep walking toward 6 to 10. If the subdivision is short of 3, widen the closed-sale age and date range inside that subdivision first, then adjacent subdivisions, then the neighborhood or community. Do not expand to same-zip as the fallback. One size cutoff, the picker's, about 35% living area. Do not drop a sale the picker kept because the match is looser.
 
 Also pull every comp's `pending_timestamp`, `OnMarketDate`, `CloseDate`, `DaysOnMarket`, `days_to_pending`. The CMA reports **Days to Offer** (active days = `pending_timestamp - OnMarketDate`) as the primary recency signal, with the Spark-reported DOM (which includes time under contract) as a secondary number. See §10.  this is a known Oregon Data Share quirk.
 
@@ -651,7 +653,7 @@ This is the appraiser "market conditions adjustment".  the single most important
 
 Size, bed/bath, lot, garage, and condition adjustments follow standard paired-sales logic against the subject. Keep every adjustment defensible.  if you cannot justify it from the data, do not make it.
 
-**Method 3.  time-and-physically-adjusted comp reconciliation.** The similarity-weighted average of the adjusted prices from the grid (weight by size proximity, distance, and recency). This is a check against the moat close, not the list.
+**Method 3.  time-and-physically-adjusted comp reconciliation.** The recommended price is the weighted price of the sales the picker kept. Location weighs first: same subdivision (3), adjacent subdivisions (2), neighborhood or community (1). Size and bedrooms, then recency, add less than one location step, so a neighborhood sale cannot outrank a same-subdivision sale of similar size. An adjacent-subdivision sale sits between those two. A looser match the picker kept stays in the price. It is not dropped for weighing less.
 
 **Convergence + confidence.** Methods 1, 2, and 3 are checks. If they diverge more than ±5% from each other, disclose the spread and lower confidence. They do not replace the moat cover numbers. Confidence (High / Moderate / Supportable-only) is a function of: comp count (≥5 is strong), range dispersion, median comp age (>9 months caps at Moderate), median comp distance (>4 mi caps at Moderate), and method divergence. State the confidence and a one-line reason on the pricing page.  honest uncertainty beats false precision (CLAUDE.md §0).
 
@@ -914,7 +916,7 @@ The `measured` step for a CMA is light.  90 days after delivery, the `performanc
 | failure | symptoms | recovery |
 |---|---|---|
 | Subject not in MLS | listings query returns 0 rows | Surface to Matt: ask for manual subject specs (beds/baths/sqft/lot/year) in `payload.client_notes`. Continue with comp pull using same-zip filter only. |
-| Comp set < 3 rows | subdivision-only filter returns sparse | Expand to same-zip + same-property-class. If still < 3, surface to Matt.  a credible CMA needs at least 3 closed comps. |
+| Comp set < 3 rows | subdivision-only filter returns sparse | Widen closed-sale age and date inside the subdivision, then adjacent subdivisions, then the neighborhood or community. Do not expand to same-zip. If still under 3, the build stays short and fails. A credible CMA needs at least 3 closed comps. |
 | Photo endpoint 404 for a comp | Spark returns "Listing not found" | Use the "No MLS photo on file" placeholder card. Don't block the CMA over a single missing comp photo. |
 | Broker not in `public.brokers` | broker_email/slug doesn't match | Default to `matt-ryan`. Surface a one-line note that broker fell back to Matt; ask if a new broker record should be created. |
 | Map endpoint 500 | Google Maps Static API error or missing env var | Surface the actual error from the route's JSON response. Don't ship the CMA without the map. If `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` is missing, that's a Matt-side env fix; pause and report. |

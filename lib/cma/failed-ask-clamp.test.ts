@@ -40,14 +40,15 @@ describe('pricing.clamp — the failed-ask ceiling, on render_args', () => {
     const r = applyFailedAskCap(x, { lastFailedListPrice: 1500000, offMarketDate: recentOff })
 
     expect(r.applied).toBe(true)
-    expect(x.recommended).toBe(1473000)
+    expect(x.recommended).toBe(1499000)
+    expect(x.recommended).toBeLessThan(1500000)
     const clamp = x.clamp
     expect(clamp).not.toBeNull()
     expect(clamp!.kind).toBe('failed-ask')
     expect(clamp!.appliedTo).toBe('recommended')
     expect(clamp!.before).toBe(1973000)
-    expect(clamp!.after).toBe(1473000)
-    expect(clamp!.basis.ratio).toBe(FAILED_ASK_BACKTEST.closeP75Ratio)
+    expect(clamp!.after).toBe(1499000)
+    expect(clamp!.basis.ratio).toBe(1499000 / 1500000)
     expect(clamp!.basis.source).toContain(FAILED_ASK_BACKTEST.pairs.toLocaleString('en-US'))
     expect(clamp!.basis.source).toContain(FAILED_ASK_BACKTEST.runstamp)
     // Every tier the ceiling moved is recorded, not only the headline one.
@@ -56,8 +57,8 @@ describe('pricing.clamp — the failed-ask ceiling, on render_args', () => {
     expect(clamp!.applications.map((a) => a.tier).sort()).toEqual(['highEnd', 'recommended'])
     expect(clamp!.applications.find((a) => a.tier === 'highEnd')).toMatchObject({
       before: 1930000,
-      after: 1473000,
-      ratio: FAILED_ASK_BACKTEST.closeP75Ratio,
+      after: 1499000,
+      ratio: 1499000 / 1500000,
     })
   })
 
@@ -70,10 +71,10 @@ describe('pricing.clamp — the failed-ask ceiling, on render_args', () => {
     // The cover owns $1,473,000. The sentence points at that price without
     // reprinting it next to the failed ask, where "that price" read as the ask.
     expect(s).toContain('price on the cover')
-    expect(s).toContain('75th percentile')
+    expect(s).toContain('stays under that ask')
+    expect(s).not.toContain('75th percentile')
     expect(s).not.toContain('$1,473,000')
     expect(s).not.toContain('that price')
-    expect(s).toContain('3,394')
     // Seller language, not engine language.
     expect(s).not.toMatch(/\b(clamp|cap|quantile|p75|comp|comps|subject)\b/i)
   })
@@ -91,14 +92,15 @@ describe('pricing.clamp — the failed-ask ceiling, on render_args', () => {
     expect(x.clamp).toBeNull()
   })
 
-  it('a stale failure clamps at the ask itself and says so without a percentile', () => {
+  it('a stale failure still comes out under the ask and says so without a percentile', () => {
     const x = p({ conservative: 780000, recommended: 800000, highEnd: 830000 })
     applyFailedAskCap(x, { lastFailedListPrice: 600000, offMarketDate: staleOff })
     const clamp = x.clamp!
-    expect(clamp.basis.ratio).toBe(1)
+    expect(clamp.basis.ratio).toBe(599000 / 600000)
     expect(clamp.appliedTo).toBe('recommended')
     expect(clamp.before).toBe(800000)
-    expect(clamp.after).toBe(600000)
+    expect(clamp.after).toBe(599000)
+    expect(clamp.after).toBeLessThan(600000)
     expect(clamp.sentence).toContain('$800,000')
     expect(clamp.sentence).toContain('$600,000')
     expect(clamp.sentence).not.toContain('percentile')
@@ -111,10 +113,16 @@ describe('pricing.clamp — the failed-ask ceiling, on render_args', () => {
     const x = p({ conservative: 1390000, recommended: 1973000, highEnd: 1930000 })
     applyFailedAskCap(x, { lastFailedListPrice: 1500000, offMarketDate: null })
     expect(x.clamp!.before).toBe(1973000)
-    expect(x.clamp!.after).toBe(1500000)
-    applyFailedAskCap(x, { lastFailedListPrice: 1500000, offMarketDate: recentOff })
+    expect(x.clamp!.after).toBe(1499000)
+    applyFailedAskCap(x, {
+      lastFailedListPrice: 1500000,
+      offMarketDate: recentOff,
+      daysOnMarket: 120,
+      originalListPrice: 1500000,
+    })
     expect(x.clamp!.before).toBe(1973000)
-    expect(x.clamp!.after).toBe(1473000)
+    expect(x.clamp!.after).toBe(1455000)
+    expect(x.clamp!.after).toBeLessThan(1499000)
     expect(x.clamp!.applications.find((a) => a.tier === 'recommended')!.before).toBe(1973000)
   })
 
@@ -139,9 +147,10 @@ describe('pricing.clamp — the failed-ask ceiling, on render_args', () => {
     const x = p({ conservative: 400000, recommended: 460000, highEnd: 530000 })
     applyFailedAskCap(x, { lastFailedListPrice: 500000, offMarketDate: recentOff })
     expect(x.recommended).toBe(460000)
-    expect(x.highEnd).toBe(491000)
+    expect(x.highEnd).toBe(499000)
+    expect(x.highEnd).toBeLessThan(500000)
     expect(x.clamp!.appliedTo).toBe('highEnd')
-    expect(x.clamp!.basis.ratio).toBe(FAILED_ASK_BACKTEST.closeP75Ratio)
+    expect(x.clamp!.basis.ratio).toBe(499000 / 500000)
     expect(x.clamp!.applications).toHaveLength(1)
   })
 })
@@ -163,7 +172,8 @@ describe('the clamp is ONE ceiling for every list tier', () => {
     const x = p({ conservative: 1438000, recommended: 1774000, highEnd: 1996000 })
     applyFailedAskCap(x, { lastFailedListPrice: ask, offMarketDate: recentOff })
     const after = x.clamp!.after
-    expect(after).toBe(1473000)
+    expect(after).toBe(1499000)
+    expect(after).toBeLessThan(ask)
     for (const tier of ['conservative', 'recommended', 'highEnd'] as const) {
       expect(x[tier]).toBeLessThanOrEqual(after)
     }
@@ -175,8 +185,8 @@ describe('the clamp is ONE ceiling for every list tier', () => {
     // The high end's move is recorded against the ceiling that produced it.
     expect(x.clamp!.applications.find((a) => a.tier === 'highEnd')).toMatchObject({
       before: 1996000,
-      after: 1473000,
-      ratio: FAILED_ASK_BACKTEST.closeP75Ratio,
+      after: 1499000,
+      ratio: 1499000 / 1500000,
     })
   })
 
@@ -184,8 +194,9 @@ describe('the clamp is ONE ceiling for every list tier', () => {
     const ask = 460000
     const x = p({ conservative: 435000, recommended: 454000, highEnd: 484000 })
     applyFailedAskCap(x, { lastFailedListPrice: ask, offMarketDate: recentOff })
-    expect(x.recommended).toBe(452000)
-    expect(x.highEnd).toBe(452000)
+    expect(x.recommended).toBe(454000)
+    expect(x.highEnd).toBe(459000)
+    expect(x.recommended).toBeLessThan(ask)
     expect(x.highEnd).toBeLessThan(ask)
     expect(x.highEnd).toBeLessThanOrEqual(x.clamp!.after)
   })

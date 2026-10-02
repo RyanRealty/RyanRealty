@@ -5,12 +5,15 @@
  * A CMA or BPO that then recommends listing ABOVE that ask is the document
  * telling the owner to retry the price that just failed. The engine may still
  * compute a higher comp-supported number; the printed list band is clipped
- * to the failed ask. Equal is allowed. Above is not.
+ * to the failed ask. The recommendation is under that ask, not on it.
+ * Above is not allowed either. A band already under the ask is left alone.
  *
  * Live (Active / Pending) and Closed subjects are untouched:
  * a live ask is shown beside the comps (never blended), and a closed sale
  * is not a failed ask.
  */
+
+import { priceUnderFailedAsk } from '@/lib/pricing/failed-ask-under'
 
 export type FailedAskSubject = {
   lastListPrice: number | null | undefined
@@ -55,19 +58,9 @@ export function capListBandToFailedAsk(
 ): ListBand & { capped: boolean; failedAsk: number | null } {
   const cap = money(failedAsk)
   if (cap == null) return { ...band, capped: false, failedAsk: null }
-  const conservative = Math.min(band.conservative, cap)
-  let recommended = Math.min(band.recommended, cap)
-  const highEnd = Math.min(band.highEnd, cap)
-  if (recommended > highEnd) recommended = highEnd
-  if (conservative > recommended) {
-    return {
-      conservative: recommended,
-      recommended,
-      highEnd: Math.max(recommended, highEnd),
-      capped: true,
-      failedAsk: cap,
-    }
-  }
+  const recommended = band.recommended >= cap ? priceUnderFailedAsk(cap) : band.recommended
+  const highEnd = band.highEnd >= cap ? recommended : Math.max(band.highEnd, recommended)
+  const conservative = Math.min(band.conservative, recommended)
   const capped =
     conservative !== band.conservative || recommended !== band.recommended || highEnd !== band.highEnd
   return { conservative, recommended, highEnd, capped, failedAsk: cap }

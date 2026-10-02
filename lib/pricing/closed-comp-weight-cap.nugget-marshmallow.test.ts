@@ -35,7 +35,7 @@ describe('comp weight cap and $/sf band-endpoint trim', () => {
     expect(forBand.length).toBeGreaterThanOrEqual(3)
   })
 
-  it('Murphy shape: 39.2% max share is already under the cap; failed-ask rec stays $716k', () => {
+  it('Murphy shape: 39.2% max share is already under the cap; failed-ask rec comes out under the ask', () => {
     // Stored closed-comp weights on cma-20506-murphy (read-only dump 2026-09-25).
     const raw = [0.4234, 0.3563, 0.1285, 0.113, 0.0583]
     const total = raw.reduce((a, b) => a + b, 0)
@@ -52,10 +52,10 @@ describe('comp weight cap and $/sf band-endpoint trim', () => {
       { adjustedPrice: 735_000, weight: 0.113 },
       { adjustedPrice: 725_000, weight: 0.0583 },
     ])
-    // Weighted mid of the stored comps is not the published rec. Murphy's
-    // $716k is the failed-ask p75 of the $729k ask against band $693k–$735k.
+    // Weighted mid of the stored comps is not the published rec. The
+    // failed ask is $729k. Comps at $803k come out just under that ask.
     expect(point).toBeGreaterThan(700_000)
-    expect(point).toBeLessThan(716_000)
+    expect(point).toBeLessThan(729_000)
 
     const x = {
       conservative: 693_000,
@@ -70,8 +70,9 @@ describe('comp weight cap and $/sf band-endpoint trim', () => {
     const off = new Date(Date.now() - 60 * 24 * 3600 * 1000).toISOString()
     const r = applyFailedAskCap(x, { lastFailedListPrice: 729_000, offMarketDate: off })
     expect(r.applied).toBe(true)
-    expect(x.recommended).toBe(716_000)
-    expect(x.recommended).toBe(
+    expect(x.recommended).toBe(728_000)
+    expect(x.recommended).toBeLessThan(729_000)
+    expect(x.recommended).not.toBe(
       Math.round((729_000 * FAILED_ASK_BACKTEST.closeP75Ratio) / 1000) * 1000,
     )
     expect(x.valueLow).toBe(693_000)

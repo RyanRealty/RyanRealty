@@ -36,6 +36,7 @@ import { listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing
 import type { ListingTimelineInput, ListingTimelineStep } from '@/lib/cma/market-charts'
 import { askStoryReading } from '@/lib/cma/ask-story'
 import { reanchorSellerNet } from '@/lib/pricing/seller-net'
+import { priceUnderFailedAsk, type FailedAskPullFacts } from '@/lib/pricing/failed-ask-under'
 
 /**
  * Where the seller's own ask sat against what homes like theirs sold for, in
@@ -1093,7 +1094,15 @@ export function applyFailedAskCap(
     failedAskBelowRange?: boolean
     rangeRule?: { saleLow?: number; evidenceLow?: number } | null
   },
-  args: { lastFailedListPrice: number | null; offMarketDate: string | null; asOf?: Date },
+  args: {
+    lastFailedListPrice: number | null
+    offMarketDate: string | null
+    asOf?: Date
+    /** Days the failed listing was on market, when the subject already has them. */
+    daysOnMarket?: number | null
+    /** Original ask, when the listing already has one. Above the last ask means a cut. */
+    originalListPrice?: number | null
+  },
 ): FailedAskCapResult {
   const none: FailedAskCapResult = { applied: false, cappedTo: null, uncappedRecommended: null }
   const ask = args.lastFailedListPrice
@@ -1115,21 +1124,21 @@ export function applyFailedAskCap(
   // The sales' own low. A minimum-width open can put the printed low under
   // this. The ask is judged against the sales, not against that open.
   const salesLow = closedSaleLow(pricing)
-  // Haircut only when the failed ask was inside or above the sales.
-  // An ask already below the sales is not a ceiling: cutting further from it
-  // is the Nugget defect (range $734k-$878k, ask $725k, rec $712k). Pin the
-  // recommendation to the sales low so the printed list sits on the sales
-  // and the expired-list-cap contract can pass (rec <= that low, not rec <= ask).
+  // An ask already below the sales is not a reason to pin the recommendation
+  // up onto a sale. If the comps are already under that ask, leave them.
+  // If they sit on the ask or above it, the pull below still applies: an
+  // expired does not keep a price the market refused.
   if (band && salesLow != null && ask < salesLow) {
     pricing.failedAskBelowRange = true
-    const pinned = salesLow
-    pricing.recommended = pinned
-    pricing.conservative = Math.min(pricing.conservative, pinned)
-    if (pricing.highEnd < pinned) pricing.highEnd = pinned
     const note = failedAskBelowRangeNote(ask)
     if (!pricing.notes.includes(note)) pricing.notes.push(note)
-    reanchorSellerNet(pricing)
-    return { applied: false, cappedTo: null, uncappedRecommended: null, belowRange: true }
+    const evidenceRec = priorBefore.get('recommended') ?? pricing.recommended
+    // Already under the ask: leave the comps. Do not pin the list up to a
+    // sale that sits on or above the ask that failed, and do not cut again.
+    if (evidenceRec < ask) {
+      reanchorSellerNet(pricing)
+      return { applied: false, cappedTo: null, uncappedRecommended: null, belowRange: true }
+    }
   }
   // A broker override with a note may sit below the sales. Do not lift or cut it.
   if (band && salesLow != null && pricing.recommended < salesLow && hasStoredBelowRangeReason(pricing)) {
@@ -1147,20 +1156,62 @@ export function applyFailedAskCap(
   }
 
   const ceilings = clampCeilings(ask, recent)
-  const consCeil = ceilings.conservative.value
+  let consCeil = ceilings.conservative.value
   // Inside the band the haircut may still bind, but the recommend never
   // drops below the hero low unless a stored broker override said so.
   const askInsideBand = band != null && salesLow != null && ask >= salesLow && ask <= band.high
   const insideFloor = salesLow ?? band?.low ?? 0
-  const recCeil =
+  let recCeil =
     askInsideBand && !hasStoredBelowRangeReason(pricing)
       ? Math.max(ceilings.recommended.value, insideFloor)
       : ceilings.recommended.value
-  const highCeil =
+  let highCeil =
     askInsideBand && !hasStoredBelowRangeReason(pricing)
       ? Math.max(ceilings.highEnd.value, recCeil)
       : ceilings.highEnd.value
-  if (pricing.conservative <= consCeil && pricing.recommended <= recCeil && pricing.highEnd <= highCeil)
+  // Comps under the failed ask stay. Comps at or above it come under the ask
+  // by the small step in priceUnderFailedAsk. A percentile ceiling must not
+  // take a second cut off a price that is already under, and it must not
+  // leave the recommendation sitting on the ask.
+  const evidenceRec = priorBefore.get('recommended') ?? pricing.recommended
+  const pullFacts: FailedAskPullFacts = {
+    daysOnMarket: args.daysOnMarket,
+    originalListPrice: args.originalListPrice,
+  }
+  const underAsk = priceUnderFailedAsk(ask, pullFacts)
+  const pullRatio = underAsk / ask
+  if (evidenceRec < ask) {
+    if (pricing.recommended < evidenceRec) pricing.recommended = evidenceRec
+    recCeil = Math.max(recCeil, pricing.recommended)
+    if (pricing.conservative < ask) consCeil = Math.max(consCeil, pricing.conservative)
+    if (pricing.highEnd < ask) highCeil = Math.max(highCeil, pricing.highEnd)
+    else {
+      const highTarget = Math.max(underAsk, pricing.recommended)
+      highCeil = highTarget < ask ? highTarget : underAsk
+      ceilings.highEnd = { ...ceilings.highEnd, value: highCeil, ratio: pullRatio, phrase: null }
+    }
+  } else {
+    recCeil = underAsk
+    highCeil = underAsk
+    consCeil = pricing.conservative < ask ? pricing.conservative : underAsk
+    ceilings.recommended = { ...ceilings.recommended, value: underAsk, ratio: pullRatio, phrase: null }
+    ceilings.highEnd = { ...ceilings.highEnd, value: underAsk, ratio: pullRatio, phrase: null }
+    ceilings.conservative = {
+      ...ceilings.conservative,
+      value: consCeil,
+      ratio: pricing.conservative < ask ? ceilings.conservative.ratio : pullRatio,
+      phrase: null,
+    }
+  }
+  // Already under the ask and nothing to move: no clamp. When the comps were
+  // at or above the ask, keep going so a second pass still records the pull
+  // from the original evidence even if an earlier pass already landed on it.
+  if (
+    evidenceRec < ask &&
+    pricing.conservative <= consCeil &&
+    pricing.recommended <= recCeil &&
+    pricing.highEnd <= highCeil
+  )
     return none
 
   const uncapped = pricing.recommended
@@ -1184,7 +1235,8 @@ export function applyFailedAskCap(
   // `lib/cma/build.ts` re-applies with the real off-market date, and a reader
   // must be told the whole distance once rather than half of it twice.
   const baseline = (tier: CmaPricingClampTier, current: number) => priorBefore.get(tier) ?? current
-  const boundHere = (tier: CmaPricingClampTier) => entry[tier] > ceilFor[tier]
+  const boundHere = (tier: CmaPricingClampTier) =>
+    (priorBefore.get(tier) ?? entry[tier]) > ceilFor[tier]
   const baselines = {
     conservative: baseline('conservative', pricing.conservative),
     recommended: baseline('recommended', pricing.recommended),
@@ -1242,15 +1294,15 @@ export function applyFailedAskCap(
   pricing.reviewReason = [
     carried.trim(),
     recent
-      ? `Comp evidence supported ${usd(supported)} against the ${usd(ask)} asking that just failed. List tiers clamped to the failed-ask backtest quantiles (median ${FAILED_ASK_BACKTEST.closeMedianRatio}, p75 ${FAILED_ASK_BACKTEST.closeP75Ratio}, cap 1.00).`
-      : `Comp evidence supported ${usd(supported)} against the ${usd(ask)} asking that failed to sell. The printed list sits at or below that ask.`,
+      ? `Comp evidence supported ${usd(supported)} against the ${usd(ask)} asking that just failed. The recommendation is under that ask.`
+      : `Comp evidence supported ${usd(supported)} against the ${usd(ask)} asking that failed to sell. The recommendation is under that ask.`,
   ]
     .filter(Boolean)
     .join(' ')
   const askNote = `Your last listing asked ${usd(ask)} and did not sell.`
   if (!pricing.notes.includes(askNote)) pricing.notes.push(askNote)
   reanchorSellerNet(pricing)
-  return { applied: true, cappedTo: recCeil, uncappedRecommended: supported }
+  return { applied: true, cappedTo: recCeil, uncappedRecommended: supported, belowRange: pricing.failedAskBelowRange === true }
 }
 
 /**

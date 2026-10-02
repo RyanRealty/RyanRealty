@@ -143,9 +143,12 @@ export function evaluateAccuracyContract(args: {
     // The printed pin and the printed sales low are the same thousand.
     // An off-grid sale of $849,416 prints as $849,000. No one-step slack.
     const printedSalesLow = Math.round(salesLow / 1000) * 1000
-    const over = belowRange
-      ? pricing.recommended > printedSalesLow
-      : pricing.recommended > failedAsk || pricing.highEnd > failedAsk
+    // Matching the ask is wrong for a home that did not sell. Under is
+    // required. The sales low is still a ceiling when the ask sat below
+    // the sales: do not print a list above those sales either.
+    const overAsk = pricing.recommended >= failedAsk || pricing.highEnd >= failedAsk
+    const overSales = belowRange && pricing.recommended > printedSalesLow
+    const over = overAsk || overSales
     const rec = pricing.recommended.toLocaleString()
     const high = pricing.highEnd.toLocaleString()
     const ask = failedAsk.toLocaleString()
@@ -154,13 +157,13 @@ export function evaluateAccuracyContract(args: {
       id: 'expired-list-cap',
       severity: 'hard',
       pass: !over,
-      detail: belowRange
-        ? over
+      detail: overAsk
+        ? `Expired last list was $${ask}. Recommended $${rec} / high end $${high} must come out under the price that already failed to sell.`
+        : overSales
           ? `Last ask $${ask} sat below the sales band. Recommended $${rec} must sit at or below the band low $${low} (failedAskBelowRange).`
-          : `Last ask $${ask} sat below the sales band. Recommended $${rec} is pinned at the band low $${low} (failedAskBelowRange), not at the failed ask.`
-        : over
-          ? `Expired last list was $${ask}. Recommended $${rec} / high end $${high} sits above the price that already failed to sell.`
-          : `Expired last list $${ask} caps the printed list. Recommended $${rec} and high end $${high} sit at or below it.`,
+          : belowRange
+            ? `Last ask $${ask} sat below the sales. Recommended $${rec} is under that ask and not above the band low $${low} (failedAskBelowRange).`
+            : `Expired last list $${ask} caps the printed list. Recommended $${rec} and high end $${high} sit under it.`,
     })
   }
   if (pricing.currentAsk != null && pricing.currentAsk > 0) {

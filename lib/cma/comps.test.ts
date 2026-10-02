@@ -60,26 +60,27 @@ describe('realSubdivision — the MLS placeholder trap', () => {
 })
 
 describe('compTierLadder', () => {
-  it('walks tightest-first and trades TIME before it trades LOCATION', () => {
+  it('stays in the subdivision, then adjacent, then the neighborhood, and widens dates before the zip', () => {
     const names = compTierLadder('Kenwood').map((t) => t.name)
     expect(names).toEqual([
       'subdivision-6mo',
       'subdivision-12mo',
+      'subdivision-18mo',
+      'subdivision-24mo',
       'pocket-6mo',
       'pocket-12mo',
+      'pocket-24mo',
       'adjacent-subdivision-6mo',
       'adjacent-subdivision-12mo',
+      'adjacent-subdivision-18mo',
+      'adjacent-subdivision-24mo',
       'neighborhood-6mo',
       'neighborhood-12mo',
-      // Two years inside the plat and its ring, then the community the plat
-      // sits inside, then the polygon to two years, then its peer communities
-      // (Matt 2026-09-09: go up a parent level, and never leave it early).
-      'subdivision-24mo',
-      'adjacent-subdivision-24mo',
+      'neighborhood-18mo',
+      'neighborhood-24mo',
       'community-6mo',
       'community-12mo',
       'community-24mo',
-      'neighborhood-24mo',
       'like-community-24mo',
       'competing-area-12mo',
       'citywide-12mo',
@@ -272,11 +273,11 @@ describe('diagnoseStarvation — name the constraint, not the count', () => {
 })
 
 describe('the parent level on the listings ladder (Matt 2026-09-09)', () => {
-  it('holds the plat to its community before any polygon, ring or city rung', () => {
+  it('holds the plat, then adjacent, then the neighborhood, before the community leaves for the city', () => {
     const names = compTierLadder('Tetherow').map((t) => t.name)
-    expect(names.indexOf('adjacent-subdivision-24mo')).toBeLessThan(names.indexOf('community-6mo'))
-    expect(names.indexOf('community-24mo')).toBeLessThan(names.indexOf('neighborhood-24mo'))
-    expect(names.indexOf('neighborhood-24mo')).toBeLessThan(names.indexOf('like-community-24mo'))
+    expect(names.indexOf('adjacent-subdivision-24mo')).toBeLessThan(names.indexOf('neighborhood-6mo'))
+    expect(names.indexOf('neighborhood-24mo')).toBeLessThan(names.indexOf('community-6mo'))
+    expect(names.indexOf('community-24mo')).toBeLessThan(names.indexOf('like-community-24mo'))
     expect(names.indexOf('like-community-24mo')).toBeLessThan(names.indexOf('competing-area-12mo'))
     expect(names.indexOf('competing-area-12mo')).toBeLessThan(names.indexOf('citywide-12mo'))
   })

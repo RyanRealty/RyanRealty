@@ -217,7 +217,7 @@ const JUDGE_SCHEMA: Record<string, unknown> = {
       exclusionRule: {
         type: 'string',
         description:
-          'One or two plain sentences stating every criterion you applied and the threshold for each, in numbers where the criterion is numeric. Example: "Priced on closed sales from $420 to $610 per square foot. Sales above that band were remodeled to a higher finish level per their remarks, and sales built more than 15 years after the subject were excluded as a different construction generation." The same threshold must hold for every candidate.',
+          'One or two plain sentences stating every criterion you applied and the threshold for each, in numbers where the criterion is numeric. Example: "Priced on closed sales from $420 to $610 per square foot. Sales above that band were remodeled to a higher finish level per their remarks." The same threshold must hold for every candidate. Do not state a year-built wall. The picker already applied year built.',
       },
       verdicts: {
         type: 'array',
@@ -287,12 +287,13 @@ const SYSTEM =
   'ceiling has to be at least $631, and then you cannot call $650 a premium tier — you need a different, real ' +
   'reason for the ones above, or you keep them too. And do not strand a kept comp: if one retained sale sits far ' +
   'above the rest of the retained cluster and near the sales you threw out, it belongs with the ones you threw ' +
-  'out. Apply the same discipline to every non-numeric criterion. If you exclude one comp for being 16 years newer ' +
-  'than the subject, say the vintage threshold you used and exclude every candidate past it. ' +
-  'WHAT REVIEWERS CATCH MOST OFTEN, in order: a kept comp a full construction generation newer or older than the ' +
-  'subject; a kept comp in an amenity-bearing planned community or resort when the subject is not, or the reverse; ' +
+  'out. Apply the same discipline to every non-numeric criterion. Do not exclude a sale for living area inside ' +
+  'about 35 percent of the subject, and do not exclude one for year built. The picker already made those cuts, ' +
+  'and it widens closed-sale age and date when the first location search is short of 3. A looser match stays. ' +
+  'Weigh it less. Do not drop it. ' +
+  'WHAT REVIEWERS CATCH MOST OFTEN, in order: a kept comp in an amenity-bearing planned community or resort when the subject is not, or the reverse; ' +
   'a kept comp of a different product type; and an exclusion reason the data does not actually show. Check your ' +
-  'own set against those four before you answer. ' +
+  'own set against those three before you answer. ' +
   'CUSTOM AND NEW CONSTRUCTION: do not exclude a same-generation custom or new-construction peer as too luxury, ' +
   'too expensive, or a premium tier. Year and quality outrank price. A 2022 custom sale is a peer to a 2024 custom ' +
   'subject even when it sold higher. ' +

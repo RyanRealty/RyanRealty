@@ -661,6 +661,8 @@ export async function selectComps(
         ? 'the community supplied the minimum, so no peer community was needed'
         : tier.name.startsWith('subdivision') && !tier.subdivisionIlike
         ? 'the subject has no usable SubdivisionName on its MLS record'
+        : (tier.name.startsWith('citywide-') || tier.name.startsWith('competing-area')) && byKey.size >= MIN_COMPS
+        ? 'the subdivision, the adjacent plats, and the neighborhood already supplied 3 sales, so the search did not fall back to the same zip'
         : tier.samePocket && pocketNeighborNorms.length === 0
         ? 'no nearby mapped pocket cluster sits inside a quarter mile'
         : isListingsGeographyWidenTier(tier) &&

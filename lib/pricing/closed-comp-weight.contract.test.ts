@@ -67,4 +67,47 @@ describe('closed-comp Recommended weighting', () => {
     expect(clamped.recommended).toBeGreaterThanOrEqual(675_000)
     expect(clamped.recommended).toBeLessThanOrEqual(705_000)
   })
+
+  it('same-subdivision sale pulls the recommended price harder than an equal-weight average with a neighborhood sale', () => {
+    const subjectSqft = 2000
+    const monthsSinceClose = 3
+    const same = closedCompWeight({
+      subjectSqft,
+      saleSqft: subjectSqft * 1.2,
+      monthsSinceClose,
+      subjectBeds: 3,
+      saleBeds: 4,
+      locationMatch: 'same-subdivision',
+    })
+    const adjacent = closedCompWeight({
+      subjectSqft,
+      saleSqft: subjectSqft,
+      monthsSinceClose,
+      subjectBeds: 3,
+      saleBeds: 3,
+      locationMatch: 'adjacent-subdivision',
+    })
+    const neighborhood = closedCompWeight({
+      subjectSqft,
+      saleSqft: subjectSqft,
+      monthsSinceClose,
+      subjectBeds: 3,
+      saleBeds: 3,
+      locationMatch: 'neighborhood-or-community',
+    })
+    // Location order holds even when the neighborhood sale is the closer size and bed match.
+    expect(same).toBeGreaterThan(adjacent)
+    expect(adjacent).toBeGreaterThan(neighborhood)
+
+    const samePrice = 640_000
+    const neighborhoodPrice = 520_000
+    const weighted = weightedAdjustedPrice([
+      { adjustedPrice: samePrice, weight: same },
+      { adjustedPrice: neighborhoodPrice, weight: neighborhood },
+    ])
+    const equal = (samePrice + neighborhoodPrice) / 2
+    expect(weighted).not.toBeNull()
+    expect(weighted!).toBeGreaterThan(equal)
+    expect(weighted!).toBeLessThan(samePrice)
+  })
 })

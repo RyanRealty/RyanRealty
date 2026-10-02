@@ -170,11 +170,22 @@ export function roundPrintedRecommendation(
   if (low != null && next < low) next = low
   if (high != null && next > high) next = high
   const ask = bounds.ask
-  if (ask != null && Number.isFinite(ask) && ask > 0 && Math.abs(rec - ask) <= step && next > ask) {
-    const capped = Math.floor(ask / step) * step
-    const fits = (n: number) => n > 0 && (low == null || n >= low) && (high == null || n <= high)
-    if (fits(capped)) next = capped
-    else if (low != null && fits(low) && low <= ask) next = low
+  if (ask != null && Number.isFinite(ask) && ask > 0) {
+    // Already under the ask. A band clamp must not lift that pin back onto
+    // or above the price that failed. $773,900 stays $773,900.
+    if (rec < ask && next >= ask) {
+      const capped = Math.floor((ask - 1) / step) * step
+      const fits = (n: number) => n > 0 && n < ask && (low == null || n >= low) && (high == null || n <= high)
+      if (fits(capped)) next = capped
+      else next = rec
+    } else if (Math.abs(rec - ask) <= step && next > ask) {
+      // Within one thousand of the ask, nearest-thousand must not step above it.
+      // $499,600 against $499,000 prints $499,000, not $500,000.
+      const onAsk = Math.floor(ask / step) * step
+      const fitsOnAsk = (n: number) => n > 0 && (low == null || n >= low) && (high == null || n <= high)
+      if (fitsOnAsk(onAsk) && onAsk <= ask) next = onAsk
+      else if (low != null && fitsOnAsk(low) && low <= ask) next = low
+    }
   }
   return next
 }
@@ -1078,11 +1089,17 @@ export function adjustCmaCompAlongMarket(opts: {
   // Matt 2026-09-17: storyAdjustment is permanently 0 (kill story-adj entirely).
   const storyAdj = storyAdjustment(opts.subjectStory, opts.saleStory, timeAdjustedPrice)
   const adjustedPrice = timeAdjustedPrice + sizeAdjustment + storyAdj
-  // Matt 2026-09-17: Recommended weighted toward more recent/similar closeds.
+  // Closer match weighs more. Location first, then size and bedrooms, then recency.
   const weight = closedCompWeight({
     subjectSqft,
     saleSqft: sale.sqft,
     monthsSinceClose,
+    subjectBeds: opts.subject.beds,
+    saleBeds: sale.beds,
+    subjectSubdivision: opts.subject.subdivision,
+    saleSubdivision: sale.subdivision,
+    selectionTier: sale.selectionTier,
+    ownPlat: sale.ownPlat,
   })
   const proximity =
     (sale.proximity ?? '').trim() ||

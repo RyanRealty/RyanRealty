@@ -22,7 +22,7 @@ import type { GroundResult } from '@/lib/cma/judge-ground'
 
 /** Bump when the vote, the grounding rules, or the prompt contract change.
  *  The version is part of the checksum, so old stored decisions miss. */
-export const JUDGE_VERSION = 'judge-stability-1'
+export const JUDGE_VERSION = 'judge-stability-2'
 export const JUDGE_RUNS = 3
 /** Fixed. xAI chat `seed` is best-effort, not a guarantee. */
 export const JUDGE_SEED = 20260929

@@ -213,6 +213,41 @@ describe('exclusion grounding', () => {
     expect(result.rule).toBe('price-outlier')
   })
 
+  it('does not drop a sale inside the picker living-area band', () => {
+    // 30% living-area gap: inside the picker's about-35% band, past the old 20% wall.
+    const sale = comp({ listingKey: 'band', sqft: Math.round(1840 * 1.3), closePrice: 500000 })
+    const result = groundVerdict(
+      sub,
+      sale,
+      verdict({
+        listingKey: 'band',
+        tier: 'exclude',
+        basis: 'size',
+        reason: `${sale.sqft} sqft versus the subject's 1840 sqft.`,
+      }),
+      [sale],
+    )
+    expect(result.verdict.tier).not.toBe('exclude')
+    expect(result.grounded).toBe(false)
+  })
+
+  it('does not drop a picker-kept sale on a 15-year vintage wall', () => {
+    const sale = comp({ listingKey: 'old', yearBuilt: 1980 })
+    const result = groundVerdict(
+      subject({ yearBuilt: 2001 }),
+      sale,
+      verdict({
+        listingKey: 'old',
+        tier: 'exclude',
+        basis: 'vintage',
+        reason: 'Built in 1980, twenty-one years older than the subject built in 2001.',
+      }),
+      [sale],
+    )
+    expect(result.verdict.tier).not.toBe('exclude')
+    expect(result.rule).toBe('vintage')
+  })
+
   it('keeps a real large size gap, including one stated with a round floor', () => {
     const sale = comp({ listingKey: 'half', sqft: 1200, closePrice: 400000 })
     const result = groundVerdict(

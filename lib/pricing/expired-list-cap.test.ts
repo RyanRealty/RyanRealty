@@ -45,8 +45,9 @@ describe('capListBandToFailedAsk', () => {
     )
     expect(out.capped).toBe(true)
     expect(out.conservative).toBe(700_000)
-    expect(out.recommended).toBe(749_900)
-    expect(out.highEnd).toBe(749_900)
+    expect(out.recommended).toBe(748_900)
+    expect(out.recommended).toBeLessThan(749_900)
+    expect(out.highEnd).toBe(748_900)
     expect(out.conservative).toBeLessThanOrEqual(out.recommended)
     expect(out.recommended).toBeLessThanOrEqual(out.highEnd)
   })
@@ -57,11 +58,12 @@ describe('capListBandToFailedAsk', () => {
       750_000,
     )
     expect(out).toMatchObject({
-      conservative: 750_000,
-      recommended: 750_000,
-      highEnd: 750_000,
+      conservative: 749_000,
+      recommended: 749_000,
+      highEnd: 749_000,
       capped: true,
     })
+    expect(out.recommended).toBeLessThan(750_000)
   })
 
   it('leaves a live or missing cap alone', () => {
