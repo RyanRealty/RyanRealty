@@ -35,23 +35,57 @@
  *      caller's deadline no new batch starts, so a run cut off by its host
  *      leaves at most one batch without its rebuilds.
  *
- * A listing the MLS no longer serves is reported, never changed, here. Matt
- * ruled 2026-10-01 that it follows the removed-sales rule (whole row saved,
- * deleted on the third daily sighting, texted); that step is not built yet.
- * The daily cron is /api/cron/on-market-reconcile (Matt 2026-10-01, "Fix now
- * and check daily").
+ * A listing we hold for sale or under contract that the MLS no longer serves at
+ * all follows the removed-sales rule (Matt 2026-10-01, "Treat like removed
+ * sales", "Leave them out now"), in two steps around the repair:
+ *
+ *   - Before it (recordAndRemoveAbsentOnMarket), on this run's fresh answer:
+ *     each daily sighting is recorded in market_listing_absent_from_mls and
+ *     left out of the on-market episodes at once (episode builder
+ *     20261002010534); on the third sighting, 36 hours or more after the first,
+ *     the listing is deleted with its whole row saved first and the owner
+ *     texted (delete_mls_removed_sales with the on-market statuses,
+ *     20261002010548). A Spark answer that looks like an outage records nothing.
+ *   - After it (releaseServedAgainOnMarket): a recorded listing the MLS serves
+ *     again is released and its episodes rebuilt from the repaired row.
+ *
+ * On 2026-10-01 the check found 21, 13 of them Central Oregon single-family
+ * homes listed March to July 2026. The daily cron is
+ * /api/cron/on-market-reconcile (Matt 2026-10-01, "Fix now and check daily").
  */
 import { type DriftReason } from '@/lib/sync/listingDrift'
 import { restoreServedAgain } from '@/lib/sync/mlsRemovedRestore'
 import {
+  absentRefusal,
+  DAILY_ALERT_COOLDOWN_MINUTES,
+  MLS_REMOVED_DAILY_BUDGET,
   driftAgainstOurs,
   fetchSparkLiteByKeys,
   fetchSparkLiteWhere,
+  lookUpByKeys,
+  absentRecordLimit,
+  removeDueAbsent,
   repairListingsFromSpark,
+  tellMlsRemovals,
   type ClosingDrift,
+  type RemovalStep,
   type SparkLite,
 } from '@/lib/sync/closingsReconcile'
-import { getOnMarketListingRows, type ReconcileListingRow } from '@/lib/data/sync/closingsReconcile'
+import {
+  clearAbsentFromMls,
+  getAbsentRecords,
+  getListingsForReconcile,
+  getOnMarketListingRows,
+  getPendingAbsentReleases,
+  recordAbsentFromMls,
+  recordRepairLog,
+  RELEASED_SOURCE,
+  setRepairLogOutcome,
+  type ReconcileListingRow,
+} from '@/lib/data/sync/closingsReconcile'
+import { refreshMarketFactSpansForKeys } from '@/lib/data/market-report/compute'
+import { queueBrokerHealthAlert } from '@/lib/crm/broker-alerts'
+import { absentStepFailedText, type AbsentStep } from '@/lib/sync/mlsRemovedText'
 import { getDeltaSyncCursor } from '@/lib/data/sync/syncWrites'
 import { LIVE_INVENTORY_STATUSES } from '@/lib/listing-status-public'
 
@@ -73,7 +107,7 @@ export type OnMarketReconcileResult = {
   /** Drifted listings the MLS changed recently enough that the delta sync takes them. */
   leftToDeltaSync: number
   /** Listings we hold on the market that Spark no longer serves at all. */
-  notInSpark: { key: string; status: string }[]
+  notInSpark: { key: string; status: string; listNumber: string | null }[]
   /**
    * The cutoff, epoch ms: the delta-sync cursor less DELTA_SYNC_MARGIN_MS. A
    * listing the MLS changed at or after it is the delta sync's, never repaired here.
@@ -87,6 +121,24 @@ export type OnMarketReconcileResult = {
   leftAtRepair: string[]
   /** The deadline passed with drift still to repair: it is drift on the next run. */
   stoppedForTime: boolean
+  /** The removed-sales rule for listings the MLS no longer serves; null on a run that does not repair. */
+  absent: OnMarketAbsentResult | null
+}
+
+/** What the removed-sales rule did with the listings the MLS no longer serves. */
+export type OnMarketAbsentResult = RemovalStep & {
+  /** Sighted and recorded this run (left out of the on-market episodes). */
+  recorded: number
+  /** Recorded earlier, served by the MLS again, and released (episodes rebuilt here or on a later run). */
+  released: number
+  /** Released listings whose episodes this run rebuilt (this run's and any earlier one left pending). */
+  rebuilt: number
+  /** Why nothing was recorded: a Spark answer that looks like an outage. */
+  refused: string | null
+  /** A step other than the deletion that failed, as "<step>: <error>"; each is texted on its own. */
+  stepFailures: string[]
+  /** Removals and restores texted to the owner this run. */
+  told: number
 }
 
 /** Every listing Spark holds at an on-market or under-contract status, all property types. */
@@ -130,35 +182,190 @@ export function planOnMarketRepair(
   return { repair, leftToDeltaSync }
 }
 
-type Found = Omit<OnMarketReconcileResult, 'repaired' | 'repairLogged' | 'repairFailed' | 'repairedKeys' | 'leftAtRepair' | 'stoppedForTime'>
+type Found = Omit<
+  OnMarketReconcileResult,
+  'repaired' | 'repairLogged' | 'repairFailed' | 'repairedKeys' | 'leftAtRepair' | 'stoppedForTime' | 'absent'
+> & {
+  /** Every row we hold at an on-market status, by key, read once (kept off the result: a Map prints as {}). */
+  held: ReadonlyMap<string, ReconcileListingRow>
+  /** Every drifted key, the delta sync's included: a release waits until its repair lands. */
+  driftKeys: ReadonlySet<string>
+}
 
 /** Find every on-market listing, ours or the MLS's, where the two disagree. */
 export async function findOnMarketDrift(now = Date.now()): Promise<Found> {
   const [spark, oursRows, cursorAt] = await Promise.all([fetchSparkOnMarket(), getOnMarketListingRows(), getDeltaSyncCursor()])
-  const ours = oursRows.map((r) => ({ key: r.ListingKey!, status: r.StandardStatus ?? '' }))
-  const lookups = keysToLookUp(ours, spark)
-  const served = lookups.length > 0 ? await fetchSparkLiteByKeys(lookups) : new Map<string, SparkLite>()
-  const statusOf = new Map(ours.map((o) => [o.key, o.status]))
-  const notInSpark = lookups
-    .filter((k) => !served.has(k))
-    .map((k) => ({ key: k, status: statusOf.get(k) ?? '' }))
+  const held = new Map<string, ReconcileListingRow>(oursRows.map((r) => [r.ListingKey!, r]))
+  const lookups = keysToLookUp([...held.keys()].map((key) => ({ key })), spark)
+  // A key the lookup misses is asked again on its own before it counts as not served.
+  const { served, notServed } = await lookUpByKeys(lookups, absentRecordLimit(held.size))
+  const notInSpark = notServed
+    .map((k) => ({ key: k, status: held.get(k)?.StandardStatus ?? '', listNumber: held.get(k)?.ListNumber ?? null }))
     .sort((a, b) => a.key.localeCompare(b.key))
 
   const candidates = new Map<string, SparkLite>([...spark, ...served])
-  const held = new Map<string, ReconcileListingRow>(oursRows.map((r) => [r.ListingKey!, r]))
   const drift = await driftAgainstOurs(candidates, held)
   // No cursor stored yet: the delta sync's own default window is the newest half
   // hour. A failed read throws above, never lands here.
   const cursor = cursorAt ? Date.parse(cursorAt) : now
   const deltaFrom = (Number.isFinite(cursor) ? cursor : now) - DELTA_SYNC_MARGIN_MS
   const { repair, leftToDeltaSync } = planOnMarketRepair(drift, candidates, deltaFrom)
-  return { sparkOnMarket: spark.size, ourOnMarket: ours.length, drift: repair, leftToDeltaSync, notInSpark, deltaFrom }
+  return {
+    sparkOnMarket: spark.size,
+    ourOnMarket: held.size,
+    drift: repair,
+    leftToDeltaSync,
+    notInSpark,
+    deltaFrom,
+    held,
+    driftKeys: new Set(drift.map((d) => d.key)),
+  }
+}
+
+const ON_MARKET_NOUNS = { spark: 'on-market listings', ours: 'on-market listings' }
+
+/** Record a step's failure on the result and text it, once a day per step. */
+async function stepFailed(out: OnMarketAbsentResult, step: AbsentStep, err: unknown): Promise<void> {
+  const message = err instanceof Error ? err.message : String(err)
+  console.error(`[onMarketReconcile] the ${step} step for listings the MLS removed failed`, err)
+  out.stepFailures.push(`${step}: ${message}`)
+  await queueBrokerHealthAlert({
+    key: `mls-removed-listings-${step}-failed`,
+    body: absentStepFailedText(step, message),
+    cooldownMinutes: DAILY_ALERT_COOLDOWN_MINUTES,
+  })
+}
+
+/**
+ * The removed-sales rule's first step for listings we hold for sale or under
+ * contract that the MLS no longer serves (Matt 2026-10-01, "Treat like removed
+ * sales", "Leave them out now"), the same rule as for closed sales
+ * (syncAbsentFromMls in ./closingsReconcile.ts) with the on-market class:
+ *
+ *   1. Record each daily sighting (no close date), which leaves the listing out
+ *      of the on-market episodes; its episodes are rebuilt here, since its row
+ *      did not change and nothing else would.
+ *   2. Delete the ones on their third sighting, within the on-market class and
+ *      the same daily budget as closed sales (removeDueAbsent): more due at
+ *      once deletes nothing and holds them for a person. Then text the owner.
+ *
+ * A Spark answer that looks like an outage records nothing (absentRefusal). A
+ * failed recording deletes nothing that day; a failed rebuild does not stop the
+ * deletion. Never throws: each failure is texted and the next run tries again.
+ */
+export async function recordAndRemoveAbsentOnMarket(
+  found: Pick<Found, 'notInSpark' | 'sparkOnMarket' | 'ourOnMarket'>,
+): Promise<OnMarketAbsentResult> {
+  const out: OnMarketAbsentResult = {
+    recorded: 0,
+    released: 0,
+    rebuilt: 0,
+    refused: absentRefusal(found.notInSpark.length, found.sparkOnMarket, found.ourOnMarket, ON_MARKET_NOUNS),
+    removed: [],
+    removalHeld: null,
+    held: 0,
+    waiting: 0,
+    removalFailed: null,
+    stepFailures: [],
+    told: 0,
+  }
+  if (out.refused) {
+    await queueBrokerHealthAlert({
+      key: 'on-market-absent-refused',
+      body: `The listings check did not record missing listings today: ${out.refused.slice(0, 200)}. Spark may be down or answering empty.`,
+      cooldownMinutes: DAILY_ALERT_COOLDOWN_MINUTES,
+    })
+  }
+  const toRecord = out.refused ? [] : found.notInSpark
+  try {
+    out.recorded = await recordAbsentFromMls(toRecord.map((x) => ({ listingKey: x.key, listNumber: x.listNumber, closeDate: null })))
+  } catch (err) {
+    // The deletion counts on today's sighting: without it, nothing is deleted today.
+    await stepFailed(out, 'record', err)
+    return out
+  }
+  const keys = toRecord.map((x) => x.key)
+  if (keys.length > 0) {
+    try {
+      await refreshMarketFactSpansForKeys(keys)
+    } catch (err) {
+      await stepFailed(out, 'rebuild', err)
+    }
+  }
+  Object.assign(out, await removeDueAbsent(keys, 'listing', { maxDelete: MLS_REMOVED_DAILY_BUDGET, statuses: LIVE_INVENTORY_STATUSES }))
+  out.told = await tellMlsRemovals()
+  return out
+}
+
+/**
+ * The rule's last step, after the repair: release a recorded listing the MLS
+ * serves again, and rebuild its episodes from the repaired row.
+ *
+ * Released: a listing we held on the market at the start of the run that this
+ * run did not find missing (whatever its record's class), unless it drifted and
+ * its repair has not landed (`unsettled`): that one waits a run, so its
+ * episodes are never rebuilt from a row the MLS has moved on from. And an
+ * on-market record whose row was off the market already, asked of Spark by
+ * key; a deleted listing has no row and is never asked again. A release logs a
+ * pending marker (source absent-from-mls-release) before its record goes, and
+ * the marker is closed only when the episodes are rebuilt, so a rebuild cut
+ * short is retried on the next run. Never throws.
+ */
+export async function releaseServedAgainOnMarket(
+  found: Pick<Found, 'notInSpark' | 'held'>,
+  unsettled: ReadonlySet<string>,
+  out: OnMarketAbsentResult,
+): Promise<void> {
+  const missing = new Set(found.notInSpark.map((x) => x.key))
+  try {
+    const records = (await getAbsentRecords()).filter((r) => !missing.has(r.listingKey))
+    const servedOnMarket = records
+      .filter((r) => found.held.has(r.listingKey) && !unsettled.has(r.listingKey))
+      .map((r) => r.listingKey)
+    const offMarket = records.filter((r) => r.closeDate == null && !found.held.has(r.listingKey)).map((r) => r.listingKey)
+    const rows = offMarket.length > 0 ? await getListingsForReconcile(offMarket) : new Map<string, ReconcileListingRow>()
+    const ask = offMarket.filter((k) => rows.has(k))
+    const servedOff = ask.length > 0 ? [...(await fetchSparkLiteByKeys(ask)).keys()] : []
+    const back = [...servedOnMarket, ...servedOff]
+    if (back.length > 0) {
+      await recordRepairLog(
+        back.map((k) => ({
+          listingKey: k,
+          listNumber: found.held.get(k)?.ListNumber ?? rows.get(k)?.ListNumber ?? null,
+          reasons: ['served_again'],
+          ours: null,
+          mls: { servedAgain: true },
+          windowFrom: null,
+          windowTo: null,
+          note: 'The MLS serves this listing again: its absent-from-MLS record is released and its on-market episodes rebuilt. Pending until they are.',
+        })),
+        RELEASED_SOURCE,
+      )
+      out.released = await clearAbsentFromMls(back)
+    }
+  } catch (err) {
+    await stepFailed(out, 'release', err)
+  }
+  try {
+    const pending = await getPendingAbsentReleases()
+    if (pending.length > 0) {
+      const r = await refreshMarketFactSpansForKeys(pending.map((p) => p.listingKey))
+      const missed = new Set(r.missed)
+      const done = pending.filter((p) => !missed.has(p.listingKey))
+      await setRepairLogOutcome(done.map((p) => p.id), 'repaired')
+      out.rebuilt = done.length
+    }
+  } catch (err) {
+    await stepFailed(out, 'rebuild', err)
+  }
 }
 
 /**
  * Find and, with `repair`, re-pull up to `maxRepairs` drifted listings. No
  * repair batch starts at or after `deadline` (epoch ms); what is left is drift
- * on the next run.
+ * on the next run. A repairing run applies the removed-sales rule to the
+ * listings the MLS no longer serves whatever `maxRepairs`: it records and
+ * deletes before the repair, inside the time budget, and releases after it.
  */
 export async function reconcileOnMarket(opts: {
   repair: boolean
@@ -170,29 +377,47 @@ export async function reconcileOnMarket(opts: {
     throw new Error(`[onMarketReconcile] maxRepairs must be a whole number, got ${opts.maxRepairs}`)
   }
   const found = await findOnMarketDrift()
-  const none = { repaired: 0, repairLogged: 0, repairFailed: [], repairedKeys: [], leftAtRepair: [], stoppedForTime: false }
-  if (!opts.repair || found.drift.length === 0 || opts.maxRepairs === 0) return { ...found, ...none }
-  const toRepair = found.drift.slice(0, opts.maxRepairs)
-  // A key Spark serves that we lack may be a sale we deleted as removed and the
-  // MLS now serves again: put the saved row back first (every writer does).
-  const missing = toRepair.filter((d) => d.reasons.includes('missing')).map((d) => d.key)
-  if (missing.length > 0) await restoreServedAgain(missing)
-  const r = await repairListingsFromSpark(
-    toRepair.map((d) => d.key),
-    {
-      window: { from: opts.today, to: opts.today },
-      reasons: new Map<string, DriftReason[]>(toRepair.map((d) => [d.key, d.reasons])),
-      source: 'on-market-reconcile',
-    },
-    { leaveModifiedFrom: found.deltaFrom, deadline: opts.deadline },
-  )
-  return {
-    ...found,
-    repaired: r.repaired,
-    repairLogged: r.repairLogged,
-    repairFailed: r.failed,
-    repairedKeys: r.repairedKeys,
-    leftAtRepair: r.leftToDeltaSync,
-    stoppedForTime: r.unreached.length > 0,
+  // The rows and drift keys stay internal: the result is printed as JSON.
+  const result: OnMarketReconcileResult = {
+    sparkOnMarket: found.sparkOnMarket,
+    ourOnMarket: found.ourOnMarket,
+    drift: found.drift,
+    leftToDeltaSync: found.leftToDeltaSync,
+    notInSpark: found.notInSpark,
+    deltaFrom: found.deltaFrom,
+    repaired: 0,
+    repairLogged: 0,
+    repairFailed: [],
+    repairedKeys: [],
+    leftAtRepair: [],
+    stoppedForTime: false,
+    absent: null,
   }
+  if (!opts.repair) return result
+  result.absent = await recordAndRemoveAbsentOnMarket(found)
+  const toRepair = found.drift.slice(0, opts.maxRepairs)
+  if (toRepair.length > 0) {
+    // A key Spark serves that we lack may be a sale we deleted as removed and the
+    // MLS now serves again: put the saved row back first (every writer does).
+    const missing = toRepair.filter((d) => d.reasons.includes('missing')).map((d) => d.key)
+    if (missing.length > 0) await restoreServedAgain(missing)
+    const r = await repairListingsFromSpark(
+      toRepair.map((d) => d.key),
+      {
+        window: { from: opts.today, to: opts.today },
+        reasons: new Map<string, DriftReason[]>(toRepair.map((d) => [d.key, d.reasons])),
+        source: 'on-market-reconcile',
+      },
+      { leaveModifiedFrom: found.deltaFrom, deadline: opts.deadline },
+    )
+    result.repaired = r.repaired
+    result.repairLogged = r.repairLogged
+    result.repairFailed = r.failed
+    result.repairedKeys = r.repairedKeys
+    result.leftAtRepair = r.leftToDeltaSync
+    result.stoppedForTime = r.unreached.length > 0
+  }
+  const repaired = new Set(result.repairedKeys)
+  await releaseServedAgainOnMarket(found, new Set([...found.driftKeys].filter((k) => !repaired.has(k))), result.absent)
+  return result
 }

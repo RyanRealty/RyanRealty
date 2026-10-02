@@ -432,7 +432,12 @@ was shown the causes below and ruled:
    `/api/cron/on-market-reconcile`.
 4. **A for-sale listing the MLS no longer serves follows the removed-sales rule** ("Treat like
    removed sales"): whole row saved, deleted on the third daily sighting, Matt texted each one.
-   21 on 2026-10-01 (19 Active, 2 Coming Soon, last changed March to July 2026).
+   21 on 2026-10-01 (19 Active, 2 Coming Soon, last changed in the MLS October 2025 to July 2026;
+   13 are Central Oregon single-family homes listed March to July 2026). Asked how the republish should treat them, he ruled **"Leave them out
+   now"**: a listing the daily check records as no longer served gets no on-market episodes from
+   that day (builder `20261002010534`), as a removed sale already left the sale facts, and is
+   deleted on the third sighting (`20261002010548`, the deletion by status class). First recorded
+   2026-10-02 01:13Z.
 5. **Every edition is rebuilt and republished from the corrected data** ("Republish all 248").
    Homes for sale on a past day count `Active` only (§2.2): an Active listing with a Contingency
    (this MLS's Active Under Contract) is under contract, not for sale; 22 of the 1,258 homes the
@@ -443,3 +448,8 @@ was shown the causes below and ruled:
    field covers 90% of the period's sales (`CONCESSION_COVERAGE_MIN`): before mid-2023 the field
    was filled almost only when a concession was given, so the printed share read 100% (261 notes
    in 117 PDFs), and Spark serves it on 1 of August 2016's 461 sales today.
+6. **Full MLS histories cover the last 13 months only** ("Keep the 13 months", asked 2026-10-01
+   whether to pull the other 175,505 report-area listings, about 10 hours of MLS calls): the
+   9,201 listings on the market since 2025-09-01 have whole histories; an older listing keeps the
+   newest 10 events the old fetch kept, and its episodes fall back to the listing row's on and
+   off dates where those 10 hold no start.

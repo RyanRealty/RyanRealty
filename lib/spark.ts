@@ -135,6 +135,23 @@ export type SparkListingsResponse = {
     /** Present when the request paged by `_skiptoken`: the last key this page returned. */
     SkipToken?: string
     Errors?: unknown[]
+    /** With Success false: Spark can answer 200 so (e.g. Code 1500, permission denied). */
+    Code?: number
+    Message?: string
+  }
+}
+
+/**
+ * Throw when Spark answered 200 with D.Success false (e.g. Code 1500): its empty
+ * Results are an error, never "no listings". A reader that stops at an empty
+ * page, or that counts a key it did not get back as removed from the MLS, must
+ * not read such an answer as the end of the data.
+ */
+export function assertSparkSuccess(res: SparkListingsResponse, where: string): void {
+  const d = res.D
+  if (d && d.Success === false) {
+    const code = d.Code != null ? ` (Code ${d.Code})` : ''
+    throw new Error(`${where} Spark answered Success false${d.Message ? `: ${d.Message}` : ''}${code}`)
   }
 }
 
@@ -431,6 +448,7 @@ export async function fetchSparkListingsWhere(
   let skiptoken = ''
   for (let request = 1; ; request++) {
     const res = await fetchSparkListingsPage(accessToken, { limit: opts.limit ?? 1000, filter: opts.filter, select: opts.select, skiptoken })
+    assertSparkSuccess(res, '[fetchSparkListingsWhere]')
     const results = res.D?.Results ?? []
     if (results.length === 0) break
     if (request > opts.maxPages) throw new Error(opts.tooMany)

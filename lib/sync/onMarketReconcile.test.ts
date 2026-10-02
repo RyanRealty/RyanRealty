@@ -11,7 +11,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
  */
 
 type Fields = Record<string, unknown>
-const spark = { onMarket: [] as Fields[], byKey: new Map<string, Fields>(), filters: [] as string[] }
+const spark = {
+  onMarket: [] as Fields[],
+  byKey: new Map<string, Fields>(),
+  filters: [] as string[],
+  /** Keys a lookup of several keys drops, as a batch answered wrongly would; asked alone they come back. */
+  droppedInBatch: new Set<string>(),
+  /** Key lookups answered 200 with Success false (Spark's Code 1500). */
+  answerSuccessFalse: false,
+}
 const store = {
   onMarket: [] as { key: string; status: string }[],
   rows: new Map<string, Record<string, unknown>>(),
@@ -23,11 +31,27 @@ const store = {
   repairOpts: [] as { leaveModifiedFrom?: number; deadline?: number }[],
   freshAtRepair: new Set<string>(),
   unreachedAtRepair: new Set<string>(),
+  absent: new Map<string, string | null>(),
+  recorded: [] as { listingKey: string; listNumber: string | null; closeDate: string | null }[],
+  releaseLogs: [] as { listingKey: string; source: string }[],
+  pendingReleases: [] as { id: number; listingKey: string }[],
+  closedOutcomes: [] as number[][],
+  cleared: [] as string[],
+  spansFor: [] as string[][],
+  deleteCalls: [] as { keys: string[]; maxDelete: number; statuses?: readonly string[] }[],
+  deleteResult: { removed: [] as unknown[], refused: null as 'budget' | 'hold' | null, due: 0, held: 0, waiting: 0, budget: 45 as number | null },
+  alerts: [] as { key: string; body: string }[],
+  told: 0,
+  recordFails: false,
+  spansFail: false,
+  /** The order the steps ran in: repair, record, release. */
+  events: [] as string[],
 }
 
 vi.mock('@/lib/spark', async () => {
   const { allPages } = await import('@/test/spark-skip-token-fake')
   return {
+    assertSparkSuccess: (await vi.importActual<typeof import('@/lib/spark')>('@/lib/spark')).assertSparkSuccess,
     fetchSparkListingsWhere: vi.fn(async (_token: string, opts: { filter: string }) => {
       spark.filters.push(opts.filter)
       return opts.filter.startsWith('StandardStatus Eq ') ? allPages(spark.onMarket) : []
@@ -35,8 +59,11 @@ vi.mock('@/lib/spark', async () => {
     fetchSparkListingsPage: vi.fn(async (_token: string, opts: { filter?: string }) => {
       const filter = opts.filter ?? ''
       spark.filters.push(filter)
+      if (spark.answerSuccessFalse) return { D: { Success: false, Code: 1500, Message: 'permission denied' } }
       const keys = [...filter.matchAll(/ListingKey Eq '([^']+)'/g)].map((m) => m[1]!)
-      const hits = keys.flatMap((k) => (spark.byKey.has(k) ? [{ StandardFields: spark.byKey.get(k)! }] : []))
+      const hits = keys.flatMap((k) =>
+        spark.byKey.has(k) && !(keys.length > 1 && spark.droppedInBatch.has(k)) ? [{ StandardFields: spark.byKey.get(k)! }] : [],
+      )
       return { D: { Results: hits, Pagination: { TotalPages: 1 } } }
     }),
   }
@@ -45,6 +72,41 @@ vi.mock('@/lib/data/sync/closingsReconcile', () => ({
   getOnMarketListingRows: vi.fn(async () =>
     store.onMarket.map((o) => ({ ...(store.rows.get(o.key) ?? {}), ListingKey: o.key, StandardStatus: o.status })),
   ),
+  recordAbsentFromMls: vi.fn(async (rows: typeof store.recorded) => {
+    if (store.recordFails) throw new Error('[recordAbsentFromMls] connection reset')
+    store.events.push('record')
+    store.recorded.push(...rows)
+    for (const r of rows) store.absent.set(r.listingKey, r.closeDate)
+    return rows.length
+  }),
+  getAbsentRecords: vi.fn(async () => [...store.absent].map(([listingKey, closeDate]) => ({ listingKey, closeDate }))),
+  RELEASED_SOURCE: 'absent-from-mls-release',
+  recordRepairLog: vi.fn(async (entries: { listingKey: string }[], source: string) => {
+    const ids = new Map<string, number>()
+    for (const e of entries) {
+      store.releaseLogs.push({ listingKey: e.listingKey, source })
+      const id = 9000 + store.releaseLogs.length
+      store.pendingReleases.push({ id, listingKey: e.listingKey })
+      ids.set(e.listingKey, id)
+    }
+    return ids
+  }),
+  getPendingAbsentReleases: vi.fn(async () => [...store.pendingReleases]),
+  setRepairLogOutcome: vi.fn(async (ids: number[]) => {
+    store.closedOutcomes.push(ids)
+    store.pendingReleases = store.pendingReleases.filter((p) => !ids.includes(p.id))
+    return ids.length
+  }),
+  clearAbsentFromMls: vi.fn(async (keys: string[]) => {
+    store.events.push('release')
+    store.cleared.push(...keys)
+    for (const k of keys) store.absent.delete(k)
+    return keys.length
+  }),
+  deleteMlsRemovedSales: vi.fn(async (keys: string[], opts: { maxDelete: number; statuses?: readonly string[] }) => {
+    store.deleteCalls.push({ keys, maxDelete: opts.maxDelete, statuses: opts.statuses })
+    return store.deleteResult
+  }),
   getListingsForReconcile: vi.fn(async (keys: string[]) => {
     const out = new Map<string, Record<string, unknown>>()
     for (const k of keys) if (store.rows.has(k)) out.set(k, store.rows.get(k)!)
@@ -70,6 +132,7 @@ vi.mock('@/lib/sync/closingsReconcile', async (importOriginal) => {
     ...real,
     repairListingsFromSpark: vi.fn(
       async (keys: string[], log: { source?: string; reasons: Map<string, string[]> }, opts: { leaveModifiedFrom?: number; deadline?: number } = {}) => {
+        store.events.push('repair')
         store.repairCalls.push({ keys, source: log.source, reasons: [...log.reasons.entries()] })
         store.repairOpts.push(opts)
         const left = keys.filter((k) => store.freshAtRepair.has(k))
@@ -81,11 +144,22 @@ vi.mock('@/lib/sync/closingsReconcile', async (importOriginal) => {
         }
       },
     ),
+    tellMlsRemovals: vi.fn(async () => store.told),
   }
 })
-// The real closings module imports these; this file never reaches them.
-vi.mock('@/lib/crm/broker-alerts', () => ({ queueBrokerHealthAlert: vi.fn() }))
-vi.mock('@/lib/data/market-report/compute', () => ({ refreshMarketFactSpansForKeys: vi.fn() }))
+vi.mock('@/lib/crm/broker-alerts', () => ({
+  queueBrokerHealthAlert: vi.fn(async (a: { key: string; body: string }) => {
+    store.alerts.push({ key: a.key, body: a.body })
+    return true
+  }),
+}))
+vi.mock('@/lib/data/market-report/compute', () => ({
+  refreshMarketFactSpansForKeys: vi.fn(async (keys: string[]) => {
+    if (store.spansFail) throw new Error('[refreshMarketFactSpansForKeys k] statement timeout')
+    store.spansFor.push(keys)
+    return { rebuilt: keys.length, missed: [] }
+  }),
+}))
 vi.mock('@/lib/sync/fetchListingHistory', () => ({ fetchAndInsertHistoryCore: vi.fn() }))
 vi.mock('@/lib/sync/deltaSync', () => ({ DELTA_SYNC: { EXPAND: '', UPSERT_CHUNK: 50 }, resolveRunMortgageRate: vi.fn(), resultToMappedRow: vi.fn() }))
 
@@ -116,6 +190,22 @@ beforeEach(() => {
   store.repairOpts = []
   store.freshAtRepair = new Set()
   store.unreachedAtRepair = new Set()
+  store.absent = new Map()
+  store.recorded = []
+  store.releaseLogs = []
+  store.pendingReleases = []
+  store.closedOutcomes = []
+  store.cleared = []
+  store.spansFor = []
+  store.deleteCalls = []
+  store.deleteResult = { removed: [], refused: null, due: 0, held: 0, waiting: 0, budget: 45 }
+  store.alerts = []
+  store.told = 0
+  store.recordFails = false
+  store.spansFail = false
+  store.events = []
+  spark.droppedInBatch = new Set()
+  spark.answerSuccessFalse = false
   process.env.SPARK_API_KEY = 'test-token'
 })
 
@@ -155,7 +245,7 @@ describe('findOnMarketDrift', () => {
     store.onMarket = [{ key: 'gone', status: COMING_SOON_STATUS }]
     store.rows.set('gone', ours('gone', COMING_SOON_STATUS))
     const r = await findOnMarketDrift()
-    expect(r.notInSpark).toEqual([{ key: 'gone', status: COMING_SOON_STATUS }])
+    expect(r.notInSpark).toEqual([{ key: 'gone', status: COMING_SOON_STATUS, listNumber: 'n-gone' }])
     expect(r.drift).toEqual([])
   })
 
@@ -274,5 +364,189 @@ describe('reconcileOnMarket hands the repair its cutoff and deadline', () => {
     expect(r.leftAtRepair).toEqual(['e001'])
     expect(r.repairedKeys).toEqual(['e000'])
     expect(r.stoppedForTime).toBe(true)
+  })
+})
+
+describe('listings the MLS no longer serves follow the removed-sales rule (Matt 2026-10-01)', () => {
+  it('records each one with no close date, leaves it out of the episodes at once, and deletes the due ones within the on-market class', async () => {
+    spark.onMarket = [mls('kept', 'Active')]
+    store.onMarket = [{ key: 'gone', status: 'Active' }, { key: 'kept', status: 'Active' }]
+    store.rows.set('gone', ours('gone', 'Active'))
+    store.rows.set('kept', ours('kept', 'Active'))
+    const r = await reconcileOnMarket({ repair: true, maxRepairs: 400, today: '2026-10-02' })
+    expect(store.recorded).toEqual([{ listingKey: 'gone', listNumber: 'n-gone', closeDate: null }])
+    expect(store.spansFor).toEqual([['gone']])
+    expect(store.deleteCalls).toEqual([{ keys: ['gone'], maxDelete: 10, statuses: LIVE_INVENTORY_STATUSES }])
+    expect(r.absent).toMatchObject({ recorded: 1, released: 0, refused: null, removalFailed: null })
+  })
+
+  it('records nothing when Spark answered no on-market listings at all, and texts that', async () => {
+    store.onMarket = [{ key: 'a', status: 'Active' }, { key: 'b', status: 'Active' }]
+    const r = await reconcileOnMarket({ repair: true, maxRepairs: 400, today: '2026-10-02' })
+    expect(store.recorded).toEqual([])
+    expect(r.absent?.refused).toMatch(/Spark returned no on-market listings while we hold 2/)
+    expect(store.alerts.map((a) => a.key)).toContain('on-market-absent-refused')
+    expect(store.deleteCalls[0]!.keys).toEqual([])
+  })
+
+  it('releases a recorded listing the MLS serves again: logged pending first, then rebuilt and closed', async () => {
+    store.absent.set('back', null)
+    store.rows.set('back', ours('back', 'Expired'))
+    spark.byKey.set('back', mls('back', 'Expired'))
+    spark.onMarket = [mls('other', 'Active')]
+    store.onMarket = [{ key: 'other', status: 'Active' }]
+    store.rows.set('other', ours('other', 'Active'))
+    const r = await reconcileOnMarket({ repair: true, maxRepairs: 400, today: '2026-10-02' })
+    expect(store.releaseLogs).toEqual([{ listingKey: 'back', source: 'absent-from-mls-release' }])
+    expect(store.cleared).toEqual(['back'])
+    expect(store.spansFor).toEqual([['back']])
+    expect(store.pendingReleases).toEqual([])
+    expect(r.absent).toMatchObject({ recorded: 0, released: 1, rebuilt: 1 })
+  })
+
+  it('releases a recorded listing we hold on the market that this run did not find missing, whatever its record class, without asking Spark', async () => {
+    store.absent.set('relisted', '2026-05-01')
+    spark.onMarket = [mls('relisted', 'Pending')]
+    store.onMarket = [{ key: 'relisted', status: 'Pending' }]
+    store.rows.set('relisted', ours('relisted', 'Pending'))
+    await reconcileOnMarket({ repair: true, maxRepairs: 400, today: '2026-10-02' })
+    expect(store.cleared).toEqual(['relisted'])
+    expect(spark.filters.filter((f) => f.startsWith('ListingKey'))).toEqual([])
+  })
+
+  it('never asks Spark about a deleted listing (no row): its record stays', async () => {
+    store.absent.set('deleted', null)
+    spark.onMarket = [mls('other', 'Active')]
+    store.onMarket = [{ key: 'other', status: 'Active' }]
+    store.rows.set('other', ours('other', 'Active'))
+    await reconcileOnMarket({ repair: true, maxRepairs: 400, today: '2026-10-02' })
+    expect(spark.filters.filter((f) => f.includes("'deleted'"))).toEqual([])
+    expect(store.cleared).toEqual([])
+  })
+
+  it('rebuilds a release an earlier run left pending, then closes it', async () => {
+    store.pendingReleases = [{ id: 77, listingKey: 'cut-short' }]
+    spark.onMarket = [mls('other', 'Active')]
+    store.onMarket = [{ key: 'other', status: 'Active' }]
+    store.rows.set('other', ours('other', 'Active'))
+    const r = await reconcileOnMarket({ repair: true, maxRepairs: 400, today: '2026-10-02' })
+    expect(store.spansFor).toEqual([['cut-short']])
+    expect(store.closedOutcomes).toEqual([[77]])
+    expect(r.absent?.rebuilt).toBe(1)
+  })
+
+  it('holds more due at once than the daily budget for sales and listings alike (10)', async () => {
+    spark.onMarket = [mls('kept', 'Active')]
+    store.onMarket = [{ key: 'gone', status: 'Active' }, { key: 'kept', status: 'Active' }]
+    store.rows.set('kept', ours('kept', 'Active'))
+    await reconcileOnMarket({ repair: true, maxRepairs: 400, today: '2026-10-02' })
+    expect(store.deleteCalls[0]!.maxDelete).toBe(10)
+  })
+
+  it('texts a held batch in listing words', async () => {
+    store.onMarket = [{ key: 'gone', status: 'Active' }]
+    spark.onMarket = [mls('x', 'Active')]
+    store.deleteResult = { removed: [], refused: 'budget', due: 21, held: 21, waiting: 0, budget: 0 }
+    await reconcileOnMarket({ repair: true, maxRepairs: 400, today: '2026-10-02' })
+    const held = store.alerts.find((a) => a.key === 'mls-removed-listings-held')
+    expect(held?.body).toMatch(/^21 listings that were for sale or under contract the MLS no longer has are due to be removed/)
+  })
+
+  it('asks a key a batch missed again on its own: a listing its own lookup finds is never recorded as removed', async () => {
+    spark.onMarket = [mls('kept', 'Active')]
+    store.onMarket = [{ key: 'flaky', status: 'Active' }, { key: 'gone', status: 'Active' }, { key: 'kept', status: 'Active' }]
+    for (const k of ['flaky', 'gone', 'kept']) store.rows.set(k, ours(k, 'Active'))
+    spark.byKey.set('flaky', mls('flaky', 'Expired'))
+    spark.droppedInBatch.add('flaky')
+    const r = await reconcileOnMarket({ repair: true, maxRepairs: 400, today: '2026-10-02' })
+    expect(store.recorded.map((x) => x.listingKey)).toEqual(['gone'])
+    expect(r.notInSpark.map((x) => x.key)).toEqual(['gone'])
+    // Found on its own lookup, it is compared like the rest: Expired in the MLS, repaired.
+    expect(r.drift.map((d) => d.key)).toEqual(['flaky'])
+    expect(spark.filters).toContain("ListingKey Eq 'flaky'")
+  })
+
+  it('reads an error Spark answers as 200 as an error, never as listings removed', async () => {
+    spark.onMarket = [mls('kept', 'Active')]
+    store.onMarket = [{ key: 'gone', status: 'Active' }, { key: 'kept', status: 'Active' }]
+    spark.answerSuccessFalse = true
+    await expect(reconcileOnMarket({ repair: true, maxRepairs: 400, today: '2026-10-02' })).rejects.toThrow(/Success false: permission denied \(Code 1500\)/)
+    expect(store.recorded).toEqual([])
+    expect(store.deleteCalls).toEqual([])
+  })
+
+  it('a failed recording deletes nothing that day and is texted in its own words; the release still runs', async () => {
+    spark.onMarket = [mls('kept', 'Active')]
+    store.onMarket = [{ key: 'gone', status: 'Active' }, { key: 'kept', status: 'Active' }]
+    store.rows.set('kept', ours('kept', 'Active'))
+    store.recordFails = true
+    store.pendingReleases = [{ id: 81, listingKey: 'earlier' }]
+    const r = await reconcileOnMarket({ repair: true, maxRepairs: 400, today: '2026-10-02' })
+    expect(store.deleteCalls).toEqual([])
+    expect(r.absent?.stepFailures).toEqual(['record: [recordAbsentFromMls] connection reset'])
+    const text = store.alerts.find((a) => a.key === 'mls-removed-listings-record-failed')
+    expect(text?.body).toMatch(/error recording the for-sale and under-contract listings the MLS no longer has: \[recordAbsentFromMls\] connection reset\. It removed none today/)
+    expect(store.closedOutcomes).toEqual([[81]])
+  })
+
+  it('a failed rebuild does not stop the deletion, and is texted in its own words', async () => {
+    spark.onMarket = [mls('kept', 'Active')]
+    store.onMarket = [{ key: 'gone', status: 'Active' }, { key: 'kept', status: 'Active' }]
+    store.rows.set('kept', ours('kept', 'Active'))
+    store.spansFail = true
+    const r = await reconcileOnMarket({ repair: true, maxRepairs: 400, today: '2026-10-02' })
+    expect(store.deleteCalls).toEqual([{ keys: ['gone'], maxDelete: 10, statuses: LIVE_INVENTORY_STATUSES }])
+    expect(r.absent?.stepFailures).toEqual(['rebuild: [refreshMarketFactSpansForKeys k] statement timeout'])
+    expect(store.alerts.map((a) => a.key)).toContain('mls-removed-listings-rebuild-failed')
+  })
+
+  it('releases after the repair, so a listing the MLS serves again off the market is rebuilt from its repaired row', async () => {
+    store.absent.set('back', null)
+    store.onMarket = [{ key: 'back', status: 'Active' }, { key: 'other', status: 'Active' }]
+    store.rows.set('back', ours('back', 'Active'))
+    store.rows.set('other', ours('other', 'Active'))
+    spark.byKey.set('back', mls('back', 'Canceled'))
+    spark.onMarket = [mls('other', 'Active')]
+    const r = await reconcileOnMarket({ repair: true, maxRepairs: 400, today: '2026-10-02' })
+    expect(r.repairedKeys).toEqual(['back'])
+    expect(store.events).toEqual(['record', 'repair', 'release'])
+    expect(store.cleared).toEqual(['back'])
+    expect(store.spansFor).toEqual([['back']])
+  })
+
+  it('keeps the record of a listing whose repair has not landed: capped, or left to the delta sync; it waits a run', async () => {
+    store.absent.set('back', null)
+    store.onMarket = [{ key: 'back', status: 'Active' }, { key: 'other', status: 'Active' }]
+    store.rows.set('back', ours('back', 'Active'))
+    store.rows.set('other', ours('other', 'Active'))
+    spark.byKey.set('back', mls('back', 'Canceled'))
+    spark.onMarket = [mls('other', 'Active')]
+    await reconcileOnMarket({ repair: true, maxRepairs: 0, today: '2026-10-02' })
+    expect(store.cleared).toEqual([])
+    expect(store.absent.has('back')).toBe(true)
+
+    spark.byKey.set('back', mls('back', 'Canceled', { ModificationTimestamp: '2026-10-01T09:30:00Z' }))
+    await reconcileOnMarket({ repair: true, maxRepairs: 400, today: '2026-10-02' })
+    expect(store.repairCalls).toEqual([])
+    expect(store.cleared).toEqual([])
+  })
+
+  it('writes nothing on a run that does not repair', async () => {
+    store.onMarket = [{ key: 'gone', status: 'Active' }]
+    const r = await reconcileOnMarket({ repair: false, maxRepairs: 400, today: '2026-10-02' })
+    expect(r.absent).toBeNull()
+    expect(store.recorded).toEqual([])
+    expect(store.deleteCalls).toEqual([])
+  })
+})
+
+describe('the episode builder and the check agree on what is on the market', () => {
+  it('leaves out exactly the statuses the check records and deletes by (LIVE_INVENTORY_STATUSES)', async () => {
+    const { readFileSync } = await import('node:fs')
+    const sql = readFileSync('supabase/migrations/20261002010534_span_leave_out_mls_removed.sql', 'utf8')
+    const list = /l\."StandardStatus" IN \(([^)]*)\)\s*AND EXISTS \(\s*SELECT 1 FROM public\.market_listing_absent_from_mls/.exec(sql)
+    expect(list).not.toBeNull()
+    const statuses = [...list![1]!.matchAll(/'([^']+)'/g)].map((m) => m[1]).sort()
+    expect(statuses).toEqual([...LIVE_INVENTORY_STATUSES].sort())
   })
 })

@@ -15,7 +15,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 type Fields = Record<string, unknown>
 type RemovedSale = import('@/lib/data/sync/closingsReconcile').RemovedSale
 type MlsRemovalNotice = import('@/lib/data/sync/closingsReconcile').MlsRemovalNotice
-const spark = { window: [] as Fields[], byKey: new Map<string, Fields>(), windowRequests: [] as string[] }
+const spark = {
+  window: [] as Fields[],
+  byKey: new Map<string, Fields>(),
+  windowRequests: [] as string[],
+  /** Keys a lookup of several keys drops, as a batch answered wrongly would; asked alone they come back. */
+  droppedInBatch: new Set<string>(),
+  /** Key lookups answered 200 with Success false (Spark's Code 1500). */
+  answerSuccessFalse: false,
+}
 const store = {
   closedInWindow: [] as string[],
   rows: new Map<string, Record<string, unknown>>(),
@@ -50,14 +58,18 @@ let alertQueues = true
 vi.mock('@/lib/spark', async () => {
   const { allPages } = await import('@/test/spark-skip-token-fake')
   return {
+    assertSparkSuccess: (await vi.importActual<typeof import('@/lib/spark')>('@/lib/spark')).assertSparkSuccess,
     fetchSparkListingsWhere: vi.fn(async (_token: string, opts: { filter: string }) => {
       spark.windowRequests.push(opts.filter)
       return opts.filter.startsWith("StandardStatus Eq 'Closed'") ? allPages(spark.window) : []
     }),
     fetchSparkListingsPage: vi.fn(async (_token: string, opts: { filter?: string }) => {
       const filter = opts.filter ?? ''
+      if (spark.answerSuccessFalse) return { D: { Success: false, Code: 1500, Message: 'permission denied' } }
       const keys = [...filter.matchAll(/ListingKey Eq '([^']+)'/g)].map((m) => m[1]!)
-      const hits = keys.flatMap((k) => (spark.byKey.has(k) ? [{ StandardFields: spark.byKey.get(k)! }] : []))
+      const hits = keys.flatMap((k) =>
+        spark.byKey.has(k) && !(keys.length > 1 && spark.droppedInBatch.has(k)) ? [{ StandardFields: spark.byKey.get(k)! }] : [],
+      )
       return { D: { Results: hits, Pagination: { TotalPages: 1 } } }
     }),
   }
@@ -205,6 +217,8 @@ beforeEach(() => {
   process.env.SPARK_API_KEY = 'test-key'
   spark.window = []
   spark.byKey = new Map()
+  spark.droppedInBatch = new Set()
+  spark.answerSuccessFalse = false
   spark.windowRequests = []
   store.closedInWindow = []
   store.rows = new Map()
@@ -241,6 +255,8 @@ function removedSale(over: Partial<RemovedSale> = {}): RemovedSale {
     city: 'Sisters',
     closeDate: '2026-03-10',
     closePrice: 735000,
+    status: 'Closed',
+    listPrice: null,
     firstDetectedAt: '2026-09-28T11:20:00Z',
     ...over,
   }
@@ -257,6 +273,8 @@ function notice(over: Partial<MlsRemovalNotice> = {}): MlsRemovalNotice {
     city: 'Sisters',
     closeDate: '2026-03-10',
     closePrice: 735000,
+    status: 'Closed',
+    listPrice: null,
     ...over,
   }
 }
@@ -434,6 +452,27 @@ describe('reconcileClosings', () => {
     const repair = await reconcileClosings({ from: '2026-03-01', to: '2026-03-31', repair: true })
     expect(repair.absentFromMls).toEqual({ recorded: 1, cleared: 0, refused: null, ...NONE_REMOVED })
     expect(store.recorded).toEqual([{ listingKey: 'GONE', listNumber: 'LGONE', closeDate: '2026-03-10' }])
+  })
+
+  it('asks a closing a batch missed again on its own: one its own lookup finds is never recorded as removed', async () => {
+    spark.window = [sparkClosing('K2')]
+    store.closedInWindow = ['GONE', 'FLAKY', 'K2']
+    for (const k of ['GONE', 'FLAKY', 'K2']) store.rows.set(k, ourRow(k))
+    spark.byKey.set('FLAKY', sparkClosing('FLAKY'))
+    spark.droppedInBatch.add('FLAKY')
+    const r = await reconcileClosings({ from: '2026-03-01', to: '2026-03-31', repair: true })
+    expect(r.notInSpark).toEqual(['GONE'])
+    expect(store.recorded.map((x) => x.listingKey)).toEqual(['GONE'])
+  })
+
+  it('reads an error Spark answers as 200 as an error, never as sales removed', async () => {
+    spark.window = [sparkClosing('K2')]
+    store.closedInWindow = ['GONE', 'K2']
+    store.rows.set('GONE', ourRow('GONE'))
+    store.rows.set('K2', ourRow('K2'))
+    spark.answerSuccessFalse = true
+    await expect(reconcileClosings({ from: '2026-03-01', to: '2026-03-31', repair: true })).rejects.toThrow(/Success false: permission denied/)
+    expect(store.recorded).toEqual([])
   })
 
   it('releases a recorded key once Spark serves it again', async () => {

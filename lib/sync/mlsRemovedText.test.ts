@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { MlsRemovalNotice } from '@/lib/data/sync/closingsReconcile'
-import { TEXT_BUDGET, heldSalesText, noticeText, removalFailedText, saleLine } from './mlsRemovedText'
+import { TEXT_BUDGET, absentStepFailedText, heldSalesText, listingLine, noticeKind, noticeText, removalFailedText, saleLine } from './mlsRemovedText'
 
 /**
  * The owner's texts about MLS-removed sales (Matt 2026-09-30). A health text is
@@ -18,6 +18,8 @@ function notice(over: Partial<MlsRemovalNotice> = {}): MlsRemovalNotice {
     city: 'Sisters',
     closeDate: '2026-03-10',
     closePrice: 960000,
+    status: 'Closed',
+    listPrice: null,
     ...over,
   }
 }
@@ -98,5 +100,41 @@ describe('removalFailedText', () => {
     expect(text).toContain('Any it did remove are texted separately')
     expect(text).toContain('tries again tomorrow')
     expect(text.length).toBeLessThan(400)
+  })
+})
+
+describe('listings the MLS removed while for sale or under contract (Matt 2026-10-01)', () => {
+  const listing = (over: Partial<MlsRemovalNotice> = {}) =>
+    notice({ closeDate: null, closePrice: null, status: 'Active', listPrice: 899000, streetNumber: '61010', streetName: 'Ridge Rd', city: 'Bend', listNumber: '220205521', ...over })
+
+  it('tells a listing from a sale by its saved status, and by a missing close date when a restore log has none', () => {
+    expect(noticeKind(listing())).toBe('listing')
+    expect(noticeKind(notice())).toBe('sale')
+    expect(noticeKind(listing({ status: null }))).toBe('listing')
+    expect(noticeKind(notice({ status: null }))).toBe('sale')
+  })
+
+  it('lists a removed listing by its status and list price', () => {
+    expect(listingLine(listing())).toBe('61010 Ridge Rd, Bend, MLS 220205521, Active, listed $899,000')
+    expect(noticeText('removed', [listing()], 'listing').split('\n')).toEqual([
+      'The MLS no longer has 1 listing that was for sale or under contract, so it was removed from our site and reports. Full records saved (repair log id 3637).',
+      '61010 Ridge Rd, Bend, MLS 220205521, Active, listed $899,000',
+    ])
+  })
+
+  it('words the hold and the failure for listings', () => {
+    expect(heldSalesText({ reason: 'budget', due: 2, held: 2, budget: 0 }, 'listing')).toMatch(/^2 listings that were for sale or under contract the MLS no longer has are due/)
+    expect(removalFailedText('boom', 'listing')).toMatch(/removing the for-sale and under-contract listings the MLS no longer has: boom/)
+  })
+})
+
+describe('absentStepFailedText', () => {
+  it('says what a failed step means for the report until a run succeeds, with the error cut short', () => {
+    expect(absentStepFailedText('record', 'boom')).toBe(
+      'The daily listings check hit an error recording the for-sale and under-contract listings the MLS no longer has: boom. It removed none today; any it had not recorded on an earlier day still count in the market report, and it tries again tomorrow.',
+    )
+    expect(absentStepFailedText('release', 'boom')).toMatch(/putting back listings the MLS serves again: boom\. They stay out of the market report until it does/)
+    expect(absentStepFailedText('rebuild', 'boom')).toMatch(/a listing it recorded today still counts there and one the MLS serves again stays out/)
+    expect(absentStepFailedText('record', 'x'.repeat(400)).length).toBeLessThan(450)
   })
 })

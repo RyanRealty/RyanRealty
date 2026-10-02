@@ -10,12 +10,21 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
  */
 
 type Row = { ListingKey: string; ModificationTimestamp: string }
-const fake = { rows: [] as Row[], requests: 0, filters: [] as string[], onRequest: null as null | ((n: number) => void) }
+const fake = {
+  rows: [] as Row[],
+  requests: 0,
+  filters: [] as string[],
+  onRequest: null as null | ((n: number) => void),
+  /** The request Spark answers 200 with Success false (Code 1500). */
+  successFalseAt: null as number | null,
+}
 
-vi.mock('@/lib/spark', () => ({
+vi.mock('@/lib/spark', async () => ({
+  assertSparkSuccess: (await vi.importActual<typeof import('@/lib/spark')>('@/lib/spark')).assertSparkSuccess,
   fetchSparkListingsPage: vi.fn(async (_token: string, opts: { limit?: number; filter?: string; skiptoken?: string }) => {
     fake.requests++
     fake.onRequest?.(fake.requests)
+    if (fake.successFalseAt === fake.requests) return { D: { Success: false, Code: 1500, Message: 'permission denied' } }
     const filter = opts.filter ?? ''
     fake.filters.push(filter)
     const m = /^ModificationTimestamp (Ge|Gt|Eq) (\S+)$/.exec(filter)
@@ -50,6 +59,7 @@ beforeEach(() => {
   fake.requests = 0
   fake.filters = []
   fake.onRequest = null
+  fake.successFalseAt = null
 })
 
 describe('fetchDeltaWindow', () => {
@@ -89,5 +99,13 @@ describe('fetchDeltaWindow', () => {
     const r = await fetchDeltaWindow('t', sec(0), { pageSize: 4, maxPages: 2 })
     expect(r.truncated).toBe(true)
     expect(r.pagesProcessed).toBe(2)
+  })
+
+  it('throws on an error Spark answers as 200 (Success false) rather than reading the window as drained', async () => {
+    for (let i = 0; i < 30; i++) fake.rows.push({ ListingKey: `k${String(i).padStart(2, '0')}`, ModificationTimestamp: sec(i) })
+    fake.successFalseAt = 2
+    await expect(fetchDeltaWindow('t', sec(0), { pageSize: 4, maxPages: 100 })).rejects.toThrow(
+      '[deltaSync] Spark answered Success false: permission denied (Code 1500)',
+    )
   })
 })

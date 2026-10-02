@@ -25,7 +25,7 @@
  * no status-history rows: these sales are weeks or months old, and an event
  * would announce an old sale as news.
  */
-import { fetchSparkListingsPage, fetchSparkListingsWhere } from '@/lib/spark'
+import { assertSparkSuccess, fetchSparkListingsPage, fetchSparkListingsWhere } from '@/lib/spark'
 import { DELTA_SYNC, resolveRunMortgageRate, resultToMappedRow, type SparkDeltaResult } from '@/lib/sync/deltaSync'
 import { driftReasons, factsFromListingRow, factsFromSparkFields, type DriftFacts, type DriftReason } from '@/lib/sync/listingDrift'
 import { mergeFrozenMedia } from '@/lib/sync/frozenMedia'
@@ -56,7 +56,7 @@ import {
 } from '@/lib/data/sync/syncWrites'
 import { refreshMarketFactSpansForKeys } from '@/lib/data/market-report/compute'
 import { queueBrokerHealthAlert } from '@/lib/crm/broker-alerts'
-import { heldSalesText, noticeText, removalFailedText } from '@/lib/sync/mlsRemovedText'
+import { heldSalesText, noticeKind, noticeText, removalFailedText, type RemovedKind } from '@/lib/sync/mlsRemovedText'
 import { rebuildRestoredSales, restoreServedAgain } from '@/lib/sync/mlsRemovedRestore'
 
 /**
@@ -204,18 +204,46 @@ function keyFilter(keys: string[]): string {
   return keys.map((k) => `ListingKey Eq '${k.replace(/'/g, '')}'`).join(' Or ')
 }
 
-/** Spark's current lite record for each key (missing keys are simply absent). */
+/**
+ * Spark's current lite record for each key (missing keys are simply absent).
+ * An error Spark answers as 200 throws, so it never reads as keys not served.
+ */
 export async function fetchSparkLiteByKeys(keys: string[]): Promise<Map<string, SparkLite>> {
   const out = new Map<string, SparkLite>()
   for (let i = 0; i < keys.length; i += 25) {
     const batch = keys.slice(i, i + 25)
     const res = await fetchSparkListingsPage(token(), { page: 1, limit: 25, filter: keyFilter(batch), select: LITE_SELECT })
+    assertSparkSuccess(res, '[fetchSparkLiteByKeys]')
     for (const r of res.D?.Results ?? []) {
       const lite = liteFrom(r)
       if (lite) out.set(lite.key, lite)
     }
   }
   return out
+}
+
+/**
+ * Look keys up by key, for a check that counts a key not served as removed
+ * from the MLS. A key a batch did not return is asked again on its own, and
+ * counts as not served only when that lookup misses it too: one batch answered
+ * wrongly (lib/spark.ts reads a 404 as an empty answer) must not look like 25
+ * listings removed. Over `confirmUpTo` missing keys the caller records no
+ * absence at all (absentRefusal), so they are not asked again.
+ */
+export async function lookUpByKeys(
+  keys: string[],
+  confirmUpTo: number,
+): Promise<{ served: Map<string, SparkLite>; notServed: string[] }> {
+  const served = keys.length > 0 ? await fetchSparkLiteByKeys(keys) : new Map<string, SparkLite>()
+  const first = keys.filter((k) => !served.has(k))
+  if (first.length === 0 || first.length > confirmUpTo) return { served, notServed: first }
+  const notServed: string[] = []
+  for (const k of first) {
+    const lite = (await fetchSparkLiteByKeys([k])).get(k)
+    if (lite) served.set(k, lite)
+    else notServed.push(k)
+  }
+  return { served, notServed }
 }
 
 /** Find every closing in the window where our copy disagrees with Spark. */
@@ -230,8 +258,7 @@ export async function findClosingsDrift(
 > {
   const [spark, ourClosed] = await Promise.all([fetchSparkClosingsInWindow(from, to), getClosedListingKeysInWindow(from, to)])
   const reverseKeys = ourClosed.filter((k) => !spark.has(k))
-  const reverse = reverseKeys.length > 0 ? await fetchSparkLiteByKeys(reverseKeys) : new Map<string, SparkLite>()
-  const notInSpark = reverseKeys.filter((k) => !reverse.has(k))
+  const { served: reverse, notServed: notInSpark } = await lookUpByKeys(reverseKeys, absentRecordLimit(ourClosed.length))
 
   const kept = await driftAgainstOurs(new Map<string, SparkLite>([...spark, ...reverse]))
   return { window: { from, to }, sparkClosings: spark.size, ourClosedInWindow: ourClosed.length, drift: kept, notInSpark }
@@ -557,51 +584,105 @@ async function repairBatch(
   return { repaired, repairedKeys, repairLogged: logId.size, failed, historyRefreshed, refinalized, membershipRows, leftToDeltaSync }
 }
 
-/** Absences one window may record before the pull is treated as an outage: 10, or 0.5% of our closings. */
-export function absentRecordLimit(ourClosedInWindow: number): number {
-  return Math.max(10, Math.ceil(ourClosedInWindow * 0.005))
+/**
+ * Absences one check may record before Spark's answer is treated as an outage:
+ * 10, or 0.5% of what we hold (a window's closings, or every listing we hold
+ * for sale or under contract).
+ */
+export function absentRecordLimit(weHold: number): number {
+  return Math.max(10, Math.ceil(weHold * 0.005))
 }
 
 /**
- * Closed sales the daily check may delete in one Bend calendar day (the SQL
- * function counts every deletion since midnight). The trailing 13 months held
- * three on 2026-09-30, found after a year of drift; more due at once looks like
- * a bad Spark answer, not removals, and is held for a person.
+ * Why a check must record no absence this run, or null. A Spark outage (an
+ * error page read as an empty answer, a rejected filter) makes everything we
+ * hold look removed, and recording it would drop it from every statistic and,
+ * three days on, delete it. So nothing is recorded when Spark returned none of
+ * the set while we hold some, or when more are missing than removed listings
+ * explain (absentRecordLimit). Both daily checks, closed sales and listings
+ * for sale or under contract, guard their deletions with this one rule.
+ */
+export function absentRefusal(
+  missing: number,
+  sparkHolds: number,
+  weHold: number,
+  what: { spark: string; ours: string },
+): string | null {
+  if (missing > 0 && sparkHolds === 0) return `Spark returned no ${what.spark} while we hold ${weHold}`
+  const limit = absentRecordLimit(weHold)
+  if (missing > limit) return `${missing} of our ${weHold} ${what.ours} are missing from Spark, more than removed listings explain (limit ${limit})`
+  return null
+}
+
+/**
+ * Listings the daily check may delete in one Bend calendar day, per class
+ * (closed sales; listings for sale or under contract): the SQL function counts
+ * every deletion of the class since midnight. The trailing 13 months held three
+ * closed sales on 2026-09-30, found after a year of drift; more due at once
+ * looks like a bad Spark answer, not removals, and is held for a person.
  */
 export const MLS_REMOVED_DAILY_BUDGET = 10
+
+/** What the deletion step did: deleted, held for a person, not due yet, or failed. */
+export type RemovalStep = Pick<AbsentFromMlsResult, 'removed' | 'removalHeld' | 'held' | 'waiting' | 'removalFailed'>
+
+/**
+ * Delete the due keys of one class (deleteMlsRemovedSales: the third daily
+ * sighting, 36 hours or more after the first, within the day's budget) and text
+ * a hold or a failure; the caller then texts what was removed
+ * (tellMlsRemovals). Called even with no key: the answer carries a standing
+ * hold. Never throws: a failed deletion leaves the listings recorded (out of
+ * the report), texts the owner, and the next daily run tries again.
+ */
+export async function removeDueAbsent(
+  keys: string[],
+  what: RemovedKind,
+  opts: { maxDelete: number; window?: { from: string; to: string }; statuses?: readonly string[] },
+): Promise<RemovalStep> {
+  const alertKey = what === 'sale' ? 'mls-removed' : 'mls-removed-listings'
+  try {
+    const r = await deleteMlsRemovedSales(keys, opts)
+    if (r.refused) {
+      await queueBrokerHealthAlert({
+        key: `${alertKey}-held`,
+        body: heldSalesText({ reason: r.refused, due: r.due, held: r.held, budget: r.budget }, what),
+        cooldownMinutes: DAILY_ALERT_COOLDOWN_MINUTES,
+      })
+    }
+    return { removed: r.removed, removalHeld: r.refused, held: r.held, waiting: r.waiting, removalFailed: null }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    console.error(what === 'sale' ? '[closingsReconcile] deleting MLS-removed sales failed' : '[onMarketReconcile] deleting listings the MLS removed failed', err)
+    await queueBrokerHealthAlert({ key: `${alertKey}-failed`, body: removalFailedText(message, what), cooldownMinutes: DAILY_ALERT_COOLDOWN_MINUTES })
+    return { removed: [], removalHeld: null, held: 0, waiting: 0, removalFailed: message }
+  }
+}
 
 /**
  * Record the window's closings Spark no longer serves, and release any key
  * recorded earlier, with a close date in the same window, that Spark serves
  * again. A run re-checks only its own window's keys by key, so the daily cron
  * never re-reads the whole history from Spark; an older key is re-checked when
- * its window is reconciled (scripts/closings-reconcile.ts).
- *
- * A Spark outage (an error page read as an empty result, a rejected filter)
- * would make every closing we hold look removed, and recording them would
- * drop every sale from every statistic. So nothing is recorded when Spark
- * returned no closings for the window, or when more go missing than a few
- * removed listings explain (absentRecordLimit); the caller alerts instead.
+ * its window is reconciled (scripts/closings-reconcile.ts). An answer that
+ * looks like an outage records nothing (absentRefusal); the caller alerts.
  *
  * With removal on (the daily cron), the keys just confirmed missing then go to
- * deleteMlsRemovedSales (Matt 2026-09-30: "The daily check deletes it after
- * saving the full record, and texts you what it removed"). It deletes a sale
- * found missing on three daily checks, the first 36 hours or more ago, so one
- * bad answer from Spark never deletes anything; a day's budget, or an earlier
- * hold, holds the due sales for a person instead. Then the owner is texted
- * every deletion and restore not told yet (tellMlsRemovals).
+ * the deletion step (Matt 2026-09-30: "The daily check deletes it after saving
+ * the full record, and texts you what it removed"): a sale found missing on
+ * three daily checks, the first 36 hours or more ago, so one bad answer from
+ * Spark never deletes anything; a day's budget, or an earlier hold, holds the
+ * due sales for a person instead. Then the owner is texted every deletion and
+ * restore not told yet (tellMlsRemovals).
  */
 async function syncAbsentFromMls(
   notInSpark: string[],
   window: { from: string; to: string; sparkClosings: number; ourClosedInWindow: number },
   removal: { remove: boolean; maxRemovals: number },
 ): Promise<AbsentFromMlsResult> {
-  let refused: string | null = null
-  if (notInSpark.length > 0 && window.sparkClosings === 0) {
-    refused = `Spark returned no closings for the window while we hold ${window.ourClosedInWindow}`
-  } else if (notInSpark.length > absentRecordLimit(window.ourClosedInWindow)) {
-    refused = `${notInSpark.length} of our ${window.ourClosedInWindow} closings are missing from Spark, more than removed listings explain (limit ${absentRecordLimit(window.ourClosedInWindow)})`
-  }
+  const refused = absentRefusal(notInSpark.length, window.sparkClosings, window.ourClosedInWindow, {
+    spark: 'closings for the window',
+    ours: 'closings',
+  })
   const toRecord = refused ? [] : notInSpark
   const rows = toRecord.length > 0 ? await getListingsForReconcile(toRecord) : new Map()
   const recorded = await recordAbsentFromMls(
@@ -622,25 +703,9 @@ async function syncAbsentFromMls(
   const out: AbsentFromMlsResult = { ...NO_ABSENT_WORK, recorded, cleared, refused }
   if (!removal.remove) return out
 
-  // Called even with no key: the answer carries a standing hold. A failed
-  // deletion must not stop the day's report refresh: the sales stay recorded
-  // (out of Market Truth), Matt is told, and tomorrow's run tries again.
-  try {
-    const r = await deleteMlsRemovedSales(toRecord, { maxDelete: removal.maxRemovals, window: { from: window.from, to: window.to } })
-    Object.assign(out, { removed: r.removed, removalHeld: r.refused, held: r.held, waiting: r.waiting })
-    if (r.refused) {
-      await queueBrokerHealthAlert({
-        key: 'mls-removed-held',
-        body: heldSalesText({ reason: r.refused, due: r.due, held: r.held, budget: r.budget }),
-        cooldownMinutes: DAILY_ALERT_COOLDOWN_MINUTES,
-      })
-    }
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    console.error('[closingsReconcile] deleting MLS-removed sales failed', err)
-    await queueBrokerHealthAlert({ key: 'mls-removed-failed', body: removalFailedText(message), cooldownMinutes: DAILY_ALERT_COOLDOWN_MINUTES })
-    out.removalFailed = message
-  }
+  // A failed deletion must not stop the day's report refresh: the sales stay
+  // recorded (out of Market Truth), Matt is told, and tomorrow's run tries again.
+  Object.assign(out, await removeDueAbsent(toRecord, 'sale', { maxDelete: removal.maxRemovals, window: { from: window.from, to: window.to } }))
   out.told = await tellMlsRemovals()
   return out
 }
@@ -654,7 +719,7 @@ async function syncAbsentFromMls(
 export const DAILY_ALERT_COOLDOWN_MINUTES = 20 * 60
 
 /**
- * Text the owner every deletion and restore of an MLS-removed sale not told yet
+ * Text the owner every deletion and restore of an MLS-removed listing not told yet
  * (listing_mls_repair_log.reported_at), one text per kind, then mark them told.
  * Read from the log rather than from the call that deleted them, so a deletion
  * whose response was lost, or one a person approved by hand, is still told on
@@ -665,17 +730,21 @@ export async function tellMlsRemovals(): Promise<number> {
   try {
     const notices = await getUnreportedMlsRemovalNotices()
     let told = 0
+    // One text per kind (removed, restored) and per class: closed sales, and
+    // listings that were for sale or under contract (Matt 2026-10-01).
     for (const kind of ['removed', 'restored'] as const) {
-      const batch = notices.filter((n) => n.kind === kind)
-      if (batch.length === 0) continue
-      const queued = await queueBrokerHealthAlert({
-        key: `mls-${kind}-${batch[0]!.logId}`,
-        body: noticeText(kind, batch),
-        cooldownMinutes: DAILY_ALERT_COOLDOWN_MINUTES,
-      })
-      if (!queued) continue
-      await markMlsRemovalNoticesReported(batch.map((n) => n.logId))
-      told += batch.length
+      for (const what of ['sale', 'listing'] as const) {
+        const batch = notices.filter((n) => n.kind === kind && noticeKind(n) === what)
+        if (batch.length === 0) continue
+        const queued = await queueBrokerHealthAlert({
+          key: what === 'sale' ? `mls-${kind}-${batch[0]!.logId}` : `mls-${kind}-listing-${batch[0]!.logId}`,
+          body: noticeText(kind, batch, what),
+          cooldownMinutes: DAILY_ALERT_COOLDOWN_MINUTES,
+        })
+        if (!queued) continue
+        await markMlsRemovalNoticesReported(batch.map((n) => n.logId))
+        told += batch.length
+      }
     }
     return told
   } catch (err) {
