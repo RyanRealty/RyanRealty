@@ -355,32 +355,9 @@ Add it via the pattern in `docs/MECHANICAL_GATES.md`.
 
 ## Which rule here is a gate, and which is only prose
 
-A gated rule fails the commit whether or not you read the section. An ungated rule is enforced
-by a reviewer or by nothing — those are the ones that rot, so treat them as the ones to convert
-next.
+Gated rules fail the commit. The catalog is [`docs/MECHANICAL_GATES.md`](docs/MECHANICAL_GATES.md). Do not re-list it here. This file may only shrink (`scripts/check-claude-canon.mjs`).
 
-| Rule | Mechanism | Gate script |
-|---|---|---|
-| Design tokens — no off-brand hex, no raw controls | gated | `lint-design-tokens.js` |
-| Mockup parity per surface | gated | `check-mockup-parity.mjs` |
-| DAL boundary — no raw `.from()` outside `lib/data/` | gated | `check-dal-boundary.mjs` |
-| Every `app/<route>/page.tsx` imports the DAL | gated | `check-page-dal.mjs` |
-| `listings` mixed-case columns are quoted | gated | `check-dal-column-quoting.mjs` |
-| MoS formula + thresholds | gated | `check-market-formula.mjs` |
-| Aggregate SQL over a stat table (an aggregate is a stat) | gated at tool time | `pre-tool-use.mjs` |
-| No NEW raw stat aggregate in `scripts/` | gated (ratchet) | `check-script-stat-source.mjs` |
-| Schema snapshot + DAL index stay current | gated, local/nightly (needs DB creds) | `check-data-access.mjs` |
-| Every cron route registered in `vercel.json` | gated | `check-cron-registered.mjs` |
-| THE LOOP process canon, no rogue plan files, ship-class (no rebuild per fleet finding) | gated | `check-process-canon.mjs` |
-| Loop skills stay on the 2026-07-21 approval model | gated | `check-loop-skills-canon.mjs` |
-| Every `scripts/check-*.mjs` actually runs somewhere | gated (meta) | `check-gates-wired.mjs` |
-| A ledger row cannot claim "done" without a real mechanism | gated (meta) | `check-program-complete.mjs` |
-| This file cites no dead path, no decommissioned doc, no retired v1 token, and does not regrow | gated | [`check-claude-canon.mjs`](scripts/check-claude-canon.mjs) |
-| Rendered video deliverables carry an approval marker | gated via commit-msg hook | `check-draft-first.mjs` |
-| First frame of a render is a usable thumbnail | gated in the render pipeline, not CI | `check_first_frame.py` |
-| §0 data accuracy — every number traces to a named source | **prose + reviewer.** No gate can read a deliverable's intent; the per-figure verification trace is the mechanism | — |
-| §4 video hard rules — length, hook, beats, safe zones, VO | **prose + the hand-run quality gate** | — |
-| §1 approval model — the four per-action classes | **prose**, except the commit-msg marker | — |
+Still prose, not a gate: §0 data accuracy (every number traces to a named source), §4 video hard rules, and §1 approval classes except the commit-msg marker.
 
 ---
 
