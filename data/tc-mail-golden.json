@@ -119,11 +119,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "18eb191bbe4293be",
-    "expect": "file",
-    "deal_id": "89f3e1f3-f649-497f-9171-2fdfbf8bf6e1",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "deal-recall",
-    "confidence": "classifier"
+    "confidence": "verified",
+    "note": "2026-10-01: an unsent Gmail draft (label DRAFT, listed by users.drafts.list): it reached no one, so it files nowhere (rules v4.2)"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -677,11 +678,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1924601ad8b9d57f",
-    "expect": "file",
-    "deal_id": "3dae9736-e531-4521-a4a2-345308ad3578",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "filed-matt",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "2026-10-01: an unsent Gmail draft (label DRAFT, listed by users.drafts.list): it reached no one, so it files nowhere (rules v4.2)"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -839,20 +841,22 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1935aacbac642705",
-    "expect": "file",
-    "deal_id": "4c71737c-93ea-4e4f-8878-2b5695cc9887",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "filed-matt",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "2026-10-01: an unsent Gmail draft (label DRAFT, listed by users.drafts.list): it reached no one, so it files nowhere (rules v4.2)"
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19379a5c18ead6e6",
-    "expect": "file",
-    "deal_id": "4c71737c-93ea-4e4f-8878-2b5695cc9887",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "filed-matt",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "2026-10-01: an unsent Gmail draft (label DRAFT, listed by users.drafts.list): it reached no one, so it files nowhere (rules v4.2)"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -1820,11 +1824,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1975675d9618f041",
-    "expect": "file",
-    "deal_id": "023c20b6-a0bb-4dad-bd2c-22067751b9e6",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "queue",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "2026-10-01: an unsent Gmail draft (label DRAFT, listed by users.drafts.list): it reached no one, so it files nowhere (rules v4.2)"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -2009,11 +2014,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "197d115829c1b7f7",
-    "expect": "file",
-    "deal_id": "350a70b7-a6eb-45c1-a3fe-0a1ae833d951",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "queue",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "2026-10-01: an unsent Gmail draft (label DRAFT, listed by users.drafts.list): it reached no one, so it files nowhere (rules v4.2)"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -2162,11 +2168,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "197fbcbc7df35fe6",
-    "expect": "file",
-    "deal_id": "926195da-8037-4f57-9423-40b802dad86b",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "filed-matt",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "2026-10-01: an unsent Gmail draft (label DRAFT, listed by users.drafts.list): it reached no one, so it files nowhere (rules v4.2)"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -2855,11 +2862,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19920bea6233e130",
-    "expect": "file",
-    "deal_id": "d0296dfe-4daa-49e8-ac15-6ca7ebffeec4",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "deal-recall",
-    "confidence": "classifier"
+    "confidence": "verified",
+    "note": "2026-10-01: an unsent Gmail draft (label DRAFT, listed by users.drafts.list): it reached no one, so it files nowhere (rules v4.2)"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -3035,11 +3043,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1994f1ae6c43a41d",
-    "expect": "file",
-    "deal_id": "c382b4d0-f40a-40c8-9d6e-afa0657d411f",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "filed-matt",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "2026-10-01: an unsent Gmail draft (label DRAFT, listed by users.drafts.list): it reached no one, so it files nowhere (rules v4.2)"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -3189,11 +3198,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1996d0d9fa48c826",
-    "expect": "file",
-    "deal_id": "3616bd0a-d653-4819-b8f9-1c9925fee99e",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "filed-matt",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "2026-10-01: an unsent Gmail draft (label DRAFT, listed by users.drafts.list): it reached no one, so it files nowhere (rules v4.2)"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -3918,11 +3928,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19a08847e0262eaa",
-    "expect": "file",
-    "deal_id": "3616bd0a-d653-4819-b8f9-1c9925fee99e",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "deal-recall",
-    "confidence": "classifier"
+    "confidence": "verified",
+    "note": "2026-10-01: an unsent Gmail draft (label DRAFT, listed by users.drafts.list): it reached no one, so it files nowhere (rules v4.2)"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -3954,11 +3965,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19a0cf922aafb549",
-    "expect": "file",
-    "deal_id": "3616bd0a-d653-4819-b8f9-1c9925fee99e",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "deal-recall",
-    "confidence": "classifier"
+    "confidence": "verified",
+    "note": "2026-10-01: an unsent Gmail draft (label DRAFT, listed by users.drafts.list): it reached no one, so it files nowhere (rules v4.2)"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -4593,11 +4605,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19d03f7f0f55c069",
-    "expect": "file",
-    "deal_id": "880b5387-ddc0-4cde-8919-615e184506ca",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "queue",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "2026-10-01: an unsent Gmail draft (label DRAFT, listed by users.drafts.list): it reached no one, so it files nowhere (rules v4.2)"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -4710,11 +4723,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19d2c20a8f3c215e",
-    "expect": "file",
-    "deal_id": "a7c45930-0544-4546-9543-52230f005c84",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "deal-recall",
-    "confidence": "classifier"
+    "confidence": "verified",
+    "note": "2026-10-01: an unsent Gmail draft (label DRAFT, listed by users.drafts.list): it reached no one, so it files nowhere (rules v4.2)"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -4863,11 +4877,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19d354544c9aba9f",
-    "expect": "file",
-    "deal_id": "a7c45930-0544-4546-9543-52230f005c84",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "deal-recall",
-    "confidence": "classifier"
+    "confidence": "verified",
+    "note": "2026-10-01: an unsent Gmail draft (label DRAFT, listed by users.drafts.list): it reached no one, so it files nowhere (rules v4.2)"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -5457,20 +5472,22 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19d65f6a69209292",
-    "expect": "file",
-    "deal_id": "a7c45930-0544-4546-9543-52230f005c84",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "deal-recall",
-    "confidence": "classifier"
+    "confidence": "verified",
+    "note": "2026-10-01: an unsent Gmail draft (label DRAFT, listed by users.drafts.list): it reached no one, so it files nowhere (rules v4.2)"
   },
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19d69c80e9aacc4b",
-    "expect": "file",
-    "deal_id": "a7c45930-0544-4546-9543-52230f005c84",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "deal-recall",
-    "confidence": "classifier"
+    "confidence": "verified",
+    "note": "2026-10-01: an unsent Gmail draft (label DRAFT, listed by users.drafts.list): it reached no one, so it files nowhere (rules v4.2)"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -5592,11 +5609,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19d72e0e4da5044f",
-    "expect": "file",
-    "deal_id": "a7c45930-0544-4546-9543-52230f005c84",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "deal-recall",
-    "confidence": "classifier"
+    "confidence": "verified",
+    "note": "2026-10-01: an unsent Gmail draft (label DRAFT, listed by users.drafts.list): it reached no one, so it files nowhere (rules v4.2)"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -5718,11 +5736,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19da7f5c39899f93",
-    "expect": "file",
-    "deal_id": "d0296dfe-4daa-49e8-ac15-6ca7ebffeec4",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "filed-matt",
-    "confidence": "hand"
+    "confidence": "verified",
+    "note": "2026-10-01: an unsent Gmail draft (label DRAFT, listed by users.drafts.list): it reached no one, so it files nowhere (rules v4.2)"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -5898,11 +5917,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19dac6072f20f204",
-    "expect": "file",
-    "deal_id": "a7c45930-0544-4546-9543-52230f005c84",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "deal-recall",
-    "confidence": "classifier"
+    "confidence": "verified",
+    "note": "2026-10-01: an unsent Gmail draft (label DRAFT, listed by users.drafts.list): it reached no one, so it files nowhere (rules v4.2)"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -7452,11 +7472,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "19f38a150a0f1401",
-    "expect": "file",
-    "deal_id": "58bc2719-d052-4f5e-919b-482471875e9f",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "deal-recall",
-    "confidence": "classifier"
+    "confidence": "verified",
+    "note": "2026-10-01: an unsent Gmail draft (label DRAFT, listed by users.drafts.list): it reached no one, so it files nowhere (rules v4.2)"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -8967,11 +8988,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1a0b660fd014836b",
-    "expect": "file",
-    "deal_id": "58bc2719-d052-4f5e-919b-482471875e9f",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "deal-recall",
-    "confidence": "classifier"
+    "confidence": "verified",
+    "note": "2026-10-01: an unsent Gmail draft (label DRAFT, listed by users.drafts.list): it reached no one, so it files nowhere (rules v4.2)"
   },
   {
     "mailbox": "matt@ryan-realty.com",
@@ -9219,11 +9241,12 @@
   {
     "mailbox": "matt@ryan-realty.com",
     "gmail_id": "1a0c654c0dee0fdf",
-    "expect": "file",
-    "deal_id": "58bc2719-d052-4f5e-919b-482471875e9f",
+    "expect": "not_filed",
+    "deal_id": null,
     "deal_not_in_vault": false,
     "slice": "deal-recall",
-    "confidence": "classifier"
+    "confidence": "verified",
+    "note": "2026-10-01: an unsent Gmail draft (label DRAFT, listed by users.drafts.list): it reached no one, so it files nowhere (rules v4.2)"
   },
   {
     "mailbox": "matt@ryan-realty.com",

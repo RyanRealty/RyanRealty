@@ -57,6 +57,9 @@ const KIND_MAP: Record<string, KindMeta> = {
   // email_in was missing — inbound CRM/Gmail emails fell through to 'other' and
   // mis-rendered as "Email in". Classify it as an inbound email. (no-drop-off fix)
   email_in: { category: 'email', direction: 'in', label: 'Email received' },
+  // Someone else's email the contact was copied on (a title company's closing
+  // mail): neither from us nor from them (Matt 2026-10-02).
+  email_cc: { category: 'email', direction: null, label: 'Copied on an email' },
   email: { category: 'email', direction: null, label: 'Email' },
   email_open: { category: 'email', direction: 'in', label: 'Email opened' },
   email_click: { category: 'email', direction: 'in', label: 'Email link clicked' },

@@ -14,7 +14,7 @@
 
 import { BROKERS } from '@/lib/brand/contact'
 
-export const MAIL_RULES_VERSION = 'mail-rules-v4.1-2026-09-30'
+export const MAIL_RULES_VERSION = 'mail-rules-v4.2-2026-10-01'
 
 const HOUSE_DOMAINS = new Set(['ryan-realty.com', 'mail.ryan-realty.com'])
 
@@ -172,6 +172,11 @@ export type MailFacts = {
   /** List-Unsubscribe present, Precedence bulk/list, or Auto-Submitted not "no". */
   bulkHeaders: boolean
   autoReply: boolean
+  /**
+   * Gmail still holds it as a draft (label DRAFT): it was never sent. Gmail
+   * lists drafts beside sent mail under the sender's own From line.
+   */
+  draft?: boolean
 }
 
 export type DealCycleFacts = {
@@ -1712,6 +1717,16 @@ export function decideMailFiling(input: {
   }
 
   const hardHits = scored.filter((c) => hasEvidence(c, 'escrow', 'mls'))
+
+  // Rule −1 — an unsent draft is not mail (v4.2). It reached no one, so it says
+  // nothing about any file, whatever address or offer it names ("Offer 2",
+  // "Home warranty on school house" sat filed on deals as Matt's mail). Every
+  // autosave and the send itself get a new Gmail id under one Message-ID, so
+  // the sent copy is decided on its own when it goes out.
+  if (facts.draft) {
+    reasons.push('an unsent draft (Gmail label DRAFT): it reached no one')
+    return finish('not_deal', null, null, 0)
+  }
 
   // Rule 0 — noise. Auto-replies, alerts and list mail never file on who they
   // touched. An escrow number of exactly one deal (title's automated notices)

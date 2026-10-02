@@ -20,7 +20,7 @@ import { toFeedItem, type ActivityFeedItem } from './getContactActivityFeed'
  * what the feed query filters on. Order = display order of the toggle chips.
  */
 export const ACTIVITY_TYPES = [
-  { key: 'email', label: 'Emails', kinds: ['email_in', 'email_out', 'email_open', 'email_click', 'email'] },
+  { key: 'email', label: 'Emails', kinds: ['email_in', 'email_out', 'email_cc', 'email_open', 'email_click', 'email'] },
   { key: 'sms', label: 'Texts', kinds: ['sms_in', 'sms_out'] },
   { key: 'call', label: 'Calls', kinds: ['call', 'voicemail'] },
   { key: 'note', label: 'Notes', kinds: ['note'] },

@@ -2663,3 +2663,43 @@ describe('re-decide dry run 2026-09-30: one person under two spellings is on bot
     expect(pickCycleForMail(cycles, '2026-07-22T16:48:00Z', 'general', { text })).toBe('sold-2026')
   })
 })
+
+describe('v4.2: an unsent draft is not mail', () => {
+  const counter = (p: Partial<MailFacts> = {}) =>
+    mail({
+      from: ['matt@ryan-realty.com'],
+      to: ['agent@otherbrokerage.com'],
+      subject: 'Seller counter - 19496 Tumalo Reservoir Rd',
+      attachments: [{ name: 'SCO1.pdf' }],
+      ...p,
+    })
+
+  it('files the sent counter on its deal', () => {
+    const sent = decide(counter())
+    expect(sent.status).toBe('filed')
+    expect(sent.dealId).toBe('tumalo')
+  })
+
+  it('refuses the same message while Gmail still holds it as a draft', () => {
+    const draft = decide(counter({ draft: true }))
+    expect(draft.status).toBe('not_deal')
+    expect(draft.dealId).toBeNull()
+    expect(draft.cycleId).toBeNull()
+    expect(draft.reasons.join(' ')).toMatch(/unsent draft/)
+  })
+
+  it('refuses a draft on a thread that sits on a deal', () => {
+    const draft = decide(mail({ from: ['matt@ryan-realty.com'], to: ['agent@otherbrokerage.com'], subject: 'Re:', draft: true }), {
+      dealId: 'tumalo',
+      method: 'address',
+    })
+    expect(draft.status).toBe('not_deal')
+    expect(draft.dealId).toBeNull()
+  })
+
+  it('refuses a draft whatever escrow number it carries', () => {
+    const subject = 'Escrow WT0291454 - counter'
+    expect(decide(counter({ subject })).dealId).toBe('tumalo')
+    expect(decide(counter({ subject, draft: true })).status).toBe('not_deal')
+  })
+})

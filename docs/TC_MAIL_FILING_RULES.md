@@ -27,6 +27,7 @@ content is silent and exactly one open file fits.
 
 | # | Rule | Files to | Notes |
 |---|---|---|---|
+| −1 | **An unsent draft is not mail** (v4.2). A message Gmail still labels DRAFT reached no one, whatever file, offer or escrow number it names. | nothing | Gmail lists drafts beside sent mail under the broker's own From line, and every autosave is a new Gmail id under one Message-ID: the sent copy is decided on its own when it goes out. The 15-minute sync, the daily sweep, the party and offer harvest and the backfill walk list with `-in:drafts` (`lib/crm/gmail-drafts.ts`), so a draft writes no CRM timeline row either; a path that fetches a message by id is refused by this rule before its attachments are read or the model stage sees it. The one-time full-history review walk lists drafts on purpose (coverage counts every message) and records each as not a deal. |
 | 0 | **Noise never files.** List mail (List-Unsubscribe, Precedence: bulk), auto-replies, listing alerts ("16 new listings for…", "Copy: Subscription…"), system notices ("[Expired]…", "[Deploy]…", Google's "[Notice]…"), a CRM's reminder list ("Daily Birthday Reminder" names a client and her address), **our own machines** (anything from `mail.ryan-realty.com`: lead notices, CMAs, alerts, newsletters, the Vault's own signing emails; anything from `resend.dev`: the Studio's drafts), and **digests**: three or more street addresses listed as content. | nothing | A subject naming exactly one of our files by full address, MLS or escrow number is never a digest (a street alone is not enough: "Follow-Up: Bluff Dr. Units + New Options" was a buyer's tour of five properties), and letterhead addresses (a suite after them, or on their own line beside a phone or email) never count toward the three. Bulk mail carrying exactly one file's escrow number files by rule 1; bulk mail whose subject names exactly one file by full address or MLS number goes on to rules 1 to 5, which still refuse a stranger's pitch. Our own machines, system notices, and our own list mail to ourselves (a BCC blast, "Great New Price on …") are never lifted. |
 | 1 | **Escrow or MLS number** of exactly one file, anywhere in the subject, body, attachment names or attachment text. | that file, any stage | Escrow numbers need 6+ characters with 4+ digits; MLS numbers never match inside a longer number. A number in the subject outweighs one in the body. **A comparables report** (CMA, BPO, appraisal: by file name or its first page) contributes only the property it is about, never its comps' numbers or addresses. Two files → queue. |
 | 1b | **Our clients on two open files** (selling one home, buying the next), and the email names no property: the people on it, and the thread it sits in, cannot pick. Only what the email says can: the street it calls one of those files by, in the subject, a file name or the words its sender wrote ("are you back in your Drouillard home"), or the subdivision in the subject or a file name, or a numbered street with its suffix ("7th Street Inspection" among one investor's four files); else someone the email talks about, not someone on it, who is on only one of those files (the purchase's lender, named in the body); else the side it is on ("the <client> purchase", "buying", "the down payment", "our loan", "a jumbo loan amount" → the file where we represent the buyers; "selling", "showings", "open house", "listing" → the file we list; "sold" is neither, "CC Mortgage sold our loan"). | that file | Clients = parties on the file by email, by the name beside their address, or named first-and-last in what the sender wrote ("Mutual Clients \| Pat Client / Lee Client"); a first and last name that are one word ("Test test") names nobody. A file counts while it could be open: open by its dates, or it has a cycle with no dates (SkySlope's listing record often has none) and the email falls in the year before its first contract. What the sender wrote is read first, then the conversation it quotes ("… included it with the listing documents in the mls"); in the body a bare street needs six letters or two words, and a house number alone ("to show 3480") counts. The side is the clients' side of that file **on that date**, by their names on the contract then (they bought 3480 SW 45th in 2025 and sold it in 2026); "the listing agent" is how a buyer's broker names the other side, not a sale word. A side word picks only when one file is on that side (an investor's four purchases are all purchases); a file whose every contract died before the email, with no listing of ours open, is over and does not count on its side (the clients' first purchase fell through on 2025-07-08, so their "Balance of Down Payment" a month later is the purchase that went on to close), except for its own termination paperwork within 30 days. Names both, or neither, and no side (or both sides, "proceeds from the sale … their purchase") → queue. Runs only when the thread, if any, sits on one of those files. |
@@ -930,7 +931,7 @@ open deals, naming none", which is what the message says; the label is now
 `not_filed`. If the rules should file it, its file is School House, not
 Beaumont.
 
-*A possible rule gap, described and not changed:* v4.1 reads a never-sent
+*A rule gap, closed by v4.2 (section below):* v4.1 read a never-sent
 draft as correspondence. The sibling draft above carries no body and was never
 sent, yet it is filed on School House as mail ("street name of one deal"). A
 rule that skips a message whose only label is DRAFT would keep unsent drafts out
@@ -995,3 +996,107 @@ initials on a document whose envelope record has both signers complete); the
 13:42 envelope's copy read "Fully executed". That is the document reader and
 the form check on a test fixture, a different path from `execution-state.ts`;
 not looked into further.
+
+### v4.2: an unsent draft is not mail (2026-10-01)
+
+`mail-rules-v4.2-2026-10-01`, rule −1 in the table above. Gmail's
+`users.messages.list` returns drafts beside sent mail, under the broker's own
+From line, and v4.1 decided them like mail he had sent.
+
+**Measured 2026-10-01, before the change** (Gmail `users.drafts.list` read-only
+per mailbox, matched by Gmail id):
+
+| Where | Rows that are a current draft |
+|---|---|
+| Gmail drafts | 410 (matt@ 400, rebeccapeterson@ 10, paul@ 0) |
+| `tc_mail_messages` | 152: 142 filed on 26 deals, 8 ambiguous, 1 unfiled_transaction, 1 dismissed (149 decided by v4.1, 3 by v2) |
+| `tc_mail_reviews` | 410: 142 filed, 252 not_deal, 8 ambiguous, 7 bulk, 1 unfiled_transaction |
+| `crm_timeline` (source gmail) | 143 `email_out` rows on 65 people |
+
+The timeline rows are the costlier half: `lib/crm/response-clock.ts` counts a
+Gmail-synced `email_out` with a broker on it as a person touching the lead, so a
+draft to a new lead could stamp its first broker action and stop its five-minute
+clock for an email nobody received.
+
+**Draft ids.** Every autosave and the send itself get a new Gmail id under one
+RFC Message-ID (rows with two to five same-mailbox `gmail_refs` seconds apart:
+"Inspection Items (Draft)", "Offer 2", "Septic Items"). The index already keys on
+the Message-ID, so a sent message carries its drafts' ids beside its own and
+stays one row; only a message that is still a draft is wrong.
+
+**The change.**
+- `lib/tc/mail-rules.ts`: `MailFacts.draft`; rule −1 decides a draft `not_deal`
+  ("an unsent draft (Gmail label DRAFT): it reached no one") before every other
+  rule, the thread anchor included.
+- `lib/tc/mail-index.ts`: the facts carry `isUnsentDraft(labelIds)`; a draft stops
+  after pass 1, before its PDFs are read or the model stage sees it.
+- `lib/crm/gmail-drafts.ts` (`withoutDrafts`, `isUnsentDraft`): the 15-minute sync
+  (CRM timeline and Vault), `sweepQuery` (the daily sweep's deal and transaction
+  queries), the party and offer harvest (`lib/tc/mailbox-harvest-run.ts`) and the
+  backfill walk list with `-in:drafts` (checked live: 20 of 20 sampled drafts
+  listed without it, 0 with it). The sync also skips a DRAFT-labeled message if
+  one is listed anyway. The one-time full-history review walk keeps listing
+  drafts so its coverage still counts every message; the rule records each.
+- `lib/crm/gmail-drafts.test.ts` fails if any of those walks lists without the
+  filter (4 of 6 fail with the change reverted).
+
+**Golden set.** 23 rows labeled `file` are current drafts (in `users.drafts.list`
+on 2026-10-01); relabeled `not_filed`, `confidence: "verified"`, dated note. Six
+more drafts were already `not_filed`. Golden eval, the same corrected labels,
+one run at a time (an earlier pair run beside other Gmail readers hit the
+per-user quota and is discarded):
+
+| Run | Filed right | Wrong file | Filed, should not be | Safe queue | Missed | Correctly not filed | Precision | Recall |
+|---|---|---|---|---|---|---|---|---|
+| v4.1 | 1,067 | 0 | 23 | 19 | 7 | 376 | 97.9% | 97.9% |
+| v4.2 | 1,067 | 0 | 4 | 19 | 7 | 395 | 99.6% | 97.9% |
+
+Row by row against the v4.1 run: 19 better (each a draft, FALSE_FILE to TN),
+0 worse, 1,503 unchanged; 0 errors either run.
+
+**CRM timeline repair** (`scripts/crm-timeline-mail-repair.ts`, first dry run
+2026-10-02 00:16Z, drafts only): of 13,918 Gmail email rows, 13,710 are messages that exist and are not
+drafts, **143 are drafts (65 people)**, 0 were written from an autosave the send
+replaced, and 65 point at a message gone from Gmail with nothing of its
+Message-ID left in its thread (a discarded draft, or mail deleted for good: not
+provable either way, so left alone). The conversation model holds a copy of
+124 of the 143: the July 2026 backfill (migration `20260716210000`) copied the
+timeline into `crm_message`, so those drafts also sit in the CRM inbox as sent
+email, in 55 conversations. `--apply` deletes each draft's copy with its
+timeline row (none is replied to; a copy that is stays, with its row), deletes a
+conversation left with no message (0 of the 55; read with paging, since a
+1,000-row read had counted 39), and recomputes the 55 conversations' rollups
+the way `recompute_conversation_rollups()` does
+(`lib/crm/conversation-rollups.ts`, tested), without touching any other
+conversation. Every row it changes or removes is written whole to
+`tmp/crm-timeline-mail-repair/<run>/before.json` first.
+
+### Copied on an email: `email_cc` (Matt 2026-10-02)
+
+The CRM sync wrote every CRM person on an email's To or Cc as `email_out`,
+whoever sent it. Of the latest 400 Gmail `email_out` rows on 2026-10-01, 174
+were outside senders' mail copying 10 clients (Western Title 52, First American
+35, Bridgetown 26), and every one counted as a broker touching that client
+(`isHumanTouch`, speed-to-lead, contact attempts, the first-broker-action stamp).
+Asked whether to leave them off the timeline or show them as their own entry,
+Matt chose **"Copied on an email"**.
+
+- `lib/crm/gmail-timeline-kind.ts`: `email_in` when the person sent it;
+  `email_out` only when one of our brokers did (the mailbox holds it as SENT, or
+  its From is ours by `isHouseAddress`: our domains and Matt's own Gmail alias);
+  otherwise `email_cc`, with the sender in `payload.from`.
+- Migration `20261002011238_crm_timeline_email_cc_kind` adds `email_cc` to
+  `crm_timeline_kind_check` (applied 2026-10-02 before the code, so the sync's
+  batch never meets the old constraint; the live definition matched
+  `20260713140100` before it).
+- `email_cc` is on the contact's activity feed ("Copied on an email"), the
+  person page's Emails tab with a "Copied on" chip, and the global activity
+  feed's email filter. It is in no human-touch, conversation, inbox, deal
+  conversation or broker-activity report kind list.
+- `scripts/crm-timeline-mail-repair.ts` recasts the existing rows: an
+  `email_out` row whose message is not SENT in its mailbox and not From us
+  becomes `email_cc`, its `crm_message` copy (the July backfill's "our outbound
+  email") leaves the conversation model, and a first-broker-action stamp taken
+  from it, or from a draft, is recomputed from the rows left through
+  `isHumanTouch` (cleared when none is left). A journey stage that stamp
+  advanced is not moved back.
