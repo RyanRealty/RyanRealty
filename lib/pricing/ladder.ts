@@ -10,10 +10,11 @@
  *      Never a gated / much-more-expensive (or much-cheaper) subdivision.
  *      Never rural vs urban. Age, stories, beds, baths, GLA filter first.
  *
- * Hard exclusions run on EVERY rung, including whole bathroom count
- * (1-bath vs 2-bath is a different buyer). Soft filters (age/story/beds)
- * start tight and loosen as the ladder widens. A half-bath still matches
- * the same whole count (1 and 1.5 both floor to 1).
+ * Hard exclusions run on EVERY rung. Beds and baths use the one-room rule
+ * (`lib/pricing/room-counts.ts`): same whole count travels anywhere, one
+ * room apart only on own ground, two or more refused everywhere. Soft
+ * filters (age/story) start tight and loosen as the ladder widens. A
+ * half-bath still matches the same whole count (1 and 1.5 both floor to 1).
  */
 
 import { POCKET_RADIUS_MILES } from '@/lib/pricing/infer-pocket'

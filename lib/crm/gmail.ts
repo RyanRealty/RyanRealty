@@ -25,6 +25,8 @@ import { prospectOutreachContext } from '@/lib/crm/prospect-context'
 import { buildEmailIntentNote, emailIntentDedupeKey } from '@/lib/crm/email-intent-note'
 import { INDEX_METADATA_HEADERS } from '@/lib/tc/gmail-message'
 import { GMAIL_AUTH_TIMEOUT_MS } from '@/lib/gmail-draft'
+import { isUnsentDraft, withoutDrafts } from '@/lib/crm/gmail-drafts'
+import { gmailTimelineKind, sentByUs } from '@/lib/crm/gmail-timeline-kind'
 
 // System/notification senders that must never create timeline entries — leftover
 // vendor mail is platform noise, not a communication from a contact.
@@ -309,7 +311,7 @@ export async function syncMailboxWindow(params: {
     for (; pagesUsed < pageBudget; pagesUsed++) {
       const list = await gmail.users.messages.list({
         userId: 'me',
-        q: `after:${afterSec} -in:spam -in:trash`,
+        q: withoutDrafts(`after:${afterSec} -in:spam -in:trash`),
         maxResults: 100,
         pageToken,
       })
@@ -332,6 +334,10 @@ export async function syncMailboxWindow(params: {
         processed++
         const internal = Number(meta.internalDate ?? 0)
         if (internal > maxInternal) maxInternal = internal
+        // A draft reached no one: no timeline row ("email_out" to a client who
+        // never got it) and no Vault filing. The query leaves drafts out; this
+        // holds if a draft is listed anyway.
+        if (isUnsentDraft(meta.labelIds)) continue
         const from = parseAddresses(headerOf(meta, 'From'))
         if (from.length && from.every((a) => BLOCKED_SENDER_DOMAINS.has(a.split('@')[1] ?? ''))) continue
         const toCc = [...parseAddresses(headerOf(meta, 'To')), ...parseAddresses(headerOf(meta, 'Cc'))]
@@ -352,12 +358,15 @@ export async function syncMailboxWindow(params: {
         // Message-ID, so keying on it makes the second copy an upsert no-op.
         const rfcId = headerOf(fullMsg.data, 'Message-ID')
         const messageKey = rfcId ? `rfc:${createHash('sha1').update(rfcId.trim()).digest('hex').slice(0, 24)}` : fullMsg.data.id
+        // A person copied on someone else's email (a title company's closing
+        // mail) was not written to by us: `email_cc`, never a broker touch.
+        const ours = sentByUs({ labelIds: meta.labelIds, from })
         for (const [personId, dir] of candidates) {
           matched++
           rows.push({
             person_id: personId,
             ts: new Date(internal || Date.now()).toISOString(),
-            kind: dir === 'in' ? 'email_in' : 'email_out',
+            kind: gmailTimelineKind({ personIsSender: dir === 'in', sentByUs: ours }),
             title: subject,
             body,
             payload: {
@@ -365,6 +374,7 @@ export async function syncMailboxWindow(params: {
               threadId: fullMsg.data.threadId,
               mailbox: mailboxEmail,
               snippet: fullMsg.data.snippet ?? null,
+              from: from[0] ?? null,
             },
             broker: brokerSlug,
             source: 'gmail',

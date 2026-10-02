@@ -2442,9 +2442,9 @@
       ]
     },
     "homepage-v6": {
-      "layoutLock": "The homepage opens with live inventory in the first viewport and a real Sell address field without waiting on JS. Do not replace the hero search with a stacked memo. Rails stay house carousels \u2014 adapt V3Carousel into them rather than inventing a second rail look. Featured community and Browse places are catalog Card / carousel / number \u2014 not house chips or a house pager.",
+      "layoutLock": "Live inventory in the first viewport; a Sell address field without JS. The search field morphs into its results. Shelves are listing dials (V3ListingDial, rails bottom/left/right), never carousels. Communities: one spotlight. Towns: a photo mosaic. New construction: a ledger. The results surface carries places with their live counts drawn to one scale, the lead shelf's homes with photograph, ask and facts, and a preview of the row under the cursor. The spotlight is the installed Card with a counted index. No card shape runs twice down the page, and every figure prints with its label.",
       "primitivesToAdd": [
-        "V3Carousel"
+        "V3ListingDial"
       ],
       "demoStates": [
         "search-open=.v3-morph-search--live [aria-haspopup=dialog]!click",
@@ -2494,8 +2494,14 @@
         {
           "id": "house-home-rails",
           "catalog": "house-v3",
-          "url": "app/_v3/HomeListingRail.client.tsx",
-          "job": "Stacked house carousels of live inventory, not a wall of cards."
+          "url": "app/_v3/HomeHomesRails.tsx",
+          "job": "Stacked shelves of live inventory, each on V3ListingDial with its own rail position, not a wall of cards and not a carousel."
+        },
+        {
+          "id": "house-listing-dial",
+          "catalog": "house-v3",
+          "url": "components/site/v3/V3ListingDial.client.tsx",
+          "job": "One home large with its photograph and the card copy, the rest of the shelf as thumbnails that turn it, 03 / 12 at its head."
         },
         {
           "id": "beui-morphing-search",
@@ -2513,13 +2519,13 @@
           "id": "shadcn-carousel",
           "catalog": "shadcn",
           "url": "https://ui.shadcn.com/docs/components/carousel",
-          "job": "Inventory rails and featured community. Adapt into the installed Carousel, do not paste a second kit."
+          "job": "Sideways paging only where a run of place cards needs it. Listing shelves are dials, never a listing carousel."
         },
         {
           "id": "shadcn-card",
           "catalog": "shadcn",
           "url": "https://ui.shadcn.com/docs/components/card",
-          "job": "House cards on the rail, featured community, and Browse places: price/address/specs or sourced counts on the installed Card, not a photo with a heart and not house chips."
+          "job": "The featured-community spotlight and house cards: photograph, name or price/address/specs, and sourced figures each with its label on the installed Card, not a photo with a heart and not house chips."
         },
         {
           "id": "beui-number",

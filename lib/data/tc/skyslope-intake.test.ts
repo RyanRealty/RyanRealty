@@ -238,6 +238,9 @@ function seedVault(db: FakeDb) {
   db.tables.tc_checklist_assignments = [{ item_id: 'item-11', document_id: 'doc-rsa' }]
   db.tables.tc_deal_contacts = [{ id: 'contact-1', deal_id: 'deal-beaumont', role: 'title', name: 'Yvonne Ward', email: 'yvonne.ward@westerntitle.com', source_contact_guid: 'title-1' }]
   db.tables.tc_events = []
+  // the MLS rows the close rule reads at the end of a run (lib/data/tc/mls-close.ts)
+  db.tables.listings = []
+  db.tables.tc_cycle_repair_log = []
 }
 
 function seedSkySlope() {
@@ -421,6 +424,46 @@ describe('runSkySlopeVaultIntake', () => {
     const before = h.db.snapshot()
     const res = await runSkySlopeVaultIntake({ apply: true, paceMs: 0, deadline: Date.now() - 1 })
     expect(res.complete).toBe(false)
+    expect(h.db.snapshot()).toBe(before)
+  })
+
+  it('ends by closing a sale the MLS shows closed, whatever SkySlope says, and the next run keeps it', async () => {
+    // placeholder MLS number on the lapsed (Expired) folder, and its MLS row
+    h.sky.details.get(DELAWARE)!.mlsNumber = '000000009'
+    h.db.tables.listings = [
+      { ListNumber: '000000009', StandardStatus: 'Closed', CloseDate: '2026-09-18T00:00:00+00:00', ClosePrice: 950000, purchase_contract_date: '2026-09-01', ListOfficeName: 'Example Listing Office', buyer_office_name: 'Ryan Realty LLC', ModificationTimestamp: '2026-09-18T20:00:00+00:00' },
+    ]
+    const res = await run(true)
+    expect(res.mlsCloses).toMatchObject({ ok: true, mode: 'apply', totals: { closed: 1, stagesUpdated: 1 } })
+    const t = h.db.tables
+    const delaware = t.tc_cycles.find((c) => c.source_guid === DELAWARE)!
+    expect(delaware).toMatchObject({ status: 'Closed', actual_closing_date: '2026-09-18' })
+    expect((delaware.term_provenance as Row).status).toMatchObject({ by: 'mls' })
+    expect(t.tc_deals.find((d) => d.id === 'deal-delaware')).toMatchObject({ stage: 'closed', stage_detail: 'Closed 2026-09-18' })
+    expect(t.tc_cycle_repair_log).toHaveLength(1)
+    expect(t.tc_cycle_repair_log[0]).toMatchObject({ cycle_id: delaware.id, outcome: 'repaired', before_row: { status: 'Expired', actual_closing_date: null } })
+    expect(t.tc_events.filter((e) => e.actor === 'mls-close').map((e) => e.action).sort()).toEqual(['mls_cycle_closed', 'mls_stage_updated'])
+
+    // SkySlope still says Expired: the next run takes nothing back and writes nothing
+    const settled = h.db.snapshot()
+    const writes = h.db.writes
+    const again = await run(true)
+    expect(again.mlsCloses?.totals.closes).toBe(0)
+    expect(h.db.writes).toBe(writes)
+    expect(h.db.snapshot()).toBe(settled)
+  })
+
+  it('plan mode decides the MLS close and writes nothing', async () => {
+    h.sky.details.get(DELAWARE)!.mlsNumber = '000000009'
+    h.db.tables.listings = [{ ListNumber: '000000009', StandardStatus: 'Closed', CloseDate: '2026-09-18T00:00:00+00:00', ClosePrice: 950000, ListOfficeName: 'Example Listing Office', buyer_office_name: 'Ryan Realty LLC' }]
+    // the cycle is already in the Vault (a previous intake), still Expired
+    await run(true)
+    const delaware = h.db.tables.tc_cycles.find((c) => c.source_guid === DELAWARE)!
+    Object.assign(delaware, { status: 'Expired', actual_closing_date: null, term_provenance: {} })
+    Object.assign(h.db.tables.tc_deals.find((d) => d.id === 'deal-delaware')!, { stage: 'dead', stage_detail: 'All cycles canceled' })
+    const before = h.db.snapshot()
+    const res = await run(false)
+    expect(res.mlsCloses).toMatchObject({ mode: 'plan', totals: { closes: 1, closed: 0 } })
     expect(h.db.snapshot()).toBe(before)
   })
 

@@ -1,30 +1,31 @@
 ---
-description: Production ships on main; worktrees allowed with anti-strand rules (aligns with AGENTS.md).
+description: Push the branch to GitHub right away. Main lands only by fast-forward from the Mini after the push gate.
 alwaysApply: true
 ---
 
 # Trunk + worktrees (anti-strand)
 
-**Production truth is `origin/main`.** Verified work must land on `main` and be pushed so CI and Vercel production can run.
+**Production truth is `origin/main`.** All code work is pushed to GitHub as a branch right away. Main lands only by fast-forward from the Mini after the push gate. No rebase, force-push, or reset.
 
 ## Default
 
-- Day-to-day work stays on **`main`** in the primary checkout (`/Users/matthewryan/RyanRealty`).
-- Push finished units with `NODE_OPTIONS=--max-old-space-size=8192 npm run push`.
+- Day-to-day work is a branch from current `origin/main`, pushed to GitHub right away. Do not land `main` yourself.
+- Push the branch with `NODE_OPTIONS=--max-old-space-size=8192 npm run push`.
 - Do **not** open PRs for routine work. Do **not** use a long-lived release branch.
+- No rebase, force-push, or reset.
 
 ## Worktrees are allowed when they help
 
-Use a linked worktree for parallel agents, long experiments, or cloud-agent isolation — **not** as a place to abandon unfinished work.
+Use a linked worktree for parallel agents, long experiments, or cloud-agent isolation. Not as a place to abandon unfinished work.
 
 Required anti-strand rules (see **AGENTS.md → Worktrees**):
 
 1. Name branches `wt/<agent-or-topic>-YYYYMMDD` (example: `wt/crm-mobile-20260726`).
-2. Prefer **local-only** branches until ready to merge. Pushing a branch to `origin` triggers Vercel **preview** builds unless previews are disabled in the dashboard — that burns Build CPU.
-3. Before ending a session: either **merge/rebase into `main` + push `main`**, or record the branch + path + intent in `docs/plans/CROSS_AGENT_HANDOFF.md` Current block, and push the branch only if another machine must continue it.
-4. When done: merge to `main`, push `main`, delete the branch locally (and on `origin` if it was pushed), `git worktree remove <path>`, `git worktree prune`.
+2. Push the branch to GitHub right away. Do not keep the only copy local.
+3. Before ending a session: push the branch. If work is unfinished, also record the branch, path, and intent in `docs/plans/CROSS_AGENT_HANDOFF.md` Current block.
+4. Main lands only by fast-forward from the Mini after the push gate. Do not land `main` from the worktree. After that fast-forward has landed and the branch is done: delete the branch locally and on `origin`, `git worktree remove <path>`, `git worktree prune`.
 5. Never leave the only copy of valued work in an unpushed worktree with no handoff entry.
 
 ## Failure mode this rule prevents
 
-Matt previously forbade worktrees because unfinished work got stranded off `main` and the other tool could not see it. Worktrees are fine; **invisible unfinished work is not**.
+Matt previously forbade worktrees because unfinished work got stranded off `main` and the other tool could not see it. Worktrees are fine. Invisible unfinished work is not. Push the branch right away.

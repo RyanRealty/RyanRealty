@@ -32,7 +32,12 @@ export type HomeFeaturedCommunitySlide = {
  * that count that way (lib/kb/registry-resort-public-figures.ts, active
  * single-family tiles); the sales, new-this-week and days figures come from the
  * community's MarketPulse row, which the prefix already names.
+ *
+ * 2026-10-01 (section 0 trace for the homepage spotlight): the sentence said
+ * "every single-family listing", but the read is every residential listing
+ * (MLS property type A): of Tetherow's 22, 9 are townhouses. The words now say
+ * what the figure counts. The spotlight prints only these two figures.
  */
 export const HOME_FEATURED_COMMUNITY_SOURCE = publicMarketPulseSource(
-  "Homes for sale and the median list price count every single-family listing the MLS files under any of the community's subdivision names.",
+  "Homes for sale and the median list price count every house, townhome and condo on the market that the MLS files under any of the community's subdivision names.",
 )

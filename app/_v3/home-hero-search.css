@@ -122,11 +122,15 @@ html:has(.home-hero-search) .v3-chrome__search {
 
 .v3 .home-hero-search .v3-tabs__list,
 .v3 .home-hero-search .v3-tabs__list.bg-card {
-  background: transparent !important;
-  background-color: transparent !important;
-  border-color: transparent !important;
+  /* The track the indicator slides in, drawn on the photograph (2026-10-01:
+     with no track, a still read as two buttons swapping fill, not a sliding
+     indicator). A navy scrim with a cream hairline: no glass, no blur. */
+  background: var(--v3-scrim-mid) !important;
+  background-color: var(--v3-scrim-mid) !important;
+  border: 1px solid var(--v3-cream-60) !important;
   box-shadow: none !important;
-  /* Beat V3Tabs.css radius-control: 0 so the track (when any fill leaks) stays pill. */
+  padding: 3px !important;
+  /* Beat V3Tabs.css radius-control: 0 so the track stays a pill. */
   border-radius: 999px !important;
 }
 
@@ -140,8 +144,8 @@ html:has(.home-hero-search) .v3-chrome__search {
    the closed state a labeled cream field and the open state a typeahead —
    demoMatch false. */
 .v3 .home-hero-search .v3-morph-search--live .v3-morph-search__catalog {
-  width: 18rem;
-  max-width: min(18rem, 100%);
+  width: 22rem;
+  max-width: min(22rem, 100%);
 }
 
 @media (max-width: 40rem) {
@@ -245,4 +249,53 @@ html:has(.home-hero-search) .v3-chrome__search {
   overflow: auto;
   background: var(--v3-surface);
   color: var(--v3-ink);
+}
+
+/* The opened front door's last row (portaled with the .v3 root class): the
+   door to every listing, and the keys that move through the rows. */
+.v3 .home-hero-search__all {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--v3-tap);
+  color: var(--v3-ink);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-strong);
+  text-decoration: underline;
+  text-underline-offset: var(--v3-underline-offset);
+}
+
+.v3 .home-hero-search__keys {
+  margin-left: auto;
+  color: var(--v3-ink-muted);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-label);
+}
+
+@media (max-width: 40rem) {
+  .v3 .home-hero-search__keys {
+    display: none;
+  }
+}
+
+/* The opened panel's list from 64rem: the towns down the first column, the
+   communities and the shelf's homes down the second, so all three groups and
+   the preview stand in one view (keyboard order is unchanged). */
+@media (min-width: 64rem) {
+  .home-hero-search-overlay [data-v3-morph='listbox'] {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--v3-space-xs);
+    align-content: start;
+  }
+
+  .home-hero-search-overlay [data-v3-morph='listbox'] > [data-v3-morph='group']:first-child {
+    grid-row: 1 / span 2;
+  }
+}
+
+/* While the opened search is on screen, Jax stands down: his disc sat over the
+   panel's rows at 375 (build b1). */
+html:has([data-v3-morph='dialog']) [data-v3-dog-floater] {
+  visibility: hidden;
 }

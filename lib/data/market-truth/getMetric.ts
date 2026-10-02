@@ -52,6 +52,29 @@ export class UnknownStatError extends Error {
   }
 }
 
+/** PostgREST's per-response row cap; getMetrics pages in this size. */
+const METRIC_PAGE = 1000
+
+/** market_metric's primary key, in order: the tiebreak that makes offset paging stable. */
+export const METRIC_PRIMARY_KEY = [
+  'stat_id',
+  'geo_type',
+  'geo_slug',
+  'segment',
+  'period_end',
+  'window_months',
+  'definition_id',
+] as const
+
+/** Appends the primary key to an ordered market_metric read so every page boundary is fixed. */
+export function orderByPrimaryKey<Q extends { order: (column: string, options?: { ascending?: boolean }) => Q }>(
+  query: Q,
+): Q {
+  let ordered = query
+  for (const column of METRIC_PRIMARY_KEY) ordered = ordered.order(column, { ascending: true })
+  return ordered
+}
+
 const METRIC_COLUMNS =
   'stat_id, geo_type, geo_slug, segment, period_end, window_months, definition_id, value, value_text, sample_n, method, excluded_n, complete_through, is_publishable, withheld_reason, is_floor, computed_at'
 
@@ -167,21 +190,50 @@ export async function getMetrics(inputs: GetMetricInput[]): Promise<(MetricResul
   }
   if (!inputs.length) return []
 
+  // EVERY ROW, NEWEST FIRST, PAGED (2026-10-01). market_metric keeps every
+  // daily computation, so this read grew past PostgREST's 1,000-row page: the
+  // public pace read for neighborhood:tetherow (18 stats, every window, every
+  // day since 2026-08-23) passed 1,000 rows, the unordered first page held
+  // none of the newest pending_count, new_listings_30d or sale-to-original
+  // cells, and the community page printed "Hear about new listings" with no
+  // count while Market Truth published 5 new listings and 3 under contract.
+  // The same cap cut the overlay read once (getSellBendMarket.ts,
+  // loadOverlayRows). Ordered by computed_at desc, the range loop finishes
+  // every page; the window and period filters narrow the read when every
+  // input names one. pickRow still decides which row answers.
+  const windows = inputs.every((input) => input.windowMonths != null)
+    ? unique(inputs.map((input) => String(input.windowMonths)))
+    : null
+  const periodEnds = inputs.every((input) => Boolean(input.periodEnd))
+    ? unique(inputs.map((input) => String(input.periodEnd).slice(0, 10)))
+    : null
   const sb = createServiceClient()
-  const { data, error } = await sb
-    .from('market_metric')
-    .select(METRIC_COLUMNS)
-    .in('stat_id', unique(inputs.map((input) => input.stat)))
-    .in('geo_type', unique(inputs.map((input) => input.geoType)))
-    .in('geo_slug', unique(inputs.map((input) => input.geoSlug)))
-    .in('segment', unique(inputs.map((input) => input.segment)))
-    .in(
-      'definition_id',
-      unique(inputs.map((input) => input.definitionId ?? DEFINITION_ID)),
-    )
+  const rows: Record<string, unknown>[] = []
+  for (let from = 0; ; from += METRIC_PAGE) {
+    let query = sb
+      .from('market_metric')
+      .select(METRIC_COLUMNS)
+      .in('stat_id', unique(inputs.map((input) => input.stat)))
+      .in('geo_type', unique(inputs.map((input) => input.geoType)))
+      .in('geo_slug', unique(inputs.map((input) => input.geoSlug)))
+      .in('segment', unique(inputs.map((input) => input.segment)))
+      .in(
+        'definition_id',
+        unique(inputs.map((input) => input.definitionId ?? DEFINITION_ID)),
+      )
+    if (windows) query = query.in('window_months', windows)
+    if (periodEnds) query = query.in('period_end', periodEnds)
+    // computed_at is shared by every row one compute run writes, so the
+    // primary key breaks the tie: offset pages over a non-unique order can
+    // skip a row or repeat one between pages.
+    const { data, error } = await orderByPrimaryKey(query.order('computed_at', { ascending: false }))
+      .range(from, from + METRIC_PAGE - 1)
 
-  if (error) throw new Error(`getMetrics: ${error.message}`)
-  const rows = (data ?? []) as Record<string, unknown>[]
+    if (error) throw new Error(`getMetrics: ${error.message}`)
+    const page = (data ?? []) as Record<string, unknown>[]
+    rows.push(...page)
+    if (page.length < METRIC_PAGE) break
+  }
   return inputs.map((input) => {
     const row = pickRow(rows, input)
     return row ? toMetricResult(row) : null

@@ -141,7 +141,8 @@ describe('rail position by dial order (Matt 2026-09-24)', () => {
 })
 
 // Matt 2026-09-25, "fix first, then ship": a class below its taste mark with
-// the dial keeps what production showed, by one explicit prop.
+// the dial keeps what production showed, by one explicit prop. The community
+// pages were that class until 2026-10-01; the default below is what they show now.
 describe('held presentations', () => {
   const RAIL = [
     { id: 'heath', name: 'Heath', detail: '2 for sale' },
@@ -164,7 +165,9 @@ describe('held presentations', () => {
       </PlaceSubdivisionMap>,
     )
 
-  it('PlaceSubdivisionMap layout="rails" (community pages): a carousel per buyer group, no dial, no rail bars', () => {
+  // The held layout stays a supported prop for a class below its mark; no
+  // place page passes it since the community pages took the dial (2026-10-01).
+  it('PlaceSubdivisionMap layout="rails" (the held layout): a carousel per buyer group, no dial, no rail bars', () => {
     const html = render('rails')
     expect(rails(html)).toEqual([])
     expect(html).toContain('place-homes--rails')
@@ -176,7 +179,7 @@ describe('held presentations', () => {
     expect(html).not.toContain('place-subdiv-rail__key')
   })
 
-  it('PlaceSubdivisionMap default: the dials and the rail count bars', () => {
+  it('PlaceSubdivisionMap default (community, city and neighborhood pages): the dials and the rail count bars', () => {
     const html = render()
     expect(rails(html).length).toBe(SECTIONS.length + 1)
     expect(html).not.toContain('place-homes--rails')

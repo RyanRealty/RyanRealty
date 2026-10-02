@@ -348,7 +348,13 @@ describe('taste-receipt --ship CLI', () => {
     )
     expect(r.status).toBe(0)
     expect(`${r.stdout}${r.stderr}`).toMatch(/ship OK/)
-    expect(`${r.stdout}${r.stderr}`).toMatch(/demoMatch true/)
+    // demoMatch is a recorded note, not a gate (Matt 2026-09-23): the CLI must
+    // report the judge's verdict the receipt holds, whichever way it went.
+    const recorded = JSON.parse(
+      readFileSync(join(REPO, 'design_system/ryan-realty/ui_kits/community/parity.json'), 'utf8'),
+    ).tasteReview.demoMatch
+    expect(typeof recorded).toBe('boolean')
+    expect(`${r.stdout}${r.stderr}`).toMatch(new RegExp(`demoMatch ${recorded}\\b`))
     expect(`${r.stdout}${r.stderr}`).toMatch(/open-state/)
     expect(`${r.stdout}${r.stderr}`).toMatch(/catalog-install/)
   })

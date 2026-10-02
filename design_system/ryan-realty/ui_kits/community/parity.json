@@ -38,7 +38,7 @@
     },
     {
       "name": "PlaceSubdivisionMap",
-      "section": "Matt 2026-09-22. One map for the community. The subdivision list sits beside it and a carousel of homes sits below.",
+      "section": "Matt 2026-09-22. One map for the community. The subdivision list sits beside it and the listing dials sit below (Matt 2026-09-24, the carousel is gone).",
       "blocking": true
     },
     {
@@ -53,7 +53,7 @@
     },
     {
       "name": "PlaceSubdivisionHomes",
-      "section": "#homes. Carousel of every publicly active home in the current selection.",
+      "section": "#homes, the listing dials (Matt 2026-09-24: every place page shows listings the same way; /subdivisions/northwest-crossing and /subdivisions/broken-top 301 here, which is where Matt still saw the carousel). Every publicly active home in the current map selection, one V3ListingDial per buyer group: one home large with its lead photograph and the card copy, the rest of the group as thumbnails on a vertical rail to its left (a strip under the card on a phone), an \"03 / 12\" readout heading the rail. The type links over it (community-field-types) land on each dial's #homes-<group> id. Commercial leases are the last dial, never in a for-sale dial or its count. Every listing stays an <a href> in the served HTML.",
       "blocking": true
     },
     {
@@ -68,7 +68,7 @@
     },
     {
       "name": "V3Instrument",
-      "section": "Pattern 1, AFTER village bars. Slope or strip of THIS community's closes, never Bend's median. chartFirst + foldAfter={0}. Too-few closes render Quiet. MOS stays off this grain.",
+      "section": "Pattern 1, AFTER village bars. Slope or strip of THIS community's closes, never Bend's median. chartFirst + foldAfter={0}. Too-few closes render Quiet. The supply read is not repeated here: it opens the page (#place-insight), and this section's source line says so.",
       "blocking": true
     },
 
@@ -84,12 +84,17 @@
     },
     {
       "name": "publishPlaceFace",
-      "section": "Face publisher. Community grain withholds MOS. Call is publishPlaceFace({ grain: 'community', hud }) \u2014 leftover 16 for Tetherow, never alias Field length.",
+      "section": "Face publisher. Call is publishPlaceFace({ grain: 'community', hud }) \u2014 leftover 16 for Tetherow, never alias Field length. hud.monthsSupply is the community's own Market Truth figure (neighborhood:<slug>, place_membership is_primary on both sides) and is set only when its 180-day closes clear the registry floor of 30 (2026-10-01: Sunriver 4.9, Eagle Crest 5.9, Northwest Crossing 1.9, Three Rivers 7.2; Tetherow withheld at 23). The pulse ratio stays untrusted at this grain (lib/market/geo-grain-trust.ts).",
       "blocking": true
     },
     {
       "name": "V3Quiet",
       "section": "Pattern 6, #belonging. Authored knowledge from _v3/place-knowledge.ts: facts and chips as the display (HOA, drive times, course specs, membership), extra prose and the authored story under disclosure. FAQ is V3Answers, not this Quiet. Market absence is a Quiet only when leftover HUD publishes nothing.",
+      "blocking": true
+    },
+    {
+      "name": "CommunityInsight",
+      "section": "#place-insight, the opening fold's paged figure beside #alerts (2026-10-01, the place-page layout lock: a drawing and a figure beside the alerts sentence). beautifului InsightCards, the same object the city, neighborhood and subdivision folds ship. Page one is the supply read: the community's own two months-of-supply bars and verdict where Market Truth publishes them; where Market Truth withholds them under the 30-close floor, the six-month closed count the withheld cell rests on (getDetachedOverlays supplyFloor), the floor, and the parent city's bars under the CITY's name (or a tally of the sales against the floor when the city has no published read). Never the community's withheld ratio, never a verdict for the community. Page two is the community's own monthly closed sales on the AnomalyCard scrub, never a city fallback. Pure turn: _v3/community-insight.ts.",
       "blocking": true
     },
     {
@@ -104,7 +109,7 @@
     },
     {
       "name": "V3Answers",
-      "section": "Pattern 8, #faq (site queue SITE-08, 2026-09-08). Rows come from buildPlaceAnswers and EACH CARRIES ONE SOURCED DATED FIGURE: the value on the closed row (so a shut section already reads as an answer sheet), and inside the disclosure the figure DRAWN plus its own \u00a70 trace. Two drawings cover the class \u2014 a banded rule (months of supply lands inside seller's / balanced / buyer's, so the verdict is a position and not a word) and a tally of one mark per home, grouped in fives. The parent city sits on the same rule as a named context mark where one exists, never as a figure under this place's name. The SAME array feeds the FAQPage JSON-LD through answersFaqItems, which is the whole point of the node: a schema built beside the rows instead of from them can drift from the visible text. The questions with no figure (HOA, school district, which subdivisions a community holds) still come from buildMarketFaq and are merged in after the figured rows, deduped by question text. The last row is the closing ask and links to the address field. ON THIS GRAIN the verdict is WITHHELD and said so: publishMonthsOfSupply refuses a community's supply ratio (lib/market/geo-grain-trust.ts), so the question is answered with the closed count and the same sentence SITE-01 put on the address answer. The inventory row carries listedVsDetachedNote, one wording shared with reconcileListedVsDetachedFaq, so the every-property-type Field count and the single-family figure are reconciled rather than left to be spotted. Its closing action is #value \u2014 CommunityPlaceValue, the SITE-01 address ask at the top of this page.",
+      "section": "Pattern 8, #faq (site queue SITE-08, 2026-09-08). Rows come from buildPlaceAnswers and EACH CARRIES ONE SOURCED DATED FIGURE: the value on the closed row (so a shut section already reads as an answer sheet), and inside the disclosure the figure DRAWN plus its own \u00a70 trace. Two drawings cover the class \u2014 a banded rule (months of supply lands inside seller's / balanced / buyer's, so the verdict is a position and not a word) and a tally of one mark per home, grouped in fives. The parent city sits on the same rule as a named context mark where one exists, never as a figure under this place's name. The SAME array feeds the FAQPage JSON-LD through answersFaqItems, which is the whole point of the node: a schema built beside the rows instead of from them can drift from the visible text. The questions with no figure (HOA, school district, which subdivisions a community holds) still come from buildMarketFaq and are merged in after the figured rows, deduped by question text. The last row is the closing ask and links to the address field. ON THIS GRAIN the verdict follows Market Truth: where the community's own months of supply publishes (its 180-day closes clear the floor of 30) the row is the banded rule; where it is withheld (Tetherow, 23 closes on 2026-10-01) the question is answered with the closed count and the same sentence SITE-01 put on the address answer, and the opening fold says the same thing with the six-month count. The inventory row carries listedVsDetachedNote, one wording shared with reconcileListedVsDetachedFaq, so the every-property-type Field count and the single-family figure are reconciled rather than left to be spotted. Its closing action is #value \u2014 CommunityPlaceValue, the SITE-01 address ask at the top of this page.",
       "blocking": true
     },
     {
@@ -149,7 +154,7 @@
     }
   ],
   "removedComponents": [
-    "V3Stage + CommunityStage + V3Field + PlaceFieldMap + V3PlacePropertyTypes \u2014 first screen is PlaceSplitView + leftover PlaceFaceStrip (count + median list). Type strips, not property-type H2s. MOS stays off the face.",
+    "V3Stage + CommunityStage + V3Field + PlaceFieldMap + V3PlacePropertyTypes \u2014 first screen is PlaceSplitView + leftover PlaceFaceStrip (count + median list). Type strips, not property-type H2s. MOS stays off the photograph; it is page one of the fold figure (#place-insight) where Market Truth publishes it.",
     "KbHero \u2014 the community hero photo and its stat row. Places open on Instrument (PUBLIC_UI.md section 3); the photo survives as the OG image.",
     "KbResortOverview + KbAbout \u2014 the authored depth, rebuilt as the first V3Quiet block through _v3/place-knowledge.ts. Every fact it rendered is still rendered.",
     "KbFeatured + KbTicker \u2014 the poster rail and the price tape. The Field's rows are the same listings, each a door, with the price beside the address.",
@@ -240,12 +245,13 @@
     "PlaceAreaHero (photograph owns the fold)",
     "V3Breadcrumb",
     "V3Heading (H1 `{Community} homes for sale`)",
+    "CommunityInsight #place-insight (the paged supply figure: the community's own months of supply, or the withheld count and the parent city named as the city; then the community's monthly closes)",
+    "CommunityAlertsStrip #alerts (the 30-day new-listing count and the email ask, beside the figure in the first screen, 2026-10-01)",
     "PlaceSubdivisionRail #child-places -- subdivisions beside the one map. Name and property-type line. No sales bars.",
     "PlaceSubdivisionAtlas #atlas -- the one map. Selecting a subdivision zooms to it. No second map and no reach list.",
-    "PlaceSubdivisionHomes #homes -- carousel of every publicly active home in the place, or in the selected subdivision.",
-    "V3Amenities #amenities -- each authored place and what it is. No share bar.",
-    "CommunityAlertsStrip #alerts (the 30-day new-listing count and the email ask, after the map)",
+    "PlaceSubdivisionHomes #homes, listing dials -- one V3ListingDial per buyer group of every publicly active home in the place, or in the selected subdivision; commercial leases last.",
     "CommunityPlaceValue (address in, verdict and pace out, then the email that delivers the written valuation)",
+    "V3Amenities #amenities -- each authored place and what it is. No share bar.",
     "V3Instrument #market (this community's typical-price slope; never Bend's median) or V3Quiet (too few / stated absence)",
     "V3Quiet #belonging",
     "V3CourseMap #course (the community's own course, when the registry names one with a map)",
@@ -280,13 +286,12 @@
     ]
   },
   "tasteReview": {
-    "evaluatedAt": "2026-09-15",
+    "evaluatedAt": "2026-10-01",
     "rubricVersion": "v1-2026-09-12",
-    "evaluator": "SITE-94 Tip Ready receipt, SITE-116 amenity catalog install on the same instrument. Catalog beui-number is the installed source at components/motion/number.tsx; beautifului-insight is components/motion/insight-cards.tsx. Both are imported by app/communities/[slug]/_v3/community-catalog.ts (requireRouteImport). The fold paints beui-number through V3AlertsStrip → V3Number → AnimatedNumber. #amenities paints InsightCards AllocationCard from the authored amenity list. Open-state is the valuation email field (value-open). Scores and shotsHash are the SITE-94 plates — this pass did not invent a new judge mark. Tip Ready = taste-receipt --ship exit 0.",
-    "evaluatorModel": "grok-4.6",
-    "builderModel": "grok-4.5",
-    "comparedToPrior": "rebaselined",
-    "rebaselineReason": "rubricVersion v1-2026-09-10 → v1-2026-09-12; shotsHash added value-open evidence for Tip Ready open-state. Do not invent demoMatch — beui-number is the real catalog file the route imports.",
+    "evaluator": "npx tsx scripts/taste-evaluate.ts community --builder claude-opus-5-5 --evaluator claude --url http://127.0.0.1:3331/communities/tetherow --shots <the 8 files below>. The grok CLI and the Cursor CLI are missing in this sandbox, so the judge is the chain's claude link (claude CLI, the sonnet alias pinned to claude-sonnet-5, subscription): three scorings of these shots in one call, recorded exactly as returned, no re-roll, no --focus. The builder (the community-mos lane, claude-opus-5-5) is not the judge. Iteration 1 of this lane on the same ruler (the withheld supply read drawn as Bend's bars under the Tetherow heading, the figure and the alerts in a band over the map) scored [58, 61, 64], median 61, honesty 7, and was not shipped; this is iteration 2.",
+    "evaluatorModel": "claude-sonnet-5",
+    "builderModel": "claude-opus-5-5",
+    "transport": "claude-cli",
     "shotSpec": {
       "routes": [
         "/communities/tetherow"
@@ -297,39 +302,53 @@
       ],
       "states": [
         "default",
-        "value-open"
+        "homes",
+        "homes-open",
+        "insight-open"
       ],
-      "capture": "scripts/take-route-shots.mjs first viewport for the instrument pair, then value-open from the PlaceValue email field (existing email-desktop / email-mobile375 plates, renamed for the *-open token)."
+      "capture": "node scripts/take-route-shots.mjs community http://127.0.0.1:3331/communities/tetherow --states \"insight-open=#place-insight .insight-pager__btn[aria-label^='Next']!click,homes=#homes,homes-open=#homes .v3-dial__thumbs > :nth-child(2)@#homes!click\". First viewport, scale 1, palette-quantized, against the community-mos tree's own next build + next start (2026-10-01, build b2)."
     },
     "shots": {
       "desktop": "design_system/ryan-realty/ui_kits/community/shots/desktop.png",
-      "mobile375": "design_system/ryan-realty/ui_kits/community/shots/mobile375.png",
-      "valueOpenDesktop": "design_system/ryan-realty/ui_kits/community/shots/value-open-desktop.png",
-      "valueOpenMobile375": "design_system/ryan-realty/ui_kits/community/shots/value-open-mobile375.png"
+      "homesDesktop": "design_system/ryan-realty/ui_kits/community/shots/homes-desktop.png",
+      "homesMobile375": "design_system/ryan-realty/ui_kits/community/shots/homes-mobile375.png",
+      "homesOpenDesktop": "design_system/ryan-realty/ui_kits/community/shots/homes-open-desktop.png",
+      "homesOpenMobile375": "design_system/ryan-realty/ui_kits/community/shots/homes-open-mobile375.png",
+      "insightOpenDesktop": "design_system/ryan-realty/ui_kits/community/shots/insight-open-desktop.png",
+      "insightOpenMobile375": "design_system/ryan-realty/ui_kits/community/shots/insight-open-mobile375.png",
+      "mobile375": "design_system/ryan-realty/ui_kits/community/shots/mobile375.png"
     },
-    "shotsHash": "sha256:3a005afc2c13b8104449f6e3aff9533ba212bf3fa9c0c388df5e154f4daaf7a3",
+    "shotsHash": "sha256:6fbd3117269a84a3e6ceda89378c39bb00c3569779a29bf0d918387bb79ed571",
     "scores": [
-      60,
-      64,
-      69
+      65,
+      68,
+      71
     ],
-    "score": 64,
+    "score": 68,
     "breakdown": {
       "design": 20,
-      "originality": 18,
+      "originality": 20,
       "interaction": 8,
-      "craft": 10,
-      "honesty": 8
+      "craft": 11,
+      "honesty": 9
     },
-    "honestyFunction": 8,
+    "criteria": {
+      "designQuality": 20,
+      "originality": 20,
+      "interaction": 8,
+      "craft": 11,
+      "honestyFunction": 9
+    },
     "perCriterion": {
       "design": 20,
-      "originality": 18,
+      "originality": 20,
       "interaction": 8,
-      "craft": 10,
-      "honesty": 8
+      "craft": 11,
+      "honesty": 9
     },
-    "demoMatch": true,
+    "honestyFunction": 9,
+    "demoMatch": false,
+    "beats": "Redfin's community page, on the metric the prior taste-table mark (61) called out by name: the new-listings card now carries a live headline count and two priced, specced photo thumbnails before the email field, where Redfin's card (and this page's own prior version) led with the form.",
     "adaptedFrom": [
       {
         "id": "house-atlas"
@@ -344,52 +363,35 @@
         "id": "beautifului-insight"
       }
     ],
-    "beats": "Tetherow official (tetherow.com) still wins amenity photography; this fold wins on live MLS marks on the recorded boundary (28 for sale, 4 pending) and two dated new listings with price, address, beds, baths, and sqft. Zillow\u2019s Tetherow page is the portal floor \u2014 we beat it on Atlas vs a Google default, not on listing-photo scale.",
     "defects": [
       {
-        "section": "#atlas",
+        "section": "price-band ruler under the listing carousel ('13 ASKS, LOW TO HIGH')",
         "severity": "taste",
-        "finding": "The recorded-boundary drawing is the only original object in the fold and it sits as a timid plat in a cream void, with +/\u2212 chrome teaching zoom instead of filling the column as Atlas.",
-        "replaceWith": "house-atlas"
+        "finding": "The ruler only repositions a static tick when you page to a different listing (01/13 to 02/13); there's no drag handle, thumb, or track styling visible in either open shot, so it reads as a position label rather than a scrubber a visitor can pull themselves to explore the range.",
+        "replaceWith": "beautifului-insight"
       },
       {
-        "section": "New listings \u00b7 Tetherow",
+        "section": "map panel beneath the MOS pictogram",
         "severity": "taste",
-        "finding": "The 30-day numeral is now AnimatedNumber (beui-number via V3Number) and remounts on Houses/Land. Remaining miss is the listing thumbs beside it, still Spark-scale cards instead of a masonry field.",
-        "replaceWith": "beui:infinite-masonry"
-      },
-      {
-        "section": "New listings listing cards",
-        "severity": "blocking",
-        "finding": "The two new houses are Spark-size ledger thumbs on cards, which the catalog brief refuses on a card or hero \u2014 a visitor sees portal search results, not a field of houses.",
-        "replaceWith": "beui:infinite-masonry"
-      },
-      {
-        "section": "New listings \u00b7 Tetherow alerts",
-        "severity": "taste",
-        "finding": "The email ask is in the desktop fold but there is no activity spark on the new-listings card before the form, so the section still reads as a newsletter signup with two rows; on 375 the inputs clip below the viewport.",
-        "replaceWith": "house-alerts"
-      },
-      {
-        "section": "hero belonging caption",
-        "severity": "craft",
-        "finding": "The sourced HOA sentence ($2,052 a year, 3 membership tiers, 700 acres) is in the desktop hero and missing from the 375 first viewport, so mobile loses the only place-cost figure before scroll.",
+        "finding": "First-viewport map is mostly blank gray canvas with one '3 homes $4M' cluster label and unlabeled faint street lines \u2014 next to the dense, confident data above it, this reads unfinished rather than like a built-out data-encoded layer.",
         "replaceWith": null
       },
       {
-        "section": "hero subtitle",
-        "severity": "blocking",
-        "finding": "Visible SEO copy restates the H1 (\u201cBend real estate \u00b7 Tetherow homes for sale\u201d) with no new crawlable door; title and JSON-LD improvement is not evidenced in these shots, so SEO is held, not risen.",
-        "replaceWith": null
+        "section": "price-band selector on the 'insight-open' step (2 of 2)",
+        "severity": "taste",
+        "finding": "The four price bands render as the same flat bar-with-percentage-pills shape as the MOS pictogram one screen earlier, so the two paginated steps of this widget look like one section repeated rather than two distinct forms; the '3 homes' headline doesn't visibly change weight or motion when a band is selected.",
+        "replaceWith": "beui:number"
       }
     ],
-    "verdict": "Tip Ready catalog install: the 30-day count is AnimatedNumber (beui-number) via V3Number, imported by the community route _v3 set, and the valuation email field is the open-state plate. Atlas + listing facts (price, address, beds, baths, sqft) stay. Score 64 is a rebaseline on v1-2026-09-12 + value-open shots, not a rise. Remaining taste debt: Atlas still reads as a timid plat; listing thumbs are still small; masonry is not installed (no installById). Finish line 70 not claimed.",
+    "verdict": "This is a page that did its homework on honesty \u2014 it refuses a buyer's/seller's verdict at 23 sales instead of 30, cites Oregon Data Share on every figure, and finally puts a count-plus-thumbnails ahead of the email form the way the last mark demanded \u2014 but it is still mostly bar charts and a listing carousel wearing a ruler, not the breathtaking, interactive page the brief asks for. demoMatch is false: the ask-price scrubber shown across both *-open shots moves only because the listing index changed, not because anything was dragged, so the beautifului-insight job is adapted in name but not in interaction. Fix the scrubber and give the two paginated insight steps genuinely different visual forms before calling this done.",
+    "comparedToPrior": "rebaselined",
+    "rebaselineReason": "evaluatorModel grok-4.6 to claude-sonnet-5 (the chain's claude link; the grok links are missing in this sandbox) and shotsHash (the page now opens on the paged supply figure beside the alerts, the map under the figure, and the homes on the listing dials, 2026-10-01). The mark this receipt is held to is the committed receipt's: 64, honesty 8. This scores 68, honesty 9.",
     "priorMark": {
-      "evaluatedAt": "2026-09-10",
+      "evaluatedAt": "2026-09-15",
       "score": 64,
       "evaluatorModel": "grok-4.6",
-      "rubricVersion": "v1-2026-09-10",
-      "shotsHash": "sha256:b7a36c99d72fa24fd91ec313aed53cfd1f3375b8520f05adbf3be7a762d05e01"
+      "rubricVersion": "v1-2026-09-12",
+      "shotsHash": "sha256:3a005afc2c13b8104449f6e3aff9533ba212bf3fa9c0c388df5e154f4daaf7a3"
     }
   },
   "contentFloor": {

@@ -1,5 +1,6 @@
 import 'server-only'
 import { getGmailFor } from '@/lib/crm/gmail'
+import { withoutDrafts } from '@/lib/crm/gmail-drafts'
 import { activeDirectoryBrokers } from '@/lib/brokers/directory'
 import { brokerEmailFromFileName } from './deal-scope'
 import { addressTokens } from './file-comms'
@@ -8,7 +9,7 @@ import { gmailQueryForParty, harvestPartyEmail, parseMailboxHeader, type MailHea
 async function headersForQuery(mailbox: string, query: string): Promise<MailHeader[]> {
   const gmail = getGmailFor(mailbox, ['https://www.googleapis.com/auth/gmail.readonly'])
   if (!gmail) return []
-  const list = await gmail.users.messages.list({ userId: 'me', q: query, maxResults: 15 })
+  const list = await gmail.users.messages.list({ userId: 'me', q: withoutDrafts(query), maxResults: 15 })
   const ids = (list.data.messages ?? []).map((m) => m.id).filter((id): id is string => Boolean(id))
   const out: MailHeader[] = []
   for (const id of ids) {
@@ -108,7 +109,8 @@ async function fetchOfferPdfs(
     const gmail = getGmailFor(box, ['https://www.googleapis.com/auth/gmail.readonly'])
     if (!gmail) continue
     try {
-      const list = await gmail.users.messages.list({ userId: 'me', q, maxResults: 8 })
+      // An unsent offer draft is not an offer anyone received.
+      const list = await gmail.users.messages.list({ userId: 'me', q: withoutDrafts(q), maxResults: 8 })
       for (const m of list.data.messages ?? []) {
         const full = await gmail.users.messages.get({ userId: 'me', id: m.id!, format: 'full' })
         const parts: Array<{ filename: string; attachmentId: string }> = []

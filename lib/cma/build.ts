@@ -710,10 +710,14 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           subject: {
             sqft: subject.sqft,
             yearBuilt: subject.yearBuilt,
+            beds: subject.beds,
             baths: subject.baths,
             propertySubType: subject.propertySubType,
             latitude: subject.latitude,
             longitude: subject.longitude,
+            streetAddress: subject.streetAddress,
+            city: subject.city,
+            subdivision: subject.subdivision,
           },
         })
       }
@@ -1057,6 +1061,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       marketContextPresent: market != null,
       subjectSubType: subject.propertySubType,
       subjectBaths: subject.baths,
+      subjectBeds: subject.beds,
       subjectIsCustomOrNew,
       failedAsk: pricing.failedAsk ?? null,
       // Null when nothing graded a comp on price on this build.

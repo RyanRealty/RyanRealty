@@ -166,10 +166,10 @@ A number belongs to a section or it does not print. Beat the competitor **and** 
 **Lock 2026-09-06 (expanded):** No Atlas on home. No homepage map block, town ledger, or market essay — those live on `/homes-for-sale`, `/cities`, `/housing-market`.
 
 1. Full-bleed hero with Buy \| Sell tabs. Buyer H1 `Homes for sale in Central Oregon` (brand in metadata only). Plain copy.  
-2. Stacked house carousels (local Bend-area actives plus honest price-cut / new rows when data exists). Overlay badges via Field path. Zillow card face via V3ListingRow / SplitCardMedia. No fake personalization.  
+2. Stacked house shelves on the listing dial (local Bend-area actives plus honest price-cut / new shelves when data exists; rails bottom, left, right; 2026-10-01). The search opens into a results surface: towns and communities with their counts on one scale, the first shelf's homes, a preview of the row under the cursor. No fake personalization.  
 3. Doors: Buy a home · Sell a home · Work with us with illustrations (art, not photos). Sell → valuation. Work with us → `/join`. No Invest door. Never “see what your home is worth.”  
 4. Talk to a broker (three faces → `/team/[slug]`)  
-5. Browse places (city/resort chips as doors, not a KPI grid)  
+5. Browse places: the towns as a photograph mosaic (count with its unit, median list price on hover), new construction as a counted ledger. Resorts and communities sit in the featured-community spotlight (one Card, a counted index), every figure with its label (2026-10-01). Not a KPI grid, not one card run repeated.  
 6. Proof (V3Proof Google reviews)  
 7. Footer (V3Footer denser Markets / Company / Contact)  
 

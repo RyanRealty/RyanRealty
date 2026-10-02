@@ -9,7 +9,9 @@ import {
 	useReducedMotion,
 } from "motion/react";
 import {
+	Fragment,
 	type KeyboardEvent as ReactKeyboardEvent,
+	type ReactNode,
 	useCallback,
 	useEffect,
 	useId,
@@ -41,6 +43,20 @@ const SEARCH_CLIP_TRANSITION: Transition = {
 /** One MorphingSearch overlay at a time. Homepage hero + chrome both mount this. */
 const MORPH_OPEN_EVENT = "rr:morphing-search-open";
 
+/**
+ * What the wide panel shows beside the list for the row under the cursor: a
+ * photograph, a name and the row's own figures, each with its label. Only the
+ * caller's published figures go here; the panel never derives one.
+ */
+export type MorphingSearchPreview = {
+	photo?: string;
+	eyebrow?: string;
+	title: string;
+	figures?: { value: string; label: string }[];
+	note?: string;
+	cta?: string;
+};
+
 export type MorphingSearchItem = {
 	id: string;
 	title: string;
@@ -48,6 +64,16 @@ export type MorphingSearchItem = {
 	keywords?: string[];
 	icon?: LucideIcon;
 	onSelect?: () => void;
+	/** The heading the row sits under. Consecutive rows with one group share it. */
+	group?: string;
+	/** The row's figure with its unit ("1,044 houses for sale", "$1,624,900"). */
+	meta?: string;
+	/** 0..1: the row's figure as a share of its group's largest, drawn as a rule. */
+	measure?: number;
+	/** A small photograph at the row's start (a listing's lead photo, a place). */
+	thumb?: string;
+	/** The wide panel's preview for this row. */
+	preview?: MorphingSearchPreview;
 };
 
 export interface MorphingSearchProps {
@@ -72,6 +98,18 @@ export interface MorphingSearchProps {
 	 * search"). A host whose header stacks above 50 passes its own z here.
 	 */
 	overlayClassName?: string;
+	/**
+	 * How wide the open panel may grow (px). The demo's 448 is the default; a
+	 * front-door search passes more, and the field then opens into a results
+	 * surface with a preview pane once there is room for one (720px and up).
+	 */
+	panelMaxWidth?: number;
+	/** How tall the results may grow (px) before they scroll. Default 288. */
+	resultsMaxHeight?: number;
+	/** Dim the page behind the open panel (navy scrim, no blur). */
+	scrim?: boolean;
+	/** A row under the results, across the panel (a "search everything" door). */
+	footer?: ReactNode;
 }
 
 type AnchorRect = {
@@ -103,6 +141,10 @@ export function MorphingSearch({
 	onSelect,
 	className,
 	overlayClassName = "z-[150]",
+	panelMaxWidth = 448,
+	resultsMaxHeight = 288,
+	scrim = false,
+	footer,
 }: MorphingSearchProps) {
 	const [internalOpen, setInternalOpen] = useState(defaultOpen);
 	const [query, setQuery] = useState("");
@@ -388,33 +430,66 @@ export function MorphingSearch({
 	// sheet instead: as wide as the viewport allows, clamped inside its gutters,
 	// still anchored to the trigger's top so the morph has an origin.
 	const viewportWidth = mounted ? window.innerWidth : 0;
+	// A front-door search (panelMaxWidth past the demo's 448) grows from the
+	// field into a results surface: as wide as the viewport allows inside 16px
+	// gutters, shifted left only as far as it must be to stay on screen.
+	const wide = panelMaxWidth > 448;
 	const panelWidth = mounted
 		? iconOnly
 			? Math.max(anchorRect.width, Math.min(448, viewportWidth - 24))
-			: Math.max(
-					anchorRect.width,
-					Math.min(448, viewportWidth - anchorRect.left - 16),
-				)
+			: wide
+				? Math.max(
+						anchorRect.width,
+						Math.min(panelMaxWidth, viewportWidth - 32),
+					)
+				: Math.max(
+						anchorRect.width,
+						Math.min(448, viewportWidth - anchorRect.left - 16),
+					)
 		: anchorRect.width;
-	const panelLeft =
-		mounted && iconOnly
+	const panelLeft = mounted
+		? iconOnly
 			? Math.max(12, Math.min(anchorRect.left, viewportWidth - panelWidth - 12))
-			: anchorRect.left;
+			: wide
+				? Math.max(16, Math.min(anchorRect.left, viewportWidth - panelWidth - 16))
+				: anchorRect.left
+		: anchorRect.left;
+	const footerHeight = footer != null ? 52 : 0;
+	const rowHeight = items.some((item) => item.thumb || item.measure != null)
+		? 60
+		: 52;
 	const resultsHeight = mounted
 		? Math.max(
 				96,
 				Math.min(
-					288,
-					window.innerHeight - anchorRect.top - 80,
-					Math.max(filteredItems.length, 1) * 52 + 16,
+					resultsMaxHeight,
+					window.innerHeight - anchorRect.top - 80 - footerHeight,
+					wide
+						? resultsMaxHeight
+						: Math.max(filteredItems.length, 1) * rowHeight + 16,
 				),
 			)
-		: 288;
+		: resultsMaxHeight;
+	// The preview pane needs room beside the list; on a phone the list's own
+	// thumbnails and figures carry the row.
+	const showPreview =
+		wide && panelWidth >= 720 && items.some((item) => item.preview);
+	const activeItem = filteredItems[activeIndex] ?? null;
+	const leftInset = Math.max(0, anchorRect.left - panelLeft);
 	const collapsedContentClip = `inset(0px ${Math.max(
 		0,
-		panelWidth - anchorRect.width,
-	)}px ${resultsHeight}px 0px round 12px)`;
+		panelWidth - anchorRect.width - leftInset,
+	)}px ${resultsHeight + footerHeight}px ${leftInset}px round 12px)`;
 	const expandedContentClip = "inset(0px 0px 0px 0px round 12px)";
+	// Rows grouped under their headings, each keeping its place in the
+	// keyboard order (data-index is the row's index in filteredItems).
+	const groups: { name: string | null; rows: { item: MorphingSearchItem; index: number }[] }[] = [];
+	filteredItems.forEach((item, index) => {
+		const name = item.group ?? null;
+		const last = groups.at(-1);
+		if (last && last.name === name) last.rows.push({ item, index });
+		else groups.push({ name, rows: [{ item, index }] });
+	});
 
 	// Neither grouping layer carries a box: they only hold `inert`/`aria-hidden`,
 	// the z-index and the presence key, and every child below is `fixed` and
@@ -425,6 +500,99 @@ export function MorphingSearch({
 	// shared-layout projection otherwise paint on top of the input and swallow
 	// taps — SITE-121 residual, Matt 2026-09-18). See
 	// tests/fixed-overlay-edge-sampling.test.tsx.
+	const thumbGroups = new Set(
+		filteredItems.filter((row) => row.thumb).map((row) => row.group ?? ""),
+	);
+	const groupHasThumb = (item: MorphingSearchItem) =>
+		thumbGroups.has(item.group ?? "");
+	const renderRow = (item: MorphingSearchItem, index: number) => {
+		const Icon = item.icon;
+		const active = index === activeIndex;
+		const measure =
+			item.measure != null && Number.isFinite(item.measure)
+				? Math.max(0, Math.min(1, item.measure))
+				: null;
+		return (
+			<button
+				key={item.id}
+				id={`${uid}-option-${index}`}
+				type="button"
+				role="option"
+				aria-selected={active}
+				data-index={index}
+				onMouseMove={() => moveTo(item.id)}
+				onFocus={() => moveTo(item.id)}
+				onClick={() => selectItem(item)}
+				className="relative flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+			>
+				{active ? (
+					<motion.span
+						layoutId={`${uid}-active-result`}
+						className="absolute inset-0 rounded-lg bg-foreground/5"
+						transition={transition}
+					/>
+				) : null}
+				{item.thumb ? (
+					// A plate drawn at 56px: the optimizer is off site-wide
+					// (next.config images.unoptimized), so next/image would add
+					// only its inline style. Eager: the row exists only while the
+					// panel is open, so it is on screen when it mounts.
+					// eslint-disable-next-line @next/next/no-img-element
+					<img
+						src={item.thumb}
+						alt=""
+						loading="eager"
+						decoding="async"
+						data-v3-morph="thumb"
+						className="relative h-[42px] w-14 shrink-0 rounded-md object-cover"
+					/>
+				) : groupHasThumb(item) ? (
+					// A row without a photograph in a group of photographed rows
+					// keeps the column with a plate, never a gap.
+					<span
+						aria-hidden="true"
+						data-v3-morph="thumb-plate"
+						className="relative h-[42px] w-14 shrink-0 rounded-md bg-foreground/10"
+					/>
+				) : Icon ? (
+					<Icon className="relative size-4 shrink-0 text-muted-foreground" />
+				) : null}
+				<span className="relative min-w-0 flex-1">
+					<span className="flex items-baseline gap-3">
+						<span className="block min-w-0 flex-1 truncate text-sm font-medium text-foreground">
+							{item.title}
+						</span>
+						{item.meta ? (
+							<span
+								data-v3-morph="meta"
+								className="shrink-0 text-xs font-medium tabular-nums text-foreground"
+							>
+								{item.meta}
+							</span>
+						) : null}
+					</span>
+					{item.description ? (
+						<span className="block truncate text-xs text-muted-foreground">
+							{item.description}
+						</span>
+					) : null}
+					{measure != null ? (
+						<span
+							aria-hidden="true"
+							data-v3-morph="measure"
+							className="relative mt-1.5 block h-[3px] w-full bg-foreground/10"
+						>
+							<span
+								className="absolute inset-y-0 left-0 bg-foreground"
+								style={{ width: `${Math.max(measure * 100, 1.5)}%` }}
+							/>
+						</span>
+					) : null}
+				</span>
+			</button>
+		);
+	};
+
 	const triggerVisible = mounted && anchorRect.width >= 8;
 	const overlay =
 		mounted && triggerVisible
@@ -447,11 +615,18 @@ export function MorphingSearch({
 								key="morphing-search-overlay"
 								className="fixed left-0 top-0 size-0"
 							>
-								<button
+								<motion.button
 									type="button"
 									aria-label="Close search"
 									data-v3-morph="catcher"
-									className="pointer-events-auto fixed inset-0 z-0 cursor-default bg-transparent"
+									className={cn(
+										"pointer-events-auto fixed inset-0 z-0 cursor-default bg-transparent",
+										scrim && "v3-morph-search__scrim",
+									)}
+									initial={scrim && !reduce ? { opacity: 0 } : false}
+									animate={{ opacity: 1 }}
+									exit={scrim && !reduce ? { opacity: 0 } : undefined}
+									transition={{ duration: 0.2, ease: EASE_OUT }}
 									onClick={closeSearch}
 								/>
 
@@ -464,7 +639,7 @@ export function MorphingSearch({
 										top: anchorRect.top,
 										left: panelLeft,
 										width: panelWidth,
-										height: 48 + resultsHeight,
+										height: 48 + resultsHeight + footerHeight,
 										boxShadow: "inset 0 0 0 1px var(--color-border)",
 										pointerEvents: "none",
 									}}
@@ -512,7 +687,7 @@ export function MorphingSearch({
 										top: anchorRect.top,
 										left: panelLeft,
 										width: panelWidth,
-										height: 48 + resultsHeight,
+										height: 48 + resultsHeight + footerHeight,
 										backgroundColor: "var(--v3-cream)",
 									}}
 								>
@@ -555,99 +730,122 @@ export function MorphingSearch({
 										</kbd>
 									</div>
 
-									<motion.div
-										ref={listRef}
-										id={listboxId}
-										role="listbox"
-										aria-label="Search results"
-										transition={reduce ? { duration: 0 } : undefined}
-										variants={
-											reduce
-												? undefined
-												: {
-														closed: {
-															opacity: 0,
-															transform: "translateY(6px)",
-															transition: {
-																duration: 0.16,
-																delay: 0.18,
-																ease: EASE_OUT,
-															},
-														},
-														open: {
-															opacity: 1,
-															transform: "translateY(0px)",
-															transition: {
-																duration: 0.16,
-																ease: EASE_OUT,
-															},
-														},
-													}
-										}
-										initial={
-											reduce
-												? { opacity: 1, transform: "translateY(0px)" }
-												: "closed"
-										}
-										animate={
-											reduce
-												? { opacity: 1, transform: "translateY(0px)" }
-												: "open"
-										}
-										exit={reduce ? undefined : "closed"}
-										className="overscroll-contain overflow-y-auto p-2"
-										style={{
-											maxHeight: resultsHeight,
-											minHeight: resultsHeight,
-											backgroundColor: "var(--v3-cream)",
-										}}
-									>
-										{filteredItems.length > 0 ? (
-											filteredItems.map((item, index) => {
-												const Icon = item.icon;
-												const active = index === activeIndex;
-												return (
-													<button
-														key={item.id}
-														id={`${uid}-option-${index}`}
-														type="button"
-														role="option"
-														aria-selected={active}
-														data-index={index}
-														onMouseMove={() => moveTo(item.id)}
-														onFocus={() => moveTo(item.id)}
-														onClick={() => selectItem(item)}
-														className="relative flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-													>
-														{active ? (
-															<motion.span
-																layoutId={`${uid}-active-result`}
-																className="absolute inset-0 rounded-lg bg-foreground/5"
-																transition={transition}
-															/>
-														) : null}
-														{Icon ? (
-															<Icon className="relative size-4 shrink-0 text-muted-foreground" />
-														) : null}
-														<span className="relative min-w-0">
-															<span className="block truncate text-sm font-medium text-foreground">
-																{item.title}
-															</span>
-															{item.description ? (
-																<span className="block truncate text-xs text-muted-foreground">
-																	{item.description}
-																</span>
-															) : null}
-														</span>
-													</button>
-												);
-											})
-										) : (
-											<p className="px-3 py-8 text-center text-sm text-muted-foreground">
-												{emptyMessage}
-											</p>
+									<div
+										data-v3-morph="body"
+										className={cn(
+											"grid",
+											showPreview &&
+												"grid-cols-[minmax(0,1fr)_minmax(0,21rem)]",
 										)}
-									</motion.div>
+										style={{ height: resultsHeight }}
+									>
+										<motion.div
+											ref={listRef}
+											id={listboxId}
+											role="listbox"
+											data-v3-morph="listbox"
+											aria-label="Search results"
+											transition={reduce ? { duration: 0 } : undefined}
+											variants={
+												reduce
+													? undefined
+													: {
+															closed: {
+																opacity: 0,
+																transform: "translateY(6px)",
+																transition: {
+																	duration: 0.16,
+																	delay: 0.18,
+																	ease: EASE_OUT,
+																},
+															},
+															open: {
+																opacity: 1,
+																transform: "translateY(0px)",
+																transition: {
+																	duration: 0.16,
+																	ease: EASE_OUT,
+																},
+															},
+														}
+											}
+											initial={
+												reduce
+													? { opacity: 1, transform: "translateY(0px)" }
+													: "closed"
+											}
+											animate={
+												reduce
+													? { opacity: 1, transform: "translateY(0px)" }
+													: "open"
+											}
+											exit={reduce ? undefined : "closed"}
+											className="overscroll-contain overflow-y-auto p-2"
+											style={{
+												maxHeight: resultsHeight,
+												minHeight: resultsHeight,
+												backgroundColor: "var(--v3-cream)",
+											}}
+										>
+											{filteredItems.length > 0 ? (
+												groups.map((group, g) => {
+													const rows = group.rows.map(({ item, index }) =>
+														renderRow(item, index),
+													);
+													if (!group.name) {
+														return <Fragment key={`${uid}-rows-${g}`}>{rows}</Fragment>;
+													}
+													const headId = `${uid}-group-${g}`;
+													return (
+														<div
+															key={headId}
+															role="group"
+															aria-labelledby={headId}
+															data-v3-morph="group"
+														>
+															<div
+																id={headId}
+																role="presentation"
+																data-v3-morph="group-label"
+																className="px-3 pb-1 pt-3 text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground"
+															>
+																{group.name}
+															</div>
+															{rows}
+														</div>
+													);
+												})
+											) : (
+												<p className="px-3 py-8 text-center text-sm text-muted-foreground">
+													{emptyMessage}
+												</p>
+											)}
+										</motion.div>
+										{showPreview ? (
+											<div
+												aria-hidden="true"
+												data-v3-morph="preview"
+												className="min-h-0 overflow-hidden border-l border-border"
+												style={{ height: resultsHeight }}
+											>
+												{activeItem?.preview ? (
+													<MorphingSearchPreviewPane
+														key={activeItem.id}
+														preview={activeItem.preview}
+													/>
+												) : null}
+											</div>
+										) : null}
+									</div>
+									{footer != null ? (
+										<div
+											data-v3-morph="footer"
+											className="flex items-center gap-3 border-t border-border px-3.5"
+											style={{ height: footerHeight }}
+										>
+											{footer}
+										</div>
+									) : null}
 								</motion.div>
 							</div>
 						) : null}
@@ -754,5 +952,67 @@ export function MorphingSearch({
 			</div>
 			{overlay}
 		</LayoutGroup>
+	);
+}
+
+/** The wide panel's preview of the row under the cursor (aria-hidden: the row carries its words). */
+function MorphingSearchPreviewPane({
+	preview,
+}: {
+	preview: MorphingSearchPreview;
+}) {
+	return (
+		<div
+			data-v3-morph="preview-card"
+			className="flex h-full min-h-0 flex-col gap-3 p-3.5"
+		>
+			{preview.photo ? (
+				// eslint-disable-next-line @next/next/no-img-element
+				<img
+					src={preview.photo}
+					alt=""
+					loading="eager"
+					decoding="async"
+					data-v3-morph="preview-photo"
+					className="aspect-[4/3] w-full shrink-0 rounded-lg object-cover"
+				/>
+			) : null}
+			<div className="min-w-0">
+				{preview.eyebrow ? (
+					<p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+						{preview.eyebrow}
+					</p>
+				) : null}
+				<p
+					data-v3-morph="preview-title"
+					className="truncate text-lg font-medium text-foreground"
+				>
+					{preview.title}
+				</p>
+			</div>
+			{preview.figures?.length ? (
+				<dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
+					{preview.figures.map((figure) => (
+						<div key={figure.label} className="flex min-w-0 flex-col-reverse">
+							<dt className="text-xs text-muted-foreground">{figure.label}</dt>
+							<dd
+								data-v3-morph="preview-figure"
+								className="text-base font-semibold tabular-nums text-foreground"
+							>
+								{figure.value}
+							</dd>
+						</div>
+					))}
+				</dl>
+			) : null}
+			{preview.note ? (
+				<p className="text-xs text-muted-foreground">{preview.note}</p>
+			) : null}
+			{preview.cta ? (
+				<p className="mt-auto text-sm font-medium text-foreground underline underline-offset-4">
+					{preview.cta}
+				</p>
+			) : null}
+		</div>
 	);
 }

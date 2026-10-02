@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { agreeReadings } from './agree'
 import { planTermsWrite, type CycleTermColumns } from './plan'
-import { parseProvenance, stampProvenance } from './provenance'
+import { closedByMls, parseProvenance, stampCloseProvenance, stampProvenance } from './provenance'
 import { disputesToSettle, needsTiebreak, settleWithThird } from './tiebreak'
 import { QUEUE_FIELDS, afterTermsDecisionHref, formIsThisCycles, formatTermValue, groupReadings, orderTermsQueue } from './review'
 import { resolveCycleTerms, surnames, type Instrument } from './resolve'
@@ -301,6 +301,23 @@ describe('term provenance', () => {
   it('ignores anything in the stored column it does not recognize', () => {
     expect(parseProvenance({ sale_price: { by: 'robot', at: 'x' }, listing_price: { by: 'person', at: 'x' }, buyers: { by: 'person', at: 'x' } })).toEqual({ buyers: { by: 'person', at: 'x' } })
     expect(parseProvenance(null)).toEqual({})
+  })
+
+  it('a close the MLS recorded is stamped on the close columns only, and survives every later term write', () => {
+    const mls = { listNumber: '000000001', closeDate: '2030-03-20', closePrice: 500000 }
+    const imported = stampProvenance({}, { sale_price: 500000 }, 'import', { at: '2030-03-01T00:00:00Z' })
+    const closed = stampCloseProvenance(imported, { status: 'Closed', actual_closing_date: '2030-03-20', sale_price: 1 } as never, { at: '2030-03-25T00:00:00Z', actor: 'mls-close', mls })
+    expect(closed.status).toEqual({ by: 'mls', at: '2030-03-25T00:00:00Z', actor: 'mls-close', document: null, page: null, keptAgainst: null, mls })
+    expect(closed.actual_closing_date).toMatchObject({ by: 'mls', mls })
+    expect(closed.sale_price).toEqual(imported.sale_price)
+    expect(closedByMls(closed, 'status')).toBe(true)
+    // a later contract or import write stamps its own term and keeps the close
+    const later = stampProvenance(closed, { sale_price: 505000, status: 'Expired' }, 'contract')
+    expect(later.status).toEqual(closed.status)
+    expect(later.actual_closing_date).toEqual(closed.actual_closing_date)
+    expect(parseProvenance(JSON.parse(JSON.stringify(later))).status?.by).toBe('mls')
+    // only the MLS rule stamps a close column
+    expect(stampProvenance({}, { status: 'Closed', actual_closing_date: '2030-03-20' }, 'import')).toEqual({})
   })
 })
 

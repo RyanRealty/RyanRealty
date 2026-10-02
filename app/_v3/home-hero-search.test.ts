@@ -177,14 +177,17 @@ describe('homepage hero search uses the public search stack', () => {
     expect(css).toContain('html:has(.home-hero-search) .v3-chrome__search')
     expect(css).toMatch(/html:has\(\.home-hero-search\) \.v3-chrome__search \{\s*display:\s*none/)
     expect(css).toContain('.v3 .home-hero-search .v3-morph-search--live .v3-morph-search__catalog')
-    expect(css).toContain('width: 18rem')
+    // The closed field fits its placeholder (2026-10-01: "Bend, Tetherow, or an addres").
+    expect(css).toContain('width: 22rem')
     // Sharp cream painters: nested .v3 + TabsList bg-card + V3Tabs track — gone on Stage.
     expect(css).toContain('.v3 .home-hero-search .v3,')
     expect(css).toContain('.v3 .home-hero-search .v3-tabs,')
     expect(css).toContain('.v3 .home-hero-search .v3-morph-search')
     expect(css).toContain('.v3 .home-hero-search .v3-tabs__list.bg-card')
     expect(css).toMatch(/\.v3 \.home-hero-search \.v3,[\s\S]*?background:\s*transparent\s*!important/)
-    expect(css).toMatch(/\.v3 \.home-hero-search \.v3-tabs__list\.bg-card \{[\s\S]*?background-color:\s*transparent\s*!important/)
+    // The track is the navy scrim on the photograph (2026-10-01), never the cream bg-card painter.
+    expect(css).toMatch(/\.v3 \.home-hero-search \.v3-tabs__list\.bg-card \{[\s\S]*?background-color:\s*var\(--v3-scrim-mid\)\s*!important/)
+    expect(css).not.toMatch(/\.v3-tabs__list\.bg-card \{[^}]*var\(--v3-cream\)/)
     const stageCssForWrappers = readFileSync(resolve('components/site/v3/V3Stage.css'), 'utf8')
     expect(stageCssForWrappers).toContain('.v3.v3-stage .v3-stage-copy .v3')
     expect(stageCssForWrappers).toMatch(
@@ -423,14 +426,12 @@ describe('homepage house rails use SplitCardMedia cards', () => {
     expect(PLACES).toMatch(/id = 'places'/)
     expect(PLACES).toMatch(/id=\{id\}/)
     expect(PLACES).toMatch(/Browse places/)
-    expect(PLACES).toMatch(/home-browse-places__cards/)
-    expect(PLACES).toMatch(/home-browse-places__card/)
-    expect(PLACES).toMatch(/home-browse-places__media/)
-    expect(PLACES).toMatch(/home-browse-places__media--reserved/)
-    expect(PLACES).toMatch(/from '@\/components\/ui\/card'/)
-    expect(PLACES).toMatch(/from '@\/components\/ui\/carousel'/)
-    expect(PLACES).toMatch(/from '@\/components\/ui\/button'/)
-    expect(PLACES).toMatch(/from '@\/components\/motion\/number'/)
+    // 2026-10-01: the towns are a photograph mosaic and new construction a
+    // counted ledger, not a third run of photo-top cards.
+    expect(PLACES).toMatch(/home-places__mosaic/)
+    expect(PLACES).toMatch(/home-places__tile--plate/)
+    expect(PLACES).toMatch(/home-places__rows/)
+    expect(PLACES).not.toMatch(/from '@\/components\/ui\/carousel'/)
     expect(PLACES).not.toMatch(/markSrc/)
     expect(PLACES).not.toMatch(/home-browse-places__mark/)
     expect(PAGE).not.toMatch(/markSrc/)
@@ -452,9 +453,10 @@ describe('homepage house rails use SplitCardMedia cards', () => {
     expect(PAGE).not.toMatch(/<SellCapture/)
     expect(PAGE).not.toMatch(/id="communities"/)
     expect(PAGE).toMatch(/HomeFeaturedCommunity/)
-    expect(FEATURED).toMatch(/from '@\/components\/ui\/carousel'/)
+    // 2026-10-01: one spotlight (the installed Card) with an index of tabs.
     expect(FEATURED).toMatch(/from '@\/components\/ui\/card'/)
-    expect(FEATURED).toMatch(/from '@\/components\/motion\/number'/)
+    expect(FEATURED).toMatch(/from '@\/components\/ui\/tabs'/)
+    expect(FEATURED).toMatch(/<TabsContent[\s\S]*?forceMount/)
     expect(PAGE).toMatch(/loadHomeFeaturedCommunitySlides/)
         expect(PAGE).toMatch(/featured-community/)
     // Always mount — never omit #featured-community when slides miss.
@@ -488,33 +490,31 @@ describe('homepage house rails use SplitCardMedia cards', () => {
   })
 
   // 2026-09-08 evaluator: #places was twelve identical empty boxes with nothing
-  // telling a town from a resort. Two labelled runs now, and the town run
-  // carries the same live active count /cities publishes per city.
-  it('browses places as two labelled runs, with the live count on the towns', () => {
+  // telling a town from a resort. 2026-10-01: the towns as a mosaic carrying
+  // the same live count /cities publishes per city, new construction as a
+  // counted ledger, and the resorts folded into the featured-community
+  // spotlight with their alias-aware figures (the judge's "bare numeral").
+  it('browses places as a towns mosaic and a new-construction ledger, the resorts in the spotlight', () => {
     expect(PAGE).toMatch(/<HomeBrowsePlaces[^>]*runs=\{placeRuns\}/)
     expect(PAGE).toContain('loadHomeNewConRun')
     expect(PAGE).toContain('...(newConRun ? [newConRun] : [])')
     expect(PAGE).toContain("name: 'Towns'")
-    expect(PAGE).toContain("name: 'Resorts and communities'")
+    expect(PAGE).toContain("layout: 'mosaic' as const")
+    expect(PAGE).not.toContain("name: 'Resorts and communities'")
+    expect(PAGE).not.toMatch(/RESORT_DOORS/)
     expect(PAGE).toContain("unit: 'houses for sale'")
     expect(PAGE).toContain("seeAll: { label: 'Every city', href: '/cities' }")
-    expect(PAGE).toContain("seeAll: { label: 'Every community', href: '/communities' }")
-    // Section 0: a null or non-finite activeCount prints nothing, never a zero.
-    expect(PAGE).toContain("typeof active === 'number' && Number.isFinite(active)")
+    // Section 0: a null or non-finite count prints nothing, never a zero.
+    expect(PAGE).toContain('town.activeCount != null && Number.isFinite(town.activeCount) && town.activeCount > 0')
     expect(PLACES).toMatch(/home-browse-places__run\b/)
     expect(PLACES).toMatch(/home-browse-places__runname/)
-    expect(PLACES).toMatch(/home-browse-places__unit/)
-    expect(PLACES).toMatch(/home-browse-places__count/)
-    // The resorts run ships no inventory figure — this page holds no per-resort read.
-    expect(PAGE).toMatch(/RESORT_DOORS\.map\(\(r\) =>/)
-    expect(PAGE).toContain("layout: 'carousel' as const")
-    expect(PAGE).toContain('communityImage(r.slug)')
     expect(PAGE).toContain('preferPlaceHeroOrNull')
     expect(PAGE).toContain('hasCuratedCityHero')
     expect(PAGE).not.toMatch(/if \(!photoSrc\) return \[\]/)
     expect(FEATURED).toMatch(/home-featured-community__stage/)
-    expect(FEATURED).toContain('CarouselPrevious')
-    expect(FEATURED).toContain('CarouselNext')
+    expect(FEATURED).toMatch(/home-featured-community__tab-count/)
+    expect(FEATURED).toMatch(/for sale<\/span>/)
+    expect(FEATURED).toContain('Every community')
   })
 
   it('does not print the regional remainder paragraph', () => {

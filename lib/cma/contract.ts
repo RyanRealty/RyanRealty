@@ -17,8 +17,8 @@
  */
 
 import type { CmaAdjustedComp, CmaPricing } from '@/lib/cma/types'
-import { bathCountCompatible, productTypeCompatible } from '@/lib/cma/market-area'
-import { customBathCompatible } from '@/lib/pricing/classes'
+import { productTypeCompatible } from '@/lib/cma/market-area'
+import { roomCountsDecision } from '@/lib/pricing/room-ground'
 import type { CompJudgment } from '@/lib/cma/judge'
 import type { CmaAudit } from '@/lib/cma/audit'
 import type { CmaSiteData } from '@/lib/cma/county'
@@ -70,6 +70,7 @@ export function evaluateAccuracyContract(args: {
   marketContextPresent: boolean
   subjectSubType?: string | null
   subjectBaths?: number | null
+  subjectBeds?: number | null
   /**
    * The rungs the selection actually used. The disclosed widening
    * (`widened-disclosed-24mo`) only runs when the bounded ladder came up
@@ -79,13 +80,9 @@ export function evaluateAccuracyContract(args: {
    */
   tiersUsed?: readonly string[] | null
   /**
-   * True when the SELECTOR classified the subject custom/new. The bath cut is
-   * graded with the rule selection actually applied: lib/pricing/match.ts and
-   * the lib/cma/comps.ts fallback open a plus-or-minus-one whole-bath window
-   * for this class (Matt: a 3-bath custom peer prices a 4-bath custom house),
-   * and exact-floor everywhere else. Grading with the resale rule regardless
-   * hard-failed 59 of 136 live builds on comps the engine's own ladder was
-   * told to keep — every one of them off by exactly one bath.
+   * True when the SELECTOR classified the subject custom/new. Recorded for
+   * the year/quality path; the room cut is the same one-room rule for every
+   * subject (`roomCountsDecision`, skill 0.1).
    */
   subjectIsCustomOrNew?: boolean
   failedAsk?: number | null
@@ -97,7 +94,7 @@ export function evaluateAccuracyContract(args: {
    */
   priceAnchorPpsf?: number | null
 }): AccuracyContract {
-  const { comps, pricing, judgment, audit, site, minComps, subjectSubType, subjectBaths, subjectIsCustomOrNew } = args
+  const { comps, pricing, judgment, audit, site, minComps, subjectSubType, subjectBaths, subjectBeds } = args
   const widened = (args.tiersUsed ?? []).some((t) => t.includes(WIDENED_TIER_MARK))
   const checks: ContractCheck[] = []
   const now = Date.now()
@@ -230,32 +227,21 @@ export function evaluateAccuracyContract(args: {
           ? `Comp ${crossType.address} is ${crossType.propertySubType ?? 'an unknown type'} and cannot price a ${subjectSubType}.`
           : `Every priced sale is the same property type as the subject (${subjectSubType}).`,
   })
-  const bathRuleOk = subjectIsCustomOrNew ? customBathCompatible : bathCountCompatible
-  // The selector may admit a sale ONE room apart on the subject's own ground
-  // and record that it did (`roomDifference`, lib/pricing/room-counts.ts). The
-  // contract grades what the selector decided; it does not re-apply a wall the
-  // rule deliberately opened. A bath gap with no such record is still a hard
-  // failure — that is a sale nothing signed off on.
-  const crossBath = comps.find(
-    (c) => !bathRuleOk(subjectBaths ?? null, c.baths) && !(c.roomDifference ?? []).includes('baths'),
-  )
-  const bathNoted = comps.filter((c) => (c.roomDifference ?? []).includes('baths')).length
+  // ONE ROOM RULE (skill 0.1). Same function the picker and the review use.
+  const crossRoom = comps.find((c) => !roomCountsDecision({ beds: subjectBeds, baths: subjectBaths }, c).ok)
+  const roomNoted = comps.filter((c) => (c.roomDifference ?? []).length > 0).length
   checks.push({
     id: 'bath-count-match',
     severity: 'hard',
-    pass: subjectBaths == null || !crossBath,
+    pass: (subjectBaths == null && subjectBeds == null) || !crossRoom,
     detail:
-      subjectBaths == null
-        ? 'Subject bathroom count was not stored. Bath-count gate skipped.'
-        : crossBath
-          ? subjectIsCustomOrNew
-            ? `Comp ${crossBath.address} has ${crossBath.baths ?? 'an unknown'} bath, more than one whole bathroom away from this ${subjectBaths}-bath custom or new home.`
-            : `Comp ${crossBath.address} has ${crossBath.baths ?? 'an unknown'} bath and cannot price a ${subjectBaths}-bath house.`
-          : bathNoted > 0
-            ? `Every priced sale matches the subject's ${subjectBaths} bathrooms, except ${bathNoted} on this home's own ground that sit one bathroom away and are disclosed as such.`
-            : subjectIsCustomOrNew
-              ? `Custom or new subject: every priced sale is within one whole bathroom of the subject (${subjectBaths}).`
-              : `Every priced sale has the same whole bathroom count as the subject (${subjectBaths}).`,
+      subjectBaths == null && subjectBeds == null
+        ? 'Subject room counts were not stored. Room-count gate skipped.'
+        : crossRoom
+          ? `Comp ${crossRoom.address} is ${crossRoom.beds ?? '?'} bed / ${crossRoom.baths ?? '?'} bath against this home's ${subjectBeds ?? '?'} / ${subjectBaths ?? '?'}, a room gap the one-room rule refuses.`
+          : roomNoted > 0
+            ? `Every priced sale matches the subject's ${subjectBeds ?? '?'} bed / ${subjectBaths ?? '?'} bath counts, except ${roomNoted} on this home's own ground that sit one room away and are disclosed as such.`
+            : `Every priced sale has a room count the one-room rule allows (${subjectBeds ?? '?'} bed / ${subjectBaths ?? '?'} bath).`,
   })
   checks.push({
     id: 'dispersion-computed',

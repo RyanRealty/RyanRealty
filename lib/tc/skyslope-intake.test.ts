@@ -18,6 +18,7 @@ import {
   skySlopeDocumentsForIntake,
   skySlopeIntakeEnabled,
   stageFactsFromDetail,
+  withVaultClose,
   type CycleField,
   type CyclePlan,
   type StageCycleFacts,
@@ -25,6 +26,7 @@ import {
   type VaultCycleSnapshot,
 } from './skyslope-intake'
 import { assertInboundRequest, folderPageIsPastEnd, SKYSLOPE_FILES_BASE } from './skyslope-inbound'
+import { stampCloseProvenance } from './terms/provenance'
 
 // ── fixtures shaped like the live SkySlope payloads (2026-09-24 probe) ──────
 
@@ -561,6 +563,74 @@ describe('deal stage follows the newest cycle, only while the Vault stage is une
 
   it('reads stage facts from a payload the way the migration did', () => {
     expect(stageFactsFromDetail('sales', SALE, saleDetail())).toMatchObject({ status: 'Pending', escrowClosingDate: '2026-06-23', actualClosingDate: null })
+  })
+})
+
+// ── a close the MLS recorded is the Vault's (rule 5) ───────────────────────
+
+describe('a close the MLS recorded is never taken back from SkySlope', () => {
+  const status = CYCLE_FIELD_SPECS.find((s) => s.column === 'status')!
+  const mls = { listNumber: '000000001', closeDate: '2030-03-20', closePrice: 500000 }
+  const mlsClosed = (snapshot: VaultCycleSnapshot): VaultCycleSnapshot => ({
+    ...snapshot,
+    fields: { ...snapshot.fields, status: 'Closed', actual_closing_date: '2030-03-20' },
+    termProvenance: stampCloseProvenance({}, { status: 'Closed', actual_closing_date: '2030-03-20' }, { actor: 'mls-close', mls }),
+  })
+
+  it('decideField never updates a Vault-owned value, even one SkySlope once sent', () => {
+    expect(decideField(status, { vault: 'Closed', before: 'Closed', now: 'Expired' }, { vaultOwned: true })).toEqual({
+      kind: 'drift',
+      vault: 'Closed',
+      skyslopeBefore: 'Closed',
+      skyslopeNow: 'Expired',
+    })
+    expect(decideField(status, { vault: 'Closed', before: 'Expired', now: 'Expired' }, { vaultOwned: true })).toEqual({ kind: 'vault_edit' })
+    expect(decideField(status, { vault: 'Closed', before: 'Expired', now: 'Closed' }, { vaultOwned: true })).toEqual({ kind: 'same' })
+  })
+
+  it('the lapsed folder: SkySlope still Expired, the Vault keeps Closed and the MLS date, silently', () => {
+    const lapsed = saleDetail({ status: 'Expired' })
+    const { snapshot, contacts } = migratedSnapshot(lapsed, saleDocs())
+    const p = plan(saleDetail({ status: 'Expired' }, 2), saleDocs(2), mlsClosed(snapshot), contacts)
+    expect(p.fieldUpdates.map((u) => u.field)).not.toContain('status')
+    expect(p.fieldUpdates.map((u) => u.field)).not.toContain('actual_closing_date')
+    expect(p.drift).toEqual([])
+    expect(p.vaultEdits).toEqual(expect.arrayContaining(['status', 'actual_closing_date']))
+  })
+
+  it('SkySlope catches up with another date, then moves again: the MLS close stays, each difference recorded', () => {
+    const { snapshot, contacts } = migratedSnapshot(saleDetail({ status: 'Expired' }), saleDocs())
+    const caughtUp = saleDetail({ status: 'Closed', actualClosingDate: '2030-03-21T00:00:00' }, 2)
+    const p = plan(caughtUp, saleDocs(2), mlsClosed(snapshot), contacts)
+    expect(p.fieldUpdates.map((u) => u.field)).not.toContain('actual_closing_date')
+    expect(p.drift).toEqual([{ field: 'actual_closing_date', vault: '2030-03-20', skyslopeBefore: null, skyslopeNow: '2030-03-21' }])
+    // raw now reads Closed; a later SkySlope change is still not taken
+    const after = { ...mlsClosed(snapshot), raw: caughtUp }
+    const moved = plan(saleDetail({ status: 'Canceled/App', actualClosingDate: '2030-03-21T00:00:00' }, 3), saleDocs(3), after, contacts)
+    expect(moved.fieldUpdates.map((u) => u.field)).not.toContain('status')
+    expect(moved.drift).toContainEqual({ field: 'status', vault: 'Closed', skyslopeBefore: 'Closed', skyslopeNow: 'Canceled/App' })
+  })
+
+  it('without the MLS stamp the field rule is unchanged: an unedited status follows SkySlope', () => {
+    const { snapshot, contacts } = migratedSnapshot(saleDetail(), saleDocs())
+    const p = plan(saleDetail({ status: 'Expired' }, 2), saleDocs(2), snapshot, contacts)
+    expect(p.fieldUpdates).toContainEqual({ field: 'status', from: 'Pending', to: 'Expired' })
+  })
+
+  it('the stage derivation reads an MLS-closed cycle as closed on both sides, so the stage the rule wrote stays', () => {
+    const expired = facts('sales', 'c-1', 'Expired', { escrowClosingDate: '2030-03-20' })
+    const cycle = { fields: { status: 'Closed', actual_closing_date: '2030-03-20' }, termProvenance: stampCloseProvenance({}, { status: 'Closed', actual_closing_date: '2030-03-20' }, { mls }) }
+    const read = withVaultClose(expired, cycle)
+    expect(read).toMatchObject({ status: 'Closed', actualClosingDate: '2030-03-20' })
+    expect(decideDealStage({ vaultStage: 'closed', vaultStageDetail: 'Closed 2030-03-20', before: [read], now: [read] })).toEqual({ kind: 'same' })
+    // a newer listing in SkySlope still moves the stage on
+    const relist = facts('listings', 'l-2', 'Active', { createdOn: '2031-01-01', expirationDate: '2031-06-30' })
+    expect(decideDealStage({ vaultStage: 'closed', vaultStageDetail: 'Closed 2030-03-20', before: [read], now: [read, relist] })).toMatchObject({
+      kind: 'update',
+      to: { stage: 'active_listing' },
+    })
+    // no MLS stamp: the facts are SkySlope's
+    expect(withVaultClose(expired, { fields: { status: 'Closed', actual_closing_date: '2030-03-20' }, termProvenance: {} })).toBe(expired)
   })
 })
 

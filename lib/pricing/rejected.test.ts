@@ -75,7 +75,35 @@ describe('rejectionReason', () => {
   })
 
   it('then the bath count, stated against the reader’s own', () => {
-    expect(rejectionReason(candidate({ baths: 3 }), SUBJECT, ASOF)).toBe('3 baths against your 2')
+    expect(
+      rejectionReason(
+        candidate({
+          baths: 3,
+          subdivision: 'Other Park',
+          city: 'Bend',
+          latitude: 44.02,
+          longitude: -121.5,
+          ownPlat: false,
+        }),
+        SUBJECT,
+        ASOF,
+      ),
+    ).toBe('3 baths against your 2')
+  })
+
+  it('does not call a one-bath own-plat gap a rejection — the one-room rule keeps that sale', () => {
+    expect(
+      rejectionReason(
+        candidate({
+          baths: 3,
+          ownPlat: true,
+          subdivision: 'Same Park',
+          address: '12 Same St',
+        }),
+        { ...SUBJECT, streetAddress: '10 Same St', subdivision: 'Same Park', baths: 2 },
+        ASOF,
+      ),
+    ).not.toBe('3 baths against your 2')
   })
 
   it('then size', () => {
@@ -158,7 +186,18 @@ describe('rejectionReason', () => {
   it('writes prose the voice canon accepts', () => {
     const lines = [
       rejectionReason(candidate({ propertySubType: 'Townhouse' }), SUBJECT, ASOF),
-      rejectionReason(candidate({ baths: 3 }), SUBJECT, ASOF),
+      rejectionReason(
+        candidate({
+          baths: 3,
+          subdivision: 'Other Park',
+          city: 'Bend',
+          latitude: 44.02,
+          longitude: -121.5,
+          ownPlat: false,
+        }),
+        SUBJECT,
+        ASOF,
+      ),
       rejectionReason(candidate({ sqft: 2_400 }), SUBJECT, ASOF),
       rejectionReason(candidate({ yearBuilt: 1961 }), SUBJECT, ASOF),
       rejectionReason(candidate({ closeDate: '2024-01-15' }), SUBJECT, ASOF),
