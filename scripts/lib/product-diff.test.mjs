@@ -50,6 +50,32 @@ describe('isVercelSkippable / isReleaseSkippable', () => {
     }
   })
 
+  it('skips unit tests and the repo-root test/ harness, not live /test routes', () => {
+    const skip = [
+      'lib/crm/import.test.ts',
+      'app/zip/[zip]/page.test.ts',
+      'components/site/foo.test.tsx',
+      'test/next-cache-cli-stub.ts',
+      'test/next-fetch-cache-harness.ts',
+    ]
+    for (const f of skip) {
+      expect(isVercelSkippable(f), f).toBe(true)
+      expect(isReleaseSkippable(f), f).toBe(true)
+    }
+    const live = [
+      'app/api/push/test/route.ts',
+      'app/api/google-business-profile/test/route.ts',
+    ]
+    for (const f of live) {
+      expect(isVercelSkippable(f), f).toBe(false)
+      expect(isReleaseSkippable(f), f).toBe(false)
+    }
+    expect(classifyDiff(['lib/crm/import.test.ts', 'test/server-only-stub.ts']).status).toBe('skip')
+    expect(classifyDiff(['app/zip/[zip]/page.test.ts', 'app/zip/[zip]/page.tsx']).blockers).toEqual([
+      'app/zip/[zip]/page.tsx',
+    ])
+  })
+
   it('treats hosted migrations as a product release but not a Next rebuild', () => {
     const mig = 'supabase/migrations/20260818120000_example.sql'
     expect(isVercelSkippable(mig)).toBe(true)
