@@ -133,7 +133,11 @@ export function rungLabel(tier: string, subdivision: string | null): string {
     const miles = parseTierRadiusMiles(tier)
     return miles != null ? `within ${milesPhrase(miles)} at your size` : 'close to your home at your size'
   }
-  return tier
+  if (tier.startsWith('own-street-')) return 'your own street'
+  if (tier.startsWith('like-community-')) return 'communities like yours'
+  if (tier.startsWith('community-')) return 'your community'
+  // A slug is not a sentence. own-street-24mo must never reach a seller.
+  return 'a wider search'
 }
 
 function windowPhrase(tier: string, monthsBack: number): string | null {

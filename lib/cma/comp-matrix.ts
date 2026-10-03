@@ -38,6 +38,7 @@ import {
 } from '@/lib/cma/price-path'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import { daysOnMarketFrom } from '@/lib/cma/listing-history-line'
+import { roomAdjustmentWords } from '@/lib/cma/seller-letter-copy'
 import { closedEntries, subjectEntry, type MatrixEntry } from '@/lib/cma/matrix-entry'
 import { statusPpsfCaptionHtml } from '@/lib/cma/status-ppsf'
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
@@ -536,10 +537,7 @@ function dateCell(iso: string | null | undefined): string {
  * away on a set where every sale matches.
  */
 function roomAdjustmentCell(comp: CmaAdjustedComp): string {
-  const notes = comp.roomDifference ?? []
-  if (notes.length === 0) return '-'
-  const parts = notes.map((n) => (n === 'beds' ? '1 bed' : '1 bath'))
-  return `$0 (${parts.join(', ')})`
+  return roomAdjustmentWords(comp.roomDifference ?? [])
 }
 
 /** The adjustment-grid cells for one closed sale, in ADJUSTMENT_ROWS order. */

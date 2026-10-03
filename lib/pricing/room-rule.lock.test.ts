@@ -286,7 +286,8 @@ describe('one-room rule — picker and review share one decision', () => {
       '',
       null,
     )
-    expect(html).toContain('$0 (1 bath)')
+    expect(html).toContain('One bathroom off yours. No dollar adjustment.')
+    expect(html).not.toContain('$0 (1 bath)')
     expect(html).toContain('Adjusted for rooms (theirs vs yours)')
   })
 

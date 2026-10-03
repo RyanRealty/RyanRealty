@@ -1521,7 +1521,7 @@ describe('chapter 1 — the story the numbers carry', () => {
   }
 
   const WALK =
-    'days without an offer points at something other than the number. We would walk it with you before saying what.'
+    'days without an offer points at something other than the number. We would walk it with you before saying more.'
 
   it('keeps the overpricing story when the ask was more than 10 percent above the range', () => {
     for (const html of [letter(withRange(380000, 398000)), immersive(withRange(380000, 398000))]) {

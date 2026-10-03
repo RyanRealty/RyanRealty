@@ -147,6 +147,8 @@ describe('market status grain', () => {
     expect(area).not.toBeNull()
     expect(area!.grain).toBe('subdivision')
     expect(area!.closed?.count).toBe(5)
+    expect(area!.closed?.label).toMatch(/Closed sales in Tetherow, last 12 months/)
+    expect(area!.closed?.label).toMatch(/priced/)
     expect(area!.closed?.low).toBeGreaterThan(100_000)
     expect(area!.closed?.high).toBeLessThan(3_000_000)
     expect(JSON.stringify(area)).not.toContain('2420000')

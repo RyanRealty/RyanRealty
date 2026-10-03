@@ -195,7 +195,11 @@ describe('client name stays off every letter and email surface', () => {
     const immersive = renderImmersiveCmaHtml(args(), 'https://ryan-realty.com')
     expect(html).toContain('Prepared for the owners of 10 Cedar Lane')
     expect(immersive).toContain('Prepared for the owners of 10 Cedar Lane')
-    expect(html).toContain('January 7, 2026')
+    // The list date is not the off-market date. The expired peer came off
+    // 40 days after it listed, so the status date is Feb 16, not Jan 7.
+    // "Jan" is also the owner's name, so it must not appear as a month.
+    expect(html).toContain('Feb 16, 2026')
+    expect(html).not.toContain('January 7, 2026')
     expect(html).not.toMatch(/\bJan\b/)
     assertNoTokens(html)
     assertNoTokens(immersive)

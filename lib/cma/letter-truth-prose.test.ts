@@ -65,7 +65,8 @@ describe('range sentence counts the sales that set the ends', () => {
       saleHigh: 1_195_000,
       suffix: ' The range is those adjusted sale prices.',
     })
-    expect(sentence).toContain('the three of the five')
+    expect(sentence).toContain('three of the five')
+    expect(sentence).not.toMatch(/the three of the five/)
     expect(sentence).not.toContain('all five')
     expect(sentence).toContain('$1,120,000 to $1,195,000')
   })

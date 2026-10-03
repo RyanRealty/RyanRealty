@@ -30,6 +30,7 @@ import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 import type { DevelopmentOpportunities } from '@/lib/cma/development'
 import type { RentalPotential } from '@/lib/cma/rental-potential'
 import { assembleOpinionPages } from '@/lib/cma/opinion-pages'
+import { scrubSellerLetterHtml } from '@/lib/cma/seller-letter-copy'
 import { letterCoverPayoffHtml } from '@/lib/cma/cover-value'
 import {
   cmaCoverLabelHtml,
@@ -487,8 +488,12 @@ export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: numb
 ${body}
 </body>
 </html>`
+  const rendered = expandNameMonthDatesInHtml(html, { clientName: a.client?.name ?? null })
   return {
-    html: expandNameMonthDatesInHtml(html, { clientName: a.client?.name ?? null }),
+    html: scrubSellerLetterHtml(rendered, {
+      recommended: a.pricing?.recommended ?? null,
+      failedAsk: a.subject?.lastListPrice ?? null,
+    }),
     pageCount: pages.length,
   }
 }

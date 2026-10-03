@@ -546,6 +546,8 @@ export function computeMarketArea(input: {
   const sold90Rows = closed.filter((r) => (r.CloseDate ?? '') >= since90)
   const sold90Prices = sold90Rows.map((r) => num(r.ClosePrice)).filter((n): n is number => n != null && n > 0)
   const place = useSub ? subdivision : input.subject.city
+  const where = useSub ? place : `${bedsLabel} homes in ${place}`
+  const priced = `priced $${band.lo.toLocaleString('en-US')} to $${band.hi.toLocaleString('en-US')}`
   const sold90: CmaSoldBand | null =
     sold90Prices.length >= 3
       ? {
@@ -575,10 +577,10 @@ export function computeMarketArea(input: {
     priceLo: band.lo,
     priceHi: band.hi,
     selected: selectedBucket(input.comps),
-    active: pack('active', 'For sale now', live('Active')),
-    pending: pack('pending', 'Under contract', live('Pending')),
-    expired: pack('expired', 'Expired or withdrawn', expired),
-    closed: pack('closed', 'Closed, last 12 months', closed),
+    active: pack('active', `For sale now in ${where}, ${priced}`, live('Active')),
+    pending: pack('pending', `Under contract in ${where}, ${priced}`, live('Pending')),
+    expired: pack('expired', `Came off unsold in ${where}, last 12 months, ${priced}`, expired),
+    closed: pack('closed', `Closed sales in ${where}, last 12 months, ${priced}`, closed),
     sold90,
     listingTrend: listingTrend(scoped, asOf),
     outcomes: computeBandOutcomes({
