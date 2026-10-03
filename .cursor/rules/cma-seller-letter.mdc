@@ -20,3 +20,4 @@ A seller letter must not print any of these. The generator refuses them in `lib/
 - A zero room adjustment with no plain-language explanation.
 
 No buyer or seller names.
+- Each home on the screen cards shows one listing photo when the MLS has one. Do not strip those photos.

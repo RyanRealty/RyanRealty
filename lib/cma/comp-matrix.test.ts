@@ -510,6 +510,19 @@ describe('the adjustment grid, line by line', () => {
     expect(card).not.toContain('class="price-path"')
     expect(card).toContain('List $/sqft')
   })
+
+  it('puts one listing photo on each screen card when the MLS has one', () => {
+    const html = renderCompMatrixHtml(
+      { ...subj, photoUrl: 'https://cdn.example/subject.jpg' },
+      five({ ...sale, photoUrl: 'https://cdn.example/comp.jpg' }),
+    )
+    const stack = html.slice(html.indexOf('class="comp-stack"'))
+    const cards = stack.split('comp-stack-card').slice(1)
+    expect(cards[0]).toContain('class="matrix-thumb"')
+    expect(cards[0]).toContain('https://cdn.example/subject.jpg')
+    expect(cards[1]).toContain('https://cdn.example/comp.jpg')
+    expect(cards[0]).toContain('loading="eager"')
+  })
 })
 
 /**
