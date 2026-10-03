@@ -18,6 +18,15 @@
  *                           --span-since (default --from), refresh report attributes, rebuild the compact
  *                           copies for the window, recompute every period in it
  *   --span-since YYYY-MM-DD with --refresh-window
+ *   --window-only           with --facts, compute only --from..--to on purpose (see below)
+ *
+ * --facts rebuilds every listing's copies, so a computation that goes with it
+ * must start at or before the earliest period any edition reads that holds
+ * data: the first edition's charts read back to 1993-01 (editionFetchWindow),
+ * and the record starts in 1997 (RECORD_START), so 1997-01. The script refuses
+ * a later --from without --window-only. On 2026-10-02 a recompute from 2006-01
+ * had left the periods before it on older data, behind the 2006 to 2008
+ * editions' charts, and 35 editions were republished.
  *
  * Every call is idempotent: a period is deleted and rewritten for its definition.
  */
@@ -26,6 +35,8 @@ loadEnv({ path: '.env.local' })
 loadEnv()
 
 import { refreshReportWindow } from '@/lib/market-report/pipeline'
+import { editionFetchWindow } from '@/lib/market-report/build-edition'
+import { FIRST_EDITION_MONTH } from '@/lib/market-report/edition-path-guard'
 import {
   computeMarketReportPeriod,
   refreshMarketReportFacts,
@@ -78,7 +89,22 @@ async function refreshListings() {
   console.log(`\n  listings done: ${total} rows, ${geos} geographies, ${((Date.now() - t0) / 1000).toFixed(0)}s`)
 }
 
+/**
+ * The first month of the MLS record the report reads: on 2026-10-02
+ * market_report_sale held two sales in 1996 (Aug 20 and Oct 30) and its next on
+ * 1997-01-03. A period before it has nothing to compute.
+ */
+const RECORD_START = '1997-01'
+
 async function main() {
+  const earliest = [editionFetchWindow(FIRST_EDITION_MONTH).fromEnd.slice(0, 7), RECORD_START].sort().at(-1)!
+  const computeFrom = flag('from')
+  if (has('facts') && computeFrom && !has('refresh-window') && computeFrom > earliest && !has('window-only')) {
+    throw new Error(
+      `--facts rebuilds every listing's copies, so compute from ${earliest} or earlier: editions read every period from there on, ` +
+        `and a period before --from would keep values from older data. Pass --window-only to compute just ${computeFrom}..${flag('to')} on purpose.`,
+    )
+  }
   if (has('listings')) {
     console.log('refreshing market_report_listing')
     await refreshListings()

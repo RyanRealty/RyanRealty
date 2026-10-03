@@ -15,7 +15,18 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 type Fields = Record<string, unknown>
 type RemovedSale = import('@/lib/data/sync/closingsReconcile').RemovedSale
 type MlsRemovalNotice = import('@/lib/data/sync/closingsReconcile').MlsRemovalNotice
-const spark = { window: [] as Fields[], byKey: new Map<string, Fields>(), windowRequests: [] as string[] }
+const spark = {
+  window: [] as Fields[],
+  byKey: new Map<string, Fields>(),
+  windowRequests: [] as string[],
+  /** Keys a lookup of several keys drops, as a batch answered wrongly would; asked alone they come back. */
+  droppedInBatch: new Set<string>(),
+  /** Key lookups answered 200 with Success false (Spark's Code 1500). */
+  answerSuccessFalse: false,
+  /** Listings Spark serves by address (StreetNumber and City filters). */
+  byAddress: [] as Fields[],
+  addressFails: false,
+}
 const store = {
   closedInWindow: [] as string[],
   rows: new Map<string, Record<string, unknown>>(),
@@ -50,14 +61,24 @@ let alertQueues = true
 vi.mock('@/lib/spark', async () => {
   const { allPages } = await import('@/test/spark-skip-token-fake')
   return {
+    assertSparkSuccess: (await vi.importActual<typeof import('@/lib/spark')>('@/lib/spark')).assertSparkSuccess,
     fetchSparkListingsWhere: vi.fn(async (_token: string, opts: { filter: string }) => {
       spark.windowRequests.push(opts.filter)
       return opts.filter.startsWith("StandardStatus Eq 'Closed'") ? allPages(spark.window) : []
     }),
     fetchSparkListingsPage: vi.fn(async (_token: string, opts: { filter?: string }) => {
       const filter = opts.filter ?? ''
+      if (spark.answerSuccessFalse) return { D: { Success: false, Code: 1500, Message: 'permission denied' } }
+      const addr = /^StreetNumber Eq '([^']+)' And City Eq '([^']+)'$/.exec(filter)
+      if (addr) {
+        if (spark.addressFails) throw new Error('Spark API error 503: unavailable')
+        const hits = spark.byAddress.filter((f) => f.StreetNumber === addr[1] && f.City === addr[2])
+        return { D: { Success: true, Results: hits.map((f) => ({ StandardFields: f })) } }
+      }
       const keys = [...filter.matchAll(/ListingKey Eq '([^']+)'/g)].map((m) => m[1]!)
-      const hits = keys.flatMap((k) => (spark.byKey.has(k) ? [{ StandardFields: spark.byKey.get(k)! }] : []))
+      const hits = keys.flatMap((k) =>
+        spark.byKey.has(k) && !(keys.length > 1 && spark.droppedInBatch.has(k)) ? [{ StandardFields: spark.byKey.get(k)! }] : [],
+      )
       return { D: { Results: hits, Pagination: { TotalPages: 1 } } }
     }),
   }
@@ -168,6 +189,7 @@ import { heldSalesText } from './mlsRemovedText'
 import { rebuildPlaceMembershipForKeys } from '@/lib/data/sync/closingsReconcile'
 import { refreshMarketFactSpansForKeys } from '@/lib/data/market-report/compute'
 import type { DriftReason } from './listingDrift'
+import { COMING_SOON_STATUS } from '@/lib/listing-status-public'
 
 function sparkClosing(key: string, over: Fields = {}): Fields {
   return {
@@ -205,6 +227,10 @@ beforeEach(() => {
   process.env.SPARK_API_KEY = 'test-key'
   spark.window = []
   spark.byKey = new Map()
+  spark.droppedInBatch = new Set()
+  spark.answerSuccessFalse = false
+  spark.byAddress = []
+  spark.addressFails = false
   spark.windowRequests = []
   store.closedInWindow = []
   store.rows = new Map()
@@ -241,6 +267,8 @@ function removedSale(over: Partial<RemovedSale> = {}): RemovedSale {
     city: 'Sisters',
     closeDate: '2026-03-10',
     closePrice: 735000,
+    status: 'Closed',
+    listPrice: null,
     firstDetectedAt: '2026-09-28T11:20:00Z',
     ...over,
   }
@@ -257,6 +285,8 @@ function notice(over: Partial<MlsRemovalNotice> = {}): MlsRemovalNotice {
     city: 'Sisters',
     closeDate: '2026-03-10',
     closePrice: 735000,
+    status: 'Closed',
+    listPrice: null,
     ...over,
   }
 }
@@ -436,6 +466,27 @@ describe('reconcileClosings', () => {
     expect(store.recorded).toEqual([{ listingKey: 'GONE', listNumber: 'LGONE', closeDate: '2026-03-10' }])
   })
 
+  it('asks a closing a batch missed again on its own: one its own lookup finds is never recorded as removed', async () => {
+    spark.window = [sparkClosing('K2')]
+    store.closedInWindow = ['GONE', 'FLAKY', 'K2']
+    for (const k of ['GONE', 'FLAKY', 'K2']) store.rows.set(k, ourRow(k))
+    spark.byKey.set('FLAKY', sparkClosing('FLAKY'))
+    spark.droppedInBatch.add('FLAKY')
+    const r = await reconcileClosings({ from: '2026-03-01', to: '2026-03-31', repair: true })
+    expect(r.notInSpark).toEqual(['GONE'])
+    expect(store.recorded.map((x) => x.listingKey)).toEqual(['GONE'])
+  })
+
+  it('reads an error Spark answers as 200 as an error, never as sales removed', async () => {
+    spark.window = [sparkClosing('K2')]
+    store.closedInWindow = ['GONE', 'K2']
+    store.rows.set('GONE', ourRow('GONE'))
+    store.rows.set('K2', ourRow('K2'))
+    spark.answerSuccessFalse = true
+    await expect(reconcileClosings({ from: '2026-03-01', to: '2026-03-31', repair: true })).rejects.toThrow(/Success false: permission denied/)
+    expect(store.recorded).toEqual([])
+  })
+
   it('releases a recorded key once Spark serves it again', async () => {
     store.absent.add('BACK')
     store.absentCloseDate.set('BACK', '2026-03-12')
@@ -564,6 +615,39 @@ describe('deleting the sales the MLS removed (Matt 2026-09-30)', () => {
     alertQueues = true
     expect(await tellMlsRemovals()).toBe(1)
     expect(store.reported).toEqual([3637])
+  })
+
+  it('names the number the MLS has at a removed listing\'s address: a duplicate entry the MLS deleted', async () => {
+    const listing = notice({ status: COMING_SOON_STATUS, closeDate: null, closePrice: null, listPrice: 560000, listNumber: '220226052', streetNumber: '3778', streetName: 'Lava', city: 'Redmond' })
+    store.notices = [listing]
+    const daysAgo = (d: number) => new Date(Date.now() - d * 86_400_000).toISOString().slice(0, 10)
+    spark.byAddress = [
+      // The removed one itself, the house's sale of two years ago (its history), its twin, and another street.
+      { ListingId: '220226052', StandardStatus: COMING_SOON_STATUS, ListPrice: 560000, StreetNumber: '3778', StreetName: 'Lava', City: 'Redmond', OnMarketDate: daysAgo(66) },
+      { ListingId: '220175722', StandardStatus: 'Closed', ListPrice: 526990, StreetNumber: '3778', StreetName: 'Lava', City: 'Redmond', OnMarketDate: daysAgo(990) },
+      { ListingId: '220226053', StandardStatus: 'Active', ListPrice: 550000, StreetNumber: '3778', StreetName: 'Lava', City: 'Redmond', OnMarketDate: daysAgo(65) },
+      { ListingId: '220999999', StandardStatus: 'Active', ListPrice: 1, StreetNumber: '3778', StreetName: 'Lava Butte', City: 'Redmond', OnMarketDate: daysAgo(3) },
+    ]
+    expect(await tellMlsRemovals()).toBe(1)
+    expect(alerts.map((a) => a.key)).toEqual(['mls-removed-listing-3637'])
+    expect(alerts[0]!.body.split('\n')[1]).toBe(
+      `3778 Lava, Redmond, MLS 220226052, ${COMING_SOON_STATUS}, listed $560,000; the MLS has this address as MLS 220226053, Active, listed $550,000`,
+    )
+  })
+
+  it('names no number for a building of units, or when the address lookup fails; the text still goes', async () => {
+    store.notices = [notice({ status: 'Active', closeDate: null, closePrice: null, listPrice: 29500, listNumber: '220216423', streetNumber: '18575', streetName: 'Century', city: 'Bend' })]
+    // Four other units listed this year: a building, so no one of them is named. Listed with no date and on the market counts too.
+    spark.byAddress = Array.from({ length: 4 }, (_, i) => ({ ListingId: `2202000${i}`, StandardStatus: 'Active', ListPrice: 100000, StreetNumber: '18575', StreetName: 'Century', City: 'Bend', OnMarketDate: i === 0 ? null : new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10) }))
+    expect(await tellMlsRemovals()).toBe(1)
+    expect(alerts[0]!.body).not.toContain('the MLS has this address')
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    store.reported = []
+    alerts.length = 0
+    spark.addressFails = true
+    expect(await tellMlsRemovals()).toBe(1)
+    expect(alerts[0]!.body).toContain('18575 Century, Bend, MLS 220216423, Active, listed $29,500')
+    expect(alerts[0]!.body).not.toContain('the MLS has this address')
   })
 
   it('tells restores apart from deletions, one text each', async () => {

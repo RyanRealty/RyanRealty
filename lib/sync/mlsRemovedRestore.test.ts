@@ -107,9 +107,10 @@ describe('the deletion and the restore stay symmetric', () => {
       .filter((f) => f.endsWith('.sql'))
       .sort()
       .map((f) => readFileSync(path.join(dir, f), 'utf8'))
-      .filter((sql) => /FUNCTION public\.delete_mls_removed_sales\(/.test(sql))
+      // The latest definition: a COMMENT ON FUNCTION names it too, with no body.
+      .filter((sql) => /CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+public\.delete_mls_removed_sales\(/i.test(sql))
       .pop()!
-    const start = latest.search(/FUNCTION public\.delete_mls_removed_sales\(/)
+    const start = latest.search(/CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+public\.delete_mls_removed_sales\(/i)
     const bodyStart = latest.indexOf('$$', start)
     const body = latest.slice(bodyStart, latest.indexOf('$$', bodyStart + 2))
     // Every table the function deletes from, however the statement is spelled.

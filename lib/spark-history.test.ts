@@ -164,4 +164,14 @@ describe('fetchSparkListingsWhere', () => {
     )
     await expect(fetchSparkListingsWhere('token', { filter: 'x', maxPages: 5, tooMany: 'too many' })).rejects.toThrow(/no next skip token/)
   })
+
+  it('throws on an error Spark answers as 200 (Success false): never the end of the data', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify({ D: { Success: false, Code: 1500, Message: 'permission denied' } }), { status: 200 })),
+    )
+    await expect(fetchSparkListingsWhere('token', { filter: 'x', maxPages: 5, tooMany: 'too many' })).rejects.toThrow(
+      '[fetchSparkListingsWhere] Spark answered Success false: permission denied (Code 1500)',
+    )
+  })
 })

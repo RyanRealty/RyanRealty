@@ -27,7 +27,7 @@ import { computeNextDeltaCursor } from '@/lib/sync/deltaCursor'
 import { isTerminalStatus } from '@/lib/sync/terminalStatus'
 import { isActiveStatus, isPendingStatus, isClosedStatus } from '@/lib/listing-status'
 import { sparkToListingRow, extractPrivateDetails, type ListingMapperOptions } from '@/lib/listing-mapper'
-import { fetchSparkListingsPage } from '@/lib/spark'
+import { assertSparkSuccess, fetchSparkListingsPage } from '@/lib/spark'
 import { fetchAndInsertHistoryCore } from '@/lib/sync/fetchListingHistory'
 import { driftReasons, factsFromListingRow, type DriftReason } from '@/lib/sync/listingDrift'
 import { mergeFrozenMedia } from '@/lib/sync/frozenMedia'
@@ -652,6 +652,8 @@ export async function fetchDeltaWindow(
       orderby: '+ModificationTimestamp',
       expand: DELTA_SYNC.EXPAND,
     })
+    // An error answered as 200 would read as a drained window and move the cursor past it.
+    assertSparkSuccess(res, '[deltaSync]')
     pagesProcessed++
     const page = (res.D?.Results ?? []) as SparkDeltaResult[]
     take(page)
@@ -672,6 +674,7 @@ export async function fetchDeltaWindow(
         expand: DELTA_SYNC.EXPAND,
         skiptoken,
       })
+      assertSparkSuccess(tie, '[deltaSync]')
       pagesProcessed++
       const tiePage = (tie.D?.Results ?? []) as SparkDeltaResult[]
       if (tiePage.length === 0) break
