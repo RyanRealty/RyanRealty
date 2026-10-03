@@ -19,9 +19,20 @@
  * One copy, both callers. Set SHOT_NO_MEDIA_PROXY=1 to turn it off; a machine
  * with ordinary network access behaves identically either way, because a failed
  * fetch hands the request straight back to the browser.
+ *
+ * VIDEO AND AUDIO ARE NOT PROXIED (2026-10-03). Fulfilling hands the whole body
+ * to Chromium in one message. A listing reel of 79 MB (18575 SW Century Drive,
+ * the phone-fold gate's video case) closed the browser mid-gate every run:
+ * "Target page, context or browser has been closed", reproduced locally with
+ * the same file. A <video> asks for byte ranges and no gate reads its frames,
+ * so the browser fetches it itself. Anything else over MAX_FULFILL_BYTES goes
+ * back to the browser the same way.
  */
 
-const MEDIA_TYPES = new Set(['image', 'media', 'font'])
+const MEDIA_TYPES = new Set(['image', 'font'])
+
+/** Largest body handed to the browser in one fulfill: far above any photo or font. */
+export const MAX_FULFILL_BYTES = 16 * 1024 * 1024
 
 /** One response cache per process — six shots load the same hero six times. */
 const mediaCache = new Map()
@@ -49,8 +60,14 @@ export async function installRemoteMediaProxy(target, pageOrigin, stats = { serv
       if (!mediaCache.has(key)) {
         const response = await fetch(key, { signal: AbortSignal.timeout(20_000) })
         if (!response.ok) throw new Error(`HTTP ${response.status}`)
+        if (Number(response.headers.get('content-length') ?? 0) > MAX_FULFILL_BYTES) {
+          await response.body?.cancel()
+          throw new Error('too large to fulfill')
+        }
+        const body = Buffer.from(await response.arrayBuffer())
+        if (body.length > MAX_FULFILL_BYTES) throw new Error('too large to fulfill')
         mediaCache.set(key, {
-          body: Buffer.from(await response.arrayBuffer()),
+          body,
           contentType: response.headers.get('content-type') ?? 'application/octet-stream',
         })
       }
