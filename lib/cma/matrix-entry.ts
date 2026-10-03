@@ -37,6 +37,7 @@ import {
 import { keyFor, type CmaMapFamily } from '@/lib/cma/map-families'
 import type { CmaPinFact } from '@/lib/cma/comp-pin-map'
 import type { ExpiredFinalCycle } from '@/lib/cma/expired-audit'
+import { sellerOffMarketDate } from '@/lib/cma/seller-letter-copy'
 import type { AskExposureLike } from '@/lib/cma/ask-position'
 import type { CmaExpiredPeer } from '@/lib/cma/market-status'
 import type { CmaBandRival } from '@/lib/cma/band-rivals'
@@ -395,9 +396,11 @@ export function unsoldEntries(
       proximity: (p as { proximity?: string | null }).proximity?.trim() || entryProximity(subject, p),
       garageSpaces: null,
       cdomDays: dom,
-      statusDate: /^\d{4}-\d{2}-\d{2}/.test((p.onMarketDate ?? '').slice(0, 10))
-        ? (p.onMarketDate ?? '').slice(0, 10)
-        : null,
+      statusDate: sellerOffMarketDate({
+        listDate: p.onMarketDate,
+        offMarketDate: null,
+        days: dom,
+      }),
       adjustedPrice: null,
       endLabel: 'came off',
       latitude: p.latitude ?? null,
@@ -562,9 +565,15 @@ export function subjectEntry(input: {
     proximity: null,
     garageSpaces: s.garageSpaces != null && Number.isFinite(s.garageSpaces) ? Number(s.garageSpaces) : null,
     cdomDays: input.domDays,
-    statusDate: s.lastListDate && /^\d{4}-\d{2}-\d{2}/.test(s.lastListDate.slice(0, 10))
-      ? s.lastListDate.slice(0, 10)
-      : null,
+    statusDate: cameOff
+      ? sellerOffMarketDate({
+          listDate: input.finalCycle?.listDate ?? s.lastListDate,
+          offMarketDate: input.finalCycle?.offMarketDate,
+          days: input.finalCycle?.days ?? null,
+        })
+      : s.lastListDate && /^\d{4}-\d{2}-\d{2}/.test(s.lastListDate.slice(0, 10))
+        ? s.lastListDate.slice(0, 10)
+        : null,
     adjustedPrice: null,
     endLabel: cameOff ? 'came off' : input.printableAsk != null ? 'still asking' : '',
     latitude: s.latitude ?? null,

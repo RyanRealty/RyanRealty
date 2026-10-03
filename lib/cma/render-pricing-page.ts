@@ -542,6 +542,8 @@ export type PricingPageInput = {
     listPrice: number
     sqft?: number | null
   }>
+  /** A sale under one percent of the weight, left out of the seller letter. */
+  negligibleWeightNote?: string | null
 }
 
 /**
@@ -658,6 +660,7 @@ export function salesThatSetItPage(input: PricingPageInput): CmaPageDef | null {
     toc: 'The sales that set this price',
     body: `
   <h2 class="section">${esc(SALES_THAT_SET_IT_HEADING)}</h2>
+  ${input.negligibleWeightNote ? `<p class="method-line">${esc(input.negligibleWeightNote)}</p>` : ''}
   ${input.statusPriceBoard ?? ''}
   ${matrix}
   ${renderSetAsideHtml(p, input.comps)}

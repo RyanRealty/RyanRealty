@@ -39,9 +39,9 @@ export const REVIEW_REASONS = {
   failedAskCeiling:
     'The sales support more than the price that already failed to sell, so a broker confirms the asking price before this goes out.',
   auditFindings:
-    'An independent review pass recorded findings on this analysis, and a broker answers them before this goes out.',
+    'An independent review recorded findings on this analysis, and a broker answers them before this goes out.',
   auditMissing:
-    'The independent review pass did not run on this build, so a broker reads it before this goes out.',
+    'The independent review did not run on this build, so a broker reads it before this goes out.',
   rangeWidth:
     'The range the sales support is wider than usual for this home, so a broker confirms the number before this goes out.',
   widenedSearch:
@@ -123,8 +123,8 @@ export function confidenceForVerdict(
     confidence: ceiling,
     reason:
       verdict === 'fail'
-        ? 'An independent review pass could not stand behind this price, so the confidence stated here is held at the lowest of the three.'
-        : 'An independent review pass left questions on this analysis, so the confidence stated here is held below the top of the three.',
+        ? 'An independent review could not stand behind this price, so the confidence stated here is held at the lowest of the three.'
+        : 'An independent review left questions on this analysis, so the confidence stated here is held below the top of the three.',
   }
 }
 

@@ -14,9 +14,6 @@ what is verified, and what is open. Subject work (admin, CRM, growth) still runs
 does not erase other planes from Sense.
 
 **Every development cycle routes through THE LOOP v1.6.0 — [`docs/DEVELOPMENT_PROCESS.md`](docs/DEVELOPMENT_PROCESS.md).** Session boot: `npx tsx scripts/loop-brief.ts` (the durable work graph, not the chat, is the source of record for in-flight work). The brief serves a **ship class**: same-category fleet findings share one `npm run push` and one `deploy:verify`. **"Run the loop" = [`docs/RUN_LOOP.md`](docs/RUN_LOOP.md)**, one page for all tools.
-One self-improving cycle: ingest telemetry → diagnose → prioritize → fix the class → verify
-exhaustively → ship → measure → learn → lock behind a gate → compete. It carries the preflight
-contract, the live-environment rules, the escape-ledger protocol, and the approval model.
 Enforced by G44 (`ci:process-canon`).
 
 **A rule that lives only in chat history is lost next session.** When Matt issues a directive
@@ -162,6 +159,8 @@ public copy** (2026-09-20, `ci:no-public-em-dash`) and the site-copy calls of 20
 to 09-18. Otherwise copy is judged by one question: does it sound like a person who knows
 Central Oregon and wants to help. What still binds is not style: real numbers (§0), real
 quotes, fair housing, and MLS remarks shown as written.
+
+**Seller CMA letters:** full rule in [`.cursor/rules/cma-seller-letter.mdc`](.cursor/rules/cma-seller-letter.mdc) and AGENTS.md item 17. Do not put the bad shapes back.
 
 ---
 

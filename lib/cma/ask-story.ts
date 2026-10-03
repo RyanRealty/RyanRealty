@@ -131,7 +131,7 @@ export function walkTheHouseSentence(cls: AskGapClass, days: number | null): str
   if (cls === 'near-above') {
     return `You were asking above what the sales support, and your home went ${d} days without an offer. We would walk it with you before saying more.`
   }
-  return `${atThatPrice(cls)}, ${d} days without an offer points at something other than the number. We would walk it with you before saying what.`
+  return `${atThatPrice(cls)}, ${d} days without an offer points at something other than the number. We would walk it with you before saying more.`
 }
 
 /** "Your home sat 187 days." — and, off the overpricing story, what it sat without. */

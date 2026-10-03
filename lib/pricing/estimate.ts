@@ -850,7 +850,7 @@ export function describeRangeSentence(args: {
   const count =
     args.kept === args.n
       ? `all ${countWord(args.n)}`
-      : `the ${countWord(args.kept)} of the ${countWord(args.n)}`
+      : `${countWord(args.kept)} of the ${countWord(args.n)}`
   if (same) {
     return `The range is the spread of ${count} sale prices adjusted for date and size: ${usd(args.printedLow)} to ${usd(args.printedHigh)}.${suffix}`
   }

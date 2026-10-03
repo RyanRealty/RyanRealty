@@ -1,0 +1,22 @@
+---
+description: Seller CMA letter copy. Apply when editing CMA letters, pricing prose, comp matrices, or review banners.
+globs: lib/cma/**,lib/pricing/**
+alwaysApply: false
+---
+
+# Seller CMA letter copy
+
+A seller letter must not print any of these. The generator refuses them in `lib/cma/seller-letter-copy.ts`. Do not put them back.
+
+- Internal search labels, including `own-street-24mo` and any similar slug. Say it in plain English or omit the sentence.
+- Unfinished sentences, including "before saying what."
+- "the N of the M" (for example "the four of the five").
+- Review tokens such as `pass`, and a line that says the sales support more than a failed ask while the printed recommendation is lower.
+- A list date labeled as the off-market date.
+- Two counts that do not each say what they count.
+- A new-home sentence that does not match the table.
+- A local price per square foot that held flat next to a large date cut. One story.
+- A negligible-weight sale presented as a comp that sets the price.
+- A zero room adjustment with no plain-language explanation.
+
+No buyer or seller names.
