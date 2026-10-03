@@ -102,13 +102,11 @@ export function newHomeRateParagraph(input: NewHomeRateInput): string | null {
     lo != null && hi != null && lo > 0 && hi > 0
       ? price >= Math.min(lo, hi) && price <= Math.max(lo, hi)
       : false
+  // The listing table is the rival list. A second size filter made the
+  // sentence count a different set than the table (three rates beside four
+  // homes). Every new house on that list is named, in the same order.
   const listed = (input.rivals ?? []).filter(
-    (r) =>
-      r.yearBuilt != null &&
-      r.yearBuilt >= newFrom &&
-      r.sqft != null &&
-      similar(r.sqft, input.subjectSqft) &&
-      inRange(r.listPrice),
+    (r) => r.yearBuilt != null && r.yearBuilt >= newFrom && r.sqft != null && r.sqft > 0 && r.listPrice > 0,
   )
 
   const count = newer.length === 1 ? 'One of these sales was' : `${newer.length} of these sales were`
@@ -145,11 +143,19 @@ export function newHomeRateParagraph(input: NewHomeRateInput): string | null {
       )
     }
   } else if (listed.length > 1) {
-    const rates = listed
+    const allInRange = listed.every((r) => inRange(r.listPrice))
+    const where = allInRange ? 'in this range' : 'in this letter'
+    const ordered = listed
       .map((r) => perFoot(r.listPrice, r.sqft!))
       .filter((n): n is number => n != null)
+    const ratesInOrder =
+      ordered.length <= 1
+        ? moneyList(ordered)
+        : ordered.length === 2
+          ? `${usd(ordered[0]!)} and ${usd(ordered[1]!)}`
+          : `${ordered.slice(0, -1).map((n) => usd(n)).join(', ')}, and ${usd(ordered[ordered.length - 1]!)}`
     bits.push(
-      `${listed.length} houses built in ${yearList(listed.map((r) => r.yearBuilt!))} are listed in this range, at ${moneyList(rates)} a square foot.`,
+      `${listed.length} houses built in ${yearList(listed.map((r) => r.yearBuilt!))} are listed ${where}, at ${ratesInOrder} a square foot.`,
     )
   }
   return bits.join(' ')

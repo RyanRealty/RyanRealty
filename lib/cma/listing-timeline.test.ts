@@ -187,7 +187,7 @@ describe('listingTimelineReading', () => {
     expect(reading).toContain('You were asking inside the range homes like yours sold in')
     expect(reading).toContain('Your home sat 187 days without an offer.')
     expect(reading).toContain(
-      'At a price inside the range, 187 days without an offer points at something other than the number. We would walk it with you before saying what.',
+      'At a price inside the range, 187 days without an offer points at something other than the number. We would walk it with you before saying more.',
     )
     expect(reading).not.toContain('accepted offer in')
   })

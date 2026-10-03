@@ -163,6 +163,9 @@ to 09-18. Otherwise copy is judged by one question: does it sound like a person 
 Central Oregon and wants to help. What still binds is not style: real numbers (§0), real
 quotes, fair housing, and MLS remarks shown as written.
 
+**Seller CMA letters (Matt 2026-10-02).** A seller letter must not print internal search labels (including own-street-24mo and any similar slug), unfinished sentences, "the N of the M", review tokens such as pass, a list date labeled as the off-market date, or a recommendation the letter says the comps do not support. Each count says what it counts. The new-home sentence matches the table. A flat local price per square foot and a large date cut do not both ship. A negligible-weight sale does not sit as a comp that sets the price. A zero room adjustment is explained or omitted. No buyer or seller names. The generator refuses these shapes in `lib/cma/seller-letter-copy.ts`. Do not put them back.
+
+
 ---
 
 # §3. Design System

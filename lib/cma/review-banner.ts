@@ -70,8 +70,19 @@ export function readPricingReview(pricing: unknown): PricingReview | null {
 export function adminReviewBannerHtml(pricing: unknown): string {
   const review = readPricingReview(pricing)
   if (!review || !review.needsReview) return ''
-  const parts = [...review.reasons]
-  if (review.auditVerdict) parts.push(review.auditVerdict)
+  // A verdict token ("pass", "fail", "review") is not a sentence. Never append it.
+  // Do not claim the sales support more than the failed ask. That fights a
+  // printed recommendation that is lower.
+  const parts = review.reasons
+    .map((reason) =>
+      /sales support more than the price that already failed/i.test(reason)
+        ? 'A broker confirms the asking price before this goes out.'
+        : reason,
+    )
+    .filter((reason) => !/^(pass|fail|review|did-not-run)$/i.test(reason.trim()))
+  const verdict = review.auditVerdict?.trim() ?? ''
+  // A one-word verdict is a token. A sentence the audit wrote for the broker stays.
+  if (verdict && !/^(pass|fail|review|did-not-run)$/i.test(verdict)) parts.push(verdict)
   const body = parts.join(' ')
   return `<div class="cma-review-gate" role="status" style="background:#102742;color:#faf8f4;padding:14px 20px;font:500 15px/1.45 Geist,system-ui,sans-serif">Needs review before it goes out${
     body ? `: ${esc(body)}` : '.'

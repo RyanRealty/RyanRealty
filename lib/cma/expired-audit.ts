@@ -22,6 +22,7 @@
  *     are labeled estimates. Math is computed here, penny-exact, and traced.
  */
 
+import { sellerOffMarketDate } from '@/lib/cma/seller-letter-copy'
 import type {
   CmaPricing,
   CmaPricingClamp,
@@ -1390,7 +1391,11 @@ export function resolveListingTimeline(input: {
   }
   if (steps.length === 0) return null
 
-  const offMarket = cycle?.offMarketDate ?? offMarketFromDays(listDate, input.domDays)
+  const offMarket = sellerOffMarketDate({
+    listDate,
+    offMarketDate: cycle?.offMarketDate ?? offMarketFromDays(listDate, input.domDays),
+    days: cycle?.days ?? input.domDays,
+  })
   const status = (cycle?.status ?? s.standardStatus ?? '').trim().toLowerCase() || null
   return {
     listDate,

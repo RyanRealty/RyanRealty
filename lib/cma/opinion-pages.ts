@@ -38,6 +38,13 @@ import {
   type DidNotSellArgs,
 } from '@/lib/cma/did-not-sell'
 import { FAILED_ASK_BACKTEST, resolveListingTimeline } from '@/lib/cma/expired-audit'
+import {
+  cityDateCutsFightFlatLocal,
+  compsWithoutCityDateMove,
+  pricingWithoutCityDateMove,
+} from '@/lib/cma/flat-date-story'
+import { withoutNegligibleWeight } from '@/lib/cma/seller-letter-copy'
+import { compWeightIndex } from '@/lib/cma/pricing-method'
 import { preparedClosingLine } from '@/lib/cma/letter-privacy'
 import { listingTimelinePhoneSvg, listingTimelineSvg, listingMarketSlopesPhoneSvg, listingMarketSlopesSvg } from '@/lib/cma/market-charts'
 import {
@@ -269,11 +276,19 @@ export function mapArgs(a: OpinionPageArgs) {
 /** Chapter 3a. Matrix 1, and the working under it. */
 export function salesThatSetItArgs(a: OpinionPageArgs): PricingPageInput {
   const sets = matrixEntriesFor(a)
+  const flat = cityDateCutsFightFlatLocal({
+    ppsfMove: a.listingMarket?.ppsfMove ?? null,
+    comps: a.comps,
+  })
+  const datedComps = flat ? compsWithoutCityDateMove(a.comps) : a.comps
+  const pricing = flat ? pricingWithoutCityDateMove(a.pricing, datedComps) : a.pricing
+  const weighed = withoutNegligibleWeight(datedComps, compWeightIndex(pricing))
   return {
     subject: a.subject,
-    comps: a.comps,
+    comps: weighed.comps,
+    negligibleWeightNote: weighed.note,
     market: a.market,
-    pricing: a.pricing,
+    pricing,
     tiersUsed: a.tiersUsed,
     docLinks: a.docLinks,
     renderArgs: a,
@@ -289,7 +304,7 @@ export function salesThatSetItArgs(a: OpinionPageArgs): PricingPageInput {
     })),
     statusPriceBoard: statusPriceBoardHtml(
       statusPriceSummaries({
-        closed: sets.closed,
+        closed: closedEntries(weighed.comps, a.docLinks ?? null, a.subject),
         active: sets.active,
         unsold: sets.unsold,
       }),
