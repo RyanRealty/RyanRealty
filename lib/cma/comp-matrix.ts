@@ -790,9 +790,13 @@ function matrixStack(input: {
     }</span></div>`
   const cardFor = (col: Col, entry: MatrixEntry | null, i: number): string => {
     const pin = col.key === 'subject' ? 'subject' : (col.pin ?? col.key)
-    // Tip Ready P1: stack is the screen reading path — facts first, no photo
-    // spam burying the number. Print matrix keeps thumbs.
-    const img = ''
+    // One listing photo on the card, the same source as the table head.
+    // Matt 2026-10-03: the screen reading is these cards, and a card with
+    // no photo is a letter with no thumbnails. Not a gallery.
+    const src = col.photoUrl ? sparkPhotoAt(col.photoUrl, '320x240') ?? col.photoUrl : null
+    const img = src
+      ? `<img class="matrix-thumb" src="${esc(src)}" alt="" loading="eager" referrerpolicy="no-referrer"/>`
+      : `<span class="matrix-thumb is-empty" aria-hidden="true"></span>`
     // The phone card has room for the whole line; the desktop column head,
     // 93px wide, does not. "Your home · 2465 7th" is what a seller looks for.
     const cardLabel =
