@@ -21,3 +21,5 @@ A seller letter must not print any of these. The generator refuses them in `lib/
 
 No buyer or seller names.
 - Each home on the screen cards shows one listing photo when the MLS has one. Do not strip those photos.
+
+Sold information includes seller concessions (or seller-paid closing costs) when the MLS already stored an amount. Comparison matrices factor that amount into the sale they adjust. A sale price that ignores a recorded concession is wrong. When the sale reported none, print none or zero; do not hide the line. Do not invent a concession amount. Adjusted matrix figures, the prices that set the recommendation, and any sold summary must use the same concession-adjusted sale.

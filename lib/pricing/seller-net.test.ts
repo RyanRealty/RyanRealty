@@ -7,6 +7,11 @@ import {
   attachCompConcessions,
   attachSellerNet,
   buildSellerNet,
+  comparableAdjustedPrice,
+  comparisonSalePrice,
+  concessionOffClose,
+  concessionOnSale,
+  printedAdjustedPrice,
   reanchorSellerNet,
   resolveConcessions,
   sellerCostLines,
@@ -42,6 +47,38 @@ describe('sellerNetFromPrice', () => {
 
   it('is unknown when concessions were not resolved', () => {
     expect(sellerNetFromPrice(500_000, null)).toBeNull()
+  })
+})
+
+describe('comparisonSalePrice — the sale a matrix adjusts', () => {
+  it('takes a recorded credit off the contract close', () => {
+    expect(comparisonSalePrice(500_000, 10_000)).toBe(490_000)
+  })
+
+  it('leaves the close unchanged when the sale reported none or the amount is unknown', () => {
+    expect(comparisonSalePrice(500_000, 0)).toBe(500_000)
+    expect(comparisonSalePrice(500_000, null)).toBe(500_000)
+    expect(comparisonSalePrice(500_000, undefined)).toBe(500_000)
+  })
+
+  it('does not invent a credit from a missing amount', () => {
+    expect(concessionOffClose({ concessionsAmount: null, concessionsYn: 'Yes', closeDate: '2023-06-01' })).toBe(0)
+    expect(concessionOnSale({ concessionsAmount: null, concessionsYn: 'Yes', closeDate: '2023-06-01' })).toBeNull()
+  })
+
+  it('the adjusted comparable price moves by the recorded credit', () => {
+    const none = {
+      closePrice: 457_000,
+      concessions: 0,
+      timeAdjustment: -39_211,
+      sizeAdjustment: -28_229,
+      storyAdjustment: 0,
+    }
+    const given = { ...none, concessions: 4_000, adjustedPrice: 389_560 }
+    expect(comparableAdjustedPrice(none)).toBe(389_560)
+    expect(comparableAdjustedPrice(given)).toBe(385_560)
+    expect(printedAdjustedPrice(given)).toBe(385_560)
+    expect(printedAdjustedPrice({ ...given, adjustedPrice: 385_560 })).toBe(385_560)
   })
 })
 

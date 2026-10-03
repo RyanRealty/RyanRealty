@@ -42,6 +42,7 @@ import type { AskExposureLike } from '@/lib/cma/ask-position'
 import type { CmaExpiredPeer } from '@/lib/cma/market-status'
 import type { CmaBandRival } from '@/lib/cma/band-rivals'
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
+import { concessionOnSale, printedAdjustedPrice } from '@/lib/pricing/seller-net'
 
 const esc = escapeHtml
 
@@ -84,8 +85,7 @@ export type MatrixEntry = {
   closePrice: number | null
   /** List/ask used for list $/sqft. */
   listPrice: number | null
-  /** Seller concessions $ on a closed sale; null when unknown or not a sale. */
-  concessionsAmount: number | null
+  /** Seller concessions $ on a closed sale; 0 when none; null when unknown or not a sale. */
   /** Flex FLOW: distance + direction when known ("0.2 mi NW"). */
   proximity: string | null
   /** Flex FLOW: garage spaces when known. */
@@ -312,18 +312,14 @@ export function closedEntries(
       lastAsk: num(c.listPrice),
       closePrice: c.closePrice > 0 ? c.closePrice : null,
       listPrice: num(c.listPrice) ?? num(c.originalListPrice),
-      concessionsAmount: (() => {
-        const v = c.concessions ?? c.concessionsAmount ?? null
-        return v != null && Number.isFinite(v) ? Number(v) : null
-      })(),
+      concessionsAmount: concessionOnSale(c),
       proximity: (c.proximity ?? '').trim() || entryProximity(subject, c),
       garageSpaces: c.garageSpaces != null && Number.isFinite(c.garageSpaces) ? Number(c.garageSpaces) : null,
       cdomDays: days(c.domTotal),
       statusDate: /^\d{4}-\d{2}-\d{2}/.test((c.closeDate ?? '').slice(0, 10))
         ? (c.closeDate ?? '').slice(0, 10)
         : null,
-      adjustedPrice:
-        c.adjustedPrice != null && Number.isFinite(c.adjustedPrice) ? Number(c.adjustedPrice) : null,
+      adjustedPrice: printedAdjustedPrice(c),
       endLabel: c.closePrice > 0 ? `sold ${shortOrExactUsd(c.closePrice)}` : 'sold',
       latitude: c.latitude ?? null,
       longitude: c.longitude ?? null,

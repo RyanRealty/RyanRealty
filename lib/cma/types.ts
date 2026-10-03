@@ -99,9 +99,8 @@ export interface CmaComp {
   /**
    * The seller concession as the grid prints it: a dollar amount when one was
    * reported, 0 when the sale reported none, null when nothing was recorded.
-   * Resolved by `resolveConcessions`, the same function the seller-net caption
-   * reads, so the line and the caption cannot disagree (research brief
-   * 2026-09-07, item 8; D14).
+   * Resolved by `resolveConcessions`. The comparison matrix subtracts a
+   * recorded amount from the sale before date and size; it does not invent one.
    */
   concessions?: number | null
   /** ClosePrice minus resolved seller concessions. Null when concessions are unknown. */

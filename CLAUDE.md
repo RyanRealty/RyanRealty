@@ -160,7 +160,7 @@ to 09-18. Otherwise copy is judged by one question: does it sound like a person 
 Central Oregon and wants to help. What still binds is not style: real numbers (§0), real
 quotes, fair housing, and MLS remarks shown as written.
 
-**Seller CMA letters:** full rule in [`.cursor/rules/cma-seller-letter.mdc`](.cursor/rules/cma-seller-letter.mdc) and AGENTS.md item 17. Do not put the bad shapes back.
+**Seller CMA letters:** full rule in [`.cursor/rules/cma-seller-letter.mdc`](.cursor/rules/cma-seller-letter.mdc) and AGENTS.md items 17–18. Do not put the bad shapes back. Sold comps include concessions; matrices factor them in.
 
 ---
 

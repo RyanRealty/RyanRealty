@@ -45,6 +45,7 @@ import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
 import { formatDate } from '@/lib/format/date'
 import type { ExpiredFinalCycle } from '@/lib/cma/expired-audit'
 import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
+import { concessionOffClose, concessionOnSale, printedAdjustedPrice } from '@/lib/pricing/seller-net'
 
 const esc = escapeHtml
 
@@ -405,8 +406,8 @@ function ppsfCell(price: number | null | undefined, sqft: number | null | undefi
 function sharedConcessionCell(entry: MatrixEntry): string {
   if (entry.family !== 'closed') return '-'
   const c = entry.concessionsAmount
-  if (c == null || !Number.isFinite(c)) return '-'
-  return c > 0 ? usd(c) : 'none'
+  if (c == null || !Number.isFinite(c) || c <= 0) return 'none'
+  return usd(c)
 }
 
 function statusCell(entry: MatrixEntry): string {
@@ -496,9 +497,13 @@ function adjustmentLines(comp: CmaAdjustedComp): {
   netPct: number | null
   grossPct: number | null
 } {
-  const parts = [comp.timeAdjustment, comp.sizeAdjustment, comp.storyAdjustment].filter(
-    (v): v is number => v != null && Number.isFinite(v),
-  )
+  const concession = concessionOffClose(comp)
+  const parts = [
+    concession > 0 ? -concession : null,
+    comp.timeAdjustment,
+    comp.sizeAdjustment,
+    comp.storyAdjustment,
+  ].filter((v): v is number => v != null && Number.isFinite(v))
   if (parts.length === 0) return { net: null, netPct: null, grossPct: null }
   const close = comp.closePrice
   const net = parts.reduce((sum, v) => sum + v, 0)
@@ -508,14 +513,13 @@ function adjustmentLines(comp: CmaAdjustedComp): {
 }
 
 /**
- * The 1004's FIRST value adjustment, and the one this document printed nowhere
- * (research item 8) while the net sheet quoted two concession figures with no
- * basis on the page.
+ * The 1004's FIRST value adjustment. A recorded credit is a dollar amount.
+ * Reported none, or nothing recorded, prints "none" so the line stays.
  */
 function concessionCell(comp: CmaAdjustedComp): string {
-  const c = comp.concessions ?? comp.concessionsAmount ?? null
-  if (c == null || !Number.isFinite(c)) return '-'
-  return c > 0 ? usd(c) : 'none'
+  const c = concessionOnSale(comp)
+  if (c == null || !Number.isFinite(c) || c <= 0) return 'none'
+  return usd(c)
 }
 
 function signedCell(v: number | null | undefined): string {
@@ -561,7 +565,7 @@ function adjustmentCells(
       ? `${adj.netPct > 0 ? '+' : adj.netPct < 0 ? '−' : ''}${Math.abs(adj.netPct).toFixed(1)}%`
       : '-',
     gross != null ? `${gross.toFixed(1)}%` : '-',
-    usd(comp.adjustedPrice),
+    usd(printedAdjustedPrice(comp)),
     weight?.weight != null ? `${weight.weight.toFixed(1)}%` : '-',
   ]
 }

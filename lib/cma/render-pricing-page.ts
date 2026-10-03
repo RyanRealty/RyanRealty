@@ -418,21 +418,15 @@ function tableLead(input: { comps: CmaAdjustedComp[]; pricing: CmaPricing }): st
 }
 
 /**
- * What the concessions row is, and is not.
+ * What the concessions row is.
  *
- * tasteReview round two, §3.H: the row sits inside the adjustment grid,
- * between "Price history" and "Adjusted for date", and enters none of the
- * arithmetic below it — while chapter 6 takes the same figures off the
- * seller's net. A reader adding the column up has to know that.
+ * A recorded credit comes off that sale before date and size, the same number
+ * the pricing walk uses. A sale that reported none still prints the line.
  */
 function concessionsCaption(comps: readonly CmaAdjustedComp[]): string {
-  const any = comps.some((c) => {
-    const v = c.concessions ?? c.concessionsAmount ?? null
-    return v != null && Number.isFinite(v)
-  })
-  if (!any) return ''
+  if (comps.length === 0) return ''
   return `<p class="small">${esc(
-    'Seller concessions are reported to the MLS. They are not part of the adjustments; they are used in Net at list.',
+    'Seller concessions are the amount the MLS recorded on each sale. A recorded credit comes off that sale in the adjustments. A sale that reported none shows none.',
   )}</p>`
 }
 

@@ -236,6 +236,63 @@ describe('adjustCompAlongMarket', () => {
     expect(adjusted.listingHistoryLine).toContain('307 days on market')
     expect(adjusted.closePrice).toBe(957_250)
   })
+
+  it('factors a recorded seller concession into the adjusted sale', () => {
+    const points = [
+      { month: '2025-01-01', ppsf: 350, n: 40 },
+      { month: '2025-06-01', ppsf: 350, n: 40 },
+    ]
+    const base = {
+      subject,
+      subjectStory: 'one' as const,
+      saleStory: 'one' as const,
+      points,
+      asOf: '2025-06-15',
+    }
+    const none = adjustCompAlongMarket({
+      ...base,
+      sale: sale({
+        closeDate: '2025-01-15',
+        closePrice: 600_000,
+        concessionsAmount: 0,
+        concessionsYn: 'No',
+      }),
+    }).adjusted
+    const given = adjustCompAlongMarket({
+      ...base,
+      sale: sale({
+        closeDate: '2025-01-15',
+        closePrice: 600_000,
+        concessionsAmount: 10_000,
+        concessionsYn: 'Yes',
+      }),
+    }).adjusted
+    expect(none.concessions).toBe(0)
+    expect(given.concessions).toBe(10_000)
+    expect(given.adjustedPrice).toBeLessThan(none.adjustedPrice)
+    expect(none.adjustedPrice - given.adjustedPrice).toBeGreaterThanOrEqual(9_000)
+    expect(given.adjustedPrice).toBe(
+      590_000 + given.timeAdjustment + given.sizeAdjustment + (given.storyAdjustment ?? 0),
+    )
+  })
+
+  it('does not invent a concession when the MLS stored none', () => {
+    const { adjusted } = adjustCompAlongMarket({
+      subject,
+      subjectStory: 'one',
+      sale: sale({
+        closeDate: '2025-06-01',
+        closePrice: 500_000,
+        concessionsAmount: 0,
+        concessionsYn: 'No',
+      }),
+      saleStory: 'one',
+      points: [{ month: '2025-06-01', ppsf: 250, n: 40 }],
+      asOf: '2025-06-15',
+    })
+    expect(adjusted.concessions).toBe(0)
+    expect(adjusted.closePrice).toBe(500_000)
+  })
 })
 
 describe('predictedCloseFromAdjusted', () => {
