@@ -290,6 +290,7 @@ async function dryRun(slug: string): Promise<DryRun> {
   const { selectCompsPreferringFacts } = await import('@/lib/pricing/select')
   const { isCustomOrNewSubject } = await import('@/lib/pricing/classes')
   const { adjustComps, computePricing } = await import('@/lib/cma/pricing')
+  const { pricingFailureMessage } = await import('@/lib/pricing/price-set')
   const { adjustCmaCompAlongMarket, adjustCompAlongMarket, priceCmaSet } = await import('@/lib/pricing/estimate')
   const { classifyStory } = await import('@/lib/pricing/classes')
   const { checkDateAdjustments } = await import('@/lib/pricing/market-path')
@@ -455,7 +456,7 @@ async function dryRun(slug: string): Promise<DryRun> {
       marketIndex.length > 0 ? null : `no monthly index rows for ${citySlug(subject.city) || 'this city'}`,
     computePricing,
   })
-  if (!pricing) return { ...withSel, stage: 'pricing', error: 'Pricing could not be computed (subject sqft missing).' }
+  if (!pricing) return { ...withSel, stage: 'pricing', error: pricingFailureMessage(subject, adjusted) }
 
   // EXACTLY the ceiling lib/cma/build.ts applies after priceSet (step 4, the
   // `lastCycleFailed` branch). Without it this script printed the ask itself

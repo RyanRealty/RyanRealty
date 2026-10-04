@@ -4,6 +4,14 @@ import { getAllResortCommunities } from '@/lib/data/communities/registry'
 import { communitySlugForRecordedPlats } from '@/lib/cma/community-location'
 
 /**
+ * Points per geo_assign_batch call. Each point matches several polygons, and
+ * the read is capped, so a page of 400 drops the plats on the later points.
+ * A dropped plat is how a sale inside the recorded community arrives with no
+ * community at all. 40 points leaves room for every containing polygon.
+ */
+const GEO_ASSIGN_BATCH = 40
+
+/**
  * The plats next to the plat a point sits in, and the plat for a batch of
  * points. Both read `public.boundaries` (county GIS subdivision polygons)
  * through two RPCs: `cma_subdivision_ring` (migration 20260909120000; the
@@ -92,7 +100,7 @@ export async function readSubdivisionRing(lat: number, lng: number): Promise<Sub
 
 /**
  * The smallest plat polygon holding each point, by index; null where none
- * does or the point has no coordinates. One RPC per 400 points.
+ * does or the point has no coordinates. One RPC per GEO_ASSIGN_BATCH points.
  */
 export async function assignSubdivisionSlugs(
   points: ReadonlyArray<{ lat: number | null; lng: number | null }>,
@@ -105,8 +113,8 @@ export async function assignSubdivisionSlugs(
       batch.push({ idx, lat: p.lat, lon: p.lng })
     }
   })
-  for (let i = 0; i < batch.length; i += 400) {
-    const part = batch.slice(i, i + 400)
+  for (let i = 0; i < batch.length; i += GEO_ASSIGN_BATCH) {
+    const part = batch.slice(i, i + GEO_ASSIGN_BATCH)
     const { data, error } = await sb.rpc('geo_assign_batch', { points: part })
     if (error) {
       console.error('[assignSubdivisionSlugs]', error.message)
@@ -149,8 +157,8 @@ export async function assignCommunitySlugs(
     })
     if (batch.length === 0) return null
     const sb = createServiceClient()
-    for (let i = 0; i < batch.length; i += 400) {
-      const part = batch.slice(i, i + 400)
+    for (let i = 0; i < batch.length; i += GEO_ASSIGN_BATCH) {
+      const part = batch.slice(i, i + GEO_ASSIGN_BATCH)
       const { data, error } = await sb.rpc('geo_assign_batch', { points: part })
       if (error) {
         console.error('[assignCommunitySlugs]', error.message)

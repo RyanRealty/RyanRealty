@@ -29,6 +29,7 @@ import {
 import { resolveCmaSubject } from '@/lib/cma/subject'
 import { selectComps, MIN_COMPS } from '@/lib/cma/comps'
 import { adjustComps, computePricing } from '@/lib/cma/pricing'
+import { pricingFailureMessage } from '@/lib/pricing/price-set'
 import { loadBpoEngineInputs, priceBpoAdjusted, bpoCompMap } from '@/lib/bpo/engine'
 import { judgeComps } from '@/lib/cma/judge'
 import { pricingCompsAfterJudgment } from '@/lib/cma/judgment-prune'
@@ -213,12 +214,12 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
         subject, set, market, selection, marketIndex, asOf: generatedAtIso.slice(0, 10), tierByKey,
         priceOverride: input.priceOverride ?? null, adjustComps, computePricing,
       })
-      if (!priced) return null
-      return { ...priced, op: deriveOpinion(subject, priced.p, market, history, { priceOverride: input.priceOverride ?? null }) }
+      if (!priced.p) return { adj: priced.adj, p: null, op: null }
+      return { ...priced, p: priced.p, op: deriveOpinion(subject, priced.p, market, history, { priceOverride: input.priceOverride ?? null }) }
     }
     const derived = deriveAll(compsForPricing)
-    if (!derived) {
-      const err = 'Pricing could not be computed (subject sqft missing).'
+    if (!derived?.p || !derived.op) {
+      const err = pricingFailureMessage(subject, derived?.adj ?? [])
       await recordFailure(slug, err)
       return { ok: false, error: err, slug }
     }

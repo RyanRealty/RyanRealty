@@ -19,7 +19,7 @@
  */
 import { communityForAddress } from '@/lib/cma/community-location'
 import { lotCompatible } from '@/lib/pricing/classes'
-import { PLAT_WIDE_SQFT_BAND } from '@/lib/pricing/ladder'
+import { PLAT_WIDE_SQFT_BAND, PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
 
 export type PriceSetSale = {
   ownPlat?: boolean | null
@@ -106,6 +106,27 @@ export function saleSetsThePrice(input: PriceSetSale): boolean {
  * 'under' or 'over' when the recommended price sits outside every sale that
  * set it. Null when it sits with those sales, or when there is nothing to compare.
  */
+
+/**
+ * Why pricing returned nothing. Missing living area and a set with fewer than
+ * three sales that set the price are different failures. The second one used
+ * to be reported as the first.
+ */
+export function pricingFailureMessage(
+  subject: { sqft?: number | null },
+  adjusted: readonly { weight?: number | null }[],
+  opts: { afterAudit?: boolean } = {},
+): string {
+  const where = opts.afterAudit ? ' after audit' : ''
+  const sqft = subject.sqft ?? 0
+  if (!(sqft > 0)) return `Pricing could not be computed${where} (subject sqft missing).`
+  const weighted = adjusted.filter((c) => (c.weight ?? 0) > 0).length
+  if (weighted < PRICING_MIN_COMPS) {
+    return `Pricing could not be computed${where} (${weighted} of ${adjusted.length} comps set the price, and this home needs ${PRICING_MIN_COMPS}).`
+  }
+  return `Pricing could not be computed${where} (the recommended price sits outside the sales that set it).`
+}
+
 export function recommendationOutsideSaleSet(
   recommended: number | null | undefined,
   salePrices: readonly number[],

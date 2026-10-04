@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { closedCompWeight } from '@/lib/pricing/closed-comp-weight'
 import { listPriceFromEngine } from '@/lib/pricing/estimate'
-import { recommendationOutsideSaleSet, saleSetsThePrice } from '@/lib/pricing/price-set'
+import { pricingFailureMessage, recommendationOutsideSaleSet, saleSetsThePrice } from '@/lib/pricing/price-set'
 import { weightedAdjustedPrice } from '@/lib/pricing/reconciliation'
 
 const subject = {
@@ -118,5 +118,17 @@ describe('a sale sets the price only when it is this home', () => {
     expect(empty.compsImpliedClose).toBeNull()
     expect(empty.outsideSaleSet).toBe('empty')
     expect(empty.source).toBe('none')
+  })
+})
+
+describe('pricing failure message', () => {
+  it('does not call a thin price-setting set a missing sqft', () => {
+    const thin = pricingFailureMessage({ sqft: 1748 }, [{ weight: 0 }, { weight: 0 }, { weight: 0 }])
+    expect(thin).toContain('0 of 3 comps set the price')
+    expect(thin).not.toContain('sqft missing')
+    expect(pricingFailureMessage({ sqft: null }, [])).toContain('subject sqft missing')
+    expect(pricingFailureMessage({ sqft: 1748 }, [{ weight: 1 }, { weight: 1 }, { weight: 1 }])).toContain(
+      'outside the sales that set it',
+    )
   })
 })

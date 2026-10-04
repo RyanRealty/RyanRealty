@@ -51,6 +51,7 @@ import { buildRejectedSales } from '@/lib/pricing/rejected'
 import { dropPriorSalesOfSameHome } from '@/lib/pricing/same-address'
 import { buildPricingReview, confidenceForVerdict } from '@/lib/pricing/review'
 import { attachSellerNet } from '@/lib/pricing/seller-net'
+import { pricingFailureMessage } from '@/lib/pricing/price-set'
 import { classifyStory, citySlug, irrigationClassFromOwrd, isCustomOrNewSubject, yearQualityCompatible } from '@/lib/pricing/classes'
 import type { CompSelectionDiagnostics } from '@/lib/cma/comp-trace'
 import { composeBuildSummary } from '@/lib/cma/build-summary'
@@ -626,6 +627,11 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       // can count — not the wider band set the price path is fitted on
       // (§0 rule 5; look pass 2026-09-07 printed "4 of 8" beside a 5-row matrix).
       attachSellerNet(p, set)
+      if (p) {
+        for (const line of [...new Set(adj.map((c) => c.sewerNote).filter((n): n is string => Boolean(n)))]) {
+          if (!p.notes.includes(line)) p.notes.push(line)
+        }
+      }
       if (p && exclusivePocket) {
         const moves: AppliedDateMove[] = adj.map((c) => ({
           address: c.address,
@@ -789,7 +795,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
 
     let { adj: adjusted, p: pricing } = priceSet(compsForPricing)
     if (!pricing) {
-      const err = 'Pricing could not be computed (subject sqft missing).'
+      const err = pricingFailureMessage(subject, adjusted)
       await recordBuildFailure(slug, err, { stage: 'pricing', docType, compSelection: selection.diagnostics })
       return { ok: false, error: err, slug }
     }
@@ -1095,7 +1101,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // CmaPricing | null). Without this, `if (pricing && …)` widens the rest
     // of the function and TS18047 fires in closures (ci:commit-compiles).
     if (!pricing) {
-      const err = 'Pricing could not be computed after audit (subject sqft missing).'
+      const err = pricingFailureMessage(subject, adjusted, { afterAudit: true })
       await recordBuildFailure(slug, err, {
         stage: 'pricing',
         docType,
