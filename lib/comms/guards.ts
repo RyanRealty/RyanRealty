@@ -31,7 +31,7 @@ import type { GovernedFailure } from './types'
 export const QUIET_HOURS_ERROR = `Quiet hours: texts pause ${smsPauseStartLabel()} to 8am Pacific, ahead of Oregon's 8pm cutoff (ORS 646.563). Check "send anyway" to override.`
 
 /** "9:43pm EDT": the clock in `timeZone` at `date`, for a recipient-zone refusal. */
-export function zoneClock(timeZone: string, date: Date): string {
+function zoneClock(timeZone: string, date: Date): string {
   const parts = new Intl.DateTimeFormat('en-US', {
     hour: 'numeric',
     minute: '2-digit',
@@ -42,23 +42,36 @@ export function zoneClock(timeZone: string, date: Date): string {
   return `${part('hour')}:${part('minute')}${part('dayPeriod').toLowerCase()} ${part('timeZoneName')}`.trim()
 }
 
+/** The Pacific refusal where nobody can override (an automated or intro send). */
+const QUIET_HOURS_NO_OVERRIDE = `Quiet hours: texts pause ${smsPauseStartLabel()} to 8am Pacific, ahead of Oregon's 8pm cutoff (ORS 646.563). Try again after 8am.`
+
 /**
  * The refusal for a text held by the recipient's own zone (Pacific is open,
  * their area code is not). Names their clock so the broker sees why.
  */
-export function recipientQuietHoursError(timeZone: string, date: Date): string {
-  return `Quiet hours for this number: it is ${zoneClock(timeZone, date)} in its area code. Texts pause ${smsPauseStartLabel()} to 8am there as well as in Pacific. Check "send anyway" to override.`
+function recipientQuietHoursError(timeZone: string, date: Date, canOverride = true): string {
+  const next = canOverride ? 'Check "send anyway" to override.' : 'Try again once it is 8am there.'
+  return `Quiet hours for this number: it is ${zoneClock(timeZone, date)} in its area code. Texts pause ${smsPauseStartLabel()} to 8am there as well as in Pacific. ${next}`
 }
 
 /**
- * Why a text to `phone` may not send at `date`, or null when it may. Pacific
- * quiet hours keep QUIET_HOURS_ERROR word for word; a hold by the number's own
- * zone names that zone's clock. No phone: Pacific alone.
+ * Why a text to `phone` may not send at `date`, or null when it may: the one
+ * place the quiet-hours copy is built. Pacific quiet hours keep
+ * QUIET_HOURS_ERROR word for word; a hold by the number's own zone names that
+ * zone's clock. No phone: Pacific alone. `canOverride: false` is for a send
+ * with no "send anyway" (an intro, a template test): the copy says when to try
+ * again instead.
  */
-export function quietHoursRefusal(phone?: string | null, date: Date = new Date()): string | null {
+export function quietHoursRefusal(
+  phone?: string | null,
+  date: Date = new Date(),
+  opts?: { canOverride?: boolean },
+): string | null {
   const zone = smsQuietZoneFor(phone, date)
   if (zone === null) return null
-  return zone === DEFAULT_SMS_TIMEZONE ? QUIET_HOURS_ERROR : recipientQuietHoursError(zone, date)
+  const canOverride = opts?.canOverride ?? true
+  if (zone === DEFAULT_SMS_TIMEZONE) return canOverride ? QUIET_HOURS_ERROR : QUIET_HOURS_NO_OVERRIDE
+  return recipientQuietHoursError(zone, date, canOverride)
 }
 
 const HARD_STOP_REASON = 'tag:compliance:hard-stop'

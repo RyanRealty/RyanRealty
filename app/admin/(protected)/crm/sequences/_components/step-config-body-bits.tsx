@@ -256,7 +256,8 @@ export function StepChannelBody({
           ) : (
             <p className="rounded-lg p-2.5 text-xs" style={{ border: '1px solid var(--a-border)', background: 'var(--a-inset)', color: 'var(--a-text-2)' }}>
               Texts send from the assigned broker&apos;s number, only between {clockTime(QUIET_START_HOUR * 60)} and{' '}
-              {clockTime(SMS_PAUSE_START_MINUTE)} PT so each lands before Oregon&apos;s 8pm cutoff, and skip opted-out contacts.
+              {clockTime(SMS_PAUSE_START_MINUTE)} PT so each lands before Oregon&apos;s 8pm cutoff, within the same hours on
+              the lead&apos;s own clock (their area code&apos;s time zone), and skip opted-out contacts.
             </p>
           )}
           {waitField}

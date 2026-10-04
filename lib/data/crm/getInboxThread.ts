@@ -8,6 +8,7 @@
  * DAL boundary (G1): all raw .from() reads live here, inside lib/data/.
  */
 import 'server-only'
+import { primaryPhoneValue } from '@/lib/crm/primary-phone'
 import { createServiceClient } from '@/lib/supabase/service'
 import { toFeedItem, type ActivityFeedItem } from '@/lib/data/crm/getContactActivityFeed'
 import { readSmsDelivery, deliverySummary } from '@/lib/crm/sms-delivery'
@@ -46,7 +47,6 @@ export async function getInboxContactCard(personId: number): Promise<InboxContac
     .maybeSingle()
   if (!data) return null
   const emails = Array.isArray(data.emails) ? (data.emails as Array<{ value?: string }>) : []
-  const phones = Array.isArray(data.phones) ? (data.phones as Array<{ value?: string }>) : []
   return {
     personId: Number(data.id),
     name: (data.name as string | null) ?? null,
@@ -58,7 +58,8 @@ export async function getInboxContactCard(personId: number): Promise<InboxContac
     timeframe: (data.timeframe as string | null) ?? null,
     tags: Array.isArray(data.tags) ? (data.tags as string[]) : [],
     email: emails.find((e) => e.value)?.value ?? null,
-    phone: phones.find((p) => p.value)?.value ?? null,
+    // The number a text goes to (primary first), the one getSendTarget uses.
+    phone: primaryPhoneValue(data.phones),
     pictureUrl: (data.picture_url as string | null) ?? null,
     address: firstPersonAddress(data.addresses),
   }

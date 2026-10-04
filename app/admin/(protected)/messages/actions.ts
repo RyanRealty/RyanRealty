@@ -12,6 +12,7 @@ import { scopeBroker } from '@/lib/crm/scope'
 import { refuseMessagesSend } from '@/lib/crm/messages-send-auth'
 import type { ComposePersonChip } from '@/lib/crm/compose-group'
 import { recipientTimeZones } from '@/lib/crm/recipient-timezones'
+import { primaryPhoneValue } from '@/lib/crm/primary-phone'
 
 export async function searchComposePeopleAction(q: string): Promise<ComposePersonChip[]> {
   const auth = await checkAdminAction('inbox.send')
@@ -24,7 +25,8 @@ export async function searchComposePeopleAction(q: string): Promise<ComposePerso
     limit: 8,
   })
   return hits.map((h) => {
-    const phone = h.phones?.[0]?.value ?? null
+    // The number a text goes to (primary first), so its zones are the ones the server checks.
+    const phone = primaryPhoneValue(h.phones)
     return {
       id: h.id,
       name: h.name ?? 'Unknown contact',

@@ -14,6 +14,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { instrumentSmsLinks } from '@/lib/data/crm/shortLinks'
 import { recordConversationMessage } from '@/lib/crm/record-message'
 import { sendGroupMms, type GroupMmsMedia } from '@/lib/crm/twilio-conversations'
+import { recordSendBlockEvent } from '@/lib/data/crm/recordSendBlockEvent'
 import { checkSendGuards, quietHoursRefusal } from './guards'
 import type { GovernedFailure, GovernedInitiator } from './types'
 
@@ -49,12 +50,32 @@ export type GovernedGroupMmsResult =
   | GovernedFailure
   | { ok: false; error: string; stage: 'provider' }
 
-/** The quiet-hours hold for the first raw (no-contact) number whose zone is closed, else null. */
-function rawMemberQuiet(members: GovernedGroupMember[]): GovernedFailure | null {
+/**
+ * The quiet-hours hold for a thread: the first number on it that is quiet in
+ * Pacific or its own zone, written to the send-block ledger, else null. One
+ * held number holds the whole thread (Matt 2026-10-04: a group text waits). A
+ * raw number has no person, so its hold is filed on the thread's primary
+ * person with the reason 'raw-member', never as that person's own number.
+ * Exported for the composer's group attempt, which must ask before it may
+ * fall back to one-to-one texts.
+ */
+export function groupQuietHold(
+  members: GovernedGroupMember[],
+  primaryPersonId: number,
+  source?: string,
+  now: Date = new Date(),
+): GovernedFailure | null {
   for (const member of members) {
-    if (member.personId !== null) continue
-    const error = quietHoursRefusal(member.phone)
-    if (error) return { ok: false, error, stage: 'quiet-hours' }
+    const error = quietHoursRefusal(member.phone, now)
+    if (!error) continue
+    void recordSendBlockEvent({
+      personId: member.personId ?? primaryPersonId,
+      channel: 'sms',
+      stage: 'quiet-hours',
+      reasons: member.personId === null ? ['quiet-hours', 'raw-member'] : ['quiet-hours'],
+      source,
+    })
+    return { ok: false, error, stage: 'quiet-hours' }
   }
   return null
 }
@@ -74,8 +95,10 @@ export async function sendGovernedGroupMms(
     if (refused) return refused
   }
   // A raw number has no person to suppress, but its zone still holds the thread.
-  const rawQuiet = req.overrideQuietHours ? null : rawMemberQuiet(req.members)
-  if (rawQuiet) return rawQuiet
+  if (!req.overrideQuietHours) {
+    const rawHold = groupQuietHold(req.members.filter((m) => m.personId === null), req.primaryPersonId, req.purpose)
+    if (rawHold) return rawHold
+  }
 
   const trackedBody = await instrumentSmsLinks(req.mergedBody, {
     personId: req.primaryPersonId,
@@ -84,13 +107,8 @@ export async function sendGovernedGroupMms(
   // Quiet hours again at the POST, for every number on the thread: the guards
   // above can pass at 7:59pm and the send land after 8pm. Suppression was read
   // per member; only the clock moves. One quiet zone holds the whole thread.
-  for (const member of req.members) {
-    const late = await checkSendGuards(member.personId ?? req.primaryPersonId, 'sms', {
-      overrideQuietHours: req.overrideQuietHours,
-      source: req.purpose,
-      skipSuppression: true,
-      recipientPhone: member.phone,
-    })
+  if (!req.overrideQuietHours) {
+    const late = groupQuietHold(req.members, req.primaryPersonId, req.purpose)
     if (late) return late
   }
   const group = await sendGroupMms({

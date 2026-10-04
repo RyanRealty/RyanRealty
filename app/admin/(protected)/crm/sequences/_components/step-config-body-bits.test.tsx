@@ -20,6 +20,8 @@ describe('StepChannelBody, text step', () => {
     )
     expect(html).toContain('between 8:00 am and 7:55 pm PT')
     expect(html).toContain('before Oregon&#x27;s 8pm cutoff')
+    // Matt 2026-10-04, "Both zones": the lead's own zone holds a text too.
+    expect(html).toContain('on the lead&#x27;s own clock (their area code&#x27;s time zone)')
     expect(html).not.toContain('9:00 pm')
   })
 })

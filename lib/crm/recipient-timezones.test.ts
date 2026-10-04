@@ -6,6 +6,7 @@ vi.mock('@/lib/data/crm/recordSendBlockEvent', () => ({ recordSendBlockEvent: vi
 import {
   inSmsQuietHoursFor,
   nanpDigits,
+  nextMorningSmsWindowFor,
   nextSmsWindowFor,
   recipientTimeZones,
   smsQuietZoneFor,
@@ -125,18 +126,33 @@ describe('nextSmsWindowFor', () => {
     expect(nextSmsWindow(at).toISOString()).toBe('2026-06-25T16:05:00.000Z')
   })
 
-  it('keeps the marker when the number is already open then', () => {
+  it('sends a New York text held in its evening at 8am Pacific, when both are open', () => {
     const at = new Date('2026-06-25T00:30:00Z') // 5:30pm PDT, 8:30pm EDT
-    expect(nextSmsWindowFor(NEW_YORK, at).toISOString()).toBe('2026-06-25T16:05:00.000Z') // 12:05pm EDT
+    expect(nextSmsWindowFor(NEW_YORK, at).toISOString()).toBe('2026-06-25T15:00:00.000Z') // 8am PDT, 11am EDT
   })
 
-  it('moves later until the number opens too', () => {
-    const at = new Date('2026-06-25T03:30:00Z')
-    expect(nextSmsWindowFor(HONOLULU, at).toISOString()).toBe('2026-06-25T18:00:00.000Z') // 8am HST, 11am PDT
-    expect(nextSmsWindowFor(GUAM, at).toISOString()).toBe('2026-06-25T22:00:00.000Z') // 8am ChST, 3pm PDT
-    for (const phone of [HONOLULU, GUAM]) {
-      expect(inSmsQuietHoursFor(phone, nextSmsWindowFor(phone, at))).toBe(false)
+  it('waits for the number to open, the same day when it opens later today', () => {
+    const night = new Date('2026-06-25T03:30:00Z') // 8:30pm PDT
+    expect(nextSmsWindowFor(HONOLULU, night).toISOString()).toBe('2026-06-25T18:00:00.000Z') // 8am HST, 11am PDT
+    expect(nextSmsWindowFor(GUAM, night).toISOString()).toBe('2026-06-25T22:00:00.000Z') // 8am ChST, 3pm PDT
+    // Held mid-morning Pacific, past the market marker: still today, not tomorrow
+    // (code review 2026-10-04: this used to wait 25.8 hours).
+    const morning = new Date('2026-06-25T16:10:00Z') // 9:10am PDT, 6:10am HST
+    expect(nextSmsWindowFor(HONOLULU, morning).toISOString()).toBe('2026-06-25T18:00:00.000Z')
+    for (const [phone, at] of [[HONOLULU, night], [GUAM, night], [HONOLULU, morning], [NEW_YORK, night]] as const) {
+      const next = nextSmsWindowFor(phone, at)
+      expect(inSmsQuietHoursFor(phone, next)).toBe(false)
+      expect(next.getTime()).toBeGreaterThan(at.getTime())
     }
+  })
+})
+
+describe('nextMorningSmsWindowFor (a daily-cap hold)', () => {
+  it('is the next market morning, later if the number is still closed then', () => {
+    const open = new Date('2026-06-25T17:00:00Z') // 10am PDT, 1pm EDT, 7am HST: cap hit, not quiet
+    expect(nextMorningSmsWindowFor(BEND, open).toISOString()).toBe('2026-06-26T16:05:00.000Z')
+    expect(nextMorningSmsWindowFor(NEW_YORK, open).toISOString()).toBe('2026-06-26T16:05:00.000Z')
+    expect(nextMorningSmsWindowFor(HONOLULU, open).toISOString()).toBe('2026-06-26T18:00:00.000Z')
   })
 })
 
@@ -151,6 +167,14 @@ describe('quietHoursRefusal: the copy a broker sees', () => {
     expect(refusal).toContain('it is 8:30pm EDT in its area code')
     expect(refusal).toContain('send anyway')
     expect(refusal).not.toMatch(/—/)
+  })
+
+  it('says when to try again where nobody can override (an intro, a template test)', () => {
+    const pacific = quietHoursRefusal(BEND, new Date('2026-06-25T03:00:00Z'), { canOverride: false })
+    expect(pacific).toContain('Try again after 8am')
+    const zone = quietHoursRefusal(NEW_YORK, new Date('2026-06-25T00:30:00Z'), { canOverride: false })
+    expect(zone).toContain('Try again once it is 8am there')
+    expect(zone).not.toContain('send anyway')
   })
 
   it('returns null while every zone is open', () => {

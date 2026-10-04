@@ -55,8 +55,11 @@ export function CommsSection(props: {
 }) {
   const [channel, setChannel] = useState<'sms' | 'email'>(props.initialChannel)
   const isMobile = useIsMobile()
-  // Pacific and the lead's own zone, read live (Matt 2026-10-04, "Both zones").
-  const quietNow = useSmsQuiet(props.primaryTimeZones ?? [], props.quietHours)
+  // Pacific and the lead's own zone, read live (Matt 2026-10-04, "Both zones");
+  // once the composer mounts it reports for everyone selected on the text.
+  const leadQuiet = useSmsQuiet(props.primaryTimeZones ?? [], props.quietHours)
+  const [composerQuiet, setComposerQuiet] = useState<boolean | null>(null)
+  const quietNow = composerQuiet ?? leadQuiet
   const [cmaSeed, setCmaSeed] = useState<CmaComposeSeed | null>(null)
   const router = useRouter()
   const pathname = usePathname()
@@ -154,6 +157,7 @@ export function CommsSection(props: {
               hideAttachments={isMobile}
               quietHours={props.quietHours}
               primaryTimeZones={props.primaryTimeZones}
+              onQuietChange={setComposerQuiet}
             />
           </>
         ) : (

@@ -45,6 +45,15 @@ export async function sendGovernedSms(req: GovernedSmsRequest): Promise<Governed
     }
     const person = target.person
     const to = target.phone
+    // The number is known now: its own zone holds the text before any link is
+    // minted or merge context read (Matt 2026-10-04, "Both zones"). The POST
+    // check below is for the 7:59pm race.
+    const zoneHold = await checkSendGuards(req.personId, 'sms', {
+      overrideQuietHours: req.overrideQuietHours,
+      skipSuppression: true,
+      recipientPhone: to,
+    })
+    if (zoneHold) return zoneHold
     const slug =
       req.initiator.broker ?? (person.assigned_broker as string | null) ?? 'matt'
 
@@ -63,9 +72,9 @@ export async function sendGovernedSms(req: GovernedSmsRequest): Promise<Governed
     // keeps the readable mergedBody so the broker's thread stays legible.
     const trackedBody = await instrumentSmsLinks(mergedBody, { personId: req.personId, broker: slug })
     const mediaUrls = req.payload.mediaUrls
-    // Quiet hours again at the POST, now in the number's own zone as well as
-    // Pacific: the reads above can carry a 7:59pm guard pass past 8pm.
-    // Suppression was read at stage 2; only the clock moves.
+    // Quiet hours again at the POST, in Pacific and the number's own zone: the
+    // reads above can carry a 7:59pm guard pass past 8pm. Suppression was read
+    // at stage 2; only the clock moves.
     const late = await checkSendGuards(req.personId, 'sms', {
       overrideQuietHours: req.overrideQuietHours,
       skipSuppression: true,

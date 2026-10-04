@@ -219,15 +219,29 @@ describe('sendGovernedSms — guard order', () => {
 
   it('asks quiet hours again at the POST: a 7:59pm guard pass that reaches the send after 8pm refuses', async () => {
     h.isSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
-    // The guard reads the clock before the target, merge and link reads; 8pm
-    // arrives while they run.
+    // The guards read the clock before the merge and link reads (once with no
+    // number, once with it); 8pm arrives while those run.
+    h.inSmsQuietHours.mockReturnValueOnce(false).mockReturnValueOnce(false).mockReturnValue(true)
+    wireHappySmsPath()
+    const res = await sendGovernedSms(baseReq)
+    expect(res).toEqual({ ok: false, stage: 'quiet-hours', error: QUIET_HOURS_ERROR })
+    expect(h.instrumentSmsLinks).toHaveBeenCalled()
+    expect(h.sendSms).not.toHaveBeenCalled()
+    expect(h.sendSmsViaMessagingService).not.toHaveBeenCalled()
+    expect(h.inserts.filter((i) => i.table === 'crm_timeline')).toHaveLength(0)
+  })
+
+  it('holds a text by the number’s own zone before any link is minted', async () => {
+    h.isSuppressed.mockResolvedValue({ suppressed: false, reasons: [] })
+    // Open with no number (Pacific), held once the number is read.
     h.inSmsQuietHours.mockReturnValueOnce(false).mockReturnValue(true)
     wireHappySmsPath()
     const res = await sendGovernedSms(baseReq)
     expect(res).toEqual({ ok: false, stage: 'quiet-hours', error: QUIET_HOURS_ERROR })
+    expect(h.getSendTarget).toHaveBeenCalled()
+    expect(h.instrumentSmsLinks).not.toHaveBeenCalled()
+    expect(h.buildMergeContext).not.toHaveBeenCalled()
     expect(h.sendSms).not.toHaveBeenCalled()
-    expect(h.sendSmsViaMessagingService).not.toHaveBeenCalled()
-    expect(h.inserts.filter((i) => i.table === 'crm_timeline')).toHaveLength(0)
   })
 
   it('happy path: merge → tracked body to Twilio, readable body + exact row shape to the timeline', async () => {

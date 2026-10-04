@@ -69,8 +69,7 @@ export async function trySendGroupMms(opts: {
     opts.access.brokerSlug ??
     (primaryTarget?.person.assigned_broker as CrmBrokerSlug | null) ??
     'matt'
-  const proxy = await brokerTwilioNumber(slug)
-  if (!proxy || !primaryTarget) {
+  if (!primaryTarget) {
     return opts.explicitGroupThread
       ? { status: 'fallback', notice: GROUP_THREAD_FALLBACK_NOTICE }
       : { status: 'continue' }
@@ -93,6 +92,27 @@ export async function trySendGroupMms(opts: {
   }
   for (const e164 of opts.rawPhones) members.push({ rid: null, phone: e164 })
   if (members.length < 2) {
+    return opts.explicitGroupThread
+      ? { status: 'fallback', notice: GROUP_THREAD_FALLBACK_NOTICE }
+      : { status: 'continue' }
+  }
+
+  // Quiet hours hold the whole group before anything can split it: a broker
+  // with no line and a carrier group that fails both fall back to one-to-one
+  // texts, which would reach whoever's zone is open (Matt 2026-10-04: a group
+  // text waits until 8am). Pacific and every number's own zone.
+  if (!opts.overrideQuietHours) {
+    const { groupQuietHold } = await import('@/lib/comms/sendGovernedGroupMms')
+    const hold = groupQuietHold(
+      members.map((m) => ({ personId: m.rid, phone: m.phone })),
+      opts.personId,
+      'crm:manual-group-sms',
+    )
+    if (hold) return { status: 'failed', error: hold.error }
+  }
+
+  const proxy = await brokerTwilioNumber(slug)
+  if (!proxy) {
     return opts.explicitGroupThread
       ? { status: 'fallback', notice: GROUP_THREAD_FALLBACK_NOTICE }
       : { status: 'continue' }

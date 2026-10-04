@@ -108,6 +108,27 @@ describe('SmsComposer on a phone', () => {
     expect(sendButton().disabled).toBe(false)
   })
 
+  it('the broker’s own Text me copy does not make a one-lead text a group', () => {
+    render(
+      <SmsComposer
+        initialBody="Here is the CMA"
+        sendAction={vi.fn(async () => {})}
+        recipients={[lead()]}
+        primaryPersonId={42}
+        personId={42}
+        hideQuietHours
+        quietHours
+        primaryTimeZones={PACIFIC}
+        textMePhone="+15415559999"
+        initialTextMe
+      />,
+      QUIET_NIGHT,
+    )
+    expect(overrideInput()?.value).toBe('1')
+    expect(sendButton().disabled).toBe(false)
+    expect(container.textContent).not.toContain(PHONE_GROUP_QUIET_NOTE)
+  })
+
   it('holds a group by the New York member’s clock, live, though the server said open', () => {
     const nyCousin = lead({ personId: 44, name: 'Al', phone: '+12125550100', relation: 'Cousin', defaultOn: true, timeZones: NEW_YORK })
     render(smsComposer([lead(), nyCousin], PACIFIC, false), NY_EVENING)
@@ -151,6 +172,18 @@ describe('ComposeSurface', () => {
     render(compose([person(44, NEW_YORK, '+12125550100')], false), NY_EVENING)
     expect(container.textContent).toContain('Send anyway. Quiet hours.')
     expect(composeSend().disabled).toBe(true)
+  })
+
+  it('computer: a quiet-hours refusal the page did not foresee reveals Send anyway', async () => {
+    h.mobile = false
+    const { sendComposeAction } = await import('@/app/admin/(protected)/messages/actions')
+    vi.mocked(sendComposeAction).mockResolvedValueOnce({ ok: false, error: 'Quiet hours for this number: it is 8:01pm EDT in its area code.' })
+    render(compose([person(42, PACIFIC)], false), MIDDAY)
+    expect(container.textContent).not.toContain('Send anyway')
+    await act(async () => {
+      composeSend().click()
+    })
+    expect(container.textContent).toContain('Send anyway. Quiet hours.')
   })
 
   it('computer, the same number at noon Pacific: no quiet-hours control', () => {

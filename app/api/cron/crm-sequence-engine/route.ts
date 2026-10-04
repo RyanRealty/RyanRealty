@@ -31,6 +31,7 @@ import {
   laHour,
   inSmsQuietHours,
   looksSuspect,
+  nextCapWindow,
   nextSendWindow,
   renderMerge,
   smsWindowCloseAt,
@@ -498,7 +499,7 @@ export async function GET(request: Request) {
             // Daily cap (#3): hold once the engine hits its daily budget so a big
             // backlog can't blast past the low-volume campaign's carrier cap.
             if ((smsSentToday ?? 0) + smsThisRun >= SMS_DAILY_CAP) {
-              await finish({ next_run_at: nextSendWindow(toPhone).toISOString() })
+              await finish({ next_run_at: nextCapWindow(toPhone).toISOString() })
               await log(`Sequence SMS held — daily cap ${SMS_DAILY_CAP} reached; resumes next window`)
               queuedSms++
               continue

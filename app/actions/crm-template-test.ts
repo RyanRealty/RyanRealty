@@ -108,9 +108,8 @@ export async function sendTemplateSelfTestAction(
 
   // SMS path. Respect TCPA quiet hours (compliance gate), in Pacific and the
   // receiving cell's own zone.
-  const { smsPauseStartLabel } = await import('@/lib/crm/quiet-hours')
-  const { inSmsQuietHoursFor, smsWindowCloseAtFor } = await import('@/lib/crm/recipient-timezones')
-  const quietError = `Quiet hours (${smsPauseStartLabel()} to 8am, Pacific and the phone's own zone, ORS 646.563). Try again after 8am.`
+  const { smsWindowCloseAtFor } = await import('@/lib/crm/recipient-timezones')
+  const { quietHoursRefusal } = await import('@/lib/comms/guards')
 
   // Route through the cached DAL reader (not raw .from()) for broker telephony.
   const { getBrokerTelephony } = await import('@/lib/data/crm/getBrokerTelephony')
@@ -126,7 +125,8 @@ export async function sendTemplateSelfTestAction(
     return { ok: false, error: 'No Twilio number on file for your broker profile.' }
   }
 
-  if (inSmsQuietHoursFor(toPhone)) return { ok: false, error: quietError }
+  const quiet = quietHoursRefusal(toPhone, new Date(), { canOverride: false })
+  if (quiet) return { ok: false, error: quiet }
 
   const { sendSms } = await import('@/lib/crm/twilio')
   const smsResult = await sendSms({ from: fromNumber, to: toPhone, body: renderedBody, validUntil: smsWindowCloseAtFor(toPhone) })

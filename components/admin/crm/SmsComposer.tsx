@@ -147,6 +147,8 @@ export function SmsComposer(props: {
   quietHours?: boolean
   /** The lead's area-code zones, so the flag stays live after render. */
   primaryTimeZones?: string[]
+  /** Told whenever quiet hours change for everyone on this text (lead plus selected people). */
+  onQuietChange?: (quiet: boolean) => void
   /** Externally gate the send button (e.g. a review-ack checkbox in the host). */
   sendDisabled?: boolean
 }) {
@@ -231,7 +233,14 @@ export function SmsComposer(props: {
     [...(props.primaryTimeZones ?? []), ...selectedRecips.flatMap((r) => r.timeZones ?? [])],
     Boolean(props.quietHours),
   )
-  const isGroup = selectedRecips.length > 0 || Boolean(textMe && textMePhone)
+  // The host's status pill reads this, so it covers everyone selected here.
+  const onQuietChange = props.onQuietChange
+  useEffect(() => {
+    onQuietChange?.(quietNow)
+  }, [quietNow, onQuietChange])
+  // The broker's own "Text me" copy is not a second person: a one-lead text
+  // with it on is still a one-person text.
+  const isGroup = selectedRecips.length > 0
   const phoneGroupHeld = hideQuiet && isGroup && quietNow
 
   function handleInsertToken(token: string) {

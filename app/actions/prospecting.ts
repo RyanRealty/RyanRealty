@@ -57,9 +57,8 @@ import { ensureNativeLead, enrichNativeLead } from '@/lib/data/crm/ensureNativeL
 import { searchPeopleByName } from '@/lib/data/crm/searchPeople'
 import { attachCmaToPerson } from '@/lib/data/cma/crm'
 import { isSuppressed, isSuppressedByPhone, isSuppressedByEmail } from '@/lib/crm/suppressions'
-import { DEFAULT_SMS_TIMEZONE, smsPauseStartLabel } from '@/lib/crm/quiet-hours'
-import { smsQuietZoneFor, smsWindowCloseAtFor } from '@/lib/crm/recipient-timezones'
-import { zoneClock } from '@/lib/comms/guards'
+import { smsWindowCloseAtFor } from '@/lib/crm/recipient-timezones'
+import { quietHoursRefusal } from '@/lib/comms/guards'
 import { renderCrmMerge, findUnresolvedMergeTokens, type MergePersonLike } from '@/lib/crm/merge'
 import { buildMergeContext } from '@/lib/crm/merge-context'
 import {
@@ -126,19 +125,12 @@ async function composeProspectFirstTouch(args: {
  * and doesn't carry the prospect kind.
  */
 /** The refusal a broker sees in quiet hours, naming the live pause time. */
-function quietHoursError(): string {
-  return `Quiet hours (${smsPauseStartLabel()} to 8am Pacific). Try again inside the window.`
-}
-
 /**
- * Why a text to `to` must wait right now, or null. Pacific first, then the
+ * Why an intro to `to` must wait right now, or null: Pacific first, then the
  * number's own zone (Matt 2026-10-04, "Both zones"). An intro has no override.
  */
-function quietHoursHold(to: string, now: Date = new Date()): string | null {
-  const zone = smsQuietZoneFor(to, now)
-  if (zone === null) return null
-  if (zone === DEFAULT_SMS_TIMEZONE) return quietHoursError()
-  return `Quiet hours for this number: it is ${zoneClock(zone, now)} in its area code. Try again when it is 8am to ${smsPauseStartLabel()} there and in Pacific.`
+function quietHoursHold(to: string): string | null {
+  return quietHoursRefusal(to, new Date(), { canOverride: false })
 }
 
 function revalidateProspectCaches(kinds: ProspectKind[] = ['expired', 'fsbo']): void {

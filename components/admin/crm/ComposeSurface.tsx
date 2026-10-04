@@ -123,11 +123,17 @@ export function ComposeSurface({
   // 2026-10-04, "Both zones"). `quiet` is the server's answer for the page's
   // first render.
   const zones = useMemo(() => (brokerSelf ? [] : people.flatMap((p) => p.timeZones ?? [])), [brokerSelf, people])
-  const quietNow = useSmsQuiet(zones, quiet)
+  // The server checks every send. When it refused one for quiet hours this
+  // page did not see coming (a clock tick, a number it could not read), the
+  // quiet-hours control shows from then on, so the broker is never stuck.
+  const [serverSaidQuiet, setServerSaidQuiet] = useState(false)
+  const quietNow = useSmsQuiet(zones, quiet) || serverSaidQuiet
   // A text typed on a phone to ONE person is a deliberate manual send and goes
-  // at any hour. A phone GROUP text in quiet hours waits until 8am, or a
-  // computer's "send anyway" (Matt 2026-10-04, "1:1 only").
-  const effectiveOverrideQuiet = mobileTextClean && !group ? true : overrideQuiet
+  // at any hour, so it always carries the override. A phone GROUP text in quiet
+  // hours waits until 8am, or a computer's "send anyway" (Matt 2026-10-04,
+  // "1:1 only").
+  const phoneOneToOne = mobileTextClean && !group
+  const effectiveOverrideQuiet = phoneOneToOne ? true : overrideQuiet
   const phoneGroupHeld = mobileTextClean && group && quietNow
   const toEmails = emailsForCompose(people)
   const ccEmails = emailsForCompose(ccPeople)
@@ -150,7 +156,7 @@ export function ComposeSurface({
     } else {
       fd.set('personId', String(packed.personId))
     }
-    if (quietNow && channel === 'text' && effectiveOverrideQuiet) fd.set('overrideQuietHours', '1')
+    if (channel === 'text' && (phoneOneToOne || (quietNow && overrideQuiet))) fd.set('overrideQuietHours', '1')
     if (attachments.ready.length) fd.set('attachments', JSON.stringify(attachments.ready))
     if (channel === 'text') {
       if (packed.extraIds) fd.set('recipientIds', packed.extraIds)
@@ -163,8 +169,10 @@ export function ComposeSurface({
     }
     startTransition(async () => {
       const res = await sendComposeAction(fd)
-      if (!res.ok) toast.error(res.error)
-      else {
+      if (!res.ok) {
+        toast.error(res.error)
+        if (res.error.startsWith('Quiet hours')) setServerSaidQuiet(true)
+      } else {
         if (res.notice) toast.message(res.notice)
         else toast.success(channel === 'email' ? 'Email sent.' : group ? 'Group text sent.' : 'Text sent.')
         setBody('')

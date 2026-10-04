@@ -497,6 +497,13 @@
         "finding": "Opened Photos is a padded white Dialog card with the house inset; the photograph is no longer the object the way a lightbox filmstrip is.",
         "primitive": "components/site/listing-detail/PhotoGalleryLightbox.tsx",
         "replaceWith": "shadcn-dialog"
+      },
+      {
+        "section": "PriceCtaStrip at 375",
+        "severity": "defect",
+        "finding": "The H1 wraps so Place sits alone.",
+        "primitive": "components/site/listing-detail/PriceCtaStrip.tsx",
+        "replaceWith": null
       }
     ],
     "comparedToPrior": "rebaselined",

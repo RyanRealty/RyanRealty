@@ -16,7 +16,12 @@ import {
 import { classifyLeadQuality, hasSuspectTag } from '@/lib/crm/lead-quality'
 import { decorateOutboundText } from '@/lib/identity/outbound-links'
 import { hourInTimeZone } from '@/lib/crm/quiet-hours'
-import { inSmsQuietHoursFor, nextSmsWindowFor, smsWindowCloseAtFor } from '@/lib/crm/recipient-timezones'
+import {
+  inSmsQuietHoursFor,
+  nextMorningSmsWindowFor,
+  nextSmsWindowFor,
+  smsWindowCloseAtFor,
+} from '@/lib/crm/recipient-timezones'
 
 /**
  * An archived email/SMS template imports into crm_templates with its
@@ -47,9 +52,18 @@ export function smsWindowCloseAt(phone?: string | null, date?: Date): Date {
   return smsWindowCloseAtFor(phone, date)
 }
 
-/** Next 8:05am Pacific, after the Oregon SMS window opens; later when the number's own zone is still closed then. */
+/**
+ * When a text held by quiet hours may go: next 8:05am Pacific for a Pacific
+ * number; otherwise the first instant Pacific and the number's zone are both
+ * open. With no phone (the email window), next 8:05am Pacific.
+ */
 export function nextSendWindow(phone?: string | null): Date {
   return nextSmsWindowFor(phone)
+}
+
+/** When a text held by the daily cap may go: the next market morning, later if the number's zone is still closed then. */
+export function nextCapWindow(phone?: string | null): Date {
+  return nextMorningSmsWindowFor(phone)
 }
 
 export type Step = {
