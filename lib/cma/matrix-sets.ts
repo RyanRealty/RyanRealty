@@ -187,7 +187,11 @@ export function matrixSetsFromArgs(args: unknown): {
   const doc = a as {
     compArea?: CompArea | null
     expiredPeers?: { peers?: readonly CmaExpiredPeer[] | null } | null
-    bandRivals?: { rivals?: readonly CmaBandRival[] | null } | null
+    bandRivals?: {
+      rivals?: readonly CmaBandRival[] | null
+      area?: CompArea | null
+      productWidened?: boolean | null
+    } | null
   } | null
   const peers = doc?.expiredPeers?.peers ?? a?.extras?.marketArea?.expiredPeers ?? []
   const rivals = doc?.bandRivals?.rivals ?? a?.extras?.band?.rivals ?? []

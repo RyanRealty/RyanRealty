@@ -613,11 +613,16 @@ export function buildBandRivalSet(input: {
   /** Closest homes, including a different bed count. Used when the sales plat had nothing listed. */
   rankByDistance?: boolean
 }): CmaBandRivalSet {
-  const rivals = pickBandRivals(
-    input.rivals,
-    input.rankByDistance ? { ...(input.subject ?? {}), beds: null, sqft: null } : input.subject ?? null,
-    input.cap ?? BAND_RIVAL_CAP,
-  )
+  const subject = input.subject ?? null
+  const rankedSubject = input.rankByDistance
+    ? {
+        latitude: subject?.latitude ?? null,
+        longitude: subject?.longitude ?? null,
+        beds: null,
+        sqft: null,
+      }
+    : subject
+  const rivals = pickBandRivals(input.rivals, rankedSubject, input.cap ?? BAND_RIVAL_CAP)
   const likeYours = input.rivals.some((r) => rivalFitsSubject(r, input.subject ?? null))
   const widenedFrom = input.widenedFrom ?? null
   return {
