@@ -13,8 +13,12 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const drain = vi.hoisted(() => vi.fn())
+const sunday = vi.hoisted(() => vi.fn())
 vi.mock('@/lib/data/prospecting/drip-drain', () => ({
   drainProspectingFirstTouchDrip: (...a: unknown[]) => drain(...a),
+}))
+vi.mock('@/lib/data/prospecting/drip-sunday-drain', () => ({
+  drainSundayFirstTouchQueue: (...a: unknown[]) => sunday(...a),
 }))
 
 /** The lease RPCs, recorded in call order. */
@@ -87,6 +91,8 @@ const authed = () =>
 describe('GET /api/cron/prospecting-first-touch-drip', () => {
   beforeEach(() => {
     drain.mockReset()
+    sunday.mockReset()
+    sunday.mockResolvedValue({ ok: true, action: 'idle', reason: 'before-open' })
     rpc.mockReset()
     rpc.mockImplementation(async (name: string) =>
       name === 'crm_try_cron_lease' ? { data: true, error: null } : { data: null, error: null },
@@ -102,6 +108,7 @@ describe('GET /api/cron/prospecting-first-touch-drip', () => {
     const res = await GET(new Request('https://ryan-realty.com/api/cron/prospecting-first-touch-drip'))
     expect(res.status).toBe(401)
     expect(drain).not.toHaveBeenCalled()
+    expect(sunday).not.toHaveBeenCalled()
   })
 
   it('returns the drain result, including a busy stand-down', async () => {
@@ -115,12 +122,17 @@ describe('GET /api/cron/prospecting-first-touch-drip', () => {
     const body = await res.json()
     expect(body).toMatchObject({ ok: true, action: 'busy', reason: 'in-flight', kind: 'expired', id: 'LK1' })
     expect(drain).toHaveBeenCalledTimes(1)
+    expect(sunday).not.toHaveBeenCalled()
   })
 
   it('takes the lease before draining and releases it after, one run at a time', async () => {
     drain.mockResolvedValue({ ok: true, action: 'idle', reason: 'empty' })
-    await GET(authed())
+    const res = await GET(authed())
     expect(rpc.mock.calls.map((c) => c[0])).toEqual(['crm_try_cron_lease', 'crm_release_cron_lease'])
+    expect(sunday).toHaveBeenCalledTimes(1)
+    expect(await res.json()).toMatchObject({
+      sundayQueue: { ok: true, action: 'idle', reason: 'before-open' },
+    })
     expect(rpc.mock.calls[0]![1]).toEqual({ p_name: DRIP_LEASE_NAME, p_lease_seconds: DRIP_LEASE_SECONDS })
     expect(DRIP_LEASE_SECONDS).toBeGreaterThan(maxDuration)
   })
@@ -130,6 +142,7 @@ describe('GET /api/cron/prospecting-first-touch-drip', () => {
     const res = await GET(authed())
     expect(await res.json()).toMatchObject({ ok: true, action: 'busy', reason: 'lease' })
     expect(drain).not.toHaveBeenCalled()
+    expect(sunday).not.toHaveBeenCalled()
     expect(rpc.mock.calls.map((c) => c[0])).toEqual(['crm_try_cron_lease'])
   })
 

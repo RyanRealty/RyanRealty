@@ -13,6 +13,9 @@ import {
   DRIP_TIMEZONE,
   DRIP_WEEKDAY_START_MINUTES,
   canSendDripNow,
+  canSendSundayQueueNow,
+  SUNDAY_QUEUE_OPENS_AT_ISO,
+  SUNDAY_QUEUE_STATUS,
   dripBusyCutoff,
   dripStaleCutoff,
   firstTouchClaimAgeMs,
@@ -183,3 +186,46 @@ describe('drip-schedule — claim windows (busy guard + stuck-send recovery)', (
     expect(holdMs).toBeGreaterThanOrEqual(DRIP_STUCK_SEND_STALE_MS + 3 * 60_000)
   })
 })
+
+describe('sunday queue: opens Sunday 2026-10-04 08:00 PT, not the weekday drip', () => {
+  // Saturday night, and Sunday 07:59 / 08:00 / 08:05 PT (PDT, UTC-7).
+  const SAT_NIGHT_PT = new Date('2026-10-04T05:30:00.000Z')
+  const SUN_759_PT = new Date('2026-10-04T14:59:00.000Z')
+  const SUN_800_PT = new Date('2026-10-04T15:00:00.000Z')
+  const SUN_804_PT = new Date('2026-10-04T15:04:00.000Z')
+  const SUN_805_PT = new Date('2026-10-04T15:05:00.000Z')
+
+  it('locks the open instant to Sunday 2026-10-04 08:00 America/Los_Angeles', () => {
+    expect(SUNDAY_QUEUE_OPENS_AT_ISO).toBe('2026-10-04T15:00:00.000Z')
+    expect(Date.parse(SUNDAY_QUEUE_OPENS_AT_ISO)).toBe(Date.parse('2026-10-04T08:00:00-07:00'))
+    expect(SUNDAY_QUEUE_STATUS).toBe('sunday-queue')
+    expect(SUNDAY_QUEUE_STATUS).not.toBe('queued')
+  })
+
+  it('refuses Saturday night and Sunday 07:59 PT, and opens at 08:00', () => {
+    expect(canSendSundayQueueNow({ now: SAT_NIGHT_PT, lastSundayQueueSentAt: null })).toEqual({
+      ok: false,
+      reason: 'before-open',
+    })
+    expect(canSendSundayQueueNow({ now: SUN_759_PT, lastSundayQueueSentAt: null })).toEqual({
+      ok: false,
+      reason: 'before-open',
+    })
+    expect(canSendSundayQueueNow({ now: SUN_800_PT, lastSundayQueueSentAt: null })).toEqual({ ok: true })
+    // The weekday drip is still closed on Sunday, including at 08:00.
+    expect(canSendDripNow({ now: SUN_800_PT, lastDripSentAt: null })).toEqual({
+      ok: false,
+      reason: 'weekend',
+    })
+  })
+
+  it('reuses the weekday 5-minute spacing after the queue opens', () => {
+    expect(DRIP_SPACING_MINUTES).toBe(5)
+    expect(canSendSundayQueueNow({ now: SUN_804_PT, lastSundayQueueSentAt: SUN_800_PT })).toEqual({
+      ok: false,
+      reason: 'spacing',
+    })
+    expect(canSendSundayQueueNow({ now: SUN_805_PT, lastSundayQueueSentAt: SUN_800_PT })).toEqual({ ok: true })
+  })
+})
+
