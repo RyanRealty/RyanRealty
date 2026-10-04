@@ -139,10 +139,11 @@ export function resolveLocationMatch(input: {
   if (input.ownPlat === true || sameName || tier.startsWith('subdivision-')) {
     return 'same-subdivision'
   }
-  if (tier.startsWith('adjacent-subdivision') || tier.startsWith('pocket-')) {
+  if (tier.startsWith('adjacent-sub') || tier.startsWith('pocket-')) {
     return 'adjacent-subdivision'
   }
   if (
+    tier.startsWith('closer-sub') ||
     tier.startsWith('neighborhood-') ||
     tier.startsWith('community-') ||
     tier.startsWith('like-community')

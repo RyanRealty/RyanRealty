@@ -6,7 +6,102 @@
 import { countedAddressesMissingFromDocument } from '@/lib/cma/counted-rows'
 import { letterLinkTrackingCheck, type LetterLinkIdentity } from '@/lib/cma/letter-link-contract'
 import { letterOwnerNameCheck, type LetterNameSource } from '@/lib/cma/letter-privacy'
+import { letterProductNoun } from '@/lib/cma/market-area'
+import { int } from '@/lib/cma/render-blocks'
+import { namedSalesPlace } from '@/lib/pricing/comp-area'
+import { printedAdjustedPrice } from '@/lib/pricing/seller-net'
 import type { ContractCheck } from '@/lib/cma/contract'
+
+const MILE_SENTENCE = /\bwithin\s+(?:[\d.]+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s+miles?\s+of your home/i
+const WRONG_PRODUCT_LINE = /single-family homes in|single-family sales|single-family listings/i
+
+export type LetterPlaceSource = {
+  compArea?: { kind?: string | null; sentence?: string | null } | null
+  propertySubType?: string | null
+  listingMarket?: { place?: string | null; productNoun?: string | null } | null
+  /** Ask-outcome group counts. A named place does not print these as "N listings". */
+  citywideListingCounts?: readonly number[] | null
+}
+
+/**
+ * The page the seller reads. A mile ring, a citywide count, or a
+ * single-family line on a townhouse letter fails the save.
+ */
+export function letterPlaceChecks(html: string, place: LetterPlaceSource | null | undefined): ContractCheck[] {
+  if (!place) return []
+  const checks: ContractCheck[] = []
+  const named = namedSalesPlace(place.compArea)
+  if (named) {
+    const mile = MILE_SENTENCE.test(html)
+    checks.push({
+      id: 'sales-place-not-a-mile-ring',
+      severity: 'hard',
+      pass: !mile,
+      detail: mile
+        ? 'The sales sit in a named place and the letter still says they are within a mile ring.'
+        : 'The letter does not widen a named place out to a mile ring.',
+    })
+    const sentence = place.compArea?.sentence?.trim() ?? ''
+    if (sentence) {
+      const shown = html.includes(sentence)
+      checks.push({
+        id: 'sales-place-sentence',
+        severity: 'hard',
+        pass: shown,
+        detail: shown
+          ? 'The letter names the place the sales sit in.'
+          : `The letter is missing the sales place: ${sentence}`,
+      })
+    }
+    const leaked = (place.citywideListingCounts ?? []).filter((n) => n > 0 && html.includes(`${int(n)} listings`))
+    checks.push({
+      id: 'no-citywide-count',
+      severity: 'hard',
+      pass: leaked.length === 0,
+      detail:
+        leaked.length === 0
+          ? 'The letter does not print a citywide listing count beside a named place.'
+          : `Citywide count still on the page: ${leaked.map((n) => `${int(n)} listings`).join(', ')}.`,
+    })
+  }
+  const noun = letterProductNoun(place.propertySubType)
+  if (noun) {
+    const wrong = WRONG_PRODUCT_LINE.test(html)
+    checks.push({
+      id: 'chart-matches-product',
+      severity: 'hard',
+      pass: !wrong,
+      detail: wrong
+        ? `This home is a ${noun} and the letter still charts single-family homes.`
+        : `The letter does not chart single-family homes for a ${noun}.`,
+    })
+  }
+  const marketPlace = place.listingMarket?.place?.trim() ?? ''
+  if (marketPlace) {
+    const shown = html.includes(marketPlace)
+    checks.push({
+      id: 'listing-chart-place',
+      severity: 'hard',
+      pass: shown,
+      detail: shown
+        ? `The listing chart names ${marketPlace}.`
+        : `The listing chart is missing ${marketPlace}.`,
+    })
+  }
+  const productNoun = place.listingMarket?.productNoun?.trim() ?? ''
+  if (productNoun) {
+    const shown = html.toLowerCase().includes(productNoun.toLowerCase())
+    checks.push({
+      id: 'listing-chart-product',
+      severity: 'hard',
+      pass: shown,
+      detail: shown
+        ? `The listing chart names the ${productNoun}.`
+        : `The listing chart does not name the ${productNoun}.`,
+    })
+  }
+  return checks
+}
 
 function money(n: unknown): number | null {
   const v = typeof n === 'number' ? n : Number(n)
@@ -113,13 +208,64 @@ export function letterRecommendDollarsCheck(
  */
 export function bandVersusClosedCompsCheck(
   pricing: { valueLow?: number | null; valueHigh?: number | null },
-  comps: readonly { adjustedPrice?: number | null; closePrice?: number | null }[] | null | undefined,
+  comps: readonly {
+    adjustedPrice?: number | null
+    closePrice?: number | null
+    weight?: number | null
+    timeAdjustment?: number | null
+    sizeAdjustment?: number | null
+    storyAdjustment?: number | null
+    concessionsAmount?: number | null
+    concessionsYn?: string | null
+  }[] | null | undefined,
 ): ContractCheck {
   const low = money(pricing.valueLow)
   const high = money(pricing.valueHigh)
   const bandLow = low != null && high != null ? Math.min(low, high) : null
   const bandHigh = low != null && high != null ? Math.max(low, high) : null
-  const prices = (comps ?? [])
+  const rows = comps ?? []
+  const weighted = rows.filter((c) => typeof c.weight === 'number')
+  const setters = weighted.filter((c) => (c.weight ?? 0) > 0)
+  if (setters.length >= 3 && weighted.some((c) => (c.weight ?? 0) === 0)) {
+    return {
+      id: 'band-overlaps-closed-comps',
+      severity: 'hard',
+      pass: false,
+      detail: 'A sale that does not set the price is still in the table.',
+    }
+  }
+  if (setters.length > 0) {
+    const ends = setters
+      .map((c) =>
+        printedAdjustedPrice({
+          closePrice: c.closePrice ?? 0,
+          adjustedPrice: c.adjustedPrice,
+          timeAdjustment: c.timeAdjustment,
+          sizeAdjustment: c.sizeAdjustment,
+          storyAdjustment: c.storyAdjustment,
+          concessionsAmount: c.concessionsAmount,
+          concessionsYn: c.concessionsYn,
+        }),
+      )
+      .filter((n) => Number.isFinite(n) && n > 0)
+    if (ends.length > 0) {
+      const min = Math.min(...ends)
+      const max = Math.max(...ends)
+      const pass =
+        bandLow != null && bandHigh != null && Math.abs(bandLow - min) <= 1 && Math.abs(bandHigh - max) <= 1
+      const band = `$${Math.round(bandLow ?? 0).toLocaleString('en-US')}-$${Math.round(bandHigh ?? 0).toLocaleString('en-US')}`
+      const span = `$${Math.round(min).toLocaleString('en-US')}-$${Math.round(max).toLocaleString('en-US')}`
+      return {
+        id: 'band-overlaps-closed-comps',
+        severity: 'hard',
+        pass,
+        detail: pass
+          ? `Band ${band} is the adjusted sales that set the price ${span}.`
+          : `Band ${band} is not the adjusted sales that set the price ${span}.`,
+      }
+    }
+  }
+  const prices = rows
     .map((c) => money(c.adjustedPrice) ?? money(c.closePrice))
     .filter((n): n is number => n != null)
   if (bandLow == null || bandHigh == null || prices.length === 0) {
@@ -189,6 +335,8 @@ export function evaluateLetterConsistencyContract(args: {
   expiredAddresses?: readonly (string | null | undefined)[] | null
   /** The addresses the letter prints (printedAddressesOf). Lets the owner-name check tell a street from a name. */
   printedAddresses?: readonly (string | null | undefined)[] | null
+  /** Where the sales sit, and the chart. Absent on older callers, which skip these checks. */
+  place?: LetterPlaceSource | null
 }): { pass: boolean; checks: ContractCheck[] } {
   const checks: ContractCheck[] = [
     letterOwnerNameCheck(args.html, args.names, { printedAddresses: args.printedAddresses }),
@@ -201,6 +349,7 @@ export function evaluateLetterConsistencyContract(args: {
       sales: (args.closedComps ?? []).map((c) => c.address),
       expired: args.expiredAddresses,
     }),
+    ...letterPlaceChecks(args.html, args.place),
   ]
   return { pass: checks.every((c) => c.pass), checks }
 }

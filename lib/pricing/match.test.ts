@@ -748,9 +748,10 @@ describe('walkPricingLadder', () => {
     expect(keys).toContain('BY_BOUNDARY')
     expect(keys).toContain('BY_PLAT')
     expect(keys).not.toContain('REMARKS_ONLY')
-    expect(out.comps.every((c) => c.selectionTier.startsWith('community-'))).toBe(true)
-    const firstAdded = out.rungs.find((r) => r.added > 0)
-    expect(firstAdded?.tier.startsWith('community-')).toBe(true)
+    // A recorded member plat is the closer subdivision. The other sales inside
+    // the boundary stay on the community rung. A mile ring does not go first.
+    expect(out.comps.find((c) => c.listingKey === 'BY_PLAT')?.selectionTier.startsWith('closer-sub-')).toBe(true)
+    expect(out.comps.filter((c) => c.listingKey !== 'BY_PLAT').every((c) => c.selectionTier.startsWith('community-'))).toBe(true)
     expect(out.rungs.some((r) => r.added > 0 && /\dmi/.test(r.tier))).toBe(false)
   })
 
@@ -1226,8 +1227,8 @@ describe('containment — the plats next to the subject, then the boundary (Matt
     const out = walkPricingLadder(subj, pool, { asOf })
     const tiers = out.comps.map((c) => [c.subdivisionNorm, c.selectionTier])
     expect(tiers).toContainEqual(['roanoke', 'adjacent-sub-3mo'])
-    // The non-adjacent plat inside the same polygon still enters, later, on a mile ring.
-    expect(tiers.find((t) => t[0] === 'aubrey heights')?.[1]).toMatch(/^nearby-/)
+    // The next plat inside the same neighborhood enters after the touching one, not on a mile ring.
+    expect(tiers.find((t) => t[0] === 'aubrey heights')?.[1]).toMatch(/^closer-sub-/)
   })
 
   it('the adjacent rung skips when no ring is known, and the walk says why', () => {
@@ -1260,9 +1261,239 @@ describe('containment — the plats next to the subject, then the boundary (Matt
       expect(beyond.skippedReason).toMatch(/stayed (inside|exclusive)|already has/)
     }
 
-    const crossed = walkPricingLadder(subj, [...inside(3), ...strangers], { asOf })
-    expect(crossed.comps.some((c) => c.selectionTier.startsWith('beyond-'))).toBe(true)
-    expect(crossed.trace.join(' ')).toMatch(/crossed its boundary/)
+    const stayed = walkPricingLadder(subj, [...inside(3), ...strangers], { asOf })
+    expect(stayed.comps.every((c) => c.listingKey.startsWith('IN'))).toBe(true)
+    expect(stayed.comps.some((c) => c.selectionTier.startsWith('beyond-'))).toBe(false)
+    expect(stayed.trace.join(' ')).not.toMatch(/crossed its boundary/)
+  })
+})
+
+describe('parent wall and the subdivision crawl (Matt 2026-10-04)', () => {
+  const asOf = '2026-10-04'
+
+  it('takes the subdivision through 12 months, then the closest touching plat, and never a home outside the parent', () => {
+    const subj = subject({
+      latitude: 44.076219,
+      longitude: -121.352101,
+      marketArea: 'bend-awbrey-butte',
+      subdivision: 'Copperstone',
+      subdivisionNorm: 'copperstone',
+      subdivisionSlug: 'copperstone-phase-one',
+      adjacentSubdivisionSlugs: ['copperstone-phases-2-and-3', 'valhalla-heights'],
+      closerSubdivisionSlugs: ['shevlin-court', 'awbrey-butte-homesites'],
+      communityLocated: true,
+      communitySlug: null,
+      sqft: 2275,
+    })
+    const own = sale({
+      listingKey: 'OWN12',
+      address: '2550 Locke',
+      subdivision: 'Copperstone',
+      subdivisionNorm: 'copperstone',
+      subdivisionSlug: 'copperstone-phase-one',
+      marketArea: 'bend-awbrey-butte',
+      latitude: 44.0763,
+      longitude: -121.3522,
+      closeDate: '2025-12-10',
+      closePrice: 732_000,
+      sqft: 2200,
+    })
+    const ownOld = sale({
+      listingKey: 'OWN14',
+      address: '2500 Locke',
+      subdivision: 'Copperstone',
+      subdivisionNorm: 'copperstone',
+      subdivisionSlug: 'copperstone-phase-one',
+      marketArea: 'bend-awbrey-butte',
+      latitude: 44.0764,
+      longitude: -121.3523,
+      closeDate: '2025-08-01',
+      closePrice: 710_000,
+      sqft: 2200,
+    })
+    const touching = sale({
+      listingKey: 'HAVRE',
+      address: '2723 Havre',
+      subdivision: 'Copperstone',
+      subdivisionNorm: 'copperstone',
+      subdivisionSlug: 'copperstone-phases-2-and-3',
+      marketArea: 'bend-summit-west',
+      communityLocated: true,
+      communitySlug: null,
+      latitude: 44.076143,
+      longitude: -121.352887,
+      closeDate: '2026-09-15',
+      closePrice: 670_000,
+      sqft: 2275,
+    })
+    const nextInParent = sale({
+      listingKey: 'GLEN',
+      address: '1 Shevlin',
+      subdivision: 'Shevlin Court',
+      subdivisionNorm: 'shevlin court',
+      subdivisionSlug: 'shevlin-court',
+      marketArea: 'bend-awbrey-butte',
+      communityLocated: true,
+      communitySlug: null,
+      latitude: 44.0815,
+      longitude: -121.353,
+      closeDate: '2026-09-10',
+      closePrice: 690_000,
+      sqft: 2100,
+    })
+    const fartherInParent = sale({
+      listingKey: 'HOMESITES',
+      address: '1 Homesites',
+      subdivision: 'Awbrey Butte Homesites',
+      subdivisionNorm: 'awbrey butte homesites',
+      subdivisionSlug: 'awbrey-butte-homesites',
+      marketArea: 'bend-awbrey-butte',
+      communityLocated: true,
+      communitySlug: null,
+      latitude: 44.09,
+      longitude: -121.355,
+      closeDate: '2026-09-01',
+      closePrice: 680_000,
+      sqft: 2100,
+    })
+    const resortInsideTheButte = sale({
+      listingKey: 'AWG',
+      address: '1 Awbrey Glen',
+      subdivision: 'Awbrey Glen',
+      subdivisionNorm: 'awbrey glen',
+      subdivisionSlug: 'awbrey-glen-homesites',
+      marketArea: 'bend-awbrey-butte',
+      communityLocated: true,
+      communitySlug: 'awbrey-glen',
+      latitude: 44.084,
+      longitude: -121.354,
+      closeDate: '2026-09-12',
+      closePrice: 900_000,
+      sqft: 2200,
+    })
+    const outside = sale({
+      listingKey: 'PHILS',
+      address: '362 Phils',
+      subdivision: 'Skyliner Summit',
+      subdivisionNorm: 'skyliner summit',
+      subdivisionSlug: 'skyliner-summit-at-broken-top',
+      marketArea: 'bend-summit-west',
+      communityLocated: true,
+      communitySlug: 'skyliner-summit-at-broken-top',
+      latitude: 44.054568,
+      longitude: -121.348688,
+      closeDate: '2026-09-01',
+      closePrice: 925_000,
+      sqft: 2300,
+    })
+    const out = walkPricingLadder(
+      subj,
+      [outside, resortInsideTheButte, fartherInParent, nextInParent, touching, ownOld, own],
+      { asOf },
+    )
+    const tierOf = (key: string) => out.comps.find((c) => c.listingKey === key)?.selectionTier
+    expect(tierOf('OWN12')).toBe('subdivision-12mo')
+    expect(tierOf('HAVRE')).toBe('adjacent-sub-3mo')
+    expect(tierOf('GLEN')).toMatch(/^closer-sub-/)
+    expect(tierOf('PHILS')).toBeUndefined()
+    expect(tierOf('AWG')).toBeUndefined()
+    expect(out.comps.some((c) => c.selectionTier.startsWith('beyond-') || c.selectionTier.startsWith('nearby-'))).toBe(false)
+    const glenAt = out.comps.findIndex((c) => c.listingKey === 'GLEN')
+    const homesitesAt = out.comps.findIndex((c) => c.listingKey === 'HOMESITES')
+    if (glenAt >= 0 && homesitesAt >= 0) {
+      expect(out.comps[glenAt]!.selectionTier).toBe(out.comps[homesitesAt]!.selectionTier)
+    }
+    const added = out.rungs.filter((r) => r.added > 0).map((r) => r.tier)
+    const adjAt = added.indexOf('adjacent-sub-3mo')
+    const oldAt = added.findIndex((t) => t === 'subdivision-18mo' || t === 'subdivision-24mo')
+    expect(adjAt).toBeGreaterThanOrEqual(0)
+    if (oldAt >= 0) expect(oldAt).toBeGreaterThan(adjAt)
+  })
+
+  it('never takes a sale outside Tetherow, including a plat that touches the boundary', () => {
+    const subj = subject({
+      latitude: 44.05,
+      longitude: -121.39,
+      marketArea: null,
+      subdivision: 'Tetherow',
+      subdivisionNorm: 'tetherow',
+      subdivisionSlug: 'tetherow-phase-1',
+      adjacentSubdivisionSlugs: ['outside-touch', 'tetherow-phase-2'],
+      communityLocated: true,
+      communitySlug: 'tetherow',
+    })
+    const inside = sale({
+      listingKey: 'INSIDE',
+      address: '1 Tetherow',
+      subdivision: 'Tetherow Phase 2',
+      subdivisionNorm: 'tetherow phase 2',
+      subdivisionSlug: 'tetherow-phase-2',
+      marketArea: null,
+      communityLocated: true,
+      communitySlug: 'tetherow',
+      latitude: 44.051,
+      longitude: -121.391,
+      closeDate: '2026-09-01',
+    })
+    const touchingOutside = sale({
+      listingKey: 'OUTSIDE',
+      address: '1 Outside',
+      subdivision: 'Outside Touch',
+      subdivisionNorm: 'outside touch',
+      subdivisionSlug: 'outside-touch',
+      marketArea: null,
+      communityLocated: true,
+      communitySlug: null,
+      latitude: 44.0512,
+      longitude: -121.392,
+      closeDate: '2026-09-02',
+    })
+    const out = walkPricingLadder(subj, [touchingOutside, inside], { asOf })
+    expect(out.comps.map((c) => c.listingKey)).toContain('INSIDE')
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('OUTSIDE')
+    expect(out.comps.some((c) => c.selectionTier.startsWith('beyond-') || c.selectionTier.startsWith('nearby-'))).toBe(false)
+  })
+
+  it('drops a sale from another community once three sales already set the price', () => {
+    const subj = subject({
+      latitude: 44.0645,
+      longitude: -121.3237,
+      marketArea: null,
+      subdivision: 'Plain',
+      subdivisionNorm: 'plain',
+      subdivisionSlug: 'plain-plat',
+      adjacentSubdivisionSlugs: [],
+      closerSubdivisionSlugs: [],
+      communityLocated: true,
+      communitySlug: null,
+    })
+    const own = (key: string) =>
+      sale({
+        listingKey: key,
+        address: `${key} Plain`,
+        subdivision: 'Plain',
+        subdivisionNorm: 'plain',
+        subdivisionSlug: 'plain-plat',
+        communityLocated: true,
+        communitySlug: null,
+        latitude: 44.0646,
+        longitude: -121.3238,
+        closeDate: '2026-09-01',
+      })
+    const outsideCommunity = sale({
+      listingKey: 'OUT',
+      address: '1 Tetherow',
+      subdivision: 'Other Tract',
+      subdivisionNorm: 'other tract',
+      subdivisionSlug: 'other-tract',
+      communityLocated: true,
+      communitySlug: 'tetherow',
+      latitude: 44.0645,
+      longitude: -121.3237 + 0.03,
+      closeDate: '2026-09-01',
+    })
+    const out = walkPricingLadder(subj, [own('A'), own('B'), own('C'), outsideCommunity], { asOf })
+    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['A', 'B', 'C'])
   })
 })
 

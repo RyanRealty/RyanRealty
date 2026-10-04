@@ -116,6 +116,79 @@ describe('listing window market', () => {
     })
     expect(move).toBeNull()
   })
+
+  it('draws the subdivision from one close and then three, and does not step up to a parent or the city', () => {
+    const rows = [
+      close({
+        closeDate: '2026-06-10',
+        closePrice: 732000,
+        sqft: 2018,
+        subdivision: 'Copperstone',
+        propertySubType: 'Townhouse',
+      }),
+      close({
+        closeDate: '2026-07-14',
+        closePrice: 699000,
+        sqft: 2275,
+        subdivision: 'Copperstone',
+        propertySubType: 'Townhouse',
+      }),
+      close({
+        closeDate: '2026-08-05',
+        closePrice: 670000,
+        sqft: 2386,
+        subdivision: 'Copperstone',
+        propertySubType: 'Townhouse',
+      }),
+      close({
+        closeDate: '2026-09-23',
+        closePrice: 600000,
+        sqft: 2275,
+        subdivision: 'Copperstone',
+        propertySubType: 'Townhouse',
+      }),
+    ]
+    const move = chooseListingMarket({
+      listDate: '2026-03-27',
+      offDate: '2026-09-30',
+      subjectSqft: 2275,
+      subdivision: 'Copperstone',
+      neighborhoodSlug: 'awbrey-butte',
+      neighborhoodName: 'Awbrey Butte',
+      city: 'Bend',
+      rows,
+      propertySubType: 'Townhouse',
+    })
+    expect(move).not.toBeNull()
+    expect(move!.place).toBe('Copperstone')
+    expect(move!.grain).toBe('subdivision')
+    expect(move!.early.n).toBe(1)
+    expect(move!.late.n).toBe(3)
+    expect(move!.sized).toBe(true)
+    const told = { ...move!, productNoun: 'townhouse' }
+    expect(listingMarketSentence(told)).toContain('the median townhouse sale in Copperstone')
+    expect(listingMarketSource(told)).toContain('Townhouses in Copperstone')
+    expect(listingMarketSource(told)).not.toMatch(/single-family/i)
+    expect(listingMarketSentence(move!)).toContain('the median sale in Copperstone')
+  })
+
+  it('does not draw a neighborhood from one close and then three', () => {
+    const move = chooseListingMarket({
+      listDate: '2026-03-06',
+      offDate: '2026-09-21',
+      subjectSqft: null,
+      subdivision: null,
+      areaKind: 'neighborhood',
+      neighborhoodSlug: 'bend-old-farm-district',
+      neighborhoodName: 'Old Farm District',
+      city: 'Bend',
+      rows: [
+        close({ closeDate: '2026-04-01', closePrice: 700000, subdivision: 'Other' }),
+        ...repeat(3, close({ closeDate: '2026-08-01', closePrice: 710000, subdivision: 'Other' })),
+      ],
+    })
+    expect(move).toBeNull()
+  })
 })
 
 describe('the market slopes', () => {

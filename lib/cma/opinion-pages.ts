@@ -67,8 +67,9 @@ import {
   type PricingPageInput,
 } from '@/lib/cma/render-pricing-page'
 import { activeRivalsFor, unsoldPeersFor } from '@/lib/cma/matrix-sets'
-import { letterProductMatch } from '@/lib/cma/market-area'
+import { letterProductMatch, productClass } from '@/lib/cma/market-area'
 import { realSubdivisionName } from '@/lib/pricing/classes'
+import { namedSalesPlace } from '@/lib/pricing/comp-area'
 import {
   activeEntries,
   closedEntries,
@@ -859,13 +860,17 @@ export function pricedRightHeading(a: OpinionPageArgs): string {
  * instead of two, sourced the same way, and it makes the same point.
  */
 export function pricedRightBodyHtml(a: OpinionPageArgs): string {
-  const timing = renderOfferTimingHtml({ market: a.market, subject: a.subject, bare: true })
-  const outcome = renderAskOutcomeHtml({ market: a.market, subject: a.subject, bare: true })
+  // The sales already sit in a subdivision or a recorded plat. The citywide
+  // bars, including the count of homes that failed somewhere in the city,
+  // are a different place. The days on this letter's own sales can stay.
+  const named = namedSalesPlace(a.compArea)
+  const timing = named ? '' : renderOfferTimingHtml({ market: a.market, subject: a.subject, bare: true })
+  const outcome = named ? '' : renderAskOutcomeHtml({ market: a.market, subject: a.subject, bare: true })
   // The days strip stands in for 2a when the 12-month curve is not on the row.
   const daysStrip = timing
     ? ''
     : renderDaysToOfferHtml({ subject: a.subject, comps: a.comps, market: a.market })
-  const realization = renderAskRealizationHtml({ market: a.market, subject: a.subject, bare: true })
+  const realization = named ? '' : renderAskRealizationHtml({ market: a.market, subject: a.subject, bare: true })
   // With no curve, no bars and no realization table there is nothing local to
   // argue from, so the chapter omits rather than printing a slogan.
   if (!timing && !outcome && !daysStrip && !realization) return ''
@@ -888,7 +893,7 @@ export function pricedRightBodyHtml(a: OpinionPageArgs): string {
     <div class="spread-col">${outcome}</div>
   </div>`
       : [left, outcome].filter(Boolean).join('\n  ')
-  const source = chapter2bSourceLine({ market: a.market })
+  const source = named ? '' : chapter2bSourceLine({ market: a.market })
   return [spread, realization, source ? `<p class="small">${esc(source)}</p>` : '']
     .filter(Boolean)
     .join('\n  ')
@@ -1060,10 +1065,16 @@ export function thisMarketBodyHtml(a: OpinionPageArgs, headingTag: 'h3' | 'sub')
   // The month line is drawn from a pooled city read at every size; the number
   // this document recommends is not. When the whole line sits above it, the
   // board says so in one sentence (tasteReview round three, §3).
-  const board = renderInventoryBoardHtml(a.market, {
-    recommended: a.pricing.recommended,
-    subject: a.subject,
-  })
+  const board = renderInventoryBoardHtml(
+    a.market,
+    {
+      recommended: a.pricing.recommended,
+      subject: a.subject,
+    },
+    // The month line is the city's single-family median. A letter whose sales
+    // sit in a named place does not substitute that line for its own chart.
+    { drawCityTrend: !namedSalesPlace(a.compArea) },
+  )
   const street = subdivisionLineHtml(a, headingTag)
   return [reconcile, board, street].filter(Boolean).join('\n  ')
 }
@@ -1125,6 +1136,9 @@ export function cityMedianReconciliationHtml(a: OpinionPageArgs): string {
  * table the blueprint cut.
  */
 function subdivisionLineHtml(a: OpinionPageArgs, headingTag: 'h3' | 'sub'): string {
+  // The street count is closed single-family sales. A townhouse or condo
+  // letter does not print that line and call it this home.
+  if (productClass(a.subject.propertySubType) === 'attached') return ''
   const f = a.subdivisionStory?.facts
   const name = cleanText(f?.name ?? null)
   if (!f || !name || !(f.totalSales > 0)) return ''

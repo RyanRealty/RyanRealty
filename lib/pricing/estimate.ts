@@ -16,6 +16,7 @@ import {
   attachSellerNet,
   comparisonSalePrice,
   concessionOnSale,
+  printedAdjustedPrice,
   resolveConcessions,
   sellerNetFromPrice,
 } from '@/lib/pricing/seller-net'
@@ -897,6 +898,89 @@ export function syncRangeRuleToHeroBand<T extends { valueLow: number; valueHigh:
         )
   if (sentence === rule.sentence && rule.adjustedLow === low && rule.adjustedHigh === high) return pricing
   return { ...pricing, rangeRule: { ...rule, adjustedLow: low, adjustedHigh: high, sentence } }
+}
+
+/**
+ * The letter's low and high are the adjusted sales still in the table that
+ * set the price. Exact dollars. A later thousand-dollar round is a second
+ * band, and a sale that weighs nothing does not set either end.
+ */
+export function pinPrintedBandToSettingSales<
+  T extends {
+    valueLow: number
+    valueHigh: number
+    recommended?: number
+    conservative?: number
+    highEnd?: number
+    rangeRule?: PricingRangeRule | null
+  },
+>(
+  pricing: T,
+  comps: readonly {
+    adjustedPrice?: number | null
+    closePrice?: number | null
+    weight?: number | null
+    timeAdjustment?: number | null
+    sizeAdjustment?: number | null
+    storyAdjustment?: number | null
+    concessionsAmount?: number | null
+    concessionsYn?: string | null
+  }[],
+): T {
+  const weighted = comps.filter((c) => typeof c.weight === 'number')
+  const setters = (weighted.length > 0 ? weighted : comps).filter((c) => weighted.length === 0 || (c.weight ?? 0) > 0)
+  const values = setters
+    .map((c) =>
+      printedAdjustedPrice({
+        closePrice: c.closePrice ?? 0,
+        adjustedPrice: c.adjustedPrice,
+        timeAdjustment: c.timeAdjustment,
+        sizeAdjustment: c.sizeAdjustment,
+        storyAdjustment: c.storyAdjustment,
+        concessionsAmount: c.concessionsAmount,
+        concessionsYn: c.concessionsYn,
+      }),
+    )
+    .filter((n) => Number.isFinite(n) && n > 0)
+  if (values.length === 0) return pricing
+  const low = Math.min(...values)
+  const high = Math.max(...values)
+  const rule = pricing.rangeRule
+  const sentence = rule?.sentence
+    ? describeRangeSentence({
+        rule: 'min-max',
+        n: values.length,
+        kept: values.length,
+        printedLow: low,
+        printedHigh: high,
+        saleLow: low,
+        saleHigh: high,
+        suffix: rangeSentenceSuffix(rule.sentence),
+      })
+    : null
+  const next: T = {
+    ...pricing,
+    valueLow: low,
+    valueHigh: high,
+    ...(pricing.conservative != null && pricing.conservative < low ? { conservative: low } : {}),
+    ...(pricing.highEnd != null && pricing.highEnd > high ? { highEnd: high } : {}),
+    ...(rule && sentence
+      ? {
+          rangeRule: {
+            ...rule,
+            rule: 'min-max' as const,
+            n: values.length,
+            kept: values.length,
+            adjustedLow: low,
+            adjustedHigh: high,
+            saleLow: low,
+            saleHigh: high,
+            sentence,
+          },
+        }
+      : {}),
+  }
+  return next
 }
 
 /**

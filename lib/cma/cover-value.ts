@@ -31,7 +31,9 @@ type CoverArgs = {
 export function tableAdjustedBand(
   comps: readonly CmaAdjustedComp[],
 ): { low: number; high: number } | null {
-  const values = comps
+  const weighted = comps.filter((c) => typeof c.weight === 'number')
+  const setters = weighted.some((c) => c.weight > 0) ? weighted.filter((c) => c.weight > 0) : comps
+  const values = setters
     .map((c) => printedAdjustedPrice(c))
     .filter((n) => Number.isFinite(n) && n > 0)
   if (values.length === 0) return null

@@ -1405,6 +1405,17 @@ export function resolveListingTimeline(input: {
   }
   if (steps.length === 0) return null
 
+  // A change under 1 percent, or no change, stays on the era already running.
+  // $699,000 then $698,000 is one stretch, not two labels.
+  const drawn: ListingTimelineStep[] = []
+  for (const step of steps) {
+    const prev = drawn[drawn.length - 1]
+    if (prev && !askStepIsOwnEra(prev.ask, step.ask)) continue
+    drawn.push(step)
+  }
+  steps.length = 0
+  steps.push(...drawn)
+
   const offMarket = sellerOffMarketDate({
     listDate,
     offMarketDate: cycle?.offMarketDate ?? offMarketFromDays(listDate, input.domDays),

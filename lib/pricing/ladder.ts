@@ -58,7 +58,13 @@ export type PricingTier = {
    * Top home, not a subdivision across the highway"). Disclosed.
    */
   likeCommunity?: boolean
-  /** May cross the neighborhood/community polygon. Runs only once the boundary is exhausted. */
+  /**
+   * The next subdivisions inside the parent, nearest first. Not the plats
+   * that touch, and not a distance ring. A parent neighborhood or community
+   * never gives this rung a sale from outside it.
+   */
+  closerSubdivision?: boolean
+  /** May cross the neighborhood/community polygon. Runs only once the boundary is exhausted, and never when a parent neighborhood or community confines the home. */
   crossBoundary?: boolean
   disclosure?: string
   /**
@@ -119,9 +125,8 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
     bedSlop: apples === 'strict' ? 1 : 2,
     bathSlop: apples === 'strict' ? 1 : 2,
   })
-  // Containment (Matt 2026-09-08): the plats that touch the subject's, inside
-  // the same neighborhood or community, walked 3 → 12 months before any
-  // distance ring. Old Bend never again prices off Southwest Crossing.
+  // The plats that touch the subject's, closest first. A parent neighborhood
+  // or community still refuses a touching plat that sits outside that parent.
   const adjacent = (months: number, apples: AppleStrictness): PricingTier => ({
     name: `adjacent-sub-${months}mo`,
     monthsBack: months,
@@ -136,7 +141,26 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
     bedSlop: apples === 'strict' ? 1 : 2,
     bathSlop: apples === 'strict' ? 1 : 2,
     disclosure:
-      'These sales are in the subdivisions that touch yours, inside the same neighborhood, walked before any distance ring.',
+      'These sales are in the subdivisions that touch yours, the closest one first, walked before any subdivision farther out and before any distance ring.',
+  })
+  // After the touching plats: the other subdivisions inside the same parent,
+  // nearest first. Same 3, 6, 12 month clock. This is the crawl that keeps a
+  // city search off the distance rings.
+  const closer = (months: number, apples: AppleStrictness): PricingTier => ({
+    name: `closer-sub-${months}mo`,
+    monthsBack: months,
+    maxMiles: null,
+    sameSubdivision: false,
+    similarSubdivision: false,
+    closerSubdivision: true,
+    apples,
+    sqftBand: PLAT_WIDE_SQFT_BAND,
+    ageYears: apples === 'strict' ? 15 : 25,
+    sameStory: apples === 'strict',
+    bedSlop: apples === 'strict' ? 1 : 2,
+    bathSlop: apples === 'strict' ? 1 : 2,
+    disclosure:
+      'These sales are in the next subdivisions inside the same neighborhood or community, the closest one first, after the plats that touch yours.',
   })
   const pocket = (months: number, apples: AppleStrictness): PricingTier => ({
     name: `pocket-${months}mo`,
@@ -271,28 +295,35 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
     sub(9, PLAT_WIDE_SQFT_BAND, '-wide'),
     sub(12),
     sub(12, PLAT_WIDE_SQFT_BAND, '-wide'),
-    // TIME BEFORE LOCATION, ALL THE WAY TO TWO YEARS INSIDE THE PLAT (Matt
-    // 2026-09-09: exhaust the boundary out to 24 months before leaving it).
-    sub(18),
-    sub(24),
-    // Still the plat. The 35% cutoff, out to two years, before any other place.
-    sub(18, PLAT_WIDE_SQFT_BAND, '-wide'),
-    sub(24, PLAT_WIDE_SQFT_BAND, '-wide'),
     // Same subdiv + ~0.25 mi street cluster, before adjacent plats or mile rings
     // (Matt 2026-09-15: named SaddleStone stays exclusive when Horse Back / Ranch exist).
     pocket(3, 'strict'),
     pocket(6, 'strict'),
     pocket(9, 'utilities'),
     pocket(12, 'utilities'),
+    // Twelve months in the subdivision, then the same clock on the plats that
+    // touch, then the next subdivisions inside the parent. A sale older than
+    // 12 months in the subject's plat does not outrank a recent sale next door.
     adjacent(3, 'strict'),
     adjacent(6, 'strict'),
     adjacent(9, 'utilities'),
     adjacent(12, 'utilities'),
-    adjacent(18, 'utilities'),
-    adjacent(24, 'utilities'),
-    // The community the plat sits inside, before any ring or polygon rung.
+    closer(3, 'strict'),
+    closer(6, 'strict'),
+    closer(9, 'utilities'),
+    closer(12, 'utilities'),
     community(6, 'strict'),
     community(12, 'utilities'),
+    // The crawl is still short. Open the same places to 18 and 24 months
+    // before any distance ring.
+    sub(18),
+    sub(24),
+    sub(18, PLAT_WIDE_SQFT_BAND, '-wide'),
+    sub(24, PLAT_WIDE_SQFT_BAND, '-wide'),
+    adjacent(18, 'utilities'),
+    adjacent(24, 'utilities'),
+    closer(18, 'utilities'),
+    closer(24, 'utilities'),
     community(24, 'utilities'),
     // Distance starts at a quarter mile and steps by a quarter mile.
     // Do not open with a 1-mile ring. One mile and two miles are later steps.
@@ -544,7 +575,7 @@ export function isPocketExclusiveTier(tier: Pick<PricingTier, 'sameSubdivision' 
 export function isGeographyWidenTier(tier: PricingTier): boolean {
   if (tier.whenStarved || tier.ruralOnly) return false
   if (isPocketExclusiveTier(tier)) return false
-  if (tier.sameCommunity || tier.likeCommunity || tier.adjacentSubdivision) return false
+  if (tier.sameCommunity || tier.likeCommunity || tier.adjacentSubdivision || tier.closerSubdivision) return false
   return true
 }
 

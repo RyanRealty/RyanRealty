@@ -7,6 +7,7 @@ import { resortCommunityCompatible } from '@/lib/cma/resort-guard'
 import { communityForAddress, memberPlatMap, saleInsideSubjectCommunity } from '@/lib/cma/community-location'
 import { isResortCommunity } from '@/lib/cma/resort-guard'
 import { resolvePriceAnchor, samePlat, sameStreetPeer, streetKey, type PriceAnchor } from '@/lib/pricing/price-anchor'
+import { saleSetsThePrice } from '@/lib/pricing/price-set'
 import { ageRestrictedMismatch, ownPlatAgeRestrictedShare } from '@/lib/pricing/age-restricted'
 import { distanceMiles, proximityLabel, resolveMarketArea } from '@/lib/cma/market-area'
 import { roomCountsDecision } from '@/lib/pricing/room-ground'
@@ -92,11 +93,17 @@ export type PricingSubject = {
   /** County plat the subject sits in (boundaries.geo_slug), for the adjacency rung. */
   subdivisionSlug?: string | null
   /**
-   * Plats next to the subject's, inside the same neighborhood or community
-   * (Matt 2026-09-08 containment). Empty when the point is in no plat or the
-   * ring read failed; the adjacent rung then skips.
+   * Plats that touch the subject's, closest first. A parent community still
+   * refuses one that sits outside that community. Empty when the point is in
+   * no plat or the ring read failed; the adjacent rung then skips.
    */
   adjacentSubdivisionSlugs?: string[]
+  /**
+   * Other plats inside the parent, nearest first. Not the subject's plat and
+   * not the touching ring. Undefined lets the walk derive this from the pool.
+   * An empty list means the crawl has nowhere to go.
+   */
+  closerSubdivisionSlugs?: string[]
   newConstruction?: boolean | null
   /** MLS property_sub_type — "New Construction" classifies even when YN is null. */
   propertySubType?: string | null
@@ -482,21 +489,20 @@ function passesTier(
   // Horse Back / Ranch pocket, not every Black Butte home that shares the
   // catch-all SaddleStone MLS name (Matt Flex HARD LOCK 2026-09-15).
   if (tier.sameSubdivision && !inSubjectPlat(subject, sale)) return { ok: false, miles: null }
-  // THE PARENT LEVEL IS A WALL (Matt 2026-09-09): a plat inside a planned or
-  // golf community is priced from that community until the community itself is
-  // exhausted. Only the like-community rung and a boundary-exit rung may look
-  // outside it, and both disclose. A subject with no community is unaffected.
+  // THE PARENT IS THE WALL. A home inside a community (Tetherow, Caldera
+  // Springs, Broken Top) or a neighborhood (Awbrey Butte, River West) never
+  // takes a sale outside that parent. Not on a distance ring, not when the
+  // set is short, not from another resort. A subject with neither is unaffected.
   const subjectCommunity = communityForAddress(subject)
   const saleCommunity = communityForAddress(sale, memberPlatMap(subjectCommunity, subject.communityMemberPlats))
-  // The two rungs allowed outside the community: the boundary exit, and the
-  // starved widening — the last resort that exists so a home gets an answer
-  // instead of nothing, and which says on the document what it reached for.
-  const crossesCommunity = Boolean(tier.crossBoundary) || Boolean(tier.whenStarved)
+  const confined = parentConfines(subject)
+  const crossesCommunity = !confined && (Boolean(tier.crossBoundary) || Boolean(tier.whenStarved))
   if (tier.sameCommunity) {
     if (!subjectCommunity || saleCommunity !== subjectCommunity) return { ok: false, miles: null }
   } else if (tier.likeCommunity) {
-    // Another community of the same kind, never the subject's own and never a
-    // plain neighborhood.
+    // A parent is never left for a peer resort. The peer rung remains only
+    // for a home that sits in no neighborhood and no community.
+    if (confined) return { ok: false, miles: null }
     if (!subjectCommunity || !isResortCommunity(subjectCommunity)) return { ok: false, miles: null }
     if (!saleCommunity || saleCommunity === subjectCommunity || !isResortCommunity(saleCommunity)) {
       return { ok: false, miles: null }
@@ -508,10 +514,14 @@ function passesTier(
     // not price an ordinary plat next door either.
     return { ok: false, miles: null }
   }
-  // The plats next to the subject's, inside its boundary (containment rung).
+  // The plats next to the subject's, closest first.
   if (tier.adjacentSubdivision) {
     const ring = subject.adjacentSubdivisionSlugs ?? []
     if (!sale.subdivisionSlug || !ring.includes(sale.subdivisionSlug)) return { ok: false, miles: null }
+  }
+  if (tier.closerSubdivision) {
+    const next = subject.closerSubdivisionSlugs ?? []
+    if (!sale.subdivisionSlug || !next.includes(sale.subdivisionSlug)) return { ok: false, miles: null }
   }
   if (tier.samePocket) {
     const nameHit =
@@ -609,11 +619,14 @@ function passesTier(
     // subjects outside the Bend GIS mesh still keep year-quality peers that
     // resolve into a neighboring polygon (North Rim → Awbrey Butte). True
     // Parkway/Deschutes crosses stay hard in applesOk.
-    // A boundary-exit rung (ladder.ts `beyond-*`) is the one place the search
-    // may cross the polygon, and it only runs once the boundary is exhausted.
-    // Crossing lands in ANOTHER mapped polygon, never in unmapped land — a
-    // Highway 20 sale is a different market for a mapped Bend subject.
-    if (subjectArea !== saleArea && !customPeer && !(tier.crossBoundary && saleArea != null)) {
+    // A touching plat is the adjacent step even when a neighborhood line
+    // splits it from the subject. Anything farther stays inside the parent's
+    // polygon. A home with no parent may still cross on the boundary-exit
+    // rung, into another mapped polygon, never into unmapped land.
+    const touchingAdjacent = tier.adjacentSubdivision === true
+    const customOutsideMesh = customPeer && !subject.marketArea
+    const mayCrossArea = !confined && Boolean(tier.crossBoundary) && saleArea != null
+    if (subjectArea !== saleArea && !touchingAdjacent && !customOutsideMesh && !mayCrossArea) {
       return { ok: false, miles: null }
     }
     const subj = cellFor(cells, subject.citySlug, subject.subdivisionNorm)
@@ -999,6 +1012,46 @@ function keepCloserPlaceBeforeZip<T extends { selectionTier?: string | null; clo
   return [...closer, ...keepTightestByClosePrice(zip, max - closer.length, asOf)]
 }
 
+/** A neighborhood polygon or a community boundary confines the search. */
+function parentConfines(subject: PricingSubject): boolean {
+  return Boolean(subject.marketArea) || Boolean(communityForAddress(subject))
+}
+
+function saleInsideParent(subject: PricingSubject, sale: PricingSale): boolean {
+  const subjectCommunity = communityForAddress(subject)
+  if (subjectCommunity) {
+    return communityForAddress(sale, memberPlatMap(subjectCommunity, subject.communityMemberPlats)) === subjectCommunity
+  }
+  if (subject.marketArea) {
+    const saleArea = sale.marketArea ?? resolveMarketArea(sale.latitude, sale.longitude)
+    return saleArea === subject.marketArea
+  }
+  return true
+}
+
+/**
+ * Other plats inside the parent, nearest to the subject first. The touching
+ * ring is the adjacent step and is not repeated here.
+ */
+function deriveCloserSubdivisionSlugs(subject: PricingSubject, pool: readonly PricingSale[]): string[] {
+  const own = subject.subdivisionSlug ?? null
+  const adjacent = new Set(subject.adjacentSubdivisionSlugs ?? [])
+  const best = new Map<string, number>()
+  for (const sale of pool) {
+    const slug = sale.subdivisionSlug
+    if (!slug || slug === own || adjacent.has(slug)) continue
+    if (!saleInsideParent(subject, sale)) continue
+    const miles =
+      distanceMiles(
+        { lat: subject.latitude, lng: subject.longitude },
+        { lat: sale.latitude, lng: sale.longitude },
+      ) ?? 99
+    const prev = best.get(slug)
+    if (prev == null || miles < prev) best.set(slug, miles)
+  }
+  return [...best.entries()].sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0])).map(([slug]) => slug)
+}
+
 export function walkPricingLadder(
   rawSubject: PricingSubject,
   pool: PricingSale[],
@@ -1015,6 +1068,9 @@ export function walkPricingLadder(
   // Whether this home's own plat is a 55+ community, read off the plat's own
   // sales in the pool, once, before any rung grades a sale against it.
   subject.ownPlatAgeRestrictedShare = ownPlatAgeRestrictedShare(pool.filter((s) => inSubjectPlat(subject, s)))
+  if (subject.closerSubdivisionSlugs == null) {
+    subject.closerSubdivisionSlugs = deriveCloserSubdivisionSlugs(subject, pool)
+  }
   const asOf = opts.asOf.slice(0, 10)
   const cells = opts.cells ?? new Map()
   // The subject's price tier, resolved once. Only consulted where its own plat
@@ -1164,6 +1220,10 @@ export function walkPricingLadder(
               clusterPocket: true,
             })
           ? `the street-cluster pocket already supplied a tight closed+pending set (${exclusiveCount} closed, ${exclusivePending} pending), so the search stayed exclusive`
+        : parentConfines(subject) && (tier.likeCommunity || tier.crossBoundary || tier.whenStarved)
+          ? 'this home sits inside a neighborhood or community, so the search does not leave it for another community or a distance past that boundary'
+        : tier.closerSubdivision && !(subject.closerSubdivisionSlugs?.length)
+          ? 'no other subdivision inside this home\'s neighborhood or community is known'
         : tier.adjacentSubdivision && !(subject.adjacentSubdivisionSlugs?.length)
           ? 'no plat next to the subject\'s is known'
           : tier.crossBoundary && !subject.marketArea
@@ -1188,7 +1248,28 @@ export function walkPricingLadder(
       continue
     }
     let added = 0
-    for (const sale of pool) {
+    const slugOrder = tier.adjacentSubdivision
+      ? (subject.adjacentSubdivisionSlugs ?? [])
+      : tier.closerSubdivision
+        ? (subject.closerSubdivisionSlugs ?? [])
+        : null
+    const scanPool = slugOrder
+      ? [...pool].sort((a, b) => {
+          const rank = (slug: string | null | undefined) => {
+            const at = slug ? slugOrder.indexOf(slug) : -1
+            return at === -1 ? slugOrder.length + 1 : at
+          }
+          return rank(a.subdivisionSlug) - rank(b.subdivisionSlug)
+        })
+      : pool
+    for (const sale of scanPool) {
+      if (
+        slugOrder &&
+        byKey.size >= PRICING_TARGET_COMPS &&
+        !isPocketExclusiveTier(tier)
+      ) {
+        break
+      }
       if (byKey.has(sale.listingKey)) continue
       // ONE SALE, ONE ROW. A relisting of the same closed transaction carries a
       // new listing key, so keying on that alone lets one sale into a set twice
@@ -1250,7 +1331,38 @@ export function walkPricingLadder(
     trace.push(bracketed.note)
   }
   const priced = hadOwnPlat ? bracketed.comps : pocketSalesSitWithKept([...bracketed.comps], customLadder)
-  const comps = [...priced].sort((a, b) => b.closeDate.localeCompare(a.closeDate))
+  // Once three sales set the price, a sale that does not is not in the set.
+  // A short set keeps the next rung that was already admitted. Those sales
+  // set the price too. Size and product were already refused on the way in.
+  const setsPrice = (sale: SelectedPricingComp) => {
+    const subjectCommunity = communityForAddress(subject)
+    const saleCommunity = communityForAddress(
+      sale,
+      memberPlatMap(subjectCommunity, subject.communityMemberPlats),
+    )
+    return saleSetsThePrice({
+      ownPlat: sale.ownPlat,
+      subjectSubdivision: subject.subdivision,
+      saleSubdivision: sale.subdivision,
+      subjectCommunity,
+      saleCommunity,
+      subjectCommunityLocated: subject.communityLocated === true || subjectCommunity != null,
+      saleCommunityLocated: sale.communityLocated === true || saleCommunity != null,
+      subjectSqft: subject.sqft,
+      saleSqft: sale.sqft,
+      subjectLotAcres: subject.lotAcres,
+      saleLotAcres: sale.lotAcres,
+    })
+  }
+  const setters = priced.filter(setsPrice)
+  const keptForPrice = setters.length >= PRICING_MIN_COMPS ? setters : priced
+  if (keptForPrice.length < priced.length) {
+    const dropped = priced.length - keptForPrice.length
+    trace.push(
+      `${dropped} ${dropped === 1 ? 'sale does' : 'sales do'} not set the price once ${setters.length} sales do, so ${dropped === 1 ? 'it is' : 'they are'} not in the set.`,
+    )
+  }
+  const comps = [...keptForPrice].sort((a, b) => b.closeDate.localeCompare(a.closeDate))
   const reachedTarget = comps.length >= PRICING_TARGET_COMPS
   if (comps.length < PRICING_MIN_COMPS) {
     trace.push(`Only ${comps.length} comparable sale(s) after the full ladder. The estimate needs broker review.`)

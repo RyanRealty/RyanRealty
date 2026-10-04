@@ -8,7 +8,7 @@
  */
 
 import { getCmaCityClosedDuring } from '@/lib/data/cma/builderReads'
-import { compPoolPropertySubType, marketAreaName, resolveMarketArea } from '@/lib/cma/market-area'
+import { compPoolPropertySubType, letterProductNoun, marketAreaName, resolveMarketArea } from '@/lib/cma/market-area'
 import {
   chooseListingMarket,
   closesFromRows,
@@ -75,7 +75,8 @@ export async function loadListingWindowMarket(input: {
     propertySubType: input.propertySubType ?? null,
   })
   if (!move) return null
-  return { ...move, asOf: input.asOf.slice(0, 10) }
+  const productNoun = letterProductNoun(input.propertySubType)
+  return { ...move, asOf: input.asOf.slice(0, 10), ...(productNoun ? { productNoun } : {}) }
 }
 
 type MarketDoc = {

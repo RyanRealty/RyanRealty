@@ -300,6 +300,19 @@ export function productClass(subType: string | null): ProductClass | null {
  */
 export type AttachedKind = 'townhouse' | 'condo' | 'tic' | 'other-attached'
 
+/**
+ * The noun a letter uses for this product. Detached stays unset so the
+ * existing single-family lines keep their wording. Townhouse and condo are
+ * named, because a single-family line on those letters is the wrong house.
+ */
+export function letterProductNoun(subType: string | null | undefined): 'townhouse' | 'condo' | null {
+  if (productClass(subType ?? null) !== 'attached') return null
+  const kind = attachedKind(subType!)
+  if (kind === 'townhouse') return 'townhouse'
+  if (kind === 'condo') return 'condo'
+  return null
+}
+
 export function attachedKind(subType: string): AttachedKind {
   const s = subType.toLowerCase()
   if (s.includes('town')) return 'townhouse'

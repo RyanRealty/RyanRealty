@@ -33,6 +33,14 @@ function chartUsd(n: number): string {
   return `$${Math.round(n / 1000)}K`
 }
 
+/** Two asks that would round to the same short label print their own dollars. */
+function timelineAskLabel(ask: number, asks: readonly number[]): string {
+  const short = chartUsd(ask)
+  const shared = asks.filter((n) => chartUsd(n) === short).length > 1
+  if (!shared) return short
+  return `$${Math.round(ask).toLocaleString('en-US')}`
+}
+
 function linePath(xs: number[], ys: number[]): string {
   return xs.map((x, i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${ys[i]!.toFixed(1)}`).join(' ')
 }
@@ -785,11 +793,12 @@ function timelineBody(o: {
   // Only the asks carry a number. A price on every point is unread chaos
   // (dataviz skill, step 4) — the zone is named, not numbered on both edges.
   const last = g.steps[g.steps.length - 1]!
+  const askAmounts = g.steps.map((s) => s.ask)
   const marks = g.steps
     .map((s, i) => {
       const cx = x(s.t)
       const cy = y(s.ask)
-      const label = chartUsd(s.ask)
+      const label = timelineAskLabel(s.ask, askAmounts)
       const w = label.length * fs * 0.58
       // The first ask labels above its own run, from the left. A cut labels to
       // the RIGHT of its drop: centred, the label would sit inside the vertical

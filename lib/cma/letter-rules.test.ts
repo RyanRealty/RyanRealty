@@ -6,6 +6,7 @@ import type { CmaExpiredPeer } from '@/lib/cma/market-status'
 import { pricePathFromFinalCycle } from '@/lib/cma/price-path'
 import { didNotSellLeadSentence } from '@/lib/cma/did-not-sell'
 import { buildCompArea, resolveCompetitionArea } from '@/lib/pricing/comp-area'
+import { letterPlaceChecks } from '@/lib/cma/letter-consistency'
 
 function rival(over: Partial<CmaBandRival>): CmaBandRival {
   return {
@@ -142,5 +143,35 @@ describe('letter rules that cannot be skipped', () => {
         { ask: 470000, days: 20 },
       ]),
     ).toBe('You asked $500,000 for 40 days, then $470,000 for 20.')
+  })
+
+  it('refuses a townhouse letter that still uses a mile ring, a citywide count, or a single-family chart', () => {
+    const bad = letterPlaceChecks(
+      'Within two miles of your home. Came off unsold 803 listings. Single-family homes in Bend.',
+      {
+        compArea: { kind: 'subdivision', sentence: 'Copperstone, your own subdivision.' },
+        propertySubType: 'Townhouse',
+        listingMarket: { place: 'Copperstone', productNoun: 'townhouse' },
+        citywideListingCounts: [803, 1201, 1008],
+      },
+    )
+    expect(bad.filter((c) => !c.pass).map((c) => c.id)).toEqual([
+      'sales-place-not-a-mile-ring',
+      'sales-place-sentence',
+      'no-citywide-count',
+      'chart-matches-product',
+      'listing-chart-place',
+      'listing-chart-product',
+    ])
+    const good = letterPlaceChecks(
+      'Copperstone, your own subdivision. While your home was listed, the median townhouse sale in Copperstone fell. Townhouses in Copperstone.',
+      {
+        compArea: { kind: 'subdivision', sentence: 'Copperstone, your own subdivision.' },
+        propertySubType: 'Townhouse',
+        listingMarket: { place: 'Copperstone', productNoun: 'townhouse' },
+        citywideListingCounts: [803, 1201, 1008],
+      },
+    )
+    expect(good.every((c) => c.pass)).toBe(true)
   })
 })

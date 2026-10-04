@@ -140,6 +140,35 @@ describe('resolveListingTimeline', () => {
     expect(t!.steps).toEqual([{ date: '2026-02-26', ask: 475000 }])
   })
 
+  it('does not give a price change under 1 percent its own stretch', () => {
+    const t = resolveListingTimeline({
+      subject,
+      expiredAudit: audit(
+        cycle({
+          listDate: '2026-03-27',
+          initialAsk: 749000,
+          cuts: [
+            { date: '2026-04-21', ask: 699000 },
+            { date: '2026-05-21', ask: 698000 },
+          ],
+          offMarketDate: '2026-09-30',
+          status: 'Expired',
+          days: 187,
+        }),
+      ),
+      ...RANGE,
+      domDays: 187,
+    })
+    expect(t!.steps).toEqual([
+      { date: '2026-03-27', ask: 749000 },
+      { date: '2026-04-21', ask: 699000 },
+    ])
+    const svg = listingTimelineSvg(t!)
+    expect(svg).toContain('$749K')
+    expect(svg).toContain('$699K')
+    expect(svg).not.toContain('$698K')
+  })
+
   it('returns null when the row carries neither a list date nor an ask', () => {
     expect(
       resolveListingTimeline({
@@ -281,6 +310,21 @@ describe('the timeline drawing', () => {
     expect(svg).toContain('$460K')
     expect(svg).not.toContain('$475K')
     expect(svg).toMatch(/<path d="M[\d.]+,([\d.]+) L[\d.]+,\1"/)
+  })
+
+  it('prints both dollars when two asks would share one short label', () => {
+    const svg = listingTimelineSvg({
+      ...t,
+      steps: [
+        { date: '2026-02-26', ask: 49600 },
+        { date: '2026-05-14', ask: 50400 },
+      ],
+      rangeLow: 40000,
+      rangeHigh: 45000,
+    })
+    expect(svg).toContain('$49,600')
+    expect(svg).toContain('$50,400')
+    expect(visibleText(svg)).not.toContain('$50K')
   })
 
   it('draws nothing without a range or an ask', () => {

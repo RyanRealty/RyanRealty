@@ -65,21 +65,21 @@ describe('compTierLadder', () => {
     expect(names).toEqual([
       'subdivision-6mo',
       'subdivision-12mo',
-      'subdivision-18mo',
-      'subdivision-24mo',
       'pocket-6mo',
       'pocket-12mo',
-      'pocket-24mo',
       'adjacent-subdivision-6mo',
       'adjacent-subdivision-12mo',
-      'adjacent-subdivision-18mo',
-      'adjacent-subdivision-24mo',
       'neighborhood-6mo',
       'neighborhood-12mo',
-      'neighborhood-18mo',
-      'neighborhood-24mo',
       'community-6mo',
       'community-12mo',
+      'subdivision-18mo',
+      'subdivision-24mo',
+      'pocket-24mo',
+      'adjacent-subdivision-18mo',
+      'adjacent-subdivision-24mo',
+      'neighborhood-18mo',
+      'neighborhood-24mo',
       'community-24mo',
       'like-community-24mo',
       'nearby-0.25mi-6mo',
@@ -299,8 +299,9 @@ describe('diagnoseStarvation — name the constraint, not the count', () => {
 describe('the parent level on the listings ladder (Matt 2026-09-09)', () => {
   it('holds the plat, then adjacent, then the neighborhood, before the community leaves for the city', () => {
     const names = compTierLadder('Tetherow').map((t) => t.name)
-    expect(names.indexOf('adjacent-subdivision-24mo')).toBeLessThan(names.indexOf('neighborhood-6mo'))
-    expect(names.indexOf('neighborhood-24mo')).toBeLessThan(names.indexOf('community-6mo'))
+    expect(names.indexOf('adjacent-subdivision-12mo')).toBeLessThan(names.indexOf('neighborhood-6mo'))
+    expect(names.indexOf('neighborhood-12mo')).toBeLessThan(names.indexOf('subdivision-18mo'))
+    expect(names.indexOf('community-12mo')).toBeLessThan(names.indexOf('neighborhood-24mo'))
     expect(names.indexOf('community-24mo')).toBeLessThan(names.indexOf('like-community-24mo'))
     expect(names.indexOf('like-community-24mo')).toBeLessThan(names.indexOf('competing-area-12mo'))
     expect(names.indexOf('competing-area-12mo')).toBeLessThan(names.indexOf('citywide-12mo'))

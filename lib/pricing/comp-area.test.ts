@@ -158,7 +158,7 @@ describe('buildCompArea — a boundary rung supplied a kept sale', () => {
 })
 
 describe('buildCompArea — otherwise the radius the widest kept rung used', () => {
-  it('takes the widest rung that actually kept a sale, not the widest that ran', () => {
+  it('names the subdivisions the printed sales sit in, not the mile ring that found one of them', () => {
     const area = buildCompArea({
       subject: { ...REDMOND, subdivision: 'Diamond Bar Ranch', city: 'Redmond' },
       rungs: [rung('subdivision-3mo', 2), rung('nearby-1mi-6mo', 2), rung('city-5mi-9mo', 0, 6)],
@@ -169,9 +169,28 @@ describe('buildCompArea — otherwise the radius the widest kept rung used', () 
         comp('Hayloft', 'nearby-1mi-6mo'),
       ],
     })
-    expect(area!.kind).toBe('radius')
-    expect(area!.radiusMiles).toBe(1)
-    expect(area!.sentence).toBe('Within one mile of your home.')
+    expect(area!.kind).toBe('subdivisions')
+    expect(area!.names).toEqual(['Diamond Bar Ranch', 'Hayloft'])
+    expect(area!.radiusMiles).toBeNull()
+    expect(area!.sentence).toBe('Diamond Bar Ranch and the one subdivision next to it.')
+    expect(area!.sentence).not.toMatch(/mile/)
+  })
+
+  it('names the subdivision when every sale is there, even if the rungs were a street and a distance ring', () => {
+    const area = buildCompArea({
+      subject: { ...REDMOND, subdivision: 'Copperstone', city: 'Bend' },
+      rungs: [rung('own-street-24mo', 1), rung('beyond-2mi-12mo', 2)],
+      keptComps: [
+        comp('Copperstone', 'beyond-2mi-12mo'),
+        comp('Copperstone', 'beyond-2mi-12mo'),
+        comp('Copperstone', 'own-street-24mo'),
+      ],
+    })
+    expect(area!.kind).toBe('subdivision')
+    expect(area!.names).toEqual(['Copperstone'])
+    expect(area!.radiusMiles).toBeNull()
+    expect(area!.sentence).toBe('Copperstone, your own subdivision.')
+    expect(area!.sentence).not.toMatch(/mile/)
   })
 
   it('spells the miles the way a seller reads them', () => {
@@ -496,5 +515,27 @@ describe('the adjacent-plat rungs are boundary rungs', () => {
       ],
     })!
     expect(area.kind).toBe('neighborhood')
+  })
+
+  it('stays on one subdivision when every sale carries that name, including a later phase', () => {
+    const area = buildCompArea({
+      subject: { ...OLD_BEND, subdivision: 'Copperstone', city: 'Bend' },
+      rungs: [
+        rung('own-street-24mo', 1),
+        rung('subdivision-6mo', 1),
+        rung('adjacent-sub-3mo', 2),
+        rung('adjacent-sub-18mo', 1),
+      ],
+      keptComps: [
+        comp('Copperstone', 'own-street-24mo', OLD_BEND),
+        comp('Copperstone', 'subdivision-6mo', OLD_BEND),
+        comp('Copperstone', 'adjacent-sub-3mo', OLD_BEND),
+        comp('Copperstone', 'adjacent-sub-3mo', OLD_BEND),
+        comp('Copperstone', 'adjacent-sub-18mo', OLD_BEND),
+      ],
+    })!
+    expect(area.kind).toBe('subdivision')
+    expect(area.names).toEqual(['Copperstone'])
+    expect(area.sentence).toBe('Copperstone, your own subdivision.')
   })
 })

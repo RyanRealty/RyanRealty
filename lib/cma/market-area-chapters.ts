@@ -226,14 +226,20 @@ export function renderInventoryBoardHtml(
    * when it IS passed, the month line says what it is a line of.
    */
   against?: { recommended: number | null; subject: CmaSubject } | null,
+  /**
+   * The city median line. Letters whose sales sit in a named place pass false
+   * so a Bend single-family line is not standing in for that place.
+   */
+  options?: { drawCityTrend?: boolean },
 ): string {
   if (!market) return ''
   const place = cleanText(market.geoLabel) ?? 'this market'
   const mos = market.monthsOfSupply
   const verdict = mos != null ? monthsOfSupplyVerdict(mos) : null
   const trend = market.trend ?? []
-  const chart = medianCloseLineSvg(trend)
-  const chartPhone = medianCloseLinePhoneSvg(trend)
+  const drawCityTrend = options?.drawCityTrend !== false
+  const chart = drawCityTrend ? medianCloseLineSvg(trend) : ''
+  const chartPhone = drawCityTrend ? medianCloseLinePhoneSvg(trend) : ''
   const chartHtml = chart
     ? `<div class="szn median-wide" data-anim="chart">${chart}</div>${
         chartPhone ? `<div class="szn median-phone" data-anim="chart">${chartPhone}</div>` : ''

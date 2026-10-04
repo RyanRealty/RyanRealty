@@ -203,14 +203,15 @@ export async function selectPricingComps(
     marketArea: s.marketArea ?? resolveMarketArea(s.latitude, s.longitude),
     seniorCommunityYn: seniorKeys.has(s.listingKey) ? true : null,
   }))
-  // Containment (Matt 2026-09-08): the subject's plat and the plats next to it
-  // inside its boundary, and each sale's plat, so the adjacent rung can run.
-  // A plat outside the neighborhood polygon is not "next to" for this purpose.
+  // Every plat that touches the subject's, closest first. The parent wall
+  // inside the walk refuses a touching plat that sits outside a community
+  // such as Tetherow or Caldera Springs. A neighborhood line does not hide
+  // a plat that touches.
   if (ring) {
     pricingSubject.subdivisionSlug = ring.homeSlug
     pricingSubject.platLabel = ring.homeLabel
-    pricingSubject.adjacentSubdivisionSlugs = ring.ring
-      .filter((r) => r.inNeighborhood !== false)
+    pricingSubject.adjacentSubdivisionSlugs = [...ring.ring]
+      .sort((a, b) => a.pointM - b.pointM || a.rank - b.rank)
       .map((r) => r.slug)
     const slugs = await assignSubdivisionSlugs(sales.map((s) => ({ lat: s.latitude, lng: s.longitude })))
     sales.forEach((s, i) => {

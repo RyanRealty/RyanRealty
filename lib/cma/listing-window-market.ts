@@ -39,6 +39,11 @@ export type ListingMarketMove = {
   ppsfMove: ListingMarketMoveWord | null
   /** The day these closes were read. Printed on the source line. */
   asOf?: string | null
+  /**
+   * Singular product for the sentence, when the subject is not a detached
+   * house. Absent keeps the single-family wording the older letters use.
+   */
+  productNoun?: string | null
 }
 
 export type ListingMarketClose = {
@@ -127,8 +132,8 @@ function splitHalves(
   return { early, late }
 }
 
-function enough(early: ListingMarketClose[], late: ListingMarketClose[]): boolean {
-  return early.length >= LISTING_MARKET_MIN_HALF && late.length >= LISTING_MARKET_MIN_HALF
+function enough(early: ListingMarketClose[], late: ListingMarketClose[], min: number): boolean {
+  return early.length >= min && late.length >= min
 }
 
 function inSize(rows: ListingMarketClose[], low: number, high: number): ListingMarketClose[] {
@@ -227,7 +232,10 @@ export function chooseListingMarket(input: {
     for (const grain of grains) {
       const rows = useSize && lo != null && hi != null ? inSize(grain.rows, lo, hi) : grain.rows
       const halves = splitHalves(rows, start, end, midDay)
-      if (!enough(halves.early, halves.late)) continue
+      // A subdivision chart can be two real medians. A parent polygon still
+      // needs a full half, so a thin plat does not become the neighborhood.
+      const min = grain.grain === 'subdivision' ? 1 : LISTING_MARKET_MIN_HALF
+      if (!enough(halves.early, halves.late, min)) continue
       return finish(
         grain.place,
         grain.grain,
@@ -285,8 +293,9 @@ function mixSentence(move: ListingMarketMove): string {
 /** The sentence under the chart. Both halves are named, and the rate per foot when it exists. */
 export function listingMarketSentence(move: ListingMarketMove): string {
   const size = move.sized ? ' for a home about this size' : ''
+  const product = move.productNoun ? `${move.productNoun} ` : ''
   const price = moveClause(move.priceMove, move.early.median, move.late.median)
-  const head = `While your home was listed, the median sale in ${move.place}${size} ${price}.`
+  const head = `While your home was listed, the median ${product}sale in ${move.place}${size} ${price}.`
   if (move.ppsfMove == null || move.early.ppsf == null || move.late.ppsf == null) return head
   const foot = `The price per square foot ${moveClause(move.ppsfMove, move.early.ppsf, move.late.ppsf)}.`
   const mix = mixSentence(move)
@@ -339,7 +348,15 @@ export function listingMarketSource(move: ListingMarketMove): string {
   const lateSpan = spokenSpan(move.late.from, move.late.to)
   const year = move.late.to.slice(0, 4)
   const lateLabeled = year && !lateSpan.includes(year) ? `${lateSpan}, ${year}` : lateSpan
-  return `${move.early.n} closed sales ${spokenSpan(move.early.from, move.early.to)}, then ${move.late.n} from ${lateLabeled}. Single-family homes in ${move.place}${size}. Oregon Data Share MLS.${measured}`
+  const homes =
+    move.productNoun === 'townhouse'
+      ? 'Townhouses'
+      : move.productNoun === 'condo'
+        ? 'Condos'
+        : move.productNoun
+          ? move.productNoun
+          : 'Single-family homes'
+  return `${move.early.n} closed sales ${spokenSpan(move.early.from, move.early.to)}, then ${move.late.n} from ${lateLabeled}. ${homes} in ${move.place}${size}. Oregon Data Share MLS.${measured}`
 }
 
 export type ListingMarketSlopePanel = {

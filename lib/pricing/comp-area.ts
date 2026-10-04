@@ -294,6 +294,36 @@ export function buildCompArea(input: {
     // subdivision name (an MLS placeholder is not a place). Fall through.
   }
 
+  // Every printed sale is the same subdivision, including a later phase that
+  // arrived on the adjacent rung. That phase is still this place. Mixed names
+  // fall through to the neighborhood the search stayed inside.
+  const oneName: string[] = []
+  const oneSubdivision =
+    kept.length > 0 &&
+    kept.every((c) => {
+      const n = usableSubdivision(c.subdivision)
+      if (!n) return false
+      if (!oneName.includes(n)) oneName.push(n)
+      return true
+    }) &&
+    oneName.length === 1
+  if (oneSubdivision) {
+    if (subjectSubdivision && oneName[0] !== subjectSubdivision && oneName.includes(subjectSubdivision)) {
+      oneName.splice(oneName.indexOf(subjectSubdivision), 1)
+      oneName.unshift(subjectSubdivision)
+    }
+    const base = {
+      kind: 'subdivision' as const,
+      names: oneName,
+      radiusMiles: null,
+      centre,
+      source: trace(
+        `every printed sale is in ${oneName[0]}, so the area is that subdivision`,
+      ),
+    }
+    return { ...base, sentence: areaSentence(base, subjectSubdivision) }
+  }
+
   // 2. A boundary rung supplied a kept sale.
   const boundaryKept = keptRungs.some((r) => isBoundaryRung(r.key)) ||
     [...keptTiers].some((t) => isBoundaryRung(t))
@@ -313,6 +343,36 @@ export function buildCompArea(input: {
       }
       return { ...base, sentence: areaSentence(base, subjectSubdivision) }
     }
+  }
+
+  // The printed sales name the place. A street rung or a distance rung does
+  // not widen the letter past those subdivisions. A sale with no usable name
+  // falls through to the radius below. N/A is not a name.
+  const saleNames: string[] = []
+  const everySaleNamed = kept.every((c) => {
+    const n = usableSubdivision(c.subdivision)
+    if (!n) return false
+    if (!saleNames.includes(n)) saleNames.push(n)
+    return true
+  })
+  if (everySaleNamed && saleNames.length > 0) {
+    if (subjectSubdivision && saleNames.includes(subjectSubdivision)) {
+      saleNames.splice(saleNames.indexOf(subjectSubdivision), 1)
+      saleNames.unshift(subjectSubdivision)
+    }
+    const kind: CompAreaKind = saleNames.length === 1 ? 'subdivision' : 'subdivisions'
+    const base = {
+      kind,
+      names: saleNames,
+      radiusMiles: null,
+      centre,
+      source: trace(
+        `every printed sale carries a subdivision name, so the area is ${
+          saleNames.length === 1 ? 'that subdivision' : `those ${saleNames.length} subdivisions`
+        }: ${saleNames.join(', ')}`,
+      ),
+    }
+    return { ...base, sentence: areaSentence(base, subjectSubdivision) }
   }
 
   // 3. The radius the widest kept rung used.
@@ -366,6 +426,21 @@ export function salesAreaIsBounded(area: { kind?: string | null } | null | undef
     kind === 'neighborhood' ||
     kind === 'community' ||
     kind === 'radius'
+  )
+}
+
+/**
+ * The sales sit in a named place: a subdivision, a recorded plat, a
+ * neighborhood, or a community. A radius and the city are not that place.
+ * Citywide charts do not belong on a letter whose sales are already here.
+ */
+export function namedSalesPlace(area: { kind?: string | null } | null | undefined): boolean {
+  const kind = area?.kind
+  return (
+    kind === 'subdivision' ||
+    kind === 'subdivisions' ||
+    kind === 'neighborhood' ||
+    kind === 'community'
   )
 }
 

@@ -436,11 +436,14 @@ export async function selectComps(
   )
 
   const ruralAcreage = isRuralAcreage(subject, subjectArea)
-  // Containment (Matt 2026-09-08): the plats next to the subject's, inside its
-  // neighborhood polygon when it has one. Fail-open: no ring, no adjacent rung.
+  // Every plat that touches the subject's, closest first. The parent wall
+  // refuses one that sits outside the subject's community. A neighborhood
+  // line does not hide a touching plat.
   const ring = await getSubdivisionRing(subject.latitude, subject.longitude)
   const adjacentSlugs = new Set(
-    (ring?.ring ?? []).filter((r) => r.inNeighborhood !== false).map((r) => r.slug),
+    [...(ring?.ring ?? [])]
+      .sort((a, b) => a.pointM - b.pointM || a.rank - b.rank)
+      .map((r) => r.slug),
   )
   if (ring) {
     trace.push(
@@ -709,7 +712,10 @@ export async function selectComps(
         ? `the pocket already supplied a tight closed set (${exclusiveCount} closed), so the search stayed exclusive`
         : tier.sameArea && !subjectArea
           ? 'the subject sits outside every mapped neighborhood polygon'
-          : tier.adjacentSubdivisions && adjacentSlugs.size === 0
+          : (subjectArea || subjectCommunity) &&
+            (isListingsGeographyWidenTier(tier) || tier.likeCommunity || tier.whenStarved)
+          ? 'this home sits inside a neighborhood or community, so the search stays in the subdivisions there and does not open a distance ring'
+        : tier.adjacentSubdivisions && adjacentSlugs.size === 0
             ? 'no plat next to the subject\'s is known'
             : tier.ruralOnly && !ruralAcreage
             ? 'this rung is reserved for rural acreage subjects outside every mapped neighborhood'
@@ -1132,7 +1138,10 @@ export async function selectComps(
       }
 
       const compArea = resolveMarketArea(comp.latitude, comp.longitude)
-      if ((tier.sameArea || (tier.adjacentSubdivisions && subjectArea)) && compArea !== subjectArea) {
+      // A touching plat is the adjacent step even when the neighborhood
+      // polygon puts it on the other side of the line. Farther rungs that
+      // are limited to the subject's polygon still refuse a different area.
+      if (tier.sameArea && subjectArea && compArea !== subjectArea) {
         rung.excluded.market_area++
         continue
       }

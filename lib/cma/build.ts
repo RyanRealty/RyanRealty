@@ -39,6 +39,7 @@ import {
   priceCmaSet,
   roundPriceDown,
   roundPriceUp,
+  pinPrintedBandToSettingSales,
   syncRangeRuleToHeroBand,
 } from '@/lib/pricing/estimate'
 import {
@@ -1431,6 +1432,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       propertySubType: subject.propertySubType,
     }).catch(() => null)
 
+    pricing = pinPrintedBandToSettingSales(pricing, renderComps)
     const renderArgs = {
       coverPhoto: {
         url: coverPhoto.url,
@@ -1497,6 +1499,14 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       expiredAddresses: (expiredPeers?.peers ?? []).map((peer) => peer.address),
       // A name word inside an address the letter prints is the street, not the owner.
       printedAddresses: printedAddressesOf(renderArgs),
+      place: {
+        compArea,
+        propertySubType: subject.propertySubType,
+        listingMarket,
+        citywideListingCounts: (market?.askOutcome?.groups ?? [])
+          .map((group) => group.n)
+          .filter((n) => n > 0),
+      },
     })
     for (const check of letterContract.checks) {
       contract.checks.push(check)
