@@ -131,8 +131,13 @@
       {
         "id": "523085075568558239",
         "topic": "Team intro, BOOK button",
-        "state": "REJECTED",
-        "note": "auto-rejected at create; body contained a phone number, which GBP post policy does not allow"
+        "state": "REJECTED then deleted",
+        "note": "auto-rejected at create for the phone number in the body; reposted without it as 8891645534267247154 (LIVE), rejected copy deleted"
+      },
+      {
+        "id": "8891645534267247154",
+        "topic": "Team intro, BOOK button, no phone in body",
+        "state": "LIVE"
       }
     ],
     "photos_added": [

@@ -28,6 +28,7 @@ import type {
   CmaSubject,
 } from '@/lib/cma/types'
 import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
+import { fillShortSetWeights } from '@/lib/pricing/closed-comp-weight'
 import { comparisonSalePrice, concessionOnSale, sellerNetFromPrice } from '@/lib/pricing/seller-net'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { SAME_STREET_PREMIUM_MAX, sameStreetPeer } from '@/lib/pricing/price-anchor'
@@ -216,6 +217,9 @@ export function computePricing(
   }
 
   if (subjectSqft <= 0) return null
+  // A plat with fewer than three sales does not stand alone. The next rung
+  // was already admitted, and those sales set the price. A tighter sale stays.
+  adjusted = fillShortSetWeights(subject, adjusted)
   // Sales that do not set the price (weight 0) are not a back door into the
   // number. Fewer than the minimum that DO set it is no price, not a thinner set.
   adjusted = adjusted.filter((c) => c.weight > 0)
