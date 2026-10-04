@@ -39,6 +39,7 @@ import { classifyDiff, isVercelSkippable, listChangedFiles } from './lib/product
 // 403s an unknown UA, and ci:probe-ua fails any raw-HTTP probe without it.
 import { CI_PROBE_USER_AGENT } from './lib/ci-probe-ua.mjs'
 import { formatSitemapSmoke, probeSitemapClasses } from './lib/sitemap-smoke.mjs'
+import { LIVE_SEO_UA, runLiveSeoAudit } from './lib/live-seo-audit.mjs'
 import { checkInlineScripts, formatInlineScriptReport } from './lib/inline-script-health.mjs'
 import {
   DEFAULT_TIMEOUT_MS,
@@ -504,6 +505,26 @@ async function main() {
             err('  Google cannot discover the affected URL class while this is red.')
             process.exit(1)
           }
+        }
+
+        // ── live SEO baseline (Matt 2026-10-04) ────────────────────────────
+        // robots groups, the image sitemap, and a sample of every sitemap's
+        // pages as Google is served them: title, description, canonical, one
+        // H1, BreadcrumbList, alt attributes, the listing lead photo's
+        // priority. Rules: scripts/lib/live-seo-audit.mjs. LIVE_SEO_SKIP=1 is
+        // the acknowledged-outage escape, same as the sitemap smoke.
+        if (process.env.LIVE_SEO_SKIP === '1') {
+          out('live seo: SKIPPED (LIVE_SEO_SKIP=1)')
+        } else {
+          const seo = await runLiveSeoAudit('https://ryan-realty.com', { ua: LIVE_SEO_UA })
+          for (const l of seo.lines) out(`live seo: ${l}`)
+          for (const w of seo.warns) out(`live seo: warn · ${w}`)
+          if (seo.fails.length > 0) {
+            err(`✗ LIVE SEO FAILED (${seo.fails.length}) — production serves a page below the SEO baseline:`)
+            for (const f of seo.fails) err(`  - ${f}`)
+            process.exit(1)
+          }
+          out('live seo: ✓ baseline holds')
         }
 
         const regressed = usingCliFallback
