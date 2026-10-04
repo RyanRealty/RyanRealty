@@ -8,10 +8,18 @@
  *   1. same subdivision
  *   2. adjacent subdivisions
  *   3. the neighborhood or community
- * Size and bedrooms come after that. Recency comes after those. Each of those
- * adds less than one location step, so a same-subdivision sale outweighs a
- * similar-size sale from only the neighborhood, and an adjacent-subdivision
- * sale sits between those two.
+ * Size, year built, bedrooms, bathrooms, lot size, and recency come after
+ * that. Each of those adds less than one location step, so a same-subdivision
+ * sale outweighs a similar-size sale from only the neighborhood, and an
+ * adjacent-subdivision sale sits between those two. A 4-bedroom in the same
+ * subdivision still counts for a 3-bedroom subject. The extra bedroom lowers
+ * the weight more than one bath apart does. Neither removes the sale, and
+ * neither lets an adjacent sale pass it.
+ *
+ * Within about 350 square feet, within 5 years, and within one bath is the
+ * close match, and it weighs more than a home outside those bands. A full
+ * match on size, year, subdivision, bedrooms, bathrooms, and lot weighs more
+ * than an adjacent sale with an extra bedroom.
  *
  * Recency half-life is still ~3 months when location is the same: a 6-month-old
  * sale carries about a quarter of the recency of a fresh close. Pending and
@@ -28,6 +36,10 @@ export type ClosedCompWeightInput = {
   monthsSinceClose: number
   subjectBeds?: number | null
   saleBeds?: number | null
+  subjectBaths?: number | null
+  saleBaths?: number | null
+  subjectYearBuilt?: number | null
+  saleYearBuilt?: number | null
   subjectSubdivision?: string | null
   saleSubdivision?: string | null
   selectionTier?: string | null
@@ -71,6 +83,16 @@ export type LocationMatch = keyof typeof LOCATION_MATCH_WEIGHT
 
 /** Less than one location step. A perfect secondary match cannot cross a class. */
 export const LOCATION_SECONDARY_SPAN = 0.99
+
+/** Living area this close still counts as the same size for weight. */
+export const SQFT_CLOSE_BAND = 350
+
+/** Year built this close still counts as the same age for weight. */
+export const AGE_CLOSE_YEARS = 5
+
+/** A lot this close, by share of the subject's lot or by acres, still matches. */
+export const LOT_CLOSE_RATIO = 0.25
+export const LOT_CLOSE_ACRES = 0.05
 
 /** Cap raw shares, then renormalize. Equal shares when nothing is usable. */
 export function capClosedCompShares(raw: readonly number[]): number[] {
@@ -153,13 +175,89 @@ export function resolveLocationMatch(input: {
   return 'wider'
 }
 
-function bedProximity(subjectBeds: number | null | undefined, saleBeds: number | null | undefined): number {
-  if (subjectBeds == null || saleBeds == null) return 1
-  if (!Number.isFinite(subjectBeds) || !Number.isFinite(saleBeds)) return 1
-  const gap = Math.abs(Math.floor(subjectBeds) - Math.floor(saleBeds))
+/** One whole bedroom apart still counts. It weighs less than one bath apart. */
+const BED_ONE_APART = 0.85
+/**
+ * One whole bath apart is still the close match: same subdivision, within
+ * about 350 square feet, and within 5 years. It weighs more than an extra
+ * bedroom and less than the same bath count.
+ */
+const BATH_ONE_APART = 0.9
+
+/** Whole rooms. A missing count is not a mismatch. One apart still weighs. */
+function roomProximity(
+  subject: number | null | undefined,
+  sale: number | null | undefined,
+  oneApart: number,
+): number {
+  if (subject == null || sale == null) return 1
+  if (!Number.isFinite(subject) || !Number.isFinite(sale) || subject <= 0 || sale <= 0) return 1
+  const gap = Math.abs(Math.floor(subject) - Math.floor(sale))
   if (gap === 0) return 1
-  if (gap === 1) return 0.85
+  if (gap === 1) return oneApart
   return 0.7
+}
+
+function yearBuilt(value: number | null | undefined): number | null {
+  if (value == null || !Number.isFinite(value)) return null
+  const year = Math.floor(value)
+  if (year < 1800 || year > 2100) return null
+  return year
+}
+
+/**
+ * Within 5 years is the same age, and a closer year still weighs a little
+ * more. The sixth year steps down. Unknown year does not lower the weight.
+ */
+function ageProximity(subjectYear: number | null | undefined, saleYear: number | null | undefined): number {
+  const subject = yearBuilt(subjectYear)
+  const sale = yearBuilt(saleYear)
+  if (subject == null || sale == null) return 1
+  const gap = Math.abs(subject - sale)
+  if (gap <= AGE_CLOSE_YEARS) return 1 - 0.04 * (gap / AGE_CLOSE_YEARS)
+  if (gap <= 15) return 0.85
+  return 0.7
+}
+
+function acres(value: number | null | undefined): number | null {
+  if (value == null || !Number.isFinite(value) || value <= 0) return null
+  return value
+}
+
+/**
+ * Within a quarter of the subject's lot, or 0.05 acres, is the same lot, and
+ * a closer lot still weighs a little more. Past that the factor falls. A
+ * missing lot does not lower the weight.
+ */
+const LOT_BAND_EDGE = 0.96
+
+function lotProximity(subjectLot: number | null | undefined, saleLot: number | null | undefined): number {
+  const subject = acres(subjectLot)
+  const sale = acres(saleLot)
+  if (subject == null || sale == null) return 1
+  const gap = Math.abs(subject - sale)
+  const rel = gap / subject
+  const bandT = Math.min(rel / LOT_CLOSE_RATIO, gap / LOT_CLOSE_ACRES)
+  if (bandT <= 1) return 1 - (1 - LOT_BAND_EDGE) * bandT
+  const over = Math.max(0, rel - LOT_CLOSE_RATIO)
+  return LOT_BAND_EDGE / (1 + 1.5 * over)
+}
+
+/**
+ * Within 350 square feet is the same size: the factor stays high, and a
+ * closer living area still weighs a little more. Past 350 it falls, so a
+ * home about twice that far does not pull like a same-size sale. One square
+ * foot across the line does not jump.
+ */
+const SQFT_BAND_EDGE = 0.92
+const SQFT_PAST_SLOPE = 2.5
+
+function sizeProximity(subjectSqft: number, saleSqft: number): number {
+  if (!(subjectSqft > 0) || !(saleSqft > 0)) return 1
+  const gap = Math.abs(subjectSqft - saleSqft)
+  if (gap <= SQFT_CLOSE_BAND) return 1 - (1 - SQFT_BAND_EDGE) * (gap / SQFT_CLOSE_BAND)
+  const past = (gap - SQFT_CLOSE_BAND) / subjectSqft
+  return SQFT_BAND_EDGE / (1 + SQFT_PAST_SLOPE * past)
 }
 
 function locationFieldsPresent(input: ClosedCompWeightInput): boolean {
@@ -203,11 +301,17 @@ export function closedCompWeight(input: ClosedCompWeightInput): number {
   const months = Math.max(0, Number(input.monthsSinceClose) || 0)
   const subjectSqft = Number(input.subjectSqft) || 0
   const saleSqft = Number(input.saleSqft) || 0
-  const sizeProximity =
-    subjectSqft > 0 ? 1 / (1 + Math.abs(subjectSqft - saleSqft) / subjectSqft) : 1
+  const size = sizeProximity(subjectSqft, saleSqft)
   const recency = Math.pow(0.5, months / CLOSED_COMP_RECENCY_HALF_LIFE_MONTHS)
-  const secondary = sizeProximity * bedProximity(input.subjectBeds, input.saleBeds) * recency
-  if (!locationFieldsPresent(input)) return +(sizeProximity * recency).toFixed(4)
+  const secondary =
+    size *
+    roomProximity(input.subjectBeds, input.saleBeds, BED_ONE_APART) *
+    roomProximity(input.subjectBaths, input.saleBaths, BATH_ONE_APART) *
+    ageProximity(input.subjectYearBuilt, input.saleYearBuilt) *
+    lotProximity(input.subjectLotAcres, input.saleLotAcres) *
+    recency
+  // No location class: keep the similarity product, and do not invent a step.
+  if (!locationFieldsPresent(input)) return +secondary.toFixed(4)
   const base = LOCATION_MATCH_WEIGHT[resolveLocationMatch(input)]
   return +(base + LOCATION_SECONDARY_SPAN * secondary).toFixed(4)
 }
@@ -222,6 +326,8 @@ export function fillShortSetWeights<T extends {
   weight: number
   sqft: number
   beds?: number | null
+  baths?: number | null
+  yearBuilt?: number | null
   lotAcres?: number | null
   subdivision?: string | null
   communitySlug?: string | null
@@ -233,6 +339,8 @@ export function fillShortSetWeights<T extends {
   subject: {
     sqft?: number | null
     beds?: number | null
+    baths?: number | null
+    yearBuilt?: number | null
     lotAcres?: number | null
     subdivision?: string | null
     communitySlug?: string | null
@@ -250,6 +358,10 @@ export function fillShortSetWeights<T extends {
       monthsSinceClose: comp.monthsSinceClose ?? 0,
       subjectBeds: subject.beds,
       saleBeds: comp.beds,
+      subjectBaths: subject.baths,
+      saleBaths: comp.baths,
+      subjectYearBuilt: subject.yearBuilt,
+      saleYearBuilt: comp.yearBuilt,
       subjectSubdivision: subject.subdivision,
       saleSubdivision: comp.subdivision,
       selectionTier: comp.selectionTier,
