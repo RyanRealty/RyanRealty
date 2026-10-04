@@ -128,7 +128,8 @@ describe('master-plan place follows', () => {
     // The winner never hands "Sunriver homes for sale" to the search slug.
     expect(byLabel.get('Sunriver homes for sale')).toBeUndefined()
     expect(byLabel.get('Search Sunriver homes')).toBe('/homes-for-sale/sunriver')
-    expect(byLabel.get('About Sunriver')).toBe('/cities/sunriver')
+    // Matt 2026-10-04: /cities/sunriver 301s here, so no door back to itself.
+    expect(byLabel.get('About Sunriver')).toBeUndefined()
     // SITE-184: Black Butte Ranch is its own MLS city under the registry city
     // Sisters. Its search door is ITS city search, never Sisters' or the
     // /homes-for-sale/sisters/black-butte-ranch twin (which now 301s home).

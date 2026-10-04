@@ -74,11 +74,12 @@ export function communitySerpTitle(input: {
   listedCount?: number | null
 }): string {
   const { name, city, slug, listedCount } = input
-  // A self-city community's /cities/<slug> page is titled "{place} real
-  // estate" (publishCityRealEstateTitle), so this page keeps the inventory
-  // title and the two never share a title again (SITE-187 / SITE-184). A
-  // compound slug is noindex and not a registered community: unchanged.
-  if (isSelfCityCommunity(slug) || !isCanonicalCommunitySlug(slug)) {
+  // A compound slug is noindex and not a registered community: unchanged.
+  // A self-city community (Sunriver, Black Butte Ranch) took the inventory-only
+  // title while its /cities/<slug> twin held "{place} real estate" (SITE-187 /
+  // SITE-184). That twin now 301s here (Matt 2026-10-04), so this page carries
+  // both queries like every other registered community.
+  if (!isCanonicalCommunitySlug(slug)) {
     return `${name} Homes for Sale | ${city}, OR`
   }
   // Mountain High GSC: title at pos 5–15 with 0 CTR. Name the on-page listed

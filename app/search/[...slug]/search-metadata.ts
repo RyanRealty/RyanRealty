@@ -142,7 +142,9 @@ export async function buildSearchSlugMetadata({
     : typeTwinPath
       ? typeTwinPath
       : selfCityCanonical
-        ? selfCityCanonical
+        ? // Noindexed below; a noindex page names itself, never the page we
+          // want ranked (Matt 2026-10-04).
+          buildCanonicalPath(city, subdivisionDisplayName, subdivisionSlug, presetSlug)
         : area && slug.length === 2
           ? // EXP-4 / SEO-6: a plat twin or a community twin consolidates onto its
             // place page; every other pair is self-canonical.
@@ -199,7 +201,12 @@ export async function buildSearchSlugMetadata({
         (!!preset && isSortOnlyPreset(preset)) ||
         shouldNoIndexSearchVariant(sp) ||
         matrixNoIndex ||
-        areaNoIndex
+        areaNoIndex ||
+        // Self-city plain search (/homes-for-sale/sunriver, /black-butte-
+        // ranch): Search Console 2026-10-04 showed Google ignoring the old
+        // canonical to /communities/<slug> and indexing both, so the search
+        // tool now says noindex outright and the community page stands alone.
+        selfCityCanonical != null
           ? { index: false, follow: true }
           : { index: true, follow: true },
       openGraph: {

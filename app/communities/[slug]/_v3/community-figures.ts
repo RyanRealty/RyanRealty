@@ -250,7 +250,11 @@ export function buildExploreEdges(input: {
       ? [{ label: `${cityName} homes for sale`, href: homesForSalePath(cityName), group: cityName }]
       : []),
     { label: `${cityName} market report`, href: input.cityReportHref, group: cityName },
-    ...(citySlug ? [{ label: `About ${cityName}`, href: `/cities/${citySlug}`, group: cityName }] : []),
+    // A self-city community's /cities/<slug> 301s to this page (Matt
+    // 2026-10-04), so Sunriver gets no "About Sunriver" door back to itself.
+    ...(citySlug && !selfCityCommunitySlug(citySlug)
+      ? [{ label: `About ${cityName}`, href: `/cities/${citySlug}`, group: cityName }]
+      : []),
     ...(citySlug ? [{ label: `Open houses in ${cityName}`, href: `/open-houses/${citySlug}`, group: cityName }] : []),
     ...input.golfCourses.map((c) => ({
       label: `${c.name} golf course`,

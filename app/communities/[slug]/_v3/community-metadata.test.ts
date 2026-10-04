@@ -181,7 +181,8 @@ describe('SITE-177 community SERP copy', () => {
       city: 'Sunriver',
       stock: { listedCount: 47, types: ['homes', 'attached', 'lots'] },
     })
-    expect(input.title).toBe('Sunriver Homes for Sale | Sunriver, OR')
+    // Matt 2026-10-04: /cities/sunriver 301s here, so this page carries "real estate" too.
+    expect(input.title).toBe('Sunriver real estate | Homes for Sale | Sunriver, OR')
     expect(input.description).toMatch(/^Sunriver, Oregon homes for sale\./)
     expect(input.description).not.toMatch(/Sunriver in Sunriver/)
     expect(input.path).toBe('/communities/sunriver')
@@ -194,7 +195,7 @@ describe('SITE-177 community SERP copy', () => {
       city: 'Sisters',
       stock: { listedCount: 31, types: ['homes', 'attached', 'lots'] },
     })
-    expect(input.title).toBe('Black Butte Ranch Homes for Sale | Sisters, OR')
+    expect(input.title).toBe('Black Butte Ranch real estate | Homes for Sale | Sisters, OR')
     expect(input.description).toMatch(/^Black Butte Ranch, Oregon homes for sale\./)
     expect(input.description).not.toMatch(/Black Butte Ranch in Sisters/)
     expect(input.description).toMatch(/Golf resort with two courses under the Cascades\./)
@@ -238,7 +239,7 @@ describe('SITE-177 community SERP copy', () => {
     expect(shareDescription(input.description)).toBe(input.description)
   })
 
-  it('every other registered community leads with "real estate" (Matt 2026-09-24)', () => {
+  it('every registered community leads with "real estate" (Matt 2026-09-24, self-city 2026-10-04)', () => {
     const input = communityMetadataInput({
       slug: 'broken-top',
       name: 'Broken Top',
@@ -246,8 +247,8 @@ describe('SITE-177 community SERP copy', () => {
       stock: { listedCount: 12, types: ['homes'] },
     })
     expect(input.title).toBe('Broken Top real estate | Homes for Sale | Bend, OR')
-    // Sweep the registry: "real estate" everywhere but the two self-city
-    // communities, whose /cities/<slug> pages already carry that title.
+    // Sweep the registry: "real estate" everywhere. The two self-city
+    // communities joined 2026-10-04, when their /cities/<slug> twins became 301s.
     const registry = (resortRegistry as { communities: Array<{ slug: string; label: string; city: string }> })
       .communities
     expect(registry.length).toBeGreaterThan(10)
@@ -257,7 +258,7 @@ describe('SITE-177 community SERP copy', () => {
       .filter((e) => !/ real estate \| /.test(communitySerpTitle({ slug: e.slug, name: e.label, city: e.city })))
       .map((e) => e.slug)
       .sort()
-    expect(plain).toEqual(['black-butte-ranch', 'sunriver'])
+    expect(plain).toEqual([])
   })
 
   it('a compound slug keeps the Homes for Sale title (noindex, not a registered community)', () => {
