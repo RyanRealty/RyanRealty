@@ -474,6 +474,12 @@ describe('the adjustment grid, line by line', () => {
     )
     expect(html).toContain('Seller concessions')
     expect(html).toContain('$12,500')
+    const soldAt = html.indexOf('<th>Sold</th>')
+    const concessionAt = html.indexOf('<th>Seller concessions</th>')
+    const daysAt = html.indexOf('<th>Days on market</th>')
+    expect(soldAt).toBeGreaterThan(-1)
+    expect(concessionAt).toBeGreaterThan(soldAt)
+    expect(daysAt).toBeGreaterThan(concessionAt)
     expect(html).not.toMatch(/<th>Seller concessions<\/th>(?:<td[^>]*>none<\/td>){6}/)
   })
 

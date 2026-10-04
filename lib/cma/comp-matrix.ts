@@ -246,6 +246,7 @@ const SHARED_ROWS: ReadonlyArray<MatrixRow> = [
   { label: 'List price', figure: true },
   { label: 'Original list', figure: true },
   { label: 'Sold', figure: true },
+  { label: 'Seller concessions', figure: true },
   { label: 'Days on market', figure: true, fact: 'dom' },
   { label: 'CDOM', figure: true },
   { label: 'Beds', figure: true },
@@ -258,7 +259,6 @@ const SHARED_ROWS: ReadonlyArray<MatrixRow> = [
   // Matt ADD 2026-09-12: list $/sqft AND sold $/sqft + concession $ on sold.
   { label: 'List $/sqft', figure: true },
   { label: 'Sold $/sqft', figure: true },
-  { label: 'Seller concessions', figure: true },
   { label: 'Adjusted', figure: true },
   // Asks on one line, then each clause of the outcome on its own. One
   // sentence in a six-column cell was breaking in a different place in every
@@ -444,6 +444,7 @@ function sharedCells(entry: MatrixEntry, _range?: PricePathRange | null): string
     moneyCell(entry.listPrice ?? entry.lastAsk),
     moneyCell(entry.firstAsk),
     moneyCell(entry.closePrice),
+    sharedConcessionCell(entry),
     entry.domDays != null ? `${int(entry.domDays)} ${entry.domDays === 1 ? 'day' : 'days'}` : '-',
     cdom != null ? `${int(cdom)} ${cdom === 1 ? 'day' : 'days'}` : '-',
     entry.beds != null ? int(entry.beds) : '-',
@@ -454,7 +455,6 @@ function sharedCells(entry: MatrixEntry, _range?: PricePathRange | null): string
     entry.garageSpaces != null ? int(entry.garageSpaces) : '-',
     ppsfCell(listForPpsf, entry.sqft),
     ppsfCell(entry.closePrice, entry.sqft),
-    sharedConcessionCell(entry),
     entry.family === 'closed' ? moneyCell(entry.adjustedPrice) : '-',
     askArcCell(entry),
   ]
