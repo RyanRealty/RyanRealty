@@ -81,7 +81,9 @@ export async function buildSearchSlugMetadata({
   const rawMetaDesc =
     luxuryPresetDescription(preset, placeName) ??
     (areaPrint && subdivisionDisplayName ? (subdivisionDesc ?? getSubdivisionBlurb(subdivisionDisplayName)) : null) ??
-    (subdivisionSlug ? null : content?.metaDescription) ??
+    // SEO review 2026-10-04: same leak for a preset. /homes-for-sale/bend/residential-lots
+    // and /homes-for-sale/bend/manufactured both printed Bend's city description.
+    (subdivisionSlug || preset ? null : content?.metaDescription) ??
     (preset
       ? `${preset.label} in ${placeName}, Central Oregon. Live listings from the regional MLS, with price, size, and the map.`
       : subdivisionSlug && areaPrint && city

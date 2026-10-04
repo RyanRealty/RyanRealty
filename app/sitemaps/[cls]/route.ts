@@ -19,9 +19,9 @@
  * real headroom under the cap. Cold cost is one buildAllUrls run per class
  * per hour instead of one shared run that never actually cached.
  *
- * No XML escaping is needed. Every loc comes from our own slugified path
+ * Locs need no XML escaping. Every loc comes from our own slugified path
  * builders (lowercase a-z, digits, hyphens, slashes only) and lastmod is an
- * ISO timestamp. Neither can contain XML-special characters.
+ * ISO timestamp. Listing image URLs come from Spark and are escaped.
  */
 import { SITEMAP_CLASSES, type SitemapClass } from '@/lib/data/sitemap/classify'
 import { getClassRows, siteBaseUrl } from '@/lib/sitemap-class-rows'
@@ -56,6 +56,15 @@ export const dynamicParams = true
 // invocation with its own module scope, so all five classes paid a full
 // ~10.7K-URL fan-out and three of them 504'd at maxDuration in production.
 
+function escapeXml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;')
+}
+
 export async function GET(_req: Request, ctx: { params: Promise<{ cls: string }> }) {
   const { cls } = await ctx.params
   const clean = cls.replace(/\.xml$/, '') as SitemapClass
@@ -67,16 +76,20 @@ export async function GET(_req: Request, ctx: { params: Promise<{ cls: string }>
   const rows = await getClassRows(clean)
 
   const entries = rows
-    .map(([path, lastmodIso]) => {
+    .map(([path, lastmodIso, imageUrl]) => {
       const loc = path.startsWith('http') ? path : `${baseUrl}${path}`
       const lastmod = lastmodIso ? `<lastmod>${lastmodIso}</lastmod>` : ''
-      return `<url><loc>${loc}</loc>${lastmod}</url>`
+      // A listing's lead photo, so Google Images can tie the MLS photograph to
+      // the listing page (SEO review 2026-10-04). It comes from the Spark CDN,
+      // not our path builders, so it is escaped.
+      const image = imageUrl ? `<image:image><image:loc>${escapeXml(imageUrl)}</image:loc></image:image>` : ''
+      return `<url><loc>${loc}</loc>${lastmod}${image}</url>`
     })
     .join('\n')
 
   const body = [
     '<?xml version="1.0" encoding="UTF-8"?>',
-    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">',
     entries,
     '</urlset>',
     '',

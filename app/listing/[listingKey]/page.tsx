@@ -698,6 +698,7 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
       floorPlans={flightFloorPlans}
       videos={videos}
       addressLine={street}
+      cityLine={listing.city}
       lat={listing.lat}
       lng={listing.lng}
       openHouseLabel={

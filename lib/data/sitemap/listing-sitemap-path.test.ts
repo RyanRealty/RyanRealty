@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assembleListingSitemapRows, listingSitemapPath } from './listing-sitemap-path'
+import { assembleListingSitemapRows, listingSitemapImageUrl, listingSitemapPath } from './listing-sitemap-path'
 
 describe('listingSitemapPath', () => {
   // P14 (2026-09-23): the canonical is MLS City + MLS SubdivisionName +
@@ -85,5 +85,24 @@ describe('assembleListingSitemapRows', () => {
     expect(rows[0].path).toBe('/homes-for-sale/bend/1-oak-220201111')
     expect(rows[0].lastModified).toBe(now.toISOString())
     expect(rows[1].lastModified).toBe('2026-08-01T00:00:00.000Z')
+  })
+})
+
+describe('listingSitemapImageUrl', () => {
+  const row = {
+    listing_key: 'K1',
+    photo_url: 'https://cdn.resize.sparkplatform.com/ore/320x240/true/abc-o.jpg',
+  }
+
+  it('lists the lead photo at the 1600x1200 size the listing page loads', () => {
+    expect(listingSitemapImageUrl(row, new Set())).toBe(
+      'https://cdn.resize.sparkplatform.com/ore/1600x1200/true/abc-o.jpg',
+    )
+  })
+
+  it('withholds a suppressed listing and a missing or insecure photo', () => {
+    expect(listingSitemapImageUrl(row, new Set(['K1']))).toBeNull()
+    expect(listingSitemapImageUrl({ listing_key: 'K1', photo_url: null }, new Set())).toBeNull()
+    expect(listingSitemapImageUrl({ listing_key: 'K1', photo_url: 'http://x.test/a.jpg' }, new Set())).toBeNull()
   })
 })
