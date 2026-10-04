@@ -6,3 +6,6 @@ node scripts/check-draft-first.mjs "$1"
 # Site-node gate (G72): app/** and components/site/** commits name their queue node.
 # Bypass for the gate itself: SITE_NODE_OK=1 git commit ...
 node scripts/check-site-node.mjs "$1"
+# SEO decisions: removing or loosening a pinned entry in data/seo/decisions.json
+# needs an `SEO-decision: <who, when, why>` trailer. Override: SEO_DECISION_OK=1.
+node scripts/check-seo-decisions.mjs "$1"

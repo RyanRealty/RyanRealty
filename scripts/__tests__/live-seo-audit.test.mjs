@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { auditPage, auditRobots, parsePage, parseRobots } from '../lib/live-seo-audit.mjs'
+import { readFileSync } from 'node:fs'
+import { auditDecision, auditPage, auditRobots, parsePage, parseRobots } from '../lib/live-seo-audit.mjs'
 
 const URL_ = 'https://ryan-realty.com/homes-for-sale/bend/woodridge'
 
@@ -88,5 +89,50 @@ describe('parsePage + auditPage', () => {
     const r = auditPage(URL_, p, { isHome: false, isListing: false })
     expect(r.fails).toEqual([])
     expect(r.warns).toHaveLength(1)
+  })
+})
+
+describe('auditDecision (data/seo/decisions.json)', () => {
+  const O = 'https://ryan-realty.com'
+  const redirect = { id: 'r', path: '/cities/sunriver', expect: { status: 301, location: '/communities/sunriver' } }
+  const page = { id: 'p', path: '/communities/sunriver', expect: { status: 200, index: true, canonical: 'self', title: '^Sunriver real estate' } }
+  const live = (over = {}) =>
+    parsePage(
+      `<html><head><title>${over.title ?? 'Sunriver real estate | Homes for Sale | Sunriver, OR | Ryan Realty'}</title>` +
+        `<link rel="canonical" href="${over.canonical ?? O + '/communities/sunriver'}"/>` +
+        (over.robots ? `<meta name="robots" content="${over.robots}"/>` : '') +
+        `</head><body><h1>Sunriver homes for sale</h1></body></html>`,
+    )
+
+  it('passes a redirect that still lands on the decided page, absolute or relative', () => {
+    expect(auditDecision(redirect, { status: 301, location: `${O}/communities/sunriver` }, O)).toEqual([])
+    expect(auditDecision(redirect, { status: 301, location: '/communities/sunriver' }, O)).toEqual([])
+  })
+
+  it('fails the regressions it exists for', () => {
+    // The city page comes back as its own page.
+    expect(auditDecision(redirect, { status: 200, location: null, page: live() }, O).join()).toMatch(/HTTP 200, decision says 301/)
+    // Indexed page turned noindex, canonical moved, title lost its phrase.
+    const f = auditDecision(page, { status: 200, page: live({ robots: 'noindex, follow', canonical: `${O}/cities/sunriver`, title: 'Sunriver Homes for Sale' }) }, O).join('\n')
+    expect(f).toMatch(/noindex, decision says indexable/)
+    expect(f).toMatch(/canonical \/cities\/sunriver, decision says \/communities\/sunriver/)
+    expect(f).toMatch(/no longer matches/)
+  })
+
+  it('passes the page as decided', () => {
+    expect(auditDecision(page, { status: 200, page: live() }, O)).toEqual([])
+  })
+
+  it('every pinned decision is well formed', () => {
+    const { decisions } = JSON.parse(readFileSync(new URL('../../data/seo/decisions.json', import.meta.url), 'utf8'))
+    const ids = new Set()
+    for (const d of decisions) {
+      expect(d.id && !ids.has(d.id), d.id).toBe(true)
+      ids.add(d.id)
+      expect(d.path, d.id).toMatch(/^\//)
+      expect(d.decided && d.why, d.id).toBeTruthy()
+      expect(Object.keys(d.expect).length, d.id).toBeGreaterThan(0)
+      for (const k of ['title', 'h1']) if (d.expect[k]) expect(() => new RegExp(d.expect[k]), d.id).not.toThrow()
+    }
   })
 })

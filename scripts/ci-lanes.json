@@ -1204,6 +1204,10 @@
       "app/site-index/**",
       "app/**/site-index/**"
     ],
+    "ci:seo-decisions": [
+      "data/seo/**",
+      "scripts/check-seo-decisions.mjs"
+    ],
     "ci:site-node": [
       "app/**",
       "components/site/**"

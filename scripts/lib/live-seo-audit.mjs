@@ -23,6 +23,9 @@
  *            - no BreadcrumbList JSON-LD (homepage exempt), or JSON-LD that does not parse
  *            - an <img> with no alt attribute
  *   listing  the lead photo without fetchPriority="high", or no image preload
+ *   decision any pinned decision in data/seo/decisions.json the live URL no
+ *            longer keeps (status, redirect target, index, canonical, title,
+ *            h1). Those are Matt's calls; a miss means the site regressed.
  * Warns (printed, not failing) on titles over 60 chars: the 2026-10-04 suffix
  * change left 203 of 367 sampled titles over 60, mostly listing titles; this
  * keeps the count visible without failing every deploy on a known backlog.
@@ -31,6 +34,8 @@
 // Audit what Google is served. Next streams metadata for ordinary visitors and
 // serves it in <head> to crawlers it recognises; reading as Googlebot is the view
 // that ranks. The tail names the probe in access logs.
+import { readFileSync } from 'node:fs'
+
 export const LIVE_SEO_UA = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html) rr-live-seo'
 
 const PRIVATE_DISALLOWS = ['/admin/', '/dev/']
@@ -95,6 +100,10 @@ export function parsePage(html) {
     robots: metaContent(head, 'name', 'robots'),
     canonical: canonicalTag ? attr(canonicalTag, 'href') : null,
     h1Count: (html.match(/<h1[\s>]/gi) ?? []).length,
+    h1: (() => {
+      const m = /<h1\b[^>]*>([\s\S]*?)<\/h1>/i.exec(html)
+      return m ? decode(m[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()) : null
+    })(),
     ldTypes,
     ldParseErrors,
     imgsWithoutAlt: imgs.filter((t) => attr(t, 'alt') === null).length,
@@ -213,6 +222,64 @@ async function mapLimit(items, limit, fn) {
  * Audit the live site. Returns { fails, warns, lines } — the caller prints
  * `lines` and fails on `fails.length > 0`.
  */
+/**
+ * One pinned decision against one live response. Pure; exported for tests.
+ * `location` is the raw Location header (absolute or relative).
+ */
+export function auditDecision(decision, { status, location, page }, origin) {
+  const fails = []
+  const e = decision.expect ?? {}
+  const at = `${decision.path} [${decision.id}]`
+  if (e.status != null && status !== e.status) fails.push(`${at}: HTTP ${status}, decision says ${e.status}`)
+  if (e.location != null) {
+    let got = null
+    try {
+      got = location ? new URL(location, origin).pathname : null
+    } catch {
+      got = location
+    }
+    if (got !== e.location) fails.push(`${at}: redirects to ${got ?? 'nothing'}, decision says ${e.location}`)
+  }
+  if (page) {
+    const noindex = /noindex/i.test(page.robots ?? '')
+    if (e.index === true && noindex) fails.push(`${at}: noindex, decision says indexable`)
+    if (e.index === false && !noindex) fails.push(`${at}: indexable, decision says noindex`)
+    if (e.canonical != null) {
+      const want = e.canonical === 'self' ? decision.path : e.canonical
+      let got = null
+      try {
+        got = page.canonical ? new URL(page.canonical, origin).pathname : null
+      } catch {
+        got = page.canonical
+      }
+      const norm = (p) => (p && p.length > 1 ? p.replace(/\/$/, '') : p)
+      if (norm(got) !== norm(want)) fails.push(`${at}: canonical ${got ?? 'missing'}, decision says ${want}`)
+    }
+    if (e.title != null && !new RegExp(e.title).test(page.title ?? '')) {
+      fails.push(`${at}: title "${page.title ?? ''}" no longer matches /${e.title}/`)
+    }
+    if (e.h1 != null && !new RegExp(e.h1).test(page.h1 ?? '')) fails.push(`${at}: h1 "${page.h1 ?? ''}" no longer matches /${e.h1}/`)
+  }
+  return fails
+}
+
+/** Every pinned decision, fetched live and checked. */
+export async function auditDecisions(origin, ua, decisions, concurrency = 6) {
+  const fails = []
+  await mapLimit(decisions, concurrency, async (d) => {
+    let res
+    try {
+      res = await fetchText(`${origin}${d.path}`, ua)
+    } catch (err) {
+      fails.push(`${d.path} [${d.id}]: fetch failed (${err?.name ?? 'error'})`)
+      return
+    }
+    const page = res.status === 200 ? parsePage(res.text) : null
+    fails.push(...auditDecision(d, { status: res.status, location: res.headers.get('location'), page }, origin))
+  })
+  return fails
+}
+
 export async function runLiveSeoAudit(base, { ua, perSitemap = 8, concurrency = 6 } = {}) {
   const fails = []
   const warns = []
@@ -282,6 +349,11 @@ export async function runLiveSeoAudit(base, { ua, perSitemap = 8, concurrency = 
     }
   })
   lines.push(`pages: ${targets.length} sampled (${perSitemap} per sitemap + home)`)
+
+  const decisions = JSON.parse(readFileSync(new URL('../../data/seo/decisions.json', import.meta.url), 'utf8')).decisions
+  const decisionFails = await auditDecisions(origin, ua, decisions, concurrency)
+  fails.push(...decisionFails)
+  lines.push(`decisions: ${decisions.length} pinned, ${decisionFails.length} broken`)
   if (overSoft > 0) warns.push(`${overSoft} of ${targets.length} sampled titles run past ${MAX_TITLE_SOFT} chars (Google truncates)`)
   return { fails, warns, lines }
 }
