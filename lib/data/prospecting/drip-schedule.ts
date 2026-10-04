@@ -155,3 +155,56 @@ export function canSendDripNow(args: {
   }
   return { ok: true }
 }
+
+/**
+ * Second first-touch queue. Not the weekday drip.
+ *
+ * Opens at Sunday 2026-10-04 08:00 America/Los_Angeles and not before.
+ * The instant is absolute (PDT, UTC-7), so the every-minute cron cannot send
+ * on Saturday night or at 07:59 Sunday. After it opens, spacing is the same
+ * DRIP_SPACING_MINUTES the weekday drip already uses. There is no second cadence.
+ *
+ * Membership is outreach_email_status `sunday-queue` plus an idempotency key
+ * with SUNDAY_QUEUE_IDEMPOTENCY_PREFIX. It is not status `queued`, and rows
+ * on it keep outreach_email_queued_at null so the shared release RPC cannot
+ * move a failed send onto the weekday FIFO.
+ */
+export const SUNDAY_QUEUE_STATUS = 'sunday-queue'
+export const SUNDAY_QUEUE_IDEMPOTENCY_PREFIX = 'sunday-queue|'
+/** 2026-10-04 08:00 America/Los_Angeles. */
+export const SUNDAY_QUEUE_OPENS_AT_ISO = '2026-10-04T15:00:00.000Z'
+
+export type SundayQueueDecision =
+  | { ok: true }
+  | { ok: false; reason: 'before-open' | 'spacing' }
+
+export function sundayQueueIdempotencyKey(enqueuedAtIso: string, kind: string, id: string): string {
+  return `${SUNDAY_QUEUE_IDEMPOTENCY_PREFIX}${enqueuedAtIso}|${kind}|${id}`
+}
+
+/** True while this row is waiting on the Sunday queue (not sent, not the weekday FIFO). */
+export function isSundayQueueWaiting(status: string | null | undefined, idempotencyKey: string | null | undefined): boolean {
+  if (status === 'sent' || status === 'sending') return false
+  if (status === SUNDAY_QUEUE_STATUS) return true
+  return typeof idempotencyKey === 'string' && idempotencyKey.startsWith(SUNDAY_QUEUE_IDEMPOTENCY_PREFIX)
+}
+
+/**
+ * Whether the Sunday queue may send exactly one email at `now`.
+ * Closed until SUNDAY_QUEUE_OPENS_AT_ISO, then one send per DRIP_SPACING_MINUTES.
+ */
+export function canSendSundayQueueNow(args: {
+  now: Date
+  lastSundayQueueSentAt: Date | null
+  spacingMinutes?: number
+}): SundayQueueDecision {
+  const spacing = args.spacingMinutes ?? DRIP_SPACING_MINUTES
+  if (args.now.getTime() < Date.parse(SUNDAY_QUEUE_OPENS_AT_ISO)) {
+    return { ok: false, reason: 'before-open' }
+  }
+  if (args.lastSundayQueueSentAt) {
+    const elapsedMs = args.now.getTime() - args.lastSundayQueueSentAt.getTime()
+    if (elapsedMs < spacing * 60_000) return { ok: false, reason: 'spacing' }
+  }
+  return { ok: true }
+}
