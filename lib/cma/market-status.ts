@@ -201,8 +201,10 @@ export type ExpiredPeerSubject = Pick<
   | 'listingKey'
   | 'mlsNumber'
   | 'streetAddress'
-  | 'propertySubType'
->
+> & {
+  /** Absent on older callers. A blank type is not a different product. */
+  propertySubType?: string | null
+}
 
 function peerAddress(row: CmaMarketAreaRow): string {
   return [row.StreetNumber, row.StreetName]
@@ -578,6 +580,7 @@ export function computeMarketArea(input: {
     listingKey: input.subject.listingKey,
     mlsNumber: input.subject.mlsNumber,
     streetAddress: input.subject.streetAddress,
+    propertySubType: input.subject.propertySubType,
   })
 
   return {
@@ -821,8 +824,9 @@ function peerSetSentence(input: {
   }
   const homes = `${countWord(n)} ${n === 1 ? 'home' : 'homes'}${like}`
   if (!input.shortfall) {
-    const head = `${countWord(n, true)} ${n === 1 ? 'home' : 'homes'}${like}`
-    return `${head} ${where} came off the market without selling in the last ${w} months.`
+    const head = `${countWord(n)} ${n === 1 ? 'home' : 'homes'}${like}`
+    const sentence = `${head} ${where} came off the market without selling in the last ${w} months.`
+    return sentence.charAt(0).toUpperCase() + sentence.slice(1)
   }
   // Fewer than three even at the widest window. Say the number, say the
   // window, and say plainly that nothing was brought in from outside.

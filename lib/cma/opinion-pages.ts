@@ -963,7 +963,11 @@ export function didNotSellBodyMatrixHtml(a: OpinionPageArgs): string {
     // The area set's own sentence first (how many came off inside the comp
     // area, over which window, and whether it fell short), then the matrix lead.
     lead: [
-      `${countWord(sets.unsold.length, true)} ${sets.unsold.length === 1 ? 'listing' : 'listings'} came off without selling.`,
+      (() => {
+        const n = sets.unsold.length
+        const line = `${countWord(n)} ${n === 1 ? 'listing' : 'listings'} came off without selling.`
+        return line.charAt(0).toUpperCase() + line.slice(1)
+      })(),
       unsoldMatrixLead(sets.unsold, range),
     ]
       .filter(Boolean)
