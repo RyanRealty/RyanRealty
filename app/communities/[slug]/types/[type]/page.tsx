@@ -20,6 +20,7 @@
  * Photographed listings are their own set. Miss omits.
  */
 
+import { cityHref as cityHrefFor } from '@/lib/site/place-href'
 import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
@@ -179,7 +180,7 @@ async function renderCommunityPlaceTypePage({ params }: Props) {
   const placeLine = registry ? homeFeaturedBlurb(placeContent, registry) : null
   const placeHref = `/communities/${slug}`
   const pagePath = `/communities/${slug}/types/${spec.slug}`
-  const cityHref = community.citySlug ? `/cities/${community.citySlug}` : placeHref
+  const cityDoorHref = community.citySlug ? (cityHrefFor(community.citySlug) ?? placeHref) : placeHref
 
   const boundaryRead = await withTimeoutFallbackResult(
     readCommunityOutline(slug),
@@ -308,7 +309,7 @@ async function renderCommunityPlaceTypePage({ params }: Props) {
     description: copy.description,
     listings: rows,
     breadcrumbName: cityName,
-    breadcrumbHref: cityHref,
+    breadcrumbHref: cityDoorHref,
   })
 
   return (
@@ -320,7 +321,8 @@ async function renderCommunityPlaceTypePage({ params }: Props) {
           // The community is a step on the way (2026-09-29: "Bend / For sale"
           // over a Tetherow page named nothing of Tetherow).
           trail={[
-            { label: cityName, href: cityHref },
+            // A self-city community's city IS this place (Matt 2026-10-04).
+            ...(cityDoorHref === placeHref ? [] : [{ label: cityName, href: cityDoorHref }]),
             { label: publicName, href: placeHref },
             { label: 'For sale' },
           ]}

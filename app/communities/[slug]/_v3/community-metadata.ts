@@ -14,6 +14,7 @@
  * or omitted. Mountain High is the one title that names that listed count.
  */
 
+import { cityHref } from '@/lib/site/place-href'
 import type { pageMetadata } from '@/lib/site/page-metadata'
 import { shareDescription } from '@/lib/share-metadata'
 import { isCanonicalCommunitySlug } from '@/lib/communities/canonical-community-slug'
@@ -379,7 +380,11 @@ export function buildCommunitySchemas(input: {
       items: [
         { name: 'Home', url: '/' },
         { name: 'Communities', url: '/communities' },
-        ...(cityName ? [{ name: cityName, url: citySlug ? `/cities/${citySlug}` : '/cities' }] : []),
+        // The city level resolves where the city page lives; a self-city
+        // community's city IS this page, so it has no separate level.
+        ...(cityName && (!citySlug || cityHref(citySlug) !== `/communities/${slug}`)
+          ? [{ name: cityName, url: citySlug ? (cityHref(citySlug) ?? `/cities/${citySlug}`) : '/cities' }]
+          : []),
         { name, url: `/communities/${slug}` },
       ],
     },

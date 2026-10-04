@@ -23,6 +23,7 @@
  * pile. Miss omits. Do not pass alias length as an active override.
  */
 
+import { cityHref } from '@/lib/site/place-href'
 import { notFound } from 'next/navigation'
 import { readCityOpenHouses, openHouseRows, OPEN_HOUSE_TRACE } from '@/lib/kb/place-open-houses'
 import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
@@ -1055,9 +1056,11 @@ async function renderCommunityDetail({ params }: Props) {
             </V3Heading>
             {/* SITE-87 SEO: crawlable city + inventory doors in the opening. */}
             <p className="place-opening__caption place-opening__caption--doors">
-              {citySlug ? (
+              {/* A self-city community IS "{city} real estate" (Matt
+                  2026-10-04): its city URL 301s here, so no door to itself. */}
+              {citySlug && cityHref(citySlug) !== `/communities/${slug}` ? (
                 <>
-                  <a href={`/cities/${citySlug}`}>{cityName} real estate</a>
+                  <a href={cityHref(citySlug) ?? `/cities/${citySlug}`}>{cityName} real estate</a>
                   {' · '}
                 </>
               ) : null}
