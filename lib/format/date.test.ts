@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatCalendarDay, formatDate, formatDateTime } from './date'
+import { formatCalendarDay, formatDate, formatDateTime, formatZonedClock } from './date'
 
 describe('formatDate (brand timezone, audit p1.4)', () => {
   it('formats an ISO date in America/Los_Angeles', () => {
@@ -60,5 +60,13 @@ describe('migration byte-identity guard (components/ListingTile + admin leads)',
     for (const iso of samples) {
       expect(formatDate(iso)).toBe(inline(new Date(iso)))
     }
+  })
+})
+
+describe('formatZonedClock', () => {
+  it('names the clock and the zone at an instant', () => {
+    expect(formatZonedClock(new Date('2026-06-25T00:30:00Z'), 'America/New_York')).toBe('8:30pm EDT')
+    expect(formatZonedClock(new Date('2026-06-24T16:30:00Z'), 'Pacific/Honolulu')).toBe('6:30am HST')
+    expect(formatZonedClock(new Date('2026-01-15T17:00:00Z'), 'America/Los_Angeles')).toBe('9:00am PST')
   })
 })

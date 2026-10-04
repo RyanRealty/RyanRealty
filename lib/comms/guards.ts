@@ -19,6 +19,7 @@ import 'server-only'
 import { isSuppressed, type SendChannel } from '@/lib/crm/suppressions'
 import { DEFAULT_SMS_TIMEZONE, smsPauseStartLabel } from '@/lib/crm/quiet-hours'
 import { smsQuietZoneFor } from '@/lib/crm/recipient-timezones'
+import { formatZonedClock } from '@/lib/format/date'
 import { recordSendBlockEvent } from '@/lib/data/crm/recordSendBlockEvent'
 import type { GovernedFailure } from './types'
 
@@ -30,18 +31,6 @@ import type { GovernedFailure } from './types'
  */
 export const QUIET_HOURS_ERROR = `Quiet hours: texts pause ${smsPauseStartLabel()} to 8am Pacific, ahead of Oregon's 8pm cutoff (ORS 646.563). Check "send anyway" to override.`
 
-/** "9:43pm EDT": the clock in `timeZone` at `date`, for a recipient-zone refusal. */
-function zoneClock(timeZone: string, date: Date): string {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    timeZoneName: 'short',
-    timeZone,
-  }).formatToParts(date)
-  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)?.value ?? ''
-  return `${part('hour')}:${part('minute')}${part('dayPeriod').toLowerCase()} ${part('timeZoneName')}`.trim()
-}
-
 /** The Pacific refusal where nobody can override (an automated or intro send). */
 const QUIET_HOURS_NO_OVERRIDE = `Quiet hours: texts pause ${smsPauseStartLabel()} to 8am Pacific, ahead of Oregon's 8pm cutoff (ORS 646.563). Try again after 8am.`
 
@@ -51,7 +40,7 @@ const QUIET_HOURS_NO_OVERRIDE = `Quiet hours: texts pause ${smsPauseStartLabel()
  */
 function recipientQuietHoursError(timeZone: string, date: Date, canOverride = true): string {
   const next = canOverride ? 'Check "send anyway" to override.' : 'Try again once it is 8am there.'
-  return `Quiet hours for this number: it is ${zoneClock(timeZone, date)} in its area code. Texts pause ${smsPauseStartLabel()} to 8am there as well as in Pacific. ${next}`
+  return `Quiet hours for this number: it is ${formatZonedClock(date, timeZone)} in its area code. Texts pause ${smsPauseStartLabel()} to 8am there as well as in Pacific. ${next}`
 }
 
 /**
