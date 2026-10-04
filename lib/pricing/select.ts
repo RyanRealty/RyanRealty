@@ -231,6 +231,8 @@ export async function selectPricingComps(
       s.communityLocated = true
       s.communitySlug = communitySlugs[i + 1] ?? null
     })
+    subject.communityLocated = true
+    subject.communitySlug = communitySlugs[0] ?? null
   }
   // Delta 4 (Matt 2026-09-09): a rural sale's zoning class is a hard split,
   // and the facts table carries no zone. Nearest rural sales first, county

@@ -215,7 +215,11 @@ export function computePricing(
     })
   }
 
-  if (adjusted.length < PRICING_MIN_COMPS || subjectSqft <= 0) return null
+  if (subjectSqft <= 0) return null
+  // Sales that do not set the price (weight 0) are not a back door into the
+  // number. Fewer than the minimum that DO set it is no price, not a thinner set.
+  adjusted = adjusted.filter((c) => c.weight > 0)
+  if (adjusted.length < PRICING_MIN_COMPS) return null
   const notes: string[] = []
 
   // Surface the time-adjustment safety rail in the audit trail: when a comp's

@@ -66,6 +66,12 @@ export interface CmaSubject {
   listAgentName?: string | null
   listAgentEmail?: string | null
   listOfficeName?: string | null
+  /**
+   * Community whose boundary contains this address. Set when lat/lng was
+   * tested. Not the MLS subdivision name, and not a remark.
+   */
+  communitySlug?: string | null
+  communityLocated?: boolean
 }
 
 export interface CmaComp {
@@ -144,6 +150,9 @@ export interface CmaComp {
    * evidence either way.
    */
   seniorCommunityYn?: boolean | null
+  /** Community whose boundary contains this sale. Not the MLS plat name. */
+  communitySlug?: string | null
+  communityLocated?: boolean
 }
 
 export type CmaCompKeepTier = 'strong' | 'weak'
