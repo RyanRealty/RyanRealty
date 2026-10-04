@@ -67,6 +67,8 @@ import {
   type PricingPageInput,
 } from '@/lib/cma/render-pricing-page'
 import { activeRivalsFor, unsoldPeersFor } from '@/lib/cma/matrix-sets'
+import { letterProductMatch } from '@/lib/cma/market-area'
+import { realSubdivisionName } from '@/lib/pricing/classes'
 import {
   activeEntries,
   closedEntries,
@@ -171,9 +173,9 @@ export type OpinionPageArgs = {
    */
   docLinks?: TrackedDocLinkCtx | null
   /**
-   * What sale prices did while this home was listed. Subdivision, then the
-   * neighborhood, then the city. Absent when no grain had enough closes, and
-   * absent on a letter signed before this was measured.
+   * What sale prices did while this home was listed, in the same place and
+   * the same subtype as the sales. Absent when that place cannot say, and
+   * never a parent polygon, the city, or N/A.
    */
   listingMarket?: ListingMarketMove | null
   /** Row status at serve. A draft replaces an automatic concession net. */
@@ -235,15 +237,26 @@ export function matrixEntriesFor(a: OpinionPageArgs): {
       printableAsk: subjectPrintableAsk(a.subject, askCtx),
       exposure: askExposureFor(a),
     }),
-    closed: closedEntries(a.comps, a.docLinks ?? null, a.subject),
+    closed: closedEntries(
+      a.comps.filter(
+        (c) =>
+          Boolean(c.address?.trim()) && letterProductMatch(a.subject.propertySubType, c.propertySubType),
+      ),
+      a.docLinks ?? null,
+      a.subject,
+    ),
     unsold: unsoldEntries(
-      unsoldPeersFor({ subject: a.subject, peers: a.expiredPeers?.peers ?? a.extras?.marketArea?.expiredPeers }),
+      unsoldPeersFor({
+        subject: a.subject,
+        peers: a.expiredPeers?.peers ?? a.extras?.marketArea?.expiredPeers,
+        area: a.compArea,
+      }),
       a.docLinks ?? null,
       a.subject.city,
       a.subject,
     ),
     active: activeEntries(
-      activeRivalsFor(a.bandRivals?.rivals ?? a.extras?.band?.rivals),
+      activeRivalsFor(a.bandRivals?.rivals ?? a.extras?.band?.rivals, a.subject, a.compArea),
       a.docLinks ?? null,
       a.subject.city,
       a.subject,
@@ -253,7 +266,7 @@ export function matrixEntriesFor(a: OpinionPageArgs): {
 
 /** The worth range, shaded on every price path in every matrix. */
 export function pathRangeFor(a: OpinionPageArgs): { low: number; high: number } | null {
-  const worth = worthRangeRounded(a.pricing)
+  const worth = worthRangeRounded(a.pricing, a.comps)
   return worth.low > 0 && worth.high > 0 ? worth : null
 }
 
@@ -296,7 +309,7 @@ export function salesThatSetItArgs(a: OpinionPageArgs): PricingPageInput {
     askCtx: subjectAskContext(a),
     finalCycle: a.expiredAudit?.finalCycle ?? null,
     asOfIso: a.generatedAtIso,
-    rivals: (a.bandRivals?.rivals ?? []).map((r) => ({
+    rivals: activeRivalsFor(a.bandRivals?.rivals ?? a.extras?.band?.rivals, a.subject, a.compArea).map((r) => ({
       address: r.address,
       yearBuilt: r.yearBuilt ?? null,
       listPrice: r.listPrice,
@@ -678,6 +691,7 @@ export function whatHappenedGraphicHtml(a: OpinionPageArgs): string {
  */
 function listingMarketHtml(move: ListingMarketMove | null | undefined): string {
   if (!move) return ''
+  if (!realSubdivisionName(move.place)) return ''
   const sentence = listingMarketSentence(move)
   const drawn = { ...listingMarketSlopes(move), caption: sentence }
   const wide = listingMarketSlopesSvg(drawn)
@@ -915,7 +929,11 @@ export function didNotSellArgs(a: OpinionPageArgs): DidNotSellArgs {
  */
 export function didNotSellBodyMatrixHtml(a: OpinionPageArgs): string {
   const sets = matrixEntriesFor(a)
-  const lead0 = didNotSellLeadSentence({ market: a.market, city: a.subject.city })
+  const lead0 = didNotSellLeadSentence({
+    market: a.market,
+    city: a.subject.city,
+    compArea: a.compArea,
+  })
   if (sets.unsold.length === 0) {
     // NO PEERS ON THE ROW, AND THE SELLER'S OWN LISTING IS STILL ONE OF THEM.
     // A one-column matrix is not a comparison, so the chapter degrades to the
@@ -944,7 +962,12 @@ export function didNotSellBodyMatrixHtml(a: OpinionPageArgs): string {
     heading: 'The listings in this area that came off unsold',
     // The area set's own sentence first (how many came off inside the comp
     // area, over which window, and whether it fell short), then the matrix lead.
-    lead: [a.expiredPeers?.sentence, unsoldMatrixLead(sets.unsold, range)].filter(Boolean).join(' '),
+    lead: [
+      `${countWord(sets.unsold.length, true)} ${sets.unsold.length === 1 ? 'listing' : 'listings'} came off without selling.`,
+      unsoldMatrixLead(sets.unsold, range),
+    ]
+      .filter(Boolean)
+      .join(' '),
     entries: [sets.subject, ...sets.unsold],
     range,
   })
@@ -1078,7 +1101,7 @@ export function cityMedianReconciliationHtml(a: OpinionPageArgs): string {
   // quotable pair in the document (tasteReview round three, §3). The adjusted
   // pair is the one the chapter of the answer states, rounded the same way, so
   // a reader meets both halves of "homes like yours" in one line.
-  const worth = worthRangeRounded(a.pricing)
+  const worth = worthRangeRounded(a.pricing, a.comps)
   const adjusted =
     worth.low > 0 && worth.high > 0
       ? worth.low === worth.high
@@ -1491,7 +1514,7 @@ export function competitionBodyMatrixHtml(a: OpinionPageArgs): string {
           range,
         })
       : ''
-  const pendingClaimed = (b.pendingCount ?? 0) > 0
+  const pendingClaimed = false
   const pendingLead =
     '<p class="chart-read">Under contract is not closed. These are still competing until they close.</p>'
   const pendingMatrix =
@@ -1509,15 +1532,24 @@ export function competitionBodyMatrixHtml(a: OpinionPageArgs): string {
   ${pendingLead}`
         : ''
   const matrix = [activeMatrix, pendingMatrix].filter(Boolean).join('\n  ')
+  const shown = activeOnly.length + pendingOnly.length
   const sentence =
-    a.bandRivals?.sentence ??
-    competitionSentence({
-      lo: b.lo,
-      hi: b.hi,
-      activeCount: b.activeCount,
-      pendingCount: b.pendingCount,
-      shown: sets.active.length,
-    })
+    shown > 0
+      ? competitionSentence({
+          lo: b.lo,
+          hi: b.hi,
+          activeCount: activeOnly.length,
+          pendingCount: pendingOnly.length,
+          shown,
+        })
+      : (a.bandRivals?.sentence ??
+        competitionSentence({
+          lo: b.lo,
+          hi: b.hi,
+          activeCount: 0,
+          pendingCount: 0,
+          shown: 0,
+        }))
   const cut = competitorCutLine(args.rivals)
   return `<p>${esc(sentence)}</p>
   ${cut ? `<p>${esc(cut)}</p>` : ''}
@@ -1546,7 +1578,7 @@ export function competitionArgs(a: OpinionPageArgs): BandRivalsInput {
     hi: b.hi,
     activeCount: b.activeCount,
     pendingCount: b.pendingCount,
-    rivals: b.rivals ?? [],
+    rivals: activeRivalsFor(b.rivals, a.subject, a.compArea),
     docLinks: a.docLinks ?? null,
     recommendedList: a.pricing.recommended,
     asOfIso: a.generatedAtIso,

@@ -6,6 +6,7 @@
 import { countWord, escapeHtml, usd } from '@/lib/cma/render-blocks'
 import { pricingRangeDisplay } from '@/lib/cma/pricing'
 import { closedCompBand } from '@/lib/pricing/recommended-in-band'
+import { printedAdjustedPrice } from '@/lib/pricing/seller-net'
 import { describeCompSearch } from '@/lib/pricing/search-story'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CmaEquityPosition } from '@/lib/cma/equity'
@@ -24,6 +25,29 @@ type CoverArgs = {
   equity?: CmaEquityPosition | null
   expiredAudit?: ExpiredAuditData | null
   tiersUsed?: string[]
+}
+
+
+export function tableAdjustedBand(
+  comps: readonly CmaAdjustedComp[],
+): { low: number; high: number } | null {
+  const values = comps
+    .map((c) => printedAdjustedPrice(c))
+    .filter((n) => Number.isFinite(n) && n > 0)
+  if (values.length === 0) return null
+  return { low: Math.min(...values), high: Math.max(...values) }
+}
+
+/** One end accounts for at least half the span. That is not a range to list in. */
+export function oneOutlierMakesTheSpan(values: readonly number[]): boolean {
+  if (values.length < 3) return false
+  const sorted = [...values].filter((n) => n > 0).sort((a, b) => a - b)
+  if (sorted.length < 3) return false
+  const span = sorted[sorted.length - 1]! - sorted[0]!
+  if (!(span > 0)) return false
+  const dropHigh = sorted[sorted.length - 2]! - sorted[0]!
+  const dropLow = sorted[sorted.length - 1]! - sorted[1]!
+  return Math.min(dropHigh, dropLow) <= span * 0.5
 }
 
 export function expectedSale(p: CmaPricing): number {
@@ -177,9 +201,14 @@ export function coverValueBlockHtml(a: CoverArgs): string {
  * Recommended must stay inside that band (Tip Ready refuse if outside).
  * Falls back to list tiers only when the closed band is missing.
  */
-export function heroTrioHtml(p: CmaPricing, opts?: { singleClass?: string }): string {
+export function heroTrioHtml(
+  p: CmaPricing,
+  opts?: { singleClass?: string; comps?: readonly CmaAdjustedComp[] | null },
+): string {
   // Same closedCompBand listRangeBounds / Tip Ready parity reads.
-  const band = closedCompBand(p)
+  // When the table is in hand, low and high are the adjusted sales still on it.
+  const table = opts?.comps && opts.comps.length > 0 ? tableAdjustedBand(opts.comps) : null
+  const band = table ?? closedCompBand(p)
   const loRaw = band?.low ?? (p.conservative ?? 0)
   const hiRaw = band?.high ?? (p.highEnd ?? 0)
   const low = Math.min(loRaw, hiRaw)
@@ -217,7 +246,7 @@ export function immersiveHeroNumberHtml(a: CoverArgs): string {
   return `
     <div class="hero-payoff">
       <div class="ans-l r">${esc(COVER_LIST_PRICE_HEADLINE)}</div>
-      ${heroTrioHtml(p)}
+      ${heroTrioHtml(p, { comps: a.comps })}
       ${cause ? `<div class="hero-why r">${esc(cause)}</div>` : ''}
     </div>`
 }
@@ -225,9 +254,12 @@ export function immersiveHeroNumberHtml(a: CoverArgs): string {
 /**
  * Letter cover payoff (renderCmaHtml): same FLOW trio as immersive — never sole cover-price.
  */
-export function letterCoverPayoffHtml(p: CmaPricing): string {
+export function letterCoverPayoffHtml(
+  p: CmaPricing,
+  comps?: readonly CmaAdjustedComp[] | null,
+): string {
   const cause = rangeSpreadCauseSentence(p)
-  const trio = heroTrioHtml(p)
+  const trio = heroTrioHtml(p, { comps })
   if (!trio && !cause) return ''
   return `<div class="cover-payoff">
       <div class="cover-headline">${esc(COVER_LIST_PRICE_HEADLINE)}</div>

@@ -197,17 +197,15 @@ export function roundPrintedRecommendation(
   return next
 }
 
-/** Printed band ends sit on the same outward grid the range already uses. On-grid ends stay. */
+/**
+ * Printed band ends are the sales. Do not round the high up past them, or the
+ * low down past them. On-grid ends stay. Off-grid ends stay on the sale.
+ */
 export function roundPrintedBand(low: number, high: number): { low: number; high: number } {
   if (!(low > 0) || !(high > 0)) return { low, high }
   const lo = Math.min(low, high)
   const hi = Math.max(low, high)
-  const stepLo = priceRoundingStep(lo)
-  const stepHi = priceRoundingStep(hi)
-  const nextLo = lo % stepLo === 0 ? lo : roundPriceDown(lo)
-  const nextHi = hi % stepHi === 0 ? hi : roundPriceUp(hi)
-  if (!(nextLo > 0) || nextLo > nextHi) return { low: lo, high: hi }
-  return { low: nextLo, high: nextHi }
+  return { low: lo, high: hi }
 }
 
 export function roundPrintedPrices<

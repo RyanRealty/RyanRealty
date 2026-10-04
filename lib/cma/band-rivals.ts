@@ -31,6 +31,8 @@ export type CmaBandRival = {
   yearBuilt?: number | null
   lotAcres?: number | null
   propertySubType?: string | null
+  /** MLS subdivision. Lets the letter drop a rival outside the sales plat. */
+  subdivision?: string | null
   originalListPrice?: number | null
   onMarketDate?: string | null
   listingHistoryLine?: string | null
@@ -713,6 +715,8 @@ export type BandInventoryRow = BandStreetRow & {
   year_built?: number | null
   lot_size_acres?: number | null
   property_sub_type?: string | null
+  SubdivisionName?: string | null
+  City?: string | null
 }
 
 function finiteOrNull(v: unknown): number | null {
@@ -751,6 +755,7 @@ export function bandRowToRival(row: BandInventoryRow, status: 'Active' | 'Pendin
     yearBuilt: finiteOrNull(row.year_built),
     lotAcres: finiteOrNull(row.lot_size_acres),
     propertySubType: row.property_sub_type ?? null,
+    subdivision: row.SubdivisionName ?? null,
     originalListPrice,
     onMarketDate: row.OnMarketDate,
     listingHistoryLine: buildListingHistoryLine({

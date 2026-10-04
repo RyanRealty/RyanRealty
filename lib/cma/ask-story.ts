@@ -47,6 +47,8 @@
  * (round-four class B and class D). `askGapClass` never returns it; the
  * chapter chooses it.
  */
+import { askStepIsOwnEra } from '@/lib/cma/price-path'
+
 export type AskGapClass = 'far-above' | 'near-above' | 'inside' | 'below' | 'neutral'
 
 function pct1(ratio: number): string {
@@ -175,7 +177,17 @@ function medianSentence(cls: AskGapClass, city: string, medianDays: number | nul
 export function askExposureSentence(
   segments: ReadonlyArray<{ ask: number; days: number | null }>,
 ): string {
-  const runs = segments.filter((s) => s.ask > 0)
+  const raw = segments.filter((s) => s.ask > 0)
+  const runs: Array<{ ask: number; days: number | null }> = []
+  for (const step of raw) {
+    const prev = runs[runs.length - 1]
+    if (!prev || askStepIsOwnEra(prev.ask, step.ask)) {
+      runs.push({ ask: step.ask, days: step.days })
+      continue
+    }
+    if (prev.days != null && step.days != null) prev.days += step.days
+    else if (step.days != null) prev.days = step.days
+  }
   if (runs.length === 0) return ''
   const allDated = runs.every((s) => s.days != null && s.days > 0)
   if (!allDated) {

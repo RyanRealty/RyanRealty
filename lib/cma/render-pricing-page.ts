@@ -11,6 +11,7 @@ import { cleanText, countWord, escapeHtml, int, usd } from '@/lib/cma/render-blo
 import { sanitizeLetterEmDash } from '@/lib/cma/voice-sanitize'
 import { pricingRangeDisplay } from '@/lib/cma/pricing'
 import { currentAskLine } from '@/lib/cma/cover-value'
+import { oneOutlierMakesTheSpan, tableAdjustedBand } from '@/lib/cma/cover-value'
 import { describeCompSearch } from '@/lib/pricing/search-story'
 import {
   renderCompMatrixHtml,
@@ -31,6 +32,7 @@ import { deRepeatRecommendDollars, isRecommendMark } from '@/lib/cma/recommend-o
 import { failedAskBelowRangeNote } from '@/lib/cma/expired-audit'
 import { listCeiling, readMeasure } from '@/lib/cma/render-contract'
 import { closedCompBand } from '@/lib/pricing/recommended-in-band'
+import { printedAdjustedPrice } from '@/lib/pricing/seller-net'
 import { compSearchSentence } from '@/lib/cma/render-comp-search'
 import { newHomeRateParagraph } from '@/lib/cma/new-home-rate'
 import { resaleNeverOwnedParagraph } from '@/lib/cma/resale-never-owned'
@@ -92,6 +94,7 @@ export function whatItsWorthLead(
   subject: CmaSubject,
   pricing: CmaPricing,
   askCtx?: SubjectAskContext,
+  comps?: readonly CmaAdjustedComp[] | null,
 ): string {
   // THE VALUE RANGE, ONCE, HERE. tasteReview round two, §1 Words: chapter 3
   // stated it three times inside ten lines — the strip's reading to the
@@ -101,8 +104,8 @@ export function whatItsWorthLead(
   // only place the chapter states it, it reads `valueLow`/`valueHigh` (which
   // is what the cover reads), and it is rounded to the nearest thousand so the
   // two cannot print to different precisions.
-  const worth = worthRangeSentence(pricing)
-  const listRange = listRangeSentence(pricing, failedSubjectAsk(subject, askCtx))
+  const worth = worthRangeSentence(pricing, comps)
+  const listRange = listRangeSentence(pricing, failedSubjectAsk(subject, askCtx), comps)
   // A home that is on the market already has an ask. The blueprint gives that
   // case ONE line: what it is listed at, and what the sales support.
   const liveAsk = subjectPrintableAsk(subject, askCtx)
@@ -183,7 +186,12 @@ export function failedSubjectAsk(
  * joining them), and the strip's axis labels are these two numbers. Three
  * places, one rounding.
  */
-export function worthRangeRounded(pricing: CmaPricing): { low: number; high: number } {
+export function worthRangeRounded(
+  pricing: CmaPricing,
+  comps?: readonly CmaAdjustedComp[] | null,
+): { low: number; high: number } {
+  const table = comps && comps.length > 0 ? tableAdjustedBand(comps) : null
+  if (table) return table
   return {
     low: round1k(Math.min(pricing.valueLow, pricing.valueHigh)),
     high: round1k(Math.max(pricing.valueLow, pricing.valueHigh)),
@@ -191,9 +199,10 @@ export function worthRangeRounded(pricing: CmaPricing): { low: number; high: num
 }
 
 /** "The sales support $372,000 to $399,000." — the ONE statement of the range. */
-function worthRangeSentence(pricing: CmaPricing): string {
-  const lo = round1k(Math.min(pricing.valueLow, pricing.valueHigh))
-  const hi = round1k(Math.max(pricing.valueLow, pricing.valueHigh))
+function worthRangeSentence(pricing: CmaPricing, comps?: readonly CmaAdjustedComp[] | null): string {
+  const band = worthRangeRounded(pricing, comps)
+  const lo = band.low
+  const hi = band.high
   if (!(lo > 0) || !(hi > 0)) return ''
   return lo === hi
     ? `The sales support ${usd(lo)}.`
@@ -219,7 +228,10 @@ function worthRangeSentence(pricing: CmaPricing): string {
 export function listRangeBounds(
   pricing: CmaPricing,
   failedAsk?: number | null,
+  comps?: readonly CmaAdjustedComp[] | null,
 ): { low: number; high: number } | null {
+  const table = comps && comps.length > 0 ? tableAdjustedBand(comps) : null
+  if (table) return table
   const band = closedCompBand(pricing)
   if (band) {
     return { low: round1k(band.low), high: round1k(band.high) }
@@ -307,11 +319,20 @@ export function keptSaleCount(
  * listRangeBounds now reads the closed-comp (hero) band, so the usual case is
  * "List in that range." Dual-tier list dollars beside the hero are refused.
  */
-function listRangeSentence(pricing: CmaPricing, failedAsk: number | null): string {
-  const bounds = listRangeBounds(pricing, failedAsk)
+function listRangeSentence(
+  pricing: CmaPricing,
+  failedAsk: number | null,
+  comps?: readonly CmaAdjustedComp[] | null,
+): string {
+  const adjusted = (comps ?? [])
+    .map((c) => printedAdjustedPrice(c))
+    .filter((n) => Number.isFinite(n) && n > 0)
+  if (oneOutlierMakesTheSpan(adjusted)) return ''
+  const bounds = listRangeBounds(pricing, failedAsk, comps)
   if (!bounds) return ''
   const { low: lo, high: hi } = bounds
-  if (lo === round1k(Math.min(pricing.valueLow, pricing.valueHigh)) && hi === round1k(Math.max(pricing.valueLow, pricing.valueHigh))) {
+  const worth = worthRangeRounded(pricing, comps)
+  if (lo === worth.low && hi === worth.high) {
     // Same two numbers. The instruction survives; the figures do not repeat.
     return 'List in that range.'
   }
@@ -578,7 +599,7 @@ export function pricingPage(input: PricingPageInput): CmaPageDef {
     ? ''
     : `
   <h2 class="section is-answer">${esc(heading)}</h2>
-  <p class="worth-lead">${esc(whatItsWorthLead(s, p, input.askCtx))}</p>
+  <p class="worth-lead">${esc(whatItsWorthLead(s, p, input.askCtx, input.comps))}</p>
   ${clampHtml}`
   // The method comes BEFORE the evidence for it (Delta 1): which sales, how
   // each was adjusted, and how the range and the recommended list follow.
@@ -624,7 +645,7 @@ export function pricingPage(input: PricingPageInput): CmaPageDef {
     toc: heading,
     body: `
   ${lead}
-  ${input.omitLeadPrices ? `<p class="worth-lead">${esc(whatItsWorthLead(s, p, input.askCtx))}</p>
+  ${input.omitLeadPrices ? `<p class="worth-lead">${esc(whatItsWorthLead(s, p, input.askCtx, input.comps))}</p>
   ${clampHtml}` : ''}
   ${ageHtml}
   ${neverOwnedHtml}

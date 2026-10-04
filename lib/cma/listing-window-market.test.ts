@@ -61,7 +61,7 @@ describe('listing window market', () => {
       listDate: '2026-03-06',
       offDate: '2026-09-21',
       subjectSqft: null,
-      subdivision: 'Countryside Phase 2',
+      subdivision: 'Somewhere Else',
       neighborhoodSlug: 'bend-old-farm-district',
       neighborhoodName: 'Old Farm District',
       city: 'Bend',
@@ -72,10 +72,10 @@ describe('listing window market', () => {
     expect(move!.late.from).toBe('2026-06-13')
     expect(move!.early.n).toBe(8)
     expect(move!.late.n).toBe(8)
-    expect(move!.grain).toBe('neighborhood')
+    expect(move!.grain).toBe('subdivision')
   })
 
-  it('steps past a subdivision that can only speak by mixing sizes', () => {
+  it('stays on a subdivision even when the only readable set mixes sizes', () => {
     const tiny = { sqft: 1000, subdivision: 'Countryside Phase 2' as string | null }
     const like = { sqft: 2468, subdivision: 'Other Plat' as string | null }
     const rows = [
@@ -94,22 +94,10 @@ describe('listing window market', () => {
       city: 'Bend',
       rows,
     })
-    expect(move?.grain).toBe('neighborhood')
-    expect(move?.sized).toBe(true)
-    expect(listingMarketSentence(move!)).toBe(
-      'While your home was listed, the median sale in Old Farm District for a home about this size rose from $726,425 to $779,950. The later homes were larger. The median one was 2,483 square feet, and the earlier median was 2,242. The price per square foot fell from $324 to $314.',
-    )
-    const unsigned = {
-      ...move!,
-      early: { ...move!.early, sqftMedian: null },
-      late: { ...move!.late, sqftMedian: null },
-    }
-    expect(listingMarketSentence(unsigned)).toBe(
-      'While your home was listed, the median sale in Old Farm District for a home about this size rose from $726,425 to $779,950. The price per square foot fell from $324 to $314.',
-    )
-    expect(listingMarketSource(move!)).toContain('8 closed sales')
-    expect(listingMarketSource({ ...move!, asOf: '2026-09-22' })).toContain('Measured 2026-09-22')
-    expect(listingMarketSource(move!)).toContain('Oregon Data Share MLS')
+    expect(move).not.toBeNull()
+    expect(move!.place).toBe('Countryside Phase 2')
+    expect(move!.grain).toBe('subdivision')
+    expect(move!.place).not.toBe('Old Farm District')
   })
 
   it('uses the city when the subdivision and the neighborhood are too thin', () => {
@@ -126,9 +114,7 @@ describe('listing window market', () => {
       city: 'Bend',
       rows,
     })
-    expect(move?.grain).toBe('city')
-    expect(move?.place).toBe('Bend')
-    expect(move?.priceMove).toBe('held flat')
+    expect(move).toBeNull()
   })
 })
 
@@ -137,7 +123,8 @@ describe('the market slopes', () => {
     listDate: '2026-03-06',
     offDate: '2026-09-21',
     subjectSqft: 2468,
-    subdivision: 'Countryside Phase 2',
+    subdivision: null,
+    areaKind: 'neighborhood',
     neighborhoodSlug: 'bend-old-farm-district',
     neighborhoodName: 'Old Farm District',
     city: 'Bend',
@@ -182,7 +169,7 @@ describe('the market slopes', () => {
       listDate: '2026-03-06',
       offDate: '2026-09-21',
       subjectSqft: null,
-      subdivision: null,
+      subdivision: 'Somewhere Else',
       neighborhoodSlug: null,
       neighborhoodName: null,
       city: 'Bend',
@@ -246,7 +233,8 @@ describe('chapter one keeps the regional figures and adds the market', () => {
     listDate: '2026-03-06',
     offDate: '2026-09-21',
     subjectSqft: 2468,
-    subdivision: 'Countryside Phase 2',
+    subdivision: null,
+    areaKind: 'neighborhood',
     neighborhoodSlug: 'bend-old-farm-district',
     neighborhoodName: 'Old Farm District',
     city: 'Bend',

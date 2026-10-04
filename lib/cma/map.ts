@@ -22,6 +22,7 @@ import { circlePath, pathParam, ringsFromGeometry, type MapLatLng } from '@/lib/
 import { renderMapGroundSvg, svgDataUri, viewBbox } from '@/lib/cma/map-ground'
 import { basemapForFrame } from '@/lib/geo/basemap-source'
 import { fitStaticMapView, type StaticMapView } from '@/lib/cma/static-map-projection'
+import { letterProductMatch } from '@/lib/cma/market-area'
 import { describeCompSearch } from '@/lib/pricing/search-story'
 import { polygonHoldsAnyPoint } from '@/lib/cma/render-place-polygon'
 import { keyFor, type CmaMapFamily } from '@/lib/cma/map-families'
@@ -80,6 +81,7 @@ export interface CmaMapPin {
 export type CmaMapEntry = {
   latitude?: number | null
   longitude?: number | null
+  address?: string | null
 }
 
 function finite(n: unknown): number | null {
@@ -302,9 +304,15 @@ export async function buildCmaMapDataUri(
   push(subject, 'subject', null)
   // Nine is the ceiling the numbered set has always had — past it the pins
   // knot however far they are spread — and each family gets its own.
-  comps.slice(0, 9).forEach((c, i) => push(c, 'closed', keyFor('closed', i)))
-  ;(opts.active ?? []).slice(0, 9).forEach((r, i) => push(r, 'active', keyFor('active', i)))
-  ;(opts.unsold ?? []).slice(0, 9).forEach((p, i) => push(p, 'unsold', keyFor('unsold', i)))
+  // A pin with no address is not a home. Closed pins are the same subtype
+  // the table keeps, in the same order, so the key still names the row.
+  const sales = comps.filter(
+    (c) => Boolean(c.address?.trim()) && letterProductMatch(subject.propertySubType, c.propertySubType),
+  )
+  sales.slice(0, 9).forEach((c, i) => push({ ...c, address: c.address }, 'closed', keyFor('closed', i)))
+  const addressed = (rows: readonly CmaMapEntry[]) => rows.filter((r) => Boolean(r.address?.trim()))
+  addressed(opts.active ?? []).slice(0, 9).forEach((r, i) => push(r, 'active', keyFor('active', i)))
+  addressed(opts.unsold ?? []).slice(0, 9).forEach((r, i) => push(r, 'unsold', keyFor('unsold', i)))
   if (points.length < 1) return null
   const area = opts.compArea ?? null
   const story = describeCompSearch({ subdivision: subject.subdivision, tiersUsed: opts.tiersUsed ?? [] })
@@ -346,11 +354,18 @@ export async function buildCmaMapDataUri(
     // Two pins on one rooftop cover each other whoever draws them, so the same
     // nudge the Google markers used still applies to ours.
     const spread = spreadStackedMapPoints(points)
+    // The frame is the sales that set the price, plus the subject. A rival
+    // or an expired listing does not pull the map out to a wider ring.
+    const salesFrame = spread.filter((_, i) => {
+      const family = families[i]?.family
+      return family === 'subject' || family === 'closed'
+    })
+    const framed = salesFrame.length > 0 ? salesFrame : spread
     // The document's own ground (lib/cma/map-ground.ts): a fractional zoom
     // fits the pins tight, and the TIGER skeleton under them is the Atlas
     // register. The Google tile stays as the fallback for a frame outside
     // the basemap tiers.
-    const tightView = fitStaticMapView(spread, {
+    const tightView = fitStaticMapView(framed, {
       width: MAP_W,
       height: MAP_H,
       padding: MAP_PAD,
@@ -384,7 +399,7 @@ export async function buildCmaMapDataUri(
         }
       }
     }
-    const view = fitStaticMapView(spread, {
+    const view = fitStaticMapView(framed, {
       width: MAP_W,
       height: MAP_H,
       padding: MAP_PAD,

@@ -33,6 +33,7 @@ import { collapseExpiredPeerCycles, peerMatchesSubject } from '@/lib/cma/market-
 import { readAskOutcome } from '@/lib/cma/market-area-chapters'
 import { FAILED_ASK_BACKTEST, askAgainstRangeSentence } from '@/lib/cma/expired-audit'
 import { subjectDomDays, subjectListingFailed } from '@/lib/cma/comp-matrix'
+import { salesAreaIsBounded } from '@/lib/pricing/comp-area'
 import type { CmaExpiredPeer } from '@/lib/cma/market-status'
 import type { ExpiredFinalCycle } from '@/lib/cma/expired-audit'
 import type { CmaAdjustedComp, CmaMarketContext, CmaSubject } from '@/lib/cma/types'
@@ -89,7 +90,10 @@ export function readLocalFailedThenSold(
 export function didNotSellLeadSentence(input: {
   market: CmaMarketContext | null
   city: string
+  /** When the sales sit in a plat, a polygon, or a radius, do not print a citywide came-off count. */
+  compArea?: { kind?: string | null } | null
 }): string {
+  if (salesAreaIsBounded(input.compArea)) return ''
   const outcome = readAskOutcome(input.market)
   const failed = outcome?.groups.find((g) => g.key === 'did-not-sell') ?? null
   const local = readLocalFailedThenSold(input.market)
@@ -227,6 +231,7 @@ export type DidNotSellArgs = {
   /** What homes like this one sold for. Chapter 1 measures the ask against it. */
   rangeLow?: number | null
   rangeHigh?: number | null
+  compArea?: { kind?: string | null } | null
   /**
    * True when chapter 1 renders in this document and already states where the
    * ask sat against that range. The subject card then carries the
@@ -341,7 +346,7 @@ export function didNotSellBodyHtml(a: DidNotSellArgs): string {
   const stories = didNotSellStories(a)
   if (stories.length === 0) return ''
   const range = soldPpsfRange(a.comps)
-  const lead = didNotSellLeadSentence({ market: a.market, city: a.subject.city })
+  const lead = didNotSellLeadSentence({ market: a.market, city: a.subject.city, compArea: a.compArea })
   const cards = stories.map((story) => storyCard(story, range)).join('\n    ')
   const legend = range
     ? `<p class="small">${esc(

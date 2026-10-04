@@ -115,6 +115,16 @@ function plusDays(d: string, days: number): string {
   return new Date(utc(d) + days * 86_400_000).toISOString().slice(0, 10)
 }
 
+/**
+ * A price step is its own era only when it moves the ask by at least 1 percent.
+ * No change, and a change under 1 percent, stay on the era already running.
+ */
+export function askStepIsOwnEra(previous: number, next: number): boolean {
+  if (!(previous > 0) || !(next > 0)) return false
+  if (next === previous) return false
+  return Math.abs(next - previous) / previous >= 0.01
+}
+
 function today(): string {
   return new Date().toISOString().slice(0, 10)
 }
@@ -167,14 +177,21 @@ export function pricePathFromFinalCycle(cycle: {
   const startDate = day(cycle.listDate)
   const startPrice = price(cycle.initialAsk) ?? price(cycle.finalAsk)
   if (!startDate || startPrice == null) return null
-  const cuts: PricePathCut[] = cycle.cutsDated
+  const dated: PricePathCut[] = cycle.cutsDated
     ? cycle.cuts
         .map((c) => ({ date: day(c.date), price: price(c.ask) }))
         .filter((c): c is PricePathCut => c.date != null && c.price != null)
     : []
+  const cuts: PricePathCut[] = []
+  let era = startPrice
+  for (const cut of dated) {
+    if (!askStepIsOwnEra(era, cut.price)) continue
+    cuts.push(cut)
+    era = cut.price
+  }
   const finalAsk = price(cycle.finalAsk)
   const undatedCutTo =
-    !cycle.cutsDated && finalAsk != null && finalAsk !== startPrice ? finalAsk : null
+    !cycle.cutsDated && finalAsk != null && askStepIsOwnEra(startPrice, finalAsk) ? finalAsk : null
   const endDate =
     day(cycle.offMarketDate) ??
     (cycle.days != null && cycle.days >= 0 ? plusDays(startDate, cycle.days) : today())
@@ -313,7 +330,9 @@ export function finalAskOf(path: PricePath): number {
 export function alignPricePathToLastAsk(path: PricePath | null, lastAsk: number | null): PricePath | null {
   if (!path || lastAsk == null || !(lastAsk > 0)) return path
   const end = Math.round(lastAsk)
-  if (finalAskOf(path) === end) return path
+  const current = finalAskOf(path)
+  if (current === end) return path
+  if (!askStepIsOwnEra(current, end)) return path
   return { ...path, undatedCutTo: end }
 }
 

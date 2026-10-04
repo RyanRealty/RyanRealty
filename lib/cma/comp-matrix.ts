@@ -412,7 +412,10 @@ function sharedConcessionCell(entry: MatrixEntry): string {
 
 function statusCell(entry: MatrixEntry): string {
   if (entry.family === 'closed') return 'Sold'
-  if (entry.family === 'unsold') return 'Expired'
+  if (entry.family === 'unsold') {
+    const raw = entry.mlsStatus?.trim()
+    return raw || 'Off market'
+  }
   if (entry.family === 'subject') {
     if (entry.endLabel === 'came off') return 'Off market'
     if (entry.listPrice != null && entry.listPrice > 0) return 'Listed'

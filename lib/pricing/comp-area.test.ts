@@ -235,9 +235,10 @@ describe('resolveCompetitionArea', () => {
       subject: { ...OLD_BEND, city: 'Bend' },
       keptComps: [comp('Park Addition', 'subdivision-6mo', OLD_BEND)],
     })
+    expect(rings).toHaveLength(1)
     expect(rings[0]!.kind).toBe('subdivision')
     expect(rings[0]!.names).toEqual(['Park Addition'])
-    expect(rings.filter((r) => r.kind === 'radius').map((r) => r.radiusMiles)).toEqual([0.5, 1, 2, 5])
+    expect(rings.filter((r) => r.kind === 'radius')).toEqual([])
     expect(rings.some((r) => r.kind === 'city' || r.kind === 'neighborhood')).toBe(false)
   })
 
@@ -262,14 +263,14 @@ describe('resolveCompetitionArea', () => {
         }),
       ],
     })
+    expect(rings).toHaveLength(1)
     expect(rings[0]!.kind).toBe('subdivision')
     expect(rings[0]!.names).toEqual(['Diamond Bar Ranch'])
-    const radii = rings.filter((r) => r.kind === 'radius').map((r) => r.radiusMiles)
-    expect(radii).toEqual([0.5, 1])
-    expect(rings.every((r) => r.kind === 'subdivision' || r.centre)).toBe(true)
+    expect(rings.filter((r) => r.kind === 'radius')).toEqual([])
+    expect(rings[0]!.centre).toBeTruthy()
   })
 
-  it('never proposes a ring past the comp search reach it measured', () => {
+  it('keeps the one ring the sales already measured', () => {
     const compArea = buildCompArea({
       subject: { ...REDMOND, subdivision: null, city: 'Redmond' },
       rungs: [rung('nearby-1mi-6mo', 2)],
@@ -283,9 +284,10 @@ describe('resolveCompetitionArea', () => {
         comp(null, 'nearby-1mi-6mo', { latitude: REDMOND.latitude + 0.035, longitude: REDMOND.longitude }),
       ],
     })
-    const radii = rings.map((r) => r.radiusMiles)
-    expect(radii).toEqual([0.5, 1, 2, 2.5])
-    expect(Math.max(...radii.filter((n): n is number => n != null))).toBeLessThanOrEqual(2.5)
+    expect(rings).toHaveLength(1)
+    expect(rings[0]!.kind).toBe(compArea.kind)
+    expect(rings[0]!.radiusMiles).toBe(compArea.radiusMiles)
+    expect(rings[0]!.names).toEqual(compArea.names)
   })
 
   it('widens a rural reach through five and ten, then the comp search, and stops at 15', () => {
@@ -300,14 +302,13 @@ describe('resolveCompetitionArea', () => {
       subject: { ...REDMOND, city: 'Redmond' },
       keptComps: [comp(null, 'rural-15mi-24mo', REDMOND)],
     })
-    expect(rings.map((r) => r.radiusMiles)).toEqual([0.5, 1, 2, 5, 10, 15])
-    for (const r of rings) {
-      expect(r.kind).toBe('radius')
-      expect(r.centre).toEqual({ lat: REDMOND.latitude, lng: REDMOND.longitude })
-    }
+    expect(rings).toHaveLength(1)
+    expect(rings[0]!.radiusMiles).toBe(15)
+    expect(rings[0]!.kind).toBe('radius')
+    expect(rings[0]!.centre).toEqual({ lat: REDMOND.latitude, lng: REDMOND.longitude })
   })
 
-  it('drops ten from the ladder when the comp search reach sits between five and ten', () => {
+  it('does not add a wider ring when the sales reach sits between five and ten', () => {
     const compArea = buildCompArea({
       subject: { ...REDMOND, subdivision: null, city: 'Redmond' },
       rungs: [rung('nearby-2mi-6mo', 2)],
@@ -321,7 +322,9 @@ describe('resolveCompetitionArea', () => {
         comp(null, 'nearby-2mi-6mo', { latitude: REDMOND.latitude + 0.1058, longitude: REDMOND.longitude }),
       ],
     })
-    expect(rings.map((r) => r.radiusMiles)).toEqual([0.5, 1, 2, 5, 7.5])
+    expect(rings).toHaveLength(1)
+    expect(rings[0]!.kind).toBe(compArea.kind)
+    expect(rings[0]!.radiusMiles).toBe(compArea.radiusMiles)
   })
 
   it('never widens to the whole city', () => {
@@ -352,9 +355,9 @@ describe('resolveCompetitionArea', () => {
       subject: { latitude: 44.06, longitude: -121.31, city: 'Bend' },
       keptComps: [comp('Meridian', 'subdivision-12mo', { latitude: 44.061, longitude: -121.31 })],
     })
-    const radii = rings.filter((r) => r.kind === 'radius').map((r) => r.radiusMiles)
-    expect(radii).toEqual([0.5, 1, 2, 5])
-    expect(Math.max(...(radii.filter((n): n is number => n != null)))).toBeLessThanOrEqual(5)
+    expect(rings).toHaveLength(1)
+    expect(rings[0]!.kind).toBe('subdivision')
+    expect(rings.filter((r) => r.kind === 'radius')).toEqual([])
     expect(rings.some((r) => r.kind === 'city')).toBe(false)
   })
 })

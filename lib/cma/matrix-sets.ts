@@ -18,6 +18,8 @@ import { collapseExpiredPeerCycles, peerMatchesSubject } from '@/lib/cma/market-
 import type { CmaExpiredPeer } from '@/lib/cma/market-status'
 import type { CmaBandRival } from '@/lib/cma/band-rivals'
 import type { CmaSubject } from '@/lib/cma/types'
+import { letterProductMatch } from '@/lib/cma/market-area'
+import { compAreaContains, salesAreaIsBounded, type CompArea } from '@/lib/pricing/comp-area'
 
 /**
  * The listings that came off the same area unsold, in matrix-2 order.
@@ -25,12 +27,37 @@ import type { CmaSubject } from '@/lib/cma/types'
  * Named, priced, not the subject's own listing, one row per address (a home
  * that failed twice is one story, not two). Every peer the sentence counted.
  */
+function insideSalesBoundary(
+  area: CompArea | null | undefined,
+  row: {
+    latitude?: number | null
+    longitude?: number | null
+    subdivision?: string | null
+    city?: string | null
+  },
+): boolean {
+  if (!area || !salesAreaIsBounded(area)) return true
+  // A blank place is not inside the sales boundary. Keeping it would be a
+  // second path around the plat, the polygon, or the radius.
+  if (area.kind === 'subdivision' || area.kind === 'subdivisions') {
+    return compAreaContains(area, row)
+  }
+  if (row.latitude == null || row.longitude == null) return false
+  return compAreaContains(area, row)
+}
+
 export function unsoldPeersFor(input: {
-  subject: Pick<CmaSubject, 'listingKey' | 'mlsNumber' | 'streetAddress'>
+  subject: Pick<CmaSubject, 'listingKey' | 'mlsNumber' | 'streetAddress' | 'propertySubType'>
   peers?: readonly CmaExpiredPeer[] | null
+  area?: CompArea | null
 }): CmaExpiredPeer[] {
   const named = (input.peers ?? []).filter(
-    (p) => p.address.trim() && p.listPrice > 0 && !peerMatchesSubject(p, input.subject),
+    (p) =>
+      p.address.trim() &&
+      p.listPrice > 0 &&
+      !peerMatchesSubject(p, input.subject) &&
+      letterProductMatch(input.subject.propertySubType, p.propertySubType) &&
+      insideSalesBoundary(input.area, p),
   )
   return collapseExpiredPeerCycles(named)
 }
@@ -61,9 +88,18 @@ export function dedupeRivalsByAddress(rivals: readonly CmaBandRival[]): CmaBandR
   return [...byAddr.values()]
 }
 
-export function activeRivalsFor(rivals?: readonly CmaBandRival[] | null): CmaBandRival[] {
+export function activeRivalsFor(
+  rivals?: readonly CmaBandRival[] | null,
+  subject?: { propertySubType?: string | null } | null,
+  area?: CompArea | null,
+): CmaBandRival[] {
   const named = dedupeRivalsByAddress((rivals ?? []).filter((r) => r.address.trim() && r.listPrice > 0))
-  return [...named.filter((r) => r.status === 'Active'), ...named.filter((r) => r.status === 'Pending')]
+  const kept = named.filter(
+    (r) =>
+      letterProductMatch(subject?.propertySubType, r.propertySubType) &&
+      insideSalesBoundary(area, r),
+  )
+  return [...kept.filter((r) => r.status === 'Active'), ...kept.filter((r) => r.status === 'Pending')]
 }
 
 /**
@@ -134,10 +170,15 @@ export function matrixSetsFromArgs(args: unknown): {
     | null
     | undefined
   const subject = a?.subject
+  const doc = a as {
+    compArea?: CompArea | null
+    expiredPeers?: { peers?: readonly CmaExpiredPeer[] | null } | null
+    bandRivals?: { rivals?: readonly CmaBandRival[] | null } | null
+  } | null
+  const peers = doc?.expiredPeers?.peers ?? a?.extras?.marketArea?.expiredPeers ?? []
+  const rivals = doc?.bandRivals?.rivals ?? a?.extras?.band?.rivals ?? []
   return {
-    unsold: subject
-      ? unsoldPeersFor({ subject, peers: a?.extras?.marketArea?.expiredPeers ?? [] })
-      : [],
-    active: activeRivalsFor(a?.extras?.band?.rivals ?? []),
+    unsold: subject ? unsoldPeersFor({ subject, peers, area: doc?.compArea ?? null }) : [],
+    active: activeRivalsFor(rivals, subject, doc?.compArea ?? null),
   }
 }

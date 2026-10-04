@@ -67,7 +67,11 @@ describe('pending section — Slate shape', () => {
         source: 'test',
       },
     } as unknown as OpinionPageArgs)
-    expect(html).toContain('1 is under contract')
-    expect(html).toContain('Pending: under contract in this range')
+    // The stored sentence says one home is under contract. No pending row is
+    // in the table, so the letter does not say it.
+    expect(html).toContain('1 home is for sale between $550,000 and $670,000.')
+    expect(html).toContain('None are under contract right now.')
+    expect(html).not.toContain('1 is under contract')
+    expect(html).not.toContain('Pending: under contract in this range')
   })
 })

@@ -109,6 +109,8 @@ export type MatrixEntry = {
    * every closed sale closed, and every unsold listing came off.
    */
   status?: 'active' | 'pending'
+  /** MLS StandardStatus on an unsold row. Canceled and Withdrawn stay those words. */
+  mlsStatus?: string | null
 }
 
 // ── the remodel fragment ────────────────────────────────────────────────────
@@ -401,6 +403,7 @@ export function unsoldEntries(
       }),
       adjustedPrice: null,
       endLabel: 'came off',
+      mlsStatus: p.status,
       latitude: p.latitude ?? null,
       longitude: p.longitude ?? null,
       sort: sortAttrs([

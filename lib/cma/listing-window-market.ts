@@ -1,16 +1,16 @@
 /**
  * What sale prices did while this home was listed.
  *
- * The tightest grain that can say up, down, or flat: the subdivision, then
- * the neighborhood polygon, then the city. Each half of the listing has to
- * hold enough closes for a median. Homes about the subject's size are tried
- * at every grain before any mixed-size set, so a mix of cottages and large
- * houses does not decide the story.
+ * The chart uses the same place as the sales, and the same subtype. It does
+ * not step up to a parent polygon or the city, and it never prints N/A.
+ * Each half of the listing has to hold enough closes for a median. Homes
+ * about the subject's size are tried before a mixed-size set.
  */
 
 import type { CmaWindowCloseRow } from '@/lib/data/cma/builderReads'
-import { marketAreaName, resolveMarketArea } from '@/lib/cma/market-area'
+import { marketAreaName, productTypeCompatible, resolveMarketArea } from '@/lib/cma/market-area'
 import { usd } from '@/lib/cma/render-blocks'
+import { realSubdivisionName } from '@/lib/pricing/classes'
 
 export const LISTING_MARKET_MIN_HALF = 8
 const FLAT = 0.03
@@ -48,6 +48,7 @@ export type ListingMarketClose = {
   subdivision: string | null
   lat: number | null
   lng: number | null
+  propertySubType?: string | null
 }
 
 function dayMs(iso: string): number | null {
@@ -176,6 +177,9 @@ export function chooseListingMarket(input: {
   neighborhoodName: string | null
   city: string
   rows: readonly ListingMarketClose[]
+  /** The sales boundary. A subdivision does not fall through to its parent polygon. */
+  areaKind?: string | null
+  propertySubType?: string | null
 }): ListingMarketMove | null {
   const start = dayMs(input.listDate)
   const end = dayMs(input.offDate)
@@ -194,25 +198,30 @@ export function chooseListingMarket(input: {
   const lo = sized ? Math.round(sqft * 0.75) : null
   const hi = sized ? Math.round(sqft * 1.25) : null
 
+  const typed = input.propertySubType
+    ? windowed.filter(
+        (r) => !r.propertySubType || productTypeCompatible(input.propertySubType!, r.propertySubType),
+      )
+    : windowed
   const grains: Array<{ rows: ListingMarketClose[]; place: string; grain: ListingMarketMove['grain'] }> = []
-  const subdivision = input.subdivision?.trim()
-  if (subdivision) {
+  const subdivision = realSubdivisionName(input.subdivision)
+  const kind = (input.areaKind ?? '').trim()
+  const slug = input.neighborhoodSlug
+  const neighborhood = input.neighborhoodName?.trim()
+  const polygon = kind === 'neighborhood' || kind === 'community'
+  if (!polygon && subdivision) {
     grains.push({
-      rows: windowed.filter((r) => (r.subdivision ?? '').trim() === subdivision),
+      rows: typed.filter((r) => (r.subdivision ?? '').trim() === subdivision),
       place: subdivision,
       grain: 'subdivision',
     })
-  }
-  const slug = input.neighborhoodSlug
-  const neighborhood = input.neighborhoodName?.trim()
-  if (slug && neighborhood) {
+  } else if (polygon && slug && neighborhood && realSubdivisionName(neighborhood)) {
     grains.push({
-      rows: windowed.filter((r) => resolveMarketArea(r.lat, r.lng) === slug),
+      rows: typed.filter((r) => resolveMarketArea(r.lat, r.lng) === slug),
       place: neighborhood,
       grain: 'neighborhood',
     })
   }
-  grains.push({ rows: windowed, place: input.city.trim() || 'this city', grain: 'city' })
 
   const attempt = (useSize: boolean): ListingMarketMove | null => {
     for (const grain of grains) {
@@ -236,9 +245,8 @@ export function chooseListingMarket(input: {
     return null
   }
 
-  // Similar size at every grain before any mixed-size set. A subdivision
-  // whose only readable median mixes cottages with large houses steps up,
-  // instead of letting that mix decide the direction.
+  // Similar size first. If that set is too thin, stay on the same place
+  // and read the mixed sizes. Never step up to a parent polygon or the city.
   if (lo != null && hi != null) {
     const sizedHit = attempt(true)
     if (sizedHit) return sizedHit
@@ -399,5 +407,6 @@ export function closesFromRows(rows: readonly CmaWindowCloseRow[]): ListingMarke
     subdivision: r.SubdivisionName,
     lat: r.Latitude != null ? Number(r.Latitude) : null,
     lng: r.Longitude != null ? Number(r.Longitude) : null,
+    propertySubType: r.property_sub_type ?? null,
   }))
 }

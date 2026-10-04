@@ -326,6 +326,29 @@ export function keepSameProductType(subjectSubType: string | null, otherSubType:
   return other == null || other === 'detached'
 }
 
+/**
+ * The letter rule for sales, rivals, and expireds.
+ *
+ * Detached only against detached, townhouse only against townhouse, condo only
+ * against condo, and the same for lots, multifamily, and commercial.
+ * `keepSameProductType` on a known subject already does this, and the letter
+ * calls this function so a rival path cannot skip it. A blank other subtype
+ * is not treated as a different product. An unknown subject still drops a
+ * townhouse, condo, or other attached product.
+ */
+export function letterProductMatch(
+  subjectSubType: string | null | undefined,
+  otherSubType: string | null | undefined,
+): boolean {
+  const subject = subjectSubType ?? null
+  const other = otherSubType ?? null
+  // A known other product has to be the same product. A blank other subtype
+  // is not a townhouse or a condo, so it is not dropped here. The sales
+  // boundary still applies.
+  if (productClass(subject) != null && productClass(other) == null) return true
+  return keepSameProductType(subject, other)
+}
+
 /** D1: detached is this MLS value, not PropertyType A. */
 export const DETACHED_PROPERTY_SUB_TYPE = 'Single Family Residence'
 

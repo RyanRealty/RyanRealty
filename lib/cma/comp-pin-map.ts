@@ -282,12 +282,14 @@ export function renderCompPinMapHtml(input: CompPinMapInput): string {
           })
         }
         const fact = byKey.get(pin.key)
+        if (!fact?.address?.trim()) return ''
+        if (at.xPct < 0 || at.xPct > 100 || at.yPct < 0 || at.yPct > 100) return ''
         return pinButton({
           key: pin.key,
           glyph: pin.key,
           family: pin.family,
-          label: fact ? pinReading(fact) : `${pin.key}. this home`,
-          reveal: fact ? revealHtml(fact) : '',
+          label: pinReading(fact),
+          reveal: revealHtml(fact),
           xPct: at.xPct,
           yPct: at.yPct,
         })

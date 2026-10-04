@@ -1386,6 +1386,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       listingKey: subject.listingKey,
       mlsNumber: subject.mlsNumber,
       streetAddress: subject.streetAddress,
+      propertySubType: subject.propertySubType,
     }
     // Same ladder as actives: pocket, then radius, stop when three homes are
     // in hand, never the city. An empty rung still produces a sentence.
@@ -1425,6 +1426,9 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       listDate: expiredAudit?.finalCycle?.listDate ?? subject.lastListDate,
       offDate: expiredAudit?.finalCycle?.offMarketDate ?? null,
       asOf: generatedAtIso.slice(0, 10),
+      areaKind: compArea?.kind ?? null,
+      areaName: compArea?.names?.[0] ?? null,
+      propertySubType: subject.propertySubType,
     }).catch(() => null)
 
     const renderArgs = {
@@ -1634,7 +1638,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             late: listingMarket.late,
             price_move: listingMarket.priceMove,
             ppsf_move: listingMarket.ppsfMove,
-            source: `Supabase listings. City exact, PropertyType A, Single Family Residence, Closed, ClosePrice > 0, CloseDate ${listingMarket.early.from} through ${listingMarket.late.to}. Neighborhood is the Bend GIS polygon. Measured ${listingMarket.asOf ?? generatedAtIso.slice(0, 10)}.`,
+            source: `Supabase listings. ${listingMarket.place} (${listingMarket.grain}), same property subtype as the subject, Closed, ClosePrice > 0, CloseDate ${listingMarket.early.from} through ${listingMarket.late.to}. Measured ${listingMarket.asOf ?? generatedAtIso.slice(0, 10)}.`,
           }
         : { source: 'none' },
       equity_position: equity ?? { source: 'none' },

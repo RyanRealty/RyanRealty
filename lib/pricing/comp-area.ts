@@ -348,83 +348,46 @@ export function buildCompArea(input: {
   return { ...base, sentence: areaSentence(base, subjectSubdivision) }
 }
 
-/**
- * Round a measured distance UP to a radius a seller can read. Never down: the
- * circle has to hold every sale the price was built on.
- */
-function radiusStep(miles: number): number {
-  if (miles <= 1) return 1
-  if (miles <= 2) return 2
-  return Math.ceil(miles * 2) / 2
-}
-
-/** Bend competition never leaves this radius. A city-wide pull is not a comp set. */
+/** Bend competition never leaves this radius. Kept so older traces still name the cap. */
 export const COMPETITION_BEND_CAP_MILES = 5
 
-/** Outside Bend the ladder may follow a rural comp search, and then it stops. */
+/** Outside Bend a comp search used to stop here. The letter no longer walks that ladder. */
 export const COMPETITION_RURAL_CAP_MILES = 15
 
 /**
- * THE COMPETITION LADDER. Same idea as the closed-comp pocket, then a radius.
+ * A subdivision, a recorded plat, a neighborhood polygon, or the radius the
+ * sales already used. The city is not a boundary.
+ */
+export function salesAreaIsBounded(area: { kind?: string | null } | null | undefined): boolean {
+  const kind = area?.kind
+  return (
+    kind === 'subdivision' ||
+    kind === 'subdivisions' ||
+    kind === 'neighborhood' ||
+    kind === 'community' ||
+    kind === 'radius'
+  )
+}
+
+/**
+ * Competition and expireds use the sales boundary. One ring.
  *
- * Pocket (the subdivision the closed sales came from) first, then 0.5 / 1 / 2
- * / 5 miles. Widen only while the caller is starved. In Bend the cap is 5
- * miles. Elsewhere the cap is the comp search's own reach, and never more
- * than 15. Never the city. A subject with no coordinates returns no ring:
- * there is nothing to draw, and the city is not a substitute.
- *
- * This function does not read inventory. The caller queries once at the
- * widest ring and walks this order (see `pickCompetitionRing`).
+ * If the sales that set the price sit in a subdivision or a recorded plat,
+ * that place is the ring. A radius search keeps that radius. There is no
+ * 0.5 / 1 / 2 / 5 mile ladder past it, and the city is not a ring.
+ * `keptComps` stays on the signature so callers do not grow a second ladder.
  */
 export function resolveCompetitionArea(input: {
   compArea: CompArea
   subject: { latitude: number | null; longitude: number | null; city: string }
   keptComps: readonly CompAreaKeptComp[]
 }): CompArea[] {
+  void input.keptComps
   const centre = centreOf({ ...input.subject, subdivision: null })
   if (!centre) return []
-
-  const bend = input.subject.city.trim().toLowerCase() === 'bend'
-  const farthest = input.keptComps
-    .map((c) => distanceMiles(centre, { lat: c.latitude ?? null, lng: c.longitude ?? null }))
-    .filter((d): d is number => d != null && Number.isFinite(d))
-  const measured = farthest.length > 0 ? Math.max(...farthest) : 0
-  const compSearchRadiusMiles = radiusStep(Math.max(input.compArea.radiusMiles ?? 0, measured, 0.5))
-  const cap = bend
-    ? COMPETITION_BEND_CAP_MILES
-    : Math.min(COMPETITION_RURAL_CAP_MILES, Math.max(compSearchRadiusMiles, 0.5))
-
-  const steps = bend
-    ? [0.5, 1, 2, 5]
-    : cap < 5
-      ? [0.5, 1, 2, cap].filter((m) => m <= cap + 1e-9)
-      : [0.5, 1, 2, 5, 10, cap].filter((m) => m <= cap + 1e-9)
-  const miles = [...new Set(steps.map((m) => (m >= 5 ? radiusStep(m) : m)))].sort((a, b) => a - b)
-
-  const rings: CompArea[] = []
-  if (input.compArea.kind === 'subdivision' || input.compArea.kind === 'subdivisions') {
-    rings.push({
-      ...input.compArea,
-      centre,
-      sentence: input.compArea.sentence || areaSentence({ ...input.compArea, centre }, null),
-    })
-  }
-  for (const radiusMiles of miles) {
-    const widest = radiusMiles === miles[miles.length - 1]
-    const base = {
-      kind: 'radius' as const,
-      names: [],
-      radiusMiles,
-      centre,
-      source: `competition: pocket then radius, ring of ${milesPhrase(radiusMiles)}${
-        widest
-          ? `, the widest this search may go (${bend ? 'Bend cap 5 miles' : `cap ${milesPhrase(cap)}`})`
-          : ', widened only when the tighter ring is short of homes'
-      }`,
-    }
-    rings.push({ ...base, sentence: areaSentence(base, null) })
-  }
-  return rings
+  if (!salesAreaIsBounded(input.compArea)) return []
+  const withCentre: Omit<CompArea, 'sentence'> = { ...input.compArea, centre: input.compArea.centre ?? centre }
+  return [{ ...withCentre, sentence: input.compArea.sentence || areaSentence(withCentre, null) }]
 }
 
 /**

@@ -390,7 +390,7 @@ function coverPage(a: RenderCmaArgs): PageDef {
   })
   // FlexMLS letter FLOW on the letter cover (same trio as immersive hero):
   // Low · High · Recommended once. Never sole legacy cover-price.
-  const payoff = letterCoverPayoffHtml(a.pricing)
+  const payoff = letterCoverPayoffHtml(a.pricing, a.comps)
   return {
     cover: true,
     meta: `Pricing report · ${dateLong(a.generatedAtIso)}`,

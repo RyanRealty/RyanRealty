@@ -7,7 +7,7 @@
 import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import { compAreaIn, compAreaPhrase, type CompArea } from '@/lib/pricing/comp-area'
 import { countWord } from '@/lib/pricing/estimate'
-import { keepSameProductType } from '@/lib/cma/market-area'
+import { keepSameProductType, letterProductMatch } from '@/lib/cma/market-area'
 import { realSubdivision } from '@/lib/cma/comp-tiers'
 import type { CmaMarketAreaRow } from '@/lib/data/cma/marketAreaReads'
 import { daysOnMarketFrom, listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
@@ -79,6 +79,8 @@ export type CmaExpiredPeer = {
   yearBuilt: number | null
   lotAcres: number | null
   propertySubType: string | null
+  /** MLS subdivision, so a plat boundary can be re-tested at render. */
+  subdivision?: string | null
   latitude: number | null
   longitude: number | null
 }
@@ -192,7 +194,14 @@ function num(v: unknown): number | null {
 
 export type ExpiredPeerSubject = Pick<
   CmaSubject,
-  'beds' | 'sqft' | 'latitude' | 'longitude' | 'listingKey' | 'mlsNumber' | 'streetAddress'
+  | 'beds'
+  | 'sqft'
+  | 'latitude'
+  | 'longitude'
+  | 'listingKey'
+  | 'mlsNumber'
+  | 'streetAddress'
+  | 'propertySubType'
 >
 
 function peerAddress(row: CmaMarketAreaRow): string {
@@ -351,6 +360,7 @@ export function pickExpiredPeers(
   const named = rows
     .map((row) => {
       if (isSubjectExpiredRow(row, subject)) return null
+      if (!letterProductMatch(subject.propertySubType, row.property_sub_type ?? null)) return null
       const address = peerAddress(row)
       const listPrice = Number(row.ListPrice)
       if (!address || !Number.isFinite(listPrice) || listPrice <= 0) return null
@@ -385,6 +395,7 @@ export function pickExpiredPeers(
         yearBuilt: row.year_built ?? null,
         lotAcres: row.lot_size_acres ?? null,
         propertySubType: row.property_sub_type ?? null,
+        subdivision: row.SubdivisionName ?? null,
         latitude: row.Latitude ?? null,
         longitude: row.Longitude ?? null,
       }

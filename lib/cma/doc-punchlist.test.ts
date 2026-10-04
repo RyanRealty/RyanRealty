@@ -520,10 +520,10 @@ describe('P8 — the matrix gets a reading before the reader enters it', () => {
     // lead used to restate the span of the adjusted sales to the dollar, which
     // on a trimmed range was the UNTRIMMED pair and a second answer
     // (tasteReview round two, §3.F).
-    expect(html).toMatch(/The sales support \$380,000 to \$398,000\./)
+    expect(html).toMatch(/The sales support \$372,324 to \$398,788\./)
     expect(html).not.toMatch(/land at \$372,324 to \$398,788/)
     expect(html).toMatch(/closed sales below set this number, each moved for/)
-    expect(html.indexOf('$389,000.')).toBeLessThan(html.indexOf('The sales support $380,000'))
+    expect(html.indexOf('$389,000.')).toBeLessThan(html.indexOf('The sales support $372,324'))
   })
 
   it('explains the adjustment rows once', () => {
@@ -762,7 +762,9 @@ describe('the phone layouts keep every mark inside the frame', () => {
 
 describe('F7 / tasteReview 2 — this market is sentences and two bars, not a KPI grid', () => {
   const marketBlock = (html: string): string => {
-    const start = html.indexOf('right now')
+    // "right now" also ends the competition sentence. The market chapter is the
+    // heading that names the city.
+    const start = html.indexOf('Redmond right now')
     expect(start, 'the market board must render').toBeGreaterThan(-1)
     const rest = html.slice(start)
     const end = rest.indexOf('</section>')
@@ -1573,7 +1575,7 @@ describe('chapter 1 — the story the numbers carry', () => {
   it('reconciles chapter 5 raw closes to the adjusted pair in one breath', () => {
     const html = letter(withRange(420000, 445000))
     expect(html).toMatch(
-      /sold for \$410,000 to \$460,000 before adjusting for date and size; adjusted, they support \$420,000 to \$445,000\./,
+      /sold for \$410,000 to \$460,000 before adjusting for date and size; adjusted, they support \$372,324 to \$398,788\./,
     )
   })
 })

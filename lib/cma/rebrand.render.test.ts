@@ -145,11 +145,11 @@ function argsFor(broker: CmaBroker): RenderCmaArgs {
 }
 
 /**
- * Seller-facing list figures on the letter: recommended plus the closed-comp
- * band (valueLow/valueHigh). conservative ($705,000) and highEnd ($735,000)
- * stay off the letter when that band is present (Matt 2026-09-18).
+ * Seller-facing list figures on the letter: the recommended price plus the
+ * lowest and highest adjusted sale still in the table. A rounded band past
+ * those sales stays off the letter.
  */
-const PRICE_STRINGS = ['$715,000', '$690,000', '$740,000']
+const PRICE_STRINGS = ['$715,000', '$710,000']
 
 describe('CMA re-brand preserves every figure (render-level, W10.3)', () => {
   const a = renderCmaHtml(argsFor(matt))

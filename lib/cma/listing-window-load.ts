@@ -8,7 +8,7 @@
  */
 
 import { getCmaCityClosedDuring } from '@/lib/data/cma/builderReads'
-import { marketAreaName, resolveMarketArea } from '@/lib/cma/market-area'
+import { compPoolPropertySubType, marketAreaName, resolveMarketArea } from '@/lib/cma/market-area'
 import {
   chooseListingMarket,
   closesFromRows,
@@ -39,6 +39,9 @@ export async function loadListingWindowMarket(input: {
   listDate: string | null | undefined
   offDate: string | null | undefined
   asOf: string
+  areaKind?: string | null
+  areaName?: string | null
+  propertySubType?: string | null
 }): Promise<ListingMarketMove | null> {
   const listDate = String(input.listDate ?? '').slice(0, 10)
   const offDate = String(input.offDate ?? '').slice(0, 10)
@@ -47,22 +50,29 @@ export async function loadListingWindowMarket(input: {
   if (offDate <= listDate) return null
   let rows
   try {
-    rows = await getCmaCityClosedDuring(city, listDate, offDate)
+    rows = await getCmaCityClosedDuring(city, listDate, offDate, compPoolPropertySubType(input.propertySubType ?? null))
   } catch (err) {
     console.error('[listing-window-market]', err)
     return null
   }
   if (rows.length === 0) return null
   const slug = resolveMarketArea(input.latitude ?? null, input.longitude ?? null)
+  const kind = input.areaKind ?? null
+  const subdivision =
+    kind === 'subdivision' || kind === 'subdivisions'
+      ? (input.areaName ?? input.subdivision ?? null)
+      : (input.subdivision ?? null)
   const move = chooseListingMarket({
     listDate,
     offDate,
     subjectSqft: input.sqft ?? null,
-    subdivision: input.subdivision ?? null,
+    subdivision,
     neighborhoodSlug: slug,
     neighborhoodName: marketAreaName(slug),
     city,
     rows: closesFromRows(rows),
+    areaKind: kind,
+    propertySubType: input.propertySubType ?? null,
   })
   if (!move) return null
   return { ...move, asOf: input.asOf.slice(0, 10) }
@@ -76,7 +86,9 @@ type MarketDoc = {
     latitude?: number | null
     longitude?: number | null
     lastListDate?: string | null
+    propertySubType?: string | null
   } | null
+  compArea?: { kind?: string | null; names?: readonly string[] | null } | null
   expiredAudit?: {
     finalCycle?: { listDate?: string | null; offMarketDate?: string | null } | null
   } | null
@@ -94,6 +106,9 @@ async function measureDocument(doc: MarketDoc, readBudgetMs?: number): Promise<L
     listDate: cycle?.listDate ?? doc.subject?.lastListDate,
     offDate: cycle?.offMarketDate,
     asOf: new Date().toISOString().slice(0, 10),
+    areaKind: doc.compArea?.kind ?? null,
+    areaName: doc.compArea?.names?.[0] ?? null,
+    propertySubType: doc.subject?.propertySubType ?? null,
   })
   // No budget: wait for the read, same as the PDF / print path. A budget is
   // only the admin Open-report serve, and a timeout returns null so a stored

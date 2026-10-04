@@ -192,8 +192,8 @@ describe('print CMA cover — the recommendation never sits outside its own stat
   it('names what the sales support and explains the cap when the recommend is clamped outside it', () => {
     const { html } = renderCmaHtml(byronArgs())
     expect(html).toContain('$609,000')
-    expect(html).toContain('The sales support $620,000 to $635,000')
-    expect(html).not.toContain('>Supported range $620,000 to $635,000')
+    expect(html).toContain('The sales support $619,675 to $623,675')
+    expect(html).not.toContain('>Supported range $619,675 to $623,675')
     expect(html).toMatch(/capped below this range/)
   })
 
@@ -202,7 +202,7 @@ describe('print CMA cover — the recommendation never sits outside its own stat
     // The list range and the supported range are the same pair here, so the
     // chapter states it once and keeps the instruction (tasteReview round two,
     // §1 Words: three statements of one range inside ten lines).
-    expect(html).toContain('The sales support $620,000 to $635,000.')
+    expect(html).toContain('The sales support $619,675 to $623,675.')
     expect(html).toContain('List in that range.')
     expect(html).not.toContain('List between $620,000 and $635,000')
     expect(html).not.toMatch(/capped (below|above) this range/)
@@ -212,7 +212,8 @@ describe('print CMA cover — the recommendation never sits outside its own stat
     const { html } = renderCmaHtml(byronArgs())
     // The evidence range itself is untouched — only the label and the added
     // sentence change. This asserts the fix did not silently widen the range.
-    expect(html).toContain('$620,000 to $635,000')
+    expect(html).toContain('$619,675 to $623,675')
+    expect(html).not.toContain('$635,000')
   })
 })
 
@@ -222,6 +223,6 @@ describe('immersive CMA — same two contracts, same source data', () => {
     expect(html).not.toContain('Confidence: High')
     expect(html).not.toContain('Confidence: Moderate')
     expect(html).toMatch(/capped below this range/)
-    expect(html).toContain('The sales support $620,000 to $635,000')
+    expect(html).toContain('The sales support $619,675 to $623,675')
   })
 })

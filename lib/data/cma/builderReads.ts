@@ -489,6 +489,7 @@ export type CmaWindowCloseRow = {
   Latitude: number | null
   Longitude: number | null
   SubdivisionName: string | null
+  property_sub_type?: string | null
 }
 
 /**
@@ -500,19 +501,22 @@ export async function getCmaCityClosedDuring(
   city: string,
   fromIso: string,
   toIso: string,
+  propertySubType?: string | null,
 ): Promise<CmaWindowCloseRow[]> {
   const sb = client()
   if (!sb || !city.trim() || !fromIso || !toIso) return []
   const out: CmaWindowCloseRow[] = []
   const SIZE = 1000
+  const sub = propertySubType === undefined ? 'Single Family Residence' : propertySubType
   for (let from = 0; from < 20000; from += SIZE) {
-    const { data, error } = await sb
+    let q = sb
       .from('listings')
-      .select('ClosePrice, CloseDate, TotalLivingAreaSqFt, Latitude, Longitude, SubdivisionName')
+      .select('ClosePrice, CloseDate, TotalLivingAreaSqFt, Latitude, Longitude, SubdivisionName, property_sub_type')
       .eq('City', city)
       .eq('PropertyType', 'A')
-      .eq('property_sub_type', 'Single Family Residence')
       .eq('StandardStatus', 'Closed')
+    if (sub) q = q.eq('property_sub_type', sub)
+    const { data, error } = await q
       .gte('CloseDate', fromIso)
       .lte('CloseDate', toIso)
       .gt('ClosePrice', 0)

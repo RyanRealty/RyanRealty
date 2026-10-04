@@ -36,6 +36,7 @@ import type { BpoListingCycle, BpoListingHistory } from '@/lib/bpo/types'
 import { listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
 import type { ListingTimelineInput, ListingTimelineStep } from '@/lib/cma/market-charts'
 import { askStoryReading } from '@/lib/cma/ask-story'
+import { askStepIsOwnEra } from '@/lib/cma/price-path'
 import { reanchorSellerNet } from '@/lib/pricing/seller-net'
 import { priceUnderFailedAsk, type FailedAskPullFacts } from '@/lib/pricing/failed-ask-under'
 
@@ -514,6 +515,19 @@ export function buildAskExposure(args: {
     spans.push({ ask: step.ask, from: step.date, to, days })
   }
   if (spans.length === 0) return null
+
+  const merged: typeof spans = []
+  for (const span of spans) {
+    const prev = merged[merged.length - 1]
+    if (!prev || askStepIsOwnEra(prev.ask, span.ask)) {
+      merged.push({ ...span })
+      continue
+    }
+    prev.to = span.to
+    prev.days += span.days
+  }
+  spans.length = 0
+  spans.push(...merged)
 
   const total = spans.reduce((sum, s) => sum + s.days, 0)
   const high = args.rangeHigh != null && args.rangeHigh > 0 ? args.rangeHigh : null

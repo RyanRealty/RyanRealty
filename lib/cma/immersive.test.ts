@@ -53,9 +53,9 @@ describe('renderImmersiveCmaHtml', () => {
     expect(html).toMatch(/class="[^"]*ans-n[^"]*"[^>]*>\$609,000</)
     expect(html).not.toMatch(/class="ans-n[^"]*"[^>]*data-count/)
     expect(html).not.toMatch(/pin numbers match the map/i)
-    // Hero Low/High are valueLow/valueHigh, not conservative/highEnd.
-    expect(html).toContain('$620,000')
-    expect(html).toContain('$635,000')
+    // Hero Low/High are the adjusted sale still in the table, not a rounded band past it.
+    expect(html).toContain('$619,675')
+    expect(html).not.toContain('$635,000')
     expect(html).toContain('$619,999')
     expect(html).toContain('Prepared for the owners of 20513 Byron by Matt Ryan, Ryan Realty')
     expect(html).not.toContain('Prepared for Eric Demello')

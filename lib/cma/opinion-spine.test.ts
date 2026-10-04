@@ -285,8 +285,9 @@ describe('print CMA price-opinion spine', () => {
     expect(cover).toContain('>Low<')
     expect(cover).toContain('>High<')
     expect(cover).toContain('>Recommended<')
-    expect(cover).toContain('$470,000')
-    expect(cover).toContain('$490,000')
+    expect(cover).toContain('$487,000')
+    expect(cover).toContain('$491,000')
+    expect(cover).not.toContain('$470,000')
     expect(cover).not.toContain('cover-price')
     expect(cover).not.toContain('Expected close')
     // CUT by the blueprint (CMA_REIMAGINED_2026-09-07.md): the property-facts
