@@ -305,4 +305,94 @@ describe('closed-comp Recommended weighting', () => {
     expect(looseSameSubdivision).toBeGreaterThan(perfectNeighborhood)
     expect(looseSameSubdivision).toBeGreaterThan(0)
   })
+
+  it('a flat market keeps a 12-month same-subdivision match nearly as heavy as its 3-month twin', () => {
+    // Same house, same plat. The index did not move, so the calendar does not
+    // throw the older sale out. It still weighs a little less.
+    const flat = {
+      subjectSqft: 2000,
+      saleSqft: 2000,
+      subjectBeds: 3,
+      saleBeds: 3,
+      subjectBaths: 2,
+      saleBaths: 2,
+      subjectYearBuilt: 2002,
+      saleYearBuilt: 2002,
+      subjectLotAcres: 0.12,
+      saleLotAcres: 0.12,
+      locationMatch: 'same-subdivision' as const,
+      marketPathSource: 'index' as const,
+      marketMonthlyRate: 0,
+      marketReversed: false,
+    }
+    const three = closedCompWeight({ ...flat, monthsSinceClose: 3 })
+    const six = closedCompWeight({ ...flat, monthsSinceClose: 6 })
+    const twelve = closedCompWeight({ ...flat, monthsSinceClose: 12 })
+    expect(three).toBeGreaterThan(six)
+    expect(six).toBeGreaterThan(twelve)
+    expect(twelve).toBeGreaterThan(three * 0.95)
+  })
+
+  it('a market running about 1 percent a month keeps the short half-life across 3, 6, and 12 months', () => {
+    const running = {
+      subjectSqft: 2000,
+      saleSqft: 2000,
+      subjectBeds: 3,
+      saleBeds: 3,
+      subjectBaths: 2,
+      saleBaths: 2,
+      subjectYearBuilt: 2002,
+      saleYearBuilt: 2002,
+      subjectLotAcres: 0.12,
+      saleLotAcres: 0.12,
+      locationMatch: 'same-subdivision' as const,
+      marketPathSource: 'index' as const,
+      marketMonthlyRate: 0.012,
+      marketReversed: false,
+    }
+    const three = closedCompWeight({ ...running, monthsSinceClose: 3 })
+    const six = closedCompWeight({ ...running, monthsSinceClose: 6 })
+    const twelve = closedCompWeight({ ...running, monthsSinceClose: 12 })
+    expect(three).toBeGreaterThan(six)
+    expect(six).toBeGreaterThan(twelve)
+    expect(twelve).toBeLessThan(three * 0.9)
+  })
+
+  it('a reversed or missing index does not treat an old sale as a flat-market match', () => {
+    const same = {
+      subjectSqft: 2000,
+      saleSqft: 2000,
+      subjectBeds: 3,
+      saleBeds: 3,
+      locationMatch: 'same-subdivision' as const,
+      marketMonthlyRate: 0,
+    }
+    const reversed = closedCompWeight({
+      ...same,
+      monthsSinceClose: 12,
+      marketPathSource: 'index',
+      marketReversed: true,
+    })
+    const missing = closedCompWeight({
+      ...same,
+      monthsSinceClose: 12,
+      marketPathSource: 'none',
+    })
+    const calm = closedCompWeight({
+      ...same,
+      monthsSinceClose: 12,
+      marketPathSource: 'index',
+      marketReversed: false,
+    })
+    const capped = closedCompWeight({
+      ...same,
+      monthsSinceClose: 12,
+      marketPathSource: 'index',
+      marketReversed: false,
+      marketCapped: true,
+    })
+    expect(calm).toBeGreaterThan(reversed)
+    expect(reversed).toBe(missing)
+    expect(capped).toBe(missing)
+  })
 })

@@ -21,13 +21,17 @@
  * match on size, year, subdivision, bedrooms, bathrooms, and lot weighs more
  * than an adjacent sale with an extra bedroom.
  *
- * Recency half-life is still ~3 months when location is the same: a 6-month-old
- * sale carries about a quarter of the recency of a fresh close. Pending and
- * active sales never enter this weight.
+ * Recency follows the market path that already moved the sale price to today.
+ * A quiet index, under about 1% a month, keeps a 12-month sale of the same
+ * house nearly as heavy as its 3-month twin. A market that is actually
+ * running, a path that reversed, a capped path, or no index at all keeps the
+ * 3-month half-life: a 6-month sale carries about a quarter of the recency
+ * of a fresh close. Pending and active sales never enter this weight.
  */
 
 import { normSubdivision } from '@/lib/pricing/classes'
 import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
+import { REGIME_MONTHLY_CUT } from '@/lib/pricing/market-path'
 import { saleSetsThePrice } from '@/lib/pricing/price-set'
 
 export type ClosedCompWeightInput = {
@@ -55,10 +59,27 @@ export type ClosedCompWeightInput = {
   saleLotAcres?: number | null
   /** See PriceSetSale.fillShortSet. Alone, an outside sale still weighs 0. */
   fillShortSet?: boolean
+  /**
+   * The path that moved this sale's price to the as-of date. Absent, not from
+   * the index, reversed, or capped keeps the 3-month half-life.
+   */
+  marketPathSource?: 'index' | 'none' | null
+  /** Average monthly index rate over this sale's own span. */
+  marketMonthlyRate?: number | null
+  /** The index turned around between the sale and today. */
+  marketReversed?: boolean | null
+  /** The move was capped, or an upward city move was refused. Not a flat market. */
+  marketCapped?: boolean | null
 }
 
-/** Months for recency to halve, inside one location step. */
+/** Months for recency to halve when the market is running, or the index is missing. */
 export const CLOSED_COMP_RECENCY_HALF_LIFE_MONTHS = 3
+
+/**
+ * A quiet index stretches the half-life this far. A 12-month sale of the same
+ * house still counts. It does not catch a fresh close.
+ */
+const CALM_RECENCY_HALF_LIFE_MONTHS = 36
 
 /**
  * No single closed sale may carry more than this share of the weighted
@@ -273,6 +294,25 @@ function locationFieldsPresent(input: ClosedCompWeightInput): boolean {
 }
 
 /**
+ * Age of the sale, after the index has already moved its price.
+ * A quiet index stretches the half-life. A running market, a reversal, a
+ * capped path, or no index keeps the 3-month half-life.
+ */
+function recencyFactor(months: number, input: ClosedCompWeightInput): number {
+  const indexed =
+    input.marketPathSource === 'index' && input.marketReversed !== true && input.marketCapped !== true
+  const rate = Math.abs(Number(input.marketMonthlyRate) || 0)
+  if (!indexed || rate > REGIME_MONTHLY_CUT) {
+    return Math.pow(0.5, months / CLOSED_COMP_RECENCY_HALF_LIFE_MONTHS)
+  }
+  const t = rate / REGIME_MONTHLY_CUT
+  const halfLife =
+    CALM_RECENCY_HALF_LIFE_MONTHS +
+    (CLOSED_COMP_RECENCY_HALF_LIFE_MONTHS - CALM_RECENCY_HALF_LIFE_MONTHS) * t
+  return Math.pow(0.5, months / halfLife)
+}
+
+/**
  * Location step, then size, bedrooms, and recency inside that step.
  * Callers that pass only size and recency keep the prior size-times-recency
  * product, so a number with no location class does not grow a false step.
@@ -302,7 +342,7 @@ export function closedCompWeight(input: ClosedCompWeightInput): number {
   const subjectSqft = Number(input.subjectSqft) || 0
   const saleSqft = Number(input.saleSqft) || 0
   const size = sizeProximity(subjectSqft, saleSqft)
-  const recency = Math.pow(0.5, months / CLOSED_COMP_RECENCY_HALF_LIFE_MONTHS)
+  const recency = recencyFactor(months, input)
   const secondary =
     size *
     roomProximity(input.subjectBeds, input.saleBeds, BED_ONE_APART) *
@@ -335,6 +375,10 @@ export function fillShortSetWeights<T extends {
   ownPlat?: boolean | null
   selectionTier?: string | null
   monthsSinceClose?: number | null
+  marketPathSource?: 'index' | 'none' | null
+  marketMonthlyRate?: number | null
+  marketReversed?: boolean | null
+  marketCapped?: boolean | null
 }>(
   subject: {
     sqft?: number | null
@@ -372,6 +416,10 @@ export function fillShortSetWeights<T extends {
       saleCommunityLocated: comp.communityLocated,
       subjectLotAcres: subject.lotAcres,
       saleLotAcres: comp.lotAcres,
+      marketPathSource: comp.marketPathSource,
+      marketMonthlyRate: comp.marketMonthlyRate,
+      marketReversed: comp.marketReversed,
+      marketCapped: comp.marketCapped,
       fillShortSet: true,
     })
     return weight > 0 ? { ...comp, weight } : comp

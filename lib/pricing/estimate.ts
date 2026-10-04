@@ -1205,6 +1205,10 @@ export function adjustCmaCompAlongMarket(opts: {
     saleCommunityLocated: sale.communityLocated,
     subjectLotAcres: opts.subject.lotAcres,
     saleLotAcres: sale.lotAcres,
+    marketPathSource: path.source,
+    marketMonthlyRate: path.monthlyRate,
+    marketReversed: path.reversedWithinSpan,
+    marketCapped: path.capped,
   })
   const proximity =
     (sale.proximity ?? '').trim() ||
@@ -1226,6 +1230,10 @@ export function adjustCmaCompAlongMarket(opts: {
     storyAdjustment: storyAdj,
     adjustedPrice,
     weight,
+    marketPathSource: path.source,
+    marketMonthlyRate: path.monthlyRate,
+    marketReversed: path.reversedWithinSpan,
+    marketCapped: path.capped,
   }
   const pathNote =
     opts.exclusivePocket === true

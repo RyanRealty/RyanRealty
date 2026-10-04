@@ -179,6 +179,14 @@ export interface CmaAdjustedComp extends CmaComp {
   storyAdjustment?: number
   adjustedPrice: number
   weight: number
+  /**
+   * The market path that moved this sale's price, kept so a short-set reweight
+   * uses the same age rule as the first pass.
+   */
+  marketPathSource?: 'index' | 'none' | null
+  marketMonthlyRate?: number | null
+  marketReversed?: boolean | null
+  marketCapped?: boolean | null
   /** Display-only judge tier. Does not change pricing math. */
   keepTier?: CmaCompKeepTier | null
   /** Display-only judge reason. Does not change pricing math. */
