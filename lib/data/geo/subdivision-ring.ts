@@ -1,6 +1,7 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
+import { communitySlugForOutlinePlats } from '@/lib/cma/community-location'
 
 /**
  * The plats next to the plat a point sits in, and the plat for a batch of
@@ -139,6 +140,7 @@ export async function assignCommunitySlugs(
     const rank = new Map(registryOrder.map((slug, i) => [slug, i]))
     const out: Array<string | null> = points.map(() => null)
     const best = points.map(() => Number.POSITIVE_INFINITY)
+    const plats: string[][] = points.map(() => [])
     const batch: Array<{ idx: number; lat: number; lon: number }> = []
     points.forEach((p, idx) => {
       if (p.lat != null && p.lng != null && Number.isFinite(p.lat) && Number.isFinite(p.lng)) {
@@ -155,15 +157,28 @@ export async function assignCommunitySlugs(
         return null
       }
       for (const row of (data ?? []) as Array<{ idx: number; geo_type: string; geo_slug: string }>) {
-        if (row.geo_type !== 'neighborhood') continue
         const slug = row.geo_slug?.trim().toLowerCase()
-        if (!slug || !allowed.has(slug)) continue
+        if (!slug) continue
+        if (row.geo_type === 'subdivision') {
+          plats[row.idx]!.push(slug)
+          continue
+        }
+        if (row.geo_type !== 'neighborhood') continue
+        if (!allowed.has(slug)) continue
         const r = rank.get(slug) ?? Number.POSITIVE_INFINITY
         if (r < best[row.idx]!) {
           best[row.idx] = r
           out[row.idx] = slug
         }
       }
+    }
+    // A recorded plat is the community outline when no neighborhood polygon
+    // is stored. The MLS name is not consulted. A point already inside a
+    // registry neighborhood keeps that community.
+    for (let i = 0; i < out.length; i++) {
+      if (out[i]) continue
+      const fromPlat = communitySlugForOutlinePlats(plats[i])
+      if (fromPlat) out[i] = fromPlat
     }
     return out
   } catch (err) {
