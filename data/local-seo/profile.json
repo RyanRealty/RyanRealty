@@ -114,5 +114,54 @@
     "url_appointment": [
       "https://ryan-realty.com/book"
     ]
+  },
+  "activity_2026_10_04": {
+    "source": "Google Business Profile API mybusiness v4, re-read 2026-10-04T10:18Z after publish (Matt approved: \"Go\")",
+    "posts": [
+      {
+        "id": "2716070864712326015",
+        "topic": "Bend SFR market, as of 2026-10-04 (Spark MLS city text: 728 active, $898,000 median ask, 3.5 MoS)",
+        "state": "LIVE"
+      },
+      {
+        "id": "8569647599878009357",
+        "topic": "Redmond SFR market, as of 2026-10-04 (271 active, $599,000 median ask, 4.0 MoS, balanced)",
+        "state": "LIVE"
+      },
+      {
+        "id": "523085075568558239",
+        "topic": "Team intro, BOOK button",
+        "state": "REJECTED",
+        "note": "auto-rejected at create; body contained a phone number, which GBP post policy does not allow"
+      }
+    ],
+    "photos_added": [
+      {
+        "asset": "429e7228 Old Mill District aerial",
+        "category": "ADDITIONAL",
+        "state": "live (googleUrl present)"
+      },
+      {
+        "asset": "713b6a5a Tower Theatre marquee at night",
+        "category": "ADDITIONAL",
+        "state": "live (googleUrl present)"
+      },
+      {
+        "asset": "ba294855 Deschutes River footbridge aerial",
+        "category": "ADDITIONAL",
+        "state": "live (googleUrl present)"
+      },
+      {
+        "asset": "aab6f55b Drake Park / Mirror Pond aerial",
+        "category": "ADDITIONAL",
+        "state": "live (googleUrl present)"
+      },
+      {
+        "asset": "d22cff05 Pilot Butte residential aerial",
+        "category": "ADDITIONAL",
+        "state": "live (googleUrl present)"
+      }
+    ],
+    "media_total_after": 36
   }
 }

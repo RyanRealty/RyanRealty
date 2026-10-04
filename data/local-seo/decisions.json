@@ -6,6 +6,10 @@
       "by": "Matt",
       "decision": "Matt handles Google review requests personally. Do not draft or send review-request emails or texts to past clients from this loop.",
       "context": "GBP had 25 reviews (1 in the last 90 days) on 2026-10-04 vs 26 to 484 for the Bend pack holders; review velocity remains the largest gap and is tracked in data/local-seo/profile.json."
+    },
+    {
+      "date": "2026-10-04",
+      "rule": "GBP post bodies carry no phone numbers. Google auto-rejects them at create; the phone lives on the profile and the CTA button carries the action."
     }
   ]
 }
