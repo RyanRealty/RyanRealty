@@ -86,6 +86,7 @@ export type MatrixEntry = {
   /** List/ask used for list $/sqft. */
   listPrice: number | null
   /** Seller concessions $ on a closed sale; 0 when none; null when unknown or not a sale. */
+  concessionsAmount: number | null
   /** Flex FLOW: distance + direction when known ("0.2 mi NW"). */
   proximity: string | null
   /** Flex FLOW: garage spaces when known. */
