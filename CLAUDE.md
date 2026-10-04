@@ -160,7 +160,7 @@ to 09-18. Otherwise copy is judged by one question: does it sound like a person 
 Central Oregon and wants to help. What still binds is not style: real numbers (§0), real
 quotes, fair housing, and MLS remarks shown as written.
 
-**Seller CMA letters:** full rule in [`.cursor/rules/cma-seller-letter.mdc`](.cursor/rules/cma-seller-letter.mdc) and AGENTS.md items 17–20. Do not put the bad shapes back. Sold comps include concessions; matrices factor them in.
+**Seller CMA letters:** full rule in [`.cursor/rules/cma-seller-letter.mdc`](.cursor/rules/cma-seller-letter.mdc) and AGENTS.md items 17–20. Community membership is where the address sits (AGENTS.md 22), not the MLS name.
 
 ---
 
@@ -546,6 +546,5 @@ else fires on trigger match.
 13. No em dashes in public site copy.
 14. All code work is pushed to GitHub as a branch right away. Land main with a fast-forward when the work is ready. Any machine may do it. No rebase, force-push, or reset.
 15. A townhouse subject uses closed townhouse sales. sale_pricing_facts stores those closes as product_class attached, not townhouse, so the facts pool filters property_sub_type to townhouse and classes the row as townhouse. Do not pull condos, apartments, or other attached homes just because they share product_class attached. Do not change how single-family comps are chosen.
-16. Community membership is the location of the address, for every community. It is not the MLS SubdivisionName and not a one-community exception. A sale belongs to the subject's community when its latitude and longitude sit inside that community boundary, or inside a plat that sits in that community, even when the MLS subdivision name is a different plat. A sale does not belong because the remarks mention the community. The search order stays own subdivision, then adjacent subdivisions, then the neighborhood or community, before any mile ring. Do not replace that order with a radius search.
 
 **CRM is in-house** `public.crm_people` via `sendEvent()` in [`lib/crm/send-event.ts`](lib/crm/send-event.ts). Review at `/admin/crm`.
