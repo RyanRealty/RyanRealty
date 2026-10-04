@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { communitySlugForOutlinePlats } from '@/lib/cma/community-location'
+import { communitySlugForRecordedPlats } from '@/lib/cma/community-location'
 import { pricingTierLadder } from '@/lib/pricing/ladder'
 import { walkPricingLadder, type PricingSale, type PricingSubject } from '@/lib/pricing/match'
 
@@ -39,7 +39,7 @@ function subject(): PricingSubject {
     ruralAcreage: false,
     marketArea: null,
     communityLocated: true,
-    communitySlug: communitySlugForOutlinePlats(PARRELL_PLATS),
+    communitySlug: communitySlugForRecordedPlats(PARRELL_PLATS),
   }
 }
 
@@ -80,16 +80,16 @@ function sale(over: Partial<PricingSale> = {}): PricingSale {
     photoUrl: null,
     publicRemarks: null,
     communityLocated: true,
-    communitySlug: communitySlugForOutlinePlats(FAIRWAY_PLATS),
+    communitySlug: communitySlugForRecordedPlats(FAIRWAY_PLATS),
     ...over,
   }
 }
 
 describe('Bend Golf Club recorded-plat outline', () => {
   it('the community rung takes a sale in either plat and not a remarks mention', () => {
-    expect(communitySlugForOutlinePlats(PARRELL_PLATS)).toBe('bend-golf-club')
-    expect(communitySlugForOutlinePlats(FAIRWAY_PLATS)).toBe('bend-golf-club')
-    expect(communitySlugForOutlinePlats(['wildwood-park'])).toBeNull()
+    expect(communitySlugForRecordedPlats(PARRELL_PLATS)).toBe('bend-golf-club')
+    expect(communitySlugForRecordedPlats(FAIRWAY_PLATS)).toBe('bend-golf-club')
+    expect(communitySlugForRecordedPlats(['wildwood-park'])).toBeNull()
 
     const asOf = '2026-10-04'
     const tiers = pricingTierLadder().filter((tier) => tier.sameCommunity)
@@ -120,6 +120,62 @@ describe('Bend Golf Club recorded-plat outline', () => {
       false,
     )
     expect(out.comps.map((comp) => comp.listingKey)).toEqual(['FAIRWAY_2ND'])
+    expect(out.comps[0]?.selectionTier.startsWith('community-')).toBe(true)
+  })
+})
+
+describe('recorded plat membership for every community', () => {
+  it('a subject inside a plat is a member, a different MLS name inside that plat can be selected, and a remarks mention is not', () => {
+    expect(communitySlugForRecordedPlats(['cedar-ridge-addition'])).toBe('cedar-ridge')
+    expect(communitySlugForRecordedPlats(['cedar-ridge-2nd-addition', 'other-park'])).toBe('cedar-ridge')
+    expect(communitySlugForRecordedPlats(['other-park'])).toBeNull()
+    expect(communitySlugForRecordedPlats(['wildwood-park'])).toBeNull()
+
+    const asOf = '2026-10-04'
+    const home = subject()
+    home.streetAddress = '10 Cedar'
+    home.subdivision = 'Cedar Ridge'
+    home.subdivisionNorm = 'cedar ridge'
+    home.subdivisionSlug = 'other-park'
+    home.communitySlug = null
+    home.communityLocated = true
+    home.containingPlatSlugs = ['cedar-ridge-addition']
+
+    const inside = sale({
+      listingKey: 'INSIDE_PLAT',
+      address: '20 Cedar',
+      subdivision: 'Other Park',
+      subdivisionNorm: 'other park',
+      subdivisionSlug: 'other-park',
+      communitySlug: null,
+      communityLocated: true,
+      containingPlatSlugs: ['cedar-ridge-2nd-addition', 'other-park'],
+    })
+    const remarks = sale({
+      listingKey: 'REMARKS_ONLY',
+      address: '9 Outside',
+      subdivision: 'Timber Ridge',
+      subdivisionNorm: 'timber ridge',
+      subdivisionSlug: 'timber-ridge',
+      latitude: 44.05,
+      longitude: -121.35,
+      closeDate: '2026-07-01',
+      closePrice: 630_000,
+      lastAsk: 640_000,
+      communitySlug: null,
+      communityLocated: true,
+      containingPlatSlugs: ['timber-ridge'],
+      publicRemarks: 'Charming home on the golf course, walk to the clubhouse.',
+    })
+
+    const tiers = pricingTierLadder().filter((tier) => tier.sameCommunity)
+    const out = walkPricingLadder(home, [inside, remarks], { asOf, tiers })
+
+    expect(out.rungs.filter((rung) => rung.tier.startsWith('community-')).every((rung) => rung.ran)).toBe(true)
+    expect(out.rungs.some((rung) => rung.skippedReason === 'the subject is not inside a planned or golf community')).toBe(
+      false,
+    )
+    expect(out.comps.map((comp) => comp.listingKey)).toEqual(['INSIDE_PLAT'])
     expect(out.comps[0]?.selectionTier.startsWith('community-')).toBe(true)
   })
 })

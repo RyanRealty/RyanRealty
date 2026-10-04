@@ -132,6 +132,26 @@ export const WIDENED_SQFT_BAND = 0.25
 /** The picker's one living-area cutoff. About 35%. Location rungs use this. */
 export const LOCATION_SQFT_BAND = 0.35
 
+
+/** 0.25 through 2 miles, dates widened at each ring before the next distance. */
+function quarterMileCompRings(): CompTier[] {
+  const tiers: CompTier[] = []
+  for (let quarter = 1; quarter <= 8; quarter++) {
+    const miles = quarter / 4
+    for (const months of [6, 12, 24] as const) {
+      tiers.push({
+        name: `nearby-${miles}mi-${months}mo`,
+        monthsBack: months,
+        sqftBand: 0.25,
+        sameArea: false,
+        competing: true,
+        maxMiles: miles,
+      })
+    }
+  }
+  return tiers
+}
+
 export function compTierLadder(subdivisionIlike: string | null): CompTier[] {
     const band = LOCATION_SQFT_BAND
     const tiers: CompTier[] = [
@@ -202,6 +222,9 @@ export function compTierLadder(subdivisionIlike: string | null): CompTier[] {
         'Your home sits in a golf or resort community, and that community did not have enough of its own sales even across two years. The sales below come from comparable golf and resort communities in Central Oregon rather than from ordinary neighborhoods nearby, because that is the market a buyer of your home shops against.',
     },
     // 5. Competing market area — permitted, but disclosed and distance-bounded.
+    // Distance rings. A quarter mile first, then each next quarter mile.
+    // Do not open with a 1-mile ring.
+    ...quarterMileCompRings(),
     { name: 'competing-area-12mo', monthsBack: 12, sqftBand: 0.25, sameArea: false, competing: true, maxMiles: 2 },
     // 6. Last resort for a subject inside a mapped city. Still bounded — the
     // old ladder ended at "anywhere in the city".

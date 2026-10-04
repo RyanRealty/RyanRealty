@@ -244,6 +244,13 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
     disclosure:
       'This home sits in a golf or resort community, and that community did not have enough of its own sales even across two years. The sales below come from comparable golf and resort communities in Central Oregon rather than from ordinary neighborhoods nearby, because that is the market a buyer of this home shops against.',
   })
+  // Integer quarters so 0.25 + 0.25 does not drift. Through 2 miles.
+  const distanceRings: PricingTier[] = []
+  for (let quarter = 1; quarter <= 8; quarter++) {
+    const miles = quarter / 4
+    const apples: AppleStrictness = miles <= 1 ? 'strict' : 'utilities'
+    for (const months of [3, 6, 9] as const) distanceRings.push(near(miles, months, apples))
+  }
   const tiers: PricingTier[] = [
     // YOUR OWN STREET, FIRST, WHATEVER THE MLS CALLS THE TRACT (Matt
     // 2026-09-10: "We want to look specifically at that address or in that
@@ -287,12 +294,9 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
     community(6, 'strict'),
     community(12, 'utilities'),
     community(24, 'utilities'),
-    near(1, 3, 'strict'),
-    near(1, 6, 'strict'),
-    near(1, 9, 'strict'),
-    near(2, 3, 'utilities'),
-    near(2, 6, 'utilities'),
-    near(2, 9, 'utilities'),
+    // Distance starts at a quarter mile and steps by a quarter mile.
+    // Do not open with a 1-mile ring. One mile and two miles are later steps.
+    ...distanceRings,
     ...customTimeFirst,
     // The community is exhausted; its peers are other communities of its kind.
     likeCommunity(24),

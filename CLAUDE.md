@@ -160,7 +160,7 @@ to 09-18. Otherwise copy is judged by one question: does it sound like a person 
 Central Oregon and wants to help. What still binds is not style: real numbers (§0), real
 quotes, fair housing, and MLS remarks shown as written.
 
-**Seller CMA letters:** full rule in [`.cursor/rules/cma-seller-letter.mdc`](.cursor/rules/cma-seller-letter.mdc) and AGENTS.md items 17–20. Community membership is where the address sits (AGENTS.md 22). See AGENTS.md 23.
+**Seller CMA letters:** full rule in [`.cursor/rules/cma-seller-letter.mdc`](.cursor/rules/cma-seller-letter.mdc) and AGENTS.md items 17–20. Community membership is where the address sits (AGENTS.md 22): a point inside a recorded plat is a member even when the MLS name differs, and distance rings start at 0.25 miles and step by 0.25. See AGENTS.md 23.
 
 ---
 
