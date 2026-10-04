@@ -89,3 +89,38 @@ export const LISTING_UNAVAILABLE_METADATA = {
   title: "We can't show this home",
   robots: { index: false, follow: true },
 } as const
+
+/**
+ * The listing exists but the database did not answer in time (2026-10-04,
+ * Supabase API Gateway degraded). NOT the refusal above: it says nothing about
+ * the home and carries no noindex, because a temporary failure that tells
+ * Google "noindex" drops an active listing from search. The page is dynamic,
+ * so the next request tries again; Google recrawls and finds the home.
+ */
+export function ListingTemporarilyUnavailable() {
+  return (
+    <>
+      <main className={V3_ROOT_CLASS}>
+        <V3Quiet
+          id="slow"
+          heading="This home is taking a moment to load"
+          headingLevel={1}
+          items={[
+            {
+              kind: 'prose',
+              body: 'Our listing data is slow to answer right now. Refresh the page in a minute and the home will be here. You can also browse every home for sale or talk to a broker.',
+            },
+            { label: 'Homes for sale', href: '/homes-for-sale?view=list' },
+            { label: 'Talk to a broker', href: '/contact' },
+          ]}
+        />
+      </main>
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
+    </>
+  )
+}
+
+/** No robots key on purpose: a temporary failure must never emit noindex. No canonical either. */
+export const LISTING_TEMPORARILY_UNAVAILABLE_METADATA = {
+  title: 'Listing loading',
+} as const

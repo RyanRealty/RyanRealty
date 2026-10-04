@@ -555,6 +555,47 @@ const getListingDetailUncoalesced = async (listingKey: string): Promise<GetListi
 }
 
 /**
+ * Listing lookup that keeps a DATABASE FAILURE apart from a MISS.
+ *
+ * WHY (2026-10-04). getListingDetail returns null for both, and the listing
+ * page rendered null as "We can't show this home" with robots noindex. During
+ * the Supabase API Gateway degradation of 2026-10-04 (status.supabase.com
+ * "Partially Degraded Service"; our REST endpoint answered 503 on 2 of 5
+ * probes), active listings straight out of /sitemaps/listings.xml stalled 16s
+ * (two retry loops x two 4s timeouts) and then told Google to drop them:
+ * measured on 6 of 6 sampled listing URLs, 18.0 to 19.8s each.
+ *
+ * Here a failure is { kind: 'error' } so the page can serve a temporary state
+ * with NO noindex, and the uncached second retry loop is gone: worst case is
+ * the 2 x 4s inside fetchOneOrThrow, 8s instead of 16s.
+ */
+export type ListingLookup =
+  | { kind: 'ok'; listing: NonNullable<GetListingDetailResult> }
+  | { kind: 'missing' }
+  | { kind: 'error' }
+
+async function getListingLookupUncoalesced(listingKey: string): Promise<ListingLookup> {
+  if (!InputSchema.safeParse({ listingKey }).success) return { kind: 'missing' }
+  const cached = unstable_cache(
+    () => fetchOneOrThrow(listingKey),
+    ['listing-detail-v6', listingKey],
+    {
+      revalidate: CACHE_WINDOWS.listingDetail,
+      tags: [cacheTag.listings, cacheTag.listing(listingKey)],
+    }
+  )
+  try {
+    const listing = await cached()
+    return listing ? { kind: 'ok', listing } : { kind: 'missing' }
+  } catch {
+    return { kind: 'error' }
+  }
+}
+
+/** Request-scoped like getListingDetail: generateMetadata and the page share one lookup. */
+export const getListingLookup = cache(getListingLookupUncoalesced)
+
+/**
  * Request-scoped dedup (React cache) OVER unstable_cache (cross-request). The
  * listing-detail page calls this in both generateMetadata and the page body;
  * without cache() each cold render pays the Supabase round trip twice. listingKey

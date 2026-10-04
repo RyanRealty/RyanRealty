@@ -166,7 +166,7 @@ export { getRepeatSalesAppreciation } from '@/lib/data/listings/getRepeatSalesAp
 export type { RepeatSale, RepeatSalesResult } from '@/lib/data/listings/getRepeatSalesAppreciation'
 
 // Listings — detail page (stub today; real impl with listing_detail_mv in Wave 1.5)
-export { getListingDetail } from '@/lib/data/listings/getListingDetail'
+export { getListingDetail, getListingLookup, type ListingLookup } from '@/lib/data/listings/getListingDetail'
 export { getListingPhotos, getListingFloorPlans } from '@/lib/data/listings/getListingPhotos'
 export {
   attachListingCardExtras,
