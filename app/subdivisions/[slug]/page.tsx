@@ -198,7 +198,7 @@ import { subdivisionPageTrail } from '@/lib/site/place-trail'
 import { refuseDegradedIsr, runPublishedPageRender } from '@/lib/site/degraded-isr'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { formatCount } from '@/lib/format/count'
-import { formatDate } from '@/lib/format/date'
+import { formatDate, toIsoTimestamp } from '@/lib/format/date'
 import { formatPriceExact } from '@/lib/format/money'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import {
@@ -337,13 +337,6 @@ function derivePlatCity(
 }
 
 /** Title-case a slug for display, null in / null out. */
-/** ISO 8601 from a timestamp string, or null when absent or unparseable. */
-function isoOrNull(value: string | null | undefined): string | null {
-  if (!value) return null
-  const t = new Date(value)
-  return Number.isNaN(t.getTime()) ? null : t.toISOString()
-}
-
 function titleCaseSlug(slug: string | null | undefined): string | null {
   return slug ? slugToTitle(slug) : null
 }
@@ -1411,7 +1404,12 @@ async function renderSubdivisionPage({ params }: Props) {
     when: undefined,
   }))
 
-  const platDateModified = isoOrNull(inventory?.readAt ?? subdivisionStats?.refreshedAt)
+  // AEO freshness: the time the plat's figures were last refreshed (the
+  // market_stats_cache row the page prints), never the moment of this render:
+  // inventory.readAt is new Date() at read time, so it would claim "changed
+  // now" on every request. It rides the FAQPage node below (a WebPage type);
+  // a second WebPage node would give this URL two page entities.
+  const platDateModified = toIsoTimestamp(subdivisionStats?.refreshedAt)
   const schemas: SchemaInput[] = [
     {
       type: 'breadcrumb',
@@ -1441,18 +1439,6 @@ async function renderSubdivisionPage({ params }: Props) {
       containedInPlace: placeCity ?? undefined,
       hasMap: hasMap ? `/subdivisions/${slug}` : undefined,
     },
-    // AEO freshness: dateModified is not a Place property, so it rides a WebPage
-    // node. The time is the inventory read already printed as the page's as-of.
-    ...(platDateModified
-      ? [
-          {
-            type: 'webPage' as const,
-            name: displayName,
-            url: `/subdivisions/${slug}`,
-            dateModified: platDateModified,
-          },
-        ]
-      : []),
   ]
   const platGuideSchema = areaGuideVideoSchema(displayName, `/subdivisions/${slug}`, areaGuideVideo)
   if (platGuideSchema) schemas.push(platGuideSchema)
@@ -1588,7 +1574,9 @@ async function renderSubdivisionPage({ params }: Props) {
   })
   const platFaqs = answersFaqItems(platAnswers)
   // Derived FROM the rendered rows, never beside them.
-  if (platFaqs.length > 0) schemas.push({ type: 'faqPage', items: platFaqs })
+  if (platFaqs.length > 0) {
+    schemas.push({ type: 'faqPage', items: platFaqs, ...(platDateModified ? { dateModified: platDateModified } : {}) })
+  }
   if (process.env.NODE_ENV !== 'production') {
     for (const line of platAnswerTraces) console.log(`[plat:${slug}] ${line}`)
   }

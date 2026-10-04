@@ -144,6 +144,8 @@ export type OrganizationFactsInput = {
 export type FaqPageInput = {
   type: 'faqPage'
   items: ReadonlyArray<{ question: string; answer: string }>
+  /** ISO 8601: when the figures the answers quote were last refreshed. */
+  dateModified?: string
 }
 
 export type PlaceInput = {
@@ -511,6 +513,7 @@ export function buildJsonLd(input: SchemaInput): Record<string, unknown> {
       return {
         '@context': 'https://schema.org',
         '@type': 'FAQPage',
+        ...(input.dateModified ? { dateModified: input.dateModified } : {}),
         mainEntity: input.items.map(({ question, answer }) => ({
           '@type': 'Question',
           name: question,

@@ -24,6 +24,7 @@
  * cap at 5 matches the builder's own slice.
  */
 
+import { toIsoTimestamp } from '@/lib/format/date'
 import { listingShareSummary } from '@/lib/share-metadata'
 import { publishListingStatusWord } from '@/lib/listing/publish-listing-published-price'
 import { listingCanonicalHref } from '@/lib/slug'
@@ -97,13 +98,6 @@ export function listingCanonicalPath(listing: ListingJsonLdInput['listing']): st
   return listingCanonicalHref(listing)
 }
 
-/** ISO 8601 string from a feed timestamp, or undefined when null or unparseable. */
-function isoOrUndefined(value: string | null | undefined): string | undefined {
-  if (!value) return undefined
-  const t = new Date(value)
-  return Number.isNaN(t.getTime()) ? undefined : t.toISOString()
-}
-
 export function buildListingJsonLd(input: ListingJsonLdInput): SchemaInput[] {
   const { listing, street, listingKey, wholePropertyPrice, photoUrls, agent, trail } = input
   const canonicalPath = listingCanonicalPath(listing)
@@ -161,8 +155,8 @@ export function buildListingJsonLd(input: ListingJsonLdInput): SchemaInput[] {
           }
         : undefined,
       availability: listing.status ?? undefined,
-      datePosted: isoOrUndefined(listing.onMarketDate),
-      dateModified: isoOrUndefined(listing.modifiedAt),
+      datePosted: toIsoTimestamp(listing.onMarketDate) ?? undefined,
+      dateModified: toIsoTimestamp(listing.modifiedAt) ?? undefined,
     },
   ]
 }

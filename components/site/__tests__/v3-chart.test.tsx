@@ -107,6 +107,41 @@ describe('V3Chart atom', () => {
     expect(html).toContain('Median close: Dec 2024, $475K')
   })
 
+  it('opens the same readings as a real table under "See the numbers" (AEO 2026-10-04)', () => {
+    const html = renderToStaticMarkup(
+      createElement(V3Chart, {
+        caption: v3Text('Median close, monthly'),
+        series: [MEDIAN],
+      }),
+    )
+    expect(html).toContain('<details class="v3-chart__numbers">')
+    expect(html).toContain('See the numbers')
+    expect(html).toContain('class="v3-chart__table"')
+    expect(html).toMatch(/<th scope="col">Median close<\/th>/)
+    expect(html).toMatch(/<th scope="row">Jan 2024<\/th><td>\$420K<\/td>/)
+    expect(html).toMatch(/<th scope="row">Dec 2024<\/th><td>\$475K<\/td>/)
+    // Raw values never reach the table; the caller's formatted labels do.
+    expect(html).not.toContain('420000')
+  })
+
+  it('keeps one table row per plotted point when ticks repeat (a weekly series)', () => {
+    const weekly: V3ChartSeries = {
+      name: v3Text('30-year rate'),
+      points: [point(6.1, 'Jan 2024', '6.10%'), point(6.2, 'Jan 2024', '6.20%'), point(6.3, 'Feb 2024', '6.30%')],
+    }
+    const html = renderToStaticMarkup(createElement(V3Chart, { caption: v3Text('Rates'), series: [weekly] }))
+    expect(html).toContain('6.10%</td>')
+    expect(html).toContain('6.20%</td>')
+    expect(html.indexOf('6.10%</td>')).toBeLessThan(html.indexOf('6.30%</td>'))
+  })
+
+  it('draws no table when nothing plots', () => {
+    const html = renderToStaticMarkup(
+      createElement(V3Chart, { caption: v3Text('Nothing yet'), series: [] }),
+    )
+    expect(html).not.toContain('v3-chart__table')
+  })
+
   it('states the reason when the series cannot plot, and draws no path', () => {
     const html = renderToStaticMarkup(
       createElement(V3Chart, {

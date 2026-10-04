@@ -25,7 +25,8 @@
  *   listing  the lead photo without fetchPriority="high", or no image preload
  *   decision any pinned decision in data/seo/decisions.json the live URL no
  *            longer keeps (status, redirect target, index, canonical, title,
- *            h1). Those are Matt's calls; a miss means the site regressed.
+ *            h1, served-HTML patterns). Those are Matt's calls; a miss means
+ *            the site regressed.
  * Warns (printed, not failing) on titles over 60 chars: the 2026-10-04 suffix
  * change left 203 of 367 sampled titles over 60, mostly listing titles; this
  * keeps the count visible without failing every deploy on a known backlog.
@@ -226,7 +227,7 @@ async function mapLimit(items, limit, fn) {
  * One pinned decision against one live response. Pure; exported for tests.
  * `location` is the raw Location header (absolute or relative).
  */
-export function auditDecision(decision, { status, location, page }, origin) {
+export function auditDecision(decision, { status, location, page, html }, origin) {
   const fails = []
   const e = decision.expect ?? {}
   const at = `${decision.path} [${decision.id}]`
@@ -259,6 +260,11 @@ export function auditDecision(decision, { status, location, page }, origin) {
       fails.push(`${at}: title "${page.title ?? ''}" no longer matches /${e.title}/`)
     }
     if (e.h1 != null && !new RegExp(e.h1).test(page.h1 ?? '')) fails.push(`${at}: h1 "${page.h1 ?? ''}" no longer matches /${e.h1}/`)
+    // Served-HTML patterns the decision needs present (the AEO takeaways, a
+    // chart's data table): what an AI crawler reads without running script.
+    for (const pattern of e.html ?? []) {
+      if (!new RegExp(pattern).test(html ?? '')) fails.push(`${at}: served HTML no longer contains /${pattern}/`)
+    }
   }
   return fails
 }
@@ -275,7 +281,7 @@ export async function auditDecisions(origin, ua, decisions, concurrency = 6) {
       return
     }
     const page = res.status === 200 ? parsePage(res.text) : null
-    fails.push(...auditDecision(d, { status: res.status, location: res.headers.get('location'), page }, origin))
+    fails.push(...auditDecision(d, { status: res.status, location: res.headers.get('location'), page, html: res.status === 200 ? res.text : null }, origin))
   })
   return fails
 }

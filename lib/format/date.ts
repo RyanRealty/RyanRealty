@@ -117,3 +117,14 @@ export function zonedDayMinutes(now: Date, timeZone: string): { day: string; min
   const minute = Number(get('minute'))
   return { day, minutes: hour * 60 + minute }
 }
+
+/**
+ * ISO 8601 for a structured-data date (JSON-LD datePosted / dateModified), or
+ * null when the value is absent or unparseable. One helper for every schema
+ * builder, so a date-only feed value and a timestamp normalize the same way.
+ */
+export function toIsoTimestamp(value: string | number | Date | null | undefined): string | null {
+  if (value == null || value === '') return null
+  const t = value instanceof Date ? value : new Date(value)
+  return Number.isNaN(t.getTime()) ? null : t.toISOString()
+}

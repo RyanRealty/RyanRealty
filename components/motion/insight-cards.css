@@ -39,16 +39,24 @@
   line-height: 1.45;
 }
 
+/* One explicit minmax(0, 1fr) column: the implicit auto column took the
+   chart stage's 364px min-content, and every row in the card (the legend
+   included) followed it 9px past a 375px screen (2026-10-04). */
 .insight-cards__card {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
   gap: var(--v3-space-sm);
   padding: var(--v3-space-md) 0 0;
   border-top: var(--v3-rule-hairline);
 }
 
+/* minmax(0, 1fr), not 1fr: a bare 1fr column will not shrink under its
+   content, and the big price numerals pushed the card 9px past a 375px
+   screen on /housing-market/bend (2026-10-04, a page that scrolled sideways). */
 .insight-cards__legend {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--v3-space-sm);
 }
 

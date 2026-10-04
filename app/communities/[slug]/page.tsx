@@ -113,6 +113,7 @@ import {
   V3Ledger,
   V3PlaceCharacter,
   V3Answers,
+  V3Takeaways,
   V3Quiet,
   type AtlasRegion,
   V3Amenities,
@@ -120,6 +121,7 @@ import {
   type V3InstrumentFigure,
   type V3MosBarsProps,
 } from '@/components/site/v3'
+import { placeTakeaways } from '@/lib/site/place-takeaways'
 import {
   PlaceSubdivisionAtlas,
   PlaceSubdivisionHomes,
@@ -595,6 +597,7 @@ async function renderCommunityDetail({ params }: Props) {
     pulseActiveCount: hud.active,
     medianListPrice: hud.medianList,
     monthsOfSupply: null,
+    yoyMedianPrice: publicPace.yoyMedian,
     medianDaysToPending: hud.daysToPending,
     medianDaysOnMarket: null,
     refreshedAt: leftoverStamp,
@@ -608,6 +611,24 @@ async function renderCommunityDetail({ params }: Props) {
     attendanceSchools: placeSchools.map((school) => school.name),
   }
   const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(publicName, marketFaqInput)
+  // The short answer between the composed fold and the homes (AEO, Matt
+  // 2026-10-04). The community's own figures only: hud.monthsSupply is null
+  // below the 30-sale floor and its sentence drops, and the sale median is the
+  // community's 12-month close (publicPace.medianClose), the same value the
+  // page's answers print as "median sale price over the past 12 months"
+  // (buildPlaceAnswers medianSalePrice below, which also feeds the FAQPage).
+  const takeaways = placeTakeaways({
+    place: publicName,
+    asOfLabel: mosAsOf,
+    active: hud.active,
+    medianList: hud.medianList,
+    monthsOfSupply: hud.monthsSupply,
+    saleMedian:
+      publicPace.medianClose != null && publicPace.medianClose > 0
+        ? { value: publicPace.medianClose, when: 'over the last 12 months' }
+        : null,
+    yoyMedian: publicPace.yoyMedian,
+  })
 
   const placeLinks = getPlaceLinks({
     type: 'community',
@@ -1145,6 +1166,12 @@ async function renderCommunityDetail({ params }: Props) {
             />
             </div>
           </div>
+          <V3Takeaways
+            id="takeaways"
+            heading={`${publicName} at a glance`}
+            items={takeaways}
+            source={mosAsOf ? `Single-family homes, Oregon Data Share MLS, as of ${mosAsOf}.` : null}
+          />
           {fieldTypeIndex.length > 1 ? (
             <nav className="community-field-types" aria-label={`${publicName} listing types`}>
               <ul>

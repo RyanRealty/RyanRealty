@@ -119,6 +119,12 @@ describe('auditDecision (data/seo/decisions.json)', () => {
     expect(f).toMatch(/no longer matches/)
   })
 
+  it('fails a served-HTML pattern the decision needs (AEO takeaways, chart tables)', () => {
+    const d = { id: 'h', path: '/cities/bend', expect: { status: 200, html: ['id="takeaways"'] } }
+    expect(auditDecision(d, { status: 200, page: live(), html: '<section id="takeaways">' }, O)).toEqual([])
+    expect(auditDecision(d, { status: 200, page: live(), html: '<main></main>' }, O).join()).toMatch(/no longer contains/)
+  })
+
   it('passes the page as decided', () => {
     expect(auditDecision(page, { status: 200, page: live() }, O)).toEqual([])
   })

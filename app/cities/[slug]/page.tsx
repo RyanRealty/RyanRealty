@@ -116,6 +116,7 @@ import {
   V3PlaceDoor,
   V3Ledger,
   V3Answers,
+  V3Takeaways,
   V3PlaceAffordability,
   V3Quiet,
   V3SectionTracker,
@@ -123,6 +124,7 @@ import {
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { type AtlasRegion, type V3PlaceIndexEntry } from '@/components/site/v3'
+import { placeTakeaways } from '@/lib/site/place-takeaways'
 import {
   PlaceSubdivisionAtlas,
   PlaceSubdivisionHomes,
@@ -539,6 +541,17 @@ async function renderCityDetail({ params }: Props) {
   // complete month, so the FAQ and the chart cannot disagree.
   const chartMonths = leftoverOrCacheMonthly(leftoverMonthly, dropCurrentMonth(priceHist, currentMonthKey))
   const saleMedian = latestSaleMedian(chartMonths.months, currentMonthKey)
+  // The short answer after the opening (AEO, Matt 2026-10-04): the page's own
+  // figures in plain sentences, each naming the city (lib/site/place-takeaways).
+  const takeaways = placeTakeaways({
+    place: cityName,
+    asOfLabel: mosAsOf,
+    active: hud.active,
+    medianList: hud.medianList,
+    monthsOfSupply: mosRaw,
+    saleMedian: saleMedian ? { value: saleMedian.value, when: `in ${saleMedian.monthLabel}` } : null,
+    yoyMedian: publicPace.yoyMedian,
+  })
   const marketFaqInput: MarketFaqInput = {
     grain: 'city',
     source: 'market-truth',
@@ -548,6 +561,7 @@ async function renderCityDetail({ params }: Props) {
     medianSalePrice: saleMedian?.value ?? null,
     medianSaleMonthLabel: saleMedian?.monthLabel ?? null,
     monthsOfSupply: mosRaw,
+    yoyMedianPrice: publicPace.yoyMedian,
     medianDaysToPending: hud.daysToPending,
     soldCount12mo: hud.sold12mo,
     refreshedAt: leftoverStamp,
@@ -1189,6 +1203,15 @@ async function renderCityDetail({ params }: Props) {
             </aside>
           </div>
         </div>
+
+        {/* The short answer, after the figure and the alerts the 2026-09-29
+            taste lock keeps under the photograph (AEO, Matt 2026-10-04). */}
+        <V3Takeaways
+          id="takeaways"
+          heading={`${cityName} at a glance`}
+          items={takeaways}
+          source={mosAsOf ? `Single-family homes, Oregon Data Share MLS, as of ${mosAsOf}.` : null}
+        />
 
         <PlaceSubdivisionMap
           placeName={cityName}
