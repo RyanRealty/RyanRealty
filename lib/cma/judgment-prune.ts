@@ -32,7 +32,7 @@
  * When the review did not run, the product-matched pool prices with the
  * dispersion guard and the contract's review flag as the backstop.
  */
-import { isCustomOrNewSubject, isNewBuild, newConstructionCompatible } from '@/lib/pricing/classes'
+import { dropsResaleVersusNewBuild } from '@/lib/pricing/classes'
 import { productTypeCompatible } from '@/lib/cma/market-area'
 import { ageRestrictedMismatch, ownPlatAgeRestrictedShare } from '@/lib/pricing/age-restricted'
 
@@ -57,6 +57,7 @@ type ProductComp = {
   listingKey: string
   propertySubType?: string | null
   yearBuilt?: number | null
+  newConstructionYn?: boolean | null
   publicRemarks?: string | null
   subdivision?: string | null
   /** The selector's own-plat decision (lib/cma/types.ts CmaComp.ownPlat). */
@@ -93,14 +94,6 @@ export function pricingCompsAfterJudgment<T extends ProductComp>(args: {
 }): { comps: T[]; shortage: boolean; droppedProduct: number; trace: string } {
   const year = args.asOfYear ?? new Date().getFullYear()
   const byVerdict = new Map(args.verdicts.map((v) => [v.listingKey, v]))
-  const subjectNew = isCustomOrNewSubject(
-    {
-      yearBuilt: args.subject.yearBuilt,
-      newConstructionYn: args.subject.newConstructionYn,
-      propertySubType: args.subject.propertySubType,
-    },
-    year,
-  )
   const platShare =
     args.ownPlatAgeRestrictedShare !== undefined
       ? args.ownPlatAgeRestrictedShare
@@ -125,10 +118,21 @@ export function pricingCompsAfterJudgment<T extends ProductComp>(args: {
     ) {
       return true
     }
-    if (args.exclusivePocket || subjectNew) return false
-    return !newConstructionCompatible(
-      isNewBuild(args.subject.yearBuilt, year, args.subject.newConstructionYn),
-      isNewBuild(comp.yearBuilt, year, null),
+    if (args.exclusivePocket) return false
+    return dropsResaleVersusNewBuild(
+      {
+        yearBuilt: args.subject.yearBuilt,
+        newConstructionYn: args.subject.newConstructionYn,
+        remarks: args.subject.publicRemarks,
+        propertySubType: args.subject.propertySubType,
+      },
+      {
+        yearBuilt: comp.yearBuilt,
+        newConstructionYn: comp.newConstructionYn,
+        remarks: comp.publicRemarks,
+        propertySubType: comp.propertySubType,
+      },
+      year,
     )
   }
   const pool = args.selected.filter((c) => !hard(c))

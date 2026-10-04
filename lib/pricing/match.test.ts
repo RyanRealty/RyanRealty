@@ -2218,3 +2218,123 @@ describe('the facts pool reaches the rung that names it', () => {
     expect(out.rungs.find((r) => r.tier === 'subdivision-24mo')?.added).toBe(0)
   })
 })
+
+describe('Petrosa-shaped resale still prices with brand-new homes in the subdivision', () => {
+  const asOfPetrosa = '2026-08-01'
+  function petrosaSale(over: Partial<PricingSale>): PricingSale {
+    return sale({
+      subdivision: 'Petrosa',
+      subdivisionNorm: 'petrosa',
+      city: 'Bend',
+      citySlug: 'bend',
+      sqft: 2000,
+      lotAcres: 0.15,
+      beds: 4,
+      baths: 3,
+      storyClass: 'two',
+      closeDate: '2026-06-15',
+      closePrice: 650000,
+      ...over,
+    })
+  }
+
+  it('keeps same-subdivision never-owned sales for a 2021 resale', () => {
+    const pool = [
+      petrosaSale({
+        listingKey: 'tellus-2026',
+        address: '3847 Tellus',
+        yearBuilt: 2026,
+        newConstruction: true,
+        closePrice: 659900,
+      }),
+      petrosaSale({
+        listingKey: 'oakside-2025',
+        address: '3903 Oakside',
+        yearBuilt: 2025,
+        newConstruction: true,
+        closePrice: 649900,
+      }),
+      petrosaSale({
+        listingKey: 'tellus-2022',
+        address: '3759 Tellus',
+        yearBuilt: 2022,
+        newConstruction: false,
+        closePrice: 659000,
+      }),
+      petrosaSale({
+        listingKey: 'tellus-2024',
+        address: '3831 Tellus',
+        yearBuilt: 2024,
+        newConstruction: false,
+        closePrice: 645000,
+      }),
+    ]
+    const out = walkPricingLadder(
+      subject({
+        streetAddress: '3722 NE Petrosa',
+        subdivision: 'Petrosa',
+        subdivisionNorm: 'petrosa',
+        yearBuilt: 2021,
+        newConstruction: false,
+        sqft: 2000,
+        beds: 4,
+        baths: 3,
+        storyClass: 'two',
+        lotAcres: 0.15,
+      }),
+      pool,
+      { asOf: asOfPetrosa },
+    )
+    const keys = out.comps.map((c) => c.listingKey)
+    expect(keys).toContain('tellus-2026')
+    expect(keys).toContain('oakside-2025')
+    expect(keys).toContain('tellus-2022')
+    expect(keys).toContain('tellus-2024')
+  })
+
+  it('drops never-owned sales once the resale is past the 5-year window', () => {
+    const pool = [
+      petrosaSale({
+        listingKey: 'tellus-2026',
+        address: '3847 Tellus',
+        yearBuilt: 2026,
+        newConstruction: true,
+        closePrice: 659900,
+      }),
+      petrosaSale({
+        listingKey: 'oakside-2023',
+        address: '3903 Oakside',
+        yearBuilt: 2023,
+        newConstruction: true,
+        closePrice: 649900,
+      }),
+      petrosaSale({
+        listingKey: 'tellus-2022',
+        address: '3759 Tellus',
+        yearBuilt: 2022,
+        newConstruction: false,
+        closePrice: 659000,
+      }),
+    ]
+    const out = walkPricingLadder(
+      subject({
+        streetAddress: '100 Older',
+        subdivision: 'Petrosa',
+        subdivisionNorm: 'petrosa',
+        yearBuilt: 2017,
+        newConstruction: false,
+        sqft: 2000,
+        beds: 4,
+        baths: 3,
+        storyClass: 'two',
+        lotAcres: 0.15,
+      }),
+      pool,
+      { asOf: asOfPetrosa },
+    )
+    const keys = out.comps.map((c) => c.listingKey)
+    expect(keys).not.toContain('tellus-2026')
+    expect(keys).not.toContain('oakside-2023')
+    expect(keys).toContain('tellus-2022')
+  })
+})

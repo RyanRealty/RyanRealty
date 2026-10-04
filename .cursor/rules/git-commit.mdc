@@ -36,7 +36,7 @@ chore: update supabase-js to 2.98.0
 2. `git add -A` (or stage intentionally — never commit secrets)
 3. `git commit -m "type: description"`
 4. **Push that branch to GitHub in the same session** with `npm run push`. All code work is pushed to GitHub as a branch right away. Do not leave finished work only on a local branch. Matt uses Claude Code and Cursor interchangeably; unpushed commits are invisible to the other tool and are not “shipped.”
-5. Main lands only by fast-forward from the Mini after the push gate. No rebase, force-push, or reset. Do not land `main` yourself. If the remote branch moved and the push is rejected, stop and report.
+5. Land main with a fast-forward when the work is ready. Any machine may do it. No rebase, force-push, or reset. If the remote branch moved and the push is rejected, stop and report.
 
 Pre-commit runs `npm test`. Pre-push runs the full quality gate.
 
@@ -47,7 +47,7 @@ SKIP_DB_GUARD=1 git push         # skip migration drift check only
 ```
 
 ## Branch strategy
-- **Production is `main`.** Main lands only by fast-forward from the Mini after the push gate. Pushing `main` triggers a Vercel production deploy (docs-only commits may skip via `ignoreCommand`).
+- **Production is `main`.** Land main with a fast-forward when the work is ready. Any machine may do it. Pushing `main` triggers a Vercel production deploy (docs-only commits may skip via `ignoreCommand`).
 - **Worktrees allowed** for parallel agents / experiments — name `wt/<topic>-YYYYMMDD`, push the branch right away, or record it in `CROSS_AGENT_HANDOFF.md` before stopping. See `.cursor/rules/always-merge-to-main.mdc` and **AGENTS.md → Worktrees**.
 - Push the branch to GitHub right away. Do not keep the only copy local.
 - No PRs for routine agent work.

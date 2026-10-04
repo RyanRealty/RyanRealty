@@ -1010,6 +1010,7 @@ export function pricingSaleToCmaComp(sale: SelectedPricingComp): CmaComp {
     lotAcres: sale.lotAcres,
     propertySubType: sale.productClass === 'detached' ? 'Single Family Residence' : sale.productClass,
     yearBuilt: sale.yearBuilt,
+    newConstructionYn: sale.newConstruction ?? null,
     photoUrl: sale.photoUrl,
     publicRemarks: sale.publicRemarks,
     viewDescription: null,
