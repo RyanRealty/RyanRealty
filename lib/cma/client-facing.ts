@@ -257,6 +257,12 @@ function ownershipLine(equity: CmaEquityPosition | null | undefined): string | n
  * "Why this list price" from facts already on the row. No invented comps,
  * no invented market, no silent gap when an override sits above Method 3.
  */
+
+function withSewer(comp: CmaAdjustedComp, text: string): string {
+  const note = comp.sewerNote?.trim()
+  return note ? `${text} ${note}` : text
+}
+
 export function whyThisListPrice(input: {
   subject: CmaSubject
   comps: readonly CmaAdjustedComp[]
@@ -271,22 +277,22 @@ export function whyThisListPrice(input: {
   if (ceiling && floor && ceiling !== floor) {
     bullets.push({
       label: ceiling.address,
-      text: `Sold at ${usd(ceiling.closePrice)}. Adjusted close ${usd(ceiling.adjustedPrice)}. Highest in this set.`,
+      text: withSewer(ceiling, `Sold at ${usd(ceiling.closePrice)}. Adjusted close ${usd(ceiling.adjustedPrice)}. Highest in this set.`),
     })
     if (best && best !== ceiling && best !== floor) {
       bullets.push({
         label: best.address,
-        text: `Adjusted close ${usd(best.adjustedPrice)}.`,
+        text: withSewer(best, `Adjusted close ${usd(best.adjustedPrice)}.`),
       })
     }
     bullets.push({
       label: floor.address,
-      text: `Sold at ${usd(floor.closePrice)}. Adjusted close ${usd(floor.adjustedPrice)}. Lowest in this set.`,
+      text: withSewer(floor, `Sold at ${usd(floor.closePrice)}. Adjusted close ${usd(floor.adjustedPrice)}. Lowest in this set.`),
     })
   } else if (best) {
     bullets.push({
       label: best.address,
-      text: `Sold at ${usd(best.closePrice)}. Adjusted close ${usd(best.adjustedPrice)}.`,
+      text: withSewer(best, `Sold at ${usd(best.closePrice)}. Adjusted close ${usd(best.adjustedPrice)}.`),
     })
   }
 

@@ -179,3 +179,54 @@ describe('recorded plat membership for every community', () => {
     expect(out.comps[0]?.selectionTier.startsWith('community-')).toBe(true)
   })
 })
+
+describe('sewer inside a recorded plat', () => {
+  it('keeps a septic sale inside the plat and names both sewers', () => {
+    const asOf = '2026-10-04'
+    const home = subject()
+    const inside = sale({ sewerClass: 'septic' })
+    const tiers = pricingTierLadder().filter((tier) => tier.sameCommunity)
+    const out = walkPricingLadder(home, [inside], { asOf, tiers })
+    expect(out.comps.map((comp) => comp.listingKey)).toEqual(['FAIRWAY_2ND'])
+    expect(out.comps[0]?.sewerNote).toBe('20270 Fairway is on septic. This home is on public sewer.')
+  })
+
+  it('still drops septic against public sewer outside the plat, and keeps unknown', () => {
+    const asOf = '2026-10-04'
+    const home = subject()
+    home.communitySlug = null
+    home.communityLocated = false
+    home.containingPlatSlugs = null
+    home.subdivision = 'Plain Street'
+    home.subdivisionNorm = 'plain street'
+    home.subdivisionSlug = null
+    const septic = sale({
+      listingKey: 'OUTSIDE_SEPTIC',
+      address: '9 Outside',
+      subdivision: 'Other Tract',
+      subdivisionNorm: 'other tract',
+      subdivisionSlug: 'other-tract',
+      communitySlug: null,
+      communityLocated: false,
+      containingPlatSlugs: null,
+      sewerClass: 'septic',
+      latitude: home.latitude,
+      longitude: (home.longitude ?? 0) + 0.002,
+      closeDate: '2026-06-01',
+    })
+    const unknown = sale({
+      ...septic,
+      listingKey: 'OUTSIDE_UNKNOWN',
+      address: '10 Outside',
+      sewerClass: 'unknown',
+      longitude: (home.longitude ?? 0) + 0.001,
+    })
+    const tiers = pricingTierLadder().filter((tier) => tier.name === 'nearby-0.25mi-9mo')
+    expect(tiers).toHaveLength(1)
+    const dropped = walkPricingLadder(home, [septic], { asOf, tiers })
+    expect(dropped.comps).toEqual([])
+    const kept = walkPricingLadder(home, [unknown], { asOf, tiers })
+    expect(kept.comps.map((comp) => comp.listingKey)).toEqual(['OUTSIDE_UNKNOWN'])
+    expect(kept.comps[0]?.sewerNote ?? null).toBeNull()
+  })
+})

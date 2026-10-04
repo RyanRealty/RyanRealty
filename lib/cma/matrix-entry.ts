@@ -269,6 +269,7 @@ export function closedEntries(
         : ran != null
           ? `listed to closed, ${int(ran)} ${ran === 1 ? 'day' : 'days'}`
           : '',
+      c.sewerNote?.trim() || '',
     ]
       .filter(Boolean)
       .join(' · ')
