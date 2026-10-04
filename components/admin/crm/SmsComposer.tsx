@@ -51,6 +51,8 @@ import {
 import { MMS_ACCEPT_ATTR, type CrmAttachmentRef } from '@/lib/crm/attachment-limits'
 import { Button, FilterChip, Switch, ToolbarCheck } from '@/components/admin/v2'
 import { useIsMobile } from '@/hooks/use-mobile'
+import { useSmsQuiet } from '@/components/admin/crm/use-sms-quiet'
+import { PHONE_GROUP_QUIET_NOTE } from '@/lib/crm/compose-group'
 
 function segmentInfo(text: string): { chars: number; segments: number } {
   const gsm = /^[A-Za-z0-9 @£$¥èéùìòÇØøÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ!"#%&'()*+,\-./:;<=>?¡ÄÖÑܧ¿äöñüà\n\r^{}\\[~\]|€]*$/.test(text)
@@ -64,7 +66,15 @@ function segmentInfo(text: string): { chars: number; segments: number } {
 /** A group-text recipient. personId 0 = a raw thread number with no contact
  *  record (still included so a group reply drops nobody). defaultOn pre-selects
  *  it (group-thread participants come pre-checked; relationships start off). */
-export type SmsRecipient = { personId: number; name: string; phone: string; relation: string; defaultOn?: boolean }
+export type SmsRecipient = {
+  personId: number
+  name: string
+  phone: string
+  relation: string
+  defaultOn?: boolean
+  /** The phone's area-code zones (lib/crm/recipient-timezones), for the quiet-hours flag. */
+  timeZones?: string[]
+}
 
 /** Stable per-recipient key: contact id when we have one, else the phone. */
 function recipKey(r: SmsRecipient): string {
@@ -133,6 +143,10 @@ export function SmsComposer(props: {
   hideMergeFields?: boolean
   /** Hide the quiet-hours override (host send path has no override wiring). */
   hideQuietHours?: boolean
+  /** The server's quiet-hours answer for the lead's number at render (Pacific and its zone). */
+  quietHours?: boolean
+  /** The lead's area-code zones, so the flag stays live after render. */
+  primaryTimeZones?: string[]
   /** Externally gate the send button (e.g. a review-ack checkbox in the host). */
   sendDisabled?: boolean
 }) {
@@ -208,6 +222,17 @@ export function SmsComposer(props: {
     ...selectedRecips.filter((r) => r.personId === 0).map((r) => r.phone),
     ...(textMe && textMePhone ? [textMePhone] : []),
   ].join(',')
+
+  // Quiet hours in Pacific and every number on this text, read live (Matt
+  // 2026-10-04, "Both zones"). A phone text to ONE person is a deliberate
+  // manual send and goes at any hour; a phone GROUP text in quiet hours waits
+  // until 8am, or a computer's "send anyway" (Matt 2026-10-04, "1:1 only").
+  const quietNow = useSmsQuiet(
+    [...(props.primaryTimeZones ?? []), ...selectedRecips.flatMap((r) => r.timeZones ?? [])],
+    Boolean(props.quietHours),
+  )
+  const isGroup = selectedRecips.length > 0 || Boolean(textMe && textMePhone)
+  const phoneGroupHeld = hideQuiet && isGroup && quietNow
 
   function handleInsertToken(token: string) {
     const el = bodyRef.current
@@ -289,6 +314,11 @@ export function SmsComposer(props: {
           Unfilled merge fields, this contact has no value for: {unresolved.join(', ')}. Edit before sending.
         </p>
       ) : null}
+      {phoneGroupHeld ? (
+        <p className="px-1 text-xs" style={{ color: 'var(--a-text-2)' }}>
+          {PHONE_GROUP_QUIET_NOTE}
+        </p>
+      ) : null}
 
       <AttachmentChips items={attachments.items} onRemove={attachments.remove} />
 
@@ -327,7 +357,7 @@ export function SmsComposer(props: {
         />
         <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
         <SmsSendButton
-          disabled={!body.trim() || attachments.uploading || Boolean(props.sendDisabled)}
+          disabled={!body.trim() || attachments.uploading || Boolean(props.sendDisabled) || phoneGroupHeld}
           onSettled={() => {
             submitGuard.settle()
             setIdempotencyKey(newIdempotencyKey())
@@ -353,6 +383,8 @@ export function SmsComposer(props: {
             value="1"
             label="Send anyway (quiet hours)"
           />
+        ) : isGroup ? (
+          <span />
         ) : (
           <>
             <span />

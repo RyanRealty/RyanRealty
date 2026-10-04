@@ -37,7 +37,7 @@ Every client-facing outbound send either passes the compliance gates (suppressio
 ## 5. End-to-end path (a send attempt)
 1. **Hard-stop check** · system · `checkSendGuards()` stage 1 — hard-stop suppressions (channel `all`) · `lib/comms/guards.ts:28-49` · failure: none (fail-closed) · n/a
 2. **Channel suppression** · system · `isSuppressed(person, channel)` — DB error ⇒ treated as suppressed (fail-closed by design) · `lib/crm/suppressions.ts:31-57` · n/a
-3. **Quiet hours** · system · `inSmsQuietHours()` (`lib/crm/quiet-hours.ts:23-26`) — automated: reschedule via `nextSendWindow()`; manual 1:1: override permitted (`crm.ts:788-793`); sequence email uses LA-hours window 7–19 (`engine:197-199`) · n/a
+3. **Quiet hours** · system · 8am to the 7:55pm pause in Pacific AND in every zone the recipient's number sits in (Matt 2026-10-04, "Both zones"): `quietHoursRefusal()` / `checkSendGuards({ recipientPhone })` in `lib/comms/guards.ts`, zones from `lib/crm/recipient-timezones.ts` (libphonenumber prefix table; unknown or non-+1 numbers are Pacific alone) — automated: reschedule via `nextSendWindow(phone)`; manual: "send anyway" override permitted on a computer; on a phone a one-person text overrides automatically and a group text waits (Matt 2026-10-04, "1:1 only"); a group refused for quiet hours is held whole, never fanned out to one-to-one texts; sequence email uses LA-hours window 7–19 · n/a
 4. **A2P gate (SMS)** · system · VERIFIED → Twilio send; else fallback email body, else visible queue row in `crm_timeline` · `engine:392-470` · n/a
 5. **Daily cap (sequence SMS)** · system · `SEQ_SMS_DAILY_CAP` (default 500) counted from trailing-24h `sms_out` `source='sequence'` · `engine:86-93,397-402` · n/a
 6. **Merge-token guard** · system · unresolved `%token%` → enrollment `stopped`, never leaks · `engine:284-290` · n/a
@@ -48,7 +48,7 @@ Every client-facing outbound send either passes the compliance gates (suppressio
 ## 6. Decision points
 - Hard-stop? → block always, every channel.
 - Channel suppressed? → block that channel; others may pass.
-- Quiet hours? → automated reschedule vs manual-1:1 override (deliberate asymmetry).
+- Quiet hours (Pacific or the number's own zone)? → automated reschedule vs manual override (deliberate asymmetry); a phone overrides for one person only.
 - A2P not VERIFIED? → email fallback → visible queue (never silent).
 - Cap hit? → reschedule to next window.
 - DB unreachable? → FAIL CLOSED (no send).
@@ -84,6 +84,8 @@ Every client-facing outbound send either passes the compliance gates (suppressio
 - [ ] Text STOP → `crm_suppressions` sms row (stop-keyword); sequence SMS to that person → enrollment `suppressed`, no Twilio call.
 - [ ] START after broker-added suppression → broker suppression SURVIVES (scope check).
 - [ ] Manual 1:1 SMS in quiet hours → allowed with override flag; sequence SMS same window → rescheduled, `next_run_at` in window.
+- [ ] Sequence SMS to a 212 number at 5:30pm Pacific → rescheduled to the next window open in New York and Pacific (`lib/crm/recipient-timezones.test.ts`).
+- [ ] Phone group text in quiet hours → Send disabled with the wait note; one-person phone text → sends (`components/admin/crm/composer-quiet-hours.test.tsx`).
 - [ ] Kill DB access in a test env → `isSuppressed` error ⇒ send blocked (fail-closed proof).
 - [ ] Group MMS to a mixed cohort → suppressed member excluded (and note idempotency gap until fixed).
 - [ ] A2P status forced non-VERIFIED in test → SMS step lands as visible queue/email fallback, never silent drop.
