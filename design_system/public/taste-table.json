@@ -1265,13 +1265,6 @@
      "replaceWith": "beui-tabs"
     },
     {
-     "section": "listing-ask",
-     "severity": "taste",
-     "finding": "Desktop fold has no Tour / Call / Text control — only a Talk to a broker card. Mobile shows three separate leftover buttons (filled TOUR, outline CALL, outline TEXT), not one grouped control and not an action-swap.",
-     "primitive": "components/site/listing-detail/ListingMobileContactBar.client.tsx",
-     "replaceWith": "shadcn-button-group"
-    },
-    {
      "section": "listing-specs",
      "severity": "taste",
      "finding": "The fold shows 3 bd · 3 ba · 2,008 sqft and a $693/SQFT chip. Type, lot, year, and HOA — the facts the lock says a buyer came for — are not in either first viewport.",
