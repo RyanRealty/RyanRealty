@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { renderCompMatrixHtml } from '@/lib/cma/comp-matrix'
+import { cmaSectionStyles } from '@/lib/cma/render-css-sections'
+import { immersiveStylesheet } from '@/lib/cma/immersive-css'
 import { salesThatSetItPage, SALES_THAT_SET_IT_HEADING } from '@/lib/cma/render-pricing-page'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 
@@ -559,6 +561,41 @@ describe('the adjustment grid, line by line', () => {
     expect(cards[0]).toContain('https://cdn.example/subject.jpg')
     expect(cards[1]).toContain('https://cdn.example/comp.jpg')
     expect(cards[0]).toContain('loading="eager"')
+  })
+
+  it('prints each sold-comp field once on the phone card', () => {
+    const html = renderCompMatrixHtml(
+      subject,
+      padSales({
+        ...comp,
+        roomDifference: ['beds'],
+      } as CmaAdjustedComp),
+      '',
+      null,
+      new Map([['P1', { weight: 29.2, grossAdjustmentPct: 7 }]]),
+    )
+    const stack = html.slice(html.indexOf('class="comp-stack"'))
+    const card = stack.split('comp-stack-card')[2] ?? ''
+    const count = (label: string) => card.split(`class="k">${label}<`).length - 1
+    expect(count('Sold')).toBe(1)
+    expect(count('Seller concessions')).toBe(1)
+    expect(count('Sold for')).toBe(0)
+    expect(count('Adjusted for rooms (theirs vs yours)')).toBe(1)
+    expect(card).toContain('One bedroom off yours. No dollar adjustment.')
+    expect(count('Sale price today')).toBe(1)
+    expect(count('Weight in this price')).toBe(1)
+    expect(card.indexOf('matrix-thumb')).toBeLessThan(card.indexOf('class="k">Weight in this price'))
+  })
+
+  it('keeps a phone card from painting the next card\'s weight column', () => {
+    for (const css of [cmaSectionStyles(), immersiveStylesheet()]) {
+      expect(css).toContain('.comp-stack-card')
+      expect(css).toMatch(/\.comp-stack-card\s*\{[^}]*overflow:\s*clip/)
+      expect(css).not.toMatch(/\.comp-stack-line\s*\{[^}]*white-space:\s*nowrap/)
+      expect(css).not.toMatch(/\.comp-stack-line\s*\{[^}]*flex-wrap:\s*nowrap/)
+      expect(css).toMatch(/\.comp-stack-line\s*\{[^}]*grid-template-columns/)
+      expect(css).toMatch(/\.comp-stack-line \.v\s*\{[^}]*white-space:\s*normal/)
+    }
   })
 })
 

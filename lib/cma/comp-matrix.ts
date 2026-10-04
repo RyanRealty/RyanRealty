@@ -841,23 +841,36 @@ function matrixStack(input: {
       'Seller concessions',
       'Adjusted',
     ])
+    // ONE LABEL, ONCE. The fact rows and the adjustment grid share Sold (the
+    // close price), Sold for (that same price again), and Seller concessions.
+    // Printing both blocks put the sale's fields on the card twice. The close
+    // date stays on Status date, so the grid's second "Sold" (the date) does
+    // not come back under another name. Adjusted for rooms is not one of
+    // those and stays, sentence and all.
+    const seenLabels = new Set<string>()
+    const keepLabel = (label: string): boolean => {
+      if (seenLabels.has(label)) return false
+      if (label === 'Sold for' && seenLabels.has('Sold')) return false
+      seenLabels.add(label)
+      return true
+    }
     const headline = facts
-      .filter(({ row }) => row.label === 'Status')
+      .filter(({ row }) => row.label === 'Status' && keepLabel(row.label))
       .map(({ row, value }) => line(row.label, value, row.html === true, false, false))
       .join('')
     const body = facts
-      .filter(({ row }) => row.label !== 'Status' && OPEN.has(row.label))
+      .filter(({ row }) => row.label !== 'Status' && OPEN.has(row.label) && keepLabel(row.label))
       .map(({ row, value }) => line(row.label, value, row.html === true, false, false))
       .join('')
     const rest = facts
-      .filter(({ row }) => !OPEN.has(row.label))
+      .filter(({ row }) => !OPEN.has(row.label) && keepLabel(row.label))
       .map(({ row, value }) => line(row.label, value, row.html === true, false, false))
       .join('')
     const adjCol = input.adjustment?.cols[i] ?? null
     const adjLines = adjCol
       ? (input.adjustment?.rows ?? [])
           .map((row, ri) => ({ row, value: adjCol.cells[ri] ?? '-' }))
-          .filter(({ value }) => value !== '-')
+          .filter(({ row, value }) => value !== '-' && keepLabel(row.label))
           .map(({ row, value }) => line(row.label, value, false, row.rule !== true, row.rule === true))
           .join('')
       : ''
