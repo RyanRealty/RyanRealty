@@ -444,8 +444,8 @@ and silently returns nothing. Enforced by `check-dal-column-quoting.mjs`.
 - **Truthful and accurate, always.** If you're not sure, say so. Never state something as fact
   unless you've confirmed it.
 - **All code work is pushed to GitHub as a branch right away (locked process rule 14).**
-  Main lands only by fast-forward from the Mini after the push gate. No rebase, force-push, or
-  reset. Do not merge to `main` yourself. Worktrees only for parallel work; push the branch, or
+  Land main with a fast-forward when the work is ready. Any machine may do it. No rebase, force-push, or
+  reset. Worktrees only for parallel work; push the branch, or
   hand off in `CROSS_AGENT_HANDOFF.md` before stop. See
   [`AGENTS.md`](AGENTS.md). **R-221:** do not poll GitHub Actions.
 - **Never ask Matt to run anything, and never queue found work for him (Matt 2026-09-25).**
@@ -550,6 +550,6 @@ else fires on trigger match.
 11. Approved CMAs send only in the weekday 9:03 AM PT window.
 12. Never use buyer or seller names in social, email, or public copy.
 13. No em dashes in public site copy.
-14. All code work is pushed to GitHub as a branch right away. Main lands only by fast-forward from the Mini after the push gate. No rebase, force-push, or reset.
+14. All code work is pushed to GitHub as a branch right away. Land main with a fast-forward when the work is ready. Any machine may do it. No rebase, force-push, or reset.
 
 **CRM is in-house** `public.crm_people` via `sendEvent()` in [`lib/crm/send-event.ts`](lib/crm/send-event.ts). Review at `/admin/crm`.
