@@ -57,6 +57,5 @@ SKIP_DB_GUARD=1 git push         # skip migration drift check only
 - Commit `.env.local` or any file containing secrets
 - Force-push
 - Rebase or reset
-- Land `main` yourself
 - Leave valued work only on an unpushed worktree with no handoff entry
 - Leave the working tree dirty before switching tasks — always commit or stash
