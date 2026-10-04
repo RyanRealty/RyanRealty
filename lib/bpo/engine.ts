@@ -37,7 +37,7 @@ export function priceBpoAdjusted(opts: {
   priceOverride?: number | null
   adjustComps: typeof adjustComps
   computePricing: typeof computePricing
-}): { adj: CmaAdjustedComp[]; p: CmaPricing } | null {
+}): { adj: CmaAdjustedComp[]; p: CmaPricing | null } {
   const adj = opts.adjustComps(opts.subject, opts.set, opts.market).map((c) => {
     const factor = reviewWeightFactor(opts.tierByKey.get(c.listingKey))
     return factor < 1 ? { ...c, weight: +(c.weight * factor).toFixed(4) } : c
@@ -52,7 +52,7 @@ export function priceBpoAdjusted(opts: {
     asOf: opts.asOf,
     computePricing: opts.computePricing,
   })
-  return p ? { adj, p } : null
+  return { adj, p }
 }
 
 export function bpoCompMap(subject: CmaSubject, comps: CmaComp[], tiersUsed: string[]) {

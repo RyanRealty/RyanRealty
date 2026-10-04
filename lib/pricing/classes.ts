@@ -173,6 +173,32 @@ export function sewerCompatible(a: SewerClass, b: SewerClass): boolean {
   return false
 }
 
+/** Words for a known sewer. Unknown is not a fact to print. */
+export function sewerWords(cls: SewerClass | null | undefined): string | null {
+  if (cls === 'public') return 'public sewer'
+  if (cls === 'septic') return 'septic'
+  if (cls === 'private') return 'a private sewer'
+  return null
+}
+
+/**
+ * Inside one recorded plat, a septic sale and a public-sewer sale both stay.
+ * The letter names each. Unknown stays and says nothing. A compatible pair
+ * (septic and private sewer) is not a difference to announce.
+ */
+export function sewerPlatNote(
+  subject: SewerClass | null | undefined,
+  sale: SewerClass | null | undefined,
+  address: string,
+): string | null {
+  if (sewerCompatible(subject ?? 'unknown', sale ?? 'unknown')) return null
+  const subjectWords = sewerWords(subject)
+  const saleWords = sewerWords(sale)
+  if (!subjectWords || !saleWords) return null
+  const place = address.trim() || 'This sale'
+  return `${place} is on ${saleWords}. This home is on ${subjectWords}.`
+}
+
 export function hoaCompatible(a: HoaClass, b: HoaClass): boolean {
   if (a === 'unknown' || b === 'unknown') return true
   return a === b

@@ -1033,6 +1033,7 @@ export function pricingSaleToCmaComp(sale: SelectedPricingComp): CmaComp {
     seniorCommunityYn: sale.seniorCommunityYn ?? null,
     communitySlug: sale.communitySlug ?? null,
     communityLocated: sale.communityLocated,
+    sewerNote: sale.sewerNote ?? null,
   }
 }
 

@@ -153,6 +153,11 @@ export interface CmaComp {
   /** Community whose boundary contains this sale. Not the MLS plat name. */
   communitySlug?: string | null
   communityLocated?: boolean
+  /**
+   * Printed when this sale is inside the recorded plat and its sewer is not
+   * the subject's. Names which is which. No dollar adjustment.
+   */
+  sewerNote?: string | null
 }
 
 export type CmaCompKeepTier = 'strong' | 'weak'

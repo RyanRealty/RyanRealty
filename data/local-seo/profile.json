@@ -1,0 +1,167 @@
+{
+  "fetched_at": "2026-10-04T09:11:27+00:00",
+  "source": "Google Business Profile API (businessinformation v1, mybusiness v4), read-only",
+  "maps_uri": "https://maps.google.com/maps?cid=11038319841912529644",
+  "title": "Ryan Realty",
+  "phone": "(541) 703-3095",
+  "website": "https://ryan-realty.com/?utm_source=gbp&utm_medium=organic&utm_campaign=profile",
+  "address": [
+    "115 NW Oregon Ave",
+    "Suite #2"
+  ],
+  "primary_category": "Real estate agency",
+  "additional_categories": [
+    "Real estate consultant",
+    "Commercial real estate agency"
+  ],
+  "description": "Ryan Realty is your trusted Central Oregon real estate brokerage, based in downtown Bend.\n\nOur mission: build community through authentic relationships and exceptional customer service.\n\nService area: Bend, Redmond, Sisters, Sunriver, Tumalo, La Pine, Prineville.\n\nWe work the way you would want us to. Honest. Direct. Kind. Local. We know the neighborhoods, the trails, the breweries, the school districts.\n\nWhether you are buying your first home, listing in Tumalo, retiring to Sunriver, building in Sisters, or thinking through an investment strategy, we will help you do it right.\n\nHow can we earn your business?",
+  "services": [
+    "job_type_id:building_lots_for_sale",
+    "job_type_id:buying_agent_services",
+    "job_type_id:commercial_real_estate",
+    "job_type_id:developments",
+    "job_type_id:farm_sales",
+    "job_type_id:first_time_home_buyer_services",
+    "job_type_id:foreclosed_property_sales",
+    "job_type_id:luxury_property_buying_and_sales",
+    "job_type_id:new_real_estate",
+    "job_type_id:plots_of_land",
+    "job_type_id:real_estate_investment",
+    "job_type_id:relocation_services",
+    "job_type_id:sellers_agent_services"
+  ],
+  "service_area": [
+    "Bend, OR, USA",
+    "Terrebonne, OR, USA",
+    "Tumalo, OR 97703, USA",
+    "La Pine, OR 97739, USA",
+    "Redmond, OR 97756, USA",
+    "Sisters, OR 97759, USA",
+    "Sunriver, OR 97707, USA",
+    "Tetherow, OR 97702, USA",
+    "Prineville, OR 97754, USA",
+    "Eagle Crest, OR 97756, USA",
+    "Seventh Mountain, OR 97702, USA",
+    "Crooked River Ranch, OR 97760, USA",
+    "Deschutes River Woods, OR 97702, USA"
+  ],
+  "reviews": {
+    "total": 25,
+    "average": 5,
+    "newest": "2026-07-10T01:33:01.401544Z",
+    "replied": 25,
+    "review_dates": [
+      "2019-11-01T02:22:30.804008Z",
+      "2019-11-04T16:08:16.782141Z",
+      "2019-11-13T03:59:38.695747Z",
+      "2019-11-17T23:21:19.910950Z",
+      "2023-05-31T14:22:43.305576Z",
+      "2023-12-11T04:55:22.731068Z",
+      "2023-12-15T20:21:09.368225Z",
+      "2024-05-09T18:21:38.977938Z",
+      "2024-05-09T20:58:52.093570Z",
+      "2024-06-15T06:36:48.613422Z",
+      "2024-10-23T01:00:11.556488Z",
+      "2024-11-22T23:13:08.939170Z",
+      "2024-12-17T04:55:17.243162Z",
+      "2025-01-08T23:51:50.712012Z",
+      "2025-02-02T22:37:08.727317Z",
+      "2025-02-24T23:15:37.010339Z",
+      "2025-05-02T22:39:52.609454Z",
+      "2025-07-23T02:34:50.713060Z",
+      "2025-08-28T23:20:42.607114Z",
+      "2025-08-29T20:10:41.185639Z",
+      "2025-10-03T02:42:27.560347Z",
+      "2026-02-18T20:11:09.476456Z",
+      "2026-02-20T01:36:00.274365Z",
+      "2026-05-18T00:55:32.476010Z",
+      "2026-07-10T01:33:01.401544Z"
+    ]
+  },
+  "posts": {
+    "count_listed": 20,
+    "newest": "2026-07-19T14:39:56.294861Z"
+  },
+  "photos": {
+    "total": 31,
+    "newest": "2026-05-23T04:18:08Z"
+  },
+  "attributes": {
+    "url_facebook": [
+      "https://www.facebook.com/RyanRealtyBend/"
+    ],
+    "url_instagram": [
+      "https://www.instagram.com/ryanrealtybend/"
+    ],
+    "url_twitter": [
+      "https://twitter.com/RyanRealtyBend"
+    ],
+    "url_tiktok": [
+      "https://www.tiktok.com/@ryanrealtybend"
+    ],
+    "url_youtube": [
+      "https://www.youtube.com/@Ryan-Realty"
+    ],
+    "url_pinterest": [
+      "https://www.pinterest.com/ryanrealty/"
+    ],
+    "url_linkedin": [
+      "https://www.linkedin.com/company/ryan-realty-llc-bend-oregon/"
+    ],
+    "url_text_messaging": [
+      "sms:+15417033095"
+    ],
+    "url_appointment": [
+      "https://ryan-realty.com/book"
+    ]
+  },
+  "activity_2026_10_04": {
+    "source": "Google Business Profile API mybusiness v4, re-read 2026-10-04T10:18Z after publish (Matt approved: \"Go\")",
+    "posts": [
+      {
+        "id": "2716070864712326015",
+        "topic": "Bend SFR market, as of 2026-10-04 (Spark MLS city text: 728 active, $898,000 median ask, 3.5 MoS)",
+        "state": "LIVE"
+      },
+      {
+        "id": "8569647599878009357",
+        "topic": "Redmond SFR market, as of 2026-10-04 (271 active, $599,000 median ask, 4.0 MoS, balanced)",
+        "state": "LIVE"
+      },
+      {
+        "id": "523085075568558239",
+        "topic": "Team intro, BOOK button",
+        "state": "REJECTED",
+        "note": "auto-rejected at create; body contained a phone number, which GBP post policy does not allow"
+      }
+    ],
+    "photos_added": [
+      {
+        "asset": "429e7228 Old Mill District aerial",
+        "category": "ADDITIONAL",
+        "state": "live (googleUrl present)"
+      },
+      {
+        "asset": "713b6a5a Tower Theatre marquee at night",
+        "category": "ADDITIONAL",
+        "state": "live (googleUrl present)"
+      },
+      {
+        "asset": "ba294855 Deschutes River footbridge aerial",
+        "category": "ADDITIONAL",
+        "state": "live (googleUrl present)"
+      },
+      {
+        "asset": "aab6f55b Drake Park / Mirror Pond aerial",
+        "category": "ADDITIONAL",
+        "state": "live (googleUrl present)"
+      },
+      {
+        "asset": "d22cff05 Pilot Butte residential aerial",
+        "category": "ADDITIONAL",
+        "state": "live (googleUrl present)"
+      }
+    ],
+    "media_total_after": 36
+  }
+}

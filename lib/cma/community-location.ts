@@ -25,6 +25,11 @@ export type CommunityAddress = {
   communityLocated?: boolean
   /** Recorded plat the lat/lng sits in. */
   platSlug?: string | null
+  /**
+   * Every recorded plat polygon that contains the point, smallest or not.
+   * Membership is read from these slugs. The MLS subdivision string is not.
+   */
+  containingPlatSlugs?: readonly string[] | null
   subdivisionSlug?: string | null
   subdivision?: string | null
 }
@@ -46,6 +51,11 @@ export function communityForAddress(
 ): string | null {
   const located = address.communitySlug?.trim()
   if (located) return located
+  const recorded = communitySlugForRecordedPlats([
+    ...(address.containingPlatSlugs ?? []),
+    ...(address.platSlug ? [address.platSlug] : []),
+  ])
+  if (recorded) return recorded
   const plat = platOf(address)
   if (plat && memberPlatToCommunity?.has(plat)) return memberPlatToCommunity.get(plat) ?? null
   if (address.communityLocated) return null
@@ -96,3 +106,49 @@ export function resortMembershipCompatible(
     : resortSlugForSubdivision(sale.subdivision)
   return subjectResort === saleResort
 }
+
+const ORDINAL_WORD = 'first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth'
+const ORDINAL_ADDITION_TAIL = new RegExp(`-(?:\\d+(?:st|nd|rd|th)|${ORDINAL_WORD})-addition$`)
+const PHASE_TAIL = /-(?:phase|phases|unit|units|stage|stages)(?:-.+)?$/
+const BARE_ADDITION_TAIL = /-addition$/
+
+/**
+ * Parent community of one recorded plat, from the plat slug the county filed.
+ * A phase or an addition belongs to the name those words were added to.
+ * A plat that is not a phase or an addition is a subdivision, not a parent
+ * community. One token left after the strip ("park-addition") is the plat's
+ * own name, not a parent. The MLS subdivision string is not an input.
+ * Remarks are not an input. No community is named here.
+ */
+export function recordedPlatCommunityKey(slug: string | null | undefined): string | null {
+  const raw = slug?.trim().toLowerCase() ?? ''
+  if (!raw) return null
+  let stem = raw
+  if (PHASE_TAIL.test(stem)) stem = stem.replace(PHASE_TAIL, '')
+  else if (ORDINAL_ADDITION_TAIL.test(stem)) stem = stem.replace(ORDINAL_ADDITION_TAIL, '')
+  else if (BARE_ADDITION_TAIL.test(stem)) stem = stem.replace(BARE_ADDITION_TAIL, '')
+  else return null
+  if (!stem || stem === raw) return null
+  const tokens = stem.split('-').filter(Boolean)
+  if (tokens.length < 2) return null
+  return stem
+}
+
+/**
+ * The community whose recorded plats contain this point.
+ * Every containing plat is read. The smallest plat does not hide a larger
+ * one, and a different MLS name does not remove membership. Null when none
+ * of the plats is a phase or an addition of a parent community.
+ */
+export function communitySlugForRecordedPlats(platSlugs: readonly string[] | null | undefined): string | null {
+  if (!platSlugs?.length) return null
+  const keys = new Set<string>()
+  for (const slug of platSlugs) {
+    const key = recordedPlatCommunityKey(slug)
+    if (key) keys.add(key)
+  }
+  if (keys.size === 0) return null
+  if (keys.size === 1) return [...keys][0]!
+  return [...keys].sort((a, b) => b.length - a.length || a.localeCompare(b))[0]!
+}
+

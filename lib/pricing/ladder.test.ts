@@ -27,6 +27,15 @@ describe('pricingTierLadder — time before distance', () => {
     expect(names.indexOf('subdivision-9mo')).toBeLessThan(names.indexOf('nearby-1mi-3mo'))
     expect(names.indexOf('nearby-1mi-9mo')).toBeLessThan(names.indexOf('nearby-2mi-3mo'))
     expect(names.indexOf('nearby-2mi-9mo')).toBeLessThan(names.indexOf('similar-sub-3mo'))
+    const nearby = names.filter((name) => name.startsWith('nearby-'))
+    expect(nearby[0]).toBe('nearby-0.25mi-3mo')
+    expect(nearby[0]?.startsWith('nearby-1mi-')).toBe(false)
+    const radii: string[] = []
+    for (let quarter = 1; quarter <= 8; quarter++) {
+      const miles = quarter / 4
+      for (const months of [3, 6, 9]) radii.push(`nearby-${miles}mi-${months}mo`)
+    }
+    expect(nearby).toEqual(radii)
   })
 
   it('resets the clock when distance opens', () => {
@@ -103,7 +112,8 @@ describe('pricingTierLadder — the parent level (Matt 2026-09-09)', () => {
     expect(names.indexOf('adjacent-sub-24mo')).toBeLessThan(names.indexOf('community-6mo'))
     expect(names.indexOf('pocket-12mo')).toBeLessThan(names.indexOf('community-6mo'))
     expect(names.filter((n) => n.startsWith('community-'))).toEqual(['community-6mo', 'community-12mo', 'community-24mo'])
-    expect(names.indexOf('community-24mo')).toBeLessThan(names.indexOf('nearby-1mi-3mo'))
+    expect(names.indexOf('community-24mo')).toBeLessThan(names.indexOf('nearby-0.25mi-3mo'))
+    expect(names.indexOf('nearby-0.25mi-3mo')).toBeLessThan(names.indexOf('nearby-1mi-3mo'))
   })
 
   it('exhausts the boundary to two years before any rung may leave it', () => {

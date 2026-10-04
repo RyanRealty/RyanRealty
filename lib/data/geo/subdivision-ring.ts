@@ -1,6 +1,15 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
+import { communitySlugForRecordedPlats } from '@/lib/cma/community-location'
+
+/**
+ * Points per geo_assign_batch call. Each point matches several polygons, and
+ * the read is capped, so a page of 400 drops the plats on the later points.
+ * A dropped plat is how a sale inside the recorded community arrives with no
+ * community at all. 40 points leaves room for every containing polygon.
+ */
+const GEO_ASSIGN_BATCH = 40
 
 /**
  * The plats next to the plat a point sits in, and the plat for a batch of
@@ -91,7 +100,7 @@ export async function readSubdivisionRing(lat: number, lng: number): Promise<Sub
 
 /**
  * The smallest plat polygon holding each point, by index; null where none
- * does or the point has no coordinates. One RPC per 400 points.
+ * does or the point has no coordinates. One RPC per GEO_ASSIGN_BATCH points.
  */
 export async function assignSubdivisionSlugs(
   points: ReadonlyArray<{ lat: number | null; lng: number | null }>,
@@ -104,8 +113,8 @@ export async function assignSubdivisionSlugs(
       batch.push({ idx, lat: p.lat, lon: p.lng })
     }
   })
-  for (let i = 0; i < batch.length; i += 400) {
-    const part = batch.slice(i, i + 400)
+  for (let i = 0; i < batch.length; i += GEO_ASSIGN_BATCH) {
+    const part = batch.slice(i, i + GEO_ASSIGN_BATCH)
     const { data, error } = await sb.rpc('geo_assign_batch', { points: part })
     if (error) {
       console.error('[assignSubdivisionSlugs]', error.message)
@@ -139,6 +148,7 @@ export async function assignCommunitySlugs(
     const rank = new Map(registryOrder.map((slug, i) => [slug, i]))
     const out: Array<string | null> = points.map(() => null)
     const best = points.map(() => Number.POSITIVE_INFINITY)
+    const plats: string[][] = points.map(() => [])
     const batch: Array<{ idx: number; lat: number; lon: number }> = []
     points.forEach((p, idx) => {
       if (p.lat != null && p.lng != null && Number.isFinite(p.lat) && Number.isFinite(p.lng)) {
@@ -147,23 +157,37 @@ export async function assignCommunitySlugs(
     })
     if (batch.length === 0) return null
     const sb = createServiceClient()
-    for (let i = 0; i < batch.length; i += 400) {
-      const part = batch.slice(i, i + 400)
+    for (let i = 0; i < batch.length; i += GEO_ASSIGN_BATCH) {
+      const part = batch.slice(i, i + GEO_ASSIGN_BATCH)
       const { data, error } = await sb.rpc('geo_assign_batch', { points: part })
       if (error) {
         console.error('[assignCommunitySlugs]', error.message)
         return null
       }
       for (const row of (data ?? []) as Array<{ idx: number; geo_type: string; geo_slug: string }>) {
-        if (row.geo_type !== 'neighborhood') continue
         const slug = row.geo_slug?.trim().toLowerCase()
-        if (!slug || !allowed.has(slug)) continue
+        if (!slug) continue
+        if (row.geo_type === 'subdivision') {
+          plats[row.idx]!.push(slug)
+          continue
+        }
+        if (row.geo_type !== 'neighborhood') continue
+        if (!allowed.has(slug)) continue
         const r = rank.get(slug) ?? Number.POSITIVE_INFINITY
         if (r < best[row.idx]!) {
           best[row.idx] = r
           out[row.idx] = slug
         }
       }
+    }
+    // A phase or addition plat is the community when no neighborhood polygon
+    // is stored. Every containing plat counts, not only the smallest. The MLS
+    // name is not consulted. A point already inside a registry neighborhood
+    // keeps that community.
+    for (let i = 0; i < out.length; i++) {
+      if (out[i]) continue
+      const fromPlat = communitySlugForRecordedPlats(plats[i])
+      if (fromPlat) out[i] = fromPlat
     }
     return out
   } catch (err) {

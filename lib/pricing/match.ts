@@ -4,7 +4,7 @@
  */
 
 import { resortCommunityCompatible } from '@/lib/cma/resort-guard'
-import { communityForAddress, memberPlatMap } from '@/lib/cma/community-location'
+import { communityForAddress, memberPlatMap, saleInsideSubjectCommunity } from '@/lib/cma/community-location'
 import { isResortCommunity } from '@/lib/cma/resort-guard'
 import { resolvePriceAnchor, samePlat, sameStreetPeer, streetKey, type PriceAnchor } from '@/lib/pricing/price-anchor'
 import { ageRestrictedMismatch, ownPlatAgeRestrictedShare } from '@/lib/pricing/age-restricted'
@@ -27,6 +27,7 @@ import {
   productCompatible,
   resolveIrrigationClass,
   sewerCompatible,
+  sewerPlatNote,
   customSalePriceFloorOk,
   SAME_NEIGHBORHOOD_TIER_RATIO,
   SUBDIVISION_TIER_RATIO,
@@ -132,6 +133,8 @@ export type PricingSubject = {
   communitySlug?: string | null
   /** Lat/lng was tested against community boundaries. */
   communityLocated?: boolean
+  /** Every recorded plat polygon that contains the subject. Not the MLS name. */
+  containingPlatSlugs?: readonly string[] | null
   /** Plat slugs that sit inside the subject's community. Location, not a name list. */
   communityMemberPlats?: string[]
 }
@@ -183,6 +186,8 @@ export type PricingSale = {
   communitySlug?: string | null
   /** Lat/lng was tested against community boundaries. */
   communityLocated?: boolean
+  /** Every recorded plat polygon that contains the sale. Not the MLS name. */
+  containingPlatSlugs?: readonly string[] | null
   newConstruction?: boolean | null
   zoning?: string | null
 }
@@ -210,6 +215,12 @@ export type SelectedPricingComp = PricingSale & {
    * tier (Matt 2026-09-10, the first of the two exemptions).
    */
   ownPlat?: boolean
+  /**
+   * Set when this sale stays inside the recorded plat even though its sewer
+   * is not the subject's. The letter prints it. Absent when they match, when
+   * either is unknown, or when the sale is outside the plat.
+   */
+  sewerNote?: string | null
 }
 
 /**
@@ -354,11 +365,17 @@ function applesOk(
     if (!lotCompatible(subject.lotAcres, sale.lotAcres)) return false
   }
   if (!resortCommunityCompatible(subject.subdivision, sale.subdivision)) return false
-  // Water and sewer stay hard on every rung. A well house and a city-water
-  // house are different products in this market; widening distance does not
-  // make them comparable.
+  // Water stays hard on every rung. A well house and a city-water house are
+  // different products; widening distance does not make them comparable.
+  // Sewer is hard outside the recorded plat. Inside it, septic and public
+  // sewer both stay and the letter names which is which. Unknown still stays.
   if (!waterCompatible(subject.waterClass, sale.waterClass)) return false
-  if (!sewerCompatible(subject.sewerClass, sale.sewerClass)) return false
+  if (
+    !sewerCompatible(subject.sewerClass, sale.sewerClass) &&
+    !saleInsideSubjectCommunity(subject, sale)
+  ) {
+    return false
+  }
   if (crossesMajorDivide(subject.marketArea, sale.marketArea)) return false
   // The highway cut, and the one exception Matt named: on a subject with no
   // mapped boundary, the starved widening rung may cross when a crossing is
@@ -444,7 +461,7 @@ function passesTier(
    * $579/sqft downtown sale (Matt 2026-09-10).
    */
   anchor: PriceAnchor | null = null,
-): { ok: boolean; miles: number | null; roomDifference?: Array<'beds' | 'baths'> | null } {
+): { ok: boolean; miles: number | null; roomDifference?: Array<'beds' | 'baths'> | null; sewerNote?: string | null } {
   if (subject.listingKey && sale.listingKey === subject.listingKey) return { ok: false, miles: null }
   if (subject.streetAddress && sale.address.toLowerCase() === subject.streetAddress.toLowerCase()) {
     return { ok: false, miles: null }
@@ -646,7 +663,15 @@ function passesTier(
   if (tier.maxMiles != null) {
     if (miles == null || miles > tier.maxMiles) return { ok: false, miles }
   }
-  return { ok: true, miles, roomDifference: rooms.notes.length > 0 ? rooms.notes : null }
+  const sewerNote = saleInsideSubjectCommunity(subject, sale)
+    ? sewerPlatNote(subject.sewerClass, sale.sewerClass, sale.address)
+    : null
+  return {
+    ok: true,
+    miles,
+    roomDifference: rooms.notes.length > 0 ? rooms.notes : null,
+    sewerNote,
+  }
 }
 
 const GLA_BRACKET_BAND = 0.25
@@ -812,7 +837,10 @@ function bracketGla(
     if (size !== 0) return size
     return b.closeDate.localeCompare(a.closeDate)
   })
-  const outgoing = comps.reduce((worst, c) => {
+  // A size swap may not spend the recorded plat to import a sale from outside it.
+  const removable = comps.filter((c) => !saleInsideSubjectCommunity(subject, c))
+  if (removable.length === 0) return { comps, note: null }
+  const outgoing = removable.reduce((worst, c) => {
     const size = Math.abs(c.sqft - subject.sqft) - Math.abs(worst.sqft - subject.sqft)
     if (size > 0) return c
     if (size < 0) return worst
@@ -1170,7 +1198,7 @@ export function walkPricingLadder(
       // agrees with itself on price even when it disagrees on square footage.
       const saleKey = `${sale.address.trim().toLowerCase()}|${(sale.city ?? '').trim().toLowerCase()}|${Math.round(sale.closePrice)}`
       if (bySale.has(saleKey)) continue
-      const { ok, roomDifference } = passesTier(subject, sale, tier, asOf, cells, priceAnchor)
+      const { ok, roomDifference, sewerNote } = passesTier(subject, sale, tier, asOf, cells, priceAnchor)
       if (!ok) continue
       // The subdivision-median tier does not see this close. Once the plat has
       // a sale, a different plat has to land on that set's own prices.
@@ -1180,6 +1208,7 @@ export function walkPricingLadder(
       byKey.set(sale.listingKey, {
         ...toSelected(subject, sale, asOf, tier.name),
         roomDifference: roomDifference ?? null,
+        sewerNote: sewerNote ?? null,
       })
       bySale.add(saleKey)
       added++
