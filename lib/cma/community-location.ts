@@ -96,3 +96,29 @@ export function resortMembershipCompatible(
     : resortSlugForSubdivision(sale.subdivision)
   return subjectResort === saleResort
 }
+
+/**
+ * Recorded plats that are a community's outline when no neighborhood polygon
+ * is stored. A point inside any plat in a group is inside that community.
+ * The MLS subdivision string is not an input. Remarks are not an input.
+ */
+const OUTLINE_PLAT_GROUPS: ReadonlyArray<{ community: string; plats: readonly string[] }> = [
+  {
+    community: 'bend-golf-club',
+    plats: ['bend-golf-club-addition', 'bend-golf-club-2nd-addition'],
+  },
+]
+
+/**
+ * The community whose recorded-plat outline contains this address.
+ * Null when none of the plats the point sits in is an outline plat.
+ */
+export function communitySlugForOutlinePlats(platSlugs: readonly string[] | null | undefined): string | null {
+  if (!platSlugs?.length) return null
+  const have = new Set(platSlugs.map((slug) => slug.trim().toLowerCase()).filter(Boolean))
+  if (have.size === 0) return null
+  for (const group of OUTLINE_PLAT_GROUPS) {
+    if (group.plats.some((plat) => have.has(plat))) return group.community
+  }
+  return null
+}
