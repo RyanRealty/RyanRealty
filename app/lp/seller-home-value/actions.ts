@@ -100,19 +100,6 @@ export type SellerLPResult =
   | { success: true; eventId: string; classification: 'hot' | 'warm' | 'nurture' | 'unknown'; alreadyKnown: boolean; assignedBroker: BrokerSlug | null }
   | { success: false; error: string }
 
-/**
- * Locked off 2026-08-14: no save until contact exists. Address-only
- * advances the form. Contact submit is the first write.
- */
-export async function saveSellerPartialLead(_params: {
-  address: string
-  sessionId: string | undefined
-  source: 'seller-lp' | 'list-now-lp'
-  pagePath?: string
-}): Promise<void> {
-  return
-}
-
 function getServiceSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY

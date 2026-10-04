@@ -17,8 +17,6 @@ const PATHS = [
   'app/actions/newsletter-subscribe.ts',
   'app/actions/search-alert-capture.ts',
   'app/lp/seller-home-value/actions.ts',
-  'app/lp/expired-listing/actions.ts',
-  'app/lp/buyer-listing-alerts/actions.ts',
   'app/auth/callback/route.ts',
   'app/actions/identity-bridge.ts',
 ]

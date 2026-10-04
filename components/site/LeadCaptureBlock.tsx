@@ -30,12 +30,12 @@ import { cn } from '@/lib/utils'
  * Submission contract (caller provides):
  *   onSubmit(payload, variant): Promise<{ ok: boolean; message?: string }>
  *
- * Callers wire `onSubmit` to one of the existing server actions
- * (`app/lp/seller-home-value/actions.ts`, `app/lp/buyer-listing-alerts/actions.ts`,
- * `app/lp/expired-listing/actions.ts`) — those already handle CRM
- * person creation, custom-field set, tag application, broker
- * round-robin assignment, agent-attribution cookie read, GA4 + Meta
- * Pixel `generate_lead` server-side fire.
+ * Callers wire `onSubmit` to a server action that handles CRM person
+ * creation, tagging, broker assignment, the agent-attribution cookie and
+ * the GA4 + Meta Pixel `generate_lead` fire. The live caller is the
+ * housing-market inquiry (`app/housing-market/actions.ts`, inquiry
+ * variant); the buyer and expired LP actions this once named were
+ * deleted with their forms (2026-10-04).
  *
  * Per CLAUDE.md §0.5 brand-voice rules every caller-supplied label /
  * placeholder / heading runs through the brand-voice ESLint gate at

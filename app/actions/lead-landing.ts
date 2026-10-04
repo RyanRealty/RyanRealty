@@ -6,6 +6,7 @@ import { sendContactNotification } from '@/lib/resend'
 import type { LeadLandingAudience } from '@/lib/lead-landing-content'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
+import { resolvePaidAttributionTags } from '@/lib/crm/lead-source'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
 import { visitorCapiConsent } from '@/lib/meta-capi-visitor'
 import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
@@ -42,8 +43,9 @@ type SubmitLeadLandingInput = {
   message?: string
   /** Real first-touch attribution captured client-side (utm_* from the URL +
    *  persisted rr_lp_context). When the visitor arrived from a Facebook ad,
-   *  lp_source='facebook' — so the CRM person carries the true origin instead
-   *  of a hardcoded 'landing_page'. */
+   *  lp_source='facebook'. The CRM person carries it as the channel:,
+   *  campaign: and ad-content: tags (paidTags below); sendEvent's `campaign`
+   *  field is accepted and not stored. */
   lpContext?: LpContextInput
   /** Anonymous visitor session id (uuid v4) from localStorage. When present,
    *  we stitch this lead's prior browsing history to the CRM person and mark
@@ -70,6 +72,17 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
       emails: [{ value: email }],
       ...(phone ? { phones: [{ value: phone }] } : {}),
     }
+
+    // Paid-channel attribution, the seller LP's rule: channel:*, campaign:* and
+    // ad-content:* from the URL utm. buyer- and seller-lead-attribution match a
+    // lead to the post or ad that sent it by these tags and nothing else, and
+    // this form is the live buyer LP (/buy/[intent]) since /lp/buyer-listing-alerts
+    // became a redirect. Empty when the visit carried no utm_source.
+    const paidTags = resolvePaidAttributionTags({
+      utmSource: input.lpContext?.lp_source,
+      utmCampaign: input.lpContext?.lp_campaign,
+      utmContent: input.lpContext?.lp_content,
+    })
 
     const eventType = input.audience === 'seller' ? 'Seller Inquiry' : 'General Inquiry'
     const siteUrl = siteOrigin()
@@ -111,7 +124,7 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
           email,
           phone,
           source: lpSource,
-          tags: [`audience:${input.audience}`, `source:${lpSource}`, 'fub-fallback'],
+          tags: [`audience:${input.audience}`, `source:${lpSource}`, 'fub-fallback', ...paidTags],
         })
         if (native.created || native.personId > 0) {
           console.warn(
@@ -176,6 +189,7 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
           fubPersonId: result.personId,
           audience: input.audience === 'seller' ? 'seller' : 'buyer',
           source: input.audience === 'seller' ? 'seller-lp' : 'buyer-lp',
+          extraTags: paidTags,
         })
 
         // Stitch via rr_vid always. Session-only writes missed submits that
