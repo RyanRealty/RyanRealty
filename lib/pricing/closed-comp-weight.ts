@@ -19,6 +19,7 @@
  */
 
 import { normSubdivision } from '@/lib/pricing/classes'
+import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
 import { saleSetsThePrice } from '@/lib/pricing/price-set'
 
 export type ClosedCompWeightInput = {
@@ -40,6 +41,8 @@ export type ClosedCompWeightInput = {
   saleCommunityLocated?: boolean
   subjectLotAcres?: number | null
   saleLotAcres?: number | null
+  /** See PriceSetSale.fillShortSet. Alone, an outside sale still weighs 0. */
+  fillShortSet?: boolean
 }
 
 /** Months for recency to halve, inside one location step. */
@@ -191,6 +194,7 @@ export function closedCompWeight(input: ClosedCompWeightInput): number {
       saleSqft: input.saleSqft,
       subjectLotAcres: input.subjectLotAcres,
       saleLotAcres: input.saleLotAcres,
+      fillShortSet: input.fillShortSet,
     })
   ) {
     return 0
@@ -206,3 +210,58 @@ export function closedCompWeight(input: ClosedCompWeightInput): number {
   const base = LOCATION_MATCH_WEIGHT[resolveLocationMatch(input)]
   return +(base + LOCATION_SECONDARY_SPAN * secondary).toFixed(4)
 }
+
+/**
+ * A tighter sale stays. When fewer than three kept sales set the price, the
+ * next rung already admitted fills the count, and those sales set the price.
+ * A sale past the living-area cutoff, or a cottage against acreage, still
+ * does not. When the plat already has three, nothing here changes.
+ */
+export function fillShortSetWeights<T extends {
+  weight: number
+  sqft: number
+  beds?: number | null
+  lotAcres?: number | null
+  subdivision?: string | null
+  communitySlug?: string | null
+  communityLocated?: boolean
+  ownPlat?: boolean | null
+  selectionTier?: string | null
+  monthsSinceClose?: number | null
+}>(
+  subject: {
+    sqft?: number | null
+    beds?: number | null
+    lotAcres?: number | null
+    subdivision?: string | null
+    communitySlug?: string | null
+    communityLocated?: boolean
+  },
+  comps: readonly T[],
+): T[] {
+  const setters = comps.filter((c) => c.weight > 0).length
+  if (setters >= PRICING_MIN_COMPS) return [...comps]
+  return comps.map((comp) => {
+    if (comp.weight > 0) return comp
+    const weight = closedCompWeight({
+      subjectSqft: subject.sqft ?? 0,
+      saleSqft: comp.sqft,
+      monthsSinceClose: comp.monthsSinceClose ?? 0,
+      subjectBeds: subject.beds,
+      saleBeds: comp.beds,
+      subjectSubdivision: subject.subdivision,
+      saleSubdivision: comp.subdivision,
+      selectionTier: comp.selectionTier,
+      ownPlat: comp.ownPlat,
+      subjectCommunity: subject.communitySlug,
+      saleCommunity: comp.communitySlug,
+      subjectCommunityLocated: subject.communityLocated,
+      saleCommunityLocated: comp.communityLocated,
+      subjectLotAcres: subject.lotAcres,
+      saleLotAcres: comp.lotAcres,
+      fillShortSet: true,
+    })
+    return weight > 0 ? { ...comp, weight } : comp
+  })
+}
+

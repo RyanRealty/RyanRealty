@@ -4,11 +4,16 @@
  * A sale sets the price when it is the subject's own plat, or when it sits in
  * the subject's community. Community membership is the location of the address
  * (lib/cma/community-location.ts), not the MLS subdivision string and not a
- * remark. A different community does not set the price. Neither does a
- * clearly different size (past the one living-area cutoff) or a clearly
- * different product (a cottage versus acreage). A different plat that is not
- * the subject's community is that different community, not a neighbor that
- * still prices the home.
+ * remark. A different community does not set the price while the plat already has
+ * three sales that do. Neither does a clearly different size (past the one
+ * living-area cutoff) or a clearly different product (a cottage versus
+ * acreage). A different plat that is not the subject's community is that
+ * different community, not a neighbor that still prices the home.
+ *
+ * When the plat and its community supplied fewer than three sales, the next
+ * rung was already admitted. Those admitted sales set the price too. The
+ * tighter sale stays. Size and product still refuse. The caller passes
+ * fillShortSet for that case only (lib/pricing/closed-comp-weight.ts).
  *
  * An adjacent sale with no community on either side still sets the price.
  * The search order is unchanged. This only decides which kept sales move the
@@ -33,6 +38,12 @@ export type PriceSetSale = {
   saleSqft?: number | null
   subjectLotAcres?: number | null
   saleLotAcres?: number | null
+  /**
+   * The kept set is already short of three sales that set the price, and this
+   * sale was admitted on a later rung. Skip the community wall. Size and
+   * product still refuse.
+   */
+  fillShortSet?: boolean
 }
 
 /** Living area past the picker's wide cutoff. Unknown size is not "clearly different". */
@@ -98,7 +109,9 @@ export function saleSetsThePrice(input: PriceSetSale): boolean {
   const subjectKnown = input.subjectCommunityLocated === true || subjectCommunity != null
   const saleKnown = input.saleCommunityLocated === true || saleCommunity != null
   // One side is in a community the other is not, or they are different communities.
-  if ((subjectKnown || saleKnown) && subjectCommunity !== saleCommunity) return false
+  // A short set does not make the plat stand alone: a sale the next rung
+  // already admitted still sets the price. Size and product were refused above.
+  if ((subjectKnown || saleKnown) && subjectCommunity !== saleCommunity && !input.fillShortSet) return false
   return true
 }
 
