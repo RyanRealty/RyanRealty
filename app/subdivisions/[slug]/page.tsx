@@ -337,6 +337,13 @@ function derivePlatCity(
 }
 
 /** Title-case a slug for display, null in / null out. */
+/** ISO 8601 from a timestamp string, or null when absent or unparseable. */
+function isoOrNull(value: string | null | undefined): string | null {
+  if (!value) return null
+  const t = new Date(value)
+  return Number.isNaN(t.getTime()) ? null : t.toISOString()
+}
+
 function titleCaseSlug(slug: string | null | undefined): string | null {
   return slug ? slugToTitle(slug) : null
 }
@@ -1404,6 +1411,7 @@ async function renderSubdivisionPage({ params }: Props) {
     when: undefined,
   }))
 
+  const platDateModified = isoOrNull(inventory?.readAt ?? subdivisionStats?.refreshedAt)
   const schemas: SchemaInput[] = [
     {
       type: 'breadcrumb',
@@ -1433,6 +1441,18 @@ async function renderSubdivisionPage({ params }: Props) {
       containedInPlace: placeCity ?? undefined,
       hasMap: hasMap ? `/subdivisions/${slug}` : undefined,
     },
+    // AEO freshness: dateModified is not a Place property, so it rides a WebPage
+    // node. The time is the inventory read already printed as the page's as-of.
+    ...(platDateModified
+      ? [
+          {
+            type: 'webPage' as const,
+            name: displayName,
+            url: `/subdivisions/${slug}`,
+            dateModified: platDateModified,
+          },
+        ]
+      : []),
   ]
   const platGuideSchema = areaGuideVideoSchema(displayName, `/subdivisions/${slug}`, areaGuideVideo)
   if (platGuideSchema) schemas.push(platGuideSchema)

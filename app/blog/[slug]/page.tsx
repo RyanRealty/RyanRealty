@@ -53,6 +53,7 @@ import '@/components/site/v3/V3ArticleIsland.css'
 import { generateBlogSchema } from '@/lib/structured-data'
 import ShareButton from '@/components/ShareButton'
 import { formatDate } from '@/lib/format/date'
+import { blogUpdatedLabel } from './updated-label'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import {
@@ -128,6 +129,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       siteName: 'Ryan Realty',
       images: [{ url: ogImageUrl, width: 1200, height: 630, alt: period.displayTitle }],
       ...(post.published_at ? { publishedTime: post.published_at } : {}),
+      ...(post.updated_at ? { modifiedTime: post.updated_at } : {}),
     },
     twitter: {
       card: 'summary_large_image',
@@ -250,7 +252,10 @@ export default async function BlogPostPage({ params }: PageProps) {
   const publishedLabel = post.published_at ? formatDate(post.published_at) : null
   // A dateline, the way a printed guide carries one — not a taxonomy label. The
   // category still does real work one line down, as a link to its archive.
-  const mastheadEyebrow = [category ?? 'Central Oregon', publishedLabel].filter(Boolean).join(' · ')
+  // AEO freshness: an "Updated" date prints only when the post was really revised,
+  // more than a day after publish (the seed fallback sets updated_at = published_at).
+  const updatedLabel = blogUpdatedLabel(post.published_at, post.updated_at)
+  const mastheadEyebrow = [category ?? 'Central Oregon', publishedLabel, updatedLabel].filter(Boolean).join(' · ')
   // The crumb names the SUBJECT. A guide title states a decision ("Awbrey Glen:
   // A $1,349,000 Median and an $87 HOA") and at 375 it wraps inside its own
   // crumb, leaving the separator hanging on a line by itself; the part before
@@ -267,6 +272,7 @@ export default async function BlogPostPage({ params }: PageProps) {
   const bylineLine = [
     post.author_name?.trim() ? post.author_name.trim() : 'Ryan Realty',
     publishedLabel ?? 'Date not recorded',
+    ...(updatedLabel ? [updatedLabel] : []),
     `${readMinutes} min read`,
   ].join(' · ')
 

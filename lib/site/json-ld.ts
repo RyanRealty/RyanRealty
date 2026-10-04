@@ -98,6 +98,10 @@ export type RealEstateListingInput = {
    * undefined             -> behaves like Active (backwards-compatible)
    */
   availability?: string
+  /** ISO 8601: when the listing went on the market (MLS OnMarketDate). */
+  datePosted?: string
+  /** ISO 8601: last MLS modification (ModificationTimestamp). */
+  dateModified?: string
 }
 
 export type BreadcrumbInput = {
@@ -114,6 +118,8 @@ export type WebPageInput = {
   pageType?: 'AboutPage' | 'CollectionPage' | 'ContactPage'
   /** Set true to point mainEntity at the sitewide Organization (#organization) — the brand-entity anchor AI engines attribute citations to. */
   aboutOrganization?: boolean
+  /** ISO 8601 last-modified time of the page's own data (AEO freshness). Omitted when unknown. */
+  dateModified?: string
   /**
    * Facts about the Organization that THIS page states in its visible copy,
    * added to the mainEntity reference (same @id, so a parser merges them into
@@ -460,6 +466,8 @@ export function buildJsonLd(input: SchemaInput): Record<string, unknown> {
         // node and no availability, for a home that closed at $1,100,000.
         availability: publishListingSchemaAvailability(input.availability) ?? undefined,
         offers: buildOffer(input.listPrice, input.availability),
+        datePosted: input.datePosted,
+        dateModified: input.dateModified,
         image: input.photos && input.photos.length > 0 ? input.photos.slice(0, 5).map(absoluteUrl) : undefined,
         listingAgent: input.listingAgent ? prune({
           '@type': 'RealEstateAgent',
@@ -488,6 +496,7 @@ export function buildJsonLd(input: SchemaInput): Record<string, unknown> {
         name: input.name,
         description: input.description,
         url: absoluteUrl(input.url),
+        dateModified: input.dateModified,
         // Every page belongs to the one WebSite node the root layout emits
         // (components/JsonLd.tsx), whose publisher is #organization. The
         // reference is what ties a page to the brand entity without a second

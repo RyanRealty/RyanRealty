@@ -71,6 +71,10 @@ export type ListingJsonLdInput = {
     lat: number | null
     lng: number | null
     status: string | null
+    /** MLS OnMarketDate (ISO). Feeds RealEstateListing.datePosted. */
+    onMarketDate?: string | null
+    /** MLS ModificationTimestamp (ISO). Feeds RealEstateListing.dateModified. */
+    modifiedAt?: string | null
   }
   photoUrls: readonly string[]
   agent: { fullName: string; email: string | null; phoneDirect: string | null } | null
@@ -91,6 +95,13 @@ export type ListingJsonLdInput = {
  */
 export function listingCanonicalPath(listing: ListingJsonLdInput['listing']): string {
   return listingCanonicalHref(listing)
+}
+
+/** ISO 8601 string from a feed timestamp, or undefined when null or unparseable. */
+function isoOrUndefined(value: string | null | undefined): string | undefined {
+  if (!value) return undefined
+  const t = new Date(value)
+  return Number.isNaN(t.getTime()) ? undefined : t.toISOString()
 }
 
 export function buildListingJsonLd(input: ListingJsonLdInput): SchemaInput[] {
@@ -150,6 +161,8 @@ export function buildListingJsonLd(input: ListingJsonLdInput): SchemaInput[] {
           }
         : undefined,
       availability: listing.status ?? undefined,
+      datePosted: isoOrUndefined(listing.onMarketDate),
+      dateModified: isoOrUndefined(listing.modifiedAt),
     },
   ]
 }
