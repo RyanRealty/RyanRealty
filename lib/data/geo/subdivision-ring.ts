@@ -1,5 +1,6 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
+import { getAllResortCommunities } from '@/lib/data/communities/registry'
 
 /**
  * The plats next to the plat a point sits in, and the plat for a batch of
@@ -118,4 +119,55 @@ export async function assignSubdivisionSlugs(
     }
   }
   return out
+}
+
+/**
+ * The registry community whose boundary contains each point, in registry
+ * order when more than one polygon covers it. Null at an index means the
+ * point was tested and sits in no community. A null return means the read
+ * failed and the caller must not treat the MLS name as disproved.
+ *
+ * Membership is the polygon, for every registry community. Not a subdivision
+ * string and not one community's name.
+ */
+export async function assignCommunitySlugs(
+  points: ReadonlyArray<{ lat: number | null; lng: number | null }>,
+): Promise<Array<string | null> | null> {
+  try {
+    const registryOrder = getAllResortCommunities().map((c) => c.slug)
+    const allowed = new Set(registryOrder)
+    const rank = new Map(registryOrder.map((slug, i) => [slug, i]))
+    const out: Array<string | null> = points.map(() => null)
+    const best = points.map(() => Number.POSITIVE_INFINITY)
+    const batch: Array<{ idx: number; lat: number; lon: number }> = []
+    points.forEach((p, idx) => {
+      if (p.lat != null && p.lng != null && Number.isFinite(p.lat) && Number.isFinite(p.lng)) {
+        batch.push({ idx, lat: p.lat, lon: p.lng })
+      }
+    })
+    if (batch.length === 0) return null
+    const sb = createServiceClient()
+    for (let i = 0; i < batch.length; i += 400) {
+      const part = batch.slice(i, i + 400)
+      const { data, error } = await sb.rpc('geo_assign_batch', { points: part })
+      if (error) {
+        console.error('[assignCommunitySlugs]', error.message)
+        return null
+      }
+      for (const row of (data ?? []) as Array<{ idx: number; geo_type: string; geo_slug: string }>) {
+        if (row.geo_type !== 'neighborhood') continue
+        const slug = row.geo_slug?.trim().toLowerCase()
+        if (!slug || !allowed.has(slug)) continue
+        const r = rank.get(slug) ?? Number.POSITIVE_INFINITY
+        if (r < best[row.idx]!) {
+          best[row.idx] = r
+          out[row.idx] = slug
+        }
+      }
+    }
+    return out
+  } catch (err) {
+    console.error('[assignCommunitySlugs]', err instanceof Error ? err.message : err)
+    return null
+  }
 }

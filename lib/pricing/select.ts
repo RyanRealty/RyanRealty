@@ -6,7 +6,7 @@
 import { isRuralAcreage } from '@/lib/cma/comp-tiers'
 import { marketAreaName, resolveMarketArea } from '@/lib/cma/market-area'
 import type { CmaSubject } from '@/lib/cma/types'
-import { getSubdivisionRing, assignSubdivisionSlugs } from '@/lib/data/geo/subdivision-ring'
+import { getSubdivisionRing, assignSubdivisionSlugs, assignCommunitySlugs } from '@/lib/data/geo/subdivision-ring'
 import { resolveSaleZones } from '@/lib/pricing/sale-zoning'
 import {
   classifyHoa,
@@ -215,6 +215,21 @@ export async function selectPricingComps(
     const slugs = await assignSubdivisionSlugs(sales.map((s) => ({ lat: s.latitude, lng: s.longitude })))
     sales.forEach((s, i) => {
       s.subdivisionSlug = slugs[i]
+    })
+  }
+  // Community membership is the boundary that contains the address, for every
+  // community. A failed read leaves the registry-name fallback in place.
+  const communityPoints = [
+    { lat: pricingSubject.latitude, lng: pricingSubject.longitude },
+    ...sales.map((s) => ({ lat: s.latitude, lng: s.longitude })),
+  ]
+  const communitySlugs = await assignCommunitySlugs(communityPoints)
+  if (communitySlugs) {
+    pricingSubject.communityLocated = true
+    pricingSubject.communitySlug = communitySlugs[0]
+    sales.forEach((s, i) => {
+      s.communityLocated = true
+      s.communitySlug = communitySlugs[i + 1] ?? null
     })
   }
   // Delta 4 (Matt 2026-09-09): a rural sale's zoning class is a hard split,

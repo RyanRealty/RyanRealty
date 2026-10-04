@@ -689,6 +689,71 @@ describe('walkPricingLadder', () => {
     expect(caldera.comps.map((c) => c.listingKey)).toEqual(['CALD'])
   })
 
+  it('takes a sale inside the community when the MLS plat name differs, and not one that only mentions it', () => {
+    // Membership is the boundary, for every community. Not the subdivision
+    // string and not a remark. The community rung is the one that may take
+    // the inside sale; a mile ring is not allowed to go first.
+    const inside = (listingKey: string, subdivision: string, over: Partial<PricingSale> = {}) =>
+      sale({
+        listingKey,
+        subdivision,
+        subdivisionNorm: subdivision.toLowerCase(),
+        address: `${listingKey} Fairway`,
+        communitySlug: 'sample-community',
+        communityLocated: true,
+        marketArea: 'test-area',
+        latitude: 44.06,
+        longitude: -121.29,
+        closeDate: '2026-06-01',
+        ...over,
+      })
+    const out = walkPricingLadder(
+      subject({
+        subdivision: 'Subject Plat',
+        subdivisionNorm: 'subject plat',
+        communitySlug: 'sample-community',
+        communityLocated: true,
+        communityMemberPlats: ['member-plat'],
+        marketArea: 'test-area',
+        latitude: 44.06,
+        longitude: -121.3,
+      }),
+      [
+        inside('BY_BOUNDARY', 'Wildwood Park'),
+        inside('BY_PLAT', 'Another Plat', {
+          communitySlug: null,
+          subdivisionSlug: 'member-plat',
+        }),
+        inside('ALSO_IN', 'Third Plat'),
+        inside('STILL_IN', 'Fourth Plat'),
+        inside('FIFTH', 'Fifth Plat'),
+        sale({
+          listingKey: 'REMARKS_ONLY',
+          subdivision: 'Timber Ridge',
+          subdivisionNorm: 'timber ridge',
+          address: '9 Remarks Only',
+          communitySlug: null,
+          communityLocated: true,
+          subdivisionSlug: 'not-a-member',
+          marketArea: 'test-area',
+          latitude: 44.06,
+          longitude: -121.29,
+          closeDate: '2026-06-02',
+          publicRemarks: 'Charming home in the sample community, walk to the clubhouse.',
+        }),
+      ],
+      { asOf },
+    )
+    const keys = out.comps.map((c) => c.listingKey)
+    expect(keys).toContain('BY_BOUNDARY')
+    expect(keys).toContain('BY_PLAT')
+    expect(keys).not.toContain('REMARKS_ONLY')
+    expect(out.comps.every((c) => c.selectionTier.startsWith('community-'))).toBe(true)
+    const firstAdded = out.rungs.find((r) => r.added > 0)
+    expect(firstAdded?.tier.startsWith('community-')).toBe(true)
+    expect(out.rungs.some((r) => r.added > 0 && /\dmi/.test(r.tier))).toBe(false)
+  })
+
   it('does not keep a dry acreage sale for an irrigated subject', () => {
     const pool = [
       sale({

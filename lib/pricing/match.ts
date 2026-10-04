@@ -4,7 +4,8 @@
  */
 
 import { resortCommunityCompatible } from '@/lib/cma/resort-guard'
-import { communitySlugForSubdivision, isResortCommunity } from '@/lib/cma/resort-guard'
+import { communityForAddress, memberPlatMap } from '@/lib/cma/community-location'
+import { isResortCommunity } from '@/lib/cma/resort-guard'
 import { resolvePriceAnchor, samePlat, sameStreetPeer, streetKey, type PriceAnchor } from '@/lib/pricing/price-anchor'
 import { ageRestrictedMismatch, ownPlatAgeRestrictedShare } from '@/lib/pricing/age-restricted'
 import { distanceMiles, proximityLabel, resolveMarketArea } from '@/lib/cma/market-area'
@@ -124,6 +125,15 @@ export type PricingSubject = {
   inferredPocket?: InferredPocket | null
   /** County plat label from getSubdivisionRing — not an MLS SubdivisionName. */
   platLabel?: string | null
+  /**
+   * Community whose boundary contains this lat/lng. Not an MLS SubdivisionName.
+   * Null with communityLocated means the address sits in no community.
+   */
+  communitySlug?: string | null
+  /** Lat/lng was tested against community boundaries. */
+  communityLocated?: boolean
+  /** Plat slugs that sit inside the subject's community. Location, not a name list. */
+  communityMemberPlats?: string[]
 }
 
 export type PricingSale = {
@@ -169,6 +179,10 @@ export type PricingSale = {
   marketArea?: string | null
   /** County plat the sale sits in (boundaries.geo_slug); set by the selector for the adjacency rung. */
   subdivisionSlug?: string | null
+  /** Community boundary that contains this sale's lat/lng. Not the MLS name. */
+  communitySlug?: string | null
+  /** Lat/lng was tested against community boundaries. */
+  communityLocated?: boolean
   newConstruction?: boolean | null
   zoning?: string | null
 }
@@ -455,8 +469,8 @@ function passesTier(
   // golf community is priced from that community until the community itself is
   // exhausted. Only the like-community rung and a boundary-exit rung may look
   // outside it, and both disclose. A subject with no community is unaffected.
-  const subjectCommunity = communitySlugForSubdivision(subject.subdivision)
-  const saleCommunity = communitySlugForSubdivision(sale.subdivision)
+  const subjectCommunity = communityForAddress(subject)
+  const saleCommunity = communityForAddress(sale, memberPlatMap(subjectCommunity, subject.communityMemberPlats))
   // The two rungs allowed outside the community: the boundary exit, and the
   // starved widening — the last resort that exists so a home gets an answer
   // instead of nothing, and which says on the document what it reached for.
@@ -1091,9 +1105,9 @@ export function walkPricingLadder(
               clusterPocket: isClusterPocket(subject),
             })
           ? `the pocket already supplied a tight closed+pending set (${exclusiveCount} closed, ${exclusivePending} pending), so the search stayed exclusive`
-        : tier.sameCommunity && !communitySlugForSubdivision(subject.subdivision)
+        : tier.sameCommunity && !communityForAddress(subject)
         ? 'the subject is not inside a planned or golf community'
-        : tier.likeCommunity && !isResortCommunity(communitySlugForSubdivision(subject.subdivision))
+        : tier.likeCommunity && !isResortCommunity(communityForAddress(subject))
         ? 'the subject is not inside a golf or resort community'
         : tier.likeCommunity && byKey.size >= PRICING_MIN_COMPS
         ? 'the community supplied the minimum, so no peer community was needed'

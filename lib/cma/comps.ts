@@ -32,7 +32,7 @@
  */
 
 import { selectCmaCompsPool, selectCmaCompsByKeys } from '@/lib/data/cma/builderReads'
-import { getSubdivisionRing, assignSubdivisionSlugs } from '@/lib/data/geo/subdivision-ring'
+import { getSubdivisionRing, assignSubdivisionSlugs, assignCommunitySlugs } from '@/lib/data/geo/subdivision-ring'
 import { keepTightestByClosePrice } from '@/lib/pricing/ladder'
 import { resolveConcessions, sellerNetFromPrice } from '@/lib/pricing/seller-net'
 import {
@@ -77,7 +77,8 @@ import {
 } from '@/lib/cma/comp-tiers'
 import { outbuildingsCompatible, terrainCompatible, zoningClassCompatible } from '@/lib/pricing/rural'
 import { resolveSaleZones } from '@/lib/pricing/sale-zoning'
-import { communitySlugForSubdivision, isResortCommunity, resortCommunityCompatible } from '@/lib/cma/resort-guard'
+import { resortMembershipCompatible } from '@/lib/cma/community-location'
+import { communitySlugForSubdivision, isResortCommunity } from '@/lib/cma/resort-guard'
 import {
   ANCHOR_MIN_N,
   ANCHOR_RADIUS_MILES,
@@ -563,8 +564,35 @@ export async function selectComps(
   const disclosedWidening: string[] = []
   // Sales set aside for sitting across a river from an unmapped subject.
   let crossedFeature = 0
-  // The parent the subject's plat sits inside, from the recorded-plat registry.
-  const subjectCommunity = communitySlugForSubdivision(subject.subdivision)
+  // The community whose boundary contains the address. The MLS name is only
+  // the fallback when the point was not tested. Remarks are never membership.
+  let subjectCommunity = communitySlugForSubdivision(subject.subdivision)
+  let subjectCommunityLocated = false
+  const subjectLocated = await assignCommunitySlugs([
+    { lat: subject.latitude ?? null, lng: subject.longitude ?? null },
+  ])
+  if (subjectLocated) {
+    subjectCommunityLocated = true
+    subjectCommunity = subjectLocated[0] ?? null
+  }
+  const communityByKey = new Map<string, string | null>()
+  const saleCommunityOf = (listingKey: string, subdivision: string | null): string | null =>
+    communityByKey.has(listingKey)
+      ? (communityByKey.get(listingKey) ?? null)
+      : communitySlugForSubdivision(subdivision)
+  const resortOk = (listingKey: string, subdivision: string | null): boolean =>
+    resortMembershipCompatible(
+      {
+        communitySlug: subjectCommunity,
+        communityLocated: subjectCommunityLocated,
+        subdivision: subject.subdivision,
+      },
+      {
+        communitySlug: saleCommunityOf(listingKey, subdivision),
+        communityLocated: communityByKey.has(listingKey),
+        subdivision,
+      },
+    )
 
   // THE PRICE TIER, READ ONCE, BEFORE THE LADDER WALKS.
   //
@@ -779,6 +807,18 @@ export async function selectComps(
     const rowPlats = tier.adjacentSubdivisions
       ? await assignSubdivisionSlugs(rows.map((r) => ({ lat: num(r['Latitude']), lng: num(r['Longitude']) })))
       : null
+    const pendingLocate: { key: string; lat: number; lng: number }[] = []
+    for (const row of rows) {
+      const key = str(row['ListingKey'])
+      const lat = num(row['Latitude'])
+      const lng = num(row['Longitude'])
+      if (!key || communityByKey.has(key) || lat == null || lng == null) continue
+      pendingLocate.push({ key, lat, lng })
+    }
+    if (pendingLocate.length > 0) {
+      const located = await assignCommunitySlugs(pendingLocate.map((point) => ({ lat: point.lat, lng: point.lng })))
+      if (located) pendingLocate.forEach((point, i) => communityByKey.set(point.key, located[i] ?? null))
+    }
     let added = 0
     for (const [rowIndex, row] of rows.entries()) {
       const comp = rowToComp(row, tier.name, Boolean(land))
@@ -922,7 +962,7 @@ export async function selectComps(
           // $595/sqft Caldera Springs sale price a $427/sqft plat (55442
           // Heierman). A sale in a resort community the subject is not in is
           // held to the ordinary band, whatever else the last rung relaxes.
-          const crossesResort = !resortCommunityCompatible(subject.subdivision, comp.subdivision)
+          const crossesResort = !resortOk(comp.listingKey, comp.subdivision)
           const ratio = crossesResort ? anchorTierRatio : rungTierRatio
           const gap = rate / anchorPpsf
           if (gap < 1 / ratio || gap > ratio) {
@@ -935,7 +975,7 @@ export async function selectComps(
       // THE PARENT LEVEL (Matt 2026-09-09). The community rung takes the
       // subject's own community and nothing else; the peer rung takes another
       // community of the same kind and never a plain neighborhood.
-      const compCommunity = communitySlugForSubdivision(comp.subdivision)
+      const compCommunity = saleCommunityOf(comp.listingKey, comp.subdivision)
       if (tier.sameCommunity && compCommunity !== subjectCommunity) {
         rung.excluded.resort_premium++
         continue
@@ -951,7 +991,7 @@ export async function selectComps(
       // resort-community sale (Crosswater, Caldera Springs, ...) only prices
       // a home in the SAME resort community — and a plain-town sale never
       // prices a resort subject. Registry-driven, symmetric.
-      if (!resortCommunityCompatible(subject.subdivision, comp.subdivision)) {
+      if (!resortOk(comp.listingKey, comp.subdivision)) {
         // Matt 2026-09-09: cross only when starved, and say so. Outside the
         // widening rung the guard is absolute, exactly as it was.
         if (!tier.relaxResort && !tier.likeCommunity) {
@@ -1243,7 +1283,7 @@ export async function selectComps(
   // sentence in a seller-facing report (§0 applies to a count in prose exactly
   // as to a price). Only the printed set is countable here.
   if (resortCrossed > 0) {
-    const crossedKept = comps.filter((c) => !resortCommunityCompatible(subject.subdivision, c.subdivision)).length
+    const crossedKept = comps.filter((c) => !resortOk(c.listingKey, c.subdivision)).length
     if (crossedKept > 0) {
       const d =
         crossedKept === 1

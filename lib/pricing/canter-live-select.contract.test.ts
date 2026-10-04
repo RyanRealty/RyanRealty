@@ -31,6 +31,7 @@ vi.mock('@/lib/pricing/sale-zoning', () => ({ resolveSaleZones: async () => new 
 vi.mock('@/lib/data/geo/subdivision-ring', () => ({
   getSubdivisionRing,
   assignSubdivisionSlugs,
+  assignCommunitySlugs: async () => null,
 }))
 vi.mock('@/lib/cma/comps', () => ({
   selectComps: vi.fn(async () => {
