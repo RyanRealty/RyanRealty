@@ -11,7 +11,13 @@
 import 'server-only'
 
 import { createServiceClient } from '@/lib/supabase/service'
-import { dripBusyCutoff } from './drip-schedule'
+import {
+  dripBusyCutoff,
+  isSundayQueueWaiting,
+  SUNDAY_QUEUE_IDEMPOTENCY_PREFIX,
+  SUNDAY_QUEUE_STATUS,
+  sundayQueueIdempotencyKey,
+} from './drip-schedule'
 import type { ProspectKind } from './types'
 
 export type QueuedDripItem = {
@@ -34,7 +40,7 @@ export async function enqueueProspectFirstTouchEmail(
 
   const { data, error } = await sb
     .from(table)
-    .select('outreach_email_sent_at, outreach_email_status, outreach_email_message_id, outreach_email_queued_at')
+    .select('outreach_email_sent_at, outreach_email_status, outreach_email_message_id, outreach_email_queued_at, outreach_email_idempotency_key')
     .eq(keyCol, id)
     .maybeSingle()
   if (error) return { ok: false, error: error.message }
@@ -52,6 +58,11 @@ export async function enqueueProspectFirstTouchEmail(
     return { ok: true, already: true }
   }
   if (status === 'sending') {
+    return { ok: true, already: true }
+  }
+  // Sunday queue is a different FIFO. Do not pull it onto the weekday drip.
+  const idempotencyKey = data.outreach_email_idempotency_key as string | null
+  if (isSundayQueueWaiting(status, idempotencyKey)) {
     return { ok: true, already: true }
   }
 
@@ -406,3 +417,209 @@ export async function removeQueuedFirstTouch(
   if (error) return { ok: false, error: error.message }
   return { ok: true }
 }
+
+export type SundayQueueItem = QueuedDripItem & { idempotencyKey: string }
+
+/** Split a Sunday-queue idempotency key. Null when it is not one of ours. */
+export function parseSundayQueueIdempotency(
+  key: string | null | undefined,
+): { enqueuedAt: string; kind: ProspectKind; id: string } | null {
+  if (!key || !key.startsWith(SUNDAY_QUEUE_IDEMPOTENCY_PREFIX)) return null
+  const rest = key.slice(SUNDAY_QUEUE_IDEMPOTENCY_PREFIX.length)
+  const z = rest.indexOf('Z|')
+  if (z < 0) return null
+  const enqueuedAt = rest.slice(0, z + 1)
+  const tail = rest.slice(z + 2)
+  const bar = tail.indexOf('|')
+  if (bar < 0) return null
+  const kind = tail.slice(0, bar)
+  const id = tail.slice(bar + 1)
+  if ((kind !== 'expired' && kind !== 'fsbo') || !id) return null
+  if (!Number.isFinite(Date.parse(enqueuedAt))) return null
+  return { enqueuedAt, kind, id }
+}
+
+/**
+ * Stamp a prospect onto the Sunday 2026-10-04 queue. Not the weekday drip:
+ * status is `sunday-queue`, queued_at stays null (so release cannot restore
+ * weekday `queued`), and the idempotency key carries the FIFO stamp.
+ * Idempotent if this row is already waiting on that queue. Does not send.
+ */
+export async function enqueueSundayFirstTouchEmail(
+  kind: ProspectKind,
+  id: string,
+): Promise<{ ok: true; already: boolean } | { ok: false; error: string }> {
+  const sb = createServiceClient()
+  const table = kind === 'expired' ? 'expired_listings' : 'fsbo_listings'
+  const keyCol = kind === 'expired' ? 'listing_key' : 'fsbo_url'
+
+  const { data, error } = await sb
+    .from(table)
+    .select('outreach_email_sent_at, outreach_email_status, outreach_email_message_id, outreach_email_idempotency_key')
+    .eq(keyCol, id)
+    .maybeSingle()
+  if (error) return { ok: false, error: error.message }
+  if (!data) return { ok: false, error: 'Prospect not found.' }
+
+  const sentAt = data.outreach_email_sent_at as string | null
+  const messageId = data.outreach_email_message_id as string | null
+  const status = data.outreach_email_status as string | null
+  const idempotencyKey = data.outreach_email_idempotency_key as string | null
+
+  if (sentAt || messageId || status === 'sent') return { ok: true, already: true }
+  if (status === 'sending') return { ok: true, already: true }
+  if (isSundayQueueWaiting(status, idempotencyKey)) return { ok: true, already: true }
+
+  const enqueuedAt = new Date().toISOString()
+  const { error: upErr } = await sb
+    .from(table)
+    .update({
+      outreach_email_status: SUNDAY_QUEUE_STATUS,
+      outreach_email_queued_at: null,
+      outreach_email_idempotency_key: sundayQueueIdempotencyKey(enqueuedAt, kind, id),
+    })
+    .eq(keyCol, id)
+    .is('outreach_email_sent_at', null)
+    // NULL status must match. `.neq('sending')` does not, because NULL <> 'sending'
+    // is unknown in SQL and the update would touch zero rows.
+    .or('outreach_email_status.is.null,outreach_email_status.eq.queued')
+  if (upErr) return { ok: false, error: upErr.message }
+  return { ok: true, already: false }
+}
+
+/**
+ * Oldest waiting Sunday-queue row (FIFO by the stamp inside the idempotency key).
+ * Never returns a weekday `queued` row. Does not write.
+ */
+export async function peekOldestSundayQueue(): Promise<SundayQueueItem | null> {
+  const sb = createServiceClient()
+  const selectExpired =
+    'listing_key, outreach_email_idempotency_key, street_address, city, expired_at, status_change_timestamp'
+  const selectFsbo = 'fsbo_url, outreach_email_idempotency_key, street_address, city, detected_at'
+  const prefix = `${SUNDAY_QUEUE_IDEMPOTENCY_PREFIX}%`
+
+  const [expRes, fsboRes] = await Promise.all([
+    sb
+      .from('expired_listings')
+      .select(selectExpired)
+      .like('outreach_email_idempotency_key', prefix)
+      .is('outreach_email_sent_at', null)
+      .is('outreach_email_message_id', null)
+      // Include status null (a failed send the shared release RPC cleared) and
+      // exclude weekday `queued`. `.neq` would drop the nulls.
+      .or(`outreach_email_status.eq.${SUNDAY_QUEUE_STATUS},outreach_email_status.is.null`)
+      .order('outreach_email_idempotency_key', { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+    sb
+      .from('fsbo_listings')
+      .select(selectFsbo)
+      .like('outreach_email_idempotency_key', prefix)
+      .is('outreach_email_sent_at', null)
+      .is('outreach_email_message_id', null)
+      // Include status null (a failed send the shared release RPC cleared) and
+      // exclude weekday `queued`. `.neq` would drop the nulls.
+      .or(`outreach_email_status.eq.${SUNDAY_QUEUE_STATUS},outreach_email_status.is.null`)
+      .order('outreach_email_idempotency_key', { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+  ])
+  if (expRes.error) throw new Error(`peek sunday queue (expired) failed: ${expRes.error.message}`)
+  if (fsboRes.error) throw new Error(`peek sunday queue (fsbo) failed: ${fsboRes.error.message}`)
+
+  const candidates: SundayQueueItem[] = []
+  if (expRes.data?.outreach_email_idempotency_key) {
+    const row = expRes.data
+    const parsed = parseSundayQueueIdempotency(String(row.outreach_email_idempotency_key))
+    const id = String(row.listing_key)
+    if (parsed && parsed.kind === 'expired' && parsed.id === id) {
+      candidates.push({
+        kind: 'expired',
+        id,
+        queuedAt: parsed.enqueuedAt,
+        idempotencyKey: String(row.outreach_email_idempotency_key),
+        streetAddress: (row.street_address as string | null) ?? null,
+        city: (row.city as string | null) ?? null,
+        expiredAt:
+          ((row.expired_at as string | null) ?? null) ||
+          ((row.status_change_timestamp as string | null) ?? null),
+      })
+    }
+  }
+  if (fsboRes.data?.outreach_email_idempotency_key) {
+    const row = fsboRes.data
+    const parsed = parseSundayQueueIdempotency(String(row.outreach_email_idempotency_key))
+    const id = String(row.fsbo_url)
+    if (parsed && parsed.kind === 'fsbo' && parsed.id === id) {
+      candidates.push({
+        kind: 'fsbo',
+        id,
+        queuedAt: parsed.enqueuedAt,
+        idempotencyKey: String(row.outreach_email_idempotency_key),
+        streetAddress: (row.street_address as string | null) ?? null,
+        city: (row.city as string | null) ?? null,
+        expiredAt: (row.detected_at as string | null) ?? null,
+      })
+    }
+  }
+  if (candidates.length === 0) return null
+  candidates.sort((a, b) => a.idempotencyKey.localeCompare(b.idempotencyKey))
+  return candidates[0]
+}
+
+/** Most recent send that left from this Sunday queue. Weekday sends do not count. */
+export async function getLastSundayQueueSentAt(): Promise<Date | null> {
+  const sb = createServiceClient()
+  const prefix = `${SUNDAY_QUEUE_IDEMPOTENCY_PREFIX}%`
+  const [expRes, fsboRes] = await Promise.all([
+    sb
+      .from('expired_listings')
+      .select('outreach_email_sent_at')
+      .like('outreach_email_idempotency_key', prefix)
+      .not('outreach_email_sent_at', 'is', null)
+      .order('outreach_email_sent_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    sb
+      .from('fsbo_listings')
+      .select('outreach_email_sent_at')
+      .like('outreach_email_idempotency_key', prefix)
+      .not('outreach_email_sent_at', 'is', null)
+      .order('outreach_email_sent_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ])
+  if (expRes.error) throw new Error(`last sunday queue sent (expired) failed: ${expRes.error.message}`)
+  if (fsboRes.error) throw new Error(`last sunday queue sent (fsbo) failed: ${fsboRes.error.message}`)
+  const stamps = [expRes.data?.outreach_email_sent_at, fsboRes.data?.outreach_email_sent_at]
+    .filter((s): s is string => typeof s === 'string' && s.length > 0)
+    .map((s) => new Date(s).getTime())
+    .filter((n) => Number.isFinite(n))
+  if (stamps.length === 0) return null
+  return new Date(Math.max(...stamps))
+}
+
+/** Drop a Sunday-queue row. Does not match weekday `queued` rows. */
+export async function hardSkipSundayQueue(kind: ProspectKind, id: string, reason: string): Promise<void> {
+  const sb = createServiceClient()
+  const table = kind === 'expired' ? 'expired_listings' : 'fsbo_listings'
+  const keyCol = kind === 'expired' ? 'listing_key' : 'fsbo_url'
+  const { error } = await sb
+    .from(table)
+    .update({
+      outreach_email_status: null,
+      outreach_email_queued_at: null,
+      outreach_email_idempotency_key: null,
+    })
+    .eq(keyCol, id)
+    .like('outreach_email_idempotency_key', `${SUNDAY_QUEUE_IDEMPOTENCY_PREFIX}%`)
+    .is('outreach_email_sent_at', null)
+    .is('outreach_email_message_id', null)
+    .or(`outreach_email_status.eq.${SUNDAY_QUEUE_STATUS},outreach_email_status.is.null`)
+  if (error) {
+    console.error('[prospecting] hardSkipSundayQueue failed:', error.message, { kind, id, reason })
+  } else {
+    console.warn('[prospecting] sunday queue hard-skip:', { kind, id, reason })
+  }
+}
+

@@ -5,6 +5,7 @@ import {
   LISTING_FRAME_ASPECT_MIN,
   LISTING_MOSAIC_PHOTO_QUALITY,
   listingFrameAspect,
+  listingMosaicSrcSet,
   preferListingMosaicPhotoUrl,
 } from './publish-listing-mosaic'
 
@@ -73,3 +74,22 @@ describe('listingFrameAspect (the phone frame takes the photograph shape)', () =
   })
 })
 
+
+describe('listingMosaicSrcSet', () => {
+  it('offers the 800, 1024 and 1600 Spark boxes for one asset', () => {
+    const src = 'https://cdn.resize.sparkplatform.com/ore/1600x1200/true/abc-o.jpg'
+    expect(listingMosaicSrcSet(src)).toBe(
+      [
+        'https://cdn.resize.sparkplatform.com/ore/800x600/true/abc-o.jpg 800w',
+        'https://cdn.resize.sparkplatform.com/ore/1024x768/true/abc-o.jpg 1024w',
+        'https://cdn.resize.sparkplatform.com/ore/1600x1200/true/abc-o.jpg 1600w',
+      ].join(', '),
+    )
+  })
+
+  it('leaves any other URL without a srcset', () => {
+    expect(listingMosaicSrcSet('https://cdn.photos.sparkplatform.com/ore/abc-o.jpg')).toBeUndefined()
+    expect(listingMosaicSrcSet('/images/house.jpg')).toBeUndefined()
+    expect(listingMosaicSrcSet('')).toBeUndefined()
+  })
+})

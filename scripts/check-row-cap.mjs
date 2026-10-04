@@ -106,8 +106,13 @@ function stripComments(src) {
       if (ch === '/' && next === '/') { mode = 'line'; out += '  '; i += 2; continue }
       if (ch === '/' && next === '*') { mode = 'block'; out += '  '; i += 2; continue }
       if (ch === '/') {
-        const before = out.replace(/\s+$/, '')
-        if (regexPrecederRE.test(before.slice(-8))) { mode = 'regex'; inCharClass = false }
+        // The last 8 code chars before any trailing whitespace. Walking back
+        // from the end replaces `out.replace(/\s+$/, '')`, which copied the
+        // whole output at every `/` and made the gate quadratic: 43s per push
+        // over 3,115 files (2026-10-04).
+        let end = out.length
+        while (end > 0 && /\s/.test(out[end - 1])) end -= 1
+        if (regexPrecederRE.test(out.slice(Math.max(0, end - 8), end))) { mode = 'regex'; inCharClass = false }
         out += ch; i += 1; continue
       }
       if (ch === "'") mode = 'single'

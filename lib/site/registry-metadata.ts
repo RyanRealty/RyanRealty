@@ -122,9 +122,14 @@ export function registryDescription(blurb: string, max: number = MAX_DESC): stri
 }
 
 /**
- * The page-level title for a registry detail page. The entity name and nothing
- * else — the layout suffix carries the brand and the region.
+ * The page-level title for a registry detail page: the entity name, then its
+ * town when the name does not already say it ("Pilot Butte, Bend"). The layout
+ * suffix carries only the brand since Matt 2026-10-04, so the place has to be
+ * in the title itself, at the front where the search engine reads it.
  */
-export function registryTitle(name: string): string {
-  return name.trim()
+export function registryTitle(name: string, city?: string | null): string {
+  const n = name.trim()
+  const c = (city ?? '').trim()
+  if (!c || n.toLowerCase().includes(c.toLowerCase())) return n
+  return `${n}, ${c}`
 }

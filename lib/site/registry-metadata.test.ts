@@ -6,7 +6,7 @@ import { CO_VENUES } from '@/data/co-venues'
 import { MAX_DESC, registryDescription, registryTitle, sentences } from './registry-metadata'
 import { BRAND_SUFFIX, documentTitle } from './page-metadata'
 
-type Row = { slug: string; name: string; blurb: string }
+type Row = { slug: string; name: string; blurb: string; city: string }
 
 const FAMILIES: Array<[string, ReadonlyArray<Row>]> = [
   ['parks', CO_PARKS as unknown as ReadonlyArray<Row>],
@@ -95,15 +95,16 @@ describe.each(FAMILIES)('%s registry titles', (label, rows) => {
     }
   })
 
-  it('adds Central Oregon exactly once — the layout suffix, and nothing else', () => {
+  it('names its town and the brand once each (Matt 2026-10-04)', () => {
     for (const row of rows) {
-      const doc = `${documentTitle(registryTitle(row.name))}${BRAND_SUFFIX}`
-      // The suffix contributes the one region. A name that carries "Central
-      // Oregon" as part of its own proper noun ("Central Oregon Beer Week")
-      // adds its own; nothing else may.
-      expect(count(doc, 'Central Oregon'), `${label}/${row.slug}: ${doc}`).toBe(
-        1 + count(row.name, 'Central Oregon'),
-      )
+      const doc = `${documentTitle(registryTitle(row.name, row.city))}${BRAND_SUFFIX}`
+      // The suffix is the brand only, so the town rides in the title: "Pilot
+      // Butte, Bend". A name that already says its town adds nothing.
+      expect(doc.toLowerCase(), `${label}/${row.slug}: ${doc}`).toContain(row.city.toLowerCase())
+      if (!row.name.toLowerCase().includes(row.city.toLowerCase())) {
+        expect(doc, `${label}/${row.slug}: ${doc}`).toContain(`${row.name.trim()}, ${row.city}`)
+      }
+      expect(count(doc, 'Central Oregon'), `${label}/${row.slug}: ${doc}`).toBe(count(row.name, 'Central Oregon'))
       expect(doc.match(/Ryan Realty/g), `${label}/${row.slug}: ${doc}`).toHaveLength(1)
     }
   })

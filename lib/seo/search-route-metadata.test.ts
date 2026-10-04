@@ -96,7 +96,7 @@ describe('SEO-1: a made-up area fails CLOSED', () => {
   it('a real pair still indexes with its own canonical and name', async () => {
     const { canonicalUrl, metadata } = await meta(['bend', 'cambria'])
     expect(metadata.robots).toEqual({ index: true, follow: true })
-    expect(metadata.title).toBe('Cambria homes for sale')
+    expect(metadata.title).toBe('Cambria homes for sale in Bend')
     expect(canonicalUrl).toBe('https://ryan-realty.com/homes-for-sale/bend/cambria')
   })
 

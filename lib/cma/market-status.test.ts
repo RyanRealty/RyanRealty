@@ -938,7 +938,7 @@ describe('keptCompMedianPpsf', () => {
   })
 })
 
-describe('the peer sentence counts what was found, not what is drawn', () => {
+describe('the peer sentence counts the rows it shows', () => {
   const AREA: CompArea = {
     kind: 'neighborhood',
     names: ['River West'],
@@ -985,9 +985,11 @@ describe('the peer sentence counts what was found, not what is drawn', () => {
     expect(set.areaTotal).toBe(7)
     expect(set.found).toBe(7)
     expect(set.likeYours).toBe(false)
-    expect(set.count).toBe(5)
+    expect(set.count).toBe(7)
+    expect(set.peers).toHaveLength(7)
     expect(set.sentence).toBe(
-      'Seven homes in River West came off the market without selling in the last three months. The five closest to your home are below.',
+      'Seven homes in River West came off the market without selling in the last three months.',
     )
+    expect(set.sentence).not.toContain('closest')
   })
 })

@@ -83,9 +83,14 @@ function regexLiteralFromTs(file, name) {
 }
 
 function robotsUserAgents(robotsSrc) {
-  return [...robotsSrc.matchAll(/userAgent:\s*['"]([^'"]+)['"]/g)]
-    .map((m) => m[1])
-    .filter((agent) => agent !== '*')
+  const inline = [...robotsSrc.matchAll(/userAgent:\s*['"]([^'"]+)['"]/g)].map((m) => m[1])
+  // Named crawlers share one group (2026-10-04): a list const, not one
+  // userAgent string per group. Read every quoted name inside it.
+  const list = /const NAMED_CRAWLERS = \[([\s\S]*?)\]/.exec(robotsSrc)
+  const named = list
+    ? [...list[1].replace(/\/\/.*$/gm, '').matchAll(/['"]([^'"]+)['"]/g)].map((m) => m[1])
+    : []
+  return [...inline, ...named].filter((agent) => agent !== '*')
 }
 
 const errors = []
@@ -102,7 +107,7 @@ if (!robots) {
   // Content must be crawlable: an Allow of '/' must be present. (The wildcard
   // rule allows '/' today; this catches a future edit that drops it or replaces
   // it with a blanket Disallow.)
-  if (!/allow:\s*\[?\s*['"`]\/['"`]/.test(robots)) {
+  if (!/(?:allow:|PUBLIC_ALLOW =)\s*\[?\s*['"`]\/['"`]/.test(robots)) {
     errors.push("robots.ts no longer Allows '/' — the site would stop being crawlable for AI + search.")
   }
 }

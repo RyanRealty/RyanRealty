@@ -44,7 +44,7 @@ import {
 
 const PAGE_SIZE = 1000
 const SELECT_COLS =
-  'listing_key, list_number, street_number, street_name, city, subdivision_name, boundary_city, boundary_neighborhood, modified_at'
+  'listing_key, list_number, street_number, street_name, city, subdivision_name, boundary_city, boundary_neighborhood, modified_at, photo_url'
 
 // Exponential backoff with jitter. A statement-timeout is a contention
 // signal, not a fluke: retrying instantly (the old flat 150ms backoff) just
@@ -194,7 +194,37 @@ export function serviceAreaSitemapTiles(
   return tiles.filter((tile) => isServiceAreaCity(tile.city))
 }
 
+/**
+ * Listing keys whose photos a broker has suppressed (admin listing editor).
+ * listing_tile_mv does not carry the flag, so the sitemap reads it here and
+ * withholds those photos from `<image:image>`. A tiny set (one row on
+ * 2026-10-04). A failed read withholds EVERY image rather than risk listing a
+ * suppressed one; the page URLs still ship.
+ */
+async function fetchMediaSuppressedKeys(): Promise<ReadonlySet<string> | null> {
+  const supabase = supabaseAnon()
+  if (!supabase) return null
+  const { data, error } = await withRetry(() =>
+    // Narrowed to the sitemap's own statuses: media_suppressed has no index,
+    // and the bare flag filter over all of `listings` hit the statement
+    // timeout (2026-10-04). With the status filter it returned in 573ms.
+    supabase
+      .from('listings')
+      .select('ListingKey')
+      .in('StandardStatus', PUBLIC_ACTIVE_STATUSES)
+      .eq('media_suppressed', true)
+      .limit(1000),
+    2,
+  )
+  if (error) {
+    console.error(`[getListingSitemapRows] media_suppressed read failed, omitting images: ${errorMessage(error)}`)
+    return null
+  }
+  return new Set(((data ?? []) as Array<{ ListingKey: string | null }>).map((r) => String(r.ListingKey ?? '').trim()))
+}
+
 export async function getListingSitemapRows(now: Date = new Date()): Promise<ListingSitemapRow[]> {
-  const tiles = await fetchActiveListingTiles()
-  return assembleListingSitemapRows(serviceAreaSitemapTiles(tiles), now)
+  const [tiles, suppressed] = await Promise.all([fetchActiveListingTiles(), fetchMediaSuppressedKeys()])
+  const rows = assembleListingSitemapRows(serviceAreaSitemapTiles(tiles), now, suppressed ?? new Set())
+  return suppressed ? rows : rows.map((r) => ({ ...r, imageUrl: null }))
 }

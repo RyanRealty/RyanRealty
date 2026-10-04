@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
+import { preload } from 'react-dom'
 import { SparkSafeImage } from '@/lib/listing/SparkSafeImage'
 import { cn } from '@/lib/utils'
 import type { ListingPhoto } from '@/lib/data/types/listing'
@@ -34,6 +35,7 @@ import {
   LISTING_MOSAIC_PHOTO_QUALITY,
   LISTING_MOSAIC_STRIP_SIZES,
   listingFrameAspect,
+  listingMosaicSrcSet,
   preferListingMosaicPhotoUrl,
 } from '@/lib/listing/publish-listing-mosaic'
 import { listingRowPhotoSrc } from '@/lib/listing/row-photo'
@@ -84,12 +86,14 @@ type Props = {
   floorPlans?: ReadonlyArray<ListingPhoto>
   videos: ReadonlyArray<VideoEmbed>
   addressLine?: string
+  /** City for photo alt text, so image search knows which town the house is in. */
+  cityLine?: string | null
   lat?: number | null
   lng?: number | null
   openHouseLabel?: string | null
   className?: string
   /**
-   * Lead stills emit `<link rel="preload">` when true (next/image `priority`).
+   * Lead stills emit `<link rel="preload">` and `fetchpriority="high"` when true.
    * Speculative App Router prefetches must pass false (SITE-60): a 1600×1200
    * Spark plate in a payload the visitor never opened is the list-page tax.
    * Real document / click navigations keep the default so LCP stays sharp.
@@ -184,6 +188,7 @@ export function ListingHero({
   floorPlans = [],
   videos,
   addressLine,
+  cityLine,
   lat,
   lng,
   openHouseLabel,
@@ -226,10 +231,11 @@ export function ListingHero({
     lat != null && lng != null && Number.isFinite(lat) && Number.isFinite(lng)
   const hasLeadMedia = heroVideo != null || total > 0 || floorPlans.length > 0 || hasMap
   const canUnmute = publishListingHeroUnmute(heroVideo)
-  const altBase = listingPhotoAlt({ addressLine: addressLine ?? '' }) || 'Listing photo'
+  const altBase = listingPhotoAlt({ addressLine: addressLine ?? '', cityLine }) || 'Listing photo'
   const frameAlt = (ordinal: number) =>
     listingGalleryFrameAlt({
       addressLine,
+      cityLine,
       ordinal,
       total: Math.max(1, total),
     })
@@ -611,7 +617,7 @@ export function ListingHero({
         onPaneChange={setGalleryPane}
         total={galleryPane === 'floor' ? floorPlans.length : total}
         altBase={altBase}
-        addressLine={addressLine}
+        addressLine={addressLine ? altBase : undefined}
         hasStreetView={hasStreetView}
         onClose={() => setOpenIndex(null)}
         onChange={(i) => setOpenIndex(i)}
@@ -665,8 +671,17 @@ function MosaicStill({
   // Lead still is the 1600 mosaic derivative (or larger). Never the 320
   // filmstrip thumb or the 800 field-lead plate in this frame.
   const live = preferListingMosaicPhotoUrl(src)
-  void sizes
-  void priority
+  const srcSet = listingMosaicSrcSet(live)
+  // The lead still is the listing page's LCP element. Preload it in the
+  // document head and mark it high priority; every other still waits its turn.
+  if (priority) {
+    preload(live, {
+      as: 'image',
+      fetchPriority: 'high',
+      imageSrcSet: srcSet,
+      imageSizes: srcSet ? sizes : undefined,
+    })
+  }
   const imgRef = useRef<HTMLImageElement>(null)
   // A portrait still covers into a landscape phone frame anchored at its foot
   // (listing-detail.css), which keeps the ODS mark and the house.
@@ -692,7 +707,12 @@ function MosaicStill({
       <img
         ref={imgRef}
         src={live}
+        srcSet={srcSet}
+        sizes={srcSet ? sizes : undefined}
         alt={alt}
+        fetchPriority={priority ? 'high' : undefined}
+        loading={priority ? 'eager' : 'lazy'}
+        decoding={priority ? undefined : 'async'}
         className={cn(contain && 'is-plan', portrait && 'is-portrait') || undefined}
         onLoad={(event) => read(event.currentTarget)}
       />

@@ -62,7 +62,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const description = span
     ? `${n} verified Google reviews of Ryan Realty in Central Oregon (${average.toFixed(1)} of 5, ${span}). Every review in full on this page. Nothing picked, nothing trimmed.`
     : `${n} verified Google reviews of Ryan Realty in Central Oregon (${average.toFixed(1)} of 5). Every review in full on this page. Nothing picked, nothing trimmed.`
-  // The layout template appends "| Ryan Realty, Central Oregon", so the
+  // The layout template appends "| Ryan Realty", so the
   // document title carries the brand once. The brand twice here made /reviews
   // the stronger brand match than / (SITE-198). Social cards get no template,
   // so they keep it.

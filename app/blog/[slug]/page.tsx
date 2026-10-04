@@ -23,6 +23,7 @@
  * claims rewrite through publishBlogCurrentMos + getMarketPulse.
  */
 
+import { cleanTitle } from '@/lib/site/page-metadata'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
@@ -101,7 +102,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     html: post.content?.trim() || post.excerpt?.trim() || '',
     seoTitle: post.seo_title,
   })
-  const title = period.metaTitle
+  // A DB seo_title can carry the brand already ("… | Ryan Realty"); the
+  // layout template adds it, so strip it here or it prints twice (live SEO
+  // audit 2026-10-04: /blog/new-federal-housing-law-central-oregon).
+  const title = cleanTitle(period.metaTitle)
   const description =
     post.seo_description?.trim() ||
     post.excerpt?.trim() ||

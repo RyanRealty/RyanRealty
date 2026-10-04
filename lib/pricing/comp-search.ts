@@ -18,6 +18,7 @@
  */
 
 import { countWord } from '@/lib/pricing/estimate'
+import { streetKey } from '@/lib/pricing/price-anchor'
 import { parseTierMonths, parseTierRadiusMiles } from '@/lib/pricing/search-story'
 import { ruralSplitsSentence, type RuralSplitCounts } from '@/lib/pricing/rural'
 
@@ -33,6 +34,8 @@ export type CompSearchRungInput = {
 export type CompSearchKeptComp = {
   subdivision?: string | null
   selectionTier?: string | null
+  /** Street address, when the row has one. Used to name an outside sale. */
+  address?: string | null
 }
 
 export type CompSearchRung = {
@@ -160,6 +163,8 @@ function joinPhrases(parts: string[]): string {
  */
 export function buildCompSearch(input: {
   subdivision: string | null | undefined
+  /** The subject's street address. "Your own street" is only true when a sale shares it. */
+  subjectStreet?: string | null
   ladder: readonly CompSearchRungInput[]
   keptComps: readonly CompSearchKeptComp[]
   /** On acreage: the subject's zone and the split counts, for the reader's sentence. */
@@ -197,42 +202,27 @@ export function buildCompSearch(input: {
     : []
   const inSubdivision = inside.length
 
-  // ONE ARITHMETIC. The rungs named beside "two more were added from" are the
-  // rungs THOSE TWO SALES came from — resolved off the same array the count
-  // is, never off the tier list separately. Splitting the two is how the first
-  // cut of this sentence said "One more was added from" and then named three
-  // rungs.
-  //
-  // Where no sale carries its tier — a caller with counts but no attribution —
-  // fall back to the rungs that contributed candidates, which is still a
-  // count, never a guess from the tier name.
-  const labelFor = new Map(rungs.map((r) => [r.key, r.label]))
-  const outsideKeys = new Set(
-    input.keptComps
-      .filter((c) => !subdivision || usableSubdivision(c.subdivision) !== subdivision)
-      .map((c) => clean(c.selectionTier))
-      .filter((k): k is string => k != null && labelFor.has(k)),
+  // The sales OUTSIDE the subdivision. Name those sales. A rung that
+  // added candidates and then kept none of them is not where the extra sale
+  // came from. own-street-24mo did that on 3722 Petrosa and the sentence
+  // called 62899 Daniel, in Mirada, "your own street."
+  const subjectStreetKey = streetKey(input.subjectStreet)
+  const outside = input.keptComps.filter(
+    (c) => !subdivision || usableSubdivision(c.subdivision) !== subdivision,
   )
-  const attributed = outsideKeys.size > 0
-  // Named in LADDER order — tightest rung first — not in whatever order the
-  // sales happen to sit in the grid.
-  const outsideLabels = joinPhrases([
-    ...new Set(
-      rungs
-        .filter((r) =>
-          attributed
-            ? outsideKeys.has(r.key)
-            : r.added > 0 && !isSubdivisionTier(r.key) && r.key !== BROKER_TIER,
-        )
-        .map((r) => r.label),
-    ),
-  ])
+  const onSubjectStreet = (c: CompSearchKeptComp): boolean => {
+    const saleStreet = streetKey(c.address)
+    return subjectStreetKey != null && saleStreet != null && saleStreet === subjectStreetKey
+  }
+  const described =
+    describeOutsideSales(outside, onSubjectStreet) ??
+    rungPhraseForUnnamed(outside, rungs, onSubjectStreet)
 
   const sentence = writeSentence({
     subdivision,
     total,
     inSubdivision,
-    outsideLabels,
+    outside: described,
     brokerOnly: ran.every((r) => r.tier === BROKER_TIER),
   })
 
@@ -245,15 +235,90 @@ export function buildCompSearch(input: {
   }
 }
 
+type OutsidePhrase = {
+  /** "your own street", "Redmond Heights", or "62899 Daniel in Mirada". */
+  text: string
+  /** True when `text` names a sale, so the sentence uses a colon instead of "from". */
+  namesSale: boolean
+}
+
+/**
+ * Last resort, when the sale has no address and no subdivision to name.
+ * Only rungs that kept an outside sale. If none of those rungs are on the
+ * ladder, the rungs that added candidates, and never "your own street"
+ * unless the sale is on that street.
+ */
+function rungPhraseForUnnamed(
+  outside: readonly CompSearchKeptComp[],
+  rungs: readonly CompSearchRung[],
+  onSubjectStreet: (c: CompSearchKeptComp) => boolean,
+): OutsidePhrase | null {
+  const labelFor = new Map(rungs.map((r) => [r.key, r.label]))
+  const keptKeys = new Set(
+    outside
+      .map((c) => clean(c.selectionTier))
+      .filter((k): k is string => k != null && labelFor.has(k)),
+  )
+  const labels = [
+    ...new Set(
+      (keptKeys.size > 0
+        ? rungs.filter((r) => keptKeys.has(r.key))
+        : rungs.filter((r) => r.added > 0 && !isSubdivisionTier(r.key) && r.key !== BROKER_TIER)
+      ).map((r) => r.label),
+    ),
+  ].filter(
+    (label) => label !== 'your own street' || (outside.length > 0 && outside.every(onSubjectStreet)),
+  )
+  if (labels.length === 0) return null
+  return { text: joinPhrases(labels), namesSale: false }
+}
+
+/**
+ * Where the sales outside the subdivision actually are.
+ *
+ * "Your own street" only when every one of them is on the subject's street.
+ * A sale in another subdivision is named, with that subdivision. A rung label
+ * is the last resort, and only for a rung that kept the sale. Never a rung
+ * that merely added candidates.
+ */
+
+function describeOutsideSales(
+  outside: readonly CompSearchKeptComp[],
+  onSubjectStreet: (c: CompSearchKeptComp) => boolean,
+): OutsidePhrase | null {
+  if (outside.length === 0) return null
+  if (outside.every(onSubjectStreet)) return { text: 'your own street', namesSale: false }
+
+  const phrases = outside.map((c) => {
+    if (onSubjectStreet(c)) {
+      const address = clean(c.address)
+      return { text: address ? `${address} on your street` : 'a sale on your street', namesSale: true }
+    }
+    const place = usableSubdivision(c.subdivision)
+    const address = clean(c.address)
+    if (address && place) return { text: `${address} in ${place}`, namesSale: true }
+    if (address) return { text: address, namesSale: true }
+    if (place) return { text: place, namesSale: false }
+    return null
+  })
+  if (phrases.some((p) => p == null)) return null
+  const named = phrases as { text: string; namesSale: boolean }[]
+  if (named.some((p) => p.namesSale)) {
+    return { text: joinPhrases(named.map((p) => p.text)), namesSale: true }
+  }
+  return { text: joinPhrases([...new Set(named.map((p) => p.text))]), namesSale: false }
+}
+
 function writeSentence(args: {
   subdivision: string | null
   total: number
   inSubdivision: number
-  outsideLabels: string
+  outside: OutsidePhrase | null
   brokerOnly: boolean
 }): string {
-  const { subdivision, total, inSubdivision, outsideLabels, brokerOnly } = args
+  const { subdivision, total, inSubdivision, outside, brokerOnly } = args
   const n = countWord(total)
+  const outsideLabels = outside?.text ?? ''
   if (brokerOnly) {
     return total === 1
       ? 'This sale was chosen by your broker.'
@@ -281,6 +346,8 @@ function writeSentence(args: {
   }
   const rest = total - inSubdivision
   const head = `${countWord(inSubdivision, true)} of the ${n} sales ${inSubdivision === 1 ? 'is' : 'are'} in ${subdivision}.`
-  if (!outsideLabels) return head
-  return `${head} ${countWord(rest, true)} more ${rest === 1 ? 'was' : 'were'} added from ${outsideLabels}.`
+  if (!outside) return head
+  const more = `${countWord(rest, true)} more ${rest === 1 ? 'was' : 'were'} added`
+  if (outside.namesSale) return `${head} ${more}: ${outside.text}.`
+  return `${head} ${more} from ${outside.text}.`
 }

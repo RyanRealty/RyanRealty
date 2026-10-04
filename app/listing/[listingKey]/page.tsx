@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import {
-  getListingDetail,
+  getListingLookup,
   getListingPhotos,
   getListingFloorPlans,
   getListingVideos,
@@ -45,7 +45,9 @@ import { homesForSalePath, listingCanonicalHref } from '@/lib/slug'
 import { listingKeepExploringDoor } from '@/lib/listing/listing-keep-exploring'
 import { ListingDetailShell } from '@/components/site/listing-detail/ListingDetailShell'
 import {
+  ListingTemporarilyUnavailable,
   ListingUnavailable,
+  LISTING_TEMPORARILY_UNAVAILABLE_METADATA,
   LISTING_UNAVAILABLE_METADATA,
 } from '@/components/site/listing-detail/ListingUnavailable'
 import { ListingHero } from '@/components/site/listing-detail/ListingHero'
@@ -167,8 +169,11 @@ export const revalidate = 300
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { listingKey } = await params
-  const listing = await getListingDetail(listingKey)
-  if (!listing) return LISTING_UNAVAILABLE_METADATA
+  const lookup = await getListingLookup(listingKey)
+  // A database failure is not a missing home: no noindex (2026-10-04).
+  if (lookup.kind === 'error') return LISTING_TEMPORARILY_UNAVAILABLE_METADATA
+  if (lookup.kind === 'missing') return LISTING_UNAVAILABLE_METADATA
+  const listing = lookup.listing
 
   const addressFull = listingMlsAddressFull(listing)
   // SITE-20. Every figure and every word this function publishes is
@@ -272,8 +277,10 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
   // 1600×1200 hero preload. Next strips the rsc / next-router-prefetch headers
   // before headers() sees them, so this also reads Accept and `_rsc`.
   const lcpPriority = !(await isNextRouterPrefetch(sp))
-  const listing = await getListingDetail(listingKey)
-  if (!listing) return <ListingUnavailable />
+  const lookup = await getListingLookup(listingKey)
+  if (lookup.kind === 'error') return <ListingTemporarilyUnavailable />
+  if (lookup.kind === 'missing') return <ListingUnavailable />
+  const listing = lookup.listing
 
   // SITE-20: ONE published price for the whole page. Before this, PriceCtaStrip
   // branched on Closed by hand and printed the close price, while these two
@@ -698,6 +705,7 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
       floorPlans={flightFloorPlans}
       videos={videos}
       addressLine={street}
+      cityLine={listing.city}
       lat={listing.lat}
       lng={listing.lng}
       openHouseLabel={

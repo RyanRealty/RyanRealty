@@ -73,7 +73,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!trail) notFound()
   // Registry-only, and the trail's OWN words (lib/site/registry-metadata.ts).
   return pageMetadata({
-    title: registryTitle(trail.name),
+    title: registryTitle(trail.name, trail.city),
     description: registryDescription(trail.blurb),
     path: `/central-oregon/trails/${slug}`,
   })

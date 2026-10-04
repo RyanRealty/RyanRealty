@@ -55,17 +55,20 @@ const buildUniverseOnce = createUniverseMemo<MetadataRoute.Sitemap>(
   UNIVERSE_TTL_MS,
 )
 
+/** [path, lastmodISO] or, for a listing with a photo, [path, lastmodISO, imageUrl]. */
+export type SitemapClassRow = [string, string] | [string, string, string]
+
 /**
- * Rows are [path, lastmodISO] tuples; path is relative to the site base URL
+ * Rows are [path, lastmodISO] tuples (plus an image URL on listing rows); path is relative to the site base URL
  * ('' for the homepage row). unstable_cache includes the cls argument in the
  * cache key, so each class caches independently and stays far under the 2MB
  * per-entry cap that broke v1.
  */
 export const getClassRows = unstable_cache(
-  async (cls: SitemapClass): Promise<[string, string][]> => {
+  async (cls: SitemapClass): Promise<SitemapClassRow[]> => {
     if (cls === 'listings') {
       const rows = await getListingSitemapRows()
-      return rows.map((r) => [r.path, r.lastModified])
+      return rows.map((r) => (r.imageUrl ? [r.path, r.lastModified, r.imageUrl] : [r.path, r.lastModified]))
     }
     const baseUrl = siteBaseUrl()
     const urls = await buildUniverseOnce()
@@ -82,6 +85,7 @@ export const getClassRows = unstable_cache(
   // entries built by the old code kept serving the three 301 sources for over
   // an hour after the deploy, so the key moves and the next read builds fresh.
   // Bump it again whenever buildAllUrls changes WHICH urls it emits.
-  ['sitemap-class-urls-v4'],
+  // v5 (2026-10-04): listing rows carry a third element, the lead photo URL.
+  ['sitemap-class-urls-v5'],
   { revalidate: 3600 },
 )

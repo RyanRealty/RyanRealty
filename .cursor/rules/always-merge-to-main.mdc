@@ -1,15 +1,15 @@
 ---
-description: Push the branch to GitHub right away. Main lands only by fast-forward from the Mini after the push gate.
+description: Push the branch to GitHub right away. Land main with a fast-forward when the work is ready. Any machine may do it.
 alwaysApply: true
 ---
 
 # Trunk + worktrees (anti-strand)
 
-**Production truth is `origin/main`.** All code work is pushed to GitHub as a branch right away. Main lands only by fast-forward from the Mini after the push gate. No rebase, force-push, or reset.
+**Production truth is `origin/main`.** All code work is pushed to GitHub as a branch right away. Land main with a fast-forward when the work is ready. Any machine may do it. No rebase, force-push, or reset.
 
 ## Default
 
-- Day-to-day work is a branch from current `origin/main`, pushed to GitHub right away. Do not land `main` yourself.
+- Day-to-day work is a branch from current `origin/main`, pushed to GitHub right away. Fast-forward `main` from that branch when the work is ready. Any machine may do it.
 - Push the branch with `NODE_OPTIONS=--max-old-space-size=8192 npm run push`.
 - Do **not** open PRs for routine work. Do **not** use a long-lived release branch.
 - No rebase, force-push, or reset.
@@ -23,7 +23,7 @@ Required anti-strand rules (see **AGENTS.md → Worktrees**):
 1. Name branches `wt/<agent-or-topic>-YYYYMMDD` (example: `wt/crm-mobile-20260726`).
 2. Push the branch to GitHub right away. Do not keep the only copy local.
 3. Before ending a session: push the branch. If work is unfinished, also record the branch, path, and intent in `docs/plans/CROSS_AGENT_HANDOFF.md` Current block.
-4. Main lands only by fast-forward from the Mini after the push gate. Do not land `main` from the worktree. After that fast-forward has landed and the branch is done: delete the branch locally and on `origin`, `git worktree remove <path>`, `git worktree prune`.
+4. Land main with a fast-forward when the work is ready. Any machine may do it. After that fast-forward has landed and the branch is done: delete the branch locally and on `origin`, `git worktree remove <path>`, `git worktree prune`.
 5. Never leave the only copy of valued work in an unpushed worktree with no handoff entry.
 
 ## Failure mode this rule prevents

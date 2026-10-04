@@ -11,7 +11,7 @@ import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { resolveCanonicalListingKey } from '@/lib/data/listings/resolveCanonicalListingKey'
 import type { MarketIndexPoint } from '@/lib/pricing/market-path'
 import type { PricingSale, SubdivisionCell } from '@/lib/pricing/match'
-import { plausibleListedClose, type HoaClass, type LotClass, type ProductKey, type SewerClass, type StoryClass, type WaterClass } from '@/lib/pricing/classes'
+import { factsProductClauses, plausibleListedClose, productClassFromFactsRow, type HoaClass, type LotClass, type SewerClass, type StoryClass, type WaterClass } from '@/lib/pricing/classes'
 
 function client() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -32,6 +32,7 @@ const FACT_COLS = [
   'latitude',
   'longitude',
   'product_class',
+  'property_sub_type',
   'beds',
   'baths',
   'sqft',
@@ -84,7 +85,10 @@ function rowToSale(r: Record<string, unknown>): PricingSale | null {
     lotAcres: r.lot_acres != null ? Number(r.lot_acres) : null,
     yearBuilt: r.year_built != null ? Number(r.year_built) : null,
     storyClass: (r.story_class as StoryClass) ?? 'unknown',
-    productClass: (r.product_class as ProductKey) ?? 'unknown',
+    productClass: productClassFromFactsRow(
+      typeof r.product_class === 'string' ? r.product_class : null,
+      typeof r.property_sub_type === 'string' ? r.property_sub_type : null,
+    ),
     waterClass: (r.water_class as WaterClass) ?? 'unknown',
     sewerClass: (r.sewer_class as SewerClass) ?? 'unknown',
     hoaClass: (r.hoa_class as HoaClass) ?? 'unknown',
@@ -122,6 +126,17 @@ export async function countSalePricingFacts(): Promise<number> {
   return count ?? 0
 }
 
+
+function applyFactsProductClause<Q extends { eq: (col: string, val: string) => Q; or: (filters: string) => Q }>(
+  q: Q,
+  productClass: string | null | undefined,
+): Q {
+  const clause = factsProductClauses(productClass)
+  if (clause.or) return q.or(clause.or)
+  if (clause.eq) return q.eq(clause.eq[0], clause.eq[1])
+  return q
+}
+
 export async function selectPricingFactsPool(opts: {
   citySlug: string | null
   closeBefore: string
@@ -143,7 +158,7 @@ export async function selectPricingFactsPool(opts: {
     .lte('sqft', opts.sqftMax)
     .gt('close_price', 0)
   if (!opts.ignoreCity && opts.citySlug) q = q.eq('city_slug', opts.citySlug)
-  if (opts.productClass && opts.productClass !== 'unknown') q = q.eq('product_class', opts.productClass)
+  q = applyFactsProductClause(q, opts.productClass)
   const { data, error } = await q.order('close_date', { ascending: false }).limit(Math.min(opts.limit ?? 800, 1000))
   if (error) {
     console.error('[selectPricingFactsPool]', error.message)
@@ -203,7 +218,7 @@ export async function selectPricingFactsNear(opts: {
       .lte('latitude', opts.latitude + dLat)
       .gte('longitude', opts.longitude - dLng)
       .lte('longitude', opts.longitude + dLng)
-    if (opts.productClass && opts.productClass !== 'unknown') q = q.eq('product_class', opts.productClass)
+    q = applyFactsProductClause(q, opts.productClass)
     // Stable total order — range paging without one skips and duplicates rows.
     return q
       .order('close_date', { ascending: false })

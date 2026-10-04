@@ -37,6 +37,18 @@ export const SEARCH_AREA_UNAVAILABLE_METADATA = {
  * contract stays pinned in the route file (ci:seo-routes file contract). A null
  * canonicalUrl is the refusal: the wrapper emits no canonical.
  */
+/**
+ * "{title} in {town}" for an area (plat / neighborhood) page whose title does
+ * not already name its town. City pages and titles that already carry the
+ * town pass through unchanged.
+ */
+export function withAreaTown(title: string, town: string | null | undefined): string {
+  const t = (town ?? '').trim()
+  if (!t) return title
+  if (title.toLowerCase().includes(t.toLowerCase())) return title
+  return `${title} in ${t}`
+}
+
 export async function buildSearchSlugMetadata({
   params,
   searchParams,
@@ -81,7 +93,9 @@ export async function buildSearchSlugMetadata({
   const rawMetaDesc =
     luxuryPresetDescription(preset, placeName) ??
     (areaPrint && subdivisionDisplayName ? (subdivisionDesc ?? getSubdivisionBlurb(subdivisionDisplayName)) : null) ??
-    (subdivisionSlug ? null : content?.metaDescription) ??
+    // SEO review 2026-10-04: same leak for a preset. /homes-for-sale/bend/residential-lots
+    // and /homes-for-sale/bend/manufactured both printed Bend's city description.
+    (subdivisionSlug || preset ? null : content?.metaDescription) ??
     (preset
       ? `${preset.label} in ${placeName}, Central Oregon. Live listings from the regional MLS, with price, size, and the map.`
       : subdivisionSlug && areaPrint && city
@@ -144,12 +158,16 @@ export async function buildSearchSlugMetadata({
   // ("Bend luxury homes for sale"); the layout template adds the brand.
   // SITE-184: the plain city search of a self-city community reads "Search
   // {place} homes" so no second page carries the community's title.
-  const title =
+  const baseTitle =
     luxuryPresetHeading(preset, placeName) ??
     (preset
       ? `${preset.label} in ${placeName}`
       : (selfCityTitle ??
         (areaPrint || !subdivisionSlug ? placeHomesForSaleHeading(placeName) : `Homes for sale in ${placeName}`)))
+  // The brand suffix stopped carrying "Central Oregon" (Matt 2026-10-04), so an
+  // area page names its own town: "Woodridge homes for sale in Bend", not a
+  // bare plat name the searcher cannot place.
+  const title = withAreaTown(baseTitle, subdivisionSlug ? city : null)
   // W3.2 search-matrix noindex: a 3-segment {city}/{area}/{preset} combo with a
   // VERIFIED zero active-inventory count stays renderable but is noindexed —
   // the sitemap (lib/seo/getSearchMatrixEntries.ts) only submits combos with

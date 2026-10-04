@@ -5,7 +5,7 @@
  *
  * THE TITLE BUDGET COUNTS THE SUFFIX (SITE-25). A registry detail page's title
  * is the entity `name` and nothing else; app/layout.tsx then appends
- * " | Ryan Realty, Central Oregon" — 30 characters. The old bound was 48 on
+ * " | Ryan Realty" — 14 characters (30 before 2026-10-04). The old bound was 48 on
  * the name alone and never counted those 31, so every "bounded" name still
  * composed a 79-char document title. The bound is now
  * MAX_TITLE − BRAND_SUFFIX.length, measured on the document title the visitor
@@ -46,7 +46,7 @@ const WRITE_BASELINE = argv.includes('--write-baseline')
 const BASELINE_PATH = path.join(ROOT, 'scripts/content-metadata-baseline.json')
 
 /** Kept in sync with lib/site/page-metadata.ts — the same two constants. */
-const BRAND_SUFFIX = ' | Ryan Realty, Central Oregon'
+const BRAND_SUFFIX = ' | Ryan Realty'
 const MAX_TITLE = 60
 const MAX_NAME = MAX_TITLE - BRAND_SUFFIX.length
 
@@ -68,7 +68,8 @@ function names(file) {
     const end = i + 1 < slugs.length ? slugs[i + 1].index : src.length
     const block = src.slice(start, end)
     const nm = block.match(/\bname:\s*(['"])((?:\\.|(?!\1)[^\\])*)\1/)
-    return { slug: m[1], name: nm ? nm[2] : null }
+    const ct = block.match(/\bcity:\s*(['"])((?:\\.|(?!\1)[^\\])*)\1/)
+    return { slug: m[1], name: nm ? nm[2] : null, city: ct ? ct[2] : null }
   })
 }
 
@@ -81,11 +82,15 @@ function checkFamily(label, file) {
       fail.push(`${key}: missing name`)
       continue
     }
-    if (r.name.length > MAX_NAME) {
+    // The page title is registryTitle(name, city): "Pilot Butte, Bend" unless
+    // the name already says its town (lib/site/registry-metadata.ts).
+    const town = (r.city ?? '').trim()
+    const title = town && !r.name.toLowerCase().includes(town.toLowerCase()) ? `${r.name}, ${town}` : r.name
+    if (title.length > MAX_NAME) {
       overflowing.push({
         key,
-        name: r.name,
-        docLength: r.name.length + BRAND_SUFFIX.length,
+        name: title,
+        docLength: title.length + BRAND_SUFFIX.length,
       })
     }
     const dupKey = r.name.toLowerCase()

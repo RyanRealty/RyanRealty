@@ -189,7 +189,6 @@ function num(v: unknown): number | null {
 }
 
 
-const EXPIRED_PEER_CAP = 5
 
 export type ExpiredPeerSubject = Pick<
   CmaSubject,
@@ -348,7 +347,6 @@ export function expiredPeerCycleLabel(peer: CmaExpiredPeer): string {
 export function pickExpiredPeers(
   rows: readonly CmaMarketAreaRow[],
   subject: ExpiredPeerSubject,
-  cap = EXPIRED_PEER_CAP,
 ): CmaExpiredPeer[] {
   const named = rows
     .map((row) => {
@@ -409,8 +407,9 @@ export function pickExpiredPeers(
     seenKeys.add(item.peer.listingKey)
     picked.push(item.peer)
   }
-  // Collapse multi-cycle same-address peers, then cap columns.
-  return collapseExpiredPeerCycles(picked).slice(0, cap)
+  // Every peer the set counted. A column cap made the sentence name homes
+  // the table left off.
+  return collapseExpiredPeerCycles(picked)
 }
 
 function inBand(price: number | null, lo: number, hi: number): boolean {
@@ -714,7 +713,6 @@ export function buildExpiredPeerSet(input: {
   asOf?: Date
   /** Median $/sqft of the sales that set the price, for `whyItSat`. */
   keptCompMedianPpsf?: number | null
-  cap?: number
   /**
    * Matt ADD 2026-09-12: cap the peer clock to the closed-sales lookback so
    * expireds do not come from an older pocket than the solds.
@@ -722,7 +720,6 @@ export function buildExpiredPeerSet(input: {
   maxWindowMonths?: number | null
 }): CmaExpiredPeerSet {
   const asOf = input.asOf ?? new Date()
-  const cap = input.cap ?? EXPIRED_PEER_CAP
   const dated = input.rows
     .map((row) => ({ row, months: offMarketMonths(row, asOf) }))
     // A row with no off-market date cannot support "in the last N months", so
@@ -744,14 +741,12 @@ export function buildExpiredPeerSet(input: {
   for (const w of windows) {
     tried.push(w)
     const inWindow = dated.filter((x) => x.months <= w).map((x) => x.row)
-    peers = pickExpiredPeers(inWindow, input.subject, cap)
+    peers = pickExpiredPeers(inWindow, input.subject)
     // How many homes came off in the area at all, one per address, subject
     // excluded. The narrowed set is what the document prints; this is what the
     // sentence would otherwise silently claim to be counting.
-    // What the SENTENCE counts. `peers` is capped at five columns, so a
-    // sentence built on its length would say five homes came off the market
-    // in a neighborhood where seven did. These mirror pickExpiredPeers' own
-    // pool rule: the homes like the subject when there are any, else all.
+    // What the SENTENCE counts is the same set the table shows. `found` is
+    // that set: the homes like the subject when there are any, else all.
     const key = (r: CmaMarketAreaRow) =>
       normalizePeerAddress(peerAddress(r)) || String(r.ListingKey ?? '')
     const eligible = inWindow.filter(
@@ -786,7 +781,6 @@ export function buildExpiredPeerSet(input: {
     sentence: peerSetSentence({
       area: input.area,
       count,
-      found,
       windowMonths,
       shortfall,
       likeYours,
@@ -798,7 +792,6 @@ export function buildExpiredPeerSet(input: {
 function peerSetSentence(input: {
   area: CompArea
   count: number
-  found: number
   windowMonths: number
   shortfall: boolean
   likeYours: boolean
@@ -810,20 +803,15 @@ function peerSetSentence(input: {
   // over an area that may hold thirty unsold listings — would be a count of
   // one set attached to the name of another (§0).
   const like = input.likeYours ? ' like yours' : ''
-  const n = input.found
+  // `count` is the rows the table prints. The sentence uses that number.
+  const n = input.count
   if (n === 0) {
     return `No home${like} ${where} came off the market without selling in the last ${w} months.`
   }
-  // The columns are capped; the sentence is not. Say how many were found and
-  // then say how many of them are drawn below.
-  const shown =
-    input.count > 0 && input.count < n
-      ? ` The ${countWord(input.count)} closest to your home ${input.count === 1 ? 'is' : 'are'} below.`
-      : ''
   const homes = `${countWord(n)} ${n === 1 ? 'home' : 'homes'}${like}`
   if (!input.shortfall) {
     const head = `${countWord(n, true)} ${n === 1 ? 'home' : 'homes'}${like}`
-    return `${head} ${where} came off the market without selling in the last ${w} months.${shown}`
+    return `${head} ${where} came off the market without selling in the last ${w} months.`
   }
   // Fewer than three even at the widest window. Say the number, say the
   // window, and say plainly that nothing was brought in from outside.

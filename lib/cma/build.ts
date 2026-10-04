@@ -1484,6 +1484,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       identity: { personId, clientEmail: input.client.email },
       pricing,
       closedComps: renderComps,
+      expiredAddresses: (expiredPeers?.peers ?? []).map((peer) => peer.address),
       // A name word inside an address the letter prints is the street, not the owner.
       printedAddresses: printedAddressesOf(renderArgs),
     })

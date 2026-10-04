@@ -95,3 +95,43 @@ export function preferListingMosaicPhotoUrl(url: string): string {
     return url
   }
 }
+
+/**
+ * Spark resize boxes the lead still is offered in, smallest first. Spark fits
+ * the photo inside the WxH box and never upscales past the original, so a
+ * declared width is the box edge, not a promise of pixels. Measured 2026-10-04
+ * on one listing asset (cdn.resize.sparkplatform.com): 800x600 returned
+ * 64,835 bytes on three fetches, 1024x768 111,105, 1600x1200 236,066 and
+ * 289,700 on two fetches. A 2x phone needs about 780 pixels across, so it no
+ * longer pays for the 1600 plate.
+ */
+const MOSAIC_SRCSET_BOXES = [
+  [800, 600],
+  [1024, 768],
+  [MOSAIC_TARGET_EDGE, 1200],
+] as const
+
+/**
+ * A `srcset` for a Spark resize URL (`/ore/{W}x{H}/{crop}/{asset}`), or
+ * undefined for any other URL. next/image is unoptimized (Matt 2026-09-13), so
+ * this is the only responsive sizing a listing photo gets, and it stays on the
+ * MLS's own CDN (display, never copy).
+ */
+export function listingMosaicSrcSet(url: string): string | undefined {
+  if (!url) return undefined
+  let parsed: URL
+  try {
+    parsed = new URL(url)
+  } catch {
+    return undefined
+  }
+  if (parsed.hostname !== 'cdn.resize.sparkplatform.com') return undefined
+  const parts = /^\/([^/]+)\/\d{2,4}x\d{2,4}\/([^/]+)\/(.+)$/.exec(parsed.pathname)
+  if (!parts) return undefined
+  const [, feed, crop, asset] = parts
+  return MOSAIC_SRCSET_BOXES.map(([w, h]) => {
+    const next = new URL(parsed.toString())
+    next.pathname = `/${feed}/${w}x${h}/${crop}/${asset}`
+    return `${next.toString()} ${w}w`
+  }).join(', ')
+}

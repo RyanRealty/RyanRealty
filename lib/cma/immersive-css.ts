@@ -114,7 +114,7 @@ img{max-width:100%;display:block}
 .comp-matrix-wrap{display:block;margin:18px 0 8px;overflow-x:auto;max-width:100%}
 .comp-stack{display:none;margin:18px 0 8px;max-width:100%;min-width:0}
 @media screen and (max-width:700px){.comp-matrix-wrap,.matrix-group-h{display:none}.comp-stack{display:block}}
-.comp-stack-card{border:1px solid var(--ink12);padding:14px;margin:0 0 14px;background:#fff;max-width:100%;min-width:0;overflow-wrap:anywhere;box-sizing:border-box}
+.comp-stack-card{border:1px solid var(--ink12);padding:14px;margin:0 0 14px;background:#fff;max-width:100%;min-width:0;overflow-wrap:anywhere;overflow:clip;box-sizing:border-box}
 .comp-stack-addr{font-weight:600;margin:0 0 6px;font-size:17px;line-height:1.25}
 .comp-stack-sold{font-size:15px;margin:0 0 10px;font-variant-numeric:tabular-nums}
 .comp-stack-nums{display:flex;flex-wrap:wrap;gap:12px 18px;margin:0 0 8px;font-variant-numeric:tabular-nums}
@@ -458,11 +458,11 @@ ul.rejected-list .rj-addr{font-weight:600}
 ul.rejected-list .rj-why{opacity:.7}
 @media (max-width:700px){ul.rejected-list li{grid-template-columns:1fr;gap:2px}}
 /* The phone card carries the same grid lines as the column. */
-.comp-stack-grid{display:grid;gap:4px;margin-top:10px}
-.comp-stack-line{display:flex;justify-content:space-between;gap:14px;font-size:14px;flex-wrap:nowrap;white-space:nowrap}
-.comp-stack-line .k{opacity:.6}
-.comp-stack-line .v{font-variant-numeric:tabular-nums;font-weight:600;text-align:right}
-.comp-stack-line .arc-asks,.comp-stack-line .arc-tail{display:block;white-space:nowrap;text-align:right;font-weight:600}
+.comp-stack-grid{display:grid;gap:4px;margin-top:10px;min-width:0;max-width:100%}
+.comp-stack-line{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:baseline;column-gap:14px;font-size:14px;min-width:0;max-width:100%}
+.comp-stack-line .k{opacity:.6;min-width:0;white-space:normal}
+.comp-stack-line .v{font-variant-numeric:tabular-nums;font-weight:600;text-align:right;min-width:0;white-space:normal;overflow-wrap:anywhere}
+.comp-stack-line .arc-asks,.comp-stack-line .arc-tail{display:block;white-space:normal;text-align:right;font-weight:600}
 /* Chapter 2b's centrepiece: what the first ask realized, by weeks. */
 table.realization{width:100%;table-layout:fixed;border-collapse:collapse;margin:16px 0 8px;font-size:15px}
 table.realization col.rz-weeks{width:38%}

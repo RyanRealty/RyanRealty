@@ -47,7 +47,8 @@ describe('buildCompSearch — the rungs, the counts, the sentence', () => {
     expect(s!.sentence).not.toMatch(/not enough|too few|no recent sale/i)
     expect(s!.sentence).toContain('Three of the five sales are in Diamond Bar Ranch')
     expect(s!.sentence).toContain('Two more')
-    expect(s!.sentence).toContain('within a mile at your size')
+    expect(s!.sentence).toContain('Redmond Heights')
+    expect(s!.sentence).not.toContain('your own street')
   })
 
   it('counts the kept sales by subdivision, by name', () => {
@@ -110,7 +111,8 @@ describe('buildCompSearch — the rungs, the counts, the sentence', () => {
     })
     expect(s!.keptBySubdivision['Diamond Bar Ranch']).toBeUndefined()
     expect(s!.sentence).toMatch(/No recent sale inside Diamond Bar Ranch/)
-    expect(s!.sentence).toContain('within a mile at your size')
+    expect(s!.sentence).toContain('Redmond Heights')
+    expect(s!.sentence).not.toContain('your own street')
   })
 
   it('says so plainly when every sale is in the subdivision', () => {
@@ -140,8 +142,10 @@ describe('buildCompSearch — the rungs, the counts, the sentence', () => {
       ],
     })
     expect(two!.sentence).toContain('Two of the five sales are in Kenwood')
-    expect(two!.sentence).toContain('within a mile at your size')
-    expect(two!.sentence).toContain('subdivisions that price like yours')
+    expect(two!.sentence).toContain('Awbrey')
+    expect(two!.sentence).toContain('River West')
+    expect(two!.sentence).not.toContain('your own street')
+    expect(two!.sentence).not.toContain('within a mile')
   })
 
   it('has no subdivision to name, and says what it searched instead', () => {
@@ -212,7 +216,7 @@ describe('buildCompSearch — the rungs, the counts, the sentence', () => {
       ],
     })
     expect(s!.sentence).toBe(
-      'Three of the four sales are in Kenwood. One more was added from within a mile at your size.',
+      'Three of the four sales are in Kenwood. One more was added from Awbrey.',
     )
     expect(s!.sentence).not.toContain('subdivisions that price like yours')
     expect(s!.sentence).not.toContain('the wider city')
@@ -233,7 +237,9 @@ describe('buildCompSearch — the rungs, the counts, the sentence', () => {
         { subdivision: 'River West', selectionTier: 'neighborhood-6mo' },
       ],
     })
-    expect(s!.sentence).toContain('the neighborhood around your home')
+    expect(s!.sentence).toContain('Awbrey Butte')
+    expect(s!.sentence).toContain('River West')
+    expect(s!.sentence).not.toContain('your own street')
     // No tier name ever reaches a seller.
     expect(s!.sentence).not.toMatch(/neighborhood-6mo|subdivision-6mo|-\d+mo/)
     for (const r of s!.rungs) expect(r.label).not.toBe(r.key)
@@ -252,6 +258,52 @@ describe('buildCompSearch — the rungs, the counts, the sentence', () => {
     expect(s!.sentence).toContain('chosen by your broker')
   })
 })
+
+  it('does not call a Mirada sale the subject street', () => {
+    const s = buildCompSearch({
+      subdivision: 'Petrosa',
+      subjectStreet: '3722 Petrosa',
+      ladder: [
+        rung({ tier: 'own-street-24mo', monthsBack: 24, compsAdded: 11 }),
+        rung({ tier: 'subdivision-3mo', monthsBack: 3, compsAdded: 6 }),
+        rung({ tier: 'subdivision-6mo', monthsBack: 6, compsAdded: 9 }),
+        rung({ tier: 'subdivision-12mo', monthsBack: 12, compsAdded: 8 }),
+      ],
+      keptComps: [
+        { address: '3847 Tellus', subdivision: 'Petrosa', selectionTier: 'subdivision-3mo' },
+        { address: '3759 Tellus', subdivision: 'Petrosa', selectionTier: 'subdivision-3mo' },
+        { address: '3831 Tellus', subdivision: 'Petrosa', selectionTier: 'subdivision-6mo' },
+        { address: '3903 Oakside', subdivision: 'Petrosa', selectionTier: 'subdivision-12mo' },
+        { address: '62899 Daniel', subdivision: 'Mirada', selectionTier: 'gla-bracket' },
+      ],
+    })
+    expect(s!.sentence).toBe(
+      'Four of the five sales are in Petrosa. One more was added: 62899 Daniel in Mirada.',
+    )
+    expect(s!.sentence).not.toContain('your own street')
+    expect(s!.sentence).not.toMatch(/\$590,000|2025|2026/)
+  })
+
+  it('says your own street only when the extra sale is on that street', () => {
+    const s = buildCompSearch({
+      subdivision: 'Petrosa',
+      subjectStreet: '3722 Petrosa',
+      ladder: [
+        rung({ tier: 'subdivision-6mo', monthsBack: 6, compsAdded: 4 }),
+        rung({ tier: 'own-street-24mo', monthsBack: 24, compsAdded: 1 }),
+      ],
+      keptComps: [
+        { address: '3847 Tellus', subdivision: 'Petrosa', selectionTier: 'subdivision-6mo' },
+        { address: '3759 Tellus', subdivision: 'Petrosa', selectionTier: 'subdivision-6mo' },
+        { address: '3831 Tellus', subdivision: 'Petrosa', selectionTier: 'subdivision-6mo' },
+        { address: '3903 Oakside', subdivision: 'Petrosa', selectionTier: 'subdivision-6mo' },
+        { address: '3801 Petrosa', subdivision: 'Somewhere Else', selectionTier: 'own-street-24mo' },
+      ],
+    })
+    expect(s!.sentence).toBe(
+      'Four of the five sales are in Petrosa. One more was added from your own street.',
+    )
+  })
 
 describe('rungLabel — the containment rungs in seller language', () => {
   it('names the touching plats and the boundary exit, never the tier name', () => {
