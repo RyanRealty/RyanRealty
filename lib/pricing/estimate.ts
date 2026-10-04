@@ -22,6 +22,7 @@ import {
 import type { CmaAdjustedComp, CmaComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import { citySlug, storyAdjustment, type StoryClass } from '@/lib/pricing/classes'
 import { capClosedCompShares, closedCompWeight } from '@/lib/pricing/closed-comp-weight'
+import { recommendationOutsideSaleSet } from '@/lib/pricing/price-set'
 import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
 import type { SelectedPricingComp } from '@/lib/pricing/match'
 import { closedSaleDomTotal } from '@/lib/cma/listing-history-line'
@@ -1030,6 +1031,8 @@ export function pricingSaleToCmaComp(sale: SelectedPricingComp): CmaComp {
     roomDifference: sale.roomDifference ?? null,
     ownPlat: sale.ownPlat ?? null,
     seniorCommunityYn: sale.seniorCommunityYn ?? null,
+    communitySlug: sale.communitySlug ?? null,
+    communityLocated: sale.communityLocated,
   }
 }
 
@@ -1109,6 +1112,12 @@ export function adjustCmaCompAlongMarket(opts: {
     saleSubdivision: sale.subdivision,
     selectionTier: sale.selectionTier,
     ownPlat: sale.ownPlat,
+    subjectCommunity: opts.subject.communitySlug,
+    saleCommunity: sale.communitySlug,
+    subjectCommunityLocated: opts.subject.communityLocated,
+    saleCommunityLocated: sale.communityLocated,
+    subjectLotAcres: opts.subject.lotAcres,
+    saleLotAcres: sale.lotAcres,
   })
   const proximity =
     (sale.proximity ?? '').trim() ||
@@ -1146,6 +1155,11 @@ export type EngineListResult = {
   highEndList: number | null
   source: 'ask' | 'comps' | 'none'
   offMarketAsk?: boolean
+  /**
+   * Set when no kept sale may set the price, or the number sits outside every
+   * sale that did. The result is not a price.
+   */
+  outsideSaleSet?: 'under' | 'over' | 'empty' | null
   /** How the low and high were produced, and the ask step applied to them. */
   rangeRule?: PricingRangeRule | null
   /** The value the printed sales support, before the ask step. */
@@ -1182,6 +1196,22 @@ export function listPriceFromEngine(opts: {
   qualitySet: boolean
   methodFallback?: number | null
 }): EngineListResult {
+  // A sale with weight 0 does not set the price. It is not averaged back in
+  // when every other weight is also 0: that is no price, not an equal share.
+  const weightsGiven = opts.adjusted.some((a) => typeof a.weight === 'number')
+  const adjusted = weightsGiven ? opts.adjusted.filter((a) => (a.weight ?? 0) > 0) : opts.adjusted
+  if (weightsGiven && opts.adjusted.length > 0 && adjusted.length === 0) {
+    return {
+      predictedClose: null,
+      compsImpliedClose: null,
+      recommendedList: null,
+      conservativeList: null,
+      highEndList: null,
+      source: 'none',
+      outsideSaleSet: 'empty',
+    }
+  }
+  opts = { ...opts, adjusted }
   const band = saleBandFromAdjusted(opts.subjectSqft, opts.adjusted)
   // The sales that carry a printed adjusted price, split by the ONE range rule
   // (partitionByRangeRule). Land has no living area and prices per acre, so it
@@ -1576,7 +1606,8 @@ export function priceCmaSet(args: {
   // price (tasteReview round three, §2 item 1). `listPriceFromEngine` runs the
   // same pure partition over the same array, so the printed weights and the
   // printed number come from one set.
-  const part = partitionByRangeRule(args.adjusted)
+  const priceSetting = args.adjusted.filter((c) => c.weight > 0)
+  const part = partitionByRangeRule(priceSetting)
   pricing.reconciliation = reconcileAdjustedSales({
     sales: part.kept as unknown as ReconcilableSale[],
     subjectSqft: args.subject.sqft ?? 0,
@@ -1678,6 +1709,17 @@ export function priceCmaSet(args: {
       covered.valueLow = covered.conservative
       covered.valueHigh = covered.highEnd
       covered.needsReview = true
+    }
+    const settingPrices = args.adjusted
+      .filter((c) => c.weight > 0 && c.adjustedPrice > 0)
+      .map((c) => c.adjustedPrice)
+    // A broker override is a person choosing a number. Everything else that
+    // sits under or over every sale that set it is not a price.
+    if (
+      args.input.priceOverride == null &&
+      recommendationOutsideSaleSet(covered.recommended, settingPrices)
+    ) {
+      return null
     }
     return syncRangeRuleToHeroBand(covered)
   }

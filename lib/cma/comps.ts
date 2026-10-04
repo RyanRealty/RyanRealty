@@ -574,6 +574,8 @@ export async function selectComps(
   if (subjectLocated) {
     subjectCommunityLocated = true
     subjectCommunity = subjectLocated[0] ?? null
+    subject.communityLocated = true
+    subject.communitySlug = subjectCommunity
   }
   const communityByKey = new Map<string, string | null>()
   const saleCommunityOf = (listingKey: string, subdivision: string | null): string | null =>
@@ -825,6 +827,10 @@ export async function selectComps(
       if (!comp) {
         rung.excluded.unusable_row++
         continue
+      }
+      if (communityByKey.has(comp.listingKey)) {
+        comp.communityLocated = true
+        comp.communitySlug = communityByKey.get(comp.listingKey) ?? null
       }
       if (rowPlats) {
         const plat = rowPlats[rowIndex]

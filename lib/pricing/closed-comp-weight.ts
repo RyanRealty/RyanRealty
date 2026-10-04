@@ -19,6 +19,7 @@
  */
 
 import { normSubdivision } from '@/lib/pricing/classes'
+import { saleSetsThePrice } from '@/lib/pricing/price-set'
 
 export type ClosedCompWeightInput = {
   subjectSqft: number
@@ -32,6 +33,13 @@ export type ClosedCompWeightInput = {
   ownPlat?: boolean | null
   /** Set when the caller already classified the sale. Wins over the fields above. */
   locationMatch?: LocationMatch | null
+  /** Community whose boundary contains the address. Not the MLS plat name. */
+  subjectCommunity?: string | null
+  saleCommunity?: string | null
+  subjectCommunityLocated?: boolean
+  saleCommunityLocated?: boolean
+  subjectLotAcres?: number | null
+  saleLotAcres?: number | null
 }
 
 /** Months for recency to halve, inside one location step. */
@@ -89,7 +97,10 @@ export function capClosedCompShares(raw: readonly number[]): number[] {
       }
       return s
     })
-    const roomIdx = next.map((s, i) => (s < floorCap ? i : -1)).filter((i) => i >= 0)
+    // A sale that weighed nothing does not receive the excess. The cap trims
+    // a heavy sale; it does not hand that share to a sale that does not set
+    // the price.
+    const roomIdx = next.map((s, i) => (positive[i]! > 0 && s < floorCap ? i : -1)).filter((i) => i >= 0)
     const room = roomIdx.reduce((sum, i) => sum + (floorCap - next[i]!), 0)
     if (room <= 0 || excess <= 0) {
       shares = next
@@ -165,6 +176,25 @@ function locationFieldsPresent(input: ClosedCompWeightInput): boolean {
  * product, so a number with no location class does not grow a false step.
  */
 export function closedCompWeight(input: ClosedCompWeightInput): number {
+  // A sale that is a different community, or a clearly different size or product,
+  // does not set the price. Weight 0 is not averaged back in by this function.
+  if (
+    !saleSetsThePrice({
+      ownPlat: input.ownPlat,
+      subjectSubdivision: input.subjectSubdivision,
+      saleSubdivision: input.saleSubdivision,
+      subjectCommunity: input.subjectCommunity,
+      saleCommunity: input.saleCommunity,
+      subjectCommunityLocated: input.subjectCommunityLocated,
+      saleCommunityLocated: input.saleCommunityLocated,
+      subjectSqft: input.subjectSqft,
+      saleSqft: input.saleSqft,
+      subjectLotAcres: input.subjectLotAcres,
+      saleLotAcres: input.saleLotAcres,
+    })
+  ) {
+    return 0
+  }
   const months = Math.max(0, Number(input.monthsSinceClose) || 0)
   const subjectSqft = Number(input.subjectSqft) || 0
   const saleSqft = Number(input.saleSqft) || 0
