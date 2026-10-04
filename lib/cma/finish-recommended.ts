@@ -58,6 +58,22 @@ function gridAtOrAboveFloor(floor: number, original: number): number {
   return Math.min(original, next)
 }
 
+/**
+ * Homes shown because the sales place had nothing listed do not move the
+ * price. A sitting active in the sales place still can.
+ */
+export function rivalsThatMayNudgeTheList<T>(
+  band: {
+    rivals?: readonly T[] | null
+    emptyPlace?: string | null
+    productWidened?: boolean | null
+  } | null | undefined,
+): T[] {
+  if (!band) return []
+  if (band.emptyPlace?.trim() || band.productWidened === true) return []
+  return [...(band.rivals ?? [])]
+}
+
 export function finishRecommendedAfterActives<T extends FinishRecommendedPricing>(
   pricing: T,
   input: {

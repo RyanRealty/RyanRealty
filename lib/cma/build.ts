@@ -106,7 +106,7 @@ import { compAreaContains, type CompArea } from '@/lib/pricing/comp-area'
 import { buildExpiredPeerSet, keptCompMedianPpsf } from '@/lib/cma/market-status'
 import { loadListingWindowMarket } from '@/lib/cma/listing-window-load'
 import { pocketClosedSupportPrice } from '@/lib/pricing/active-dom-nudge'
-import { finishRecommendedAfterActives } from '@/lib/cma/finish-recommended'
+import { finishRecommendedAfterActives, rivalsThatMayNudgeTheList } from '@/lib/cma/finish-recommended'
 import { assembleCompetition } from '@/lib/cma/assemble-competition'
 import type { CmaBroker, CmaBuildInput, CmaBuildResult, CmaPricing } from '@/lib/cma/types'
 
@@ -832,7 +832,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       })
       const finished = syncRangeRuleToHeroBand(
         finishRecommendedAfterActives(current, {
-          actives: (competition.bandRivals?.rivals ?? []).map((r) => ({
+          actives: rivalsThatMayNudgeTheList(competition.bandRivals).map((r) => ({
             status: r.status,
             listPrice: r.listPrice,
             daysOnMarket: r.daysOnMarket,

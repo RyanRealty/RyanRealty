@@ -445,6 +445,33 @@ export function namedSalesPlace(area: { kind?: string | null } | null | undefine
 }
 
 /**
+ * The neighborhood or community the subject sits in.
+ *
+ * Used when the sales subdivision has nothing listed in the price band.
+ * The sales that set the price stay in their own place. This is not a
+ * radius and it is not the city.
+ */
+export function parentPlaceArea(input: {
+  latitude: number | null
+  longitude: number | null
+}): CompArea | null {
+  const centre = centreOf({ latitude: input.latitude, longitude: input.longitude, city: '' })
+  if (!centre) return null
+  const slug = resolveMarketArea(centre.lat, centre.lng)
+  const kind = marketAreaKind(slug)
+  const name = marketAreaLabel(slug)
+  if (!kind || !name) return null
+  const bare: Omit<CompArea, 'sentence'> = {
+    kind,
+    names: [name],
+    radiusMiles: null,
+    centre,
+    source: 'parent of an empty sales subdivision',
+  }
+  return { ...bare, sentence: areaSentence(bare, null) }
+}
+
+/**
  * Competition and expireds use the sales boundary. One ring.
  *
  * If the sales that set the price sit in a subdivision or a recorded plat,

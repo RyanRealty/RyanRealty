@@ -6,20 +6,30 @@
 import { applyCompVerdicts } from '@/lib/cma/client-facing'
 import { resolveCmaParcels } from '@/lib/cma/parcel-shapes'
 import { buildCompSearch } from '@/lib/pricing/comp-search'
-import { buildCompArea, resolveCompetitionArea } from '@/lib/pricing/comp-area'
+import { buildCompArea, compAreaPhrase, parentPlaceArea, resolveCompetitionArea } from '@/lib/pricing/comp-area'
 import { getCmaAreaUnsoldCycles } from '@/lib/data/cma/areaUnsoldReads'
-import { getCmaAreaBandInventory } from '@/lib/data/cma/bandInventory'
+import { getCmaAreaBandInventory, type CmaAreaBandInventory } from '@/lib/data/cma/bandInventory'
 import { marketAreaPriceBand } from '@/lib/cma/market-status'
 import {
   bandAroundList,
   bandRowToRival,
   buildBandRivalSet,
   emptyCompetitionSet,
+  parentCompetitionSet,
   pickCompetitionRing,
+  type CmaBandRival,
 } from '@/lib/cma/band-rivals'
 import { attachCompConcessions } from '@/lib/pricing/seller-net'
 import type { CompSelectionDiagnostics } from '@/lib/cma/comp-trace'
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
+
+function inventoryRivals(inv: CmaAreaBandInventory | null): CmaBandRival[] {
+  if (!inv) return []
+  return [
+    ...inv.activeRows.map((r) => bandRowToRival(r, 'Active')),
+    ...inv.pendingRows.map((r) => bandRowToRival(r, 'Pending')),
+  ].filter((r): r is CmaBandRival => r != null)
+}
 
 export async function assembleCompetition(args: {
   subject: CmaSubject
@@ -145,6 +155,82 @@ export async function assembleCompetition(args: {
       lo: rivalBand.lo,
       hi: rivalBand.hi,
     })
+  }
+  const salesPlaceEmpty =
+    rivalBand != null &&
+    compArea != null &&
+    (compArea.kind === 'subdivision' || compArea.kind === 'subdivisions') &&
+    widestAreaInventory != null &&
+    widestAreaInventory.activeCount === 0 &&
+    widestAreaInventory.pendingCount === 0
+  if (salesPlaceEmpty && rivalBand && compArea && competitionArea) {
+    const anyInPlace = subject.propertySubType?.trim()
+      ? await getCmaAreaBandInventory({
+          area: competitionArea,
+          city: subject.city,
+          lo: rivalBand.lo,
+          hi: rivalBand.hi,
+        }).catch(() => null)
+      : null
+    const placeRivals = inventoryRivals(anyInPlace)
+    if (placeRivals.length > 0) {
+      // The subdivision has homes, just not this kind. Stay in the sales place.
+      bandRivals = buildBandRivalSet({
+        area: competitionArea,
+        lo: rivalBand.lo,
+        hi: rivalBand.hi,
+        activeCount: placeRivals.filter((r) => r.status === 'Active').length,
+        pendingCount: placeRivals.filter((r) => r.status === 'Pending').length,
+        rivals: placeRivals,
+        subject: {
+          latitude: subject.latitude,
+          longitude: subject.longitude,
+          beds: subject.beds,
+          sqft: subject.sqft,
+        },
+        asOfIso: args.generatedAtIso,
+        productWidened: true,
+        rankByDistance: true,
+      })
+    } else {
+      const parent = parentPlaceArea({ latitude: subject.latitude, longitude: subject.longitude })
+      if (parent) {
+        const [sameParent, anyParent] = await Promise.all([
+          getCmaAreaBandInventory({
+            area: parent,
+            city: subject.city,
+            lo: rivalBand.lo,
+            hi: rivalBand.hi,
+            propertySubType: subject.propertySubType,
+          }).catch(() => null),
+          subject.propertySubType?.trim()
+            ? getCmaAreaBandInventory({
+                area: parent,
+                city: subject.city,
+                lo: rivalBand.lo,
+                hi: rivalBand.hi,
+              }).catch(() => null)
+            : Promise.resolve(null),
+        ])
+        const next = parentCompetitionSet({
+          parent,
+          emptyPlace: compAreaPhrase(compArea),
+          lo: rivalBand.lo,
+          hi: rivalBand.hi,
+          sameType: inventoryRivals(sameParent),
+          anyResidential: inventoryRivals(anyParent ?? sameParent),
+          subjectSubdivision: subject.subdivision,
+          subject: {
+            latitude: subject.latitude,
+            longitude: subject.longitude,
+            beds: subject.beds,
+            sqft: subject.sqft,
+          },
+          asOfIso: args.generatedAtIso,
+        })
+        if (next) bandRivals = next
+      }
+    }
   }
   return {
     renderComps,

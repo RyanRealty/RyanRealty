@@ -8,10 +8,12 @@
  */
 
 import {
+  competitionAreaSentence,
   competitionHeading,
   competitionSentence,
   competitionSourceLine,
   competitorCutLine,
+  widenedProductSentence,
   type BandRivalsInput,
 } from '@/lib/cma/band-rivals'
 import { formatClientMlsField } from '@/lib/cma/client-facing'
@@ -66,10 +68,10 @@ import {
   worthRangeRounded,
   type PricingPageInput,
 } from '@/lib/cma/render-pricing-page'
-import { activeRivalsFor, unsoldPeersFor } from '@/lib/cma/matrix-sets'
+import { activeRivalsFor, listedRivalsFor, unsoldPeersFor } from '@/lib/cma/matrix-sets'
 import { letterProductMatch, productClass } from '@/lib/cma/market-area'
 import { realSubdivisionName } from '@/lib/pricing/classes'
-import { namedSalesPlace } from '@/lib/pricing/comp-area'
+import { compAreaPhrase, namedSalesPlace } from '@/lib/pricing/comp-area'
 import {
   activeEntries,
   closedEntries,
@@ -257,7 +259,12 @@ export function matrixEntriesFor(a: OpinionPageArgs): {
       a.subject,
     ),
     active: activeEntries(
-      activeRivalsFor(a.bandRivals?.rivals ?? a.extras?.band?.rivals, a.subject, a.compArea),
+      listedRivalsFor({
+        rivals: a.bandRivals?.rivals ?? a.extras?.band?.rivals,
+        subject: a.subject,
+        salesArea: a.compArea ?? null,
+        band: a.bandRivals ?? null,
+      }),
       a.docLinks ?? null,
       a.subject.city,
       a.subject,
@@ -276,6 +283,16 @@ export function theMapPage(a: OpinionPageArgs): CmaPageDef | null {
   return mapPage(mapArgs(a))
 }
 
+/** Sales stay in their place. Homes for sale in the parent are named as such. */
+function competitionMapCaption(a: OpinionPageArgs): string | null {
+  const base = compAreaSentence(a)
+  const empty = a.bandRivals?.emptyPlace?.trim()
+  const parent = a.bandRivals?.area ? compAreaPhrase(a.bandRivals.area) : ''
+  if (!empty || !parent) return base
+  const note = `The homes for sale are in ${parent}. ${empty} has nothing listed in this range.`
+  return [base, note].filter(Boolean).join(' ')
+}
+
 export function mapArgs(a: OpinionPageArgs) {
   const sets = matrixEntriesFor(a)
   return {
@@ -283,7 +300,7 @@ export function mapArgs(a: OpinionPageArgs) {
     facts: pinFactsFor([...sets.closed, ...sets.active, ...sets.unsold]),
     mapDataUri: a.mapDataUri,
     mapOverlay: a.mapOverlay,
-    areaSentence: compAreaSentence(a),
+    areaSentence: competitionMapCaption(a),
   }
 }
 
@@ -1551,25 +1568,45 @@ export function competitionBodyMatrixHtml(a: OpinionPageArgs): string {
         : ''
   const matrix = [activeMatrix, pendingMatrix].filter(Boolean).join('\n  ')
   const shown = activeOnly.length + pendingOnly.length
+  const area = a.bandRivals?.area
   const sentence =
-    shown > 0
-      ? competitionSentence({
+    shown > 0 && area
+      ? competitionAreaSentence({
+          area,
           lo: b.lo,
           hi: b.hi,
           activeCount: activeOnly.length,
           pendingCount: pendingOnly.length,
           shown,
+          emptyPlace: a.bandRivals?.emptyPlace ?? null,
         })
-      : (a.bandRivals?.sentence ??
-        competitionSentence({
-          lo: b.lo,
-          hi: b.hi,
-          activeCount: 0,
-          pendingCount: 0,
-          shown: 0,
-        }))
+      : shown > 0
+        ? competitionSentence({
+            lo: b.lo,
+            hi: b.hi,
+            activeCount: activeOnly.length,
+            pendingCount: pendingOnly.length,
+            shown,
+          })
+        : (a.bandRivals?.sentence ??
+          competitionSentence({
+            lo: b.lo,
+            hi: b.hi,
+            activeCount: 0,
+            pendingCount: 0,
+            shown: 0,
+          }))
+  const productNote =
+    shown > 0
+      ? widenedProductSentence({
+          productWidened: a.bandRivals?.productWidened,
+          subjectSubType: a.subject.propertySubType,
+          place: area ? compAreaPhrase(area) : null,
+        })
+      : null
   const cut = competitorCutLine(args.rivals)
   return `<p>${esc(sentence)}</p>
+  ${productNote ? `<p>${esc(productNote)}</p>` : ''}
   ${cut ? `<p>${esc(cut)}</p>` : ''}
   <p class="small">${esc(a.bandRivals?.source ?? competitionSourceLine(args))}</p>
   ${matrix}`
@@ -1596,7 +1633,12 @@ export function competitionArgs(a: OpinionPageArgs): BandRivalsInput {
     hi: b.hi,
     activeCount: b.activeCount,
     pendingCount: b.pendingCount,
-    rivals: activeRivalsFor(b.rivals, a.subject, a.compArea),
+    rivals: listedRivalsFor({
+      rivals: b.rivals,
+      subject: a.subject,
+      salesArea: a.compArea ?? null,
+      band: a.bandRivals ?? null,
+    }),
     docLinks: a.docLinks ?? null,
     recommendedList: a.pricing.recommended,
     asOfIso: a.generatedAtIso,

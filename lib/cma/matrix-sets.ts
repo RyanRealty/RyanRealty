@@ -92,14 +92,28 @@ export function activeRivalsFor(
   rivals?: readonly CmaBandRival[] | null,
   subject?: { propertySubType?: string | null } | null,
   area?: CompArea | null,
+  opts?: { matchProduct?: boolean },
 ): CmaBandRival[] {
   const named = dedupeRivalsByAddress((rivals ?? []).filter((r) => r.address.trim() && r.listPrice > 0))
+  const matchProduct = opts?.matchProduct !== false
   const kept = named.filter(
     (r) =>
-      letterProductMatch(subject?.propertySubType, r.propertySubType) &&
+      (!matchProduct || letterProductMatch(subject?.propertySubType, r.propertySubType)) &&
       insideSalesBoundary(area, r),
   )
   return [...kept.filter((r) => r.status === 'Active'), ...kept.filter((r) => r.status === 'Pending')]
+}
+
+/** Homes the competition chapter prints. The sales plat stays the price boundary. */
+export function listedRivalsFor(input: {
+  rivals?: readonly CmaBandRival[] | null
+  subject?: { propertySubType?: string | null } | null
+  salesArea?: CompArea | null
+  band?: { area?: CompArea | null; productWidened?: boolean | null } | null
+}): CmaBandRival[] {
+  return activeRivalsFor(input.rivals, input.subject, input.band?.area ?? input.salesArea ?? null, {
+    matchProduct: input.band?.productWidened !== true,
+  })
 }
 
 /**
@@ -179,6 +193,11 @@ export function matrixSetsFromArgs(args: unknown): {
   const rivals = doc?.bandRivals?.rivals ?? a?.extras?.band?.rivals ?? []
   return {
     unsold: subject ? unsoldPeersFor({ subject, peers, area: doc?.compArea ?? null }) : [],
-    active: activeRivalsFor(rivals, subject, doc?.compArea ?? null),
+    active: listedRivalsFor({
+      rivals,
+      subject,
+      salesArea: doc?.compArea ?? null,
+      band: doc?.bandRivals ?? null,
+    }),
   }
 }

@@ -8,6 +8,8 @@ import { trackedDocLink, type TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import { formatDate } from '@/lib/format/date'
 import { priceHistoryLineCompactHtml, pricePathFromListing } from '@/lib/cma/price-path'
 import { listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
+import { letterProductNoun } from '@/lib/cma/market-area'
+import { resortCommunityCompatible } from '@/lib/cma/resort-guard'
 import { compAreaContains, compAreaIn, compAreaPhrase, milesPhrase, type CompArea } from '@/lib/pricing/comp-area'
 import { countWord } from '@/lib/pricing/estimate'
 import { publishStreetNumber, publishStreetPart } from '@/lib/listing/publish-street-line'
@@ -439,6 +441,10 @@ export type CmaBandRivalSet = {
   widenedFrom: number | null
   /** Every ring radius (miles) tried, in order. Empty for a mapped boundary or a no-coordinate subject. */
   ringsTried: number[]
+  /** Subdivision that had nothing listed in the band. Null when the sales place itself had homes. */
+  emptyPlace?: string | null
+  /** True when the homes are a different residential type because the same type was not listed. */
+  productWidened?: boolean
 }
 
 /**
@@ -458,8 +464,19 @@ export function competitionAreaSentence(input: {
   likeYours?: boolean
   /** The starting ring's radius, when the winning ring widened past it. Null otherwise. */
   widenedFrom?: number | null
+  /**
+   * The subdivision the sales came from, when it had nothing listed in this
+   * band. The homes below are the next place, not that subdivision.
+   */
+  emptyPlace?: string | null
 }): string {
   const where = compAreaIn(input.area)
+  const emptyNamed =
+    input.emptyPlace && (input.activeCount > 0 || input.pendingCount > 0)
+      ? `No home in ${input.emptyPlace} is for sale between ${usd(input.lo)} and ${usd(
+          input.hi,
+        )}, and none is under contract. `
+      : ''
   const widenedNote =
     input.widenedFrom != null &&
     input.area.kind === 'radius' &&
@@ -492,7 +509,68 @@ export function competitionAreaSentence(input: {
       } below.`,
     )
   }
-  return bits.join(' ')
+  return `${emptyNamed}${bits.join(' ')}`
+}
+
+/**
+ * The sales place had the right kind of house nowhere in this range, so the
+ * homes below are the other residential listings in the parent place.
+ */
+export function widenedProductSentence(input: {
+  productWidened?: boolean | null
+  subjectSubType?: string | null
+  place?: string | null
+}): string | null {
+  if (input.productWidened !== true) return null
+  const place = input.place?.trim()
+  if (!place) return null
+  const noun = letterProductNoun(input.subjectSubType)
+  const kind = noun ?? 'home like yours'
+  return `No ${kind} is listed in ${place} in this range, so these are the other homes for sale there.`
+}
+
+/**
+ * The sales subdivision had nothing listed. These are the homes in the parent
+ * neighborhood or community, closest first. A resort plat does not compete
+ * with an ordinary subdivision. Same kind of house wins when one is listed.
+ */
+export function parentCompetitionSet(input: {
+  parent: CompArea
+  emptyPlace: string
+  lo: number
+  hi: number
+  sameType: readonly CmaBandRival[]
+  anyResidential: readonly CmaBandRival[]
+  subjectSubdivision?: string | null
+  subject?: {
+    latitude: number | null
+    longitude: number | null
+    beds?: number | null
+    sqft?: number | null
+  } | null
+  asOfIso?: string | null
+}): CmaBandRivalSet | null {
+  const compatible = (rows: readonly CmaBandRival[]) =>
+    rows.filter((r) => resortCommunityCompatible(input.subjectSubdivision, r.subdivision))
+  const same = compatible(input.sameType)
+  const widened = same.length === 0
+  const rows = widened ? compatible(input.anyResidential) : same
+  const activeCount = rows.filter((r) => r.status === 'Active').length
+  const pendingCount = rows.filter((r) => r.status === 'Pending').length
+  if (activeCount + pendingCount === 0) return null
+  return buildBandRivalSet({
+    area: input.parent,
+    lo: input.lo,
+    hi: input.hi,
+    activeCount,
+    pendingCount,
+    rivals: rows,
+    subject: input.subject ?? null,
+    asOfIso: input.asOfIso ?? null,
+    emptyPlace: input.emptyPlace,
+    productWidened: widened,
+    rankByDistance: true,
+  })
 }
 
 /** The §0 trace for the two counts: the area, the band, the source and the day. */
@@ -530,8 +608,16 @@ export function buildBandRivalSet(input: {
   widenedFrom?: number | null
   /** Every ring radius (miles) the ladder tried, in order. Empty for a mapped boundary or a no-coordinate subject. */
   ringsTried?: number[]
+  emptyPlace?: string | null
+  productWidened?: boolean
+  /** Closest homes, including a different bed count. Used when the sales plat had nothing listed. */
+  rankByDistance?: boolean
 }): CmaBandRivalSet {
-  const rivals = pickBandRivals(input.rivals, input.subject ?? null, input.cap ?? BAND_RIVAL_CAP)
+  const rivals = pickBandRivals(
+    input.rivals,
+    input.rankByDistance ? { ...(input.subject ?? {}), beds: null, sqft: null } : input.subject ?? null,
+    input.cap ?? BAND_RIVAL_CAP,
+  )
   const likeYours = input.rivals.some((r) => rivalFitsSubject(r, input.subject ?? null))
   const widenedFrom = input.widenedFrom ?? null
   return {
@@ -550,6 +636,7 @@ export function buildBandRivalSet(input: {
       shown: rivals.length,
       likeYours,
       widenedFrom,
+      emptyPlace: input.emptyPlace ?? null,
     }),
     source: competitionAreaSourceLine({
       area: input.area,
@@ -559,6 +646,8 @@ export function buildBandRivalSet(input: {
     }),
     widenedFrom,
     ringsTried: input.ringsTried ?? [],
+    emptyPlace: input.emptyPlace ?? null,
+    productWidened: input.productWidened === true,
   }
 }
 

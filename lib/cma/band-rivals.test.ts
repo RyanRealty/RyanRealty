@@ -420,6 +420,28 @@ describe('competitionAreaSentence — widening note', () => {
     )
   })
 
+  it('names the subdivision that had nothing listed, then the homes in the surrounding place', () => {
+    const sentence = competitionAreaSentence({
+      area: {
+        kind: 'neighborhood',
+        names: ['Awbrey Butte'],
+        radiusMiles: null,
+        centre: { lat: 44.07, lng: -121.35 },
+        source: 'test',
+        sentence: 'Awbrey Butte, the neighborhood around your home.',
+      },
+      lo: 618_000,
+      hi: 756_000,
+      activeCount: 2,
+      pendingCount: 1,
+      shown: 3,
+      emptyPlace: 'Copperstone',
+    })
+    expect(sentence).toBe(
+      'No home in Copperstone is for sale between $618,000 and $756,000, and none is under contract. 2 homes are for sale in Awbrey Butte between $618,000 and $756,000. 1 is under contract.',
+    )
+  })
+
   it('never claims a widening the ring did not do', () => {
     // area.radiusMiles (5) does not exceed widenedFrom (5) — same ring, no widening.
     const sentence = competitionAreaSentence({
