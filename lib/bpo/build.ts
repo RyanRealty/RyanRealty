@@ -308,11 +308,13 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
       const remaining = compsForPricing.filter((c) => !flagged.includes(c.listingKey))
       if (flagged.length > 0 && remaining.length >= MIN_COMPS) {
         const rederived = deriveAll(remaining)
-        if (rederived) {
+        if (rederived.p && rederived.op) {
           firstRoundAudit = audit
           repairedKeys = flagged
           compsForPricing = remaining
-          ;({ adj: adjusted, p: pricing, op: opinion } = rederived)
+          adjusted = rederived.adj
+          pricing = rederived.p
+          opinion = rederived.op
           selection.trace.push(
             `Adversarial audit repair: ${flagged.length} comp(s) flagged by the independent audit were removed, the opinion re-derived on the ${remaining.length}-comp set, then re-audited.`,
           )
