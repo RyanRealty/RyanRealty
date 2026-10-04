@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { closedCompWeight } from '@/lib/pricing/closed-comp-weight'
+import { closedCompWeight, fillShortSetWeights } from '@/lib/pricing/closed-comp-weight'
 import { listPriceFromEngine } from '@/lib/pricing/estimate'
 import { pricingFailureMessage, recommendationOutsideSaleSet, saleSetsThePrice } from '@/lib/pricing/price-set'
 import { weightedAdjustedPrice } from '@/lib/pricing/reconciliation'
@@ -132,3 +132,67 @@ describe('pricing failure message', () => {
     )
   })
 })
+
+describe('a short plat does not stand alone', () => {
+  const home = {
+    sqft: 1748,
+    beds: 3,
+    lotAcres: 0.2,
+    subdivision: 'Home Plat',
+    communitySlug: 'sample-community',
+    communityLocated: true,
+  }
+  const inside = {
+    weight: 2.4,
+    sqft: 1656,
+    beds: 3,
+    lotAcres: 0.18,
+    subdivision: 'Member Plat',
+    communitySlug: 'sample-community',
+    communityLocated: true,
+    ownPlat: false,
+    selectionTier: 'pocket-12mo',
+    monthsSinceClose: 11,
+  }
+  const outside = (sqft = 1900) => ({
+    weight: 0,
+    sqft,
+    beds: 3,
+    lotAcres: 0.2,
+    subdivision: 'Other Tract',
+    communitySlug: null as string | null,
+    communityLocated: true,
+    ownPlat: false,
+    selectionTier: 'beyond-2mi-12mo',
+    monthsSinceClose: 2,
+  })
+
+  it('keeps the inside sale and lets the admitted next rung set the price', () => {
+    const filled = fillShortSetWeights(home, [inside, outside(), outside(2000), outside(1600)])
+    expect(filled[0]?.weight).toBe(2.4)
+    expect(filled.slice(1).every((comp) => comp.weight > 0)).toBe(true)
+    expect(closedCompWeight({
+      subjectSqft: home.sqft,
+      saleSqft: 1900,
+      monthsSinceClose: 2,
+      subjectCommunity: home.communitySlug,
+      subjectCommunityLocated: true,
+      saleCommunity: null,
+      saleCommunityLocated: true,
+      subjectSubdivision: home.subdivision,
+      saleSubdivision: 'Other Tract',
+    })).toBe(0)
+  })
+
+  it('still refuses a different size, and does not open the next rung once three sales set the price', () => {
+    const tooBig = outside(2756)
+    const filled = fillShortSetWeights(home, [inside, outside(), outside(1800), tooBig])
+    expect(filled[3]?.weight).toBe(0)
+    expect(filled.filter((comp) => comp.weight > 0)).toHaveLength(3)
+    const three = [1, 2, 3].map((weight) => ({ ...inside, weight }))
+    const held = fillShortSetWeights(home, [...three, outside()])
+    expect(held[3]?.weight).toBe(0)
+    expect(held.slice(0, 3).map((comp) => comp.weight)).toEqual([1, 2, 3])
+  })
+})
+

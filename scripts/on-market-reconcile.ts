@@ -11,12 +11,18 @@
  *   --max <n>         repair at most n listings (default 500)
  *   --json <file>     write the full result (every drifted key and why) to a file
  *
- * Without --repair nothing is written. With it, each drifted listing's old row
- * is kept in listing_mls_repair_log (source 'on-market-reconcile') before it is
- * re-pulled. A listing the MLS changed since the delta-sync cursor is left to
- * the delta sync, and one the MLS no longer serves is listed, never changed.
- * The daily cron /api/cron/on-market-reconcile runs the same sweep with repair
- * (Matt 2026-10-01, "Fix now and check daily"). See lib/sync/onMarketReconcile.ts.
+ * Without --repair nothing is written, and a listing the MLS no longer serves
+ * is only listed. With it, each drifted listing's old row is kept in
+ * listing_mls_repair_log (source 'on-market-reconcile') before it is re-pulled;
+ * a listing the MLS changed since the delta-sync cursor is left to the delta
+ * sync. And with it a listing the MLS no longer serves is recorded (left out of
+ * the on-market episodes) and, on its third daily sighting, DELETED with its
+ * whole row saved and the owner texted (Matt 2026-10-01); a recorded one the MLS
+ * serves again is released after the repair. That rule runs on every --repair
+ * run, whatever --max: --max caps the drift repairs only, so --repair --max 0
+ * still records sightings, deletes the due and texts. The daily cron
+ * /api/cron/on-market-reconcile runs the same sweep with repair (Matt
+ * 2026-10-01, "Fix now and check daily"). See lib/sync/onMarketReconcile.ts.
  */
 import { config as loadEnv } from 'dotenv'
 loadEnv({ path: '.env.local' })
@@ -53,6 +59,14 @@ async function main() {
   if (repair) {
     console.log(`repaired ${r.repaired} (before-images logged ${r.repairLogged}), failed ${r.repairFailed.length}${r.repairFailed.length ? `: ${r.repairFailed.join(', ')}` : ''}`)
     if (r.leftAtRepair.length) console.log(`changed in the MLS since the cutoff when re-pulled, left to the delta sync: ${r.leftAtRepair.join(', ')}`)
+    const a = r.absent
+    if (a) {
+      console.log(
+        `no longer served by the MLS: recorded ${a.recorded}, released ${a.released}, episodes rebuilt for ${a.rebuilt} released${a.refused ? ` (refused: ${a.refused})` : ''}; ` +
+          `removed ${a.removed.length}${a.removalHeld ? ` (held: ${a.removalHeld})` : ''}, held ${a.held}, not due yet ${a.waiting}, told ${a.told}` +
+          `${a.removalFailed ? `; removal failed: ${a.removalFailed}` : ''}${a.stepFailures.length ? `; failed: ${a.stepFailures.join('; ')}` : ''}`,
+      )
+    }
   }
   console.log(`${((Date.now() - t0) / 1000).toFixed(0)}s`)
   const out = flag('json')

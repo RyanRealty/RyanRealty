@@ -15,6 +15,9 @@
  *      by key, each on its own. It takes the deletion's lock first and clears
  *      any real hold inside the block, so its answers are exact and it never
  *      deadlocks with an approval. Its rolled-back inserts spend log ids.
+ *      Since 20261002025812 it also runs the on-market class (Matt 2026-10-01):
+ *      an Active row due to an on-market call only, a listing the MLS served
+ *      again never due, a closed hold not blocking it, the budget per class.
  *   2. delete_mls_removed_sales and restore_mls_removed_sales are callable with
  *      the argument names the DAL sends; a key with no listing is left alone.
  *   3. The notice read parses the saved row's mixed-case keys, and the three
@@ -102,6 +105,25 @@ run('deleting MLS-removed sales against the real DB', () => {
       cursors_left: false,
     })
     expect(t.restored_again).toBe(0)
+    // The on-market class (Matt 2026-10-01; 20261002025812): an on-market call deletes the
+    // Active row only, never one the MLS served again (a newer stamp) nor a closed sale, a
+    // held closed sale does not block it, and its budget counts on-market deletions only.
+    expect(t.listing_class).toMatchObject({
+      refused: false,
+      due: 1,
+      waiting: 1,
+      deleted: 1,
+      budget: 0,
+      held: 0,
+      deleted_keys: ['selftest-mls-removed-40'],
+      row_status: 'Active',
+      row_list_price: 400000,
+      k7_kept: true,
+      k8_kept: true,
+      log: { ours_status: 'Active', note_says_listing: true },
+    })
+    // An empty class list deletes a closed sale, and its note says sale.
+    expect(t.empty_class).toMatchObject({ refused: false, due: 1, deleted: 1, note_says_sale: true })
     expect(t.rolled_back).toBe(true)
   })
 

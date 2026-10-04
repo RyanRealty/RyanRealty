@@ -19,7 +19,10 @@
  * means the delta sync is losing updates again and queues ONE deduped ops text
  * to the owner (queueBrokerHealthAlert). It never messages a client.
  *
- * Listings Spark no longer serves at all are reported, not changed, here.
+ * A listing Spark no longer serves at all follows the removed-sales rule (Matt
+ * 2026-10-01): recorded each day and left out of the report's homes for sale,
+ * deleted on the third daily sighting with its whole row saved, and texted;
+ * released after the repair if the MLS serves it again.
  *
  * Schedule: daily 10:47 UTC (vercel.json), ahead of the market report refresh,
  * so the report's on-market episodes read the repaired rows.
@@ -70,6 +73,11 @@ export async function GET(request: Request) {
       `on-market: Spark ${r.sparkOnMarket}, ours ${r.ourOnMarket}, drifted ${r.drift.length} ` +
       `(left to the delta sync ${r.leftToDeltaSync + r.leftAtRepair.length}), repaired ${r.repaired} (before-images logged ${r.repairLogged}), ` +
       `failed ${r.repairFailed.length}, not served by the MLS ${r.notInSpark.length}` +
+      (r.absent
+        ? ` (recorded ${r.absent.recorded}, released ${r.absent.released}, rebuilt ${r.absent.rebuilt}, removed ${r.absent.removed.length}, held ${r.absent.held}, not due ${r.absent.waiting}` +
+          `${r.absent.refused ? `, refused: ${r.absent.refused}` : ''}${r.absent.removalFailed ? `, removal failed: ${r.absent.removalFailed}` : ''}` +
+          `${r.absent.stepFailures.length ? `, failed: ${r.absent.stepFailures.join('; ')}` : ''})`
+        : '') +
       `${r.stoppedForTime ? ', stopped at the time budget' : ''}, ${((Date.now() - started) / 1000).toFixed(0)}s`
     console.log(`[on-market-reconcile] ${line}`)
     if (repair && r.drift.length > REPAIR_ALERT_AT) {
@@ -80,7 +88,7 @@ export async function GET(request: Request) {
       })
     }
     return NextResponse.json({
-      ok: r.repairFailed.length === 0,
+      ok: r.repairFailed.length === 0 && !r.absent?.removalFailed && (r.absent?.stepFailures.length ?? 0) === 0,
       sparkOnMarket: r.sparkOnMarket,
       ourOnMarket: r.ourOnMarket,
       drifted: r.drift.length,
@@ -91,6 +99,7 @@ export async function GET(request: Request) {
       repairLogged: r.repairLogged,
       repairFailed: r.repairFailed,
       notInSpark: r.notInSpark,
+      absent: r.absent,
       log: [line],
     })
   } catch (err) {

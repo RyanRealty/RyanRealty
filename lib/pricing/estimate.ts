@@ -21,7 +21,7 @@ import {
 } from '@/lib/pricing/seller-net'
 import type { CmaAdjustedComp, CmaComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import { citySlug, storyAdjustment, type StoryClass } from '@/lib/pricing/classes'
-import { capClosedCompShares, closedCompWeight } from '@/lib/pricing/closed-comp-weight'
+import { capClosedCompShares, closedCompWeight, fillShortSetWeights } from '@/lib/pricing/closed-comp-weight'
 import { recommendationOutsideSaleSet } from '@/lib/pricing/price-set'
 import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
 import type { SelectedPricingComp } from '@/lib/pricing/match'
@@ -1593,7 +1593,8 @@ export function priceCmaSet(args: {
   computePricing?: typeof computePricing
 }): CmaPricing | null {
   const priceFn = args.computePricing ?? computePricing
-  const pricing = priceFn(args.subject, args.adjusted, args.market, {
+  const adjusted = fillShortSetWeights(args.subject, args.adjusted)
+  const pricing = priceFn(args.subject, adjusted, args.market, {
     sellerImprovementsTotal: args.input.sellerImprovementsTotal ?? null,
     priceOverride: args.input.priceOverride ?? null,
     site: args.site ?? null,
@@ -1607,7 +1608,7 @@ export function priceCmaSet(args: {
   // price (tasteReview round three, §2 item 1). `listPriceFromEngine` runs the
   // same pure partition over the same array, so the printed weights and the
   // printed number come from one set.
-  const priceSetting = args.adjusted.filter((c) => c.weight > 0)
+  const priceSetting = adjusted.filter((c) => c.weight > 0)
   const part = partitionByRangeRule(priceSetting)
   pricing.reconciliation = reconcileAdjustedSales({
     sales: part.kept as unknown as ReconcilableSale[],
@@ -1652,7 +1653,7 @@ export function priceCmaSet(args: {
     yoyMedianPriceDeltaPct: args.market?.yoyMedianPriceDeltaPct ?? null,
     indexUnavailableReason: args.indexUnavailableReason ?? null,
     exclusivePocket: selectionIsExclusivePocket(args.selection.tiersUsed),
-    applied: args.adjusted.map((c) => ({
+    applied: adjusted.map((c) => ({
       address: c.address,
       closePrice: c.closePrice,
       timeAdjustment: c.timeAdjustment,
@@ -1674,7 +1675,7 @@ export function priceCmaSet(args: {
   // sales at 80 percent of their ask over three priced ones at 100 percent
   // moved a $490,000 / $500,000 / $510,000 list to $510,000 on all three
   // tiers (lib/pricing/estimate.test.ts). The ratios are held to `adjusted`.
-  const pricedKeys = new Set(args.adjusted.map((c) => c.listingKey))
+  const pricedKeys = new Set(adjusted.map((c) => c.listingKey))
   const pricedSales = (args.selection.pricingSales ?? []).filter(
     (s) => s.listingKey != null && pricedKeys.has(s.listingKey),
   )
@@ -1682,7 +1683,7 @@ export function priceCmaSet(args: {
     subjectSqft: args.subject.sqft ?? 0,
     lastAsk: currentListAsk(args.subject),
     failedAsk: failedListAsk(args.subject),
-    adjusted: args.adjusted,
+    adjusted: adjusted,
     pricingSales: pricedSales,
     marketIndex: args.marketIndex,
     asOf: args.asOf,
@@ -1694,7 +1695,7 @@ export function priceCmaSet(args: {
     const anchored = applyStreetAnchor(
       {
         subject: args.subject,
-        adjusted: args.adjusted,
+        adjusted: adjusted,
         priceOverride: args.input.priceOverride ?? null,
         notes: covered.notes,
         prior: covered.streetAnchor ?? null,
@@ -1711,7 +1712,7 @@ export function priceCmaSet(args: {
       covered.valueHigh = covered.highEnd
       covered.needsReview = true
     }
-    const settingPrices = args.adjusted
+    const settingPrices = adjusted
       .filter((c) => c.weight > 0 && c.adjustedPrice > 0)
       .map((c) => c.adjustedPrice)
     // A broker override is a person choosing a number. Everything else that
