@@ -179,7 +179,7 @@ export function publishListingOffMarketFacts(
   }
 
   const source = sold
-    ? 'This listing’s MLS close record: ClosePrice, CloseDate, the final ListPrice and OnMarketDate on the row. The percentage is the close price over the FINAL list price. Days on market are calendar days from the on-market date to the close.'
+    ? 'From this home’s MLS record: the sale price, the closing date, the final asking price and the day it went on the market. The percentage is the sale price divided by the final asking price. Days on market count calendar days from going on the market to closing.'
     : 'This listing’s MLS status record. It ended without a recorded sale, so no sale price, no percentage of asking and no close date publish.'
 
   return { statusWord, headline, eyebrow: statusWord, figures, source }
