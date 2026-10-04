@@ -37,6 +37,31 @@ describe('platDocumentTitle', () => {
     expect(title).not.toMatch(/homes for sale/i)
   })
 
+  it('fits a long phase under the live audit ceiling, dropping city then family (2026-10-04)', () => {
+    const longFamilies = derivePlatFamilies({
+      plats: [
+        { slug: 'greens-at-redmond-phase-1', label: 'Greens at Redmond Phase 1', citySlug: 'redmond', closedCount: 40 },
+        {
+          slug: 'greens-at-redmond-the-phase-1-and-2-replat-lots-3-8',
+          label: 'Greens at Redmond (the) Phase 1 & 2 Replat Lots 3-8 With A Very Long Recorded Name',
+          citySlug: 'redmond',
+          closedCount: 12,
+        },
+      ],
+      communities: [],
+    })
+    const role = platFamilyRole(longFamilies, 'greens-at-redmond-the-phase-1-and-2-replat-lots-3-8')
+    expect(role?.role).toBe('member')
+    const title = platDocumentTitle({ displayName: 'x', cityName: 'Redmond', role })
+    expect(title.length + ' | Ryan Realty'.length).toBeLessThanOrEqual(90)
+    expect(title).not.toMatch(/, Redmond$/)
+    // A phase that fits keeps the whole subordinate title.
+    const short = platFamilyRole(families, 'ridge-at-eagle-crest-36')
+    expect(platDocumentTitle({ displayName: 'x', cityName: 'Redmond', role: short })).toBe(
+      'Ridge at Eagle Crest 36 · part of Ridge at Eagle Crest, Redmond',
+    )
+  })
+
   it('keeps the family page and a plain plat on the place-first homes title', () => {
     const head = platFamilyRole(families, 'ridge-at-eagle-crest')
     expect(head?.role).toBe('head')

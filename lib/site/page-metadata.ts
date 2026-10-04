@@ -61,6 +61,8 @@ const MAX_TITLE = 60
  * scripts/check-content-metadata.mjs holds the registry names to this.
  */
 export const TITLE_BUDGET = MAX_TITLE - BRAND_SUFFIX.length
+/** The live SEO audit's hard ceiling for a whole document title (scripts/lib/live-seo-audit.mjs). */
+const HARD_TITLE = 90
 /** Backstop only — double the budget. A document title past it is a content bug. */
 const DOC_CEILING = MAX_TITLE * 2
 const MAX_DESC = 155
@@ -205,7 +207,10 @@ export function publishPlaceHomesTitle(name: string, city: string | null | undef
   if (!place) return heading
   if (!cityName || /^central oregon$/i.test(cityName)) return heading
   if (place.toLowerCase().endsWith(cityName.toLowerCase())) return heading
-  return `${heading} · ${cityName}, Oregon`
+  const full = `${heading} · ${cityName}, Oregon`
+  // The live SEO audit fails a document title past 90 chars (2026-10-04); a
+  // long recorded plat name drops the town before it crosses that ceiling.
+  return full.length + BRAND_SUFFIX.length <= HARD_TITLE ? full : heading
 }
 
 /** City document title. Does not bid "{city} homes for sale". */

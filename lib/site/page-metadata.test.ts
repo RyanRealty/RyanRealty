@@ -14,6 +14,14 @@ function rendered(pageTitle: string): string {
 }
 
 describe('publishPlaceHomesTitle', () => {
+  it('drops the town before a long plat name crosses the 90-char live ceiling (2026-10-04)', () => {
+    const name = 'Greens at Redmond (the) Phase 1 & 2 Replat Lots 3-8'
+    const title = publishPlaceHomesTitle(name, 'Redmond')
+    expect(title).toBe(`${name} homes for sale`)
+    expect(title.length + ' | Ryan Realty'.length).toBeLessThanOrEqual(90)
+    expect(publishPlaceHomesTitle('Woodridge', 'Bend')).toBe('Woodridge homes for sale · Bend, Oregon')
+  })
+
   it('does not emit Central Oregon, Oregon', () => {
     expect(publishPlaceHomesTitle('8th Street Cottages', 'Central Oregon')).toBe(
       '8th Street Cottages homes for sale',
