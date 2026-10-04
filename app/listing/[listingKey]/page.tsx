@@ -25,7 +25,7 @@ import {
   firstVisitorPlaceLabel,
   firstVisitorPlaceSlug,
 } from '@/lib/site/visitor-place-noise'
-import { listingShareSummary } from '@/lib/share-metadata'
+import { listingShareSummary, shareDescription } from '@/lib/share-metadata'
 import { publishListingDrop } from '@/lib/listing/publish-listing-ask'
 import {
   publishListingPublishedPrice,
@@ -183,7 +183,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // that said only the address. The publisher is the same one the visible page
   // uses, so the SERP snippet and the H1 cannot disagree again.
   const statusWord = publishListingStatusWord(listing.status)
-  const description = listingShareSummary({
+  // The SERP snippet (Matt 2026-10-04): the facts, where it is, then the
+  // listing's own MLS description to fill Google's ~155 characters. The street
+  // address is already in the title, so the snippet names the plat and town
+  // instead and spends the rest on the agent's words, shown as written (VOICE:
+  // MLS remarks as written; only whitespace is normalised and the tail is cut
+  // at a word). A land listing used to read "$299,000 · <street, city, zip>"
+  // and nothing else. No remarks: the facts line plus what the page holds.
+  const plat = listing.subdivisionName?.trim()
+  const where = [plat, listing.city?.trim()].filter(Boolean).join(', ')
+  const snippetLead = listingShareSummary({
     price: publishListingPublishedWholePropertyPrice({
       status: listing.status,
       listPrice: listing.listPrice,
@@ -198,9 +207,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     beds: listing.beds,
     baths: listing.baths,
     sqft: listing.sqft ?? listing.totalLivingAreaSqFt,
-    address: addressFull || undefined,
-    city: addressFull ? undefined : (listing.city ?? undefined),
+    city: where || undefined,
   })
+  const remarks = (listing.publicRemarks ?? '').replace(/\s+/g, ' ').trim()
+  const metaDescription = shareDescription(
+    remarks ? `${snippetLead}. ${remarks}` : `${snippetLead}. Photos, map, and nearby sales.`,
+  )
   const addressTitle = addressFull ? addressFull : `Listing ${listing.listingKey}`
   const title = listingDocumentTitle({
     statusWord,
@@ -256,7 +268,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // scripts/check-listing-offmarket-index.mjs (ci:listing-offmarket-index).
   return pageMetadata({
     title,
-    description,
+    description: metaDescription,
     path: canonicalPath,
     ogImage: `/api/og?type=listing&id=${encodeURIComponent(listing.listingKey)}`,
     noindex: outOfArea !== null,

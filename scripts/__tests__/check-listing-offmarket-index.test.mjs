@@ -179,7 +179,7 @@ describe('ci:listing-offmarket-index', () => {
       edit(
         PAGE,
         "  if (lookup.kind === 'missing') return LISTING_UNAVAILABLE_METADATA",
-        "  if (lookup.kind === 'missing' || lookup.listing.status === 'Closed') return LISTING_UNAVAILABLE_METADATA",
+        "  if (lookup.kind === 'missing' || (lookup.kind === 'ok' && lookup.listing.status === 'Closed')) return LISTING_UNAVAILABLE_METADATA",
       )
       const { code, out } = run()
       expect(code).toBe(1)

@@ -149,6 +149,7 @@ function searchPath(city: string | null, subdivision: string | null): string {
 function listingPath(target: TrackedDocLinkTarget): string {
   if (typeof target === 'string') {
     const key = clean(target)
+    // listing-href-number-ok: a bare string target is the only id this caller holds
     return key ? listingTileHref({ listingKey: key }) : publishRegionalSearchHref()
   }
   if (!isObj(target)) return publishRegionalSearchHref()
