@@ -525,3 +525,39 @@ describe('selectComps — a condo building is not "self" (the 363 Bluff starvati
     expect(sel.diagnostics.excluded_totals.self).toBeGreaterThan(0)
   })
 })
+
+describe('selectComps — resale past the waiting period reads the new-construction flag', () => {
+  beforeEach(() => {
+    selectCmaCompsPool.mockReset()
+    selectCmaCompsPool.mockResolvedValue([])
+    selectCmaCompsByKeys.mockReset()
+    selectCmaCompsByKeys.mockResolvedValue([])
+  })
+
+  it('drops a never-owned 2023 sale that the year alone would not call a new build', async () => {
+    selectCmaCompsPool.mockResolvedValue([
+      closedRow({
+        ListingKey: 'never-owned-2023',
+        StreetNumber: '200',
+        year_built: 2023,
+        new_construction_yn: true,
+        TotalLivingAreaSqFt: 1800,
+        property_sub_type: 'Townhouse',
+      }),
+      closedRow({
+        ListingKey: 'resale-2016',
+        StreetNumber: '300',
+        year_built: 2016,
+        new_construction_yn: false,
+        TotalLivingAreaSqFt: 1800,
+        property_sub_type: 'Townhouse',
+      }),
+    ])
+    const result = await selectComps(
+      subject({ propertySubType: 'Townhouse', yearBuilt: 2018, newConstructionYn: false, sqft: 1800 }),
+      { asOf: '2026-08-01' },
+    )
+    expect(result.comps.map((c) => c.listingKey)).toContain('resale-2016')
+    expect(result.comps.map((c) => c.listingKey)).not.toContain('never-owned-2023')
+  })
+})

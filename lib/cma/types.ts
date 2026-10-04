@@ -85,6 +85,8 @@ export interface CmaComp {
   /** MLS property_sub_type — drives product-class comparability. */
   propertySubType: string | null
   yearBuilt: number | null
+  /** MLS NewConstructionYN. True is never-owned new construction. Null means the feed did not say. */
+  newConstructionYn?: boolean | null
   garageSpaces?: number | null
   photoUrl: string | null
   publicRemarks: string | null

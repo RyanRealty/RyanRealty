@@ -33,6 +33,7 @@ import { listCeiling, readMeasure } from '@/lib/cma/render-contract'
 import { closedCompBand } from '@/lib/pricing/recommended-in-band'
 import { compSearchSentence } from '@/lib/cma/render-comp-search'
 import { newHomeRateParagraph } from '@/lib/cma/new-home-rate'
+import { resaleNeverOwnedParagraph } from '@/lib/cma/resale-never-owned'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CmaPageDef } from '@/lib/cma/render-use-of-property'
@@ -604,6 +605,18 @@ export function pricingPage(input: PricingPageInput): CmaPageDef {
     })),
   })
   const ageHtml = age ? `<p class="method-line">${esc(age)}</p>` : ''
+  const neverOwned = resaleNeverOwnedParagraph({
+    subjectYear: s.yearBuilt ?? null,
+    subjectNewConstructionYn: s.newConstructionYn,
+    propertySubType: s.propertySubType,
+    asOfIso: input.asOfIso ?? null,
+    comps: input.comps.map((c) => ({
+      address: c.address,
+      yearBuilt: c.yearBuilt ?? null,
+      newConstructionYn: c.newConstructionYn,
+    })),
+  })
+  const neverOwnedHtml = neverOwned ? `<p class="method-line">${esc(neverOwned)}</p>` : ''
   // Tip Ready P0: cover already carries recommend + range. The worth-strip's
   // "list $521K" mark was the fold repeating the number (~8× on Falcon).
   return {
@@ -614,6 +627,7 @@ export function pricingPage(input: PricingPageInput): CmaPageDef {
   ${input.omitLeadPrices ? `<p class="worth-lead">${esc(whatItsWorthLead(s, p, input.askCtx))}</p>
   ${clampHtml}` : ''}
   ${ageHtml}
+  ${neverOwnedHtml}
   ${method}
 `,
   }

@@ -95,7 +95,7 @@ function mlsText(v: unknown): string | null {
 }
 
 /** Strict tri-state read. Anything the MLS did not say stays null, never false. */
-function bool(v: unknown): boolean | null {
+export function mlsTriBool(v: unknown): boolean | null {
   if (typeof v === 'boolean') return v
   if (typeof v === 'string') {
     const s = v.trim().toLowerCase()
@@ -227,7 +227,7 @@ export function rowToSubject(row: CmaListingRow): CmaSubject {
     listAgentName: str(row['ListAgentName']),
     listAgentEmail: str(row['list_agent_email']),
     listOfficeName: str(row['ListOfficeName']),
-    associationYn: bool(row['association_yn']),
+    associationYn: mlsTriBool(row['association_yn']),
     associationFee: num(row['association_fee']),
     associationFeeFrequency: str(row['association_fee_frequency']),
     hoaMonthly: num(row['hoa_monthly']),
@@ -236,11 +236,11 @@ export function rowToSubject(row: CmaListingRow): CmaSubject {
     sewerRaw: row['sewer'] ?? null,
     levelsRaw: row['levels'] ?? null,
     newConstructionYn: (() => {
-      const fromCol = bool(row['new_construction_yn'])
+      const fromCol = mlsTriBool(row['new_construction_yn'])
       if (fromCol != null) return fromCol
-      return bool(row['new_construction_details'])
+      return mlsTriBool(row['new_construction_details'])
     })(),
-    seniorCommunityYn: bool(row['senior_community_yn']),
+    seniorCommunityYn: mlsTriBool(row['senior_community_yn']),
   }
 }
 

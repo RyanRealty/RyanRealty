@@ -555,6 +555,22 @@ export function horseInfrastructureCompatible(
 /** One construction generation — the tight ageYears band on the subdivision rungs. */
 export const CUSTOM_NEW_YEAR_BAND = 15
 
+/**
+ * How long a resale still prices with never-owned new construction.
+ *
+ * This is the custom/new year window already used below (`as-of` minus year
+ * built, at most 5). A 2021 resale as of 2026 is still inside it, so brand-new
+ * homes stay eligible comps. It is not the 0–2 year new-build mark: that mark
+ * says the house itself is a new build, and it still wins over
+ * NewConstructionYN false. It is not CUSTOM_NEW_YEAR_BAND (15): that is how
+ * far apart two custom or new years can sit and still be one generation.
+ *
+ * After this window a resale (NewConstructionYN false, not a new-construction
+ * subtype, not custom-quality remarks) leaves the custom/new class. The
+ * resale-versus-new-build wall then runs.
+ */
+export const RESALE_COMPETES_WITH_NEVER_OWNED_YEARS = 5
+
 export type YearQualityInput = {
   yearBuilt: number | null | undefined
   newConstructionYn?: boolean | null
@@ -588,14 +604,14 @@ export function isCustomOrNewSubject(input: YearQualityInput, asOfYear?: number)
   if (subtypeMarksCustomOrNew(input.propertySubType)) return true
   if (isNewBuild(input.yearBuilt, asOf, input.newConstructionYn) === true) return true
   const year = input.yearBuilt
-  if (year != null && year >= 1850 && year <= asOf + 2 && asOf - year <= 5) return true
+  if (year != null && year >= 1850 && year <= asOf + 2 && asOf - year <= RESALE_COMPETES_WITH_NEVER_OWNED_YEARS) return true
   const flags = extractRemarkFlags(input.remarks)
   // Custom-built / to-be-built / mid-century still classify on an older house.
   // New-construction keywords do not: Nugget (1976, NewConstructionYN false,
   // "brand new including ... paint") is a remodeled resale, not a new home.
   if (flags.customQuality) return true
   if (input.newConstructionYn === false) return false
-  if (year != null && year >= 1850 && year <= asOf + 2 && asOf - year > 5) return false
+  if (year != null && year >= 1850 && year <= asOf + 2 && asOf - year > RESALE_COMPETES_WITH_NEVER_OWNED_YEARS) return false
   return flags.newConstruction
 }
 
@@ -620,6 +636,61 @@ export function yearQualityCompatible(
     return Math.abs(subjectYear - compYear) <= CUSTOM_NEW_YEAR_BAND
   }
   return isCustomOrNewSubject(comp, asOf)
+}
+
+/**
+ * A resale whose year is still inside the 5-year window. Brand-new homes stay
+ * eligible. The letter, not a dollar cut, says it will likely sell for less
+ * than never-owned new construction.
+ */
+export function resaleInsideNewBuildWindow(input: YearQualityInput, asOfYear?: number): boolean {
+  if (input.newConstructionYn !== false) return false
+  if (subtypeMarksCustomOrNew(input.propertySubType)) return false
+  const asOf = asOfYearOrNow(asOfYear)
+  const year = input.yearBuilt
+  if (year == null || year < 1850 || year > asOf + 2) return false
+  const age = asOf - year
+  return age >= 0 && age <= RESALE_COMPETES_WITH_NEVER_OWNED_YEARS
+}
+
+/**
+ * Never-owned new construction a buyer can choose instead.
+ * NewConstructionYN true and a year still inside the 5-year window. A false
+ * flag is a resale even when the year is 0–2. A missing flag is not called
+ * never-owned: the letter must not invent an owner history.
+ */
+export function isNeverOwnedNewConstruction(input: YearQualityInput, asOfYear?: number): boolean {
+  const asOf = asOfYearOrNow(asOfYear)
+  const year = input.yearBuilt
+  const age = year != null && year >= 1850 && year <= asOf + 2 ? asOf - year : null
+  const inWindow = age != null && age >= 0 && age <= RESALE_COMPETES_WITH_NEVER_OWNED_YEARS
+  if (input.newConstructionYn === true) return inWindow
+  return false
+}
+
+/**
+ * True when the sale must not price the subject: the subject is past the
+ * 5-year window (not custom/new), and one side is a new build while the other
+ * is not. Inside the window this is false, so brand-new peers stay eligible.
+ */
+export function dropsResaleVersusNewBuild(
+  subject: YearQualityInput,
+  comp: YearQualityInput,
+  asOfYear?: number,
+): boolean {
+  const asOf = asOfYearOrNow(asOfYear)
+  const year = subject.yearBuilt
+  // Inside the waiting period, never-owned sales stay in the price set.
+  // That is why the new homes are the higher price. Do not drop them here.
+  if (year != null && year >= 1850 && year <= asOf + 2) {
+    const age = asOf - year
+    if (age >= 0 && age <= RESALE_COMPETES_WITH_NEVER_OWNED_YEARS) return false
+  }
+  if (isCustomOrNewSubject(subject, asOf)) return false
+  return !newConstructionCompatible(
+    isNewBuild(subject.yearBuilt, asOf, subject.newConstructionYn),
+    isNewBuild(comp.yearBuilt, asOf, comp.newConstructionYn),
+  )
 }
 
 export type AcreageInfrastructureFlags = {

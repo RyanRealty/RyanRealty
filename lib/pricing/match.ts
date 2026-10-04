@@ -20,9 +20,8 @@ import {
   irrigationClassFromRemarks,
   irrigationCompatible,
   isCustomOrNewSubject,
-  isNewBuild,
+  dropsResaleVersusNewBuild,
   lotCompatible,
-  newConstructionCompatible,
   plausibleListedClose,
   productCompatible,
   resolveIrrigationClass,
@@ -531,10 +530,15 @@ function passesTier(
   const skipYearQualityOnExclusive = isPocketExclusiveTier(tier) && isClusterPocket(subject)
   if (
     !skipYearQualityOnExclusive &&
-    !customOrNew &&
-    !newConstructionCompatible(
-      isNewBuild(subject.yearBuilt, asOfYear, subject.newConstruction),
-      isNewBuild(sale.yearBuilt, asOfYear, sale.newConstruction),
+    dropsResaleVersusNewBuild(
+      {
+        yearBuilt: subject.yearBuilt,
+        newConstructionYn: subject.newConstruction,
+        remarks: subject.publicRemarks,
+        propertySubType: subject.propertySubType,
+      },
+      { yearBuilt: sale.yearBuilt, newConstructionYn: sale.newConstruction, remarks: sale.publicRemarks },
+      asOfYear,
     )
   ) {
     return { ok: false, miles: null }
@@ -716,10 +720,15 @@ function bracketEligible(
     asOfYear,
   )
   if (
-    !customOrNew &&
-    !newConstructionCompatible(
-      isNewBuild(subject.yearBuilt, asOfYear, subject.newConstruction),
-      isNewBuild(sale.yearBuilt, asOfYear, sale.newConstruction),
+    dropsResaleVersusNewBuild(
+      {
+        yearBuilt: subject.yearBuilt,
+        newConstructionYn: subject.newConstruction,
+        remarks: subject.publicRemarks,
+        propertySubType: subject.propertySubType,
+      },
+      { yearBuilt: sale.yearBuilt, newConstructionYn: sale.newConstruction, remarks: sale.publicRemarks },
+      asOfYear,
     )
   ) {
     return false
