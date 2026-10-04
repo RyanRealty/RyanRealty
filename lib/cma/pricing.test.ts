@@ -105,6 +105,23 @@ describe('adjustComps', () => {
     expect(adj!.sizeAdjustment).toBe(35000)
     expect(adj!.adjustedPrice).toBe(735000)
   })
+
+  it('factors a recorded seller concession into the adjusted sale', () => {
+    const none = adjustComps(
+      subject(),
+      [comp({ closePrice: 700000, concessionsAmount: 0, concessionsYn: 'No' })],
+      null,
+    )[0]
+    const given = adjustComps(
+      subject(),
+      [comp({ closePrice: 700000, concessionsAmount: 10000, concessionsYn: 'Yes' })],
+      null,
+    )[0]
+    expect(none!.concessions).toBe(0)
+    expect(given!.concessions).toBe(10_000)
+    expect(none!.adjustedPrice).toBe(700_000)
+    expect(given!.adjustedPrice).toBe(690_000)
+  })
 })
 
 describe('computePricing', () => {

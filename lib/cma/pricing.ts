@@ -28,6 +28,7 @@ import type {
   CmaSubject,
 } from '@/lib/cma/types'
 import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
+import { comparisonSalePrice, concessionOnSale, sellerNetFromPrice } from '@/lib/pricing/seller-net'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { SAME_STREET_PREMIUM_MAX, sameStreetPeer } from '@/lib/pricing/price-anchor'
 import { landProduct, priceLandSubject } from '@/lib/cma/land-pricing'
@@ -89,12 +90,14 @@ export function adjustComps(
   const now = asOfMs
   return comps.map((comp) => {
     const monthsSinceClose = Math.max(0, (now - new Date(comp.closeDate).getTime()) / MS_PER_MONTH)
+    const concessions = concessionOnSale(comp)
+    const startPrice = comparisonSalePrice(comp.closePrice, concessions)
     const rawTimeAdjustment =
-      yoyPct != null ? Math.round(comp.closePrice * (yoyPct / 100) * (monthsSinceClose / 12)) : 0
-    const timeAdjCap = Math.round(comp.closePrice * TIME_ADJ_CAP_FRACTION)
+      yoyPct != null ? Math.round(startPrice * (yoyPct / 100) * (monthsSinceClose / 12)) : 0
+    const timeAdjCap = Math.round(startPrice * TIME_ADJ_CAP_FRACTION)
     const timeAdjustment = Math.max(-timeAdjCap, Math.min(timeAdjCap, rawTimeAdjustment))
     const timeAdjustmentCapped = timeAdjustment !== rawTimeAdjustment
-    const timeAdjustedPrice = comp.closePrice + timeAdjustment
+    const timeAdjustedPrice = startPrice + timeAdjustment
     // Land comps have no living area. Dividing by it yielded Infinity, which
     // then flowed into the citations blob. Land prices per ACRE, in
     // lib/cma/land-pricing.ts; here the rate is simply not defined.
@@ -106,6 +109,9 @@ export function adjustComps(
     const recency = 1 / (1 + monthsSinceClose / 12)
     const out: AdjustedCompInternal = {
       ...comp,
+      concessions,
+      concessionsAmount: concessions ?? comp.concessionsAmount ?? null,
+      sellerNet: sellerNetFromPrice(comp.closePrice, concessions),
       monthsSinceClose: +monthsSinceClose.toFixed(1),
       timeAdjustment,
       timeAdjustedPrice,

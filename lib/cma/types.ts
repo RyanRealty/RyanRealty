@@ -85,6 +85,8 @@ export interface CmaComp {
   /** MLS property_sub_type — drives product-class comparability. */
   propertySubType: string | null
   yearBuilt: number | null
+  /** MLS NewConstructionYN. True is never-owned new construction. Null means the feed did not say. */
+  newConstructionYn?: boolean | null
   garageSpaces?: number | null
   photoUrl: string | null
   publicRemarks: string | null
@@ -99,9 +101,8 @@ export interface CmaComp {
   /**
    * The seller concession as the grid prints it: a dollar amount when one was
    * reported, 0 when the sale reported none, null when nothing was recorded.
-   * Resolved by `resolveConcessions`, the same function the seller-net caption
-   * reads, so the line and the caption cannot disagree (research brief
-   * 2026-09-07, item 8; D14).
+   * Resolved by `resolveConcessions`. The comparison matrix subtracts a
+   * recorded amount from the sale before date and size; it does not invent one.
    */
   concessions?: number | null
   /** ClosePrice minus resolved seller concessions. Null when concessions are unknown. */

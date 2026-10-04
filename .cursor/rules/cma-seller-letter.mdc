@@ -21,3 +21,7 @@ A seller letter must not print any of these. The generator refuses them in `lib/
 
 No buyer or seller names.
 - Each home on the screen cards shows one listing photo when the MLS has one. Do not strip those photos.
+
+Sold information includes seller concessions (or seller-paid closing costs) when the MLS already stored an amount. Comparison matrices factor that amount into the sale they adjust. A sale price that ignores a recorded concession is wrong. When the sale reported none, print none or zero; do not hide the line. Do not invent a concession amount. Adjusted matrix figures, the prices that set the recommendation, and any sold summary must use the same concession-adjusted sale.
+
+A resale built within 5 years of the as-of date still prices with brand-new homes. That is the existing custom/new year window, not a new cutoff. Do not drop those never-owned sales from the price set. After 5 years, a resale with the new-construction flag false is not the same product as never-owned new construction. When the subject is a resale inside the window and the sales that set the price include never-owned new homes, the letter says this home is basically a new home, but it is competing with brand-new homes that have had no previous owner, at that same price point, so it will likely sell for less. No dollar discount is invented. The names in that sentence are homes in the price set.

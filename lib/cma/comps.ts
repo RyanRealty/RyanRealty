@@ -43,7 +43,7 @@ import {
 import { hydrateClosedCompDaysOnMarket } from '@/lib/cma/hydrate-closed-comp-dom'
 import type { CmaListingRow } from '@/lib/data/cma/builderReads'
 import type { CmaComp, CmaSubject } from '@/lib/cma/types'
-import { saneYearBuilt } from '@/lib/cma/subject'
+import { mlsTriBool, saneYearBuilt } from '@/lib/cma/subject'
 import { ACREAGE_THRESHOLD_ACRES, landProduct } from '@/lib/cma/land-pricing'
 import {
   distanceMiles,
@@ -97,9 +97,8 @@ import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
 import { crossesNamedRiver } from '@/lib/pricing/river-cross'
 import {
   customLotCompatible,
+  dropsResaleVersusNewBuild,
   isCustomOrNewSubject,
-  isNewBuild,
-  newConstructionCompatible,
   type IrrigationClass,
 } from '@/lib/pricing/classes'
 
@@ -216,6 +215,11 @@ function rowToComp(row: CmaListingRow, tier: string, land = false): CmaComp | nu
     lotAcres,
     propertySubType: str(row['property_sub_type']),
     yearBuilt: saneYearBuilt(num(row['year_built'])),
+    newConstructionYn: (() => {
+      const fromCol = mlsTriBool(row['new_construction_yn'])
+      if (fromCol != null) return fromCol
+      return mlsTriBool(row['new_construction_details'])
+    })(),
     garageSpaces: num(row['garage_spaces']),
     photoUrl: str(row['PhotoURL']),
     publicRemarks: str(row['public_remarks']),
@@ -1047,10 +1051,20 @@ export async function selectComps(
       if (!(isListingsPocketExclusiveTier(tier) && clusterPocket)) {
         const asOfYear = Number((opts.asOf ?? new Date().toISOString().slice(0, 10)).slice(0, 4))
         if (
-          !customOrNew &&
-          !newConstructionCompatible(
-            isNewBuild(subject.yearBuilt, asOfYear, subject.newConstructionYn),
-            isNewBuild(comp.yearBuilt, asOfYear, null),
+          dropsResaleVersusNewBuild(
+            {
+              yearBuilt: subject.yearBuilt,
+              newConstructionYn: subject.newConstructionYn,
+              remarks: subject.publicRemarks,
+              propertySubType: subject.propertySubType,
+            },
+            {
+              yearBuilt: comp.yearBuilt,
+              newConstructionYn: comp.newConstructionYn,
+              remarks: comp.publicRemarks,
+              propertySubType: comp.propertySubType,
+            },
+            asOfYear,
           )
         ) {
           rung.excluded.year_quality++

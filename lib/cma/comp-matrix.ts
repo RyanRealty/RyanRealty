@@ -45,6 +45,7 @@ import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
 import { formatDate } from '@/lib/format/date'
 import type { ExpiredFinalCycle } from '@/lib/cma/expired-audit'
 import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
+import { concessionOffClose, concessionOnSale, printedAdjustedPrice } from '@/lib/pricing/seller-net'
 
 const esc = escapeHtml
 
@@ -245,6 +246,7 @@ const SHARED_ROWS: ReadonlyArray<MatrixRow> = [
   { label: 'List price', figure: true },
   { label: 'Original list', figure: true },
   { label: 'Sold', figure: true },
+  { label: 'Seller concessions', figure: true },
   { label: 'Days on market', figure: true, fact: 'dom' },
   { label: 'CDOM', figure: true },
   { label: 'Beds', figure: true },
@@ -257,7 +259,6 @@ const SHARED_ROWS: ReadonlyArray<MatrixRow> = [
   // Matt ADD 2026-09-12: list $/sqft AND sold $/sqft + concession $ on sold.
   { label: 'List $/sqft', figure: true },
   { label: 'Sold $/sqft', figure: true },
-  { label: 'Seller concessions', figure: true },
   { label: 'Adjusted', figure: true },
   // Asks on one line, then each clause of the outcome on its own. One
   // sentence in a six-column cell was breaking in a different place in every
@@ -405,8 +406,8 @@ function ppsfCell(price: number | null | undefined, sqft: number | null | undefi
 function sharedConcessionCell(entry: MatrixEntry): string {
   if (entry.family !== 'closed') return '-'
   const c = entry.concessionsAmount
-  if (c == null || !Number.isFinite(c)) return '-'
-  return c > 0 ? usd(c) : 'none'
+  if (c == null || !Number.isFinite(c) || c <= 0) return 'none'
+  return usd(c)
 }
 
 function statusCell(entry: MatrixEntry): string {
@@ -443,6 +444,7 @@ function sharedCells(entry: MatrixEntry, _range?: PricePathRange | null): string
     moneyCell(entry.listPrice ?? entry.lastAsk),
     moneyCell(entry.firstAsk),
     moneyCell(entry.closePrice),
+    sharedConcessionCell(entry),
     entry.domDays != null ? `${int(entry.domDays)} ${entry.domDays === 1 ? 'day' : 'days'}` : '-',
     cdom != null ? `${int(cdom)} ${cdom === 1 ? 'day' : 'days'}` : '-',
     entry.beds != null ? int(entry.beds) : '-',
@@ -453,7 +455,6 @@ function sharedCells(entry: MatrixEntry, _range?: PricePathRange | null): string
     entry.garageSpaces != null ? int(entry.garageSpaces) : '-',
     ppsfCell(listForPpsf, entry.sqft),
     ppsfCell(entry.closePrice, entry.sqft),
-    sharedConcessionCell(entry),
     entry.family === 'closed' ? moneyCell(entry.adjustedPrice) : '-',
     askArcCell(entry),
   ]
@@ -496,9 +497,13 @@ function adjustmentLines(comp: CmaAdjustedComp): {
   netPct: number | null
   grossPct: number | null
 } {
-  const parts = [comp.timeAdjustment, comp.sizeAdjustment, comp.storyAdjustment].filter(
-    (v): v is number => v != null && Number.isFinite(v),
-  )
+  const concession = concessionOffClose(comp)
+  const parts = [
+    concession > 0 ? -concession : null,
+    comp.timeAdjustment,
+    comp.sizeAdjustment,
+    comp.storyAdjustment,
+  ].filter((v): v is number => v != null && Number.isFinite(v))
   if (parts.length === 0) return { net: null, netPct: null, grossPct: null }
   const close = comp.closePrice
   const net = parts.reduce((sum, v) => sum + v, 0)
@@ -508,14 +513,13 @@ function adjustmentLines(comp: CmaAdjustedComp): {
 }
 
 /**
- * The 1004's FIRST value adjustment, and the one this document printed nowhere
- * (research item 8) while the net sheet quoted two concession figures with no
- * basis on the page.
+ * The 1004's FIRST value adjustment. A recorded credit is a dollar amount.
+ * Reported none, or nothing recorded, prints "none" so the line stays.
  */
 function concessionCell(comp: CmaAdjustedComp): string {
-  const c = comp.concessions ?? comp.concessionsAmount ?? null
-  if (c == null || !Number.isFinite(c)) return '-'
-  return c > 0 ? usd(c) : 'none'
+  const c = concessionOnSale(comp)
+  if (c == null || !Number.isFinite(c) || c <= 0) return 'none'
+  return usd(c)
 }
 
 function signedCell(v: number | null | undefined): string {
@@ -561,7 +565,7 @@ function adjustmentCells(
       ? `${adj.netPct > 0 ? '+' : adj.netPct < 0 ? '−' : ''}${Math.abs(adj.netPct).toFixed(1)}%`
       : '-',
     gross != null ? `${gross.toFixed(1)}%` : '-',
-    usd(comp.adjustedPrice),
+    usd(printedAdjustedPrice(comp)),
     weight?.weight != null ? `${weight.weight.toFixed(1)}%` : '-',
   ]
 }

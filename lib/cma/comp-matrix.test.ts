@@ -467,6 +467,43 @@ describe('the adjustment grid, line by line', () => {
     expect(html).toContain('none')
   })
 
+  it('shows the recorded concession on a sold comp', () => {
+    const html = renderCompMatrixHtml(
+      subj,
+      five({ ...sale, concessions: 12_500, concessionsAmount: 12_500 }),
+    )
+    expect(html).toContain('Seller concessions')
+    expect(html).toContain('$12,500')
+    const soldAt = html.indexOf('<th>Sold</th>')
+    const concessionAt = html.indexOf('<th>Seller concessions</th>')
+    const daysAt = html.indexOf('<th>Days on market</th>')
+    expect(soldAt).toBeGreaterThan(-1)
+    expect(concessionAt).toBeGreaterThan(soldAt)
+    expect(daysAt).toBeGreaterThan(concessionAt)
+    expect(html).not.toMatch(/<th>Seller concessions<\/th>(?:<td[^>]*>none<\/td>){6}/)
+  })
+
+  it('shows none when a sold comp reported no concession, and keeps the line', () => {
+    const html = renderCompMatrixHtml(subj, five({ ...sale, concessions: 0, concessionsAmount: 0 }))
+    expect(html).toContain('<th>Seller concessions</th>')
+    expect(html).toContain('none')
+    expect(html).not.toContain('$4,000')
+    expect(html).toContain('$389,560')
+  })
+
+  it('lowers the matrix adjusted figure when a concession is present', () => {
+    const noneHtml = renderCompMatrixHtml(subj, five({ ...sale, concessions: 0 }))
+    const givenHtml = renderCompMatrixHtml(
+      subj,
+      five({ ...sale, concessions: 4_000, concessionsAmount: 4_000 }),
+    )
+    expect(noneHtml).toContain('$389,560')
+    expect(givenHtml).toContain('$385,560')
+    expect(givenHtml).toContain('$4,000')
+    expect(givenHtml).toContain('−$71,440')
+    expect(noneHtml).not.toContain('$385,560')
+  })
+
   it('drops an adjustment row nobody adjusted rather than printing five zeros', () => {
     const html = renderCompMatrixHtml(subj, five(sale))
     expect(html).not.toContain('Adjusted for style')

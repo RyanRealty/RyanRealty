@@ -13,7 +13,10 @@ import {
   irrigationCompatible,
   customBathCompatible,
   customLotCompatible,
+  dropsResaleVersusNewBuild,
   isCustomOrNewSubject,
+  isNeverOwnedNewConstruction,
+  RESALE_COMPETES_WITH_NEVER_OWNED_YEARS,
   subtypeMarksCustomOrNew,
   isNewBuild,
   newConstructionCompatible,
@@ -408,5 +411,65 @@ describe('customLotCompatible', () => {
   it('does not cliff-split near-acre custom peers at exactly 1.0', () => {
     expect(customLotCompatible(0.96, 1.08)).toBe(true)
     expect(customLotCompatible(0.5, 2.0)).toBe(false)
+  })
+})
+
+describe('resale versus never-owned new construction', () => {
+  it('uses the existing 5-year custom/new window, not the 0-2 year mark or the 15-year generation', () => {
+    expect(RESALE_COMPETES_WITH_NEVER_OWNED_YEARS).toBe(5)
+  })
+
+  it('keeps a 2021 resale in the class that can be priced with brand-new homes', () => {
+    expect(
+      isCustomOrNewSubject({ yearBuilt: 2021, newConstructionYn: false, remarks: null }, 2026),
+    ).toBe(true)
+    expect(
+      dropsResaleVersusNewBuild(
+        { yearBuilt: 2021, newConstructionYn: false },
+        { yearBuilt: 2026, newConstructionYn: true },
+        2026,
+      ),
+    ).toBe(false)
+    expect(
+      dropsResaleVersusNewBuild(
+        { yearBuilt: 2021, newConstructionYn: false },
+        { yearBuilt: 2025, newConstructionYn: true },
+        2026,
+      ),
+    ).toBe(false)
+  })
+
+  it('does not treat a resale past the window as the same product as never-owned new construction', () => {
+    expect(
+      isCustomOrNewSubject({ yearBuilt: 2017, newConstructionYn: false, remarks: null }, 2026),
+    ).toBe(false)
+    expect(
+      dropsResaleVersusNewBuild(
+        { yearBuilt: 2017, newConstructionYn: false },
+        { yearBuilt: 2026, newConstructionYn: true },
+        2026,
+      ),
+    ).toBe(true)
+    expect(
+      dropsResaleVersusNewBuild(
+        { yearBuilt: 2017, newConstructionYn: false },
+        { yearBuilt: 2023, newConstructionYn: true },
+        2026,
+      ),
+    ).toBe(true)
+    expect(
+      dropsResaleVersusNewBuild(
+        { yearBuilt: 2017, newConstructionYn: false },
+        { yearBuilt: 2022, newConstructionYn: false },
+        2026,
+      ),
+    ).toBe(false)
+  })
+
+  it('calls a flagged new home never-owned and does not call a false flag that', () => {
+    expect(isNeverOwnedNewConstruction({ yearBuilt: 2026, newConstructionYn: true }, 2026)).toBe(true)
+    expect(isNeverOwnedNewConstruction({ yearBuilt: 2024, newConstructionYn: false }, 2026)).toBe(false)
+    expect(isNeverOwnedNewConstruction({ yearBuilt: 2026, newConstructionYn: null }, 2026)).toBe(false)
+    expect(isNeverOwnedNewConstruction({ yearBuilt: 1990, newConstructionYn: true }, 2026)).toBe(false)
   })
 })

@@ -12,7 +12,13 @@
 
 import { applyStreetAnchor, computePricing } from '@/lib/cma/pricing'
 import type { CmaSiteData } from '@/lib/cma/county'
-import { attachSellerNet, resolveConcessions, sellerNetFromPrice } from '@/lib/pricing/seller-net'
+import {
+  attachSellerNet,
+  comparisonSalePrice,
+  concessionOnSale,
+  resolveConcessions,
+  sellerNetFromPrice,
+} from '@/lib/pricing/seller-net'
 import type { CmaAdjustedComp, CmaComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import { citySlug, storyAdjustment, type StoryClass } from '@/lib/pricing/classes'
 import { capClosedCompShares, closedCompWeight } from '@/lib/pricing/closed-comp-weight'
@@ -1004,6 +1010,7 @@ export function pricingSaleToCmaComp(sale: SelectedPricingComp): CmaComp {
     lotAcres: sale.lotAcres,
     propertySubType: sale.productClass === 'detached' ? 'Single Family Residence' : sale.productClass,
     yearBuilt: sale.yearBuilt,
+    newConstructionYn: sale.newConstruction ?? null,
     photoUrl: sale.photoUrl,
     publicRemarks: sale.publicRemarks,
     viewDescription: null,
@@ -1073,8 +1080,10 @@ export function adjustCmaCompAlongMarket(opts: {
   const exclusivePocket = opts.exclusivePocket === true
   const cityPath = marketPath({ points: opts.points, fromDate: sale.closeDate, toDate: opts.asOf })
   const path = applyExclusivePocketDateAdj(cityPath, exclusivePocket)
-  const timeAdjustedPrice = timeAdjustAlongPath(sale.closePrice, path)
-  const timeAdjustment = timeAdjustedPrice - sale.closePrice
+  const concessions = concessionOnSale(sale)
+  const startPrice = comparisonSalePrice(sale.closePrice, concessions)
+  const timeAdjustedPrice = timeAdjustAlongPath(startPrice, path)
+  const timeAdjustment = timeAdjustedPrice - startPrice
   const monthsSinceClose = Math.max(
     0,
     (new Date(opts.asOf).getTime() - new Date(sale.closeDate).getTime()) / MS_PER_MONTH,
@@ -1110,6 +1119,9 @@ export function adjustCmaCompAlongMarket(opts: {
   const adjusted: CmaAdjustedComp = {
     ...sale,
     proximity,
+    concessions,
+    concessionsAmount: concessions ?? sale.concessionsAmount ?? null,
+    sellerNet: sellerNetFromPrice(sale.closePrice, concessions),
     monthsSinceClose: +monthsSinceClose.toFixed(1),
     timeAdjustment,
     timeAdjustedPrice,

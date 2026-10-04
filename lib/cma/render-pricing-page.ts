@@ -33,6 +33,7 @@ import { listCeiling, readMeasure } from '@/lib/cma/render-contract'
 import { closedCompBand } from '@/lib/pricing/recommended-in-band'
 import { compSearchSentence } from '@/lib/cma/render-comp-search'
 import { newHomeRateParagraph } from '@/lib/cma/new-home-rate'
+import { resaleNeverOwnedParagraph } from '@/lib/cma/resale-never-owned'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CmaPageDef } from '@/lib/cma/render-use-of-property'
@@ -418,21 +419,15 @@ function tableLead(input: { comps: CmaAdjustedComp[]; pricing: CmaPricing }): st
 }
 
 /**
- * What the concessions row is, and is not.
+ * What the concessions row is.
  *
- * tasteReview round two, §3.H: the row sits inside the adjustment grid,
- * between "Price history" and "Adjusted for date", and enters none of the
- * arithmetic below it — while chapter 6 takes the same figures off the
- * seller's net. A reader adding the column up has to know that.
+ * A recorded credit comes off that sale before date and size, the same number
+ * the pricing walk uses. A sale that reported none still prints the line.
  */
 function concessionsCaption(comps: readonly CmaAdjustedComp[]): string {
-  const any = comps.some((c) => {
-    const v = c.concessions ?? c.concessionsAmount ?? null
-    return v != null && Number.isFinite(v)
-  })
-  if (!any) return ''
+  if (comps.length === 0) return ''
   return `<p class="small">${esc(
-    'Seller concessions are reported to the MLS. They are not part of the adjustments; they are used in Net at list.',
+    'Seller concessions are the amount the MLS recorded on each sale. A recorded credit comes off that sale in the adjustments. A sale that reported none shows none.',
   )}</p>`
 }
 
@@ -610,6 +605,18 @@ export function pricingPage(input: PricingPageInput): CmaPageDef {
     })),
   })
   const ageHtml = age ? `<p class="method-line">${esc(age)}</p>` : ''
+  const neverOwned = resaleNeverOwnedParagraph({
+    subjectYear: s.yearBuilt ?? null,
+    subjectNewConstructionYn: s.newConstructionYn,
+    propertySubType: s.propertySubType,
+    asOfIso: input.asOfIso ?? null,
+    comps: input.comps.map((c) => ({
+      address: c.address,
+      yearBuilt: c.yearBuilt ?? null,
+      newConstructionYn: c.newConstructionYn,
+    })),
+  })
+  const neverOwnedHtml = neverOwned ? `<p class="method-line">${esc(neverOwned)}</p>` : ''
   // Tip Ready P0: cover already carries recommend + range. The worth-strip's
   // "list $521K" mark was the fold repeating the number (~8× on Falcon).
   return {
@@ -620,6 +627,7 @@ export function pricingPage(input: PricingPageInput): CmaPageDef {
   ${input.omitLeadPrices ? `<p class="worth-lead">${esc(whatItsWorthLead(s, p, input.askCtx))}</p>
   ${clampHtml}` : ''}
   ${ageHtml}
+  ${neverOwnedHtml}
   ${method}
 `,
   }
