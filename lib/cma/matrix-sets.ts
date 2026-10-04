@@ -47,7 +47,7 @@ function insideSalesBoundary(
 }
 
 export function unsoldPeersFor(input: {
-  subject: Pick<CmaSubject, 'listingKey' | 'mlsNumber' | 'streetAddress' | 'propertySubType'>
+  subject: Pick<CmaSubject, 'listingKey' | 'mlsNumber' | 'streetAddress'> & { propertySubType?: string | null }
   peers?: readonly CmaExpiredPeer[] | null
   area?: CompArea | null
 }): CmaExpiredPeer[] {
