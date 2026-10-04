@@ -492,12 +492,13 @@ export async function GET(request: Request) {
           // else the Mac iMessage relay as backup; else the step's email fallback
           // ("optional email or text"); else hold + queue visibly until A2P clears.
           if (a2pStatus === 'VERIFIED') {
-            // Quiet hours gate the actual Twilio send only (8am to the 7:55pm pause, PT).
-            if (inSmsQuietHours()) { await finish({ next_run_at: nextSendWindow().toISOString() }); continue }
+            // Quiet hours gate the actual Twilio send only (8am to the 7:55pm
+            // pause, in Pacific and the number's own zone).
+            if (inSmsQuietHours(toPhone)) { await finish({ next_run_at: nextSendWindow(toPhone).toISOString() }); continue }
             // Daily cap (#3): hold once the engine hits its daily budget so a big
             // backlog can't blast past the low-volume campaign's carrier cap.
             if ((smsSentToday ?? 0) + smsThisRun >= SMS_DAILY_CAP) {
-              await finish({ next_run_at: nextSendWindow().toISOString() })
+              await finish({ next_run_at: nextSendWindow(toPhone).toISOString() })
               await log(`Sequence SMS held — daily cap ${SMS_DAILY_CAP} reached; resumes next window`)
               queuedSms++
               continue
@@ -517,13 +518,14 @@ export async function GET(request: Request) {
               // Quiet hours again at the POST: the check above sits several awaits
               // back, so the :58 run can pass it at 7:59pm and send after 8pm. Give
               // the claim back, then reschedule exactly as the check above does.
-              if (inSmsQuietHours()) {
+              if (inSmsQuietHours(toPhone)) {
                 await releaseSend()
-                await finish({ next_run_at: nextSendWindow().toISOString() })
+                await finish({ next_run_at: nextSendWindow(toPhone).toISOString() })
                 continue
               }
-              // Twilio drops the text if it is still queued at 8pm.
-              const validUntil = smsWindowCloseAt()
+              // Twilio drops the text if it is still queued at 8pm, Pacific or
+              // the number's zone, whichever comes first.
+              const validUntil = smsWindowCloseAt(toPhone)
               const sent = seqFrom
                 ? await sendSms({ from: seqFrom, to: toPhone, body, validUntil })
                 : await sendSmsViaMessagingService({ to: toPhone, body, validUntil })

@@ -19,7 +19,9 @@ export type GroupSmsAccess = {
 /**
  * Outcome of a group-thread attempt from the CRM composer.
  * - sent: carrier group delivered
- * - failed: hard stop (do not fan out) — reserved; prefer fallback
+ * - failed: hard stop (do not fan out): quiet hours on any number on the
+ *   thread hold the whole group (Matt 2026-10-04), or the group send failed
+ *   with no fan-out allowed
  * - fallback: group did not form; caller must 1:1 with notice
  * - continue: not a multi-recipient send (or legacy path continues without notice)
  */
@@ -120,6 +122,9 @@ export async function trySendGroupMms(opts: {
     skipSuppression: opts.skipSuppression === true,
   })
   if (!group.ok) {
+    // Quiet hours hold the whole group (Matt 2026-10-04: a group text waits
+    // until 8am). Falling back to 1:1 would text whoever's zone is open.
+    if (group.stage === 'quiet-hours') return { status: 'failed', error: group.error }
     const fan = decideGroupSmsFallback({
       explicitGroupThread: opts.explicitGroupThread,
       groupFormed: false,

@@ -22,7 +22,7 @@ import { renderCrmMerge } from '@/lib/crm/merge'
 import { decorateOutboundText } from '@/lib/identity/outbound-links'
 import { buildMergeContext } from '@/lib/crm/merge-context'
 import { sendSms, sendSmsViaMessagingService, brokerTwilioNumber } from '@/lib/crm/twilio'
-import { smsWindowCloseAt } from '@/lib/crm/quiet-hours'
+import { smsWindowCloseAtFor } from '@/lib/crm/recipient-timezones'
 import { instrumentSmsLinks } from '@/lib/data/crm/shortLinks'
 import { recordConversationMessage } from '@/lib/crm/record-message'
 import { checkSendGuards } from './guards'
@@ -30,7 +30,8 @@ import type { GovernedSmsRequest, GovernedSmsResult } from './types'
 
 export async function sendGovernedSms(req: GovernedSmsRequest): Promise<GovernedSmsResult> {
   // Stages 1–3: hard-stop → suppression (fail closed) → quiet hours. A refused
-  // person never reaches the idempotency ledger or the provider.
+  // person never reaches the idempotency ledger or the provider. The number is
+  // not read yet, so this pass is Pacific; the POST check below adds its zone.
   const refused = await checkSendGuards(req.personId, 'sms', {
     overrideQuietHours: req.overrideQuietHours,
     skipSuppression: req.skipSuppression,
@@ -62,16 +63,19 @@ export async function sendGovernedSms(req: GovernedSmsRequest): Promise<Governed
     // keeps the readable mergedBody so the broker's thread stays legible.
     const trackedBody = await instrumentSmsLinks(mergedBody, { personId: req.personId, broker: slug })
     const mediaUrls = req.payload.mediaUrls
-    // Quiet hours again at the POST: the reads above can carry a 7:59pm guard
-    // pass past 8pm. Suppression was read at stage 2; only the clock moves.
+    // Quiet hours again at the POST, now in the number's own zone as well as
+    // Pacific: the reads above can carry a 7:59pm guard pass past 8pm.
+    // Suppression was read at stage 2; only the clock moves.
     const late = await checkSendGuards(req.personId, 'sms', {
       overrideQuietHours: req.overrideQuietHours,
       skipSuppression: true,
+      recipientPhone: to,
     })
     if (late) return late
-    // Under quiet hours, Twilio drops the text if it is still queued at 8pm. A
-    // broker's deliberate override carries no such bound.
-    const validUntil = req.overrideQuietHours ? undefined : smsWindowCloseAt()
+    // Under quiet hours, Twilio drops the text if it is still queued at 8pm in
+    // Pacific or the number's zone, whichever comes first. A broker's
+    // deliberate override carries no such bound.
+    const validUntil = req.overrideQuietHours ? undefined : smsWindowCloseAtFor(to)
     const sent = fromNumber
       ? await sendSms({ from: fromNumber, to, body: trackedBody, mediaUrls, validUntil })
       : await sendSmsViaMessagingService({ to, body: trackedBody, mediaUrls, validUntil })

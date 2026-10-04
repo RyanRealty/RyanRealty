@@ -67,6 +67,7 @@ export async function sendSmsForm(personId: number, formData: FormData): Promise
   formData.set('personId', String(personId))
   const r = await sendCrmSmsAction(formData)
   if (!r.ok) redirect(`${BASE}/${personId}/tools?error=${encodeURIComponent(`Text not sent — ${r.error ?? 'unknown error'}`)}`)
+  if (r.notice) redirect(`${BASE}/${personId}/tools?flash=${encodeURIComponent(r.notice)}`)
 }
 // ── Home-driven next step (CRM record-card cutover) ──────────────────────────
 export async function startCmaForm(personId: number): Promise<void> {

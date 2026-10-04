@@ -2,7 +2,11 @@
  * Quiet hours for SMS. No text may reach a phone before 8am or at/after 8pm
  * local time, so sends pause at 7:55pm (QUIET_END_GUARD_MINUTES) and every
  * enforced 1:1 text expires in Twilio's queue at 8:00pm (smsWindowCloseAt).
- * Every caller times sends on America/Los_Angeles, the market timezone.
+ * The window is checked in America/Los_Angeles, the market timezone, AND in
+ * every zone the recipient's number sits in (Matt 2026-10-04, "Both zones"):
+ * a text sends only while all of them are open. The phone-to-zone lookup is
+ * lib/crm/recipient-timezones.ts (server only, it carries the area-code
+ * table); this file stays pure so a client composer can share the rule.
  *
  * WHY 8PM AND NOT 9PM. Federal TCPA/TSR allows until 9pm, and this file used
  * to. Oregon is stricter and Oregon is the only market we text: HB 3865
@@ -36,14 +40,21 @@ export const DEFAULT_SMS_TIMEZONE = 'America/Los_Angeles'
  * Seconds after local midnight of `date` in the given IANA timezone. The one
  * clock reader here: the hour, the minute and the window close all come from it.
  */
+const clockFormats = new Map<string, Intl.DateTimeFormat>()
+
 function secondOfDayInTimeZone(date: Date, timeZone: string): number {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    hour: 'numeric',
-    minute: 'numeric',
-    second: 'numeric',
-    hourCycle: 'h23',
-    timeZone,
-  }).formatToParts(date)
+  let format = clockFormats.get(timeZone)
+  if (!format) {
+    format = new Intl.DateTimeFormat('en-US', {
+      hour: 'numeric',
+      minute: 'numeric',
+      second: 'numeric',
+      hourCycle: 'h23',
+      timeZone,
+    })
+    clockFormats.set(timeZone, format)
+  }
+  const parts = format.formatToParts(date)
   const part = (type: Intl.DateTimeFormatPartTypes) => Number(parts.find((p) => p.type === type)?.value ?? 0)
   return (part('hour') % 24) * 3600 + part('minute') * 60 + part('second')
 }
@@ -95,6 +106,20 @@ export function smsPauseStartLabel(): string {
 export function inSmsQuietHours(date: Date = new Date(), timeZone: string = DEFAULT_SMS_TIMEZONE): boolean {
   const minute = minuteOfDayInTimeZone(date, timeZone)
   return minute < QUIET_START_HOUR * 60 || minute >= SMS_PAUSE_START_MINUTE
+}
+
+/** Pacific first, then each recipient zone once: every zone a text must be open in. */
+export function smsSendZones(recipientZones: readonly string[]): string[] {
+  return [...new Set([DEFAULT_SMS_TIMEZONE, ...recipientZones])]
+}
+
+/**
+ * The first send zone (Pacific first) that is quiet at `date`, or null when
+ * every one is open. `date` is required so a client render never reads the
+ * clock itself (ci:hydration-safety).
+ */
+export function quietSmsZone(recipientZones: readonly string[], date: Date): string | null {
+  return smsSendZones(recipientZones).find((tz) => inSmsQuietHours(date, tz)) ?? null
 }
 
 /**

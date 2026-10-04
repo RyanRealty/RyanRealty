@@ -29,11 +29,11 @@ describe('sequence-engine SMS quiet hours', () => {
     // pass could POST after 8pm. The late check takes the quiet-hours path:
     // release the claim, reschedule to the next window, no new state.
     const route = readFileSync(new URL('./route.ts', import.meta.url), 'utf8')
-    const firstCheckAt = route.indexOf('if (inSmsQuietHours()) { await finish({ next_run_at: nextSendWindow().toISOString() }); continue }')
+    const firstCheckAt = route.indexOf('if (inSmsQuietHours(toPhone)) { await finish({ next_run_at: nextSendWindow(toPhone).toISOString() }); continue }')
     const claimAt = route.indexOf("const smsClaim = await claimSend('sms')", firstCheckAt)
     const linksAt = route.indexOf('body = await instrumentSmsLinks(', claimAt)
     const postAt = route.indexOf('? await sendSms({ from: seqFrom, to: toPhone, body, validUntil })', linksAt)
-    const lateCheckAt = route.indexOf('if (inSmsQuietHours()) {', linksAt)
+    const lateCheckAt = route.indexOf('if (inSmsQuietHours(toPhone)) {', linksAt)
     expect(firstCheckAt).toBeGreaterThan(-1)
     expect(claimAt).toBeGreaterThan(firstCheckAt)
     expect(linksAt).toBeGreaterThan(claimAt)
@@ -44,11 +44,11 @@ describe('sequence-engine SMS quiet hours', () => {
     expect(lateEnd).toBeLessThan(postAt)
     const lateBranch = route.slice(lateCheckAt, lateEnd)
     expect(lateBranch).toContain('await releaseSend()')
-    expect(lateBranch).toContain('await finish({ next_run_at: nextSendWindow().toISOString() })')
+    expect(lateBranch).toContain('await finish({ next_run_at: nextSendWindow(toPhone).toISOString() })')
     expect(lateBranch).not.toContain('status:')
     expect(route.slice(lateEnd, postAt)).not.toContain('await ')
     // The POST carries the 8pm close, so Twilio drops a text still queued then.
-    expect(route.slice(lateEnd, postAt)).toContain('const validUntil = smsWindowCloseAt()')
+    expect(route.slice(lateEnd, postAt)).toContain('const validUntil = smsWindowCloseAt(toPhone)')
     expect(route).toContain(': await sendSmsViaMessagingService({ to: toPhone, body, validUntil })')
   })
 })

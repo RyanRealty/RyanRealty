@@ -15,12 +15,8 @@ import {
 } from '@/lib/crm/merge'
 import { classifyLeadQuality, hasSuspectTag } from '@/lib/crm/lead-quality'
 import { decorateOutboundText } from '@/lib/identity/outbound-links'
-import {
-  hourInTimeZone,
-  inSmsQuietHours as canonicalInSmsQuietHours,
-  nextSmsWindow,
-  smsWindowCloseAt as canonicalSmsWindowCloseAt,
-} from '@/lib/crm/quiet-hours'
+import { hourInTimeZone } from '@/lib/crm/quiet-hours'
+import { inSmsQuietHoursFor, nextSmsWindowFor, smsWindowCloseAtFor } from '@/lib/crm/recipient-timezones'
 
 /**
  * An archived email/SMS template imports into crm_templates with its
@@ -38,19 +34,22 @@ export function laHour(): number {
   return hourInTimeZone(new Date())
 }
 
-/** Oregon 8am to the 7:55pm pause, Pacific. Do not fork a 9pm copy here (deep audit C1). */
-export function inSmsQuietHours(date?: Date): boolean {
-  return canonicalInSmsQuietHours(date)
+/**
+ * Oregon 8am to the 7:55pm pause, in Pacific AND the number's own zone (Matt
+ * 2026-10-04, "Both zones"). Do not fork a 9pm copy here (deep audit C1).
+ */
+export function inSmsQuietHours(phone?: string | null, date?: Date): boolean {
+  return inSmsQuietHoursFor(phone, date)
 }
 
-/** 8:00pm Pacific today, the instant Twilio drops a still-queued sequence text. */
-export function smsWindowCloseAt(date?: Date): Date {
-  return canonicalSmsWindowCloseAt(date)
+/** The first 8:00pm across Pacific and the number's zone: the instant Twilio drops a still-queued sequence text. */
+export function smsWindowCloseAt(phone?: string | null, date?: Date): Date {
+  return smsWindowCloseAtFor(phone, date)
 }
 
-/** Next 8:05am Pacific — after the Oregon SMS window opens. */
-export function nextSendWindow(): Date {
-  return nextSmsWindow()
+/** Next 8:05am Pacific, after the Oregon SMS window opens; later when the number's own zone is still closed then. */
+export function nextSendWindow(phone?: string | null): Date {
+  return nextSmsWindowFor(phone)
 }
 
 export type Step = {

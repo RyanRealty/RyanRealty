@@ -39,6 +39,13 @@ vi.mock('@/lib/crm/quiet-hours', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/crm/quiet-hours')>()),
   inSmsQuietHours: h.inSmsQuietHours,
 }))
+// The guard's clock is smsQuietZoneFor (Pacific and the number's own zone,
+// Matt 2026-10-04). h.inSmsQuietHours still drives it: quiet means the market
+// zone holds the text. The zone rule itself is tested in recipient-timezones.test.
+vi.mock('@/lib/crm/recipient-timezones', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/crm/recipient-timezones')>()),
+  smsQuietZoneFor: (...args: unknown[]) => (h.inSmsQuietHours(...args) ? 'America/Los_Angeles' : null),
+}))
 vi.mock('@/lib/crm/idempotency', () => ({ withSendIdempotency: h.withSendIdempotency }))
 vi.mock('@/lib/data/crm/getSendTarget', () => ({ getSendTarget: h.getSendTarget }))
 vi.mock('@/lib/crm/merge', () => ({

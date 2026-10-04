@@ -4,7 +4,9 @@
  *
  * Guard order matches sendGovernedSms: hard-stop → suppression → quiet hours
  * for every CRM person on the thread. One refused member blocks the send.
- * Raw numbers (no contact) cannot carry STOP state. Then Twilio Conversations.
+ * Raw numbers (no contact) cannot carry STOP state, but quiet hours hold them:
+ * every number's own zone counts, as well as Pacific (Matt 2026-10-04). Then
+ * Twilio Conversations.
  */
 
 import 'server-only'
@@ -12,7 +14,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { instrumentSmsLinks } from '@/lib/data/crm/shortLinks'
 import { recordConversationMessage } from '@/lib/crm/record-message'
 import { sendGroupMms, type GroupMmsMedia } from '@/lib/crm/twilio-conversations'
-import { checkSendGuards } from './guards'
+import { checkSendGuards, quietHoursRefusal } from './guards'
 import type { GovernedFailure, GovernedInitiator } from './types'
 
 export type GovernedGroupMember = {
@@ -47,6 +49,16 @@ export type GovernedGroupMmsResult =
   | GovernedFailure
   | { ok: false; error: string; stage: 'provider' }
 
+/** The quiet-hours hold for the first raw (no-contact) number whose zone is closed, else null. */
+function rawMemberQuiet(members: GovernedGroupMember[]): GovernedFailure | null {
+  for (const member of members) {
+    if (member.personId !== null) continue
+    const error = quietHoursRefusal(member.phone)
+    if (error) return { ok: false, error, stage: 'quiet-hours' }
+  }
+  return null
+}
+
 export async function sendGovernedGroupMms(
   req: GovernedGroupMmsRequest,
 ): Promise<GovernedGroupMmsResult> {
@@ -57,22 +69,30 @@ export async function sendGovernedGroupMms(
       overrideQuietHours: req.overrideQuietHours,
       source: req.purpose,
       skipSuppression: req.skipSuppression,
+      recipientPhone: member.phone,
     })
     if (refused) return refused
   }
+  // A raw number has no person to suppress, but its zone still holds the thread.
+  const rawQuiet = req.overrideQuietHours ? null : rawMemberQuiet(req.members)
+  if (rawQuiet) return rawQuiet
 
   const trackedBody = await instrumentSmsLinks(req.mergedBody, {
     personId: req.primaryPersonId,
     broker: slug,
   })
-  // Quiet hours again at the POST: the guards above can pass at 7:59pm and the
-  // send land after 8pm. Suppression was read per member; only the clock moves.
-  const late = await checkSendGuards(req.primaryPersonId, 'sms', {
-    overrideQuietHours: req.overrideQuietHours,
-    source: req.purpose,
-    skipSuppression: true,
-  })
-  if (late) return late
+  // Quiet hours again at the POST, for every number on the thread: the guards
+  // above can pass at 7:59pm and the send land after 8pm. Suppression was read
+  // per member; only the clock moves. One quiet zone holds the whole thread.
+  for (const member of req.members) {
+    const late = await checkSendGuards(member.personId ?? req.primaryPersonId, 'sms', {
+      overrideQuietHours: req.overrideQuietHours,
+      source: req.purpose,
+      skipSuppression: true,
+      recipientPhone: member.phone,
+    })
+    if (late) return late
+  }
   const group = await sendGroupMms({
     projectedAddress: req.projectedAddress,
     participants: req.members.map((m) => m.phone),
