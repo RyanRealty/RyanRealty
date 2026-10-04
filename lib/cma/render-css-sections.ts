@@ -287,6 +287,9 @@ export function cmaSectionStyles(): string {
     max-width: 100%;
     min-width: 0;
     overflow-wrap: anywhere;
+    /* The value column used to escape the card (nowrap) and paint the next
+       sale's weight on top of this one. Clip it. The lines wrap instead. */
+    overflow: clip;
     box-sizing: border-box;
   }
   .comp-stack-addr { font-weight: 600; margin: 0 0 6px; color: var(--navy); font-size: 14px; line-height: 1.25; }
@@ -475,10 +478,13 @@ export function cmaSectionStyles(): string {
   ul.rejected-list .rj-addr { font-weight: 600; }
   ul.rejected-list .rj-why { color: var(--muted); }
   /* The phone card carries the same grid lines as the column. */
-  .comp-stack-grid { display: grid; gap: 2px; margin-top: 6px; }
-  .comp-stack-line { display: flex; justify-content: space-between; gap: 12px; font-size: 11px; flex-wrap: nowrap; white-space: nowrap; }
-  .comp-stack-line .k { color: var(--muted); }
-  .comp-stack-line .v { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .comp-stack-grid { display: grid; gap: 2px; margin-top: 6px; min-width: 0; max-width: 100%; }
+  /* Two columns inside the card. nowrap let the weight figures escape and
+     draw on the next sale. A long room sentence wraps in its own column. */
+  .comp-stack-line { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: baseline; column-gap: 12px; font-size: 11px; min-width: 0; max-width: 100%; }
+  .comp-stack-line .k { color: var(--muted); min-width: 0; white-space: normal; }
+  .comp-stack-line .v { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 0; white-space: normal; overflow-wrap: anywhere; text-align: right; }
+  .comp-stack-line .arc-asks, .comp-stack-line .arc-tail { display: block; white-space: normal; text-align: right; }
   /* Chapter 2b's centrepiece: what the first ask realized, by weeks. */
   table.realization { width: 100%; table-layout: fixed; border-collapse: collapse; margin: 8px 0 4px; font-size: 11.5px; }
   table.realization col.rz-weeks { width: 38%; }
