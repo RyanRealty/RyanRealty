@@ -261,6 +261,49 @@ export function productCompatible(a: ProductKey, b: ProductKey): boolean {
 }
 
 /**
+ * How `sale_pricing_facts` is filtered for a subject product.
+ *
+ * `pricing_classify_product` stores Townhouse, Condominium, TIC, and other
+ * attached subtypes as product_class `attached`. A townhouse subject used to
+ * eq `product_class = townhouse` and match nothing (Bend, 2026-10-03: 386
+ * townhouse closes in 24 months, 381 facts rows, all `attached`, zero
+ * `townhouse`). Ask for attached rows whose property_sub_type names a
+ * townhouse, and also a row already stored as townhouse. Do not ask for every
+ * attached row: condos and other attached homes share that class.
+ * Detached and every other class stay an equality filter.
+ */
+export const TOWNHOUSE_FACTS_OR =
+  'and(product_class.eq.attached,property_sub_type.ilike.%town%),product_class.eq.townhouse'
+
+export type FactsProductClause = {
+  eq?: ['product_class', string]
+  or?: string
+}
+
+export function factsProductClauses(productClass: string | null | undefined): FactsProductClause {
+  if (!productClass || productClass === 'unknown') return {}
+  if (productClass === 'townhouse') return { or: TOWNHOUSE_FACTS_OR }
+  return { eq: ['product_class', productClass] }
+}
+
+/**
+ * Class a facts row for the ladder. Detached and every non-attached stored
+ * class pass through, so single-family comps stay on product_class.
+ * The attached bucket is split by property_sub_type: townhouse and condo are
+ * different products. Anything else attached (TIC, apartment, bare attached)
+ * stays attached and does not match a townhouse subject.
+ */
+export function productClassFromFactsRow(
+  stored: string | null | undefined,
+  propertySubType: string | null | undefined,
+): ProductKey {
+  if (stored !== 'attached') return (stored as ProductKey) || 'unknown'
+  const fromSub = classifyProduct(propertySubType)
+  if (fromSub === 'townhouse' || fromSub === 'condo') return fromSub
+  return 'attached'
+}
+
+/**
  * ±1 whole bath with no own-ground test. Not the CMA room wall. Beds and
  * baths on a priced sale go through roomCountsDecision (skill 0.1).
  */

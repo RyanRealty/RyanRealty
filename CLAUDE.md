@@ -425,11 +425,7 @@ and silently returns nothing. Enforced by `check-dal-column-quoting.mjs`.
 
 ## Methodology version — cite the stamp, not the definition
 
-`public.cache_methodology_definitions` holds 3 rows and the newest definition is
-`v4-2026-05-15`. **But no live cache row is stamped v4.** Every row the site serves carries
-`methodology_version = 'v3-2026-05-07'`: `market_pulse_live` 17/17 rows,
-`market_stats_cache` 10,955 rows, plus 70 legacy `v1-pre-fix` and 5 NULL. **State
-`v3-2026-05-07` — that is the stamp on the row — and never claim v4 for a served figure.**
+Served cache rows are stamped `methodology_version = 'v3-2026-05-07'`, not the newer unused `v4-2026-05-15` definition. State v3. Never claim v4 for a served figure.
 
 ---
 
@@ -444,10 +440,8 @@ and silently returns nothing. Enforced by `check-dal-column-quoting.mjs`.
 - **Truthful and accurate, always.** If you're not sure, say so. Never state something as fact
   unless you've confirmed it.
 - **All code work is pushed to GitHub as a branch right away (locked process rule 14).**
-  Land main with a fast-forward when the work is ready. Any machine may do it. No rebase, force-push, or
-  reset. Worktrees only for parallel work; push the branch, or
-  hand off in `CROSS_AGENT_HANDOFF.md` before stop. See
-  [`AGENTS.md`](AGENTS.md). **R-221:** do not poll GitHub Actions.
+  Land main with a fast-forward when the work is ready. Any machine may do it. No rebase, force-push, or reset.
+  See [`AGENTS.md`](AGENTS.md). **R-221:** do not poll GitHub Actions.
 - **Never ask Matt to run anything, and never queue found work for him (Matt 2026-09-25).**
   Git, terminal and deploys are yours; a defect found on the way ships this session, not as a
   suggested task.
@@ -551,5 +545,6 @@ else fires on trigger match.
 12. Never use buyer or seller names in social, email, or public copy.
 13. No em dashes in public site copy.
 14. All code work is pushed to GitHub as a branch right away. Land main with a fast-forward when the work is ready. Any machine may do it. No rebase, force-push, or reset.
+15. A townhouse subject uses closed townhouse sales. sale_pricing_facts stores those closes as product_class attached, not townhouse, so the facts pool filters property_sub_type to townhouse and classes the row as townhouse. Do not pull condos, apartments, or other attached homes just because they share product_class attached. Do not change how single-family comps are chosen.
 
 **CRM is in-house** `public.crm_people` via `sendEvent()` in [`lib/crm/send-event.ts`](lib/crm/send-event.ts). Review at `/admin/crm`.
