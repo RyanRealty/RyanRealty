@@ -64,10 +64,12 @@ const D11_HOMEPAGE_LEAD =
  * title now (gsc-trend-11, 2026-09-23): the 2026-09-07 keyword title put
  * "Ryan Realty" at the tail and / ranked p45.1 then p45.3 for "ryan realty"
  * (GSC API, 06-29..07-19 and 08-31..09-20) while the GBP-tagged URL sat at p3.
- * The head term "Homes for Sale in Central Oregon" stays as it was. "Bend"
- * rides with the brand, not the head term: it tells the brand query which of
- * the several US firms named Ryan Realty this is (COMP-8), and it leaves
- * "Bend homes for sale" to /homes-for-sale/bend, which owns that term.
+ * After the brand (Matt 2026-10-04): "Bend Oregon Real Estate" is what the
+ * homepage is actually shown for in GSC (bend realtor, bend oregon realtor,
+ * real estate agents bend oregon, real estate bend oregon; p28 to p41,
+ * 09-15..09-25), then "Homes for Sale". "Bend" also tells the brand query
+ * which of the several US firms named Ryan Realty this is (COMP-8). Not
+ * "Realtors": REALTOR is an NAR trademark.
  * absolute title skips the layout suffix, so the brand still prints once.
  */
 export const revalidate = 900
@@ -81,21 +83,21 @@ export async function generateMetadata(): Promise<Metadata> {
       : 'Active homes for sale in '
   const description = `${liveLead}${D11_HOMEPAGE_LEAD} Photographed homes on this page show list price, address, beds, baths, and square feet. Closed comps from the regional MLS.`
   return {
-    title: { absolute: 'Ryan Realty, Bend | Homes for Sale in Central Oregon' },
+    title: { absolute: 'Ryan Realty | Bend Oregon Real Estate & Homes for Sale' },
     description,
     alternates: { canonical: siteUrl },
     openGraph: {
-      title: 'Ryan Realty, Bend | Homes for Sale in Central Oregon',
+      title: 'Ryan Realty | Bend Oregon Real Estate & Homes for Sale',
       description:
         'Active homes for sale in Bend, Redmond, Sisters, and Sunriver. List price, address, beds, baths, and square feet on photographed homes. Closed comps from the regional MLS.',
       url: siteUrl,
       siteName: 'Ryan Realty',
       type: 'website',
-      images: [{ url: ogImage, width: 1200, height: 630, alt: 'Ryan Realty, Bend | Homes for Sale in Central Oregon' }],
+      images: [{ url: ogImage, width: 1200, height: 630, alt: 'Ryan Realty | Bend Oregon Real Estate & Homes for Sale' }],
     },
     twitter: {
       card: 'summary_large_image',
-      title: 'Ryan Realty, Bend | Homes for Sale in Central Oregon',
+      title: 'Ryan Realty | Bend Oregon Real Estate & Homes for Sale',
       description:
         'Active Central Oregon homes for sale. List price, address, beds, baths, and square feet on photographed homes.',
     },

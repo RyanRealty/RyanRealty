@@ -58,10 +58,10 @@ const REQUIRED = [
         // permanent"): the brand now LEADS the title. The 2026-09-07 keyword
         // title carried it as the tail and / ranked p45 for "ryan realty" in
         // both July and September (GSC API) while /?utm_source=gbp ranked p3.
-        // The head term stays exactly "Homes for Sale in Central Oregon"; "Bend"
-        // rides with the brand so /homes-for-sale/bend keeps "Bend homes for sale".
-        re: /title:\s*\{\s*absolute:\s*['"]Ryan Realty, Bend \| Homes for Sale in Central Oregon['"]/,
-        msg: 'metadata title must be "Ryan Realty, Bend | Homes for Sale in Central Oregon" (gsc-trend-11, 2026-09-23; absolute, so the layout suffix does not double the brand)',
+        // Matt 2026-10-04: after the brand, the terms GSC shows / for (bend
+        // realtor, real estate agents bend oregon), then "Homes for Sale".
+        re: /title:\s*\{\s*absolute:\s*['"]Ryan Realty \| Bend Oregon Real Estate & Homes for Sale['"]/,
+        msg: 'metadata title must be "Ryan Realty | Bend Oregon Real Estate & Homes for Sale" (brand first per gsc-trend-11 2026-09-23; market terms per Matt 2026-10-04; absolute, so the layout suffix does not double the brand)',
       },
     ],
   },
