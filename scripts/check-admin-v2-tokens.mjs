@@ -517,6 +517,8 @@ const SCAN_DIRS = [
   'components/admin/crm/ReportSubscriptionsPanel.tsx',
   'components/admin/crm/SaveAsTemplateDialog.tsx',
   'components/admin/crm/SmsComposer.tsx',
+  // Live SMS quiet hours for the composers (Matt 2026-10-04, "Both zones"); no colour.
+  'components/admin/crm/use-sms-quiet.ts',
   'components/admin/crm/StoredAttachments.tsx',
   'components/admin/crm/TemplatePicker.tsx',
   'components/admin/crm/TemplatePickerNav.tsx',
