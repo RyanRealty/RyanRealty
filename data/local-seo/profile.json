@@ -45,7 +45,6 @@
     "Crooked River Ranch, OR 97760, USA",
     "Deschutes River Woods, OR 97702, USA"
   ],
-  "attributes_present_but_empty": [],
   "reviews": {
     "total": 25,
     "average": 5,
@@ -86,5 +85,34 @@
   "photos": {
     "total": 31,
     "newest": "2026-05-23T04:18:08Z"
+  },
+  "attributes": {
+    "url_facebook": [
+      "https://www.facebook.com/RyanRealtyBend/"
+    ],
+    "url_instagram": [
+      "https://www.instagram.com/ryanrealtybend/"
+    ],
+    "url_twitter": [
+      "https://twitter.com/RyanRealtyBend"
+    ],
+    "url_tiktok": [
+      "https://www.tiktok.com/@ryanrealtybend"
+    ],
+    "url_youtube": [
+      "https://www.youtube.com/@Ryan-Realty"
+    ],
+    "url_pinterest": [
+      "https://www.pinterest.com/ryanrealty/"
+    ],
+    "url_linkedin": [
+      "https://www.linkedin.com/company/ryan-realty-llc-bend-oregon/"
+    ],
+    "url_text_messaging": [
+      "sms:+15417033095"
+    ],
+    "url_appointment": [
+      "https://ryan-realty.com/book"
+    ]
   }
 }
