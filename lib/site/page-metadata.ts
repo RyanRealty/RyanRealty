@@ -17,8 +17,9 @@ import { getCanonicalSiteUrl, shareDescription } from '@/lib/share-metadata'
 /**
  * THE TITLE BUDGET IS THE WHOLE DOCUMENT TITLE, SUFFIX INCLUDED (SITE-25).
  *
- * app/layout.tsx appends `title.template` — " | Ryan Realty, Central Oregon",
- * 30 characters — to every page title that is not `title: { absolute }`. The
+ * app/layout.tsx appends `title.template` — " | Ryan Realty", 14 characters
+ * (30 with ", Central Oregon" until Matt 2026-10-04) — to every page title that
+ * is not `title: { absolute }`. The
  * old code capped the page's OWN title at 60 and then let those 31 land on top,
  * so the cap bought nothing and only sheared the phrase people search:
  *
@@ -27,10 +28,9 @@ import { getCanonicalSiteUrl, shareDescription } from '@/lib/share-metadata'
  *     — the word "Ranch" cut off the end of a place name, on a 91-char title.
  *
  * The rule now:
- *   1. A trailing "| Central Oregon…" segment is dropped. The brand suffix
- *      already says Central Oregon; carrying it twice is the defect, not the
- *      style. This is why the registry pages pass a bare entity name — one
- *      region in the document title, contributed by the suffix.
+ *   1. A trailing "| Central Oregon…" segment is dropped. A region tail is
+ *      cut off in the SERP; the place name at the FRONT is what ranks, so a
+ *      page names its own town there (area pages: "… in Bend").
  *   2. A place name is NEVER cut. An over-budget title truncates in the SERP
  *      display, which costs the brand at the tail; a sheared one loses the
  *      phrase entirely, which costs the match. Losing the tail is the cheaper
@@ -53,7 +53,7 @@ import { getCanonicalSiteUrl, shareDescription } from '@/lib/share-metadata'
  * ci:title-brand-once exempts pageMetadata() arguments, so this stays green.
  */
 /** Exactly what app/layout.tsx's title.template appends. Keep the two in sync. */
-export const BRAND_SUFFIX = ' | Ryan Realty, Central Oregon'
+export const BRAND_SUFFIX = ' | Ryan Realty'
 /** The whole document title, suffix included. ~600px SERP proxy, not a hard limit. */
 const MAX_TITLE = 60
 /**

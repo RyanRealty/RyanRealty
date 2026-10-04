@@ -60,16 +60,16 @@ describe('documentTitle — one brand line, and no sheared place names', () => {
     expect(rendered(documentTitle('Sawyer Park')).length).toBeLessThanOrEqual(60)
   })
 
-  it('drops a duplicated Central Oregon segment rather than shipping it twice', () => {
+  it('drops a trailing Central Oregon segment: a region tail is cut off in the SERP anyway', () => {
     expect(documentTitle('Smith Rock State Park | Central Oregon Parks')).toBe('Smith Rock State Park')
-    expect(rendered(documentTitle('Smith Rock State Park | Central Oregon Parks')).match(/Central Oregon/g)).toHaveLength(1)
+    expect(rendered(documentTitle('Smith Rock State Park | Central Oregon Parks'))).toBe('Smith Rock State Park | Ryan Realty')
   })
 
   it('keeps a long plat name whole instead of shearing it', () => {
     const long = 'Homes for Sale in Rock Ridge Cabin Sites of Black Butte Ranch | Central Oregon'
     const out = rendered(documentTitle(long))
     expect(out).toContain('Black Butte Ranch')
-    expect(out.match(/Central Oregon/g)).toHaveLength(1)
+    expect(out).not.toContain('Central Oregon')
   })
 
   it('keeps the city segment on an over-budget plat title', () => {
@@ -89,9 +89,10 @@ describe('documentTitle — one brand line, and no sheared place names', () => {
   })
 
   it('sheds a whole trailing segment before it ever cuts inside one', () => {
-    // 92 chars + the 31-char suffix is past the backstop; the qualifier goes,
+    // 116 chars + the 14-char suffix is past the backstop; the qualifier goes,
     // the recorded plat name does not.
-    const long = 'Homes for Sale in River Ridge Two Condominiums at Mt Bachelor Village Stage B | Bend, Oregon'
+    const long =
+      'Homes for Sale in River Ridge Two Condominiums at Mt Bachelor Village Stage B Second Addition Replat | Bend, Oregon'
     const out = documentTitle(long)
     expect(out).toContain('Mt Bachelor Village Stage B')
     expect(out).not.toContain('Bend, Oregon')
@@ -105,9 +106,9 @@ describe('documentTitle — one brand line, and no sheared place names', () => {
     expect(out).not.toMatch(/[&+|,]\s*$/)
   })
 
-  it('budgets 30 characters — the number the registry gate enforces', () => {
+  it('budgets 46 characters — the number the registry gate enforces', () => {
     expect(TITLE_BUDGET).toBe(60 - BRAND_SUFFIX.length)
-    expect(TITLE_BUDGET).toBe(30)
+    expect(TITLE_BUDGET).toBe(46)
   })
 })
 

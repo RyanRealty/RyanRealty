@@ -73,7 +73,7 @@ import './_v3/lease-page.css'
 
 export const revalidate = 900
 
-// The layout suffix adds "Ryan Realty, Central Oregon"; Bend is the search.
+// The layout suffix adds "Ryan Realty"; Bend is the search.
 const TITLE = 'Commercial Space for Lease in Bend, Oregon'
 
 /** One JSON-LD node as a script body, with `<` escaped so no text can close the tag. */

@@ -10,7 +10,7 @@ import { spawnSync } from 'node:child_process'
  *
  * The bound the gate enforces is the DOCUMENT title, suffix included: a registry
  * detail page titles itself with the entity `name`, and app/layout.tsx then
- * appends " | Ryan Realty, Central Oregon" (30 chars). The old bound was 48 on
+ * appends " | Ryan Realty" (14 chars; 30 before 2026-10-04). The old bound was 48 on
  * the name alone and never counted those 31, so a "bounded" 48-char name still
  * composed a 79-char title (SITE-25). Parks were not checked at all.
  *
@@ -44,7 +44,9 @@ function write(relPath, contents) {
 
 /** A registry file in the shape the gate parses: a slug line, then a name line. */
 function registry(rows) {
-  const body = rows.map((r) => `  {\n    slug: '${r.slug}',\n    name: '${r.name}',\n  },`).join('\n')
+  const body = rows
+    .map((r) => `  {\n    slug: '${r.slug}',\n    name: '${r.name}',\n${r.city ? `    city: '${r.city}',\n` : ''}  },`)
+    .join('\n')
   return `export const ROWS = [\n${body}\n]\n`
 }
 
@@ -73,27 +75,35 @@ afterAll(() => rmSync(SANDBOX, { recursive: true, force: true }))
 describe('ci:content-metadata', () => {
   it('passes on short, unique names across all four registries', () => {
     const { status, out } = run()
-    expect(out).toContain('name budget 30 chars')
+    expect(out).toContain('name budget 46 chars')
     expect(status).toBe(0)
   })
 
-  it('FAILS on a name that only overflows once the brand suffix is counted', () => {
-    // 34 chars: under the retired 48-char bound, over the real budget — the
-    // exact class /parks/pilot-butte shipped at 64 characters with the
-    // 30-char brand suffix.
-    const name = 'Pilot Butte State Scenic Viewpoint'
-    expect(name.length).toBeGreaterThan(30)
-    expect(name.length).toBeLessThan(48)
-    reset({ 'data/co-parks.ts': registry([{ slug: 'pilot-butte', name }]) })
+  it('FAILS on a name that only overflows once its town and the brand suffix are counted', () => {
+    // 41 chars: under the 46-char budget alone, over it as "Name, Bend"
+    // (registryTitle adds the town, Matt 2026-10-04): 47 + 14 = 61.
+    const name = 'Pilot Butte State Scenic Viewpoint Summit'
+    expect(name.length).toBeLessThanOrEqual(46)
+    reset({ 'data/co-parks.ts': registry([{ slug: 'pilot-butte', name, city: 'Bend' }]) })
     const { status, out } = run()
     expect(out).toContain('park/pilot-butte')
-    expect(out).toContain('the document title is 64 chars')
+    expect(out).toContain('the document title is 61 chars')
     expect(status).toBe(1)
+  })
+
+  it('does not add a town the name already carries', () => {
+    const name = 'Bend Whitewater Park at McKay Park Bend Oregon'
+    expect(name.length).toBe(46)
+    reset({ 'data/co-parks.ts': registry([{ slug: 'bend-whitewater', name, city: 'Bend' }]) })
+    const { status } = run()
+    expect(status).toBe(0)
   })
 
   it('covers parks, which the old gate never read', () => {
     reset({
-      'data/co-parks.ts': registry([{ slug: 'cline-falls', name: 'Cline Falls State Scenic Viewpoint' }]),
+      'data/co-parks.ts': registry([
+        { slug: 'cline-falls', name: 'Cline Falls State Scenic Viewpoint North', city: 'Terrebonne' },
+      ]),
     })
     const { out, status } = run()
     expect(out).toContain('park/cline-falls')
@@ -122,8 +132,8 @@ describe('ci:content-metadata', () => {
   it('lets a baselined name through, and nothing else', () => {
     reset({
       'data/co-parks.ts': registry([
-        { slug: 'pilot-butte', name: 'Pilot Butte State Scenic Viewpoint' },
-        { slug: 'cline-falls', name: 'Cline Falls State Scenic Viewpoint' },
+        { slug: 'pilot-butte', name: 'Pilot Butte State Scenic Viewpoint North', city: 'Terrebonne' },
+        { slug: 'cline-falls', name: 'Cline Falls State Scenic Viewpoint North', city: 'Terrebonne' },
       ]),
     })
     write(
