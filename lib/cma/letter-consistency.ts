@@ -3,6 +3,7 @@
  * pricing the letter prints. Gates, not prose: a hard fail refuses the letter.
  */
 
+import { countedAddressesMissingFromDocument } from '@/lib/cma/counted-rows'
 import { letterLinkTrackingCheck, type LetterLinkIdentity } from '@/lib/cma/letter-link-contract'
 import { letterOwnerNameCheck, type LetterNameSource } from '@/lib/cma/letter-privacy'
 import type { ContractCheck } from '@/lib/cma/contract'
@@ -148,6 +149,31 @@ export function bandVersusClosedCompsCheck(
   }
 }
 
+
+/**
+ * Every sale and every expired listing the document counts has to be in the
+ * document. A missing address fails the letter.
+ */
+export function countedRowsInDocumentCheck(args: {
+  html: string
+  sales?: readonly (string | null | undefined)[] | null
+  expired?: readonly (string | null | undefined)[] | null
+}): ContractCheck {
+  const missing = countedAddressesMissingFromDocument(
+    [...(args.sales ?? []), ...(args.expired ?? [])],
+    args.html,
+  )
+  const pass = missing.length === 0
+  return {
+    id: 'counted-rows-in-table',
+    severity: 'hard',
+    pass,
+    detail: pass
+      ? 'Every counted sale and expired listing is in the document.'
+      : `Counted but missing from the table: ${missing.join(', ')}.`,
+  }
+}
+
 export function evaluateLetterConsistencyContract(args: {
   html: string
   names: LetterNameSource | null | undefined
@@ -158,7 +184,9 @@ export function evaluateLetterConsistencyContract(args: {
     valueLow?: number | null
     valueHigh?: number | null
   }
-  closedComps?: readonly { adjustedPrice?: number | null; closePrice?: number | null }[] | null
+  closedComps?: readonly { adjustedPrice?: number | null; closePrice?: number | null; address?: string | null }[] | null
+  /** Expired listings the letter counted. Each address has to be in the table. */
+  expiredAddresses?: readonly (string | null | undefined)[] | null
   /** The addresses the letter prints (printedAddressesOf). Lets the owner-name check tell a street from a name. */
   printedAddresses?: readonly (string | null | undefined)[] | null
 }): { pass: boolean; checks: ContractCheck[] } {
@@ -168,6 +196,11 @@ export function evaluateLetterConsistencyContract(args: {
     highEndAtOrBelowBandCheck(args.pricing),
     letterRecommendDollarsCheck(args.html, args.pricing),
     bandVersusClosedCompsCheck(args.pricing, args.closedComps),
+    countedRowsInDocumentCheck({
+      html: args.html,
+      sales: (args.closedComps ?? []).map((c) => c.address),
+      expired: args.expiredAddresses,
+    }),
   ]
   return { pass: checks.every((c) => c.pass), checks }
 }

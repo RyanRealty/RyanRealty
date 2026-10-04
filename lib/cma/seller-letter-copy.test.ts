@@ -76,8 +76,9 @@ describe('the generators write plain English', () => {
       ],
     })
     expect(search?.sentence).toBe(
-      'Four of the five sales are in North Plat. One more was added from your own street.',
+      'Four of the five sales are in North Plat. One more was added from Other Plat.',
     )
+    expect(search?.sentence).not.toContain('your own street')
     expect(search?.sentence).not.toContain('own-street-24mo')
     expect(sellerLetterDefects(search?.sentence ?? '')).toEqual([])
   })
@@ -231,7 +232,7 @@ describe('the generators write plain English', () => {
     expect(sellerLetterDefects(`${pricing.timeAdjustment?.sentence} ${pricing.rangeRule?.sentence}`)).toEqual([])
   })
 
-  it('leaves a negligible-weight sale out of the letter', () => {
+  it('keeps a negligible-weight sale in the table and says the weight', () => {
     const weights = new Map<string, { weight: number | null }>([
       ['near', { weight: 40 }],
       ['far', { weight: 0.1 }],
@@ -243,10 +244,10 @@ describe('the generators write plain English', () => {
       ],
       weights,
     )
-    expect(out.comps.map((c) => c.listingKey)).toEqual(['near'])
-    expect(out.note).toContain('does not set the price')
-    expect(out.note).not.toContain('543')
-    expect(out.note).not.toContain('90 Far')
+    expect(out.comps.map((c) => c.listingKey)).toEqual(['near', 'far'])
+    expect(out.note).toContain('under one percent')
+    expect(out.note).toContain('in this table')
+    expect(out.note).not.toContain('not in this letter')
   })
 
   it('explains a bedroom difference instead of a zero', () => {

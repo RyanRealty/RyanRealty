@@ -106,23 +106,21 @@ export function withoutNegligibleWeight<T extends { listingKey?: string | null }
   comps: readonly T[],
   weights: ReadonlyMap<string, { weight: number | null }>,
 ): { comps: T[]; note: string | null } {
-  const kept: T[] = []
-  let dropped = 0
+  // The price counted these sales. The table shows the same list. A weight
+  // under one percent does not take a sale out of the grid, or the letter
+  // would say five and print four.
+  let light = 0
   for (const c of comps) {
     const key = c.listingKey ?? ''
     const weight = key ? weights.get(key)?.weight : null
-    if (weight != null && weight < NEGLIGIBLE_WEIGHT_PERCENT) {
-      dropped += 1
-      continue
-    }
-    kept.push(c)
+    if (weight != null && weight < NEGLIGIBLE_WEIGHT_PERCENT) light += 1
   }
-  if (dropped === 0) return { comps: [...comps], note: null }
+  if (light === 0) return { comps: [...comps], note: null }
   const note =
-    dropped === 1
-      ? 'One other sale is not in this letter. Its weight is under one percent, so it does not set the price.'
-      : `${dropped} other sales are not in this letter. Each is under one percent of the weight, so they do not set the price.`
-  return { comps: kept, note }
+    light === 1
+      ? 'One sale in this table is under one percent of the weight, so it barely moves the price.'
+      : `${light} sales in this table are under one percent of the weight, so they barely move the price.`
+  return { comps: [...comps], note }
 }
 
 export type SellerLetterMoney = { recommended?: number | null; failedAsk?: number | null }

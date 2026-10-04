@@ -41,9 +41,6 @@ const esc = escapeHtml
 
 export const DID_NOT_SELL_HEADING = 'The listings near you that did not sell.'
 
-/** At most this many stories. Past it the chapter is a list again. */
-const MAX_STORIES = 5
-
 /**
  * `render_args.market.localFailedThenSold`, validated.
  *
@@ -281,7 +278,7 @@ export function didNotSellStories(a: DidNotSellArgs): Story[] {
   const peers = collapseExpiredPeerCycles(
     (a.peers ?? []).filter((p) => p.address.trim() && p.listPrice > 0 && !peerMatchesSubject(p, s)),
   )
-  for (const p of peers.slice(0, MAX_STORIES)) {
+  for (const p of peers) {
     stories.push({
       id: p.listingKey || p.address,
       title: p.address,

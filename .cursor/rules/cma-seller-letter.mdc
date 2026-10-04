@@ -16,10 +16,13 @@ A seller letter must not print any of these. The generator refuses them in `lib/
 - Two counts that do not each say what they count.
 - A new-home sentence that does not match the table.
 - A local price per square foot that held flat next to a large date cut. One story.
-- A negligible-weight sale presented as a comp that sets the price.
+- A negligible-weight sale described as the sale that set the number. It stays in the table when the price counted it, with a line that its weight is under one percent.
 - A zero room adjustment with no plain-language explanation.
 
 No buyer or seller names.
+
+- The count you use is the count you show. Four sales means the letter says four and the table shows four. Five means five, and the same for seven, eight, or three expired listings. A headline, sentence, or adjusted-price line never counts a row the table left off.
+- Say a sale was added from the subject's own street only when that sale is on the subject's street. Name a sale in another subdivision, and name the subdivision. Do not call it the subject's street.
 - Each home on the screen cards shows one listing photo when the MLS has one. Do not strip those photos.
 
 Sold information includes seller concessions (or seller-paid closing costs) when the MLS already stored an amount. Comparison matrices factor that amount into the sale they adjust. A sale price that ignores a recorded concession is wrong. When the sale reported none, print none or zero; do not hide the line. Do not invent a concession amount. Adjusted matrix figures, the prices that set the recommendation, and any sold summary must use the same concession-adjusted sale.

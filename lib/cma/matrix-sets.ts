@@ -19,14 +19,11 @@ import type { CmaExpiredPeer } from '@/lib/cma/market-status'
 import type { CmaBandRival } from '@/lib/cma/band-rivals'
 import type { CmaSubject } from '@/lib/cma/types'
 
-/** At most this many unsold peers. Past it the matrix is a list again. */
-export const MAX_UNSOLD_PEERS = 5
-
 /**
  * The listings that came off the same area unsold, in matrix-2 order.
  *
  * Named, priced, not the subject's own listing, one row per address (a home
- * that failed twice is one story, not two), capped.
+ * that failed twice is one story, not two). Every peer the sentence counted.
  */
 export function unsoldPeersFor(input: {
   subject: Pick<CmaSubject, 'listingKey' | 'mlsNumber' | 'streetAddress'>
@@ -35,7 +32,7 @@ export function unsoldPeersFor(input: {
   const named = (input.peers ?? []).filter(
     (p) => p.address.trim() && p.listPrice > 0 && !peerMatchesSubject(p, input.subject),
   )
-  return collapseExpiredPeerCycles(named).slice(0, MAX_UNSOLD_PEERS)
+  return collapseExpiredPeerCycles(named)
 }
 
 /**

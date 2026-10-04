@@ -35,6 +35,7 @@ export async function assembleCompetition(args: {
   const parcels = await resolveCmaParcels({ subject, comps: renderComps }).catch(() => null)
   const compSearch = buildCompSearch({
     subdivision: args.diagnostics.subject.subdivision ?? subject.subdivision,
+    subjectStreet: subject.streetAddress,
     ladder: args.diagnostics.ladder.map((t) => ({
       tier: t.tier,
       ran: t.ran,
@@ -42,6 +43,7 @@ export async function assembleCompetition(args: {
       compsAdded: t.comps_added,
     })),
     keptComps: renderComps.map((c) => ({
+      address: c.address,
       subdivision: c.subdivision,
       selectionTier: c.selectionTier,
     })),
