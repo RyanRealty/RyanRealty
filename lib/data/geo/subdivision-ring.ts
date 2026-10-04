@@ -1,7 +1,7 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
-import { communitySlugForOutlinePlats } from '@/lib/cma/community-location'
+import { communitySlugForRecordedPlats } from '@/lib/cma/community-location'
 
 /**
  * The plats next to the plat a point sits in, and the plat for a batch of
@@ -172,12 +172,13 @@ export async function assignCommunitySlugs(
         }
       }
     }
-    // A recorded plat is the community outline when no neighborhood polygon
-    // is stored. The MLS name is not consulted. A point already inside a
-    // registry neighborhood keeps that community.
+    // A phase or addition plat is the community when no neighborhood polygon
+    // is stored. Every containing plat counts, not only the smallest. The MLS
+    // name is not consulted. A point already inside a registry neighborhood
+    // keeps that community.
     for (let i = 0; i < out.length; i++) {
       if (out[i]) continue
-      const fromPlat = communitySlugForOutlinePlats(plats[i])
+      const fromPlat = communitySlugForRecordedPlats(plats[i])
       if (fromPlat) out[i] = fromPlat
     }
     return out

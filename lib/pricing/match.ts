@@ -132,6 +132,8 @@ export type PricingSubject = {
   communitySlug?: string | null
   /** Lat/lng was tested against community boundaries. */
   communityLocated?: boolean
+  /** Every recorded plat polygon that contains the subject. Not the MLS name. */
+  containingPlatSlugs?: readonly string[] | null
   /** Plat slugs that sit inside the subject's community. Location, not a name list. */
   communityMemberPlats?: string[]
 }
@@ -183,6 +185,8 @@ export type PricingSale = {
   communitySlug?: string | null
   /** Lat/lng was tested against community boundaries. */
   communityLocated?: boolean
+  /** Every recorded plat polygon that contains the sale. Not the MLS name. */
+  containingPlatSlugs?: readonly string[] | null
   newConstruction?: boolean | null
   zoning?: string | null
 }

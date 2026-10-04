@@ -418,7 +418,16 @@ function countField(v: unknown): number | null {
   return Number.isInteger(n) && n > 0 ? n : null
 }
 
-const LOCAL_TIER = /^(subdivision-|adjacent-subdivision-|neighborhood-|similar-sub-|nearby-[12]mi-)/
+const LOCAL_TIER = /^(subdivision-|adjacent-subdivision-|neighborhood-|similar-sub-)/
+const NEARBY_MILES = /^nearby-(\d+(?:\.\d+)?)mi-/
+
+function isLocalTier(tier: string): boolean {
+  if (LOCAL_TIER.test(tier)) return true
+  const miles = NEARBY_MILES.exec(tier)
+  if (!miles) return false
+  const n = Number(miles[1])
+  return n > 0 && n <= 2
+}
 
 /**
  * Where the priced sales came from, off `build_summary.comp_selection.final_tier_counts`
@@ -435,7 +444,7 @@ export function salesScopeFromTierCounts(counts: unknown): CmaSalesScope | null 
     .map(([k]) => k)
   if (!tiers.length) return null
   if (tiers.every((t) => t.startsWith('subdivision-'))) return 'subdivision'
-  if (tiers.every((t) => LOCAL_TIER.test(t))) return 'near'
+  if (tiers.every((t) => isLocalTier(t))) return 'near'
   return 'area'
 }
 
