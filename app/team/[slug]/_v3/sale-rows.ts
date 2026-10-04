@@ -55,11 +55,17 @@ export function brokerageTileToRow(tile: PriceDropTile, opts?: { anyArea?: boole
   const detailParts = [houseRowSpecs(tile), sub].filter((part): part is string => Boolean(part && part.trim()))
   const photo = (tile.PhotoURL ?? '').trim()
   return {
+    // The MLS number and boundary segments are what the listing canonicalises
+    // to. Without them the href fell back to the RETS ListingKey and every
+    // closing on /about and /team 308'd (14 of 400 checked links, 2026-10-04).
     href: listingTileHref({
       listingKey: tile.ListingKey,
+      listNumber: tile.ListNumber,
       streetNumber: tile.StreetNumber,
       streetName: tile.StreetName,
       city: tile.City,
+      boundaryCity: tile.boundary_city ?? null,
+      boundaryNeighborhood: tile.boundary_neighborhood ?? null,
       subdivisionName: tile.SubdivisionName,
     }),
     when: v3Text(soldWhen(tile.CloseDate)),
@@ -223,9 +229,12 @@ export function publishActiveListingRows(
       return {
         href: listingTileHref({
           listingKey: tile.listingKey,
+          listNumber: tile.listNumber,
           streetNumber: tile.streetNumber,
           streetName: tile.streetName,
           city: tile.city,
+          boundaryCity: tile.boundaryCity,
+          boundaryNeighborhood: tile.boundaryNeighborhood,
           subdivisionName: tile.subdivisionName,
         }),
         ...(when ? { when: v3Text(when) } : {}),

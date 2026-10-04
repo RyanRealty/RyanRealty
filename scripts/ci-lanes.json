@@ -47,6 +47,7 @@
     "ci:listing-key-lookup",
     "ci:listing-offmarket-index",
     "ci:listing-photo-alt",
+    "ci:listing-href-number",
     "ci:maps-safety",
     "ci:market-formula",
     "ci:market-truth",
