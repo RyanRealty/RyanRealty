@@ -32,6 +32,7 @@
  *   node scripts/gsc-listing-noindex-sweep.mjs --cap 200       # smaller run
  *   node scripts/gsc-listing-noindex-sweep.mjs --dry-run       # inspect only, no DB write, no submit
  *   node scripts/gsc-listing-noindex-sweep.mjs --reset         # forget the state, start over
+ *   node scripts/gsc-listing-noindex-sweep.mjs --apply-state   # re-derive flags from the state file, no quota
  *
  * Env: GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL, GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
  * (the Search Console service account every scripts/*gsc* script uses),
@@ -45,7 +46,7 @@ import { google } from 'googleapis'
 const ROOT = resolve(new URL('.', import.meta.url).pathname, '..')
 const SITE_URL = process.env.GOOGLE_SEARCH_CONSOLE_SITE_URL?.trim() || 'https://ryan-realty.com/'
 const SITEMAP_URL = 'https://ryan-realty.com/sitemaps/listings.xml'
-const NOINDEX_STATE = "Excluded by 'noindex' tag"
+const NOINDEX_RE = /excluded by .noindex. tag/i
 
 function arg(name, fallback) {
   const i = process.argv.indexOf(name)
@@ -55,6 +56,7 @@ const CAP = Number(arg('--cap', '1800'))
 const CONCURRENCY = Math.max(1, Math.min(8, Number(arg('--concurrency', '4'))))
 const STATE_PATH = resolve(ROOT, arg('--state', 'tmp/gsc-listing-noindex-sweep/state.json'))
 const DRY = process.argv.includes('--dry-run')
+const APPLY_STATE = process.argv.includes('--apply-state')
 const NO_SUBMIT = process.argv.includes('--no-submit') || DRY
 const RESET = process.argv.includes('--reset')
 
@@ -75,7 +77,9 @@ function norm(u) {
 /** The flag for one inspection result, or null when the URL is healthy. */
 export function flagFor(url, r) {
   if (!r) return null
-  if (r.coverageState === NOINDEX_STATE) return 'noindex'
+  // The API spells it with typographic quotes ("Excluded by ‘noindex’ tag",
+  // first live run 2026-10-05), so match the word, never the punctuation.
+  if (NOINDEX_RE.test(String(r.coverageState ?? ''))) return 'noindex'
   const ours = norm(r.userCanonical || url)
   if (r.googleCanonical && norm(r.googleCanonical) !== ours) return 'canonical_mismatch'
   return null
@@ -129,7 +133,9 @@ async function main() {
   const runStartedAt = new Date().toISOString()
   const state = loadState()
   const urls = await fetchSitemapUrls()
-  const todo = urls.filter((u) => !state.done[u]).slice(0, CAP)
+  // --apply-state re-derives the flags from every inspection already in the
+  // state file and rewrites the table, spending no inspection quota.
+  const todo = APPLY_STATE ? [] : urls.filter((u) => !state.done[u]).slice(0, CAP)
   console.log(`Sitemap ${SITEMAP_URL}: ${urls.length} listing URLs. Already inspected: ${urls.length - urls.filter((u) => !state.done[u]).length}. This run: ${todo.length} (cap ${CAP}).`)
 
   const results = []
@@ -168,6 +174,11 @@ async function main() {
   }
   await Promise.all(Array.from({ length: CONCURRENCY }, worker))
   saveState(state)
+  if (APPLY_STATE) {
+    const live = new Set(urls)
+    for (const [url, rec] of Object.entries(state.done)) if (live.has(url)) results.push({ url, ...rec })
+    console.log(`--apply-state: ${results.length} inspections from the state file, none spent.`)
+  }
 
   const flagged = results
     .map((r) => ({ ...r, flag: flagFor(r.url, r) }))
