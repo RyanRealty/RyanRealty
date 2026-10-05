@@ -258,7 +258,11 @@ export function matrixEntriesFor(a: OpinionPageArgs): {
       a.subject,
     ),
     active: activeEntries(
-      activeRivalsFor(a.bandRivals?.rivals ?? a.extras?.band?.rivals, a.subject, a.compArea),
+      activeRivalsFor(
+        a.bandRivals?.rivals ?? a.extras?.band?.rivals,
+        a.subject,
+        a.bandRivals?.area ?? a.compArea,
+      ),
       a.docLinks ?? null,
       a.subject.city,
       a.subject,
@@ -311,7 +315,11 @@ export function salesThatSetItArgs(a: OpinionPageArgs): PricingPageInput {
     askCtx: subjectAskContext(a),
     finalCycle: a.expiredAudit?.finalCycle ?? null,
     asOfIso: a.generatedAtIso,
-    rivals: activeRivalsFor(a.bandRivals?.rivals ?? a.extras?.band?.rivals, a.subject, a.compArea).map((r) => ({
+    rivals: activeRivalsFor(
+      a.bandRivals?.rivals ?? a.extras?.band?.rivals,
+      a.subject,
+      a.bandRivals?.area ?? a.compArea,
+    ).map((r) => ({
       address: r.address,
       yearBuilt: r.yearBuilt ?? null,
       listPrice: r.listPrice,
@@ -1602,17 +1610,26 @@ export function competitionBodyMatrixHtml(a: OpinionPageArgs): string {
   ${pendingLead}`
         : ''
   const matrix = [activeMatrix, pendingMatrix].filter(Boolean).join('\n  ')
-  const shown = activeOnly.length + pendingOnly.length
-  const sentence =
-    shown > 0
+  const drawnActive = activeOnly.length
+  const drawnPending = pendingOnly.length
+  const shown = drawnActive + drawnPending
+  // The stored sentence names every home in the band and says the nearest are
+  // below. Use it when the table is that nearest set. A stored pending that
+  // the table does not draw is not said.
+  const stored = a.bandRivals?.sentence?.trim() ?? ''
+  const useStored =
+    stored.length > 0 && b.pendingCount === drawnPending && b.activeCount > drawnActive && drawnActive > 0
+  const sentence = useStored
+    ? stored
+    : shown > 0
       ? competitionSentence({
           lo: b.lo,
           hi: b.hi,
-          activeCount: activeOnly.length,
-          pendingCount: pendingOnly.length,
+          activeCount: drawnActive,
+          pendingCount: drawnPending,
           shown,
         })
-      : (a.bandRivals?.sentence ??
+      : (stored ||
         competitionSentence({
           lo: b.lo,
           hi: b.hi,
@@ -1648,7 +1665,7 @@ export function competitionArgs(a: OpinionPageArgs): BandRivalsInput {
     hi: b.hi,
     activeCount: b.activeCount,
     pendingCount: b.pendingCount,
-    rivals: activeRivalsFor(b.rivals, a.subject, a.compArea),
+    rivals: activeRivalsFor(b.rivals, a.subject, a.bandRivals?.area ?? a.compArea),
     docLinks: a.docLinks ?? null,
     recommendedList: a.pricing.recommended,
     asOfIso: a.generatedAtIso,

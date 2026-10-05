@@ -354,11 +354,13 @@ export async function buildCmaMapDataUri(
     // Two pins on one rooftop cover each other whoever draws them, so the same
     // nudge the Google markers used still applies to ours.
     const spread = spreadStackedMapPoints(points)
-    // The frame is the sales that set the price, plus the subject. A rival
-    // or an expired listing does not pull the map out to a wider ring.
+    // The frame is the subject, the sales that set the price, and the homes
+    // the competition chapter draws. Those rivals are already the nearest
+    // few, so the map does not open to a mile ring. An expired listing still
+    // does not pull the frame.
     const salesFrame = spread.filter((_, i) => {
       const family = families[i]?.family
-      return family === 'subject' || family === 'closed'
+      return family === 'subject' || family === 'closed' || family === 'active'
     })
     const framed = salesFrame.length > 0 ? salesFrame : spread
     // The document's own ground (lib/cma/map-ground.ts): a fractional zoom

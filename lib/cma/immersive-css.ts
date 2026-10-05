@@ -424,6 +424,8 @@ table.comp-matrix .matrix-addr{display:block}
 .worth-lead-note{font-size:clamp(15px,1.8vw,17px);max-width:640px;margin:0 0 26px;border-left:2px solid var(--navy);padding-left:12px}
 table.comp-matrix .matrix-sub{display:block;margin-top:4px;font-size:12px;font-weight:400;opacity:.65;white-space:nowrap;text-align:right}
 table.comp-matrix .arc-asks,table.comp-matrix .arc-tail{display:block;white-space:normal;text-align:right;line-height:1.35}
+.arc-arrow{display:inline-block;vertical-align:-1px}
+.pin-star{display:block;width:12px;height:12px}
 table.comp-matrix .arc-tail + .arc-tail{margin-top:1px}
 table.comp-matrix a.matrix-addr,.comp-stack-card a.comp-stack-addr{display:block;color:inherit;text-decoration:none;border-bottom:1px solid var(--ink12)}
 /* The price-path primitive (blueprint, Delta 1). Two layouts, one visible. */

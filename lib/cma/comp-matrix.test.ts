@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { renderCompMatrixHtml } from '@/lib/cma/comp-matrix'
+import { askArcCell, renderCompMatrixHtml } from '@/lib/cma/comp-matrix'
+import type { MatrixEntry } from '@/lib/cma/matrix-entry'
 import { cmaSectionStyles } from '@/lib/cma/render-css-sections'
 import { immersiveStylesheet } from '@/lib/cma/immersive-css'
 import { salesThatSetItPage, SALES_THAT_SET_IT_HEADING } from '@/lib/cma/render-pricing-page'
@@ -53,6 +54,31 @@ function padSales(seed: CmaAdjustedComp, n = 5): CmaAdjustedComp[] {
     adjustedPrice: seed.adjustedPrice + i * 1000,
   }))
 }
+
+describe('askArcCell', () => {
+  it('draws an ask change as a painted arrow and leaves a single ask without one', () => {
+    const changed = askArcCell({
+      firstAsk: 1_700_000,
+      lastAsk: 1_600_000,
+      outcome: 'Came off after 68 days',
+      endLabel: '',
+    } as MatrixEntry)
+    expect(changed).toContain('$1.70M')
+    expect(changed).toContain('$1.60M')
+    expect(changed).toContain('class="arc-arrow"')
+    expect(changed).not.toContain('\u2192')
+
+    const single = askArcCell({
+      firstAsk: 1_480_000,
+      lastAsk: 1_480_000,
+      outcome: 'offer in 0 days',
+      endLabel: '',
+    } as MatrixEntry)
+    expect(single).toContain('$1.48M')
+    expect(single).not.toContain('class="arc-arrow"')
+    expect(single).not.toContain('\u2192')
+  })
+})
 
 describe('renderCompMatrixHtml', () => {
   it('ends the subject banner on the last ask, not the cycle step before it', () => {
@@ -119,7 +145,6 @@ describe('renderCompMatrixHtml', () => {
       'Sold $/sqft',
       'Seller concessions',
       'Adjusted',
-      'First ask \u2192 last ask \u2192 outcome',
       'Sold for',
       'Sale price today',
     ]) {
@@ -141,6 +166,11 @@ describe('renderCompMatrixHtml', () => {
     // on the next.
     expect(html).toContain('>offer in 8&nbsp;days</span>')
     expect(html).toContain('class="arc-asks">$499K</span>')
+    expect(html).toContain('First ask')
+    expect(html).toContain('last ask')
+    expect(html).toContain('outcome')
+    expect(html).toContain('class="arc-arrow"')
+    expect(html).not.toContain('\u2192')
     expect(html).toContain('Jun 25, 2026')
     expect(html).not.toContain('Adjusted to subject')
     // No MLS photo on the fixture → honest empty thumb boxes so column heights align.

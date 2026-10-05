@@ -139,6 +139,14 @@ export function pinReading(fact: CmaPinFact): string {
  * reachable by touch, and the whole point of Delta 3's pin is that a tap tells
  * the tale.
  */
+/** Drawn. The black star is not in the embedded print fonts, so the glyph vanishes. */
+const SUBJECT_STAR_SVG =
+  '<svg class="pin-star" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" focusable="false"><path fill="currentColor" d="M6 .7l1.45 3.15 3.45.4-2.55 2.35.7 3.4L6 8.4 2.95 10l.7-3.4L1.1 4.25l3.45-.4z"/></svg>'
+
+function pinMark(glyph: string): string {
+  return glyph === '★' ? SUBJECT_STAR_SVG : esc(glyph)
+}
+
 function pinButton(input: {
   key: string
   glyph: string
@@ -150,7 +158,7 @@ function pinButton(input: {
 }): string {
   return `<button type="button" class="pin-hit is-${esc(input.family)}" data-comp="${esc(input.key)}" data-pin="${esc(input.key)}" style="left:${input.xPct.toFixed(
     2,
-  )}%;top:${input.yPct.toFixed(2)}%" aria-label="${esc(input.label)}"><span class="pin-dot" aria-hidden="true">${esc(
+  )}%;top:${input.yPct.toFixed(2)}%" aria-label="${esc(input.label)}"><span class="pin-dot" aria-hidden="true">${pinMark(
     input.glyph,
   )}</span>${input.reveal ? `<span class="pin-note" aria-hidden="true">${input.reveal}</span>` : ''}</button>`
 }
@@ -182,7 +190,7 @@ export function pinLegendHtml(facts: readonly CmaPinFact[]): string {
         )}</span>${esc(FAMILY_LABEL[f])}</li>`,
     )
     .join('')
-  return `<ul class="pin-legend"><li class="pl-i is-subject"><span class="pl-k" aria-hidden="true">★</span>Your home</li>${items}</ul>`
+  return `<ul class="pin-legend"><li class="pl-i is-subject"><span class="pl-k" aria-hidden="true">${SUBJECT_STAR_SVG}</span>Your home</li>${items}</ul>`
 }
 
 /**

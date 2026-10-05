@@ -6,20 +6,120 @@
 import { applyCompVerdicts } from '@/lib/cma/client-facing'
 import { resolveCmaParcels } from '@/lib/cma/parcel-shapes'
 import { buildCompSearch } from '@/lib/pricing/comp-search'
-import { buildCompArea, resolveCompetitionArea } from '@/lib/pricing/comp-area'
+import {
+  buildCompArea,
+  competitionDistanceRings,
+  COMPETITION_BEND_CAP_MILES,
+  parentPlaceArea,
+  resolveCompetitionArea,
+  type CompArea,
+} from '@/lib/pricing/comp-area'
 import { getCmaAreaUnsoldCycles } from '@/lib/data/cma/areaUnsoldReads'
-import { getCmaAreaBandInventory } from '@/lib/data/cma/bandInventory'
+import { getCmaAreaBandInventory, type CmaAreaBandInventory } from '@/lib/data/cma/bandInventory'
 import { marketAreaPriceBand } from '@/lib/cma/market-status'
 import {
   bandAroundList,
   bandRowToRival,
   buildBandRivalSet,
+  COMPETITION_RING_MIN,
   emptyCompetitionSet,
   pickCompetitionRing,
+  type CmaBandRivalSet,
 } from '@/lib/cma/band-rivals'
 import { attachCompConcessions } from '@/lib/pricing/seller-net'
 import type { CompSelectionDiagnostics } from '@/lib/cma/comp-trace'
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
+
+function setFromInventory(
+  area: CompArea,
+  inv: CmaAreaBandInventory,
+  subject: CmaSubject,
+  asOfIso: string,
+): CmaBandRivalSet {
+  return buildBandRivalSet({
+    area,
+    lo: inv.lo,
+    hi: inv.hi,
+    activeCount: inv.activeCount,
+    pendingCount: inv.pendingCount,
+    rivals: [
+      ...inv.activeRows.map((r) => bandRowToRival(r, 'Active')),
+      ...inv.pendingRows.map((r) => bandRowToRival(r, 'Pending')),
+    ].filter((r): r is NonNullable<typeof r> => r != null),
+    subject: {
+      latitude: subject.latitude,
+      longitude: subject.longitude,
+      beds: subject.beds,
+      sqft: subject.sqft,
+    },
+    asOfIso,
+  })
+}
+
+/**
+ * The sales plat has fewer than three homes in the band. Continue to the
+ * mapped neighborhood, then quarter-mile rings, and stop at the first place
+ * that holds three. The city is not a ring.
+ */
+async function widenShortPlatCompetition(args: {
+  subject: CmaSubject
+  rivalBand: { lo: number; hi: number }
+  platCount: number
+  asOfIso: string
+}): Promise<CmaBandRivalSet | null> {
+  const read = (area: CompArea) =>
+    getCmaAreaBandInventory({
+      area,
+      city: args.subject.city,
+      lo: args.rivalBand.lo,
+      hi: args.rivalBand.hi,
+      propertySubType: args.subject.propertySubType,
+    }).catch(() => null)
+  const parent = parentPlaceArea({ latitude: args.subject.latitude, longitude: args.subject.longitude })
+  if (parent) {
+    const parentInv = await read(parent)
+    const n = (parentInv?.activeCount ?? 0) + (parentInv?.pendingCount ?? 0)
+    if (parentInv && n >= COMPETITION_RING_MIN) return setFromInventory(parent, parentInv, args.subject, args.asOfIso)
+  }
+  const rings = [
+    ...(parent ? [parent] : []),
+    ...competitionDistanceRings({
+      latitude: args.subject.latitude,
+      longitude: args.subject.longitude,
+      capMiles: COMPETITION_BEND_CAP_MILES,
+    }),
+  ]
+  const widest = rings[rings.length - 1]
+  if (!widest) return null
+  const wideInv = await read(widest)
+  if (!wideInv) return null
+  const pick = pickCompetitionRing({
+    rings,
+    activeRows: wideInv.activeRows,
+    pendingRows: wideInv.pendingRows,
+  })
+  if (pick.activeCount + pick.pendingCount <= args.platCount) return null
+  return buildBandRivalSet({
+    area: pick.area,
+    lo: wideInv.lo,
+    hi: wideInv.hi,
+    activeCount: pick.activeCount,
+    pendingCount: pick.pendingCount,
+    rivals: [
+      ...pick.activeRows.map((r) => bandRowToRival(r, 'Active')),
+      ...pick.pendingRows.map((r) => bandRowToRival(r, 'Pending')),
+    ].filter((r): r is NonNullable<typeof r> => r != null),
+    subject: {
+      latitude: args.subject.latitude,
+      longitude: args.subject.longitude,
+      beds: args.subject.beds,
+      sqft: args.subject.sqft,
+    },
+    asOfIso: args.asOfIso,
+    widenedFrom: pick.widenedFrom,
+    ringsTried: pick.ringsTried,
+  })
+}
 
 export async function assembleCompetition(args: {
   subject: CmaSubject
@@ -138,6 +238,23 @@ export async function assembleCompetition(args: {
           ringsTried: competitionRing.ringsTried,
         })
       : null
+  const platCount =
+    (competitionRing?.activeCount ?? widestAreaInventory?.activeCount ?? 0) +
+    (competitionRing?.pendingCount ?? widestAreaInventory?.pendingCount ?? 0)
+  if (
+    rivalBand &&
+    compArea &&
+    (compArea.kind === 'subdivision' || compArea.kind === 'subdivisions') &&
+    platCount < COMPETITION_RING_MIN
+  ) {
+    const widened = await widenShortPlatCompetition({
+      subject,
+      rivalBand,
+      platCount,
+      asOfIso: args.generatedAtIso,
+    })
+    if (widened && widened.rivals.length > (bandRivals?.rivals.length ?? 0)) bandRivals = widened
+  }
   if (!bandRivals && rivalBand && compArea) {
     bandRivals = emptyCompetitionSet({
       rings: competitionRings,

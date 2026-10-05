@@ -541,10 +541,12 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
       'Sold $/sqft',
       'Seller concessions',
       'Adjusted',
-      'First ask \u2192 last ask \u2192 outcome',
     ]) {
       expect(html, label).toContain(label)
     }
+    expect(html).toContain('First ask')
+    expect(html).toContain('class="arc-arrow"')
+    expect(html).toContain('outcome')
     expect(html).toContain('0.2 miles NW')
     expect(html).not.toContain('>Outcome<')
     expect(html).not.toContain('Remodel or update notes')

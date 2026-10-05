@@ -126,6 +126,70 @@ describe('pickBandRivals', () => {
   it('drops unnamed rows', () => {
     expect(pickBandRivals([rival({ address: '  ' })])).toEqual([])
   })
+
+  it('keeps a home one bedroom off and drops one two bedrooms off', () => {
+    const picked = pickBandRivals(
+      [
+        rival({
+          listingKey: 'TWO',
+          address: '5 Craftsman',
+          beds: 5,
+          sqft: 3600,
+          latitude: 44.2701,
+          longitude: -121.17,
+        }),
+        rival({
+          listingKey: 'ONE',
+          address: '4 Duffy',
+          beds: 4,
+          sqft: 3700,
+          latitude: 44.271,
+          longitude: -121.17,
+        }),
+        rival({
+          listingKey: 'SAME',
+          address: '3 Fairway',
+          beds: 3,
+          sqft: 3500,
+          latitude: 44.28,
+          longitude: -121.17,
+        }),
+      ],
+      { latitude: 44.27, longitude: -121.17, beds: 3, sqft: 3600 },
+    )
+    expect(picked.map((r) => r.address)).toEqual(['4 Duffy', '3 Fairway'])
+  })
+
+  it('ranks a closer east-west home ahead of a farther north-south home', () => {
+    const picked = pickBandRivals(
+      [
+        rival({
+          address: 'Due south',
+          latitude: 44.01,
+          longitude: -121,
+        }),
+        rival({
+          address: 'Due east',
+          latitude: 44,
+          longitude: -121.012,
+          listingKey: 'E',
+        }),
+      ],
+      { latitude: 44, longitude: -121, beds: 3, sqft: 1280 },
+    )
+    expect(picked.map((r) => r.address)).toEqual(['Due east', 'Due south'])
+  })
+
+  it('drops a house past the living-area cutoff', () => {
+    const picked = pickBandRivals(
+      [
+        rival({ address: 'Small', beds: 3, sqft: 2000, latitude: 44.2701, longitude: -121.17 }),
+        rival({ address: 'Fit', beds: 3, sqft: 3400, latitude: 44.272, longitude: -121.17 }),
+      ],
+      { latitude: 44.27, longitude: -121.17, beds: 3, sqft: 3600 },
+    )
+    expect(picked.map((r) => r.address)).toEqual(['Fit'])
+  })
 })
 
 describe('renderBandRivalsHtml', () => {

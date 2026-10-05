@@ -344,6 +344,19 @@ function escCell(s: string): string {
     .replace(/"/g, '&quot;')
 }
 
+/**
+ * The ask change, drawn. Geist has no U+2192, and the PDF embeds no font for
+ * the system fallback, so the character prints as a blank gap.
+ */
+const ARC_ARROW_SVG =
+  '<svg class="arc-arrow" viewBox="0 0 14 8" width="14" height="8" aria-hidden="true" focusable="false"><path d="M0 4h10M7 1l4 3-4 3" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="square" stroke-linejoin="miter"/></svg>'
+
+/** The row name a reader sees. The data key stays the words with an arrow. */
+function matrixRowLabelHtml(label: string): string {
+  if (label !== 'First ask → last ask → outcome') return esc(label)
+  return `First ask ${ARC_ARROW_SVG} last ask ${ARC_ARROW_SVG} outcome`
+}
+
 const ARC_LINE = 18
 
 function arcTokens(clause: string): string[] {
@@ -386,7 +399,7 @@ export function askArcCell(entry: MatrixEntry): string {
   // nowrap path ran 3pt past the right margin on a six-column sheet
   // (cma-20506-murphy) under the stylesheet's own face.
   const asksHtml = path
-    ? `<span class="arc-asks">${escCell(path).replace(/ → /g, '&nbsp;→ ')}</span>`
+    ? `<span class="arc-asks">${escCell(path).replace(/ → /g, `&nbsp;${ARC_ARROW_SVG} `)}</span>`
     : ''
   const lines = full ? arcLines(full) : []
   const tailHtml = lines
@@ -763,7 +776,7 @@ function matrixTable(
       // prices to see what the adjustments do.' The toggle hides the working,
       // never the conclusion — the sale price today keeps its row.
       const adjAttr = row.grid === true && row.rule !== true ? ' data-adj="1"' : ''
-      return `<tr${factAttr}${cls}${adjAttr}><th>${esc(row.label)}</th>${tds}</tr>`
+      return `<tr${factAttr}${cls}${adjAttr}><th>${matrixRowLabelHtml(row.label)}</th>${tds}</tr>`
     })
     .join('')
   return `
@@ -794,7 +807,7 @@ function matrixStack(input: {
   const line = (label: string, value: string, html: boolean, adj: boolean, rule: boolean) =>
     `<div class="comp-stack-line${rule ? ' is-total' : ''}"${
       adj ? ' data-adj="1"' : ''
-    }><span class="k">${esc(label)}</span><span class="v${html ? '' : ' n'}">${
+    }><span class="k">${matrixRowLabelHtml(label)}</span><span class="v${html ? '' : ' n'}">${
       html ? value : esc(value)
     }</span></div>`
   const cardFor = (col: Col, entry: MatrixEntry | null, i: number): string => {

@@ -12,7 +12,13 @@ export const COMPARABLE_PRICE_HISTORY_ROW_LABEL = 'First ask \u2192 last ask \u2
 /** Matrix HTML must carry both shared rows. */
 export function matrixHtmlHasDomAndPriceHistory(html: string): boolean {
   if (!html || html.trim().length === 0) return false
-  return html.includes(COMPARABLE_DOM_ROW_LABEL) && html.includes(COMPARABLE_PRICE_HISTORY_ROW_LABEL)
+  const hasHistory =
+    html.includes(COMPARABLE_PRICE_HISTORY_ROW_LABEL) ||
+    (html.includes('First ask') &&
+      html.includes('last ask') &&
+      html.includes('outcome') &&
+      html.includes('class="arc-arrow"'))
+  return html.includes(COMPARABLE_DOM_ROW_LABEL) && hasHistory
 }
 
 /**

@@ -65,15 +65,9 @@ export function rivalAddress(row: BandStreetRow): string {
     .join(' ')
 }
 
-function dist2(
-  rival: CmaBandRival,
-  lat: number,
-  lng: number,
-): number {
-  if (rival.latitude == null || rival.longitude == null) return Number.POSITIVE_INFINITY
-  const dLat = rival.latitude - lat
-  const dLng = rival.longitude - lng
-  return dLat * dLat + dLng * dLng
+function rivalMiles(rival: CmaBandRival, lat: number, lng: number): number {
+  const d = milesBetween({ latitude: lat, longitude: lng }, rival)
+  return d == null ? Number.POSITIVE_INFINITY : d
 }
 
 export function rivalFitsSubject(
@@ -81,9 +75,14 @@ export function rivalFitsSubject(
   subject?: { beds?: number | null; sqft?: number | null } | null,
 ): boolean {
   if (!subject) return true
-  if (subject.beds != null && r.beds != null && r.beds !== subject.beds) return false
+  // One whole bedroom apart still competes. Two or more does not, and neither
+  // does a house past the one living-area cutoff. A 2-bedroom cottage does
+  // not compete with a much larger house.
+  if (subject.beds != null && r.beds != null && Math.abs(Math.floor(subject.beds) - Math.floor(r.beds)) > 1) {
+    return false
+  }
   if (subject.sqft != null && subject.sqft > 0 && r.sqft != null && r.sqft > 0) {
-    if (Math.abs(r.sqft - subject.sqft) / subject.sqft > 0.25) return false
+    if (Math.abs(r.sqft - subject.sqft) / subject.sqft > 0.35) return false
   }
   return true
 }
@@ -105,7 +104,7 @@ export function pickBandRivals(
   const slng = subject?.longitude
   const ranked =
     slat != null && slng != null && Number.isFinite(slat) && Number.isFinite(slng)
-      ? [...pool].sort((a, b) => dist2(a, slat, slng) - dist2(b, slat, slng))
+      ? [...pool].sort((a, b) => rivalMiles(a, slat, slng) - rivalMiles(b, slat, slng))
       : [...pool]
   const actives = ranked.filter((r) => r.status === 'Active').slice(0, cap)
   const pendings = ranked.filter((r) => r.status === 'Pending').slice(0, cap)
@@ -483,8 +482,8 @@ export function competitionAreaSentence(input: {
   if (widenedNote) bits.push(widenedNote.trim())
   if (input.shown > 0 && input.shown < input.activeCount + input.pendingCount) {
     // "like yours" when the pick narrowed: the counts above are every home in
-    // the band, the cards below are the ones at the subject's bed count and
-    // within 25% of its size. Without the qualifier the sentence says the
+    // the band, the cards below are within one bedroom and about 35% of the
+    // subject's living area. Without the qualifier the sentence says the
     // nearest of one set and then draws another (§0).
     bits.push(
       `The nearest ${countWord(input.shown)}${input.likeYours ? ' like yours' : ''} ${

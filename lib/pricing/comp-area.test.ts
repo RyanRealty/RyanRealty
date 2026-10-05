@@ -6,6 +6,7 @@ import {
   compAreaIn,
   compAreaPhrase,
   compAreaSlug,
+  parentPlaceArea,
   resolveCompetitionArea,
   rungRadiusMiles,
   type CompAreaKeptComp,
@@ -235,6 +236,16 @@ describe('buildCompArea — otherwise the radius the widest kept rung used', () 
     })
     expect(area!.source).toContain('subdivision-3mo')
     expect(area!.source).toContain('3 of 3')
+  })
+})
+
+describe('parentPlaceArea', () => {
+  it('names the neighborhood a short plat sits in, and not a radius or the city', () => {
+    const area = parentPlaceArea({ latitude: 44.08554, longitude: -121.325841 })
+    expect(area).not.toBeNull()
+    expect(area!.kind).toBe('neighborhood')
+    expect(area!.names).toEqual(['Awbrey Butte'])
+    expect(area!.radiusMiles).toBeNull()
   })
 })
 

@@ -690,6 +690,8 @@ export function cmaSectionStyles(): string {
      "offer in 12 days" did the same. The path breaks only after an arrow and a
      day count never leaves its unit; both are held by no-break spaces. */
   table.comp-matrix .arc-asks, table.comp-matrix .arc-tail { display: block; white-space: normal; text-align: right; }
+  .arc-arrow { display: inline-block; vertical-align: -1px; }
+  .pin-star { display: block; width: 12px; height: 12px; }
   table.comp-matrix td.is-note { text-align: left; font-size: 9.5px; line-height: 1.35; }
   table.comp-matrix th[hidden], table.comp-matrix td[hidden] { display: none; }
   table.comp-matrix thead th:first-child, table.comp-matrix tbody th { text-align: left; }

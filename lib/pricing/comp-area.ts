@@ -445,6 +445,66 @@ export function namedSalesPlace(area: { kind?: string | null } | null | undefine
 }
 
 /**
+ * The neighborhood or community the subject sits in.
+ *
+ * Used when the sales subdivision has fewer than three homes listed in the
+ * price band. The sales that set the price stay in their own place. This is
+ * not a radius and it is not the city.
+ */
+export function parentPlaceArea(input: {
+  latitude: number | null
+  longitude: number | null
+}): CompArea | null {
+  const centre = centreOf({ latitude: input.latitude, longitude: input.longitude, city: '' })
+  if (!centre) return null
+  const slug = resolveMarketArea(centre.lat, centre.lng)
+  const kind = marketAreaKind(slug)
+  const name = marketAreaLabel(slug)
+  if (!kind || !name) return null
+  const bare: Omit<CompArea, 'sentence'> = {
+    kind,
+    names: [name],
+    radiusMiles: null,
+    centre,
+    source: 'parent of a short sales subdivision',
+  }
+  return { ...bare, sentence: areaSentence(bare, null) }
+}
+
+/** One distance ring. Rings start at a quarter mile and step by a quarter mile. */
+export function competitionRadiusArea(input: {
+  latitude: number | null
+  longitude: number | null
+  miles: number
+}): CompArea | null {
+  const centre = centreOf({ latitude: input.latitude, longitude: input.longitude, city: '' })
+  if (!centre || !(input.miles > 0)) return null
+  const bare: Omit<CompArea, 'sentence'> = {
+    kind: 'radius',
+    names: [],
+    radiusMiles: input.miles,
+    centre,
+    source: `competition widened to ${input.miles} miles`,
+  }
+  return { ...bare, sentence: areaSentence(bare, null) }
+}
+
+/** Quarter-mile steps from 0.25 through `capMiles`, inclusive. */
+export function competitionDistanceRings(input: {
+  latitude: number | null
+  longitude: number | null
+  capMiles: number
+}): CompArea[] {
+  const steps = Math.round(input.capMiles / 0.25)
+  const rings: CompArea[] = []
+  for (let i = 1; i <= steps; i++) {
+    const ring = competitionRadiusArea({ ...input, miles: i * 0.25 })
+    if (ring) rings.push(ring)
+  }
+  return rings
+}
+
+/**
  * Competition and expireds use the sales boundary. One ring.
  *
  * If the sales that set the price sit in a subdivision or a recorded plat,

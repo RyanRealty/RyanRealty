@@ -266,7 +266,9 @@ describe('assembleOpinionPages format', () => {
     // Matrix 2, one column set with the closed sales, never the cards it
     // replaced and never the price ruler of dots before them.
     expect(body).toContain('comp-matrix is-unsold')
-    expect(body).toContain('First ask \u2192 last ask \u2192 outcome')
+    expect(body).toContain('First ask')
+    expect(body).toContain('class="arc-arrow"')
+    expect(body).toContain('outcome')
     expect(body).not.toContain('dns-card')
     expect(body).not.toContain("Didn't sell")
     expect(body).not.toContain('Recommended $')
