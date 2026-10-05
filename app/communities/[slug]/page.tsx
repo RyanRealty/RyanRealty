@@ -157,6 +157,7 @@ import {
 } from './_v3/community-stock-types'
 import { resolveCommunityDisplayName } from './_v3/community-display-name'
 import { CommunityUnavailable } from './_v3/CommunityUnavailable'
+import { CommunityDegraded } from './_v3/CommunityDegraded'
 import { isCanonicalCommunitySlug } from '@/lib/communities/canonical-community-slug'
 import { publicCommunitySlug } from '@/lib/communities/community-public-pair'
 import { getRecordedPlatLabel } from '@/lib/data/subdivisions/getRecordedPlatLabel'
@@ -317,7 +318,29 @@ export default async function CommunityDetailPage(props: Props) {
 async function renderCommunityDetail({ params }: Props) {
   const { slug } = await params
 
-  const community = await getCommunityBySlug(slug)
+  // RACED like generateMetadata above (SITE-214). A read that threw or hung used
+  // to end in error.tsx, a hollow 200 titled "This community didn't load" that a
+  // crawler indexed as the page. Unknown renders a small honest body with no
+  // figures; only a read that ANSWERED with no community is a 404. The degrade
+  // is noted by withTimeoutFallbackResult, so this copy's ISR lifetime is the
+  // 60 s window (lib/site/degraded-isr.ts), and robots stay as the head set them.
+  const communityRead = await withTimeoutFallbackResult(
+    getCommunityBySlug(slug),
+    null,
+    PLACE_HEAD_READ_MS,
+    'comm:body-community',
+  )
+  if (!communityRead.ok) {
+    const entry = getResortCommunityBySlug(slug)
+    return (
+      <CommunityDegraded
+        name={entry?.label ?? placeNameFromSlug(slug)}
+        city={entry?.city ?? null}
+        citySlug={entry?.city_slug ?? null}
+      />
+    )
+  }
+  const community = communityRead.value
   if (!community) notFound()
 
   // SITE-28 — NAME FIRST, BEFORE ANY OTHER READ. If this URL has no real place
