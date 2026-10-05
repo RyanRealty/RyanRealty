@@ -175,6 +175,10 @@ describe('isRuralAcreage — who may reach the rural rungs', () => {
   it('is false when the lot size is unknown', () => {
     expect(isRuralAcreage(subject({ lotAcres: null }), null)).toBe(false)
   })
+  it('is false for a named plat, and still true when the plat name is a placeholder', () => {
+    expect(isRuralAcreage(subject({ lotAcres: 1.2, subdivision: 'Whispering Pines' }), null)).toBe(false)
+    expect(isRuralAcreage(subject({ lotAcres: 2, subdivision: 'N/A' }), null)).toBe(true)
+  })
 })
 
 describe('exclusion counters', () => {

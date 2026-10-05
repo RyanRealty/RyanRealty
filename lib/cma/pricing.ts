@@ -142,10 +142,10 @@ export function adjustComps(
  * further without a person saying so. A broker priceOverride is deliberate and
  * untouched.
  *
- * Idempotent, and it must be: computePricing applies it, then the engine cover
- * re-derives the tiers, then priceCmaSet applies it again. The first `before`
- * survives so the sentence names the whole distance once instead of half of it
- * twice.
+ * Idempotent for a direct caller of computePricing. The seller letter does not
+ * apply this ceiling again: priceCmaSet keeps the weighted price of the sales
+ * that set it. Putting the ceiling back on that cover replaced a $1,790,000
+ * weighted price with $1,370,000.
  */
 export function applyStreetAnchor(
   ctx: {
@@ -353,11 +353,10 @@ export function computePricing(
   if (conservative > recommended) conservative = recommended
   if (highEnd < recommended) highEnd = recommended
 
-  // THE HOUSE NEXT DOOR IS THE EVIDENCE (Matt 2026-09-10). Applied here so a
-  // direct caller of computePricing gets it, and AGAIN after the engine cover
-  // in priceCmaSet, which re-derives the tiers from the range rule and would
-  // otherwise undo it. The function is idempotent and keeps the first
-  // `before`, so a reader is told the whole distance once.
+  // THE HOUSE NEXT DOOR IS THE EVIDENCE (Matt 2026-09-10). A direct caller of
+  // computePricing still gets this ceiling. The seller letter does not: its
+  // cover is the weighted price of the sales that set it, and priceCmaSet
+  // does not put this ceiling back on top of that price.
   const streetAnchor = applyStreetAnchor(
     { subject, adjusted, priceOverride, notes },
     { conservative, recommended, highEnd },

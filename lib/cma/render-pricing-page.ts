@@ -331,6 +331,9 @@ function listRangeSentence(
   const bounds = listRangeBounds(pricing, failedAsk, comps)
   if (!bounds) return ''
   const { low: lo, high: hi } = bounds
+  // The sale spread can sit above the ask that failed. That is the evidence.
+  // It is not an instruction to list there again.
+  if (failedAsk != null && failedAsk > 0 && hi >= failedAsk) return ''
   const worth = worthRangeRounded(pricing, comps)
   if (lo === worth.low && hi === worth.high) {
     // Same two numbers. The instruction survives; the figures do not repeat.

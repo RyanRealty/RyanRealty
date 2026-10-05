@@ -197,13 +197,13 @@ describe('print CMA cover — the recommendation never sits outside its own stat
     expect(html).toMatch(/capped below this range/)
   })
 
-  it('keeps the plain "Supported range" label with no cap note when the recommendation sits inside it', () => {
+  it('keeps one support range and does not tell them to list above the ask that failed', () => {
     const { html } = renderCmaHtml(byronArgs({ recommended: 630000, conservative: 620000, highEnd: 635000 }))
-    // The list range and the supported range are the same pair here, so the
-    // chapter states it once and keeps the instruction (tasteReview round two,
-    // §1 Words: three statements of one range inside ten lines).
+    // The printed high ($623,675) sits above the ask that failed ($619,999).
+    // That spread is the evidence. It is not an instruction to list there.
+    // The failed ask is not printed as a second list tier either.
     expect(html).toContain('The sales support $619,675 to $623,675.')
-    expect(html).toContain('List in that range.')
+    expect(html).not.toContain('List in that range.')
     expect(html).not.toContain('List between $620,000 and $635,000')
     expect(html).not.toMatch(/capped (below|above) this range/)
   })

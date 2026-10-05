@@ -13,6 +13,13 @@ describe('date-adjustment text vs math: Slate and Oakside', () => {
       { address: '100 Other', closePrice: 620_000, timeAdjustment: 0, timeAdjustedPrice: 620_000 },
     ])
     expect(rolen).toMatch(/61234 Slate Rolen moved -4\.3 percent, from \$621,000 to \$594,000/)
+    // A concession is already inside timeAdjustedPrice. The percent has to
+    // match the two dollars it sits between, not the raw close.
+    const conceded = describeAppliedDateAdjustments([
+      { address: '2642 Keats', closePrice: 637_000, timeAdjustment: -8_680, timeAdjustedPrice: 611_320 },
+    ])
+    expect(conceded).toMatch(/2642 Keats moved -1\.4 percent, from \$620,000 to \$611,320/)
+    expect(conceded).not.toMatch(/from \$637,000/)
     expect(rolen).not.toMatch(/not applied|stays on its own|no date adjustment/i)
     expect(rolen).not.toMatch(/[—–]/)
 

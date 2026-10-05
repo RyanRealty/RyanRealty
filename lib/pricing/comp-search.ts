@@ -36,6 +36,11 @@ export type CompSearchKeptComp = {
   selectionTier?: string | null
   /** Street address, when the row has one. Used to name an outside sale. */
   address?: string | null
+  /**
+   * The selector put this sale inside the subject's recorded plat.
+   * The MLS subdivision name can still be blank or different.
+   */
+  ownPlat?: boolean | null
 }
 
 export type CompSearchRung = {
@@ -189,17 +194,28 @@ export function buildCompSearch(input: {
     kept: keptByTier.get(r.tier) ?? 0,
   }))
 
+  const inThisPlat = (c: CompSearchKeptComp): boolean => {
+    if (!subdivision) return false
+    // A point inside the recorded plat is in it even when the MLS name is
+    // blank or names a phase. Counting only the MLS string said Highland
+    // held two sales while a third, stamped own-plat, sat in the grid.
+    if (c.ownPlat === true) return true
+    return usableSubdivision(c.subdivision) === subdivision
+  }
+
   const keptBySubdivision: Record<string, number> = {}
   for (const c of input.keptComps) {
+    if (inThisPlat(c)) {
+      keptBySubdivision[subdivision!] = (keptBySubdivision[subdivision!] ?? 0) + 1
+      continue
+    }
     const name = usableSubdivision(c.subdivision)
     if (!name) continue
     keptBySubdivision[name] = (keptBySubdivision[name] ?? 0) + 1
   }
 
   const total = input.keptComps.length
-  const inside = subdivision
-    ? input.keptComps.filter((c) => usableSubdivision(c.subdivision) === subdivision)
-    : []
+  const inside = input.keptComps.filter((c) => inThisPlat(c))
   const inSubdivision = inside.length
 
   // The sales OUTSIDE the subdivision. Name those sales. A rung that
@@ -207,9 +223,7 @@ export function buildCompSearch(input: {
   // came from. own-street-24mo did that on 3722 Petrosa and the sentence
   // called 62899 Daniel, in Mirada, "your own street."
   const subjectStreetKey = streetKey(input.subjectStreet)
-  const outside = input.keptComps.filter(
-    (c) => !subdivision || usableSubdivision(c.subdivision) !== subdivision,
-  )
+  const outside = input.keptComps.filter((c) => !inThisPlat(c))
   const onSubjectStreet = (c: CompSearchKeptComp): boolean => {
     const saleStreet = streetKey(c.address)
     return subjectStreetKey != null && saleStreet != null && saleStreet === subjectStreetKey

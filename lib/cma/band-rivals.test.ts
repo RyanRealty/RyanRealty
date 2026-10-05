@@ -123,6 +123,28 @@ describe('pickBandRivals', () => {
     expect(picked.map((r) => r.address)).toEqual(['9 Fit'])
   })
 
+  it('allows one bedroom apart and refuses two, with no fallback to the mismatch', () => {
+    const subject = { latitude: 44.27, longitude: -121.17, beds: 4, sqft: 2554 }
+    const camp = rival({
+      listingKey: 'CAMP',
+      address: '19737 River Camp',
+      beds: 2,
+      sqft: 1200,
+      latitude: 44.27005,
+      longitude: -121.17,
+    })
+    const oneOff = rival({
+      listingKey: 'ONE',
+      address: '4 One Off',
+      beds: 3,
+      sqft: 2200,
+      latitude: 44.272,
+      longitude: -121.17,
+    })
+    expect(pickBandRivals([camp, oneOff], subject).map((r) => r.address)).toEqual(['4 One Off'])
+    expect(pickBandRivals([camp], subject)).toEqual([])
+  })
+
   it('drops unnamed rows', () => {
     expect(pickBandRivals([rival({ address: '  ' })])).toEqual([])
   })

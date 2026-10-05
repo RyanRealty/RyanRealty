@@ -670,12 +670,12 @@ describe('listPriceFromEngine is the only cover number', () => {
       },
       {},
     )
-    expect(cover.recommended).toBe(600_000)
+    expect(cover.recommended).toBe(594_000)
     expect(cover.currentAsk).toBeUndefined()
     expect(cover.askDerivedList).toBeUndefined()
   })
 
-  it('off-market cover is sale ÷ sale-to-list, not Method 3, and the list band stays a band', () => {
+  it('off-market cover is the weighted sale price, not sale ÷ sale-to-list', () => {
     const adjusted = [
       { ppsfTimeAdjusted: 425 },
       { ppsfTimeAdjusted: 428 },
@@ -719,12 +719,11 @@ describe('listPriceFromEngine is the only cover number', () => {
       null,
     )!
     const cover = applyEngineRecommendedList(board, engine)
-    expect(cover.recommended).toBe(472_000)
+    expect(cover.recommended).toBe(Math.round(cover.method3 / 1000) * 1000)
     expect(cover.predictedClose).toBe(452_000)
     expect(cover.conservative).toBe(engine.conservativeList)
     expect(cover.highEnd).toBe(engine.highEndList)
-    expect(cover.highEnd).toBeGreaterThan(cover.recommended)
-    expect(cover.method3).not.toBe(cover.recommended)
+    expect(cover.recommended).not.toBe(engine.recommendedList)
   })
 
   it('never prints a list above a failed last ask', () => {
@@ -1106,7 +1105,7 @@ describe('D10 — what the cover calls the value is the printed evidence', () =>
     expect(priced.valueLow).toBe(420_000)
     expect(priced.valueHigh).toBe(480_000)
     expect(priced.conservative).toBe(442_000)
-    expect(priced.recommended).toBe(474_000)
+    expect(priced.recommended).toBe(450_000)
     expect(priced.highEnd).toBe(480_000)
     expect(priced.highEnd).toBeLessThanOrEqual(priced.valueHigh)
     expect(priced.rangeRule?.saleToAskRatio).toBe(0.95)
@@ -1468,5 +1467,64 @@ describe('priceCmaSet: the sale-to-ask share comes from the sales that price (re
       keptOnly.highEnd,
     ])
     expect(withPool.rangeRule?.sentence).toContain('closing at 100.0 percent')
+  })
+})
+
+describe('priceCmaSet keeps the weighted cover when a same-street sale is cheaper', () => {
+  it('does not replace that price with the house-next-door ceiling', () => {
+    const home = {
+      ...subject,
+      streetAddress: '22936 Ghost Tree',
+      sqft: 3250,
+      standardStatus: 'Expired' as const,
+      lastListPrice: 2_350_000,
+    }
+    const row = (listingKey: string, address: string, closePrice: number, sqft: number) => ({
+      ...sale({ listingKey, address, closePrice, originalAsk: closePrice, lastAsk: closePrice, sqft }),
+      monthsSinceClose: 2,
+      timeAdjustment: 0,
+      timeAdjustedPrice: closePrice,
+      ppsfTimeAdjusted: closePrice / sqft,
+      sizeAdjustment: 0,
+      storyAdjustment: 0,
+      adjustedPrice: closePrice,
+      weight: 1,
+      listPrice: closePrice,
+      mlsNumber: null,
+      propertySubType: 'Single Family Residence',
+      photoUrl: null,
+      publicRemarks: null,
+      viewDescription: null,
+      taxAnnual: null,
+      domTotal: 20,
+    })
+    const adjusted = [
+      row('ST', '22972 Ghost Tree', 1_200_000, 3200),
+      row('A', '22850 Stone Wall', 1_800_000, 3300),
+      row('B', '65912 Bearing', 1_900_000, 3100),
+    ]
+    const built = priceCmaSet({
+      subject: home,
+      adjusted: adjusted as never,
+      market: null,
+      input: { priceOverride: null },
+      selection: {
+        pricingSales: adjusted.map((c) =>
+          sale({ listingKey: c.listingKey, closePrice: c.closePrice, originalAsk: c.closePrice, address: c.address, sqft: c.sqft }),
+        ),
+        tiersUsed: ['subdivision-6mo'],
+      },
+      marketIndex: [],
+      asOf: '2026-10-01',
+    })
+    // round5000(1,200,000 × 1.1). The old letter path printed this instead of the weighted sales.
+    const ceiling = 1_320_000
+    expect(built).not.toBeNull()
+    expect(built!.streetAnchor ?? null).toBeNull()
+    expect(built!.notes.join(' ')).not.toMatch(/same street/)
+    expect(built!.recommended).toBeGreaterThan(ceiling)
+    const weighted = built!.reconciliation?.weightedPrice ?? 0
+    expect(weighted).toBeGreaterThan(ceiling)
+    expect(built!.recommended).toBe(Math.round(weighted / 1000) * 1000)
   })
 })

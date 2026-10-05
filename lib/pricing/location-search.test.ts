@@ -174,4 +174,65 @@ describe('location search', () => {
     expect(listings.indexOf('neighborhood-24mo')).toBeLessThan(listings.indexOf('citywide-12mo'))
     expect(listings.indexOf('community-24mo')).toBeLessThan(listings.indexOf('competing-area-12mo'))
   })
+
+  it('does not price an unparented named plat from a different plat on a distance rung', () => {
+    // A home in a plat, with no neighborhood and no community, used to take
+    // widened-disclosed-24mo sales from another neighborhood. Adjacent and
+    // closer plats are already empty here. A sale with no plat name can
+    // still be the house next door.
+    const asOf = '2026-08-01'
+    const home = subject({
+      marketArea: null,
+      communityLocated: true,
+      communitySlug: null,
+      adjacentSubdivisionSlugs: [],
+      closerSubdivisionSlugs: [],
+      subdivision: 'Skyline',
+      subdivisionNorm: 'skyline',
+      subdivisionSlug: 'skyline',
+    })
+    const pool = [
+      sale({
+        listingKey: 'OWN',
+        address: '1 Skyline',
+        subdivision: 'Skyline',
+        subdivisionNorm: 'skyline',
+        subdivisionSlug: 'skyline',
+        marketArea: null,
+        communityLocated: true,
+        communitySlug: null,
+      }),
+      sale({
+        listingKey: 'BLANK',
+        address: '2 Next Door',
+        subdivision: null,
+        subdivisionNorm: null,
+        subdivisionSlug: null,
+        marketArea: null,
+        communityLocated: true,
+        communitySlug: null,
+        latitude: 44.0612,
+        longitude: -121.3004,
+      }),
+      sale({
+        listingKey: 'FAR',
+        address: '266 Riverside',
+        subdivision: 'Park Addition',
+        subdivisionNorm: 'park addition',
+        subdivisionSlug: 'park-addition',
+        marketArea: null,
+        communityLocated: true,
+        communitySlug: null,
+        latitude: 44.089,
+        longitude: -121.3,
+      }),
+    ]
+    const out = walkPricingLadder(home, pool, { asOf })
+    const keys = out.comps.map((c) => c.listingKey)
+    expect(keys).toContain('OWN')
+    expect(keys).toContain('BLANK')
+    expect(keys).not.toContain('FAR')
+    const widened = out.rungs.find((r) => r.tier === 'widened-disclosed-24mo')
+    expect(widened?.added ?? 0).toBe(0)
+  })
 })

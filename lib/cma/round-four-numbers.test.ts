@@ -307,7 +307,11 @@ describe('E2 — one list ceiling per document', () => {
       asOfIso: AS_OF,
       hasFinalCycle: true,
     })
-    expect(lead).toContain('List in that range.')
+    // The printed high ($1,930,000) sits above the ask that failed ($1,500,000).
+    // State the sales. Do not say to list in that range, and do not print the
+    // failed ask or the clamp floor as a second list tier.
+    expect(lead).toContain('The sales support $1,390,000 to $1,930,000.')
+    expect(lead).not.toContain('List in that range.')
     expect(lead).not.toContain('$1,500,000')
     expect(lead).not.toContain('$1,413,000')
   })

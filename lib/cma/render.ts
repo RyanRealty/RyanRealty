@@ -29,6 +29,7 @@ import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 import type { DevelopmentOpportunities } from '@/lib/cma/development'
 import type { RentalPotential } from '@/lib/cma/rental-potential'
+import { applyFlatDateStory } from '@/lib/cma/flat-date-story'
 import { assembleOpinionPages } from '@/lib/cma/opinion-pages'
 import { scrubSellerLetterHtml } from '@/lib/cma/seller-letter-copy'
 import { letterCoverPayoffHtml } from '@/lib/cma/cover-value'
@@ -471,7 +472,7 @@ export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: numb
   // only on the letter is exactly the drift the shared order removes.
   // The broker-review banner is admin-only (serve-document adminReview).
   // It does not belong in the owner letter, draft or final.
-  const src = scrubLetterSources(a)
+  const src = applyFlatDateStory(scrubLetterSources(a))
   const pages: PageDef[] = [coverPage(src), ...assembleOpinionPages(src)]
   const body = pages.map((p) => wrapPage(p)).join('\n')
   const html = `<!DOCTYPE html>

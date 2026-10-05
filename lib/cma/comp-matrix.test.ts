@@ -587,6 +587,19 @@ describe('the adjustment grid, line by line', () => {
     expect(card.indexOf('matrix-thumb')).toBeLessThan(card.indexOf('class="k">Weight in this price'))
   })
 
+  it('wraps the room sentence inside its own column', () => {
+    const html = renderCompMatrixHtml(
+      subject,
+      padSales({ ...comp, roomDifference: ['baths'] } as CmaAdjustedComp),
+    )
+    // The phone stack is rendered before the adjustment table.
+    const table = html.slice(html.indexOf('is-adjustments'))
+    const row = table.split('Adjusted for rooms (theirs vs yours)</th>')[1]?.split('</tr>')[0] ?? ''
+    expect(row).toContain('One bathroom off yours. No dollar adjustment.')
+    // Class n is nowrap. Two of those sentences in adjacent columns paint on top of each other.
+    expect(row).not.toMatch(/<td class="v n/)
+  })
+
   it('keeps a phone card from painting the next card\'s weight column', () => {
     for (const css of [cmaSectionStyles(), immersiveStylesheet()]) {
       expect(css).toContain('.comp-stack-card')

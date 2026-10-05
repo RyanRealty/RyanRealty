@@ -229,6 +229,11 @@ describe('the generators write plain English', () => {
     expect(pricing.timeAdjustment?.sentence).toContain('held flat')
     expect(pricing.timeAdjustment?.sentence).not.toContain('fell 8.0')
     expect(pricing.rangeRule?.sentence).not.toContain('-$45,000')
+    expect(pricing.valueLow).toBe(620_000)
+    expect(pricing.valueHigh).toBe(700_000)
+    expect(pricing.rangeRule?.sentence).toContain('$620,000 to $700,000')
+    expect(pricing.rangeRule?.sentence).not.toContain('$599,000')
+    expect(pricing.rangeRule?.sentence).not.toContain('printed range')
     expect(sellerLetterDefects(`${pricing.timeAdjustment?.sentence} ${pricing.rangeRule?.sentence}`)).toEqual([])
   })
 

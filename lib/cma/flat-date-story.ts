@@ -9,6 +9,12 @@ import type { CmaPricing } from '@/lib/cma/types'
 
 const LARGE_DATE_CUT = 10_000
 
+function rangeSentenceSuffix(sentence: string | null | undefined): string {
+  if (!sentence) return ''
+  const idx = sentence.search(/The range is (?:those|the) adjusted/)
+  return idx >= 0 ? ` ${sentence.slice(idx)}` : ''
+}
+
 export const FLAT_LOCAL_DATE_SENTENCE =
   'The price per square foot held flat while your home was listed, so no sale is moved for the month it closed.'
 
@@ -40,30 +46,44 @@ export function pricingWithoutCityDateMove<P extends CmaPricing>(
 ): P {
   const time = pricing.timeAdjustment
   const nextTime = time
-    ? { ...time, sentence: FLAT_LOCAL_DATE_SENTENCE, pctPerMonth: 0, pctOverWindow: 0 }
+    ? {
+        ...time,
+        sentence: FLAT_LOCAL_DATE_SENTENCE,
+        pctPerMonth: 0,
+        pctOverWindow: 0,
+        // The city or pocket index is not the story this sentence tells.
+        measure: null,
+      }
     : time
   const rule = pricing.rangeRule
   let rangeRule = rule
+  let valueLow = pricing.valueLow
+  let valueHigh = pricing.valueHigh
   if (rule?.rule === 'min-max') {
     const prices = comps.map((c) => c.adjustedPrice).filter((n) => n > 0)
     if (prices.length >= 2) {
       const saleLow = Math.min(...prices)
       const saleHigh = Math.max(...prices)
-      const printedLow = Math.min(pricing.valueLow, pricing.valueHigh)
-      const printedHigh = Math.max(pricing.valueLow, pricing.valueHigh)
+      // The date cut is gone. The cover, the lead, and this sentence are
+      // that one pair. Keeping the old band names a second range.
+      valueLow = saleLow
+      valueHigh = saleHigh
       rangeRule = {
         ...rule,
         saleLow,
         saleHigh,
+        adjustedLow: saleLow,
+        adjustedHigh: saleHigh,
         sentence: describeRangeSentence({
           rule: 'min-max',
-          n: rule.n,
-          kept: rule.kept,
-          printedLow,
-          printedHigh,
+          n: prices.length,
+          kept: prices.length,
+          printedLow: saleLow,
+          printedHigh: saleHigh,
           saleLow,
           saleHigh,
-        }),
+          suffix: rangeSentenceSuffix(rule.sentence),
+        }).replaceAll('adjusted for date and size', 'adjusted for size'),
       }
     }
   } else if (rule?.sentence) {
@@ -72,5 +92,22 @@ export function pricingWithoutCityDateMove<P extends CmaPricing>(
       sentence: rule.sentence.replaceAll('adjusted for date and size', 'adjusted for size'),
     }
   }
-  return { ...pricing, timeAdjustment: nextTime, rangeRule }
+  return { ...pricing, valueLow, valueHigh, timeAdjustment: nextTime, rangeRule }
+}
+
+/** Cover and chapters read one set. A later chapter must not strip the date again and leave the cover on the old band. */
+export function applyFlatDateStory<
+  T extends {
+    comps: Parameters<typeof compsWithoutCityDateMove>[0]
+    pricing: CmaPricing
+    listingMarket?: { ppsfMove?: string | null } | null
+  },
+>(args: T): T {
+  const flat = cityDateCutsFightFlatLocal({
+    ppsfMove: args.listingMarket?.ppsfMove ?? null,
+    comps: args.comps,
+  })
+  if (!flat) return args
+  const comps = compsWithoutCityDateMove(args.comps)
+  return { ...args, comps, pricing: pricingWithoutCityDateMove(args.pricing, comps) }
 }

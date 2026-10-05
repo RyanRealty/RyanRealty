@@ -27,6 +27,7 @@ import { applySubjectFactOverrides, resolveCmaSubject } from '@/lib/cma/subject'
 import { applyReconciledRoomCounts, reconcileSubjectRoomCounts } from '@/lib/cma/subject-room-conflict'
 import { pickCoverPhoto } from '@/lib/cma/cover-photo'
 import { applySlugStreetDirectional, formatPersistedCmaAddress } from '@/lib/cma/address-slug'
+import { cmaBlockedBecauseOnMarket } from '@/lib/cma/on-market'
 import { applyCmaClientIntent, isCmaClientIntent, parseCmaClientIntent } from '@/lib/cma/client-intent'
 import { brokerCompRefusal, selectCompsByKeys, MIN_COMPS } from '@/lib/cma/comps'
 import { pricingCompsAfterJudgment } from '@/lib/cma/judgment-prune'
@@ -52,7 +53,8 @@ import { buildRejectedSales } from '@/lib/pricing/rejected'
 import { dropPriorSalesOfSameHome } from '@/lib/pricing/same-address'
 import { buildPricingReview, confidenceForVerdict } from '@/lib/pricing/review'
 import { attachSellerNet } from '@/lib/pricing/seller-net'
-import { pricingFailureMessage } from '@/lib/pricing/price-set'
+import { compsTheLetterPrints, pricingFailureMessage, sourceSalesTheLetterKeeps } from '@/lib/pricing/price-set'
+import { applyFlatDateStory } from '@/lib/cma/flat-date-story'
 import { classifyStory, citySlug, irrigationClassFromOwrd, isCustomOrNewSubject, yearQualityCompatible } from '@/lib/pricing/classes'
 import type { CompSelectionDiagnostics } from '@/lib/cma/comp-trace'
 import { composeBuildSummary } from '@/lib/cma/build-summary'
@@ -260,6 +262,18 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           })
         : []
     const cycleStatus = String(cycleRows[0]?.['StandardStatus'] ?? subject.standardStatus ?? '')
+    // Live status first. A home that is listed again does not get a letter.
+    // Any cycle still on the market blocks, not only the newest row.
+    const onMarketReason =
+      cmaBlockedBecauseOnMarket(cycleStatus) ??
+      cycleRows.reduce<string | null>((hit, row) => {
+        if (hit) return hit
+        return cmaBlockedBecauseOnMarket(typeof row['StandardStatus'] === 'string' ? row['StandardStatus'] : null)
+      }, null)
+    if (onMarketReason) {
+      await recordBuildFailure(slug, onMarketReason, { stage: 'subject', docType })
+      return { ok: false, error: onMarketReason, slug }
+    }
     const lastCycleFailed = ['Expired', 'Canceled', 'Withdrawn'].includes(cycleStatus)
     if (lastCycleFailed) {
       const row0 = cycleRows[0] ?? {}
@@ -800,6 +814,18 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       await recordBuildFailure(slug, err, { stage: 'pricing', docType, compSelection: selection.diagnostics })
       return { ok: false, error: err, slug }
     }
+    // The price and the table are one set. A sale the price did not use does
+    // not stay in the letter once three sales set it. A shorter set fails
+    // here instead of printing a row the range then ignores.
+    adjusted = compsTheLetterPrints(adjusted)
+    if (adjusted.length < 3 || adjusted.some((c) => !((c.weight ?? 0) > 0))) {
+      const err = pricingFailureMessage(subject, adjusted)
+      await recordBuildFailure(slug, err, { stage: 'pricing', docType, compSelection: selection.diagnostics })
+      return { ok: false, error: err, slug }
+    }
+    // A later reprice starts from this list. The wider set would put the
+    // dropped sale back in the table at weight zero.
+    compsForPricing = sourceSalesTheLetterKeeps(compsForPricing, adjusted)
     if (lastCycleFailed) {
       const row0 = cycleRows[0] ?? {}
       const offDate = String(row0['off_market_date'] ?? row0['status_change_timestamp'] ?? '') || null
@@ -901,11 +927,16 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       const remaining = compsForPricing.filter((c) => !flagged.includes(c.listingKey))
       if (flagged.length > 0 && remaining.length >= MIN_COMPS) {
         const repriced = priceSet(remaining)
-        if (repriced.p) {
+        const repricedLetter = repriced.p ? compsTheLetterPrints(repriced.adj) : null
+        const letterReady =
+          repricedLetter != null &&
+          repricedLetter.length >= 3 &&
+          repricedLetter.every((c) => (c.weight ?? 0) > 0)
+        if (repriced.p && letterReady && repricedLetter) {
           firstRoundAudit = audit
           repairedKeys = flagged
-          compsForPricing = remaining
-          adjusted = repriced.adj
+          compsForPricing = sourceSalesTheLetterKeeps(remaining, repricedLetter)
+          adjusted = repricedLetter
           pricing = repriced.p
           if (lastCycleFailed) {
             const row0 = cycleRows[0] ?? {}
@@ -982,10 +1013,16 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           const gatedRepair = narrativeGate.adopt(repair.narrative, adjusted)
           if (gatedRepair.adopted) {
             const rebuilt = priceSet(compsForPricing)
-            if (!rebuilt.p) {
+            const rebuiltLetter = rebuilt.p ? compsTheLetterPrints(rebuilt.adj) : null
+            const letterReady =
+              rebuiltLetter != null &&
+              rebuiltLetter.length >= 3 &&
+              rebuiltLetter.every((c) => (c.weight ?? 0) > 0)
+            if (!rebuilt.p || !letterReady || !rebuiltLetter) {
               narrativeGate.revert()
             } else {
-              adjusted = rebuilt.adj
+              adjusted = rebuiltLetter
+              compsForPricing = sourceSalesTheLetterKeeps(compsForPricing, rebuiltLetter)
               pricing = rebuilt.p
               if (lastCycleFailed) {
                 const row0 = cycleRows[0] ?? {}
@@ -1432,7 +1469,17 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       propertySubType: subject.propertySubType,
     }).catch(() => null)
 
-    pricing = pinPrintedBandToSettingSales(pricing, renderComps)
+    // Pin first, then the flat-date story. The pin rewrites the range sentence,
+    // and that sentence must not put "adjusted for date" back beside a line
+    // that says no sale moved for the month it closed.
+    const pinned = pinPrintedBandToSettingSales(pricing, renderComps)
+    const flatTold = applyFlatDateStory({
+      comps: renderComps,
+      pricing: pinned,
+      listingMarket,
+    })
+    const letterComps = flatTold.comps
+    pricing = flatTold.pricing
     const renderArgs = {
       coverPhoto: {
         url: coverPhoto.url,
@@ -1442,7 +1489,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         costUsd: coverPhoto.costUsd,
       },
       subject,
-      comps: renderComps,
+      comps: letterComps,
       compSearch,
       compArea,
       expiredPeers,
@@ -1495,7 +1542,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       names: { clientName: input.client.name },
       identity: { personId, clientEmail: input.client.email },
       pricing,
-      closedComps: renderComps,
+      closedComps: letterComps,
       expiredAddresses: (expiredPeers?.peers ?? []).map((peer) => peer.address),
       // A name word inside an address the letter prints is the street, not the owner.
       printedAddresses: printedAddressesOf(renderArgs),

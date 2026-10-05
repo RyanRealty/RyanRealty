@@ -140,6 +140,29 @@ export function pricingFailureMessage(
   return `Pricing could not be computed${where} (the recommended price sits outside the sales that set it).`
 }
 
+/**
+ * The rows the letter prints. Once three sales set the price, a sale that
+ * does not is not in the table. A shorter set is returned whole so the
+ * minimum can still fail the build instead of padding the page.
+ */
+export function compsTheLetterPrints<T extends { weight?: number | null }>(comps: readonly T[]): T[] {
+  const setters = comps.filter((c) => (c.weight ?? 0) > 0)
+  if (setters.length >= PRICING_MIN_COMPS) return setters
+  return [...comps]
+}
+
+/**
+ * The source rows for the next price. A repair that starts over from the
+ * wider set puts a sale the price did not use back in the table at weight zero.
+ */
+export function sourceSalesTheLetterKeeps<T extends { listingKey: string }>(
+  source: readonly T[],
+  priced: readonly { listingKey: string; weight?: number | null }[],
+): T[] {
+  const keep = new Set(compsTheLetterPrints(priced).map((c) => c.listingKey))
+  return source.filter((c) => keep.has(c.listingKey))
+}
+
 export function recommendationOutsideSaleSet(
   recommended: number | null | undefined,
   salePrices: readonly number[],

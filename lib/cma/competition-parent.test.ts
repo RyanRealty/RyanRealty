@@ -193,6 +193,28 @@ describe('empty subdivision competition', () => {
     })
     expect(sameKind?.productWidened).toBe(false)
     expect(sameKind?.rivals.map((r) => r.address)).toEqual(['10 Townhouse'])
+
+    const riverCamp = home({
+      listingKey: 'camp',
+      address: '19737 River Camp',
+      beds: 2,
+      sqft: 1200,
+      latitude: 44.0763,
+      longitude: -121.352,
+      subdivision: 'Awbrey Woods',
+    })
+    expect(
+      parentCompetitionSet({
+        parent: parent!,
+        emptyPlace: 'Copperstone',
+        lo: 618_000,
+        hi: 756_000,
+        sameType: [],
+        anyResidential: [riverCamp],
+        subjectSubdivision: 'Copperstone',
+        subject: { latitude: 44.076219, longitude: -121.352101, beds: 4, sqft: 2554 },
+      }),
+    ).toBeNull()
   })
 
   it('does not let a home outside the sales place pull the recommended price', () => {

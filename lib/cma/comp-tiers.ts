@@ -323,6 +323,10 @@ const RANCH_ACRES = 5
 
 export function isRuralAcreage(subject: CmaSubject, marketArea: string | null): boolean {
   if (marketArea != null) return false
+  // A named plat is a place. The county-mile rungs are for acreage that has
+  // no plat. A short plat stays short. It does not reach ten miles into the
+  // next subdivision.
+  if (realSubdivision(subject.subdivision) != null) return false
   const acres = subject.lotAcres ?? 0
   if (acres < 1) return false
   const city = (subject.city ?? '').trim().toLowerCase()

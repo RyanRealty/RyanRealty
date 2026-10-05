@@ -124,10 +124,21 @@ function recencyPhrase(sale: ReconcilableSale): string {
   return `sold ${months} months ago`
 }
 
-/** "its price moved 2.1 percent" · "its price did not move". */
-function movementPhrase(pct: number): string {
-  if (pct <= 0) return 'its price did not move when adjusted for date and size'
-  return `its price moved ${pct} percent when adjusted for date and size`
+/**
+ * Name only the adjustments that moved this sale. A date-only move is not
+ * "date and size". 61441 Linton moved 3.9 percent for date and the size
+ * adjustment was $0, and the letter still said both.
+ */
+function movementPhrase(sale: ReconcilableSale): string {
+  const parts: string[] = []
+  if (Math.abs(sale.timeAdjustment) >= 1) parts.push('date')
+  if (Math.abs(sale.sizeAdjustment) >= 1) parts.push('size')
+  if (Math.abs(sale.storyAdjustment ?? 0) >= 1) parts.push('style')
+  const pct = grossAdjustmentPct(sale)
+  if (parts.length === 0 || pct <= 0) return 'its price did not move'
+  const named =
+    parts.length === 1 ? parts[0]! : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`
+  return `its price moved ${pct} percent when adjusted for ${named}`
 }
 
 /**
@@ -161,7 +172,7 @@ export function reconcileAdjustedSales(args: {
 
   const weights: ReconciliationWeight[] = usable.map((s, i) => {
     const gross = grossAdjustmentPct(s)
-    const parts = [sizePhrase(s, args.subjectSqft), recencyPhrase(s), movementPhrase(gross)]
+    const parts = [sizePhrase(s, args.subjectSqft), recencyPhrase(s), movementPhrase(s)]
     const leads: string[] = []
     // "closest in size to yours" adds nothing beside "the same size as yours",
     // and printing both reads as padding.
@@ -190,7 +201,7 @@ export function reconcileAdjustedSales(args: {
     recencyPhrase(leaderSale),
     ...(leader.grossAdjustmentPct === smallestGross && usable.length > 1
       ? ['it needed the smallest adjustment of any of them']
-      : [movementPhrase(leader.grossAdjustmentPct)]),
+      : [movementPhrase(leaderSale)]),
   ]
   // ONE COUNT (tasteReview round three, §2 item 1). The sentence states how
   // many sales are behind the price, and it is the same number as the weights

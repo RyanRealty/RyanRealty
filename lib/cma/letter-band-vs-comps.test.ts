@@ -83,6 +83,34 @@ describe('band overlaps closed comps', () => {
     expect(pinned.rangeRule?.sentence).not.toContain('$725,000')
     expect(pinned.rangeRule?.sentence).not.toContain('$599,000')
   })
+
+  it('does not say the sales were adjusted for size when size did not move', () => {
+    const pinned = pinPrintedBandToSettingSales(
+      {
+        valueLow: 510_000,
+        valueHigh: 612_000,
+        recommended: 581_000,
+        highEnd: 612_000,
+        rangeRule: {
+          rule: 'min-max' as const,
+          n: 2,
+          kept: 2,
+          adjustedLow: 510_000,
+          adjustedHigh: 612_000,
+          saleToAskRatio: null,
+          saleToAskSource: 'none' as const,
+          ratiosExcluded: 0,
+          sentence: 'The range is the spread of two sale prices adjusted for date and size: $510,000 to $612,000.',
+        },
+      },
+      [
+        { adjustedPrice: 510_735, closePrice: 557_000, weight: 2, timeAdjustment: -38_265, sizeAdjustment: 0, storyAdjustment: 0 },
+        { adjustedPrice: 611_320, closePrice: 637_000, weight: 3, timeAdjustment: -8_680, sizeAdjustment: 0, storyAdjustment: 0 },
+      ],
+    )
+    expect(pinned.rangeRule?.sentence).toContain('adjusted for date')
+    expect(pinned.rangeRule?.sentence).not.toContain('adjusted for date and size')
+  })
 })
 
 describe('date sentence matches the grid', () => {

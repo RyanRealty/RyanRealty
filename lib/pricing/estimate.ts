@@ -10,7 +10,7 @@
  * Beds/baths/age: match filters, not stacked dollar lines.
  */
 
-import { applyStreetAnchor, computePricing } from '@/lib/cma/pricing'
+import { computePricing } from '@/lib/cma/pricing'
 import type { CmaSiteData } from '@/lib/cma/county'
 import {
   attachSellerNet,
@@ -109,6 +109,15 @@ export function saleBandFromAdjusted(
 
 function round1000(n: number): number {
   return Math.round(n / 1000) * 1000
+}
+
+/** The cover list. Weighted sale price, on the thousand. Not sale ÷ sale-to-list. */
+function roundedWeightedList(pricing: CmaPricing, close: number | null): number | null {
+  const weighted = pricing.reconciliation?.weightedPrice
+  const raw =
+    typeof weighted === 'number' && weighted > 0 ? weighted : pricing.method3 > 0 ? pricing.method3 : close
+  if (raw == null || !(raw > 0)) return null
+  return round1000(raw)
 }
 
 /**
@@ -845,12 +854,16 @@ export function describeRangeSentence(args: {
   /** Trimmed-rule aside count wording, already composed. */
   trimmedAside?: string | null
   suffix?: string
+  /** What actually moved the sale. "none" prints the prices with no adjustment claim. */
+  adjustedFor?: 'date and size' | 'date' | 'size' | 'none'
 }): string {
   const usd = (n: number) => `$${Math.round(n).toLocaleString('en-US')}`
   const suffix = args.suffix ?? ''
+  const adjustedFor = args.adjustedFor ?? 'date and size'
+  const adjusted = adjustedFor === 'none' ? '' : ` adjusted for ${adjustedFor}`
   if (args.rule === 'trimmed-one-each-end') {
     const aside = args.trimmedAside ?? ''
-    return `The range is the spread of the ${countWord(args.kept)} sale prices behind this price, adjusted for date and size: ${usd(args.printedLow)} to ${usd(args.printedHigh)}. ${aside}${suffix}`
+    return `The range is the spread of the ${countWord(args.kept)} sale prices behind this price${adjusted}: ${usd(args.printedLow)} to ${usd(args.printedHigh)}. ${aside}${suffix}`
   }
   const same = args.printedLow === args.saleLow && args.printedHigh === args.saleHigh
   const count =
@@ -858,9 +871,31 @@ export function describeRangeSentence(args: {
       ? `all ${countWord(args.n)}`
       : `${countWord(args.kept)} of the ${countWord(args.n)}`
   if (same) {
-    return `The range is the spread of ${count} sale prices adjusted for date and size: ${usd(args.printedLow)} to ${usd(args.printedHigh)}.${suffix}`
+    return `The range is the spread of ${count} sale prices${adjusted}: ${usd(args.printedLow)} to ${usd(args.printedHigh)}.${suffix}`
   }
-  return `The ${countWord(args.kept)} sale prices that set the ends, of the ${countWord(args.n)} adjusted for date and size, run from ${usd(args.saleLow)} to ${usd(args.saleHigh)}. The printed range is ${usd(args.printedLow)} to ${usd(args.printedHigh)}.${suffix}`
+  return `The ${countWord(args.kept)} sale prices that set the ends, of the ${countWord(args.n)}${adjusted}, run from ${usd(args.saleLow)} to ${usd(args.saleHigh)}. The printed range is ${usd(args.printedLow)} to ${usd(args.printedHigh)}.${suffix}`
+}
+
+/** The adjustment words the range sentence is allowed to use. Unknown fields keep the old phrase. */
+export function printedAdjustmentPhrase(
+  comps: readonly {
+    sizeAdjustment?: number | null
+    storyAdjustment?: number | null
+    timeAdjustment?: number | null
+  }[],
+): 'date and size' | 'date' | 'size' | 'none' {
+  const known = comps.some(
+    (c) => c.sizeAdjustment != null || c.storyAdjustment != null || c.timeAdjustment != null,
+  )
+  if (!known) return 'date and size'
+  const size = comps.some(
+    (c) => Math.abs(c.sizeAdjustment ?? 0) >= 1 || Math.abs(c.storyAdjustment ?? 0) >= 1,
+  )
+  const date = comps.some((c) => Math.abs(c.timeAdjustment ?? 0) >= 500)
+  if (size && date) return 'date and size'
+  if (date) return 'date'
+  if (size) return 'size'
+  return 'none'
 }
 
 /**
@@ -956,6 +991,7 @@ export function pinPrintedBandToSettingSales<
         saleLow: low,
         saleHigh: high,
         suffix: rangeSentenceSuffix(rule.sentence),
+        adjustedFor: printedAdjustmentPhrase(setters),
       })
     : null
   const next: T = {
@@ -1585,10 +1621,15 @@ export function applyEngineRecommendedList(
   const highEndClamped = Math.min(highEnd, bandTop)
   const conservativeClamped = Math.min(conservative, highEndClamped)
   const listClamped = Math.min(Math.max(list, conservativeClamped), highEndClamped)
+  // The printed recommendation is the weighted price of the sales that set
+  // it. Sale ÷ sale-to-list stays on engine.recommendedList for the listing
+  // stamp. It is not the cover. A price already under a failed ask is left
+  // there by the cap below. A price at or above that ask is pulled under.
+  const weightedList = roundedWeightedList(pricing, close)
   return clipCoverToFailedAsk(
     {
       ...pricing,
-      recommended: listClamped,
+      recommended: weightedList ?? listClamped,
       conservative: conservativeClamped,
       highEnd: highEndClamped,
       valueLow: Math.min(valueLow, valueHigh),
@@ -1754,11 +1795,11 @@ export function priceCmaSet(args: {
       timeAdjustedPrice: c.timeAdjustedPrice,
     })),
   })
-  // THE HOUSE NEXT DOOR IS THE EVIDENCE, AND IT GETS THE LAST WORD BEFORE THE
-  // FAILED-ASK CEILING (Matt 2026-09-10). computePricing already applied it,
-  // and the engine cover below re-derives every tier from the range rule, so
-  // it has to run again after. applyStreetAnchor is idempotent and keeps the
-  // first `before`, so the sentence names the whole distance once.
+  // The printed recommendation is the weighted price of the sales that set
+  // it. computePricing may still hold a same-street ceiling for a direct
+  // caller. The letter does not. Re-applying that ceiling after the weighted
+  // cover replaced Ghost Tree's $1,790,000 with $1,370,000 while the table
+  // still showed the three sales that weight to $1,790,000.
   // THE SHARE COMES FROM THE SALES THAT PRICE (review of da8dce6, 2026-09-30).
   // selection.pricingSales is the selector's whole pool: the sales the
   // comparability review excluded, the product wall kept out and the audit
@@ -1786,26 +1827,13 @@ export function priceCmaSet(args: {
     marketSaleToList: args.market?.saleToListRatio,
   })
   if (covered) {
-    const anchored = applyStreetAnchor(
-      {
-        subject: args.subject,
-        adjusted: adjusted,
-        priceOverride: args.input.priceOverride ?? null,
-        notes: covered.notes,
-        prior: covered.streetAnchor ?? null,
-      },
-      { conservative: covered.conservative, recommended: covered.recommended, highEnd: covered.highEnd },
+    // A same-street sale already has its weight. It does not replace the
+    // weighted price, and the letter does not say the list was held to a
+    // different number than the one on the cover.
+    covered.notes = covered.notes.filter(
+      (n) => !n.includes('sits on the same street') && !n.includes('sit on the same street'),
     )
-    covered.streetAnchor = anchored
-    if (anchored && covered.recommended > anchored.after) {
-      covered.recommended = anchored.after
-      // The twin is the floor, not the number.
-      covered.conservative = Math.min(covered.conservative, anchored.floor)
-      if (covered.highEnd < covered.recommended) covered.highEnd = covered.recommended
-      covered.valueLow = covered.conservative
-      covered.valueHigh = covered.highEnd
-      covered.needsReview = true
-    }
+    covered.streetAnchor = null
     const settingPrices = adjusted
       .filter((c) => c.weight > 0 && c.adjustedPrice > 0)
       .map((c) => c.adjustedPrice)

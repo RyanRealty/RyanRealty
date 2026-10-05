@@ -422,7 +422,11 @@ export function fillShortSetWeights<T extends {
       marketCapped: comp.marketCapped,
       fillShortSet: true,
     })
-    return weight > 0 ? { ...comp, weight } : comp
+    if (!(weight > 0)) return comp
+    // The letter prints this same object. A copy would let the price count
+    // the sale while the page still shows a weight of zero.
+    comp.weight = weight
+    return comp
   })
 }
 

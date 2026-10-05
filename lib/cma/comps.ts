@@ -719,6 +719,10 @@ export async function selectComps(
             ? 'no plat next to the subject\'s is known'
             : tier.ruralOnly && !ruralAcreage
             ? 'this rung is reserved for rural acreage subjects outside every mapped neighborhood'
+            : realSubdivision(subject.subdivision) &&
+                !ruralAcreage &&
+                (tier.whenStarved || isListingsGeographyWidenTier(tier))
+              ? 'this home is in a named subdivision, so a different subdivision on a distance rung does not set the price'
             : null
     const sqftMin = Math.round(sqft * (1 - tier.sqftBand))
     const sqftMax = Math.round(sqft * (1 + tier.sqftBand))

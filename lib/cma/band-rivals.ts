@@ -83,9 +83,14 @@ export function rivalFitsSubject(
   subject?: { beds?: number | null; sqft?: number | null } | null,
 ): boolean {
   if (!subject) return true
-  if (subject.beds != null && r.beds != null && r.beds !== subject.beds) return false
+  // One whole bedroom apart still competes. Two or more does not, and neither
+  // does a house past the one living-area cutoff. A 2-bedroom, 1,200 sqft
+  // listing does not compete with a 4-bedroom, 2,554 sqft house.
+  if (subject.beds != null && r.beds != null && Math.abs(Math.floor(subject.beds) - Math.floor(r.beds)) > 1) {
+    return false
+  }
   if (subject.sqft != null && subject.sqft > 0 && r.sqft != null && r.sqft > 0) {
-    if (Math.abs(r.sqft - subject.sqft) / subject.sqft > 0.25) return false
+    if (Math.abs(r.sqft - subject.sqft) / subject.sqft > 0.35) return false
   }
   return true
 }
@@ -102,7 +107,10 @@ export function pickBandRivals(
 ): CmaBandRival[] {
   const named = rivals.filter((r) => r.address.trim() && r.listPrice > 0)
   const similar = named.filter((r) => rivalFitsSubject(r, subject))
-  const pool = similar.length > 0 ? similar : named
+  const canJudge =
+    subject != null && (subject.beds != null || (subject.sqft != null && subject.sqft > 0))
+  // No fallback to a different house. An empty list is the honest competition.
+  const pool = canJudge ? similar : named
   const slat = subject?.latitude
   const slng = subject?.longitude
   const ranked =
@@ -551,7 +559,11 @@ export function parentCompetitionSet(input: {
   asOfIso?: string | null
 }): CmaBandRivalSet | null {
   const compatible = (rows: readonly CmaBandRival[]) =>
-    rows.filter((r) => resortCommunityCompatible(input.subjectSubdivision, r.subdivision))
+    rows.filter(
+      (r) =>
+        resortCommunityCompatible(input.subjectSubdivision, r.subdivision) &&
+        rivalFitsSubject(r, input.subject ?? null),
+    )
   const same = compatible(input.sameType)
   const widened = same.length === 0
   const rows = widened ? compatible(input.anyResidential) : same
@@ -610,19 +622,12 @@ export function buildBandRivalSet(input: {
   ringsTried?: number[]
   emptyPlace?: string | null
   productWidened?: boolean
-  /** Closest homes, including a different bed count. Used when the sales plat had nothing listed. */
+  /** Kept so callers can still ask for closest-first. Bed and size still apply. */
   rankByDistance?: boolean
 }): CmaBandRivalSet {
   const subject = input.subject ?? null
-  const rankedSubject = input.rankByDistance
-    ? {
-        latitude: subject?.latitude ?? null,
-        longitude: subject?.longitude ?? null,
-        beds: null,
-        sqft: null,
-      }
-    : subject
-  const rivals = pickBandRivals(input.rivals, rankedSubject, input.cap ?? BAND_RIVAL_CAP)
+  // Distance ranks the homes that fit. It does not drop the bed and size test.
+  const rivals = pickBandRivals(input.rivals, subject, input.cap ?? BAND_RIVAL_CAP)
   const likeYours = input.rivals.some((r) => rivalFitsSubject(r, input.subject ?? null))
   const widenedFrom = input.widenedFrom ?? null
   return {

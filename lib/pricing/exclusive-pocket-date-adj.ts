@@ -138,11 +138,19 @@ export function describeAppliedDateAdjustments(moves: readonly AppliedDateMove[]
   })
   if (moved.length === 0) return null
   const bits = moved.map((m) => {
-    const to = m.timeAdjustedPrice != null && m.timeAdjustedPrice > 0 ? m.timeAdjustedPrice : m.closePrice + m.timeAdjustment
-    const pct = (m.timeAdjustment / m.closePrice) * 100
+    // The percent is the date dollar over the price it was applied to.
+    // timeAdjustedPrice can already be net of a seller concession, so
+    // "from the close to that figure" names a percent the dollars do not make.
+    const to =
+      m.timeAdjustedPrice != null && m.timeAdjustedPrice > 0
+        ? m.timeAdjustedPrice
+        : m.closePrice + m.timeAdjustment
+    const from = to - m.timeAdjustment
+    const base = from > 0 ? from : m.closePrice
+    const pct = (m.timeAdjustment / base) * 100
     const sign = pct > 0 ? '+' : ''
     const where = m.address.trim() || 'one sale'
-    return `${where} moved ${sign}${pct.toFixed(1)} percent, from ${usd(m.closePrice)} to ${usd(to)}`
+    return `${where} moved ${sign}${pct.toFixed(1)} percent, from ${usd(base)} to ${usd(to)}`
   })
   const head =
     moved.length === 1

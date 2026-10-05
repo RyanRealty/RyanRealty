@@ -110,6 +110,48 @@ describe('reconcileAdjustedSales', () => {
     expect(b.reason).toContain('700 square feet larger than yours')
   })
 
+  it('names only the adjustments that moved that sale', () => {
+    const out = reconcileAdjustedSales({
+      sales: [
+        sale({
+          listingKey: 'DATE',
+          address: '61441 Linton',
+          timeAdjustment: -36_839,
+          sizeAdjustment: 0,
+          storyAdjustment: 0,
+          closePrice: 935_000,
+          weight: 3,
+        }),
+        sale({
+          listingKey: 'BOTH',
+          address: '1124 Baltimore',
+          timeAdjustment: -10_000,
+          sizeAdjustment: 8_000,
+          weight: 1,
+        }),
+        sale({
+          listingKey: 'NONE',
+          address: '61429 Linton',
+          timeAdjustment: 0,
+          sizeAdjustment: 0,
+          storyAdjustment: 0,
+          weight: 1,
+        }),
+      ],
+      subjectSqft: 1_700,
+    })
+    const date = out.weights.find((w) => w.listingKey === 'DATE')!
+    const both = out.weights.find((w) => w.listingKey === 'BOTH')!
+    const none = out.weights.find((w) => w.listingKey === 'NONE')!
+    expect(date.reason).toContain('when adjusted for date')
+    expect(date.reason).not.toContain('date and size')
+    expect(both.reason).toContain('when adjusted for date and size')
+    expect(none.reason).toContain('its price did not move')
+    expect(none.reason).not.toContain('date and size')
+    expect(out.sentence).toContain('when adjusted for date')
+    expect(out.sentence).not.toContain('date and size')
+  })
+
   it('names the leading sale in a sentence a seller can read', () => {
     const out = reconcileAdjustedSales({
       sales: [

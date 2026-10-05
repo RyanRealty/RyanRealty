@@ -48,10 +48,17 @@ describe('cmaSubjectToPricing', () => {
     expect(out.waterClass).toBe('public')
   })
 
-  it('is rural only outside the mesh on an acre or more', () => {
-    const out = cmaSubjectToPricing(subject({ latitude: 44.2, longitude: -121.4, lotAcres: 6.73 }))
+  it('is rural only outside the mesh on an acre or more, and a named plat is not rural', () => {
+    const out = cmaSubjectToPricing(
+      subject({ latitude: 44.2, longitude: -121.4, lotAcres: 6.73, subdivision: null }),
+    )
     expect(out.ruralAcreage).toBe(true)
     expect(out.marketArea).toBeNull()
+    const namedPlat = cmaSubjectToPricing(
+      subject({ latitude: 44.2, longitude: -121.4, lotAcres: 6.73, subdivision: 'Westridge' }),
+    )
+    expect(namedPlat.ruralAcreage).toBe(false)
+    expect(namedPlat.marketArea).toBeNull()
   })
 
   it('carries remarks and an OWRD irrigation class onto the facts subject', () => {
@@ -93,14 +100,17 @@ describe('matchToCompSelection', () => {
     expect(awbrey.diagnostics.pricing_source).toBe('facts')
     expect(awbrey.diagnostics.starved_reason).toMatch(/facts path/i)
 
-    const rural = matchToCompSelection(subject({ latitude: 44.2, longitude: -121.4, lotAcres: 6.73 }), {
-      comps: [],
-      tiersUsed: [],
-      trace: [],
-      reachedTarget: false,
-      starved: true,
-      rungs: [],
-    })
+    const rural = matchToCompSelection(
+      subject({ latitude: 44.2, longitude: -121.4, lotAcres: 6.73, subdivision: null }),
+      {
+        comps: [],
+        tiersUsed: [],
+        trace: [],
+        reachedTarget: false,
+        starved: true,
+        rungs: [],
+      },
+    )
     expect(rural.diagnostics.market_area).toBeNull()
     expect(rural.diagnostics.market_area_resolved).toBe(false)
     expect(rural.diagnostics.rural_acreage).toBe(true)

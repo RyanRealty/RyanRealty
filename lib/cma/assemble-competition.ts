@@ -56,6 +56,7 @@ export async function assembleCompetition(args: {
       address: c.address,
       subdivision: c.subdivision,
       selectionTier: c.selectionTier,
+      ownPlat: c.ownPlat,
     })),
     rural:
       args.diagnostics.rural_acreage || (subject.lotAcres ?? 0) >= 1

@@ -514,6 +514,23 @@ function passesTier(
     // not price an ordinary plat next door either.
     return { ok: false, miles: null }
   }
+  // A named plat with no parent does not take a different named plat off a
+  // distance ring or the 10-mile widen. Adjacent and closer rungs already
+  // walked those plats. A sale with no plat name can still be the house next
+  // door. A parent neighborhood or community is a separate wall, above: inside
+  // that parent a nearby ring may still take another plat (Kenwood taking
+  // Aubrey, a custom peer farther inside the same neighborhood). This wall
+  // holds only when the subject sits in a plat and in no parent, which is how
+  // a 10-mile rung priced a home from another neighborhood.
+  if (
+    !subject.ruralAcreage &&
+    !confined &&
+    (subject.subdivisionSlug || subject.subdivisionNorm) &&
+    (isGeographyWidenTier(tier) || tier.whenStarved) &&
+    namedPlatOutsideTheCrawl(subject, sale)
+  ) {
+    return { ok: false, miles: null }
+  }
   // The plats next to the subject's, closest first.
   if (tier.adjacentSubdivision) {
     const ring = subject.adjacentSubdivisionSlugs ?? []
@@ -738,6 +755,23 @@ const BRACKET_MAX_AGE_MONTHS = 24
  */
 function inSubjectPlat(subject: PricingSubject, sale: PricingSale): boolean {
   return isClusterPocket(subject) ? saleInExclusivePocket(subject, sale) : samePlat(subject, sale)
+}
+
+/**
+ * True when this sale is a recorded or named plat the crawl did not already
+ * treat as the subject's own, a touching plat, or the next plat inside the
+ * parent. A blank MLS name is not another plat.
+ */
+function namedPlatOutsideTheCrawl(subject: PricingSubject, sale: PricingSale): boolean {
+  if (inSubjectPlat(subject, sale)) return false
+  const saleSlug = sale.subdivisionSlug ?? null
+  if (saleSlug && subject.subdivisionSlug && saleSlug === subject.subdivisionSlug) return false
+  if (saleSlug && (subject.adjacentSubdivisionSlugs ?? []).includes(saleSlug)) return false
+  if (saleSlug && (subject.closerSubdivisionSlugs ?? []).includes(saleSlug)) return false
+  const saleNorm = sale.subdivisionNorm?.trim() || null
+  if (!saleSlug && !saleNorm) return false
+  if (saleNorm && subject.subdivisionNorm && saleNorm === subject.subdivisionNorm) return false
+  return true
 }
 
 function bracketEligible(

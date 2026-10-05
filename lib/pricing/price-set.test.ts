@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { closedCompWeight, fillShortSetWeights } from '@/lib/pricing/closed-comp-weight'
 import { listPriceFromEngine } from '@/lib/pricing/estimate'
-import { pricingFailureMessage, recommendationOutsideSaleSet, saleSetsThePrice } from '@/lib/pricing/price-set'
+import {
+  compsTheLetterPrints,
+  pricingFailureMessage,
+  recommendationOutsideSaleSet,
+  saleSetsThePrice,
+  sourceSalesTheLetterKeeps,
+} from '@/lib/pricing/price-set'
 import { weightedAdjustedPrice } from '@/lib/pricing/reconciliation'
 
 const subject = {
@@ -121,6 +127,38 @@ describe('a sale sets the price only when it is this home', () => {
   })
 })
 
+describe('the letter prints the sales that set the price', () => {
+  it('drops a sale that does not set the price once three sales do', () => {
+    const rows = [
+      { weight: 1, address: 'a' },
+      { weight: 2, address: 'b' },
+      { weight: 3, address: 'c' },
+      { weight: 0, address: 'd' },
+    ]
+    expect(compsTheLetterPrints(rows).map((r) => r.address)).toEqual(['a', 'b', 'c'])
+  })
+
+  it('keeps a short set so the minimum can still fail it', () => {
+    expect(compsTheLetterPrints([{ weight: 1 }, { weight: 2 }, { weight: 0 }])).toHaveLength(3)
+  })
+
+  it('does not hand a dropped sale back to the next price', () => {
+    const source = [
+      { listingKey: 'a' },
+      { listingKey: 'b' },
+      { listingKey: 'c' },
+      { listingKey: 'd' },
+    ]
+    const priced = [
+      { listingKey: 'a', weight: 1 },
+      { listingKey: 'b', weight: 2 },
+      { listingKey: 'c', weight: 3 },
+      { listingKey: 'd', weight: 0 },
+    ]
+    expect(sourceSalesTheLetterKeeps(source, priced).map((row) => row.listingKey)).toEqual(['a', 'b', 'c'])
+  })
+})
+
 describe('pricing failure message', () => {
   it('does not call a thin price-setting set a missing sqft', () => {
     const thin = pricingFailureMessage({ sqft: 1748 }, [{ weight: 0 }, { weight: 0 }, { weight: 0 }])
@@ -165,6 +203,12 @@ describe('a short plat does not stand alone', () => {
     ownPlat: false,
     selectionTier: 'beyond-2mi-12mo',
     monthsSinceClose: 2,
+  })
+
+  it('writes that filled weight onto the sale the letter already holds', () => {
+    const admitted = outside()
+    fillShortSetWeights(home, [inside, outside(), outside(2000), admitted])
+    expect(admitted.weight).toBeGreaterThan(0)
   })
 
   it('keeps the inside sale and lets the admitted next rung set the price', () => {

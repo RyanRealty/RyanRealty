@@ -288,7 +288,9 @@ const ADJUSTMENT_ROWS: ReadonlyArray<MatrixRow> = [
   // sales in this market put the extra bath slightly below its pair at the
   // median). The reader asks "what did you adjust for" in this grid, so the
   // honest $0 belongs in it. Folds away when no sale carries a difference.
-  { label: 'Adjusted for rooms (theirs vs yours)', figure: true, grid: true },
+  // Prose, not a figure. Class n is nowrap, and two of these sentences
+  // in neighboring columns paint across each other.
+  { label: 'Adjusted for rooms (theirs vs yours)', figure: false, grid: true },
   { label: 'Net adjustment', figure: true, grid: true },
   { label: 'Net, as a share of the sale', figure: true, grid: true },
   { label: 'Every adjustment added up', figure: true, grid: true },

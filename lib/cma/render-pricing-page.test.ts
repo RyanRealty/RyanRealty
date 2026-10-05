@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { pricingPage, salesThatSetItPage } from '@/lib/cma/render-pricing-page'
+import { pricingPage, salesThatSetItPage, whatItsWorthLead } from '@/lib/cma/render-pricing-page'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 
 const subject = {
@@ -93,6 +93,22 @@ describe('pricingPage', () => {
     // prints without the figures a second time.
     expect(html).toContain('The sales support $636,000 to $638,000.')
     expect(html).toContain('List in that range.')
+    const overAsk = whatItsWorthLead(
+      {
+        ...subject,
+        standardStatus: 'Canceled',
+        lastListPrice: 849_900,
+        lastListDate: '2026-08-01',
+      },
+      { ...pricing, failedAsk: 849_900, valueLow: 774_513, valueHigh: 894_798, recommended: 849_000 },
+      { asOfIso: '2026-10-04', hasFinalCycle: true },
+      [
+        { ...seedComp, adjustedPrice: 774_513, listingKey: 'A' },
+        { ...seedComp, adjustedPrice: 894_798, listingKey: 'B' },
+      ] as CmaAdjustedComp[],
+    )
+    expect(overAsk).toContain('The sales support $774,513 to $894,798.')
+    expect(overAsk).not.toContain('List in that range.')
     expect(html).not.toContain('List between $636,000 and $638,000.')
     expect(html).not.toContain('$669,000')
     // The three-stat strip is gone: the number IS the chapter title and the

@@ -305,6 +305,34 @@ describe('buildCompSearch — the rungs, the counts, the sentence', () => {
     )
   })
 
+  it('counts a sale inside the recorded plat even when the MLS name is blank', () => {
+    // 1405 Davenport is inside Highland. The MLS subdivision is N/A, and the
+    // point is own-plat. The sentence used to call that sale an added one.
+    const s = buildCompSearch({
+      subdivision: 'Highland',
+      subjectStreet: '1027 Albany',
+      ladder: [
+        rung({ tier: 'subdivision-6mo', monthsBack: 6, compsAdded: 4 }),
+        rung({ tier: 'adjacent-sub-6mo', monthsBack: 6, compsAdded: 1 }),
+        rung({ tier: 'closer-sub-6mo', monthsBack: 6, compsAdded: 1 }),
+        rung({ tier: 'own-street-24mo', monthsBack: 24, compsAdded: 1 }),
+      ],
+      keptComps: [
+        { address: '1124 Baltimore', subdivision: 'Highland', selectionTier: 'subdivision-6mo', ownPlat: true },
+        { address: '1127 Federal', subdivision: 'Boulevard', selectionTier: 'adjacent-sub-6mo', ownPlat: false },
+        { address: '94 Portland', subdivision: 'River Terrace', selectionTier: 'closer-sub-6mo', ownPlat: false },
+        { address: '1405 Davenport', subdivision: 'N/A', selectionTier: 'subdivision-6mo', ownPlat: true },
+        { address: '1424 Albany', subdivision: 'Highland', selectionTier: 'own-street-24mo', ownPlat: true },
+      ],
+    })
+    expect(s!.keptBySubdivision).toEqual({ Highland: 3, Boulevard: 1, 'River Terrace': 1 })
+    expect(s!.sentence).toBe(
+      'Three of the five sales are in Highland. Two more were added: 1127 Federal in Boulevard and 94 Portland in River Terrace.',
+    )
+    expect(s!.sentence).not.toContain('Davenport')
+    expect(s!.sentence).not.toContain('N/A')
+  })
+
 describe('rungLabel — the containment rungs in seller language', () => {
   it('names the touching plats and the boundary exit, never the tier name', () => {
     expect(rungLabel('adjacent-sub-6mo', 'Kenwood')).toBe('the subdivisions next to yours')
