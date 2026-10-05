@@ -40,10 +40,13 @@ export function placeHomesCount(rows: readonly PlaceCountRow[]): PlaceHomesCount
  * null for no rows. Never "0 for sale": a group with no listing for sale says
  * only what it holds.
  */
-export function placeHomesCountLabel(rows: readonly PlaceCountRow[]): string | null {
+export function placeHomesCountLabel(rows: readonly PlaceCountRow[], scope?: string | null): string | null {
   const { forSale, underContract } = placeHomesCount(rows)
   const parts: string[] = []
-  if (forSale > 0) parts.push(`${formatCount(forSale)} for sale`)
+  // `scope` names the population when the page prints other counts of the same
+  // place (Matt 2026-10-04: "699 for sale on the map" beside "726 houses with a
+  // Bend address" read as a contradiction until each said what it counts).
+  if (forSale > 0) parts.push(`${formatCount(forSale)} for sale${scope?.trim() ? ` ${scope.trim()}` : ''}`)
   // The homes hold only the ones still showing; the map over them counts every
   // home under contract, so this says which part it is (2026-09-29).
   if (underContract > 0) parts.push(`${formatCount(underContract)} under contract, still showing`)

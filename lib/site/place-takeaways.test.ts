@@ -23,6 +23,13 @@ describe('placeTakeaways', () => {
     for (const s of t) expect(s).toContain('Bend')
   })
 
+  it('names the city population the way the supply bars do (Matt 2026-10-04)', () => {
+    expect(placeTakeaways({ ...BEND, addressScope: true })[0]).toBe(
+      '726 single-family houses with a Bend address are for sale as of Oct 3, 2026, at a median asking price of $897,500.',
+    )
+    expect(placeTakeaways({ place: 'X', active: 1, addressScope: true })[0]).toBe('1 single-family house with a X address is for sale.')
+  })
+
   it('prints prices exact, the way the FAQ and the Dataset do (§0)', () => {
     expect(placeTakeaways(BEND)[2]).toContain('$759,500')
     expect(placeTakeaways(BEND)[2]).not.toContain('$760,000')

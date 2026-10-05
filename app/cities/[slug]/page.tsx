@@ -545,6 +545,7 @@ async function renderCityDetail({ params }: Props) {
   // figures in plain sentences, each naming the city (lib/site/place-takeaways).
   const takeaways = placeTakeaways({
     place: cityName,
+    addressScope: true,
     asOfLabel: mosAsOf,
     active: hud.active,
     medianList: hud.medianList,
@@ -1261,7 +1262,9 @@ async function renderCityDetail({ params }: Props) {
           {/* Matt 2026-09-24: the homes below the map are listing dials, one
               per buyer group, the same as every other place page, still
               filtered by the child place chosen on the map. */}
-          <PlaceSubdivisionHomes id="homes" />
+          {/* "699 for sale on the map": the same set the Atlas above counts, and not
+              the market figure's houses (Matt 2026-10-04, reconcile the counts). */}
+          <PlaceSubdivisionHomes id="homes" countScope="on the map" />
         </PlaceSubdivisionMap>
 
         {earlyNamedPlaces && firstGolf ? (

@@ -45,7 +45,7 @@ describe('place pages show listings on the dial, never a carousel', () => {
     '%s page puts its homes under the map on PlaceSubdivisionHomes (the dial host)',
     (grain) => {
       const src = read(PLACE_ROUTES[grain])
-      expect(src).toMatch(/<PlaceSubdivisionHomes id="homes" \/>/)
+      expect(src).toMatch(/<PlaceSubdivisionHomes id="homes"( countScope="[^"]+")? \/>/)
     },
   )
 

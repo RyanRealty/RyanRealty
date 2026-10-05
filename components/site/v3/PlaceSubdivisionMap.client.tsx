@@ -362,7 +362,19 @@ function homesByBuyerGroup(listings: readonly V3ListingRowData[]): Array<{
  * buyer group is instead the card carousel it shipped as, counted "N for
  * sale" as it was.
  */
-export function PlaceSubdivisionHomes({ id }: { id: string }) {
+export function PlaceSubdivisionHomes({
+  id,
+  countScope,
+}: {
+  id: string
+  /**
+   * Names the whole place's count ("on the map") where the page prints other
+   * counts of the same place (Matt 2026-10-04). Only on a page whose map and
+   * homes block share one population (lib/place/place-count-label.test.tsx);
+   * dropped while a subdivision is selected, which the map does not count alone.
+   */
+  countScope?: string
+}) {
   const { layout, placeName, rail, homes, leases, keysBySlug, source, asOf, selectedId } = usePlaceMap()
   const selected = rail.find((entry) => entry.id === selectedId) ?? null
   const title = selected?.name ?? placeName
@@ -383,7 +395,7 @@ export function PlaceSubdivisionHomes({ id }: { id: string }) {
   const typeSections = useMemo(() => homesByBuyerGroup(visible), [visible])
   // For sale is Active, under contract is Active Under Contract: the buckets
   // the map above draws its marks in (placeHomesCountLabel, SITE-193).
-  const countLabel = placeHomesCountLabel(visible)
+  const countLabel = placeHomesCountLabel(visible, selectedId ? null : countScope)
   const typed = typeSections.length > 1
   const dialKey = selectedId ?? 'all'
   // The lease dial comes after every for-sale dial drawn above it.

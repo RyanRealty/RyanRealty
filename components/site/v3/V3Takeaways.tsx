@@ -46,7 +46,7 @@ export type V3TakeawaysProps = {
  * crawler and a screen reader get the same sentence. Exported for tests.
  */
 export const TAKEAWAY_FIGURE_RE =
-  /(\$[\d,]+(?:\.\d+)?[KM]?|\d[\d,]*(?:\.\d+)?%|\d[\d,]*(?:\.\d+)? (?:single-family homes?|months of supply))/g
+  /(\$[\d,]+(?:\.\d+)?[KM]?|\d[\d,]*(?:\.\d+)?%|\d[\d,]*(?:\.\d+)? (?:single-family (?:homes?|houses?)|months of supply))/g
 
 function withFigures(sentence: string) {
   const parts = sentence.split(TAKEAWAY_FIGURE_RE)

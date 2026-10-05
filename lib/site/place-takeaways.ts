@@ -30,6 +30,13 @@ export type PlaceTakeawaysInput = {
   asOfLabel?: string | null
   /** Single-family homes for sale, as the page prints it. */
   active?: number | null
+  /**
+   * City grain: the count is Market Truth's MLS-city population, the houses
+   * the page's supply bars name "Houses with a {city} address". Say so, so it
+   * reads beside the map's "for sale on the map" count without contradicting
+   * it (Matt 2026-10-04, reconcile the counts).
+   */
+  addressScope?: boolean
   /** Median asking price of those homes. */
   medianList?: number | null
   /** Raw months of supply (the page's own value, before formatting). */
@@ -58,12 +65,16 @@ export function placeTakeaways(input: PlaceTakeawaysInput): string[] {
   const asOf = input.asOfLabel?.trim() ? ` as of ${input.asOfLabel.trim()}` : ''
 
   if (input.active != null && input.active > 0) {
-    const homes = count(input.active, 'single-family home', 'single-family homes')
     const ask =
       input.medianList != null && input.medianList > 0
         ? `, at a median asking price of ${formatPriceExact(input.medianList)}`
         : ''
-    out.push(`${place} has ${homes} for sale${asOf}${ask}.`)
+    if (input.addressScope) {
+      const houses = count(input.active, 'single-family house', 'single-family houses')
+      out.push(`${houses} with a ${place} address ${input.active === 1 ? 'is' : 'are'} for sale${asOf}${ask}.`)
+    } else {
+      out.push(`${place} has ${count(input.active, 'single-family home', 'single-family homes')} for sale${asOf}${ask}.`)
+    }
   }
 
   const verdict = marketVerdict(input.monthsOfSupply)

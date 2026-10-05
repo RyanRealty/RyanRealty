@@ -17,6 +17,10 @@ describe('V3Takeaways', () => {
     expect(html).toContain('<strong class="v3-takeaways__figure">3.6 months of supply</strong>')
     expect(html).toContain('<strong class="v3-takeaways__figure">$759,000</strong>')
     expect(html).toContain('<strong class="v3-takeaways__figure">97.0%</strong>')
+    const city = renderToStaticMarkup(
+      createElement(V3Takeaways, { id: 't', heading: 'h', items: ['726 single-family houses with a Bend address are for sale.', 'b 2%.'] }),
+    )
+    expect(city).toContain('<strong class="v3-takeaways__figure">726 single-family houses</strong>')
     // "12 months" and "September 2026" are windows, not the figure.
     expect(html).not.toContain('<strong class="v3-takeaways__figure">12')
     expect(html.replace(/<[^>]+>/g, '')).toContain(ITEMS[1])

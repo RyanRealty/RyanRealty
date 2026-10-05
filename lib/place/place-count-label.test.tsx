@@ -208,4 +208,10 @@ describe('placeHomesCountLabel', () => {
     expect(placeHomesCountLabel([{ standardStatus: 'Active Under Contract' }])).toBe('1 under contract, still showing')
     expect(placeHomesCountLabel([{ standardStatus: 'Active' }, { standardStatus: null }])).toBe('2 for sale')
   })
+
+  it('names the population when the page asks it to (Matt 2026-10-04)', () => {
+    const rows = [{ standardStatus: 'Active' }, { standardStatus: 'Active Under Contract' }]
+    expect(placeHomesCountLabel(rows, 'on the map')).toBe('1 for sale on the map · 1 under contract, still showing')
+    expect(placeHomesCountLabel(rows)).toBe('1 for sale · 1 under contract, still showing')
+  })
 })

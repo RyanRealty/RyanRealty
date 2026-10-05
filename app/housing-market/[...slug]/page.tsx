@@ -237,6 +237,7 @@ const loadGeoMarket = cache(async (slugKey: string) => {
   // FAQ and the Dataset print, so the lead cannot disagree with them.
   const takeaways = placeTakeaways({
     place: geoName,
+    addressScope: isCity,
     asOfLabel: refreshedAt ? formatDate(refreshedAt) : null,
     active: hud.active,
     medianList: hud.medianList,

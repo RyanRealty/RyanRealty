@@ -1190,7 +1190,9 @@ async function renderCommunityDetail({ params }: Props) {
               per buyer group (each type link above lands on its dial), the
               same as every other place page, still filtered by the
               subdivision chosen on the map. */}
-          <PlaceSubdivisionHomes id="homes" />
+          {/* "699 for sale on the map": the same set the Atlas above counts, and not
+              the market figure's houses (Matt 2026-10-04, reconcile the counts). */}
+          <PlaceSubdivisionHomes id="homes" countScope="on the map" />
         </PlaceSubdivisionMap>
 
         <div className="community-fold">
