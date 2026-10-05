@@ -48,8 +48,8 @@ import {
 import { applyFailedAskCap as applyExpiredFailedAskCap } from '@/lib/cma/expired-audit'
 import {
   applyExclusivePocketDateAdj,
-  describeAppliedDateAdjustments,
   exclusivePocketPathNote,
+  exclusivePocketSetNote,
   selectionIsExclusivePocket,
   TIME_ADJUSTMENT_BASIS_POCKET,
   TIME_ADJUSTMENT_MEASURE_POCKET,
@@ -399,16 +399,9 @@ export function buildTimeAdjustmentBasis(opts: {
   const city = opts.cityName?.trim() ? `${opts.cityName.trim()}'s` : "this city's"
   if (opts.exclusivePocket === true) {
     const trend = marketIndexTrend({ points: opts.points, asOf: opts.asOf, windowMonths })
-    const wouldMove = trend.pctOverWindow
-    const would =
-      wouldMove != null && Number.isFinite(wouldMove) && wouldMove !== 0
-        ? ` That city index ${wouldMove > 0 ? 'rose' : 'fell'} ${Math.abs(wouldMove).toFixed(1)} percent over the last ${windowMonths} months; it is not applied here.`
-        : ''
-    const appliedDetail = describeAppliedDateAdjustments(opts.applied ?? [])
-    const place = opts.cityName?.trim() || 'this city'
-    const sentence = appliedDetail
-      ? `These sales are the exclusive pocket. ${appliedDetail} The ${place} city index is not used to pump prices. Size and story class do not adjust.`
-      : `These sales are the exclusive pocket. Date adjustment does not walk the city index, which includes tracts already excluded from this set. Each sale stays on its own sold and last-ask price. Size and story class do not adjust.${would}`
+    const applied = opts.applied ?? []
+    const coolingApplied = applied.some((c) => Number.isFinite(c.timeAdjustment) && c.timeAdjustment < 0)
+    const sentence = exclusivePocketSetNote(opts.cityName ?? '', coolingApplied, applied)
     return {
       pctPerMonth: 0,
       pctOverWindow: 0,

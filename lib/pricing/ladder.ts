@@ -502,16 +502,10 @@ export function keepTightestByClosePrice<T extends { closePrice: number; closeDa
     const midIndex = Math.floor(sorted.length / 2)
     const mid =
       sorted.length % 2 === 1 ? sorted[midIndex]! : (sorted[midIndex - 1]! + sorted[midIndex]!) / 2
-    const dist = (c: T) => {
-      const price = Math.abs(c.closePrice - mid) / mid
-      const months = monthsBefore(asOf, c.closeDate)
-      const stale = months > 12 ? (months - 12) / 12 : 0
-      return price + stale
-    }
     let worst = kept.length - 1
-    let worstDist = dist(kept[worst]!)
+    let worstDist = distanceFromMid(kept[worst]!, mid, asOf)
     for (let i = 0; i < kept.length - 1; i++) {
-      const d = dist(kept[i]!)
+      const d = distanceFromMid(kept[i]!, mid, asOf)
       if (d > worstDist) {
         worstDist = d
         worst = i
@@ -520,6 +514,88 @@ export function keepTightestByClosePrice<T extends { closePrice: number; closeDa
     kept.splice(worst, 1)
   }
   return kept
+}
+
+/**
+ * Keep `max` sales without letting a later rung take an earlier rung's slot.
+ *
+ * The list is best-first. Inside the first rung, the sales whose prices sit
+ * together stay. A later rung only fills seats that are still open, and the
+ * sale it adds is the one closest to the sales already kept. A cheap cluster
+ * on a wider rung does not push out a sale the search found first.
+ */
+export function keepEarlierRungSales<
+  T extends { closePrice: number; closeDate?: string | null; selectionTier?: string | null },
+>(comps: readonly T[], max: number, tierOrder: readonly string[], asOf?: string): T[] {
+  if (max <= 0) return []
+  if (comps.length <= max) return [...comps]
+  const rank = new Map(tierOrder.map((name, i) => [name, i]))
+  const unknown = tierOrder.length
+  const groups = new Map<number, T[]>()
+  for (const comp of comps) {
+    const name = comp.selectionTier ?? ''
+    const at = rank.has(name) ? rank.get(name)! : unknown
+    const list = groups.get(at)
+    if (list) list.push(comp)
+    else groups.set(at, [comp])
+  }
+  const kept: T[] = []
+  for (const at of [...groups.keys()].sort((a, b) => a - b)) {
+    const room = max - kept.length
+    if (room <= 0) break
+    const group = groups.get(at)!
+    if (group.length <= room) {
+      kept.push(...group)
+      continue
+    }
+    kept.push(
+      ...(kept.length === 0
+        ? keepTightestByClosePrice(group, room, asOf)
+        : closestToKept(group, kept, room, asOf)),
+    )
+  }
+  return kept
+}
+
+/** Fill open seats with the candidates closest to the sales already kept. */
+function closestToKept<T extends { closePrice: number; closeDate?: string | null }>(
+  candidates: readonly T[],
+  already: readonly T[],
+  max: number,
+  asOf?: string,
+): T[] {
+  const prices = already.map((c) => c.closePrice).filter((n) => Number.isFinite(n) && n > 0)
+  if (prices.length === 0 || candidates.length <= max) {
+    return candidates.length <= max ? [...candidates] : keepTightestByClosePrice(candidates, max, asOf)
+  }
+  const sorted = [...prices].sort((a, b) => a - b)
+  const midIndex = Math.floor(sorted.length / 2)
+  const mid = sorted.length % 2 === 1 ? sorted[midIndex]! : (sorted[midIndex - 1]! + sorted[midIndex]!) / 2
+  const pool = [...candidates]
+  while (pool.length > max) {
+    let worst = pool.length - 1
+    let worstDist = distanceFromMid(pool[worst]!, mid, asOf)
+    for (let i = 0; i < pool.length - 1; i++) {
+      const d = distanceFromMid(pool[i]!, mid, asOf)
+      if (d > worstDist) {
+        worstDist = d
+        worst = i
+      }
+    }
+    pool.splice(worst, 1)
+  }
+  return pool
+}
+
+function distanceFromMid(
+  comp: { closePrice: number; closeDate?: string | null },
+  mid: number,
+  asOf?: string,
+): number {
+  const price = mid > 0 ? Math.abs(comp.closePrice - mid) / mid : 0
+  const months = monthsBefore(asOf, comp.closeDate)
+  const stale = months > 12 ? (months - 12) / 12 : 0
+  return price + stale
 }
 
 function monthsBefore(asOf: string | undefined, closeDate: string | null | undefined): number {

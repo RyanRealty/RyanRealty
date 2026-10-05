@@ -28,12 +28,16 @@ const REVIEW_TOKEN =
 const SUPPORT_MORE =
   /sales support more than the price that already failed/i
 
+/** Search label and the method talk that used to follow it. */
+const POCKET_LABEL = /\bexclusive pocket\b|\bpump prices\b|\bstory class do not adjust\b/i
+
 export type SellerLetterDefectId =
   | 'internal-search-slug'
   | 'unfinished-sentence'
   | 'the-n-of-the-m'
   | 'review-token'
   | 'support-contradicts-recommendation'
+  | 'exclusive-pocket-label'
 
 export type SellerLetterDefect = { id: SellerLetterDefectId; excerpt: string }
 
@@ -60,6 +64,8 @@ export function sellerLetterDefects(
   if (counted) defects.push(hit('the-n-of-the-m', text, counted.index))
   const token = REVIEW_TOKEN.exec(text.trim())
   if (token) defects.push(hit('review-token', text, token.index))
+  const pocket = POCKET_LABEL.exec(text)
+  if (pocket) defects.push(hit('exclusive-pocket-label', text, pocket.index))
   const support = SUPPORT_MORE.exec(text)
   if (support) {
     const rec = money?.recommended
@@ -137,6 +143,13 @@ export function scrubSellerLetterHtml(html: string, money?: SellerLetterMoney): 
   out = out.replace(/\bbroker-selected\b/gi, 'chosen by your broker')
   out = out.replace(new RegExp(`\\bthe (${COUNT}) of the (${COUNT})\\b`, 'gi'), '$1 of the $2')
   out = out.replace(/\bbefore saying what\b/gi, 'before saying more')
+  out = out.replace(/\bThese sales are the exclusive pocket\.\s*/gi, '')
+  out = out.replace(/\s*The [^.]*\bcity index is not used to pump prices\.\s*/gi, ' ')
+  out = out.replace(/\bDate adjustment does not walk the (?:[A-Za-z]+ )?city index[^.]*\.\s*/gi, '')
+  out = out.replace(/\s*That series includes tracts already excluded from this set\.\s*/gi, ' ')
+  out = out.replace(/\s*Size and story class do not adjust\.\s*/gi, ' ')
+  out = out.replace(/\s*That index is sold and last-ask prices in this exclusive pocket\.\s*/gi, ' ')
+  out = out.replace(/\bexclusive pocket\b/gi, 'nearby sales')
   out = out.replace(/\s+\b(?:pass|fail|did-not-run)\b(?=\s*[.<])/gi, '')
   out = out.replace(/\breview pass\b/gi, 'review')
   const visible = sellerVisibleText(out)

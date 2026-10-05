@@ -33,18 +33,18 @@ vi.mock('@/lib/pricing/divides', async (importOriginal) => {
   }
 })
 
-// Wraps (not stubs) the real keepTightestByClosePrice so selectComps still
+// Wraps (not stubs) the real keepEarlierRungSales so selectComps still
 // culls for real; this just records what asOf it was called with, to prove
 // the CMA's own as-of date (WP5 item d) reaches the final cull instead of
 // being dropped on the floor.
-const keepTightestSpy = vi.hoisted(() => vi.fn())
+const keepEarlierSpy = vi.hoisted(() => vi.fn())
 vi.mock('@/lib/pricing/ladder', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/pricing/ladder')>()
   return {
     ...actual,
-    keepTightestByClosePrice: (...args: Parameters<typeof actual.keepTightestByClosePrice>) => {
-      keepTightestSpy(...args)
-      return actual.keepTightestByClosePrice(...args)
+    keepEarlierRungSales: (...args: Parameters<typeof actual.keepEarlierRungSales>) => {
+      keepEarlierSpy(...args)
+      return actual.keepEarlierRungSales(...args)
     },
   }
 })
@@ -168,21 +168,21 @@ describe('selectComps — CMA as-of date reaches the final cull (WP5 item d)', (
     selectCmaCompsPool.mockResolvedValue([closedRow()])
     selectCmaCompsByKeys.mockReset()
     selectCmaCompsByKeys.mockResolvedValue([])
-    keepTightestSpy.mockClear()
+    keepEarlierSpy.mockClear()
   })
 
-  it('passes opts.asOf through to keepTightestByClosePrice — a back-dated CMA ranks by its own date, not today', async () => {
+  it('passes opts.asOf through to keepEarlierRungSales — a back-dated CMA ranks by its own date, not today', async () => {
     await selectComps(subject(), { asOf: '2024-01-15' })
-    expect(keepTightestSpy).toHaveBeenCalled()
-    const lastArgs = keepTightestSpy.mock.calls.at(-1)!
-    expect(lastArgs[2]).toBe('2024-01-15')
+    expect(keepEarlierSpy).toHaveBeenCalled()
+    const lastArgs = keepEarlierSpy.mock.calls.at(-1)!
+    expect(lastArgs[3]).toBe('2024-01-15')
   })
 
   it('leaves asOf undefined (today-shaped, current behavior) when the caller supplies none', async () => {
     await selectComps(subject())
-    expect(keepTightestSpy).toHaveBeenCalled()
-    const lastArgs = keepTightestSpy.mock.calls.at(-1)!
-    expect(lastArgs[2]).toBeUndefined()
+    expect(keepEarlierSpy).toHaveBeenCalled()
+    const lastArgs = keepEarlierSpy.mock.calls.at(-1)!
+    expect(lastArgs[3]).toBeUndefined()
   })
 })
 

@@ -60,6 +60,20 @@ describe('seller letter refuses the shapes that shipped', () => {
 })
 
 describe('the generators write plain English', () => {
+  it('does not leave the exclusive-pocket label on a stored method sentence', () => {
+    const stored = [
+      'These sales are the exclusive pocket.',
+      'Date adjustment was applied to 3 sales. 2990 Wells Acres moved -2.4 percent, from $521,180 to $508,567.',
+      'The Bend city index is not used to pump prices.',
+      'Size and story class do not adjust.',
+      'That index is sold and last-ask prices in this exclusive pocket.',
+    ].join(' ')
+    const clean = scrubSellerLetterHtml(`<p>${stored}</p>`)
+    expect(clean).toContain('2990 Wells Acres moved -2.4 percent')
+    expect(clean).not.toMatch(/exclusive pocket|pump prices|story class/i)
+    expect(sellerLetterStillDirty(`<p>${stored}</p>`)).toEqual([])
+  })
+
   it('does not print an own-street slug when a sale comes from that rung', () => {
     expect(rungLabel('own-street-24mo', 'North Plat')).toBe('your own street')
     expect(rungLabel('community-12mo', null)).toBe('your community')

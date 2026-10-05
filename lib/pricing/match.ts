@@ -46,7 +46,7 @@ import {
   type WaterClass,
 } from '@/lib/pricing/classes'
 import {
-  keepTightestByClosePrice,
+  keepEarlierRungSales,
   PRICING_MAX_COMPS,
   PRICING_MIN_COMPS,
   PRICING_TARGET_COMPS,
@@ -1027,26 +1027,6 @@ function similarity(subject: PricingSubject, sale: PricingSale, asOf: string, po
 }
 
 
-/** City, similar-tract, and boundary-exit rungs. Not the subdivision, not adjacent, not the neighborhood. */
-function isSameZipTierName(name: string | null | undefined): boolean {
-  return /^(city-|citywide-|similar-sub|competing-area-|beyond-)/.test(name ?? '')
-}
-
-/**
- * A sale from the closer place stays. A later zip rung can fill a short set.
- * It cannot take a slot from a subdivision, adjacent, or neighborhood sale.
- */
-function keepCloserPlaceBeforeZip<T extends { selectionTier?: string | null; closePrice: number; closeDate?: string | null }>(
-  comps: readonly T[],
-  max: number,
-  asOf?: string,
-): T[] {
-  const closer = comps.filter((c) => !isSameZipTierName(c.selectionTier))
-  if (closer.length >= max) return keepTightestByClosePrice(closer, max, asOf)
-  const zip = comps.filter((c) => isSameZipTierName(c.selectionTier))
-  return [...closer, ...keepTightestByClosePrice(zip, max - closer.length, asOf)]
-}
-
 /** A neighborhood polygon or a community boundary confines the search. */
 function parentConfines(subject: PricingSubject): boolean {
   return Boolean(subject.marketArea) || Boolean(communityForAddress(subject))
@@ -1372,7 +1352,7 @@ export function walkPricingLadder(
   // pass runs only when that median was never there.
   const hadOwnPlat = ranked.some((c) => c.ownPlat)
   const sitting = hadOwnPlat ? ranked : pocketSalesSitWithKept(ranked, customLadder)
-  const sliced = keepCloserPlaceBeforeZip(sitting, PRICING_MAX_COMPS, asOf)
+  const sliced = keepEarlierRungSales(sitting, PRICING_MAX_COMPS, tiers.map((t) => t.name), asOf)
   const bracketed = bracketGla(subject, sliced, pool, asOf, priceAnchor, cells, customLadder)
   if (bracketed.note) {
     if (!tiersUsed.includes('gla-bracket')) tiersUsed.push('gla-bracket')

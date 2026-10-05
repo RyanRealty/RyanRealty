@@ -211,7 +211,9 @@ describe('CMA letter copy has no em dash', () => {
       } as never,
     })
     const body = html.replace(/<style\b[\s\S]*?<\/style>/gi, '')
-    expect(body).toContain('price. Size and story class do not adjust.')
+    expect(body).toContain('Each sale stays on its own sold and last-ask price.')
+    expect(body).not.toContain('exclusive pocket')
+    expect(body).not.toContain('story class')
     expect(body).not.toContain('\u2014')
     expect(body).not.toContain(stored)
   })

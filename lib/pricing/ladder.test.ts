@@ -4,6 +4,7 @@ import {
   isClusterPocket,
   isGeographyWidenTier,
   isPocketExclusiveTier,
+  keepEarlierRungSales,
   keepTightestByClosePrice,
   pocketHoldsGeographyExclusive,
   pocketStopsLaterRungs,
@@ -216,5 +217,51 @@ describe('keepTightestByClosePrice — as-of date (WP5 item d, back-dated CMA)',
     // ~24 months stale and loses its slot to E instead.
     const kept = keepTightestByClosePrice(comps, 5, '2026-06-15')
     expect(kept.map((c) => c.key).sort()).toEqual(['A', 'B', 'C', 'D', 'E'])
+  })
+})
+
+describe('keepEarlierRungSales', () => {
+  const order = ['subdivision-12mo', 'pocket-6mo', 'pocket-12mo']
+
+  it('keeps the earlier rung when a later cheap cluster would have set the range', () => {
+    const comps = [
+      { key: 'delmas', selectionTier: 'subdivision-12mo', closePrice: 540_000, closeDate: '2026-03-13' },
+      { key: 'marea-near', selectionTier: 'pocket-6mo', closePrice: 550_000, closeDate: '2026-08-01' },
+      { key: 'marea-high', selectionTier: 'pocket-6mo', closePrice: 595_000, closeDate: '2026-08-06' },
+      { key: 'daniel', selectionTier: 'pocket-6mo', closePrice: 585_000, closeDate: '2026-07-17' },
+      { key: 'cheap-a', selectionTier: 'pocket-12mo', closePrice: 530_000, closeDate: '2025-12-15' },
+      { key: 'cheap-b', selectionTier: 'pocket-12mo', closePrice: 530_000, closeDate: '2025-11-26' },
+      { key: 'sits-with', selectionTier: 'pocket-12mo', closePrice: 550_000, closeDate: '2025-10-24' },
+    ]
+    const kept = keepEarlierRungSales(comps, 5, order, '2026-10-05').map((c) => c.key)
+    expect(kept).toEqual(['delmas', 'marea-near', 'marea-high', 'daniel', 'sits-with'])
+  })
+
+  it('still drops a price outlier inside a single rung', () => {
+    const comps = [
+      { key: 'A', selectionTier: 'pocket-6mo', closePrice: 500_000, closeDate: '2026-06-01' },
+      { key: 'B', selectionTier: 'pocket-6mo', closePrice: 505_000, closeDate: '2026-06-01' },
+      { key: 'C', selectionTier: 'pocket-6mo', closePrice: 495_000, closeDate: '2026-06-01' },
+      { key: 'D', selectionTier: 'pocket-6mo', closePrice: 510_000, closeDate: '2026-06-01' },
+      { key: 'E', selectionTier: 'pocket-6mo', closePrice: 560_000, closeDate: '2026-06-01' },
+      { key: 'F', selectionTier: 'pocket-6mo', closePrice: 502_000, closeDate: '2026-06-01' },
+    ]
+    const kept = keepEarlierRungSales(comps, 5, order, '2026-06-15').map((c) => c.key)
+    expect(kept).not.toContain('E')
+    expect(kept).toHaveLength(5)
+  })
+
+  it('does not add a later rung once the earlier rungs already fill the set', () => {
+    const comps = [
+      { key: 'a', selectionTier: 'subdivision-12mo', closePrice: 500_000, closeDate: '2026-06-01' },
+      { key: 'b', selectionTier: 'pocket-6mo', closePrice: 510_000, closeDate: '2026-06-01' },
+      { key: 'c', selectionTier: 'pocket-6mo', closePrice: 520_000, closeDate: '2026-06-01' },
+      { key: 'd', selectionTier: 'pocket-6mo', closePrice: 530_000, closeDate: '2026-06-01' },
+      { key: 'e', selectionTier: 'pocket-6mo', closePrice: 540_000, closeDate: '2026-06-01' },
+      { key: 'later', selectionTier: 'pocket-12mo', closePrice: 525_000, closeDate: '2026-01-01' },
+    ]
+    const kept = keepEarlierRungSales(comps, 5, order, '2026-10-05').map((c) => c.key)
+    expect(kept).not.toContain('later')
+    expect(kept).toHaveLength(5)
   })
 })

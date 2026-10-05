@@ -148,6 +148,8 @@ function pricingWithMeasure(pricing: CmaPricing): CmaPricing {
   const measure = readMeasure(ta)
   const sentence = typeof ta?.sentence === 'string' ? sanitizeLetterEmDash(ta.sentence.trim()) : ''
   if (!measure || !sentence) return pricing
+  // The pocket measure names the search. It is not an index a seller reads.
+  if (/exclusive pocket/i.test(measure) || ta?.basis === 'exclusive-pocket-sold-list') return pricing
   if (sentence.toLowerCase().includes(measure.toLowerCase())) return pricing
   return {
     ...pricing,

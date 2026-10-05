@@ -37,11 +37,15 @@ describe('date-adjustment text vs math: Slate and Oakside', () => {
       { address: '61234 Slate Rolen', closePrice: 621_000, timeAdjustment: -27_000, timeAdjustedPrice: 594_000 },
     ])
     expect(note).toMatch(/61234 Slate Rolen moved -4\.3 percent/)
+    expect(note).toMatch(/Living area was not adjusted/)
+    expect(note).not.toMatch(/exclusive pocket|pump prices|story class|city index/i)
     expect(note).not.toMatch(/not applied here|Each sale stays on its own/)
     expect(note).not.toMatch(/[—–]/)
 
     const flat = exclusivePocketSetNote('Bend', false)
-    expect(flat).toMatch(/Date adjustment is not applied along the Bend city index/)
+    expect(flat).toMatch(/not moved with other Bend sales/)
+    expect(flat).toMatch(/Each sale stays at the price it sold for/)
+    expect(flat).not.toMatch(/exclusive pocket|pump prices|story class|city index/i)
     expect(flat).not.toMatch(/[—–]/)
 
     const basis = buildTimeAdjustmentBasis({

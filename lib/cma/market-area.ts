@@ -408,6 +408,7 @@ export {
   isCustomOrNewSubject,
   remarksMarkCustomOrNew,
   yearQualityCompatible,
+  withinConstructionGeneration,
   type AcreageInfrastructureFlags,
   type YearQualityInput,
 } from '@/lib/pricing/classes'

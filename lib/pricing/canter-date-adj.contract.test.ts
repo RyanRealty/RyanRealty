@@ -278,7 +278,8 @@ describe('1130 E Canter Horse Back date-adj residual', () => {
     expect(method1Mid).toBeLessThanOrEqual(RAW_SOLD_LIST_HIGH + 15_000)
     expect(built?.timeAdjustment?.basis).toBe(TIME_ADJUSTMENT_BASIS_POCKET)
     expect(built?.timeAdjustment?.measure).toBe(TIME_ADJUSTMENT_MEASURE_POCKET)
-    expect(built?.timeAdjustment?.sentence).toMatch(/exclusive pocket/i)
+    expect(built?.timeAdjustment?.sentence).toMatch(/Living area was not adjusted/)
+    expect(built?.timeAdjustment?.sentence).not.toMatch(/exclusive pocket|city index|pump prices|story class/i)
     expect(built?.timeAdjustment?.sentence).not.toMatch(/each sale is moved by the change/i)
   })
 
@@ -304,9 +305,9 @@ describe('1130 E Canter Horse Back date-adj residual', () => {
     expect(basis.basis).toBe(TIME_ADJUSTMENT_BASIS_POCKET)
     expect(basis.measure).toBe(TIME_ADJUSTMENT_MEASURE_POCKET)
     expect(basis.pctPerMonth).toBe(0)
-    expect(basis.sentence).toMatch(/exclusive pocket/)
-    expect(basis.sentence).toMatch(/city index/)
-    expect(basis.sentence).toMatch(/Size and story/)
+    expect(basis.sentence).toMatch(/not moved with other Sisters sales/)
+    expect(basis.sentence).toMatch(/Living area was not adjusted/)
+    expect(basis.sentence).not.toMatch(/exclusive pocket|city index|pump prices|story class/i)
     expect(basis.sentence).not.toMatch(/Each sale is moved by the change/)
   })
 

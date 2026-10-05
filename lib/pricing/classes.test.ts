@@ -22,6 +22,7 @@ import {
   newConstructionCompatible,
   resolveIrrigationClass,
   yearQualityCompatible,
+  withinConstructionGeneration,
   plausibleListedClose,
   hoaCompatible,
   lotCompatible,
@@ -248,6 +249,12 @@ describe('year and quality for custom / new subjects', () => {
 
   it('does not change the rule for an ordinary 1998 ranch', () => {
     expect(yearQualityCompatible({ yearBuilt: 1998 }, { yearBuilt: 1977 }, 2026)).toBe(true)
+  })
+
+  it('refuses a different generation off the subject plat', () => {
+    expect(withinConstructionGeneration(2018, 2003)).toBe(true)
+    expect(withinConstructionGeneration(2018, 1996)).toBe(false)
+    expect(withinConstructionGeneration(2018, null)).toBe(true)
   })
 })
 

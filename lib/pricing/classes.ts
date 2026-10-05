@@ -625,6 +625,19 @@ export function horseInfrastructureCompatible(
 export const CUSTOM_NEW_YEAR_BAND = 15
 
 /**
+ * The same 15-year generation on an ordinary resale. Unknown years stay.
+ * The call site exempts the subject's own plat and own street.
+ */
+export function withinConstructionGeneration(
+  subjectYear: number | null | undefined,
+  saleYear: number | null | undefined,
+): boolean {
+  if (subjectYear == null || saleYear == null) return true
+  if (subjectYear < 1850 || saleYear < 1850) return true
+  return Math.abs(subjectYear - saleYear) <= CUSTOM_NEW_YEAR_BAND
+}
+
+/**
  * How long a resale still prices with never-owned new construction.
  *
  * This is the custom/new year window already used below (`as-of` minus year

@@ -160,24 +160,25 @@ export function describeAppliedDateAdjustments(moves: readonly AppliedDateMove[]
 }
 
 /**
- * Set-level note. Must match the math: when sales were cooled, name those
- * sales and the percentage. When nothing moved, say the city index was not
- * used to pump and each sale stays on its sold price.
+ * Set-level note a seller reads. Name the sales the date actually moved.
+ * When nothing moved, say each sale stays at the price it sold for.
+ * Never the search label, the city index, or a story class.
  */
 export function exclusivePocketSetNote(
   city: string,
   coolingApplied: boolean,
   applied?: readonly AppliedDateMove[],
 ): string {
-  const place = (city ?? '').trim() || 'this city'
+  const place = (city ?? '').trim()
   const detail = describeAppliedDateAdjustments(applied ?? [])
   if (coolingApplied && detail) {
-    return `These sales are the exclusive pocket. ${detail} The ${place} city index is not used to pump prices. Size and story class do not adjust.`
+    return `${detail} Living area was not adjusted.`
   }
   if (coolingApplied) {
-    return `These sales are the exclusive pocket. Flex-style cooling date adjustment is applied to every sale in this window along the market path. The ${place} city index is not used to pump prices. Size and story class do not adjust.`
+    return 'These sale prices were moved down for how long ago they closed. Living area was not adjusted.'
   }
-  return `These sales are the exclusive pocket. Date adjustment is not applied along the ${place} city index. That series includes tracts already excluded from this set. Each sale stays on its sold and last-ask price. Size and story class do not adjust.`
+  const otherSales = place ? `other ${place} sales` : 'other sales'
+  return `These sale prices were not moved with ${otherSales}. Each sale stays at the price it sold for. Living area was not adjusted.`
 }
 
 /**

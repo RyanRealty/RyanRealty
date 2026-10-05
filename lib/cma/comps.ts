@@ -33,7 +33,7 @@
 
 import { selectCmaCompsPool, selectCmaCompsByKeys } from '@/lib/data/cma/builderReads'
 import { getSubdivisionRing, assignSubdivisionSlugs, assignCommunitySlugs } from '@/lib/data/geo/subdivision-ring'
-import { keepTightestByClosePrice } from '@/lib/pricing/ladder'
+import { keepEarlierRungSales } from '@/lib/pricing/ladder'
 import { saleSpentNoDaysOnMarket } from '@/lib/pricing/price-set'
 import { resolveConcessions, sellerNetFromPrice } from '@/lib/pricing/seller-net'
 import {
@@ -52,6 +52,7 @@ import {
   productTypeCompatible,
   keepSameProductType,
   yearQualityCompatible,
+  withinConstructionGeneration,
   acreageInfrastructureCompatible,
   marketAreaBounds,
   radiusBounds,
@@ -369,7 +370,7 @@ export async function selectComps(
     subjectIrrigation?: IrrigationClass | null
     subjectZoning?: string | null
     /** The CMA's own as-of date (lib/pricing/select.ts threads this through
-     *  from selectCompsPreferringFacts). Undefined keeps keepTightestByClosePrice's
+     *  from selectCompsPreferringFacts). Undefined keeps the final cull's
      *  no-asOf behavior (no staleness penalty) rather than assuming today. */
     asOf?: string
   } = {},
@@ -970,6 +971,12 @@ export async function selectComps(
         { streetAddress: subject.streetAddress, city: subject.city, sqft: subject.sqft ?? 0 },
         { address: comp.address, city: comp.city, sqft: comp.sqft },
       )
+      // Same 15-year generation the strict facts rungs already use. Own plat
+      // and own street stay; a 1996 house does not price a 2018 house next door.
+      if (!inOwnPlat && !ownStreetPeer && !withinConstructionGeneration(subject.yearBuilt, comp.yearBuilt)) {
+        rung.excluded.year_quality++
+        continue
+      }
       if (!land && !tightRung && !ownStreetPeer && anchorPpsf != null) {
         const rate = unitRate(comp, false)
         if (anchorPpsf > 0 && rate > 0) {
@@ -1288,12 +1295,12 @@ export async function selectComps(
     }
   }
 
-  // Rank by similarity (size proximity x recency), then keep five
-  // whose close prices sit together. A rung that dumped a high outlier
-  // does not get to set the range.
+  // Similarity is the tie-break inside one rung. A later rung only fills
+  // a seat that is still open, closest to the sales already kept. It does
+  // not take a slot from a sale the search found first.
   const rankBy = land ? (subject.lotAcres ?? 0) : sqft
   comps.sort((a, b) => similarityScore(rankBy, b, Boolean(land)) - similarityScore(rankBy, a, Boolean(land)))
-  comps = keepTightestByClosePrice(comps, MAX_COMPS, opts.asOf)
+  comps = keepEarlierRungSales(comps, MAX_COMPS, tiers.map((t) => t.name), opts.asOf)
   // Present most recent first (matches the exemplar ordering).
   comps.sort((a, b) => b.closeDate.localeCompare(a.closeDate))
 
