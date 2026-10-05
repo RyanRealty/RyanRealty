@@ -59,6 +59,8 @@ export type ClosedCompWeightInput = {
   saleLotAcres?: number | null
   /** See PriceSetSale.fillShortSet. Alone, an outside sale still weighs 0. */
   fillShortSet?: boolean
+  /** Closed-sale days on market. Exactly 0 weighs nothing. Unknown still weighs. */
+  saleDomTotal?: number | null
   /**
    * The path that moved this sale's price to the as-of date. Absent, not from
    * the index, reversed, or capped keeps the 3-month half-life.
@@ -334,6 +336,7 @@ export function closedCompWeight(input: ClosedCompWeightInput): number {
       subjectLotAcres: input.subjectLotAcres,
       saleLotAcres: input.saleLotAcres,
       fillShortSet: input.fillShortSet,
+      saleDomTotal: input.saleDomTotal,
     })
   ) {
     return 0
@@ -379,6 +382,7 @@ export function fillShortSetWeights<T extends {
   marketMonthlyRate?: number | null
   marketReversed?: boolean | null
   marketCapped?: boolean | null
+  domTotal?: number | null
 }>(
   subject: {
     sqft?: number | null
@@ -421,6 +425,7 @@ export function fillShortSetWeights<T extends {
       marketReversed: comp.marketReversed,
       marketCapped: comp.marketCapped,
       fillShortSet: true,
+      saleDomTotal: comp.domTotal,
     })
     if (!(weight > 0)) return comp
     // The letter prints this same object. A copy would let the price count

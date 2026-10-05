@@ -7,7 +7,8 @@ import { resortCommunityCompatible } from '@/lib/cma/resort-guard'
 import { communityForAddress, memberPlatMap, saleInsideSubjectCommunity } from '@/lib/cma/community-location'
 import { isResortCommunity } from '@/lib/cma/resort-guard'
 import { resolvePriceAnchor, samePlat, sameStreetPeer, streetKey, type PriceAnchor } from '@/lib/pricing/price-anchor'
-import { saleSetsThePrice } from '@/lib/pricing/price-set'
+import { closedSaleDomTotal } from '@/lib/cma/listing-history-line'
+import { saleSetsThePrice, saleSpentNoDaysOnMarket } from '@/lib/pricing/price-set'
 import { ageRestrictedMismatch, ownPlatAgeRestrictedShare } from '@/lib/pricing/age-restricted'
 import { distanceMiles, proximityLabel, resolveMarketArea } from '@/lib/cma/market-area'
 import { roomCountsDecision } from '@/lib/pricing/room-ground'
@@ -1320,6 +1321,19 @@ export function walkPricingLadder(
       if (!customLadder && !inSubjectPlat(subject, sale) && !closeNearOwnPlat(subject, sale, byKey.values())) {
         continue
       }
+      // A same-day close did not spend a day on the market. It does not take
+      // a slot, and the letter uses the same decision after days are measured.
+      if (
+        saleSpentNoDaysOnMarket(
+          closedSaleDomTotal({
+            daysOnMarket: sale.cdom,
+            onMarketDate: sale.onMarketDate,
+            closeDate: sale.closeDate,
+          }),
+        )
+      ) {
+        continue
+      }
       byKey.set(sale.listingKey, {
         ...toSelected(subject, sale, asOf, tier.name),
         roomDifference: roomDifference ?? null,
@@ -1386,10 +1400,27 @@ export function walkPricingLadder(
       saleSqft: sale.sqft,
       subjectLotAcres: subject.lotAcres,
       saleLotAcres: sale.lotAcres,
+      saleDomTotal: closedSaleDomTotal({
+        daysOnMarket: sale.cdom,
+        onMarketDate: sale.onMarketDate,
+        closeDate: sale.closeDate,
+      }),
     })
   }
-  const setters = priced.filter(setsPrice)
-  const keptForPrice = setters.length >= PRICING_MIN_COMPS ? setters : priced
+  // A zero-day sale is not kept to pad a short set. Fewer than three measured
+  // sales fails the build.
+  const measured = priced.filter(
+    (sale) =>
+      !saleSpentNoDaysOnMarket(
+        closedSaleDomTotal({
+          daysOnMarket: sale.cdom,
+          onMarketDate: sale.onMarketDate,
+          closeDate: sale.closeDate,
+        }),
+      ),
+  )
+  const setters = measured.filter(setsPrice)
+  const keptForPrice = setters.length >= PRICING_MIN_COMPS ? setters : measured
   if (keptForPrice.length < priced.length) {
     const dropped = priced.length - keptForPrice.length
     trace.push(

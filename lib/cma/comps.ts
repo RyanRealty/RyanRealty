@@ -34,6 +34,7 @@
 import { selectCmaCompsPool, selectCmaCompsByKeys } from '@/lib/data/cma/builderReads'
 import { getSubdivisionRing, assignSubdivisionSlugs, assignCommunitySlugs } from '@/lib/data/geo/subdivision-ring'
 import { keepTightestByClosePrice } from '@/lib/pricing/ladder'
+import { saleSpentNoDaysOnMarket } from '@/lib/pricing/price-set'
 import { resolveConcessions, sellerNetFromPrice } from '@/lib/pricing/seller-net'
 import {
   closedSaleDomTotal,
@@ -1162,6 +1163,8 @@ export async function selectComps(
       comp.competingArea =
         tier.competing && compArea && compArea !== subjectArea ? marketAreaName(compArea) : null
       comp.ownPlat = inOwnPlat
+      // Same decision as the facts ladder: a same-day close does not take a slot.
+      if (saleSpentNoDaysOnMarket(comp.domTotal)) continue
 
       byKey.set(comp.listingKey, comp)
       bySale.add(saleKey(comp))

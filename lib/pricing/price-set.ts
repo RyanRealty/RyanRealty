@@ -21,6 +21,9 @@
  *
  * A recommended price under every sale that set it, or above every one of
  * them, is not a price. The set is wrong, or the result is a hold.
+ *
+ * A closed sale that spent zero days on the market does not set the price.
+ * Unknown days still count. The picker and the letter both use this.
  */
 import { communityForAddress } from '@/lib/cma/community-location'
 import { lotCompatible } from '@/lib/pricing/classes'
@@ -41,9 +44,16 @@ export type PriceSetSale = {
   /**
    * The kept set is already short of three sales that set the price, and this
    * sale was admitted on a later rung. Skip the community wall. Size and
-   * product still refuse.
+   * product still refuse. A zero-day sale still does not set the price.
    */
   fillShortSet?: boolean
+  /** Closed-sale days on market. Exactly 0 does not set the price. Unknown still does. */
+  saleDomTotal?: number | null
+}
+
+/** Exactly zero days. A missing count is not zero. */
+export function saleSpentNoDaysOnMarket(domTotal: number | null | undefined): boolean {
+  return domTotal === 0
 }
 
 /** Living area past the picker's wide cutoff. Unknown size is not "clearly different". */
@@ -88,6 +98,7 @@ function communityOf(input: {
  * Remarks are not an input.
  */
 export function saleSetsThePrice(input: PriceSetSale): boolean {
+  if (saleSpentNoDaysOnMarket(input.saleDomTotal)) return false
   if (clearlyDifferentSize(input.subjectSqft, input.saleSqft)) return false
   if (clearlyDifferentProduct(input.subjectLotAcres, input.saleLotAcres)) return false
 
@@ -145,10 +156,14 @@ export function pricingFailureMessage(
  * does not is not in the table. A shorter set is returned whole so the
  * minimum can still fail the build instead of padding the page.
  */
-export function compsTheLetterPrints<T extends { weight?: number | null }>(comps: readonly T[]): T[] {
-  const setters = comps.filter((c) => (c.weight ?? 0) > 0)
+export function compsTheLetterPrints<T extends { weight?: number | null; domTotal?: number | null }>(
+  comps: readonly T[],
+): T[] {
+  // A same-day close is not a row, even when dropping it leaves the set short.
+  const measured = comps.filter((c) => !saleSpentNoDaysOnMarket(c.domTotal))
+  const setters = measured.filter((c) => (c.weight ?? 0) > 0)
   if (setters.length >= PRICING_MIN_COMPS) return setters
-  return [...comps]
+  return measured
 }
 
 /**

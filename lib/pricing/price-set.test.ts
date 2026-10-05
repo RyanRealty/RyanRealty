@@ -142,6 +142,73 @@ describe('the letter prints the sales that set the price', () => {
     expect(compsTheLetterPrints([{ weight: 1 }, { weight: 2 }, { weight: 0 }])).toHaveLength(3)
   })
 
+  it('does not let a sale that spent zero days on the market set the price or stay in the letter', () => {
+    expect(saleSetsThePrice({
+      subjectSqft: 1800,
+      saleSqft: 1750,
+      ownPlat: true,
+      subjectSubdivision: 'Home Plat',
+      saleSubdivision: 'Home Plat',
+      saleDomTotal: 0,
+    })).toBe(false)
+    expect(closedCompWeight({
+      subjectSqft: 1800,
+      saleSqft: 1750,
+      monthsSinceClose: 1,
+      ownPlat: true,
+      subjectSubdivision: 'Home Plat',
+      saleSubdivision: 'Home Plat',
+      saleDomTotal: 0,
+    })).toBe(0)
+    expect(closedCompWeight({
+      subjectSqft: 1800,
+      saleSqft: 1750,
+      monthsSinceClose: 1,
+      ownPlat: true,
+      subjectSubdivision: 'Home Plat',
+      saleSubdivision: 'Home Plat',
+      saleDomTotal: 27,
+    })).toBeGreaterThan(0)
+
+    const printed = compsTheLetterPrints([
+      { weight: 3, address: 'a', domTotal: 40 },
+      { weight: 2, address: 'b', domTotal: 12 },
+      { weight: 3.1, address: 'same-day', domTotal: 0 },
+    ])
+    expect(printed.map((row) => row.address)).toEqual(['a', 'b'])
+
+    // Two measured sales plus a same-day close is still short. The same-day
+    // close is not kept to pad the minimum.
+    expect(compsTheLetterPrints([
+      { weight: 2, domTotal: 10 },
+      { weight: 2, domTotal: 20 },
+      { weight: 3, domTotal: 0 },
+    ])).toHaveLength(2)
+
+    const filled = fillShortSetWeights(
+      { sqft: 1800, subdivision: 'Home Plat', communityLocated: true },
+      [
+        {
+          weight: 2,
+          sqft: 1750,
+          subdivision: 'Home Plat',
+          ownPlat: true,
+          monthsSinceClose: 1,
+          domTotal: 20,
+        },
+        {
+          weight: 0,
+          sqft: 1760,
+          subdivision: 'Home Plat',
+          ownPlat: true,
+          monthsSinceClose: 1,
+          domTotal: 0,
+        },
+      ],
+    )
+    expect(filled.find((row) => row.domTotal === 0)?.weight).toBe(0)
+  })
+
   it('does not hand a dropped sale back to the next price', () => {
     const source = [
       { listingKey: 'a' },

@@ -53,7 +53,12 @@ import { buildRejectedSales } from '@/lib/pricing/rejected'
 import { dropPriorSalesOfSameHome } from '@/lib/pricing/same-address'
 import { buildPricingReview, confidenceForVerdict } from '@/lib/pricing/review'
 import { attachSellerNet } from '@/lib/pricing/seller-net'
-import { compsTheLetterPrints, pricingFailureMessage, sourceSalesTheLetterKeeps } from '@/lib/pricing/price-set'
+import {
+  compsTheLetterPrints,
+  pricingFailureMessage,
+  saleSpentNoDaysOnMarket,
+  sourceSalesTheLetterKeeps,
+} from '@/lib/pricing/price-set'
 import { applyFlatDateStory } from '@/lib/cma/flat-date-story'
 import { classifyStory, citySlug, irrigationClassFromOwrd, isCustomOrNewSubject, yearQualityCompatible } from '@/lib/pricing/classes'
 import type { CompSelectionDiagnostics } from '@/lib/cma/comp-trace'
@@ -410,6 +415,22 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // Relists reset OnMarketDate. Calendar DOM from that date undercounts
     // when listing/price history still holds the first list (Clearpine / Linda).
     selection.comps = await hydrateClosedCompDaysOnMarket(selection.comps)
+    // Hydrate can be the first time a sale's days are known. A same-day close
+    // still does not set the price, and it is not kept to reach the minimum.
+    const measuredDays = selection.comps.filter((c) => !saleSpentNoDaysOnMarket(c.domTotal))
+    if (measuredDays.length < selection.comps.length) {
+      const droppedKeys = new Set(
+        selection.comps.filter((c) => saleSpentNoDaysOnMarket(c.domTotal)).map((c) => c.listingKey),
+      )
+      const dropped = selection.comps.length - measuredDays.length
+      selection.comps = measuredDays
+      if (selection.pricingSales) {
+        selection.pricingSales = selection.pricingSales.filter((s) => !droppedKeys.has(s.listingKey))
+      }
+      selection.trace.push(
+        `${dropped} closed ${dropped === 1 ? 'sale spent' : 'sales spent'} no days on the market, so ${dropped === 1 ? 'it does' : 'they do'} not set the price.`,
+      )
+    }
 
     if (selection.comps.length < MIN_COMPS) {
       // ONE broker-readable sentence on the row. Until 2026-09-07 this stored

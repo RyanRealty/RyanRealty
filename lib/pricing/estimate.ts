@@ -1245,6 +1245,7 @@ export function adjustCmaCompAlongMarket(opts: {
     marketMonthlyRate: path.monthlyRate,
     marketReversed: path.reversedWithinSpan,
     marketCapped: path.capped,
+    saleDomTotal: sale.domTotal,
   })
   const proximity =
     (sale.proximity ?? '').trim() ||

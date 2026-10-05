@@ -82,6 +82,40 @@ function sale(over: Partial<PricingSale> = {}): PricingSale {
 const asOf = '2026-08-01'
 
 describe('walkPricingLadder', () => {
+  it('does not keep a closed sale that spent zero days on the market', () => {
+    const pool = [
+      sale({ listingKey: 'A', closeDate: '2026-06-15', address: '10 Kenwood', cdom: 40 }),
+      sale({ listingKey: 'B', closeDate: '2026-06-10', address: '11 Kenwood', cdom: 22 }),
+      sale({ listingKey: 'C', closeDate: '2026-06-08', address: '12 Kenwood', cdom: 18 }),
+      sale({
+        listingKey: 'SAME_DAY',
+        closeDate: '2026-06-20',
+        address: '13 Kenwood',
+        cdom: 0,
+        onMarketDate: '2026-06-20',
+      }),
+    ]
+    const out = walkPricingLadder(subject(), pool, { asOf })
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('SAME_DAY')
+    expect(out.comps).toHaveLength(3)
+  })
+
+  it('does not pad a short set with a zero-day sale', () => {
+    const pool = [
+      sale({ listingKey: 'A', closeDate: '2026-06-15', address: '20 Kenwood', cdom: 40 }),
+      sale({ listingKey: 'B', closeDate: '2026-06-10', address: '21 Kenwood', cdom: 22 }),
+      sale({
+        listingKey: 'ZERO',
+        closeDate: '2026-06-12',
+        address: '22 Kenwood',
+        cdom: 0,
+        onMarketDate: '2026-06-12',
+      }),
+    ]
+    const out = walkPricingLadder(subject(), pool, { asOf })
+    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['A', 'B'])
+  })
+
   it('takes same-subdivision 3-month sales before it reaches for distance', () => {
     const pool = [
       sale({ listingKey: 'RECENT', closeDate: '2026-06-15', address: '10 Kenwood' }),
