@@ -110,8 +110,8 @@ describe('service-area (audit P0-3)', () => {
    * `outOfAreaListingPolicy` from service-area.ts fails this block: the import
    * above stops resolving, so the whole file fails rather than passing quietly
    * with the branch gone. That is the point of testing it here and not beside
-   * the component — this predicate is what the robots directive, the visible
-   * honesty block and the sitemap row all read.
+   * the component — this predicate is what the visible honesty block reads
+   * (since Matt's 2026-10-05 revert it no longer drives robots or the sitemap).
    */
   describe('outOfAreaListingPolicy (the listing tier)', () => {
     it('returns null for every Central Oregon city, so an in-area page is untouched', () => {

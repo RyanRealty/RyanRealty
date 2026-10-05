@@ -222,9 +222,10 @@ describe('listing remainder composition', () => {
   })
 
   /**
-   * SITE-33 (Matt 2026-09-08). The out-of-area listing tier: the block renders,
-   * the page still serves, robots is "noindex, follow" (never nofollow), and
-   * both halves read the SAME predicate as the sitemap.
+   * SITE-33 (Matt 2026-09-08), noindex half REVERTED by Matt 2026-10-05. The
+   * out-of-area listing tier: the block renders, the page still serves, and
+   * robots is "index, follow" like every other listing (the noindex cost ~36%
+   * of the Search Console impression drop since Sep 12).
    */
   it('discloses the market on an out-of-area home, before it says anything else about it', () => {
     const main = PAGE.slice(PAGE.indexOf('const main = ('), PAGE.indexOf('const floating ='))
@@ -237,15 +238,15 @@ describe('listing remainder composition', () => {
     }
   })
 
-  it('decides the block and the robots directive with one predicate', () => {
+  it('decides the block with the policy, and only the block', () => {
     expect(PAGE).toMatch(/import \{ outOfAreaListingPolicy \} from '@\/lib\/data\/listings\/service-area'/)
-    // Once in generateMetadata, once in the render.
-    expect(PAGE.match(/outOfAreaListingPolicy\(listing\.city\)/g)).toHaveLength(2)
+    // Once, in the render. generateMetadata no longer reads it (2026-10-05).
+    expect(PAGE.match(/outOfAreaListingPolicy\(listing\.city\)/g)).toHaveLength(1)
     expect(PAGE).toMatch(/buildListingOutOfAreaNotice\(/)
   })
 
-  it('leaves the index WITH follow preserved, and keeps the page serving', () => {
-    expect(PAGE).toMatch(/noindex: outOfArea !== null/)
+  it('stays in the index, never nofollow, and keeps the page serving', () => {
+    expect(PAGE).not.toMatch(/noindex: outOfArea/)
     // `nofollow` is a SEPARATE pageMetadata flag (SITE-25) and is not wanted:
     // the /oregon referral pages link IN to these pages, and these pages link
     // back out to the place, plat and city they sit in. Setting it would throw

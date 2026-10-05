@@ -234,6 +234,20 @@
       },
       "decided": "Matt 2026-10-04",
       "why": "AEO: the short answer right after the opening, every chart's numbers as a real table, and the appreciation question people search."
+    },
+    {
+      "id": "out-of-area-listing-indexed",
+      "path": "/homes-for-sale/medford/619-main-220103111",
+      "expect": {
+        "status": 200,
+        "index": true,
+        "canonical": "self",
+        "html": [
+          "Outside our home market"
+        ]
+      },
+      "decided": "Matt 2026-10-05",
+      "why": "Undo SITE-33's out-of-area noindex: Search Console showed it cost ~36% of the impression drop since Sep 12 (~2,500 impressions, ~30 clicks a week). Out-of-area listings are index, follow with a self canonical, in /sitemaps/listings.xml, and keep the honesty block. Sample: an Active Medford listing on the feed since 2020."
     }
   ]
 }

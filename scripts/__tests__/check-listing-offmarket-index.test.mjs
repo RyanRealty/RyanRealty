@@ -16,11 +16,14 @@ import { tmpdir } from 'node:os'
  * written for, because that defect had been re-typed one character apart and
  * the gate held the SPELLING it had been tested against. So the noindex is
  * restored here as a direct call, as a bare property comparison against a
- * status literal (which defeats an identifier allowlist on its own), through a
- * local const one hop away, and as a hand-built robots object — and the honest
- * rewrites (`Boolean(outOfArea)`, `!!outOfArea`, an intermediate const) must
- * still PASS, because a gate that fires on honest code gets deleted by the next
- * person in a hurry.
+ * status literal, through a local const one hop away, behind a shorthand, and
+ * as a hand-built robots object.
+ *
+ * SITE-33 REVERTED (Matt 2026-10-05, "Undo it"): the out-of-area noindex cost
+ * ~36% of the Search Console impression drop since Sep 12, so geography is no
+ * longer a sanctioned input either. Restoring `noindex: outOfArea !== null` in
+ * any spelling fails, and so does putting a service-area filter back into the
+ * listings sitemap read.
  *
  * The gate runs against a SANDBOX copy of the files it reads, so a deliberately
  * broken tree never touches the repo.
@@ -42,6 +45,7 @@ const SHARE = 'lib/share-metadata.ts'
 const LOOKUP_DAL = 'lib/data/listings/getListingDetail.ts'
 const MIDDLEWARE = 'middleware.ts'
 const UNAVAILABLE_503 = 'lib/routing/listing-unavailable.ts'
+const SITEMAP_ROWS = 'lib/data/sitemap/getListingSitemapRows.ts'
 
 const FILES = [
   'scripts/check-listing-offmarket-index.mjs',
@@ -53,6 +57,7 @@ const FILES = [
   LOOKUP_DAL,
   MIDDLEWARE,
   UNAVAILABLE_503,
+  SITEMAP_ROWS,
 ]
 
 function reset() {
@@ -88,17 +93,11 @@ function edit(rel, from, to) {
   writeFileSync(p, parts.join(to))
 }
 
-/** The shipped out-of-area directive, the one line every break rewrites. */
-const SHIPPED_DIRECTIVE = 'noindex: outOfArea !== null,'
+/** The last field generateMetadata hands pageMetadata; every break adds after it. */
+const OG_LINE = 'ogImage: `/api/og?type=listing&id=${encodeURIComponent(listing.listingKey)}`,'
 
-/**
- * The generateMetadata copy of the out-of-area lookup. The page body computes
- * the same policy for the visible honesty block, so the bare declaration
- * appears twice — anchor on the comment line above it, which does not.
- */
-const OUT_OF_AREA_DECL =
-  '  // disagree about which market this home is in.\n' +
-  '  const outOfArea = outOfAreaListingPolicy(listing.city)'
+/** A line inside generateMetadata to hang a local const off. */
+const CANONICAL_DECL = '  const canonicalPath = listingCanonicalHref(listing)'
 
 beforeAll(() => {
   rmSync(SANDBOX, { recursive: true, force: true })
@@ -116,66 +115,51 @@ describe('ci:listing-offmarket-index', () => {
   })
 
   describe('a status branch at the [listingKey] chokepoint fails, however it is written', () => {
-    it('a predicate call added to the directive', () => {
+    it('a predicate call as the directive', () => {
       reset()
-      edit(PAGE, SHIPPED_DIRECTIVE, 'noindex: outOfArea !== null || isPublicOffMarketStatus(listing.status),')
+      edit(PAGE, OG_LINE, OG_LINE + '\n    noindex: isPublicOffMarketStatus(listing.status),')
       const { code, out } = run()
       expect(code).toBe(1)
-      expect(out).toMatch(/isPublicOffMarketStatus|\.status/)
+      expect(out).toMatch(/isPublicOffMarketStatus|Status is not an input/)
     })
 
-    it('a bare comparison against a status literal — no new identifier to catch', () => {
+    it('a bare comparison against a status literal', () => {
       reset()
-      edit(PAGE, SHIPPED_DIRECTIVE, "noindex: outOfArea !== null || listing.status === 'Closed',")
+      edit(PAGE, OG_LINE, OG_LINE + "\n    noindex: listing.status === 'Closed',")
       const { code, out } = run()
       expect(code).toBe(1)
-      expect(out).toContain('.status')
-      expect(out).toContain('"Closed"')
+      expect(out).toContain('Status is not an input')
     })
 
     it('the status test hidden one hop away in a local const', () => {
       reset()
-      edit(
-        PAGE,
-        OUT_OF_AREA_DECL,
-        OUT_OF_AREA_DECL + '\n' +
-          '  const hidden = outOfArea !== null || isPublicOffMarketStatus(listing.status)',
-      )
-      edit(PAGE, SHIPPED_DIRECTIVE, 'noindex: hidden,')
+      edit(PAGE, CANONICAL_DECL, CANONICAL_DECL + '\n  const hidden = isPublicOffMarketStatus(listing.status)')
+      edit(PAGE, OG_LINE, OG_LINE + '\n    noindex: hidden,')
       const { code, out } = run()
       expect(code).toBe(1)
-      expect(out).toMatch(/isPublicOffMarketStatus/)
+      expect(out).toContain('generateMetadata passes `noindex: hidden`')
     })
 
     it('the status test hidden behind a shorthand property', () => {
       reset()
-      edit(
-        PAGE,
-        OUT_OF_AREA_DECL,
-        OUT_OF_AREA_DECL + '\n' +
-          "  const noindex = outOfArea !== null || listing.standardStatus === 'Expired'",
-      )
-      edit(PAGE, SHIPPED_DIRECTIVE, 'noindex,')
+      edit(PAGE, CANONICAL_DECL, CANONICAL_DECL + "\n  const noindex = listing.standardStatus === 'Expired'")
+      edit(PAGE, OG_LINE, OG_LINE + '\n    noindex,')
       const { code, out } = run()
       expect(code).toBe(1)
-      expect(out).toMatch(/standardStatus|"Expired"/)
+      expect(out).toContain('generateMetadata passes `noindex`')
     })
 
     it('a robots object hand-built around pageMetadata', () => {
       reset()
-      edit(
-        PAGE,
-        SHIPPED_DIRECTIVE,
-        'noindex: outOfArea !== null,\n    robots: { index: false, follow: true },',
-      )
+      edit(PAGE, OG_LINE, OG_LINE + '\n    robots: { index: false, follow: true },')
       const { code, out } = run()
       expect(code).toBe(1)
       expect(out).toContain('`robots` object is built by hand')
     })
 
-    it('nofollow set alongside it', () => {
+    it('nofollow set', () => {
       reset()
-      edit(PAGE, SHIPPED_DIRECTIVE, 'noindex: outOfArea !== null,\n    nofollow: true,')
+      edit(PAGE, OG_LINE, OG_LINE + '\n    nofollow: true,')
       const { code, out } = run()
       expect(code).toBe(1)
       expect(out).toContain('nofollow')
@@ -192,39 +176,42 @@ describe('ci:listing-offmarket-index', () => {
       expect(code).toBe(1)
       expect(out).toContain('reached on a STATUS test')
     })
-
-    it('the out-of-area branch deleted outright', () => {
-      reset()
-      edit(PAGE, `\n    ${SHIPPED_DIRECTIVE}`, '')
-      const { code, out } = run()
-      expect(code).toBe(1)
-      expect(out).toContain('passes no `noindex` at all')
-    })
   })
 
-  describe('honest rewrites of the same geography branch still pass', () => {
-    it('Boolean(outOfArea)', () => {
+  describe('the reverted SITE-33 out-of-area noindex fails in every spelling (Matt 2026-10-05)', () => {
+    const OOA = '\n  const outOfArea = outOfAreaListingPolicy(listing.city)'
+    for (const directive of ['noindex: outOfArea !== null,', 'noindex: Boolean(outOfArea),', 'noindex: !!outOfArea,']) {
+      it(directive, () => {
+        reset()
+        edit(PAGE, CANONICAL_DECL, CANONICAL_DECL + OOA)
+        edit(PAGE, OG_LINE, OG_LINE + '\n    ' + directive)
+        const { code, out } = run()
+        expect(code).toBe(1)
+        expect(out).toContain('out-of-area listings are index, follow')
+      })
+    }
+
+    it('an intermediate const', () => {
       reset()
-      edit(PAGE, SHIPPED_DIRECTIVE, 'noindex: Boolean(outOfArea),')
-      expect(run().code).toBe(0)
+      edit(PAGE, CANONICAL_DECL, CANONICAL_DECL + OOA + '\n  const referralOnly = outOfArea !== null')
+      edit(PAGE, OG_LINE, OG_LINE + '\n    noindex: referralOnly,')
+      const { code, out } = run()
+      expect(code).toBe(1)
+      expect(out).toContain('generateMetadata passes `noindex: referralOnly`')
     })
 
-    it('!!outOfArea', () => {
-      reset()
-      edit(PAGE, SHIPPED_DIRECTIVE, 'noindex: !!outOfArea,')
-      expect(run().code).toBe(0)
-    })
-
-    it('an intermediate const, geography only', () => {
+    it('the service-area filter put back into the listings sitemap read', () => {
       reset()
       edit(
-        PAGE,
-        OUT_OF_AREA_DECL,
-        OUT_OF_AREA_DECL + '\n' +
-          '  const referralOnly = outOfArea !== null',
+        SITEMAP_ROWS,
+        "import { PUBLIC_ACTIVE_STATUSES } from '@/lib/listing-status-public'",
+        "import { PUBLIC_ACTIVE_STATUSES } from '@/lib/listing-status-public'\nimport { isServiceAreaCity } from '@/lib/data/listings/service-area'",
       )
-      edit(PAGE, SHIPPED_DIRECTIVE, 'noindex: referralOnly,')
-      expect(run().code).toBe(0)
+      edit(SITEMAP_ROWS, 'assembleListingSitemapRows(tiles, now,', 'assembleListingSitemapRows(tiles.filter((t) => isServiceAreaCity(t.city)), now,')
+      const { code, out } = run()
+      expect(code).toBe(1)
+      expect(out).toContain('imports @/lib/data/listings/service-area')
+      expect(out).toContain('names `isServiceAreaCity`')
     })
   })
 

@@ -91,7 +91,7 @@
     },
     {
       "name": "ListingOutOfAreaNotice",
-      "section": "SITE-33, out-of-area only (Matt 2026-09-08): the honesty block directly under the price strip on a home whose city is outside CENTRAL_OREGON_CITY_SLUGS. The city tier's claim one level down \u2014 'Outside our home market \u00b7 We don't work in <city>' \u2014 ending in that city's /oregon referral page. Same predicate as the page's noindex,follow directive and the listings.xml row drop (outOfAreaListingPolicy). Null on every Central Oregon listing.",
+      "section": "SITE-33, out-of-area only (Matt 2026-09-08): the honesty block directly under the price strip on a home whose city is outside CENTRAL_OREGON_CITY_SLUGS. The city tier's claim one level down \u2014 'Outside our home market \u00b7 We don't work in <city>' \u2014 ending in that city's /oregon referral page. Decided by outOfAreaListingPolicy; since Matt's 2026-10-05 revert the page is index, follow and in listings.xml like any other listing. Null on every Central Oregon listing.",
       "blocking": true
     },
     {

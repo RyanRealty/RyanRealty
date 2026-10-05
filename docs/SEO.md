@@ -14,6 +14,8 @@ Read this before changing any URL, redirect, title, canonical or robots rule.
 3. **Daily crawl probe:** `/api/cron/crawl-probe` checks sitemaps, sampled pages and Google's own index status every morning, and alerts Matt.
 4. **Commit gates:** `npm run ci:gates` (titles, H1s, nav, crawler access, internal links and more; catalog in `docs/MECHANICAL_GATES.md`).
 
+**Listing indexing (Matt 2026-10-05):** reverted SITE-33's out-of-area noindex; Search Console showed it cost ~36% of impressions dropped since Sep 12. Every listing page, in-area or out, is `index, follow` with a self canonical, and every Active/AUC listing is in `/sitemaps/listings.xml` (out-of-area pages keep the honesty block). Only the refusal page is noindexed. Held by `ci:listing-offmarket-index` and the `out-of-area-listing-indexed` pin.
+
 ## Technical foundations
 
 - **Canonical URLs** – Every page sets `alternates.canonical` so search engines know the preferred URL (no duplicate indexing from query params).

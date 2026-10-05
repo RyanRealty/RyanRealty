@@ -130,6 +130,27 @@ describe('getListingSitemapRows keyset paging', () => {
     expect(sb.gtCalls).toEqual([null])
   })
 
+  it('ships out-of-area rows: no geography filter (Matt 2026-10-05 reverted SITE-33)', async () => {
+    const rows = [
+      tile(1),
+      { ...tile(2), city: 'Medford', boundary_city: 'Outside Boundaries' },
+      { ...tile(3), city: 'Grants Pass', boundary_city: 'Outside Boundaries' },
+      { ...tile(4), city: 'Klamath Falls', boundary_city: 'Outside Boundaries' },
+    ]
+    const sb = mockSupabase({
+      countResults: [{ count: rows.length, error: null }],
+      pageResults: [{ data: rows, error: null }],
+    })
+    setSb(sb.client)
+
+    const result = await getListingSitemapRows(NOW)
+
+    expect(result.map((r) => r.listingKey)).toEqual(rows.map((t) => t.listing_key))
+    expect(result.some((r) => /\/medford\//.test(r.path))).toBe(true)
+    expect(result.some((r) => /\/grants-pass\//.test(r.path))).toBe(true)
+    expect(result.some((r) => /\/klamath-falls\//.test(r.path))).toBe(true)
+  })
+
   it('a full page continues from the last key of the previous page', async () => {
     const fullPage = Array.from({ length: PAGE_SIZE }, (_, i) => tile(i + 1))
     const secondPage = [tile(PAGE_SIZE + 1), tile(PAGE_SIZE + 2)]

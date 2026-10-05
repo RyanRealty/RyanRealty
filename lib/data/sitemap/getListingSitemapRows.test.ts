@@ -1,13 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { serviceAreaSitemapTiles } from './getListingSitemapRows'
 import { assembleListingSitemapRows, type ListingSitemapTile } from './listing-sitemap-path'
 
 /**
- * SITE-33 — a noindexed URL does not belong in a sitemap (Matt 2026-09-08).
- *
- * The out-of-area listing detail page renders "noindex, follow"; its row must
- * therefore leave listings.xml. Fixtures are real rows, resolved live from
- * listing_tile_mv on 2026-09-09 (Active, one per city).
+ * SITE-33 REVERTED (Matt 2026-10-05, "Undo it"). Out-of-area listing pages are
+ * index, follow again, so their rows are back in listings.xml: the 2026-09-09
+ * noindex cost about 36% of the Search Console impression drop since Sep 12.
+ * Fixtures are real rows, resolved live from listing_tile_mv on 2026-09-09
+ * (Active, one per city).
  */
 const tile = (over: Partial<ListingSitemapTile>): ListingSitemapTile => ({
   listing_key: '20260101000000000000000000',
@@ -63,46 +62,15 @@ const KLAMATH = tile({
   boundary_neighborhood: null,
 })
 
-describe('serviceAreaSitemapTiles (SITE-33)', () => {
-  it('drops the out-of-area rows and keeps the Central Oregon ones', () => {
-    const kept = serviceAreaSitemapTiles([BEND, MEDFORD, GRANTS_PASS, KLAMATH])
-    expect(kept.map((t) => t.city)).toEqual(['Bend'])
-  })
-
-  it('keeps every service-area city, whatever case the feed spells it in', () => {
-    const rows = [
-      tile({ listing_key: 'a', city: 'Bend' }),
-      tile({ listing_key: 'b', city: 'redmond' }),
-      tile({ listing_key: 'c', city: 'LA PINE' }),
-      tile({ listing_key: 'd', city: 'Sunriver' }),
-      tile({ listing_key: 'e', city: 'Crooked River Ranch' }),
-    ]
-    expect(serviceAreaSitemapTiles(rows)).toHaveLength(rows.length)
-  })
-
-  it('drops a row with no city rather than submitting an unplaceable URL', () => {
-    expect(serviceAreaSitemapTiles([tile({ city: null })])).toHaveLength(0)
-    expect(serviceAreaSitemapTiles([tile({ city: '' })])).toHaveLength(0)
-  })
-
-  it('is applied BEFORE assembly, so no out-of-area loc reaches listings.xml', () => {
-    const now = new Date('2026-09-09T00:00:00.000Z')
-    const rows = assembleListingSitemapRows(
-      serviceAreaSitemapTiles([BEND, MEDFORD, GRANTS_PASS, KLAMATH]),
-      now,
+describe('listings.xml assembly keeps out-of-area homes (SITE-33 reverted 2026-10-05)', () => {
+  it('assembles a loc for every city, in-area and out', () => {
+    const now = new Date('2026-10-05T00:00:00.000Z')
+    const rows = assembleListingSitemapRows([BEND, MEDFORD, GRANTS_PASS, KLAMATH], now)
+    expect(rows.map((r) => r.listingKey)).toEqual(
+      [BEND, MEDFORD, GRANTS_PASS, KLAMATH].map((t) => t.listing_key),
     )
-    expect(rows).toHaveLength(1)
-    for (const row of rows) {
-      expect(row.path).not.toMatch(/\/medford\//)
-      expect(row.path).not.toMatch(/\/grants-pass\//)
-      expect(row.path).not.toMatch(/\/klamath-falls\//)
-    }
-  })
-
-  it('does not otherwise change the assembled rows', () => {
-    const now = new Date('2026-09-09T00:00:00.000Z')
-    expect(assembleListingSitemapRows(serviceAreaSitemapTiles([BEND]), now)).toEqual(
-      assembleListingSitemapRows([BEND], now),
-    )
+    expect(rows.some((r) => /\/medford\//.test(r.path))).toBe(true)
+    expect(rows.some((r) => /\/grants-pass\//.test(r.path))).toBe(true)
+    expect(rows.some((r) => /\/klamath-falls\//.test(r.path))).toBe(true)
   })
 })

@@ -49,9 +49,8 @@
  *
  *  1. The out-of-area listing page GETS THE HONESTY BLOCK — the same claim the
  *     city tier makes, in the same words, linking to that city's /oregon page.
- *  2. It is NOINDEX WITH FOLLOW PRESERVED. `pageMetadata({ noindex: true })`
- *     emits "noindex, follow" (SITE-25); the `nofollow` flag beside it is NOT
- *     wanted here. The canonical stays on the page.
+ *  2. [REVERTED 2026-10-05, see below] It was NOINDEX WITH FOLLOW
+ *     PRESERVED, and its row left listings.xml.
  *  3. THE PAGE STILL SERVES, 200, in full. Refusing the row in a read would
  *     turn every inventory link on the Medford and Grants Pass referral pages
  *     into ListingUnavailable — the referral tier links straight at these
@@ -61,10 +60,15 @@
  *     Confirmed, unchanged: 55 pages, 1,187 impressions, 1 click, position
  *     33.8 over the GSC window read 2026-09-08.
  *
- * A noindexed URL does not belong in a sitemap, so `getListingSitemapRows`
- * drops out-of-area rows through `isServiceAreaCity` — the SAME predicate this
- * function uses, so the sitemap, the robots directive and the visible block can
- * never disagree about which market a home is in.
+ * PARTS 2 AND THE SITEMAP DROP ARE REVERTED — MATT, 2026-10-05 ("Undo it").
+ * Search Console showed the out-of-area noindex cost about 36% of the
+ * impression drop since Sep 12 (~2,500 impressions and ~30 clicks a week).
+ * Out-of-area listing pages are now `index, follow` with a self canonical and
+ * ship in /sitemaps/listings.xml like any other Active/AUC listing. Parts 1, 3
+ * and 4 stand: the honesty block still renders, the page still serves in full,
+ * /oregon/[city] stays indexed. `outOfAreaListingPolicy` now drives the visible
+ * block ONLY; it must not reach the robots directive or the sitemap read
+ * (held by ci:listing-offmarket-index).
  *
  * Owning doc: docs/plans/PUBLIC_PRODUCT/processes/refer-out-of-area.md §8.
  * ─────────────────────────────────────────────────────────────────────────────
@@ -129,10 +133,9 @@ export type OutOfAreaListingPolicy = {
  * header). Returns the honesty policy for a listing OUTSIDE the Central Oregon
  * service area, or `null` for one inside it.
  *
- * `null` is the whole in-area behaviour: no block, index + follow, the sitemap
- * row kept. Non-null is the whole out-of-area behaviour: the block renders,
- * `pageMetadata({ noindex: true })` emits "noindex, follow", and
- * `getListingSitemapRows` drops the row.
+ * `null` means no block; non-null means the honesty block renders. Either way
+ * the page is index, follow and its sitemap row ships (SITE-33's noindex and
+ * sitemap drop were reverted by Matt 2026-10-05).
  *
  * A row with no city makes NO claim about a market, so it stays in-area — the
  * honest failure mode is to say nothing, not to tell a reader a home is outside

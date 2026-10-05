@@ -227,29 +227,22 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // every path for this listing points at.
   const canonicalPath = listingCanonicalHref(listing)
 
-  // SITE-33 (Matt 2026-09-08). 56% of listings.xml was Southern Oregon
-  // inventory rendered identically to a Bend home under a "Central Oregon"
-  // brand suffix. The ruling: the page still serves in full, it carries the
-  // honesty block, and it leaves the index — with FOLLOW PRESERVED, so the
-  // ~200 internal links on it (and the /oregon referral pages that link IN to
-  // it) keep passing. `nofollow` is deliberately not set. The canonical stays:
-  // pageMetadata always emits alternates.canonical, noindexed or not.
+  // SITE-33 REVERTED (Matt 2026-10-05, "Undo it"). Out-of-area listings
+  // (Medford, Klamath Falls, Grants Pass, ...) are INDEXED again: the
+  // 2026-09-09 noindex cost about 36% of the Search Console impression drop
+  // since Sep 12 (~2,500 impressions and ~30 clicks a week). The honesty block
+  // stays on the page (outOfAreaListingPolicy in the page body); it no longer
+  // reaches the robots directive, and the sitemap ships the row again.
   //
-  // The predicate is the one lib/data/listings/service-area.ts uses for the
-  // tile and feed reads and the one /oregon/[city] uses for the city tier, so
-  // the robots directive, the visible block and the sitemap row cannot
-  // disagree about which market this home is in.
-  const outOfArea = outOfAreaListingPolicy(listing.city)
-
   // SITE-32 (Matt ruled 2026-09-08). THE ABSENCE OF A STATUS BRANCH BELOW IS
   // THE POLICY, not an oversight — read this before you add one.
   //
   // Off-market listing URLs — Closed, Expired, Canceled, Withdrawn, and Pending
   // with them — stay INDEXED, index,follow, carrying SITE-21's honest state.
-  // `noindex` here is a function of GEOGRAPHY ONLY (SITE-33's out-of-area
-  // cities) and, one branch up at :140, of the refusal path where
-  // getListingDetail returned null (IDX opt-out or Coming Soon). Status is not
-  // an input and must not become one.
+  // Nothing here passes `noindex`: the only noindex on a listing URL is the
+  // refusal path one branch up, where getListingDetail returned null (IDX
+  // opt-out or Coming Soon). Neither status nor geography is an input, and
+  // neither may become one.
   //
   // Two contradictory written policies had stood for months — MASTER_SPEC §4.9
   // said keep the URL indexed, docs/plans/data-architecture-plan.md Part J §1
@@ -264,14 +257,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // same ruling), so G54 is deliberately not extended here.
   //
   // These URLs are residual index, not submitted: getListingSitemapRows.ts
-  // ships Active/AUC only, and that stays. Held by
+  // ships Active/AUC only (every city, in-area or not), and that stays. Held by
   // scripts/check-listing-offmarket-index.mjs (ci:listing-offmarket-index).
   return pageMetadata({
     title,
     description: metaDescription,
     path: canonicalPath,
     ogImage: `/api/og?type=listing&id=${encodeURIComponent(listing.listingKey)}`,
-    noindex: outOfArea !== null,
   })
 }
 
@@ -332,8 +324,9 @@ export default async function ListingDetailPage({ params, searchParams }: PagePr
   // pay; everything it turns on is a door that goes somewhere.
   const offMarket = isPublicOffMarketStatus(listing.status)
 
-  // SITE-33 — this home's market, decided by the SAME predicate as the robots
-  // directive above and the sitemap row. Null on every Central Oregon home, so
+  // SITE-33 — this home's market, for the honesty block only. Since Matt's
+  // 2026-10-05 revert it no longer touches robots or the sitemap: out-of-area
+  // homes are index, follow and in listings.xml. Null on every Central Oregon home, so
   // a Bend page pays nothing: the geo read below only runs when the answer is
   // already "outside our market".
   const outOfArea = outOfAreaListingPolicy(listing.city)
