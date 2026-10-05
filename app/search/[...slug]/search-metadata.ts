@@ -12,6 +12,7 @@ import { withTimeout } from './fetch-guards'
 import { refusalPlatDoor, searchAreaUnavailableHeading } from './sections/AreaUnavailable'
 import { resolveSlug, buildCanonicalPath, printableAreaName, unnamedAreaPhrase } from './resolve-slug'
 import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
+import { fitTitle } from '@/lib/site/page-metadata'
 import { selfCitySearchCanonicalPath, selfCitySearchHeading } from '@/lib/communities/self-city-community'
 import { luxuryPresetDescription, luxuryPresetHeading } from '@/lib/site/bend-luxury-homes'
 import {
@@ -39,14 +40,16 @@ export const SEARCH_AREA_UNAVAILABLE_METADATA = {
  */
 /**
  * "{title} in {town}" for an area (plat / neighborhood) page whose title does
- * not already name its town. City pages and titles that already carry the
- * town pass through unchanged.
+ * not already name its town, when it fits TITLE_BUDGET. City pages and titles
+ * that already carry the town pass through unchanged.
  */
 export function withAreaTown(title: string, town: string | null | undefined): string {
   const t = (town ?? '').trim()
   if (!t) return title
   if (title.toLowerCase().includes(t.toLowerCase())) return title
-  return `${title} in ${t}`
+  // The town goes when it would push the title past the 60-char SERP width
+  // (Matt 2026-10-05): "Homes Under $1 Million in Old Farm District".
+  return fitTitle(`${title} in ${t}`, title)
 }
 
 export async function buildSearchSlugMetadata({

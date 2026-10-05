@@ -32,7 +32,7 @@ import {
   getResortCommunityBySlug,
   getAllResortCommunities,
 } from '@/lib/data'
-import { pageMetadata } from '@/lib/site/page-metadata'
+import { fitTitle, pageMetadata } from '@/lib/site/page-metadata'
 import { runPublishedPageRender } from '@/lib/site/degraded-isr'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { formatDateTime } from '@/lib/format/date'
@@ -144,12 +144,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   )
   const copy = placeTypeMetadataCopy({ spec, placeName: publicName, count: activeCount })
   /* SEO increment vs HEAD: live count in the title when measured. */
-  const title =
+  const counted =
     activeCount != null && activeCount > 0
-      ? `${activeCount.toLocaleString('en-US')} ${
-          activeCount === 1 ? spec.nounOne : spec.nounMany
-        } for sale in ${publicName}, Oregon`
-      : copy.title
+      ? `${activeCount.toLocaleString('en-US')} ${activeCount === 1 ? spec.nounOne : spec.nounMany} for sale in ${publicName}`
+      : null
+  // ", Oregon" goes first when the title would pass the 60-char SERP width.
+  const title = counted ? fitTitle(`${counted}, Oregon`, counted) : copy.title
   return pageMetadata({
     title,
     description: copy.description,

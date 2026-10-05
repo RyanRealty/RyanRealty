@@ -28,7 +28,7 @@ import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getGeoSnapshot, getListingTiles, getListingTilesCount } from '@/lib/data'
-import { pageMetadata } from '@/lib/site/page-metadata'
+import { fitTitle, pageMetadata } from '@/lib/site/page-metadata'
 import { runPublishedPageRender } from '@/lib/site/degraded-isr'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { PRIMARY_CITIES } from '@/lib/cities'
@@ -103,12 +103,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   })
   /* SEO increment vs HEAD: put the live count in the title when measured so
      the SERP states inventory, not only the type name. */
-  const title =
+  const counted =
     activeCount != null && activeCount > 0
-      ? `${activeCount.toLocaleString('en-US')} ${
-          activeCount === 1 ? spec.nounOne : spec.nounMany
-        } for sale in ${cityName}, Oregon`
-      : copy.title
+      ? `${activeCount.toLocaleString('en-US')} ${activeCount === 1 ? spec.nounOne : spec.nounMany} for sale in ${cityName}`
+      : null
+  // ", Oregon" goes first when the title would pass the 60-char SERP width.
+  const title = counted ? fitTitle(`${counted}, Oregon`, counted) : copy.title
   return pageMetadata({
     title,
     description: copy.description,

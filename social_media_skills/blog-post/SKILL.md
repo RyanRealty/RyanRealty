@@ -85,11 +85,12 @@ If you need a bulk seed pattern, follow `scripts/seed-blog-posts.ts` (upsert on 
 ## 3. SEO spec.  every blog post must hit all of these
 
 ### 3.1 Title tag
-- **Length:** ≤60 characters
+- **Length:** `seo_title` ≤46 characters. The site layout appends " | Ryan Realty" (14), so the whole title Google shows stays ≤60 (`TITLE_BUDGET` in `lib/site/page-metadata.ts`). The post-deploy check fails when more than 10% of sampled titles run past 60 (Matt 2026-10-05).
 - **Front-loaded keyword:** start with the primary target keyword (e.g. "Bend Oregon Real Estate")
-- **Brand suffix:** end with " | Ryan Realty"
-- **Pattern:** `{Primary Keyword} {Period or Modifier} | Ryan Realty`
-- **Example:** "Bend Oregon Real Estate Market Report.  April 2026 | Ryan Realty"
+- **No brand in `seo_title`:** the layout adds it; a baked-in " | Ryan Realty" is stripped anyway.
+- **No stale year, no figure that can go stale:** a year only on a dated report; no dollar or unit counts.
+- **Pattern:** `{Primary Keyword}, {Period or Modifier}`
+- **Example:** "Bend Oregon Market Report, April 2026"
 - Store in `seo_title` (and `title` if they match)
 
 ### 3.2 Meta description
@@ -153,7 +154,7 @@ If the post embeds a companion video, that video is a Studio draft (`CLAUDE.md` 
 1. **Pull verified data.** Cache row + DAL. CLAUDE.md §0. Generate `citations.json` next to the draft. Every figure traces.
 2. **Outline first.** H1 title, H2 sections, H3 subsections. The data dictates section order.
 3. **Draft body HTML** into `content`. Hero still goes in `hero_image_url`, not a WP featured-image id.
-4. **SEO checklist.** title length ≤60, meta description 150-160, internal links 3-5, alt text on every image, slug correct, banned words removed.
+4. **SEO checklist.** `seo_title` ≤46 (the layout adds the 14-char brand), meta description 150-160, internal links 3-5, alt text on every image, slug correct, banned words removed.
 5. **Upsert `public.blog_posts` as `status='draft'`.** Do not set `published`.
 6. **Surface the draft to Matt** (row id, slug, excerpt, citations.json). There is no WordPress preview URL.
 7. **On Matt's "go"** (explicit, this session): set `status='published'`, `published_at=now()`. Live URL is `/blog/{slug}`.
@@ -197,7 +198,7 @@ Each post gets 1 `category` + 3-8 `tags`.
 
 Before flipping draft → published:
 
-- [ ] Title ≤60 chars (`seo_title`)
+- [ ] `seo_title` ≤46 chars, no brand (layout adds " | Ryan Realty")
 - [ ] Meta description 150-160 chars (`seo_description`)
 - [ ] Slug is `/blog/{slug}` and unique
 - [ ] `hero_image_url` set

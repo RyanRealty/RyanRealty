@@ -15,7 +15,7 @@
  */
 
 import { cityHref } from '@/lib/site/place-href'
-import type { pageMetadata } from '@/lib/site/page-metadata'
+import { fitTitle, type pageMetadata } from '@/lib/site/page-metadata'
 import { shareDescription } from '@/lib/share-metadata'
 import { isCanonicalCommunitySlug } from '@/lib/communities/canonical-community-slug'
 import { isSelfCityCommunity } from '@/lib/communities/self-city-community'
@@ -92,7 +92,9 @@ export function communitySerpTitle(input: {
   // "{name} real estate" is the other query for the same URL: Tetherow first
   // (Matt 2026-09-22), every registered community since (Matt 2026-09-24).
   // The heading stays "{name} homes for sale".
-  return `${name} real estate | ${homes} | ${city}, OR`
+  // Fit the 60-char SERP width (Matt 2026-10-05): the town tail goes first,
+  // then "| Homes for Sale"; "{name} real estate" always leads.
+  return fitTitle(`${name} real estate | ${homes} | ${city}, OR`, `${name} real estate | ${homes}`, `${name} real estate`)
 }
 
 export function communitySerpDescription(input: {

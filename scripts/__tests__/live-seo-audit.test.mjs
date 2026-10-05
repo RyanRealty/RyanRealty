@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
-import { auditDecision, auditPage, auditRobots, parsePage, parseRobots } from '../lib/live-seo-audit.mjs'
+import { auditDecision, auditPage, auditRobots, overSoftShareProblems, parsePage, parseRobots } from '../lib/live-seo-audit.mjs'
 
 const URL_ = 'https://ryan-realty.com/homes-for-sale/bend/woodridge'
 
@@ -140,5 +140,17 @@ describe('auditDecision (data/seo/decisions.json)', () => {
       expect(Object.keys(d.expect).length, d.id).toBeGreaterThan(0)
       for (const k of ['title', 'h1']) if (d.expect[k]) expect(() => new RegExp(d.expect[k]), d.id).not.toThrow()
     }
+  })
+})
+
+describe('overSoftShareProblems (title-length ratchet, Matt 2026-10-05)', () => {
+  it('passes at or under 10% of the sample over 60 chars', () => {
+    expect(overSoftShareProblems(['a', 'b', 'c', 'd'], 40)).toEqual([])
+    expect(overSoftShareProblems([], 0)).toEqual([])
+  })
+  it('fails past 10%, naming every long title', () => {
+    const fails = overSoftShareProblems(['/x: title 66 chars: X', '/y: title 70 chars: Y', '/z', '/w', '/v'], 40)
+    expect(fails).toHaveLength(1)
+    expect(fails[0]).toMatch(/^5 of 40 sampled titles run past 60 chars, over the 10% ceiling: \/x: title 66 chars: X; /)
   })
 })

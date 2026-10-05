@@ -42,7 +42,7 @@ export const revalidate = 3600
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
 export const metadata: Metadata = pageMetadata({
-  title: 'Bend neighborhoods: Awbrey Butte, Larkspur, Old Bend',
+  title: 'Bend neighborhoods: Awbrey Butte, Old Bend',
   description:
     'City of Bend neighborhood districts with live single-family inventory and list prices from the regional MLS.',
   path: '/neighborhoods',

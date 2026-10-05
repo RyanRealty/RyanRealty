@@ -27,9 +27,14 @@
  *            longer keeps (status, redirect target, index, canonical, title,
  *            h1, served-HTML patterns). Those are Matt's calls; a miss means
  *            the site regressed.
- * Warns (printed, not failing) on titles over 60 chars: the 2026-10-04 suffix
- * change left 203 of 367 sampled titles over 60, mostly listing titles; this
- * keeps the count visible without failing every deploy on a known backlog.
+ * Titles over 60 chars (Google truncates): each one is a warning, and more
+ * than MAX_OVER_SOFT_SHARE of the sample over 60 FAILS (Matt 2026-10-05,
+ * "shorten them now"). The 2026-10-04 suffix change left 203 of 367 sampled
+ * titles over 60; the 2026-10-05 pass fit place, community, type, area and
+ * blog titles to TITLE_BUDGET (lib/site/page-metadata.ts fitTitle), so a
+ * share past the ceiling means a title template or a blog seo_title drifted.
+ * The ceiling leaves room for recorded plat names longer than the budget,
+ * which are never cut.
  */
 
 // Audit what Google is served. Next streams metadata for ordinary visitors and
@@ -37,11 +42,23 @@
 // that ranks. The tail names the probe in access logs.
 import { readFileSync } from 'node:fs'
 
+/**
+ * The title-length ratchet: a sample with more than MAX_OVER_SOFT_SHARE of its
+ * titles past 60 chars fails, naming each long title. Exported for tests.
+ */
+export function overSoftShareProblems(overSoftPages, sampled) {
+  if (sampled <= 0 || overSoftPages.length / sampled <= MAX_OVER_SOFT_SHARE) return []
+  return [
+    `${overSoftPages.length} of ${sampled} sampled titles run past ${MAX_TITLE_SOFT} chars, over the ${Math.round(MAX_OVER_SOFT_SHARE * 100)}% ceiling: ${overSoftPages.join('; ')}`,
+  ]
+}
+
 export const LIVE_SEO_UA = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html) rr-live-seo'
 
 const PRIVATE_DISALLOWS = ['/admin/', '/dev/']
 const MAX_TITLE_HARD = 90
 const MAX_TITLE_SOFT = 60
+export const MAX_OVER_SOFT_SHARE = 0.1
 const IMAGE_SITEMAP_MIN_SHARE = 0.9
 const BRAND = 'Ryan Realty'
 
@@ -174,7 +191,7 @@ export function auditPage(url, page, { isHome, isListing }) {
     const brands = page.title.split(BRAND).length - 1
     if (brands !== 1) fails.push(`${where}: "${BRAND}" appears ${brands}x in the title: ${page.title}`)
     if (page.title.length > MAX_TITLE_HARD) fails.push(`${where}: title is ${page.title.length} chars: ${page.title}`)
-    else if (page.title.length > MAX_TITLE_SOFT) warns.push(`${where}: title ${page.title.length} chars`)
+    else if (page.title.length > MAX_TITLE_SOFT) warns.push(`${where}: title ${page.title.length} chars: ${page.title}`)
   }
   if (!page.description) fails.push(`${where}: no meta description`)
   if (page.h1Count !== 1) fails.push(`${where}: ${page.h1Count} <h1> elements (want exactly 1)`)
@@ -325,6 +342,7 @@ export async function runLiveSeoAudit(base, { ua, perSitemap = 8, concurrency = 
 
   const descSeen = new Map()
   let overSoft = 0
+  const overSoftPages = []
   await mapLimit(targets, concurrency, async (t) => {
     let res
     try {
@@ -348,6 +366,7 @@ export async function runLiveSeoAudit(base, { ua, perSitemap = 8, concurrency = 
     const r = auditPage(t.url, page, t)
     fails.push(...r.fails)
     overSoft += r.warns.length
+    overSoftPages.push(...r.warns)
     if (page.description) {
       const prev = descSeen.get(page.description)
       if (prev) fails.push(`${where}: meta description duplicates ${prev}`)
@@ -361,5 +380,6 @@ export async function runLiveSeoAudit(base, { ua, perSitemap = 8, concurrency = 
   fails.push(...decisionFails)
   lines.push(`decisions: ${decisions.length} pinned, ${decisionFails.length} broken`)
   if (overSoft > 0) warns.push(`${overSoft} of ${targets.length} sampled titles run past ${MAX_TITLE_SOFT} chars (Google truncates)`)
+  fails.push(...overSoftShareProblems(overSoftPages, targets.length))
   return { fails, warns, lines }
 }

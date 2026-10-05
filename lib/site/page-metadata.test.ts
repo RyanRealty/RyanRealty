@@ -4,6 +4,7 @@ import {
   TITLE_BUDGET,
   cleanTitle,
   documentTitle,
+  fitTitle,
   pageMetadata,
   publishPlaceHomesTitle,
 } from './page-metadata'
@@ -30,6 +31,30 @@ describe('publishPlaceHomesTitle', () => {
 
   it('keeps a real city with Oregon', () => {
     expect(publishPlaceHomesTitle('Tetherow', 'Bend')).toBe('Tetherow homes for sale · Bend, Oregon')
+  })
+
+  it('sheds ", Oregon", then the town, to fit the 60-char SERP width; never cuts the name (2026-10-05)', () => {
+    expect(publishPlaceHomesTitle('Ridge at Eagle Crest', 'Redmond')).toBe('Ridge at Eagle Crest homes for sale · Redmond')
+    expect(publishPlaceHomesTitle('Courtyard Garages at Broken Top', 'Bend')).toBe(
+      'Courtyard Garages at Broken Top homes for sale',
+    )
+    const long = 'South Meadow Homesite Section Third Addition of Black Butte Ranch Replat'
+    expect(publishPlaceHomesTitle(long, 'Sisters')).toBe(long)
+  })
+})
+
+describe('fitTitle', () => {
+  it('returns the first form inside TITLE_BUDGET', () => {
+    expect(fitTitle('x'.repeat(TITLE_BUDGET + 1), 'short', 's')).toBe('short')
+    expect(fitTitle('x'.repeat(TITLE_BUDGET))).toBe('x'.repeat(TITLE_BUDGET))
+  })
+
+  it('returns the last form uncut when none fits, and skips empty forms', () => {
+    const a = 'a'.repeat(TITLE_BUDGET + 5)
+    const b = 'b'.repeat(TITLE_BUDGET + 2)
+    expect(fitTitle(a, b)).toBe(b)
+    expect(fitTitle(null, '  ', 'ok')).toBe('ok')
+    expect(fitTitle()).toBe('')
   })
 })
 

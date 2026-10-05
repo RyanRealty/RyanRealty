@@ -3,8 +3,12 @@ import { platPageTitle } from './plat-title'
 
 describe('platPageTitle', () => {
   it('names the city once when the plat name does not carry it', () => {
+    expect(platPageTitle('Elk Run', 'Bend')).toBe('Elk Run homes for sale · Bend, Oregon')
+  })
+  it('sheds ", Oregon", then the town, to fit the 60-char SERP width (Matt 2026-10-05)', () => {
+    expect(platPageTitle('Ridge at Eagle Crest', 'Redmond')).toBe('Ridge at Eagle Crest homes for sale · Redmond')
     expect(platPageTitle('Courtyard Garages at Broken Top', 'Bend')).toBe(
-      'Courtyard Garages at Broken Top homes for sale · Bend, Oregon',
+      'Courtyard Garages at Broken Top homes for sale',
     )
   })
   it('drops the city segment when the plat name already ends in the city', () => {

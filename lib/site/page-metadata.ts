@@ -188,6 +188,18 @@ export function documentTitle(raw: string): string {
 }
 
 /**
+ * The first of `forms` that fits TITLE_BUDGET, so the whole document title
+ * stays inside the 60 chars Google shows (Matt 2026-10-05, "shorten them now").
+ * Callers list the full form first and each later form sheds a qualifier
+ * (", Oregon", the town, a "| Homes for Sale" tail), never a recorded name.
+ * When none fits, the LAST form wins: the shortest honest title, uncut.
+ */
+export function fitTitle(...forms: ReadonlyArray<string | null | undefined>): string {
+  const list = forms.map((f) => (f ?? '').trim()).filter(Boolean)
+  return list.find((f) => f.length <= TITLE_BUDGET) ?? list[list.length - 1] ?? ''
+}
+
+/**
  * Place-page document title. Do not emit "Central Oregon, Oregon" — that
  * truncates to "Central Oregon," and the layout suffix becomes
  * "Central Oregon, | Ryan Realty".
@@ -207,10 +219,12 @@ export function publishPlaceHomesTitle(name: string, city: string | null | undef
   if (!place) return heading
   if (!cityName || /^central oregon$/i.test(cityName)) return heading
   if (place.toLowerCase().endsWith(cityName.toLowerCase())) return heading
-  const full = `${heading} · ${cityName}, Oregon`
-  // The live SEO audit fails a document title past 90 chars (2026-10-04); a
-  // long recorded plat name drops the town before it crosses that ceiling.
-  return full.length + BRAND_SUFFIX.length <= HARD_TITLE ? full : heading
+  // Fit the 60-char SERP width (Matt 2026-10-05): ", Oregon" goes first, then
+  // the town; the place name is never cut.
+  const fitted = fitTitle(`${heading} · ${cityName}, Oregon`, `${heading} · ${cityName}`, heading)
+  // A recorded plat name long enough that even "{name} homes for sale" passes
+  // the live audit's hard ceiling prints the bare name.
+  return fitted.length + BRAND_SUFFIX.length <= HARD_TITLE ? fitted : place
 }
 
 /** City document title. Does not bid "{city} homes for sale". */

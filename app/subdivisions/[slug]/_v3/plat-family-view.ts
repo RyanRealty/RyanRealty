@@ -19,7 +19,7 @@ import {
   type PlatFamilyRole,
 } from '@/lib/market/plat-family'
 import { platPageTitle } from './plat-title'
-import { BRAND_SUFFIX } from '@/lib/site/page-metadata'
+import { BRAND_SUFFIX, TITLE_BUDGET } from '@/lib/site/page-metadata'
 
 /** The live SEO audit's hard ceiling (90) less the layout suffix. */
 const PHASE_TITLE_MAX = 90 - BRAND_SUFFIX.length
@@ -71,9 +71,10 @@ export function platDocumentTitle(input: {
     // Phase 1 & 2 Replat Lots 3-8 · part of Greens at Redmond, Redmond" ran
     // 102 chars). Drop the city, then the family, then cut the phase name at a
     // word: the page's own name is the last thing to go.
-    const fits = [`${phase} · part of ${family}${withCity}`, `${phase} · part of ${family}`, phase].find(
-      (t) => t.length <= PHASE_TITLE_MAX,
-    )
+    // Then fit the 60-char SERP width the same way (Matt 2026-10-05): the
+    // first form inside TITLE_BUDGET wins, the phase name alone when none is.
+    const forms = [`${phase} · part of ${family}${withCity}`, `${phase} · part of ${family}`, phase]
+    const fits = forms.find((t) => t.length <= TITLE_BUDGET) ?? forms.find((t) => t.length <= PHASE_TITLE_MAX)
     return fits ?? cutAtWord(phase, PHASE_TITLE_MAX)
   }
   return platPageTitle(input.displayName, input.cityName)

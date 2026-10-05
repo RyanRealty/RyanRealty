@@ -33,7 +33,9 @@ describe('platDocumentTitle', () => {
   it('titles a phase as part of its family, without the head-term pattern', () => {
     const role = platFamilyRole(families, 'ridge-at-eagle-crest-36')
     const title = platDocumentTitle({ displayName: 'Ridge at Eagle Crest 36', cityName: 'Redmond', role })
-    expect(title).toBe('Ridge at Eagle Crest 36 · part of Ridge at Eagle Crest, Redmond')
+    // The whole subordinate form runs past the 60-char SERP width, so the
+    // phase's own name stands alone (Matt 2026-10-05).
+    expect(title).toBe('Ridge at Eagle Crest 36')
     expect(title).not.toMatch(/homes for sale/i)
   })
 
@@ -55,24 +57,32 @@ describe('platDocumentTitle', () => {
     const title = platDocumentTitle({ displayName: 'x', cityName: 'Redmond', role })
     expect(title.length + ' | Ryan Realty'.length).toBeLessThanOrEqual(90)
     expect(title).not.toMatch(/, Redmond$/)
-    // A phase that fits keeps the whole subordinate title.
-    const short = platFamilyRole(families, 'ridge-at-eagle-crest-36')
-    expect(platDocumentTitle({ displayName: 'x', cityName: 'Redmond', role: short })).toBe(
-      'Ridge at Eagle Crest 36 · part of Ridge at Eagle Crest, Redmond',
-    )
+    // A phase whose subordinate title fits 46 chars keeps all of it.
+    const fitFamilies = derivePlatFamilies({
+      plats: [
+        { slug: 'elk-run', label: 'Elk Run', citySlug: 'bend', closedCount: 40 },
+        { slug: 'elk-run-phase-2', label: 'Elk Run Phase 2', citySlug: 'bend', closedCount: 12 },
+      ],
+      communities: [],
+    })
+    const short = platFamilyRole(fitFamilies, 'elk-run-phase-2')
+    expect(short?.role).toBe('member')
+    const fitted = platDocumentTitle({ displayName: 'x', cityName: 'Bend', role: short })
+    expect(fitted).toMatch(/ · part of Elk Run, Bend$/)
+    expect(fitted.length).toBeLessThanOrEqual(46)
   })
 
   it('keeps the family page and a plain plat on the place-first homes title', () => {
     const head = platFamilyRole(families, 'ridge-at-eagle-crest')
     expect(head?.role).toBe('head')
     expect(platDocumentTitle({ displayName: 'Ridge at Eagle Crest', cityName: 'Redmond', role: head })).toBe(
-      'Ridge at Eagle Crest homes for sale · Redmond, Oregon',
+      'Ridge at Eagle Crest homes for sale · Redmond',
     )
   })
 
   it('never puts a county land-use file number in a title (SEO-7)', () => {
     expect(platPageTitle('Canyon Ridge, Phase 4 711-18-000032-sub', 'Redmond')).toBe(
-      'Canyon Ridge, Phase 4 homes for sale · Redmond, Oregon',
+      'Canyon Ridge, Phase 4 homes for sale · Redmond',
     )
     const role = platFamilyRole(families, 'canyon-ridge-phase-4-711-18-000032-sub')
     expect(platDocumentTitle({ displayName: 'x', cityName: 'Redmond', role })).not.toMatch(/711-18/)
