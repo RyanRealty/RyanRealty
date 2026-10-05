@@ -193,6 +193,11 @@ export type RunningMarks = {
    * guessed before pagination.
    */
   footerRight?: string
+  /**
+   * Paper color behind the footer words only. Cream sheets hide it. A navy
+   * sheet would otherwise print the navy footer on navy. Not a full-width bar.
+   */
+  footerPlate?: string
 }
 
 export function headerTemplate(marks: RunningMarks, m: Margins = MARGIN_IN): string {
@@ -206,7 +211,8 @@ export function headerTemplate(marks: RunningMarks, m: Margins = MARGIN_IN): str
 export function footerTemplate(marks: RunningMarks, m: Margins = MARGIN_IN): string {
   const l = marks.footerLeft ?? ''
   const r = marks.footerRight ?? 'Page <span class="pageNumber"></span> of <span class="totalPages"></span>'
-  return strip(`<span>${l}</span><span>${r}</span>`, `padding-bottom:${EDGE_SAFE_IN}in;`, m.left)
+  const chip = marks.footerPlate ? ` style="background:${marks.footerPlate};padding:0 3px;"` : ''
+  return strip(`<span${chip}>${l}</span><span${chip}>${r}</span>`, `padding-bottom:${EDGE_SAFE_IN}in;`, m.left)
 }
 
 /**

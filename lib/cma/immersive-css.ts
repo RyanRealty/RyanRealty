@@ -313,12 +313,15 @@ h4.subhead{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:up
 .reach a:hover{text-decoration:underline;text-underline-offset:3px}
 .next-note{font-size:16px;line-height:1.55;max-width:56ch;margin:0 0 12px;color:rgba(250,248,244,.88)}
 .sc-cream .next-note{color:var(--ink)}
-.close-reviews{margin:6px 0 16px;max-width:56ch}
-.close-reviews-kicker{font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;opacity:.62;margin:16px 0 10px}
-.close-quote{margin:0 0 12px;padding:0 0 0 12px;border-left:2px solid currentColor}
-.close-quote p{margin:0;font-size:15px;line-height:1.45}
-.close-quote cite{display:block;margin-top:4px;font-style:normal;font-size:12.5px;opacity:.72}
-.close-reviews-more{margin:2px 0 0;font-size:15px;font-weight:600}
+.close-reviews{margin:18px 0 16px;max-width:none}
+.close-reviews-kicker{font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;opacity:.62;margin:0 0 10px}
+.close-review-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.close-quote{margin:0;padding:14px 14px 12px;border:1px solid rgba(250,248,244,.32);background:rgba(250,248,244,.06)}
+.sc-cream .close-quote{border-color:var(--ink12);background:rgba(16,39,66,.04)}
+.close-lead{margin:0;font-family:'Amboqia Boriango',Georgia,serif;font-weight:400;font-size:26px;line-height:1.12;letter-spacing:-.01em;text-wrap:balance}
+.close-line{margin:8px 0 0;font-size:13.5px;line-height:1.4;opacity:.84}
+.close-quote cite{display:block;margin-top:12px;font-style:normal;font-size:11.5px;letter-spacing:.04em;opacity:.7}
+.close-reviews-more{margin:12px 0 0;font-size:15px;font-weight:600}
 .close-reviews-more a{text-decoration:underline;text-underline-offset:3px}
 .print-out{margin-top:22px;font-size:13px}
 .print-out a{color:rgba(250,248,244,.7);text-decoration:underline;text-underline-offset:4px}

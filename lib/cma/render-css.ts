@@ -17,6 +17,16 @@ export function cmaStylesheet(siteUrl: string): string {
   return `
   ${pageContractCss(CMA_MARGIN_IN)}
 
+  /* The contract reserves the bands and leaves them unpainted, so every sheet
+     sat in a white frame. Paint the sheet color through the margin. A named
+     page does not inherit the contract margin, so the navy sheets restate it. */
+  @page { background: #faf8f4; }
+  @page cma-navy {
+    size: Letter;
+    margin: ${CMA_MARGIN_IN.top}in ${CMA_MARGIN_IN.right}in ${CMA_MARGIN_IN.bottom}in ${CMA_MARGIN_IN.left}in;
+    background: #102742;
+  }
+
   @font-face {
     font-family: 'Amboqia Boriango';
     src: url('${siteUrl}/fonts/Amboqia_Boriango.otf') format('opentype');
@@ -63,11 +73,11 @@ export function cmaStylesheet(siteUrl: string): string {
     break-before: auto;
     page-break-before: auto;
   }
-  .page-cover { break-after: page; page-break-after: always; }
+  .page-cover { break-after: page; page-break-after: always; page: cma-navy; }
   .page-flyer { break-before: page; page-break-before: always; }
   /* Navy close is its own sheet. Leftover basis/disclosure lines must not
      sit above the closing header. */
-  .page-closing { break-before: page; page-break-before: always; }
+  .page-closing { break-before: page; page-break-before: always; page: cma-navy; }
 
   @media screen {
     /* Screen only: show sheets on a desk. Print takes its box from @page. */
@@ -751,7 +761,7 @@ export function cmaStylesheet(siteUrl: string): string {
   }
 
   @media print {
-    body { background: white; margin: 0; padding: 0; }
+    html, body { background: transparent; margin: 0; padding: 0; }
     .page {
       box-shadow: none;
       margin: 0;
