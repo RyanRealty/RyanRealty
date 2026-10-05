@@ -949,6 +949,42 @@ export function failedAskBelowRangeNote(ask: number): string {
   return `The last listing asked ${usd(ask)}, below the sales band. The recommended list sits on the sales, not on that ask.`
 }
 
+/**
+ * True only when the ask sits under the low the letter will print.
+ * A higher evidence floor, or a band from before the table was pinned,
+ * is not this low.
+ */
+export function failedAskSitsBelowPrintedBand(pricing: {
+  valueLow?: number | null
+  valueHigh?: number | null
+  failedAsk?: number | null
+}): boolean {
+  const printed = heroBandFromPricing(pricing)
+  const ask = pricing.failedAsk
+  return printed != null && ask != null && Number.isFinite(ask) && ask > 0 && ask < printed.low
+}
+
+/**
+ * The below-range note is set while the band can still move. Once the
+ * letter's low is known, an ask inside that low is not below the sales.
+ * The failed-ask pull on the cover stays. The note does not.
+ */
+export function reconcileFailedAskBelowRange<
+  T extends {
+    valueLow?: number | null
+    valueHigh?: number | null
+    failedAsk?: number | null
+    failedAskBelowRange?: boolean
+    notes?: string[]
+  },
+>(pricing: T): T {
+  if (failedAskSitsBelowPrintedBand(pricing)) return pricing
+  const notes = pricing.notes ?? []
+  const nextNotes = notes.filter((n) => !n.includes('below the sales band'))
+  if (pricing.failedAskBelowRange !== true && nextNotes.length === notes.length) return pricing
+  return { ...pricing, failedAskBelowRange: false, notes: nextNotes }
+}
+
 function hasStoredBelowRangeReason(pricing: {
   priceOverride?: number | null
   reviewReason?: string | null

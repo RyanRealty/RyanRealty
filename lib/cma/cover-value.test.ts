@@ -185,4 +185,28 @@ describe('rangeSpreadCauseSentence names the exclusion that happened', () => {
       } as unknown as import('@/lib/cma/types').CmaPricing),
     ).toBe('')
   })
+
+  it('does not say the sales were moved to today when no sale is moved', () => {
+    const sentence = rangeSpreadCauseSentence({
+      ...wide,
+      rangeRule: { rule: 'min-max', n: 5, kept: 5, endpointPpsfAside: 0, endpointWeightAside: 0 },
+      timeAdjustment: {
+        sentence:
+          'The price per square foot held flat while your home was listed, so no sale is moved for the month it closed.',
+      },
+    } as unknown as import('@/lib/cma/types').CmaPricing)
+    expect(sentence).toBe(
+      'That range is wide because the five sales behind it still land $400,000 apart.',
+    )
+    expect(sentence).not.toContain('moved to today')
+  })
+
+  it('still says the sales were moved to today when a date adjustment is on', () => {
+    const sentence = rangeSpreadCauseSentence({
+      ...wide,
+      rangeRule: { rule: 'min-max', n: 5, kept: 5, endpointPpsfAside: 0, endpointWeightAside: 0 },
+      timeAdjustment: { sentence: 'The city price path moved those sales for the month they closed.' },
+    } as unknown as import('@/lib/cma/types').CmaPricing)
+    expect(sentence).toContain('once each is moved to today')
+  })
 })

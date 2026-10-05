@@ -6,6 +6,7 @@
 
 import { describeRangeSentence, printedAdjustmentPhrase } from '@/lib/pricing/estimate'
 import { grossAdjustmentPct, weightedAdjustedPrice } from '@/lib/pricing/reconciliation'
+import { reanchorSellerNet } from '@/lib/pricing/seller-net'
 import type { CmaPricing } from '@/lib/cma/types'
 
 const LARGE_DATE_CUT = 10_000
@@ -43,6 +44,54 @@ export function compsWithoutCityDateMove<
 
 function usdWhole(n: number): string {
   return `$${Math.round(n).toLocaleString('en-US')}`
+}
+
+/** Notes that describe a date move this pass just took off the sales. */
+function noteDescribesStrippedDateMove(note: string): boolean {
+  return (
+    /Date adjustment was applied/i.test(note) ||
+    /lowest meaningful same-subdivision adjusted sale/i.test(note) ||
+    /moved [+-]?\d+(?:\.\d+)? percent, from \$/i.test(note)
+  )
+}
+
+/**
+ * The weight sentence was written before the date move came off.
+ * A sale that no longer moves for the month it closed cannot still say it did.
+ * A size or style move that is still on the card keeps its own name.
+ */
+function reasonWithoutStrippedDateMove(
+  text: string,
+  comp: {
+    timeAdjustment?: number | null
+    sizeAdjustment?: number | null
+    storyAdjustment?: number | null
+    closePrice?: number | null
+  } | null,
+): string {
+  if (!comp || Math.abs(comp.timeAdjustment ?? 0) >= 1) return text
+  const size = Math.abs(comp.sizeAdjustment ?? 0) >= 1
+  const story = Math.abs(comp.storyAdjustment ?? 0) >= 1
+  if (!size && !story) {
+    return text
+      .replace(
+        /its price moved [\d.]+ percent when adjusted for date(?:, size| and size)?/g,
+        'its price did not move',
+      )
+      .replace(/ when adjusted for date and size/g, '')
+      .replace(/ when adjusted for date/g, '')
+  }
+  const named = [size ? 'size' : null, story ? 'style' : null].filter(Boolean).join(' and ')
+  const pct = grossShare({
+    closePrice: comp.closePrice,
+    timeAdjustment: 0,
+    sizeAdjustment: comp.sizeAdjustment,
+    storyAdjustment: comp.storyAdjustment,
+  })
+  return text.replace(
+    /its price moved [\d.]+ percent when adjusted for [^.,]*/,
+    `its price moved ${pct} percent when adjusted for ${named}`,
+  )
 }
 
 /** The printed sales, weighted, rounded to the thousand the sentence names. */
@@ -182,8 +231,21 @@ export function pricingWithoutCityDateMove<P extends CmaPricing>(
           ...row,
           adjustedPrice: Math.round(comp.adjustedPrice),
           grossAdjustmentPct: grossShare(comp),
+          reason: reasonWithoutStrippedDateMove(row.reason, comp),
         }
       }),
+      sentence:
+        reconciliation.sentence == null
+          ? null
+          : reasonWithoutStrippedDateMove(
+              reconciliation.sentence,
+              (reconciliation.mostWeighted ? byKey.get(reconciliation.mostWeighted) : null) ?? {
+                timeAdjustment: 0,
+                sizeAdjustment: 0,
+                storyAdjustment: 0,
+                closePrice: 0,
+              },
+            ),
     }
   }
   let clamp = pricing.clamp
@@ -197,6 +259,20 @@ export function pricingWithoutCityDateMove<P extends CmaPricing>(
       ),
     }
   }
+  // The cover is the weighted price of the sales the letter now shows.
+  // A failed-ask pull stays only when those sales sit on the ask or above it.
+  // Sales that are already under the ask set the list. The old date-adjusted
+  // number does not.
+  let recommended = pricing.recommended
+  if (supported != null && supported > 0) {
+    const ask = pricing.failedAsk
+    const keepPull =
+      ask != null && ask > 0 && recommended > 0 && recommended < ask && supported >= ask
+    if (!keepPull) recommended = supported
+  }
+  if (clamp && recommended !== pricing.recommended && clamp.appliedTo === 'recommended') {
+    clamp = { ...clamp, after: recommended }
+  }
   const reviewReason =
     supported != null && pricing.reviewReason
       ? pricing.reviewReason.replace(
@@ -204,7 +280,21 @@ export function pricingWithoutCityDateMove<P extends CmaPricing>(
           `Comp evidence supported ${usdWhole(supported)}`,
         )
       : pricing.reviewReason
-  return { ...pricing, valueLow, valueHigh, timeAdjustment: nextTime, rangeRule, reconciliation, clamp, reviewReason }
+  const notes = (pricing.notes ?? []).filter((n) => !noteDescribesStrippedDateMove(n))
+  const next = {
+    ...pricing,
+    recommended,
+    valueLow,
+    valueHigh,
+    timeAdjustment: nextTime,
+    rangeRule,
+    reconciliation,
+    clamp,
+    reviewReason,
+    notes,
+  }
+  if (recommended !== pricing.recommended && next.sellerNet) reanchorSellerNet(next)
+  return next
 }
 
 /** Cover and chapters read one set. A later chapter must not strip the date again and leave the cover on the old band. */

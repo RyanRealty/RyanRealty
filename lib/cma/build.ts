@@ -89,6 +89,7 @@ import { buildCmaLocalOutcomes } from '@/lib/pricing/local-outcomes-read'
 import { analyzeListingHistory } from '@/lib/bpo/history'
 import {
   applyFailedAskCap,
+  reconcileFailedAskBelowRange,
   buildFailureFindings,
   buildServicesList,
   buildNetSheet,
@@ -1501,7 +1502,9 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       listingMarket,
     })
     const letterComps = flatTold.comps
-    pricing = flatTold.pricing
+    // The pin and the flat-date story are the band the letter prints.
+    // A below-range note taken against an earlier, tighter low does not survive that.
+    pricing = reconcileFailedAskBelowRange(flatTold.pricing)
     const renderArgs = {
       coverPhoto: {
         url: coverPhoto.url,

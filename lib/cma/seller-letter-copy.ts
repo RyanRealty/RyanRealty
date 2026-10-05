@@ -31,6 +31,9 @@ const SUPPORT_MORE =
 /** Search label and the method talk that used to follow it. */
 const POCKET_LABEL = /\bexclusive pocket\b|\bpump prices\b|\bstory class do not adjust\b/i
 
+/** Cover spread that says the sales were moved after the letter says they were not. */
+const MOVED_WHILE_FLAT = /apart once each is moved to today/i
+
 export type SellerLetterDefectId =
   | 'internal-search-slug'
   | 'unfinished-sentence'
@@ -38,6 +41,7 @@ export type SellerLetterDefectId =
   | 'review-token'
   | 'support-contradicts-recommendation'
   | 'exclusive-pocket-label'
+  | 'date-move-contradiction'
 
 export type SellerLetterDefect = { id: SellerLetterDefectId; excerpt: string }
 
@@ -72,6 +76,10 @@ export function sellerLetterDefects(
     const ask = money?.failedAsk
     const contradicts = rec == null || ask == null || rec <= ask
     if (contradicts) defects.push(hit('support-contradicts-recommendation', text, support.index))
+  }
+  if (/no sale is moved/i.test(text)) {
+    const moved = MOVED_WHILE_FLAT.exec(text)
+    if (moved) defects.push(hit('date-move-contradiction', text, moved.index))
   }
   return defects
 }
@@ -152,6 +160,9 @@ export function scrubSellerLetterHtml(html: string, money?: SellerLetterMoney): 
   out = out.replace(/\bexclusive pocket\b/gi, 'nearby sales')
   out = out.replace(/\s+\b(?:pass|fail|did-not-run)\b(?=\s*[.<])/gi, '')
   out = out.replace(/\breview pass\b/gi, 'review')
+  if (/no sale is moved/i.test(out)) {
+    out = out.replace(/ apart once each is moved to today/gi, ' apart')
+  }
   const visible = sellerVisibleText(out)
   if (sellerLetterDefects(visible, money).some((d) => d.id === 'support-contradicts-recommendation')) {
     out = out.replace(

@@ -29,7 +29,7 @@ import { adjustedCloseRange } from '@/lib/cma/market-area-chapters'
 import { renderCompPinMapHtml } from '@/lib/cma/comp-pin-map'
 import { clampSentence, keptCompCount, setAsideCompIndexes, setAsideRows } from '@/lib/cma/set-aside'
 import { deRepeatRecommendDollars, isRecommendMark } from '@/lib/cma/recommend-once'
-import { failedAskBelowRangeNote } from '@/lib/cma/expired-audit'
+import { failedAskBelowRangeNote, failedAskSitsBelowPrintedBand } from '@/lib/cma/expired-audit'
 import { listCeiling, readMeasure } from '@/lib/cma/render-contract'
 import { closedCompBand } from '@/lib/pricing/recommended-in-band'
 import { printedAdjustedPrice } from '@/lib/pricing/seller-net'
@@ -120,7 +120,14 @@ export function whatItsWorthLead(
   const display = pricingRangeDisplay(pricing)
   const failedAsk = failedSubjectAsk(subject, askCtx) ?? pricing.failedAsk ?? null
   const belowRangeNote =
-    pricing.failedAskBelowRange && failedAsk != null && failedAsk > 0
+    pricing.failedAskBelowRange &&
+    failedAsk != null &&
+    failedAsk > 0 &&
+    failedAskSitsBelowPrintedBand({
+      valueLow: pricing.valueLow,
+      valueHigh: pricing.valueHigh,
+      failedAsk,
+    })
       ? failedAskBelowRangeNote(failedAsk)
       : null
   return [worth, listRange, display.outOfRange ? display.note : null, belowRangeNote, ask]

@@ -17,6 +17,7 @@ import {
   applyFailedAskCap,
   FAILED_ASK_BACKTEST,
   failedAskBelowRangeNote,
+  reconcileFailedAskBelowRange,
 } from '@/lib/cma/expired-audit'
 import { whatItsWorthLead } from '@/lib/cma/render-pricing-page'
 import { applyEngineRecommendedList } from '@/lib/pricing/estimate'
@@ -210,6 +211,70 @@ describe('failed-ask haircut vs the hero band', () => {
     expect(lead).toContain('The sales support $734,000 to $878,000.')
     expect(lead).toContain(failedAskBelowRangeNote(NUGGET.lastAsk))
     expect(lead).not.toMatch(/[—–]/)
+  })
+
+  it('Sage shape: a later wider low under the ask drops the below-range note and keeps the pull', () => {
+    const x = pricing({
+      conservative: 1_930_000,
+      recommended: 1_911_000,
+      highEnd: 2_115_000,
+      valueLow: 1_930_000,
+      valueHigh: 2_115_000,
+    })
+    const r = applyFailedAskCap(x, {
+      lastFailedListPrice: 1_759_700,
+      offMarketDate: recentOff,
+      daysOnMarket: 131,
+      originalListPrice: 1_759_700,
+    })
+    expect(r.applied).toBe(true)
+    expect(x.failedAskBelowRange).toBe(true)
+    expect(x.recommended).toBeLessThan(1_759_700)
+    expect(x.notes.join(' ')).toContain(failedAskBelowRangeNote(1_759_700))
+    const pulled = x.recommended
+    const reconciled = reconcileFailedAskBelowRange({
+      ...x,
+      valueLow: 1_338_350,
+      valueHigh: 2_111_248,
+      failedAsk: 1_759_700,
+    })
+    expect(reconciled.failedAskBelowRange).toBe(false)
+    expect(reconciled.recommended).toBe(pulled)
+    expect(reconciled.notes.join(' ')).not.toContain('below the sales band')
+    expect(reconciled.notes.join(' ')).not.toContain('sits on the sales')
+    const lead = whatItsWorthLead(
+      {
+        streetAddress: '65867 Sage Canyon',
+        standardStatus: 'Canceled',
+        lastListPrice: 1_759_700,
+      } as CmaSubject,
+      reconciled as unknown as CmaPricing,
+    )
+    expect(lead).not.toContain('below the sales band')
+    expect(lead).not.toContain('sits on the sales')
+  })
+
+  it('worth lead stays quiet when the flag is stale and the printed low is under the ask', () => {
+    const lead = whatItsWorthLead(
+      {
+        streetAddress: '65867 Sage Canyon',
+        standardStatus: 'Canceled',
+        lastListPrice: 1_759_700,
+      } as CmaSubject,
+      {
+        conservative: 1_338_350,
+        recommended: 1_706_000,
+        highEnd: 2_111_248,
+        valueLow: 1_338_350,
+        valueHigh: 2_111_248,
+        failedAsk: 1_759_700,
+        failedAskBelowRange: true,
+        notes: [failedAskBelowRangeNote(1_759_700)],
+      } as unknown as CmaPricing,
+    )
+    expect(lead).toContain('The sales support')
+    expect(lead).not.toContain('below the sales band')
+    expect(lead).not.toContain('sits on the sales')
   })
 
   it('a broker override with a note may sit below the band', () => {

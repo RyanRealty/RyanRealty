@@ -137,9 +137,15 @@ export function rangeSpreadCauseSentence(pricing: CmaPricing | null | undefined)
   const kept = num(rule.kept)
   if (n == null || kept == null || !(kept > 0)) return ''
   const setAside = Math.max(n - kept, 0)
+  // A flat local market already told the seller no sale moved for the month
+  // it closed. Saying those same sales were moved to today contradicts that.
+  const movedToToday =
+    pricing.timeAdjustment?.sentence?.includes('no sale is moved') === true
+      ? ''
+      : ' once each is moved to today'
   const spread = `That range is wide because the ${countWord(kept)} sales behind it still land ${usd(
     Math.round(hi - lo),
-  )} apart once each is moved to today`
+  )} apart${movedToToday}`
   if (setAside <= 0) return `${spread}.`
   const ppsf = Math.max(0, num(rule.endpointPpsfAside) ?? 0)
   const light = Math.max(0, num(rule.endpointWeightAside) ?? 0)

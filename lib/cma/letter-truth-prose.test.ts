@@ -71,6 +71,25 @@ describe('range sentence counts the sales that set the ends', () => {
     expect(sentence).toContain('$1,120,000 to $1,195,000')
   })
 
+  it('drops the adjusted-sale claim when nothing was adjusted and keeps the list-strategy share', () => {
+    const sentence = describeRangeSentence({
+      rule: 'min-max',
+      n: 3,
+      kept: 3,
+      printedLow: 1_450_000,
+      printedHigh: 1_541_875,
+      saleLow: 1_450_000,
+      saleHigh: 1_541_875,
+      adjustedFor: 'none',
+      suffix:
+        ' The range is those adjusted sale prices. Homes in this city are closing at 95.8 percent of the price they first asked. That share is a list-strategy fact. It is not applied to this range.',
+    })
+    expect(sentence).toContain('The range is the spread of all three sale prices: $1,450,000 to $1,541,875.')
+    expect(sentence).not.toContain('adjusted')
+    expect(sentence).toContain('95.8 percent')
+    expect(sentence).toContain('list-strategy fact')
+  })
+
   it('Grand Targhee shape: a printed comp below the band is not called the spread', () => {
     const sentence = describeRangeSentence({
       rule: 'min-max',

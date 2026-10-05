@@ -825,6 +825,24 @@ export function ensureMinBandWidth(
   return { low: Math.min(lo, rec - half), high: Math.max(hi, rec + half) }
 }
 
+/**
+ * The old range sentence's tail. When nothing was adjusted, drop the claim
+ * that these are adjusted sale prices. Keep the city close-to-ask share.
+ */
+function rangeSuffixAfterMoves(
+  suffix: string | undefined,
+  adjustedFor: 'date and size' | 'date' | 'size' | 'none',
+): string {
+  let text = suffix ?? ''
+  if (adjustedFor === 'none') {
+    text = text
+      .replace(/\s*The range is those adjusted sale prices\./g, '')
+      .replace(/\s*The range is the adjusted sale prices\./g, '')
+  }
+  const trimmed = text.trim()
+  return trimmed ? ` ${trimmed}` : ''
+}
+
 /** The tail of a range sentence that explains the list-strategy share. */
 function rangeSentenceSuffix(sentence: string): string {
   const idx = sentence.search(/The range is (?:those|the) adjusted/)
@@ -851,9 +869,12 @@ export function describeRangeSentence(args: {
   adjustedFor?: 'date and size' | 'date' | 'size' | 'none'
 }): string {
   const usd = (n: number) => `$${Math.round(n).toLocaleString('en-US')}`
-  const suffix = args.suffix ?? ''
   const adjustedFor = args.adjustedFor ?? 'date and size'
   const adjusted = adjustedFor === 'none' ? '' : ` adjusted for ${adjustedFor}`
+  // A later step can drop every date and size move and still hand in the old
+  // tail, which calls the same prices "adjusted sale prices." That claim
+  // leaves with the moves. The list-strategy share stays.
+  const suffix = rangeSuffixAfterMoves(args.suffix, adjustedFor)
   if (args.rule === 'trimmed-one-each-end') {
     const aside = args.trimmedAside ?? ''
     return `The range is the spread of the ${countWord(args.kept)} sale prices behind this price${adjusted}: ${usd(args.printedLow)} to ${usd(args.printedHigh)}. ${aside}${suffix}`

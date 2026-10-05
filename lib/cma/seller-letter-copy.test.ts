@@ -59,6 +59,29 @@ describe('seller letter refuses the shapes that shipped', () => {
   })
 })
 
+describe('a flat market does not say the sales were moved to today', () => {
+  const flat =
+    'The price per square foot held flat while your home was listed, so no sale is moved for the month it closed. That range is wide because the five sales behind it still land $450,000 apart once each is moved to today.'
+
+  it('refuses the cover line that contradicts the flat story', () => {
+    expect(sellerLetterDefects(flat).map((d) => d.id)).toEqual(['date-move-contradiction'])
+  })
+
+  it('drops that clause so the letter can still name the dollar spread', () => {
+    const clean = scrubSellerLetterHtml(`<p>${flat}</p>`)
+    expect(clean).toContain('still land $450,000 apart')
+    expect(clean).not.toContain('moved to today')
+    expect(clean).toContain('no sale is moved')
+    expect(sellerLetterStillDirty(`<p>${flat}</p>`)).toEqual([])
+  })
+
+  it('leaves a real date move alone', () => {
+    const moved = 'That range is wide because the five sales behind it still land $450,000 apart once each is moved to today.'
+    expect(sellerLetterDefects(moved)).toEqual([])
+    expect(scrubSellerLetterHtml(`<p>${moved}</p>`)).toContain('once each is moved to today')
+  })
+})
+
 describe('the generators write plain English', () => {
   it('does not leave the exclusive-pocket label on a stored method sentence', () => {
     const stored = [
@@ -339,6 +362,121 @@ describe('the generators write plain English', () => {
     expect(pricing.reconciliation?.weights.find((w) => w.listingKey === 'a')?.grossAdjustmentPct).toBe(0)
     expect(pricing.reviewReason).toContain('$660,000')
     expect(pricing.reviewReason).not.toContain('$637,500')
+    // Both sales are under a failed ask that is not on this row, so the
+    // cover follows the unmoved sales. $660,000 is their weighted price.
+    expect(pricing.recommended).toBe(660_000)
+    expect(pricing.clamp?.after).toBe(660_000)
+  })
+
+  it('does not say a sale moved for date after that move is taken off', () => {
+    const comps = compsWithoutCityDateMove([
+      {
+        listingKey: 'a',
+        address: '3186 Strickland',
+        closePrice: 1_541_875,
+        weight: 3,
+        timeAdjustment: -21_586,
+        timeAdjustedPrice: 1_520_289,
+        adjustedPrice: 1_520_289,
+        sizeAdjustment: 0,
+        storyAdjustment: 0,
+      },
+    ])
+    const pricing = pricingWithoutCityDateMove(
+      {
+        recommended: 1_520_000,
+        valueLow: 1_450_000,
+        valueHigh: 1_541_875,
+        timeAdjustment: { sentence: 'Each sale is moved by the city index.' },
+        rangeRule: {
+          rule: 'min-max',
+          n: 1,
+          kept: 1,
+          sentence: 'old',
+          adjustedLow: 1_450_000,
+          adjustedHigh: 1_541_875,
+        },
+        reconciliation: {
+          weightedPrice: 1_520_000,
+          mostWeighted: 'a',
+          sentence:
+            '3186 Strickland carries the most weight of the three sales behind this price, at 40 percent: it is 170 square feet larger than yours, it sold 10 months ago, and its price moved 1.4 percent when adjusted for date.',
+          weights: [
+            {
+              listingKey: 'a',
+              address: '3186 Strickland',
+              weight: 40,
+              weightRaw: 3,
+              adjustedPrice: 1_520_289,
+              grossAdjustmentPct: 1.4,
+              reason:
+                '170 square feet larger than yours, sold 10 months ago, its price moved 1.4 percent when adjusted for date',
+            },
+          ],
+        },
+      } as unknown as CmaPricing,
+      comps,
+    )
+    expect(pricing.reconciliation?.sentence).not.toContain('adjusted for date')
+    expect(pricing.reconciliation?.sentence).toContain('its price did not move')
+    expect(pricing.reconciliation?.weights[0]?.reason).not.toContain('adjusted for date')
+    expect(pricing.reconciliation?.weights[0]?.reason).toContain('its price did not move')
+  })
+
+  it('keeps a failed-ask pull when the unmoved sales sit on or above the ask', () => {
+    const comps = compsWithoutCityDateMove([
+      {
+        listingKey: 'a',
+        closePrice: 800_000,
+        weight: 1,
+        timeAdjustment: -20_000,
+        timeAdjustedPrice: 780_000,
+        adjustedPrice: 780_000,
+        sizeAdjustment: 0,
+        storyAdjustment: 0,
+      },
+      {
+        listingKey: 'b',
+        closePrice: 780_000,
+        weight: 1,
+        timeAdjustment: -20_000,
+        timeAdjustedPrice: 760_000,
+        adjustedPrice: 760_000,
+        sizeAdjustment: 0,
+        storyAdjustment: 0,
+      },
+    ])
+    const pricing = pricingWithoutCityDateMove(
+      {
+        recommended: 724_000,
+        failedAsk: 725_000,
+        valueLow: 760_000,
+        valueHigh: 780_000,
+        notes: [
+          'Date adjustment was applied to 2 sales. 1 Test moved -2.5 percent, from $800,000 to $780,000.',
+          'The printed low is the lowest meaningful same-subdivision adjusted sale at $760,000. A cooled price below every one of those sales does not set the range.',
+        ],
+        timeAdjustment: { sentence: 'Each sale is moved by the city index.' },
+        rangeRule: {
+          rule: 'min-max',
+          n: 2,
+          kept: 2,
+          sentence:
+            'The range is the spread of all two sale prices adjusted for date: $760,000 to $780,000. The range is those adjusted sale prices. Homes in this city are closing at 95.8 percent of the price they first asked. That share is a list-strategy fact. It is not applied to this range.',
+          adjustedLow: 760_000,
+          adjustedHigh: 780_000,
+        },
+        reconciliation: { weightedPrice: 770_000, weights: [], mostWeighted: null, sentence: null },
+      } as unknown as CmaPricing,
+      comps,
+    )
+    expect(pricing.reconciliation?.weightedPrice).toBeGreaterThanOrEqual(725_000)
+    expect(pricing.recommended).toBe(724_000)
+    expect(pricing.notes.join(' ')).not.toContain('Date adjustment was applied')
+    expect(pricing.notes.join(' ')).not.toContain('lowest meaningful')
+    expect(pricing.rangeRule?.sentence).not.toContain('adjusted sale prices')
+    expect(pricing.rangeRule?.sentence).not.toContain('adjusted for')
+    expect(pricing.rangeRule?.sentence).toContain('95.8 percent')
   })
 
   it('keeps a size adjustment on the card after a flat market drops the date cut', () => {
