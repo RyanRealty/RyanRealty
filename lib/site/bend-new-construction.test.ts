@@ -76,8 +76,8 @@ describe('Bend new-construction snapshot', () => {
   it('keeps the public path and research date', () => {
     expect(BEND_NEW_CONSTRUCTION_PATH).toBe('/new-construction')
     expect(BEND_NEW_CONSTRUCTION_RESEARCH_DATE).toBe('2026-09-16')
-    expect(BEND_NEW_CONSTRUCTION_TITLE).toBe('New Homes in Bend: Builder Savings')
-    expect(BEND_NEW_CONSTRUCTION_H1).toBe('New homes in Bend: inventory and builder savings')
+    expect(BEND_NEW_CONSTRUCTION_TITLE).toBe('New Construction Homes in Bend, Oregon')
+    expect(BEND_NEW_CONSTRUCTION_H1).toBe('New construction homes in Bend: inventory and builder savings')
     expect(BEND_NEW_CONSTRUCTION_DESCRIPTION).toMatch(/2026-09-16/)
     expect(BEND_NEW_CONSTRUCTION_DESCRIPTION).toMatch(/Not a loan offer/)
     expect(BEND_NEW_CON_DISCLAIMER.title).toBe('Not a loan offer')
