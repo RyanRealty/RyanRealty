@@ -35,7 +35,7 @@
  *   - NO brand mark top-left
  *   - NO "5★ · 24 reviews" tagline
  */
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { writeFile, mkdir, copyFile, readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'

@@ -23,7 +23,7 @@
  *   - No stock seniors, no canned "happy older couple," no pandering per
  *     Matt's explicit directive 2026-05-27/28.
  */
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { writeFile, mkdir } from 'node:fs/promises'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'

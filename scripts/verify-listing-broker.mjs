@@ -10,7 +10,7 @@
  *   NO cookie           → ["Talk to a broker"]        (single card, Matt fallback)
  * Before the fix the cookie case showed BOTH "Your broker" + "Talk to a broker".
  */
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { mkdirSync } from 'node:fs'
 
 const URL = process.env.LISTING_URL

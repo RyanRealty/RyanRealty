@@ -1,7 +1,7 @@
 // Targeted E2E: market-report self-subscribe happy path. Toggles Redmond ON
 // (Bend already selected), saves, asserts the crm_report_subscriptions row
 // updated with both areas.
-import { chromium, devices } from 'playwright'
+import { chromium, devices } from './lib/marked-playwright.mjs'
 import { createClient as createSb } from '@supabase/supabase-js'
 import { createServerClient } from '@supabase/ssr'
 import { readFileSync } from 'node:fs'

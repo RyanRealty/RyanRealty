@@ -146,7 +146,7 @@ import { execFile } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import sharp from 'sharp'
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { SHOT_BYTE_CAP } from './check-shot-weight.mjs'
 import { CATALOG_PATH, demoStateSpecs, loadTasteCatalog } from './lib/taste-catalog.mjs'
 import { installRemoteMediaProxy } from './lib/remote-media-proxy.mjs'
@@ -470,13 +470,23 @@ export function resolveUrl(baseUrl, routeKey, readParity) {
 // page handling
 // ---------------------------------------------------------------------------
 
-/** Trap 3 — kill the two overlays before any page JS runs. */
+/**
+ * Trap 3 — kill the two overlays before any page JS runs.
+ *
+ * The banner is answered with a DECLINE, never a grant. Until 2026-10-05 this
+ * wrote `{ analytics: true, marketing: true }`, which told gtag it could count
+ * the capture: ~128 GA4 sessions in four weeks and 1,232 unflagged first-party
+ * sessions were this tool (Matt 2026-10-05, GA cleanup). Any stored answer
+ * hides the banner, and a decline records nothing. The browser itself carries
+ * the `rr_automation=1` marker (scripts/lib/marked-playwright.mjs), so the site
+ * loads no Google tag for it either way. `ci:analytics-suppression` holds both.
+ */
 const SUPPRESS_OVERLAYS = () => {
   try {
     localStorage.setItem('ryan_realty_signin_prompt_dismissed', String(Date.now()))
     document.cookie =
       'ryan_realty_cookie_consent=' +
-      encodeURIComponent(JSON.stringify({ analytics: true, marketing: true })) +
+      encodeURIComponent(JSON.stringify({ analytics: false, marketing: false })) +
       '; path=/'
   } catch {}
 }

@@ -27,7 +27,7 @@
  */
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { loadEnv } from '../lib/platform/env.mjs'
 
 await loadEnv()

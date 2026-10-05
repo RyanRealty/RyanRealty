@@ -5,7 +5,7 @@
 // the URL bar (every hop is a click; goto() is used only for the entry point
 // and the phone-size passes). Screenshots at 1400x900 and 390x844 land in
 // out/broker-walkthrough/.
-import { chromium, devices } from 'playwright'
+import { chromium, devices } from './lib/marked-playwright.mjs'
 import { createClient as createSb } from '@supabase/supabase-js'
 import { createServerClient } from '@supabase/ssr'
 import { readFileSync, mkdirSync } from 'node:fs'

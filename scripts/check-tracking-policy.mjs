@@ -204,7 +204,7 @@ for (const rel of ['components/GTMHead.tsx', 'components/GoogleAnalytics.tsx', '
   check(`${rel} skips private pages`, /isPrivatePath\(/.test(src),
     `${rel} must render nothing / send nothing when isPrivatePath(pathname) (lib/analytics/private-paths.ts): a signing link's address opens a client's documents.`)
 }
-check('GTM loader checks the private path before it runs', /if\(!\$\{PRIVATE_PATH_JS\}\)\(function\(w,d,s,l,i\)/.test(read('lib/analytics/gtm-bootstrap.ts')),
+check('GTM loader checks the private path before it runs', /if\(!\$\{PRIVATE_PATH_JS\}(?:&&!\$\{GA_SUPPRESS_JS\})?\)\(function\(w,d,s,l,i\)/.test(read('lib/analytics/gtm-bootstrap.ts')),
   'lib/analytics/gtm-bootstrap.ts must guard the gtm.js loader with PRIVATE_PATH_JS.')
 check('Signing page CSP admits no third-party tag', (() => {
   const cfg = read('next.config.ts')

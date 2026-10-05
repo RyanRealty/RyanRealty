@@ -24,7 +24,7 @@
  * Download / Book Now / Sign Up). "Start Now" and "Get My Estimate" aren't
  * FB-button-allowed — would only work as visual button copy in creative.
  */
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { writeFile, mkdir } from 'node:fs/promises'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'

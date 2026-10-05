@@ -4,7 +4,7 @@
  * must share the alias-aware Tetherow pair (35 / $1,499,000).
  */
 import { mkdirSync, writeFileSync } from 'node:fs'
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { CI_PROBE_HEADERS } from './lib/ci-probe-ua.mjs'
 
 const ART = '/opt/cursor/artifacts'

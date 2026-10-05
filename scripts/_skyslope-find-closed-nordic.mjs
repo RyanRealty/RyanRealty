@@ -5,7 +5,7 @@
  * integer transaction ID.
  */
 import fs from 'node:fs/promises'
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 
 const STATE_PATH = 'tmp/skyslope-session.json'
 

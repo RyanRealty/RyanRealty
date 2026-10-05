@@ -24,7 +24,7 @@
  *
  * Config schema: see social_media_skills/flyer-design/SKILL.md.
  */
-import { chromium } from 'playwright';
+import { chromium } from './lib/marked-playwright.mjs';
 import QRCode from 'qrcode';
 import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'fs';
 import { resolve, dirname, isAbsolute } from 'path';

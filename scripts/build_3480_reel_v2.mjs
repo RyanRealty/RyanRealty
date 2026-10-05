@@ -6,7 +6,7 @@
  * neighbours alike) instead of the generic center Ken Burns. Renders per-slide
  * clips then xfade-concats. Figures trace to Supabase listings.
  */
-import { chromium } from 'playwright';
+import { chromium } from './lib/marked-playwright.mjs';
 import { readFileSync, existsSync, mkdirSync, rmSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 const STATE='tmp/skyslope-session.json'
 const TXN_B64=Buffer.from('21849771').toString('base64')
 const URL=`https://app.skyslope.com/CreateTransaction.aspx?TransactionID=${TXN_B64}&ListingID=MA==&checklistId=MA==`

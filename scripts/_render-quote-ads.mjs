@@ -4,7 +4,7 @@
  * Real Google reviews as headlines + market-data body + restrained brand mark.
  * Each = 1080x1080 JPG written to out/seller-ad-concepts/quote-ad-{slug}.jpg
  */
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { writeFile, mkdir } from 'node:fs/promises'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'

@@ -26,7 +26,7 @@
  *   - Ernie Oster quote verbatim from 2026-05-18 review
  *   - Gary Timms quote verbatim from 2025-08-29 review
  */
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { writeFile, mkdir } from 'node:fs/promises'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'

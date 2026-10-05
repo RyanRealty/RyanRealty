@@ -7,8 +7,11 @@ import { pageTypeFromPath } from '@/lib/analytics/page-type'
 import { IS_NON_PRODUCTION_BUILD } from '@/lib/analytics/non-production-build'
 import { gtmBootstrapScript } from '@/lib/analytics/gtm-bootstrap'
 import { isPrivatePath } from '@/lib/analytics/private-paths'
+import { decideGaSuppression } from '@/lib/analytics/ga-suppression'
 
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_CONTAINER_ID?.trim()
+// The GA4 property the GTM Google tag sends to (GTM-WV6R4NZ5 -> G-ST40W4WM6T).
+const GA4_ID = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID?.trim() || 'G-ST40W4WM6T'
 
 /**
  * GTM container with **Consent Mode v2** (ci:tracking-policy).
@@ -63,6 +66,24 @@ export default function GTMHead() {
     window.addEventListener('cookie-consent', applyConsent)
     return () => window.removeEventListener('cookie-consent', applyConsent)
   }, [])
+
+  // The suppression decision again on every client-side navigation (Matt
+  // 2026-10-05). gtm.js is decided once per page load by the inline bootstrap;
+  // a visitor whose page loaded it and who then navigates into /admin (or signs
+  // in, which sets rr_internal) would otherwise send that history-change
+  // page_view. `ga-disable-<id>` is Google's own per-property off switch, honored
+  // by every later hit of the Google tag.
+  useEffect(() => {
+    const decision = decideGaSuppression({
+      pathname: window.location.pathname,
+      host: window.location.hostname,
+      search: window.location.search,
+      userAgent: navigator.userAgent,
+      webdriver: navigator.webdriver,
+      cookieHeader: document.cookie,
+    })
+    ;(window as unknown as Record<string, unknown>)[`ga-disable-${GA4_ID}`] = decision.suppress
+  }, [pathname])
 
   // GTM ships its own GA4 configuration tag, so it leaks page views into the
   // production property from a dev server just as gtag does.

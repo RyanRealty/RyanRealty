@@ -10,6 +10,7 @@ import { brokerDisplayName } from '@/lib/brokers/directory'
 import { buildAdminNav, buildAdminMobileTabs } from '@/app/components/admin/admin-nav'
 import type { AdminCapabilityContext } from '@/lib/admin/capabilities'
 import ConsoleShell from '@/components/console/ConsoleShell'
+import InternalBrowserMark from '@/components/admin/InternalBrowserMark'
 
 /**
  * Auth + chrome for every admin dashboard page.
@@ -75,6 +76,9 @@ export default async function AdminProtectedLayout({
 
   return (
     <div className="console-root">
+      {/* A signed-in broker's browser is internal: GA4 never counts it
+          (lib/analytics/ga-suppression.ts, Matt 2026-10-05). */}
+      <InternalBrowserMark />
       <ConsoleShell
         user={{
           email: session.user.email ?? '',

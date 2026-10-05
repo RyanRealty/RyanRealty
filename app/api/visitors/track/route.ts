@@ -71,6 +71,12 @@ import {
   classifyAutomation,
 } from '@/lib/analytics/automation'
 import { campaignDetailsParams, ga4SessionParams, parseVisit } from '@/lib/analytics/ga4-visit'
+import {
+  decideGaSuppressionForPage,
+  hasAutomationMarker,
+  hasInternalUserCookie,
+} from '@/lib/analytics/ga-suppression'
+import { isNonProductionPageLocation } from '@/lib/analytics/non-production-host'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -365,6 +371,19 @@ export async function POST(request: NextRequest) {
     return jsonError(400, 'pageUrl must be a full URL', origin)
   }
 
+  // ─── Our own development never lands in production (Matt 2026-10-05) ────
+  // A local `next build && next start` holds production credentials, so its
+  // tracker wrote to the production visitor tables: 2,594 sessions landing on
+  // 127.0.0.1 / localhost in the 2026-10-05 audit, 2,306 of them not flagged.
+  // The same host rule the GA4 mirror applies (isNonProductionPageLocation):
+  // a page on localhost, 127.0.0.1 or a *.vercel.app preview records nothing.
+  if (isNonProductionPageLocation(pageUrl)) {
+    return NextResponse.json(
+      { ok: true, dropped: true, reason: 'non_production_host' },
+      { headers: corsHeaders(origin) },
+    )
+  }
+
   // ─── Consent gate (server-side enforcement) ─────────────────────────────
   // Snippet MUST send a consent level. We refuse 'declined' and untyped
   // events entirely so even a buggy or compromised client cannot store
@@ -445,9 +464,15 @@ export async function POST(request: NextRequest) {
   // ─── Automation class + arrival identity (P7) ──────────────────────────
   // Classified from the UA HEADER at every tier; only the class label is
   // stored, never the UA string itself at essential (docs/TRACKING_POLICY.md).
+  // Our own scripts carry an explicit marker (`rr_automation=1` cookie or query,
+  // lib/analytics/ga-suppression.ts), so a capture that spoofs a desktop user
+  // agent is still flagged (Matt 2026-10-05: 1,232 Chrome/124-Mac sessions from
+  // the capture tool were not).
+  const cookieHeader = request.headers.get('cookie')
   const automation = classifyAutomation({
     userAgent: request.headers.get('user-agent'),
     webdriver: body.webdriver,
+    marker: hasAutomationMarker({ cookieHeader, search: (() => { try { return new URL(pageUrl).search } catch { return '' } })() }),
   })
   const rawToken = arrivalTokenFrom({ identityToken: body.identityToken, pageUrl })
   const token = rawToken ? verifyPersonLinkToken(rawToken) : null
@@ -457,7 +482,16 @@ export async function POST(request: NextRequest) {
   const arrivalShape = automation.automated
     ? { automated: false, reason: null }
     : classifyArrivalShape({ landingPage: body.landingPage, referrer: body.referrer, hasToken: !!rawToken })
-  const birthClass = automation.automated ? automation : arrivalShape
+  // A signed-in broker's browser (`rr_internal=1`, set on admin sign-in) is
+  // flagged `internal` at birth: left out of counts of outside visitors and
+  // never mirrored to GA4, but still a person, so identification proceeds
+  // (NON_BLOCKING_FLAG_REASONS in lib/analytics/automation.ts).
+  const internalBrowser = !automation.automated && hasInternalUserCookie(cookieHeader)
+  const birthClass = automation.automated
+    ? automation
+    : internalBrowser
+      ? { automated: true, reason: 'internal' as const }
+      : arrivalShape
   let tokenPersonExists = true
   if (token && !automation.automated) {
     const [owner, exists] = await Promise.all([
@@ -618,7 +652,22 @@ export async function POST(request: NextRequest) {
   // exactly the inflation TRACK-1 measured, and GA4's known-bot filter does
   // not see Measurement Protocol hits. A provisional contact-deep-link session
   // loses only its first view; a later event proves a person and mirrors.
-  if (mirrorGa4 && !automation.automated && !(sessionWrite.inserted && arrivalShape.automated)) {
+  // ONE suppression decision with the browser's Google tag loader
+  // (lib/analytics/ga-suppression.ts, Matt 2026-10-05): never /admin, never a
+  // non-production host, never automation (user agent, navigator.webdriver, our
+  // marker), never a signed-in broker's browser.
+  const gaSuppression = decideGaSuppressionForPage({
+    pageUrl,
+    userAgent: request.headers.get('user-agent'),
+    webdriver: body.webdriver,
+    cookieHeader,
+  })
+  if (
+    mirrorGa4 &&
+    !gaSuppression.suppress &&
+    !automation.automated &&
+    !(sessionWrite.inserted && arrivalShape.automated)
+  ) {
     try {
       const { fireGa4Event, clientIdFromGaCookie, clientIdFromSessionId } = await import(
         '@/lib/ga4-measurement-protocol'

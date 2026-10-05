@@ -11,7 +11,7 @@
  * Three variants — same architecture, different photograph + different
  * voice from the GBP corpus. All locked to the same restraint.
  */
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { writeFile, mkdir } from 'node:fs/promises'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'

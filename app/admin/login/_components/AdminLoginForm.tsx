@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { signInWithOAuthBrowser } from '@/lib/supabase/oauth'
+import { markInternalBrowser } from '@/app/actions/internal-browser'
 import { isSafeAdminReturnPath } from '@/lib/auth/admin-return-path'
 import { GoogleIcon } from '@/components/icons/AuthProviderIcons'
 import { Button } from '@/components/admin/v2'
@@ -126,6 +127,10 @@ export default function AdminLoginForm({ googleClientId, next }: { googleClientI
         setError(error.message)
         return
       }
+      // A broker's browser is internal from the moment they sign in: GA4 never
+      // counts it (lib/analytics/ga-suppression.ts, Matt 2026-10-05). The action
+      // verifies the admin role server-side; a failure never blocks sign-in.
+      await markInternalBrowser().catch(() => null)
       router.push(dest)
       router.refresh()
     },

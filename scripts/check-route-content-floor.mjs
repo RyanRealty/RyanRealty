@@ -52,7 +52,7 @@
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { CI_PROBE_HEADERS } from './lib/ci-probe-ua.mjs'
 import { floorProblems, isPlainObject, measurePage, seedFloor, seedSectionFloors, spliceContentFloor } from './lib/content-floor.mjs'
 import { openGateContext } from './lib/gate-browser.mjs'

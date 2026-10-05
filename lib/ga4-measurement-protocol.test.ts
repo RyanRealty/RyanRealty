@@ -9,6 +9,7 @@ describe('isNonProductionPageLocation — our own browsing is not analytics', ()
     'http://localhost:3000/housing-market/bend',
     'http://127.0.0.1:8777/',
     'http://0.0.0.0:3000/search',
+    'http://[::1]:3000/',
     'http://mac-mini.local:3000/',
     'https://ryanrealty-abc123.vercel.app/listings', // staging-host-ok: fixture asserting we BLOCK this host, not a link we emit
     'http://site.test/',

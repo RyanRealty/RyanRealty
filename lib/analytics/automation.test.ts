@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { PROVISIONAL_AUTOMATION_REASONS, classifyArrivalShape, classifyAutomation } from './automation'
+import {
+  IDENTIFIABLE_SESSION_FILTER,
+  PROVISIONAL_AUTOMATION_REASONS,
+  classifyArrivalShape,
+  classifyAutomation,
+  sessionBlocksIdentification,
+} from './automation'
 
 const CHROME =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36'
@@ -67,5 +73,19 @@ describe('classifyArrivalShape — the provisional contact-deep-link class (P7)'
     expect(classifyArrivalShape({ landingPage: 'https://ryan-realty.com/listing/220199976', referrer: null }).automated).toBe(false)
     expect(classifyArrivalShape({ landingPage: 'not a url', referrer: null }).automated).toBe(false)
     expect(classifyArrivalShape({ landingPage: null, referrer: null }).automated).toBe(false)
+  })
+})
+
+describe('our own marker and a signed-in broker browser (Matt 2026-10-05, GA cleanup)', () => {
+  it('the rr_automation marker classifies as automation even behind a desktop user agent', () => {
+    const ua = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+    expect(classifyAutomation({ userAgent: ua, marker: true })).toEqual({ automated: true, reason: 'marker' })
+    expect(classifyAutomation({ userAgent: ua, marker: false })).toEqual({ automated: false, reason: null })
+  })
+
+  it('a marker session is never identified; an internal (broker) session always may be', () => {
+    expect(sessionBlocksIdentification({ is_automated: true, automation_reason: 'marker' })).toBe(true)
+    expect(sessionBlocksIdentification({ is_automated: true, automation_reason: 'internal' })).toBe(false)
+    expect(IDENTIFIABLE_SESSION_FILTER).toContain('internal')
   })
 })

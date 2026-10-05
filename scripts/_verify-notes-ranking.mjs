@@ -3,7 +3,7 @@
 // on desktop (18157: 1 broker note + 38 packets) and mobile (18187: 212 packets
 // → all in the collapsed "Automated activity" group). Run from repo root:
 //   node scripts/_verify-notes-ranking.mjs
-import { chromium, devices } from 'playwright'
+import { chromium, devices } from './lib/marked-playwright.mjs'
 import { createClient as createSb } from '@supabase/supabase-js'
 import { createServerClient } from '@supabase/ssr'
 import { readFileSync, mkdirSync } from 'node:fs'

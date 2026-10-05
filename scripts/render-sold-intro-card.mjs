@@ -19,7 +19,7 @@
  *   }
  */
 
-import { chromium } from 'playwright';
+import { chromium } from './lib/marked-playwright.mjs';
 import { readFileSync, existsSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';

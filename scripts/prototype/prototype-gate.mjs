@@ -15,7 +15,7 @@
  *
  * Usage: node check.mjs [pageKey ...]     (no args = every page)
  */
-import { chromium } from 'playwright';
+import { chromium } from '../lib/marked-playwright.mjs';
 import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';

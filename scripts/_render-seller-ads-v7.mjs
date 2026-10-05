@@ -28,7 +28,7 @@
  * Skills loaded: design_system/ryan-realty/SKILL.md, brand-voice rules,
  * facebook-lead-gen-ad/SKILL.md (drives /lp/seller-home-value).
  */
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { writeFile, mkdir } from 'node:fs/promises'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'

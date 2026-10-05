@@ -5,7 +5,7 @@
  *   node scripts/probe-blog-punch-prod.mjs
  */
 import { mkdirSync, writeFileSync } from 'node:fs'
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { CI_PROBE_HEADERS } from './lib/ci-probe-ua.mjs'
 
 const BASE = (process.env.BASE_URL || 'https://ryan-realty.com').replace(/\/$/, '')
