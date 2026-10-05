@@ -290,10 +290,11 @@ function rungPhraseForUnnamed(
 /**
  * Where the sales outside the subdivision actually are.
  *
- * "Your own street" only when every one of them is on the subject's street.
- * A sale in another subdivision is named, with that subdivision. A rung label
- * is the last resort, and only for a rung that kept the sale. Never a rung
- * that merely added candidates.
+ * "Your own street" only when every one of them is on the subject's street
+ * and none of them names another subdivision. A sale in another subdivision
+ * is named with that subdivision, even when the street name matches. A rung
+ * label is the last resort, and only for a rung that kept the sale. Never a
+ * rung that merely added candidates.
  */
 
 function describeOutsideSales(
@@ -301,16 +302,19 @@ function describeOutsideSales(
   onSubjectStreet: (c: CompSearchKeptComp) => boolean,
 ): OutsidePhrase | null {
   if (outside.length === 0) return null
-  if (outside.every(onSubjectStreet)) return { text: 'your own street', namesSale: false }
+  const placeOf = (c: CompSearchKeptComp) => usableSubdivision(c.subdivision)
+  if (outside.every(onSubjectStreet) && outside.every((c) => placeOf(c) == null)) {
+    return { text: 'your own street', namesSale: false }
+  }
 
   const phrases = outside.map((c) => {
+    const place = placeOf(c)
+    const address = clean(c.address)
+    // Another plat is named first. A matching street is not that plat.
+    if (address && place) return { text: `${address} in ${place}`, namesSale: true }
     if (onSubjectStreet(c)) {
-      const address = clean(c.address)
       return { text: address ? `${address} on your street` : 'a sale on your street', namesSale: true }
     }
-    const place = usableSubdivision(c.subdivision)
-    const address = clean(c.address)
-    if (address && place) return { text: `${address} in ${place}`, namesSale: true }
     if (address) return { text: address, namesSale: true }
     if (place) return { text: place, namesSale: false }
     return null

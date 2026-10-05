@@ -284,7 +284,32 @@ describe('buildCompSearch — the rungs, the counts, the sentence', () => {
     expect(s!.sentence).not.toMatch(/\$590,000|2025|2026/)
   })
 
-  it('says your own street only when the extra sale is on that street', () => {
+  it('names the other subdivision when the street name matches', () => {
+    // 1432 Remarkable shares the street token with 1195 Remarkable, and it
+    // sits in Awbrey Butte. The sentence names that plat. It does not call
+    // another plat the subject's street.
+    const s = buildCompSearch({
+      subdivision: 'Awbrey Village',
+      subjectStreet: '1195 Remarkable',
+      ladder: [
+        rung({ tier: 'subdivision-12mo', monthsBack: 12, compsAdded: 1 }),
+        rung({ tier: 'pocket-6mo', monthsBack: 6, compsAdded: 2 }),
+        rung({ tier: 'pocket-12mo', monthsBack: 12, compsAdded: 2 }),
+      ],
+      keptComps: [
+        { address: '2000 Bungalow', subdivision: 'Awbrey Village', selectionTier: 'subdivision-12mo' },
+        { address: '3072 Duffy', subdivision: 'Awbrey Butte', selectionTier: 'pocket-6mo' },
+        { address: '925 Yosemite', subdivision: 'Awbrey Park', selectionTier: 'pocket-6mo' },
+        { address: '855 Haleakala', subdivision: 'Awbrey Park', selectionTier: 'pocket-12mo' },
+        { address: '1432 Remarkable', subdivision: 'Awbrey Butte', selectionTier: 'pocket-12mo' },
+      ],
+    })
+    expect(s!.sentence).toContain('1432 Remarkable in Awbrey Butte')
+    expect(s!.sentence).not.toContain('on your street')
+    expect(s!.sentence).not.toContain('your own street')
+  })
+
+  it('names the other plat when the only extra sale shares the street', () => {
     const s = buildCompSearch({
       subdivision: 'Petrosa',
       subjectStreet: '3722 Petrosa',
@@ -298,6 +323,28 @@ describe('buildCompSearch — the rungs, the counts, the sentence', () => {
         { address: '3831 Tellus', subdivision: 'Petrosa', selectionTier: 'subdivision-6mo' },
         { address: '3903 Oakside', subdivision: 'Petrosa', selectionTier: 'subdivision-6mo' },
         { address: '3801 Petrosa', subdivision: 'Somewhere Else', selectionTier: 'own-street-24mo' },
+      ],
+    })
+    expect(s!.sentence).toBe(
+      'Four of the five sales are in Petrosa. One more was added: 3801 Petrosa in Somewhere Else.',
+    )
+    expect(s!.sentence).not.toContain('your own street')
+  })
+
+  it('says your own street only when that sale names no other plat', () => {
+    const s = buildCompSearch({
+      subdivision: 'Petrosa',
+      subjectStreet: '3722 Petrosa',
+      ladder: [
+        rung({ tier: 'subdivision-6mo', monthsBack: 6, compsAdded: 4 }),
+        rung({ tier: 'own-street-24mo', monthsBack: 24, compsAdded: 1 }),
+      ],
+      keptComps: [
+        { address: '3847 Tellus', subdivision: 'Petrosa', selectionTier: 'subdivision-6mo' },
+        { address: '3759 Tellus', subdivision: 'Petrosa', selectionTier: 'subdivision-6mo' },
+        { address: '3831 Tellus', subdivision: 'Petrosa', selectionTier: 'subdivision-6mo' },
+        { address: '3903 Oakside', subdivision: 'Petrosa', selectionTier: 'subdivision-6mo' },
+        { address: '3801 Petrosa', subdivision: 'N/A', selectionTier: 'own-street-24mo' },
       ],
     })
     expect(s!.sentence).toBe(
