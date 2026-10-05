@@ -111,6 +111,9 @@ export function PlaceSubdivisionMap({
   return <PlaceMapContext.Provider value={value}>{children}</PlaceMapContext.Provider>
 }
 
+/** Rows the rail shows before "Show all" (Matt 2026-10-04). Exported for tests. */
+export const RAIL_FOLD_AT = 10
+
 export function PlaceSubdivisionRail({
   id,
   nameOnly = true,
@@ -127,6 +130,14 @@ export function PlaceSubdivisionRail({
   const bars = layout !== 'rails'
   const railMost = Math.max(1, ...rail.map((entry) => keysBySlug[entry.id]?.length ?? 0))
   const detailBase = useId()
+  const listId = useId()
+  // Matt 2026-10-04: the Sunriver rail ran 7,759px down the desktop fold and
+  // pushed the homes several screens away. Past RAIL_FOLD_AT the rows stay in
+  // the served HTML (every place name and its page link is still crawlable)
+  // but carry `hidden` until "Show all" opens them. A row the map selected
+  // always shows, so a polygon click never selects an invisible row.
+  const [railOpen, setRailOpen] = useState(false)
+  const folds = rail.length > RAIL_FOLD_AT
   return (
     <nav
       id={id}
@@ -144,7 +155,7 @@ export function PlaceSubdivisionRail({
           Bar: homes for sale in each, on one scale
         </p>
       ) : null}
-      <ul className="place-subdiv-rail__list">
+      <ul id={listId} className="place-subdiv-rail__list">
         <li>
           <button
             type="button"
@@ -157,11 +168,12 @@ export function PlaceSubdivisionRail({
             </span>
           </button>
         </li>
-        {rail.map((entry) => {
+        {rail.map((entry, index) => {
           const photo = firstListedPhoto(homes, keysBySlug[entry.id])
           const listed = keysBySlug[entry.id]?.length ?? 0
+          const folded = folds && !railOpen && index >= RAIL_FOLD_AT && selectedId !== entry.id
           return (
-            <li key={entry.id} className={cn(entry.href && 'place-subdiv-rail__item--linked')}>
+            <li key={entry.id} hidden={folded} className={cn(entry.href && 'place-subdiv-rail__item--linked')}>
               <button
                 type="button"
                 className={cn('place-subdiv-rail__button', selectedId === entry.id && 'is-selected')}
@@ -218,6 +230,17 @@ export function PlaceSubdivisionRail({
           )
         })}
       </ul>
+      {folds ? (
+        <button
+          type="button"
+          className="place-subdiv-rail__more"
+          aria-expanded={railOpen}
+          aria-controls={listId}
+          onClick={() => setRailOpen((open) => !open)}
+        >
+          {railOpen ? 'Show fewer' : `Show all ${formatCount(rail.length)}`}
+        </button>
+      ) : null}
     </nav>
   )
 }

@@ -73,6 +73,32 @@
   display: grid;
 }
 
+.place-subdiv-rail__list > li[hidden] {
+  display: none;
+}
+
+/* "Show all N": the rail's own disclosure (Matt 2026-10-04). A text control on
+   the 44px tap floor, in the rail's label voice. */
+.place-subdiv-rail__more {
+  display: flex;
+  align-items: center;
+  min-height: var(--v3-tap);
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-strong);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+  color: var(--v3-ink);
+}
+
+.place-subdiv-rail__more:focus-visible {
+  outline: 3px solid var(--v3-focus);
+  outline-offset: 2px;
+}
+
 .place-subdiv-rail__button {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
