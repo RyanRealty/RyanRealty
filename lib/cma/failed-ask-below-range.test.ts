@@ -2,10 +2,10 @@
  * Failed-ask haircut vs the letter hero band.
  *
  * Nugget (cma-19815-nugget): last ask $725k sits below the sales. The
- * haircut is skipped and the recommendation pins to the band LOW.
- * Production rebuild: band $734k–$1,285k, midpoint $1,036k — that rec
- * failed expired-list-cap (rec > ask). Pin to $734k and the contract
- * becomes rec <= valueLow.
+ * recommendation comes out under that ask, not pinned to the band low.
+ * Production rebuild: band $734k–$1,285k, midpoint $1,036k. The cover
+ * is $724k. The letter says the list stays under the ask. It does not
+ * say the list sits on the sales.
  *
  * Murphy (cma-20506-murphy): range $693k–$735k, last ask $729k (inside),
  * rec $716k. Unchanged.
@@ -13,15 +13,18 @@
  * Ask above the range: existing p75 haircut still binds.
  */
 import { describe, expect, it } from 'vitest'
+import { coverWorthSentence } from '@/lib/cma/cover-value'
 import {
   applyFailedAskCap,
   FAILED_ASK_BACKTEST,
   failedAskBelowRangeNote,
+  floorFailedAskPullAtSaleUnderAsk,
   reconcileFailedAskBelowRange,
 } from '@/lib/cma/expired-audit'
 import { whatItsWorthLead } from '@/lib/cma/render-pricing-page'
+import { attachSellerNet } from '@/lib/pricing/seller-net'
 import { applyEngineRecommendedList } from '@/lib/pricing/estimate'
-import type { CmaPricing, CmaSubject } from '@/lib/cma/types'
+import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
 
 const recentOff = new Date(Date.now() - 60 * 24 * 3600 * 1000).toISOString()
 
@@ -210,6 +213,8 @@ describe('failed-ask haircut vs the hero band', () => {
     )
     expect(lead).toContain('The sales support $734,000 to $878,000.')
     expect(lead).toContain(failedAskBelowRangeNote(NUGGET.lastAsk))
+    expect(lead).toContain('stays under that ask')
+    expect(lead).not.toContain('sits on the sales')
     expect(lead).not.toMatch(/[—–]/)
   })
 
@@ -275,6 +280,88 @@ describe('failed-ask haircut vs the hero band', () => {
     expect(lead).toContain('The sales support')
     expect(lead).not.toContain('below the sales band')
     expect(lead).not.toContain('sits on the sales')
+  })
+
+  it('Pronghorn shape: a sale already under the ask stops the pull at that sale', () => {
+    const ask = 1_499_000
+    const saleLow = 1_486_263
+    const board = pricing({
+      conservative: 1_498_000,
+      recommended: 1_485_000,
+      highEnd: 1_476_000,
+      valueLow: saleLow,
+      valueHigh: 1_974_121,
+      notes: [],
+      clamp: {
+        kind: 'failed-ask',
+        appliedTo: 'recommended',
+        before: 1_669_000,
+        after: 1_485_000,
+        basis: { ratio: 0.9847, source: 'test' },
+        applications: [{ tier: 'recommended', before: 1_669_000, after: 1_485_000, ratio: 0.9847 }],
+        sentence:
+          'The sales support a value of $1,669,000. Because $1,499,000 already failed to sell, we recommend the price on the cover, which stays under that ask.',
+      },
+    })
+    attachSellerNet(board, [{ concessionsAmount: 0, concessionsYn: 'No', closeDate: '2026-08-28' }])
+    expect(board.sellerNet?.list).toBe(1_485_000)
+    const floored = floorFailedAskPullAtSaleUnderAsk({ ...board, failedAsk: ask })
+    expect(floored.recommended).toBe(saleLow)
+    expect(floored.recommended).toBeLessThan(ask)
+    expect(floored.recommended).not.toBe(1_485_000)
+    expect(floored.clamp?.after).toBe(saleLow)
+    expect(floored.clamp?.sentence).toContain('stays under that ask')
+    expect(floored.sellerNet?.list).toBe(saleLow)
+    const asPricing = floored as unknown as CmaPricing
+    const comps = [
+      { closePrice: 1_500_000, adjustedPrice: saleLow, weight: 1 },
+      { closePrice: 1_998_800, adjustedPrice: 1_974_121, weight: 1 },
+    ] as unknown as CmaAdjustedComp[]
+    const lead = whatItsWorthLead(
+      {
+        streetAddress: '65885 Pronghorn Estates',
+        standardStatus: 'Canceled',
+        lastListPrice: ask,
+        lastListDate: new Date(Date.now() - 40 * 24 * 3600 * 1000).toISOString().slice(0, 10),
+      } as CmaSubject,
+      asPricing,
+      undefined,
+      comps,
+    )
+    expect(lead).toContain('The sales support $1,486,263 to $1,974,121.')
+    expect(lead).not.toContain('capped below this range')
+    expect(coverWorthSentence(asPricing)).toContain('We recommend listing at $1,486,263.')
+    expect(coverWorthSentence(asPricing)).not.toContain('capped below')
+  })
+
+  it('a stored broker override stays under a sale that is already under the ask', () => {
+    const floored = floorFailedAskPullAtSaleUnderAsk({
+      ...pricing({
+        recommended: 1_400_000,
+        valueLow: 1_486_263,
+        valueHigh: 1_974_121,
+        priceOverride: 1_400_000,
+        reviewReason: 'The recommended list price reflects a broker adjustment applied on review.',
+      }),
+      failedAsk: 1_499_000,
+    })
+    expect(floored.recommended).toBe(1_400_000)
+  })
+
+  it('Nugget shape: the pull stays under the low when every sale is at or above the ask', () => {
+    const floored = floorFailedAskPullAtSaleUnderAsk({
+      ...pricing({
+        conservative: NUGGET.conservative,
+        recommended: 724_000,
+        highEnd: NUGGET.highEnd,
+        valueLow: NUGGET.valueLow,
+        valueHigh: NUGGET.valueHigh,
+      }),
+      failedAsk: NUGGET.lastAsk,
+    })
+    expect(floored.recommended).toBe(724_000)
+    expect(floored.recommended).toBeLessThan(NUGGET.valueLow)
+    expect(floored.recommended).toBeLessThan(NUGGET.lastAsk)
   })
 
   it('a broker override with a note may sit below the band', () => {

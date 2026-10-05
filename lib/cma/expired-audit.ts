@@ -946,7 +946,7 @@ export function closedSaleLow(pricing: {
  * Printed on the pricing beat and stored on `pricing.notes`.
  */
 export function failedAskBelowRangeNote(ask: number): string {
-  return `The last listing asked ${usd(ask)}, below the sales band. The recommended list sits on the sales, not on that ask.`
+  return `The last listing asked ${usd(ask)}, below the sales band. The list on the cover stays under that ask.`
 }
 
 /**
@@ -983,6 +983,41 @@ export function reconcileFailedAskBelowRange<
   const nextNotes = notes.filter((n) => !n.includes('below the sales band'))
   if (pricing.failedAskBelowRange !== true && nextNotes.length === notes.length) return pricing
   return { ...pricing, failedAskBelowRange: false, notes: nextNotes }
+}
+
+/**
+ * A failed-ask pull must not print under every sale that set the price
+ * when one of those sales is already under the ask. Stop at that sale.
+ * When every setting sale is at or above the ask, the pull under both
+ * the ask and the low stays. A stored broker override below the band stays.
+ * Runs after the printed band is pinned. The low is the sale, not a
+ * thousand-dollar step under it.
+ */
+export function floorFailedAskPullAtSaleUnderAsk<
+  T extends {
+    recommended: number
+    valueLow?: number | null
+    valueHigh?: number | null
+    failedAsk?: number | null
+    priceOverride?: number | null
+    reviewReason?: string | null
+    notes?: string[]
+    clamp?: CmaPricingClamp | null
+    sellerNet?: CmaSellerNet | null
+  },
+>(pricing: T): T {
+  if (hasStoredBelowRangeReason(pricing)) return pricing
+  const printed = heroBandFromPricing(pricing)
+  const ask = pricing.failedAsk
+  if (!printed || ask == null || !(ask > 0) || !(printed.low < ask)) return pricing
+  if (!(pricing.recommended > 0) || pricing.recommended >= printed.low) return pricing
+  const lifted = rewriteFailedAskClampAfterRec({
+    ...pricing,
+    recommended: printed.low,
+    notes: [...(pricing.notes ?? [])],
+  })
+  if (lifted.sellerNet) reanchorSellerNet(lifted)
+  return lifted
 }
 
 function hasStoredBelowRangeReason(pricing: {

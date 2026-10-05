@@ -89,6 +89,7 @@ import { buildCmaLocalOutcomes } from '@/lib/pricing/local-outcomes-read'
 import { analyzeListingHistory } from '@/lib/bpo/history'
 import {
   applyFailedAskCap,
+  floorFailedAskPullAtSaleUnderAsk,
   reconcileFailedAskBelowRange,
   buildFailureFindings,
   buildServicesList,
@@ -1504,7 +1505,13 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     const letterComps = flatTold.comps
     // The pin and the flat-date story are the band the letter prints.
     // A below-range note taken against an earlier, tighter low does not survive that.
-    pricing = reconcileFailedAskBelowRange(flatTold.pricing)
+    const reconciled = reconcileFailedAskBelowRange(flatTold.pricing)
+    // The pin can put the low back above a thousand-dollar pull. When that
+    // low is already under the ask, the cover stops on the sale.
+    pricing = floorFailedAskPullAtSaleUnderAsk({
+      ...reconciled,
+      failedAsk: reconciled.failedAsk ?? (lastCycleFailed ? subject.lastListPrice : null),
+    })
     const renderArgs = {
       coverPhoto: {
         url: coverPhoto.url,
