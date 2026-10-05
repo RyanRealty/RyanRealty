@@ -101,7 +101,9 @@ const CHECKS = [
       '  what an AI assistant reads to cite a Ryan Realty listing.',
   },
   {
-    file: 'app/blog/[slug]/page.tsx',
+    // The post body (and its JSON-LD) renders in the shared module the route and
+    // the admin draft preview both call (2026-10-05).
+    file: 'app/blog/[slug]/_v3/render-blog-post.tsx',
     label: 'blog: BlogPosting JSON-LD',
     all: ['generateBlogSchema'],
     why:

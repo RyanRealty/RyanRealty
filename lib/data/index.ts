@@ -257,6 +257,10 @@ export { getPublishedBlogPosts } from '@/lib/data/blog/getPublishedBlogPosts'
 export type { BlogPostWithAuthor, GetPublishedBlogPostsResult } from '@/lib/data/blog/getPublishedBlogPosts'
 export { getBlogPostBySlug } from '@/lib/data/blog/getBlogPostBySlug'
 export type { BlogPostFull } from '@/lib/data/blog/getBlogPostBySlug'
+// Blog — ONE row by slug, any status, UNCACHED, service role. Admin draft
+// preview only (/admin/blog/preview/[slug]); never a public route.
+export { getBlogPostDraftBySlug } from '@/lib/data/blog/getBlogPostDraftBySlug'
+export type { BlogPostDraft } from '@/lib/data/blog/getBlogPostDraftBySlug'
 export { getPopularBlogSlugs } from '@/lib/data/blog/getPopularBlogSlugs'
 export { getRelatedBlogPosts } from '@/lib/data/blog/getRelatedBlogPosts'
 

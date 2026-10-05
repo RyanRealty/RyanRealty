@@ -40,6 +40,7 @@
 
 import { readFileSync, readdirSync, statSync, writeFileSync, existsSync } from 'node:fs'
 import { join, resolve, relative } from 'node:path'
+import { routeRenderSource } from './lib/route-render-source.mjs'
 
 const ROOT = resolve(new URL('.', import.meta.url).pathname, '..')
 const APP_DIR = join(ROOT, 'app')
@@ -123,7 +124,8 @@ function walkPages(dir, acc = []) {
 }
 
 function classify(pagePath) {
-  const src = readFileSync(pagePath, 'utf8')
+  // A route rendering through its own render-*.tsx module is judged on both.
+  const src = routeRenderSource(pagePath)
   const rel = relative(ROOT, pagePath)
   const optOut = /@no-breadcrumb/.test(src.slice(0, 600))
   // A pure re-export page (e.g. app/housing-market/explore/page.tsx doing

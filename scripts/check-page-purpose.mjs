@@ -40,6 +40,7 @@
  * edit the contract -> the diff shows Matt the plan changed.
  */
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
+import { routeRenderSource } from './lib/route-render-source.mjs'
 import { join } from 'node:path'
 import {
   aboutOpenerProblems,
@@ -107,7 +108,9 @@ for (const rel of contracts) {
     failures.push(`${rel}: sectionOrder is missing or empty. The page's section set is the plan; write it.`)
     continue
   }
-  const src = readFileSync(join(ROOT, route), 'utf8')
+  // A route rendering through its own render-*.tsx module is judged on both
+  // (scripts/lib/route-render-source.mjs); section order is the module's order.
+  const src = routeRenderSource(join(ROOT, route))
 
   let cursor = -1
   for (const raw of order) {

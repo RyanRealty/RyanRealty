@@ -12,6 +12,7 @@
  *   node scripts/check-publish-months-of-supply.mjs
  */
 import { readFileSync } from 'node:fs'
+import { routeRenderSource } from './lib/route-render-source.mjs'
 
 const checks = []
 
@@ -124,7 +125,10 @@ const surfaces = [
   },
 ]
 
-const blogPage = src('app/blog/[slug]/page.tsx')
+// The post body renders in app/blog/[slug]/_v3/render-blog-post.tsx (one render path
+// shared with the admin draft preview, 2026-10-05); the route file keeps metadata + ISR.
+// routeRenderSource reads the route plus the render module it imports.
+const blogPage = routeRenderSource(new URL('../app/blog/[slug]/page.tsx', import.meta.url).pathname)
 // D27 moved the live months-of-supply guard off market pulse and onto leftover
 // detached membership, so requiring `getMarketPulse(` here would pin the source
 // this change deliberately replaced. What the gate is for is unchanged: the guard
