@@ -93,6 +93,24 @@ describe('status price bands', () => {
     expect(rows[3]).toMatchObject({ label: 'Expired', homes: 1, sold: null, ppsf: { median: 350 } })
   })
 
+  it('does not call a canceled listing Expired', () => {
+    const rows = statusPriceSummaries({
+      unsold: [entry({ key: 'i', family: 'unsold', listPrice: 560000, sqft: 1600, mlsStatus: 'Canceled' })],
+    })
+    expect(rows).toHaveLength(1)
+    expect(rows[0]?.label).toBe('Canceled')
+  })
+
+  it('does not call a mix of canceled and expired listings Expired', () => {
+    const rows = statusPriceSummaries({
+      unsold: [
+        entry({ key: 'i', family: 'unsold', listPrice: 560000, sqft: 1600, mlsStatus: 'Canceled' }),
+        entry({ key: 'j', family: 'unsold', listPrice: 540000, sqft: 1600, mlsStatus: 'Expired' }),
+      ],
+    })
+    expect(rows[0]?.label).toBe('Off market')
+  })
+
   it('prints one FlexMLS-style table: List, Sold, $/sqft across, the four figures down each status', () => {
     const html = statusPriceBoardHtml(
       statusPriceSummaries({

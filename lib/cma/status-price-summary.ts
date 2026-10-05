@@ -131,8 +131,18 @@ export function statusPriceSummaries(input: {
     statusRow('closed', 'Closed', closed),
     statusRow('pending', 'Pending', pending),
     statusRow('active', 'Active', active),
-    statusRow('expired', 'Expired', expired),
+    statusRow('expired', unsoldStatusLabel(expired), expired),
   ].filter((row): row is StatusPriceRow => row != null)
+}
+
+/** The MLS status, when every unsold home shares one. A cancel is not Expired. */
+function unsoldStatusLabel(homes: readonly MatrixEntry[]): string {
+  const words = homes.map((h) => (h.mlsStatus ?? '').trim()).filter(Boolean)
+  if (words.length === 0) return 'Expired'
+  if (words.length !== homes.length) return 'Off market'
+  const unique = [...new Set(words)]
+  if (unique.length === 1) return unique[0]!
+  return 'Off market'
 }
 
 const STATS = [

@@ -10,6 +10,7 @@ import {
   readOfferTiming,
   renderAskOutcomeHtml,
   renderAskRealizationHtml,
+  renderDaysToOfferHtml,
   renderOfferTimingHtml,
   subjectRealizationBucket,
 } from '@/lib/cma/market-area-chapters'
@@ -77,6 +78,18 @@ function textOutsideViewBox(svg: string): string[] {
 describe('reading the build contract off render_args.market', () => {
   it('takes a well-formed offerTiming block', () => {
     expect(readOfferTiming(market({ offerTiming }))).toMatchObject({ city: 'Redmond', medianDays: 12 })
+  })
+
+  it('draws the offer-timing median on the days chart when the cache median differs', () => {
+    const html = renderDaysToOfferHtml({
+      subject,
+      comps: [1, 2, 3].map((n) => ({ address: `${n}00 North`, daysToOffer: n * 10 })) as never,
+      market: market({ offerTiming, medianDom: 21 }),
+    })
+    expect(html).toContain('Redmond median 12 days')
+    expect(html).toContain('median is 12.')
+    expect(html).not.toContain('median 21')
+    expect(html).not.toContain('median is 21')
   })
 
   it('refuses a thin sample rather than publishing it', () => {

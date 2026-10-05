@@ -391,10 +391,16 @@ export function renderDaysToOfferHtml(
       valueLabel: `${int(subjectDays)} days, no offer`,
     })
   }
+  // The offer-timing median is the sourced figure. The cache median is the
+  // same measure from a second read, and the chart must not print the other one.
+  const offerMedian = readOfferTiming(a.market)?.medianDays
+  const cacheMedian = a.market?.medianDom
   const marketMedian =
-    a.market?.medianDom != null && Number.isFinite(a.market.medianDom) && a.market.medianDom > 0
-      ? Math.round(a.market.medianDom)
-      : null
+    offerMedian != null && offerMedian > 0
+      ? Math.round(offerMedian)
+      : cacheMedian != null && Number.isFinite(cacheMedian) && cacheMedian > 0
+        ? Math.round(cacheMedian)
+        : null
   const marketPlace = cleanText(a.market?.geoLabel) ?? cleanText(a.subject.city)
   const tick =
     marketMedian != null && marketPlace

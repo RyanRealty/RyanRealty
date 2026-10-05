@@ -17,6 +17,7 @@ import {
   type BandRivalsInput,
 } from '@/lib/cma/band-rivals'
 import { formatClientMlsField } from '@/lib/cma/client-facing'
+import { beforeAdjustmentWords, homesLikeYoursRangeLabel } from '@/lib/cma/flat-date-story'
 import { trackedDocLink } from '@/lib/cma/doc-links'
 import { daysOnMarketFrom } from '@/lib/cma/listing-history-line'
 import { normalizeAgentSlug } from '@/lib/agent-attribution'
@@ -651,7 +652,7 @@ export function whatHappenedGraphicHtml(a: OpinionPageArgs): string {
     // $372K–$399K under that phrase while chapter 5 printed $410K–$460K under
     // the same phrase, and chapter 2 a third figure a foot). The label says
     // which of the two it is, on the mark, where the reader meets it.
-    rangeLabel: 'where homes like yours sold, adjusted for date and size',
+    rangeLabel: homesLikeYoursRangeLabel(a.comps),
     domDays: subjectDomDays(a.subject),
   })
   // The row carries no list date and no ask, so there is no period to draw.
@@ -691,6 +692,9 @@ export function whatHappenedGraphicHtml(a: OpinionPageArgs): string {
     marketMedianDom: readOfferTiming(a.market)?.medianDays ?? a.market?.medianDom ?? null,
     neutral: storyClassFor(a) === 'neutral',
     exposureKnown: askExposureKnown(a),
+    // The cover was pulled under an ask that already failed. Chapter 1 may
+    // say where that ask sat. It may not say the days point away from the price.
+    priceCutForFailedAsk: a.pricing.clamp?.kind === 'failed-ask',
   })
   return `<div class="szn timeline-wide">${wide}</div>
   ${phone ? `<div class="szn timeline-phone">${phone}</div>` : ''}
@@ -1134,8 +1138,9 @@ export function cityMedianReconciliationHtml(a: OpinionPageArgs): string {
   // pair is the one the chapter of the answer states, rounded the same way, so
   // a reader meets both halves of "homes like yours" in one line.
   const worth = worthRangeRounded(a.pricing, a.comps)
+  const before = beforeAdjustmentWords(kept)
   const adjusted =
-    worth.low > 0 && worth.high > 0
+    before && worth.low > 0 && worth.high > 0
       ? worth.low === worth.high
         ? `; adjusted, they support ${usd(worth.low)}`
         : `; adjusted, they support ${usd(worth.low)} to ${usd(worth.high)}`
@@ -1143,7 +1148,7 @@ export function cityMedianReconciliationHtml(a: OpinionPageArgs): string {
   return `<p class="chart-read">${esc(
     `The ${countWord(keptSaleCount(a.pricing, a.comps))} sales behind your price sold for ${usd(
       Math.min(...closes),
-    )} to ${usd(Math.max(...closes))} before adjusting for date and size${adjusted}.`,
+    )} to ${usd(Math.max(...closes))}${before}${adjusted}.`,
   )}</p>`
 }
 

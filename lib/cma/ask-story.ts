@@ -267,6 +267,11 @@ export function askStoryReading(input: {
    * it explicitly.
    */
   exposureKnown?: boolean
+  /**
+   * The cover was pulled under an ask that already failed. The days may not
+   * be read as evidence that the price was not the problem.
+   */
+  priceCutForFailedAsk?: boolean
 }): string {
   if (input.neutral) {
     return neutralAskReading({
@@ -291,7 +296,7 @@ export function askStoryReading(input: {
     askAgainstRangeSentence(input.ask, input.rangeLow, input.rangeHigh),
     satSentence(cls, input.days),
     medianSentence(cls, input.city, input.marketMedianDom),
-    cls === 'far-above' ? '' : walkTheHouseSentence(cls, input.days),
+    cls === 'far-above' || input.priceCutForFailedAsk ? '' : walkTheHouseSentence(cls, input.days),
   ]
   return bits.filter((s) => s.trim()).join(' ')
 }

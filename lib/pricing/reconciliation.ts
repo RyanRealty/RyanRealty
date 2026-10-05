@@ -99,8 +99,13 @@ function countWord(n: number): string {
   return n >= 0 && n < COUNT_WORDS.length ? COUNT_WORDS[n]! : String(n)
 }
 
-/** Total adjustment movement as a share of the sale price. */
-export function grossAdjustmentPct(sale: ReconcilableSale): number {
+/** Total adjustment movement as a share of the sale price. Concessions are not in this figure. */
+export function grossAdjustmentPct(sale: {
+  closePrice: number
+  timeAdjustment: number
+  sizeAdjustment: number
+  storyAdjustment?: number | null
+}): number {
   if (!(sale.closePrice > 0)) return 0
   const gross =
     Math.abs(sale.timeAdjustment) + Math.abs(sale.sizeAdjustment) + Math.abs(sale.storyAdjustment ?? 0)

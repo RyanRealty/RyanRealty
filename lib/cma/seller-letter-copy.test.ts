@@ -4,7 +4,8 @@
 import { describe, expect, it } from 'vitest'
 import { buildCompSearch, rungLabel } from '@/lib/pricing/comp-search'
 import { describeRangeSentence } from '@/lib/pricing/estimate'
-import { walkTheHouseSentence } from '@/lib/cma/ask-story'
+import { askStoryReading, walkTheHouseSentence } from '@/lib/cma/ask-story'
+import { cityMedianReconciliationHtml, type OpinionPageArgs } from '@/lib/cma/opinion-pages'
 import { adminReviewBannerHtml } from '@/lib/cma/review-banner'
 import { REVIEW_REASONS } from '@/lib/pricing/review'
 import { newHomeRateParagraph } from '@/lib/cma/new-home-rate'
@@ -12,6 +13,7 @@ import { subjectEntry, unsoldEntries } from '@/lib/cma/matrix-entry'
 import {
   cityDateCutsFightFlatLocal,
   compsWithoutCityDateMove,
+  homesLikeYoursRangeLabel,
   pricingWithoutCityDateMove,
 } from '@/lib/cma/flat-date-story'
 import {
@@ -234,7 +236,254 @@ describe('the generators write plain English', () => {
     expect(pricing.rangeRule?.sentence).toContain('$620,000 to $700,000')
     expect(pricing.rangeRule?.sentence).not.toContain('$599,000')
     expect(pricing.rangeRule?.sentence).not.toContain('printed range')
+    // Size did not move, and the date cut was dropped. The sentence must not
+    // invent an adjustment that the sales do not have.
+    expect(pricing.rangeRule?.sentence).not.toContain('adjusted for')
     expect(sellerLetterDefects(`${pricing.timeAdjustment?.sentence} ${pricing.rangeRule?.sentence}`)).toEqual([])
+  })
+
+  it('names the unmoved sales once a flat local market drops the date cut', () => {
+    const comps = compsWithoutCityDateMove([
+      {
+        listingKey: 'a',
+        closePrice: 700_000,
+        weight: 1,
+        timeAdjustment: -45_000,
+        timeAdjustedPrice: 655_000,
+        adjustedPrice: 655_000,
+        sizeAdjustment: 0,
+        storyAdjustment: 0,
+      },
+      {
+        listingKey: 'b',
+        closePrice: 620_000,
+        weight: 1,
+        timeAdjustment: 0,
+        timeAdjustedPrice: 620_000,
+        adjustedPrice: 620_000,
+        sizeAdjustment: 0,
+        storyAdjustment: 0,
+      },
+    ])
+    const pricing = pricingWithoutCityDateMove(
+      {
+        recommended: 625_000,
+        valueLow: 599_000,
+        valueHigh: 659_000,
+        timeAdjustment: { sentence: 'Each sale is moved by the city index.' },
+        rangeRule: {
+          rule: 'min-max',
+          n: 2,
+          kept: 2,
+          sentence: 'old',
+          adjustedLow: 599_000,
+          adjustedHigh: 659_000,
+        },
+        reconciliation: {
+          weightedPrice: 637_500,
+          weights: [
+            {
+              listingKey: 'a',
+              address: '30 North',
+              weight: 50,
+              weightRaw: 1,
+              adjustedPrice: 655_000,
+              grossAdjustmentPct: 6.4,
+              reason: 'moved for date',
+            },
+            {
+              listingKey: 'b',
+              address: '40 North',
+              weight: 50,
+              weightRaw: 1,
+              adjustedPrice: 620_000,
+              grossAdjustmentPct: 0,
+              reason: 'did not move',
+            },
+          ],
+          mostWeighted: null,
+          sentence: null,
+        },
+        clamp: {
+          kind: 'failed-ask',
+          appliedTo: 'recommended',
+          before: 637_500,
+          after: 625_000,
+          basis: { ratio: 0.985, source: 'test' },
+          applications: [],
+          sentence:
+            'The sales support a value of $637,500. Because $700,000 already failed to sell, we recommend the price on the cover, which stays under that ask.',
+        },
+        reviewReason: 'Comp evidence supported $637,500 against the $700,000 asking that just failed.',
+      } as unknown as CmaPricing,
+      comps,
+    )
+    expect(pricing.clamp?.before).toBe(660_000)
+    expect(pricing.clamp?.sentence).toContain('The sales support a value of $660,000')
+    expect(pricing.clamp?.sentence).not.toContain('$637,500')
+    expect(pricing.reconciliation?.weightedPrice).toBe(660_000)
+    expect(pricing.reconciliation?.weights.find((w) => w.listingKey === 'a')?.grossAdjustmentPct).toBe(0)
+    expect(pricing.reviewReason).toContain('$660,000')
+    expect(pricing.reviewReason).not.toContain('$637,500')
+  })
+
+  it('keeps a size adjustment on the card after a flat market drops the date cut', () => {
+    const comps = compsWithoutCityDateMove([
+      {
+        listingKey: 'a',
+        closePrice: 700_000,
+        weight: 1,
+        timeAdjustment: -45_000,
+        timeAdjustedPrice: 655_000,
+        adjustedPrice: 725_000,
+        sizeAdjustment: 70_000,
+        storyAdjustment: 0,
+      },
+      {
+        listingKey: 'b',
+        closePrice: 620_000,
+        weight: 1,
+        timeAdjustment: 0,
+        timeAdjustedPrice: 620_000,
+        adjustedPrice: 620_000,
+        sizeAdjustment: 0,
+        storyAdjustment: 0,
+      },
+    ])
+    const pricing = pricingWithoutCityDateMove(
+      {
+        recommended: 770_000,
+        valueLow: 620_000,
+        valueHigh: 770_000,
+        timeAdjustment: { sentence: 'Each sale is moved by the city index.' },
+        rangeRule: {
+          rule: 'min-max',
+          n: 2,
+          kept: 2,
+          sentence: 'old',
+          adjustedLow: 620_000,
+          adjustedHigh: 770_000,
+        },
+        reconciliation: {
+          weightedPrice: 725_000,
+          weights: [
+            {
+              listingKey: 'a',
+              address: '30 North',
+              weight: 50,
+              weightRaw: 1,
+              adjustedPrice: 725_000,
+              grossAdjustmentPct: 16.4,
+              reason: 'moved for date and size',
+            },
+            {
+              listingKey: 'b',
+              address: '40 North',
+              weight: 50,
+              weightRaw: 1,
+              adjustedPrice: 620_000,
+              grossAdjustmentPct: 0,
+              reason: 'did not move',
+            },
+          ],
+          mostWeighted: 'a',
+          sentence: null,
+        },
+      } as unknown as CmaPricing,
+      comps,
+    )
+    // $70,000 of size on a $700,000 sale is 10 percent. The date cut is gone.
+    expect(pricing.reconciliation?.weights[0]?.grossAdjustmentPct).toBe(10)
+    expect(pricing.rangeRule?.sentence).toContain('adjusted for size')
+    expect(pricing.rangeRule?.sentence).not.toContain('date')
+    expect(homesLikeYoursRangeLabel(comps)).toBe('where homes like yours sold, adjusted for size')
+    expect(
+      homesLikeYoursRangeLabel([{ timeAdjustment: -45_000, sizeAdjustment: -1_000 }]),
+    ).toBe('where homes like yours sold, adjusted for date and size')
+  })
+
+  it('does not say the sales were adjusted for date when nothing moved them', () => {
+    const html = cityMedianReconciliationHtml({
+      comps: [
+        {
+          listingKey: 'a',
+          address: '30 North',
+          closePrice: 700_000,
+          adjustedPrice: 700_000,
+          weight: 1,
+          timeAdjustment: 0,
+          sizeAdjustment: 0,
+          storyAdjustment: 0,
+        },
+        {
+          listingKey: 'b',
+          address: '40 North',
+          closePrice: 620_000,
+          adjustedPrice: 620_000,
+          weight: 1,
+          timeAdjustment: 0,
+          sizeAdjustment: 0,
+          storyAdjustment: 0,
+        },
+      ],
+      pricing: {
+        recommended: 660_000,
+        valueLow: 620_000,
+        valueHigh: 700_000,
+        rangeRule: { rule: 'min-max', n: 2, kept: 2 },
+      },
+    } as unknown as OpinionPageArgs)
+    expect(html).toContain('sold for $620,000 to $700,000')
+    expect(html).not.toContain('adjust')
+  })
+
+  it('names a size adjustment when that is the only move', () => {
+    const html = cityMedianReconciliationHtml({
+      comps: [
+        {
+          listingKey: 'a',
+          address: '30 North',
+          closePrice: 700_000,
+          adjustedPrice: 710_000,
+          weight: 1,
+          timeAdjustment: 0,
+          sizeAdjustment: 10_000,
+          storyAdjustment: 0,
+        },
+        {
+          listingKey: 'b',
+          address: '40 North',
+          closePrice: 620_000,
+          adjustedPrice: 620_000,
+          weight: 1,
+          timeAdjustment: 0,
+          sizeAdjustment: 0,
+          storyAdjustment: 0,
+        },
+      ],
+      pricing: {
+        recommended: 660_000,
+        valueLow: 620_000,
+        valueHigh: 710_000,
+        rangeRule: { rule: 'min-max', n: 2, kept: 2 },
+      },
+    } as unknown as OpinionPageArgs)
+    expect(html).toContain('before adjusting for size')
+    expect(html).not.toContain('date')
+  })
+
+  it('does not say the days point away from the price when the cover was pulled under a failed ask', () => {
+    const reading = askStoryReading({
+      ask: 1_600_000,
+      rangeLow: 1_560_000,
+      rangeHigh: 1_720_700,
+      days: 208,
+      city: 'Bend',
+      marketMedianDom: 26,
+      priceCutForFailedAsk: true,
+    })
+    expect(reading).toContain('inside the range')
+    expect(reading).not.toContain('something other than the number')
   })
 
   it('keeps a negligible-weight sale in the table and says the weight', () => {
