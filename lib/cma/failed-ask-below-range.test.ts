@@ -285,27 +285,31 @@ describe('failed-ask haircut vs the hero band', () => {
   it('Pronghorn shape: a sale already under the ask stops the pull at that sale', () => {
     const ask = 1_499_000
     const saleLow = 1_486_263
-    const board = pricing({
-      conservative: 1_498_000,
-      recommended: 1_485_000,
-      highEnd: 1_476_000,
-      valueLow: saleLow,
-      valueHigh: 1_974_121,
-      notes: [],
-      clamp: {
-        kind: 'failed-ask',
-        appliedTo: 'recommended',
-        before: 1_669_000,
-        after: 1_485_000,
-        basis: { ratio: 0.9847, source: 'test' },
-        applications: [{ tier: 'recommended', before: 1_669_000, after: 1_485_000, ratio: 0.9847 }],
-        sentence:
-          'The sales support a value of $1,669,000. Because $1,499,000 already failed to sell, we recommend the price on the cover, which stays under that ask.',
-      },
-    })
+    const board = {
+      ...pricing({
+        conservative: 1_498_000,
+        recommended: 1_485_000,
+        highEnd: 1_476_000,
+        valueLow: saleLow,
+        valueHigh: 1_974_121,
+        notes: [],
+        clamp: {
+          kind: 'failed-ask',
+          appliedTo: 'recommended',
+          before: 1_669_000,
+          after: 1_485_000,
+          basis: { ratio: 0.9847, source: 'test' },
+          applications: [{ tier: 'recommended', before: 1_669_000, after: 1_485_000, ratio: 0.9847 }],
+          sentence:
+            'The sales support a value of $1,669,000. Because $1,499,000 already failed to sell, we recommend the price on the cover, which stays under that ask.',
+        },
+      }),
+      failedAsk: ask,
+      sellerNet: null as CmaPricing['sellerNet'],
+    }
     attachSellerNet(board, [{ concessionsAmount: 0, concessionsYn: 'No', closeDate: '2026-08-28' }])
     expect(board.sellerNet?.list).toBe(1_485_000)
-    const floored = floorFailedAskPullAtSaleUnderAsk({ ...board, failedAsk: ask })
+    const floored = floorFailedAskPullAtSaleUnderAsk(board)
     expect(floored.recommended).toBe(saleLow)
     expect(floored.recommended).toBeLessThan(ask)
     expect(floored.recommended).not.toBe(1_485_000)
