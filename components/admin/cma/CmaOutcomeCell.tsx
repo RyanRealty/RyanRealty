@@ -75,8 +75,16 @@ export function clickedLine(links: CmaOutcome['clickedLinks'] | undefined): stri
 }
 
 function stagesOf(o: CmaOutcome): Stage[] {
+  const leftAt = cmaOutcomeLeftAt(o)
   return [
-    { key: 'sent', label: 'sent', at: o.sentAt, count: null, done: o.sentAt != null },
+    {
+      key: 'sent',
+      label: 'sent',
+      at: leftAt,
+      count: null,
+      done: leftAt != null,
+      detail: !o.sentAt && o.emailEventSentAt ? 'email log' : null,
+    },
     {
       key: 'delivered',
       label: 'delivered',
@@ -109,6 +117,27 @@ function stagesOf(o: CmaOutcome): Stage[] {
   ]
 }
 
+/**
+ * When this document left. The letter-row stamp wins. An email-log send
+ * still counts, because a send the row forgot is still a send.
+ */
+export function cmaOutcomeLeftAt(o: CmaOutcome | null | undefined): string | null {
+  if (!o) return null
+  return o.sentAt ?? o.emailEventSentAt ?? null
+}
+
+/** Done stages, then the first one that has not happened. Undone stages after that stay off the row. */
+export function cmaOutcomeProgress(o: CmaOutcome): { done: string[]; next: string | null } {
+  const stages = stagesOf(o)
+  const done = stages.filter((s) => s.done).map((s) => {
+    const times = s.count != null && s.count > 1 ? ` ${s.count}` : ''
+    const detail = s.detail && (s.key === 'delivered' || s.key === 'sent') ? ` (${s.detail})` : ''
+    return `${s.label}${detail}${times}`
+  })
+  const next = stages.find((s) => !s.done)
+  return { done, next: next ? `not ${next.label}` : null }
+}
+
 /** The stamp a broker wants on hover: when, and how many times if more than one. */
 function stampFor(s: Stage): string {
   if (!s.done) return `Not ${s.label} yet`
@@ -127,15 +156,16 @@ function exceptionsOf(o: CmaOutcome): string[] {
 }
 
 export function CmaOutcomeCell({ outcome, variant = 'row' }: CmaOutcomeCellProps) {
-  if (!outcome || outcome.sentAt == null) {
+  if (!cmaOutcomeLeftAt(outcome)) {
     return (
       <span style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
-        Not sent
+        No send recorded
       </span>
     )
   }
 
   const stages = stagesOf(outcome)
+  const progress = cmaOutcomeProgress(outcome)
   const exceptions = exceptionsOf(outcome)
 
   if (variant === 'panel') {
@@ -164,11 +194,16 @@ export function CmaOutcomeCell({ outcome, variant = 'row' }: CmaOutcomeCellProps
                   {s.count != null && s.count > 1 ? ` · ${s.count}×` : ''}
                 </>
               ) : (
-                '—'
+                'not yet'
               )}
             </span>
           </div>
         ))}
+        {!outcome.sentAt && outcome.emailEventSentAt ? (
+          <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+            The email log has a send. This letter row has no send stamp.
+          </p>
+        ) : null}
         {clickedLine(outcome.clickedLinks) ? (
           <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
             {clickedLine(outcome.clickedLinks)}
@@ -205,26 +240,23 @@ export function CmaOutcomeCell({ outcome, variant = 'row' }: CmaOutcomeCellProps
         fontVariantNumeric: 'tabular-nums',
       }}
     >
-      {stages.map((s, i) => (
+      {stages.filter((s) => s.done).map((s, i) => (
         <span key={s.key}>
           {i > 0 ? <span style={{ color: 'var(--a-border-strong)' }}> · </span> : null}
           <span
             title={stampFor(s)}
-            style={{
-              color: !s.done
-                ? 'var(--a-text-2)'
-                : s.key === 'replied'
-                  ? 'var(--a-ok)'
-                  : 'var(--a-text)',
-              opacity: s.done ? 1 : 0.55,
-            }}
+            style={{ color: s.key === 'replied' ? 'var(--a-ok)' : 'var(--a-text)' }}
           >
-            {s.label}
-            {s.key === 'delivered' && s.done && s.detail ? ` (${s.detail})` : ''}
-            {s.count != null && s.count > 1 ? ` ${s.count}` : ''}
+            {progress.done[i]}
           </span>
         </span>
       ))}
+      {progress.next ? (
+        <span style={{ color: 'var(--a-text-2)' }}>
+          {' · '}
+          {progress.next}
+        </span>
+      ) : null}
       {clickedLine(outcome.clickedLinks) ? (
         <span title={clickedLine(outcome.clickedLinks) ?? undefined} style={{ color: 'var(--a-text-2)' }}>
           {' · '}

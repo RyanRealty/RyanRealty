@@ -21,11 +21,12 @@ import { CmaPublishControl } from '@/app/admin/(protected)/cmas/_components/CmaP
 import { cmaPublishConcerns, cmaPublishRefusals } from '@/app/actions/cma-publish-preconditions'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatDate } from '@/lib/format/date'
-import { brokerCmaViewHref, canOpenCmaDocument } from '@/lib/cma/draft-access'
+import { canOpenCmaDocument } from '@/lib/cma/draft-access'
 import { applySlugStreetDirectional } from '@/lib/cma/address-slug'
 import { CmaReviewDocumentButton } from '@/app/admin/(protected)/cmas/_components/CmaReviewDocumentButton'
 import { CmaBuildWatch } from '@/app/admin/(protected)/cmas/_components/CmaBuildWatch'
-import { CmaOutcomeCell } from '@/components/admin/cma/CmaOutcomeCell'
+import { CmaOutcomeCell, cmaOutcomeLeftAt } from '@/components/admin/cma/CmaOutcomeCell'
+import { cmaProcessPlace } from '@/lib/cma/process-place'
 import { getCmaOutcomes } from '@/lib/data/cma/outcomes'
 import { classifyCmaOrigin, CMA_ORIGIN_INTENT, sendModeForOrigin, theirPriceLabelFor } from '@/lib/cma/origin'
 import { buildCmaFirstContactForRow } from '@/lib/cma/first-contact-for-send'
@@ -177,10 +178,23 @@ export default async function AdminCmaReviewPage({
       }
     }
   }
-  // What happened after we sent it. Only read for a document that actually
-  // went out — an unsent row has no outcome to show, and the reader would
-  // spend three queries proving it.
-  const outcome = row.delivered_at ? (await getCmaOutcomes([String(row.id)]))[String(row.id)] ?? null : null
+  // What happened after it left. One letter, so the read stays even when the
+  // row forgot its send stamp and only the email log has the send.
+  const outcome = (await getCmaOutcomes([String(row.id)]))[String(row.id)] ?? null
+  const leftAt = cmaOutcomeLeftAt(outcome)
+  const countedSent = mine?.state === 'sent' || status === 'delivered' || Boolean(row.delivered_at)
+  const place = cmaProcessPlace({
+    building: isBuilding,
+    buildFailed: Boolean(buildError),
+    held: mine?.state === 'flagged' || mine?.state === 'audit-failed' || mine?.state === 'unvetted',
+    inDrip,
+    sent: Boolean(leftAt),
+    countedSent: countedSent && !leftAt,
+    hasDocument,
+    hasEmail: Boolean(contactEmail),
+    sendMode,
+    origin,
+  })
 
   const built = await buildCmaFirstContactForRow(row as Record<string, unknown>, {
     origin,
@@ -194,12 +208,6 @@ export default async function AdminCmaReviewPage({
     subject: savedOverride?.subject || composed.subject,
     bodyText: savedOverride?.bodyText || composed.bodyText,
   }
-
-  const previewSrc = canOpenDocument
-    ? brokerCmaViewHref(safeSlug)
-    : isLegacyFile
-      ? String(row.html_path).replace(/^public/, '')
-      : null
 
   return (
     <div
@@ -346,21 +354,30 @@ export default async function AdminCmaReviewPage({
         </p>
       ) : null}
 
-      {outcome ? (
+      <SectionHead>Where this letter is</SectionHead>
+      <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text)', margin: '0 0 4px' }}>{place.where}</p>
+      <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '0 0 12px', maxWidth: 640 }}>
+        {place.next}
+      </p>
+      {leftAt ? (
         <>
           <SectionHead>What happened</SectionHead>
           <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '0 0 12px' }}>
-            Every stage this document reached after it left the building.
+            Every stage this document reached after it left.
           </p>
           <CmaOutcomeCell outcome={outcome} variant="panel" />
           <div style={{ marginTop: 18 }} />
         </>
       ) : null}
 
-      <SectionHead>Review and send</SectionHead>
-      <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '0 0 12px' }}>
-        Read the numbers, tweak the outbound email, then approve. The email below is what goes out.
-      </p>
+      <SectionHead>{!hasDocument ? 'Letter' : leftAt ? 'The email' : 'Review and send'}</SectionHead>
+      {hasDocument ? (
+        <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '0 0 12px' }}>
+          {leftAt
+            ? 'The email below is what this letter carries.'
+            : 'Read the letter, then the email below. Nothing sends until you schedule or send it.'}
+        </p>
+      ) : null}
       <CmaReviewActions
         cmaId={String(row.id)}
         slug={safeSlug}
@@ -394,6 +411,8 @@ export default async function AdminCmaReviewPage({
         letterParagraphs={composed.paragraphs}
         letterAddress={built.facts.address}
         canDeliver={canDeliver}
+        scheduleNote={hasDocument && !leftAt ? place.next : null}
+        focusRebuild={!hasDocument && !isBuilding}
       />
 
       <details style={{ marginTop: 24 }}>
@@ -413,11 +432,6 @@ export default async function AdminCmaReviewPage({
           concerns={concerns}
         />
       </details>
-      {!previewSrc ? (
-        <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', marginTop: 16 }}>
-          No document yet. Use Save and rebuild to generate it.
-        </p>
-      ) : null}
     </div>
   )
 }

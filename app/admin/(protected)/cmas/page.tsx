@@ -9,7 +9,9 @@ import { CMA_QUEUE_READ_LIMIT, listCmaQueue, type CmaQueueRow, type CmaQueueStat
 import { CMA_ORIGIN_LABEL, type CmaOrigin } from '@/lib/cma/origin'
 import { approveAndDeliverCma, setCmaLaneAutoSendAction } from '@/app/actions/cma-queue'
 import { getLaneSettings, AUTO_SEND_LANES } from '@/lib/data/cma/lane-settings'
-import { getCmaLaneFunnel } from '@/lib/data/cma/outcomes'
+import { getCmaLaneFunnel, getCmaOutcomes } from '@/lib/data/cma/outcomes'
+import { CmaOutcomeCell } from '@/components/admin/cma/CmaOutcomeCell'
+import { cmaQueueSendBanner, cmaQueueSendNote, cmaSentPageLine } from '@/lib/cma/process-place'
 import { CmaLaneFunnel } from '@/components/admin/cma/CmaLaneFunnel'
 import { isColdOrigin } from '@/lib/cma/origin'
 import { hasCapability } from '@/lib/admin/capabilities'
@@ -251,6 +253,21 @@ export default async function CmaQueuePage({
   const views = rows.map((r) => toCmaQueueViewRow(r))
   const matched = sortCmaQueueRows(filterCmaQueueRows(views, filters), filters.sort)
   const pageSlice = sliceCmaQueuePage(matched, filters.page)
+  const sentOnPage = pageSlice.rows
+    .map((view) => byId.get(view.id))
+    .filter((r): r is CmaQueueRow => !!r && r.docKind === 'cma' && r.state === 'sent')
+  const outcomeMap = sentOnPage.length > 0 ? await getCmaOutcomes(sentOnPage.map((r) => r.id)) : {}
+  const sendBanner = cmaQueueSendBanner(pageSlice.rows)
+  const sentLine =
+    filters.state === 'sent'
+      ? cmaSentPageLine({
+          shown: sentOnPage.length,
+          opened: sentOnPage.filter((r) => (outcomeMap[r.id]?.opens ?? 0) > 0).length,
+          clicked: sentOnPage.filter((r) => (outcomeMap[r.id]?.clicks ?? 0) > 0).length,
+          replied: sentOnPage.filter((r) => Boolean(outcomeMap[r.id]?.repliedAt)).length,
+          bad: sentOnPage.filter((r) => outcomeMap[r.id]?.bounced || outcomeMap[r.id]?.unsubscribed).length,
+        })
+      : null
   const listFilters = { ...filters, page: pageSlice.page }
   const whyCounts = new Map<CmaQueueWhy, number>()
   for (const view of filterCmaQueueRows(views, { ...filters, why: undefined })) {
@@ -330,6 +347,15 @@ export default async function CmaQueuePage({
         </Link>
       </SectionHead>
 
+      {sentLine ? (
+        <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '0 0 8px' }}>{sentLine}</p>
+      ) : null}
+      {sendBanner ? (
+        <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text)', margin: '0 0 8px', maxWidth: 640 }}>
+          {sendBanner}
+        </p>
+      ) : null}
+
       <QueuePager filters={listFilters} page={pageSlice.page} pages={pageSlice.pages} />
 
       <ul className="av2-queue">
@@ -351,6 +377,8 @@ export default async function CmaQueuePage({
           const money = cmaQueueMoneyLine(r)
           const recBit = money.split(' · ')[0]
           const restBit = money.split(' · ').slice(1).join(' · ')
+          const sendNote = cmaQueueSendNote(r.state, r.origin)
+          const outcome = r.docKind === 'cma' && r.state === 'sent' ? outcomeMap[r.id] ?? null : null
           return (
             <QueueRow
               key={r.id}
@@ -376,6 +404,18 @@ export default async function CmaQueuePage({
                     <>
                       <br />
                       <span>{why}</span>
+                    </>
+                  ) : null}
+                  {sendNote ? (
+                    <>
+                      <br />
+                      <span>{sendNote}</span>
+                    </>
+                  ) : null}
+                  {outcome || (r.docKind === 'cma' && r.state === 'sent') ? (
+                    <>
+                      <br />
+                      <CmaOutcomeCell outcome={outcome} />
                     </>
                   ) : null}
                 </>

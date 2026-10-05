@@ -85,6 +85,10 @@ export interface CmaReviewActionsProps {
   letterAddress: string | null
   /** Ready to approve+deliver (audit ok, contact, document). */
   canDeliver: boolean
+  /** What Schedule or Send now will actually do. Null once the letter has left. */
+  scheduleNote?: string | null
+  /** Open the rebuild section when there is no letter yet. */
+  focusRebuild?: boolean
 }
 
 const usd = formatPriceExact
@@ -111,6 +115,7 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [emailSubject, setEmailSubject] = useState(props.emailSubject)
   const [emailBody, setEmailBody] = useState(props.emailBody)
+  const [rebuildOpen, setRebuildOpen] = useState(props.focusRebuild === true)
 
   const isDraft = props.status === 'draft'
   const isArchived = props.status === 'archived'
@@ -346,6 +351,7 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
         </div>
       ) : null}
 
+      {props.hasDocument ? (
       <div className="cma-send-dock space-y-3">
         <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', fontWeight: 500, color: 'var(--a-text)' }}>
           Outbound email
@@ -406,6 +412,12 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
           }
         />
 
+        {props.scheduleNote ? (
+          <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', color: 'var(--a-text)', maxWidth: 640 }}>
+            {props.scheduleNote}
+          </p>
+        ) : null}
+
         {showSchedule ? (
           <Button
             onClick={() => deliver('drip')}
@@ -444,18 +456,27 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
 
         {showSchedule || showSendNow ? (
           <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', margin: '4px 0 0' }}>
-            This lands on the next ready document in this lane.
+            After you schedule or send, the next ready letter in this lane opens.
           </p>
         ) : null}
 
         {props.hasDocument ? <CmaTextMeButton slug={props.slug} /> : null}
       </div>
+      ) : null}
 
-      <details>
+      <details
+        open={rebuildOpen}
+        onToggle={(event) => setRebuildOpen(event.currentTarget.open)}
+      >
         <summary style={{ cursor: 'pointer', fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
           Client, price, rebuild
         </summary>
         <div className="space-y-4" style={{ marginTop: 12 }}>
+          {!props.hasDocument ? (
+            <Button onClick={rebuild} disabled={isPending} variant="quiet" touch className="w-full">
+              {isPending ? 'Working…' : 'Save and rebuild'}
+            </Button>
+          ) : null}
           <div className="space-y-1.5">
             <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
               {personId
@@ -576,9 +597,11 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
             hint={`Data-supported recommendation: ${usd(props.recommendedList)}. Setting a number here re-anchors the tier grid on your price and notes the adjustment in the document. Leave blank to keep the computed value.`}
           />
 
-          <Button onClick={rebuild} disabled={isPending} variant="quiet" touch className="w-full">
-            {isPending ? 'Working…' : 'Save and rebuild'}
-          </Button>
+          {props.hasDocument ? (
+            <Button onClick={rebuild} disabled={isPending} variant="quiet" touch className="w-full">
+              {isPending ? 'Working…' : 'Save and rebuild'}
+            </Button>
+          ) : null}
         </div>
       </details>
 
