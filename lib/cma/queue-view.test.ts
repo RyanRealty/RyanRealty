@@ -1,10 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import {
+  cmaQueueFiltersFromSearch,
   cmaQueueHref,
   cmaQueueMoneyLine,
+  cmaQueueReachFromFacts,
+  cmaQueueReachNote,
+  cmaQueueWalk,
   cmaQueueWhoLine,
+  cmaQueueWhy,
+  cmaReviewHref,
   filterCmaQueueRows,
   resolveTheirPrice,
+  sliceCmaQueuePage,
   sortCmaQueueRows,
   theirPriceFromBuildSummary,
   type CmaQueueViewRow,
@@ -13,6 +20,8 @@ import {
 function row(over: Partial<CmaQueueViewRow> = {}): CmaQueueViewRow {
   return {
     id: over.id ?? over.address ?? 'row',
+    slug: over.slug ?? 'cma-123-main',
+    why: over.why ?? 'none',
     address: '123 Main St',
     city: 'Bend',
     origin: 'expired',
@@ -136,6 +145,80 @@ describe('sortCmaQueueRows', () => {
     ]
     expect(sortCmaQueueRows(rows, 'price-asc').map((r) => r.address)).toEqual(['lo', 'hi'])
     expect(sortCmaQueueRows(rows, 'price-desc').map((r) => r.address)).toEqual(['hi', 'lo'])
+  })
+})
+
+describe('cma queue paging and why', () => {
+  it('pages 50 at a time and clamps a page past the end', () => {
+    const rows = Array.from({ length: 55 }, (_, i) => row({ id: String(i), slug: `cma-${i}`, address: String(i) }))
+    const first = sliceCmaQueuePage(rows, undefined)
+    expect(first.pages).toBe(2)
+    expect(first.rows).toHaveLength(50)
+    expect(first.start).toBe(1)
+    expect(first.end).toBe(50)
+    const second = sliceCmaQueuePage(rows, 2)
+    expect(second.rows.map((r) => r.address)).toEqual(['50', '51', '52', '53', '54'])
+    expect(sliceCmaQueuePage(rows, 9).page).toBe(2)
+    expect(sliceCmaQueuePage([], 3)).toMatchObject({ page: 1, pages: 0, start: 0, end: 0, rows: [] })
+  })
+
+  it('walks the filtered list without skipping', () => {
+    const slugs = ['a', 'b', 'c']
+    expect(cmaQueueWalk(slugs, 'b')).toMatchObject({ index: 1, prev: 'a', next: 'c', page: 1, total: 3 })
+    expect(cmaQueueWalk(slugs, 'missing').index).toBe(-1)
+  })
+
+  it('keeps a wide range distinct from an ask that did not sell', () => {
+    expect(cmaQueueWhy({ state: 'flagged', reviewReason: 'The value range is wider than 8% of the recommended list' })).toBe(
+      'wide-range',
+    )
+    expect(cmaQueueWhy({ state: 'flagged', reviewReason: 'Comp evidence supported $630,000 against the $625,000 asking that just failed.' })).toBe(
+      'failed-ask',
+    )
+    expect(cmaQueueWhy({ state: 'failed', buildError: 'JUDGE_UNSTABLE. The comparability review did not agree' })).toBe(
+      'judge-unstable',
+    )
+    expect(cmaQueueWhy({ state: 'failed', buildError: 'Not enough comparable sales the review would keep.' })).toBe(
+      'short-comps',
+    )
+    expect(cmaQueueWhy({ state: 'ready', reviewReason: 'wider than 8%' })).toBe('none')
+    expect(cmaQueueWhy({ state: 'audit-failed' })).toBe('audit')
+  })
+
+  it('filters to one why and puts that why and the page on the url', () => {
+    const rows = [
+      row({ address: 'wide', state: 'flagged', why: 'wide-range' }),
+      row({ address: 'short', state: 'failed', why: 'short-comps' }),
+    ]
+    expect(filterCmaQueueRows(rows, { state: 'all', why: 'wide-range' }).map((r) => r.address)).toEqual(['wide'])
+    expect(cmaQueueHref({ state: 'flagged', why: 'wide-range', page: 2 })).toBe(
+      '/admin/cmas?state=flagged&why=wide-range&page=2',
+    )
+    expect(cmaReviewHref('cma-1', { state: 'flagged', why: 'wide-range', page: 2 })).toBe(
+      '/admin/cmas/cma-1?state=flagged&why=wide-range&page=2',
+    )
+    expect(cmaQueueHref({ page: 1, why: 'none' })).toBe('/admin/cmas')
+  })
+
+  it('drops a garbage filter and keeps a real page', () => {
+    expect(
+      cmaQueueFiltersFromSearch({ state: 'nope', why: 'wide-range', page: '2', rec: 'nope', sort: 'newest' }),
+    ).toEqual({
+      why: 'wide-range',
+      sort: 'newest',
+      page: 2,
+    })
+  })
+
+  it('calls a number a cell only when the line type already confirmed it', () => {
+    expect(cmaQueueReachFromFacts({ email: 'a@b.co', hasConfirmedCell: true, hasAnyPhone: true })).toBe('email')
+    expect(cmaQueueReachFromFacts({ email: null, hasConfirmedCell: true, hasAnyPhone: true })).toBe('text')
+    expect(cmaQueueReachFromFacts({ email: '  ', hasConfirmedCell: false, hasAnyPhone: true })).toBe('unconfirmed-phone')
+    expect(cmaQueueReachFromFacts({ email: null, hasConfirmedCell: false, hasAnyPhone: false })).toBe('none')
+    expect(cmaQueueReachNote('text')).toBe('text')
+    expect(cmaQueueReachNote('unconfirmed-phone')).toBe('phone on file, not a confirmed cell')
+    expect(cmaQueueReachNote('none')).toBe('no email')
+    expect(cmaQueueReachNote('email')).toBeNull()
   })
 })
 
