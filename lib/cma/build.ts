@@ -212,18 +212,10 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
   // A throw anywhere downstream of selection (voice gate, render, persist) used
   // to wipe the answer to "why these comps" off the row entirely.
   let compDiagnostics: CompSelectionDiagnostics | null = null
-  const snapshot = await snapshotCmaVersion({ slug, reason: 'rebuild' })
-  if (!snapshot.ok) {
-    return {
-      ok: false,
-      error: `Could not snapshot the current CMA before rebuild: ${snapshot.error}`,
-      slug,
-    }
-  }
   try {
-    const broker = await resolveBroker(input)
-
-    // 1. Subject.
+    // Look at the listing first. This read is not a build. Active, Pending,
+    // Coming Soon, or Active Under Contract returns here, before a snapshot,
+    // a cover photo, or a comp search.
     const resolved = await resolveCmaSubject({
       mlsNumber: input.mlsNumber,
       rawAddress: input.rawAddress,
@@ -241,14 +233,6 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       },
       input.subjectFacts,
     )
-    // The cover (Matt 2026-09-09): the best exterior among the listing's own
-    // photos, graded once each, the MLS hero kept when it already is one.
-    const coverPhoto = await pickCoverPhoto({ listingKey: subject.listingKey, heroUrl: subject.photoUrl })
-    if (coverPhoto.url) subject.photoUrl = coverPhoto.url
-    // Stamp the failed last cycle onto the subject BEFORE pricing and audit.
-    // The engine cap keys off standardStatus; the auditor reads lastListPrice.
-    // Fetching this after the audit was why first builds failed on rec-above-ask
-    // and why live ready rows still printed above last list.
     const streetTokens = subject.streetAddress.trim().split(/\s+/)
     const streetNumber = streetTokens[0] && /^\d+$/.test(streetTokens[0]) ? streetTokens[0] : null
     const namePrefix = streetNumber ? streetTokens.slice(1).join(' ') : null
@@ -262,10 +246,10 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           })
         : []
     const cycleStatus = String(cycleRows[0]?.['StandardStatus'] ?? subject.standardStatus ?? '')
-    // Live status first. A home that is listed again does not get a letter.
     // Any cycle still on the market blocks, not only the newest row.
     const onMarketReason =
       cmaBlockedBecauseOnMarket(cycleStatus) ??
+      cmaBlockedBecauseOnMarket(subject.standardStatus) ??
       cycleRows.reduce<string | null>((hit, row) => {
         if (hit) return hit
         return cmaBlockedBecauseOnMarket(typeof row['StandardStatus'] === 'string' ? row['StandardStatus'] : null)
@@ -274,6 +258,23 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       await recordBuildFailure(slug, onMarketReason, { stage: 'subject', docType })
       return { ok: false, error: onMarketReason, slug }
     }
+
+    const snapshot = await snapshotCmaVersion({ slug, reason: 'rebuild' })
+    if (!snapshot.ok) {
+      return {
+        ok: false,
+        error: `Could not snapshot the current CMA before rebuild: ${snapshot.error}`,
+        slug,
+      }
+    }
+
+    const broker = await resolveBroker(input)
+    // The cover (Matt 2026-09-09): the best exterior among the listing's own
+    // photos, graded once each, the MLS hero kept when it already is one.
+    const coverPhoto = await pickCoverPhoto({ listingKey: subject.listingKey, heroUrl: subject.photoUrl })
+    if (coverPhoto.url) subject.photoUrl = coverPhoto.url
+    // Stamp the failed last cycle onto the subject BEFORE pricing and audit.
+    // The engine cap keys off standardStatus; the auditor reads lastListPrice.
     const lastCycleFailed = ['Expired', 'Canceled', 'Withdrawn'].includes(cycleStatus)
     if (lastCycleFailed) {
       const row0 = cycleRows[0] ?? {}
