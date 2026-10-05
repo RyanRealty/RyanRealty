@@ -109,8 +109,10 @@ export function pickBandRivals(
   const similar = named.filter((r) => rivalFitsSubject(r, subject))
   const canJudge =
     subject != null && (subject.beds != null || (subject.sqft != null && subject.sqft > 0))
-  // No fallback to a different house. An empty list is the honest competition.
-  const pool = canJudge ? similar : named
+  // A home within one bedroom and the living-area cutoff wins when at least
+  // one is in the band. When none fit, print the homes the sentence counted.
+  // An empty card list under that count is a lie.
+  const pool = canJudge && similar.length > 0 ? similar : named
   const slat = subject?.latitude
   const slng = subject?.longitude
   const ranked =

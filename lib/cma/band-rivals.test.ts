@@ -123,7 +123,7 @@ describe('pickBandRivals', () => {
     expect(picked.map((r) => r.address)).toEqual(['9 Fit'])
   })
 
-  it('allows one bedroom apart and refuses two, with no fallback to the mismatch', () => {
+  it('allows one bedroom apart and still shows a lone home the sentence counted', () => {
     const subject = { latitude: 44.27, longitude: -121.17, beds: 4, sqft: 2554 }
     const camp = rival({
       listingKey: 'CAMP',
@@ -141,8 +141,10 @@ describe('pickBandRivals', () => {
       latitude: 44.272,
       longitude: -121.17,
     })
+    // A home that fits wins. The two-bedroom gap stays out of that set.
     expect(pickBandRivals([camp, oneOff], subject).map((r) => r.address)).toEqual(['4 One Off'])
-    expect(pickBandRivals([camp], subject)).toEqual([])
+    // The sentence already counted this home. An empty card list is a lie.
+    expect(pickBandRivals([camp], subject).map((r) => r.address)).toEqual(['19737 River Camp'])
   })
 
   it('drops unnamed rows', () => {
@@ -356,6 +358,31 @@ describe('buildBandRivalSet — the competition is the neighborhood, never the c
     })
     expect(set.sentence).toContain('for sale within one mile of your home between $400,000 and $480,000')
     expect(set.sentence).toContain('None are under contract right now.')
+  })
+
+  it('keeps the only home in the band when the bedroom gap is two', () => {
+    const set = buildBandRivalSet({
+      area: OLD_BEND,
+      lo: 1_273_000,
+      hi: 1_555_000,
+      activeCount: 1,
+      pendingCount: 0,
+      rivals: [
+        rival({
+          listingKey: 'FAR',
+          address: '9 Far Beds',
+          listPrice: 1_495_000,
+          beds: 5,
+          sqft: 4170,
+          status: 'Active',
+        }),
+      ],
+      subject: { latitude: 44.0554, longitude: -121.3153, beds: 3, sqft: 3603 },
+    })
+    expect(set.rivals.map((r) => r.address)).toEqual(['9 Far Beds'])
+    expect(set.activeCount).toBe(1)
+    expect(set.sentence).toContain('1 home is for sale in Old Bend between $1,273,000 and $1,555,000')
+    expect(set.sentence).not.toContain('like yours')
   })
 
   it('says plainly when nothing in the area is for sale in the band', () => {

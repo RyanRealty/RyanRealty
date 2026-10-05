@@ -327,6 +327,55 @@ export function dateSentenceMatchesGridCheck(
   }
 }
 
+const COMPETITION_HEADING = /Who you would compete with at this price/gi
+const COMPETITION_COUNT =
+  '(?:[1-9]\\d*|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)'
+const COMPETITION_FOR_SALE = new RegExp(
+  `\\b${COMPETITION_COUNT}\\s+homes?\\s+(?:is|are)\\s+for sale\\b`,
+  'i',
+)
+const COMPETITION_UNDER_CONTRACT = new RegExp(
+  `\\b${COMPETITION_COUNT}\\s+(?:is|are)\\s+under contract\\b`,
+  'i',
+)
+const ACTIVE_MATRIX = /Active: asking in this range now/
+const PENDING_MATRIX = /Pending: under contract in this range/
+
+/**
+ * The competition chapter may not count a home it does not draw.
+ * A positive for-sale count needs the active matrix. A positive
+ * under-contract count needs the pending matrix. A chapter that is
+ * absent, or that says no home is for sale, passes.
+ */
+export function competitionHomesAreDrawnCheck(html: string): ContractCheck {
+  const chapters: string[] = []
+  const heading = new RegExp(COMPETITION_HEADING.source, 'gi')
+  let match: RegExpExecArray | null
+  while ((match = heading.exec(html))) {
+    const rest = html.slice(match.index + match[0].length)
+    const next = rest.search(/<h2\b/i)
+    chapters.push(next === -1 ? rest : rest.slice(0, next))
+  }
+  const missing: string[] = []
+  for (const chapter of chapters) {
+    if (COMPETITION_FOR_SALE.test(chapter) && !ACTIVE_MATRIX.test(chapter)) {
+      missing.push('a home for sale')
+    }
+    if (COMPETITION_UNDER_CONTRACT.test(chapter) && !PENDING_MATRIX.test(chapter)) {
+      missing.push('a home under contract')
+    }
+  }
+  const pass = missing.length === 0
+  return {
+    id: 'competition-homes-are-drawn',
+    severity: 'hard',
+    pass,
+    detail: pass
+      ? 'Every home the competition chapter counts is on the page.'
+      : `The letter counts ${[...new Set(missing)].join(' and ')} and does not show it.`,
+  }
+}
+
 export function countedRowsInDocumentCheck(args: {
   html: string
   sales?: readonly (string | null | undefined)[] | null
@@ -382,6 +431,7 @@ export function evaluateLetterConsistencyContract(args: {
       sales: (args.closedComps ?? []).map((c) => c.address),
       expired: args.expiredAddresses,
     }),
+    competitionHomesAreDrawnCheck(args.html),
     ...letterPlaceChecks(args.html, args.place),
   ]
   return { pass: checks.every((c) => c.pass), checks }
