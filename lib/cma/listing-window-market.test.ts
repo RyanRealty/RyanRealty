@@ -169,6 +169,7 @@ describe('listing window market', () => {
     expect(listingMarketSentence(told)).toContain('the median townhouse sale in Copperstone')
     expect(listingMarketSource(told)).toContain('Townhouses in Copperstone')
     expect(listingMarketSource(told)).not.toMatch(/single-family/i)
+    expect(listingMarketSource(told)).not.toMatch(/[—–]/)
     expect(listingMarketSentence(move!)).toContain('the median sale in Copperstone')
   })
 
@@ -218,7 +219,8 @@ describe('the market slopes', () => {
     expect(svg).toContain('>fell<')
     expect(svg).toContain('2,242 sqft')
     expect(svg).toContain('2,483 sqft')
-    expect(svg.match(/Mar 6–Jun 12/g)).toHaveLength(1)
+    expect(svg.match(/Mar 6 to Jun 12/g)).toHaveLength(1)
+    expect(svg).not.toMatch(/[—–]/)
     expect(svg).not.toContain('<rect')
     const priceY = Number(/\$726,425<\/text>/.test(svg) ? /y="([\d.]+)"[^>]*>\$726,425</.exec(svg)?.[1] : NaN)
     const firstCircles = [...svg.matchAll(/<circle[^>]*\bcy="([\d.]+)"/g)].slice(0, 2).map((m) => Number(m[1]))

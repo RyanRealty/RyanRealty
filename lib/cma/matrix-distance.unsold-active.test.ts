@@ -77,6 +77,23 @@ describe('matrix distance — unsold / active / pending from subject lat/lng', (
     expect(row?.proximity).toMatch(/miles/)
   })
 
+  it('does not call a zero days-to-offer an offer on the first day', () => {
+    const comp = {
+      listingKey: 'S1',
+      address: '16795 Stage Stop',
+      city: 'Bend',
+      closePrice: 810_000,
+      sqft: 2354,
+      domTotal: 150,
+      daysToOffer: 0,
+      adjustedPrice: 778_792,
+      weight: 1,
+    } as CmaAdjustedComp
+    const [row] = closedEntries([comp], null, subject)
+    expect(row?.outcome).not.toContain('offer in 0')
+    expect(row?.outcome).toContain('listed to closed, 150 days')
+  })
+
   it('fills Monterey Mews expired rows when coordinates are stored as Latitude/Longitude', () => {
     const peer = {
       listingKey: 'M1',

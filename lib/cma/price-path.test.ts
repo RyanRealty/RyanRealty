@@ -298,6 +298,9 @@ describe('shortOrExactUsd', () => {
     })!
     expect(priceHistoryEndLabel(clearpine)).toContain('sold $957,250')
     expect(priceHistoryEndLabel(clearpine)).not.toContain('$957K')
+    // A stored 0 is not an offer on the first day. The sale was on the market 307 days.
+    expect(priceHistoryEndLabel(clearpine)).not.toContain('offer in 0')
+    expect(priceHistoryEndLabel(clearpine)).toContain('listed to closed, 307 days')
 
     const diamond = pricePathFromSale({
       address: '490 Diamond Peak',

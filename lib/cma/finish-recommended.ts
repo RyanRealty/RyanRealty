@@ -84,7 +84,13 @@ export function finishRecommendedAfterActives<T extends FinishRecommendedPricing
   },
 ): T {
   let next = pricing
-  if (input.actives.length > 0) {
+  const ask = input.ask
+  const askBinds = ask != null && Number.isFinite(ask) && ask > 0
+  // A failed listing whose comps, or whose failed-ask pull, already sit
+  // under the last ask stays there. The sitting-active nudge is a second
+  // discount, and it can push the pull past the 3 percent floor.
+  const alreadyUnderFailedAsk = askBinds && ask != null && next.recommended < ask
+  if (input.actives.length > 0 && !alreadyUnderFailedAsk) {
     const printedLow = Math.min(next.valueLow, next.valueHigh)
     const printedHigh = Math.max(next.valueLow, next.valueHigh)
     const saleLow = closedSaleLow(next)
@@ -110,8 +116,7 @@ export function finishRecommendedAfterActives<T extends FinishRecommendedPricing
   }
   const beforeBand = next.recommended
   next = clampRecommendedToClosedBand(next)
-  const ask = input.ask
-  if (ask != null && Number.isFinite(ask) && ask > 0) {
+  if (askBinds && ask != null) {
     if (beforeBand < ask && next.recommended >= ask) {
       next = { ...next, recommended: beforeBand }
     } else if (next.recommended >= ask) {

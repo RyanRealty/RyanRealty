@@ -90,6 +90,27 @@ describe('printed recommendation rounding', () => {
     expect(range?.detail).toMatch(/recommended \$773,900/)
   })
 
+  it('does not cut again once the failed-ask pull is already under the ask', () => {
+    // Lost Rider: weighted $841,000 sat over the $799,900 ask, so the pull
+    // landed at $787,000. A sitting active must not take a second 3 percent
+    // off that and print $763,000.
+    const sitting = [{ status: 'Active', listPrice: 780_000, daysOnMarket: 116 }]
+    const finished = finishRecommendedAfterActives(
+      {
+        recommended: 787_000,
+        conservative: 697_000,
+        highEnd: 1_068_000,
+        valueLow: 697_000,
+        valueHigh: 1_068_000,
+        notes: [],
+        failedAsk: 799_900,
+      },
+      { actives: sitting, ask: 799_900 },
+    )
+    expect(finished.recommended).toBe(787_000)
+    expect(finished.notes.join(' ')).not.toContain('Sitting high-DOM')
+  })
+
   it('prints an in-band pin on the band low when the ask sits above it', () => {
     // Unrounded list $566,341. Printed band $566,000 to $590,000. Ask
     // $574,500 is inside the band and more than one thousand above the pin,

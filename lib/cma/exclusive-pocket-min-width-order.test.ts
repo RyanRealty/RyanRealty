@@ -157,7 +157,8 @@ describe('floor, minimum width, failed-ask cap, and the nudge', () => {
       ask: 599_000,
     })
     expect(finished.valueLow).toBeLessThan(554_000)
-    expect(finished.recommended).toBe(557_000)
+    // $564,000 is already under the $599,000 ask, so the sitting active does not cut it.
+    expect(finished.recommended).toBe(564_000)
     expect(finished.conservative).toBe(554_000)
     expect(finished.recommended).toBeLessThanOrEqual(599_000)
     expect(finished.failedAskBelowRange).not.toBe(true)

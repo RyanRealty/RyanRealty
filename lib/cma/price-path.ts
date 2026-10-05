@@ -241,8 +241,10 @@ export function pricePathFromSale(sale: {
   // date labels say so; the end label names an event, and says which event it
   // is naming. When the row carries no days-to-offer the line falls back to
   // the period it drew and labels itself "listed to closed".
+  // Zero is not a measured offer. A missing pending date is stored as 0,
+  // and printing "offer in 0 days" beside a long market time is false.
   const toOffer =
-    sale.daysToOffer != null && Number.isFinite(sale.daysToOffer) && sale.daysToOffer >= 0
+    sale.daysToOffer != null && Number.isFinite(sale.daysToOffer) && sale.daysToOffer > 0
       ? Math.round(sale.daysToOffer)
       : null
   return {

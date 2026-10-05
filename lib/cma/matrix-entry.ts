@@ -264,11 +264,13 @@ export function closedEntries(
     const path = pricePathFromSale(c)
     const toOffer = days(c.daysToOffer)
     const ran = days(c.domTotal)
+    // Zero is not an offer on the first day. Say how long the listing ran.
+    const offerDays = toOffer != null && toOffer > 0 ? toOffer : null
     const outcome = [
       c.closePrice > 0 ? `sold ${shortOrExactUsd(c.closePrice)}` : 'sold',
-      toOffer != null
-        ? `offer in ${int(toOffer)} ${toOffer === 1 ? 'day' : 'days'}`
-        : ran != null
+      offerDays != null
+        ? `offer in ${int(offerDays)} ${offerDays === 1 ? 'day' : 'days'}`
+        : ran != null && ran > 0
           ? `listed to closed, ${int(ran)} ${ran === 1 ? 'day' : 'days'}`
           : '',
       c.sewerNote?.trim() || '',

@@ -244,10 +244,16 @@ describe('empty subdivision competition', () => {
       ask: 698_000,
     })
     expect(stayed.recommended).toBe(687_000)
-    const pulled = finishRecommendedAfterActives(pricing, {
+    const alreadyUnder = finishRecommendedAfterActives(pricing, {
       actives: [debron],
       pocketClosedSupport: 599_350,
       ask: 698_000,
+    })
+    // $687,000 is already under the $698,000 ask. The sitting active does not cut it again.
+    expect(alreadyUnder.recommended).toBe(687_000)
+    const pulled = finishRecommendedAfterActives(pricing, {
+      actives: [debron],
+      pocketClosedSupport: 599_350,
     })
     expect(pulled.recommended).toBe(666_000)
   })

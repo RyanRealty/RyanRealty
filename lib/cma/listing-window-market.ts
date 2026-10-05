@@ -336,13 +336,13 @@ function spokenSpan(from: string, to: string): string {
   const a = spokenDay(from)
   const b = spokenDay(to)
   const year = to.slice(0, 4)
-  return year && from.slice(0, 4) === year ? `${a}–${b}` : `${a}–${b}, ${year}`
+  return year && from.slice(0, 4) === year ? `${a} to ${b}` : `${a} to ${b}, ${year}`
 }
 
 export function listingMarketSource(move: ListingMarketMove): string {
   const size =
     move.sized && move.sqftLow != null && move.sqftHigh != null
-      ? `, ${move.sqftLow.toLocaleString('en-US')}–${move.sqftHigh.toLocaleString('en-US')} sqft`
+      ? `, ${move.sqftLow.toLocaleString('en-US')} to ${move.sqftHigh.toLocaleString('en-US')} sqft`
       : ''
   const measured = move.asOf ? ` Measured ${move.asOf}.` : ''
   const lateSpan = spokenSpan(move.late.from, move.late.to)
