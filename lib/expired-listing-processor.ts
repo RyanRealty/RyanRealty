@@ -272,6 +272,7 @@ export async function processNewExpiredListings(
         dncPhone: intakeFlags.includes('dnc'),
         email: candidateEmail,
         emailSuppressed,
+        phones: owner.allPhones ?? [],
       })
       const lookupPending = !lookedUp || owner.status === 'pending'
 
@@ -287,15 +288,20 @@ export async function processNewExpiredListings(
       let matchedBy: string = owner.source ?? 'unresolved'
       let skippedFub = false
       let clientEmail: string | null = null
+      let leadPhone: string | null = owner.ownerPhone ?? null
 
       if (intakeBuildsCma(decision)) {
-        clientEmail = decision.email
+        if (decision.channel === 'sms') {
+          leadPhone = decision.phone
+        } else {
+          clientEmail = decision.email
+        }
         // Create/reuse the native CRM lead (email-first, then phone dedup).
         // ensureNativeLead is idempotent and never throws.
         const native = await ensureNativeLead({
           name: owner.ownerName ?? `Expired Listing ${l.ListNumber ?? l.ListingKey}`,
           email: clientEmail,
-          phone: owner.ownerPhone ?? null,
+          phone: leadPhone,
           source: 'expired-listing-cron',
           assignedBroker: 'matt',
         })
@@ -375,7 +381,11 @@ export async function processNewExpiredListings(
             ...(owner.absentee ? ['owner:absentee'] : []),
             ...(owner.outOfState ? ['geo:out-of-state'] : []),
             ...(df?.equityRich ? ['owner:equity-rich'] : []),
-            ...(owner.complianceTags?.length ? owner.complianceTags : decision.tags),
+            ...(intakeBuildsCma(decision) && decision.channel === 'sms'
+              ? decision.tags
+              : owner.complianceTags?.length
+                ? owner.complianceTags
+                : decision.tags),
           ],
           custom: {
             customClassification: 'EXPIRED',
@@ -432,7 +442,7 @@ export async function processNewExpiredListings(
               parsedPostalCode: l.PostalCode ?? null,
               leadEmail: clientEmail,
               leadName: owner.ownerName ?? null,
-              leadPhone: owner.ownerPhone ?? null,
+              leadPhone,
               leadTimeline: 'ready-now',
               leadClassification: 'hot',
               crmPersonId,
@@ -514,8 +524,8 @@ export async function processNewExpiredListings(
               : num(l.CumulativeDaysOnMarket),
           expired_at: l.status_change_timestamp,
           standard_status: l.StandardStatus,
-          contact_phone: owner.ownerPhone ?? null,
-          contact_email: clientEmail ?? owner.ownerEmail ?? null,
+          contact_phone: leadPhone,
+          contact_email: decision.action === 'proceed' ? clientEmail : (owner.ownerEmail ?? null),
           contact_source: matchedBy,
           compliance_hard_stop: decision.emailHardStop,
           compliance_flags: decision.flags,

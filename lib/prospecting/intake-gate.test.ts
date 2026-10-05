@@ -1,6 +1,6 @@
 /**
  * Expired/FSBO intake (Matt 2026-10-05).
- * Live status, then compliance, then a sendable email.
+ * Live status, then compliance, then a sendable email, then a cell.
  * A proceed decision is what lets the processor build a CMA.
  */
 import { readFileSync } from 'node:fs'
@@ -13,6 +13,7 @@ import {
   emailBlockedByFlags,
   intakeBuildsCma,
   phoneBlockedByFlags,
+  pickSendableCell,
   type ProspectIntakeInput,
 } from './intake-gate'
 
@@ -29,6 +30,7 @@ function clean(over: Partial<ProspectIntakeInput> = {}): ProspectIntakeInput {
     dncPhone: false,
     email: 'owner@example.com',
     emailSuppressed: false,
+    phones: [],
     ...over,
   }
 }
@@ -88,6 +90,7 @@ describe('decideProspectIntake', () => {
     expect(intakeBuildsCma(decision)).toBe(true)
     expect(decision).toMatchObject({
       action: 'proceed',
+      channel: 'email',
       email: 'owner@example.com',
       emailHardStop: false,
       flags: ['dnc:tcpa'],
@@ -104,15 +107,109 @@ describe('decideProspectIntake', () => {
     expect(phoneBlockedByFlags(decision.flags)).toMatch(/dnc/)
   })
 
-  it('skips a phone-only owner', () => {
-    const decision = decideProspectIntake(clean({ email: null, dncPhone: false }))
+  it('skips a landline when there is no email', () => {
+    const decision = decideProspectIntake(clean({
+      email: null,
+      phones: [{ value: '5415550100', type: 'Landline', dnc: false }],
+    }))
     expect(decision).toMatchObject({ action: 'skip', reason: 'no-sendable-email' })
     expect(intakeBuildsCma(decision)).toBe(false)
   })
 
-  it('skips a suppressed email', () => {
+  it('skips an untyped phone when there is no email', () => {
+    const decision = decideProspectIntake(clean({
+      email: null,
+      phones: [{ value: '5415550101', type: null, dnc: false }],
+    }))
+    expect(decision).toMatchObject({ action: 'skip', reason: 'no-sendable-email' })
+  })
+
+  it('builds for a non-DNC cell when there is no email', () => {
+    const decision = decideProspectIntake(clean({
+      email: null,
+      phones: [
+        { value: '5415550199', type: 'Landline', dnc: true },
+        { value: '15415550102', type: 'Mobile', dnc: false },
+      ],
+    }))
+    expect(intakeBuildsCma(decision)).toBe(true)
+    expect(decision).toMatchObject({
+      action: 'proceed',
+      channel: 'sms',
+      email: null,
+      phone: '5415550102',
+      emailHardStop: false,
+      flags: [],
+      tags: [],
+    })
+  })
+
+  it('does not text a DNC cell, and does not tag a clean cell do-not-text', () => {
+    const blocked = decideProspectIntake(clean({
+      email: null,
+      dncPhone: true,
+      phones: [{ value: '5415550103', type: 'Wireless', dnc: true }],
+    }))
+    expect(blocked).toMatchObject({ action: 'skip', reason: 'no-sendable-email' })
+
+    const cleanCell = decideProspectIntake(clean({
+      email: null,
+      dncPhone: true,
+      phones: [{ value: '5415550104', type: 'cell', dnc: false }],
+    }))
+    expect(cleanCell).toMatchObject({ action: 'proceed', channel: 'sms', phone: '5415550104' })
+    expect(cleanCell.tags).not.toContain('contact:do-not-text')
+    expect(cleanCell.tags).not.toContain('contact:do-not-call')
+  })
+
+  it('does not text a TCPA cell when there is no email', () => {
+    const decision = decideProspectIntake(clean({
+      email: null,
+      dncTcpa: true,
+      phones: [{ value: '5415550105', type: 'Mobile', dnc: false }],
+    }))
+    expect(decision).toMatchObject({ action: 'skip', reason: 'sms-blocked', flags: ['dnc:tcpa'] })
+    expect(intakeBuildsCma(decision)).toBe(false)
+  })
+
+  it('texts a clean cell when the email is suppressed', () => {
+    const decision = decideProspectIntake(clean({
+      emailSuppressed: true,
+      phones: [{ value: '5415550106', type: 'Mobile', dnc: false }],
+    }))
+    expect(decision).toMatchObject({
+      action: 'proceed',
+      channel: 'sms',
+      email: null,
+      phone: '5415550106',
+    })
+  })
+
+  it('keeps email when both a cell and a sendable email exist', () => {
+    const decision = decideProspectIntake(clean({
+      phones: [{ value: '5415550107', type: 'Mobile', dnc: false }],
+    }))
+    expect(decision).toMatchObject({
+      action: 'proceed',
+      channel: 'email',
+      email: 'owner@example.com',
+      phone: null,
+    })
+  })
+
+  it('skips a suppressed email when there is no cell', () => {
     const decision = decideProspectIntake(clean({ emailSuppressed: true }))
     expect(decision).toMatchObject({ action: 'skip', reason: 'email-suppressed' })
+  })
+
+  it('pickSendableCell ignores landline, VOIP, DNC, and a blank type', () => {
+    expect(pickSendableCell([
+      { value: '5415550110', type: 'Landline' },
+      { value: '5415550111', type: 'VOIP' },
+      { value: '5415550112', type: 'Mobile', dnc: true },
+      { value: '5415550113', type: '' },
+      { number: '5415550114', type: 'wireless' },
+    ])).toBe('5415550114')
   })
 
   it('checks live status before compliance', () => {
@@ -126,7 +223,9 @@ describe('decideProspectIntake', () => {
     expect(intakeBuildsCma(decision)).toBe(true)
     expect(decision).toMatchObject({
       action: 'proceed',
+      channel: 'email',
       email: 'owner@example.com',
+      phone: null,
       emailHardStop: false,
       flags: [],
       tags: [],
@@ -242,6 +341,7 @@ describe('intake is wired in front of person and CMA creation', () => {
     expect(resolved).toContain('enrichOwnerContact')
     expect(resolved.indexOf('!resolved.bestEmail')).toBeLessThan(resolved.indexOf('enrichOwnerContact'))
     expect(resolved.indexOf('enrichOwnerContact')).toBeLessThan(resolved.lastIndexOf('return result'))
+    expect(resolved).toContain('fallback?.allPhones')
   })
 
   it('shares one email-hard-stop flag set with the prospect send path', () => {

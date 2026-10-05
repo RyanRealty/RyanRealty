@@ -203,6 +203,7 @@ export async function processNewFsboListings(supabase: SupabaseClient): Promise<
         dncPhone: intakeFlags.includes('dnc'),
         email: ownerEmail,
         emailSuppressed,
+        phones: ownerLookup?.allPhones ?? [],
       })
       const skipReason = decision.action === 'skip' ? decision.reason : 'proceed'
 
@@ -210,11 +211,16 @@ export async function processNewFsboListings(supabase: SupabaseClient): Promise<
       let crmPersonId: number | null = null
       let clientEmail: string | null = ownerEmail
       if (intakeBuildsCma(decision)) {
-        clientEmail = decision.email
-        ownerEmail = decision.email
+        if (decision.channel === 'sms') {
+          clientEmail = null
+          ownerPhone = decision.phone
+        } else {
+          clientEmail = decision.email
+          ownerEmail = decision.email
+        }
         const native = await ensureNativeLead({
           name: ownerName ?? `Owner of ${l.streetAddress || l.fullAddress}`,
-          email: decision.email,
+          email: clientEmail,
           phone: ownerPhone,
           source: 'fsbo-cron',
           assignedBroker: 'matt',
@@ -267,7 +273,11 @@ export async function processNewFsboListings(supabase: SupabaseClient): Promise<
             ownerStatus === 'pending' ? 'owner-lookup:pending' : 'owner-lookup:resolved',
             ...(ownerLookup?.absentee ? ['owner:absentee'] : []),
             ...(ownerLookup?.outOfState ? ['geo:out-of-state'] : []),
-            ...(ownerLookup?.complianceTags?.length ? ownerLookup.complianceTags : decision.tags),
+            ...(intakeBuildsCma(decision) && decision.channel === 'sms'
+              ? decision.tags
+              : ownerLookup?.complianceTags?.length
+                ? ownerLookup.complianceTags
+                : decision.tags),
           ],
           assignedBroker: 'matt',
           originNote: {
@@ -381,7 +391,7 @@ export async function processNewFsboListings(supabase: SupabaseClient): Promise<
           description: l.description,
           owner_name: ownerName,
           contact_phone: ownerPhone,
-          contact_email: clientEmail ?? ownerEmail,
+          contact_email: decision.action === 'proceed' ? clientEmail : ownerEmail,
           contact_source: ownerSource,
           compliance_hard_stop: decision.emailHardStop,
           compliance_flags: decision.flags,

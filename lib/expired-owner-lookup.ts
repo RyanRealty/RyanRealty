@@ -678,6 +678,15 @@ export async function lookupOwnerForExpiredListing(params: {
         type: p.type ?? undefined,
         dnc: p.dnc,
       }))
+      if (fallback?.allPhones?.length) {
+        const have = new Set(tracePhones.map((phone) => phone.value.replace(/\D/g, '')))
+        for (const phone of fallback.allPhones) {
+          const value = phone.value.replace(/\D/g, '')
+          if ((value.length !== 10 && value.length !== 11) || have.has(value)) continue
+          tracePhones.push({ value, type: phone.type, dnc: !!phone.dnc })
+          have.add(value)
+        }
+      }
       const traceEmails = [...(resolved.trace?.emails ?? [])]
       if (fallback?.email && !traceEmails.some((e) => e.toLowerCase() === fallback.email!.toLowerCase())) {
         traceEmails.push(fallback.email)
