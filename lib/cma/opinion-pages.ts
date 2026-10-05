@@ -1330,28 +1330,41 @@ export const CLOSE_SIT_DOWN =
   'We would love the opportunity to sit down with you and go through the house, and to show you the detailed marketing plan we use. There is nothing to sign for that. Who you list with is your decision, and we would be grateful for the chance to earn it.'
 
 /**
- * Published Google reviews. Whole quotes, never a cut, never an invented line.
- * Matt 2026-10-05: the most glowing pair. E Oster is the May 18, 2026 review
- * (he knows the reviewer as Ernie; Google publishes E Oster). Douglas Grant
- * is the other whole quote that calls Matt the best. Audra Hedberg's line
- * has an em dash, so it stays off the letter.
+ * Two review cards. Each line is a complete sentence from that Google review,
+ * copied verbatim. The card leads with the short line and keeps one more
+ * sentence under it. The rest of a long review stays on /reviews.
+ * E Oster is the May 18, 2026 review (Matt knows him as Ernie; Google
+ * publishes E Oster). Douglas Grant is the other. Audra Hedberg's review
+ * stays off the letter because it contains an em dash.
  */
-const CLOSE_REVIEW_AUTHORS = ['E Oster', 'Douglas Grant'] as const
+const CLOSE_REVIEW_CARDS: ReadonlyArray<{ author: string; lead: string; line: string }> = [
+  {
+    author: 'E Oster',
+    lead: 'You will not be disappointed ....',
+    line: "I'd highly recommend Matt Ryan as his attention to detail and art of the negotiations with data on both buyers/sellers is impressive.",
+  },
+  {
+    author: 'Douglas Grant',
+    lead: 'Matt is the best!!',
+    line: 'Matt is the most professional, communicative, and honest Real Estate Broker I have ever worked with.',
+  },
+]
 
 export function closeReviewsHtml(a: OpinionPageArgs): string {
-  const picks = CLOSE_REVIEW_AUTHORS.flatMap((author) => {
-    const found = TESTIMONIALS.find((t) => t.author === author && t.source === 'Google')
-    return found ? [found] : []
+  const picks = CLOSE_REVIEW_CARDS.flatMap((card) => {
+    const found = TESTIMONIALS.find((t) => t.author === card.author && t.source === 'Google')
+    if (!found || !found.quote.includes(card.lead) || !found.quote.includes(card.line)) return []
+    return [{ author: found.author, lead: card.lead, line: card.line }]
   })
   if (picks.length === 0) return ''
   const href = trackedDocLink('site', 'https://ryan-realty.com/reviews', a.docLinks ?? UNADDRESSED_DOC_LINKS)
   const cards = picks
     .map(
       (t) =>
-        `<blockquote class="close-quote"><p>${esc(t.quote)}</p><cite>${esc(t.author)} · Verified Google review</cite></blockquote>`,
+        `<blockquote class="close-quote"><p class="close-lead">${esc(t.lead)}</p><p class="close-line">${esc(t.line)}</p><cite>${esc(t.author)} · Verified Google review</cite></blockquote>`,
     )
     .join('')
-  return `<div class="close-reviews"><p class="close-reviews-kicker">From people we have worked with</p>${cards}<p class="close-reviews-more"><a href="${esc(href)}" data-rr-track="cma-reviews">Read the reviews</a></p></div>`
+  return `<div class="close-reviews"><p class="close-reviews-kicker">From people we have worked with</p><div class="close-review-row">${cards}</div><p class="close-reviews-more"><a href="${esc(href)}" data-rr-track="cma-reviews">Read the reviews</a></p></div>`
 }
 
 /** The failed-listing heading, or the neutral one when this document may not say the home failed. */

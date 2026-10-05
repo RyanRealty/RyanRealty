@@ -507,6 +507,10 @@ describe('client document look', () => {
   it('print CSS keeps safe @page margins', () => {
     const { html } = renderCmaHtml(args())
     expect(html).toMatch(/@page\s*\{[^}]*margin:\s*0\.4in/)
+    expect(html).toMatch(/@page\s*\{[^}]*background:\s*#faf8f4/)
+    expect(html).toMatch(/@page cma-navy\s*\{[^}]*margin:\s*0\.4in 0\.6in 0\.7in 0\.6in[^}]*background:\s*#102742/)
+    expect(html).toContain('page: cma-navy')
+    expect(html).not.toContain('background: white')
     expect(html).toContain('$1,050,000')
     expect(html).toContain('The sales support')
     expect(html).toContain('<svg')

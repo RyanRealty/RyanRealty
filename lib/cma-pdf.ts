@@ -191,7 +191,7 @@ export async function renderCmaPdfBuffer(slug: string): Promise<RenderCmaPdfResu
     // rather than a section count guessed before pagination.
     const pdf = await page.pdf(
       pdfRenderOptions(
-        { footerLeft: `Ryan Realty · ${CONTACT.phoneDirect}` },
+        { footerLeft: `Ryan Realty · ${CONTACT.phoneDirect}`, footerPlate: '#faf8f4' },
         CMA_MARGIN_IN,
       ),
     )
