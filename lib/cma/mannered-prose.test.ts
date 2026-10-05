@@ -420,4 +420,11 @@ describe('the overpricing folklore never reaches a seller', () => {
     ]
     for (const html of fine) expect(findSellerBannedWords(html)).toEqual([])
   })
+
+  it('does not treat a published review as our wording', () => {
+    const quote =
+      '<blockquote class="close-quote"><p>Matt kept me informed. He is the best broker I have ever worked with.</p></blockquote>'
+    expect(findSellerBannedWords(quote)).toEqual([])
+    expect(findSellerBannedWords(`<p>The sales we kept.</p>${quote}`).map((h) => h.label)).toEqual(['kept'])
+  })
 })
