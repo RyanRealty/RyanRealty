@@ -10,7 +10,7 @@
 //   0  every diagram rendered cleanly
 //   1  one or more diagrams threw a syntax/parse error
 
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { resolve } from 'node:path'
 
 const HTML_PATH = resolve(process.cwd(), 'docs/FACEBOOK_SELLER_GROWTH_PIPELINE.html')

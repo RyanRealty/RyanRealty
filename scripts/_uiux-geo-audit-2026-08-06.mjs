@@ -2,7 +2,7 @@
  * UI/UX geo-route audit — production Playwright harness.
  * Usage: node scripts/_uiux-geo-audit-2026-08-06.mjs
  */
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 

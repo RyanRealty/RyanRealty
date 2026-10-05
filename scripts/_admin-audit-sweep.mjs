@@ -1,7 +1,7 @@
 // Phase 0 admin consolidation audit — visit every top-level admin route as an
 // authenticated superuser, screenshot it, and record console errors + basic
 // render evidence. Output: out/admin-audit/<route>.png + out/admin-audit/report.json
-import { chromium, devices } from 'playwright'
+import { chromium, devices } from './lib/marked-playwright.mjs'
 import { createClient as createSb } from '@supabase/supabase-js'
 import { createServerClient } from '@supabase/ssr'
 import { readFileSync, mkdirSync, writeFileSync } from 'node:fs'

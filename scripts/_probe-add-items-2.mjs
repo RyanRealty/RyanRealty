@@ -1,4 +1,4 @@
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 const browser = await chromium.launch({ headless: true })
 const ctx = await browser.newContext({ storageState: 'tmp/skyslope-session.json', viewport: { width: 1600, height: 1200 } })
 const page = await ctx.newPage()

@@ -2,7 +2,7 @@
  * Site polish audit crawler — 2026-06-10. AUDIT ONLY, writes out/audit-polish/*.
  * Usage: node scripts/_audit-site-polish.mjs
  */
-import { chromium } from '@playwright/test';
+import { chromium } from './lib/marked-playwright.mjs';
 import fs from 'node:fs';
 
 const BASE = 'http://localhost:3000';

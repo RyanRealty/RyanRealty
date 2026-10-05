@@ -8,7 +8,7 @@
  *
  * Run: node scripts/_cma-228-page-fit.mjs
  */
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 

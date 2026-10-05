@@ -3,7 +3,7 @@
  * Patch 3 — F6 final fix: shorter photo, illustration gets full breathing room
  */
 
-const { chromium } = require('playwright');
+const { chromium } = require('./lib/marked-playwright.mjs');
 const fs = require('fs');
 const path = require('path');
 

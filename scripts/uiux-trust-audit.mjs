@@ -2,7 +2,7 @@
  * UI/UX trust audit — production Playwright sweep (desktop + mobile).
  * Usage: node scripts/uiux-trust-audit.mjs
  */
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 

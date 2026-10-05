@@ -6,7 +6,7 @@
  *   node scripts/probe-tetherow-hoa-prod.mjs
  */
 import { copyFileSync, mkdirSync, writeFileSync } from 'node:fs'
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 
 const URL = 'https://ryan-realty.com/communities/tetherow'
 const OUT = 'out/tetherow-hoa-prod'

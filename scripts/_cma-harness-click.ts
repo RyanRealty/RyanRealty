@@ -7,7 +7,7 @@
  *
  *   npx tsx scripts/_cma-harness-click.ts '<tracked click url>'
  */
-import puppeteer from 'puppeteer'
+import puppeteer from './lib/marked-puppeteer.mjs'
 
 const CHROME =
   process.env.PUPPETEER_EXECUTABLE_PATH ||

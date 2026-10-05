@@ -3,7 +3,7 @@
  * Render the 228 SE Soft Tail CMA HTML to PDF using local Chrome on macOS.
  * Inlines local assets + map image as data URIs (same logic as lib/cma-pdf.ts).
  */
-import puppeteer from 'puppeteer-core'
+import puppeteer from './lib/marked-puppeteer.mjs'
 import { promises as fs, statSync } from 'node:fs'
 import { resolve, dirname, join, extname } from 'node:path'
 import { fileURLToPath } from 'node:url'

@@ -1111,7 +1111,7 @@ async function main(): Promise<void> {
   const { immersiveFromRow } = await import('@/lib/cma/serve-document')
   const { extractChapters } = await import('@/lib/cma/lookpass-chapters')
   const { findSellerBannedWords } = await import('@/lib/cma/seller-text')
-  const puppeteerModule = await import('puppeteer-core')
+  const puppeteerModule = await import('./lib/marked-puppeteer.mjs')
   const puppeteer = puppeteerModule.default
 
   const fsExists = await fs

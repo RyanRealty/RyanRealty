@@ -5,7 +5,7 @@
  */
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
-import { chromium } from 'playwright'
+import { chromium } from '../scripts/lib/marked-playwright.mjs'
 
 const OUT = resolve('look-pass-site128-ring-fill-2026-09-19')
 const URL = process.env.CAPTURE_URL || 'http://127.0.0.1:3199/cities/bend'

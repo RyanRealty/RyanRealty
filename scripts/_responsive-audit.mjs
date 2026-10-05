@@ -4,7 +4,7 @@
  * Usage: node scripts/_responsive-audit.mjs
  * Output: out/audits/uiux-2026-08-06-responsive.json
  */
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 

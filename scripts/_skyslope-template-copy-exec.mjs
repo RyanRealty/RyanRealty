@@ -17,7 +17,7 @@
  */
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 
 const STATE_PATH = path.join(process.cwd(), 'tmp/skyslope-session.json')
 const OUTDIR = path.join(process.cwd(), 'tmp/template-copy-exec')

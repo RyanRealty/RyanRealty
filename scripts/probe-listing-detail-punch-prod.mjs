@@ -5,7 +5,7 @@
  *   node scripts/probe-listing-detail-punch-prod.mjs
  */
 import { mkdirSync, writeFileSync } from 'node:fs'
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 
 const BASE = (process.env.BASE_URL || 'https://ryan-realty.com').replace(/\/$/, '')
 const ART = '/opt/cursor/artifacts'

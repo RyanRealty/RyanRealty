@@ -1,7 +1,7 @@
 /**
  * Full interactive feature audit against production
  */
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 
 const BASE = 'https://ryanrealty.vercel.app'
 const results = []

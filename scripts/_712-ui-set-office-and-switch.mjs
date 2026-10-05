@@ -11,7 +11,7 @@ import crypto from 'node:crypto'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { skyslopeFetchWithRetry } from './skyslope-files-api.mjs'
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')

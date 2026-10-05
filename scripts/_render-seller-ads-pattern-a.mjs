@@ -9,7 +9,7 @@
  *
  * Output: 6 clean 1080x1080 Bend photos at JPG quality 92.
  */
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { writeFile, mkdir } from 'node:fs/promises'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'

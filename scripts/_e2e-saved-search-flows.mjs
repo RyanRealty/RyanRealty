@@ -6,7 +6,7 @@
 //   captures the full filter set.
 // Flow C (user): /account/notifications -> market report self-subscribe ->
 //   assert crm_report_subscriptions row.
-import { chromium, devices } from 'playwright'
+import { chromium, devices } from './lib/marked-playwright.mjs'
 import { createClient as createSb } from '@supabase/supabase-js'
 import { createServerClient } from '@supabase/ssr'
 import { readFileSync, mkdirSync } from 'node:fs'

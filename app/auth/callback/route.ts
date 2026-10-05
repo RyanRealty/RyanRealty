@@ -12,6 +12,8 @@ import * as Sentry from '@sentry/nextjs'
 import { NextResponse } from 'next/server'
 import { cookies, headers } from 'next/headers'
 import { safeRedirectPath } from '@/lib/auth/safeRedirect'
+import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
+import { internalUserCookie } from '@/lib/analytics/internal-user-cookie'
 import {
   GOOGLE_COMMS_COOKIE,
   googleCommsEnrichmentCustom,
@@ -21,6 +23,22 @@ import {
 } from '@/lib/auth/google-comms-consent'
 
 const AUTH_NEXT_COOKIE = 'auth_next'
+
+/**
+ * A broker or admin signing in marks this browser internal (`rr_internal=1`, a
+ * year), so GA4 never counts it (lib/analytics/ga-suppression.ts, Matt
+ * 2026-10-05: internal users identified BY LOGIN). Only a verified sign-in whose
+ * email holds an admin role; a consumer sign-in sets nothing. Never blocks.
+ */
+async function markInternalIfAdmin(res: NextResponse, email: string | null | undefined, request: Request): Promise<void> {
+  try {
+    if (!email || !(await getAdminRoleForEmail(email))) return
+    const cookie = internalUserCookie(new URL(request.url).hostname)
+    res.cookies.set(cookie.name, cookie.value, cookie.options)
+  } catch (err) {
+    console.warn('[auth/callback] internal mark failed:', err instanceof Error ? err.message : String(err))
+  }
+}
 
 /**
  * Stamp the durable rr_pid cookie on a freshly signed-in visitor by resolving
@@ -265,6 +283,7 @@ export async function GET(request: Request) {
       // Phase 7.3: pull this signer's guest email-keyed saved searches into the
       // account (verified-email gated, idempotent, never blocks sign-in).
       await claimGuestSearchesForUser(data.user)
+      await markInternalIfAdmin(res, data.user.email, request)
       return res
     }
   }
@@ -299,6 +318,7 @@ export async function GET(request: Request) {
       // Phase 7.3: pull this signer's guest email-keyed saved searches into the
       // account (verified-email gated, idempotent, never blocks sign-in).
       await claimGuestSearchesForUser(data.user)
+      await markInternalIfAdmin(res, data.user.email, request)
       return res
     }
   }

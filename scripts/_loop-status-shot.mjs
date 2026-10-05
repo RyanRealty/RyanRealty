@@ -7,7 +7,7 @@
  * read-only otherwise. Same pattern as _ws4-shot-delivery-tab.mjs.
  */
 import fs from 'node:fs'
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { createClient } from '@supabase/supabase-js'
 
 for (const line of fs.readFileSync('.env.local', 'utf8').split('\n')) {

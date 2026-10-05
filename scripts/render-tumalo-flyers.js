@@ -5,7 +5,7 @@
  * Uses Playwright with deviceScaleFactor 2 for crisp output
  */
 
-const { chromium } = require('playwright');
+const { chromium } = require('./lib/marked-playwright.mjs');
 const fs = require('fs');
 const path = require('path');
 

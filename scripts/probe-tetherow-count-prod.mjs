@@ -5,7 +5,7 @@
  *   node scripts/probe-tetherow-count-prod.mjs
  */
 import { mkdirSync, writeFileSync } from 'node:fs'
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 
 const URL = 'https://ryan-realty.com/communities/tetherow'
 const OUT = 'out/tetherow-count-prod'

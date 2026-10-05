@@ -5,7 +5,7 @@
 // search filters articles, and an article page shows its body. Finally check
 // the Help button is present at phone size (390x844).
 // Screenshots land in out/ws5-help-verify/.
-import { chromium, devices } from 'playwright'
+import { chromium, devices } from './lib/marked-playwright.mjs'
 import { createClient as createSb } from '@supabase/supabase-js'
 import { createServerClient } from '@supabase/ssr'
 import { readFileSync, mkdirSync } from 'node:fs'

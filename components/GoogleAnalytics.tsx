@@ -5,6 +5,7 @@ import Script from 'next/script'
 import { usePathname } from 'next/navigation'
 import { IS_NON_PRODUCTION_BUILD } from '@/lib/analytics/non-production-build'
 import { isPrivatePath } from '@/lib/analytics/private-paths'
+import { GA_SUPPRESS_JS } from '@/lib/analytics/ga-suppression'
 import { hasAnalyticsConsent, hasMarketingConsent } from './CookieConsentBanner'
 
 const GA4_ID = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID?.trim()
@@ -155,15 +156,22 @@ export default function GoogleAnalytics() {
 
       {/* 2. gtag.js + GA4 config — loaded always now, since consent state
               is communicated via the defaults block above. Cookieless
-              modeling kicks in automatically when consent is denied. */}
+              modeling kicks in automatically when consent is denied.
+              Never on a page GA4 must not count (lib/analytics/ga-suppression.ts,
+              Matt 2026-10-05): the decision runs in the browser BEFORE gtag.js
+              is requested, so /admin, a non-production host, automation and a
+              signed-in broker's browser load no Google tag at all. */}
       {(hasGA4 || hasGoogleAds) && gtagScriptId && (
         <>
-          <Script
-            src={`https://www.googletagmanager.com/gtag/js?id=${gtagScriptId}`}
-            strategy="afterInteractive"
-          />
           <Script id="ga4-gads-config" strategy="afterInteractive">
             {`
+              if (!${GA_SUPPRESS_JS}) {
+              (function() {
+                var tag = document.createElement('script');
+                tag.async = true;
+                tag.src = 'https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(gtagScriptId)}';
+                document.head.appendChild(tag);
+              })();
               (function() {
                 var params = new URLSearchParams(window.location.search || '');
                 var utmSource = params.get('utm_source');
@@ -205,6 +213,7 @@ export default function GoogleAnalytics() {
                 ${hasGA4 ? `gtag('config', '${GA4_ID!.replace(/'/g, "\\'")}', gaConfig);` : ''}
               })();
               ${hasGoogleAds ? `gtag('config', '${GOOGLE_ADS_ID!.replace(/'/g, "\\'")}');` : ''}
+              }
             `}
           </Script>
         </>

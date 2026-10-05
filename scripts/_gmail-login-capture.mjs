@@ -28,7 +28,7 @@
  */
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 
 const args = process.argv.slice(2)
 const accountIdx = args.indexOf('--account')

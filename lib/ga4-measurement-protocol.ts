@@ -28,6 +28,7 @@
  * words slip through (we send slugs, classifications, and numbers, not prose).
  */
 import { randomUUID } from 'node:crypto'
+import { isNonProductionPageLocation } from '@/lib/analytics/non-production-host'
 
 const GA4_ENDPOINT = 'https://www.google-analytics.com/mp/collect'
 const GA4_DEBUG_ENDPOINT = 'https://www.google-analytics.com/debug/mp/collect'
@@ -144,35 +145,10 @@ export function clientIdFromSessionId(sessionId: string): string {
   return `${a}.${b}`
 }
 
-/**
- * Hosts whose traffic must never reach the production GA4 property.
- *
- * Measured 2026-08-26: 43 sessions in the production property arrived with a
- * `127.0.0.1:8777` referral source — our own local development, indistinguishable
- * in the reports from a real referral. Analytics that includes the people
- * building the site is not analytics.
- *
- * Matched against the page_location we are about to report, not the process env,
- * because a local run against production credentials is exactly the case that
- * leaked. `NEXT_PUBLIC_SITE_URL` is deliberately not consulted — a dev machine
- * often has the production value set.
- */
-const NON_PRODUCTION_HOSTS = new Set(['localhost', '127.0.0.1', '0.0.0.0', '::1'])
-
-export function isNonProductionPageLocation(pageLocation: unknown): boolean {
-  if (typeof pageLocation !== 'string' || !pageLocation) return false
-  let host: string
-  try {
-    host = new URL(pageLocation).hostname.toLowerCase()
-  } catch {
-    return false
-  }
-  if (NON_PRODUCTION_HOSTS.has(host)) return true
-  // Vercel preview + branch deploys, and any *.local / *.test dev domain.
-  if (host.endsWith('.local') || host.endsWith('.test') || host.endsWith('.localhost')) return true
-  if (host.endsWith('.vercel.app')) return true
-  return false
-}
+// The host rule lives in a pure module so the track route can refuse a
+// non-production page before any write without loading this one
+// (lib/analytics/non-production-host.ts).
+export { isNonProductionPageLocation }
 
 export async function fireGa4Event(params: Ga4MpFireParams): Promise<Ga4MpFireResult> {
   const creds = getCreds()

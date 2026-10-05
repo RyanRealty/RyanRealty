@@ -15,7 +15,7 @@
  *   node scripts/orea-download-roster.mjs
  */
 
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { mkdir, copyFile } from 'node:fs/promises'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'

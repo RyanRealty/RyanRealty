@@ -23,7 +23,7 @@
 import { realpathSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
 

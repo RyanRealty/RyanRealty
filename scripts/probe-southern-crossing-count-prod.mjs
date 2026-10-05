@@ -7,7 +7,7 @@
  *   node scripts/probe-southern-crossing-count-prod.mjs
  */
 import { copyFileSync, mkdirSync, writeFileSync } from 'node:fs'
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { CI_PROBE_HEADERS } from './lib/ci-probe-ua.mjs'
 
 const PLACE = 'https://ryan-realty.com/cities/bend/southern-crossing'

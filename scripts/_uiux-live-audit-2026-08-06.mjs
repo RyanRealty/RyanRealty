@@ -2,7 +2,7 @@
  * Live UI/UX audit — https://ryan-realty.com
  * Usage: node scripts/_uiux-live-audit-2026-08-06.mjs
  */
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { mkdirSync, writeFileSync } from 'node:fs'
 
 const BASE = 'https://ryan-realty.com'
