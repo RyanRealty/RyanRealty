@@ -156,7 +156,7 @@ function exceptionsOf(o: CmaOutcome): string[] {
 }
 
 export function CmaOutcomeCell({ outcome, variant = 'row' }: CmaOutcomeCellProps) {
-  if (!cmaOutcomeLeftAt(outcome)) {
+  if (!outcome || !cmaOutcomeLeftAt(outcome)) {
     return (
       <span style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
         No send recorded

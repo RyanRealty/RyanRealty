@@ -28,6 +28,7 @@
  * ASSERTS:
  *   1. No client-facing document builder reads `.phone` off a brokers row.
  *      (lib/cma/build.ts, lib/bpo/build.ts — AST, so a rename does not evade.)
+ *      The identifier `linked` is the skip-traced owner, not that row.
  *   2. The brokers DAL that feeds those documents selects twilio_number and
  *      does NOT select the bare `phone` column.
  *   3. `forward_to_cell` appears in no rendering, email, or document path at
@@ -59,10 +60,15 @@ for (const rel of DOC_BUILDERS) {
     // row.phone / broker.phone / data.phone — any property access named `phone`
     // whose object is a plain identifier (the shape a DB row is held in here).
     if (ts.isPropertyAccessExpression(node) && node.name.text === 'phone' && ts.isIdentifier(node.expression)) {
-      const line = sf.getLineAndCharacterOfPosition(node.getStart()).line + 1
-      problems.push(
-        `${rel}:${line}: reads \`${node.expression.text}.phone\`. For paul-stevenson and rebecca-peterson that column holds their PERSONAL CELL (same value as forward_to_cell). Publish \`twilio_number\` instead — it is the line the main business number routes to, and it forwards to their cell.`,
-      )
+      // `linked` is the skip-traced owner from resolveLinkedCmaClient, not a
+      // brokers row. That phone belongs on the letter as the client's phone.
+      // `row.phone` on a brokers row still fails.
+      if (node.expression.text !== 'linked') {
+        const line = sf.getLineAndCharacterOfPosition(node.getStart()).line + 1
+        problems.push(
+          `${rel}:${line}: reads \`${node.expression.text}.phone\`. For paul-stevenson and rebecca-peterson that column holds their PERSONAL CELL (same value as forward_to_cell). Publish \`twilio_number\` instead — it is the line the main business number routes to, and it forwards to their cell.`,
+        )
+      }
     }
     // element access: row['phone']
     if (
