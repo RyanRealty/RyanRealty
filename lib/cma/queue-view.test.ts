@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   cmaQueueFiltersFromSearch,
+  cmaQueueHoldLine,
   cmaQueueHref,
   cmaQueueMoneyLine,
   cmaQueueReachFromFacts,
@@ -219,6 +220,27 @@ describe('cma queue paging and why', () => {
     expect(cmaQueueReachNote('unconfirmed-phone')).toBe('phone on file, not a confirmed cell')
     expect(cmaQueueReachNote('none')).toBe('no email')
     expect(cmaQueueReachNote('email')).toBeNull()
+  })
+})
+
+describe('cmaQueueHoldLine', () => {
+  it('puts the hold on the letter and stays quiet when nothing is held', () => {
+    expect(
+      cmaQueueHoldLine({
+        state: 'flagged',
+        reviewReason: 'The value range is wider than 8% of the recommended list.',
+      }),
+    ).toBe('Range is wide. The value range is wider than 8% of the recommended list.')
+    expect(
+      cmaQueueHoldLine({
+        state: 'audit-failed',
+        auditSummary: 'The price sits outside the sales.',
+        auditCriticalCount: 2,
+      }),
+    ).toBe('Audit failed. 2 critical. The price sits outside the sales.')
+    expect(cmaQueueHoldLine({ state: 'unvetted' })).toBe('Audit did not run. Nothing has checked this one.')
+    expect(cmaQueueHoldLine({ state: 'ready' })).toBeNull()
+    expect(cmaQueueHoldLine({ state: 'failed', buildError: 'not enough comparable sales' })).toBeNull()
   })
 })
 

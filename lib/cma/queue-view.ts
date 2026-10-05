@@ -134,6 +134,37 @@ function one(v: string | string[] | undefined): string | undefined {
   return t || undefined
 }
 
+/**
+ * The sentence on the letter itself. The queue row already names the bucket.
+ * A ready, sent, or queued letter has nothing to hold it, so this is null.
+ * A failed build keeps its own error line. This covers the holds that used
+ * to vanish once you opened the letter.
+ */
+export function cmaQueueHoldLine(r: {
+  state: CmaQueueViewState
+  reviewReason?: string | null
+  buildError?: string | null
+  auditSummary?: string | null
+  auditCriticalCount?: number | null
+}): string | null {
+  const why = cmaQueueWhy(r)
+  if (r.state === 'flagged') {
+    const label = why === 'none' ? 'Flagged' : CMA_QUEUE_WHY_LABEL[why]
+    const reason = (r.reviewReason ?? '').trim()
+    if (!reason) return `${label}.`
+    if (reason.toLowerCase().startsWith(label.toLowerCase())) return reason
+    return `${label}. ${reason}`
+  }
+  if (r.state === 'audit-failed') {
+    const n = r.auditCriticalCount ?? 0
+    const head = n > 0 ? `Audit failed. ${n} critical.` : 'Audit failed.'
+    const extra = (r.auditSummary ?? '').trim()
+    return extra ? `${head} ${extra}` : head
+  }
+  if (r.state === 'unvetted') return 'Audit did not run. Nothing has checked this one.'
+  return null
+}
+
 export function cmaQueueWhy(r: {
   state: CmaQueueViewState
   reviewReason?: string | null

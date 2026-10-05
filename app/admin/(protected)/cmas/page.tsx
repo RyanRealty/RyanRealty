@@ -285,13 +285,20 @@ export default async function CmaQueuePage({
         </Link>
       </VerdictLine>
 
-      <LaneStrip
-        rows={rows}
-        settings={laneSettings}
-        canFlip={hasCapability(admin, 'settings.compliance')}
-      />
-
-      <CmaLaneFunnel funnel={laneFunnel} />
+      <details className="av2-fold">
+        <summary>
+          Lane totals and auto-send
+          <span className="av2-fold__hint">{AUTO_SEND_LANES.length} lanes</span>
+        </summary>
+        <div className="av2-fold__body">
+          <LaneStrip
+            rows={rows}
+            settings={laneSettings}
+            canFlip={hasCapability(admin, 'settings.compliance')}
+          />
+          <CmaLaneFunnel funnel={laneFunnel} />
+        </div>
+      </details>
 
       <QueueFilters
         filters={filters}

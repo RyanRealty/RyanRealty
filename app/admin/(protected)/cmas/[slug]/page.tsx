@@ -32,6 +32,7 @@ import { buildCmaFirstContactForRow } from '@/lib/cma/first-contact-for-send'
 import { readFirstContactOverride } from '@/lib/cma/first-contact-override'
 import {
   cmaQueueFiltersFromSearch,
+  cmaQueueHoldLine,
   cmaQueueHref,
   cmaQueueReachNote,
   cmaQueueWalk,
@@ -86,6 +87,15 @@ export default async function AdminCmaReviewPage({
   if (!row) notFound()
   const mine = queue?.rows.find((item) => item.docKind === 'cma' && item.slug === safeSlug) ?? null
   const reachNote = mine ? cmaQueueReachNote(mine.contactReach) : null
+  const holdLine = mine
+    ? cmaQueueHoldLine({
+        state: mine.state,
+        reviewReason: mine.reviewReason,
+        buildError: mine.buildError,
+        auditSummary: mine.auditSummary,
+        auditCriticalCount: mine.auditCriticalCount,
+      })
+    : null
   const views = (queue?.rows ?? []).filter((item) => item.docKind === 'cma').map((item) => toCmaQueueViewRow(item))
   const filtered = sortCmaQueueRows(filterCmaQueueRows(views, queueFilters), queueFilters.sort)
   const pool = filtered.some((item) => item.slug === safeSlug)
@@ -327,6 +337,12 @@ export default async function AdminCmaReviewPage({
           }}
         >
           last build failed: {buildError}
+        </p>
+      ) : null}
+
+      {holdLine ? (
+        <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text)', margin: '12px 0 0', maxWidth: 640 }}>
+          {holdLine}
         </p>
       ) : null}
 
