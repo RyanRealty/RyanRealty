@@ -125,7 +125,7 @@ export const BEND_NEW_CONSTRUCTION_TITLE = 'New Construction Homes in Bend, Oreg
 export const BEND_NEW_CONSTRUCTION_H1 =
   'New construction homes in Bend: inventory and builder savings'
 export const BEND_NEW_CONSTRUCTION_DESCRIPTION =
-  'New construction homes in Bend, Oregon: live Active inventory and builder savings. Researched 2026-09-16. Not a loan offer. Verify terms with the builder.'
+  'New construction homes for sale in Bend, with the savings each builder has published as of September 16, 2026. Not a loan offer: confirm with the builder.'
 
 export const BEND_NEW_CONSTRUCTION_KEYWORDS = [
   'Bend new construction',
