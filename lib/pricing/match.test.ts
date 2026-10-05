@@ -82,7 +82,7 @@ function sale(over: Partial<PricingSale> = {}): PricingSale {
 const asOf = '2026-08-01'
 
 describe('walkPricingLadder', () => {
-  it('does not keep a closed sale that spent zero days on the market', () => {
+  it('keeps a closed sale that spent zero days on the market', () => {
     const pool = [
       sale({ listingKey: 'A', closeDate: '2026-06-15', address: '10 Kenwood', cdom: 40 }),
       sale({ listingKey: 'B', closeDate: '2026-06-10', address: '11 Kenwood', cdom: 22 }),
@@ -96,11 +96,11 @@ describe('walkPricingLadder', () => {
       }),
     ]
     const out = walkPricingLadder(subject(), pool, { asOf })
-    expect(out.comps.map((c) => c.listingKey)).not.toContain('SAME_DAY')
-    expect(out.comps).toHaveLength(3)
+    expect(out.comps.map((c) => c.listingKey)).toContain('SAME_DAY')
+    expect(out.comps).toHaveLength(4)
   })
 
-  it('does not pad a short set with a zero-day sale', () => {
+  it('keeps a zero-day sale in a short set', () => {
     const pool = [
       sale({ listingKey: 'A', closeDate: '2026-06-15', address: '20 Kenwood', cdom: 40 }),
       sale({ listingKey: 'B', closeDate: '2026-06-10', address: '21 Kenwood', cdom: 22 }),
@@ -113,7 +113,59 @@ describe('walkPricingLadder', () => {
       }),
     ]
     const out = walkPricingLadder(subject(), pool, { asOf })
-    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['A', 'B'])
+    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['A', 'B', 'ZERO'])
+  })
+
+  it('searches the pocket at a quarter mile, and does not let another plat print the top', () => {
+    const mile = (north: number) => 44.06 + north / 69.093
+    const own = sale({ listingKey: 'OWN', address: '10 Kenwood', closePrice: 1_000_000 })
+    const inside = sale({
+      listingKey: 'IN_RING',
+      address: '1 Nearby',
+      subdivision: 'Other Plat',
+      subdivisionNorm: 'other plat',
+      latitude: mile(0.2),
+      longitude: -121.3,
+      closePrice: 1_080_000,
+    })
+    const outside = sale({
+      listingKey: 'OUT_RING',
+      address: '2 Farther',
+      subdivision: 'Other Plat',
+      subdivisionNorm: 'other plat',
+      latitude: mile(0.3),
+      longitude: -121.3,
+      closePrice: 1_050_000,
+    })
+    const over = sale({
+      listingKey: 'OVER',
+      address: '3 Over',
+      subdivision: 'Other Plat',
+      subdivisionNorm: 'other plat',
+      latitude: mile(0.15),
+      longitude: -121.3,
+      closePrice: 1_090_000,
+    })
+    const under = sale({
+      listingKey: 'UNDER',
+      address: '4 Under',
+      subdivision: 'Other Plat',
+      subdivisionNorm: 'other plat',
+      latitude: mile(0.1),
+      longitude: -121.3,
+      closePrice: 800_000,
+    })
+    const out = walkPricingLadder(
+      subject({ pocketSubdivisionNorms: ['other plat'] }),
+      [own, inside, outside, over, under],
+      { asOf },
+    )
+    const keys = out.comps.map((c) => c.listingKey)
+    expect(keys).toContain('OWN')
+    expect(keys).toContain('IN_RING')
+    expect(keys).toContain('UNDER')
+    expect(keys).not.toContain('OUT_RING')
+    expect(keys).not.toContain('OVER')
   })
 
   it('takes same-subdivision 3-month sales before it reaches for distance', () => {
@@ -244,11 +296,10 @@ describe('walkPricingLadder', () => {
   })
 
   /**
-   * D12 — the same cut, on a sale whose SubdivisionName is an MLS placeholder.
-   * 291 Bluff ('N/A', $695/sqft) walked into the Plaza's set because no name
-   * means no cell and the median-vs-median guard fails open.
+   * 291 Bluff ('N/A', $695/sqft) is not removed for sitting off the neighborhood
+   * median. A median does not remove a home.
    */
-  it('D12 — drops an unnamed-subdivision sale a tier off the subject once the wider rungs run', () => {
+  it('keeps an unnamed-subdivision sale that a neighborhood median would have cut', () => {
     const cells = new Map([['bend:kenwood', { medianPpsf: 400, n: 20 }]])
     const pool = [
       sale({
@@ -259,14 +310,12 @@ describe('walkPricingLadder', () => {
         closePpsf: 695,
         closePrice: 1_376_100,
         address: '291 Bluff',
-        // Same neighborhood polygon as the subject, so the mapped-area cut
-        // above is not what removes it. The tier cut is.
         latitude: 44.06,
         longitude: -121.3,
       }),
     ]
     const out = walkPricingLadder(subject(), pool, { asOf, cells })
-    expect(out.comps.map((c) => c.listingKey)).not.toContain('UNNAMED')
+    expect(out.comps.map((c) => c.listingKey)).toContain('UNNAMED')
   })
 
   it('D12 — keeps an unnamed-subdivision sale that sits in the subject price tier', () => {
@@ -624,7 +673,7 @@ describe('walkPricingLadder', () => {
     expect(out.comps.map((c) => c.listingKey)).not.toContain('NO_GEO')
   })
 
-  it('does not price Awbrey Butte custom off Awbrey Woods tract in the same polygon', () => {
+  it('keeps a same-polygon sale a neighborhood median would have cut', () => {
     const cells = new Map([
       ['bend:awbrey butte', { medianPpsf: 457.29, n: 86 }],
       ['bend:awbrey woods', { medianPpsf: 381.85, n: 7 }],
@@ -653,7 +702,7 @@ describe('walkPricingLadder', () => {
       pool,
       { asOf, cells },
     )
-    expect(out.comps.map((c) => c.listingKey)).not.toContain('DEBRON')
+    expect(out.comps.map((c) => c.listingKey)).toContain('DEBRON')
   })
 
   it('does not mix a mapped Bend neighborhood with an unmapped Highway 20 sale', () => {
@@ -1440,8 +1489,8 @@ describe('parent wall and the subdivision crawl (Matt 2026-10-04)', () => {
     const added = out.rungs.filter((r) => r.added > 0).map((r) => r.tier)
     const adjAt = added.indexOf('adjacent-sub-3mo')
     const oldAt = added.findIndex((t) => t === 'subdivision-18mo' || t === 'subdivision-24mo')
-    expect(adjAt).toBeGreaterThanOrEqual(0)
-    if (oldAt >= 0) expect(oldAt).toBeGreaterThan(adjAt)
+    expect(oldAt).toBeGreaterThanOrEqual(0)
+    expect(adjAt).toBeGreaterThan(oldAt)
   })
 
   it('never takes a sale outside Tetherow, including a plat that touches the boundary', () => {
@@ -1634,7 +1683,7 @@ describe('a custom subject keeps the floor and loses the ceiling', () => {
     )
   }
 
-  it('refuses a sale at 0.45 of the neighborhood rate', () => {
+  it('keeps a custom sale a neighborhood median would have cut for closing low', () => {
     const cheap = sale({
       listingKey: 'CHEAP',
       address: '61289 Bronze Meadow',
@@ -1650,7 +1699,7 @@ describe('a custom subject keeps the floor and loses the ceiling', () => {
       closeDate: '2026-07-04',
     })
     const out = walkPricingLadder(customSubject(), [...neighbors(8, 489), cheap], { asOf })
-    expect(out.comps.map((c) => c.listingKey)).not.toContain('CHEAP')
+    expect(out.comps.map((c) => c.listingKey)).toContain('CHEAP')
   })
 
   it('keeps a same-generation custom peer far ABOVE that rate', () => {
@@ -2227,7 +2276,7 @@ describe('a comp from the wrong house', () => {
     )
     expect(low.comps.map((c) => c.listingKey)).toContain('WILLOW-NEAR')
     expect(low.comps.map((c) => c.listingKey)).toContain('GLEN0')
-    expect(low.comps.map((c) => c.listingKey)).not.toContain('JUNIPER-3331')
+    expect(low.comps.map((c) => c.listingKey)).toContain('JUNIPER-3331')
     expect(low.comps.find((c) => c.listingKey === 'WILLOW-NEAR')?.selectionTier.startsWith('pocket-')).toBe(true)
   })
 
@@ -2302,11 +2351,10 @@ describe('a comp from the wrong house', () => {
 
   it('Juniper last-own-plat-swap: does not drop the last own-plat sale and then keep Juniper', () => {
     // 3028 Indian. One own-plat sale is left, and it is the small house the
-    // bracket would drop. The only larger sale inside a mile is off-plat and
-    // fails the 1.3 close check against that own-plat close. 3331 Juniper is
-    // the cheap Willow Springs sale in the quarter-mile pocket. It clears the
-    // subdivision-median tier, so it stays out while that own-plat sale is
-    // still in the set. The 1.3 band is read before any swap removes it.
+    // bracket would drop. Fieldstone is the larger sale inside a mile, and it
+    // closes more than 8% above that own-plat sale, so it does not take the
+    // seat. 3331 Juniper is the cheaper Willow Springs sale inside a quarter
+    // mile. A close under the own-plat sale stays.
     const ownClose = 740_000
     const ownPlat = sale({
       listingKey: 'INDIAN-2834',
@@ -2379,7 +2427,7 @@ describe('a comp from the wrong house', () => {
     )
     const keys = out.comps.map((c) => c.listingKey)
     expect(keys).toContain('INDIAN-2834')
-    expect(keys).not.toContain('JUNIPER-3331')
+    expect(keys).toContain('JUNIPER-3331')
     expect(keys).not.toContain('FIELDSTONE-388')
   })
 

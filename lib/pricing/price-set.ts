@@ -22,12 +22,13 @@
  * A recommended price under every sale that set it, or above every one of
  * them, is not a price. The set is wrong, or the result is a hold.
  *
- * A closed sale that spent zero days on the market does not set the price.
- * Unknown days still count. The picker and the letter both use this.
+ * A closed sale that spent zero days on the market still sets the price and
+ * stays in the letter. Unknown days still count.
  */
 import { communityForAddress } from '@/lib/cma/community-location'
 import { lotCompatible } from '@/lib/pricing/classes'
 import { PLAT_WIDE_SQFT_BAND, PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
+import { RANGE_REVIEW_SHARE } from '@/lib/pricing/review'
 
 export type PriceSetSale = {
   ownPlat?: boolean | null
@@ -44,16 +45,34 @@ export type PriceSetSale = {
   /**
    * The kept set is already short of three sales that set the price, and this
    * sale was admitted on a later rung. Skip the community wall. Size and
-   * product still refuse. A zero-day sale still does not set the price.
+   * product still refuse.
    */
   fillShortSet?: boolean
-  /** Closed-sale days on market. Exactly 0 does not set the price. Unknown still does. */
+  /** Closed-sale days on market. Zero is a real close and still sets the price. Unknown still does. */
   saleDomTotal?: number | null
 }
 
-/** Exactly zero days. A missing count is not zero. */
+/** Exactly zero days. A missing count is not zero. Zero still sets the price. */
 export function saleSpentNoDaysOnMarket(domTotal: number | null | undefined): boolean {
   return domTotal === 0
+}
+
+/**
+ * Once the subject's own plat has a close, a different plat whose close sits
+ * more than 8% above that highest close does not enter and does not set the
+ * printed high. A close under the highest own-plat sale stays. No own-plat
+ * close yet returns false, so the first comp can enter. This is not a median.
+ */
+export function differentPlatAboveOwnPlatHigh(
+  saleClose: number,
+  ownPlatCloses: readonly number[],
+): boolean {
+  const closes = ownPlatCloses.filter((n) => Number.isFinite(n) && n > 0)
+  if (closes.length === 0) return false
+  if (!(saleClose > 0)) return false
+  const high = Math.max(...closes)
+  // A dollar of float error must not turn an exact 8% into a refusal.
+  return saleClose / high - 1 > RANGE_REVIEW_SHARE + 1e-9
 }
 
 /** Living area past the picker's wide cutoff. Unknown size is not "clearly different". */
@@ -98,7 +117,6 @@ function communityOf(input: {
  * Remarks are not an input.
  */
 export function saleSetsThePrice(input: PriceSetSale): boolean {
-  if (saleSpentNoDaysOnMarket(input.saleDomTotal)) return false
   if (clearlyDifferentSize(input.subjectSqft, input.saleSqft)) return false
   if (clearlyDifferentProduct(input.subjectLotAcres, input.saleLotAcres)) return false
 
@@ -159,11 +177,9 @@ export function pricingFailureMessage(
 export function compsTheLetterPrints<T extends { weight?: number | null; domTotal?: number | null }>(
   comps: readonly T[],
 ): T[] {
-  // A same-day close is not a row, even when dropping it leaves the set short.
-  const measured = comps.filter((c) => !saleSpentNoDaysOnMarket(c.domTotal))
-  const setters = measured.filter((c) => (c.weight ?? 0) > 0)
+  const setters = comps.filter((c) => (c.weight ?? 0) > 0)
   if (setters.length >= PRICING_MIN_COMPS) return setters
-  return measured
+  return [...comps]
 }
 
 /**

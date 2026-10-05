@@ -5,6 +5,7 @@ import {
   compsTheLetterPrints,
   pricingFailureMessage,
   recommendationOutsideSaleSet,
+  differentPlatAboveOwnPlatHigh,
   saleSetsThePrice,
   sourceSalesTheLetterKeeps,
 } from '@/lib/pricing/price-set'
@@ -127,6 +128,15 @@ describe('a sale sets the price only when it is this home', () => {
   })
 })
 
+describe('a different plat does not print above the own plat', () => {
+  it('allows exactly 8% over the highest own-plat close and refuses one dollar more', () => {
+    expect(differentPlatAboveOwnPlatHigh(1_080_000, [1_000_000])).toBe(false)
+    expect(differentPlatAboveOwnPlatHigh(1_080_001, [1_000_000])).toBe(true)
+    expect(differentPlatAboveOwnPlatHigh(800_000, [1_000_000, 900_000])).toBe(false)
+    expect(differentPlatAboveOwnPlatHigh(2_000_000, [])).toBe(false)
+  })
+})
+
 describe('the letter prints the sales that set the price', () => {
   it('drops a sale that does not set the price once three sales do', () => {
     const rows = [
@@ -142,7 +152,7 @@ describe('the letter prints the sales that set the price', () => {
     expect(compsTheLetterPrints([{ weight: 1 }, { weight: 2 }, { weight: 0 }])).toHaveLength(3)
   })
 
-  it('does not let a sale that spent zero days on the market set the price or stay in the letter', () => {
+  it('lets a sale that spent zero days on the market set the price and stay in the letter', () => {
     expect(saleSetsThePrice({
       subjectSqft: 1800,
       saleSqft: 1750,
@@ -150,7 +160,7 @@ describe('the letter prints the sales that set the price', () => {
       subjectSubdivision: 'Home Plat',
       saleSubdivision: 'Home Plat',
       saleDomTotal: 0,
-    })).toBe(false)
+    })).toBe(true)
     expect(closedCompWeight({
       subjectSqft: 1800,
       saleSqft: 1750,
@@ -159,7 +169,7 @@ describe('the letter prints the sales that set the price', () => {
       subjectSubdivision: 'Home Plat',
       saleSubdivision: 'Home Plat',
       saleDomTotal: 0,
-    })).toBe(0)
+    })).toBeGreaterThan(0)
     expect(closedCompWeight({
       subjectSqft: 1800,
       saleSqft: 1750,
@@ -175,15 +185,13 @@ describe('the letter prints the sales that set the price', () => {
       { weight: 2, address: 'b', domTotal: 12 },
       { weight: 3.1, address: 'same-day', domTotal: 0 },
     ])
-    expect(printed.map((row) => row.address)).toEqual(['a', 'b'])
+    expect(printed.map((row) => row.address)).toEqual(['a', 'b', 'same-day'])
 
-    // Two measured sales plus a same-day close is still short. The same-day
-    // close is not kept to pad the minimum.
     expect(compsTheLetterPrints([
       { weight: 2, domTotal: 10 },
       { weight: 2, domTotal: 20 },
       { weight: 3, domTotal: 0 },
-    ])).toHaveLength(2)
+    ])).toHaveLength(3)
 
     const filled = fillShortSetWeights(
       { sqft: 1800, subdivision: 'Home Plat', communityLocated: true },
@@ -206,7 +214,7 @@ describe('the letter prints the sales that set the price', () => {
         },
       ],
     )
-    expect(filled.find((row) => row.domTotal === 0)?.weight).toBe(0)
+    expect(filled.find((row) => row.domTotal === 0)?.weight).toBeGreaterThan(0)
   })
 
   it('does not hand a dropped sale back to the next price', () => {

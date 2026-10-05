@@ -123,7 +123,7 @@ describe('inferSubdivisionPocket', () => {
     expect(pocket.pocketStreetKeys).toEqual(expect.arrayContaining(['canter', 'horse', 'ranch']))
   })
 
-  it('picks the nearest mapped neighbor inside 0.35 mi when MLS and plat are blank', () => {
+  it('picks the nearest mapped neighbor inside a quarter mile when MLS and plat are blank', () => {
     const pocket = inferSubdivisionPocket({
       subdivision: null,
       ...SISTERS,
@@ -220,8 +220,8 @@ describe('applyInferredPocket', () => {
 })
 
 describe('POCKET_RADIUS_MILES', () => {
-  it('is a third of a mile for blank-MLS inference', () => {
-    expect(POCKET_RADIUS_MILES).toBe(0.35)
+  it('is a quarter mile', () => {
+    expect(POCKET_RADIUS_MILES).toBe(0.25)
   })
 })
 

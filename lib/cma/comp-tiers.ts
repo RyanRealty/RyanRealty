@@ -166,10 +166,11 @@ function quarterMileCompRings(): CompTier[] {
 export function compTierLadder(subdivisionIlike: string | null): CompTier[] {
     const band = LOCATION_SQFT_BAND
     const tiers: CompTier[] = [
-    // Same subdivision through 12 months, then the plats that touch, then the
-    // neighborhood. 18 and 24 months open only after that crawl is still short.
+    // Own plat through 24 months before a pocket, an adjacent plat, or the neighborhood.
     { name: 'subdivision-6mo', subdivisionIlike, monthsBack: 6, sqftBand: band, sameArea: false, competing: false, maxMiles: null },
     { name: 'subdivision-12mo', subdivisionIlike, monthsBack: 12, sqftBand: band, sameArea: false, competing: false, maxMiles: null },
+    { name: 'subdivision-18mo', subdivisionIlike, monthsBack: 18, sqftBand: band, sameArea: false, competing: false, maxMiles: null },
+    { name: 'subdivision-24mo', subdivisionIlike, monthsBack: 24, sqftBand: band, sameArea: false, competing: false, maxMiles: null },
     // Quarter-mile pocket after the plat's own dates are exhausted, before adjacent plats.
     {
       name: 'pocket-6mo',
@@ -193,16 +194,6 @@ export function compTierLadder(subdivisionIlike: string | null): CompTier[] {
       disclosure:
         'These sales are in the mapped pockets next to this home, inside a quarter mile, walked before any mile ring.',
     },
-    // Adjacent subdivisions through 12 months, then the neighborhood.
-    { name: 'adjacent-subdivision-6mo', monthsBack: 6, sqftBand: band, sameArea: false, competing: false, maxMiles: 2, adjacentSubdivisions: true },
-    { name: 'adjacent-subdivision-12mo', monthsBack: 12, sqftBand: band, sameArea: false, competing: false, maxMiles: 2, adjacentSubdivisions: true },
-    { name: 'neighborhood-6mo', monthsBack: 6, sqftBand: band, sameArea: true, competing: false, maxMiles: null },
-    { name: 'neighborhood-12mo', monthsBack: 12, sqftBand: band, sameArea: true, competing: false, maxMiles: null },
-    { name: 'community-6mo', monthsBack: 6, sqftBand: band, sameArea: false, competing: true, maxMiles: 5, sameCommunity: true },
-    { name: 'community-12mo', monthsBack: 12, sqftBand: band, sameArea: false, competing: true, maxMiles: 5, sameCommunity: true },
-    // The 12-month crawl is still short. Same places, out to two years.
-    { name: 'subdivision-18mo', subdivisionIlike, monthsBack: 18, sqftBand: band, sameArea: false, competing: false, maxMiles: null },
-    { name: 'subdivision-24mo', subdivisionIlike, monthsBack: 24, sqftBand: band, sameArea: false, competing: false, maxMiles: null },
     {
       name: 'pocket-24mo',
       monthsBack: 24,
@@ -214,10 +205,16 @@ export function compTierLadder(subdivisionIlike: string | null): CompTier[] {
       disclosure:
         'These sales are in the mapped pockets next to this home, inside a quarter mile, walked before any mile ring.',
     },
+    { name: 'adjacent-subdivision-6mo', monthsBack: 6, sqftBand: band, sameArea: false, competing: false, maxMiles: 2, adjacentSubdivisions: true },
+    { name: 'adjacent-subdivision-12mo', monthsBack: 12, sqftBand: band, sameArea: false, competing: false, maxMiles: 2, adjacentSubdivisions: true },
     { name: 'adjacent-subdivision-18mo', monthsBack: 18, sqftBand: band, sameArea: false, competing: false, maxMiles: 2, adjacentSubdivisions: true },
     { name: 'adjacent-subdivision-24mo', monthsBack: 24, sqftBand: band, sameArea: false, competing: false, maxMiles: 2, adjacentSubdivisions: true },
+    { name: 'neighborhood-6mo', monthsBack: 6, sqftBand: band, sameArea: true, competing: false, maxMiles: null },
+    { name: 'neighborhood-12mo', monthsBack: 12, sqftBand: band, sameArea: true, competing: false, maxMiles: null },
     { name: 'neighborhood-18mo', monthsBack: 18, sqftBand: band, sameArea: true, competing: false, maxMiles: null },
     { name: 'neighborhood-24mo', monthsBack: 24, sqftBand: band, sameArea: true, competing: false, maxMiles: null },
+    { name: 'community-6mo', monthsBack: 6, sqftBand: band, sameArea: false, competing: true, maxMiles: 5, sameCommunity: true },
+    { name: 'community-12mo', monthsBack: 12, sqftBand: band, sameArea: false, competing: true, maxMiles: 5, sameCommunity: true },
     { name: 'community-24mo', monthsBack: 24, sqftBand: band, sameArea: false, competing: true, maxMiles: 5, sameCommunity: true },
     // 4c. The community is spent: its peers are other communities of its kind.
     {

@@ -8,7 +8,8 @@ import { communityForAddress, memberPlatMap, saleInsideSubjectCommunity } from '
 import { isResortCommunity } from '@/lib/cma/resort-guard'
 import { resolvePriceAnchor, samePlat, sameStreetPeer, streetKey, type PriceAnchor } from '@/lib/pricing/price-anchor'
 import { closedSaleDomTotal } from '@/lib/cma/listing-history-line'
-import { saleSetsThePrice, saleSpentNoDaysOnMarket } from '@/lib/pricing/price-set'
+import { differentPlatAboveOwnPlatHigh, saleSetsThePrice } from '@/lib/pricing/price-set'
+import { RANGE_REVIEW_SHARE } from '@/lib/pricing/review'
 import { ageRestrictedMismatch, ownPlatAgeRestrictedShare } from '@/lib/pricing/age-restricted'
 import { distanceMiles, proximityLabel, resolveMarketArea } from '@/lib/cma/market-area'
 import { roomCountsDecision } from '@/lib/pricing/room-ground'
@@ -30,11 +31,6 @@ import {
   resolveIrrigationClass,
   sewerCompatible,
   sewerPlatNote,
-  customSalePriceFloorOk,
-  SAME_NEIGHBORHOOD_TIER_RATIO,
-  SUBDIVISION_TIER_RATIO,
-  similarPerformingSubdivision,
-  untieredSalePriceTierOk,
   waterCompatible,
   yearQualityCompatible,
   type HoaClass,
@@ -124,7 +120,7 @@ export type PricingSubject = {
   irrigationClass?: IrrigationClass | null
   /**
    * Mapped tract names in the street-cluster / inferred pocket.
-   * Named MLS tracts: 0.25 mi cluster. Blank MLS: 0.35 mi inferred names.
+   * Named MLS tracts and a blank MLS name both use the quarter-mile pocket.
    * The pocket-* rungs match these; the home name uses subdivision-*.
    */
   pocketSubdivisionNorms?: string[]
@@ -447,28 +443,17 @@ function applesOk(
   return hoaCompatible(subject.hoaClass, sale.hoaClass)
 }
 
-function cellFor(
-  cells: Map<string, SubdivisionCell>,
-  citySlug: string,
-  subdivisionNorm: string | null,
-): SubdivisionCell | null {
-  if (!subdivisionNorm) return null
-  return cells.get(`${citySlug}:${subdivisionNorm}`) ?? null
-}
-
 function passesTier(
   subject: PricingSubject,
   sale: PricingSale,
   tier: PricingTier,
   asOf: string,
-  cells: Map<string, SubdivisionCell>,
+  _cells: Map<string, SubdivisionCell>,
   /**
-   * The subject's price tier when its own plat has no cell
-   * (lib/pricing/price-anchor.ts). Without it the $/sqft cut below fails open
-   * on every comp, which is how 23 Benaiah priced a $320/sqft home off a
-   * $579/sqft downtown sale (Matt 2026-09-10).
+   * Kept on the signature so callers still pass the neighborhood anchor.
+   * A median does not remove a sale.
    */
-  anchor: PriceAnchor | null = null,
+  _anchor: PriceAnchor | null = null,
 ): { ok: boolean; miles: number | null; roomDifference?: Array<'beds' | 'baths'> | null; sewerNote?: string | null } {
   if (subject.listingKey && sale.listingKey === subject.listingKey) return { ok: false, miles: null }
   if (subject.streetAddress && sale.address.toLowerCase() === subject.streetAddress.toLowerCase()) {
@@ -618,10 +603,8 @@ function passesTier(
     return { ok: false, miles: null }
   }
 
-  // Price-tier + neighborhood cuts on every rung that leaves the subdivision.
-  // Same-subdivision sales are the same tier and the same polygon by definition.
-  // Custom/new year-quality peers skip the $/sqft tier cut so a North Rim
-  // custom sale is not tossed as "too luxury" against a custom subject.
+  // A rung that leaves the subdivision still stays inside the parent's polygon.
+  // A neighborhood median does not remove a sale.
   if (!tier.sameSubdivision) {
     const subjectArea = subject.marketArea ?? resolveMarketArea(subject.latitude, subject.longitude) ?? null
     const saleArea = sale.marketArea ?? resolveMarketArea(sale.latitude, sale.longitude) ?? null
@@ -646,44 +629,6 @@ function passesTier(
     const mayCrossArea = !confined && Boolean(tier.crossBoundary) && saleArea != null
     if (subjectArea !== saleArea && !touchingAdjacent && !customOutsideMesh && !mayCrossArea) {
       return { ok: false, miles: null }
-    }
-    const subj = cellFor(cells, subject.citySlug, subject.subdivisionNorm)
-    const comp = cellFor(cells, sale.citySlug, sale.subdivisionNorm)
-    const tierRatio = subjectArea != null ? SAME_NEIGHBORHOOD_TIER_RATIO : undefined
-    if (
-      !customPeer &&
-      !similarPerformingSubdivision(
-        subj?.medianPpsf ?? null,
-        subj?.n ?? 0,
-        comp?.medianPpsf ?? null,
-        comp?.n ?? 0,
-        tierRatio,
-      )
-    ) {
-      return { ok: false, miles: null }
-    }
-    // THE SUBJECT ALWAYS HAS A PRICE TIER. When its own plat has no cell — an
-    // MLS record carrying "N/A", or a plat with too few sales — the cut above
-    // compares null to null and passes everything. The anchor is the
-    // neighborhood around the home, or the mile around it, and every comp is
-    // graded on its own $/sqft against it.
-    const subjectPpsf = subj?.medianPpsf ?? anchor?.ppsf ?? null
-    const subjectN = subj?.n ?? anchor?.n ?? 0
-    // The same plan on the same street is this home's tier, whatever a
-    // neighborhood median says (lib/pricing/price-anchor.ts).
-    const ownStreet = sameStreetPeer(
-      { streetAddress: subject.streetAddress, city: subject.city, sqft: subject.sqft },
-      { address: sale.address, city: sale.city, sqft: sale.sqft },
-    )
-    const gradeOnOwnPpsf = !ownStreet && (!comp || !sale.subdivisionNorm || subj == null)
-    if (gradeOnOwnPpsf) {
-      // Custom and new subjects keep the FLOOR and lose the ceiling. A custom
-      // home selling far above its neighborhood's median is what custom means;
-      // being priced from a sale far below it is not. See customSalePriceFloorOk.
-      const ok = customPeer
-        ? customSalePriceFloorOk(subjectPpsf, subjectN, sale.closePpsf, tierRatio)
-        : untieredSalePriceTierOk(subjectPpsf, subjectN, sale.closePpsf, tierRatio)
-      if (!ok) return { ok: false, miles: null }
     }
   }
 
@@ -780,10 +725,8 @@ function bracketEligible(
   sale: PricingSale,
   asOf: string,
   wantLarger: boolean,
-  /** Same price tier as the ladder itself applies — the bracket swap used to
-   *  reach into the whole city pool on size alone. */
-  anchor: PriceAnchor | null = null,
-  cells: Map<string, SubdivisionCell> = new Map(),
+  _anchor: PriceAnchor | null = null,
+  _cells: Map<string, SubdivisionCell> = new Map(),
 ): boolean {
   if (subject.listingKey && sale.listingKey === subject.listingKey) return false
   if (subject.streetAddress && sale.address.toLowerCase() === subject.streetAddress.toLowerCase()) return false
@@ -797,15 +740,6 @@ function bracketEligible(
   if (!plausibleListedClose(sale.closePrice, sale.lastAsk)) return false
   const asOfYear = Number(asOf.slice(0, 4))
   if (!applesOk(subject, sale, 'product_lot', asOfYear)) return false
-  const customOrNew = isCustomOrNewSubject(
-    {
-      yearBuilt: subject.yearBuilt,
-      newConstructionYn: subject.newConstruction,
-      remarks: subject.publicRemarks,
-      propertySubType: subject.propertySubType,
-    },
-    asOfYear,
-  )
   if (
     dropsResaleVersusNewBuild(
       {
@@ -835,21 +769,6 @@ function bracketEligible(
     return false
   }
   if (!glaWithinBand(subject.sqft, sale.sqft, GLA_BRACKET_BAND)) return false
-  // The bracket may not import a different price tier. A swap is a size fix,
-  // not a licence to reach across town.
-  {
-    const subj = cellFor(cells, subject.citySlug, subject.subdivisionNorm)
-    const subjectPpsf = subj?.medianPpsf ?? anchor?.ppsf ?? null
-    const subjectN = subj?.n ?? anchor?.n ?? 0
-    const ratio = subject.marketArea != null ? SAME_NEIGHBORHOOD_TIER_RATIO : undefined
-    // Custom and new keep the FLOOR here too. Skipping the cut outright let the
-    // bracket swap reach past the ladder and import the cheap sale the ladder
-    // itself had just refused.
-    const ok = customOrNew
-      ? customSalePriceFloorOk(subjectPpsf, subjectN, sale.closePpsf, ratio)
-      : untieredSalePriceTierOk(subjectPpsf, subjectN, sale.closePpsf, ratio)
-    if (!ok) return false
-  }
   if (wantLarger) return sale.sqft > subject.sqft
   return sale.sqft < subject.sqft
 }
@@ -910,9 +829,10 @@ function bracketGla(
 
 /**
  * A different plat may take the place of a same-plat sale only inside a mile,
- * and only when its close is inside the own-plat band. The band is read before
- * the outgoing sale is removed. A same-plat replacement is not distance-blocked
- * and skips the band. Custom and new subjects skip the band, as they do on the walk.
+ * and only when its close is not more than 8% above the highest own-plat close
+ * still in the set. The high is read before the outgoing sale is removed.
+ * A same-plat replacement is not distance-blocked and skips the ceiling.
+ * Custom and new subjects skip the ceiling, as they do on the walk.
  */
 function bracketMayReplace(
   subject: PricingSubject,
@@ -929,27 +849,12 @@ function bracketMayReplace(
   return closeNearOwnPlat(subject, incoming, kept)
 }
 
-function medianClose(values: readonly number[]): number | null {
-  const sorted = values.filter((n) => n > 0).sort((a, b) => a - b)
-  if (sorted.length === 0) return null
-  const mid = Math.floor(sorted.length / 2)
-  return sorted.length % 2 === 1 ? sorted[mid]! : (sorted[mid - 1]! + sorted[mid]!) / 2
-}
-
 /**
- * A neighbor plat can clear the subdivision-median tier and still close far
- * from this home's own sales. The plat set is those sales. While an own-plat
- * sale is in the set, the band is their median (30%): a close about 32% off
- * that set is a different house, not a size gap the pocket's 20% band explains.
- * No own-plat sale yet still returns true here, so the first comp can enter.
- * A different-plat pocket sale does not stay on that opening. After the set is
- * built it has to sit with the comps that were kept, and a close under every
- * one of them is dropped. That is not an 80% floor and not a new minimum price.
- *
- * The walk applies this while the set is accumulating. The GLA bracket applies
- * it again to a different-plat replacement, and the median has to be read on
- * the kept set that still includes the own-plat sale being replaced. Removing
- * that sale first leaves this median check with nothing to measure.
+ * Once an own-plat sale is in the set, a different plat more than 8% above
+ * the highest own-plat close does not enter. A close under that sale stays.
+ * No own-plat close yet returns true, so the first comp can enter.
+ * The high is read on the kept set that still includes the own-plat sale
+ * being replaced. Removing that sale first leaves the check with nothing to measure.
  */
 function closeNearOwnPlat(
   subject: PricingSubject,
@@ -960,20 +865,15 @@ function closeNearOwnPlat(
   for (const row of kept) {
     if (inSubjectPlat(subject, row)) closes.push(row.closePrice)
   }
-  const mid = medianClose(closes)
-  if (mid == null) return true
-  if (!(sale.closePrice > 0)) return true
-  const gap = sale.closePrice / mid
-  return gap >= 1 / SUBDIVISION_TIER_RATIO && gap <= SUBDIVISION_TIER_RATIO
+  return !differentPlatAboveOwnPlatHigh(sale.closePrice, closes)
 }
 
 /**
- * No own-plat close was kept, so the 1.3 own-plat band has nothing to read.
- * A different-plat pocket sale still has to sit with the comps that were
- * kept. One that closes under every one of them is a cheaper house. Same-plat
- * sales are not in this pass. Custom and new subjects skip it, as they skip
- * the plat check on the walk. When an own-plat sale is kept, the caller does
- * not use this: that case stays the 1.3 own-plat median.
+ * No own-plat close was kept. A different-plat pocket sale still has to sit
+ * with the comps that were kept. One that closes under every one of them is
+ * a cheaper house. Same-plat sales are not in this pass. Custom and new
+ * subjects skip it. When an own-plat sale is kept, the caller uses the
+ * own-plat high instead.
  */
 function pocketSalesSitWithKept(
   comps: SelectedPricingComp[],
@@ -986,11 +886,7 @@ function pocketSalesSitWithKept(
     const others = comps.filter((row) => row.listingKey !== sale.listingKey && row.closePrice > 0)
     if (others.length === 0) return true
     const cheapestOther = Math.min(...others.map((row) => row.closePrice))
-    if (sale.closePrice < cheapestOther) return false
-    const mid = medianClose(others.map((row) => row.closePrice))
-    if (mid == null) return true
-    const gap = sale.closePrice / mid
-    return gap >= 1 / SUBDIVISION_TIER_RATIO && gap <= SUBDIVISION_TIER_RATIO
+    return sale.closePrice >= cheapestOther
   })
 }
 
@@ -1160,6 +1056,7 @@ export function walkPricingLadder(
   // The Sep 7 build, before that cut, still had the plat sale. A pocket rung
   // is wider than a plat that has already filled. It must not be mixed in.
   let countBeforePocket: number | null = null
+  let aboveOwnPlatHigh = 0
 
   for (const tier of tiers) {
     if (tier.samePocket && countBeforePocket == null) countBeforePocket = byKey.size
@@ -1299,19 +1196,7 @@ export function walkPricingLadder(
       // The subdivision-median tier does not see this close. Once the plat has
       // a sale, a different plat has to land on that set's own prices.
       if (!customLadder && !inSubjectPlat(subject, sale) && !closeNearOwnPlat(subject, sale, byKey.values())) {
-        continue
-      }
-      // A same-day close did not spend a day on the market. It does not take
-      // a slot, and the letter uses the same decision after days are measured.
-      if (
-        saleSpentNoDaysOnMarket(
-          closedSaleDomTotal({
-            daysOnMarket: sale.cdom,
-            onMarketDate: sale.onMarketDate,
-            closeDate: sale.closeDate,
-          }),
-        )
-      ) {
+        aboveOwnPlatHigh++
         continue
       }
       byKey.set(sale.listingKey, {
@@ -1347,9 +1232,9 @@ export function walkPricingLadder(
   const ranked = [...byKey.values()].sort(
     (a, b) => similarity(subject, b, asOf, pocketStarved) - similarity(subject, a, asOf, pocketStarved),
   )
-  // An own-plat sale still in this set keeps the 1.3 median, including the
-  // bracket read below, which runs before that sale is removed. The pocket
-  // pass runs only when that median was never there.
+  // An own-plat sale still in this set keeps the high-close ceiling, including
+  // the bracket read below, which runs before that sale is removed. The pocket
+  // pass runs only when no own-plat sale was kept.
   const hadOwnPlat = ranked.some((c) => c.ownPlat)
   const sitting = hadOwnPlat ? ranked : pocketSalesSitWithKept(ranked, customLadder)
   const sliced = keepEarlierRungSales(sitting, PRICING_MAX_COMPS, tiers.map((t) => t.name), asOf)
@@ -1387,20 +1272,13 @@ export function walkPricingLadder(
       }),
     })
   }
-  // A zero-day sale is not kept to pad a short set. Fewer than three measured
-  // sales fails the build.
-  const measured = priced.filter(
-    (sale) =>
-      !saleSpentNoDaysOnMarket(
-        closedSaleDomTotal({
-          daysOnMarket: sale.cdom,
-          onMarketDate: sale.onMarketDate,
-          closeDate: sale.closeDate,
-        }),
-      ),
-  )
-  const setters = measured.filter(setsPrice)
-  const keptForPrice = setters.length >= PRICING_MIN_COMPS ? setters : measured
+  if (aboveOwnPlatHigh > 0) {
+    trace.push(
+      `Excluded ${aboveOwnPlatHigh} sale(s) in another plat that closed more than ${Math.round(RANGE_REVIEW_SHARE * 100)}% above the highest sale in this home's own plat.`,
+    )
+  }
+  const setters = priced.filter(setsPrice)
+  const keptForPrice = setters.length >= PRICING_MIN_COMPS ? setters : priced
   if (keptForPrice.length < priced.length) {
     const dropped = priced.length - keptForPrice.length
     trace.push(

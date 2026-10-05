@@ -15,8 +15,8 @@ import { distanceMiles } from '@/lib/cma/market-area'
 import { normSubdivision, realSubdivisionName } from '@/lib/pricing/classes'
 import { streetKey } from '@/lib/pricing/price-anchor'
 
-/** Mapped neighbors inside this radius form the blank-MLS inferred pocket. */
-export const POCKET_RADIUS_MILES = 0.35
+/** Quarter-mile pocket. Blank-MLS inference and the pocket search use this ring. */
+export const POCKET_RADIUS_MILES = 0.25
 /** Named tract: exclusive street cluster before any mile ring (Matt 2026-09-15). */
 export const STREET_CLUSTER_RADIUS_MILES = 0.25
 
@@ -373,7 +373,7 @@ function finish(
 /**
  * When MLS names a tract, keep it and still collect the 0.25 mi street
  * cluster. When it does not, prefer the recorded plat label, then the
- * street cluster inside 0.35 mi (not the nearest isolated plat). Other
+ * street cluster inside a quarter mile (not the nearest isolated plat). Other
  * mapped names in that window become the pocket cluster.
  */
 export function inferSubdivisionPocket(input: InferPocketInput): InferredPocket {
@@ -402,7 +402,7 @@ export function inferSubdivisionPocket(input: InferPocketInput): InferredPocket 
   // Live 1130 E Canter: county plat / nearest home is Rolling Horse Meadow.
   // The priced pocket is SaddleStone / Horse Back / Ranch. Sales cluster wins.
   // Exclusive streets stay on that cluster — not every Black Butte / Timber
-  // Creek street that happens to sit inside 0.35 mi.
+  // Creek street that happens to sit inside a quarter mile.
   if (picked?.source === 'street-cluster') {
     const clusterRows = picked.clusterRows
     return finish(

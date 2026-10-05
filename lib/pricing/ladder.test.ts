@@ -19,10 +19,14 @@ import {
 describe('pricingTierLadder — time before distance', () => {
   it('walks 3 then 6 then 9 months inside the subdivision before any mile ring', () => {
     const names = pricingTierLadder().map((t) => t.name)
-    // The subject's own street comes before its own plat (Matt 2026-09-10:
-    // "we want to look specifically at that address or in that subdivision").
-    expect(names[0]).toBe('own-street-24mo')
-    expect(names.slice(1, 4)).toEqual(['subdivision-3mo', 'subdivision-6mo', 'subdivision-9mo'])
+    // The subject's own plat through two years, then its street, then the quarter-mile pocket.
+    expect(names[0]).toBe('subdivision-3mo')
+    expect(names.slice(0, 3)).toEqual(['subdivision-3mo', 'subdivision-6mo', 'subdivision-9mo'])
+    expect(names.indexOf('subdivision-24mo-wide')).toBeLessThan(names.indexOf('own-street-24mo'))
+    expect(names.indexOf('own-street-24mo')).toBeLessThan(names.indexOf('pocket-3mo'))
+    for (const tier of pricingTierLadder()) {
+      if (tier.samePocket) expect(tier.maxMiles).toBe(0.25)
+    }
     expect(names.indexOf('subdivision-9mo')).toBeLessThan(names.indexOf('subdivision-3mo-wide'))
     expect(names.indexOf('subdivision-9mo-wide')).toBeLessThan(names.indexOf('nearby-1mi-3mo'))
     expect(names.indexOf('subdivision-9mo')).toBeLessThan(names.indexOf('nearby-1mi-3mo'))
@@ -71,7 +75,7 @@ describe('pricingTierLadder — containment (Matt 2026-09-08)', () => {
   it('exhausts the subdivision to 12 months, then the plats next to it, before any mile ring', () => {
     const names = pricingTierLadder().map((t) => t.name)
     expect(names.indexOf('subdivision-9mo-wide')).toBeLessThan(names.indexOf('subdivision-12mo'))
-    expect(names.indexOf('subdivision-12mo-wide')).toBeLessThan(names.indexOf('pocket-3mo'))
+    expect(names.indexOf('subdivision-24mo-wide')).toBeLessThan(names.indexOf('pocket-3mo'))
     expect(names.indexOf('pocket-12mo')).toBeLessThan(names.indexOf('adjacent-sub-3mo'))
     expect(names.filter((n) => n.startsWith('adjacent-sub-'))).toEqual([
       'adjacent-sub-3mo',
@@ -102,11 +106,11 @@ describe('pricingTierLadder — the parent level (Matt 2026-09-09)', () => {
   const names = pricingTierLadder().map((t) => t.name)
 
   it('holds a plat to its community before any ring, and reaches two years inside first', () => {
-    expect(names.indexOf('subdivision-12mo-wide')).toBeLessThan(names.indexOf('pocket-3mo'))
+    expect(names.indexOf('subdivision-24mo-wide')).toBeLessThan(names.indexOf('pocket-3mo'))
     expect(names.indexOf('pocket-12mo')).toBeLessThan(names.indexOf('adjacent-sub-3mo'))
-    expect(names.indexOf('adjacent-sub-12mo')).toBeLessThan(names.indexOf('closer-sub-3mo'))
-    expect(names.indexOf('closer-sub-12mo')).toBeLessThan(names.indexOf('community-6mo'))
-    expect(names.indexOf('community-12mo')).toBeLessThan(names.indexOf('subdivision-18mo'))
+    expect(names.indexOf('adjacent-sub-24mo')).toBeLessThan(names.indexOf('closer-sub-3mo'))
+    expect(names.indexOf('closer-sub-24mo')).toBeLessThan(names.indexOf('community-6mo'))
+    expect(names.indexOf('subdivision-18mo')).toBeLessThan(names.indexOf('pocket-3mo'))
     expect(names.filter((n) => n.startsWith('pocket-'))).toEqual([
       'pocket-3mo',
       'pocket-6mo',

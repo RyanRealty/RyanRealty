@@ -44,12 +44,12 @@ export type PricingTier = {
    * step above the subject's plat and below the designated neighborhood.
    */
   sameCommunity?: boolean
-  /** Only sales on the subject's own street, at close to its size. Runs first. */
+  /** Only sales on the subject's own street, at close to its size. Runs after the plat's two years. */
   sameStreetOnly?: boolean
   /**
    * Mapped tracts inside the street-cluster / inferred pocket.
-   * Named MLS tracts fill this from the 0.25 mi cluster; blank MLS
-   * fills it from the 0.35 mi inferred pocket. Skipped when empty.
+   * Named MLS tracts and a blank MLS name both fill this from the
+   * quarter-mile pocket. Skipped when empty.
    */
   samePocket?: boolean
   /**
@@ -276,54 +276,48 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
     for (const months of [3, 6, 9] as const) distanceRings.push(near(miles, months, apples))
   }
   const tiers: PricingTier[] = [
-    // YOUR OWN STREET, FIRST, WHATEVER THE MLS CALLS THE TRACT (Matt
-    // 2026-09-10: "We want to look specifically at that address or in that
-    // subdivision"). 23 Benaiah carries "N/A" for a subdivision, so every plat
-    // rung below skips, and 31 Benaiah — the identical 2,080 sqft plan next
-    // door — was only reachable on the five-mile eighteen-month rung, eight
-    // sales deep. Whether it made the set at all then depended on how fast the
-    // rings above filled, and it moved between builds. A street is a place;
-    // this rung finds it before any of that.
-    street(24),
+    // The subject's own plat through two years, wide size band included,
+    // before any other plat. A sale in the plat that is 18 or 24 months old
+    // outranks a recent sale next door.
     sub(3),
     sub(6),
     sub(9),
-    // Same street, different floorplan, before the next tract. Hayloft 2500 vs
+    // Same plat, different floorplan, before the next tract. Hayloft 2500 vs
     // 1927 is 23% — inside 30%, outside the tight 15% band.
     sub(3, PLAT_WIDE_SQFT_BAND, '-wide'),
     sub(6, PLAT_WIDE_SQFT_BAND, '-wide'),
     sub(9, PLAT_WIDE_SQFT_BAND, '-wide'),
     sub(12),
     sub(12, PLAT_WIDE_SQFT_BAND, '-wide'),
-    // Same subdiv + ~0.25 mi street cluster, before adjacent plats or mile rings
-    // (Matt 2026-09-15: named SaddleStone stays exclusive when Horse Back / Ranch exist).
-    pocket(3, 'strict'),
-    pocket(6, 'strict'),
-    pocket(9, 'utilities'),
-    pocket(12, 'utilities'),
-    // Twelve months in the subdivision, then the same clock on the plats that
-    // touch, then the next subdivisions inside the parent. A sale older than
-    // 12 months in the subject's plat does not outrank a recent sale next door.
-    adjacent(3, 'strict'),
-    adjacent(6, 'strict'),
-    adjacent(9, 'utilities'),
-    adjacent(12, 'utilities'),
-    closer(3, 'strict'),
-    closer(6, 'strict'),
-    closer(9, 'utilities'),
-    closer(12, 'utilities'),
-    community(6, 'strict'),
-    community(12, 'utilities'),
-    // The crawl is still short. Open the same places to 18 and 24 months
-    // before any distance ring.
     sub(18),
     sub(24),
     sub(18, PLAT_WIDE_SQFT_BAND, '-wide'),
     sub(24, PLAT_WIDE_SQFT_BAND, '-wide'),
+    // Own street after the plat is finished. A blank MLS subdivision skips
+    // every plat rung, so this is still the rung that finds the house next
+    // door (23 / 31 Benaiah). A different plat on the same street does not
+    // run before the subject's own plat is finished.
+    street(24),
+    // Quarter-mile pocket after the plat's own dates are exhausted, before
+    // adjacent plats or mile rings.
+    pocket(3, 'strict'),
+    pocket(6, 'strict'),
+    pocket(9, 'utilities'),
+    pocket(12, 'utilities'),
+    adjacent(3, 'strict'),
+    adjacent(6, 'strict'),
+    adjacent(9, 'utilities'),
+    adjacent(12, 'utilities'),
     adjacent(18, 'utilities'),
     adjacent(24, 'utilities'),
+    closer(3, 'strict'),
+    closer(6, 'strict'),
+    closer(9, 'utilities'),
+    closer(12, 'utilities'),
     closer(18, 'utilities'),
     closer(24, 'utilities'),
+    community(6, 'strict'),
+    community(12, 'utilities'),
     community(24, 'utilities'),
     // Distance starts at a quarter mile and steps by a quarter mile.
     // Do not open with a 1-mile ring. One mile and two miles are later steps.

@@ -34,7 +34,8 @@
 import { selectCmaCompsPool, selectCmaCompsByKeys } from '@/lib/data/cma/builderReads'
 import { getSubdivisionRing, assignSubdivisionSlugs, assignCommunitySlugs } from '@/lib/data/geo/subdivision-ring'
 import { keepEarlierRungSales } from '@/lib/pricing/ladder'
-import { saleSpentNoDaysOnMarket } from '@/lib/pricing/price-set'
+import { differentPlatAboveOwnPlatHigh } from '@/lib/pricing/price-set'
+import { RANGE_REVIEW_SHARE } from '@/lib/pricing/review'
 import { resolveConcessions, sellerNetFromPrice } from '@/lib/pricing/seller-net'
 import {
   closedSaleDomTotal,
@@ -93,7 +94,7 @@ import {
 } from '@/lib/pricing/price-anchor'
 import { ageRestrictedMismatch, ownPlatAgeRestrictedShare } from '@/lib/pricing/age-restricted'
 import { roomCountsDecision } from '@/lib/pricing/room-ground'
-import { SAME_NEIGHBORHOOD_TIER_RATIO, STARVED_TIER_WIDEN, SUBDIVISION_TIER_RATIO, normSubdivision } from '@/lib/pricing/classes'
+import { normSubdivision } from '@/lib/pricing/classes'
 import { inferSubdivisionPocket, POCKET_RADIUS_MILES } from '@/lib/pricing/infer-pocket'
 import { isClusterPocket, pocketStopsLaterRungs } from '@/lib/pricing/ladder'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
@@ -548,24 +549,13 @@ export async function selectComps(
   // How many sales the widening rung crossed the resort-membership rule for.
   // Counted so the disclosure can name it rather than imply it.
   let resortCrossed = 0
+  let aboveOwnPlatHigh = 0
   /**
-   * THE SUBJECT'S PRICE TIER (Matt 2026-09-10, on 23 Benaiah): the listings
-   * path had NO price cut of any kind, so a $579/sqft downtown sale and a
-   * $234/sqft sale out on China Hat both priced a $320/sqft tract home and the
-   * range printed the spread. Every row the ladder reads that sits in the
-   * subject's own neighborhood, or within a mile of it, feeds this sample; once
-   * it holds enough sales its median grades every later comp.
+   * Neighborhood median $/sqft, stored on the diagnostics for the contract's
+   * unanchored check. It does not remove a sale.
    */
   let anchorPpsf: number | null = null
   let anchorN = 0
-  /**
-   * ONE SALE against a MEDIAN, so the wider ratio. The 1.15 neighborhood ratio
-   * grades a subdivision median against another median — stable figures. A
-   * single sale swings much further than that on condition alone: at 1.15 the
-   * cut threw out 31 Benaiah, the same 2,080 sqft plan on the subject's own
-   * street, which is the best evidence this document has.
-   */
-  const anchorTierRatio = SUBDIVISION_TIER_RATIO
   /** Sentences the starved widening added, folded into the disclosures below. */
   const disclosedWidening: string[] = []
   // Sales set aside for sitting across a river from an unmapped subject.
@@ -664,7 +654,7 @@ export async function selectComps(
       anchorPpsf = medianOf(ring.rates)
       anchorN = ring.rates.length
       trace.push(
-        `Price tier: homes of this size sell for about $${Math.round(anchorPpsf)} a square foot ${ring.where} (median of ${anchorN} sales, last 12 months). Sales more than ${Math.round((anchorTierRatio - 1) * 100)}% either side of that are a different market and are not used.`,
+        `Homes of this size ${ring.where} have closed around $${Math.round(anchorPpsf)} a square foot (median of ${anchorN} sales, last 12 months).`,
       )
       break
     }
@@ -763,13 +753,6 @@ export async function selectComps(
     // the minimum; holding the price band fixed while it does made 120 Sisemore
     // fail to build at four comps. Read ONCE per rung, before any comp is
     // added, so the band cannot change partway through a rung.
-    const starvedRung = Boolean(tier.whenStarved) && byKey.size < MIN_COMPS
-    const rungTierRatio = starvedRung ? anchorTierRatio * STARVED_TIER_WIDEN : anchorTierRatio
-    if (starvedRung && anchorPpsf != null) {
-      const d = `The bounded search came up short, so the last step also widened what counts as your home's price tier: from ${Math.round((anchorTierRatio - 1) * 100)}% either side of $${Math.round(anchorPpsf)} a square foot to ${Math.round((rungTierRatio - 1) * 100)}%. Sales outside even that are still not used.`
-      trace.push(d)
-      disclosedWidening.push(d)
-    }
     // Push the tier's geography INTO the query. The row limit is applied
     // before any in-memory filter, so without this a polygon or radius tier
     // only sees whichever recent citywide sales happen to fall inside it.
@@ -945,19 +928,6 @@ export async function selectComps(
         }
       }
 
-      // THE PRICE TIER. A sale more than a tier away from what your home's own
-      // neighborhood sells for is not a comparable at any distance, whatever
-      // its size says. The subject's plat cell is not required — an MLS record
-      // reading "N/A" (23 Benaiah) has no cell at all, which is exactly the
-      // case that had no cut before.
-      // ONLY the subject's OWN plat is exempt. A sale inside it IS your home's
-      // price tier by definition, whatever a neighborhood median says. An
-      // ADJACENT plat is a different plat: 120 Sisemore sits in Staats and the
-      // adjacent-subdivision rung handed it a $2,601,883 Park Addition sale at
-      // $1,264/sqft against a $738 anchor, because the exemption covered both.
-      // Containment orders the search; it does not exempt what the search finds
-      // from being graded on price. The facts ladder already drew the line
-      // here (`tier.sameSubdivision` in lib/pricing/match.ts).
       const tightRung = isOwnPlatRung(tier.name)
       // THE SUBJECT'S OWN PLAT on this ladder: the plat rung itself, or the same
       // MLS subdivision name the rung searched (samePlat's fallback key; this
@@ -985,25 +955,6 @@ export async function selectComps(
         rung.excluded.year_quality++
         continue
       }
-      if (!land && !tightRung && !ownStreetPeer && anchorPpsf != null) {
-        const rate = unitRate(comp, false)
-        if (anchorPpsf > 0 && rate > 0) {
-          // THE WIDENING DOES NOT STACK WITH THE RESORT CROSSING. The starved
-          // rung relaxes the resort wall so a home near Sunriver can find
-          // PRODUCT peers; widening the price band on top of that let a
-          // $595/sqft Caldera Springs sale price a $427/sqft plat (55442
-          // Heierman). A sale in a resort community the subject is not in is
-          // held to the ordinary band, whatever else the last rung relaxes.
-          const crossesResort = !resortOk(comp.listingKey, comp.subdivision)
-          const ratio = crossesResort ? anchorTierRatio : rungTierRatio
-          const gap = rate / anchorPpsf
-          if (gap < 1 / ratio || gap > ratio) {
-            rung.excluded.price_tier++
-            continue
-          }
-        }
-      }
-
       // THE PARENT LEVEL (Matt 2026-09-09). The community rung takes the
       // subject's own community and nothing else; the peer rung takes another
       // community of the same kind and never a plain neighborhood.
@@ -1178,8 +1129,16 @@ export async function selectComps(
       comp.competingArea =
         tier.competing && compArea && compArea !== subjectArea ? marketAreaName(compArea) : null
       comp.ownPlat = inOwnPlat
-      // Same decision as the facts ladder: a same-day close does not take a slot.
-      if (saleSpentNoDaysOnMarket(comp.domTotal)) continue
+      if (
+        !inOwnPlat &&
+        differentPlatAboveOwnPlatHigh(
+          comp.closePrice,
+          [...byKey.values()].filter((row) => row.ownPlat).map((row) => row.closePrice),
+        )
+      ) {
+        aboveOwnPlatHigh++
+        continue
+      }
 
       byKey.set(comp.listingKey, comp)
       bySale.add(saleKey(comp))
@@ -1219,9 +1178,11 @@ export async function selectComps(
     trace.push(`Excluded ${x.lot_character} comp(s) on lot character (acreage vs in-town lot is not comparable at any distance).`)
   }
   if (x.price_tier > 0) {
-    const at = anchorPpsf != null && anchorPpsf > 0 ? ` The neighborhood's own sales run about $${Math.round(anchorPpsf)} a square foot.` : ''
+    trace.push(`Excluded ${x.price_tier} sale(s) on price tier.`)
+  }
+  if (aboveOwnPlatHigh > 0) {
     trace.push(
-      `Excluded ${x.price_tier} sale(s) on price tier: more than ${Math.round((anchorTierRatio - 1) * 100)}% away from what your home's own area sells for per square foot.${at}`,
+      `Excluded ${aboveOwnPlatHigh} sale(s) in another plat that closed more than ${Math.round(RANGE_REVIEW_SHARE * 100)}% above the highest sale in this home's own plat.`,
     )
   }
   if (x.market_area > 0) trace.push(`Excluded ${x.market_area} comp(s) outside the subject's market area.`)
@@ -1259,49 +1220,7 @@ export async function selectComps(
 
   let comps = Array.from(byKey.values())
   const candidateCount = comps.length
-
-  // Outlier exclusion: drop $/sqft beyond 2 standard deviations OR far from the
-  // peer median band (Tip Ready P1: $201/sf beside $498–561k peers must go),
-  // only when the set stays at or above MIN_COMPS afterward.
   const excludedOutliers: CompSelection['excludedOutliers'] = []
-  const OUTLIER_MEDIAN_BAND = 0.35
-  if (comps.length >= TARGET_COMPS) {
-    const ppsfs = comps.map((c) => unitRate(c, Boolean(land)))
-    const mean = ppsfs.reduce((a, b) => a + b, 0) / ppsfs.length
-    const sd = Math.sqrt(ppsfs.reduce((a, b) => a + (b - mean) ** 2, 0) / ppsfs.length)
-    const sorted = [...ppsfs].sort((a, b) => a - b)
-    const mid = Math.floor(sorted.length / 2)
-    const median =
-      sorted.length % 2 === 0 ? (sorted[mid - 1]! + sorted[mid]!) / 2 : sorted[mid]!
-    const kept: CmaComp[] = []
-    for (const c of comps) {
-      const ppsf = unitRate(c, Boolean(land))
-      const farSd = sd > 0 && Math.abs(ppsf - mean) > 2 * sd
-      const farMedian =
-        median > 0 &&
-        (ppsf < median * (1 - OUTLIER_MEDIAN_BAND) || ppsf > median * (1 + OUTLIER_MEDIAN_BAND))
-      if ((farSd || farMedian) && comps.length - excludedOutliers.length > MIN_COMPS) {
-        excludedOutliers.push({
-          address: c.address,
-          closePrice: c.closePrice,
-          ppsf: Math.round(ppsf),
-          reason: farMedian
-            ? `$${Math.round(ppsf)}/${land ? 'acre' : 'sqft'} sits outside ±${Math.round(
-                OUTLIER_MEDIAN_BAND * 100,
-              )}% of the peer median $${Math.round(median)}/${land ? 'acre' : 'sqft'}`
-            : `$${Math.round(ppsf)}/${land ? 'acre' : 'sqft'} is more than 2 standard deviations from the set mean of $${Math.round(mean)}/${land ? 'acre' : 'sqft'}`,
-        })
-      } else {
-        kept.push(c)
-      }
-    }
-    comps = kept
-    if (excludedOutliers.length > 0) {
-      trace.push(
-        `Excluded ${excludedOutliers.length} $/${land ? 'acre' : 'sqft'} outlier(s) beyond 2 standard deviations or the peer median band.`,
-      )
-    }
-  }
 
   // Similarity is the tie-break inside one rung. A later rung only fills
   // a seat that is still open, closest to the sales already kept. It does
