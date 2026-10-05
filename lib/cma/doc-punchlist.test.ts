@@ -20,6 +20,7 @@ import { askOutcomeBarsSvg, askOutcomeDaysPhrase, niceAxis } from './market-char
 import type { CmaAdjustedComp, CmaBroker, CmaPricing, CmaSubject } from './types'
 import type { CmaMarketArea } from './market-status'
 import type { ExpiredAuditData } from './expired-audit'
+import { withoutPublishedReviewQuotes } from './seller-text'
 
 const subject: CmaSubject = {
   listingKey: 'S1',
@@ -501,7 +502,8 @@ describe('the land is cut, drawn or not', () => {
 
 describe('P7 — we, not I', () => {
   it('never speaks as I outside a signed letter', () => {
-    const html = immersive()
+    // A published review is the reviewer speaking. The letter still cannot.
+    const html = withoutPublishedReviewQuotes(immersive())
     expect(html).not.toMatch(/\bI am here\b/)
     expect(html).not.toMatch(/(^|[\s>"])I\s+(am|will|can|have|would|think)\b/)
   })

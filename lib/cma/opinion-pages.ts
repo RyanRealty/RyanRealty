@@ -1329,8 +1329,14 @@ export const CLOSE_HERE_FOR_QUESTIONS = 'Please feel free to call with any quest
 export const CLOSE_SIT_DOWN =
   'We would love the opportunity to sit down with you and go through the house, and to show you the detailed marketing plan we use. There is nothing to sign for that. Who you list with is your decision, and we would be grateful for the chance to earn it.'
 
-/** Published Google reviews. Whole quotes, never a cut, never an invented line. */
-const CLOSE_REVIEW_AUTHORS = ['Gary Timms', 'Kim Anderson'] as const
+/**
+ * Published Google reviews. Whole quotes, never a cut, never an invented line.
+ * Matt 2026-10-05: the most glowing pair. E Oster is the May 18, 2026 review
+ * (he knows the reviewer as Ernie; Google publishes E Oster). Douglas Grant
+ * is the other whole quote that calls Matt the best. Audra Hedberg's line
+ * has an em dash, so it stays off the letter.
+ */
+const CLOSE_REVIEW_AUTHORS = ['E Oster', 'Douglas Grant'] as const
 
 export function closeReviewsHtml(a: OpinionPageArgs): string {
   const picks = CLOSE_REVIEW_AUTHORS.flatMap((author) => {

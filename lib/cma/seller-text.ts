@@ -21,6 +21,15 @@
  */
 
 /**
+ * A published review on the close is the reviewer's sentence, printed whole.
+ * The jargon list is about words we write. "Matt kept me informed" is not
+ * "the sales we kept", and the reviewer's "I" is not the letter speaking.
+ */
+export function withoutPublishedReviewQuotes(html: string): string {
+  return html.replace(/<blockquote\b[^>]*class="close-quote"[^>]*>[\s\S]*?<\/blockquote>/gi, ' ')
+}
+
+/**
  * Strip a rendered document down to the words a reader sees.
  *
  * Scripts and styles go (class names are not prose). Tags go, which drops
@@ -130,7 +139,7 @@ export type SellerWordHit = { label: string; excerpt: string }
 
 /** Every banned word present in a rendered document, with the words around it. */
 export function findSellerBannedWords(html: string): SellerWordHit[] {
-  const text = sellerVisibleText(html)
+  const text = sellerVisibleText(withoutPublishedReviewQuotes(html))
   const hits: SellerWordHit[] = []
   for (const banned of SELLER_BANNED_WORDS) {
     const re = new RegExp(banned.re.source, `${banned.re.flags.replace('g', '')}g`)
