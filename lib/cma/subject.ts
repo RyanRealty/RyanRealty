@@ -219,6 +219,7 @@ export function rowToSubject(row: CmaListingRow): CmaSubject {
     taxAnnual: num(row['tax_annual_amount']),
     standardStatus: status,
     lastListPrice: listPrice,
+    originalListPrice,
     lastListDate: listDate,
     listingHistoryLine: historyLine,
     // Who holds this listing. Read only by the compliance carve-out

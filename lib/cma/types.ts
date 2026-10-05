@@ -35,6 +35,8 @@ export interface CmaSubject {
   taxAnnual: number | null
   standardStatus: string | null
   lastListPrice: number | null
+  /** MLS OriginalListPrice. The ask story starts here when the exposure opens later. */
+  originalListPrice?: number | null
   lastListDate: string | null
   listingHistoryLine: string | null
   /**

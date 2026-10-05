@@ -18,7 +18,7 @@ import { mlsStatusLabel, type MatrixEntry } from '@/lib/cma/matrix-entry'
 
 const esc = escapeHtml
 
-export type StatusPriceKey = 'closed' | 'pending' | 'active' | 'expired'
+export type StatusPriceKey = 'closed' | 'pending' | 'active' | 'expired' | 'canceled' | 'withdrawn'
 
 export type PriceBand = {
   n: number
@@ -146,8 +146,14 @@ function unsoldStatusRows(entries: readonly MatrixEntry[]): StatusPriceRow[] {
     groups.set(key, group)
   }
   return [...groups.values()]
-    .map((group) => statusRow(group.label.toLowerCase(), group.label, group.homes))
+    .map((group) => statusRow(unsoldStatusKey(group.label), group.label, group.homes))
     .filter((row): row is StatusPriceRow => row != null)
+}
+
+function unsoldStatusKey(label: string): StatusPriceKey {
+  const key = label.toLowerCase()
+  if (key === 'canceled' || key === 'withdrawn' || key === 'expired') return key
+  return 'expired'
 }
 
 const STATS = [
