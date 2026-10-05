@@ -328,9 +328,33 @@ describe('describeIndexShape — the path, not the endpoint', () => {
     expect(shape.turned).toBe(false)
     expect(shape.extremeMonth).toBeNull()
     expect(shape.clause).toContain('rose 10.5 percent with no reversal')
-    // Every month in the window sits below the endpoint, so every sale moves up.
+    // The last two months share today's level, so a sale that closed then stays put.
     expect(shape.movesDown).toEqual([])
-    expect(shape.clause).toContain('every sale below moves up')
+    expect(shape.clause).toContain('sales that closed from January 2026 to October 2026 move up')
+    expect(shape.clause).toContain("a sale that closed at today's level stays put")
+    expect(shape.clause).not.toContain('every sale below')
+  })
+
+  it('does not say every sale moves down when the index has come back to today', async () => {
+    const { describeIndexShape } = await import('@/lib/pricing/market-path')
+    // A peak, then a return to the level the last months already sit on.
+    // Sales in those flat months do not move. "Every sale below moves down"
+    // contradicts a date adjustment of $0.
+    const months = [
+      '2025-08', '2025-09', '2025-10', '2025-11', '2025-12',
+      '2026-01', '2026-02', '2026-03', '2026-04', '2026-05',
+      '2026-06', '2026-07', '2026-08', '2026-09',
+    ]
+    const ppsf = [280, 290, 300, 310, 320, 330, 340, 350, 360, 400, 340, 310, 300, 300]
+    const points = months.map((month, i) => ({ month: `${month}-01`, ppsf: ppsf[i]!, n: 40 }))
+    const shape = describeIndexShape({ points, asOf: '2026-10-04', windowMonths: 12 })
+    expect(shape.extreme).toBe('peak')
+    expect(shape.movesUp).toEqual([])
+    expect(shape.movesDown.length).toBeGreaterThan(0)
+    expect(shape.clause).toBe(
+      'rose to a peak in April 2026 and has come back 16.7 percent since, so sales that closed from November 2025 to July 2026 move down, and a sale that closed at today\'s level stays put',
+    )
+    expect(shape.clause).not.toContain('every sale below')
   })
 
   it('says nothing when the index cannot speak', async () => {

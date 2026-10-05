@@ -519,6 +519,38 @@ function contiguous(all: string[], subset: string[]): boolean {
   return subset.every((m, i) => all[first + i] === m)
 }
 
+/**
+ * Which sales the path moves. A month level with the endpoint does not move
+ * a sale that closed then. "Every sale below" is false as soon as one of
+ * those months is in the window.
+ */
+function saleDirectionTail(months: string[], movesDown: string[], movesUp: string[]): string {
+  if (movesDown.length > 0 && movesUp.length > 0) {
+    return contiguous(months, movesDown)
+      ? `, so sales that closed from ${monthLabel(movesDown[0]!)} to ${monthLabel(
+          movesDown[movesDown.length - 1]!,
+        )} move down and older sales move up`
+      : ', so sales that closed when it was higher move down and the rest move up'
+  }
+  if (movesDown.length > 0) {
+    if (contiguous(months, movesDown)) {
+      return `, so sales that closed from ${monthLabel(movesDown[0]!)} to ${monthLabel(
+        movesDown[movesDown.length - 1]!,
+      )} move down, and a sale that closed at today's level stays put`
+    }
+    return ", so sales that closed while it was higher move down, and a sale that closed at today's level stays put"
+  }
+  if (movesUp.length > 0) {
+    if (contiguous(months, movesUp)) {
+      return `, so sales that closed from ${monthLabel(movesUp[0]!)} to ${monthLabel(
+        movesUp[movesUp.length - 1]!,
+      )} move up, and a sale that closed at today's level stays put`
+    }
+    return ", so sales that closed while it was lower move up, and a sale that closed at today's level stays put"
+  }
+  return ''
+}
+
 export function describeIndexShape(opts: {
   points: MarketIndexPoint[]
   asOf: string
@@ -590,18 +622,7 @@ export function describeIndexShape(opts: {
             1,
           )} percent with no reversal`
 
-  let tail = ''
-  if (movesDown.length > 0 && movesUp.length > 0) {
-    tail = contiguous(months, movesDown)
-      ? `, so sales that closed from ${monthLabel(movesDown[0]!)} to ${monthLabel(
-          movesDown[movesDown.length - 1]!,
-        )} move down and older sales move up`
-      : ', so sales that closed when it was higher move down and the rest move up'
-  } else if (movesDown.length > 0) {
-    tail = ', so every sale below moves down'
-  } else if (movesUp.length > 0) {
-    tail = ', so every sale below moves up'
-  }
+  const tail = saleDirectionTail(months, movesDown, movesUp)
 
   return {
     turned,

@@ -13,6 +13,9 @@ import { printedAdjustedPrice } from '@/lib/pricing/seller-net'
 import type { ContractCheck } from '@/lib/cma/contract'
 
 const MILE_SENTENCE = /\bwithin\s+(?:[\d.]+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s+miles?\s+of your home/i
+const EVERY_SALE_MOVES = /every sale below moves (?:down|up)/i
+/** A date move under this is the grid saying the sale stayed put. */
+const DATE_MOVE_STAYED_DOLLARS = 500
 const WRONG_PRODUCT_LINE = /single-family homes in|single-family sales|single-family listings/i
 
 export type LetterPlaceSource = {
@@ -300,6 +303,30 @@ export function bandVersusClosedCompsCheck(
  * Every sale and every expired listing the document counts has to be in the
  * document. A missing address fails the letter.
  */
+/**
+ * "Every sale below moves down" cannot sit next to a sale the grid did not
+ * move. A sale that closed at today's level prints $0.
+ */
+export function dateSentenceMatchesGridCheck(
+  html: string,
+  comps: readonly { timeAdjustment?: number | null }[] | null | undefined,
+): ContractCheck {
+  const claimsEvery = EVERY_SALE_MOVES.test(html)
+  const stayed = (comps ?? []).some((c) => {
+    const move = c.timeAdjustment
+    return move != null && Number.isFinite(move) && Math.abs(move) < DATE_MOVE_STAYED_DOLLARS
+  })
+  const pass = !(claimsEvery && stayed)
+  return {
+    id: 'date-sentence-matches-grid',
+    severity: 'hard',
+    pass,
+    detail: pass
+      ? 'The date sentence does not move a sale the grid left alone.'
+      : 'The letter says every sale moved for its date, and a sale in the table did not.',
+  }
+}
+
 export function countedRowsInDocumentCheck(args: {
   html: string
   sales?: readonly (string | null | undefined)[] | null
@@ -330,7 +357,12 @@ export function evaluateLetterConsistencyContract(args: {
     valueLow?: number | null
     valueHigh?: number | null
   }
-  closedComps?: readonly { adjustedPrice?: number | null; closePrice?: number | null; address?: string | null }[] | null
+  closedComps?: readonly {
+    adjustedPrice?: number | null
+    closePrice?: number | null
+    address?: string | null
+    timeAdjustment?: number | null
+  }[] | null
   /** Expired listings the letter counted. Each address has to be in the table. */
   expiredAddresses?: readonly (string | null | undefined)[] | null
   /** The addresses the letter prints (printedAddressesOf). Lets the owner-name check tell a street from a name. */
@@ -344,6 +376,7 @@ export function evaluateLetterConsistencyContract(args: {
     highEndAtOrBelowBandCheck(args.pricing),
     letterRecommendDollarsCheck(args.html, args.pricing),
     bandVersusClosedCompsCheck(args.pricing, args.closedComps),
+    dateSentenceMatchesGridCheck(args.html, args.closedComps),
     countedRowsInDocumentCheck({
       html: args.html,
       sales: (args.closedComps ?? []).map((c) => c.address),

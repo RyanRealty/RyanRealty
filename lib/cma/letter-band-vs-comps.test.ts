@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bandVersusClosedCompsCheck } from '@/lib/cma/letter-consistency'
+import { bandVersusClosedCompsCheck, dateSentenceMatchesGridCheck } from '@/lib/cma/letter-consistency'
 import { pinPrintedBandToSettingSales } from '@/lib/pricing/estimate'
 
 describe('band overlaps closed comps', () => {
@@ -82,5 +82,24 @@ describe('band overlaps closed comps', () => {
     expect(pinned.rangeRule?.sentence).toContain('$724,343')
     expect(pinned.rangeRule?.sentence).not.toContain('$725,000')
     expect(pinned.rangeRule?.sentence).not.toContain('$599,000')
+  })
+})
+
+describe('date sentence matches the grid', () => {
+  it('refuses a line that moves every sale when one sale stayed put', () => {
+    const check = dateSentenceMatchesGridCheck(
+      'Over the last 12 months that index rose to a peak in May 2026 and has come back 7.0 percent since, so every sale below moves down.',
+      [{ timeAdjustment: 0 }, { timeAdjustment: -16_771 }],
+    )
+    expect(check.pass).toBe(false)
+    expect(check.severity).toBe('hard')
+  })
+
+  it('allows the same grid under a sentence that leaves today\'s sales put', () => {
+    const check = dateSentenceMatchesGridCheck(
+      'so sales that closed from June 2025 to July 2026 move down, and a sale that closed at today\'s level stays put.',
+      [{ timeAdjustment: 0 }, { timeAdjustment: -16_771 }],
+    )
+    expect(check.pass).toBe(true)
   })
 })
