@@ -52,6 +52,7 @@ import { buildSignature } from '@/lib/crm/email-signature'
 import { getBrokers } from '@/lib/data'
 import { previewTextFromCustomBody } from '@/lib/cma/report-button'
 import { classifyCmaOrigin, type CmaOrigin } from '@/lib/cma/origin'
+import { resolveSendableClientEmail } from '@/lib/cma/send-client-email'
 import { resolveTheirPrice } from '@/lib/cma/queue-view'
 import { formatPublishedPhone } from '@/lib/cma/format-phone'
 
@@ -102,7 +103,11 @@ async function resolveSendContext(
   if (status !== 'finalized' && status !== 'delivered') {
     return { ctx: null, error: `This CMA is not approved yet (status ${status}). Approve it before sending.` }
   }
-  const clientEmail = (row.client_email as string | null)?.trim().toLowerCase() ?? null
+  const clientEmail = await resolveSendableClientEmail({
+    slug,
+    columnEmail: row.client_email as string | null,
+    personId: row.person_id as number | string | null,
+  })
   if (!clientEmail) {
     return { ctx: null, error: 'This CMA has no client email on file. Add one on the review page first.' }
   }

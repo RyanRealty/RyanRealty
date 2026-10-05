@@ -46,13 +46,28 @@ export type SkipTraceResult = {
   }
 }
 
+export type SkipTraceCompliance = {
+  emailHardStop: boolean
+  flags: string[]
+  tags: string[]
+}
+
 export type ResolvedOwner = {
   county: CountyOwner
   trace: SkipTraceResult | null
   bestEmail: string | null
   bestPhone: string | null
   complianceTags: string[]
+  complianceFlags: string[]
+  emailHardStop: boolean
 }
+
+export function complianceFromSkipTrace(input: {
+  litigator?: boolean
+  deceased?: boolean
+  dncTcpa?: boolean
+  dncPhone?: boolean
+}): SkipTraceCompliance
 
 export function parseOwnerName(raw: string): { firstName: string | null; lastName: string | null; isEntity: boolean }
 export function deschutesCountyOwner(streetAddress: string, city?: string): Promise<CountyOwner | null>

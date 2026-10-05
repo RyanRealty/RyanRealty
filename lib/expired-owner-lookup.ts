@@ -27,6 +27,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
+import { complianceFromSkipTrace, resolveOwnerContact } from './owner-resolution.mjs'
 import type { CountyOwner, SkipTraceResult } from './owner-resolution.d.ts'
 
 const APIFY_BASE = 'https://api.apify.com/v2'
@@ -48,6 +49,10 @@ export type OwnerLookupResult = {
   taxlot?: string | null
   /** TCPA/DNC tags to apply on the CRM person (from BatchData flags). */
   complianceTags?: string[]
+  /** Structured skip-trace flags. Email hard stop is litigator or deceased only. */
+  complianceFlags?: string[]
+  /** True when the skip trace says litigator or deceased. */
+  emailHardStop?: boolean
   /** Owner's mailing address differs from the property. */
   absentee?: boolean
   /** Owner's mailing address is outside Oregon. */
@@ -415,7 +420,7 @@ export async function tracerfySkipTrace(params: {
     if (best.litigator) flags.push('LITIGATOR FLAG')
     if (best.deceased) flags.push('DECEASED')
     if (best.property_owner === false) flags.push('NOT PROPERTY OWNER (likely tenant/prior resident)')
-    if (bestPhone?.dnc) flags.push('BEST PHONE ON DNC — DO NOT cold-call (TCPA risk). SMS / direct mail / door-knock allowed.')
+    if (bestPhone?.dnc) flags.push('BEST PHONE ON DNC — do not call or text. Email is still allowed.')
     const flagStr = flags.length ? ` ${flags.map((f) => `[${f}]`).join(' ')}` : ''
 
     return {
@@ -548,7 +553,7 @@ export async function enrichOwnerContact(params: {
     const onDnc = await isPhoneOnDNC(apifyRes.phone)
     if (onDnc === true) {
       apifyRes.phoneIsOnDnc = true
-      apifyRes.notes += ' Best phone is on DNC registry. DO NOT cold-call (TCPA risk). SMS / direct mail / door-knock allowed.'
+      apifyRes.notes += ' Best phone is on the DNC registry. Do not call or text. Email is still allowed.'
     } else if (onDnc === false) {
       apifyRes.phoneIsOnDnc = false
       apifyRes.notes += ' Best phone passed DNC scrub.'
@@ -578,11 +583,26 @@ function buildCountyNotes(
       ? `Owned since ${ownership.since} (county deed history${ownership.salePrice ? `, acquired at $${new Intl.NumberFormat('en-US').format(Math.round(ownership.salePrice))}` : ''}).`
       : '',
     trace
-      ? `Skip trace: ${trace.phones.length} phone(s), ${trace.emails.length} email(s).${trace.hardStop ? ' HARD STOP flags present (litigator/TCPA/deceased).' : ''}`
+      ? `Skip trace: ${trace.phones.length} phone(s), ${trace.emails.length} email(s).${trace.hardStop ? ' HARD STOP flags present (litigator/deceased).' : ''}`
       : 'Skip trace unavailable (check BATCHDATA_API_KEY on Vercel).',
   ]
     .filter(Boolean)
     .join(' ')
+}
+
+function complianceFieldsFromEnrichment(
+  enrichment: TracerfyEnrichment,
+): Pick<OwnerLookupResult, 'complianceTags' | 'complianceFlags' | 'emailHardStop'> {
+  const mapped = complianceFromSkipTrace({
+    litigator: !!enrichment.litigator,
+    deceased: !!enrichment.deceased,
+    dncPhone: !!enrichment.phoneIsOnDnc || (enrichment.allPhones ?? []).some((p) => p.dnc),
+  })
+  return {
+    complianceTags: mapped.tags,
+    complianceFlags: mapped.flags,
+    emailHardStop: mapped.emailHardStop,
+  }
 }
 
 /**
@@ -601,9 +621,43 @@ export async function lookupOwnerForExpiredListing(params: {
 
   // Strategy 1 (canonical): Deschutes County assessor + BatchData skip trace.
   try {
-    const { resolveOwnerContact } = await import('./owner-resolution.mjs')
     const resolved = await resolveOwnerContact(params.streetAddress, params.city, zip)
     if (resolved) {
+      // BatchData can resolve the county owner and still return zero emails.
+      // Tracerfy, then Apify, run before we give up on an address we can email.
+      let fallback: TracerfyEnrichment | null = null
+      if (!resolved.bestEmail) {
+        fallback = await enrichOwnerContact({
+          streetAddress: params.streetAddress,
+          city: params.city,
+          state: 'OR',
+          postalCode: zip ?? null,
+          ownerName: resolved.county.isEntity ? undefined : [resolved.county.firstName, resolved.county.lastName].filter(Boolean).join(' ') || undefined,
+        })
+        if (fallback?.email) resolved.bestEmail = fallback.email
+        if (!resolved.bestPhone && fallback?.phone) resolved.bestPhone = fallback.phone
+        if (fallback?.allEmails?.length && resolved.trace) {
+          const have = new Set(resolved.trace.emails)
+          for (const email of fallback.allEmails) {
+            if (email && !have.has(email)) {
+              resolved.trace.emails.push(email)
+              have.add(email)
+            }
+          }
+        }
+      }
+      const mapped = complianceFromSkipTrace({
+        litigator: !!resolved.trace?.litigator || !!fallback?.litigator,
+        deceased: !!resolved.trace?.deceased || !!fallback?.deceased,
+        dncTcpa: !!resolved.trace?.dncTcpa,
+        dncPhone:
+          (resolved.trace?.phones ?? []).some((phone: { dnc?: boolean }) => !!phone?.dnc) ||
+          !!fallback?.phoneIsOnDnc ||
+          (fallback?.allPhones ?? []).some((phone) => !!phone.dnc),
+      })
+      resolved.complianceTags = mapped.tags
+      resolved.complianceFlags = mapped.flags
+      resolved.emailHardStop = mapped.emailHardStop
       const c = resolved.county
       // The skip-trace resolves the real human even behind an LLC / trust. Prefer
       // that person for entity-owned records so we file an actual name, not "SOME LLC".
@@ -624,7 +678,10 @@ export async function lookupOwnerForExpiredListing(params: {
         type: p.type ?? undefined,
         dnc: p.dnc,
       }))
-      const traceEmails = resolved.trace?.emails ?? []
+      const traceEmails = [...(resolved.trace?.emails ?? [])]
+      if (fallback?.email && !traceEmails.some((e) => e.toLowerCase() === fallback.email!.toLowerCase())) {
+        traceEmails.push(fallback.email)
+      }
       const result: OwnerLookupResult = {
         status: hasReachableOwnerContact({
           ownerEmail: resolved.bestEmail ?? undefined,
@@ -642,6 +699,8 @@ export async function lookupOwnerForExpiredListing(params: {
         allEmails: traceEmails,
         taxlot: c.taxlot,
         complianceTags: resolved.complianceTags,
+        complianceFlags: resolved.complianceFlags,
+        emailHardStop: resolved.emailHardStop,
         absentee: c.absentee,
         outOfState: c.outOfState,
         demographics: resolved.trace?.demographics ?? undefined,
@@ -678,6 +737,7 @@ export async function lookupOwnerForExpiredListing(params: {
       notes: directEnrichment.notes,
       allPhones: directEnrichment.allPhones,
       allEmails: directEnrichment.allEmails,
+      ...complianceFieldsFromEnrichment(directEnrichment),
     }
     if (fubMatch?.fubPersonId) {
       result.fubPersonId = fubMatch.fubPersonId

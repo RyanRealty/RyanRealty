@@ -144,7 +144,9 @@ export async function approveAndDeliverCma(
     // require a finalized row (and the drain's own compliance checks). The
     // acknowledgement recorded by approveCmaAction is what lets this call
     // through; it does not open any other gate.
-    if (!alreadyQueued) {
+    // A draft already sitting in the drip still has cmas.status draft.
+    // Send now has to finalize that row before the send rail will accept it.
+    if (row.status === 'draft' || !alreadyQueued) {
       const approved = await approveCmaAction(slug, {
         acknowledgeReview: opts?.acknowledgeReview,
         // An audit verdict of review flags the row even when needs_review

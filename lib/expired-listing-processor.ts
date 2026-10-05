@@ -33,16 +33,19 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import {
   lookupOwnerForExpiredListing,
-  hasReachableOwnerContact,
   ownershipCustomFields,
   type OwnerLookupResult,
 } from '@/lib/expired-owner-lookup'
 import { autoEnrollPerson } from '@/lib/crm/enroll'
+import { isSuppressedByEmail } from '@/lib/crm/suppressions'
 import {
   ensureNativeLead,
   enrichNativeLead,
   createNativeTask,
 } from '@/lib/data/crm/ensureNativeLead'
+import { normalizeParcelNumber, probeIntakeBackOnMarket } from '@/lib/data/prospecting/compliance'
+import { hasSendableEmail } from '@/lib/data/prospecting/types'
+import { decideProspectIntake, intakeBuildsCma } from '@/lib/prospecting/intake-gate'
 
 // Expired leads auto-enroll into the "Expired Recovery (auto)" sequence
 // (crm_sequences.fub_legacy_plan_id = 71) via autoEnrollPerson, which resolves
@@ -80,6 +83,7 @@ interface ExpiredListingRow {
   BathroomsTotal: number | string | null
   TotalLivingAreaSqFt: number | string | null
   SubdivisionName: string | null
+  parcel_number?: string | null
 }
 
 export interface ProcessExpiredOptions {
@@ -201,14 +205,76 @@ export async function processNewExpiredListings(
       const fullAddress = `${streetAddress}, ${l.City}, OR ${l.PostalCode ?? ''}`.trim()
       stats.new_processed++
 
-      const owner = await lookupOwnerForExpiredListing({
+      // Live status, then compliance, then a sendable email. All three finish
+      // before a CRM person or a CMA. An unreadable listings probe retries next
+      // cron and does not write the audit row (that write would hide the retry).
+      const knownParcel = normalizeParcelNumber(l.parcel_number)
+      const live = await probeIntakeBackOnMarket({
+        kind: 'expired',
         streetAddress,
         city: l.City,
-        postalCode: l.PostalCode,
+        expiryComparator: l.status_change_timestamp,
+        parcelNumber: knownParcel,
       })
+      if (live.unreadable) {
+        stats.errors++
+        continue
+      }
+      let onMarket = live.onMarket
+      let owner: OwnerLookupResult = { status: 'pending' }
+      let lookedUp = false
+      if (!onMarket) {
+        owner = await lookupOwnerForExpiredListing({
+          streetAddress,
+          city: l.City,
+          postalCode: l.PostalCode,
+        })
+        lookedUp = true
+        const taxlot = normalizeParcelNumber(owner.taxlot)
+        if (taxlot && taxlot !== knownParcel) {
+          const again = await probeIntakeBackOnMarket({
+            kind: 'expired',
+            streetAddress,
+            city: l.City,
+            expiryComparator: l.status_change_timestamp,
+            parcelNumber: taxlot,
+          })
+          if (again.unreadable) {
+            stats.errors++
+            continue
+          }
+          if (again.onMarket) onMarket = true
+        }
+      }
 
-      const hasContact = hasReachableOwnerContact(owner)
-      const lookupPending = !hasContact
+      let emailSuppressed = false
+      const candidateEmail = owner.ownerEmail ?? null
+      if (!onMarket && hasSendableEmail(candidateEmail)) {
+        try {
+          const sup = await isSuppressedByEmail(candidateEmail!, 'email')
+          if (sup.reasons.some((r) => r.startsWith('email-suppression-check-failed'))) {
+            stats.errors++
+            continue
+          }
+          emailSuppressed = sup.suppressed
+        } catch (err) {
+          console.error('[expired-listing-processor] email suppression unread', l.ListingKey, err)
+          stats.errors++
+          continue
+        }
+      }
+      const intakeFlags = owner.complianceFlags ?? []
+      const decision = decideProspectIntake({
+        onMarket,
+        litigator: intakeFlags.includes('litigator'),
+        deceased: intakeFlags.includes('deceased'),
+        dncTcpa: intakeFlags.includes('dnc:tcpa'),
+        dncPhone: intakeFlags.includes('dnc'),
+        email: candidateEmail,
+        emailSuppressed,
+      })
+      const lookupPending = !lookedUp || owner.status === 'pending'
+
       // The native crm_people id once we create/reuse a lead. Named crmPersonId
       // (not fubPersonId) because the CRM cutover (2026-06-24) means the workflow
       // is fully CRM-native now: person + tags + note + task + enrollment all live
@@ -220,13 +286,15 @@ export async function processNewExpiredListings(
       let crmPersonId: number | null = null
       let matchedBy: string = owner.source ?? 'unresolved'
       let skippedFub = false
+      let clientEmail: string | null = null
 
-      if (hasContact) {
+      if (intakeBuildsCma(decision)) {
+        clientEmail = decision.email
         // Create/reuse the native CRM lead (email-first, then phone dedup).
         // ensureNativeLead is idempotent and never throws.
         const native = await ensureNativeLead({
           name: owner.ownerName ?? `Expired Listing ${l.ListNumber ?? l.ListingKey}`,
-          email: owner.ownerEmail ?? null,
+          email: clientEmail,
           phone: owner.ownerPhone ?? null,
           source: 'expired-listing-cron',
           assignedBroker: 'matt',
@@ -250,7 +318,7 @@ export async function processNewExpiredListings(
         // created; the audit row + the alert to Matt still fire so nothing is lost.
         skippedFub = true
         stats.fub_skipped_no_contact++
-        matchedBy = 'no-contact-skip-fub'
+        matchedBy = `intake-skip:${decision.reason}`
       }
 
       // Doc id from the auto-CMA queue (set below when a person exists), stamped
@@ -307,7 +375,7 @@ export async function processNewExpiredListings(
             ...(owner.absentee ? ['owner:absentee'] : []),
             ...(owner.outOfState ? ['geo:out-of-state'] : []),
             ...(df?.equityRich ? ['owner:equity-rich'] : []),
-            ...(owner.complianceTags ?? []),
+            ...(owner.complianceTags?.length ? owner.complianceTags : decision.tags),
           ],
           custom: {
             customClassification: 'EXPIRED',
@@ -362,7 +430,7 @@ export async function processNewExpiredListings(
               parsedCity: l.City ?? null,
               parsedState: 'OR',
               parsedPostalCode: l.PostalCode ?? null,
-              leadEmail: owner.ownerEmail ?? null,
+              leadEmail: clientEmail,
               leadName: owner.ownerName ?? null,
               leadPhone: owner.ownerPhone ?? null,
               leadTimeline: 'ready-now',
@@ -447,8 +515,11 @@ export async function processNewExpiredListings(
           expired_at: l.status_change_timestamp,
           standard_status: l.StandardStatus,
           contact_phone: owner.ownerPhone ?? null,
-          contact_email: owner.ownerEmail ?? null,
+          contact_email: clientEmail ?? owner.ownerEmail ?? null,
           contact_source: matchedBy,
+          compliance_hard_stop: decision.emailHardStop,
+          compliance_flags: decision.flags,
+          compliance_source: lookedUp ? 'skip-trace' : onMarket ? 'live-status' : null,
           enrichment_notes: owner.notes ?? null,
           status_change_timestamp: l.status_change_timestamp,
           property_type: l.PropertyType,
@@ -460,7 +531,7 @@ export async function processNewExpiredListings(
           fub_person_matched_by: matchedBy,
           alert_sent_at: alertRes.ok ? new Date().toISOString() : null,
           alert_method: alertRes.ok ? 'resend-email' : null,
-          owner_lookup_status: lookupPending ? 'pending' : 'resolved',
+          owner_lookup_status: !lookedUp && onMarket ? 'skipped-back-on-market' : lookupPending ? 'pending' : 'resolved',
           owner_lookup_attempts: 1,
           last_owner_lookup_at: new Date().toISOString(),
         },

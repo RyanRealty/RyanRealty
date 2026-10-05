@@ -215,7 +215,7 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
         toast.error('Subject and email body are required before send.')
         return
       }
-      if (toEmail.trim() && toEmail.trim().toLowerCase() !== (props.clientEmail ?? '').toLowerCase()) {
+      if (toEmail.trim()) {
         const { error: toErr } = await updateCmaOutboundToAction(props.slug, toEmail.trim())
         if (toErr) {
           toast.error(`Could not update To: ${toErr}`)
@@ -351,7 +351,7 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
           Outbound email
         </p>
         <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
-          Edit on Review. PDF attaches automatically on send. Signature and Oregon disclosure show in preview.
+          PDF attaches automatically on send. Signature and Oregon disclosure show in preview.
         </p>
 
         <TextField
@@ -430,7 +430,7 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
           </Button>
         ) : null}
 
-        {!showSchedule && !showSendNow && isDraft ? (
+        {isDraft ? (
           <Button onClick={approve} disabled={isPending || !props.hasDocument} variant="quiet" touch className="w-full">
             Approve (draft to final)
           </Button>

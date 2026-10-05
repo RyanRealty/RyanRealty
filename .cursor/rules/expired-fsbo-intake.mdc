@@ -1,0 +1,25 @@
+---
+description: Expired and FSBO intake. A CMA is built only when we can email the owner and the home is still off market.
+globs: lib/expired-listing-processor.ts,lib/fsbo-processor.ts,lib/expired-owner-lookup.ts,lib/owner-resolution.mjs,lib/prospecting/intake-gate.ts,lib/data/prospecting/**
+alwaysApply: true
+---
+
+# Expired and FSBO intake (Matt 2026-10-05)
+
+A CMA is built only when we hold a sendable owner email. No CRM person and no CMA for an owner we cannot email, or for a home that is back on the market.
+
+Run these three checks before `createCmaRequest` and before the CRM person is created, in this order:
+
+1. Live status. Skip Active, Pending, Coming Soon, and Closed after the expiry. Match the same address or the same parcel or taxlot. An unreadable listings probe does not create a person or a CMA. Retry on the next run.
+2. Compliance. Skip a litigator, a deceased owner, and an email that is already suppressed. The litigator tag is applied only when the skip-trace says the person is a litigator. TCPA-only and a DNC phone block calls and texts. They do not block email and they do not set `compliance:hard-stop`.
+3. Email. No valid, non-suppressed owner email means no CRM person and no CMA. Phone-only owners do not get a CMA.
+
+The same checks gate FSBO intake, including a contact copied off the listing page. A page phone with no email does not get a CMA. Do not invent a litigator tag for a page contact.
+
+Do not put this gate in `sendCmaToLead` or `createCmaRequest`. Those also serve inbound seller and lead-form CMAs.
+
+The source of truth is `expired_listings.compliance_hard_stop` and `compliance_flags`, and the same columns on `fsbo_listings`. Write them at intake. Every expired and FSBO send path reads them. A litigator or deceased owner sets the column so the send stays blocked.
+
+When BatchData returns no email, try Tracerfy and then Apify before giving up. Keep the county record. A fallback phone is not a reason to build.
+
+This does not loosen CMA rules 1–23. Rule 6 still says do not build or send a home that is listed again. This rule is the intake-front version of that check.

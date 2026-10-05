@@ -16,6 +16,7 @@ import { resolveDocsBatch, resolveComplianceBatch } from './batch'
 import { getProspectEngagement, EMPTY_ENGAGEMENT, type ProspectEngagementKey } from './engagement'
 import { isProspectDocClientReady } from './doc-ready'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
+import { emailBlockedByFlags, phoneBlockedByFlags } from '@/lib/prospecting/intake-gate'
 import { blockAllChannels, hasSendableEmail, hasSendablePhone, isUndefinedColumnError, type ProspectComplianceState, type ProspectDetail, type ProspectDocState, type ProspectKind, type ProspectPriceCycle, type ProspectRow } from './types'
 
 // Fail-closed default when the batch somehow omits a row (it never should — it
@@ -589,50 +590,41 @@ export const PROSPECT_DETAIL_LOAD_ERRORS = {
 
 const EMPTY_DRIP: ProspectDetail['drip'] = { sequenceId: null, sequenceName: null, enrolled: false }
 
-// Same dangerous skip-trace flags as resolveComplianceBatch. The detail shell
-// paints from the row only; the live probe replaces this once it returns.
-const SNAPSHOT_DANGEROUS_FLAGS = new Set([
-  'litigator',
-  'deceased',
-  'dnc',
-  'dnc:tcpa',
-  'do-not-call',
-  'do_not_call',
-  'do-not-text',
-  'hard-stop',
-])
-
 /** Persisted flags only. Relist is unknown until the live probe — not claimed false as a fact. */
 export function complianceSnapshotFromRow(kind: ProspectKind, raw: RawRow): ProspectComplianceState {
   const flags = Array.isArray(raw.compliance_flags) ? (raw.compliance_flags as unknown[]).map((f) => String(f)) : []
-  const dangerous = flags.find((f) => SNAPSHOT_DANGEROUS_FLAGS.has(f.toLowerCase())) ?? null
   const persistedHardStop = raw.compliance_hard_stop === true
-  const allChannelReason = persistedHardStop
-    ? 'Compliance hard stop on the record'
-    : dangerous
-      ? `Skip-trace flag: ${dangerous}`
-      : null
+  const emailHard = emailBlockedByFlags(flags, persistedHardStop)
+  const phoneHard = emailHard ? null : phoneBlockedByFlags(flags)
   const noPhone = !hasSendablePhone((raw.contact_phone as string | null) ?? null)
   const noEmail = !hasSendableEmail((raw.contact_email as string | null) ?? null)
-  const channels = allChannelReason
-    ? blockAllChannels(allChannelReason)
+  const channels = emailHard
+    ? blockAllChannels(emailHard)
     : {
-        sms: { blocked: noPhone, reason: noPhone ? 'No phone on file' : null },
+        sms: {
+          blocked: noPhone || phoneHard != null,
+          reason: phoneHard ?? (noPhone ? 'No phone on file' : null),
+        },
         email: { blocked: noEmail, reason: noEmail ? 'No email on file' : null },
-        call: { blocked: noPhone, reason: noPhone ? 'No phone on file' : null },
+        call: {
+          blocked: noPhone || phoneHard != null,
+          reason: phoneHard ?? (noPhone ? 'No phone on file' : null),
+        },
       }
   const offMarket = kind === 'fsbo' ? ((raw.status as string | null) ?? 'active') !== 'active' : false
   const reasons: string[] = []
-  if (allChannelReason) reasons.push(allChannelReason)
+  if (emailHard) reasons.push(emailHard)
+  if (phoneHard) reasons.push(phoneHard)
   if (noPhone) reasons.push('SMS: No phone on file')
   if (noEmail) reasons.push('EMAIL: No email on file')
   if (offMarket) reasons.push('Off market')
+  const smsClosedByCompliance = emailHard != null || phoneHard != null
   return {
-    hardStop: allChannelReason != null,
+    hardStop: smsClosedByCompliance,
     flags,
     relisted: false,
     offMarket,
-    suppressedSms: allChannelReason != null,
+    suppressedSms: smsClosedByCompliance,
     noPhone,
     noEmail,
     reasons,

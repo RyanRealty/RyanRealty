@@ -72,7 +72,7 @@ export async function selectNewExpiredListings(options: {
   let query = sb
     .from('listings')
     .select(
-      'ListingKey,ListNumber,StandardStatus,status_change_timestamp,StreetNumber,StreetName,City,PostalCode,ListPrice,OriginalListPrice,CumulativeDaysOnMarket,OnMarketDate,ListDate,ListAgentName,list_agent_email,PropertyType,BedroomsTotal,BathroomsTotal,TotalLivingAreaSqFt,SubdivisionName',
+      'ListingKey,ListNumber,StandardStatus,status_change_timestamp,StreetNumber,StreetName,City,PostalCode,ListPrice,OriginalListPrice,CumulativeDaysOnMarket,OnMarketDate,ListDate,ListAgentName,list_agent_email,PropertyType,BedroomsTotal,BathroomsTotal,TotalLivingAreaSqFt,SubdivisionName,parcel_number',
     )
     .in('StandardStatus', ['Expired', 'Canceled', 'Withdrawn'])
     .gt('status_change_timestamp', options.sinceIso)
