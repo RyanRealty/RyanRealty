@@ -756,6 +756,10 @@ export async function buildProspectDoc(
       },
       requestSource: kind === 'expired' ? 'expired-dashboard' : 'fsbo-dashboard',
       docType: expectedDocTypeFor(kind),
+      // The prospect row already resolved the CRM person (outreach id, else
+      // the native id stored on fub_person_id). The build fills a blank email
+      // from that person. Passing the id is what attaches the contact.
+      personId: prospect.personId,
     })
     if (!res.ok) return { ok: false, error: res.error ?? 'Build failed.' }
 

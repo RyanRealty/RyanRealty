@@ -19,7 +19,6 @@ import {
   snapshotCmaVersion,
   getCmaBuildSummaryBySlug,
   getPricingMarketIndex,
-  findCrmPersonIdByEmail,
   type CmaCompInsert,
 } from '@/lib/data'
 import { resolveSigningBrokerForPerson } from '@/lib/data/cma/signing-broker'
@@ -28,6 +27,7 @@ import { applyReconciledRoomCounts, reconcileSubjectRoomCounts } from '@/lib/cma
 import { pickCoverPhoto } from '@/lib/cma/cover-photo'
 import { applySlugStreetDirectional, formatPersistedCmaAddress } from '@/lib/cma/address-slug'
 import { applyCmaClientIntent, isCmaClientIntent, parseCmaClientIntent } from '@/lib/cma/client-intent'
+import { cmaClientPersistFields, resolveLinkedCmaClient } from '@/lib/cma/expired-owner-link'
 import { brokerCompRefusal, selectCompsByKeys, MIN_COMPS } from '@/lib/cma/comps'
 import { pricingCompsAfterJudgment } from '@/lib/cma/judgment-prune'
 import { reviewWeightFactor } from '@/lib/cma/review-weight'
@@ -1433,6 +1433,20 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     }).catch(() => null)
 
     pricing = pinPrintedBandToSettingSales(pricing, renderComps)
+    // A blank client on an expired home is the skip-traced owner. Resolved
+    // before render so the letter can keep that name out of the copy, and
+    // before persist so a null does not wipe a client already stored.
+    const linked = await resolveLinkedCmaClient({
+      client: input.client,
+      personId: input.personId ?? null,
+      listingKey: subject.listingKey,
+    })
+    const linkedClient = {
+      ...input.client,
+      name: linked.name,
+      email: linked.email,
+      phone: linked.phone,
+    }
     const renderArgs = {
       coverPhoto: {
         url: coverPhoto.url,
@@ -1449,7 +1463,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       bandRivals,
       market,
       pricing,
-      client: input.client,
+      client: linkedClient,
       generatedAtIso,
       subjectTrace: resolved.trace,
       compTrace: selection.trace,
@@ -1472,17 +1486,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
 
     // Spread, never a second hand-written list: a field added to one list and
     // not the other would render here and vanish on re-brand (W10.3).
-    let personId =
-      input.personId != null && Number.isFinite(input.personId) && input.personId > 0
-        ? Math.round(input.personId)
-        : null
-    if (personId == null && input.client.email?.trim()) {
-      try {
-        personId = await findCrmPersonIdByEmail(input.client.email)
-      } catch {
-        personId = null
-      }
-    }
+    const personId = linked.personId
     const { html, pageCount } = renderCmaHtml({
       ...renderArgs,
       broker,
@@ -1492,8 +1496,8 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     })
     const letterContract = evaluateLetterConsistencyContract({
       html,
-      names: { clientName: input.client.name },
-      identity: { personId, clientEmail: input.client.email },
+      names: { clientName: linkedClient.name },
+      identity: { personId, clientEmail: linkedClient.email },
       pricing,
       closedComps: renderComps,
       expiredAddresses: (expiredPeers?.peers ?? []).map((peer) => peer.address),
@@ -1867,16 +1871,11 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       subject_sqft: subject.sqft != null ? Math.round(subject.sqft) : null,
       subject_lot_acres: subject.lotAcres,
       subject_year_built: subject.yearBuilt,
-      client_name: input.client.name,
-      client_email: input.client.email,
-      client_phone: input.client.phone,
+      ...cmaClientPersistFields(linked),
       client_notes: applyCmaClientIntent(
         input.client.notes,
         isCmaClientIntent(input.clientIntent) ? input.clientIntent : parseCmaClientIntent(input.client.notes),
       ),
-      ...(input.personId && Number.isFinite(input.personId) && input.personId > 0
-        ? { person_id: Math.round(input.personId) }
-        : {}),
       broker_id: broker.id,
       broker_slug: broker.slug,
       value_low: pricing.valueLow,

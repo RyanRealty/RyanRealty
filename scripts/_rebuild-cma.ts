@@ -104,6 +104,12 @@ async function main() {
     priceOverride: null,
     requestSource: 'cli-rebuild',
     docType: (row.doc_type as string | null) === 'expired-audit' ? 'expired-audit' : 'cma',
+    // Same as rebuildCmaAction: keep the linked person. A blank client is
+    // filled from that person, or from the expired owner of this listing.
+    personId:
+      row.person_id == null || !Number.isFinite(Number(row.person_id)) || Number(row.person_id) <= 0
+        ? null
+        : Math.round(Number(row.person_id)),
   })
 
   const secs = ((Date.now() - started) / 1000).toFixed(1)

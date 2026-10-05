@@ -287,8 +287,10 @@ const ADJUSTMENT_ROWS: ReadonlyArray<MatrixRow> = [
   // ground and is NOT priced for the room (lib/pricing/room-counts.ts: paired
   // sales in this market put the extra bath slightly below its pair at the
   // median). The reader asks "what did you adjust for" in this grid, so the
-  // honest $0 belongs in it. Folds away when no sale carries a difference.
-  { label: 'Adjusted for rooms (theirs vs yours)', figure: true, grid: true },
+  // sentence belongs in it. Folds away when no sale carries a difference.
+  // Prose, not a figure: nowrap painted "One bedroom off yours. No dollar
+  // adjustment." past the right margin (Golden Market, page 5, 0.04in).
+  { label: 'Adjusted for rooms (theirs vs yours)', figure: false, grid: true },
   { label: 'Net adjustment', figure: true, grid: true },
   { label: 'Net, as a share of the sale', figure: true, grid: true },
   { label: 'Every adjustment added up', figure: true, grid: true },

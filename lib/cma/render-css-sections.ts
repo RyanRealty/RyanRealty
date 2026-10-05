@@ -302,7 +302,11 @@ export function cmaSectionStyles(): string {
   .comp-stack-card .matrix-thumb { width: 100%; max-width: 100%; aspect-ratio: 16 / 10; object-fit: cover; display: block; margin: 0 0 8px; }
   @media print {
     .comp-stack { display: none !important; }
-    .comp-matrix-wrap { display: block !important; overflow-x: visible; }
+    /* 4pt inside the content box. A right-aligned room sentence
+       ("One bedroom off yours. No dollar adjustment.") was landing 0.04in
+       past the right margin on a full-width last column. The sentence stays
+       whole. The table moves in. */
+    .comp-matrix-wrap { display: block !important; overflow-x: visible; max-width: calc(100% - 4pt); }
     .matrix-group-h { display: block !important; }
   }
   /* Chapter 3's title IS the number, so it is set as the answer rather than as
@@ -657,7 +661,7 @@ export function cmaSectionStyles(): string {
   }
   /* Matt ADD 2026-09-12 tension: figures nowrap; LABEL + long prose wrap. */
   table.comp-matrix tbody th { white-space: normal; overflow: visible; text-overflow: clip; }
-  table.comp-matrix td.v:not(.n) { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.35; }
+  table.comp-matrix td.v:not(.n) { white-space: normal; overflow-wrap: break-word; overflow: visible; text-overflow: clip; line-height: 1.35; }
   table.comp-matrix td.n { white-space: nowrap; }
   /* The column HEAD is the address, and an address is neither a label nor a
      number: under nowrap + overflow hidden a long one ("401 Comparable Street

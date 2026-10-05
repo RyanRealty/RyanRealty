@@ -17,6 +17,60 @@ function client() {
   return createServiceClient()
 }
 
+export type ExpiredOwnerContact = {
+  name: string | null
+  email: string | null
+  phone: string | null
+  personId: number | null
+}
+
+function cleanContact(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  const trimmed = value.trim()
+  return trimmed || null
+}
+
+function cleanPersonId(value: unknown): number | null {
+  const n = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN
+  if (!Number.isFinite(n) || n <= 0) return null
+  return Math.round(n)
+}
+
+/**
+ * The skip-traced owner for this MLS key, when expired_listings has one.
+ *
+ * Person id prefers outreach_crm_person_id, then fub_person_id (that column
+ * holds the native crm_people id on this lane). Email and name prefer the
+ * CRM person, then the columns on the expired row. No person and no email
+ * is not a contact to attach.
+ */
+export async function getExpiredOwnerForCma(listingKey: string): Promise<ExpiredOwnerContact | null> {
+  const key = listingKey.trim()
+  if (!key) return null
+  const sb = client()
+  if (!sb) return null
+  const { data, error } = await sb
+    .from('expired_listings')
+    .select('owner_name, contact_email, contact_phone, fub_person_id, outreach_crm_person_id')
+    .eq('listing_key', key)
+    .maybeSingle()
+  if (error || !data) return null
+  const row = data as {
+    owner_name?: unknown
+    contact_email?: unknown
+    contact_phone?: unknown
+    fub_person_id?: unknown
+    outreach_crm_person_id?: unknown
+  }
+  const personId = cleanPersonId(row.outreach_crm_person_id) ?? cleanPersonId(row.fub_person_id)
+  const person = personId ? await getPersonForCmaKickoff(personId) : null
+  const email = person?.primaryEmail || cleanContact(row.contact_email)?.toLowerCase() || null
+  const name = person?.name || cleanContact(row.owner_name)
+  const phone = person?.primaryPhone || cleanContact(row.contact_phone)
+  if (!personId && !email) return null
+  return { name, email, phone, personId }
+}
+
 /** First crm_people id carrying this email (case-insensitive), or null. */
 export async function findCrmPersonIdByEmail(email: string): Promise<number | null> {
   const sb = client()

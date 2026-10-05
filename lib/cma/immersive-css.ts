@@ -139,7 +139,7 @@ table.comp-matrix td.is-note{text-align:left;font-size:12px;line-height:1.4;opac
    so Status / First ask→last ask→outcome / Distance do not collide at ~24% label. */
 table.comp-matrix th,table.comp-matrix td{padding:8px 10px;border-bottom:1px solid var(--ink12);text-align:right}
 table.comp-matrix tbody th{white-space:normal;overflow:visible;text-overflow:clip}
-table.comp-matrix td.v:not(.n){white-space:normal;overflow:visible;text-overflow:clip;line-height:1.35}
+table.comp-matrix td.v:not(.n){white-space:normal;overflow-wrap:break-word;overflow:visible;text-overflow:clip;line-height:1.35}
 table.comp-matrix td.n{white-space:nowrap}
 /* Matrix 3's status filter hides COLUMNS. A table cell needs the rule said
    out loud: our own padding rule would otherwise fight the UA [hidden]. */

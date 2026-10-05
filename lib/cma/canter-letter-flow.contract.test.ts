@@ -801,7 +801,7 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
     expect(matrixSrc).toMatch(/const LABEL_COL_PCT = 24/)
     const immersive = readFileSync(join(process.cwd(), 'lib/cma/immersive-css.ts'), 'utf8')
     expect(immersive).toContain('table.comp-matrix tbody th{white-space:normal')
-    expect(immersive).toContain('table.comp-matrix td.v:not(.n){white-space:normal')
+    expect(immersive).toContain('table.comp-matrix td.v:not(.n){white-space:normal;overflow-wrap:break-word')
     expect(immersive).toContain('table.comp-matrix td.n{white-space:nowrap}')
     // No blanket nowrap+ellipsis on every th/td.
     expect(immersive).not.toMatch(
@@ -809,7 +809,8 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
     )
     const printCss = readFileSync(join(process.cwd(), 'lib/cma/render-css-sections.ts'), 'utf8')
     expect(printCss).toContain('table.comp-matrix tbody th { white-space: normal')
-    expect(printCss).toContain('table.comp-matrix td.v:not(.n) { white-space: normal')
+    expect(printCss).toContain('table.comp-matrix td.v:not(.n) { white-space: normal; overflow-wrap: break-word;')
+    expect(printCss).toContain('.comp-matrix-wrap { display: block !important; overflow-x: visible; max-width: calc(100% - 4pt); }')
   })
 
   it('contract: sales-that-set-it-one-heading', () => {

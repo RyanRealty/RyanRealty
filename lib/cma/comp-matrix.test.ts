@@ -582,6 +582,12 @@ describe('the adjustment grid, line by line', () => {
     expect(count('Sold for')).toBe(0)
     expect(count('Adjusted for rooms (theirs vs yours)')).toBe(1)
     expect(card).toContain('One bedroom off yours. No dollar adjustment.')
+    // The desktop cell wraps. Class n is nowrap, and that sentence ran past
+    // the right margin on the printed adjustment grid.
+    expect(html).not.toMatch(
+      /<td class="v n[^"]*">One bedroom off yours\. No dollar adjustment\.<\/td>/,
+    )
+    expect(html).toContain('>One bedroom off yours. No dollar adjustment.</td>')
     expect(count('Sale price today')).toBe(1)
     expect(count('Weight in this price')).toBe(1)
     expect(card.indexOf('matrix-thumb')).toBeLessThan(card.indexOf('class="k">Weight in this price'))

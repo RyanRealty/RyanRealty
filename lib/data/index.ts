@@ -657,7 +657,8 @@ export { listOpenCmaActions, listOpenCmaActionsForSlug, claimCmaAction, updateCm
 export { listCmaQueue, isSendableQueueState } from '@/lib/data/cma/unified-queue'
 export type { CmaQueueRow, CmaQueueState, CmaAuditVerdict } from '@/lib/data/cma/unified-queue'
 export type { CmaActionRow } from '@/lib/data/cma/queue'
-export { findCrmPersonIdByEmail, stampCmaLinkOnPerson, stampCmaPersonId, attachCmaToPerson, logCmaTimelineEvent } from '@/lib/data/cma/crm'
+export { findCrmPersonIdByEmail, getExpiredOwnerForCma, stampCmaLinkOnPerson, stampCmaPersonId, attachCmaToPerson, logCmaTimelineEvent } from '@/lib/data/cma/crm'
+export type { ExpiredOwnerContact } from '@/lib/data/cma/crm'
 
 // CMA — the /account overview's view of delivered-to-me reports (never drafts).
 export { getMyCmas } from '@/lib/data/cma/getMyCmas'
