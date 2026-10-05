@@ -37,7 +37,9 @@ import { supabaseAnon } from '@/lib/data/client'
 import { PUBLIC_ACTIVE_STATUSES } from '@/lib/listing-status-public'
 import { isServiceAreaCity } from '@/lib/data/listings/service-area'
 import {
+  applyRecrawlLastmod,
   assembleListingSitemapRows,
+  type ListingRecrawlFlag,
   type ListingSitemapRow,
   type ListingSitemapTile,
 } from '@/lib/data/sitemap/listing-sitemap-path'
@@ -223,8 +225,36 @@ async function fetchMediaSuppressedKeys(): Promise<ReadonlySet<string> | null> {
   return new Set(((data ?? []) as Array<{ ListingKey: string | null }>).map((r) => String(r.ListingKey ?? '').trim()))
 }
 
+/**
+ * GSC slide fix (2026-10-05). Listing URLs Google still holds as "Excluded by
+ * 'noindex' tag" or under another listing's canonical, recorded by
+ * scripts/gsc-listing-noindex-sweep.mjs. A small table (one row per flagged
+ * URL, deleted when a re-inspection finds it healthy). A failed read bumps
+ * nothing and never fails the sitemap.
+ */
+async function fetchRecrawlFlags(): Promise<ListingRecrawlFlag[]> {
+  const supabase = supabaseAnon()
+  if (!supabase) return []
+  const { data, error } = await withRetry(
+    // One page is enough: at most one row per sitemap listing URL that Google
+    // holds badly (12 of a random 150 on 2026-10-05, so ~260 of 3,247).
+    () => supabase.from('gsc_listing_index_flags').select('url, listing_number, recrawl_after').limit(1000),
+    2,
+  )
+  if (error) {
+    console.error(`[getListingSitemapRows] gsc_listing_index_flags read failed, no lastmod bump: ${errorMessage(error)}`)
+    return []
+  }
+  return (data ?? []) as ListingRecrawlFlag[]
+}
+
 export async function getListingSitemapRows(now: Date = new Date()): Promise<ListingSitemapRow[]> {
-  const [tiles, suppressed] = await Promise.all([fetchActiveListingTiles(), fetchMediaSuppressedKeys()])
-  const rows = assembleListingSitemapRows(serviceAreaSitemapTiles(tiles), now, suppressed ?? new Set())
+  const [tiles, suppressed, flags] = await Promise.all([
+    fetchActiveListingTiles(),
+    fetchMediaSuppressedKeys(),
+    fetchRecrawlFlags(),
+  ])
+  const assembled = assembleListingSitemapRows(serviceAreaSitemapTiles(tiles), now, suppressed ?? new Set())
+  const rows = applyRecrawlLastmod(assembled, flags, now)
   return suppressed ? rows : rows.map((r) => ({ ...r, imageUrl: null }))
 }

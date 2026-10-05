@@ -71,10 +71,15 @@ function mockSupabase(opts: { countResults: CountResult[]; pageResults: PageResu
 
   return {
     client: {
-      from: () => ({
-        select: (_cols: string, selectOpts?: { count?: string; head?: boolean }) =>
-          selectOpts?.head ? countBuilder() : dataBuilder(),
-      }),
+      from: (table: string) =>
+        // Only the MV pages are under test here; the recrawl-flag side read
+        // (gsc_listing_index_flags) answers empty and consumes no page result.
+        table === 'gsc_listing_index_flags'
+          ? { select: () => ({ limit: async () => ({ data: [], error: null }) }) }
+          : {
+              select: (_cols: string, selectOpts?: { count?: string; head?: boolean }) =>
+                selectOpts?.head ? countBuilder() : dataBuilder(),
+            },
     },
     gtCalls,
     pageCallCount: () => pageIdx,

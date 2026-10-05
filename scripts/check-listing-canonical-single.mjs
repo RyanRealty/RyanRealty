@@ -189,12 +189,16 @@ const hopAt = middleware.indexOf('resolveListingCanonicalHop(pathname')
 checks.push({
   label: 'P14: middleware.ts 308s non-canonical listing paths via resolveListingCanonicalHop + the Edge lookup',
   ok:
-    /import \{ (isRouterFlightRequest, )?resolveListingCanonicalHop \} from '@\/lib\/routing\/listing-canonical-hop'/.test(middleware) &&
+    /import \{ (isRouterFlightRequest, )?(listingIdFromRequestPath, )?resolveListingCanonicalHop \} from '@\/lib\/routing\/listing-canonical-hop'/.test(middleware) &&
     /import \{ getListingCanonicalPathFieldsEdge \} from '@\/lib\/data\/listings\/getListingCanonicalPathFieldsEdge'/.test(
       middleware,
     ) &&
     hopAt !== -1 &&
-    /getListingCanonicalPathFieldsEdge\(id\)/.test(middleware.slice(hopAt, hopAt + 600)) &&
+    // The Edge read feeds the hop either inline, or (2026-10-05) once ahead of
+    // it through readListingForRequest, which also decides the 503 on a
+    // database failure (lib/routing/listing-unavailable.ts).
+    (/getListingCanonicalPathFieldsEdge\(id\)/.test(middleware.slice(hopAt, hopAt + 600)) ||
+      /readListingForRequest\(listingId, getListingCanonicalPathFieldsEdge\)/.test(middleware.slice(Math.max(0, hopAt - 600), hopAt))) &&
     /NextResponse\.redirect\(redirectUrl, 308\)/.test(middleware.slice(hopAt, hopAt + 900)),
 })
 // The unit tests prove the decision; only a running server proves the Edge

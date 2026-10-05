@@ -39,6 +39,10 @@ const UNAVAILABLE = 'components/site/listing-detail/ListingUnavailable.tsx'
 const META = 'lib/site/page-metadata.ts'
 const SHARE = 'lib/share-metadata.ts'
 
+const LOOKUP_DAL = 'lib/data/listings/getListingDetail.ts'
+const MIDDLEWARE = 'middleware.ts'
+const UNAVAILABLE_503 = 'lib/routing/listing-unavailable.ts'
+
 const FILES = [
   'scripts/check-listing-offmarket-index.mjs',
   PAGE,
@@ -46,6 +50,9 @@ const FILES = [
   UNAVAILABLE,
   META,
   SHARE,
+  LOOKUP_DAL,
+  MIDDLEWARE,
+  UNAVAILABLE_503,
 ]
 
 function reset() {
@@ -326,6 +333,66 @@ describe('ci:listing-offmarket-index', () => {
       const { code, out } = run()
       expect(code).toBe(1)
       expect(out).toContain('refusal copy says')
+    })
+  })
+
+  // GSC slide fix 2026-10-05: a database failure must never be a 200 noindex.
+  describe('a database failure reaching the noindexed refusal fails', () => {
+    it('getListingLookup reporting a failed read as missing', () => {
+      reset()
+      edit(LOOKUP_DAL, "  } catch {\n    return { kind: 'error' }", "  } catch {\n    return { kind: 'missing' }")
+      const { code, out } = run()
+      expect(code).toBe(1)
+      expect(out).toContain("must return { kind: 'error' }")
+    })
+
+    it('the page rendering the refusal on an error', () => {
+      reset()
+      edit(PAGE, "if (lookup.kind === 'error') return <ListingTemporarilyUnavailable />", "if (lookup.kind === 'error') return <ListingUnavailable />")
+      const { code, out } = run()
+      expect(code).toBe(1)
+      expect(out).toContain('lookup ERROR')
+    })
+
+    it('generateMetadata returning the refusal metadata on an error', () => {
+      reset()
+      edit(
+        PAGE,
+        "if (lookup.kind === 'error') return LISTING_TEMPORARILY_UNAVAILABLE_METADATA",
+        "if (lookup.kind === 'error') return LISTING_UNAVAILABLE_METADATA",
+      )
+      const { code, out } = run()
+      expect(code).toBe(1)
+      expect(out).toContain('lookup ERROR')
+    })
+
+    it('a robots directive added to the temporary metadata', () => {
+      reset()
+      edit(UNAVAILABLE, "  title: 'Listing loading',", "  title: 'Listing loading',\n  robots: { index: false, follow: true },")
+      const { code, out } = run()
+      expect(code).toBe(1)
+      expect(out).toContain('declares robots')
+    })
+
+    it('middleware no longer answering a failed read with the 503', () => {
+      reset()
+      edit(MIDDLEWARE, 'return listingTemporarilyUnavailableResponse(', 'return void (')
+      const { code, out } = run()
+      expect(code).toBe(1)
+      expect(out).toContain('listingTemporarilyUnavailableResponse()')
+    })
+
+    it('the 503 downgraded to a 200, or given a noindex', () => {
+      reset()
+      edit(UNAVAILABLE_503, 'status: 503,', 'status: 200,')
+      let r = run()
+      expect(r.code).toBe(1)
+      expect(r.out).toContain('status 503')
+      reset()
+      edit(UNAVAILABLE_503, "'cache-control': 'no-store',", "'cache-control': 'no-store',\n    'x-robots-tag': 'noindex',")
+      r = run()
+      expect(r.code).toBe(1)
+      expect(r.out).toContain('never carry')
     })
   })
 })

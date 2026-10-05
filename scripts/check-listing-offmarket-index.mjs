@@ -71,6 +71,22 @@
  *     that refuses none of those things, and it is what let the off-market
  *     state be believed handled while the live page sold a closed house.
  *
+ *  6. A DATABASE FAILURE IS NEVER A 200 NOINDEX (GSC slide fix, 2026-10-05).
+ *     Until 7e392cc4 a failed listing lookup rendered the noindexed refusal as
+ *     HTTP 200; URL Inspection found 12 of a random 150 sitemap listing URLs
+ *     still "Excluded by 'noindex' tag" weeks later, 8 of them with a Google
+ *     canonical pointing at a different listing. So:
+ *       a. getListingLookup's catch returns { kind: 'error' }, never 'missing'.
+ *       b. In the page, an `.kind === 'error'` guard never reaches the refusal
+ *          (LISTING_UNAVAILABLE_METADATA / <ListingUnavailable />), and
+ *          generateMetadata does return LISTING_TEMPORARILY_UNAVAILABLE_METADATA
+ *          under one.
+ *       c. LISTING_TEMPORARILY_UNAVAILABLE_METADATA declares no robots.
+ *       d. middleware.ts answers a transient edge lookup failure through
+ *          readListingForRequest / isListingLookupUnavailable /
+ *          listingTemporarilyUnavailableResponse, and that response is a 503
+ *          with Retry-After and no-store whose strings never say noindex.
+ *
  * Usage:
  *   node scripts/check-listing-offmarket-index.mjs            # CI
  *   node scripts/check-listing-offmarket-index.mjs --json
@@ -579,6 +595,164 @@ function functionNamed(sf, name) {
         }
       }
     })
+  }
+}
+
+/* ── 6. a database failure is never a 200 noindex ─────────────────────────── */
+
+const LOOKUP_DAL = 'lib/data/listings/getListingDetail.ts'
+const MIDDLEWARE = 'middleware.ts'
+const UNAVAILABLE_503 = 'lib/routing/listing-unavailable.ts'
+
+/** The nearest enclosing if-guard's text, or null. */
+function guardTextOf(sf, node) {
+  for (let p = node.parent; p; p = p.parent) {
+    if (ts.isIfStatement(p)) return p.expression.getText(sf)
+  }
+  return null
+}
+
+const ERROR_GUARD = /\.kind\s*===\s*['"]error['"]/
+
+{
+  const src = read(LOOKUP_DAL)
+  if (src) {
+    const sf = parse(LOOKUP_DAL, src)
+    const fn = functionNamed(sf, 'getListingLookupUncoalesced')
+    if (!fn) {
+      failures.push(
+        `${LOOKUP_DAL}: getListingLookupUncoalesced not found. It is the lookup that keeps a database ` +
+          `failure apart from a missing home; if it moved, re-point this gate in the same commit.`,
+      )
+    } else {
+      let catches = 0
+      walk(fn, (n) => {
+        if (!ts.isCatchClause(n)) return
+        catches++
+        const literals = stringsIn(n.block)
+        if (!literals.has('error') || literals.has('missing')) {
+          failures.push(
+            `${LOOKUP_DAL}:${lineOf(sf, n)}: getListingLookup's catch must return { kind: 'error' } and ` +
+              `nothing else. A failed read reported as 'missing' renders the noindexed refusal on a ` +
+              `live listing, which is how 12 of 150 sampled sitemap listings sat "Excluded by noindex" ` +
+              `(URL Inspection, 2026-10-05).`,
+          )
+        }
+      })
+      if (catches === 0) {
+        failures.push(
+          `${LOOKUP_DAL}: getListingLookupUncoalesced has no catch; a failed read must become { kind: 'error' }.`,
+        )
+      }
+    }
+  }
+}
+
+{
+  const src = read(PAGE)
+  if (src) {
+    const sf = parse(PAGE, src)
+    let tempMetaOnError = false
+    walk(sf, (n) => {
+      const isRefusalMeta =
+        ts.isIdentifier(n) && n.text === 'LISTING_UNAVAILABLE_METADATA' && n.parent && ts.isReturnStatement(n.parent)
+      const isRefusalJsx =
+        (ts.isJsxSelfClosingElement(n) || ts.isJsxOpeningElement(n)) && n.tagName.getText(sf) === 'ListingUnavailable'
+      if (isRefusalMeta || isRefusalJsx) {
+        const guard = guardTextOf(sf, n)
+        if (guard && ERROR_GUARD.test(guard)) {
+          failures.push(
+            `${PAGE}:${lineOf(sf, n)}: the refusal is reached on a lookup ERROR (\`${guard}\`). A ` +
+              `database failure is not a missing home: it must never render the noindexed refusal.`,
+          )
+        }
+      }
+      if (
+        ts.isIdentifier(n) &&
+        n.text === 'LISTING_TEMPORARILY_UNAVAILABLE_METADATA' &&
+        n.parent &&
+        ts.isReturnStatement(n.parent)
+      ) {
+        const guard = guardTextOf(sf, n)
+        if (guard && ERROR_GUARD.test(guard)) tempMetaOnError = true
+      }
+    })
+    if (!tempMetaOnError) {
+      failures.push(
+        `${PAGE}: generateMetadata no longer returns LISTING_TEMPORARILY_UNAVAILABLE_METADATA under a ` +
+          `\`.kind === 'error'\` guard. A failed lookup must get the robots-free temporary metadata.`,
+      )
+    }
+  }
+}
+
+{
+  const src = read(UNAVAILABLE)
+  if (src) {
+    const sf = parse(UNAVAILABLE, src)
+    let declared = false
+    walk(sf, (n) => {
+      if (
+        ts.isVariableDeclaration(n) &&
+        ts.isIdentifier(n.name) &&
+        n.name.text === 'LISTING_TEMPORARILY_UNAVAILABLE_METADATA'
+      ) {
+        declared = true
+        if (!n.initializer) return
+        walk(n.initializer, (m) => {
+          if (
+            (ts.isPropertyAssignment(m) || ts.isShorthandPropertyAssignment(m)) &&
+            (propertyName(m) ?? m.name?.text) === 'robots'
+          ) {
+            failures.push(
+              `${UNAVAILABLE}:${lineOf(sf, m)}: LISTING_TEMPORARILY_UNAVAILABLE_METADATA declares robots. ` +
+                `A temporary failure must never carry a robots directive.`,
+            )
+          }
+        })
+      }
+    })
+    if (!declared) failures.push(`${UNAVAILABLE}: LISTING_TEMPORARILY_UNAVAILABLE_METADATA is missing.`)
+  }
+}
+
+{
+  const mw = read(MIDDLEWARE)
+  if (mw) {
+    const sf = parse(MIDDLEWARE, mw)
+    const called = new Set()
+    walk(sf, (n) => {
+      if (ts.isCallExpression(n) && ts.isIdentifier(n.expression)) called.add(n.expression.text)
+    })
+    for (const name of ['readListingForRequest', 'isListingLookupUnavailable', 'listingTemporarilyUnavailableResponse']) {
+      if (!called.has(name)) {
+        failures.push(
+          `${MIDDLEWARE}: no call to ${name}(). A listing path whose database read fails must answer 503 ` +
+            `with Retry-After before the page streams a 200 (lib/routing/listing-unavailable.ts).`,
+        )
+      }
+    }
+  }
+  const resp = read(UNAVAILABLE_503)
+  if (resp) {
+    const sf = parse(UNAVAILABLE_503, resp)
+    const fn = functionNamed(sf, 'listingTemporarilyUnavailableResponse')
+    if (!fn) {
+      failures.push(`${UNAVAILABLE_503}: listingTemporarilyUnavailableResponse is missing.`)
+    } else {
+      const text = fn.getText(sf)
+      if (!/status:\s*503\b/.test(text)) failures.push(`${UNAVAILABLE_503}: the response must be status 503.`)
+      if (!/['"]retry-after['"]/i.test(text)) failures.push(`${UNAVAILABLE_503}: the response must carry Retry-After.`)
+      if (!/no-store/.test(text)) failures.push(`${UNAVAILABLE_503}: the response must be cache-control no-store.`)
+    }
+    for (const lit of stringsIn(sf)) {
+      if (/noindex/i.test(lit)) {
+        failures.push(
+          `${UNAVAILABLE_503}: a string says ${JSON.stringify(lit.slice(0, 60))}. The 503 must never carry ` +
+            `noindex, in a header or the body.`,
+        )
+      }
+    }
   }
 }
 

@@ -89,3 +89,55 @@ export function assembleListingSitemapRows(
   }
   return out
 }
+
+/** One gsc_listing_index_flags row, as the sitemap reads it. */
+export type ListingRecrawlFlag = {
+  url: string
+  listing_number: string | null
+  recrawl_after: string | null
+}
+
+function pathOf(url: string): string {
+  try {
+    return new URL(url, 'https://ryan-realty.com').pathname.replace(/\/$/, '')
+  } catch {
+    return ''
+  }
+}
+
+/**
+ * GSC slide fix (2026-10-05). Listing URLs that URL Inspection found
+ * "Excluded by 'noindex' tag" or folded into another listing's canonical
+ * (scripts/gsc-listing-noindex-sweep.mjs) were crawled while the page served a
+ * failure state. The page has changed since, so their lastmod becomes
+ * greatest(listing modified_at, recrawl_after): the time the content Google
+ * holds stopped being true. A flag matches a row by its sitemap path, or by the
+ * MLS number at the path's tail when the canonical has moved since the
+ * inspection. A lastmod never moves backwards and never into the future.
+ */
+export function applyRecrawlLastmod(
+  rows: readonly ListingSitemapRow[],
+  flags: readonly ListingRecrawlFlag[],
+  now: Date,
+): ListingSitemapRow[] {
+  if (flags.length === 0) return [...rows]
+  const byPath = new Map<string, number>()
+  const byNumber = new Map<string, number>()
+  for (const f of flags) {
+    const t = f.recrawl_after ? Date.parse(f.recrawl_after) : NaN
+    if (!Number.isFinite(t)) continue
+    const at = Math.min(t, now.getTime())
+    const p = pathOf(f.url)
+    if (p) byPath.set(p, Math.max(byPath.get(p) ?? 0, at))
+    const n = String(f.listing_number ?? '').trim()
+    if (n) byNumber.set(n, Math.max(byNumber.get(n) ?? 0, at))
+  }
+  return rows.map((row) => {
+    const tail = row.path.match(/-([0-9]{5,})$/)?.[1] ?? ''
+    const bump = byPath.get(row.path.replace(/\/$/, '')) ?? (tail ? byNumber.get(tail) : undefined)
+    if (bump === undefined) return row
+    const current = Date.parse(row.lastModified)
+    if (Number.isFinite(current) && current >= bump) return row
+    return { ...row, lastModified: new Date(bump).toISOString() }
+  })
+}

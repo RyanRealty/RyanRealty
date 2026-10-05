@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { assembleListingSitemapRows, listingSitemapImageUrl, listingSitemapPath } from './listing-sitemap-path'
+import {
+  applyRecrawlLastmod,
+  assembleListingSitemapRows,
+  listingSitemapImageUrl,
+  listingSitemapPath,
+} from './listing-sitemap-path'
 
 describe('listingSitemapPath', () => {
   // P14 (2026-09-23): the canonical is MLS City + MLS SubdivisionName +
@@ -104,5 +109,52 @@ describe('listingSitemapImageUrl', () => {
     expect(listingSitemapImageUrl(row, new Set(['K1']))).toBeNull()
     expect(listingSitemapImageUrl({ listing_key: 'K1', photo_url: null }, new Set())).toBeNull()
     expect(listingSitemapImageUrl({ listing_key: 'K1', photo_url: 'http://x.test/a.jpg' }, new Set())).toBeNull()
+  })
+})
+
+describe('applyRecrawlLastmod (GSC slide fix 2026-10-05)', () => {
+  const NOW = new Date('2026-10-05T12:00:00.000Z')
+  const mk = (path: string, lastModified: string) => ({ listingKey: path, path, lastModified, imageUrl: null })
+  const rows = [
+    mk('/homes-for-sale/bend/providence/1522-locksley-220226356', '2026-08-01T00:00:00.000Z'),
+    mk('/homes-for-sale/bend/2-oak-220000002', '2026-08-01T00:00:00.000Z'),
+    mk('/homes-for-sale/bend/3-elm-220000003', '2026-10-05T11:00:00.000Z'),
+  ]
+  const BUMP = '2026-10-05T08:00:00.000Z'
+
+  it('bumps a flagged URL to recrawl_after, matched by path', () => {
+    const out = applyRecrawlLastmod(
+      rows,
+      [{ url: 'https://ryan-realty.com/homes-for-sale/bend/providence/1522-locksley-220226356', listing_number: '220226356', recrawl_after: BUMP }],
+      NOW,
+    )
+    expect(out[0]!.lastModified).toBe(BUMP)
+    expect(out[1]).toEqual(rows[1])
+  })
+
+  it('matches by MLS number when the canonical moved since the inspection', () => {
+    const out = applyRecrawlLastmod(
+      rows,
+      [{ url: 'https://ryan-realty.com/homes-for-sale/bend/old-sub/2-oak-220000002', listing_number: '220000002', recrawl_after: BUMP }],
+      NOW,
+    )
+    expect(out[1]!.lastModified).toBe(BUMP)
+  })
+
+  it('never moves a lastmod backwards or into the future', () => {
+    const out = applyRecrawlLastmod(
+      rows,
+      [
+        { url: 'https://ryan-realty.com/homes-for-sale/bend/3-elm-220000003', listing_number: '220000003', recrawl_after: BUMP },
+        { url: 'https://ryan-realty.com/homes-for-sale/bend/2-oak-220000002', listing_number: '220000002', recrawl_after: '2026-12-01T00:00:00.000Z' },
+      ],
+      NOW,
+    )
+    expect(out[2]!.lastModified).toBe('2026-10-05T11:00:00.000Z')
+    expect(out[1]!.lastModified).toBe(NOW.toISOString())
+  })
+
+  it('no flags is the identity', () => {
+    expect(applyRecrawlLastmod(rows, [], NOW)).toEqual(rows)
   })
 })

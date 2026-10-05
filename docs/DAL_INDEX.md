@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-10-05T02:57:56.589Z
+**Generated:** 2026-10-05T07:55:25.196Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -561,6 +561,12 @@ Companion files:
 **TTL windows:** `CACHE_WINDOWS.blog`
 
 **Cache tags:** `cacheTag.blog`
+
+---
+
+### `lib/data/blog/publishedBlogSlugsEdge.ts`
+
+**Exports:** `resetPublishedBlogSlugsEdgeCache`, `lookupPublishedBlogSlugEdge`
 
 ---
 
@@ -2994,7 +3000,7 @@ Companion files:
 
 ### `lib/data/listings/getListingCanonicalPathFieldsEdge.ts`
 
-**Exports:** `resetListingCanonicalEdgeCache`, `getListingCanonicalPathFieldsEdge`
+**Exports:** `resetListingCanonicalEdgeCache`, `isTransientHttpStatus`, `getListingCanonicalPathFieldsEdge`
 
 ---
 
@@ -4588,15 +4594,15 @@ Companion files:
 
 **Exports:** `serviceAreaSitemapTiles`, `getListingSitemapRows`
 
-**Tables:** `listing_tile_mv`, `listings`
+**Tables:** `listing_tile_mv`, `listings`, `gsc_listing_index_flags`
 
-**Selected columns:** `listing_key`, `ListingKey`
+**Selected columns:** `listing_key`, `ListingKey`, `url`, `listing_number`, `recrawl_after`
 
 ---
 
 ### `lib/data/sitemap/listing-sitemap-path.ts`
 
-**Exports:** `listingSitemapPath`, `listingSitemapImageUrl`, `assembleListingSitemapRows`
+**Exports:** `listingSitemapPath`, `listingSitemapImageUrl`, `assembleListingSitemapRows`, `applyRecrawlLastmod`
 
 ---
 
@@ -5493,6 +5499,7 @@ Companion files:
 | `fleet_findings` | `FLEET_PUNCH_GAP()`, `FLEET_PUNCH_TITLE_BODY()`, `FLEET_PUNCH_OUTPUT()`, `FLEET_PUNCH_ACCEPT()`, `FLEET_PUNCH_CONTRACT()`, `fleetFingerprintTag()`, `objectiveHasFingerprint()`, `isFleetPunchListTitle()`, `isFleetPunchListNode()`, `findFleetPunchListNode()`, `fleetPunchListTitle()`, `punchTitleSeverity()`, `formatFleetPunchLine()`, `appendPunchLine()`, `parsePunchLines()`, `punchDispositionFingerprints()`, `openPunchLines()`, `canCompletePunchList()`, `formatPunchDisposition()`, `appendPunchDispositions()`, `regressGapOf()`, `isFoldableFleetSingle()`, `punchLineFromSingleNode()`, `initialPunchObjective()`, `mergeFleetIntake()`, `runFleetIntake()`, `FLEET_SEVERITIES()`, `findingFingerprint()`, `validateFindingDraft()`, `insertFleetFinding()`, `listNewFindings()`, `markFinding()`, `getLoopStatus()` <br /> `lib/data/loop/fleet-intake-core.ts` · `lib/data/loop/fleet.ts` · `lib/data/loop/status.ts` |
 | `fsbo_listings` | `getCmaBuildSummaryBySlug()`, `CMA_ADMIN_REVIEW_COLUMNS()`, `getCmaAdminRowBySlug()`, `getCmaAdminReviewRowBySlug()`, `getCmaProspectAsk()`, `getCmaServeHead()`, `getCmaStoredHtmlBySlug()`, `getCmaRenderSourceBySlug()`, `getCmaHtmlBySlug()`, `updateCmaRowFieldsBySlug()`, `deleteCmaRowById()`, `snapshotCmaVersion()`, `replaceCmaComps()`, `getCmaAccessIdentity()`, `isSendableQueueState()`, `resolveCmaQueueState()`, `readCmaAuditVerdict()`, `mapBpoQueueRow()`, `listCmaQueue()`, `getContactProspectStory()`, `resolveDocsBatch()`, `resolveComplianceBatch()`, `verifyNotRelisted()`, `verifyFsboStillActive()`, `resolveProspectForCmaSend()`, `enqueueProspectFirstTouchEmail()`, `findProspectForCmaSlug()`, `peekOldestQueuedFirstTouch()`, `findInFlightFirstTouchSend()`, `hardSkipQueuedFirstTouch()`, `getLastDripSentAt()`, `listQueuedFirstTouch()`, `holdQueuedFirstTouch()`, `removeQueuedFirstTouch()`, `parseSundayQueueIdempotency()`, `enqueueSundayFirstTouchEmail()`, `peekOldestSundayQueue()`, `getLastSundayQueueSentAt()`, `hardSkipSundayQueue()`, `EXPIRED_SELECT()`, `FSBO_SELECT()`, `prospectSelect()`, `prospectSelectLegacy()`, `shouldRetryWithoutEmailColumns()`, `markEmailOutreachColumnsAbsent()`, `numOrNull()`, `fetchExpiredListingJoinBatch()`, `resolvePersonId()`, `computeSendable()`, `engagementKeyFor()`, `finalizeRow()`, `mapExpiredSkeleton()`, `mapFsboSkeleton()`, `buildExpiredRowSkeleton()`, `buildFsboRowSkeleton()`, `getProspect()`, `ownershipYearsFromDate()`, `deriveOwnershipSince()`, `getExpiredOwnershipSince()`, `getProspectDetail()`, `PROSPECT_DETAIL_FAST_MS()`, `PROSPECT_DETAIL_LOAD_ERRORS()`, `complianceSnapshotFromRow()`, `getProspectDetailCore()`, `attachProspectOptionalPanels()`, `STUCK_SEND_CANDIDATE_LIMIT()`, `listStaleFirstTouchSends()`, `listEmailEventsSince()`, `finalizeRecoveredFirstTouchSend()`, `releaseStuckFirstTouchSend()` <br /> `lib/data/cma/documents.ts` · `lib/data/cma/unified-queue.ts` · `lib/data/crm/getContactProspectStory.ts` · `lib/data/prospecting/batch.ts` · `lib/data/prospecting/cma-send-prospect.ts` · `lib/data/prospecting/drip-queue.ts` · `lib/data/prospecting/get.ts` · `lib/data/prospecting/stuck-send.ts` |
 | `geo_snapshot_mv` | `placeInventorySlugs()`, `overlayPublishedInventory()`, `getGeoSnapshot()`, `getAllCitySnapshots()`, `getAllCommunitySnapshots()`, `getCityCommunitySnapshots()`, `getOutOfAreaCityIndex()`, `getOutOfAreaCity()`, `getIndexableOutOfAreaCities()`, `isIndexableOutOfAreaCity()`, `getOutOfAreaCitySitemapEntries()`, `countOutOfAreaCities()` <br /> `lib/data/geo/getGeoSnapshot.ts` · `lib/data/geo/getOutOfAreaCities.ts` |
+| `gsc_listing_index_flags` | `serviceAreaSitemapTiles()`, `getListingSitemapRows()` <br /> `lib/data/sitemap/getListingSitemapRows.ts` |
 | `gsc_page_daily` | `GSC_STORE_MIGRATION()`, `isMissingRelationError()`, `foldPageRows()`, `foldQueryPageRows()`, `pullGscStoreRange()`, `writeGscStore()`, `readGscStoreCoverage()`, `readGscClassRollup()`, `readGscStorePageTotals()` <br /> `lib/data/loop/gsc-store.ts` |
 | `guides` | `getPublishedGuides()`, `getGuideBySlug()`, `searchSiteContentTitles()` <br /> `lib/data/guides/getGuides.ts` · `lib/data/search/searchSiteContentTitles.ts` |
 | `hidden_listings` | `filtersToParamMap()`, `otherFilterChips()`, `enabledEventTypes()`, `summarizeAreaShapes()`, `activityLabel()`, `toClientPortalAlert()`, `collectAreaIds()`, `getClientPortalView()` <br /> `lib/data/crm/getClientPortalView.ts` |

@@ -15,7 +15,12 @@ import {
   LEGACY_NEXT_IMAGE_PATH,
   resolveLegacyNextImage,
 } from '@/lib/routing/legacy-next-image'
-import { isRouterFlightRequest, resolveListingCanonicalHop } from '@/lib/routing/listing-canonical-hop'
+import { isRouterFlightRequest, listingIdFromRequestPath, resolveListingCanonicalHop } from '@/lib/routing/listing-canonical-hop'
+import {
+  isListingLookupUnavailable,
+  listingTemporarilyUnavailableResponse,
+  readListingForRequest,
+} from '@/lib/routing/listing-unavailable'
 import { getListingCanonicalPathFieldsEdge } from '@/lib/data/listings/getListingCanonicalPathFieldsEdge'
 
 /**
@@ -680,19 +685,31 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   // a displayable listing and is not that listing's canonical now gets a real
   // 308 here; the page body cannot do it (app/loading.tsx flushes a 200 first).
   // One indexed PostgREST read per id per isolate (lib/data/listings/
-  // getListingCanonicalPathFieldsEdge.ts). A miss, a refused row, an error or a
-  // timeout passes the request through untouched, so no real listing is ever
-  // 404'd and an unknown key renders exactly as it did before. Runs after the
+  // getListingCanonicalPathFieldsEdge.ts). A miss or a refused row passes the
+  // request through untouched, so no real listing is ever 404'd and an unknown
+  // key renders exactly as it did before. Runs after the
   // bot screen so a blocked scraper never costs a lookup, and skips the App
   // Router's own prefetch/navigation requests (they follow hrefs the site built
   // canonical). The query string is kept (utm tags on ad and email links).
   // Browser caching of the 308 is capped at a day because the MLS can still
   // edit a field the path is built from.
+  //
+  // (0e') A DATABASE THAT DOES NOT ANSWER IS A 503, NOT A PAGE (2026-10-05).
+  // When the read fails because the database is down or timing out (after one
+  // retry at the page's own 4s ceiling), the listing page could only render a
+  // failure state, and the page cannot set its own status (the shell flushes
+  // 200 first). A 200 failure page is what Google noindexed and merged across
+  // listings from 09-05 (lib/routing/listing-unavailable.ts). So the answer is
+  // 503 + Retry-After + no-store here, and Google comes back later.
   if (!pathname.startsWith('/api/') && !isRouterFlightRequest(request.headers, url.searchParams)) {
-    const listingDest = await resolveListingCanonicalHop(pathname, async (id) => {
-      const r = await getListingCanonicalPathFieldsEdge(id)
-      return r.kind === 'row' ? r.row : null
-    })
+    const listingId = listingIdFromRequestPath(pathname)
+    const listingLookup = listingId ? await readListingForRequest(listingId, getListingCanonicalPathFieldsEdge) : null
+    if (listingLookup && isListingLookupUnavailable(listingLookup)) {
+      return listingTemporarilyUnavailableResponse(listingLookup.kind === 'error' ? listingLookup.reason : undefined)
+    }
+    const listingDest = await resolveListingCanonicalHop(pathname, async () =>
+      listingLookup?.kind === 'row' ? listingLookup.row : null,
+    )
     if (listingDest) {
       const redirectUrl = url.clone()
       redirectUrl.pathname = listingDest

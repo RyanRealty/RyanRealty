@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { getListingDetail } from '@/lib/data'
+import { getListingLookup } from '@/lib/data'
+import { listingTemporarilyUnavailableResponse } from '@/lib/routing/listing-unavailable'
 import { listingCanonicalHref, listingsBrowsePath } from '@/lib/slug'
 
 /**
@@ -17,6 +18,10 @@ import { listingCanonicalHref, listingsBrowsePath } from '@/lib/slug'
  * new URL. If the listing is gone (sold/off-market/unknown MLS#), fall back to
  * the search page so the visitor — and Googlebot — lands on a real 200 instead
  * of a dead end.
+ *
+ * A lookup that ERRORS is neither (GSC slide fix 2026-10-05): a permanent 308
+ * to the search page on a database timeout would tell Google the listing moved
+ * there for good. It answers 503 + Retry-After instead, and Google asks again.
  */
 
 // Resolved per request from the path + DB; never statically cached.
@@ -43,8 +48,10 @@ export async function GET(
 
   let dest = listingsBrowsePath()
   if (mls) {
-    const listing = await getListingDetail(mls).catch(() => null)
-    if (listing) {
+    const lookup = await getListingLookup(mls).catch(() => ({ kind: 'error' as const }))
+    if (lookup.kind === 'error') return listingTemporarilyUnavailableResponse('listing lookup failed')
+    if (lookup.kind === 'ok') {
+      const listing = lookup.listing
       // SITE-22: the same builder the canonical, the sitemap and every internal
       // href use. It was a hand-rolled copy that passed {city, subdivision} and
       // dropped the boundary fields, so this 308 landed on a URL the listing
