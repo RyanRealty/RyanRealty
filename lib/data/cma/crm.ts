@@ -52,6 +52,9 @@ export async function getExpiredOwnerForCma(listingKey: string): Promise<Expired
   const { data, error } = await sb
     .from('expired_listings')
     .select('owner_name, contact_email, contact_phone, fub_person_id, outreach_crm_person_id')
+    // @canonical-key — subject.listingKey is the listings row's RETS ListingKey
+    // (lib/cma/subject.ts), and expired_listings.listing_key is that same key
+    // copied at detection. A key-to-key self-lookup, no ListNumber.
     .eq('listing_key', key)
     .maybeSingle()
   if (error || !data) return null
