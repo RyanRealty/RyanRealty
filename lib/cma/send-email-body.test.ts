@@ -107,19 +107,36 @@ function track(html: string): string {
 describe('CMA first-contact send body', () => {
   const copy = composeCmaFirstContact('expired', FACTS)
 
-  it('tracks every letter link once, as words, with the email tag set', () => {
+  it('puts Get the full report in the first screen, before the letter copy', () => {
+    const sent = buildLeadBody(ctx(), undefined, SIGNATURE)
+    const letter = letterHtml(sent.html)
+    const visible = decodeVisible(letter)
+    const greeting = visible.indexOf('Hi there')
+    const cta = visible.indexOf('Get the full report')
+    const story = visible.indexOf('My name is Matt Ryan')
+    expect(greeting).toBeGreaterThanOrEqual(0)
+    expect(cta).toBeGreaterThan(greeting)
+    expect(story).toBeGreaterThan(cta)
+    const first = anchors(letter)[0]
+    expect(first?.text).toBe('Get the full report →')
+    expect(first?.href).toContain(`/cma/${SLUG}`)
+    expect(first?.href).not.toContain('/api/track/')
+  })
+
+  it('tracks every letter link as words, with the email tag set', () => {
     const sent = buildLeadBody(ctx(), undefined, SIGNATURE)
     const html = track(sent.html)
     const letter = letterHtml(html)
     const links = anchors(letter)
     expect(links.map((l) => l.text)).toEqual([
+      'Get the full report →',
       'read it online',
       'see how we sell homes',
       'read our reviews',
       'learn about our business',
       'Clarendon Place page',
       'Bend page',
-      'READ THE FULL REPORT →',
+      'Get the full report →',
     ])
     expect(decodeVisible(letter).toLowerCase()).not.toContain('http')
     const paths: string[] = []
@@ -141,6 +158,7 @@ describe('CMA first-contact send body', () => {
       paths.push(dest.pathname)
     }
     expect(paths).toEqual([
+      `/cma/${SLUG}`,
       `/cma/${SLUG}`,
       '/sell',
       '/reviews',
@@ -176,8 +194,11 @@ describe('CMA first-contact send body', () => {
     const note = buildLeadBody(ctx(), { bodyText: 'Hi there,\n\nA short note.' }, SIGNATURE)
     expect(note.text).not.toContain('Read the full report')
     expect(note.text.split('\n--\n')[0]?.toLowerCase()).not.toContain('http')
-    expect(letterHtml(note.html)).toContain('READ THE FULL REPORT')
-    expect(letterHtml(note.html)).toContain(`/cma/${SLUG}`)
+    const edited = letterHtml(note.html)
+    const editedVisible = decodeVisible(edited)
+    expect(editedVisible.indexOf('Get the full report')).toBeGreaterThan(editedVisible.indexOf('Hi there'))
+    expect(editedVisible.indexOf('A short note')).toBeGreaterThan(editedVisible.indexOf('Get the full report'))
+    expect(edited).toContain(`/cma/${SLUG}`)
 
     const stale = [
       'Hi there,',
@@ -188,9 +209,18 @@ describe('CMA first-contact send body', () => {
     const letter = letterHtml(rescued)
     expect(decodeVisible(letter).toLowerCase()).not.toContain('http')
     const links = anchors(letter)
-    expect(links.map((l) => l.text)).toEqual(['our reviews', 'who we are', 'READ THE FULL REPORT →'])
-    const reviews = new URL(verifyEmailToken(new URL(links[0]!.href).searchParams.get('t'))!.url!)
-    const about = new URL(verifyEmailToken(new URL(links[1]!.href).searchParams.get('t'))!.url!)
+    expect(links.map((l) => l.text)).toEqual([
+      'Get the full report →',
+      'our reviews',
+      'who we are',
+      'Get the full report →',
+    ])
+    const opening = new URL(verifyEmailToken(new URL(links[0]!.href).searchParams.get('t'))!.url!)
+    const reviews = new URL(verifyEmailToken(new URL(links[1]!.href).searchParams.get('t'))!.url!)
+    const about = new URL(verifyEmailToken(new URL(links[2]!.href).searchParams.get('t'))!.url!)
+    const closing = new URL(verifyEmailToken(new URL(links[3]!.href).searchParams.get('t'))!.url!)
+    expect(opening.pathname).toBe(`/cma/${SLUG}`)
+    expect(closing.pathname).toBe(`/cma/${SLUG}`)
     expect(reviews.pathname).toBe('/reviews')
     expect(about.pathname).toBe('/about')
     for (const dest of [reviews, about]) {

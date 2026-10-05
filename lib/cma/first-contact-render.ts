@@ -160,17 +160,35 @@ function renderRuns(runs: FirstContactRun[], address: string | null, slug: strin
     .join('')
 }
 
-/** Paragraphs plus the report button. No signature. Clean campaign UTMs only. */
+/** A one-line salutation. Anything longer is letter copy, and the button goes above it. */
+function isShortGreeting(paragraphs: FirstContactRun[][]): boolean {
+  const first = paragraphs[0]
+  if (!first) return false
+  const text = paragraphsToPlain([first])
+  return text.length > 0 && text.length <= 40 && /^(hi|hello|hey|dear)\b/i.test(text)
+}
+
+/**
+ * Paragraphs plus the report button. No signature. Clean campaign UTMs only.
+ *
+ * The button is the first action. A short greeting may sit above it. The same
+ * button repeats after the note, so a reader who finishes does not have to
+ * scroll back. Both go to the same report.
+ */
 export function renderCmaLetterBlock(args: {
   paragraphs: FirstContactRun[][]
   address: string | null
   slug: string
 }): string {
-  const paras = args.paragraphs
-    .map((p) => `<p style="margin:0 0 16px 0;">${renderRuns(p, args.address, args.slug)}</p>`)
-    .join('')
+  const rendered = args.paragraphs.map(
+    (p) => `<p style="margin:0 0 16px 0;">${renderRuns(p, args.address, args.slug)}</p>`,
+  )
   const button = cmaReportButtonHtml(
     stampCmaEmailCampaign(`${CMA_EMAIL_ORIGIN}/cma/${args.slug}`, args.slug),
   )
-  return `<div data-cma-letter>${paras}${button}</div>`
+  const greetingFirst = isShortGreeting(args.paragraphs)
+  const head = greetingFirst ? (rendered[0] ?? '') : ''
+  const rest = (greetingFirst ? rendered.slice(1) : rendered).join('')
+  const closingButton = rest ? button : ''
+  return `<div data-cma-letter>${head}${button}${rest}${closingButton}</div>`
 }

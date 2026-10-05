@@ -11,7 +11,7 @@ describe('CMA report link in the admin preview', () => {
   it('does not change the button HTML the send path uses', () => {
     const html = cmaReportButtonHtml(REPORT)
     expect(html).toContain(`href="${REPORT}"`)
-    expect(html).toContain('READ THE FULL REPORT')
+    expect(html).toContain('Get the full report')
     expect(html).not.toContain('target=')
     expect(html).not.toContain('<base')
   })

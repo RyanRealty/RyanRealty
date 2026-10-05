@@ -1,16 +1,24 @@
 /**
- * The one "read the full report" button every CMA email carries, whether the
+ * The one "Get the full report" button every CMA email carries, whether the
  * broker sent the composed first contact or typed their own note. Shared by the
  * send rail (lib/cma/send.ts) and the review page preview so what the broker
  * previews is what goes out (send walk 2026-09-08: the preview of a custom
  * email showed no report link while the send appended one).
+ *
+ * It is a full-width button, not a small text link. The letter renderer places
+ * one in the first screen and repeats the same action after the note.
  */
+import { EMAIL_CREAM, EMAIL_FONT_STACK, EMAIL_NAVY } from '@/lib/email/brand'
+
 function escapeAttr(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
 }
 
 export function cmaReportButtonHtml(viewUrl: string): string {
-  return `<p style="margin:0 0 24px 0;"><a href="${escapeAttr(viewUrl)}" style="display:inline-block;background:#102742;color:#faf8f4;font-size:13px;font-weight:700;letter-spacing:.08em;text-decoration:none;padding:14px 32px;">READ THE FULL REPORT &rarr;</a></p>`
+  const href = escapeAttr(viewUrl)
+  // Table cell holds the color. Outlook drops padding and background on an <a>.
+  // The label is on the anchor and a span so Gmail keeps the cream type.
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px 0;"><tr><td align="center" bgcolor="${EMAIL_NAVY}" style="background:${EMAIL_NAVY};"><a href="${href}" style="display:block;padding:18px 24px;font-family:${EMAIL_FONT_STACK};font-size:18px;line-height:1.3;font-weight:700;color:${EMAIL_CREAM};text-decoration:none;text-align:center;"><span style="color:${EMAIL_CREAM};">Get the full report &rarr;</span></a></td></tr></table>`
 }
 
 /** The preheader for a broker-typed note: its first sentence, not the composed one. */
