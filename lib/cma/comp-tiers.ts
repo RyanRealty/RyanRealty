@@ -75,6 +75,17 @@ export function isListingsPocketExclusiveTier(
  * Competing-area and citywide mile rings. Not the exclusive pocket, not
  * adjacent plats, not designated communities, not the neighborhood polygon.
  */
+/**
+ * The 15-year generation applies on the 12-month place rungs. A later date
+ * window, a community rung, and the disclosed widen may use the next
+ * generation when the same-generation set is still short. Own plat and own
+ * street are exempt at the call site.
+ */
+export function listingsUsesConstructionGeneration(tier: Pick<CompTier, 'monthsBack' | 'whenStarved' | 'sameCommunity' | 'likeCommunity'>): boolean {
+  if (tier.whenStarved || tier.sameCommunity || tier.likeCommunity) return false
+  return tier.monthsBack <= 12
+}
+
 export function isListingsGeographyWidenTier(tier: CompTier): boolean {
   if (tier.whenStarved || tier.ruralOnly) return false
   if (isListingsPocketExclusiveTier(tier)) return false

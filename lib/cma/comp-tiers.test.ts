@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { compTierLadder, WIDENED_SQFT_BAND } from './comp-tiers'
+import { compTierLadder, listingsUsesConstructionGeneration, WIDENED_SQFT_BAND } from './comp-tiers'
 
 describe('the disclosed widening (Matt 2026-09-09)', () => {
   it('is the last rung on both ladders, runs only when starved, and says what it traded', () => {
@@ -23,6 +23,20 @@ describe('the disclosed widening (Matt 2026-09-09)', () => {
       const lastIndex = ladder.map((t) => t.name).findLastIndex((n) => n.includes('widened-disclosed'))
       expect(lastIndex).toBe(ladder.length - 1)
     }
+  })
+
+  it('holds the 15-year generation on the 12-month place rungs and lets a later window widen', () => {
+    const ladder = compTierLadder('Bend Park')
+    const byName = (name: string) => ladder.find((t) => t.name === name)!
+    expect(listingsUsesConstructionGeneration(byName('pocket-6mo'))).toBe(true)
+    expect(listingsUsesConstructionGeneration(byName('pocket-12mo'))).toBe(true)
+    expect(listingsUsesConstructionGeneration(byName('subdivision-12mo'))).toBe(true)
+    expect(listingsUsesConstructionGeneration(byName('neighborhood-12mo'))).toBe(true)
+    expect(listingsUsesConstructionGeneration(byName('pocket-24mo'))).toBe(false)
+    expect(listingsUsesConstructionGeneration(byName('neighborhood-18mo'))).toBe(false)
+    expect(listingsUsesConstructionGeneration(byName('community-24mo'))).toBe(false)
+    expect(listingsUsesConstructionGeneration(byName('community-6mo'))).toBe(false)
+    expect(listingsUsesConstructionGeneration(byName('widened-disclosed-24mo'))).toBe(false)
   })
 
   it('is the only rung allowed to cross the resort-membership rule', () => {

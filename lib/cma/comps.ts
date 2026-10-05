@@ -72,6 +72,7 @@ import {
 } from '@/lib/cma/comp-trace'
 import {
   compTierLadder,
+  listingsUsesConstructionGeneration,
   isListingsGeographyWidenTier,
   isListingsPocketExclusiveTier,
   isRuralAcreage,
@@ -971,9 +972,16 @@ export async function selectComps(
         { streetAddress: subject.streetAddress, city: subject.city, sqft: subject.sqft ?? 0 },
         { address: comp.address, city: comp.city, sqft: comp.sqft },
       )
-      // Same 15-year generation the strict facts rungs already use. Own plat
-      // and own street stay; a 1996 house does not price a 2018 house next door.
-      if (!inOwnPlat && !ownStreetPeer && !withinConstructionGeneration(subject.yearBuilt, comp.yearBuilt)) {
+      // Same 15-year generation on the 12-month place rungs. Own plat and
+      // own street stay. A later window may use the next generation once
+      // the same-generation set is still short, which is how a 1946 house
+      // is priced when almost nothing its own age has sold.
+      if (
+        listingsUsesConstructionGeneration(tier) &&
+        !inOwnPlat &&
+        !ownStreetPeer &&
+        !withinConstructionGeneration(subject.yearBuilt, comp.yearBuilt)
+      ) {
         rung.excluded.year_quality++
         continue
       }
