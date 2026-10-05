@@ -9,11 +9,29 @@ import { letterOwnerNameCheck, type LetterNameSource } from '@/lib/cma/letter-pr
 import { letterProductNoun } from '@/lib/cma/market-area'
 import { int } from '@/lib/cma/render-blocks'
 import { namedSalesPlace } from '@/lib/pricing/comp-area'
-import { printedAdjustedPrice } from '@/lib/pricing/seller-net'
+import { printedAdjustedPrice, settingWeight } from '@/lib/pricing/seller-net'
 import type { ContractCheck } from '@/lib/cma/contract'
 
 const MILE_SENTENCE = /\bwithin\s+(?:[\d.]+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s+miles?\s+of your home/i
 const WRONG_PRODUCT_LINE = /single-family homes in|single-family sales|single-family listings/i
+const SIZE_STORY_DO_NOT_ADJUST = 'Size and story class do not adjust'
+const ADJUSTED_FOR_DATE_AND_SIZE = 'adjusted for date and size'
+
+/**
+ * A pocket letter that says size and story do not adjust cannot also say
+ * the sales were adjusted for date and size. Runs with or without a place.
+ */
+export function letterAdjustmentClaimCheck(html: string): ContractCheck {
+  const both = html.includes(SIZE_STORY_DO_NOT_ADJUST) && html.includes(ADJUSTED_FOR_DATE_AND_SIZE)
+  return {
+    id: 'adjustment-claim-matches-lines',
+    severity: 'hard',
+    pass: !both,
+    detail: both
+      ? 'The letter says size and story do not adjust and also says the sales were adjusted for date and size.'
+      : 'The letter does not claim a date-and-size adjustment the lines say did not happen.',
+  }
+}
 
 export type LetterPlaceSource = {
   compArea?: { kind?: string | null; sentence?: string | null } | null
@@ -212,6 +230,7 @@ export function bandVersusClosedCompsCheck(
     adjustedPrice?: number | null
     closePrice?: number | null
     weight?: number | null
+    printedWeight?: number | null
     timeAdjustment?: number | null
     sizeAdjustment?: number | null
     storyAdjustment?: number | null
@@ -224,9 +243,9 @@ export function bandVersusClosedCompsCheck(
   const bandLow = low != null && high != null ? Math.min(low, high) : null
   const bandHigh = low != null && high != null ? Math.max(low, high) : null
   const rows = comps ?? []
-  const weighted = rows.filter((c) => typeof c.weight === 'number')
-  const setters = weighted.filter((c) => (c.weight ?? 0) > 0)
-  if (setters.length >= 3 && weighted.some((c) => (c.weight ?? 0) === 0)) {
+  const weighted = rows.filter((c) => settingWeight(c) != null)
+  const setters = weighted.filter((c) => (settingWeight(c) ?? 0) > 0)
+  if (setters.length >= 3 && weighted.some((c) => (settingWeight(c) ?? 0) === 0)) {
     return {
       id: 'band-overlaps-closed-comps',
       severity: 'hard',
@@ -349,6 +368,7 @@ export function evaluateLetterConsistencyContract(args: {
       sales: (args.closedComps ?? []).map((c) => c.address),
       expired: args.expiredAddresses,
     }),
+    letterAdjustmentClaimCheck(args.html),
     ...letterPlaceChecks(args.html, args.place),
   ]
   return { pass: checks.every((c) => c.pass), checks }

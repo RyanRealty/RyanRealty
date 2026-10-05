@@ -474,6 +474,14 @@ describe('chapter one reads the ask that ran the clock', () => {
     expect(whatHappenedHeading(a)).toBe('You asked $500,000 for 152 days, then $460,000 for 35.')
   })
 
+  it('names the original list when the exposure starts at a later ask', () => {
+    const a = withAudit({ findings: FINDINGS, askExposure: EXPOSURE, finalCycle: { days: 187 } })
+    a.subject = { ...a.subject, originalListPrice: 1_025_000 }
+    const heading = whatHappenedHeading(a)
+    expect(heading).toContain('$1,025,000')
+    expect(heading).toContain('You asked $500,000 for 152 days, then $460,000 for 35.')
+  })
+
   it('measures the gap off the last ask, not the original list', () => {
     const a = withAudit({ findings: FINDINGS, askExposure: EXPOSURE, finalCycle: { days: 187 } })
     // $500,000 against a $444,000 top is 12.6 percent. The last ask, $460,000,

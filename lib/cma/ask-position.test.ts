@@ -24,6 +24,14 @@ describe('one ask position — Slate', () => {
     expect(position.originalAsk).toBe(616_900)
     expect(position.lastAsk).toBe(589_900)
 
+    const listedOriginal = resolveAskPosition({
+      lastListPrice: 979_995,
+      originalListPrice: 1_025_000,
+      exposure: { segments: [{ ask: 999_000 }, { ask: 979_995 }], final: 979_995 },
+    })
+    expect(listedOriginal.originalAsk).toBe(1_025_000)
+    expect(listedOriginal.lastAsk).toBe(979_995)
+
     const heading = whatHappenedHeading({
       subject,
       pricing: { recommended: 620_000, valueLow: 594_000, valueHigh: 623_000 } as CmaPricing,

@@ -49,10 +49,10 @@ describe('roomCountsUsable — both counts at once', () => {
     expect(r.notes).toEqual(['beds'])
   })
 
-  it('names both rooms when both differ', () => {
+  it('refuses one bedroom and one bathroom apart, even on the home’s own ground', () => {
     const r = roomCountsUsable({ beds: 4, baths: 3 }, { beds: 3, baths: 2 }, { local: true })
-    expect(r.ok).toBe(true)
-    expect(r.notes).toEqual(['beds', 'baths'])
+    expect(r.ok).toBe(false)
+    expect(r.notes).toEqual([])
   })
 
   it('refuses the same sale from across town', () => {

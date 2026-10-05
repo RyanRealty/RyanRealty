@@ -1415,6 +1415,8 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           area: expiredArea,
           keptCompMedianPpsf: keptCompMedianPpsf(renderComps),
           maxWindowMonths: compsLookbackMonths,
+          closedSaleAddresses: renderComps.map((c) => c.address),
+          subjectCameOff: lastCycleFailed,
         })
       : null
 

@@ -865,6 +865,61 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
     )
   })
 
+  it('does not say no home came off when the subject is the home that came off', () => {
+    const off = buildExpiredPeerSet({
+      rows: [],
+      subject: subj,
+      area: AREA,
+      asOf: ASOF,
+      subjectCameOff: true,
+    })
+    expect(off.count).toBe(0)
+    expect(off.sentence).toBe('')
+    expect(off.sentence).not.toMatch(/No home/i)
+    expect(off.sentence).not.toMatch(/came off the market without selling/)
+
+    const stayed = buildExpiredPeerSet({
+      rows: [],
+      subject: subj,
+      area: AREA,
+      asOf: ASOF,
+      subjectCameOff: false,
+    })
+    expect(stayed.sentence).toBe(
+      'No home in Diamond Bar Ranch came off the market without selling in the last 24 months.',
+    )
+
+    const withPeers = buildExpiredPeerSet({
+      rows: [unsold('A', '10 Aspen', 1)],
+      subject: subj,
+      area: AREA,
+      asOf: ASOF,
+      subjectCameOff: true,
+    })
+    expect(withPeers.count).toBe(1)
+    expect(withPeers.sentence).toContain('came off the market without selling')
+  })
+
+  it('drops an unsold peer at the same street as a closed sale that set the price', () => {
+    const rows = [
+      unsold('A', '10 Aspen', 1),
+      unsold('B', '20 Birch', 1),
+      unsold('SOLDKEY', '30 Cedar Lane', 1),
+    ]
+    const kept = buildExpiredPeerSet({
+      rows,
+      subject: subj,
+      area: AREA,
+      asOf: ASOF,
+      closedSaleAddresses: ['30 Cedar Ln', null, undefined, '99 Nowhere'],
+    })
+    expect(kept.peers.map((p) => p.listingKey)).not.toContain('SOLDKEY')
+    expect(kept.peers.map((p) => p.address)).toEqual(['10 Aspen', '20 Birch'])
+
+    const untouched = buildExpiredPeerSet({ rows, subject: subj, area: AREA, asOf: ASOF })
+    expect(untouched.peers.map((p) => p.listingKey)).toContain('SOLDKEY')
+  })
+
   it('drops a row with no off-market date rather than date it', () => {
     const set = buildExpiredPeerSet({
       rows: [

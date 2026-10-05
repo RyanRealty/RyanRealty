@@ -378,8 +378,9 @@ describe('buildBandRivalSet — the competition is the neighborhood, never the c
     })
     expect(set.area).toBe(OLD_BEND)
     expect(set.sentence).toBe(
-      '27 homes are for sale in Old Bend between $350,000 and $428,000. 14 are under contract. The nearest three like yours are below.',
+      'The nearest three like yours are for sale in Old Bend between $350,000 and $428,000. 14 are under contract.',
     )
+    expect(set.sentence).not.toContain('27 homes')
     expect(set.rivals.map((r) => r.address)).toEqual(['10 Aspen', '20 Birch', '30 Cedar'])
     // A mapped boundary never widens: no ladder, nothing to report.
     expect(set.widenedFrom).toBeNull()

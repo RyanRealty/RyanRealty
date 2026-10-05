@@ -14,7 +14,7 @@
 import { countWord, escapeHtml, usd } from '@/lib/cma/render-blocks'
 import { median } from '@/lib/cma/market-status'
 import { listPriceForPpsf, ppsfOf } from '@/lib/cma/status-ppsf'
-import type { MatrixEntry } from '@/lib/cma/matrix-entry'
+import { mlsStatusLabel, type MatrixEntry } from '@/lib/cma/matrix-entry'
 
 const esc = escapeHtml
 
@@ -131,8 +131,23 @@ export function statusPriceSummaries(input: {
     statusRow('closed', 'Closed', closed),
     statusRow('pending', 'Pending', pending),
     statusRow('active', 'Active', active),
-    statusRow('expired', 'Expired', expired),
+    ...unsoldStatusRows(expired),
   ].filter((row): row is StatusPriceRow => row != null)
+}
+
+/** A canceled or withdrawn listing is not an expiration. No MLS word stays Expired. */
+function unsoldStatusRows(entries: readonly MatrixEntry[]): StatusPriceRow[] {
+  const groups = new Map<string, { label: string; homes: MatrixEntry[] }>()
+  for (const entry of entries) {
+    const label = mlsStatusLabel(entry.mlsStatus) ?? 'Expired'
+    const key = label.toLowerCase()
+    const group = groups.get(key) ?? { label, homes: [] }
+    group.homes.push(entry)
+    groups.set(key, group)
+  }
+  return [...groups.values()]
+    .map((group) => statusRow(group.label.toLowerCase(), group.label, group.homes))
+    .filter((row): row is StatusPriceRow => row != null)
 }
 
 const STATS = [

@@ -173,6 +173,19 @@ export function comparableAdjustedPrice(comp: ConcessionSale & {
 }
 
 /**
+ * Weight the table prints. A printed figure wins. Otherwise the stored
+ * weight. Null when neither is a finite number.
+ */
+export function settingWeight(comp: {
+  printedWeight?: number | null
+  weight?: number | null
+}): number | null {
+  if (typeof comp.printedWeight === 'number' && Number.isFinite(comp.printedWeight)) return comp.printedWeight
+  if (typeof comp.weight === 'number' && Number.isFinite(comp.weight)) return comp.weight
+  return null
+}
+
+/**
  * What the matrix prints as the adjusted sale. Prefer the engine's stored
  * figure. If that figure still equals close plus the other lines — a sale
  * price that ignored a recorded concession — take the credit off.

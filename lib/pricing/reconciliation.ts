@@ -19,7 +19,7 @@
  * VOICE. The document never says comp, subject, band, kept, or set
  * (docs/plans/CMA_REIMAGINED_2026-09-07.md, "Words"). Every string this module
  * writes is a plain fact about a house: "60 square feet from yours", "sold two
- * months ago", "its price moved 2.1 percent when adjusted for date and size".
+ * months ago", "its price moved 2.1 percent when adjusted for date".
  * A superlative is written only when it is true of the printed sales.
  */
 
@@ -59,6 +59,8 @@ export interface ReconcilableSale {
   timeAdjustment: number
   sizeAdjustment: number
   storyAdjustment?: number
+  /** Recorded seller concession. Omitted fixtures stay on date, size, and story only. */
+  concessionsAmount?: number | null
   adjustedPrice: number
   /** size proximity × recency, from adjustCompAlongMarket. Judge-weak sales come in halved. */
   weight: number
@@ -73,7 +75,7 @@ export interface ReconciliationWeight {
   weightRaw: number
   /** Sale price after the date, size and story adjustments. */
   adjustedPrice: number
-  /** Every adjustment's size added up, as a percent of the sale price. */
+  /** Date, size, story, and a recorded concession, as a percent of the sale price. */
   grossAdjustmentPct: number
   /** A short factual phrase: size gap, recency, how far the adjustments moved it. */
   reason: string
@@ -99,11 +101,20 @@ function countWord(n: number): string {
   return n >= 0 && n < COUNT_WORDS.length ? COUNT_WORDS[n]! : String(n)
 }
 
+/** Recorded concession dollars. Missing or non-finite stays out of the gross. */
+function concessionDollars(sale: ReconcilableSale): number {
+  const n = sale.concessionsAmount
+  return typeof n === 'number' && Number.isFinite(n) ? Math.abs(n) : 0
+}
+
 /** Total adjustment movement as a share of the sale price. */
 export function grossAdjustmentPct(sale: ReconcilableSale): number {
   if (!(sale.closePrice > 0)) return 0
   const gross =
-    Math.abs(sale.timeAdjustment) + Math.abs(sale.sizeAdjustment) + Math.abs(sale.storyAdjustment ?? 0)
+    Math.abs(sale.timeAdjustment) +
+    Math.abs(sale.sizeAdjustment) +
+    Math.abs(sale.storyAdjustment ?? 0) +
+    concessionDollars(sale)
   return round1((gross / sale.closePrice) * 100)
 }
 
@@ -116,18 +127,59 @@ function sizePhrase(sale: ReconcilableSale, subjectSqft: number): string {
   return `${n} square ${Math.abs(delta) === 1 ? 'foot' : 'feet'} ${delta > 0 ? 'larger' : 'smaller'} than yours`
 }
 
+/** Calendar year and month from a date string. Local Date would shift the day. */
+function yearMonth(iso: string | null | undefined): { y: number; m: number } | null {
+  if (!iso) return null
+  const match = /^(\d{4})-(\d{2})/.exec(iso.trim())
+  if (!match) return null
+  const y = Number(match[1])
+  const m = Number(match[2])
+  if (!Number.isInteger(y) || m < 1 || m > 12) return null
+  return { y, m }
+}
+
 /** "sold this month" · "sold a month ago" · "sold 7 months ago". */
-function recencyPhrase(sale: ReconcilableSale): string {
-  const months = Math.round(sale.monthsSinceClose)
+function monthsSincePhrase(monthsRaw: number): string {
+  const months = Math.round(monthsRaw)
   if (months <= 0) return 'sold this month'
   if (months === 1) return 'sold a month ago'
   return `sold ${months} months ago`
 }
 
-/** "its price moved 2.1 percent" · "its price did not move". */
-function movementPhrase(pct: number): string {
-  if (pct <= 0) return 'its price did not move when adjusted for date and size'
-  return `its price moved ${pct} percent when adjusted for date and size`
+/**
+ * Recency from the letter date when both dates are present.
+ * Same calendar month is "sold this month". The previous calendar month is
+ * "sold last month". Any older close uses that month count. Without asOf,
+ * the stored monthsSinceClose phrase stays, so older callers do not move.
+ */
+function recencyPhrase(sale: ReconcilableSale, asOf?: string | null): string {
+  const close = yearMonth(sale.closeDate)
+  const letter = yearMonth(asOf)
+  if (!close || !letter) return monthsSincePhrase(sale.monthsSinceClose)
+  const diff = (letter.y - close.y) * 12 + (letter.m - close.m)
+  if (diff <= 0) return 'sold this month'
+  if (diff === 1) return 'sold last month'
+  return `sold ${diff} months ago`
+}
+
+/** Names only the lines that moved by at least a dollar. */
+function adjustmentClaim(sale: ReconcilableSale): string {
+  const parts: string[] = []
+  if (Math.abs(sale.timeAdjustment) >= 1) parts.push('date')
+  if (Math.abs(sale.sizeAdjustment) >= 1) parts.push('size')
+  if (Math.abs(sale.storyAdjustment ?? 0) >= 1) parts.push('story')
+  if (concessionDollars(sale) >= 1) parts.push('seller concessions')
+  if (parts.length === 0) return ''
+  if (parts.length === 1) return parts[0]!
+  if (parts.length === 2) return `${parts[0]} and ${parts[1]}`
+  return `${parts.slice(0, -1).join(', ')}, and ${parts[parts.length - 1]}`
+}
+
+/** "its price moved 2.1 percent when adjusted for date" · "its price did not move". */
+function movementPhrase(sale: ReconcilableSale, pct: number): string {
+  const claim = adjustmentClaim(sale)
+  if (pct <= 0 || !claim) return 'its price did not move'
+  return `its price moved ${pct} percent when adjusted for ${claim}`
 }
 
 /**
@@ -142,6 +194,8 @@ function movementPhrase(pct: number): string {
 export function reconcileAdjustedSales(args: {
   sales: readonly ReconcilableSale[]
   subjectSqft: number
+  /** Letter date. Used only for the recency phrase, never for the weights. */
+  asOf?: string | null
 }): CmaReconciliation {
   const usable = args.sales.filter((s) => Number.isFinite(s.adjustedPrice) && s.adjustedPrice > 0)
   if (usable.length === 0) {
@@ -161,7 +215,7 @@ export function reconcileAdjustedSales(args: {
 
   const weights: ReconciliationWeight[] = usable.map((s, i) => {
     const gross = grossAdjustmentPct(s)
-    const parts = [sizePhrase(s, args.subjectSqft), recencyPhrase(s), movementPhrase(gross)]
+    const parts = [sizePhrase(s, args.subjectSqft), recencyPhrase(s, args.asOf), movementPhrase(s, gross)]
     const leads: string[] = []
     // "closest in size to yours" adds nothing beside "the same size as yours",
     // and printing both reads as padding.
@@ -187,10 +241,10 @@ export function reconcileAdjustedSales(args: {
   const leaderSale = usable.find((s) => s.listingKey === leader.listingKey)!
   const why = [
     sizePhrase(leaderSale, args.subjectSqft),
-    recencyPhrase(leaderSale),
+    recencyPhrase(leaderSale, args.asOf),
     ...(leader.grossAdjustmentPct === smallestGross && usable.length > 1
       ? ['it needed the smallest adjustment of any of them']
-      : [movementPhrase(leader.grossAdjustmentPct)]),
+      : [movementPhrase(leaderSale, leader.grossAdjustmentPct)]),
   ]
   // ONE COUNT (tasteReview round three, §2 item 1). The sentence states how
   // many sales are behind the price, and it is the same number as the weights

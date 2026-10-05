@@ -18,6 +18,7 @@ import {
   concessionOnSale,
   printedAdjustedPrice,
   resolveConcessions,
+  settingWeight,
   sellerNetFromPrice,
 } from '@/lib/pricing/seller-net'
 import type { CmaAdjustedComp, CmaComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
@@ -845,12 +846,17 @@ export function describeRangeSentence(args: {
   /** Trimmed-rule aside count wording, already composed. */
   trimmedAside?: string | null
   suffix?: string
+  /** Words after "adjusted for". Empty string names the sale prices with no adjustment claim. */
+  adjustmentPhrase?: string
 }): string {
   const usd = (n: number) => `$${Math.round(n).toLocaleString('en-US')}`
   const suffix = args.suffix ?? ''
+  const phrase = args.adjustmentPhrase ?? 'date and size'
+  const adjustedFor = phrase ? ` adjusted for ${phrase}` : ''
   if (args.rule === 'trimmed-one-each-end') {
     const aside = args.trimmedAside ?? ''
-    return `The range is the spread of the ${countWord(args.kept)} sale prices behind this price, adjusted for date and size: ${usd(args.printedLow)} to ${usd(args.printedHigh)}. ${aside}${suffix}`
+    const claim = phrase ? `, adjusted for ${phrase}` : ''
+    return `The range is the spread of the ${countWord(args.kept)} sale prices behind this price${claim}: ${usd(args.printedLow)} to ${usd(args.printedHigh)}. ${aside}${suffix}`
   }
   const same = args.printedLow === args.saleLow && args.printedHigh === args.saleHigh
   const count =
@@ -858,9 +864,35 @@ export function describeRangeSentence(args: {
       ? `all ${countWord(args.n)}`
       : `${countWord(args.kept)} of the ${countWord(args.n)}`
   if (same) {
-    return `The range is the spread of ${count} sale prices adjusted for date and size: ${usd(args.printedLow)} to ${usd(args.printedHigh)}.${suffix}`
+    return `The range is the spread of ${count} sale prices${adjustedFor}: ${usd(args.printedLow)} to ${usd(args.printedHigh)}.${suffix}`
   }
-  return `The ${countWord(args.kept)} sale prices that set the ends, of the ${countWord(args.n)} adjusted for date and size, run from ${usd(args.saleLow)} to ${usd(args.saleHigh)}. The printed range is ${usd(args.printedLow)} to ${usd(args.printedHigh)}.${suffix}`
+  return `The ${countWord(args.kept)} sale prices that set the ends, of the ${countWord(args.n)}${adjustedFor}, run from ${usd(args.saleLow)} to ${usd(args.saleHigh)}. The printed range is ${usd(args.printedLow)} to ${usd(args.printedHigh)}.${suffix}`
+}
+
+const SETTING_ADJUSTMENT_LABELS = [
+  ['timeAdjustment', 'date'],
+  ['sizeAdjustment', 'size'],
+  ['storyAdjustment', 'story'],
+] as const
+
+/** Phrase for adjustments that actually moved a setter. Empty when none did. */
+function settingAdjustmentPhrase(
+  setters: readonly {
+    timeAdjustment?: number | null
+    sizeAdjustment?: number | null
+    storyAdjustment?: number | null
+  }[],
+): string {
+  const moved = SETTING_ADJUSTMENT_LABELS.filter(([key]) =>
+    setters.some((row) => {
+      const n = row[key]
+      return typeof n === 'number' && Number.isFinite(n) && Math.abs(n) >= 1
+    }),
+  ).map(([, label]) => label)
+  if (moved.length === 0) return ''
+  if (moved.length === 1) return moved[0]!
+  if (moved.length === 2) return `${moved[0]} and ${moved[1]}`
+  return `${moved[0]}, ${moved[1]}, and ${moved[2]}`
 }
 
 /**
@@ -920,6 +952,7 @@ export function pinPrintedBandToSettingSales<
     adjustedPrice?: number | null
     closePrice?: number | null
     weight?: number | null
+    printedWeight?: number | null
     timeAdjustment?: number | null
     sizeAdjustment?: number | null
     storyAdjustment?: number | null
@@ -927,8 +960,10 @@ export function pinPrintedBandToSettingSales<
     concessionsYn?: string | null
   }[],
 ): T {
-  const weighted = comps.filter((c) => typeof c.weight === 'number')
-  const setters = (weighted.length > 0 ? weighted : comps).filter((c) => weighted.length === 0 || (c.weight ?? 0) > 0)
+  const weighted = comps.filter((c) => settingWeight(c) != null)
+  const setters = (weighted.length > 0 ? weighted : comps).filter(
+    (c) => weighted.length === 0 || (settingWeight(c) ?? 0) > 0,
+  )
   const values = setters
     .map((c) =>
       printedAdjustedPrice({
@@ -956,6 +991,7 @@ export function pinPrintedBandToSettingSales<
         saleLow: low,
         saleHigh: high,
         suffix: rangeSentenceSuffix(rule.sentence),
+        adjustmentPhrase: settingAdjustmentPhrase(setters),
       })
     : null
   const next: T = {
@@ -1688,6 +1724,14 @@ export function priceCmaSet(args: {
 }): CmaPricing | null {
   const priceFn = args.computePricing ?? computePricing
   const adjusted = fillShortSetWeights(args.subject, args.adjusted)
+  // The letter still holds args.adjusted. A filled weight has to land on that
+  // object or the table and the band read two different sets.
+  for (let i = 0; i < adjusted.length; i++) {
+    const row = args.adjusted[i]
+    const filled = adjusted[i]?.weight
+    if (!row || filled == null || !(filled > 0) || filled === row.weight) continue
+    row.weight = filled
+  }
   const pricing = priceFn(args.subject, adjusted, args.market, {
     sellerImprovementsTotal: args.input.sellerImprovementsTotal ?? null,
     priceOverride: args.input.priceOverride ?? null,
@@ -1707,6 +1751,7 @@ export function priceCmaSet(args: {
   pricing.reconciliation = reconcileAdjustedSales({
     sales: part.kept as unknown as ReconcilableSale[],
     subjectSqft: args.subject.sqft ?? 0,
+    asOf: args.asOf,
   })
   const pricedValues = part.priced
     .map((s) => s.adjustedPrice)

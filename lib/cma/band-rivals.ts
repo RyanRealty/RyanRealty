@@ -481,15 +481,18 @@ export function competitionAreaSentence(input: {
   ]
   if (widenedNote) bits.push(widenedNote.trim())
   if (input.shown > 0 && input.shown < input.activeCount + input.pendingCount) {
-    // "like yours" when the pick narrowed: the counts above are every home in
-    // the band, the cards below are within one bedroom and about 35% of the
-    // subject's living area. Without the qualifier the sentence says the
-    // nearest of one set and then draws another (§0).
-    bits.push(
-      `The nearest ${countWord(input.shown)}${input.likeYours ? ' like yours' : ''} ${
-        input.shown === 1 ? 'is' : 'are'
-      } below.`,
-    )
+    // The count in the sentence is the count of cards below it. A parent
+    // total the chapter does not draw is not a number the letter may state.
+    const like = input.likeYours ? ' like yours' : ''
+    const verb = input.shown === 1 ? 'is' : 'are'
+    const pending =
+      input.pendingCount > 0
+        ? `${int(input.pendingCount)} ${input.pendingCount === 1 ? 'is' : 'are'} under contract.`
+        : 'None are under contract right now.'
+    const widened = widenedNote ? ` ${widenedNote.trim()}` : ''
+    return `The nearest ${countWord(input.shown)}${like} ${verb} for sale ${where} between ${usd(
+      input.lo,
+    )} and ${usd(input.hi)}. ${pending}${widened}`
   }
   return bits.join(' ')
 }

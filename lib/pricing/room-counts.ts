@@ -2,10 +2,10 @@
  * ONE ROOM RULE, for bedrooms and bathrooms alike (Matt 2026-09-10:
  * "adjust inside, wall outside").
  *
- * Same whole count travels anywhere. ONE room apart is used only on the
- * subject's own ground — its plat, its mapped neighborhood, or its own street
- * — and the document says so on the sale. Two or more apart is refused
- * everywhere.
+ * Same whole count travels anywhere. ONE bedroom or ONE bathroom apart, not
+ * both, is used only on the subject's own ground (its plat, its mapped
+ * neighborhood, or its own street) and the document says so on the sale. Two
+ * or more apart on either count, or one apart on both, is refused everywhere.
  *
  * WHY THERE IS NO DOLLAR ADJUSTMENT HERE. The obvious implementation is to
  * price the missing room and adjust. This market does not support a number.
@@ -62,9 +62,9 @@ export function roomCountVerdict(
 }
 
 /**
- * Both counts at once. `ok` is false as soon as either is refused; `notes`
- * names every room count that differs on a sale we are still using, so the
- * selector can stamp it on the comp and the document can print it.
+ * Both counts at once. One whole room is one bedroom or one bathroom, not
+ * both. `ok` is false when either count is refused, and when both are one
+ * apart. `notes` names the single count that differs on a sale we still use.
  */
 export function roomCountsUsable(
   subject: { beds: number | null | undefined; baths: number | null | undefined },
@@ -74,6 +74,8 @@ export function roomCountsUsable(
   const beds = roomCountVerdict(subject.beds, comp.beds, opts)
   const baths = roomCountVerdict(subject.baths, comp.baths, opts)
   if (beds === 'refuse' || baths === 'refuse') return { ok: false, notes: [] }
+  // One apart on both dimensions is two rooms, not the one-room keep.
+  if (beds === 'noted' && baths === 'noted') return { ok: false, notes: [] }
   const notes: Array<'beds' | 'baths'> = []
   if (beds === 'noted') notes.push('beds')
   if (baths === 'noted') notes.push('baths')

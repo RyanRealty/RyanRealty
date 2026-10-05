@@ -298,6 +298,31 @@ describe('one-room rule — picker and review share one decision', () => {
     expect(pickerKeeps(subject, sale)).toBe(true)
   })
 
+  it('refuses one bed and one bath on own plat, and still keeps a one-bath-only gap', () => {
+    const subject = pricingSubject({ beds: 4, baths: 3 })
+    const both = pricingSale({
+      listingKey: 'BED_AND_BATH',
+      beds: 3,
+      baths: 2,
+      address: '12 Indian Ridge',
+    })
+    const bothDecision = roomCountsDecision(subject, { ...both, ownPlat: true })
+    expect(bothDecision.ok).toBe(false)
+    expect(bothDecision.notes).toEqual([])
+    expect(pickerKeeps(subject, both)).toBe(false)
+
+    const bathOnly = pricingSale({
+      listingKey: 'BATH_ONLY',
+      beds: 4,
+      baths: 2,
+      address: '14 Indian Ridge',
+    })
+    const bathDecision = roomCountsDecision(subject, { ...bathOnly, ownPlat: true })
+    expect(bathDecision.ok).toBe(true)
+    expect(bathDecision.notes).toEqual(['baths'])
+    expect(pickerKeeps(subject, bathOnly)).toBe(true)
+  })
+
   it('one bath off off-plat is out', () => {
     const subject = pricingSubject({ baths: 3, marketArea: null })
     const sale = pricingSale({

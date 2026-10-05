@@ -1470,3 +1470,45 @@ describe('priceCmaSet: the sale-to-ask share comes from the sales that price (re
     expect(withPool.rangeRule?.sentence).toContain('closing at 100.0 percent')
   })
 })
+
+describe('priceCmaSet writes a short-set fill weight back onto the sale the letter holds', () => {
+  it('stamps the filled weight by index and does not drop a sale or zero another', () => {
+    const row = (listingKey: string, closePrice: number, weight: number) => ({
+      ...sale({ listingKey, closePrice, originalAsk: closePrice, lastAsk: closePrice, sqft: 2000 }),
+      monthsSinceClose: 1,
+      timeAdjustment: 0,
+      timeAdjustedPrice: closePrice,
+      ppsfTimeAdjusted: closePrice / 2000,
+      sizeAdjustment: 0,
+      adjustedPrice: closePrice,
+      weight,
+      listPrice: closePrice,
+      mlsNumber: null,
+      propertySubType: 'Single Family Residence',
+      photoUrl: null,
+      publicRemarks: null,
+      viewDescription: null,
+      taxAnnual: null,
+      domTotal: 10,
+    })
+    const adjusted = [row('A', 490_000, 1), row('B', 500_000, 1), row('C', 510_000, 0)]
+    priceCmaSet({
+      subject: { ...subject, standardStatus: 'Closed', lastListPrice: null },
+      adjusted: adjusted as never,
+      market: null,
+      input: { priceOverride: null },
+      selection: {
+        pricingSales: adjusted.map((c) =>
+          sale({ listingKey: c.listingKey, closePrice: c.closePrice, originalAsk: c.closePrice }),
+        ),
+        tiersUsed: ['subdivision-3mo'],
+      },
+      marketIndex: [],
+      asOf: '2026-01-15',
+    })
+    expect(adjusted).toHaveLength(3)
+    expect(adjusted[0]!.weight).toBe(1)
+    expect(adjusted[1]!.weight).toBe(1)
+    expect(adjusted[2]!.weight).toBeGreaterThan(0)
+  })
+})

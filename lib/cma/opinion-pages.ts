@@ -643,7 +643,7 @@ export function whatHappenedGraphicHtml(a: OpinionPageArgs): string {
     // $372K–$399K under that phrase while chapter 5 printed $410K–$460K under
     // the same phrase, and chapter 2 a third figure a foot). The label says
     // which of the two it is, on the mark, where the reader meets it.
-    rangeLabel: 'where homes like yours sold, adjusted for date and size',
+    rangeLabel: `where homes like yours sold, ${adjustedForClause(a.comps)}`,
     domDays: subjectDomDays(a.subject),
   })
   // The row carries no list date and no ask, so there is no period to draw.
@@ -747,6 +747,7 @@ export function whatHappenedHeading(a: OpinionPageArgs): string {
   const exposure = askExposureFor(a)
   const position = resolveAskPosition({
     lastListPrice: a.subject.lastListPrice,
+    originalListPrice: a.subject.originalListPrice,
     exposure,
   })
   if (status?.isActiveWithOtherBrokerage) {
@@ -757,7 +758,12 @@ export function whatHappenedHeading(a: OpinionPageArgs): string {
   const exposureAgrees = position.lastAsk == null || lastSegmentAsk === position.lastAsk
   if (exposure && exposure.segments.length > 1 && exposureAgrees) {
     const sentence = askExposureSentence(exposure.segments)
-    if (sentence) return sentence
+    if (sentence) {
+      const original = position.originalAsk
+      const dollars = original != null && original > 0 ? usd(original) : null
+      if (dollars && !sentence.includes(dollars)) return `You first asked ${dollars}. ${sentence}`
+      return sentence
+    }
   }
   if (askStepped(position)) {
     return `You first asked ${usd(position.originalAsk!)}. The last listing asked ${usd(position.lastAsk!)} and did not sell.`
@@ -1243,9 +1249,10 @@ export const BASIS_AND_LIMITS_HEADING = 'Basis and limits'
  * sentence in the document to get wrong. Both paragraphs now read the same
  * function, and that function reads the sales.
  */
-export function adjustmentsMade(comps: readonly CmaAdjustedComp[]): string[] {
+export function adjustmentsMade(comps: readonly CmaAdjustedComp[] | null | undefined): string[] {
+  const rows = comps ?? []
   const any = (pick: (c: CmaAdjustedComp) => number | null | undefined): boolean =>
-    comps.some((c) => {
+    rows.some((c) => {
       const v = pick(c)
       return v != null && Number.isFinite(v) && v !== 0
     })

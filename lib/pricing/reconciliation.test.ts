@@ -92,6 +92,38 @@ describe('reconcileAdjustedSales', () => {
     ).toBe(3)
   })
 
+  it('does not call a zero date and size move the smaller adjustment when that sale paid a concession', () => {
+    const out = reconcileAdjustedSales({
+      sales: [
+        sale({
+          listingKey: 'CONCESSION',
+          address: '10 Quiet Ln',
+          closePrice: 500_000,
+          timeAdjustment: 0,
+          sizeAdjustment: 0,
+          storyAdjustment: 0,
+          concessionsAmount: 14_600,
+          weight: 1,
+        }),
+        sale({
+          listingKey: 'DATE',
+          address: '20 Date Ln',
+          closePrice: 500_000,
+          timeAdjustment: 9_064,
+          sizeAdjustment: 0,
+          storyAdjustment: 0,
+          weight: 1,
+        }),
+      ],
+      subjectSqft: 1_700,
+    })
+    const concession = out.weights.find((w) => w.listingKey === 'CONCESSION')!
+    const dateMove = out.weights.find((w) => w.listingKey === 'DATE')!
+    expect(dateMove.reason).toContain('the smallest adjustment of the sales behind this price')
+    expect(concession.reason).not.toContain('the smallest adjustment of the sales behind this price')
+    expect(concession.grossAdjustmentPct).toBeGreaterThan(dateMove.grossAdjustmentPct)
+  })
+
   it('claims a superlative only when the sale actually holds it', () => {
     const out = reconcileAdjustedSales({
       sales: [
@@ -108,6 +140,90 @@ describe('reconcileAdjustedSales', () => {
     expect(b.reason).toContain('the most recent sale')
     expect(b.reason).toContain('the smallest adjustment of the sales behind this price')
     expect(b.reason).toContain('700 square feet larger than yours')
+  })
+
+  it('does not say the price was adjusted for size when only the date and a concession moved', () => {
+    const out = reconcileAdjustedSales({
+      sales: [
+        sale({
+          timeAdjustment: -9_064,
+          sizeAdjustment: 0,
+          storyAdjustment: 0,
+          concessionsAmount: 0,
+        }),
+        sale({
+          listingKey: 'B',
+          address: '20 Second St',
+          timeAdjustment: 0,
+          sizeAdjustment: 0,
+          storyAdjustment: 0,
+          concessionsAmount: 14_600,
+          weight: 0.2,
+        }),
+      ],
+      subjectSqft: 1_700,
+    })
+    const prose = [out.sentence ?? '', ...out.weights.map((w) => w.reason)].join('\n')
+    expect(prose).not.toContain('adjusted for date and size')
+    expect(prose).toContain('adjusted for date')
+    expect(prose).toContain('adjusted for seller concessions')
+  })
+
+  it('does not call a September 28 close sold this month on an October 5 letter', () => {
+    const out = reconcileAdjustedSales({
+      sales: [
+        sale({
+          listingKey: 'SEP',
+          address: '28 September St',
+          closeDate: '2026-09-28',
+          monthsSinceClose: 0.23,
+        }),
+      ],
+      subjectSqft: 1_700,
+      asOf: '2026-10-05',
+    })
+    const prose = [out.sentence ?? '', ...out.weights.map((w) => w.reason)].join('\n')
+    expect(prose).not.toContain('sold this month')
+    expect(prose).toContain('sold last month')
+  })
+
+  it('counts older closes from the letter date, and leaves monthsSinceClose alone when asOf is absent', () => {
+    const dated = reconcileAdjustedSales({
+      sales: [
+        sale({
+          closeDate: '2026-07-28',
+          monthsSinceClose: 0,
+        }),
+      ],
+      subjectSqft: 1_700,
+      asOf: '2026-10-05',
+    })
+    expect(dated.sentence).toContain('sold 3 months ago')
+    expect(dated.sentence).not.toContain('sold this month')
+
+    const sameMonth = reconcileAdjustedSales({
+      sales: [
+        sale({
+          closeDate: '2026-10-02',
+          monthsSinceClose: 4,
+        }),
+      ],
+      subjectSqft: 1_700,
+      asOf: '2026-10-05',
+    })
+    expect(sameMonth.sentence).toContain('sold this month')
+    expect(sameMonth.sentence).not.toContain('sold 4 months ago')
+
+    const undated = reconcileAdjustedSales({
+      sales: [
+        sale({
+          closeDate: '2026-09-28',
+          monthsSinceClose: 0,
+        }),
+      ],
+      subjectSqft: 1_700,
+    })
+    expect(undated.sentence).toContain('sold this month')
   })
 
   it('names the leading sale in a sentence a seller can read', () => {

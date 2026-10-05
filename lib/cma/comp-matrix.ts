@@ -39,7 +39,7 @@ import {
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import { daysOnMarketFrom } from '@/lib/cma/listing-history-line'
 import { roomAdjustmentWords } from '@/lib/cma/seller-letter-copy'
-import { closedEntries, subjectEntry, type MatrixEntry } from '@/lib/cma/matrix-entry'
+import { closedEntries, mlsStatusLabel, subjectEntry, type MatrixEntry } from '@/lib/cma/matrix-entry'
 import { statusPpsfCaptionHtml } from '@/lib/cma/status-ppsf'
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
 import { formatDate } from '@/lib/format/date'
@@ -428,10 +428,11 @@ function sharedConcessionCell(entry: MatrixEntry): string {
 function statusCell(entry: MatrixEntry): string {
   if (entry.family === 'closed') return 'Sold'
   if (entry.family === 'unsold') {
-    const raw = entry.mlsStatus?.trim()
-    return raw || 'Off market'
+    return mlsStatusLabel(entry.mlsStatus) ?? 'Off market'
   }
   if (entry.family === 'subject') {
+    const word = mlsStatusLabel(entry.mlsStatus)
+    if (word === 'Canceled' || word === 'Expired' || word === 'Withdrawn') return word
     if (entry.endLabel === 'came off') return 'Off market'
     if (entry.listPrice != null && entry.listPrice > 0) return 'Listed'
     return 'Your home'

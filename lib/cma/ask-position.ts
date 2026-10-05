@@ -25,6 +25,8 @@ function positive(n: number | null | undefined): number | null {
 
 export function resolveAskPosition(input: {
   lastListPrice?: number | null
+  /** MLS OriginalListPrice. It is the first ask even when the exposure starts later. */
+  originalListPrice?: number | null
   exposure?: AskExposureLike | null
 }): AskPosition {
   const segments = (input.exposure?.segments ?? [])
@@ -34,7 +36,7 @@ export function resolveAskPosition(input: {
   const finalFromExposure = positive(input.exposure?.final) ?? segments[segments.length - 1] ?? null
   const lastList = positive(input.lastListPrice)
   const lastAsk = lastList ?? finalFromExposure
-  const originalAsk = first ?? lastAsk
+  const originalAsk = positive(input.originalListPrice) ?? first ?? lastAsk
   return { originalAsk, lastAsk }
 }
 

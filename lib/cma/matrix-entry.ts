@@ -113,6 +113,18 @@ export type MatrixEntry = {
   mlsStatus?: string | null
 }
 
+/** The MLS status word a seller letter may print. Anything else stays unlabeled. */
+export function mlsStatusLabel(raw: string | null | undefined): string | null {
+  const s = (raw ?? '').trim()
+  if (/^expired\b/i.test(s)) return 'Expired'
+  if (/^withdrawn\b/i.test(s)) return 'Withdrawn'
+  if (/^cancell?ed\b/i.test(s)) return 'Canceled'
+  if (/^closed\b/i.test(s)) return 'Closed'
+  if (/^pending\b/i.test(s)) return 'Pending'
+  if (/^active\b/i.test(s)) return 'Active'
+  return null
+}
+
 // ── the remodel fragment ────────────────────────────────────────────────────
 
 /**
@@ -577,6 +589,7 @@ export function subjectEntry(input: {
         : null,
     adjustedPrice: null,
     endLabel: cameOff ? 'came off' : input.printableAsk != null ? 'still asking' : '',
+    mlsStatus: s.standardStatus ?? null,
     latitude: s.latitude ?? null,
     longitude: s.longitude ?? null,
     // The reader's own home never sorts: it is the first column, always.

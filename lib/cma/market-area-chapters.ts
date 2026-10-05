@@ -291,12 +291,9 @@ export function renderInventoryBoardHtml(
   // price itself was carried to. On 19968 those were 97.0 and 93.5 percent,
   // both captioned "of the price they first asked", four screens apart. The
   // two that are load-bearing stay; this one goes (CLAUDE.md §0).
-  // The SAME median chapter 2b draws, when the row carries it. Two figures for
-  // "half had an offer inside N days" — 25 off the 12-month single-family read
-  // and 26 off market_stats_cache — printed three screens apart is a §0
-  // failure whichever is right, and only the offer-timing block ships with a
-  // source trace beside it.
-  const offerMedian = readOfferTiming(market)?.medianDays ?? market.medianDom
+  // The same median the days chart prints. Offer timing when that block has a
+  // number, otherwise medianDom. Two figures for one sentence is a §0 failure.
+  const offerMedian = printedOfferMedianDays(market)
   if (offerMedian != null && offerMedian > 0) {
     sentences.push(
       // "Half of them" sat after a sentence whose subject is the homes FOR
@@ -359,8 +356,10 @@ export function adjustedCloseRange(
  * and two measures never share an axis. That reason was wrong:
  * `market.medianDom` is `market_stats_cache.median_dom`, the median of
  * `listings.days_to_pending`, and a comp's `daysToOffer` reads the same column
- * (lib/cma/comps.ts:131). One measure, one axis. The tick renders only when
- * the figure is on `render_args`; nothing here is recomputed or filled.
+ * (lib/cma/comps.ts:131). The tick uses `printedOfferMedianDays`: the
+ * offer-timing median when that block has one, otherwise `medianDom`. One
+ * measure, one axis. The tick renders only when the figure is on
+ * `render_args`; nothing here is recomputed or filled.
  */
 export function renderDaysToOfferHtml(
   a: Pick<MarketChapterArgs, 'subject' | 'comps' | 'market'>,
@@ -391,10 +390,8 @@ export function renderDaysToOfferHtml(
       valueLabel: `${int(subjectDays)} days, no offer`,
     })
   }
-  const marketMedian =
-    a.market?.medianDom != null && Number.isFinite(a.market.medianDom) && a.market.medianDom > 0
-      ? Math.round(a.market.medianDom)
-      : null
+  const printedMedian = printedOfferMedianDays(a.market)
+  const marketMedian = printedMedian != null && printedMedian > 0 ? Math.round(printedMedian) : null
   const marketPlace = cleanText(a.market?.geoLabel) ?? cleanText(a.subject.city)
   const tick =
     marketMedian != null && marketPlace
@@ -627,6 +624,18 @@ export function readOfferTiming(market: CmaMarketContext | null | undefined): Of
   return { city, windowMonths, n, points, medianDays: num(o.medianDays) }
 }
 
+/**
+ * The one days-to-offer median this file prints.
+ * Offer timing wins when its median is a finite number. Otherwise the city
+ * `medianDom`. Callers still drop a non-positive result.
+ */
+export function printedOfferMedianDays(market: CmaMarketContext | null | undefined): number | null {
+  const fromTiming = readOfferTiming(market)?.medianDays
+  if (typeof fromTiming === 'number' && Number.isFinite(fromTiming)) return fromTiming
+  const dom = market?.medianDom
+  return typeof dom === 'number' && Number.isFinite(dom) ? dom : null
+}
+
 /** `render_args.market.askOutcome`, validated. Every group needs CHAPTER2_MIN_N. */
 export function readAskOutcome(market: CmaMarketContext | null | undefined): AskOutcome | null {
   const raw = (market as unknown as { askOutcome?: unknown } | null)?.askOutcome
@@ -741,10 +750,11 @@ export function renderOfferTimingHtml(a: {
   // 100 — so the sentence states the shares, not a rounded fraction of them.
   const ninety = timing.points.find((p) => p.days === 90) ?? null
   const last = timing.points[timing.points.length - 1] ?? null
+  const offerMedian = printedOfferMedianDays(a.market)
   const reading = [
-    timing.medianDays != null && timing.medianDays > 0
+    offerMedian != null && offerMedian > 0
       ? `Half of the ${int(timing.n)} homes that sold in ${timing.city} had an offer inside ${int(
-          timing.medianDays,
+          offerMedian,
         )} days.`
       : null,
     ninety ? `${ninety.pct.toFixed(1)} percent had one inside 90 days.` : null,

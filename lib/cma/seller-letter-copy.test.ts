@@ -150,6 +150,7 @@ describe('the generators write plain English', () => {
       printableAsk: 650_000,
     })
     expect(row.outcome).toMatch(/Came off/)
+    expect(row.mlsStatus).toBe('Expired')
     expect(row.statusDate).toBeNull()
     const peer = {
       address: '20 North Lane',

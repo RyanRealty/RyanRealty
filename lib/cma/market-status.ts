@@ -732,13 +732,37 @@ export function buildExpiredPeerSet(input: {
    * expireds do not come from an older pocket than the solds.
    */
   maxWindowMonths?: number | null
+  /**
+   * Street addresses of the closed sales that set the price. An unsold cycle
+   * at one of those streets already sold, so it is not a peer that failed.
+   * A different listing key at the same street is still that sale. Omitted
+   * leaves every unsold row in the set.
+   */
+  closedSaleAddresses?: readonly (string | null | undefined)[]
+  /**
+   * The subject itself came off without selling. With no other peers, the
+   * "no home came off" sentence would be about this home. Omit it. Omitted
+   * or false keeps that sentence.
+   */
+  subjectCameOff?: boolean
 }): CmaExpiredPeerSet {
   const asOf = input.asOf ?? new Date()
+  const closedSaleNorms = new Set(
+    (input.closedSaleAddresses ?? [])
+      .map((address) => normalizePeerAddress(address ?? ''))
+      .filter((address) => address.length > 0),
+  )
+  const soldAtThisStreet = (row: CmaMarketAreaRow): boolean => {
+    if (closedSaleNorms.size === 0) return false
+    const address = normalizePeerAddress(peerAddress(row))
+    return address.length > 0 && closedSaleNorms.has(address)
+  }
   const dated = input.rows
     .map((row) => ({ row, months: offMarketMonths(row, asOf) }))
     // A row with no off-market date cannot support "in the last N months", so
     // it is not evidence for any window. It is dropped, never dated.
-    .filter((x): x is { row: CmaMarketAreaRow; months: number } => x.months != null)
+    // A street that already closed in the priced set is a sale, not a failure.
+    .filter((x): x is { row: CmaMarketAreaRow; months: number } => x.months != null && !soldAtThisStreet(x.row))
 
   const maxW =
     input.maxWindowMonths != null && Number.isFinite(input.maxWindowMonths) && input.maxWindowMonths > 0
@@ -798,6 +822,7 @@ export function buildExpiredPeerSet(input: {
       windowMonths,
       shortfall,
       likeYours,
+      subjectCameOff: input.subjectCameOff === true,
     }),
     peers: withWhy,
   }
@@ -809,6 +834,7 @@ function peerSetSentence(input: {
   windowMonths: number
   shortfall: boolean
   likeYours: boolean
+  subjectCameOff?: boolean
 }): string {
   const where = compAreaIn(input.area)
   const w = monthsWord(input.windowMonths)
@@ -820,6 +846,8 @@ function peerSetSentence(input: {
   // `count` is the rows the table prints. The sentence uses that number.
   const n = input.count
   if (n === 0) {
+    // The subject is the home that came off. Do not say none did.
+    if (input.subjectCameOff) return ''
     return `No home${like} ${where} came off the market without selling in the last ${w} months.`
   }
   const homes = `${countWord(n)} ${n === 1 ? 'home' : 'homes'}${like}`
