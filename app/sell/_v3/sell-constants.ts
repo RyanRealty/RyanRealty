@@ -228,14 +228,14 @@ export const SELL_FAQ_ITEMS = [
   {
     question: 'Is there a contract to talk with you?',
     answer:
-      'No. Talking with us and getting the written valuation are free, and there is no listing agreement to sign for either. If you decide to list with us, that is a separate agreement we go through together.',
+      'No. The conversation and the written valuation are free. There is no listing agreement to sign for either. If you decide to list with us later, that is a separate agreement we walk through together.',
   },
   FAQ_ITEMS[1],
   FAQ_ITEMS[2],
   {
     question: 'My listing just ended with another brokerage. Can we talk?',
     answer:
-      'Yes, once that listing agreement has ended. We look at what the price, the photos and the showings did, tell you plainly what we would change, and you decide. From a signed agreement to live on the MLS is typically 5 to 7 business days.',
+      'Yes, once that listing agreement has ended. We look at the price, the photos and the showings, tell you plainly what we would change, and you decide. From a signed agreement to live on the MLS is typically 5 to 7 business days.',
   },
 ] as const
 
@@ -244,7 +244,11 @@ export const SELL_PRIMARY_LABEL = 'Talk to us about your home'
 
 /** /sell default hero. The H1 must open "Sell your home in Central Oregon" (ci:seo-shell). */
 export const SELL_HERO_SUB =
-  'Tell us about your home and we will show you what the closed sales around it say, and how we would price and launch it. No contract to talk, no pressure.'
+  'We set the list price from nearby closed sales, then put professional photos, drone, video and a 3D tour on the market in week one. Start with your address. No contract to talk.'
+
+/** Default H1. States what we do for the seller and why us, in one read. */
+export const SELL_HERO_HEADLINE =
+  'Sell your home in Central Oregon with a clear price and a week-one launch'
 
 /** /sell?from=cma hero (Matt, 2026-09-28). ONLY the hero copy changes. */
 export const SELL_CMA_EYEBROW = 'For homeowners whose listing ended'

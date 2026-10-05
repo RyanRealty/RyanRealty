@@ -1,8 +1,10 @@
 /**
  * /sell - the Sell landing page and seller path, on the components/site/v3
- * barrel. Rebuilt 2026-09-28 from Matt's brief and the competitor walk in
- * /workspace/competitor-sell-paths-2026-09-28/SYNTHESIS.md. Order, cuts and
- * per-section reasoning live in design_system/ryan-realty/ui_kits/sell/parity.json.
+ * barrel. Rebuilt top-to-bottom 2026-10-05 from Matt's feedback (hero must make
+ * sense in one read; the whole page, not just the fold) and the competitor walk
+ * in /workspace/competitor-sell-paths-2026-09-28/SYNTHESIS.md. Section map,
+ * order, cuts and per-section reasoning live in
+ * design_system/ryan-realty/ui_kits/sell/parity.json.
  *
  * WHO LANDS HERE. Every CMA email to a homeowner whose listing just EXPIRED
  * elsewhere, plus everyone who searches for selling in Central Oregon. So the
@@ -95,7 +97,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return pageMetadata({
     title: 'Sell Your Home in Central Oregon',
     description:
-      'Talk with Ryan Realty about selling your Central Oregon home. A price built from the closed sales, a complete launch in week one with photos, drone, video and a 3D tour in the 3%, and a written report every week. No contract to talk.',
+      'Sell your Central Oregon home with a clear price from nearby closed sales, a complete week-one launch with photos, drone, video and a 3D tour in the 3%, and a written report every week. No contract to talk.',
     path: ROUTE_PATH,
     ogImage: SELL_OG_IMAGE,
     keywords: [
@@ -197,9 +199,9 @@ export default async function SellPage() {
     { type: 'faqPage', items: SELL_FAQ_ITEMS },
     {
       type: 'webPage',
-      name: 'Sell your home in Central Oregon',
+      name: 'Sell your home in Central Oregon with a clear price and a week-one launch',
       description:
-        'How Ryan Realty prices, launches and reports on a Central Oregon listing, with reviews, recent office closings, and a way to talk about your home.',
+        'How Ryan Realty prices a Central Oregon home from nearby closed sales, launches it in week one, and reports every week, with reviews, recent office closings, and a way to talk about your home.',
       url: ROUTE_PATH,
       aboutOrganization: true,
     },
@@ -255,7 +257,7 @@ export default async function SellPage() {
           headingLevel={1}
           height="tall"
           className="sell-stage-poster sell-landing-hero"
-          headline="Sell your home in Central Oregon, priced from the sales that closed"
+          headline="Sell your home in Central Oregon with a clear price and a week-one launch"
           altEyebrow={SELL_CMA_EYEBROW}
           altHeadline={SELL_CMA_HEADLINE}
           posterSrc={SELL_HERO_SRC}
@@ -342,7 +344,7 @@ export default async function SellPage() {
 
         <SellClosings closings={closings} />
 
-        <V3Quiet id="selling-questions" heading="Selling questions" items={quietItems} />
+        <V3Quiet id="selling-questions" heading="Selling questions, answered" items={quietItems} />
 
         <SellFinalAsk
           label={SELL_PRIMARY_LABEL}

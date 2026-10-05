@@ -1,8 +1,8 @@
 {
   "route": "app/sell/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md. The KB-era index.html that used to sit in this directory was DELETED 2026-08-27: it was retired as a visual target on 2026-08-26 and kept only because ci:mockup-coverage required a parity.json beside any index.html, which is a gate keeping a dead file alive. The target is the patterns in PUBLIC_UI.md, built from components/site/v3. THIS FILE STILL BINDS: requiredComponents is what stops a page silently losing a section, and ci:mockup-parity reads it with or without a mockup.",
-  "competitiveTarget": "Rebuilt 2026-09-28 against a walk of 11 seller paths at 1440x900 and 375x812 (/workspace/competitor-sell-paths-2026-09-28/SYNTHESIS.md: Cascade Hasson SIR, Coldwell Banker Bain, Duke Warner, Bend Premier, Stellar/lifeinbend, Strategic/movetobend, RE/MAX Key, Redfin, Compass, Opendoor, Windermere, Zillow landing only). Beat them where they are weak: the Bend offices open on a contact form with no proof and no face on the first screen; only Stellar puts numbers in the hero; nobody shows a broker face plus reviews on the first screen; only Bend Premier speaks to an expired listing. Match the national pattern that wins: an address first, low-effort questions next, contact LAST as the submit (Redfin, Opendoor). So /sell carries proof, Matt\u2019s face and the one action on the first screen at both widths, a ?from=cma hero for owners whose listing ended, three concrete steps, initials-only reviews, real office closings, and the same value flow with contact moved to the end. Zero invented results.",
-  "note": "Rebuilt 2026-09-28 from Matt\u2019s brief (CMA landing for expired listings) and the Phase 1 competitor walk. Rhythm: no two adjacent sections share a pattern. Cut: market sections, property-type rows, the blog/site link block, Expand ask, the 3% hero label, full reviewer names, the em dash in the proof trace, the sticky ask. ?from=cma changes ONLY the hero copy, client-side over the static HTML, so /sell keeps revalidate 3600.",
+  "competitiveTarget": "Rebuilt top-to-bottom 2026-10-05 against the 2026-09-28 walk of 11 seller paths (/workspace/competitor-sell-paths-2026-09-28/SYNTHESIS.md). Section map: hero modeled on Redfin outcome headline + Stellar first-screen proof + Strategic face + Redfin/Opendoor address-as-CTA; how-we-sell on Compass phased clarity + Stellar numbered process; reviews on Stellar/Opendoor social proof; closings on Stellar client results with real MLS data; FAQ on Stellar answered Q&A; final ask on Redfin/Stellar close. Beat locals (no face+proof on fold, contact-first forms) and nationals (no local person). Zero invented results.",
+  "note": "Rebuilt 2026-10-05 from Matt's feedback (hero must make sense in one read; whole page not just the fold) and the Phase 1 competitor walk. Rhythm: no two adjacent sections share a pattern. Cut: market sections, property-type rows, the blog/site link block, Expand ask, the 3% hero label, full reviewer names, the sticky ask. ?from=cma changes ONLY the hero copy, client-side over the static HTML, so /sell keeps revalidate 3600.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
@@ -16,17 +16,17 @@
     },
     {
       "name": "V3Stage",
-      "section": "Opens the page. headingLevel 1, height tall. H1 opens with the seo-shell head term (Sell your home in Central Oregon, priced from the sales that closed). altEyebrow/altHeadline carry the ?from=cma copy (For homeowners whose listing ended / Your listing ended. Let\u2019s talk about what\u2019s next.), both in the static HTML. Poster is a pre-sized srcset of the Drake Park aerial, each file under 300 KB.",
+      "section": "Opens the page. headingLevel 1, height tall. H1 opens with the seo-shell head term (Sell your home in Central Oregon with a clear price and a week-one launch). altEyebrow/altHeadline carry the ?from=cma copy (For homeowners whose listing ended / Your listing ended. Let's talk about what's next.), both in the static HTML. Poster is a pre-sized srcset of the Drake Park aerial, each file under 300 KB.",
       "blocking": true
     },
     {
       "name": "SellValueForm",
-      "section": "The ONE primary action, inside SellCapture on the Stage: first-screen proof line (Google rating + count, homes sold) with its trace, Matt\u2019s face (name, Principal Broker, license), the address field and the submit labelled Talk to us about your home, then a small call/text link. Same flow, action and payload as before; steps are address, market read, timing, contact (contact last, as the submit).",
+      "section": "The ONE primary action, inside SellCapture on the Stage: first-screen proof line (Google rating + count, homes sold) with its trace, Matt’s face (name, Principal Broker, license), the address field and the submit labelled Talk to us about your home, then a small call/text link. Same flow, action and payload as before; steps are address, market read, timing, contact (contact last, as the submit).",
       "blocking": true
     },
     {
       "name": "SellHowWeSell",
-      "section": "How we sell in 3 steps (price from the sales; launch right in week one with photo, drone, video and 3D in the 3%; a written weekly report). Full PLAN_GROUPS inclusions behind one native details toggle.",
+      "section": "How we sell in 3 steps (price from closed sales; complete launch in week one with photo, drone, video and 3D in the 3%; a written weekly report). Lead line under the heading. Full PLAN_GROUPS inclusions behind one native details toggle. Eyebrow is process, not the fee.",
       "blocking": true
     },
     {
@@ -36,17 +36,17 @@
     },
     {
       "name": "SellClosings",
-      "section": "Up to 6 Ryan Realty list-side closings in the last 12 months from MLS closed data (getOfficeRecentClosings): city, beds, price, days to contract, sale to final list. No street, month or names. Not links. Renders nothing with no rows.",
+      "section": "Up to 6 Ryan Realty list-side closings in the last 12 months from MLS closed data (getOfficeRecentClosings): city, beds, price, days to contract, sale to final list. Lead line under the heading. No street, month or names. Not links. Renders nothing with no rows.",
       "blocking": true
     },
     {
       "name": "V3Quiet",
-      "section": "Four selling questions (SELL_FAQ_ITEMS). The same array feeds FAQPage.",
+      "section": "Four selling questions (SELL_FAQ_ITEMS), heading 'Selling questions, answered'. The same array feeds FAQPage.",
       "blocking": true
     },
     {
       "name": "SellFinalAsk",
-      "section": "The primary action repeated once (a link to the same value-flow field), small call/text links, and the one link to the full Bend market report that replaces the market sections.",
+      "section": "The primary action repeated once (a link to the same value-flow field), heading 'Ready to talk about your home?', small call/text links, and the one link to the full Bend market report that replaces the market sections.",
       "blocking": true
     },
     {
@@ -126,7 +126,7 @@
   "dataLayer": {
     "getProofBlock": "lib/data/proof/getProofBlock.ts. Google reviews (count, average, quotes) and the brokerage record. Quotes are mapped to initials on the page.",
     "getBrokerageTrackRecord": "lib/data/track-record.ts. Homes sold (list side, all time), fallback for the hero proof line.",
-    "getBrokers": "lib/data/brokers/getBrokers.ts. Matt\u2019s roster row (headshot record, license, phone) through aboutFaceFromBroker.",
+    "getBrokers": "lib/data/brokers/getBrokers.ts. Matt’s roster row (headshot record, license, phone) through aboutFaceFromBroker.",
     "getOfficeRecentClosings": "lib/data/proof/getOfficeRecentClosings.ts. Up to 6 list-side office closings, CloseDate in the last 12 months.",
     "SellValueForm": "app/sell/_v3/SellValueForm.tsx into app/lp/seller-home-value/actions.ts. Same action, payload and field names, pagePath=/sell, plus entry=cma when the page URL says from=cma.",
     "note": "Every read is a DAL function from @/lib/data (G8). getSellBendMarket, getPublicDetachedPace, getPublicPlaceSegments, getBrokerageListings and getSurfaceImage left /sell with the sections that consumed them."
@@ -135,12 +135,12 @@
     "MetadataBlock",
     "V3SectionTracker",
     "V3Breadcrumb",
-    "V3Stage id=sell-hero (H1, sub, first-screen proof + trace, Matt face, address field, Talk to us about your home, small call/text link; the submit opens the Sheet: market read, timing, contact as the final submit, success)",
-    "SellHowWeSell (three steps, inclusions behind a toggle)",
+    "V3Stage id=sell-hero (H1 clear price + week-one launch, sub, first-screen proof + trace, Matt face, address field, Talk to us about your home, small call/text link; the submit opens the Sheet: market read, timing, contact as the final submit, success)",
+    "SellHowWeSell (three steps with lead, inclusions behind a toggle)",
     "V3ProofBlock #proof (reviews, initials only)",
-    "SellClosings (recent office closings, MLS closed data)",
-    "V3Quiet #selling-questions (four questions)",
-    "SellFinalAsk (the primary action repeated once, call/text links, the market report link)",
+    "SellClosings (recent office closings with lead, MLS closed data)",
+    "V3Quiet #selling-questions (four questions, answered)",
+    "SellFinalAsk (Ready to talk, primary action once, call/text, market report)",
     "V3Footer"
   ],
   "openDefects": {

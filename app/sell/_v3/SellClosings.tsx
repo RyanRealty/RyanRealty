@@ -1,5 +1,6 @@
 /**
- * Recent office closings, one card per home (Matt's /sell brief 2026-09-28).
+ * Recent office closings, one card per home. Modeled on Stellar's "client
+ * results" section: real sold outcomes a seller can scan, not a brochure.
  *
  * Real MLS closed data only (getOfficeRecentClosings): city, bedrooms, the
  * close price, days to contract and sale to FINAL list price. No street, no
@@ -28,10 +29,14 @@ export function SellClosings({ closings }: { closings: OfficeRecentClosings }) {
       aria-labelledby="recent-closings-title"
     >
       <header className="sell-closings__head">
-        <V3Eyebrow>Last 12 months</V3Eyebrow>
+        <V3Eyebrow>Last 12 months · MLS closed</V3Eyebrow>
         <V3Heading level={2} id="recent-closings-title">
-          Homes we sold
+          Homes we sold for sellers like you
         </V3Heading>
+        <p className="sell-closings__lead">
+          City, beds, sale price, days to contract, and sale to final list.
+          No streets and no names. Just what closed.
+        </p>
       </header>
       <ol className="sell-closings__list">
         {closings.rows.map((row) => (

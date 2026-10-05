@@ -1,22 +1,22 @@
 /**
- * How we sell, in three steps (Matt's /sell brief, 2026-09-28): price from the
- * sales, launch it right in week one, a written report every week. The full
- * list of what the 3% includes sits behind one native disclosure, so the
- * section reads in one screen and the detail is one tap away.
+ * How we sell, in three steps. Modeled on Compass's clear phased story and
+ * Stellar's numbered process, kept to three concrete outcomes (Matt 2026-09-28
+ * brief; rebuilt 2026-10-05 so the whole page, not just the fold, reads as a
+ * seller plan). Full plan inclusions sit behind one native disclosure.
  *
- * Every sentence here restates LISTING_TERMS, PLAN_GROUPS or the listing-time
- * FAQ in sell-constants.ts. Nothing is promised that the plan does not say.
+ * Every sentence restates LISTING_TERMS, PLAN_GROUPS or the listing-time FAQ
+ * in sell-constants.ts. Nothing is promised that the plan does not say.
  */
 import { V3_ROOT_CLASS, V3Eyebrow, V3Heading } from '@/components/site/v3'
 import { LISTING_TERMS, PLAN_GROUPS } from './sell-constants'
 
 export const SELL_HOW_STEPS = [
   {
-    title: 'Price it from the sales',
-    body: 'We set the list price from the homes like yours that closed and the ones competing with it now, and we walk you through the comparable sales behind the number before you decide.',
+    title: 'A price built from closed sales',
+    body: 'We set the list price from homes like yours that closed nearby and the ones competing with it now. Before you decide, we walk you through the comparable sales behind the number.',
   },
   {
-    title: 'Launch it right in week one',
+    title: 'A complete launch in week one',
     body: 'Professional photos within 48 hours of signing, plus aerial drone video, a cinematic walkthrough and a 3D tour, all in the 3%. Live on the MLS typically 5 to 7 business days after a signed agreement.',
   },
   {
@@ -33,10 +33,14 @@ export function SellHowWeSell() {
       aria-labelledby="how-we-sell-title"
     >
       <header className="sell-how__head">
-        <V3Eyebrow>The 3% listing plan</V3Eyebrow>
+        <V3Eyebrow>How working with us goes</V3Eyebrow>
         <V3Heading level={2} id="how-we-sell-title">
-          How we sell your home
+          Three steps from your address to a weekly written report
         </V3Heading>
+        <p className="sell-how__lead">
+          No market lecture. A clear price, a complete launch, and a report you
+          can read every week. Everything below is in the 3% listing fee.
+        </p>
       </header>
       <ol className="sell-how__steps">
         {SELL_HOW_STEPS.map((step, i) => (

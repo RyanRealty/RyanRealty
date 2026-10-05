@@ -1,9 +1,13 @@
 /*
- * /sell landing (2026-09-28 rebuild). Route-local, tokens only.
+ * /sell landing (2026-10-05 whole-page rebuild). Route-local, tokens only.
  *
  * FIRST SCREEN. At 1440x900 and 375x812 the hero carries the H1, the sub, the
  * proof line, Matt's face and the one action. The stage stops where the slab
  * stops; the photograph is a pre-sized srcset and stays the LCP.
+ *
+ * BELOW THE FOLD. How we sell, reviews, closings, FAQ and the final ask each
+ * take a full section modeled on the competitor walk winners (Redfin, Stellar,
+ * Compass, Strategic). Dog-floater lane rules on the hero are unchanged.
  *
  * ?from=cma. html[data-sell-entry="cma"] (set before first paint by
  * SELL_ENTRY_SCRIPT) swaps the default headline and sub for the CMA pair that
@@ -161,11 +165,13 @@ html[data-sell-entry='cma'] .v3.v3-stage.sell-landing-hero .sell-hero-sub--cma {
 
 /* ---------- how we sell ---------- */
 .v3.sell-how,
-.v3.sell-closings,
-.v3.sell-final {
+.v3.sell-closings {
   max-width: var(--v3-measure);
   margin-inline: auto;
   padding: var(--v3-section-pad) var(--v3-gutter);
+  scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
+}
+.v3.sell-final {
   scroll-margin-top: calc(var(--v3-chrome-h) + var(--v3-space-md));
 }
 .sell-how__head,
@@ -173,6 +179,16 @@ html[data-sell-entry='cma'] .v3.v3-stage.sell-landing-hero .sell-hero-sub--cma {
   display: grid;
   gap: var(--v3-space-2xs);
   margin-block-end: var(--v3-space-lg);
+}
+.sell-how__lead,
+.sell-closings__lead {
+  margin: var(--v3-space-2xs) 0 0;
+  max-width: 40rem;
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-muted);
+  text-wrap: pretty;
 }
 .sell-how__steps {
   display: grid;
@@ -192,8 +208,10 @@ html[data-sell-entry='cma'] .v3.v3-stage.sell-landing-hero .sell-hero-sub--cma {
   grid-template-columns: auto minmax(0, 1fr);
   gap: var(--v3-space-sm);
   align-items: start;
-  padding-block-start: var(--v3-space-sm);
-  border-block-start: var(--v3-rule-section);
+  padding: var(--v3-space-md);
+  background: var(--v3-surface-raised);
+  border: var(--v3-rule-hairline);
+  border-radius: var(--v3-radius-card);
 }
 .sell-how__n {
   font-family: var(--v3-font-num);
@@ -330,7 +348,17 @@ html[data-sell-entry='cma'] .v3.v3-stage.sell-landing-hero .sell-hero-sub--cma {
   display: grid;
   justify-items: start;
   gap: var(--v3-space-sm);
-  border-block-start: var(--v3-rule-section);
+  margin-block: var(--v3-space-md);
+  padding-block: var(--v3-section-pad);
+  padding-inline: var(--v3-gutter);
+  max-width: none;
+  background: var(--v3-wash);
+  border-block: var(--v3-rule-hairline);
+}
+.v3.sell-final > * {
+  max-width: var(--v3-measure);
+  margin-inline: auto;
+  width: min(100%, var(--v3-measure));
 }
 .sell-final__sub,
 .sell-final__reach,
