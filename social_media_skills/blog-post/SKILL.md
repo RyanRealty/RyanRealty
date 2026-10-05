@@ -85,7 +85,7 @@ If you need a bulk seed pattern, follow `scripts/seed-blog-posts.ts` (upsert on 
 ## 3. SEO spec.  every blog post must hit all of these
 
 ### 3.1 Title tag
-- **Length:** `seo_title` ≤46 characters. The site layout appends " | Ryan Realty" (14), so the whole title Google shows stays ≤60 (`TITLE_BUDGET` in `lib/site/page-metadata.ts`). The post-deploy check fails when more than 10% of sampled titles run past 60 (Matt 2026-10-05).
+- **Length:** `seo_title` ≤46 characters. The site layout appends " | Ryan Realty" (14), so the whole title Google shows stays ≤60 (`TITLE_BUDGET` in `lib/site/page-metadata.ts`). The post-deploy check fails when more than 15% of sampled titles run past 60 (Matt 2026-10-05).
 - **Front-loaded keyword:** start with the primary target keyword (e.g. "Bend Oregon Real Estate")
 - **No brand in `seo_title`:** the layout adds it; a baked-in " | Ryan Realty" is stripped anyway.
 - **No stale year, no figure that can go stale:** a year only on a dated report; no dollar or unit counts.

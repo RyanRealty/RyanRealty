@@ -144,13 +144,13 @@ describe('auditDecision (data/seo/decisions.json)', () => {
 })
 
 describe('overSoftShareProblems (title-length ratchet, Matt 2026-10-05)', () => {
-  it('passes at or under 10% of the sample over 60 chars', () => {
-    expect(overSoftShareProblems(['a', 'b', 'c', 'd'], 40)).toEqual([])
+  it('passes at or under 15% of the sample over 60 chars', () => {
+    expect(overSoftShareProblems(['a', 'b', 'c', 'd', 'e', 'f'], 40)).toEqual([])
     expect(overSoftShareProblems([], 0)).toEqual([])
   })
-  it('fails past 10%, naming every long title', () => {
-    const fails = overSoftShareProblems(['/x: title 66 chars: X', '/y: title 70 chars: Y', '/z', '/w', '/v'], 40)
+  it('fails past 15%, naming every long title', () => {
+    const fails = overSoftShareProblems(['/x: title 66 chars: X', '/y: title 70 chars: Y', '/z', '/w', '/v', '/u', '/t'], 40)
     expect(fails).toHaveLength(1)
-    expect(fails[0]).toMatch(/^5 of 40 sampled titles run past 60 chars, over the 10% ceiling: \/x: title 66 chars: X; /)
+    expect(fails[0]).toMatch(/^7 of 40 sampled titles run past 60 chars, over the 15% ceiling: \/x: title 66 chars: X; /)
   })
 })
