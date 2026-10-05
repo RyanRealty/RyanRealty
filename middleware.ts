@@ -5,7 +5,8 @@ import { resolveBendNewConstructionSearchTwinHop } from '@/lib/routing/bend-new-
 import { shouldRefuseDevRoute, DEV_NOT_FOUND_HTML } from '@/lib/routing/dev-only'
 import { CENTRAL_OREGON_CITY_SLUGS, isCentralOregonCommunitySlug } from '@/lib/central-oregon'
 import { isPresetSlug } from '@/lib/search-presets'
-import { isInvalidBlogIndexPath } from '@/lib/blog/index-path-guard'
+import { blogPostSlugFromPath, isInvalidBlogIndexPath } from '@/lib/blog/index-path-guard'
+import { lookupPublishedBlogSlugEdge } from '@/lib/data/blog/publishedBlogSlugsEdge'
 import { allowedCommunityUrlSlugs } from '@/lib/communities/community-public-pair'
 import { FIRST_EDITION_LABEL, isInvalidEditionPath } from '@/lib/market-report/edition-path-guard'
 import {
@@ -593,6 +594,31 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       status: 404,
       headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' },
     })
+  }
+
+  // ─── (0b2b) Unknown or draft blog post → REAL 404 (soft-404 2026-10-05) ──
+  // /blog/<slug> is on-demand ISR with an empty generateStaticParams. Its own
+  // notFound() (generateMetadata and the page body) runs under app/loading.tsx
+  // with streamed metadata, so the 200 shell flushes first and ISR caches a
+  // 200 "Page not found" for browsers and Googlebot alike (measured on
+  // production 2026-10-05). The published-slug set answers here instead, before
+  // render (lib/data/blog/publishedBlogSlugsEdge.ts). A failed read passes
+  // through to the route, so a published post is never 404'd by a blip.
+  // Runs before the bot screen: a 404 for a URL that does not exist is the
+  // answer for every client. next.config redirects (/guides/:slug, retired
+  // slugs) already ran, so they never reach this.
+  if (!pathname.startsWith('/api/')) {
+    const blogSlug = blogPostSlugFromPath(pathname)
+    if (blogSlug && (await lookupPublishedBlogSlugEdge(blogSlug)) === 'missing') {
+      return new NextResponse(BLOG_NOT_FOUND_HTML, {
+        status: 404,
+        headers: {
+          'content-type': 'text/html; charset=utf-8',
+          'cache-control': 'no-store',
+          'x-robots-tag': 'noindex',
+        },
+      })
+    }
   }
 
   // ─── (0b3) Invalid monthly report edition → REAL 404 (SEO-9) ────────────

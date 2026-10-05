@@ -43,3 +43,21 @@ export function isInvalidBlogIndexPath(pathname: string): boolean {
   if (pageOnly) return !isPageSegment(pageOnly[1])
   return false
 }
+
+/**
+ * The decoded slug of a /blog/<slug> post path, or null for any other path
+ * (the index, the category and page families, deeper paths, an undecodable
+ * segment). middleware.ts asks the published-slug set about it before render,
+ * because a notFound() from the post route itself ships a 200 under
+ * app/loading.tsx (lib/data/blog/publishedBlogSlugsEdge.ts has the mechanism).
+ */
+export function blogPostSlugFromPath(pathname: string): string | null {
+  const m = pathname.match(/^\/blog\/([^/]+)\/?$/)
+  if (!m) return null
+  try {
+    const slug = decodeURIComponent(m[1])
+    return slug || null
+  } catch {
+    return null
+  }
+}

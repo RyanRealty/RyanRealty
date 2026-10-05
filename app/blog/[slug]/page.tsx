@@ -26,7 +26,8 @@
  * ./_v3/render-blog-post.tsx, which the login-only draft preview at
  * /admin/blog/preview/[slug] calls with the same row shape. This file keeps
  * what is about the ROUTE: the published-only read, generateMetadata, the ISR
- * config and the 404. The draft read must never be imported here.
+ * config and the fallback notFound(). The draft read must never be imported
+ * here. The real HTTP 404 for an unknown or draft slug is middleware.ts (0b2b).
  */
 
 import { cleanTitle } from '@/lib/site/page-metadata'
@@ -43,11 +44,15 @@ type PageProps = { params: Promise<{ slug: string }> }
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params
   const post = await getBlogPostBySlug(slug)
-  // notFound() here, in generateMetadata: app/loading.tsx opens a Suspense
-  // boundary on every route, so the page body's notFound() lands after the
-  // shell's 200 has flushed and a crawler reads a 200 "Post Not Found" with no
-  // H1 (measured 2026-09-09 on next start). Metadata resolves before the
-  // shell, so this one is a real 404 (SITE-29).
+  // THIS notFound() IS NOT THE 404. Next 16 streams metadata for every UA but
+  // the HTML-limited bots (Googlebot is not one), so generateMetadata renders
+  // under app/loading.tsx's Suspense boundary like the body does: a throw here
+  // lands after the shell's 200 and ISR caches a 200 "Page not found"
+  // (production, browser and Googlebot UA, 2026-10-05; the SITE-29 note that
+  // metadata resolves before the shell was wrong). The real 404 is answered
+  // before render by middleware.ts (0b2b) from the published-slug set
+  // (lib/data/blog/publishedBlogSlugsEdge.ts). This stays as the fallback for
+  // when that read fails and passes the request through.
   if (!post) notFound()
 
   const period = publishBlogReportPeriod({
