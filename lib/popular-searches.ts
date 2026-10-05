@@ -28,6 +28,10 @@
 import type { SearchPreset } from '@/lib/search-presets'
 import { getPresetBySlug } from '@/lib/search-presets'
 import { cityEntityKey, homesForSalePath } from '@/lib/slug'
+import {
+  BEND_NEW_CONSTRUCTION_CANONICAL_PATH,
+  isBendNewConstructionSearchTwinPath,
+} from '@/lib/routing/bend-new-construction-search-twin'
 
 export type CityPopularSearches = {
   /** Display name, matches CITY_LINKS label. */
@@ -247,8 +251,11 @@ export function getPopularSearchesForCity(citySlug: string, limit?: number): Pop
   for (const slug of slugs) {
     const preset: SearchPreset | null = getPresetBySlug(slug)
     if (!preset) continue
+    // SITE-179 / SITE-213: Bend new construction lives at /new-construction;
+    // the search twin 308s there, so the link goes straight to the winner.
+    const path = `${homesForSalePath(entry.city)}/${preset.slug}`
     links.push({
-      href: `${homesForSalePath(entry.city)}/${preset.slug}`,
+      href: isBendNewConstructionSearchTwinPath(path) ? BEND_NEW_CONSTRUCTION_CANONICAL_PATH : path,
       label: preset.shortLabel,
       shortLabel: preset.shortLabel,
     })
