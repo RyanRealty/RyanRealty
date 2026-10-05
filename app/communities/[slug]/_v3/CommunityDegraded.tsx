@@ -43,7 +43,7 @@ export function CommunityDegraded({
           items={[
             {
               kind: 'prose',
-              body: `The live homes for ${name} did not load just now. This page refreshes within a minute, and the places below work in the meantime.`,
+              body: `The live homes for ${name} did not load just now. Try again shortly, or start from one of these.`,
             },
             ...cityDoor,
             { label: 'Every community', href: '/communities' },
