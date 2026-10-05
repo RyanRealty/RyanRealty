@@ -222,20 +222,29 @@ describe('letter craft P0 — close voice', () => {
       generatedAtIso: '2026-09-12T00:00:00.000Z',
       expiredAudit: args().expiredAudit,
     }
-    expect(nextStepHeading(a as never)).toBe("Sorry your home didn't sell.")
+    expect(nextStepHeading(a as never)).toBe(
+      "We're sorry your home didn't sell this go-around.",
+    )
     const note = nextStepNoteHtml(a as never)
-    expect(note).toContain('If you decide to list again, we&#39;re glad to help.')
-    expect(note).toContain('here for any questions you have')
-    expect(note).not.toContain('earn your business')
-    expect(note).not.toContain('this go-around')
+    expect(note).toContain(
+      'If you decide to list again, we would love the opportunity to earn your business.',
+    )
+    expect(note).toContain('Please feel free to call with any questions.')
+    expect(note).toContain('sit down with you and go through the house')
+    expect(note).toContain('detailed marketing plan')
+    expect(note).toContain('Who you list with is your decision')
+    expect(note).toContain('Gary Timms')
+    expect(note).toContain('Kim Anderson')
+    expect(note).toContain('data-rr-track="cma-reviews"')
+    expect(note).toContain('/reviews')
+    expect(note).not.toContain('glad to help')
     expect(note).toContain('>Call<')
     expect(note).toContain('>Text<')
     expect(note).toContain('>Email<')
     const { html } = renderCmaHtml(args())
-    expect(html).toContain('Sorry your home didn&#39;t sell.')
-    expect(html).toContain('If you decide to list again, we&#39;re glad to help.')
-    expect(html).not.toContain('earn your business')
-    expect(html).not.toContain('this go-around')
+    expect(html).toContain('We&#39;re sorry your home didn&#39;t sell this go-around.')
+    expect(html).toContain('we would love the opportunity to earn your business')
+    expect(html).toContain('cma-reviews')
   })
 })
 

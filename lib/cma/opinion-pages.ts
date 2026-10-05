@@ -19,6 +19,7 @@ import { trackedDocLink } from '@/lib/cma/doc-links'
 import { daysOnMarketFrom } from '@/lib/cma/listing-history-line'
 import { normalizeAgentSlug } from '@/lib/agent-attribution'
 import { BRAND } from '@/lib/brand/contact'
+import { TESTIMONIALS } from '@/lib/testimonials'
 import { UNADDRESSED_DOC_LINKS, cleanText, countWord, dateLong, dottedPhone, escapeHtml, int, phoneHref, propertyDescription, usd } from '@/lib/cma/render-blocks'
 import { clientSourceLine } from '@/lib/cma/client-facing'
 import {
@@ -1314,14 +1315,38 @@ export function nextStepPage(a: OpinionPageArgs): CmaPageDef | null {
 }
 
 /**
- * The close. Sorry it did not sell, glad to help if they relist. Plain
- * broker voice, not a form letter about "this listing."
+ * The failed-listing close. Matt 2026-10-05: sorry this go-around, the chance
+ * to earn the business, a sit-down and the marketing plan. Do not assume they
+ * will list with us. The short "glad to help" line is not this close.
  */
-export const CLOSE_SORRY_HEADING = "Sorry your home didn't sell."
+export const CLOSE_SORRY_HEADING = "We're sorry your home didn't sell this go-around."
 
-export const CLOSE_EARN_YOUR_BUSINESS = "If you decide to list again, we're glad to help."
+export const CLOSE_EARN_YOUR_BUSINESS =
+  'If you decide to list again, we would love the opportunity to earn your business.'
 
-export const CLOSE_HERE_FOR_QUESTIONS = "We're here for any questions you have."
+export const CLOSE_HERE_FOR_QUESTIONS = 'Please feel free to call with any questions.'
+
+export const CLOSE_SIT_DOWN =
+  'We would love the opportunity to sit down with you and go through the house, and to show you the detailed marketing plan we use. There is nothing to sign for that. Who you list with is your decision, and we would be grateful for the chance to earn it.'
+
+/** Published Google reviews. Whole quotes, never a cut, never an invented line. */
+const CLOSE_REVIEW_AUTHORS = ['Gary Timms', 'Kim Anderson'] as const
+
+export function closeReviewsHtml(a: OpinionPageArgs): string {
+  const picks = CLOSE_REVIEW_AUTHORS.flatMap((author) => {
+    const found = TESTIMONIALS.find((t) => t.author === author && t.source === 'Google')
+    return found ? [found] : []
+  })
+  if (picks.length === 0) return ''
+  const href = trackedDocLink('site', 'https://ryan-realty.com/reviews', a.docLinks ?? UNADDRESSED_DOC_LINKS)
+  const cards = picks
+    .map(
+      (t) =>
+        `<blockquote class="close-quote"><p>${esc(t.quote)}</p><cite>${esc(t.author)} · Verified Google review</cite></blockquote>`,
+    )
+    .join('')
+  return `<div class="close-reviews"><p class="close-reviews-kicker">From people we have worked with</p>${cards}<p class="close-reviews-more"><a href="${esc(href)}" data-rr-track="cma-reviews">Read the reviews</a></p></div>`
+}
 
 /** The failed-listing heading, or the neutral one when this document may not say the home failed. */
 export function nextStepHeading(a: OpinionPageArgs): string {
@@ -1453,11 +1478,19 @@ export function nextStepNoteHtml(a: OpinionPageArgs): string {
     )}</p>
   ${closingComplianceHtml(a)}`
   }
-  const walk = a.expiredAudit
-    ? `Bring this report. We'll walk the house with you and talk through what it would take to sell it. There is nothing to sign for that.`
-    : `Bring this report. We'll walk the house with you and talk through the price. There is nothing to sign for that.`
-  return `<p class="next-note">${esc(`${CLOSE_EARN_YOUR_BUSINESS} ${CLOSE_HERE_FOR_QUESTIONS}`)}</p>
-  <p class="next-note">${esc(walk)}</p>
+  if (a.expiredAudit) {
+    return `<p class="next-note">${esc(`${CLOSE_EARN_YOUR_BUSINESS} ${CLOSE_HERE_FOR_QUESTIONS}`)}</p>
+  <p class="next-note">${esc(CLOSE_SIT_DOWN)}</p>
+  ${closeReviewsHtml(a)}
+  ${nextStepReachHtml(a)}
+  ${closingComplianceHtml(a)}`
+  }
+  return `<p class="next-note">${esc(
+    "If you decide to list again, we're glad to help. We're here for any questions you have.",
+  )}</p>
+  <p class="next-note">${esc(
+    "Bring this report. We'll walk the house with you and talk through the price. There is nothing to sign for that.",
+  )}</p>
   ${nextStepReachHtml(a)}
   ${closingComplianceHtml(a)}`
 }

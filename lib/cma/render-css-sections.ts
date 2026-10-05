@@ -551,6 +551,12 @@ export function cmaSectionStyles(): string {
     .mos-phone, .worth-phone { display: none !important; }
   }
   .next-note { font-size: 12px; line-height: 1.7; max-width: 62ch; margin: 12px 0 0; color: var(--navy); }
+  .close-reviews { margin: 14px 0 8px; max-width: 62ch; }
+  .close-reviews-kicker { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; font-weight: 600; margin: 0 0 8px; }
+  .close-quote { margin: 0 0 10px; padding: 0 0 0 10px; border-left: 2px solid currentColor; }
+  .close-quote p { margin: 0; font-size: 12px; line-height: 1.55; }
+  .close-quote cite { display: block; margin-top: 3px; font-style: normal; font-size: 11px; }
+  .close-reviews-more { margin: 0; font-size: 12px; font-weight: 600; }
   /* Chapter 1's timeline. Same two-layout mechanism: the reading is the gap
      between a line and a zone, and a cropped right edge deletes the day it
      came off. Exactly one layout is ever visible. */
