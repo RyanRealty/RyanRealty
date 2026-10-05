@@ -679,8 +679,11 @@ export async function lookupOwnerForExpiredListing(params: {
         dnc: p.dnc,
       }))
       if (fallback?.allPhones?.length) {
-        const have = new Set(tracePhones.map((phone) => phone.value.replace(/\D/g, '')))
-        for (const phone of fallback.allPhones) {
+        const extraPhones = fallback.allPhones as Array<{ value: string; type?: string; dnc?: boolean }>
+        const have = new Set(
+          tracePhones.map((phone: { value: string }) => phone.value.replace(/\D/g, '')),
+        )
+        for (const phone of extraPhones) {
           const value = phone.value.replace(/\D/g, '')
           if ((value.length !== 10 && value.length !== 11) || have.has(value)) continue
           tracePhones.push({ value, type: phone.type, dnc: !!phone.dnc })
