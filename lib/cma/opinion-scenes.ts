@@ -222,19 +222,12 @@ function disclosureScene(a: OpinionSceneArgs): string {
 /** Chapter 7. The closing, and the only navy scene. Web twin of nextStepPage. */
 function nextScene(a: OpinionSceneArgs): string {
   const br = a.broker
-  const site = 'https://ryan-realty.com'
-  const photo = br.photoUrl
-    ? `<img class="br-img" src="${esc(br.photoUrl.startsWith('http') ? br.photoUrl : `${site}${br.photoUrl}`)}" alt="${esc(br.displayName)}"/>`
-    : ''
-  // `pack`: the closing is CONTENT height, not viewport height. It was an
-  // 812-to-1400px navy panel holding about 300px of content floated right of
-  // centre — the last thing the seller sees and the only place the document
-  // asks for anything (tasteReview item 3).
+  // One column: heading, message, reviews, then a small photo with the
+  // contact list. The leading portrait left a navy void beside the heading.
   const actions = nextStepButtonsHtml(a)
   return `
   <section class="sc sc-navy pack" id="next-step">
     <div class="in next-in">
-      ${photo}
       <div class="next-b">
         <div class="kick r">Your next step</div>
         <h2 class="h r">${esc(nextStepHeading(a))}</h2>

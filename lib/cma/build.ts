@@ -1341,6 +1341,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       peerBand,
       rivalBand,
       unsoldRead,
+      rivalUnsoldRows,
       widestAreaInventory,
       competitionRing,
       competitionArea,
@@ -1424,6 +1425,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           maxWindowMonths: compsLookbackMonths,
           closedSaleAddresses: renderComps.map((c) => c.address),
           subjectCameOff: lastCycleFailed,
+          alsoRows: rivalUnsoldRows,
           liveAddresses: (bandRivals?.rivals ?? [])
             .filter((rival) => rival.status === 'Active' || rival.status === 'Pending')
             .map((rival) => rival.address),

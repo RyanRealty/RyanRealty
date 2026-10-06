@@ -35,11 +35,14 @@ describe('first-contact copy (Matt 2026-10-05 email)', () => {
   it('opens on the unsold home, then the work, and keeps the list price out of the note', () => {
     const c = composeCmaFirstContact('expired', FACTS)
     const report = 'You can see the full report here. It has the price we would list at, the homes you would be competing with, and what happened to nearby homes that did not sell.'
-    const work = "We took some time and put together a comparative market analysis so we could try to better understand why your home didn't sell."
+    const work = "We did a detailed review of the market and put together a comparative market analysis so you can see why your home didn't sell."
     expect(c.bodyText.indexOf('Hi there,')).toBe(0)
     expect(c.bodyText).toContain("We're sorry your home wasn't able to sell. We know that can be frustrating.")
     expect(c.bodyText.indexOf("We're sorry")).toBeLessThan(c.bodyText.indexOf(work))
-    expect(c.bodyText).toContain(`${work} There is no obligation to have this report. We just thought you might find it useful.`)
+    expect(c.bodyText).toContain('There is no obligation to have this report. We just thought you might find it useful.')
+    expect(c.bodyText).toContain('Those are concessions, and we factor them into every sale in this report.')
+    expect(c.bodyText).toContain('If you are working with another broker, please accept our apology in advance.')
+    expect(c.bodyText.slice(0, c.bodyText.indexOf(report))).not.toContain('full report')
     expect(c.bodyText).not.toContain('We spent time in the MLS')
     expect(c.bodyText).not.toContain('We went through the homes')
     expect(c.bodyText.indexOf('We found five sales')).toBeGreaterThan(c.bodyText.indexOf('comparative market analysis'))
@@ -47,7 +50,7 @@ describe('first-contact copy (Matt 2026-10-05 email)', () => {
     const reportAt = c.bodyText.indexOf(report)
     expect(c.bodyText.slice(0, reportAt)).not.toMatch(/full report|attached as a PDF/i)
     expect(c.bodyText.indexOf('sit down with you')).toBeGreaterThan(c.bodyText.indexOf(report))
-    expect(c.bodyText.indexOf('If you have any questions on it, please let us know.')).toBeGreaterThan(c.bodyText.indexOf('sit down with you'))
+    expect(c.bodyText.indexOf('If you have any questions, we hope you will reach out.')).toBeGreaterThan(c.bodyText.indexOf('sit down with you'))
     expect(c.bodyText).not.toContain('We would list it at')
     expect(c.bodyText).not.toContain('Our price')
     expect(c.bodyText).not.toContain('See our price')
@@ -77,7 +80,7 @@ describe('first-contact copy (Matt 2026-10-05 email)', () => {
       expect(c.bodyText).not.toMatch(/https?:/)
       if (o === 'expired') {
         expect(c.bodyText).toContain('sit down with you and possibly earn your business.')
-        expect(c.bodyText).toContain('If you have any questions on it, please let us know.')
+        expect(c.bodyText).toContain('If you have any questions, we hope you will reach out.')
         expect(c.bodyText).not.toContain('Please feel free to call with any questions.')
         expect(c.bodyText).not.toContain('Please let me know if you have any questions.')
         expect(c.bodyText).not.toContain('We spent time in the MLS')
@@ -270,7 +273,7 @@ describe('first-contact copy (Matt 2026-10-05 email)', () => {
       expect(c.bodyText).not.toMatch(/@ryan-realty\.com/)
       expect(c.bodyText.trimEnd().endsWith('Ryan Realty')).toBe(false)
     }
-    expect(composeCmaFirstContact('expired', FACTS).bodyText).toContain('If you have any questions on it, please let us know.')
+    expect(composeCmaFirstContact('expired', FACTS).bodyText).toContain('If you have any questions, we hope you will reach out.')
     expect(composeCmaFirstContact('expired', FACTS).bodyText).not.toContain('Best of luck')
     expect(composeCmaFirstContact('fsbo', FACTS).bodyText).toContain('Best of luck with the sale.')
   })
@@ -330,7 +333,7 @@ describe('first-contact copy (Matt 2026-10-05 email)', () => {
     const letter = composeCmaFirstContact('expired', facts)
     expect(letter.bodyText).toContain('Hi there,')
     expect(letter.bodyText).not.toContain('Blair')
-    expect(letter.bodyText).toContain('We took some time and put together a comparative market analysis so we could try to better understand why your home didn\'t sell.')
+    expect(letter.bodyText).toContain('We did a detailed review of the market and put together a comparative market analysis so you can see why your home didn\'t sell.')
     expect(letter.bodyText).not.toContain('We spent time in the MLS')
     expect(letter.bodyText).toContain('We found five sales of homes like yours near you, and they support $412,000 to $443,000.')
     expect(letter.bodyText).toContain('The last listing asked $460,000, a little above what those sales support.')

@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   bandAroundList,
+  bandAroundListAt,
   buildBandRivalSet,
+  chooseCompetitionBand,
   competitionAreaSentence,
   competitorCutLine,
   pickBandRivals,
@@ -584,5 +586,22 @@ describe('bandAroundList', () => {
   it('is the same ten percent either side the competition chapter has always used', () => {
     expect(bandAroundList(475_000)).toEqual({ lo: 428_000, hi: 523_000 })
     expect(bandAroundList(0)).toBeNull()
+  })
+
+  it('opens the band one step at a time and stops at five fitting homes', () => {
+    expect(bandAroundListAt(639_000, 0.15)).toEqual({ lo: 543_000, hi: 735_000 })
+    expect(bandAroundListAt(639_000, 0)).toBeNull()
+    const picked = chooseCompetitionBand([
+      { halfWidth: 0.1, fitting: ['a', 'b'] },
+      { halfWidth: 0.15, fitting: ['a', 'b', 'c', 'd', 'e'] },
+      { halfWidth: 0.2, fitting: ['a', 'b', 'c', 'd', 'e', 'f', 'g'] },
+    ])
+    expect(picked?.halfWidth).toBe(0.15)
+    const thin = chooseCompetitionBand([
+      { halfWidth: 0.1, fitting: ['a'] },
+      { halfWidth: 0.15, fitting: ['a', 'b'] },
+      { halfWidth: 0.2, fitting: ['a', 'b'] },
+    ])
+    expect(thin?.halfWidth).toBe(0.15)
   })
 })

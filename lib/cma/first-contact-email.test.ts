@@ -20,15 +20,19 @@ const NATE_PLAIN = `Hi there,
 
 We're sorry your home wasn't able to sell. We know that can be frustrating.
 
-We took some time and put together a comparative market analysis so we could try to better understand why your home didn't sell. There is no obligation to have this report. We just thought you might find it useful.
+We did a detailed review of the market and put together a comparative market analysis so you can see why your home didn't sell. Most reports stop at the price a home was listed for. A list price is not what the seller took home. A home can be listed at $700,000 and still close for less, because the seller gives money back to the buyer at closing. Those are concessions, and we factor them into every sale in this report.
+
+We spend the time to go through each sale this way so the number you see is what really happened. We are comfortable standing behind it. There is no obligation to have this report. We just thought you might find it useful.
 
 We found four sales of homes like yours in Clarendon Place, and they support $346,000 to $372,000. The last listing asked $405,000, about 9% above what those sales support. That gap is usually the whole story, and it says nothing bad about the house.
 
 You can see the full report here. It has the price we would list at, the homes you would be competing with, and what happened to nearby homes that did not sell.
 
+If you are working with another broker, please accept our apology in advance. We are not asking you to leave that broker. We make homeowners aware of how we work by doing the work, and this report is that work.
+
 If you are ever considering a sale in the future, we would love the opportunity to sit down with you and possibly earn your business.
 
-If you have any questions on it, please let us know.`
+If you have any questions, we hope you will reach out.`
 
 function linksOf(paragraphs: FirstContactRun[][]): Array<{ text: string; href: string }> {
   return paragraphs.flat().flatMap((r) => (typeof r === 'string' ? [] : [{ text: r.text, href: r.href }]))

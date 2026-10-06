@@ -35,13 +35,16 @@ describe('adjustment grid stays inside the print box', () => {
 
   it('stacks the signature at phone width so the 260px name plate cannot push past 375', () => {
     const css = readFileSync(join(process.cwd(), 'lib/cma/render-css.ts'), 'utf8')
-    // Base rule must not hard-lock 260px — that alone is 16+200+36+260=512 on a
-    // 360 viewport when the phone stack loses the cascade (prod re-walk).
+    // Base rule must not hard-lock 260px. The portrait column is gone, so
+    // the sign-off is one track.
     expect(css).toMatch(
       /\.signature-page \.sig-name\s*\{[^}]*width:\s*min\(260px,\s*100%\)/,
     )
+    expect(css).not.toMatch(
+      /\.signature-page\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*200px\)/,
+    )
     expect(css).toMatch(
-      /\.signature-page\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*200px\)\s+minmax\(0,\s*1fr\)/,
+      /\.signature-page\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/,
     )
     expect(css).toMatch(
       /@media screen and \(max-width: 700px\)[\s\S]*?\.signature-page\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/,

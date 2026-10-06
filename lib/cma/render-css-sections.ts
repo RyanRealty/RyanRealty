@@ -553,7 +553,7 @@ export function cmaSectionStyles(): string {
   .next-note { font-size: 12px; line-height: 1.7; max-width: 62ch; margin: 12px 0 0; color: var(--navy); }
   .close-reviews { margin: 8px 0 6px; max-width: none; }
   .close-reviews-head { font-size: 13px; font-weight: 600; letter-spacing: 0; text-transform: none; line-height: 1.3; margin: 0 0 6px; }
-  .close-review-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .close-review-row { display: grid; grid-template-columns: 1fr; gap: 6px; }
   .close-quote { position: relative; margin: 0; padding: 7px 7px 6px; background: #fff; color: var(--navy); border: 0; break-inside: avoid; page-break-inside: avoid; overflow-wrap: break-word; }
   .close-reviews .close-quote p,
   .close-reviews .close-quote cite,
@@ -562,19 +562,13 @@ export function cmaSectionStyles(): string {
   .page-closing .close-reviews .close-quote cite { color: var(--navy); }
   .close-reviews .close-quote p.close-stars,
   .page-closing .close-reviews .close-quote p.close-stars { margin: 0 0 4px; color: #E1B04A; font-size: 10px; letter-spacing: 0.08em; line-height: 1; }
-  .close-lead { margin: 0; font-family: 'Amboqia Boriango', Georgia, serif; font-weight: 400; font-size: 12.5px; line-height: 1.15; }
-  .close-line { margin: 3px 0 0; font-size: 9.5px; line-height: 1.3; }
+  .close-lead { margin: 0; font-family: Georgia, serif; font-style: italic; font-weight: 400; font-size: 12.5px; line-height: 1.15; }
+  .close-line { margin: 3px 0 0; font-family: Georgia, serif; font-style: italic; font-size: 9.5px; line-height: 1.3; }
   .close-quote cite { display: block; margin-top: 5px; font-style: normal; font-size: 8.5px; letter-spacing: 0.02em; }
   .close-reviews-more { margin: 6px 0 0; font-size: 11px; font-weight: 600; }
-  .close-reviews-more a { display: inline-flex; align-items: center; gap: 6px; text-decoration: underline; text-underline-offset: 2px; }
-  .close-reviews .google-g { width: 12px; height: 12px; flex: 0 0 auto; display: block; }
+  .close-reviews-more a { display: inline-flex; align-items: center; gap: 8px; text-decoration: underline; text-underline-offset: 2px; }
+  .close-reviews .google-g { width: 22px; height: 22px; flex: 0 0 auto; display: block; }
   .close-sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
-  @media screen and (max-width: 700px) {
-    .close-review-row { grid-template-columns: 1fr 1fr; }
-  }
-  @media print {
-    .close-review-row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  }
   /* Chapter 1's timeline. Same two-layout mechanism: the reading is the gap
      between a line and a zone, and a cropped right edge deletes the day it
      came off. Exactly one layout is ever visible. */

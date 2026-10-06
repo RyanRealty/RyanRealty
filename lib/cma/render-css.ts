@@ -626,9 +626,9 @@ export function cmaStylesheet(siteUrl: string): string {
 
   .signature-page {
     display: grid;
-    /* minmax(0, …) so a fixed name plate cannot inflate the letter past the
-       viewport when the phone stack media query loses (16+200+36+260 = 512). */
-    grid-template-columns: minmax(0, 200px) minmax(0, 1fr);
+    /* The portrait column is gone. One track, so the name plate cannot
+       leave an empty 200px gap beside the sign-off. */
+    grid-template-columns: minmax(0, 1fr);
     gap: 36px;
     align-items: end;
     margin-top: 22px;
@@ -698,8 +698,7 @@ export function cmaStylesheet(siteUrl: string): string {
     color: var(--muted);
     letter-spacing: 0.08em;
   }
-  /* 200px portrait + 36px gap + fixed 260px name plate is 496px — past a 375
-     content box. Collapse to one column and let the name use the row width. */
+  /* Phone: the name uses the row width instead of a fixed 260px plate. */
   @media screen and (max-width: 700px) {
     .signature-page {
       grid-template-columns: minmax(0, 1fr);
@@ -780,17 +779,13 @@ export function cmaStylesheet(siteUrl: string): string {
       break-after: auto;
       page-break-after: auto;
     }
-    /* A forced break before the close left the last disclosure paragraph
-       alone on its own sheet. Let the close follow that paragraph when the
-       two fit. The close itself stays whole: heading, reach list, signature.
-       Starting it in the leftover under basis-and-limits split the reach
-       list and left the signature on the next sheet. It is under a page, so
-       if it does not fit it moves, at the section boundary. */
+    /* A tall close continues on the next navy sheet. A quote, the reach
+       block, and the signature stay whole. */
     .page-closing {
       break-before: auto;
       page-break-before: auto;
-      break-inside: avoid;
-      page-break-inside: avoid;
+      break-inside: auto;
+      page-break-inside: auto;
     }
     /* The cover photo must not push "Prepared for" onto a blank next page.
        The content box is 9.9in. A loaded photo used to add its own height
@@ -856,6 +851,14 @@ export function cmaStylesheet(siteUrl: string): string {
     color: var(--cream);
     border-color: rgba(250, 248, 244, 0.55);
   }
+  .reach-block {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .reach-photo { width: 72px; height: auto; flex: 0 0 auto; display: block; }
   .page-closing .reach { margin: 6px 0 16px; max-width: 460px; }
   .page-closing .reach-row {
     display: grid;

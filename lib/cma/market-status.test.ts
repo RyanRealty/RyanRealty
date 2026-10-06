@@ -4,6 +4,7 @@ import {
   computeMarketArea,
   marketAreaPriceBand,
   buildExpiredPeerSet,
+  competitorUnsoldSubdivisionNames,
   keptCompMedianPpsf,
   pickExpiredPeers,
   similarBedRange,
@@ -994,6 +995,118 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
       asOf: ASOF,
     })
     expect(set.peers[0]!.whyItSat).toContain('never came down from $500,000')
+  })
+
+  it('shows a one-bedroom miss inside a subdivision when nothing matched exactly', () => {
+    const set = buildExpiredPeerSet({
+      rows: [
+        unsold('NEAR', '2515 Keats', 5, {
+          BedroomsTotal: 3,
+          TotalLivingAreaSqFt: 2122,
+          SubdivisionName: 'Hampton Park',
+        }),
+        unsold('ROOMS', '10 Oak', 5, {
+          BedroomsTotal: 2,
+          TotalLivingAreaSqFt: 2388,
+          SubdivisionName: 'Hampton Park',
+        }),
+        unsold('SIZE', '1512 Quiet Ridge', 5, {
+          BedroomsTotal: 3,
+          TotalLivingAreaSqFt: 1460,
+          SubdivisionName: 'Hampton Park',
+        }),
+      ],
+      subject: { ...subj, beds: 4, sqft: 2388, streetAddress: '2566 Keats' },
+      area: { ...AREA, names: ['Hampton Park'], sentence: 'Hampton Park, your own subdivision.' },
+      asOf: ASOF,
+    })
+    expect(set.peers.map((p) => p.address)).toEqual(['2515 Keats'])
+    expect(set.likeYours).toBe(false)
+    expect(set.sentence).toBe(
+      'Only one home in Hampton Park came off the market without selling in the last six months, and nothing from outside Hampton Park was added to make up the number. Each is within one bedroom of this home and within 35 percent of its size.',
+    )
+    expect(set.sentence).not.toContain('like yours')
+    expect(set.sentence).not.toContain('None were close')
+    expect(set.sentence).not.toMatch(/[—–]/)
+  })
+
+  it('names a competitor subdivision when the sales plats are still short, and drops a home that is for sale now', () => {
+    const set = buildExpiredPeerSet({
+      rows: [
+        unsold('NEAR', '2515 Keats', 5, {
+          BedroomsTotal: 3,
+          TotalLivingAreaSqFt: 2122,
+          SubdivisionName: 'Hampton Park',
+        }),
+      ],
+      alsoRows: [
+        unsold('RUM', '1482 Rumgay', 8, {
+          BedroomsTotal: 3,
+          TotalLivingAreaSqFt: 1768,
+          SubdivisionName: 'Quiet Canyon',
+        }),
+        unsold('LIVE', '408 Hawthorne', 1, {
+          BedroomsTotal: 3,
+          TotalLivingAreaSqFt: 1864,
+          SubdivisionName: 'Center Addition to Bend',
+        }),
+        unsold('MAKER', '1816 Maker', 14, {
+          BedroomsTotal: 3,
+          TotalLivingAreaSqFt: 1778,
+          SubdivisionName: 'Village Wiestoria',
+        }),
+      ],
+      subject: { ...subj, beds: 4, sqft: 2388, streetAddress: '2566 Keats' },
+      area: {
+        ...AREA,
+        kind: 'subdivisions',
+        names: ['Hampton Park', 'Deer Pointe Village'],
+        sentence: 'Hampton Park and the one subdivision next to it.',
+      },
+      asOf: ASOF,
+      liveAddresses: ['408 Hawthorne'],
+    })
+    expect(set.peers.map((p) => p.address)).toEqual(['2515 Keats', '1482 Rumgay', '1816 Maker'])
+    expect(set.likeYours).toBe(false)
+    expect(set.shortfall).toBe(false)
+    expect(set.sentence).toBe(
+      'Three homes in Hampton Park, Quiet Canyon and Village Wiestoria came off the market without selling in the last 18 months. Each is within one bedroom of this home and within 35 percent of its size.',
+    )
+    expect(set.sentence).not.toContain('Deer Pointe')
+    expect(set.sentence).not.toContain('Center Addition')
+    expect(set.sentence).not.toContain('like yours')
+    expect(set.sentence).not.toContain('nothing from outside')
+  })
+
+  it('does not pull competitor rows into a neighborhood set', () => {
+    const set = buildExpiredPeerSet({
+      rows: [],
+      alsoRows: [unsold('X', '9 Fir', 1, { SubdivisionName: 'Other Plat' })],
+      subject: subj,
+      area: { ...AREA, kind: 'neighborhood', names: ['River West'], sentence: 'River West.' },
+      asOf: ASOF,
+      subjectCameOff: true,
+    })
+    expect(set.peers).toEqual([])
+    expect(set.sentence).toBe('')
+  })
+
+  it('names only the competitor subdivisions that are not already the sales plats', () => {
+    expect(
+      competitorUnsoldSubdivisionNames(
+        [
+          { subdivision: 'Quiet Canyon' },
+          { subdivision: 'Hampton Park' },
+          { subdivision: 'Center Addition to Bend' },
+          { subdivision: 'Village Wiestoria' },
+          { subdivision: 'N/A' },
+          { subdivision: 'Quiet Canyon' },
+          { subdivision: null },
+        ],
+        ['Hampton Park', 'Deer Pointe Village'],
+      ),
+    ).toEqual(['Quiet Canyon', 'Center Addition to Bend', 'Village Wiestoria'])
+    expect(competitorUnsoldSubdivisionNames([{ subdivision: 'Quiet Canyon' }], [])).toEqual([])
   })
 
   it('claims nothing when the row carries no days, no opening ask and no size', () => {

@@ -98,6 +98,40 @@ describe('letter rules that cannot be skipped', () => {
     ).toBe('')
   })
 
+  it('keeps an expired home the peer set counted in a competitor subdivision', () => {
+    const area = {
+      kind: 'subdivisions' as const,
+      names: ['Hampton Park', 'Deer Pointe Village'],
+      radiusMiles: null,
+      centre: { lat: 44.075, lng: -121.294 },
+      source: 'test',
+      sentence: 'Hampton Park and the one subdivision next to it.',
+    }
+    const subject = {
+      propertySubType: 'Single Family Residence',
+      listingKey: 'S',
+      mlsNumber: '1',
+      streetAddress: '2566 Keats',
+    }
+    const peers = unsoldPeersFor({
+      subject,
+      area,
+      peers: [
+        peer({ listingKey: 'near', address: '2515 Keats', subdivision: 'Hampton Park' }),
+        peer({ listingKey: 'rum', address: '1482 Rumgay', subdivision: 'Quiet Canyon' }),
+        peer({ listingKey: 'maker', address: '1816 Maker', subdivision: 'Village Wiestoria' }),
+        peer({
+          listingKey: 'blank',
+          address: '9 Nowhere',
+          subdivision: null,
+          latitude: 45.2,
+          longitude: -120.1,
+        }),
+      ],
+    })
+    expect(peers.map((p) => p.address)).toEqual(['2515 Keats', '1482 Rumgay', '1816 Maker'])
+  })
+
   it('drops a detached rival that sits outside the sales plat', () => {
     const area = {
       kind: 'subdivision' as const,

@@ -46,6 +46,13 @@ function insideSalesBoundary(
   return compAreaContains(area, row)
 }
 
+/** A real MLS subdivision. Placeholders are not a place the set can stand on. */
+function namedSubdivision(raw: string | null | undefined): boolean {
+  const name = raw?.trim() ?? ''
+  if (!name) return false
+  return !/^(n\/a|na|none|other|unknown)$/i.test(name)
+}
+
 export function unsoldPeersFor(input: {
   subject: Pick<CmaSubject, 'listingKey' | 'mlsNumber' | 'streetAddress'> & { propertySubType?: string | null }
   peers?: readonly CmaExpiredPeer[] | null
@@ -57,7 +64,11 @@ export function unsoldPeersFor(input: {
       p.listPrice > 0 &&
       !peerMatchesSubject(p, input.subject) &&
       letterProductMatch(input.subject.propertySubType, p.propertySubType) &&
-      insideSalesBoundary(input.area, p),
+      // The set already counted this home. A competitor subdivision sits
+      // outside the sales plat on purpose. Dropping it here counts a home
+      // the table does not show. A blank place still has to be inside the
+      // sales boundary.
+      (namedSubdivision(p.subdivision) || insideSalesBoundary(input.area, p)),
   )
   return collapseExpiredPeerCycles(named)
 }

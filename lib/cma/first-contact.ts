@@ -1,16 +1,15 @@
 /**
  * First-contact email for a CMA, by origin.
  *
- * Matt, 2026-10-05: the email is one short letter. An expired listing opens
- * on the apology, then says we took some time and put together a comparative
- * market analysis to understand why the home did not sell. The sentence that
- * says you can see the full report is the one the button follows. It does
- * not say we spent time in the MLS on the street. The house photo sits above
- * the letter. The recommended list price stays in the report. The city supply
- * line prints in the letter only when the served pulse was loaded, and only
- * once. Place pages, the pricing essay, and the bio stay out of the email.
- * The PDF letter still carries them, and the system signature still signs
- * the note.
+ * Matt, 2026-10-06: an expired letter opens on the apology, then says we
+ * reviewed the market and built a comparative market analysis. It explains
+ * that a list price is not the check the seller received, because concessions
+ * come off the sale, and that we factor those in. The sentence that says you
+ * can see the full report is the one the button follows. Those words do not
+ * appear earlier. It does not say we spent time in the MLS on the street, and
+ * it does not print the recommended list price. If they are with another
+ * broker, the letter apologizes and does not ask them to leave. The city
+ * supply line prints only when the served pulse was loaded, and only once.
  *
  * Every figure is off the cmas row or the city pulse. Nothing in here
  * estimates. Voice: marketing_brain_skills/brand-voice/VOICE.md.
@@ -287,12 +286,18 @@ const EXPIRED_ACK =
   "We're sorry your home wasn't able to sell. We know that can be frustrating."
 
 const EXPIRED_WORK =
-  "We took some time and put together a comparative market analysis so we could try to better understand why your home didn't sell. There is no obligation to have this report. We just thought you might find it useful."
+  "We did a detailed review of the market and put together a comparative market analysis so you can see why your home didn't sell. Most reports stop at the price a home was listed for. A list price is not what the seller took home. A home can be listed at $700,000 and still close for less, because the seller gives money back to the buyer at closing. Those are concessions, and we factor them into every sale in this report."
+
+const EXPIRED_CARE =
+  'We spend the time to go through each sale this way so the number you see is what really happened. We are comfortable standing behind it. There is no obligation to have this report. We just thought you might find it useful.'
+
+const EXPIRED_OTHER_BROKER =
+  'If you are working with another broker, please accept our apology in advance. We are not asking you to leave that broker. We make homeowners aware of how we work by doing the work, and this report is that work.'
 
 const EXPIRED_FUTURE =
   'If you are ever considering a sale in the future, we would love the opportunity to sit down with you and possibly earn your business.'
 
-const EXPIRED_QUESTIONS = 'If you have any questions on it, please let us know.'
+const EXPIRED_QUESTIONS = 'If you have any questions, we hope you will reach out.'
 
 /**
  * What we did. The recommended price itself stays in the report.
@@ -331,7 +336,7 @@ function reportSentence(origin: CmaOrigin, named: string, hasPrice: boolean): st
 
 function emailClose(origin: CmaOrigin): string[] {
   if (origin === 'expired') {
-    return [EXPIRED_FUTURE, EXPIRED_QUESTIONS]
+    return [EXPIRED_OTHER_BROKER, EXPIRED_FUTURE, EXPIRED_QUESTIONS]
   }
   if (origin === 'fsbo') {
     return [
@@ -359,6 +364,7 @@ export function composeCmaFirstContact(
   pushParagraph(paragraphs, [greeting])
   if (origin === 'expired') pushParagraph(paragraphs, [EXPIRED_ACK])
   pushParagraph(paragraphs, [plan])
+  if (origin === 'expired') pushParagraph(paragraphs, [EXPIRED_CARE])
   pushParagraph(paragraphs, emailEvidence(origin, facts) ? [emailEvidence(origin, facts)!] : null)
   const supply = citySupplySentence(facts.city, facts.monthsOfSupply)
   if (supply) pushParagraph(paragraphs, [supply])

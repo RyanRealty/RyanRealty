@@ -566,8 +566,10 @@ describe('the closing does not solicit somebody else\'s listing', () => {
         note: null,
       },
     }
-    expect(closingComplianceSentence(withdrawn)).toContain('not an offer to interfere')
+    expect(closingComplianceSentence(withdrawn)).toBe('')
     const note = nextStepNoteHtml(withdrawn)
+    expect(note).not.toContain('not an offer to interfere')
+    expect(note).not.toContain('may still be running')
     expect(note).toContain('>Call<')
     expect(note).toContain('>Text<')
     expect(note).toContain('sms:+15415551234')

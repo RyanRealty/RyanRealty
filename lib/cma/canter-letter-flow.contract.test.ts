@@ -945,7 +945,7 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
     })
     expect(letter.bodyText).not.toContain('utm_')
     expect(letter.bodyText).not.toMatch(/https?:/)
-    expect(letter.bodyText).toContain('We took some time and put together a comparative market analysis so we could try to better understand why your home didn\'t sell.')
+    expect(letter.bodyText).toContain('We did a detailed review of the market and put together a comparative market analysis so you can see why your home didn\'t sell.')
     expect(letter.bodyText).not.toContain('We spent time in the MLS on')
     expect(letter.bodyText).toContain("We're sorry your home wasn't able to sell.")
     expect(letter.bodyText).toContain('You can see the full report here. It has the price we would list at, the homes you would be competing with, and what happened to nearby homes that did not sell.')

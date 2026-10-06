@@ -332,12 +332,13 @@ describe('D — the closing never solicits a listing it may not solicit', () => 
 
   it('carries the non-interference sentence on a withdrawn listing', () => {
     const a = opinion(withdrawn)
-    // Withdrawn is not somebody else's live listing, so the ask survives — but
-    // the agreement may still be running and the document says so.
+    // Withdrawn is not somebody else's live listing, so the ask survives.
+    // The agreement sentence does not.
     expect(closingIsNonSoliciting(a)).toBe(false)
     for (const html of [letter(withdrawn), immersive(withdrawn)]) {
-      expect(html).toContain(WITHDRAWN_AGREEMENT_SENTENCE)
+      expect(html).not.toContain(WITHDRAWN_AGREEMENT_SENTENCE)
       expect(html).not.toContain(NON_SOLICITATION_SENTENCE)
+      expect(html).toContain('class="reach"')
     }
   })
 

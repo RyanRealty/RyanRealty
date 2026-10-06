@@ -412,15 +412,51 @@ export function renderBandRivalsSceneHtml(input: BandRivalsInput): string {
  * resolved and states the counts inside it.
  */
 
-/** ±10% of the recommended list — the band the competition chapter has always used. */
+/** ±10% of the recommended list — the band the competition chapter starts with. */
 export const BAND_HALF_WIDTH_PCT = 0.1
 
-export function bandAroundList(recommendedList: number): { lo: number; hi: number } | null {
+/**
+ * When ±10% holds fewer than five homes within one bedroom and 35 percent of
+ * the size, the chapter opens the band in the same places. It stops at the
+ * first step that holds five, and it does not go past the last step.
+ * Matt 2026-10-06.
+ */
+export const COMPETITION_BAND_STEPS = [0.1, 0.15, 0.2, 0.25] as const
+
+/** Fitting homes to stop on. The priced set uses the same five. */
+export const COMPETITION_GOOD_COUNT = 5
+
+/** The chapter draws this many nearest homes when a band holds more. */
+export const COMPETITION_SHOWN_CAP = 8
+
+export function bandAroundListAt(
+  recommendedList: number,
+  halfWidth: number,
+): { lo: number; hi: number } | null {
   if (!Number.isFinite(recommendedList) || recommendedList <= 0) return null
+  if (!Number.isFinite(halfWidth) || halfWidth <= 0 || halfWidth >= 1) return null
   return {
-    lo: Math.round((recommendedList * (1 - BAND_HALF_WIDTH_PCT)) / 1000) * 1000,
-    hi: Math.round((recommendedList * (1 + BAND_HALF_WIDTH_PCT)) / 1000) * 1000,
+    lo: Math.round((recommendedList * (1 - halfWidth)) / 1000) * 1000,
+    hi: Math.round((recommendedList * (1 + halfWidth)) / 1000) * 1000,
   }
+}
+
+export function bandAroundList(recommendedList: number): { lo: number; hi: number } | null {
+  return bandAroundListAt(recommendedList, BAND_HALF_WIDTH_PCT)
+}
+
+/**
+ * The first price step that holds five fitting homes. When none does, the
+ * step that holds the most. A tie keeps the tighter step.
+ */
+export function chooseCompetitionBand<T extends { fitting: readonly unknown[] }>(
+  steps: readonly T[],
+): T | null {
+  if (steps.length === 0) return null
+  for (const step of steps) {
+    if (step.fitting.length >= COMPETITION_GOOD_COUNT) return step
+  }
+  return steps.reduce((best, step) => (step.fitting.length > best.fitting.length ? step : best))
 }
 
 export type CmaBandRivalSet = {
@@ -647,6 +683,8 @@ export function pickCompetitionRing<
     rings: readonly CompArea[]
     activeRows: readonly T[]
     pendingRows: readonly T[]
+    /** Stop once a ring holds this many. Defaults to three. */
+    min?: number
   },
 ): CompetitionRingPick<T> {
   const rings = input.rings
@@ -672,7 +710,8 @@ export function pickCompetitionRing<
     const pendingIn = isLast
       ? [...input.pendingRows]
       : input.pendingRows.filter((r) => compAreaContains(ring, geo(r)))
-    if (activeIn.length + pendingIn.length >= COMPETITION_RING_MIN || isLast) {
+    const need = input.min ?? COMPETITION_RING_MIN
+    if (activeIn.length + pendingIn.length >= need || isLast) {
       const widenedFrom =
         i > 0 && first && first.kind === 'radius' && first.radiusMiles !== ring.radiusMiles
           ? first.radiusMiles

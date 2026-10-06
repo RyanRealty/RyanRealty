@@ -976,14 +976,18 @@ export function didNotSellBodyMatrixHtml(a: OpinionPageArgs): string {
     // area, over which window, and whether it fell short), then the matrix lead.
     lead: [
       (() => {
+        // The peer sentence is the count, the places, and whether these homes
+        // are the same bedroom count. The table shows that same set.
+        const story = a.expiredPeers?.sentence?.trim() ?? ''
+        if (story) return `<p>${esc(story)}</p>`
         const n = sets.unsold.length
         const line = `${countWord(n)} ${n === 1 ? 'listing' : 'listings'} came off without selling.`
-        return line.charAt(0).toUpperCase() + line.slice(1)
+        return `<p>${esc(line.charAt(0).toUpperCase() + line.slice(1))}</p>`
       })(),
       unsoldMatrixLead(sets.unsold, range),
     ]
       .filter(Boolean)
-      .join(' '),
+      .join('\n'),
     entries: [sets.subject, ...sets.unsold],
     range,
   })
@@ -1336,6 +1340,12 @@ export const CLOSE_HERE_FOR_QUESTIONS = 'Please feel free to call with any quest
 export const CLOSE_SIT_DOWN =
   'We would love the opportunity to sit down with you and go through the house, and to show you the detailed marketing plan we use. There is nothing to sign for that. Who you list with is your decision, and we would be grateful for the chance to earn it.'
 
+export const CLOSE_WHAT_THE_REPORT_IS =
+  'This report is the sales, the homes you would have been competing with, and the ones that came off without selling, so you can see what buyers were doing while your home was listed.'
+
+export const CLOSE_NO_OBLIGATION =
+  "There is no obligation. If you want to talk any of it through, we're here."
+
 /**
  * Four review cards. Each line is a verbatim fragment of that Google review.
  * A fragment that is not in the published quote is dropped, not rewritten.
@@ -1371,7 +1381,7 @@ const CLOSE_REVIEW_CARDS: ReadonlyArray<{ author: string; lead: string; line: st
 ]
 
 /** Decorative Google mark. Four paths, no external image. Not a gold accent. */
-const GOOGLE_G_MARK = `<svg class="google-g" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77a6.6 6.6 0 0 1-3.71 1.06 6.6 6.6 0 0 1-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M5.84 14.09a6.6 6.6 0 0 1 0-4.18V7.07H2.18A11 11 0 0 0 1 12c0 1.78.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84A6.6 6.6 0 0 1 12 5.38z"/></svg>`
+const GOOGLE_G_MARK = `<svg class="google-g" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" focusable="false"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77a6.6 6.6 0 0 1-3.71 1.06 6.6 6.6 0 0 1-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M5.84 14.09a6.6 6.6 0 0 1 0-4.18V7.07H2.18A11 11 0 0 0 1 12c0 1.78.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84A6.6 6.6 0 0 1 12 5.38z"/></svg>`
 
 export function closeReviewsHtml(a: OpinionPageArgs): string {
   const picks = CLOSE_REVIEW_CARDS.flatMap((card) => {
@@ -1409,8 +1419,9 @@ export function nextStepHeading(a: OpinionPageArgs): string {
  * still running. A licensed principal broker does not send that, and a
  * renderer that cannot tell the two apart will send it every time.
  *
- * So the two statuses each get their own sentence, and the active one gets a
- * single neutral action instead of the two asks.
+ * The active listing still gets the non-solicitation sentence and one neutral
+ * action. WITHDRAWN_AGREEMENT_SENTENCE stays exported so a letter can be
+ * checked for its absence.
  */
 export const NON_SOLICITATION_SENTENCE =
   'This report is not a solicitation. If your home is listed with another broker, we are not asking you to break that agreement, and we are not asking for the listing.'
@@ -1428,7 +1439,8 @@ export function closingComplianceSentence(a: OpinionPageArgs): string {
   const status = readSubjectStatus(a)
   if (!status) return ''
   if (status.isActiveWithOtherBrokerage) return NON_SOLICITATION_SENTENCE
-  if (status.isWithdrawnNotExpired) return WITHDRAWN_AGREEMENT_SENTENCE
+  // Matt 2026-10-06 dropped that sentence from the close.
+  if (status.isWithdrawnNotExpired) return ''
   return ''
 }
 
@@ -1500,7 +1512,11 @@ export function nextStepReachHtml(a: OpinionPageArgs): string {
       `<a href="${esc(search)}" data-rr-track="cma-search">See homes for sale near you</a>`,
     ),
   )
-  return `<dl class="reach">${rows.join('')}</dl>`
+  const origin = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const photo = b.photoUrl
+    ? `<img class="reach-photo" src="${esc(b.photoUrl.startsWith('http') ? b.photoUrl : `${origin}${b.photoUrl}`)}" alt="${esc(b.displayName)}" />`
+    : ''
+  return `<div class="reach-block">${photo}<dl class="reach">${rows.join('')}</dl></div>`
 }
 
 /**
@@ -1521,8 +1537,10 @@ export function nextStepNoteHtml(a: OpinionPageArgs): string {
   ${closingComplianceHtml(a)}`
   }
   if (a.expiredAudit) {
-    return `<p class="next-note">${esc(`${CLOSE_EARN_YOUR_BUSINESS} ${CLOSE_HERE_FOR_QUESTIONS}`)}</p>
+    return `<p class="next-note">${esc(CLOSE_WHAT_THE_REPORT_IS)}</p>
+  <p class="next-note">${esc(`${CLOSE_EARN_YOUR_BUSINESS} ${CLOSE_HERE_FOR_QUESTIONS}`)}</p>
   <p class="next-note">${esc(CLOSE_SIT_DOWN)}</p>
+  <p class="next-note">${esc(CLOSE_NO_OBLIGATION)}</p>
   ${closeReviewsHtml(a)}
   ${nextStepReachHtml(a)}
   ${closingComplianceHtml(a)}`
@@ -1541,15 +1559,8 @@ export function nextStepNoteHtml(a: OpinionPageArgs): string {
 export function nextStepSignatureHtml(a: OpinionPageArgs): string {
   const b = a.broker
   if (!b) return ''
-  const site = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-  const headshot = b.photoUrl
-    ? b.photoUrl.startsWith('http')
-      ? b.photoUrl
-      : `${site}${b.photoUrl}`
-    : null
   return `<div class="keep-close">
   <div class="signature-page">
-    ${headshot ? `<img class="portrait" src="${esc(headshot)}" alt="${esc(b.displayName)}" />` : '<div></div>'}
     <div class="sig-content">
       <div class="sig-name">${esc(b.displayName)}</div>
       <div class="sig-printed">${esc(b.displayName)}</div>
