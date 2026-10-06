@@ -405,8 +405,10 @@ export function pickExpiredPeers(
     })
     .filter((x): x is { row: CmaMarketAreaRow; peer: CmaExpiredPeer } => x != null)
 
-  const similar = named.filter((x) => peerFitsSubject(x.row, subject))
-  const pool = similar.length > 0 ? similar : named
+  // Homes that are not this size and bedroom count do not fill the map.
+  // A wide price band across a neighborhood used to print those homes once
+  // nothing close was in the first window, and then the window stopped.
+  const pool = named.filter((x) => peerFitsSubject(x.row, subject))
   const slat = subject.latitude
   const slng = subject.longitude
   const ranked =
@@ -632,12 +634,11 @@ export type CmaExpiredPeerSet = {
   /** Every unsold home inside the area, the band and the window, one per address. */
   areaTotal: number
   /**
-   * How many the sentence claims: `areaTotal`, or the subset like the subject
-   * when the pick narrowed to those. `count` is what the document PRINTS, and
-   * it is capped, so the sentence must never be built on it (§0).
+   * Homes like the subject the map can show, after same-address cycles collapse.
+   * Unlike homes stay in `areaTotal` and are not this number.
    */
   found: number
-  /** True when the printed peers were narrowed to homes like the subject. */
+  /** True when the printed peers are homes like the subject. */
   likeYours: boolean
   /** True when even 24 months inside the area holds fewer than three. */
   shortfall: boolean
@@ -745,8 +746,18 @@ export function buildExpiredPeerSet(input: {
    * or false keeps that sentence.
    */
   subjectCameOff?: boolean
+  /**
+   * A home that is for sale or under contract now is not also a pin for an
+   * older cycle that came off. The address is enough. The listing keys differ.
+   */
+  liveAddresses?: readonly (string | null | undefined)[]
 }): CmaExpiredPeerSet {
   const asOf = input.asOf ?? new Date()
+  const liveNorms = new Set(
+    (input.liveAddresses ?? [])
+      .map((address) => normalizePeerAddress(address ?? ''))
+      .filter((address) => address.length > 0),
+  )
   const closedSaleNorms = new Set(
     (input.closedSaleAddresses ?? [])
       .map((address) => normalizePeerAddress(address ?? ''))
@@ -762,7 +773,11 @@ export function buildExpiredPeerSet(input: {
     // A row with no off-market date cannot support "in the last N months", so
     // it is not evidence for any window. It is dropped, never dated.
     // A street that already closed in the priced set is a sale, not a failure.
-    .filter((x): x is { row: CmaMarketAreaRow; months: number } => x.months != null && !soldAtThisStreet(x.row))
+    .filter((x): x is { row: CmaMarketAreaRow; months: number } => {
+      if (x.months == null || soldAtThisStreet(x.row)) return false
+      const address = normalizePeerAddress(peerAddress(x.row))
+      return address.length === 0 || !liveNorms.has(address)
+    })
 
   const maxW =
     input.maxWindowMonths != null && Number.isFinite(input.maxWindowMonths) && input.maxWindowMonths > 0
@@ -783,8 +798,8 @@ export function buildExpiredPeerSet(input: {
     // How many homes came off in the area at all, one per address, subject
     // excluded. The narrowed set is what the document prints; this is what the
     // sentence would otherwise silently claim to be counting.
-    // What the SENTENCE counts is the same set the table shows. `found` is
-    // that set: the homes like the subject when there are any, else all.
+    // What the sentence counts is the set the table shows. `found` is that
+    // set: homes that fit this one. Unlike homes stay in areaTotal only.
     const key = (r: CmaMarketAreaRow) =>
       normalizePeerAddress(peerAddress(r)) || String(r.ListingKey ?? '')
     const eligible = inWindow.filter(
@@ -794,9 +809,10 @@ export function buildExpiredPeerSet(input: {
         Number(r.ListPrice) > 0,
     )
     areaTotal = new Set(eligible.map(key).filter((k) => k.length > 0)).size
-    const similar = eligible.filter((r) => peerFitsSubject(r, input.subject))
-    likeYours = similar.length > 0
-    found = likeYours ? new Set(similar.map(key).filter((k) => k.length > 0)).size : areaTotal
+    // Pins are only homes that fit. Unlike homes stay in areaTotal. They do
+    // not fill the three-home quota, so this window keeps opening.
+    likeYours = peers.length > 0
+    found = peers.length
     windowMonths = w
     if (peers.length >= EXPIRED_PEER_MIN) break
   }
@@ -819,6 +835,7 @@ export function buildExpiredPeerSet(input: {
     sentence: peerSetSentence({
       area: input.area,
       count,
+      areaTotal,
       windowMonths,
       shortfall,
       likeYours,
@@ -831,6 +848,7 @@ export function buildExpiredPeerSet(input: {
 function peerSetSentence(input: {
   area: CompArea
   count: number
+  areaTotal?: number
   windowMonths: number
   shortfall: boolean
   likeYours: boolean
@@ -846,9 +864,14 @@ function peerSetSentence(input: {
   // `count` is the rows the table prints. The sentence uses that number.
   const n = input.count
   if (n === 0) {
+    const cameOff = input.areaTotal ?? 0
+    if (cameOff > 0) {
+      const came = cameOff === 1 ? 'One home' : `${countWord(cameOff, true)} homes`
+      return `${came} ${where} came off the market without selling in the last ${w} months. None were close to this home in bedrooms and size, so none are on this map.`
+    }
     // The subject is the home that came off. Do not say none did.
     if (input.subjectCameOff) return ''
-    return `No home${like} ${where} came off the market without selling in the last ${w} months.`
+    return `No home ${where} came off the market without selling in the last ${w} months.`
   }
   const homes = `${countWord(n)} ${n === 1 ? 'home' : 'homes'}${like}`
   if (!input.shortfall) {

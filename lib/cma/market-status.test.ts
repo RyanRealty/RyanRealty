@@ -920,6 +920,43 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
     expect(untouched.peers.map((p) => p.listingKey)).toContain('SOLDKEY')
   })
 
+  it('keeps opening the window when unlike homes already number three', () => {
+    const set = buildExpiredPeerSet({
+      rows: [
+        unsold('U1', '1 Oak', 1, { BedroomsTotal: 5, TotalLivingAreaSqFt: 3200 }),
+        unsold('U2', '2 Oak', 1, { BedroomsTotal: 5, TotalLivingAreaSqFt: 3200 }),
+        unsold('U3', '3 Oak', 1, { BedroomsTotal: 5, TotalLivingAreaSqFt: 3200 }),
+        unsold('A', '10 Aspen', 10),
+        unsold('B', '20 Birch', 10),
+        unsold('C', '30 Cedar', 10),
+      ],
+      subject: subj,
+      area: AREA,
+      asOf: ASOF,
+    })
+    expect(set.windowMonths).toBe(12)
+    expect(set.widenedTo).toBe(12)
+    expect(set.count).toBe(3)
+    expect(set.likeYours).toBe(true)
+    expect(set.peers.map((p) => p.address)).toEqual(['10 Aspen', '20 Birch', '30 Cedar'])
+    expect(set.sentence).toContain('like yours')
+    expect(set.sentence).not.toContain('1 Oak')
+  })
+
+  it('drops an unsold pin at an address that is for sale or under contract now', () => {
+    const rows = [unsold('A', '10 Aspen', 1), unsold('B', '20 Birch', 1), unsold('C', '30 Cedar', 1)]
+    const set = buildExpiredPeerSet({
+      rows,
+      subject: subj,
+      area: AREA,
+      asOf: ASOF,
+      liveAddresses: ['10 Aspen Lane', '30 Cedar Ln'],
+    })
+    expect(set.peers.map((p) => p.address)).toEqual(['20 Birch'])
+    expect(set.peers.map((p) => p.listingKey)).not.toContain('A')
+    expect(set.peers.map((p) => p.listingKey)).not.toContain('C')
+  })
+
   it('drops a row with no off-market date rather than date it', () => {
     const set = buildExpiredPeerSet({
       rows: [
@@ -1004,7 +1041,7 @@ describe('the peer sentence counts the rows it shows', () => {
   }
   const ASOF = new Date('2026-09-08T12:00:00.000Z')
 
-  it('says seven came off and five are below, never five came off', () => {
+  it('does not pin unlike homes, and does not say none came off', () => {
     const rows = Array.from({ length: 7 }, (_, i) =>
       row({
         ListingKey: `K${i}`,
@@ -1023,8 +1060,6 @@ describe('the peer sentence counts the rows it shows', () => {
     )
     const set = buildExpiredPeerSet({
       rows,
-      // Nothing in the set matches three beds at 1,200 sqft, so the pick is
-      // not narrowed and the sentence may not say "like yours".
       subject: {
         beds: 3,
         sqft: 1200,
@@ -1038,13 +1073,15 @@ describe('the peer sentence counts the rows it shows', () => {
       asOf: ASOF,
     })
     expect(set.areaTotal).toBe(7)
-    expect(set.found).toBe(7)
+    expect(set.found).toBe(0)
     expect(set.likeYours).toBe(false)
-    expect(set.count).toBe(7)
-    expect(set.peers).toHaveLength(7)
+    expect(set.count).toBe(0)
+    expect(set.peers).toHaveLength(0)
     expect(set.sentence).toBe(
-      'Seven homes in River West came off the market without selling in the last three months.',
+      'Seven homes in River West came off the market without selling in the last 24 months. None were close to this home in bedrooms and size, so none are on this map.',
     )
-    expect(set.sentence).not.toContain('closest')
+    expect(set.sentence).not.toMatch(/No home /)
+    expect(set.sentence).not.toContain('—')
+    expect(set.sentence).not.toContain('like yours')
   })
 })

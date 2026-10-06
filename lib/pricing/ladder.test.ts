@@ -70,8 +70,9 @@ describe('pricingTierLadder — containment (Matt 2026-09-08)', () => {
   it('exhausts the subdivision to 12 months, then the plats next to it, before any mile ring', () => {
     const names = pricingTierLadder().map((t) => t.name)
     expect(names.indexOf('subdivision-9mo-wide')).toBeLessThan(names.indexOf('subdivision-12mo'))
-    expect(names.indexOf('subdivision-12mo-wide')).toBeLessThan(names.indexOf('pocket-3mo'))
-    expect(names.indexOf('pocket-12mo')).toBeLessThan(names.indexOf('adjacent-sub-3mo'))
+    expect(names.indexOf('subdivision-24mo-wide')).toBeLessThan(names.indexOf('adjacent-sub-3mo'))
+    expect(names.indexOf('adjacent-sub-24mo')).toBeLessThan(names.indexOf('closer-sub-3mo'))
+    expect(names.indexOf('closer-sub-24mo')).toBeLessThan(names.indexOf('pocket-3mo'))
     expect(names.filter((n) => n.startsWith('adjacent-sub-'))).toEqual([
       'adjacent-sub-3mo',
       'adjacent-sub-6mo',
@@ -80,6 +81,7 @@ describe('pricingTierLadder — containment (Matt 2026-09-08)', () => {
       'adjacent-sub-18mo',
       'adjacent-sub-24mo',
     ])
+    expect(names.indexOf('pocket-12mo')).toBeLessThan(names.indexOf('nearby-0.25mi-3mo'))
     expect(names.indexOf('adjacent-sub-12mo')).toBeLessThan(names.indexOf('nearby-1mi-3mo'))
   })
 
@@ -101,11 +103,11 @@ describe('pricingTierLadder — the parent level (Matt 2026-09-09)', () => {
   const names = pricingTierLadder().map((t) => t.name)
 
   it('holds a plat to its community before any ring, and reaches two years inside first', () => {
-    expect(names.indexOf('subdivision-12mo-wide')).toBeLessThan(names.indexOf('pocket-3mo'))
-    expect(names.indexOf('pocket-12mo')).toBeLessThan(names.indexOf('adjacent-sub-3mo'))
-    expect(names.indexOf('adjacent-sub-12mo')).toBeLessThan(names.indexOf('closer-sub-3mo'))
-    expect(names.indexOf('closer-sub-12mo')).toBeLessThan(names.indexOf('community-6mo'))
-    expect(names.indexOf('community-12mo')).toBeLessThan(names.indexOf('subdivision-18mo'))
+    expect(names.indexOf('subdivision-24mo-wide')).toBeLessThan(names.indexOf('adjacent-sub-3mo'))
+    expect(names.indexOf('adjacent-sub-24mo')).toBeLessThan(names.indexOf('closer-sub-3mo'))
+    expect(names.indexOf('closer-sub-24mo')).toBeLessThan(names.indexOf('pocket-3mo'))
+    expect(names.indexOf('pocket-12mo')).toBeLessThan(names.indexOf('community-6mo'))
+    expect(names.indexOf('community-24mo')).toBeLessThan(names.indexOf('nearby-0.25mi-3mo'))
     expect(names.filter((n) => n.startsWith('pocket-'))).toEqual([
       'pocket-3mo',
       'pocket-6mo',
@@ -113,8 +115,8 @@ describe('pricingTierLadder — the parent level (Matt 2026-09-09)', () => {
       'pocket-12mo',
     ])
     expect(names.indexOf('adjacent-sub-12mo')).toBeLessThan(names.indexOf('community-6mo'))
-    expect(names.indexOf('subdivision-24mo-wide')).toBeLessThan(names.indexOf('adjacent-sub-18mo'))
-    expect(names.indexOf('adjacent-sub-24mo')).toBeLessThan(names.indexOf('community-24mo'))
+    expect(names.indexOf('subdivision-24mo-wide')).toBeLessThan(names.indexOf('adjacent-sub-3mo'))
+    expect(names.indexOf('adjacent-sub-24mo')).toBeLessThan(names.indexOf('closer-sub-3mo'))
     expect(names.indexOf('pocket-12mo')).toBeLessThan(names.indexOf('community-6mo'))
     expect(names.filter((n) => n.startsWith('community-'))).toEqual(['community-6mo', 'community-12mo', 'community-24mo'])
     expect(names.indexOf('community-24mo')).toBeLessThan(names.indexOf('nearby-0.25mi-3mo'))

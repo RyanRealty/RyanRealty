@@ -144,6 +144,7 @@ describe('renderCompMatrixHtml', () => {
       'List $/sqft',
       'Sold $/sqft',
       'Seller concessions',
+      'Sold after concessions',
       'Adjusted',
       'Sold for',
       'Sale price today',
@@ -506,12 +507,23 @@ describe('the adjustment grid, line by line', () => {
     )
     expect(html).toContain('Seller concessions')
     expect(html).toContain('$12,500')
+    // 457000 - 12500 = 444500. 444500 / 1665 = 266.966, so Sold $/sqft is $267.
+    // List $/sqft stays on the $465,000 ask: 465000 / 1665 rounds to $279.
+    const net = /<tr><th>Sold after concessions<\/th>([\s\S]*?)<\/tr>/.exec(html)?.[1] ?? ''
+    const soldRate = /<tr><th>Sold \$\/sqft<\/th>([\s\S]*?)<\/tr>/.exec(html)?.[1] ?? ''
+    const listRate = /<tr><th>List \$\/sqft<\/th>([\s\S]*?)<\/tr>/.exec(html)?.[1] ?? ''
+    expect(net).toContain('$444,500')
+    expect(soldRate).toContain('$267')
+    expect(soldRate).not.toContain('$274')
+    expect(listRate).toContain('$279')
     const soldAt = html.indexOf('<th>Sold</th>')
     const concessionAt = html.indexOf('<th>Seller concessions</th>')
+    const netAt = html.indexOf('<th>Sold after concessions</th>')
     const daysAt = html.indexOf('<th>Days on market</th>')
     expect(soldAt).toBeGreaterThan(-1)
     expect(concessionAt).toBeGreaterThan(soldAt)
-    expect(daysAt).toBeGreaterThan(concessionAt)
+    expect(netAt).toBeGreaterThan(concessionAt)
+    expect(daysAt).toBeGreaterThan(netAt)
     expect(html).not.toMatch(/<th>Seller concessions<\/th>(?:<td[^>]*>none<\/td>){6}/)
   })
 
@@ -521,6 +533,12 @@ describe('the adjustment grid, line by line', () => {
     expect(html).toContain('none')
     expect(html).not.toContain('$4,000')
     expect(html).toContain('$389,560')
+    // A reported zero leaves the net equal to the close, and Sold $/sqft on it.
+    // 457000 / 1665 = 274.47, so $274.
+    const net = /<tr><th>Sold after concessions<\/th>([\s\S]*?)<\/tr>/.exec(html)?.[1] ?? ''
+    const soldRate = /<tr><th>Sold \$\/sqft<\/th>([\s\S]*?)<\/tr>/.exec(html)?.[1] ?? ''
+    expect(net).toContain('$457,000')
+    expect(soldRate).toContain('$274')
   })
 
   it('lowers the matrix adjusted figure when a concession is present', () => {
@@ -566,6 +584,7 @@ describe('the adjustment grid, line by line', () => {
     expect(html).toContain('List $/sqft')
     expect(html).toContain('Sold $/sqft')
     expect(html).toContain('Seller concessions')
+    expect(html).toContain('Sold after concessions')
   })
 
   it('leads the phone stack with their own home, then the sales', () => {
@@ -609,6 +628,7 @@ describe('the adjustment grid, line by line', () => {
     const count = (label: string) => card.split(`class="k">${label}<`).length - 1
     expect(count('Sold')).toBe(1)
     expect(count('Seller concessions')).toBe(1)
+    expect(count('Sold after concessions')).toBe(1)
     expect(count('Sold for')).toBe(0)
     expect(count('Adjusted for rooms (theirs vs yours)')).toBe(1)
     expect(card).toContain('One bedroom off yours. No dollar adjustment.')

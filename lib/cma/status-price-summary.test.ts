@@ -84,6 +84,8 @@ describe('status price bands', () => {
       homes: 3,
       list: { low: 490000, avg: 510000, median: 510000, high: 530000 },
       sold: { low: 480000, avg: 500000, median: 500000, high: 520000 },
+      // Nothing recorded. Null stays out of the band and does not change $/sqft.
+      concessions: null,
       // Sold price over living area once closed: 480000/1600 = 300.
       ppsf: { low: 300, avg: 313, median: 313, high: 325 },
     })
@@ -104,7 +106,7 @@ describe('status price bands', () => {
     expect(rows.find((r) => r.label === 'Canceled')?.homes).toBe(1)
   })
 
-  it('prints one FlexMLS-style table: List, Sold, $/sqft across, the four figures down each status', () => {
+  it('prints one FlexMLS-style table: List, Sold, Concessions, $/sqft across, the four figures down each status', () => {
     const html = statusPriceBoardHtml(
       statusPriceSummaries({
         closed: [
@@ -115,23 +117,25 @@ describe('status price bands', () => {
       }),
     )
     expect(html).toContain('<h3 class="subhead">Closed · Active</h3>')
-    expect(html).toMatch(/<th class="n" scope="col">List<\/th><th class="n" scope="col">Sold<\/th><th class="n" scope="col">\$\/sqft<\/th>/)
+    expect(html).toMatch(
+      /<th class="n" scope="col">List<\/th><th class="n" scope="col">Sold<\/th><th class="n" scope="col">Concessions<\/th><th class="n" scope="col">\$\/sqft<\/th>/,
+    )
     expect(html).toContain('col class="sp-fig"')
     expect(html).toContain('<tbody data-status="closed">')
     expect(html).toContain('<tbody data-status="active">')
     expect(html).toContain('Closed<span class="sp-count">2 homes</span>')
     expect(html).toContain('Active<span class="sp-count">1 home</span>')
-    // Closed Low row: list 510,400, sold 505,600, 505600/1600 = 316.
+    // Closed Low row: list 510,400, sold 505,600, no concession recorded, 505600/1600 = 316.
     expect(html).toContain(
-      '<tr><th scope="row">Low</th><td class="n">$510,400</td><td class="n">$505,600</td><td class="n">$316</td></tr>',
+      '<tr><th scope="row">Low</th><td class="n">$510,400</td><td class="n">$505,600</td><td class="n"></td><td class="n">$316</td></tr>',
     )
-    // Closed High row: 512000/1600 = 320.
+    // Closed High row: 512000/1600 = 320. A null concession stays a blank cell.
     expect(html).toContain(
-      '<tr><th scope="row">High</th><td class="n">$528,000</td><td class="n">$512,000</td><td class="n">$320</td></tr>',
+      '<tr><th scope="row">High</th><td class="n">$528,000</td><td class="n">$512,000</td><td class="n"></td><td class="n">$320</td></tr>',
     )
-    // Active has no sale: the Sold cell is empty, $/sqft is the ask (544000/1600 = 340).
+    // Active has no sale and no stored concession. $/sqft is the ask (544000/1600 = 340).
     expect(html).toContain(
-      '<tr><th scope="row">Median</th><td class="n">$544,000</td><td class="n"></td><td class="n">$340</td></tr>',
+      '<tr><th scope="row">Median</th><td class="n">$544,000</td><td class="n"></td><td class="n"></td><td class="n">$340</td></tr>',
     )
     for (const stat of ['Low', 'Avg', 'Median', 'High']) {
       expect(html.match(new RegExp(`<th scope="row">${stat}</th>`, 'g'))).toHaveLength(2)
@@ -156,7 +160,7 @@ describe('status price bands', () => {
     )
     expect(html).toContain('Closed<span class="sp-count">2 homes</span>')
     expect(html).toContain(
-      '<tr><th scope="row">Low</th><td class="n">$490,000</td><td class="n">$480,000</td><td class="n">$300</td></tr>',
+      '<tr><th scope="row">Low</th><td class="n">$490,000</td><td class="n">$480,000</td><td class="n"></td><td class="n">$300</td></tr>',
     )
     expect(html).toContain('Closed $/sqft covers 1 of 2 homes (1 with no living area on record).')
   })
@@ -177,9 +181,13 @@ describe('status price bands', () => {
       statusPriceSummaries({ active: [entry({ key: 'A', family: 'active', status: 'active', listPrice: 544000, sqft: 1600 })] }),
     )
     expect(noSales).not.toContain('>Sold<')
-    expect(noSales).toContain('<tr><th scope="row">Low</th><td class="n">$544,000</td><td class="n">$340</td></tr>')
-    expect(noSales).toMatch(/List is the asking price\. \$\/sqft is each home(&#39;|&#x27;|')s list price over its own living area\./)
-    expect(noSales.match(/<col class="sp-fig">/g)).toHaveLength(2)
+    expect(noSales).toMatch(
+      /scope="col">List<\/th><th class="n" scope="col">Concessions<\/th><th class="n" scope="col">\$\/sqft<\/th>/,
+    )
+    expect(noSales).toContain('<tr><th scope="row">Low</th><td class="n">$544,000</td><td class="n"></td><td class="n">$340</td></tr>')
+    expect(noSales).toMatch(/List is the asking price\./)
+    expect(noSales).toMatch(/\$\/sqft is each home&#39;s list price over its own living area\./)
+    expect(noSales.match(/<col class="sp-fig">/g)).toHaveLength(3)
   })
 
   it('names the real gap when a $/sqft is missing for want of a price, not a living area', () => {
@@ -207,5 +215,47 @@ describe('status price bands', () => {
     expect(rows.map((r) => r.key)).toEqual(['closed'])
     expect(rows[0]).toMatchObject({ homes: 1, sold: { high: 500000 } })
     expect(statusPriceBoardHtml([])).toBe('')
+  })
+
+  it('prices a closed foot from the sale after a recorded concession', () => {
+    const html = statusPriceBoardHtml(
+      statusPriceSummaries({
+        closed: [
+          entry({
+            key: '1',
+            family: 'closed',
+            listPrice: 510400,
+            closePrice: 505600,
+            sqft: 1600,
+            concessionsAmount: 15000,
+          }),
+        ],
+      }),
+    )
+    // 505600 - 15000 = 490600. 490600 / 1600 = 306.625, rounded once to $307.
+    expect(html).toContain(
+      '<tr><th scope="row">Median</th><td class="n">$510,400</td><td class="n">$505,600</td><td class="n">$15,000</td><td class="n">$307</td></tr>',
+    )
+  })
+
+  it('keeps a reported zero concession and leaves an unstored active concession blank', () => {
+    const stored = statusPriceBoardHtml(
+      statusPriceSummaries({
+        active: [
+          entry({
+            key: 'A',
+            family: 'active',
+            status: 'active',
+            listPrice: 544000,
+            sqft: 1600,
+            concessionsAmount: 0,
+          }),
+        ],
+      }),
+    )
+    expect(stored).toContain(
+      '<tr><th scope="row">Median</th><td class="n">$544,000</td><td class="n">$0</td><td class="n">$340</td></tr>',
+    )
+    expect(stored).not.toContain('>Sold<')
   })
 })

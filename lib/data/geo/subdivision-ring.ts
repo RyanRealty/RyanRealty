@@ -195,3 +195,243 @@ export async function assignCommunitySlugs(
     return null
   }
 }
+
+/**
+ * Touching plats the search may enter. Closest to the subject first.
+ * When the subject has a neighborhood, a plat with inNeighborhood false stays
+ * out. Null means no polygon was tested and does not exclude.
+ */
+export function touchingPlatsForSearch(
+  ring: readonly SubdivisionRingPlat[],
+  subjectHasNeighborhood: boolean,
+): SubdivisionRingPlat[] {
+  const kept = ring.filter((plat) => {
+    if (!plat.slug?.trim()) return false
+    if (subjectHasNeighborhood && plat.inNeighborhood === false) return false
+    return true
+  })
+  return [...kept].sort((a, b) => a.pointM - b.pointM || a.gapM - b.gapM || a.rank - b.rank || a.slug.localeCompare(b.slug))
+}
+
+export type NeighborPlatRing = {
+  homeSlug: string
+  neighborhoodSlug?: string | null
+  plats: readonly Pick<SubdivisionRingPlat, 'slug' | 'gapM' | 'pointM' | 'inNeighborhood'>[]
+}
+
+/**
+ * The next row: plats that touch a first-ring plat, minus the subject and the
+ * first ring. A plat that merely sits in the parent and does not appear on a
+ * neighbor ring is not included. Distance to a sale is not an input.
+ * inNeighborhood false is dropped when the subject has a neighborhood. Null stays.
+ */
+export function nextRowSubdivisionSlugs(input: {
+  subjectSlug: string | null
+  firstRingSlugs: readonly string[]
+  neighborRings: readonly NeighborPlatRing[]
+  subjectHasNeighborhood: boolean
+}): string[] {
+  const own = (input.subjectSlug ?? '').trim()
+  const first = new Set(input.firstRingSlugs.map((slug) => slug.trim()).filter(Boolean))
+  const best = new Map<string, { ringIndex: number; gapM: number; pointM: number }>()
+  for (const neighbor of input.neighborRings) {
+    const fromFirst = input.firstRingSlugs.indexOf(neighbor.homeSlug)
+    const ringIndex = fromFirst === -1 ? input.firstRingSlugs.length : fromFirst
+    for (const plat of neighbor.plats) {
+      const slug = plat.slug.trim()
+      if (!slug || slug === own || slug === neighbor.homeSlug.trim() || first.has(slug)) continue
+      if (input.subjectHasNeighborhood && plat.inNeighborhood === false) continue
+      const cand = { ringIndex, gapM: plat.gapM ?? 0, pointM: plat.pointM ?? 0 }
+      const prev = best.get(slug)
+      if (
+        !prev ||
+        cand.ringIndex < prev.ringIndex ||
+        (cand.ringIndex === prev.ringIndex &&
+          (cand.gapM < prev.gapM || (cand.gapM === prev.gapM && cand.pointM < prev.pointM)))
+      ) {
+        best.set(slug, cand)
+      }
+    }
+  }
+  return [...best.entries()]
+    .sort(
+      (a, b) =>
+        a[1].ringIndex - b[1].ringIndex ||
+        a[1].gapM - b[1].gapM ||
+        a[1].pointM - b[1].pointM ||
+        a[0].localeCompare(b[0]),
+    )
+    .map(([slug]) => slug)
+}
+
+function signedRingArea(ring: readonly number[][]): number {
+  let sum = 0
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const x0 = ring[j]?.[0] ?? 0
+    const y0 = ring[j]?.[1] ?? 0
+    const x1 = ring[i]?.[0] ?? 0
+    const y1 = ring[i]?.[1] ?? 0
+    sum += x0 * y1 - x1 * y0
+  }
+  return sum / 2
+}
+
+function pointInLinearRing(lng: number, lat: number, ring: readonly number[][]): boolean {
+  let inside = false
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i]?.[0] ?? 0
+    const yi = ring[i]?.[1] ?? 0
+    const xj = ring[j]?.[0] ?? 0
+    const yj = ring[j]?.[1] ?? 0
+    const crosses = yi > lat !== yj > lat && lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi
+    if (crosses) inside = !inside
+  }
+  return inside
+}
+
+/** A point inside the largest exterior ring. Null when none of the probes land inside. */
+export function interiorLngLat(
+  geometry: { type: string; coordinates: number[][][] | number[][][][] } | null,
+): { lat: number; lng: number } | null {
+  if (!geometry) return null
+  const polygons: number[][][][] =
+    geometry.type === 'Polygon'
+      ? [geometry.coordinates as number[][][]]
+      : geometry.type === 'MultiPolygon'
+        ? (geometry.coordinates as number[][][][])
+        : []
+  let best: number[][] | null = null
+  let bestArea = 0
+  for (const poly of polygons) {
+    const ring = poly[0]
+    if (!ring || ring.length < 3) continue
+    const area = Math.abs(signedRingArea(ring))
+    if (area > bestArea) {
+      bestArea = area
+      best = ring
+    }
+  }
+  if (!best) return null
+  const area = signedRingArea(best)
+  if (area !== 0) {
+    let cx = 0
+    let cy = 0
+    for (let i = 0, j = best.length - 1; i < best.length; j = i++) {
+      const x0 = best[j]?.[0] ?? 0
+      const y0 = best[j]?.[1] ?? 0
+      const x1 = best[i]?.[0] ?? 0
+      const y1 = best[i]?.[1] ?? 0
+      const f = x0 * y1 - x1 * y0
+      cx += (x0 + x1) * f
+      cy += (y0 + y1) * f
+    }
+    const lng = cx / (6 * area)
+    const lat = cy / (6 * area)
+    if (Number.isFinite(lng) && Number.isFinite(lat) && pointInLinearRing(lng, lat, best)) {
+      return { lat, lng }
+    }
+  }
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  for (const p of best) {
+    const x = p[0] ?? 0
+    const y = p[1] ?? 0
+    if (x < minX) minX = x
+    if (x > maxX) maxX = x
+    if (y < minY) minY = y
+    if (y > maxY) maxY = y
+  }
+  for (let gy = 1; gy <= 7; gy++) {
+    for (let gx = 1; gx <= 7; gx++) {
+      const lng = minX + ((maxX - minX) * gx) / 8
+      const lat = minY + ((maxY - minY) * gy) / 8
+      if (pointInLinearRing(lng, lat, best)) return { lat, lng }
+    }
+  }
+  return null
+}
+
+/** Recorded label for one boundary. Not a slug, and not a sentence. */
+export async function readBoundaryLabel(
+  geoType: 'subdivision' | 'neighborhood',
+  geoSlug: string,
+): Promise<string | null> {
+  const key = geoSlug.trim()
+  if (!key) return null
+  try {
+    const sb = createServiceClient()
+    const { data, error } = await sb
+      .from('boundaries')
+      .select('geo_label')
+      .eq('geo_type', geoType)
+      .eq('geo_slug', key)
+      .limit(1)
+      .maybeSingle()
+    if (error) {
+      console.error('[readBoundaryLabel]', error.message)
+      return null
+    }
+    const label = (data as { geo_label?: string | null } | null)?.geo_label?.trim()
+    return label || null
+  } catch (err) {
+    console.error('[readBoundaryLabel]', err instanceof Error ? err.message : err)
+    return null
+  }
+}
+
+/**
+ * A point inside a recorded plat, from boundary_geojson. Null when the plat
+ * has no polygon or no probe lands inside it. Used only to ask
+ * cma_subdivision_ring what touches that plat.
+ */
+export async function readPlatInteriorPoint(slug: string): Promise<{ lat: number; lng: number } | null> {
+  const key = slug.trim()
+  if (!key) return null
+  try {
+    const sb = createServiceClient()
+    const { data, error } = await sb.rpc('boundary_geojson', {
+      p_geo_type: 'subdivision',
+      p_geo_slug: key,
+    })
+    if (error || !data || typeof data !== 'string') return null
+    const parsed = JSON.parse(data) as { type?: string; coordinates?: number[][][] | number[][][][] }
+    if (!parsed?.type || !parsed.coordinates) return null
+    return interiorLngLat({ type: parsed.type, coordinates: parsed.coordinates })
+  } catch (err) {
+    console.error('[readPlatInteriorPoint]', err instanceof Error ? err.message : err)
+    return null
+  }
+}
+
+/**
+ * Each first-ring plat's own touching plats.
+ *
+ * The probe is an interior point of that plat, then the same ring read the
+ * subject used. A plat with no interior point, or whose probe lands in a
+ * different plat, contributes nothing. That gap stays empty. It is not filled
+ * with every other plat in the parent.
+ */
+export async function readNeighborRings(firstRing: readonly SubdivisionRingPlat[]): Promise<NeighborPlatRing[]> {
+  const rows = await Promise.all(
+    firstRing.map(async (plat): Promise<NeighborPlatRing | null> => {
+      const point = await readPlatInteriorPoint(plat.slug)
+      if (!point) return null
+      let ring: SubdivisionRing | null = null
+      try {
+        ring = await readSubdivisionRing(point.lat, point.lng)
+      } catch (err) {
+        console.error('[readNeighborRings]', err instanceof Error ? err.message : err)
+        return null
+      }
+      if (!ring || ring.homeSlug !== plat.slug) return null
+      return {
+        homeSlug: ring.homeSlug,
+        neighborhoodSlug: ring.neighborhoodSlug,
+        plats: ring.ring,
+      }
+    }),
+  )
+  return rows.filter((row): row is NeighborPlatRing => row != null)
+}

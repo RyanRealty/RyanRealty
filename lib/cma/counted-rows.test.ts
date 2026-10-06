@@ -44,16 +44,26 @@ describe('a counted sale missing from the table fails', () => {
 })
 
 describe('expired rows match the count', () => {
-  it('shows all seven when seven came off, and the matrix does not drop two', () => {
-    const area: CompArea = {
-      kind: 'neighborhood',
-      names: ['River West'],
-      radiusMiles: null,
-      centre: { lat: 44.0645, lng: -121.3237 },
-      source: 'test',
-      sentence: 'River West, the neighborhood around your home.',
-    }
-    const rows = Array.from({ length: 7 }, (_, i) => ({
+  const area: CompArea = {
+    kind: 'neighborhood',
+    names: ['River West'],
+    radiusMiles: null,
+    centre: { lat: 44.0645, lng: -121.3237 },
+    source: 'test',
+    sentence: 'River West, the neighborhood around your home.',
+  }
+  const subject = {
+    beds: 3,
+    sqft: 1200,
+    latitude: 44.0645,
+    longitude: -121.3237,
+    listingKey: 'SUBJ',
+    mlsNumber: '1',
+    streetAddress: '1617 NW 8th',
+  }
+
+  function rows(beds: number, sqft: number) {
+    return Array.from({ length: 7 }, (_, i) => ({
       ListingKey: `K${i}`,
       StreetNumber: String(100 + i),
       StreetName: 'Portland',
@@ -61,25 +71,39 @@ describe('expired rows match the count', () => {
       ListPrice: 900_000 + i * 1000,
       ClosePrice: null,
       CloseDate: null,
-      BedroomsTotal: 4,
-      TotalLivingAreaSqFt: 2400,
+      BedroomsTotal: beds,
+      TotalLivingAreaSqFt: sqft,
       SubdivisionName: null,
       status_change_timestamp: '2026-08-20',
       OnMarketDate: '2026-05-01',
       Latitude: 44.0645,
       Longitude: -121.3237,
     }))
+  }
+
+  it('does not pin unlike homes when seven came off and none fit', () => {
     const set = buildExpiredPeerSet({
-      rows: rows as never,
-      subject: {
-        beds: 3,
-        sqft: 1200,
-        latitude: 44.0645,
-        longitude: -121.3237,
-        listingKey: 'SUBJ',
-        mlsNumber: '1',
-        streetAddress: '1617 NW 8th',
-      },
+      rows: rows(4, 2400) as never,
+      subject,
+      area,
+      asOf: new Date('2026-09-08T12:00:00.000Z'),
+    })
+    expect(set.count).toBe(0)
+    expect(set.likeYours).toBe(false)
+    expect(set.peers).toHaveLength(0)
+    expect(set.sentence).not.toMatch(/No home /)
+    expect(set.sentence).toContain('None were close')
+    const shown = unsoldPeersFor({
+      subject: { listingKey: 'SUBJ', mlsNumber: '1', streetAddress: '1617 NW 8th' },
+      peers: set.peers,
+    })
+    expect(shown).toHaveLength(0)
+  })
+
+  it('shows all seven fitting homes, and the matrix does not drop two', () => {
+    const set = buildExpiredPeerSet({
+      rows: rows(3, 1200) as never,
+      subject,
       area,
       asOf: new Date('2026-09-08T12:00:00.000Z'),
     })

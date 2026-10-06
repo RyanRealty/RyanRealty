@@ -39,6 +39,8 @@ import {
   type DidNotSellArgs,
 } from '@/lib/cma/did-not-sell'
 import { FAILED_ASK_BACKTEST, resolveListingTimeline } from '@/lib/cma/expired-audit'
+import { placePricingStoryHtml } from '@/lib/cma/place-pricing-story'
+import type { PlacePricingStory } from '@/lib/cma/place-pricing-types'
 import {
   cityDateCutsFightFlatLocal,
   compsWithoutCityDateMove,
@@ -180,6 +182,12 @@ export type OpinionPageArgs = {
    * never a parent polygon, the city, or N/A.
    */
   listingMarket?: ListingMarketMove | null
+  /**
+   * Twelve-month pricing in the parent neighborhood or community.
+   * Absent, or a place with no listings, prints nothing on what happened.
+   * Never the regional relist tiles.
+   */
+  placePricing?: PlacePricingStory | null
   /** Row status at serve. A draft replaces an automatic concession net. */
   documentStatus?: string | null
   /** Credits homes like this one actually gave. Drafts only. */
@@ -583,41 +591,25 @@ export function whatHappenedPage(a: OpinionPageArgs): CmaPageDef | null {
 }
 
 /**
- * The three regional relist figures — and the one case they may not print.
+ * What happened in the parent place, under the ask chart.
  *
- * "94.2 percent of the ask that failed is what the median one sold for" is a
- * statement about listings that FAILED. On a home that is on the market with
- * another brokerage today it is not a fact about this seller at all, it is a
- * pitch about somebody else's live listing; and on an ask that sat below the
- * bottom of the range it argues a case the numbers contradict. Both are the
- * neutral chapter, which states the ask, the range and the days and stops
- * (round-four class B).
+ * A neutral chapter states the ask, the range and the days and stops. That
+ * includes a home on the market with another brokerage, and an ask that sat
+ * below the range (round-four class B). Either one returns nothing here.
+ *
+ * When the row carries a parent place with listings, print that story. When
+ * it does not, print nothing. Do not fall back to the regional relist tiles.
  */
 export function failedAskBacktestHtml(a: OpinionPageArgs, doc: 'letter' | 'immersive'): string {
   if (storyClassFor(a) === 'neutral') return ''
-  const b = FAILED_ASK_BACKTEST
-  const strip = doc === 'letter' ? 'stat-strip is-3' : 'stat3 r'
-  const cell = doc === 'letter' ? 'stat' : 'st'
-  const val = doc === 'letter' ? 'val' : 'st-n'
-  const lbl = doc === 'letter' ? 'lbl' : 'st-l'
-  const small = doc === 'letter' ? 'small' : 'small r'
-  return `<div class="keep-note">
-  <div class="${strip}">
-    <div class="${cell}"><div class="${val}">${int(b.pairs)}</div><div class="${lbl}">Central Oregon homes came off unsold and then sold, 2023 to 2026</div></div>
-    <div class="${cell}"><div class="${val}">${(b.closeMedianRatio * 100).toFixed(1)}%</div><div class="${lbl}">of the asking price that failed is what the median one sold for</div></div>
-    <div class="${cell}"><div class="${val}">${b.shareClosedAboveAskPct}%</div><div class="${lbl}">sold for more than that ask</div></div>
-  </div>
-  <p class="${small}">${esc(FAILED_ASK_BACKTEST_SOURCE)}</p>
-  </div>`
+  return placePricingStoryHtml(a.placePricing, doc)
 }
 
 /**
- * The §0 trace for the three relist figures.
+ * The §0 trace for the regional relist pairs.
  *
- * They are REGIONAL — every listing in the Central Oregon MLS that came off
- * unsold and later closed — and they sat on the screen with no source line at
- * all, one scroll under a chapter of Redmond figures. A reader had no way to
- * know which geography they were being handed.
+ * The what-happened page does not print this. A city that is too thin still
+ * names the same pairs, as regional, in the did-not-sell chapter.
  */
 export const FAILED_ASK_BACKTEST_SOURCE = `These three figures are regional, not this city alone: ${int(
   FAILED_ASK_BACKTEST.pairs,
@@ -696,8 +688,8 @@ export function whatHappenedGraphicHtml(a: OpinionPageArgs): string {
  * The picture is two slopes in one comparison — the sale price, then the
  * price per square foot — because those are two units. The dates and the
  * median size are said once. The sentence states both moves, and the size
- * when that is what makes them disagree. The regional relist figures stay
- * where they are; this is a different question.
+ * when that is what makes them disagree. The parent-place story, when the
+ * row has one, is the block under this chart.
  */
 function listingMarketHtml(move: ListingMarketMove | null | undefined): string {
   if (!move) return ''
@@ -1345,13 +1337,16 @@ export const CLOSE_SIT_DOWN =
   'We would love the opportunity to sit down with you and go through the house, and to show you the detailed marketing plan we use. There is nothing to sign for that. Who you list with is your decision, and we would be grateful for the chance to earn it.'
 
 /**
- * Two review cards. Each line is a complete sentence from that Google review,
- * copied verbatim. The card leads with the short line and keeps one more
- * sentence under it. The rest of a long review stays on /reviews.
- * E Oster is the May 18, 2026 review (Matt knows him as Ernie; Google
- * publishes E Oster). Douglas Grant is the other. Audra Hedberg's review
- * stays off the letter because it contains an em dash.
+ * Four review cards. Each line is a verbatim fragment of that Google review.
+ * A fragment that is not in the published quote is dropped, not rewritten.
+ * Audra Hedberg stays off the letter because her quote contains an em dash.
+ * The card keeps class close-quote so the seller-text stripper still removes
+ * the reviewer's words, including the name, from the plain-text surface.
  */
+const CLOSE_REVIEWS_HEADING = "Here's what our clients have to say"
+
+const CLOSE_REVIEWS_LINK = 'Read the rest of the Google reviews'
+
 const CLOSE_REVIEW_CARDS: ReadonlyArray<{ author: string; lead: string; line: string }> = [
   {
     author: 'E Oster',
@@ -1363,7 +1358,20 @@ const CLOSE_REVIEW_CARDS: ReadonlyArray<{ author: string; lead: string; line: st
     lead: 'Matt is the best!!',
     line: 'Matt is the most professional, communicative, and honest Real Estate Broker I have ever worked with.',
   },
+  {
+    author: 'Gary Timms',
+    lead: "We would not hesitate to recommend or use Matt's services again.",
+    line: 'Matt did a great job helping us sell our home.',
+  },
+  {
+    author: 'Doug Millard',
+    lead: 'I highly recommend Ryan Realty for both buying and selling!',
+    line: 'From the start of our journey to the end, Matt was right at every turn.',
+  },
 ]
+
+/** Decorative Google mark. Four paths, no external image. Not a gold accent. */
+const GOOGLE_G_MARK = `<svg class="google-g" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77a6.6 6.6 0 0 1-3.71 1.06 6.6 6.6 0 0 1-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M5.84 14.09a6.6 6.6 0 0 1 0-4.18V7.07H2.18A11 11 0 0 0 1 12c0 1.78.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84A6.6 6.6 0 0 1 12 5.38z"/></svg>`
 
 export function closeReviewsHtml(a: OpinionPageArgs): string {
   const picks = CLOSE_REVIEW_CARDS.flatMap((card) => {
@@ -1376,10 +1384,10 @@ export function closeReviewsHtml(a: OpinionPageArgs): string {
   const cards = picks
     .map(
       (t) =>
-        `<blockquote class="close-quote"><p class="close-lead">${esc(t.lead)}</p><p class="close-line">${esc(t.line)}</p><cite>${esc(t.author)} · Verified Google review</cite></blockquote>`,
+        `<blockquote class="close-quote"><p class="close-stars" aria-hidden="true">&#9733;&#9733;&#9733;&#9733;&#9733;</p><span class="close-sr">5 star Google review</span><p class="close-lead">${esc(t.lead)}</p><p class="close-line">${esc(t.line)}</p><cite>${esc(t.author)} · Verified Google review</cite></blockquote>`,
     )
     .join('')
-  return `<div class="close-reviews"><p class="close-reviews-kicker">From people we have worked with</p><div class="close-review-row">${cards}</div><p class="close-reviews-more"><a href="${esc(href)}" data-rr-track="cma-reviews">Read the reviews</a></p></div>`
+  return `<div class="close-reviews"><p class="close-reviews-head">${esc(CLOSE_REVIEWS_HEADING)}</p><div class="close-review-row">${cards}</div><p class="close-reviews-more"><a href="${esc(href)}" data-rr-track="cma-reviews">${GOOGLE_G_MARK}${esc(CLOSE_REVIEWS_LINK)}</a></p></div>`
 }
 
 /** The failed-listing heading, or the neutral one when this document may not say the home failed. */

@@ -243,7 +243,19 @@ describe('letter craft P0 — close voice', () => {
     expect(note).toContain('most professional, communicative, and honest')
     expect(note).not.toContain('kept me informed')
     expect(note).not.toContain('navigate the process')
-    expect(note).not.toContain('Gary Timms')
+    expect(note).toContain('Here&#39;s what our clients have to say')
+    expect(note).toContain('Gary Timms')
+    expect(note).toContain('We would not hesitate to recommend')
+    expect(note).toContain('Matt did a great job helping us sell our home.')
+    expect(note).toContain('Doug Millard')
+    expect(note).toContain('I highly recommend Ryan Realty for both buying and selling!')
+    expect(note).toContain('From the start of our journey to the end, Matt was right at every turn.')
+    expect(note).toContain('Read the rest of the Google reviews')
+    expect(note).toContain('class="google-g"')
+    expect(note).toContain('close-stars')
+    expect(note).toContain('aria-hidden="true"')
+    expect(note).toContain('5 star Google review')
+    expect(note).not.toContain('Audra')
     expect(note).not.toContain('Kim Anderson')
     expect(note).toContain('data-rr-track="cma-reviews"')
     expect(note).toContain('/reviews')
@@ -313,6 +325,7 @@ describe('letter craft Matt ADD 2026-09-12', () => {
     expect(html).toContain('List $/sqft')
     expect(html).toContain('Sold $/sqft')
     expect(html).toContain('Seller concessions')
+    expect(html).toContain('Sold after concessions')
     expect(html).toContain('Lot size')
   })
 
@@ -378,12 +391,17 @@ describe('letter craft Matt ADD 2026-09-12', () => {
       expect(doc).toContain('data-status-price="board"')
       expect(doc).not.toContain('data-ppsf-status="board"')
       expect(doc).not.toContain('Dollars a square foot')
-      expect(doc).toMatch(/scope="col">List<\/th><th class="n" scope="col">Sold<\/th><th class="n" scope="col">\$\/sqft<\/th>/)
+      expect(doc).toMatch(
+        /scope="col">List<\/th><th class="n" scope="col">Sold<\/th><th class="n" scope="col">Concessions<\/th><th class="n" scope="col">\$\/sqft<\/th>/,
+      )
       expect(doc).toContain('<tbody data-status="closed">')
       expect(doc).toContain('<tbody data-status="active">')
       expect(doc).toContain('<tbody data-status="expired">')
-      // 500000/1580 sold on the five closed sales = $316 a foot.
-      expect(doc).toMatch(/<tbody data-status="closed">[\s\S]*?<th scope="row">Median<\/th><td class="n">\$510,000<\/td><td class="n">\$500,000<\/td><td class="n">\$316<\/td>/)
+      // These closes report none, so the net equals the sold price.
+      // 500000/1580 on the five closed sales = $316 a foot.
+      expect(doc).toMatch(
+        /<tbody data-status="closed">[\s\S]*?<th scope="row">Median<\/th><td class="n">\$510,000<\/td><td class="n">\$500,000<\/td><td class="n">\$0<\/td><td class="n">\$316<\/td>/,
+      )
       // Active 520000/1600 = 325; expired 540000/1500 = 360.
       expect(doc).toMatch(/<tbody data-status="active">[\s\S]*?<td class="n">\$325<\/td>/)
       expect(doc).toMatch(/<tbody data-status="expired">[\s\S]*?<td class="n">\$360<\/td>/)

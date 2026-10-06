@@ -79,14 +79,19 @@ describe('renderImmersiveCmaHtml', () => {
     expect(html).not.toContain('$609,000.')
   })
 
-  it('the failed-listing scene renders with the backtest constants', () => {
+  it('the failed-listing scene does not print the regional relist tiles', () => {
     const html = renderImmersiveCmaHtml(
       args({ expiredAudit: { findings: [{ lens: 'pricing', fact: 'Asked above every sale.', meaning: 'The ask was the ceiling.' }], services: [], netSheet: { lines: [], netLow: 0, netHigh: 0 }, feeLine: '' } as never }),
       'https://ryan-realty.com',
     )
     expect(html).toContain('and did not sell.')
-    expect(html).toContain('3,394')
-    expect(html).toContain('94.2%')
+    const start = html.indexOf('id="what-happened"')
+    expect(start).toBeGreaterThan(-1)
+    const end = html.indexOf('<section', start + 1)
+    const scene = html.slice(start, end > 0 ? end : undefined)
+    expect(scene).not.toContain('3,394')
+    expect(scene).not.toContain('94.2%')
+    expect(scene).not.toContain('12.3%')
   })
 
   it('gives the subdivision no scene of its own', () => {

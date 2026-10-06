@@ -26,9 +26,9 @@ export type MapGroundLabel = {
   text: string
   lat: number
   lng: number
-  /** town: a city or CDP; place: a resort or planned community. */
-  kind: 'town' | 'place'
-  /** Higher wins a collision. Cities by size, then communities. */
+  /** town: a city or CDP; place: a resort; subdivision: a plat; parent: the neighborhood or community. */
+  kind: 'town' | 'place' | 'subdivision' | 'parent'
+  /** Higher wins a collision. Cities by size, then the parent, then plats. */
   rank: number
 }
 
@@ -38,8 +38,8 @@ export type MapGroundInput = {
   /** The subdivision outlines the subject and the comps sit in. */
   boundaryRings: readonly MapLatLng[][]
   /**
-   * The neighborhood or community around those plats, drawn only when a pin
-   * has no subdivision polygon. No name is printed on it.
+   * The neighborhood or community around the plats. Its name is a label of
+   * kind parent, one place name, not a sentence.
    */
   parentRings?: readonly MapLatLng[][]
   /** The search ring, when the area is a radius. */
@@ -154,8 +154,8 @@ export function renderMapGroundSvg(input: MapGroundInput): MapGroundResult {
     }
   }
 
-  // Parent first, so the subdivision lines sit on top of it. Dashed, and
-  // unnamed: the chapter title is the label.
+  // Parent first, so the subdivision lines sit on top of it. Dashed. The
+  // parent name is a label, not a sentence in the chapter title.
   for (const ring of input.parentRings ?? []) {
     const d = pathD(ring.map(project), true)
     if (d) {
@@ -194,12 +194,13 @@ export function renderMapGroundSvg(input: MapGroundInput): MapGroundResult {
     Math.abs(a.x - b.x) < a.hw + b.hw + gap && Math.abs(a.y - b.y) < a.hh + b.hh + gap
   const taken: Box[] = input.pins.map((p) => ({ ...project(p), hw: 15, hh: 15 }))
   const labelsDrawn: string[] = []
-  const placed: Array<{ text: string; kind: 'town' | 'place'; x: number; y: number }> = []
+  const placed: Array<{ text: string; kind: MapGroundLabel['kind']; x: number; y: number }> = []
   const ordered = [...input.labels].sort((a, b) => b.rank - a.rank || a.text.localeCompare(b.text))
   for (const l of ordered) {
     const at = project({ lat: l.lat, lng: l.lng })
     if (at.x < -40 || at.x > W + 40 || at.y < -20 || at.y > H + 20) continue
-    const box = atlasLabelBox(l.text, l.kind)
+    const boxKind = l.kind === 'parent' || l.kind === 'town' ? 'town' : 'place'
+    const box = atlasLabelBox(l.text, boxKind)
     // Eight directions at two distances, nearest first. A city (rank ≥ 100)
     // is the answer to "where all of this is" and is never dropped: when every
     // spot collides it takes the one that collides least.
@@ -222,16 +223,19 @@ export function renderMapGroundSvg(input: MapGroundInput): MapGroundResult {
       }
       if (!leastBad || hits < leastBad.hits) leastBad = { box: c, hits }
     }
-    if (!chosen && l.kind === 'town' && l.rank >= 100 && leastBad) chosen = leastBad.box
+    const keepOnCollision =
+      (l.kind === 'town' && l.rank >= 100) || l.kind === 'subdivision' || l.kind === 'parent'
+    if (!chosen && keepOnCollision && leastBad) chosen = leastBad.box
     if (!chosen) continue
     taken.push(chosen)
     placed.push({ text: l.text, kind: l.kind, x: chosen.x, y: chosen.y })
     labelsDrawn.push(l.text)
   }
   for (const p of placed) {
-    const size = p.kind === 'town' ? 12 : 11
+    const prominent = p.kind === 'town' || p.kind === 'parent'
+    const size = prominent ? 12 : 11
     parts.push(
-      `<text x="${fmt(p.x)}" y="${fmt(p.y)}" font-family="${FONT}" font-size="${size}" font-weight="${p.kind === 'town' ? 600 : 500}" fill="${NAVY}" fill-opacity="${p.kind === 'town' ? 0.85 : 0.7}" text-anchor="middle" dominant-baseline="middle" paint-order="stroke" stroke="${CREAM}" stroke-width="3" stroke-linejoin="round">${esc(p.text)}</text>`,
+      `<text x="${fmt(p.x)}" y="${fmt(p.y)}" font-family="${FONT}" font-size="${size}" font-weight="${prominent ? 600 : 500}" fill="${NAVY}" fill-opacity="${prominent ? 0.85 : 0.7}" text-anchor="middle" dominant-baseline="middle" paint-order="stroke" stroke="${CREAM}" stroke-width="3" stroke-linejoin="round">${esc(p.text)}</text>`,
     )
   }
 

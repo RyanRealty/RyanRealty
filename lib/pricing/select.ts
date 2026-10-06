@@ -6,7 +6,14 @@
 import { isRuralAcreage } from '@/lib/cma/comp-tiers'
 import { marketAreaName, resolveMarketArea } from '@/lib/cma/market-area'
 import type { CmaSubject } from '@/lib/cma/types'
-import { getSubdivisionRing, assignSubdivisionSlugs, assignCommunitySlugs } from '@/lib/data/geo/subdivision-ring'
+import {
+  assignCommunitySlugs,
+  assignSubdivisionSlugs,
+  getSubdivisionRing,
+  nextRowSubdivisionSlugs,
+  readNeighborRings,
+  touchingPlatsForSearch,
+} from '@/lib/data/geo/subdivision-ring'
 import { resolveSaleZones } from '@/lib/pricing/sale-zoning'
 import {
   classifyHoa,
@@ -203,17 +210,27 @@ export async function selectPricingComps(
     marketArea: s.marketArea ?? resolveMarketArea(s.latitude, s.longitude),
     seniorCommunityYn: seniorKeys.has(s.listingKey) ? true : null,
   }))
-  // Every plat that touches the subject's, closest first. The parent wall
-  // inside the walk refuses a touching plat that sits outside a community
-  // such as Tetherow or Caldera Springs. A neighborhood line does not hide
-  // a plat that touches.
+  // Touching plats, closest first. When this home has a neighborhood, a plat
+  // with inNeighborhood false stays out. Null means no polygon was tested and
+  // does not exclude. The next row is only the plats that touch those plats.
+  // A plat that merely sits in the parent is not in that row. The walk still
+  // refuses a plat outside the parent community.
   if (ring) {
+    const hasNeighborhood = Boolean(ring.neighborhoodSlug) || Boolean(pricingSubject.marketArea)
+    const touching = touchingPlatsForSearch(ring.ring, hasNeighborhood)
     pricingSubject.subdivisionSlug = ring.homeSlug
     pricingSubject.platLabel = ring.homeLabel
-    pricingSubject.adjacentSubdivisionSlugs = [...ring.ring]
-      .sort((a, b) => a.pointM - b.pointM || a.rank - b.rank)
-      .map((r) => r.slug)
-    const slugs = await assignSubdivisionSlugs(sales.map((s) => ({ lat: s.latitude, lng: s.longitude })))
+    pricingSubject.adjacentSubdivisionSlugs = touching.map((p) => p.slug)
+    const [neighborRings, slugs] = await Promise.all([
+      readNeighborRings(touching),
+      assignSubdivisionSlugs(sales.map((s) => ({ lat: s.latitude, lng: s.longitude }))),
+    ])
+    pricingSubject.closerSubdivisionSlugs = nextRowSubdivisionSlugs({
+      subjectSlug: ring.homeSlug,
+      firstRingSlugs: touching.map((p) => p.slug),
+      neighborRings,
+      subjectHasNeighborhood: hasNeighborhood,
+    })
     sales.forEach((s, i) => {
       s.subdivisionSlug = slugs[i]
     })

@@ -3,6 +3,7 @@ import { distanceMiles } from '@/lib/cma/market-area'
 import { SUBDIVISION_TIER_RATIO } from '@/lib/pricing/classes'
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
 import { CUSTOM_FACTS_POOL_MONTHS, factsPoolCloseAfter, ORDINARY_FACTS_POOL_MONTHS } from '@/lib/pricing/ladder'
+import { nextRowSubdivisionSlugs, touchingPlatsForSearch } from '@/lib/data/geo/subdivision-ring'
 import { walkPricingLadder, type PricingSale, type PricingSubject } from '@/lib/pricing/match'
 import { crossesNamedRiver } from '@/lib/pricing/river-cross'
 
@@ -250,8 +251,16 @@ describe('walkPricingLadder', () => {
         longitude: -121.3,
       }),
     ]
-    const out = walkPricingLadder(subject(), pool, { asOf, cells })
+    // A recorded plat does not open the rung this sale used to ride. The price
+    // tier is what keeps it, so the subject here has no plat.
+    const out = walkPricingLadder(
+      subject({ subdivision: null, subdivisionNorm: null, subdivisionSlug: null }),
+      pool,
+      { asOf, cells },
+    )
     expect(out.comps.map((c) => c.listingKey)).toContain('UNNAMED_OK')
+    const platted = walkPricingLadder(subject(), pool, { asOf, cells })
+    expect(platted.comps.map((c) => c.listingKey)).not.toContain('UNNAMED_OK')
   })
 
   it('does not look ahead of the as-of date', () => {
@@ -557,21 +566,19 @@ describe('walkPricingLadder', () => {
         subdivision: 'Aubrey',
         subdivisionNorm: 'aubrey',
         address: '2 Aubrey',
-        // Outside the 0.25 mi street cluster, inside the 1-mile ring — three
-        // plat sales are not a reason to stop before that ring.
-        latitude: 44.06 + 0.5 / 69,
+        // Another plat, past a mile. A recorded subdivision does not open a
+        // distance ring to take it, and the size bracket does not reach it.
+        latitude: 44.06 + 1.6 / 69,
         longitude: -121.3,
         marketArea: 'bend-old-bend',
         closeDate: '2026-07-15',
       }),
     ]
     const out = walkPricingLadder(subject({ sqft: 2500, marketArea: 'bend-old-bend' }), pool, { asOf })
-    expect(out.comps.map((c) => c.listingKey)).toContain('NEAR')
-    // 1927 against 2500 is inside the 25% plat band now, so these arrive on the
-    // plain rung rather than the -wide one. The point stands: three plat sales
-    // at the edge of the band are not a reason to stop before the ring.
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('NEAR')
+    expect(out.comps.map((c) => c.listingKey)).toEqual(expect.arrayContaining(['W1', 'W2', 'W3']))
     expect(out.tiersUsed.some((t) => t.startsWith('subdivision-'))).toBe(true)
-    expect(out.tiersUsed.some((t) => t.startsWith('nearby-'))).toBe(true)
+    expect(out.tiersUsed.some((t) => t.startsWith('nearby-') || t.startsWith('pocket-'))).toBe(false)
   })
 
   it('does not let a sale with no coordinates pass a mile ring', () => {
@@ -689,10 +696,9 @@ describe('walkPricingLadder', () => {
     expect(caldera.comps.map((c) => c.listingKey)).toEqual(['CALD'])
   })
 
-  it('takes a sale inside the community when the MLS plat name differs, and not one that only mentions it', () => {
-    // Membership is the boundary, for every community. Not the subdivision
-    // string and not a remark. The community rung is the one that may take
-    // the inside sale; a mile ring is not allowed to go first.
+  it('does not take another plat in the community just because the boundary contains it', () => {
+    // A recorded plat stays in its own rows. A sale in the same community,
+    // or a remarks mention, is not the next row unless that plat touches.
     const inside = (listingKey: string, subdivision: string, over: Partial<PricingSale> = {}) =>
       sale({
         listingKey,
@@ -745,14 +751,10 @@ describe('walkPricingLadder', () => {
       { asOf },
     )
     const keys = out.comps.map((c) => c.listingKey)
-    expect(keys).toContain('BY_BOUNDARY')
-    expect(keys).toContain('BY_PLAT')
+    expect(keys).not.toContain('BY_BOUNDARY')
+    expect(keys).not.toContain('BY_PLAT')
     expect(keys).not.toContain('REMARKS_ONLY')
-    // A recorded member plat is the closer subdivision. The other sales inside
-    // the boundary stay on the community rung. A mile ring does not go first.
-    expect(out.comps.find((c) => c.listingKey === 'BY_PLAT')?.selectionTier.startsWith('closer-sub-')).toBe(true)
-    expect(out.comps.filter((c) => c.listingKey !== 'BY_PLAT').every((c) => c.selectionTier.startsWith('community-'))).toBe(true)
-    expect(out.rungs.some((r) => r.added > 0 && /\dmi/.test(r.tier))).toBe(false)
+    expect(out.rungs.some((r) => r.added > 0 && (r.tier.startsWith('community-') || /\dmi/.test(r.tier)))).toBe(false)
   })
 
   it('does not keep a dry acreage sale for an irrigated subject', () => {
@@ -1009,11 +1011,12 @@ describe('walkPricingLadder', () => {
     expect(keys).not.toContain('FAREWELL_2000')
     expect(keys).not.toContain('OKANE_1996')
     expect(keys).not.toContain('INTOWN_CUSTOM')
-    expect(keys).toContain('PERSPECTIVE')
-    expect(keys).toContain('GREENLEAF')
-    expect(keys).toContain('NORTH_RIM_2021')
-    // Live admin floor is MIN_COMPS=3. Ladder "starved" means under TARGET 8.
-    expect(out.comps.length).toBeGreaterThanOrEqual(3)
+    // Lakes At Tanager is a recorded plat. Bend North Rim is another plat, so
+    // a distance ring does not take it.
+    expect(keys).not.toContain('PERSPECTIVE')
+    expect(keys).not.toContain('GREENLEAF')
+    expect(keys).not.toContain('NORTH_RIM_2021')
+    expect(out.tiersUsed.some((t) => t.startsWith('nearby-'))).toBe(false)
   })
 
   it('keeps Perspective when live yearBuilt is null and NewConstructionYN is null (to-be-built remarks)', () => {
@@ -1117,10 +1120,10 @@ describe('walkPricingLadder', () => {
     )
     const keys = out.comps.map((c) => c.listingKey)
     expect(keys).not.toContain('SUMMIT')
-    expect(keys).toContain('PERSPECTIVE')
-    expect(keys).toContain('GREENLEAF')
-    expect(keys).toContain('NORTH_RIM_2021')
-    expect(out.comps.length).toBeGreaterThanOrEqual(3)
+    expect(keys).not.toContain('PERSPECTIVE')
+    expect(keys).not.toContain('GREENLEAF')
+    expect(keys).not.toContain('NORTH_RIM_2021')
+    expect(out.tiersUsed.some((t) => t.startsWith('nearby-'))).toBe(false)
   })
 
   it('takes a farther same-generation custom peer before nearby 2000 stock', () => {
@@ -1166,7 +1169,8 @@ describe('walkPricingLadder', () => {
       [nearbyOlder, farCustom],
       { asOf },
     )
-    expect(out.comps.map((c) => c.listingKey)).toEqual(['FAR_CUSTOM'])
+    expect(out.comps.map((c) => c.listingKey)).toEqual([])
+    expect(out.tiersUsed.some((t) => t.startsWith('nearby-'))).toBe(false)
   })
 
   it('does not let a rural unmapped point fail open against a known Parkway bank', () => {
@@ -1227,8 +1231,10 @@ describe('containment — the plats next to the subject, then the boundary (Matt
     const out = walkPricingLadder(subj, pool, { asOf })
     const tiers = out.comps.map((c) => [c.subdivisionNorm, c.selectionTier])
     expect(tiers).toContainEqual(['roanoke', 'adjacent-sub-3mo'])
-    // The next plat inside the same neighborhood enters after the touching one, not on a mile ring.
-    expect(tiers.find((t) => t[0] === 'aubrey heights')?.[1]).toMatch(/^closer-sub-/)
+    // Sitting in the same neighborhood is not the next row. Aubrey Heights
+    // does not touch, and no neighbor ring names it.
+    expect(tiers.find((t) => t[0] === 'aubrey heights')).toBeUndefined()
+    expect(out.rungs.some((r) => r.added > 0 && r.tier.startsWith('closer-sub-'))).toBe(false)
   })
 
   it('the adjacent rung skips when no ring is known, and the walk says why', () => {
@@ -1249,7 +1255,7 @@ describe('containment — the plats next to the subject, then the boundary (Matt
     const strangers = Array.from({ length: 4 }, (_, i) =>
       sale({ ...outside, subdivision: 'Awbrey Woods', subdivisionNorm: 'awbrey woods', subdivisionSlug: 'awbrey-woods', listingKey: `OUT${i}`, closeDate: '2026-06-01' }),
     )
-    const subj = subject(RIVER_WEST)
+    const subj = subject({ ...RIVER_WEST, subdivision: null, subdivisionNorm: null, subdivisionSlug: null })
     const held = walkPricingLadder(subj, [...inside(5), ...strangers], { asOf })
     expect(held.comps.every((c) => c.listingKey.startsWith('IN'))).toBe(true)
     expect(held.comps).toHaveLength(5)
@@ -1407,7 +1413,8 @@ describe('parent wall and the subdivision crawl (Matt 2026-10-04)', () => {
     const adjAt = added.indexOf('adjacent-sub-3mo')
     const oldAt = added.findIndex((t) => t === 'subdivision-18mo' || t === 'subdivision-24mo')
     expect(adjAt).toBeGreaterThanOrEqual(0)
-    if (oldAt >= 0) expect(oldAt).toBeGreaterThan(adjAt)
+    expect(oldAt).toBeGreaterThanOrEqual(0)
+    expect(oldAt).toBeLessThan(adjAt)
   })
 
   it('never takes a sale outside Tetherow, including a plat that touches the boundary', () => {
@@ -1818,7 +1825,7 @@ describe('named subdivision pocket-first (Matt 2026-09-15 Canter / SaddleStone)'
       subdivision: 'SaddleStone',
       subdivisionNorm: 'saddlestone',
       yearBuilt: 2006,
-      sqft: 2050,
+      sqft: 2020,
       beds: 3,
       baths: 2,
       lotAcres: 0.22,
@@ -1829,16 +1836,17 @@ describe('named subdivision pocket-first (Matt 2026-09-15 Canter / SaddleStone)'
     const decoys = [upmarket('Clearpine', 2.2, 890_000), upmarket('Forest Edge', 2.5, 860_000)]
     const out = walkPricingLadder(canterSubject(), [...decoys, ...gold], { asOf })
     const numbers = out.comps.map((c) => c.listNumber)
-    expect(out.comps).toHaveLength(5)
-    expect(numbers.every((n) => FLEX_GOLD.some((g) => g.mls === n))).toBe(true)
+    expect(out.comps).toHaveLength(3)
+    expect(out.comps.every((c) => c.subdivision === 'SaddleStone')).toBe(true)
+    expect(numbers.every((n) => FLEX_GOLD.some((g) => g.mls === n && g.name === 'SaddleStone'))).toBe(true)
     expect(out.comps.map((c) => c.listingKey)).not.toContain('UP-Clearpine')
     expect(out.comps.map((c) => c.listingKey)).not.toContain('UP-ForestEdge')
-    expect(out.comps.every((c) => !/clearpine|forest edge/i.test(c.subdivision ?? ''))).toBe(true)
-    expect(out.tiersUsed.some((t) => t.startsWith('nearby-') || t.startsWith('similar-sub') || t.startsWith('city-'))).toBe(
+    expect(out.comps.every((c) => !/clearpine|forest edge|horse back|^ranch$/i.test(c.subdivision ?? ''))).toBe(true)
+    expect(out.tiersUsed.some((t) => t.startsWith('nearby-') || t.startsWith('pocket-') || t.startsWith('similar-sub') || t.startsWith('city-'))).toBe(
       false,
     )
-    expect(out.pocketStarved).toBe(false)
-    expect(out.exclusiveCount).toBeGreaterThanOrEqual(5)
+    expect(out.pocketStarved).toBe(true)
+    expect(out.exclusiveCount).toBe(3)
     const closes = out.comps.map((c) => c.closePrice).sort((a, b) => a - b)
     const mid = closes[Math.floor(closes.length / 2)]!
     expect(mid).toBeGreaterThanOrEqual(649_000)
@@ -1855,10 +1863,11 @@ describe('named subdivision pocket-first (Matt 2026-09-15 Canter / SaddleStone)'
       publicRemarks: 'Custom built modern home.',
     })
     const out = walkPricingLadder(customCanter, [...decoys, ...gold], { asOf })
-    expect(out.pocketStarved).toBe(false)
+    expect(out.pocketStarved).toBe(true)
     expect(out.comps.map((c) => c.listingKey)).not.toContain('UP-Clearpine')
     expect(out.comps.map((c) => c.listingKey)).not.toContain('UP-ForestEdge')
-    expect(out.comps.some((c) => c.listNumber && FLEX_GOLD.some((g) => g.mls === c.listNumber))).toBe(true)
+    expect(out.comps.some((c) => c.subdivision === 'SaddleStone')).toBe(true)
+    expect(out.tiersUsed.some((t) => t.startsWith('nearby-') || t.startsWith('pocket-'))).toBe(false)
   })
 })
 
@@ -1908,7 +1917,8 @@ describe('year/quality outranks radius only when the pocket is starved', () => {
     )
     expect(out.pocketStarved).toBe(true)
     expect(out.exclusiveCount).toBe(0)
-    expect(out.comps.map((c) => c.listingKey)).toEqual(['FAR_CUSTOM'])
+    expect(out.comps.map((c) => c.listingKey)).toEqual([])
+    expect(out.tiersUsed.some((t) => t.startsWith('nearby-'))).toBe(false)
   })
 })
 
@@ -1958,7 +1968,7 @@ describe('a full plat is not replaced by a cheaper quarter-mile pocket', () => {
     expect(pocketRung?.skippedReason).toMatch(/own plat already has/)
   })
 
-  it('still uses the quarter-mile pocket when the plat has fewer than five sales', () => {
+  it('does not open the quarter-mile pocket for a named plat that has fewer than five sales', () => {
     const plat = [770_000, 790_000].map((closePrice, i) =>
       sale({
         listingKey: `PLAT${i}`,
@@ -1992,8 +2002,11 @@ describe('a full plat is not replaced by a cheaper quarter-mile pocket', () => {
       { asOf },
     )
     const keys = out.comps.map((c) => c.listingKey)
-    expect(keys.some((k) => k.startsWith('POCKET'))).toBe(true)
+    expect(keys.some((k) => k.startsWith('POCKET'))).toBe(false)
     expect(keys.some((k) => k.startsWith('PLAT'))).toBe(true)
+    const pocketRung = out.rungs.find((r) => r.tier === 'pocket-3mo')
+    expect(pocketRung?.ran).toBe(false)
+    expect(pocketRung?.skippedReason).toMatch(/recorded subdivision/)
   })
 })
 
@@ -2075,7 +2088,7 @@ describe('a comp from the wrong house', () => {
     expect(out.tiersUsed).not.toContain('gla-bracket')
   })
 
-  it('does not let a quarter-mile pocket rung add a close whose price is far from the plat set', () => {
+  it('does not let another plat fill a named subdivision when the pocket used to', () => {
     // Both pocket plats have a median $/sqft inside the subject's tier, which
     // is the check the ladder already runs. The sale's own close is not. Vine
     // Maple at $1,510,000 is about 32% over the Fairway Crest closes. 3331
@@ -2134,9 +2147,10 @@ describe('a comp from the wrong house', () => {
       [near, vine, ...crest].map((row) => ({ ...row, city: 'Sunriver', citySlug: 'sunriver' })),
       { asOf, cells: highCells },
     )
-    expect(high.comps.map((c) => c.listingKey)).toContain('POCKET-NEAR')
+    expect(high.comps.map((c) => c.listingKey)).toEqual(expect.arrayContaining(['CREST0', 'CREST1']))
+    expect(high.comps.map((c) => c.listingKey)).not.toContain('POCKET-NEAR')
     expect(high.comps.map((c) => c.listingKey)).not.toContain('VINE-MAPLE')
-    expect(high.comps.find((c) => c.listingKey === 'POCKET-NEAR')?.selectionTier.startsWith('pocket-')).toBe(true)
+    expect(high.tiersUsed.some((t) => t.startsWith('pocket-'))).toBe(false)
 
     const glen = [497_000, 740_000, 780_000].map((closePrice, i) => {
       const sqft = i === 0 ? 1668 : 2200
@@ -2191,10 +2205,10 @@ describe('a comp from the wrong house', () => {
       [juniper, willowNear, ...glen].map((row) => ({ ...row, city: 'Redmond', citySlug: 'redmond' })),
       { asOf, cells: lowCells },
     )
-    expect(low.comps.map((c) => c.listingKey)).toContain('WILLOW-NEAR')
+    expect(low.comps.map((c) => c.listingKey)).not.toContain('WILLOW-NEAR')
     expect(low.comps.map((c) => c.listingKey)).toContain('GLEN0')
     expect(low.comps.map((c) => c.listingKey)).not.toContain('JUNIPER-3331')
-    expect(low.comps.find((c) => c.listingKey === 'WILLOW-NEAR')?.selectionTier.startsWith('pocket-')).toBe(true)
+    expect(low.tiersUsed.some((t) => t.startsWith('pocket-'))).toBe(false)
   })
 
   it('Vine Maple post-swap: does not let the GLA bracket replace a kept own-plat sale with a different plat about 32% over', () => {
@@ -2349,13 +2363,11 @@ describe('a comp from the wrong house', () => {
     expect(keys).not.toContain('FIELDSTONE-388')
   })
 
-  it('drops a cheap different-plat pocket sale when no own-plat sale is kept', () => {
-    // 3028 Indian. 2834 Indian is outside the wide plat size band, so it never
-    // anchors an own-plat median, and this check must not pull it back in.
-    // 3331 Juniper at $475,000 is the quarter-mile pocket sale. 1216 SW 32nd,
-    // Hayden View, at $550,000 is in the pool. Juniper is inside 30% of that
-    // close, so the own-plat 1.3 band is not what removes it. It still has to
-    // sit with the comps that were kept, and it loses to Hayden.
+  it('does not open a quarter-mile pocket for a recorded plat when no own-plat sale is kept', () => {
+    // 3028 Indian sits in Copper Ridge. 2834 Indian is outside the wide plat
+    // size band. 3331 Juniper and 1216 SW 32nd (Hayden View) sit inside a
+    // quarter mile in other plats. A recorded plat does not take them. The
+    // build stays short. The 1.3 band is unchanged and is not what removes them.
     const subjectSqft = 2526
     const tooSmall = sale({
       listingKey: 'INDIAN-2834',
@@ -2425,9 +2437,14 @@ describe('a comp from the wrong house', () => {
       { asOf, cells },
     )
     const keys = out.comps.map((c) => c.listingKey)
-    expect(keys).toContain('HAYDEN-1216')
+    expect(keys).not.toContain('HAYDEN-1216')
     expect(keys).not.toContain('JUNIPER-3331')
     expect(keys).not.toContain('INDIAN-2834')
+    expect(out.tiersUsed.some((t) => t.startsWith('pocket-') || t.startsWith('nearby-'))).toBe(false)
+    expect(out.rungs.some((r) => r.tier.startsWith('pocket-') && r.ran)).toBe(false)
+    const pocketSkip = out.rungs.find((r) => r.tier === 'pocket-3mo')
+    expect(pocketSkip?.ran).toBe(false)
+    expect(pocketSkip?.skippedReason).toMatch(/recorded subdivision/)
   })
 })
 
@@ -2632,5 +2649,76 @@ describe('Petrosa-shaped resale still prices with brand-new homes in the subdivi
     expect(keys).not.toContain('tellus-2026')
     expect(keys).not.toContain('oakside-2023')
     expect(keys).toContain('tellus-2022')
+  })
+})
+
+describe('next row is touching plats, not every plat in the parent (Matt 2026-10-06)', () => {
+  it('leaves out a plat that merely sits in the parent', () => {
+    const next = nextRowSubdivisionSlugs({
+      subjectSlug: 'copperstone-phase-one',
+      firstRingSlugs: ['copperstone-phases-2-and-3'],
+      subjectHasNeighborhood: true,
+      neighborRings: [
+        {
+          homeSlug: 'copperstone-phases-2-and-3',
+          plats: [
+            { slug: 'shevlin-court', gapM: 0, pointM: 400, inNeighborhood: true },
+            { slug: 'copperstone-phase-one', gapM: 0, pointM: 80, inNeighborhood: true },
+          ],
+        },
+      ],
+    })
+    expect(next).toEqual(['shevlin-court'])
+    expect(next).not.toContain('awbrey-glen-homesites')
+  })
+
+  it('drops a touching plat whose neighborhood flag is false when the subject has a neighborhood', () => {
+    const ring = [
+      { slug: 'inside-touch', label: 'Inside Touch', gapM: 0, pointM: 120, inNeighborhood: true, rank: 1 },
+      { slug: 'outside-touch', label: 'Outside Touch', gapM: 0, pointM: 40, inNeighborhood: false, rank: 0 },
+      { slug: 'untested', label: 'Untested', gapM: 0, pointM: 200, inNeighborhood: null, rank: 2 },
+    ]
+    expect(touchingPlatsForSearch(ring, true).map((p) => p.slug)).toEqual(['inside-touch', 'untested'])
+    expect(touchingPlatsForSearch(ring, false).map((p) => p.slug)).toEqual(['outside-touch', 'inside-touch', 'untested'])
+  })
+
+  it('walks a quarter mile before a mile when the subject has no plat', () => {
+    const asOf = '2026-10-06'
+    const here = { latitude: 44.06, longitude: -121.3, marketArea: null as string | null }
+    const close = sale({
+      ...here,
+      listingKey: 'QUARTER',
+      address: '10 Near Lane',
+      subdivision: null,
+      subdivisionNorm: null,
+      latitude: here.latitude + 0.15 / 69,
+      closeDate: '2026-09-01',
+    })
+    const mile = sale({
+      ...here,
+      listingKey: 'MILE',
+      address: '80 Far Lane',
+      subdivision: null,
+      subdivisionNorm: null,
+      latitude: here.latitude + 0.9 / 69,
+      closeDate: '2026-09-01',
+    })
+    const out = walkPricingLadder(
+      subject({
+        ...here,
+        streetAddress: '1 Open Ground',
+        subdivision: null,
+        subdivisionNorm: null,
+        subdivisionSlug: null,
+      }),
+      [mile, close],
+      { asOf },
+    )
+    const quarterAt = out.rungs.findIndex((r) => r.tier === 'nearby-0.25mi-3mo' && r.added > 0)
+    const mileAt = out.rungs.findIndex((r) => r.tier === 'nearby-1mi-3mo' && r.added > 0)
+    expect(out.comps.find((c) => c.listingKey === 'QUARTER')?.selectionTier).toBe('nearby-0.25mi-3mo')
+    expect(quarterAt).toBeGreaterThanOrEqual(0)
+    expect(mileAt).toBeGreaterThan(quarterAt)
+    expect(out.comps.find((c) => c.listingKey === 'MILE')?.selectionTier.startsWith('nearby-0.25')).toBe(false)
   })
 })

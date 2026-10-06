@@ -102,8 +102,10 @@ import { buildCmaMapDataUri } from '@/lib/cma/map'
 import { renderCmaHtml } from '@/lib/cma/render'
 import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
 import { buildSubjectStatus } from '@/lib/pricing/subject-status'
-import { compAreaContains, type CompArea } from '@/lib/pricing/comp-area'
+import { compAreaContains, parentPlaceArea, type CompArea } from '@/lib/pricing/comp-area'
 import { buildExpiredPeerSet, keptCompMedianPpsf } from '@/lib/cma/market-status'
+import type { PlacePricingStory } from '@/lib/cma/place-pricing-types'
+import { readPlacePricingStory } from '@/lib/data/cma/placePricingRead'
 import { loadListingWindowMarket } from '@/lib/cma/listing-window-load'
 import { pocketClosedSupportPrice } from '@/lib/pricing/active-dom-nudge'
 import { finishRecommendedAfterActives } from '@/lib/cma/finish-recommended'
@@ -1287,7 +1289,11 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
 
     // 5. Map (best effort — the report ships without it if the key is absent).
     // C9: build the comps map only. Subject-only map is not stamped into the letter.
-    const map = await buildCmaMapDataUri(subject, adjusted, { tiersUsed: selection.tiersUsed })
+    const parentPlace = parentPlaceArea({ latitude: subject.latitude, longitude: subject.longitude })
+    const map = await buildCmaMapDataUri(subject, adjusted, {
+      tiersUsed: selection.tiersUsed,
+      parentName: parentPlace?.names[0] ?? null,
+    })
 
     // 5.5. Punctuation sanitization over every composed PROSE string in the
     // report: the pricing rationale/narrative notes, and (for the
@@ -1417,8 +1423,25 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           maxWindowMonths: compsLookbackMonths,
           closedSaleAddresses: renderComps.map((c) => c.address),
           subjectCameOff: lastCycleFailed,
+          liveAddresses: (bandRivals?.rivals ?? [])
+            .filter((rival) => rival.status === 'Active' || rival.status === 'Pending')
+            .map((rival) => rival.address),
         })
       : null
+
+    let placePricing: PlacePricingStory | null = null
+    try {
+      placePricing = await readPlacePricingStory({
+        compArea,
+        latitude: subject.latitude,
+        longitude: subject.longitude,
+        propertySubType: subject.propertySubType,
+        asOf: generatedAtIso.slice(0, 10),
+      })
+    } catch (err) {
+      console.error('[buildCma] placePricing', err)
+      placePricing = null
+    }
 
     const listingMarket = await loadListingWindowMarket({
       city: subject.city,
@@ -1462,6 +1485,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       compSearch,
       compArea,
       expiredPeers,
+      placePricing,
       bandRivals,
       market,
       pricing,

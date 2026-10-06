@@ -3,6 +3,7 @@
  * walk the 3/6/9 → distance → similar-subdivision ladder. No I/O.
  */
 
+import { realSubdivision } from '@/lib/cma/comp-tiers'
 import { resortCommunityCompatible } from '@/lib/cma/resort-guard'
 import { communityForAddress, memberPlatMap, saleInsideSubjectCommunity } from '@/lib/cma/community-location'
 import { isResortCommunity } from '@/lib/cma/resort-guard'
@@ -99,9 +100,10 @@ export type PricingSubject = {
    */
   adjacentSubdivisionSlugs?: string[]
   /**
-   * Other plats inside the parent, nearest first. Not the subject's plat and
-   * not the touching ring. Undefined lets the walk derive this from the pool.
-   * An empty list means the crawl has nowhere to go.
+   * The next row: plats that touch the touching plats, not the subject and not
+   * already in the touching row. Undefined means that adjacency was not read.
+   * The walk does not fill it from every other plat in the parent. An empty
+   * list means the next row has nowhere to go.
    */
   closerSubdivisionSlugs?: string[]
   newConstruction?: boolean | null
@@ -530,6 +532,18 @@ function passesTier(
     const saleStreet = streetKey(sale.address)
     const streetHit = Boolean(saleStreet && (subject.pocketStreetKeys ?? []).includes(saleStreet))
     if (!nameHit && !streetHit) return { ok: false, miles: null }
+  }
+  // A street-cluster match is this home's own ground only inside its neighborhood.
+  // A shared street name in another mapped neighborhood does not cross that line.
+  // A null market area (no polygon) does not exclude.
+  if (
+    isClusterPocket(subject) &&
+    (tier.sameSubdivision || tier.samePocket || tier.sameStreetOnly) &&
+    subject.marketArea &&
+    sale.marketArea &&
+    subject.marketArea !== sale.marketArea
+  ) {
+    return { ok: false, miles: null }
   }
   const sqftLo = subject.sqft * (1 - tier.sqftBand)
   const sqftHi = subject.sqft * (1 + tier.sqftBand)
@@ -1017,39 +1031,22 @@ function parentConfines(subject: PricingSubject): boolean {
   return Boolean(subject.marketArea) || Boolean(communityForAddress(subject))
 }
 
-function saleInsideParent(subject: PricingSubject, sale: PricingSale): boolean {
-  const subjectCommunity = communityForAddress(subject)
-  if (subjectCommunity) {
-    return communityForAddress(sale, memberPlatMap(subjectCommunity, subject.communityMemberPlats)) === subjectCommunity
-  }
-  if (subject.marketArea) {
-    const saleArea = sale.marketArea ?? resolveMarketArea(sale.latitude, sale.longitude)
-    return saleArea === subject.marketArea
-  }
-  return true
+/**
+ * A recorded subdivision is a county plat slug, or a real MLS plat name.
+ * N/A, blank, and the other sentinels in realSubdivision are none. An inferred
+ * pocket name does not count: the check uses the subject before that fill.
+ */
+export function subjectHasRecordedSubdivision(subject: {
+  subdivisionSlug?: string | null
+  subdivision?: string | null
+}): boolean {
+  if ((subject.subdivisionSlug ?? '').trim()) return true
+  return realSubdivision(subject.subdivision) != null
 }
 
-/**
- * Other plats inside the parent, nearest to the subject first. The touching
- * ring is the adjacent step and is not repeated here.
- */
-function deriveCloserSubdivisionSlugs(subject: PricingSubject, pool: readonly PricingSale[]): string[] {
-  const own = subject.subdivisionSlug ?? null
-  const adjacent = new Set(subject.adjacentSubdivisionSlugs ?? [])
-  const best = new Map<string, number>()
-  for (const sale of pool) {
-    const slug = sale.subdivisionSlug
-    if (!slug || slug === own || adjacent.has(slug)) continue
-    if (!saleInsideParent(subject, sale)) continue
-    const miles =
-      distanceMiles(
-        { lat: subject.latitude, lng: subject.longitude },
-        { lat: sale.latitude, lng: sale.longitude },
-      ) ?? 99
-    const prev = best.get(slug)
-    if (prev == null || miles < prev) best.set(slug, miles)
-  }
-  return [...best.entries()].sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0])).map(([slug]) => slug)
+/** Street, own plat, touching plats, and the next touching row. Nothing past that. */
+function tierOutsideRecordedPlatRows(tier: PricingTier): boolean {
+  return !(tier.sameStreetOnly || tier.sameSubdivision || tier.adjacentSubdivision || tier.closerSubdivision)
 }
 
 export function walkPricingLadder(
@@ -1063,13 +1060,17 @@ export function walkPricingLadder(
     pendingPool?: PricingSale[]
   },
 ): PricingMatchResult {
+  const recordedPlat = subjectHasRecordedSubdivision(rawSubject)
   const inferred = inferPocketForPricingWalk(rawSubject, pool)
   const subject = applyInferredPocket({ ...rawSubject }, inferred)
   // Whether this home's own plat is a 55+ community, read off the plat's own
   // sales in the pool, once, before any rung grades a sale against it.
   subject.ownPlatAgeRestrictedShare = ownPlatAgeRestrictedShare(pool.filter((s) => inSubjectPlat(subject, s)))
+  // Next-row slugs come from the touching-plat read in selectPricingComps.
+  // Distance from a sale is not adjacency. When that read did not run, the
+  // next row stays empty rather than every other plat in the parent.
   if (subject.closerSubdivisionSlugs == null) {
-    subject.closerSubdivisionSlugs = deriveCloserSubdivisionSlugs(subject, pool)
+    subject.closerSubdivisionSlugs = []
   }
   const asOf = opts.asOf.slice(0, 10)
   const cells = opts.cells ?? new Map()
@@ -1102,7 +1103,7 @@ export function walkPricingLadder(
     trace.push(
       `MLS SubdivisionName was blank, so the search inferred ${subject.inferredPocket.subdivision} (${subject.inferredPocket.source}) before any mile ring.`,
     )
-  } else if ((subject.pocketSubdivisionNorms?.length ?? 0) > 0 && subject.subdivision) {
+  } else if (!recordedPlat && (subject.pocketSubdivisionNorms?.length ?? 0) > 0 && subject.subdivision) {
     trace.push(
       `${subject.subdivision} is a named tract, so the search also held the ${subject.pocketSubdivisionNorms!.length} mapped pocket${subject.pocketSubdivisionNorms!.length === 1 ? '' : 's'} inside a quarter mile before any mile ring.`,
     )
@@ -1220,10 +1221,12 @@ export function walkPricingLadder(
               clusterPocket: true,
             })
           ? `the street-cluster pocket already supplied a tight closed+pending set (${exclusiveCount} closed, ${exclusivePending} pending), so the search stayed exclusive`
+        : recordedPlat && tierOutsideRecordedPlatRows(tier)
+          ? 'this home sits in a recorded subdivision, so the search stays in that plat, the plats that touch it, and the plats that touch those. It does not open a quarter-mile pocket, a distance ring, or the rest of the neighborhood'
         : parentConfines(subject) && (tier.likeCommunity || tier.crossBoundary || tier.whenStarved)
           ? 'this home sits inside a neighborhood or community, so the search does not leave it for another community or a distance past that boundary'
         : tier.closerSubdivision && !(subject.closerSubdivisionSlugs?.length)
-          ? 'no other subdivision inside this home\'s neighborhood or community is known'
+          ? 'no subdivision that touches the touching plats is known'
         : tier.adjacentSubdivision && !(subject.adjacentSubdivisionSlugs?.length)
           ? 'no plat next to the subject\'s is known'
           : tier.crossBoundary && !subject.marketArea

@@ -10,6 +10,7 @@
 import { countWord, escapeHtml, usd } from '@/lib/cma/render-blocks'
 import { median } from '@/lib/cma/market-status'
 import type { MatrixEntry } from '@/lib/cma/matrix-entry'
+import { comparisonSalePrice } from '@/lib/pricing/seller-net'
 
 const esc = escapeHtml
 
@@ -79,7 +80,11 @@ function closedRow(entries: readonly MatrixEntry[]): StatusPpsfRow | null {
   )
   const sold = ppsfBand(
     homes
-      .map((e) => ppsfOf(e.closePrice, e.sqft))
+      .map((e) => {
+        const close = e.closePrice
+        if (close == null || !(close > 0)) return null
+        return ppsfOf(comparisonSalePrice(close, e.concessionsAmount), e.sqft)
+      })
       .filter((v): v is number => v != null),
   )
   if (!list && !sold) return null

@@ -138,11 +138,13 @@ function isSubdivisionRung(key: string): boolean {
 }
 
 /**
- * Rungs whose membership test IS the GIS boundary the subject sits in. The
- * adjacent-plat rungs count: their members are inside the polygon by rule.
+ * Rungs whose membership test IS the whole GIS neighborhood or community.
+ * A touching plat, and the next row of plats that touch those, are specific
+ * subdivisions. They do not open the parent polygon. The parent is the wall,
+ * and the map labels it. It is not the search disk.
  */
 function isBoundaryRung(key: string): boolean {
-  return key.startsWith('neighborhood-') || key.startsWith('adjacent-sub')
+  return key.startsWith('neighborhood-')
 }
 
 function clean(s: string | null | undefined): string | null {

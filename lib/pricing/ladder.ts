@@ -59,9 +59,9 @@ export type PricingTier = {
    */
   likeCommunity?: boolean
   /**
-   * The next subdivisions inside the parent, nearest first. Not the plats
-   * that touch, and not a distance ring. A parent neighborhood or community
-   * never gives this rung a sale from outside it.
+   * Plats that touch the touching plats. Not every other plat in the parent,
+   * and not a sale's distance from the subject. A parent neighborhood or
+   * community never gives this rung a sale from outside it.
    */
   closerSubdivision?: boolean
   /** May cross the neighborhood/community polygon. Runs only once the boundary is exhausted, and never when a parent neighborhood or community confines the home. */
@@ -125,8 +125,9 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
     bedSlop: apples === 'strict' ? 1 : 2,
     bathSlop: apples === 'strict' ? 1 : 2,
   })
-  // The plats that touch the subject's, closest first. A parent neighborhood
-  // or community still refuses a touching plat that sits outside that parent.
+  // The plats that touch the subject's, closest first. Months widen inside
+  // this row before the next row. A parent neighborhood or community still
+  // refuses a touching plat that sits outside that parent.
   const adjacent = (months: number, apples: AppleStrictness): PricingTier => ({
     name: `adjacent-sub-${months}mo`,
     monthsBack: months,
@@ -141,11 +142,10 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
     bedSlop: apples === 'strict' ? 1 : 2,
     bathSlop: apples === 'strict' ? 1 : 2,
     disclosure:
-      'These sales are in the subdivisions that touch yours, the closest one first, walked before any subdivision farther out and before any distance ring.',
+      'These sales are in the subdivisions that touch yours, the closest one first. Your own subdivision is finished before any of them.',
   })
-  // After the touching plats: the other subdivisions inside the same parent,
-  // nearest first. Same 3, 6, 12 month clock. This is the crawl that keeps a
-  // city search off the distance rings.
+  // After the touching plats: only the plats that touch those plats. Not every
+  // other plat in the parent, and not a sale's distance from the subject.
   const closer = (months: number, apples: AppleStrictness): PricingTier => ({
     name: `closer-sub-${months}mo`,
     monthsBack: months,
@@ -160,7 +160,7 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
     bedSlop: apples === 'strict' ? 1 : 2,
     bathSlop: apples === 'strict' ? 1 : 2,
     disclosure:
-      'These sales are in the next subdivisions inside the same neighborhood or community, the closest one first, after the plats that touch yours.',
+      'These sales are in the subdivisions that touch the subdivisions next to yours. A subdivision that only sits in the same neighborhood is not included.',
   })
   const pocket = (months: number, apples: AppleStrictness): PricingTier => ({
     name: `pocket-${months}mo`,
@@ -279,51 +279,53 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
     // YOUR OWN STREET, FIRST, WHATEVER THE MLS CALLS THE TRACT (Matt
     // 2026-09-10: "We want to look specifically at that address or in that
     // subdivision"). 23 Benaiah carries "N/A" for a subdivision, so every plat
-    // rung below skips, and 31 Benaiah — the identical 2,080 sqft plan next
-    // door — was only reachable on the five-mile eighteen-month rung, eight
+    // rung below skips, and 31 Benaiah, the identical 2,080 sqft plan next
+    // door, was only reachable on the five-mile eighteen-month rung, eight
     // sales deep. Whether it made the set at all then depended on how fast the
     // rings above filled, and it moved between builds. A street is a place;
-    // this rung finds it before any of that.
+    // this rung finds it before any other plat. It is not a quarter-mile ring.
     street(24),
+    // The subject's own plat, the whole clock, including the wide living-area
+    // band, before any other plat (Matt 2026-10-06). A sale in another plat
+    // is not taken while this clock is still unopened.
     sub(3),
     sub(6),
     sub(9),
-    // Same street, different floorplan, before the next tract. Hayloft 2500 vs
-    // 1927 is 23% — inside 30%, outside the tight 15% band.
+    // Same street, different floorplan, still inside the plat. Hayloft 2500 vs
+    // 1927 is 23%, inside 35%, outside the tight 25% band.
     sub(3, PLAT_WIDE_SQFT_BAND, '-wide'),
     sub(6, PLAT_WIDE_SQFT_BAND, '-wide'),
     sub(9, PLAT_WIDE_SQFT_BAND, '-wide'),
     sub(12),
     sub(12, PLAT_WIDE_SQFT_BAND, '-wide'),
-    // Same subdiv + ~0.25 mi street cluster, before adjacent plats or mile rings
-    // (Matt 2026-09-15: named SaddleStone stays exclusive when Horse Back / Ranch exist).
-    pocket(3, 'strict'),
-    pocket(6, 'strict'),
-    pocket(9, 'utilities'),
-    pocket(12, 'utilities'),
-    // Twelve months in the subdivision, then the same clock on the plats that
-    // touch, then the next subdivisions inside the parent. A sale older than
-    // 12 months in the subject's plat does not outrank a recent sale next door.
+    sub(18),
+    sub(18, PLAT_WIDE_SQFT_BAND, '-wide'),
+    sub(24),
+    sub(24, PLAT_WIDE_SQFT_BAND, '-wide'),
+    // Touching plats, closest first, every month of that row before the next row.
     adjacent(3, 'strict'),
     adjacent(6, 'strict'),
     adjacent(9, 'utilities'),
     adjacent(12, 'utilities'),
+    adjacent(18, 'utilities'),
+    adjacent(24, 'utilities'),
+    // The next row only: plats that touch the touching plats. Not every other
+    // plat in the parent, and not a distance ring.
     closer(3, 'strict'),
     closer(6, 'strict'),
     closer(9, 'utilities'),
     closer(12, 'utilities'),
-    community(6, 'strict'),
-    community(12, 'utilities'),
-    // The crawl is still short. Open the same places to 18 and 24 months
-    // before any distance ring.
-    sub(18),
-    sub(24),
-    sub(18, PLAT_WIDE_SQFT_BAND, '-wide'),
-    sub(24, PLAT_WIDE_SQFT_BAND, '-wide'),
-    adjacent(18, 'utilities'),
-    adjacent(24, 'utilities'),
     closer(18, 'utilities'),
     closer(24, 'utilities'),
+    // No recorded plat (and rural acreage with no plat): the distance ladder.
+    // A recorded subdivision does not open these. The walk skips them.
+    // Pocket stays only for that no-plat case.
+    pocket(3, 'strict'),
+    pocket(6, 'strict'),
+    pocket(9, 'utilities'),
+    pocket(12, 'utilities'),
+    community(6, 'strict'),
+    community(12, 'utilities'),
     community(24, 'utilities'),
     // Distance starts at a quarter mile and steps by a quarter mile.
     // Do not open with a 1-mile ring. One mile and two miles are later steps.

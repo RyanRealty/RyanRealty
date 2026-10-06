@@ -93,3 +93,33 @@ describe('a city inside a pin cluster is still named', () => {
     expect(ground.labelsDrawn).toEqual(expect.arrayContaining(['Bend', 'Tumalo', 'Redmond']))
   })
 })
+
+describe('subdivision and parent names stay on the map', () => {
+  it('draws two plat labels and the parent without dropping the towns', () => {
+    const pins = [
+      { lat: 44.07, lng: -121.32 },
+      { lat: 44.1, lng: -121.25 },
+      { lat: 44.1566, lng: -121.3262 },
+      { lat: 44.2643, lng: -121.174 },
+    ]
+    const view = fitStaticMapView(pins, { width: 640, height: 360, padding: 46, fractional: true })!
+    const ground = renderMapGroundSvg({
+      view,
+      basemap: null,
+      boundaryRings: [],
+      radius: null,
+      labels: [
+        { text: 'Bend', lat: 44.06148, lng: -121.31156, kind: 'town', rank: 135 },
+        { text: 'Redmond', lat: 44.26434, lng: -121.17405, kind: 'town', rank: 119 },
+        { text: 'Tumalo', lat: 44.15663, lng: -121.32616, kind: 'town', rank: 102 },
+        { text: 'Countryside', lat: 44.07, lng: -121.32, kind: 'subdivision', rank: 80 },
+        { text: 'Northwest Crossing', lat: 44.1, lng: -121.25, kind: 'subdivision', rank: 80 },
+        { text: 'River West', lat: 44.12, lng: -121.28, kind: 'parent', rank: 90 },
+      ],
+      pins,
+    })
+    expect(ground.labelsDrawn).toEqual(
+      expect.arrayContaining(['Countryside', 'Northwest Crossing', 'River West', 'Bend', 'Redmond', 'Tumalo']),
+    )
+  })
+})

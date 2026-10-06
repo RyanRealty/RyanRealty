@@ -26,6 +26,7 @@ import type { ListingPlan } from '@/lib/cma/listing-plan'
 import type { CmaSiteData } from '@/lib/cma/county'
 import type { CmaParcelSet } from '@/lib/cma/parcel-shapes'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
+import type { PlacePricingStory } from '@/lib/cma/place-pricing-types'
 import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 import type { DevelopmentOpportunities } from '@/lib/cma/development'
 import type { RentalPotential } from '@/lib/cma/rental-potential'
@@ -128,6 +129,11 @@ export interface RenderCmaArgs {
   listingMarket?: import('@/lib/cma/listing-window-market').ListingMarketMove | null
   /** What homes like this one credited the buyer. Measured at serve for a draft. */
   likeHomeCredits?: { sentence: string; source: string } | null
+  /**
+   * Twelve-month pricing story for the parent neighborhood or community.
+   * Null when that place has no matching rows. Absent on older letters.
+   */
+  placePricing?: PlacePricingStory | null
 }
 
 interface PageDef {

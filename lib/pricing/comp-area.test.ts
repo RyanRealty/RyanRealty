@@ -512,8 +512,8 @@ describe('compAreaIn', () => {
   })
 })
 
-describe('the adjacent-plat rungs are boundary rungs', () => {
-  it('a sale from a touching plat makes the area the neighborhood, and carries a 2-mile cap', () => {
+describe('the adjacent-plat rungs stay on those plats', () => {
+  it('a sale from a touching plat names those subdivisions, and does not open the neighborhood', () => {
     expect(rungRadiusMiles('adjacent-subdivision-6mo')).toBe(2)
     expect(rungRadiusMiles('adjacent-sub-12mo')).toBe(2)
     const area = buildCompArea({
@@ -525,7 +525,9 @@ describe('the adjacent-plat rungs are boundary rungs', () => {
         comp('Bend View Addition', 'adjacent-sub-6mo', OLD_BEND),
       ],
     })!
-    expect(area.kind).toBe('neighborhood')
+    expect(area.kind).toBe('subdivisions')
+    expect(area.names).toEqual(['Kenwood', 'Roanoke', 'Bend View Addition'])
+    expect(area.sentence).toBe('Kenwood and the two subdivisions next to it.')
   })
 
   it('stays on one subdivision when every sale carries that name, including a later phase', () => {

@@ -405,14 +405,16 @@ describe('chapter 1 — what happened comes FIRST, before the number', () => {
     expect(competition).toBeGreaterThan(price)
   })
 
-  it('carries the failed-then-sold statistics', () => {
+  it('does not print the regional relist tiles on what happened', () => {
     const html = letter()
     const start = html.indexOf('and did not sell.')
     const end = html.indexOf('<section class="page"', start)
+    expect(start).toBeGreaterThan(-1)
     const chapter = html.slice(start, end > 0 ? end : undefined)
-    expect(chapter).toContain('3,394')
-    expect(chapter).toContain('94.2%')
-    expect(chapter).toContain('12.3%')
+    expect(chapter).not.toContain('3,394')
+    expect(chapter).not.toContain('94.2%')
+    expect(chapter).not.toContain('12.3%')
+    expect(chapter).not.toContain('94.2 percent')
   })
 
   it('does the same in the immersive, in the same place', () => {
@@ -1094,10 +1096,9 @@ describe('tasteReview 1 — nothing in the document argues with itself', () => {
     expect(html).not.toMatch(/sold \$457K · 25 days/)
   })
 
-  it('sources the three regional relist figures on the screen that prints them', () => {
+  it('does not print the regional relist source line', () => {
     for (const html of [letter(), immersive()]) {
-      expect(html).toContain('These three figures are regional, not this city alone')
-      expect(html).toContain('matched pairs')
+      expect(html).not.toContain('These three figures are regional, not this city alone')
     }
   })
 

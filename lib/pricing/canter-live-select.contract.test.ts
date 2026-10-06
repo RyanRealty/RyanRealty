@@ -28,11 +28,17 @@ const getPricingMarketIndex = vi.hoisted(() => vi.fn(async () => []))
 const getPricingSubdivisionCells = vi.hoisted(() => vi.fn(async () => new Map()))
 
 vi.mock('@/lib/pricing/sale-zoning', () => ({ resolveSaleZones: async () => new Map() }))
-vi.mock('@/lib/data/geo/subdivision-ring', () => ({
-  getSubdivisionRing,
-  assignSubdivisionSlugs,
-  assignCommunitySlugs: async () => null,
-}))
+vi.mock('@/lib/data/geo/subdivision-ring', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/data/geo/subdivision-ring')>()
+  return {
+    ...actual,
+    getSubdivisionRing,
+    assignSubdivisionSlugs,
+    assignCommunitySlugs: async () => null,
+    // The Canter ring fixture is empty. Do not probe boundary_geojson.
+    readNeighborRings: async () => [],
+  }
+})
 vi.mock('@/lib/cma/comps', () => ({
   selectComps: vi.fn(async () => {
     throw new Error('listings selectComps must not run for Canter custom/new')

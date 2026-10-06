@@ -273,7 +273,7 @@ describe('the market slopes', () => {
   })
 })
 
-describe('chapter one keeps the regional figures and adds the market', () => {
+describe('chapter one keeps the market and does not print the regional tiles', () => {
   const base = {
     subject: {
       streetAddress: '20506 Murphy',
@@ -317,13 +317,13 @@ describe('chapter one keeps the regional figures and adds the market', () => {
     ],
   })!
 
-  it('prints the market sentence under the ask, and still prints the three regional figures', () => {
+  it('prints the market sentence under the ask, and does not print the regional tiles', () => {
     const page = whatHappenedPage({ ...base, listingMarket: move })
     expect(page?.body).toContain('rose from $726,425 to $779,950')
     expect(page?.body).toContain('fell from $324 to $314')
-    expect(page?.body).toContain('3,394')
-    expect(page?.body).toContain('94.2%')
-    expect(page?.body).toContain('12.3%')
+    expect(page?.body).not.toContain('3,394')
+    expect(page?.body).not.toContain('94.2%')
+    expect(page?.body).not.toContain('12.3%')
     const graphic = whatHappenedGraphicHtml(base)
     expect(graphic).not.toContain('While your home was listed')
   })

@@ -146,10 +146,10 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
     expect(html).toContain('data-status="pending"')
     expect(html).toContain('data-status="active"')
     expect(html).toContain('data-status="closed"')
-    // Matt 2026-09-24, FlexMLS style: List, Sold and $/sqft across the top,
-    // the four figures down each status, one table (the $/sqft board folded in).
+    // Matt 2026-09-24, FlexMLS style: List, Sold, Concessions, and $/sqft
+    // across the top, the four figures down each status, one table.
     expect(html).toMatch(
-      /scope="col">List<\/th><th class="n" scope="col">Sold<\/th><th class="n" scope="col">\$\/sqft<\/th>/,
+      /scope="col">List<\/th><th class="n" scope="col">Sold<\/th><th class="n" scope="col">Concessions<\/th><th class="n" scope="col">\$\/sqft<\/th>/,
     )
     expect(html.match(/<tbody data-status=/g)).toHaveLength(3)
     expect(html.match(/<th scope="row">Median<\/th>/g)).toHaveLength(3)
@@ -540,6 +540,7 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
       'List $/sqft',
       'Sold $/sqft',
       'Seller concessions',
+      'Sold after concessions',
       'Adjusted',
     ]) {
       expect(html, label).toContain(label)

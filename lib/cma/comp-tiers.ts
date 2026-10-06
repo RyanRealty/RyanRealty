@@ -152,61 +152,78 @@ function quarterMileCompRings(): CompTier[] {
   return tiers
 }
 
+function subdivisionMonths(subdivisionIlike: string | null, months: readonly number[]): CompTier[] {
+  return months.map((monthsBack) => ({
+    name: `subdivision-${monthsBack}mo`,
+    subdivisionIlike,
+    monthsBack,
+    sqftBand: LOCATION_SQFT_BAND,
+    sameArea: false,
+    competing: false,
+    maxMiles: null,
+  }))
+}
+
+const ADJACENT_DISCLOSURE =
+  'These sales are in the subdivisions that touch yours, the closest one first. Your own subdivision is finished before any of them.'
+
+function adjacentMonths(months: readonly number[]): CompTier[] {
+  return months.map((monthsBack) => ({
+    name: `adjacent-subdivision-${monthsBack}mo`,
+    monthsBack,
+    sqftBand: LOCATION_SQFT_BAND,
+    sameArea: false,
+    competing: false,
+    maxMiles: null,
+    adjacentSubdivisions: true,
+    disclosure: ADJACENT_DISCLOSURE,
+  }))
+}
+
+function pocketMonths(months: readonly number[]): CompTier[] {
+  return months.map((monthsBack) => ({
+    name: `pocket-${monthsBack}mo`,
+    monthsBack,
+    sqftBand: LOCATION_SQFT_BAND,
+    sameArea: false,
+    competing: false,
+    maxMiles: POCKET_RADIUS_MILES,
+    samePocket: true,
+    disclosure:
+      'These sales are in the mapped pockets next to this home, inside a quarter mile, walked before any mile ring.',
+  }))
+}
+
+/**
+ * Listings competition ladder.
+ *
+ * A named plat finishes its own months, then the plats that touch it. This
+ * ladder has no second-row membership test, so it stops there. A closer rung
+ * would be queried as an unbounded city sale. Pocket, the neighborhood grab,
+ * distance rings, and the city widening stay off.
+ *
+ * No recorded name (null): the distance ladder. Rings start at 0.25 miles.
+ * Do not invent plats.
+ */
 export function compTierLadder(subdivisionIlike: string | null): CompTier[] {
-    const band = LOCATION_SQFT_BAND
-    const tiers: CompTier[] = [
-    // Same subdivision through 12 months, then the plats that touch, then the
-    // neighborhood. 18 and 24 months open only after that crawl is still short.
-    { name: 'subdivision-6mo', subdivisionIlike, monthsBack: 6, sqftBand: band, sameArea: false, competing: false, maxMiles: null },
-    { name: 'subdivision-12mo', subdivisionIlike, monthsBack: 12, sqftBand: band, sameArea: false, competing: false, maxMiles: null },
-    // Quarter-mile pocket after the plat's own dates are exhausted, before adjacent plats.
-    {
-      name: 'pocket-6mo',
-      monthsBack: 6,
-      sqftBand: band,
-      sameArea: false,
-      competing: false,
-      maxMiles: POCKET_RADIUS_MILES,
-      samePocket: true,
-      disclosure:
-        'These sales are in the mapped pockets next to this home, inside a quarter mile, walked before any mile ring.',
-    },
-    {
-      name: 'pocket-12mo',
-      monthsBack: 12,
-      sqftBand: band,
-      sameArea: false,
-      competing: false,
-      maxMiles: POCKET_RADIUS_MILES,
-      samePocket: true,
-      disclosure:
-        'These sales are in the mapped pockets next to this home, inside a quarter mile, walked before any mile ring.',
-    },
-    // Adjacent subdivisions through 12 months, then the neighborhood.
-    { name: 'adjacent-subdivision-6mo', monthsBack: 6, sqftBand: band, sameArea: false, competing: false, maxMiles: 2, adjacentSubdivisions: true },
-    { name: 'adjacent-subdivision-12mo', monthsBack: 12, sqftBand: band, sameArea: false, competing: false, maxMiles: 2, adjacentSubdivisions: true },
+  const named = Boolean(subdivisionIlike?.trim())
+  const band = LOCATION_SQFT_BAND
+  const platMonths = [6, 12, 18, 24] as const
+  if (named) {
+    const tiers = [...subdivisionMonths(subdivisionIlike, platMonths), ...adjacentMonths(platMonths)]
+    assertRungsClassified(tiers.map((tier) => tier.name))
+    return tiers
+  }
+  const tiers: CompTier[] = [
+    ...subdivisionMonths(null, platMonths),
+    ...pocketMonths([6, 12, 24]),
+    ...quarterMileCompRings(),
     { name: 'neighborhood-6mo', monthsBack: 6, sqftBand: band, sameArea: true, competing: false, maxMiles: null },
     { name: 'neighborhood-12mo', monthsBack: 12, sqftBand: band, sameArea: true, competing: false, maxMiles: null },
-    { name: 'community-6mo', monthsBack: 6, sqftBand: band, sameArea: false, competing: true, maxMiles: 5, sameCommunity: true },
-    { name: 'community-12mo', monthsBack: 12, sqftBand: band, sameArea: false, competing: true, maxMiles: 5, sameCommunity: true },
-    // The 12-month crawl is still short. Same places, out to two years.
-    { name: 'subdivision-18mo', subdivisionIlike, monthsBack: 18, sqftBand: band, sameArea: false, competing: false, maxMiles: null },
-    { name: 'subdivision-24mo', subdivisionIlike, monthsBack: 24, sqftBand: band, sameArea: false, competing: false, maxMiles: null },
-    {
-      name: 'pocket-24mo',
-      monthsBack: 24,
-      sqftBand: band,
-      sameArea: false,
-      competing: false,
-      maxMiles: POCKET_RADIUS_MILES,
-      samePocket: true,
-      disclosure:
-        'These sales are in the mapped pockets next to this home, inside a quarter mile, walked before any mile ring.',
-    },
-    { name: 'adjacent-subdivision-18mo', monthsBack: 18, sqftBand: band, sameArea: false, competing: false, maxMiles: 2, adjacentSubdivisions: true },
-    { name: 'adjacent-subdivision-24mo', monthsBack: 24, sqftBand: band, sameArea: false, competing: false, maxMiles: 2, adjacentSubdivisions: true },
     { name: 'neighborhood-18mo', monthsBack: 18, sqftBand: band, sameArea: true, competing: false, maxMiles: null },
     { name: 'neighborhood-24mo', monthsBack: 24, sqftBand: band, sameArea: true, competing: false, maxMiles: null },
+    { name: 'community-6mo', monthsBack: 6, sqftBand: band, sameArea: false, competing: true, maxMiles: 5, sameCommunity: true },
+    { name: 'community-12mo', monthsBack: 12, sqftBand: band, sameArea: false, competing: true, maxMiles: 5, sameCommunity: true },
     { name: 'community-24mo', monthsBack: 24, sqftBand: band, sameArea: false, competing: true, maxMiles: 5, sameCommunity: true },
     // 4c. The community is spent: its peers are other communities of its kind.
     {
@@ -221,10 +238,7 @@ export function compTierLadder(subdivisionIlike: string | null): CompTier[] {
       disclosure:
         'Your home sits in a golf or resort community, and that community did not have enough of its own sales even across two years. The sales below come from comparable golf and resort communities in Central Oregon rather than from ordinary neighborhoods nearby, because that is the market a buyer of your home shops against.',
     },
-    // 5. Competing market area — permitted, but disclosed and distance-bounded.
-    // Distance rings. A quarter mile first, then each next quarter mile.
-    // Do not open with a 1-mile ring.
-    ...quarterMileCompRings(),
+    // Competing market area, after the quarter-mile rings above.
     { name: 'competing-area-12mo', monthsBack: 12, sqftBand: 0.25, sameArea: false, competing: true, maxMiles: 2 },
     // 6. Last resort for a subject inside a mapped city. Still bounded — the
     // old ladder ended at "anywhere in the city".

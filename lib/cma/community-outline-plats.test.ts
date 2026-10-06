@@ -85,42 +85,46 @@ function sale(over: Partial<PricingSale> = {}): PricingSale {
   }
 }
 
+const RECORDED_ROW_SKIP =
+  'this home sits in a recorded subdivision, so the search stays in that plat, the plats that touch it, and the plats that touch those. It does not open a quarter-mile pocket, a distance ring, or the rest of the neighborhood'
+
+function remarksOnly() {
+  return sale({
+    listingKey: 'REMARKS_ONLY',
+    address: '9 Outside',
+    subdivision: 'Timber Ridge',
+    subdivisionNorm: 'timber ridge',
+    subdivisionSlug: 'timber-ridge',
+    latitude: 44.05,
+    longitude: -121.35,
+    closeDate: '2026-07-01',
+    closePrice: 630_000,
+    lastAsk: 640_000,
+    communitySlug: null,
+    containingPlatSlugs: ['timber-ridge'],
+    publicRemarks: 'Charming home on the Bend Golf Club course, walk to the clubhouse.',
+  })
+}
+
 describe('Bend Golf Club recorded-plat outline', () => {
-  it('the community rung takes a sale in either plat and not a remarks mention', () => {
+  it('takes a touching plat in the same community and not a remarks mention', () => {
     expect(communitySlugForRecordedPlats(PARRELL_PLATS)).toBe('bend-golf-club')
     expect(communitySlugForRecordedPlats(FAIRWAY_PLATS)).toBe('bend-golf-club')
     expect(communitySlugForRecordedPlats(['wildwood-park'])).toBeNull()
 
     const asOf = '2026-10-04'
-    const tiers = pricingTierLadder().filter((tier) => tier.sameCommunity)
-    const out = walkPricingLadder(
-      subject(),
-      [
-        sale(),
-        sale({
-          listingKey: 'REMARKS_ONLY',
-          address: '9 Outside',
-          subdivision: 'Timber Ridge',
-          subdivisionNorm: 'timber ridge',
-          subdivisionSlug: 'timber-ridge',
-          latitude: 44.05,
-          longitude: -121.35,
-          closeDate: '2026-07-01',
-          closePrice: 630_000,
-          lastAsk: 640_000,
-          communitySlug: null,
-          publicRemarks: 'Charming home on the Bend Golf Club course, walk to the clubhouse.',
-        }),
-      ],
-      { asOf, tiers },
-    )
+    const home = subject()
+    home.adjacentSubdivisionSlugs = ['bend-golf-club-2nd-addition']
+    const tiers = pricingTierLadder().filter((tier) => tier.adjacentSubdivision || tier.sameCommunity)
+    const out = walkPricingLadder(home, [sale(), remarksOnly()], { asOf, tiers })
 
-    expect(out.rungs.filter((rung) => rung.tier.startsWith('community-')).every((rung) => rung.ran)).toBe(true)
-    expect(out.rungs.some((rung) => rung.skippedReason === 'the subject is not inside a planned or golf community')).toBe(
-      false,
-    )
+    const community = out.rungs.filter((rung) => rung.tier.startsWith('community-'))
+    expect(community.length).toBeGreaterThan(0)
+    expect(community.every((rung) => rung.ran)).toBe(false)
+    expect(community.every((rung) => rung.skippedReason === RECORDED_ROW_SKIP)).toBe(true)
     expect(out.comps.map((comp) => comp.listingKey)).toEqual(['FAIRWAY_2ND'])
-    expect(out.comps[0]?.selectionTier.startsWith('community-')).toBe(true)
+    expect(out.comps[0]?.selectionTier.startsWith('adjacent-sub-')).toBe(true)
+    expect(out.comps.some((comp) => comp.listingKey === 'REMARKS_ONLY')).toBe(false)
   })
 })
 
@@ -168,15 +172,16 @@ describe('recorded plat membership for every community', () => {
       publicRemarks: 'Charming home on the golf course, walk to the clubhouse.',
     })
 
-    const tiers = pricingTierLadder().filter((tier) => tier.sameCommunity)
+    const tiers = pricingTierLadder().filter((tier) => tier.sameSubdivision || tier.sameCommunity)
     const out = walkPricingLadder(home, [inside, remarks], { asOf, tiers })
 
-    expect(out.rungs.filter((rung) => rung.tier.startsWith('community-')).every((rung) => rung.ran)).toBe(true)
-    expect(out.rungs.some((rung) => rung.skippedReason === 'the subject is not inside a planned or golf community')).toBe(
-      false,
-    )
+    const community = out.rungs.filter((rung) => rung.tier.startsWith('community-'))
+    expect(community.length).toBeGreaterThan(0)
+    expect(community.every((rung) => rung.ran)).toBe(false)
+    expect(community.every((rung) => rung.skippedReason === RECORDED_ROW_SKIP)).toBe(true)
     expect(out.comps.map((comp) => comp.listingKey)).toEqual(['INSIDE_PLAT'])
-    expect(out.comps[0]?.selectionTier.startsWith('community-')).toBe(true)
+    expect(out.comps[0]?.selectionTier.startsWith('subdivision-')).toBe(true)
+    expect(out.comps.some((comp) => comp.listingKey === 'REMARKS_ONLY')).toBe(false)
   })
 })
 
@@ -184,10 +189,17 @@ describe('sewer inside a recorded plat', () => {
   it('keeps a septic sale inside the plat and names both sewers', () => {
     const asOf = '2026-10-04'
     const home = subject()
-    const inside = sale({ sewerClass: 'septic' })
-    const tiers = pricingTierLadder().filter((tier) => tier.sameCommunity)
+    const inside = sale({
+      sewerClass: 'septic',
+      subdivision: 'Bend Golf Club',
+      subdivisionNorm: 'bend golf club',
+      subdivisionSlug: 'bend-golf-club-addition',
+      containingPlatSlugs: PARRELL_PLATS,
+    })
+    const tiers = pricingTierLadder().filter((tier) => tier.sameSubdivision)
     const out = walkPricingLadder(home, [inside], { asOf, tiers })
     expect(out.comps.map((comp) => comp.listingKey)).toEqual(['FAIRWAY_2ND'])
+    expect(out.comps[0]?.selectionTier.startsWith('subdivision-')).toBe(true)
     expect(out.comps[0]?.sewerNote).toBe('20270 Fairway is on septic. This home is on public sewer.')
   })
 
@@ -197,8 +209,8 @@ describe('sewer inside a recorded plat', () => {
     home.communitySlug = null
     home.communityLocated = false
     home.containingPlatSlugs = null
-    home.subdivision = 'Plain Street'
-    home.subdivisionNorm = 'plain street'
+    home.subdivision = null
+    home.subdivisionNorm = null
     home.subdivisionSlug = null
     const septic = sale({
       listingKey: 'OUTSIDE_SEPTIC',

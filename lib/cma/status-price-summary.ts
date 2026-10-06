@@ -15,6 +15,7 @@ import { countWord, escapeHtml, usd } from '@/lib/cma/render-blocks'
 import { median } from '@/lib/cma/market-status'
 import { listPriceForPpsf, ppsfOf } from '@/lib/cma/status-ppsf'
 import { mlsStatusLabel, type MatrixEntry } from '@/lib/cma/matrix-entry'
+import { comparisonSalePrice } from '@/lib/pricing/seller-net'
 
 const esc = escapeHtml
 
@@ -37,7 +38,12 @@ export type StatusPriceRow = {
   list: PriceBand | null
   /** Closed only. */
   sold: PriceBand | null
-  /** Each home's own price over its own living area: sold price once closed, the ask before. */
+  /**
+   * Recorded concessions, including $0. A null amount stays out of the band
+   * and does not reduce the price.
+   */
+  concessions: PriceBand | null
+  /** Each home's own price over its own living area: net sold price once closed, the ask before. */
   ppsf: PriceBand | null
   /** Homes with no $/sqft because the living area is missing. */
   noLivingArea: number
@@ -69,6 +75,28 @@ function present(v: number | null | undefined): v is number {
   return v != null && Number.isFinite(v) && v > 0
 }
 
+/** A stored concession. Null is not zero. A reported zero stays. */
+function recordedConcession(amount: number | null | undefined): number | null {
+  if (amount == null || !Number.isFinite(amount) || amount < 0) return null
+  return amount
+}
+
+/** Same rounding as priceBand, but a reported $0 is a fact and stays in the band. */
+function concessionBand(values: readonly (number | null | undefined)[]): PriceBand | null {
+  const nums = values.filter((v): v is number => v != null && Number.isFinite(v) && v >= 0)
+  if (nums.length === 0) return null
+  const mid = median(nums)
+  if (mid == null) return null
+  const sum = nums.reduce((a, b) => a + b, 0)
+  return {
+    n: nums.length,
+    low: Math.round(Math.min(...nums)),
+    avg: Math.round(sum / nums.length),
+    median: Math.round(mid),
+    high: Math.round(Math.max(...nums)),
+  }
+}
+
 function statusRow(
   key: StatusPriceKey,
   label: string,
@@ -80,9 +108,12 @@ function statusRow(
   // under the table counts exactly the homes the $/sqft band left out.
   const perHome = homes.map((e) => {
     const list = listPriceForPpsf(e)
-    const sold = closed ? e.closePrice : null
-    const basis = closed ? sold : list
-    return { list, sold, basis, rate: ppsfOf(basis, e.sqft) }
+    const sold = closed && e.closePrice != null && e.closePrice > 0 ? e.closePrice : null
+    const concession = recordedConcession(e.concessionsAmount)
+    // Null is not a credit. Zero leaves the close unchanged.
+    const net = sold != null ? comparisonSalePrice(sold, concession) : null
+    const basis = closed ? net : list
+    return { list, sold, concession, basis, rate: ppsfOf(basis, e.sqft) }
   })
   const list = priceBand(perHome.map((h) => h.list).filter(present))
   const sold = closed ? priceBand(perHome.map((h) => h.sold).filter(present)) : null
@@ -94,6 +125,7 @@ function statusRow(
     homes: homes.length,
     list,
     sold,
+    concessions: concessionBand(perHome.map((h) => h.concession)),
     ppsf: priceBand(perHome.map((h) => h.rate).filter(present)),
     noLivingArea: unrated.filter((h) => present(h.basis)).length,
     noRatePrice: unrated.filter((h) => !present(h.basis)).length,
@@ -185,6 +217,7 @@ function coverageNotes(rows: readonly StatusPriceRow[]): string[] {
   for (const row of rows) {
     note(row, 'List', row.list, 'no list price on record')
     if (row.key === 'closed') note(row, 'Sold', row.sold, 'no sold price on record')
+    if (row.concessions) note(row, 'Concessions', row.concessions, 'no concession recorded')
     const why =
       row.noRatePrice === 0
         ? 'no living area on record'
@@ -202,8 +235,10 @@ export function statusPriceBoardHtml(rows: readonly StatusPriceRow[]): string {
   // reads as missing data.
   const showSold = rows.some((row) => row.sold)
   const figureCells = (row: StatusPriceRow, stat: (typeof STATS)[number][0]) =>
-    [row.list, ...(showSold ? [row.sold] : []), row.ppsf].map((band) => `<td class="n">${figure(band, stat)}</td>`).join('')
-  const columns = showSold ? 4 : 3
+    [row.list, ...(showSold ? [row.sold] : []), row.concessions, row.ppsf]
+      .map((band) => `<td class="n">${figure(band, stat)}</td>`)
+      .join('')
+  const columns = showSold ? 5 : 4
   const groups = rows
     .map(
       (row) => `<tbody data-status="${esc(row.key)}">
@@ -217,8 +252,9 @@ export function statusPriceBoardHtml(rows: readonly StatusPriceRow[]): string {
   const read = [
     n === 1 ? 'The one home in this report, by status.' : `The ${countWord(n)} homes in this report, by status.`,
     showSold ? 'List is the asking price and Sold the closing price.' : 'List is the asking price.',
+    'Concessions are seller-paid costs the MLS recorded. A blank means nothing was recorded, and zero means the sale reported none.',
     showSold
-      ? "$/sqft is each home's own price over its own living area: the sold price once closed, the list price for the rest."
+      ? "$/sqft is each home's own price over its own living area. Once closed, that price is the sold price after a recorded concession, or the sold price when none was recorded. Before a sale it is the list price."
       : "$/sqft is each home's list price over its own living area.",
   ].join(' ')
   return `<div class="status-price" data-status-price="board">
@@ -226,7 +262,7 @@ export function statusPriceBoardHtml(rows: readonly StatusPriceRow[]): string {
   <p class="chart-read">${esc(read)}</p>
   <table class="kv is-wide status-price-table">
     <colgroup><col class="sp-stat">${'<col class="sp-fig">'.repeat(columns - 1)}</colgroup>
-    <thead><tr><th scope="col"></th><th class="n" scope="col">List</th>${showSold ? '<th class="n" scope="col">Sold</th>' : ''}<th class="n" scope="col">$/sqft</th></tr></thead>
+    <thead><tr><th scope="col"></th><th class="n" scope="col">List</th>${showSold ? '<th class="n" scope="col">Sold</th>' : ''}<th class="n" scope="col">Concessions</th><th class="n" scope="col">$/sqft</th></tr></thead>
     ${groups}
   </table>${notes.length ? `\n  <p class="small status-price-note">${esc(notes.join(' '))}</p>` : ''}
 </div>`

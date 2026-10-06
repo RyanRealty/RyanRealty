@@ -45,7 +45,7 @@ import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
 import { formatDate } from '@/lib/format/date'
 import type { ExpiredFinalCycle } from '@/lib/cma/expired-audit'
 import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
-import { concessionOffClose, concessionOnSale, printedAdjustedPrice } from '@/lib/pricing/seller-net'
+import { comparisonSalePrice, concessionOffClose, concessionOnSale, printedAdjustedPrice } from '@/lib/pricing/seller-net'
 
 const esc = escapeHtml
 
@@ -247,6 +247,8 @@ const SHARED_ROWS: ReadonlyArray<MatrixRow> = [
   { label: 'Original list', figure: true },
   { label: 'Sold', figure: true },
   { label: 'Seller concessions', figure: true },
+  // Net of a recorded concession. Null or zero leaves this equal to Sold.
+  { label: 'Sold after concessions', figure: true },
   { label: 'Days on market', figure: true, fact: 'dom' },
   { label: 'CDOM', figure: true },
   { label: 'Beds', figure: true },
@@ -425,6 +427,21 @@ function sharedConcessionCell(entry: MatrixEntry): string {
   return usd(c)
 }
 
+/** Close minus a positive recorded concession. Unsold rows stay blank. */
+function soldAfterConcessionsCell(entry: MatrixEntry): string {
+  if (entry.family !== 'closed') return '-'
+  const close = entry.closePrice
+  if (close == null || !(close > 0)) return '-'
+  return usd(comparisonSalePrice(close, entry.concessionsAmount))
+}
+
+function soldPpsfCell(entry: MatrixEntry): string {
+  if (entry.family !== 'closed') return '-'
+  const close = entry.closePrice
+  if (close == null || !(close > 0)) return '-'
+  return ppsfCell(comparisonSalePrice(close, entry.concessionsAmount), entry.sqft)
+}
+
 function statusCell(entry: MatrixEntry): string {
   if (entry.family === 'closed') return 'Sold'
   if (entry.family === 'unsold') {
@@ -464,6 +481,7 @@ function sharedCells(entry: MatrixEntry, _range?: PricePathRange | null): string
     moneyCell(entry.firstAsk),
     moneyCell(entry.closePrice),
     sharedConcessionCell(entry),
+    soldAfterConcessionsCell(entry),
     entry.domDays != null ? `${int(entry.domDays)} ${entry.domDays === 1 ? 'day' : 'days'}` : '-',
     cdom != null ? `${int(cdom)} ${cdom === 1 ? 'day' : 'days'}` : '-',
     entry.beds != null ? int(entry.beds) : '-',
@@ -473,7 +491,7 @@ function sharedCells(entry: MatrixEntry, _range?: PricePathRange | null): string
     entry.yearBuilt != null ? String(entry.yearBuilt) : '-',
     entry.garageSpaces != null ? int(entry.garageSpaces) : '-',
     ppsfCell(listForPpsf, entry.sqft),
-    ppsfCell(entry.closePrice, entry.sqft),
+    soldPpsfCell(entry),
     entry.family === 'closed' ? moneyCell(entry.adjustedPrice) : '-',
     askArcCell(entry),
   ]
@@ -630,6 +648,7 @@ function foldIdenticalRows(
       row.label === 'List $/sqft' ||
       row.label === 'Sold $/sqft' ||
       row.label === 'Seller concessions' ||
+      row.label === 'Sold after concessions' ||
       // Matt 2026-09-17 Flex FLOW: keep side-by-side identity/price rows even when identical.
       row.label === 'Beds' ||
       row.label === 'Baths' ||
@@ -858,6 +877,7 @@ function matrixStack(input: {
       'List $/sqft',
       'Sold $/sqft',
       'Seller concessions',
+      'Sold after concessions',
       'Adjusted',
     ])
     // ONE LABEL, ONCE. The fact rows and the adjustment grid share Sold (the
