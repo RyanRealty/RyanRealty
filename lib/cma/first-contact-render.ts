@@ -184,6 +184,10 @@ function mentionsReport(text: string): boolean {
   return /full report|attached as a PDF/i.test(text)
 }
 
+function namesOurPrice(paragraphs: FirstContactRun[][]): boolean {
+  return paragraphs.some((paragraph) => /our price/i.test(paragraphsToPlain([paragraph])))
+}
+
 function reportLead(address: string | null): string {
   const named = streetOnly(address)
   if (named) return `The full report on ${named} is attached as a PDF.`
@@ -194,9 +198,10 @@ function reportLead(address: string | null): string {
  * Paragraphs plus the report button. No signature. Clean campaign UTMs only.
  *
  * The sentence that names the report sits directly above the one button.
- * A price line just before that sentence is set as a plate. A broker note
- * that never names the report gets one lead sentence, then the button,
- * and the button again after the note.
+ * "Our price" in that sentence makes the button "See our price". A broker
+ * who typed "We would list it at $X." still gets the plate. A note that
+ * never names the report gets one lead sentence, then the button, and the
+ * button again after the note.
  */
 export function renderCmaLetterBlock(args: {
   paragraphs: FirstContactRun[][]
@@ -205,6 +210,7 @@ export function renderCmaLetterBlock(args: {
 }): string {
   const button = cmaReportButtonHtml(
     stampCmaEmailCampaign(`${CMA_EMAIL_ORIGIN}/cma/${args.slug}`, args.slug),
+    namesOurPrice(args.paragraphs) ? 'See our price' : 'Read the full report',
   )
   const parts: string[] = []
   let mentionAt = -1

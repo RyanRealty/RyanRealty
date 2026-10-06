@@ -20,9 +20,7 @@ const NATE_PLAIN = `Hi there,
 
 We spent time in the MLS on 62017 Nate's.
 
-We would list it at $358,000.
-
-The full report on 62017 Nate's is attached as a PDF.
+Our price is in the full report, attached as a PDF.
 
 The report is the price, the homes you would be competing with, and what happened to nearby homes that did not sell.
 
@@ -63,7 +61,8 @@ describe('Nate first-contact letter (expired, 62017 Nate\'s)', () => {
 
   it('keeps the note free of links; the button carries the report', () => {
     expect(linksOf(copy.paragraphs)).toEqual([])
-    expect(copy.previewText).toBe("We would list 62017 Nate's at $358,000. The report is attached.")
+    expect(copy.previewText).toBe("Four sales on 62017 Nate's. Our price is in the report.")
+    expect(copy.bodyText).not.toContain('$358,000')
     expect(copy.mastheadLine).toBe('MARKET ANALYSIS')
   })
 

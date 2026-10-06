@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { blamesPriorAgent } from '@/lib/crm/first-touch-copy'
 import {
   citySupplySentence,
+  cmaEmailGlance,
   cmaFirstContactFactsFromRow,
   composeCmaFirstContact,
   composeCmaFirstContactSubject,
@@ -32,14 +33,15 @@ function linkHrefs(paragraphs: FirstContactRun[][]): string[] {
 }
 
 describe('first-contact copy (Matt 2026-10-05 email)', () => {
-  it('opens with the work, the price, and the report, then the sorry close', () => {
+  it('opens with the work and the report, and keeps the list price out of the note', () => {
     const c = composeCmaFirstContact('expired', FACTS)
     expect(c.bodyText.indexOf('Hi there,')).toBe(0)
     expect(c.bodyText).toContain('We spent time in the MLS on 1005 Butler Market.')
-    expect(c.bodyText.indexOf('We would list it at $605,000.')).toBeGreaterThan(c.bodyText.indexOf('We spent time in the MLS'))
-    expect(c.bodyText.indexOf('The full report on 1005 Butler Market is attached as a PDF.')).toBeGreaterThan(c.bodyText.indexOf('We would list it at $605,000.'))
+    expect(c.bodyText).not.toContain('We would list it at')
+    expect(c.bodyText).not.toContain('$605,000')
+    expect(c.bodyText.indexOf('Our price is in the full report, attached as a PDF.')).toBeGreaterThan(c.bodyText.indexOf('We spent time in the MLS'))
     expect(c.bodyText.indexOf('The report is the price, the homes you would be competing with, and what happened to nearby homes that did not sell.')).toBeGreaterThan(
-      c.bodyText.indexOf('The full report on 1005 Butler Market is attached as a PDF.'),
+      c.bodyText.indexOf('Our price is in the full report, attached as a PDF.'),
     )
     expect(c.bodyText).toContain("We're sorry your home didn't sell this go-around.")
     expect(c.bodyText).toContain('we would love the opportunity to earn your business.')
@@ -49,7 +51,8 @@ describe('first-contact copy (Matt 2026-10-05 email)', () => {
     expect(c.bodyText).not.toContain('the price is everything')
     expect(c.bodyText).not.toContain('shifting')
     expect(c.bodyText).not.toContain('less favorable for sellers')
-    expect(c.previewText).toBe('We would list 1005 Butler Market at $605,000. The report is attached.')
+    expect(c.previewText).toBe('Five sales on 1005 Butler Market. Our price is in the report.')
+    expect(c.previewText).not.toMatch(/\$/)
   })
 
   it('asks to earn the business without the essay, on every lane', () => {
@@ -82,11 +85,14 @@ describe('first-contact copy (Matt 2026-10-05 email)', () => {
     expect(fsbo.bodyText).toContain('no charge and no strings')
     expect(fsbo.bodyText).not.toContain('sorry')
     expect(fsbo.bodyText).toContain('Best of luck with the sale.')
+    expect(fsbo.previewText).toBe('A second look at 1005 Butler Market, no charge and no strings.')
+    expect(fsbo.previewText).not.toMatch(/\$/)
     const asked = composeCmaFirstContact('seller-valuation', FACTS)
     expect(asked.bodyText).toContain('Thank you for asking what 1005 Butler Market is worth.')
     expect(asked.bodyText).not.toContain('came off the market')
     expect(asked.bodyText).not.toContain('sorry')
     expect(asked.bodyText).toContain('The range is what the sales support, not a promise.')
+    expect(asked.previewText).toBe('1005 Butler Market: our price is in the report.')
   })
 
   it('carries the same verified numbers whatever the origin', () => {
@@ -182,8 +188,9 @@ describe('first-contact copy (Matt 2026-10-05 email)', () => {
   it('keeps the report sentence in the body and does not print a URL', () => {
     for (const o of ORIGINS) {
       const c = composeCmaFirstContact(o, FACTS)
-      expect(c.close).toBe('The full report on 1005 Butler Market is attached as a PDF.')
+      expect(c.close).toBe('Our price is in the full report, attached as a PDF.')
       expect(c.bodyText).toContain(c.close)
+      expect(c.previewText).not.toMatch(/\$/)
       expect(c.bodyText).not.toMatch(/https?:/)
     }
   })
@@ -202,10 +209,13 @@ describe('first-contact copy (Matt 2026-10-05 email)', () => {
     expect(citySupplySentence('Bend', null)).toBeNull()
     expect(citySupplySentence('', 2.95)).toBeNull()
     const withPulse = composeCmaFirstContact('expired', { ...FACTS, monthsOfSupply: 2.95 })
-    expect(withPulse.bodyText).toContain("Bend has 3.0 months of supply right now. That is a seller's market.")
+    expect(cmaEmailGlance({ ...FACTS, monthsOfSupply: 2.95 }).market).toBe("Bend has 3.0 months of supply right now. That is a seller's market.")
+    expect(withPulse.bodyText).not.toContain('months of supply')
     expect(withPulse.bodyText).not.toContain('shifting')
     const without = composeCmaFirstContact('expired', FACTS)
     expect(without.bodyText).not.toContain('months of supply')
+    expect(cmaEmailGlance(FACTS).market).toBeNull()
+    expect(cmaEmailGlance(FACTS)).toEqual({ count: '5 sales', range: '$585,000 to $625,000', market: null })
   })
 
   it('has no em dash, semicolon or exclamation on any origin, and never prints CMA', () => {
@@ -268,7 +278,10 @@ describe('first-contact copy (Matt 2026-10-05 email)', () => {
     expect(c.bodyText).not.toContain('sold in the last twelve months')
     expect(c.bodyText).not.toContain('came off the market without selling')
     expect(c.bodyText).not.toContain('Our Redmond page')
-    expect(c.bodyText).toContain("Redmond has 3.0 months of supply right now. That is a seller's market.")
+    expect(c.bodyText).not.toContain('months of supply')
+    expect(cmaEmailGlance({ city: 'Redmond', monthsOfSupply: 2.95, closedSalesCount: 5, valueLow: 585_000, valueHigh: 625_000 }).market).toBe(
+      "Redmond has 3.0 months of supply right now. That is a seller's market.",
+    )
     expect(c.bodyText).not.toMatch(/https?:/)
     expect(linkHrefs(c.paragraphs)).toEqual([])
   })
@@ -327,7 +340,8 @@ describe('first-contact copy (Matt 2026-10-05 email)', () => {
     )
     expect(facts.cmaSlug).toBe('cma-2465-7th')
     const letter = composeCmaFirstContact('expired', facts)
-    expect(letter.bodyText).toContain('The full report on 2465 7th is attached as a PDF.')
+    expect(letter.bodyText).toContain('Our price is in the full report, attached as a PDF.')
+    expect(letter.bodyText).not.toContain('$435,000')
     expect(letter.bodyText).not.toContain('utm_')
     expect(letter.bodyText).not.toMatch(/https?:/)
     expect(linkHrefs(letter.paragraphs)).toEqual([])
