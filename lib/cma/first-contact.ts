@@ -1,14 +1,14 @@
 /**
  * First-contact email for a CMA, by origin.
  *
- * Matt, 2026-10-05: the email is a short professional note, not the essay.
- * The house photo and the sales sit above the greeting. The list price is
- * the click ("See our price"), so the note and the inbox preview do not
- * print it. The sentence above the button says our price is in the attached
- * report. The city supply line prints only when the served pulse was loaded,
- * and only on that card, not again under the button. Place pages, the
- * pricing essay, and the bio stay out of the email. The PDF letter still
- * carries them, and the system signature still signs the note.
+ * Matt, 2026-10-05: the email is one short letter. An expired listing opens
+ * by acknowledging that the home did not sell, then says what the MLS work
+ * found, then points at the attached report. The house photo sits above the
+ * letter. The recommended list price stays in the report. The city supply
+ * line prints in the letter only when the served pulse was loaded, and only
+ * once. Place pages, the pricing essay, and the bio stay out of the email.
+ * The PDF letter still carries them, and the system signature still signs
+ * the note.
  *
  * Every figure is off the cmas row or the city pulse. Nothing in here
  * estimates. Voice: marketing_brain_skills/brand-voice/VOICE.md.
@@ -195,11 +195,26 @@ function honestNote(origin: CmaOrigin): string | null {
   return 'The range is what the sales support, not a promise. The right list price also depends on the condition of the home, and we would want to walk it before putting a number in front of a buyer.'
 }
 
+/**
+ * Inbox preview. The sold range, when the letter will actually print it.
+ * The recommended list price stays out. An FSBO preview stays free of a dollar.
+ */
+function salesPreview(named: string, count: number | null, lo: number, hi: number): string {
+  const range = `${formatFirstTouchUsd(lo)} to ${formatFirstTouchUsd(hi)}`
+  if (count == null) return `${named}: sales support ${range}.`
+  const noun = count === 1 ? 'sale' : 'sales'
+  const word = countWord(count)
+  const head = /^\d/.test(word) ? word : word.charAt(0).toUpperCase() + word.slice(1)
+  const verb = count === 1 ? 'supports' : 'support'
+  return `${head} ${noun} on ${named} ${verb} ${range}.`
+}
+
 export function cmaFirstContactPreview(
   origin: CmaOrigin,
   address: string | null,
   recommendedList?: number | null,
   closedSalesCount?: number | null,
+  band?: { valueLow?: number | null; valueHigh?: number | null } | null,
 ): string {
   const named = streetOnly(address) ?? 'this home'
   const rec = finiteMoney(recommendedList)
@@ -208,48 +223,21 @@ export function cmaFirstContactPreview(
       ? `A second look at ${named}, no charge and no strings.`
       : `A second set of numbers for ${named}, no charge and no strings.`
   }
+  const lo = finiteMoney(band?.valueLow)
+  const hi = finiteMoney(band?.valueHigh)
+  if (rec != null && lo != null && hi != null) {
+    return salesPreview(named, saleCount(closedSalesCount), lo, hi)
+  }
   if (rec == null) {
     return origin === 'expired'
       ? 'The price, the competition, and homes that did not sell.'
       : `${named}: the number, and the sales behind it.`
   }
-  const count = saleCount(closedSalesCount)
-  if (origin === 'expired' && count != null) {
-    const noun = count === 1 ? 'sale' : 'sales'
-    const word = countWord(count)
-    const head = /^\d/.test(word) ? word : word.charAt(0).toUpperCase() + word.slice(1)
-    return `${head} ${noun} on ${named}. Our price is in the report.`
-  }
-  return `${named}: our price is in the report.`
+  return `${named}: the report is attached.`
 }
 
 function saleCount(n: number | null | undefined): number | null {
   return typeof n === 'number' && Number.isInteger(n) && n > 0 ? n : null
-}
-
-/**
- * The card under the house photo. Numerals and the sold range, plus the city
- * pulse when it was loaded. The recommended list price is not on this card.
- */
-export function cmaEmailGlance(facts: {
-  closedSalesCount?: number | null
-  valueLow?: number | null
-  valueHigh?: number | null
-  city?: string | null
-  monthsOfSupply?: number | null
-}): { count: string | null; range: string | null; market: string | null } {
-  const count = saleCount(facts.closedSalesCount)
-  const lo = finiteMoney(facts.valueLow)
-  const hi = finiteMoney(facts.valueHigh)
-  return {
-    count: count == null ? null : `${count} ${count === 1 ? 'sale' : 'sales'}`,
-    range: lo != null && hi != null ? `${formatFirstTouchUsd(lo)} to ${formatFirstTouchUsd(hi)}` : null,
-    market: citySupplySentence(facts.city, facts.monthsOfSupply),
-  }
-}
-
-export function cmaEmailGlancePlain(glance: { count: string | null; range: string | null; market: string | null }): string {
-  return [glance.count, glance.range, glance.market].filter((line): line is string => Boolean(line)).join('\n')
 }
 
 /**
@@ -276,10 +264,18 @@ function pushParagraph(out: FirstContactRun[][], runs: FirstContactRun[] | null 
   out.push(runs)
 }
 
+/**
+ * What the attached report holds. One sentence, above the button.
+ * It must not say "our price": that phrase switches the button to a teaser.
+ */
 const REPORT_HOLDS =
-  'The report is the price, the homes you would be competing with, and what happened to nearby homes that did not sell.'
+  'The full report is attached. It has the price we would list at, the homes you would be competing with, and what happened to nearby homes that did not sell.'
 
-/** What we did. The price itself stays in the report, behind the button. */
+/** The expired letter opens on this. The home did not sell. That is why we wrote. */
+const EXPIRED_ACK =
+  "We're sorry your home didn't sell this go-around. If you decide to list again, we would love the opportunity to earn your business."
+
+/** What we did. The recommended price itself stays in the report. */
 function workFor(origin: CmaOrigin, named: string): string {
   if (origin === 'fsbo') {
     return `We noticed your home at ${named} is for sale by owner. We put a second set of numbers together from the MLS, no charge and no strings.`
@@ -287,7 +283,7 @@ function workFor(origin: CmaOrigin, named: string): string {
   if (isAskedOrigin(origin) || origin === 'place-page') {
     return `Thank you for asking what ${named} is worth. We spent time in the MLS and put this report together for you.`
   }
-  return `We spent time in the MLS on ${named}.`
+  return `We spent time in the MLS on ${named} and put this report together for you.`
 }
 
 /**
@@ -305,16 +301,13 @@ function emailEvidence(origin: CmaOrigin, facts: CmaFirstContactFacts): string |
 }
 
 function reportSentence(named: string, hasPrice: boolean): string {
-  if (hasPrice) return 'Our price is in the full report, attached as a PDF.'
+  if (hasPrice) return REPORT_HOLDS
   return `The full report on ${named} is attached as a PDF.`
 }
 
 function emailClose(origin: CmaOrigin): string[] {
   if (origin === 'expired') {
-    return [
-      "We're sorry your home didn't sell this go-around. If you decide to list again, we would love the opportunity to earn your business.",
-      'Please feel free to call with any questions. Best of luck in the future.',
-    ]
+    return ['Please feel free to call with any questions. Best of luck in the future.']
   }
   if (origin === 'fsbo') {
     return [
@@ -340,17 +333,25 @@ export function composeCmaFirstContact(
   const close = reportSentence(named, hasPrice)
   const paragraphs: FirstContactRun[][] = []
   pushParagraph(paragraphs, [greeting])
+  if (origin === 'expired') pushParagraph(paragraphs, [EXPIRED_ACK])
   pushParagraph(paragraphs, [plan])
-  pushParagraph(paragraphs, [close])
-  pushParagraph(paragraphs, [REPORT_HOLDS])
   pushParagraph(paragraphs, emailEvidence(origin, facts) ? [emailEvidence(origin, facts)!] : null)
+  const supply = citySupplySentence(facts.city, facts.monthsOfSupply)
+  if (supply) pushParagraph(paragraphs, [supply])
+  pushParagraph(paragraphs, [close])
   const note = honestNote(origin)
   if (note) pushParagraph(paragraphs, [note])
   for (const line of emailClose(origin)) pushParagraph(paragraphs, [line])
   const bodyText = paragraphsToPlain(paragraphs)
   return {
     subject: composeCmaFirstContactSubject(origin, facts.address),
-    previewText: cmaFirstContactPreview(origin, facts.address, facts.recommendedList, facts.closedSalesCount),
+    previewText: cmaFirstContactPreview(
+      origin,
+      facts.address,
+      facts.recommendedList,
+      facts.closedSalesCount,
+      facts,
+    ),
     mastheadLine: 'MARKET ANALYSIS',
     greeting,
     plan,

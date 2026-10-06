@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cmaEmailGlance, cmaEmailGlancePlain, composeCmaFirstContact } from '@/lib/cma/first-contact'
+import { composeCmaFirstContact } from '@/lib/cma/first-contact'
 import { buildCmaFirstContactForRow } from '@/lib/cma/first-contact-for-send'
 import type { FirstContactPlace } from '@/lib/cma/first-contact-place'
 import { attributeOutbound } from '@/lib/crm/attributed-links'
@@ -111,24 +111,29 @@ function mailedPlain(text: string): string {
 describe('CMA first-contact send body', () => {
   const copy = composeCmaFirstContact('expired', FACTS)
 
-  it('puts the sales above the greeting and keeps our price for the button', () => {
+  it('leads with the unsold home, then the findings, then the report', () => {
     const sent = buildLeadBody(ctx(), undefined, SIGNATURE)
     const letter = letterHtml(sent.html)
     const visible = decodeVisible(letter)
     const greeting = visible.indexOf('Hi there')
+    const sorry = visible.indexOf("We're sorry your home didn't sell")
     const work = visible.indexOf('We spent time in the MLS')
-    const report = visible.indexOf('Our price is in the full report')
-    const cta = visible.indexOf('See our price')
-    expect(sent.html.indexOf('4 sales')).toBeLessThan(sent.html.indexOf('Hi there'))
-    expect(sent.html.indexOf('$346,000 to $372,000')).toBeLessThan(sent.html.indexOf('Hi there'))
+    const sales = visible.indexOf('We found four sales')
+    const report = visible.indexOf('The full report is attached.')
+    const cta = visible.indexOf('Read the full report')
     expect(greeting).toBeGreaterThanOrEqual(0)
-    expect(work).toBeGreaterThan(greeting)
-    expect(report).toBeGreaterThan(work)
+    expect(sorry).toBeGreaterThan(greeting)
+    expect(work).toBeGreaterThan(sorry)
+    expect(sales).toBeGreaterThan(work)
+    expect(report).toBeGreaterThan(sales)
     expect(cta).toBeGreaterThan(report)
     expect(visible).not.toContain('We would list it at')
+    expect(visible).not.toContain('Our price')
+    expect(visible).not.toContain('See our price')
     expect(sent.html).not.toContain('$358,000')
+    expect(sent.html).not.toContain('>4 sales<')
     const first = anchors(letter)[0]
-    expect(first?.text).toBe('See our price →')
+    expect(first?.text).toBe('Read the full report →')
     expect(first?.href).toContain(`/cma/${SLUG}`)
     expect(first?.href).not.toContain('/api/track/')
     expect(sent.html).toContain('MARKET ANALYSIS')
@@ -137,24 +142,27 @@ describe('CMA first-contact send body', () => {
     expect(sent.html).not.toContain('height:240px')
   })
 
-  it('does not offer see our price when the row has no recommendation', () => {
+  it('does not claim a list price when the row has no recommendation', () => {
     const facts = { ...FACTS, recommendedList: null }
     const sent = buildLeadBody({ ...ctx(), facts, recommendedList: null }, undefined, SIGNATURE)
     const visible = decodeVisible(letterHtml(sent.html))
+    expect(visible).toContain("We're sorry your home didn't sell")
     expect(visible).toContain("The full report on 62017 Nate's is attached as a PDF.")
+    expect(visible).not.toContain('the price we would list at')
     expect(visible).not.toContain('Our price')
     expect(visible).not.toContain('See our price')
     expect(anchors(letterHtml(sent.html)).map((l) => l.text)).toEqual(['Read the full report →'])
-    expect(sent.html.indexOf('4 sales')).toBeLessThan(sent.html.indexOf('Hi there'))
+    expect(visible.indexOf('Hi there')).toBeLessThan(visible.indexOf("We're sorry"))
   })
 
-  it('prints the city pulse once, on the card, and only when it was loaded', () => {
+  it('prints the city pulse once, in the letter, and only when it was loaded', () => {
     const facts = { ...FACTS, monthsOfSupply: 2.95 }
     const sent = buildLeadBody({ ...ctx(), facts }, undefined, SIGNATURE)
     const line = "Bend has 3.0 months of supply right now. That is a seller's market."
-    expect(sent.html.indexOf(line)).toBeLessThan(sent.html.indexOf('Hi there'))
+    const visible = decodeVisible(letterHtml(sent.html))
+    expect(visible.indexOf(line)).toBeGreaterThan(visible.indexOf('We found four sales'))
+    expect(visible.indexOf('The full report is attached.')).toBeGreaterThan(visible.indexOf(line))
     expect(sent.html.indexOf(line, sent.html.indexOf(line) + line.length)).toBe(-1)
-    expect(letterHtml(sent.html)).not.toContain('months of supply')
     const bare = buildLeadBody(ctx(), undefined, SIGNATURE)
     expect(bare.html).not.toContain('months of supply')
   })
@@ -170,8 +178,7 @@ describe('CMA first-contact send body', () => {
     expect(sent.html).toContain('alt="62017 Nate&#39;s"')
     expect(sent.html).toContain('width="240"')
     expect(sent.html).toContain('height="160"')
-    expect(sent.html.indexOf(src)).toBeLessThan(sent.html.indexOf('4 sales'))
-    expect(sent.html.indexOf('4 sales')).toBeLessThan(sent.html.indexOf('Hi there'))
+    expect(sent.html.indexOf(src)).toBeLessThan(sent.html.indexOf('Hi there'))
     expect(sent.html).not.toContain('hero-oldmill')
     expect(sent.html).not.toContain('height:240px')
     expect(sent.html).not.toContain('/1600x1200/')
@@ -182,7 +189,7 @@ describe('CMA first-contact send body', () => {
     const html = track(sent.html)
     const letter = letterHtml(html)
     const links = anchors(letter)
-    expect(links.map((l) => l.text)).toEqual(['See our price →'])
+    expect(links.map((l) => l.text)).toEqual(['Read the full report →'])
     expect(decodeVisible(letter).toLowerCase()).not.toContain('http')
     const paths: string[] = []
     for (const link of links) {
@@ -209,7 +216,7 @@ describe('CMA first-contact send body', () => {
     const sent = buildLeadBody(ctx(), undefined, SIGNATURE)
     const letter = sent.text.split('\n--\n')[0] ?? ''
     expect(letter.toLowerCase()).not.toContain('http')
-    expect(letter.trim()).toBe(`${cmaEmailGlancePlain(cmaEmailGlance(FACTS))}\n\n${copy.bodyText}`)
+    expect(letter.trim()).toBe(copy.bodyText)
     expect(sent.text).toContain('https://ryan-realty.com/docs/oregon-initial-agency-disclosure-pamphlet.pdf')
     const sigVisible = decodeVisible(sent.html.split('data-cma-letter')[1]?.split('</div>')[1] ?? '')
     expect(sigVisible).toContain('Oregon Initial Agency Disclosure Pamphlet')
@@ -293,7 +300,7 @@ describe('CMA first-contact send body', () => {
       SIGNATURE,
     )
     expect(preview.copy.bodyText).toBe(copy.bodyText)
-    expect(mailedPlain(sent.text)).toBe(`${cmaEmailGlancePlain(cmaEmailGlance(preview.facts))}\n\n${preview.copy.bodyText}`)
+    expect(mailedPlain(sent.text)).toBe(preview.copy.bodyText)
     expect(preview.copy.bodyText).not.toContain('Someone')
   })
 })

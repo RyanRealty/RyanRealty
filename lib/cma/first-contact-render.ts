@@ -198,10 +198,11 @@ function reportLead(address: string | null): string {
  * Paragraphs plus the report button. No signature. Clean campaign UTMs only.
  *
  * The sentence that names the report sits directly above the one button.
- * "Our price" in that sentence makes the button "See our price". A broker
- * who typed "We would list it at $X." still gets the plate. A note that
- * never names the report gets one lead sentence, then the button, and the
- * button again after the note.
+ * A broker note that says "our price" makes the button "See our price".
+ * The composed letter does not say that, so its button is "Read the full
+ * report". A broker who typed "We would list it at $X." still gets the
+ * plate. A note that never names the report gets one lead sentence, then
+ * the button, and the button again after the note.
  */
 export function renderCmaLetterBlock(args: {
   paragraphs: FirstContactRun[][]

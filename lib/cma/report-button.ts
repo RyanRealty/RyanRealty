@@ -4,9 +4,9 @@
  * (lib/cma/send.ts) and the review page preview so what the broker previews
  * is what goes out.
  *
- * The composed note says "our price" and the button reads "See our price".
- * A broker note that never says that keeps "Read the full report". A button
- * with no sentence in front of it is a dead tap.
+ * The composed letter names the report and the button reads "Read the full
+ * report". A broker note that says "our price" still gets "See our price".
+ * A button with no sentence in front of it is a dead tap.
  */
 import {
   EMAIL_BODY_MUTED,
@@ -27,36 +27,6 @@ export function cmaReportButtonHtml(viewUrl: string, label = 'Read the full repo
   // Table cell holds the color. Outlook drops padding and background on an <a>.
   // The label is on the anchor and a span so Gmail keeps the cream type.
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px 0;"><tr><td align="center" bgcolor="${EMAIL_NAVY}" style="background:${EMAIL_NAVY};"><a href="${href}" style="display:block;padding:18px 24px;font-family:${EMAIL_FONT_STACK};font-size:18px;line-height:1.3;font-weight:700;color:${EMAIL_CREAM};text-decoration:none;text-align:center;"><span style="color:${EMAIL_CREAM};">${safeLabel} &rarr;</span></a></td></tr></table>`
-}
-
-/**
- * Sales count, the sold range, and the city pulse when it was loaded.
- * Nested tables only. This sits under the photo and outside the letter,
- * so a later </div> in the letter cannot clip it. The list price is not here.
- */
-export function cmaEmailStatsHtml(
-  glance: { count: string | null; range: string | null; market: string | null },
-  underPhoto = false,
-): string {
-  const rows: string[] = []
-  if (glance.count) {
-    rows.push(
-      `<tr><td align="center" style="font-family:${EMAIL_FONT_STACK};font-size:12px;line-height:1.3;letter-spacing:0.08em;text-transform:uppercase;color:${EMAIL_BODY_MUTED};padding:0;">${escapeAttr(glance.count)}</td></tr>`,
-    )
-  }
-  if (glance.range) {
-    rows.push(
-      `<tr><td align="center" style="font-family:${EMAIL_SERIF};font-size:18px;line-height:1.3;font-weight:700;color:${EMAIL_NAVY};padding:${glance.count ? '2px' : '0'} 0 0 0;">${escapeAttr(glance.range)}</td></tr>`,
-    )
-  }
-  if (glance.market) {
-    rows.push(
-      `<tr><td align="center" style="font-family:${EMAIL_FONT_STACK};font-size:13px;line-height:1.45;color:${EMAIL_BODY_MUTED};padding:6px 0 0 0;">${escapeAttr(glance.market)}</td></tr>`,
-    )
-  }
-  if (!rows.length) return ''
-  const pad = underPhoto ? '10px 34px 0 34px' : '22px 34px 0 34px'
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:${pad};"><table role="presentation" cellpadding="0" cellspacing="0" border="0">${rows.join('')}</table></td></tr></table>`
 }
 
 /**

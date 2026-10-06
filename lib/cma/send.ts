@@ -44,7 +44,7 @@ import { isSuppressed } from '@/lib/crm/suppressions'
 import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'
 import { sendEmail } from '@/lib/resend'
 import { sendGmailMessage } from '@/lib/gmail-draft'
-import { cmaEmailGlance, cmaEmailGlancePlain, composeCmaFirstContact, streetOnly, type CmaFirstContactFacts } from '@/lib/cma/first-contact'
+import { composeCmaFirstContact, streetOnly, type CmaFirstContactFacts } from '@/lib/cma/first-contact'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { acquireCmaProspectLease, type CmaProspectLease } from '@/lib/cma/prospect-send-claim'
 import { cmaFirstContactFactsForSend, cmaSendBrokerSlug } from '@/lib/cma/first-contact-for-send'
@@ -52,7 +52,7 @@ import { paragraphsForLetterBody, paragraphsToPlain, renderCmaLetterBlock } from
 import { screenAddressForSolicitation } from '@/lib/cma/solicit-screen'
 import { buildSignature } from '@/lib/crm/email-signature'
 import { getBrokers } from '@/lib/data'
-import { cmaEmailPhotoHtml, cmaEmailStatsHtml, previewTextFromCustomBody } from '@/lib/cma/report-button'
+import { cmaEmailPhotoHtml, previewTextFromCustomBody } from '@/lib/cma/report-button'
 import { classifyCmaOrigin, type CmaOrigin } from '@/lib/cma/origin'
 import { resolveSendableClientEmail } from '@/lib/cma/send-client-email'
 import { resolveTheirPrice } from '@/lib/cma/queue-view'
@@ -277,17 +277,13 @@ export function buildLeadBody(
   const photoHtml = photo
     ? cmaEmailPhotoHtml(photo, streetOnly(ctx.subjectAddress) ?? 'The home')
     : ''
-  const glance = cmaEmailGlance(ctx.facts)
-  const statsHtml = cmaEmailStatsHtml(glance, Boolean(photoHtml))
-  const glancePlain = cmaEmailGlancePlain(glance)
   const bodyHtml = `
 ${photoHtml}
-${statsHtml}
-<div style="padding:${photoHtml || statsHtml ? '18px' : '28px'} 34px 8px;">
+<div style="padding:${photoHtml ? '18px' : '28px'} 34px 8px;">
   ${block}
   ${signature?.html ?? ''}
 </div>`
-  const text = `${glancePlain ? `${glancePlain}\n\n` : ''}${letterPlain}
+  const text = `${letterPlain}
 ${signature?.plain ?? ''}${brandedTextFooter()}`
   const html = wrapBrandedEmail({
     bodyHtml,
