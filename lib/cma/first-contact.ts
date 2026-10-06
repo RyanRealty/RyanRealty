@@ -2,9 +2,11 @@
  * First-contact email for a CMA, by origin.
  *
  * Matt, 2026-10-05: the email is one short letter. An expired listing opens
- * by acknowledging that the home did not sell, then says what the MLS work
- * found, then points at the attached report. The house photo sits above the
- * letter. The recommended list price stays in the report. The city supply
+ * by acknowledging that the home did not sell, then says we went through the
+ * homes and the sales and put the report together, then points at the
+ * attachment. It does not say we spent time in the MLS on the street. The
+ * house photo sits above the letter. The recommended list price stays in
+ * the report. The city supply
  * line prints in the letter only when the served pulse was loaded, and only
  * once. Place pages, the pricing essay, and the bio stay out of the email.
  * The PDF letter still carries them, and the system signature still signs
@@ -275,15 +277,18 @@ const REPORT_HOLDS =
 const EXPIRED_ACK =
   "We're sorry your home didn't sell this go-around. If you decide to list again, we would love the opportunity to earn your business."
 
-/** What we did. The recommended price itself stays in the report. */
-function workFor(origin: CmaOrigin, named: string): string {
+/**
+ * What we did. The recommended price itself stays in the report.
+ * An expired letter does not say we spent time in the MLS on the street.
+ */
+function workFor(origin: CmaOrigin, named: string, facts: CmaFirstContactFacts): string {
   if (origin === 'fsbo') {
     return `We noticed your home at ${named} is for sale by owner. We put a second set of numbers together from the MLS, no charge and no strings.`
   }
   if (isAskedOrigin(origin) || origin === 'place-page') {
     return `Thank you for asking what ${named} is worth. We spent time in the MLS and put this report together for you.`
   }
-  return `We spent time in the MLS on ${named} and put this report together for you.`
+  return `We went through the homes and the sales ${scopePhrase(facts)} and put this report together. We thought you might find it useful, and we're happy to go through the numbers with you.`
 }
 
 /**
@@ -307,7 +312,7 @@ function reportSentence(named: string, hasPrice: boolean): string {
 
 function emailClose(origin: CmaOrigin): string[] {
   if (origin === 'expired') {
-    return ['Please feel free to call with any questions. Best of luck in the future.']
+    return ['If you have any questions, please let us know. Best of luck in the future.']
   }
   if (origin === 'fsbo') {
     return [
@@ -327,7 +332,7 @@ export function composeCmaFirstContact(
 ): CmaFirstContactCopy {
   const greeting = 'Hi there,'
   const named = streetOnly(facts.address) ?? 'this home'
-  const plan = workFor(origin, named)
+  const plan = workFor(origin, named, facts)
   const numbers = composeFirstContactNumbers(origin, facts)
   const hasPrice = finiteMoney(facts.recommendedList) != null
   const close = reportSentence(named, hasPrice)

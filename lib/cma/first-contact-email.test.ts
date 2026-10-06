@@ -20,13 +20,13 @@ const NATE_PLAIN = `Hi there,
 
 We're sorry your home didn't sell this go-around. If you decide to list again, we would love the opportunity to earn your business.
 
-We spent time in the MLS on 62017 Nate's and put this report together for you.
+We went through the homes and the sales in Clarendon Place and put this report together. We thought you might find it useful, and we're happy to go through the numbers with you.
 
 We found four sales of homes like yours in Clarendon Place, and they support $346,000 to $372,000. The last listing asked $405,000, about 9% above what those sales support. That gap is usually the whole story, and it says nothing bad about the house.
 
 The full report is attached. It has the price we would list at, the homes you would be competing with, and what happened to nearby homes that did not sell.
 
-Please feel free to call with any questions. Best of luck in the future.`
+If you have any questions, please let us know. Best of luck in the future.`
 
 function linksOf(paragraphs: FirstContactRun[][]): Array<{ text: string; href: string }> {
   return paragraphs.flat().flatMap((r) => (typeof r === 'string' ? [] : [{ text: r.text, href: r.href }]))
