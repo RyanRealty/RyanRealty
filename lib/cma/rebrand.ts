@@ -27,7 +27,7 @@
 
 import { getCmaAdminRowBySlug, updateCmaRowFieldsBySlug, getCmaBrokerBySlugOrEmail } from '@/lib/data'
 import { renderCmaHtml, type RenderCmaArgs } from '@/lib/cma/render'
-import { buildCmaMapDataUri } from '@/lib/cma/map'
+import { buildCmaMapDataUri, cmaMapOptionsFromArgs } from '@/lib/cma/map'
 import type { CmaBroker } from '@/lib/cma/types'
 
 export type RebrandResult =
@@ -110,9 +110,11 @@ export async function rebrandCma(input: { slug: string; brokerSlug: string }): P
   // the map because an unrelated API had a bad minute.
   let mapDataUri: string | null = null
   try {
-    const map = await buildCmaMapDataUri(storedArgs.subject, storedArgs.comps, {
-      tiersUsed: storedArgs.tiersUsed,
-    })
+    const map = await buildCmaMapDataUri(
+      storedArgs.subject,
+      storedArgs.comps,
+      cmaMapOptionsFromArgs(storedArgs),
+    )
     mapDataUri = map?.dataUri ?? null
   } catch {
     mapDataUri = null

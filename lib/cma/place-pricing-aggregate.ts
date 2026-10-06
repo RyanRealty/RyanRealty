@@ -6,6 +6,7 @@
 import type { PlacePricingStory } from '@/lib/cma/place-pricing-types'
 import { parentPlaceArea } from '@/lib/pricing/comp-area'
 import { median } from '@/lib/cma/market-status'
+import { formatCalendarDay } from '@/lib/format/date'
 
 const FAILED = new Set(['Expired', 'Canceled', 'Withdrawn'])
 
@@ -109,12 +110,7 @@ function latest<T extends PlacePricingListingRow>(rows: readonly T[]): T {
 }
 
 function longDate(iso: string): string {
-  return new Date(`${iso}T12:00:00.000Z`).toLocaleDateString('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-    timeZone: 'UTC',
-  })
+  return formatCalendarDay(iso, { month: 'long', day: 'numeric', year: 'numeric' })
 }
 
 function shareMedian(values: number[], gate: number): number | null {

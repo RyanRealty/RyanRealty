@@ -477,7 +477,7 @@ export function cmaMapOptionsFromArgs(args: unknown): CmaMapOptions {
   const compArea = readCompArea(args)
   const namedParent =
     compArea && (compArea.kind === 'neighborhood' || compArea.kind === 'community')
-      ? compArea.names[0]?.trim() || null
+      ? compArea.names?.[0]?.trim() || null
       : null
   const lat = a?.subject?.latitude
   const lng = a?.subject?.longitude
