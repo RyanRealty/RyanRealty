@@ -46,7 +46,6 @@ import {
   type WaterClass,
 } from '@/lib/pricing/classes'
 import {
-  keepTightestByClosePrice,
   PRICING_MAX_COMPS,
   PRICING_MIN_COMPS,
   PRICING_TARGET_COMPS,
@@ -1006,24 +1005,140 @@ function similarity(subject: PricingSubject, sale: PricingSale, asOf: string, po
 }
 
 
-/** City, similar-tract, and boundary-exit rungs. Not the subdivision, not adjacent, not the neighborhood. */
-function isSameZipTierName(name: string | null | undefined): boolean {
-  return /^(city-|citywide-|similar-sub|competing-area-|beyond-)/.test(name ?? '')
+/**
+ * Own ground, then the touching plats, then the next row, then a pocket.
+ * Distance, community, and city fill only what those rows left open.
+ * A later row does not take a slot from an earlier one.
+ */
+function pricingLocationGroup(tier: string | null | undefined): number {
+  const name = tier ?? ''
+  if (name.startsWith('own-street-') || name.startsWith('subdivision-')) return 0
+  if (name.startsWith('adjacent-sub-')) return 1
+  if (name.startsWith('closer-sub-')) return 2
+  if (name.startsWith('pocket-')) return 3
+  return 4
+}
+
+/** Same era, then a generation apart, then a different era. Unknown sits in the middle. */
+const PLAT_ERA_TIGHT_YEARS = 7
+const PLAT_ERA_LOOSE_YEARS = 15
+/** A plat whose homes are within about 10% of this living area is the same size. */
+const PLAT_SIZE_CLOSE = 0.1
+/** Float noise under a hundredth of a mile does not beat a closer feature match. */
+const MILES_TIE = 0.01
+
+function platKey(sale: PricingSale): string {
+  const slug = sale.subdivisionSlug?.trim().toLowerCase()
+  if (slug) return slug
+  const name = sale.subdivisionNorm?.trim().toLowerCase()
+  if (name) return name
+  return sale.listingKey
 }
 
 /**
- * A sale from the closer place stays. A later zip rung can fill a short set.
- * It cannot take a slot from a subdivision, adjacent, or neighborhood sale.
+ * How much this plat's homes resemble the subject's own subdivision.
+ * Era first, then size. This ranks which plat fills an open slot. It does
+ * not drop a sale, and it does not use a median close.
  */
-function keepCloserPlaceBeforeZip<T extends { selectionTier?: string | null; closePrice: number; closeDate?: string | null }>(
-  comps: readonly T[],
+function platLikeness(
+  subject: PricingSubject,
+  sales: readonly PricingSale[],
+): { era: number; size: number } {
+  const years = sales
+    .map((sale) => sale.yearBuilt)
+    .filter((year): year is number => year != null && year >= 1850)
+  const sqfts = sales.map((sale) => sale.sqft).filter((sqft) => sqft > 0)
+  const yearMid = medianClose(years)
+  const sqftMid = medianClose(sqfts)
+  let era = 1
+  if (subject.yearBuilt != null && subject.yearBuilt >= 1850 && yearMid != null) {
+    const gap = Math.abs(subject.yearBuilt - yearMid)
+    era = gap <= PLAT_ERA_TIGHT_YEARS ? 0 : gap <= PLAT_ERA_LOOSE_YEARS ? 1 : 2
+  }
+  let size = 1
+  if (subject.sqft > 0 && sqftMid != null) {
+    size = Math.abs(sqftMid - subject.sqft) / subject.sqft <= PLAT_SIZE_CLOSE ? 0 : 1
+  }
+  return { era, size }
+}
+
+/** Beds, baths, living area, then year. Close price is not in this gap. */
+function featureGap(subject: PricingSubject, sale: PricingSale): number {
+  const beds = subject.beds != null && sale.beds != null ? Math.abs(sale.beds - subject.beds) : 1
+  const baths = subject.baths != null && sale.baths != null ? Math.abs(sale.baths - subject.baths) : 1
+  const sizePct = subject.sqft > 0 ? Math.abs(sale.sqft - subject.sqft) / subject.sqft : 1
+  const year =
+    subject.yearBuilt != null && sale.yearBuilt != null ? Math.abs(subject.yearBuilt - sale.yearBuilt) : 25
+  return beds * 10 + baths * 10 + sizePct * 5 + year / 50
+}
+
+/**
+ * The homes in one opened row that most resemble the subject.
+ * On a touching row, the plat whose homes match this subdivision comes
+ * first. Inside the subject's own ground or pocket, distance comes first.
+ * Then beds, baths, size, and year.
+ */
+function pickClosestMatches(
+  subject: PricingSubject,
+  sales: readonly SelectedPricingComp[],
+  slots: number,
+  rankPlats: boolean,
+): SelectedPricingComp[] {
+  const likeness = new Map<string, { era: number; size: number }>()
+  if (rankPlats) {
+    const byPlat = new Map<string, SelectedPricingComp[]>()
+    for (const sale of sales) {
+      const key = platKey(sale)
+      const rows = byPlat.get(key)
+      if (rows) rows.push(sale)
+      else byPlat.set(key, [sale])
+    }
+    for (const [key, rows] of byPlat) likeness.set(key, platLikeness(subject, rows))
+  }
+  const neutral = { era: 0, size: 0 }
+  return [...sales]
+    .sort((a, b) => {
+      const left = likeness.get(platKey(a)) ?? neutral
+      const right = likeness.get(platKey(b)) ?? neutral
+      if (left.era !== right.era) return left.era - right.era
+      if (left.size !== right.size) return left.size - right.size
+      const miles = saleMiles(subject, a) - saleMiles(subject, b)
+      if (Math.abs(miles) > MILES_TIE) return miles
+      const features = featureGap(subject, a) - featureGap(subject, b)
+      if (features !== 0) return features
+      return a.listingKey.localeCompare(b.listingKey)
+    })
+    .slice(0, slots)
+}
+
+/**
+ * Five sales. An earlier place keeps its seats. A row with more qualifiers
+ * than open seats keeps the closest homes in the plat that resembles this
+ * one. A median close does not remove a home.
+ */
+function capPricingSet(
+  subject: PricingSubject,
+  comps: readonly SelectedPricingComp[],
   max: number,
-  asOf?: string,
-): T[] {
-  const closer = comps.filter((c) => !isSameZipTierName(c.selectionTier))
-  if (closer.length >= max) return keepTightestByClosePrice(closer, max, asOf)
-  const zip = comps.filter((c) => isSameZipTierName(c.selectionTier))
-  return [...closer, ...keepTightestByClosePrice(zip, max - closer.length, asOf)]
+): SelectedPricingComp[] {
+  if (comps.length <= max) return [...comps]
+  const groups = new Map<number, SelectedPricingComp[]>()
+  for (const comp of comps) {
+    const group = pricingLocationGroup(comp.selectionTier)
+    const rows = groups.get(group)
+    if (rows) rows.push(comp)
+    else groups.set(group, [comp])
+  }
+  const kept: SelectedPricingComp[] = []
+  for (const group of [0, 1, 2, 3, 4]) {
+    if (kept.length >= max) break
+    const rows = groups.get(group)
+    if (!rows?.length) continue
+    const slots = max - kept.length
+    if (rows.length <= slots) kept.push(...rows)
+    else kept.push(...pickClosestMatches(subject, rows, slots, group === 1 || group === 2))
+  }
+  return kept
 }
 
 /** A neighborhood polygon or a community boundary confines the search. */
@@ -1141,10 +1256,12 @@ export function walkPricingLadder(
   // How many sales the plat and the street had before any quarter-mile pocket
   // rung. 3759 SW 45th (Redtail Ridge), rebuilt 2026-09-28: the plat already
   // held 7 sales, then pocket-9mo and pocket-12mo added 17 cheaper sales in
-  // other subdivisions. keepTightestByClosePrice then kept the cheap cluster
-  // and dropped every Redtail Ridge sale, including 3499 SW 44th at $790,000.
-  // The Sep 7 build, before that cut, still had the plat sale. A pocket rung
-  // is wider than a plat that has already filled. It must not be mixed in.
+  // other subdivisions. A price cut then kept the cheap cluster and dropped
+  // every Redtail Ridge sale, including 3499 SW 44th at $790,000. The Sep 7
+  // build, before that cut, still had the plat sale. A pocket rung is wider
+  // than a plat that has already filled. It must not be mixed in. When a row
+  // still has more than five qualifiers, the closest homes stay. A median
+  // close does not choose them.
   let countBeforePocket: number | null = null
 
   for (const tier of tiers) {
@@ -1266,13 +1383,6 @@ export function walkPricingLadder(
         })
       : pool
     for (const sale of scanPool) {
-      if (
-        slugOrder &&
-        byKey.size >= PRICING_TARGET_COMPS &&
-        !isPocketExclusiveTier(tier)
-      ) {
-        break
-      }
       if (byKey.has(sale.listingKey)) continue
       // ONE SALE, ONE ROW. A relisting of the same closed transaction carries a
       // new listing key, so keying on that alone lets one sale into a set twice
@@ -1327,7 +1437,7 @@ export function walkPricingLadder(
   // pass runs only when that median was never there.
   const hadOwnPlat = ranked.some((c) => c.ownPlat)
   const sitting = hadOwnPlat ? ranked : pocketSalesSitWithKept(ranked, customLadder)
-  const sliced = keepCloserPlaceBeforeZip(sitting, PRICING_MAX_COMPS, asOf)
+  const sliced = capPricingSet(subject, sitting, PRICING_MAX_COMPS)
   const bracketed = bracketGla(subject, sliced, pool, asOf, priceAnchor, cells, customLadder)
   if (bracketed.note) {
     if (!tiersUsed.includes('gla-bracket')) tiersUsed.push('gla-bracket')

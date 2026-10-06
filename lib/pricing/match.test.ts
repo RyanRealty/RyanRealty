@@ -532,27 +532,32 @@ describe('walkPricingLadder', () => {
     expect(out.comps).toHaveLength(5)
   })
 
-  it('drops the price outlier once five closer sales are in', () => {
-    const tight = [700_000, 710_000, 720_000, 735_000, 748_000]
+  it('drops a farther sale once five nearer sales are in, and a same-distance price does not', () => {
+    const near = [700_000, 710_000, 720_000, 735_000, 980_000]
     const pool = [
-      ...tight.map((closePrice, i) =>
+      ...near.map((closePrice, i) =>
         sale({
-          listingKey: `T${i}`,
+          listingKey: `N${i}`,
           address: `${10 + i} Kenwood`,
           closeDate: `2026-07-${String(20 - i).padStart(2, '0')}`,
           closePrice,
+          latitude: 44.061,
+          longitude: -121.301,
         }),
       ),
       sale({
-        listingKey: 'HIGH',
+        listingKey: 'FAR',
         address: '90 Kenwood',
-        closeDate: '2026-05-01',
-        closePrice: 980_000,
+        closeDate: '2026-07-01',
+        closePrice: 720_000,
+        latitude: 44.061 + 0.4 / 69,
+        longitude: -121.301,
       }),
     ]
     const out = walkPricingLadder(subject(), pool, { asOf })
     expect(out.comps).toHaveLength(5)
-    expect(out.comps.map((c) => c.listingKey)).not.toContain('HIGH')
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('FAR')
+    expect(out.comps.map((c) => c.listingKey)).toContain('N4')
   })
 
   it('does not treat three wide-GLA same-subdivision sales as a quality stop', () => {
@@ -2720,5 +2725,213 @@ describe('next row is touching plats, not every plat in the parent (Matt 2026-10
     expect(quarterAt).toBeGreaterThanOrEqual(0)
     expect(mileAt).toBeGreaterThan(quarterAt)
     expect(out.comps.find((c) => c.listingKey === 'MILE')?.selectionTier.startsWith('nearby-0.25')).toBe(false)
+  })
+})
+
+describe('overflow — closest homes, then the plat that resembles this one (Matt 2026-10-06)', () => {
+  const asOf = '2026-08-01'
+  const here = { latitude: 44.06, longitude: -121.3, communityLocated: true as const, communitySlug: null }
+
+  function atMiles(miles: number) {
+    return { latitude: here.latitude + miles / 69, longitude: here.longitude }
+  }
+
+  it('keeps the nearer sales when one adjacent plat qualifies more than five', () => {
+    const subj = subject({
+      ...here,
+      subdivision: 'Old Ground',
+      subdivisionNorm: 'old ground',
+      subdivisionSlug: 'old-ground',
+      adjacentSubdivisionSlugs: ['like-neighbors'],
+      yearBuilt: 1998,
+      sqft: 2000,
+    })
+    const row = (listingKey: string, miles: number) =>
+      sale({
+        ...here,
+        ...atMiles(miles),
+        listingKey,
+        address: `${listingKey} Like Ln`,
+        subdivision: 'Like Neighbors',
+        subdivisionNorm: 'like neighbors',
+        subdivisionSlug: 'like-neighbors',
+        yearBuilt: 1996,
+        sqft: 2000,
+        beds: 3,
+        baths: 2,
+        closeDate: '2026-06-01',
+        closePrice: 700_000,
+      })
+    // Far sales are first in the pool. The walk used to stop at five in that order.
+    const pool = [
+      ...['F1', 'F2', 'F3', 'F4', 'F5'].map((key) => row(key, 0.3)),
+      ...['N1', 'N2', 'N3'].map((key) => row(key, 0.05)),
+    ]
+    const out = walkPricingLadder(subj, pool, { asOf })
+    const keys = out.comps.map((c) => c.listingKey)
+    expect(keys).toHaveLength(5)
+    expect(keys).toEqual(expect.arrayContaining(['N1', 'N2', 'N3']))
+  })
+
+  it('fills an adjacent row from the plat whose homes match this subdivision before a newer closer plat', () => {
+    const subj = subject({
+      ...here,
+      subdivision: 'Old Ground',
+      subdivisionNorm: 'old ground',
+      subdivisionSlug: 'old-ground',
+      // The newer plat is first. Slug order must not decide the seats.
+      adjacentSubdivisionSlugs: ['new-homes', 'like-neighbors'],
+      yearBuilt: 1998,
+      sqft: 2000,
+    })
+    const row = (listingKey: string, slug: string, name: string, yearBuilt: number, miles: number) =>
+      sale({
+        ...here,
+        ...atMiles(miles),
+        listingKey,
+        address: `${listingKey} Adj Ln`,
+        subdivision: name,
+        subdivisionNorm: name.toLowerCase(),
+        subdivisionSlug: slug,
+        yearBuilt,
+        sqft: 2000,
+        beds: 3,
+        baths: 2,
+        closeDate: '2026-06-01',
+        closePrice: 700_000,
+      })
+    const pool = [
+      ...['NEW1', 'NEW2', 'NEW3', 'NEW4', 'NEW5'].map((key) => row(key, 'new-homes', 'New Homes', 2012, 0.2)),
+      row('NEWCLOSE', 'new-homes', 'New Homes', 2012, 0.08),
+      ...['L1', 'L2', 'L3', 'L4'].map((key) => row(key, 'like-neighbors', 'Like Neighbors', 1997, 0.3)),
+    ]
+    const out = walkPricingLadder(subj, pool, { asOf })
+    const keys = out.comps.map((c) => c.listingKey)
+    expect(keys).toHaveLength(5)
+    expect(keys).toEqual(expect.arrayContaining(['L1', 'L2', 'L3', 'L4', 'NEWCLOSE']))
+  })
+
+  it('keeps the five closest own-plat sales when a farther cluster sits on the middle price', () => {
+    const subj = subject({
+      ...here,
+      subdivision: 'Old Ground',
+      subdivisionNorm: 'old ground',
+      subdivisionSlug: 'old-ground',
+      yearBuilt: 1998,
+      sqft: 2000,
+    })
+    const row = (listingKey: string, miles: number, closePrice: number) =>
+      sale({
+        ...here,
+        ...atMiles(miles),
+        listingKey,
+        address: `${listingKey} Own Ln`,
+        subdivision: 'Old Ground',
+        subdivisionNorm: 'old ground',
+        subdivisionSlug: 'old-ground',
+        yearBuilt: 1996,
+        sqft: 2000,
+        beds: 3,
+        baths: 2,
+        closeDate: '2026-06-01',
+        closePrice,
+        lastAsk: closePrice,
+      })
+    const pool = [
+      row('C400', 0.04, 400_000),
+      row('C500', 0.04, 500_000),
+      row('C800', 0.04, 800_000),
+      row('C900', 0.04, 900_000),
+      row('C1000', 0.04, 1_000_000),
+      row('F640', 0.3, 640_000),
+      row('F650', 0.3, 650_000),
+      row('F660', 0.3, 660_000),
+    ]
+    const out = walkPricingLadder(subj, pool, { asOf })
+    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['C1000', 'C400', 'C500', 'C800', 'C900'])
+  })
+
+  it('does not give an own-plat seat to a closer adjacent sale', () => {
+    const subj = subject({
+      ...here,
+      subdivision: 'Old Ground',
+      subdivisionNorm: 'old ground',
+      subdivisionSlug: 'old-ground',
+      adjacentSubdivisionSlugs: ['like-neighbors'],
+      yearBuilt: 1998,
+      sqft: 2000,
+    })
+    const own = ['OWN1', 'OWN2'].map((listingKey) =>
+      sale({
+        ...here,
+        ...atMiles(0.4),
+        listingKey,
+        address: `${listingKey} Own Ln`,
+        subdivision: 'Old Ground',
+        subdivisionNorm: 'old ground',
+        subdivisionSlug: 'old-ground',
+        yearBuilt: 1976,
+        sqft: 2000,
+        closeDate: '2026-06-01',
+        closePrice: 700_000,
+      }),
+    )
+    const adjacent = ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8'].map((listingKey) =>
+      sale({
+        ...here,
+        ...atMiles(0.05),
+        listingKey,
+        address: `${listingKey} Adj Ln`,
+        subdivision: 'Like Neighbors',
+        subdivisionNorm: 'like neighbors',
+        subdivisionSlug: 'like-neighbors',
+        yearBuilt: 1998,
+        sqft: 2000,
+        closeDate: '2026-06-01',
+        closePrice: 700_000,
+      }),
+    )
+    const out = walkPricingLadder(subj, [...adjacent, ...own], { asOf })
+    const keys = out.comps.map((c) => c.listingKey)
+    expect(keys).toHaveLength(5)
+    expect(keys).toEqual(expect.arrayContaining(['OWN1', 'OWN2']))
+    expect(keys.filter((key) => key.startsWith('A'))).toHaveLength(3)
+  })
+
+  it('fills from the same-size adjacent plat before a closer plat of smaller homes', () => {
+    const subj = subject({
+      ...here,
+      subdivision: 'Old Ground',
+      subdivisionNorm: 'old ground',
+      subdivisionSlug: 'old-ground',
+      adjacentSubdivisionSlugs: ['small-homes', 'same-size'],
+      yearBuilt: 1998,
+      sqft: 2000,
+    })
+    const row = (listingKey: string, slug: string, name: string, sqft: number, miles: number) =>
+      sale({
+        ...here,
+        ...atMiles(miles),
+        listingKey,
+        address: `${listingKey} Size Ln`,
+        subdivision: name,
+        subdivisionNorm: name.toLowerCase(),
+        subdivisionSlug: slug,
+        yearBuilt: 1996,
+        sqft,
+        beds: 3,
+        baths: 2,
+        closeDate: '2026-06-01',
+        closePrice: 700_000,
+      })
+    const pool = [
+      ...['S1', 'S2', 'S3', 'S4', 'S5'].map((key) => row(key, 'small-homes', 'Small Homes', 1400, 0.08)),
+      ...['M1', 'M2', 'M3', 'M4'].map((key) => row(key, 'same-size', 'Same Size', 2000, 0.28)),
+    ]
+    const out = walkPricingLadder(subj, pool, { asOf })
+    const keys = out.comps.map((c) => c.listingKey)
+    expect(keys).toHaveLength(5)
+    expect(keys.filter((key) => key.startsWith('M'))).toHaveLength(4)
+    expect(keys.filter((key) => key.startsWith('S'))).toHaveLength(1)
   })
 })

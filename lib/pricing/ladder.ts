@@ -480,7 +480,7 @@ export const POCKET_TIGHT_SET_MIN = 2
  * supply 5 never ran, and the build failed the document's own minimum.
  */
 export const FACTS_STANDALONE_MIN = BOUNDARY_EXIT_BELOW
-/** The priced set is five. A rung that overshoots is cut back to the tightest prices. */
+/** The priced set is five. The facts walk keeps the closest matches in the opened row. */
 export const PRICING_MAX_COMPS = 5
 
 /**

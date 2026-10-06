@@ -337,9 +337,11 @@ describe('1130 E Canter live selectPricingComps path', () => {
     expect(sel.diagnostics.subject.subdivision).not.toMatch(/rolling horse meadow/i)
     const keys = sel.comps.map((c) => c.listingKey)
     const numbers = sel.comps.map((c) => c.mlsNumber)
-    expect(keys).toContain('RANCH-1058')
-    expect(keys).toContain('HB-1025')
-    expect(numbers).toContain('220218584')
+    // Five closer pocket sales take the seats. 1058 E Ranch is the sixth.
+    // A close price near the middle does not put it back in front of them.
+    expect(keys).toEqual(expect.arrayContaining(['HB-1025', 'RHM-MEADOW', 'HB-995', 'HB-1104', 'HB-994']))
+    expect(keys).not.toContain('RANCH-1058')
+    expect(numbers).not.toContain('220218584')
     expect(numbers).toContain('220214720')
     expect(keys).not.toContain('UP-Clearpine')
     expect(keys).not.toContain('UP-ForestEdge')
