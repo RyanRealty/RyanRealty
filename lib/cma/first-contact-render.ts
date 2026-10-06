@@ -9,7 +9,7 @@
  * are added later by decorateOutboundText, once, on the href.
  */
 
-import { cmaReportButtonHtml } from '@/lib/cma/report-button'
+import { cmaListPricePlate, cmaReportButtonHtml } from '@/lib/cma/report-button'
 import { peelTrailingUrlPunctuation } from '@/lib/analytics/own-site-links'
 
 export const CMA_EMAIL_ORIGIN = 'https://ryan-realty.com'
@@ -160,7 +160,7 @@ function renderRuns(runs: FirstContactRun[], address: string | null, slug: strin
     .join('')
 }
 
-/** A one-line salutation. Anything longer is letter copy, and the button goes above it. */
+/** A one-line salutation. The report sentence, not the button, comes next. */
 function isShortGreeting(paragraphs: FirstContactRun[][]): boolean {
   const first = paragraphs[0]
   if (!first) return false
@@ -168,27 +168,67 @@ function isShortGreeting(paragraphs: FirstContactRun[][]): boolean {
   return text.length > 0 && text.length <= 40 && /^(hi|hello|hey|dear)\b/i.test(text)
 }
 
+function paragraphText(paragraphs: FirstContactRun[][], index: number): string {
+  const paragraph = paragraphs[index]
+  if (!paragraph) return ''
+  return paragraphsToPlain([paragraph])
+}
+
+/** "We would list it at $640,000." becomes the price plate. The plain text keeps the sentence. */
+function listPriceAmount(text: string): string | null {
+  const match = text.trim().match(/^We would list it at (\$[\d,]+)\.$/)
+  return match?.[1] ?? null
+}
+
+function mentionsReport(text: string): boolean {
+  return /full report|attached as a PDF/i.test(text)
+}
+
+function reportLead(address: string | null): string {
+  const named = streetOnly(address)
+  if (named) return `The full report on ${named} is attached as a PDF.`
+  return 'The full report is attached as a PDF.'
+}
+
 /**
  * Paragraphs plus the report button. No signature. Clean campaign UTMs only.
  *
- * The button is the first action. A short greeting may sit above it. The same
- * button repeats after the note, so a reader who finishes does not have to
- * scroll back. Both go to the same report.
+ * The sentence that names the report sits directly above the one button.
+ * A price line just before that sentence is set as a plate. A broker note
+ * that never names the report gets one lead sentence, then the button,
+ * and the button again after the note.
  */
 export function renderCmaLetterBlock(args: {
   paragraphs: FirstContactRun[][]
   address: string | null
   slug: string
 }): string {
-  const rendered = args.paragraphs.map(
-    (p) => `<p style="margin:0 0 16px 0;">${renderRuns(p, args.address, args.slug)}</p>`,
-  )
   const button = cmaReportButtonHtml(
     stampCmaEmailCampaign(`${CMA_EMAIL_ORIGIN}/cma/${args.slug}`, args.slug),
   )
-  const greetingFirst = isShortGreeting(args.paragraphs)
-  const head = greetingFirst ? (rendered[0] ?? '') : ''
-  const rest = (greetingFirst ? rendered.slice(1) : rendered).join('')
-  const closingButton = rest ? button : ''
-  return `<div data-cma-letter>${head}${button}${rest}${closingButton}</div>`
+  const parts: string[] = []
+  let mentionAt = -1
+  for (let i = 0; i < args.paragraphs.length; i++) {
+    const text = paragraphText(args.paragraphs, i)
+    if (mentionAt < 0 && mentionsReport(text)) mentionAt = parts.length
+    const amount = listPriceAmount(text)
+    if (amount) {
+      parts.push(cmaListPricePlate(amount))
+      continue
+    }
+    const paragraph = args.paragraphs[i]
+    if (!paragraph) continue
+    parts.push(`<p style="margin:0 0 16px 0;">${renderRuns(paragraph, args.address, args.slug)}</p>`)
+  }
+  if (mentionAt < 0) {
+    const greetingFirst = isShortGreeting(args.paragraphs)
+    const lead = `<p style="margin:0 0 16px 0;">${escapeHtml(reportLead(args.address))}</p>`
+    const head = greetingFirst ? (parts[0] ?? '') : ''
+    const rest = (greetingFirst ? parts.slice(1) : parts).join('')
+    const closing = rest ? button : ''
+    return `<div data-cma-letter>${head}${lead}${button}${rest}${closing}</div>`
+  }
+  const before = parts.slice(0, mentionAt + 1).join('')
+  const after = parts.slice(mentionAt + 1).join('')
+  return `<div data-cma-letter>${before}${button}${after}</div>`
 }

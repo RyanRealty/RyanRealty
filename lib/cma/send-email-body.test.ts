@@ -107,20 +107,45 @@ function track(html: string): string {
 describe('CMA first-contact send body', () => {
   const copy = composeCmaFirstContact('expired', FACTS)
 
-  it('puts Get the full report in the first screen, before the letter copy', () => {
+  it('names the report before the button, with the price above that sentence', () => {
     const sent = buildLeadBody(ctx(), undefined, SIGNATURE)
     const letter = letterHtml(sent.html)
     const visible = decodeVisible(letter)
     const greeting = visible.indexOf('Hi there')
-    const cta = visible.indexOf('Get the full report')
-    const story = visible.indexOf('My name is Matt Ryan')
+    const work = visible.indexOf('We spent time in the MLS')
+    const price = visible.indexOf('We would list it at')
+    const report = visible.indexOf('The full report')
+    const cta = visible.indexOf('Read the full report')
     expect(greeting).toBeGreaterThanOrEqual(0)
-    expect(cta).toBeGreaterThan(greeting)
-    expect(story).toBeGreaterThan(cta)
+    expect(work).toBeGreaterThan(greeting)
+    expect(price).toBeGreaterThan(work)
+    expect(report).toBeGreaterThan(price)
+    expect(cta).toBeGreaterThan(report)
     const first = anchors(letter)[0]
-    expect(first?.text).toBe('Get the full report →')
+    expect(first?.text).toBe('Read the full report →')
     expect(first?.href).toContain(`/cma/${SLUG}`)
     expect(first?.href).not.toContain('/api/track/')
+    expect(sent.html).toContain('MARKET ANALYSIS')
+    expect(sent.html).not.toContain('https://cdn.resize.sparkplatform.com/')
+    expect(sent.html).not.toContain('hero-oldmill')
+    expect(sent.html).not.toContain('height:240px')
+  })
+
+  it('uses the listing photo, small, above the greeting', () => {
+    const sent = buildLeadBody(
+      { ...ctx(), heroUrl: 'https://cdn.resize.sparkplatform.com/ore/1600x1200/true/house.jpg' },
+      undefined,
+      SIGNATURE,
+    )
+    const src = 'src="https://cdn.resize.sparkplatform.com/ore/640x360/true/house.jpg"'
+    expect(sent.html).toContain(src)
+    expect(sent.html).toContain('alt="62017 Nate&#39;s"')
+    expect(sent.html).toContain('width="240"')
+    expect(sent.html).toContain('height="160"')
+    expect(sent.html.indexOf(src)).toBeLessThan(sent.html.indexOf('Hi there'))
+    expect(sent.html).not.toContain('hero-oldmill')
+    expect(sent.html).not.toContain('height:240px')
+    expect(sent.html).not.toContain('/1600x1200/')
   })
 
   it('tracks every letter link as words, with the email tag set', () => {
@@ -128,16 +153,7 @@ describe('CMA first-contact send body', () => {
     const html = track(sent.html)
     const letter = letterHtml(html)
     const links = anchors(letter)
-    expect(links.map((l) => l.text)).toEqual([
-      'Get the full report →',
-      'read it online',
-      'see how we sell homes',
-      'read our reviews',
-      'learn about our business',
-      'Clarendon Place page',
-      'Bend page',
-      'Get the full report →',
-    ])
+    expect(links.map((l) => l.text)).toEqual(['Read the full report →'])
     expect(decodeVisible(letter).toLowerCase()).not.toContain('http')
     const paths: string[] = []
     for (const link of links) {
@@ -157,16 +173,7 @@ describe('CMA first-contact send body', () => {
       expect(dest.search).not.toContain('utm_medium=document')
       paths.push(dest.pathname)
     }
-    expect(paths).toEqual([
-      `/cma/${SLUG}`,
-      `/cma/${SLUG}`,
-      '/sell',
-      '/reviews',
-      '/about',
-      '/subdivisions/clarendon-place',
-      '/cities/bend',
-      `/cma/${SLUG}`,
-    ])
+    expect(paths).toEqual([`/cma/${SLUG}`])
   })
 
   it('keeps http out of the letter plain text, and leaves the signature plain part alone', () => {
@@ -196,8 +203,8 @@ describe('CMA first-contact send body', () => {
     expect(note.text.split('\n--\n')[0]?.toLowerCase()).not.toContain('http')
     const edited = letterHtml(note.html)
     const editedVisible = decodeVisible(edited)
-    expect(editedVisible.indexOf('Get the full report')).toBeGreaterThan(editedVisible.indexOf('Hi there'))
-    expect(editedVisible.indexOf('A short note')).toBeGreaterThan(editedVisible.indexOf('Get the full report'))
+    expect(editedVisible.indexOf('Read the full report')).toBeGreaterThan(editedVisible.indexOf('Hi there'))
+    expect(editedVisible.indexOf('A short note')).toBeGreaterThan(editedVisible.indexOf('Read the full report'))
     expect(edited).toContain(`/cma/${SLUG}`)
 
     const stale = [
@@ -210,10 +217,10 @@ describe('CMA first-contact send body', () => {
     expect(decodeVisible(letter).toLowerCase()).not.toContain('http')
     const links = anchors(letter)
     expect(links.map((l) => l.text)).toEqual([
-      'Get the full report →',
+      'Read the full report →',
       'our reviews',
       'who we are',
-      'Get the full report →',
+      'Read the full report →',
     ])
     const opening = new URL(verifyEmailToken(new URL(links[0]!.href).searchParams.get('t'))!.url!)
     const reviews = new URL(verifyEmailToken(new URL(links[1]!.href).searchParams.get('t'))!.url!)
