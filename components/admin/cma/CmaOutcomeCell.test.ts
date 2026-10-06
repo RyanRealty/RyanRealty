@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { clickedLine, deliveredKind, pageLabel } from './CmaOutcomeCell'
+import { clickedLine, cmaOutcomeLeftAt, cmaOutcomeProgress, deliveredKind, pageLabel } from './CmaOutcomeCell'
+import type { CmaOutcome } from '@/lib/data/cma/outcomes'
 
 /**
  * The broker reads addresses, not URLs. `pageLabel` is the whole difference
@@ -31,6 +32,42 @@ describe('deliveredKind', () => {
   it('marks a Gmail inferred delivery separately from a Resend receipt', () => {
     expect(deliveredKind(true)).toBe('inferred')
     expect(deliveredKind(false)).toBe('receipt')
+  })
+})
+
+describe('cmaOutcomeLeftAt', () => {
+  const blank = { sentAt: null, emailEventSentAt: null } as CmaOutcome
+
+  it('uses the letter stamp, then the email log, and stays empty when neither exists', () => {
+    expect(cmaOutcomeLeftAt(null)).toBeNull()
+    expect(cmaOutcomeLeftAt(blank)).toBeNull()
+    expect(cmaOutcomeLeftAt({ ...blank, emailEventSentAt: '2026-09-01T10:00:00Z' })).toBe('2026-09-01T10:00:00Z')
+    expect(
+      cmaOutcomeLeftAt({ ...blank, sentAt: '2026-09-02T10:00:00Z', emailEventSentAt: '2026-09-01T10:00:00Z' }),
+    ).toBe('2026-09-02T10:00:00Z')
+  })
+})
+
+describe('cmaOutcomeProgress', () => {
+  it('stops the row at the first stage that has not happened', () => {
+    const base = { sentAt: null, emailEventSentAt: null } as CmaOutcome
+    const row = cmaOutcomeProgress({
+      ...base,
+      sentAt: '2026-09-01T10:00:00Z',
+      deliveredAt: '2026-09-01T10:00:05Z',
+      deliveredInferred: true,
+      opens: 0,
+      clicks: 0,
+      visits: 0,
+      firstOpenAt: null,
+      firstClickAt: null,
+      firstVisitAt: null,
+      repliedAt: null,
+      visitedPages: { count: 0, recent: [] },
+      clickedLinks: [],
+    })
+    expect(row.done).toEqual(['sent', 'delivered (inferred)'])
+    expect(row.next).toBe('not opened')
   })
 })
 
