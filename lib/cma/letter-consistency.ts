@@ -171,6 +171,32 @@ export function highEndAtOrBelowBandCheck(pricing: {
   }
 }
 
+/**
+ * A list above every sale that set the price is not a price. A list the
+ * failed ask already pulled under the band stays, and the letter says so.
+ */
+export function recommendedAtOrBelowBandCheck(pricing: {
+  recommended?: number | null
+  valueLow?: number | null
+  valueHigh?: number | null
+}): ContractCheck {
+  const rec = money(pricing.recommended)
+  const low = money(pricing.valueLow)
+  const high = money(pricing.valueHigh)
+  const bandHigh = low != null && high != null ? Math.max(low, high) : high
+  const pass = rec == null || bandHigh == null || rec <= bandHigh
+  return {
+    id: 'recommended-at-or-below-band',
+    severity: 'hard',
+    pass,
+    detail: pass
+      ? rec != null && bandHigh != null
+        ? `Recommended list $${rec.toLocaleString('en-US')} sits at or below the highest sale that set the price, $${bandHigh.toLocaleString('en-US')}.`
+        : 'Recommended list or band top is not printed.'
+      : `Recommended list $${rec!.toLocaleString('en-US')} sits above the highest sale that set the price, $${bandHigh!.toLocaleString('en-US')}.`,
+  }
+}
+
 export function letterRecommendDollarsCheck(
   html: string,
   pricing: { recommended?: number | null; valueLow?: number | null; valueHigh?: number | null },
@@ -361,6 +387,7 @@ export function evaluateLetterConsistencyContract(args: {
     letterOwnerNameCheck(args.html, args.names, { printedAddresses: args.printedAddresses }),
     letterLinkTrackingCheck(args.html, args.identity),
     highEndAtOrBelowBandCheck(args.pricing),
+    recommendedAtOrBelowBandCheck(args.pricing),
     letterRecommendDollarsCheck(args.html, args.pricing),
     bandVersusClosedCompsCheck(args.pricing, args.closedComps),
     countedRowsInDocumentCheck({

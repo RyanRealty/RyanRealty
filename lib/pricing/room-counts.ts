@@ -7,6 +7,11 @@
  * neighborhood, or its own street) and the document says so on the sale. Two
  * or more apart on either count, or one apart on both, is refused everywhere.
  *
+ * Phases of one ordinary subdivision are the exception (Matt 2026-10-06).
+ * A sale in another phase of that subdivision may be one bedroom and one
+ * bathroom apart. It is disclosed, and no dollar value is applied. Two or
+ * more apart on either count is still refused. A neighbor does not get this.
+ *
  * WHY THERE IS NO DOLLAR ADJUSTMENT HERE. The obvious implementation is to
  * price the missing room and adjust. This market does not support a number.
  * Paired sales over `sale_pricing_facts` (detached, closed on or after
@@ -69,13 +74,14 @@ export function roomCountVerdict(
 export function roomCountsUsable(
   subject: { beds: number | null | undefined; baths: number | null | undefined },
   comp: { beds: number | null | undefined; baths: number | null | undefined },
-  opts: { local: boolean },
+  opts: { local: boolean; phaseFamily?: boolean },
 ): { ok: boolean; notes: Array<'beds' | 'baths'> } {
   const beds = roomCountVerdict(subject.beds, comp.beds, opts)
   const baths = roomCountVerdict(subject.baths, comp.baths, opts)
   if (beds === 'refuse' || baths === 'refuse') return { ok: false, notes: [] }
   // One apart on both dimensions is two rooms, not the one-room keep.
-  if (beds === 'noted' && baths === 'noted') return { ok: false, notes: [] }
+  // Another phase of this subdivision is the one place both may be used.
+  if (beds === 'noted' && baths === 'noted' && opts.phaseFamily !== true) return { ok: false, notes: [] }
   const notes: Array<'beds' | 'baths'> = []
   if (beds === 'noted') notes.push('beds')
   if (baths === 'noted') notes.push('baths')

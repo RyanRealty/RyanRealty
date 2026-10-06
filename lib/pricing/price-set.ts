@@ -140,6 +140,11 @@ export function pricingFailureMessage(
   return `Pricing could not be computed${where} (the recommended price sits outside the sales that set it).`
 }
 
+/** Same grid as priceRoundingStep in lib/pricing/estimate.ts. Kept here so this file does not import the pricer. */
+function pricingUnit(n: number): number {
+  return Math.abs(n) >= 1_000_000 ? 5_000 : 1_000
+}
+
 export function recommendationOutsideSaleSet(
   recommended: number | null | undefined,
   salePrices: readonly number[],
@@ -149,7 +154,11 @@ export function recommendationOutsideSaleSet(
   if (prices.length === 0) return null
   const low = Math.min(...prices)
   const high = Math.max(...prices)
-  if (recommended < low) return 'under'
-  if (recommended > high) return 'over'
+  // The cover rounds a sale outward onto the pricing unit. A recommendation
+  // on that same step is that sale. It is not a price outside the set.
+  const lowBound = Math.floor(low / pricingUnit(low)) * pricingUnit(low)
+  const highBound = Math.ceil(high / pricingUnit(high)) * pricingUnit(high)
+  if (recommended < lowBound) return 'under'
+  if (recommended > highBound) return 'over'
   return null
 }

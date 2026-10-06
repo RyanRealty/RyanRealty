@@ -13,6 +13,7 @@
  * community does not fall back to the name, and remarks are never read.
  */
 import { communitySlugForSubdivision, isResortCommunity, resortSlugForSubdivision } from '@/lib/cma/resort-guard'
+import { getResortCommunityBySlug } from '@/lib/data/communities/registry'
 
 export type CommunityAddress = {
   /** Community boundary that contains this lat/lng. */
@@ -150,5 +151,54 @@ export function communitySlugForRecordedPlats(platSlugs: readonly string[] | nul
   if (keys.size === 0) return null
   if (keys.size === 1) return [...keys][0]!
   return [...keys].sort((a, b) => b.length - a.length || a.localeCompare(b))[0]!
+}
+
+/**
+ * The subdivision a phased plat belongs to, when that name is not itself a
+ * registry community. Hampton Park Phase I and Phase II are one subdivision.
+ * Tetherow Phase 1 is one token and a registry community, so it is not.
+ * An addition (`bend-golf-club-addition`) is not a phase and returns null,
+ * so golf-club plats stay neighboring plats inside one community.
+ */
+export function ordinaryPhaseFamilyKey(slug: string | null | undefined): string | null {
+  const raw = slug?.trim().toLowerCase() ?? ''
+  if (!raw || !PHASE_TAIL.test(raw)) return null
+  const stem = raw.replace(PHASE_TAIL, '')
+  if (!stem || stem === raw) return null
+  const tokens = stem.split('-').filter(Boolean)
+  if (tokens.length < 2) return null
+  if (getResortCommunityBySlug(stem)) return null
+  return stem
+}
+
+export function sameOrdinaryPhaseFamily(
+  a: string | null | undefined,
+  b: string | null | undefined,
+): boolean {
+  const ka = ordinaryPhaseFamilyKey(a)
+  const kb = ordinaryPhaseFamilyKey(b)
+  return ka != null && ka === kb
+}
+
+/**
+ * The community the comp search may use as a wall.
+ * A phase stem of an ordinary subdivision is that subdivision, not a parent.
+ * A registry community and an addition community (Bend Golf Club, Cedar Ridge)
+ * still wall the search.
+ */
+export function searchCommunitySlug(
+  address: CommunityAddress,
+  memberPlatToCommunity?: ReadonlyMap<string, string> | null,
+): string | null {
+  const slug = communityForAddress(address, memberPlatToCommunity)
+  if (!slug) return null
+  if (getResortCommunityBySlug(slug)) return slug
+  const plats = [
+    address.subdivisionSlug,
+    address.platSlug,
+    ...(address.containingPlatSlugs ?? []),
+  ]
+  if (plats.some((plat) => ordinaryPhaseFamilyKey(plat) === slug)) return null
+  return slug
 }
 

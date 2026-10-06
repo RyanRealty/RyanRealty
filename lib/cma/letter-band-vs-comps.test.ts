@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { bandVersusClosedCompsCheck, evaluateLetterConsistencyContract } from '@/lib/cma/letter-consistency'
+import {
+  bandVersusClosedCompsCheck,
+  evaluateLetterConsistencyContract,
+  recommendedAtOrBelowBandCheck,
+} from '@/lib/cma/letter-consistency'
 import { pinPrintedBandToSettingSales } from '@/lib/pricing/estimate'
 
 describe('band overlaps closed comps', () => {
@@ -117,6 +121,98 @@ describe('band overlaps closed comps', () => {
     expect(pinned.rangeRule?.sentence).toMatch(/all five/)
     expect(pinned.rangeRule?.sentence).not.toMatch(/all two/)
     expect(pinned.rangeRule?.sentence).not.toContain('adjusted for')
+  })
+
+  it('pulls a list that rounded one step above the highest setting sale back inside that sale', () => {
+    const pinned = pinPrintedBandToSettingSales(
+      {
+        valueLow: 603_000,
+        valueHigh: 640_000,
+        recommended: 640_000,
+        conservative: 629_000,
+        highEnd: 640_000,
+        failedAsk: 649_900,
+        rangeRule: {
+          rule: 'min-max' as const,
+          n: 5,
+          kept: 5,
+          adjustedLow: 603_000,
+          adjustedHigh: 640_000,
+          saleToAskRatio: null,
+          saleToAskSource: 'none' as const,
+          ratiosExcluded: 0,
+          sentence:
+            'The range is the spread of all five sale prices adjusted for date and size: $603,000 to $640,000.',
+        },
+      },
+      [
+        { adjustedPrice: 603_227, closePrice: 535_000, weight: 0.14 },
+        { adjustedPrice: 620_206, closePrice: 605_000, weight: 0.36 },
+        { adjustedPrice: 639_871, closePrice: 637_000, weight: 0.3 },
+      ],
+    )
+    expect(pinned.valueHigh).toBe(639_871)
+    expect(pinned.valueLow).toBe(603_227)
+    expect(pinned.recommended).toBe(639_000)
+    expect(pinned.recommended!).toBeLessThanOrEqual(pinned.valueHigh)
+    expect(pinned.recommended!).toBeGreaterThanOrEqual(pinned.valueLow)
+    expect(pinned.highEnd).toBeLessThanOrEqual(639_871)
+    expect(pinned.highEnd!).toBeGreaterThanOrEqual(pinned.recommended!)
+    expect(pinned.conservative).toBeLessThanOrEqual(pinned.recommended!)
+    expect(
+      recommendedAtOrBelowBandCheck({
+        recommended: pinned.recommended,
+        valueLow: pinned.valueLow,
+        valueHigh: pinned.valueHigh,
+      }).pass,
+    ).toBe(true)
+  })
+
+  it('refuses a recommended list that still sits above the sales, and keeps one the failed ask pulled under', () => {
+    const above = recommendedAtOrBelowBandCheck({
+      recommended: 640_000,
+      valueLow: 603_227,
+      valueHigh: 639_871,
+    })
+    expect(above.pass).toBe(false)
+    expect(above.detail).toMatch(/above the highest sale/)
+    expect(
+      recommendedAtOrBelowBandCheck({
+        recommended: 609_000,
+        valueLow: 620_000,
+        valueHigh: 635_000,
+      }).pass,
+    ).toBe(true)
+  })
+
+  it('leaves a recommendation the failed ask already pulled under the sales', () => {
+    const pinned = pinPrintedBandToSettingSales(
+      {
+        valueLow: 620_000,
+        valueHigh: 635_000,
+        recommended: 609_000,
+        conservative: 620_000,
+        highEnd: 635_000,
+        rangeRule: {
+          rule: 'min-max' as const,
+          n: 2,
+          kept: 2,
+          adjustedLow: 620_000,
+          adjustedHigh: 635_000,
+          saleToAskRatio: null,
+          saleToAskSource: 'none' as const,
+          ratiosExcluded: 0,
+          sentence: 'The range is the spread of all two sale prices adjusted for date and size: $620,000 to $635,000.',
+        },
+      },
+      [
+        { adjustedPrice: 620_000, closePrice: 620_000, weight: 0.5 },
+        { adjustedPrice: 635_000, closePrice: 635_000, weight: 0.5 },
+      ],
+    )
+    expect(pinned.recommended).toBe(609_000)
+    expect(pinned.valueLow).toBe(620_000)
+    expect(pinned.valueHigh).toBe(635_000)
   })
 
   it('does not say adjusted for date and size when only the date moved', () => {

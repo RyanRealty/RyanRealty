@@ -7,6 +7,7 @@
  * facts ladder, the listings ladder, the judge prompt's post-cut, and the
  * accuracy contract cannot invent a second bath wall.
  */
+import { sameOrdinaryPhaseFamily } from '@/lib/cma/community-location'
 import { resolveMarketArea } from '@/lib/cma/market-area'
 import { samePlat, sameStreetPeer } from '@/lib/pricing/price-anchor'
 import { normSubdivision } from '@/lib/pricing/classes'
@@ -23,6 +24,7 @@ export type RoomGroundSubject = {
   marketArea?: string | null
   beds?: number | null
   baths?: number | null
+  subdivisionSlug?: string | null
 }
 
 export type RoomGroundSale = {
@@ -40,6 +42,7 @@ export type RoomGroundSale = {
   roomDifference?: Array<'beds' | 'baths'> | null
   beds?: number | null
   baths?: number | null
+  subdivisionSlug?: string | null
 }
 
 /**
@@ -72,9 +75,10 @@ export function saleOnOwnRoomGround(subject: RoomGroundSubject, sale: RoomGround
  * `ok` is false as soon as either beds or baths is refused.
  */
 export function roomCountsDecision(subject: RoomGroundSubject, sale: RoomGroundSale) {
+  const phaseFamily = sameOrdinaryPhaseFamily(subject.subdivisionSlug, sale.subdivisionSlug)
   return roomCountsUsable(
     { beds: subject.beds, baths: subject.baths },
     { beds: sale.beds, baths: sale.baths },
-    { local: saleOnOwnRoomGround(subject, sale) },
+    { local: saleOnOwnRoomGround(subject, sale) || phaseFamily, phaseFamily },
   )
 }

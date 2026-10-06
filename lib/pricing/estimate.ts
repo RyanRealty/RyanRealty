@@ -10,6 +10,7 @@
  * Beds/baths/age: match filters, not stacked dollar lines.
  */
 
+import { searchCommunitySlug } from '@/lib/cma/community-location'
 import { applyStreetAnchor, computePricing } from '@/lib/cma/pricing'
 import type { CmaSiteData } from '@/lib/cma/county'
 import {
@@ -944,6 +945,7 @@ export function pinPrintedBandToSettingSales<
     recommended?: number
     conservative?: number
     highEnd?: number
+    failedAsk?: number | null
     rangeRule?: PricingRangeRule | null
   },
 >(
@@ -980,6 +982,38 @@ export function pinPrintedBandToSettingSales<
   if (values.length === 0) return pricing
   const low = Math.min(...values)
   const high = Math.max(...values)
+  // The cover may already have rounded the list up to the next thousand.
+  // Once the band is the exact sale, that step sits above every sale that
+  // set the price. Pull it onto the thousand still inside the sale. A
+  // recommendation the failed ask already put under the band stays there.
+  let recommended = pricing.recommended
+  if (recommended != null && Number.isFinite(recommended) && recommended > high) {
+    recommended = roundPrintedRecommendation(recommended, {
+      low,
+      high,
+      ask: pricing.failedAsk,
+    })
+  }
+  let conservative = pricing.conservative
+  if (conservative != null && conservative < low) conservative = low
+  if (
+    recommended != null &&
+    recommended !== pricing.recommended &&
+    conservative != null &&
+    conservative > recommended
+  ) {
+    conservative = recommended
+  }
+  let highEnd = pricing.highEnd
+  if (highEnd != null && highEnd > high) highEnd = high
+  if (
+    recommended != null &&
+    recommended !== pricing.recommended &&
+    highEnd != null &&
+    highEnd < recommended
+  ) {
+    highEnd = recommended
+  }
   const rule = pricing.rangeRule
   const sentence = rule?.sentence
     ? describeRangeSentence({
@@ -998,8 +1032,9 @@ export function pinPrintedBandToSettingSales<
     ...pricing,
     valueLow: low,
     valueHigh: high,
-    ...(pricing.conservative != null && pricing.conservative < low ? { conservative: low } : {}),
-    ...(pricing.highEnd != null && pricing.highEnd > high ? { highEnd: high } : {}),
+    ...(recommended != null && recommended !== pricing.recommended ? { recommended } : {}),
+    ...(conservative != null && conservative !== pricing.conservative ? { conservative } : {}),
+    ...(highEnd != null && highEnd !== pricing.highEnd ? { highEnd } : {}),
     ...(rule && sentence
       ? {
           rangeRule: {
@@ -1121,6 +1156,7 @@ export function pricingSaleToCmaComp(sale: SelectedPricingComp): CmaComp {
     address: sale.address,
     city: sale.city,
     subdivision: sale.subdivision,
+    subdivisionSlug: sale.subdivisionSlug ?? null,
     latitude: sale.latitude,
     longitude: sale.longitude,
     beds: sale.beds,
@@ -1235,8 +1271,19 @@ export function adjustCmaCompAlongMarket(opts: {
     saleSubdivision: sale.subdivision,
     selectionTier: sale.selectionTier,
     ownPlat: sale.ownPlat,
-    subjectCommunity: opts.subject.communitySlug,
-    saleCommunity: sale.communitySlug,
+    // A phase stem is the subdivision, not a parent community. The weight
+    // uses the same community the search used, or a next-row neighbor is
+    // kept in the table at weight 0 and the letter refuses.
+    subjectCommunity: searchCommunitySlug({
+      communitySlug: opts.subject.communitySlug,
+      communityLocated: opts.subject.communityLocated,
+      subdivisionSlug: opts.subject.subdivisionSlug,
+    }),
+    saleCommunity: searchCommunitySlug({
+      communitySlug: sale.communitySlug,
+      communityLocated: sale.communityLocated,
+      subdivisionSlug: sale.subdivisionSlug,
+    }),
     subjectCommunityLocated: opts.subject.communityLocated,
     saleCommunityLocated: sale.communityLocated,
     subjectLotAcres: opts.subject.lotAcres,

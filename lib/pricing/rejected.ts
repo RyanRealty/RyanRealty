@@ -64,6 +64,7 @@ export interface RejectedCandidate {
   longitude?: number | null
   city?: string | null
   subdivision?: string | null
+  subdivisionSlug?: string | null
   ownPlat?: boolean | null
   roomDifference?: Array<'beds' | 'baths'> | null
 }
@@ -79,6 +80,7 @@ export interface RejectionSubject {
   streetAddress?: string | null
   city?: string | null
   subdivision?: string | null
+  subdivisionSlug?: string | null
 }
 
 /**
@@ -219,6 +221,7 @@ export function rejectionReason(
       streetAddress: subject.streetAddress,
       city: subject.city,
       subdivision: subject.subdivision,
+      subdivisionSlug: subject.subdivisionSlug,
       latitude: subject.latitude,
       longitude: subject.longitude,
       sqft: subject.sqft,

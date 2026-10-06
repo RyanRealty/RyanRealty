@@ -24,6 +24,7 @@
  * have admitted the luxury comps that produced it.
  */
 
+import { sameOrdinaryPhaseFamily } from '@/lib/cma/community-location'
 import type { PricingSale, PricingSubject } from '@/lib/pricing/match'
 
 export type PriceAnchorSource = 'subdivision' | 'neighborhood' | 'within-a-mile' | 'rural-radius'
@@ -186,6 +187,8 @@ export function streetKey(address: string | null | undefined): string | null {
  * THE OTHER EXEMPTION: THE SUBJECT'S OWN PLAT (Matt 2026-09-10, "two
  * exemptions and only two"). A sale inside it IS the subject's price tier. An
  * adjacent plat is a different plat and is graded like anything else.
+ * Phases of one ordinary subdivision are that plat (Matt 2026-10-06). An
+ * addition inside a community, and a phase of a registry community, are not.
  *
  * Keys, not names: `subdivisionSlug` is the RECORDED plat polygon both homes
  * were resolved against, and `subdivisionNorm` the MLS SubdivisionName
@@ -219,7 +222,10 @@ export type PlatKeys = {
  * own-plat restoration (lib/cma/judge.ts) read the same definition.
  */
 export function samePlat(subject: PlatKeys, sale: PlatKeys): boolean {
-  if (subject.subdivisionSlug && sale.subdivisionSlug) return sale.subdivisionSlug === subject.subdivisionSlug
+  if (subject.subdivisionSlug && sale.subdivisionSlug) {
+    if (sale.subdivisionSlug === subject.subdivisionSlug) return true
+    return sameOrdinaryPhaseFamily(subject.subdivisionSlug, sale.subdivisionSlug)
+  }
   if (subject.subdivisionNorm) return sale.subdivisionNorm === subject.subdivisionNorm
   return false
 }

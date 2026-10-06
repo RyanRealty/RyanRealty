@@ -219,6 +219,7 @@ export async function selectPricingComps(
     const hasNeighborhood = Boolean(ring.neighborhoodSlug) || Boolean(pricingSubject.marketArea)
     const touching = touchingPlatsForSearch(ring.ring, hasNeighborhood)
     pricingSubject.subdivisionSlug = ring.homeSlug
+    subject.subdivisionSlug = ring.homeSlug
     pricingSubject.platLabel = ring.homeLabel
     pricingSubject.adjacentSubdivisionSlugs = touching.map((p) => p.slug)
     const [neighborRings, slugs] = await Promise.all([

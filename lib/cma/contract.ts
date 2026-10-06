@@ -71,6 +71,8 @@ export function evaluateAccuracyContract(args: {
   subjectSubType?: string | null
   subjectBaths?: number | null
   subjectBeds?: number | null
+  /** Recorded plat. A phase-family sale is graded with this, not the MLS name. */
+  subjectSubdivisionSlug?: string | null
   /**
    * The rungs the selection actually used. The disclosed widening
    * (`widened-disclosed-24mo`) only runs when the bounded ladder came up
@@ -95,6 +97,7 @@ export function evaluateAccuracyContract(args: {
   priceAnchorPpsf?: number | null
 }): AccuracyContract {
   const { comps, pricing, judgment, audit, site, minComps, subjectSubType, subjectBaths, subjectBeds } = args
+  const subjectSubdivisionSlug = args.subjectSubdivisionSlug
   const widened = (args.tiersUsed ?? []).some((t) => t.includes(WIDENED_TIER_MARK))
   const checks: ContractCheck[] = []
   const now = Date.now()
@@ -231,7 +234,13 @@ export function evaluateAccuracyContract(args: {
           : `Every priced sale is the same property type as the subject (${subjectSubType}).`,
   })
   // ONE ROOM RULE (skill 0.1). Same function the picker and the review use.
-  const crossRoom = comps.find((c) => !roomCountsDecision({ beds: subjectBeds, baths: subjectBaths }, c).ok)
+  const crossRoom = comps.find(
+    (c) =>
+      !roomCountsDecision(
+        { beds: subjectBeds, baths: subjectBaths, subdivisionSlug: subjectSubdivisionSlug },
+        c,
+      ).ok,
+  )
   const roomNoted = comps.filter((c) => (c.roomDifference ?? []).length > 0).length
   checks.push({
     id: 'bath-count-match',

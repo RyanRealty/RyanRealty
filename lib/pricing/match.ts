@@ -5,7 +5,7 @@
 
 import { realSubdivision } from '@/lib/cma/comp-tiers'
 import { resortCommunityCompatible } from '@/lib/cma/resort-guard'
-import { communityForAddress, memberPlatMap, saleInsideSubjectCommunity } from '@/lib/cma/community-location'
+import { communityForAddress, memberPlatMap, saleInsideSubjectCommunity, searchCommunitySlug } from '@/lib/cma/community-location'
 import { isResortCommunity } from '@/lib/cma/resort-guard'
 import { resolvePriceAnchor, samePlat, sameStreetPeer, streetKey, type PriceAnchor } from '@/lib/pricing/price-anchor'
 import { saleSetsThePrice } from '@/lib/pricing/price-set'
@@ -494,8 +494,8 @@ function passesTier(
   // Springs, Broken Top) or a neighborhood (Awbrey Butte, River West) never
   // takes a sale outside that parent. Not on a distance ring, not when the
   // set is short, not from another resort. A subject with neither is unaffected.
-  const subjectCommunity = communityForAddress(subject)
-  const saleCommunity = communityForAddress(sale, memberPlatMap(subjectCommunity, subject.communityMemberPlats))
+  const subjectCommunity = searchCommunitySlug(subject)
+  const saleCommunity = searchCommunitySlug(sale, memberPlatMap(subjectCommunity, subject.communityMemberPlats))
   const confined = parentConfines(subject)
   const crossesCommunity = !confined && (Boolean(tier.crossBoundary) || Boolean(tier.whenStarved))
   if (tier.sameCommunity) {
@@ -753,6 +753,24 @@ function inSubjectPlat(subject: PricingSubject, sale: PricingSale): boolean {
   return isClusterPocket(subject) ? saleInExclusivePocket(subject, sale) : samePlat(subject, sale)
 }
 
+/**
+ * The size bracket may not leave the rows the walk already searched.
+ * A recorded plat opened size inside its own phases, then the touching
+ * plats, then the next row. A closer match in square footage does not
+ * take a seat from outside those rows. A subject with no recorded plat
+ * still brackets from the wider pool.
+ */
+function bracketStaysOnSubdivisionRows(subject: PricingSubject, sale: PricingSale): boolean {
+  if (!subject.subdivisionSlug?.trim()) return true
+  if (inSubjectPlat(subject, sale)) return true
+  const plat = sale.subdivisionSlug?.trim()
+  if (!plat) return false
+  return (
+    (subject.adjacentSubdivisionSlugs ?? []).includes(plat) ||
+    (subject.closerSubdivisionSlugs ?? []).includes(plat)
+  )
+}
+
 function bracketEligible(
   subject: PricingSubject,
   sale: PricingSale,
@@ -765,6 +783,7 @@ function bracketEligible(
 ): boolean {
   if (subject.listingKey && sale.listingKey === subject.listingKey) return false
   if (subject.streetAddress && sale.address.toLowerCase() === subject.streetAddress.toLowerCase()) return false
+  if (!bracketStaysOnSubdivisionRows(subject, sale)) return false
   if (sale.closeDate >= asOf) return false
   // THE BRACKET SWAP OBEYS THE SAME 24-MONTH WALL AS EVERY RUNG. It checked
   // only that the sale was not in the future, so on a custom or new subject —
@@ -1448,8 +1467,8 @@ export function walkPricingLadder(
   // A short set keeps the next rung that was already admitted. Those sales
   // set the price too. Size and product were already refused on the way in.
   const setsPrice = (sale: SelectedPricingComp) => {
-    const subjectCommunity = communityForAddress(subject)
-    const saleCommunity = communityForAddress(
+    const subjectCommunity = searchCommunitySlug(subject)
+    const saleCommunity = searchCommunitySlug(
       sale,
       memberPlatMap(subjectCommunity, subject.communityMemberPlats),
     )

@@ -101,6 +101,11 @@ describe('a sale sets the price only when it is this home', () => {
     expect(recommendationOutsideSaleSet(1_073_000, [1_200_000, 1_260_000])).toBe('under')
     expect(recommendationOutsideSaleSet(700_000, [500_000, 520_000, 540_000])).toBe('over')
     expect(recommendationOutsideSaleSet(520_000, [500_000, 520_000, 540_000])).toBeNull()
+    // The cover rounds $639,871 up to $640,000. That step is the sale.
+    expect(recommendationOutsideSaleSet(640_000, [603_227, 620_206, 639_871])).toBeNull()
+    expect(recommendationOutsideSaleSet(645_000, [603_227, 620_206, 639_871])).toBe('over')
+    expect(recommendationOutsideSaleSet(603_000, [603_227, 639_871])).toBeNull()
+    expect(recommendationOutsideSaleSet(602_000, [603_227, 639_871])).toBe('under')
 
     const empty = listPriceFromEngine({
       subjectSqft: 1800,

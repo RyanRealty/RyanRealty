@@ -19,6 +19,8 @@ export interface CmaSubject {
   state: string
   postalCode: string | null
   subdivision: string | null
+  /** Recorded plat polygon. Phases of one ordinary subdivision share a family. */
+  subdivisionSlug?: string | null
   latitude: number | null
   longitude: number | null
   beds: number | null
@@ -84,6 +86,8 @@ export interface CmaComp {
   address: string
   city: string
   subdivision: string | null
+  /** Recorded plat the sale sits in. The room rule reads a phase family from this. */
+  subdivisionSlug?: string | null
   latitude: number | null
   longitude: number | null
   beds: number | null

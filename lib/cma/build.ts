@@ -51,7 +51,7 @@ import {
 import { buildRejectedSales } from '@/lib/pricing/rejected'
 import { dropPriorSalesOfSameHome } from '@/lib/pricing/same-address'
 import { buildPricingReview, confidenceForVerdict } from '@/lib/pricing/review'
-import { attachSellerNet } from '@/lib/pricing/seller-net'
+import { attachSellerNet, reanchorSellerNet } from '@/lib/pricing/seller-net'
 import { pricingFailureMessage } from '@/lib/pricing/price-set'
 import { classifyStory, citySlug, irrigationClassFromOwrd, isCustomOrNewSubject, yearQualityCompatible } from '@/lib/pricing/classes'
 import type { CompSelectionDiagnostics } from '@/lib/cma/comp-trace'
@@ -1078,6 +1078,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       subjectSubType: subject.propertySubType,
       subjectBaths: subject.baths,
       subjectBeds: subject.beds,
+      subjectSubdivisionSlug: subject.subdivisionSlug ?? null,
       subjectIsCustomOrNew,
       failedAsk: pricing.failedAsk ?? null,
       // Null when nothing graded a comp on price on this build.
@@ -1457,7 +1458,9 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       propertySubType: subject.propertySubType,
     }).catch(() => null)
 
+    const recommendedBeforePin = pricing.recommended
     pricing = pinPrintedBandToSettingSales(pricing, renderComps)
+    if (pricing.recommended !== recommendedBeforePin) reanchorSellerNet(pricing)
     // A blank client on an expired home is the skip-traced owner. Resolved
     // before render so the letter can keep that name out of the copy, and
     // before persist so a null does not wipe a client already stored.
