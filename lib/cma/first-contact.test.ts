@@ -34,23 +34,27 @@ function linkHrefs(paragraphs: FirstContactRun[][]): string[] {
 describe('first-contact copy (Matt 2026-10-05 email)', () => {
   it('opens on the unsold home, then the work, and keeps the list price out of the note', () => {
     const c = composeCmaFirstContact('expired', FACTS)
-    const report = 'The full report is attached. It has the price we would list at, the homes you would be competing with, and what happened to nearby homes that did not sell.'
+    const report = 'You can see the full report here. It has the price we would list at, the homes you would be competing with, and what happened to nearby homes that did not sell.'
+    const work = "We took some time and put together a comparative market analysis so we could try to better understand why your home didn't sell."
     expect(c.bodyText.indexOf('Hi there,')).toBe(0)
-    expect(c.bodyText.indexOf("We're sorry your home didn't sell this go-around.")).toBeGreaterThan(0)
-    expect(c.bodyText.indexOf("We're sorry")).toBeLessThan(c.bodyText.indexOf('We went through the homes'))
-    expect(c.bodyText).toContain("We went through the homes and the sales near you and put this report together. We thought you might find it useful, and we're happy to go through the numbers with you.")
+    expect(c.bodyText).toContain("We're sorry your home wasn't able to sell. We know that can be frustrating.")
+    expect(c.bodyText.indexOf("We're sorry")).toBeLessThan(c.bodyText.indexOf(work))
+    expect(c.bodyText).toContain(`${work} There is no obligation to have this report. We just thought you might find it useful.`)
     expect(c.bodyText).not.toContain('We spent time in the MLS')
-    expect(c.bodyText.indexOf('We found five sales')).toBeGreaterThan(c.bodyText.indexOf('We went through the homes'))
+    expect(c.bodyText).not.toContain('We went through the homes')
+    expect(c.bodyText.indexOf('We found five sales')).toBeGreaterThan(c.bodyText.indexOf('comparative market analysis'))
     expect(c.bodyText.indexOf(report)).toBeGreaterThan(c.bodyText.indexOf('We found five sales'))
+    const reportAt = c.bodyText.indexOf(report)
+    expect(c.bodyText.slice(0, reportAt)).not.toMatch(/full report|attached as a PDF/i)
+    expect(c.bodyText.indexOf('sit down with you')).toBeGreaterThan(c.bodyText.indexOf(report))
+    expect(c.bodyText.indexOf('If you have any questions on it, please let us know.')).toBeGreaterThan(c.bodyText.indexOf('sit down with you'))
     expect(c.bodyText).not.toContain('We would list it at')
     expect(c.bodyText).not.toContain('Our price')
     expect(c.bodyText).not.toContain('See our price')
     expect(c.bodyText).not.toContain('$605,000')
-    expect(c.bodyText).toContain('we would love the opportunity to earn your business.')
-    expect(c.bodyText.indexOf('we would love the opportunity')).toBeLessThan(c.bodyText.indexOf('We went through the homes'))
-    expect(c.bodyText).toContain('If you have any questions, please let us know.')
+    expect(c.bodyText).toContain('possibly earn your business.')
     expect(c.bodyText).not.toContain('Please feel free to call with any questions.')
-    expect(c.bodyText).toContain('Best of luck in the future.')
+    expect(c.bodyText).not.toContain('Best of luck in the future.')
     expect(c.bodyText).not.toContain('My name is')
     expect(c.bodyText).not.toContain('the price is everything')
     expect(c.bodyText).not.toContain('shifting')
@@ -69,15 +73,17 @@ describe('first-contact copy (Matt 2026-10-05 email)', () => {
       expect(c.bodyText).not.toContain('see how we sell homes')
       expect(c.bodyText).not.toContain('read our reviews')
       expect(c.bodyText).not.toContain('learn about our business')
-      expect(c.bodyText).not.toContain('sit down')
       expect(c.bodyText).not.toContain('premium product')
       expect(c.bodyText).not.toMatch(/https?:/)
       if (o === 'expired') {
-        expect(c.bodyText).toContain('If you have any questions, please let us know.')
+        expect(c.bodyText).toContain('sit down with you and possibly earn your business.')
+        expect(c.bodyText).toContain('If you have any questions on it, please let us know.')
         expect(c.bodyText).not.toContain('Please feel free to call with any questions.')
         expect(c.bodyText).not.toContain('Please let me know if you have any questions.')
         expect(c.bodyText).not.toContain('We spent time in the MLS')
+        expect(c.bodyText).not.toContain('Best of luck')
       } else {
+        expect(c.bodyText).not.toContain('sit down')
         expect(c.bodyText).toContain('Please let me know if you have any questions.')
       }
     }
@@ -196,7 +202,9 @@ describe('first-contact copy (Matt 2026-10-05 email)', () => {
     for (const o of ORIGINS) {
       const c = composeCmaFirstContact(o, FACTS)
       expect(c.close).toBe(
-        'The full report is attached. It has the price we would list at, the homes you would be competing with, and what happened to nearby homes that did not sell.',
+        o === 'expired'
+          ? 'You can see the full report here. It has the price we would list at, the homes you would be competing with, and what happened to nearby homes that did not sell.'
+          : 'The full report is attached. It has the price we would list at, the homes you would be competing with, and what happened to nearby homes that did not sell.',
       )
       expect(c.bodyText).toContain(c.close)
       expect(c.previewText).not.toContain('$605,000')
@@ -223,7 +231,7 @@ describe('first-contact copy (Matt 2026-10-05 email)', () => {
     const line = "Bend has 3.0 months of supply right now. That is a seller's market."
     const market = withPulse.bodyText.indexOf(line)
     expect(market).toBeGreaterThan(withPulse.bodyText.indexOf('they support $585,000 to $625,000'))
-    expect(withPulse.bodyText.indexOf('The full report is attached.')).toBeGreaterThan(market)
+    expect(withPulse.bodyText.indexOf('You can see the full report here.')).toBeGreaterThan(market)
     expect(withPulse.bodyText.indexOf('months of supply', market + line.length)).toBe(-1)
     expect(withPulse.bodyText).not.toContain('shifting')
     const without = composeCmaFirstContact('expired', FACTS)
@@ -262,7 +270,8 @@ describe('first-contact copy (Matt 2026-10-05 email)', () => {
       expect(c.bodyText).not.toMatch(/@ryan-realty\.com/)
       expect(c.bodyText.trimEnd().endsWith('Ryan Realty')).toBe(false)
     }
-    expect(composeCmaFirstContact('expired', FACTS).bodyText).toContain('Best of luck in the future.')
+    expect(composeCmaFirstContact('expired', FACTS).bodyText).toContain('If you have any questions on it, please let us know.')
+    expect(composeCmaFirstContact('expired', FACTS).bodyText).not.toContain('Best of luck')
     expect(composeCmaFirstContact('fsbo', FACTS).bodyText).toContain('Best of luck with the sale.')
   })
 
@@ -321,7 +330,7 @@ describe('first-contact copy (Matt 2026-10-05 email)', () => {
     const letter = composeCmaFirstContact('expired', facts)
     expect(letter.bodyText).toContain('Hi there,')
     expect(letter.bodyText).not.toContain('Blair')
-    expect(letter.bodyText).toContain('We went through the homes and the sales near you and put this report together.')
+    expect(letter.bodyText).toContain('We took some time and put together a comparative market analysis so we could try to better understand why your home didn\'t sell.')
     expect(letter.bodyText).not.toContain('We spent time in the MLS')
     expect(letter.bodyText).toContain('We found five sales of homes like yours near you, and they support $412,000 to $443,000.')
     expect(letter.bodyText).toContain('The last listing asked $460,000, a little above what those sales support.')
@@ -351,7 +360,7 @@ describe('first-contact copy (Matt 2026-10-05 email)', () => {
     )
     expect(facts.cmaSlug).toBe('cma-2465-7th')
     const letter = composeCmaFirstContact('expired', facts)
-    expect(letter.bodyText).toContain('The full report is attached. It has the price we would list at, the homes you would be competing with, and what happened to nearby homes that did not sell.')
+    expect(letter.bodyText).toContain('You can see the full report here. It has the price we would list at, the homes you would be competing with, and what happened to nearby homes that did not sell.')
     expect(letter.bodyText).not.toContain('$435,000')
     expect(letter.bodyText).not.toContain('utm_')
     expect(letter.bodyText).not.toMatch(/https?:/)

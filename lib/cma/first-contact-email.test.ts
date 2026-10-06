@@ -18,15 +18,17 @@ const NATE_PLACE: FirstContactPlace = {
 
 const NATE_PLAIN = `Hi there,
 
-We're sorry your home didn't sell this go-around. If you decide to list again, we would love the opportunity to earn your business.
+We're sorry your home wasn't able to sell. We know that can be frustrating.
 
-We went through the homes and the sales in Clarendon Place and put this report together. We thought you might find it useful, and we're happy to go through the numbers with you.
+We took some time and put together a comparative market analysis so we could try to better understand why your home didn't sell. There is no obligation to have this report. We just thought you might find it useful.
 
 We found four sales of homes like yours in Clarendon Place, and they support $346,000 to $372,000. The last listing asked $405,000, about 9% above what those sales support. That gap is usually the whole story, and it says nothing bad about the house.
 
-The full report is attached. It has the price we would list at, the homes you would be competing with, and what happened to nearby homes that did not sell.
+You can see the full report here. It has the price we would list at, the homes you would be competing with, and what happened to nearby homes that did not sell.
 
-If you have any questions, please let us know. Best of luck in the future.`
+If you are ever considering a sale in the future, we would love the opportunity to sit down with you and possibly earn your business.
+
+If you have any questions on it, please let us know.`
 
 function linksOf(paragraphs: FirstContactRun[][]): Array<{ text: string; href: string }> {
   return paragraphs.flat().flatMap((r) => (typeof r === 'string' ? [] : [{ text: r.text, href: r.href }]))

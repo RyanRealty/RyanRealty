@@ -2,11 +2,11 @@
  * First-contact email for a CMA, by origin.
  *
  * Matt, 2026-10-05: the email is one short letter. An expired listing opens
- * by acknowledging that the home did not sell, then says we went through the
- * homes and the sales and put the report together, then points at the
- * attachment. It does not say we spent time in the MLS on the street. The
- * house photo sits above the letter. The recommended list price stays in
- * the report. The city supply
+ * on the apology, then says we took some time and put together a comparative
+ * market analysis to understand why the home did not sell. The sentence that
+ * says you can see the full report is the one the button follows. It does
+ * not say we spent time in the MLS on the street. The house photo sits above
+ * the letter. The recommended list price stays in the report. The city supply
  * line prints in the letter only when the served pulse was loaded, and only
  * once. Place pages, the pricing essay, and the bio stay out of the email.
  * The PDF letter still carries them, and the system signature still signs
@@ -273,15 +273,33 @@ function pushParagraph(out: FirstContactRun[][], runs: FirstContactRun[] | null 
 const REPORT_HOLDS =
   'The full report is attached. It has the price we would list at, the homes you would be competing with, and what happened to nearby homes that did not sell.'
 
-/** The expired letter opens on this. The home did not sell. That is why we wrote. */
+/**
+ * Expired only. "full report" lives in this sentence so the button sits here,
+ * not under the greeting. Do not put those words in an earlier paragraph.
+ */
+const EXPIRED_REPORT_HOLDS =
+  'You can see the full report here. It has the price we would list at, the homes you would be competing with, and what happened to nearby homes that did not sell.'
+
+const EXPIRED_REPORT_BARE = 'You can see the full report here.'
+
+/** The expired letter opens on this. The home was not able to sell. */
 const EXPIRED_ACK =
-  "We're sorry your home didn't sell this go-around. If you decide to list again, we would love the opportunity to earn your business."
+  "We're sorry your home wasn't able to sell. We know that can be frustrating."
+
+const EXPIRED_WORK =
+  "We took some time and put together a comparative market analysis so we could try to better understand why your home didn't sell. There is no obligation to have this report. We just thought you might find it useful."
+
+const EXPIRED_FUTURE =
+  'If you are ever considering a sale in the future, we would love the opportunity to sit down with you and possibly earn your business.'
+
+const EXPIRED_QUESTIONS = 'If you have any questions on it, please let us know.'
 
 /**
  * What we did. The recommended price itself stays in the report.
  * An expired letter does not say we spent time in the MLS on the street.
  */
 function workFor(origin: CmaOrigin, named: string, facts: CmaFirstContactFacts): string {
+  if (origin === 'expired') return EXPIRED_WORK
   if (origin === 'fsbo') {
     return `We noticed your home at ${named} is for sale by owner. We put a second set of numbers together from the MLS, no charge and no strings.`
   }
@@ -305,14 +323,15 @@ function emailEvidence(origin: CmaOrigin, facts: CmaFirstContactFacts): string |
   return trimmed || null
 }
 
-function reportSentence(named: string, hasPrice: boolean): string {
+function reportSentence(origin: CmaOrigin, named: string, hasPrice: boolean): string {
+  if (origin === 'expired') return hasPrice ? EXPIRED_REPORT_HOLDS : EXPIRED_REPORT_BARE
   if (hasPrice) return REPORT_HOLDS
   return `The full report on ${named} is attached as a PDF.`
 }
 
 function emailClose(origin: CmaOrigin): string[] {
   if (origin === 'expired') {
-    return ['If you have any questions, please let us know. Best of luck in the future.']
+    return [EXPIRED_FUTURE, EXPIRED_QUESTIONS]
   }
   if (origin === 'fsbo') {
     return [
@@ -335,7 +354,7 @@ export function composeCmaFirstContact(
   const plan = workFor(origin, named, facts)
   const numbers = composeFirstContactNumbers(origin, facts)
   const hasPrice = finiteMoney(facts.recommendedList) != null
-  const close = reportSentence(named, hasPrice)
+  const close = reportSentence(origin, named, hasPrice)
   const paragraphs: FirstContactRun[][] = []
   pushParagraph(paragraphs, [greeting])
   if (origin === 'expired') pushParagraph(paragraphs, [EXPIRED_ACK])
