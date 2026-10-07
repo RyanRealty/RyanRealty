@@ -9,9 +9,9 @@ import 'server-only'
  * DWD service account the mailbox sync uses. sendAs.list accepts the
  * `gmail.readonly` scope (verified live 2026-07-09 across all three broker
  * mailboxes) — the SAME scope the mailbox sync already holds, so no
- * domain-wide-delegation change is needed. Do NOT switch to
- * `gmail.settings.basic`: that scope is not in the DWD grant and fails with
- * unauthorized_client.
+ * domain-wide-delegation change is needed. `gmail.settings.basic` was added
+ * to the DWD grant on 2026-10-07 (signature installs write through it; see
+ * docs/ACCESS_INVENTORY.md), but this read stays on gmail.readonly.
  *
  * Runs: piggybacked on the crm-gmail-sync cron (staleness-gated, every ~6h)
  * + on demand from §9 My Settings ("Sync from Gmail").
