@@ -2,6 +2,7 @@
  * Apply earliest-list closed-comp DOM onto a CmaComp. Pure — no DB.
  */
 import {
+  closedSaleDaysToOffer,
   closedSaleDomTotal,
   earliestClosedCompListDate,
   listingHistoryLine as buildListingHistoryLine,
@@ -44,10 +45,21 @@ export function stampClosedCompDom(comp: CmaComp, extras: ClosedCompListStartExt
     closeDate,
     daysOnMarket: domTotal,
   })
+  // The record's days-to-offer counted from the comp's on-market date as it
+  // arrived (the relist day, when there was one). Move it to the first list
+  // so "offer in N days" and the days on market share one start.
+  const daysToOffer = closedSaleDaysToOffer({
+    daysToOffer: comp.daysToOffer,
+    measuredFrom: comp.onMarketDate,
+    firstListDate: start,
+    domTotal,
+    closeDate,
+  })
   return {
     ...comp,
     onMarketDate: start ?? comp.onMarketDate,
     domTotal,
+    daysToOffer,
     listingHistoryLine: listingHistoryLine ?? comp.listingHistoryLine,
   }
 }

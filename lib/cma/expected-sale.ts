@@ -78,6 +78,44 @@ function gridTolerance(price: number): number {
   return Math.max(5, price * 0.0005)
 }
 
+/** The listing keys the reconciliation gave a weight above zero. */
+function weightedKeys(pricing: CmaPricing): Set<string> {
+  const recon = obj((pricing as unknown as { reconciliation?: unknown }).reconciliation)
+  return new Set(
+    (Array.isArray(recon?.weights) ? (recon!.weights as unknown[]) : [])
+      .map((w) => obj(w))
+      .filter((w) => {
+        const share = num(w?.weight)
+        return share != null && share > 0 && typeof w?.listingKey === 'string'
+      })
+      .map((w) => String(w!.listingKey)),
+  )
+}
+
+/**
+ * The printed sales that carry weight in the price, in grid order. Empty when
+ * the row records no weights, so a caller never guesses which sales they are.
+ */
+export function priceSettingComps(
+  pricing: CmaPricing | null | undefined,
+  comps: readonly CmaAdjustedComp[] | null | undefined,
+): CmaAdjustedComp[] {
+  if (!pricing || !comps || comps.length === 0) return []
+  const keys = weightedKeys(pricing)
+  if (keys.size === 0) return []
+  return comps.filter((c) => c.listingKey != null && keys.has(c.listingKey))
+}
+
+/**
+ * The expected sale where the letter says "near": to the thousand. A weighted
+ * average printed to the dollar ("near $522,219") claims a precision "near"
+ * takes back (reader review 2026-10-07). The net column is figured on this
+ * same number, so the header and the fees under it agree.
+ */
+export function expectedSaleNear(e: Pick<ExpectedSale, 'price'>): number {
+  return Math.round(e.price / 1000) * 1000
+}
+
 /**
  * The expected sale, or null.
  *
@@ -106,15 +144,7 @@ export function expectedSaleFor(input: {
   // THE GRID MUST PRODUCE IT.
   const comps = input.comps ?? []
   if (comps.length === 0) return null
-  const keys = new Set(
-    (Array.isArray(recon?.weights) ? (recon!.weights as unknown[]) : [])
-      .map((w) => obj(w))
-      .filter((w) => {
-        const share = num(w?.weight)
-        return share != null && share > 0 && typeof w?.listingKey === 'string'
-      })
-      .map((w) => String(w!.listingKey)),
-  )
+  const keys = weightedKeys(p)
   if (keys.size === 0) return null
   const rows = comps.filter((c) => c.listingKey != null && keys.has(c.listingKey))
   if (rows.length !== keys.size) return null
@@ -135,21 +165,72 @@ export function expectedSaleFor(input: {
  * The one sentence under the price chapter's heading.
  *
  * The cover owns the list dollars (lib/cma/recommend-once.ts), so the list is
- * "that price" here. The expected sale is a different number and prints.
+ * "the price on the cover" here. It said "that price" with no price on the
+ * page for it to point at (reader review 2026-10-07). The expected sale is a
+ * different number and prints, to the thousand ("near").
+ *
+ * `setters` names the sales behind the figure when they are fewer than the
+ * grid prints. "The three sales" under a heading that counts five, three of
+ * them in the subdivision, read as those three; on 3037 Purcell only one of
+ * the three that set the price was.
  */
-export function expectedSaleSentence(e: ExpectedSale, opts?: { onMarket?: boolean }): string {
-  const sales = e.sales != null && e.sales > 1 ? `the ${countWord(e.sales)} sales` : 'the sales'
+export function expectedSaleSentence(
+  e: ExpectedSale,
+  opts?: { onMarket?: boolean; setters?: readonly string[] | null },
+): string {
+  const named = (opts?.setters ?? []).map((a) => a.trim()).filter(Boolean)
+  const count = e.sales != null && e.sales > 1 ? `the ${countWord(e.sales)} sales` : 'the sales'
+  const sales = (behind: string) =>
+    named.length > 1 && (e.sales == null || e.sales === named.length)
+      ? `the ${countWord(named.length)} sales ${behind}, ${joinAnd(named)},`
+      : count
+  const near = usd(expectedSaleNear(e))
   // A home on the market now is listed with a broker. "We'd list at that
   // price" asks for that listing, so the document says only what the sales
   // point to (the closing's non-solicitation rule, closingIsNonSoliciting).
   if (opts?.onMarket) {
-    return `${capitalise(sales)} point to a sale near ${usd(
-      e.price,
-    )} once each is weighted by how closely it matches your home.`
+    return `${capitalise(sales('that set this price'))} point to a sale near ${near} once each is weighted by how closely it matches your home.`
   }
-  return `We'd list at that price and expect it to sell near ${usd(
-    e.price,
-  )}, which is what ${sales} point to once each is weighted by how closely it matches your home.`
+  return `We'd list at the price on the cover and expect it to sell near ${near}, which is what ${sales('behind it')} point to once each is weighted by how closely it matches your home.`
+}
+
+/**
+ * The heading's subdivision count, squared with the sales that set the price.
+ *
+ * "Three of the five sales are in Silver Sage." is true of the five the grid
+ * prints, and the next sentence says the price comes from three. On 3037
+ * Purcell only one of those three is in Silver Sage, so the heading read as a
+ * claim about the wrong set. When the priced sales are fewer than the printed
+ * ones and the heading counts the printed ones inside the subdivision, the
+ * same sentence also counts the priced ones.
+ */
+export function headingWithPriceSet(
+  heading: string,
+  input: {
+    subdivision: string | null | undefined
+    comps: readonly CmaAdjustedComp[]
+    pricing: CmaPricing | null | undefined
+  },
+): string {
+  const name = (input.subdivision ?? '').trim()
+  if (!name || !heading.includes(name) || !/\bsales\b/i.test(heading)) return heading
+  if (/set the price/i.test(heading)) return heading
+  const setters = priceSettingComps(input.pricing, input.comps)
+  if (setters.length === 0 || setters.length >= input.comps.length) return heading
+  const inside = (c: CmaAdjustedComp) => (c.subdivision ?? '').trim().toLowerCase() === name.toLowerCase()
+  const printedInside = input.comps.filter(inside).length
+  if (printedInside === 0 || printedInside >= input.comps.length) return heading
+  const k = setters.filter(inside).length
+  const m = setters.length
+  const clause =
+    k === m
+      ? m === 2
+        ? 'both that set the price are'
+        : `all ${countWord(m)} that set the price are`
+      : k === 0
+        ? `none of the ${countWord(m)} that set the price is`
+        : `${countWord(k)} of the ${countWord(m)} that set the price ${k === 1 ? 'is' : 'are'}`
+  return `${heading.trim().replace(/\.$/, '')}, and ${clause}.`
 }
 
 // ── the range line ──────────────────────────────────────────────────────────
@@ -303,14 +384,18 @@ export function netAtExpectedSale(input: {
   const p = input.pricing
   if (!sheet || !p) return null
   const expected = expectedSaleFor({ pricing: p, comps: input.comps })
-  if (!expected || !(expected.price < sheet.list)) return null
+  if (!expected) return null
+  // The column header says "near" and prints the thousand; the fees under it
+  // are figured on that same number.
+  const near = expectedSaleNear(expected)
+  if (!(near < sheet.list)) return null
   const formula = sellerCostLines(sheet.list)
   if (formula.length !== sheet.lines.length || formula.length !== ENGINE_LINES.length) return null
   for (let i = 0; i < formula.length; i++) {
     const stored = sheet.lines[i]!
     if (stored.label !== formula[i]!.label || Math.round(stored.amount) !== formula[i]!.amount) return null
   }
-  const atExpected = sellerCostLines(expected.price)
+  const atExpected = sellerCostLines(near)
   if (atExpected.length !== formula.length) return null
 
   const sn = obj((p as unknown as { sellerNet?: unknown }).sellerNet)
@@ -334,7 +419,7 @@ export function netAtExpectedSale(input: {
     expected,
     lines,
     netAtList: sheet.net,
-    netAtExpected: Math.max(0, expected.price - costsAtExpected),
+    netAtExpected: Math.max(0, near - costsAtExpected),
     credits,
   }
 }
@@ -352,7 +437,8 @@ export function netCreditsSentence(t: NetTwoColumns): string {
   // would name a count the reader cannot find, so it says nothing.
   if (!c || c.known !== t.expected.sales) return ''
   const n = countWord(c.known)
-  if (c.given === 0) return `None of the ${n} sales behind ${usd(t.expected.price)} gave the buyer a credit.`
+  const near = usd(expectedSaleNear(t.expected))
+  if (c.given === 0) return `None of the ${n} sales behind ${near} gave the buyer a credit.`
   const gave =
     c.given === c.known
       ? `All ${n} gave one`
@@ -363,7 +449,5 @@ export function netCreditsSentence(t: NetTwoColumns): string {
   // written higher with a credit back carries its fees on the higher price,
   // so the note says where the fees are figured instead of claiming the
   // column already covers a credit.
-  return `The ${n} sales are counted after any credit their sellers gave the buyer. ${gave}${typical}. This column figures the fees on ${usd(
-    t.expected.price,
-  )}. If the sale is written higher with a credit back to the buyer, the fees are figured on the higher price.`
+  return `The ${n} sales are counted after any credit their sellers gave the buyer. ${gave}${typical}. This column figures the fees on ${near}. If the sale is written higher with a credit back to the buyer, the fees are figured on the higher price.`
 }

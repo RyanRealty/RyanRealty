@@ -316,9 +316,11 @@ export function competitorCutLine(rivals: readonly CmaBandRival[]): string | nul
       ? 'The one home below has not come down from its opening price.'
       : `None of the ${int(shown)} homes below has come down from its opening price.`
   }
-  const cut = `a median cut of ${usd(Math.round(median(cuts.map((c) => c.dollars))))}, or ${median(
-    cuts.map((c) => c.pct),
-  ).toFixed(1)} percent`
+  // One home has a cut, not a median cut. A median needs two or more
+  // (reader review 2026-10-07: "a median cut of $120,000" for one home).
+  const cut = `${cuts.length === 1 ? 'a cut of' : 'a median cut of'} ${usd(
+    Math.round(median(cuts.map((c) => c.dollars))),
+  )}, or ${median(cuts.map((c) => c.pct)).toFixed(1)} percent`
   if (shown === 1) return `The one home below has already come down, ${cut}.`
   return `${int(cuts.length)} of the ${int(shown)} homes below ${
     cuts.length === 1 ? 'has' : 'have'
@@ -428,7 +430,7 @@ export const BAND_HALF_WIDTH_PCT = 0.1
  */
 export const COMPETITION_BAND_STEPS = [0.1, 0.15, 0.2, 0.25] as const
 
-/** Fitting homes to stop on. The priced set uses the same five. */
+/** Fitting homes to stop on. The priced set has the same five as its floor. */
 export const COMPETITION_GOOD_COUNT = 5
 
 /** The chapter draws this many nearest homes when a band holds more. */

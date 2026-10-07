@@ -25,7 +25,13 @@ import {
   renderReconciliationHtml,
   renderRejectedSalesHtml,
 } from '@/lib/cma/pricing-method'
-import { adjustedRangeLine, expectedSaleFor, expectedSaleSentence } from '@/lib/cma/expected-sale'
+import {
+  adjustedRangeLine,
+  expectedSaleFor,
+  expectedSaleSentence,
+  headingWithPriceSet,
+  priceSettingComps,
+} from '@/lib/cma/expected-sale'
 import { adjustedCloseRange } from '@/lib/cma/market-area-chapters'
 import { renderCompPinMapHtml } from '@/lib/cma/comp-pin-map'
 import { clampSentence, keptCompCount, setAsideCompIndexes, setAsideRows } from '@/lib/cma/set-aside'
@@ -163,7 +169,11 @@ export function whatItsWorthLead(
   const expected = expectedSaleFor({ pricing, comps })
   const liveAsk = subjectPrintableAsk(subject, askCtx)
   const onMarket = ON_MARKET.test(subject.standardStatus ?? '') && liveAsk != null && liveAsk > 0
-  const expectedLine = expected ? expectedSaleSentence(expected, { onMarket }) : ''
+  // Name the sales behind the expected sale when the grid prints more than
+  // set it, so "the three sales" points at three addresses on the page.
+  const setters = priceSettingComps(pricing, comps)
+  const named = setters.length > 1 && setters.length < (comps?.length ?? 0) ? setters.map((c) => c.address) : null
+  const expectedLine = expected ? expectedSaleSentence(expected, { onMarket, setters: named }) : ''
   // THE VALUE RANGE, ONCE, HERE. tasteReview round two, §1 Words: chapter 3
   // stated it three times inside ten lines. With the grid in hand it is the
   // grid's own adjusted pair (the hero's pair), counted over the same sales
@@ -657,12 +667,19 @@ export function pricingPage(input: PricingPageInput): CmaPageDef {
   // The first sentence is the chapter title. The rest of the story is method,
   // and method prints in Basis and limits now (Matt 2026-10-07: under the
   // headline it read like notes to ourselves).
-  const { heading } = whatItsWorthSearchStory({
+  const story = whatItsWorthSearchStory({
     subdivision: s.subdivision,
     comps: input.comps,
     tiersUsed: input.tiersUsed,
     renderArgs: input.renderArgs,
     compTrace: input.compTrace,
+  })
+  // The heading counts the printed sales; when fewer set the price, it counts
+  // those too, so "the three sales" under it cannot be read as the wrong three.
+  const heading = headingWithPriceSet(story.heading, {
+    subdivision: s.subdivision,
+    comps: input.comps,
+    pricing: p,
   })
   // THE CLAMP, UNDER THE NUMBER IT MOVED. When the failed-ask clamp binds, the
   // printed price is not the one the method above it produces — Concorde

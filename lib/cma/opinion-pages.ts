@@ -40,6 +40,7 @@ import {
   DID_NOT_SELL_HEADING,
   askAgainstSoldSentence,
   didNotSellLeadSentence,
+  soldPpsfLegend,
   soldPpsfRange,
   type DidNotSellArgs,
 } from '@/lib/cma/did-not-sell'
@@ -94,7 +95,7 @@ import { statusPriceBoardHtml, statusPriceSummaries, splitActivePending } from '
 import type { LikeHomeCredit } from '@/lib/cma/like-home-credits'
 import { sellerCostLines } from '@/lib/pricing/seller-net'
 import { deRepeatRecommendDollars, isRecommendMark } from '@/lib/cma/recommend-once'
-import { netAtExpectedSale, netCreditsSentence, type NetTwoColumns } from '@/lib/cma/expected-sale'
+import { expectedSaleNear, netAtExpectedSale, netCreditsSentence, type NetTwoColumns } from '@/lib/cma/expected-sale'
 import { SALES_METHOD_LABEL, salesMethodSentences } from '@/lib/cma/sales-method-note'
 import type { CmaBroker, CmaClient, CmaSellerNetLine } from '@/lib/cma/types'
 import type { DevelopmentOpportunities } from '@/lib/cma/development'
@@ -558,7 +559,7 @@ function netTwoColumnsHtml(t: NetTwoColumns, rec: number): string {
   const credits = netCreditsSentence(t)
   return `<table class="kv netsheet net-two" style="table-layout:fixed;max-width:760px">
     <colgroup><col style="width:40%"><col style="width:30%"><col style="width:30%"></colgroup>
-    ${netHead([netListHeader(t.list, rec), `If it sells near ${usd(t.expected.price)}`])}
+    ${netHead([netListHeader(t.list, rec), `If it sells near ${usd(expectedSaleNear(t.expected))}`])}
     <tbody>
     ${rows}
     <tr class="is-net"><th scope="row">Left from the sale</th><td class="v">${usd(t.netAtList)}</td><td class="v">${usd(
@@ -611,10 +612,31 @@ function netOneColumnHtml(
     )
     .join('\n    ')
   const unknowns = (sheet.unknowns ?? []).filter((u) => u.trim())
+  // A stored sheet that is not everything and names nothing it leaves out
+  // still leaves out escrow and the payoff. It printed the net with no line
+  // under it at all (reader review 2026-10-07, 20676 Wild Rose: the stored
+  // sheet was the engine's own three lines, rendered off the draft path).
+  const hasEscrow = sheet.lines.some((l) => /escrow/i.test(l.label))
+  const hasPayoff = sheet.lines.some((l) => /payoff/i.test(l.label))
+  const leftOut =
+    !hasEscrow && !hasPayoff
+      ? NET_BEFORE_ESCROW
+      : !hasEscrow
+        ? "Before the escrow company's fee."
+        : !hasPayoff
+          ? 'Before what you still owe on the home.'
+          : ''
+  const omits = everything
+    ? ''
+    : unknowns.length > 0
+      ? `<p>${esc(`This does not include ${orList(unknowns)}.`)}</p>`
+      : leftOut
+        ? `<p>${esc(leftOut)}</p>`
+        : ''
   const tail = opts.engine
     ? `<p>${esc(NET_BEFORE_ESCROW)}</p>`
     : `${sheet.basis && sheet.basis !== 'list' ? `<p class="small">${esc(sheet.basis)}</p>` : ''}
-  ${everything || unknowns.length === 0 ? '' : `<p>${esc(`This does not include ${orList(unknowns)}.`)}</p>`}`
+  ${omits}`
   return `${sentence ? `<p>${esc(sentence)}</p>` : ''}
   <table class="kv netsheet">
     ${netHead([netListHeader(sheet.list, rec)])}
@@ -788,6 +810,7 @@ export function whatHappenedGraphicHtml(a: OpinionPageArgs): string {
     marketMedianDom: readOfferTiming(a.market)?.medianDays ?? a.market?.medianDom ?? null,
     neutral: storyClassFor(a) === 'neutral',
     exposureKnown: askExposureKnown(a),
+    status: a.subject.standardStatus,
   })
   return `<div class="szn timeline-wide">${wide}</div>
   ${phone ? `<div class="szn timeline-phone">${phone}</div>` : ''}
@@ -1137,7 +1160,8 @@ export function didNotSellBodyMatrixHtml(a: OpinionPageArgs): string {
  * function, keyed to the pin so a reader can find the row and the pin.
  */
 function peerStoriesHtml(a: OpinionPageArgs, peers: readonly MatrixEntry[]): string {
-  const range = soldPpsfRange(a.comps)
+  // The rows the sales table prints (gridSales), on the table's own basis.
+  const range = soldPpsfRange(gridSales(a).comps)
   if (!range) return ''
   const items = peers
     .map((p) => {
@@ -1151,9 +1175,7 @@ function peerStoriesHtml(a: OpinionPageArgs, peers: readonly MatrixEntry[]): str
     .join('')
   if (!items) return ''
   return `<ul class="peer-stories">${items}</ul>
-  <p class="small">${esc(
-    `The dollars a foot come from the ${int(range.n)} closed sales in this report, at their own sale price over their own living area.`,
-  )}</p>`
+  <p class="small">${esc(soldPpsfLegend(range.n))}</p>`
 }
 
 export function didNotSellPage(a: OpinionPageArgs): CmaPageDef | null {
@@ -1452,7 +1474,7 @@ export function cmaDisclosureProseHtml(a: OpinionPageArgs): string {
   <p><strong>Effective date.</strong> This opinion is effective ${esc(
     dateLong(a.generatedAtIso),
   )}. Every figure in it was pulled that day and reads the market as it stood then.</p>
-  <p><strong>What was looked at.</strong> This opinion reads the Oregon Data Share MLS record for your home and for every sale, listing and failed listing named in it: the recorded facts, the price history and the listing photographs${record}. Nobody walked through the inside of your home, or the inside of any home it is measured against. Facts you told us, where they are used, are labelled as yours and should be confirmed independently.</p>
+  <p><strong>What was looked at.</strong> This opinion reads the Oregon Data Share MLS record for your home and for every sale, listing and failed listing named in it: the recorded facts, the price history and the listing photographs${record}. Nobody walked through the inside of your home, or the inside of any home it is measured against. Facts you told us, where they are used, are labeled as yours and should be confirmed independently.</p>
   ${salesMethodHtml(a)}
   <p><strong>Condition was not adjusted for.</strong> The grid in the price chapter moves each sale ${esc(
     adjustmentsMadeClause(a.comps),
@@ -1467,7 +1489,7 @@ export function cmaDisclosureProseHtml(a: OpinionPageArgs): string {
       ? ` View: ${esc(formatClientMlsField(a.subject.viewDescription)!)}.`
       : ''
   }</p>
-  ${a.development ? '<p><strong>Land use, rental, and code statements.</strong> Zoning, buildability, rental, and covenant statements in this report are preliminary reads of published code and recorded documents as of the verification dates shown beside them. They are not land-use decisions, permits, or legal opinions, and they should be confirmed with the agencies listed at the back of this report before anyone relies on them.</p>' : ''}
+  ${a.development ? '<p><strong>Land use, rental, and code statements.</strong> Zoning, buildability, rental, and covenant statements in this report are preliminary reads of published code and recorded documents as of the verification dates shown beside them. They are not land-use decisions, permits, or legal opinions, and they should be confirmed with the city or county planning office before anyone relies on them.</p>' : ''}
   <p><strong>Licensee interest.</strong> Neither ${esc(name)} nor Ryan Realty holds any existing or contemplated interest in this property. Any such interest, should one arise, will be disclosed in writing.</p>
   <p><strong>Not an appraisal.</strong> This competitive market analysis is not intended as an appraisal. If an appraisal is desired, the services of a competent professional licensed appraiser should be obtained. Unless the preparing licensee is also licensed by the Oregon Appraiser Certification and Licensure Board, this report is not intended to meet the requirements set out in the Uniform Standards of Professional Appraisal Practice. Equal Housing Opportunity.</p>
   </div>`

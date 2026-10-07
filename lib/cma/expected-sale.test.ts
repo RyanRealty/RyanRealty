@@ -21,7 +21,9 @@ import { describe, expect, it } from 'vitest'
 import {
   adjustedRangeLine,
   expectedSaleFor,
+  expectedSaleNear,
   expectedSaleSentence,
+  headingWithPriceSet,
   netAtExpectedSale,
   netCreditsSentence,
 } from '@/lib/cma/expected-sale'
@@ -279,8 +281,10 @@ function renderArgs() {
   } as unknown as Parameters<typeof renderCmaHtml>[0]
 }
 
+// The list points at the cover, which owns those dollars, and the expected
+// sale prints to the thousand where it says "near" (reader review 2026-10-07).
 const EXPECTED_SENTENCE =
-  "We'd list at that price and expect it to sell near $622,128, which is what the five sales point to once each is weighted by how closely it matches your home."
+  "We'd list at the price on the cover and expect it to sell near $622,000, which is what the five sales point to once each is weighted by how closely it matches your home."
 const RANGE_LINE = "Adjusted to today's market and your home's size, they run from $603,227 to $639,871."
 
 /** The worth-lead paragraph as a reader sees it. */
@@ -368,24 +372,26 @@ describe('net from the sale: the list, and the expected sale (Keats arithmetic)'
     expect(sellerCostLines(639000).map((l) => l.amount)).toEqual([19170, 15975, 1559])
   })
 
-  it('recomputes every line at $622,128 and shows the arithmetic', () => {
+  it('recomputes every line at the $622,000 the header prints, and shows the arithmetic', () => {
     const t = netAtExpectedSale({ pricing: PRICING, comps: COMPS, sheet })!
     expect(t).not.toBeNull()
     expect(t.expected.price).toBe(622128)
+    expect(expectedSaleNear(t.expected)).toBe(622000)
     expect(t.lines).toEqual([
-      { label: 'Our fee', source: '3% of the sale price', atList: 19170, atExpected: 18664 },
-      { label: "Buyer's agent", source: '2.5% of the sale price, if you offer it', atList: 15975, atExpected: 15553 },
-      { label: 'Title insurance', source: "Oregon owner's policy rate", atList: 1559, atExpected: 1535 },
+      { label: 'Our fee', source: '3% of the sale price', atList: 19170, atExpected: 18660 },
+      { label: "Buyer's agent", source: '2.5% of the sale price, if you offer it', atList: 15975, atExpected: 15550 },
+      { label: 'Title insurance', source: "Oregon owner's policy rate", atList: 1559, atExpected: 1533 },
     ])
     // List column, as stored: 639,000 - 19,170 - 15,975 - 1,559 = 602,296.
     expect(t.netAtList).toBe(639000 - 19170 - 15975 - 1559)
     expect(t.netAtList).toBe(602296)
-    // Expected column: 622,128 - 3% - 2.5% - title(622,128).
-    const fee = Math.round(622128 * 0.03) // 18,663.84 -> 18,664
-    const buyers = Math.round(622128 * 0.025) // 15,553.2 -> 15,553
-    const title = ownersPolicyPremium(622128)! // 1,535
-    expect(t.netAtExpected).toBe(622128 - fee - buyers - title)
-    expect(t.netAtExpected).toBe(586376)
+    // Expected column, at the printed $622,000: 3% - 2.5% - title(622,000).
+    const fee = Math.round(622000 * 0.03) // 18,660
+    const buyers = Math.round(622000 * 0.025) // 15,550
+    const title = ownersPolicyPremium(622000)! // 1,350 + 122 x 1.5 = 1,533
+    expect(title).toBe(1533)
+    expect(t.netAtExpected).toBe(622000 - fee - buyers - title)
+    expect(t.netAtExpected).toBe(586257)
   })
 
   it('does not take the typical $12,000 credit off a second time', () => {
@@ -398,15 +404,15 @@ describe('net from the sale: the list, and the expected sale (Keats arithmetic)'
     const t = netAtExpectedSale({ pricing: PRICING, comps: COMPS, sheet })!
     expect(t.netAtExpected).not.toBe(622128 - 18664 - 15553 - 1535 - 12000)
     expect(netCreditsSentence(t)).toBe(
-      'The five sales are counted after any credit their sellers gave the buyer. Three of the five gave one, and the typical credit across all five was $12,000. This column figures the fees on $622,128. If the sale is written higher with a credit back to the buyer, the fees are figured on the higher price.',
+      'The five sales are counted after any credit their sellers gave the buyer. Three of the five gave one, and the typical credit across all five was $12,000. This column figures the fees on $622,000. If the sale is written higher with a credit back to the buyer, the fees are figured on the higher price.',
     )
   })
 
   it('renders two columns, heads the list column without reprinting the cover dollars', () => {
     const html = sellerNetBodyHtml(opinion())
     expect(html).toContain('At the list price')
-    expect(html).toContain('If it sells near $622,128')
-    for (const v of ['−$19,170', '−$18,664', '−$15,975', '−$15,553', '−$1,559', '−$1,535', '$602,296', '$586,376']) {
+    expect(html).toContain('If it sells near $622,000')
+    for (const v of ['−$19,170', '−$18,660', '−$15,975', '−$15,550', '−$1,559', '−$1,533', '$602,296', '$586,257']) {
       expect(html).toContain(v)
     }
     for (const form of recommendUsdForms(639000)) expect(html).not.toContain(form)
@@ -428,6 +434,21 @@ describe('net from the sale: the list, and the expected sale (Keats arithmetic)'
     expect(html).toContain('At the list price')
     expect(html).toContain('Left from the sale')
     expect(sellerNetPage(a)!.toc).toBe('Net at list')
+    // A stored sheet that names nothing it leaves out still leaves out escrow
+    // and the payoff, and says so (20676 Wild Rose, reader review 2026-10-07).
+    expect(sellerVisibleText(html)).toContain("Before the escrow company's fee and what you still owe on the home.")
+  })
+
+  it('keeps the escrow line on a stored one-column sheet of the engine lines (Wild Rose)', () => {
+    // The weighted price sits above the list, so there is no second column,
+    // and the stored sheet renders off the stored path, not the draft one.
+    const a = opinion({
+      documentStatus: 'ready',
+      pricing: { ...PRICING, predictedClose: 700000, reconciliation: { ...(PRICING as unknown as { reconciliation: object }).reconciliation, weightedPrice: 700000 } } as unknown as CmaPricing,
+    } as Partial<OpinionPageArgs>)
+    const html = sellerNetBodyHtml(a)
+    expect(html).not.toContain('If it sells near')
+    expect(sellerVisibleText(html)).toContain("Before the escrow company's fee and what you still owe on the home.")
   })
 })
 
@@ -557,7 +578,7 @@ describe('the new copy keeps the voice rules', () => {
       const text = sellerVisibleText(html)
       expect(text).toContain(EXPECTED_SENTENCE)
       expect(text).toContain('How the sales were chosen and adjusted.')
-      expect(text).toContain('If it sells near $622,128')
+      expect(text).toContain('If it sells near $622,000')
       expect(text).toContain(HERO_SOLD_RANGE_LABEL)
     }
   })
@@ -587,13 +608,13 @@ describe('review fixes (2026-10-07)', () => {
   it('a home on the market gets no "we would list" line (non-solicitation)', () => {
     const line = expectedSaleSentence(expected, { onMarket: true })
     expect(line).toBe(
-      'The five sales point to a sale near $622,128 once each is weighted by how closely it matches your home.',
+      'The five sales point to a sale near $622,000 once each is weighted by how closely it matches your home.',
     )
     expect(line).not.toMatch(/we'?d list|we would list/i)
   })
 
   it('an off-market home keeps the list line', () => {
-    expect(expectedSaleSentence(expected)).toMatch(/^We'd list at that price and expect it to sell near \$622,128/)
+    expect(expectedSaleSentence(expected)).toMatch(/^We'd list at the price on the cover and expect it to sell near \$622,000/)
   })
 
   it('a sale with no subdivision on record is not called outside', () => {
@@ -610,5 +631,72 @@ describe('review fixes (2026-10-07)', () => {
     const html = heroTrioHtml({ recommended: 500000, conservative: 480000, highEnd: 520000 } as never)
     expect(html).toContain(HERO_LIST_RANGE_LABEL)
     expect(html).not.toContain(HERO_SOLD_RANGE_LABEL)
+  })
+})
+
+describe('reader review 2026-10-07: every reference names its number, every count its set', () => {
+  const expected = { price: 522219, field: 'pricing.predictedClose' as const, sales: 3 }
+
+  it('rounds "near" to the thousand and points at the cover for the list', () => {
+    expect(expectedSaleNear(expected)).toBe(522000)
+    const line = expectedSaleSentence(expected)
+    expect(line).toContain('near $522,000')
+    expect(line).not.toContain('$522,219')
+    expect(line).toContain('the price on the cover')
+    expect(line).not.toContain('that price')
+  })
+
+  it('names the sales behind the figure when the grid prints more of them (3037 Purcell)', () => {
+    const line = expectedSaleSentence(expected, { setters: ['2110 Carrie', '2014 Taylor', '2591 Purcell'] })
+    expect(line).toBe(
+      "We'd list at the price on the cover and expect it to sell near $522,000, which is what the three sales behind it, 2110 Carrie, 2014 Taylor and 2591 Purcell, point to once each is weighted by how closely it matches your home.",
+    )
+    const live = expectedSaleSentence(expected, { onMarket: true, setters: ['2110 Carrie', '2014 Taylor', '2591 Purcell'] })
+    expect(live).toMatch(/^The three sales that set this price, 2110 Carrie, 2014 Taylor and 2591 Purcell, point to a sale near \$522,000/)
+    // A setter list that does not match the count is not printed as the set.
+    expect(expectedSaleSentence(expected, { setters: ['2110 Carrie', '2014 Taylor'] })).toContain('the three sales point to')
+  })
+
+  const sale = (listingKey: string, address: string, subdivision: string) =>
+    ({ listingKey, address, subdivision }) as unknown as CmaAdjustedComp
+  const grid = [
+    sale('A', '2058 Hollow Tree', 'Silver Sage'),
+    sale('B', '2110 Carrie', 'Silver Sage'),
+    sale('C', '2014 Taylor', 'Tamarack Park'),
+    sale('D', '2107 Carrie', 'Silver Sage'),
+    sale('E', '2591 Purcell', 'Holliday Park'),
+  ]
+  const priced = (keys: string[]) =>
+    ({
+      recommended: 538000,
+      reconciliation: { weights: keys.map((listingKey) => ({ listingKey, weight: 33.3 })) },
+    }) as unknown as CmaPricing
+
+  it('counts the sales that set the price beside the printed count when they differ', () => {
+    const heading = 'Three of the five sales are in Silver Sage.'
+    expect(headingWithPriceSet(heading, { subdivision: 'Silver Sage', comps: grid, pricing: priced(['B', 'C', 'E']) })).toBe(
+      'Three of the five sales are in Silver Sage, and one of the three that set the price is.',
+    )
+    expect(headingWithPriceSet(heading, { subdivision: 'Silver Sage', comps: grid, pricing: priced(['A', 'B', 'D']) })).toBe(
+      'Three of the five sales are in Silver Sage, and all three that set the price are.',
+    )
+    expect(headingWithPriceSet(heading, { subdivision: 'Silver Sage', comps: grid, pricing: priced(['C', 'E']) })).toBe(
+      'Three of the five sales are in Silver Sage, and none of the two that set the price is.',
+    )
+  })
+
+  it('leaves the heading alone when every printed sale sets the price or no weights are recorded', () => {
+    const heading = 'Three of the five sales are in Silver Sage.'
+    expect(
+      headingWithPriceSet(heading, { subdivision: 'Silver Sage', comps: grid, pricing: priced(['A', 'B', 'C', 'D', 'E']) }),
+    ).toBe(heading)
+    expect(headingWithPriceSet(heading, { subdivision: 'Silver Sage', comps: grid, pricing: priced([]) })).toBe(heading)
+    expect(
+      headingWithPriceSet('All five sales are in Holliday Park.', {
+        subdivision: 'Holliday Park',
+        comps: grid.map((c) => ({ ...c, subdivision: 'Holliday Park' })),
+        pricing: priced(['A', 'B', 'C']),
+      }),
+    ).toBe('All five sales are in Holliday Park.')
   })
 })

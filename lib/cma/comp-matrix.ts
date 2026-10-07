@@ -480,6 +480,18 @@ export function weightCell(weight: number | null | undefined): string {
   return weight != null && Number.isFinite(weight) ? `${weight.toFixed(1)}%` : '-'
 }
 
+/**
+ * The Days on market cell. A closed sale counts to its accepted offer, the
+ * same number its outcome line prints. When only first list to close is
+ * known, the cell says that is what it counts: that figure is not days on
+ * market (CLAUDE.md §7), and a bare number under that label would claim it.
+ */
+export function domCell(entry: Pick<MatrixEntry, 'domMeasure'>, n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(n) || n < 0) return '-'
+  const count = `${int(n)} ${n === 1 ? 'day' : 'days'}`
+  return entry.domMeasure === 'listed-to-closed' ? `${count}, listed to closed` : count
+}
+
 function sharedCells(entry: MatrixEntry, _range?: PricePathRange | null): string[] {
   // Matt ADD 2026-09-12: kill "how the price moved" spark entirely.
   void _range
@@ -494,8 +506,8 @@ function sharedCells(entry: MatrixEntry, _range?: PricePathRange | null): string
     moneyCell(entry.closePrice),
     sharedConcessionCell(entry),
     soldAfterConcessionsCell(entry),
-    entry.domDays != null ? `${int(entry.domDays)} ${entry.domDays === 1 ? 'day' : 'days'}` : '-',
-    cdom != null ? `${int(cdom)} ${cdom === 1 ? 'day' : 'days'}` : '-',
+    domCell(entry, entry.domDays),
+    domCell(entry, cdom),
     entry.beds != null ? int(entry.beds) : '-',
     entry.baths != null ? dec(entry.baths, entry.baths % 1 !== 0 ? 1 : 0) : '-',
     sizeCell(entry.sqft, entry.lotAcres),

@@ -46,9 +46,9 @@ import {
   type WaterClass,
 } from '@/lib/pricing/classes'
 import {
-  PRICING_MAX_COMPS,
   PRICING_MIN_COMPS,
   PRICING_TARGET_COMPS,
+  PRICING_WALK_CAP,
   pricingTierLadder,
   type AppleStrictness,
   type PricingTier,
@@ -1215,9 +1215,13 @@ function pickClosestMatches(
 }
 
 /**
- * Five sales. An earlier place keeps its seats. A row with more qualifiers
- * than open seats keeps the closest homes in the plat that resembles this
- * one. A median close does not remove a home.
+ * Up to PRICING_WALK_CAP sales (walk to 7, Matt 2026-10-07). An earlier place
+ * keeps its seats: own ground, then the touching plats, the next row, the
+ * pocket, the rest. A place with more qualifiers than open seats keeps its
+ * closest homes (distance, then beds, baths, size and year), in the plat that
+ * resembles this one on a touching row. Own ground walks its whole window, so
+ * an 18- or 24-month own-plat sale competes for a seat on distance. A median
+ * close does not remove a home.
  */
 function capPricingSet(
   subject: PricingSubject,
@@ -1295,6 +1299,13 @@ function tierOutsideRecordedPlatRows(tier: PricingTier): boolean {
  * crosses a wall the old walk would not cross; it only continues further down
  * the same ordered list when a non-setter was met. Never a radius search in
  * place of the order.
+ *
+ * WALK TO 7, PRICE ON 5+ (Matt 2026-10-07). The subject's own ground (own
+ * street, own plat, its pocket) walks its whole window. Once byKey holds
+ * PRICING_TARGET_COMPS, no rung that widens the area runs. Every rung scans
+ * its whole row, and capPricingSet keeps up to PRICING_WALK_CAP, own ground
+ * first, closest homes inside an over-full place. So the review can drop one
+ * or two and the set still prices on five.
  */
 export function walkPricingLadder(
   rawSubject: PricingSubject,
@@ -1391,9 +1402,9 @@ export function walkPricingLadder(
   // other subdivisions. A price cut then kept the cheap cluster and dropped
   // every Redtail Ridge sale, including 3499 SW 44th at $790,000. The Sep 7
   // build, before that cut, still had the plat sale. A pocket rung is wider
-  // than a plat that has already filled. It must not be mixed in. When a row
-  // still has more than five qualifiers, the closest homes stay. A median
-  // close does not choose them.
+  // than a plat that has already filled. It must not be mixed in. When a
+  // place still has more qualifiers than the seven seats (walk to 7, Matt
+  // 2026-10-07), its closest homes stay. A median close does not choose them.
   let countBeforePocket: number | null = null
   // How many sales the plat rows (street, own plat, touching plats, the plats
   // that touch those) held when the walk first reached a rung outside them.
@@ -1453,6 +1464,13 @@ export function walkPricingLadder(
       })
       continue
     }
+    // THE AREA STOPS WIDENING AT FIVE (walk to 7, Matt 2026-10-07: "while
+    // the same area still holds qualifying sales"). The subject's own ground
+    // (own street, own plat, its pocket) is the same area across its whole
+    // window, so those rungs keep walking past five. Every rung that widens
+    // the area (touching plats, the next row, rings, neighborhood, community,
+    // boundary exit, starved) is skipped once the set holds five. The cap
+    // below keeps up to PRICING_WALK_CAP.
     if (byKey.size >= PRICING_TARGET_COMPS && !isPocketExclusiveTier(tier)) {
       rungs.push({
         tier: tier.name,
@@ -1632,7 +1650,7 @@ export function walkPricingLadder(
   // pass runs only when that median was never there.
   const hadOwnPlat = ranked.some((c) => c.ownPlat)
   const sitting = hadOwnPlat ? ranked : pocketSalesSitWithKept(ranked, customLadder)
-  const sliced = capPricingSet(subject, sitting, PRICING_MAX_COMPS)
+  const sliced = capPricingSet(subject, sitting, PRICING_WALK_CAP)
   const bracketed = bracketGla(subject, sliced, pool, asOf, priceAnchor, cells, customLadder, setsPrice)
   if (bracketed.note) {
     if (!tiersUsed.includes('gla-bracket')) tiersUsed.push('gla-bracket')

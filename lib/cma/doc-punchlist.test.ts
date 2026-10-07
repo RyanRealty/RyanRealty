@@ -789,7 +789,8 @@ describe('F7 / tasteReview 2 — this market is sentences and two bars, not a KP
     expect(block).not.toMatch(/<div class="stat-strip is-4">/)
     expect(block).not.toContain('class="stat3"')
     expect(block).toContain('40 homes are for sale in Redmond right now')
-    expect(block).toMatch(/about 13 sell in a typical month/)
+    // A monthly average over the window months of supply divides by.
+    expect(block).toMatch(/Over the last six months, an average of 13 sold each month/)
     expect(block).toMatch(/3\.2 months to sell what is listed/)
     expect(block).toMatch(/seller(&#39;|')s market territory/)
   })
@@ -812,7 +813,7 @@ describe('F7 / tasteReview 2 — this market is sentences and two bars, not a KP
     const block = marketBlock(letter())
     expect(block).toContain('class="szn mos-wide"')
     expect(block).toContain('Homes for sale in Redmond right now')
-    expect(block).toContain('Homes that sell in a typical month')
+    expect(block).toContain('Sold each month, average of the last six months')
   })
 
   it('is the same reading on the immersive', () => {
@@ -1143,7 +1144,7 @@ describe('tasteReview 1 — nothing in the document argues with itself', () => {
     expect(
       (html.match(/above the top of the range homes like yours sold in\./g) ?? []).length,
     ).toBe(1)
-    expect(html).toContain('a foot, unadjusted.')
+    expect(html).toContain('a foot, net of seller concessions and not adjusted for date or size.')
   })
 
   it('gives "homes like yours" one meaning and drops the unsourced city median', () => {
@@ -1208,7 +1209,8 @@ describe('tasteReview 2 — the answer is drawn, and nothing floats over it', ()
     expect(html).toMatch(/<button type="button" class="pin-hit is-closed" data-comp="1" data-pin="1"/)
     // Delta 3: every pin tells the tale — days on market, price changes, and
     // the outcome — on tap and on hover.
-    expect(html).toMatch(/aria-label="1\. 730 Quince[^"]*days on market/)
+    // 730 Quince had its offer in 1 day: the pin's count is the row's count.
+    expect(html).toMatch(/aria-label="1\. 730 Quince[^"]*days? on market/)
     expect(html).toContain('class="pin-legend"')
     // A cropped tile and a percentage-positioned pin cannot both be right.
     for (const css of [cmaStylesheet('https://ryan-realty.com'), immersiveStylesheet()]) {

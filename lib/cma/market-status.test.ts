@@ -739,7 +739,9 @@ describe('chapter order', () => {
     // of (TASTE.md: "MOS is two bars ... not a tile that says 3.9").
     expect(html).not.toContain('<div class="stat-strip is-4">')
     expect(html).toContain('class="szn mos-wide"')
-    expect(html).toContain('sell in a typical month')
+    // The pace names its window (reader review 2026-10-07).
+    expect(html).toContain('sold each month')
+    expect(html).not.toContain('typical month')
     expect(html).not.toContain('inv-hero')
     expect(html).not.toContain('photo-lead')
     expect(html).not.toMatch(/>0 days</)

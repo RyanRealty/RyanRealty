@@ -64,6 +64,8 @@ export type CmaPinFact = {
   /** "sold $457K · offer in 25 days" / "asking $417K · 13 days" */
   outcome: string
   domDays: number | null
+  /** On a closed sale, what `domDays` counts (see MatrixEntry.domMeasure). */
+  domMeasure?: 'offer' | 'listed-to-closed'
   priceChanges: number | null
   /** False when the record says only THAT the price moved, not how often. */
   priceChangesExact?: boolean
@@ -119,7 +121,9 @@ export type CompPinMapOverlay = {
 export function pinRevealLine(fact: CmaPinFact): string {
   const bits: string[] = []
   if (fact.domDays != null && fact.domDays >= 0) {
-    bits.push(`${int(fact.domDays)} ${fact.domDays === 1 ? 'day' : 'days'} on market`)
+    const n = `${int(fact.domDays)} ${fact.domDays === 1 ? 'day' : 'days'}`
+    // First list to close is not days on market (CLAUDE.md §7): name it.
+    bits.push(fact.domMeasure === 'listed-to-closed' ? `${n} listed to closed` : `${n} on market`)
   }
   if (fact.priceChanges != null && fact.priceChanges >= 0) {
     bits.push(

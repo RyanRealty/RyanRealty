@@ -163,6 +163,55 @@ export function closedSaleDomTotal(facts: {
   return calendar
 }
 
+/**
+ * Days from the FIRST list to an accepted offer, on the same clock as
+ * `closedSaleDomTotal`.
+ *
+ * The record's days-to-offer (`sale_pricing_facts.days_to_offer`,
+ * `listings.days_to_pending`) counts from the CURRENT `OnMarketDate`, and a
+ * relist resets that date. The closed-sale DOM counts from the first list.
+ * Printed side by side they disagreed on every letter of 2026-10-07: 3169
+ * Coho "Days on market 146 days" beside "offer in 3 days" (3 days after the
+ * relist), 61131 Brown Trout 300 beside 15. Moving the offer clock back to
+ * the first list puts both on one start.
+ *
+ * An offer clock longer than the whole run to close is not an offer clock
+ * (2107 Carrie printed 66 days on market beside an offer in 67): null, and the
+ * row falls back to the listed-to-closed count, labeled as that.
+ *
+ * Nor is one whose start sits after the run's start when the record cannot
+ * say where the run began: a DOM longer than the calendar days from the
+ * offer clock's start to close means the MLS counted an earlier listing this
+ * row has no date for. Moving the offer clock back by the difference would be
+ * an estimate (CLAUDE.md §0), so it is null and the run prints, labeled.
+ */
+export function closedSaleDaysToOffer(facts: {
+  daysToOffer: number | null | undefined
+  /** The on-market date the record's figure counted from. */
+  measuredFrom?: string | null
+  /** The first list date (`earliestClosedCompListDate`). */
+  firstListDate?: string | null
+  /** First list to close, from `closedSaleDomTotal`. */
+  domTotal?: number | null
+  /** The close date, to check the run's start against the clock's start. */
+  closeDate?: string | null
+}): number | null {
+  const raw = facts.daysToOffer
+  if (raw == null || !Number.isFinite(raw) || raw < 0) return null
+  const from = closedCompCivilDay(facts.measuredFrom)
+  const first = closedCompCivilDay(facts.firstListDate)
+  const shift = from && first ? (calendarDaysBetween(first, from) ?? 0) : 0
+  const days = Math.round(raw) + shift
+  const total = facts.domTotal
+  if (total == null || !Number.isFinite(total) || total < 0) return days
+  if (days > Math.round(total)) return null
+  const start = first ?? from
+  const close = closedCompCivilDay(facts.closeDate)
+  const run = start && close ? calendarDaysBetween(start, close) : null
+  if (run != null && Math.round(total) > run + 1) return null
+  return days
+}
+
 /** Whole days on market. Prefer the measured count; else derive from on-market date. */
 export function daysOnMarketFrom(facts: {
   daysOnMarket?: number | null

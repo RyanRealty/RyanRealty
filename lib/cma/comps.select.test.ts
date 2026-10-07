@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CmaListingRow } from '@/lib/data'
 import type { CmaSubject } from '@/lib/cma/types'
 
@@ -14,9 +14,15 @@ vi.mock('@/lib/data/cma/builderReads', () => ({
   selectCmaCompsPool,
   selectCmaCompsByKeys,
 }))
+// Hoisted so the walk-to-7 tests can hand the subject a touching plat; every
+// other test keeps the default: no ring, no plat on any row.
+const ringMocks = vi.hoisted(() => ({
+  getSubdivisionRing: vi.fn(async (): Promise<unknown> => null),
+  assignSubdivisionSlugs: vi.fn(async (pts: ReadonlyArray<unknown>): Promise<Array<string | null>> => pts.map(() => null)),
+}))
 vi.mock('@/lib/data/geo/subdivision-ring', () => ({
-  getSubdivisionRing: async () => null,
-  assignSubdivisionSlugs: async (pts: ReadonlyArray<unknown>) => pts.map(() => null),
+  getSubdivisionRing: ringMocks.getSubdivisionRing,
+  assignSubdivisionSlugs: ringMocks.assignSubdivisionSlugs,
   assignCommunitySlugs: async () => null,
 }))
 
@@ -560,5 +566,134 @@ describe('selectComps — resale past the waiting period reads the new-construct
     )
     expect(result.comps.map((c) => c.listingKey)).toContain('resale-2016')
     expect(result.comps.map((c) => c.listingKey)).not.toContain('never-owned-2023')
+  })
+})
+
+describe('selectComps — walk to 7, price on 5+ (Matt 2026-10-07)', () => {
+  // The listings ladder for a named plat walks subdivision-6mo, -12mo, -18mo,
+  // -24mo (own ground, the same area across its whole window), then the
+  // touching plats at 6, 12, 18 and 24 months (a wider area). Once the set
+  // holds five, no rung that widens the area runs. The set keeps up to seven,
+  // the tightest prices first, own ground ahead of a wider place.
+  const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10)
+  const SIX_MO = daysAgo(60)
+  const TWELVE_MO = daysAgo(240)
+  const plat = (key: string, i: number, closePrice: number, closeDate: string) =>
+    closedRow({ ListingKey: key, StreetNumber: String(100 + i), ClosePrice: closePrice, CloseDate: closeDate })
+  const touching = (key: string, i: number, closePrice: number, closeDate: string) =>
+    closedRow({
+      ListingKey: key,
+      StreetNumber: String(500 + i),
+      StreetName: 'Aubrey',
+      SubdivisionName: 'Aubrey',
+      ClosePrice: closePrice,
+      CloseDate: closeDate,
+    })
+  const kenwood = subject({ subdivision: 'Kenwood' })
+  const PLAT_TIERS = ['subdivision-6mo', 'subdivision-12mo', 'subdivision-18mo', 'subdivision-24mo']
+
+  /**
+   * The plat query answers with the plat's rows, the touching-plat query
+   * (no subdivision, no bounds: limit 100) with the touching plat's, each by
+   * its own close-date window. The anchor and pocket reads get nothing.
+   */
+  function poolOf(platRows: CmaListingRow[], touchingRows: CmaListingRow[] = []) {
+    selectCmaCompsPool.mockImplementation(async (opts: Record<string, unknown>) => {
+      const since = String(opts.closeDateGte ?? '')
+      if (opts.subdivisionIlike === 'Kenwood') return platRows.filter((r) => String(r.CloseDate) >= since)
+      if (opts.limit === 100) return touchingRows.filter((r) => String(r.CloseDate) >= since)
+      return []
+    })
+  }
+  const keys = (sel: Awaited<ReturnType<typeof selectComps>>) => sel.comps.map((c) => c.listingKey).sort()
+  const ran = (sel: Awaited<ReturnType<typeof selectComps>>) => sel.diagnostics.ladder.filter((t) => t.ran).map((t) => t.tier)
+
+  beforeEach(() => {
+    selectCmaCompsPool.mockReset()
+    selectCmaCompsByKeys.mockReset()
+    selectCmaCompsByKeys.mockResolvedValue([])
+    ringMocks.getSubdivisionRing.mockImplementation(async () => ({
+      homeSlug: 'kenwood',
+      homeLabel: 'Kenwood',
+      neighborhoodSlug: null,
+      ring: [{ slug: 'aubrey', label: 'Aubrey', pointM: 10, rank: 1 }],
+    }))
+    ringMocks.assignSubdivisionSlugs.mockImplementation(async (pts: ReadonlyArray<unknown>) => pts.map(() => 'aubrey'))
+  })
+  afterEach(() => {
+    ringMocks.getSubdivisionRing.mockImplementation(async () => null)
+    ringMocks.assignSubdivisionSlugs.mockImplementation(async (pts: ReadonlyArray<unknown>) => pts.map(() => null))
+  })
+
+  it('an over-full plat yields seven, the tightest prices first', async () => {
+    const central = [500_000, 502_000, 504_000, 506_000, 508_000, 510_000, 512_000]
+    poolOf([
+      ...central.map((price, i) => plat(`C${i}`, i, price, SIX_MO)),
+      plat('LOW', 20, 470_000, SIX_MO),
+      plat('HIGH1', 21, 545_000, SIX_MO),
+      plat('HIGH2', 22, 550_000, SIX_MO),
+    ])
+    const sel = await selectComps(kenwood)
+    expect(sel.comps).toHaveLength(7)
+    expect(keys(sel)).toEqual(['C0', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6'])
+    expect(sel.diagnostics.candidates).toBe(10)
+    expect(ran(sel)).toEqual(PLAT_TIERS)
+  })
+
+  it('own-plat sales from a longer window still compete after five is reached', async () => {
+    poolOf(
+      [
+        ...[0, 1, 2, 3, 4].map((i) => plat(`F${i}`, i, 500_000 + i * 1_000, SIX_MO)),
+        ...[0, 1].map((i) => plat(`W${i}`, 10 + i, 502_000, TWELVE_MO)),
+      ],
+      [touching('ADJ', 0, 502_000, SIX_MO)],
+    )
+    const sel = await selectComps(kenwood)
+    expect(keys(sel)).toEqual(['F0', 'F1', 'F2', 'F3', 'F4', 'W0', 'W1'])
+    expect(ran(sel)).toEqual(PLAT_TIERS)
+  })
+
+  it('once five is reached no touching-plat sale enters; a wider rung that reaches five exactly stays five', async () => {
+    poolOf(
+      [0, 1, 2].map((i) => plat(`O${i}`, i, 500_000, SIX_MO)),
+      [
+        ...[0, 1].map((i) => touching(`E${i}`, i, 501_000, SIX_MO)),
+        // One window out, at the middle price.
+        ...[0, 1, 2].map((i) => touching(`T${i}`, 10 + i, 500_000, TWELVE_MO)),
+      ],
+    )
+    const sel = await selectComps(kenwood)
+    expect(keys(sel)).toEqual(['E0', 'E1', 'O0', 'O1', 'O2'])
+    expect(ran(sel)).toEqual([...PLAT_TIERS, 'adjacent-subdivision-6mo'])
+    expect(sel.diagnostics.reached_target).toBe(true)
+  })
+
+  it('a wider rung that reaches five holding six gives six, and nothing past it fills the seventh seat', async () => {
+    poolOf(
+      [0, 1].map((i) => plat(`O${i}`, i, 500_000, SIX_MO)),
+      [
+        ...[0, 1, 2, 3].map((i) => touching(`E${i}`, i, 500_000 + i * 1_000, SIX_MO)),
+        ...[0, 1, 2].map((i) => touching(`T${i}`, 10 + i, 501_000, TWELVE_MO)),
+      ],
+    )
+    const sel = await selectComps(kenwood)
+    expect(keys(sel)).toEqual(['E0', 'E1', 'E2', 'E3', 'O0', 'O1'])
+    expect(ran(sel)).toEqual([...PLAT_TIERS, 'adjacent-subdivision-6mo'])
+  })
+
+  it('own ground keeps its seats: only the wider rung that reached five gives up a seat', async () => {
+    poolOf(
+      [plat('E500', 0, 500_000, SIX_MO), plat('E545', 1, 545_000, SIX_MO)],
+      [470_000, 480_000, 490_000, 500_000, 510_000, 520_000, 530_000, 540_000].map((price, i) =>
+        touching(`T${price / 1000}`, 10 + i, price, SIX_MO),
+      ),
+    )
+    const sel = await selectComps(kenwood)
+    expect(ran(sel)).toEqual([...PLAT_TIERS, 'adjacent-subdivision-6mo'])
+    expect(sel.excludedOutliers).toHaveLength(0)
+    expect(sel.comps).toHaveLength(7)
+    // $545,000 is the farthest close from the middle price, and it stays: it
+    // is in this home's own plat, and the touching plat reached five.
+    expect(keys(sel)).toEqual(['E500', 'E545', 'T480', 'T490', 'T500', 'T510', 'T520'])
   })
 })

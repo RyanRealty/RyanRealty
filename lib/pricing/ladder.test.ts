@@ -10,15 +10,15 @@ import {
   pocketStarvedForYearQuality,
   POCKET_STARVE_BELOW,
   POCKET_TIGHT_SET_MIN,
-  PRICING_MAX_COMPS,
   PRICING_MIN_COMPS,
   PRICING_TARGET_COMPS,
+  PRICING_WALK_CAP,
   pricingTierLadder,
   RANGE_MIN_KEPT,
   RANGE_TRIM_MIN_N,
 } from '@/lib/pricing/ladder'
 
-describe('five price-setting sales is the floor and the stop (Matt 2026-10-07, reversing the 2026-09-10 lowering to 3)', () => {
+describe('five price-setting sales is the floor and where widening stops (Matt 2026-10-07, reversing the 2026-09-10 lowering to 3)', () => {
   it('pins the floor, the target, the trim threshold and the kept floor to one rule', () => {
     expect(PRICING_MIN_COMPS).toBe(5)
     expect(PRICING_MIN_COMPS).toBe(PRICING_TARGET_COMPS)
@@ -66,9 +66,11 @@ describe('pricingTierLadder — time before distance', () => {
     }
   })
 
-  it('stops at five sales, and never prices more than five', () => {
+  it('stops widening the area at five sales, and keeps up to seven (walk to 7, price on 5+, Matt 2026-10-07)', () => {
     expect(PRICING_TARGET_COMPS).toBe(5)
-    expect(PRICING_MAX_COMPS).toBe(5)
+    expect(PRICING_WALK_CAP).toBe(7)
+    // Seven candidates leave room for the review to drop two and still price on the floor.
+    expect(PRICING_WALK_CAP - 2).toBe(PRICING_MIN_COMPS)
   })
 
   it('inserts wider custom time-first rungs before similar-sub for custom/new', () => {
@@ -233,5 +235,38 @@ describe('keepTightestByClosePrice — as-of date (WP5 item d, back-dated CMA)',
     // ~24 months stale and loses its slot to E instead.
     const kept = keepTightestByClosePrice(comps, 5, '2026-06-15')
     expect(kept.map((c) => c.key).sort()).toEqual(['A', 'B', 'C', 'D', 'E'])
+  })
+})
+
+describe('keepTightestByClosePrice — only the place that reached five gives up a seat (walk to 7, Matt 2026-10-07)', () => {
+  const comps = [
+    { key: 'EARLY', rung: 'early', closePrice: 640_000, closeDate: '2026-06-01' },
+    { key: 'R1', rung: 'reach', closePrice: 500_000, closeDate: '2026-06-01' },
+    { key: 'R2', rung: 'reach', closePrice: 505_000, closeDate: '2026-06-01' },
+    { key: 'R3', rung: 'reach', closePrice: 495_000, closeDate: '2026-06-01' },
+    { key: 'R4', rung: 'reach', closePrice: 510_000, closeDate: '2026-06-01' },
+    { key: 'R5', rung: 'reach', closePrice: 490_000, closeDate: '2026-06-01' },
+    { key: 'R6', rung: 'reach', closePrice: 515_000, closeDate: '2026-06-01' },
+    { key: 'R7', rung: 'reach', closePrice: 560_000, closeDate: '2026-06-01' },
+    { key: 'R8', rung: 'reach', closePrice: 440_000, closeDate: '2026-06-01' },
+  ]
+
+  it('without a limit the price-far earlier sale is the first to go', () => {
+    const kept = keepTightestByClosePrice(comps, 7)
+    expect(kept.map((c) => c.key)).not.toContain('EARLY')
+  })
+
+  it('with the reaching rung named, the earlier sale keeps its seat and the reaching rung keeps its tightest', () => {
+    const kept = keepTightestByClosePrice(comps, 7, undefined, (c) => c.rung === 'reach')
+    expect(kept).toHaveLength(7)
+    expect(kept.map((c) => c.key)).toContain('EARLY')
+    expect(kept.map((c) => c.key)).not.toContain('R7')
+    expect(kept.map((c) => c.key)).not.toContain('R8')
+  })
+
+  it('stops when nothing left may go', () => {
+    const kept = keepTightestByClosePrice(comps, 3, undefined, (c) => c.key === 'R8')
+    expect(kept).toHaveLength(comps.length - 1)
+    expect(kept.map((c) => c.key)).not.toContain('R8')
   })
 })

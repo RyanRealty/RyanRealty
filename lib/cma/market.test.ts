@@ -378,7 +378,7 @@ describe('months of supply is stored raw, printed through one helper, and graded
       detached: { ...CITY_DETACHED, monthsOfSupply: 4.02, verdictKind: 'balanced', activeCount: 201 },
     })
     const html = renderInventoryBoardHtml(row)
-    expect(html).toContain('about 50 sell in a typical month')
+    expect(html).toContain('an average of 50 sold each month')
     expect(html).toContain('it would take 4.1 months')
     expect(html).toContain('balanced market territory')
   })
