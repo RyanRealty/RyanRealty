@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { applyFailedAskCap } from '@/lib/cma/expired-audit'
 import { pinPrintedBandToSettingSales } from '@/lib/pricing/estimate'
+import type { CmaPricingClamp } from '@/lib/cma/types'
 
 const recentOff = new Date(Date.now() - 9 * 24 * 3600 * 1000).toISOString()
 
@@ -15,7 +16,7 @@ describe('915 Saginaw: list tiers stay ordered under a failed ask', () => {
       needsReview: false,
       reviewReason: null as string | null,
       notes: [] as string[],
-      clamp: null,
+      clamp: null as CmaPricingClamp | null,
     }
     applyFailedAskCap(x, { lastFailedListPrice: 925_000, offMarketDate: null })
     expect([x.conservative, x.recommended, x.highEnd]).toEqual([924_000, 924_000, 924_000])
