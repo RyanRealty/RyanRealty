@@ -3329,118 +3329,147 @@ describe('the GLA bracket never crosses a wall the walk would not cross (review,
 describe('walk to 7, price on 5+ (Matt 2026-10-07)', () => {
   // The ruling: keep walking past five, up to seven, while the same area
   // still holds qualifying sales, so the comparability review can drop one or
-  // two and still leave five. Nothing widens the area to get them. Widening
-  // stops at five; the rung that reached five, and only that rung, fills the
-  // set to seven, closest first.
+  // two and still leave five. Nothing widens the area to get them. The
+  // subject's own ground (own street, own plat, its pocket) is the same area
+  // across its whole window; every rung that widens the area stops at five.
+  // The cap seats own ground first, then the closest homes of an over-full place.
   const asOf = '2026-08-01'
-  const at = (miles: number) => ({ latitude: 44.06 + miles / 69, longitude: -121.3 })
-  // Kenwood, the subject's own plat. Same size as the subject, so the GLA
-  // bracket has nothing to swap and the set is the walk's own.
-  const plat = (listingKey: string, miles: number, closeDate: string, closePrice = 700_000) =>
-    sale({ ...at(miles), listingKey, address: `${listingKey} Kenwood Ln`, sqft: 2000, closeDate, closePrice })
+  const here = { latitude: 44.06, longitude: -121.3, communityLocated: true as const, communitySlug: null }
+  const at = (miles: number) => ({ latitude: here.latitude + miles / 69, longitude: here.longitude })
+  const subj = () =>
+    subject({
+      ...here,
+      subdivisionSlug: 'kenwood',
+      adjacentSubdivisionSlugs: ['aubrey'],
+      closerSubdivisionSlugs: [],
+    })
+  // Same size as the subject, so the GLA bracket has nothing to swap and the
+  // set is the walk's own.
+  const plat = (listingKey: string, miles: number, closeDate: string) =>
+    sale({
+      ...here,
+      ...at(miles),
+      listingKey,
+      address: `${listingKey} Kenwood Ln`,
+      subdivisionSlug: 'kenwood',
+      sqft: 2000,
+      closeDate,
+    })
+  const adj = (listingKey: string, miles: number, closeDate: string) =>
+    sale({
+      ...here,
+      ...at(miles),
+      listingKey,
+      address: `${listingKey} Aubrey Ln`,
+      subdivision: 'Aubrey',
+      subdivisionNorm: 'aubrey',
+      subdivisionSlug: 'aubrey',
+      sqft: 2000,
+      closeDate,
+    })
+  const ring = (listingKey: string, miles: number, closeDate: string) =>
+    sale({
+      ...here,
+      ...at(miles),
+      listingKey,
+      address: `${listingKey} Open Rd`,
+      subdivision: null,
+      subdivisionNorm: null,
+      sqft: 2000,
+      closeDate,
+    })
   const THREE_MO = '2026-07-01'
   const SIX_MO = '2026-03-15'
-  const NINE_MO = '2025-12-01'
+  const EIGHTEEN_MO = '2025-03-01'
+  const TWENTY_FOUR_MO = '2024-10-01'
   const keysOf = (out: ReturnType<typeof walkPricingLadder>) => out.comps.map((c) => c.listingKey).sort()
   const rung = (out: ReturnType<typeof walkPricingLadder>, tier: string) => out.rungs.find((r) => r.tier === tier)
 
-  it('a rung holding seven or more qualifiers after reaching five yields seven, the earlier rung seated and the closest of that rung after it', () => {
+  it('a wider rung holding seven or more after reaching five yields seven: own ground first, then that rung\'s closest homes', () => {
     const pool = [
-      // subdivision-3mo: three sales.
-      ...['E1', 'E2', 'E3'].map((key) => plat(key, 0.2, THREE_MO)),
-      // subdivision-6mo: eight sales; the rung reaches five and holds three more than seven needs.
-      ...[0.45, 0.4, 0.35, 0.3, 0.25, 0.15, 0.1, 0.05].map((miles, i) => plat(`S${8 - i}`, miles, SIX_MO)),
-      // subdivision-9mo: the closest sale in the pool. A longer window is a wider rung.
-      plat('LATE', 0.01, NINE_MO),
+      plat('O1', 0.3, THREE_MO),
+      plat('O2', 0.3, THREE_MO),
+      // adjacent-sub-3mo: eight sales; the rung reaches five and holds three more than seven needs.
+      ...[0.4, 0.35, 0.3, 0.25, 0.2, 0.15, 0.1, 0.05].map((miles, i) => adj(`A${8 - i}`, miles, THREE_MO)),
+      // adjacent-sub-6mo: the closest sale in the pool. A wider rung once five is held.
+      adj('A6MO', 0.01, SIX_MO),
     ]
-    const out = walkPricingLadder(subject(), pool, { asOf })
+    const out = walkPricingLadder(subj(), pool, { asOf })
     expect(out.comps).toHaveLength(7)
-    // S1 to S4 sit at 0.05, 0.1, 0.15 and 0.25 miles: the four closest of the rung that reached five.
-    expect(keysOf(out)).toEqual(['E1', 'E2', 'E3', 'S1', 'S2', 'S3', 'S4'])
-    expect(rung(out, 'subdivision-6mo')?.added).toBe(8)
-    expect(rung(out, 'subdivision-9mo')?.ran).toBe(false)
-    expect(rung(out, 'subdivision-9mo')?.skippedReason).toMatch(/already has 11 price-setting sales/)
+    // A1 to A5 sit at 0.05 to 0.25 miles: the five closest of the rung that reached five.
+    expect(keysOf(out)).toEqual(['A1', 'A2', 'A3', 'A4', 'A5', 'O1', 'O2'])
+    expect(rung(out, 'adjacent-sub-3mo')?.added).toBe(8)
+    expect(rung(out, 'adjacent-sub-6mo')?.ran).toBe(false)
+    expect(rung(out, 'adjacent-sub-6mo')?.skippedReason).toMatch(/already has 10 price-setting sales/)
     expect(out.reachedTarget).toBe(true)
   })
 
-  it('once five is reached the set never takes a sale from a wider rung, even one closer in price, date or distance', () => {
-    const subj = subject({ subdivisionSlug: 'kenwood', adjacentSubdivisionSlugs: ['aubrey'] })
+  it('once five is reached no sale from a rung that widens the area enters, even one closer in price, date or distance', () => {
     const pool = [
-      // subdivision-3mo: six sales at 0.3 miles, closing at $700,000 two months back.
-      ...['P1', 'P2', 'P3', 'P4', 'P5', 'P6'].map((key) => ({
-        ...plat(key, 0.3, '2026-06-01', 700_000),
-        subdivisionSlug: 'kenwood',
-      })),
-      // A longer window of the same plat, the nearest sale of all.
-      { ...plat('LONGER', 0.01, '2026-04-01', 700_000), subdivisionSlug: 'kenwood' },
-      // The touching plat, two days old, at the same price.
-      sale({
-        ...at(0.02),
-        listingKey: 'ADJ',
-        address: '1 Aubrey Ln',
-        subdivision: 'Aubrey',
-        subdivisionNorm: 'aubrey',
-        subdivisionSlug: 'aubrey',
-        sqft: 2000,
-        closeDate: '2026-07-30',
-        closePrice: 700_000,
-      }),
+      ...['P1', 'P2', 'P3', 'P4', 'P5', 'P6'].map((key) => plat(key, 0.3, '2026-06-01')),
+      // The touching plat, two days old, at the same price, a fiftieth of a mile out.
+      adj('ADJ', 0.02, '2026-07-30'),
       // No plat at all, a tenth of a mile out, last week, at the same price.
-      sale({
-        ...at(0.1),
-        listingKey: 'RING',
-        address: '2 Open Rd',
-        subdivision: null,
-        subdivisionNorm: null,
-        sqft: 2000,
-        closeDate: '2026-07-25',
-        closePrice: 700_000,
-      }),
+      ring('RING', 0.1, '2026-07-25'),
     ]
-    const out = walkPricingLadder(subj, pool, { asOf })
+    const out = walkPricingLadder(subj(), pool, { asOf })
     expect(keysOf(out)).toEqual(['P1', 'P2', 'P3', 'P4', 'P5', 'P6'])
-    for (const tier of ['subdivision-6mo', 'adjacent-sub-3mo', 'nearby-0.25mi-3mo']) {
+    for (const tier of ['adjacent-sub-3mo', 'closer-sub-3mo', 'nearby-0.25mi-3mo', 'community-6mo', 'widened-disclosed-24mo']) {
       expect(rung(out, tier)?.ran).toBe(false)
       expect(rung(out, tier)?.skippedReason).toMatch(/already has 6 price-setting sales/)
     }
+    // Own ground is the same area: its later windows still ran.
+    expect(rung(out, 'subdivision-24mo-wide')?.ran).toBe(true)
   })
 
-  it('a rung that reaches five holding six gives six, and nothing past it fills the seventh seat', () => {
+  it('own-plat sales from the 18- and 24-month windows still compete for seats after five is reached', () => {
     const pool = [
-      ...['A1', 'A2'].map((key) => plat(key, 0.2, THREE_MO)),
-      ...['B1', 'B2', 'B3', 'B4'].map((key) => plat(key, 0.25, SIX_MO)),
-      ...['C1', 'C2', 'C3'].map((key) => plat(key, 0.05, NINE_MO)),
+      ...['F1', 'F2', 'F3', 'F4', 'F5'].map((key) => plat(key, 0.3, THREE_MO)),
+      plat('L18A', 0.02, EIGHTEEN_MO),
+      plat('L18B', 0.04, EIGHTEEN_MO),
+      plat('L24A', 0.03, TWENTY_FOUR_MO),
+      plat('L24B', 0.05, TWENTY_FOUR_MO),
+      adj('ADJ', 0.01, THREE_MO),
     ]
-    const out = walkPricingLadder(subject(), pool, { asOf })
-    expect(keysOf(out)).toEqual(['A1', 'A2', 'B1', 'B2', 'B3', 'B4'])
-    expect(rung(out, 'subdivision-9mo')?.ran).toBe(false)
+    const out = walkPricingLadder(subj(), pool, { asOf })
+    expect(rung(out, 'subdivision-3mo')?.runningTotal).toBe(5)
+    expect(rung(out, 'subdivision-18mo')?.added).toBe(2)
+    expect(rung(out, 'subdivision-24mo')?.added).toBe(2)
+    // Nine own-plat sales, seven seats, closest first: the four older ones sit
+    // nearer than the five recent ones, so they take seats.
+    expect(out.comps).toHaveLength(7)
+    expect(keysOf(out)).toEqual(['F1', 'F2', 'F3', 'L18A', 'L18B', 'L24A', 'L24B'])
+    expect(rung(out, 'adjacent-sub-3mo')?.ran).toBe(false)
+  })
+
+  it('a wider rung that reaches five holding six gives six, and nothing past it fills the seventh seat', () => {
+    const pool = [
+      plat('O1', 0.3, THREE_MO),
+      plat('O2', 0.3, EIGHTEEN_MO),
+      ...['B1', 'B2', 'B3', 'B4'].map((key) => adj(key, 0.25, THREE_MO)),
+      ...['C1', 'C2', 'C3'].map((key) => adj(key, 0.05, SIX_MO)),
+      ring('RING', 0.1, THREE_MO),
+    ]
+    const out = walkPricingLadder(subj(), pool, { asOf })
+    expect(keysOf(out)).toEqual(['B1', 'B2', 'B3', 'B4', 'O1', 'O2'])
+    expect(rung(out, 'adjacent-sub-6mo')?.ran).toBe(false)
     expect(out.trace.some((t) => t.includes('Comp shortage'))).toBe(false)
   })
 
-  it('a walk that reaches five exactly at the last sale of a rung stays five and does not widen', () => {
-    const subj = subject({ subdivisionSlug: 'kenwood', adjacentSubdivisionSlugs: ['aubrey'] })
+  it('a walk that reaches five exactly at the last sale of a wider rung stays five and does not widen', () => {
     const pool = [
-      ...['F1', 'F2', 'F3', 'F4', 'F5'].map((key) => ({ ...plat(key, 0.3, THREE_MO), subdivisionSlug: 'kenwood' })),
-      // Three more own-plat sales one window out, closer than every one of the five.
-      ...['W1', 'W2', 'W3'].map((key) => ({ ...plat(key, 0.02, SIX_MO), subdivisionSlug: 'kenwood' })),
-      sale({
-        ...at(0.05),
-        listingKey: 'ADJ',
-        address: '3 Aubrey Ln',
-        subdivision: 'Aubrey',
-        subdivisionNorm: 'aubrey',
-        subdivisionSlug: 'aubrey',
-        sqft: 2000,
-        closeDate: THREE_MO,
-      }),
+      ...['O1', 'O2', 'O3'].map((key) => plat(key, 0.3, THREE_MO)),
+      ...['E1', 'E2'].map((key) => adj(key, 0.3, THREE_MO)),
+      // Three more touching-plat sales one window out, closer than every one of the five.
+      ...['W1', 'W2', 'W3'].map((key) => adj(key, 0.02, SIX_MO)),
+      ring('RING', 0.05, THREE_MO),
     ]
-    const out = walkPricingLadder(subj, pool, { asOf })
-    expect(keysOf(out)).toEqual(['F1', 'F2', 'F3', 'F4', 'F5'])
+    const out = walkPricingLadder(subj(), pool, { asOf })
+    expect(keysOf(out)).toEqual(['E1', 'E2', 'O1', 'O2', 'O3'])
     expect(out.reachedTarget).toBe(true)
-    expect(rung(out, 'subdivision-3mo')?.runningTotal).toBe(5)
+    expect(rung(out, 'adjacent-sub-3mo')?.runningTotal).toBe(5)
     const ran = out.rungs.filter((r) => r.ran).map((r) => r.tier)
-    expect(ran[ran.length - 1]).toBe('subdivision-3mo')
-    expect(rung(out, 'subdivision-6mo')?.skippedReason).toMatch(/already has 5 price-setting sales/)
-    expect(rung(out, 'adjacent-sub-3mo')?.ran).toBe(false)
+    expect(ran[ran.length - 1]).toBe('adjacent-sub-3mo')
+    expect(rung(out, 'adjacent-sub-6mo')?.skippedReason).toMatch(/already has 5 price-setting sales/)
   })
 })

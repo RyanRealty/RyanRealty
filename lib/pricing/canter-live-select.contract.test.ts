@@ -338,14 +338,11 @@ describe('1130 E Canter live selectPricingComps path', () => {
     expect(sel.diagnostics.subject.subdivision).not.toMatch(/rolling horse meadow/i)
     const keys = sel.comps.map((c) => c.listingKey)
     const numbers = sel.comps.map((c) => c.mlsNumber)
-    // Walk to 7, price on 5+ (Matt 2026-10-07). The pocket's own windows run
-    // 6, 12, then 18 months: two sales each, six at 18 months, so the walk
-    // stops widening there and all six take seats. 1058 E Ranch, the sixth
-    // closest and the second newest, now prices; under the five-seat cap it
-    // was cut on distance. 994 E Horse Back closed more than 18 months back,
-    // and the 24-month window does not open once 18 months already hold six.
-    expect([...keys].sort()).toEqual(['HB-1025', 'HB-1104', 'HB-945', 'HB-995', 'RANCH-1058', 'RHM-MEADOW'])
-    expect(keys).not.toContain('HB-994')
+    // Walk to 7, price on 5+ (Matt 2026-10-07). The pocket is this home's own
+    // ground, so it walks its whole 24-month window: seven sales, seven seats.
+    // 1058 E Ranch, the sixth closest, now prices; under the five-seat cap it
+    // was cut on distance. 994 E Horse Back, past 18 months, still competes.
+    expect([...keys].sort()).toEqual(['HB-1025', 'HB-1104', 'HB-945', 'HB-994', 'HB-995', 'RANCH-1058', 'RHM-MEADOW'])
     expect(numbers).toContain('220218584')
     expect(numbers).toContain('220214720')
     expect(keys).not.toContain('UP-Clearpine')

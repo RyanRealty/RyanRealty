@@ -448,14 +448,15 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
 }
 
 /**
- * Five price-setting sales stop the WIDENING (Matt 2026-09-22, on 20506
+ * Five price-setting sales stop the AREA widening (Matt 2026-09-22, on 20506
  * Murphy: every sale past five is bought by a wider rung, and that wider rung
- * is what stretched the shaded range). Once the set holds five, no wider rung
- * runs on either ladder: no larger radius, no longer window, no next plat
- * ring, no neighborhood or community step, no boundary exit, no starved rung.
- * The rung that reached five still hands over its own remaining sales, up to
- * PRICING_WALK_CAP (Matt 2026-10-07, below). The listings ladder stops at the
- * same five (`lib/cma/comps.ts` TARGET_COMPS).
+ * is what stretched the shaded range). Once the set holds five, no rung that
+ * widens the area runs on either ladder: no touching plats, no next plat
+ * ring, no distance ring, no neighborhood or community step, no boundary
+ * exit, no starved rung. The subject's own ground (own street, own plat, its
+ * pocket) is the same area across its whole window and keeps walking. The set
+ * keeps up to PRICING_WALK_CAP (Matt 2026-10-07, below). The listings ladder
+ * stops at the same five (`lib/cma/comps.ts` TARGET_COMPS).
  */
 export const PRICING_TARGET_COMPS = 5
 /**
@@ -477,13 +478,14 @@ export const PRICING_MIN_COMPS = 5
  * so the review (lib/cma/judge.ts, lib/cma/judgment-prune.ts) can drop one or
  * two and still leave five. Nothing widens the area to get them.
  *
- * Mechanically, on both ladders: widening stops at PRICING_TARGET_COMPS. The
- * rung that reached five, and only that rung, contributes its remaining
- * qualifying sales, best first by that rung's own order, until the set holds
- * this many. A rung that holds fewer leaves the set at five or six. Every
- * wall (community, neighborhood polygon, recorded plat, 24 months, the room
- * rule, rule 20, the same product type) is unchanged. The floor stays
- * PRICING_MIN_COMPS.
+ * Mechanically, on both ladders: the subject's own ground (own street, own
+ * plat, its pocket) walks its whole window, and no rung that widens the area
+ * runs once the set holds PRICING_TARGET_COMPS. The set keeps this many, own
+ * ground first, then the closest homes of the place that overflowed (the
+ * tightest prices on the listings ladder). An area that holds fewer leaves
+ * the set at five or six. Every wall (community, neighborhood polygon,
+ * recorded plat, 24 months, the room rule, rule 20, the same product type) is
+ * unchanged. The floor stays PRICING_MIN_COMPS.
  */
 export const PRICING_WALK_CAP = 7
 /**
@@ -532,9 +534,10 @@ export const FACTS_STANDALONE_MIN = BOUNDARY_EXIT_BELOW
  * equally far, the later one goes.
  *
  * `removable`, when given, names the only sales the cut may take (walk to 7,
- * Matt 2026-10-07: the rung that reached five fills the open seats, and a
- * sale an earlier rung admitted keeps its seat). The middle price is still
- * read over the whole set. With nothing left that may go, the cut stops.
+ * Matt 2026-10-07: the place that reached five fills the open seats, and a
+ * sale from an earlier place, own ground first, keeps its seat). The middle
+ * price is still read over the whole set. With nothing left that may go, the
+ * cut stops.
  */
 export function keepTightestByClosePrice<T extends { closePrice: number; closeDate?: string | null }>(
   comps: readonly T[],

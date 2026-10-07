@@ -66,7 +66,7 @@ describe('pricingTierLadder — time before distance', () => {
     }
   })
 
-  it('stops widening at five sales, and walks the rung that reached five to seven (walk to 7, price on 5+, Matt 2026-10-07)', () => {
+  it('stops widening the area at five sales, and keeps up to seven (walk to 7, price on 5+, Matt 2026-10-07)', () => {
     expect(PRICING_TARGET_COMPS).toBe(5)
     expect(PRICING_WALK_CAP).toBe(7)
     // Seven candidates leave room for the review to drop two and still price on the floor.
@@ -238,7 +238,7 @@ describe('keepTightestByClosePrice — as-of date (WP5 item d, back-dated CMA)',
   })
 })
 
-describe('keepTightestByClosePrice — only the rung that reached five gives up a seat (walk to 7, Matt 2026-10-07)', () => {
+describe('keepTightestByClosePrice — only the place that reached five gives up a seat (walk to 7, Matt 2026-10-07)', () => {
   const comps = [
     { key: 'EARLY', rung: 'early', closePrice: 640_000, closeDate: '2026-06-01' },
     { key: 'R1', rung: 'reach', closePrice: 500_000, closeDate: '2026-06-01' },

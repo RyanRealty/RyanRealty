@@ -131,10 +131,11 @@ export const MIN_COMPS = PRICING_MIN_COMPS
 export const TARGET_COMPS = PRICING_TARGET_COMPS
 /**
  * Same cap as the facts ladder: walk to 7, price on 5+ (Matt 2026-10-07).
- * The walk stops widening at five, and the rung that reached five keeps up to
- * seven of its sales, the tightest prices first, so the comparability review
- * can drop one or two and the set still prices on the five-sale floor. A
- * sale an earlier rung admitted keeps its seat.
+ * The subject's own plat and pocket walk their whole window; once the set
+ * holds five, no rung that widens the area runs. The set keeps up to seven,
+ * the tightest prices first, so the comparability review can drop one or two
+ * and the set still prices on the five-sale floor. Own ground keeps its seats
+ * ahead of a wider place.
  */
 export const MAX_COMPS = PRICING_WALK_CAP
 
@@ -688,9 +689,19 @@ export async function selectComps(
     { listingKey: string; publicRemarks: string | null; subdivision: string | null; seniorCommunityYn: boolean | null }
   >()
   let ownPlatAgeShare: number | null | undefined = undefined
-  /** The rung that brought the set to TARGET_COMPS. Only its sales may give up a seat in the cap. */
+  /**
+   * The rung that brought the set to TARGET_COMPS, and whether it was own
+   * ground. The cap may cut only that place: all of own ground when own
+   * ground reached five, otherwise only the wider rung that did.
+   */
   let reachedOnTier: string | null = null
+  let reachedOnOwnGround = false
   for (const tier of tiers) {
+    // THE AREA STOPS WIDENING AT FIVE (walk to 7, Matt 2026-10-07: "while the
+    // same area still holds qualifying sales"). The subject's own plat and
+    // pocket walk their whole window; the first rung that would widen the
+    // area once five are held ends the walk, and every rung after it is wider.
+    if (byKey.size >= TARGET_COMPS && !isListingsPocketExclusiveTier(tier)) break
     const skip =
       // THE WIDENING RUNS ONLY WHEN THE BOUNDED LADDER CAME UP SHORT.
       tier.whenStarved && byKey.size >= MIN_COMPS
@@ -1221,11 +1232,10 @@ export async function selectComps(
     )
     if (added > 0) tiersUsed.push(tier.name)
     if (isListingsPocketExclusiveTier(tier)) exclusiveCount = byKey.size
-    // WIDENING STOPS AT FIVE (walk to 7, Matt 2026-10-07). This rung already
-    // added every qualifier it returned; the cap below keeps up to MAX_COMPS.
-    if (byKey.size >= TARGET_COMPS) {
+    // This rung added every qualifier it returned; the cap below keeps up to MAX_COMPS.
+    if (reachedOnTier == null && byKey.size >= TARGET_COMPS) {
       reachedOnTier = tier.name
-      break
+      reachedOnOwnGround = isListingsPocketExclusiveTier(tier)
     }
   }
 
@@ -1344,16 +1354,22 @@ export async function selectComps(
 
   // Rank by similarity (size proximity x recency), then keep up to seven
   // whose close prices sit together. A rung that dumped a high outlier
-  // does not get to set the range. Only the rung that reached five gives up
-  // a seat (walk to 7, Matt 2026-10-07): every earlier rung held fewer than
-  // five between them, and their sales stay.
+  // does not get to set the range. Own ground keeps its seats ahead of a
+  // wider place (walk to 7, Matt 2026-10-07): when own ground reached five,
+  // the cut runs across own ground; when a wider rung did, only that rung
+  // gives up a seat, since everything before it held fewer than five.
   const rankBy = land ? (subject.lotAcres ?? 0) : sqft
+  const ownGroundTiers = new Set(tiers.filter(isListingsPocketExclusiveTier).map((t) => t.name))
   comps.sort((a, b) => similarityScore(rankBy, b, Boolean(land)) - similarityScore(rankBy, a, Boolean(land)))
   comps = keepTightestByClosePrice(
     comps,
     MAX_COMPS,
     opts.asOf,
-    reachedOnTier ? (c) => c.selectionTier === reachedOnTier : undefined,
+    reachedOnTier == null
+      ? undefined
+      : reachedOnOwnGround
+        ? (c) => ownGroundTiers.has(c.selectionTier)
+        : (c) => c.selectionTier === reachedOnTier,
   )
   // Present most recent first (matches the exemplar ordering).
   comps.sort((a, b) => b.closeDate.localeCompare(a.closeDate))
