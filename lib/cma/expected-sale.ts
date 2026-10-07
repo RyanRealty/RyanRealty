@@ -33,7 +33,7 @@ import { countWord, usd } from '@/lib/cma/render-blocks'
 import { tableAdjustedBand } from '@/lib/cma/cover-value'
 import { FLAT_LOCAL_DATE_SENTENCE } from '@/lib/cma/flat-date-story'
 import { isRecommendMark } from '@/lib/cma/recommend-once'
-import { setAsideCompIndexes } from '@/lib/cma/set-aside'
+import { setAsideCompIndexes, trimsEachEnd } from '@/lib/cma/set-aside'
 import {
   NET_BUYER_AGENT_FEE_PCT,
   NET_LISTING_FEE_PCT,
@@ -137,8 +137,16 @@ export function expectedSaleFor(input: {
  * The cover owns the list dollars (lib/cma/recommend-once.ts), so the list is
  * "that price" here. The expected sale is a different number and prints.
  */
-export function expectedSaleSentence(e: ExpectedSale): string {
+export function expectedSaleSentence(e: ExpectedSale, opts?: { onMarket?: boolean }): string {
   const sales = e.sales != null && e.sales > 1 ? `the ${countWord(e.sales)} sales` : 'the sales'
+  // A home on the market now is listed with a broker. "We'd list at that
+  // price" asks for that listing, so the document says only what the sales
+  // point to (the closing's non-solicitation rule, closingIsNonSoliciting).
+  if (opts?.onMarket) {
+    return `${capitalise(sales)} point to a sale near ${usd(
+      e.price,
+    )} once each is weighted by how closely it matches your home.`
+  }
   return `We'd list at that price and expect it to sell near ${usd(
     e.price,
   )}, which is what ${sales} point to once each is weighted by how closely it matches your home.`
@@ -151,7 +159,8 @@ function adjustedToWords(comps: readonly CmaAdjustedComp[]): string[] {
   const moved = (pick: (c: CmaAdjustedComp) => number | null | undefined) =>
     comps.some((c) => {
       const v = pick(c)
-      return v != null && Number.isFinite(v) && Math.abs(v) >= 1
+      // Same test as adjustmentsMade (opinion-pages.ts): any non-zero move.
+      return v != null && Number.isFinite(v) && v !== 0
     })
   const words: string[] = []
   if (moved((c) => c.timeAdjustment)) words.push("today's market")
@@ -210,16 +219,22 @@ export function adjustedRangeLine(
   // line states the span without a count rather than a count the grid's own
   // "set aside" list contradicts.
   const aside = opts?.pricing ? setAsideCompIndexes(opts.pricing, rows) : new Set<number>()
+  // The trim rule is the range's own rule, so the line says it (the stored
+  // rangeRule.sentence used to, and set-aside rows name it as their reason).
+  const trim =
+    opts?.pricing && aside.size > 0 && trimsEachEnd(opts.pricing)
+      ? ' The highest and the lowest sale are set aside, so the range runs between the rest.'
+      : ''
   const countable = ![...aside].some((i) => sales.includes(rows[i]!))
   if (!countable) {
-    return adjusted ? `${capitalise(adjusted)}, the sales ${span}.` : `The sales ${span}.`
+    return (adjusted ? `${capitalise(adjusted)}, the sales ${span}.` : `The sales ${span}.`) + trim
   }
   const sameSales = !one && opts?.afterExpected?.sales != null && opts.afterExpected.sales === n
   if (sameSales) {
-    return adjusted ? `${capitalise(adjusted)}, they ${span}.` : `They ${span}.`
+    return (adjusted ? `${capitalise(adjusted)}, they ${span}.` : `They ${span}.`) + trim
   }
   const who = one ? 'The one sale' : `The ${countWord(n)} sales`
-  return adjusted ? `${who}, ${adjusted}, ${span}.` : `${who} ${span}.`
+  return (adjusted ? `${who}, ${adjusted}, ${span}.` : `${who} ${span}.`) + trim
 }
 
 function capitalise(s: string): string {
@@ -346,7 +361,11 @@ export function netCreditsSentence(t: NetTwoColumns): string {
       : `${capitalise(countWord(c.given))} of the ${n} gave one`
   const typical =
     c.typical != null && c.typical > 0 ? `, and the typical credit across all ${n} was ${usd(c.typical)}` : ''
-  return `The ${n} sales are counted after any credit their sellers gave the buyer, so ${usd(
+  // The fees in the column are figured on the expected sale itself. A deal
+  // written higher with a credit back carries its fees on the higher price,
+  // so the note says where the fees are figured instead of claiming the
+  // column already covers a credit.
+  return `The ${n} sales are counted after any credit their sellers gave the buyer. ${gave}${typical}. This column figures the fees on ${usd(
     t.expected.price,
-  )} already allows for a credit like theirs. ${gave}${typical}.`
+  )}. If the sale is written higher with a credit back to the buyer, the fees are figured on the higher price.`
 }

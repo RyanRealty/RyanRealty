@@ -1,4 +1,4 @@
-# Current — 2026-10-07 (Claude Code, no sign-in on CMA reports + email link host)
+# Current — 2026-10-07 (Claude Code, no sign-in on CMA reports, email link host, CMA report improvements)
 
 Surface: Claude Code. Branch `claude/beautiful-lamport-2x4fjs`, fast-forwarded onto main (PR #426).
 
@@ -6,7 +6,15 @@ Surface: Claude Code. Branch `claude/beautiful-lamport-2x4fjs`, fast-forwarded o
 
 **Email links off the Vercel alias.** `lib/email/link-origin.ts` `emailLinkOrigin()` maps the production alias to https://ryan-realty.com (preview and localhost kept) for click tracking, the open pixel, unsubscribe, newsletter, BPO, legacy CMA deliver, visitor confirmations and the click fallback. Synced Gmail signatures get the alias host rewritten at send (`canonicalizeEmailHosts` in `buildGmailSignature`). Install kits updated. The global NEXT_PUBLIC_SITE_URL is unchanged.
 
-Open for Matt: re-install his Gmail signature from `docs/install-kits/matt-email-signature/signature.html` so mail sent straight from Gmail stops loading images from the alias. Report improvements for the Keats CMA (net sheet, hero fold, map on phones, plain-English method text) went to him in chat; no report code changed.
+**CMA report improvements (Matt picked all four, 2026-10-07).** Built by three parallel workstreams, merged and reviewed here. They change every CMA's layout live, delivered ones included; stored figures are unchanged.
+- Price explained (`lib/cma/expected-sale.ts`): under the price heading, "We'd list at that price and expect it to sell near $X" where X is the weighted price of the printed sales (pricing.predictedClose = reconciliation.weightedPrice), only when under the list. A home on the market gets the neutral line (no "we'd list", non-solicitation). Hero puts the recommended list first; Low/High labelled "Where similar homes sold, adjusted to today" (or "List price range" on the list-tier fallback).
+- Net (`sellerNetPage`): second column "If it sells near $X", same fee and title formulas. It does NOT subtract the typical concession again: the comps' adjusted prices are already after their buyer credits. The note says the fees are figured on $X.
+- Method text: composed from stored fields in plain English and moved to Basis and limits (`lib/cma/sales-method-note.ts`); the stored rangeRule/timeAdjustment sentences no longer print.
+- Phone-first (`sales-glance.ts`, `pin-layout.ts`, comp-matrix, immersive-css): price on the first laptop screen, five sales at a glance, folded card lists, all-blank rows and duplicate CDOM hidden, "Sort / Our order", de-overlapped map pins, dashed ring for unsold (letter too). Keats at 375 went from ~23,800px to ~16,800px.
+- Close: one "Pick a time with {broker}" button plus Call and Text, two short paragraphs, on-brand review cards, and the competition line on size and price per foot when the data supports it (`competitionEdge`).
+- `scripts/cma-lookpass.ts` no longer drops the first slug when no flag leads.
+
+Open for Matt: re-install his Gmail signature from `docs/install-kits/matt-email-signature/signature.html` so mail sent straight from Gmail stops loading images from the alias.
 
 Skills read this pass: `marketing_brain_skills/brand-voice/VOICE.md`, `code-review`.
 

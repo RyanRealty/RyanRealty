@@ -684,6 +684,13 @@ try{
         ;[].slice.call(chapter.querySelectorAll('.comp-stack-card[data-status]')).forEach(function(c){
           c.hidden=!!status&&c.getAttribute('data-status')!==status
         })
+        // A filtered list shows every match: its "Show all N homes" count is
+        // the unfiltered total, so the fold opens and its label steps aside.
+        ;[].slice.call(chapter.querySelectorAll('details.comp-more')).forEach(function(d){
+          var sm=d.querySelector('summary')
+          if(status){d.open=true;if(sm)sm.hidden=true}
+          else if(sm){sm.hidden=false}
+        })
       }
       button(fbox,'All',true,function(){only(null)})
       button(fbox,'For sale',false,function(){only('active')})

@@ -398,7 +398,7 @@ describe('net from the sale: the list, and the expected sale (Keats arithmetic)'
     const t = netAtExpectedSale({ pricing: PRICING, comps: COMPS, sheet })!
     expect(t.netAtExpected).not.toBe(622128 - 18664 - 15553 - 1535 - 12000)
     expect(netCreditsSentence(t)).toBe(
-      'The five sales are counted after any credit their sellers gave the buyer, so $622,128 already allows for a credit like theirs. Three of the five gave one, and the typical credit across all five was $12,000.',
+      'The five sales are counted after any credit their sellers gave the buyer. Three of the five gave one, and the typical credit across all five was $12,000. This column figures the fees on $622,128. If the sale is written higher with a credit back to the buyer, the fees are figured on the higher price.',
     )
   })
 
@@ -571,5 +571,37 @@ describe('the new copy keeps the voice rules', () => {
     for (const html of [letter, immersive]) {
       expect(findSellerBannedWords(html).map((h) => h.label)).toEqual([])
     }
+  })
+})
+
+describe('review fixes (2026-10-07)', () => {
+  const expected = { price: 622128, field: 'pricing.predictedClose' as const, sales: 5 }
+
+  it('a home on the market gets no "we would list" line (non-solicitation)', () => {
+    const line = expectedSaleSentence(expected, { onMarket: true })
+    expect(line).toBe(
+      'The five sales point to a sale near $622,128 once each is weighted by how closely it matches your home.',
+    )
+    expect(line).not.toMatch(/we'?d list|we would list/i)
+  })
+
+  it('an off-market home keeps the list line', () => {
+    expect(expectedSaleSentence(expected)).toMatch(/^We'd list at that price and expect it to sell near \$622,128/)
+  })
+
+  it('a sale with no subdivision on record is not called outside', () => {
+    const comps = [
+      { address: '1 A St', subdivision: 'Hampton Park' },
+      { address: '2 B St', subdivision: null },
+      { address: '3 C St', subdivision: 'Deer Pointe Village' },
+    ] as never
+    expect(outsideSubdivisionSentence({ subdivision: 'Hampton Park' }, comps)).toBeNull()
+  })
+
+  it('the hero labels a list-tier fallback as a list range, never as sold prices', async () => {
+    const { heroTrioHtml, HERO_LIST_RANGE_LABEL, HERO_SOLD_RANGE_LABEL } = await import('@/lib/cma/cover-value')
+    const html = heroTrioHtml({ recommended: 500000, conservative: 480000, highEnd: 520000 } as never)
+    expect(html).toContain(HERO_LIST_RANGE_LABEL)
+    expect(html).not.toContain(HERO_SOLD_RANGE_LABEL)
   })
 })

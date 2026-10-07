@@ -198,6 +198,8 @@ export function coverValueBlockHtml(a: CoverArgs): string {
 
 /** The label over the low and high pair: a SOLD range, not a list range. */
 export const HERO_SOLD_RANGE_LABEL = 'Where similar homes sold, adjusted to today'
+/** The pair's label when no sold band exists and it falls back to the list tiers. */
+export const HERO_LIST_RANGE_LABEL = 'List price range'
 
 /**
  * The recommended list price, then where similar homes sold.
@@ -239,7 +241,7 @@ export function heroTrioHtml(
     </div>
     <div class="hero-trio hero-sold" style="margin-top:14px">
       <div class="ht">
-        <div class="ht-l">${esc(HERO_SOLD_RANGE_LABEL)}</div>
+        <div class="ht-l">${esc(band ? HERO_SOLD_RANGE_LABEL : HERO_LIST_RANGE_LABEL)}</div>
         <div class="hero-trio">
           <div class="ht">
             <div class="ht-l">Low</div>

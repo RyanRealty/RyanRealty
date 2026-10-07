@@ -26,9 +26,13 @@ import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 const usd = formatPriceExact
 
 /**
- * The only seller-facing price sentence. List band and recommended list.
- * Expected close stays off the seller document unless a caller opts in
- * (admin / evidence board only).
+ * A list-band and recommended-list sentence. Its expected-close clause stays
+ * off unless a caller opts in (admin / evidence board).
+ *
+ * The seller document DOES print the expected sale now (Matt 2026-10-07), but
+ * through lib/cma/expected-sale.ts, which prints it only when it is the
+ * weighted price of the printed sales and under the list. This helper's
+ * opt-in is not that path.
  */
 export function listPriceLead(
   p: CmaPricing,

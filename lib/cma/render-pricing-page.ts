@@ -101,7 +101,9 @@ export function whatItsWorthLead(
   // joined the two. The expected sale is the first thing under the heading,
   // and the list stays "that price" (the cover owns those dollars).
   const expected = expectedSaleFor({ pricing, comps })
-  const expectedLine = expected ? expectedSaleSentence(expected) : ''
+  const liveAsk = subjectPrintableAsk(subject, askCtx)
+  const onMarket = ON_MARKET.test(subject.standardStatus ?? '') && liveAsk != null && liveAsk > 0
+  const expectedLine = expected ? expectedSaleSentence(expected, { onMarket }) : ''
   // THE VALUE RANGE, ONCE, HERE. tasteReview round two, §1 Words: chapter 3
   // stated it three times inside ten lines. With the grid in hand it is the
   // grid's own adjusted pair (the hero's pair), counted over the same sales
@@ -114,8 +116,7 @@ export function whatItsWorthLead(
   // A home that is on the market already has an ask. The blueprint gives that
   // case ONE line: what it is listed at, and what the sales support. The ask
   // follows the expected sale, so "that price" can only mean the cover's.
-  const liveAsk = subjectPrintableAsk(subject, askCtx)
-  if (ON_MARKET.test(subject.standardStatus ?? '') && liveAsk != null && liveAsk > 0) {
+  if (onMarket && liveAsk != null) {
     return (
       expectedLine
         ? [expectedLine, worth, `Listed at ${usd(liveAsk)}.`]

@@ -71,7 +71,7 @@ export function readSetAsideSales(pricing: CmaPricing | null | undefined): SetAs
 }
 
 /** True when `pricing.rangeRule` says the extremes were trimmed. */
-function trimsEachEnd(pricing: CmaPricing | null | undefined): boolean {
+export function trimsEachEnd(pricing: CmaPricing | null | undefined): boolean {
   return bag(pricing, 'rangeRule')?.rule === 'trimmed-one-each-end'
 }
 
@@ -128,7 +128,8 @@ export function keptCompCount(
  *
  * When the pricing unit supplies a reason it is printed as written. When only
  * the rule is on the row, the reason is the rule's own words — the highest and
- * the lowest, which is what `rangeRule.sentence` says three lines above.
+ * the lowest, which the range line states too (adjustedRangeLine in
+ * lib/cma/expected-sale.ts).
  */
 export function setAsideRows(
   pricing: CmaPricing | null | undefined,

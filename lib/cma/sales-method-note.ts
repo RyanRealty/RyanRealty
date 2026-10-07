@@ -99,6 +99,9 @@ export function outsideSubdivisionSentence(
   const home = realSubdivisionName(cleanText(subject.subdivision ?? null))
   if (!home) return null
   const homeKey = home.toLowerCase()
+  // A sale with no subdivision on its record is unknown, not outside: §0 says
+  // no claim the data does not hold, so the pricing side's own words print.
+  if (comps.some((c) => !realSubdivisionName(c.subdivision))) return null
   const outside = comps.filter((c) => realSubdivisionName(c.subdivision)?.toLowerCase() !== homeKey)
   if (outside.length === 0 || outside.length >= comps.length) return null
   const total = comps.length
