@@ -551,20 +551,28 @@ export function cmaSectionStyles(): string {
     .mos-phone, .worth-phone { display: none !important; }
   }
   .next-note { font-size: 12px; line-height: 1.7; max-width: 62ch; margin: 12px 0 0; color: var(--navy); }
-  .close-reviews { margin: 8px 0 6px; max-width: none; }
-  .close-reviews-head { font-size: 13px; font-weight: 600; letter-spacing: 0; text-transform: none; line-height: 1.3; margin: 0 0 6px; }
-  .close-review-row { display: grid; grid-template-columns: 1fr; gap: 6px; }
-  .close-quote { position: relative; margin: 0; padding: 7px 7px 6px; background: #fff; color: var(--navy); border: 0; break-inside: avoid; page-break-inside: avoid; overflow-wrap: break-word; }
+  /* The competition chapter's one claim about this home. */
+  .compete-edge { font-weight: 600; }
+  /* Reviews in the palette (Matt 2026-10-07): a translucent cream panel on the
+     navy close, cream stars, Geist. No white card, no gold, no Georgia italic.
+     The reviewer's words are unchanged. Two up on the sheet, one on a phone. */
+  .close-reviews { margin: 14px 0 6px; max-width: none; }
+  .close-reviews-head { font-size: 13px; font-weight: 600; letter-spacing: 0; text-transform: none; line-height: 1.3; margin: 0 0 8px; }
+  .close-review-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  @media screen and (max-width: 700px) {
+    .close-review-row { grid-template-columns: 1fr; }
+  }
+  .close-quote { position: relative; margin: 0; padding: 10px 12px 9px; background: rgba(16, 39, 66, 0.04); color: var(--navy); border: 1px solid var(--navy-line); break-inside: avoid; page-break-inside: avoid; overflow-wrap: break-word; display: flex; flex-direction: column; }
+  .page-closing .close-reviews .close-quote { background: rgba(250, 248, 244, 0.07); color: var(--cream); border-color: rgba(250, 248, 244, 0.2); }
   .close-reviews .close-quote p,
   .close-reviews .close-quote cite,
-  .page-closing .close-reviews .close-quote,
   .page-closing .close-reviews .close-quote p,
-  .page-closing .close-reviews .close-quote cite { color: var(--navy); }
+  .page-closing .close-reviews .close-quote cite { color: inherit; }
   .close-reviews .close-quote p.close-stars,
-  .page-closing .close-reviews .close-quote p.close-stars { margin: 0 0 4px; color: #E1B04A; font-size: 10px; letter-spacing: 0.08em; line-height: 1; }
-  .close-lead { margin: 0; font-family: Georgia, serif; font-style: italic; font-weight: 400; font-size: 12.5px; line-height: 1.15; }
-  .close-line { margin: 3px 0 0; font-family: Georgia, serif; font-style: italic; font-size: 9.5px; line-height: 1.3; }
-  .close-quote cite { display: block; margin-top: 5px; font-style: normal; font-size: 8.5px; letter-spacing: 0.02em; }
+  .page-closing .close-reviews .close-quote p.close-stars { margin: 0 0 6px; color: inherit; font-size: 10px; letter-spacing: 0.2em; line-height: 1; }
+  .close-lead { margin: 0; font-family: 'Geist', system-ui, sans-serif; font-style: normal; font-weight: 600; font-size: 12px; line-height: 1.3; }
+  .close-line { margin: 4px 0 0; font-family: 'Geist', system-ui, sans-serif; font-style: normal; font-weight: 400; font-size: 10.5px; line-height: 1.45; opacity: 0.85; }
+  .close-quote cite { display: block; margin-top: auto; padding-top: 7px; font-family: 'Geist', system-ui, sans-serif; font-style: normal; font-size: 9px; letter-spacing: 0.02em; opacity: 0.72; }
   .close-reviews-more { margin: 6px 0 0; font-size: 11px; font-weight: 600; }
   .close-reviews-more a { display: inline-flex; align-items: center; gap: 8px; text-decoration: underline; text-underline-offset: 2px; }
   .close-reviews .google-g { width: 22px; height: 22px; flex: 0 0 auto; display: block; }

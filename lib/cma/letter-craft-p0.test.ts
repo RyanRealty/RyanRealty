@@ -229,10 +229,15 @@ describe('letter craft P0 — close voice', () => {
     expect(note).toContain(
       'If you decide to list again, we would love the opportunity to earn your business.',
     )
-    expect(note).toContain('Please feel free to call with any questions.')
-    expect(note).toContain('sit down with you and go through the house')
+    expect(note).toContain('sit down with you, go through the house')
     expect(note).toContain('detailed marketing plan')
     expect(note).toContain('Who you list with is your decision')
+    // Matt 2026-10-07: the close said it twice. Once now, in two paragraphs.
+    expect(note.match(/would love the opportunity/g)?.length).toBe(1)
+    expect(note.match(/earn (?:your business|it)\b/g)?.length).toBe(1)
+    expect(note).not.toContain('grateful for the chance')
+    expect(note).not.toContain('Please feel free to call')
+    expect(note.match(/<p class="next-note"/g)?.length).toBe(2)
     expect(note).toContain('close-review-row')
     expect(note).toContain('close-lead')
     expect(note).toContain('E Oster')
@@ -260,9 +265,10 @@ describe('letter craft P0 — close voice', () => {
     expect(note).toContain('data-rr-track="cma-reviews"')
     expect(note).toContain('/reviews')
     expect(note).not.toContain('glad to help')
-    expect(note).toContain('>Call<')
-    expect(note).toContain('>Text<')
+    // The contact card prints the number once; Call and Text are buttons.
+    expect(note).toContain('>Phone<')
     expect(note).toContain('>Email<')
+    expect(note).not.toContain('>Calendar<')
     const { html } = renderCmaHtml(args())
     expect(html).toContain('We&#39;re sorry your home didn&#39;t sell this go-around.')
     expect(html).toContain('we would love the opportunity to earn your business')

@@ -851,6 +851,28 @@ export function cmaStylesheet(siteUrl: string): string {
     color: var(--cream);
     border-color: rgba(250, 248, 244, 0.55);
   }
+  /* The one next step: a time on the broker's calendar, then Call and Text.
+     Sentence case, not the uppercase CTA style (VOICE.md: a Call control says
+     Call), and a 44px target on screen and in a PDF read on a phone. */
+  .cta-actions.next-cta { margin: 16px 0 20px; gap: 10px; }
+  .cta-actions a.next-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    min-width: 88px;
+    box-sizing: border-box;
+    padding: 0 22px;
+    font-size: 13px;
+    letter-spacing: 0;
+    text-transform: none;
+    text-align: center;
+  }
+  @media screen and (max-width: 700px) {
+    .cta-actions.next-cta { display: grid; grid-template-columns: 1fr 1fr; }
+    .cta-actions.next-cta a.next-btn:not(.ghost),
+    .cta-actions.next-cta a.next-btn:only-child { grid-column: 1 / -1; }
+  }
   .reach-block {
     display: flex;
     gap: 16px;
@@ -867,6 +889,11 @@ export function cmaStylesheet(siteUrl: string): string {
     align-items: baseline;
     padding: 6px 0;
     border-top: 1px solid rgba(250, 248, 244, 0.22);
+  }
+  .page-closing .reach dd { min-width: 0; overflow-wrap: anywhere; }
+  @media screen and (max-width: 700px) {
+    .reach-block { flex-direction: column; gap: 10px; }
+    .page-closing .reach { width: 100%; max-width: none; }
   }
   .page-closing .reach-row:last-child { border-bottom: 1px solid rgba(250, 248, 244, 0.22); }
   .page-closing .reach dt {

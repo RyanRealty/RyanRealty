@@ -570,11 +570,15 @@ describe('the closing does not solicit somebody else\'s listing', () => {
     const note = nextStepNoteHtml(withdrawn)
     expect(note).not.toContain('not an offer to interfere')
     expect(note).not.toContain('may still be running')
-    expect(note).toContain('>Call<')
-    expect(note).toContain('>Text<')
-    expect(note).toContain('sms:+15415551234')
+    expect(note).toContain('tel:+15415551234')
     expect(note).toContain('mailto:matt@ryan-realty.com')
-    expect(nextStepButtonsHtml(withdrawn)).toBe('')
+    // Withdrawn is not somebody else's live listing, so the one next step
+    // (Matt 2026-10-07) is there: book a time, then Call and Text.
+    const buttons = nextStepButtonsHtml(withdrawn)
+    expect(buttons).toContain('>Pick a time with Matt<')
+    expect(buttons).toContain('>Call<')
+    expect(buttons).toContain('>Text<')
+    expect(buttons).toContain('sms:+15415551234')
   })
 
   it('puts the signing broker on the phone, the email, and the calendar', () => {
@@ -596,7 +600,7 @@ describe('the closing does not solicit somebody else\'s listing', () => {
         note: null,
       },
     }
-    const note = nextStepNoteHtml(paul)
+    const note = `${nextStepButtonsHtml(paul)}${nextStepNoteHtml(paul)}`
     expect(note).toContain('tel:+15415023436')
     expect(note).toContain('sms:+15415023436')
     expect(note).toContain('mailto:paul@ryan-realty.com')

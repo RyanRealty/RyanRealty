@@ -1332,19 +1332,22 @@ export function nextStepPage(a: OpinionPageArgs): CmaPageDef | null {
  */
 export const CLOSE_SORRY_HEADING = "We're sorry your home didn't sell this go-around."
 
+/**
+ * THE CLOSE IS TWO SHORT PARAGRAPHS (Matt 2026-10-07). The 10-05 close said
+ * "would love the opportunity" twice and "earn" twice, and explained the
+ * report the reader had just scrolled through. What stays is what Matt asked
+ * for: the chance to earn the business, said once, a sit-down with the
+ * marketing plan, and no assumption that they list with us. The action is the
+ * button row under the heading, not a sentence.
+ */
 export const CLOSE_EARN_YOUR_BUSINESS =
   'If you decide to list again, we would love the opportunity to earn your business.'
 
-export const CLOSE_HERE_FOR_QUESTIONS = 'Please feel free to call with any questions.'
-
 export const CLOSE_SIT_DOWN =
-  'We would love the opportunity to sit down with you and go through the house, and to show you the detailed marketing plan we use. There is nothing to sign for that. Who you list with is your decision, and we would be grateful for the chance to earn it.'
-
-export const CLOSE_WHAT_THE_REPORT_IS =
-  'This report is the sales, the homes you would have been competing with, and the ones that came off without selling, so you can see what buyers were doing while your home was listed.'
+  "We'd like to sit down with you, go through the house, and show you the detailed marketing plan we use."
 
 export const CLOSE_NO_OBLIGATION =
-  "There is no obligation. If you want to talk any of it through, we're here."
+  "There is nothing to sign and no obligation. Who you list with is your decision, and we're here for any questions about this report."
 
 /**
  * Four review cards. Each line is a verbatim fragment of that Google review.
@@ -1450,19 +1453,58 @@ export function closingComplianceHtml(a: OpinionPageArgs): string {
 }
 
 /**
- * The button row. Only the non-soliciting close still uses one. Everywhere
- * else the contact list is the action, so this returns '' and the caller
- * omits the empty box.
+ * The broker's own calendar, built once for every place the close links it.
+ * The tracked `book` link carries the document's identity (`_pid`, `utm_*`),
+ * and the calendar is keyed on the short slug: a CMA stores the web slug
+ * (paul-stevenson), and leaving that on ?agent= opened Matt's book.
+ */
+function brokerBookHref(a: OpinionPageArgs): string | null {
+  const b = a.broker
+  if (!b) return null
+  const bookUrl = new URL(trackedDocLink('book', '', a.docLinks ?? UNADDRESSED_DOC_LINKS))
+  const agent = normalizeAgentSlug(b.slug)
+  if (agent) bookUrl.searchParams.set('agent', agent)
+  return bookUrl.toString()
+}
+
+function brokerFirstName(b: CmaBroker): string {
+  return b.displayName.trim().split(/\s+/)[0] || 'us'
+}
+
+/**
+ * THE ONE NEXT STEP (Matt 2026-10-07). The close used to end on a seven-row
+ * contact table with no primary action, and its calendar link measured 82x42
+ * on a phone. Now the heading is followed by one primary button, a time on the
+ * signing broker's calendar, with Call and Text beside it on the same
+ * published line the contact card prints. VOICE.md: a Call or Text control
+ * says Call or Text.
+ *
+ * Every button carries `next-btn`, which both stylesheets hold to a 44px tap
+ * target. The non-soliciting close keeps its single neutral action and never
+ * asks for a meeting.
  */
 export function nextStepButtonsHtml(a: OpinionPageArgs): string {
-  if (!closingIsNonSoliciting(a)) return ''
-  const search = trackedDocLink('search', a.subject.city, a.docLinks ?? UNADDRESSED_DOC_LINKS)
-  return `<a class="btn sec ghost" href="${esc(search)}" data-rr-track="cma-search">See homes for sale near you</a>`
+  if (closingIsNonSoliciting(a)) {
+    const search = trackedDocLink('search', a.subject.city, a.docLinks ?? UNADDRESSED_DOC_LINKS)
+    return `<a class="btn sec ghost next-btn" href="${esc(search)}" data-rr-track="cma-search">See homes for sale near you</a>`
+  }
+  const b = a.broker
+  const book = brokerBookHref(a)
+  if (!b || !book) return ''
+  const buttons = [
+    `<a class="btn pri next-btn" href="${esc(book)}" data-rr-track="cma-book">Pick a time with ${esc(brokerFirstName(b))}</a>`,
+  ]
+  const tel = phoneHref(b.phone)
+  if (tel) {
+    buttons.push(`<a class="btn sec ghost next-btn" href="tel:${tel}" data-rr-track="cma-call">Call</a>`)
+    buttons.push(`<a class="btn sec ghost next-btn" href="sms:${tel}" data-rr-track="cma-text">Text</a>`)
+  }
+  return buttons.join('')
 }
 
 export function nextStepActionsHtml(a: OpinionPageArgs): string {
   const buttons = nextStepButtonsHtml(a)
-  return buttons ? `<div class="cta-actions">${buttons}</div>` : ''
+  return buttons ? `<div class="cta-actions next-cta">${buttons}</div>` : ''
 }
 
 function reachRow(label: string, valueHtml: string): string {
@@ -1470,35 +1512,25 @@ function reachRow(label: string, valueHtml: string): string {
 }
 
 /**
- * Every way to reach the broker who signed this, in one list. Call and text
- * use the published line on the row, never a personal cell. Omitted entirely
- * when the document may not ask for the listing.
+ * The broker's contact card under the reviews. The calendar, Call and Text are
+ * the buttons under the heading, so the card does not repeat them as three
+ * rows: it prints the number once (a paper copy still has to show it), then
+ * email, the office, the site and the listings. The number is the published
+ * line, never a personal cell. Omitted entirely when the document may not ask
+ * for the listing.
  */
 export function nextStepReachHtml(a: OpinionPageArgs): string {
   if (closingIsNonSoliciting(a)) return ''
   const b = a.broker
   if (!b) return ''
   const ctx = a.docLinks ?? UNADDRESSED_DOC_LINKS
-  const bookUrl = new URL(trackedDocLink('book', '', ctx))
-  // The calendar is keyed on the short slug. A CMA stores the web slug
-  // (paul-stevenson). Leaving that on ?agent= opened Matt's book.
-  const agent = normalizeAgentSlug(b.slug)
-  if (agent) bookUrl.searchParams.set('agent', agent)
-  const book = bookUrl.toString()
   const search = trackedDocLink('search', a.subject.city, ctx)
   const site = trackedDocLink('site', BRAND.url, ctx)
   const tel = phoneHref(b.phone)
   const shown = dottedPhone(b.phone)
-  const first = b.displayName.trim().split(/\s+/)[0] || 'us'
   const rows: string[] = []
-  if (shown && tel) {
-    rows.push(reachRow('Call', `<a href="tel:${tel}">${esc(shown)}</a>`))
-    rows.push(reachRow('Text', `<a href="sms:${tel}">${esc(shown)}</a>`))
-  } else if (shown) {
-    rows.push(reachRow('Call', esc(shown)))
-  }
+  if (shown) rows.push(reachRow('Phone', tel ? `<a href="tel:${tel}">${esc(shown)}</a>` : esc(shown)))
   if (b.email) rows.push(reachRow('Email', `<a href="mailto:${esc(b.email)}">${esc(b.email)}</a>`))
-  rows.push(reachRow('Calendar', `<a href="${esc(book)}" data-rr-track="cma-book">Pick a time with ${esc(first)}</a>`))
   rows.push(
     reachRow(
       'Office',
@@ -1537,9 +1569,7 @@ export function nextStepNoteHtml(a: OpinionPageArgs): string {
   ${closingComplianceHtml(a)}`
   }
   if (a.expiredAudit) {
-    return `<p class="next-note">${esc(CLOSE_WHAT_THE_REPORT_IS)}</p>
-  <p class="next-note">${esc(`${CLOSE_EARN_YOUR_BUSINESS} ${CLOSE_HERE_FOR_QUESTIONS}`)}</p>
-  <p class="next-note">${esc(CLOSE_SIT_DOWN)}</p>
+    return `<p class="next-note">${esc(`${CLOSE_EARN_YOUR_BUSINESS} ${CLOSE_SIT_DOWN}`)}</p>
   <p class="next-note">${esc(CLOSE_NO_OBLIGATION)}</p>
   ${closeReviewsHtml(a)}
   ${nextStepReachHtml(a)}
@@ -1664,10 +1694,98 @@ export function competitionBodyMatrixHtml(a: OpinionPageArgs): string {
           shown: 0,
         }))
   const cut = competitorCutLine(args.rivals)
+  const edge = competitionEdge({
+    subjectSqft: a.subject.sqft,
+    recommended: a.pricing.recommended,
+    competitors: [...activeOnly, ...pendingOnly],
+    nonSoliciting: closingIsNonSoliciting(a),
+  })
   return `<p>${esc(sentence)}</p>
   ${cut ? `<p>${esc(cut)}</p>` : ''}
+  ${edge ? `<p class="compete-edge">${esc(edge.sentence)}</p>` : ''}
   <p class="small">${esc(a.bandRivals?.source ?? competitionSourceLine(args))}</p>
   ${matrix}`
+}
+
+/**
+ * THE SELLING POINT THE CHAPTER WAS NOT SAYING (Matt 2026-10-07).
+ *
+ * On 2566 Keats, at the recommended list the home is bigger than every home in
+ * the competition chapter and asks the least per square foot, and the chapter
+ * printed both facts only as two rows of a table nobody adds up. This states
+ * them in one sentence, and only the parts that are true:
+ *
+ *   - larger than every home drawn below, strictly, when every one of them
+ *     has a living area on record
+ *   - priced lower per square foot than every one of them, at the
+ *     recommended list over the home's own living area, when every one has a
+ *     list price too. The figures are rounded exactly as the matrix's List
+ *     $/sqft row rounds them, and the claim needs the rounded figure to be
+ *     lower, so the sentence can never print "$313, against $313".
+ *
+ * Either part alone prints alone. Neither, or any home below missing the
+ * figure the claim needs, prints nothing: a comparison we cannot make against
+ * every home shown is not made (CLAUDE.md §0). The recommended list is the
+ * cover's figure and is not reprinted here (recommend-once); the derived
+ * $/sqft is.
+ *
+ * `competitors` are the matrix entries the chapter draws, active and pending,
+ * so the range quoted is the range a reader finds in the List $/sqft row.
+ */
+export type CompetitionEdge = {
+  sentence: string
+  largest: boolean
+  lowestPpsf: boolean
+  subjectPpsf: number | null
+  competitorPpsf: { lo: number; hi: number } | null
+}
+
+export function competitionEdge(input: {
+  subjectSqft: number | null | undefined
+  recommended: number | null | undefined
+  competitors: ReadonlyArray<Pick<MatrixEntry, 'sqft' | 'listPrice'>>
+  /** A home listed with another brokerage: no "we recommend" in the sentence. */
+  nonSoliciting?: boolean
+}): CompetitionEdge | null {
+  const sqft = input.subjectSqft
+  const n = input.competitors.length
+  if (n === 0 || sqft == null || !Number.isFinite(sqft) || !(sqft > 0)) return null
+  const sized = input.competitors.every((c) => c.sqft != null && Number.isFinite(c.sqft) && c.sqft > 0)
+  if (!sized) return null
+  const largest = input.competitors.every((c) => sqft > (c.sqft as number))
+  const rec = input.recommended
+  const priced =
+    rec != null &&
+    Number.isFinite(rec) &&
+    rec > 0 &&
+    input.competitors.every((c) => c.listPrice != null && Number.isFinite(c.listPrice) && c.listPrice > 0)
+  const subjectPpsf = priced ? Math.round((rec as number) / sqft) : null
+  const theirs = priced
+    ? input.competitors.map((c) => Math.round((c.listPrice as number) / (c.sqft as number)))
+    : []
+  const competitorPpsf = theirs.length > 0 ? { lo: Math.min(...theirs), hi: Math.max(...theirs) } : null
+  const lowestPpsf = subjectPpsf != null && competitorPpsf != null && subjectPpsf < competitorPpsf.lo
+  if (!largest && !lowestPpsf) return null
+
+  const allBelow = n === 1 ? 'the one home below' : n === 2 ? 'both homes below' : `all ${int(n)} homes below`
+  const anyOfThem = n === 1 ? 'that home' : n === 2 ? 'either of them' : 'any of them'
+  const anyBelow =
+    n === 1 ? 'the one home below' : n === 2 ? 'either of the 2 homes below' : `any of the ${int(n)} homes below`
+  const atPrice = input.nonSoliciting ? 'at this price' : 'at the list price we recommend'
+  const range =
+    competitorPpsf == null
+      ? ''
+      : competitorPpsf.lo === competitorPpsf.hi
+        ? usd(competitorPpsf.lo)
+        : `${usd(competitorPpsf.lo)} to ${usd(competitorPpsf.hi)}`
+  const size = `At ${int(sqft)} square feet, your home is larger than ${allBelow}`
+  const sentence =
+    largest && lowestPpsf
+      ? `${size}, and ${atPrice} it is priced lower per square foot than ${anyOfThem}: ${usd(subjectPpsf!)}, against ${range}.`
+      : largest
+        ? `${size}.`
+        : `${atPrice.charAt(0).toUpperCase()}${atPrice.slice(1)}, your home is priced lower per square foot than ${anyBelow}: ${usd(subjectPpsf!)}, against ${range}.`
+  return { sentence, largest, lowestPpsf, subjectPpsf, competitorPpsf }
 }
 
 export function competitionPage(a: OpinionPageArgs): CmaPageDef | null {

@@ -222,8 +222,9 @@ function disclosureScene(a: OpinionSceneArgs): string {
 /** Chapter 7. The closing, and the only navy scene. Web twin of nextStepPage. */
 function nextScene(a: OpinionSceneArgs): string {
   const br = a.broker
-  // One column: heading, message, reviews, then a small photo with the
-  // contact list. The leading portrait left a navy void beside the heading.
+  // One column: heading, the one next step (book a time, with Call and Text
+  // beside it), two short paragraphs, reviews, then a small photo with the
+  // contact card. The leading portrait left a navy void beside the heading.
   const actions = nextStepButtonsHtml(a)
   return `
   <section class="sc sc-navy pack" id="next-step">
@@ -231,7 +232,7 @@ function nextScene(a: OpinionSceneArgs): string {
       <div class="next-b">
         <div class="kick r">Your next step</div>
         <h2 class="h r">${esc(nextStepHeading(a))}</h2>
-        ${actions ? `<div class="cta r">${actions}</div>` : ''}
+        ${actions ? `<div class="cta next-cta r">${actions}</div>` : ''}
         <div class="r">${nextStepNoteHtml(a)}</div>
         <div class="sig r">${esc(br.displayName)} · ${esc(br.title)}${br.licenseNumber ? ` · Oregon Real Estate License # ${esc(br.licenseNumber)}` : ''}</div>
         <div class="fine r">${esc(

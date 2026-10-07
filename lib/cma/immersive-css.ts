@@ -303,28 +303,55 @@ h4.subhead{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:up
 .cando-t{font-size:12px;letter-spacing:.14em;text-transform:uppercase;opacity:.55;margin-bottom:8px}
 .next-in{display:block}
 .next-b{min-width:0}
-.reach-block{display:flex;gap:16px;align-items:flex-start}
+/* The contact card. Every row is a 44px tap target, not a 21px line inside a
+   9px pad (look-pass, 375). On a phone the portrait sits above the list so the
+   values get the width: an email split as "matt@ryan-" / "realty.com" is not
+   something a reader can copy. */
+.reach-block{display:flex;gap:16px;align-items:flex-start;margin-top:26px}
 .reach-photo{width:84px;height:auto;flex:0 0 auto;display:block}
-.reach{margin:8px 0 18px;max-width:480px}
-.reach-row{display:grid;grid-template-columns:92px minmax(0,1fr);gap:12px;align-items:baseline;padding:9px 0;border-top:1px solid rgba(250,248,244,.22)}
+.reach{margin:0 0 18px;max-width:480px;flex:1 1 auto;min-width:0}
+.reach-row{display:grid;grid-template-columns:84px minmax(0,1fr);gap:12px;align-items:center;min-height:44px;border-top:1px solid rgba(250,248,244,.22)}
 .reach-row:last-child{border-bottom:1px solid rgba(250,248,244,.22)}
 .reach dt{font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;opacity:.62}
-.reach dd{margin:0;font-size:15.5px;font-weight:600;line-height:1.35}
+.reach dd{margin:0;font-size:15.5px;font-weight:600;line-height:1.35;min-width:0;overflow-wrap:anywhere}
 .reach a{color:inherit;text-decoration:none}
+.reach dd a{display:inline-flex;align-items:center;min-height:44px;padding:4px 0;box-sizing:border-box}
 .reach a:hover{text-decoration:underline;text-underline-offset:3px}
+@media (max-width:560px){.reach-block{flex-direction:column;gap:12px}.reach-photo{width:72px}.reach{width:100%;max-width:none}}
+/* The competition chapter's one claim about this home (size, and $/sqft at
+   the recommended list), set apart from the counts above it. New rule for the
+   new sentence; no competition rule above is changed. */
+.compete-edge{margin:12px 0 0;font-weight:600;max-width:72ch}
 .next-note{font-size:16px;line-height:1.55;max-width:56ch;margin:0 0 12px;color:rgba(250,248,244,.88)}
 .sc-cream .next-note{color:var(--ink)}
-.close-reviews{margin:14px 0 10px;max-width:none}
-.close-reviews-head{font-size:20px;font-weight:600;letter-spacing:0;text-transform:none;line-height:1.25;margin:0 0 10px}
-.close-review-row{display:grid;grid-template-columns:1fr;gap:10px}
-.close-quote{position:relative;margin:0;padding:12px 12px 10px;background:#fff;color:var(--navy);border:0;overflow-wrap:break-word}
-.sc-navy .close-reviews .close-quote,.sc-cream .close-reviews .close-quote,.close-reviews .close-quote p,.close-reviews .close-quote cite{color:var(--navy)}
-.close-reviews .close-quote p.close-stars{margin:0 0 6px;color:#E1B04A;font-size:13px;letter-spacing:1.5px;line-height:1}
-.close-lead{margin:0;font-family:Georgia,serif;font-style:italic;font-weight:400;font-size:17px;line-height:1.15;letter-spacing:0;text-wrap:balance}
-.close-line{margin:6px 0 0;font-family:Georgia,serif;font-style:italic;font-size:13px;line-height:1.35;opacity:1}
-.close-quote cite{display:block;margin-top:8px;font-style:normal;font-size:12px;letter-spacing:.02em;opacity:.75}
-.close-reviews-more{margin:10px 0 0;font-size:15px;font-weight:600}
-.close-reviews-more a{display:inline-flex;align-items:center;gap:10px;text-decoration:underline;text-underline-offset:3px;color:inherit}
+/* THE ONE NEXT STEP. One cream primary (a time on the broker's calendar) and
+   two outlined secondaries, Call and Text. Each is a 48px target. On a phone
+   the primary takes the full row and Call and Text share the one under it. */
+.cta.next-cta{display:flex;flex-wrap:wrap;gap:12px;align-items:stretch;margin:4px 0 28px}
+.btn.next-btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;min-width:96px;padding:12px 26px;font-size:16px;line-height:1.2;text-align:center;box-sizing:border-box}
+@media (max-width:560px){
+  .sc-navy.pack{padding:44px 24px 52px}
+  .cta.next-cta{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .next-cta .btn.next-btn.pri,.next-cta .btn.next-btn:only-child{grid-column:1 / -1}
+  .btn.next-btn{padding:12px 16px}
+}
+/* REVIEWS, IN THE PALETTE (Matt 2026-10-07). They were white cards with gold
+   stars and Georgia italic. Now a translucent cream panel on the navy close,
+   cream stars, Geist throughout. The reviewer's words are unchanged. Two up
+   where the column has room, one up on a phone. */
+.close-reviews{margin:26px 0 10px;max-width:none}
+.close-reviews-head{font-size:20px;font-weight:600;letter-spacing:0;text-transform:none;line-height:1.25;margin:0 0 12px}
+.close-review-row{display:grid;grid-template-columns:1fr;gap:12px}
+@media (min-width:761px){.close-review-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.close-quote{position:relative;margin:0;padding:16px 18px 14px;background:rgba(250,248,244,.07);color:var(--cream);border:1px solid rgba(250,248,244,.18);overflow-wrap:break-word;display:flex;flex-direction:column}
+.sc-cream .close-quote{background:rgba(16,39,66,.04);color:var(--navy);border-color:var(--ink12)}
+.close-reviews .close-quote p,.close-reviews .close-quote cite{color:inherit}
+.close-reviews .close-quote p.close-stars{margin:0 0 10px;color:inherit;font-size:14px;letter-spacing:3px;line-height:1}
+.close-lead{margin:0;font-family:Geist,system-ui,sans-serif;font-style:normal;font-weight:600;font-size:17px;line-height:1.3;letter-spacing:0;text-wrap:balance}
+.close-line{margin:6px 0 0;font-family:Geist,system-ui,sans-serif;font-style:normal;font-weight:400;font-size:15px;line-height:1.45;opacity:.82}
+.close-quote cite{display:block;margin-top:auto;padding-top:12px;font-family:Geist,system-ui,sans-serif;font-style:normal;font-size:12.5px;letter-spacing:.02em;opacity:.68}
+.close-reviews-more{margin:12px 0 0;font-size:15px;font-weight:600}
+.close-reviews-more a{display:inline-flex;align-items:center;gap:10px;min-height:44px;text-decoration:underline;text-underline-offset:3px;color:inherit}
 .close-reviews .google-g{width:28px;height:28px;flex:0 0 auto;display:block}
 .close-sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .print-out{margin-top:22px;font-size:13px}
