@@ -382,8 +382,13 @@ function listRangeSentence(
  * before anyone knew, and a sentence that hedges about something visible on
  * the page reads as the document not having looked.
  */
-function mapLegend(boundaryShown?: boolean, parentShown?: boolean): string {
-  const pins = 'Every pin below is a row in one of the three tables that follow.'
+function mapLegend(boundaryShown?: boolean, parentShown?: boolean, pinsDrawn = true): string {
+  // A tile with no overlay is a picture with no pins on it; the caption may
+  // not promise them (2026-10-07: the stored html_content read "Every pin
+  // below is a row" over a bare image).
+  const pins = pinsDrawn
+    ? 'Every pin below is a row in one of the three tables that follow.'
+    : 'The three tables that follow list every home this map was drawn for.'
   if (boundaryShown !== true) return pins
   const lines = parentShown
     ? 'The lines are the subdivisions these homes sit in, and the neighborhood around them.'
@@ -760,7 +765,15 @@ export function mapBodyHtml(input: {
   const area = cleanText(input.areaSentence ?? null)
   return `<div class="pin-map-wrap">${pinMap}</div>
   <p class="small">${esc(
-    [area, mapLegend(input.mapOverlay?.boundaryShown, input.mapOverlay?.parentShown)]
+    [
+      area,
+      mapLegend(
+        input.mapOverlay?.boundaryShown,
+        input.mapOverlay?.parentShown,
+        // The SVG fallback draws its own pins; a tile draws them only with its overlay.
+        !input.mapDataUri || Boolean(input.mapOverlay?.view),
+      ),
+    ]
       .filter(Boolean)
       .join(' '),
   )}</p>`

@@ -99,11 +99,10 @@ import {
 import { subjectDomDays } from '@/lib/cma/comp-matrix'
 import { resolveDevelopmentOpportunities } from '@/lib/cma/development'
 import { resolveRentalPotential } from '@/lib/cma/rental-potential'
-import { buildCmaMapDataUri } from '@/lib/cma/map'
+import { buildCmaMapDataUri, cmaMapOptionsFromArgs } from '@/lib/cma/map'
 import { renderCmaHtml } from '@/lib/cma/render'
 import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
 import { buildSubjectStatus } from '@/lib/pricing/subject-status'
-import { parentPlaceArea } from '@/lib/pricing/comp-area'
 import type { PlacePricingStory } from '@/lib/cma/place-pricing-types'
 import { readPlacePricingStory } from '@/lib/data/cma/placePricingRead'
 import { loadListingWindowMarket } from '@/lib/cma/listing-window-load'
@@ -1293,11 +1292,23 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
 
     // 5. Map (best effort — the report ships without it if the key is absent).
     // C9: build the comps map only. Subject-only map is not stamped into the letter.
-    const parentPlace = parentPlaceArea({ latitude: subject.latitude, longitude: subject.longitude })
-    const map = await buildCmaMapDataUri(subject, adjusted, {
-      tiersUsed: selection.tiersUsed,
-      parentName: parentPlace?.names[0] ?? null,
-    })
+    // The stored letter carries the same three pin families, off the same
+    // sets, as the served one (lib/cma/serve-document.ts): render_args'
+    // comps, area, rivals and unsold peers, read by the same options builder.
+    // Its overlay rides into the render below, so html_content (the PDF and
+    // the review snapshot) is not a bare tile under "Every pin below is a row".
+    const map = await buildCmaMapDataUri(
+      subject,
+      competition.renderComps,
+      cmaMapOptionsFromArgs({
+        subject,
+        comps: competition.renderComps,
+        compArea: competition.compArea,
+        bandRivals: competition.bandRivals,
+        expiredPeers: assembleExpiredPeers({ competition, subject, lastCycleFailed }).expiredPeers,
+        tiersUsed: selection.tiersUsed,
+      }),
+    )
 
     // 5.5. Punctuation sanitization over every composed PROSE string in the
     // report: the pricing rationale/narrative notes, and (for the
@@ -1488,6 +1499,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       ...renderArgs,
       broker,
       mapDataUri: map?.dataUri ?? null,
+      mapOverlay: map,
       subjectMapDataUri: null,
       docLinks: { brokerSlug: broker.slug, personId, cmaSlug: slug },
     })

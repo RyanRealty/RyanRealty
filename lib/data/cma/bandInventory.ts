@@ -12,7 +12,12 @@ import {
   compAreaContains,
   type CompArea,
 } from '@/lib/pricing/comp-area'
-import { areaFilterTrace, type CmaAreaReadCitation } from '@/lib/data/cma/areaUnsoldReads'
+import {
+  areaFilterTrace,
+  rowPlatSlugs,
+  rowStreetAddress,
+  type CmaAreaReadCitation,
+} from '@/lib/data/cma/areaUnsoldReads'
 
 const BAND_SELECT =
   'ListingKey, StreetNumber, StreetName, ListPrice, OriginalListPrice, StandardStatus, DaysOnMarket, OnMarketDate, PhotoURL, Latitude, Longitude, property_sub_type, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, year_built, lot_size_acres'
@@ -241,15 +246,22 @@ export async function getCmaAreaBandInventory(input: {
     return { rows, truncated: true }
   }
 
-  const inside = (rows: CmaBandListingRow[]) =>
-    rows.filter((r) =>
+  // A plat area tests each row's recorded polygon, and a plat held to the
+  // subject's street tests the street (rule 24), the same test the unsold
+  // read applies.
+  const inside = async (rows: CmaBandListingRow[]) => {
+    const plats = await rowPlatSlugs(area, rows)
+    return rows.filter((r, i) =>
       compAreaContains(area, {
         latitude: r.Latitude,
         longitude: r.Longitude,
         subdivision: r.SubdivisionName ?? null,
         city: r.City ?? null,
+        platSlug: plats[i],
+        address: rowStreetAddress(r),
       }),
     )
+  }
 
   const filter = [
     `PropertyType='A'`,
@@ -261,8 +273,7 @@ export async function getCmaAreaBandInventory(input: {
 
   try {
     const [actives, pendings] = await Promise.all([readAll('Active'), readAll('Pending')])
-    const activeRows = inside(actives.rows)
-    const pendingRows = inside(pendings.rows)
+    const [activeRows, pendingRows] = await Promise.all([inside(actives.rows), inside(pendings.rows)])
     return {
       area,
       lo: input.lo,

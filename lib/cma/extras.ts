@@ -16,6 +16,7 @@ import {
   type CmaSubdivisionSaleRow,
 } from '@/lib/data/cma/builderReads'
 import { getCmaAreaBandInventory } from '@/lib/data/cma/bandInventory'
+import { rowPlatSlugs, rowStreetAddress } from '@/lib/data/cma/areaUnsoldReads'
 import { bandAroundList, pickBandRivals, rivalAddress, type CmaBandRival } from '@/lib/cma/band-rivals'
 import { compAreaContains, compAreaPhrase, type CompArea } from '@/lib/pricing/comp-area'
 import { listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
@@ -496,15 +497,20 @@ export async function buildCmaExtras(args: {
 
   const photoUrl = args.subject.photoUrl?.trim() ?? ''
   const area = args.compArea ?? null
+  // The city-wide rows narrow to the area by name first (cheap), then by the
+  // recorded plat polygon each survivor sits in (rule 24, the same exact test
+  // the area reads apply).
+  const rowGeo = (r: CmaMarketAreaRow) => ({
+    latitude: r.Latitude ?? null,
+    longitude: r.Longitude ?? null,
+    subdivision: r.SubdivisionName ?? null,
+    city: r.City ?? args.subject.city,
+    address: rowStreetAddress(r),
+  })
+  const named = area ? areaRows.filter((r) => compAreaContains(area, rowGeo(r))) : areaRows
+  const namedPlats = area ? await rowPlatSlugs(area, named) : []
   const pocketRows = area
-    ? areaRows.filter((r) =>
-        compAreaContains(area, {
-          latitude: r.Latitude ?? null,
-          longitude: r.Longitude ?? null,
-          subdivision: r.SubdivisionName ?? null,
-          city: r.City ?? args.subject.city,
-        }),
-      )
+    ? named.filter((r, i) => compAreaContains(area, { ...rowGeo(r), platSlug: namedPlats[i] }))
     : areaRows
   return {
     seasonality: computeSeasonality(skinny, args.subject.city, since36),

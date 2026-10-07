@@ -20,7 +20,7 @@ import { assignSubdivisionSlugs, getSubdivisionRing, readBoundaryLabel } from '@
 import { labelsForUsedPlats, platSlugsToDraw, type OutlineMapLabel } from '@/lib/cma/map-outlines'
 import { parentPlaceArea } from '@/lib/pricing/comp-area'
 import { spreadStackedMapPoints, type CmaMapPoint } from '@/lib/cma-map'
-import { circlePath, pathParam, ringsFromGeometry, type MapLatLng } from '@/lib/cma/map-overlay'
+import { circlePath, pathParam, ringsFromGeometry, simplifyRing, type MapLatLng } from '@/lib/cma/map-overlay'
 import { renderMapGroundSvg, svgDataUri, viewBbox } from '@/lib/cma/map-ground'
 import { basemapForFrame } from '@/lib/geo/basemap-source'
 import { fitStaticMapView, type StaticMapView } from '@/lib/cma/static-map-projection'
@@ -157,7 +157,10 @@ async function ringsFor(
   if (!id) return []
   try {
     const geom = await getBoundaryGeoJSON({ geoType, geoSlug: id })
-    return ringsFromGeometry(geom)
+    // The recorded shape, not the 40-point URL sample: the hold test and the
+    // drawn outline both read it, so a home inside its plat is drawn inside
+    // it. The Static Maps fallback samples at the URL (below).
+    return ringsFromGeometry(geom, { maxPoints: Infinity, maxPolygons: Infinity })
   } catch (e) {
     console.warn('[buildCmaMapDataUri] boundary', e instanceof Error ? e.message : String(e))
     return []
@@ -168,6 +171,14 @@ async function boundaryRings(name: string | null | undefined): Promise<MapLatLng
   const slug = name?.trim() ? slugify(name.trim()) : ''
   return ringsFor('subdivision', slug)
 }
+
+/**
+ * Points per drawn ring. A plat keeps its recorded shape (a lot-traced plat
+ * runs to several hundred vertices); a neighborhood is drawn lighter, behind
+ * it. The hold tests read the full recorded rings either way.
+ */
+const DRAWN_PLAT_POINTS = 2000
+const DRAWN_PARENT_POINTS = 600
 
 type DrawnOutlines = {
   plats: MapLatLng[][]
@@ -181,14 +192,24 @@ type DrawnOutlines = {
  * Subject plat, then each plat a priced sale sits in, plus the parent
  * neighborhood or community when its polygon holds this home. Each used plat
  * and the parent get one place-name label.
+ *
+ * On a plat area (rule 24) the plat each home for sale and each listing that
+ * came off sits in is drawn too: those homes passed the same polygon test the
+ * area applies, so the line around them is part of the area, and a pin is
+ * never left floating outside every outline (20676 Wild Rose, 2026-10-07).
  */
 async function outlinesFor(
   subject: CmaSubject,
   comps: readonly CmaComp[],
   area: CmaCompArea | null,
   marks: readonly MapLatLng[],
-  opts: { parentName?: string | null; platLabels?: Readonly<Record<string, string>> | null } = {},
+  opts: {
+    parentName?: string | null
+    platLabels?: Readonly<Record<string, string>> | null
+    others?: readonly MapLatLng[]
+  } = {},
 ): Promise<DrawnOutlines> {
+  const platArea = area?.kind === 'subdivision' || area?.kind === 'subdivisions'
   const located = [
     finite(subject.latitude) != null && finite(subject.longitude) != null
       ? { lat: subject.latitude as number, lng: subject.longitude as number }
@@ -200,6 +221,7 @@ async function outlinesFor(
         ? { lat, lng }
         : { lat: null as number | null, lng: null as number | null }
     }),
+    ...(platArea ? (opts.others ?? []).map((p) => ({ lat: p.lat as number | null, lng: p.lng as number | null })) : []),
   ]
   let assigned: Array<string | null> = []
   try {
@@ -211,8 +233,9 @@ async function outlinesFor(
   const plats: MapLatLng[][] = []
   const drawnPlats: Array<{ slug: string; rings: MapLatLng[][] }> = []
   for (const slug of platSlugsToDraw(assigned)) {
-    const rings = await ringsFor('subdivision', slug)
-    if (!polygonHoldsAnyPoint(rings, marks)) continue
+    const recorded = await ringsFor('subdivision', slug)
+    if (!polygonHoldsAnyPoint(recorded, marks)) continue
+    const rings = recorded.map((r) => simplifyRing(r, DRAWN_PLAT_POINTS))
     plats.push(...rings)
     drawnPlats.push({ slug, rings })
   }
@@ -226,7 +249,7 @@ async function outlinesFor(
       const parentRings = await ringsFor('neighborhood', ring?.neighborhoodSlug)
       const subjectPoint = [{ lat: subjectLat, lng: subjectLng }]
       if (polygonHoldsAnyPoint(parentRings, subjectPoint) || polygonHoldsAnyPoint(parentRings, marks)) {
-        parent = parentRings
+        parent = parentRings.map((r) => simplifyRing(r, DRAWN_PARENT_POINTS))
       }
       if (!parentLabel && ring?.neighborhoodSlug) {
         parentLabel = await readBoundaryLabel('neighborhood', ring.neighborhoodSlug)
@@ -240,8 +263,9 @@ async function outlinesFor(
   }
   if (plats.length === 0 && parent.length === 0) {
     for (const name of areaNames(area, subject)) {
-      const rings = await boundaryRings(name)
-      if (!polygonHoldsAnyPoint(rings, marks)) continue
+      const recorded = await boundaryRings(name)
+      if (!polygonHoldsAnyPoint(recorded, marks)) continue
+      const rings = recorded.map((r) => simplifyRing(r, DRAWN_PLAT_POINTS))
       plats.push(...rings)
       drawnPlats.push({ slug: '', rings })
     }
@@ -351,11 +375,15 @@ export async function buildCmaMapDataUri(
   const outlines = await outlinesFor(subject, comps.slice(0, 9), area, drawn, {
     parentName: opts.parentName,
     platLabels: opts.platLabels,
+    others: points
+      .filter((_, i) => families[i]?.family === 'active' || families[i]?.family === 'unsold')
+      .map((p) => ({ lat: p.lat, lng: p.lng })),
   })
   const boundaryShown = outlines.shown
   const parentShown = outlines.parentShown
-  for (const ring of [...outlines.parent, ...outlines.plats]) {
-    const path = pathParam('0x102742CC', '0x10274222', ring)
+  // The Static Maps URL has a length cap: it gets a sampled ring, a few at most.
+  for (const ring of [...outlines.parent, ...outlines.plats].slice(0, 12)) {
+    const path = pathParam('0x102742CC', '0x10274222', simplifyRing(ring))
     if (path) paths.push(path)
   }
   // THE COMP AREA'S OWN RADIUS FIRST, the search story's second. `compArea`
@@ -382,15 +410,12 @@ export async function buildCmaMapDataUri(
     // Two pins on one rooftop cover each other whoever draws them, so the same
     // nudge the Google markers used still applies to ours.
     const spread = spreadStackedMapPoints(points)
-    // The frame is the subject, the sales that set the price, and the homes
-    // the competition chapter draws. Those rivals are already the nearest
-    // few, so the map does not open to a mile ring. An expired listing still
-    // does not pull the frame.
-    const salesFrame = spread.filter((_, i) => {
-      const family = families[i]?.family
-      return family === 'subject' || family === 'closed' || family === 'active'
-    })
-    const framed = salesFrame.length > 0 ? salesFrame : spread
+    // The frame is every pin: the subject, the sales that set the price, the
+    // homes for sale and the listings that came off. All three come from the
+    // one sales area (rule 24), so none of them opens a mile ring, and a row
+    // whose pin fell off the frame would be a row with no pin (2382 Jackson,
+    // 2020 Hall, 2026-10-07: "Every pin below is a row" with one missing).
+    const framed = spread
     // The document's own ground (lib/cma/map-ground.ts): a fractional zoom
     // fits the pins tight, and the TIGER skeleton under them is the Atlas
     // register. The Google tile stays as the fallback for a frame outside

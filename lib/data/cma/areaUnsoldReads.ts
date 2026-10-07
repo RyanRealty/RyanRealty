@@ -33,6 +33,7 @@ import {
   type CompArea,
 } from '@/lib/pricing/comp-area'
 import type { CmaMarketAreaRow } from '@/lib/data/cma/marketAreaReads'
+import { assignSubdivisionSlugs } from '@/lib/data/geo/subdivision-ring'
 
 /** The three MLS statuses that mean "came off without selling". */
 export const UNSOLD_STATUSES = ['Expired', 'Withdrawn', 'Canceled'] as const
@@ -96,7 +97,13 @@ export function areaFilterTrace(area: CompArea): string {
   switch (area.kind) {
     case 'subdivision':
     case 'subdivisions':
-      return `SubdivisionName IN (${area.names.map((n) => `'${n}'`).join(', ')})`
+      return `SubdivisionName IN (${area.names.map((n) => `'${n}'`).join(', ')})${
+        areaReadsPlats(area)
+          ? `, then the recorded plat polygon per row (${[...(area.platSlugs ?? [])].join(', ')}${
+              area.street ? `; ${area.street.platSlugs.join(', ') || area.street.names.join(', ')} on ${area.street.key} only` : ''
+            }), the MLS name only where no polygon holds the row`
+          : ''
+      }`
     case 'neighborhood':
     case 'community': {
       const slug = compAreaSlug(area)
@@ -112,6 +119,38 @@ export function areaFilterTrace(area: CompArea): string {
     case 'city':
       return `City = '${area.names[0] ?? ''}'`
   }
+}
+
+/** A plat area that recorded its plats: the exact test reads each row's polygon. */
+export function areaReadsPlats(area: CompArea): boolean {
+  if (area.kind !== 'subdivision' && area.kind !== 'subdivisions') return false
+  return (area.platSlugs?.length ?? 0) > 0 || (area.street?.platSlugs.length ?? 0) > 0
+}
+
+/**
+ * The recorded plat each row sits in, by index (Matt 2026-10-07, rule 24):
+ * membership in a plat area is the polygon, and the MLS name only where no
+ * polygon holds the row. Undefined at every index when the area does not read
+ * plats, or the read fails; the exact test then falls back to the name.
+ */
+export async function rowPlatSlugs(
+  area: CompArea,
+  rows: ReadonlyArray<{ Latitude?: number | null; Longitude?: number | null }>,
+): Promise<Array<string | null | undefined>> {
+  if (rows.length === 0 || !areaReadsPlats(area)) return rows.map(() => undefined)
+  try {
+    return await assignSubdivisionSlugs(rows.map((r) => ({ lat: r.Latitude ?? null, lng: r.Longitude ?? null })))
+  } catch (e) {
+    console.error('[rowPlatSlugs]', e instanceof Error ? e.message : String(e))
+    return rows.map(() => undefined)
+  }
+}
+
+/** "2591 Purcell", the street a street-only plat is held to. Null when the row carries no street. */
+export function rowStreetAddress(r: { StreetNumber?: string | null; StreetName?: string | null }): string | null {
+  const street = (r.StreetName ?? '').trim()
+  if (!street) return null
+  return `${(r.StreetNumber ?? '').trim()} ${street}`.trim()
 }
 
 async function pageQuery(build: () => ListingQuery): Promise<{ rows: CmaMarketAreaRow[]; truncated: boolean }> {
@@ -206,15 +245,19 @@ export async function getCmaAreaUnsoldCycles(input: {
 
   try {
     const { rows, truncated } = await pageQuery(build)
-    // The exact shape, after the box. A subdivision or city read is already
-    // exact in SQL; running it again costs nothing and keeps ONE definition of
-    // membership for every read this document makes.
-    const inside = rows.filter((r) =>
+    // The exact shape, after the box. A plat area tests each row's recorded
+    // polygon (the SQL name match is only the prefilter), and a plat held to
+    // the subject's street tests the street. ONE definition of membership
+    // for every read this document makes.
+    const plats = await rowPlatSlugs(area, rows)
+    const inside = rows.filter((r, i) =>
       compAreaContains(area, {
         latitude: r.Latitude ?? null,
         longitude: r.Longitude ?? null,
         subdivision: r.SubdivisionName ?? null,
         city: r.City ?? null,
+        platSlug: plats[i],
+        address: rowStreetAddress(r),
       }),
     )
     return {
