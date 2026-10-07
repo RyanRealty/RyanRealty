@@ -66,6 +66,7 @@ import {
   mapPage,
   pricingPage,
   salesThatSetItPage,
+  whatItsWorthSearchStory,
   worthRangeRounded,
   type PricingPageInput,
 } from '@/lib/cma/render-pricing-page'
@@ -88,7 +89,9 @@ import { statusPriceBoardHtml, statusPriceSummaries, splitActivePending } from '
 import type { LikeHomeCredit } from '@/lib/cma/like-home-credits'
 import { sellerCostLines } from '@/lib/pricing/seller-net'
 import { deRepeatRecommendDollars, isRecommendMark } from '@/lib/cma/recommend-once'
-import type { CmaBroker, CmaClient } from '@/lib/cma/types'
+import { netAtExpectedSale, netCreditsSentence, type NetTwoColumns } from '@/lib/cma/expected-sale'
+import { SALES_METHOD_LABEL, salesMethodSentences } from '@/lib/cma/sales-method-note'
+import type { CmaBroker, CmaClient, CmaSellerNetLine } from '@/lib/cma/types'
 import type { DevelopmentOpportunities } from '@/lib/cma/development'
 import type { CmaExtras } from '@/lib/cma/extras'
 import type { CmaSiteData } from '@/lib/cma/county'
@@ -300,20 +303,37 @@ export function mapArgs(a: OpinionPageArgs) {
   }
 }
 
+/**
+ * The sales and the pricing the grid prints, after the flat-date story.
+ *
+ * One resolution, so the price chapter, the net and the method paragraph in
+ * Basis and limits read the same rows the reader can count.
+ */
+export function gridSales(a: OpinionPageArgs): {
+  comps: CmaAdjustedComp[]
+  pricing: CmaPricing
+  negligibleWeightNote: string | null
+} {
+  const comps = a.comps ?? []
+  const flat = cityDateCutsFightFlatLocal({
+    ppsfMove: a.listingMarket?.ppsfMove ?? null,
+    comps,
+  })
+  const datedComps = flat ? compsWithoutCityDateMove(comps) : comps
+  const pricing = flat ? pricingWithoutCityDateMove(a.pricing, datedComps) : a.pricing
+  const weighed = withoutNegligibleWeight(datedComps, compWeightIndex(pricing))
+  return { comps: weighed.comps, pricing, negligibleWeightNote: weighed.note }
+}
+
 /** Chapter 3a. Matrix 1, and the working under it. */
 export function salesThatSetItArgs(a: OpinionPageArgs): PricingPageInput {
   const sets = matrixEntriesFor(a)
-  const flat = cityDateCutsFightFlatLocal({
-    ppsfMove: a.listingMarket?.ppsfMove ?? null,
-    comps: a.comps,
-  })
-  const datedComps = flat ? compsWithoutCityDateMove(a.comps) : a.comps
-  const pricing = flat ? pricingWithoutCityDateMove(a.pricing, datedComps) : a.pricing
-  const weighed = withoutNegligibleWeight(datedComps, compWeightIndex(pricing))
+  const weighed = gridSales(a)
+  const pricing = weighed.pricing
   return {
     subject: a.subject,
     comps: weighed.comps,
-    negligibleWeightNote: weighed.note,
+    negligibleWeightNote: weighed.negligibleWeightNote,
     market: a.market,
     pricing,
     tiersUsed: a.tiersUsed,
@@ -471,32 +491,136 @@ function replaceEngineNet(status: string | null | undefined, sheet: SellerNetShe
   return sheet.lines.length > 0 && sheet.lines.every((l) => ENGINE_NET_LINE.test(l.label))
 }
 
-function engineNetHtml(list: number, credits: Pick<LikeHomeCredit, 'sentence' | 'source'> | null | undefined): string {
+/** The automatic sheet a draft prints, at the list on the stored sheet. */
+function engineSheet(list: number): { list: number; lines: CmaSellerNetLine[]; net: number } {
   const lines = sellerCostLines(list)
   const net = Math.max(0, Math.round(list) - lines.reduce((sum, l) => sum + l.amount, 0))
-  const rows = lines
+  return { list: Math.round(list), lines, net }
+}
+
+/**
+ * THE LIST COLUMN'S HEAD. The cover owns the recommended dollars
+ * (lib/cma/recommend-once.ts), so a sheet at the recommend says "At the list
+ * price" and prints no dollar figure for it. A cell reading "that price" in
+ * the money column looked like a bug on screen (Matt 2026-10-07). A sheet at
+ * any other price names it.
+ */
+function netListHeader(list: number, rec: number): string {
+  return isRecommendMark(list, rec) ? 'At the list price' : `At ${usd(list)}`
+}
+
+/**
+ * Right-aligned over the money it heads, in both stylesheets. `width:auto`
+ * because both stylesheets give every netsheet `th` 62 percent, and Chrome
+ * reads a first-row cell width beside the colgroup's: two heads at 62 percent
+ * squeezed the label column to 28 percent and wrapped "Buyer's agent" at 375.
+ * The left padding keeps two wrapped heads from reading as one line at 375.
+ */
+const NET_HEAD_STYLE =
+  'width:auto;text-align:right;padding-right:0;padding-left:12px;vertical-align:bottom;white-space:normal'
+
+function netHead(columns: readonly string[]): string {
+  return `<thead><tr><th scope="col" style="width:auto"></th>${columns
+    .map((c) => `<th scope="col" style="${NET_HEAD_STYLE}">${esc(c)}</th>`)
+    .join('')}</tr></thead>`
+}
+
+function netCost(amount: number): string {
+  return esc(`${amount < 0 ? '+' : '−'}${usd(Math.abs(amount))}`)
+}
+
+const NET_BEFORE_ESCROW = "Before the escrow company's fee and what you still owe on the home."
+
+/**
+ * TWO COLUMNS: the list, and the sale the evidence expects (Matt 2026-10-07).
+ *
+ * "Net at list" alone assumed a full-price sale, while the same report says
+ * homes are closing under their first ask. The second column recomputes every
+ * line at the expected sale with the same formula the list column was written
+ * with (`sellerCostLines`, the same fee percentages and the same Oregon
+ * owner's-policy rate). Its credits line explains why no concession is
+ * subtracted a second time (lib/cma/expected-sale.ts `netAtExpectedSale`).
+ */
+function netTwoColumnsHtml(t: NetTwoColumns, rec: number): string {
+  const rows = t.lines
     .map(
       (l) =>
-        `<tr><th>${esc(l.label)}<span class="ln-src">${esc(l.source)}</span></th><td class="v">−${usd(l.amount)}</td></tr>`,
+        `<tr><th scope="row">${esc(l.label)}<span class="ln-src">${esc(l.source)}</span></th><td class="v">${netCost(
+          l.atList,
+        )}</td><td class="v">${netCost(l.atExpected)}</td></tr>`,
     )
     .join('\n    ')
-  const note = credits?.sentence
-    ? `<p>${esc(credits.sentence)}</p>${credits.source ? `<p class="small">${esc(credits.source)}</p>` : ''}`
-    : ''
-  return `<table class="kv netsheet">
+  const credits = netCreditsSentence(t)
+  return `<table class="kv netsheet net-two" style="table-layout:fixed;max-width:760px">
+    <colgroup><col style="width:40%"><col style="width:30%"><col style="width:30%"></colgroup>
+    ${netHead([netListHeader(t.list, rec), `If it sells near ${usd(t.expected.price)}`])}
     <tbody>
-    <tr><th>List price</th><td class="v">${usd(list)}</td></tr>
     ${rows}
-    <tr class="is-net"><th>Left from the sale</th><td class="v">${usd(net)}</td></tr>
+    <tr class="is-net"><th scope="row">Left from the sale</th><td class="v">${usd(t.netAtList)}</td><td class="v">${usd(
+      t.netAtExpected,
+    )}</td></tr>
     </tbody>
   </table>
-  <p>Before the escrow company's fee and what you still owe.</p>
-  ${note}`
+  ${credits ? `<p class="small">${esc(credits)}</p>` : ''}
+  <p class="small">${esc(`Both columns are ${NET_BEFORE_ESCROW.charAt(0).toLowerCase()}${NET_BEFORE_ESCROW.slice(1)}`)}</p>`
+}
+
+/**
+ * The net at the list and at the expected sale, when both can be added up
+ * from the row. Null means the chapter prints its one list column.
+ */
+export function sellerNetColumns(a: OpinionPageArgs): NetTwoColumns | null {
+  const sheet = sellerNetSheetForDoc(a)
+  if (!sheet) return null
+  const grid = gridSales(a)
+  const base = replaceEngineNet(a.documentStatus, sheet) ? engineSheet(sheet.list) : sheet
+  return netAtExpectedSale({ pricing: grid.pricing, comps: grid.comps, sheet: base })
+}
+
+/** The chapter title. A list-only sheet is a net at list; two columns are not. */
+export function sellerNetHeading(a: OpinionPageArgs): string {
+  return sellerNetColumns(a) ? 'Net from the sale' : 'Net at list'
 }
 
 /** The eyebrow over the immersive twin. Never "What you keep" on a partial net. */
 export function sellerNetKick(a: OpinionPageArgs): string {
-  return netIsEverything(sellerNetSheetForDoc(a)) ? 'What you keep' : 'Net at list'
+  return netIsEverything(sellerNetSheetForDoc(a)) ? 'What you keep' : sellerNetHeading(a)
+}
+
+/** One list column, the stored sheet or a draft's automatic one. */
+function netOneColumnHtml(
+  sheet: Pick<SellerNetSheet, 'list' | 'lines' | 'net'> & Partial<Pick<SellerNetSheet, 'sentence' | 'basis' | 'unknowns'>>,
+  rec: number,
+  opts: { engine: boolean },
+): string {
+  const everything = !opts.engine && netIsEverything(sheet as SellerNetSheet)
+  const sentence = sheet.sentence ? deRepeatRecommendDollars(sheet.sentence, rec) : ''
+  // A stored source names the price it was worked at ("3% of $639,000"); the
+  // header already says which price, and the cover owns those dollars.
+  const rows = sheet.lines
+    .map(
+      (l) =>
+        `<tr><th scope="row">${esc(l.label)}<span class="ln-src">${esc(
+          deRepeatRecommendDollars(l.source, rec, 'the list price'),
+        )}</span></th><td class="v">${netCost(l.amount)}</td></tr>`,
+    )
+    .join('\n    ')
+  const unknowns = (sheet.unknowns ?? []).filter((u) => u.trim())
+  const tail = opts.engine
+    ? `<p>${esc(NET_BEFORE_ESCROW)}</p>`
+    : `${sheet.basis && sheet.basis !== 'list' ? `<p class="small">${esc(sheet.basis)}</p>` : ''}
+  ${everything || unknowns.length === 0 ? '' : `<p>${esc(`This does not include ${orList(unknowns)}.`)}</p>`}`
+  return `${sentence ? `<p>${esc(sentence)}</p>` : ''}
+  <table class="kv netsheet">
+    ${netHead([netListHeader(sheet.list, rec)])}
+    <tbody>
+    ${rows}
+    <tr class="is-net"><th scope="row">${esc(everything ? 'What you keep' : 'Left from the sale')}</th><td class="v">${usd(
+      sheet.net,
+    )}</td></tr>
+    </tbody>
+  </table>
+  ${tail}`
 }
 
 export function sellerNetBodyHtml(a: OpinionPageArgs): string {
@@ -511,40 +635,23 @@ export function sellerNetBodyHtml(a: OpinionPageArgs): string {
       )}. None of those is in the record this report reads. We put them in writing, against a real list price, before anything is signed.`,
     )}</p>`
   }
-  if (replaceEngineNet(a.documentStatus, sheet)) return engineNetHtml(sheet.list, a.likeHomeCredits)
-  const everything = netIsEverything(sheet)
-  const listIsRec = isRecommendMark(sheet.list, rec)
-  const listCell = listIsRec ? 'that price' : usd(sheet.list)
-  const netLabel = everything
-    ? listIsRec
-      ? 'What you keep at that price'
-      : `What you keep at ${usd(sheet.list)}`
-    : listIsRec
-      ? 'Net at that price'
-      : `Net at ${usd(sheet.list)}`
-  const sentence = sheet.sentence ? deRepeatRecommendDollars(sheet.sentence, rec) : ''
-  const rows = sheet.lines
-    .map(
-      (l) =>
-        `<tr><th>${esc(l.label)}<span class="ln-src">${esc(l.source)}</span></th><td class="v">${esc(
-          `${l.amount < 0 ? '+' : '−'}${usd(Math.abs(l.amount))}`,
-        )}</td></tr>`,
-    )
-    .join('\n    ')
-  return `${sentence ? `<p>${esc(sentence)}</p>` : ''}
-  <table class="kv netsheet">
-    <tbody>
-    <tr><th>List price</th><td class="v">${esc(listCell)}</td></tr>
-    ${rows}
-    <tr class="is-net"><th>${esc(netLabel)}</th><td class="v">${usd(sheet.net)}</td></tr>
-    </tbody>
-  </table>
-  ${sheet.basis && sheet.basis !== 'list' ? `<p class="small">${esc(sheet.basis)}</p>` : ''}
-  ${
-    everything || sheet.unknowns.filter((u) => u.trim()).length === 0
-      ? ''
-      : `<p>${esc(`This does not include ${orList(sheet.unknowns)}.`)}</p>`
-  }`
+  const engine = replaceEngineNet(a.documentStatus, sheet)
+  const credits = engine && a.likeHomeCredits?.sentence
+    ? `<p>${esc(a.likeHomeCredits.sentence)}</p>${
+        a.likeHomeCredits.source ? `<p class="small">${esc(a.likeHomeCredits.source)}</p>` : ''
+      }`
+    : ''
+  const two = sellerNetColumns(a)
+  if (two) {
+    const sentence = !engine && sheet.sentence ? deRepeatRecommendDollars(sheet.sentence, rec) : ''
+    const unknowns = engine ? [] : sheet.unknowns.filter((u) => u.trim())
+    return `${sentence ? `<p>${esc(sentence)}</p>` : ''}
+  ${netTwoColumnsHtml(two, rec)}
+  ${unknowns.length > 0 ? `<p>${esc(`This does not include ${orList(unknowns)}.`)}</p>` : ''}
+  ${credits}`
+  }
+  return `${netOneColumnHtml(engine ? engineSheet(sheet.list) : sheet, rec, { engine })}
+  ${credits}`
 }
 
 export function sellerNetPage(a: OpinionPageArgs): CmaPageDef | null {
@@ -552,11 +659,12 @@ export function sellerNetPage(a: OpinionPageArgs): CmaPageDef | null {
   // chapter. The "what a net would need" sentence is for a sheet that exists
   // and cannot be added up, not for a row that never carried one.
   if (a.pricing.sellerNet == null) return null
+  const heading = sellerNetHeading(a)
   return {
-    meta: `${esc(a.subject.streetAddress)} · Net at list`,
-    toc: 'Net at list',
+    meta: `${esc(a.subject.streetAddress)} · ${esc(heading)}`,
+    toc: heading,
     body: `
-  <h2 class="section">Net at list</h2>
+  <h2 class="section">${esc(heading)}</h2>
   ${sellerNetBodyHtml(a)}`,
   }
 }
@@ -1276,6 +1384,36 @@ function adjustedForClause(comps: readonly CmaAdjustedComp[]): string {
   return `adjusted for ${made.slice(0, -1).join(', ')} and ${made[made.length - 1]}`
 }
 
+/**
+ * HOW THE SALES WERE CHOSEN AND ADJUSTED (Matt 2026-10-07).
+ *
+ * The method that used to sit under the price chapter's headline, in plain
+ * English, composed from the stored fields and the grid the reader sees
+ * (lib/cma/sales-method-note.ts). It reads the same rows the price chapter
+ * does (`gridSales`) and the same search story its heading came from
+ * (`whatItsWorthSearchStory`), so the two chapters cannot tell different
+ * stories about one set of sales.
+ */
+export function salesMethodHtml(a: OpinionPageArgs): string {
+  if (!a.pricing || !a.subject) return ''
+  const grid = gridSales(a)
+  const { tail } = whatItsWorthSearchStory({
+    subdivision: a.subject.subdivision,
+    comps: grid.comps,
+    tiersUsed: a.tiersUsed,
+    renderArgs: a,
+    compTrace: a.compTrace,
+  })
+  const sentences = salesMethodSentences({
+    subject: a.subject,
+    comps: grid.comps,
+    pricing: grid.pricing,
+    searchTail: tail,
+  })
+  if (sentences.length === 0) return ''
+  return `<p><strong>${esc(SALES_METHOD_LABEL)}</strong> ${esc(sentences.join(' '))}</p>`
+}
+
 export function cmaDisclosureProseHtml(a: OpinionPageArgs): string {
   const b = a.broker
   const name = b?.displayName ?? 'the preparing broker'
@@ -1290,6 +1428,7 @@ export function cmaDisclosureProseHtml(a: OpinionPageArgs): string {
     dateLong(a.generatedAtIso),
   )}. Every figure in it was pulled that day and reads the market as it stood then.</p>
   <p><strong>What was looked at.</strong> This opinion reads the Oregon Data Share MLS record for your home and for every sale, listing and failed listing named in it: the recorded facts, the price history and the listing photographs${record}. Nobody walked through the inside of your home, or the inside of any home it is measured against. Facts you told us, where they are used, are labelled as yours and should be confirmed independently.</p>
+  ${salesMethodHtml(a)}
   <p><strong>Condition was not adjusted for.</strong> The grid in the price chapter moves each sale ${esc(
     adjustmentsMadeClause(a.comps),
   )}. It moves none of them for condition, because the MLS record carries no condition rating. Where a sale was in better or worse shape than your home, that difference sits inside its sale price and is not broken out.</p>

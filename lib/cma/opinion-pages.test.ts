@@ -347,15 +347,17 @@ function withNet(sellerNet: unknown): OpinionPageArgs {
 describe('net at list itemises, or prints no figure at all', () => {
   it('prints the list, every cost line with its source, and the net', () => {
     const html = sellerNetBodyHtml(withNet(NET_SHEET))
-    expect(html).toContain('List price')
-    expect(html).toContain('that price')
+    // Matt 2026-10-07: the money column never reads "that price". The column
+    // head says which price, and the cover owns the dollars.
+    expect(html).toContain('At the list price')
+    expect(html).not.toContain('<td class="v">that price</td>')
     expect(html).not.toContain('$429,000')
     expect(html).toContain('Commission')
     expect(html).toContain('Listing agreement, 5.0%')
     expect(html).toContain('Deschutes County schedule')
     expect(html).toContain('Payoff quote you provided')
     expect(html).toContain('$194,450')
-    expect(html).toContain('What you keep at that price')
+    expect(html).toContain('What you keep')
   })
 
   it('names what is not in the net and refuses the phrase when something is missing', () => {
@@ -429,7 +431,11 @@ describe('net at list itemises, or prints no figure at all', () => {
         source: '4 closed sales in Countryside, 2,098 to 2,838 sqft. Oregon Data Share MLS.',
       },
     })
-    expect(html).toContain('$429,000')
+    // The cover owns the list dollars on a draft too: the column head names
+    // the list price, the sources say "the list price".
+    expect(html).toContain('At the list price')
+    expect(html).not.toContain('$429,000')
+    expect(html).toContain('3% of the list price')
     expect(html).toContain('Our fee')
     expect(html).toContain('$12,870')
     expect(html).toContain('if you offer it')

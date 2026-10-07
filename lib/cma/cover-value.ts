@@ -196,12 +196,27 @@ export function coverValueBlockHtml(a: CoverArgs): string {
     <div class="vb-detail">${a.comps.length} closed MLS sales. Automated estimates are not used.${a.market?.geoLabel ? ` The market read is ${esc(a.market.geoLabel)}.` : ''} ${esc(story.body)}</div>`
 }
 
+/** The label over the low and high pair: a SOLD range, not a list range. */
+export const HERO_SOLD_RANGE_LABEL = 'Where similar homes sold, adjusted to today'
+
 /**
- * Low · High · Recommended once — FlexMLS letter FLOW labels, Ryan craft.
- * Shared by immersive hero and letter cover so renderCmaHtml cannot skip the trio.
+ * The recommended list price, then where similar homes sold.
+ *
+ * Shared by immersive hero and letter cover so renderCmaHtml cannot skip it.
  * Matt 2026-09-17: Low/High from closed-comp band (valueLow/valueHigh).
  * Recommended must stay inside that band (Tip Ready refuse if outside).
  * Falls back to list tiers only when the closed band is missing.
+ *
+ * ORDER (Matt 2026-10-07). This used to print Low · High · Recommended under
+ * "Our Recommended List Price for your home", so the first two figures under a
+ * list-price label were the adjusted SOLD prices of the sales. The
+ * recommended list is now the first and biggest thing under that label, and
+ * the pair sits under its own label saying what it is. The markup reuses the
+ * hero-trio classes both stylesheets already size (lib/cma/immersive-css.ts,
+ * lib/cma/render-css.ts), so no stylesheet changes with it: the recommend is a
+ * one-item trio, and the sold pair is a trio inside a labelled column. The one
+ * inline margin is the gap between the two: the letter's trio rule sets 4px,
+ * which sat the sold label on the big number.
  */
 export function heroTrioHtml(
   p: CmaPricing,
@@ -218,17 +233,23 @@ export function heroTrioHtml(
   const rec = p.recommended
   if (low > 0 && high > 0 && rec > 0) {
     return `<div class="hero-trio" data-recommend-once="1">
-      <div class="ht">
-        <div class="ht-l">Low</div>
-        <div class="ht-v">${usd(low)}</div>
-      </div>
-      <div class="ht">
-        <div class="ht-l">High</div>
-        <div class="ht-v">${usd(high)}</div>
-      </div>
       <div class="ht is-rec">
-        <div class="ht-l">Recommended</div>
         <div class="ans-n r ht-v">${usd(rec)}</div>
+      </div>
+    </div>
+    <div class="hero-trio hero-sold" style="margin-top:14px">
+      <div class="ht">
+        <div class="ht-l">${esc(HERO_SOLD_RANGE_LABEL)}</div>
+        <div class="hero-trio">
+          <div class="ht">
+            <div class="ht-l">Low</div>
+            <div class="ht-v">${usd(low)}</div>
+          </div>
+          <div class="ht">
+            <div class="ht-l">High</div>
+            <div class="ht-v">${usd(high)}</div>
+          </div>
+        </div>
       </div>
     </div>`
   }

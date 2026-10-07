@@ -91,7 +91,10 @@ describe('pricingPage', () => {
     // ONE statement of the range: the lowest and highest adjusted sales still
     // in the table. The list range is that same pair, so the instruction
     // prints without the figures a second time.
-    expect(html).toContain('The sales support $636,000 to $638,000.')
+    // Since 2026-10-07 the line counts the sales and names the adjustments
+    // the grid made. With no weighted price on this row there is no expected
+    // sale, so the list instruction stays.
+    expect(html).toContain('The five sales, adjusted to your home&#39;s size, run from $636,000 to $638,000.')
     expect(html).toContain('List in that range.')
     expect(html).not.toContain('List between $636,000 and $638,000.')
     expect(html).not.toContain('$669,000')
@@ -107,7 +110,8 @@ describe('pricingPage', () => {
     expect(html).not.toMatch(/anchors the recommendation/)
     expect(html).not.toContain('a check against the expected close, not the list')
     expect(html).not.toContain('Method 1 ·')
-    expect(html.replace(/&[a-zA-Z]+;/g, '')).not.toMatch(/;/)
+    // An entity (&#39; is the apostrophe in "your home's size") is markup, not a semicolon.
+    expect(html.replace(/&(?:[a-zA-Z]+|#\d+);/g, '')).not.toMatch(/;/)
   })
 })
 

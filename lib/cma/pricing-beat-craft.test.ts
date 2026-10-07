@@ -146,7 +146,7 @@ describe('pricing beat craft', () => {
     expect(html).toContain('data-recommend-once="1"')
     expect(html).toContain('>Low<')
     expect(html).toContain('>High<')
-    expect(html).toContain('>Recommended<')
+    expect(html).toContain('>Where similar homes sold, adjusted to today<')
     expect(html).toContain('$563,000')
     expect(html).toContain('$500,000')
     expect(html).toContain('$508,000')

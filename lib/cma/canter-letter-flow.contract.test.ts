@@ -163,9 +163,12 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
       expect(html).toContain('hero-trio')
       expect(html).toContain('>Low<')
       expect(html).toContain('>High<')
-      expect(html).toContain('>Recommended<')
-      expect(html).toContain('$659,000')
-      expect((html.match(/>Recommended</g) ?? []).length).toBe(1)
+      // Matt 2026-10-07: the recommended list is the first and biggest figure
+      // under the list-price headline, printed once. Low and High follow,
+      // labelled as where similar homes sold, adjusted to today.
+      expect(html).toContain('>Where similar homes sold, adjusted to today<')
+      expect((html.match(/\$659,000/g) ?? []).length).toBe(1)
+      expect(html.indexOf('$659,000')).toBeLessThan(html.indexOf('>Low<'))
     }
   })
 
