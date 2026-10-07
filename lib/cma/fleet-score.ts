@@ -109,9 +109,10 @@ const BOOL_FLAGS = new Set(['--no-raw', '--no-latest', '--allow-regressions', '-
 
 export const FLEET_USAGE =
   'usage: npm run cma:fleet -- [--city bend|any] [--states csv] [--kind expired|fsbo|all] [--since YYYY-MM-DD] ' +
-  '[--limit N] [--slugs csv]... [--concurrency N] [--timeout-sec N] [--retries N] [--resume file] [--out-dir dir] ' +
+  '[--limit N] [--slugs csv]... [--concurrency N] [--timeout-sec N] [--retries N] [--out-dir dir] ' +
   '[--no-raw] [--no-latest] [--save-as path] [--baseline file|none] [--price-threshold-pct N] [--allow-regressions] ' +
-  '[--json] [--dry] [--dry-list] [--from-json dir]'
+  '[--json] [--dry] [--dry-list] [--from-json dir]\n' +
+  '       npm run cma:fleet -- --resume <out-dir>/<runId>.partial.json   (every setting comes from the partial file)'
 
 function parseInteger(raw: string, flag: string, min: number): number | { usageError: string } {
   if (!/^-?\d+$/.test(raw.trim())) return { usageError: `${flag} needs an integer, got '${raw}'` }
@@ -131,14 +132,22 @@ function csvTokens(raw: string): string[] {
     .filter((t) => t.length > 0)
 }
 
-/** One value per flag (--flag value), booleans take none, anything else is a usage error. */
-export function parseFleetArgs(argv: readonly string[]): { config: FleetConfig; warnings: string[] } | { usageError: string } {
+/**
+ * One value per flag (--flag value), booleans take none, anything else is a
+ * usage error. `given` lists every flag the command line named, in order, once
+ * each: --resume refuses any of them that disagrees with the partial file.
+ */
+export function parseFleetArgs(
+  argv: readonly string[],
+): { config: FleetConfig; warnings: string[]; given: string[] } | { usageError: string } {
   const values = new Map<string, string>()
   const slugLists: string[] = []
   const bools = new Set<string>()
+  const given: string[] = []
   for (let i = 0; i < argv.length; i += 1) {
     const tok = argv[i]!
     if (!tok.startsWith('--')) return { usageError: `unexpected argument '${tok}' (slugs go through --slugs)` }
+    if (!given.includes(tok) && (BOOL_FLAGS.has(tok) || VALUE_FLAGS.has(tok))) given.push(tok)
     if (BOOL_FLAGS.has(tok)) {
       bools.add(tok)
       continue
@@ -275,7 +284,344 @@ export function parseFleetArgs(argv: readonly string[]): { config: FleetConfig; 
     config[key] = v.trim()
   }
 
-  return { config, warnings }
+  return { config, warnings, given }
+}
+
+// ---------------------------------------------------------------------------
+// Resume: the partial file is the config, and the code must not have moved
+// ---------------------------------------------------------------------------
+
+/** The FleetConfig key each command-line flag sets (--resume aside). */
+const FLAG_KEY: ReadonlyMap<string, keyof FleetConfig> = new Map<string, keyof FleetConfig>([
+  ['--city', 'city'],
+  ['--states', 'states'],
+  ['--kind', 'kind'],
+  ['--since', 'since'],
+  ['--limit', 'limit'],
+  ['--slugs', 'slugs'],
+  ['--concurrency', 'concurrency'],
+  ['--timeout-sec', 'timeoutSec'],
+  ['--retries', 'retries'],
+  ['--out-dir', 'outDir'],
+  ['--save-as', 'saveAs'],
+  ['--baseline', 'baseline'],
+  ['--price-threshold-pct', 'priceThresholdPct'],
+  ['--from-json', 'fromJson'],
+  ['--no-raw', 'raw'],
+  ['--no-latest', 'latest'],
+  ['--allow-regressions', 'allowRegressions'],
+  ['--json', 'json'],
+  ['--dry', 'dry'],
+  ['--dry-list', 'dryList'],
+])
+
+function defaultFleetConfig(): FleetConfig {
+  const parsed = parseFleetArgs([])
+  if ('usageError' in parsed) throw new Error(parsed.usageError)
+  return parsed.config
+}
+
+const isStr = (v: unknown): v is string => typeof v === 'string'
+const isStrOrNull = (v: unknown): v is string | null => v === null || typeof v === 'string'
+const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
+const isBool = (v: unknown): v is boolean => typeof v === 'boolean'
+
+/**
+ * A partial file's stored config, checked field by field. Null when anything
+ * is missing or the wrong type: a resume never guesses a setting.
+ */
+export function readStoredConfig(stored: unknown): FleetConfig | null {
+  if (typeof stored !== 'object' || stored == null || Array.isArray(stored)) return null
+  const c = stored as Record<string, unknown>
+  const known = new Set<string>(CMA_QUEUE_STATES)
+  const ok =
+    isStr(c.city) &&
+    Array.isArray(c.states) &&
+    c.states.length > 0 &&
+    c.states.every((s) => isStr(s) && known.has(s)) &&
+    isBool(c.includeArchived) &&
+    (c.kind === 'expired' || c.kind === 'fsbo' || c.kind === 'all') &&
+    isStrOrNull(c.since) &&
+    (c.limit === null || isNum(c.limit)) &&
+    (c.slugs === null || (Array.isArray(c.slugs) && c.slugs.every(isStr))) &&
+    isNum(c.concurrency) &&
+    isNum(c.timeoutSec) &&
+    isNum(c.retries) &&
+    isStrOrNull(c.resume) &&
+    isStr(c.outDir) &&
+    isBool(c.raw) &&
+    isBool(c.latest) &&
+    isStrOrNull(c.saveAs) &&
+    isStr(c.baseline) &&
+    isNum(c.priceThresholdPct) &&
+    isBool(c.allowRegressions) &&
+    isBool(c.json) &&
+    isBool(c.dry) &&
+    isBool(c.dryList) &&
+    isStrOrNull(c.fromJson)
+  if (!ok) return null
+  return {
+    city: c.city as string,
+    states: [...(c.states as CmaQueueState[])],
+    includeArchived: c.includeArchived as boolean,
+    kind: c.kind as FleetKind,
+    since: c.since as string | null,
+    limit: c.limit as number | null,
+    slugs: c.slugs == null ? null : [...(c.slugs as string[])],
+    concurrency: c.concurrency as number,
+    timeoutSec: c.timeoutSec as number,
+    retries: c.retries as number,
+    resume: c.resume as string | null,
+    outDir: c.outDir as string,
+    raw: c.raw as boolean,
+    latest: c.latest as boolean,
+    saveAs: c.saveAs as string | null,
+    baseline: c.baseline as string,
+    priceThresholdPct: c.priceThresholdPct as number,
+    allowRegressions: c.allowRegressions as boolean,
+    json: c.json as boolean,
+    dry: c.dry as boolean,
+    dryList: c.dryList as boolean,
+    fromJson: c.fromJson as string | null,
+  }
+}
+
+/** Order-free for the two list flags, so `--states a,b` matches a stored [b, a]. */
+function comparable(key: keyof FleetConfig, v: unknown): string {
+  if ((key === 'states' || key === 'slugs') && Array.isArray(v)) return JSON.stringify([...v].sort())
+  return JSON.stringify(v ?? null)
+}
+
+function shown(v: unknown): string {
+  if (Array.isArray(v)) return v.join(',')
+  return v == null ? 'none' : String(v)
+}
+
+/**
+ * --resume <partial>: every setting comes from the partial file (selection,
+ * out-dir, baseline, raw, latest, concurrency, timeouts, output format), so the
+ * printed resume command needs nothing but the file. A flag on the command
+ * line that names the stored value is harmless; one that disagrees is refused,
+ * because the resumed run would otherwise select or write differently from the
+ * run it continues.
+ */
+export function resumeConfig(args: {
+  cli: FleetConfig
+  given: readonly string[]
+  stored: unknown
+}): { config: FleetConfig } | { refuse: string } {
+  const stored = readStoredConfig(args.stored)
+  if (!stored) return { refuse: "--resume: the partial file's config is missing or unreadable; start a fresh run" }
+  const conflicts: string[] = []
+  for (const flag of args.given) {
+    const key = FLAG_KEY.get(flag)
+    if (!key) continue
+    if (comparable(key, args.cli[key]) === comparable(key, stored[key])) continue
+    const typed = VALUE_FLAGS.has(flag) ? `${flag} ${shown(args.cli[key])}` : flag
+    conflicts.push(`${typed} (the partial has ${key} ${shown(stored[key])})`)
+  }
+  if (conflicts.length > 0) {
+    return {
+      refuse:
+        `--resume takes every setting from the partial file, and ${conflicts.length === 1 ? 'this flag disagrees' : 'these flags disagree'} ` +
+        `with it: ${conflicts.join('; ')}. Drop ${conflicts.length === 1 ? 'it' : 'them'} to resume, or start a fresh run without --resume.`,
+    }
+  }
+  return { config: { ...stored, resume: args.cli.resume, dry: false, dryList: false } }
+}
+
+/**
+ * The flags that reproduce a config's run: everything that differs from the
+ * defaults, never --resume, --dry or --dry-list. parseFleetArgs of the result
+ * gives the config back (the unit test round-trips it).
+ */
+export function fleetArgsFor(config: FleetConfig): string[] {
+  const d = defaultFleetConfig()
+  const out: string[] = []
+  const value = (flag: string, v: string) => out.push(flag, v)
+  if (config.city !== d.city) value('--city', config.city)
+  if (JSON.stringify(config.states) !== JSON.stringify(d.states)) value('--states', config.states.join(','))
+  if (config.kind !== d.kind) value('--kind', config.kind)
+  if (config.since != null) value('--since', config.since)
+  if (config.limit != null) value('--limit', String(config.limit))
+  if (config.slugs != null) value('--slugs', config.slugs.join(','))
+  if (config.concurrency !== d.concurrency) value('--concurrency', String(config.concurrency))
+  if (config.timeoutSec !== d.timeoutSec) value('--timeout-sec', String(config.timeoutSec))
+  if (config.retries !== d.retries) value('--retries', String(config.retries))
+  if (config.outDir !== d.outDir) value('--out-dir', config.outDir)
+  if (!config.raw) out.push('--no-raw')
+  if (!config.latest) out.push('--no-latest')
+  if (config.saveAs != null) value('--save-as', config.saveAs)
+  if (config.baseline !== d.baseline) value('--baseline', config.baseline)
+  if (config.priceThresholdPct !== d.priceThresholdPct) value('--price-threshold-pct', String(config.priceThresholdPct))
+  if (config.allowRegressions) out.push('--allow-regressions')
+  if (config.json) out.push('--json')
+  if (config.fromJson != null) value('--from-json', config.fromJson)
+  return out
+}
+
+/** POSIX single-quoting, only when the word needs it. */
+export function shellQuote(word: string): string {
+  return /^[A-Za-z0-9_\-.,/:=@+%]+$/.test(word) ? word : `'${word.replace(/'/g, `'\\''`)}'`
+}
+
+function npmCommand(args: readonly string[]): string {
+  return args.length === 0 ? 'npm run cma:fleet' : `npm run cma:fleet -- ${args.map(shellQuote).join(' ')}`
+}
+
+/** The fresh-run command for a config (what an operator types to start over). */
+export function fleetCommand(config: FleetConfig): string {
+  return npmCommand(fleetArgsFor(config))
+}
+
+/** The whole resume command: the partial file carries every other setting. */
+export function resumeCommand(partialFile: string): string {
+  return npmCommand(['--resume', partialFile])
+}
+
+/**
+ * What a run's code was. gitDirtySha1 fingerprints the uncommitted changes
+ * (paths and contents), null on a clean tree, so two dirty runs at one commit
+ * can be told apart.
+ */
+export type RunProvenance = {
+  gitSha: string
+  gitDirty: boolean | 'unknown'
+  gitDirtySha1: string | null
+  dryRunScriptSha1: string
+}
+
+const unknownish = (v: unknown): boolean => v == null || v === 'unknown'
+
+/**
+ * Why a partial cannot be resumed on this code, one line per change; empty
+ * when it can. A resume must score the rest of the fleet with the same engine
+ * as the first part, so the commit, the working tree, and the dry-run script
+ * must all match, and a value that cannot be read on either side is a change,
+ * because sameness cannot be proven.
+ */
+export function resumeProvenanceChanges(
+  partial: Partial<Record<keyof RunProvenance, unknown>>,
+  current: RunProvenance,
+): string[] {
+  const changes: string[] = []
+  if (unknownish(partial.gitSha) || unknownish(current.gitSha)) {
+    changes.push(`commit unknown (partial ${shown(partial.gitSha)}, now ${current.gitSha}): sameness cannot be proven`)
+  } else if (partial.gitSha !== current.gitSha) {
+    changes.push(`commit ${shown(partial.gitSha)} -> ${current.gitSha}`)
+  }
+  const tree = (v: unknown) => (v === true ? 'dirty' : v === false ? 'clean' : 'unknown')
+  if (unknownish(partial.gitDirty) || unknownish(current.gitDirty)) {
+    changes.push(`working tree state unknown (partial ${tree(partial.gitDirty)}, now ${tree(current.gitDirty)}): sameness cannot be proven`)
+  } else if (partial.gitDirty !== current.gitDirty) {
+    changes.push(`working tree ${tree(partial.gitDirty)} -> ${tree(current.gitDirty)}`)
+  } else if (current.gitDirty === true) {
+    const before = typeof partial.gitDirtySha1 === 'string' ? partial.gitDirtySha1 : null
+    if (before == null || current.gitDirtySha1 == null) {
+      changes.push('uncommitted changes cannot be compared (no fingerprint recorded)')
+    } else if (before !== current.gitDirtySha1) {
+      changes.push(`uncommitted changes differ (fingerprint ${before.slice(0, 12)} -> ${current.gitDirtySha1.slice(0, 12)})`)
+    }
+  }
+  if (unknownish(partial.dryRunScriptSha1) || unknownish(current.dryRunScriptSha1)) {
+    changes.push('scripts/cma-build-dryrun.ts sha1 unknown: sameness cannot be proven')
+  } else if (partial.dryRunScriptSha1 !== current.dryRunScriptSha1) {
+    changes.push(`scripts/cma-build-dryrun.ts sha1 ${shown(partial.dryRunScriptSha1).slice(0, 12)} -> ${current.dryRunScriptSha1.slice(0, 12)}`)
+  }
+  return changes
+}
+
+/**
+ * Two runs ran the same code: one commit, and either both trees clean or both
+ * dirty with the same fingerprint. Anything unreadable is not the same.
+ */
+export function sameCode(a: Partial<Record<keyof RunProvenance, unknown>>, b: Partial<Record<keyof RunProvenance, unknown>>): boolean {
+  if (unknownish(a.gitSha) || a.gitSha !== b.gitSha) return false
+  if (a.gitDirty === false && b.gitDirty === false) return true
+  return (
+    a.gitDirty === true &&
+    b.gitDirty === true &&
+    typeof a.gitDirtySha1 === 'string' &&
+    a.gitDirtySha1 === b.gitDirtySha1
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Baseline choice, queue read, child outcome
+// ---------------------------------------------------------------------------
+
+export type BaselineSource =
+  | { kind: 'none' }
+  /** --baseline auto: out-dir/latest.json when it exists and reads, else no baseline. */
+  | { kind: 'latest' }
+  | { kind: 'file'; file: string }
+  /** A resume diffs against the run its partial recorded, never a newer latest.json. */
+  | { kind: 'resume'; ref: BaselineRef }
+
+export function baselineSource(config: Pick<FleetConfig, 'baseline'>, resume: { partialBaseline: BaselineRef | null } | null): BaselineSource {
+  if (resume) return resume.partialBaseline ? { kind: 'resume', ref: resume.partialBaseline } : { kind: 'none' }
+  if (config.baseline === 'none') return { kind: 'none' }
+  if (config.baseline === 'auto') return { kind: 'latest' }
+  return { kind: 'file', file: config.baseline }
+}
+
+/**
+ * A baseline file that does not read. latest.json under the default 'auto'
+ * is a convenience, so a corrupt one warns with the recovery and the run goes
+ * on with no baseline; an explicit --baseline file, or the baseline a partial
+ * recorded, is a request, so it refuses.
+ */
+export function baselineUnreadable(
+  kind: 'latest' | 'file' | 'resume',
+  file: string,
+  error: string,
+): { warn: string } | { refuse: string } {
+  if (kind === 'latest') {
+    return {
+      warn:
+        `${file} is unreadable (${error}); continuing with NO baseline, so nothing below is diffed. ` +
+        `To recover: delete ${file}, or pass --baseline none. A clean run (no harness errors) writes a fresh latest.json.`,
+    }
+  }
+  if (kind === 'file') return { refuse: `--baseline ${file} is unusable: ${error}` }
+  return { refuse: `the partial's baseline ${file} is unusable: ${error}; start a fresh run` }
+}
+
+/** A run the partial named as its baseline: same runId, complete. */
+export function isBaselineFor(ref: Pick<BaselineRef, 'runId'>, run: Pick<FleetRun, 'runId' | 'complete'>): boolean {
+  return run.runId === ref.runId && run.complete === true
+}
+
+/**
+ * listCmaQueue's read. An explicit --slugs list includes archived rows, so a
+ * listed archived slug still carries its stored fields instead of reading as
+ * "no queue row".
+ */
+export function queueReadOptions(config: Pick<FleetConfig, 'includeArchived' | 'slugs'>): { includeArchived: boolean } {
+  return { includeArchived: config.includeArchived || config.slugs != null }
+}
+
+/** What one child process came back as, before its stdout is read. */
+export type ChildOutcomeLike = {
+  spawnError: string | null
+  overflow: boolean
+  timedOut: boolean
+  signal: string | null
+  exitCode: number | null
+}
+
+/**
+ * Why a child gave no usable result, or null when its stdout should be
+ * parsed. The order is the cause: a spawn failure, then our own kills
+ * (overflow, timeout), then a signal from elsewhere, then a nonzero exit.
+ */
+export function childHarnessReason(c: ChildOutcomeLike): string | null {
+  if (c.spawnError) return `spawn-error ${c.spawnError}`
+  if (c.overflow) return 'stdout-overflow'
+  if (c.timedOut) return 'timeout'
+  if (c.signal) return 'signal'
+  if (c.exitCode !== 0) return 'nonzero-exit'
+  return null
 }
 
 // ---------------------------------------------------------------------------
@@ -941,6 +1287,12 @@ export type FleetRun = {
   gitSha: string
   gitBranch: string
   gitDirty: boolean | 'unknown'
+  /**
+   * sha1 over the uncommitted changes (each changed or untracked path and its
+   * contents), null on a clean tree. Files written before 2026-10-07's resume
+   * fix lack it, so readers treat a missing value as unknown.
+   */
+  gitDirtySha1: string | null
   dryRunScriptSha1: string
   nodeVersion: string
   childArgv: string[]
@@ -1223,7 +1575,10 @@ export function diffFleet(baseline: FleetRun, current: FleetRun, opts: { priceTh
   if (selectionKey(baseline.config) !== selectionKey(current.config)) {
     diff.warnings.push('selection changed; compare only the common set')
   }
-  if (baseline.gitSha === current.gitSha) {
+  // Same commit is not same code when either tree carried uncommitted
+  // changes: measuring an uncommitted engine fix against a clean baseline at
+  // the same commit is the normal workflow, and its moves are the fix.
+  if (sameCode(baseline, current)) {
     diff.warnings.push('same commit: every move is data drift or nondeterminism')
   }
   return diff
@@ -1301,18 +1656,22 @@ export function storedLine(vsStored: StoredDiff): string {
 }
 
 /**
- * 0 ok · 1 regression · 2 unusable (nothing ran) · 3 harness error. Harness
- * outranks regression so a broken box never reads as an engine regression.
+ * 0 ok · 1 regression · 2 unusable (nothing ran) · 3 harness error, which
+ * includes a run aborted mid-way by an exception (partial file flushed, resume
+ * command printed). Harness outranks regression so a broken box never reads
+ * as an engine regression.
  */
 export function fleetExitCode(args: {
   usageError?: string | null
   unusable?: boolean
+  aborted?: boolean
   harnessErrors?: number
   diff?: FleetDiff | null
   allowRegressions?: boolean
   dry?: boolean
 }): 0 | 1 | 2 | 3 {
   if (args.usageError || args.unusable) return 2
+  if (args.aborted) return 3
   if (args.dry) return 0
   if ((args.harnessErrors ?? 0) > 0) return 3
   if (args.diff?.hasRegressions && !args.allowRegressions) return 1

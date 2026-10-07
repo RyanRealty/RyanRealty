@@ -4,17 +4,30 @@ import { recommendationGapHold } from '@/lib/cma/gap-hold'
 import type { Ring } from '@/lib/geo/project-svg'
 import {
   FLEET_MIN_COMPS_DEFAULT,
+  baselineSource,
+  baselineUnreadable,
+  childHarnessReason,
   diffAgainstStored,
   diffFleet,
   firstReasonLine,
+  fleetArgsFor,
+  fleetCommand,
   fleetExitCode,
   headline,
+  isBaselineFor,
   median,
   parseDryRunStdout,
   parseFleetArgs,
+  queueReadOptions,
+  readStoredConfig,
+  resumeCommand,
+  resumeConfig,
+  resumeProvenanceChanges,
   ruleThreeHold,
+  sameCode,
   scoreHome,
   selectHomes,
+  shellQuote,
   storedLine,
   subjectInsideCity,
   type DryRunLike,
@@ -22,6 +35,7 @@ import {
   type FleetRun,
   type HomeScore,
   type QueueRowLike,
+  type RunProvenance,
   type SelectedHome,
 } from '@/lib/cma/fleet-score'
 
@@ -143,6 +157,7 @@ function run(homes: HomeScore[], over: Partial<FleetRun> = {}): FleetRun {
     gitSha: 'aaa',
     gitBranch: 'main',
     gitDirty: false,
+    gitDirtySha1: null,
     dryRunScriptSha1: 's1',
     nodeVersion: 'v22',
     childArgv: [],
@@ -267,6 +282,183 @@ describe('parseFleetArgs', () => {
     const r = parseFleetArgs(['--no-raw', '--no-latest', '--allow-regressions', '--json', '--dry', '--dry-list', '--from-json', 'out/x', '--retries', '0'])
     if ('usageError' in r) throw new Error(r.usageError)
     expect(r.config).toMatchObject({ raw: false, latest: false, allowRegressions: true, json: true, dry: true, dryList: true, fromJson: 'out/x', retries: 0 })
+  })
+
+  it('given lists each flag the command line named, once, in order', () => {
+    const r = parseFleetArgs(['--slugs', 'a', '--no-raw', '--slugs', 'b', '--resume', 'p.json'])
+    if ('usageError' in r) throw new Error(r.usageError)
+    expect(r.given).toEqual(['--slugs', '--no-raw', '--resume'])
+    const none = parseFleetArgs([])
+    if ('usageError' in none) throw new Error(none.usageError)
+    expect(none.given).toEqual([])
+  })
+})
+
+describe('resume: config from the partial file', () => {
+  const stored = cfg({ states: ['failed', 'flagged'], slugs: null, concurrency: 5, outDir: '/scratch/fleet', baseline: 'none', raw: false, latest: false, timeoutSec: 900 })
+  const cli = (argv: string[]) => {
+    const r = parseFleetArgs(argv)
+    if ('usageError' in r) throw new Error(r.usageError)
+    return r
+  }
+
+  it('--resume alone takes every setting from the partial, keeps the resume path, and never resumes into a dry mode', () => {
+    const r = cli(['--resume', 'out/cma-fleet/x.partial.json'])
+    const out = resumeConfig({ cli: r.config, given: r.given, stored: { ...stored, dry: true } })
+    if ('refuse' in out) throw new Error(out.refuse)
+    expect(out.config).toEqual({ ...stored, resume: 'out/cma-fleet/x.partial.json', dry: false, dryList: false })
+  })
+
+  it('a flag that names the stored value is harmless; --states and --slugs compare without order', () => {
+    const r = cli(['--resume', 'p', '--out-dir', '/scratch/fleet', '--states', 'flagged,failed', '--concurrency', '9', '--no-raw'])
+    const out = resumeConfig({ cli: r.config, given: r.given, stored })
+    expect('config' in out).toBe(true)
+  })
+
+  it('a flag that disagrees is refused, naming each flag and the stored value', () => {
+    const r = cli(['--resume', 'p', '--out-dir', 'out/other', '--concurrency', '3', '--json'])
+    const out = resumeConfig({ cli: r.config, given: r.given, stored })
+    if (!('refuse' in out)) throw new Error('expected a refusal')
+    expect(out.refuse).toContain('--resume takes every setting from the partial file')
+    expect(out.refuse).toContain('--out-dir out/other (the partial has outDir /scratch/fleet)')
+    expect(out.refuse).toContain('--concurrency 3 (the partial has concurrency 5)')
+    expect(out.refuse).toContain('--json (the partial has json false)')
+    expect(out.refuse).toContain('Drop them to resume')
+
+    const dry = cli(['--resume', 'p', '--dry'])
+    expect('refuse' in resumeConfig({ cli: dry.config, given: dry.given, stored })).toBe(true)
+    const raw = cli(['--resume', 'p', '--no-raw'])
+    expect('refuse' in resumeConfig({ cli: raw.config, given: raw.given, stored: cfg() })).toBe(true)
+  })
+
+  it('a missing or mistyped stored config is refused, never guessed', () => {
+    const r = cli(['--resume', 'p'])
+    expect(readStoredConfig(stored)).toEqual(stored)
+    expect(readStoredConfig(null)).toBeNull()
+    const noOutDir: Record<string, unknown> = { ...stored }
+    delete noOutDir.outDir
+    expect(readStoredConfig(noOutDir)).toBeNull()
+    expect(readStoredConfig({ ...stored, states: ['failed', 'bogus'] })).toBeNull()
+    expect(readStoredConfig({ ...stored, concurrency: '3' })).toBeNull()
+    const out = resumeConfig({ cli: r.config, given: r.given, stored: { ...stored, kind: 'nope' } })
+    expect('refuse' in out && out.refuse).toContain('unreadable')
+  })
+
+  it('fleetArgsFor round-trips through parseFleetArgs; defaults give no flags', () => {
+    expect(fleetArgsFor(cfg())).toEqual([])
+    const configs: FleetConfig[] = [
+      stored,
+      cfg({ city: 'any', kind: 'all', since: '2026-09-01', limit: 7, slugs: ['b', 'a'], retries: 0, saveAs: 'out/s.json', baseline: 'out/b.json', priceThresholdPct: 2.5, allowRegressions: true, json: true }),
+      cfg({ states: ['archived', 'sent'], includeArchived: true, fromJson: 'out/cma-fleet/raw/r1' }),
+    ]
+    for (const c of configs) {
+      const back = parseFleetArgs(fleetArgsFor(c))
+      if ('usageError' in back) throw new Error(back.usageError)
+      expect(back.config).toEqual({ ...c, resume: null, dry: false, dryList: false })
+    }
+  })
+
+  it('the printed commands: the resume command is the file alone; quoting only where needed', () => {
+    expect(resumeCommand('out/cma-fleet/2026-10-07T10-00-00.000Z.partial.json')).toBe(
+      'npm run cma:fleet -- --resume out/cma-fleet/2026-10-07T10-00-00.000Z.partial.json',
+    )
+    expect(fleetCommand(cfg())).toBe('npm run cma:fleet')
+    expect(fleetCommand(cfg({ slugs: ['a', 'b'], baseline: 'none' }))).toBe('npm run cma:fleet -- --slugs a,b --baseline none')
+    expect(shellQuote("it's here")).toBe(`'it'\\''s here'`)
+    expect(shellQuote('/tmp/a b')).toBe("'/tmp/a b'")
+  })
+})
+
+describe('resume: the code must not have moved', () => {
+  const same: RunProvenance = { gitSha: 'abc', gitDirty: false, gitDirtySha1: null, dryRunScriptSha1: 's1' }
+
+  it('the same commit, a clean tree and the same dry-run script resume', () => {
+    expect(resumeProvenanceChanges(same, same)).toEqual([])
+    const dirty = { ...same, gitDirty: true as const, gitDirtySha1: 'f'.repeat(40) }
+    expect(resumeProvenanceChanges(dirty, dirty)).toEqual([])
+  })
+
+  it('names each change: commit, tree, uncommitted contents, the dry-run script', () => {
+    expect(resumeProvenanceChanges(same, { ...same, gitSha: 'def' })).toEqual(['commit abc -> def'])
+    expect(resumeProvenanceChanges(same, { ...same, gitDirty: true, gitDirtySha1: 'x' })).toEqual(['working tree clean -> dirty'])
+    expect(
+      resumeProvenanceChanges({ ...same, gitDirty: true, gitDirtySha1: 'a'.repeat(40) }, { ...same, gitDirty: true, gitDirtySha1: 'b'.repeat(40) }),
+    ).toEqual(['uncommitted changes differ (fingerprint aaaaaaaaaaaa -> bbbbbbbbbbbb)'])
+    expect(resumeProvenanceChanges(same, { ...same, dryRunScriptSha1: 's2' })).toEqual(['scripts/cma-build-dryrun.ts sha1 s1 -> s2'])
+  })
+
+  it('anything unreadable is a change: sameness cannot be proven', () => {
+    // A partial written before the fingerprint existed, on a dirty tree.
+    const legacy = { gitSha: 'abc', gitDirty: true, dryRunScriptSha1: 's1' }
+    expect(resumeProvenanceChanges(legacy, { ...same, gitDirty: true, gitDirtySha1: 'x' })).toEqual([
+      'uncommitted changes cannot be compared (no fingerprint recorded)',
+    ])
+    expect(resumeProvenanceChanges({ ...same, gitSha: 'unknown' }, same)[0]).toContain('commit unknown')
+    expect(resumeProvenanceChanges(same, { ...same, gitDirty: 'unknown' })[0]).toContain('working tree state unknown')
+    expect(resumeProvenanceChanges(same, { ...same, dryRunScriptSha1: 'unknown' })[0]).toContain('sha1 unknown')
+  })
+
+  it("sameCode: one commit and the same tree; the diff's same-commit warning follows it", () => {
+    expect(sameCode(same, same)).toBe(true)
+    expect(sameCode(same, { ...same, gitDirty: true, gitDirtySha1: 'x' })).toBe(false)
+    expect(sameCode({ ...same, gitDirty: true, gitDirtySha1: 'x' }, { ...same, gitDirty: true, gitDirtySha1: 'x' })).toBe(true)
+    expect(sameCode({ ...same, gitSha: 'unknown' }, { ...same, gitSha: 'unknown' })).toBe(false)
+    // An uncommitted engine fix measured against a clean baseline at the same commit is not "data drift".
+    const t = { priceThresholdPct: 1 }
+    const b = run([score({ slug: 'a' })], { gitSha: 'aaa' })
+    const fix = diffFleet(b, run([score({ slug: 'a' })], { gitSha: 'aaa', gitDirty: true, gitDirtySha1: 'f1' }), t)
+    expect(fix.warnings).not.toContain('same commit: every move is data drift or nondeterminism')
+    const rerun = diffFleet(b, run([score({ slug: 'a' })], { gitSha: 'aaa' }), t)
+    expect(rerun.warnings).toContain('same commit: every move is data drift or nondeterminism')
+  })
+})
+
+describe('baseline choice', () => {
+  const ref = { file: 'out/cma-fleet/latest.json', runId: 'r0', gitSha: 'abc', dryRunScriptSha1: 's1', startedAt: 'T' }
+
+  it('auto reads latest.json, none is none, a path is a file; a resume uses the baseline its partial recorded', () => {
+    expect(baselineSource(cfg(), null)).toEqual({ kind: 'latest' })
+    expect(baselineSource(cfg({ baseline: 'none' }), null)).toEqual({ kind: 'none' })
+    expect(baselineSource(cfg({ baseline: 'out/b.json' }), null)).toEqual({ kind: 'file', file: 'out/b.json' })
+    expect(baselineSource(cfg(), { partialBaseline: ref })).toEqual({ kind: 'resume', ref })
+    // A partial that started with no baseline never picks up a latest.json written since.
+    expect(baselineSource(cfg(), { partialBaseline: null })).toEqual({ kind: 'none' })
+  })
+
+  it('an unreadable latest.json warns with the recovery and continues; a requested baseline refuses', () => {
+    const w = baselineUnreadable('latest', 'out/cma-fleet/latest.json', 'Unexpected end of JSON input')
+    if (!('warn' in w)) throw new Error('expected a warning')
+    expect(w.warn).toContain('continuing with NO baseline')
+    expect(w.warn).toContain('delete out/cma-fleet/latest.json, or pass --baseline none')
+    expect('refuse' in baselineUnreadable('file', 'out/b.json', 'x')).toBe(true)
+    expect('refuse' in baselineUnreadable('resume', 'run r0', 'x')).toBe(true)
+  })
+
+  it('isBaselineFor: the recorded runId, complete', () => {
+    expect(isBaselineFor(ref, { runId: 'r0', complete: true })).toBe(true)
+    expect(isBaselineFor(ref, { runId: 'r9', complete: true })).toBe(false)
+    expect(isBaselineFor(ref, { runId: 'r0', complete: false })).toBe(false)
+  })
+})
+
+describe('queueReadOptions', () => {
+  it('an explicit --slugs list reads archived rows too, so a listed archived slug keeps its stored fields', () => {
+    expect(queueReadOptions(cfg())).toEqual({ includeArchived: false })
+    expect(queueReadOptions(cfg({ slugs: ['cma-x'] }))).toEqual({ includeArchived: true })
+    expect(queueReadOptions(cfg({ includeArchived: true }))).toEqual({ includeArchived: true })
+  })
+})
+
+describe('childHarnessReason', () => {
+  const ok = { spawnError: null, overflow: false, timedOut: false, signal: null, exitCode: 0 }
+  it('null for a clean exit; otherwise the cause, in order', () => {
+    expect(childHarnessReason(ok)).toBeNull()
+    expect(childHarnessReason({ ...ok, exitCode: 1 })).toBe('nonzero-exit')
+    expect(childHarnessReason({ ...ok, exitCode: null, signal: 'SIGSEGV' })).toBe('signal')
+    // Our own kills name themselves, not the signal they sent.
+    expect(childHarnessReason({ ...ok, exitCode: null, signal: 'SIGKILL', timedOut: true })).toBe('timeout')
+    expect(childHarnessReason({ ...ok, exitCode: null, signal: 'SIGKILL', timedOut: true, overflow: true })).toBe('stdout-overflow')
+    expect(childHarnessReason({ ...ok, exitCode: null, spawnError: 'spawn tsx ENOENT' })).toBe('spawn-error spawn tsx ENOENT')
   })
 })
 
@@ -713,6 +905,9 @@ describe('fleetExitCode', () => {
     expect(fleetExitCode({ harnessErrors: 0, diff: regressing })).toBe(1)
     expect(fleetExitCode({ harnessErrors: 0, diff: regressing, allowRegressions: true })).toBe(0)
     expect(fleetExitCode({ harnessErrors: 0, diff: null })).toBe(0)
+    // An exception mid-run is a harness error, not "unusable".
+    expect(fleetExitCode({ aborted: true })).toBe(3)
+    expect(fleetExitCode({ aborted: true, diff: regressing })).toBe(3)
   })
 })
 
