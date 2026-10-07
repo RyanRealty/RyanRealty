@@ -196,11 +196,10 @@ export default function GoogleAnalytics() {
 
                 var gaConfig = {
                   // Cross-domain linker: keep client_id stable when a
-                  // visitor hops between ryan-realty.com (WordPress) and
-                  // ryanrealty.vercel.app (Next.js). Prevents the same
-                  // person from showing as two sessions.
+                  // visitor hops between the apex and its subdomains.
+                  // Prevents the same person from showing as two sessions.
                   linker: {
-                    domains: ['ryan-realty.com', 'www.ryan-realty.com', 'seller.ryan-realty.com', 'buyer.ryan-realty.com', 'ryanrealty.vercel.app'],
+                    domains: ['ryan-realty.com', 'www.ryan-realty.com', 'seller.ryan-realty.com', 'buyer.ryan-realty.com'],
                     accept_incoming: true
                   }
                 };

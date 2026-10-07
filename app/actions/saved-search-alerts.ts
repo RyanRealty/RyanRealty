@@ -1,5 +1,6 @@
 'use server'
 
+import { siteOrigin } from '@/lib/site-origin'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getCachedSearchListings } from '@/app/actions/search-cache'
 import { getAreaIdsFromFilters, resolveAreasToShapeSet } from '@/lib/alerts/area-resolve'
@@ -131,7 +132,7 @@ export async function runListingAlerts(options?: {
   const now = new Date()
   const maxAlerts = Math.min(1000, Math.max(1, options?.maxAlerts ?? 120))
   const dryRun = options?.dryRun === true
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const siteUrl = siteOrigin()
   const runDate = now.toISOString().slice(0, 10)
 
   const supabase = createServiceClient()
@@ -510,7 +511,7 @@ export async function approveAlertQueueItems(ids: string[]): Promise<QueueDecisi
     byAlert.set(item.alert_id, list)
   }
 
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const siteUrl = siteOrigin()
   const runDate = new Date().toISOString().slice(0, 10)
   let sent = 0
   const errors: string[] = []

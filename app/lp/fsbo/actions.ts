@@ -1,5 +1,6 @@
 'use server'
 
+import { siteOrigin } from '@/lib/site-origin'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import {
   sendEvent,
@@ -39,7 +40,7 @@ import { cookies, headers } from 'next/headers'
 
 const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const siteUrl = siteOrigin()
 const source = siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase() || 'ryan-realty.com'
 
 const CRM_DESK_MATT = 1

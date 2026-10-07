@@ -1,5 +1,6 @@
 // @no-parity
 // TEMPORARY verification harness for AnimatedSalesMap. Deleted before handoff.
+import { siteOrigin } from '@/lib/site-origin'
 import type { Metadata } from 'next'
 import { getAnimatedSalesMapData } from '@/lib/data'
 import AnimatedSalesMap from '@/components/geo-page/AnimatedSalesMap.client'
@@ -10,7 +11,7 @@ import SiteFooter from '@/components/site/SiteFooter'
 export const metadata: Metadata = {
   title: 'Animated sales map harness',
   robots: 'noindex, nofollow',
-  alternates: { canonical: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com'}/dev/animated-map` },
+  alternates: { canonical: `${siteOrigin()}/dev/animated-map` },
 }
 
 export const dynamic = 'force-dynamic'

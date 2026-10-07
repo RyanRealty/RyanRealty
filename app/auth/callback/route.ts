@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { siteOrigin } from '@/lib/site-origin'
 import { createServiceClient } from '@/lib/supabase/service'
 import { trackSignedInUser } from '@/lib/crm/send-event'
 import { stitchVisitorIdentity } from '@/lib/visitor-backfill'
@@ -211,8 +212,9 @@ async function getBaseUrl(request: Request): Promise<string> {
     const proto = h.get('x-forwarded-proto') || (host.startsWith('localhost') || host.startsWith('127.0.0.1') ? 'http' : 'https')
     return `${proto}://${host}`.replace(/\/$/, '')
   }
-  const { origin } = new URL(request.url)
-  return (process.env.NEXT_PUBLIC_SITE_URL || origin).replace(/\/$/, '')
+  // No host header: stay on the host this request came in on (the PKCE cookie
+  // lives there), with a production host folded to the canonical origin.
+  return siteOrigin(new URL(request.url).origin)
 }
 
 export async function GET(request: Request) {

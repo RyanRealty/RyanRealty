@@ -25,6 +25,7 @@
  * Never throws — partial-lead capture must never affect the UI step change.
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import { createClient } from '@supabase/supabase-js'
 
 function getServiceSupabase() {
@@ -65,8 +66,7 @@ export async function saveAnonymousPartialAddress(
     const supabase = getServiceSupabase()
     if (!supabase) return
 
-    const siteUrl =
-      (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+    const siteUrl = siteOrigin()
     const defaultPageUrl =
       lpSurface === 'seller-lp'
         ? `${siteUrl}/lp/seller-home-value`

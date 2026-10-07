@@ -34,7 +34,7 @@ import { CI_PROBE_HEADERS } from './lib/ci-probe-ua.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-const FALLBACK_BASE = 'https://ryanrealty.vercel.app'
+const FALLBACK_BASE = 'https://ryan-realty.com'
 const PROBE_TIMEOUT_MS = 4000
 
 // Fallback URLs — verified active at the time of writing. These get

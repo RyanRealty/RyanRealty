@@ -1,5 +1,6 @@
 'use server'
 
+import { siteOrigin } from '@/lib/site-origin'
 import { after } from 'next/server'
 import { cookies, headers } from 'next/headers'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
@@ -108,7 +109,7 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
       ...(phone && { phones: [{ value: phone }] }),
     },
     source: door,
-    sourceUrl: typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_SITE_URL ? `${process.env.NEXT_PUBLIC_SITE_URL}/contact` : undefined,
+    sourceUrl: `${siteOrigin()}/contact`,
     message: `[${messageTag}] ${message || '(no message)'}`,
     campaign: originUtmSource
       ? {
@@ -208,7 +209,7 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
           originContext: {
             source: 'contact-form',
             sourceLabel: `Contact form (${inquiryType})`,
-            landingPage: process.env.NEXT_PUBLIC_SITE_URL ? `${process.env.NEXT_PUBLIC_SITE_URL}/contact` : '/contact',
+            landingPage: `${siteOrigin()}/contact`,
             audience,
             ...(message ? { want: message } : {}),
           },
@@ -269,7 +270,7 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
     : inquiryLower.includes('seller') || inquiryLower.includes('valuation')
       ? 500
       : 200
-  if (!recruit) await fetch(`${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com'}/api/meta-capi`, {
+  if (!recruit) await fetch(`${siteOrigin()}/api/meta-capi`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -284,7 +285,7 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
         value: leadValue,
         currency: 'USD',
       },
-      eventSourceUrl: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com'}/contact`,
+      eventSourceUrl: `${siteOrigin()}/contact`,
     }),
   }).catch((err) => {
     console.warn('[Contact Form] CAPI call failed:', err)

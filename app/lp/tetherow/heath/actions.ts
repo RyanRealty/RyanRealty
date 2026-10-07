@@ -1,5 +1,6 @@
 'use server'
 
+import { siteOrigin } from '@/lib/site-origin'
 import {
   type LeadEventPerson,
   sendEvent,
@@ -28,7 +29,7 @@ import { CONTACT } from '@/lib/brand/contact'
  * cookie is set on the visitor (rr_agent_attribution).
  */
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const siteUrl = siteOrigin()
 
 export type HeathCmaTimeline = 'ready-now' | 'next-3-6' | 'next-6-12' | 'exploring'
 

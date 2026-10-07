@@ -1,9 +1,10 @@
 /**
  * JSON-LD structured data generators for SEO. Step 20.
  */
+import { siteOrigin } from '@/lib/site-origin'
 import { listingTileHref, teamPath } from '@/lib/slug'
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const SITE_URL = siteOrigin()
 
 export type ListingForSchema = {
   listing_key: string

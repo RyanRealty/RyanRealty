@@ -1,5 +1,6 @@
 'use server'
 
+import { siteOrigin } from '@/lib/site-origin'
 import { getPacketSections, type PacketContinuation, type PacketSection } from '@/lib/data/tc/continuation'
 import { createClient } from '@supabase/supabase-js'
 import { TC_DOCUMENT_URL_TTL_SECONDS } from '@/lib/tc/document-urls'
@@ -145,7 +146,7 @@ async function requireEnvelopeReadContext(): Promise<AdminCapabilityContext | nu
 }
 
 function siteUrl(): string {
-  return (process.env.NEXT_PUBLIC_SITE_URL || 'https://ryan-realty.com').replace(/\/$/, '')
+  return siteOrigin()
 }
 
 // ---------------------------------------------------------------------------

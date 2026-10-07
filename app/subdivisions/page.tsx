@@ -7,6 +7,7 @@
  * Instrument.
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import type { Metadata } from 'next'
 import { getSurfaceImages, getCommunityHeroUrlsBySlug } from '@/lib/data'
 import {
@@ -55,7 +56,7 @@ import type { SchemaInput } from '@/lib/site/json-ld'
 
 export const revalidate = 3600
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const siteUrl = siteOrigin()
 
 export const metadata: Metadata = pageMetadata({
   title: 'Central Oregon subdivisions',

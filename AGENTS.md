@@ -70,6 +70,7 @@ Matt alternates between **Claude Code** and **Cursor**. Both are the same repo a
 1. `git fetch origin` and branch from current `origin/main`. Do not rebase, force-push, or reset. All code work is pushed to GitHub as a branch right away (locked process rule 14).
 2. If you are picking up mid-thread from the other surface, read the newest `~/.claude/plans/HANDOFF-*.md` when one exists (narrative); otherwise **`git log origin/main -5`** is enough.
 3. What you can reach (Supabase, the Google service account, Gmail, Vercel, GitHub, the rest) is in [`docs/ACCESS_INVENTORY.md`](docs/ACCESS_INVENTORY.md). Never ask Matt what access you have (Matt 2026-10-07). A provider refusal is a scope or grant to name precisely, not a question.
+4. **The public origin is https://ryan-realty.com. Never use `ryanrealty.vercel.app` for anything outward** (a link, email, SMS, canonical, OG or sitemap URL, PDF, redirect, lead source, or a URL a script prints or posts; Matt 2026-10-07). `siteOrigin()` / `siteUrl()` / `siteHost()` in [`lib/site-origin.ts`](lib/site-origin.ts) (plain-node scripts: `scripts/lib/site-origin.mjs`) is the only way to build an outward URL; never read `NEXT_PUBLIC_SITE_URL` directly (production still holds the alias). Held by `ci:site-origin` (G81).
 
 ### Ship discipline (non-negotiable)
 
@@ -414,7 +415,7 @@ git worktree add -b wt/crm-mobile-20260726 ../RyanRealty-wt-crm-mobile origin/ma
 
 ## Production parity (code + database + Vercel)
 
-**https://ryanrealty.vercel.app** reflects “everything current” only when **`main` is on Vercel production** and **hosted Supabase** has **all migrations applied** that the shipped code needs. SQL under `supabase/migrations/` is not live until it runs against the production database. See `.cursor/rules/production-parity.mdc` and `.cursor/rules/supabase-migrations-auto.mdc`.
+**https://ryan-realty.com** reflects “everything current” only when **`main` is on Vercel production** and **hosted Supabase** has **all migrations applied** that the shipped code needs. SQL under `supabase/migrations/` is not live until it runs against the production database. See `.cursor/rules/production-parity.mdc` and `.cursor/rules/supabase-migrations-auto.mdc`.
 
 ---
 

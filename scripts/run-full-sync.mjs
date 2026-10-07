@@ -9,6 +9,7 @@
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
 import { CI_PROBE_HEADERS } from './lib/ci-probe-ua.mjs'
+import { configuredSiteOrigin } from './lib/site-origin.mjs'
 
 function loadEnvLocal() {
   const path = resolve(process.cwd(), '.env.local')
@@ -34,7 +35,7 @@ function loadEnvLocal() {
 }
 
 const env = loadEnvLocal()
-const baseUrl = (process.argv[2] || process.env.SITE_URL || env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '')
+const baseUrl = (process.argv[2] || process.env.SITE_URL || configuredSiteOrigin(env.NEXT_PUBLIC_SITE_URL) || 'http://localhost:3000').replace(/\/$/, '')
 const secret = process.env.CRON_SECRET || env.CRON_SECRET
 
 if (!secret?.trim()) {

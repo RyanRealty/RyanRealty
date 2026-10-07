@@ -30,6 +30,7 @@
  * here. The real HTTP 404 for an unknown or draft slug is middleware.ts (0b2b).
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import { cleanTitle } from '@/lib/site/page-metadata'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
@@ -37,7 +38,7 @@ import { getBlogPostBySlug } from '@/lib/data'
 import { publishBlogReportPeriod } from '@/lib/blog/publish-blog-report-period'
 import { renderBlogPost } from './_v3/render-blog-post'
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const siteUrl = siteOrigin()
 
 type PageProps = { params: Promise<{ slug: string }> }
 

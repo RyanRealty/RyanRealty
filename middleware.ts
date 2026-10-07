@@ -415,6 +415,7 @@ const GEO_NOT_FOUND_HTML =
 // callers (Meta CAPI, Spark webhooks, Vercel crons) that may hit the alias
 // and not follow redirects keep working. Also consolidates SEO to one hostname.
 const CANONICAL_HOST = 'ryan-realty.com'
+// staging-host-ok: the INCOMING hosts this file 308s to the apex; builds no URL.
 const NON_CANONICAL_HOSTS = new Set(['ryanrealty.vercel.app', 'www.ryan-realty.com'])
 
 function buildNextResponse(pathname: string, request: NextRequest): NextResponse {

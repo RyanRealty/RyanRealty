@@ -1,3 +1,4 @@
+import { siteOrigin } from '@/lib/site-origin'
 import { NextResponse } from 'next/server'
 import React from 'react'
 import { renderToBuffer } from '@react-pdf/renderer'
@@ -5,7 +6,7 @@ import { ListingPdfDocument } from '@/lib/pdf/listing-pdf'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { listingDetailPath } from '@/lib/slug'
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const siteUrl = siteOrigin()
 
 export async function POST(request: Request) {
   const rl = await checkRateLimit(request, 'strict')

@@ -282,8 +282,9 @@ export default async function LiveVisitorsPage({
       ) : (
         <>
           <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '0 0 12px' }}>
-            Up to 50 sessions, most recently active first, across ryan-realty.com and
-            ryanrealty.vercel.app. A database trigger rescores a session on every event it records.
+            Up to 50 sessions, most recently active first, across ryan-realty.com and the Vercel
+            hosts (preview deploys and older sessions). A database trigger rescores a session on every
+            event it records.
             Open a session id for its full event timeline.
           </p>
           <SectionHead>Sessions</SectionHead>

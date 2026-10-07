@@ -1,5 +1,6 @@
 'use server'
 
+import { siteOrigin } from '@/lib/site-origin'
 import { createClient } from '@supabase/supabase-js'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import {
@@ -22,7 +23,7 @@ import { cookies, headers } from 'next/headers'
 import { findCrmPersonIdByEmail } from '@/lib/data/cma/crm'
 import { resolveSubmittedIdentity } from '@/lib/crm/submitted-identity'
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const siteUrl = siteOrigin()
 
 // ─── Broker routing constants ─────────────────────────────────────────────
 const CRM_DESK_MATT = 1
