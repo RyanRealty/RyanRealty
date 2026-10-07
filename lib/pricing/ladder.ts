@@ -448,10 +448,14 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
 }
 
 /**
- * Five closed sales, then stop (Matt 2026-09-22, on 20506 Murphy).
- * Every sale past five is bought by a wider rung, and that wider rung is
- * what stretched the shaded range. The listings ladder already stopped at
- * five (`lib/cma/comps.ts` TARGET_COMPS).
+ * Five price-setting sales stop the WIDENING (Matt 2026-09-22, on 20506
+ * Murphy: every sale past five is bought by a wider rung, and that wider rung
+ * is what stretched the shaded range). Once the set holds five, no wider rung
+ * runs on either ladder: no larger radius, no longer window, no next plat
+ * ring, no neighborhood or community step, no boundary exit, no starved rung.
+ * The rung that reached five still hands over its own remaining sales, up to
+ * PRICING_WALK_CAP (Matt 2026-10-07, below). The listings ladder stops at the
+ * same five (`lib/cma/comps.ts` TARGET_COMPS).
  */
 export const PRICING_TARGET_COMPS = 5
 /**
@@ -459,11 +463,29 @@ export const PRICING_TARGET_COMPS = 5
  * 2026-09-10 lowering to 3 that rescued 63 thin documents: a three-sale
  * letter printed a raw min-to-max band and one stray sale put the failed ask
  * inside it, which contradicts the letter. Equal to PRICING_TARGET_COMPS by
- * that rule: the stop and the floor are one number. A sale that does not set
- * the price (lib/pricing/price-set.ts) never counts toward it; the walks
- * refuse it at admission and go on in order.
+ * that rule: the floor and the point where widening stops are one number. A
+ * sale that does not set the price (lib/pricing/price-set.ts) never counts
+ * toward it; the walks refuse it at admission and go on in order.
  */
 export const PRICING_MIN_COMPS = 5
+/**
+ * WALK TO 7, PRICE ON 5+ (Matt 2026-10-07). Asked: "with five as both the
+ * floor and the stop, the search ends at exactly five sales; if the
+ * comparability review drops or splits on one, the build fails. How should
+ * the search handle that?" Ruling: "Walk to 7, price on 5+": keep walking
+ * past five, up to seven, while the same area still holds qualifying sales,
+ * so the review (lib/cma/judge.ts, lib/cma/judgment-prune.ts) can drop one or
+ * two and still leave five. Nothing widens the area to get them.
+ *
+ * Mechanically, on both ladders: widening stops at PRICING_TARGET_COMPS. The
+ * rung that reached five, and only that rung, contributes its remaining
+ * qualifying sales, best first by that rung's own order, until the set holds
+ * this many. A rung that holds fewer leaves the set at five or six. Every
+ * wall (community, neighborhood polygon, recorded plat, 24 months, the room
+ * rule, rule 20, the same product type) is unchanged. The floor stays
+ * PRICING_MIN_COMPS.
+ */
+export const PRICING_WALK_CAP = 7
 /**
  * The floor is the trim threshold: every priced set sets its highest and
  * lowest aside (Matt 2026-10-07, the band is always the trimmed range). A
@@ -500,8 +522,6 @@ export const POCKET_TIGHT_SET_MIN = 2
  * five on both ladders the build is a comp shortage.
  */
 export const FACTS_STANDALONE_MIN = BOUNDARY_EXIT_BELOW
-/** The priced set is five. The facts walk keeps the closest matches in the opened row. */
-export const PRICING_MAX_COMPS = 5
 
 /**
  * Keep the `max` sales whose close prices sit together.
@@ -510,11 +530,17 @@ export const PRICING_MAX_COMPS = 5
  * that happens to match today's prices does not hold a slot a recent sale
  * should have. The list should already be best-first. When two sales are
  * equally far, the later one goes.
+ *
+ * `removable`, when given, names the only sales the cut may take (walk to 7,
+ * Matt 2026-10-07: the rung that reached five fills the open seats, and a
+ * sale an earlier rung admitted keeps its seat). The middle price is still
+ * read over the whole set. With nothing left that may go, the cut stops.
  */
 export function keepTightestByClosePrice<T extends { closePrice: number; closeDate?: string | null }>(
   comps: readonly T[],
   max: number,
   asOf?: string,
+  removable?: (comp: T) => boolean,
 ): T[] {
   const kept = [...comps]
   while (kept.length > max) {
@@ -530,9 +556,15 @@ export function keepTightestByClosePrice<T extends { closePrice: number; closeDa
       const stale = months > 12 ? (months - 12) / 12 : 0
       return price + stale
     }
-    let worst = kept.length - 1
+    // The last sale that may go is the starting candidate, so a tie with it
+    // still drops the later sale, exactly as before `removable` existed.
+    let last = kept.length - 1
+    while (last >= 0 && removable && !removable(kept[last]!)) last--
+    if (last < 0) break
+    let worst = last
     let worstDist = dist(kept[worst]!)
-    for (let i = 0; i < kept.length - 1; i++) {
+    for (let i = 0; i < last; i++) {
+      if (removable && !removable(kept[i]!)) continue
       const d = dist(kept[i]!)
       if (d > worstDist) {
         worstDist = d

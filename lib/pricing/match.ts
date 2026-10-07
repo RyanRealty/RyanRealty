@@ -46,9 +46,9 @@ import {
   type WaterClass,
 } from '@/lib/pricing/classes'
 import {
-  PRICING_MAX_COMPS,
   PRICING_MIN_COMPS,
   PRICING_TARGET_COMPS,
+  PRICING_WALK_CAP,
   pricingTierLadder,
   type AppleStrictness,
   type PricingTier,
@@ -1215,31 +1215,43 @@ function pickClosestMatches(
 }
 
 /**
- * Five sales. An earlier place keeps its seats. A row with more qualifiers
- * than open seats keeps the closest homes in the plat that resembles this
- * one. A median close does not remove a home.
+ * Up to PRICING_WALK_CAP sales (walk to 7, Matt 2026-10-07). An earlier rung
+ * keeps its seats: the walk stops widening at five, so every rung before the
+ * one that reached five holds fewer than five and all of them are seated. The
+ * rung that reached five fills the open seats with its closest homes, in the
+ * plat that resembles this one on a touching row. A median close does not
+ * remove a home. Seats go in walk order, which never reorders the location
+ * steps (own ground, touching plats, the next row, the pocket, the rest);
+ * a rung missing from the walk's list sits after every rung that is in it,
+ * in its location step.
  */
 function capPricingSet(
   subject: PricingSubject,
   comps: readonly SelectedPricingComp[],
   max: number,
+  rungOrder: ReadonlyMap<string, number>,
 ): SelectedPricingComp[] {
   if (comps.length <= max) return [...comps]
-  const groups = new Map<number, SelectedPricingComp[]>()
+  const rank = (comp: SelectedPricingComp): number =>
+    rungOrder.get(comp.selectionTier) ?? rungOrder.size + pricingLocationGroup(comp.selectionTier)
+  const rungs = new Map<number, SelectedPricingComp[]>()
   for (const comp of comps) {
-    const group = pricingLocationGroup(comp.selectionTier)
-    const rows = groups.get(group)
+    const at = rank(comp)
+    const rows = rungs.get(at)
     if (rows) rows.push(comp)
-    else groups.set(group, [comp])
+    else rungs.set(at, [comp])
   }
   const kept: SelectedPricingComp[] = []
-  for (const group of [0, 1, 2, 3, 4]) {
+  for (const at of [...rungs.keys()].sort((a, b) => a - b)) {
     if (kept.length >= max) break
-    const rows = groups.get(group)
-    if (!rows?.length) continue
+    const rows = rungs.get(at)!
     const slots = max - kept.length
-    if (rows.length <= slots) kept.push(...rows)
-    else kept.push(...pickClosestMatches(subject, rows, slots, group === 1 || group === 2))
+    if (rows.length <= slots) {
+      kept.push(...rows)
+      continue
+    }
+    const group = pricingLocationGroup(rows[0]!.selectionTier)
+    kept.push(...pickClosestMatches(subject, rows, slots, group === 1 || group === 2))
   }
   return kept
 }
@@ -1295,6 +1307,13 @@ function tierOutsideRecordedPlatRows(tier: PricingTier): boolean {
  * crosses a wall the old walk would not cross; it only continues further down
  * the same ordered list when a non-setter was met. Never a radius search in
  * place of the order.
+ *
+ * WALK TO 7, PRICE ON 5+ (Matt 2026-10-07). Widening stops once byKey holds
+ * PRICING_TARGET_COMPS: no later rung runs, own street, plat and pocket
+ * windows included. The rung that reached five has already scanned its whole
+ * row, and capPricingSet keeps up to PRICING_WALK_CAP: every earlier rung's
+ * sales (fewer than five by construction), then that rung's closest homes.
+ * So the review can drop one or two and the set still prices on five.
  */
 export function walkPricingLadder(
   rawSubject: PricingSubject,
@@ -1336,6 +1355,8 @@ export function walkPricingLadder(
     asOfYearForLadder,
   )
   const tiers = opts.tiers ?? pricingTierLadder({ customOrNew: customLadder })
+  /** Each rung's place in the walk, so the cap seats earlier rungs first. */
+  const rungOrder = new Map(tiers.map((tier, index) => [tier.name, index]))
   const byKey = new Map<string, SelectedPricingComp>()
   /** Sales already held, so one closed sale cannot enter a set twice. */
   const bySale = new Set<string>()
@@ -1391,9 +1412,10 @@ export function walkPricingLadder(
   // other subdivisions. A price cut then kept the cheap cluster and dropped
   // every Redtail Ridge sale, including 3499 SW 44th at $790,000. The Sep 7
   // build, before that cut, still had the plat sale. A pocket rung is wider
-  // than a plat that has already filled. It must not be mixed in. When a row
-  // still has more than five qualifiers, the closest homes stay. A median
-  // close does not choose them.
+  // than a plat that has already filled. It must not be mixed in. When the
+  // rung that reached five holds more than seven seats can take, its closest
+  // homes stay (walk to 7, Matt 2026-10-07). A median close does not choose
+  // them.
   let countBeforePocket: number | null = null
   // How many sales the plat rows (street, own plat, touching plats, the plats
   // that touch those) held when the walk first reached a rung outside them.
@@ -1453,7 +1475,14 @@ export function walkPricingLadder(
       })
       continue
     }
-    if (byKey.size >= PRICING_TARGET_COMPS && !isPocketExclusiveTier(tier)) {
+    // WIDENING STOPS AT FIVE, ON EVERY RUNG (walk to 7, Matt 2026-10-07).
+    // The rung that reached five already handed over every sale it holds; the
+    // cap below keeps up to PRICING_WALK_CAP of them. No later rung runs: not
+    // a longer window of the subject's own street, plat or pocket, and not a
+    // wider place. Before this ruling the own-ground rungs (street, plat,
+    // pocket) kept walking their longer windows past five and the cap chose
+    // five by distance across all of them; a longer window is a wider rung.
+    if (byKey.size >= PRICING_TARGET_COMPS) {
       rungs.push({
         tier: tier.name,
         ran: false,
@@ -1632,7 +1661,7 @@ export function walkPricingLadder(
   // pass runs only when that median was never there.
   const hadOwnPlat = ranked.some((c) => c.ownPlat)
   const sitting = hadOwnPlat ? ranked : pocketSalesSitWithKept(ranked, customLadder)
-  const sliced = capPricingSet(subject, sitting, PRICING_MAX_COMPS)
+  const sliced = capPricingSet(subject, sitting, PRICING_WALK_CAP, rungOrder)
   const bracketed = bracketGla(subject, sliced, pool, asOf, priceAnchor, cells, customLadder, setsPrice)
   if (bracketed.note) {
     if (!tiersUsed.includes('gla-bracket')) tiersUsed.push('gla-bracket')

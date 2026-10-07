@@ -428,7 +428,7 @@ export const BAND_HALF_WIDTH_PCT = 0.1
  */
 export const COMPETITION_BAND_STEPS = [0.1, 0.15, 0.2, 0.25] as const
 
-/** Fitting homes to stop on. The priced set uses the same five. */
+/** Fitting homes to stop on. The priced set has the same five as its floor. */
 export const COMPETITION_GOOD_COUNT = 5
 
 /** The chapter draws this many nearest homes when a band holds more. */

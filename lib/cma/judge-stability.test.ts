@@ -27,7 +27,7 @@ import type { CmaComp, CmaMarketContext, CmaSubject } from '@/lib/cma/types'
 import type { CompVerdict } from '@/lib/cma/judge-consistency'
 import { MIN_COMPS } from '@/lib/cma/comps'
 import { pricingCompsAfterJudgment } from '@/lib/cma/judgment-prune'
-import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
+import { PRICING_MIN_COMPS, PRICING_WALK_CAP } from '@/lib/pricing/ladder'
 
 function subject(overrides: Partial<CmaSubject> = {}): CmaSubject {
   return {
@@ -783,5 +783,106 @@ describe('the comparability review at the production floor (five price-setting s
       minComps: MIN_COMPS,
     })
     expect(gated.shortage).toBe(true)
+  })
+})
+
+describe('the review on a walk-to-7 set (walk to 7, price on 5+, Matt 2026-10-07)', () => {
+  // The walk now hands the review up to PRICING_WALK_CAP candidates, so it
+  // can drop one or two and still price on the five-sale floor. Same real
+  // floor (MIN_COMPS), same lot outlier shape as the floor tests above.
+  const sub = subject()
+  const seven = Array.from({ length: PRICING_WALK_CAP }, (_, i) =>
+    comp({ listingKey: `W${i}`, address: `${60 + i} Elm Ave`, sqft: 1800, closePrice: 1800 * 400 }),
+  )
+  const outlierLot = { lotAcres: 0.34, publicRemarks: '4 car garage.' }
+  const LOT_REASON = '0.34 acre lot and 4-car garage versus 0.14 acre and 2-car.'
+
+  /** Three passes. `out(key, n)` says whether pass n excludes that sale on the lot. */
+  function passesOn(pool: CmaComp[], out: (key: string, n: number) => boolean): JudgeModelCall {
+    let n = 0
+    return async () => {
+      n += 1
+      const pass = n
+      return {
+        payload: judgment(
+          pool.map((c) => {
+            const excluded = out(c.listingKey, pass)
+            return verdict({
+              listingKey: c.listingKey,
+              tier: excluded ? 'exclude' : 'strong',
+              basis: excluded ? 'lot' : undefined,
+              reason: excluded ? LOT_REASON : 'Comparable sale.',
+            })
+          }),
+        ),
+        raw: '{}',
+        costUsd: 0,
+      }
+    }
+  }
+  const gate = (pool: CmaComp[], keptKeys: string[], verdicts: CompVerdict[]) =>
+    pricingCompsAfterJudgment({
+      selected: pool,
+      vetted: pool.filter((c) => keptKeys.includes(c.listingKey)),
+      verdicts,
+      subject: { propertySubType: sub.propertySubType, yearBuilt: sub.yearBuilt, publicRemarks: sub.publicRemarks },
+      minComps: MIN_COMPS,
+    })
+
+  it('seven candidates leave room for two exclusions above the floor', () => {
+    expect(PRICING_WALK_CAP).toBe(7)
+    expect(PRICING_WALK_CAP - 2).toBe(MIN_COMPS)
+  })
+
+  it('two unanimous exclusions out of seven price on the five the review kept', async () => {
+    const pool = [...seven.slice(0, 5), { ...seven[5]!, ...outlierLot }, { ...seven[6]!, ...outlierLot }]
+    const result = await judgeComps(sub, pool, market, {
+      callModel: passesOn(pool, (key) => key === 'W5' || key === 'W6'),
+      minComps: MIN_COMPS,
+    })
+    expect(result).not.toBeNull()
+    expect(result!.decision?.unstable).toBe(false)
+    expect(result!.decision?.keepLow).toBe(5)
+    expect(result!.decision?.keepHigh).toBe(5)
+    expect(result!.keptKeys.sort()).toEqual(['W0', 'W1', 'W2', 'W3', 'W4'])
+    const gated = gate(pool, result!.keptKeys, result!.verdicts)
+    expect(gated.shortage).toBe(false)
+    expect(gated.comps.map((c) => c.listingKey).sort()).toEqual(['W0', 'W1', 'W2', 'W3', 'W4'])
+    expect(gated.trace).toContain('Priced on the 5 sale(s) the comparability review kept')
+  })
+
+  it('one split vote out of seven still prices, it is not JUDGE_UNSTABLE', async () => {
+    const pool = [...seven.slice(0, 6), { ...seven[6]!, ...outlierLot }]
+    // Two of three passes exclude W6: the majority drops it. Six stayed in
+    // every pass, so the split cannot decide the floor either way.
+    const result = await judgeComps(sub, pool, market, {
+      callModel: passesOn(pool, (key, n) => key === 'W6' && n % 3 !== 1),
+      minComps: MIN_COMPS,
+    })
+    expect(result).not.toBeNull()
+    expect(result!.decision?.unstable).toBe(false)
+    expect(result!.decision?.keepLow).toBe(6)
+    expect(result!.decision?.keepHigh).toBe(7)
+    expect(result!.keptKeys).toHaveLength(6)
+    expect(result!.keptKeys).not.toContain('W6')
+    const gated = gate(pool, result!.keptKeys, result!.verdicts)
+    expect(gated.shortage).toBe(false)
+    expect(gated.comps).toHaveLength(6)
+  })
+
+  it('two sure exclusions and one split out of seven is the five-sale failure again: JUDGE_UNSTABLE', async () => {
+    // The shape that failed today at five candidates (four sure keeps, five if
+    // the split is kept), reached on a seven-sale walk. Seven seats make it
+    // rarer; they do not make it impossible, and the vote rule is unchanged.
+    const pool = [
+      ...seven.slice(0, 4),
+      { ...seven[4]!, ...outlierLot },
+      { ...seven[5]!, ...outlierLot },
+      { ...seven[6]!, ...outlierLot },
+    ]
+    const call = passesOn(pool, (key, n) => key === 'W5' || key === 'W6' || (key === 'W4' && n % 3 !== 1))
+    await expect(judgeComps(sub, pool, market, { callModel: call, minComps: MIN_COMPS })).rejects.toMatchObject({
+      code: JUDGE_UNSTABLE,
+    })
   })
 })

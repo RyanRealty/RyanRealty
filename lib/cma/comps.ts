@@ -33,7 +33,7 @@
 
 import { selectCmaCompsPool, selectCmaCompsByKeys } from '@/lib/data/cma/builderReads'
 import { getSubdivisionRing, assignSubdivisionSlugs, assignCommunitySlugs } from '@/lib/data/geo/subdivision-ring'
-import { keepTightestByClosePrice, PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
+import { keepTightestByClosePrice, PRICING_MIN_COMPS, PRICING_TARGET_COMPS, PRICING_WALK_CAP } from '@/lib/pricing/ladder'
 import { resolveConcessions, sellerNetFromPrice } from '@/lib/pricing/seller-net'
 import {
   closedSaleDomTotal,
@@ -125,14 +125,18 @@ export const MIN_COMPS = PRICING_MIN_COMPS
  * comps as possible" — every extra comp is bought by widening geography or
  * time, so a target of 6 forced one more descent down the ladder than the
  * analysis needed. Five closed sales support the three pricing methods, and
- * stopping there keeps the set in the tightest tier that can fill it.
+ * stopping there keeps the set in the tightest tier that can fill it. The
+ * facts ladder stops widening at the same five (PRICING_TARGET_COMPS).
  */
-export const TARGET_COMPS = 5
+export const TARGET_COMPS = PRICING_TARGET_COMPS
 /**
- * Same cap as the facts ladder. A rung that overshoots is cut to five tight
- * prices. The cap equals the floor: a five-sale set cannot lose one and survive.
+ * Same cap as the facts ladder: walk to 7, price on 5+ (Matt 2026-10-07).
+ * The walk stops widening at five, and the rung that reached five keeps up to
+ * seven of its sales, the tightest prices first, so the comparability review
+ * can drop one or two and the set still prices on the five-sale floor. A
+ * sale an earlier rung admitted keeps its seat.
  */
-export const MAX_COMPS = 5
+export const MAX_COMPS = PRICING_WALK_CAP
 
 function num(v: unknown): number | null {
   if (v == null) return null
@@ -684,6 +688,8 @@ export async function selectComps(
     { listingKey: string; publicRemarks: string | null; subdivision: string | null; seniorCommunityYn: boolean | null }
   >()
   let ownPlatAgeShare: number | null | undefined = undefined
+  /** The rung that brought the set to TARGET_COMPS. Only its sales may give up a seat in the cap. */
+  let reachedOnTier: string | null = null
   for (const tier of tiers) {
     const skip =
       // THE WIDENING RUNS ONLY WHEN THE BOUNDED LADDER CAME UP SHORT.
@@ -1215,7 +1221,12 @@ export async function selectComps(
     )
     if (added > 0) tiersUsed.push(tier.name)
     if (isListingsPocketExclusiveTier(tier)) exclusiveCount = byKey.size
-    if (byKey.size >= TARGET_COMPS) break
+    // WIDENING STOPS AT FIVE (walk to 7, Matt 2026-10-07). This rung already
+    // added every qualifier it returned; the cap below keeps up to MAX_COMPS.
+    if (byKey.size >= TARGET_COMPS) {
+      reachedOnTier = tier.name
+      break
+    }
   }
 
   const disclosures: string[] = []
@@ -1287,9 +1298,9 @@ export async function selectComps(
 
   // Outlier exclusion: drop $/sqft beyond 2 standard deviations OR far from the
   // peer median band (Tip Ready P1: $201/sf beside $498–561k peers must go),
-  // only when the set stays above MIN_COMPS afterward. This runs on the
-  // pre-cap set (the cap is below), so it fires only when a rung overshot past
-  // five; on an exactly-five set an end outlier is handled by the trimmed
+  // only when the set stays at MIN_COMPS or above afterward. This runs on the
+  // pre-cap set (the cap is below), so it fires only when the walk holds more
+  // than five; on an exactly-five set an end outlier is handled by the trimmed
   // range (lib/pricing/estimate.ts partitionByRangeRule), never a drop.
   const excludedOutliers: CompSelection['excludedOutliers'] = []
   const OUTLIER_MEDIAN_BAND = 0.35
@@ -1331,12 +1342,19 @@ export async function selectComps(
     }
   }
 
-  // Rank by similarity (size proximity x recency), then keep five
+  // Rank by similarity (size proximity x recency), then keep up to seven
   // whose close prices sit together. A rung that dumped a high outlier
-  // does not get to set the range.
+  // does not get to set the range. Only the rung that reached five gives up
+  // a seat (walk to 7, Matt 2026-10-07): every earlier rung held fewer than
+  // five between them, and their sales stay.
   const rankBy = land ? (subject.lotAcres ?? 0) : sqft
   comps.sort((a, b) => similarityScore(rankBy, b, Boolean(land)) - similarityScore(rankBy, a, Boolean(land)))
-  comps = keepTightestByClosePrice(comps, MAX_COMPS, opts.asOf)
+  comps = keepTightestByClosePrice(
+    comps,
+    MAX_COMPS,
+    opts.asOf,
+    reachedOnTier ? (c) => c.selectionTier === reachedOnTier : undefined,
+  )
   // Present most recent first (matches the exemplar ordering).
   comps.sort((a, b) => b.closeDate.localeCompare(a.closeDate))
 

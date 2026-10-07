@@ -517,11 +517,12 @@ describe('walkPricingLadder', () => {
     const out = walkPricingLadder(subject({ sqft: 2000 }), [...larger, smaller], { asOf })
     expect(out.comps.map((c) => c.listingKey)).toContain('SMALL')
     expect(out.comps.some((c) => c.sqft > 2000)).toBe(true)
-    expect(out.comps).toHaveLength(5)
-    expect(out.comps.filter((c) => c.listingKey.startsWith('BIG'))).toHaveLength(4)
+    // Walk to 7 (Matt 2026-10-07): seven seats, one of them swapped for the smaller sale.
+    expect(out.comps).toHaveLength(7)
+    expect(out.comps.filter((c) => c.listingKey.startsWith('BIG'))).toHaveLength(6)
   })
 
-  it('never keeps more than five priced sales', () => {
+  it('never keeps more than seven priced sales (walk to 7, price on 5+, Matt 2026-10-07)', () => {
     const pool = Array.from({ length: 12 }, (_, i) =>
       sale({
         listingKey: `N${i}`,
@@ -530,11 +531,11 @@ describe('walkPricingLadder', () => {
       }),
     )
     const out = walkPricingLadder(subject(), pool, { asOf })
-    expect(out.comps).toHaveLength(5)
+    expect(out.comps).toHaveLength(7)
   })
 
-  it('drops a farther sale once five nearer sales are in, and a same-distance price does not', () => {
-    const near = [700_000, 710_000, 720_000, 735_000, 980_000]
+  it('drops a farther sale once seven nearer sales are in, and a same-distance price does not', () => {
+    const near = [700_000, 705_000, 710_000, 715_000, 720_000, 735_000, 980_000]
     const pool = [
       ...near.map((closePrice, i) =>
         sale({
@@ -556,9 +557,9 @@ describe('walkPricingLadder', () => {
       }),
     ]
     const out = walkPricingLadder(subject(), pool, { asOf })
-    expect(out.comps).toHaveLength(5)
+    expect(out.comps).toHaveLength(7)
     expect(out.comps.map((c) => c.listingKey)).not.toContain('FAR')
-    expect(out.comps.map((c) => c.listingKey)).toContain('N4')
+    expect(out.comps.map((c) => c.listingKey)).toContain('N6')
   })
 
   it('does not treat three wide-GLA same-subdivision sales as a quality stop', () => {
@@ -2859,13 +2860,15 @@ describe('overflow — closest homes, then the plat that resembles this one (Mat
       })
     // Far sales are first in the pool. The walk used to stop at five in that order.
     const pool = [
-      ...['F1', 'F2', 'F3', 'F4', 'F5'].map((key) => row(key, 0.3)),
+      ...['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7'].map((key) => row(key, 0.3)),
       ...['N1', 'N2', 'N3'].map((key) => row(key, 0.05)),
     ]
     const out = walkPricingLadder(subj, pool, { asOf })
     const keys = out.comps.map((c) => c.listingKey)
-    expect(keys).toHaveLength(5)
+    // Seven seats (walk to 7, Matt 2026-10-07): the three near sales and four far ones.
+    expect(keys).toHaveLength(7)
     expect(keys).toEqual(expect.arrayContaining(['N1', 'N2', 'N3']))
+    expect(keys.filter((key) => key.startsWith('F'))).toHaveLength(4)
   })
 
   it('fills an adjacent row from the plat whose homes match this subdivision before a newer closer plat', () => {
@@ -2902,11 +2905,13 @@ describe('overflow — closest homes, then the plat that resembles this one (Mat
     ]
     const out = walkPricingLadder(subj, pool, { asOf })
     const keys = out.comps.map((c) => c.listingKey)
-    expect(keys).toHaveLength(5)
+    // Seven seats: the four like-plat homes first, then the nearest three of the newer plat.
+    expect(keys).toHaveLength(7)
     expect(keys).toEqual(expect.arrayContaining(['L1', 'L2', 'L3', 'L4', 'NEWCLOSE']))
+    expect(keys.filter((key) => key.startsWith('NEW'))).toHaveLength(3)
   })
 
-  it('keeps the five closest own-plat sales when a farther cluster sits on the middle price', () => {
+  it('keeps the seven closest own-plat sales when a farther cluster sits on the middle price', () => {
     const subj = subject({
       ...here,
       subdivision: 'Old Ground',
@@ -2934,16 +2939,18 @@ describe('overflow — closest homes, then the plat that resembles this one (Mat
       })
     const pool = [
       row('C400', 0.04, 400_000),
+      row('C450', 0.04, 450_000),
       row('C500', 0.04, 500_000),
       row('C800', 0.04, 800_000),
       row('C900', 0.04, 900_000),
+      row('C950', 0.04, 950_000),
       row('C1000', 0.04, 1_000_000),
       row('F640', 0.3, 640_000),
       row('F650', 0.3, 650_000),
       row('F660', 0.3, 660_000),
     ]
     const out = walkPricingLadder(subj, pool, { asOf })
-    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['C1000', 'C400', 'C500', 'C800', 'C900'])
+    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['C1000', 'C400', 'C450', 'C500', 'C800', 'C900', 'C950'])
   })
 
   it('does not give an own-plat seat to a closer adjacent sale', () => {
@@ -2988,9 +2995,9 @@ describe('overflow — closest homes, then the plat that resembles this one (Mat
     )
     const out = walkPricingLadder(subj, [...adjacent, ...own], { asOf })
     const keys = out.comps.map((c) => c.listingKey)
-    expect(keys).toHaveLength(5)
+    expect(keys).toHaveLength(7)
     expect(keys).toEqual(expect.arrayContaining(['OWN1', 'OWN2']))
-    expect(keys.filter((key) => key.startsWith('A'))).toHaveLength(3)
+    expect(keys.filter((key) => key.startsWith('A'))).toHaveLength(5)
   })
 
   it('fills from the same-size adjacent plat before a closer plat of smaller homes', () => {
@@ -3025,9 +3032,9 @@ describe('overflow — closest homes, then the plat that resembles this one (Mat
     ]
     const out = walkPricingLadder(subj, pool, { asOf })
     const keys = out.comps.map((c) => c.listingKey)
-    expect(keys).toHaveLength(5)
+    expect(keys).toHaveLength(7)
     expect(keys.filter((key) => key.startsWith('M'))).toHaveLength(4)
-    expect(keys.filter((key) => key.startsWith('S'))).toHaveLength(1)
+    expect(keys.filter((key) => key.startsWith('S'))).toHaveLength(3)
   })
 })
 
@@ -3177,9 +3184,9 @@ describe('five price-setting sales is the floor, and a sale that does not set th
     expect(out.trace.some((t) => t.includes('Comp shortage: only 3 price-setting sale(s)'))).toBe(true)
   })
 
-  it('the cap hands its five seats to setters only', () => {
-    // Six setters, and a community sale met on the way: five seats, every
-    // one a setter.
+  it('the cap hands its seats to setters only', () => {
+    // Six setters, and a community sale met on the way: six seats (under the
+    // walk cap of seven), every one a setter.
     const pool = [
       own('A', 0),
       own('B', 1),
@@ -3190,7 +3197,7 @@ describe('five price-setting sales is the floor, and a sale that does not set th
       far('F', 2),
     ]
     const out = walkPricingLadder(plain(), pool, { asOf })
-    expect(out.comps).toHaveLength(5)
+    expect(out.comps).toHaveLength(6)
     expect(out.comps.every((c) => c.setsPrice === true)).toBe(true)
     expect(out.comps.map((c) => c.listingKey)).not.toContain('COMMUNITY')
   })
@@ -3316,5 +3323,124 @@ describe('the GLA bracket never crosses a wall the walk would not cross (review,
     expect(out.comps.map((c) => c.listingKey)).toContain('INSIDE')
     expect(out.comps).toHaveLength(5)
     expect(out.trace.some((t) => t.startsWith('GLA bracket: replaced'))).toBe(true)
+  })
+})
+
+describe('walk to 7, price on 5+ (Matt 2026-10-07)', () => {
+  // The ruling: keep walking past five, up to seven, while the same area
+  // still holds qualifying sales, so the comparability review can drop one or
+  // two and still leave five. Nothing widens the area to get them. Widening
+  // stops at five; the rung that reached five, and only that rung, fills the
+  // set to seven, closest first.
+  const asOf = '2026-08-01'
+  const at = (miles: number) => ({ latitude: 44.06 + miles / 69, longitude: -121.3 })
+  // Kenwood, the subject's own plat. Same size as the subject, so the GLA
+  // bracket has nothing to swap and the set is the walk's own.
+  const plat = (listingKey: string, miles: number, closeDate: string, closePrice = 700_000) =>
+    sale({ ...at(miles), listingKey, address: `${listingKey} Kenwood Ln`, sqft: 2000, closeDate, closePrice })
+  const THREE_MO = '2026-07-01'
+  const SIX_MO = '2026-03-15'
+  const NINE_MO = '2025-12-01'
+  const keysOf = (out: ReturnType<typeof walkPricingLadder>) => out.comps.map((c) => c.listingKey).sort()
+  const rung = (out: ReturnType<typeof walkPricingLadder>, tier: string) => out.rungs.find((r) => r.tier === tier)
+
+  it('a rung holding seven or more qualifiers after reaching five yields seven, the earlier rung seated and the closest of that rung after it', () => {
+    const pool = [
+      // subdivision-3mo: three sales.
+      ...['E1', 'E2', 'E3'].map((key) => plat(key, 0.2, THREE_MO)),
+      // subdivision-6mo: eight sales; the rung reaches five and holds three more than seven needs.
+      ...[0.45, 0.4, 0.35, 0.3, 0.25, 0.15, 0.1, 0.05].map((miles, i) => plat(`S${8 - i}`, miles, SIX_MO)),
+      // subdivision-9mo: the closest sale in the pool. A longer window is a wider rung.
+      plat('LATE', 0.01, NINE_MO),
+    ]
+    const out = walkPricingLadder(subject(), pool, { asOf })
+    expect(out.comps).toHaveLength(7)
+    // S1 to S4 sit at 0.05, 0.1, 0.15 and 0.25 miles: the four closest of the rung that reached five.
+    expect(keysOf(out)).toEqual(['E1', 'E2', 'E3', 'S1', 'S2', 'S3', 'S4'])
+    expect(rung(out, 'subdivision-6mo')?.added).toBe(8)
+    expect(rung(out, 'subdivision-9mo')?.ran).toBe(false)
+    expect(rung(out, 'subdivision-9mo')?.skippedReason).toMatch(/already has 11 price-setting sales/)
+    expect(out.reachedTarget).toBe(true)
+  })
+
+  it('once five is reached the set never takes a sale from a wider rung, even one closer in price, date or distance', () => {
+    const subj = subject({ subdivisionSlug: 'kenwood', adjacentSubdivisionSlugs: ['aubrey'] })
+    const pool = [
+      // subdivision-3mo: six sales at 0.3 miles, closing at $700,000 two months back.
+      ...['P1', 'P2', 'P3', 'P4', 'P5', 'P6'].map((key) => ({
+        ...plat(key, 0.3, '2026-06-01', 700_000),
+        subdivisionSlug: 'kenwood',
+      })),
+      // A longer window of the same plat, the nearest sale of all.
+      { ...plat('LONGER', 0.01, '2026-04-01', 700_000), subdivisionSlug: 'kenwood' },
+      // The touching plat, two days old, at the same price.
+      sale({
+        ...at(0.02),
+        listingKey: 'ADJ',
+        address: '1 Aubrey Ln',
+        subdivision: 'Aubrey',
+        subdivisionNorm: 'aubrey',
+        subdivisionSlug: 'aubrey',
+        sqft: 2000,
+        closeDate: '2026-07-30',
+        closePrice: 700_000,
+      }),
+      // No plat at all, a tenth of a mile out, last week, at the same price.
+      sale({
+        ...at(0.1),
+        listingKey: 'RING',
+        address: '2 Open Rd',
+        subdivision: null,
+        subdivisionNorm: null,
+        sqft: 2000,
+        closeDate: '2026-07-25',
+        closePrice: 700_000,
+      }),
+    ]
+    const out = walkPricingLadder(subj, pool, { asOf })
+    expect(keysOf(out)).toEqual(['P1', 'P2', 'P3', 'P4', 'P5', 'P6'])
+    for (const tier of ['subdivision-6mo', 'adjacent-sub-3mo', 'nearby-0.25mi-3mo']) {
+      expect(rung(out, tier)?.ran).toBe(false)
+      expect(rung(out, tier)?.skippedReason).toMatch(/already has 6 price-setting sales/)
+    }
+  })
+
+  it('a rung that reaches five holding six gives six, and nothing past it fills the seventh seat', () => {
+    const pool = [
+      ...['A1', 'A2'].map((key) => plat(key, 0.2, THREE_MO)),
+      ...['B1', 'B2', 'B3', 'B4'].map((key) => plat(key, 0.25, SIX_MO)),
+      ...['C1', 'C2', 'C3'].map((key) => plat(key, 0.05, NINE_MO)),
+    ]
+    const out = walkPricingLadder(subject(), pool, { asOf })
+    expect(keysOf(out)).toEqual(['A1', 'A2', 'B1', 'B2', 'B3', 'B4'])
+    expect(rung(out, 'subdivision-9mo')?.ran).toBe(false)
+    expect(out.trace.some((t) => t.includes('Comp shortage'))).toBe(false)
+  })
+
+  it('a walk that reaches five exactly at the last sale of a rung stays five and does not widen', () => {
+    const subj = subject({ subdivisionSlug: 'kenwood', adjacentSubdivisionSlugs: ['aubrey'] })
+    const pool = [
+      ...['F1', 'F2', 'F3', 'F4', 'F5'].map((key) => ({ ...plat(key, 0.3, THREE_MO), subdivisionSlug: 'kenwood' })),
+      // Three more own-plat sales one window out, closer than every one of the five.
+      ...['W1', 'W2', 'W3'].map((key) => ({ ...plat(key, 0.02, SIX_MO), subdivisionSlug: 'kenwood' })),
+      sale({
+        ...at(0.05),
+        listingKey: 'ADJ',
+        address: '3 Aubrey Ln',
+        subdivision: 'Aubrey',
+        subdivisionNorm: 'aubrey',
+        subdivisionSlug: 'aubrey',
+        sqft: 2000,
+        closeDate: THREE_MO,
+      }),
+    ]
+    const out = walkPricingLadder(subj, pool, { asOf })
+    expect(keysOf(out)).toEqual(['F1', 'F2', 'F3', 'F4', 'F5'])
+    expect(out.reachedTarget).toBe(true)
+    expect(rung(out, 'subdivision-3mo')?.runningTotal).toBe(5)
+    const ran = out.rungs.filter((r) => r.ran).map((r) => r.tier)
+    expect(ran[ran.length - 1]).toBe('subdivision-3mo')
+    expect(rung(out, 'subdivision-6mo')?.skippedReason).toMatch(/already has 5 price-setting sales/)
+    expect(rung(out, 'adjacent-sub-3mo')?.ran).toBe(false)
   })
 })

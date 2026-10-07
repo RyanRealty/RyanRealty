@@ -185,8 +185,9 @@ describe('renderCompMatrixHtml', () => {
   })
 
   it('keeps the CMA a seller actually gets to one undivided table', () => {
-    // TARGET_COMPS is 5 and MIN_COMPS is 5 (lib/cma/comps.ts), so the priced
-    // set renders as a single table with no group captions.
+    // MIN_COMPS is 5 (lib/cma/comps.ts), so a five-sale priced set renders as
+    // a single table with no group captions. A walk-to-7 set of six or seven
+    // (Matt 2026-10-07) splits three and three, or four and three, below.
     const html = renderCompMatrixHtml(subject, padSales(comp, 5))
     expect(html.match(/<table class="kv is-wide comp-matrix is-closed">/g)).toHaveLength(1)
     expect(html).not.toContain('matrix-group-h')
