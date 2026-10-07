@@ -1,4 +1,18 @@
-# Current — 2026-10-06 (Grok, expired email photo card)
+# Current — 2026-10-07 (Claude Code, CMA door + email link host)
+
+Surface: Claude Code. Branch `claude/beautiful-lamport-2x4fjs`, commit `7adb7b99e`, draft PR for Matt's review. Not on main.
+
+Matt asked for screenshots of https://ryan-realty.com/cma/cma-2566-keats and how to improve it. The link he pasted had no `_pid`, so it showed the Google door; the owner's email link carries the signed token and opens the report directly. The report itself was reviewed from a read-only look-pass render (Matt approved opening it). Report findings went to Matt in chat; no report code changed.
+
+Built, on the branch:
+- The CMA door (`lib/cma/register-gate.ts`): wordmark, Amboqia heading, Geist, cream card, the broker's face with Call and Text, street once, plain bullets. A second way in, "Email me the link": `app/api/cma/email-link/route.ts` + `lib/cma/email-link.ts`. Sends only on a DELIVERED report, only to an email already on file, after the live listed-again screen, from the broker's own mailbox through `sendGovernedEmail`, once per address per home per 8 hours, after the response (same page and timing either way). The wrong-person page now offers Google's account chooser (`switch=1`, `getSignInUrl` `selectAccount`) and the email link.
+- Email links off the Vercel alias: `lib/email/link-origin.ts` `emailLinkOrigin()` maps the production alias to https://ryan-realty.com (preview and localhost kept) for click tracking, the open pixel, unsubscribe, newsletter, BPO, legacy CMA deliver, visitor confirmations and the click fallback. Synced Gmail signatures get their alias host rewritten at send (`canonicalizeEmailHosts` in `buildGmailSignature`). Install kits updated. The global NEXT_PUBLIC_SITE_URL is unchanged.
+
+Open for Matt: sign-off on the link email wording; whether a requested link waits for the 9:03 AM window; re-installing his Gmail signature from `docs/install-kits/matt-email-signature/signature.html` so mail sent straight from Gmail stops loading images from the alias.
+
+Skills read this pass: `marketing_brain_skills/brand-voice/VOICE.md`, `code-review`.
+
+## Earlier — 2026-10-06 (Grok, expired email photo card)
 
 Surface: Grok. The expired first-contact email is composed when a letter is previewed or sent (`lib/cma/first-contact.ts`). It is not stored in the report HTML, and the PDF close is unchanged. The sales range, the last ask, and months of supply are out of the expired email and out of its inbox preview. The button is a card of up to three photos of the home and reads "See the full market analysis". One photo still sits in the card. No photo leaves the plain text button. The system signature is the only sign-off. Matt's introduction stays "My name is Matt Ryan, and I own Ryan Realty here in Bend." Paula, Rebecca, Paul, and any other broker say they are a broker at Ryan Realty. They do not say they own it, and the letter does not add a first name after the close. A plausible first name is greeted. A trust, a placeholder, or no name stays "Hi there,". The 3% concession sentence is his illustration, not that house's measured concession. The recommended dollar stays out of the email. FSBO and asked-origin copy are unchanged.
 
