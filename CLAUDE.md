@@ -538,7 +538,7 @@ else fires on trigger match.
 5. Pocket rungs are skipped when the plat and the street already have five sales before the first quarter-mile pocket rung. A cheap different-plat pocket sale drops when no own-plat sale remains in the set that is actually priced. Do not check only the pre-review set.
 6. Do not build or send a CMA if the home is listed again. Live status first. Active, pending, or otherwise on the market means skip.
 7. A rebuild does not send, enqueue, or approve.
-8. Minimum 3 good comp sales. No 2-comp letters. Comp-shortage stays build-failed.
+8. Minimum 5 price-setting sales (Matt 2026-10-07). Comp-shortage stays build-failed.
 9. Nothing enters the send queue without Matt's review.
 10. No owner email until a real owner-path send to matt@ryan-realty.com shows, on that contact, sent, delivered, opened, each link click, and the sell-page visit, with timestamps. Tests must use that production path, not a separate test sender. Every outbound email link is click-tracked. Links are short linked words, never raw tracking URLs. Approved CMA email wording does not change without Matt's sign-off.
 11. Approved CMAs send only in the weekday 9:03 AM PT window.
