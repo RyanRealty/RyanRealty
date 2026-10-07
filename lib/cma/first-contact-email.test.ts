@@ -18,24 +18,24 @@ const NATE_PLACE: FirstContactPlace = {
 
 const NATE_PLAIN = `Hi there,
 
-We're sorry your home wasn't able to sell. We know that can be frustrating.
+My name is Matt Ryan, and I own Ryan Realty here in Bend. We're a small brokerage, and we spend our days studying this market closely. Your home at 62017 Nate's came off the market recently, so we put together an analysis we thought might be useful.
 
-We did a detailed review of the market and put together a comparative market analysis so you can see why your home didn't sell. Most reports stop at the price a home was listed for. A list price is not what the seller took home. A home can be listed at $700,000 and still close for less, because the seller gives money back to the buyer at closing. Those are concessions, and we factor them into every sale in this report.
+The market has shifted this year. Price reductions are up, but the bigger change is seller concessions, where the seller pays money back to the buyer at closing for things like closing costs, repairs, or a lower interest rate. The recorded sale price stays the same, so values can look steadier than they are. A home that sells at full price with a 3% concession leaves the seller with 3% less than the record shows.
 
-We spend the time to go through each sale this way so the number you see is what really happened. We are comfortable standing behind it. There is no obligation to have this report. We just thought you might find it useful.
+Our report accounts for that. It shows where your listing sat against the competition, what nearby homes actually sold for after concessions, the homes you'd be competing with today, and where we'd price it.
 
-We found four sales of homes like yours in Clarendon Place, and they support $346,000 to $372,000. The last listing asked $405,000, about 9% above what those sales support. That gap is usually the whole story, and it says nothing bad about the house.
+Four recent sales of homes like yours support a value between $346,000 and $372,000. Your last list price was $405,000, about 9% above what those sales support.
 
-You can see the full report here. It has the price we would list at, the homes you would be competing with, and what happened to nearby homes that did not sell.
+Read the full report
 
-If you are working with another broker, please accept our apology in advance. We are not asking you to leave that broker. We make homeowners aware of how we work by doing the work, and this report is that work.
+Please let me know if you have any questions about the numbers or how we put this together. If you consider selling in the future, we'd love the opportunity to earn your business, and we're here anytime.
 
-If you are ever considering a sale in the future, we would love the opportunity to sit down with you and possibly earn your business.
+If you've already chosen a broker for your next step, please consider this information only. We hope it goes well for you.
 
-If you have any questions, we hope you will reach out.`
+Matt`
 
 function linksOf(paragraphs: FirstContactRun[][]): Array<{ text: string; href: string }> {
-  return paragraphs.flat().flatMap((r) => (typeof r === 'string' ? [] : [{ text: r.text, href: r.href }]))
+  return paragraphs.flat().flatMap((r) => (typeof r === 'string' || !('href' in r) ? [] : [{ text: r.text, href: r.href }]))
 }
 
 describe('Nate first-contact letter (expired, 62017 Nate\'s)', () => {

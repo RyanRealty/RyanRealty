@@ -111,30 +111,37 @@ function mailedPlain(text: string): string {
 describe('CMA first-contact send body', () => {
   const copy = composeCmaFirstContact('expired', FACTS)
 
-  it('leads with the unsold home, then the findings, then the report', () => {
+  it('leads with the broker, then the findings, then the report button', () => {
     const sent = buildLeadBody(ctx(), undefined, SIGNATURE)
     const letter = letterHtml(sent.html)
     const visible = decodeVisible(letter)
     const greeting = visible.indexOf('Hi there')
-    const sorry = visible.indexOf("We're sorry your home wasn't able to sell")
-    const work = visible.indexOf('comparative market analysis')
-    const sales = visible.indexOf('We found four sales')
-    const report = visible.indexOf('You can see the full report here')
+    const intro = visible.indexOf('My name is Matt Ryan, and I own Ryan Realty here in Bend.')
+    const concession = visible.indexOf('A home that sells at full price with a 3% concession')
+    const report = visible.indexOf('Our report accounts for that.')
+    const sales = visible.indexOf('Four recent sales of homes like yours support a value between $346,000 and $372,000.')
+    const ask = visible.indexOf('Your last list price was $405,000, about 9% above what those sales support.')
     const cta = visible.indexOf('Read the full report')
+    const questions = visible.indexOf('Please let me know if you have any questions about the numbers')
+    const chosen = visible.indexOf("If you've already chosen a broker")
     expect(greeting).toBeGreaterThanOrEqual(0)
-    expect(sorry).toBeGreaterThan(greeting)
-    expect(work).toBeGreaterThan(sorry)
-    expect(sales).toBeGreaterThan(work)
-    expect(report).toBeGreaterThan(sales)
-    expect(cta).toBeGreaterThan(report)
-    expect(visible.indexOf('sit down')).toBeGreaterThan(cta)
+    expect(intro).toBeGreaterThan(greeting)
+    expect(concession).toBeGreaterThan(intro)
+    expect(report).toBeGreaterThan(concession)
+    expect(sales).toBeGreaterThan(report)
+    expect(ask).toBeGreaterThan(sales)
+    expect(cta).toBeGreaterThan(ask)
+    expect(questions).toBeGreaterThan(cta)
+    expect(chosen).toBeGreaterThan(questions)
     expect(visible).not.toContain('We would list it at')
     expect(visible).not.toContain('Our price')
     expect(visible).not.toContain('See our price')
+    expect(visible).not.toContain("seller's market")
+    expect(visible).not.toContain('$358,000')
     expect(sent.html).not.toContain('$358,000')
     expect(sent.html).not.toContain('>4 sales<')
+    expect(anchors(letter).map((l) => l.text)).toEqual(['Read the full report →'])
     const first = anchors(letter)[0]
-    expect(first?.text).toBe('Read the full report →')
     expect(first?.href).toContain(`/cma/${SLUG}`)
     expect(first?.href).not.toContain('/api/track/')
     expect(sent.html).toContain('MARKET ANALYSIS')
@@ -147,22 +154,25 @@ describe('CMA first-contact send body', () => {
     const facts = { ...FACTS, recommendedList: null }
     const sent = buildLeadBody({ ...ctx(), facts, recommendedList: null }, undefined, SIGNATURE)
     const visible = decodeVisible(letterHtml(sent.html))
-    expect(visible).toContain("We're sorry your home wasn't able to sell")
-    expect(visible).toContain('You can see the full report here.')
+    expect(visible).toContain("where we'd price it")
+    expect(visible).toContain('Four recent sales of homes like yours support a value between $346,000 and $372,000.')
+    expect(visible).not.toContain('We would list it at $')
     expect(visible).not.toContain('the price we would list at')
+    expect(visible).not.toContain('$358,000')
     expect(visible).not.toContain('Our price')
     expect(visible).not.toContain('See our price')
     expect(anchors(letterHtml(sent.html)).map((l) => l.text)).toEqual(['Read the full report →'])
-    expect(visible.indexOf('Hi there')).toBeLessThan(visible.indexOf("We're sorry"))
+    expect(visible.indexOf('Hi there')).toBeLessThan(visible.indexOf('My name is Matt Ryan'))
   })
 
   it('prints the city pulse once, in the letter, and only when it was loaded', () => {
     const facts = { ...FACTS, monthsOfSupply: 2.95 }
     const sent = buildLeadBody({ ...ctx(), facts }, undefined, SIGNATURE)
-    const line = "Bend has 3.0 months of supply right now. That is a seller's market."
+    const line = 'Bend is at 3.0 months of supply right now.'
     const visible = decodeVisible(letterHtml(sent.html))
-    expect(visible.indexOf(line)).toBeGreaterThan(visible.indexOf('We found four sales'))
-    expect(visible.indexOf('You can see the full report here.')).toBeGreaterThan(visible.indexOf(line))
+    expect(visible.indexOf(line)).toBeGreaterThan(visible.indexOf('Four recent sales'))
+    expect(visible.indexOf('Read the full report')).toBeGreaterThan(visible.indexOf(line))
+    expect(visible).not.toContain("seller's market")
     expect(sent.html.indexOf(line, sent.html.indexOf(line) + line.length)).toBe(-1)
     const bare = buildLeadBody(ctx(), undefined, SIGNATURE)
     expect(bare.html).not.toContain('months of supply')
@@ -300,8 +310,30 @@ describe('CMA first-contact send body', () => {
       undefined,
       SIGNATURE,
     )
-    expect(preview.copy.bodyText).toBe(copy.bodyText)
+    expect(preview.facts.firstName).toBe('Nate')
+    expect(preview.copy.bodyText.startsWith('Hi Nate,')).toBe(true)
+    expect(preview.copy.subject).toBe("An analysis of your home at 62017 Nate's")
+    expect(preview.copy.bodyText).not.toBe(copy.bodyText)
     expect(mailedPlain(sent.text)).toBe(preview.copy.bodyText)
     expect(preview.copy.bodyText).not.toContain('Someone')
+  })
+
+  it('does not greet a trust by name', async () => {
+    const preview = await buildCmaFirstContactForRow(
+      {
+        slug: SLUG,
+        subject_address: FACTS.address,
+        subject_city: 'Bend',
+        client_name: 'Jan North & Bea North Rev Liv Trust',
+        value_low: 346000,
+        value_high: 372000,
+        recommended_list: 358000,
+        comps_count: 4,
+      },
+      { origin: 'expired', brokerName: 'Matt Ryan', brokerSlug: 'matt', lastListPrice: 405000, place: null },
+    )
+    expect(preview.facts.firstName).toBeNull()
+    expect(preview.copy.bodyText.startsWith('Hi there,')).toBe(true)
+    expect(preview.copy.bodyText).not.toMatch(/\b(Jan|Bea|North|Rev|Liv|Trust)\b/)
   })
 })

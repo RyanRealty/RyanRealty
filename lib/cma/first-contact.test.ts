@@ -6,6 +6,7 @@ import {
   composeCmaFirstContact,
   composeCmaFirstContactSubject,
   composeFirstContactNumbers,
+  greetingFirstName,
   lastAskVersusHeroBand,
   salesScopeFromTierCounts,
   streetOnly,
@@ -28,49 +29,46 @@ const FACTS = {
 const ORIGINS: CmaOrigin[] = ['expired', 'fsbo', 'seller-valuation', 'lead-form', 'broker', 'internal', 'unknown']
 
 function linkHrefs(paragraphs: FirstContactRun[][]): string[] {
-  return paragraphs.flat().flatMap((r) => (typeof r === 'string' ? [] : [r.href]))
+  return paragraphs.flat().flatMap((r) => (typeof r === 'string' || !('href' in r) ? [] : [r.href]))
 }
 
 describe('first-contact copy (Matt 2026-10-05 email)', () => {
-  it('opens on the unsold home, then the work, and keeps the list price out of the note', () => {
+  it('opens with the broker, the concession, and the range, and keeps the recommended price out', () => {
     const c = composeCmaFirstContact('expired', FACTS)
-    const report = 'You can see the full report here. It has the price we would list at, the homes you would be competing with, and what happened to nearby homes that did not sell.'
-    const work = "We did a detailed review of the market and put together a comparative market analysis so you can see why your home didn't sell."
-    expect(c.bodyText.indexOf('Hi there,')).toBe(0)
-    expect(c.bodyText).toContain("We're sorry your home wasn't able to sell. We know that can be frustrating.")
-    expect(c.bodyText.indexOf("We're sorry")).toBeLessThan(c.bodyText.indexOf(work))
-    expect(c.bodyText).toContain('There is no obligation to have this report. We just thought you might find it useful.')
-    expect(c.bodyText).toContain('Those are concessions, and we factor them into every sale in this report.')
-    expect(c.bodyText).toContain('If you are working with another broker, please accept our apology in advance.')
-    expect(c.bodyText.slice(0, c.bodyText.indexOf(report))).not.toContain('full report')
-    expect(c.bodyText).not.toContain('We spent time in the MLS')
-    expect(c.bodyText).not.toContain('We went through the homes')
-    expect(c.bodyText.indexOf('We found five sales')).toBeGreaterThan(c.bodyText.indexOf('comparative market analysis'))
-    expect(c.bodyText.indexOf(report)).toBeGreaterThan(c.bodyText.indexOf('We found five sales'))
-    const reportAt = c.bodyText.indexOf(report)
-    expect(c.bodyText.slice(0, reportAt)).not.toMatch(/full report|attached as a PDF/i)
-    expect(c.bodyText.indexOf('sit down with you')).toBeGreaterThan(c.bodyText.indexOf(report))
-    expect(c.bodyText.indexOf('If you have any questions, we hope you will reach out.')).toBeGreaterThan(c.bodyText.indexOf('sit down with you'))
+    const report = "Our report accounts for that. It shows where your listing sat against the competition, what nearby homes actually sold for after concessions, the homes you'd be competing with today, and where we'd price it."
+    expect(c.bodyText.startsWith('Hi Michelle,')).toBe(true)
+    expect(c.bodyText).toContain('My name is Matt Ryan, and I own Ryan Realty here in Bend.')
+    expect(c.bodyText).toContain('A home that sells at full price with a 3% concession leaves the seller with 3% less than the record shows.')
+    expect(c.bodyText).toContain(report)
+    expect(c.bodyText).toContain('Five recent sales of homes like yours support a value between $585,000 and $625,000.')
+    expect(c.bodyText).not.toContain('near you')
+    expect(c.bodyText).not.toContain('in your area')
+    expect(c.bodyText.indexOf('Read the full report')).toBeGreaterThan(c.bodyText.indexOf(report))
+    expect(c.bodyText.indexOf('Read the full report')).toBeGreaterThan(c.bodyText.indexOf('support a value between'))
+    expect(c.bodyText.indexOf('Please let me know if you have any questions about the numbers or how we put this together.')).toBeGreaterThan(c.bodyText.indexOf('Read the full report'))
+    expect(c.bodyText.indexOf("If you've already chosen a broker for your next step, please consider this information only.")).toBeGreaterThan(c.bodyText.indexOf('earn your business'))
+    expect(c.bodyText.trimEnd().endsWith('Matt')).toBe(true)
+    expect(c.bodyText).not.toContain("We're sorry")
+    expect(c.bodyText).not.toContain('comparative market analysis')
     expect(c.bodyText).not.toContain('We would list it at')
+    expect(c.bodyText).not.toContain('We would recommend listing')
     expect(c.bodyText).not.toContain('Our price')
     expect(c.bodyText).not.toContain('See our price')
     expect(c.bodyText).not.toContain('$605,000')
-    expect(c.bodyText).toContain('possibly earn your business.')
-    expect(c.bodyText).not.toContain('Please feel free to call with any questions.')
-    expect(c.bodyText).not.toContain('Best of luck in the future.')
-    expect(c.bodyText).not.toContain('My name is')
-    expect(c.bodyText).not.toContain('the price is everything')
-    expect(c.bodyText).not.toContain('shifting')
-    expect(c.bodyText).not.toContain('less favorable for sellers')
+    expect(c.bodyText).not.toContain('$700,000')
+    expect(c.bodyText).not.toContain("It's yours to keep")
+    expect(c.bodyText).not.toContain('sit down')
+    expect(c.bodyText).not.toContain('seller\'s market')
+    expect(c.bodyText).not.toContain('buyer\'s market')
     expect(c.previewText).toBe('Five sales on 1005 Butler Market support $585,000 to $625,000.')
     expect(c.previewText).not.toContain('$605,000')
+    expect(linkHrefs(c.paragraphs)).toEqual([])
   })
 
   it('asks to earn the business without the essay, on every lane', () => {
     for (const o of ORIGINS) {
       const c = composeCmaFirstContact(o, FACTS)
       expect(c.bodyText).toContain('earn your business')
-      expect(c.bodyText).toContain('the price we would list at, the homes you would be competing with')
       expect(c.bodyText).not.toContain('the price is everything')
       expect(c.bodyText).not.toContain('the most knowledgeable brokers in Central Oregon')
       expect(c.bodyText).not.toContain('see how we sell homes')
@@ -79,15 +77,18 @@ describe('first-contact copy (Matt 2026-10-05 email)', () => {
       expect(c.bodyText).not.toContain('premium product')
       expect(c.bodyText).not.toMatch(/https?:/)
       if (o === 'expired') {
-        expect(c.bodyText).toContain('sit down with you and possibly earn your business.')
-        expect(c.bodyText).toContain('If you have any questions, we hope you will reach out.')
-        expect(c.bodyText).not.toContain('Please feel free to call with any questions.')
-        expect(c.bodyText).not.toContain('Please let me know if you have any questions.')
+        expect(c.bodyText).toContain("the homes you'd be competing with today")
+        expect(c.bodyText).toContain("we'd love the opportunity to earn your business")
+        expect(c.bodyText).not.toContain('sit down')
+        expect(c.bodyText).not.toContain('the price we would list at')
         expect(c.bodyText).not.toContain('We spent time in the MLS')
         expect(c.bodyText).not.toContain('Best of luck')
       } else {
+        expect(c.bodyText).toContain('the price we would list at, the homes you would be competing with')
         expect(c.bodyText).not.toContain('sit down')
         expect(c.bodyText).toContain('Please let me know if you have any questions.')
+        expect(c.bodyText).not.toContain('My name is')
+        expect(c.bodyText.startsWith('Hi there,')).toBe(true)
       }
     }
   })
@@ -194,7 +195,8 @@ describe('first-contact copy (Matt 2026-10-05 email)', () => {
   })
 
   it('subjects and previews are plain', () => {
-    expect(composeCmaFirstContactSubject('expired', '2240 Oak, Bend, OR 97703')).toBe('A market analysis for 2240 Oak')
+    expect(composeCmaFirstContactSubject('expired', '2240 Oak, Bend, OR 97703')).toBe('An analysis of your home at 2240 Oak')
+    expect(composeCmaFirstContactSubject('expired', null)).toBe('An analysis of your home')
     expect(composeCmaFirstContactSubject('fsbo', '2240 Oak')).toBe('A market analysis for 2240 Oak')
     expect(composeCmaFirstContactSubject('seller-valuation', '2240 Oak')).toBe('Your report on 2240 Oak')
     expect(streetOnly('2465 7th, Redmond, OR 97756')).toBe('2465 7th')
@@ -206,7 +208,7 @@ describe('first-contact copy (Matt 2026-10-05 email)', () => {
       const c = composeCmaFirstContact(o, FACTS)
       expect(c.close).toBe(
         o === 'expired'
-          ? 'You can see the full report here. It has the price we would list at, the homes you would be competing with, and what happened to nearby homes that did not sell.'
+          ? "Please let me know if you have any questions about the numbers or how we put this together. If you consider selling in the future, we'd love the opportunity to earn your business, and we're here anytime."
           : 'The full report is attached. It has the price we would list at, the homes you would be competing with, and what happened to nearby homes that did not sell.',
       )
       expect(c.bodyText).toContain(c.close)
@@ -219,9 +221,11 @@ describe('first-contact copy (Matt 2026-10-05 email)', () => {
 
   it('describes the report only as what it holds', () => {
     const c = composeCmaFirstContact('expired', FACTS)
-    expect(c.bodyText).toContain('the homes you would be competing with')
-    expect(c.bodyText).toContain('what happened to nearby homes that did not sell')
+    expect(c.bodyText).toContain("the homes you'd be competing with today")
+    expect(c.bodyText).toContain('what nearby homes actually sold for after concessions')
+    expect(c.bodyText).toContain("where we'd price it")
     expect(c.bodyText).not.toContain('Every address in it links back to our site')
+    expect(c.bodyText).not.toContain('We would list it at $')
   })
 
   it('prints the city pulse in the market page\'s own words, and only when it was loaded', () => {
@@ -231,14 +235,18 @@ describe('first-contact copy (Matt 2026-10-05 email)', () => {
     expect(citySupplySentence('Bend', null)).toBeNull()
     expect(citySupplySentence('', 2.95)).toBeNull()
     const withPulse = composeCmaFirstContact('expired', { ...FACTS, monthsOfSupply: 2.95 })
-    const line = "Bend has 3.0 months of supply right now. That is a seller's market."
+    const line = 'Bend is at 3.0 months of supply right now.'
     const market = withPulse.bodyText.indexOf(line)
-    expect(market).toBeGreaterThan(withPulse.bodyText.indexOf('they support $585,000 to $625,000'))
-    expect(withPulse.bodyText.indexOf('You can see the full report here.')).toBeGreaterThan(market)
+    expect(market).toBeGreaterThan(withPulse.bodyText.indexOf('support a value between $585,000 and $625,000'))
+    expect(withPulse.bodyText.indexOf('Read the full report')).toBeGreaterThan(market)
     expect(withPulse.bodyText.indexOf('months of supply', market + line.length)).toBe(-1)
-    expect(withPulse.bodyText).not.toContain('shifting')
+    expect(withPulse.bodyText).not.toContain("seller's market")
+    expect(withPulse.bodyText).not.toContain("buyer's market")
+    expect(withPulse.bodyText).not.toContain('balanced market')
     const without = composeCmaFirstContact('expired', FACTS)
     expect(without.bodyText).not.toContain('months of supply')
+    const noCity = composeCmaFirstContact('expired', { ...FACTS, city: null, monthsOfSupply: 2.95 })
+    expect(noCity.bodyText).not.toContain('months of supply')
   })
 
   it('has no em dash, semicolon or exclamation on any origin, and never prints CMA', () => {
@@ -273,15 +281,33 @@ describe('first-contact copy (Matt 2026-10-05 email)', () => {
       expect(c.bodyText).not.toMatch(/@ryan-realty\.com/)
       expect(c.bodyText.trimEnd().endsWith('Ryan Realty')).toBe(false)
     }
-    expect(composeCmaFirstContact('expired', FACTS).bodyText).toContain('If you have any questions, we hope you will reach out.')
+    expect(composeCmaFirstContact('expired', FACTS).bodyText).toContain('Please let me know if you have any questions about the numbers or how we put this together.')
     expect(composeCmaFirstContact('expired', FACTS).bodyText).not.toContain('Best of luck')
     expect(composeCmaFirstContact('fsbo', FACTS).bodyText).toContain('Best of luck with the sale.')
   })
 
-  it('leaves the broker name to the system signature', () => {
-    const c = composeCmaFirstContact('expired', { ...FACTS, brokerName: 'Rebecca Peterson' })
-    expect(c.bodyText).not.toContain('Rebecca')
-    expect(c.bodyText).not.toContain('My name is')
+  it('signs as the assigned broker, and only the owner says they own the brokerage', () => {
+    const matt = composeCmaFirstContact('expired', FACTS)
+    expect(matt.bodyText).toContain('My name is Matt Ryan, and I own Ryan Realty here in Bend.')
+    expect(matt.bodyText.trimEnd().endsWith('Matt')).toBe(true)
+    const rebecca = composeCmaFirstContact('expired', { ...FACTS, brokerName: 'Rebecca Peterson', brokerSlug: 'rebecca' })
+    expect(rebecca.bodyText).toContain("My name is Rebecca Peterson, and I'm a broker at Ryan Realty here in Bend.")
+    expect(rebecca.bodyText).not.toContain('I own Ryan Realty')
+    expect(rebecca.bodyText).not.toContain('Matt')
+    expect(rebecca.bodyText.trimEnd().endsWith('Rebecca')).toBe(true)
+    const paula = composeCmaFirstContact('expired', { ...FACTS, brokerName: 'Paula Rebecca', brokerSlug: 'paula' })
+    expect(paula.bodyText).toContain("My name is Paula Rebecca, and I'm a broker at Ryan Realty here in Bend.")
+    expect(paula.bodyText).not.toContain('I own')
+    expect(paula.bodyText).not.toContain('Matt Ryan')
+    expect(paula.bodyText.trimEnd().endsWith('Paula')).toBe(true)
+    const paul = composeCmaFirstContact('expired', { ...FACTS, brokerName: 'Paul Stevenson', brokerSlug: 'paul' })
+    expect(paul.bodyText).toContain("My name is Paul Stevenson, and I'm a broker at Ryan Realty here in Bend.")
+    expect(paul.bodyText.trimEnd().endsWith('Paul')).toBe(true)
+    const unnamed = composeCmaFirstContact('expired', { ...FACTS, brokerName: null, brokerSlug: 'rebecca' })
+    expect(unnamed.bodyText).toContain("I'm a broker at Ryan Realty here in Bend.")
+    expect(unnamed.bodyText).not.toContain('My name is')
+    expect(unnamed.bodyText).not.toContain('I own')
+    expect(unnamed.bodyText.trimEnd().endsWith('you.')).toBe(true)
   })
 
   const DBR = {
@@ -302,7 +328,8 @@ describe('first-contact copy (Matt 2026-10-05 email)', () => {
     expect(c.bodyText).not.toContain('sold in the last twelve months')
     expect(c.bodyText).not.toContain('came off the market without selling')
     expect(c.bodyText).not.toContain('Our Redmond page')
-    expect(c.bodyText).toContain("Redmond has 3.0 months of supply right now. That is a seller's market.")
+    expect(c.bodyText).toContain('Redmond is at 3.0 months of supply right now.')
+    expect(c.bodyText).not.toContain("seller's market")
     expect(c.bodyText.match(/months of supply/g)).toEqual(['months of supply'])
     expect(c.bodyText).not.toMatch(/https?:/)
     expect(linkHrefs(c.paragraphs)).toEqual([])
@@ -331,13 +358,15 @@ describe('first-contact copy (Matt 2026-10-05 email)', () => {
     expect(facts.closedSalesCount).toBe(5)
     expect(facts.salesScope).toBe('near')
     const letter = composeCmaFirstContact('expired', facts)
-    expect(letter.bodyText).toContain('Hi there,')
+    expect(letter.bodyText.startsWith('Hi there,')).toBe(true)
     expect(letter.bodyText).not.toContain('Blair')
-    expect(letter.bodyText).toContain('We did a detailed review of the market and put together a comparative market analysis so you can see why your home didn\'t sell.')
+    expect(letter.bodyText).toContain('My name is Matt Ryan, and I own Ryan Realty here in Bend.')
+    expect(letter.bodyText).not.toContain('comparative market analysis')
     expect(letter.bodyText).not.toContain('We spent time in the MLS')
-    expect(letter.bodyText).toContain('We found five sales of homes like yours near you, and they support $412,000 to $443,000.')
-    expect(letter.bodyText).toContain('The last listing asked $460,000, a little above what those sales support.')
-    expect(letter.bodyText).not.toContain('In Diamond Bar Ranch')
+    expect(letter.bodyText).toContain('Five recent sales of homes like yours support a value between $412,000 and $443,000. Your last list price was $460,000, a little above what those sales support.')
+    expect(letter.bodyText).not.toContain('near you')
+    expect(letter.bodyText).not.toContain('Diamond Bar Ranch')
+    expect(letter.bodyText).not.toContain('$435,000')
     expect(linkHrefs(letter.paragraphs)).toEqual([])
   })
 
@@ -363,10 +392,49 @@ describe('first-contact copy (Matt 2026-10-05 email)', () => {
     )
     expect(facts.cmaSlug).toBe('cma-2465-7th')
     const letter = composeCmaFirstContact('expired', facts)
-    expect(letter.bodyText).toContain('You can see the full report here. It has the price we would list at, the homes you would be competing with, and what happened to nearby homes that did not sell.')
+    expect(letter.subject).toBe('An analysis of your home at 2465 7th')
+    expect(letter.bodyText).toContain('Read the full report')
+    expect(letter.bodyText).toContain("where we'd price it")
     expect(letter.bodyText).not.toContain('$435,000')
     expect(letter.bodyText).not.toContain('utm_')
     expect(letter.bodyText).not.toMatch(/https?:/)
     expect(linkHrefs(letter.paragraphs)).toEqual([])
+  })
+
+  it('greets a real first name and refuses a trust, a placeholder, or a generic word', () => {
+    expect(greetingFirstName('Michelle Smith')).toBe('Michelle')
+    expect(greetingFirstName('AULD, BLAIR')).toBe('BLAIR')
+    expect(greetingFirstName('Jan North Revocable Living Trust')).toBeNull()
+    expect(greetingFirstName('Jan North & Bea North Rev Liv Trust')).toBeNull()
+    expect(greetingFirstName('Website lead')).toBeNull()
+    expect(greetingFirstName('Lead nate@example.com')).toBeNull()
+    expect(greetingFirstName('Owner')).toBeNull()
+    expect(greetingFirstName('Homeowner Smith')).toBeNull()
+    expect(greetingFirstName(null)).toBeNull()
+    const one = composeCmaFirstContact('expired', { ...FACTS, closedSalesCount: 1, lastListPrice: 600_000 })
+    expect(one.bodyText).toContain('One recent sale of a home like yours supports a value between $585,000 and $625,000. Your last list price was $600,000, inside what those sales support.')
+    const below = composeCmaFirstContact('expired', { ...FACTS, lastListPrice: 500_000 })
+    expect(below.bodyText).toContain('Your last list price was $500,000, below what those sales support.')
+    const bare = composeCmaFirstContact('expired', {
+      ...FACTS,
+      address: null,
+      firstName: 'Owner',
+      valueLow: null,
+      valueHigh: null,
+      recommendedList: null,
+      lastListPrice: 700_000,
+      closedSalesCount: null,
+      monthsOfSupply: 2.95,
+      city: 'Bend',
+    })
+    expect(bare.subject).toBe('An analysis of your home')
+    expect(bare.bodyText.startsWith('Hi there,')).toBe(true)
+    expect(bare.bodyText).toContain('Your home came off the market recently, so we put together an analysis we thought might be useful.')
+    expect(bare.bodyText).not.toContain('Your home at ')
+    expect(bare.bodyText).not.toContain('support a value')
+    expect(bare.bodyText).not.toContain('last list price')
+    expect(bare.bodyText).toContain('Bend is at 3.0 months of supply right now.')
+    expect(bare.bodyText).toContain("where we'd price it")
+    expect(bare.bodyText).not.toContain('We would list it at')
   })
 })

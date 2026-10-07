@@ -1,15 +1,14 @@
 /**
  * First-contact email for a CMA, by origin.
  *
- * Matt, 2026-10-06: an expired letter opens on the apology, then says we
- * reviewed the market and built a comparative market analysis. It explains
- * that a list price is not the check the seller received, because concessions
- * come off the sale, and that we factor those in. The sentence that says you
- * can see the full report is the one the button follows. Those words do not
- * appear earlier. It does not say we spent time in the MLS on the street, and
- * it does not print the recommended list price. If they are with another
- * broker, the letter apologizes and does not ask them to leave. The city
- * supply line prints only when the served pulse was loaded, and only once.
+ * Matt, 2026-10-06: an expired letter is his template. The assigned broker
+ * signs it. Matt owns Ryan Realty. Any other broker works here and does not
+ * say they own it. The greeting uses a first name when one is safe. The 3%
+ * concession line is his illustration, not this house's measured concession.
+ * The letter does not print the recommended list price, the verdict, or the
+ * acronym CMA. The city supply line prints only when the served pulse was
+ * loaded, and only once, without a seller or buyer label. The report button
+ * sits on its own run, after the numbers and before the close.
  *
  * Every figure is off the cmas row or the city pulse. Nothing in here
  * estimates. Voice: marketing_brain_skills/brand-voice/VOICE.md.
@@ -19,9 +18,11 @@ import { type InboundPacketFacts, type InboundValuationCopy } from '@/lib/cma/in
 import type { FirstContactPlace } from '@/lib/cma/first-contact-place'
 import { isAskedOrigin, type CmaOrigin } from '@/lib/cma/origin'
 import { formatFirstTouchUsd } from '@/lib/crm/first-touch-copy'
+import { isPlaceholderLeadName, isPlausibleFirstName } from '@/lib/crm/merge'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { marketVerdict } from '@/lib/market/classify'
 import {
+  FIRST_CONTACT_REPORT_BUTTON,
   paragraphsToMarkers,
   paragraphsToPlain,
   type FirstContactRun,
@@ -30,6 +31,42 @@ import {
 function trim(v: string | null | undefined): string | null {
   const s = (v ?? '').trim()
   return s || null
+}
+
+/** A trust, a company, or a placeholder is not a person we greet by name. */
+const NOT_A_PERSON =
+  /\b(?:LLC|TRUSTEE|TRUST|INC|CORP|LLP|LP|PARTNERSHIP|PROPERTIES|HOLDINGS|ESTATE|BANK|HOA|ASSOC|REVOCABLE|LIVING)\b/i
+
+const NOT_A_GREETING = new Set([
+  'owner',
+  'owners',
+  'homeowner',
+  'seller',
+  'client',
+  'resident',
+  'occupant',
+  'the',
+  'and',
+  'mr',
+  'mrs',
+  'ms',
+  'dr',
+])
+
+/**
+ * A greeting name, or null. "First Last" uses the first word. "LAST, FIRST"
+ * uses the word after the comma. A trust, a placeholder lead, or a generic
+ * word ("owner", "seller") stays unnamed so the letter says "Hi there,".
+ */
+export function greetingFirstName(name: string | null | undefined): string | null {
+  const raw = (name ?? '').trim().replace(/\s+/g, ' ')
+  if (!raw || isPlaceholderLeadName(raw) || NOT_A_PERSON.test(raw)) return null
+  const comma = raw.indexOf(',')
+  const side = comma >= 0 ? raw.slice(comma + 1) : raw
+  const word = (side.trim().split(/\s+/)[0] ?? '').replace(/\.+$/g, '')
+  if (!word || NOT_A_GREETING.has(word.toLowerCase())) return null
+  if (!isPlausibleFirstName(word)) return null
+  return word
 }
 
 /** "2465 7th, Redmond, OR 97756" reads as "2465 7th" inside a sentence. */
@@ -84,8 +121,9 @@ function countWord(n: number): string {
 
 export function composeCmaFirstContactSubject(origin: CmaOrigin, address: string | null): string {
   const named = streetOnly(address)
+  if (origin === 'expired') return named ? `An analysis of your home at ${named}` : 'An analysis of your home'
   if (!named) return 'Your report on this home'
-  if (origin === 'expired' || origin === 'fsbo') return `A market analysis for ${named}`
+  if (origin === 'fsbo') return `A market analysis for ${named}`
   if (origin === 'place-page') return `Your ${named} valuation`
   return `Your report on ${named}`
 }
@@ -273,38 +311,27 @@ const REPORT_HOLDS =
   'The full report is attached. It has the price we would list at, the homes you would be competing with, and what happened to nearby homes that did not sell.'
 
 /**
- * Expired only. "full report" lives in this sentence so the button sits here,
- * not under the greeting. Do not put those words in an earlier paragraph.
+ * Expired letter, Matt 2026-10-06. The 3% line is his illustration of how a
+ * concession works. It is not this house's measured concession.
  */
-const EXPIRED_REPORT_HOLDS =
-  'You can see the full report here. It has the price we would list at, the homes you would be competing with, and what happened to nearby homes that did not sell.'
+const EXPIRED_SHIFT =
+  'The market has shifted this year. Price reductions are up, but the bigger change is seller concessions, where the seller pays money back to the buyer at closing for things like closing costs, repairs, or a lower interest rate. The recorded sale price stays the same, so values can look steadier than they are. A home that sells at full price with a 3% concession leaves the seller with 3% less than the record shows.'
 
-const EXPIRED_REPORT_BARE = 'You can see the full report here.'
+const EXPIRED_REPORT =
+  "Our report accounts for that. It shows where your listing sat against the competition, what nearby homes actually sold for after concessions, the homes you'd be competing with today, and where we'd price it."
 
-/** The expired letter opens on this. The home was not able to sell. */
-const EXPIRED_ACK =
-  "We're sorry your home wasn't able to sell. We know that can be frustrating."
+const EXPIRED_QUESTIONS_EARN =
+  "Please let me know if you have any questions about the numbers or how we put this together. If you consider selling in the future, we'd love the opportunity to earn your business, and we're here anytime."
 
-const EXPIRED_WORK =
-  "We did a detailed review of the market and put together a comparative market analysis so you can see why your home didn't sell. Most reports stop at the price a home was listed for. A list price is not what the seller took home. A home can be listed at $700,000 and still close for less, because the seller gives money back to the buyer at closing. Those are concessions, and we factor them into every sale in this report."
+const EXPIRED_CHOSEN_BROKER =
+  "If you've already chosen a broker for your next step, please consider this information only. We hope it goes well for you."
 
-const EXPIRED_CARE =
-  'We spend the time to go through each sale this way so the number you see is what really happened. We are comfortable standing behind it. There is no obligation to have this report. We just thought you might find it useful.'
-
-const EXPIRED_OTHER_BROKER =
-  'If you are working with another broker, please accept our apology in advance. We are not asking you to leave that broker. We make homeowners aware of how we work by doing the work, and this report is that work.'
-
-const EXPIRED_FUTURE =
-  'If you are ever considering a sale in the future, we would love the opportunity to sit down with you and possibly earn your business.'
-
-const EXPIRED_QUESTIONS = 'If you have any questions, we hope you will reach out.'
+const OWNER_BROKER_SLUGS = new Set(['matt', 'matthew', 'matthew-ryan'])
 
 /**
  * What we did. The recommended price itself stays in the report.
- * An expired letter does not say we spent time in the MLS on the street.
  */
 function workFor(origin: CmaOrigin, named: string, facts: CmaFirstContactFacts): string {
-  if (origin === 'expired') return EXPIRED_WORK
   if (origin === 'fsbo') {
     return `We noticed your home at ${named} is for sale by owner. We put a second set of numbers together from the MLS, no charge and no strings.`
   }
@@ -328,16 +355,12 @@ function emailEvidence(origin: CmaOrigin, facts: CmaFirstContactFacts): string |
   return trimmed || null
 }
 
-function reportSentence(origin: CmaOrigin, named: string, hasPrice: boolean): string {
-  if (origin === 'expired') return hasPrice ? EXPIRED_REPORT_HOLDS : EXPIRED_REPORT_BARE
+function reportSentence(_origin: CmaOrigin, named: string, hasPrice: boolean): string {
   if (hasPrice) return REPORT_HOLDS
   return `The full report on ${named} is attached as a PDF.`
 }
 
 function emailClose(origin: CmaOrigin): string[] {
-  if (origin === 'expired') {
-    return [EXPIRED_OTHER_BROKER, EXPIRED_FUTURE, EXPIRED_QUESTIONS]
-  }
   if (origin === 'fsbo') {
     return [
       'If at some point you would rather have someone handle the showings, the paperwork and the negotiation, we would love the opportunity to earn your business.',
@@ -350,10 +373,131 @@ function emailClose(origin: CmaOrigin): string[] {
   ]
 }
 
+function cameOffSentence(street: string | null): string {
+  if (street) {
+    return `Your home at ${street} came off the market recently, so we put together an analysis we thought might be useful.`
+  }
+  return 'Your home came off the market recently, so we put together an analysis we thought might be useful.'
+}
+
+/**
+ * Matt owns the brokerage. A missing broker is his, because the send path
+ * already falls back to him. Anyone else works at Ryan Realty.
+ */
+function brokerVoice(facts: CmaFirstContactFacts): { introName: string; signOff: string | null } {
+  const slug = (facts.brokerSlug ?? '').trim().toLowerCase()
+  const name = trim(facts.brokerName)
+  const ownerName = name != null && /^(matt|matthew)\s+ryan$/i.test(name)
+  const owner = OWNER_BROKER_SLUGS.has(slug) || (!slug && (ownerName || !name))
+  if (owner) {
+    return {
+      introName: 'My name is Matt Ryan, and I own Ryan Realty here in Bend.',
+      signOff: 'Matt',
+    }
+  }
+  if (name) {
+    return {
+      introName: `My name is ${name}, and I'm a broker at Ryan Realty here in Bend.`,
+      signOff: greetingFirstName(name),
+    }
+  }
+  return {
+    introName: "I'm a broker at Ryan Realty here in Bend.",
+    signOff: null,
+  }
+}
+
+function countHead(count: number): string {
+  const word = countWord(count)
+  return /^\d/.test(word) ? word : word.charAt(0).toUpperCase() + word.slice(1)
+}
+
+function expiredAskPosition(last: number, low: number, high: number): string {
+  const vs = lastAskVersusHeroBand(last, low, high)
+  if (vs === 'below') return 'below what those sales support'
+  if (vs === 'inside') return 'inside what those sales support'
+  const pct = Math.round((last / high - 1) * 100)
+  if (pct >= 5) return `about ${pct}% above what those sales support`
+  return 'a little above what those sales support'
+}
+
+/** Supply without a seller or buyer verdict. Omitted when the pulse was not loaded. */
+function expiredSupplySentence(city: string | null | undefined, months: number | null | undefined): string | null {
+  const place = trim(city)
+  if (!place || months == null || !Number.isFinite(months) || months <= 0) return null
+  return `${place} is at ${formatMonthsOfSupply(months)} months of supply right now.`
+}
+
+/**
+ * The numbers paragraph of an expired letter. The recommended dollar stays
+ * out. A missing band, ask, or pulse drops only that piece.
+ */
+function expiredNumbersParagraph(facts: CmaFirstContactFacts): string | null {
+  const lo = finiteMoney(facts.valueLow)
+  const hi = finiteMoney(facts.valueHigh)
+  const parts: string[] = []
+  if (lo != null && hi != null) {
+    const low = Math.min(lo, hi)
+    const high = Math.max(lo, hi)
+    const between = `${formatFirstTouchUsd(low)} and ${formatFirstTouchUsd(high)}`
+    const count = saleCount(facts.closedSalesCount)
+    if (count == null) parts.push(`Recent sales of homes like yours support a value between ${between}.`)
+    else if (count === 1) parts.push(`One recent sale of a home like yours supports a value between ${between}.`)
+    else parts.push(`${countHead(count)} recent sales of homes like yours support a value between ${between}.`)
+    const last = finiteMoney(facts.lastListPrice)
+    if (last != null) {
+      parts.push(`Your last list price was ${formatFirstTouchUsd(last)}, ${expiredAskPosition(last, low, high)}.`)
+    }
+  }
+  const supply = expiredSupplySentence(facts.city, facts.monthsOfSupply)
+  if (supply) parts.push(supply)
+  const text = parts.join(' ').trim()
+  return text || null
+}
+
+function composeExpiredFirstContact(facts: CmaFirstContactFacts): CmaFirstContactCopy {
+  const street = streetOnly(facts.address)
+  const voice = brokerVoice(facts)
+  const greeted = greetingFirstName(facts.firstName)
+  const greeting = greeted ? `Hi ${greeted},` : 'Hi there,'
+  const plan = `${voice.introName} We're a small brokerage, and we spend our days studying this market closely. ${cameOffSentence(street)}`
+  const numbersLine = expiredNumbersParagraph(facts)
+  const paragraphs: FirstContactRun[][] = []
+  pushParagraph(paragraphs, [greeting])
+  pushParagraph(paragraphs, [plan])
+  pushParagraph(paragraphs, [EXPIRED_SHIFT])
+  pushParagraph(paragraphs, [EXPIRED_REPORT])
+  pushParagraph(paragraphs, numbersLine ? [numbersLine] : null)
+  pushParagraph(paragraphs, [FIRST_CONTACT_REPORT_BUTTON])
+  pushParagraph(paragraphs, [EXPIRED_QUESTIONS_EARN])
+  pushParagraph(paragraphs, [EXPIRED_CHOSEN_BROKER])
+  if (voice.signOff) pushParagraph(paragraphs, [voice.signOff])
+  const bodyText = paragraphsToPlain(paragraphs)
+  return {
+    subject: composeCmaFirstContactSubject('expired', facts.address),
+    previewText: cmaFirstContactPreview(
+      'expired',
+      facts.address,
+      facts.recommendedList,
+      facts.closedSalesCount,
+      facts,
+    ),
+    mastheadLine: 'MARKET ANALYSIS',
+    greeting,
+    plan,
+    numbers: composeFirstContactNumbers('expired', facts),
+    close: EXPIRED_QUESTIONS_EARN,
+    bodyText,
+    paragraphs,
+    bodyMarkers: paragraphsToMarkers(paragraphs),
+  }
+}
+
 export function composeCmaFirstContact(
   origin: CmaOrigin,
   facts: CmaFirstContactFacts,
 ): CmaFirstContactCopy {
+  if (origin === 'expired') return composeExpiredFirstContact(facts)
   const greeting = 'Hi there,'
   const named = streetOnly(facts.address) ?? 'this home'
   const plan = workFor(origin, named, facts)
@@ -362,9 +506,7 @@ export function composeCmaFirstContact(
   const close = reportSentence(origin, named, hasPrice)
   const paragraphs: FirstContactRun[][] = []
   pushParagraph(paragraphs, [greeting])
-  if (origin === 'expired') pushParagraph(paragraphs, [EXPIRED_ACK])
   pushParagraph(paragraphs, [plan])
-  if (origin === 'expired') pushParagraph(paragraphs, [EXPIRED_CARE])
   pushParagraph(paragraphs, emailEvidence(origin, facts) ? [emailEvidence(origin, facts)!] : null)
   const supply = citySupplySentence(facts.city, facts.monthsOfSupply)
   if (supply) pushParagraph(paragraphs, [supply])

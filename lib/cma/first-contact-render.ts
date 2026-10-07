@@ -14,7 +14,18 @@ import { peelTrailingUrlPunctuation } from '@/lib/analytics/own-site-links'
 
 export const CMA_EMAIL_ORIGIN = 'https://ryan-realty.com'
 
-export type FirstContactRun = string | { text: string; href: string }
+/**
+ * A link is words plus a clean href. A button run is not a sentence: the
+ * renderer consumes it and stamps the one report button there. Plain text
+ * still reads "Read the full report", with no URL.
+ */
+export type FirstContactRun = string | { text: string; href: string } | { button: true }
+
+export const FIRST_CONTACT_REPORT_BUTTON: FirstContactRun = { button: true }
+
+function isReportButton(run: FirstContactRun): run is { button: true } {
+  return typeof run !== 'string' && 'button' in run && run.button === true
+}
 
 const TOKEN_RE = /\[([^\]\n]+)\]\((https?:\/\/[^)\s]+)\)|https?:\/\/[^\s<]+/g
 
@@ -64,22 +75,30 @@ export function labelForBareUrl(raw: string): string {
   }
 }
 
+function runPlain(run: FirstContactRun): string {
+  if (typeof run === 'string') return run
+  if (isReportButton(run)) return 'Read the full report'
+  return run.text
+}
+
 export function paragraphsToPlain(paragraphs: FirstContactRun[][]): string {
   return paragraphs
-    .map((p) => p.map((r) => (typeof r === 'string' ? r : r.text)).join(''))
+    .map((p) => p.map(runPlain).join(''))
     .map((p) => p.trim())
     .filter(Boolean)
     .join('\n\n')
     .trim()
 }
 
+function runMarker(run: FirstContactRun): string {
+  if (typeof run === 'string') return run
+  if (isReportButton(run)) return 'Read the full report'
+  return `[${run.text}](${run.href})`
+}
+
 export function paragraphsToMarkers(paragraphs: FirstContactRun[][]): string {
   return paragraphs
-    .map((p) =>
-      p
-        .map((r) => (typeof r === 'string' ? r : `[${r.text}](${r.href})`))
-        .join(''),
-    )
+    .map((p) => p.map(runMarker).join(''))
     .map((p) => p.trim())
     .filter(Boolean)
     .join('\n\n')
@@ -154,10 +173,15 @@ function renderRuns(runs: FirstContactRun[], address: string | null, slug: strin
   return runs
     .map((run) => {
       if (typeof run === 'string') return emphasizeAddress(run, address).replace(/\n/g, '<br/>')
+      if (isReportButton(run)) return ''
       const href = escapeHtml(stampCmaEmailCampaign(cleanFirstPartyHref(run.href), slug))
       return `<a href="${href}">${escapeHtml(run.text)}</a>`
     })
     .join('')
+}
+
+function isReportButtonParagraph(paragraph: FirstContactRun[]): boolean {
+  return paragraph.length === 1 && paragraph[0] != null && isReportButton(paragraph[0])
 }
 
 /** A one-line salutation. The report sentence, not the button, comes next. */
@@ -197,7 +221,8 @@ function reportLead(address: string | null): string {
 /**
  * Paragraphs plus the report button. No signature. Clean campaign UTMs only.
  *
- * The sentence that names the report sits directly above the one button.
+ * A composed letter can mark the button with a button-only paragraph. That
+ * paragraph is not printed again. The button sits there, once.
  * A broker note that says "our price" makes the button "See our price".
  * The composed letter does not say that, so its button is "Read the full
  * report". A broker who typed "We would list it at $X." still gets the
@@ -214,20 +239,24 @@ export function renderCmaLetterBlock(args: {
     namesOurPrice(args.paragraphs) ? 'See our price' : 'Read the full report',
   )
   const parts: string[] = []
-  let mentionAt = -1
+  let buttonAt: number | null = null
   for (let i = 0; i < args.paragraphs.length; i++) {
+    const paragraph = args.paragraphs[i]
+    if (!paragraph) continue
+    if (isReportButtonParagraph(paragraph)) {
+      if (buttonAt == null) buttonAt = parts.length
+      continue
+    }
     const text = paragraphText(args.paragraphs, i)
-    if (mentionAt < 0 && mentionsReport(text)) mentionAt = parts.length
     const amount = listPriceAmount(text)
+    if (buttonAt == null && mentionsReport(text)) buttonAt = parts.length + 1
     if (amount) {
       parts.push(cmaListPricePlate(amount))
       continue
     }
-    const paragraph = args.paragraphs[i]
-    if (!paragraph) continue
     parts.push(`<p style="margin:0 0 16px 0;">${renderRuns(paragraph, args.address, args.slug)}</p>`)
   }
-  if (mentionAt < 0) {
+  if (buttonAt == null) {
     const greetingFirst = isShortGreeting(args.paragraphs)
     const lead = `<p style="margin:0 0 16px 0;">${escapeHtml(reportLead(args.address))}</p>`
     const head = greetingFirst ? (parts[0] ?? '') : ''
@@ -235,7 +264,7 @@ export function renderCmaLetterBlock(args: {
     const closing = rest ? button : ''
     return `<div data-cma-letter>${head}${lead}${button}${rest}${closing}</div>`
   }
-  const before = parts.slice(0, mentionAt + 1).join('')
-  const after = parts.slice(mentionAt + 1).join('')
+  const before = parts.slice(0, buttonAt).join('')
+  const after = parts.slice(buttonAt).join('')
   return `<div data-cma-letter>${before}${button}${after}</div>`
 }

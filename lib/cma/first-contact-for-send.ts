@@ -1,11 +1,14 @@
 /**
  * The facts the Review preview and the send both compose from.
- * firstName is always null: the letter greets "Hi there," and never the owner.
+ * The greeting uses a plausible first name off client_name. A trust, a
+ * placeholder, or a generic word stays "Hi there,". The report itself
+ * never receives that name. This helper is the email only.
  */
 import 'server-only'
 import {
   cmaFirstContactFactsFromRow,
   composeCmaFirstContact,
+  greetingFirstName,
   type CmaFirstContactCopy,
   type CmaFirstContactFacts,
 } from '@/lib/cma/first-contact'
@@ -30,13 +33,13 @@ export async function cmaFirstContactFactsForSend(
   const providedPlace = extra != null && Object.prototype.hasOwnProperty.call(extra, 'place')
   const facts = cmaFirstContactFactsFromRow(row, {
     brokerName: extra?.brokerName ?? null,
-    firstName: null,
     lastListPrice: extra?.lastListPrice ?? null,
     brokerSlug: extra?.brokerSlug ?? null,
     personId: extra?.personId ?? null,
     place: providedPlace ? (extra?.place ?? null) : null,
   })
-  facts.firstName = null
+  const clientName = typeof row.client_name === 'string' ? row.client_name : null
+  facts.firstName = greetingFirstName(clientName)
   if (!providedPlace) facts.place = await resolveFirstContactPlace(facts)
   return facts
 }
