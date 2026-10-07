@@ -43,6 +43,17 @@ export const SITEMAP_SMOKE_PATHS = Object.freeze([
 export const SITEMAP_SMOKE_TIMEOUT_MS = 300_000
 
 /**
+ * One retry, for a TRANSPORT error only (the fetch threw: a dropped tunnel,
+ * a reset, a timeout). An HTTP status is the platform's answer and is never
+ * retried, so a 504 or a 403 still fails the smoke on the first read. The
+ * cloud container's egress relay drops about one of six concurrent tunnels
+ * to the same host (2026-10-07, three runs, a different sitemap each time),
+ * which read as a dead sitemap while every class answered 200 with entries.
+ */
+export const SITEMAP_SMOKE_TRANSPORT_RETRIES = 1
+const RETRY_DELAY_MS = 1_000
+
+/**
  * `<url>` for a urlset, `<sitemap>` for the index. Either proves the document
  * carries entries rather than being a well-formed empty shell.
  */
@@ -56,41 +67,50 @@ function countEntries(body) {
  * Probe every sitemap path against `origin`.
  *
  * @param {string} origin e.g. 'https://ryan-realty.com'
- * @param {{ timeoutMs?: number, fetchImpl?: typeof fetch, paths?: readonly string[] }} [opts]
- * @returns {Promise<{ ok: boolean, results: Array<{ path: string, status: number|null, entries: number, ms: number, error: string|null }> }>}
+ * @param {{ timeoutMs?: number, fetchImpl?: typeof fetch, paths?: readonly string[], transportRetries?: number, retryDelayMs?: number }} [opts]
+ * @returns {Promise<{ ok: boolean, results: Array<{ path: string, status: number|null, entries: number, ms: number, error: string|null, retried: number }> }>}
  */
 export async function probeSitemapClasses(origin, opts = {}) {
   const timeoutMs = opts.timeoutMs ?? SITEMAP_SMOKE_TIMEOUT_MS
   const doFetch = opts.fetchImpl ?? fetch
   const paths = opts.paths ?? SITEMAP_SMOKE_PATHS
+  const retries = opts.transportRetries ?? SITEMAP_SMOKE_TRANSPORT_RETRIES
+  const retryDelayMs = opts.retryDelayMs ?? RETRY_DELAY_MS
   const base = String(origin).replace(/\/$/, '')
 
   const results = await Promise.all(
     paths.map(async (path) => {
       const startedAt = Date.now()
-      try {
-        const res = await doFetch(`${base}${path}`, {
-          method: 'GET',
-          redirect: 'follow',
-          headers: { 'user-agent': CI_PROBE_USER_AGENT },
-          signal: AbortSignal.timeout(timeoutMs),
-        })
-        const body = res.status === 200 ? await res.text() : ''
-        return {
-          path,
-          status: res.status,
-          entries: body ? countEntries(body) : 0,
-          ms: Date.now() - startedAt,
-          error: null,
+      let lastError = null
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        if (attempt > 0) await new Promise((r) => setTimeout(r, retryDelayMs))
+        try {
+          const res = await doFetch(`${base}${path}`, {
+            method: 'GET',
+            redirect: 'follow',
+            headers: { 'user-agent': CI_PROBE_USER_AGENT },
+            signal: AbortSignal.timeout(timeoutMs),
+          })
+          const body = res.status === 200 ? await res.text() : ''
+          return {
+            path,
+            status: res.status,
+            entries: body ? countEntries(body) : 0,
+            ms: Date.now() - startedAt,
+            error: null,
+            retried: attempt,
+          }
+        } catch (e) {
+          lastError = e instanceof Error ? e.message : String(e)
         }
-      } catch (e) {
-        return {
-          path,
-          status: null,
-          entries: 0,
-          ms: Date.now() - startedAt,
-          error: e instanceof Error ? e.message : String(e),
-        }
+      }
+      return {
+        path,
+        status: null,
+        entries: 0,
+        ms: Date.now() - startedAt,
+        error: lastError,
+        retried: retries,
       }
     }),
   )

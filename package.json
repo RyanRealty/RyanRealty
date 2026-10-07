@@ -332,7 +332,7 @@
     "test:history": "node scripts/test-listing-history.mjs",
     "video:reprocess:hero": "node scripts/reprocess-hero-video.mjs",
     "env:verify": "npx tsx scripts/verify-env.ts",
-    "deploy:verify": "node scripts/check-vercel-deploy.mjs",
+    "deploy:verify": "NODE_USE_ENV_PROXY=1 node scripts/check-vercel-deploy.mjs",
     "seo:live": "node scripts/check-live-seo.mjs",
     "env:pull-merge": "npx vercel env pull .env.vercel.pull --environment=production --yes && node scripts/merge-vercel-env-into-local.mjs",
     "vercel:env": "node scripts/sync-vercel-env.mjs",
