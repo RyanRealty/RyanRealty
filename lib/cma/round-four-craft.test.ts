@@ -232,4 +232,18 @@ describe('F2 — a place polygon is suppressed when it holds neither the subject
     expect(legendOf(undefined)).toBe('Every pin below is a row in one of the three tables that follow.')
     expect(legendOf(undefined)).not.toContain('when that boundary is on file')
   })
+
+  it('does not promise pins over a tile that carries none (stored html_content, 2026-10-07)', () => {
+    const body =
+      mapPage({
+        subject,
+        facts: [
+          { key: '1', family: 'closed', address: comps[0]!.address, outcome: 'sold $400K', domDays: 20, priceChanges: 0 },
+        ],
+        mapDataUri: 'data:image/png;base64,AAAA',
+        mapOverlay: null,
+      })?.body ?? ''
+    expect(body).not.toContain('Every pin below')
+    expect(body).toContain('The three tables that follow list every home this map was drawn for.')
+  })
 })

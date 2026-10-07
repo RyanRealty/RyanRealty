@@ -86,7 +86,12 @@ describe('buildCompArea — every kept sale came from a subdivision rung', () =>
     })
     expect(area!.kind).toBe('subdivisions')
     expect(area!.names).toEqual(['Diamond Bar Ranch', 'Obsidian Estates', 'Cascade View'])
-    expect(area!.sentence).toBe('Diamond Bar Ranch and the two subdivisions next to it.')
+    // A similar-price plat is capped at four miles, not a touching plat
+    // (3037 Purcell, 2026-10-07: "next to it" only where the plat touches).
+    expect(area!.sentence).toBe(
+      'Diamond Bar Ranch, your own subdivision, with Obsidian Estates and Cascade View within four miles of your home.',
+    )
+    expect(area!.sentence).not.toMatch(/next to it/)
   })
 
   it('keeps pocket rungs as named subdivisions, not a radius', () => {
@@ -175,7 +180,7 @@ describe('buildCompArea — otherwise the radius the widest kept rung used', () 
     expect(area!.radiusMiles).toBeNull()
     // Hayloft was reached only by a distance rung, so it is not "next to"
     // Diamond Bar Ranch; it is named with the ring that found it (rule 17).
-    expect(area!.sentence).toMatch(/^Diamond Bar Ranch, and Hayloft within .+ of your home\.$/)
+    expect(area!.sentence).toBe('Diamond Bar Ranch, your own subdivision, with Hayloft within one mile of your home.')
     expect(area!.sentence).not.toMatch(/next to it/)
   })
 
@@ -192,7 +197,9 @@ describe('buildCompArea — otherwise the radius the widest kept rung used', () 
     })
     expect(area!.kind).toBe('subdivisions')
     expect(area!.names).toEqual(['Deschutes', 'Park Addition', 'Staats'])
-    expect(area!.sentence).toMatch(/^Deschutes and the one subdivision next to it, and Staats within .+ of your home\.$/)
+    expect(area!.sentence).toBe(
+      'Deschutes, your own subdivision, with Park Addition next to it and Staats within 0.5 miles of your home.',
+    )
   })
 
   it('names the subdivision when every sale is there, even if the rungs were a street and a distance ring', () => {
@@ -562,7 +569,7 @@ describe('the adjacent-plat rungs stay on those plats', () => {
     })!
     expect(area.kind).toBe('subdivisions')
     expect(area.names).toEqual(['Kenwood', 'Roanoke', 'Bend View Addition'])
-    expect(area.sentence).toBe('Kenwood and the two subdivisions next to it.')
+    expect(area.sentence).toBe('Kenwood, your own subdivision, with Roanoke and Bend View Addition next to it.')
   })
 
   it('stays on one subdivision when every sale carries that name, including a later phase', () => {
@@ -585,5 +592,180 @@ describe('the adjacent-plat rungs stay on those plats', () => {
     expect(area.kind).toBe('subdivision')
     expect(area.names).toEqual(['Copperstone'])
     expect(area.sentence).toBe('Copperstone, your own subdivision.')
+  })
+})
+
+/**
+ * The reader review of 2026-10-07: 20676 Wild Rose, 3037 Purcell, 2382 Jackson.
+ * Coordinates and recorded plat slugs are the stored render_args and the
+ * geo_assign_batch reads of that day.
+ */
+describe('rule 24: the area is the subject plat and the plats the sales sit in, by polygon (2026-10-07)', () => {
+  const WILD_ROSE = { latitude: 44.021047, longitude: -121.290318 }
+  const wildRose = buildCompArea({
+    subject: {
+      ...WILD_ROSE,
+      subdivision: 'Larkspur',
+      subdivisionSlug: 'larkspur-village-phases-iii-and-iv',
+      streetAddress: '20676 Wild Rose',
+      city: 'Bend',
+    },
+    rungs: [
+      rung('subdivision-24mo', 0),
+      rung('adjacent-sub-12mo', 1),
+      rung('closer-sub-9mo', 1),
+      rung('closer-sub-18mo', 1),
+      rung('pocket-6mo', 1),
+      rung('nearby-1.25mi-3mo', 1),
+    ],
+    keptComps: [
+      { subdivision: 'Chloe Estates', subdivisionSlug: 'chloe-estates', selectionTier: 'nearby-1.25mi-3mo', latitude: 44.023187, longitude: -121.282816 },
+      { subdivision: 'South Point', subdivisionSlug: 'south-point', selectionTier: 'closer-sub-9mo', latitude: 44.02062, longitude: -121.294318 },
+      { subdivision: 'Foxborough', subdivisionSlug: 'foxborough-phase-3', selectionTier: 'pocket-6mo', latitude: 44.023789, longitude: -121.292997 },
+      { subdivision: 'Copper Springs', subdivisionSlug: 'copper-springs-estates-phase-1', selectionTier: 'adjacent-sub-12mo', latitude: 44.021491, longitude: -121.295155 },
+      { subdivision: 'South Point', subdivisionSlug: 'south-point', selectionTier: 'closer-sub-18mo', latitude: 44.019928, longitude: -121.295156 },
+    ],
+  })!
+
+  it("20676 Wild Rose: the subject's own subdivision is named first, though no sale sits there", () => {
+    expect(wildRose.kind).toBe('subdivisions')
+    expect(wildRose.names[0]).toBe('Larkspur')
+    expect(wildRose.names).toEqual(['Larkspur', 'Chloe Estates', 'South Point', 'Foxborough', 'Copper Springs'])
+    expect(wildRose.platSlugs).toContain('larkspur-village-phases-iii-and-iv')
+    expect(wildRose.sentence).toBe(
+      'Larkspur, your own subdivision, with Copper Springs next to it, South Point one subdivision further out, Foxborough within 0.35 miles of your home and Chloe Estates within 1.25 miles of your home.',
+    )
+    expect(wildRose.source).toContain('own subdivision Larkspur is in the area')
+  })
+
+  it('20676 Wild Rose: a Foxborough listing in a Foxborough plat no sale sits in is outside, by its polygon', () => {
+    // Expired i (20653 Foxborough, foxborough-phase-1) and ii and pending C
+    // (foxborough-phase-6) carry the MLS name the area names.
+    expect(compAreaContains(wildRose, { subdivision: 'Foxborough', platSlug: 'foxborough-phase-1' })).toBe(false)
+    expect(compAreaContains(wildRose, { subdivision: 'Foxborough', platSlug: 'foxborough-phase-6' })).toBe(false)
+    // Active B sits in the plat the pocket sale sits in.
+    expect(compAreaContains(wildRose, { subdivision: 'Foxborough', platSlug: 'foxborough-phase-3' })).toBe(true)
+    // A home in the subject's own plat is in the area.
+    expect(compAreaContains(wildRose, { subdivision: 'Larkspur', platSlug: 'larkspur-village-phases-iii-and-iv' })).toBe(true)
+    // A phase of the subject's own ordinary subdivision is that plat (samePlat).
+    expect(compAreaContains(wildRose, { subdivision: 'Larkspur', platSlug: 'larkspur-village-phases-i-and-ii' })).toBe(true)
+    // No polygon holds the row, or nobody tested it: the MLS name decides.
+    expect(compAreaContains(wildRose, { subdivision: 'Foxborough', platSlug: null })).toBe(true)
+    expect(compAreaContains(wildRose, { subdivision: 'Foxborough' })).toBe(true)
+    expect(compAreaContains(wildRose, { subdivision: 'Somewhere Else', platSlug: null })).toBe(false)
+  })
+
+  const PURCELL = { latitude: 44.080952, longitude: -121.272517 }
+  const purcell = buildCompArea({
+    subject: {
+      ...PURCELL,
+      subdivision: 'Silver Sage',
+      subdivisionSlug: 'silver-sage-phase-i',
+      streetAddress: '3037 Purcell',
+      city: 'Bend',
+    },
+    rungs: [
+      rung('own-street-24mo', 1),
+      rung('subdivision-3mo', 1),
+      rung('subdivision-6mo', 1),
+      rung('subdivision-24mo', 1),
+      rung('adjacent-sub-6mo', 1),
+    ],
+    keptComps: [
+      { subdivision: 'Silver Sage', subdivisionSlug: 'silver-sage-phase-2', selectionTier: 'subdivision-3mo', latitude: 44.080803, longitude: -121.273575 },
+      { subdivision: 'Silver Sage', subdivisionSlug: 'silver-sage-phase-i', selectionTier: 'subdivision-6mo', latitude: 44.082282, longitude: -121.272738 },
+      { subdivision: 'Tamarack Park', subdivisionSlug: 'tamarack-park-east-phase-vi', selectionTier: 'adjacent-sub-6mo', latitude: 44.08161, longitude: -121.274366 },
+      { subdivision: 'Silver Sage', subdivisionSlug: 'silver-sage-phase-i', selectionTier: 'subdivision-24mo', latitude: 44.081817, longitude: -121.272599 },
+      { subdivision: 'Holliday Park', subdivisionSlug: 'holliday-park-third-addition-phase-iii', selectionTier: 'own-street-24mo', latitude: 44.074665, longitude: -121.269784 },
+    ],
+  })!
+
+  it('3037 Purcell: a plat only the own-street sale reached is named as the homes on your street, not as next to it', () => {
+    expect(purcell.names).toEqual(['Silver Sage', 'Tamarack Park', 'Holliday Park'])
+    expect(purcell.sentence).toBe(
+      'Silver Sage, your own subdivision, with Tamarack Park next to it and the Holliday Park homes on your street.',
+    )
+    expect(purcell.sentence).not.toMatch(/two subdivisions next to it/)
+    expect(purcell.street).toEqual({
+      key: 'purcell',
+      names: ['Holliday Park'],
+      platSlugs: ['holliday-park-third-addition-phase-iii'],
+    })
+    expect(purcell.platSlugs).not.toContain('holliday-park-third-addition-phase-iii')
+    expect(compAreaPhrase(purcell)).toBe('Silver Sage, Tamarack Park and your street in Holliday Park')
+  })
+
+  it('3037 Purcell: the own-street plat is not a whole-polygon license for the actives and expireds', () => {
+    // 2382 Jackson and 2260 Indigo: Holliday Park, not on Purcell.
+    expect(
+      compAreaContains(purcell, { subdivision: 'Holliday Park', platSlug: 'holliday-park-third-addition-phase-iii', address: '2382 Jackson' }),
+    ).toBe(false)
+    expect(
+      compAreaContains(purcell, { subdivision: 'Holliday Park', platSlug: 'holliday-park-third-addition-phase-ii', address: '2260 Indigo' }),
+    ).toBe(false)
+    // 2020 Hall: the older Holliday Park plat, not on Purcell.
+    expect(compAreaContains(purcell, { subdivision: 'Holliday Park', platSlug: 'holliday-park', address: '2020 Hall' })).toBe(false)
+    // A Holliday Park home on Purcell is on the street the sale was.
+    expect(
+      compAreaContains(purcell, { subdivision: 'Holliday Park', platSlug: 'holliday-park-third-addition-phase-iii', address: '2350 Purcell' }),
+    ).toBe(true)
+    // By name alone (no polygon) the street still binds.
+    expect(compAreaContains(purcell, { subdivision: 'Holliday Park', platSlug: null, address: '2020 Hall' })).toBe(false)
+    expect(compAreaContains(purcell, { subdivision: 'Holliday Park', platSlug: null, address: '2591 NE Purcell Blvd' })).toBe(true)
+    // The touching plat is whole: a Tamarack Park East phase is in.
+    expect(
+      compAreaContains(purcell, { subdivision: 'Tamarack Park', platSlug: 'tamarack-park-east-phase-iv', address: '2923 Deborah' }),
+    ).toBe(true)
+    expect(compAreaContains(purcell, { subdivision: 'Silver Sage', platSlug: 'silver-sage-phase-i', address: '2110 Carrie' })).toBe(true)
+  })
+
+  const JACKSON = { latitude: 44.075079, longitude: -121.268868 }
+  const jackson = buildCompArea({
+    subject: {
+      ...JACKSON,
+      subdivision: 'Holliday Park',
+      subdivisionSlug: 'holliday-park-third-addition-phase-iii',
+      streetAddress: '2382 Jackson',
+      city: 'Bend',
+    },
+    rungs: [rung('own-street-24mo', 1), rung('subdivision-9mo', 2), rung('subdivision-24mo', 1), rung('subdivision-24mo-wide', 1)],
+    keptComps: [
+      { subdivision: 'Holliday Park', subdivisionSlug: 'holliday-park-third-addition-phase-ii', selectionTier: 'subdivision-9mo', latitude: 44.075936, longitude: -121.271063 },
+      { subdivision: 'Holliday Park', subdivisionSlug: 'holliday-park-third-addition-phase-ii', selectionTier: 'subdivision-9mo', latitude: 44.076059, longitude: -121.269702 },
+      { subdivision: 'Holliday Park', subdivisionSlug: 'holliday-park-third-addition-phase-iii', selectionTier: 'own-street-24mo', latitude: 44.075276, longitude: -121.270033 },
+      { subdivision: 'Holliday Park', subdivisionSlug: 'holliday-park-third-addition-phase-ii', selectionTier: 'subdivision-24mo-wide', latitude: 44.075577, longitude: -121.271089 },
+      { subdivision: 'Holliday Park', subdivisionSlug: 'holliday-park-third-addition-phase-iii', selectionTier: 'subdivision-24mo', latitude: 44.074665, longitude: -121.269784 },
+    ],
+  })!
+
+  it("2382 Jackson: a same-name listing in another recorded plat is outside; the subject's own street sale is not a street-only plat", () => {
+    expect(jackson.kind).toBe('subdivision')
+    expect(jackson.sentence).toBe('Holliday Park, your own subdivision.')
+    expect(jackson.street).toBeNull()
+    // 2020 Hall (built 1995) sits in the older Holliday Park plat: an MLS-name match only.
+    expect(compAreaContains(jackson, { subdivision: 'Holliday Park', platSlug: 'holliday-park', address: '2020 Hall' })).toBe(false)
+    // 2574 Robinson sits in Phase I of the same Third Addition: one ordinary subdivision.
+    expect(
+      compAreaContains(jackson, { subdivision: 'Holliday Park', platSlug: 'holliday-park-third-addition-phase-i', address: '2574 Robinson' }),
+    ).toBe(true)
+  })
+
+  it('an area stored before plat keys existed still tests by name', () => {
+    const legacy = { ...jackson, platSlugs: undefined, namesWithoutPlat: undefined, street: undefined }
+    expect(compAreaContains(legacy, { subdivision: 'Holliday Park', platSlug: 'holliday-park' })).toBe(true)
+  })
+
+  it('a plat with no recorded polygon is tested by its name, even for a row a polygon holds', () => {
+    const area = buildCompArea({
+      subject: { ...JACKSON, subdivision: 'Holliday Park', subdivisionSlug: 'holliday-park-third-addition-phase-iii', city: 'Bend' },
+      rungs: [rung('subdivision-9mo', 1), rung('adjacent-sub-6mo', 1)],
+      keptComps: [
+        { subdivision: 'Holliday Park', subdivisionSlug: 'holliday-park-third-addition-phase-iii', selectionTier: 'subdivision-9mo' },
+        { subdivision: 'Unplatted Acres', subdivisionSlug: null, selectionTier: 'adjacent-sub-6mo' },
+      ],
+    })!
+    expect(area.namesWithoutPlat).toEqual(['Unplatted Acres'])
+    expect(compAreaContains(area, { subdivision: 'Unplatted Acres', platSlug: 'some-other-plat' })).toBe(true)
+    expect(compAreaContains(area, { subdivision: 'Holliday Park', platSlug: 'some-other-plat' })).toBe(false)
   })
 })

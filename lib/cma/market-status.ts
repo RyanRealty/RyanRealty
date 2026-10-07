@@ -847,6 +847,8 @@ export function buildExpiredPeerSet(input: {
       longitude: r.Longitude ?? null,
       subdivision: r.SubdivisionName ?? null,
       city: r.City ?? null,
+      // A plat held to the subject's street holds only that street.
+      address: r.StreetName?.trim() ? `${(r.StreetNumber ?? '').trim()} ${r.StreetName.trim()}`.trim() : null,
     })
   for (const w of windows) {
     tried.push(w)

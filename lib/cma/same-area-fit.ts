@@ -156,6 +156,8 @@ export function sameAreaFit(
       longitude: c.longitude ?? null,
       subdivision: c.subdivision ?? null,
       city: c.city ?? null,
+      // A plat only the own-street rung reached holds only the subject's street.
+      address: c.address ?? undefined,
     })
     if (!inside) return { ok: false, reason: 'area' }
   }
