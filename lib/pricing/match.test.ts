@@ -251,8 +251,8 @@ describe('walkPricingLadder', () => {
         longitude: -121.3,
       }),
     ]
-    // A recorded plat does not open the rung this sale used to ride. The price
-    // tier is what keeps it, so the subject here has no plat.
+    // The price tier is what keeps it, with or without a plat. A recorded plat
+    // whose own rows hold no sale walks on inside the neighborhood (rule 15).
     const out = walkPricingLadder(
       subject({ subdivision: null, subdivisionNorm: null, subdivisionSlug: null }),
       pool,
@@ -260,7 +260,7 @@ describe('walkPricingLadder', () => {
     )
     expect(out.comps.map((c) => c.listingKey)).toContain('UNNAMED_OK')
     const platted = walkPricingLadder(subject(), pool, { asOf, cells })
-    expect(platted.comps.map((c) => c.listingKey)).not.toContain('UNNAMED_OK')
+    expect(platted.comps.map((c) => c.listingKey)).toContain('UNNAMED_OK')
   })
 
   it('does not look ahead of the as-of date', () => {
@@ -701,9 +701,10 @@ describe('walkPricingLadder', () => {
     expect(caldera.comps.map((c) => c.listingKey)).toEqual(['CALD'])
   })
 
-  it('does not take another plat in the community just because the boundary contains it', () => {
-    // A recorded plat stays in its own rows. A sale in the same community,
-    // or a remarks mention, is not the next row unless that plat touches.
+  it('walks the community after short plat rows, and never takes a remarks mention', () => {
+    // A recorded plat's own rows come first. They hold nothing here, so the
+    // community is the next step (rules 15 and 19), and membership is the
+    // boundary or a member plat, never a remark.
     const inside = (listingKey: string, subdivision: string, over: Partial<PricingSale> = {}) =>
       sale({
         listingKey,
@@ -756,10 +757,12 @@ describe('walkPricingLadder', () => {
       { asOf },
     )
     const keys = out.comps.map((c) => c.listingKey)
-    expect(keys).not.toContain('BY_BOUNDARY')
-    expect(keys).not.toContain('BY_PLAT')
+    expect(keys).toContain('BY_BOUNDARY')
+    expect(keys).toContain('BY_PLAT')
     expect(keys).not.toContain('REMARKS_ONLY')
-    expect(out.rungs.some((r) => r.added > 0 && (r.tier.startsWith('community-') || /\dmi/.test(r.tier)))).toBe(false)
+    // The community rung takes them. A mile ring does not go first.
+    expect(out.comps.every((c) => c.selectionTier.startsWith('community-'))).toBe(true)
+    expect(out.rungs.some((r) => r.added > 0 && /\dmi/.test(r.tier))).toBe(false)
   })
 
   it('does not keep a dry acreage sale for an irrigated subject', () => {
@@ -1016,12 +1019,12 @@ describe('walkPricingLadder', () => {
     expect(keys).not.toContain('FAREWELL_2000')
     expect(keys).not.toContain('OKANE_1996')
     expect(keys).not.toContain('INTOWN_CUSTOM')
-    // Lakes At Tanager is a recorded plat. Bend North Rim is another plat, so
-    // a distance ring does not take it.
-    expect(keys).not.toContain('PERSPECTIVE')
-    expect(keys).not.toContain('GREENLEAF')
-    expect(keys).not.toContain('NORTH_RIM_2021')
-    expect(out.tiersUsed.some((t) => t.startsWith('nearby-'))).toBe(false)
+    // Lakes At Tanager is a recorded plat whose own rows hold no sale, so the
+    // walk goes on inside the neighborhood to the same-generation peers.
+    expect(keys).toContain('PERSPECTIVE')
+    expect(keys).toContain('GREENLEAF')
+    expect(keys).toContain('NORTH_RIM_2021')
+    expect(out.comps.length).toBeGreaterThanOrEqual(3)
   })
 
   it('keeps Perspective when live yearBuilt is null and NewConstructionYN is null (to-be-built remarks)', () => {
@@ -1125,10 +1128,10 @@ describe('walkPricingLadder', () => {
     )
     const keys = out.comps.map((c) => c.listingKey)
     expect(keys).not.toContain('SUMMIT')
-    expect(keys).not.toContain('PERSPECTIVE')
-    expect(keys).not.toContain('GREENLEAF')
-    expect(keys).not.toContain('NORTH_RIM_2021')
-    expect(out.tiersUsed.some((t) => t.startsWith('nearby-'))).toBe(false)
+    expect(keys).toContain('PERSPECTIVE')
+    expect(keys).toContain('GREENLEAF')
+    expect(keys).toContain('NORTH_RIM_2021')
+    expect(out.comps.length).toBeGreaterThanOrEqual(3)
   })
 
   it('takes a farther same-generation custom peer before nearby 2000 stock', () => {
@@ -1174,8 +1177,7 @@ describe('walkPricingLadder', () => {
       [nearbyOlder, farCustom],
       { asOf },
     )
-    expect(out.comps.map((c) => c.listingKey)).toEqual([])
-    expect(out.tiersUsed.some((t) => t.startsWith('nearby-'))).toBe(false)
+    expect(out.comps.map((c) => c.listingKey)).toEqual(['FAR_CUSTOM'])
   })
 
   it('does not let a rural unmapped point fail open against a known Parkway bank', () => {
@@ -1236,10 +1238,12 @@ describe('containment — the plats next to the subject, then the boundary (Matt
     const out = walkPricingLadder(subj, pool, { asOf })
     const tiers = out.comps.map((c) => [c.subdivisionNorm, c.selectionTier])
     expect(tiers).toContainEqual(['roanoke', 'adjacent-sub-3mo'])
-    // Sitting in the same neighborhood is not the next row. Aubrey Heights
-    // does not touch, and no neighbor ring names it.
-    expect(tiers.find((t) => t[0] === 'aubrey heights')).toBeUndefined()
+    // Sitting in the same neighborhood is not the next row: Aubrey Heights
+    // does not touch, and no neighbor ring names it. The plat rows hold one
+    // sale, short of the minimum, so the walk reaches it after every plat row,
+    // on a ring inside River West (rule 15).
     expect(out.rungs.some((r) => r.added > 0 && r.tier.startsWith('closer-sub-'))).toBe(false)
+    expect(tiers.find((t) => t[0] === 'aubrey heights')?.[1]).toMatch(/^nearby-/)
   })
 
   it('the adjacent rung skips when no ring is known, and the walk says why', () => {
@@ -1922,8 +1926,7 @@ describe('year/quality outranks radius only when the pocket is starved', () => {
     )
     expect(out.pocketStarved).toBe(true)
     expect(out.exclusiveCount).toBe(0)
-    expect(out.comps.map((c) => c.listingKey)).toEqual([])
-    expect(out.tiersUsed.some((t) => t.startsWith('nearby-'))).toBe(false)
+    expect(out.comps.map((c) => c.listingKey)).toEqual(['FAR_CUSTOM'])
   })
 })
 
@@ -1973,8 +1976,8 @@ describe('a full plat is not replaced by a cheaper quarter-mile pocket', () => {
     expect(pocketRung?.skippedReason).toMatch(/own plat already has/)
   })
 
-  it('does not open the quarter-mile pocket for a named plat that has fewer than five sales', () => {
-    const plat = [770_000, 790_000].map((closePrice, i) =>
+  it('opens the quarter-mile pocket for a named plat only while its rows hold fewer than three sales', () => {
+    const platOf = (prices: number[]) => prices.map((closePrice, i) =>
       sale({
         listingKey: `PLAT${i}`,
         address: `${300 + i} Redtail`,
@@ -2003,15 +2006,28 @@ describe('a full plat is not replaced by a cheaper quarter-mile pocket', () => {
         sqft: 2186,
         pocketSubdivisionNorms: ['north trailside'],
       }),
-      [...plat, ...pocket],
+      [...platOf([770_000, 790_000]), ...pocket],
       { asOf },
     )
+    // Two plat sales are short of the minimum: the pocket fills the set.
     const keys = out.comps.map((c) => c.listingKey)
-    expect(keys.some((k) => k.startsWith('POCKET'))).toBe(false)
+    expect(keys.some((k) => k.startsWith('POCKET'))).toBe(true)
     expect(keys.some((k) => k.startsWith('PLAT'))).toBe(true)
-    const pocketRung = out.rungs.find((r) => r.tier === 'pocket-3mo')
+    // Three plat sales hold the minimum: the plat rows are the set.
+    const full = walkPricingLadder(
+      subject({
+        subdivision: 'Redtail Ridge',
+        subdivisionNorm: 'redtail ridge',
+        sqft: 2186,
+        pocketSubdivisionNorms: ['north trailside'],
+      }),
+      [...platOf([770_000, 780_000, 790_000]), ...pocket],
+      { asOf },
+    )
+    expect(full.comps.map((c) => c.listingKey).some((k) => k.startsWith('POCKET'))).toBe(false)
+    const pocketRung = full.rungs.find((r) => r.tier === 'pocket-3mo')
     expect(pocketRung?.ran).toBe(false)
-    expect(pocketRung?.skippedReason).toMatch(/recorded subdivision/)
+    expect(pocketRung?.skippedReason).toMatch(/recorded subdivision.*already hold 3 sales/)
   })
 })
 
@@ -2093,7 +2109,7 @@ describe('a comp from the wrong house', () => {
     expect(out.tiersUsed).not.toContain('gla-bracket')
   })
 
-  it('does not let another plat fill a named subdivision when the pocket used to', () => {
+  it('does not let a quarter-mile pocket rung add a close whose price is far from the plat set', () => {
     // Both pocket plats have a median $/sqft inside the subject's tier, which
     // is the check the ladder already runs. The sale's own close is not. Vine
     // Maple at $1,510,000 is about 32% over the Fairway Crest closes. 3331
@@ -2152,10 +2168,12 @@ describe('a comp from the wrong house', () => {
       [near, vine, ...crest].map((row) => ({ ...row, city: 'Sunriver', citySlug: 'sunriver' })),
       { asOf, cells: highCells },
     )
+    // Two plat sales are short of the minimum, so the pocket runs, and the
+    // close-price check still keeps Vine Maple out.
     expect(high.comps.map((c) => c.listingKey)).toEqual(expect.arrayContaining(['CREST0', 'CREST1']))
-    expect(high.comps.map((c) => c.listingKey)).not.toContain('POCKET-NEAR')
+    expect(high.comps.map((c) => c.listingKey)).toContain('POCKET-NEAR')
     expect(high.comps.map((c) => c.listingKey)).not.toContain('VINE-MAPLE')
-    expect(high.tiersUsed.some((t) => t.startsWith('pocket-'))).toBe(false)
+    expect(high.comps.find((c) => c.listingKey === 'POCKET-NEAR')?.selectionTier.startsWith('pocket-')).toBe(true)
 
     const glen = [497_000, 740_000, 780_000].map((closePrice, i) => {
       const sqft = i === 0 ? 1668 : 2200
@@ -2368,11 +2386,13 @@ describe('a comp from the wrong house', () => {
     expect(keys).not.toContain('FIELDSTONE-388')
   })
 
-  it('does not open a quarter-mile pocket for a recorded plat when no own-plat sale is kept', () => {
+  it('drops a cheap different-plat pocket sale when no own-plat sale is kept', () => {
     // 3028 Indian sits in Copper Ridge. 2834 Indian is outside the wide plat
-    // size band. 3331 Juniper and 1216 SW 32nd (Hayden View) sit inside a
-    // quarter mile in other plats. A recorded plat does not take them. The
-    // build stays short. The 1.3 band is unchanged and is not what removes them.
+    // size band, so the plat rows hold nothing and the walk goes on (rule 15).
+    // 3331 Juniper at $475,000 and 1216 SW 32nd (Hayden View) at $550,000 sit
+    // inside a quarter mile in other plats. Juniper is inside 30% of Hayden, so
+    // the own-plat 1.3 band is not what removes it. It still has to sit with
+    // the comps that were kept, and it loses to Hayden.
     const subjectSqft = 2526
     const tooSmall = sale({
       listingKey: 'INDIAN-2834',
@@ -2442,14 +2462,9 @@ describe('a comp from the wrong house', () => {
       { asOf, cells },
     )
     const keys = out.comps.map((c) => c.listingKey)
-    expect(keys).not.toContain('HAYDEN-1216')
+    expect(keys).toContain('HAYDEN-1216')
     expect(keys).not.toContain('JUNIPER-3331')
     expect(keys).not.toContain('INDIAN-2834')
-    expect(out.tiersUsed.some((t) => t.startsWith('pocket-') || t.startsWith('nearby-'))).toBe(false)
-    expect(out.rungs.some((r) => r.tier.startsWith('pocket-') && r.ran)).toBe(false)
-    const pocketSkip = out.rungs.find((r) => r.tier === 'pocket-3mo')
-    expect(pocketSkip?.ran).toBe(false)
-    expect(pocketSkip?.skippedReason).toMatch(/recorded subdivision/)
   })
 })
 
