@@ -273,9 +273,7 @@ export function cmaFirstContactPreview(
     return salesPreview(named, saleCount(closedSalesCount), lo, hi)
   }
   if (rec == null) {
-    return origin === 'expired'
-      ? 'The price, the competition, and homes that did not sell.'
-      : `${named}: the number, and the sales behind it.`
+    return `${named}: the number, and the sales behind it.`
   }
   return `${named}: the report is attached.`
 }
