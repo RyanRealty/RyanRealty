@@ -8,9 +8,10 @@ import { trackedDocLink, type TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import { formatDate } from '@/lib/format/date'
 import { priceHistoryLineCompactHtml, pricePathFromListing } from '@/lib/cma/price-path'
 import { listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
-import { compAreaContains, compAreaIn, compAreaPhrase, milesPhrase, type CompArea } from '@/lib/pricing/comp-area'
+import { compAreaContains, compAreaIn, compAreaPhrase, type CompArea } from '@/lib/pricing/comp-area'
 import { countWord } from '@/lib/pricing/estimate'
 import { publishStreetNumber, publishStreetPart } from '@/lib/listing/publish-street-line'
+import { roomNotedSentence, sameAreaFit, type SameAreaSubject } from '@/lib/cma/same-area-fit'
 
 const esc = escapeHtml
 
@@ -38,6 +39,8 @@ export type CmaBandRival = {
   listingHistoryLine?: string | null
   /** Miles from the subject. Blank on a stored row until print fills it from coordinates. */
   proximity?: string | null
+  /** Rule 4: one room apart on the subject's own ground, kept and disclosed, zero dollars. */
+  roomDifference?: Array<'beds' | 'baths'> | null
 }
 
 export type CmaBandSubject = {
@@ -70,36 +73,38 @@ function rivalMiles(rival: CmaBandRival, lat: number, lng: number): number {
   return d == null ? Number.POSITIVE_INFINITY : d
 }
 
+/**
+ * The same fit the sales passed (Matt 2026-10-07, rule 24): inside the sales
+ * area, the same product, the one-room rule on beds and baths, the plat-wide
+ * size band, the plat-row year band. One definition, lib/cma/same-area-fit.ts.
+ */
 export function rivalFitsSubject(
   r: CmaBandRival,
-  subject?: { beds?: number | null; sqft?: number | null } | null,
+  subject?: Partial<SameAreaSubject> | null,
+  area?: CompArea | null,
 ): boolean {
-  if (!subject) return true
-  // One whole bedroom apart still competes. Two or more does not, and neither
-  // does a house past the one living-area cutoff. A 2-bedroom cottage does
-  // not compete with a much larger house.
-  if (subject.beds != null && r.beds != null && Math.abs(Math.floor(subject.beds) - Math.floor(r.beds)) > 1) {
-    return false
-  }
-  if (subject.sqft != null && subject.sqft > 0 && r.sqft != null && r.sqft > 0) {
-    if (Math.abs(r.sqft - subject.sqft) / subject.sqft > 0.35) return false
-  }
-  return true
+  return sameAreaFit(area ?? null, subject ?? {}, {
+    address: r.address,
+    subdivision: r.subdivision,
+    latitude: r.latitude,
+    longitude: r.longitude,
+    beds: r.beds,
+    baths: r.baths,
+    sqft: r.sqft,
+    yearBuilt: r.yearBuilt,
+    propertySubType: r.propertySubType,
+  }).ok
 }
 
 export function pickBandRivals(
   rivals: readonly CmaBandRival[],
-  subject?: {
-    latitude: number | null
-    longitude: number | null
-    beds?: number | null
-    sqft?: number | null
-  } | null,
+  subject?: (Partial<SameAreaSubject> & { latitude: number | null; longitude: number | null }) | null,
   cap = BAND_RIVAL_CAP,
+  area?: CompArea | null,
 ): CmaBandRival[] {
   const named = rivals.filter((r) => r.address.trim() && r.listPrice > 0)
-  const similar = named.filter((r) => rivalFitsSubject(r, subject))
-  const pool = similar.length > 0 ? similar : named
+  // An unlike home never fills the table (Matt 2026-10-07). Short is short.
+  const pool = named.filter((r) => rivalFitsSubject(r, subject, area))
   const slat = subject?.latitude
   const slng = subject?.longitude
   const ranked =
@@ -416,10 +421,10 @@ export function renderBandRivalsSceneHtml(input: BandRivalsInput): string {
 export const BAND_HALF_WIDTH_PCT = 0.1
 
 /**
- * When ±10% holds fewer than five homes within one bedroom and 35 percent of
- * the size, the chapter opens the band in the same places. It stops at the
- * first step that holds five, and it does not go past the last step.
- * Matt 2026-10-06.
+ * When ±10% holds fewer than five homes that pass the sales rules, the
+ * chapter opens the band in the sales area only, never a wider place, and
+ * never past the last step. It stops at the first step that holds five.
+ * Matt 2026-10-06; area reversed 2026-10-07.
  */
 export const COMPETITION_BAND_STEPS = [0.1, 0.15, 0.2, 0.25] as const
 
@@ -470,17 +475,24 @@ export type CmaBandRivalSet = {
   rivals: CmaBandRival[]
   sentence: string
   source: string
-  /** The starting ring's radius, when the winner widened past it. Null for a mapped boundary, a no-coordinate subject, or a ring that already held three. */
+  /** The starting ring's radius, when the winner widened past it. Always null since 2026-10-07: the letter has one ring. */
   widenedFrom: number | null
-  /** Every ring radius (miles) tried, in order. Empty for a mapped boundary or a no-coordinate subject. */
+  /** Every ring radius (miles) tried, in order. Always empty since 2026-10-07: the letter has one ring. */
   ringsTried: number[]
+  /** Homes in the band and the area that did not pass the sales rules. They are counted, never drawn. */
+  unlikeCount?: number
+  /** True when the band opened to its last step and still holds fewer than five fitting homes. */
+  shortOfFive?: boolean
 }
 
 /**
- * "27 homes are for sale in Old Bend between $350,000 and $428,000. 14 are
- * under contract." A rural ring that had to widen past its starting five
- * miles says so, in the same sentence, so the seller reads why the map got
- * bigger rather than just a wider number (Matt 2026-09-08).
+ * "2 homes like yours are for sale in Rooster Rock and Madison Park between
+ * $494,000 and $604,000. 1 is under contract." Every count is a home that
+ * passed the sales rules inside the sales area (Matt 2026-10-07, rule 24).
+ * When the area holds none, or only unlike homes, the sentence says so
+ * plainly instead of reaching further; when the band opened and still fell
+ * short, it says nothing from outside was added. A home kept one room apart
+ * on the subject's own ground is named with the room, and no dollar value.
  */
 export function competitionAreaSentence(input: {
   area: CompArea
@@ -491,46 +503,51 @@ export function competitionAreaSentence(input: {
   shown: number
   /** True when the homes drawn were narrowed to ones like the subject. */
   likeYours?: boolean
-  /** The starting ring's radius, when the winning ring widened past it. Null otherwise. */
+  /** Kept on the signature for older callers. Ignored: the letter has one ring. */
   widenedFrom?: number | null
+  /** Homes in the band and the area that did not pass the rules. */
+  unlikeCount?: number
+  /** True when the band opened to its last step and still holds fewer than five. */
+  shortOfFive?: boolean
+  /** The homes drawn, for the one-room disclosure. */
+  rivals?: ReadonlyArray<{ address: string; roomDifference?: Array<'beds' | 'baths'> | null }>
 }): string {
   const where = compAreaIn(input.area)
-  const widenedNote =
-    input.widenedFrom != null &&
-    input.area.kind === 'radius' &&
-    input.area.radiusMiles != null &&
-    input.area.radiusMiles > input.widenedFrom
-      ? ` We widened from ${milesPhrase(input.widenedFrom)} to find three.`
-      : ''
-  if (input.activeCount === 0 && input.pendingCount === 0) {
-    return `No home ${where} is for sale between ${usd(input.lo)} and ${usd(
-      input.hi,
-    )}, and none is under contract.${widenedNote}`
-  }
-  const bits = [
-    `${int(input.activeCount)} home${input.activeCount === 1 ? ' is' : 's are'} for sale ${where} between ${usd(
-      input.lo,
-    )} and ${usd(input.hi)}.`,
+  const whereOr = compAreaIn(input.area, { negative: true })
+  const band = `between ${usd(input.lo)} and ${usd(input.hi)}`
+  const pend =
     input.pendingCount > 0
       ? `${int(input.pendingCount)} ${input.pendingCount === 1 ? 'is' : 'are'} under contract.`
-      : 'None are under contract right now.',
-  ]
-  if (widenedNote) bits.push(widenedNote.trim())
+      : 'None are under contract right now.'
+  const tail = input.shortOfFive
+    ? ` Nothing from outside ${compAreaPhrase(input.area)} was added to make up the number.`
+    : ''
+  const noted = roomNotedSentence(input.rivals ?? [])
+  const rooms = noted ? ` ${noted}` : ''
+  const unlike = input.unlikeCount ?? 0
+  if (input.activeCount === 0 && input.pendingCount === 0) {
+    if (unlike === 0) {
+      return `No home ${whereOr} is for sale ${band}, and none is under contract.${tail}`
+    }
+    return `No home like yours ${whereOr} is for sale or under contract ${band}. ${countWord(unlike, true)} other ${
+      unlike === 1 ? 'home is' : 'homes are'
+    } listed there in that range, but none is close to this home in bedrooms, bathrooms, size or age, so none are on this map.${tail}`
+  }
+  if (input.activeCount === 0) {
+    return `No home like yours ${whereOr} is for sale ${band}, but ${countWord(input.pendingCount)} ${
+      input.pendingCount === 1 ? 'is' : 'are'
+    } under contract.${tail}${rooms}`
+  }
   if (input.shown > 0 && input.shown < input.activeCount + input.pendingCount) {
-    // The count in the sentence is the count of cards below it. A parent
-    // total the chapter does not draw is not a number the letter may state.
+    // The count in the sentence is the count of cards below it. A total the
+    // chapter does not draw is not a number the letter may state.
     const like = input.likeYours ? ' like yours' : ''
     const verb = input.shown === 1 ? 'is' : 'are'
-    const pending =
-      input.pendingCount > 0
-        ? `${int(input.pendingCount)} ${input.pendingCount === 1 ? 'is' : 'are'} under contract.`
-        : 'None are under contract right now.'
-    const widened = widenedNote ? ` ${widenedNote.trim()}` : ''
-    return `The nearest ${countWord(input.shown)}${like} ${verb} for sale ${where} between ${usd(
-      input.lo,
-    )} and ${usd(input.hi)}. ${pending}${widened}`
+    return `The nearest ${countWord(input.shown)}${like} ${verb} for sale ${where} ${band}. ${pend}${tail}${rooms}`
   }
-  return bits.join(' ')
+  return `${int(input.activeCount)} home${
+    input.activeCount === 1 ? ' like yours is' : 's like yours are'
+  } for sale ${where} ${band}. ${pend}${tail}${rooms}`
 }
 
 /** The §0 trace for the two counts: the area, the band, the source and the day. */
@@ -556,21 +573,23 @@ export function buildBandRivalSet(input: {
   activeCount: number
   pendingCount: number
   rivals: readonly CmaBandRival[]
-  subject?: {
-    latitude: number | null
-    longitude: number | null
-    beds?: number | null
-    sqft?: number | null
-  } | null
+  subject?: (Partial<SameAreaSubject> & { latitude: number | null; longitude: number | null }) | null
   cap?: number
   asOfIso?: string | null
-  /** The starting ring's radius, when `area` widened past it. Null otherwise — see `pickCompetitionRing`. */
+  /** Kept on the signature for older callers. Always null from the one-ring path. */
   widenedFrom?: number | null
-  /** Every ring radius (miles) the ladder tried, in order. Empty for a mapped boundary or a no-coordinate subject. */
+  /** Kept on the signature for older callers. Always empty from the one-ring path. */
   ringsTried?: number[]
+  /** Homes in the band and the area that did not pass the sales rules. */
+  unlikeCount?: number
+  /** True when the band opened to its last step and still holds fewer than five. */
+  shortOfFive?: boolean
 }): CmaBandRivalSet {
+  // The assembly already tested every rival against the sales area; this
+  // re-applies the rules to the subject and draws the nearest.
   const rivals = pickBandRivals(input.rivals, input.subject ?? null, input.cap ?? BAND_RIVAL_CAP)
-  const likeYours = input.rivals.some((r) => rivalFitsSubject(r, input.subject ?? null))
+  // Every drawn home passed the rules, so a drawn set is like yours.
+  const likeYours = rivals.length > 0
   const widenedFrom = input.widenedFrom ?? null
   return {
     area: input.area,
@@ -588,6 +607,9 @@ export function buildBandRivalSet(input: {
       shown: rivals.length,
       likeYours,
       widenedFrom,
+      unlikeCount: input.unlikeCount,
+      shortOfFive: input.shortOfFive,
+      rivals,
     }),
     source: competitionAreaSourceLine({
       area: input.area,
@@ -597,6 +619,8 @@ export function buildBandRivalSet(input: {
     }),
     widenedFrom,
     ringsTried: input.ringsTried ?? [],
+    unlikeCount: input.unlikeCount,
+    shortOfFive: input.shortOfFive,
   }
 }
 
@@ -670,6 +694,10 @@ export type CompetitionRingPick<T> = {
  * ... so the ladder is a walk, not six queries." A ring narrower than the
  * widest is always a radius (only the sole, unwidened ring can be a mapped
  * boundary or a city), so re-testing membership only ever needs lat/lng.
+ *
+ * Since 2026-10-07 the letter has one ring and this function is a
+ * pass-through kept for the rural fixtures and the stored widenedFrom and
+ * ringsTried fields; assemble-competition.ts no longer calls it.
  */
 export function pickCompetitionRing<
   T extends {
@@ -765,8 +793,13 @@ function finiteOrNull(v: unknown): number | null {
   return Number.isFinite(n) ? n : null
 }
 
-/** Whole days since a listing went on market. Null when the date is unusable. */
-function daysSinceOnMarket(onMarketDate: string | null | undefined): number | null {
+/**
+ * Whole days since a listing went on market. Null when the date is unusable.
+ * Date arithmetic, not the "DaysOnMarket" column: docs/DATABASE_FOR_AI_AGENTS.md
+ * warns that column is list-to-close. The competition assembly reads this
+ * same helper so its day figures cannot drift from the cards.
+ */
+export function daysSinceOnMarket(onMarketDate: string | null | undefined): number | null {
   if (!onMarketDate) return null
   const then = new Date(onMarketDate)
   if (Number.isNaN(then.getTime())) return null

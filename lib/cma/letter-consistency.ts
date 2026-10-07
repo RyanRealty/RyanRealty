@@ -15,17 +15,27 @@ import type { ContractCheck } from '@/lib/cma/contract'
 /**
  * The sales caption as a bare ring: "Within one mile of your home." That is
  * the sentence areaSentence in lib/pricing/comp-area.ts writes for a radius
- * area, and nothing else on the page starts a sentence that way. The
- * competition and did-not-sell chapters may widen past a short plat to a
- * ring (Matt 2026-10-06, lib/cma/assemble-competition.ts) and say so inside
- * their own sentences ("6 homes are for sale within one mile of your home
- * between ..."), and a sales caption may name its plats and then the ring
+ * area. The competition and did-not-sell chapters no longer widen past a
+ * short plat (Matt 2026-10-07 reversed the 2026-10-06 permission, rule 24):
+ * inside a named sales place neither chapter may print a ring sentence of
+ * its own, and a sales caption may still name its plats and then the ring
  * that found one ("Deschutes, and Park Addition within one mile of your
- * home."). Neither says the sales sit in a ring. cma-61433-linton (2026-10-05)
- * and cma-711-georgia (2026-10-07) failed on the competition's ring sentence.
+ * home."). cma-61433-linton (2026-10-05) and cma-711-georgia (2026-10-07)
+ * are why the bare-ring check exists.
  */
-const BARE_RING_CAPTION =
-  /(?:^|>|[.!?]\s)Within\s+(?:[\d.]+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s+miles?\s+of your home\./
+const MILES = '(?:[\\d.]+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)'
+const BARE_RING_CAPTION = new RegExp(`(?:^|>|[.!?]\\s)Within\\s+${MILES}\\s+miles?\\s+of your home\\.`)
+/**
+ * A competition or did-not-sell sentence that counts homes inside a mile
+ * ring: "6 homes are for sale within one mile of your home between ...",
+ * "... within one mile of your home came off the market ...". Inside a named
+ * sales place that sentence cannot be written (rule 24); this is the
+ * mechanical gate that keeps the widening from coming back by prose.
+ */
+const CHAPTER_RING_SENTENCE = new RegExp(
+  `(?:for sale|under contract)[^<.]{0,120}?\\bwithin ${MILES} miles? of your home\\b|\\bwithin ${MILES} miles? of your home came off the market`,
+  'i',
+)
 const WRONG_PRODUCT_LINE = /single-family homes in|single-family sales|single-family listings/i
 const SIZE_STORY_DO_NOT_ADJUST = 'Size and story class do not adjust'
 const ADJUSTED_FOR_DATE_AND_SIZE = 'adjusted for date and size'
@@ -71,6 +81,15 @@ export function letterPlaceChecks(html: string, place: LetterPlaceSource | null 
       detail: mile
         ? 'The sales sit in a named place and the letter still says they are within a mile ring.'
         : 'The letter does not widen a named place out to a mile ring.',
+    })
+    const chapterRing = CHAPTER_RING_SENTENCE.test(html)
+    checks.push({
+      id: 'competition-not-a-mile-ring',
+      severity: 'hard',
+      pass: !chapterRing,
+      detail: chapterRing
+        ? 'The sales sit in a named place and a chapter still counts homes within a mile ring.'
+        : 'The competition and did-not-sell chapters stay inside the named sales place.',
     })
     const sentence = place.compArea?.sentence?.trim() ?? ''
     if (sentence) {

@@ -258,7 +258,7 @@ describe('buildCompArea — otherwise the radius the widest kept rung used', () 
 })
 
 describe('parentPlaceArea', () => {
-  it('names the neighborhood a short plat sits in, and not a radius or the city', () => {
+  it('names the parent for the map label, never a competition area (Matt 2026-10-07)', () => {
     const area = parentPlaceArea({ latitude: 44.08554, longitude: -121.325841 })
     expect(area).not.toBeNull()
     expect(area!.kind).toBe('neighborhood')
@@ -268,7 +268,7 @@ describe('parentPlaceArea', () => {
 })
 
 describe('resolveCompetitionArea', () => {
-  it('Bend: pocket first, then a radius ladder capped at 5 miles, never the neighborhood polygon or the city', () => {
+  it('Bend: the sales plat is the one ring, never a radius ladder, the neighborhood polygon or the city (Matt 2026-10-07)', () => {
     const compArea = buildCompArea({
       subject: { ...OLD_BEND, subdivision: 'Park Addition', city: 'Bend' },
       rungs: [rung('subdivision-6mo', 3)],
@@ -526,6 +526,23 @@ describe('compAreaIn', () => {
     expect(compAreaIn(named)).toBe('in Old Bend')
     expect(
       compAreaIn({ ...named, kind: 'radius', names: [], radiusMiles: 2, centre: { lat: 1, lng: 2 } }),
+    ).toBe('within two miles of your home')
+  })
+
+  it('joins the plats on "or" for a negative sentence, and leaves one name and a radius alone (Matt 2026-10-07)', () => {
+    const twoPlats = {
+      kind: 'subdivisions' as const,
+      names: ['Rooster Rock', 'Madison Park'],
+      radiusMiles: null,
+      centre: null,
+      source: '',
+      sentence: '',
+    }
+    expect(compAreaIn(twoPlats, { negative: true })).toBe('in Rooster Rock or Madison Park')
+    expect(compAreaIn(twoPlats)).toBe('in Rooster Rock and Madison Park')
+    expect(compAreaIn({ ...twoPlats, kind: 'subdivision', names: ['Purcell'] }, { negative: true })).toBe('in Purcell')
+    expect(
+      compAreaIn({ ...twoPlats, kind: 'radius', names: [], radiusMiles: 2, centre: { lat: 1, lng: 2 } }, { negative: true }),
     ).toBe('within two miles of your home')
   })
 })

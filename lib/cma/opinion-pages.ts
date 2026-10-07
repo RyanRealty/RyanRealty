@@ -273,7 +273,7 @@ export function matrixEntriesFor(a: OpinionPageArgs): {
       activeRivalsFor(
         a.bandRivals?.rivals ?? a.extras?.band?.rivals,
         a.subject,
-        a.bandRivals?.area ?? a.compArea,
+        a.compArea ?? a.bandRivals?.area,
       ),
       a.docLinks ?? null,
       a.subject.city,
@@ -1086,9 +1086,11 @@ export function didNotSellBodyMatrixHtml(a: OpinionPageArgs): string {
     lead: [
       (() => {
         // The peer sentence is the count, the places, and whether these homes
-        // are the same bedroom count. The table shows that same set.
+        // passed the sales rules. It prints only when the table is the set it
+        // counted (rule 17): an old row whose stored sentence counted peers
+        // outside the sales area prints the count it shows instead.
         const story = a.expiredPeers?.sentence?.trim() ?? ''
-        if (story) return `<p>${esc(story)}</p>`
+        if (story && sets.unsold.length === (a.expiredPeers?.count ?? 0)) return `<p>${esc(story)}</p>`
         const n = sets.unsold.length
         const line = `${countWord(n)} ${n === 1 ? 'listing' : 'listings'} came off without selling.`
         return `<p>${esc(line.charAt(0).toUpperCase() + line.slice(1))}</p>`
@@ -1809,12 +1811,20 @@ export function competitionBodyMatrixHtml(a: OpinionPageArgs): string {
   const drawnActive = activeOnly.length
   const drawnPending = pendingOnly.length
   const shown = drawnActive + drawnPending
-  // The stored sentence names every home in the band and says the nearest are
-  // below. Use it when the table is that nearest set. A stored pending that
-  // the table does not draw is not said.
+  // The stored sentence names the area and counts the homes in the band that
+  // passed the sales rules, and says "the nearest N" when it drew fewer than
+  // it counted. Use it only when the table draws exactly the set it was
+  // written over. A drawn set that diverged from the stored one (an old row
+  // whose rivals fell to the sales-area re-test at render) gets the no-area
+  // sentence over the counts it shows (rule 17).
   const stored = a.bandRivals?.sentence?.trim() ?? ''
+  const storedActive = (b.rivals ?? []).filter((r) => r.status === 'Active').length
+  const storedPending = (b.rivals ?? []).filter((r) => r.status === 'Pending').length
   const useStored =
-    stored.length > 0 && b.pendingCount === drawnPending && b.activeCount > drawnActive && drawnActive > 0
+    stored.length > 0 &&
+    b.pendingCount === drawnPending &&
+    drawnPending === storedPending &&
+    drawnActive === storedActive
   const sentence = useStored
     ? stored
     : shown > 0
@@ -1949,7 +1959,7 @@ export function competitionArgs(a: OpinionPageArgs): BandRivalsInput {
     hi: b.hi,
     activeCount: b.activeCount,
     pendingCount: b.pendingCount,
-    rivals: activeRivalsFor(b.rivals, a.subject, a.bandRivals?.area ?? a.compArea),
+    rivals: activeRivalsFor(b.rivals, a.subject, a.compArea ?? a.bandRivals?.area),
     docLinks: a.docLinks ?? null,
     recommendedList: a.pricing.recommended,
     asOfIso: a.generatedAtIso,

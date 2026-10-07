@@ -5,11 +5,11 @@
  */
 
 import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
-import { compAreaIn, compAreaPhrase, type CompArea } from '@/lib/pricing/comp-area'
+import { compAreaContains, compAreaIn, compAreaPhrase, type CompArea } from '@/lib/pricing/comp-area'
 import { countWord } from '@/lib/pricing/estimate'
-import { PLAT_WIDE_SQFT_BAND } from '@/lib/pricing/ladder'
 import { keepSameProductType, letterProductMatch } from '@/lib/cma/market-area'
 import { realSubdivision } from '@/lib/cma/comp-tiers'
+import { roomNotedSentence, sameAreaFit, sameAreaSubject, type SameAreaCandidate } from '@/lib/cma/same-area-fit'
 import type { CmaMarketAreaRow } from '@/lib/data/cma/marketAreaReads'
 import { daysOnMarketFrom, listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
 
@@ -84,6 +84,8 @@ export type CmaExpiredPeer = {
   subdivision?: string | null
   latitude: number | null
   longitude: number | null
+  /** Rule 4: one room apart on the subject's own ground, kept and disclosed, zero dollars. */
+  roomDifference?: Array<'beds' | 'baths'> | null
 }
 
 export type CmaMarketArea = {
@@ -205,6 +207,12 @@ export type ExpiredPeerSubject = Pick<
 > & {
   /** Absent on older callers. A blank type is not a different product. */
   propertySubType?: string | null
+  /** The rest of what the sales rules read (lib/cma/same-area-fit.ts). Absent on older callers. */
+  baths?: number | null
+  yearBuilt?: number | null
+  subdivision?: string | null
+  subdivisionSlug?: string | null
+  city?: string | null
 }
 
 function peerAddress(row: CmaMarketAreaRow): string {
@@ -262,36 +270,20 @@ export function peerMatchesSubject(
   return false
 }
 
-export function peerFitsSubject(
-  row: CmaMarketAreaRow,
-  subject: Pick<CmaSubject, 'beds' | 'sqft'>,
-): boolean {
-  if (subject.beds != null && row.BedroomsTotal != null && Number(row.BedroomsTotal) !== subject.beds) {
-    return false
+/** An unsold MLS row as the one fit reads it (lib/cma/same-area-fit.ts). */
+function rowToCandidate(row: CmaMarketAreaRow): SameAreaCandidate {
+  return {
+    address: peerAddress(row) || null,
+    city: row.City ?? null,
+    subdivision: row.SubdivisionName ?? null,
+    latitude: row.Latitude ?? null,
+    longitude: row.Longitude ?? null,
+    beds: num(row.BedroomsTotal),
+    baths: num(row.BathroomsTotal),
+    sqft: num(row.TotalLivingAreaSqFt),
+    yearBuilt: row.year_built ?? null,
+    propertySubType: row.property_sub_type ?? null,
   }
-  if (subject.sqft != null && subject.sqft > 0 && row.TotalLivingAreaSqFt != null && row.TotalLivingAreaSqFt > 0) {
-    if (Math.abs(row.TotalLivingAreaSqFt - subject.sqft) / subject.sqft > 0.25) return false
-  }
-  return true
-}
-
-/**
- * The open fit for a recorded subdivision that is short of three tight peers.
- * One bedroom either way, and living area within the same 35 percent band the
- * wide subdivision rungs already use. Two bedrooms apart stays off. A
- * neighborhood, a city, or a radius never uses this.
- */
-export function peerFitsSubjectOpen(
-  row: CmaMarketAreaRow,
-  subject: Pick<CmaSubject, 'beds' | 'sqft'>,
-): boolean {
-  if (subject.beds != null && row.BedroomsTotal != null) {
-    if (Math.abs(Number(row.BedroomsTotal) - subject.beds) >= 2) return false
-  }
-  if (subject.sqft != null && subject.sqft > 0 && row.TotalLivingAreaSqFt != null && row.TotalLivingAreaSqFt > 0) {
-    if (Math.abs(row.TotalLivingAreaSqFt - subject.sqft) / subject.sqft > PLAT_WIDE_SQFT_BAND) return false
-  }
-  return true
 }
 
 function peerDist2(row: CmaMarketAreaRow, lat: number, lng: number): number {
@@ -378,7 +370,7 @@ export function expiredPeerCycleLabel(peer: CmaExpiredPeer): string {
 export function pickExpiredPeers(
   rows: readonly CmaMarketAreaRow[],
   subject: ExpiredPeerSubject,
-  fit: 'tight' | 'open' = 'tight',
+  area?: CompArea | null,
 ): CmaExpiredPeer[] {
   const named = rows
     .map((row) => {
@@ -426,11 +418,15 @@ export function pickExpiredPeers(
     })
     .filter((x): x is { row: CmaMarketAreaRow; peer: CmaExpiredPeer } => x != null)
 
-  // Homes that are not this size and bedroom count do not fill the map.
-  // A wide price band across a neighborhood used to print those homes once
-  // nothing close was in the first window, and then the window stopped.
-  const fits = fit === 'open' ? peerFitsSubjectOpen : peerFitsSubject
-  const pool = named.filter((x) => fits(x.row, subject))
+  // Only a home that passes the sales rules inside the sales area is a peer
+  // (Matt 2026-10-07, rule 24). A wide price band across a neighborhood used
+  // to print unlike homes once nothing close was in the first window, and
+  // then the window stopped. A home kept one room apart on the subject's own
+  // ground carries the note so the sentence can disclose it.
+  const pool = named.flatMap((x) => {
+    const fit = sameAreaFit(area ?? null, subject, rowToCandidate(x.row))
+    return fit.ok ? [{ row: x.row, peer: { ...x.peer, roomDifference: fit.roomDifference } }] : []
+  })
   const slat = subject.latitude
   const slng = subject.longitude
   const ranked =
@@ -596,16 +592,19 @@ export function computeMarketArea(input: {
         }
       : null
 
-  const expiredPeers = pickExpiredPeers(expired, {
-    beds: input.subject.beds,
-    sqft: input.subject.sqft,
-    latitude: input.subject.latitude,
-    longitude: input.subject.longitude,
-    listingKey: input.subject.listingKey,
-    mlsNumber: input.subject.mlsNumber,
-    streetAddress: input.subject.streetAddress,
-    propertySubType: input.subject.propertySubType,
-  })
+  // These rows are citywide and read only when the document carries no
+  // expiredPeers set (lib/cma/matrix-sets.ts), so no area is tested here; the
+  // product, room, size and year rules still are.
+  const expiredPeers = pickExpiredPeers(
+    expired,
+    {
+      ...sameAreaSubject(input.subject),
+      streetAddress: input.subject.streetAddress,
+      listingKey: input.subject.listingKey,
+      mlsNumber: input.subject.mlsNumber,
+    },
+    null,
+  )
 
   return {
     grain,
@@ -736,31 +735,6 @@ function offMarketMonths(row: CmaMarketAreaRow, asOf: Date): number | null {
   return months >= 0 ? months : 0
 }
 
-/**
- * Subdivision names drawn as competition that are not already the sales plats.
- * An empty sales list means this is not a subdivision read, so nothing is added.
- * Placeholders (N/A, none, other) are not a place. The parent neighborhood is
- * not a name here unless a drawn rival's own MLS subdivision is that name.
- */
-export function competitorUnsoldSubdivisionNames(
-  rivals: readonly { subdivision?: string | null }[],
-  salesAreaNames: readonly string[],
-): string[] {
-  const have = new Set(
-    salesAreaNames.map((name) => name.trim().toLowerCase()).filter((name) => name.length > 0),
-  )
-  if (have.size === 0) return []
-  const out: string[] = []
-  for (const rival of rivals) {
-    const name = realSubdivision(rival.subdivision)
-    if (!name) continue
-    const key = name.toLowerCase()
-    if (have.has(key) || out.some((n) => n.toLowerCase() === key)) continue
-    out.push(name)
-  }
-  return out
-}
-
 /** The sentence names a subdivision only when a shown peer sits there. */
 function sentenceArea(area: CompArea, peers: readonly CmaExpiredPeer[]): CompArea {
   if (peers.length === 0) return area
@@ -787,13 +761,11 @@ function sentenceArea(area: CompArea, peers: readonly CmaExpiredPeer[]): CompAre
 }
 
 /**
- * Build the peer set from rows ALREADY scoped to the area and the price band.
- * This function never widens to a neighborhood, a city, or a mile ring. When
- * a recorded subdivision is still short of three homes at the same bedroom
- * count and within 25 percent of the size, it shows a home within one bedroom
- * and within 35 percent of the size, and it may add the subdivisions of the
- * homes drawn as competition. It says so, and it does not call that set like
- * yours. §0: the document goes out with fewer facts rather than a padded set.
+ * Build the peer set from rows ALREADY scoped to the sales area and the price
+ * band. This function never widens to a neighborhood, a city, a mile ring, or
+ * the subdivisions drawn as competition, and never opens the fit (Matt
+ * 2026-10-07, rule 24). Short of three, it says so. §0: the document goes out
+ * with fewer facts rather than a padded set.
  */
 export function buildExpiredPeerSet(input: {
   rows: readonly CmaMarketAreaRow[]
@@ -825,12 +797,6 @@ export function buildExpiredPeerSet(input: {
    * older cycle that came off. The address is enough. The listing keys differ.
    */
   liveAddresses?: readonly (string | null | undefined)[]
-  /**
-   * Unsold rows from the subdivisions drawn as competition, already price-banded.
-   * Used only when the sales plats are a recorded subdivision and the tight
-   * fit is still short of three. Ignored for a neighborhood, a city, or a radius.
-   */
-  alsoRows?: readonly CmaMarketAreaRow[]
 }): CmaExpiredPeerSet {
   const asOf = input.asOf ?? new Date()
   const liveNorms = new Set(
@@ -871,10 +837,21 @@ export function buildExpiredPeerSet(input: {
   let found = 0
   let likeYours = false
   const tried: number[] = []
+  // A row outside the sales area is not in the area, whatever read returned
+  // it (Matt 2026-10-07, rule 24): the same exact test the fit applies, so
+  // `areaTotal` only counts homes the fit compared, and "none were close"
+  // is never said of a home that was never inside.
+  const inArea = (r: CmaMarketAreaRow) =>
+    compAreaContains(input.area, {
+      latitude: r.Latitude ?? null,
+      longitude: r.Longitude ?? null,
+      subdivision: r.SubdivisionName ?? null,
+      city: r.City ?? null,
+    })
   for (const w of windows) {
     tried.push(w)
     const inWindow = dated.filter((x) => x.months <= w).map((x) => x.row)
-    peers = pickExpiredPeers(inWindow, input.subject)
+    peers = pickExpiredPeers(inWindow, input.subject, input.area)
     // How many homes came off in the area at all, one per address, subject
     // excluded. The narrowed set is what the document prints; this is what the
     // sentence would otherwise silently claim to be counting.
@@ -884,6 +861,7 @@ export function buildExpiredPeerSet(input: {
       normalizePeerAddress(peerAddress(r)) || String(r.ListingKey ?? '')
     const eligible = inWindow.filter(
       (r) =>
+        inArea(r) &&
         !isSubjectExpiredRow(r, input.subject) &&
         peerAddress(r).length > 0 &&
         Number(r.ListPrice) > 0,
@@ -897,72 +875,14 @@ export function buildExpiredPeerSet(input: {
     if (peers.length >= EXPIRED_PEER_MIN) break
   }
 
-  // A recorded subdivision that is short of three homes at the same bedroom
-  // count and within 25 percent of the size still has a story. Show a home
-  // within one bedroom and within 35 percent of the size, and say that. Do
-  // not call it like yours. Competitor subdivisions are the names drawn on
-  // the competition chapter, not the parent neighborhood, and only when the
-  // sales plats are still short. A neighborhood, a city, or a radius does
-  // not get this opening. Matt 2026-10-06.
-  const subdivisionArea = input.area.kind === 'subdivision' || input.area.kind === 'subdivisions'
-  let openedFit = false
-  if (peers.length < EXPIRED_PEER_MIN && subdivisionArea) {
-    const rowKey = (row: CmaMarketAreaRow) => String(row.ListingKey ?? peerAddress(row)).trim()
-    const salesKeys = new Set(dated.map((x) => rowKey(x.row)).filter((key) => key.length > 0))
-    const extraDated = (input.alsoRows ?? [])
-      .map((row) => ({ row, months: offMarketMonths(row, asOf) }))
-      .filter((x): x is { row: CmaMarketAreaRow; months: number } => {
-        if (x.months == null || soldAtThisStreet(x.row)) return false
-        const address = normalizePeerAddress(peerAddress(x.row))
-        if (address.length > 0 && liveNorms.has(address)) return false
-        const key = rowKey(x.row)
-        return key.length === 0 || !salesKeys.has(key)
-      })
-    const inWindow = (pool: readonly { row: CmaMarketAreaRow; months: number }[]) =>
-      pool.filter((x) => x.months <= windowMonths).map((x) => x.row)
-    const combined = [...inWindow(dated), ...inWindow(extraDated)]
-    const tightCombined = pickExpiredPeers(combined, input.subject, 'tight')
-    let chosen = tightCombined.length > peers.length ? tightCombined : peers
-    if (chosen.length < EXPIRED_PEER_MIN) {
-      const opened = pickExpiredPeers(combined, input.subject, 'open')
-      if (opened.length > chosen.length) {
-        chosen = opened
-        openedFit = true
-      }
-    }
-    if (chosen !== peers) {
-      peers = chosen
-      likeYours = !openedFit && peers.length > 0
-      found = peers.length
-      const ages = new Map<string, number>()
-      for (const x of dated) ages.set(rowKey(x.row), x.months)
-      for (const x of extraDated) ages.set(rowKey(x.row), x.months)
-      let oldest = 0
-      for (const peer of chosen) {
-        const months = ages.get(peer.listingKey)
-        if (months != null && months > oldest) oldest = months
-      }
-      windowMonths = windows.find((w) => w >= oldest) ?? windowMonths
-      const addressKey = (r: CmaMarketAreaRow) =>
-        normalizePeerAddress(peerAddress(r)) || String(r.ListingKey ?? '')
-      const eligible = combined.filter(
-        (r) =>
-          !isSubjectExpiredRow(r, input.subject) &&
-          peerAddress(r).length > 0 &&
-          Number(r.ListPrice) > 0,
-      )
-      areaTotal = new Set(eligible.map(addressKey).filter((k) => k.length > 0)).size
-    }
-  }
-
   const withWhy = peers.map((p) => ({ ...p, whyItSat: whyItSat(p, input.keptCompMedianPpsf) }))
   const count = withWhy.length
   const shortfall = count < EXPIRED_PEER_MIN
   const widenedTo = !shortfall && windowMonths > windows[0]! ? windowMonths : null
-  const openNote =
-    openedFit && count > 0
-      ? ' Each is within one bedroom of this home and within 35 percent of its size.'
-      : ''
+  // A peer kept one room apart on the subject's own ground is named with the
+  // room, and the sentence says no dollar value is applied (rule 4).
+  const noted = roomNotedSentence(withWhy)
+  const roomNote = noted ? ` ${noted}` : ''
 
   return {
     area: input.area,
@@ -977,19 +897,23 @@ export function buildExpiredPeerSet(input: {
     sentence:
       peerSetSentence({
         area: sentenceArea(input.area, withWhy),
+        searchArea: input.area,
         count,
         areaTotal,
         windowMonths,
         shortfall,
         likeYours,
         subjectCameOff: input.subjectCameOff === true,
-      }) + openNote,
+      }) + roomNote,
     peers: withWhy,
   }
 }
 
 function peerSetSentence(input: {
+  /** The plats holding a shown peer, for the count sentence. */
   area: CompArea
+  /** The whole sales area the rows were read over, for the "nothing from outside" clause. */
+  searchArea: CompArea
   count: number
   areaTotal?: number
   windowMonths: number
@@ -998,11 +922,11 @@ function peerSetSentence(input: {
   subjectCameOff?: boolean
 }): string {
   const where = compAreaIn(input.area)
+  const whereOr = compAreaIn(input.area, { negative: true })
   const w = monthsWord(input.windowMonths)
-  // "like yours" is not decoration: the peers are narrowed to the subject's
-  // bedroom count and within 25% of its size, so a bare "three homes in X" —
-  // over an area that may hold thirty unsold listings — would be a count of
-  // one set attached to the name of another (§0).
+  // "like yours" is not decoration: every peer passed the sales rules, so a
+  // bare "three homes in X" over an area that may hold thirty unsold
+  // listings would be a count of one set attached to the name of another (§0).
   const like = input.likeYours ? ' like yours' : ''
   // `count` is the rows the table prints. The sentence uses that number.
   const n = input.count
@@ -1010,22 +934,22 @@ function peerSetSentence(input: {
     const cameOff = input.areaTotal ?? 0
     if (cameOff > 0) {
       const came = cameOff === 1 ? 'One home' : `${countWord(cameOff, true)} homes`
-      return `${came} ${where} came off the market without selling in the last ${w} months. None were close to this home in bedrooms and size, so none are on this map.`
+      return `${came} ${where} came off the market without selling in the last ${w} months. None were close to this home in bedrooms, bathrooms, size or age, so none are on this map.`
     }
     // The subject is the home that came off. Do not say none did.
     if (input.subjectCameOff) return ''
-    return `No home ${where} came off the market without selling in the last ${w} months.`
+    return `No home ${whereOr} came off the market without selling in the last ${w} months.`
   }
   const homes = `${countWord(n)} ${n === 1 ? 'home' : 'homes'}${like}`
   if (!input.shortfall) {
-    const head = `${countWord(n)} ${n === 1 ? 'home' : 'homes'}${like}`
-    const sentence = `${head} ${where} came off the market without selling in the last ${w} months.`
+    const sentence = `${homes} ${where} came off the market without selling in the last ${w} months.`
     return sentence.charAt(0).toUpperCase() + sentence.slice(1)
   }
   // Fewer than three even at the widest window. Say the number, say the
-  // window, and say plainly that nothing was brought in from outside.
+  // window, and say plainly that nothing was brought in from outside the
+  // WHOLE search area, so the sentence never implies only one plat was read.
   const outside =
-    input.area.kind === 'radius' ? 'further out' : `outside ${compAreaPhrase(input.area)}`
+    input.searchArea.kind === 'radius' ? 'further out' : `outside ${compAreaPhrase(input.searchArea)}`
   return `Only ${homes} ${where} came off the market without selling in the last ${w} months, and nothing from ${outside} was added to make up the number.`
 }
 

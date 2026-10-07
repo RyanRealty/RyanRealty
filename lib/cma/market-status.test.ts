@@ -4,7 +4,6 @@ import {
   computeMarketArea,
   marketAreaPriceBand,
   buildExpiredPeerSet,
-  competitorUnsoldSubdivisionNames,
   keptCompMedianPpsf,
   pickExpiredPeers,
   similarBedRange,
@@ -300,9 +299,15 @@ describe('market status grain', () => {
 
 
 describe('pickExpiredPeers', () => {
+  // The rows above are Tetherow rows with three baths and no year, so the
+  // same-area fit (rule 24) reads them as the subject's own plat and a match.
   const subj = {
     beds: 3,
+    baths: 3,
     sqft: 1450,
+    yearBuilt: 2005,
+    subdivision: 'Tetherow',
+    city: 'Bend',
     latitude: 43.7,
     longitude: -121.5,
     listingKey: 'FALCON-15991',
@@ -772,7 +777,11 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
   const ASOF = new Date('2026-09-08T12:00:00.000Z')
   const subj = {
     beds: 3,
+    baths: 2,
     sqft: 1450,
+    yearBuilt: 2005,
+    subdivision: 'Diamond Bar Ranch',
+    city: 'Redmond',
     latitude: 44.2726,
     longitude: -121.1739,
     listingKey: 'SUBJ',
@@ -795,7 +804,9 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
       DaysOnMarket: 150,
       CumulativeDaysOnMarket: 150,
       BedroomsTotal: 3,
+      BathroomsTotal: 2,
       TotalLivingAreaSqFt: 1450,
+      year_built: 2005,
       SubdivisionName: 'Diamond Bar Ranch',
       status_change_timestamp: off,
       OnMarketDate: new Date(ASOF.getTime() - (monthsAgo + 5) * 30.44 * 24 * 3600e3).toISOString().slice(0, 10),
@@ -997,7 +1008,7 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
     expect(set.peers[0]!.whyItSat).toContain('never came down from $500,000')
   })
 
-  it('shows a one-bedroom miss inside a subdivision when nothing matched exactly', () => {
+  it("keeps a one-bedroom miss on the subject's own plat, refuses two apart and the size cutoff, and says so (rule 4, Matt 2026-10-07)", () => {
     const set = buildExpiredPeerSet({
       rows: [
         unsold('NEAR', '2515 Keats', 5, {
@@ -1016,21 +1027,24 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
           SubdivisionName: 'Hampton Park',
         }),
       ],
-      subject: { ...subj, beds: 4, sqft: 2388, streetAddress: '2566 Keats' },
+      subject: { ...subj, beds: 4, baths: 2, sqft: 2388, subdivision: 'Hampton Park', city: 'Bend', streetAddress: '2566 Keats' },
       area: { ...AREA, names: ['Hampton Park'], sentence: 'Hampton Park, your own subdivision.' },
       asOf: ASOF,
+      // The closed-sale lookback caps the window (Matt ADD 2026-09-12).
+      maxWindowMonths: 6,
     })
     expect(set.peers.map((p) => p.address)).toEqual(['2515 Keats'])
-    expect(set.likeYours).toBe(false)
+    expect(set.peers[0]!.roomDifference).toEqual(['beds'])
+    expect(set.likeYours).toBe(true)
     expect(set.sentence).toBe(
-      'Only one home in Hampton Park came off the market without selling in the last six months, and nothing from outside Hampton Park was added to make up the number. Each is within one bedroom of this home and within 35 percent of its size.',
+      'Only one home like yours in Hampton Park came off the market without selling in the last six months, and nothing from outside Hampton Park was added to make up the number. 2515 Keats is one bedroom different from yours. No dollar value is applied to the room.',
     )
-    expect(set.sentence).not.toContain('like yours')
+    expect(set.sentence).not.toContain('within 35 percent')
     expect(set.sentence).not.toContain('None were close')
     expect(set.sentence).not.toMatch(/[—–]/)
   })
 
-  it('names a competitor subdivision when the sales plats are still short, and drops a home that is for sale now', () => {
+  it('takes nothing from the subdivisions drawn as competition (Matt 2026-10-07)', () => {
     const set = buildExpiredPeerSet({
       rows: [
         unsold('NEAR', '2515 Keats', 5, {
@@ -1039,24 +1053,15 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
           SubdivisionName: 'Hampton Park',
         }),
       ],
+      // @ts-expect-error alsoRows was removed 2026-10-07: competitor plats are not an expired ring.
       alsoRows: [
         unsold('RUM', '1482 Rumgay', 8, {
           BedroomsTotal: 3,
           TotalLivingAreaSqFt: 1768,
           SubdivisionName: 'Quiet Canyon',
         }),
-        unsold('LIVE', '408 Hawthorne', 1, {
-          BedroomsTotal: 3,
-          TotalLivingAreaSqFt: 1864,
-          SubdivisionName: 'Center Addition to Bend',
-        }),
-        unsold('MAKER', '1816 Maker', 14, {
-          BedroomsTotal: 3,
-          TotalLivingAreaSqFt: 1778,
-          SubdivisionName: 'Village Wiestoria',
-        }),
       ],
-      subject: { ...subj, beds: 4, sqft: 2388, streetAddress: '2566 Keats' },
+      subject: { ...subj, beds: 4, baths: 2, sqft: 2388, subdivision: 'Hampton Park', city: 'Bend', streetAddress: '2566 Keats' },
       area: {
         ...AREA,
         kind: 'subdivisions',
@@ -1064,24 +1069,20 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
         sentence: 'Hampton Park and the one subdivision next to it.',
       },
       asOf: ASOF,
-      liveAddresses: ['408 Hawthorne'],
+      maxWindowMonths: 6,
     })
-    expect(set.peers.map((p) => p.address)).toEqual(['2515 Keats', '1482 Rumgay', '1816 Maker'])
-    expect(set.likeYours).toBe(false)
-    expect(set.shortfall).toBe(false)
+    expect(set.peers.map((p) => p.address)).toEqual(['2515 Keats'])
+    expect(set.shortfall).toBe(true)
     expect(set.sentence).toBe(
-      'Three homes in Hampton Park, Quiet Canyon and Village Wiestoria came off the market without selling in the last 18 months. Each is within one bedroom of this home and within 35 percent of its size.',
+      'Only one home like yours in Hampton Park came off the market without selling in the last six months, and nothing from outside Hampton Park and Deer Pointe Village was added to make up the number. 2515 Keats is one bedroom different from yours. No dollar value is applied to the room.',
     )
-    expect(set.sentence).not.toContain('Deer Pointe')
-    expect(set.sentence).not.toContain('Center Addition')
-    expect(set.sentence).not.toContain('like yours')
-    expect(set.sentence).not.toContain('nothing from outside')
+    expect(set.sentence).not.toContain('Quiet Canyon')
+    expect(set.sentence).not.toMatch(/[—–]/)
   })
 
-  it('does not pull competitor rows into a neighborhood set', () => {
+  it('says nothing for a neighborhood set when the subject is the home that came off', () => {
     const set = buildExpiredPeerSet({
       rows: [],
-      alsoRows: [unsold('X', '9 Fir', 1, { SubdivisionName: 'Other Plat' })],
       subject: subj,
       area: { ...AREA, kind: 'neighborhood', names: ['River West'], sentence: 'River West.' },
       asOf: ASOF,
@@ -1091,22 +1092,79 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
     expect(set.sentence).toBe('')
   })
 
-  it('names only the competitor subdivisions that are not already the sales plats', () => {
-    expect(
-      competitorUnsoldSubdivisionNames(
-        [
-          { subdivision: 'Quiet Canyon' },
-          { subdivision: 'Hampton Park' },
-          { subdivision: 'Center Addition to Bend' },
-          { subdivision: 'Village Wiestoria' },
-          { subdivision: 'N/A' },
-          { subdivision: 'Quiet Canyon' },
-          { subdivision: null },
-        ],
-        ['Hampton Park', 'Deer Pointe Village'],
-      ),
-    ).toEqual(['Quiet Canyon', 'Center Addition to Bend', 'Village Wiestoria'])
-    expect(competitorUnsoldSubdivisionNames([{ subdivision: 'Quiet Canyon' }], [])).toEqual([])
+  it('never prints a plat outside the sales area (Matt 2026-10-07, 3177 Coho)', () => {
+    const area: CompArea = {
+      kind: 'subdivisions',
+      names: ['Rooster Rock', 'Madison Park'],
+      radiusMiles: null,
+      centre: { lat: 44.03, lng: -121.27 },
+      source: 'test',
+      sentence: 'Rooster Rock and the one subdivision next to it.',
+    }
+    const coho = {
+      ...subj,
+      subdivision: 'Rooster Rock',
+      city: 'Bend',
+      yearBuilt: 2018,
+      sqft: 1458,
+      streetAddress: '3177 Coho',
+    }
+    const foreign = [
+      unsold('HP', '20 High Pointe', 2, { SubdivisionName: 'High Pointe', TotalLivingAreaSqFt: 1458, year_built: 2018 }),
+      unsold('OW', '30 Owls', 4, { SubdivisionName: 'Owls', TotalLivingAreaSqFt: 1458, year_built: 2018 }),
+    ]
+    expect(pickExpiredPeers(foreign, coho, area)).toEqual([])
+    const set = buildExpiredPeerSet({ rows: foreign, subject: coho, area, asOf: ASOF, maxWindowMonths: 12 })
+    expect(set.peers).toEqual([])
+    expect(set.areaTotal).toBe(0)
+    expect(set.sentence).toBe(
+      'No home in Rooster Rock or Madison Park came off the market without selling in the last 12 months.',
+    )
+    expect(set.sentence).not.toContain('High Pointe')
+    expect(set.sentence).not.toContain('Owls')
+  })
+
+  it('keeps a one-bath miss on the own plat and names the room once (rule 4, Matt 2026-10-07)', () => {
+    const set = buildExpiredPeerSet({
+      rows: [
+        unsold('A', '10 Aspen', 1, { BathroomsTotal: 3 }),
+        unsold('B', '20 Birch', 1),
+        unsold('C', '30 Cedar', 2),
+      ],
+      subject: subj,
+      area: AREA,
+      asOf: ASOF,
+    })
+    expect(set.peers.map((p) => p.address)).toEqual(['10 Aspen', '20 Birch', '30 Cedar'])
+    expect(set.peers.find((p) => p.address === '10 Aspen')!.roomDifference).toEqual(['baths'])
+    expect(set.sentence).toBe(
+      'Three homes like yours in Diamond Bar Ranch came off the market without selling in the last three months. 10 Aspen is one bathroom different from yours. No dollar value is applied to the room.',
+    )
+    expect(set.sentence).not.toMatch(/[—–]/)
+  })
+
+  it('holds the year band off the own plat and never on it (Matt 2026-10-07)', () => {
+    const twoPlats: CompArea = {
+      ...AREA,
+      kind: 'subdivisions',
+      names: ['Diamond Bar Ranch', 'Other Plat'],
+      sentence: 'Diamond Bar Ranch and the one subdivision next to it.',
+    }
+    const off = buildExpiredPeerSet({
+      rows: [unsold('OLD', '10 Aspen', 1, { year_built: 1975, SubdivisionName: 'Other Plat' })],
+      subject: subj,
+      area: twoPlats,
+      asOf: ASOF,
+    })
+    expect(off.peers).toEqual([])
+    expect(off.areaTotal).toBe(1)
+    const own = buildExpiredPeerSet({
+      rows: [unsold('OLD', '10 Aspen', 1, { year_built: 1975, SubdivisionName: 'Diamond Bar Ranch' })],
+      subject: subj,
+      area: twoPlats,
+      asOf: ASOF,
+    })
+    expect(own.peers.map((p) => p.address)).toEqual(['10 Aspen'])
   })
 
   it('claims nothing when the row carries no days, no opening ask and no size', () => {
@@ -1169,6 +1227,9 @@ describe('the peer sentence counts the rows it shows', () => {
         SubdivisionName: null,
         status_change_timestamp: '2026-08-20',
         OnMarketDate: '2026-05-01',
+        // Inside the River West polygon: the area counts only homes the fit compared.
+        Latitude: 44.0645,
+        Longitude: -121.3237,
       }),
     )
     const set = buildExpiredPeerSet({
@@ -1191,7 +1252,7 @@ describe('the peer sentence counts the rows it shows', () => {
     expect(set.count).toBe(0)
     expect(set.peers).toHaveLength(0)
     expect(set.sentence).toBe(
-      'Seven homes in River West came off the market without selling in the last 24 months. None were close to this home in bedrooms and size, so none are on this map.',
+      'Seven homes in River West came off the market without selling in the last 24 months. None were close to this home in bedrooms, bathrooms, size or age, so none are on this map.',
     )
     expect(set.sentence).not.toMatch(/No home /)
     expect(set.sentence).not.toContain('—')

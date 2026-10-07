@@ -103,14 +103,13 @@ import { buildCmaMapDataUri } from '@/lib/cma/map'
 import { renderCmaHtml } from '@/lib/cma/render'
 import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
 import { buildSubjectStatus } from '@/lib/pricing/subject-status'
-import { compAreaContains, parentPlaceArea, type CompArea } from '@/lib/pricing/comp-area'
-import { buildExpiredPeerSet, keptCompMedianPpsf } from '@/lib/cma/market-status'
+import { parentPlaceArea } from '@/lib/pricing/comp-area'
 import type { PlacePricingStory } from '@/lib/cma/place-pricing-types'
 import { readPlacePricingStory } from '@/lib/data/cma/placePricingRead'
 import { loadListingWindowMarket } from '@/lib/cma/listing-window-load'
 import { pocketClosedSupportPrice } from '@/lib/pricing/active-dom-nudge'
 import { finishRecommendedAfterActives } from '@/lib/cma/finish-recommended'
-import { assembleCompetition } from '@/lib/cma/assemble-competition'
+import { assembleCompetition, assembleExpiredPeers } from '@/lib/cma/assemble-competition'
 import type { CmaBroker, CmaBuildInput, CmaBuildResult, CmaPricing } from '@/lib/cma/types'
 
 export const CMA_BUILDER_VERSION = 'deterministic-v1 (2026-07-07)'
@@ -1341,11 +1340,9 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       parcels,
       compSearch,
       compArea,
-      competitionRings,
       peerBand,
       rivalBand,
       unsoldRead,
-      rivalUnsoldRows,
       widestAreaInventory,
       competitionRing,
       competitionArea,
@@ -1377,64 +1374,10 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         }
       : null
 
-    // Same lookback as the closed sales that set the price — no older expireds
-    // from a longer window than the solds (Matt ADD 2026-09-12).
-    const compsLookbackMonths = (() => {
-      const ages = renderComps
-        .map((c) => {
-          const iso = (c.closeDate ?? '').slice(0, 10)
-          if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null
-          const ms = Date.now() - Date.parse(`${iso}T12:00:00.000Z`)
-          if (!Number.isFinite(ms) || ms < 0) return null
-          return Math.ceil(ms / (1000 * 60 * 60 * 24 * 30.44))
-        })
-        .filter((n): n is number => n != null && n > 0)
-      return ages.length > 0 ? Math.max(3, Math.max(...ages)) : 12
-    })()
-    const expiredSubject = {
-      beds: subject.beds,
-      sqft: subject.sqft,
-      latitude: subject.latitude,
-      longitude: subject.longitude,
-      listingKey: subject.listingKey,
-      mlsNumber: subject.mlsNumber,
-      streetAddress: subject.streetAddress,
-      propertySubType: subject.propertySubType,
-    }
-    // Same ladder as actives: pocket, then radius, stop when three homes are
-    // in hand, never the city. An empty rung still produces a sentence.
-    let expiredArea: CompArea | null = competitionRings[0] ?? null
-    let expiredRows = unsoldRead?.rows ?? []
-    if (unsoldRead && competitionRings.length > 0) {
-      for (const ring of competitionRings) {
-        const inside = unsoldRead.rows.filter((r) =>
-          compAreaContains(ring, {
-            latitude: r.Latitude ?? null,
-            longitude: r.Longitude ?? null,
-            subdivision: r.SubdivisionName ?? null,
-            city: r.City ?? null,
-          }),
-        )
-        expiredArea = ring
-        expiredRows = inside
-        if (inside.length >= 3) break
-      }
-    }
-    const expiredPeers = expiredArea
-      ? buildExpiredPeerSet({
-          rows: expiredRows,
-          subject: expiredSubject,
-          area: expiredArea,
-          keptCompMedianPpsf: keptCompMedianPpsf(renderComps),
-          maxWindowMonths: compsLookbackMonths,
-          closedSaleAddresses: renderComps.map((c) => c.address),
-          subjectCameOff: lastCycleFailed,
-          alsoRows: rivalUnsoldRows,
-          liveAddresses: (bandRivals?.rivals ?? [])
-            .filter((rival) => rival.status === 'Active' || rival.status === 'Pending')
-            .map((rival) => rival.address),
-        })
-      : null
+    // The homes that came off unsold, from the same one ring the competition
+    // was read over and by the same rules (Matt 2026-10-07, rule 24). The
+    // closed-sale lookback caps the window inside it (Matt ADD 2026-09-12).
+    const { expiredPeers } = assembleExpiredPeers({ competition, subject, lastCycleFailed })
 
     let placePricing: PlacePricingStory | null = null
     try {

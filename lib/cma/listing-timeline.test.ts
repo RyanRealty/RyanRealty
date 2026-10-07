@@ -216,14 +216,18 @@ describe('listingTimelineReading', () => {
     expect(reading).toContain('You were asking inside the range homes like yours sold in')
     expect(reading).toContain('Your home sat 187 days without an offer.')
     expect(reading).toContain(
-      'At a price inside the range, 187 days without an offer points at something other than the number. We would walk it with you before saying more.',
+      'At a price inside the range, that long without an offer points at something other than the number. We would walk it with you before saying more.',
     )
+    // The days are said once, by the sat sentence (Matt 2026-10-07).
+    expect(reading.match(/187 days/g)).toHaveLength(1)
     expect(reading).not.toContain('accepted offer in')
   })
 
-  it('does not argue overpricing when the ask was near the range', () => {
+  it('says the ask and the days once when the ask was near the range (Matt 2026-10-07)', () => {
     // The corrected engine's own case (tasteReview round three, §4.1): 3.8
-    // percent above the top is not a story about the number.
+    // percent above the top is not a story about the number. The ask claim
+    // and the day count are already on the page; the handoff says neither
+    // again.
     const reading = listingTimelineReading({
       timeline: { ...base, steps: [{ date: '2026-02-26', ask: 405000 }] },
       city: 'Redmond',
@@ -231,7 +235,9 @@ describe('listingTimelineReading', () => {
     })
     expect(reading).toContain('percent above the top of the range homes like yours sold in')
     expect(reading).toContain('Half of the homes that sold in Redmond had an offer inside 26 days.')
-    expect(reading).toContain('You were asking above what the sales support, and your home went 187 days without an offer. We would walk it with you before saying more.')
+    expect(reading).toContain('That starts with the price. We would walk it with you before saying more.')
+    expect(reading).not.toContain('above what the sales support')
+    expect(reading.match(/187 days/g)).toHaveLength(1)
     expect(reading).not.toContain('points at something other than the number')
   })
 

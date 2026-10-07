@@ -46,13 +46,6 @@ function insideSalesBoundary(
   return compAreaContains(area, row)
 }
 
-/** A real MLS subdivision. Placeholders are not a place the set can stand on. */
-function namedSubdivision(raw: string | null | undefined): boolean {
-  const name = raw?.trim() ?? ''
-  if (!name) return false
-  return !/^(n\/a|na|none|other|unknown)$/i.test(name)
-}
-
 export function unsoldPeersFor(input: {
   subject: Pick<CmaSubject, 'listingKey' | 'mlsNumber' | 'streetAddress'> & { propertySubType?: string | null }
   peers?: readonly CmaExpiredPeer[] | null
@@ -64,11 +57,9 @@ export function unsoldPeersFor(input: {
       p.listPrice > 0 &&
       !peerMatchesSubject(p, input.subject) &&
       letterProductMatch(input.subject.propertySubType, p.propertySubType) &&
-      // The set already counted this home. A competitor subdivision sits
-      // outside the sales plat on purpose. Dropping it here counts a home
-      // the table does not show. A blank place still has to be inside the
-      // sales boundary.
-      (namedSubdivision(p.subdivision) || insideSalesBoundary(input.area, p)),
+      // A peer outside the sales area is never drawn, whatever its stored
+      // name (Matt 2026-10-07).
+      insideSalesBoundary(input.area, p),
   )
   return collapseExpiredPeerCycles(named)
 }
@@ -190,6 +181,8 @@ export function matrixSetsFromArgs(args: unknown): {
   const rivals = doc?.bandRivals?.rivals ?? a?.extras?.band?.rivals ?? []
   return {
     unsold: subject ? unsoldPeersFor({ subject, peers, area: doc?.compArea ?? null }) : [],
-    active: activeRivalsFor(rivals, subject, doc?.bandRivals?.area ?? doc?.compArea ?? null),
+    // The sales area first. An old row's widened `bandRivals.area` no longer
+    // admits a pin outside the plats the sales sit in (Matt 2026-10-07).
+    active: activeRivalsFor(rivals, subject, doc?.compArea ?? doc?.bandRivals?.area ?? null),
   }
 }

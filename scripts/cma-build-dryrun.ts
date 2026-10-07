@@ -520,129 +520,34 @@ async function dryRun(slug: string): Promise<DryRun> {
     })),
   })
 
-  // render_args.compSearch — the ladder as counts, built by the same function
-  // lib/cma/build.ts calls. The judge is skipped here, so the kept set is the
-  // full ladder result and the counts are the widest the document could print.
-  const { buildCompSearch } = await import('@/lib/pricing/comp-search')
-  const compSearch = buildCompSearch({
-    subdivision: selection.diagnostics.subject.subdivision ?? subject.subdivision,
-    ladder: selection.diagnostics.ladder.map((t) => ({
-      tier: t.tier,
-      ran: t.ran,
-      monthsBack: t.months_back,
-      compsAdded: t.comps_added,
-    })),
-    keptComps: adjusted.map((c) => ({ subdivision: c.subdivision, selectionTier: c.selectionTier })),
+  // render_args.compSearch, render_args.compArea, render_args.expiredPeers and
+  // render_args.bandRivals through the same two functions lib/cma/build.ts
+  // calls, so a dry-run score equals a build's for these blocks. The judge is
+  // skipped here, so the kept set is the full ladder result and the counts are
+  // the widest the document could print. Both reads are scoped to the sales
+  // area and to nothing wider (Matt 2026-10-07, rule 24).
+  const { assembleCompetition, assembleExpiredPeers } = await import('@/lib/cma/assemble-competition')
+  const competition = await assembleCompetition({
+    subject,
+    comps: adjusted,
+    verdicts: [],
+    diagnostics: selection.diagnostics,
+    recommended: pricing.recommended,
+    subjectZone: null,
+    generatedAtIso: new Date().toISOString(),
   })
-
-  // R2h — render_args.compArea, render_args.expiredPeers, render_args.bandRivals,
-  // through the same functions lib/cma/build.ts calls. Both reads are scoped to
-  // the derived area and to nothing wider.
-  const { buildCompArea, resolveCompetitionArea } = await import('@/lib/pricing/comp-area')
-  const { getCmaAreaUnsoldCycles } = await import('@/lib/data/cma/areaUnsoldReads')
-  const { getCmaAreaBandInventory } = await import('@/lib/data/cma/bandInventory')
-  const { buildExpiredPeerSet, keptCompMedianPpsf, marketAreaPriceBand } = await import('@/lib/cma/market-status')
-  const { bandAroundList, bandRowToRival, buildBandRivalSet, pickCompetitionRing } = await import(
-    '@/lib/cma/band-rivals'
-  )
-
-  const compArea = buildCompArea({
-    subject: {
-      latitude: subject.latitude,
-      longitude: subject.longitude,
-      subdivision: selection.diagnostics.subject.subdivision ?? subject.subdivision,
-      city: subject.city,
-    },
-    rungs: (compSearch?.rungs ?? []).map((r) => ({ key: r.key, kept: r.kept, added: r.added })),
-    keptComps: adjusted.map((c) => ({
-      subdivision: c.subdivision,
-      selectionTier: c.selectionTier,
-      latitude: c.latitude,
-      longitude: c.longitude,
-    })),
-  })
-  // Matt 2026-09-08: rural competition widens only as far as it has to.
-  // `resolveCompetitionArea` returns the ring order to try; the widest one
-  // bounds the single read, and `pickCompetitionRing` walks the rest.
-  const competitionRings = compArea
-    ? resolveCompetitionArea({
-        compArea,
-        subject: { latitude: subject.latitude, longitude: subject.longitude, city: subject.city },
-        keptComps: adjusted.map((c) => ({ latitude: c.latitude, longitude: c.longitude })),
-      })
-    : []
-  const widestCompetitionRing = competitionRings[competitionRings.length - 1] ?? null
-  const peerBand = marketAreaPriceBand(pricing.recommended || subject.lastListPrice || 0)
-  const rivalBand = bandAroundList(pricing.recommended)
-  const [unsoldRead, widestAreaInventory] = await Promise.all([
-    compArea && peerBand
-      ? getCmaAreaUnsoldCycles({
-          area: compArea,
-          city: subject.city,
-          propertySubType: subject.propertySubType,
-          priceLo: peerBand.lo,
-          priceHi: peerBand.hi,
-        }).catch(() => null)
-      : Promise.resolve(null),
-    widestCompetitionRing && rivalBand
-      ? getCmaAreaBandInventory({
-          area: widestCompetitionRing,
-          city: subject.city,
-          lo: rivalBand.lo,
-          hi: rivalBand.hi,
-          propertySubType: subject.propertySubType,
-        }).catch(() => null)
-      : Promise.resolve(null),
-  ])
-  const expiredPeers =
-    compArea && unsoldRead
-      ? buildExpiredPeerSet({
-          rows: unsoldRead.rows,
-          subject: {
-            beds: subject.beds,
-            sqft: subject.sqft,
-            latitude: subject.latitude,
-            longitude: subject.longitude,
-            listingKey: subject.listingKey,
-            mlsNumber: subject.mlsNumber,
-            streetAddress: subject.streetAddress,
-          },
-          area: compArea,
-          keptCompMedianPpsf: keptCompMedianPpsf(adjusted),
-        })
-      : null
-  const competitionRing =
-    widestAreaInventory && competitionRings.length > 0
-      ? pickCompetitionRing({
-          rings: competitionRings,
-          activeRows: widestAreaInventory.activeRows,
-          pendingRows: widestAreaInventory.pendingRows,
-        })
-      : null
-  const competitionArea = competitionRing?.area ?? widestCompetitionRing
-  const bandRivals =
-    competitionRing && widestAreaInventory
-      ? buildBandRivalSet({
-          area: competitionRing.area,
-          lo: widestAreaInventory.lo,
-          hi: widestAreaInventory.hi,
-          activeCount: competitionRing.activeCount,
-          pendingCount: competitionRing.pendingCount,
-          rivals: [
-            ...competitionRing.activeRows.map((r) => bandRowToRival(r, 'Active')),
-            ...competitionRing.pendingRows.map((r) => bandRowToRival(r, 'Pending')),
-          ].filter((r): r is NonNullable<typeof r> => r != null),
-          subject: {
-            latitude: subject.latitude,
-            longitude: subject.longitude,
-            beds: subject.beds,
-            sqft: subject.sqft,
-          },
-          asOfIso: new Date().toISOString(),
-          widenedFrom: competitionRing.widenedFrom,
-          ringsTried: competitionRing.ringsTried,
-        })
-      : null
+  const {
+    compSearch,
+    compArea,
+    peerBand,
+    rivalBand,
+    unsoldRead,
+    widestAreaInventory,
+    competitionRing,
+    competitionArea,
+    bandRivals,
+  } = competition
+  const { expiredPeers } = assembleExpiredPeers({ competition, subject, lastCycleFailed })
 
   // §0 rule 5 cross-checks, computed off the same objects render_args carries.
   attachSellerNet(pricing, selection.comps)

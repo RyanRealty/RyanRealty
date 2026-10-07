@@ -1,23 +1,25 @@
 /**
- * The rival set the nudge reads, and the same rings the letter prints.
+ * The rival set the nudge reads, and the expired set the letter prints, both
+ * inside the sales area and by the sales rules (Matt 2026-10-07, rule 24).
  * Loaded before the graded audit so that audit sees the list after the nudge.
  */
 
 import { applyCompVerdicts } from '@/lib/cma/client-facing'
 import { resolveCmaParcels } from '@/lib/cma/parcel-shapes'
 import { buildCompSearch } from '@/lib/pricing/comp-search'
-import {
-  buildCompArea,
-  competitionDistanceRings,
-  COMPETITION_BEND_CAP_MILES,
-  parentPlaceArea,
-  resolveCompetitionArea,
-  type CompArea,
-} from '@/lib/pricing/comp-area'
+import { buildCompArea, resolveCompetitionArea } from '@/lib/pricing/comp-area'
 import { getCmaAreaUnsoldCycles } from '@/lib/data/cma/areaUnsoldReads'
-import { getCmaAreaBandInventory } from '@/lib/data/cma/bandInventory'
-import { competitorUnsoldSubdivisionNames, marketAreaPriceBand } from '@/lib/cma/market-status'
-import type { CmaMarketAreaRow } from '@/lib/data/cma/marketAreaReads'
+import {
+  getCmaAreaBandInventory,
+  type CmaAreaBandInventory,
+  type CmaBandListingRow,
+} from '@/lib/data/cma/bandInventory'
+import {
+  buildExpiredPeerSet,
+  keptCompMedianPpsf,
+  marketAreaPriceBand,
+  type CmaExpiredPeerSet,
+} from '@/lib/cma/market-status'
 import {
   bandAroundList,
   bandAroundListAt,
@@ -27,141 +29,29 @@ import {
   COMPETITION_BAND_STEPS,
   COMPETITION_GOOD_COUNT,
   COMPETITION_SHOWN_CAP,
+  daysSinceOnMarket,
   emptyCompetitionSet,
-  pickCompetitionRing,
-  rivalFitsSubject,
   type CmaBandRival,
   type CmaBandRivalSet,
+  type CompetitionRingPick,
 } from '@/lib/cma/band-rivals'
+import { sameAreaFit, sameAreaSubject, type SameAreaFit } from '@/lib/cma/same-area-fit'
 import { attachCompConcessions } from '@/lib/pricing/seller-net'
 import type { CompSelectionDiagnostics } from '@/lib/cma/comp-trace'
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
 
-type CompetitionStep = {
+/** One price step inside the sales area: every home the band holds, and the ones that pass the rules. */
+type BandStep = {
   halfWidth: number
   band: { lo: number; hi: number }
-  area: CompArea
-  fitting: CmaBandRival[]
   all: CmaBandRival[]
+  fitting: CmaBandRival[]
 }
 
-/**
- * The sales plat is short of five homes a buyer would actually cross-shop.
- * Open the price band in that place, then the mapped neighborhood, then
- * quarter-mile rings. Stop at the first step that holds five homes within
- * one bedroom and 35 percent of the size. The city is not a ring.
- * Matt 2026-10-06. Same opening the expired chapter uses when three tight
- * matches are not there.
- */
-async function widenShortPlatCompetition(args: {
-  subject: CmaSubject
-  recommended: number
-  startArea: CompArea
-  platFitting: number
-  asOfIso: string
-}): Promise<CmaBandRivalSet | null> {
-  const fitSubject = {
-    latitude: args.subject.latitude,
-    longitude: args.subject.longitude,
-    beds: args.subject.beds,
-    sqft: args.subject.sqft,
-  }
-  const read = (area: CompArea, band: { lo: number; hi: number }) =>
-    getCmaAreaBandInventory({
-      area,
-      city: args.subject.city,
-      lo: band.lo,
-      hi: band.hi,
-      propertySubType: args.subject.propertySubType,
-    }).catch(() => null)
-  const asRivals = (
-    inv: Awaited<ReturnType<typeof getCmaAreaBandInventory>>,
-  ): CmaBandRival[] => {
-    if (!inv) return []
-    return [
-      ...inv.activeRows.map((r) => bandRowToRival(r, 'Active')),
-      ...inv.pendingRows.map((r) => bandRowToRival(r, 'Pending')),
-    ].filter((r): r is CmaBandRival => r != null)
-  }
-  async function walk(area: CompArea): Promise<CompetitionStep | null> {
-    const steps: CompetitionStep[] = []
-    for (const halfWidth of COMPETITION_BAND_STEPS) {
-      const band = bandAroundListAt(args.recommended, halfWidth)
-      if (!band) continue
-      const all = asRivals(await read(area, band))
-      const fitting = all.filter((r) => rivalFitsSubject(r, fitSubject))
-      steps.push({ halfWidth, band, area, fitting, all })
-      if (fitting.length >= COMPETITION_GOOD_COUNT) break
-    }
-    return chooseCompetitionBand(steps)
-  }
-  function toSet(step: CompetitionStep, extra?: { widenedFrom: number | null; ringsTried: number[] }): CmaBandRivalSet {
-    const use = step.fitting.length > 0 ? step.fitting : step.all
-    return buildBandRivalSet({
-      area: step.area,
-      lo: step.band.lo,
-      hi: step.band.hi,
-      activeCount: use.filter((r) => r.status === 'Active').length,
-      pendingCount: use.filter((r) => r.status === 'Pending').length,
-      rivals: use,
-      subject: fitSubject,
-      cap: COMPETITION_SHOWN_CAP,
-      asOfIso: args.asOfIso,
-      widenedFrom: extra?.widenedFrom ?? null,
-      ringsTried: extra?.ringsTried ?? [],
-    })
-  }
-  let best = await walk(args.startArea)
-  if (best && best.fitting.length >= COMPETITION_GOOD_COUNT) return toSet(best)
-  const parent = parentPlaceArea({ latitude: args.subject.latitude, longitude: args.subject.longitude })
-  if (parent) {
-    const parentStep = await walk(parent)
-    if (parentStep && parentStep.fitting.length > (best?.fitting.length ?? 0)) best = parentStep
-    if (best && best.fitting.length >= COMPETITION_GOOD_COUNT) return toSet(best)
-  }
-  const rings = [
-    ...(parent ? [parent] : []),
-    ...competitionDistanceRings({
-      latitude: args.subject.latitude,
-      longitude: args.subject.longitude,
-      capMiles: COMPETITION_BEND_CAP_MILES,
-    }),
-  ]
-  const widest = rings[rings.length - 1]
-  const widestBand = bandAroundListAt(args.recommended, COMPETITION_BAND_STEPS[COMPETITION_BAND_STEPS.length - 1]!)
-  if (!widest || !widestBand) return best && best.fitting.length > args.platFitting ? toSet(best) : null
-  const wideInv = await read(widest, widestBand)
-  if (!wideInv) return best && best.fitting.length > args.platFitting ? toSet(best) : null
-  const rowFits = (row: (typeof wideInv.activeRows)[number], status: 'Active' | 'Pending') => {
-    const rival = bandRowToRival(row, status)
-    return rival != null && rivalFitsSubject(rival, fitSubject)
-  }
-  const pick = pickCompetitionRing({
-    rings,
-    activeRows: wideInv.activeRows.filter((row) => rowFits(row, 'Active')),
-    pendingRows: wideInv.pendingRows.filter((row) => rowFits(row, 'Pending')),
-    min: COMPETITION_GOOD_COUNT,
-  })
-  const picked = pick.activeCount + pick.pendingCount
-  if (picked <= (best?.fitting.length ?? args.platFitting)) {
-    return best && best.fitting.length > args.platFitting ? toSet(best) : null
-  }
-  const pickedRivals = [
-    ...pick.activeRows.map((r) => bandRowToRival(r, 'Active')),
-    ...pick.pendingRows.map((r) => bandRowToRival(r, 'Pending')),
-  ].filter((r): r is CmaBandRival => r != null)
-  return buildBandRivalSet({
-    area: pick.area,
-    lo: widestBand.lo,
-    hi: widestBand.hi,
-    activeCount: pickedRivals.filter((r) => r.status === 'Active').length,
-    pendingCount: pickedRivals.filter((r) => r.status === 'Pending').length,
-    rivals: pickedRivals,
-    subject: fitSubject,
-    cap: COMPETITION_SHOWN_CAP,
-    asOfIso: args.asOfIso,
-    widenedFrom: pick.widenedFrom,
-    ringsTried: pick.ringsTried,
+function rowsInBand(rows: readonly CmaBandListingRow[], band: { lo: number; hi: number }): CmaBandListingRow[] {
+  return rows.filter((r) => {
+    const price = Number(r.ListPrice)
+    return Number.isFinite(price) && price >= band.lo && price <= band.hi
   })
 }
 
@@ -229,8 +119,8 @@ export async function assembleCompetition(args: {
     : []
   const widestCompetitionRing = competitionRings.length > 0 ? competitionRings[competitionRings.length - 1]! : null
   const peerBand = marketAreaPriceBand(args.recommended || subject.lastListPrice || 0)
-  const rivalBand = bandAroundList(args.recommended)
-  const [unsoldRead, widestAreaInventory] = await Promise.all([
+  const firstBand = bandAroundList(args.recommended)
+  const [unsoldRead, firstInventory] = await Promise.all([
     widestCompetitionRing && peerBand
       ? getCmaAreaUnsoldCycles({
           area: widestCompetitionRing,
@@ -240,76 +130,180 @@ export async function assembleCompetition(args: {
           priceHi: peerBand.hi,
         }).catch(() => null)
       : Promise.resolve(null),
-    widestCompetitionRing && rivalBand
+    widestCompetitionRing && firstBand
       ? getCmaAreaBandInventory({
           area: widestCompetitionRing,
           city: subject.city,
-          lo: rivalBand.lo,
-          hi: rivalBand.hi,
+          lo: firstBand.lo,
+          hi: firstBand.hi,
           propertySubType: subject.propertySubType,
         }).catch(() => null)
       : Promise.resolve(null),
   ])
-  const competitionRing =
-    widestAreaInventory && competitionRings.length > 0
-      ? pickCompetitionRing({
-          rings: competitionRings,
-          activeRows: widestAreaInventory.activeRows,
-          pendingRows: widestAreaInventory.pendingRows,
-        })
-      : null
-  const competitionArea = competitionRing?.area ?? widestCompetitionRing
-  let bandRivals =
-    competitionRing && widestAreaInventory
-      ? buildBandRivalSet({
-          area: competitionRing.area,
-          lo: widestAreaInventory.lo,
-          hi: widestAreaInventory.hi,
-          activeCount: competitionRing.activeCount,
-          pendingCount: competitionRing.pendingCount,
-          rivals: [
-            ...competitionRing.activeRows.map((r) => bandRowToRival(r, 'Active')),
-            ...competitionRing.pendingRows.map((r) => bandRowToRival(r, 'Pending')),
-          ].filter((r): r is NonNullable<typeof r> => r != null),
-          subject: {
-            latitude: subject.latitude,
-            longitude: subject.longitude,
-            beds: subject.beds,
-            sqft: subject.sqft,
-          },
-          asOfIso: args.generatedAtIso,
-          widenedFrom: competitionRing.widenedFrom,
-          ringsTried: competitionRing.ringsTried,
-          cap: COMPETITION_SHOWN_CAP,
-        })
-      : null
-  const recommended = args.recommended || subject.lastListPrice || 0
-  const uncappedPlat = [
-    ...(competitionRing?.activeRows ?? widestAreaInventory?.activeRows ?? []).map((r) => bandRowToRival(r, 'Active')),
-    ...(competitionRing?.pendingRows ?? widestAreaInventory?.pendingRows ?? []).map((r) => bandRowToRival(r, 'Pending')),
-  ].filter((r): r is CmaBandRival => r != null)
-  const platFitting = uncappedPlat.filter((r) =>
-    rivalFitsSubject(r, {
-      beds: subject.beds,
-      sqft: subject.sqft,
-    }),
-  ).length
-  if (
-    recommended > 0 &&
-    compArea &&
-    widestCompetitionRing &&
-    (compArea.kind === 'subdivision' || compArea.kind === 'subdivisions') &&
-    platFitting < COMPETITION_GOOD_COUNT
-  ) {
-    const widened = await widenShortPlatCompetition({
-      subject,
-      recommended,
-      startArea: widestCompetitionRing,
-      platFitting,
-      asOfIso: args.generatedAtIso,
+
+  // THE ONE AREA, THE ONE FIT (Matt 2026-10-07, rule 24). Every home the
+  // chapter counts sits inside the sales area and passes the same rules the
+  // sales passed. When a short recorded plat holds fewer than five such homes
+  // at ±10%, the price band opens one step at a time INSIDE that area, never
+  // the parent neighborhood, never a quarter-mile ring. One extra read at
+  // most: the ±25% band is a superset of every step, so the rest is a walk in
+  // memory, the same shape as the expired window ladder.
+  const fitSubject = sameAreaSubject(subject)
+  // One fit per listing, however many band steps hold it.
+  const fits = new Map<string, SameAreaFit>()
+  const fitOf = (r: CmaBandRival): SameAreaFit => {
+    const known = fits.get(r.listingKey)
+    if (known) return known
+    const fit = sameAreaFit(widestCompetitionRing, fitSubject, {
+      address: r.address,
+      subdivision: r.subdivision,
+      latitude: r.latitude,
+      longitude: r.longitude,
+      beds: r.beds,
+      baths: r.baths,
+      sqft: r.sqft,
+      yearBuilt: r.yearBuilt,
+      propertySubType: r.propertySubType,
     })
-    if (widened && widened.rivals.length > (bandRivals?.rivals.length ?? 0)) bandRivals = widened
+    fits.set(r.listingKey, fit)
+    return fit
   }
+  const toRivals = (inv: CmaAreaBandInventory): CmaBandRival[] =>
+    [
+      ...inv.activeRows.map((r) => bandRowToRival(r, 'Active')),
+      ...inv.pendingRows.map((r) => bandRowToRival(r, 'Pending')),
+    ].filter((r): r is CmaBandRival => r != null)
+  const stamp = (all: readonly CmaBandRival[]): CmaBandRival[] =>
+    all.flatMap((r) => {
+      const fit = fitOf(r)
+      return fit.ok ? [{ ...r, roomDifference: fit.roomDifference }] : []
+    })
+  const steps: BandStep[] = []
+  if (firstInventory && firstBand) {
+    const all = toRivals(firstInventory)
+    steps.push({ halfWidth: COMPETITION_BAND_STEPS[0], band: firstBand, all, fitting: stamp(all) })
+  }
+  let wideInventory: CmaAreaBandInventory | null = null
+  const recommended = args.recommended || subject.lastListPrice || 0
+  const shortPlat =
+    compArea != null && (compArea.kind === 'subdivision' || compArea.kind === 'subdivisions')
+  if (
+    steps[0] &&
+    widestCompetitionRing &&
+    recommended > 0 &&
+    shortPlat &&
+    steps[0].fitting.length < COMPETITION_GOOD_COUNT
+  ) {
+    const widest = bandAroundListAt(recommended, COMPETITION_BAND_STEPS[COMPETITION_BAND_STEPS.length - 1]!)
+    wideInventory = widest
+      ? await getCmaAreaBandInventory({
+          area: widestCompetitionRing,
+          city: subject.city,
+          lo: widest.lo,
+          hi: widest.hi,
+          propertySubType: subject.propertySubType,
+        }).catch(() => null)
+      : null
+    if (wideInventory) {
+      const wideAll = toRivals(wideInventory)
+      for (const halfWidth of COMPETITION_BAND_STEPS.slice(1)) {
+        const band = bandAroundListAt(recommended, halfWidth)
+        if (!band) continue
+        const all = wideAll.filter((r) => r.listPrice >= band.lo && r.listPrice <= band.hi)
+        const fitting = stamp(all)
+        steps.push({ halfWidth, band, all, fitting })
+        if (fitting.length >= COMPETITION_GOOD_COUNT) break
+      }
+    }
+  }
+  const chosen = chooseCompetitionBand(steps)
+
+  // The returned objects describe the PRINTED band and the FITTING set, so
+  // buildCmaExtras (the listing plan's "homes like yours are for sale in this
+  // band"), the nudge and the citations in lib/cma/build.ts all read the one
+  // count the sentence states (rule 17) with no edit there. An opened band is
+  // cut from the wide read by ListPrice, and its citation names that band,
+  // not the wide read's.
+  const rivalBand = chosen?.band ?? firstBand
+  let widestAreaInventory: CmaAreaBandInventory | null = null
+  let competitionRing: CompetitionRingPick<CmaBandListingRow> | null = null
+  let bandRivals: CmaBandRivalSet | null = null
+  if (chosen && widestCompetitionRing) {
+    const opened = chosen.halfWidth > COMPETITION_BAND_STEPS[0]
+    const source = opened ? wideInventory : firstInventory
+    if (source) {
+      const activeRows = opened ? rowsInBand(source.activeRows, chosen.band) : source.activeRows
+      const pendingRows = opened ? rowsInBand(source.pendingRows, chosen.band) : source.pendingRows
+      const fittingKeys = new Set(chosen.fitting.map((r) => r.listingKey))
+      const fittingActive = activeRows.filter((r) => fittingKeys.has(r.ListingKey))
+      const fittingPending = pendingRows.filter((r) => fittingKeys.has(r.ListingKey))
+      const pct = (halfWidth: number) => `±${Math.round(halfWidth * 100)}%`
+      const stepsNote =
+        steps.length > 1
+          ? `; band steps tried ${steps.map((s) => pct(s.halfWidth)).join('/')} inside the same area, never a wider place (Matt 2026-10-07)`
+          : ''
+      const openedNote = opened
+        ? `; band opened from ±10% to ${pct(chosen.halfWidth)}, read once at ${pct(
+            COMPETITION_BAND_STEPS[COMPETITION_BAND_STEPS.length - 1]!,
+          )} (ListPrice ${source.lo}..${source.hi}, ${source.citation.rowsAfterAreaTest} rows) and cut to this band in memory`
+        : ''
+      const citation = {
+        ...source.citation,
+        filter: `${
+          opened
+            ? source.citation.filter.replace(
+                `ListPrice ${source.lo}..${source.hi}`,
+                `ListPrice ${chosen.band.lo}..${chosen.band.hi}`,
+              )
+            : source.citation.filter
+        }${stepsNote}${openedNote}; sameAreaFit kept ${chosen.fitting.length} of ${chosen.all.length}`,
+        rows: opened ? activeRows.length + pendingRows.length : source.citation.rows,
+        rowsAfterAreaTest: opened ? activeRows.length + pendingRows.length : source.citation.rowsAfterAreaTest,
+      }
+      widestAreaInventory = {
+        ...source,
+        lo: chosen.band.lo,
+        hi: chosen.band.hi,
+        activeRows: fittingActive,
+        pendingRows: fittingPending,
+        activeCount: fittingActive.length,
+        pendingCount: fittingPending.length,
+        activeAsks: fittingActive.map((r) => Number(r.ListPrice)).filter((n) => Number.isFinite(n) && n > 0),
+        activeDaysOnMarket: fittingActive
+          .map((r) => daysSinceOnMarket(r.OnMarketDate))
+          .filter((n): n is number => n != null),
+        citation,
+      }
+      competitionRing = {
+        area: widestCompetitionRing,
+        ringsTried: [],
+        widenedFrom: null,
+        activeRows: fittingActive,
+        pendingRows: fittingPending,
+        activeCount: fittingActive.length,
+        pendingCount: fittingPending.length,
+      }
+      bandRivals = buildBandRivalSet({
+        area: widestCompetitionRing,
+        lo: chosen.band.lo,
+        hi: chosen.band.hi,
+        activeCount: fittingActive.length,
+        pendingCount: fittingPending.length,
+        unlikeCount: chosen.all.length - chosen.fitting.length,
+        // True when the band ladder was walked and still holds fewer than
+        // five, whichever step printed (a tie keeps the tighter band). The
+        // citation above records every step tried.
+        shortOfFive: steps.length > 1 && chosen.fitting.length < COMPETITION_GOOD_COUNT,
+        rivals: chosen.fitting,
+        subject: fitSubject,
+        cap: COMPETITION_SHOWN_CAP,
+        asOfIso: args.generatedAtIso,
+        widenedFrom: null,
+        ringsTried: [],
+      })
+    }
+  }
+  const competitionArea = widestCompetitionRing
   if (!bandRivals && rivalBand && compArea) {
     bandRivals = emptyCompetitionSet({
       rings: competitionRings,
@@ -317,34 +311,6 @@ export async function assembleCompetition(args: {
       lo: rivalBand.lo,
       hi: rivalBand.hi,
     })
-  }
-  // Expireds follow the subdivisions actually drawn as competition. Not the
-  // parent neighborhood, and not a mile ring. The peer set uses these rows
-  // only when the sales plats are still short of three close matches.
-  let rivalUnsoldRows: CmaMarketAreaRow[] = []
-  const salesNames =
-    widestCompetitionRing &&
-    (widestCompetitionRing.kind === 'subdivision' || widestCompetitionRing.kind === 'subdivisions')
-      ? widestCompetitionRing.names
-      : []
-  const extraNames = competitorUnsoldSubdivisionNames(bandRivals?.rivals ?? [], salesNames)
-  if (extraNames.length > 0 && peerBand && subject.city.trim()) {
-    const extraArea: CompArea = {
-      kind: extraNames.length === 1 ? 'subdivision' : 'subdivisions',
-      names: extraNames,
-      radiusMiles: null,
-      centre: widestCompetitionRing?.centre ?? null,
-      source: 'subdivisions of the homes drawn as competition',
-      sentence: '',
-    }
-    const extra = await getCmaAreaUnsoldCycles({
-      area: extraArea,
-      city: subject.city,
-      propertySubType: subject.propertySubType,
-      priceLo: peerBand.lo,
-      priceHi: peerBand.hi,
-    }).catch(() => null)
-    rivalUnsoldRows = extra?.rows ?? []
   }
   return {
     renderComps,
@@ -356,10 +322,61 @@ export async function assembleCompetition(args: {
     peerBand,
     rivalBand,
     unsoldRead,
-    rivalUnsoldRows,
     widestAreaInventory,
     competitionRing,
     competitionArea,
     bandRivals,
   }
+}
+
+/**
+ * The homes that came off unsold, from the SAME one ring the competition was
+ * read over and by the same rules (Matt 2026-10-07, rule 24). The build and
+ * the dry run both call this, so a dry-run score equals a build's.
+ */
+export function assembleExpiredPeers(args: {
+  competition: Awaited<ReturnType<typeof assembleCompetition>>
+  subject: CmaSubject
+  lastCycleFailed: boolean
+  now?: Date
+}): { expiredPeers: CmaExpiredPeerSet | null; compsLookbackMonths: number } {
+  const { competition, subject } = args
+  const now = args.now ?? new Date()
+  // Same lookback as the closed sales that set the price. No older expireds
+  // from a longer window than the solds (Matt ADD 2026-09-12).
+  const ages = competition.renderComps
+    .map((c) => {
+      const iso = (c.closeDate ?? '').slice(0, 10)
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null
+      const ms = now.getTime() - Date.parse(`${iso}T12:00:00.000Z`)
+      if (!Number.isFinite(ms) || ms < 0) return null
+      return Math.ceil(ms / (1000 * 60 * 60 * 24 * 30.44))
+    })
+    .filter((n): n is number => n != null && n > 0)
+  const compsLookbackMonths = ages.length > 0 ? Math.max(3, Math.max(...ages)) : 12
+  const area = competition.widestCompetitionRing
+  // `unsoldRead` was already read over this one ring; there is no ring loop.
+  // An EMPTY read still produces a sentence ("No home in X came off"). A
+  // FAILED read produces no set at all: a read that threw is not evidence
+  // that nothing came off (§0), and the citation says `source: none`.
+  const expiredPeers =
+    area && competition.unsoldRead
+      ? buildExpiredPeerSet({
+          rows: competition.unsoldRead.rows,
+          subject: {
+            ...sameAreaSubject(subject),
+            streetAddress: subject.streetAddress,
+            listingKey: subject.listingKey,
+            mlsNumber: subject.mlsNumber,
+          },
+          area,
+          asOf: now,
+          keptCompMedianPpsf: keptCompMedianPpsf(competition.renderComps),
+          maxWindowMonths: compsLookbackMonths,
+          closedSaleAddresses: competition.renderComps.map((c) => c.address),
+          subjectCameOff: args.lastCycleFailed,
+          liveAddresses: (competition.bandRivals?.rivals ?? []).map((rival) => rival.address),
+        })
+      : null
+  return { expiredPeers, compsLookbackMonths }
 }
