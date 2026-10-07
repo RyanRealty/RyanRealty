@@ -1528,7 +1528,7 @@ describe('chapter 1 — the story the numbers carry', () => {
   }
 
   const WALK =
-    'days without an offer points at something other than the number. We would walk it with you before saying more.'
+    'that long without an offer points at something other than the number. We would walk it with you before saying more.'
 
   it('keeps the overpricing story when the ask was more than 10 percent above the range', () => {
     for (const html of [letter(withRange(380000, 398000)), immersive(withRange(380000, 398000))]) {
@@ -1544,7 +1544,9 @@ describe('chapter 1 — the story the numbers carry', () => {
       expect(html).toContain('3.4 percent above the top of the range homes like yours sold in.')
       expect(html).toContain('Your home sat 187 days without an offer.')
       expect(html).toContain('Half of the homes that sold in Redmond had an offer inside 21 days.')
-      expect(html).toContain('You were asking above what the sales support, and your home went 187 days without an offer. We would walk it with you before saying more.')
+      // The ask claim and the day count are said once each (Matt 2026-10-07).
+      expect(html).toContain('That starts with the price. We would walk it with you before saying more.')
+      expect(html).not.toContain('above what the sales support')
       expect(html).not.toContain(WALK)
       // The title is the claim, so the title changes. The exhibits under it
       // measure the city, not this listing, so they do not.
@@ -1558,7 +1560,7 @@ describe('chapter 1 — the story the numbers carry', () => {
     for (const html of [letter(withRange(440000, 470000)), immersive(withRange(440000, 470000))]) {
       expect(html).toContain('You were asking inside the range homes like yours sold in.')
       expect(html).toContain('Your home sat 187 days without an offer.')
-      expect(html).toContain(`At a price inside the range, 187 ${WALK}`)
+      expect(html).toContain(`At a price inside the range, ${WALK}`)
       expect(html).toContain('What price and time look like in Redmond.')
       expect(html).not.toContain('What overpricing costs.')
     }

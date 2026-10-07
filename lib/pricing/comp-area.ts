@@ -173,20 +173,22 @@ export function milesPhrase(miles: number): string {
   return `${n} ${miles === 1 ? 'mile' : 'miles'}`
 }
 
-/** "a, b and c" — no Oxford comma. */
-function joinNames(parts: readonly string[]): string {
+/** "a, b and c" — no Oxford comma. A negative sentence joins on "or". */
+function joinNames(parts: readonly string[], conjunction: 'and' | 'or' = 'and'): string {
   if (parts.length === 0) return ''
   if (parts.length === 1) return parts[0]!
-  return `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`
+  return `${parts.slice(0, -1).join(', ')} ${conjunction} ${parts[parts.length - 1]}`
 }
 
 /**
  * The area as a phrase that drops into a longer sentence: "Homes for sale in
  * Old Bend between $X and $Y", "three homes within one mile of your home".
  * The peer and competition sentences both read off this, so the three
- * chapters cannot describe the same geography two different ways.
+ * chapters cannot describe the same geography two different ways. A negative
+ * sentence ("No home in Rooster Rock or Madison Park") joins the names on
+ * "or"; a single name and a radius read the same either way.
  */
-export function compAreaPhrase(area: CompArea): string {
+export function compAreaPhrase(area: CompArea, opts?: { negative?: boolean }): string {
   switch (area.kind) {
     case 'radius':
       return area.radiusMiles != null
@@ -197,7 +199,7 @@ export function compAreaPhrase(area: CompArea): string {
     case 'neighborhood':
     case 'community':
     case 'city':
-      return joinNames(area.names) || 'your area'
+      return joinNames(area.names, opts?.negative ? 'or' : 'and') || 'your area'
   }
 }
 
@@ -456,12 +458,6 @@ export function buildCompArea(input: {
   return { ...base, sentence: areaSentence(base, subjectSubdivision) }
 }
 
-/** Bend competition never leaves this radius. Kept so older traces still name the cap. */
-export const COMPETITION_BEND_CAP_MILES = 5
-
-/** Outside Bend a comp search used to stop here. The letter no longer walks that ladder. */
-export const COMPETITION_RURAL_CAP_MILES = 15
-
 /**
  * A subdivision, a recorded plat, a neighborhood polygon, or the radius the
  * sales already used. The city is not a boundary.
@@ -493,11 +489,9 @@ export function namedSalesPlace(area: { kind?: string | null } | null | undefine
 }
 
 /**
- * The neighborhood or community the subject sits in.
- *
- * Used when the sales subdivision has fewer than three homes listed in the
- * price band. The sales that set the price stay in their own place. This is
- * not a radius and it is not the city.
+ * The neighborhood or community the subject sits in, for the map's parent
+ * label and the place-pricing story. It is not a competition ring and not an
+ * expired ring (Matt 2026-10-07).
  */
 export function parentPlaceArea(input: {
   latitude: number | null
@@ -519,46 +513,17 @@ export function parentPlaceArea(input: {
   return { ...bare, sentence: areaSentence(bare, null) }
 }
 
-/** One distance ring. Rings start at a quarter mile and step by a quarter mile. */
-export function competitionRadiusArea(input: {
-  latitude: number | null
-  longitude: number | null
-  miles: number
-}): CompArea | null {
-  const centre = centreOf({ latitude: input.latitude, longitude: input.longitude, city: '' })
-  if (!centre || !(input.miles > 0)) return null
-  const bare: Omit<CompArea, 'sentence'> = {
-    kind: 'radius',
-    names: [],
-    radiusMiles: input.miles,
-    centre,
-    source: `competition widened to ${input.miles} miles`,
-  }
-  return { ...bare, sentence: areaSentence(bare, null) }
-}
-
-/** Quarter-mile steps from 0.25 through `capMiles`, inclusive. */
-export function competitionDistanceRings(input: {
-  latitude: number | null
-  longitude: number | null
-  capMiles: number
-}): CompArea[] {
-  const steps = Math.round(input.capMiles / 0.25)
-  const rings: CompArea[] = []
-  for (let i = 1; i <= steps; i++) {
-    const ring = competitionRadiusArea({ ...input, miles: i * 0.25 })
-    if (ring) rings.push(ring)
-  }
-  return rings
-}
-
 /**
- * Competition and expireds use the sales boundary. One ring.
+ * Competition and expireds use the sales boundary. One ring, and the same
+ * rules the sales passed (lib/cma/same-area-fit.ts).
  *
  * If the sales that set the price sit in a subdivision or a recorded plat,
  * that place is the ring. A radius search keeps that radius. There is no
- * 0.5 / 1 / 2 / 5 mile ladder past it, and the city is not a ring.
- * `keptComps` stays on the signature so callers do not grow a second ladder.
+ * 0.5 / 1 / 2 / 5 mile ladder past it, no parent-neighborhood step, no
+ * competitor-plat step, and the city is not a ring. A price-band step inside
+ * the ring is the only opening (lib/cma/assemble-competition.ts). Matt
+ * 2026-10-07, reversing c72d6f567 and e858fd5e0 for area. `keptComps` stays
+ * on the signature so callers do not grow a second ladder.
  */
 export function resolveCompetitionArea(input: {
   compArea: CompArea
@@ -578,8 +543,8 @@ export function resolveCompetitionArea(input: {
  * Ranch", "for sale within one mile of your home". A radius phrase already
  * carries its own preposition; a name does not.
  */
-export function compAreaIn(area: CompArea): string {
-  const phrase = compAreaPhrase(area)
+export function compAreaIn(area: CompArea, opts?: { negative?: boolean }): string {
+  const phrase = compAreaPhrase(area, opts)
   return area.kind === 'radius' ? phrase : `in ${phrase}`
 }
 

@@ -427,7 +427,7 @@ describe('net at list itemises, or prints no figure at all', () => {
       documentStatus: 'draft',
       likeHomeCredits: {
         sentence:
-          'Four Countryside houses about this size, built in 2022 or 2023, have sold in the last 18 months. Three gave the buyer nothing. 20457 Aberdeen gave $7,500, so nothing is taken off here for a credit.',
+          'Four Countryside houses about this size, built in 2022 or 2023, have sold in the last 18 months. 20457 Aberdeen gave the buyer $7,500. The other three gave nothing. A credit is agreed in the offer, not in the list price, so this sheet takes nothing off for one.',
         source: '4 closed sales in Countryside, 2,098 to 2,838 sqft. Oregon Data Share MLS.',
       },
     })
@@ -445,7 +445,7 @@ describe('net at list itemises, or prints no figure at all', () => {
     expect(html).toContain('Left from the sale')
     expect(html).toContain('$404,197')
     expect(html).toContain('Before the escrow company')
-    expect(html).toContain('20457 Aberdeen gave $7,500')
+    expect(html).toContain('20457 Aberdeen gave the buyer $7,500')
     expect(html).not.toContain('that price')
     expect(html).not.toContain('does not include')
     expect(html).not.toContain('$8,000')

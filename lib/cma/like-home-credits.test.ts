@@ -49,11 +49,54 @@ describe('likeHomeCredits', () => {
       '20457 Aberdeen',
     ])
     expect(credit?.sentence).toBe(
-      'Four Countryside houses about this size, built in 2022 or 2023, have sold in the last 18 months. Three gave the buyer nothing. 20457 Aberdeen gave $7,500, so nothing is taken off here for a credit.',
+      'Four Countryside houses about this size, built in 2022 or 2023, have sold in the last 18 months. 20457 Aberdeen gave the buyer $7,500. The other three gave nothing. A credit is agreed in the offer, not in the list price, so this sheet takes nothing off for one.',
     )
     expect(credit?.sentence).not.toContain('14,557')
     expect(credit?.source).toContain('2,098 to 2,838 sqft')
     expect(credit?.source).toContain('Oregon Data Share MLS')
+  })
+
+  it('names the sale that gave a credit before the one that did not, and never hangs the no-deduction on the credit (Matt 2026-10-07, 3177 Coho)', () => {
+    const credit = likeHomeCredits({
+      subdivision: 'Rooster Rock',
+      yearBuilt: 2018,
+      sqft: 1458,
+      asOf: AS_OF,
+      rows: [
+        row({ address: '3163 Delmas', subdivision: 'Rooster Rock', yearBuilt: 2019, sqft: 1500, closeDate: '2026-03-14', concessionsAmount: 10000 }),
+        row({ address: '3140 Coho', subdivision: 'Rooster Rock', yearBuilt: 2017, sqft: 1430, closeDate: '2025-11-02', concessionsAmount: null, concessionsYn: 'No' }),
+      ],
+    })
+    const sentence = credit!.sentence
+    expect(sentence).toBe(
+      'Two Rooster Rock houses about this size, built in 2017 or 2019, have sold in the last 18 months. 3163 Delmas gave the buyer $10,000. The other one gave nothing. A credit is agreed in the offer, not in the list price, so this sheet takes nothing off for one.',
+    )
+    expect(sentence.indexOf('3163 Delmas')).toBeLessThan(sentence.indexOf('The other one'))
+    expect(sentence).not.toMatch(/gave \$[\d,]+, so nothing/)
+    expect(sentence).not.toMatch(/[—–]/)
+  })
+
+  it('says plainly when no like home gave a credit, one sale or several', () => {
+    const one = likeHomeCredits({
+      subdivision: 'Rooster Rock',
+      yearBuilt: 2018,
+      sqft: 1458,
+      asOf: AS_OF,
+      rows: [row({ address: '3140 Coho', subdivision: 'Rooster Rock', yearBuilt: 2017, sqft: 1430, closeDate: '2025-11-02', concessionsAmount: null, concessionsYn: 'No' })],
+    })
+    expect(one!.sentence).toContain('It gave the buyer nothing. This sheet takes nothing off for a credit.')
+    const several = likeHomeCredits({
+      subdivision: 'Rooster Rock',
+      yearBuilt: 2018,
+      sqft: 1458,
+      asOf: AS_OF,
+      rows: [
+        row({ address: '3140 Coho', subdivision: 'Rooster Rock', yearBuilt: 2017, sqft: 1430, closeDate: '2025-11-02', concessionsAmount: null, concessionsYn: 'No' }),
+        row({ address: '3163 Delmas', subdivision: 'Rooster Rock', yearBuilt: 2019, sqft: 1500, closeDate: '2026-03-14', concessionsAmount: null, concessionsYn: 'No' }),
+      ],
+    })
+    expect(several!.sentence).toContain('None of them gave the buyer a credit. This sheet takes nothing off for one.')
+    expect(several!.sentence).not.toMatch(/[—–]/)
   })
 
   it('says nothing when the subject has no year or size to match', () => {
