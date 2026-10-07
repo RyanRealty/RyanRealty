@@ -141,12 +141,12 @@ describe('letter craft P0 — cover headline once', () => {
     expect(html).toContain('data-recommend-once')
     expect(html).toContain('>Low<')
     expect(html).toContain('>High<')
-    expect(html).toContain('>Recommended<')
+    expect(html).toContain('>Where similar homes sold, adjusted to today<')
     expect(html).not.toContain('cover-price')
     expect(html).not.toContain('We recommend listing at')
     // Fold chapter is not titled with the recommend dollars.
     expect(html).not.toContain('class="section is-answer">$497,800')
-    expect(html).toContain('The sales support')
+    expect(html).toMatch(/\brun from \$[\d,]+ to \$[\d,]+\./)
     const hero = immersiveHeroNumberHtml({
       subject,
       comps: five(),
@@ -157,7 +157,7 @@ describe('letter craft P0 — cover headline once', () => {
     expect(hero).toContain('hero-trio')
     expect(hero).toContain('>Low<')
     expect(hero).toContain('>High<')
-    expect(hero).toContain('>Recommended<')
+    expect(hero).toContain('>Where similar homes sold, adjusted to today<')
     expect(hero).toContain('$497,800')
     expect(hero).not.toMatch(/>Recommended list</)
     const fold = immersiveAnswerHtml({

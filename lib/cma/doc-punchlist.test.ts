@@ -524,10 +524,12 @@ describe('P8 — the matrix gets a reading before the reader enters it', () => {
     // lead used to restate the span of the adjusted sales to the dollar, which
     // on a trimmed range was the UNTRIMMED pair and a second answer
     // (tasteReview round two, §3.F).
-    expect(html).toMatch(/The sales support \$372,324 to \$398,788\./)
+    // Since 2026-10-07 the line names the sales it counts and the adjustments
+    // the grid made (lib/cma/expected-sale.ts adjustedRangeLine).
+    expect(html).toMatch(/run from \$372,324 to \$398,788\./)
     expect(html).not.toMatch(/land at \$372,324 to \$398,788/)
     expect(html).toMatch(/closed sales below set this number, each moved for/)
-    expect(html.indexOf('$389,000.')).toBeLessThan(html.indexOf('The sales support $372,324'))
+    expect(html.indexOf('$389,000.')).toBeLessThan(html.indexOf('run from $372,324'))
   })
 
   it('explains the adjustment rows once', () => {
@@ -1165,7 +1167,7 @@ describe('tasteReview 2 — the answer is drawn, and nothing floats over it', ()
       // Tip Ready P0 / Cos Falcon: cover carries recommend once; strip's list mark is gone.
       expect(html).not.toContain('class="szn worth-wide"')
       expect(html).not.toContain('list $')
-      expect(html).toContain('The sales support')
+      expect(html).toMatch(/\brun from \$[\d,]+ to \$[\d,]+\./)
       expect(html).toContain('The sales that set this price')
     }
   })

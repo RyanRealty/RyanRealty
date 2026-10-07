@@ -36,7 +36,7 @@ import { listCeiling, readCompSearch, readRangeRuleKept } from '@/lib/cma/render
 import { renderCompMatrixHtml, subjectPrintableAsk } from '@/lib/cma/comp-matrix'
 import { worthStripSvg, WORTH_STRIP_WIDE } from '@/lib/cma/worth-strip'
 import { renderInventoryBoardHtml } from '@/lib/cma/market-area-chapters'
-import { cityMedianReconciliationHtml, sellerNetPage, nextStepPage } from '@/lib/cma/opinion-pages'
+import { cityMedianReconciliationHtml, salesMethodHtml, sellerNetPage, nextStepPage } from '@/lib/cma/opinion-pages'
 import type { OpinionPageArgs } from '@/lib/cma/opinion-pages'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 
@@ -344,12 +344,13 @@ describe('E2 — one list ceiling per document', () => {
         }),
       )?.body ?? ''
     // Fixture closed-comp band high is $443,000 (hero High) — a sheet there itemises.
-    expect(at(443_000)).toContain('List price')
+    expect(at(443_000)).toContain('At $443,000')
+    expect(at(443_000)).toContain('netsheet')
     // Above the hero band, and the chapter prints no figure at all.
-    expect(at(452_000)).not.toContain('List price')
+    expect(at(452_000)).not.toContain('netsheet')
     expect(at(452_000)).toContain('needs')
     // AT the failed ask ($460,000) is the same defect wearing the failed price.
-    expect(at(460_000)).not.toContain('List price')
+    expect(at(460_000)).not.toContain('netsheet')
   })
 
   it('never prints a second ceiling in the closing', () => {
@@ -466,36 +467,46 @@ describe('E4 — a set-aside sale is never an axis label', () => {
 
 describe('E5 — chapter 3 and chapter 5 each name what they measure', () => {
   it("names the index's measure beside its month", () => {
-    const html = chapter(
-      pricing({
-        timeAdjustment: {
-          sentence: 'Over the last 12 months that index rose to a peak in April 2026.',
-          measure: 'the median price a square foot across every Redmond sale',
-        },
+    // Since 2026-10-07 the method prints in Basis and limits, not under the
+    // price chapter's headline. A basis the plain composer does not know
+    // prints its stored sentence there, with the measure beside it.
+    const html = salesMethodHtml(
+      opinionArgs({
+        comps: DBR_COMPS,
+        pricing: pricing({
+          timeAdjustment: {
+            sentence: 'Over the last 12 months that index rose to a peak in April 2026.',
+            measure: 'the median price a square foot across every Redmond sale',
+          },
+        }),
       }),
-      DBR_COMPS,
     )
     expect(html).toContain('rose to a peak in April 2026.')
     expect(html).toContain('That index is the median price a square foot across every Redmond sale.')
   })
 
   it('never repeats a measure the sentence already names', () => {
-    const html = chapter(
-      pricing({
-        timeAdjustment: {
-          sentence: 'The index of median price a square foot peaked in April 2026.',
-          measure: 'median price a square foot',
-        },
+    const html = salesMethodHtml(
+      opinionArgs({
+        comps: DBR_COMPS,
+        pricing: pricing({
+          timeAdjustment: {
+            sentence: 'The index of median price a square foot peaked in April 2026.',
+            measure: 'median price a square foot',
+          },
+        }),
       }),
-      DBR_COMPS,
     )
+    expect(html).toContain('peaked in April 2026.')
     expect(html).not.toContain('That index is median price a square foot.')
   })
 
   it('prints the index sentence untouched when the row names no measure', () => {
-    const html = chapter(
-      pricing({ timeAdjustment: { sentence: 'That index rose to a peak in April 2026.' } }),
-      DBR_COMPS,
+    const html = salesMethodHtml(
+      opinionArgs({
+        comps: DBR_COMPS,
+        pricing: pricing({ timeAdjustment: { sentence: 'That index rose to a peak in April 2026.' } }),
+      }),
     )
     expect(html).toContain('That index rose to a peak in April 2026.')
     expect(html).not.toContain('That index is ')

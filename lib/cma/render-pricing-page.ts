@@ -21,16 +21,16 @@ import {
 } from '@/lib/cma/comp-matrix'
 import {
   compWeightIndex,
-  renderPricingMethodHtml,
   renderReconciliationHtml,
   renderRejectedSalesHtml,
 } from '@/lib/cma/pricing-method'
+import { adjustedRangeLine, expectedSaleFor, expectedSaleSentence } from '@/lib/cma/expected-sale'
 import { adjustedCloseRange } from '@/lib/cma/market-area-chapters'
 import { renderCompPinMapHtml } from '@/lib/cma/comp-pin-map'
 import { clampSentence, keptCompCount, setAsideCompIndexes, setAsideRows } from '@/lib/cma/set-aside'
 import { deRepeatRecommendDollars, isRecommendMark } from '@/lib/cma/recommend-once'
 import { failedAskBelowRangeNote } from '@/lib/cma/expired-audit'
-import { listCeiling, readMeasure } from '@/lib/cma/render-contract'
+import { listCeiling } from '@/lib/cma/render-contract'
 import { closedCompBand } from '@/lib/pricing/recommended-in-band'
 import { printedAdjustedPrice } from '@/lib/pricing/seller-net'
 import { compSearchSentence } from '@/lib/cma/render-comp-search'
@@ -96,21 +96,33 @@ export function whatItsWorthLead(
   askCtx?: SubjectAskContext,
   comps?: readonly CmaAdjustedComp[] | null,
 ): string {
+  // THE PRICE, EXPLAINED, FIRST (Matt 2026-10-07). Keats recommended listing
+  // at $639,000 while its five sales weighed out to $622,128, and no sentence
+  // joined the two. The expected sale is the first thing under the heading,
+  // and the list stays "that price" (the cover owns those dollars).
+  const expected = expectedSaleFor({ pricing, comps })
+  const expectedLine = expected ? expectedSaleSentence(expected) : ''
   // THE VALUE RANGE, ONCE, HERE. tasteReview round two, §1 Words: chapter 3
-  // stated it three times inside ten lines — the strip's reading to the
-  // dollar, the method sentence rounded, and the table's lead to the dollar
-  // again — and on the FSBO and land documents the cover's pair and the
-  // chapter's pair were two different pairs (§3.F). This sentence is now the
-  // only place the chapter states it, it reads `valueLow`/`valueHigh` (which
-  // is what the cover reads), and it is rounded to the nearest thousand so the
-  // two cannot print to different precisions.
-  const worth = worthRangeSentence(pricing, comps)
-  const listRange = listRangeSentence(pricing, failedSubjectAsk(subject, askCtx), comps)
+  // stated it three times inside ten lines. With the grid in hand it is the
+  // grid's own adjusted pair (the hero's pair), counted over the same sales
+  // and named for the adjustments the grid made. Without a grid it is the
+  // stored worth pair, rounded once.
+  const worth = adjustedRangeLine(comps, { afterExpected: expected, pricing }) || worthRangeSentence(pricing, comps)
+  // "List in that range." is the instruction when nothing else says where to
+  // list. The expected-sale sentence already says it.
+  const listRange = expectedLine ? '' : listRangeSentence(pricing, failedSubjectAsk(subject, askCtx), comps)
   // A home that is on the market already has an ask. The blueprint gives that
-  // case ONE line: what it is listed at, and what the sales support.
+  // case ONE line: what it is listed at, and what the sales support. The ask
+  // follows the expected sale, so "that price" can only mean the cover's.
   const liveAsk = subjectPrintableAsk(subject, askCtx)
   if (ON_MARKET.test(subject.standardStatus ?? '') && liveAsk != null && liveAsk > 0) {
-    return [`Listed at ${usd(liveAsk)}.`, worth, listRange].filter(Boolean).join(' ')
+    return (
+      expectedLine
+        ? [expectedLine, worth, `Listed at ${usd(liveAsk)}.`]
+        : [`Listed at ${usd(liveAsk)}.`, worth, listRange]
+    )
+      .filter(Boolean)
+      .join(' ')
   }
   // A subject whose ASK is on the pricing row rather than its MLS status —
   // an owner-supplied ask on an off-market home. The blueprint puts that line
@@ -123,36 +135,37 @@ export function whatItsWorthLead(
     pricing.failedAskBelowRange && failedAsk != null && failedAsk > 0
       ? failedAskBelowRangeNote(failedAsk)
       : null
-  return [worth, listRange, display.outOfRange ? display.note : null, belowRangeNote, ask]
+  return [expectedLine, worth, listRange, display.outOfRange ? display.note : null, belowRangeNote, ask]
     .filter((b): b is string => Boolean(b && b.trim()))
     .join(' ')
 }
 
 /**
- * THE INDEX CLAUSE NAMES WHAT THE INDEX MEASURES (round-four class E).
- *
- * Chapter 3's method sentence says the market "rose to a peak in April";
- * chapter 5's month line, four screens later, draws April as the LOW month.
- * Both are true — one is a price-a-square-foot index, the other is the median
- * close price of every home in the city — and a reader who cannot see that
- * reads one document contradicting itself. `timeAdjustment.measure` is the
- * pricing side's own short phrase for what its index is an index OF; when the
- * row carries it, it prints in the same breath as the month.
- *
- * Nothing is invented when the field is absent: the sentence prints exactly as
- * lib/pricing wrote it.
+ * The search story, split where the chapter splits it: the first sentence is
+ * the price chapter's heading, the rest is method and prints in Basis and
+ * limits (lib/cma/sales-method-note.ts). One function, so the heading and the
+ * method paragraph can never read two different stories.
  */
-function pricingWithMeasure(pricing: CmaPricing): CmaPricing {
-  const ta = (pricing as unknown as { timeAdjustment?: Record<string, unknown> | null })
-    .timeAdjustment
-  const measure = readMeasure(ta)
-  const sentence = typeof ta?.sentence === 'string' ? sanitizeLetterEmDash(ta.sentence.trim()) : ''
-  if (!measure || !sentence) return pricing
-  if (sentence.toLowerCase().includes(measure.toLowerCase())) return pricing
+export function whatItsWorthSearchStory(input: {
+  subdivision?: string | null
+  comps: readonly CmaAdjustedComp[]
+  tiersUsed?: readonly string[]
+  renderArgs?: unknown
+  compTrace?: readonly string[] | null
+}): { heading: string; tail: string } {
+  const search = describeCompSearch({ subdivision: input.subdivision, tiersUsed: input.tiersUsed ?? [] })
+  const story = compSearchSentence({
+    subdivision: input.subdivision,
+    args: input.renderArgs,
+    compTrace: input.compTrace ?? input.tiersUsed ?? null,
+    comps: input.comps,
+    fallback: search.body,
+  })
+  const logic = sentencesOf(story)
   return {
-    ...pricing,
-    timeAdjustment: { ...ta, sentence: `${sentence} That index is ${measure}.` },
-  } as unknown as CmaPricing
+    heading: sanitizeLetterEmDash(logic[0] ?? whatItsWorthHeading(input)),
+    tail: logic.slice(1).join(' '),
+  }
 }
 
 /** Nearest thousand. Never enough to move a narrative, always enough to match. */
@@ -462,10 +475,10 @@ function concessionsCaption(comps: readonly CmaAdjustedComp[]): string {
  * stated range (CLAUDE.md §0).
  *
  * The rate is now taken over the number this chapter is titled with, and the
- * sentence names that basis. Predicted close stays off the seller document
- * (the Sunstone contract, `client-facing.ts` `includeExpectedClose`), so a rate
- * computed over it would be one the reader cannot reconcile to anything
- * printed — the same defect in a quieter form.
+ * sentence names that basis. The expected sale prints in the price chapter
+ * since 2026-10-07 (lib/cma/expected-sale.ts), but only where the weighted
+ * sales produce it; this rate stays on the list price, the one figure every
+ * document carries.
  */
 function perSquareFootLine(input: { subject: CmaSubject; pricing: CmaPricing }): string {
   const sqft = input.subject.sqft
@@ -574,20 +587,17 @@ export type PricingPageInput = {
 export function pricingPage(input: PricingPageInput): CmaPageDef {
   const p = input.pricing
   const s = input.subject
-  const search = describeCompSearch({ subdivision: s.subdivision, tiersUsed: input.tiersUsed ?? [] })
   // WHY THESE SALES. Never a shortage claim the printed grid refutes (class E).
-  // The first sentence is the chapter title. A second sentence, when the
-  // story has one, stays here so the title is not repeated under itself.
-  const whichSales = compSearchSentence({
+  // The first sentence is the chapter title. The rest of the story is method,
+  // and method prints in Basis and limits now (Matt 2026-10-07: under the
+  // headline it read like notes to ourselves).
+  const { heading } = whatItsWorthSearchStory({
     subdivision: s.subdivision,
-    args: input.renderArgs,
-    compTrace: input.compTrace ?? input.tiersUsed ?? null,
     comps: input.comps,
-    fallback: search.body,
+    tiersUsed: input.tiersUsed,
+    renderArgs: input.renderArgs,
+    compTrace: input.compTrace,
   })
-  const logic = sentencesOf(whichSales)
-  const heading = sanitizeLetterEmDash(logic[0] ?? whatItsWorthHeading(input))
-  const methodTail = logic.slice(1).join(' ')
   // THE CLAMP, UNDER THE NUMBER IT MOVED. When the failed-ask clamp binds, the
   // printed price is not the one the method above it produces — Concorde
   // stated a method yielding $1,973,000 and printed $1,473,000 with nothing
@@ -601,11 +611,12 @@ export function pricingPage(input: PricingPageInput): CmaPageDef {
   <h2 class="section is-answer">${esc(heading)}</h2>
   <p class="worth-lead">${esc(whatItsWorthLead(s, p, input.askCtx, input.comps))}</p>
   ${clampHtml}`
-  // The method comes BEFORE the evidence for it (Delta 1): which sales, how
-  // each was adjusted, and how the range and the recommended list follow.
-  // Every one of those sentences is written by lib/pricing and stored on the
-  // row; nothing here composes one.
-  const method = renderPricingMethodHtml({ pricing: pricingWithMeasure(p), whichSales: methodTail || null })
+  // THE METHOD MOVED TO BASIS AND LIMITS (Matt 2026-10-07). Under the
+  // headline the reader gets the expected sale and the range, and nothing
+  // that reads like working notes. Which sales, how each was moved for date,
+  // and the sale-to-ask share are composed in plain English from the stored
+  // fields by lib/cma/sales-method-note.ts and print in the disclosure chapter
+  // of both documents (`cmaDisclosureProseHtml`).
   const age = newHomeRateParagraph({
     subjectYear: s.yearBuilt ?? null,
     subjectSqft: s.sqft ?? null,
@@ -649,7 +660,6 @@ export function pricingPage(input: PricingPageInput): CmaPageDef {
   ${clampHtml}` : ''}
   ${ageHtml}
   ${neverOwnedHtml}
-  ${method}
 `,
   }
 }

@@ -1,0 +1,265 @@
+/**
+ * HOW THE SALES WERE CHOSEN AND ADJUSTED, in plain English, for Basis and
+ * limits (Matt 2026-10-07).
+ *
+ * The price chapter used to print three stored method sentences under its
+ * headline. On 2566 Keats they read like notes to ourselves ("One more was
+ * added: 530 Majesty in Deer Pointe Village.", "That share is a list-strategy
+ * fact. It is not applied to this range.") and one of them was wrong against
+ * the grid: "every sale below moves down" sat over a sale the grid moved by $0.
+ *
+ * Delivered documents carry those sentences STORED on render_args
+ * (`pricing.timeAdjustment.sentence`, `pricing.rangeRule.sentence`,
+ * `compSearch.sentence`), so changing the pricing builder alone would never
+ * reach a report that has already gone out. This composes the reader's
+ * paragraph from the structured fields beside them, and from the grid the
+ * reader can check, at render time:
+ *
+ *  - which sales sit outside the home's subdivision, named, with their own
+ *    subdivision (CMA rule 17: the count you use is the count you show, and a
+ *    sale in another subdivision is named with that subdivision);
+ *  - the date move: the city's monthly price-per-square-foot figure
+ *    (`timeAdjustment.n`, `.windowMonths`, `.shape.extreme`,
+ *    `.shape.extremeMonth`, `.shape.sinceExtremePct`), and how many of the
+ *    printed sales it actually moved, read off each sale's own
+ *    `timeAdjustment`;
+ *  - the sale-to-ask share (`rangeRule.saleToAskRatio`), stated once, with
+ *    what it is for.
+ *
+ * Every number prints exactly as stored, formatted the way the pricing unit
+ * formatted it. A basis this does not know (the exclusive pocket, the
+ * year-over-year fallback) prints its stored sentence as written.
+ */
+
+import { cleanText, countWord, int } from '@/lib/cma/render-blocks'
+import { sanitizeLetterEmDash } from '@/lib/cma/voice-sanitize'
+import { FLAT_LOCAL_DATE_SENTENCE } from '@/lib/cma/flat-date-story'
+import { realSubdivisionName } from '@/lib/pricing/classes'
+import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
+
+const INDEX_BASIS = 'city-monthly-index-trailing-3'
+
+const MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+]
+
+function num(v: unknown): number | null {
+  const n = typeof v === 'number' ? v : Number(v)
+  return v != null && Number.isFinite(n) ? n : null
+}
+
+function obj(v: unknown): Record<string, unknown> | null {
+  return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : null
+}
+
+function str(v: unknown): string | null {
+  return typeof v === 'string' && v.trim() ? sanitizeLetterEmDash(v.trim()) : null
+}
+
+function capitalise(s: string): string {
+  return s ? `${s.charAt(0).toUpperCase()}${s.slice(1)}` : s
+}
+
+function joinAnd(parts: readonly string[]): string {
+  if (parts.length <= 1) return parts[0] ?? ''
+  if (parts.length === 2) return `${parts[0]} and ${parts[1]}`
+  return `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`
+}
+
+/** "May 2026" from "2026-05-01". Null on anything else. */
+function monthLabel(month: unknown): string | null {
+  const m = typeof month === 'string' ? /^(\d{4})-(\d{2})/.exec(month) : null
+  if (!m) return null
+  const name = MONTHS[Number(m[2]) - 1]
+  return name ? `${name} ${m[1]}` : null
+}
+
+function sentencesOf(text: string): string[] {
+  return text
+    .split(/(?<=\.)\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
+// ── which sales ─────────────────────────────────────────────────────────────
+
+/** The search story's "One more was added: ..." sentence, in any count. */
+const ADDED_SENTENCE = /\bmore (?:was|were) added\b/i
+
+/**
+ * "One of the five sales, 530 Majesty, is outside Hampton Park, in Deer
+ * Pointe Village." Read off the printed grid. Null when the home has no
+ * subdivision or every printed sale is in it.
+ */
+export function outsideSubdivisionSentence(
+  subject: Pick<CmaSubject, 'subdivision'>,
+  comps: readonly CmaAdjustedComp[],
+): string | null {
+  const home = realSubdivisionName(cleanText(subject.subdivision ?? null))
+  if (!home) return null
+  const homeKey = home.toLowerCase()
+  const outside = comps.filter((c) => realSubdivisionName(c.subdivision)?.toLowerCase() !== homeKey)
+  if (outside.length === 0 || outside.length >= comps.length) return null
+  const total = comps.length
+  if (outside.length === 1) {
+    const c = outside[0]!
+    const theirs = realSubdivisionName(c.subdivision)
+    return `One of the ${countWord(total)} sales, ${c.address}, is outside ${home}${theirs ? `, in ${theirs}` : ''}.`
+  }
+  const named = outside.map((c) => {
+    const theirs = realSubdivisionName(c.subdivision)
+    return theirs ? `${c.address} in ${theirs}` : c.address
+  })
+  return `${capitalise(countWord(outside.length))} of the ${countWord(total)} sales are outside ${home}: ${joinAnd(named)}.`
+}
+
+/**
+ * The rest of the search story, after the sentence the chapter uses as its
+ * heading. The "added" sentence is rewritten from the grid; anything else in
+ * the story prints as the pricing side wrote it.
+ */
+function searchNote(
+  subject: Pick<CmaSubject, 'subdivision'>,
+  comps: readonly CmaAdjustedComp[],
+  tail: string | null | undefined,
+): string[] {
+  const said = str(tail)
+  if (!said) return []
+  const outside = outsideSubdivisionSentence(subject, comps)
+  return sentencesOf(said).map((s) => (outside && ADDED_SENTENCE.test(s) ? outside : s))
+}
+
+// ── the date move ───────────────────────────────────────────────────────────
+
+function months(v: unknown): string[] {
+  return Array.isArray(v) ? v.filter((m): m is string => typeof m === 'string').map((m) => m.slice(0, 7)) : []
+}
+
+/**
+ * How the printed sales moved for date, counted off the grid.
+ *
+ * A sale the grid did not move is explained only when the index says why:
+ * its month sits inside the window and is in neither `shape.movesDown` nor
+ * `shape.movesUp`, so that month's level already IS today's. "Sold in the last
+ * three months" is not that reason: on 61404 Skene two July sales inside the
+ * reference months still moved, because July's own level is a different
+ * three-month window.
+ */
+function dateMovesSentence(comps: readonly CmaAdjustedComp[], ta: Record<string, unknown>): string {
+  const total = comps.length
+  const down = comps.filter((c) => (c.timeAdjustment ?? 0) <= -1).length
+  const up = comps.filter((c) => (c.timeAdjustment ?? 0) >= 1).length
+  const still = comps.filter((c) => Math.abs(c.timeAdjustment ?? 0) < 1)
+  if (down === 0 && up === 0) return ''
+  if (down === total) return `That moves all ${countWord(total)} sales down.`
+  if (up === total) return `That moves all ${countWord(total)} sales up.`
+  const parts: string[] = []
+  if (down > 0) parts.push(`${countWord(down)} of the ${countWord(total)} sales down`)
+  if (up > 0) parts.push(down > 0 ? `${countWord(up)} up` : `${countWord(up)} of the ${countWord(total)} sales up`)
+  const moved = `That moves ${joinAnd(parts)}.`
+  if (still.length === 0) return moved
+  const shape = obj(ta.shape)
+  const off = new Set([...months(shape?.movesDown), ...months(shape?.movesUp)])
+  const window = [...off, ...months(ta.referenceMonths)].sort()
+  const first = window[0]
+  const last = window[window.length - 1]
+  const atLevel = (c: CmaAdjustedComp) => {
+    const m = (c.closeDate ?? '').slice(0, 7)
+    return Boolean(shape && first && last && m >= first && m <= last && !off.has(m))
+  }
+  const who = still.length === 1 ? 'The other one' : `The other ${countWord(still.length)}`
+  return still.every(atLevel)
+    ? `${moved} ${who} sold when that figure was already at today's level, so ${
+        still.length === 1 ? 'it does' : 'they do'
+      } not move.`
+    : `${moved} ${who} ${still.length === 1 ? 'does' : 'do'} not move.`
+}
+
+/** The shape of the index over the window, from `shape`, in plain words. */
+function indexShapeSentence(ta: Record<string, unknown>): string {
+  const window = num(ta.windowMonths)
+  const over = window != null && window > 0 ? `Over the last ${window} months` : 'Over the last year'
+  const shape = obj(ta.shape)
+  const month = monthLabel(shape?.extremeMonth)
+  const since = num(shape?.sinceExtremePct)
+  if (shape?.extreme === 'peak' && month && since != null) {
+    return `${over} it peaked in ${month} and has come down ${Math.abs(since).toFixed(1)} percent since.`
+  }
+  if (shape?.extreme === 'trough' && month && since != null) {
+    return `${over} it hit a low in ${month} and has climbed ${Math.abs(since).toFixed(1)} percent since.`
+  }
+  const move = num(shape?.overWindowPct) ?? num(ta.pctOverWindow)
+  if (move == null) return ''
+  if (move === 0) return `${over} it held flat.`
+  return `${over} it ${move > 0 ? 'rose' : 'fell'} ${Math.abs(move).toFixed(1)} percent.`
+}
+
+/** The date paragraph, or the stored sentence when the basis is not the city index. */
+function dateNote(
+  subject: Pick<CmaSubject, 'city'>,
+  comps: readonly CmaAdjustedComp[],
+  pricing: CmaPricing,
+): string[] {
+  const ta = obj((pricing as unknown as { timeAdjustment?: unknown }).timeAdjustment)
+  if (!ta) return []
+  const stored = str(ta.sentence)
+  if (ta.sentence === FLAT_LOCAL_DATE_SENTENCE) return [FLAT_LOCAL_DATE_SENTENCE]
+  const n = num(ta.n)
+  const anyMoved = comps.some((c) => Math.abs(c.timeAdjustment ?? 0) >= 1)
+  if (ta.basis === INDEX_BASIS && n != null && n > 0 && comps.length > 0) {
+    if (!anyMoved) return ['None of these sales is moved for the month it sold.']
+    const city = cleanText(subject.city ?? null)
+    const whose = city ? `${city}'s` : "this city's"
+    return [
+      `To bring each sale to today's market, we move it by how much ${whose} median price per square foot changed between the month it sold and the last three full months.`,
+      `That figure is built from ${int(n)} home sales across ${city ?? 'the city'}.`,
+      indexShapeSentence(ta),
+      dateMovesSentence(comps, ta),
+    ].filter(Boolean)
+  }
+  if (!stored) return []
+  // Any other basis prints as the pricing side wrote it, with the plain name
+  // of what its index measures when the sentence does not already say.
+  const measure = str(ta.measure)
+  return measure && !stored.toLowerCase().includes(measure.toLowerCase())
+    ? [stored, `That index is ${measure}.`]
+    : [stored]
+}
+
+// ── the sale-to-ask share ───────────────────────────────────────────────────
+
+function askShareNote(subject: Pick<CmaSubject, 'city'>, pricing: CmaPricing): string[] {
+  const rr = obj((pricing as unknown as { rangeRule?: unknown }).rangeRule)
+  const ratio = num(rr?.saleToAskRatio)
+  if (ratio == null || !(ratio > 0.5) || !(ratio < 1.5)) return []
+  const pct = (ratio * 100).toFixed(1)
+  const city = cleanText(subject.city ?? null)
+  const source = rr?.saleToAskSource
+  const fact =
+    source === 'these-sales'
+      ? `Typically, these sales sold for ${pct} percent of the price they first asked.`
+      : source === 'city-index' || source === 'market-context'
+        ? `Homes in ${city ?? 'this city'} are selling for ${pct} percent of the price they first asked.`
+        : null
+  return fact ? [fact, 'That matters for the list price, not for the range.'] : []
+}
+
+// ── the paragraph ───────────────────────────────────────────────────────────
+
+export const SALES_METHOD_LABEL = 'How the sales were chosen and adjusted.'
+
+/** The plain sentences, in reading order. Empty when the row says nothing. */
+export function salesMethodSentences(input: {
+  subject: Pick<CmaSubject, 'subdivision' | 'city'>
+  comps: readonly CmaAdjustedComp[]
+  pricing: CmaPricing
+  /** The search story after its first sentence (the price chapter's heading). */
+  searchTail?: string | null
+}): string[] {
+  return [
+    ...searchNote(input.subject, input.comps, input.searchTail),
+    ...dateNote(input.subject, input.comps, input.pricing),
+    ...askShareNote(input.subject, input.pricing),
+  ].map((s) => sanitizeLetterEmDash(s))
+}
