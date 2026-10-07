@@ -45,6 +45,7 @@ import {
 } from '@/lib/cma/queue-view'
 import { dripEtaFor, DRIP_CADENCE_LINE } from '@/lib/cma/drip-eta'
 import { getSignatureForMailbox } from '@/lib/crm/email-signature'
+import { cmaEmailGalleryUrls } from '@/lib/cma/email-gallery'
 import '../_components/cma-review.css'
 
 export const dynamic = 'force-dynamic'
@@ -203,6 +204,7 @@ export default async function AdminCmaReviewPage({
     lastListPrice: lastList,
   })
   const composed = built.copy
+  const letterPhotos = origin === 'expired' ? await cmaEmailGalleryUrls(listingKey) : []
   const savedOverride = readFirstContactOverride(summary)
   const firstContact = {
     subject: savedOverride?.subject || composed.subject,
@@ -410,6 +412,7 @@ export default async function AdminCmaReviewPage({
         letterMarkers={composed.bodyMarkers}
         letterParagraphs={composed.paragraphs}
         letterAddress={built.facts.address}
+        letterPhotos={letterPhotos}
         canDeliver={canDeliver}
         scheduleNote={hasDocument && !leftAt ? place.next : null}
         focusRebuild={!hasDocument && !isBuilding}

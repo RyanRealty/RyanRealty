@@ -119,28 +119,29 @@ describe('CMA first-contact send body', () => {
     const intro = visible.indexOf('My name is Matt Ryan, and I own Ryan Realty here in Bend.')
     const concession = visible.indexOf('A home that sells at full price with a 3% concession')
     const report = visible.indexOf('Our report accounts for that.')
-    const sales = visible.indexOf('Four recent sales of homes like yours support a value between $346,000 and $372,000.')
-    const ask = visible.indexOf('Your last list price was $405,000, about 9% above what those sales support.')
-    const cta = visible.indexOf('Read the full report')
+    const cta = visible.indexOf('See the full market analysis')
     const questions = visible.indexOf('Please let me know if you have any questions about the numbers')
     const chosen = visible.indexOf("If you've already chosen a broker")
     expect(greeting).toBeGreaterThanOrEqual(0)
     expect(intro).toBeGreaterThan(greeting)
     expect(concession).toBeGreaterThan(intro)
     expect(report).toBeGreaterThan(concession)
-    expect(sales).toBeGreaterThan(report)
-    expect(ask).toBeGreaterThan(sales)
-    expect(cta).toBeGreaterThan(ask)
+    expect(cta).toBeGreaterThan(report)
     expect(questions).toBeGreaterThan(cta)
     expect(chosen).toBeGreaterThan(questions)
+    expect(visible).not.toContain('support a value between')
+    expect(visible).not.toContain('Your last list price')
+    expect(visible).not.toContain('months of supply')
+    expect(visible.trimEnd().endsWith('We hope it goes well for you.')).toBe(true)
     expect(visible).not.toContain('We would list it at')
     expect(visible).not.toContain('Our price')
     expect(visible).not.toContain('See our price')
     expect(visible).not.toContain("seller's market")
     expect(visible).not.toContain('$358,000')
+    expect(visible).not.toContain('$346,000')
     expect(sent.html).not.toContain('$358,000')
     expect(sent.html).not.toContain('>4 sales<')
-    expect(anchors(letter).map((l) => l.text)).toEqual(['Read the full report →'])
+    expect(anchors(letter).map((l) => l.text)).toEqual(['See the full market analysis →'])
     const first = anchors(letter)[0]
     expect(first?.href).toContain(`/cma/${SLUG}`)
     expect(first?.href).not.toContain('/api/track/')
@@ -155,30 +156,24 @@ describe('CMA first-contact send body', () => {
     const sent = buildLeadBody({ ...ctx(), facts, recommendedList: null }, undefined, SIGNATURE)
     const visible = decodeVisible(letterHtml(sent.html))
     expect(visible).toContain("where we'd price it")
-    expect(visible).toContain('Four recent sales of homes like yours support a value between $346,000 and $372,000.')
+    expect(visible).not.toContain('support a value between')
     expect(visible).not.toContain('We would list it at $')
     expect(visible).not.toContain('the price we would list at')
     expect(visible).not.toContain('$358,000')
     expect(visible).not.toContain('Our price')
     expect(visible).not.toContain('See our price')
-    expect(anchors(letterHtml(sent.html)).map((l) => l.text)).toEqual(['Read the full report →'])
+    expect(anchors(letterHtml(sent.html)).map((l) => l.text)).toEqual(['See the full market analysis →'])
     expect(visible.indexOf('Hi there')).toBeLessThan(visible.indexOf('My name is Matt Ryan'))
   })
 
-  it('prints the city pulse once, in the letter, and only when it was loaded', () => {
+  it('keeps months of supply out of the expired letter even when the pulse was loaded', () => {
     const facts = { ...FACTS, monthsOfSupply: 2.95 }
     const sent = buildLeadBody({ ...ctx(), facts }, undefined, SIGNATURE)
-    const line = 'Bend is at 3.0 months of supply right now.'
-    const visible = decodeVisible(letterHtml(sent.html))
-    expect(visible.indexOf(line)).toBeGreaterThan(visible.indexOf('Four recent sales'))
-    expect(visible.indexOf('Read the full report')).toBeGreaterThan(visible.indexOf(line))
-    expect(visible).not.toContain("seller's market")
-    expect(sent.html.indexOf(line, sent.html.indexOf(line) + line.length)).toBe(-1)
-    const bare = buildLeadBody(ctx(), undefined, SIGNATURE)
-    expect(bare.html).not.toContain('months of supply')
+    expect(sent.html).not.toContain('months of supply')
+    expect(decodeVisible(letterHtml(sent.html))).toContain('See the full market analysis')
   })
 
-  it('uses the listing photo, small, above the greeting', () => {
+  it('puts one listing photo inside the analysis card, not above the greeting', () => {
     const sent = buildLeadBody(
       { ...ctx(), heroUrl: 'https://cdn.resize.sparkplatform.com/ore/1600x1200/true/house.jpg' },
       undefined,
@@ -186,13 +181,71 @@ describe('CMA first-contact send body', () => {
     )
     const src = 'src="https://cdn.resize.sparkplatform.com/ore/640x360/true/house.jpg"'
     expect(sent.html).toContain(src)
-    expect(sent.html).toContain('alt="62017 Nate&#39;s"')
-    expect(sent.html).toContain('width="240"')
-    expect(sent.html).toContain('height="160"')
-    expect(sent.html.indexOf(src)).toBeLessThan(sent.html.indexOf('Hi there'))
+    expect(sent.html).toContain('alt="62017 Nate&#39;s, photo 1"')
+    expect(sent.html).toContain('data-cma-analysis="1"')
+    expect(sent.html).toContain('See the full market analysis')
+    expect(sent.html.indexOf(src)).toBeGreaterThan(sent.html.indexOf('Hi there'))
+    expect(sent.html.indexOf(src)).toBeLessThan(sent.html.indexOf('See the full market analysis'))
+    expect(sent.html).not.toContain('width="240"')
+    expect(sent.html).not.toContain('height="160"')
     expect(sent.html).not.toContain('hero-oldmill')
     expect(sent.html).not.toContain('height:240px')
     expect(sent.html).not.toContain('/1600x1200/')
+  })
+
+  it('puts two or three subject photos in the card and does not repeat the hero', () => {
+    const sent = buildLeadBody(
+      {
+        ...ctx(),
+        heroUrl: 'https://cdn.resize.sparkplatform.com/ore/1600x1200/true/hero.jpg',
+        galleryUrls: [
+          'https://cdn.resize.sparkplatform.com/ore/1600x1200/true/a.jpg',
+          'https://cdn.resize.sparkplatform.com/ore/1024x768/true/b.jpg',
+          'https://cdn.resize.sparkplatform.com/ore/800x600/true/c.jpg',
+          'https://cdn.resize.sparkplatform.com/ore/800x600/true/d.jpg',
+          'http://cdn.resize.sparkplatform.com/ore/800x600/true/nope.jpg',
+        ],
+      },
+      undefined,
+      SIGNATURE,
+    )
+    expect(sent.html).toContain('/360x240/true/a.jpg')
+    expect(sent.html).toContain('/360x240/true/b.jpg')
+    expect(sent.html).toContain('/360x240/true/c.jpg')
+    expect(sent.html).not.toContain('d.jpg')
+    expect(sent.html).not.toContain('hero.jpg')
+    expect(sent.html).not.toContain('nope.jpg')
+    const hi = sent.html.indexOf('Hi there')
+    const photos = sent.html.indexOf('/360x240/true/a.jpg')
+    const label = sent.html.indexOf('See the full market analysis')
+    expect(photos).toBeGreaterThan(hi)
+    expect(label).toBeGreaterThan(photos)
+    const letter = letterHtml(sent.html)
+    const links = anchors(letter)
+    expect(links.filter((l) => l.text === 'See the full market analysis →')).toHaveLength(1)
+    expect(links.every((l) => l.href.includes(`/cma/${SLUG}`))).toBe(true)
+    expect(links.length).toBe(4)
+  })
+
+  it('keeps another origin on the single photo and the plain report button', () => {
+    const sent = buildLeadBody(
+      {
+        ...ctx(),
+        origin: 'seller-valuation',
+        heroUrl: 'https://cdn.resize.sparkplatform.com/ore/1600x1200/true/house.jpg',
+        galleryUrls: ['https://cdn.resize.sparkplatform.com/ore/1600x1200/true/a.jpg'],
+      },
+      undefined,
+      SIGNATURE,
+    )
+    const src = 'src="https://cdn.resize.sparkplatform.com/ore/640x360/true/house.jpg"'
+    expect(sent.html).toContain(src)
+    expect(sent.html.indexOf(src)).toBeLessThan(sent.html.indexOf('Hi there'))
+    expect(sent.html).toContain('width="240"')
+    expect(sent.html).not.toContain('data-cma-analysis')
+    expect(sent.html).not.toContain('a.jpg')
+    expect(decodeVisible(letterHtml(sent.html))).toContain('Read the full report')
+    expect(sent.html).not.toContain('See the full market analysis')
   })
 
   it('tracks every letter link as words, with the email tag set', () => {
@@ -200,7 +253,7 @@ describe('CMA first-contact send body', () => {
     const html = track(sent.html)
     const letter = letterHtml(html)
     const links = anchors(letter)
-    expect(links.map((l) => l.text)).toEqual(['Read the full report →'])
+    expect(links.map((l) => l.text)).toEqual(['See the full market analysis →'])
     expect(decodeVisible(letter).toLowerCase()).not.toContain('http')
     const paths: string[] = []
     for (const link of links) {

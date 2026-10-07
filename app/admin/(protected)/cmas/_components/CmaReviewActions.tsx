@@ -83,6 +83,8 @@ export interface CmaReviewActionsProps {
   letterParagraphs: FirstContactRun[][]
   /** Street the letter bolds. Same address the send uses. */
   letterAddress: string | null
+  /** Subject photos drawn inside the expired analysis button. */
+  letterPhotos?: string[] | null
   /** Ready to approve+deliver (audit ok, contact, document). */
   canDeliver: boolean
   /** What Schedule or Send now will actually do. Null once the letter has left. */
@@ -408,6 +410,7 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
               }),
               address: props.letterAddress,
               slug: props.slug,
+              photos: props.letterPhotos,
             })
           }
         />

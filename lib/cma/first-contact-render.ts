@@ -9,7 +9,7 @@
  * are added later by decorateOutboundText, once, on the href.
  */
 
-import { cmaListPricePlate, cmaReportButtonHtml } from '@/lib/cma/report-button'
+import { cmaAnalysisCardHtml, cmaListPricePlate, cmaReportButtonHtml } from '@/lib/cma/report-button'
 import { peelTrailingUrlPunctuation } from '@/lib/analytics/own-site-links'
 
 export const CMA_EMAIL_ORIGIN = 'https://ryan-realty.com'
@@ -17,14 +17,23 @@ export const CMA_EMAIL_ORIGIN = 'https://ryan-realty.com'
 /**
  * A link is words plus a clean href. A button run is not a sentence: the
  * renderer consumes it and stamps the one report button there. Plain text
- * still reads "Read the full report", with no URL.
+ * reads the button's label, with no URL. An unlabeled button reads
+ * "Read the full report".
  */
-export type FirstContactRun = string | { text: string; href: string } | { button: true }
+export type FirstContactRun = string | { text: string; href: string } | { button: true; label?: string }
 
 export const FIRST_CONTACT_REPORT_BUTTON: FirstContactRun = { button: true }
 
-function isReportButton(run: FirstContactRun): run is { button: true } {
+/** Expired letters. The words sit under the photos of the home. */
+export const EXPIRED_ANALYSIS_BUTTON: FirstContactRun = { button: true, label: 'See the full market analysis' }
+
+function isReportButton(run: FirstContactRun): run is { button: true; label?: string } {
   return typeof run !== 'string' && 'button' in run && run.button === true
+}
+
+function buttonPlain(run: { button: true; label?: string }): string {
+  const label = run.label?.trim()
+  return label || 'Read the full report'
 }
 
 const TOKEN_RE = /\[([^\]\n]+)\]\((https?:\/\/[^)\s]+)\)|https?:\/\/[^\s<]+/g
@@ -77,7 +86,7 @@ export function labelForBareUrl(raw: string): string {
 
 function runPlain(run: FirstContactRun): string {
   if (typeof run === 'string') return run
-  if (isReportButton(run)) return 'Read the full report'
+  if (isReportButton(run)) return buttonPlain(run)
   return run.text
 }
 
@@ -92,7 +101,7 @@ export function paragraphsToPlain(paragraphs: FirstContactRun[][]): string {
 
 function runMarker(run: FirstContactRun): string {
   if (typeof run === 'string') return run
-  if (isReportButton(run)) return 'Read the full report'
+  if (isReportButton(run)) return buttonPlain(run)
   return `[${run.text}](${run.href})`
 }
 
@@ -218,26 +227,53 @@ function reportLead(address: string | null): string {
   return 'The full report is attached as a PDF.'
 }
 
+function buttonLabel(paragraphs: FirstContactRun[][]): string {
+  for (const paragraph of paragraphs) {
+    if (!isReportButtonParagraph(paragraph)) continue
+    const run = paragraph[0]
+    if (run && isReportButton(run)) return buttonPlain(run)
+  }
+  if (namesOurPrice(paragraphs)) return 'See our price'
+  return 'Read the full report'
+}
+
+function cardPhotos(photos: string[] | null | undefined): string[] {
+  const out: string[] = []
+  for (const raw of photos ?? []) {
+    const url = raw.trim()
+    if (!url.startsWith('https://')) continue
+    if (out.includes(url)) continue
+    out.push(url)
+    if (out.length === 3) break
+  }
+  return out
+}
+
 /**
  * Paragraphs plus the report button. No signature. Clean campaign UTMs only.
  *
  * A composed letter can mark the button with a button-only paragraph. That
  * paragraph is not printed again. The button sits there, once.
  * A broker note that says "our price" makes the button "See our price".
- * The composed letter does not say that, so its button is "Read the full
- * report". A broker who typed "We would list it at $X." still gets the
- * plate. A note that never names the report gets one lead sentence, then
- * the button, and the button again after the note.
+ * An expired letter labels its button "See the full market analysis" and,
+ * when the home has photos, draws them in that button. Any other composed
+ * letter reads "Read the full report". A broker who typed "We would list it
+ * at $X." still gets the plate. A note that never names the report gets one
+ * lead sentence, then the button, and the button again after the note.
  */
 export function renderCmaLetterBlock(args: {
   paragraphs: FirstContactRun[][]
   address: string | null
   slug: string
+  /** Subject photos. Drawn in the button unless the label is "See our price". */
+  photos?: string[] | null
 }): string {
-  const button = cmaReportButtonHtml(
-    stampCmaEmailCampaign(`${CMA_EMAIL_ORIGIN}/cma/${args.slug}`, args.slug),
-    namesOurPrice(args.paragraphs) ? 'See our price' : 'Read the full report',
-  )
+  const label = buttonLabel(args.paragraphs)
+  const viewUrl = stampCmaEmailCampaign(`${CMA_EMAIL_ORIGIN}/cma/${args.slug}`, args.slug)
+  const photos = label === 'See our price' ? [] : cardPhotos(args.photos)
+  const button = photos.length > 0
+    ? cmaAnalysisCardHtml(viewUrl, photos, streetOnly(args.address) ?? 'The home', label)
+    : cmaReportButtonHtml(viewUrl, label)
   const parts: string[] = []
   let buttonAt: number | null = null
   for (let i = 0; i < args.paragraphs.length; i++) {

@@ -4,9 +4,11 @@
  * (lib/cma/send.ts) and the review page preview so what the broker previews
  * is what goes out.
  *
- * The composed letter names the report and the button reads "Read the full
- * report". A broker note that says "our price" still gets "See our price".
- * A button with no sentence in front of it is a dead tap.
+ * An expired letter puts two or three photos of the home in the button and
+ * reads "See the full market analysis". Any other letter reads "Read the
+ * full report". A broker note that says "our price" still gets "See our
+ * price", with no photo strip. A button with no sentence in front of it is
+ * a dead tap.
  */
 import {
   EMAIL_BODY_MUTED,
@@ -27,6 +29,37 @@ export function cmaReportButtonHtml(viewUrl: string, label = 'Read the full repo
   // Table cell holds the color. Outlook drops padding and background on an <a>.
   // The label is on the anchor and a span so Gmail keeps the cream type.
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px 0;"><tr><td align="center" bgcolor="${EMAIL_NAVY}" style="background:${EMAIL_NAVY};"><a href="${href}" style="display:block;padding:18px 24px;font-family:${EMAIL_FONT_STACK};font-size:18px;line-height:1.3;font-weight:700;color:${EMAIL_CREAM};text-decoration:none;text-align:center;"><span style="color:${EMAIL_CREAM};">${safeLabel} &rarr;</span></a></td></tr></table>`
+}
+
+/** Spark's resizer. Three across asks for a small file. One photo can be wider. */
+function sparkCardSrc(url: string, count: number): string {
+  if (!/cdn\.resize\.sparkplatform\.com/.test(url)) return url
+  const size = count >= 3 ? '360x240' : count === 2 ? '480x320' : '640x360'
+  return url.replace(/\/\d+x\d+\//, `/${size}/`)
+}
+
+/**
+ * The expired letter's button: two or three photos of the home, then the
+ * words. Each photo and the label open the same report. One photo still
+ * sits in the card. Zero photos is the plain button, from the caller.
+ */
+export function cmaAnalysisCardHtml(
+  viewUrl: string,
+  photos: string[],
+  alt: string,
+  label = 'See the full market analysis',
+): string {
+  const href = escapeAttr(viewUrl)
+  const safeLabel = escapeAttr(label)
+  const count = Math.min(photos.length, 3)
+  const width = count >= 3 ? 176 : count === 2 ? 260 : 520
+  const cells = photos.slice(0, 3).map((url, i) => {
+    const src = escapeAttr(sparkCardSrc(url, count))
+    const safeAlt = escapeAttr(`${alt}, photo ${i + 1}`).replace(/'/g, '&#39;')
+    const rule = i > 0 ? `border-left:3px solid ${EMAIL_CREAM};` : ''
+    return `<td width="${Math.round(100 / count)}%" valign="top" style="padding:0;font-size:0;line-height:0;${rule}"><a href="${href}" style="text-decoration:none;"><img src="${src}" alt="${safeAlt}" width="${width}" style="display:block;width:100%;max-width:${width}px;height:auto;border:0;"></a></td>`
+  })
+  return `<table role="presentation" data-cma-analysis="1" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:4px 0 24px 0;border:1px solid ${EMAIL_BORDER};"><tr><td style="padding:0;background:${EMAIL_CREAM};"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>${cells.join('')}</tr></table></td></tr><tr><td align="center" bgcolor="${EMAIL_NAVY}" style="background:${EMAIL_NAVY};"><a href="${href}" style="display:block;padding:16px 24px;font-family:${EMAIL_FONT_STACK};font-size:18px;line-height:1.3;font-weight:700;color:${EMAIL_CREAM};text-decoration:none;text-align:center;"><span style="color:${EMAIL_CREAM};">${safeLabel} &rarr;</span></a></td></tr></table>`
 }
 
 /**

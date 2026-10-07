@@ -52,6 +52,7 @@ import { paragraphsForLetterBody, paragraphsToPlain, renderCmaLetterBlock } from
 import { screenAddressForSolicitation } from '@/lib/cma/solicit-screen'
 import { buildSignature } from '@/lib/crm/email-signature'
 import { getBrokers } from '@/lib/data'
+import { cmaEmailGalleryUrls } from '@/lib/cma/email-gallery'
 import { cmaEmailPhotoHtml, previewTextFromCustomBody } from '@/lib/cma/report-button'
 import { classifyCmaOrigin, type CmaOrigin } from '@/lib/cma/origin'
 import { resolveSendableClientEmail } from '@/lib/cma/send-client-email'
@@ -96,6 +97,12 @@ export interface CmaSendContext {
   facts: CmaFirstContactFacts
   /** HTTPS listing photo. Omitted when the row has none. */
   heroUrl?: string | null
+  /**
+   * Up to three HTTPS photos of the subject. The expired letter draws these
+   * inside the analysis button. Empty falls back to heroUrl, then to the
+   * text button.
+   */
+  galleryUrls?: string[] | null
 }
 
 async function resolveSendContext(
@@ -141,11 +148,16 @@ async function resolveSendContext(
     brokerSlug: cmaSendBrokerSlug(brokerRow.email),
   })
   await attachCitySupply(facts)
+  const listingKey = (row.subject_listing_key as string | null) ?? null
+  const [heroUrl, galleryUrls] = await Promise.all([
+    listingHeroFromSlug(slug),
+    origin === 'expired' ? cmaEmailGalleryUrls(listingKey) : Promise.resolve(undefined),
+  ])
   return {
     ctx: {
       slug,
       subjectAddress: (row.subject_address as string) ?? slug,
-      subjectListingKey: (row.subject_listing_key as string | null) ?? null,
+      subjectListingKey: listingKey,
       clientName,
       clientEmail,
       brokerRow,
@@ -155,7 +167,8 @@ async function resolveSendContext(
       origin,
       lastListPrice,
       facts,
-      heroUrl: await listingHeroFromSlug(slug),
+      heroUrl,
+      galleryUrls,
     },
     error: null,
   }
@@ -177,6 +190,21 @@ function inboundFacts(ctx: CmaSendContext): CmaFirstContactFacts {
 export function listingHeroUrl(url: string | null | undefined): string | null {
   const photo = (url ?? '').trim()
   return photo.startsWith('https://') ? photo : null
+}
+
+/** Two or three subject photos for the expired button. The hero fills a gap of zero. */
+function expiredCardPhotos(ctx: CmaSendContext): string[] {
+  if (ctx.origin !== 'expired') return []
+  const out: string[] = []
+  for (const raw of ctx.galleryUrls ?? []) {
+    const url = listingHeroUrl(raw)
+    if (!url || out.includes(url)) continue
+    out.push(url)
+    if (out.length === 3) return out
+  }
+  if (out.length > 0) return out
+  const hero = listingHeroUrl(ctx.heroUrl)
+  return hero ? [hero] : []
 }
 
 async function listingHeroFromSlug(slug: string): Promise<string | null> {
@@ -268,12 +296,16 @@ export function buildLeadBody(
   })
   const letterPlain = paragraphsToPlain(paragraphs)
   const uneditedBody = !raw || raw === copy.bodyText.trim() || raw === copy.bodyMarkers.trim()
+  const cardPhotos = expiredCardPhotos(ctx)
   const block = renderCmaLetterBlock({
     paragraphs,
     address: ctx.subjectAddress,
     slug: ctx.slug,
+    photos: cardPhotos,
   })
-  const photo = listingHeroUrl(ctx.heroUrl)
+  // The expired card already shows the house. A second photo above the
+  // greeting would show it twice. Other letters keep the one small photo.
+  const photo = cardPhotos.length > 0 ? null : listingHeroUrl(ctx.heroUrl)
   const photoHtml = photo
     ? cmaEmailPhotoHtml(photo, streetOnly(ctx.subjectAddress) ?? 'The home')
     : ''

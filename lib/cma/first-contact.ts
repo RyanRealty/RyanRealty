@@ -2,13 +2,14 @@
  * First-contact email for a CMA, by origin.
  *
  * Matt, 2026-10-06: an expired letter is his template. The assigned broker
- * signs it. Matt owns Ryan Realty. Any other broker works here and does not
- * say they own it. The greeting uses a first name when one is safe. The 3%
- * concession line is his illustration, not this house's measured concession.
- * The letter does not print the recommended list price, the verdict, or the
- * acronym CMA. The city supply line prints only when the served pulse was
- * loaded, and only once, without a seller or buyer label. The report button
- * sits on its own run, after the numbers and before the close.
+ * introduces it. Matt owns Ryan Realty. Any other broker works here and does
+ * not say they own it. The greeting uses a first name when one is safe. The
+ * 3% concession line is his illustration, not this house's measured
+ * concession. The letter does not print the sales range, the last ask, the
+ * months of supply, the recommended list price, or the acronym CMA. The
+ * system signature is the sign-off, so the letter does not add a first name
+ * after the close. The report button sits on its own run and reads
+ * "See the full market analysis".
  *
  * Every figure is off the cmas row or the city pulse. Nothing in here
  * estimates. Voice: marketing_brain_skills/brand-voice/VOICE.md.
@@ -22,7 +23,7 @@ import { isPlaceholderLeadName, isPlausibleFirstName } from '@/lib/crm/merge'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { marketVerdict } from '@/lib/market/classify'
 import {
-  FIRST_CONTACT_REPORT_BUTTON,
+  EXPIRED_ANALYSIS_BUTTON,
   paragraphsToMarkers,
   paragraphsToPlain,
   type FirstContactRun,
@@ -236,6 +237,7 @@ function honestNote(origin: CmaOrigin): string | null {
 
 /**
  * Inbox preview. The sold range, when the letter will actually print it.
+ * An expired letter does not print the range, so its preview does not either.
  * The recommended list price stays out. An FSBO preview stays free of a dollar.
  */
 function salesPreview(named: string, count: number | null, lo: number, hi: number): string {
@@ -257,6 +259,9 @@ export function cmaFirstContactPreview(
 ): string {
   const named = streetOnly(address) ?? 'this home'
   const rec = finiteMoney(recommendedList)
+  if (origin === 'expired') {
+    return 'What nearby homes sold for after concessions, and the homes you would be competing with.'
+  }
   if (origin === 'fsbo') {
     return rec != null
       ? `A second look at ${named}, no charge and no strings.`
@@ -382,96 +387,32 @@ function cameOffSentence(street: string | null): string {
 
 /**
  * Matt owns the brokerage. A missing broker is his, because the send path
- * already falls back to him. Anyone else works at Ryan Realty.
+ * already falls back to him. Anyone else works at Ryan Realty. The system
+ * signature carries the name, so this line is the introduction only.
  */
-function brokerVoice(facts: CmaFirstContactFacts): { introName: string; signOff: string | null } {
+function brokerIntro(facts: CmaFirstContactFacts): string {
   const slug = (facts.brokerSlug ?? '').trim().toLowerCase()
   const name = trim(facts.brokerName)
   const ownerName = name != null && /^(matt|matthew)\s+ryan$/i.test(name)
   const owner = OWNER_BROKER_SLUGS.has(slug) || (!slug && (ownerName || !name))
-  if (owner) {
-    return {
-      introName: 'My name is Matt Ryan, and I own Ryan Realty here in Bend.',
-      signOff: 'Matt',
-    }
-  }
-  if (name) {
-    return {
-      introName: `My name is ${name}, and I'm a broker at Ryan Realty here in Bend.`,
-      signOff: greetingFirstName(name),
-    }
-  }
-  return {
-    introName: "I'm a broker at Ryan Realty here in Bend.",
-    signOff: null,
-  }
-}
-
-function countHead(count: number): string {
-  const word = countWord(count)
-  return /^\d/.test(word) ? word : word.charAt(0).toUpperCase() + word.slice(1)
-}
-
-function expiredAskPosition(last: number, low: number, high: number): string {
-  const vs = lastAskVersusHeroBand(last, low, high)
-  if (vs === 'below') return 'below what those sales support'
-  if (vs === 'inside') return 'inside what those sales support'
-  const pct = Math.round((last / high - 1) * 100)
-  if (pct >= 5) return `about ${pct}% above what those sales support`
-  return 'a little above what those sales support'
-}
-
-/** Supply without a seller or buyer verdict. Omitted when the pulse was not loaded. */
-function expiredSupplySentence(city: string | null | undefined, months: number | null | undefined): string | null {
-  const place = trim(city)
-  if (!place || months == null || !Number.isFinite(months) || months <= 0) return null
-  return `${place} is at ${formatMonthsOfSupply(months)} months of supply right now.`
-}
-
-/**
- * The numbers paragraph of an expired letter. The recommended dollar stays
- * out. A missing band, ask, or pulse drops only that piece.
- */
-function expiredNumbersParagraph(facts: CmaFirstContactFacts): string | null {
-  const lo = finiteMoney(facts.valueLow)
-  const hi = finiteMoney(facts.valueHigh)
-  const parts: string[] = []
-  if (lo != null && hi != null) {
-    const low = Math.min(lo, hi)
-    const high = Math.max(lo, hi)
-    const between = `${formatFirstTouchUsd(low)} and ${formatFirstTouchUsd(high)}`
-    const count = saleCount(facts.closedSalesCount)
-    if (count == null) parts.push(`Recent sales of homes like yours support a value between ${between}.`)
-    else if (count === 1) parts.push(`One recent sale of a home like yours supports a value between ${between}.`)
-    else parts.push(`${countHead(count)} recent sales of homes like yours support a value between ${between}.`)
-    const last = finiteMoney(facts.lastListPrice)
-    if (last != null) {
-      parts.push(`Your last list price was ${formatFirstTouchUsd(last)}, ${expiredAskPosition(last, low, high)}.`)
-    }
-  }
-  const supply = expiredSupplySentence(facts.city, facts.monthsOfSupply)
-  if (supply) parts.push(supply)
-  const text = parts.join(' ').trim()
-  return text || null
+  if (owner) return 'My name is Matt Ryan, and I own Ryan Realty here in Bend.'
+  if (name) return `My name is ${name}, and I'm a broker at Ryan Realty here in Bend.`
+  return "I'm a broker at Ryan Realty here in Bend."
 }
 
 function composeExpiredFirstContact(facts: CmaFirstContactFacts): CmaFirstContactCopy {
   const street = streetOnly(facts.address)
-  const voice = brokerVoice(facts)
   const greeted = greetingFirstName(facts.firstName)
   const greeting = greeted ? `Hi ${greeted},` : 'Hi there,'
-  const plan = `${voice.introName} We're a small brokerage, and we spend our days studying this market closely. ${cameOffSentence(street)}`
-  const numbersLine = expiredNumbersParagraph(facts)
+  const plan = `${brokerIntro(facts)} We're a small brokerage, and we spend our days studying this market closely. ${cameOffSentence(street)}`
   const paragraphs: FirstContactRun[][] = []
   pushParagraph(paragraphs, [greeting])
   pushParagraph(paragraphs, [plan])
   pushParagraph(paragraphs, [EXPIRED_SHIFT])
   pushParagraph(paragraphs, [EXPIRED_REPORT])
-  pushParagraph(paragraphs, numbersLine ? [numbersLine] : null)
-  pushParagraph(paragraphs, [FIRST_CONTACT_REPORT_BUTTON])
+  pushParagraph(paragraphs, [EXPIRED_ANALYSIS_BUTTON])
   pushParagraph(paragraphs, [EXPIRED_QUESTIONS_EARN])
   pushParagraph(paragraphs, [EXPIRED_CHOSEN_BROKER])
-  if (voice.signOff) pushParagraph(paragraphs, [voice.signOff])
   const bodyText = paragraphsToPlain(paragraphs)
   return {
     subject: composeCmaFirstContactSubject('expired', facts.address),

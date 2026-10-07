@@ -24,15 +24,11 @@ The market has shifted this year. Price reductions are up, but the bigger change
 
 Our report accounts for that. It shows where your listing sat against the competition, what nearby homes actually sold for after concessions, the homes you'd be competing with today, and where we'd price it.
 
-Four recent sales of homes like yours support a value between $346,000 and $372,000. Your last list price was $405,000, about 9% above what those sales support.
-
-Read the full report
+See the full market analysis
 
 Please let me know if you have any questions about the numbers or how we put this together. If you consider selling in the future, we'd love the opportunity to earn your business, and we're here anytime.
 
-If you've already chosen a broker for your next step, please consider this information only. We hope it goes well for you.
-
-Matt`
+If you've already chosen a broker for your next step, please consider this information only. We hope it goes well for you.`
 
 function linksOf(paragraphs: FirstContactRun[][]): Array<{ text: string; href: string }> {
   return paragraphs.flat().flatMap((r) => (typeof r === 'string' || !('href' in r) ? [] : [{ text: r.text, href: r.href }]))
@@ -65,7 +61,8 @@ describe('Nate first-contact letter (expired, 62017 Nate\'s)', () => {
 
   it('keeps the note free of links; the button carries the report', () => {
     expect(linksOf(copy.paragraphs)).toEqual([])
-    expect(copy.previewText).toBe("Four sales on 62017 Nate's support $346,000 to $372,000.")
+    expect(copy.previewText).toBe('What nearby homes sold for after concessions, and the homes you would be competing with.')
+    expect(copy.previewText).not.toMatch(/\$/)
     expect(copy.previewText).not.toContain('$358,000')
     expect(copy.bodyText).not.toContain('$358,000')
     expect(copy.mastheadLine).toBe('MARKET ANALYSIS')
