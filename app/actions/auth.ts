@@ -52,11 +52,7 @@ export async function getSession(): Promise<{ user: AuthUser } | null> {
 }
 
 /** Return path cookie: 10 min, httpOnly, so OAuth redirect brings user back to the page they signed in from. */
-export async function getSignInUrl(
-  provider: 'google' | 'facebook' | 'apple',
-  next = '/',
-  opts?: { selectAccount?: boolean },
-): Promise<{ url: string } | { error: string }> {
+export async function getSignInUrl(provider: 'google' | 'facebook' | 'apple', next = '/'): Promise<{ url: string } | { error: string }> {
   const supabase = await createClient()
   const base = await getRequestBaseUrl()
   const cookieStore = await cookies()
@@ -75,10 +71,6 @@ export async function getSignInUrl(
       // Google's picture lives on the profile scope. Without it, chrome
       // falls back to a letter circle (SITE-155).
       ...(provider === 'google' ? { scopes: 'openid email profile' } : {}),
-      // Google's account chooser, for a visitor signed in under the wrong
-      // account (the CMA wrong-person door). Without it Google reuses the
-      // account already signed in and the visitor lands on the same refusal.
-      ...(provider === 'google' && opts?.selectAccount ? { queryParams: { prompt: 'select_account' } } : {}),
     },
   })
   if (error) return { error: error.message }

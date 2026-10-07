@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-10-07T05:13:48.555Z
+**Generated:** 2026-10-07T06:33:36.526Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -766,7 +766,7 @@ Companion files:
 
 **Tables:** `cmas`, `expired_listings`, `fsbo_listings`, `cma_comps`, `cma_versions`, `crm_people`
 
-**Selected columns:** `build_summary`, `list_price`, `original_list_price`, `html_path`, `status`, `broker_slug`, `html_content`, `render_args`, `id`, `person_id`, `client_email`, `client_name`, `subject_address`, `subject_city`, `subject_listing_key`, `emails`, `custom`
+**Selected columns:** `build_summary`, `list_price`, `original_list_price`, `html_path`, `status`, `broker_slug`, `html_content`, `render_args`, `id`, `person_id`, `client_email`, `client_name`, `subject_address`, `emails`, `custom`
 
 ---
 

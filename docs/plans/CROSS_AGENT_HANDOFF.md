@@ -1,14 +1,12 @@
-# Current — 2026-10-07 (Claude Code, CMA door + email link host)
+# Current — 2026-10-07 (Claude Code, no sign-in on CMA reports + email link host)
 
-Surface: Claude Code. Branch `claude/beautiful-lamport-2x4fjs`, commit `7adb7b99e`, draft PR for Matt's review. Not on main.
+Surface: Claude Code. Branch `claude/beautiful-lamport-2x4fjs`, fast-forwarded onto main (PR #426).
 
-Matt asked for screenshots of https://ryan-realty.com/cma/cma-2566-keats and how to improve it. The link he pasted had no `_pid`, so it showed the Google door; the owner's email link carries the signed token and opens the report directly. The report itself was reviewed from a read-only look-pass render (Matt approved opening it). Report findings went to Matt in chat; no report code changed.
+**No sign-in to view a report (Matt 2026-10-07: "Don't require a sign in to view the report").** `lib/cma/serve-document.ts` no longer returns the Google door, the consent shell or the wrong-person page. A finalized or delivered report at /cma/[slug] opens for anyone with the link; drafts still 404 for the public; the document stays noindex. Identity now decides only the optional consent bar (the tracked recipient who has not answered). The shells are deleted from `lib/cma/register-gate.ts`; `decideCmaAccess` stays for the consent POST. Rule 21 in `marketing_brain_skills/producers/cma/SKILL.md` §0.3, held by `lib/cma/serve-document.test.ts`. A door redesign and an "email me the link" route were built earlier this session and removed before landing: with no door they had nothing to serve.
 
-Built, on the branch:
-- The CMA door (`lib/cma/register-gate.ts`): wordmark, Amboqia heading, Geist, cream card, the broker's face with Call and Text, street once, plain bullets. A second way in, "Email me the link": `app/api/cma/email-link/route.ts` + `lib/cma/email-link.ts`. Sends only on a DELIVERED report, only to an email already on file, after the live listed-again screen, from the broker's own mailbox through `sendGovernedEmail`, once per address per home per 8 hours, after the response (same page and timing either way). The wrong-person page now offers Google's account chooser (`switch=1`, `getSignInUrl` `selectAccount`) and the email link.
-- Email links off the Vercel alias: `lib/email/link-origin.ts` `emailLinkOrigin()` maps the production alias to https://ryan-realty.com (preview and localhost kept) for click tracking, the open pixel, unsubscribe, newsletter, BPO, legacy CMA deliver, visitor confirmations and the click fallback. Synced Gmail signatures get their alias host rewritten at send (`canonicalizeEmailHosts` in `buildGmailSignature`). Install kits updated. The global NEXT_PUBLIC_SITE_URL is unchanged.
+**Email links off the Vercel alias.** `lib/email/link-origin.ts` `emailLinkOrigin()` maps the production alias to https://ryan-realty.com (preview and localhost kept) for click tracking, the open pixel, unsubscribe, newsletter, BPO, legacy CMA deliver, visitor confirmations and the click fallback. Synced Gmail signatures get the alias host rewritten at send (`canonicalizeEmailHosts` in `buildGmailSignature`). Install kits updated. The global NEXT_PUBLIC_SITE_URL is unchanged.
 
-Open for Matt: sign-off on the link email wording; whether a requested link waits for the 9:03 AM window; re-installing his Gmail signature from `docs/install-kits/matt-email-signature/signature.html` so mail sent straight from Gmail stops loading images from the alias.
+Open for Matt: re-install his Gmail signature from `docs/install-kits/matt-email-signature/signature.html` so mail sent straight from Gmail stops loading images from the alias. Report improvements for the Keats CMA (net sheet, hero fold, map on phones, plain-English method text) went to him in chat; no report code changed.
 
 Skills read this pass: `marketing_brain_skills/brand-voice/VOICE.md`, `code-review`.
 

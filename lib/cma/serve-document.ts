@@ -24,15 +24,7 @@ import { listingMarketForDocument } from '@/lib/cma/listing-window-load'
 import type { RenderCmaArgs } from '@/lib/cma/render'
 import type { CmaBroker } from '@/lib/cma/types'
 import { GOOGLE_COMMS_COOKIE, hasGoogleCommsConsentRecorded } from '@/lib/auth/google-comms-consent'
-import {
-  decideCmaAccess,
-  renderRegisterShell,
-  renderConsentShell,
-  renderConsentBarHtml,
-  renderWrongPersonShell,
-  gateBrokerFromRow,
-  type CmaGateBroker,
-} from '@/lib/cma/register-gate'
+import { renderConsentBarHtml } from '@/lib/cma/register-gate'
 import { SMS_CONSENT_TEXT } from '@/lib/crm/sms-consent-text'
 import type { CmaRenderSource } from '@/lib/data/cma/documents'
 import { adminReviewBannerHtml, injectAdminReviewBanner } from '@/lib/cma/review-banner'
@@ -193,36 +185,6 @@ function storedHtmlResult(html: string, origin: string, extra = '', street?: str
   return { kind: 'html', status: 200, html: out, headers: CMA_DOC_HEADERS }
 }
 
-/**
- * The broker a CMA is from, for the door (face, Call, Text) and for the door's
- * link email (which mailbox sends). Capped like every optional read on this
- * path: a slow read renders the door without them, and returns no row, so a
- * caller that would SEND on the row sends nothing rather than guess a mailbox.
- */
-export async function cmaDoorBroker(
-  brokerSlug: string | null | undefined,
-  timeoutMs = CMA_READ_MS,
-): Promise<{ row: Record<string, unknown> | null; broker: CmaGateBroker | null }> {
-  const row = await withTimeoutFallback(
-    getCmaBrokerBySlugOrEmail({ slug: brokerSlug ?? 'matthew-ryan' }),
-    null,
-    timeoutMs,
-    'cma.doorBroker',
-  )
-  return { row, broker: gateBrokerFromRow(row) }
-}
-
-/**
- * True when the document has an email on file the door's link form could match.
- * The door offers the form only on a DELIVERED report (the route refuses the rest).
- */
-export function cmaHasEmailOnFile(
-  identity: { clientEmail: string | null; personEmails: string[]; claimedBy: string | null } | null | undefined,
-): boolean {
-  if (!identity) return false
-  return Boolean(identity.clientEmail || identity.claimedBy || identity.personEmails.length > 0)
-}
-
 export type CmaServeOpts = {
   slug: string
   requestUrl: string
@@ -289,36 +251,22 @@ async function serveCmaDocumentResult(opts: CmaServeOpts): Promise<CmaServeResul
   const wantsPrint = new URL(opts.requestUrl).searchParams.has('print')
   const publicReady = isCmaClientReady(head.status)
 
-  // The consent bar for a recipient who came in on the tracked link and has
-  // not answered the ask yet; empty for everyone else. Appended beside the
-  // tracker on the document paths below (never on the print path).
+  // NO SIGN-IN TO VIEW (Matt 2026-10-07): a client-ready report opens for
+  // anyone with the link. The only thing identity still decides is the
+  // consent bar: the recipient who came in on the tracked link (`?_pid=`
+  // token, or the signed rr_pid cookie it set) and has not answered the ask
+  // gets an optional bar inside the report. Everyone else gets no bar.
   let consentBar = ''
   if (publicReady && !opts.isAdmin && !opts.skipRegisterGate) {
     const identity = await getCmaAccessIdentity(safeSlug)
     const jar = await cookies()
     const commsCookie = jar.get(GOOGLE_COMMS_COOKIE)?.value
-    // Matt 2026-09-09: the person the email went to reads the report without
-    // the Google door. `?_pid=` rides on every tracked send (lib/cma/send.ts →
-    // attributeOutbound); PersonIdentityBridge copies it into rr_pid, so a
-    // return visit without the parameter still matches.
     const recipientPersonId =
       recipientFromParam(new URL(opts.requestUrl).searchParams.get(IDENTITY_LINK_PARAM)) ??
       signedPersonIdFromCookie(jar.get(PERSON_COOKIE)?.value)
-    const decision = decideCmaAccess({
-      isAdmin: false,
-      viewerEmail: opts.viewerEmail,
-      clientEmail: identity?.clientEmail ?? null,
-      personEmails: identity?.personEmails ?? [],
-      claimedBy: identity?.claimedBy ?? null,
-      consentRecorded: identity?.consentRecorded ?? false,
-      commsConsentRecorded: hasGoogleCommsConsentRecorded(commsCookie),
-      personId: identity?.personId ?? null,
-      recipientPersonId,
-    })
     if (
-      decision.kind === 'serve' &&
-      decision.via === 'recipient' &&
       identity?.personId &&
+      recipientPersonId === identity.personId &&
       !identity.consentRecorded &&
       !hasGoogleCommsConsentRecorded(commsCookie)
     ) {
@@ -328,44 +276,6 @@ async function serveCmaDocumentResult(opts: CmaServeOpts): Promise<CmaServeResul
         address: identity.subjectAddress ?? null,
         smsConsentText: SMS_CONSENT_TEXT,
       })
-    }
-    if (decision.kind === 'register') {
-      return {
-        kind: 'html',
-        status: 200,
-        html: renderRegisterShell({
-          slug: safeSlug,
-          address: identity?.subjectAddress ?? null,
-          clientName: identity?.clientName ?? null,
-          broker: (await cmaDoorBroker(head.broker_slug)).broker,
-          emailLink: head.status === 'delivered' && cmaHasEmailOnFile(identity),
-        }),
-      }
-    }
-    if (decision.kind === 'consent' || decision.kind === 'claim-and-consent') {
-      return {
-        kind: 'html',
-        status: 200,
-        html: renderConsentShell({
-          slug: safeSlug,
-          address: identity?.subjectAddress ?? null,
-          viewerEmail: opts.viewerEmail ?? '',
-          smsConsentText: SMS_CONSENT_TEXT,
-          claiming: decision.kind === 'claim-and-consent',
-        }),
-      }
-    }
-    if (decision.kind === 'wrong-person') {
-      return {
-        kind: 'html',
-        status: 403,
-        html: renderWrongPersonShell({
-          viewerEmail: opts.viewerEmail ?? '',
-          slug: safeSlug,
-          broker: (await cmaDoorBroker(head.broker_slug)).broker,
-          emailLink: head.status === 'delivered' && cmaHasEmailOnFile(identity),
-        }),
-      }
     }
   }
 

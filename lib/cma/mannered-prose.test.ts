@@ -4,7 +4,6 @@ import { composeCmaBottomWhyList, composeCmaCoverIntro, emptyFsboCmaMergeFacts }
 import { whyThisListPrice } from '@/lib/cma/client-facing'
 import { renderCmaHtml } from '@/lib/cma/render'
 import { renderImmersiveCmaHtml } from '@/lib/cma/immersive'
-import { renderConsentShell, renderRegisterShell } from '@/lib/cma/register-gate'
 import { findSellerBannedWords } from '@/lib/cma/seller-text'
 import type { CmaAdjustedComp, CmaBroker, CmaPricing, CmaSubject } from '@/lib/cma/types'
 
@@ -199,21 +198,6 @@ describe('CMA seller copy has no mannered prose', () => {
       'https://ryan-realty.com',
     )
     assertPlain('immersive-html', immersive)
-
-    assertPlain(
-      'register-shell',
-      renderRegisterShell({ slug: 'cma-x', address: '2465 7th', clientName: 'Blair Auld' }),
-    )
-    assertPlain(
-      'consent-shell',
-      renderConsentShell({
-        slug: 'cma-x',
-        address: '2465 7th',
-        viewerEmail: 'blair@example.com',
-        smsConsentText: 'I agree to receive text messages from Ryan Realty',
-        claiming: false,
-      }),
-    )
   })
 })
 

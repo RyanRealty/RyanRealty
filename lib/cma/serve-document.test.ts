@@ -76,6 +76,71 @@ describe('serveCmaDocument', () => {
     renderImmersiveCmaHtml.mockClear()
   })
 
+  // Matt 2026-10-07: "Don't require a sign in to view the report."
+  it('opens a delivered report for an anonymous visitor, with no sign-in door', async () => {
+    getCmaServeHead.mockResolvedValue({ html_path: 'db:cmas.html_content:cma-2566-keats', status: 'delivered', broker_slug: 'matthew-ryan' })
+    getCmaRenderSourceBySlug.mockResolvedValue({ ...draftFromRenderArgs, status: 'delivered' })
+    getCmaAccessIdentity.mockResolvedValue({
+      personId: 12959,
+      clientEmail: 'owner@msn.com',
+      clientName: 'Owner',
+      subjectAddress: '2566 Keats, Bend, OR 97701',
+      personEmails: ['owner@msn.com'],
+      claimedBy: null,
+      consentRecorded: false,
+    })
+    const result = await serveCmaDocument({
+      slug: 'cma-2566-keats',
+      requestUrl: 'https://ryan-realty.com/cma/cma-2566-keats?utm_source=cma',
+      isAdmin: false,
+      viewerEmail: null,
+    })
+    expect(result.kind).toBe('html')
+    if (result.kind !== 'html') return
+    expect(result.status).toBe(200)
+    expect(result.html).toContain('DRAFT CMA FROM RENDER_ARGS')
+    expect(result.html).not.toMatch(/Continue with Google|Sign in to open/i)
+    // A stranger is not the recipient, so no consent bar either.
+    expect(result.html).not.toContain('rr-consent-bar')
+  })
+
+  it('opens a delivered report for someone signed in as a different person', async () => {
+    getCmaServeHead.mockResolvedValue({ html_path: 'db:cmas.html_content:cma-2566-keats', status: 'delivered', broker_slug: 'matthew-ryan' })
+    getCmaRenderSourceBySlug.mockResolvedValue({ ...draftFromRenderArgs, status: 'delivered' })
+    getCmaAccessIdentity.mockResolvedValue({
+      personId: 12959,
+      clientEmail: 'owner@msn.com',
+      clientName: 'Owner',
+      subjectAddress: '2566 Keats',
+      personEmails: ['owner@msn.com'],
+      claimedBy: null,
+      consentRecorded: true,
+    })
+    const result = await serveCmaDocument({
+      slug: 'cma-2566-keats',
+      requestUrl: 'https://ryan-realty.com/cma/cma-2566-keats',
+      isAdmin: false,
+      viewerEmail: 'someone-else@gmail.com',
+    })
+    expect(result.kind).toBe('html')
+    if (result.kind !== 'html') return
+    expect(result.status).toBe(200)
+    expect(result.html).toContain('DRAFT CMA FROM RENDER_ARGS')
+  })
+
+  it('still 404s a draft for the public', async () => {
+    getCmaServeHead.mockResolvedValue(draftHead)
+    const result = await serveCmaDocument({
+      slug: DRAFT_SLUG,
+      requestUrl: `https://ryan-realty.com/cma/${DRAFT_SLUG}`,
+      isAdmin: false,
+      viewerEmail: null,
+    })
+    expect(result.kind).toBe('json')
+    if (result.kind !== 'json') return
+    expect(result.status).toBe(404)
+  })
+
   it('lets a broker GET a draft from render_args when html_content is missing', async () => {
     getCmaServeHead.mockResolvedValue(draftHead)
     getCmaStoredHtmlBySlug.mockResolvedValue(null)
