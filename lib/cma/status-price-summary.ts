@@ -257,7 +257,7 @@ export function statusPriceBoardHtml(rows: readonly StatusPriceRow[]): string {
       ? "$/sqft is each home's own price over its own living area. Once closed, that price is the sold price after a recorded concession, or the sold price when none was recorded. Before a sale it is the list price."
       : "$/sqft is each home's list price over its own living area.",
   ].join(' ')
-  return `<div class="status-price" data-status-price="board">
+  return `<div class="status-price" data-status-price="board" data-homes="${n}">
   <h3 class="subhead">${esc(rows.map((r) => r.label).join(' · '))}</h3>
   <p class="chart-read">${esc(read)}</p>
   <table class="kv is-wide status-price-table">
@@ -266,4 +266,36 @@ export function statusPriceBoardHtml(rows: readonly StatusPriceRow[]): string {
     ${groups}
   </table>${notes.length ? `\n  <p class="small status-price-note">${esc(notes.join(' '))}</p>` : ''}
 </div>`
+}
+
+/** How many homes a rendered board counts, read off the board itself. */
+export function statusPriceBoardHomes(boardHtml: string | null | undefined): number | null {
+  const m = /data-status-price="board"[^>]*\bdata-homes="(\d+)"/.exec(boardHtml ?? '')
+  const n = m ? Number(m[1]) : NaN
+  return Number.isFinite(n) && n > 0 ? n : null
+}
+
+/**
+ * THE BOARD, ONE TAP AWAY (web chapter only, Matt 2026-10-07).
+ *
+ * The status table opened the sales chapter and pushed the sales that set the
+ * price two phone screens down. On the web it moves under those sales and sits
+ * behind a closed disclosure that names what it holds. Every figure is still
+ * in the document, the board is the letter's own markup unchanged, and a
+ * <details> opens without script. The print letter keeps it open and where it
+ * was.
+ */
+export function statusPriceBoardDisclosureHtml(boardHtml: string | null | undefined): string {
+  const html = (boardHtml ?? '').trim()
+  if (!html) return ''
+  const n = statusPriceBoardHomes(html)
+  const label =
+    n == null
+      ? 'Every home in this report, by status'
+      : n === 1
+        ? 'The one home in this report, by status'
+        : `All ${n} homes by status`
+  return `<details class="status-price-more"><summary class="status-price-s">${esc(label)}</summary>
+  ${html}
+</details>`
 }

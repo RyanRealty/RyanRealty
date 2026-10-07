@@ -139,7 +139,6 @@ describe('renderCompMatrixHtml', () => {
       'Sold',
       'Size',
       'Days on market',
-      'CDOM',
       'Garage',
       'List $/sqft',
       'Sold $/sqft',
@@ -151,6 +150,10 @@ describe('renderCompMatrixHtml', () => {
     ]) {
       expect(html, row).toContain(row)
     }
+    // Every home counts the same days in both rows, so the second one goes
+    // (Matt 2026-10-07): an MLS abbreviation repeating the row above it.
+    expect(html).not.toContain('CDOM')
+    expect(html).not.toContain('Days on market, all listings')
     // Flex FLOW keeps Beds / Baths / Year built as rows; Size may still fold.
     expect(html).toContain('<th>Beds</th>')
     expect(html).toContain('<th>Baths</th>')

@@ -530,7 +530,6 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
       'Original list',
       'Sold',
       'Days on market',
-      'CDOM',
       'Beds',
       'Baths',
       'Size',
@@ -545,6 +544,9 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
     ]) {
       expect(html, label).toContain(label)
     }
+    // Matt 2026-10-07: the cumulative count prints only when it differs from
+    // Days on market, and then in words. Every sale here counts the same days.
+    expect(html).not.toContain('CDOM')
     expect(html).toContain('First ask')
     expect(html).toContain('class="arc-arrow"')
     expect(html).toContain('outcome')

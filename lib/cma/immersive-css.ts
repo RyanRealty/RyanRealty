@@ -124,8 +124,18 @@ img{max-width:100%;display:block}
 .comp-stack-facts{font-size:14px;opacity:.78;margin-top:4px;line-height:1.4;overflow-wrap:anywhere}
 .comp-stack-card .matrix-thumb{width:100%;max-width:100%;aspect-ratio:16/10;object-fit:cover;display:block;margin:0 0 8px}
 /* A comp thumbnail on a phone is an identifier, not a hero: 16/10 at 375 is
-   193px of photo above 240px of facts, five times over. */
-@media (max-width:560px){.comp-stack-card .matrix-thumb{aspect-ratio:2/1}}
+   193px of photo above 240px of facts, five times over. 2/1 still put 155px
+   of photo above every card, so on a phone the card lies down the way the
+   rival cards do (Matt 2026-10-07): the photo is a thumbnail beside the
+   address and the status, and the facts run full width under them. Same
+   photo, same lines, same order. */
+@media (max-width:560px){
+  .comp-stack-card{display:grid;grid-template-columns:104px minmax(0,1fr);column-gap:12px;align-items:start}
+  .comp-stack-card>*{grid-column:1 / -1;min-width:0}
+  .comp-stack-card>.matrix-thumb{grid-column:1;grid-row:1 / span 2;width:104px;aspect-ratio:4/3;margin:0}
+  .comp-stack-card>.addr-row.is-card{grid-column:2;grid-row:1;margin:0;align-self:start}
+  .comp-stack-card>.comp-stack-grid.is-answer{grid-column:2;grid-row:2;margin-top:0}
+}
 @media print{.comp-stack{display:none!important}.comp-matrix-wrap,.matrix-group-h{display:block!important}.comp-matrix-wrap{overflow-x:visible}}
 /* FIXED LAYOUT, the same as the print sheet. Without it the browser sized the
    columns from their content, so one long MLS remodel remark widened its
@@ -214,9 +224,6 @@ h4.subhead{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:up
 .pin-dot{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--navy);color:var(--cream);font:600 13px/1 Geist,system-ui,sans-serif;box-shadow:0 0 0 2px var(--cream),0 1px 6px rgba(16,39,66,.35)}
 /* Their own home is never buried under a sale pin. */
 .pin-hit.is-subject{z-index:2}
-/* Smaller dots on a phone: the map is a third the width there, so a cluster
-   ring that separates 28px dots on a desk screen cannot separate them at 375. */
-@media (max-width:700px){.pin-dot{width:22px;height:22px;font-size:11px}.pin-hit.is-subject .pin-dot{width:20px;height:20px;font-size:12px}}
 .pin-hit.is-subject .pin-dot{border-radius:2px;width:26px;height:26px;font-size:14px}
 /* Houses 10 metres apart cannot be pulled apart on a tile without pointing at
    the wrong block, so occlusion is resolved by the interaction instead: the
@@ -224,11 +231,10 @@ h4.subhead{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:up
 .pin-hit.is-on,.pin-hit:focus-visible{z-index:3}
 .pin-hit.is-on .pin-dot{background:var(--cream);color:var(--navy);box-shadow:0 0 0 3px var(--navy)}
 /* THREE FAMILIES, THREE GLYPHS (Delta 3): filled numbered for a sale that
-   closed, hollow lettered for a home on the market, hollow barred roman for a
-   listing that came off unsold. */
+   closed, a solid ring lettered for a home on the market, a dashed ring roman
+   for a listing that came off unsold (the dashed rules are with the phone map
+   below; the bar across the numeral went 2026-10-07). */
 .pin-hit.is-active .pin-dot,.pin-hit.is-unsold .pin-dot{background:var(--cream);color:var(--navy);box-shadow:0 0 0 2px var(--navy),0 1px 6px rgba(16,39,66,.25)}
-.pin-hit.is-unsold .pin-dot{position:relative}
-.pin-hit.is-unsold .pin-dot::after{content:'';position:absolute;left:-5px;right:-5px;top:50%;height:2px;background:var(--navy)}
 /* Every pin tells the tale: days on market, price changes, the outcome. */
 .pin-note{position:absolute;left:50%;top:100%;transform:translate(-50%,8px);width:210px;padding:9px 11px;background:var(--cream);border:1px solid var(--navy);color:var(--navy);font-size:12px;line-height:1.4;text-align:left;z-index:4;opacity:0;pointer-events:none;transition:opacity 200ms ease-out}
 .pin-hit.is-on .pin-note,.pin-hit:hover .pin-note,.pin-hit:focus-visible .pin-note{opacity:1}
@@ -244,7 +250,9 @@ h4.subhead{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:up
 .peer-stories li{display:flex;align-items:baseline;gap:10px;margin:0 0 8px;font-size:14px;line-height:1.5}
 .peer-stories .ps-a{font-weight:600;white-space:nowrap}
 .peer-stories .ps-r{min-width:0;opacity:.85}
-@media (max-width:700px){.peer-stories li{flex-direction:column;gap:2px}.peer-stories .ps-a{white-space:normal}}
+/* On a phone the badge sits beside the address it keys, not on a line of its
+   own above it, and the story reads under the address. */
+@media (max-width:700px){.peer-stories li{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:8px;row-gap:2px;align-items:center}.peer-stories li>.pin-badge{grid-column:1;grid-row:1;margin:0}.peer-stories .ps-a{grid-column:2;grid-row:1;white-space:normal}.peer-stories .ps-r{grid-column:2}}
 .lot-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin:14px 0 8px}
 .lot-tile{margin:0}
 .lot-tile svg{width:100%;height:auto;display:block;border:1px solid var(--ink12);border-radius:10px}
@@ -356,9 +364,42 @@ html.anim .on .r:nth-child(5){transition-delay:.24s}
   .sc.hero{display:block;min-height:0;padding:0;overflow:visible}
   .hero-bed,.hero-scrim,.hero .cue{display:none}
   .hero-img{position:static;width:100%;height:auto;object-fit:contain}
-  .hero .in{position:static;padding:32px 18px 44px;background:var(--navy)}
+  /* The price on the first screen of a small phone too: at 375x667 the
+     recommended price ended at 685px. Tighter gaps, same words. */
+  .hero .in{position:static;padding:24px 18px 36px;background:var(--navy)}
   .hero .in{background:var(--navy)}
   .hero-h{font-size:clamp(34px,11vw,54px)}
+  .hero-sub{margin-top:10px}
+  .hero-payoff{margin-top:24px}
+}
+/* THE PRICE ON THE FIRST SCREEN OF A LAPTOP (Matt 2026-10-07). Wider than a
+   phone, the hero was 100svh of contained photo with the title block laid
+   over its lower half: at 1280x800 the block covered the porch, and in a tall
+   window the section grew with the window: 1,400px tall put the recommended price at
+   y=1,142. The phone's answer works here too. The photo is a band, still
+   CONTAINED with its own blurred copy behind it (F3: nothing in the photo is
+   cut), and the title block sits under it instead of over it. The band takes
+   whatever the screen has left after the block, so the price is on the first
+   screen at 1280x800, 1440x900 and anything taller, and the band never grows
+   past the photo's own height at full width. */
+@media screen and (min-width:701px){
+  .sc.hero{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;align-items:stretch;padding:0;height:100svh;min-height:600px;max-height:calc(66.67vw + 340px)}
+  .hero-img{position:relative;inset:auto;grid-row:1;grid-column:1;width:100%;height:100%;min-height:0;object-fit:contain;object-position:center;z-index:1}
+  .hero-scrim{display:none}
+  .hero .in{grid-row:2;grid-column:1;max-width:none;width:100%;margin:0;padding:24px max(28px,calc((100% - 1120px) / 2)) 54px;background:var(--navy)}
+  .hero .cue{bottom:18px}
+  .hero-payoff{margin-top:26px}
+  .hero-trio{row-gap:10px}
+}
+/* Wide enough for two columns: the address on the left, the price on the
+   right, so the block is half as tall and the photo gets the difference. */
+@media screen and (min-width:1000px){
+  .hero .in{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,520px);grid-template-rows:1fr auto auto auto;column-gap:56px;align-items:end}
+  .hero-kick,.hero-h,.hero-sub,.hero-for{grid-column:1}
+  .hero-kick{align-self:end}
+  .hero-payoff{grid-column:2;grid-row:1 / span 4;margin-top:0;align-self:end}
+  .hero-h{font-size:clamp(44px,5.6vw,80px);text-wrap:balance}
+  .hero-trio .ht.is-rec .ht-v{font-size:clamp(48px,7.2vw,96px)}
 }
 @media (max-width:860px){
   .stat2,.stat3,.stat4{grid-template-columns:1fr 1fr}
@@ -624,6 +665,69 @@ a.street-sale:hover{border-color:var(--navy)}
 a.street-sale .n{font-variant-numeric:tabular-nums;font-weight:600}
 .print-out a{display:inline-block;min-height:44px;padding:12px 0;box-sizing:border-box}
 @media print{.comp-stack-card a.comp-stack-addr,a.dns-addr,.rival-card .rival-addr{min-height:0;padding:0}}
+/* ── phone first (Matt 2026-10-07) ───────────────────────────────────────── */
+/* The sales at a glance: one row per sale that set the price, the same
+   strings the matrix under it prints. Each address is a 44px row, because it
+   is the link a seller taps to open the sale. */
+.sales-glance{margin:4px 0 26px;max-width:760px}
+.sales-glance .subhead{margin:0 0 6px}
+table.glance{width:100%;border-collapse:collapse;font-size:15px;font-variant-numeric:tabular-nums}
+table.glance th,table.glance td{padding:0 0 0 12px;border-bottom:1px solid var(--ink12);text-align:right;vertical-align:middle;font-weight:400}
+table.glance thead th{font-size:12px;font-weight:600;line-height:1.3;opacity:.7;padding-top:8px;padding-bottom:8px;vertical-align:bottom}
+table.glance th.g-addr{padding-left:0;text-align:left;font-weight:600}
+table.glance td.n{white-space:nowrap;font-weight:600}
+table.glance .g-link{display:flex;align-items:center;gap:8px;min-height:44px;padding:6px 0;color:inherit;text-decoration:none;line-height:1.25}
+table.glance a.g-link .g-addr-t{border-bottom:1px solid var(--ink12)}
+table.glance a.g-link:hover .g-addr-t{border-bottom-color:var(--navy)}
+table.glance .pin-badge{margin-right:0}
+@media (max-width:480px){table.glance{font-size:13.5px}table.glance th,table.glance td{padding-left:8px}table.glance thead th{font-size:11px}}
+/* The rest of a phone card list, one tap under the first homes. The control
+   goes once it has done its job: the list is then simply the whole list. */
+details.comp-more{margin:0}
+details.comp-more>summary{list-style:none;display:flex;align-items:center;justify-content:center;gap:10px;min-height:48px;margin:0 0 14px;padding:12px 16px;border:1px solid var(--navy);color:var(--navy);font-size:15px;font-weight:600;cursor:pointer;background:transparent}
+details.comp-more>summary::-webkit-details-marker{display:none}
+details.comp-more>summary::after{content:'';width:8px;height:8px;border-right:1.5px solid var(--navy);border-bottom:1.5px solid var(--navy);transform:rotate(45deg) translateY(-2px)}
+details.comp-more>summary:focus-visible{outline:3px solid rgba(16,39,66,.35);outline-offset:2px}
+details.comp-more[open]>summary{display:none}
+/* The status table under the sales, behind its own name. */
+details.status-price-more{margin:26px 0 8px;border-top:1px solid var(--ink12)}
+details.status-price-more>summary{list-style:none;display:flex;align-items:center;gap:10px;min-height:48px;padding:12px 0;font-size:16px;font-weight:600;color:var(--navy);cursor:pointer}
+details.status-price-more>summary::-webkit-details-marker{display:none}
+details.status-price-more>summary::before{content:'';flex:0 0 auto;width:8px;height:8px;border-right:1.5px solid var(--navy);border-bottom:1.5px solid var(--navy);transform:rotate(-45deg);transition:transform .2s ease-out}
+details.status-price-more[open]>summary::before{transform:rotate(45deg)}
+details.status-price-more>summary:focus-visible{outline:3px solid rgba(16,39,66,.35);outline-offset:2px}
+details.status-price-more .status-price{margin-top:4px}
+@media print{details.comp-more>summary,details.status-price-more>summary{display:none}}
+/* A LISTING THAT CAME OFF is a dashed ring: the bar that crossed its numeral
+   struck through the one thing a reader matches to the row. Same mark on the
+   map, in the legend, and on the row's own badge. */
+.pin-hit.is-unsold .pin-dot{box-shadow:0 0 0 2px var(--cream),0 1px 6px rgba(16,39,66,.25);border:2px dashed var(--navy)}
+.pin-hit.is-on.is-unsold .pin-dot{box-shadow:0 0 0 3px var(--navy)}
+.pin-legend .is-unsold .pl-k{box-shadow:none;border:1.5px dashed var(--navy)}
+.pin-badge.is-unsold{box-shadow:none;border:1.5px dashed var(--navy)}
+/* A pin near an edge opens its card toward the middle of the map. */
+.pin-hit[data-note="l"] .pin-note{left:0;transform:translate(0,8px)}
+.pin-hit[data-note="r"] .pin-note{left:auto;right:0;transform:translate(0,8px)}
+/* THE PHONE MAP (Matt 2026-10-07). At 375 the whole tile is 339px wide and a
+   neighbourhood of pins was one blob. The phone shows a closer view of the
+   SAME image: the window that holds every pin, shaped for the column, from
+   the four fractions the renderer stamps on the frame (lib/cma/pin-layout.ts).
+   The pins take their phone places, laid out for this size, and a pin that
+   had to step aside draws a line back to its house. */
+@media screen and (max-width:700px){
+  .pin-map-frame[data-crop]{aspect-ratio:var(--car);border:1px solid var(--ink12)}
+  .pin-map-frame[data-crop] .pin-map-clip{position:absolute;inset:0;overflow:hidden}
+  .pin-map-frame[data-crop] .pin-map{position:absolute;max-width:none;max-height:none;border:0;aspect-ratio:auto;width:calc(100% / var(--cw));height:calc(100% / var(--ch));left:calc(var(--cx) * -100% / var(--cw));top:calc(var(--cy) * -100% / var(--ch))}
+  .pin-map-frame .pin-hit{left:var(--px)!important;top:var(--py)!important}
+  .pin-map-frame .pin-leaders.is-wide{display:none!important}
+  .pin-map-frame .pin-leaders.is-phone{display:block!important}
+  .pin-dot{width:24px;height:24px;font-size:12px}
+  .pin-hit.is-subject .pin-dot{width:24px;height:24px;font-size:13px}
+  .pin-note{width:200px}
+  .pin-hit .pin-note,.pin-hit[data-note="l"] .pin-note,.pin-hit[data-note="r"] .pin-note{left:50%;right:auto;transform:translate(-50%,8px)}
+  .pin-hit[data-pnote="l"] .pin-note{left:0;right:auto;transform:translate(0,8px)}
+  .pin-hit[data-pnote="r"] .pin-note{left:auto;right:0;transform:translate(0,8px)}
+}
 @media print{
   .sc{min-height:0;padding:24px}
   .sc-navy,.sc-navy.pack{padding:32px 36px 40px}

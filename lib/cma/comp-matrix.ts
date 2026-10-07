@@ -203,7 +203,7 @@ type Col = {
 }
 
 /** The map's pin, at reading size, so the two read as one object. */
-function pinBadge(pin: string | null, family?: string): string {
+export function pinBadge(pin: string | null, family?: string): string {
   return pin
     ? `<span class="pin-badge${family ? ` is-${esc(family)}` : ''}" aria-hidden="true">${esc(pin)}</span>`
     : ''
@@ -427,8 +427,13 @@ function sharedConcessionCell(entry: MatrixEntry): string {
   return usd(c)
 }
 
-/** Close minus a positive recorded concession. Unsold rows stay blank. */
-function soldAfterConcessionsCell(entry: MatrixEntry): string {
+/**
+ * Close minus a positive recorded concession. Unsold rows stay blank.
+ *
+ * Exported so the web chapter's at-a-glance list prints the SAME string this
+ * row prints for the same sale, never a figure computed a second way.
+ */
+export function soldAfterConcessionsCell(entry: MatrixEntry): string {
   if (entry.family !== 'closed') return '-'
   const close = entry.closePrice
   if (close == null || !(close > 0)) return '-'
@@ -464,8 +469,14 @@ function statusDateCell(entry: MatrixEntry): string {
   return formatDate(raw.slice(0, 10)) || raw.slice(0, 10)
 }
 
-function moneyCell(n: number | null | undefined): string {
+/** A dollar figure, or the dash a blank cell prints. The Adjusted row's own cell. */
+export function moneyCell(n: number | null | undefined): string {
   return n != null && n > 0 ? usd(n) : '-'
+}
+
+/** The "Weight in this price" cell: the reconciliation's own figure, one decimal. */
+export function weightCell(weight: number | null | undefined): string {
+  return weight != null && Number.isFinite(weight) ? `${weight.toFixed(1)}%` : '-'
 }
 
 function sharedCells(entry: MatrixEntry, _range?: PricePathRange | null): string[] {
@@ -603,7 +614,7 @@ function adjustmentCells(
       : '-',
     gross != null ? `${gross.toFixed(1)}%` : '-',
     usd(printedAdjustedPrice(comp)),
-    weight?.weight != null ? `${weight.weight.toFixed(1)}%` : '-',
+    weightCell(weight?.weight),
   ]
 }
 
@@ -634,6 +645,12 @@ const SHARED_PHRASE: Record<string, (v: string) => string> = {
 // (even when identical). Only Rooms + Size may still fold into one sentence.
 const SHARED_ORDER = ['Rooms', 'Size']
 
+/**
+ * The cumulative count, in words a homeowner reads. "CDOM" is the MLS's own
+ * abbreviation and means nothing to the person this table is for.
+ */
+export const CDOM_ROW_LABEL = 'Days on market, all listings'
+
 function foldIdenticalRows(
   cols: readonly Col[],
   rows: ReadonlyArray<MatrixRow>,
@@ -641,8 +658,34 @@ function foldIdenticalRows(
   const kept: Array<(typeof rows)[number]> = []
   const shared: Array<{ label: string; clause: string }> = []
   const keptIndexes: number[] = []
+  const domIndex = rows.findIndex((r) => r.label === 'Days on market')
   rows.forEach((row, i) => {
-    // Matt ADD 2026-09-12: these rows stay on every sold matrix even when blank.
+    // A ROW NO OTHER HOME FILLS IS NOT A COMPARISON (Matt 2026-10-07). On the
+    // listings that came off and the homes for sale, Sold, Seller concessions,
+    // Sold after concessions, Sold $/sqft and Adjusted printed a full row of
+    // dashes under every home, and Garage printed one figure (yours) over five
+    // dashes. Each one was a phone screen of nothing. The reader's own column
+    // does not make a row a comparison, so it is the OTHER homes that decide.
+    // This outranks the always-keep list below: those rows stay when they
+    // carry a figure, never as a row of blanks. (The same rule first landed
+    // for "Remodel or update notes", one cell and four dashes on a live rival,
+    // look-pass 2026-09-08.)
+    if (cols.slice(1).every((c) => (c.cells[i] ?? '-') === '-')) return
+    // CDOM IS ONLY A FACT WHEN IT DIFFERS. Every home in every table the
+    // record can fill today carries the same count in both rows, so the
+    // second row repeated the first under an MLS abbreviation. When any home
+    // counts differently it stays, in plain words.
+    if (row.label === 'CDOM') {
+      const same =
+        domIndex >= 0 && cols.every((c) => (c.cells[i] ?? '-') === (c.cells[domIndex] ?? '-'))
+      if (same) return
+      kept.push({ ...row, label: CDOM_ROW_LABEL })
+      keptIndexes.push(i)
+      return
+    }
+    // Matt ADD 2026-09-12: these rows stay on every matrix that fills them,
+    // even when a cell is blank or every home shares the value. A row no
+    // other home fills at all went above (Matt 2026-10-07).
     if (
       row.label === 'Lot size' ||
       row.label === 'List $/sqft' ||
@@ -660,7 +703,6 @@ function foldIdenticalRows(
       row.label === 'List price' ||
       row.label === 'Original list' ||
       row.label === 'Sold' ||
-      row.label === 'CDOM' ||
       row.label === 'Adjusted' ||
       row.label === 'Days on market' ||
       row.label === 'First ask → last ask → outcome'
@@ -675,10 +717,6 @@ function foldIdenticalRows(
     // that no style adjustment was made, which the legend already covers.
     if (values.length === 0) return
     if (values.every((v) => v === '$0')) return
-    // A row only the reader's own home fills is not a comparison either: the
-    // MLS carries no remarks on a live rival, so "Remodel or update notes"
-    // arrived as one cell and four dashes (look-pass, 2026-09-08).
-    if (cols.slice(1).every((c) => (c.cells[i] ?? '-') === '-')) return
     const phrase = SHARED_PHRASE[row.label]
     const same = phrase != null && values.length >= 2 && values.every((v) => v === values[0])
     if (same) {
@@ -719,7 +757,7 @@ function matrixTable(
   cols: Col[],
   rows: ReadonlyArray<MatrixRow>,
   family: string,
-  opts: { heads?: boolean; adjustments?: boolean } = {},
+  opts: { heads?: boolean; adjustments?: boolean; matrix?: string } = {},
 ): string {
   // Fixed layout reads its widths from the colgroup, so the table is exactly
   // 100% of the content box no matter what any cell holds.
@@ -800,7 +838,7 @@ function matrixTable(
     })
     .join('')
   return `
-  <div class="comp-matrix-wrap">
+  <div class="comp-matrix-wrap"${opts.matrix ? ` data-matrix="${esc(opts.matrix)}"` : ''}>
     <table class="kv is-wide comp-matrix is-${esc(family)}${opts.adjustments ? ' is-adjustments' : ''}">
       ${colgroup}
       <thead>${head}</thead>
@@ -814,6 +852,8 @@ function matrixTable(
  * same order (Delta 3). A seven-column table is a desktop object.
  */
 function matrixStack(input: {
+  /** The matrix this list belongs to, so a sort reorders the right cards. */
+  id: string
   family: string
   subject: Col
   cols: readonly Col[]
@@ -932,8 +972,35 @@ function matrixStack(input: {
   // the phone drawing dropped it entirely, so at 375 the price chapter held
   // five sales and the string "Your home" appeared nowhere (tasteReview item 1).
   const yours = cardFor(input.subject, input.entries[0] ?? null, -1)
-  const cards = input.cols.map((c, i) => cardFor(c, input.entries[i + 1] ?? null, i)).join('')
-  return `<div class="comp-stack" aria-label="${esc(input.label)}">${yours}${cards}</div>`
+  const cards = input.cols.map((c, i) => cardFor(c, input.entries[i + 1] ?? null, i))
+  return `<div class="comp-stack" aria-label="${esc(input.label)}" data-matrix="${esc(input.id)}">${yours}${stackFoldHtml(cards)}</div>`
+}
+
+/**
+ * How many homes a phone card list opens with, after the reader's own.
+ *
+ * Three matrices of full cards were 15,475 of the 23,800 pixels the Keats
+ * document ran at 375 (look-pass, 2026-10-07). The first homes stay open and
+ * the rest sit one tap under them. Nothing is removed and nothing needs
+ * script: a <details> opens without it, and the print letter never draws the
+ * phone cards at all, so every column is on the sheet regardless.
+ */
+export const STACK_OPEN_CARDS = 2
+
+/**
+ * The cards past the first few, behind "Show all N homes".
+ *
+ * A fold that would hide a single card saves less than the control costs, so
+ * a list of three homes or fewer prints whole. N counts every home in the
+ * table, so the label names the total the reader will see once it opens.
+ */
+export function stackFoldHtml(cards: readonly string[]): string {
+  if (cards.length <= STACK_OPEN_CARDS + 1) return cards.join('')
+  const open = cards.slice(0, STACK_OPEN_CARDS).join('')
+  const rest = cards.slice(STACK_OPEN_CARDS).join('')
+  return `${open}<details class="comp-more" data-visible="${STACK_OPEN_CARDS}"><summary class="comp-more-s">${esc(
+    `Show all ${cards.length} homes`,
+  )}</summary><div class="comp-more-in">${rest}</div></details>`
 }
 
 /**
@@ -977,7 +1044,7 @@ export function renderMatrixHtml(input: {
         groups.length > 1 && gi > 0
           ? `<h4 class="subhead matrix-group-h">${esc(`${input.heading}, continued`)}</h4>`
           : ''
-      return `${heading}${matrixTable([subjectCol, ...group], folded.rows, input.family)}`
+      return `${heading}${matrixTable([subjectCol, ...group], folded.rows, input.family, { matrix: input.id })}`
     })
     .join('')
   // The adjustment grid, in the SAME column order, under matrix 1 only.
@@ -1003,6 +1070,7 @@ export function renderMatrixHtml(input: {
       matrixTable([subjAdj, ...group], adjFolded.rows, input.family, {
         heads: false,
         adjustments: true,
+        matrix: input.id,
       }),
     )
     .join('')}
@@ -1019,6 +1087,7 @@ export function renderMatrixHtml(input: {
   ${folded.sentence ? `<p>${esc(folded.sentence)}</p>` : ''}
   ${tables}
   ${matrixStack({
+    id: input.id,
     family: input.family,
     subject: subjectCol,
     cols,
