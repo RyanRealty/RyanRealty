@@ -1,11 +1,10 @@
 # Run the loop
 
-The one page a session boots on when Matt says **"run the loop"**: Claude Code, Cursor, Grok
-Build, the Mac grinder (`scripts/site-queue-routine.sh`) and the Claude cloud routine alike.
-Pointer files (CLAUDE.md, AGENTS.md, both site-queue skills, `.cursor/rules/run-loop.mdc`,
-`docs/GROK_BOT_BRAIN.md`, `scripts/site-queue-routine-prompt.md`) link here and restate none
-of it. Where this page and the code disagree, the code wins and this page gets fixed.
-Held by `ci:process-canon`.
+The one page a session boots on when Matt says **"run the loop"**: Claude Code, Cursor, Grok Build,
+the Mac grinder (`scripts/site-queue-routine.sh`) and the Claude cloud routine alike. Pointer files
+(CLAUDE.md, AGENTS.md, both site-queue skills, `.cursor/rules/run-loop.mdc`, `docs/GROK_BOT_BRAIN.md`,
+`scripts/site-queue-routine-prompt.md`) link here and restate none of it. Where this page and the
+code disagree, the code wins and this page gets fixed. Held by `ci:process-canon`.
 
 **Current mission:** the 2026-09-22 visibility pass. What landed, what is still open and how
 to resume it: `docs/plans/VISIBILITY_2026-09-22/README.md`.
@@ -24,11 +23,10 @@ from there, convert... as organically as possible."
   instrument, the route's content floor, tap targets, page payload, §0 traces, and the
   product hold (honesty, JSON-LD, the conversion ask). A taste score that rises while
   clicks fall is a loss.
-- **No rule is permanent (Matt 2026-09-23):** "If there's something out there that we're
-  enforcing that's keeping us back, then we really need to evaluate it and likely change
-  it." Evaluate with evidence, change the rule and its gate in one commit, cite the
-  evidence. Still binding always: CLAUDE.md §0, the four §1 per-action classes, fair
-  housing, MLS rules.
+- **No rule is permanent (Matt 2026-09-23):** "If there's something out there that we're enforcing
+  that's keeping us back, then we really need to evaluate it and likely change it." Evaluate with
+  evidence, change the rule and its gate in one commit, cite the evidence. Still binding always:
+  CLAUDE.md §0, the four §1 per-action classes, fair housing, MLS rules.
 
 ## 2. Boot
 
@@ -50,24 +48,22 @@ npx tsx scripts/site-queue-status.ts --release SITE-XX --owner <same>           
 ```
 
 The tool is where the caps live (`MAX_SITE_WORKERS`, `MAX_SITE_CLAIMS_PER_SESSION`,
-`SITE_CLAIM_IDLE_HOURS` in `lib/data/loop/work-node.ts`, reported as `maxWorkers` in the
-JSON). Claims are optimistic: a non-zero exit means you got nothing. Never write a claim by
-hand. Take items in the JSON's order (`siteServeTier` in the same file is the one serve
-order); skip one whose route family another owner holds. A `GSC gap` node (a lost query, a
-split landing, or a money page class that lost rank, seeded by the Monday measurer
-`/api/cron/loop-weekly-measure` or the boot brief) is served with round three, behind only a
-fleet p0/major and Matt's ADD/CHANGE.
+`SITE_CLAIM_IDLE_HOURS` in `lib/data/loop/work-node.ts`, reported as `maxWorkers` in the JSON).
+Claims are optimistic: a non-zero exit means you got nothing. Never write a claim by hand. Take
+items in the JSON's order (`siteServeTier` in the same file is the one serve order); skip one
+whose route family another owner holds. A `GSC gap` node (a lost query, a split landing, or a
+money page class that lost rank, seeded by the Monday measurer `/api/cron/loop-weekly-measure`
+or the boot brief) is served with round three, behind only a fleet p0/major and Matt's ADD/CHANGE.
 
 ## 4. The accept test for a public page node
 
 A node is done when all five hold on the pushed head, with the evidence on the node:
 
-1. **Visibility.** The title and H1 own one query that no other sitemapped URL class
-   targets (a GSC-seeded node names the winner URL); `index, follow`, self-canonical, in
-   the sitemap once, 200 to a crawler; JSON-LD figures equal the visible ones; LCP inside
-   Google's Core Web Vitals "good" line (2.5 s). Gates: `ci:seo-shell`, `ci:seo-routes`,
-   `ci:title-brand-once`, `ci:sitemap-resolvable`, `ci:ai-structured-data`,
-   `ci:listing-offmarket-index`.
+1. **Visibility.** The title and H1 own one query that no other sitemapped URL class targets (a
+   GSC-seeded node names the winner URL); `index, follow`, self-canonical, in the sitemap once,
+   200 to a crawler; JSON-LD figures equal the visible ones; LCP inside Google's Core Web Vitals
+   "good" line (2.5 s). Gates: `ci:seo-shell`, `ci:seo-routes`, `ci:title-brand-once`,
+   `ci:sitemap-resolvable`, `ci:ai-structured-data`, `ci:listing-offmarket-index`.
 2. **Information.** Every figure carries a reader-facing source and date (§0); no `$0` or
    `0` placeholder in server HTML; listing cards carry price, address, beds, baths, sqft;
    nothing the page carried is gone (`ci:route-content-floor`, `requiredComponents`).
@@ -114,10 +110,9 @@ Ledger: <page class> · <gsc metric: clicks|position|impressions|ctr> · <query 
 Ledger: none (<why this cannot move a ranking>)
 ```
 
-`ci:process-canon` prints a WARN for a commit in the push range without one. Warning, not
-failure, for now: a hard fail would block lanes that booted before this page. Set
-`LEDGER_TRAILER_STRICT=1` to make it fail; that becomes the default once in-flight lanes
-have landed.
+`ci:process-canon` prints a WARN for a commit in the push range without one. Warning, not failure,
+for now: a hard fail would block lanes that booted before this page. Set `LEDGER_TRAILER_STRICT=1`
+to make it fail; that becomes the default once in-flight lanes have landed.
 
 ## 7. When to stop
 
@@ -141,10 +136,15 @@ have landed.
 - **Approval:** CLAUDE.md §1. Never message a real person, publish a post, spend on ads,
   or grant OAuth without Matt's yes for that action. Test submits use a `fleet-test` address.
 - **Voice:** VOICE.md is the only voice document.
+- **CMA engine changes are measured, not felt (Matt 2026-10-07):** before and after any change
+  under `lib/cma/`, `lib/pricing/` or `scripts/cma-build-dryrun.ts`, run `npm run cma:fleet` (every
+  open Bend expired CMA, dry run only, no DB writes). The headline `N of M build (was K); +a build,
+  -b fail; c prices moved` and the exit code (1 = a home newly fails or newly holds) go in the
+  commit message. Baseline immediately before the change, candidate immediately after; a run on
+  the same SHA is the data-drift floor.
 
 ## 9. Reference, not boot reading
 
-The skill (`.claude/skills/site-queue/SKILL.md`, Cursor and Grok:
-`.cursor/skills/site-queue/SKILL.md`), `design_system/public/TASTE.md` (the look floor),
-`design_system/public/PUBLIC_UI.md`, `docs/DEVELOPMENT_PROCESS.md` (THE LOOP),
-`docs/plans/ENTERPRISE_MAP/SITE_PAGES_E2E.md` (queue history).
+The skill (`.claude/skills/site-queue/SKILL.md`, Cursor and Grok: `.cursor/skills/site-queue/SKILL.md`),
+`design_system/public/TASTE.md` (the look floor), `design_system/public/PUBLIC_UI.md`,
+`docs/DEVELOPMENT_PROCESS.md` (THE LOOP), `docs/plans/ENTERPRISE_MAP/SITE_PAGES_E2E.md` (queue history).
