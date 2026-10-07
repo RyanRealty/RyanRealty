@@ -298,6 +298,8 @@ This spec applies to all short-form video (IG Reels, TikTok, YouTube Shorts, Fac
 
 **Music bed levels:** -18 LUFS under VO. No percussion on premium/luxury listings. Lo-fi ambient on entry/mid market listings. High-energy electronic (Daniel Heider model) for luxury drone tours only.  must match cut cadence.
 
+**Studio score (Matt 2026-10-07):** every Studio video carries an original score composed in code (`lib/studio/score`): calm felt keys and pad with no percussion on listings, a soft pulse on market and place films, -14 LUFS. It is the "original audio" share of the rule of thumb above; trending audio is still a platform-side choice at post time. See `.claude/skills/motion-design`.
+
 **Voiceover on Studio video:** Follow `CLAUDE.md` §4 and `lib/studio/craft.ts`. Remotion is retired. Do not load `video_production_skills/elevenlabs_voice/SKILL.md`. No other voice without explicit Matt direction.
 
 ---
@@ -310,7 +312,7 @@ This spec applies to all short-form video (IG Reels, TikTok, YouTube Shorts, Fac
 
 | Surface | Logo treatment |
 |---|---|
-| End card (short-form, final 2-3s) | Navy brand colors + single CTA text; logo optional at this scale |
+| End card (short-form, final 2-3s) | Navy brand colors + single CTA text; logo optional at this scale. Matt 2026-10-07: the Studio keeps it (wordmark + `ryan-realty.com`, listing agent's card on our own listings) |
 | YouTube end screen (final 15-20s) | `stacked_logo_white.png` on navy band; subscribe + related video |
 | YouTube branding watermark | Navy mark, transparent PNG, bottom-right, appears from 0:30 |
 | Thumbnail (YouTube, FB) | Wordmark in footer zone of listing thumbnails; for market/neighborhood thumbs: face replaces logo |

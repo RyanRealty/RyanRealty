@@ -10,7 +10,11 @@
  *   4. store the still in our bucket (never an expiring generator URL)
  *   5. animate the approved still, if the format wants motion
  *   6. write the caption against the verified figures only
- *   7. mark ready, with citations, QA verdict, and spend attached
+ *   7. lay the type over the footage (lib/studio/motion), if the format has a
+ *      type layer: verified figures only, or the draft dies. A paper film
+ *      (frameSource 'code') skips 3 to 5: the stage draws it whole from
+ *      verified data, scored, for nothing but the caption
+ *   8. mark ready, with citations, QA verdict, and spend attached
  *
  * The draft lands as `ready` with approval NOT stamped. Nothing here posts,
  * and nothing here can post: publishing needs a human approval on the row
@@ -18,7 +22,11 @@
  *
  * A failure at any step kills the row with a reason rather than shipping a
  * degraded version. There is no template fallback anywhere in this file, on
- * purpose: a fallback is how slop reaches a feed.
+ * purpose: a fallback is how slop reaches a feed. The two honest exceptions
+ * are recorded on the row: a film that could only ship one beat, and a type
+ * layer that could not run (the footage ships without type and says why).
+ * A type layer that tried to show an unverified number is not an exception:
+ * that kills the row.
  */
 import type { StudioFormat, StudioFormatId } from './formats'
 import { getStudioFormat, centralOregonPlate, listingShot } from './formats'
@@ -36,9 +44,11 @@ import {
   type SpendLedger,
 } from './spend'
 import { writeCaption, type CaptionRequest } from './caption'
-import { GRADE_BUDGET, planListingFilm, renderListingFilm, type FilmAdapters, type FilmPlan } from './film'
-import type { PlannedShot } from './shotlist'
+import { GRADE_BUDGET, planListingFilm, renderListingFilm, type CutShot, type FilmAdapters, type FilmPlan } from './film'
 import type { VisionVerdict } from '@/lib/grok/vision'
+import { figureScope, type MotionAgent, type MotionOutline, type MotionSeries } from './motion/cues'
+import { aspectValue, imageSize, sameShape } from '@/lib/video/image-size'
+import type { ComposeMotionInput, ComposeMotionResult } from './motion/compose'
 
 /** How many candidate stills we generate per attempt. */
 const CANDIDATES = 2
@@ -62,6 +72,36 @@ export type StudioSubject = {
   context?: string
   /** Where a click should land. */
   ctaUrl?: string
+  /** Listing heading for the type layer: city small, street large. */
+  heading?: { eyebrow: string; line: string }
+  /** The listing agent when the listing is ours; null for another office. */
+  agent?: MotionAgent | null
+  /** A trend film's verified monthly series. */
+  series?: MotionSeries
+  /** A map film's recorded outlines. */
+  outline?: MotionOutline
+  /** For a paper film: what it shows, exactly, for the caption writer. */
+  describes?: string
+  /** For a paper film: the figures it shows, the only ones its caption may use. */
+  captionKeys?: string[]
+}
+
+/**
+ * The figures a caption may use, each labelled with what it measures. A
+ * figure whose trace says segment='detached' is relabelled single-family, so
+ * "710 active listings" cannot go out as a claim about the whole market when
+ * it counts single-family homes. A paper film's caption keeps to the figures
+ * its picture shows.
+ */
+export function captionFigures(subject: StudioSubject): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const key of subject.captionKeys ?? Object.keys(subject.figures)) {
+    const value = subject.figures[key]
+    if (!value) continue
+    const scoped = figureScope(subject, key) && !/single-family/i.test(key) ? `single-family ${key}` : key
+    out[scoped] = value
+  }
+  return out
 }
 
 export type StudioProduceInput = {
@@ -86,6 +126,18 @@ export type StudioProduceResult =
   | { ok: false; error: string; draftId?: string }
 
 export type StudioAdapters = FilmAdapters & {
+  /**
+   * Animate a GENERATED still (market and place formats). Never called with a
+   * listing photograph: those are panned (FilmAdapters.panPhoto).
+   */
+  animate: (input: {
+    prompt: string
+    imageUrl: string
+    aspectRatio: string
+    seconds: number
+  }) => Promise<{ url: string; model: string; durationSeconds: number; costTicks: number | null }>
+  /** Pull a generator's output before its URL expires. */
+  downloadUrl: (url: string) => Promise<Buffer>
   /** Resolve the subject and its verified figures. Null when nothing qualifies. */
   resolveSubject: (format: StudioFormat, query: string | undefined) => Promise<StudioSubject | null>
   generateStills: (input: {
@@ -118,6 +170,102 @@ export type StudioAdapters = FilmAdapters & {
     payloadPatch?: Record<string, unknown>
   }) => Promise<{ ok: true } | { ok: false; error: string }>
   killDraft: (id: string, reason: string) => Promise<unknown>
+  /**
+   * The type layer (lib/studio/motion/compose.ts). Optional so a runtime
+   * without it still produces plain footage; formats without a `motion`
+   * spec never call it.
+   */
+  composeMotion?: (input: ComposeMotionInput) => Promise<ComposeMotionResult>
+}
+
+type TypeLayerOutcome =
+  | { kill: string }
+  | { url: string | null; record: Record<string, unknown> | null }
+
+/**
+ * Lay the type over finished footage and store the result beside the plate.
+ * Returns the final media URL, or null to keep the plate, plus what the row
+ * should record either way.
+ */
+async function typeLayer(args: {
+  adapters: StudioAdapters
+  draftId: string
+  format: StudioFormat
+  subject: StudioSubject
+  /** The footage; null for a paper film, which the stage draws whole. */
+  body: Buffer | null
+  beats?: number[]
+}): Promise<TypeLayerOutcome> {
+  const { adapters, draftId, format, subject } = args
+  if (!format.motion || !adapters.composeMotion) return { url: null, record: null }
+
+  const composed = await adapters.composeMotion({
+    spec: format.motion,
+    subject: {
+      label: subject.label,
+      figures: subject.figures,
+      citations: subject.citations,
+      heading: subject.heading,
+      agent: subject.agent ?? null,
+      series: subject.series,
+      outline: subject.outline,
+    },
+    video: args.body,
+    beats: args.beats,
+    // The draft id seeds the score, so a re-render of this draft is the same film.
+    seed: draftId,
+  })
+  if (!composed.ok) {
+    // §0: a number on screen that is not a verified figure is not shippable,
+    // with or without the rest of the film.
+    if (composed.reason === 'figure-leak') return { kill: `Type layer refused: ${composed.error}` }
+    return {
+      url: null,
+      record: { applied: false, reason: composed.reason, error: composed.error, notes: composed.notes ?? [] },
+    }
+  }
+
+  const stored = await adapters.storeMedia({
+    draftId,
+    filename: 'final.mp4',
+    body: composed.body,
+    contentType: 'video/mp4',
+  })
+  if (!stored.ok) {
+    return { url: null, record: { applied: false, reason: 'store-failed', error: stored.error, notes: [] } }
+  }
+  // One still per card, so the reviewer can check every number on screen
+  // against its trace without scrubbing the video (CLAUDE.md §0, step 6).
+  const stills: Array<{ cueId: string; t: number; url: string }> = []
+  const notes = [...composed.record.notes]
+  for (const still of composed.stills) {
+    const saved = await adapters.storeMedia({
+      draftId,
+      filename: `still-${still.cueId}.jpg`,
+      body: still.jpg,
+      contentType: 'image/jpeg',
+    })
+    if (saved.ok) stills.push({ cueId: still.cueId, t: still.t, url: saved.url })
+    else notes.push(`No still for ${still.cueId}: storage refused it (${saved.error}).`)
+  }
+  return { url: stored.url, record: { applied: true, ...composed.record, notes, stills } }
+}
+
+/** The frame a format's clips are made at: 1080 wide, the format's shape. */
+export function frameFor(aspect: string): { width: number; height: number } {
+  const value = aspectValue(aspect) ?? 9 / 16
+  return { width: 1080, height: Math.round(1080 / value / 2) * 2 }
+}
+
+/** Start time of each beat in a cut film. */
+function beatStarts(shots: Array<{ seconds: number }>): number[] {
+  const starts: number[] = []
+  let at = 0
+  for (const shot of shots) {
+    starts.push(at)
+    at += shot.seconds
+  }
+  return starts
 }
 
 function shotFor(format: StudioFormat, subject: StudioSubject): ShotSpec {
@@ -158,6 +306,10 @@ async function buildHeroFrame(
     })
 
     for (const image of stills.images) {
+      // Shape first, for free: a still that is not the clip's shape would be
+      // squeezed by the animator, so it never reaches the paid inspection.
+      const size = imageSize(image)
+      if (format.media === 'video' && (!size || !sameShape(size, format.videoAspect))) continue
       assertBudget(ledger, VISION_CALL_USD, 'frame inspection')
       const verdict = await adapters.inspectFrame({
         image,
@@ -231,8 +383,12 @@ export async function produceStudioDraft(
     const spec = shotFor(format, subject)
 
     // ── hero frame ─────────────────────────────────────────────────────────
-    let posterUrl: string
+    // A paper film has no hero frame; its poster is its own finished chart or
+    // map, set once the film is drawn.
+    let posterUrl = ''
     let qa: VisionVerdict | null = null
+    // The generated still's bytes, kept for the shape gate before animation.
+    let heroImage: Buffer | null = null
 
     // A film plans its sequence here, in place of a single hero frame. The
     // plan is cheap (grading only) and its description feeds the caption, so
@@ -260,6 +416,8 @@ export async function produceStudioDraft(
       // A real photograph of a real property. Nothing to generate, nothing
       // to inspect, and nothing we are allowed to restyle.
       posterUrl = subject.sourcePhotoUrl as string
+    } else if (format.frameSource === 'code') {
+      // Drawn whole from verified data below; nothing to generate or inspect.
     } else {
       const hero = await buildHeroFrame(format, spec, adapters, ledger)
       if (!hero) {
@@ -267,6 +425,7 @@ export async function produceStudioDraft(
         return { ok: false, error: 'No frame passed inspection. Nothing shipped.', draftId }
       }
       qa = hero.verdict
+      heroImage = hero.image
       const stored = await adapters.storeMedia({
         draftId,
         filename: 'hero.jpg',
@@ -280,6 +439,21 @@ export async function produceStudioDraft(
       posterUrl = stored.url
     }
 
+    // The shape gate, before a cent more is spent. A generator handed a still
+    // of a different shape than the clip it is asked for squeezes the still
+    // to fit; that is how every listing film came out tall and thin (Matt
+    // 2026-10-07). A generated still must already be the clip's shape.
+    if (heroImage && format.media === 'video') {
+      const still = imageSize(heroImage)
+      if (!still || !sameShape(still, format.videoAspect)) {
+        const reason = still
+          ? `Refusing to animate: the still is ${still.width}x${still.height} and the clip is ${format.videoAspect}, so the generator would distort it.`
+          : 'Refusing to animate: could not read the still size to confirm its shape.'
+        await adapters.killDraft(draftId, reason)
+        return { ok: false, error: reason, draftId }
+      }
+    }
+
     // ── caption ────────────────────────────────────────────────────────────
     // Before motion, deliberately. The caption gate kills roughly as often as
     // the frame gate does, and a caption failure after animating throws away
@@ -287,7 +461,9 @@ export async function produceStudioDraft(
     // description is available; nothing here needs the video to exist.
     const captionRequest: CaptionRequest = {
       subject: subject.label,
-      figures: subject.figures,
+      figures: captionFigures(subject),
+      // A listing's price after its address needs no label; a market figure does.
+      labelEveryFigure: format.subject !== 'listing',
       context: subject.context,
       platforms: format.platforms,
       cta: subject.ctaUrl ? `Details at ${subject.ctaUrl}` : undefined,
@@ -295,8 +471,10 @@ export async function produceStudioDraft(
         filmPlan?.describes ||
         qa?.describes ||
         (format.frameSource === 'mls_photo'
-          ? `A photograph of the home at ${subject.label}, with a slow push in.`
-          : undefined),
+          ? `A photograph of the home at ${subject.label}, panned across in its true shape.`
+          : format.frameSource === 'code'
+            ? (subject.describes ?? format.what)
+            : undefined),
     }
     assertBudget(ledger, TEXT_CALL_USD, 'caption')
     const caption = await adapters.writeCaption(captionRequest)
@@ -308,37 +486,37 @@ export async function produceStudioDraft(
     }
 
     // ── motion ─────────────────────────────────────────────────────────────
+    // Each source only makes the footage; storing it and laying the type over
+    // it is one shared tail below, so the three paths cannot drift.
     let mediaUrl = posterUrl
     let mediaKind: 'image' | 'video' = 'image'
-    let filmShots: FilmPlan['shots'] | null = null
-    let degradedToSingleBeat = false
+    let filmShots: CutShot[] | null = null
+    let motion: Record<string, unknown> | null = null
+    let footage: { body: Buffer; filename: string; beats?: number[] } | null = null
+    const frame = frameFor(format.videoAspect)
 
     if (filmPlan) {
-      const film = await renderListingFilm(
-        filmPlan,
-        { aspectRatio: format.videoAspect },
-        adapters,
-        ledger,
-      )
+      const film = await renderListingFilm(filmPlan, frame, adapters, ledger)
       if (!film.ok) {
         await adapters.killDraft(draftId, film.error)
         return { ok: false, error: film.error, draftId }
       }
-      const storedFilm = await adapters.storeMedia({
-        draftId,
-        filename: 'film.mp4',
-        body: film.body,
-        contentType: 'video/mp4',
-      })
-      if (!storedFilm.ok) {
-        await adapters.killDraft(draftId, `Could not store film: ${storedFilm.error}`)
-        return { ok: false, error: storedFilm.error, draftId }
-      }
-      mediaUrl = storedFilm.url
-      mediaKind = 'video'
       filmShots = film.shots
-      degradedToSingleBeat = film.degradedToSingleBeat
-    } else if (format.media === 'video') {
+      footage = { body: film.body, filename: 'film.mp4', beats: beatStarts(film.shots) }
+    } else if (format.media === 'video' && format.frameSource === 'mls_photo') {
+      // A real listing photograph is never animated by a generator (Matt
+      // 2026-10-07: Grok squeezed every landscape photo into 9:16). It is
+      // panned across at its true shape instead, for nothing.
+      try {
+        const pan = await adapters.panPhoto({ url: posterUrl, seconds: format.seconds, direction: 'forward', ...frame })
+        addSpend(ledger, { step: `${pan.label} across the real photo`, usd: 0, ticks: null })
+        footage = { body: pan.body, filename: 'clip.mp4' }
+      } catch (err) {
+        const reason = `Could not move across the listing photo: ${err instanceof Error ? err.message : 'pan failed'}`
+        await adapters.killDraft(draftId, reason)
+        return { ok: false, error: reason, draftId }
+      }
+    } else if (format.media === 'video' && format.frameSource === 'generated') {
       const motionPrompt = buildMotionPrompt(spec)
       assertCraftClean(motionPrompt, `${format.id} motion prompt`)
       assertBudget(ledger, videoCost('grok-imagine-video-1.5', format.seconds), 'animation')
@@ -354,21 +532,62 @@ export async function produceStudioDraft(
         usd: videoCost(clip.model, clip.durationSeconds),
         ticks: clip.costTicks,
       })
-
       // The generator URL expires. Store our own copy before the row points at it.
-      const bytes = await adapters.downloadUrl(clip.url)
-      const storedClip = await adapters.storeMedia({
+      footage = { body: await adapters.downloadUrl(clip.url), filename: 'clip.mp4' }
+    }
+
+    if (format.frameSource === 'code') {
+      // The whole film is the motion stage's drawing. With no footage under
+      // it there is nothing to fall back to: any failure kills the draft.
+      const typed = await typeLayer({ adapters, draftId, format, subject, body: null })
+      if ('kill' in typed) {
+        await adapters.killDraft(draftId, typed.kill)
+        return { ok: false, error: typed.kill, draftId }
+      }
+      if (!typed.url || !typed.record) {
+        const why = typed.record ? String(typed.record.error ?? typed.record.reason ?? 'unknown') : 'no motion stage in this runtime'
+        const reason = `${format.label} could not be drawn: ${why}`
+        await adapters.killDraft(draftId, reason)
+        return { ok: false, error: reason, draftId }
+      }
+      addSpend(ledger, { step: 'drawn from verified data', usd: 0, ticks: null })
+      motion = typed.record
+      mediaUrl = typed.url
+      mediaKind = 'video'
+      // The poster is the first card's finished picture: the landed line, the
+      // filled outline. With no still stored there is no cover to post and no
+      // still to check the numbers against (§0 step 6), so the draft dies.
+      const stills = (typed.record.stills as Array<{ cueId: string; url: string }> | undefined) ?? []
+      const poster = stills.find((still) => still.cueId === 'lead1') ?? stills[0]
+      if (!poster) {
+        const reason = `${format.label} has no stored still for its cover; nothing to review the figures against.`
+        await adapters.killDraft(draftId, reason)
+        return { ok: false, error: reason, draftId }
+      }
+      posterUrl = poster.url
+    }
+
+    if (footage) {
+      const stored = await adapters.storeMedia({
         draftId,
-        filename: 'clip.mp4',
-        body: bytes,
+        filename: footage.filename,
+        body: footage.body,
         contentType: 'video/mp4',
       })
-      if (!storedClip.ok) {
-        await adapters.killDraft(draftId, `Could not store clip: ${storedClip.error}`)
-        return { ok: false, error: storedClip.error, draftId }
+      if (!stored.ok) {
+        await adapters.killDraft(draftId, `Could not store ${footage.filename}: ${stored.error}`)
+        return { ok: false, error: stored.error, draftId }
       }
-      mediaUrl = storedClip.url
+      mediaUrl = stored.url
       mediaKind = 'video'
+
+      const typed = await typeLayer({ adapters, draftId, format, subject, body: footage.body, beats: footage.beats })
+      if ('kill' in typed) {
+        await adapters.killDraft(draftId, typed.kill)
+        return { ok: false, error: typed.kill, draftId }
+      }
+      if (typed.record) motion = { ...typed.record, plateUrl: stored.url }
+      if (typed.url) mediaUrl = typed.url
     }
 
     // ── ready ──────────────────────────────────────────────────────────────
@@ -379,25 +598,29 @@ export async function produceStudioDraft(
         citations: subject.citations,
         qa: qa
           ? { score: qa.score, defects: qa.defects, describes: qa.describes, gate: 'grok-vision' }
-          : {
-              gate: 'source-photograph',
-              describes: filmPlan?.describes ?? 'Real MLS photograph, not generated.',
-            },
+          : format.frameSource === 'code'
+            ? { gate: 'drawn-from-data', describes: format.what }
+            : {
+                gate: 'source-photograph',
+                describes: filmPlan?.describes ?? 'Real MLS photograph, not generated.',
+              },
         ...(filmShots
           ? {
               sequence: {
                 beats: filmShots.map((shot) => ({
                   subject: shot.subject,
-                  move: shot.move,
+                  // How the window moved across the real photograph.
+                  pan: shot.pan,
                   seconds: shot.seconds,
                   quality: shot.quality,
                   because: shot.because,
                 })),
-                // A film that quietly became one shot must say so on the row.
-                degradedToSingleBeat,
               },
             }
           : {}),
+        // The type layer: what it drew, a still of every card, and the plain
+        // footage underneath; or why it could not run.
+        ...(motion ? { motion } : {}),
         spend: ledger,
         media: { kind: mediaKind, url: mediaUrl, posterUrl },
         publish_payload: {

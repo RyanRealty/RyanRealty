@@ -83,6 +83,23 @@ const PDF_RENDER_TRACE_INCLUDES = [
   './node_modules/@sparticuz/chromium-min/**',
 ] as const
 
+// The Studio's motion stage (lib/studio/motion): Chromium the way the PDF
+// routes get it, plus the fonts and wordmark MOTION_ASSET_FILES in
+// lib/studio/motion/assets.ts reads from disk. ffmpeg is deliberately NOT here:
+// the '*' exclude below strips @ffmpeg-installer from every function and
+// excludes win over includes, so lib/video/ffmpeg.ts fetches the same pinned,
+// sha512-checked binary into /tmp at runtime instead.
+const STUDIO_MOTION_TRACE_INCLUDES = [
+  ...PDF_RENDER_TRACE_INCLUDES,
+  './public/fonts/Amboqia_Boriango.otf',
+  './public/fonts/amboqia-i-patch.woff2',
+  './public/fonts/AzoSans-Medium.ttf',
+  './node_modules/geist/dist/fonts/geist-sans/Geist-Regular.woff2',
+  './node_modules/geist/dist/fonts/geist-sans/Geist-Medium.woff2',
+  './node_modules/geist/dist/fonts/geist-sans/Geist-SemiBold.woff2',
+  './public/brand/logo-horizontal-navy.png',
+]
+
 // Every page or route whose import graph reaches sendCmaToLead or
 // sendProspectingEmailIntro, plus the PDF API routes. Each gets
 // PDF_RENDER_TRACE_INCLUDES on top of its natural trace.
@@ -643,6 +660,10 @@ const nextConfig: NextConfig = {
       './public/fonts/Amboqia_Boriango.otf',
       './public/market-report/*',
     ],
+    // The two functions that run the Studio: the console's server action and
+    // the slate cron (STUDIO_MOTION_TRACE_INCLUDES above).
+    'app/admin/(protected)/studio/page': [...STUDIO_MOTION_TRACE_INCLUDES],
+    'app/api/cron/studio-slate/route': [...STUDIO_MOTION_TRACE_INCLUDES],
     'app/api/reports/export/route': [
       './node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs',
     ],

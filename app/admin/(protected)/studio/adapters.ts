@@ -12,6 +12,8 @@ import { generateGrokVideo } from '@/lib/grok/video'
 import { inspectFrame } from '@/lib/grok/vision'
 import { gradePhoto } from '@/lib/grok/classify'
 import { concatMp4 } from '@/lib/video/concat'
+import { resolveFfmpeg } from '@/lib/video/ffmpeg'
+import { panPhotoClip } from '@/lib/video/pan'
 import { getListingPhotos } from '@/lib/data/studio/listing-photos'
 import { GROK_MODELS } from '@/lib/grok/client'
 import type { GrokAspect } from '@/lib/grok/image'
@@ -40,6 +42,14 @@ export function studioAdapters(): StudioAdapters {
     getPhotos: (listingKey) => getListingPhotos(listingKey, { limit: 24 }),
     gradePhoto: ({ imageUrl }) => gradePhoto({ imageUrl }),
     concat: concatMp4,
+    // A listing photograph, panned across at its true shape (lib/video/pan.ts).
+    panPhoto: async ({ url, seconds, direction, width, height }) => {
+      const ffmpeg = await resolveFfmpeg()
+      if (!ffmpeg) throw new Error('ffmpeg is not available in this runtime')
+      const photo = await downloadUrl(url)
+      const { body, label } = await panPhotoClip({ ffmpeg, photo, width, height, seconds, fps: 30, direction })
+      return { body, label }
+    },
     generateStills: async ({ prompt, aspectRatio, n }) => {
       const result = await generateGrokImages({
         prompt,
@@ -74,5 +84,8 @@ export function studioAdapters(): StudioAdapters {
     insertPending: insertStudioDraft,
     markReady: markStudioDraftReady,
     killDraft: killStudioDraft,
+    // Loaded on first use, not at import: the review page reaches this module
+    // through its actions and must not pull Chromium in just to approve a draft.
+    composeMotion: async (input) => (await import('@/lib/studio/motion/compose')).composeMotion(input),
   }
 }

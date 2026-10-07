@@ -37,6 +37,7 @@ Ryan Realty is a brokerage / **art house**. The product of this skill is work th
 | [references/character-attachment.md](references/character-attachment.md) | Whenever Jax or any character appears. Parasocial bonds, uncanny consistency, baby schema |
 | [references/transmission.md](references/transmission.md) | Distribution planning. The Watts law, loops, identity signaling, local cues |
 | [LESSONS.md](LESSONS.md) | ALWAYS — read before generating, append after learning |
+| [../motion-design/SKILL.md](../motion-design/SKILL.md) | Any code-drawn motion, scene, chart or map animation, or score in the Studio. The prompt-motion.com research and the four motion skills, adapted |
 
 ## The five laws (violate none)
 
@@ -61,7 +62,7 @@ Ryan Realty is a brokerage / **art house**. The product of this skill is work th
 
 **5. TIMED BOARD** — write the seconds on the board (Ghibli e-konte). Schedule **ma** — the pauses ARE content. Place the anticipation cue as early as possible; the payoff lands on a NEW element entering (sound + image within 2 frames).
 
-**6. MOTION TEST** — prove the riskiest movement cheapest-first (Gondry's oranges on a sidewalk; Buck's pencil tests). For formal-constraint pieces, code animation (PIL/Remotion/SVG stroke-reveal) IS the art-house tool — exact path, exact timing, zero drift.
+**6. MOTION TEST** — prove the riskiest movement cheapest-first (Gondry's oranges on a sidewalk; Buck's pencil tests). For formal-constraint pieces, code animation IS the art-house tool — exact path, exact timing, zero drift. In this repo that is `lib/studio/motion` (deterministic HTML frames, Chromium, ffmpeg; Matt 2026-10-07), plus PIL or SVG stroke-reveal for stills. Remotion is deleted.
 
 **7. PRODUCTION — overgenerate, then curate like a documentarian.** Keep-rates of the masters: Trillo 10%, shy kids 0.3%. Multiple models per shot are multiple takes. Per-shot medium choice (code / i2v / t2v / hybrid / practical). Log style-drifts — some are gifts (the porcelain elk), but when the constraint IS the piece, drift = death.
 

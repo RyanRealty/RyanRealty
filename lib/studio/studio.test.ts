@@ -9,10 +9,10 @@ import {
 } from './craft'
 import { centralOregonPlate, getStudioFormat, listingShot, STUDIO_FORMAT_LIST } from './formats'
 import { isStudioSlateEnabled, planSlate, type StudioTrigger } from './slate'
-import { unauthorisedFigures, weakOpener, writeCaption } from './caption'
+import { unauthorisedFigures, unlabeledFigures, weakOpener, writeCaption } from './caption'
 import { addSpend, assertBudget, imageCost, newLedger, SpendCapError, videoCost } from './spend'
 import { normalizeVerdict } from '@/lib/grok/vision'
-import { produceStudioDraft, type StudioAdapters } from './produce'
+import { captionFigures, produceStudioDraft, type StudioAdapters } from './produce'
 import type { MarketPulse } from '@/lib/data/types/market'
 
 const SPEC: ShotSpec = {
@@ -148,6 +148,40 @@ describe('caption', () => {
     ).toEqual([])
   })
 
+  it('a market figure must carry its label in its own sentence', () => {
+    const figures = {
+      'single-family median list price': '$879,900',
+      'single-family active listings': '710',
+      'single-family months of supply': '3.5',
+    }
+    // The first live trend draft's caption, word for word.
+    expect(unlabeledFigures('Bend, Oregon\n710 active listings. $879,900. 3.5 months of supply.', figures)).toEqual(['$879,900'])
+    expect(
+      unlabeledFigures('Bend, Oregon. 710 single-family homes listed. Median list price $879,900. 3.5 months of supply.', figures),
+    ).toEqual([])
+    // A decimal is not a sentence break.
+    expect(unlabeledFigures('Months of supply: 3.5. That is a seller\'s market.', figures)).toEqual([])
+  })
+
+  it('retries a market caption that prints a bare figure, and leaves listings alone', async () => {
+    const bare = { value: { caption: 'Bend, Oregon. $879,900.', altText: 'a' }, raw: '', costUsd: 0 }
+    const named = { value: { caption: 'Bend, Oregon. Median list price $879,900.', altText: 'a' }, raw: '', costUsd: 0 }
+    const writeStructured = vi.fn().mockResolvedValueOnce(bare).mockResolvedValueOnce(named)
+    const market = await writeCaption(
+      { subject: 'Bend, Oregon', figures: { 'single-family median list price': '$879,900' }, platforms: ['instagram'], labelEveryFigure: true },
+      { writeStructured },
+    )
+    expect(market).toMatchObject({ ok: true, result: { caption: 'Bend, Oregon. Median list price $879,900.', attempts: 2 } })
+    expect(writeStructured.mock.calls[1][0].prompt).toContain('without saying what it measures')
+
+    const listingWrite = vi.fn().mockResolvedValueOnce({ value: { caption: '61574 Devils Lake, Bend. $849,900.', altText: 'a' }, raw: '', costUsd: 0 })
+    const listing = await writeCaption(
+      { subject: '61574 Devils Lake, Bend', figures: { 'list price': '$849,900' }, platforms: ['instagram'] },
+      { writeStructured: listingWrite },
+    )
+    expect(listing).toMatchObject({ ok: true, result: { attempts: 1 } })
+  })
+
   it('rejects filler openers that pad a fact', () => {
     expect(weakOpener('This listing is in Bend.')).toBe('this ')
     expect(weakOpener('Just listed in Bend.')).toBe('just listed')
@@ -257,6 +291,17 @@ describe('slate', () => {
   })
 })
 
+/** Header bytes of a PNG of this size: all the shape gate reads. */
+function pngOf(width: number, height: number): Buffer {
+  const b = Buffer.alloc(33)
+  Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(b, 0)
+  b.writeUInt32BE(13, 8)
+  b.write('IHDR', 12, 'ascii')
+  b.writeUInt32BE(width, 16)
+  b.writeUInt32BE(height, 20)
+  return b
+}
+
 describe('produce pipeline', () => {
   function adapters(overrides: Partial<StudioAdapters> = {}): StudioAdapters {
     return {
@@ -277,7 +322,7 @@ describe('produce pipeline', () => {
       }),
       generateStills: vi
         .fn()
-        .mockResolvedValue({ images: [Buffer.from('a'), Buffer.from('b')], model: 'grok-imagine-image-2.0', costTicks: null }),
+        .mockResolvedValue({ images: [pngOf(1584, 2816), pngOf(1584, 2816)], model: 'grok-imagine-image-2.0', costTicks: null }),
       inspectFrame: vi
         .fn()
         .mockResolvedValue({ pass: true, score: 91, defects: [], describes: 'desert', fixHint: '', costUsd: null }),
@@ -288,6 +333,7 @@ describe('produce pipeline', () => {
         .fn()
         .mockResolvedValue({ ok: true, result: { caption: '412 active listings.', altText: 'alt', costUsd: 0, attempts: 1 } }),
       downloadUrl: vi.fn().mockResolvedValue(Buffer.from('mp4')),
+      panPhoto: vi.fn().mockResolvedValue({ body: Buffer.from('pan'), label: 'pan left to right' }),
       storeMedia: vi
         .fn()
         .mockImplementation(async ({ filename }) => ({ ok: true, url: `https://cdn.test/${filename}` })),
@@ -406,13 +452,177 @@ describe('produce pipeline', () => {
     expect(result.ok).toBe(true)
     expect(a.generateStills).not.toHaveBeenCalled()
     expect(a.inspectFrame).not.toHaveBeenCalled()
-    const animateCall = (a.animate as ReturnType<typeof vi.fn>).mock.calls[0][0]
-    expect(animateCall.imageUrl).toBe('https://mls.test/photo.jpg')
+    // Matt 2026-10-07: a listing photograph is panned at its true shape, never
+    // handed to the generator (which squeezed it into 9:16).
+    expect(a.animate).not.toHaveBeenCalled()
+    const pan = (a.panPhoto as ReturnType<typeof vi.fn>).mock.calls[0][0]
+    expect(pan).toMatchObject({ url: 'https://mls.test/photo.jpg', seconds: 6, width: 1080, height: 1920 })
+  })
+
+  it('refuses to animate a generated still whose shape differs from the clip, before any inspection spend', async () => {
+    const a = adapters({
+      generateStills: vi
+        .fn()
+        .mockResolvedValue({ images: [pngOf(1536, 1024), pngOf(1536, 1024)], model: 'grok-imagine-image-2.0', costTicks: null }),
+    })
+    const result = await produceStudioDraft(input, a)
+    expect(result.ok).toBe(false)
+    // Wrong-shaped stills never reach the paid inspection, the caption, or the animator.
+    expect(a.inspectFrame).not.toHaveBeenCalled()
+    expect(a.writeCaption).not.toHaveBeenCalled()
+    expect(a.animate).not.toHaveBeenCalled()
+  })
+
+  it('every generated video format asks for a still already the shape of its clip', () => {
+    for (const format of STUDIO_FORMAT_LIST) {
+      if (format.media !== 'video' || format.frameSource !== 'generated') continue
+      expect(format.stillAspect, format.id).toBe(format.videoAspect)
+    }
   })
 
   it('requires a subject for formats that need one', async () => {
     const result = await produceStudioDraft({ ...input, formatId: 'listing_motion' }, adapters())
     expect(result.ok).toBe(false)
+  })
+
+  it('lays the type layer over the clip and ships the composed film, keeping the plate', async () => {
+    const composeMotion = vi.fn().mockResolvedValue({
+      ok: true,
+      body: Buffer.from('typed'),
+      stills: [
+        { cueId: 'lead1', t: 1.6, jpg: Buffer.from('a') },
+        { cueId: 'closer', t: 4.8, jpg: Buffer.from('b') },
+      ],
+      record: { cues: [], notes: [], frames: 180, captured: 40, renderMs: 900, fonts: [] },
+    })
+    const a = adapters({ composeMotion })
+    const result = await produceStudioDraft(input, a)
+    expect(result.ok).toBe(true)
+    // The stage reads only the verified figures and their traces.
+    const call = composeMotion.mock.calls[0][0]
+    expect(call.spec).toEqual({ lead: 'market', closer: 'brand', sound: 'measured' })
+    expect(call.subject.figures).toEqual({ 'active listings': '412' })
+    expect(call.video.toString()).toBe('mp4')
+    const stored = (a.storeMedia as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[0].filename)
+    expect(stored).toEqual(expect.arrayContaining(['clip.mp4', 'final.mp4', 'still-lead1.jpg', 'still-closer.jpg']))
+    const ready = (a.markReady as ReturnType<typeof vi.fn>).mock.calls[0][0]
+    expect(ready.executorResponse.publish_payload.mediaUrl).toBe('https://cdn.test/final.mp4')
+    expect(ready.executorResponse.motion).toMatchObject({
+      applied: true,
+      plateUrl: 'https://cdn.test/clip.mp4',
+      stills: [
+        { cueId: 'lead1', url: 'https://cdn.test/still-lead1.jpg' },
+        { cueId: 'closer', url: 'https://cdn.test/still-closer.jpg' },
+      ],
+    })
+  })
+
+  it('a paper film is drawn whole from data: no generator, no pan, its own chart as the poster', async () => {
+    const composeMotion = vi.fn().mockResolvedValue({
+      ok: true,
+      body: Buffer.from('drawn'),
+      stills: [
+        { cueId: 'lead1', t: 5.2, jpg: Buffer.from('a') },
+        { cueId: 'closer', t: 13.5, jpg: Buffer.from('b') },
+      ],
+      record: { cues: [], notes: [], frames: 420, captured: 160, renderMs: 9000, fonts: [], duration: 14, score: { silent: 'x' } },
+    })
+    const a = adapters({ composeMotion })
+    const result = await produceStudioDraft({ ...input, formatId: 'market_trend' }, a)
+    expect(result.ok).toBe(true)
+    for (const paid of [a.generateStills, a.inspectFrame, a.animate, a.panPhoto, a.downloadUrl]) {
+      expect(paid).not.toHaveBeenCalled()
+    }
+    const call = composeMotion.mock.calls[0][0]
+    expect(call.video).toBeNull()
+    expect(call.spec.lead).toBe('trend')
+    expect(call.seed).toBe('draft-1')
+    const ready = (a.markReady as ReturnType<typeof vi.fn>).mock.calls[0][0]
+    expect(ready.executorResponse.publish_payload).toMatchObject({
+      mediaUrl: 'https://cdn.test/final.mp4',
+      coverUrl: 'https://cdn.test/still-lead1.jpg',
+      mediaType: 'reel',
+    })
+    expect(ready.executorResponse.qa).toMatchObject({ gate: 'drawn-from-data' })
+    expect(ready.payloadPatch.spend_usd).toBe(ready.executorResponse.spend.totalUsd)
+    // The caption is the only spend.
+    expect(ready.executorResponse.spend.lines.filter((l: { usd: number }) => l.usd > 0).map((l: { step: string }) => l.step)).toEqual(['caption'])
+  })
+
+  it('a paper film whose stills could not be stored is killed: no cover, nothing to check the figures against', async () => {
+    const a = adapters({
+      composeMotion: vi.fn().mockResolvedValue({
+        ok: true,
+        body: Buffer.from('drawn'),
+        stills: [{ cueId: 'lead1', t: 5.2, jpg: Buffer.from('a') }],
+        record: { cues: [], notes: [], frames: 420, captured: 160, renderMs: 9000, fonts: [], duration: 14, score: { silent: 'x' } },
+      }),
+      storeMedia: vi.fn().mockImplementation(async ({ filename }: { filename: string }) =>
+        filename.endsWith('.jpg') ? { ok: false, error: 'bucket refused' } : { ok: true, url: `https://cdn.test/${filename}` },
+      ),
+    })
+    const result = await produceStudioDraft({ ...input, formatId: 'market_trend' }, a)
+    expect(result.ok).toBe(false)
+    expect(a.killDraft).toHaveBeenCalledWith('draft-1', expect.stringContaining('no stored still'))
+    expect(a.markReady).not.toHaveBeenCalled()
+  })
+
+  it('a caption gets single-family on detached figures, and a paper film only the figures it shows', () => {
+    const subject = {
+      label: 'Bend, Oregon',
+      figures: { 'active listings': '710', 'homes closed in the last 30 days': '145', 'median sale price, Sep 2026': '$759,000' },
+      citations: [
+        { figure: '710', filter: "stat_id='active_count', geo_type='city', geo_slug='bend', segment='detached'" },
+        { figure: '145', filter: "geo_type='city', geo_slug='bend', property_type='A'" },
+        { figure: '$759,000', figure_key: 'median sale price, Sep 2026', filter: "stat_id='median_close', segment='detached'" },
+      ],
+    }
+    expect(captionFigures(subject)).toEqual({
+      'single-family active listings': '710',
+      'homes closed in the last 30 days': '145',
+      'single-family median sale price, Sep 2026': '$759,000',
+    })
+    expect(captionFigures({ ...subject, captionKeys: ['median sale price, Sep 2026'] })).toEqual({
+      'single-family median sale price, Sep 2026': '$759,000',
+    })
+  })
+
+  it('a paper film that cannot be drawn is killed: there is no footage to fall back to', async () => {
+    const a = adapters({
+      composeMotion: vi.fn().mockResolvedValue({ ok: false, reason: 'no-ffmpeg', error: 'ffmpeg is not available in this runtime' }),
+    })
+    const result = await produceStudioDraft({ ...input, formatId: 'place_map', subjectQuery: 'old-bend' }, a)
+    expect(result.ok).toBe(false)
+    expect(a.killDraft).toHaveBeenCalledWith('draft-1', expect.stringContaining('ffmpeg is not available'))
+    expect(a.markReady).not.toHaveBeenCalled()
+  })
+
+  it('kills the draft when the type layer would put an unverified number on screen', async () => {
+    const a = adapters({
+      composeMotion: vi.fn().mockResolvedValue({ ok: false, reason: 'figure-leak', error: 'Unverified number on screen: $1.2M' }),
+    })
+    const result = await produceStudioDraft(input, a)
+    expect(result.ok).toBe(false)
+    expect(a.killDraft).toHaveBeenCalledWith('draft-1', expect.stringContaining('$1.2M'))
+    expect(a.markReady).not.toHaveBeenCalled()
+  })
+
+  it('ships the plain clip and says why when the type layer cannot run', async () => {
+    const a = adapters({
+      composeMotion: vi.fn().mockResolvedValue({ ok: false, reason: 'no-ffmpeg', error: 'ffmpeg is not available in this runtime' }),
+    })
+    const result = await produceStudioDraft(input, a)
+    expect(result.ok).toBe(true)
+    const ready = (a.markReady as ReturnType<typeof vi.fn>).mock.calls[0][0]
+    expect(ready.executorResponse.publish_payload.mediaUrl).toBe('https://cdn.test/clip.mp4')
+    expect(ready.executorResponse.motion).toMatchObject({ applied: false, reason: 'no-ffmpeg' })
+  })
+
+  it('formats without a type layer never call it', async () => {
+    const composeMotion = vi.fn()
+    const a = adapters({ composeMotion })
+    await produceStudioDraft({ ...input, formatId: 'trend_reactive' }, a)
+    expect(composeMotion).not.toHaveBeenCalled()
   })
 
   it('knows every format it advertises', () => {

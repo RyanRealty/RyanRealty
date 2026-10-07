@@ -136,10 +136,10 @@ describe('film build', () => {
   })
 
   const renderAdapters = (over = {}) => ({
-    animate: vi.fn().mockResolvedValue({
-      url: 'https://x.ai/tmp.mp4', model: 'grok-imagine-video-1.5', durationSeconds: 6, costTicks: null,
-    }),
-    downloadUrl: vi.fn().mockResolvedValue(Buffer.from('clip')),
+    panPhoto: vi.fn().mockImplementation(async ({ direction }: { direction: string }) => ({
+      body: Buffer.from('pan'),
+      label: direction === 'forward' ? 'pan left to right' : 'pan right to left',
+    })),
     concat: vi.fn().mockResolvedValue({ ok: true, body: Buffer.from('film'), method: 'encode', clips: 4 }),
     ...over,
   })
@@ -180,35 +180,33 @@ describe('film build', () => {
     expect(result.ok).toBe(true)
   })
 
-  it('animates one beat per shot and cuts them together', async () => {
+  it('pans one beat per shot across the real photo, spends nothing, and cuts them together', async () => {
     const planned = await planListingFilm({ listingKey: 'k', maxShots: 4, secondsPerShot: 6 }, planAdapters(), newLedger(capForFormat({ shots: 4, seconds: 6, gradedPhotos: 8 })))
     if (!planned.ok) throw new Error('plan failed')
     const a = renderAdapters()
     const ledger = newLedger(capForFormat({ shots: 4, seconds: 6, gradedPhotos: 8 }))
-    const film = await renderListingFilm(planned.plan, { aspectRatio: '9:16' }, a, ledger)
+    const film = await renderListingFilm(planned.plan, { width: 1080, height: 1920 }, a, ledger)
     expect(film.ok).toBe(true)
-    expect(a.animate).toHaveBeenCalledTimes(planned.plan.shots.length)
+    expect(a.panPhoto).toHaveBeenCalledTimes(planned.plan.shots.length)
+    const urls = (a.panPhoto as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[0].url)
+    expect(urls).toEqual(planned.plan.shots.map((shot) => shot.url))
+    expect(ledger.totalUsd).toBe(0)
     expect(a.concat).toHaveBeenCalledTimes(1)
-    if (film.ok) expect(film.degradedToSingleBeat).toBe(false)
+    if (film.ok) expect(film.shots.every((shot) => shot.pan.startsWith('pan '))).toBe(true)
   })
 
-  it('ships the first beat and says so when the runtime has no ffmpeg', async () => {
+  it('fails rather than shipping one beat when the cut has no ffmpeg', async () => {
     const planned = await planListingFilm({ listingKey: 'k', maxShots: 4, secondsPerShot: 6 }, planAdapters(), newLedger(capForFormat({ shots: 4, seconds: 6, gradedPhotos: 8 })))
     if (!planned.ok) throw new Error('plan failed')
     const film = await renderListingFilm(
       planned.plan,
-      { aspectRatio: '9:16' },
+      { width: 1080, height: 1920 },
       renderAdapters({
         concat: vi.fn().mockResolvedValue({ ok: false, error: 'no ffmpeg', reason: 'no-ffmpeg' }),
       }),
       newLedger(capForFormat({ shots: 4, seconds: 6, gradedPhotos: 8 })),
     )
-    expect(film.ok).toBe(true)
-    // A quiet downgrade is the thing we refuse: it has to be on the record.
-    if (film.ok) {
-      expect(film.degradedToSingleBeat).toBe(true)
-      expect(film.shots).toHaveLength(1)
-    }
+    expect(film.ok).toBe(false)
   })
 
   it('fails rather than shipping a broken file when the cut itself failed', async () => {
@@ -216,7 +214,7 @@ describe('film build', () => {
     if (!planned.ok) throw new Error('plan failed')
     const film = await renderListingFilm(
       planned.plan,
-      { aspectRatio: '9:16' },
+      { width: 1080, height: 1920 },
       renderAdapters({
         concat: vi.fn().mockResolvedValue({ ok: false, error: 'muxer blew up', reason: 'failed' }),
       }),
@@ -225,12 +223,28 @@ describe('film build', () => {
     expect(film.ok).toBe(false)
   })
 
-  it('gives every beat a different move, end to end', async () => {
+  it('alternates the pan direction beat to beat and records it', async () => {
     const planned = await planListingFilm({ listingKey: 'k', maxShots: 4, secondsPerShot: 6 }, planAdapters(), newLedger(capForFormat({ shots: 4, seconds: 6, gradedPhotos: 8 })))
     if (!planned.ok) throw new Error('plan failed')
     const a = renderAdapters()
-    await renderListingFilm(planned.plan as FilmPlan, { aspectRatio: '9:16' }, a, newLedger(capForFormat({ shots: 4, seconds: 6, gradedPhotos: 8 })))
-    const prompts = (a.animate as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[0].prompt)
-    expect(new Set(prompts).size).toBe(prompts.length)
+    const film = await renderListingFilm(planned.plan as FilmPlan, { width: 1080, height: 1920 }, a, newLedger(capForFormat({ shots: 4, seconds: 6, gradedPhotos: 8 })))
+    const directions = (a.panPhoto as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[0].direction)
+    expect(directions).toEqual(directions.map((_, i) => (i % 2 === 0 ? 'forward' : 'back')))
+    if (film.ok) expect(film.shots.map((s) => s.pan)).toEqual(directions.map((d) => (d === 'forward' ? 'pan left to right' : 'pan right to left')))
+    const frames = (a.panPhoto as ReturnType<typeof vi.fn>).mock.calls.map((c) => [c[0].width, c[0].height])
+    expect(frames.every(([w, h]) => w === 1080 && h === 1920)).toBe(true)
+  })
+
+  it('fails the film with the reason when a beat cannot be made', async () => {
+    const planned = await planListingFilm({ listingKey: 'k', maxShots: 4, secondsPerShot: 6 }, planAdapters(), newLedger(capForFormat({ shots: 4, seconds: 6, gradedPhotos: 8 })))
+    if (!planned.ok) throw new Error('plan failed')
+    const film = await renderListingFilm(
+      planned.plan,
+      { width: 1080, height: 1920 },
+      renderAdapters({ panPhoto: vi.fn().mockRejectedValue(new Error('ffmpeg is not available in this runtime')) }),
+      newLedger(capForFormat({ shots: 4, seconds: 6, gradedPhotos: 8 })),
+    )
+    expect(film.ok).toBe(false)
+    if (!film.ok) expect(film.error).toMatch(/ffmpeg is not available/)
   })
 })

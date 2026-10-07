@@ -20,6 +20,8 @@
  */
 import 'server-only'
 import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
+import { resolveListingAgent } from '@/lib/data/brokers/resolveListingAgent'
+import type { MotionAgent } from '@/lib/studio/motion/cues'
 import {
   getMarketPulseRowsByGeoType,
   getMarketPulseRowForGeo,
@@ -37,6 +39,10 @@ import type { StudioFormat } from '@/lib/studio/formats'
 import type { StudioSubject } from '@/lib/studio/produce'
 import resortCommunities from '@/data/resort-communities.json'
 import { communityPath } from '@/lib/communities/community-public-pair'
+import { getBoundaryGeoJSON, type BoundaryGeometry } from '@/lib/data/geo/getBoundaryGeoJSON'
+import { getCommunityOutlineGeoJSON } from '@/lib/data/geo/getCommunityOutline'
+import type { MotionOutline, MotionSeries } from '@/lib/studio/motion/cues'
+import { getStudioPriceSeries, type StudioSeriesMonth } from './series'
 
 const SITE = 'https://ryan-realty.com'
 
@@ -234,6 +240,36 @@ function listingFigures(row: CmaListingRow): {
 }
 
 /**
+ * The listing agent, for the closing card. The listing-agent rule
+ * (CLAUDE.md §3): a per-listing end card carries the LISTING agent's
+ * headshot, resolved from the listings row (the CMA lookup already selects
+ * list_agent_email and ListAgentName; email is not populated on every row,
+ * so the name is the fallback). Another office's listing resolves to null and
+ * gets no brand card.
+ *
+ * The roster falls back to Matt's portrait for a broker it has no file for,
+ * so a portrait is accepted only when its file is named for this broker. A
+ * card with the right name and no portrait beats a card with the wrong face.
+ */
+export async function studioListingAgent(row: CmaListingRow): Promise<MotionAgent | null> {
+  const email = typeof row.list_agent_email === 'string' ? row.list_agent_email : null
+  const name = typeof row.ListAgentName === 'string' ? row.ListAgentName : null
+  if (!email && !name) return null
+  try {
+    const broker = await resolveListingAgent({ listAgentEmail: email, listAgentName: name })
+    if (!broker) return null
+    const lastName = broker.fullName.trim().split(/\s+/).pop()?.toLowerCase() ?? ''
+    const path = broker.headshotPng ?? ''
+    const ownPortrait =
+      path.startsWith('/images/brokers/') && !path.includes('..') && lastName.length > 1 && path.toLowerCase().includes(lastName)
+    return { name: broker.fullName, headshotPath: ownPortrait ? path : null }
+  } catch {
+    // An unreadable roster is the same as another office's listing: no brand card.
+    return null
+  }
+}
+
+/**
  * Parse a typed address into the shape the CMA lookup wants.
  * Matt types "1234 NW Elm St, Bend" or an MLS number; neither is a query.
  */
@@ -284,6 +320,99 @@ function findCommunity(query: string): CommunityRow | null {
   )
 }
 
+/** A trend film needs at least a year of published months to draw a line worth reading. */
+const MIN_TREND_MONTHS = 12
+
+function seriesCitation(geoSlug: string, month: StudioSeriesMonth, figureKey: string): Record<string, unknown> {
+  return {
+    figure: usd(month.value as number),
+    // Two figures can print the same string; the key says which trace is whose.
+    figure_key: figureKey,
+    source: 'Supabase',
+    table: 'market_metric (via getMetrics)',
+    column: 'value',
+    // The cell's own definition id, or none: a guessed one would not reproduce the row.
+    filter: `stat_id='median_close', geo_type='city', geo_slug='${geoSlug}', segment='detached', window_months=1, period_end='${month.periodEnd}'${month.definitionId ? `, definition_id='${month.definitionId}'` : ''}`,
+    rows: month.sampleN,
+    fetched_at: new Date().toISOString(),
+    computed_at: month.computedAt,
+  }
+}
+
+/**
+ * The trend film's line and its two labelled months, each with a §0 trace.
+ * The unlabelled months are marks, not text, and their values ride in one
+ * trace for the whole series, so a reviewer can check every point the line
+ * passes through. Null when fewer than a year of months published.
+ */
+export async function studioTrend(geo: { geoSlug: string; place: string }): Promise<{
+  series: MotionSeries
+  figures: Record<string, string>
+  citations: Array<Record<string, unknown>>
+  /** What the film shows, exactly, for the caption writer. */
+  describes: string
+} | null> {
+  const months = await getStudioPriceSeries({ geoType: 'city', geoSlug: geo.geoSlug })
+  const plotted = months.filter((m) => m.value != null)
+  if (plotted.length < MIN_TREND_MONTHS) return null
+  const first = plotted[0]
+  const last = plotted[plotted.length - 1]
+  const firstKey = `median sale price, ${first.tick}`
+  const lastKey = `median sale price, ${last.tick}`
+  return {
+    series: {
+      title: 'Median sale price',
+      scope: `Detached single-family homes sold in ${geo.place}, by month`,
+      points: months.map((m) => ({ tick: m.tick, value: m.value })),
+      firstKey,
+      lastKey,
+    },
+    describes:
+      `A navy line on cream paper of the median sale price of detached single-family homes in ${geo.place}, ` +
+      `one point for each of ${plotted.length} published months from ${first.tick} to ${last.tick}` +
+      `${plotted.length < months.length ? ` (${months.length - plotted.length} withheld months left as gaps)` : ''}, ` +
+      `drawn on left to right, with the first and latest months labelled; then the months-of-supply meter.`,
+    figures: { [firstKey]: usd(first.value as number), [lastKey]: usd(last.value as number) },
+    citations: [
+      seriesCitation(geo.geoSlug, first, firstKey),
+      seriesCitation(geo.geoSlug, last, lastKey),
+      {
+        figure: 'the plotted line',
+        source: 'Supabase',
+        table: 'market_metric (via getMetrics)',
+        column: 'value',
+        filter: `stat_id='median_close', geo_type='city', geo_slug='${geo.geoSlug}', segment='detached', window_months=1, period_end ${months[0].periodEnd}..${months[months.length - 1].periodEnd}, published cells only`,
+        rows: plotted.length,
+        months: months.map((m) => ({ period_end: m.periodEnd, median_close: m.value, sample_n: m.sampleN })),
+        fetched_at: new Date().toISOString(),
+      },
+    ],
+  }
+}
+
+function ringsOf(geometry: BoundaryGeometry): Array<Array<[number, number]>> {
+  const polygons = geometry.type === 'Polygon' ? [geometry.coordinates] : geometry.coordinates
+  return polygons.flatMap((polygon) => polygon.map((ring) => ring.map(([lng, lat]) => [lng, lat] as [number, number])))
+}
+
+/**
+ * The map film's outlines: the place's recorded boundary (a registry
+ * community's trusted outline, or the neighborhood row) and the city around
+ * it. Null when the place has no stored outline; the city is optional.
+ */
+export async function studioOutline(
+  slug: string,
+  community: CommunityRow | null,
+  citySlug: string,
+): Promise<MotionOutline | null> {
+  const [place, city] = await Promise.all([
+    community ? getCommunityOutlineGeoJSON(community.slug) : getBoundaryGeoJSON({ geoType: 'neighborhood', geoSlug: slug }),
+    getBoundaryGeoJSON({ geoType: 'city', geoSlug: citySlug }),
+  ])
+  if (!place) return null
+  return { subject: ringsOf(place), context: city ? ringsOf(city) : null }
+}
+
 /**
  * Resolve a subject for one format. Returns null when nothing qualifies,
  * which the pipeline treats as "do not produce" rather than "produce
@@ -311,8 +440,11 @@ export async function resolveStudioSubject(
 
     const shaped = listingFigures(row)
     if (!shaped.photoUrl) return null
+    const street = [row.StreetNumber, row.StreetName].filter(Boolean).join(' ').trim()
     return {
       label: shaped.label,
+      heading: { eyebrow: String(row.City ?? '').trim(), line: street || shaped.label },
+      agent: await studioListingAgent(row),
       figures: shaped.figures,
       citations: shaped.citations,
       sourcePhotoUrl: shaped.photoUrl,
@@ -354,11 +486,32 @@ export async function resolveStudioSubject(
       ? `${community.label} near ${community.city}`
       : `${cacheLabel || titleCaseSlug(slug)}, Bend`
 
+    const placeName = community ? community.label : cacheLabel || titleCaseSlug(slug)
+    const cityName = community ? community.city : 'Bend'
+    let outline: MotionOutline | undefined
+    if (format.motion?.lead === 'map') {
+      const found = await studioOutline(slug, community, community?.city_slug ?? 'bend')
+      // A map film of a place with no recorded outline would be an invented
+      // shape; there is no film to make.
+      if (!found) return null
+      outline = found
+    }
     return {
       label,
       place,
+      heading: { eyebrow: `${cityName}, Oregon`, line: placeName },
       figures: shaped.figures,
       citations: shaped.citations,
+      ...(outline
+        ? {
+            outline,
+            // The caption keeps to what the film shows: the count and the median under the map.
+            captionKeys: ['active listings', 'median list price'],
+            describes:
+              `A map in navy on cream paper: ${outline.context ? `the ${cityName} city outline, the camera moving in to ` : ''}` +
+              `${placeName}, its recorded outline drawing on and filling, then its live homes for sale and median list price.`,
+          }
+        : {}),
       ctaUrl: community ? `${SITE}${communityPath(community.slug)}` : `${SITE}/housing-market`,
     }
   }
@@ -368,6 +521,21 @@ export async function resolveStudioSubject(
   if (!pulse) return null
   const shaped = figuresFromPulse(pulse)
   if (shaped.citations.length === 0) return null
+  if (format.motion?.lead === 'trend') {
+    const trend = await studioTrend({ geoSlug: 'bend', place: 'Bend' })
+    if (!trend) return null
+    return {
+      label: 'Bend, Oregon',
+      place: 'Bend',
+      figures: { ...shaped.figures, ...trend.figures },
+      citations: [...shaped.citations, ...trend.citations],
+      series: trend.series,
+      describes: trend.describes,
+      // The caption keeps to what the film shows: the two labelled months and the meter.
+      captionKeys: [trend.series.firstKey, trend.series.lastKey, ...(shaped.figures['months of supply'] ? ['months of supply'] : [])],
+      ctaUrl: `${SITE}/market`,
+    }
+  }
   return {
     label: 'Bend, Oregon',
     place: 'Bend',
