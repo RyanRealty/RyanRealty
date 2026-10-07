@@ -1,4 +1,22 @@
-# Current — 2026-10-07 (Claude Code, no sign-in on CMA reports, email link host, CMA report improvements)
+# Current — 2026-10-07 (Claude Code, Studio motion stage, production ffmpeg, D113 repair, You Should Know plugin)
+
+Surface: Claude Code. Branch `claude/nifty-rubin-70dvwc`, draft PR #427 (not yet on main).
+
+**The Studio has a type layer (Matt 2026-10-07: code-rendered motion graphics as a Studio stage, not a second video factory).** `lib/studio/motion`: `cues.ts` plans the cards from the format's `motion` spec and the subject's verified figures (listing: street, then price and rooms, then the listing agent's card; market and place: the months-of-supply meter with its `marketVerdict`, else a verified figure; brand closer in the last 2.5s). `page.ts` builds a self-contained heritage-register page (navy/cream, Amboqia words, Geist figures, Azo eyebrows, the wordmark as an image, the capital-I patch face). `render.ts` steps frames in Node, applies them in Chromium, captures only changed frames, and composites in one ffmpeg pass with the overlay converted to bt709 limited range. `compose.ts` runs it and reports. A number on screen that is not a verified figure kills the draft (`figureLeaks`, checked on the plan and on the text the page actually drew); any other failure ships the plain footage and records why on the row. `produce.ts` stores `final.mp4`, one still per card and the plate, under `executor_response.motion`; the review card shows the stills. Another office's listing gets no brand card. Formats: `listing_film`, `listing_motion`, `market_pulse`, `place_video` (`trend_reactive` is an image, untouched).
+
+**Production ffmpeg (found defect, fixed here).** `next.config.ts` strips `@ffmpeg-installer` from every function and excludes win over includes, so a live four-beat listing film would have paid for four Grok beats and shipped one. No film has been made since that exclude: the ten on record (2026-08-26 to 09-04) all joined. `lib/video/ffmpeg.ts` now resolves the local installer, else on Vercel fetches the exact lockfile tarball, checks its sha512 against the lockfile (a test holds the pin equal), unpacks the binary into /tmp and reuses it warm (measured: 845ms cold, 1ms warm). `concat.ts` uses it too. Chromium, fonts and the wordmark are traced into `app/admin/(protected)/studio/page` and `app/api/cron/studio-slate/route` (`STUDIO_MOTION_TRACE_INCLUDES`).
+
+**D113 repaired.** `254a1f6` deleted the CMA door shells but `components/site/__tests__/site-contracts.test.ts` D113 still asserted the door heading, so main's unit suite was red (1 of 17,908 in CI). D113 now holds the no-sign-in rule. Commented on PR #427.
+
+**You Should Know plugin** (`cc-plugin-you-should-know@builtin`) is enabled in `.claude/settings.json` `enabledPlugins` (Matt approved). The CLI writes built-in plugins to user scope only; whether the project entry alone loads it is confirmed by the next fresh session.
+
+Verified: 123 unit tests across `lib/studio`, `lib/data/studio` and `lib/video/ffmpeg.test.ts` (including a code-review round: lazy-loaded stage so the review page never loads Chromium, ffmpeg exit and kill timer, the agent read off the CMA row with the name fallback, no borrowed portrait, no read-time dates, meter zone from `marketVerdict`, half a second clear of every cut, missing stills noted), `compose.int.test.ts` against real Chromium 141 + ffmpeg (card blends navy at the scrim opacity; footage outside the card unchanged to within 3 levels), QA renders in `out/motion-qa/` (place, market, listing film, Paul's 5663 Impala agent card on a photo plate) with `citations.json`. Not yet verified: a live Studio draft on Vercel (function size with puppeteer-core traced into the studio page, and the server action's run time).
+
+Open for Matt: whether the brand closer stays in frame. `social_media_skills/platform-best-practices` allows a navy end card in the final 2-3s; `.cursor/rules/market-video.mdc` and the 2026-07-21 reconciled rules say no brand in a video frame. Built per the former; `closer: 'none'` on a format turns it off. Carried from the block below: re-install Matt's Gmail signature from `docs/install-kits/matt-email-signature/signature.html`.
+
+Skills read this pass: `creative-brain` (SKILL.md, LESSONS.md, appended 23-27), `claude-api` (eval guides), `code-review`.
+
+## Earlier — 2026-10-07 (Claude Code, no sign-in on CMA reports, email link host, CMA report improvements)
 
 Surface: Claude Code. Branch `claude/beautiful-lamport-2x4fjs`, fast-forwarded onto main (PR #426).
 

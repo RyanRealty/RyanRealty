@@ -75,7 +75,9 @@ by slop. The full list is `BANNED_PROMPT_TOKENS`; `assertCraftClean()` throws.
 
 Also never: readable signage, phone UI, or brand marks in-camera. Generated
 letterforms hold for two frames and collapse into glyph soup, and a mark that
-almost matches ours is worse than no mark. Type is composited afterward.
+almost matches ours is worse than no mark. Type is composited afterward, by
+the Studio's motion stage (`lib/studio/motion`, Matt 2026-10-07): every figure
+on screen is a verified figure, drawn in Geist over the finished footage.
 
 ## 4. The sequence
 

@@ -20,6 +20,8 @@
  */
 import 'server-only'
 import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
+import { resolveListingAgent } from '@/lib/data/brokers/resolveListingAgent'
+import type { MotionAgent } from '@/lib/studio/motion/cues'
 import {
   getMarketPulseRowsByGeoType,
   getMarketPulseRowForGeo,
@@ -234,6 +236,36 @@ function listingFigures(row: CmaListingRow): {
 }
 
 /**
+ * The listing agent, for the closing card. The listing-agent rule
+ * (CLAUDE.md §3): a per-listing end card carries the LISTING agent's
+ * headshot, resolved from the listings row (the CMA lookup already selects
+ * list_agent_email and ListAgentName; email is not populated on every row,
+ * so the name is the fallback). Another office's listing resolves to null and
+ * gets no brand card.
+ *
+ * The roster falls back to Matt's portrait for a broker it has no file for,
+ * so a portrait is accepted only when its file is named for this broker. A
+ * card with the right name and no portrait beats a card with the wrong face.
+ */
+export async function studioListingAgent(row: CmaListingRow): Promise<MotionAgent | null> {
+  const email = typeof row.list_agent_email === 'string' ? row.list_agent_email : null
+  const name = typeof row.ListAgentName === 'string' ? row.ListAgentName : null
+  if (!email && !name) return null
+  try {
+    const broker = await resolveListingAgent({ listAgentEmail: email, listAgentName: name })
+    if (!broker) return null
+    const lastName = broker.fullName.trim().split(/\s+/).pop()?.toLowerCase() ?? ''
+    const path = broker.headshotPng ?? ''
+    const ownPortrait =
+      path.startsWith('/images/brokers/') && !path.includes('..') && lastName.length > 1 && path.toLowerCase().includes(lastName)
+    return { name: broker.fullName, headshotPath: ownPortrait ? path : null }
+  } catch {
+    // An unreadable roster is the same as another office's listing: no brand card.
+    return null
+  }
+}
+
+/**
  * Parse a typed address into the shape the CMA lookup wants.
  * Matt types "1234 NW Elm St, Bend" or an MLS number; neither is a query.
  */
@@ -311,8 +343,11 @@ export async function resolveStudioSubject(
 
     const shaped = listingFigures(row)
     if (!shaped.photoUrl) return null
+    const street = [row.StreetNumber, row.StreetName].filter(Boolean).join(' ').trim()
     return {
       label: shaped.label,
+      heading: { eyebrow: String(row.City ?? '').trim(), line: street || shaped.label },
+      agent: await studioListingAgent(row),
       figures: shaped.figures,
       citations: shaped.citations,
       sourcePhotoUrl: shaped.photoUrl,

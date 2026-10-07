@@ -1,11 +1,11 @@
 ---
-description: Required reading before any video production / Remotion composition work. Points at the master skill + quick-reference card.
+description: Required reading before any video production work. One factory, lib/studio: Grok footage plus the motion stage for type.
 alwaysApply: true
 ---
 
 # Video Production — REQUIRED reading
 
-**Before writing any video code, any Remotion composition, any video synth or render: read CLAUDE.md's "Video Build Hard Rules (READ FOURTH)" section.** That is the canonical, repo-local ship-blocker ruleset every video build follows. This is non-negotiable.
+**Before writing any video code, any video synth or render: read CLAUDE.md §4 and `docs/GROK_CRAFT_CANON.md`.** Remotion is deleted. The one video factory is `lib/studio`: Grok makes the footage, and `lib/studio/motion` composites type, cards and verified figures over it (Matt 2026-10-07). This is non-negotiable.
 
 ## Where the rules live
 
@@ -28,11 +28,8 @@ alwaysApply: true
 
 ## The render hygiene rules
 
-- Remotion only. No Playwright video, no PIL composition.
+- One factory: `lib/studio`. Type and figures go through `lib/studio/motion` (deterministic HTML frames, Chromium, ffmpeg), never a second pipeline and never baked into a generated frame.
 - 1080×1920 portrait, 30 fps minimum.
-- `concurrency=1` in render command.
-- PhotoBeat parent div is `transparent` (so previous Sequence shows through fade-in).
-- Default `crossfadeOut: 0` and Sequence overlap by 0.5s (so AbsoluteFill background never exposed).
 - After render: `ffmpeg blackdetect d=0.03:pix_th=0.05` returns ZERO black sequences.
 - Compress to under 100 MB with `-crf 24 -preset medium -movflags +faststart` before delivery.
 

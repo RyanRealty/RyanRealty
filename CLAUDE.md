@@ -295,7 +295,7 @@ or override?" Research sources at `docs/research/best-practices-*.md`.
 
 # §4. Media — Grok surface + Studio (2026-08-26)
 
-Never add a second video factory; Remotion is deleted.
+One video factory, lib/studio: Grok footage, motion-stage type.
 **Every Grok call goes through [`lib/grok/`](lib/grok/)** (text, JSON, search,
 vision, stills, edits, motion). Model ids sit in `lib/grok/client.ts`, gated by
 `ci:grok-models`. Never call `api.x.ai` elsewhere.

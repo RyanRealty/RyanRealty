@@ -36,6 +36,19 @@ export type StudioDraftRow = {
   origin: string | null
   createdAt: string
   approvedAt: string | null
+  /** The type layer (lib/studio/motion), or null when the format has none. */
+  typeLayer: StudioTypeLayer | null
+}
+
+export type StudioTypeLayer = {
+  applied: boolean
+  /** Why it did not run, when it did not. */
+  reason: string | null
+  notes: string[]
+  /** One still per card, for checking each number on screen against its trace. */
+  stills: Array<{ cueId: string; url: string }>
+  /** The footage without type. */
+  plateUrl: string | null
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -44,6 +57,22 @@ function asRecord(value: unknown): Record<string, unknown> {
 
 function asString(value: unknown): string | null {
   return typeof value === 'string' && value.trim() ? value : null
+}
+
+function shapeTypeLayer(value: unknown): StudioTypeLayer | null {
+  if (!value || typeof value !== 'object') return null
+  const motion = asRecord(value)
+  const stills = Array.isArray(motion.stills) ? motion.stills.map(asRecord) : []
+  return {
+    applied: motion.applied === true,
+    reason: asString(motion.reason),
+    notes: Array.isArray(motion.notes) ? motion.notes.filter((n): n is string => typeof n === 'string') : [],
+    stills: stills.flatMap((still) => {
+      const url = asString(still.url)
+      return url ? [{ cueId: String(still.cueId ?? ''), url }] : []
+    }),
+    plateUrl: asString(motion.plateUrl),
+  }
 }
 
 function shapeDraft(row: Record<string, unknown>): StudioDraftRow {
@@ -74,6 +103,7 @@ function shapeDraft(row: Record<string, unknown>): StudioDraftRow {
     origin: asString(payload.origin),
     createdAt: String(row.created_at ?? ''),
     approvedAt: asString(row.approved_at),
+    typeLayer: shapeTypeLayer(executor.motion),
   }
 }
 

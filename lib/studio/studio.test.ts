@@ -415,6 +415,66 @@ describe('produce pipeline', () => {
     expect(result.ok).toBe(false)
   })
 
+  it('lays the type layer over the clip and ships the composed film, keeping the plate', async () => {
+    const composeMotion = vi.fn().mockResolvedValue({
+      ok: true,
+      body: Buffer.from('typed'),
+      stills: [
+        { cueId: 'lead1', t: 1.6, jpg: Buffer.from('a') },
+        { cueId: 'closer', t: 4.8, jpg: Buffer.from('b') },
+      ],
+      record: { cues: [], notes: [], frames: 180, captured: 40, renderMs: 900, fonts: [] },
+    })
+    const a = adapters({ composeMotion })
+    const result = await produceStudioDraft(input, a)
+    expect(result.ok).toBe(true)
+    // The stage reads only the verified figures and their traces.
+    const call = composeMotion.mock.calls[0][0]
+    expect(call.spec).toEqual({ lead: 'market', closer: 'brand' })
+    expect(call.subject.figures).toEqual({ 'active listings': '412' })
+    expect(call.video.toString()).toBe('mp4')
+    const stored = (a.storeMedia as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[0].filename)
+    expect(stored).toEqual(expect.arrayContaining(['clip.mp4', 'final.mp4', 'still-lead1.jpg', 'still-closer.jpg']))
+    const ready = (a.markReady as ReturnType<typeof vi.fn>).mock.calls[0][0]
+    expect(ready.executorResponse.publish_payload.mediaUrl).toBe('https://cdn.test/final.mp4')
+    expect(ready.executorResponse.motion).toMatchObject({
+      applied: true,
+      plateUrl: 'https://cdn.test/clip.mp4',
+      stills: [
+        { cueId: 'lead1', url: 'https://cdn.test/still-lead1.jpg' },
+        { cueId: 'closer', url: 'https://cdn.test/still-closer.jpg' },
+      ],
+    })
+  })
+
+  it('kills the draft when the type layer would put an unverified number on screen', async () => {
+    const a = adapters({
+      composeMotion: vi.fn().mockResolvedValue({ ok: false, reason: 'figure-leak', error: 'Unverified number on screen: $1.2M' }),
+    })
+    const result = await produceStudioDraft(input, a)
+    expect(result.ok).toBe(false)
+    expect(a.killDraft).toHaveBeenCalledWith('draft-1', expect.stringContaining('$1.2M'))
+    expect(a.markReady).not.toHaveBeenCalled()
+  })
+
+  it('ships the plain clip and says why when the type layer cannot run', async () => {
+    const a = adapters({
+      composeMotion: vi.fn().mockResolvedValue({ ok: false, reason: 'no-ffmpeg', error: 'ffmpeg is not available in this runtime' }),
+    })
+    const result = await produceStudioDraft(input, a)
+    expect(result.ok).toBe(true)
+    const ready = (a.markReady as ReturnType<typeof vi.fn>).mock.calls[0][0]
+    expect(ready.executorResponse.publish_payload.mediaUrl).toBe('https://cdn.test/clip.mp4')
+    expect(ready.executorResponse.motion).toMatchObject({ applied: false, reason: 'no-ffmpeg' })
+  })
+
+  it('formats without a type layer never call it', async () => {
+    const composeMotion = vi.fn()
+    const a = adapters({ composeMotion })
+    await produceStudioDraft({ ...input, formatId: 'trend_reactive' }, a)
+    expect(composeMotion).not.toHaveBeenCalled()
+  })
+
   it('knows every format it advertises', () => {
     for (const format of STUDIO_FORMAT_LIST) expect(getStudioFormat(format.id)).toBeTruthy()
     expect(getStudioFormat('nope')).toBeNull()

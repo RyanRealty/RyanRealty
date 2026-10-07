@@ -51,6 +51,7 @@ export default async function StudioPage() {
     qaScore: d.qaScore,
     spendUsd: d.spendUsd,
     citationCount: d.citations.length,
+    typeLayer: d.typeLayer,
     origin: d.origin,
     createdAt: d.createdAt,
   }))

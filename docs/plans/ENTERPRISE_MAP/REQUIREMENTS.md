@@ -5,7 +5,7 @@
 **Dispositions:** LOCKED (standing rule in force) · VERIFIED (built; per the source doc or map evidence) · PARTIAL · MISSING (not built — must cite a covering gap G-row) · PARKED (deliberate not-now) · GATED (waits on a Matt per-action approval) · SUPERSEDED.
 **Honesty:** VERIFIED here inherits from source docs and map evidence statuses. The v1 certification pass (VERSION-1) re-verifies; a disposition an accept test contradicts gets corrected, never argued with.
 **Covers column:** MISSING/PARTIAL rows cite the VERSION-1 gap (G-row) or owner that carries them. Ad-hoc work that touches a row updates it in the same change.
-**Max:** R-222 (the tail pin — G57 fails if rows above this number vanish or the pin goes stale)
+**Max:** R-223 (the tail pin — G57 fails if rows above this number vanish or the pin goes stale)
 
 ## The animals (what each is, how it improves)
 
@@ -75,7 +75,7 @@
 | R-040 | Adversarial verification: second agent starved of builder reasoning for high-stakes claims | RR-PLATFORM-DECISIONS | LOCKED | workflows W1.1/W1.2 |
 | R-041 | Never ask Matt to run terminal commands; agents execute everything | AGENTS.md; CLAUDE.md §8 | LOCKED | — |
 | R-042 | Grok Imagine is the only generative image/video stack; park the model zoo; i2v of real MLS photos only | BROKER-OS D10 (2026-08-12) | LOCKED | — |
-| R-043 | Numbers and brand type composite in Remotion/list-kit; never baked into generative prompts | BROKER-OS (2026-08-12) | LOCKED | — |
+| R-043 | Numbers and brand type composite in post (`lib/studio/motion` since 2026-10-07; Remotion is deleted); never baked into generative prompts | BROKER-OS (2026-08-12) | LOCKED | — |
 | R-044 | Video hard rules: 1080×1920, hook by frame 12, single-word Amboqia captions, Victoria VO, no unapproved MP4 ships | CLAUDE.md §4 (locked 2026-04-27…05-20) | LOCKED | — |
 | R-045 | Video producers stay out of the brain REGISTRY; local worker only | CLAUDE.md §4 (Matt 2026-06-14) | LOCKED | — |
 | R-046 | Outbound content must "blow them away"; Tumalo kit is the named exemplar | BROKER-OS (2026-08-12) | LOCKED | — |
@@ -310,6 +310,7 @@
 | R-220 | Redirect-only public aliases must emit a real HTTP 308 from `next.config.ts` (or named middleware). Page-level `permanentRedirect()` under Next 16 prerender is a 200 empty shell | Fleet 2026-08-19 `/motivated-sellers` 57eefae9; P5 IA lock | VERIFIED | `next.config.ts` + `ci:redirect-only`; G35 |
 | R-221 | Agents must not sit on GitHub Actions. One `ci:gates` per ship. do not poll GitHub Actions. Rematch main only when CONFLICTING. PR CI is `test:unit`; live-DB `test:int` is nightly | Matt 2026-08-19 (cloud session burned hundreds of dollars waiting on CI) | LOCKED | G44 + `.github/workflows/ci.yml` + `int-nightly.yml` |
 | R-222 | Every seller CMA is one price-opinion spine: price first, why, named band rivals, three sales with tap-pin, subdivision, wider-market charts. No marketing pitch, confidence pills, ZIP lines, or query traces. Numbers from `lib/pricing/` only. Applies to inbound, expired, FSBO, and rebuild — not a one-off | Matt 2026-08-17 ADD | PARTIAL | G16; gate `ci:cma-opinion-spine` |
+| R-223 | Code-rendered motion graphics are a STAGE of the Studio, not a second video factory: Grok makes the footage, `lib/studio/motion` composites the type, cards and verified figures over it; a pinned, sha512-checked ffmpeg fetched into /tmp lets it run inside the serverless Studio | Matt 2026-10-07 ADD | VERIFIED | `lib/studio/motion/*.test.ts`, `compose.int.test.ts` (local Chromium + ffmpeg; first live Studio draft still to confirm on Vercel) |
 
 ## Standing Matt gates (never agent-closed)
 

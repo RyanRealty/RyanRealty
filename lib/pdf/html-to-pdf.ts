@@ -13,9 +13,7 @@ import chromium from '@sparticuz/chromium-min'
 import { assertPdfPageSafety } from '@/lib/pdf/assert-page-safety'
 import { assertPageFit } from '@/lib/pdf/assert-page-fit'
 import { pdfRenderOptions, type RunningMarks } from '@/lib/pdf/page-contract'
-
-const CHROMIUM_REMOTE =
-  'https://github.com/Sparticuz/chromium/releases/download/v138.0.2/chromium-v138.0.2-pack.x64.tar'
+import { CHROMIUM_REMOTE } from '@/lib/browser/chromium-remote'
 
 async function getBrowser(): Promise<Browser> {
   const isVercel = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME)

@@ -74,5 +74,8 @@ export function studioAdapters(): StudioAdapters {
     insertPending: insertStudioDraft,
     markReady: markStudioDraftReady,
     killDraft: killStudioDraft,
+    // Loaded on first use, not at import: the review page reaches this module
+    // through its actions and must not pull Chromium in just to approve a draft.
+    composeMotion: async (input) => (await import('@/lib/studio/motion/compose')).composeMotion(input),
   }
 }

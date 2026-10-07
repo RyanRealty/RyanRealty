@@ -8,36 +8,17 @@
  * with no visible loss, so a four-beat film lands near 27MB and is a file you
  * can actually post.
  *
- * ffmpeg is a 35MB native binary. It is present on a developer machine and on
- * the render box; it is NOT guaranteed inside a serverless function. So this
- * module probes rather than assumes, and the caller degrades to a single beat
- * instead of failing. A film that quietly became one shot must say so, which
- * is why the result reports what actually happened.
+ * ffmpeg comes from lib/video/ffmpeg.ts: the local installer on a developer
+ * machine or the render box, a pinned and verified download inside a
+ * serverless function. When neither is possible the caller degrades to a
+ * single beat instead of failing. A film that quietly became one shot must
+ * say so, which is why the result reports what actually happened.
  */
 import { spawn } from 'node:child_process'
-import { createRequire } from 'node:module'
 import { mkdtemp, writeFile, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-
-/**
- * Resolve the ffmpeg binary, or null when this runtime has none.
- *
- * Deliberately a runtime require rather than an import. The installer picks a
- * platform sub-package at resolve time, which a bundler cannot follow: an
- * import makes the build fail outright, where this fails softly and lets the
- * caller ship a single beat. `@ffmpeg-installer/ffmpeg` is also listed in
- * next.config serverExternalPackages so it is never bundled.
- */
-export function ffmpegPath(): string | null {
-  try {
-    const requireFromHere = createRequire(import.meta.url)
-    const installer = requireFromHere('@ffmpeg-installer/ffmpeg') as { path?: string }
-    return installer?.path ?? null
-  } catch {
-    return null
-  }
-}
+import { resolveFfmpeg } from './ffmpeg'
 
 export type ConcatResult =
   | { ok: true; body: Buffer; method: 'passthrough' | 'encode'; clips: number }
@@ -87,7 +68,7 @@ export async function concatMp4(clips: Buffer[]): Promise<ConcatResult> {
   if (clips.length === 0) return { ok: false, error: 'no clips', reason: 'failed' }
   if (clips.length === 1) return { ok: true, body: clips[0], method: 'passthrough', clips: 1 }
 
-  const bin = ffmpegPath()
+  const bin = await resolveFfmpeg()
   if (!bin) return { ok: false, error: 'ffmpeg is not available in this runtime', reason: 'no-ffmpeg' }
 
   const dir = await mkdtemp(join(tmpdir(), 'studio-concat-'))

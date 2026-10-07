@@ -13,6 +13,7 @@ import type { ShotSpec } from './craft'
 import { STILL_ASPECT, VIDEO_ASPECT } from './craft'
 import type { GrokAspect } from '@/lib/grok/image'
 import type { GrokVideoAspect } from '@/lib/grok/video'
+import type { MotionSpec } from './motion/cues'
 
 export type StudioFormatId =
   | 'listing_film'
@@ -55,6 +56,11 @@ export type StudioFormat = {
    * from the listing's own photo set (lib/studio/film.ts).
    */
   shots?: number
+  /**
+   * The type layer (lib/studio/motion): the cards drawn over the finished
+   * footage. Absent means the footage ships with no type, as before.
+   */
+  motion?: MotionSpec
 }
 
 export const STUDIO_FORMATS: Record<StudioFormatId, StudioFormat> = {
@@ -75,6 +81,7 @@ export const STUDIO_FORMATS: Record<StudioFormatId, StudioFormat> = {
       'the house has been altered from the source photograph',
       'furniture, landscaping, or structures that were not in the source photograph',
     ],
+    motion: { lead: 'listing', closer: 'listing-agent' },
   },
   listing_motion: {
     id: 'listing_motion',
@@ -92,6 +99,7 @@ export const STUDIO_FORMATS: Record<StudioFormatId, StudioFormat> = {
       'the house has been altered from the source photograph',
       'furniture, landscaping, or structures that were not in the source photograph',
     ],
+    motion: { lead: 'listing', closer: 'listing-agent' },
   },
   market_pulse: {
     id: 'market_pulse',
@@ -106,6 +114,7 @@ export const STUDIO_FORMATS: Record<StudioFormatId, StudioFormat> = {
     platforms: ['instagram', 'facebook', 'google_business_profile'],
     carriesFigures: true,
     alsoReject: ['any house, building, or for-sale sign', 'any chart, graph, or number rendered in the image'],
+    motion: { lead: 'market', closer: 'brand' },
   },
   place_video: {
     id: 'place_video',
@@ -123,6 +132,7 @@ export const STUDIO_FORMATS: Record<StudioFormatId, StudioFormat> = {
       'any identifiable real house presented as a specific listing',
       'any street sign, address number, or community entry sign',
     ],
+    motion: { lead: 'market', closer: 'brand' },
   },
   trend_reactive: {
     id: 'trend_reactive',
