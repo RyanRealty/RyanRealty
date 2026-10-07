@@ -695,7 +695,10 @@ describe('design directive contracts', () => {
     expect(signup).toMatch(/<GoogleCommsCard/)
     expect(card).toMatch(/Continue with Google/)
     expect(card).toMatch(/SMS_CONSENT_TEXT|SmsConsentDisclosure/)
-    expect(gate).toMatch(/Your report on/)
+    // Matt 2026-10-07: "Don't require a sign in to view the report." The CMA
+    // door shells are gone; the only ask left is the in-report consent bar.
+    expect(gate).not.toMatch(/renderRegisterShell|renderConsentShell|renderWrongPersonShell/)
+    expect(gate).toMatch(/renderConsentBarHtml/)
     expect(gate).not.toMatch(/Almost there/)
   })
 
