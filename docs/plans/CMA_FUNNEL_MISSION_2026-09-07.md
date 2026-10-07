@@ -198,10 +198,12 @@ Appended by each stream as it lands: commit, what changed, how it was verified.
   and 1280/375.
 
   - **A price shipped with no sales.** The comps matrix floored at `MIN_COMPS`
-    (5, the selector's target) while `lib/pricing` publishes a recommend from
-    `PRICING_MIN_COMPS` (3). `cma-19968` and `cma-1617-nw-8th` each printed a
-    recommended list whose price chapter held a map and nothing else. The
-    matrix floor is now the pricing floor.
+    (5, the selector's target) while `lib/pricing` published a recommend from
+    `PRICING_MIN_COMPS` (3 at the time; since 2026-10-07 both are five
+    price-setting sales and the band is always the trimmed range).
+    `cma-19968` and `cma-1617-nw-8th` each printed a recommended list whose
+    price chapter held a map and nothing else. The matrix floor is now the
+    pricing floor.
   - **A chapter headed "N/A."** `cma-65365-concorde` has no MLS subdivision and
     the subdivision story rendered anyway, on both documents. `cleanText` gates
     it now.

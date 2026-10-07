@@ -17,6 +17,7 @@
  */
 
 import type { CmaAdjustedComp, CmaPricing } from '@/lib/cma/types'
+import { RANGE_MIN_KEPT, RANGE_TRIM_MIN_N } from '@/lib/pricing/ladder'
 
 export type SetAsideSale = {
   listingKey: string | null
@@ -70,7 +71,11 @@ export function readSetAsideSales(pricing: CmaPricing | null | undefined): SetAs
   return []
 }
 
-/** True when `pricing.rangeRule` says the extremes were trimmed. */
+/**
+ * True when `pricing.rangeRule` says the extremes were trimmed. A stored
+ * `min-max` row reads false here: that rule has had no production writer since
+ * 2026-10-07 (the band is always trimmed), so it is read, never written.
+ */
 export function trimsEachEnd(pricing: CmaPricing | null | undefined): boolean {
   return bag(pricing, 'rangeRule')?.rule === 'trimmed-one-each-end'
 }
@@ -82,10 +87,12 @@ function key(v: string | null | undefined): string {
 /**
  * WHICH PRINTED SALES ARE SET ASIDE, by their index in the grid.
  *
- * The field wins. When it is absent the rule is read the way it always was:
- * `trimmed-one-each-end` sets aside the highest and the lowest adjusted sale,
- * which is the sentence the pricing unit itself prints in the method block.
- * Nothing is decided here.
+ * The field wins. When it is absent (rows built before `pricing.setAside`
+ * landed) the rule is read the way it always was: `trimmed-one-each-end` sets
+ * aside the highest and the lowest adjusted sale, which is the sentence the
+ * pricing unit itself prints in the method block, under the same five-sale
+ * trimmed rule the pricer uses (RANGE_TRIM_MIN_N, RANGE_MIN_KEPT). Nothing is
+ * decided here.
  */
 export function setAsideCompIndexes(
   pricing: CmaPricing | null | undefined,
@@ -105,11 +112,8 @@ export function setAsideCompIndexes(
     .map((c, i) => ({ i, v: c.adjustedPrice }))
     .filter((r) => r.v != null && Number.isFinite(r.v) && r.v > 0)
     .sort((a, b) => a.v - b.v)
-  // Tip Ready P0 / Cos Falcon smoke: screen needs ≥5 stacked sold comps. Do not
-  // trim ends when that would leave fewer than 5 kept sales on the grid.
-  const MIN_KEPT_ON_STACK = 5
-  if (ranked.length < 4) return out
-  if (ranked.length - 2 < MIN_KEPT_ON_STACK) return out
+  if (ranked.length < RANGE_TRIM_MIN_N) return out
+  if (ranked.length - 2 < RANGE_MIN_KEPT) return out
   out.add(ranked[0]!.i)
   out.add(ranked[ranked.length - 1]!.i)
   return out

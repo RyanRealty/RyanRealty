@@ -88,6 +88,8 @@ function row(over: Partial<CmaQueueRow> = {}): CmaQueueRow {
     emailSentAt: null,
     prospectKind: 'expired',
     prospectId: 'LK123',
+    holdKind: null,
+    holdDecided: true,
     ...over,
   }
 }

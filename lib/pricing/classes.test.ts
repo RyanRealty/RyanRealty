@@ -491,6 +491,11 @@ describe('multiUnitFromRemarks: the remarks say this home is a duplex (Matt 2026
     expect(multiUnitFromRemarks("Potential for ADU, shop, additional garage, duplex, multi generational living, lot separation.")).toBe(false)
     expect(multiUnitFromRemarks("Well suited for a thoughtful renovation into a charming NW Bend home or possible redevelopment into townhomes or fourplex.")).toBe(false)
   })
+  it('two units that are a main house and a casita are not a multi-unit, and a duplex with an ADU still is (rule 23)', () => {
+    expect(multiUnitFromRemarks('Two units: main house and casita, each with its own entrance.')).toBe(false)
+    expect(multiUnitFromRemarks('Rare duplex with ADU on the back of the lot, three rentable doors.')).toBe(true)
+    expect(productClassFromFactsRow('single-family', 'Single Family Residence', 'Rare duplex with ADU on the back of the lot.')).toBe('multi-unit')
+  })
   it('blank remarks and a plain house are not multi-unit', () => {
     expect(multiUnitFromRemarks(null)).toBe(false)
     expect(multiUnitFromRemarks('Charming single level home on a quiet street with a fenced yard.')).toBe(false)

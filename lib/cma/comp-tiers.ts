@@ -244,7 +244,8 @@ export function compTierLadder(subdivisionIlike: string | null): CompTier[] {
     // old ladder ended at "anywhere in the city".
     { name: 'citywide-12mo', monthsBack: 12, sqftBand: 0.35, sameArea: false, competing: true, maxMiles: 5 },
     // 6b. THE DISCLOSED WIDENING (Matt 2026-09-09). Reached only when every
-    // rung above left the set below MIN_COMPS — a fifth of expired owners were
+    // rung above left the set below MIN_COMPS (five price-setting sales since
+    // 2026-10-07) — a fifth of expired owners were
     // getting no document at all, and a wider search that says what it did
     // beats no answer. It trades exactly three things, each named in the
     // disclosure the report prints: age (24 months), size (45% either way),

@@ -181,6 +181,7 @@ function diag(over: Partial<CompSelectionDiagnostics> = {}): CompSelectionDiagno
     min_comps: 5,
     candidates: 2,
     excluded_totals: emptyExclusions(),
+    not_price_setting: 0,
     outliers_excluded: 0,
     final_count: 2,
     final_tier_counts: {},

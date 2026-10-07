@@ -454,12 +454,30 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
  * five (`lib/cma/comps.ts` TARGET_COMPS).
  */
 export const PRICING_TARGET_COMPS = 5
-export const PRICING_MIN_COMPS = 3
+/**
+ * Five price-setting sales is the floor (Matt 2026-10-07), reversing the
+ * 2026-09-10 lowering to 3 that rescued 63 thin documents: a three-sale
+ * letter printed a raw min-to-max band and one stray sale put the failed ask
+ * inside it, which contradicts the letter. Equal to PRICING_TARGET_COMPS by
+ * that rule: the stop and the floor are one number. A sale that does not set
+ * the price (lib/pricing/price-set.ts) never counts toward it; the walks
+ * refuse it at admission and go on in order.
+ */
+export const PRICING_MIN_COMPS = 5
+/**
+ * The floor is the trim threshold: every priced set sets its highest and
+ * lowest aside (Matt 2026-10-07, the band is always the trimmed range). A
+ * future floor change moves the trim with it on purpose.
+ */
+export const RANGE_TRIM_MIN_N = PRICING_MIN_COMPS
+/** Never peel the range below three kept sales. A five-sale set keeps three. */
+export const RANGE_MIN_KEPT = 3
 /**
  * The search may cross the subject's neighborhood/community boundary only
  * when everything inside it supplied fewer sales than a document needs
- * (lib/cma/comps.ts MIN_COMPS = 5). Matt 2026-09-08: "we would go back up to
- * 12 months within that boundary before we would ever leave it."
+ * (lib/cma/comps.ts MIN_COMPS = 5, since 2026-10-07). Matt 2026-09-08: "we
+ * would go back up to 12 months within that boundary before we would ever
+ * leave it."
  */
 export const BOUNDARY_EXIT_BELOW = 5
 /**
@@ -474,10 +492,12 @@ export const POCKET_STARVE_BELOW = BOUNDARY_EXIT_BELOW
 export const POCKET_TIGHT_SET_MIN = 2
 /**
  * How many sales the facts ladder must hold to price a document on its own.
- * Below this the listings ladder (lib/cma/comps.ts, MIN_COMPS = 5) is the
- * fallback. Was 3 until 2026-09-09: Merle's 1617 NW 8th reached exactly 3 on
- * facts once the 12-month subdivision rung landed, the fallback that used to
- * supply 5 never ran, and the build failed the document's own minimum.
+ * Below this the listings ladder (lib/cma/comps.ts, MIN_COMPS = 5 since
+ * 2026-10-07) is the fallback. Was 3 until 2026-09-09: Merle's 1617 NW 8th
+ * reached exactly 3 on facts once the 12-month subdivision rung landed, the
+ * fallback that used to supply 5 never ran, and the build failed the
+ * document's own minimum. Equal to PRICING_MIN_COMPS since 2026-10-07: under
+ * five on both ladders the build is a comp shortage.
  */
 export const FACTS_STANDALONE_MIN = BOUNDARY_EXIT_BELOW
 /** The priced set is five. The facts walk keeps the closest matches in the opened row. */

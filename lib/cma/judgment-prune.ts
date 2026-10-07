@@ -18,8 +18,9 @@
  * cma-714-wrangler-sisters, the 2020 Arena Acres sale at 0.35 on
  * cma-3153-cromwell) beside prose saying four sales were kept. It also broke
  * two of Matt's recorded rulings (marketing_brain_skills/producers/cma/SKILL.md
- * 0.1): ONE comp floor of 3 across both ladders, and "two exemptions and only
- * two" from price-tier grading. The case Falcon was compensating for, the judge
+ * 0.1): ONE comp floor across both ladders (five price-setting sales since
+ * 2026-10-07), and "two exemptions and only two" from price-tier grading. The
+ * case Falcon was compensating for, the judge
  * cutting the subject's own-plat peers on price, is now a deterministic
  * restoration inside lib/cma/judge.ts, next to the same-street one. That puts
  * the sale back as a kept comp with a reason, instead of putting every excluded
@@ -27,12 +28,14 @@
  *
  * A different product never prices the house, whatever the review said and
  * whether or not the review ran: a structure-type exclusion, a sub-type the
- * product class rejects, age-restricted housing the subject is not part of
+ * product class rejects, a duplex or any multi-unit by its public remarks
+ * (rule 23, Matt 2026-10-07, multiUnitFromRemarks; symmetric, an ADU is not
+ * a unit), age-restricted housing the subject is not part of
  * (lib/pricing/age-restricted.ts), and a new build against an ordinary resale.
  * When the review did not run, the product-matched pool prices with the
  * dispersion guard and the contract's review flag as the backstop.
  */
-import { dropsResaleVersusNewBuild } from '@/lib/pricing/classes'
+import { dropsResaleVersusNewBuild, multiUnitFromRemarks } from '@/lib/pricing/classes'
 import { productTypeCompatible } from '@/lib/cma/market-area'
 import { ageRestrictedMismatch, ownPlatAgeRestrictedShare } from '@/lib/pricing/age-restricted'
 
@@ -105,6 +108,9 @@ export function pricingCompsAfterJudgment<T extends ProductComp>(args: {
     seniorCommunityYn: args.subject.seniorCommunityYn,
   }
   const hard = (comp: T): boolean => {
+    // Rule 23: the remarks are read for a multi-unit on both sides. Null
+    // remarks on a comp fail open (false on both sides is a match).
+    if (multiUnitFromRemarks(comp.publicRemarks) !== multiUnitFromRemarks(args.subject.publicRemarks)) return true
     if (!productTypeCompatible(args.subject.propertySubType, comp.propertySubType ?? null)) return true
     const verdict = byVerdict.get(comp.listingKey)
     if (verdict && isHardProductExclusion(verdict)) return true

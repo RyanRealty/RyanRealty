@@ -77,7 +77,7 @@ function sale(over: Partial<PricingSale> = {}): PricingSale {
 }
 
 describe('location search', () => {
-  it('stays in the subdivision, then adjacent, then the neighborhood, and widens dates when short of 3, and does not jump to same-zip while a closer place still has sales', () => {
+  it('stays in the subdivision, then adjacent, then the neighborhood, and widens dates when short of 5 price-setting sales (Matt 2026-10-07), and does not jump to same-zip while a closer place still has sales', () => {
     const asOf = '2026-08-01'
     const pool = [
       // Twenty months old and 30% larger. The tight 25% band misses it.
@@ -96,6 +96,15 @@ describe('location search', () => {
         sqft: 2000,
         closePrice: 705_000,
       }),
+      // A third plat sale and a second touching-plat sale: the plat rows hold
+      // five, so the neighborhood never opens (five price-setting sales).
+      sale({
+        listingKey: 'OLD_TIGHT2',
+        address: '22 Kenwood',
+        closeDate: '2025-01-10',
+        sqft: 2000,
+        closePrice: 702_000,
+      }),
       sale({
         listingKey: 'ADJ',
         address: '1 Next',
@@ -104,6 +113,15 @@ describe('location search', () => {
         subdivisionNorm: 'next plat',
         subdivisionSlug: 'next-plat',
         latitude: 44.066,
+      }),
+      sale({
+        listingKey: 'ADJ2',
+        address: '2 Next',
+        closeDate: '2026-06-20',
+        subdivision: 'Next Plat',
+        subdivisionNorm: 'next plat',
+        subdivisionSlug: 'next-plat',
+        latitude: 44.0661,
       }),
       sale({
         listingKey: 'NEI',
@@ -150,7 +168,10 @@ describe('location search', () => {
     const keys = out.comps.map((c) => c.listingKey)
     expect(keys).toContain('OLD_WIDE')
     expect(keys).toContain('OLD_TIGHT')
+    expect(keys).toContain('OLD_TIGHT2')
     expect(keys).toContain('ADJ')
+    expect(keys).toContain('ADJ2')
+    expect(keys).toHaveLength(5)
     expect(keys).not.toContain('NEI')
     expect(keys).not.toContain('NEI2')
     expect(keys).not.toContain('ZIP1')

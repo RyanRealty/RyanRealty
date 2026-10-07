@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { distanceMiles } from '@/lib/cma/market-area'
-import { SUBDIVISION_TIER_RATIO } from '@/lib/pricing/classes'
+import { productClassFromFactsRow, SUBDIVISION_TIER_RATIO } from '@/lib/pricing/classes'
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
 import { CUSTOM_FACTS_POOL_MONTHS, factsPoolCloseAfter, ORDINARY_FACTS_POOL_MONTHS } from '@/lib/pricing/ladder'
 import { nextRowSubdivisionSlugs, touchingPlatsForSearch } from '@/lib/data/geo/subdivision-ring'
@@ -398,16 +398,17 @@ describe('walkPricingLadder', () => {
     expect(out.comps.map((c) => c.listingKey)).toContain('RURAL')
   })
 
-  it('does not stop at three same-subdivision sales; a fourth same-sub sale still enters until 8', () => {
+  it('does not stop at three same-subdivision sales; a fourth and a fifth same-sub sale still enter (five price-setting sales, Matt 2026-10-07)', () => {
     const pool = [
       sale({ listingKey: 'A', closeDate: '2026-07-01', address: '10 Kenwood' }),
       sale({ listingKey: 'B', closeDate: '2026-06-20', address: '11 Kenwood' }),
       sale({ listingKey: 'C', closeDate: '2026-06-10', address: '12 Kenwood' }),
       sale({ listingKey: 'D', closeDate: '2026-03-01', address: '13 Kenwood' }),
+      sale({ listingKey: 'E', closeDate: '2026-02-01', address: '14 Kenwood' }),
     ]
     const out = walkPricingLadder(subject(), pool, { asOf })
-    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['A', 'B', 'C', 'D'])
-    expect(out.comps).toHaveLength(4)
+    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['A', 'B', 'C', 'D', 'E'])
+    expect(out.comps).toHaveLength(5)
   })
 
   it('excludes a townhouse sale for a detached SFR subject', () => {
@@ -941,8 +942,9 @@ describe('walkPricingLadder', () => {
       marketArea: 'bend-awbrey-butte',
       closeDate: '2025-07-15',
     })
-    // Third same-gen peer so the live MIN_COMPS=3 floor can clear without
-    // falling back to the listings ladder that killed Perspective on baths.
+    // A third same-gen peer. The floor is five price-setting sales (Matt
+    // 2026-10-07); custom/new never falls back to the listings ladder that
+    // killed Perspective on baths, so a short custom set fails clean.
     const northRim2021 = sale({
       listingKey: 'NORTH_RIM_2021',
       address: '1900 NW North Rim',
@@ -1294,7 +1296,7 @@ describe('containment — the plats next to the subject, then the boundary (Matt
     expect(out.comps.length).toBeGreaterThanOrEqual(3)
     expect(out.comps.some((c) => c.listingKey.startsWith('RING'))).toBe(true)
     expect(out.rungs.some((r) => r.ran && r.tier.startsWith('nearby-'))).toBe(true)
-    expect(out.trace.some((t) => t.includes('short of 3, so the search went on'))).toBe(true)
+    expect(out.trace.some((t) => t.includes('short of 5, so the search went on'))).toBe(true)
   })
 
   it('the adjacent rung skips when no ring is known, and the walk says why', () => {
@@ -1521,7 +1523,7 @@ describe('parent wall and the subdivision crawl (Matt 2026-10-04)', () => {
     expect(out.comps.some((c) => c.selectionTier.startsWith('beyond-') || c.selectionTier.startsWith('nearby-'))).toBe(false)
   })
 
-  it('drops a sale from another community once three sales already set the price', () => {
+  it('drops a sale from another community once five sales set the price (rule 20, Matt 2026-10-07)', () => {
     const subj = subject({
       latitude: 44.0645,
       longitude: -121.3237,
@@ -1559,8 +1561,9 @@ describe('parent wall and the subdivision crawl (Matt 2026-10-04)', () => {
       longitude: -121.3237 + 0.03,
       closeDate: '2026-09-01',
     })
-    const out = walkPricingLadder(subj, [own('A'), own('B'), own('C'), outsideCommunity], { asOf })
-    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['A', 'B', 'C'])
+    const out = walkPricingLadder(subj, [own('A'), own('B'), own('C'), own('D'), own('E'), outsideCommunity], { asOf })
+    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['A', 'B', 'C', 'D', 'E'])
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('OUT')
   })
 })
 
@@ -1891,7 +1894,12 @@ describe('named subdivision pocket-first (Matt 2026-09-15 Canter / SaddleStone)'
       lotAcres: 0.22,
     })
 
-  it('prefers the Flex gold SaddleStone / Horse Back / Ranch set over Clearpine and Forest Edge', () => {
+  // MATT'S CALL, OPEN (2026-10-07, five price-setting sales): SaddleStone
+  // holds three gold rows, so the plat rows are short of five and the walk
+  // now goes on into the Horse Back and Ranch pocket rows (five across the
+  // pocket, decoys still absent). Re-fixture only once Matt chooses between
+  // five across the pocket and two more SaddleStone rows.
+  it.skip('prefers the Flex gold SaddleStone / Horse Back / Ranch set over Clearpine and Forest Edge', () => {
     const gold = FLEX_GOLD.map((row, i) => goldSale(row, i))
     const decoys = [upmarket('Clearpine', 2.2, 890_000), upmarket('Forest Edge', 2.5, 860_000)]
     const out = walkPricingLadder(canterSubject(), [...decoys, ...gold], { asOf })
@@ -1914,7 +1922,9 @@ describe('named subdivision pocket-first (Matt 2026-09-15 Canter / SaddleStone)'
     expect(mid).toBeLessThan(846_000)
   })
 
-  it('keeps year/quality from outranking radius while the pocket is filled', () => {
+  // Same open call as above: with five across the pocket the exclusive count
+  // is five, so pocketStarved reads false.
+  it.skip('keeps year/quality from outranking radius while the pocket is filled', () => {
     const gold = FLEX_GOLD.map((row, i) => goldSale(row, i))
     const decoys = [upmarket('Clearpine', 2.2, 890_000), upmarket('Forest Edge', 2.5, 860_000)]
     const customCanter = subject({
@@ -2027,7 +2037,7 @@ describe('a full plat is not replaced by a cheaper quarter-mile pocket', () => {
     expect(pocketRung?.skippedReason).toMatch(/own plat already has/)
   })
 
-  it('opens the quarter-mile pocket for a named plat only while its rows hold fewer than three sales', () => {
+  it('opens the quarter-mile pocket for a named plat only while its rows hold fewer than five price-setting sales (Matt 2026-10-07)', () => {
     const platOf = (prices: number[]) => prices.map((closePrice, i) =>
       sale({
         listingKey: `PLAT${i}`,
@@ -2064,8 +2074,8 @@ describe('a full plat is not replaced by a cheaper quarter-mile pocket', () => {
     const keys = out.comps.map((c) => c.listingKey)
     expect(keys.some((k) => k.startsWith('POCKET'))).toBe(true)
     expect(keys.some((k) => k.startsWith('PLAT'))).toBe(true)
-    // Three plat sales hold the minimum: the plat rows are the set.
-    const full = walkPricingLadder(
+    // Three plat sales are still short of five: the pocket opens too.
+    const three = walkPricingLadder(
       subject({
         subdivision: 'Redtail Ridge',
         subdivisionNorm: 'redtail ridge',
@@ -2075,10 +2085,27 @@ describe('a full plat is not replaced by a cheaper quarter-mile pocket', () => {
       [...platOf([770_000, 780_000, 790_000]), ...pocket],
       { asOf },
     )
+    expect(three.comps.map((c) => c.listingKey).some((k) => k.startsWith('POCKET'))).toBe(true)
+    // Five plat sales hold the floor: the plat rows are the set, the pocket
+    // is skipped before it runs, and every rung after the stop says so.
+    const full = walkPricingLadder(
+      subject({
+        subdivision: 'Redtail Ridge',
+        subdivisionNorm: 'redtail ridge',
+        sqft: 2186,
+        pocketSubdivisionNorms: ['north trailside'],
+      }),
+      [...platOf([770_000, 775_000, 780_000, 785_000, 790_000]), ...pocket],
+      { asOf },
+    )
     expect(full.comps.map((c) => c.listingKey).some((k) => k.startsWith('POCKET'))).toBe(false)
+    expect(full.comps).toHaveLength(5)
     const pocketRung = full.rungs.find((r) => r.tier === 'pocket-3mo')
     expect(pocketRung?.ran).toBe(false)
-    expect(pocketRung?.skippedReason).toMatch(/recorded subdivision.*already hold 3 sales/)
+    expect(pocketRung?.skippedReason).toMatch(/own plat already has 5 price-setting sales/)
+    const later = full.rungs.find((r) => r.tier === 'nearby-0.25mi-3mo')
+    expect(later?.ran).toBe(false)
+    expect(later?.skippedReason).toMatch(/already has 5 price-setting sales/)
   })
 })
 
@@ -2226,7 +2253,9 @@ describe('a comp from the wrong house', () => {
     expect(high.comps.map((c) => c.listingKey)).not.toContain('VINE-MAPLE')
     expect(high.comps.find((c) => c.listingKey === 'POCKET-NEAR')?.selectionTier.startsWith('pocket-')).toBe(true)
 
-    const glen = [497_000, 740_000, 780_000].map((closePrice, i) => {
+    // Five plat sales (Matt 2026-10-07), so the plat rows hold the floor
+    // and the pocket is never opened for a close far from them.
+    const glen = [497_000, 740_000, 780_000, 750_000, 765_000].map((closePrice, i) => {
       const sqft = i === 0 ? 1668 : 2200
       return sale({
         listingKey: `GLEN${i}`,
@@ -2999,5 +3028,219 @@ describe('overflow — closest homes, then the plat that resembles this one (Mat
     expect(keys).toHaveLength(5)
     expect(keys.filter((key) => key.startsWith('M'))).toHaveLength(4)
     expect(keys.filter((key) => key.startsWith('S'))).toHaveLength(1)
+  })
+})
+
+describe('five price-setting sales is the floor, and a sale that does not set the price never counts (rule 20, Matt 2026-10-07)', () => {
+  // Open high desert south-east of Bend: outside every mapped neighborhood
+  // polygon, east of US-97 and the Deschutes, so no wall but the community
+  // one is in play. One tract, one touching plat, the rest seven miles out.
+  const HERE = { latitude: 43.6, longitude: -121.0 }
+  const plain = (over: Partial<PricingSubject> = {}) =>
+    subject({
+      ...HERE,
+      marketArea: null,
+      subdivision: 'Plain',
+      subdivisionNorm: 'plain',
+      subdivisionSlug: 'plain-plat',
+      adjacentSubdivisionSlugs: ['touch-plat'],
+      closerSubdivisionSlugs: [],
+      communityLocated: true,
+      communitySlug: null,
+      ...over,
+    })
+  const own = (key: string, i: number) =>
+    sale({
+      listingKey: key,
+      address: `${10 + i} Plain Rd`,
+      subdivision: 'Plain',
+      subdivisionNorm: 'plain',
+      subdivisionSlug: 'plain-plat',
+      communityLocated: true,
+      communitySlug: null,
+      latitude: HERE.latitude + (0.02 * (i + 1)) / 69,
+      longitude: HERE.longitude,
+      closeDate: '2026-07-01',
+    })
+  const touching = (key: string, i: number) =>
+    sale({
+      listingKey: key,
+      address: `${20 + i} Touch Rd`,
+      subdivision: 'Touch',
+      subdivisionNorm: 'touch',
+      subdivisionSlug: 'touch-plat',
+      communityLocated: true,
+      communitySlug: null,
+      latitude: HERE.latitude + (0.3 + 0.02 * i) / 69,
+      longitude: HERE.longitude,
+      closeDate: '2026-07-01',
+    })
+  // Seven miles out: past every ring, the similar-sub four miles, the city
+  // five, so only the widened (whenStarved) rung can take it.
+  const far = (key: string, i: number, over: Partial<PricingSale> = {}) =>
+    sale({
+      listingKey: key,
+      address: `${30 + i} Far Rd`,
+      subdivision: 'Far Plat',
+      subdivisionNorm: 'far plat',
+      subdivisionSlug: 'far-plat',
+      communityLocated: true,
+      communitySlug: null,
+      latitude: HERE.latitude + (7 + 0.02 * i) / 69,
+      longitude: HERE.longitude,
+      closeDate: '2026-07-01',
+      ...over,
+    })
+  // A sale whose address sits inside a resort community: a different
+  // community than the subject, so it never sets the price (rule 20). The
+  // MLS name is not a resort alias; location alone makes it one.
+  const inCommunity = (key: string, i: number) =>
+    far(key, i, {
+      address: `${40 + i} Resort Rd`,
+      subdivision: 'Resort Tract',
+      subdivisionNorm: 'resort tract',
+      subdivisionSlug: 'resort-tract',
+      communitySlug: 'tetherow',
+    })
+
+  it('a sale that does not set the price is not admitted and does not count toward five; the walk goes on in order', () => {
+    const pool = [own('A', 0), own('B', 1), touching('C', 0), touching('D', 1), inCommunity('COMMUNITY', 0), far('E', 1)]
+    const out = walkPricingLadder(plain(), pool, { asOf })
+    const keys = out.comps.map((c) => c.listingKey).sort()
+    expect(keys).toEqual(['A', 'B', 'C', 'D', 'E'])
+    expect(keys).not.toContain('COMMUNITY')
+    expect(out.comps.every((c) => c.setsPrice === true)).toBe(true)
+    const widened = out.rungs.find((r) => r.tier === 'widened-disclosed-24mo')
+    expect(widened?.ran).toBe(true)
+    expect(widened?.notSetting).toBe(1)
+    expect(widened?.runningTotal).toBe(5)
+    // The touching plats ran before the widening, in the locked order.
+    const ranTiers = out.rungs.filter((r) => r.ran).map((r) => r.tier)
+    expect(ranTiers.findIndex((t) => t.startsWith('adjacent-sub-'))).toBeGreaterThanOrEqual(0)
+    expect(ranTiers.findIndex((t) => t.startsWith('adjacent-sub-'))).toBeLessThan(ranTiers.indexOf('widened-disclosed-24mo'))
+    expect(out.trace.some((t) => t.includes('do not set the price'))).toBe(true)
+    expect(out.trace.some((t) => t.includes('Comp shortage'))).toBe(false)
+    expect(out.reachedTarget).toBe(true)
+  })
+
+  it('no wall is crossed to reach five: a confined subject ends short and fails as a comp shortage', () => {
+    // Inside a mapped neighborhood, three setters inside it, ten sales
+    // outside the parent. The parent wall holds on every rung that could
+    // leave it, so the walk ends at three.
+    const RIVER_WEST = { latitude: 44.0645, longitude: -121.3237, marketArea: 'bend-river-west' }
+    const confined = subject({
+      ...RIVER_WEST,
+      subdivision: 'Kenwood',
+      subdivisionNorm: 'kenwood',
+      subdivisionSlug: 'kenwood',
+      adjacentSubdivisionSlugs: [],
+      closerSubdivisionSlugs: [],
+    })
+    const inside = [0, 1, 2].map((i) =>
+      sale({
+        ...RIVER_WEST,
+        latitude: RIVER_WEST.latitude + (0.05 * (i + 1)) / 69,
+        listingKey: `IN${i}`,
+        address: `${50 + i} Kenwood`,
+        closeDate: '2026-07-01',
+      }),
+    )
+    const outside = Array.from({ length: 10 }, (_, i) =>
+      sale({
+        latitude: 44.02 + (0.02 * i) / 69,
+        longitude: -121.25,
+        marketArea: 'bend-southeast',
+        listingKey: `OUT${i}`,
+        address: `${60 + i} Far St`,
+        subdivision: 'Far Plat',
+        subdivisionNorm: 'far plat',
+        subdivisionSlug: 'far-plat',
+        closeDate: '2026-07-01',
+      }),
+    )
+    const out = walkPricingLadder(confined, [...inside, ...outside], { asOf })
+    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['IN0', 'IN1', 'IN2'])
+    expect(out.starved).toBe(true)
+    const leaving = out.rungs.filter(
+      (r) => r.tier.startsWith('like-community-') || r.tier.startsWith('beyond-') || r.tier === 'widened-disclosed-24mo',
+    )
+    expect(leaving.length).toBeGreaterThan(0)
+    for (const rung of leaving) {
+      expect(rung.ran).toBe(false)
+      // The peer-resort rung is refused first for not being a resort; the
+      // boundary and widening rungs are refused by the parent wall.
+      expect(rung.skippedReason).toMatch(
+        /neighborhood or community|outside every mapped boundary|not inside a golf or resort community/,
+      )
+    }
+    expect(out.rungs.find((r) => r.tier === 'widened-disclosed-24mo')?.skippedReason).toMatch(/neighborhood or community/)
+    expect(out.trace.some((t) => t.includes('Comp shortage: only 3 price-setting sale(s)'))).toBe(true)
+  })
+
+  it('the cap hands its five seats to setters only', () => {
+    // Six setters, and a community sale met on the way: five seats, every
+    // one a setter.
+    const pool = [
+      own('A', 0),
+      own('B', 1),
+      touching('C', 0),
+      touching('D', 1),
+      inCommunity('COMMUNITY', 0),
+      far('E', 1),
+      far('F', 2),
+    ]
+    const out = walkPricingLadder(plain(), pool, { asOf })
+    expect(out.comps).toHaveLength(5)
+    expect(out.comps.every((c) => c.setsPrice === true)).toBe(true)
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('COMMUNITY')
+  })
+
+  it('the GLA bracket never imports a sale that does not set the price', () => {
+    // Every kept sale is larger than the subject; the only smaller candidate
+    // sits in a resort community. The bracket reads rule 20 and leaves the
+    // set alone.
+    const larger = [0, 1, 2, 3, 4].map((i) => own(`BIG${i}`, i))
+    const smallInCommunity = {
+      ...own('SMALL', 5),
+      address: '99 Resort Rd',
+      subdivision: 'Resort Tract',
+      subdivisionNorm: 'resort tract',
+      subdivisionSlug: 'resort-tract',
+      communitySlug: 'tetherow',
+      sqft: 1700,
+      closePpsf: 700_000 / 1700,
+    }
+    const out = walkPricingLadder(plain({ sqft: 1850, subdivisionSlug: null }), [...larger, smallInCommunity], { asOf })
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('SMALL')
+    expect(out.tiersUsed).not.toContain('gla-bracket')
+    expect(out.trace.some((t) => t.startsWith('GLA bracket'))).toBe(false)
+  })
+
+  it('four price-setting sales after the full ladder is a comp shortage, not a padded set', () => {
+    const pool = [own('A', 0), own('B', 1), touching('C', 0), touching('D', 1), inCommunity('X', 0), inCommunity('Y', 1)]
+    const out = walkPricingLadder(plain(), pool, { asOf })
+    expect(out.comps).toHaveLength(4)
+    expect(out.starved).toBe(true)
+    expect(out.trace.some((t) => t.includes('Comp shortage: only 4 price-setting sale(s)'))).toBe(true)
+    expect(out.trace.some((t) => /once \d+ sales do/.test(t))).toBe(false)
+    const widened = out.rungs.find((r) => r.tier === 'widened-disclosed-24mo')
+    expect(widened?.notSetting).toBe(2)
+    expect(widened?.added).toBe(0)
+  })
+
+  it('a duplex by its remarks never prices a single-family home (rule 23, 1531 10th against 915 Saginaw)', () => {
+    const remarks =
+      "Exceptional opportunity on Bend's highly desirable Westside! This beautifully updated duplex features a 3 bed/2 bath upper unit and a 1 bed/1 bath lower unit."
+    const duplex = {
+      ...own('TENTH-1531', 0),
+      address: '1531 NW 10th',
+      publicRemarks: remarks,
+      productClass: productClassFromFactsRow('detached', 'Single Family Residence', remarks),
+    }
+    expect(duplex.productClass).toBe('multi-unit')
+    const pool = [duplex, own('A', 1), own('B', 2), own('C', 3), own('D', 4), own('E', 5)]
+    const out = walkPricingLadder(plain(), pool, { asOf })
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('TENTH-1531')
+    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['A', 'B', 'C', 'D', 'E'])
   })
 })

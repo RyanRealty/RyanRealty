@@ -46,6 +46,8 @@ export const REVIEW_REASONS = {
     'The range the sales support is wider than usual for this home, so a broker confirms the number before this goes out.',
   widenedSearch:
     'The sales inside this home\'s own area did not reach the number this report needs, so the search was widened and says so, and a broker confirms the set before this goes out.',
+  askInBand:
+    'The price this home last asked sits inside the range the sales support, so a broker reads this before anything goes out.',
   other: 'A broker reviews this document before it is sent.',
 } as const
 
@@ -174,6 +176,8 @@ export function buildPricingReview(args: {
     add(REVIEW_REASONS.auditFindings)
   }
   if (verdict === 'did-not-run') add(REVIEW_REASONS.auditMissing)
+  // Rule 22 (lib/cma/gap-hold.ts askInBandReason, or the stored kind).
+  if (/inside the sales range|ask-in-band/.test(raw)) add(REVIEW_REASONS.askInBand)
   if (reasons.length === 0) add(REVIEW_REASONS.other)
 
   return {

@@ -155,7 +155,10 @@ describe('evaluateAccuracyContract', () => {
   })
 
   it('hard-fails below the comp floor', () => {
-    const comps = tightSet().slice(0, 3)
+    // Five priced sales against a floor of six: the pricer itself refuses
+    // anything under five (Matt 2026-10-07), so the contract is graded on a
+    // set it can price.
+    const comps = tightSet().slice(0, 5)
     const adjusted = adjustComps(subject(), comps, null)
     const pricing = computePricing(subject(), adjusted, null)!
     const contract = evaluateAccuracyContract({

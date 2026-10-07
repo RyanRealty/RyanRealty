@@ -10,6 +10,7 @@
  * emails or texts the household. Nothing in this file is called from a cron.
  */
 
+import { ASK_IN_BAND_KIND, ASK_IN_BAND_REASON_PLAIN } from '@/lib/cma/gap-hold'
 import { revalidatePath } from 'next/cache'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
@@ -281,6 +282,13 @@ export async function approveCmaAction(
       row.build_summary && typeof row.build_summary === 'object' && !Array.isArray(row.build_summary)
         ? (row.build_summary as Record<string, unknown>)
         : null
+    // RULE 22 (Matt 2026-10-07): the build's own ask-in-band hold is not a
+    // flag a broker acknowledges. A held document is never finalized, and the
+    // send rail (lib/cma/send.ts) requires finalized, so it never sends.
+    if (summary?.hold_kind === ASK_IN_BAND_KIND) {
+      const held = typeof summary.hold_reason === 'string' && summary.hold_reason.trim() ? summary.hold_reason : ASK_IN_BAND_REASON_PLAIN
+      return { error: held }
+    }
     const needsReview = Boolean(summary?.needs_review)
     const reviewReason = typeof summary?.review_reason === 'string' ? summary.review_reason : null
     const storedReason = reviewReason?.trim() ? reviewReason : null

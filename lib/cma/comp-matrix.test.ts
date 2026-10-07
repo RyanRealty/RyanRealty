@@ -192,15 +192,17 @@ describe('renderCompMatrixHtml', () => {
     expect(html).not.toContain('matrix-group-h')
   })
 
-  // The floor is the pricing unit's floor (PRICING_MIN_COMPS = 3), not the
-  // selector's target of five. At five, cma-19968 and cma-1617-nw-8th shipped
-  // a recommended list with no comparable sales anywhere in the document
-  // (2026-09-07). A thin matrix is honest; an invisible one is not.
-  it('shows the set the pricing unit priced from, and nothing thinner', () => {
+  // The floor is the pricing unit's floor (PRICING_MIN_COMPS, five
+  // price-setting sales since Matt 2026-10-07), not a separate matrix number.
+  // When it was five against a pricing floor of three, cma-19968 and
+  // cma-1617-nw-8th shipped a recommended list with no comparable sales
+  // anywhere in the document (2026-09-07). The two numbers are one again.
+  it('shows the set the pricing unit priced from, and nothing thinner (five price-setting sales, Matt 2026-10-07)', () => {
     expect(renderCompMatrixHtml(subject, [])).toBe('')
     expect(renderCompMatrixHtml(subject, padSales(comp, 1))).toBe('')
     expect(renderCompMatrixHtml(subject, padSales(comp, 2))).toBe('')
-    expect(renderCompMatrixHtml(subject, padSales(comp, 3))).toContain('The sales that set this price')
+    expect(renderCompMatrixHtml(subject, padSales(comp, 3))).toBe('')
+    expect(renderCompMatrixHtml(subject, padSales(comp, 4))).toBe('')
     expect(renderCompMatrixHtml(subject, padSales(comp, 5))).toContain('The sales that set this price')
   })
 

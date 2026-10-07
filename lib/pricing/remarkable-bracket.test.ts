@@ -85,7 +85,7 @@ describe('Remarkable shape before and after the two fixes', () => {
     expect(off.adjusted.adjustedPrice).toBe(off.adjusted.timeAdjustedPrice + off.adjusted.sizeAdjustment)
   })
 
-  it('priced the stored shape at about $1,159,000 before and about $1,368,000 after', () => {
+  it('priced the stored shape at about $1,159,000 before and about $1,319,000 after (five sales, trimmed band, Matt 2026-10-07)', () => {
     const unsized = ROWS.map((row) => {
       const time = timeAdjusted(row)
       return {
@@ -127,10 +127,14 @@ describe('Remarkable shape before and after the two fixes', () => {
         pocketClosedSupport: pocketClosedSupportPrice(sized, 'Awbrey Village'),
       },
     )
-    expect(engine.rangeRule?.kept).toBe(5)
-    expect(low).toBe(1_155_000)
-    expect(high).toBe(1_410_000)
-    expect(finished.recommended).toBe(1_368_000)
+    // The $1,159,832 bungalow and the $1,405,598 bracket sale are the ends
+    // and are set aside; the kept three run $1,201,699 to $1,356,574.
+    expect(engine.rangeRule?.rule).toBe('trimmed-one-each-end')
+    expect(engine.rangeRule?.n).toBe(5)
+    expect(engine.rangeRule?.kept).toBe(3)
+    expect(low).toBe(1_200_000)
+    expect(high).toBe(1_360_000)
+    expect(finished.recommended).toBe(1_319_000)
     expect(finished.recommended).toBeGreaterThan(beforeRec)
   })
 })

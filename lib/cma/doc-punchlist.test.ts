@@ -637,14 +637,19 @@ describe('no chapter is headed with an MLS placeholder', () => {
 })
 
 describe('a price never ships without the sales that set it', () => {
-  it('draws the matrix on the three-sale set the pricing unit priced from', () => {
-    const three = comps.slice(0, 3)
-    const html = letter({ comps: three })
+  it('draws the matrix on the five-sale set the pricing unit priced from (Matt 2026-10-07)', () => {
+    const five = comps.slice(0, 5)
+    const html = letter({ comps: five })
     expect(html).toContain('comp-matrix-wrap')
     expect(html).toContain('The sales that set this price')
-    for (const address of ['730 Quince', '840 Quince', '1737 7th']) {
+    for (const address of ['730 Quince', '840 Quince', '1737 7th', '2485 7th', '735 Oak']) {
       expect(html).toContain(address)
     }
+  })
+
+  it('draws no matrix on four sales: under the floor there is no set to show', () => {
+    const html = letter({ comps: comps.slice(0, 4) })
+    expect(html).not.toContain('The sales that set this price')
   })
 })
 

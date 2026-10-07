@@ -96,6 +96,7 @@ export default async function AdminCmaReviewPage({
         buildError: mine.buildError,
         auditSummary: mine.auditSummary,
         auditCriticalCount: mine.auditCriticalCount,
+        holdKind: mine.holdKind,
       })
     : null
   const views = (queue?.rows ?? []).filter((item) => item.docKind === 'cma').map((item) => toCmaQueueViewRow(item))

@@ -43,19 +43,24 @@ const SFR_SUBJECT = {
 }
 
 describe('one comp floor, and the review keep is what prices (Falcon re-admission retired 2026-09-30)', () => {
-  it('holds one floor of three across both ladders (SKILL.md 0.1)', () => {
-    expect(MIN_COMPS).toBe(3)
-    expect(PRICING_MIN_COMPS).toBe(3)
+  it('holds one floor of five price-setting sales across both ladders (SKILL.md rule 8, Matt 2026-10-07)', () => {
+    expect(MIN_COMPS).toBe(5)
+    expect(PRICING_MIN_COMPS).toBe(5)
+    expect(MIN_COMPS).toBe(PRICING_MIN_COMPS)
   })
 
-  it('prices the four the review kept, never the sale it excluded (cma-3153-cromwell)', () => {
-    const selected = ['cromwell', 'matthew', 'lansing', 'locksley-955', 'locksley-1131'].map((k) => sfr(k))
+  it('prices the six the review kept, never the sale it excluded (cma-3153-cromwell, at the five-sale floor)', () => {
+    const selected = ['cromwell', 'matthew', 'lansing', 'locksley-955', 'locksley-1131', 'locksley-1140', 'lansing-2'].map((k) =>
+      sfr(k),
+    )
     const verdicts = [
       kept('cromwell'),
       excluded('matthew'),
       kept('lansing'),
       kept('locksley-955'),
       kept('locksley-1131', 'weak'),
+      kept('locksley-1140'),
+      kept('lansing-2'),
     ]
     const gated = pricingCompsAfterJudgment({
       selected,
@@ -66,14 +71,21 @@ describe('one comp floor, and the review keep is what prices (Falcon re-admissio
       asOfYear: 2026,
     })
     expect(gated.shortage).toBe(false)
-    expect(gated.comps.map((c) => c.listingKey)).toEqual(['cromwell', 'lansing', 'locksley-955', 'locksley-1131'])
+    expect(gated.comps.map((c) => c.listingKey)).toEqual([
+      'cromwell',
+      'lansing',
+      'locksley-955',
+      'locksley-1131',
+      'locksley-1140',
+      'lansing-2',
+    ])
     expect(gated.comps.some((c) => c.listingKey === 'matthew')).toBe(false)
     expect(gated.trace).toContain('1 excluded by the comparability review')
   })
 
-  it('no longer prices a filled ladder when the review keeps three of eight', () => {
+  it('no longer prices a filled ladder when the review keeps five of eight', () => {
     const selected = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map((id, i) => sale(id, 2008 + i, 'Single Family Residence'))
-    const vetted = selected.slice(0, 3)
+    const vetted = selected.slice(0, 5)
     const verdicts = selected.map((c) => ({
       listingKey: c.listingKey,
       tier: vetted.some((v) => v.listingKey === c.listingKey) ? 'strong' : 'exclude',
@@ -90,7 +102,7 @@ describe('one comp floor, and the review keep is what prices (Falcon re-admissio
     })
     expect(gated.shortage).toBe(false)
     expect(gated.droppedProduct).toBe(0)
-    expect(gated.comps.map((c) => c.listingKey)).toEqual(['a', 'b', 'c'])
+    expect(gated.comps.map((c) => c.listingKey)).toEqual(['a', 'b', 'c', 'd', 'e'])
   })
 
   it('is a comp shortage, not a price off the excluded sales, when the review keeps two', () => {
@@ -108,8 +120,23 @@ describe('one comp floor, and the review keep is what prices (Falcon re-admissio
     expect(gated.trace).toContain('The excluded sales are not priced')
   })
 
+  it('is a comp shortage when the review keeps four of eight (five price-setting sales is the floor, Matt 2026-10-07)', () => {
+    const selected = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map((id) => sfr(id))
+    const gated = pricingCompsAfterJudgment({
+      selected,
+      vetted: selected.slice(0, 4),
+      verdicts: selected.map((c, i) => (i < 4 ? kept(c.listingKey) : excluded(c.listingKey))),
+      subject: SFR_SUBJECT,
+      minComps: MIN_COMPS,
+      asOfYear: 2026,
+    })
+    expect(gated.shortage).toBe(true)
+    expect(gated.comps).toHaveLength(4)
+    expect(gated.trace).toContain('under the 5-sale minimum')
+  })
+
   it('prices the product-matched pool when the review did not run', () => {
-    const selected = [sfr('a'), sfr('b'), sale('town', 2010, 'Townhouse'), sfr('c')]
+    const selected = [sfr('a'), sfr('b'), sale('town', 2010, 'Townhouse'), sfr('c'), sfr('d'), sfr('e')]
     const gated = pricingCompsAfterJudgment({
       selected,
       vetted: selected,
@@ -120,7 +147,7 @@ describe('one comp floor, and the review keep is what prices (Falcon re-admissio
     })
     expect(gated.shortage).toBe(false)
     expect(gated.droppedProduct).toBe(1)
-    expect(gated.comps.map((c) => c.listingKey)).toEqual(['a', 'b', 'c'])
+    expect(gated.comps.map((c) => c.listingKey)).toEqual(['a', 'b', 'c', 'd', 'e'])
   })
 })
 
@@ -168,7 +195,14 @@ describe('pricing comps stay on the product the audit can defend', () => {
   })
 
   it('drops a new build against a resale even when the judge kept it', () => {
-    const selected = [sale('new', 2026), sale('resale', 2014), sale('resale-2', 2012), sale('resale-3', 2010)]
+    const selected = [
+      sale('new', 2026),
+      sale('resale', 2014),
+      sale('resale-2', 2012),
+      sale('resale-3', 2010),
+      sale('resale-4', 2013),
+      sale('resale-5', 2011),
+    ]
     const gated = pricingCompsAfterJudgment({
       selected,
       vetted: selected,
@@ -182,7 +216,7 @@ describe('pricing comps stay on the product the audit can defend', () => {
       minComps: MIN_COMPS,
       asOfYear,
     })
-    expect(gated.comps.map((c) => c.listingKey)).toEqual(['resale', 'resale-2', 'resale-3'])
+    expect(gated.comps.map((c) => c.listingKey)).toEqual(['resale', 'resale-2', 'resale-3', 'resale-4', 'resale-5'])
     expect(gated.shortage).toBe(false)
     expect(gated.droppedProduct).toBe(1)
   })
@@ -232,6 +266,41 @@ describe('pricing comps stay on the product the audit can defend', () => {
     expect(isPriceTierExclusion(product)).toBe(false)
     expect(isHardProductExclusion(product)).toBe(true)
   })
+
+  it('a duplex by its remarks never prices a detached subject on the listings path (rule 23, Matt 2026-10-07)', () => {
+    // 1531 10th: PropertyType A, Single Family Residence in every structured
+    // field; only the remarks say duplex. It pinned 915 Saginaw's price.
+    const duplex = sfr('tenth-1531', {
+      publicRemarks:
+        "Exceptional opportunity on Bend's highly desirable Westside! This beautifully updated duplex features a 3 bed/2 bath upper unit and a 1 bed/1 bath lower unit.",
+    })
+    const rented = sfr('both-units', { publicRemarks: 'Duplex, both units rented.' })
+    const casita = sfr('casita', { publicRemarks: 'Main home with a detached casita; both units freshly painted.' })
+    const plain = ['saginaw-1', 'saginaw-2', 'saginaw-3', 'saginaw-4'].map((k) => sfr(k, { ownPlat: true }))
+    const selected = [duplex, rented, casita, ...plain]
+    const gated = pricingCompsAfterJudgment({
+      selected,
+      vetted: selected,
+      verdicts: selected.map((c) => kept(c.listingKey)),
+      subject: SFR_SUBJECT,
+      minComps: MIN_COMPS,
+      asOfYear: 2026,
+    })
+    expect(gated.droppedProduct).toBe(2)
+    expect(gated.comps.map((c) => c.listingKey)).toEqual(['casita', 'saginaw-1', 'saginaw-2', 'saginaw-3', 'saginaw-4'])
+    expect(gated.shortage).toBe(false)
+    // Symmetric: a duplex subject does not price from detached sales either.
+    const reverse = pricingCompsAfterJudgment({
+      selected,
+      vetted: selected,
+      verdicts: selected.map((c) => kept(c.listingKey)),
+      subject: { ...SFR_SUBJECT, publicRemarks: 'Updated duplex with an upper unit and a lower unit.' },
+      minComps: MIN_COMPS,
+      asOfYear: 2026,
+    })
+    expect(reverse.comps.map((c) => c.listingKey)).toEqual(['tenth-1531', 'both-units'])
+    expect(reverse.shortage).toBe(true)
+  })
 })
 
 describe('age-restricted housing is a different product at the backstop', () => {
@@ -239,7 +308,10 @@ describe('age-restricted housing is a different product at the backstop', () => 
     publicRemarks: 'Single level home in a 55+ community in NW Redmond.',
     subdivision: 'Waverly',
   })
-  const ordinary = ['kingwood-1572', 'nineteenth-914', 'kingwood-1550'].map((k) => sfr(k, { ownPlat: true }))
+  // Five ordinary own-plat sales: the floor is five price-setting sales.
+  const ordinary = ['kingwood-1572', 'nineteenth-914', 'kingwood-1550', 'kingwood-1560', 'nineteenth-920'].map((k) =>
+    sfr(k, { ownPlat: true }),
+  )
 
   it('drops a 55+ sale the review kept from an ordinary subject (cma-1733-hemlock)', () => {
     const selected = [waverly, ...ordinary]
@@ -252,7 +324,13 @@ describe('age-restricted housing is a different product at the backstop', () => 
       asOfYear: 2026,
     })
     expect(gated.droppedProduct).toBe(1)
-    expect(gated.comps.map((c) => c.listingKey)).toEqual(['kingwood-1572', 'nineteenth-914', 'kingwood-1550'])
+    expect(gated.comps.map((c) => c.listingKey)).toEqual([
+      'kingwood-1572',
+      'nineteenth-914',
+      'kingwood-1550',
+      'kingwood-1560',
+      'nineteenth-920',
+    ])
     expect(gated.shortage).toBe(false)
   })
 
@@ -267,11 +345,11 @@ describe('age-restricted housing is a different product at the backstop', () => 
       asOfYear: 2026,
     })
     expect(gated.droppedProduct).toBe(0)
-    expect(gated.comps).toHaveLength(4)
+    expect(gated.comps).toHaveLength(6)
   })
 
   it('keeps own-plat 55+ sales for a subject whose plat is mostly 55+ (The Pines at Sisters)', () => {
-    const pines = [1, 2, 3].map((n) =>
+    const pines = [1, 2, 3, 4, 5].map((n) =>
       sfr(`pines-${n}`, { publicRemarks: 'The Pines 55+ gated community.', subdivision: 'Pines At Sisters', ownPlat: true }),
     )
     const gated = pricingCompsAfterJudgment({
@@ -283,7 +361,8 @@ describe('age-restricted housing is a different product at the backstop', () => 
       asOfYear: 2026,
     })
     expect(gated.droppedProduct).toBe(0)
-    expect(gated.comps).toHaveLength(3)
+    expect(gated.comps).toHaveLength(5)
+    expect(gated.shortage).toBe(false)
   })
 
   it('walls a sale whose MLS SeniorCommunityYN is true, with no remarks at all, from an ordinary subject', () => {
@@ -312,16 +391,18 @@ describe('age-restricted housing is a different product at the backstop', () => 
       asOfYear: 2026,
     })
     expect(gated.droppedProduct).toBe(0)
-    expect(gated.comps).toHaveLength(4)
+    expect(gated.comps).toHaveLength(6)
   })
 
   it('counts flagged own-plat sales toward the plat-majority share', () => {
-    // Two of three own-plat sales carry the flag and no 55+ remarks: the plat
+    // Three of five own-plat sales carry the flag and no 55+ remarks: the plat
     // is a 55+ community, so its flagged sales price the subject.
     const plat = [
       sfr('w-1', { publicRemarks: 'Single level.', subdivision: 'Waverly', ownPlat: true, seniorCommunityYn: true }),
       sfr('w-2', { publicRemarks: 'Single level.', subdivision: 'Waverly', ownPlat: true, seniorCommunityYn: true }),
-      sfr('w-3', { publicRemarks: 'Single level.', subdivision: 'Waverly', ownPlat: true, seniorCommunityYn: false }),
+      sfr('w-3', { publicRemarks: 'Single level.', subdivision: 'Waverly', ownPlat: true, seniorCommunityYn: true }),
+      sfr('w-4', { publicRemarks: 'Single level.', subdivision: 'Waverly', ownPlat: true, seniorCommunityYn: false }),
+      sfr('w-5', { publicRemarks: 'Single level.', subdivision: 'Waverly', ownPlat: true, seniorCommunityYn: false }),
     ]
     const gated = pricingCompsAfterJudgment({
       selected: plat,
@@ -332,7 +413,8 @@ describe('age-restricted housing is a different product at the backstop', () => 
       asOfYear: 2026,
     })
     expect(gated.droppedProduct).toBe(0)
-    expect(gated.comps).toHaveLength(3)
+    expect(gated.comps).toHaveLength(5)
+    expect(gated.shortage).toBe(false)
   })
 
   it('reads the facts ladder\'s plat share over the candidates when it has one', () => {
@@ -341,7 +423,9 @@ describe('age-restricted housing is a different product at the backstop', () => 
       subdivision: 'Eagle Crest',
       ownPlat: true,
     })
-    const crest = ['crest-1', 'crest-2', 'crest-3'].map((k) => sfr(k, { subdivision: 'Eagle Crest', ownPlat: true }))
+    const crest = ['crest-1', 'crest-2', 'crest-3', 'crest-4', 'crest-5'].map((k) =>
+      sfr(k, { subdivision: 'Eagle Crest', ownPlat: true }),
+    )
     const eagleCrestSubject = { ...SFR_SUBJECT, publicRemarks: 'On the fourth tee of the Challenge Course.', subdivision: 'Eagle Crest' }
     const selected = [falls, ...crest]
     const run = (ownPlatAgeRestrictedShare?: number | null) =>
@@ -354,10 +438,11 @@ describe('age-restricted housing is a different product at the backstop', () => 
         asOfYear: 2026,
         ...(ownPlatAgeRestrictedShare !== undefined ? { ownPlatAgeRestrictedShare } : {}),
       })
-    // Measured over the candidates: one Falls sale of four own-plat sales.
-    expect(run().comps.map((c) => c.listingKey)).toEqual(['crest-1', 'crest-2', 'crest-3'])
+    // Measured over the candidates: one Falls sale of six own-plat sales.
+    expect(run().comps.map((c) => c.listingKey)).toEqual(['crest-1', 'crest-2', 'crest-3', 'crest-4', 'crest-5'])
+    expect(run().shortage).toBe(false)
     // The pool said the plat is mostly 55+: then the subject is too.
-    expect(run(0.8).comps).toHaveLength(4)
+    expect(run(0.8).comps).toHaveLength(6)
   })
 })
 

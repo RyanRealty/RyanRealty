@@ -181,6 +181,8 @@ type DryRun = {
   renderArgsPricingRejected: unknown
   renderArgsMarketLocalFailedThenSold: unknown
   renderArgsExpiredAuditFinalCycle: unknown
+  /** The build's own hold (rule 22): the last failed ask inside the band. */
+  hold: { kind: string; ask: number; bandLow: number; bandHigh: number; reason: string } | null
   error: string | null
 }
 
@@ -304,7 +306,7 @@ async function dryRun(slug: string): Promise<DryRun> {
   const { buildFailureFindings, stampFinalCycleDom, resolveFinalCycle, buildAskExposure, applyFailedAskCap, FAILED_ASK_RECENCY_MONTHS } =
     await import('@/lib/cma/expired-audit')
   const { buildSubjectStatus } = await import('@/lib/pricing/subject-status')
-  const { attachCompConcessions, attachSellerNet } = await import('@/lib/pricing/seller-net')
+  const { attachCompConcessions, attachSellerNet, reanchorSellerNet } = await import('@/lib/pricing/seller-net')
   const { buildCmaLocalOutcomes } = await import('@/lib/pricing/local-outcomes-read')
   const { getCmaListingPriceEvents } = await import('@/lib/data/cma/localOutcomeReads')
 
@@ -327,7 +329,7 @@ async function dryRun(slug: string): Promise<DryRun> {
     subjectLastAsk: { price: null, date: null, historyLine: null },
     queueState: null, queueStateStored: null,
     renderArgsPricingRejected: null, renderArgsExpiredAuditFinalCycle: null,
-    dateAdjustments: [], dateAdjustmentCheckOk: true, dateAdjustmentFailures: [], error: null,
+    dateAdjustments: [], dateAdjustmentCheckOk: true, dateAdjustmentFailures: [], hold: null, error: null,
   }
 
   const row = await getCmaAdminRowBySlug(slug)
@@ -742,6 +744,21 @@ async function dryRun(slug: string): Promise<DryRun> {
       emailSentAt: (row.email_sent_at as string | null) ?? null,
       queuedAt: (row.queued_at as string | null) ?? null,
     })
+  // EXACTLY lib/cma/build.ts: the band is pinned to the sales that set it
+  // (set-aside rows read by name), then rule 22, the last failed ask inside
+  // that pinned band (Matt 2026-10-07). Same helper as the build.
+  {
+    const { pinPrintedBandToSettingSales } = await import('@/lib/pricing/estimate')
+    const { applyAskInBandHold } = await import('@/lib/cma/gap-hold')
+    const recommendedBeforePin = pricing.recommended
+    pricing = pinPrintedBandToSettingSales(pricing, attachCompConcessions(adjusted))
+    if (pricing.recommended !== recommendedBeforePin) reanchorSellerNet(pricing)
+    applyAskInBandHold(pricing, {
+      lastCycleFailed,
+      lastListPrice: subject.lastListPrice,
+      auditVerdict: storedAudit.verdict,
+    })
+  }
   const review = buildPricingReview({
     needsReview: pricing.needsReview,
     reviewReason: pricing.reviewReason,
@@ -818,6 +835,7 @@ async function dryRun(slug: string): Promise<DryRun> {
     renderArgsPricingClamp: pricing.clamp ?? null,
     renderArgsPricingSetAside: pricing.setAside ?? null,
     renderArgsPricingReview: review,
+    hold: pricing.hold ?? null,
     renderArgsPricingSellerNet: pricing.sellerNet ?? null,
     // THE INVARIANT: what the seller keeps can never exceed the price we told
     // them to ask. Round four class A shipped four documents where it did.
@@ -896,6 +914,11 @@ async function main() {
     if (r.recommended != null) {
       console.log(`   recommended $${r.recommended.toLocaleString()} (list tiers $${r.range[0]?.toLocaleString()}–$${r.range[1]?.toLocaleString()}) · confidence ${r.confidence} · $/sqft CV ${r.compPpsfCv}${r.needsReview ? ' · FLAGGED' : ''}`)
       console.log(`   worth $${r.valueRange[0]?.toLocaleString()}–$${r.valueRange[1]?.toLocaleString()} (the printed adjusted sale prices)`)
+    }
+    if (r.hold) {
+      console.log(
+        `   hold = ${r.hold.kind} · ask $${r.hold.ask.toLocaleString('en-US')} inside $${r.hold.bandLow.toLocaleString('en-US')} to $${r.hold.bandHigh.toLocaleString('en-US')}`,
+      )
     }
     if (r.comps.length) {
       console.log(`   comps (${r.comps.length}):`)

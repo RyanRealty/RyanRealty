@@ -495,11 +495,18 @@ describe('the method moves to Basis and limits, in plain English (Keats)', () =>
     )
   })
 
-  it('drops the count from the range line when a set-aside sale is in the band', () => {
-    const aside = { ...PRICING, setAside: [{ listingKey: COMPS[3]!.listingKey, address: '700 Shelley', adjustedPrice: 603227, end: 'low', reason: 'x' }] } as unknown as CmaPricing
-    expect(adjustedRangeLine(COMPS, { pricing: aside })).toBe(
-      "Adjusted to today's market and your home's size, the sales run from $603,227 to $639,871.",
-    )
+  it('reads the band without a set-aside sale, so the line counts the rest and says the ends were set aside (the band is always trimmed, Matt 2026-10-07)', () => {
+    // A set-aside sale still carries its weight on the grid; the band readers
+    // skip it by name, so it never sets an end and the count is the kept set.
+    const aside = {
+      ...PRICING,
+      rangeRule: { ...(PRICING as unknown as { rangeRule: object }).rangeRule, rule: 'trimmed-one-each-end' },
+      setAside: [{ listingKey: COMPS[3]!.listingKey, address: '700 Shelley', adjustedPrice: 603227, end: 'low', reason: 'x' }],
+    } as unknown as CmaPricing
+    const line = adjustedRangeLine(COMPS, { pricing: aside })
+    expect(line).not.toContain('$603,227')
+    expect(line).toMatch(/^The four sales, adjusted to today's market and your home's size, run from \$[\d,]+ to \$639,871\./)
+    expect(line).toContain('The highest and the lowest sale are set aside, so the range runs between the rest.')
   })
 
   it('prints a basis it does not know as the pricing side wrote it', () => {

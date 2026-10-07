@@ -24,9 +24,9 @@ import {
 } from '@/lib/pricing/seller-net'
 import type { CmaAdjustedComp, CmaComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import { citySlug, storyAdjustment, type StoryClass } from '@/lib/pricing/classes'
-import { capClosedCompShares, closedCompWeight, fillShortSetWeights } from '@/lib/pricing/closed-comp-weight'
+import { capClosedCompShares, closedCompWeight } from '@/lib/pricing/closed-comp-weight'
 import { recommendationOutsideSaleSet } from '@/lib/pricing/price-set'
-import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
+import { PRICING_MIN_COMPS, RANGE_MIN_KEPT, RANGE_TRIM_MIN_N } from '@/lib/pricing/ladder'
 import { subjectHasRecordedSubdivision, type SelectedPricingComp } from '@/lib/pricing/match'
 import { closedSaleDomTotal } from '@/lib/cma/listing-history-line'
 import { proximityLabel } from '@/lib/cma/market-area'
@@ -48,6 +48,7 @@ import {
   type ReconcilableSale,
 } from '@/lib/pricing/reconciliation'
 import { applyFailedAskCap as applyExpiredFailedAskCap } from '@/lib/cma/expired-audit'
+import { readSetAsideSales } from '@/lib/cma/set-aside'
 import {
   applyExclusivePocketDateAdj,
   describeAppliedDateAdjustments,
@@ -263,17 +264,19 @@ export function roundPrintedPrices<
   return { ...pricing, recommended, valueLow: band.low, valueHigh: band.high, conservative, highEnd }
 }
 
-/** At or above this many sales the range drops one at each end. */
-export const RANGE_TRIM_MIN_N = 6
+/**
+ * The trim threshold and the kept floor live in lib/pricing/ladder.ts beside
+ * the comp floor they follow (Matt 2026-10-07: the band is always the trimmed
+ * range, so RANGE_TRIM_MIN_N is PRICING_MIN_COMPS). Re-exported so existing
+ * importers compile.
+ */
+export { RANGE_TRIM_MIN_N, RANGE_MIN_KEPT } from '@/lib/pricing/ladder'
 
 /**
  * An end sale lighter than half the median weight of the sales still in the
  * range does not set that end. Equal weights sit on the median, so they stay.
  */
 export const RANGE_END_LIGHT_MEDIAN_FRACTION = 0.5
-
-/** Never peel the range below the pricing floor of three sales. */
-export const RANGE_MIN_KEPT = 3
 
 /**
  * Redfin's ±50% exclusion, applied to every sale-to-ask ratio that reaches the
@@ -501,6 +504,11 @@ export function buildTimeAdjustmentBasis(opts: {
 export const TIME_ADJUSTMENT_MEASURE_INDEX = 'median price a square foot, every home sale in the city'
 export const TIME_ADJUSTMENT_MEASURE_YOY = 'median sale price, detached homes'
 
+/**
+ * 'min-max' is legacy stored rows only; no production writer since 2026-10-07
+ * (Matt: the band is always the trimmed range). Readers keep it so a row
+ * built before that date still renders its own sentence.
+ */
 export type PricingRangeRuleName = 'trimmed-one-each-end' | 'min-max'
 
 export interface PricingRangeRule {
@@ -579,11 +587,14 @@ export function partitionByRangeRule<T extends { adjustedPrice?: number | null; 
     (s): s is T & { adjustedPrice: number } =>
       s.adjustedPrice != null && Number.isFinite(s.adjustedPrice) && s.adjustedPrice > 0,
   )
-  if (priced.length < PRICING_MIN_COMPS) {
+  // Under the floor the rule stays null: that set already failed the floor.
+  // At or above it (RANGE_TRIM_MIN_N is PRICING_MIN_COMPS, Matt 2026-10-07)
+  // the single highest and the single lowest are set aside: five keeps three
+  // (RANGE_MIN_KEPT stops peelLightRangeEnds there), six keeps four, seven
+  // keeps five. Nothing sits between the two thresholds, so there is no
+  // min-max branch.
+  if (priced.length < Math.max(PRICING_MIN_COMPS, RANGE_TRIM_MIN_N)) {
     return { priced, kept: priced, setAside: [], rule: null }
-  }
-  if (priced.length < RANGE_TRIM_MIN_N) {
-    return { priced, kept: priced, setAside: [], rule: 'min-max' }
   }
   // Sort a COPY of the indices so ties resolve by position and the original
   // order survives into both lists.
@@ -937,6 +948,17 @@ export function syncRangeRuleToHeroBand<T extends { valueLow: number; valueHigh:
  * The letter's low and high are the adjusted sales still in the table that
  * set the price. Exact dollars. A later thousand-dollar round is a second
  * band, and a sale that weighs nothing does not set either end.
+ *
+ * THE SET-ASIDE SALES ARE READ BY NAME (Matt 2026-10-07, the band is always
+ * the trimmed range). A sale the range rule set aside still carries weight
+ * > 0 on renderComps (nothing writes printedWeight in production), so until
+ * this change every six-plus-sale letter re-printed min to max here and the
+ * rule name was rewritten to 'min-max'. Now the named rows in
+ * pricing.setAside are excluded from the pin, the rule name survives (so
+ * trimsEachEnd() is true on the stored row and setAsideCompIndexes finds the
+ * named rows), and the sentence says how many were set aside. Weight is NOT
+ * zeroed on a set-aside row: the contract's comp-floor and the pricer's own
+ * floor count them as setters, which they are.
  */
 export function pinPrintedBandToSettingSales<
   T extends {
@@ -947,10 +969,13 @@ export function pinPrintedBandToSettingSales<
     highEnd?: number
     failedAsk?: number | null
     rangeRule?: PricingRangeRule | null
+    setAside?: unknown
   },
 >(
   pricing: T,
   comps: readonly {
+    listingKey?: string | null
+    address?: string | null
     adjustedPrice?: number | null
     closePrice?: number | null
     weight?: number | null
@@ -962,9 +987,17 @@ export function pinPrintedBandToSettingSales<
     concessionsYn?: string | null
   }[],
 ): T {
+  const key = (v: string | null | undefined): string => (v ?? '').trim().toLowerCase()
+  const asideKeys = new Set(
+    readSetAsideSales(pricing as unknown as CmaPricing).flatMap((r) =>
+      [key(r.listingKey), key(r.address)].filter(Boolean),
+    ),
+  )
+  const notAside = (c: { listingKey?: string | null; address?: string | null }): boolean =>
+    !asideKeys.has(key(c.listingKey)) && !asideKeys.has(key(c.address))
   const weighted = comps.filter((c) => settingWeight(c) != null)
   const setters = (weighted.length > 0 ? weighted : comps).filter(
-    (c) => weighted.length === 0 || (settingWeight(c) ?? 0) > 0,
+    (c) => (weighted.length === 0 || (settingWeight(c) ?? 0) > 0) && notAside(c),
   )
   const values = setters
     .map((c) =>
@@ -1010,15 +1043,20 @@ export function pinPrintedBandToSettingSales<
     highEnd = recommended
   }
   const rule = pricing.rangeRule
+  // The trimmed rule keeps the set size it was written with (five, three
+  // kept). A legacy min-max row has no set-aside list, so its count is the
+  // sales that set the ends.
+  const n = rule?.rule === 'trimmed-one-each-end' ? rule.n : values.length
   const sentence = rule?.sentence
     ? describeRangeSentence({
-        rule: 'min-max',
-        n: values.length,
+        rule: rule.rule,
+        n,
         kept: values.length,
         printedLow: low,
         printedHigh: high,
         saleLow: low,
         saleHigh: high,
+        trimmedAside: rule.rule === 'trimmed-one-each-end' ? trimmedAsideClause(n, values.length) : null,
         suffix: rangeSentenceSuffix(rule.sentence),
         adjustmentPhrase: settingAdjustmentPhrase(setters),
       })
@@ -1034,8 +1072,8 @@ export function pinPrintedBandToSettingSales<
       ? {
           rangeRule: {
             ...rule,
-            rule: 'min-max' as const,
-            n: values.length,
+            rule: rule.rule,
+            n,
             kept: values.length,
             adjustedLow: low,
             adjustedHigh: high,
@@ -1047,6 +1085,21 @@ export function pinPrintedBandToSettingSales<
       : {}),
   }
   return next
+}
+
+/**
+ * The trimmed rule's aside clause, shared by the pricer and the pin: "Two of
+ * the five sales sat outside every one of them and were set aside, so no
+ * single sale could set the range." Null when nothing was set aside.
+ */
+export function trimmedAsideClause(n: number, kept: number): string | null {
+  const aside = n - kept
+  if (!(aside > 0)) return null
+  return `${
+    aside === 1
+      ? `One of the ${countWord(n)} sales sat outside every one of them and was set aside`
+      : `${countWord(aside, true)} of the ${countWord(n)} sales sat outside every one of them and were set aside`
+  }, so no single sale could set the range.`
 }
 
 /**
@@ -1179,6 +1232,7 @@ export function pricingSaleToCmaComp(sale: SelectedPricingComp): CmaComp {
     proximity: sale.proximity,
     roomDifference: sale.roomDifference ?? null,
     ownPlat: sale.ownPlat ?? null,
+    setsPrice: sale.setsPrice ?? null,
     seniorCommunityYn: sale.seniorCommunityYn ?? null,
     communitySlug: sale.communitySlug ?? null,
     communityLocated: sale.communityLocated,
@@ -1266,6 +1320,7 @@ export function adjustCmaCompAlongMarket(opts: {
     saleSubdivision: sale.subdivision,
     selectionTier: sale.selectionTier,
     ownPlat: sale.ownPlat,
+    setsPrice: sale.setsPrice,
     subjectRecordedPlat: subjectHasRecordedSubdivision(opts.subject),
     // A phase stem is the subdivision, not a parent community. The weight
     // uses the same community the search used, or a next-row neighbor is
@@ -1533,13 +1588,7 @@ export function listPriceFromEngine(opts: {
             saleLow: saleLow ?? rangeLow,
             saleHigh: saleHigh ?? rangeHigh,
             trimmedAside:
-              range.rule === 'trimmed-one-each-end'
-                ? `${
-                    range.n - range.kept === 1
-                      ? `One of the ${countWord(range.n)} sales sat outside every one of them and was set aside`
-                      : `${countWord(range.n - range.kept, true)} of the ${countWord(range.n)} sales sat outside every one of them and were set aside`
-                  }, so no single sale could set the range.`
-                : null,
+              range.rule === 'trimmed-one-each-end' ? trimmedAsideClause(range.n, range.kept) : null,
             suffix: askStep,
           }),
         }
@@ -1766,15 +1815,9 @@ export function priceCmaSet(args: {
   computePricing?: typeof computePricing
 }): CmaPricing | null {
   const priceFn = args.computePricing ?? computePricing
-  const adjusted = fillShortSetWeights(args.subject, args.adjusted)
-  // The letter still holds args.adjusted. A filled weight has to land on that
-  // object or the table and the band read two different sets.
-  for (let i = 0; i < adjusted.length; i++) {
-    const row = args.adjusted[i]
-    const filled = adjusted[i]?.weight
-    if (!row || filled == null || !(filled > 0) || filled === row.weight) continue
-    row.weight = filled
-  }
+  // No fill: a sale that does not set the price keeps its weight of 0, and
+  // under five that do the pricer returns null (Matt 2026-10-07).
+  const adjusted = args.adjusted
   const pricing = priceFn(args.subject, adjusted, args.market, {
     sellerImprovementsTotal: args.input.sellerImprovementsTotal ?? null,
     priceOverride: args.input.priceOverride ?? null,

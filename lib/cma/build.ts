@@ -51,6 +51,7 @@ import {
 import { buildRejectedSales } from '@/lib/pricing/rejected'
 import { dropPriorSalesOfSameHome } from '@/lib/pricing/same-address'
 import { buildPricingReview, confidenceForVerdict } from '@/lib/pricing/review'
+import { applyAskInBandHold } from '@/lib/cma/gap-hold'
 import { attachSellerNet, reanchorSellerNet } from '@/lib/pricing/seller-net'
 import { pricingFailureMessage } from '@/lib/pricing/price-set'
 import { classifyStory, citySlug, irrigationClassFromOwrd, isCustomOrNewSubject, yearQualityCompatible } from '@/lib/pricing/classes'
@@ -901,6 +902,9 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         ),
       ]
       const remaining = compsForPricing.filter((c) => !flagged.includes(c.listingKey))
+      // A five-sale set cannot lose a sale and still price (the cap equals the
+      // floor, Matt 2026-10-07): a flagged comp falls through to the review
+      // flag, never a silent reprice.
       if (flagged.length > 0 && remaining.length >= MIN_COMPS) {
         const repriced = priceSet(remaining)
         if (repriced.p) {
@@ -1463,6 +1467,25 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     const recommendedBeforePin = pricing.recommended
     pricing = pinPrintedBandToSettingSales(pricing, renderComps)
     if (pricing.recommended !== recommendedBeforePin) reanchorSellerNet(pricing)
+    // The ask exposure measured the pre-pin band above; the band it prints is
+    // the pinned one. resolvedCycle is block-scoped there, so the cycle is
+    // read back off the audit block.
+    if (expiredAudit) {
+      expiredAudit.askExposure = buildAskExposure({
+        cycle: expiredAudit.finalCycle,
+        rangeLow: pricing.valueLow,
+        rangeHigh: pricing.valueHigh,
+      })
+    }
+    // RULE 22 (Matt 2026-10-07): the last failed ask inside the trimmed band
+    // the recommendation reads from, read AFTER the pin so low and high are
+    // rangeRule.adjustedLow/adjustedHigh by construction. An ask above the
+    // band is rule 16's ordinary case; an ask below it is the existing
+    // failedAskBelowRange path. The build completes and the document
+    // persists; the hold on the row is what keeps it from sending
+    // (lib/cma/gap-hold.ts). Never widen or reshape the search for this.
+    // sanitizeClientProse already ran; the sentence is written clean.
+    applyAskInBandHold(pricing, { lastCycleFailed, lastListPrice: subject.lastListPrice, auditVerdict })
     // A blank client on an expired home is the skip-traced owner. Resolved
     // before render so the letter can keep that name out of the copy, and
     // before persist so a null does not wipe a client already stored.

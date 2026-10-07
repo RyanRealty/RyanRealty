@@ -381,26 +381,32 @@ describe('E2 — one list ceiling per document', () => {
 describe('E3 — the strip caption, the chapter lead, the range cause and the set-aside list agree', () => {
   it('reads the pricing side kept count', () => {
     expect(readRangeRuleKept(trimmedPricing())).toBe(4)
-    // Floor: six comps cannot trim ends (would leave 4 < 5), so the live
-    // count is every printed sale — not the stale rangeRule.kept.
-    expect(keptSaleCount(trimmedPricing(), SIX_COMPS)).toBe(6)
+    // Six comps under the trimmed rule (the band is always trimmed, Matt
+    // 2026-10-07): the highest and the lowest are set aside, four are kept.
+    expect(keptSaleCount(trimmedPricing(), SIX_COMPS)).toBe(4)
   })
 
-  it('states six everywhere when the stack floor blocks end-trimming', () => {
+  it('states four everywhere, with two set aside, on a six-row trimmed row', () => {
     const html = chapter(trimmedPricing(), SIX_COMPS)
     // worth-strip (and its One scale caption) omitted — cover owns the number.
     expect(html).not.toContain('One scale: sale price today.')
     expect(html).not.toContain('worth-strip')
-    expect(html).toContain('The six closed sales below set this number')
-    expect(html).not.toContain('Two more are shown below and set aside.')
-    expect(html).not.toContain('These 2 sales are shown above and did not set the number.')
+    expect(html).toContain('The four closed sales below set this number')
+    expect(html).toContain('Two more are shown below and set aside.')
+    expect(html).toContain('These 2 sales are shown above and did not set the number.')
+    expect(html).not.toContain('The six closed sales below set this number')
   })
 
-  it('the market chapter counts every printed sale when the floor blocks trim', () => {
+  it('the market chapter counts the kept sales and prints their adjusted spread, never a set-aside end', () => {
     const html = cityMedianReconciliationHtml(opinionArgs())
-    expect(html).toContain('The six sales behind your price')
-    expect(html).toContain('$295,000 to $510,000')
-    expect(html).not.toContain('The four sales behind your price')
+    expect(html).toContain('The four sales behind your price')
+    expect(html).toContain('sold for $368,000 to $477,000')
+    // $370,000 to $479,000 is the kept four's adjusted spread; $296,000 and
+    // $512,000 are the two sales the document set aside.
+    expect(html).toContain('$370,000 to $479,000')
+    expect(html).not.toContain('$296,000')
+    expect(html).not.toContain('$512,000')
+    expect(html).not.toContain('The six sales behind your price')
   })
 })
 

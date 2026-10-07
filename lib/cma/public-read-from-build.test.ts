@@ -22,7 +22,14 @@ describe('publicReadFromBuild', () => {
   it('prints listed over/under from comps-implied close, not the ask haircut', () => {
     const out = publicReadFromBuild({
       factsReady: true,
-      comps: [{ ppsfTimeAdjusted: 350 }, { ppsfTimeAdjusted: 350 }, { ppsfTimeAdjusted: 350 }],
+      // Five price-setting sales (Matt 2026-10-07).
+      comps: [
+        { ppsfTimeAdjusted: 350 },
+        { ppsfTimeAdjusted: 350 },
+        { ppsfTimeAdjusted: 350 },
+        { ppsfTimeAdjusted: 350 },
+        { ppsfTimeAdjusted: 350 },
+      ],
       subject,
       tiersUsed: ['subdivision-3mo'],
       asOfYear: 2026,
@@ -31,7 +38,7 @@ describe('publicReadFromBuild', () => {
     if (out.kind !== 'listed-over-under') return
     expect(out.listPrice).toBe(725_000)
     expect(out.compsClose).toBe(700_000)
-    expect(out.n).toBe(3)
+    expect(out.n).toBe(5)
   })
 
   it('refuses new construction on the public read even when the CMA set is tight', () => {

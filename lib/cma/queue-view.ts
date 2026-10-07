@@ -32,6 +32,7 @@ export type CmaQueueWhy =
   | 'none'
   | 'wide-range'
   | 'failed-ask'
+  | 'ask-in-band'
   | 'search-widened'
   | 'short-comps'
   | 'judge-unstable'
@@ -48,6 +49,7 @@ export const CMA_QUEUE_PAGE_SIZE = 50
 export const CMA_QUEUE_WHY_LABEL: Record<Exclude<CmaQueueWhy, 'none'>, string> = {
   'wide-range': 'Range is wide',
   'failed-ask': 'Ask did not sell',
+  'ask-in-band': 'Ask inside the range',
   'search-widened': 'Search widened',
   'short-comps': 'Not enough sales',
   'judge-unstable': 'Comps did not agree',
@@ -146,6 +148,7 @@ export function cmaQueueHoldLine(r: {
   buildError?: string | null
   auditSummary?: string | null
   auditCriticalCount?: number | null
+  holdKind?: string | null
 }): string | null {
   const why = cmaQueueWhy(r)
   if (r.state === 'flagged') {
@@ -169,6 +172,8 @@ export function cmaQueueWhy(r: {
   state: CmaQueueViewState
   reviewReason?: string | null
   buildError?: string | null
+  /** The build's stored hold (lib/data/cma/unified-queue.ts holdKind). */
+  holdKind?: string | null
 }): CmaQueueWhy {
   if (r.state === 'audit-failed') return 'audit'
   if (r.state === 'failed') {
@@ -176,11 +181,24 @@ export function cmaQueueWhy(r: {
     if (err.includes('judge_unstable') || err.includes('did not agree')) return 'judge-unstable'
     if (err.includes('no closed sale')) return 'no-sales'
     if (err.includes('outside the sales')) return 'price-outside'
-    if (err.includes('not enough comparable')) return 'short-comps'
+    // Every comp-shortage sentence the build writes: brokerCompRefusal, the
+    // review keep, the product wall, pricingFailureMessage, and the walk.
+    if (
+      err.includes('not enough comparable') ||
+      err.includes('closed sales this home needs') ||
+      err.includes('set the price, and this home needs') ||
+      err.includes('same product type') ||
+      err.includes('comp shortage')
+    ) {
+      return 'short-comps'
+    }
     return 'other'
   }
   if (r.state === 'flagged') {
     const reason = (r.reviewReason ?? '').toLowerCase()
+    // Rule 22 first: the stored kind, then the phrase for rows built before
+    // the field landed.
+    if (r.holdKind === 'ask-in-band' || reason.includes('inside the sales range')) return 'ask-in-band'
     if (reason.includes('wider than 8%')) return 'wide-range'
     if (
       reason.includes('just failed') ||
@@ -234,6 +252,7 @@ export function toCmaQueueViewRow(r: {
   createdAt: string | null
   reviewReason?: string | null
   buildError?: string | null
+  holdKind?: string | null
 }): CmaQueueViewRow {
   return {
     id: r.id,
