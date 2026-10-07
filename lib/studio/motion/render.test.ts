@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { MOTION_ENCODE_ARGS, overlayGraph, parseProbe } from './render'
+import { MOTION_ENCODE_ARGS, SCORE_ENCODE_ARGS, paperGraph, overlayGraph, parseProbe } from './render'
 
 describe('parseProbe', () => {
   it("reads duration and frame size from ffmpeg's banner", () => {
@@ -33,10 +33,20 @@ describe('overlayGraph', () => {
 })
 
 describe('encode', () => {
-  it('tags bt709 limited range, keeps the delivery ladder, and never adds audio', () => {
+  it('tags bt709 limited range and keeps the delivery ladder', () => {
     const args = MOTION_ENCODE_ARGS.join(' ')
-    for (const flag of ['-colorspace bt709', '-color_primaries bt709', '-color_trc bt709', '-color_range tv', '-pix_fmt yuv420p', '-maxrate 8M', '-an', '+faststart']) {
+    for (const flag of ['-colorspace bt709', '-color_primaries bt709', '-color_trc bt709', '-color_range tv', '-pix_fmt yuv420p', '-maxrate 8M', '+faststart']) {
       expect(args).toContain(flag)
     }
+    // Audio is decided per film: the score's AAC, or -an for a silent one.
+    expect(args).not.toContain('-an')
+  })
+
+  it('encodes the score as 48 kHz stereo AAC', () => {
+    expect(SCORE_ENCODE_ARGS.join(' ')).toBe('-c:a aac -b:a 192k -ar 48000 -ac 2')
+  })
+
+  it('a paper film converts the page itself to bt709 limited range', () => {
+    expect(paperGraph()).toBe('[0:v]setsar=1,format=rgba,scale=in_range=pc:out_color_matrix=bt709:out_range=tv,format=yuv420p[v]')
   })
 })

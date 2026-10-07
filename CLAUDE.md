@@ -295,7 +295,7 @@ or override?" Research sources at `docs/research/best-practices-*.md`.
 
 # §4. Media — Grok surface + Studio (2026-08-26)
 
-One video factory, lib/studio: Grok footage, motion-stage type.
+One video factory, lib/studio: footage, drawn scenes, type, score.
 **Every Grok call goes through [`lib/grok/`](lib/grok/)** (text, JSON, search,
 vision, stills, edits, motion). Model ids sit in `lib/grok/client.ts`, gated by
 `ci:grok-models`. Never call `api.x.ai` elsewhere.
@@ -512,7 +512,7 @@ else fires on trigger match.
 
 | Trigger | Load this |
 |---|---|
-| Any video build | **§4** — Grok Imagine / Grok Video. Remotion factory is gone. |
+| Any video build | **§4** and the `motion-design` skill. Remotion is gone. |
 | SEO blog post | [`social_media_skills/blog-post/SKILL.md`](social_media_skills/blog-post/SKILL.md). Publishing path is Supabase `blog_posts` rendered by the live Next site. |
 | Paid Meta pipeline, marketing automation, weekly optimization crons, seller funnel | [`docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`](docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md) first, then [`docs/MARKETING_LEAD_FLOW.md`](docs/MARKETING_LEAD_FLOW.md), `.cursor/skills/facebook-seller-growth/SKILL.md` |
 | Facebook lead-gen ad | the two docs above for live wiring, then `social_media_skills/facebook-lead-gen-ad/SKILL.md` |

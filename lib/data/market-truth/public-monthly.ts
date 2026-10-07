@@ -24,7 +24,7 @@ function hyphenSlug(raw: string): string {
     .replace(/^-+|-+$/g, '')
 }
 
-function lastDayOfMonth(year: number, monthIndex: number): string {
+export function lastDayOfMonth(year: number, monthIndex: number): string {
   const d = new Date(Date.UTC(year, monthIndex + 1, 0))
   return d.toISOString().slice(0, 10)
 }
@@ -47,7 +47,8 @@ export function completeMonthKeys(currentMonthKey: string, count = PUBLIC_MONTHL
   return keys.reverse()
 }
 
-function publishedNumber(cell: MetricResult | null | undefined): number | null {
+/** A cell the public charts plot: publishable, finite and above zero; else null. */
+export function publishedNumber(cell: MetricResult | null | undefined): number | null {
   if (!cell?.isPublishable || cell.value == null || !Number.isFinite(cell.value) || cell.value <= 0) {
     return null
   }

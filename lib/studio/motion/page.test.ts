@@ -73,8 +73,10 @@ describe('buildMotionPage', () => {
       duration: 6,
     })
     const page = buildMotionPage({ plan: at4, width: 1080, height: 1920, assets })
-    expect(page).toMatch(/class="zone on"[^>]*>Seller's</)
+    expect(page).toMatch(/class="zone on"[^>]*>Seller\u2019s</)
     expect(page).not.toMatch(/class="zone on"[^>]*>Balanced</)
+    // The bar fills to the value, not to the zone's edge.
+    expect(page).toContain('id="lead1-fill"')
   })
 
   it('draws the agent card without a portrait when there is no file for that broker', () => {

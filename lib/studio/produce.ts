@@ -11,7 +11,9 @@
  *   5. animate the approved still, if the format wants motion
  *   6. write the caption against the verified figures only
  *   7. lay the type over the footage (lib/studio/motion), if the format has a
- *      type layer: verified figures only, or the draft dies
+ *      type layer: verified figures only, or the draft dies. A paper film
+ *      (frameSource 'code') skips 3 to 5: the stage draws it whole from
+ *      verified data, scored, for nothing but the caption
  *   8. mark ready, with citations, QA verdict, and spend attached
  *
  * The draft lands as `ready` with approval NOT stamped. Nothing here posts,
@@ -43,9 +45,8 @@ import {
 } from './spend'
 import { writeCaption, type CaptionRequest } from './caption'
 import { GRADE_BUDGET, planListingFilm, renderListingFilm, type CutShot, type FilmAdapters, type FilmPlan } from './film'
-import type { PlannedShot } from './shotlist'
 import type { VisionVerdict } from '@/lib/grok/vision'
-import type { MotionAgent } from './motion/cues'
+import type { MotionAgent, MotionOutline, MotionSeries } from './motion/cues'
 import { aspectValue, imageSize, sameShape } from '@/lib/video/image-size'
 import type { ComposeMotionInput, ComposeMotionResult } from './motion/compose'
 
@@ -75,6 +76,12 @@ export type StudioSubject = {
   heading?: { eyebrow: string; line: string }
   /** The listing agent when the listing is ours; null for another office. */
   agent?: MotionAgent | null
+  /** A trend film's verified monthly series. */
+  series?: MotionSeries
+  /** A map film's recorded outlines. */
+  outline?: MotionOutline
+  /** For a paper film: what it shows, exactly, for the caption writer. */
+  describes?: string
 }
 
 export type StudioProduceInput = {
@@ -165,7 +172,8 @@ async function typeLayer(args: {
   draftId: string
   format: StudioFormat
   subject: StudioSubject
-  body: Buffer
+  /** The footage; null for a paper film, which the stage draws whole. */
+  body: Buffer | null
   beats?: number[]
 }): Promise<TypeLayerOutcome> {
   const { adapters, draftId, format, subject } = args
@@ -179,9 +187,13 @@ async function typeLayer(args: {
       citations: subject.citations,
       heading: subject.heading,
       agent: subject.agent ?? null,
+      series: subject.series,
+      outline: subject.outline,
     },
     video: args.body,
     beats: args.beats,
+    // The draft id seeds the score, so a re-render of this draft is the same film.
+    seed: draftId,
   })
   if (!composed.ok) {
     // §0: a number on screen that is not a verified figure is not shippable,
@@ -351,7 +363,9 @@ export async function produceStudioDraft(
     const spec = shotFor(format, subject)
 
     // ── hero frame ─────────────────────────────────────────────────────────
-    let posterUrl: string
+    // A paper film has no hero frame; its poster is its own finished chart or
+    // map, set once the film is drawn.
+    let posterUrl = ''
     let qa: VisionVerdict | null = null
     // The generated still's bytes, kept for the shape gate before animation.
     let heroImage: Buffer | null = null
@@ -382,6 +396,8 @@ export async function produceStudioDraft(
       // A real photograph of a real property. Nothing to generate, nothing
       // to inspect, and nothing we are allowed to restyle.
       posterUrl = subject.sourcePhotoUrl as string
+    } else if (format.frameSource === 'code') {
+      // Drawn whole from verified data below; nothing to generate or inspect.
     } else {
       const hero = await buildHeroFrame(format, spec, adapters, ledger)
       if (!hero) {
@@ -434,7 +450,9 @@ export async function produceStudioDraft(
         qa?.describes ||
         (format.frameSource === 'mls_photo'
           ? `A photograph of the home at ${subject.label}, panned across in its true shape.`
-          : undefined),
+          : format.frameSource === 'code'
+            ? (subject.describes ?? format.what)
+            : undefined),
     }
     assertBudget(ledger, TEXT_CALL_USD, 'caption')
     const caption = await adapters.writeCaption(captionRequest)
@@ -476,7 +494,7 @@ export async function produceStudioDraft(
         await adapters.killDraft(draftId, reason)
         return { ok: false, error: reason, draftId }
       }
-    } else if (format.media === 'video') {
+    } else if (format.media === 'video' && format.frameSource === 'generated') {
       const motionPrompt = buildMotionPrompt(spec)
       assertCraftClean(motionPrompt, `${format.id} motion prompt`)
       assertBudget(ledger, videoCost('grok-imagine-video-1.5', format.seconds), 'animation')
@@ -494,6 +512,37 @@ export async function produceStudioDraft(
       })
       // The generator URL expires. Store our own copy before the row points at it.
       footage = { body: await adapters.downloadUrl(clip.url), filename: 'clip.mp4' }
+    }
+
+    if (format.frameSource === 'code') {
+      // The whole film is the motion stage's drawing. With no footage under
+      // it there is nothing to fall back to: any failure kills the draft.
+      const typed = await typeLayer({ adapters, draftId, format, subject, body: null })
+      if ('kill' in typed) {
+        await adapters.killDraft(draftId, typed.kill)
+        return { ok: false, error: typed.kill, draftId }
+      }
+      if (!typed.url || !typed.record) {
+        const why = typed.record ? String(typed.record.error ?? typed.record.reason ?? 'unknown') : 'no motion stage in this runtime'
+        const reason = `${format.label} could not be drawn: ${why}`
+        await adapters.killDraft(draftId, reason)
+        return { ok: false, error: reason, draftId }
+      }
+      addSpend(ledger, { step: 'drawn from verified data', usd: 0, ticks: null })
+      motion = typed.record
+      mediaUrl = typed.url
+      mediaKind = 'video'
+      // The poster is the first card's finished picture: the landed line, the
+      // filled outline. With no still stored there is no cover to post and no
+      // still to check the numbers against (§0 step 6), so the draft dies.
+      const stills = (typed.record.stills as Array<{ cueId: string; url: string }> | undefined) ?? []
+      const poster = stills.find((still) => still.cueId === 'lead1') ?? stills[0]
+      if (!poster) {
+        const reason = `${format.label} has no stored still for its cover; nothing to review the figures against.`
+        await adapters.killDraft(draftId, reason)
+        return { ok: false, error: reason, draftId }
+      }
+      posterUrl = poster.url
     }
 
     if (footage) {
@@ -527,10 +576,12 @@ export async function produceStudioDraft(
         citations: subject.citations,
         qa: qa
           ? { score: qa.score, defects: qa.defects, describes: qa.describes, gate: 'grok-vision' }
-          : {
-              gate: 'source-photograph',
-              describes: filmPlan?.describes ?? 'Real MLS photograph, not generated.',
-            },
+          : format.frameSource === 'code'
+            ? { gate: 'drawn-from-data', describes: format.what }
+            : {
+                gate: 'source-photograph',
+                describes: filmPlan?.describes ?? 'Real MLS photograph, not generated.',
+              },
         ...(filmShots
           ? {
               sequence: {

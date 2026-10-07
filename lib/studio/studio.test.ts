@@ -466,7 +466,7 @@ describe('produce pipeline', () => {
     expect(result.ok).toBe(true)
     // The stage reads only the verified figures and their traces.
     const call = composeMotion.mock.calls[0][0]
-    expect(call.spec).toEqual({ lead: 'market', closer: 'brand' })
+    expect(call.spec).toEqual({ lead: 'market', closer: 'brand', sound: 'measured' })
     expect(call.subject.figures).toEqual({ 'active listings': '412' })
     expect(call.video.toString()).toBe('mp4')
     const stored = (a.storeMedia as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[0].filename)
@@ -481,6 +481,66 @@ describe('produce pipeline', () => {
         { cueId: 'closer', url: 'https://cdn.test/still-closer.jpg' },
       ],
     })
+  })
+
+  it('a paper film is drawn whole from data: no generator, no pan, its own chart as the poster', async () => {
+    const composeMotion = vi.fn().mockResolvedValue({
+      ok: true,
+      body: Buffer.from('drawn'),
+      stills: [
+        { cueId: 'lead1', t: 5.2, jpg: Buffer.from('a') },
+        { cueId: 'closer', t: 13.5, jpg: Buffer.from('b') },
+      ],
+      record: { cues: [], notes: [], frames: 420, captured: 160, renderMs: 9000, fonts: [], duration: 14, score: { silent: 'x' } },
+    })
+    const a = adapters({ composeMotion })
+    const result = await produceStudioDraft({ ...input, formatId: 'market_trend' }, a)
+    expect(result.ok).toBe(true)
+    for (const paid of [a.generateStills, a.inspectFrame, a.animate, a.panPhoto, a.downloadUrl]) {
+      expect(paid).not.toHaveBeenCalled()
+    }
+    const call = composeMotion.mock.calls[0][0]
+    expect(call.video).toBeNull()
+    expect(call.spec.lead).toBe('trend')
+    expect(call.seed).toBe('draft-1')
+    const ready = (a.markReady as ReturnType<typeof vi.fn>).mock.calls[0][0]
+    expect(ready.executorResponse.publish_payload).toMatchObject({
+      mediaUrl: 'https://cdn.test/final.mp4',
+      coverUrl: 'https://cdn.test/still-lead1.jpg',
+      mediaType: 'reel',
+    })
+    expect(ready.executorResponse.qa).toMatchObject({ gate: 'drawn-from-data' })
+    expect(ready.payloadPatch.spend_usd).toBe(ready.executorResponse.spend.totalUsd)
+    // The caption is the only spend.
+    expect(ready.executorResponse.spend.lines.filter((l: { usd: number }) => l.usd > 0).map((l: { step: string }) => l.step)).toEqual(['caption'])
+  })
+
+  it('a paper film whose stills could not be stored is killed: no cover, nothing to check the figures against', async () => {
+    const a = adapters({
+      composeMotion: vi.fn().mockResolvedValue({
+        ok: true,
+        body: Buffer.from('drawn'),
+        stills: [{ cueId: 'lead1', t: 5.2, jpg: Buffer.from('a') }],
+        record: { cues: [], notes: [], frames: 420, captured: 160, renderMs: 9000, fonts: [], duration: 14, score: { silent: 'x' } },
+      }),
+      storeMedia: vi.fn().mockImplementation(async ({ filename }: { filename: string }) =>
+        filename.endsWith('.jpg') ? { ok: false, error: 'bucket refused' } : { ok: true, url: `https://cdn.test/${filename}` },
+      ),
+    })
+    const result = await produceStudioDraft({ ...input, formatId: 'market_trend' }, a)
+    expect(result.ok).toBe(false)
+    expect(a.killDraft).toHaveBeenCalledWith('draft-1', expect.stringContaining('no stored still'))
+    expect(a.markReady).not.toHaveBeenCalled()
+  })
+
+  it('a paper film that cannot be drawn is killed: there is no footage to fall back to', async () => {
+    const a = adapters({
+      composeMotion: vi.fn().mockResolvedValue({ ok: false, reason: 'no-ffmpeg', error: 'ffmpeg is not available in this runtime' }),
+    })
+    const result = await produceStudioDraft({ ...input, formatId: 'place_map', subjectQuery: 'old-bend' }, a)
+    expect(result.ok).toBe(false)
+    expect(a.killDraft).toHaveBeenCalledWith('draft-1', expect.stringContaining('ffmpeg is not available'))
+    expect(a.markReady).not.toHaveBeenCalled()
   })
 
   it('kills the draft when the type layer would put an unverified number on screen', async () => {

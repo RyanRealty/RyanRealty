@@ -26,7 +26,12 @@
 import { MOS_BALANCED_MAX, MOS_SELLER_MAX, marketVerdict } from '@/lib/market/classify'
 import { formatDate } from '@/lib/format/date'
 import { unauthorisedFigures } from '../caption'
-import { presence } from './ease'
+import { presence, progress } from './ease'
+import { CHART_DRAW_SECONDS, chartGeometry, dotAt, drawProgress, type ChartPoint, type MotionSeries } from './chart'
+import { cameraAt, mapGeometry, type MapGeometry, type MotionOutline } from './map'
+
+export type { MotionSeries } from './chart'
+export type { MotionOutline } from './map'
 
 /** Entrance length, seconds. The brand motion ladder's 400ms fade-up. */
 export const ENTER_SECONDS = 0.4
@@ -55,13 +60,30 @@ export const CLOSER_CTA = 'ryan-realty.com'
 
 /** How a format uses the type layer (StudioFormat.motion). */
 export type MotionSpec = {
-  /** 'listing': address, then price and rooms. 'market': the place's months of supply. */
-  lead: 'listing' | 'market'
+  /**
+   * Over footage: 'listing' (address, then price and rooms) or 'market' (the
+   * place's months of supply). Drawn whole, no footage, on cream paper:
+   * 'trend' (a verified monthly price line drawing on, then the meter) or
+   * 'map' (the city, the camera in to the place, its outline, its figures).
+   */
+  lead: 'listing' | 'market' | 'trend' | 'map'
   /**
    * 'brand': wordmark card. 'listing-agent': the listing agent's card, our
    * listings only. 'none': no brand in frame; attribution lives in the caption.
    */
   closer: 'brand' | 'listing-agent' | 'none'
+  /**
+   * The score (lib/studio/score), composed from this plan's cues. 'calm' is
+   * pad and felt notes on events, no percussion (listings: platform canon,
+   * "No percussion on premium/luxury listings"); 'measured' adds a soft pulse
+   * for market and place films. Absent: the film is silent.
+   */
+  sound?: 'calm' | 'measured'
+}
+
+/** True for films drawn whole, with no footage under them. */
+export function isPaperFilm(spec: MotionSpec): boolean {
+  return spec.lead === 'trend' || spec.lead === 'map'
 }
 
 /** The listing agent, when the listing is ours. */
@@ -84,6 +106,10 @@ export type MotionSubject = {
   heading?: { eyebrow: string; line: string }
   /** Resolved for listings. Null when the listing belongs to another office. */
   agent?: MotionAgent | null
+  /** A trend film's verified monthly series. */
+  series?: MotionSeries
+  /** A map film's outlines, from the boundaries table. */
+  outline?: MotionOutline
 }
 
 type CueTiming = { id: string; start: number; end: number }
@@ -120,6 +146,37 @@ export type MotionCue =
       figureKeys: string[]
     })
   | (CueTiming & {
+      kind: 'chart'
+      eyebrow: string
+      line: string
+      scope: string
+      /** The line, in film pixels, and the plotted months under it. */
+      d: string
+      points: ChartPoint[]
+      x0: number
+      x1: number
+      /** The two labelled months: the point, the value as its trace holds it, the month. */
+      first: { x: number; y: number; text: string; tick: string }
+      last: { x: number; y: number; text: string; tick: string }
+      /** The scale: hairlines at round values, labelled in the gutter (chart.ts). */
+      gridlines: Array<{ y: number; label: string }>
+      /** When the line starts drawing; it lands CHART_DRAW_SECONDS later. */
+      drawStart: number
+      asOf: string | null
+      figureKeys: string[]
+    })
+  | (CueTiming & {
+      kind: 'map'
+      eyebrow: string
+      line: string
+      geometry: MapGeometry
+      zoomStart: number
+      zoomSeconds: number
+      drawStart: number
+      drawSeconds: number
+      figureKeys: string[]
+    })
+  | (CueTiming & {
       kind: 'closer'
       cta: string
       agent: MotionAgent | null
@@ -128,6 +185,8 @@ export type MotionCue =
 export type MotionPlan = {
   cues: MotionCue[]
   duration: number
+  /** 'footage' lays the cards over a clip; 'paper' draws the whole film on cream. */
+  surface: 'footage' | 'paper'
   /** What the planner chose not to draw, and why. Recorded on the draft. */
   notes: string[]
 }
@@ -143,6 +202,17 @@ export const CUE_PARTS: Record<MotionCue['kind'], Array<{ part: string; delay: n
   meter: [
     { part: 'card', delay: 0 },
     { part: 'verdict', delay: 0.45 },
+  ],
+  // A paper film's opening frame is the picture and its heading, whole, so
+  // frame 0 (the thumbnail, the first impression muted) already says what
+  // this is. Nothing enters; the line and the camera are the motion.
+  chart: [
+    { part: 'axis', delay: 0 },
+    { part: 'head', delay: 0 },
+  ],
+  map: [
+    { part: 'card', delay: 0 },
+    { part: 'head', delay: 0 },
   ],
   closer: [
     { part: 'card', delay: 0 },
@@ -165,7 +235,11 @@ function capitalise(text: string): string {
 export function figureAsOf(subject: MotionSubject, figureKey: string): string | null {
   const value = subject.figures[figureKey]
   if (!value) return null
-  const trace = subject.citations.find((c) => c.figure === value)
+  // The figure's own trace first: two figures can print the same string (a
+  // list price and a sale price both "$725,000"), and the date is the trace's.
+  const trace =
+    subject.citations.find((c) => c.figure_key === figureKey) ??
+    subject.citations.find((c) => c.figure === value && c.figure_key == null)
   const stamp = trace?.refreshed_at ?? trace?.computed_at
   if (typeof stamp !== 'string' || !stamp) return null
   const day = formatDate(stamp)
@@ -235,7 +309,7 @@ function marketLeads(subject: MotionSubject): LeadDraft[] {
     return [
       {
         kind: 'meter',
-        eyebrow: subject.label,
+        eyebrow: figureScope(subject, 'months of supply') ? `${subject.label} · single-family homes` : subject.label,
         value: mosText,
         mos,
         // The displayed value never crosses a threshold the raw value does
@@ -269,6 +343,172 @@ function marketLeads(subject: MotionSubject): LeadDraft[] {
   return [{ kind: 'title', eyebrow: '', line: subject.label, value: null, detail: null, figureKeys: [] }]
 }
 
+/** When the trend line starts to draw: the opening frame reads first. */
+export const CHART_DRAW_START = 0.4
+/** How long the line holds once it has landed, for reading both labels. */
+export const CHART_HOLD_SECONDS = 3.2
+/** The meter card on a paper film: marker travel plus a full read. */
+export const PAPER_METER_SECONDS = 4.4
+/**
+ * The map film's timings. The camera starts moving at once; the outline
+ * starts drawing while the camera is still settling (at 60% of the move), so
+ * the beats overlap instead of queueing, and the figures are up by 3s.
+ */
+export const MAP_ZOOM_START = 0.3
+export const MAP_ZOOM_SECONDS = 1.6
+export const MAP_DRAW_OVERLAP = 0.6
+export const MAP_DRAW_SECONDS = 1.4
+/** The place's figure card under the map. */
+export const MAP_FIGURE_SECONDS = 4.0
+
+/**
+ * What a figure measures, in words, when its trace says it is the detached
+ * segment: Market Truth's single-family homes. A number printed as "Bend" or
+ * "homes" while it measures single-family only is a different number from
+ * the whole market (3.5 against 3.69 months for Bend on 2026-10-07).
+ */
+export function figureScope(subject: MotionSubject, figureKey: string): 'Single-family' | null {
+  const value = subject.figures[figureKey]
+  if (!value) return null
+  const trace =
+    subject.citations.find((c) => c.figure_key === figureKey) ??
+    subject.citations.find((c) => c.figure === value && c.figure_key == null)
+  return typeof trace?.filter === 'string' && trace.filter.includes("segment='detached'") ? 'Single-family' : null
+}
+
+/** The closing card after the last lead, or null, with the planner's note. */
+function closerFor(spec: MotionSpec, subject: MotionSubject, notes: string[]): Extract<MotionCue, { kind: 'closer' }> | null {
+  if (spec.closer === 'brand') return { kind: 'closer', id: 'closer', start: 0, end: 0, cta: CLOSER_CTA, agent: null }
+  if (spec.closer === 'none') return null
+  if (subject.agent) return { kind: 'closer', id: 'closer', start: 0, end: 0, cta: CLOSER_CTA, agent: subject.agent }
+  notes.push('No closing card: the listing agent is not a Ryan Realty broker.')
+  return null
+}
+
+/** Put the closer after the last lead and close the film on it. */
+function sealPaperFilm(leads: MotionCue[], closer: MotionCue | null, notes: string[]): MotionPlan {
+  const lastEnd = leads.length ? Math.max(...leads.map((c) => c.end)) : 0
+  if (!closer) return { cues: leads, duration: round3(lastEnd + CUE_GAP_SECONDS), surface: 'paper', notes }
+  const start = round3(lastEnd + CUE_GAP_SECONDS)
+  const end = round3(start + CLOSER_SECONDS)
+  return { cues: [...leads, { ...closer, start, end }], duration: end, surface: 'paper', notes }
+}
+
+function round3(n: number): number {
+  return Math.round(n * 1000) / 1000
+}
+
+/**
+ * The trend film: the line, then the meter, then the closer. Its length is
+ * what the content needs, not a format constant: a market whose months of
+ * supply the cache withheld simply has no meter card.
+ */
+function planTrend(spec: MotionSpec, subject: MotionSubject): MotionPlan {
+  const notes: string[] = []
+  const series = subject.series
+  const geometry = series ? chartGeometry(series) : null
+  const firstText = series ? subject.figures[series.firstKey] : undefined
+  const lastText = series ? subject.figures[series.lastKey] : undefined
+  if (!series || !geometry || !firstText || !lastText) {
+    notes.push('No trend film: fewer than two months of verified prices, or their labels have no trace.')
+    return { cues: [], duration: 0, surface: 'paper', notes }
+  }
+  const drawStart = CHART_DRAW_START
+  const chartEnd = round3(drawStart + CHART_DRAW_SECONDS + CHART_HOLD_SECONDS)
+  const chart: MotionCue = {
+    kind: 'chart',
+    id: 'lead1',
+    start: 0,
+    end: chartEnd,
+    eyebrow: subject.label,
+    line: series.title,
+    scope: series.scope,
+    d: geometry.d,
+    points: geometry.points,
+    x0: geometry.x0,
+    x1: geometry.x1,
+    first: { x: geometry.first.x, y: geometry.first.y, text: firstText, tick: geometry.first.tick },
+    last: { x: geometry.last.x, y: geometry.last.y, text: lastText, tick: geometry.last.tick },
+    gridlines: geometry.gridlines,
+    drawStart,
+    asOf: figureAsOf(subject, series.lastKey),
+    figureKeys: [series.firstKey, series.lastKey],
+  }
+  const leads: MotionCue[] = [chart]
+  const meter = marketLeads(subject).find((draft) => draft.kind === 'meter')
+  if (meter) {
+    const start = round3(chartEnd + CUE_GAP_SECONDS)
+    leads.push({ ...meter, id: 'lead2', start, end: round3(start + PAPER_METER_SECONDS) } as MotionCue)
+  } else {
+    notes.push('No meter card: the cache withheld months of supply for this place.')
+  }
+  return sealPaperFilm(leads, closerFor(spec, subject, notes), notes)
+}
+
+/**
+ * The map film: the city, the camera in to the place, the place's outline
+ * drawing on and filling, then its live figures under it, then the closer.
+ */
+function planMap(spec: MotionSpec, subject: MotionSubject): MotionPlan {
+  const notes: string[] = []
+  const geometry = subject.outline ? mapGeometry(subject.outline) : null
+  if (!geometry) {
+    notes.push('No map film: the place has no outline in the boundaries table.')
+    return { cues: [], duration: 0, surface: 'paper', notes }
+  }
+  // With no city to open on, there is no move: the outline draws at once.
+  const moves = geometry.open.s !== geometry.arrive.s
+  const zoomSeconds = moves ? MAP_ZOOM_SECONDS : 0
+  const drawStart = round3(MAP_ZOOM_START + zoomSeconds * MAP_DRAW_OVERLAP)
+  const drawEnd = round3(drawStart + MAP_DRAW_SECONDS)
+
+  // The place's count with its median list price beside it: the two figures
+  // a buyer asks first, both from the same live cache row. Months of supply
+  // is not offered here: at a neighborhood's grain the cache withholds it
+  // (lib/market/geo-grain-trust.ts).
+  const figureStart = round3(drawEnd + 0.3)
+  const figureEnd = round3(figureStart + MAP_FIGURE_SECONDS)
+  const count = subject.figures['active listings']
+  const price = subject.figures['median list price']
+  const leads: MotionCue[] = []
+  let mapEnd = round3(drawEnd + CHART_HOLD_SECONDS)
+  if (count || price) {
+    leads.push({
+      kind: 'figure',
+      id: 'lead2',
+      start: figureStart,
+      end: figureEnd,
+      eyebrow: count
+        ? figureScope(subject, 'active listings')
+          ? 'Single-family homes for sale now'
+          : 'Homes for sale now'
+        : 'Median list price',
+      value: (count ?? price) as string,
+      detail: count && price ? `Median list price ${price}` : null,
+      asOf: figureAsOf(subject, count ? 'active listings' : 'median list price'),
+      figureKeys: [...(count ? ['active listings'] : []), ...(price ? ['median list price'] : [])],
+    })
+    mapEnd = figureEnd
+  } else {
+    notes.push('No figure card: the cache holds no live count or price for this place.')
+  }
+  leads.unshift({
+    kind: 'map',
+    id: 'lead1',
+    start: 0,
+    end: mapEnd,
+    eyebrow: subject.heading?.eyebrow ?? '',
+    line: subject.heading?.line ?? subject.label,
+    geometry,
+    zoomStart: MAP_ZOOM_START,
+    zoomSeconds,
+    drawStart,
+    drawSeconds: MAP_DRAW_SECONDS,
+    figureKeys: [],
+  })
+  return sealPaperFilm(leads, closerFor(spec, subject, notes), notes)
+}
+
 /**
  * Place the cards in time.
  *
@@ -276,6 +516,9 @@ function marketLeads(subject: MotionSubject): LeadDraft[] {
  * clip). Each lead card sits on its own beat and leaves before the next cut,
  * so a card never straddles a change of picture; the beats after the lead
  * cards run clean, because the pause is part of the film.
+ *
+ * A paper film (trend, map) has no footage to fit, so `duration` is ignored
+ * and the plan's own length is what its cards need.
  */
 export function planMotion(input: {
   spec: MotionSpec
@@ -283,20 +526,13 @@ export function planMotion(input: {
   duration: number
   beats?: number[]
 }): MotionPlan {
+  if (input.spec.lead === 'trend') return planTrend(input.spec, input.subject)
+  if (input.spec.lead === 'map') return planMap(input.spec, input.subject)
   const { spec, subject, duration } = input
   const notes: string[] = []
   const beats = (input.beats?.length ? input.beats : [0]).filter((b) => b >= 0 && b < duration)
 
-  let closer: MotionCue | null = null
-  if (spec.closer === 'brand') {
-    closer = { kind: 'closer', id: 'closer', start: 0, end: duration, cta: CLOSER_CTA, agent: null }
-  } else if (spec.closer === 'none') {
-    closer = null
-  } else if (subject.agent) {
-    closer = { kind: 'closer', id: 'closer', start: 0, end: duration, cta: CLOSER_CTA, agent: subject.agent }
-  } else {
-    notes.push('No closing card: the listing agent is not a Ryan Realty broker.')
-  }
+  let closer: MotionCue | null = closerFor(spec, subject, notes)
   const closerStart = duration - CLOSER_SECONDS
   if (closer && closerStart < LEAD_START_SECONDS + MIN_CARD_SECONDS + CUE_GAP_SECONDS) {
     notes.push(`No closing card: a ${duration.toFixed(1)}s clip has no room for one after the lead.`)
@@ -327,7 +563,7 @@ export function planMotion(input: {
   }) as MotionCue)
 
   if (closer) closer = { ...closer, start: closerStart, end: duration }
-  return { cues: closer ? [...leads, closer] : leads, duration, notes }
+  return { cues: closer ? [...leads, closer] : leads, duration, surface: 'footage', notes }
 }
 
 /** Every string a cue puts on screen. */
@@ -339,6 +575,20 @@ export function cueTexts(cue: MotionCue): string[] {
       return [cue.eyebrow, cue.value, cue.detail ?? '', cue.asOf ?? '']
     case 'meter':
       return [cue.eyebrow, cue.value, 'months of supply', cue.verdict, cue.asOf ?? '']
+    case 'chart':
+      return [
+        cue.eyebrow,
+        cue.line,
+        cue.first.text,
+        cue.last.text,
+        cue.first.tick,
+        cue.last.tick,
+        ...cue.gridlines.map((g) => g.label),
+        cue.scope,
+        cue.asOf ?? '',
+      ]
+    case 'map':
+      return [cue.eyebrow, cue.line]
     case 'closer':
       return [cue.agent ? 'Listed by' : '', cue.agent?.name ?? '', cue.cta]
   }
@@ -349,22 +599,50 @@ export function cueTexts(cue: MotionCue): string[] {
  *
  * Authored text is allowed through on purpose and only that: the subject's
  * own label (a street number is not a market claim), the as-of dates read
- * from the traces, and the meter's threshold constants. Anything else that
- * looks like a number is a leak, and a leak kills the draft.
+ * from the traces, the meter's threshold constants, and a chart's scale
+ * labels (round values, a ruler). A chart's month labels pass because they
+ * are part of its figures' keys ("median sale price, Sep 2026"), the way
+ * every figure label is. Anything else that looks
+ * like a number is a leak, and a leak kills the draft.
  */
 export function figureLeaks(plan: MotionPlan, subject: MotionSubject, rendered?: string[]): string[] {
   const authored: string[] = [subject.label, subject.heading?.line ?? '', subject.heading?.eyebrow ?? '', CLOSER_CTA]
   for (const cue of plan.cues) {
     if (cue.kind === 'meter') authored.push(String(cue.thresholds[0]), String(cue.thresholds[1]))
-    if ((cue.kind === 'figure' || cue.kind === 'meter') && cue.asOf) authored.push(cue.asOf)
+    if ((cue.kind === 'figure' || cue.kind === 'meter' || cue.kind === 'chart') && cue.asOf) authored.push(cue.asOf)
+    // A chart's scale labels are a ruler at round values, not a claim.
+    if (cue.kind === 'chart') authored.push(...cue.gridlines.map((g) => g.label))
     if (cue.kind === 'closer' && cue.agent) authored.push(cue.agent.name)
   }
   const text = (rendered ?? plan.cues.flatMap(cueTexts)).join('\n')
   return unauthorisedFigures(text, subject.figures, { subject: authored.join(' ') })
 }
 
-/** One element's state at frame t. Rounded so identical frames compare equal. */
-export type ElementState = { id: string; opacity: number; y: number; marker?: number }
+/**
+ * One element's state at frame t. Rounded so identical frames compare equal.
+ * The optional fields drive the paper films' pictures: the chart's reveal,
+ * its riding dot and its two labels; the map's camera, outline and fill.
+ */
+export type ElementState = {
+  id: string
+  opacity: number
+  y: number
+  marker?: number
+  /** Chart: the reveal's right edge, film pixels. */
+  reveal?: number
+  /** Chart: the riding dot [x, y, opacity]. */
+  dot?: [number, number, number]
+  /** Chart: opacity of the first and the latest month's labels. */
+  labels?: [number, number]
+  /** Map: camera [scale, tx, ty]. */
+  camera?: [number, number, number]
+  /** Map: how much of the outline has drawn (0..1), its fill, the locator dot, the city's opacity. */
+  draw?: number
+  fill?: number
+  locator?: number
+  context?: number
+}
+
 
 /**
  * Where everything is at frame t. The renderer hands this to the page and
@@ -376,11 +654,42 @@ export function frameState(plan: MotionPlan, t: number, scale = 1): ElementState
   for (const cue of plan.cues) {
     const exit = cue.kind === 'closer' ? 0 : EXIT_SECONDS
     for (const { part, delay } of CUE_PARTS[cue.kind]) {
-      const p = presence(t, { start: cue.start + delay, end: cue.end }, ENTER_SECONDS, exit)
+      // A paper film's picture (the chart's axis, the map) is up on frame 0:
+      // no entrance, so the opening frame is a picture and not blank paper.
+      const instant = cue.kind === 'chart' || cue.kind === 'map'
+      const p = presence(t, { start: cue.start + delay, end: cue.end }, instant ? 0 : ENTER_SECONDS, exit)
       const state: ElementState = {
         id: `${cue.id}-${part}`,
         opacity: Math.round(p * 1000) / 1000,
-        y: Math.round((1 - p) * TRAVEL_PX * scale * 100) / 100,
+        y: instant ? 0 : Math.round((1 - p) * TRAVEL_PX * scale * 100) / 100,
+      }
+      if (cue.kind === 'chart' && part === 'axis') {
+        const drawn = drawProgress(t, cue.drawStart)
+        const x = cue.x0 + (cue.x1 - cue.x0) * drawn
+        const dot = t >= cue.drawStart ? dotAt(cue.points, x) : null
+        const dotIn = progress(t, cue.drawStart, 0.2)
+        // Nothing of the line before it starts; then the reveal ends at the dot.
+        state.reveal = t < cue.drawStart ? 0 : Math.round(x * 100) / 100
+        state.dot = dot ? [dot.x, dot.y, round3(dotIn)] : [cue.x0, cue.first.y, 0]
+        const landed = cue.drawStart + CHART_DRAW_SECONDS
+        // The first month is up from frame 0 with its ring; the latest lands
+        // on the frame the dot reaches it ("a reaction starts on the frame of
+        // its cause").
+        state.labels = [1, round3(presence(t, { start: landed, end: cue.end }, ENTER_SECONDS, 0))]
+      }
+      if (cue.kind === 'map' && part === 'card') {
+        const camera = cameraAt(cue.geometry, t, cue.zoomStart, cue.zoomSeconds)
+        state.camera = [camera.s, camera.tx, camera.ty]
+        state.draw = round3(drawProgress(t, cue.drawStart, cue.drawSeconds))
+        state.fill = round3(presence(t, { start: cue.drawStart + cue.drawSeconds - 0.2, end: cue.end }, ENTER_SECONDS, 0))
+        // The locator is up from frame 0 to show where the camera is going,
+        // then fades over 9 frames as the outline takes over.
+        state.locator = round3(presence(t, { start: 0, end: cue.drawStart + 0.3 }, 0, 0.3))
+        // The city gives way while the camera leaves it, so no city line is
+        // ever seen cut by the map's edge.
+        state.context = round3(
+          cue.zoomSeconds > 0 ? 1 - drawProgress(t, cue.zoomStart, cue.zoomSeconds * MAP_DRAW_OVERLAP) : 1,
+        )
       }
       if (cue.kind === 'meter' && part === 'card') {
         // The marker draws on from the left edge to its value once the card is
@@ -395,13 +704,21 @@ export function frameState(plan: MotionPlan, t: number, scale = 1): ElementState
 }
 
 /**
- * Where each card's QA still is pulled: 1.3s in, when every staggered part has
+ * Where each card's QA still is pulled: 1.3s in (a chart or map once its
+ * picture has finished), when every staggered part has
  * landed and the meter marker has stopped, or just before it leaves if the
  * card is shorter than that.
  */
 export function stillTimes(plan: MotionPlan): Array<{ cueId: string; t: number }> {
-  return plan.cues.map((cue) => ({
-    cueId: cue.id,
-    t: Math.round(Math.min(cue.start + 1.3, cue.end - 0.35) * 1000) / 1000,
-  }))
+  return plan.cues.map((cue) => {
+    // A chart or map still is taken once its picture has finished: the line
+    // landed with both labels in, the outline drawn and filled.
+    const settled =
+      cue.kind === 'chart'
+        ? cue.drawStart + CHART_DRAW_SECONDS + ENTER_SECONDS + 0.2
+        : cue.kind === 'map'
+          ? cue.drawStart + cue.drawSeconds + ENTER_SECONDS
+          : cue.start + 1.3
+    return { cueId: cue.id, t: Math.round(Math.min(settled, cue.end - 0.35) * 1000) / 1000 }
+  })
 }

@@ -32,7 +32,9 @@ Two API facts that cost us if forgotten:
 - **`generate_audio` defaults to `true`.** Native generated audio is the
   loudest tell that a clip is AI, and a hallucinated voice on a brokerage feed
   is a compliance problem, not a taste problem. `lib/grok/video.ts` defaults it
-  to `false` and only turns it on for a bed someone has listened to.
+  to `false`. The Studio's sound is its own score (`lib/studio/score`, Matt
+  2026-10-07): composed in code from the plan's cue times, mastered to -14
+  LUFS, muxed by the motion stage. A Grok clip never brings audio of its own.
 
 Reference-to-video also accepts up to 3 preset voices (`reference_audios`,
 `voice_id`) and up to 3 subject reference images tagged `<IMAGE_1>`..`<IMAGE_3>`.
@@ -78,6 +80,9 @@ letterforms hold for two frames and collapse into glyph soup, and a mark that
 almost matches ours is worse than no mark. Type is composited afterward, by
 the Studio's motion stage (`lib/studio/motion`, Matt 2026-10-07): every figure
 on screen is a verified figure, drawn in Geist over the finished footage.
+Charts, maps and data never come from a generator either: those films are
+drawn whole by the same stage from verified data, with no Grok call at all
+(`market_trend`, `place_map`; `.claude/skills/motion-design`).
 
 ## 4. The sequence
 

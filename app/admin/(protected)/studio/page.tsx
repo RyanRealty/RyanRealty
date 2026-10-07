@@ -18,6 +18,10 @@ import { StudioProducer } from './StudioProducer'
 import { DraftCard, type DraftCardModel } from './DraftCard'
 
 export const dynamic = 'force-dynamic'
+// The produce action runs in this page's function: a Grok film plus the
+// motion stage's render and score, or a paper film drawn whole. Same ceiling
+// as the slate cron, which runs the same pipeline.
+export const maxDuration = 800
 
 export default async function StudioPage() {
   await requireAdminPage('content.view')

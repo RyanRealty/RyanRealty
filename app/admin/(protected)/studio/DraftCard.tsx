@@ -181,6 +181,13 @@ function TypeLayerLine({ layer }: { layer: StudioTypeLayer }) {
           ))}
         </div>
       ) : null}
+      {layer.score ? (
+        <p style={{ ...small, margin: '6px 0 0' }}>
+          {'silent' in layer.score
+            ? `Silent: ${layer.score.silent}`
+            : `Score in ${layer.score.key}, ${layer.score.lufs.toFixed(1)} LUFS, peak ${layer.score.truePeakDb.toFixed(1)} dBTP`}
+        </p>
+      ) : null}
       {layer.notes.map((note) => (
         <p key={note} style={{ ...small, margin: '6px 0 0' }}>
           {note}

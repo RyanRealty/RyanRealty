@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-10-07T06:33:36.526Z
+**Generated:** 2026-10-07T16:13:44.200Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -3690,7 +3690,7 @@ Companion files:
 
 ### `lib/data/market-truth/public-monthly.ts`
 
-**Exports:** `PUBLIC_MONTHLY_WINDOW_MONTHS`, `PUBLIC_MONTHLY_MONTHS`, `completeMonthKeys`, `leftoverMonthlyToCacheShape`, `dropCurrentMonth`, `leftoverOrCacheMonthly`, `leftoverNeighborhoodOrCityMonthly`, `getPublicDetachedMonthly`
+**Exports:** `PUBLIC_MONTHLY_WINDOW_MONTHS`, `PUBLIC_MONTHLY_MONTHS`, `lastDayOfMonth`, `completeMonthKeys`, `publishedNumber`, `leftoverMonthlyToCacheShape`, `dropCurrentMonth`, `leftoverOrCacheMonthly`, `leftoverNeighborhoodOrCityMonthly`, `getPublicDetachedMonthly`
 
 ---
 
@@ -4674,9 +4674,15 @@ Companion files:
 
 ---
 
+### `lib/data/studio/series.ts`
+
+**Exports:** `STUDIO_TREND_MONTHS`, `getStudioPriceSeries`
+
+---
+
 ### `lib/data/studio/subjects.ts`
 
-**Exports:** `figuresFromPulse`, `resolveStudioSubject`, `studioPlaceOptions`
+**Exports:** `figuresFromPulse`, `studioListingAgent`, `studioTrend`, `studioOutline`, `resolveStudioSubject`, `studioPlaceOptions`
 
 ---
 

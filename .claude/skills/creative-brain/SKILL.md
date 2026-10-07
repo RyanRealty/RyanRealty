@@ -37,6 +37,7 @@ Ryan Realty is a brokerage / **art house**. The product of this skill is work th
 | [references/character-attachment.md](references/character-attachment.md) | Whenever Jax or any character appears. Parasocial bonds, uncanny consistency, baby schema |
 | [references/transmission.md](references/transmission.md) | Distribution planning. The Watts law, loops, identity signaling, local cues |
 | [LESSONS.md](LESSONS.md) | ALWAYS — read before generating, append after learning |
+| [../motion-design/SKILL.md](../motion-design/SKILL.md) | Any code-drawn motion, scene, chart or map animation, or score in the Studio. The prompt-motion.com research and the four motion skills, adapted |
 
 ## The five laws (violate none)
 

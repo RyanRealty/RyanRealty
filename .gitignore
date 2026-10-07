@@ -98,6 +98,9 @@ next-env.d.ts
 # ...and dataviz — TASTE.md names this method. An untracked skill is how CMA
 # charts get invented from memory (2026-09-05).
 !.claude/skills/dataviz/
+# ...and motion-design — how the Studio draws and scores films (2026-10-07,
+# prompt-motion.com research). CLAUDE.md §9 routes every video build to it.
+!.claude/skills/motion-design/
 .claude/worktrees
 .worktrees
 /worktrees/

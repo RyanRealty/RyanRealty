@@ -49,6 +49,17 @@ export type StudioTypeLayer = {
   stills: Array<{ cueId: string; url: string }>
   /** The footage without type. */
   plateUrl: string | null
+  /** The score as measured, or why the film is silent. Null on older drafts. */
+  score: { key: string; lufs: number; truePeakDb: number } | { silent: string } | null
+}
+
+function shapeScore(value: unknown): StudioTypeLayer['score'] {
+  const score = asRecord(value)
+  const silent = asString(score.silent)
+  if (silent) return { silent }
+  const key = asString(score.key)
+  if (!key || typeof score.lufs !== 'number' || typeof score.truePeakDb !== 'number') return null
+  return { key, lufs: score.lufs, truePeakDb: score.truePeakDb }
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -72,6 +83,7 @@ function shapeTypeLayer(value: unknown): StudioTypeLayer | null {
       return url ? [{ cueId: String(still.cueId ?? ''), url }] : []
     }),
     plateUrl: asString(motion.plateUrl),
+    score: shapeScore(motion.score),
   }
 }
 

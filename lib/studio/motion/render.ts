@@ -3,7 +3,9 @@
  *
  * One pass. Chromium draws the type layer one frame at a time on a
  * transparent page; each PNG goes straight down ffmpeg's stdin, where it is
- * laid over the footage and encoded. No frame files, no intermediate overlay.
+ * laid over the footage and encoded, with the score muxed in the same pass.
+ * A paper film has no footage: its page is opaque cream and the frames are
+ * the picture. No frame files, no intermediate overlay.
  *
  * How it stays exact (measured 2026-10-07 against Chromium 141 + ffmpeg 6.1;
  * the same approach as HyperFrames' seek model and Remotion's setFrame):
@@ -88,6 +90,15 @@ export function overlayGraph(width: number, height: number, fps: number): string
   ].join(';')
 }
 
+/**
+ * A paper film's graph: there is no footage, so the page is the picture. The
+ * same explicit bt709 limited-range conversion as the overlay, so brand navy
+ * lands on the same code values whether it was drawn over a clip or on paper.
+ */
+export function paperGraph(): string {
+  return '[0:v]setsar=1,format=rgba,scale=in_range=pc:out_color_matrix=bt709:out_range=tv,format=yuv420p[v]'
+}
+
 /** Delivery encode: the concat ladder (lib/video/concat.ts) plus bt709 tags. */
 export const MOTION_ENCODE_ARGS = [
   '-c:v', 'libx264',
@@ -100,10 +111,16 @@ export const MOTION_ENCODE_ARGS = [
   '-color_primaries', 'bt709',
   '-color_trc', 'bt709',
   '-color_range', 'tv',
-  // Generated footage carries no audio and we never invent one.
-  '-an',
   '-movflags', '+faststart',
 ]
+
+/**
+ * The score's encode. AAC at 48 kHz stereo; the score is mastered with
+ * headroom under -1 dBTP for exactly this step (lib/studio/score). Generated
+ * footage never carries its own audio (generate_audio is off), so the score
+ * is the only sound in the file; with no score the film is silent (-an).
+ */
+export const SCORE_ENCODE_ARGS = ['-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-ac', '2']
 
 export type RenderMotionInput = {
   plan: MotionPlan
@@ -111,8 +128,10 @@ export type RenderMotionInput = {
   width: number
   height: number
   fps: number
-  /** The footage, already on disk. */
-  basePath: string
+  /** The footage, already on disk. Null for a paper film: the page is the picture. */
+  basePath: string | null
+  /** The score as a WAV on disk, the film's exact length. Null for a silent film. */
+  audioPath?: string | null
   ffmpeg: string
   /** Frames at which to read back the rendered text and pull a still. */
   stills: Array<{ cueId: string; t: number }>
@@ -168,15 +187,23 @@ export async function renderMotion(input: RenderMotionInput): Promise<RenderMoti
     const cdp = await page.createCDPSession()
     await cdp.send('Emulation.setDefaultBackgroundColorOverride', { color: { r: 0, g: 0, b: 0, a: 0 } })
 
+    // Inputs: the page's frames on stdin, then the footage (unless this is a
+    // paper film), then the score (unless the film is silent).
+    const inputs = ['-f', 'image2pipe', '-framerate', String(fps), '-c:v', 'png', '-i', '-']
+    if (input.basePath) inputs.push('-i', input.basePath)
+    const audioIndex = input.audioPath ? (input.basePath ? 2 : 1) : null
+    if (input.audioPath) inputs.push('-i', input.audioPath)
     const ff = spawn(
       input.ffmpeg,
       [
         '-y', '-hide_banner', '-loglevel', 'error',
-        '-f', 'image2pipe', '-framerate', String(fps), '-c:v', 'png', '-i', '-',
-        '-i', input.basePath,
-        '-filter_complex', overlayGraph(width, height, fps),
+        ...inputs,
+        '-filter_complex', input.basePath ? overlayGraph(width, height, fps) : paperGraph(),
         '-map', '[v]',
+        ...(audioIndex != null ? ['-map', `${audioIndex}:a`, ...SCORE_ENCODE_ARGS] : ['-an']),
         ...MOTION_ENCODE_ARGS,
+        // The picture sets the length; a score is written to the frame count.
+        '-t', (frames / fps).toFixed(3),
         outPath,
       ],
       { stdio: ['pipe', 'ignore', 'pipe'] },
