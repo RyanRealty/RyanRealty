@@ -30,6 +30,8 @@ import {
   renderConsentShell,
   renderConsentBarHtml,
   renderWrongPersonShell,
+  gateBrokerFromRow,
+  type CmaGateBroker,
 } from '@/lib/cma/register-gate'
 import { SMS_CONSENT_TEXT } from '@/lib/crm/sms-consent-text'
 import type { CmaRenderSource } from '@/lib/data/cma/documents'
@@ -191,6 +193,36 @@ function storedHtmlResult(html: string, origin: string, extra = '', street?: str
   return { kind: 'html', status: 200, html: out, headers: CMA_DOC_HEADERS }
 }
 
+/**
+ * The broker a CMA is from, for the door (face, Call, Text) and for the door's
+ * link email (which mailbox sends). Capped like every optional read on this
+ * path: a slow read renders the door without them, and returns no row, so a
+ * caller that would SEND on the row sends nothing rather than guess a mailbox.
+ */
+export async function cmaDoorBroker(
+  brokerSlug: string | null | undefined,
+  timeoutMs = CMA_READ_MS,
+): Promise<{ row: Record<string, unknown> | null; broker: CmaGateBroker | null }> {
+  const row = await withTimeoutFallback(
+    getCmaBrokerBySlugOrEmail({ slug: brokerSlug ?? 'matthew-ryan' }),
+    null,
+    timeoutMs,
+    'cma.doorBroker',
+  )
+  return { row, broker: gateBrokerFromRow(row) }
+}
+
+/**
+ * True when the document has an email on file the door's link form could match.
+ * The door offers the form only on a DELIVERED report (the route refuses the rest).
+ */
+export function cmaHasEmailOnFile(
+  identity: { clientEmail: string | null; personEmails: string[]; claimedBy: string | null } | null | undefined,
+): boolean {
+  if (!identity) return false
+  return Boolean(identity.clientEmail || identity.claimedBy || identity.personEmails.length > 0)
+}
+
 export type CmaServeOpts = {
   slug: string
   requestUrl: string
@@ -305,6 +337,8 @@ async function serveCmaDocumentResult(opts: CmaServeOpts): Promise<CmaServeResul
           slug: safeSlug,
           address: identity?.subjectAddress ?? null,
           clientName: identity?.clientName ?? null,
+          broker: (await cmaDoorBroker(head.broker_slug)).broker,
+          emailLink: head.status === 'delivered' && cmaHasEmailOnFile(identity),
         }),
       }
     }
@@ -325,7 +359,12 @@ async function serveCmaDocumentResult(opts: CmaServeOpts): Promise<CmaServeResul
       return {
         kind: 'html',
         status: 403,
-        html: renderWrongPersonShell({ viewerEmail: opts.viewerEmail ?? '' }),
+        html: renderWrongPersonShell({
+          viewerEmail: opts.viewerEmail ?? '',
+          slug: safeSlug,
+          broker: (await cmaDoorBroker(head.broker_slug)).broker,
+          emailLink: head.status === 'delivered' && cmaHasEmailOnFile(identity),
+        }),
       }
     }
   }

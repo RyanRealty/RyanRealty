@@ -10,6 +10,7 @@
  */
 import 'server-only'
 import { createHmac, timingSafeEqual } from 'node:crypto'
+import { emailLinkOrigin } from '@/lib/email/link-origin'
 
 const SECRET =
   process.env.EMAIL_TRACKING_SECRET ||
@@ -17,7 +18,8 @@ const SECRET =
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
   'insecure-dev-secret'
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+// Email links resolve on the canonical origin, never the Vercel alias (lib/email/link-origin.ts).
+const SITE_URL = emailLinkOrigin()
 
 export interface UnsubscribePayload {
   personId: number

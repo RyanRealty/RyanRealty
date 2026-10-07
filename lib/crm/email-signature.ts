@@ -8,7 +8,9 @@
  *   1. Gmail-synced signature (brokers.gmail_signature_html, pulled verbatim
  *      from the broker's Gmail sendAs settings by
  *      lib/crm/gmail-signature-sync.ts). Used as stored, except the logo alt
- *      em dash, which buildGmailSignature rewrites to a comma.
+ *      em dash, which buildGmailSignature rewrites to a comma, and the
+ *      Vercel alias host on the headshot and logo, which it points at
+ *      ryan-realty.com (lib/email/link-origin.ts, Matt 2026-10-07).
  *   2. Broker-authored custom signature (brokers.email_signature, §9 My
  *      Settings) — plain text, replaces the generated identity block.
  *   3. Generated identity block (name/title/license/contact from the row).
@@ -27,6 +29,7 @@
 import { getBrokers } from '@/lib/data/brokers/getBrokers'
 import type { Broker } from '@/lib/data/types/broker'
 import { htmlToPlainText } from '@/lib/crm/email-body'
+import { canonicalizeEmailHosts } from '@/lib/email/link-origin'
 
 export const AGENCY_PAMPHLET_URL =
   'https://ryan-realty.com/docs/oregon-initial-agency-disclosure-pamphlet.pdf'
@@ -90,11 +93,12 @@ function rewriteSignatureLogoAlt(html: string): string {
 
 /**
  * Gmail-synced variant: the broker's real Gmail sendAs signature HTML, with
- * only the logo alt normalized above. The Oregon pamphlet compliance line is
- * still appended.
+ * only the logo alt normalized above and the production alias host moved to
+ * ryan-realty.com (the installed signatures load the headshot and logo from
+ * the alias). The Oregon pamphlet compliance line is still appended.
  */
 function buildGmailSignature(gmailHtml: string): BrokerSignature {
-  const body = rewriteSignatureLogoAlt(gmailHtml)
+  const body = canonicalizeEmailHosts(rewriteSignatureLogoAlt(gmailHtml))
   const html = `<div style="margin-top:28px">${body}${pamphletHtml()}</div>`
   const plain = [
     '',

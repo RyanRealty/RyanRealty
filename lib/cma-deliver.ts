@@ -30,8 +30,10 @@ import { sendEmail } from '@/lib/resend'
 import { isSuppressed, isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { createServiceClient } from '@/lib/supabase/service'
 import { personIdsByEmailCi } from '@/lib/data/crm/personByEmailCi'
+import { emailLinkOrigin } from '@/lib/email/link-origin'
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+// Email links resolve on the canonical origin, never the Vercel alias (lib/email/link-origin.ts).
+const SITE_URL = emailLinkOrigin()
 const MATT_ALERT_EMAIL = process.env.MATT_ALERT_EMAIL ?? 'matt@ryan-realty.com'
 const ALERT_FROM = process.env.RESEND_FROM ?? 'alerts@mail.ryan-realty.com'
 const MAX_PDF_BYTES = 25 * 1024 * 1024 // Gmail attachment cap

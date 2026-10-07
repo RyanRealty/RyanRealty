@@ -7,7 +7,7 @@ Same v6 design as Matt's, with Paul's identity. Locked design 2026-05-14.
 | File | Purpose |
 |---|---|
 | `signature.html` | Paste-ready HTML block. Drop into FUB signature editor's source-mode, or use Gmail's compose-trick install. |
-| `../../public/images/brokers/stevenson-paul.png` | Inline headshot (transparent PNG, 800×1200). Served from `https://ryanrealty.vercel.app/images/brokers/stevenson-paul.png`. |
+| `../../public/images/brokers/stevenson-paul.png` | Inline headshot (transparent PNG, 800×1200). Served from `https://ryan-realty.com/images/brokers/stevenson-paul.png`. |
 | `../../public/images/brand/logo-blue.png` | Inline stacked logo (navy on white, 959×629). Same logo as Matt's signature. |
 | `../../public/images/brokers/stevenson-paul-profile-512.jpg` | 512×512 square profile photo (white background, 38 KB). For Google Account + FUB profile photo upload. |
 

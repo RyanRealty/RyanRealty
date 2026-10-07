@@ -40,8 +40,10 @@ import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'
 import { sendEmail } from '@/lib/resend'
 import { sendGmailMessage } from '@/lib/gmail-draft'
 import { formatPriceExact } from '@/lib/format/money'
+import { emailLinkOrigin } from '@/lib/email/link-origin'
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+// Email links resolve on the canonical origin, never the Vercel alias (lib/email/link-origin.ts).
+const SITE_URL = emailLinkOrigin()
 const MAX_PDF_BYTES = 25 * 1024 * 1024
 const usd = formatPriceExact
 

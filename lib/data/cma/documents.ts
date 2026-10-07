@@ -321,6 +321,9 @@ export async function getCmaAccessIdentity(slug: string): Promise<{
   clientEmail: string | null
   clientName: string | null
   subjectAddress: string | null
+  /** For the live listed-again screen before the door emails a link. */
+  subjectCity: string | null
+  subjectListingKey: string | null
   personEmails: string[]
   claimedBy: string | null
   consentRecorded: boolean
@@ -329,7 +332,7 @@ export async function getCmaAccessIdentity(slug: string): Promise<{
   if (!sb) return null
   const { data: row } = await sb
     .from('cmas')
-    .select('person_id, client_email, client_name, subject_address')
+    .select('person_id, client_email, client_name, subject_address, subject_city, subject_listing_key')
     .eq('slug', slug.trim().toLowerCase())
     .maybeSingle()
   if (!row) return null
@@ -354,6 +357,8 @@ export async function getCmaAccessIdentity(slug: string): Promise<{
     clientEmail: ((row.client_email as string | null) ?? '').trim().toLowerCase() || null,
     clientName: (row.client_name as string | null) ?? null,
     subjectAddress: (row.subject_address as string | null) ?? null,
+    subjectCity: (row.subject_city as string | null) ?? null,
+    subjectListingKey: (row.subject_listing_key as string | null) ?? null,
     personEmails,
     claimedBy,
     consentRecorded,

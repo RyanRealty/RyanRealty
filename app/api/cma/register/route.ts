@@ -4,6 +4,7 @@
  * the doc was built for gets access; capture SMS/email consent there).
  *
  * GET  ?slug=…&start=1  → begins Google OAuth with return to /cma/[slug].
+ *      &switch=1 opens Google's account chooser (wrong-person door).
  * POST slug, smsOptIn?, emailOptIn? → records the viewer's registration on
  * the linked person (claim for phone-only leads, consent choices, an audited
  * timeline row carrying the exact wording version) and returns to the doc.
@@ -28,7 +29,8 @@ export async function GET(request: Request) {
   const url = new URL(request.url)
   const slug = String(url.searchParams.get('slug') ?? '').trim().toLowerCase()
   if (!SLUG_RE.test(slug)) return NextResponse.json({ error: 'Invalid slug' }, { status: 400 })
-  const res = await getSignInUrl('google', `/cma/${slug}`)
+  // switch=1: the wrong-person door's "Use a different Google account".
+  const res = await getSignInUrl('google', `/cma/${slug}`, { selectAccount: url.searchParams.get('switch') === '1' })
   if ('error' in res) return NextResponse.json({ error: res.error }, { status: 500 })
   return NextResponse.redirect(res.url)
 }
