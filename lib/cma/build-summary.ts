@@ -154,9 +154,13 @@ export function composeBuildSummary(i: BuildSummaryInput): Record<string, unknow
     needs_review: i.pricing.needsReview,
     review_reason: i.pricing.reviewReason,
     // The build's own hold (rule 22, ask inside the band), top-level so the
-    // queue can read the kind without digging into pricing.
+    // queue can read the kind without digging into pricing. hold_measured
+    // says whether the build had an ask and a band to measure at all: a null
+    // hold_kind on a row that never measured is not a decision, and the send
+    // gates run the live backstop on it (holdDecidedFromSummary).
     hold_kind: i.pricing.hold?.kind ?? null,
     hold_reason: i.pricing.hold?.reason ?? null,
+    hold_measured: i.pricing.askInBandMeasured === true,
     // The adversarial audit (or a note that it was unavailable).
     audit: auditSummaryBlock(i.audit, i.firstRoundAudit, i.repairedKeys),
     // The full accuracy-contract evaluation — every check, pass or fail.
@@ -172,6 +176,7 @@ export function composeBuildSummary(i: BuildSummaryInput): Record<string, unknow
       review_reason: i.pricing.reviewReason,
       hold_kind: i.pricing.hold?.kind ?? null,
       hold_reason: i.pricing.hold?.reason ?? null,
+      hold_measured: i.pricing.askInBandMeasured === true,
       method1_mid: i.pricing.method1Mid,
       method2: i.pricing.method2,
       method3: i.pricing.method3,

@@ -39,6 +39,7 @@ import { askStoryReading } from '@/lib/cma/ask-story'
 import { askStepIsOwnEra } from '@/lib/cma/price-path'
 import { reanchorSellerNet } from '@/lib/pricing/seller-net'
 import { priceUnderFailedAsk, type FailedAskPullFacts } from '@/lib/pricing/failed-ask-under'
+import { printedBandBounds } from '@/lib/pricing/price-set'
 
 /**
  * Where the seller's own ask sat against what homes like theirs sold for, in
@@ -1139,11 +1140,16 @@ export function applyFailedAskCap(
   // The sales' own low. A minimum-width open can put the printed low under
   // this. The ask is judged against the sales, not against that open.
   const salesLow = closedSaleLow(pricing)
+  // The ask is judged against the band the reader sees (printedBandBounds),
+  // the same boundary the ask-in-band hold reads (lib/cma/gap-hold.ts). An
+  // ask on the printed low is inside, never below: against an exact pinned
+  // low it fell between this test and the hold (review, 2026-10-07).
+  const askBand = band && salesLow != null ? printedBandBounds(salesLow, band.high) : null
   // An ask already below the sales is not a reason to pin the recommendation
   // up onto a sale. If the comps are already under that ask, leave them.
   // If they sit on the ask or above it, the pull below still applies: an
   // expired does not keep a price the market refused.
-  if (band && salesLow != null && ask < salesLow) {
+  if (askBand && ask < askBand.low) {
     pricing.failedAskBelowRange = true
     const note = failedAskBelowRangeNote(ask)
     if (!pricing.notes.includes(note)) pricing.notes.push(note)
@@ -1174,7 +1180,7 @@ export function applyFailedAskCap(
   let consCeil = ceilings.conservative.value
   // Inside the band the haircut may still bind, but the recommend never
   // drops below the hero low unless a stored broker override said so.
-  const askInsideBand = band != null && salesLow != null && ask >= salesLow && ask <= band.high
+  const askInsideBand = askBand != null && ask >= askBand.low && ask <= askBand.high
   const insideFloor = salesLow ?? band?.low ?? 0
   let recCeil =
     askInsideBand && !hasStoredBelowRangeReason(pricing)

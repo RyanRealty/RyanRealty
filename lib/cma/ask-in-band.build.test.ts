@@ -71,4 +71,22 @@ describe('the ask-in-band hold on the built document (rule 22)', () => {
     expect(p.hold ?? null).toBeNull()
     expect(p.needsReview).toBe(false)
   })
+
+  it('records whether it measured an ask against a band, held or not', () => {
+    const held = applyAskInBandHold(pricingAfterPin(), { lastCycleFailed: true, lastListPrice: 925_000, auditVerdict: 'pass' })
+    expect(held.askInBandMeasured).toBe(true)
+    const above = applyAskInBandHold(pricingAfterPin({ failedAsk: 975_000 }), {
+      lastCycleFailed: true,
+      lastListPrice: 975_000,
+      auditVerdict: 'pass',
+    })
+    expect(above.askInBandMeasured).toBe(true)
+    expect(above.hold ?? null).toBeNull()
+    const notFailed = applyAskInBandHold(pricingAfterPin(), { lastCycleFailed: false, lastListPrice: 925_000, auditVerdict: 'pass' })
+    expect(notFailed.askInBandMeasured).toBe(false)
+    const noAsk = applyAskInBandHold(pricingAfterPin({ failedAsk: null }), { lastCycleFailed: true, lastListPrice: null, auditVerdict: 'pass' })
+    expect(noAsk.askInBandMeasured).toBe(false)
+    const noBand = applyAskInBandHold(pricingAfterPin({ valueLow: 0 }), { lastCycleFailed: true, lastListPrice: 925_000, auditVerdict: 'pass' })
+    expect(noBand.askInBandMeasured).toBe(false)
+  })
 })

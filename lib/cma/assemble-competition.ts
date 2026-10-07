@@ -184,6 +184,11 @@ export async function assembleCompetition(args: {
     steps.push({ halfWidth: COMPETITION_BAND_STEPS[0], band: firstBand, all, fitting: stamp(all) })
   }
   let wideInventory: CmaAreaBandInventory | null = null
+  // True when the ladder needed the ±25% read and it failed. The ±10% count
+  // stands and the letter sentence does not change, but the citation says
+  // the band was never opened, so a reviewer can tell a short ±10% set from
+  // one the ladder walked.
+  let wideReadFailed = false
   const recommended = args.recommended || subject.lastListPrice || 0
   const shortPlat =
     compArea != null && (compArea.kind === 'subdivision' || compArea.kind === 'subdivisions')
@@ -204,6 +209,7 @@ export async function assembleCompetition(args: {
           propertySubType: subject.propertySubType,
         }).catch(() => null)
       : null
+    if (widest && !wideInventory) wideReadFailed = true
     if (wideInventory) {
       const wideAll = toRivals(wideInventory)
       for (const halfWidth of COMPETITION_BAND_STEPS.slice(1)) {
@@ -225,7 +231,9 @@ export async function assembleCompetition(args: {
   // cut from the wide read by ListPrice, and its citation names that band,
   // not the wide read's.
   const rivalBand = chosen?.band ?? firstBand
-  let widestAreaInventory: CmaAreaBandInventory | null = null
+  // `sameAreaFit: true` tells buildCmaExtras these rows are the fitting set,
+  // so citations.price_band.source does not call them the whole band.
+  let widestAreaInventory: (CmaAreaBandInventory & { sameAreaFit: true }) | null = null
   let competitionRing: CompetitionRingPick<CmaBandListingRow> | null = null
   let bandRivals: CmaBandRivalSet | null = null
   if (chosen && widestCompetitionRing) {
@@ -242,6 +250,11 @@ export async function assembleCompetition(args: {
         steps.length > 1
           ? `; band steps tried ${steps.map((s) => pct(s.halfWidth)).join('/')} inside the same area, never a wider place (Matt 2026-10-07)`
           : ''
+      const wideFailedNote = wideReadFailed
+        ? `; the ±${Math.round(COMPETITION_BAND_STEPS[COMPETITION_BAND_STEPS.length - 1]! * 100)}% band read failed, so the band was never opened; the ±${Math.round(
+            COMPETITION_BAND_STEPS[0] * 100,
+          )}% count stands`
+        : ''
       const openedNote = opened
         ? `; band opened from ±10% to ${pct(chosen.halfWidth)}, read once at ${pct(
             COMPETITION_BAND_STEPS[COMPETITION_BAND_STEPS.length - 1]!,
@@ -256,7 +269,7 @@ export async function assembleCompetition(args: {
                 `ListPrice ${chosen.band.lo}..${chosen.band.hi}`,
               )
             : source.citation.filter
-        }${stepsNote}${openedNote}; sameAreaFit kept ${chosen.fitting.length} of ${chosen.all.length}`,
+        }${stepsNote}${openedNote}${wideFailedNote}; sameAreaFit kept ${chosen.fitting.length} of ${chosen.all.length}`,
         rows: opened ? activeRows.length + pendingRows.length : source.citation.rows,
         rowsAfterAreaTest: opened ? activeRows.length + pendingRows.length : source.citation.rowsAfterAreaTest,
       }
@@ -273,6 +286,7 @@ export async function assembleCompetition(args: {
           .map((r) => daysSinceOnMarket(r.OnMarketDate))
           .filter((n): n is number => n != null),
         citation,
+        sameAreaFit: true,
       }
       competitionRing = {
         area: widestCompetitionRing,

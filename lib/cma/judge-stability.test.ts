@@ -25,6 +25,9 @@ import {
 } from '@/lib/cma/judge'
 import type { CmaComp, CmaMarketContext, CmaSubject } from '@/lib/cma/types'
 import type { CompVerdict } from '@/lib/cma/judge-consistency'
+import { MIN_COMPS } from '@/lib/cma/comps'
+import { pricingCompsAfterJudgment } from '@/lib/cma/judgment-prune'
+import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
 
 function subject(overrides: Partial<CmaSubject> = {}): CmaSubject {
   return {
@@ -622,5 +625,163 @@ describe('the build failure path names JUDGE_UNSTABLE', () => {
     expect(src).toMatch(/judge_cache: record/)
     expect(src).toMatch(/recordBuildFailure\(slug, message/)
     expect(src).not.toMatch(/html_content: null/)
+  })
+})
+
+describe('the comparability review at the production floor (five price-setting sales, Matt 2026-10-07)', () => {
+  // The tests above pass minComps 3. Production passes MIN_COMPS, which is
+  // PRICING_MIN_COMPS, and the resolver's band cut stops at the same floor
+  // (RESOLVE_KEEP_FLOOR in lib/cma/judge.ts). These run the real constant on a
+  // five-candidate pool, the smallest pool that can price.
+  const sub = subject()
+  const five = Array.from({ length: PRICING_MIN_COMPS }, (_, i) =>
+    // Off the subject's street, so no sale is a same-street peer the resolver protects.
+    comp({ listingKey: `P${i}`, address: `${40 + i} Elm Ave`, sqft: 1800, closePrice: 1800 * 400 }),
+  )
+  const swingLot = { lotAcres: 0.34, publicRemarks: '4 car garage.' }
+  const LOT_REASON = '0.34 acre lot and 4-car garage versus 0.14 acre and 2-car.'
+
+  /** Three passes; `excludeSwing(n)` says whether pass n excludes the last sale on the lot. */
+  function passes(pool: CmaComp[], excludeSwing: (n: number) => boolean, payloadExtra: Record<string, unknown> = {}) {
+    let n = 0
+    const swing = pool[pool.length - 1]!.listingKey
+    const call: JudgeModelCall = async () => {
+      n += 1
+      const out = excludeSwing(n)
+      return {
+        payload: judgment(
+          pool.map((c) =>
+            verdict({
+              listingKey: c.listingKey,
+              tier: c.listingKey === swing && out ? 'exclude' : 'strong',
+              basis: c.listingKey === swing && out ? 'lot' : undefined,
+              reason: c.listingKey === swing && out ? LOT_REASON : 'Comparable sale.',
+            }),
+          ),
+          payloadExtra,
+        ),
+        raw: '{}',
+        costUsd: 0,
+      }
+    }
+    return { call, count: () => n }
+  }
+
+  it('the production floor is the five the pricer and the build read', () => {
+    expect(PRICING_MIN_COMPS).toBe(MIN_COMPS)
+    expect(five).toHaveLength(MIN_COMPS)
+  })
+
+  it('a split vote on one exclusion is JUDGE_UNSTABLE: four sure keeps, five if the split is kept', async () => {
+    const pool = [...five.slice(0, -1), { ...five[PRICING_MIN_COMPS - 1]!, ...swingLot }]
+    // Two of three passes exclude the lot outlier: the majority excludes it,
+    // so the kept set is four, but a keep on the split reaches five.
+    const majorityOut = passes(pool, (n) => n % 3 !== 1)
+    await expect(judgeComps(sub, pool, market, { callModel: majorityOut.call })).rejects.toBeInstanceOf(JudgeUnstableError)
+    try {
+      await judgeComps(sub, pool, market, { callModel: passes(pool, (n) => n % 3 !== 1).call, minComps: MIN_COMPS })
+      expect.unreachable()
+    } catch (err) {
+      const unstable = err as JudgeUnstableError
+      expect(unstable.code).toBe(JUDGE_UNSTABLE)
+      expect(unstable.record.minComps).toBe(PRICING_MIN_COMPS)
+      expect(unstable.record.keepLow).toBe(PRICING_MIN_COMPS - 1)
+      expect(unstable.record.keepHigh).toBe(PRICING_MIN_COMPS)
+      expect(unstable.message).toContain(`this home needs ${PRICING_MIN_COMPS}`)
+    }
+    // One pass of three excludes it: the majority keeps it, and the split
+    // still decides the floor, so it is unstable the other way round too.
+    const majorityIn = passes(pool, (n) => n % 3 === 1)
+    await expect(judgeComps(sub, pool, market, { callModel: majorityIn.call, minComps: MIN_COMPS })).rejects.toMatchObject({
+      code: JUDGE_UNSTABLE,
+    })
+    // At the old floor of three the same votes priced: the floor is what moved.
+    const atThree = await judgeComps(sub, pool, market, { callModel: passes(pool, (n) => n % 3 !== 1).call, minComps: 3 })
+    expect(atThree?.keptKeys).toHaveLength(PRICING_MIN_COMPS - 1)
+  })
+
+  it('a unanimous keep of five prices all five, and the resolver does not prune under the floor', async () => {
+    // Every pass keeps every sale, one of them at $520/sqft against a declared
+    // $300 to $500 band. The resolver may not cut a kept set under five.
+    const pool = [...five.slice(0, -1), { ...five[PRICING_MIN_COMPS - 1]!, closePrice: 1800 * 520 }]
+    const keepAll = passes(pool, () => false)
+    const result = await judgeComps(sub, pool, market, { callModel: keepAll.call, minComps: MIN_COMPS })
+    expect(result).not.toBeNull()
+    expect(result!.keptKeys.sort()).toEqual(pool.map((c) => c.listingKey).sort())
+    expect(result!.decision?.unstable).toBe(false)
+    const gated = pricingCompsAfterJudgment({
+      selected: pool,
+      vetted: pool.filter((c) => result!.keptKeys.includes(c.listingKey)),
+      verdicts: result!.verdicts,
+      subject: { propertySubType: sub.propertySubType, yearBuilt: sub.yearBuilt, publicRemarks: sub.publicRemarks },
+      minComps: MIN_COMPS,
+    })
+    expect(gated.shortage).toBe(false)
+    expect(gated.comps).toHaveLength(PRICING_MIN_COMPS)
+  })
+
+  it('an exclusion every pass agrees on is a comp shortage at five, not an unstable vote and not a price', async () => {
+    const pool = [...five.slice(0, -1), { ...five[PRICING_MIN_COMPS - 1]!, ...swingLot }]
+    const allOut = passes(pool, () => true)
+    const result = await judgeComps(sub, pool, market, { callModel: allOut.call, minComps: MIN_COMPS })
+    expect(result).not.toBeNull()
+    expect(result!.decision?.unstable).toBe(false)
+    expect(result!.keptKeys).toHaveLength(PRICING_MIN_COMPS - 1)
+    const gated = pricingCompsAfterJudgment({
+      selected: pool,
+      vetted: pool.filter((c) => result!.keptKeys.includes(c.listingKey)),
+      verdicts: result!.verdicts,
+      subject: { propertySubType: sub.propertySubType, yearBuilt: sub.yearBuilt, publicRemarks: sub.publicRemarks },
+      minComps: MIN_COMPS,
+    })
+    expect(gated.shortage).toBe(true)
+    expect(gated.comps).toHaveLength(PRICING_MIN_COMPS - 1)
+    expect(gated.trace).toContain(`under the ${PRICING_MIN_COMPS}-sale minimum`)
+  })
+
+  it('a majority exclude that stays under five even if the split is kept is a comp shortage, not unstable', async () => {
+    // Two lot outliers: every pass excludes the first, two of three exclude the
+    // second. Sure keeps three, four if the split is kept: under five both
+    // ways, so the split does not decide the floor.
+    const pool = [
+      ...five.slice(0, -2),
+      { ...five[PRICING_MIN_COMPS - 2]!, ...swingLot },
+      { ...five[PRICING_MIN_COMPS - 1]!, ...swingLot },
+    ]
+    const sure = pool[PRICING_MIN_COMPS - 2]!.listingKey
+    const split = pool[PRICING_MIN_COMPS - 1]!.listingKey
+    let n = 0
+    const call: JudgeModelCall = async () => {
+      n += 1
+      return {
+        payload: judgment(
+          pool.map((c) => {
+            const out = c.listingKey === sure || (c.listingKey === split && n % 3 !== 1)
+            return verdict({
+              listingKey: c.listingKey,
+              tier: out ? 'exclude' : 'strong',
+              basis: out ? 'lot' : undefined,
+              reason: out ? LOT_REASON : 'Comparable sale.',
+            })
+          }),
+        ),
+        raw: '{}',
+        costUsd: 0,
+      }
+    }
+    const result = await judgeComps(sub, pool, market, { callModel: call, minComps: MIN_COMPS })
+    expect(result).not.toBeNull()
+    expect(result!.decision?.unstable).toBe(false)
+    expect(result!.decision?.keepLow).toBe(PRICING_MIN_COMPS - 2)
+    expect(result!.decision?.keepHigh).toBe(PRICING_MIN_COMPS - 1)
+    expect(result!.keptKeys).toHaveLength(PRICING_MIN_COMPS - 2)
+    const gated = pricingCompsAfterJudgment({
+      selected: pool,
+      vetted: pool.filter((c) => result!.keptKeys.includes(c.listingKey)),
+      verdicts: result!.verdicts,
+      subject: { propertySubType: sub.propertySubType, yearBuilt: sub.yearBuilt, publicRemarks: sub.publicRemarks },
+      minComps: MIN_COMPS,
+    })
+    expect(gated.shortage).toBe(true)
   })
 })

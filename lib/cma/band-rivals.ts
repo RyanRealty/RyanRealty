@@ -486,6 +486,15 @@ export type CmaBandRivalSet = {
 }
 
 /**
+ * How a "nearest N" competition sentence opens. One definition, so the render
+ * (lib/cma/opinion-pages.ts) can tell whether a stored sentence's N is the
+ * number of homes the table draws for sale.
+ */
+export function nearestOpening(n: number): string {
+  return `The nearest ${countWord(n)}`
+}
+
+/**
  * "2 homes like yours are for sale in Rooster Rock and Madison Park between
  * $494,000 and $604,000. 1 is under contract." Every count is a home that
  * passed the sales rules inside the sales area (Matt 2026-10-07, rule 24).
@@ -509,8 +518,12 @@ export function competitionAreaSentence(input: {
   unlikeCount?: number
   /** True when the band opened to its last step and still holds fewer than five. */
   shortOfFive?: boolean
-  /** The homes drawn, for the one-room disclosure. */
-  rivals?: ReadonlyArray<{ address: string; roomDifference?: Array<'beds' | 'baths'> | null }>
+  /** The homes drawn: the one-room disclosure, and how many of them are for sale. */
+  rivals?: ReadonlyArray<{
+    address: string
+    status?: 'Active' | 'Pending'
+    roomDifference?: Array<'beds' | 'baths'> | null
+  }>
 }): string {
   const where = compAreaIn(input.area)
   const whereOr = compAreaIn(input.area, { negative: true })
@@ -529,21 +542,34 @@ export function competitionAreaSentence(input: {
     if (unlike === 0) {
       return `No home ${whereOr} is for sale ${band}, and none is under contract.${tail}`
     }
-    return `No home like yours ${whereOr} is for sale or under contract ${band}. ${countWord(unlike, true)} other ${
-      unlike === 1 ? 'home is' : 'homes are'
-    } listed there in that range, but none is close to this home in bedrooms, bathrooms, size or age, so none are on this map.${tail}`
+    // One unlike home is "it", never "none" (Matt 2026-10-07 review).
+    const notClose =
+      unlike === 1
+        ? 'One other home is listed there in that range, but it is not close to this home in bedrooms, bathrooms, size or age, so it is not on this map.'
+        : `${countWord(unlike, true)} other homes are listed there in that range, but none is close to this home in bedrooms, bathrooms, size or age, so none are on this map.`
+    return `No home like yours ${whereOr} is for sale or under contract ${band}. ${notClose}${tail}`
   }
   if (input.activeCount === 0) {
     return `No home like yours ${whereOr} is for sale ${band}, but ${countWord(input.pendingCount)} ${
       input.pendingCount === 1 ? 'is' : 'are'
     } under contract.${tail}${rooms}`
   }
-  if (input.shown > 0 && input.shown < input.activeCount + input.pendingCount) {
+  // "The nearest N" counts the homes drawn FOR SALE, never the drawn homes
+  // under contract as well: a table of eight for sale and two under contract
+  // is "the nearest eight", not "the nearest ten" (rule 17). It is written
+  // only when the area holds more for sale than the table draws.
+  const drawnActive = input.rivals ? input.rivals.filter((r) => r.status === 'Active').length : null
+  const nearest =
+    drawnActive != null
+      ? drawnActive > 0 && drawnActive < input.activeCount
+      : input.shown > 0 && input.shown < input.activeCount + input.pendingCount
+  if (nearest) {
     // The count in the sentence is the count of cards below it. A total the
     // chapter does not draw is not a number the letter may state.
+    const n = drawnActive ?? input.shown
     const like = input.likeYours ? ' like yours' : ''
-    const verb = input.shown === 1 ? 'is' : 'are'
-    return `The nearest ${countWord(input.shown)}${like} ${verb} for sale ${where} ${band}. ${pend}${tail}${rooms}`
+    const verb = n === 1 ? 'is' : 'are'
+    return `${nearestOpening(n)}${like} ${verb} for sale ${where} ${band}. ${pend}${tail}${rooms}`
   }
   return `${int(input.activeCount)} home${
     input.activeCount === 1 ? ' like yours is' : 's like yours are'
@@ -585,9 +611,12 @@ export function buildBandRivalSet(input: {
   /** True when the band opened to its last step and still holds fewer than five. */
   shortOfFive?: boolean
 }): CmaBandRivalSet {
-  // The assembly already tested every rival against the sales area; this
-  // re-applies the rules to the subject and draws the nearest.
-  const rivals = pickBandRivals(input.rivals, input.subject ?? null, input.cap ?? BAND_RIVAL_CAP)
+  // The draw runs the identical fit the assembly counted with: the same area,
+  // so the same year band (sameAreaAgeYears: no year test for a neighborhood
+  // or community, 30 years for a radius inside ten miles, 25 for plats). With
+  // no area the fit fell back to the 25-year plat band, and a home the
+  // sentence counted fell out of the table and the map (rule 17).
+  const rivals = pickBandRivals(input.rivals, input.subject ?? null, input.cap ?? BAND_RIVAL_CAP, input.area)
   // Every drawn home passed the rules, so a drawn set is like yours.
   const likeYours = rivals.length > 0
   const widenedFrom = input.widenedFrom ?? null

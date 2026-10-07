@@ -229,3 +229,93 @@ describe('a sale from another community never sets the price, however short the 
   })
 })
 
+
+describe('a shared subdivision name is the same plat only when it is a real name on the same side of the community line (review, 2026-10-07)', () => {
+  const sizes = { subjectSqft: 2000, saleSqft: 1980, subjectLotAcres: 0.2, saleLotAcres: 0.18 }
+
+  it('does not read two sentinel names as one plat, so a Tetherow sale never prices a home outside it', () => {
+    // The reviewer's probe: 'N/A' on both rows used to short-circuit to true
+    // before the community test ran.
+    expect(saleSetsThePrice({
+      ownPlat: false,
+      subjectSubdivision: 'N/A',
+      saleSubdivision: 'N/A',
+      subjectCommunity: null,
+      saleCommunity: 'tetherow',
+      subjectCommunityLocated: true,
+      saleCommunityLocated: true,
+      ...sizes,
+    })).toBe(false)
+    for (const sentinel of ['None', 'Not In Subdivision', '-', 'n/a', 'Unknown']) {
+      expect(saleSetsThePrice({
+        ownPlat: false,
+        subjectSubdivision: sentinel,
+        saleSubdivision: sentinel,
+        subjectCommunity: null,
+        saleCommunity: 'tetherow',
+        subjectCommunityLocated: true,
+        saleCommunityLocated: true,
+        ...sizes,
+      }), sentinel).toBe(false)
+    }
+  })
+
+  it('does not let a real shared MLS name carry a sale across the community line, either way', () => {
+    expect(saleSetsThePrice({
+      ownPlat: false,
+      subjectSubdivision: 'Plain',
+      saleSubdivision: 'Plain',
+      subjectCommunity: null,
+      saleCommunity: 'tetherow',
+      subjectCommunityLocated: true,
+      saleCommunityLocated: true,
+      ...sizes,
+    })).toBe(false)
+    expect(saleSetsThePrice({
+      ownPlat: false,
+      subjectSubdivision: 'Plain',
+      saleSubdivision: 'Plain',
+      subjectCommunity: 'tetherow',
+      saleCommunity: null,
+      subjectCommunityLocated: true,
+      saleCommunityLocated: true,
+      ...sizes,
+    })).toBe(false)
+  })
+
+  it('still reads a real shared name as the same plat when both sit outside every community, or in the same one', () => {
+    expect(saleSetsThePrice({
+      ownPlat: false,
+      subjectSubdivision: 'Plain',
+      saleSubdivision: 'Plain',
+      subjectCommunity: null,
+      saleCommunity: null,
+      subjectCommunityLocated: true,
+      saleCommunityLocated: true,
+      ...sizes,
+    })).toBe(true)
+    expect(saleSetsThePrice({
+      ownPlat: false,
+      subjectSubdivision: 'Plain',
+      saleSubdivision: 'plain ',
+      subjectCommunity: 'tetherow',
+      saleCommunity: 'tetherow',
+      subjectCommunityLocated: true,
+      saleCommunityLocated: true,
+      ...sizes,
+    })).toBe(true)
+  })
+
+  it('keeps the selector own-plat decision ahead of the community test', () => {
+    expect(saleSetsThePrice({
+      ownPlat: true,
+      subjectSubdivision: 'N/A',
+      saleSubdivision: 'N/A',
+      subjectCommunity: null,
+      saleCommunity: 'tetherow',
+      subjectCommunityLocated: true,
+      saleCommunityLocated: true,
+      ...sizes,
+    })).toBe(true)
+  })
+})

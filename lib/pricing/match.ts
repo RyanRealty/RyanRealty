@@ -468,6 +468,104 @@ function cellFor(
   return cells.get(`${citySlug}:${subdivisionNorm}`) ?? null
 }
 
+/** The neighborhood polygon a row sits in: its stamp, else the polygon its point resolves to. */
+function areaOf(row: { marketArea?: string | null; latitude: number | null; longitude: number | null }): string | null {
+  return row.marketArea ?? resolveMarketArea(row.latitude, row.longitude) ?? null
+}
+
+/**
+ * A custom or new subject, as the price-tier and polygon cuts read it (no
+ * sub type: the cuts below have always asked the question this way).
+ */
+function customPeerOf(subject: PricingSubject, asOfYear: number): boolean {
+  return isCustomOrNewSubject(
+    {
+      yearBuilt: subject.yearBuilt,
+      newConstructionYn: subject.newConstruction,
+      remarks: subject.publicRemarks,
+    },
+    asOfYear,
+  )
+}
+
+/** The rung flags the parent wall reads. A plain ring rung sets none of them. */
+type ParentWallRung = Partial<
+  Pick<
+    PricingTier,
+    | 'sameSubdivision'
+    | 'sameStreetOnly'
+    | 'samePocket'
+    | 'adjacentSubdivision'
+    | 'sameCommunity'
+    | 'likeCommunity'
+    | 'crossBoundary'
+    | 'whenStarved'
+  >
+>
+
+/**
+ * THE PARENT IS THE WALL, as one predicate. A home inside a community
+ * (Tetherow, Caldera Springs, Broken Top) or a neighborhood (Awbrey Butte,
+ * River West) never takes a sale outside that parent. Not on a distance ring,
+ * not when the set is short, not from another resort. A subject with neither
+ * is unaffected.
+ *
+ * passesTier reads it on every rung. The GLA bracket reads it with the rung
+ * the sale would have entered on (bracketWallRung), so a size swap never
+ * crosses a wall the walk would not cross: a plat-less River West subject
+ * once took a smaller Awbrey Butte sale through the swap after every ring
+ * rung had refused it (review, 2026-10-07).
+ */
+function parentWallAdmits(subject: PricingSubject, sale: PricingSale, rung: ParentWallRung, asOfYear: number): boolean {
+  const subjectCommunity = searchCommunitySlug(subject)
+  const saleCommunity = searchCommunitySlug(sale, memberPlatMap(subjectCommunity, subject.communityMemberPlats))
+  const confined = parentConfines(subject)
+  const crossesCommunity = !confined && (Boolean(rung.crossBoundary) || Boolean(rung.whenStarved))
+  if (rung.sameCommunity) {
+    if (!subjectCommunity || saleCommunity !== subjectCommunity) return false
+  } else if (rung.likeCommunity) {
+    // A parent is never left for a peer resort. The peer rung remains only
+    // for a home that sits in no neighborhood and no community.
+    if (confined) return false
+    if (!subjectCommunity || !isResortCommunity(subjectCommunity)) return false
+    if (!saleCommunity || saleCommunity === subjectCommunity || !isResortCommunity(saleCommunity)) return false
+  } else if (subjectCommunity && saleCommunity !== subjectCommunity && !crossesCommunity) {
+    return false
+  } else if (!subjectCommunity && saleCommunity && !crossesCommunity) {
+    // Symmetric: a community sale carries that community's premium, so it does
+    // not price an ordinary plat next door either.
+    return false
+  }
+  // A street-cluster match is this home's own ground only inside its neighborhood.
+  // A shared street name in another mapped neighborhood does not cross that line.
+  // A null market area (no polygon) does not exclude.
+  if (
+    isClusterPocket(subject) &&
+    (rung.sameSubdivision || rung.samePocket || rung.sameStreetOnly) &&
+    subject.marketArea &&
+    sale.marketArea &&
+    subject.marketArea !== sale.marketArea
+  ) {
+    return false
+  }
+  // Same-subdivision sales are the same polygon by definition.
+  if (rung.sameSubdivision) return true
+  // Mapped vs unmapped is a different market for ordinary resale. Custom/new
+  // subjects outside the Bend GIS mesh still keep year-quality peers that
+  // resolve into a neighboring polygon (North Rim → Awbrey Butte). True
+  // Parkway/Deschutes crosses stay hard in applesOk.
+  // A touching plat is the adjacent step even when a neighborhood line
+  // splits it from the subject. Anything farther stays inside the parent's
+  // polygon. A home with no parent may still cross on the boundary-exit
+  // rung, into another mapped polygon, never into unmapped land.
+  const subjectArea = areaOf(subject)
+  const saleArea = areaOf(sale)
+  const touchingAdjacent = rung.adjacentSubdivision === true
+  const customOutsideMesh = customPeerOf(subject, asOfYear) && !subject.marketArea
+  const mayCrossArea = !confined && Boolean(rung.crossBoundary) && saleArea != null
+  return subjectArea === saleArea || touchingAdjacent || customOutsideMesh || mayCrossArea
+}
+
 function passesTier(
   subject: PricingSubject,
   sale: PricingSale,
@@ -502,31 +600,12 @@ function passesTier(
   // Horse Back / Ranch pocket, not every Black Butte home that shares the
   // catch-all SaddleStone MLS name (Matt Flex HARD LOCK 2026-09-15).
   if (tier.sameSubdivision && !inSubjectPlat(subject, sale)) return { ok: false, miles: null }
-  // THE PARENT IS THE WALL. A home inside a community (Tetherow, Caldera
-  // Springs, Broken Top) or a neighborhood (Awbrey Butte, River West) never
-  // takes a sale outside that parent. Not on a distance ring, not when the
-  // set is short, not from another resort. A subject with neither is unaffected.
-  const subjectCommunity = searchCommunitySlug(subject)
-  const saleCommunity = searchCommunitySlug(sale, memberPlatMap(subjectCommunity, subject.communityMemberPlats))
-  const confined = parentConfines(subject)
-  const crossesCommunity = !confined && (Boolean(tier.crossBoundary) || Boolean(tier.whenStarved))
-  if (tier.sameCommunity) {
-    if (!subjectCommunity || saleCommunity !== subjectCommunity) return { ok: false, miles: null }
-  } else if (tier.likeCommunity) {
-    // A parent is never left for a peer resort. The peer rung remains only
-    // for a home that sits in no neighborhood and no community.
-    if (confined) return { ok: false, miles: null }
-    if (!subjectCommunity || !isResortCommunity(subjectCommunity)) return { ok: false, miles: null }
-    if (!saleCommunity || saleCommunity === subjectCommunity || !isResortCommunity(saleCommunity)) {
-      return { ok: false, miles: null }
-    }
-  } else if (subjectCommunity && saleCommunity !== subjectCommunity && !crossesCommunity) {
-    return { ok: false, miles: null }
-  } else if (!subjectCommunity && saleCommunity && !crossesCommunity) {
-    // Symmetric: a community sale carries that community's premium, so it does
-    // not price an ordinary plat next door either.
-    return { ok: false, miles: null }
-  }
+  // THE PARENT IS THE WALL (parentWallAdmits): the community line on
+  // every rung, the street-cluster polygon on the own-ground rungs, and the
+  // neighborhood polygon on every rung that leaves the subdivision. The GLA
+  // bracket reads the same predicate.
+  const asOfYear = Number(asOf.slice(0, 4))
+  if (!parentWallAdmits(subject, sale, tier, asOfYear)) return { ok: false, miles: null }
   // The plats next to the subject's, closest first.
   if (tier.adjacentSubdivision) {
     const ring = subject.adjacentSubdivisionSlugs ?? []
@@ -544,23 +623,10 @@ function passesTier(
     const streetHit = Boolean(saleStreet && (subject.pocketStreetKeys ?? []).includes(saleStreet))
     if (!nameHit && !streetHit) return { ok: false, miles: null }
   }
-  // A street-cluster match is this home's own ground only inside its neighborhood.
-  // A shared street name in another mapped neighborhood does not cross that line.
-  // A null market area (no polygon) does not exclude.
-  if (
-    isClusterPocket(subject) &&
-    (tier.sameSubdivision || tier.samePocket || tier.sameStreetOnly) &&
-    subject.marketArea &&
-    sale.marketArea &&
-    subject.marketArea !== sale.marketArea
-  ) {
-    return { ok: false, miles: null }
-  }
   const sqftLo = subject.sqft * (1 - tier.sqftBand)
   const sqftHi = subject.sqft * (1 + tier.sqftBand)
   if (sale.sqft < sqftLo || sale.sqft > sqftHi) return { ok: false, miles: null }
 
-  const asOfYear = Number(asOf.slice(0, 4))
   const allowFeatureCross = Boolean(tier.whenStarved) && subject.marketArea == null
   if (!applesOk(subject, sale, tier.apples, asOfYear, allowFeatureCross)) {
     return { ok: false, miles: null }
@@ -630,30 +696,9 @@ function passesTier(
   // Custom/new year-quality peers skip the $/sqft tier cut so a North Rim
   // custom sale is not tossed as "too luxury" against a custom subject.
   if (!tier.sameSubdivision) {
-    const subjectArea = subject.marketArea ?? resolveMarketArea(subject.latitude, subject.longitude) ?? null
-    const saleArea = sale.marketArea ?? resolveMarketArea(sale.latitude, sale.longitude) ?? null
-    const customPeer = isCustomOrNewSubject(
-      {
-        yearBuilt: subject.yearBuilt,
-        newConstructionYn: subject.newConstruction,
-        remarks: subject.publicRemarks,
-      },
-      asOfYear,
-    )
-    // Mapped vs unmapped is a different market for ordinary resale. Custom/new
-    // subjects outside the Bend GIS mesh still keep year-quality peers that
-    // resolve into a neighboring polygon (North Rim → Awbrey Butte). True
-    // Parkway/Deschutes crosses stay hard in applesOk.
-    // A touching plat is the adjacent step even when a neighborhood line
-    // splits it from the subject. Anything farther stays inside the parent's
-    // polygon. A home with no parent may still cross on the boundary-exit
-    // rung, into another mapped polygon, never into unmapped land.
-    const touchingAdjacent = tier.adjacentSubdivision === true
-    const customOutsideMesh = customPeer && !subject.marketArea
-    const mayCrossArea = !confined && Boolean(tier.crossBoundary) && saleArea != null
-    if (subjectArea !== saleArea && !touchingAdjacent && !customOutsideMesh && !mayCrossArea) {
-      return { ok: false, miles: null }
-    }
+    // The neighborhood polygon was held above by parentWallAdmits.
+    const subjectArea = areaOf(subject)
+    const customPeer = customPeerOf(subject, asOfYear)
     const subj = cellFor(cells, subject.citySlug, subject.subdivisionNorm)
     const comp = cellFor(cells, sale.citySlug, sale.subdivisionNorm)
     const tierRatio = subjectArea != null ? SAME_NEIGHBORHOOD_TIER_RATIO : undefined
@@ -784,6 +829,20 @@ function bracketStaysOnSubdivisionRows(subject: PricingSubject, sale: PricingSal
   )
 }
 
+/**
+ * The rung a bracket candidate would have entered the walk on, as the parent
+ * wall reads it: the subject's own plat is the same-subdivision rung, a
+ * touching plat is the adjacent rung, anything else is a plain ring rung. A
+ * size swap is not a widening, so the boundary-exit and starved rungs never
+ * stand behind it.
+ */
+function bracketWallRung(subject: PricingSubject, sale: PricingSale): ParentWallRung {
+  if (inSubjectPlat(subject, sale)) return { sameSubdivision: true }
+  const plat = sale.subdivisionSlug?.trim()
+  if (plat && (subject.adjacentSubdivisionSlugs ?? []).includes(plat)) return { adjacentSubdivision: true }
+  return {}
+}
+
 function bracketEligible(
   subject: PricingSubject,
   sale: PricingSale,
@@ -806,6 +865,9 @@ function bracketEligible(
   if (monthsBetween(asOf, sale.closeDate) > BRACKET_MAX_AGE_MONTHS) return false
   if (!plausibleListedClose(sale.closePrice, sale.lastAsk)) return false
   const asOfYear = Number(asOf.slice(0, 4))
+  // The same community, street-cluster and neighborhood walls the walk holds.
+  // Without them a plat-less subject's swap reached the whole pool.
+  if (!parentWallAdmits(subject, sale, bracketWallRung(subject, sale), asOfYear)) return false
   if (!applesOk(subject, sale, 'product_lot', asOfYear)) return false
   const customOrNew = isCustomOrNewSubject(
     {
@@ -878,9 +940,9 @@ function bracketGla(
   cells: Map<string, SubdivisionCell> = new Map(),
   customLadder = false,
   /**
-   * Rule 20's test, the same one the walk admits on. bracketEligible applies
-   * no community wall and a plat-less subject brackets from the whole pool, so
-   * without it a size swap could import a sale that does not set the price.
+   * Rule 20's test, the same one the walk admits on. bracketEligible holds the
+   * parent wall; this is the other door the walk has, so a size swap never
+   * imports a sale that does not set the price.
    */
   setsPrice: (sale: SelectedPricingComp) => boolean = () => true,
 ): { comps: SelectedPricingComp[]; note: string | null } {

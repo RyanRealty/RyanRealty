@@ -132,7 +132,8 @@ describe('buildCmaExtras — CompArea-scoped band', () => {
       pricing: pricing(),
       subjectPhotosCount: null,
       compArea: pocketArea,
-      areaInventory: pocketInventory,
+      // The competition assembly's set: the fitting homes, flagged as such.
+      areaInventory: { ...pocketInventory, sameAreaFit: true },
       band: { lo: 450000, hi: 550000 },
     })
     expect(getCmaBandInventory).not.toHaveBeenCalled()
@@ -140,6 +141,8 @@ describe('buildCmaExtras — CompArea-scoped band', () => {
     expect(extras.band).not.toBeNull()
     expect(extras.band!.activeCount).toBe(12)
     expect(extras.band!.source).toContain('CompArea')
+    expect(extras.band!.source).toContain('the 12 active listings in the band that passed the sales rules (sameAreaFit) inside the sales area')
+    expect(extras.band!.source).not.toContain('all 12 active listings in the band')
     expect(extras.band!.source).not.toMatch(/city-wide|City='Sisters'/)
   })
 
@@ -159,6 +162,8 @@ describe('buildCmaExtras — CompArea-scoped band', () => {
     })
     expect(extras.band!.activeCount).toBe(12)
     expect(extras.band!.source).toContain('CompArea subdivisions')
+    // A read extras made itself was not fitted: it is the whole band.
+    expect(extras.band!.source).toContain('all 12 active listings in the band')
   })
 
   it('falls back to city-wide getCmaBandInventory only when CompArea is absent', async () => {

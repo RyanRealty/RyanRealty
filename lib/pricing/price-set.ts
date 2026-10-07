@@ -23,7 +23,7 @@
  * them, is not a price. The set is wrong, or the result is a hold.
  */
 import { communityForAddress } from '@/lib/cma/community-location'
-import { lotCompatible } from '@/lib/pricing/classes'
+import { lotCompatible, normSubdivision } from '@/lib/pricing/classes'
 import { PLAT_WIDE_SQFT_BAND, PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
 
 export type PriceSetSale = {
@@ -60,11 +60,6 @@ export function clearlyDifferentProduct(
   return !lotCompatible(subjectLotAcres, saleLotAcres)
 }
 
-function normName(value: string | null | undefined): string | null {
-  const s = value?.trim().toLowerCase()
-  return s ? s : null
-}
-
 function communityOf(input: {
   community?: string | null
   communityLocated?: boolean
@@ -85,10 +80,8 @@ export function saleSetsThePrice(input: PriceSetSale): boolean {
   if (clearlyDifferentSize(input.subjectSqft, input.saleSqft)) return false
   if (clearlyDifferentProduct(input.subjectLotAcres, input.saleLotAcres)) return false
 
-  const subjectName = normName(input.subjectSubdivision)
-  const saleName = normName(input.saleSubdivision)
-  const samePlat = input.ownPlat === true || (subjectName != null && subjectName === saleName)
-  if (samePlat) return true
+  // The selector's own-plat decision (the recorded polygon first) wins.
+  if (input.ownPlat === true) return true
 
   const subjectCommunity = communityOf({
     community: input.subjectCommunity,
@@ -102,11 +95,27 @@ export function saleSetsThePrice(input: PriceSetSale): boolean {
   })
   const subjectKnown = input.subjectCommunityLocated === true || subjectCommunity != null
   const saleKnown = input.saleCommunityLocated === true || saleCommunity != null
+  // Both outside every community, or inside the same one.
+  const communityAgrees = subjectCommunity === saleCommunity
+
+  // A SHARED MLS NAME IS THE SAME PLAT ONLY WHEN IT IS A REAL NAME AND THE
+  // COMMUNITY LINE AGREES (review, 2026-10-07). 'N/A', 'None', 'Not In
+  // Subdivision' and '-' name no plat (realSubdivisionName, the one sentinel
+  // list), so two of them are not a match. And a raw name match never carries
+  // a sale across the community line: 'N/A' against 'N/A' once let a sale
+  // inside Tetherow set the price for a home outside it, on the widened rungs
+  // of both ladders. With the line agreeing, the test below returns the same
+  // answer; the branch is kept so the same-plat reading stays explicit, and a
+  // wall added to this function goes above it, never below.
+  const subjectName = normSubdivision(input.subjectSubdivision)
+  const saleName = normSubdivision(input.saleSubdivision)
+  if (subjectName != null && subjectName === saleName && communityAgrees) return true
+
   // One side is in a community the other is not, or they are different
   // communities. A short set does not change this: the sale never sets the
   // price, the walk goes past it, and under five setters the build is a comp
   // shortage. Size and product were refused above.
-  if ((subjectKnown || saleKnown) && subjectCommunity !== saleCommunity) return false
+  if ((subjectKnown || saleKnown) && !communityAgrees) return false
   return true
 }
 
@@ -140,6 +149,26 @@ function pricingUnit(n: number): number {
   return Math.abs(n) >= 1_000_000 ? 5_000 : 1_000
 }
 
+/**
+ * THE BAND AS THE READER SEES IT: the low rounded down and the high rounded up
+ * onto the pricing unit, the way the pricer prints the range
+ * (lib/pricing/estimate.ts roundPriceDown / roundPriceUp). The pin puts the
+ * exact sale back on the band ($893,412), and the reader still sees $893,000.
+ *
+ * One boundary for every test of an ask against the band: the failed-ask cap
+ * (an ask below the band, lib/cma/expired-audit.ts) and the ask-in-band hold
+ * (rule 22, lib/cma/gap-hold.ts) read this, so an ask on the printed low is
+ * inside, inclusive, and never falls between the two (review, 2026-10-07).
+ */
+export function printedBandBounds(low: number, high: number): { low: number; high: number } {
+  const lo = Math.min(low, high)
+  const hi = Math.max(low, high)
+  return {
+    low: Math.floor(lo / pricingUnit(lo)) * pricingUnit(lo),
+    high: Math.ceil(hi / pricingUnit(hi)) * pricingUnit(hi),
+  }
+}
+
 export function recommendationOutsideSaleSet(
   recommended: number | null | undefined,
   salePrices: readonly number[],
@@ -147,13 +176,10 @@ export function recommendationOutsideSaleSet(
   if (recommended == null || !Number.isFinite(recommended) || !(recommended > 0)) return null
   const prices = salePrices.filter((n) => Number.isFinite(n) && n > 0)
   if (prices.length === 0) return null
-  const low = Math.min(...prices)
-  const high = Math.max(...prices)
   // The cover rounds a sale outward onto the pricing unit. A recommendation
   // on that same step is that sale. It is not a price outside the set.
-  const lowBound = Math.floor(low / pricingUnit(low)) * pricingUnit(low)
-  const highBound = Math.ceil(high / pricingUnit(high)) * pricingUnit(high)
-  if (recommended < lowBound) return 'under'
-  if (recommended > highBound) return 'over'
+  const bounds = printedBandBounds(Math.min(...prices), Math.max(...prices))
+  if (recommended < bounds.low) return 'under'
+  if (recommended > bounds.high) return 'over'
   return null
 }

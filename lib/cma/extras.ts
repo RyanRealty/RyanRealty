@@ -276,6 +276,12 @@ export function computeBandPosition(
     truncated: boolean
     activeRows?: CmaBandListingRow[]
     pendingRows?: CmaBandListingRow[]
+    /**
+     * True when these rows are the competition assembly's set: the listings
+     * in the band that passed the sales rules inside the sales area
+     * (lib/cma/assemble-competition.ts, rule 24), not every listing in it.
+     */
+    sameAreaFit?: boolean
   } | null,
   city: string,
   lo: number,
@@ -322,7 +328,11 @@ export function computeBandPosition(
     }, same property type${subject?.propertySubType ? ` (${subject.propertySubType})` : ''}, Active + Pending, ListPrice ${lo}..${hi}, pulled at build time — ${
       inv.truncated
         ? `band exceeded the read ceiling, so these figures cover the first ${activeRows.length} of ${inv.activeCount} active listings`
-        : `all ${inv.activeCount} active listings in the band${typeFiltered ? `, ${activeRows.length} after the same-product-type filter` : ''}`
+        : `${
+            inv.sameAreaFit
+              ? `the ${inv.activeCount} active listings in the band that passed the sales rules (sameAreaFit) inside the sales area, not every listing in the band`
+              : `all ${inv.activeCount} active listings in the band`
+          }${typeFiltered ? `, ${activeRows.length} after the same-product-type filter` : ''}`
     }; days on market measured from OnMarketDate`,
   }
 }
@@ -441,6 +451,8 @@ export async function buildCmaExtras(args: {
     truncated: boolean
     activeRows?: CmaBandListingRow[]
     pendingRows?: CmaBandListingRow[]
+    /** Set by the competition assembly: these are the fitting homes, not the whole band. */
+    sameAreaFit?: boolean
   } | null
   band?: { lo: number; hi: number } | null
 }): Promise<CmaExtras> {

@@ -3,6 +3,8 @@ import {
   cmaQueueFiltersFromSearch,
   cmaQueueHoldLine,
   cmaQueueHref,
+  cmaQueueListReason,
+  CMA_QUEUE_LIST_REASON_CHARS,
   cmaQueueMoneyLine,
   cmaQueueReachFromFacts,
   cmaQueueReachNote,
@@ -324,5 +326,43 @@ describe('resolveTheirPrice', () => {
     expect(resolveTheirPrice('expired', summary, null)).toBe(749_900)
     expect(resolveTheirPrice('expired', {}, null)).toBeNull()
     expect(resolveTheirPrice('seller-valuation', summary, 774_900)).toBeNull()
+  })
+})
+
+describe('the queue list line leads with the hold (review, 2026-10-07)', () => {
+  const clamp =
+    'Comp evidence supported $951,000 against the $925,000 asking that just failed. The recommendation is under that ask.'
+  const hold =
+    "The last ask of $925,000 sits inside the sales range of $893,000 to $951,000 the recommendation reads from. The home did not sell at a price the sales support, so the letter's reason that the ask was too high does not hold. It stays with you. It was not queued and it was not sent."
+  // The build writes the clamp first and appends the hold (applyAskInBandHold).
+  const stored = `${clamp} ${hold}`
+
+  it('prints the hold first on a held row, so the cut keeps it', () => {
+    const line = cmaQueueListReason({ state: 'flagged', holdKind: 'ask-in-band', reviewReason: stored })
+    expect(line.startsWith('The last ask of $925,000 sits inside the sales range of $893,000 to $951,000')).toBe(true)
+    expect(line.length).toBeLessThanOrEqual(CMA_QUEUE_LIST_REASON_CHARS)
+    // The old cut showed only the clamp.
+    expect(stored.slice(0, CMA_QUEUE_LIST_REASON_CHARS)).not.toContain('inside the sales range')
+  })
+
+  it('reads a row built before the stored kind by its phrase, and the letter line keeps the clamp after the hold', () => {
+    expect(cmaQueueListReason({ state: 'flagged', reviewReason: stored })).toMatch(/^The last ask of \$925,000/)
+    expect(cmaQueueHoldLine({ state: 'flagged', holdKind: 'ask-in-band', reviewReason: stored })).toBe(
+      `Ask inside the range. ${hold} ${clamp}`,
+    )
+  })
+
+  it('names the hold when the stored kind has no sentence on the row', () => {
+    expect(cmaQueueListReason({ state: 'flagged', holdKind: 'ask-in-band', reviewReason: clamp })).toMatch(
+      /^Ask inside the range\. Comp evidence supported/,
+    )
+    expect(cmaQueueListReason({ state: 'flagged', holdKind: 'ask-in-band', reviewReason: null })).toBe('Ask inside the range.')
+  })
+
+  it('leaves every other flagged reason in its order, cut the same way', () => {
+    const wide = `The value range is wider than 8% of the recommended list. ${'x'.repeat(200)}`
+    expect(cmaQueueListReason({ state: 'flagged', reviewReason: wide })).toBe(wide.slice(0, CMA_QUEUE_LIST_REASON_CHARS))
+    expect(cmaQueueListReason({ state: 'flagged', reviewReason: clamp })).toBe(clamp)
+    expect(cmaQueueListReason({ state: 'flagged', reviewReason: null })).toBe('Flagged for review.')
   })
 })

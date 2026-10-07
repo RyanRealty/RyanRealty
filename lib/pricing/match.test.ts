@@ -3244,3 +3244,77 @@ describe('five price-setting sales is the floor, and a sale that does not set th
     expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['A', 'B', 'C', 'D', 'E'])
   })
 })
+
+describe('the GLA bracket never crosses a wall the walk would not cross (review, 2026-10-07)', () => {
+  // River West is the parent neighborhood. The subject carries no plat (its
+  // MLS row says N/A), so the size swap draws from the pool at large. Every
+  // ring rung refuses a sale from the neighboring polygon; the swap has to
+  // refuse it by the same wall.
+  const RIVER_WEST = { latitude: 44.0645, longitude: -121.3237, marketArea: 'bend-river-west' }
+  const home = () =>
+    subject({
+      ...RIVER_WEST,
+      subdivision: 'N/A',
+      subdivisionNorm: null,
+      subdivisionSlug: null,
+      adjacentSubdivisionSlugs: [],
+      closerSubdivisionSlugs: [],
+      sqft: 2000,
+    })
+  // Five setters inside River West, every one larger than the subject.
+  const larger = [0, 1, 2, 3, 4].map((i) =>
+    sale({
+      ...RIVER_WEST,
+      latitude: RIVER_WEST.latitude + (0.05 * (i + 1)) / 69,
+      listingKey: `RW${i}`,
+      address: `${70 + i} River West Ln`,
+      subdivision: 'N/A',
+      subdivisionNorm: null,
+      sqft: 2200,
+      closePrice: 770_000,
+      closePpsf: 350,
+      lastAsk: 775_000,
+      closeDate: '2026-07-01',
+    }),
+  )
+  const smaller = (over: Partial<PricingSale>) =>
+    sale({
+      listingKey: 'SMALL',
+      address: '1 Small Rd',
+      subdivision: 'N/A',
+      subdivisionNorm: null,
+      sqft: 1700,
+      closePrice: 595_000,
+      closePpsf: 350,
+      lastAsk: 599_000,
+      closeDate: '2026-07-01',
+      ...over,
+    })
+
+  it('does not swap in a smaller sale from the neighboring polygon that every ring rung refused', () => {
+    // A tenth of a mile away, so the first ring rung scans it and the
+    // neighborhood wall refuses it there.
+    const awbrey = smaller({
+      listingKey: 'AWBREY',
+      latitude: RIVER_WEST.latitude - 0.1 / 69,
+      longitude: RIVER_WEST.longitude,
+      marketArea: 'bend-awbrey-butte',
+    })
+    const out = walkPricingLadder(home(), [...larger, awbrey], { asOf })
+    expect(out.rungs.find((r) => r.tier === 'nearby-0.25mi-3mo')?.ran).toBe(true)
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('AWBREY')
+    expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['RW0', 'RW1', 'RW2', 'RW3', 'RW4'])
+    expect(out.tiersUsed).not.toContain('gla-bracket')
+    expect(out.trace.some((t) => t.startsWith('GLA bracket'))).toBe(false)
+  })
+
+  it('still swaps in the smaller sale when it sits inside the same neighborhood', () => {
+    // Farther out than the five, so the walk stops before it and only the
+    // size swap can reach it.
+    const inside = smaller({ ...RIVER_WEST, listingKey: 'INSIDE', latitude: RIVER_WEST.latitude - 0.8 / 69 })
+    const out = walkPricingLadder(home(), [...larger, inside], { asOf })
+    expect(out.comps.map((c) => c.listingKey)).toContain('INSIDE')
+    expect(out.comps).toHaveLength(5)
+    expect(out.trace.some((t) => t.startsWith('GLA bracket: replaced'))).toBe(true)
+  })
+})

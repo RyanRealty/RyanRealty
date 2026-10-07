@@ -14,6 +14,7 @@ import {
 } from './extras'
 import type { CmaAdjustedComp } from './types'
 import type { CmaMarketAreaRow } from '@/lib/data/cma/marketAreaReads'
+import type { CompArea } from '@/lib/pricing/comp-area'
 
 function closedRow(closeDate: string, dtp: number | null, fin: string | null = '{"Conventional": true}') {
   return { CloseDate: closeDate, days_to_pending: dtp, buyer_financing: fin }
@@ -166,6 +167,53 @@ describe('computeBandPosition', () => {
     expect(b!.source).toContain('CompArea subdivisions')
     expect(b!.source).toContain('Rolling Horse Meadow')
     expect(b!.source).not.toContain("City='Sisters'")
+  })
+
+  // The competition assembly hands buildCmaExtras the homes in the band that
+  // passed the sales rules inside the sales area (rule 24). The price band's
+  // source says so, so citations.price_band.source does not call twelve
+  // fitting homes the whole band beside citations.competition.filter's
+  // "sameAreaFit kept 12 of 30" (Matt 2026-10-07 review).
+  it('names a fitting set as the homes that passed the sales rules, not every listing in the band', () => {
+    const area: CompArea = {
+      kind: 'subdivisions',
+      names: ['Rooster Rock', 'Madison Park'],
+      radiusMiles: null,
+      centre: { lat: 44.03, lng: -121.27 },
+      source: 'test',
+      sentence: 'Rooster Rock and the one subdivision next to it.',
+    }
+    const fitting = computeBandPosition(
+      {
+        activeAsks: [549000],
+        activeDaysOnMarket: [12],
+        activeCount: 12,
+        pendingCount: 1,
+        truncated: false,
+        sameAreaFit: true,
+      },
+      'Bend',
+      494000,
+      604000,
+      null,
+      area,
+    )
+    expect(fitting!.activeCount).toBe(12)
+    expect(fitting!.source).toContain(
+      'the 12 active listings in the band that passed the sales rules (sameAreaFit) inside the sales area, not every listing in the band',
+    )
+    expect(fitting!.source).not.toContain('all 12 active listings in the band')
+    // A read that was not fitted keeps saying it is the whole band.
+    const whole = computeBandPosition(
+      { activeAsks: [549000], activeDaysOnMarket: [12], activeCount: 30, pendingCount: 1, truncated: false },
+      'Bend',
+      494000,
+      604000,
+      null,
+      area,
+    )
+    expect(whole!.source).toContain('all 30 active listings in the band')
+    expect(whole!.source).not.toContain('passed the sales rules')
   })
 
   it('says so in the source line when the band exceeded the read ceiling', () => {

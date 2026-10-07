@@ -954,6 +954,24 @@ function peerSetSentence(input: {
 }
 
 /**
+ * The zero sentence a render prints when the stored peers all fell to the
+ * sales-area re-test (an old row read over a wider ring than the sales sit
+ * in). It names no place: the places the stored sentence named are not the
+ * area the map draws, and the area itself is the map's caption. Same shape as
+ * the build's zero sentence above ("No home in Purcell came off the market
+ * without selling in the last 12 months."), scoped to homes like yours
+ * because the stored set only ever held homes like yours. A window that is
+ * not on the row prints nothing: an absence with no window is not a fact the
+ * row supports (§0).
+ */
+export function noPeerInAreaSentence(windowMonths: number | null | undefined): string {
+  if (windowMonths == null || !Number.isFinite(windowMonths) || windowMonths <= 0) return ''
+  return `No home like yours in this area came off the market without selling in the last ${monthsWord(
+    Math.round(windowMonths),
+  )} months.`
+}
+
+/**
  * Median close $/sqft over the sales that set the price — the benchmark
  * `whyItSat` measures a failed home's last ask against. Raw close price over
  * size, not the time-adjusted figure: the comparison is to what buyers

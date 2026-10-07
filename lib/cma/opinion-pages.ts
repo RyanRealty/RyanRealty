@@ -9,12 +9,16 @@
 
 import { siteOrigin } from '@/lib/site-origin'
 import {
+  COMPETITION_SHOWN_CAP,
+  competitionAreaSourceLine,
   competitionHeading,
   competitionSentence,
   competitionSourceLine,
   competitorCutLine,
+  nearestOpening,
   type BandRivalsInput,
 } from '@/lib/cma/band-rivals'
+import { noPeerInAreaSentence } from '@/lib/cma/market-status'
 import { formatClientMlsField } from '@/lib/cma/client-facing'
 import { trackedDocLink } from '@/lib/cma/doc-links'
 import { daysOnMarketFrom } from '@/lib/cma/listing-history-line'
@@ -74,7 +78,7 @@ import {
 import { activeRivalsFor, unsoldPeersFor } from '@/lib/cma/matrix-sets'
 import { letterProductMatch, productClass } from '@/lib/cma/market-area'
 import { realSubdivisionName } from '@/lib/pricing/classes'
-import { namedSalesPlace } from '@/lib/pricing/comp-area'
+import { namedSalesPlace, salesAreaIsBounded } from '@/lib/pricing/comp-area'
 import {
   activeEntries,
   closedEntries,
@@ -1060,9 +1064,27 @@ export function didNotSellBodyMatrixHtml(a: OpinionPageArgs): string {
     // A one-column matrix is not a comparison, so the chapter degrades to the
     // city's own count and the reader's own outcome rather than vanishing and
     // taking the ask that failed with it.
-    const said = a.expiredPeers?.sentence?.trim()
+    //
+    // The stored sentence prints only when it counts what is shown, and here
+    // nothing is: a stored count of zero (rule 17). A row whose peers all
+    // fell to the sales-area re-test above (an old row read over a wider
+    // ring) would otherwise say "Three homes like yours in High Pointe, Owls
+    // and Oakview came off..." over no table and no pins. Delivered letters
+    // re-render from stored render_args at serve, so the check lives here.
+    // That row gets the build's zero sentence naming no place, or nothing
+    // when the subject itself came off, as the build does.
+    const ownFailed = subjectListingFailed(a.subject) && Boolean(sets.subject.outcome)
+    const storedSentence = a.expiredPeers?.sentence?.trim() ?? ''
+    const storedCount = a.expiredPeers ? (a.expiredPeers.count ?? a.expiredPeers.peers?.length ?? 0) : 0
+    const said = !a.expiredPeers
+      ? ''
+      : storedCount === 0
+        ? storedSentence
+        : ownFailed
+          ? ''
+          : noPeerInAreaSentence(a.expiredPeers.windowMonths)
     const saidHtml = said ? `<p>${esc(said)}</p>` : ''
-    if (!subjectListingFailed(a.subject) || !sets.subject.outcome) {
+    if (!ownFailed) {
       // The search ran and found nothing. Say so. A letter with no peer set
       // at all still omits the chapter.
       return saidHtml
@@ -1812,37 +1834,46 @@ export function competitionBodyMatrixHtml(a: OpinionPageArgs): string {
   const drawnPending = pendingOnly.length
   const shown = drawnActive + drawnPending
   // The stored sentence names the area and counts the homes in the band that
-  // passed the sales rules, and says "the nearest N" when it drew fewer than
-  // it counted. Use it only when the table draws exactly the set it was
-  // written over. A drawn set that diverged from the stored one (an old row
-  // whose rivals fell to the sales-area re-test at render) gets the no-area
-  // sentence over the counts it shows (rule 17).
+  // passed the sales rules. It prints only when its counts are the table's
+  // (rule 17):
+  //   - the homes drawn for sale and under contract are the stored rivals,
+  //   - the stored under-contract count is the number drawn,
+  //   - an empty table goes with stored counts of zero for both,
+  //   - "the nearest N" stands only when the area held more for sale than
+  //     the cap let the table draw, and N is the number drawn for sale.
+  // Anything else (an old mile-ring sentence over homes the render dropped,
+  // a count the draw lost) gets the no-area sentence over the counts the
+  // table shows. Delivered letters re-render here from stored render_args,
+  // after the build's letter-consistency gate has run, so this is the check.
   const stored = a.bandRivals?.sentence?.trim() ?? ''
   const storedActive = (b.rivals ?? []).filter((r) => r.status === 'Active').length
   const storedPending = (b.rivals ?? []).filter((r) => r.status === 'Pending').length
-  const useStored =
-    stored.length > 0 &&
-    b.pendingCount === drawnPending &&
-    drawnPending === storedPending &&
-    drawnActive === storedActive
+  const sameRows =
+    drawnActive === storedActive && drawnPending === storedPending && b.pendingCount === drawnPending
+  const forSaleAgrees =
+    shown === 0
+      ? b.activeCount === 0 && b.pendingCount === 0
+      : b.activeCount === drawnActive ||
+        (drawnActive >= COMPETITION_SHOWN_CAP &&
+          b.activeCount > drawnActive &&
+          stored.startsWith(`${nearestOpening(drawnActive)} `))
+  const useStored = stored.length > 0 && sameRows && forSaleAgrees
   const sentence = useStored
     ? stored
-    : shown > 0
-      ? competitionSentence({
-          lo: b.lo,
-          hi: b.hi,
-          activeCount: drawnActive,
-          pendingCount: drawnPending,
-          shown,
-        })
-      : (stored ||
-        competitionSentence({
-          lo: b.lo,
-          hi: b.hi,
-          activeCount: 0,
-          pendingCount: 0,
-          shown: 0,
-        }))
+    : competitionSentence({
+        lo: b.lo,
+        hi: b.hi,
+        activeCount: drawnActive,
+        pendingCount: drawnPending,
+        shown,
+      })
+  // The trace names what the sentence counted. A stored sentence keeps its
+  // stored trace. The counts drawn instead are the homes inside the sales
+  // area, so the trace names that area, never the wider ring an old row read.
+  const sourceLine =
+    !useStored && a.compArea && salesAreaIsBounded(a.compArea)
+      ? competitionAreaSourceLine({ area: a.compArea, lo: b.lo, hi: b.hi, asOfIso: a.generatedAtIso })
+      : (a.bandRivals?.source ?? competitionSourceLine(args))
   const cut = competitorCutLine(args.rivals)
   const edge = competitionEdge({
     subjectSqft: a.subject.sqft,
@@ -1853,7 +1884,7 @@ export function competitionBodyMatrixHtml(a: OpinionPageArgs): string {
   return `<p>${esc(sentence)}</p>
   ${cut ? `<p>${esc(cut)}</p>` : ''}
   ${edge ? `<p class="compete-edge">${esc(edge.sentence)}</p>` : ''}
-  <p class="small">${esc(a.bandRivals?.source ?? competitionSourceLine(args))}</p>
+  <p class="small">${esc(sourceLine)}</p>
   ${matrix}`
 }
 

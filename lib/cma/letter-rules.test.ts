@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { askExposureSentence } from '@/lib/cma/ask-story'
 import { activeRivalsFor, matrixSetsFromArgs, unsoldPeersFor } from '@/lib/cma/matrix-sets'
-import { competitionPage, type OpinionPageArgs } from '@/lib/cma/opinion-pages'
+import { competitionPage, didNotSellPage, type OpinionPageArgs } from '@/lib/cma/opinion-pages'
 import type { CmaBandRival } from '@/lib/cma/band-rivals'
 import type { CmaExpiredPeer } from '@/lib/cma/market-status'
 import { pricePathFromFinalCycle } from '@/lib/cma/price-path'
@@ -338,5 +338,245 @@ describe('letter rules that cannot be skipped', () => {
     )
     expect(checks.map((c) => c.id)).toContain('competition-not-a-mile-ring')
     expect(checks.every((c) => c.pass)).toBe(true)
+  })
+})
+
+/**
+ * Delivered letters re-render from stored render_args at serve, after the
+ * build's letter-consistency gate has run. A stored sentence prints only when
+ * its counts are the counts the table and the map show (rule 17); the area
+ * those counts come from is the sales area (rule 24). Reviewer probes,
+ * 2026-10-07.
+ */
+describe('a stored sentence prints only over the rows it counted (rule 17, rule 24)', () => {
+  const rooster = {
+    kind: 'subdivisions' as const,
+    names: ['Rooster Rock', 'Madison Park'],
+    radiusMiles: null,
+    centre: { lat: 44.03, lng: -121.27 },
+    source: 'test',
+    sentence: 'Rooster Rock and the one subdivision next to it.',
+  }
+  const mileRing = {
+    kind: 'radius' as const,
+    names: [],
+    radiusMiles: 1,
+    centre: { lat: 44.03, lng: -121.27 },
+    source: 'old row, widened 2026-10-05',
+    sentence: 'Within one mile of your home.',
+  }
+  const coho = {
+    listingKey: 'S',
+    mlsNumber: '1',
+    streetAddress: '3177 Coho',
+    city: 'Bend',
+    subdivision: 'Rooster Rock',
+    propertySubType: 'Single Family Residence',
+    beds: 3,
+    baths: 2,
+    sqft: 1458,
+    yearBuilt: 2018,
+    latitude: 44.03,
+    longitude: -121.27,
+    standardStatus: null as string | null,
+    lastListPrice: null as number | null,
+  }
+  const pricing = { recommended: 549_000, valueLow: 513_000, valueHigh: 564_000, notes: [] }
+
+  function competitionBody(bandRivals: Record<string, unknown>): string {
+    const page = competitionPage({
+      subject: coho,
+      comps: [],
+      pricing,
+      compArea: rooster,
+      bandRivals: { lo: 494_000, hi: 604_000, widenedFrom: null, ringsTried: [], ...bandRivals },
+      generatedAtIso: '2026-10-07T12:00:00.000Z',
+    } as unknown as OpinionPageArgs)
+    return page?.body ?? ''
+  }
+
+  function inRooster(n: number, status: 'Active' | 'Pending', start = 0): CmaBandRival[] {
+    return Array.from({ length: n }, (_, i) =>
+      rival({
+        listingKey: `${status}-${start + i}`,
+        address: `${2800 + start + i} Aldrich`,
+        status,
+        subdivision: 'Rooster Rock',
+        latitude: 44.03 + (start + i) * 0.0005,
+        longitude: -121.27,
+      }),
+    )
+  }
+
+  it('drops an old mile-ring sentence the render emptied, and its ring trace, for the drawn count inside the sales area', () => {
+    const body = competitionBody({
+      area: mileRing,
+      activeCount: 3,
+      pendingCount: 0,
+      rivals: [1, 2, 3].map((i) =>
+        rival({ listingKey: `hp${i}`, address: `${20 + i} High Pointe`, subdivision: 'High Pointe', latitude: 44.035, longitude: -121.275 }),
+      ),
+      sentence:
+        '3 homes are for sale within one mile of your home between $494,000 and $604,000. None are under contract right now.',
+      source:
+        'Homes for sale and under contract within one mile of your home between $494,000 and $604,000, from the Oregon Data Share MLS as of Oct 5, 2026.',
+    })
+    expect(body).toContain('<p>0 homes are for sale between $494,000 and $604,000. None are under contract right now.</p>')
+    expect(body).not.toContain('3 homes are for sale')
+    expect(body).not.toContain('within one mile of your home')
+    expect(body).not.toContain('High Pointe')
+    // The trace names the area the drawn count was taken inside.
+    expect(body).toContain('Homes for sale and under contract in Rooster Rock and Madison Park between $494,000 and $604,000')
+    const checks = letterPlaceChecks(body, { compArea: rooster })
+    expect(checks.find((c) => c.id === 'competition-not-a-mile-ring')?.pass).toBe(true)
+  })
+
+  it('does not print a stored count of one over a table that draws nothing', () => {
+    const body = competitionBody({
+      area: rooster,
+      activeCount: 1,
+      pendingCount: 0,
+      rivals: [],
+      sentence:
+        '1 home like yours is for sale in Rooster Rock and Madison Park between $494,000 and $604,000. None are under contract right now.',
+      source: 'stored trace',
+    })
+    expect(body).not.toContain('1 home like yours is for sale')
+    expect(body).toContain('<p>0 homes are for sale between $494,000 and $604,000. None are under contract right now.</p>')
+  })
+
+  it('keeps a stored zero over an empty table, and a stored full count over the same table', () => {
+    const zero = competitionBody({
+      area: rooster,
+      activeCount: 0,
+      pendingCount: 0,
+      rivals: [],
+      sentence:
+        'No home in Rooster Rock or Madison Park is for sale between $494,000 and $604,000, and none is under contract.',
+      source: 'stored trace',
+    })
+    expect(zero).toContain(
+      '<p>No home in Rooster Rock or Madison Park is for sale between $494,000 and $604,000, and none is under contract.</p>',
+    )
+    expect(zero).toContain('stored trace')
+    const full = competitionBody({
+      area: rooster,
+      activeCount: 2,
+      pendingCount: 1,
+      rivals: [...inRooster(2, 'Active'), ...inRooster(1, 'Pending', 5)],
+      sentence:
+        '2 homes like yours are for sale in Rooster Rock and Madison Park between $494,000 and $604,000. 1 is under contract.',
+      source: 'stored trace',
+    })
+    expect(full).toContain(
+      '<p>2 homes like yours are for sale in Rooster Rock and Madison Park between $494,000 and $604,000. 1 is under contract.</p>',
+    )
+  })
+
+  it('keeps "the nearest eight" only when the cap drew eight of a larger count, and N is the number drawn for sale', () => {
+    const capped = competitionBody({
+      area: rooster,
+      activeCount: 12,
+      pendingCount: 0,
+      rivals: inRooster(8, 'Active'),
+      sentence:
+        'The nearest eight like yours are for sale in Rooster Rock and Madison Park between $494,000 and $604,000. None are under contract right now.',
+      source: 'stored trace',
+    })
+    expect(capped).toContain('<p>The nearest eight like yours are for sale in Rooster Rock and Madison Park')
+
+    // Three drawn of five counted is not the cap: the draw lost two.
+    const short = competitionBody({
+      area: rooster,
+      activeCount: 5,
+      pendingCount: 0,
+      rivals: inRooster(3, 'Active'),
+      sentence:
+        'The nearest three like yours are for sale in Rooster Rock and Madison Park between $494,000 and $604,000. None are under contract right now.',
+      source: 'stored trace',
+    })
+    expect(short).not.toContain('The nearest three')
+    expect(short).toContain('<p>3 homes are for sale between $494,000 and $604,000. None are under contract right now.</p>')
+
+    // An older build counted the drawn homes under contract as for sale too.
+    const counted = competitionBody({
+      area: rooster,
+      activeCount: 12,
+      pendingCount: 2,
+      rivals: [...inRooster(8, 'Active'), ...inRooster(2, 'Pending', 20)],
+      sentence:
+        'The nearest ten like yours are for sale in Rooster Rock and Madison Park between $494,000 and $604,000. 2 are under contract.',
+      source: 'stored trace',
+    })
+    expect(counted).not.toContain('The nearest ten')
+    expect(counted).toContain('<p>8 homes are for sale between $494,000 and $604,000. 2 are under contract.</p>')
+  })
+
+  // Did-not-sell: the reviewer's probe. The stored row counted three peers in
+  // other plats; the render's sales-area re-test drops all three.
+  const storedPeers = {
+    area: rooster,
+    windowMonths: 12,
+    windowsTried: [3, 6, 9, 12],
+    widenedTo: 12,
+    count: 3,
+    areaTotal: 3,
+    found: 3,
+    likeYours: true,
+    shortfall: false,
+    sentence: 'Three homes like yours in High Pointe, Owls and Oakview came off the market without selling in the last 12 months.',
+    peers: [
+      peer({ listingKey: 'e1', address: '21 High Pointe', subdivision: 'High Pointe' }),
+      peer({ listingKey: 'e2', address: '22 Owl', subdivision: 'Owls' }),
+      peer({ listingKey: 'e3', address: '23 Oakview', subdivision: 'Oakview' }),
+    ],
+  }
+
+  it('says an honest zero naming no place when every stored expired peer fell outside the sales area', () => {
+    const page = didNotSellPage({
+      subject: coho,
+      comps: [],
+      pricing,
+      compArea: rooster,
+      expiredPeers: storedPeers,
+      generatedAtIso: '2026-10-07T12:00:00.000Z',
+    } as unknown as OpinionPageArgs)
+    const body = page?.body ?? ''
+    expect(body).toContain('<p>No home like yours in this area came off the market without selling in the last 12 months.</p>')
+    for (const place of ['High Pointe', 'Owls', 'Oakview', 'Three homes']) expect(body).not.toContain(place)
+    expect(body).not.toMatch(/[—–]/)
+  })
+
+  it('leaves the zero out when the subject itself came off, as the build does, and still prints a stored zero', () => {
+    const own = didNotSellPage({
+      subject: { ...coho, standardStatus: 'Expired', lastListPrice: 575_000 },
+      comps: [],
+      pricing,
+      compArea: rooster,
+      expiredPeers: storedPeers,
+      generatedAtIso: '2026-10-07T12:00:00.000Z',
+    } as unknown as OpinionPageArgs)
+    const ownBody = own?.body ?? ''
+    expect(ownBody).toContain('Your own listing')
+    expect(ownBody).not.toContain('High Pointe')
+    expect(ownBody).not.toContain('No home like yours in this area')
+
+    const zero = didNotSellPage({
+      subject: coho,
+      comps: [],
+      pricing,
+      compArea: rooster,
+      expiredPeers: {
+        ...storedPeers,
+        count: 0,
+        found: 0,
+        peers: [],
+        sentence: 'No home in Rooster Rock or Madison Park came off the market without selling in the last 12 months.',
+      },
+      generatedAtIso: '2026-10-07T12:00:00.000Z',
+    } as unknown as OpinionPageArgs)
+    expect(zero?.body).toContain(
+      '<p>No home in Rooster Rock or Madison Park came off the market without selling in the last 12 months.</p>',
+    )
   })
 })

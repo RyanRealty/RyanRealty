@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest'
+import { applyFailedAskCap } from '@/lib/cma/expired-audit'
 import {
+  applyAskInBandHold,
   ASK_IN_BAND_KIND,
   ASK_IN_BAND_REASON_PLAIN,
   askInBandHold,
   askInBandReason,
   recommendationGapHold,
 } from '@/lib/cma/gap-hold'
+import type { CmaPricing } from '@/lib/cma/types'
 
 describe('recommendationGapHold', () => {
   it('holds a recommendation more than 15% under the last ask', () => {
@@ -125,5 +128,96 @@ describe('recommendationGapHold with the band (the send gates, rule 22)', () => 
     expect(recommendationGapHold(1_000_001, 1_000_000, undefined).hold).toBe(true)
     expect(recommendationGapHold(850_000, 1_000_000, null).hold).toBe(false)
     expect(recommendationGapHold(null, 849_000, null).hold).toBe(false)
+  })
+})
+
+describe('one boundary for the failed-ask cap and the ask-in-band hold: the printed band (review, 2026-10-07)', () => {
+  // The kept low sale is $893,412. The pricer printed the band from $893,000
+  // (rounded down onto the thousand); the pin then put the exact sale back on
+  // valueLow. An ask of $893,000 on the printed low used to be neither below
+  // the band for the cap (read on $893,000) nor inside it for the hold (read on
+  // $893,412), and fell through both.
+  const EXACT_LOW = 893_412
+  const PRINTED_LOW = 893_000
+  const HIGH = 951_000
+
+  it('reads an ask on the printed low as inside the band, inclusive, with the printed dollars in the reason', () => {
+    const hold = askInBandHold(PRINTED_LOW, EXACT_LOW, HIGH)
+    expect(hold.hold).toBe(true)
+    if (hold.hold) {
+      expect(hold.reason).toBe(askInBandReason(PRINTED_LOW, PRINTED_LOW, HIGH))
+      expect(hold.reason).not.toContain('$893,412')
+    }
+    expect(askInBandHold(PRINTED_LOW - 1, EXACT_LOW, HIGH).hold).toBe(false)
+  })
+
+  it('holds the built document on the pinned exact low and stores the band it measured', () => {
+    const pricing = {
+      valueLow: EXACT_LOW,
+      valueHigh: HIGH,
+      recommended: 915_000,
+      conservative: EXACT_LOW,
+      highEnd: HIGH,
+      needsReview: false,
+      reviewReason: null,
+      failedAsk: PRINTED_LOW,
+      clamp: null,
+      hold: null,
+    } as unknown as CmaPricing
+    applyAskInBandHold(pricing, { lastCycleFailed: true, lastListPrice: PRINTED_LOW, auditVerdict: 'pass' })
+    expect(pricing.hold?.kind).toBe(ASK_IN_BAND_KIND)
+    expect(pricing.hold?.bandLow).toBe(PRINTED_LOW)
+    expect(pricing.hold?.bandHigh).toBe(HIGH)
+    expect(pricing.needsReview).toBe(true)
+  })
+
+  it('the cap does not call an ask on the printed low below the band, before the pin or after it', () => {
+    const cap = (valueLow: number, ask: number) => {
+      const p = {
+        conservative: valueLow,
+        recommended: 915_000,
+        highEnd: HIGH,
+        valueLow,
+        valueHigh: HIGH,
+        needsReview: false,
+        reviewReason: null,
+        notes: [] as string[],
+        clamp: null,
+        priceOverride: null,
+        rangeRule: { saleLow: valueLow },
+      }
+      applyFailedAskCap(p, { lastFailedListPrice: ask, offMarketDate: null })
+      return p.failedAskBelowRange === true
+    }
+    // Before the pin the band reads $893,000; after it, the exact $893,412.
+    expect(cap(PRINTED_LOW, PRINTED_LOW)).toBe(false)
+    expect(cap(EXACT_LOW, PRINTED_LOW)).toBe(false)
+    expect(cap(PRINTED_LOW, PRINTED_LOW - 1)).toBe(true)
+    expect(cap(EXACT_LOW, PRINTED_LOW - 1)).toBe(true)
+  })
+
+  it('every ask is exactly one of below the band (the cap, before the pin), inside it (the hold, after the pin), or above it', () => {
+    // The build order: the cap reads the pricer's band, the pin puts the exact
+    // sale back, then the hold reads the pinned band.
+    for (const ask of [PRINTED_LOW - 1_000, PRINTED_LOW - 1, PRINTED_LOW, EXACT_LOW - 1, EXACT_LOW, 925_000, HIGH, HIGH + 1]) {
+      const p = {
+        conservative: PRINTED_LOW,
+        recommended: 915_000,
+        highEnd: HIGH,
+        valueLow: PRINTED_LOW,
+        valueHigh: HIGH,
+        needsReview: false,
+        reviewReason: null,
+        notes: [] as string[],
+        clamp: null,
+        priceOverride: null,
+        rangeRule: { saleLow: PRINTED_LOW },
+      }
+      applyFailedAskCap(p, { lastFailedListPrice: ask, offMarketDate: null })
+      const below = p.failedAskBelowRange === true
+      const inside = askInBandHold(ask, EXACT_LOW, HIGH).hold
+      const above = ask > HIGH
+      expect([below, inside, above].filter(Boolean), String(ask)).toHaveLength(1)
+    }
   })
 })

@@ -136,6 +136,45 @@ function one(v: string | string[] | undefined): string | undefined {
   return t || undefined
 }
 
+/** The ask-in-band hold's sentences, as lib/cma/gap-hold.ts writes them (with dollars or plain). */
+const ASK_IN_BAND_START = /The last ask\b[^.]*?inside the sales range/
+const ASK_IN_BAND_END = 'It was not queued and it was not sent.'
+
+/**
+ * The review reason with the ask-in-band hold first. The build appends the
+ * hold after whatever was already on the row, and on an expired home that is
+ * the failed-ask clamp sentence, so a cut line showed the clamp and lost the
+ * hold (review, 2026-10-07). Other reasons keep their order.
+ */
+export function heldReasonFirst(reason: string): string {
+  const at = reason.search(ASK_IN_BAND_START)
+  if (at <= 0) return reason
+  const endAt = reason.indexOf(ASK_IN_BAND_END, at)
+  const stop = endAt === -1 ? reason.length : endAt + ASK_IN_BAND_END.length
+  const hold = reason.slice(at, stop).trim()
+  const rest = `${reason.slice(0, at)} ${reason.slice(stop)}`.replace(/\s+/g, ' ').trim()
+  return rest ? `${hold} ${rest}` : hold
+}
+
+/** How much of a flagged row's reason the queue list prints. */
+export const CMA_QUEUE_LIST_REASON_CHARS = 140
+
+/**
+ * The one line under a flagged row in the queue list, cut to
+ * CMA_QUEUE_LIST_REASON_CHARS. A held row leads with the hold, so the cut
+ * never takes the reason Matt has to act on.
+ */
+export function cmaQueueListReason(
+  r: { reviewReason?: string | null; holdKind?: string | null; state: CmaQueueViewState },
+  max: number = CMA_QUEUE_LIST_REASON_CHARS,
+): string {
+  const reason = (r.reviewReason ?? '').trim()
+  if (cmaQueueWhy(r) !== 'ask-in-band') return reason ? reason.slice(0, max) : 'Flagged for review.'
+  const led = heldReasonFirst(reason)
+  const line = ASK_IN_BAND_START.test(led) ? led : `${CMA_QUEUE_WHY_LABEL['ask-in-band']}. ${led}`.trim()
+  return line.slice(0, max)
+}
+
 /**
  * The sentence on the letter itself. The queue row already names the bucket.
  * A ready, sent, or queued letter has nothing to hold it, so this is null.
@@ -153,7 +192,8 @@ export function cmaQueueHoldLine(r: {
   const why = cmaQueueWhy(r)
   if (r.state === 'flagged') {
     const label = why === 'none' ? 'Flagged' : CMA_QUEUE_WHY_LABEL[why]
-    const reason = (r.reviewReason ?? '').trim()
+    const raw = (r.reviewReason ?? '').trim()
+    const reason = why === 'ask-in-band' ? heldReasonFirst(raw) : raw
     if (!reason) return `${label}.`
     if (reason.toLowerCase().startsWith(label.toLowerCase())) return reason
     return `${label}. ${reason}`

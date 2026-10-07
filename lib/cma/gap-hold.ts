@@ -10,8 +10,10 @@
  *      by lib/cma/build.ts): the subject's last failed ask sits inside the
  *      trimmed band the recommendation reads from, so the letter's reason
  *      that the ask was too high does not hold (rule 22, Matt 2026-10-07).
- *   3. The live backstop for rows built before that field: an expired home
- *      whose ask sits inside the stored band, inclusive at both ends. Scoped
+ *   3. The live backstop for rows whose build did not measure the ask
+ *      against the band (built before that field, or with no failed cycle,
+ *      ask or band at build time): an expired home whose ask sits inside the
+ *      stored band, inclusive at both ends. Scoped
  *      to origin 'expired' because rule 16's thesis is about a home that did
  *      not sell; an FSBO's current ask inside the band is information, not a
  *      hold.
@@ -20,6 +22,7 @@
  * reshaped to move the band away from the ask.
  */
 
+import { printedBandBounds } from '@/lib/pricing/price-set'
 import { buildPricingReview } from '@/lib/pricing/review'
 import type { CmaPricing, CmaPricingAuditVerdict } from '@/lib/cma/types'
 
@@ -51,18 +54,38 @@ function positive(n: number | null | undefined): n is number {
 }
 
 /**
+ * True when there is an ask and a band to measure it against. Rule 22 decides
+ * nothing on a row without both, so such a row has not been measured.
+ */
+export function askInBandMeasurable(
+  lastAsk: number | null | undefined,
+  low: number | null | undefined,
+  high: number | null | undefined,
+): boolean {
+  return positive(lastAsk) && positive(low) && positive(high)
+}
+
+/**
  * Rule 22: the last failed ask inside the trimmed band, inclusive at both
  * ends. Null, non-finite or non-positive input is not a hold.
+ *
+ * The band is the one the reader sees (printedBandBounds: low down, high up,
+ * onto the pricing unit), the same boundary the failed-ask cap reads for an
+ * ask below the band. The pin puts the exact sale back on the band, so
+ * against the exact low an ask of $893,000 under a kept $893,412 sale was
+ * neither below the band for the cap nor inside it here, and fell through
+ * both (review, 2026-10-07). On the printed low it is inside.
  */
 export function askInBandHold(
   lastAsk: number | null | undefined,
   low: number | null | undefined,
   high: number | null | undefined,
 ): RecommendationGapHold {
-  if (!positive(lastAsk) || !positive(low) || !positive(high)) return { hold: false }
-  const lo = Math.min(low, high)
-  const hi = Math.max(low, high)
-  if (lo <= lastAsk && lastAsk <= hi) return { hold: true, reason: askInBandReason(lastAsk, lo, hi) }
+  if (!askInBandMeasurable(lastAsk, low, high)) return { hold: false }
+  const band = printedBandBounds(low!, high!)
+  if (band.low <= lastAsk! && lastAsk! <= band.high) {
+    return { hold: true, reason: askInBandReason(lastAsk!, band.low, band.high) }
+  }
   return { hold: false }
 }
 
@@ -77,15 +100,21 @@ export function applyAskInBandHold(
   args: { lastCycleFailed: boolean; lastListPrice: number | null | undefined; auditVerdict: CmaPricingAuditVerdict },
 ): CmaPricing {
   const askForHold = pricing.failedAsk ?? (args.lastCycleFailed ? (args.lastListPrice ?? null) : null)
-  const bandHold = args.lastCycleFailed
+  // Recorded either way, so the row says whether the build decided rule 22
+  // or never had an ask and a band to decide it on (build_summary.hold_measured).
+  // A row that did not measure goes through the live backstop at every send gate.
+  pricing.askInBandMeasured =
+    args.lastCycleFailed && askInBandMeasurable(askForHold, pricing.valueLow, pricing.valueHigh)
+  const bandHold = pricing.askInBandMeasured
     ? askInBandHold(askForHold, pricing.valueLow, pricing.valueHigh)
     : ({ hold: false } as const)
   if (!bandHold.hold) return pricing
+  const printed = printedBandBounds(pricing.valueLow, pricing.valueHigh)
   pricing.hold = {
     kind: ASK_IN_BAND_KIND,
     ask: askForHold!,
-    bandLow: pricing.valueLow,
-    bandHigh: pricing.valueHigh,
+    bandLow: printed.low,
+    bandHigh: printed.high,
     reason: bandHold.reason,
   }
   pricing.needsReview = true
@@ -108,8 +137,10 @@ export function recommendationGapHold(
     /** The build's own verdict, stored on the row. Wins over the live check. */
     holdKind?: string | null
     /**
-     * True when the build wrote a verdict at all (build_summary carries the
-     * hold_kind key). The live backstop below is for rows built before it.
+     * True when the build measured the ask against the band and decided
+     * (build_summary.hold_measured, lib/data/cma/unified-queue.ts
+     * holdDecidedFromSummary). The live backstop below is for every row that
+     * did not: built before the field, or with no ask or no band to measure.
      */
     holdDecided?: boolean | null
     origin?: 'expired' | 'fsbo' | string | null
@@ -148,9 +179,10 @@ export function recommendationGapHold(
       }
     }
   }
-  // THIRD: the live backstop for rows built before pricing.hold landed,
-  // scoped to an expired home. A build that decided no hold is not
-  // second-guessed on the row's own numbers.
+  // THIRD: the live backstop for rows whose build did not measure the ask
+  // against the band (built before pricing.hold landed, or with no ask or no
+  // band at build time), scoped to an expired home. A build that measured and
+  // decided no hold is not second-guessed on the row's own numbers.
   if (band?.origin === 'expired' && band.holdDecided !== true) {
     return askInBandHold(lastAsk, band.low, band.high)
   }

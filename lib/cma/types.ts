@@ -590,6 +590,13 @@ export interface CmaPricing {
    */
   hold?: CmaPricingHold | null
   /**
+   * True when the build measured the last failed ask against the printed band
+   * for rule 22 (a failed last cycle, an ask, and a band), whatever it found.
+   * False or absent when there was nothing to measure; the send gates then run
+   * the live backstop on the row's own ask and band (lib/cma/gap-hold.ts).
+   */
+  askInBandMeasured?: boolean
+  /**
    * Sales considered and not used, capped at eight, each with a reason
    * composed from the sale's own recorded facts. An appraisal shows what it
    * set aside; ours asserted a radius and showed nothing (research brief

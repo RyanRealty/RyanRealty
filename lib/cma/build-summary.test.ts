@@ -6,7 +6,9 @@
 import { describe, expect, it } from 'vitest'
 import { composeBuildSummary, type BuildSummaryInput } from '@/lib/cma/build-summary'
 import { emptyExclusions } from '@/lib/cma/comp-trace'
+import { applyAskInBandHold, recommendationGapHold } from '@/lib/cma/gap-hold'
 import type { CmaPricing } from '@/lib/cma/types'
+import { holdDecidedFromSummary, type CmaBuildSummary } from '@/lib/data/cma/unified-queue'
 
 const site = {
   zone: 'RS',
@@ -113,5 +115,66 @@ describe('composeBuildSummary carries the hold', () => {
     const pricing = summary.pricing as Record<string, unknown>
     expect(pricing.hold_kind).toBeNull()
     expect(pricing.hold_reason).toBeNull()
+  })
+})
+
+describe('build_summary says whether the build measured the ask against the band (review, 2026-10-07)', () => {
+  // The send gates read holdDecidedFromSummary: a build that measured and found
+  // no hold is not second-guessed; a build that never had an ask and a band to
+  // measure goes through the live backstop (expired origin, ask inside the
+  // stored band).
+  const gate = (summary: Record<string, unknown>, ask: number) =>
+    recommendationGapHold(915_000, ask, {
+      low: 893_000,
+      high: 951_000,
+      holdKind: null,
+      holdDecided: holdDecidedFromSummary(summary as CmaBuildSummary),
+      origin: 'expired',
+    })
+
+  it('writes hold_measured true when a failed cycle had an ask and a band, and the gate trusts that no-hold verdict', () => {
+    const pricing = { ...input({}).pricing, valueLow: 893_000, valueHigh: 951_000, failedAsk: 975_000 } as CmaPricing
+    applyAskInBandHold(pricing, { lastCycleFailed: true, lastListPrice: 975_000, auditVerdict: 'pass' })
+    expect(pricing.askInBandMeasured).toBe(true)
+    expect(pricing.hold ?? null).toBeNull()
+    const summary = composeBuildSummary(input(pricing))
+    expect(summary.hold_measured).toBe(true)
+    expect((summary.pricing as Record<string, unknown>).hold_measured).toBe(true)
+    expect(summary.hold_kind).toBeNull()
+    expect(holdDecidedFromSummary(summary as CmaBuildSummary)).toBe(true)
+    // The row's ask later reads inside the stored band; the build decided, so no live hold.
+    expect(gate(summary, 925_000).hold).toBe(false)
+  })
+
+  it('writes hold_measured false when the last cycle did not fail, and the row goes through the live backstop', () => {
+    const pricing = { ...input({}).pricing, valueLow: 893_000, valueHigh: 951_000, failedAsk: null } as CmaPricing
+    applyAskInBandHold(pricing, { lastCycleFailed: false, lastListPrice: 925_000, auditVerdict: 'pass' })
+    expect(pricing.askInBandMeasured).toBe(false)
+    const summary = composeBuildSummary(input(pricing))
+    expect(summary.hold_measured).toBe(false)
+    expect(summary.hold_kind).toBeNull()
+    expect(holdDecidedFromSummary(summary as CmaBuildSummary)).toBe(false)
+    const held = gate(summary, 925_000)
+    expect(held.hold).toBe(true)
+    if (held.hold) expect(held.reason).toMatch(/inside the sales range/)
+  })
+
+  it('writes hold_measured false when a failed cycle carried no ask, and the row goes through the live backstop', () => {
+    const pricing = { ...input({}).pricing, valueLow: 893_000, valueHigh: 951_000, failedAsk: null } as CmaPricing
+    applyAskInBandHold(pricing, { lastCycleFailed: true, lastListPrice: null, auditVerdict: 'pass' })
+    expect(pricing.askInBandMeasured).toBe(false)
+    const summary = composeBuildSummary(input(pricing))
+    expect(summary.hold_measured).toBe(false)
+    expect(holdDecidedFromSummary(summary as CmaBuildSummary)).toBe(false)
+    expect(gate(summary, 925_000).hold).toBe(true)
+  })
+
+  it('a stored hold is a decision, measured or not', () => {
+    const pricing = { ...input({}).pricing, valueLow: 893_000, valueHigh: 951_000, failedAsk: 925_000 } as CmaPricing
+    applyAskInBandHold(pricing, { lastCycleFailed: true, lastListPrice: 925_000, auditVerdict: 'pass' })
+    const summary = composeBuildSummary(input(pricing))
+    expect(summary.hold_kind).toBe('ask-in-band')
+    expect(summary.hold_measured).toBe(true)
+    expect(holdDecidedFromSummary(summary as CmaBuildSummary)).toBe(true)
   })
 })

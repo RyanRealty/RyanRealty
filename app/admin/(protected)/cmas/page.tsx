@@ -26,6 +26,7 @@ import {
   CMA_QUEUE_WHY_LABEL,
   cmaQueueFiltersFromSearch,
   cmaQueueHref,
+  cmaQueueListReason,
   cmaQueueMoneyLine,
   cmaQueueReachNote,
   cmaQueueWhoLine,
@@ -93,7 +94,8 @@ function whyLine(r: CmaQueueRow): string | null {
   }
   if (r.state === 'unvetted') return 'Audit did not run. Nothing has checked this one.'
   if (r.state === 'failed') return r.buildError ? `Build failed: ${r.buildError.slice(0, 140)}` : 'Build failed.'
-  if (r.state === 'flagged') return r.reviewReason ? r.reviewReason.slice(0, 140) : 'Flagged for review.'
+  // A held row leads with the hold, so the cut keeps the reason (cmaQueueListReason).
+  if (r.state === 'flagged') return cmaQueueListReason(r)
   if (r.state === 'queued') return null // filled with ETA at render
   return null
 }

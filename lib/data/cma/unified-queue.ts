@@ -150,9 +150,11 @@ export type CmaQueueRow = {
    */
   holdKind: 'ask-in-band' | null
   /**
-   * True when the build wrote a verdict at all (build_summary carries the
-   * hold_kind key, null or not). False on a row built before the field, where
-   * the send gates run a live backstop on the row's own ask and band.
+   * True when the build measured the last failed ask against the band and
+   * decided (build_summary.hold_measured, or a stored hold kind). False on a
+   * row built before the field and on a row whose build had no failed cycle,
+   * no ask or no band to measure; the send gates run a live backstop on the
+   * row's own ask and band there.
    */
   holdDecided: boolean
 }
@@ -162,9 +164,16 @@ export function holdKindFromSummary(summary: CmaBuildSummary | null | undefined)
   return summary?.hold_kind === 'ask-in-band' ? 'ask-in-band' : null
 }
 
-/** The build wrote a verdict: the key is on the summary, whatever it holds. */
+/**
+ * The build decided rule 22: it stored the hold, or it measured an ask against
+ * a band and found none. The presence of the hold_kind key is not enough: every
+ * build since 2026-10-07 wrote hold_kind null, including the ones that had no
+ * failed cycle, no ask or no band to measure, and reading the key as a
+ * decision skipped the live backstop on exactly those rows (review, 2026-10-07).
+ */
 export function holdDecidedFromSummary(summary: CmaBuildSummary | null | undefined): boolean {
-  return summary != null && typeof summary === 'object' && Object.prototype.hasOwnProperty.call(summary, 'hold_kind')
+  if (summary == null || typeof summary !== 'object') return false
+  return summary.hold_kind === 'ask-in-band' || summary.hold_measured === true
 }
 
 type Row = Record<string, unknown>
@@ -225,6 +234,8 @@ export type CmaBuildSummary = {
   review_reason?: string | null
   /** The build's own hold, when it recorded one (lib/cma/gap-hold.ts). */
   hold_kind?: string | null
+  /** True when the build measured the last failed ask against the band (lib/cma/build-summary.ts). */
+  hold_measured?: boolean
   audit?: {
     used_llm?: boolean
     verdict?: string | null
