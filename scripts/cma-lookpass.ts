@@ -1096,7 +1096,7 @@ async function main(): Promise<void> {
     }
   }
   const slugs = argv
-    .filter((a, i) => !a.startsWith('--') && i !== overlayAt + 1)
+    .filter((a, i) => !a.startsWith('--') && (overlayAt < 0 || i !== overlayAt + 1))
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean)
   if (slugs.length === 0) {
