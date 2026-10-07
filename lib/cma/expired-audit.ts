@@ -950,6 +950,45 @@ export function failedAskBelowRangeNote(ask: number): string {
   return `The last listing asked ${usd(ask)}, below the sales band. The recommended list sits on the sales, not on that ask.`
 }
 
+/**
+ * THE CAP'S CLASSIFICATION, RE-READ ON THE PRINTED BAND (review, 2026-10-07).
+ *
+ * applyFailedAskCap runs before the pin and judges the ask against the band
+ * it sees then; the ask-in-band hold (lib/cma/gap-hold.ts) runs after the pin
+ * on the band the reader sees. When the pin moved the band the two could
+ * disagree: one row carried both "the ask sat below the range" and the rule 22
+ * hold, or an ask the cap read as inside ended up under the printed band with
+ * no flag. This re-reads below / inside / above on printedBandBounds of the
+ * pinned band, the hold's own boundary, and corrects `failedAskBelowRange` and
+ * its note so exactly one of the three holds. Mutates `pricing` in place.
+ */
+export function reclassifyFailedAskOnPrintedBand(
+  pricing: {
+    valueLow?: number
+    valueHigh?: number
+    notes: string[]
+    failedAskBelowRange?: boolean
+  },
+  ask: number | null | undefined,
+): 'below' | 'inside' | 'above' | null {
+  const band = heroBandFromPricing(pricing)
+  const askValue = positivePrice(ask)
+  if (!band || askValue == null) return null
+  const printed = printedBandBounds(band.low, band.high)
+  const where: 'below' | 'inside' | 'above' =
+    askValue < printed.low ? 'below' : askValue > printed.high ? 'above' : 'inside'
+  const note = failedAskBelowRangeNote(askValue)
+  if (where === 'below') {
+    pricing.failedAskBelowRange = true
+    if (!pricing.notes.includes(note)) pricing.notes.push(note)
+  } else {
+    pricing.failedAskBelowRange = false
+    const at = pricing.notes.indexOf(note)
+    if (at !== -1) pricing.notes.splice(at, 1)
+  }
+  return where
+}
+
 function hasStoredBelowRangeReason(pricing: {
   priceOverride?: number | null
   reviewReason?: string | null

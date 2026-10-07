@@ -251,3 +251,46 @@ describe('autoSendBuiltCma — what it will never touch', () => {
     expect((await autoSendBuiltCma('cma-1-main', d)).outcome).toBe('lane-off')
   })
 })
+
+describe('autoSendBuiltCma — a ready row that holds is never finalized (review, 2026-10-07)', () => {
+  it('refuses an unmeasured expired row whose ask sits inside the stored band', async () => {
+    const d = deps({
+      findRow: vi.fn(async () =>
+        queueRow({ recommendedList: 905000, valueLow: 893000, valueHigh: 951000, theirPrice: 925000, holdKind: null, holdDecided: false }),
+      ),
+    })
+    const res = await autoSendBuiltCma('cma-1-main', d)
+    expect(res.outcome).toBe('not-ready')
+    expect(res.reason).toContain('The last ask of $925,000 sits inside the sales range of $893,000 to $951,000')
+    expect(d.finalize).not.toHaveBeenCalled()
+    expect(d.enqueueDrip).not.toHaveBeenCalled()
+    expect(d.sendNow).not.toHaveBeenCalled()
+  })
+
+  it('refuses a stored ask-below-band hold', async () => {
+    const d = deps({
+      findRow: vi.fn(async () =>
+        queueRow({ recommendedList: 593000, valueLow: 610150, valueHigh: 678983, theirPrice: 599900, holdKind: 'ask-below-band', holdDecided: true }),
+      ),
+    })
+    const res = await autoSendBuiltCma('cma-1-main', d)
+    expect(res.outcome).toBe('not-ready')
+    expect(res.reason).toContain('$593,000 sits under the sales range of $610,000 to $679,000')
+    expect(d.finalize).not.toHaveBeenCalled()
+  })
+
+  it('refuses a rule 3 gap: more than 15 percent under the last ask', async () => {
+    const d = deps({ findRow: vi.fn(async () => queueRow({ recommendedList: 400000, theirPrice: 560000 })) })
+    const res = await autoSendBuiltCma('cma-1-main', d)
+    expect(res.outcome).toBe('not-ready')
+    expect(res.reason).toMatch(/more than 15% under the last ask/)
+    expect(d.finalize).not.toHaveBeenCalled()
+  })
+
+  it('a measured row whose ask sits above the band still goes', async () => {
+    const d = deps()
+    const res = await autoSendBuiltCma('cma-1-main', d)
+    expect(res.outcome).toBe('queued')
+    expect(d.finalize).toHaveBeenCalledTimes(1)
+  })
+})

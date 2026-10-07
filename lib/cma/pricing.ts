@@ -183,6 +183,10 @@ export function applyStreetAnchor(
   }
   return {
     addresses,
+    // By key as well as by address: comp addresses carry no unit, and the
+    // pricer releases these sales from the set-aside list by key
+    // (lib/pricing/estimate.ts releaseStreetAnchorFromSetAside).
+    listingKeys: peers.map((c) => c.listingKey).filter((k): k is string => Boolean(k)),
     anchor: Math.round(anchor),
     ceiling,
     floor: round5000(anchor),
@@ -504,10 +508,18 @@ export interface PricingRangeDisplay {
  * states plainly that the recommendation is capped away from it.
  */
 export function pricingRangeDisplay(
-  p: Pick<CmaPricing, 'recommended' | 'valueLow' | 'valueHigh'>,
+  p: Pick<CmaPricing, 'recommended' | 'valueLow' | 'valueHigh'> & Partial<Pick<CmaPricing, 'hold'>>,
 ): PricingRangeDisplay {
   if (p.recommended >= p.valueLow && p.recommended <= p.valueHigh) {
     return { label: 'Supported range', outOfRange: false, note: null }
+  }
+  // RULE 26 (Matt 2026-10-07, "Hold, letter says both"). A letter held
+  // because the failed ask pulled the price under the band states the band
+  // and the failed ask once, in chapter 3 (heldUnderBandLead). "Capped below
+  // this range. See How we got the price." pointed at a section that does
+  // not exist and sat beside a sentence saying the opposite.
+  if (p.hold?.kind === 'ask-below-band') {
+    return { label: 'Comp-supported range', outOfRange: true, note: null }
   }
   const direction = p.recommended < p.valueLow ? 'below' : 'above'
   return {

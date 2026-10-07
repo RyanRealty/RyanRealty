@@ -10,11 +10,12 @@
 import { cleanText, countWord, escapeHtml, int, usd } from '@/lib/cma/render-blocks'
 import { sanitizeLetterEmDash } from '@/lib/cma/voice-sanitize'
 import { pricingRangeDisplay } from '@/lib/cma/pricing'
-import { currentAskLine } from '@/lib/cma/cover-value'
+import { currentAskLine, heldUnderBand } from '@/lib/cma/cover-value'
 import { oneOutlierMakesTheSpan, tableAdjustedBand } from '@/lib/cma/cover-value'
 import { describeCompSearch } from '@/lib/pricing/search-story'
 import {
   renderCompMatrixHtml,
+  subjectDomDays,
   subjectListingFailed,
   subjectPrintableAsk,
   type SubjectAskContext,
@@ -82,6 +83,57 @@ export function whatItsWorthHeading(input: {
   return sanitizeLetterEmDash(sentencesOf(logic)[0] ?? 'What the sales say')
 }
 
+/** How the last listing came off, in the words a seller uses. */
+function cameOffPhrase(status: string | null | undefined): string {
+  const s = (status ?? '').trim().toLowerCase()
+  if (s.startsWith('expired')) return 'expired'
+  if (s.startsWith('withdrawn')) return 'was withdrawn'
+  if (s.startsWith('cancel')) return 'was canceled'
+  return 'came off the market unsold'
+}
+
+/**
+ * RULE 26 (Matt 2026-10-07, "Hold, letter says both"). 915 Saginaw: every sale
+ * that set the price adjusts above the $925,000 failed ask. 20676 Wild Rose:
+ * withdrawn after 25 days at $599,900, under a band of $610,150 to $678,983.
+ * The build holds the letter for Matt (lib/cma/gap-hold.ts
+ * applyAskBelowBandHold), and the letter states both facts plainly and once,
+ * in this order: the sales that set the price support the band, and buyers
+ * passed at the last ask, how long it sat and how it came off. The number on
+ * the cover is the failed-ask result under the ask, labeled as the price Matt
+ * is reviewing (coverPriceHeadline); nothing here repeats it.
+ *
+ * Every dollar is the table's: the band is the adjusted sales still in the
+ * grid (tableAdjustedBand, the Sale price today row), and the ask is the one
+ * the subject column prints. Wild Rose printed "List in that range", "capped
+ * below this range. See How we got the price" (not a section), "the
+ * recommended list sits on the sales, not on that ask", and "The sales
+ * support a value of $661,000" (printed nowhere else), beside a paragraph
+ * saying the price was set under the ask. None of that prints on a held
+ * letter.
+ */
+export function heldUnderBandLead(
+  subject: CmaSubject,
+  pricing: CmaPricing,
+  askCtx?: SubjectAskContext,
+  comps?: readonly CmaAdjustedComp[] | null,
+  finalCycle?: import('@/lib/cma/expired-audit').ExpiredFinalCycle | null,
+): string {
+  const table = comps && comps.length > 0 ? tableAdjustedBand(comps, pricing) : null
+  const low = table?.low ?? Math.min(pricing.valueLow, pricing.valueHigh)
+  const high = table?.high ?? Math.max(pricing.valueLow, pricing.valueHigh)
+  const n = comps && comps.length > 0 ? keptCompCount(pricing, comps) : 0
+  const who = n > 0 ? `The ${countWord(n)} sales that set the price` : 'The sales that set the price'
+  const first = `${who} support ${usd(low)} to ${usd(high)}.`
+  const heldAsk = pricing.hold?.ask != null && pricing.hold.ask > 0 ? pricing.hold.ask : null
+  const ask = failedSubjectAsk(subject, askCtx) ?? heldAsk ?? pricing.failedAsk ?? null
+  if (ask == null || !(ask > 0)) return first
+  const days = finalCycle?.days ?? subjectDomDays(subject)
+  const how = cameOffPhrase(finalCycle?.status ?? subject.standardStatus)
+  const sat = days != null && days > 0 ? `sat ${int(days)} ${days === 1 ? 'day' : 'days'} and ` : ''
+  return `${first} Buyers passed at the last ask of ${usd(ask)}. The listing ${sat}${how}.`
+}
+
 /**
  * The line under the number.
  *
@@ -95,7 +147,15 @@ export function whatItsWorthLead(
   pricing: CmaPricing,
   askCtx?: SubjectAskContext,
   comps?: readonly CmaAdjustedComp[] | null,
+  finalCycle?: import('@/lib/cma/expired-audit').ExpiredFinalCycle | null,
 ): string {
+  // A letter held under rule 26 says both facts and nothing that argues with
+  // them: no "list in that range", no capped note, no below-band note.
+  if (heldUnderBand(pricing)) {
+    return [heldUnderBandLead(subject, pricing, askCtx, comps, finalCycle), currentAskLine(pricing)]
+      .filter((b): b is string => Boolean(b && b.trim()))
+      .join(' ')
+  }
   // THE PRICE, EXPLAINED, FIRST (Matt 2026-10-07). Keats recommended listing
   // at $639,000 while its five sales weighed out to $622,128, and no sentence
   // joined the two. The expected sale is the first thing under the heading,
@@ -604,13 +664,15 @@ export function pricingPage(input: PricingPageInput): CmaPageDef {
   // stated a method yielding $1,973,000 and printed $1,473,000 with nothing
   // between them (tasteReview round three, §2 item 1). lib/pricing writes the
   // sentence; it prints where the reader meets the number, and nowhere else.
-  const clamp = deRepeatRecommendDollars(clampSentence(p), p.recommended)
+  // A held letter (rule 26) prints no clamp sentence: its "sales support a
+  // value of" figure is printed nowhere else, and the held lead says it once.
+  const clamp = heldUnderBand(p) ? '' : deRepeatRecommendDollars(clampSentence(p), p.recommended)
   const clampHtml = clamp ? `<p class="worth-lead-note">${esc(clamp)}</p>` : ''
   const lead = input.omitLeadPrices
     ? ''
     : `
   <h2 class="section is-answer">${esc(heading)}</h2>
-  <p class="worth-lead">${esc(whatItsWorthLead(s, p, input.askCtx, input.comps))}</p>
+  <p class="worth-lead">${esc(whatItsWorthLead(s, p, input.askCtx, input.comps, input.finalCycle))}</p>
   ${clampHtml}`
   // THE METHOD MOVED TO BASIS AND LIMITS (Matt 2026-10-07). Under the
   // headline the reader gets the expected sale and the range, and nothing
@@ -657,7 +719,7 @@ export function pricingPage(input: PricingPageInput): CmaPageDef {
     toc: heading,
     body: `
   ${lead}
-  ${input.omitLeadPrices ? `<p class="worth-lead">${esc(whatItsWorthLead(s, p, input.askCtx, input.comps))}</p>
+  ${input.omitLeadPrices ? `<p class="worth-lead">${esc(whatItsWorthLead(s, p, input.askCtx, input.comps, input.finalCycle))}</p>
   ${clampHtml}` : ''}
   ${ageHtml}
   ${neverOwnedHtml}

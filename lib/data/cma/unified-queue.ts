@@ -26,6 +26,7 @@ import {
   type CmaSendMode,
 } from '@/lib/cma/origin'
 import { cmaQueueReachFromFacts, type CmaQueueReach, theirPriceFromBuildSummary } from '@/lib/cma/queue-view'
+import { storedHoldDecided, storedHoldKind } from '@/lib/cma/gap-hold'
 import { pickSendableCell, type IntakePhone } from '@/lib/prospecting/intake-gate'
 
 function client() {
@@ -144,11 +145,13 @@ export type CmaQueueRow = {
   prospectKind: 'expired' | 'fsbo' | null
   prospectId: string | null
   /**
-   * The build's own hold for Matt (SKILL.md rule 22): the last failed ask sat
-   * inside the trimmed band. The state stays 'flagged'; this is what makes
-   * the flag unacknowledgeable at every send gate.
+   * The build's own hold for Matt: 'ask-in-band' (SKILL.md rule 22, the last
+   * failed ask sat inside the trimmed band) or 'ask-below-band' (the failed-ask
+   * ceiling pulled the recommendation under every sale that set it, rule 20).
+   * The state stays 'flagged'; this is what makes the flag unacknowledgeable
+   * at every send gate.
    */
-  holdKind: 'ask-in-band' | null
+  holdKind: 'ask-in-band' | 'ask-below-band' | null
   /**
    * True when the build measured the last failed ask against the band and
    * decided (build_summary.hold_measured, or a stored hold kind). False on a
@@ -159,9 +162,11 @@ export type CmaQueueRow = {
   holdDecided: boolean
 }
 
-/** Only the one kind the build writes maps through; anything else is null. */
-export function holdKindFromSummary(summary: CmaBuildSummary | null | undefined): 'ask-in-band' | null {
-  return summary?.hold_kind === 'ask-in-band' ? 'ask-in-band' : null
+/** Only the kinds the build writes map through; anything else is null. */
+export function holdKindFromSummary(
+  summary: CmaBuildSummary | null | undefined,
+): 'ask-in-band' | 'ask-below-band' | null {
+  return storedHoldKind(summary)
 }
 
 /**
@@ -172,8 +177,7 @@ export function holdKindFromSummary(summary: CmaBuildSummary | null | undefined)
  * decision skipped the live backstop on exactly those rows (review, 2026-10-07).
  */
 export function holdDecidedFromSummary(summary: CmaBuildSummary | null | undefined): boolean {
-  if (summary == null || typeof summary !== 'object') return false
-  return summary.hold_kind === 'ask-in-band' || summary.hold_measured === true
+  return storedHoldDecided(summary)
 }
 
 type Row = Record<string, unknown>

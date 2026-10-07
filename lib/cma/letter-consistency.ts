@@ -10,7 +10,12 @@ import { letterProductNoun } from '@/lib/cma/market-area'
 import { int } from '@/lib/cma/render-blocks'
 import { namedSalesPlace } from '@/lib/pricing/comp-area'
 import { printedAdjustedPrice, settingWeight } from '@/lib/pricing/seller-net'
-import { readSetAsideSales } from '@/lib/cma/set-aside'
+import { readSetAsideSales, setAsideMatcher } from '@/lib/cma/set-aside'
+import {
+  ASK_BELOW_BAND_KIND,
+  failedAskPutRecommendationUnderBand,
+  recommendationUnderPrintedBand,
+} from '@/lib/cma/gap-hold'
 import type { CmaPricing } from '@/lib/cma/types'
 import type { ContractCheck } from '@/lib/cma/contract'
 
@@ -231,6 +236,48 @@ export function recommendedAtOrBelowBandCheck(pricing: {
   }
 }
 
+/**
+ * A list under the printed band low is not a price either (rule 20; review,
+ * 2026-10-07: 120 Benaiah printed $550,000 under a $600,000 to $660,000 band).
+ * The one recommendation that may sit there is one the failed-ask ceiling put
+ * there on a document the build holds for Matt (lib/cma/gap-hold.ts
+ * applyAskBelowBandHold); that letter never sends. Measured on the band the
+ * reader sees (printedBandBounds), so a rec on the printed low passes.
+ */
+export function recommendedAtOrAboveBandLowCheck(pricing: {
+  recommended?: number | null
+  valueLow?: number | null
+  valueHigh?: number | null
+  hold?: { kind?: string | null } | null
+  clamp?: CmaPricing['clamp']
+  priceOverride?: number | null
+}): ContractCheck {
+  const rec = money(pricing.recommended)
+  const under = recommendationUnderPrintedBand(pricing)
+  const held =
+    under != null &&
+    (pricing.hold?.kind === ASK_BELOW_BAND_KIND ||
+      (pricing.hold != null && failedAskPutRecommendationUnderBand(pricing)))
+  // A broker override is a person choosing the number (rule 26).
+  const override = pricing.priceOverride != null && pricing.priceOverride > 0
+  const pass = under == null || held || override
+  return {
+    id: 'recommended-at-or-above-band-low',
+    severity: 'hard',
+    pass,
+    detail:
+      under == null
+        ? rec != null
+          ? `Recommended list $${rec.toLocaleString('en-US')} sits at or above the printed band low.`
+          : 'Recommended list or band is not printed.'
+        : override
+          ? `Recommended list $${rec!.toLocaleString('en-US')} sits under the printed band low $${under.low.toLocaleString('en-US')} as a broker override.`
+          : held
+          ? `Recommended list $${rec!.toLocaleString('en-US')} sits under the printed band low $${under.low.toLocaleString('en-US')} because the failed ask pulled it there, and the document is held for Matt.`
+          : `Recommended list $${rec!.toLocaleString('en-US')} sits under the printed band low $${under.low.toLocaleString('en-US')}, and no held failed-ask ceiling explains it.`,
+  }
+}
+
 export function letterRecommendDollarsCheck(
   html: string,
   pricing: { recommended?: number | null; valueLow?: number | null; valueHigh?: number | null },
@@ -321,13 +368,12 @@ export function bandVersusClosedCompsCheck(
       detail: 'A sale that does not set the price is still in the table.',
     }
   }
-  const key = (v: string | null | undefined): string => (v ?? '').trim().toLowerCase()
-  const asideKeys = new Set(
-    readSetAsideSales(pricing as unknown as CmaPricing).flatMap((r) =>
-      [key(r.listingKey), key(r.address)].filter(Boolean),
-    ),
-  )
-  const bandSetters = setters.filter((c) => !asideKeys.has(key(c.listingKey)) && !asideKeys.has(key(c.address)))
+  // The pin's own matcher: by listing key, never by a unit-less address.
+  const isAside = setAsideMatcher(pricing as unknown as CmaPricing)
+  const asideCount = readSetAsideSales(pricing as unknown as CmaPricing).length
+  const asideWords =
+    asideCount >= 2 ? ', the highest and lowest set aside' : asideCount === 1 ? ', one sale set aside' : ''
+  const bandSetters = setters.filter((c) => !isAside(c))
   if (bandSetters.length > 0) {
     const ends = bandSetters
       .map((c) =>
@@ -354,8 +400,8 @@ export function bandVersusClosedCompsCheck(
         severity: 'hard',
         pass,
         detail: pass
-          ? `Band ${band} is the adjusted sales that set the price ${span}${asideKeys.size > 0 ? ', the highest and lowest set aside' : ''}.`
-          : `Band ${band} is not the adjusted sales that set the price ${span}${asideKeys.size > 0 ? ', the highest and lowest set aside' : ''}.`,
+          ? `Band ${band} is the adjusted sales that set the price ${span}${asideWords}.`
+          : `Band ${band} is not the adjusted sales that set the price ${span}${asideWords}.`,
       }
     }
   }
@@ -423,6 +469,9 @@ export function evaluateLetterConsistencyContract(args: {
     highEnd?: number | null
     valueLow?: number | null
     valueHigh?: number | null
+    hold?: { kind?: string | null } | null
+    clamp?: CmaPricing['clamp']
+    priceOverride?: number | null
   }
   closedComps?: readonly { adjustedPrice?: number | null; closePrice?: number | null; address?: string | null }[] | null
   /** Expired listings the letter counted. Each address has to be in the table. */
@@ -437,6 +486,7 @@ export function evaluateLetterConsistencyContract(args: {
     letterLinkTrackingCheck(args.html, args.identity),
     highEndAtOrBelowBandCheck(args.pricing),
     recommendedAtOrBelowBandCheck(args.pricing),
+    recommendedAtOrAboveBandLowCheck(args.pricing),
     letterRecommendDollarsCheck(args.html, args.pricing),
     bandVersusClosedCompsCheck(args.pricing, args.closedComps),
     countedRowsInDocumentCheck({

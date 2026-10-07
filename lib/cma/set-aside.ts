@@ -85,6 +85,43 @@ function key(v: string | null | undefined): string {
 }
 
 /**
+ * THE ONE MATCHER from a set-aside entry to a printed sale (review,
+ * 2026-10-07). Comp addresses carry no unit on either ladder, so two units in
+ * one building print the same street address: matching by address sent a kept
+ * unit out of the band beside the set-aside one ($470,000 under "100 Main St"
+ * dropped with the $500,000 unit). The pricer writes the listing key on every
+ * entry it sets aside, so the key decides. The address is read only for an
+ * entry that has no key (a row stored before the key was written).
+ *
+ * Every reader of the set-aside list goes through this: the band pin
+ * (lib/pricing/estimate.ts), the letter contract (lib/cma/letter-consistency.ts),
+ * setAsideCompIndexes below, and through it the cover band
+ * (lib/cma/cover-value.ts tableBandSales).
+ */
+export function setAsideEntryFor(
+  named: readonly SetAsideSale[],
+  sale: { listingKey?: string | null; address?: string | null },
+): SetAsideSale | null {
+  const saleKey = key(sale.listingKey)
+  if (saleKey) {
+    const byKey = named.find((r) => key(r.listingKey) === saleKey)
+    if (byKey) return byKey
+  }
+  const saleAddress = key(sale.address)
+  if (!saleAddress) return null
+  return named.find((r) => !key(r.listingKey) && key(r.address) === saleAddress) ?? null
+}
+
+/** A predicate over printed sales: true for a sale the pricing unit set aside. */
+export function setAsideMatcher(
+  pricing: CmaPricing | null | undefined,
+): (sale: { listingKey?: string | null; address?: string | null }) => boolean {
+  const named = readSetAsideSales(pricing)
+  if (named.length === 0) return () => false
+  return (sale) => setAsideEntryFor(named, sale) != null
+}
+
+/**
  * WHICH PRINTED SALES ARE SET ASIDE, by their index in the grid.
  *
  * The field wins. When it is absent (rows built before `pricing.setAside`
@@ -101,9 +138,8 @@ export function setAsideCompIndexes(
   const out = new Set<number>()
   const named = readSetAsideSales(pricing)
   if (named.length > 0) {
-    const keys = new Set(named.flatMap((r) => [key(r.listingKey), key(r.address)].filter(Boolean)))
     comps.forEach((c, i) => {
-      if (keys.has(key(c.listingKey)) || keys.has(key(c.address))) out.add(i)
+      if (setAsideEntryFor(named, c) != null) out.add(i)
     })
     if (out.size > 0) return out
   }
@@ -141,11 +177,7 @@ export function setAsideRows(
 ): Array<{ address: string; reason: string }> {
   const indexes = [...setAsideCompIndexes(pricing, comps)]
   if (indexes.length === 0) return []
-  const named = new Map(
-    readSetAsideSales(pricing).flatMap((r) =>
-      [key(r.listingKey), key(r.address)].filter(Boolean).map((k) => [k, r] as const),
-    ),
-  )
+  const named = readSetAsideSales(pricing)
   const values = indexes
     .map((i) => comps[i]?.adjustedPrice ?? null)
     .filter((v): v is number => v != null && Number.isFinite(v))
@@ -155,7 +187,7 @@ export function setAsideRows(
     .map((i) => {
       const c = comps[i]
       if (!c) return null
-      const supplied = named.get(key(c.listingKey)) ?? named.get(key(c.address)) ?? null
+      const supplied = setAsideEntryFor(named, c)
       const price = c.adjustedPrice ?? null
       const fallback =
         price != null && high != null && price === high
