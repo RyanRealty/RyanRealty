@@ -204,7 +204,7 @@ export function worthRangeRounded(
   pricing: CmaPricing,
   comps?: readonly CmaAdjustedComp[] | null,
 ): { low: number; high: number } {
-  const table = comps && comps.length > 0 ? tableAdjustedBand(comps) : null
+  const table = comps && comps.length > 0 ? tableAdjustedBand(comps, pricing) : null
   if (table) return table
   return {
     low: round1k(Math.min(pricing.valueLow, pricing.valueHigh)),
@@ -244,7 +244,7 @@ export function listRangeBounds(
   failedAsk?: number | null,
   comps?: readonly CmaAdjustedComp[] | null,
 ): { low: number; high: number } | null {
-  const table = comps && comps.length > 0 ? tableAdjustedBand(comps) : null
+  const table = comps && comps.length > 0 ? tableAdjustedBand(comps, pricing) : null
   if (table) return table
   const band = closedCompBand(pricing)
   if (band) {

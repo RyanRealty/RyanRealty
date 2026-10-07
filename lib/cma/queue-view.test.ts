@@ -9,12 +9,14 @@ import {
   cmaQueueWalk,
   cmaQueueWhoLine,
   cmaQueueWhy,
+  CMA_QUEUE_WHY_LABEL,
   cmaReviewHref,
   filterCmaQueueRows,
   resolveTheirPrice,
   sliceCmaQueuePage,
   sortCmaQueueRows,
   theirPriceFromBuildSummary,
+  toCmaQueueViewRow,
   type CmaQueueViewRow,
 } from '@/lib/cma/queue-view'
 
@@ -220,6 +222,67 @@ describe('cma queue paging and why', () => {
     expect(cmaQueueReachNote('unconfirmed-phone')).toBe('phone on file, not a confirmed cell')
     expect(cmaQueueReachNote('none')).toBe('no email')
     expect(cmaQueueReachNote('email')).toBeNull()
+  })
+})
+
+describe('the ask-in-band hold in the queue (SKILL.md rule 22, Matt 2026-10-07)', () => {
+  const reason =
+    "The last ask of $925,000 sits inside the sales range of $893,000 to $951,000 the recommendation reads from. The home did not sell at a price the sales support, so the letter's reason that the ask was too high does not hold. It stays with you. It was not queued and it was not sent."
+
+  it('reads the stored kind first on a flagged row, with its own chip label', () => {
+    expect(cmaQueueWhy({ state: 'flagged', holdKind: 'ask-in-band', reviewReason: reason })).toBe('ask-in-band')
+    expect(CMA_QUEUE_WHY_LABEL['ask-in-band']).toBe('Ask inside the range')
+    expect(cmaQueueHoldLine({ state: 'flagged', holdKind: 'ask-in-band', reviewReason: reason })).toBe(
+      `Ask inside the range. ${reason}`,
+    )
+  })
+
+  it('falls back to the phrase for a row built before the field landed', () => {
+    expect(cmaQueueWhy({ state: 'flagged', reviewReason: reason })).toBe('ask-in-band')
+  })
+
+  it('wins over the failed-ask phrases on the same row', () => {
+    expect(
+      cmaQueueWhy({
+        state: 'flagged',
+        holdKind: 'ask-in-band',
+        reviewReason: `Comp evidence supported $630,000 against the asking that just failed. ${reason}`,
+      }),
+    ).toBe('ask-in-band')
+  })
+
+  it('reads every comp-shortage sentence the build writes as short-comps', () => {
+    for (const err of [
+      'Not enough comparable sales in Bend: of the 40 sales searched, 12 were cut for a different property type. Found 3 of the 5 closed sales this home needs to be priced.',
+      'Pricing could not be computed (4 of 5 comps set the price, and this home needs 5).',
+      'Not enough sales of the same product type to price this home. 4 of 6 candidates matched, and this home needs 5.',
+      'Comp shortage: only 4 price-setting sale(s) after the full ladder. This home needs 5.',
+    ]) {
+      expect(cmaQueueWhy({ state: 'failed', buildError: err }), err).toBe('short-comps')
+    }
+  })
+
+  it('carries the kind onto the view row', () => {
+    const view = toCmaQueueViewRow({
+      id: 'r',
+      slug: 'cma-915-saginaw',
+      address: '915 Saginaw',
+      city: 'Bend',
+      origin: 'expired',
+      state: 'flagged',
+      recommendedList: 915_000,
+      valueLow: 893_000,
+      valueHigh: 951_000,
+      theirPrice: 925_000,
+      theirPriceLabel: 'Last list',
+      theirPriceDelta: null,
+      contactName: null,
+      contactEmail: null,
+      createdAt: null,
+      reviewReason: reason,
+      holdKind: 'ask-in-band',
+    })
+    expect(view.why).toBe('ask-in-band')
   })
 })
 

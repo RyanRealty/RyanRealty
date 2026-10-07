@@ -128,7 +128,7 @@ export function evaluateAccuracyContract(args: {
     detail:
       pricing.method2 != null
         ? 'Methods 1, 2, and 3 all computed.'
-        : 'Method 2 missing — fewer than 3 comps reached the baseline.',
+        : 'Method 2 missing: fewer than ' + minComps + ' comps reached the baseline.',
   })
   checks.push({
     id: 'range-consistency',

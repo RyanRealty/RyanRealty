@@ -133,7 +133,16 @@ export async function approveAndDeliverCma(
       return { ok: false, blocked: 'state', error: why[row.state] ?? `Not sendable from state "${row.state}".` }
     }
 
-    const gap = recommendationGapHold(row.recommendedList, row.theirPrice)
+    // Unconditional, before any acknowledgement: rule 3's two reasons, the
+    // build's own ask-in-band hold (rule 22), and the live backstop on an
+    // expired row built before that field. No needsReviewAck on any of them.
+    const gap = recommendationGapHold(row.recommendedList, row.theirPrice, {
+      low: row.valueLow,
+      high: row.valueHigh,
+      holdKind: row.holdKind,
+      holdDecided: row.holdDecided,
+      origin: row.origin,
+    })
     if (gap.hold) {
       return { ok: false, blocked: 'state', error: gap.reason }
     }

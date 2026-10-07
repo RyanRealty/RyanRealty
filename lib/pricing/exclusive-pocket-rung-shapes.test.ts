@@ -84,14 +84,17 @@ function price(args: {
 }
 
 describe('wider rungs are not an exclusive pocket', () => {
-  it('prices a four-sale ranch shape with a citywide rung and a neighborhood rung', () => {
+  it('prices a five-sale ranch shape with a citywide rung and a neighborhood rung (five price-setting sales, Matt 2026-10-07)', () => {
     const tiers = ['subdivision-6mo', 'subdivision-24mo', 'neighborhood-24mo', 'citywide-12mo']
     expect(selectionIsExclusivePocket(tiers)).toBe(false)
+    // The stored four-sale shape plus one more Cedar Ranch sale: under five
+    // the set is a comp shortage and nothing prices.
     const rows: Row[] = [
       { sold: 1_375_000, sqft: 2_914, timeAdj: 0, weight: 0.8569, tier: 'subdivision-6mo', sub: 'Cedar Ranch' },
       { sold: 1_460_000, sqft: 3_149, timeAdj: -63_218, weight: 0.4112, tier: 'citywide-12mo', sub: 'Other Knoll' },
       { sold: 1_000_000, sqft: 3_072, timeAdj: -15_600, weight: 0.0535, tier: 'subdivision-24mo', sub: 'Cedar Ranch' },
       { sold: 1_000_000, sqft: 2_430, timeAdj: 0, weight: 0.0175, tier: 'neighborhood-24mo', sub: 'Cedar Ranch' },
+      { sold: 1_300_000, sqft: 3_000, timeAdj: 0, weight: 0.3, tier: 'subdivision-24mo', sub: 'Cedar Ranch' },
     ]
     const out = price({
       rows,
@@ -103,20 +106,15 @@ describe('wider rungs are not an exclusive pocket', () => {
       subjectSub: 'Cedar Ranch',
     })
     expect(out.exclusive).toBe(false)
-    expect(out.sales.map((sale) => sale.adjustedPrice)).toEqual([
-      out.sales[0]!.adjustedPrice,
-      out.sales[1]!.adjustedPrice,
-      out.sales[2]!.adjustedPrice,
-      out.sales[3]!.adjustedPrice,
-    ])
-    expect(out.engine.rangeRule?.endpointPpsfAside).toBe(1)
-    expect(out.engine.rangeRule?.endpointWeightAside).toBe(0)
-    // No city index in the stored row, so the small upward date move on the
-    // oldest same-plat sale is not applied. The low rounds from $1,197,737.
-    expect(out.sales.map((sale) => sale.adjustedPrice)).toEqual([1_487_539, 1_450_453, 1_035_511, 1_197_737])
-    expect(out.finished.recommended).toBe(1_422_000)
+    // The $1,035,511 and $1,487,539 ends are set aside; the kept three run
+    // $1,197,737 to $1,450,453. No city index in the stored row, so the
+    // small upward date move on the oldest same-plat sale is not applied.
+    expect(out.sales.map((sale) => sale.adjustedPrice)).toEqual([1_487_539, 1_450_453, 1_035_511, 1_197_737, 1_384_717])
+    expect(out.engine.rangeRule?.rule).toBe('trimmed-one-each-end')
+    expect(out.engine.rangeRule?.kept).toBe(3)
+    expect(out.finished.recommended).toBe(1_385_000)
     expect(out.finished.valueLow).toBe(1_195_000)
-    expect(out.finished.valueHigh).toBe(1_490_000)
+    expect(out.finished.valueHigh).toBe(1_455_000)
     expect(out.finished.conservative).toBeLessThanOrEqual(out.finished.recommended)
     expect(out.finished.recommended).toBeLessThanOrEqual(out.finished.highEnd)
   })
@@ -158,12 +156,18 @@ describe('wider rungs are not an exclusive pocket', () => {
     })
     expect(out.exclusive).toBe(false)
     expect(out.sales.map((sale) => sale.adjustedPrice)).toEqual([654_415, 759_173, 699_000, 744_897, 739_398])
-    expect(out.finished.recommended).toBe(677_000)
-    expect(out.finished.recommended).toBeLessThan(698_000)
-    expect(out.finished.valueLow).toBe(654_000)
-    expect(out.finished.valueHigh).toBe(760_000)
+    // Five sales, trimmed (Matt 2026-10-07): the $654,415 and $759,173 ends
+    // are set aside and the kept three run $699,000 to $744,897. The failed
+    // ask of $698,000 then pulls the list under the band.
+    expect(out.engine.rangeRule?.rule).toBe('trimmed-one-each-end')
+    expect(out.engine.rangeRule?.kept).toBe(3)
+    expect(out.finished.valueLow).toBe(699_000)
+    expect(out.finished.valueHigh).toBe(745_000)
+    // The $698,000 ask sits under the band low, so the cap holds the list at
+    // that low (failedAskBelowRange) instead of printing under the sales.
+    expect(out.finished.recommended).toBe(699_000)
     expect(out.finished.conservative).toBeLessThanOrEqual(out.finished.recommended)
     expect(out.finished.recommended).toBeLessThanOrEqual(out.finished.highEnd)
-    expect(out.finished.recommended).toBeLessThan(misread.finished.recommended)
+    expect(misread.finished.recommended).toBe(693_000)
   })
 })

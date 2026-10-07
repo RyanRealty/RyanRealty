@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { closedCompWeight, fillShortSetWeights } from '@/lib/pricing/closed-comp-weight'
+import { closedCompWeight } from '@/lib/pricing/closed-comp-weight'
 import { listPriceFromEngine } from '@/lib/pricing/estimate'
 import { pricingFailureMessage, recommendationOutsideSaleSet, saleSetsThePrice } from '@/lib/pricing/price-set'
 import { weightedAdjustedPrice } from '@/lib/pricing/reconciliation'
@@ -128,17 +128,23 @@ describe('a sale sets the price only when it is this home', () => {
 
 describe('pricing failure message', () => {
   it('does not call a thin price-setting set a missing sqft', () => {
-    const thin = pricingFailureMessage({ sqft: 1748 }, [{ weight: 0 }, { weight: 0 }, { weight: 0 }])
-    expect(thin).toContain('0 of 3 comps set the price')
+    const thin = pricingFailureMessage({ sqft: 1748 }, [{ weight: 0 }, { weight: 0 }, { weight: 0 }, { weight: 0 }, { weight: 0 }])
+    expect(thin).toContain('0 of 5 comps set the price')
+    expect(thin).toContain('this home needs 5')
     expect(thin).not.toContain('sqft missing')
     expect(pricingFailureMessage({ sqft: null }, [])).toContain('subject sqft missing')
-    expect(pricingFailureMessage({ sqft: 1748 }, [{ weight: 1 }, { weight: 1 }, { weight: 1 }])).toContain(
-      'outside the sales that set it',
+    // Four setters is still a shortage (Matt 2026-10-07); five that set it
+    // and no price is the recommendation sitting outside them.
+    expect(pricingFailureMessage({ sqft: 1748 }, [{ weight: 1 }, { weight: 1 }, { weight: 1 }, { weight: 1 }])).toContain(
+      '4 of 4 comps set the price, and this home needs 5',
     )
+    expect(
+      pricingFailureMessage({ sqft: 1748 }, [{ weight: 1 }, { weight: 1 }, { weight: 1 }, { weight: 1 }, { weight: 1 }]),
+    ).toContain('outside the sales that set it')
   })
 })
 
-describe('a short plat does not stand alone', () => {
+describe('a sale from another community never sets the price, however short the set (rule 20, Matt 2026-10-07)', () => {
   const home = {
     sqft: 1748,
     beds: 3,
@@ -172,32 +178,54 @@ describe('a short plat does not stand alone', () => {
     monthsSinceClose: 2,
   })
 
-  it('keeps the inside sale and lets the admitted next rung set the price', () => {
-    const filled = fillShortSetWeights(home, [inside, outside(), outside(2000), outside(1600)])
-    expect(filled[0]?.weight).toBe(2.4)
-    expect(filled.slice(1).every((comp) => comp.weight > 0)).toBe(true)
-    expect(closedCompWeight({
+  const weightOf = (sale: ReturnType<typeof outside> | typeof inside) =>
+    closedCompWeight({
       subjectSqft: home.sqft,
-      saleSqft: 1900,
-      monthsSinceClose: 2,
+      saleSqft: sale.sqft,
+      monthsSinceClose: sale.monthsSinceClose,
+      subjectBeds: home.beds,
+      saleBeds: sale.beds,
+      subjectSubdivision: home.subdivision,
+      saleSubdivision: sale.subdivision,
+      selectionTier: sale.selectionTier,
+      ownPlat: sale.ownPlat,
       subjectCommunity: home.communitySlug,
-      subjectCommunityLocated: true,
-      saleCommunity: null,
-      saleCommunityLocated: true,
+      saleCommunity: sale.communitySlug,
+      subjectCommunityLocated: home.communityLocated,
+      saleCommunityLocated: sale.communityLocated,
+      subjectLotAcres: home.lotAcres,
+      saleLotAcres: sale.lotAcres,
+    })
+
+  it('weighs the outside sale at zero with one inside sale and with none, so the setters are exactly the inside set', () => {
+    // The fill that once re-weighted an outside sale when fewer than three
+    // set the price is gone: under five setters the build is a comp shortage.
+    expect(weightOf(inside)).toBeGreaterThan(0)
+    expect(weightOf(outside())).toBe(0)
+    expect(weightOf(outside(2000))).toBe(0)
+    expect(weightOf(outside(1600))).toBe(0)
+    const set = [inside, outside(), outside(2000), outside(1600)].map((sale) => ({ ...sale, weight: weightOf(sale) }))
+    expect(set.filter((comp) => comp.weight > 0)).toHaveLength(1)
+    expect(saleSetsThePrice({
+      ownPlat: false,
       subjectSubdivision: home.subdivision,
       saleSubdivision: 'Other Tract',
-    })).toBe(0)
+      subjectCommunity: home.communitySlug,
+      saleCommunity: null,
+      subjectCommunityLocated: true,
+      saleCommunityLocated: true,
+      subjectSqft: home.sqft,
+      saleSqft: 1900,
+    })).toBe(false)
   })
 
-  it('still refuses a different size, and does not open the next rung once three sales set the price', () => {
-    const tooBig = outside(2756)
-    const filled = fillShortSetWeights(home, [inside, outside(), outside(1800), tooBig])
-    expect(filled[3]?.weight).toBe(0)
-    expect(filled.filter((comp) => comp.weight > 0)).toHaveLength(3)
-    const three = [1, 2, 3].map((weight) => ({ ...inside, weight }))
-    const held = fillShortSetWeights(home, [...three, outside()])
-    expect(held[3]?.weight).toBe(0)
-    expect(held.slice(0, 3).map((comp) => comp.weight)).toEqual([1, 2, 3])
+  it('still refuses a clearly different size, and an outside sale stays at zero beside five setters', () => {
+    const tooBig = { ...inside, sqft: 2756 }
+    expect(weightOf(tooBig)).toBe(0)
+    const five = [1, 2, 3, 4, 5].map((weight) => ({ ...inside, weight: weightOf(inside) * weight }))
+    const held = [...five, { ...outside(), weight: weightOf(outside()) }]
+    expect(held[5]?.weight).toBe(0)
+    expect(held.filter((comp) => comp.weight > 0)).toHaveLength(5)
   })
 })
 

@@ -306,6 +306,9 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
         ),
       ]
       const remaining = compsForPricing.filter((c) => !flagged.includes(c.listingKey))
+      // A five-sale set cannot lose a sale and still price (the cap equals the
+      // floor, Matt 2026-10-07): a flagged comp falls through to the review
+      // flag, never a silent reprice.
       if (flagged.length > 0 && remaining.length >= MIN_COMPS) {
         const rederived = deriveAll(remaining)
         if (rederived.p && rederived.op) {

@@ -88,6 +88,7 @@ function sale(over: Partial<SelectedPricingComp> = {}): SelectedPricingComp {
     photoUrl: null,
     publicRemarks: null,
     selectionTier: 'subdivision-3mo',
+    setsPrice: true,
     proximity: '0.10 miles',
     monthsBeforeAsOf: 4,
     ...over,
@@ -296,11 +297,13 @@ describe('adjustCompAlongMarket', () => {
 })
 
 describe('predictedCloseFromAdjusted', () => {
-  it('uses median time-adjusted $/sqft times subject GLA', () => {
+  it('uses median time-adjusted $/sqft times subject GLA (five price-setting sales, Matt 2026-10-07)', () => {
     const predicted = predictedCloseFromAdjusted(2000, [
       { ppsfTimeAdjusted: 350 },
       { ppsfTimeAdjusted: 360 },
       { ppsfTimeAdjusted: 370 },
+      { ppsfTimeAdjusted: 355 },
+      { ppsfTimeAdjusted: 365 },
     ])
     expect(predicted).toBe(720_000)
   })
@@ -308,18 +311,31 @@ describe('predictedCloseFromAdjusted', () => {
   it('drops a 12%+ $/sqft outlier before the median', () => {
     const rows = [
       { ppsfTimeAdjusted: 350, id: 'a' },
-      { ppsfTimeAdjusted: 355, id: 'b' },
-      { ppsfTimeAdjusted: 360, id: 'c' },
+      { ppsfTimeAdjusted: 352, id: 'b' },
+      { ppsfTimeAdjusted: 355, id: 'c' },
+      { ppsfTimeAdjusted: 358, id: 'd' },
+      { ppsfTimeAdjusted: 360, id: 'e' },
       { ppsfTimeAdjusted: 500, id: 'out' },
     ]
-    expect(trimPpsfOutliers(rows).map((r) => r.id)).toEqual(['a', 'b', 'c'])
+    expect(trimPpsfOutliers(rows).map((r) => r.id)).toEqual(['a', 'b', 'c', 'd', 'e'])
     expect(predictedCloseFromAdjusted(2000, rows)).toBe(710_000)
   })
 
-  it('refuses a sell price on one or two sales', () => {
+  it('refuses a sell price on one, two, three or four sales (five price-setting sales is the floor, Matt 2026-10-07)', () => {
     expect(predictedCloseFromAdjusted(2000, [{ ppsfTimeAdjusted: 466 }])).toBeNull()
     expect(
       predictedCloseFromAdjusted(2000, [{ ppsfTimeAdjusted: 350 }, { ppsfTimeAdjusted: 360 }]),
+    ).toBeNull()
+    expect(
+      predictedCloseFromAdjusted(2000, [{ ppsfTimeAdjusted: 350 }, { ppsfTimeAdjusted: 360 }, { ppsfTimeAdjusted: 370 }]),
+    ).toBeNull()
+    expect(
+      predictedCloseFromAdjusted(2000, [
+        { ppsfTimeAdjusted: 350 },
+        { ppsfTimeAdjusted: 360 },
+        { ppsfTimeAdjusted: 370 },
+        { ppsfTimeAdjusted: 355 },
+      ]),
     ).toBeNull()
   })
 })
@@ -368,8 +384,10 @@ describe('estimateClosePrice n<3', () => {
         sale({ sqft: 2000, closePrice: 700_000, closeDate: '2025-12-01' }),
         sale({ listingKey: 'C2', sqft: 2000, closePrice: 700_000, closeDate: '2025-12-01' }),
         sale({ listingKey: 'C3', sqft: 2000, closePrice: 700_000, closeDate: '2025-12-01' }),
+        sale({ listingKey: 'C4', sqft: 2000, closePrice: 700_000, closeDate: '2025-12-01' }),
+        sale({ listingKey: 'C5', sqft: 2000, closePrice: 700_000, closeDate: '2025-12-01' }),
       ],
-      compStories: ['one', 'one', 'one'],
+      compStories: ['one', 'one', 'one', 'one', 'one'],
       points,
       asOf: '2026-01-15',
       market: null,
@@ -389,8 +407,10 @@ describe('estimateClosePrice compsImpliedClose', () => {
         sale({ sqft: 2000, closePrice: 700_000, closeDate: '2025-12-01' }),
         sale({ listingKey: 'C2', sqft: 2000, closePrice: 700_000, closeDate: '2025-12-01' }),
         sale({ listingKey: 'C3', sqft: 2000, closePrice: 700_000, closeDate: '2025-12-01' }),
+        sale({ listingKey: 'C4', sqft: 2000, closePrice: 700_000, closeDate: '2025-12-01' }),
+        sale({ listingKey: 'C5', sqft: 2000, closePrice: 700_000, closeDate: '2025-12-01' }),
       ],
-      compStories: ['one', 'one', 'one'],
+      compStories: ['one', 'one', 'one', 'one', 'one'],
       points: [
         { month: '2025-12-01', ppsf: 350, n: 40 },
         { month: '2026-01-01', ppsf: 350, n: 40 },
@@ -460,10 +480,13 @@ describe('listPriceFromEngine is the only cover number', () => {
     { month: '2025-12-01', ppsf: 290, n: 40, saleToOriginal: 0.98 },
     { month: '2026-01-01', ppsf: 290, n: 40, saleToOriginal: 0.98 },
   ]
+  // Five price-setting sales (Matt 2026-10-07).
   const comps = [
     sale({ sqft: 1600, closePrice: 430_000, originalAsk: 440_000, closeDate: '2025-12-01' }),
     sale({ listingKey: 'C2', sqft: 1600, closePrice: 440_000, originalAsk: 450_000, closeDate: '2025-12-01' }),
     sale({ listingKey: 'C3', sqft: 1600, closePrice: 450_000, originalAsk: 460_000, closeDate: '2025-12-01' }),
+    sale({ listingKey: 'C4', sqft: 1600, closePrice: 435_000, originalAsk: 445_000, closeDate: '2025-12-01' }),
+    sale({ listingKey: 'C5', sqft: 1600, closePrice: 445_000, originalAsk: 455_000, closeDate: '2025-12-01' }),
   ]
 
   it('does not use Method 3 as the list price when a last ask exists', () => {
@@ -471,7 +494,7 @@ describe('listPriceFromEngine is the only cover number', () => {
       subject: { ...subject, standardStatus: 'Active', sqft: 1602, lastListPrice: 505_100 },
       subjectStory: 'one',
       comps,
-      compStories: ['one', 'one', 'one'],
+      compStories: ['one', 'one', 'one', 'one', 'one'],
       points,
       asOf: '2026-01-15',
       market: null,
@@ -487,7 +510,7 @@ describe('listPriceFromEngine is the only cover number', () => {
       subject: { ...subject, standardStatus: 'Active', sqft: 1602, lastListPrice: 505_100 },
       subjectStory: 'one',
       comps,
-      compStories: ['one', 'one', 'one'],
+      compStories: ['one', 'one', 'one', 'one', 'one'],
       points,
       asOf: '2026-01-15',
       market: null,
@@ -500,6 +523,8 @@ describe('listPriceFromEngine is the only cover number', () => {
             { ppsfTimeAdjusted: 270 },
             { ppsfTimeAdjusted: 275 },
             { ppsfTimeAdjusted: 280 },
+            { ppsfTimeAdjusted: 272 },
+            { ppsfTimeAdjusted: 278 },
           ]
         : [],
       saleToAskRatios: comps.map((c) => c.closePrice / c.originalAsk!),
@@ -538,6 +563,8 @@ describe('listPriceFromEngine is the only cover number', () => {
             sale({ listingKey: 'A', sqft: 1600, closePrice: 430_000, originalAsk: 440_000 }),
             sale({ listingKey: 'B', sqft: 1600, closePrice: 440_000, originalAsk: 450_000 }),
             sale({ listingKey: 'C', sqft: 1600, closePrice: 450_000, originalAsk: 460_000 }),
+            sale({ listingKey: 'D', sqft: 1600, closePrice: 435_000, originalAsk: 445_000 }),
+            sale({ listingKey: 'E', sqft: 1600, closePrice: 445_000, originalAsk: 455_000 }),
           ].map((c) => ({
             ...c,
             monthsSinceClose: 1,
@@ -571,6 +598,8 @@ describe('listPriceFromEngine is the only cover number', () => {
             { ppsfTimeAdjusted: 270 },
             { ppsfTimeAdjusted: 275 },
             { ppsfTimeAdjusted: 280 },
+            { ppsfTimeAdjusted: 272 },
+            { ppsfTimeAdjusted: 278 },
           ].map((row, i) => ({
             ...sale({ listingKey: `P${i}` }),
             monthsSinceClose: 1,
@@ -676,9 +705,12 @@ describe('listPriceFromEngine is the only cover number', () => {
   })
 
   it('off-market cover is sale ÷ sale-to-list, not Method 3, and the list band stays a band', () => {
+    // Five price-setting sales (Matt 2026-10-07); the median $/sqft is now 430.
     const adjusted = [
       { ppsfTimeAdjusted: 425 },
       { ppsfTimeAdjusted: 428 },
+      { ppsfTimeAdjusted: 430 },
+      { ppsfTimeAdjusted: 435 },
       { ppsfTimeAdjusted: 440 },
     ]
     const engine = listPriceFromEngine({
@@ -691,8 +723,8 @@ describe('listPriceFromEngine is the only cover number', () => {
       methodFallback: 458_000,
     })
     expect(engine.source).toBe('comps')
-    expect(engine.predictedClose).toBe(452_000)
-    expect(engine.recommendedList).toBe(472_000)
+    expect(engine.predictedClose).toBe(454_000)
+    expect(engine.recommendedList).toBe(474_000)
     expect(engine.conservativeList).toBeLessThan(engine.recommendedList!)
     expect(engine.highEndList).toBeGreaterThan(engine.recommendedList!)
 
@@ -719,8 +751,8 @@ describe('listPriceFromEngine is the only cover number', () => {
       null,
     )!
     const cover = applyEngineRecommendedList(board, engine)
-    expect(cover.recommended).toBe(472_000)
-    expect(cover.predictedClose).toBe(452_000)
+    expect(cover.recommended).toBe(474_000)
+    expect(cover.predictedClose).toBe(454_000)
     expect(cover.conservative).toBe(engine.conservativeList)
     expect(cover.highEnd).toBe(engine.highEndList)
     expect(cover.highEnd).toBeGreaterThan(cover.recommended)
@@ -827,18 +859,24 @@ describe('D10 — the range and the point come off the printed adjusted prices',
     ])
   })
 
-  it('keeps every sale under six', () => {
+  it('trims one sale at each end once five are priced (trimmed band always, Matt 2026-10-07)', () => {
     expect(range([100, 300, 200, 500, 400])).toEqual({
-      low: 100,
-      high: 500,
-      rule: 'min-max',
+      low: 200,
+      high: 400,
+      rule: 'trimmed-one-each-end',
       n: 5,
-      kept: 5,
+      kept: 3,
     })
+    const part = partitionByRangeRule([100, 300, 200, 500, 400].map((p) => sale(p)))
+    expect(part.setAside.map((s) => s.adjustedPrice).sort((a, b) => a - b)).toEqual([100, 500])
+    expect(part.kept).toHaveLength(3)
   })
 
-  it('will not draw a range from fewer than the comp floor', () => {
+  it('will not draw a range from fewer than the comp floor: four sales is null, never min to max', () => {
     expect(range([100, 200])).toBeNull()
+    expect(range([100, 200, 300])).toBeNull()
+    expect(range([100, 200, 300, 400])).toBeNull()
+    expect(partitionByRangeRule([100, 200, 300, 400].map((p) => sale(p))).rule).toBeNull()
   })
 
   it('prices the low, the point and the high off the same sales', () => {
@@ -992,7 +1030,8 @@ describe('D10 — the range and the point come off the printed adjusted prices',
       for (const prices of [
         [400_000, 420_000, 440_000, 460_000, 480_000, 500_000],
         [400_000, 415_000, 430_000, 445_000, 460_000, 480_000, 500_000],
-        [400_000, 450_000, 500_000],
+        // Five sales: three of the five set the range (Matt 2026-10-07).
+        [400_000, 425_000, 450_000, 475_000, 500_000],
       ]) {
         const engine = listPriceFromEngine({
           subjectSqft: 2000,
@@ -1016,21 +1055,29 @@ describe('D10 — the range and the point come off the printed adjusted prices',
     })
   })
 
-  it('carries the value to an ask at the local share of the original ask', () => {
+  it('carries the value to an ask at the local share of the original ask (five sales, trimmed band, Matt 2026-10-07)', () => {
     const engine = listPriceFromEngine({
       subjectSqft: 2000,
       lastAsk: null,
-      adjusted: [sale(400_000), sale(450_000), sale(500_000)],
+      adjusted: [sale(400_000), sale(425_000), sale(450_000), sale(475_000), sale(500_000)],
       saleToAskRatios: [],
       asOfSaleToOriginal: 0.95,
       qualitySet: false,
     })
-    expect(engine.rangeRule?.rule).toBe('min-max')
+    // The $400,000 and $500,000 ends are set aside; the kept spread is
+    // $425,000 to $475,000, the point is the weighted $450,000, and the list
+    // tiers sit on the band and the point carried at 0.95.
+    expect(engine.rangeRule?.rule).toBe('trimmed-one-each-end')
+    expect(engine.rangeRule?.n).toBe(5)
+    expect(engine.rangeRule?.kept).toBe(3)
+    expect(engine.rangeRule?.adjustedLow).toBe(425_000)
+    expect(engine.rangeRule?.adjustedHigh).toBe(475_000)
     expect(engine.reconciledValue).toBe(450_000)
     expect(engine.recommendedList).toBe(474_000)
-    expect(engine.conservativeList).toBe(421_000)
-    expect(engine.highEndList).toBe(526_000)
+    expect(engine.conservativeList).toBe(447_000)
+    expect(engine.highEndList).toBe(500_000)
     expect(engine.rangeRule?.sentence).toContain('95.0 percent')
+    expect(engine.rangeRule?.sentence).toContain('Two of the five sales')
   })
 
   it('drops a sale-to-ask ratio more than 50 percent from the ask', () => {
@@ -1041,7 +1088,7 @@ describe('D10 — the range and the point come off the printed adjusted prices',
     const engine = listPriceFromEngine({
       subjectSqft: 2000,
       lastAsk: null,
-      adjusted: [sale(400_000), sale(450_000), sale(500_000)],
+      adjusted: [sale(400_000), sale(425_000), sale(450_000), sale(475_000), sale(500_000)],
       // 0.4 and 3.0 are the outliers; the honest median of the rest is 0.95.
       saleToAskRatios: [0.4, 0.9, 0.95, 1.0, 3.0],
       qualitySet: false,
@@ -1072,12 +1119,13 @@ describe('D10 — the range and the point come off the printed adjusted prices',
         { ppsfTimeAdjusted: 210 },
         { ppsfTimeAdjusted: 220 },
         { ppsfTimeAdjusted: 230 },
+        { ppsfTimeAdjusted: 240 },
       ],
       saleToAskRatios: [],
       qualitySet: false,
     })
     expect(engine.rangeRule).toBeNull()
-    expect(engine.compsImpliedClose).toBe(430_000)
+    expect(engine.compsImpliedClose).toBe(440_000)
   })
 })
 
@@ -1437,7 +1485,13 @@ describe('priceCmaSet: the sale-to-ask share comes from the sales that price (re
     taxAnnual: null,
     domTotal: 10,
   })
-  const kept = [pricedSale('K1', 490_000), pricedSale('K2', 500_000), pricedSale('K3', 510_000)]
+  const kept = [
+    pricedSale('K1', 490_000),
+    pricedSale('K2', 500_000),
+    pricedSale('K3', 510_000),
+    pricedSale('K4', 495_000),
+    pricedSale('K5', 505_000),
+  ]
   // Closed at 80% of their original ask, and excluded by the review: not priced.
   const excluded = ['X1', 'X2', 'X3', 'X4'].map((listingKey) =>
     sale({ listingKey, closePrice: 400_000, originalAsk: 500_000, lastAsk: 500_000 }),
@@ -1471,8 +1525,8 @@ describe('priceCmaSet: the sale-to-ask share comes from the sales that price (re
   })
 })
 
-describe('priceCmaSet writes a short-set fill weight back onto the sale the letter holds', () => {
-  it('stamps the filled weight by index and does not drop a sale or zero another', () => {
+describe('priceCmaSet does not fill a short set (Matt 2026-10-07: five price-setting sales is the floor)', () => {
+  it('leaves every weight as the letter holds it and prices nothing under five setters', () => {
     const row = (listingKey: string, closePrice: number, weight: number) => ({
       ...sale({ listingKey, closePrice, originalAsk: closePrice, lastAsk: closePrice, sqft: 2000 }),
       monthsSinceClose: 1,
@@ -1491,8 +1545,14 @@ describe('priceCmaSet writes a short-set fill weight back onto the sale the lett
       taxAnnual: null,
       domTotal: 10,
     })
-    const adjusted = [row('A', 490_000, 1), row('B', 500_000, 1), row('C', 510_000, 0)]
-    priceCmaSet({
+    const adjusted = [
+      row('A', 490_000, 1),
+      row('B', 500_000, 1),
+      row('C', 510_000, 1),
+      row('D', 495_000, 1),
+      row('E', 505_000, 0),
+    ]
+    const pricing = priceCmaSet({
       subject: { ...subject, standardStatus: 'Closed', lastListPrice: null },
       adjusted: adjusted as never,
       market: null,
@@ -1506,9 +1566,9 @@ describe('priceCmaSet writes a short-set fill weight back onto the sale the lett
       marketIndex: [],
       asOf: '2026-01-15',
     })
-    expect(adjusted).toHaveLength(3)
-    expect(adjusted[0]!.weight).toBe(1)
-    expect(adjusted[1]!.weight).toBe(1)
-    expect(adjusted[2]!.weight).toBeGreaterThan(0)
+    // Four setters and one sale at weight 0: no fill, and no price.
+    expect(pricing).toBeNull()
+    expect(adjusted).toHaveLength(5)
+    expect(adjusted.map((c) => c.weight)).toEqual([1, 1, 1, 1, 0])
   })
 })

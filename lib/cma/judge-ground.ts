@@ -97,8 +97,10 @@ export type GroundResult = {
   rule: GroundRule
 }
 
+// The three readers agree on the multi-unit words (lib/pricing/classes.ts
+// multiUnitFromRemarks, lib/cma/judgment-prune.ts PRODUCT_REASON, this).
 const OTHER_PRODUCT =
-  /\b(duplex|triplex|quadruplex|townhomes?|townhouses?|condominiums?|condos?|manufactured|mobile home|multi-?family|shared wall|common wall)\b/i
+  /\b(duplex|tri-?plex|four-?plex|quad-?plex|quadruplex|multi-?unit|both units|townhomes?|townhouses?|condominiums?|condos?|manufactured|mobile home|multi-?family|shared wall|common wall)\b/i
 
 const LOCATION_TOKENS = ['fairway', 'golf', 'resort', 'highway', 'parkway', 'lakefront', 'riverfront', 'commercial']
 

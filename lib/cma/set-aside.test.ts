@@ -60,10 +60,16 @@ function comp(i: number, adjusted: number, close: number): CmaAdjustedComp {
 }
 
 /**
- * Seven sales — enough that trimmed-one-each-end still leaves ≥5 kept
- * (Tip Ready P0 / Cos Falcon smoke floor). A six-sale Concorde-shaped set
- * no longer auto-trims, because that would leave only four on the stack.
+ * Seven sales. Under the five-sale trimmed rule (Matt 2026-10-07: the band
+ * is always the trimmed range) the fallback reader trims at five and up,
+ * so a six-sale Concorde-shaped set trims to four kept and seven to five.
  */
+/** The lowest and the highest adjusted sale in a slice: the two the trimmed rule sets aside. */
+function endsOf(rows: readonly CmaAdjustedComp[]): [CmaAdjustedComp, CmaAdjustedComp] {
+  const sorted = [...rows].sort((a, b) => (a.adjustedPrice ?? 0) - (b.adjustedPrice ?? 0))
+  return [sorted[0]!, sorted[sorted.length - 1]!]
+}
+
 const comps: CmaAdjustedComp[] = [
   comp(1, 1_070_000, 1_050_000),
   comp(2, 1_390_000, 1_380_000),
@@ -189,12 +195,12 @@ describe('set aside', () => {
   })
 
 
-  it('does not auto-trim ends when that would leave fewer than 5 kept sales', () => {
+  it('trims at six, four kept (the five-sale trimmed rule, Matt 2026-10-07)', () => {
     const six = comps.slice(0, 6)
     const p = pricing({
       rangeRule: {
         rule: 'trimmed-one-each-end',
-        sentence: 'Would trim, but the stack floor holds.',
+        sentence: 'The highest and the lowest are set aside.',
       },
       reconciliation: {
         sentence: 'n/a',
@@ -207,11 +213,14 @@ describe('set aside', () => {
         })),
       },
     })
-    expect(setAsideRows(p, six)).toEqual([])
-    expect(keptCompCount(p, six)).toBe(6)
+    const rows = setAsideRows(p, six)
+    expect(rows).toHaveLength(2)
+    const [lowest, highest] = endsOf(six)
+    expect(rows.map((r) => r.address).sort()).toEqual([lowest.address, highest.address].sort())
+    expect(keptCompCount(p, six)).toBe(4)
   })
 
-  it('falls back to the published rule when no set-aside field is on the row', () => {
+  it('reads a legacy min-max row: nothing set aside, every sale kept (no production writer since 2026-10-07)', () => {
     expect(setAsideRows(pricing({ rangeRule: { rule: 'min-max' } }), comps)).toEqual([])
     expect(keptCompCount(pricing({ rangeRule: { rule: 'min-max' } }), comps)).toBe(7)
   })

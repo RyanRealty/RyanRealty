@@ -143,6 +143,28 @@ export type CmaQueueRow = {
   /** Set when this CMA is joined to a prospect row, so send can address it. */
   prospectKind: 'expired' | 'fsbo' | null
   prospectId: string | null
+  /**
+   * The build's own hold for Matt (SKILL.md rule 22): the last failed ask sat
+   * inside the trimmed band. The state stays 'flagged'; this is what makes
+   * the flag unacknowledgeable at every send gate.
+   */
+  holdKind: 'ask-in-band' | null
+  /**
+   * True when the build wrote a verdict at all (build_summary carries the
+   * hold_kind key, null or not). False on a row built before the field, where
+   * the send gates run a live backstop on the row's own ask and band.
+   */
+  holdDecided: boolean
+}
+
+/** Only the one kind the build writes maps through; anything else is null. */
+export function holdKindFromSummary(summary: CmaBuildSummary | null | undefined): 'ask-in-band' | null {
+  return summary?.hold_kind === 'ask-in-band' ? 'ask-in-band' : null
+}
+
+/** The build wrote a verdict: the key is on the summary, whatever it holds. */
+export function holdDecidedFromSummary(summary: CmaBuildSummary | null | undefined): boolean {
+  return summary != null && typeof summary === 'object' && Object.prototype.hasOwnProperty.call(summary, 'hold_kind')
 }
 
 type Row = Record<string, unknown>
@@ -201,6 +223,8 @@ export function resolveCmaQueueState(args: {
 export type CmaBuildSummary = {
   needs_review?: boolean
   review_reason?: string | null
+  /** The build's own hold, when it recorded one (lib/cma/gap-hold.ts). */
+  hold_kind?: string | null
   audit?: {
     used_llm?: boolean
     verdict?: string | null
@@ -424,6 +448,8 @@ export function mapBpoQueueRow(r: Record<string, unknown>): CmaQueueRow {
 
     prospectKind: null,
     prospectId: null,
+    holdKind: holdKindFromSummary(summary),
+    holdDecided: holdDecidedFromSummary(summary),
   }
 }
 
@@ -681,6 +707,8 @@ export async function listCmaQueue(options: {
 
       prospectKind: ctx?.kind ?? prospectKindForOrigin(origin),
       prospectId: ctx?.id ?? null,
+      holdKind: holdKindFromSummary(summary),
+      holdDecided: holdDecidedFromSummary(summary),
     }
   })
 

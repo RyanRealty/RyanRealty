@@ -229,6 +229,12 @@ export type SelectedPricingComp = PricingSale & {
    * either is unknown, or when the sale is outside the plat.
    */
   sewerNote?: string | null
+  /**
+   * Every sale the walk admits sets the price (rule 20, Matt 2026-10-07: a
+   * sale that does not is refused at admission and never counts toward the
+   * five). Literal true so downstream never recomputes it.
+   */
+  setsPrice: true
 }
 
 /**
@@ -248,10 +254,16 @@ export type PricingLadderRung = {
   monthsBack: number
   /** Candidate sales the rung scanned. */
   scanned: number
-  /** New sales it contributed to the pool. */
+  /** New price-setting sales it contributed to the pool. */
   added: number
-  /** Distinct sales held after it. */
+  /** Distinct price-setting sales held after it. */
   runningTotal: number
+  /**
+   * Sales that passed this rung's walls and do not set the price (another
+   * community, or a clearly different size or product). They do not count
+   * toward the five, and the walk went on in order.
+   */
+  notSetting: number
 }
 
 export type PricingMatchResult = {
@@ -713,6 +725,7 @@ function toSelected(subject: PricingSubject, sale: PricingSale, asOf: string, ti
   return {
     ...sale,
     selectionTier: tierName,
+    setsPrice: true,
     ownPlat: inSubjectPlat(subject, sale),
     proximity: proximityLabel(
       { lat: subject.latitude, lng: subject.longitude },
@@ -864,6 +877,12 @@ function bracketGla(
   anchor: PriceAnchor | null = null,
   cells: Map<string, SubdivisionCell> = new Map(),
   customLadder = false,
+  /**
+   * Rule 20's test, the same one the walk admits on. bracketEligible applies
+   * no community wall and a plat-less subject brackets from the whole pool, so
+   * without it a size swap could import a sale that does not set the price.
+   */
+  setsPrice: (sale: SelectedPricingComp) => boolean = () => true,
 ): { comps: SelectedPricingComp[]; note: string | null } {
   if (comps.length === 0) return { comps, note: null }
   const allLarger = comps.every((c) => c.sqft > subject.sqft)
@@ -873,7 +892,10 @@ function bracketGla(
   const kept = new Set(comps.map((c) => c.listingKey))
   const wantLarger = allSmaller
   const candidates = pool.filter(
-    (sale) => !kept.has(sale.listingKey) && bracketEligible(subject, sale, asOf, wantLarger, anchor, cells),
+    (sale) =>
+      !kept.has(sale.listingKey) &&
+      bracketEligible(subject, sale, asOf, wantLarger, anchor, cells) &&
+      setsPrice(toSelected(subject, sale, asOf, 'gla-bracket')),
   )
   if (candidates.length === 0) return { comps, note: null }
 
@@ -1183,6 +1205,35 @@ function tierOutsideRecordedPlatRows(tier: PricingTier): boolean {
   return !(tier.sameStreetOnly || tier.sameSubdivision || tier.adjacentSubdivision || tier.closerSubdivision)
 }
 
+/**
+ * THE WALK, IN ORDER, AND WHAT COUNTS (Matt 2026-10-07: five price-setting
+ * sales is the floor; a sale that does not set the price never counts).
+ *
+ * Every count in this function (countBeforePocket, platRowCount, the stop at
+ * PRICING_TARGET_COMPS, the whenStarved and likeCommunity gates, the plat
+ * lock, crossBoundary at BOUNDARY_EXIT_BELOW, exclusiveCount, runningTotal)
+ * reads byKey, and byKey holds price-setting sales only: a sale that passes a
+ * rung's walls and fails rule 20 (lib/pricing/price-set.ts saleSetsThePrice:
+ * another community, or a clearly different size or product) is counted on
+ * the rung as notSetting, recorded in bySale so no later rung re-scans it
+ * (the test is tier-independent, so it would refuse again), and never
+ * admitted. No gate is rewritten; the walk simply goes on.
+ *
+ * ORDER PROOF. The tiers come from lib/pricing/ladder.ts in the locked order
+ * (own street and plat, the plats that touch it, the plats that touch those,
+ * the quarter-mile pocket, the neighborhood or community and its rings inside
+ * the parent, then likeCommunity, crossBoundary and whenStarved) and this
+ * loop iterates them in that order: nothing reorders, reads ahead, or
+ * re-enters an earlier rung. parentConfines still refuses likeCommunity,
+ * crossBoundary and whenStarved for a subject inside a neighborhood or
+ * community, so a confined subject never leaves its parent to reach five: it
+ * ends short and the build fails as a comp shortage. An unconfined subject
+ * reaches crossBoundary only under BOUNDARY_EXIT_BELOW setters, as before,
+ * and crossBoundary is still refused with no marketArea. Reaching five never
+ * crosses a wall the old walk would not cross; it only continues further down
+ * the same ordered list when a non-setter was met. Never a radius search in
+ * place of the order.
+ */
 export function walkPricingLadder(
   rawSubject: PricingSubject,
   pool: PricingSale[],
@@ -1289,13 +1340,36 @@ export function walkPricingLadder(
   // later pocket drop then cut to two (review, 2026-10-07).
   let platRowCount: number | null = null
 
+  // Rule 20, resolved once: a pure function of subject x sale, independent of
+  // the rung. Every input is stamped before the walk (toSelected stamps
+  // ownPlat; the selector stamps communityLocated and communitySlug on each
+  // row; sqft and lotAcres are row fields).
+  const subjectCommunity = searchCommunitySlug(subject)
+  const platMap = memberPlatMap(subjectCommunity, subject.communityMemberPlats)
+  const setsPrice = (sale: SelectedPricingComp): boolean => {
+    const saleCommunity = searchCommunitySlug(sale, platMap)
+    return saleSetsThePrice({
+      ownPlat: sale.ownPlat,
+      subjectSubdivision: subject.subdivision,
+      saleSubdivision: sale.subdivision,
+      subjectCommunity,
+      saleCommunity,
+      subjectCommunityLocated: subject.communityLocated === true || subjectCommunity != null,
+      saleCommunityLocated: sale.communityLocated === true || saleCommunity != null,
+      subjectSqft: subject.sqft,
+      saleSqft: sale.sqft,
+      subjectLotAcres: subject.lotAcres,
+      saleLotAcres: sale.lotAcres,
+    })
+  }
+
   for (const tier of tiers) {
     if (tier.samePocket && countBeforePocket == null) countBeforePocket = byKey.size
     if (recordedPlat && platRowCount == null && tierOutsideRecordedPlatRows(tier)) {
       platRowCount = byKey.size
       if (platRowCount < PRICING_MIN_COMPS) {
         trace.push(
-          `${subject.subdivision ?? 'The recorded plat'}, the plats that touch it, and the plats that touch those held ${platRowCount} sale${platRowCount === 1 ? '' : 's'}, short of ${PRICING_MIN_COMPS}, so the search went on inside the neighborhood, closest first.`,
+          `${subject.subdivision ?? 'The recorded plat'}, the plats that touch it, and the plats that touch those held ${platRowCount} price-setting sale${platRowCount === 1 ? '' : 's'}, short of ${PRICING_MIN_COMPS}, so the search went on inside the neighborhood, closest first.`,
         )
       }
     }
@@ -1308,11 +1382,12 @@ export function walkPricingLadder(
       rungs.push({
         tier: tier.name,
         ran: false,
-        skippedReason: `the subject's own plat already has ${countBeforePocket} sales, so the quarter-mile pocket was not mixed into the price`,
+        skippedReason: `the subject's own plat already has ${countBeforePocket} price-setting sales, so the quarter-mile pocket was not mixed into the price`,
         monthsBack: tier.monthsBack,
         scanned: 0,
         added: 0,
         runningTotal: byKey.size,
+        notSetting: 0,
       })
       continue
     }
@@ -1320,11 +1395,12 @@ export function walkPricingLadder(
       rungs.push({
         tier: tier.name,
         ran: false,
-        skippedReason: `the search already has ${byKey.size} sales from this home's own ground, so it stopped`,
+        skippedReason: `the search already has ${byKey.size} price-setting sales from this home's own ground, so it stopped`,
         monthsBack: tier.monthsBack,
         scanned: 0,
         added: 0,
         runningTotal: byKey.size,
+        notSetting: 0,
       })
       continue
     }
@@ -1378,7 +1454,7 @@ export function walkPricingLadder(
         // and 19: "Do not return a short set"). 915 Saginaw and 1648 Pheasant
         // failed on 2026-10-07 holding one sale each with the neighborhood unread.
         : recordedPlat && tierOutsideRecordedPlatRows(tier) && (platRowCount ?? 0) >= PRICING_MIN_COMPS
-          ? `this home sits in a recorded subdivision, and that plat, the plats that touch it, and the plats that touch those already hold ${platRowCount} sales, so the search stays there. It does not open a quarter-mile pocket, a distance ring, or the rest of the neighborhood`
+          ? `this home sits in a recorded subdivision, and that plat, the plats that touch it, and the plats that touch those already hold ${platRowCount} price-setting sales, so the search stays there. It does not open a quarter-mile pocket, a distance ring, or the rest of the neighborhood`
         : parentConfines(subject) && (tier.likeCommunity || tier.crossBoundary || tier.whenStarved)
           ? 'this home sits inside a neighborhood or community, so the search does not leave it for another community or a distance past that boundary'
         : tier.closerSubdivision && !(subject.closerSubdivisionSlugs?.length)
@@ -1388,7 +1464,7 @@ export function walkPricingLadder(
           : tier.crossBoundary && !subject.marketArea
             ? 'the subject is outside every mapped boundary, so there is no boundary to leave'
             : tier.crossBoundary && byKey.size >= BOUNDARY_EXIT_BELOW
-              ? `the boundary supplied ${byKey.size} sales, so the search stayed inside it`
+              ? `the boundary supplied ${byKey.size} price-setting sales, so the search stayed inside it`
               : tier.ruralOnly && !subject.ruralAcreage
                 ? 'the subject is not rural acreage'
                 : tier.name.startsWith('city-') && subject.ruralAcreage
@@ -1403,10 +1479,12 @@ export function walkPricingLadder(
         scanned: 0,
         added: 0,
         runningTotal: byKey.size,
+        notSetting: 0,
       })
       continue
     }
     let added = 0
+    let rungNotSetting = 0
     const slugOrder = tier.adjacentSubdivision
       ? (subject.adjacentSubdivisionSlugs ?? [])
       : tier.closerSubdivision
@@ -1438,11 +1516,21 @@ export function walkPricingLadder(
       if (!customLadder && !inSubjectPlat(subject, sale) && !closeNearOwnPlat(subject, sale, byKey.values())) {
         continue
       }
-      byKey.set(sale.listingKey, {
+      const selected: SelectedPricingComp = {
         ...toSelected(subject, sale, asOf, tier.name),
         roomDifference: roomDifference ?? null,
         sewerNote: sewerNote ?? null,
-      })
+        setsPrice: true,
+      }
+      // The walls ran first, so this is a sale the rung would have taken and
+      // rule 20 refused. It is not admitted, it does not count toward the
+      // five, and no later rung re-scans it. The walk goes on in order.
+      if (!setsPrice(selected)) {
+        bySale.add(saleKey)
+        rungNotSetting++
+        continue
+      }
+      byKey.set(sale.listingKey, selected)
       bySale.add(saleKey)
       added++
     }
@@ -1454,7 +1542,13 @@ export function walkPricingLadder(
       scanned: pool.length,
       added,
       runningTotal: byKey.size,
+      notSetting: rungNotSetting,
     })
+    if (rungNotSetting > 0) {
+      trace.push(
+        `${rungNotSetting} sale(s) passed this rung but do not set the price (another community, or a clearly different size or product), so they do not count toward the five and the search went on.`,
+      )
+    }
     if (added > 0) {
       tiersUsed.push(tier.name)
       trace.push(
@@ -1477,47 +1571,29 @@ export function walkPricingLadder(
   const hadOwnPlat = ranked.some((c) => c.ownPlat)
   const sitting = hadOwnPlat ? ranked : pocketSalesSitWithKept(ranked, customLadder)
   const sliced = capPricingSet(subject, sitting, PRICING_MAX_COMPS)
-  const bracketed = bracketGla(subject, sliced, pool, asOf, priceAnchor, cells, customLadder)
+  const bracketed = bracketGla(subject, sliced, pool, asOf, priceAnchor, cells, customLadder, setsPrice)
   if (bracketed.note) {
     if (!tiersUsed.includes('gla-bracket')) tiersUsed.push('gla-bracket')
     trace.push(bracketed.note)
   }
   const priced = hadOwnPlat ? bracketed.comps : pocketSalesSitWithKept([...bracketed.comps], customLadder)
-  // Once three sales set the price, a sale that does not is not in the set.
-  // A short set keeps the next rung that was already admitted. Those sales
-  // set the price too. Size and product were already refused on the way in.
-  const setsPrice = (sale: SelectedPricingComp) => {
-    const subjectCommunity = searchCommunitySlug(subject)
-    const saleCommunity = searchCommunitySlug(
-      sale,
-      memberPlatMap(subjectCommunity, subject.communityMemberPlats),
-    )
-    return saleSetsThePrice({
-      ownPlat: sale.ownPlat,
-      subjectSubdivision: subject.subdivision,
-      saleSubdivision: sale.subdivision,
-      subjectCommunity,
-      saleCommunity,
-      subjectCommunityLocated: subject.communityLocated === true || subjectCommunity != null,
-      saleCommunityLocated: sale.communityLocated === true || saleCommunity != null,
-      subjectSqft: subject.sqft,
-      saleSqft: sale.sqft,
-      subjectLotAcres: subject.lotAcres,
-      saleLotAcres: sale.lotAcres,
-    })
-  }
+  // Every admitted sale set the price at the door, and the bracket read the
+  // same test, so this filter holds the whole set. A short set is a comp
+  // shortage; there is no back door that keeps a non-setter when the set is
+  // thin (Matt 2026-10-07).
   const setters = priced.filter(setsPrice)
-  const keptForPrice = setters.length >= PRICING_MIN_COMPS ? setters : priced
-  if (keptForPrice.length < priced.length) {
-    const dropped = priced.length - keptForPrice.length
+  if (setters.length < priced.length) {
     trace.push(
-      `${dropped} ${dropped === 1 ? 'sale does' : 'sales do'} not set the price once ${setters.length} sales do, so ${dropped === 1 ? 'it is' : 'they are'} not in the set.`,
+      `${priced.length - setters.length} sale(s) reached the set without setting the price; this should not happen and is a defect in the walk.`,
     )
   }
+  const keptForPrice = setters
   const comps = [...keptForPrice].sort((a, b) => b.closeDate.localeCompare(a.closeDate))
   const reachedTarget = comps.length >= PRICING_TARGET_COMPS
   if (comps.length < PRICING_MIN_COMPS) {
-    trace.push(`Only ${comps.length} comparable sale(s) after the full ladder. The estimate needs broker review.`)
+    trace.push(
+      `Comp shortage: only ${comps.length} price-setting sale(s) after the full ladder. This home needs ${PRICING_MIN_COMPS}.`,
+    )
   } else {
     trace.push(`Final set: ${comps.length} closed sales from ${tiersUsed.join(', ') || 'none'}.`)
   }

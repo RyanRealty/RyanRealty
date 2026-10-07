@@ -53,11 +53,12 @@ const esc = escapeHtml
  * The floor is the PRICING unit's floor, not the selector's target.
  *
  * It used to be MIN_COMPS (5), the selector's target set size, while
- * lib/pricing publishes a recommend from PRICING_MIN_COMPS (3). Every CMA
- * built on three or four sales therefore shipped a recommended list with no
- * comparable sales visible anywhere in the document — caught on
- * cma-19968 and cma-1617-nw-8th, 2026-09-07, both of which printed a price
- * chapter containing a map and nothing else.
+ * lib/pricing published a recommend from PRICING_MIN_COMPS (3 at the time;
+ * five price-setting sales since 2026-10-07, when MIN_COMPS became an alias
+ * of it). Every CMA built on three or four sales therefore shipped a
+ * recommended list with no comparable sales visible anywhere in the
+ * document — caught on cma-19968 and cma-1617-nw-8th, 2026-09-07, both of
+ * which printed a price chapter containing a map and nothing else.
  *
  * If the pricing unit trusted the set enough to publish a number, the seller
  * sees that set. A thin matrix is honest; an invisible one is not.

@@ -44,6 +44,8 @@ export function pricingWithoutCityDateMove<P extends CmaPricing>(
     : time
   const rule = pricing.rangeRule
   let rangeRule = rule
+  // Reader of a stored legacy row only: no production writer of 'min-max'
+  // since 2026-10-07 (the band is always trimmed).
   if (rule?.rule === 'min-max') {
     const prices = comps.map((c) => c.adjustedPrice).filter((n) => n > 0)
     if (prices.length >= 2) {

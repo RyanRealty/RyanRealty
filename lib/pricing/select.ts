@@ -361,12 +361,12 @@ export function matchToCompSelection(
       propertySubType: subject.propertySubType,
       standardStatus: subject.standardStatus,
     })
+  // The floor and the target are one number (PRICING_MIN_COMPS equals
+  // PRICING_TARGET_COMPS, Matt 2026-10-07), so a starved set is a short set.
   const underMin = match.comps.length < PRICING_MIN_COMPS
   const starvedReason = underMin
-    ? `facts path: only ${match.comps.length} apples-to-apples sale(s) after the full pricing ladder (minimum ${PRICING_MIN_COMPS}). Custom/new stays on facts — listings SQL tiers are not a fallback.`
-    : match.starved
-      ? `facts path: reached ${match.comps.length} sale(s) but not the ${PRICING_TARGET_COMPS}-sale target. The set is still priceable.`
-      : null
+    ? `facts path: only ${match.comps.length} price-setting sale(s) after the full pricing ladder (minimum ${PRICING_MIN_COMPS}). Comp shortage. Custom/new stays on facts; listings SQL tiers are not a fallback.`
+    : null
   return {
     comps: match.comps.map(pricingSaleToCmaComp),
     excludedOutliers: [],
@@ -410,6 +410,7 @@ export function matchToCompSelection(
         comps_added: r.added,
         running_total: r.runningTotal,
         excluded: emptyExclusions(),
+        not_setting: r.notSetting,
       })),
       price_anchor: match.priceAnchor
         ? { ppsf: Math.round(match.priceAnchor.ppsf), n: match.priceAnchor.n }
@@ -426,6 +427,7 @@ export function matchToCompSelection(
       // totals stay at zero — except the acreage splits, which the walk counts
       // once over the rural pool for the reader's story (Delta 4).
       excluded_totals: { ...emptyExclusions(), ...(match.ruralSplits ?? {}) },
+      not_price_setting: match.rungs.reduce((n, r) => n + (r.notSetting ?? 0), 0),
       outliers_excluded: 0,
       final_count: match.comps.length,
       final_tier_counts: Object.fromEntries(
@@ -437,8 +439,10 @@ export function matchToCompSelection(
 }
 
 /**
- * Facts win when they produced a priceable set. Under 3 sales, ordinary resale
- * falls back to the listings ladder.
+ * Facts win when they produced a priceable set. Under five price-setting
+ * sales (FACTS_STANDALONE_MIN, equal to PRICING_MIN_COMPS since 2026-10-07),
+ * ordinary resale falls back to the listings ladder; under five on both
+ * ladders the build fails as a comp shortage.
  *
  * Custom/new must NOT fall back: the listings ladder still uses
  * unmappedCrossesKnownBank, which re-starves Perspective-class peers and can
@@ -462,16 +466,11 @@ export function pickCompSource(match: {
   return 'listings'
 }
 
-/**
- * Under five facts sales the listings ladder runs too. When it cannot reach
- * the minimum and the facts walk did, the facts set prices: a home with three
- * good sales is not failed because the older ladder found fewer. 1648
- * Pheasant (2026-10-07): facts held 3 inside its neighborhood, listings held 1,
- * and the build failed on the listings count.
- */
-export function factsOutlastShortListings(factsComps: number, listingsComps: number): boolean {
-  return factsComps >= PRICING_MIN_COMPS && listingsComps < PRICING_MIN_COMPS
-}
+// factsOutlastShortListings was deleted 2026-10-07. It let a three- or
+// four-sale facts set price when the listings ladder found fewer (1648
+// Pheasant: facts held 3, listings held 1). With PRICING_MIN_COMPS equal to
+// FACTS_STANDALONE_MIN (5), pickCompSource already keeps a five-sale facts
+// set, and under five on both ladders the build fails as a comp shortage.
 
 export async function selectCompsPreferringFacts(
   subject: CmaSubject,
@@ -500,9 +499,5 @@ export async function selectCompsPreferringFacts(
   if (pickCompSource({ ...match, customOrNew }) === 'facts') {
     return matchToCompSelection(subject, match, { customOrNew })
   }
-  const listings = await selectComps(subject, opts)
-  if (match.factsReady && factsOutlastShortListings(match.comps.length, listings.comps.length)) {
-    return matchToCompSelection(subject, match, { customOrNew })
-  }
-  return listings
+  return selectComps(subject, opts)
 }

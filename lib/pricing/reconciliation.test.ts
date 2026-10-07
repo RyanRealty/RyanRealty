@@ -268,7 +268,7 @@ describe('set aside means set aside (tasteReview round three, §2 item 1)', () =
     sale({ listingKey: 'G', adjustedPrice: 469_558, weight: 0.8 }),
   ]
 
-  it('partitions the single highest and single lowest out at six or more sales', async () => {
+  it('partitions the single highest and single lowest out at five or more sales', async () => {
     const { partitionByRangeRule } = await import('./estimate')
     const part = partitionByRangeRule(seven)
     expect(part.rule).toBe('trimmed-one-each-end')
@@ -277,12 +277,16 @@ describe('set aside means set aside (tasteReview round three, §2 item 1)', () =
     expect(part.kept.map((s) => s.listingKey)).not.toContain('E')
   })
 
-  it('sets nothing aside under six sales', async () => {
+  it('sets two aside at five sales, and draws no rule at four (the band is always trimmed, Matt 2026-10-07)', async () => {
     const { partitionByRangeRule } = await import('./estimate')
     const part = partitionByRangeRule(seven.slice(0, 5))
-    expect(part.rule).toBe('min-max')
-    expect(part.setAside).toEqual([])
-    expect(part.kept).toHaveLength(5)
+    expect(part.rule).toBe('trimmed-one-each-end')
+    expect(part.setAside.map((s) => s.listingKey).sort()).toEqual(['E', 'HIGH'])
+    expect(part.kept).toHaveLength(3)
+    const four = partitionByRangeRule(seven.slice(0, 4))
+    expect(four.rule).toBeNull()
+    expect(four.setAside).toEqual([])
+    expect(four.kept).toHaveLength(4)
   })
 
   it('keeps the order it was given, so the grid and the weights line up', async () => {

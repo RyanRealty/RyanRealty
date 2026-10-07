@@ -11,9 +11,23 @@ import {
   POCKET_STARVE_BELOW,
   POCKET_TIGHT_SET_MIN,
   PRICING_MAX_COMPS,
+  PRICING_MIN_COMPS,
   PRICING_TARGET_COMPS,
   pricingTierLadder,
+  RANGE_MIN_KEPT,
+  RANGE_TRIM_MIN_N,
 } from '@/lib/pricing/ladder'
+
+describe('five price-setting sales is the floor and the stop (Matt 2026-10-07, reversing the 2026-09-10 lowering to 3)', () => {
+  it('pins the floor, the target, the trim threshold and the kept floor to one rule', () => {
+    expect(PRICING_MIN_COMPS).toBe(5)
+    expect(PRICING_MIN_COMPS).toBe(PRICING_TARGET_COMPS)
+    // The band is always the trimmed range: the floor is the trim threshold,
+    // and a five-sale set keeps three.
+    expect(RANGE_TRIM_MIN_N).toBe(PRICING_MIN_COMPS)
+    expect(RANGE_MIN_KEPT).toBe(3)
+  })
+})
 
 describe('pricingTierLadder — time before distance', () => {
   it('walks 3 then 6 then 9 months inside the subdivision before any mile ring', () => {
@@ -173,8 +187,9 @@ describe('pricingTierLadder — the parent level (Matt 2026-09-09)', () => {
     expect(pocketHoldsGeographyExclusive(2, 0, true)).toBe(true)
     expect(pocketHoldsGeographyExclusive(1, 0, true)).toBe(false)
     // Two closed sales inside a quarter mile are a tight cluster and still
-    // short of the 3-sale floor. The ladder keeps walking. Three or more
-    // may stop, which is what keeps Canter off the mile rings.
+    // short of the five-sale floor (Matt 2026-10-07). The ladder keeps
+    // walking. A tight closed-plus-pending cluster may stop, which is what
+    // keeps Canter off the mile rings.
     expect(pocketStopsLaterRungs({ kept: 2, exclusiveClosed: 2, clusterPocket: true })).toBe(false)
     expect(
       pocketStopsLaterRungs({ kept: 2, exclusiveClosed: 2, exclusivePending: 1, clusterPocket: true }),

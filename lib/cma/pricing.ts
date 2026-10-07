@@ -28,7 +28,6 @@ import type {
   CmaSubject,
 } from '@/lib/cma/types'
 import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
-import { fillShortSetWeights } from '@/lib/pricing/closed-comp-weight'
 import { comparisonSalePrice, concessionOnSale, sellerNetFromPrice } from '@/lib/pricing/seller-net'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { SAME_STREET_PREMIUM_MAX, sameStreetPeer } from '@/lib/pricing/price-anchor'
@@ -217,11 +216,12 @@ export function computePricing(
   }
 
   if (subjectSqft <= 0) return null
-  // A plat with fewer than three sales does not stand alone. The next rung
-  // was already admitted, and those sales set the price. A tighter sale stays.
-  adjusted = fillShortSetWeights(subject, adjusted)
-  // Sales that do not set the price (weight 0) are not a back door into the
-  // number. Fewer than the minimum that DO set it is no price, not a thinner set.
+  // THE FIVE-PRICE-SETTING-SALES FLOOR AT PRICING TIME, for both ladders
+  // (Matt 2026-10-07). The walks already refuse a sale that does not set the
+  // price at admission (lib/pricing/match.ts, lib/cma/comps.ts); this is the
+  // second gate. A weight of 0 is a sale that does not set the price, and it
+  // is not a back door into the number. Fewer than the minimum that DO set it
+  // is no price, not a thinner set, and never a filled one.
   adjusted = adjusted.filter((c) => c.weight > 0)
   if (adjusted.length < PRICING_MIN_COMPS) return null
   const notes: string[] = []

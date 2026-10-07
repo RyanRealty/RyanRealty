@@ -7,6 +7,7 @@ import { countWord, escapeHtml, usd } from '@/lib/cma/render-blocks'
 import { pricingRangeDisplay } from '@/lib/cma/pricing'
 import { closedCompBand } from '@/lib/pricing/recommended-in-band'
 import { printedAdjustedPrice } from '@/lib/pricing/seller-net'
+import { setAsideCompIndexes } from '@/lib/cma/set-aside'
 import { describeCompSearch } from '@/lib/pricing/search-story'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CmaEquityPosition } from '@/lib/cma/equity'
@@ -28,11 +29,27 @@ type CoverArgs = {
 }
 
 
+/**
+ * The sales the printed band is drawn from: the weighted rows of the grid,
+ * less the rows `pricing.setAside` names (the band is always the trimmed
+ * range, Matt 2026-10-07; a set-aside sale still carries its weight on the
+ * grid, so it is read by name, as the pin in lib/pricing/estimate.ts does).
+ */
+export function tableBandSales(
+  comps: readonly CmaAdjustedComp[],
+  pricing?: CmaPricing | null,
+): CmaAdjustedComp[] {
+  const aside = pricing ? setAsideCompIndexes(pricing, comps) : new Set<number>()
+  const rows = comps.filter((_, i) => !aside.has(i))
+  const weighted = rows.filter((c) => typeof c.weight === 'number')
+  return weighted.some((c) => c.weight > 0) ? weighted.filter((c) => c.weight > 0) : rows
+}
+
 export function tableAdjustedBand(
   comps: readonly CmaAdjustedComp[],
+  pricing?: CmaPricing | null,
 ): { low: number; high: number } | null {
-  const weighted = comps.filter((c) => typeof c.weight === 'number')
-  const setters = weighted.some((c) => c.weight > 0) ? weighted.filter((c) => c.weight > 0) : comps
+  const setters = tableBandSales(comps, pricing)
   const values = setters
     .map((c) => printedAdjustedPrice(c))
     .filter((n) => Number.isFinite(n) && n > 0)
@@ -226,7 +243,7 @@ export function heroTrioHtml(
 ): string {
   // Same closedCompBand listRangeBounds / Tip Ready parity reads.
   // When the table is in hand, low and high are the adjusted sales still on it.
-  const table = opts?.comps && opts.comps.length > 0 ? tableAdjustedBand(opts.comps) : null
+  const table = opts?.comps && opts.comps.length > 0 ? tableAdjustedBand(opts.comps, p) : null
   const band = table ?? closedCompBand(p)
   const loRaw = band?.low ?? (p.conservative ?? 0)
   const hiRaw = band?.high ?? (p.highEnd ?? 0)

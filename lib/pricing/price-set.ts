@@ -1,22 +1,22 @@
 /**
- * What may set a recommended price.
+ * What may set a recommended price (SKILL.md rule 20).
  *
  * A sale sets the price when it is the subject's own plat, or when it sits in
  * the subject's community. Community membership is the location of the address
  * (lib/cma/community-location.ts), not the MLS subdivision string and not a
- * remark. A different community does not set the price while the plat already has
- * three sales that do. Neither does a clearly different size (past the one
- * living-area cutoff) or a clearly different product (a cottage versus
- * acreage). A different plat that is not the subject's community is that
- * different community, not a neighbor that still prices the home.
+ * remark. A sale from another community never sets the price, however short
+ * the set is (Matt 2026-10-07). Neither does a clearly different size (past
+ * the one living-area cutoff) or a clearly different product (a cottage
+ * versus acreage). A different plat that is not the subject's community is
+ * that different community, not a neighbor that still prices the home.
  *
- * When the plat and its community supplied fewer than three sales, the next
- * rung was already admitted. Those admitted sales set the price too. The
- * tighter sale stays. Size and product still refuse. The caller passes
- * fillShortSet for that case only (lib/pricing/closed-comp-weight.ts).
+ * Both walks (lib/pricing/match.ts, lib/cma/comps.ts) apply this test at
+ * admission: a sale that fails it is not admitted, does not count toward the
+ * five, and the search walks past it in the same order. Under five sales that
+ * set the price the build is a comp shortage. There is no fill.
  *
  * An adjacent sale with no community on either side still sets the price.
- * The search order is unchanged. This only decides which kept sales move the
+ * The search order is unchanged. This only decides which sales may move the
  * number.
  *
  * A recommended price under every sale that set it, or above every one of
@@ -38,12 +38,6 @@ export type PriceSetSale = {
   saleSqft?: number | null
   subjectLotAcres?: number | null
   saleLotAcres?: number | null
-  /**
-   * The kept set is already short of three sales that set the price, and this
-   * sale was admitted on a later rung. Skip the community wall. Size and
-   * product still refuse.
-   */
-  fillShortSet?: boolean
 }
 
 /** Living area past the picker's wide cutoff. Unknown size is not "clearly different". */
@@ -108,10 +102,11 @@ export function saleSetsThePrice(input: PriceSetSale): boolean {
   })
   const subjectKnown = input.subjectCommunityLocated === true || subjectCommunity != null
   const saleKnown = input.saleCommunityLocated === true || saleCommunity != null
-  // One side is in a community the other is not, or they are different communities.
-  // A short set does not make the plat stand alone: a sale the next rung
-  // already admitted still sets the price. Size and product were refused above.
-  if ((subjectKnown || saleKnown) && subjectCommunity !== saleCommunity && !input.fillShortSet) return false
+  // One side is in a community the other is not, or they are different
+  // communities. A short set does not change this: the sale never sets the
+  // price, the walk goes past it, and under five setters the build is a comp
+  // shortage. Size and product were refused above.
+  if ((subjectKnown || saleKnown) && subjectCommunity !== saleCommunity) return false
   return true
 }
 
@@ -122,8 +117,8 @@ export function saleSetsThePrice(input: PriceSetSale): boolean {
 
 /**
  * Why pricing returned nothing. Missing living area and a set with fewer than
- * three sales that set the price are different failures. The second one used
- * to be reported as the first.
+ * five sales that set the price (PRICING_MIN_COMPS) are different failures.
+ * The second one used to be reported as the first.
  */
 export function pricingFailureMessage(
   subject: { sqft?: number | null },

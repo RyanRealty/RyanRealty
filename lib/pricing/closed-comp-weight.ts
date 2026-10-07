@@ -27,10 +27,14 @@
  * running, a path that reversed, a capped path, or no index at all keeps the
  * 3-month half-life: a 6-month sale carries about a quarter of the recency
  * of a fresh close. Pending and active sales never enter this weight.
+ *
+ * A sale that does not set the price (lib/pricing/price-set.ts) weighs 0,
+ * however short the set. The fill that once re-weighted such a sale when
+ * fewer than three set the price was deleted 2026-10-07 (Matt: five
+ * price-setting sales is the floor; under it the build is a comp shortage).
  */
 
 import { normSubdivision } from '@/lib/pricing/classes'
-import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
 import { REGIME_MONTHLY_CUT } from '@/lib/pricing/market-path'
 import { saleSetsThePrice } from '@/lib/pricing/price-set'
 
@@ -49,6 +53,12 @@ export type ClosedCompWeightInput = {
   selectionTier?: string | null
   ownPlat?: boolean | null
   /**
+   * The walk already admitted this sale on rule 20 with its fullest inputs
+   * (containing plat slugs, the member-plat map). True means the weight
+   * does not re-grade it; absent or false, the weight runs the test itself.
+   */
+  setsPrice?: boolean | null
+  /**
    * The subject sits in a recorded plat. Its quarter-mile pocket is walked
    * after the touching rows, so a pocket sale weighs as the neighborhood
    * step there, not as a touching plat.
@@ -63,8 +73,6 @@ export type ClosedCompWeightInput = {
   saleCommunityLocated?: boolean
   subjectLotAcres?: number | null
   saleLotAcres?: number | null
-  /** See PriceSetSale.fillShortSet. Alone, an outside sale still weighs 0. */
-  fillShortSet?: boolean
   /**
    * The path that moved this sale's price to the as-of date. Absent, not from
    * the index, reversed, or capped keeps the 3-month half-life.
@@ -330,7 +338,11 @@ function recencyFactor(months: number, input: ClosedCompWeightInput): number {
 export function closedCompWeight(input: ClosedCompWeightInput): number {
   // A sale that is a different community, or a clearly different size or product,
   // does not set the price. Weight 0 is not averaged back in by this function.
+  // A sale the walk stamped setsPrice was graded there on the same rule with
+  // fuller inputs; re-grading it here with fewer could weigh a counted sale
+  // at zero and fail a set the walk reported complete.
   if (
+    input.setsPrice !== true &&
     !saleSetsThePrice({
       ownPlat: input.ownPlat,
       subjectSubdivision: input.subjectSubdivision,
@@ -343,7 +355,6 @@ export function closedCompWeight(input: ClosedCompWeightInput): number {
       saleSqft: input.saleSqft,
       subjectLotAcres: input.subjectLotAcres,
       saleLotAcres: input.saleLotAcres,
-      fillShortSet: input.fillShortSet,
     })
   ) {
     return 0
@@ -365,74 +376,3 @@ export function closedCompWeight(input: ClosedCompWeightInput): number {
   const base = LOCATION_MATCH_WEIGHT[resolveLocationMatch(input)]
   return +(base + LOCATION_SECONDARY_SPAN * secondary).toFixed(4)
 }
-
-/**
- * A tighter sale stays. When fewer than three kept sales set the price, the
- * next rung already admitted fills the count, and those sales set the price.
- * A sale past the living-area cutoff, or a cottage against acreage, still
- * does not. When the plat already has three, nothing here changes.
- */
-export function fillShortSetWeights<T extends {
-  weight: number
-  sqft: number
-  beds?: number | null
-  baths?: number | null
-  yearBuilt?: number | null
-  lotAcres?: number | null
-  subdivision?: string | null
-  communitySlug?: string | null
-  communityLocated?: boolean
-  ownPlat?: boolean | null
-  selectionTier?: string | null
-  monthsSinceClose?: number | null
-  marketPathSource?: 'index' | 'none' | null
-  marketMonthlyRate?: number | null
-  marketReversed?: boolean | null
-  marketCapped?: boolean | null
-}>(
-  subject: {
-    sqft?: number | null
-    beds?: number | null
-    baths?: number | null
-    yearBuilt?: number | null
-    lotAcres?: number | null
-    subdivision?: string | null
-    communitySlug?: string | null
-    communityLocated?: boolean
-  },
-  comps: readonly T[],
-): T[] {
-  const setters = comps.filter((c) => c.weight > 0).length
-  if (setters >= PRICING_MIN_COMPS) return [...comps]
-  return comps.map((comp) => {
-    if (comp.weight > 0) return comp
-    const weight = closedCompWeight({
-      subjectSqft: subject.sqft ?? 0,
-      saleSqft: comp.sqft,
-      monthsSinceClose: comp.monthsSinceClose ?? 0,
-      subjectBeds: subject.beds,
-      saleBeds: comp.beds,
-      subjectBaths: subject.baths,
-      saleBaths: comp.baths,
-      subjectYearBuilt: subject.yearBuilt,
-      saleYearBuilt: comp.yearBuilt,
-      subjectSubdivision: subject.subdivision,
-      saleSubdivision: comp.subdivision,
-      selectionTier: comp.selectionTier,
-      ownPlat: comp.ownPlat,
-      subjectCommunity: subject.communitySlug,
-      saleCommunity: comp.communitySlug,
-      subjectCommunityLocated: subject.communityLocated,
-      saleCommunityLocated: comp.communityLocated,
-      subjectLotAcres: subject.lotAcres,
-      saleLotAcres: comp.lotAcres,
-      marketPathSource: comp.marketPathSource,
-      marketMonthlyRate: comp.marketMonthlyRate,
-      marketReversed: comp.marketReversed,
-      marketCapped: comp.marketCapped,
-      fillShortSet: true,
-    })
-    return weight > 0 ? { ...comp, weight } : comp
-  })
-}
-

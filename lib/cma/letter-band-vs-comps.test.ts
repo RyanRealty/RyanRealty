@@ -88,7 +88,7 @@ describe('band overlaps closed comps', () => {
     expect(pinned.rangeRule?.sentence).not.toContain('$599,000')
   })
 
-  it('Keats shape: a printed table weight sets the band, not the stored weight of zero', () => {
+  it('Keats shape (a legacy min-max row): a printed table weight sets the band, not the stored weight of zero', () => {
     const comps = [
       { adjustedPrice: 590_400, closePrice: 590_400, weight: 0.4 },
       { adjustedPrice: 510_735, closePrice: 510_735, weight: 0, printedWeight: 0.2 },
@@ -121,6 +121,56 @@ describe('band overlaps closed comps', () => {
     expect(pinned.rangeRule?.sentence).toMatch(/all five/)
     expect(pinned.rangeRule?.sentence).not.toMatch(/all two/)
     expect(pinned.rangeRule?.sentence).not.toContain('adjusted for')
+  })
+
+  it('the pin keeps the trimmed rule and never counts a set-aside sale (the band is always trimmed, Matt 2026-10-07)', () => {
+    const comps = [
+      { listingKey: 'LOW', address: '1 Low St', adjustedPrice: 580_000, closePrice: 580_000, weight: 0.1 },
+      { listingKey: 'A', address: '2 Mid St', adjustedPrice: 603_227, closePrice: 535_000, weight: 0.25 },
+      { listingKey: 'B', address: '3 Mid St', adjustedPrice: 620_206, closePrice: 605_000, weight: 0.3 },
+      { listingKey: 'C', address: '4 Mid St', adjustedPrice: 639_871, closePrice: 637_000, weight: 0.25 },
+      { listingKey: 'HIGH', address: '5 High St', adjustedPrice: 660_000, closePrice: 660_000, weight: 0.1 },
+    ]
+    const pinned = pinPrintedBandToSettingSales(
+      {
+        valueLow: 603_000,
+        valueHigh: 640_000,
+        recommended: 630_000,
+        conservative: 603_000,
+        highEnd: 640_000,
+        setAside: [
+          { listingKey: 'LOW', address: '1 Low St', adjustedPrice: 580_000, end: 'low', reason: 'The lowest.' },
+          { listingKey: 'HIGH', address: '5 High St', adjustedPrice: 660_000, end: 'high', reason: 'The highest.' },
+        ],
+        rangeRule: {
+          rule: 'trimmed-one-each-end' as const,
+          n: 5,
+          kept: 3,
+          adjustedLow: 603_000,
+          adjustedHigh: 640_000,
+          saleToAskRatio: null,
+          saleToAskSource: 'none' as const,
+          ratiosExcluded: 0,
+          sentence:
+            'The range is the spread of the three sale prices behind this price, adjusted for date and size: $603,000 to $640,000. Two of the five sales sat outside every one of them and were set aside, so no single sale could set the range.',
+        },
+      },
+      comps,
+    )
+    // The set-aside sales still carry weight on the printed rows; the pin
+    // reads them by name and never lets one set an end.
+    expect(pinned.valueLow).toBe(603_227)
+    expect(pinned.valueHigh).toBe(639_871)
+    expect(pinned.rangeRule?.rule).toBe('trimmed-one-each-end')
+    expect(pinned.rangeRule?.n).toBe(5)
+    expect(pinned.rangeRule?.kept).toBe(3)
+    expect(pinned.rangeRule?.sentence).toContain('three sale prices')
+    expect(pinned.rangeRule?.sentence).toContain('Two of the five')
+    expect(pinned.rangeRule?.sentence).toContain('$603,227')
+    expect(pinned.rangeRule?.sentence).toContain('$639,871')
+    expect(pinned.rangeRule?.sentence).not.toContain('$580,000')
+    expect(pinned.rangeRule?.sentence).not.toContain('$660,000')
+    expect(pinned.rangeRule?.sentence).not.toMatch(/[—–]/)
   })
 
   it('pulls a list that rounded one step above the highest setting sale back inside that sale', () => {

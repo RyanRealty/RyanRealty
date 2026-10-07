@@ -33,7 +33,7 @@
 
 import { selectCmaCompsPool, selectCmaCompsByKeys } from '@/lib/data/cma/builderReads'
 import { getSubdivisionRing, assignSubdivisionSlugs, assignCommunitySlugs } from '@/lib/data/geo/subdivision-ring'
-import { keepTightestByClosePrice } from '@/lib/pricing/ladder'
+import { keepTightestByClosePrice, PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
 import { resolveConcessions, sellerNetFromPrice } from '@/lib/pricing/seller-net'
 import {
   closedSaleDomTotal,
@@ -93,6 +93,7 @@ import { roomCountsDecision } from '@/lib/pricing/room-ground'
 import { SAME_NEIGHBORHOOD_TIER_RATIO, STARVED_TIER_WIDEN, SUBDIVISION_TIER_RATIO, normSubdivision } from '@/lib/pricing/classes'
 import { inferSubdivisionPocket, POCKET_RADIUS_MILES } from '@/lib/pricing/infer-pocket'
 import { isClusterPocket, pocketStopsLaterRungs } from '@/lib/pricing/ladder'
+import { saleSetsThePrice } from '@/lib/pricing/price-set'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
 import { crossesNamedRiver } from '@/lib/pricing/river-cross'
@@ -100,23 +101,25 @@ import {
   customLotCompatible,
   dropsResaleVersusNewBuild,
   isCustomOrNewSubject,
+  multiUnitFromRemarks,
   type IrrigationClass,
 } from '@/lib/pricing/classes'
 
 export { realSubdivision }
 
 /**
- * Floor for a priced set. Thin sets must widen before the letter paints.
+ * Floor for a priced set: five price-setting sales, one number across both
+ * ladders (lib/pricing/ladder.ts PRICING_MIN_COMPS).
  *
- * ONE FLOOR ACROSS BOTH PATHS (Matt 2026-09-10). This was 5 while the facts
- * ladder's PRICING_MIN_COMPS was 3, and the difference was drift, not a
- * decision: the same home priced or failed depending on which ladder
- * pickCompSource sent it down. 63 queue documents were failing for want of
- * comparable sales, every one of them a person who asked for a value and got
- * nothing. A three-sale document is thin, and it still carries the dispersion
- * guard, the accuracy contract and a review flag before anyone sees it.
+ * History. This was 5 while the facts ladder's PRICING_MIN_COMPS was 3, and
+ * on 2026-09-10 Matt lowered both to 3 to rescue 63 queue documents failing
+ * for want of comparable sales. On 2026-10-07 he reversed that: a three-sale
+ * letter printed a raw min-to-max band and one stray sale put the failed ask
+ * inside it, which contradicts the letter. The floor is five price-setting
+ * sales, the band is always the trimmed range, and a sale that does not set
+ * the price (lib/pricing/price-set.ts) never counts toward the five.
  */
-export const MIN_COMPS = 3
+export const MIN_COMPS = PRICING_MIN_COMPS
 /**
  * Stop climbing the ladder at 5 (Matt 2026-07-30). The target is not "as many
  * comps as possible" — every extra comp is bought by widening geography or
@@ -125,7 +128,10 @@ export const MIN_COMPS = 3
  * stopping there keeps the set in the tightest tier that can fill it.
  */
 export const TARGET_COMPS = 5
-/** Same cap as the facts ladder. A rung that overshoots is cut to five tight prices. */
+/**
+ * Same cap as the facts ladder. A rung that overshoots is cut to five tight
+ * prices. The cap equals the floor: a five-sale set cannot lose one and survive.
+ */
 export const MAX_COMPS = 5
 
 function num(v: unknown): number | null {
@@ -332,6 +338,7 @@ function emptyDiagnostics(
     min_comps: MIN_COMPS,
     candidates: 0,
     excluded_totals: emptyExclusions(),
+    not_price_setting: 0,
     outliers_excluded: 0,
     final_count: 0,
     final_tier_counts: {},
@@ -699,7 +706,7 @@ export async function selectComps(
         : tier.name.startsWith('subdivision') && !tier.subdivisionIlike
         ? 'the subject has no usable SubdivisionName on its MLS record'
         : (tier.name.startsWith('citywide-') || tier.name.startsWith('competing-area')) && byKey.size >= MIN_COMPS
-        ? 'the subdivision, the adjacent plats, and the neighborhood already supplied 3 sales, so the search did not fall back to the same zip'
+        ? `the subdivision, the adjacent plats, and the neighborhood already supplied ${MIN_COMPS} price-setting sales, so the search did not fall back to the same zip`
         : tier.samePocket && pocketNeighborNorms.length === 0
         ? 'no nearby mapped pocket cluster sits inside a quarter mile'
         : isListingsGeographyWidenTier(tier) &&
@@ -1055,9 +1062,14 @@ export async function selectComps(
 
       // HARD EXCLUSION at every tier. SQL already eq's the subject's product
       // type; keepSameProductType is belt-and-suspenders if a mixed row slips in.
+      // The remarks are read too (rule 23, Matt 2026-10-07): a duplex or any
+      // multi-unit entered as Single Family Residence never prices a detached
+      // home, and the test is symmetric. Null remarks fail open here; an
+      // unknown sub type still fails closed above.
       if (
         !productTypeCompatible(subject.propertySubType, comp.propertySubType) ||
-        !keepSameProductType(subject.propertySubType, comp.propertySubType)
+        !keepSameProductType(subject.propertySubType, comp.propertySubType) ||
+        multiUnitFromRemarks(comp.publicRemarks) !== multiUnitFromRemarks(subject.publicRemarks)
       ) {
         rung.excluded.product_type++
         continue
@@ -1159,6 +1171,36 @@ export async function selectComps(
         tier.competing && compArea && compArea !== subjectArea ? marketAreaName(compArea) : null
       comp.ownPlat = inOwnPlat
 
+      // RULE 20 AT THE DOOR (Matt 2026-10-07). A sale that passed every wall
+      // above and does not set the price (another community, or a clearly
+      // different size or product) is not admitted and does not count toward
+      // the five; the walk goes on in order. This count reads
+      // subject.communitySlug / comp.communitySlug as stamped above, while the
+      // facts ladder (lib/pricing/match.ts, the primary path at
+      // FACTS_STANDALONE_MIN) reads searchCommunitySlug with the member-plat
+      // map. Missing data fails open on both: saleSetsThePrice treats an
+      // unknown community on both sides as a match.
+      if (
+        !saleSetsThePrice({
+          ownPlat: comp.ownPlat,
+          subjectSubdivision: subject.subdivision,
+          saleSubdivision: comp.subdivision,
+          subjectCommunity,
+          saleCommunity: compCommunity,
+          subjectCommunityLocated: subject.communityLocated === true || subjectCommunity != null,
+          saleCommunityLocated: comp.communityLocated === true || compCommunity != null,
+          subjectSqft: subject.sqft,
+          saleSqft: comp.sqft,
+          subjectLotAcres: subject.lotAcres,
+          saleLotAcres: comp.lotAcres,
+        })
+      ) {
+        rung.excluded.not_price_setting++
+        bySale.add(saleKey(comp))
+        continue
+      }
+      comp.setsPrice = true
+
       byKey.set(comp.listingKey, comp)
       bySale.add(saleKey(comp))
       added++
@@ -1204,6 +1246,11 @@ export async function selectComps(
   }
   if (x.market_area > 0) trace.push(`Excluded ${x.market_area} comp(s) outside the subject's market area.`)
   if (x.distance > 0) trace.push(`Excluded ${x.distance} comp(s) beyond the tier's distance bound.`)
+  if (x.not_price_setting > 0) {
+    trace.push(
+      `Excluded ${x.not_price_setting} sale(s) that do not set the price: another community, or a clearly different size or product. They do not count toward the five.`,
+    )
+  }
   if (subject.subdivision && !subdivisionIlike) {
     trace.push(
       `The subject's SubdivisionName is "${subject.subdivision}", an MLS placeholder rather than a named subdivision, so the subdivision tiers were skipped and the ladder started at the neighborhood. Selecting on that placeholder would have matched unrelated sales across the whole city and labeled them same-subdivision comps.`,
@@ -1240,7 +1287,10 @@ export async function selectComps(
 
   // Outlier exclusion: drop $/sqft beyond 2 standard deviations OR far from the
   // peer median band (Tip Ready P1: $201/sf beside $498–561k peers must go),
-  // only when the set stays at or above MIN_COMPS afterward.
+  // only when the set stays above MIN_COMPS afterward. This runs on the
+  // pre-cap set (the cap is below), so it fires only when a rung overshot past
+  // five; on an exactly-five set an end outlier is handled by the trimmed
+  // range (lib/pricing/estimate.ts partitionByRangeRule), never a drop.
   const excludedOutliers: CompSelection['excludedOutliers'] = []
   const OUTLIER_MEDIAN_BAND = 0.35
   if (comps.length >= TARGET_COMPS) {
@@ -1335,6 +1385,7 @@ export async function selectComps(
     min_comps: MIN_COMPS,
     candidates: candidateCount,
     excluded_totals: excludedTotals,
+    not_price_setting: excludedTotals.not_price_setting,
     outliers_excluded: excludedOutliers.length,
     final_count: comps.length,
     final_tier_counts: countByTier(comps),
@@ -1396,6 +1447,9 @@ export async function selectCompsByKeys(subject: CmaSubject, keys: string[]): Pr
     if (!byKey.has(comp.listingKey)) byKey.set(comp.listingKey, comp)
   }
   // Most-recent-first, matching the exemplar ordering. No cap, no outlier drop.
+  // The floor still applies (rule 8 is the floor for every set; SKILL 0.1's
+  // "not capped" is about the ceiling): a three- or four-pick set reads
+  // starved here and lib/cma/build.ts refuses it with brokerCompRefusal.
   const comps = Array.from(byKey.values()).sort((a, b) => b.closeDate.localeCompare(a.closeDate))
   const found = new Set(comps.map((c) => c.listingKey))
   const missing = requested.filter((k) => !found.has(k))
@@ -1467,6 +1521,7 @@ const REFUSAL_CUT_LABELS: Partial<Record<keyof CompExclusionCounts, string>> = {
   price_tier: 'a different price tier than your home\'s own area',
   outbuildings: 'different outbuildings',
   terrain: 'different land',
+  not_price_setting: 'sitting in a different community, or a clearly different size or product, so they do not set the price',
 }
 
 export function brokerCompRefusal(args: {
@@ -1477,7 +1532,12 @@ export function brokerCompRefusal(args: {
   subjectCity?: string | null
 }): string {
   const { diagnostics: d, found, minComps } = args
-  const need = `Found ${found} of the ${minComps} closed sales this home needs to be priced.`
+  const notSetting = d.not_price_setting ?? 0
+  const need =
+    `Found ${found} of the ${minComps} closed sales this home needs to be priced.` +
+    (notSetting > 0
+      ? ` ${notSetting} more sale(s) were found but do not set the price (a different community, or a clearly different size or product), so they do not count.`
+      : '')
   const ran = d.ladder.filter((t) => t.ran)
   const widest = ran[ran.length - 1]
   const where = widest

@@ -30,7 +30,7 @@
  */
 
 import { countWord, usd } from '@/lib/cma/render-blocks'
-import { tableAdjustedBand } from '@/lib/cma/cover-value'
+import { tableAdjustedBand, tableBandSales } from '@/lib/cma/cover-value'
 import { FLAT_LOCAL_DATE_SENTENCE } from '@/lib/cma/flat-date-story'
 import { isRecommendMark } from '@/lib/cma/recommend-once'
 import { setAsideCompIndexes, trimsEachEnd } from '@/lib/cma/set-aside'
@@ -122,7 +122,7 @@ export function expectedSaleFor(input: {
     rows.map((c) => ({ adjustedPrice: printedAdjustedPrice(c), weight: c.weight })),
   )
   if (fromGrid == null || Math.abs(fromGrid - price) > gridTolerance(price)) return null
-  const band = tableAdjustedBand(comps)
+  const band = tableAdjustedBand(comps, p)
   if (!band || price < band.low || price > band.high) return null
   return {
     price,
@@ -175,11 +175,9 @@ function joinAnd(parts: readonly string[]): string {
   return `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`
 }
 
-/** The sales the printed band is drawn from: the weighted ones, as tableAdjustedBand reads them. */
-function bandSales(comps: readonly CmaAdjustedComp[]): CmaAdjustedComp[] {
-  const weighted = comps.filter((c) => typeof c.weight === 'number')
-  const setters = weighted.some((c) => c.weight > 0) ? weighted.filter((c) => c.weight > 0) : [...comps]
-  return setters.filter((c) => {
+/** The sales the printed band is drawn from: the weighted ones less the set-aside rows, as tableAdjustedBand reads them. */
+function bandSales(comps: readonly CmaAdjustedComp[], pricing?: CmaPricing | null): CmaAdjustedComp[] {
+  return tableBandSales(comps, pricing).filter((c) => {
     const n = printedAdjustedPrice(c)
     return Number.isFinite(n) && n > 0
   })
@@ -202,9 +200,9 @@ export function adjustedRangeLine(
 ): string {
   const rows = comps ?? []
   if (rows.length === 0) return ''
-  const band = tableAdjustedBand(rows)
+  const band = tableAdjustedBand(rows, opts?.pricing)
   if (!band || !(band.low > 0) || !(band.high > 0)) return ''
-  const sales = bandSales(rows)
+  const sales = bandSales(rows, opts?.pricing)
   const n = sales.length
   if (n === 0) return ''
   const words = adjustedToWords(rows)

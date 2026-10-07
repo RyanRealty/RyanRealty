@@ -47,6 +47,7 @@ import { setJudgeUnavailableReason } from '@/lib/cma/llm-unavailable'
 import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
 import { SAME_STREET_SIZE_BAND, sameStreetPeer } from '@/lib/pricing/price-anchor'
 import { roomCountsDecision } from '@/lib/pricing/room-ground'
+import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
 import { roomDifferenceSentence } from '@/lib/pricing/room-counts'
 import {
   EXCLUSION_BASES,
@@ -126,10 +127,11 @@ export { checkJudgmentConsistency } from '@/lib/cma/judge-consistency'
 const MODEL = GROK_MODELS.text
 
 /** Below this many kept comps the deterministic band cut stops pruning. The
- *  pricing minimum is the same three (MIN_COMPS), and buildCma prices only the
- *  sales this review keeps (lib/cma/judgment-prune.ts): a keep under three is
- *  a comp shortage, never a reason to price the excluded sales. */
-const RESOLVE_KEEP_FLOOR = 3
+ *  pricing minimum is the same five (PRICING_MIN_COMPS, Matt 2026-10-07), and
+ *  buildCma prices only the sales this review keeps (lib/cma/judgment-prune.ts):
+ *  a keep under five is a comp shortage, never a reason to price the excluded
+ *  sales. */
+const RESOLVE_KEEP_FLOOR = PRICING_MIN_COMPS
 
 export interface CompJudgment {
   verdicts: CompVerdict[]
@@ -492,7 +494,7 @@ export async function judgeComps(
 
   const user = buildJudgeUserPrompt(subject, comps, market)
   const inputChecksum = judgePromptChecksum(user, MODEL)
-  const minComps = options.minComps ?? 3
+  const minComps = options.minComps ?? PRICING_MIN_COMPS
   const enforce = options.enforceKeepMinimum !== false
   const candidateKeys = comps.map((c) => c.listingKey)
   const prior = options.priorCache && options.priorCache.model === MODEL && cacheHit(options.priorCache, inputChecksum)

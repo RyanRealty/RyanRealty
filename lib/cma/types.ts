@@ -151,6 +151,13 @@ export interface CmaComp {
    */
   ownPlat?: boolean | null
   /**
+   * The walk admitted this sale on rule 20 (lib/pricing/price-set.ts) with
+   * its fullest inputs, so the weight does not re-grade it (Matt 2026-10-07).
+   * Absent on a set no walk graded, such as a broker-picked one, where the
+   * weight runs the test itself.
+   */
+  setsPrice?: boolean | null
+  /**
    * MLS SeniorCommunityYN for this sale. True walls it out of an ordinary
    * subject's pricing (lib/pricing/age-restricted.ts); false and null are not
    * evidence either way.
@@ -457,6 +464,15 @@ export interface CmaSubjectStatus {
  * the prose beside them told the reader they had been removed. They are now
  * out of the weights and out of the printed price, and this is where they go.
  */
+export type CmaPricingHold = {
+  kind: 'ask-in-band'
+  ask: number
+  bandLow: number
+  bandHigh: number
+  /** The sentence Matt reads in the queue. No em dash. */
+  reason: string
+}
+
 export interface CmaSetAsideSale {
   listingKey: string
   address: string
@@ -554,10 +570,10 @@ export interface CmaPricing {
   timeAdjustment?: import('@/lib/pricing/estimate').PricingTimeAdjustment | null
   /**
    * The sales the range rule set aside — the single highest and the single
-   * lowest adjusted price, once there are six of them. They are printed as
-   * evidence and carry NONE of the price: not a weight in
-   * `reconciliation.weights`, not a dollar in `recommended`. Empty under
-   * `min-max`, where nothing is set aside and nothing says it was.
+   * lowest adjusted price, once there are five of them (Matt 2026-10-07: the
+   * band is always the trimmed range). They are printed as evidence and carry
+   * NONE of the range: not an end of `valueLow`..`valueHigh`, and the grid
+   * marks them with their reason and no weight row.
    */
   setAside?: CmaSetAsideSale[] | null
   /**
@@ -566,6 +582,13 @@ export interface CmaPricing {
    * false and `reasons` empty on a clean one.
    */
   review?: CmaPricingReview | null
+  /**
+   * The build's own hold for Matt (SKILL.md rule 22, Matt 2026-10-07): the
+   * subject's last failed ask sits inside the trimmed band the recommendation
+   * reads from. The build completes and the document persists; nothing sends
+   * (lib/cma/gap-hold.ts reads it at every send gate).
+   */
+  hold?: CmaPricingHold | null
   /**
    * Sales considered and not used, capped at eight, each with a reason
    * composed from the sale's own recorded facts. An appraisal shows what it

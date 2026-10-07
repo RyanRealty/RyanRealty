@@ -179,12 +179,13 @@ describe('assembleOpinionPages format', () => {
   })
 
   it('runs the number, the map, then the three matrices in Delta 3 order', () => {
-    // Three closed sales is the pricing unit's own floor, and the floor the
-    // matrix fails closed at (MIN_CLOSED_SALES_FOR_MATRIX).
+    // Five price-setting sales is the pricing unit's own floor (Matt
+    // 2026-10-07), and the floor the matrix fails closed at
+    // (MIN_CLOSED_SALES_FOR_MATRIX).
     const base = args()
     const pages = assembleOpinionPages({
       ...base,
-      comps: [0, 1, 2].map((i) => ({ ...base.comps[0]!, listingKey: `K${i}`, address: `${100 + i} Test St` })),
+      comps: [0, 1, 2, 3, 4].map((i) => ({ ...base.comps[0]!, listingKey: `K${i}`, address: `${100 + i} Test St` })),
       mapDataUri: 'data:image/png;base64,compsmap',
     })
     const tocs = pages.map((p) => p.toc)

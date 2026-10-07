@@ -124,6 +124,20 @@ const coverArgs = {
   tiersUsed: ['pocket-6mo', 'pocket-12mo'],
 }
 
+
+/**
+ * Five price-setting sales is the floor (Matt 2026-10-07), and the matrix
+ * renders nothing thinner. The Horse Back fixtures were written at three
+ * rows; two more Horse Back rows, cloned from the last, bring them to five.
+ */
+function fiveOf<T extends { listingKey: string; address: string }>(rows: T[]): T[] {
+  const last = rows[rows.length - 1]!
+  return [
+    ...rows,
+    ...[4, 5].map((n) => ({ ...last, listingKey: `C${n}`, mlsNumber: String(n), address: `${900 + n} Horse Back` }) as T),
+  ]
+}
+
 describe('1130 E Canter FlexMLS letter FLOW', () => {
   it('contract: split-closed-pending-active-summary-tables', () => {
     const closed = [
@@ -471,7 +485,7 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
       sizeAdjustment: 0,
       weight: 1,
     }
-    const closedComps = [
+    const closedComps = fiveOf([
       {
         ...seed,
         listingKey: 'C1',
@@ -523,7 +537,7 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
         adjustedPrice: 705000,
         listingHistoryLine: 'Sold Jun 12, 2025 · 72 days on market',
       },
-    ] as CmaAdjustedComp[]
+    ] as CmaAdjustedComp[])
     const html = renderCompMatrixHtml(subject, closedComps)
     for (const label of [
       'Distance',
@@ -563,7 +577,7 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
     expect(COMPARABLE_DOM_ROW_LABEL).toBe('Days on market')
     expect(COMPARABLE_PRICE_HISTORY_ROW_LABEL).toContain('First ask')
 
-    const closedComps = [
+    const closedComps = fiveOf([
       {
         listingKey: 'C1',
         mlsNumber: '1',
@@ -633,7 +647,7 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
         weight: 1,
         listingHistoryLine: 'Sold Jun 12, 2025 at $705,000 · 72 days on market',
       },
-    ] as CmaAdjustedComp[]
+    ] as CmaAdjustedComp[])
 
     const closedHtml = renderCompMatrixHtml(subject, closedComps)
     expect(matrixHtmlHasDomAndPriceHistory(closedHtml)).toBe(true)
@@ -725,7 +739,7 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
 
   it('contract: matrix-empty-thumb-align', () => {
     // Canter @1280: missing MLS photo still reserves 4/3 so headers do not float.
-    const html = renderCompMatrixHtml(subject, [
+    const html = renderCompMatrixHtml(subject, fiveOf([
       {
         listingKey: 'C1',
         mlsNumber: '1',
@@ -795,7 +809,7 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
         photoUrl: null,
         listingHistoryLine: 'Sold Jun 12, 2025 · 72 days on market',
       },
-    ] as CmaAdjustedComp[])
+    ] as CmaAdjustedComp[]))
     expect(html).toContain('matrix-thumb is-empty')
     expect(html).toContain('https://cdn.example/comp.jpg')
     expect(html).not.toMatch(/cdn\.example\/(?!comp\.jpg)/)
@@ -836,7 +850,7 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
       confidence: 'High',
       notes: [],
     } as unknown as CmaPricing
-    const comps = [
+    const comps = fiveOf([
       {
         listingKey: 'C1',
         mlsNumber: '1',
@@ -903,7 +917,7 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
         weight: 1,
         listingHistoryLine: 'Sold Jun 12, 2025 · 72 days on market',
       },
-    ] as CmaAdjustedComp[]
+    ] as CmaAdjustedComp[])
     const page = salesThatSetItPage({
       subject,
       comps,

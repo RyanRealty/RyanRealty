@@ -44,7 +44,8 @@ vi.mock('@/lib/cma/comps', () => ({
     throw new Error('listings selectComps must not run for Canter custom/new')
   }),
   selectCompsByKeys: vi.fn(),
-  MIN_COMPS: 3,
+  // Five price-setting sales (Matt 2026-10-07); the Canter contract already holds five facts rows.
+  MIN_COMPS: 5,
 }))
 vi.mock('@/lib/data/pricing/facts', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/data/pricing/facts')>()

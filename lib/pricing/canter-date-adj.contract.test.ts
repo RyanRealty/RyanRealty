@@ -127,6 +127,7 @@ function sale(over: Partial<SelectedPricingComp> & Pick<SelectedPricingComp, 'li
     photoUrl: null,
     publicRemarks: null,
     selectionTier: 'pocket-6mo',
+    setsPrice: true,
     proximity: '0.12 miles',
     monthsBeforeAsOf: 5,
     ...over,

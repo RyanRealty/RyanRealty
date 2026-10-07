@@ -62,10 +62,16 @@ export interface CompExclusionCounts {
   terrain: number
   /** A sale whose $/sqft sits outside the subject's own price tier. */
   price_tier: number
+  /**
+   * A sale that passed the rung's walls and does not set the price (rule 20:
+   * another community, or a clearly different size or product). It does not
+   * count toward the five price-setting sales (Matt 2026-10-07).
+   */
+  not_price_setting: number
 }
 
 export function emptyExclusions(): CompExclusionCounts {
-  return { product_type: 0, bath_count: 0, lot_character: 0, resort_premium: 0, market_area: 0, crossed_divide: 0, distance: 0, duplicate: 0, self: 0, unusable_row: 0, year_quality: 0, acreage_infrastructure: 0, zoning_class: 0, outbuildings: 0, terrain: 0, price_tier: 0 }
+  return { product_type: 0, bath_count: 0, lot_character: 0, resort_premium: 0, market_area: 0, crossed_divide: 0, distance: 0, duplicate: 0, self: 0, unusable_row: 0, year_quality: 0, acreage_infrastructure: 0, zoning_class: 0, outbuildings: 0, terrain: 0, price_tier: 0, not_price_setting: 0 }
 }
 
 export function addExclusions(into: CompExclusionCounts, from: CompExclusionCounts): void {
@@ -73,7 +79,7 @@ export function addExclusions(into: CompExclusionCounts, from: CompExclusionCoun
 }
 
 export function totalExclusions(x: CompExclusionCounts): number {
-  return x.product_type + x.bath_count + x.lot_character + x.resort_premium + x.market_area + x.crossed_divide + x.distance + x.duplicate + x.self + x.unusable_row + x.year_quality + x.acreage_infrastructure + x.zoning_class + x.outbuildings + x.terrain + x.price_tier
+  return x.product_type + x.bath_count + x.lot_character + x.resort_premium + x.market_area + x.crossed_divide + x.distance + x.duplicate + x.self + x.unusable_row + x.year_quality + x.acreage_infrastructure + x.zoning_class + x.outbuildings + x.terrain + x.price_tier + x.not_price_setting
 }
 
 /** One rung of the ladder, whether it ran or was skipped. */
@@ -91,9 +97,15 @@ export interface CompTierTrace {
   geography: string
   rows_returned: number
   comps_added: number
-  /** Distinct comps held after this tier — the number the ladder tests against TARGET_COMPS. */
+  /** Distinct price-setting comps held after this tier — the number the ladder tests against TARGET_COMPS. */
   running_total: number
   excluded: CompExclusionCounts
+  /**
+   * Facts ladder only: sales that passed this rung and do not set the price
+   * (PricingLadderRung.notSetting). Null on the listings path, which counts
+   * the same refusal in `excluded.not_price_setting`.
+   */
+  not_setting?: number | null
 }
 
 export interface CompSelectionDiagnostics {
@@ -137,6 +149,12 @@ export interface CompSelectionDiagnostics {
   candidates: number
   excluded_totals: CompExclusionCounts
   outliers_excluded: number
+  /**
+   * Sales that passed a rung and do not set the price, over the whole walk
+   * (the sum of rung.notSetting on facts; excluded_totals.not_price_setting
+   * on listings). They never counted toward the five (Matt 2026-10-07).
+   */
+  not_price_setting: number
   /** Comps handed to pricing by selectComps (after outliers + cap). */
   final_count: number
   /** Tier -> count, over the comps that actually got priced. Filled by the builder. */
@@ -166,6 +184,8 @@ const EXCLUSION_LABELS: Record<keyof CompExclusionCounts, string> = {
   outbuildings: 'their outbuildings differ (a shop, barn, or arena on one side and none on the other)',
   terrain: 'their land differs (usable ground on one side, rock, slope, or wetland on the other)',
   price_tier: 'their price per square foot sits outside the tier this home\'s own area sells in',
+  not_price_setting:
+    'they sit in a different community, or are a clearly different size or product, so they do not set the price and do not count toward the five',
 }
 
 function band(d: CompSelectionDiagnostics): string {

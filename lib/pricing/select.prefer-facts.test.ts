@@ -16,7 +16,8 @@ vi.mock('@/lib/data/geo/subdivision-ring', () => ({
 vi.mock('@/lib/cma/comps', () => ({
   selectComps,
   selectCompsByKeys: vi.fn(),
-  MIN_COMPS: 3,
+  // Five price-setting sales (Matt 2026-10-07).
+  MIN_COMPS: 5,
 }))
 
 const countSalePricingFacts = vi.hoisted(() => vi.fn(async () => 5000))

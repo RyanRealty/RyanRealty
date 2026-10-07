@@ -787,7 +787,13 @@ export async function approveProspectDoc(
     const safe = slug.trim().toLowerCase()
     const { rows } = await listCmaQueue({ limit: 1000, includeArchived: true })
     const queuedRow = rows.find((r) => r.docKind === 'cma' && r.slug.toLowerCase() === safe)
-    const gap = recommendationGapHold(queuedRow?.recommendedList ?? null, queuedRow?.theirPrice ?? null)
+    const gap = recommendationGapHold(queuedRow?.recommendedList ?? null, queuedRow?.theirPrice ?? null, {
+      low: queuedRow?.valueLow ?? null,
+      high: queuedRow?.valueHigh ?? null,
+      holdKind: queuedRow?.holdKind ?? null,
+      holdDecided: queuedRow?.holdDecided ?? false,
+      origin: queuedRow?.origin ?? null,
+    })
     if (gap.hold) return { ok: false, error: gap.reason }
     const { approveCmaAction } = await import('@/app/actions/cma-admin')
     const res = await approveCmaAction(slug)
