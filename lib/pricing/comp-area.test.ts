@@ -159,7 +159,7 @@ describe('buildCompArea — a boundary rung supplied a kept sale', () => {
 })
 
 describe('buildCompArea — otherwise the radius the widest kept rung used', () => {
-  it('names the subdivisions the printed sales sit in, not the mile ring that found one of them', () => {
+  it('names the subdivisions the printed sales sit in, and the ring that found the plat outside the subject\'s', () => {
     const area = buildCompArea({
       subject: { ...REDMOND, subdivision: 'Diamond Bar Ranch', city: 'Redmond' },
       rungs: [rung('subdivision-3mo', 2), rung('nearby-1mi-6mo', 2), rung('city-5mi-9mo', 0, 6)],
@@ -173,8 +173,26 @@ describe('buildCompArea — otherwise the radius the widest kept rung used', () 
     expect(area!.kind).toBe('subdivisions')
     expect(area!.names).toEqual(['Diamond Bar Ranch', 'Hayloft'])
     expect(area!.radiusMiles).toBeNull()
-    expect(area!.sentence).toBe('Diamond Bar Ranch and the one subdivision next to it.')
-    expect(area!.sentence).not.toMatch(/mile/)
+    // Hayloft was reached only by a distance rung, so it is not "next to"
+    // Diamond Bar Ranch; it is named with the ring that found it (rule 17).
+    expect(area!.sentence).toMatch(/^Diamond Bar Ranch, and Hayloft within .+ of your home\.$/)
+    expect(area!.sentence).not.toMatch(/next to it/)
+  })
+
+  it('keeps "next to it" for a touching plat and names the ring only for the plat a ring reached', () => {
+    const area = buildCompArea({
+      subject: { ...REDMOND, subdivision: 'Deschutes', city: 'Bend' },
+      rungs: [rung('subdivision-12mo-wide', 2), rung('adjacent-sub-12mo', 1), rung('nearby-0.5mi-12mo', 1)],
+      keptComps: [
+        comp('Deschutes', 'subdivision-12mo-wide'),
+        comp('Deschutes', 'subdivision-12mo-wide'),
+        comp('Park Addition', 'adjacent-sub-12mo'),
+        comp('Staats', 'nearby-0.5mi-12mo'),
+      ],
+    })
+    expect(area!.kind).toBe('subdivisions')
+    expect(area!.names).toEqual(['Deschutes', 'Park Addition', 'Staats'])
+    expect(area!.sentence).toMatch(/^Deschutes and the one subdivision next to it, and Staats within .+ of your home\.$/)
   })
 
   it('names the subdivision when every sale is there, even if the rungs were a street and a distance ring', () => {

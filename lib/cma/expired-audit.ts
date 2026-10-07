@@ -1208,13 +1208,17 @@ export function applyFailedAskCap(
   } else {
     recCeil = underAsk
     highCeil = underAsk
-    consCeil = pricing.conservative < ask ? pricing.conservative : underAsk
+    // The floor tier follows the list under the ask. A tier an earlier pass
+    // left at ask minus $1,000 (lib/pricing/estimate.ts clips with no cycle
+    // facts) is under the ask and still above a 1.5 percent pull: 915 Saginaw
+    // held conservative $924,000 over recommended $911,000 (2026-10-07).
+    consCeil = Math.min(pricing.conservative, underAsk)
     ceilings.recommended = { ...ceilings.recommended, value: underAsk, ratio: pullRatio, phrase: null }
     ceilings.highEnd = { ...ceilings.highEnd, value: underAsk, ratio: pullRatio, phrase: null }
     ceilings.conservative = {
       ...ceilings.conservative,
       value: consCeil,
-      ratio: pricing.conservative < ask ? ceilings.conservative.ratio : pullRatio,
+      ratio: pricing.conservative < underAsk ? ceilings.conservative.ratio : pullRatio,
       phrase: null,
     }
   }

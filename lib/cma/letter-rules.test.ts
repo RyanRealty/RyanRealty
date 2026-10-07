@@ -208,4 +208,29 @@ describe('letter rules that cannot be skipped', () => {
     )
     expect(good.every((c) => c.pass)).toBe(true)
   })
+
+  it('lets the competition chapter widen to a ring while the sales sit in named plats, and still refuses a bare ring caption', () => {
+    // cma-711-georgia, 2026-10-07: the sales caption named Deschutes and Park
+    // Addition; the competition, short inside those plats, widened to a mile
+    // and said so in its own sentence and source line. That is not the sales
+    // sitting in a ring.
+    const compArea = { kind: 'subdivisions' as const, sentence: 'Deschutes, and Park Addition within one mile of your home.' }
+    const place = {
+      compArea,
+      propertySubType: 'Single Family Residence',
+      listingMarket: { place: 'Deschutes', productNoun: 'home' },
+      citywideListingCounts: [803, 1201, 1008],
+    }
+    const mixed = letterPlaceChecks(
+      '<p class="small">Deschutes, and Park Addition within one mile of your home.</p><p>6 homes are for sale within one mile of your home between $623,000 and $1,038,000. 3 are under contract.</p><p class="source">Homes for sale and under contract within one mile of your home between $623,000 and $1,038,000, from the Oregon Data Share MLS as of Oct 7, 2026.</p>',
+      place,
+    )
+    expect(mixed.find((c) => c.id === 'sales-place-not-a-mile-ring')?.pass).toBe(true)
+    expect(mixed.find((c) => c.id === 'sales-place-sentence')?.pass).toBe(true)
+    const bare = letterPlaceChecks(
+      '<p class="small">Within one mile of your home. Every pin below sits inside it.</p><p>Deschutes, and Park Addition within one mile of your home.</p>',
+      place,
+    )
+    expect(bare.find((c) => c.id === 'sales-place-not-a-mile-ring')?.pass).toBe(false)
+  })
 })
