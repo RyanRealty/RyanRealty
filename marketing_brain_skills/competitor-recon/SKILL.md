@@ -114,7 +114,7 @@ For manual full passes (all sources × all competitors in one call), invoke with
 
 ```sh
 curl -H "Authorization: Bearer $CRON_SECRET" \
-  "https://ryanrealty.vercel.app/api/cron/marketing-competitor-recon?source=instagram_profile"
+  "https://ryan-realty.com/api/cron/marketing-competitor-recon?source=instagram_profile"
 ```
 
 ---

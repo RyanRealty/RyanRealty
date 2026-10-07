@@ -1,3 +1,4 @@
+import { siteOrigin } from '@/lib/site-origin'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
@@ -229,7 +230,7 @@ export default async function SearchPage({
       isPlainCityBrowse) &&
     Boolean(city || hasFilterOnly)
 
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const siteUrl = siteOrigin()
 
   // Map/split seeds from MapSplitView's own viewport fetch. Do not wait on the
   // 12s grid listings RPC (or grid-only banner reads) first.

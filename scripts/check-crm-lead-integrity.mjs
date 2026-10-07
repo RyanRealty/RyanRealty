@@ -84,7 +84,11 @@ export function topLevelSource(arg) {
 
 /** A sendEvent `source:` expression that derives the site host instead of naming the door. */
 export function isHostDerivedSource(expr) {
-  return /replace\(|NEXT_PUBLIC_SITE_URL|siteUrl|\bbase\b|'ryan-realty\.com'/.test(expr) || expr.trim() === 'source'
+  // siteHost() / siteOrigin() / siteUrl() are lib/site-origin.ts, the one place the host comes from (2026-10-07).
+  return (
+    /replace\(|NEXT_PUBLIC_SITE_URL|siteUrl|\bbase\b|'ryan-realty\.com'|\bsite(?:Host|Origin)\(|\bwebsiteSource\(/.test(expr) ||
+    expr.trim() === 'source'
+  )
 }
 
 const SCAN = ['lib', 'app']

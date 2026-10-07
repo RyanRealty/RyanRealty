@@ -26,6 +26,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
+import { configuredSiteOrigin } from '@/lib/site-origin'
 import { createServiceClient } from '@/lib/supabase/service'
 
 export const maxDuration = 300
@@ -93,7 +94,10 @@ export async function GET(request: NextRequest) {
   const errors: SweepError[] = []
 
   const cronSecret = process.env.CRON_SECRET
-  const appUrl = process.env.NEXT_PUBLIC_SITE_URL ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+  // Server-to-server self-call: the configured origin (production hosts fold to
+  // https://ryan-realty.com, lib/site-origin.ts); unset, the running deployment.
+  const appUrl =
+    configuredSiteOrigin() ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
 
   // Stamp utm_content=<action_id> onto every ryan-realty.com link in a publish
   // payload (ctaUrl, caption text, nested per-platform fields). A seller lead who

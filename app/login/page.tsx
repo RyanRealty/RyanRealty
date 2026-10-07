@@ -17,6 +17,7 @@
  */
 
 // @data-free static utility page, no DAL access needed.
+import { siteOrigin } from '@/lib/site-origin'
 import type { Metadata } from 'next'
 import LoginForm from '@/components/auth/LoginForm'
 import {
@@ -27,7 +28,7 @@ import {
   V3SectionTracker,
 } from '@/components/site/v3'
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const siteUrl = siteOrigin()
 const ogImage = `${siteUrl}/api/og?type=default`
 
 export const metadata: Metadata = {

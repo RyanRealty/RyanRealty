@@ -9,6 +9,7 @@
  * getBrokerageListings, SHOWN_LISTINGS = 12, V3SectionTracker pageType="info".
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import type { Metadata } from 'next'
 import { getBrokerageListings } from '@/lib/data'
 import {
@@ -22,7 +23,7 @@ import {
 import { OurHomesField } from './_v3/OurHomesField'
 import { OUR_HOMES_TRACE, ourHomesFieldItems, ourHomesTowns } from './_v3/our-homes-rows'
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const siteUrl = siteOrigin()
 const ogImage = `${siteUrl}/api/og?type=default`
 
 export const metadata: Metadata = {

@@ -23,6 +23,7 @@
  * D11: no virtue names. No invented quote.
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import type { Metadata } from 'next'
 import { getPageContent } from '@/app/actions/site-pages'
 import { getSession } from '@/app/actions/auth'
@@ -59,7 +60,7 @@ import { TEAM_RANK } from '@/app/team/_v3/team-constants'
 import { AboutFaces } from '@/app/about/_v3/AboutFaces'
 import { aboutFaceFromBroker, type AboutFace } from '@/app/about/_v3/about-faces'
 
-const contactOgImage = `${(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')}/api/og?type=default`
+const contactOgImage = `${siteOrigin()}/api/og?type=default`
 
 /** SITE-63 proof variants — pick via ?taste_variant=; losers deleted after Matt picks. */
 const CONTACT_VARIANTS = ['quiet-doors', 'call-figure', 'faces-first'] as const

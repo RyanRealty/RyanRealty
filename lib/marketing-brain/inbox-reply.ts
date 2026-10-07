@@ -21,6 +21,7 @@
  */
 
 import { google } from 'googleapis'
+import { siteOrigin } from '@/lib/site-origin'
 import type { JWT } from 'google-auth-library'
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { MARKETING_INBOX_USER } from './inbox-auth'
@@ -58,8 +59,9 @@ export interface ReplyOutcome {
   error?: string
 }
 
-const PRODUCTION_DASHBOARD_BASE_URL =
-  process.env.MARKETING_DASHBOARD_BASE_URL?.replace(/\/$/, '') || 'https://ryan-realty.com'
+// The override still folds a production host (the Vercel alias included) to
+// https://ryan-realty.com: this link goes out in an email (lib/site-origin.ts).
+const PRODUCTION_DASHBOARD_BASE_URL = siteOrigin(process.env.MARKETING_DASHBOARD_BASE_URL)
 
 const REQUEST_PAGE_URL = `${PRODUCTION_DASHBOARD_BASE_URL}/marketing/request`
 

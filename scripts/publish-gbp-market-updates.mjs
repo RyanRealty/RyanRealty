@@ -13,6 +13,7 @@
  */
 
 import fs from 'node:fs'
+import { siteOrigin } from './lib/site-origin.mjs'
 
 function parseArgs(argv) {
   const out = {}
@@ -359,7 +360,8 @@ async function main() {
   const count = Math.max(1, Number.parseInt(args.count || '5', 10))
 
   const env = readDotEnv('.env.local')
-  const siteUrl = (env.NEXT_PUBLIC_SITE_URL || 'https://ryan-realty.com').replace(/\/+$/, '')
+  // Production hosts (the Vercel alias included) fold to https://ryan-realty.com (lib/site-origin.ts).
+  const siteUrl = siteOrigin(env.NEXT_PUBLIC_SITE_URL)
   const cronSecret = env.CRON_SECRET || process.env.CRON_SECRET
 
   if (!cronSecret) {

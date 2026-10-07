@@ -124,7 +124,7 @@ const server = http.createServer(async (req, res) => {
     console.log('     OR run scripts/google-ads-refresh-access-token.mjs in CI to refresh.')
     console.log('  4. Wait for the next 06:30 UTC snapshot run, or trigger manually:')
     console.log('     curl -H "Authorization: Bearer $CRON_SECRET" \\')
-    console.log('       https://ryanrealty.vercel.app/api/cron/marketing-snapshot-google-ads\n')
+    console.log('       https://ryan-realty.com/api/cron/marketing-snapshot-google-ads\n')
     server.close()
     process.exit(0)
   } catch (e) {

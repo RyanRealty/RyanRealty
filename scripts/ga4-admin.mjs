@@ -513,7 +513,7 @@ function buildAudiencePayload(parent, audience) {
       base.requestBody.filterClauses = [
         includeMultiOr([
           dimContains('hostName', 'ryan-realty.com'),
-          dimContains('hostName', 'ryanrealty.vercel.app'),
+          dimContains('hostName', 'ryanrealty.vercel.app'), // staging-host-ok: GA4 filter on the INCOMING hostname
         ]),
       ]
       break

@@ -1,5 +1,6 @@
 'use server'
 
+import { siteOrigin } from '@/lib/site-origin'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getSession } from '@/app/actions/auth'
@@ -141,7 +142,7 @@ export async function createSavedSearch(
   let crmPersonId: number | null = null
   try {
     const { sendEvent } = await import('@/lib/crm/send-event')
-    const base = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+    const base = siteOrigin()
     const searchUrl = `${base}${buildSearchUrlFromFilters(normalizedFilters)}`
     const summary = getFiltersSummary(normalizedFilters)
     const count = warm.totalCount != null ? ` (${warm.totalCount} matches)` : ''

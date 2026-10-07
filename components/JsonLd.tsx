@@ -12,6 +12,7 @@
  * roster. Broker license numbers come from public.brokers (OREA-authoritative).
  */
 import { getBrokers } from '@/lib/data/brokers/getBrokers'
+import { siteOrigin } from '@/lib/site-origin'
 import type { Broker } from '@/lib/data/types/broker'
 import { teamPath } from '@/lib/slug'
 import { BRAND, CONTACT, ENTITY_SAME_AS } from '@/lib/brand/contact'
@@ -57,7 +58,7 @@ function brokerAgent(b: Broker, baseUrl: string): Record<string, unknown> {
 }
 
 export default async function JsonLd() {
-  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? BRAND.url).replace(/\/$/, '')
+  const baseUrl = siteOrigin()
   const brokers = await getBrokers().catch(() => [] as Broker[])
   const principal = brokers.find((b) => b.isPrincipal) ?? null
   const team = brokers.filter((b) => !b.isPrincipal)

@@ -3,8 +3,8 @@
 // Ad links — P11D: migrated to the LOCKED admin v2 language
 // (design_system/admin/ADMIN_UI.md). Presentation only.
 //
-// Carried over verbatim: requireAdminPage('content.marketing'), siteUrl() and
-// its NEXT_PUBLIC_SITE_URL fallback + trailing-slash strip, the BROKERS and LPS
+// Carried over verbatim: requireAdminPage('content.marketing'), siteUrl() (now
+// siteOrigin(), lib/site-origin.ts: never the Vercel alias), the BROKERS and LPS
 // tables, the `${base}/lp/${lp.slug}?agent=${b.slug}` URL shape, the
 // assigned_broker lead-form instructions, and the CopyLinkButton mount.
 //
@@ -12,6 +12,7 @@
 // <h1> title chrome is gone (the nav names the page), the per-broker <h2>s
 // became SectionHeads, and the lead sentence became a verdict that counts the
 // links actually rendered.
+import { siteOrigin } from '@/lib/site-origin'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { scopeBroker } from '@/lib/crm/scope'
 import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
@@ -45,7 +46,7 @@ const code = {
 }
 
 function siteUrl(): string {
-  return (process.env.NEXT_PUBLIC_SITE_URL || 'https://ryan-realty.com').replace(/\/$/, '')
+  return siteOrigin()
 }
 
 export default async function BrokerLinksPage() {

@@ -51,6 +51,7 @@ const params = {
 };
 
 console.log('=== Signed webhook probe ===');
+// staging-host-ok: probes the INCOMING Twilio webhook on both hosts that serve /api/*; nothing outward.
 for (const base of ['https://ryan-realty.com', 'https://ryanrealty.vercel.app']) {
   const r = await postSigned(base, { ...params, MessageSid: `${probeSid}-${base.includes('vercel') ? 'v' : 'c'}` });
   console.log(r.status, r.url, r.body);

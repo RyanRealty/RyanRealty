@@ -4,7 +4,9 @@
  * Verifies env, Supabase, Spark, public pages, sitemap, OG, etc.
  */
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ?? 'http://localhost:3000'
+import { configuredSiteOrigin } from '../lib/site-origin'
+
+const SITE_URL = configuredSiteOrigin() ?? 'http://localhost:3000'
 
 const requiredEnv = [
   'NEXT_PUBLIC_SUPABASE_URL',

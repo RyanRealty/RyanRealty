@@ -3,7 +3,7 @@
  */
 import { chromium } from './lib/marked-playwright.mjs'
 
-const BASE = 'https://ryanrealty.vercel.app'
+const BASE = 'https://ryan-realty.com'
 const results = []
 
 function log(test, pass, detail) {

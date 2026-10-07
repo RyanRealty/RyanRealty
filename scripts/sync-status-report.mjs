@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { createClient } from '@supabase/supabase-js'
+import { siteOrigin } from './lib/site-origin.mjs'
 
 function argValue(name, fallback = null) {
   const i = process.argv.findIndex((a) => a === `--${name}`)
@@ -8,7 +9,7 @@ function argValue(name, fallback = null) {
 }
 
 const asJson = process.argv.includes('--json')
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || 'https://ryan-realty.com'
+const siteUrl = siteOrigin(process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL)
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY
 

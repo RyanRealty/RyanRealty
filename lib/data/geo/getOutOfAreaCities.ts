@@ -24,6 +24,7 @@
  * pages use), never from a request-time aggregate over raw listings.
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import type { MetadataRoute } from 'next'
 import { supabaseAnon } from '@/lib/data/client'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
@@ -117,7 +118,7 @@ export async function isIndexableOutOfAreaCity(slug: string): Promise<boolean> {
  * app/sitemap.ts). Non-top cities are never emitted — they render noindex.
  */
 export async function getOutOfAreaCitySitemapEntries(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const baseUrl = siteOrigin()
   const indexable = await getIndexableOutOfAreaCities()
   return indexable.map((c) => ({
     url: `${baseUrl}/oregon/${c.slug}`,

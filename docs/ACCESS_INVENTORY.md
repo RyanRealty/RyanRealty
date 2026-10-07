@@ -20,7 +20,7 @@ only, never a secret.
 | Gmail connector | `mcp__Gmail__*` | Matt's own mailbox: read and search (2026-10-07). Sending to a real person is a §1 per-action approval. |
 | Vercel | `VERCEL_TOKEN`; Vercel connector | `npm run deploy:verify` and deployment reads (2026-10-07). |
 | GitHub | GitHub connector (`mcp__github__*`), `GH_TOKEN`; git push through the session proxy | Branch push, PR create and update, merge (2026-10-07). Push with `npm run push -- <args>` (the pre-push hook needs the gates stamp). |
-| Production site | `NEXT_PUBLIC_SITE_URL` (the Vercel alias, not the canonical host) | Plain curl gets a 403 from the bot screen; use a browser user agent or Playwright with `executablePath: '/opt/pw-browsers/chromium'`. Email links use `lib/email/link-origin.ts`, not this variable. |
+| Production site | **https://ryan-realty.com** is the one public origin. `NEXT_PUBLIC_SITE_URL` in Vercel production still holds the Vercel alias, so code never reads it directly | **Never use `ryanrealty.vercel.app` for anything outward** (links, emails, SMS, canonicals, OG and sitemaps, PDFs, redirects, lead sources, script output; Matt 2026-10-07). Build every outward URL with `siteOrigin()` / `siteUrl()` / `siteHost()` from `lib/site-origin.ts` (`scripts/lib/site-origin.mjs` in plain-node scripts); gate `ci:site-origin` (G81). Plain curl gets a 403 from the bot screen; use a browser user agent or Playwright with `executablePath: '/opt/pw-browsers/chromium'`. |
 
 ## Present, not exercised in the sessions that wrote this page
 

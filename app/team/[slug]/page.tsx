@@ -19,6 +19,7 @@
  * Parity: design_system/ryan-realty/ui_kits/team/parity.json perBrokerPage
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getAgentBySlug } from '@/app/actions/agents'
@@ -67,7 +68,7 @@ import { basemapForRegions } from '@/lib/geo/basemap-source'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { brokerPersonId, brokerSameAs } from '@/lib/site/broker-entity'
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const siteUrl = siteOrigin()
 const OFFICE_NAME = 'Ryan Realty'
 
 type Props = { params: Promise<{ slug: string }> }

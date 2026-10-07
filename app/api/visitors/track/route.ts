@@ -278,12 +278,14 @@ const ALLOWED_EVENT_TYPES = new Set<string>([
 // snippets safe; the schema stays open for adding more domains later.
 function resolveSourceDomain(pageUrl: string, explicit?: string): string {
   const exp = explicit?.trim().toLowerCase()
+  // source_domain bucket labels for the INCOMING page host (a stored classification,
+  // the schema's existing value), never a URL anyone is sent to. staging-host-ok
   if (exp === 'ryan-realty.com' || exp === 'ryanrealty.vercel.app') return exp
   try {
     const host = new URL(pageUrl).hostname.toLowerCase().replace(/^www\./, '')
     if (host === 'ryan-realty.com') return 'ryan-realty.com'
-    if (host === 'ryanrealty.vercel.app') return 'ryanrealty.vercel.app'
-    if (host.endsWith('.vercel.app')) return 'ryanrealty.vercel.app'
+    if (host === 'ryanrealty.vercel.app') return 'ryanrealty.vercel.app' // staging-host-ok: bucket label, see above
+    if (host.endsWith('.vercel.app')) return 'ryanrealty.vercel.app' // staging-host-ok: bucket label, see above
   } catch {
     // fall through to default
   }

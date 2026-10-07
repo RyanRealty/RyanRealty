@@ -76,7 +76,7 @@ const cycle_started_at = new Date().toISOString()
 ```sh
 curl -X GET \
   -H "Authorization: Bearer $CRON_SECRET" \
-  "https://ryanrealty.vercel.app/api/cron/marketing-weekly-cycle?asOfDate=<yesterday>&dryRun=false&windowDays=7"
+  "https://ryan-realty.com/api/cron/marketing-weekly-cycle?asOfDate=<yesterday>&dryRun=false&windowDays=7"
 ```
 
 Or call `runWeeklyCycle({ asOfDate, dryRun: false })` from TypeScript at

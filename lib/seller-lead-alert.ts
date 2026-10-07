@@ -12,6 +12,7 @@
  * Configured via MATT_ALERT_EMAIL (defaults to matt@ryan-realty.com).
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import { sendEmail } from '@/lib/resend'
 
 const ALERT_TO = process.env.MATT_ALERT_EMAIL ?? 'matt@ryan-realty.com'
@@ -35,7 +36,7 @@ export type SellerLeadAlertParams = {
 
 function crmPersonLink(personId: number | null): string {
   if (!personId) return '(CRM record pending)'
-  const site = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const site = siteOrigin()
   return `${site}/admin/people/${personId}`
 }
 

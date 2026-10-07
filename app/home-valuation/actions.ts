@@ -1,5 +1,6 @@
 'use server'
 
+import { siteHost, siteOrigin } from '@/lib/site-origin'
 import React from 'react'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { assertPdfPageSafety } from '@/lib/pdf/assert-page-safety'
@@ -19,8 +20,8 @@ import { cookies, headers } from 'next/headers'
 import { after } from 'next/server'
 import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
 
-const source = (process.env.NEXT_PUBLIC_SITE_URL ?? 'ryan-realty.com').replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase()
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const source = siteHost()
+const siteUrl = siteOrigin()
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? process.env.RESEND_ADMIN_EMAIL ?? ''
 
 export type ValuationFormState = { error?: string; success?: boolean; cmaSent?: boolean; eventId?: string }

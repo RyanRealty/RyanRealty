@@ -19,6 +19,7 @@
  * Parity: design_system/ryan-realty/ui_kits/reviews/parity.json
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import type { Metadata } from 'next'
 import { getReviews } from '@/lib/data'
 import { GOOGLE_REVIEWS_URL } from '@/lib/testimonials'
@@ -38,7 +39,7 @@ import {
 import { buildReviewsJsonLd } from './_v3/reviews-jsonld'
 import { toReviewQuotes } from '@/lib/reviews/review-quotes'
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const siteUrl = siteOrigin()
 const ogImage = `${siteUrl}/api/og?type=default`
 const ROUTE_PATH = '/reviews'
 

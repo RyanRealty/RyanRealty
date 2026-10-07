@@ -39,7 +39,8 @@ function authHeader(c: { sid: string; token: string }): string {
 
 /**
  * URL Twilio signed for this webhook POST. Must match the configured webhook URL
- * exactly (e.g. ryan-realty.com), not NEXT_PUBLIC_SITE_URL (often vercel.app).
+ * exactly (e.g. ryan-realty.com), so it is read off the request, not the configured
+ * site origin.
  */
 export function twilioWebhookValidationUrl(request: Request): string {
   const u = new URL(request.url)

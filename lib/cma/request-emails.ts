@@ -10,6 +10,7 @@
  * (Gmail send-as-matt and the Resend fallback), fail-closed.
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import { sendEmail } from '@/lib/resend'
 import { formatPublishedPhone } from '@/lib/cma/format-phone'
 import { sendGmailMessage } from '@/lib/gmail-draft'
@@ -18,7 +19,7 @@ import { sendGovernedEmail } from '@/lib/comms/sendGovernedEmail'
 import type { CrmBrokerSlug } from '@/lib/crm/constants'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const SITE_URL = siteOrigin()
 
 export async function sendBrokerNotification(params: {
   brokerEmail: string | null

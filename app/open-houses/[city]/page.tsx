@@ -10,6 +10,7 @@
  * KbSell, KbFooter, SmoothScrollProvider. Capture contract kept on the Sheet.
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import { cache } from 'react'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
@@ -177,7 +178,7 @@ export default async function OpenHousesCityPage({
   const count = openHouses.length
   const fieldItems = openHouseFieldItems(openHouses)
   const medianList = medianPositive(openHouses.map((oh) => oh.listPrice))
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const siteUrl = siteOrigin()
   const path = `/open-houses/${citySlug}`
 
   const figures: V3InstrumentFigure[] = []

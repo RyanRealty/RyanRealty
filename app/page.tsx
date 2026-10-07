@@ -1,3 +1,4 @@
+import { siteOrigin } from '@/lib/site-origin'
 import type { Metadata } from 'next'
 
 import { valuationHref } from '@/lib/site/valuation-href'
@@ -48,7 +49,7 @@ import { AboutFaces } from '@/app/about/_v3/AboutFaces'
 import { aboutFaceFromBroker, type AboutFace } from '@/app/about/_v3/about-faces'
 import { TEAM_RANK } from '@/app/team/_v3/team-constants'
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const siteUrl = siteOrigin()
 const ogImage = `${siteUrl}/api/og?type=default`
 // D11 seo-shell lock: this exact town list stays in source (metadata).
 const D11_HOMEPAGE_LEAD =

@@ -110,6 +110,7 @@ const BY_ADDRESS = 'app/listing/by-address/[...slug]/page.tsx'
 const UNAVAILABLE = 'components/site/listing-detail/ListingUnavailable.tsx'
 const METADATA_MODULE = 'lib/site/page-metadata.ts'
 const SHARE_MODULE = 'lib/share-metadata.ts'
+const ORIGIN_MODULE = 'lib/site-origin.ts'
 
 /** Names that mean "this home is off the market". None may reach the directive. */
 const STATUS_NAMES = [
@@ -175,15 +176,17 @@ function walk(node, fn) {
 /* ── 1. the default, executed ──────────────────────────────────────────────── */
 
 async function loadPageMetadata() {
+  const originSrc = read(ORIGIN_MODULE)
   const shareSrc = read(SHARE_MODULE)
   const metaSrc = read(METADATA_MODULE)
-  if (!shareSrc || !metaSrc) return null
+  if (!originSrc || !shareSrc || !metaSrc) return null
 
-  // share-metadata.ts imports nothing; page-metadata.ts imports only from it
-  // and a `type` from next (which transpileModule erases). Transpile the two
-  // SEPARATELY and rewrite the one specifier to the first module's data URL —
-  // esbuild is not guaranteed present in every lane, and concatenating them
-  // collides on the private const both files happen to name MAX_DESC.
+  // site-origin.ts imports nothing; share-metadata.ts imports only from it;
+  // page-metadata.ts imports only from share-metadata and a `type` from next
+  // (which transpileModule erases). Transpile the three SEPARATELY and rewrite
+  // each one specifier to the module below's data URL — esbuild is not
+  // guaranteed present in every lane, and concatenating them collides on the
+  // private const both metadata files happen to name MAX_DESC.
   const asModule = (src) =>
     `data:text/javascript;base64,${Buffer.from(
       ts.transpileModule(src, {
@@ -191,7 +194,8 @@ async function loadPageMetadata() {
       }).outputText,
     ).toString('base64')}`
 
-  const metaOnly = metaSrc.replace(/'@\/lib\/share-metadata'/, JSON.stringify(asModule(shareSrc)))
+  const shareOnly = shareSrc.replace(/'@\/lib\/site-origin'/, JSON.stringify(asModule(originSrc)))
+  const metaOnly = metaSrc.replace(/'@\/lib\/share-metadata'/, JSON.stringify(asModule(shareOnly)))
   try {
     return await import(asModule(metaOnly))
   } catch (error) {

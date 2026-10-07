@@ -1,5 +1,6 @@
 'use server'
 
+import { siteOrigin } from '@/lib/site-origin'
 import { createServiceClient } from '@/lib/supabase/service'
 import { cityEntityKey } from '../../lib/slug'
 import { getMarketReportData, type MarketReportByCity } from './market-reports'
@@ -20,7 +21,7 @@ import { REPORT_CITY_SLUGS } from '@/lib/data/geo/report-cities'
 import { cityMarketPath } from '@/lib/market/canonical-market-path'
 
 const BUCKET = 'banners'
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const SITE_URL = siteOrigin()
 
 // City slugs the CRM report engine serves verified verdict blocks for — the
 // report core from the one report-coverage registry (W8.8, §0-traced cache path).

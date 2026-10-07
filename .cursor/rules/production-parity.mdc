@@ -1,11 +1,11 @@
 ---
-description: ryanrealty.vercel.app must reflect latest code, Vercel prod deploy, and hosted Supabase schema together.
+description: ryan-realty.com must reflect latest code, Vercel prod deploy, and hosted Supabase schema together.
 alwaysApply: true
 ---
 
 # Production parity (single current state)
 
-**https://ryanrealty.vercel.app** counts as “everything latest” only when all of these match the same release:
+**https://ryan-realty.com** counts as “everything latest” only when all of these match the same release:
 
 1. **`main`** includes the intended commits.  
 2. **Vercel production** has a **READY** deployment for that commit (not only a passing local build).  

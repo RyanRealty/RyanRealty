@@ -1,3 +1,4 @@
+import { siteOrigin } from '@/lib/site-origin'
 import type { MetadataRoute } from 'next'
 import { createClient } from '@supabase/supabase-js'
 import { cityEntityKey, cityNeighborhoodPath, listingsBrowsePath, teamPath, valuationPath } from '../lib/slug'
@@ -80,7 +81,7 @@ const RESORT_COMMUNITY_SLUGS: string[] = getAllResortCommunities().map((c) => pu
 export const dynamic = 'force-dynamic'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const baseUrl = siteOrigin()
   const now = new Date()
   return buildAllUrls(baseUrl, now)
 }

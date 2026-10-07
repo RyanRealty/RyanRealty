@@ -20,6 +20,7 @@
  * runs. Never throws to the caller — every failure is a 200 JSON status so
  * Vercel doesn't retry-storm.
  */
+import { siteOrigin } from '@/lib/site-origin'
 import { NextResponse } from 'next/server'
 import { produceNewsletterDraft, monthlyNewsletterSubject } from '@/lib/newsletter/produce-draft'
 import { findNewsletterIdBySubject } from '@/lib/data/newsletter/scheduled'
@@ -33,7 +34,7 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 120
 
 const MATT_EMAIL = 'matt@ryan-realty.com'
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const SITE_URL = siteOrigin()
 
 /** Day-of-month in America/Los_Angeles — the schedule is UTC, Matt's month is not. */
 function dayOfMonthPacific(now = new Date()): number {

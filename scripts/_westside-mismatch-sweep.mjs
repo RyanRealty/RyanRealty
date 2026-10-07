@@ -390,7 +390,7 @@ async function main() {
     else action = 'needs Matt (low priority)'
     const e = p._eng || {}
     lines.push([
-      p.id, `https://ryanrealty.vercel.app/admin/crm/${p.id}`, p.name, p.source, p.stage,
+      p.id, `https://ryan-realty.com/admin/crm/${p.id}`, p.name, p.source, p.stage,
       d.confidence, d.signals.join(' | '), d.evidence.join(' | '), d.altFirst || '',
       d.areaCodes.join(' '), d.occupied ? 'occupied' : 'absentee', d.tenureLong ? 'yes' : '',
       p.custom?.customSellerPropertyAddress || '', p.custom?.customAPN || '',

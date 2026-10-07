@@ -4,17 +4,19 @@
  * Share URLs must always use the production site so pasted links work on social.
  */
 
+import { CANONICAL_SITE_ORIGIN, siteOrigin } from '@/lib/site-origin'
+
 const MAX_DESC = 155
 
-/** Production site URL for canonical and share links. Never localhost so shared links work on social. */
-const PRODUCTION_SITE = 'https://ryan-realty.com'
-
-/** Base URL to use for all shared links and canonical URLs. Prefers env; never returns localhost. */
+/**
+ * Base URL for all shared links and canonical URLs (feeds metadataBase in
+ * app/layout.tsx). siteOrigin() folds every production host, the Vercel alias
+ * included, to https://ryan-realty.com; a preview host is kept; localhost is
+ * replaced by production so a shared link always works on social.
+ */
 export function getCanonicalSiteUrl(): string {
-  const raw = typeof process !== 'undefined' && process.env && process.env.NEXT_PUBLIC_SITE_URL
-  const fromEnv = typeof raw === 'string' ? raw.trim().replace(/\/$/, '') : ''
-  if (fromEnv && !fromEnv.includes('localhost')) return fromEnv
-  return PRODUCTION_SITE
+  const origin = siteOrigin()
+  return /^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?$/i.test(origin) ? CANONICAL_SITE_ORIGIN : origin
 }
 
 /** Default hashtags for all Ryan Realty social shares. */

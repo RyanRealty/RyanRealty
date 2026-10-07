@@ -20,6 +20,7 @@
  * rewrite through publishBlogCurrentMos + getDetachedMarket.
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import type { ReactElement } from 'react'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
@@ -69,7 +70,7 @@ import {
   type V3QuietItem,
 } from '@/components/site/v3'
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const siteUrl = siteOrigin()
 
 function stripHtml(value: string | null | undefined): string {
   if (!value) return ''

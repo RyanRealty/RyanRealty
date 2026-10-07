@@ -1,3 +1,4 @@
+import { siteOrigin } from '@/lib/site-origin'
 import { NextRequest } from 'next/server'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { generateICS } from '@/lib/ics'
@@ -5,7 +6,7 @@ import { listingDetailPath } from '@/lib/slug'
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com'
+const siteUrl = siteOrigin()
 
 function getSupabase() {
   if (!url?.trim() || !anonKey?.trim()) throw new Error('Supabase not configured')

@@ -29,6 +29,7 @@
  * which transitions the row to 'sent' and adds a FUB Note.
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import { CMA_PRICING_PHILOSOPHY } from '@/lib/cma/first-contact'
 import { getSignatureForMailbox } from '@/lib/crm/email-signature'
 import 'server-only'
@@ -50,8 +51,7 @@ import { formatPublishedPhone } from '@/lib/cma/format-phone'
 import { sendEmail } from '@/lib/resend'
 import { signDeliveryToken } from '@/lib/cma-delivery-tokens'
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com')
-  .replace(/\/$/, '')
+const SITE_URL = siteOrigin()
 
 const STORAGE_BUCKET = 'cma-deliveries'
 

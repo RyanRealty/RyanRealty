@@ -9,9 +9,15 @@
  * If NEXT_PUBLIC_SITE_URL is ever unset in prod, every canonical/email/attribution
  * URL silently points at staging. After cutover that corrupts SEO + lead source.
  *
- * What it flags (in app/ + lib/ .ts/.tsx):
+ * What it flags (in app/ + lib/ + components/ .ts/.tsx, and public/ .html):
  *   1. Any full `https://...vercel.app` URL literal (an outgoing URL).
  *   2. Any `?? '...vercel.app'` / `|| '...vercel.app'` env-fallback default.
+ *
+ * public/ .html was added 2026-10-07 (Matt: never ryanrealty.vercel.app in
+ * anything outward): the Gmail signature install kits and a published CMA
+ * served their images from the alias. Its companion is ci:site-origin
+ * (scripts/check-site-origin.mjs), which routes every NEXT_PUBLIC_SITE_URL
+ * read through lib/site-origin.ts.
  *
  * What it ALLOWS (intentional INCOMING-host classification, not outgoing URLs):
  *   bare hostname comparisons like `host === 'ryanrealty.vercel.app'` in the
@@ -23,18 +29,23 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
-const ROOTS = ['app', 'lib']
+const ROOTS = [
+  ['app', /\.(ts|tsx)$/],
+  ['lib', /\.(ts|tsx)$/],
+  ['components', /\.(ts|tsx)$/],
+  ['public', /\.html$/],
+]
 const URL_LITERAL = /https?:\/\/[a-z0-9.-]*vercel\.app/i
 const ENV_FALLBACK = /(\?\?|\|\|)\s*['"`][^'"`]*vercel\.app/i
 
-function walk(dir, out = []) {
+function walk(dir, exts, out = []) {
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry)
     const st = statSync(full)
     if (st.isDirectory()) {
       if (entry === 'node_modules' || entry === '.next') continue
-      walk(full, out)
-    } else if (/\.(ts|tsx)$/.test(entry)) {
+      walk(full, exts, out)
+    } else if (exts.test(entry)) {
       out.push(full)
     }
   }
@@ -42,9 +53,9 @@ function walk(dir, out = []) {
 }
 
 const hits = []
-for (const root of ROOTS) {
+for (const [root, exts] of ROOTS) {
   let files = []
-  try { files = walk(root) } catch { continue }
+  try { files = walk(root, exts) } catch { continue }
   for (const f of files) {
     const lines = readFileSync(f, 'utf8').split(/\r?\n/)
     lines.forEach((line, i) => {
@@ -63,7 +74,7 @@ for (const root of ROOTS) {
 if (hits.length) {
   console.error('\nStaging-host gate FAILED — *.vercel.app in an outgoing-URL position:')
   for (const h of hits) console.error('  ' + h)
-  console.error('\nUse NEXT_PUBLIC_SITE_URL (apex) — fallback to https://ryan-realty.com, never the staging host.')
+  console.error('\nThe public origin is https://ryan-realty.com (Matt 2026-10-07). In code use siteOrigin() from lib/site-origin.ts; in a static file write the apex.')
   process.exit(1)
 }
-console.log('Staging-host gate passed — no *.vercel.app outgoing-URL leaks in app/ or lib/.')
+console.log('Staging-host gate passed — no *.vercel.app outgoing-URL leaks in app/, lib/, components/ or public/*.html.')

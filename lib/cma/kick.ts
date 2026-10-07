@@ -9,7 +9,9 @@
  * Fail-open: nothing here can fail the intake.
  */
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+import { siteOrigin } from '@/lib/site-origin'
+
+const SITE_URL = siteOrigin()
 
 export function cmaBuildKickRequest(slug: string): { url: string; headers: Record<string, string> } | null {
   const secret = process.env.CRON_SECRET

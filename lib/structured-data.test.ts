@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { generateBrokerSchema, generateListingSchema } from './structured-data'
 import { listingDetailPath } from './slug'
+import { siteOrigin } from './site-origin'
 
 describe('structured-data canonical URLs', () => {
   it('uses canonical /team URL for brokers', () => {
@@ -40,8 +41,9 @@ describe('structured-data canonical URLs', () => {
         postal_code: '97701',
       }
     )
-    const base = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-    expect(schema.url).toBe(`${base}${expectedPath}`)
+    // The one origin (lib/site-origin.ts): the Vercel alias in the env folds to the apex.
+    expect(schema.url).toBe(`${siteOrigin()}${expectedPath}`)
+    expect(schema.url).not.toMatch(/vercel\.app/)
     expect(schema.url).not.toMatch(/\/listings\//)
   })
 })

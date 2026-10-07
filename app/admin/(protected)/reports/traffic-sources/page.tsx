@@ -97,6 +97,7 @@ function classifyReferrer(ref: string | null): string {
   if (!ref || !ref.trim()) return '(direct)'
   try {
     const host = new URL(ref).hostname.toLowerCase().replace(/^www\./, '')
+    // staging-host-ok: classifies an INCOMING referrer host as our own site; builds no URL.
     if (host === 'ryan-realty.com' || host === 'ryanrealty.vercel.app') return '(internal)'
     if (host.includes('google.')) return 'google'
     if (host.includes('bing.')) return 'bing'

@@ -1,3 +1,4 @@
+import { siteOrigin } from '@/lib/site-origin'
 import type { Metadata } from 'next'
 import { getBannerUrl } from '../../actions/banners'
 import { getSubdivisionDescription } from '../../actions/subdivision-descriptions'
@@ -110,7 +111,7 @@ export async function buildSearchSlugMetadata({
     (subdivisionDisplayName
       ? await withTimeout(getBannerUrl('subdivision', subdivisionEntityKey(city, subdivisionDisplayName)), null, 1200)
       : await withTimeout(getBannerUrl('city', cityEntityKey(city)), null, 1200))
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const siteUrl = siteOrigin()
   const defaultOgImage = `${siteUrl}/api/og?type=default`
   const isBendNewConstructionTwin = isBendNewConstructionSearchTwinSlug(slug, sp)
 
