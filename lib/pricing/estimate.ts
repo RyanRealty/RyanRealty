@@ -27,7 +27,7 @@ import { citySlug, storyAdjustment, type StoryClass } from '@/lib/pricing/classe
 import { capClosedCompShares, closedCompWeight, fillShortSetWeights } from '@/lib/pricing/closed-comp-weight'
 import { recommendationOutsideSaleSet } from '@/lib/pricing/price-set'
 import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
-import type { SelectedPricingComp } from '@/lib/pricing/match'
+import { subjectHasRecordedSubdivision, type SelectedPricingComp } from '@/lib/pricing/match'
 import { closedSaleDomTotal } from '@/lib/cma/listing-history-line'
 import { proximityLabel } from '@/lib/cma/market-area'
 import {
@@ -1271,6 +1271,7 @@ export function adjustCmaCompAlongMarket(opts: {
     saleSubdivision: sale.subdivision,
     selectionTier: sale.selectionTier,
     ownPlat: sale.ownPlat,
+    subjectRecordedPlat: subjectHasRecordedSubdivision(opts.subject),
     // A phase stem is the subdivision, not a parent community. The weight
     // uses the same community the search used, or a next-row neighbor is
     // kept in the table at weight 0 and the letter refuses.

@@ -1246,6 +1246,57 @@ describe('containment — the plats next to the subject, then the boundary (Matt
     expect(tiers.find((t) => t[0] === 'aubrey heights')?.[1]).toMatch(/^nearby-/)
   })
 
+  it('a short plat keeps walking after one outside rung brings the set to three', () => {
+    // Kenwood holds nothing. Roanoke, which touches it, holds two. A cheap
+    // quarter-mile pocket sale makes three, and three same-neighborhood sales
+    // sit past it. The stop reads the plat rows' own count, not the running
+    // total: the walk goes on to the ring sales, so the pocket drop cannot
+    // leave a two-sale set behind.
+    const subj = subject({
+      ...RIVER_WEST,
+      subdivisionSlug: 'kenwood',
+      adjacentSubdivisionSlugs: ['roanoke'],
+      pocketSubdivisionNorms: ['juniper'],
+    })
+    const roanoke = [0, 1].map((i) =>
+      sale({
+        ...RIVER_WEST,
+        latitude: RIVER_WEST.latitude + 0.4 / 69,
+        subdivision: 'Roanoke',
+        subdivisionNorm: 'roanoke',
+        subdivisionSlug: 'roanoke',
+        listingKey: `ROANOKE${i}`,
+        closeDate: '2026-07-15',
+      }),
+    )
+    const pocket = sale({
+      ...RIVER_WEST,
+      latitude: RIVER_WEST.latitude + 0.12 / 69,
+      subdivision: 'Juniper',
+      subdivisionNorm: 'juniper',
+      subdivisionSlug: 'juniper',
+      listingKey: 'POCKET',
+      closePrice: 640_000,
+      closeDate: '2026-07-10',
+    })
+    const ring = [0, 1, 2].map((i) =>
+      sale({
+        ...RIVER_WEST,
+        latitude: RIVER_WEST.latitude + 0.6 / 69,
+        subdivision: 'Aubrey Heights',
+        subdivisionNorm: 'aubrey heights',
+        subdivisionSlug: 'aubrey-heights',
+        listingKey: `RING${i}`,
+        closeDate: '2026-07-01',
+      }),
+    )
+    const out = walkPricingLadder(subj, [...roanoke, pocket, ...ring], { asOf })
+    expect(out.comps.length).toBeGreaterThanOrEqual(3)
+    expect(out.comps.some((c) => c.listingKey.startsWith('RING'))).toBe(true)
+    expect(out.rungs.some((r) => r.ran && r.tier.startsWith('nearby-'))).toBe(true)
+    expect(out.trace.some((t) => t.includes('short of 3, so the search went on'))).toBe(true)
+  })
+
   it('the adjacent rung skips when no ring is known, and the walk says why', () => {
     const subj = subject({ ...RIVER_WEST, adjacentSubdivisionSlugs: [] })
     const out = walkPricingLadder(subj, [sale({ ...RIVER_WEST, subdivisionNorm: 'roanoke', subdivisionSlug: 'roanoke' })], { asOf })

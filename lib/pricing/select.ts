@@ -460,6 +460,17 @@ export function pickCompSource(match: {
   return 'listings'
 }
 
+/**
+ * Under five facts sales the listings ladder runs too. When it cannot reach
+ * the minimum and the facts walk did, the facts set prices: a home with three
+ * good sales is not failed because the older ladder found fewer. 1648
+ * Pheasant (2026-10-07): facts held 3 inside its neighborhood, listings held 1,
+ * and the build failed on the listings count.
+ */
+export function factsOutlastShortListings(factsComps: number, listingsComps: number): boolean {
+  return factsComps >= PRICING_MIN_COMPS && listingsComps < PRICING_MIN_COMPS
+}
+
 export async function selectCompsPreferringFacts(
   subject: CmaSubject,
   opts: {
@@ -487,5 +498,9 @@ export async function selectCompsPreferringFacts(
   if (pickCompSource({ ...match, customOrNew }) === 'facts') {
     return matchToCompSelection(subject, match, { customOrNew })
   }
-  return selectComps(subject, opts)
+  const listings = await selectComps(subject, opts)
+  if (match.factsReady && factsOutlastShortListings(match.comps.length, listings.comps.length)) {
+    return matchToCompSelection(subject, match, { customOrNew })
+  }
+  return listings
 }

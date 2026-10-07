@@ -448,7 +448,7 @@ async function dryRun(slug: string): Promise<DryRun> {
             }).adjusted
       })
     : adjustComps(subject, selection.comps, market)
-  const pricing = priceCmaSet({
+  let pricing = priceCmaSet({
     subject, adjusted, market, input: {}, site: null,
     selection: { pricingSales: selection.pricingSales ?? [], tiersUsed: selection.tiersUsed ?? [] },
     marketIndex, asOf,
@@ -465,9 +465,15 @@ async function dryRun(slug: string): Promise<DryRun> {
   // blocking was invisible in the only tool that can see it without a build.
   if (lastCycleFailed) {
     const row0 = cycleRows[0] ?? {}
+    const { subjectDomDays } = await import('@/lib/cma/comp-matrix')
     applyFailedAskCap(pricing, {
       lastFailedListPrice: subject.lastListPrice,
       offMarketDate: String(row0['off_market_date'] ?? row0['status_change_timestamp'] ?? '') || null,
+      // The rule-16 pull reads these. Without them this printed the bare
+      // $1,000 step where the build pulls by days on market (3037 Purcell,
+      // $564,000 here against $555,000 in the build, 2026-10-07).
+      daysOnMarket: subjectDomDays(subject),
+      originalListPrice: Number(row0['OriginalListPrice']) || null,
     })
   }
 
@@ -638,6 +644,32 @@ async function dryRun(slug: string): Promise<DryRun> {
 
   // §0 rule 5 cross-checks, computed off the same objects render_args carries.
   attachSellerNet(pricing, selection.comps)
+  // EXACTLY build.ts settleRecommended: sitting actives can still move the
+  // list, then the band clamp and the round. Without it this printed a
+  // recommendation the build moves (3037 Purcell, 2026-10-07). The dry run's
+  // rivals come from its own competition ring, not the judged set.
+  {
+    const { finishRecommendedAfterActives } = await import('@/lib/cma/finish-recommended')
+    const { pocketClosedSupportPrice } = await import('@/lib/pricing/active-dom-nudge')
+    const { syncRangeRuleToHeroBand } = await import('@/lib/pricing/estimate')
+    const beforeActives = pricing.recommended
+    pricing = syncRangeRuleToHeroBand(
+      finishRecommendedAfterActives(pricing, {
+        actives: (bandRivals?.rivals ?? []).map((r) => ({
+          status: r.status,
+          listPrice: r.listPrice,
+          daysOnMarket: r.daysOnMarket,
+        })),
+        pocketClosedSupport: pocketClosedSupportPrice(adjusted, subject.subdivision),
+        ask: pricing.failedAsk ?? (lastCycleFailed ? subject.lastListPrice : null),
+      }),
+    )
+    if (pricing.recommended !== beforeActives) {
+      console.log(
+        `   actives settle · recommended $${beforeActives.toLocaleString('en-US')} → $${pricing.recommended.toLocaleString('en-US')}`,
+      )
+    }
+  }
   const concessionLine = (n: { knownCount: number; givenCount: number; medianWhenGiven: number | null } | undefined) => {
     if (!n || n.knownCount === 0) return null
     const whenGiven =
