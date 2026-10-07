@@ -257,6 +257,17 @@ describe('slate', () => {
   })
 })
 
+/** Header bytes of a PNG of this size: all the shape gate reads. */
+function pngOf(width: number, height: number): Buffer {
+  const b = Buffer.alloc(33)
+  Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(b, 0)
+  b.writeUInt32BE(13, 8)
+  b.write('IHDR', 12, 'ascii')
+  b.writeUInt32BE(width, 16)
+  b.writeUInt32BE(height, 20)
+  return b
+}
+
 describe('produce pipeline', () => {
   function adapters(overrides: Partial<StudioAdapters> = {}): StudioAdapters {
     return {
@@ -277,7 +288,7 @@ describe('produce pipeline', () => {
       }),
       generateStills: vi
         .fn()
-        .mockResolvedValue({ images: [Buffer.from('a'), Buffer.from('b')], model: 'grok-imagine-image-2.0', costTicks: null }),
+        .mockResolvedValue({ images: [pngOf(1584, 2816), pngOf(1584, 2816)], model: 'grok-imagine-image-2.0', costTicks: null }),
       inspectFrame: vi
         .fn()
         .mockResolvedValue({ pass: true, score: 91, defects: [], describes: 'desert', fixHint: '', costUsd: null }),
@@ -288,6 +299,7 @@ describe('produce pipeline', () => {
         .fn()
         .mockResolvedValue({ ok: true, result: { caption: '412 active listings.', altText: 'alt', costUsd: 0, attempts: 1 } }),
       downloadUrl: vi.fn().mockResolvedValue(Buffer.from('mp4')),
+      panPhoto: vi.fn().mockResolvedValue({ body: Buffer.from('pan'), label: 'pan left to right' }),
       storeMedia: vi
         .fn()
         .mockImplementation(async ({ filename }) => ({ ok: true, url: `https://cdn.test/${filename}` })),
@@ -406,8 +418,32 @@ describe('produce pipeline', () => {
     expect(result.ok).toBe(true)
     expect(a.generateStills).not.toHaveBeenCalled()
     expect(a.inspectFrame).not.toHaveBeenCalled()
-    const animateCall = (a.animate as ReturnType<typeof vi.fn>).mock.calls[0][0]
-    expect(animateCall.imageUrl).toBe('https://mls.test/photo.jpg')
+    // Matt 2026-10-07: a listing photograph is panned at its true shape, never
+    // handed to the generator (which squeezed it into 9:16).
+    expect(a.animate).not.toHaveBeenCalled()
+    const pan = (a.panPhoto as ReturnType<typeof vi.fn>).mock.calls[0][0]
+    expect(pan).toMatchObject({ url: 'https://mls.test/photo.jpg', seconds: 6, width: 1080, height: 1920 })
+  })
+
+  it('refuses to animate a generated still whose shape differs from the clip, before any inspection spend', async () => {
+    const a = adapters({
+      generateStills: vi
+        .fn()
+        .mockResolvedValue({ images: [pngOf(1536, 1024), pngOf(1536, 1024)], model: 'grok-imagine-image-2.0', costTicks: null }),
+    })
+    const result = await produceStudioDraft(input, a)
+    expect(result.ok).toBe(false)
+    // Wrong-shaped stills never reach the paid inspection, the caption, or the animator.
+    expect(a.inspectFrame).not.toHaveBeenCalled()
+    expect(a.writeCaption).not.toHaveBeenCalled()
+    expect(a.animate).not.toHaveBeenCalled()
+  })
+
+  it('every generated video format asks for a still already the shape of its clip', () => {
+    for (const format of STUDIO_FORMAT_LIST) {
+      if (format.media !== 'video' || format.frameSource !== 'generated') continue
+      expect(format.stillAspect, format.id).toBe(format.videoAspect)
+    }
   })
 
   it('requires a subject for formats that need one', async () => {

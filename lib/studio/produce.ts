@@ -42,10 +42,11 @@ import {
   type SpendLedger,
 } from './spend'
 import { writeCaption, type CaptionRequest } from './caption'
-import { GRADE_BUDGET, planListingFilm, renderListingFilm, type FilmAdapters, type FilmPlan } from './film'
+import { GRADE_BUDGET, planListingFilm, renderListingFilm, type CutShot, type FilmAdapters, type FilmPlan } from './film'
 import type { PlannedShot } from './shotlist'
 import type { VisionVerdict } from '@/lib/grok/vision'
 import type { MotionAgent } from './motion/cues'
+import { aspectValue, imageSize, sameShape } from '@/lib/video/image-size'
 import type { ComposeMotionInput, ComposeMotionResult } from './motion/compose'
 
 /** How many candidate stills we generate per attempt. */
@@ -98,6 +99,18 @@ export type StudioProduceResult =
   | { ok: false; error: string; draftId?: string }
 
 export type StudioAdapters = FilmAdapters & {
+  /**
+   * Animate a GENERATED still (market and place formats). Never called with a
+   * listing photograph: those are panned (FilmAdapters.panPhoto).
+   */
+  animate: (input: {
+    prompt: string
+    imageUrl: string
+    aspectRatio: string
+    seconds: number
+  }) => Promise<{ url: string; model: string; durationSeconds: number; costTicks: number | null }>
+  /** Pull a generator's output before its URL expires. */
+  downloadUrl: (url: string) => Promise<Buffer>
   /** Resolve the subject and its verified figures. Null when nothing qualifies. */
   resolveSubject: (format: StudioFormat, query: string | undefined) => Promise<StudioSubject | null>
   generateStills: (input: {
@@ -206,6 +219,12 @@ async function typeLayer(args: {
   return { url: stored.url, record: { applied: true, ...composed.record, notes, stills } }
 }
 
+/** The frame a format's clips are made at: 1080 wide, the format's shape. */
+export function frameFor(aspect: string): { width: number; height: number } {
+  const value = aspectValue(aspect) ?? 9 / 16
+  return { width: 1080, height: Math.round(1080 / value / 2) * 2 }
+}
+
 /** Start time of each beat in a cut film. */
 function beatStarts(shots: Array<{ seconds: number }>): number[] {
   const starts: number[] = []
@@ -255,6 +274,10 @@ async function buildHeroFrame(
     })
 
     for (const image of stills.images) {
+      // Shape first, for free: a still that is not the clip's shape would be
+      // squeezed by the animator, so it never reaches the paid inspection.
+      const size = imageSize(image)
+      if (format.media === 'video' && (!size || !sameShape(size, format.videoAspect))) continue
       assertBudget(ledger, VISION_CALL_USD, 'frame inspection')
       const verdict = await adapters.inspectFrame({
         image,
@@ -330,6 +353,8 @@ export async function produceStudioDraft(
     // ── hero frame ─────────────────────────────────────────────────────────
     let posterUrl: string
     let qa: VisionVerdict | null = null
+    // The generated still's bytes, kept for the shape gate before animation.
+    let heroImage: Buffer | null = null
 
     // A film plans its sequence here, in place of a single hero frame. The
     // plan is cheap (grading only) and its description feeds the caption, so
@@ -364,6 +389,7 @@ export async function produceStudioDraft(
         return { ok: false, error: 'No frame passed inspection. Nothing shipped.', draftId }
       }
       qa = hero.verdict
+      heroImage = hero.image
       const stored = await adapters.storeMedia({
         draftId,
         filename: 'hero.jpg',
@@ -375,6 +401,21 @@ export async function produceStudioDraft(
         return { ok: false, error: stored.error, draftId }
       }
       posterUrl = stored.url
+    }
+
+    // The shape gate, before a cent more is spent. A generator handed a still
+    // of a different shape than the clip it is asked for squeezes the still
+    // to fit; that is how every listing film came out tall and thin (Matt
+    // 2026-10-07). A generated still must already be the clip's shape.
+    if (heroImage && format.media === 'video') {
+      const still = imageSize(heroImage)
+      if (!still || !sameShape(still, format.videoAspect)) {
+        const reason = still
+          ? `Refusing to animate: the still is ${still.width}x${still.height} and the clip is ${format.videoAspect}, so the generator would distort it.`
+          : 'Refusing to animate: could not read the still size to confirm its shape.'
+        await adapters.killDraft(draftId, reason)
+        return { ok: false, error: reason, draftId }
+      }
     }
 
     // ── caption ────────────────────────────────────────────────────────────
@@ -392,7 +433,7 @@ export async function produceStudioDraft(
         filmPlan?.describes ||
         qa?.describes ||
         (format.frameSource === 'mls_photo'
-          ? `A photograph of the home at ${subject.label}, with a slow push in.`
+          ? `A photograph of the home at ${subject.label}, panned across in its true shape.`
           : undefined),
     }
     assertBudget(ledger, TEXT_CALL_USD, 'caption')
@@ -405,52 +446,36 @@ export async function produceStudioDraft(
     }
 
     // ── motion ─────────────────────────────────────────────────────────────
+    // Each source only makes the footage; storing it and laying the type over
+    // it is one shared tail below, so the three paths cannot drift.
     let mediaUrl = posterUrl
     let mediaKind: 'image' | 'video' = 'image'
-    let filmShots: FilmPlan['shots'] | null = null
-    let degradedToSingleBeat = false
+    let filmShots: CutShot[] | null = null
     let motion: Record<string, unknown> | null = null
+    let footage: { body: Buffer; filename: string; beats?: number[] } | null = null
+    const frame = frameFor(format.videoAspect)
 
     if (filmPlan) {
-      const film = await renderListingFilm(
-        filmPlan,
-        { aspectRatio: format.videoAspect },
-        adapters,
-        ledger,
-      )
+      const film = await renderListingFilm(filmPlan, frame, adapters, ledger)
       if (!film.ok) {
         await adapters.killDraft(draftId, film.error)
         return { ok: false, error: film.error, draftId }
       }
-      const storedFilm = await adapters.storeMedia({
-        draftId,
-        filename: 'film.mp4',
-        body: film.body,
-        contentType: 'video/mp4',
-      })
-      if (!storedFilm.ok) {
-        await adapters.killDraft(draftId, `Could not store film: ${storedFilm.error}`)
-        return { ok: false, error: storedFilm.error, draftId }
-      }
-      mediaUrl = storedFilm.url
-      mediaKind = 'video'
       filmShots = film.shots
-      degradedToSingleBeat = film.degradedToSingleBeat
-
-      const typed = await typeLayer({
-        adapters,
-        draftId,
-        format,
-        subject,
-        body: film.body,
-        beats: beatStarts(film.shots),
-      })
-      if ('kill' in typed) {
-        await adapters.killDraft(draftId, typed.kill)
-        return { ok: false, error: typed.kill, draftId }
+      footage = { body: film.body, filename: 'film.mp4', beats: beatStarts(film.shots) }
+    } else if (format.media === 'video' && format.frameSource === 'mls_photo') {
+      // A real listing photograph is never animated by a generator (Matt
+      // 2026-10-07: Grok squeezed every landscape photo into 9:16). It is
+      // panned across at its true shape instead, for nothing.
+      try {
+        const pan = await adapters.panPhoto({ url: posterUrl, seconds: format.seconds, direction: 'forward', ...frame })
+        addSpend(ledger, { step: `${pan.label} across the real photo`, usd: 0, ticks: null })
+        footage = { body: pan.body, filename: 'clip.mp4' }
+      } catch (err) {
+        const reason = `Could not move across the listing photo: ${err instanceof Error ? err.message : 'pan failed'}`
+        await adapters.killDraft(draftId, reason)
+        return { ok: false, error: reason, draftId }
       }
-      if (typed.record) motion = { ...typed.record, plateUrl: storedFilm.url }
-      if (typed.url) mediaUrl = typed.url
     } else if (format.media === 'video') {
       const motionPrompt = buildMotionPrompt(spec)
       assertCraftClean(motionPrompt, `${format.id} motion prompt`)
@@ -467,28 +492,30 @@ export async function produceStudioDraft(
         usd: videoCost(clip.model, clip.durationSeconds),
         ticks: clip.costTicks,
       })
-
       // The generator URL expires. Store our own copy before the row points at it.
-      const bytes = await adapters.downloadUrl(clip.url)
-      const storedClip = await adapters.storeMedia({
+      footage = { body: await adapters.downloadUrl(clip.url), filename: 'clip.mp4' }
+    }
+
+    if (footage) {
+      const stored = await adapters.storeMedia({
         draftId,
-        filename: 'clip.mp4',
-        body: bytes,
+        filename: footage.filename,
+        body: footage.body,
         contentType: 'video/mp4',
       })
-      if (!storedClip.ok) {
-        await adapters.killDraft(draftId, `Could not store clip: ${storedClip.error}`)
-        return { ok: false, error: storedClip.error, draftId }
+      if (!stored.ok) {
+        await adapters.killDraft(draftId, `Could not store ${footage.filename}: ${stored.error}`)
+        return { ok: false, error: stored.error, draftId }
       }
-      mediaUrl = storedClip.url
+      mediaUrl = stored.url
       mediaKind = 'video'
 
-      const typed = await typeLayer({ adapters, draftId, format, subject, body: bytes })
+      const typed = await typeLayer({ adapters, draftId, format, subject, body: footage.body, beats: footage.beats })
       if ('kill' in typed) {
         await adapters.killDraft(draftId, typed.kill)
         return { ok: false, error: typed.kill, draftId }
       }
-      if (typed.record) motion = { ...typed.record, plateUrl: storedClip.url }
+      if (typed.record) motion = { ...typed.record, plateUrl: stored.url }
       if (typed.url) mediaUrl = typed.url
     }
 
@@ -509,13 +536,12 @@ export async function produceStudioDraft(
               sequence: {
                 beats: filmShots.map((shot) => ({
                   subject: shot.subject,
-                  move: shot.move,
+                  // How the window moved across the real photograph.
+                  pan: shot.pan,
                   seconds: shot.seconds,
                   quality: shot.quality,
                   because: shot.because,
                 })),
-                // A film that quietly became one shot must say so on the row.
-                degradedToSingleBeat,
               },
             }
           : {}),

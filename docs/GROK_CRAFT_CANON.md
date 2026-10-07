@@ -91,8 +91,9 @@ Three rules, each of which fixed a real fault in a real cut:
 
 - **Never the same subject twice in one film.** The first film we cut opened
   and closed on the same front porch. Non-adjacent is not far enough apart.
-- **Never the same camera move twice.** Four beats built from two moves still
-  reads as a template. Prefer a move the film has not used.
+- **Never the same camera move twice in a row.** A listing film's beats are
+  pans across the real photographs (below), alternating direction beat to
+  beat; a generated film prefers a move it has not used.
 - **Fewer beats beats padding.** A two-beat film of good frames beats a
   five-beat film carrying two bad ones. When nothing qualifies, make nothing.
 
@@ -104,9 +105,18 @@ MLS order front-loads the exterior and the main living space: grading photos
 0-7 of a 41-photo set returned three exteriors, five living rooms, and no
 kitchen, so the film had nothing for its third beat.
 
-**Always re-encode the cut.** Grok returns 1080p at roughly 32 Mbps, so four
-stream-copied beats is ~96MB. The storage bucket rejected it outright. One
-pass at CRF 21 puts the same film at ~22MB with no visible loss.
+**A listing photograph is never handed to the generator (Matt 2026-10-07).**
+Grok was asked for a 9:16 clip from a 3:2 MLS photo and squeezed the whole
+frame into the portrait one: every listing film came out with tall, thin
+houses, and all eleven ready drafts were killed. Listing beats are now pans
+across the real photograph (`lib/video/pan.ts`): one uniform scale until the
+photo fills the frame, then a frame-sized window eased across it, so the whole
+house passes through at its true shape. `pan.test.ts` holds a square square.
+For every other generation, the still must already be the clip's shape: the
+shape gate in `produce.ts` refuses to animate one that is not.
+
+**Always re-encode the cut.** Four stream-copied 1080p beats ran ~96MB and
+the storage bucket rejected it. One pass at CRF 21 keeps a film postable.
 
 ## 5. The reject list
 
@@ -136,8 +146,9 @@ this pipeline. §0 still applies to any number on screen in them.
 
 - **An MLS photo is not ours to edit.** `editGrokImage` is for brand and
   background plates. Altering how a listed home looks misrepresents a real
-  property and is a licence problem. Listing motion animates the real photo
-  with a locked first frame and a push; it does not change the house.
+  property and is a licence problem. That includes its shape: listing motion
+  pans across the real photo at its true proportions and never sends it to a
+  generator.
 - **No invented property.** A generated house is a generated house. It never
   stands in for a listing.
 - **No deepfake of a real identifiable person** without consent. Our own

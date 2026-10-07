@@ -67,7 +67,7 @@ export const STUDIO_FORMATS: Record<StudioFormatId, StudioFormat> = {
   listing_film: {
     id: 'listing_film',
     label: 'Listing film',
-    what: 'Four beats cut from the listing\u2019s own photos: outside, in, the room that sells it, back out.',
+    what: 'Four of the listing\u2019s own photos, each panned at its true shape and cut together: outside, in, the room that sells it, back out.',
     media: 'video',
     subject: 'listing',
     frameSource: 'mls_photo',
@@ -86,7 +86,7 @@ export const STUDIO_FORMATS: Record<StudioFormatId, StudioFormat> = {
   listing_motion: {
     id: 'listing_motion',
     label: 'Listing motion',
-    what: 'A live listing photo, given a slow push. Price and address from the MLS row.',
+    what: 'A live listing photo, panned across at its true shape. Price and address from the MLS row.',
     media: 'video',
     subject: 'listing',
     frameSource: 'mls_photo',

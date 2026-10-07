@@ -1,26 +1,25 @@
 /**
  * lib/studio/film.ts — a multi-beat film from our own photographs.
  *
- * The single-beat path animates one frame. This one does what the people
- * making the best work on Grok Imagine actually do: grade the available
- * frames, choose a small sequence with a reason for each beat, move the
- * camera differently in each, and cut them together.
+ * Grade the available frames, choose a small sequence with a reason for each
+ * beat, move across each one, and cut them together.
  *
- * Every frame here is a real photograph of a real property. Nothing is
- * generated and nothing is restyled, so there is no vision gate on the
- * PLATE the way there is for a generated still. The judgement Grok vision
- * makes here is different: which of the forty-one photographs can carry a
- * camera move, and what is each one of.
+ * Every frame here is a real photograph of a real property, and nothing
+ * touches its pixels but a uniform scale and a crop. Matt 2026-10-07: the
+ * beats used to be Grok clips, and Grok squeezed every landscape photo into
+ * the 9:16 frame, so every house came out tall and thin. A beat is now a pan
+ * across the true photograph (lib/video/pan.ts), alternating direction beat
+ * to beat. Grok vision still does the one job it is good at here: which of
+ * the forty-one photographs can carry a beat, and what each one is of.
  *
  * Adapter-injected and pure, so the sequence logic is testable without
  * spending a cent.
  */
 import type { PhotoGrade } from '@/lib/grok/classify'
 import type { ConcatResult } from '@/lib/video/concat'
-import { buildMotionPrompt, assertCraftClean } from './craft'
-import { listingShot } from './formats'
+import type { PanDirection } from '@/lib/video/pan'
 import { planShotList, describeSequence, type GradedPhoto, type PlannedShot } from './shotlist'
-import { addSpend, assertBudget, videoCost, VISION_CALL_USD, type SpendLedger } from './spend'
+import { addSpend, assertBudget, VISION_CALL_USD, type SpendLedger } from './spend'
 
 /**
  * How many photographs we grade before choosing the sequence.
@@ -57,15 +56,23 @@ export type FilmAdapters = {
     listingKey: string,
   ) => Promise<Array<{ url: string; gradeUrl?: string; order: number; isPrimary: boolean }>>
   gradePhoto: (input: { imageUrl: string }) => Promise<PhotoGrade>
-  animate: (input: {
-    prompt: string
-    imageUrl: string
-    aspectRatio: string
+  /**
+   * One beat: the photograph at `url`, panned across at its true shape for
+   * `seconds` (lib/video/pan.ts). Never a generator: a listing photo is not
+   * animated by a model.
+   */
+  panPhoto: (input: {
+    url: string
     seconds: number
-  }) => Promise<{ url: string; model: string; durationSeconds: number; costTicks: number | null }>
-  downloadUrl: (url: string) => Promise<Buffer>
+    direction: PanDirection
+    width: number
+    height: number
+  }) => Promise<{ body: Buffer; label: string }>
   concat: (clips: Buffer[]) => Promise<ConcatResult>
 }
+
+/** A beat as cut: the planned shot plus how the window actually moved. */
+export type CutShot = PlannedShot & { pan: string }
 
 export type FilmPlan = {
   shots: PlannedShot[]
@@ -79,9 +86,7 @@ export type FilmResult =
   | {
       ok: true
       body: Buffer
-      shots: PlannedShot[]
-      /** True when we wanted a sequence and could only deliver one beat. */
-      degradedToSingleBeat: boolean
+      shots: CutShot[]
       describes: string
       posterUrl: string
     }
@@ -89,7 +94,6 @@ export type FilmResult =
 
 export type BuildFilmInput = {
   listingKey: string
-  aspectRatio: string
   maxShots: number
   secondsPerShot: number
 }
@@ -97,10 +101,9 @@ export type BuildFilmInput = {
 /**
  * PHASE 1, cheap: grade the photo set and choose the sequence.
  *
- * Split from the render on purpose. Grading ten frames costs about four
- * cents; animating four beats costs about two dollars. The caption is written
- * between the two, so a caption the voice gate rejects costs four cents
- * instead of two dollars.
+ * Split from the render on purpose. Grading is the film's only spend (a few
+ * cents a frame); the beats themselves are free pans. The caption is written
+ * between the two, so a caption the voice gate rejects throws away no cut.
  */
 export async function planListingFilm(
   input: Pick<BuildFilmInput, 'listingKey' | 'maxShots' | 'secondsPerShot'>,
@@ -139,60 +142,41 @@ export async function planListingFilm(
 }
 
 /**
- * PHASE 2, expensive: animate each beat and cut them together.
- *
- * Degrades honestly rather than failing: when ffmpeg is unavailable in this
- * runtime we ship the FIRST beat alone and say so, because a good six-second
- * establishing shot is a real post and a broken file is not.
+ * PHASE 2: pan across each beat's photograph and cut them together. No
+ * generator, no spend: the beats are the real photographs, moved across.
+ * A beat that cannot be made fails the film with the reason, rather than
+ * shipping something that is not the house.
  */
 export async function renderListingFilm(
   plan: FilmPlan,
-  input: Pick<BuildFilmInput, 'aspectRatio'>,
-  adapters: Pick<FilmAdapters, 'animate' | 'downloadUrl' | 'concat'>,
+  frame: { width: number; height: number },
+  adapters: Pick<FilmAdapters, 'panPhoto' | 'concat'>,
   ledger: SpendLedger,
 ): Promise<FilmResult> {
-  const shots = plan.shots
-  const clips: Buffer[] = []
-  for (const shot of shots) {
-    const prompt = buildMotionPrompt({ ...listingShot(), move: shot.move })
-    assertCraftClean(prompt, `film beat (${shot.subject})`)
-    assertBudget(ledger, videoCost('grok-imagine-video-1.5', shot.seconds), `beat: ${shot.subject}`)
-
-    const clip = await adapters.animate({
-      prompt,
-      imageUrl: shot.url,
-      aspectRatio: input.aspectRatio,
-      seconds: shot.seconds,
-    })
-    addSpend(ledger, {
-      step: `beat ${clips.length + 1}: ${shot.subject} (${shot.move})`,
-      usd: videoCost(clip.model, clip.durationSeconds),
-      ticks: clip.costTicks,
-    })
-    clips.push(await adapters.downloadUrl(clip.url))
+  // The beats do not depend on each other, so they are made together.
+  let made: Array<{ body: Buffer; label: string }>
+  try {
+    made = await Promise.all(
+      plan.shots.map((shot, i) =>
+        adapters
+          .panPhoto({ url: shot.url, seconds: shot.seconds, direction: i % 2 === 0 ? 'forward' : 'back', ...frame })
+          .catch((err: unknown) => {
+            throw new Error(`Could not make beat ${i + 1} (${shot.subject}): ${err instanceof Error ? err.message : 'pan failed'}`)
+          }),
+      ),
+    )
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'pan failed' }
+  }
+  const shots: CutShot[] = plan.shots.map((shot, i) => ({ ...shot, pan: made[i].label }))
+  for (const [i, shot] of shots.entries()) {
+    addSpend(ledger, { step: `beat ${i + 1}: ${shot.subject} (${shot.pan} across the real photo)`, usd: 0, ticks: null })
   }
 
-  const joined = await adapters.concat(clips)
-  if (!joined.ok) {
-    if (joined.reason === 'no-ffmpeg' && clips.length > 0) {
-      return {
-        ok: true,
-        body: clips[0],
-        shots: shots.slice(0, 1),
-        degradedToSingleBeat: true,
-        describes: shots[0].describes,
-        posterUrl: shots[0].url,
-      }
-    }
-    return { ok: false, error: `Could not cut the film: ${joined.error}` }
-  }
+  // Pans and the cut use the same ffmpeg, so there is no one-beat fallback
+  // left to take: a cut that fails fails the film with its reason.
+  const joined = await adapters.concat(made.map((m) => m.body))
+  if (!joined.ok) return { ok: false, error: `Could not cut the film: ${joined.error}` }
 
-  return {
-    ok: true,
-    body: joined.body,
-    shots,
-    degradedToSingleBeat: false,
-    describes: plan.describes,
-    posterUrl: plan.posterUrl,
-  }
+  return { ok: true, body: joined.body, shots, describes: plan.describes, posterUrl: plan.posterUrl }
 }

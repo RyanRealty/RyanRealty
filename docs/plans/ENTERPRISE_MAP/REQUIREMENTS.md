@@ -5,7 +5,7 @@
 **Dispositions:** LOCKED (standing rule in force) · VERIFIED (built; per the source doc or map evidence) · PARTIAL · MISSING (not built — must cite a covering gap G-row) · PARKED (deliberate not-now) · GATED (waits on a Matt per-action approval) · SUPERSEDED.
 **Honesty:** VERIFIED here inherits from source docs and map evidence statuses. The v1 certification pass (VERSION-1) re-verifies; a disposition an accept test contradicts gets corrected, never argued with.
 **Covers column:** MISSING/PARTIAL rows cite the VERSION-1 gap (G-row) or owner that carries them. Ad-hoc work that touches a row updates it in the same change.
-**Max:** R-223 (the tail pin — G57 fails if rows above this number vanish or the pin goes stale)
+**Max:** R-225 (the tail pin — G57 fails if rows above this number vanish or the pin goes stale)
 
 ## The animals (what each is, how it improves)
 
@@ -311,6 +311,8 @@
 | R-221 | Agents must not sit on GitHub Actions. One `ci:gates` per ship. do not poll GitHub Actions. Rematch main only when CONFLICTING. PR CI is `test:unit`; live-DB `test:int` is nightly | Matt 2026-08-19 (cloud session burned hundreds of dollars waiting on CI) | LOCKED | G44 + `.github/workflows/ci.yml` + `int-nightly.yml` |
 | R-222 | Every seller CMA is one price-opinion spine: price first, why, named band rivals, three sales with tap-pin, subdivision, wider-market charts. No marketing pitch, confidence pills, ZIP lines, or query traces. Numbers from `lib/pricing/` only. Applies to inbound, expired, FSBO, and rebuild — not a one-off | Matt 2026-08-17 ADD | PARTIAL | G16; gate `ci:cma-opinion-spine` |
 | R-223 | Code-rendered motion graphics are a STAGE of the Studio, not a second video factory: Grok makes the footage, `lib/studio/motion` composites the type, cards and verified figures over it; a pinned, sha512-checked ffmpeg fetched into /tmp lets it run inside the serverless Studio | Matt 2026-10-07 ADD | VERIFIED | `lib/studio/motion/*.test.ts`, `compose.int.test.ts` (local Chromium + ffmpeg; first live Studio draft still to confirm on Vercel) |
+| R-224 | Video keeps its end card: final 2.5s, navy-on-cream wordmark and `ryan-realty.com`, the listing agent's card (with their own headshot) on our own listings, none on another office's listing; no brand anywhere else in frame. Supersedes the 2026-07-21 "zero brand in frame" rule | Matt 2026-10-07 ADD | LOCKED | `lib/studio/motion/cues.ts` |
+| R-225 | A listing photograph is never generated, animated by a model, or reshaped. Listing video pans across the real photo at its true proportions (uniform scale + crop); a generated still must already be the clip's shape or it is not animated | Matt 2026-10-07 ADD ("That can't happen") | VERIFIED | `lib/video/pan.ts` + `pan.test.ts` (square stays square), shape gate in `lib/studio/produce.ts`, `studio.test.ts`; the 11 squeezed drafts killed |
 
 ## Standing Matt gates (never agent-closed)
 

@@ -10,9 +10,8 @@
  * Why step 3 exists. next.config.ts strips node_modules/@ffmpeg-installer/**
  * from every function (outputFileTracingExcludes['*'], a 250MB-cap fix), and
  * Next applies excludes after includes, so the binary cannot be traced back
- * into the two functions that run the Studio. Without it a four-beat listing
- * film quietly ships as one beat (film.ts degrades on 'no-ffmpeg') and the
- * motion stage cannot encode at all.
+ * into the two functions that run the Studio. Without it the Studio cannot
+ * pan a listing photo, cut a film, or lay the type layer at all.
  *
  * The fetch follows @sparticuz/chromium-min, which already downloads Chromium
  * into /tmp for the PDF routes. It is pinned twice: the exact registry tarball

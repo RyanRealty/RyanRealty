@@ -310,7 +310,7 @@ This spec applies to all short-form video (IG Reels, TikTok, YouTube Shorts, Fac
 
 | Surface | Logo treatment |
 |---|---|
-| End card (short-form, final 2-3s) | Navy brand colors + single CTA text; logo optional at this scale |
+| End card (short-form, final 2-3s) | Navy brand colors + single CTA text; logo optional at this scale. Matt 2026-10-07: the Studio keeps it (wordmark + `ryan-realty.com`, listing agent's card on our own listings) |
 | YouTube end screen (final 15-20s) | `stacked_logo_white.png` on navy band; subscribe + related video |
 | YouTube branding watermark | Navy mark, transparent PNG, bottom-right, appears from 0:30 |
 | Thumbnail (YouTube, FB) | Wordmark in footer zone of listing thumbnails; for market/neighborhood thumbs: face replaces logo |

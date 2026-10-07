@@ -19,8 +19,8 @@ alwaysApply: true
 - **Cuts:** 2-3s standard, 4s max. 12+ photo beats in a 45s video.
 - **Re-hooks at 25% and 50%, reveal in final 15%.**
 - **Text safe zone:** 900×1400 inside 1080×1920. Body 48 px+, headline 64-80 px.
-- **No brand elements in the video frame** (no logo, no "Ryan Realty," no phone, no agent name, no "REPRESENTED BY"). Brokerage attribution lives in the IG caption + bio.
-- **Gimbal/parallax motion on every photo beat.** No static photos.
+- **End card, final 2.5s (Matt 2026-10-07, supersedes the old no-brand-in-frame rule):** navy-on-cream card with the wordmark and `ryan-realty.com`; on our own listings it is the listing agent's card with their headshot. Another office's listing gets no brand card. No logo or brand anywhere else in the frame, and never at the open.
+- **Listing photos are panned at their true shape, never generated or reshaped** (Matt 2026-10-07; `lib/video/pan.ts`). A photo is scaled uniformly and a window moves across it. Never stretch or squeeze a photo to fit the frame.
 - **Three movement types per video minimum.**
 - **Banned words:** stunning, nestled, boasts, gorgeous, breathtaking, must-see, "welcome to your dream home." No em-dashes, no semicolons. (Plain hyphens are allowed where standard English requires them — single-family, 30-year fixed — per CLAUDE.md brand voice; the old "no hyphens in prose" rule was wrong.)
 - **All numbers carry units.** "$3,025,000" not "3,025,000."
