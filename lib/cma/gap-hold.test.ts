@@ -187,7 +187,7 @@ describe('one boundary for the failed-ask cap and the ask-in-band hold: the prin
         rangeRule: { saleLow: valueLow },
       }
       applyFailedAskCap(p, { lastFailedListPrice: ask, offMarketDate: null })
-      return p.failedAskBelowRange === true
+      return (p as { failedAskBelowRange?: boolean }).failedAskBelowRange === true
     }
     // Before the pin the band reads $893,000; after it, the exact $893,412.
     expect(cap(PRINTED_LOW, PRINTED_LOW)).toBe(false)
@@ -214,7 +214,7 @@ describe('one boundary for the failed-ask cap and the ask-in-band hold: the prin
         rangeRule: { saleLow: PRINTED_LOW },
       }
       applyFailedAskCap(p, { lastFailedListPrice: ask, offMarketDate: null })
-      const below = p.failedAskBelowRange === true
+      const below = (p as { failedAskBelowRange?: boolean }).failedAskBelowRange === true
       const inside = askInBandHold(ask, EXACT_LOW, HIGH).hold
       const above = ask > HIGH
       expect([below, inside, above].filter(Boolean), String(ask)).toHaveLength(1)

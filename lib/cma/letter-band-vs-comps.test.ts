@@ -329,3 +329,47 @@ describe('adjustment claim versus the adjustment lines', () => {
     expect(oneLine.pass).toBe(true)
   })
 })
+
+describe('the trimmed band (Matt 2026-10-07: the printed band is always the trimmed range)', () => {
+  // 3037 Purcell's shape on the five-sale floor: five sales set the price,
+  // the highest and lowest are set aside, and the band is the middle three.
+  const comps = [
+    { listingKey: 'A', address: '1 Low St', adjustedPrice: 503_611, closePrice: 503_611, weight: 0.2 },
+    { listingKey: 'B', address: '2 Mid St', adjustedPrice: 507_638, closePrice: 507_638, weight: 0.2 },
+    { listingKey: 'C', address: '3 Mid St', adjustedPrice: 521_000, closePrice: 521_000, weight: 0.2 },
+    { listingKey: 'D', address: '4 Mid St', adjustedPrice: 530_424, closePrice: 530_424, weight: 0.2 },
+    { listingKey: 'E', address: '5 High St', adjustedPrice: 611_484, closePrice: 611_484, weight: 0.2 },
+  ]
+  const setAside = [
+    { listingKey: 'A', address: '1 Low St', adjustedPrice: 503_611, reason: 'lowest' },
+    { listingKey: 'E', address: '5 High St', adjustedPrice: 611_484, reason: 'highest' },
+  ]
+
+  it('passes when the band is the kept sales, the highest and lowest set aside', () => {
+    const check = bandVersusClosedCompsCheck({ valueLow: 507_638, valueHigh: 530_424, setAside }, comps)
+    expect(check.pass).toBe(true)
+    expect(check.detail).toContain('the highest and lowest set aside')
+  })
+
+  it('reads the set-aside rows from rangeRule too, as the pin does', () => {
+    const check = bandVersusClosedCompsCheck(
+      { valueLow: 507_638, valueHigh: 530_424, rangeRule: { setAside } },
+      comps,
+    )
+    expect(check.pass).toBe(true)
+  })
+
+  it('fails a band that still spans the set-aside ends', () => {
+    expect(bandVersusClosedCompsCheck({ valueLow: 503_611, valueHigh: 611_484, setAside }, comps).pass).toBe(false)
+  })
+
+  it('agrees with the pin: the pinned band always passes the check', () => {
+    const pinned = pinPrintedBandToSettingSales(
+      { valueLow: 500_000, valueHigh: 615_000, recommended: 521_000, setAside },
+      comps,
+    )
+    expect(pinned.valueLow).toBe(507_638)
+    expect(pinned.valueHigh).toBe(530_424)
+    expect(bandVersusClosedCompsCheck(pinned, comps).pass).toBe(true)
+  })
+})

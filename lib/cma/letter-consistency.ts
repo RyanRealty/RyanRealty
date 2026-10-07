@@ -10,6 +10,8 @@ import { letterProductNoun } from '@/lib/cma/market-area'
 import { int } from '@/lib/cma/render-blocks'
 import { namedSalesPlace } from '@/lib/pricing/comp-area'
 import { printedAdjustedPrice, settingWeight } from '@/lib/pricing/seller-net'
+import { readSetAsideSales } from '@/lib/cma/set-aside'
+import type { CmaPricing } from '@/lib/cma/types'
 import type { ContractCheck } from '@/lib/cma/contract'
 
 /**
@@ -281,10 +283,18 @@ export function letterRecommendDollarsCheck(
  * The hero band must overlap the closed comps. A band that sits entirely
  * under every sale, or entirely over every sale, is not support (Marys Grace:
  * band $531k-$577k under comps at $610k-$665k).
+ *
+ * With the sales that set the price, the band is exactly their adjusted
+ * range, less the highest and lowest the trimmed band set aside (Matt
+ * 2026-10-07: the printed band is always the trimmed range). The set-aside
+ * rows are read the same way pinPrintedBandToSettingSales reads them, so the
+ * pin and this check can never disagree about which sales the band spans.
  */
 export function bandVersusClosedCompsCheck(
-  pricing: { valueLow?: number | null; valueHigh?: number | null },
+  pricing: { valueLow?: number | null; valueHigh?: number | null; setAside?: unknown; rangeRule?: unknown },
   comps: readonly {
+    listingKey?: string | null
+    address?: string | null
     adjustedPrice?: number | null
     closePrice?: number | null
     weight?: number | null
@@ -311,8 +321,15 @@ export function bandVersusClosedCompsCheck(
       detail: 'A sale that does not set the price is still in the table.',
     }
   }
-  if (setters.length > 0) {
-    const ends = setters
+  const key = (v: string | null | undefined): string => (v ?? '').trim().toLowerCase()
+  const asideKeys = new Set(
+    readSetAsideSales(pricing as unknown as CmaPricing).flatMap((r) =>
+      [key(r.listingKey), key(r.address)].filter(Boolean),
+    ),
+  )
+  const bandSetters = setters.filter((c) => !asideKeys.has(key(c.listingKey)) && !asideKeys.has(key(c.address)))
+  if (bandSetters.length > 0) {
+    const ends = bandSetters
       .map((c) =>
         printedAdjustedPrice({
           closePrice: c.closePrice ?? 0,
@@ -337,8 +354,8 @@ export function bandVersusClosedCompsCheck(
         severity: 'hard',
         pass,
         detail: pass
-          ? `Band ${band} is the adjusted sales that set the price ${span}.`
-          : `Band ${band} is not the adjusted sales that set the price ${span}.`,
+          ? `Band ${band} is the adjusted sales that set the price ${span}${asideKeys.size > 0 ? ', the highest and lowest set aside' : ''}.`
+          : `Band ${band} is not the adjusted sales that set the price ${span}${asideKeys.size > 0 ? ', the highest and lowest set aside' : ''}.`,
       }
     }
   }
