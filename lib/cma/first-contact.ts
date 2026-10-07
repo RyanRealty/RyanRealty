@@ -398,11 +398,15 @@ function brokerIntro(facts: CmaFirstContactFacts): string {
   return "I'm a broker at Ryan Realty here in Bend."
 }
 
+// The brokerage line (Matt 2026-10-07): "careful market analysis is at the
+// core of how we price homes" replaced "we spend our days studying this market
+// closely", which read as unprofessional. Approved wording; change only with
+// Matt's sign-off (CMA rule 10).
 function composeExpiredFirstContact(facts: CmaFirstContactFacts): CmaFirstContactCopy {
   const street = streetOnly(facts.address)
   const greeted = greetingFirstName(facts.firstName)
   const greeting = greeted ? `Hi ${greeted},` : 'Hi there,'
-  const plan = `${brokerIntro(facts)} We're a small brokerage, and we spend our days studying this market closely. ${cameOffSentence(street)}`
+  const plan = `${brokerIntro(facts)} We're a local brokerage, and careful market analysis is at the core of how we price homes. ${cameOffSentence(street)}`
   const paragraphs: FirstContactRun[][] = []
   pushParagraph(paragraphs, [greeting])
   pushParagraph(paragraphs, [plan])

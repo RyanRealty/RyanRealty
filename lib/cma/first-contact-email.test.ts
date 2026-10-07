@@ -18,7 +18,7 @@ const NATE_PLACE: FirstContactPlace = {
 
 const NATE_PLAIN = `Hi there,
 
-My name is Matt Ryan, and I own Ryan Realty here in Bend. We're a small brokerage, and we spend our days studying this market closely. Your home at 62017 Nate's came off the market recently, so we put together an analysis we thought might be useful.
+My name is Matt Ryan, and I own Ryan Realty here in Bend. We're a local brokerage, and careful market analysis is at the core of how we price homes. Your home at 62017 Nate's came off the market recently, so we put together an analysis we thought might be useful.
 
 The market has shifted this year. Price reductions are up, but the bigger change is seller concessions, where the seller pays money back to the buyer at closing for things like closing costs, repairs, or a lower interest rate. The recorded sale price stays the same, so values can look steadier than they are. A home that sells at full price with a 3% concession leaves the seller with 3% less than the record shows.
 
