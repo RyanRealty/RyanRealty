@@ -109,6 +109,9 @@ th.v.is-on,.comp-stack-card.is-on{outline:2px solid var(--navy);outline-offset:2
 .rr-seg .rr-btn+.rr-btn{border-left:1px solid var(--ink12)}
 .rr-select{font:inherit;font-size:13px;color:var(--navy);background:transparent;border:1px solid var(--ink12);border-radius:10px;padding:12px 14px;min-height:44px;cursor:pointer}
 .rr-select:focus-visible{outline:3px solid rgba(16,39,66,.35);outline-offset:2px}
+/* The order control names itself: "Sort", beside the select. */
+.rr-sort{display:inline-flex;align-items:center;gap:8px}
+.rr-sort .rr-lbl{margin:0;opacity:.7}
 /* Chapter 1's line draws itself once, and only for a reader who wants motion. */
 @media (prefers-reduced-motion:reduce){.tl-ask{stroke-dasharray:none!important;stroke-dashoffset:0!important}}
 `
@@ -412,9 +415,25 @@ try{
     // The row the pin belongs to, brought into view — the pin is on the map,
     // the reading is in the grid, and a tap should not leave the reader to
     // find it (Delta 2, chapter 3).
-    var target=document.querySelector('.comp-stack-card[data-comp="'+id+'"]:not([hidden])')||
-      document.querySelector('th.v[data-comp="'+id+'"]')
+    var target=rowFor(id)
     if(target&&target.scrollIntoView)target.scrollIntoView({block:'center',behavior:REDUCED?'auto':'smooth'})
+  }
+  // The card on a phone, the column on a wider screen: whichever the reader
+  // can actually see. The phone list is in the DOM at every width, so a bare
+  // first match handed a desk screen a card it does not draw and the scroll
+  // went nowhere. A card folded under "Show all N homes" is opened first.
+  function rowFor(id){
+    var cards=[].slice.call(document.querySelectorAll('.comp-stack-card[data-comp="'+id+'"]:not([hidden])'))
+    for(var i=0;i<cards.length;i++){
+      var stack=cards[i].closest?cards[i].closest('.comp-stack'):null
+      if(!stack||stack.getClientRects().length===0)continue
+      var fold=cards[i].closest('details')
+      if(fold&&!fold.open)fold.open=true
+      return cards[i]
+    }
+    var heads=[].slice.call(document.querySelectorAll('th.v[data-comp="'+id+'"]'))
+    for(var j=0;j<heads.length;j++){if(heads[j].getClientRects().length)return heads[j]}
+    return heads[0]||null
   }
   function lightFrom(t){
     if(!t)return
@@ -459,7 +478,7 @@ try{
     var tables=[].slice.call(chapter.querySelectorAll('table.comp-matrix'))
     var shared=tables.filter(function(t){return !t.classList.contains('is-adjustments')})
     if(!shared.length)return
-    var stack=chapter.querySelector('.comp-stack')
+    var stacks=[].slice.call(chapter.querySelectorAll('.comp-stack'))
     var anchor=chapter.querySelector('.comp-matrix-wrap')||shared[0]
 
     // ONE ROW OF CONTROLS. Raising the pills to 44px pushed this chapter's
@@ -500,16 +519,33 @@ try{
     // The order the document was printed in, kept so the reader can get back
     // to it. Restoring "the original" by leaving the DOM alone stopped working
     // the moment the sort could move a column between tables.
+    // Every shared table, not the first one: a matrix chunked into two
+    // tables printed its second table's homes at index -1, so "Our order"
+    // could not put them back.
     var printed=[]
-    ;[].slice.call(shared[0].querySelectorAll('thead th.v')).slice(1).forEach(function(h){
-      printed.push(h.getAttribute('data-comp'))
+    shared.forEach(function(t){
+      ;[].slice.call(t.querySelectorAll('thead th.v')).slice(1).forEach(function(h){
+        printed.push(h.getAttribute('data-comp'))
+      })
     })
+    // Which matrix a table belongs to. The competition chapter holds two (for
+    // sale, under contract), and one pool across both moved a home that is
+    // under contract into the for-sale table when the reader sorted by price.
+    function matrixOf(node){
+      var w=node.closest?node.closest('[data-matrix]'):null
+      return (w&&w.getAttribute('data-matrix'))||''
+    }
     function order(key,dir){
+      var ids=[]
+      groups.forEach(function(g){var m=matrixOf(g.table);if(ids.indexOf(m)<0)ids.push(m)})
+      ids.forEach(function(m){orderOne(m,key,dir)})
+    }
+    function orderOne(matrix,key,dir){
       // Every home column in the chapter, with the cell it owns in each row.
       // Captured BEFORE anything moves: the references have to outlive the
       // reshuffle. Each TABLE is sorted from its own columns, so the shared
       // grid and the adjustment grid under it stay in step.
-      var byTable=groups.map(function(g){
+      var byTable=groups.filter(function(g){return matrixOf(g.table)===matrix}).map(function(g){
         var heads=[].slice.call(g.table.querySelectorAll('thead th.v'))
         var rows=[].slice.call(g.table.querySelectorAll('tbody tr'))
         var items=[]
@@ -561,26 +597,49 @@ try{
           t.rows.forEach(function(tr,ri){if(it.cells[ri])tr.appendChild(it.cells[ri])})
         }
       })
+      // The phone cards follow the columns. A list folded under "Show all N
+      // homes" keeps the same number of cards open, so the first homes in the
+      // NEW order are the ones a reader sees, and the rest go under the fold.
       function reflow(container,sel){
         if(!container)return
         var byPin={}
         ;[].slice.call(container.querySelectorAll(sel)).forEach(function(n){
           byPin[n.getAttribute('data-comp')||n.getAttribute('data-pin')]=n
         })
-        global.forEach(function(pin){if(byPin[pin])container.appendChild(byPin[pin])})
+        var more=null,inner=null
+        for(var c=0;c<container.children.length;c++){
+          if(container.children[c].classList.contains('comp-more')){more=container.children[c];break}
+        }
+        if(more)inner=more.querySelector('.comp-more-in')
+        var open=more?Number(more.getAttribute('data-visible')||0):0
+        var placed=0
+        global.forEach(function(pin){
+          var n=byPin[pin]
+          if(!n)return
+          if(more&&inner&&placed>=open)inner.appendChild(n)
+          else if(more)container.insertBefore(n,more)
+          else container.appendChild(n)
+          placed++
+        })
       }
-      reflow(stack,'.comp-stack-card:not(.is-yours)')
+      stacks.forEach(function(s){
+        if((s.getAttribute('data-matrix')||'')===matrix)reflow(s,'.comp-stack-card:not(.is-yours)')
+      })
     }
     // "As weighted" was a lie: the printed order is newest first, and the
     // weights ran 31.9, 14.2, 15.1, 27.3, 11.6 down the row under a pill
-    // claiming they were sorted by it.
-    var ORDERS=[['As printed',null,1],['Most recent','date',-1],['Price today','price',-1],['Size','size',-1],['Days on market','days',-1]]
+    // claiming they were sorted by it. The label after it named a printed
+    // page, and a homeowner on a phone has none to compare against (Matt
+    // 2026-10-07). The default is the order we put the homes in, and says so
+    // without claiming a reason for it; the control is called what it does.
+    var ORDERS=[['Our order',null,1],['Most recent','date',-1],['Price today','price',-1],['Size','size',-1],['Days on market','days',-1]]
       .filter(function(o){
         return o[1]===null||chapter.querySelector('thead th.v[data-sort-'+o[1]+']')!=null
       })
     if(ORDERS.length>1&&homeCount>1){
       var sel=el('select','rr-select')
-      sel.setAttribute('aria-label','Order the homes in this table')
+      sel.id='rr-sort-'+id
+      sel.setAttribute('aria-label','Sort the homes in this table')
       ORDERS.forEach(function(o,i){
         var opt=el('option',null,o[0])
         opt.value=String(i)
@@ -590,7 +649,12 @@ try{
         var o=ORDERS[Number(sel.value)||0]
         order(o[1],o[2])
       })
-      box.appendChild(sel)
+      var sortBox=el('span','rr-sort')
+      var sortLbl=el('label','rr-lbl','Sort')
+      sortLbl.htmlFor=sel.id
+      sortBox.appendChild(sortLbl)
+      sortBox.appendChild(sel)
+      box.appendChild(sortBox)
     }
 
     /* Matrix 3 only: for sale · under contract · all. A home already under

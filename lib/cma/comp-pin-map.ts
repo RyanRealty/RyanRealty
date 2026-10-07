@@ -19,7 +19,7 @@
  * been on the market and how many price changes they've had."
  *
  * So a pin is filled and numbered when the sale closed, hollow and lettered
- * when the home is for sale or under contract, barred and roman when the
+ * when the home is for sale or under contract, a dashed ring and roman when the
  * listing came off unsold; the subject is a star; and every pin reveals the
  * same three facts on tap and on hover — days on market, how many times the
  * price changed, and the outcome line. The legend names the three families in
@@ -31,6 +31,14 @@
 
 import { escapeHtml, int } from '@/lib/cma/render-blocks'
 import { projectToImagePercent, type StaticMapView } from '@/lib/cma/static-map-projection'
+import {
+  intoCrop,
+  phoneCrop,
+  relaxPins,
+  type MapCrop,
+  type PinPoint,
+  type PlacedPin,
+} from '@/lib/cma/pin-layout'
 import { FAMILY_LABEL, type CmaMapFamily } from '@/lib/cma/map-families'
 import type { CmaMapPin } from '@/lib/cma/map'
 
@@ -155,13 +163,56 @@ function pinButton(input: {
   reveal: string
   xPct: number
   yPct: number
+  /** Where the same pin sits on the phone's closer view of the map. */
+  phone?: { xPct: number; yPct: number } | null
 }): string {
-  return `<button type="button" class="pin-hit is-${esc(input.family)}" data-comp="${esc(input.key)}" data-pin="${esc(input.key)}" style="left:${input.xPct.toFixed(
+  // The reveal card is 210px wide and opens under the pin. A pin near either
+  // edge opens it toward the middle of the map instead of off the screen.
+  const side = (x: number, edge: number) => (x < edge ? 'l' : x > 100 - edge ? 'r' : '')
+  const desk = side(input.xPct, 14)
+  const phone = input.phone ? side(input.phone.xPct, 32) : ''
+  const notes = `${desk ? ` data-note="${desk}"` : ''}${phone ? ` data-pnote="${phone}"` : ''}`
+  const phoneVars = input.phone
+    ? `;--px:${input.phone.xPct.toFixed(2)}%;--py:${input.phone.yPct.toFixed(2)}%`
+    : ''
+  return `<button type="button" class="pin-hit is-${esc(input.family)}" data-comp="${esc(input.key)}" data-pin="${esc(input.key)}"${notes} style="left:${input.xPct.toFixed(
     2,
-  )}%;top:${input.yPct.toFixed(2)}%" aria-label="${esc(input.label)}"><span class="pin-dot" aria-hidden="true">${pinMark(
+  )}%;top:${input.yPct.toFixed(2)}%${phoneVars}" aria-label="${esc(input.label)}"><span class="pin-dot" aria-hidden="true">${pinMark(
     input.glyph,
   )}</span>${input.reveal ? `<span class="pin-note" aria-hidden="true">${input.reveal}</span>` : ''}</button>`
 }
+
+/**
+ * The line from a pin that had to step aside back to the house it names, and
+ * a dot on the house. One drawing per layout: the wide map and the phone's
+ * closer view place their pins differently. Inline sizing, so the print
+ * letter, which has no rule for it, still lays it over the map and not under.
+ */
+function leaderSvg(placed: readonly (PlacedPin | null)[], variant: 'wide' | 'phone'): string {
+  const lines = placed
+    .filter((p): p is PlacedPin => p != null && p.moved)
+    .map((p) => {
+      const ax = p.anchorXPct.toFixed(2)
+      const ay = p.anchorYPct.toFixed(2)
+      return `<line x1="${ax}" y1="${ay}" x2="${p.xPct.toFixed(2)}" y2="${p.yPct.toFixed(
+        2,
+      )}" stroke="#102742" stroke-opacity="0.6" stroke-width="1.25" vector-effect="non-scaling-stroke"/><line class="pin-anchor" x1="${ax}" y1="${ay}" x2="${ax}" y2="${ay}" stroke="#102742" stroke-width="5" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`
+    })
+  if (lines.length === 0) return ''
+  const hide = variant === 'phone' ? 'display:none;' : ''
+  return `<svg class="pin-leaders is-${variant}" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false" style="${hide}position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;pointer-events:none">${lines.join(
+    '',
+  )}</svg>`
+}
+
+/**
+ * The frame the pins are laid out in. WIDE is the desk map (about 1,120px in
+ * the web document, about 700px on the letter's sheet), so the separation is
+ * a share of the width that keeps 28px dots apart on the first and 22px dots
+ * nearly apart on the second. PHONE is the 339px column a 375 screen leaves.
+ */
+const WIDE_LAYOUT = { width: 1000, separation: 34 }
+const PHONE_LAYOUT = { width: 339, separation: 29 }
 
 /** The reveal card's markup. Address, outcome, days and price changes. */
 function revealHtml(fact: CmaPinFact): string {
@@ -194,56 +245,50 @@ export function pinLegendHtml(facts: readonly CmaPinFact[]): string {
 }
 
 /**
- * Spread every knot of pins onto its own ring.
+ * Where every pin is drawn, on the wide map and on the phone's closer view.
  *
- * Deterministic: a cluster's members are laid out at fixed angles around the
- * point they share, so the same document draws the same map every time. It
- * moves the MARK, never the underlying coordinate — the label still names the
- * address the row carries, and a reader can see that two homes sit together.
+ * It used to put every member of a chain of near pins on a ring around their
+ * centroid, the reader's own home included, which took a block of pins off
+ * their houses with nothing to say so, and still piled them into one blob at
+ * 375 (Keats, 2026-10-07). Now each pin
+ * moves only as far as it must, the reader's home never moves, and a pin that
+ * had to step aside draws a line back to its house (`lib/cma/pin-layout.ts`).
+ * The label still names the address the row carries.
  */
-function spreadClusters(
-  points: readonly ({ xPct: number; yPct: number } | null)[],
-): ({ xPct: number; yPct: number } | null)[] {
-  // A pin dot is a fixed 28px (22px on a phone) on a map that renders between
-  // about 340 and 1150 units wide, so "how far apart is far enough" cannot be
-  // one percentage. NEAR is the width at which pins on the widest render still
-  // touch; the ring is sized so the members of a cluster sit as far from each
-  // other as that ring allows, and NOBODY is left at the centre — a member on
-  // the point with the others around it is the pin that disappears.
-  const NEAR = 3.6
-  const out = points.map((p) => (p ? { xPct: p.xPct, yPct: p.yPct } : null))
-  const clusters: number[][] = []
-  points.forEach((p, i) => {
-    if (!p) return
-    const found = clusters.find((c) =>
-      c.some((j) => {
-        const q = points[j]!
-        return Math.abs(q.xPct - p.xPct) < NEAR && Math.abs(q.yPct - p.yPct) < NEAR
-      }),
-    )
-    if (found) found.push(i)
-    else clusters.push([i])
-  })
-  for (const c of clusters) {
-    if (c.length < 2) continue
-    const cx = c.reduce((sum, i) => sum + points[i]!.xPct, 0) / c.length
-    const cy = c.reduce((sum, i) => sum + points[i]!.yPct, 0) / c.length
-    // Two pins sit either side of the point; more open the ring so adjacent
-    // members stay a dot apart.
-    const r = c.length === 2 ? 2.4 : (NEAR * 0.62) / Math.sin(Math.PI / c.length)
-    c.forEach((i, k) => {
-      const angle = (2 * Math.PI * k) / c.length - Math.PI / 2
-      out[i] = {
-        xPct: clamp(cx + Math.cos(angle) * r, 2, 98),
-        yPct: clamp(cy + Math.sin(angle) * r, 3, 97),
-      }
-    })
-  }
-  return out
+export type CompPinLayout = {
+  wide: (PlacedPin | null)[]
+  phone: (PlacedPin | null)[]
+  crop: MapCrop
+  /** The phone frame's width over its height. */
+  phoneAspect: number
 }
 
-function clamp(v: number, lo: number, hi: number): number {
-  return v < lo ? lo : v > hi ? hi : v
+export function layoutCompPins(
+  points: readonly (PinPoint | null)[],
+  fixed: readonly boolean[],
+  imageAspect: number,
+): CompPinLayout {
+  const aspect = imageAspect > 0 ? imageAspect : 16 / 9
+  const wide = relaxPins(points, fixed, {
+    width: WIDE_LAYOUT.width,
+    height: WIDE_LAYOUT.width / aspect,
+    separation: WIDE_LAYOUT.separation,
+  })
+  const crop = phoneCrop(
+    points.filter((p): p is PinPoint => p != null),
+    { imageAspect: aspect },
+  )
+  const phoneAspect = (crop.w * aspect) / crop.h
+  const phone = relaxPins(
+    points.map((p) => (p ? intoCrop(p, crop) : null)),
+    fixed,
+    {
+      width: PHONE_LAYOUT.width,
+      height: PHONE_LAYOUT.width / phoneAspect,
+      separation: PHONE_LAYOUT.separation,
+    },
+  )
+  return { wide, phone, crop, phoneAspect }
 }
 
 export type CompPinMapInput = {
@@ -265,18 +310,29 @@ export function renderCompPinMapHtml(input: CompPinMapInput): string {
     // The pins the tile was drawn FOR, so a nudged rooftop pin lands where the
     // tile expects it. `key` is null on the subject.
     //
-    // Two homes at ONE address — two units of the same building, which the MLS
-    // carries as two rows with identical coordinates — landed one pin exactly
-    // on top of the other, so the second was not on the map at all. Coincident
-    // pins are spread onto a small ring around the point they share.
-    const spread = spreadClusters(
-      overlay.pins.map((pin) => projectToImagePercent({ lat: pin.lat, lng: pin.lng }, overlay.view, 2)),
+    // Only the pins that will be drawn take part in the layout: a home with no
+    // address on the letter, or one projected off the tile, is not a pin and
+    // must not push a real one aside.
+    const isSubject = (pin: CmaMapPin) => pin.key == null || pin.family === 'subject'
+    const points = overlay.pins.map((pin): PinPoint | null => {
+      const at = projectToImagePercent({ lat: pin.lat, lng: pin.lng }, overlay.view, 2)
+      if (!at) return null
+      if (isSubject(pin)) return at
+      if (!byKey.get(pin.key!)?.address?.trim()) return null
+      if (at.xPct < 0 || at.xPct > 100 || at.yPct < 0 || at.yPct > 100) return null
+      return at
+    })
+    const layout = layoutCompPins(
+      points,
+      overlay.pins.map(isSubject),
+      overlay.view.width / overlay.view.height,
     )
     const marks = overlay.pins
       .map((pin, pi) => {
-        const at = spread[pi]
+        const at = layout.wide[pi]
         if (!at) return ''
-        if (pin.key == null || pin.family === 'subject') {
+        const phone = layout.phone[pi] ?? null
+        if (isSubject(pin)) {
           return pinButton({
             key: 'subject',
             glyph: '★',
@@ -287,26 +343,36 @@ export function renderCompPinMapHtml(input: CompPinMapInput): string {
             )}</span>`,
             xPct: at.xPct,
             yPct: at.yPct,
+            phone,
           })
         }
-        const fact = byKey.get(pin.key)
-        if (!fact?.address?.trim()) return ''
-        if (at.xPct < 0 || at.xPct > 100 || at.yPct < 0 || at.yPct > 100) return ''
+        const fact = byKey.get(pin.key!)!
         return pinButton({
-          key: pin.key,
-          glyph: pin.key,
+          key: pin.key!,
+          glyph: pin.key!,
           family: pin.family,
           label: pinReading(fact),
           reveal: revealHtml(fact),
           xPct: at.xPct,
           yPct: at.yPct,
+          phone,
         })
       })
       .filter(Boolean)
       .join('\n      ')
     if (!marks) return img
-    return `<div class="pin-map-frame">
-      ${img}
+    const c = layout.crop
+    const cropped = c.w < 1 || c.h < 1
+    // The phone's closer view of the SAME image, as four fractions and the
+    // frame's shape. The immersive stylesheet reads them under 700px; the
+    // letter has no rule for them and draws the whole map as before.
+    const cropVars = `--cx:${c.x0.toFixed(4)};--cy:${c.y0.toFixed(4)};--cw:${c.w.toFixed(4)};--ch:${c.h.toFixed(
+      4,
+    )};--car:${layout.phoneAspect.toFixed(4)}`
+    return `<div class="pin-map-frame"${cropped ? ' data-crop="phone"' : ''} style="${cropVars}">
+      <div class="pin-map-clip">${img}</div>
+      ${leaderSvg(layout.wide, 'wide')}
+      ${leaderSvg(layout.phone, 'phone')}
       ${marks}
     </div>
     ${pinLegendHtml(facts)}`
@@ -335,18 +401,16 @@ export function renderCompPinMapHtml(input: CompPinMapInput): string {
   const saleMarks = pins
     .map(({ fact, pt }) => {
       const p = xy(pt)
-      // Three glyphs, the same three the tile draws: filled for a sale that
-      // closed, hollow for one on the market, a bar across one that came off.
+      // Three glyphs, the same three the web map draws: filled for a sale
+      // that closed, a solid ring for one on the market, a DASHED ring for
+      // one that came off. The bar that used to cross the numeral struck
+      // through the very thing a reader matches to the row (Matt 2026-10-07).
       const filled = fact.family === 'closed'
       const body = filled
         ? `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="14" fill="#102742"/>`
-        : `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="13" fill="#faf8f4" stroke="#102742" stroke-width="2"/>`
-      const bar =
-        fact.family === 'unsold'
-          ? `<line x1="${(p.x - 16).toFixed(1)}" y1="${p.y.toFixed(1)}" x2="${(p.x + 16).toFixed(
-              1,
-            )}" y2="${p.y.toFixed(1)}" stroke="#102742" stroke-width="2"/>`
-          : ''
+        : `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="13" fill="#faf8f4" stroke="#102742" stroke-width="2"${
+            fact.family === 'unsold' ? ' stroke-dasharray="4 3"' : ''
+          }/>`
       return `<g class="pin-sale is-${fact.family}" data-pin="${esc(fact.key)}" data-comp="${esc(
         fact.key,
       )}" tabindex="0" role="button" aria-label="${esc(pinReading(fact))}">
@@ -355,7 +419,6 @@ export function renderCompPinMapHtml(input: CompPinMapInput): string {
         <text x="${p.x.toFixed(1)}" y="${(p.y + 4).toFixed(1)}" text-anchor="middle" fill="${
           filled ? '#faf8f4' : '#102742'
         }" font-size="12" font-weight="700">${esc(fact.key)}</text>
-        ${bar}
       </g>`
     })
     .join('')

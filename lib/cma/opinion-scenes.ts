@@ -34,6 +34,8 @@ import {
   type OpinionChapterId,
 } from '@/lib/cma/opinion-pages'
 import { DID_NOT_SELL_HEADING } from '@/lib/cma/did-not-sell'
+import { salesGlanceHtml } from '@/lib/cma/sales-glance'
+import { statusPriceBoardDisclosureHtml } from '@/lib/cma/status-price-summary'
 import { escapeHtml } from '@/lib/cma/render-blocks'
 import type { CmaBroker } from '@/lib/cma/types'
 import { formatDate } from '@/lib/format/date'
@@ -82,10 +84,39 @@ function mapScene(a: OpinionSceneArgs): string {
   </section>`
 }
 
-/** Matrix 1. Web twin of salesThatSetItPage. */
+/**
+ * Matrix 1. Web twin of salesThatSetItPage.
+ *
+ * PHONE FIRST (Matt 2026-10-07). The letter opens this chapter on the status
+ * table, which on a phone pushed the sales that set the price two screens down.
+ * The web chapter reorders the SAME parts, built by the same helpers off the
+ * same args: the sales at a glance first, then the matrix and everything the
+ * letter prints under it, then the status table behind one tap. Nothing is
+ * dropped; the letter keeps its own order.
+ */
 function salesThatSetItScene(a: OpinionSceneArgs): string {
-  const page = salesThatSetItPage(salesThatSetItArgs(a))
-  return page ? wrapLetterBody('sales-that-set-it', 'The evidence', page.body) : ''
+  const args = salesThatSetItArgs(a)
+  // The note and the board are printed by this scene, in its own order, so
+  // the letter body is asked for without them.
+  const page = salesThatSetItPage({ ...args, statusPriceBoard: '', negligibleWeightNote: null })
+  if (!page) return ''
+  const note = args.negligibleWeightNote
+    ? `<p class="method-line">${esc(args.negligibleWeightNote)}</p>`
+    : ''
+  const glance = salesGlanceHtml({
+    subject: args.subject,
+    comps: args.comps,
+    pricing: args.pricing,
+    docLinks: args.docLinks ?? null,
+  })
+  const heading = /<h2 class="section[^"]*">[\s\S]*?<\/h2>/.exec(page.body)?.[0] ?? ''
+  const rest = heading ? page.body.replace(heading, '') : page.body
+  const body = `${heading}
+  ${note}
+  ${glance}
+  ${rest}
+  ${statusPriceBoardDisclosureHtml(args.statusPriceBoard)}`
+  return wrapLetterBody('sales-that-set-it', 'The evidence', body)
 }
 
 /** Matrix 3. Web twin of competitionPage. */
