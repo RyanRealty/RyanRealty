@@ -505,6 +505,8 @@ export async function resolveStudioSubject(
       ...(outline
         ? {
             outline,
+            // The caption keeps to what the film shows: the count and the median under the map.
+            captionKeys: ['active listings', 'median list price'],
             describes:
               `A map in navy on cream paper: ${outline.context ? `the ${cityName} city outline, the camera moving in to ` : ''}` +
               `${placeName}, its recorded outline drawing on and filling, then its live homes for sale and median list price.`,
@@ -529,6 +531,8 @@ export async function resolveStudioSubject(
       citations: [...shaped.citations, ...trend.citations],
       series: trend.series,
       describes: trend.describes,
+      // The caption keeps to what the film shows: the two labelled months and the meter.
+      captionKeys: [trend.series.firstKey, trend.series.lastKey, ...(shaped.figures['months of supply'] ? ['months of supply'] : [])],
       ctaUrl: `${SITE}/market`,
     }
   }

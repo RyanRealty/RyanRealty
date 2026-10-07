@@ -9,10 +9,10 @@ import {
 } from './craft'
 import { centralOregonPlate, getStudioFormat, listingShot, STUDIO_FORMAT_LIST } from './formats'
 import { isStudioSlateEnabled, planSlate, type StudioTrigger } from './slate'
-import { unauthorisedFigures, weakOpener, writeCaption } from './caption'
+import { unauthorisedFigures, unlabeledFigures, weakOpener, writeCaption } from './caption'
 import { addSpend, assertBudget, imageCost, newLedger, SpendCapError, videoCost } from './spend'
 import { normalizeVerdict } from '@/lib/grok/vision'
-import { produceStudioDraft, type StudioAdapters } from './produce'
+import { captionFigures, produceStudioDraft, type StudioAdapters } from './produce'
 import type { MarketPulse } from '@/lib/data/types/market'
 
 const SPEC: ShotSpec = {
@@ -146,6 +146,40 @@ describe('caption', () => {
         'homes closed in the last 30 days': '214',
       }),
     ).toEqual([])
+  })
+
+  it('a market figure must carry its label in its own sentence', () => {
+    const figures = {
+      'single-family median list price': '$879,900',
+      'single-family active listings': '710',
+      'single-family months of supply': '3.5',
+    }
+    // The first live trend draft's caption, word for word.
+    expect(unlabeledFigures('Bend, Oregon\n710 active listings. $879,900. 3.5 months of supply.', figures)).toEqual(['$879,900'])
+    expect(
+      unlabeledFigures('Bend, Oregon. 710 single-family homes listed. Median list price $879,900. 3.5 months of supply.', figures),
+    ).toEqual([])
+    // A decimal is not a sentence break.
+    expect(unlabeledFigures('Months of supply: 3.5. That is a seller\'s market.', figures)).toEqual([])
+  })
+
+  it('retries a market caption that prints a bare figure, and leaves listings alone', async () => {
+    const bare = { value: { caption: 'Bend, Oregon. $879,900.', altText: 'a' }, raw: '', costUsd: 0 }
+    const named = { value: { caption: 'Bend, Oregon. Median list price $879,900.', altText: 'a' }, raw: '', costUsd: 0 }
+    const writeStructured = vi.fn().mockResolvedValueOnce(bare).mockResolvedValueOnce(named)
+    const market = await writeCaption(
+      { subject: 'Bend, Oregon', figures: { 'single-family median list price': '$879,900' }, platforms: ['instagram'], labelEveryFigure: true },
+      { writeStructured },
+    )
+    expect(market).toMatchObject({ ok: true, result: { caption: 'Bend, Oregon. Median list price $879,900.', attempts: 2 } })
+    expect(writeStructured.mock.calls[1][0].prompt).toContain('without saying what it measures')
+
+    const listingWrite = vi.fn().mockResolvedValueOnce({ value: { caption: '61574 Devils Lake, Bend. $849,900.', altText: 'a' }, raw: '', costUsd: 0 })
+    const listing = await writeCaption(
+      { subject: '61574 Devils Lake, Bend', figures: { 'list price': '$849,900' }, platforms: ['instagram'] },
+      { writeStructured: listingWrite },
+    )
+    expect(listing).toMatchObject({ ok: true, result: { attempts: 1 } })
   })
 
   it('rejects filler openers that pad a fact', () => {
@@ -531,6 +565,26 @@ describe('produce pipeline', () => {
     expect(result.ok).toBe(false)
     expect(a.killDraft).toHaveBeenCalledWith('draft-1', expect.stringContaining('no stored still'))
     expect(a.markReady).not.toHaveBeenCalled()
+  })
+
+  it('a caption gets single-family on detached figures, and a paper film only the figures it shows', () => {
+    const subject = {
+      label: 'Bend, Oregon',
+      figures: { 'active listings': '710', 'homes closed in the last 30 days': '145', 'median sale price, Sep 2026': '$759,000' },
+      citations: [
+        { figure: '710', filter: "stat_id='active_count', geo_type='city', geo_slug='bend', segment='detached'" },
+        { figure: '145', filter: "geo_type='city', geo_slug='bend', property_type='A'" },
+        { figure: '$759,000', figure_key: 'median sale price, Sep 2026', filter: "stat_id='median_close', segment='detached'" },
+      ],
+    }
+    expect(captionFigures(subject)).toEqual({
+      'single-family active listings': '710',
+      'homes closed in the last 30 days': '145',
+      'single-family median sale price, Sep 2026': '$759,000',
+    })
+    expect(captionFigures({ ...subject, captionKeys: ['median sale price, Sep 2026'] })).toEqual({
+      'single-family median sale price, Sep 2026': '$759,000',
+    })
   })
 
   it('a paper film that cannot be drawn is killed: there is no footage to fall back to', async () => {

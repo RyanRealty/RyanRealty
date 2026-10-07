@@ -46,7 +46,7 @@ import {
 import { writeCaption, type CaptionRequest } from './caption'
 import { GRADE_BUDGET, planListingFilm, renderListingFilm, type CutShot, type FilmAdapters, type FilmPlan } from './film'
 import type { VisionVerdict } from '@/lib/grok/vision'
-import type { MotionAgent, MotionOutline, MotionSeries } from './motion/cues'
+import { figureScope, type MotionAgent, type MotionOutline, type MotionSeries } from './motion/cues'
 import { aspectValue, imageSize, sameShape } from '@/lib/video/image-size'
 import type { ComposeMotionInput, ComposeMotionResult } from './motion/compose'
 
@@ -82,6 +82,26 @@ export type StudioSubject = {
   outline?: MotionOutline
   /** For a paper film: what it shows, exactly, for the caption writer. */
   describes?: string
+  /** For a paper film: the figures it shows, the only ones its caption may use. */
+  captionKeys?: string[]
+}
+
+/**
+ * The figures a caption may use, each labelled with what it measures. A
+ * figure whose trace says segment='detached' is relabelled single-family, so
+ * "710 active listings" cannot go out as a claim about the whole market when
+ * it counts single-family homes. A paper film's caption keeps to the figures
+ * its picture shows.
+ */
+export function captionFigures(subject: StudioSubject): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const key of subject.captionKeys ?? Object.keys(subject.figures)) {
+    const value = subject.figures[key]
+    if (!value) continue
+    const scoped = figureScope(subject, key) && !/single-family/i.test(key) ? `single-family ${key}` : key
+    out[scoped] = value
+  }
+  return out
 }
 
 export type StudioProduceInput = {
@@ -441,7 +461,9 @@ export async function produceStudioDraft(
     // description is available; nothing here needs the video to exist.
     const captionRequest: CaptionRequest = {
       subject: subject.label,
-      figures: subject.figures,
+      figures: captionFigures(subject),
+      // A listing's price after its address needs no label; a market figure does.
+      labelEveryFigure: format.subject !== 'listing',
       context: subject.context,
       platforms: format.platforms,
       cta: subject.ctaUrl ? `Details at ${subject.ctaUrl}` : undefined,
