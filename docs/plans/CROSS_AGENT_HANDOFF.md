@@ -21,7 +21,7 @@ Matt's Gmail signature was installed through the service account the same day (`
 **Matt's rulings 2026-10-07, in flight as worktree branches when this was written (merge, measure with `npm run cma:fleet`, push, rebuild every Bend draft, re-present; nothing sends until then):**
 1. Five price-setting sales is the floor (reverses his 2026-09-10 drop to 3); the printed band is always the trimmed range.
 2. An ask inside the trimmed band is a hold for Matt, never a widened search.
-3. Same property type only; a duplex or multi-unit never prices a single-family home even when the MLS sub type says SFR (1531 10th pinned Saginaw's price).
+3. Same property type only; a duplex or multi-unit never prices a single-family home even when the MLS sub type says SFR. LIVE on main `e895a83b7`: `multiUnitFromRemarks` in `lib/pricing/classes.ts` classes such a sale `multi-unit` on top of the type filter (1531 10th: PropertyType A, Single Family Residence, Ranch, in every structured field; only the remarks say duplex). With it refused, Saginaw's four remaining sales ($994K to $1,172K adjusted) all sit above its $925,000 ask and the build stops at pricing; the follow-up is an ask at or below the band becoming a hold for Matt, not a failure.
 4. Actives and expireds come from the sales' own area and matching rules (reverses the 10/05 and 10/06 competition widening; Coho's map sprayed rivals 0.9 miles out across Mountain View).
 Also his call: the failed-ask pull and the sitting-actives pull stack (SKILL rule 16). Open: Burnside's date-adjustment check, 139 Roosevelt and 714 10th finding zero sales inside their neighborhoods, the CLAUDE.md byte-budget audit (an uncommitted site-origin pointer edit is parked in scratch pending it).
 
