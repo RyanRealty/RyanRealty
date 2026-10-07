@@ -364,25 +364,16 @@ export function cmaSectionStyles(): string {
   .pin-hit.is-on, .pin-hit:focus-visible { z-index: 3; }
   .pin-hit.is-subject .pin-dot { border-radius: 2px; }
   /* THREE FAMILIES, THREE GLYPHS (Delta 3). Filled navy for a sale that
-     closed, hollow for a home on the market, hollow with a bar across it for a
-     listing that came off unsold — one look per set, so a reader never has to
-     consult the legend twice. */
+     closed, hollow for a home on the market, a dashed ring for a listing that
+     came off unsold (2026-10-07: the bar through the numeral read as a
+     strike-through; the web report, legend and badges use the same ring). */
   .pin-hit.is-active .pin-dot,
   .pin-hit.is-unsold .pin-dot {
     background: var(--cream);
     color: var(--navy);
     box-shadow: 0 0 0 2px var(--navy);
   }
-  .pin-hit.is-unsold .pin-dot { position: relative; }
-  .pin-hit.is-unsold .pin-dot::after {
-    content: '';
-    position: absolute;
-    left: -4px;
-    right: -4px;
-    top: 50%;
-    height: 1.5px;
-    background: var(--navy);
-  }
+  .pin-hit.is-unsold .pin-dot { box-shadow: none; border: 1.5px dashed var(--navy); }
   /* Every pin tells the tale on tap: days on market, price changes, outcome.
      Print has no hover, so the sheet shows nothing until a pin is lit — the
      matrix under it carries the same three facts as columns. */
@@ -434,6 +425,7 @@ export function cmaSectionStyles(): string {
     color: var(--navy);
     box-shadow: inset 0 0 0 1.5px var(--navy);
   }
+  .pin-legend .is-unsold .pl-k { box-shadow: none; border: 1.5px dashed var(--navy); }
   .pin-legend .is-subject .pl-k { background: transparent; color: var(--navy); }
   /* Each unsold peer's dollars-a-foot story, keyed to its pin. */
   .peer-stories { list-style: none; margin: 8px 0 0; padding: 0; }
@@ -673,6 +665,7 @@ export function cmaSectionStyles(): string {
     color: var(--navy);
     box-shadow: inset 0 0 0 1.5px var(--navy);
   }
+  .pin-badge.is-unsold { box-shadow: none; border: 1.5px dashed var(--navy); }
   .pin-badge.is-subject { background: transparent; color: var(--navy); }
   /* The adjustment grid repeats the columns and drops the photographs. */
   table.comp-matrix.is-adjustments thead th.v { padding-top: 2px; }
