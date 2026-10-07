@@ -442,9 +442,9 @@ Served cache rows are stamped `methodology_version = 'v3-2026-05-07'`, not the n
 - **All code work is pushed to GitHub as a branch right away (locked process rule 14).**
   Land main with a fast-forward when the work is ready. Any machine may do it. No rebase, force-push, or reset.
   See [`AGENTS.md`](AGENTS.md). **R-221:** do not poll GitHub Actions.
-- **Never ask Matt to run anything, and never queue found work for him (Matt 2026-09-25).**
-  Git, terminal and deploys are yours; a defect found on the way ships this session, not as a
-  suggested task.
+- **Never ask Matt to run anything or what access you have; never queue found work for him
+  (Matt 2026-09-25, 10-07).** Access: [`docs/ACCESS_INVENTORY.md`](docs/ACCESS_INVENTORY.md).
+  Git, terminal, deploys are yours; a found defect ships this session.
 - **Always ask Matt questions to get what you need (Matt 2026-09-24).** A call that is his
   goes to him as a question (AskUserQuestion, recommended option first), not a guess or a
   closing "say X if you want".

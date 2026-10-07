@@ -229,3 +229,6 @@ data/basemap/central-oregon-detail.ndjson
 design_system/public/taste-table.json.lock/
 !.claude/skills/site-queue/
 !.claude/skills/loop-status/
+
+# Session temp scripts at the repo root (run from root so node_modules resolves); never committed.
+/.tmp-*
