@@ -35,6 +35,7 @@ export type ProductKey =
   | 'townhouse'
   | 'condo'
   | 'attached'
+  | 'multi-unit'
   | 'manufactured'
   | 'leased-land'
   | 'coop'
@@ -135,6 +136,38 @@ export function classifyProduct(subType: string | null | undefined): ProductKey 
   if (s.includes('tenancy') || s.includes('attached')) return 'attached'
   if (s.includes('single family') || s.includes('detached') || s.includes('residence')) return 'detached'
   return 'unknown'
+}
+
+/**
+ * The remarks say THIS home is a duplex, triplex, fourplex or other multi-unit
+ * (Matt 2026-10-07: "we only use the same property types when doing
+ * analysis"). The MLS sub type does not say so: 1531 10th closed as Single
+ * Family Residence with "This beautifully updated duplex features a 3 bed/2
+ * bath upper unit and a 1 bed/1 bath lower unit", and it pinned 915
+ * Saginaw's price. Only wording about the home as it stands counts: "potential
+ * for a duplex", "possible redevelopment into ... fourplex" and "zoned for"
+ * are hedges and do not. A house with an ADU, guest house or casita is still a
+ * detached home, so "both units" beside an ADU does not count either.
+ */
+const MULTI_UNIT_RE =
+  /\b(duplex|tri-?plex|four-?plex|quad-?plex|multi-?family|two units|both units|upper unit|lower unit|second unit)\b/gi
+const MULTI_UNIT_HEDGE_RE =
+  /\b(potential(?:ly)?|possib(?:le|ly|ility)|could|can be|may be|option(?:al)?|opportunity to|redevelop\w*|convert\w*|zoned for|zoning (?:allows|permits)|allows? (?:for )?an?|future)\b/i
+const ADU_RE = /\b(adu|accessory dwelling|guest house|guesthouse|casita|guest quarters|mother-in-law)\b/i
+
+export function multiUnitFromRemarks(remarks: string | null | undefined): boolean {
+  const text = (remarks ?? '').trim()
+  if (!text) return false
+  const hasAdu = ADU_RE.test(text)
+  for (const m of text.matchAll(MULTI_UNIT_RE)) {
+    const word = m[1]!.toLowerCase()
+    const before = text.slice(Math.max(0, m.index! - 60), m.index!)
+    if (MULTI_UNIT_HEDGE_RE.test(before)) continue
+    // A unit word alone describes an ADU home as often as a duplex.
+    if (/\bunits?\b/.test(word) && hasAdu) continue
+    return true
+  }
+  return false
 }
 
 export function realSubdivisionName(value: string | null | undefined): string | null {
@@ -307,7 +340,7 @@ export type FactsProductClause = {
 }
 
 export function factsProductClauses(productClass: string | null | undefined): FactsProductClause {
-  if (!productClass || productClass === 'unknown') return {}
+  if (!productClass || productClass === 'unknown' || productClass === 'multi-unit') return {}
   if (productClass === 'townhouse') return { or: TOWNHOUSE_FACTS_OR }
   return { eq: ['product_class', productClass] }
 }
@@ -322,7 +355,11 @@ export function factsProductClauses(productClass: string | null | undefined): Fa
 export function productClassFromFactsRow(
   stored: string | null | undefined,
   propertySubType: string | null | undefined,
+  publicRemarks?: string | null,
 ): ProductKey {
+  // The remarks outrank the stored class: a duplex sold as Single Family
+  // Residence is still a duplex, and it never prices a detached home.
+  if (multiUnitFromRemarks(publicRemarks)) return 'multi-unit'
   if (stored !== 'attached') return (stored as ProductKey) || 'unknown'
   const fromSub = classifyProduct(propertySubType)
   if (fromSub === 'townhouse' || fromSub === 'condo') return fromSub

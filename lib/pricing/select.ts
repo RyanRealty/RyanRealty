@@ -24,6 +24,7 @@ import {
   classifyWater,
   citySlug,
   isCustomOrNewSubject,
+  multiUnitFromRemarks,
   normSubdivision,
   type IrrigationClass,
   type StoryClass,
@@ -81,7 +82,8 @@ export function cmaSubjectToPricing(
     lotAcres: subject.lotAcres,
     yearBuilt: subject.yearBuilt,
     storyClass: extras.storyClass ?? classifyStory(extras.levelsRaw ?? subject.levelsRaw, null),
-    productClass: classifyProduct(subject.propertySubType),
+    // A subject the remarks call a duplex is priced from multi-unit sales only.
+    productClass: multiUnitFromRemarks(subject.publicRemarks) ? 'multi-unit' : classifyProduct(subject.propertySubType),
     waterClass: classifyWater(extras.waterRaw ?? subject.waterRaw),
     sewerClass: classifySewer(extras.sewerRaw ?? subject.sewerRaw),
     hoaClass: classifyHoa(subject.associationYn ?? null, subject.associationFee ?? subject.hoaMonthly ?? null),

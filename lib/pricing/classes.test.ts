@@ -33,6 +33,8 @@ import {
   ONE_STORY_PREMIUM,
   storyAdjustment,
   waterCompatible,
+  multiUnitFromRemarks,
+  productClassFromFactsRow,
 } from '@/lib/pricing/classes'
 
 describe('classifyWater', () => {
@@ -471,5 +473,27 @@ describe('resale versus never-owned new construction', () => {
     expect(isNeverOwnedNewConstruction({ yearBuilt: 2024, newConstructionYn: false }, 2026)).toBe(false)
     expect(isNeverOwnedNewConstruction({ yearBuilt: 2026, newConstructionYn: null }, 2026)).toBe(false)
     expect(isNeverOwnedNewConstruction({ yearBuilt: 1990, newConstructionYn: true }, 2026)).toBe(false)
+  })
+})
+
+describe('multiUnitFromRemarks: the remarks say this home is a duplex (Matt 2026-10-07, same property types only)', () => {
+  // Real MLS remarks from sales within 1.5 miles of 915 Saginaw, read 2026-10-07.
+  it('a duplex sold as Single Family Residence is a multi-unit', () => {
+    expect(multiUnitFromRemarks("Exceptional opportunity on Bend's highly desirable Westside! This beautifully updated duplex features a 3 bed/2 bath upper unit and a 1 bed/1 bath lower unit, offering outstanding flexibility for investors, owner-occupants, or multigenerational living.")).toBe(true)
+    expect(multiUnitFromRemarks("TWO short term rental permits! Where effortless elegance and smart business converge, this beautifully designed MU-zoned duplex is tucked near downtown Bend (downstairs unit is sold fully furnished).")).toBe(true)
+    expect(productClassFromFactsRow('detached', 'Single Family Residence', "Exceptional opportunity on Bend's highly desirable Westside! This beautifully updated duplex features a 3 bed/2 bath upper unit and a 1 bed/1 bath lower unit, offering outstanding flexibility for investors, owner-occupants, or multigenerational living.")).toBe('multi-unit')
+  })
+  it('a house with an ADU is still detached, even when the remarks say both units', () => {
+    expect(multiUnitFromRemarks("Dual-zone HVAC, tankless water heaters in both units, fresh paint inside + out. 5ba main home (1857 sq ft) + private 1bd/1ba ADU (491 sq ft) offers luxurious flexibility that's hard to find.")).toBe(false)
+    expect(multiUnitFromRemarks("Mid town house and ADU with ''Grandfathered''  Transferrable Short Term Rental license. Both units professionally managed currently.")).toBe(false)
+  })
+  it('potential for a duplex, or a possible fourplex redevelopment, is not a duplex', () => {
+    expect(multiUnitFromRemarks("Potential for ADU, shop, additional garage, duplex, multi generational living, lot separation.")).toBe(false)
+    expect(multiUnitFromRemarks("Well suited for a thoughtful renovation into a charming NW Bend home or possible redevelopment into townhomes or fourplex.")).toBe(false)
+  })
+  it('blank remarks and a plain house are not multi-unit', () => {
+    expect(multiUnitFromRemarks(null)).toBe(false)
+    expect(multiUnitFromRemarks('Charming single level home on a quiet street with a fenced yard.')).toBe(false)
+    expect(productClassFromFactsRow('detached', 'Single Family Residence', null)).toBe('detached')
   })
 })
