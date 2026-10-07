@@ -37,6 +37,7 @@ import {
 import { keyFor, type CmaMapFamily } from '@/lib/cma/map-families'
 import type { CmaPinFact } from '@/lib/cma/comp-pin-map'
 import type { ExpiredFinalCycle } from '@/lib/cma/expired-audit'
+import { closedSaleDaysToOffer } from '@/lib/cma/listing-history-line'
 import { sellerOffMarketDate } from '@/lib/cma/seller-letter-copy'
 import type { AskExposureLike } from '@/lib/cma/ask-position'
 import type { CmaExpiredPeer } from '@/lib/cma/market-status'
@@ -66,6 +67,14 @@ export type MatrixEntry = {
   beds: number | null
   baths: number | null
   domDays: number | null
+  /**
+   * What `domDays` counts on a closed sale. `offer` is first list to an
+   * accepted offer, the days a home sat before it sold. `listed-to-closed` is
+   * first list to close, printed only when the offer day is unknown, and the
+   * cell says so beside the number. Absent on unsold and live rows, where the
+   * count is the days on market.
+   */
+  domMeasure?: 'offer' | 'listed-to-closed'
   /**
    * How many times the ask moved — and whether that count is EXACT.
    *
@@ -274,8 +283,17 @@ export function closedEntries(
 ): MatrixEntry[] {
   return comps.map((c, i) => {
     const path = pricePathFromSale(c)
-    const toOffer = days(c.daysToOffer)
+    // ONE clock per sale (reader review 2026-10-07). The row and the outcome
+    // line print the same count: days to an accepted offer when the record
+    // knows it, else first list to close, labeled as that. An offer count
+    // longer than the run to close is not one (2107 Carrie, 67 of 66).
     const ran = days(c.domTotal)
+    const toOffer = closedSaleDaysToOffer({
+      daysToOffer: c.daysToOffer,
+      domTotal: ran,
+      firstListDate: c.onMarketDate,
+      closeDate: c.closeDate,
+    })
     const outcome = [
       c.closePrice > 0 ? `sold ${shortOrExactUsd(c.closePrice)}` : 'sold',
       toOffer != null
@@ -314,9 +332,12 @@ export function closedEntries(
       rooms: roomsOf(c),
       beds: c.beds ?? null,
       baths: c.baths ?? null,
-      // ON MARKET, not to offer: this row is the same measure in all three
-      // matrices, and an unsold listing has no offer to count days to.
-      domDays: ran ?? toOffer,
+      // Days on market for a sale ends at the accepted offer, the same place
+      // an unsold listing's count ends when it comes off with none. The raw
+      // list-to-close figure is never printed as days on market (CLAUDE.md
+      // §7); when it is the only count, the cell names it.
+      domDays: toOffer ?? ran,
+      domMeasure: toOffer != null ? ('offer' as const) : ran != null ? ('listed-to-closed' as const) : undefined,
       // `pricePathFromSale` draws from the ask the sale went under contract
       // at; no original ask reaches the renderer for a comparable sale, so the
       // path's own change count is always zero and would assert something the
@@ -331,7 +352,9 @@ export function closedEntries(
       concessionsAmount: concessionOnSale(c),
       proximity: (c.proximity ?? '').trim() || entryProximity(subject, c),
       garageSpaces: c.garageSpaces != null && Number.isFinite(c.garageSpaces) ? Number(c.garageSpaces) : null,
-      cdomDays: days(c.domTotal),
+      // The same count as the row above: a second clock in the next row was
+      // the disagreement this replaced.
+      cdomDays: toOffer ?? ran,
       statusDate: /^\d{4}-\d{2}-\d{2}/.test((c.closeDate ?? '').slice(0, 10))
         ? (c.closeDate ?? '').slice(0, 10)
         : null,
@@ -343,7 +366,7 @@ export function closedEntries(
         ['date', /^\d{4}-\d{2}-\d{2}$/.test((c.closeDate ?? '').slice(0, 10)) ? (c.closeDate ?? '').slice(0, 10) : null],
         ['price', c.adjustedPrice != null && Number.isFinite(c.adjustedPrice) ? Math.round(c.adjustedPrice) : null],
         ['size', c.sqft != null && Number.isFinite(c.sqft) ? Math.round(c.sqft) : null],
-        ['days', ran ?? toOffer],
+        ['days', toOffer ?? ran],
       ]),
     }
   })
@@ -607,6 +630,7 @@ export function pinFactsFor(entries: readonly MatrixEntry[]): CmaPinFact[] {
       address: e.address,
       outcome: e.outcome,
       domDays: e.domDays,
+      domMeasure: e.domMeasure,
       priceChanges: e.priceChanges,
       priceChangesExact: e.priceChangesExact,
       latitude: e.latitude,

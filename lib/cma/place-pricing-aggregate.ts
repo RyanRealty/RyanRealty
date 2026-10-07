@@ -6,6 +6,7 @@
 import type { PlacePricingStory } from '@/lib/cma/place-pricing-types'
 import { parentPlaceArea } from '@/lib/pricing/comp-area'
 import { median } from '@/lib/cma/market-status'
+import { letterProductNoun, productClass } from '@/lib/cma/market-area'
 import { formatCalendarDay } from '@/lib/format/date'
 
 const FAILED = new Set(['Expired', 'Canceled', 'Withdrawn'])
@@ -31,6 +32,14 @@ export type PlacePricingListingRow = {
 export type PlacePricingTarget = {
   placeName: string
   placeKind: 'neighborhood' | 'community'
+}
+
+/** The product in the letter's own words, plural: "single-family homes", "townhouses". */
+export function productPlural(subType: string | null | undefined): string {
+  const noun = letterProductNoun(subType)
+  if (noun === 'townhouse') return 'townhouses'
+  if (noun === 'condo') return 'condos'
+  return productClass(subType?.trim() || null) === 'detached' ? 'single-family homes' : 'homes'
 }
 
 /**
@@ -219,6 +228,9 @@ export function rowsToPlacePricingStory(input: {
     heldAskMedianDays: shareMedian(heldDays, heldDays.length),
     cutPriceCount: cutDays.length,
     cutPriceMedianDays: shareMedian(cutDays, cutDays.length),
-    sourceNote: `${placeName}, ${subtype}, ${longDate(start)} through ${longDate(end)}, ${homes}.`,
+    // The plain noun the letter uses, never the MLS value ("Single Family
+    // Residence" printed raw in the Mountain View note, reader review
+    // 2026-10-07).
+    sourceNote: `${placeName} ${productPlural(subtype)} listed ${longDate(start)} through ${longDate(end)}, ${homes}.`,
   }
 }

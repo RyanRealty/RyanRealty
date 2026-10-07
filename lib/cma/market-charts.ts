@@ -233,6 +233,12 @@ export function monthsOfSupplyBarsSvg(input: {
   perMonth: number
   place: string
   width?: number
+  /**
+   * The closed-sale window the pace is an average over (CLAUDE.md §0: months
+   * of supply divides by closed_last_6_months / 6). The bar says so instead
+   * of "a typical month" (reader review 2026-10-07).
+   */
+  windowMonths?: number
 }): string {
   const { activeCount, perMonth } = input
   if (!(activeCount > 0) || !(perMonth > 0)) return ''
@@ -254,18 +260,28 @@ export function monthsOfSupplyBarsSvg(input: {
     <line x1="${plotL}" y1="${barY}" x2="${Math.max(x(value), plotL + 1).toFixed(1)}" y2="${barY}" stroke="${tint}" stroke-width="${weight}" stroke-linecap="butt"/>
     <text x="${W - 2}" y="${barY + 5}" text-anchor="end" font-size="${fs + 2}" font-weight="600" fill="${TL_INK}">${int(Math.round(value))}</text>`
   }
+  const months = monthsWord(input.windowMonths ?? 6)
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(
-    `${int(Math.round(activeCount))} homes for sale in ${input.place}, and about ${int(Math.round(perMonth))} sell in a typical month`,
+    `${int(Math.round(activeCount))} homes for sale in ${input.place}, and an average of ${int(
+      Math.round(perMonth),
+    )} sold each month over the last ${months} months`,
   )}" class="trend-svg mos-bars">
     ${bar(0, activeCount, `Homes for sale in ${input.place} right now`, TL_INK, 14)}
-    ${bar(1, perMonth, 'Homes that sell in a typical month', TL_INK, 14)}
+    ${bar(1, perMonth, `Sold each month, average of the last ${months} months`, TL_INK, 14)}
   </svg>`
+}
+
+/** "six", "twelve": a window a reader reads as words. */
+export function monthsWord(n: number): string {
+  const words: Record<number, string> = { 3: 'three', 6: 'six', 12: 'twelve' }
+  return words[n] ?? int(n)
 }
 
 export function monthsOfSupplyBarsPhoneSvg(input: {
   activeCount: number
   perMonth: number
   place: string
+  windowMonths?: number
 }): string {
   return monthsOfSupplyBarsSvg({ ...input, width: 360 })
 }
@@ -706,12 +722,27 @@ function monthDay(iso: string): string {
     : d.toLocaleString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
 }
 
-/** The end of the line: "came off withdrawn · 187 days". */
+/**
+ * The end of the line, as a person says it: "withdrawn after 187 days".
+ *
+ * It printed "came off withdrawn · 25 days", the MLS status word bolted onto a
+ * verb and a bare count (reader review 2026-10-07, 20676 Wild Rose).
+ */
 export function timelineEndLabel(input: ListingTimelineInput): string {
   const status = (input.status ?? '').trim().toLowerCase()
-  const days = input.days != null && input.days > 0 ? `${int(input.days)} days` : null
-  const off = status ? `came off ${status}` : input.offMarketDate ? 'came off' : 'still listed'
-  return days ? `${off} · ${days}` : off
+  const n = input.days != null && input.days > 0 ? Math.round(input.days) : null
+  const span = n != null ? `${int(n)} ${n === 1 ? 'day' : 'days'}` : null
+  const ended = /^withdrawn/.test(status)
+    ? 'withdrawn'
+    : /^expired/.test(status)
+      ? 'expired'
+      : /^cancell?ed/.test(status)
+        ? 'canceled'
+        : status || input.offMarketDate
+          ? 'came off'
+          : null
+  if (ended == null) return span ? `on the market ${span}` : 'still listed'
+  return span ? `${ended} after ${span}` : ended
 }
 
 export function listingTimelineSvg(input: ListingTimelineInput): string {

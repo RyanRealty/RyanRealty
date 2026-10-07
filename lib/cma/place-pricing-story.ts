@@ -21,6 +21,11 @@ function oneDecimal(n: number): string {
   return frac ? `${grouped}.${frac}` : grouped
 }
 
+function wholeDays(n: number): string {
+  const d = Math.round(n)
+  return `${d.toLocaleString('en-US')} ${d === 1 ? 'day' : 'days'}`
+}
+
 function count(n: number): string {
   return Math.round(n).toLocaleString('en-US')
 }
@@ -64,8 +69,10 @@ export function placePricingStoryHtml(
   const held = story.heldAskMedianDays
   const cut = story.cutPriceMedianDays
   const speed: string[] = []
-  if (finite(held)) speed.push(`Homes that held the first ask had an offer in ${oneDecimal(held)} days.`)
-  if (finite(cut)) speed.push(`Homes that cut the price took ${oneDecimal(cut)} days.`)
+  // Days are whole. A median of an even count can land on a half ("65.5
+  // days", reader review 2026-10-07); a reader counts days, so it rounds.
+  if (finite(held)) speed.push(`Homes that held the first ask had an offer in ${wholeDays(held)}.`)
+  if (finite(cut)) speed.push(`Homes that cut the price took ${wholeDays(cut)}.`)
   if (speed.length > 0) lines.push(speed.join(' '))
   const cutIsSlower = finite(held) && finite(cut) && cut > held
   lines.push(

@@ -39,6 +39,7 @@
 import { formatPriceExact } from '@/lib/format/money'
 import { escapeHtml, int } from '@/lib/cma/render-blocks'
 import { resolveAskPosition, type AskExposureLike } from '@/lib/cma/ask-position'
+import { closedSaleDaysToOffer } from '@/lib/cma/listing-history-line'
 
 const esc = escapeHtml
 
@@ -229,6 +230,7 @@ export function pricePathFromSale(sale: {
   closeDate?: string | null
   domTotal?: number | null
   daysToOffer?: number | null
+  onMarketDate?: string | null
 }): PricePath | null {
   const closeDate = day(sale.closeDate)
   const closePrice = price(sale.closePrice)
@@ -241,10 +243,13 @@ export function pricePathFromSale(sale: {
   // date labels say so; the end label names an event, and says which event it
   // is naming. When the row carries no days-to-offer the line falls back to
   // the period it drew and labels itself "listed to closed".
-  const toOffer =
-    sale.daysToOffer != null && Number.isFinite(sale.daysToOffer) && sale.daysToOffer >= 0
-      ? Math.round(sale.daysToOffer)
-      : null
+  // An offer count longer than the run to close is not one (2107 Carrie).
+  const toOffer = closedSaleDaysToOffer({
+    daysToOffer: sale.daysToOffer,
+    domTotal: ran,
+    firstListDate: sale.onMarketDate,
+    closeDate: sale.closeDate,
+  })
   return {
     startDate,
     startPrice: ask,

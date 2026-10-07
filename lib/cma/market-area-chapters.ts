@@ -10,6 +10,7 @@ import {
   askOutcomeBarsSvg,
   monthsOfSupplyBarsPhoneSvg,
   monthsOfSupplyBarsSvg,
+  monthsWord,
   daysToOfferPhoneSvg,
   daysToOfferSvg,
   medianCloseCaption,
@@ -23,6 +24,7 @@ import {
   type OfferTiming,
 } from '@/lib/cma/market-charts'
 import { subjectDomDays, subjectListingFailed } from '@/lib/cma/comp-matrix'
+import { closedSaleDaysToOffer } from '@/lib/cma/listing-history-line'
 import { readTrendMeasure } from '@/lib/cma/render-contract'
 import type { CmaMarketArea, CmaSoldBand, CmaStatusBucket } from '@/lib/cma/market-status'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
@@ -252,13 +254,18 @@ export function renderInventoryBoardHtml(
   const active = market.activeCount
   const perMonth =
     mos != null && mos > 0 && active != null && active > 0 ? active / mos : null
+  // The pace is an average over the closed-sale window months of supply
+  // divides by, and the letter names that window. "About 203 sell in a
+  // typical month" was a six-month average stated as a habit (reader review
+  // 2026-10-07).
+  const windowMonths = mosWindowMonths(market.mosFormula)
   const barsWide =
     perMonth != null && active != null
-      ? monthsOfSupplyBarsSvg({ activeCount: active, perMonth, place })
+      ? monthsOfSupplyBarsSvg({ activeCount: active, perMonth, place, windowMonths })
       : ''
   const barsPhone =
     perMonth != null && active != null
-      ? monthsOfSupplyBarsPhoneSvg({ activeCount: active, perMonth, place })
+      ? monthsOfSupplyBarsPhoneSvg({ activeCount: active, perMonth, place, windowMonths })
       : ''
   const barsHtml = barsWide
     ? `<div class="szn mos-wide">${barsWide}</div>${
@@ -269,9 +276,9 @@ export function renderInventoryBoardHtml(
   const sentences: string[] = []
   if (mos != null && active != null && perMonth != null && verdict) {
     sentences.push(
-      `${int(active)} homes are for sale in ${place} right now, and about ${int(
-        Math.round(perMonth),
-      )} sell in a typical month. At that pace it would take ${formatMonthsOfSupply(
+      `${int(active)} homes are for sale in ${place} right now. Over the last ${monthsWord(
+        windowMonths,
+      )} months, an average of ${int(Math.round(perMonth))} sold each month. At that pace it would take ${formatMonthsOfSupply(
         mos,
       )} months to sell what is listed, which is ${verdict.label.toLowerCase()} territory.`,
     )
@@ -322,6 +329,16 @@ export function renderInventoryBoardHtml(
   return [prose, barsHtml, chartHtml].filter(Boolean).join('\n  ')
 }
 
+/**
+ * The closed-sale window behind a published months of supply. The house
+ * formula is active / (closed_last_6_months / 6) (CLAUDE.md §0, mt-v1
+ * `months_of_supply` is windowPolicy fixed6); only a figure the row says was
+ * built over twelve months reads as twelve.
+ */
+export function mosWindowMonths(formula: string | null | undefined): number {
+  return /_12mo|\b12\s*mo|365d|rolling_365/i.test(formula ?? '') ? 12 : 6
+}
+
 export function adjustedCloseRange(
   comps: readonly CmaAdjustedComp[] | null | undefined,
 ): { low: number; high: number; adjustments: string } | null {
@@ -341,6 +358,56 @@ export function adjustedCloseRange(
 }
 
 
+
+/**
+ * WHAT THE SUBJECT'S OWN DAYS SAY, BESIDE THE FIGURES A READING PRINTS.
+ *
+ * Reader review 2026-10-07, 20676 Wild Rose: "Every sale below had an offer
+ * inside 43 days. Bend's median is 26. Yours sat 25 days and never got one."
+ * 25 is under both. The contrast printed whatever the comparison said, and on
+ * a listing that was withdrawn after 25 days, which never tested the market at
+ * all, it read as the market turning the home down.
+ *
+ * `outran` is true only when the subject's days exceed EVERY figure the
+ * sentence sets them beside. Only then may a reading say "never got one".
+ * Otherwise it states the plain fact of how the listing ended.
+ */
+export function subjectDaysAgainst(opts: {
+  days: number | null | undefined
+  status: string | null | undefined
+  figures: readonly (number | null | undefined)[]
+}): { days: number; outran: boolean; withdrawn: boolean; plain: string } | null {
+  const days = opts.days
+  if (days == null || !Number.isFinite(days) || days <= 0) return null
+  const n = Math.round(days)
+  const figures = opts.figures.filter((f): f is number => f != null && Number.isFinite(f) && f >= 0)
+  const outran = figures.length > 0 && figures.every((f) => n > Math.round(f))
+  const status = (opts.status ?? '').trim()
+  const withdrawn = /^withdrawn/i.test(status)
+  const span = `${int(n)} ${n === 1 ? 'day' : 'days'}`
+  const plain = withdrawn
+    ? `Yours was withdrawn after ${span}.`
+    : /^expired/i.test(status)
+      ? `Yours expired after ${span}.`
+      : /^cancell?ed/i.test(status)
+        ? `Yours was canceled after ${span}.`
+        : `Yours came off after ${span}.`
+  return { days: n, outran, withdrawn, plain }
+}
+
+/**
+ * A reading's line on the subject's days: the contrast when the subject
+ * outran every figure printed, the plain fact otherwise. A listing withdrawn
+ * after a long run did test the market, so it keeps the contrast; only a
+ * short one reads as the owner taking it off.
+ */
+export function subjectDaysReading(
+  against: ReturnType<typeof subjectDaysAgainst>,
+  contrast: (days: number) => string,
+): string | null {
+  if (!against) return null
+  return against.outran ? contrast(against.days) : against.plain
+}
 
 /**
  * How fast homes like yours went. One days axis, one named row per kept sale
@@ -365,16 +432,24 @@ export function renderDaysToOfferHtml(
   a: Pick<MarketChapterArgs, 'subject' | 'comps' | 'market'>,
 ): string {
   const rows: DaysRow[] = a.comps
-    .map((c, i) =>
-      c.daysToOffer != null && c.daysToOffer >= 0
+    .map((c, i) => {
+      // The same offer count the sales table prints for this sale: none when
+      // it outruns the sale's own run to close.
+      const toOffer = closedSaleDaysToOffer({
+        daysToOffer: c.daysToOffer,
+        domTotal: c.domTotal,
+        firstListDate: c.onMarketDate,
+        closeDate: c.closeDate,
+      })
+      return toOffer != null
         ? {
             label: `${i + 1}. ${c.address}`,
-            days: c.daysToOffer,
+            days: toOffer,
             subject: false,
-            valueLabel: `${int(c.daysToOffer)} ${c.daysToOffer === 1 ? 'day' : 'days'}`,
+            valueLabel: `${int(toOffer)} ${toOffer === 1 ? 'day' : 'days'}`,
           }
-        : null,
-    )
+        : null
+    })
     .filter((r): r is DaysRow => r != null)
   if (rows.length < 3) return ''
   const slowest = Math.max(...rows.map((r) => r.days))
@@ -382,16 +457,26 @@ export function renderDaysToOfferHtml(
   // exists only for a listing that actually failed — on a house that sold, the
   // same arithmetic is the age of the sale, not time on market.
   const subjectDays = subjectListingFailed(a.subject) ? subjectDomDays(a.subject) : null
-  if (subjectDays != null && subjectDays > 0) {
-    rows.push({
-      label: a.subject.streetAddress,
-      days: subjectDays,
-      subject: true,
-      valueLabel: `${int(subjectDays)} days, no offer`,
-    })
-  }
   const printedMedian = printedOfferMedianDays(a.market)
   const marketMedian = printedMedian != null && printedMedian > 0 ? Math.round(printedMedian) : null
+  const against = subjectDaysAgainst({
+    days: subjectDays,
+    status: a.subject.standardStatus,
+    figures: [slowest, marketMedian],
+  })
+  if (against) {
+    rows.push({
+      label: a.subject.streetAddress,
+      days: against.days,
+      subject: true,
+      // A short withdrawal is not "no offer" from the market; it is the owner
+      // taking the home off. The bar says which.
+      valueLabel:
+        against.withdrawn && !against.outran
+          ? `${int(against.days)} days, withdrawn`
+          : `${int(against.days)} days, no offer`,
+    })
+  }
   const marketPlace = cleanText(a.market?.geoLabel) ?? cleanText(a.subject.city)
   const tick =
     marketMedian != null && marketPlace
@@ -402,9 +487,7 @@ export function renderDaysToOfferHtml(
   const reading = [
     `Every sale below had an offer inside ${int(slowest)} days.`,
     tick ? `${possessive(marketPlace!)} median is ${int(marketMedian!)}.` : null,
-    subjectDays != null && subjectDays > 0
-      ? `Yours sat ${int(subjectDays)} days and never got one.`
-      : null,
+    subjectDaysReading(against, (d) => `Yours sat ${int(d)} days and never got one.`),
   ]
     .filter(Boolean)
     .join(' ')
@@ -751,6 +834,11 @@ export function renderOfferTimingHtml(a: {
   const ninety = timing.points.find((p) => p.days === 90) ?? null
   const last = timing.points[timing.points.length - 1] ?? null
   const offerMedian = printedOfferMedianDays(a.market)
+  const against = subjectDaysAgainst({
+    days: subjectDays,
+    status: a.subject.standardStatus,
+    figures: [offerMedian],
+  })
   const reading = [
     offerMedian != null && offerMedian > 0
       ? `Half of the ${int(timing.n)} homes that sold in ${timing.city} had an offer inside ${int(
@@ -761,7 +849,7 @@ export function renderOfferTimingHtml(a: {
     last && (!ninety || last.days !== ninety.days)
       ? `By day ${int(last.days)}, ${last.pct.toFixed(1)} percent did.`
       : null,
-    subjectDays != null && subjectDays > 0 ? `Yours went ${int(subjectDays)} days without one.` : null,
+    subjectDaysReading(against, (d) => `Yours went ${int(d)} days without one.`),
   ]
     .filter(Boolean)
     .join(' ')
@@ -958,6 +1046,16 @@ export function renderAskRealizationHtml(a: {
   }
   const subjectDays = subjectDomDays(a.subject)
   const failed = subjectListingFailed(a.subject)
+  // A listing withdrawn before the city's median offer day never tested the
+  // market; its row says it was withdrawn, not that it never got an offer.
+  const against = failed
+    ? subjectDaysAgainst({
+        days: subjectDays,
+        status: a.subject.standardStatus,
+        figures: [printedOfferMedianDays(a.market)],
+      })
+    : null
+  const shortWithdrawal = against != null && against.withdrawn && !against.outran
   const mine = subjectRealizationBucket(table.buckets, subjectDays)
   const scale = realizationScale(table.buckets)
   const rows = table.buckets
@@ -972,7 +1070,9 @@ export function renderAskRealizationHtml(a: {
         isMine
           ? `<span class="rz-mine">${esc(
               failed && subjectDays != null
-                ? `your home ran ${int(subjectDays)} days and never got one`
+                ? shortWithdrawal
+                  ? `your home, withdrawn after ${int(subjectDays)} days`
+                  : `your home ran ${int(subjectDays)} days and never got one`
                 : `your home`,
             )}</span>`
           : ''
@@ -993,7 +1093,7 @@ export function renderAskRealizationHtml(a: {
     )}</th><th class="n">Share of the first ask</th></tr></thead>
     <tbody>${rows}</tbody>
   </table>
-  ${realizationReading(table, mine, subjectDays, failed)}
+  ${realizationReading(table, mine, subjectDays, failed && !shortWithdrawal)}
   ${
     a.bare
       ? ''

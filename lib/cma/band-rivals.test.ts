@@ -331,8 +331,18 @@ describe('who has already come down', () => {
       listed({ listingKey: 'A', originalListPrice: 500000, listPrice: 470000 }),
       listed({ listingKey: 'B', originalListPrice: null, listPrice: 470000 }),
     ])
-    expect(line).toBe('The one home below has already come down, a median cut of $30,000, or 6.0 percent.')
+    expect(line).toBe('The one home below has already come down, a cut of $30,000, or 6.0 percent.')
     expect(competitorCutLine([listed({ originalListPrice: null })])).toBeNull()
+  })
+
+  it('calls one home\'s cut a cut, never a median (reader review 2026-10-07)', () => {
+    const line = competitorCutLine([
+      listed({ listingKey: 'A', originalListPrice: 600000, listPrice: 480000 }),
+      listed({ listingKey: 'B', originalListPrice: 470000, listPrice: 470000 }),
+      listed({ listingKey: 'C', originalListPrice: 460000, listPrice: 460000 }),
+    ])
+    expect(line).toBe('1 of the 3 homes below has already come down, a cut of $120,000, or 20.0 percent.')
+    expect(line).not.toContain('median')
   })
 
   it('draws each competitor its own price path on the card', () => {

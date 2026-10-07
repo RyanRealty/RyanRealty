@@ -266,7 +266,9 @@ describe('the timeline drawing', () => {
     expect(svg).toContain('$380K')
     expect(svg).toContain('$475K')
     expect(svg).toContain('$460K')
-    expect(svg).toContain('came off withdrawn · 187 days')
+    // Said the way a person says it (reader review 2026-10-07).
+    expect(svg).toContain('withdrawn after 187 days')
+    expect(svg).not.toContain('came off withdrawn')
     // A step path, not a diagonal: horizontal, vertical, horizontal.
     expect(svg).toMatch(/<path d="M[\d.]+,[\d.]+ L[\d.]+,[\d.]+ L[\d.]+,[\d.]+ L[\d.]+,[\d.]+"/)
     // Only the asks carry a number. Never a label on every point. Counted

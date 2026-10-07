@@ -36,6 +36,7 @@ import { getSubdivisionRing, assignSubdivisionSlugs, assignCommunitySlugs } from
 import { keepTightestByClosePrice, PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
 import { resolveConcessions, sellerNetFromPrice } from '@/lib/pricing/seller-net'
 import {
+  closedSaleDaysToOffer,
   closedSaleDomTotal,
   earliestClosedCompListDate,
   listingHistoryLine as buildListingHistoryLine,
@@ -206,6 +207,15 @@ function rowToComp(row: CmaListingRow, tier: string, land = false): CmaComp | nu
     listDate,
     originalEntryTimestamp: originalEntry,
     originalOnMarketTimestamp: originalOnMarket,
+  })
+  // days_to_pending counts from the current OnMarketDate; put it on the
+  // first-list start the DOM above uses, or drop it when it outruns the close.
+  daysToOffer = closedSaleDaysToOffer({
+    daysToOffer,
+    measuredFrom: onMarket,
+    firstListDate: onMarketDate,
+    domTotal,
+    closeDate: closeDay,
   })
   return {
     listingKey,

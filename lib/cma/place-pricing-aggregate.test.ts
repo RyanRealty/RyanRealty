@@ -191,9 +191,11 @@ describe('rowsToPlacePricingStory', () => {
     const result = story([home({ listDate: '2025-10-06' })])
     expect(result!.listedHomes).toBe(1)
     expect(result!.sourceNote).toBe(
-      'River West, Single Family Residence, October 6, 2025 through October 6, 2026, 1 home.',
+      'River West single-family homes listed October 6, 2025 through October 6, 2026, 1 home.',
     )
     expect(result!.sourceNote).not.toContain('—')
+    // The letter's noun, never the raw MLS value (reader review 2026-10-07).
+    expect(result!.sourceNote).not.toContain('Single Family Residence')
     expect(story([home({ listDate: '2025-10-05', onMarketDate: null, offMarketDate: null, closeDate: null })])).toBeNull()
   })
 })

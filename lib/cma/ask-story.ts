@@ -268,7 +268,27 @@ export function askStoryReading(input: {
    * it explicitly.
    */
   exposureKnown?: boolean
+  /** The listing's MLS status, so a short withdrawal reads as one. */
+  status?: string | null
 }): string {
+  // A LISTING THAT DID NOT OUTLAST THE MEDIAN DID NOT SIT (reader review
+  // 2026-10-07). "Your home sat 25 days without an offer" beside a 26-day
+  // median, and "that long without an offer", call a short run a rejection;
+  // a home withdrawn after 25 days never tested the market. The days print
+  // as the plain fact and nothing causal hangs on them.
+  const median = input.marketMedianDom
+  const short =
+    input.days != null &&
+    input.days > 0 &&
+    median != null &&
+    median > 0 &&
+    Math.round(input.days) <= Math.round(median)
+  const plainDays = (days: number) => {
+    const n = Math.round(days).toLocaleString('en-US')
+    return /^withdrawn/i.test((input.status ?? '').trim())
+      ? `Your listing was withdrawn after ${n} days.`
+      : `Your home was on the market ${n} days.`
+  }
   if (input.neutral) {
     return neutralAskReading({
       ask: input.ask,
@@ -280,7 +300,9 @@ export function askStoryReading(input: {
   if (input.exposureKnown === false) {
     const days =
       input.days != null && input.days > 0
-        ? `Your home sat ${Math.round(input.days).toLocaleString('en-US')} days.`
+        ? short
+          ? plainDays(input.days)
+          : `Your home sat ${Math.round(input.days).toLocaleString('en-US')} days.`
         : ''
     return [days, medianSentence('near-above', input.city, input.marketMedianDom)]
       .filter((s) => s.trim())
@@ -290,9 +312,9 @@ export function askStoryReading(input: {
   if (!cls) return ''
   const bits = [
     askAgainstRangeSentence(input.ask, input.rangeLow, input.rangeHigh),
-    satSentence(cls, input.days),
+    short && input.days != null ? plainDays(input.days) : satSentence(cls, input.days),
     medianSentence(cls, input.city, input.marketMedianDom),
-    cls === 'far-above' ? '' : walkTheHouseSentence(cls, input.days),
+    cls === 'far-above' || short ? '' : walkTheHouseSentence(cls, input.days),
   ]
   return bits.filter((s) => s.trim()).join(' ')
 }
