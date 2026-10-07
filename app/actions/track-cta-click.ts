@@ -3,6 +3,7 @@
 import { getSession } from '@/app/actions/auth'
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { sendEvent, type LeadEventPerson } from '@/lib/crm/send-event'
+import { siteHost } from '@/lib/site-origin'
 
 export type TrackCtaClickParams = {
   label: string
@@ -35,10 +36,8 @@ export async function trackCtaClickAction(params: TrackCtaClickParams): Promise<
   }
   if (!person) return
 
-  const source = (process.env.NEXT_PUBLIC_SITE_URL ?? '')
-    .replace(/^https?:\/\//, '')
-    .replace(/\/$/, '')
-    .toLowerCase() || 'ryan-realty.com'
+  // The site's own host, 'ryan-realty.com' in production, never the Vercel alias.
+  const source = siteHost()
 
   const messageParts = [
     `CTA click: ${label}`,

@@ -1,5 +1,6 @@
 'use server'
 
+import { siteHost, siteOrigin } from '@/lib/site-origin'
 import { sendEvent, type LeadEventPerson } from '@/lib/crm/send-event'
 import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
 import { cookies } from 'next/headers'
@@ -7,7 +8,7 @@ import { generateEventId } from '@/lib/meta-pixel-helpers'
 import { canonicallyTagLead, type LeadSource } from '@/lib/canonical-lead-tagger'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const SITE_URL = siteOrigin()
 
 async function fireCapiLead(args: {
   eventName: 'Lead' | 'ViewContent'
@@ -54,11 +55,9 @@ type CampaignInput = {
   content?: string
 }
 
+/** The site's own host as the lead source: 'ryan-realty.com' in production, never the Vercel alias. */
 function websiteSource(): string {
-  return (process.env.NEXT_PUBLIC_SITE_URL ?? '')
-    .replace(/^https?:\/\//, '')
-    .replace(/\/$/, '')
-    .toLowerCase() || 'ryan-realty.com'
+  return siteHost()
 }
 
 /**

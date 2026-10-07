@@ -33,6 +33,7 @@
  * Kept out of lib/data/ deliberately — this is a cache/composition helper, not
  * a DAL read, and the DAL index gate AST-walks lib/data/**\/*.ts.
  */
+import { siteOrigin } from '@/lib/site-origin'
 import type { MetadataRoute } from 'next'
 import { unstable_cache } from '@/lib/data/cache/next-cache'
 import { buildAllUrls } from '@/app/sitemap'
@@ -42,7 +43,7 @@ import { getIndexablePresetSlugs } from '@/lib/search-presets'
 import { createUniverseMemo } from '@/lib/sitemap-universe-memo'
 
 export function siteBaseUrl(): string {
-  return (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  return siteOrigin()
 }
 
 // Freshness is stamped on RESOLVE, so a build slower than its own TTL is still

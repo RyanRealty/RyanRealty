@@ -1,4 +1,5 @@
 'use server'
+import { siteOrigin } from '@/lib/site-origin'
 import { revalidatePerson } from '@/lib/crm/revalidate-person'
 
 /**
@@ -40,7 +41,7 @@ import { prepareDeliverableEmail } from '@/lib/email/prepare'
 import { sendEmail } from '@/lib/resend'
 import { logCmaTimelineEvent } from '@/lib/data'
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const SITE_URL = siteOrigin()
 
 export type SendListingMatchesResult =
   | { ok: true; sentCount: number; message: string }

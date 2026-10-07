@@ -27,7 +27,7 @@ import { citySlug, storyAdjustment, type StoryClass } from '@/lib/pricing/classe
 import { capClosedCompShares, closedCompWeight, fillShortSetWeights } from '@/lib/pricing/closed-comp-weight'
 import { recommendationOutsideSaleSet } from '@/lib/pricing/price-set'
 import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
-import type { SelectedPricingComp } from '@/lib/pricing/match'
+import { subjectHasRecordedSubdivision, type SelectedPricingComp } from '@/lib/pricing/match'
 import { closedSaleDomTotal } from '@/lib/cma/listing-history-line'
 import { proximityLabel } from '@/lib/cma/market-area'
 import {
@@ -996,22 +996,17 @@ export function pinPrintedBandToSettingSales<
   }
   let conservative = pricing.conservative
   if (conservative != null && conservative < low) conservative = low
-  if (
-    recommended != null &&
-    recommended !== pricing.recommended &&
-    conservative != null &&
-    conservative > recommended
-  ) {
+  // The floor tier never prints above the list, whether or not this call
+  // moved the list. The list may already sit on the thousand the exact sale
+  // low rounds to ($915,000 under a $915,246 sale, 915 Saginaw 2026-10-07);
+  // lifting the tier onto the exact sale then put it $246 over the
+  // recommendation, after the accuracy contract had already passed.
+  if (recommended != null && conservative != null && conservative > recommended) {
     conservative = recommended
   }
   let highEnd = pricing.highEnd
   if (highEnd != null && highEnd > high) highEnd = high
-  if (
-    recommended != null &&
-    recommended !== pricing.recommended &&
-    highEnd != null &&
-    highEnd < recommended
-  ) {
+  if (recommended != null && highEnd != null && highEnd < recommended) {
     highEnd = recommended
   }
   const rule = pricing.rangeRule
@@ -1271,6 +1266,7 @@ export function adjustCmaCompAlongMarket(opts: {
     saleSubdivision: sale.subdivision,
     selectionTier: sale.selectionTier,
     ownPlat: sale.ownPlat,
+    subjectRecordedPlat: subjectHasRecordedSubdivision(opts.subject),
     // A phase stem is the subdivision, not a parent community. The weight
     // uses the same community the search used, or a next-row neighbor is
     // kept in the table at weight 0 and the letter refuses.

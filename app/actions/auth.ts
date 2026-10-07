@@ -5,6 +5,7 @@ import { cookies, headers } from 'next/headers'
 import { normalizeAvatarUrl } from '@/lib/auth/avatar'
 import { safeRedirectPath } from '@/lib/auth/safeRedirect'
 import { createClient } from '@/lib/supabase/server'
+import { siteOrigin } from '@/lib/site-origin'
 import { trackSignedInUser } from '@/lib/crm/send-event'
 import type { AuthUser } from '@/lib/auth/types'
 
@@ -17,7 +18,8 @@ const AUTH_NEXT_COOKIE = 'auth_next'
  * host where the cookie isn't sent, the token exchange has no verifier, and sign-in fails with
  * "Could not sign in". Deriving the base from the request keeps the cookie and the callback on the
  * same domain (ryan-realty.com in prod, localhost in dev, the preview host on previews).
- * Falls back to NEXT_PUBLIC_SITE_URL only when request headers are unavailable.
+ * Falls back to siteOrigin() (lib/site-origin.ts, never the Vercel alias) only when request
+ * headers are unavailable.
  */
 async function getRequestBaseUrl(): Promise<string> {
   const h = await headers()
@@ -26,7 +28,7 @@ async function getRequestBaseUrl(): Promise<string> {
     const proto = h.get('x-forwarded-proto') || (host.startsWith('localhost') || host.startsWith('127.0.0.1') ? 'http' : 'https')
     return `${proto}://${host}`.replace(/\/$/, '')
   }
-  return (process.env.NEXT_PUBLIC_SITE_URL || '').replace(/\/$/, '')
+  return siteOrigin()
 }
 
 // Request-memoized: hot admin pages resolve the session from several data

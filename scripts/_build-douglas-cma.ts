@@ -9,6 +9,7 @@ loadEnv()
 import { mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import Module from 'node:module'
+import { siteOrigin } from '../lib/site-origin'
 
 const STUB = path.resolve(__dirname, '../test/server-only-stub.ts')
 const CACHE_STUB = path.resolve(__dirname, '../test/next-cache-cli-stub.ts')
@@ -118,7 +119,7 @@ async function rerenderFromStored(): Promise<void> {
   }
   const args = { ...stored, comps, broker, mapDataUri, pricing, extras }
   const { html, pageCount } = renderCmaHtml(args)
-  const web = renderImmersiveCmaHtml({ ...args, broker }, process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com')
+  const web = renderImmersiveCmaHtml({ ...args, broker }, siteOrigin())
   writePreview(html, web)
   const { mapDataUri: _drop, broker: _b, ...persistArgs } = args
   const saved = await updateCmaRowFieldsBySlug(latest.slug, {
@@ -237,7 +238,7 @@ async function main() {
         broker,
         mapDataUri: mapHit?.[1] ?? null,
       },
-      process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com',
+      siteOrigin(),
     )
     writePreview(result.html, web)
   }

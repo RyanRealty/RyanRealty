@@ -6,6 +6,7 @@
  * a supabase client and uses no headers()/cookies()). Nothing here depends on a
  * request — only the DB, Storage, pdf-lib, and Resend.
  */
+import { siteOrigin } from '@/lib/site-origin'
 import { randomUUID } from 'node:crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import {
@@ -37,7 +38,7 @@ type DbRow = Record<string, any>
 type Sb = SupabaseClient<any, any, any>
 
 function siteUrl(): string {
-  return (process.env.NEXT_PUBLIC_SITE_URL || 'https://ryan-realty.com').replace(/\/$/, '')
+  return siteOrigin()
 }
 
 /**

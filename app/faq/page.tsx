@@ -23,6 +23,7 @@
  * FAQPage JSON-LD stay intact. Each answer still links to /faq/[slug].
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import type { Metadata } from 'next'
 import {
   V3_ROOT_CLASS,
@@ -39,7 +40,7 @@ import { valuationHref } from '@/lib/site/valuation-href'
 import { getFaqGroupedByCategory } from './data'
 import { FaqInquirySheet } from './_v3/FaqInquirySheet.client'
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const siteUrl = siteOrigin()
 const faqOgImage = `${siteUrl}/api/og?type=default`
 
 export const revalidate = 86400

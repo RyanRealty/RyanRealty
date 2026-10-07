@@ -4,6 +4,7 @@
  * Conditional legal, photos, permits, and seller-net omit when unknown.
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import { cmaStylesheet } from '@/lib/cma/render-css'
 import {
   dateLong,
@@ -44,7 +45,7 @@ import {
   scrubMlsTextRow,
 } from '@/lib/cma/letter-privacy'
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const SITE_URL = siteOrigin()
 
 export {
   escapeHtml,

@@ -16,6 +16,7 @@
  * Chrome: layout owns V3Chrome. V3Footer outside main.
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import type { Metadata } from 'next'
 import { getActivityFeed } from '@/app/actions/activity-feed'
 import AdUnit from '@/components/AdUnit'
@@ -34,7 +35,7 @@ import {
 } from '@/components/site/v3'
 import { activityRows } from './_v3/activity-rows'
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const siteUrl = siteOrigin()
 const ogImage = `${siteUrl}/api/og?type=default`
 
 // UNREACHABLE SINCE 2026-09-23: next.config.ts redirects() 301s /activity to

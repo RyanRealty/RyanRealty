@@ -174,8 +174,11 @@ describe('ordinary subdivision phases', () => {
     expect(picked('PHASE_FAR')).toBeUndefined()
     expect(picked('NEXT_ROW')?.selectionTier.startsWith('closer-sub-')).toBe(true)
     expect(picked('NEXT_ROOMS')).toBeUndefined()
-    expect(picked('OUTSIDE')).toBeUndefined()
-    expect(picked('OUTSIDE_LARGER')).toBeUndefined()
+    // The two rows hold two sales, short of the minimum, so the walk goes on
+    // inside the Orchard District after both rows (rule 15). The outside sales
+    // arrive on a ring, never on the next-row seat or the size bracket.
+    expect(picked('OUTSIDE')?.selectionTier).toMatch(/^nearby-/)
+    expect(picked('OUTSIDE_LARGER')?.selectionTier).toMatch(/^nearby-/)
     expect(out.tiersUsed).not.toContain('gla-bracket')
 
     // A registry community's phases stay neighboring plats.

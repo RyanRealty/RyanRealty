@@ -1,3 +1,4 @@
+import { siteOrigin } from '@/lib/site-origin'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { createServiceClient } from '@/lib/supabase/service'
@@ -63,7 +64,7 @@ import {
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
 
-const ORIGIN = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const ORIGIN = siteOrigin()
 const WARM_UA = 'rr-ci-probe/1.0 (+https://ryan-realty.com/robots.txt)'
 const CONCURRENCY = 6
 const PER_REQUEST_TIMEOUT_MS = 15_000

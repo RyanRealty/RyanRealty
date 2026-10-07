@@ -6,6 +6,7 @@
 // BreadcrumbList JSON-LD went with it: a two-item Home>self trail cannot earn a
 // breadcrumb rich result, and the deep trails that can (/homes-for-sale/<city>,
 // listing detail) still emit theirs.
+import { siteOrigin } from '@/lib/site-origin'
 import type { Metadata } from 'next'
 import { getSearchListings, getSearchMapListings, getViewportSearch } from '@/app/actions/search'
 import { getCityBoundary } from '@/app/actions/cities'
@@ -256,7 +257,7 @@ function buildSearchDescription(filters: ReturnType<typeof parseFilters>): strin
 /** Shared by generateMetadata and the WebPage JSON-LD so the canonical URL
  *  published in both places is always the same value. */
 function buildSearchCanonical(sp: SearchParams): { siteUrl: string; canonical: URL } {
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const siteUrl = siteOrigin()
   const canonical = new URL('/homes-for-sale', siteUrl)
   appendIndexableSearchParams(canonical, sp)
   return { siteUrl, canonical }

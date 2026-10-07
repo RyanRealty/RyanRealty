@@ -10,6 +10,7 @@
  * outbound email carries open/click tracking via attributeOutbound.
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import { getAlertManageUrl } from '@/lib/alerts/manage-url'
 import { getCrmAccess } from '@/app/actions/crm'
 import {
@@ -50,7 +51,7 @@ import {
 } from '@/lib/search-filters'
 
 const MAX_BULK_IDS = 500
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const SITE_URL = siteOrigin()
 
 function cleanIds(ids: unknown): string[] {
   if (!Array.isArray(ids)) return []

@@ -85,8 +85,6 @@ function sale(over: Partial<PricingSale> = {}): PricingSale {
   }
 }
 
-const RECORDED_ROW_SKIP =
-  'this home sits in a recorded subdivision, so the search stays in that plat, the plats that touch it, and the plats that touch those. It does not open a quarter-mile pocket, a distance ring, or the rest of the neighborhood'
 
 function remarksOnly() {
   return sale({
@@ -118,10 +116,11 @@ describe('Bend Golf Club recorded-plat outline', () => {
     const tiers = pricingTierLadder().filter((tier) => tier.adjacentSubdivision || tier.sameCommunity)
     const out = walkPricingLadder(home, [sale(), remarksOnly()], { asOf, tiers })
 
+    // One sale is short of the minimum, so the community rungs run (rules 15
+    // and 19). They still never take a sale that only mentions the community.
     const community = out.rungs.filter((rung) => rung.tier.startsWith('community-'))
     expect(community.length).toBeGreaterThan(0)
-    expect(community.every((rung) => rung.ran)).toBe(false)
-    expect(community.every((rung) => rung.skippedReason === RECORDED_ROW_SKIP)).toBe(true)
+    expect(community.every((rung) => rung.ran)).toBe(true)
     expect(out.comps.map((comp) => comp.listingKey)).toEqual(['FAIRWAY_2ND'])
     expect(out.comps[0]?.selectionTier.startsWith('adjacent-sub-')).toBe(true)
     expect(out.comps.some((comp) => comp.listingKey === 'REMARKS_ONLY')).toBe(false)
@@ -175,10 +174,11 @@ describe('recorded plat membership for every community', () => {
     const tiers = pricingTierLadder().filter((tier) => tier.sameSubdivision || tier.sameCommunity)
     const out = walkPricingLadder(home, [inside, remarks], { asOf, tiers })
 
+    // One sale is short of the minimum, so the community rungs run (rules 15
+    // and 19). They still never take a sale that only mentions the community.
     const community = out.rungs.filter((rung) => rung.tier.startsWith('community-'))
     expect(community.length).toBeGreaterThan(0)
-    expect(community.every((rung) => rung.ran)).toBe(false)
-    expect(community.every((rung) => rung.skippedReason === RECORDED_ROW_SKIP)).toBe(true)
+    expect(community.every((rung) => rung.ran)).toBe(true)
     expect(out.comps.map((comp) => comp.listingKey)).toEqual(['INSIDE_PLAT'])
     expect(out.comps[0]?.selectionTier.startsWith('subdivision-')).toBe(true)
     expect(out.comps.some((comp) => comp.listingKey === 'REMARKS_ONLY')).toBe(false)

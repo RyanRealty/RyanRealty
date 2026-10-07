@@ -186,7 +186,7 @@ Every reply from marketing@ ends with a signature line linking here:
 
 ```
 Ryan Realty marketing
-Here's what we can build for you: https://ryanrealty.vercel.app/marketing/request
+Here's what we can build for you: https://ryan-realty.com/marketing/request
 ```
 
 The page is a checkbox-driven email builder. **No backend writes from the
@@ -212,13 +212,13 @@ no banned tropes, sentence case.
 Manual re-trigger:
 ```sh
 curl -H "Authorization: Bearer $CRON_SECRET" \
-  "https://ryanrealty.vercel.app/api/cron/marketing-inbox-poll?maxMessages=5"
+  "https://ryan-realty.com/api/cron/marketing-inbox-poll?maxMessages=5"
 ```
 
 Dry-run (no reply, no read-mark):
 ```sh
 curl -H "Authorization: Bearer $CRON_SECRET" \
-  "https://ryanrealty.vercel.app/api/cron/marketing-inbox-poll?dryReply=true&dryRead=true&maxMessages=1"
+  "https://ryan-realty.com/api/cron/marketing-inbox-poll?dryReply=true&dryRead=true&maxMessages=1"
 ```
 
 ---

@@ -5,6 +5,7 @@
  * only, not every neighborhood dumped in. Not a mini-Bend KPI Instrument.
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import { valuationHref } from '@/lib/site/valuation-href'
 import type { Metadata } from 'next'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
@@ -38,7 +39,7 @@ import { resolvePublicCommunitySlug } from '@/lib/communities/community-public-p
 import { bendLuxuryHomesDoor } from '@/lib/site/bend-luxury-homes'
 import resortCommunitiesRegistry from '@/data/resort-communities.json' assert { type: 'json' }
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const siteUrl = siteOrigin()
 
 export const revalidate = 3600
 

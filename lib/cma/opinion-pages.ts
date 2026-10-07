@@ -7,6 +7,7 @@
  * rather than printing an empty frame.
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import {
   competitionHeading,
   competitionSentence,
@@ -1683,7 +1684,7 @@ export function nextStepReachHtml(a: OpinionPageArgs): string {
       `<a href="${esc(search)}" data-rr-track="cma-search">See homes for sale near you</a>`,
     ),
   )
-  const origin = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const origin = siteOrigin()
   const photo = b.photoUrl
     ? `<img class="reach-photo" src="${esc(b.photoUrl.startsWith('http') ? b.photoUrl : `${origin}${b.photoUrl}`)}" alt="${esc(b.displayName)}" />`
     : ''

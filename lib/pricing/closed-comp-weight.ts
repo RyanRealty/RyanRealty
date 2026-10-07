@@ -48,6 +48,12 @@ export type ClosedCompWeightInput = {
   saleSubdivision?: string | null
   selectionTier?: string | null
   ownPlat?: boolean | null
+  /**
+   * The subject sits in a recorded plat. Its quarter-mile pocket is walked
+   * after the touching rows, so a pocket sale weighs as the neighborhood
+   * step there, not as a touching plat.
+   */
+  subjectRecordedPlat?: boolean | null
   /** Set when the caller already classified the sale. Wins over the fields above. */
   locationMatch?: LocationMatch | null
   /** Community whose boundary contains the address. Not the MLS plat name. */
@@ -172,6 +178,7 @@ export function resolveLocationMatch(input: {
   saleSubdivision?: string | null
   selectionTier?: string | null
   ownPlat?: boolean | null
+  subjectRecordedPlat?: boolean | null
   locationMatch?: LocationMatch | null
 }): LocationMatch {
   if (input.locationMatch) return input.locationMatch
@@ -181,6 +188,9 @@ export function resolveLocationMatch(input: {
   const sameName = subjectName != null && saleName != null && subjectName === saleName
   if (input.ownPlat === true || sameName || tier.startsWith('subdivision-')) {
     return 'same-subdivision'
+  }
+  if (tier.startsWith('pocket-') && input.subjectRecordedPlat === true) {
+    return 'neighborhood-or-community'
   }
   if (tier.startsWith('adjacent-sub') || tier.startsWith('pocket-')) {
     return 'adjacent-subdivision'

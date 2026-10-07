@@ -25,6 +25,7 @@
  * Parity: design_system/ryan-realty/ui_kits/compare/parity.json.
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import type { Metadata } from 'next'
 import { getListingTiles, getListingDetailPhotos, getListingDetail, getListingPhotos } from '@/lib/data'
 import CompareClient, { type CompareListingData } from '@/components/compare/CompareClient'
@@ -44,7 +45,7 @@ import {
 import { CompareEmpty } from './_v3/CompareEmpty.client'
 import type { CompareSheetHome, CompareSheetRow } from './_v3/CompareSheet.client'
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const siteUrl = siteOrigin()
 
 export const metadata: Metadata = {
   title: 'Compare homes · Ryan Realty',

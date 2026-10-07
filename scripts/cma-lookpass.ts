@@ -57,6 +57,7 @@ import { promises as fs } from 'node:fs'
 // Type-only: erased at compile time, so this does not trigger the
 // `import 'server-only'` side effect in lib/data/cma/documents.ts at runtime.
 import type { CmaRenderSource } from '@/lib/data/cma/documents'
+import { siteOrigin } from '../lib/site-origin'
 
 // `server-only` throws by design outside a Next server component, and
 // lib/data (which the render glue below pulls in) imports it; several of
@@ -73,7 +74,8 @@ installServerOnlyShim()
 
 const REPO_ROOT = path.resolve(__dirname, '..')
 const OUT_ROOT = path.join(REPO_ROOT, 'out', 'cma-look')
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+// Production hosts (the Vercel alias included) fold to https://ryan-realty.com.
+const SITE_URL = siteOrigin()
 
 const CHROME =
   process.env.PUPPETEER_EXECUTABLE_PATH ||

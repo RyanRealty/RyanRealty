@@ -22,7 +22,7 @@ import { config } from 'dotenv'
 
 config({ path: '.env.local' })
 
-const PROD = 'https://ryanrealty.vercel.app'
+const PROD = 'https://ryan-realty.com'
 const OUT = 'out/fleet/cases'
 
 type NodeRow = {

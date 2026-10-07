@@ -147,6 +147,20 @@ function isBoundaryRung(key: string): boolean {
   return key.startsWith('neighborhood-')
 }
 
+/**
+ * Rungs whose membership test IS a distance from the subject: the pricing
+ * ladder's quarter-mile steps and its exits (nearby-, beyond-, city-, rural-).
+ * A plat, a touching plat, a street, a mapped pocket and the listings
+ * ladder's named areas are not.
+ */
+function isDistanceRung(key: string): boolean {
+  if (isSubdivisionRung(key) || key.startsWith('adjacent-sub') || key.startsWith('competing-area')) return false
+  return rungRadiusMiles(key) != null
+}
+
+/** Plats only a distance rung reached, with the widest such ring. */
+type SalesRing = { names: string[]; miles: number }
+
 function clean(s: string | null | undefined): string | null {
   const t = (s ?? '').trim()
   return t.length > 0 ? t : null
@@ -187,20 +201,33 @@ export function compAreaPhrase(area: CompArea): string {
   }
 }
 
-function areaSentence(area: Omit<CompArea, 'sentence'>, subjectSubdivision: string | null): string {
+function areaSentence(
+  area: Omit<CompArea, 'sentence'>,
+  subjectSubdivision: string | null,
+  ring: SalesRing | null = null,
+): string {
   switch (area.kind) {
     case 'subdivision':
       return `${area.names[0]}, your own subdivision.`
     case 'subdivisions': {
-      const head = area.names[0]!
-      const rest = area.names.length - 1
-      // When the subject's own subdivision leads the list, the rest are "next
-      // to it" — the seller's own frame. Otherwise name them all; nothing here
+      // A plat only a distance rung reached is named with that ring (CMA rule
+      // 17: a sale in another subdivision is named with that subdivision).
+      // "Next to it" is said only of plats a plat rung reached; nothing here
       // may imply a relationship the data has not established.
-      if (subjectSubdivision && head === subjectSubdivision) {
-        return `${head} and the ${countWord(rest)} ${rest === 1 ? 'subdivision' : 'subdivisions'} next to it.`
+      const ringNames = ring?.names ?? []
+      const placed = area.names.filter((n) => !ringNames.includes(n))
+      const tail =
+        ring && ringNames.length > 0
+          ? `, and ${joinNames(ringNames)} within ${milesPhrase(ring.miles)} of your home.`
+          : '.'
+      const head = placed[0] ?? null
+      if (head && subjectSubdivision && head === subjectSubdivision) {
+        const rest = placed.length - 1
+        const next = rest > 0 ? ` and the ${countWord(rest)} ${rest === 1 ? 'subdivision' : 'subdivisions'} next to it` : ''
+        return `${head}${next}${tail}`
       }
-      return `${joinNames(area.names)}.`
+      if (placed.length > 0) return `${joinNames(placed)}${tail}`
+      return `${joinNames(ringNames)}, within ${milesPhrase(ring!.miles)} of your home.`
     }
     case 'neighborhood':
       return `${area.names[0]}, the neighborhood around your home.`
@@ -362,6 +389,23 @@ export function buildCompArea(input: {
       saleNames.splice(saleNames.indexOf(subjectSubdivision), 1)
       saleNames.unshift(subjectSubdivision)
     }
+    // A plat a plat rung also reached is a placed plat whichever rung found
+    // its other sales; the subject's own plat is never a ring find.
+    const platReached = new Set<string>()
+    const ringReached = new Map<string, number>()
+    for (const c of kept) {
+      const n = usableSubdivision(c.subdivision)
+      const t = clean(c.selectionTier)
+      if (!n) continue
+      const miles = t && isDistanceRung(t) ? rungRadiusMiles(t) : null
+      if (miles != null && n !== subjectSubdivision) ringReached.set(n, Math.max(miles, ringReached.get(n) ?? 0))
+      else platReached.add(n)
+    }
+    const ringNames = saleNames.filter((n) => ringReached.has(n) && !platReached.has(n))
+    const ring: SalesRing | null =
+      ringNames.length > 0
+        ? { names: ringNames, miles: Math.max(...ringNames.map((n) => ringReached.get(n)!)) }
+        : null
     const kind: CompAreaKind = saleNames.length === 1 ? 'subdivision' : 'subdivisions'
     const base = {
       kind,
@@ -371,10 +415,12 @@ export function buildCompArea(input: {
       source: trace(
         `every printed sale carries a subdivision name, so the area is ${
           saleNames.length === 1 ? 'that subdivision' : `those ${saleNames.length} subdivisions`
-        }: ${saleNames.join(', ')}`,
+        }: ${saleNames.join(', ')}${
+          ring ? `; ${ring.names.join(', ')} reached only by a distance rung (${milesPhrase(ring.miles)})` : ''
+        }`,
       ),
     }
-    return { ...base, sentence: areaSentence(base, subjectSubdivision) }
+    return { ...base, sentence: areaSentence(base, subjectSubdivision, ring) }
   }
 
   // 3. The radius the widest kept rung used.

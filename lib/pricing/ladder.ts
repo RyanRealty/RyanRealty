@@ -318,8 +318,8 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
     closer(18, 'utilities'),
     closer(24, 'utilities'),
     // No recorded plat (and rural acreage with no plat): the distance ladder.
-    // A recorded subdivision does not open these. The walk skips them.
-    // Pocket stays only for that no-plat case.
+    // A recorded subdivision opens these only when its plat rows above hold
+    // fewer than the minimum; the parent wall still holds on every one.
     pocket(3, 'strict'),
     pocket(6, 'strict'),
     pocket(9, 'utilities'),

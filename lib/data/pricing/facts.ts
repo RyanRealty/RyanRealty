@@ -88,6 +88,7 @@ function rowToSale(r: Record<string, unknown>): PricingSale | null {
     productClass: productClassFromFactsRow(
       typeof r.product_class === 'string' ? r.product_class : null,
       typeof r.property_sub_type === 'string' ? r.property_sub_type : null,
+      typeof r.public_remarks === 'string' ? r.public_remarks : null,
     ),
     waterClass: (r.water_class as WaterClass) ?? 'unknown',
     sewerClass: (r.sewer_class as SewerClass) ?? 'unknown',

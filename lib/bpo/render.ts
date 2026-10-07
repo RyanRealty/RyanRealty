@@ -10,6 +10,7 @@
  * that a broker price opinion is not an appraisal (ORS 696.010 / 696.290).
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import { pageContractCss } from '@/lib/pdf/page-contract'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatDate } from '@/lib/format/date'
@@ -40,7 +41,7 @@ import {
 } from '@/lib/cma/render-blocks'
 import { describeCompSearch } from '@/lib/pricing/search-story'
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const SITE_URL = siteOrigin()
 const usd = formatPriceExact
 
 /** Comment markers wrapping the internal Offer strategy block. Client-safe

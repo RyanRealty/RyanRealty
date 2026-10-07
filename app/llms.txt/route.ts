@@ -1,3 +1,4 @@
+import { siteOrigin } from '@/lib/site-origin'
 import { NextResponse } from 'next/server'
 import { getRecentBlogPosts, getPublishedGuides, listMarketReports, getEventsForIndex, getVenuesForIndex, getTrailsForIndex, getAllNeighborhoodsWithCity } from '@/lib/data'
 import { publicCommunitySlug } from '@/lib/communities/community-public-pair'
@@ -11,7 +12,7 @@ import { CORE_MARKET_PATHS } from '@/app/housing-market/[...slug]/_v3/geo-consta
 import { cityTypeLlmsLines, dedupeLlmsLines, marketCityLlmsLines, zipLlmsLines, LLMS_SUBDIVISIONS_PATH } from '@/lib/site/llms-geo'
 import { BRAND, CONTACT } from '@/lib/brand/contact'
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const SITE_URL = siteOrigin()
 
 export const revalidate = 3600
 

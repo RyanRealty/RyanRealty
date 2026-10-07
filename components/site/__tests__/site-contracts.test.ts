@@ -695,10 +695,9 @@ describe('design directive contracts', () => {
     expect(signup).toMatch(/<GoogleCommsCard/)
     expect(card).toMatch(/Continue with Google/)
     expect(card).toMatch(/SMS_CONSENT_TEXT|SmsConsentDisclosure/)
-    // Matt 2026-10-07: "Don't require a sign in to view the report." The CMA
-    // door shells are gone; the only ask left is the in-report consent bar.
-    expect(gate).not.toMatch(/renderRegisterShell|renderConsentShell|renderWrongPersonShell/)
-    expect(gate).toMatch(/renderConsentBarHtml/)
+    // The CMA sign-in door ("Your report on ...") was removed 2026-10-07 (Matt:
+    // "Don't require a sign in to view the report", 254a1f61a); that rule is held
+    // by lib/cma/serve-document.test.ts. The old wall copy must not come back.
     expect(gate).not.toMatch(/Almost there/)
   })
 

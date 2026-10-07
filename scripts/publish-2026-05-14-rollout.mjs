@@ -23,6 +23,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import crypto from 'node:crypto'
+import { siteOrigin } from './lib/site-origin.mjs'
 import { execSync, spawnSync } from 'node:child_process'
 
 // ---------------------------------------------------------------------------
@@ -37,7 +38,8 @@ for (const [k, v] of Object.entries(ENV)) {
   if (process.env[k] === undefined) process.env[k] = v
 }
 
-const SITE = ENV.NEXT_PUBLIC_SITE_URL || 'https://ryanrealty.vercel.app'
+// Never the Vercel alias (Matt 2026-10-07): production hosts fold to https://ryan-realty.com.
+const SITE = siteOrigin(ENV.NEXT_PUBLIC_SITE_URL)
 const CRON_SECRET = ENV.CRON_SECRET
 const SUPABASE_URL = ENV.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_SERVICE_ROLE_KEY = ENV.SUPABASE_SERVICE_ROLE_KEY

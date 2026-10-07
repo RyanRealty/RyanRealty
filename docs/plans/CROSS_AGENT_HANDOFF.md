@@ -45,9 +45,18 @@ Surface: Claude Code. Branch `claude/beautiful-lamport-2x4fjs`, fast-forwarded o
 - Close: one "Pick a time with {broker}" button plus Call and Text, two short paragraphs, on-brand review cards, and the competition line on size and price per foot when the data supports it (`competitionEdge`).
 - `scripts/cma-lookpass.ts` no longer drops the first slug when no flag leads.
 
-Open for Matt: re-install his Gmail signature from `docs/install-kits/matt-email-signature/signature.html` so mail sent straight from Gmail stops loading images from the alias.
+Matt's Gmail signature was installed through the service account the same day (`gmail.settings.basic` granted; docs/ACCESS_INVENTORY.md).
 
-Skills read this pass: `marketing_brain_skills/brand-voice/VOICE.md`, `code-review`.
+**Later the same day (main `22775a516`).** Picker: a recorded plat whose own rows (plat, touching plats, the plats that touch those) hold fewer than 3 sales walks on inside its neighborhood instead of failing (`lib/pricing/match.ts`, the count read once as `platRowCount`; 915 Saginaw and 1648 Pheasant had failed holding one sale); a 3-or-4-sale facts set prices when the older listings ladder finds fewer (`lib/pricing/select.ts` `factsOutlastShortListings`); a plat home's pocket sale weighs as the neighborhood step (`closed-comp-weight.ts` `subjectRecordedPlat`); the dry run passes DOM and the original ask to the failed-ask pull and settles against sitting actives like the build. Letter contract: only a bare ring caption fails `sales-place-not-a-mile-ring`; a plat reached only by a distance rung is named with that ring (`comp-area.ts`). Tiers: the failed-ask cap and `pinPrintedBandToSettingSales` keep conservative <= recommended (`expired-audit.ts`, `estimate.ts`; Saginaw printed $915,246 over $915,000). Site origin: `lib/site-origin.ts` is the only reader of `NEXT_PUBLIC_SITE_URL`, gate `ci:site-origin` (G81), Vercel production value flipped to https://ryan-realty.com (Matt: never the alias again). deploy:verify runs with `NODE_USE_ENV_PROXY=1` (Vercel's mitigation 403s this container's direct egress) and the sitemap smoke retries one transport error.
+
+**Matt's rulings 2026-10-07, in flight as worktree branches when this was written (merge, measure with `npm run cma:fleet`, push, rebuild every Bend draft, re-present; nothing sends until then):**
+1. Five price-setting sales is the floor (reverses his 2026-09-10 drop to 3); the printed band is always the trimmed range.
+2. An ask inside the trimmed band is a hold for Matt, never a widened search.
+3. Same property type only; a duplex or multi-unit never prices a single-family home even when the MLS sub type says SFR (1531 10th pinned Saginaw's price).
+4. Actives and expireds come from the sales' own area and matching rules (reverses the 10/05 and 10/06 competition widening; Coho's map sprayed rivals 0.9 miles out across Mountain View).
+Also his call: the failed-ask pull and the sitting-actives pull stack (SKILL rule 16). Open: Burnside's date-adjustment check, 139 Roosevelt and 714 10th finding zero sales inside their neighborhoods, the CLAUDE.md byte-budget audit (an uncommitted site-origin pointer edit is parked in scratch pending it).
+
+Skills read this pass: `marketing_brain_skills/brand-voice/VOICE.md`, `marketing_brain_skills/producers/cma/SKILL.md`, `code-review`.
 
 ## Earlier — 2026-10-06 (Grok, expired email photo card)
 

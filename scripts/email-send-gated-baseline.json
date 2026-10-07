@@ -17,7 +17,7 @@
       "kind": "internal",
       "reason": "Internal: weekly marketing-optimization report to the brokerage's own inbox, not a lead. Permanently allowlisted. Line re-synced in the audit cron-auth consolidation."
     },
-    "app/api/cron/newsletter-monthly-draft/route.ts:51": {
+    "app/api/cron/newsletter-monthly-draft/route.ts:52": {
       "kind": "internal",
       "reason": "Internal: draft-ready notification to matt@ryan-realty.com (MATT only) after the monthly auto-draft cron writes a newsletter DRAFT. Never a lead or subscriber \u2014 the draft itself sends nothing until Matt approves and schedules it on the review page. Permanently allowlisted. Line shifted in the 2026-07-06 lifecycle-workflows integration (W5). Line re-synced in the audit cron-auth consolidation."
     },
@@ -25,7 +25,7 @@
       "kind": "internal",
       "reason": "Internal: weekly pipeline digest to the broker (or the admin-configured Weekly Report Recipients from Company Settings \u2014 staff addresses the owner adds, not leads). Same allowlisted site; line shifted when recipients were wired to crm_company_settings (\u00a715 slice). Line re-synced in the audit cron-auth consolidation."
     },
-    "app/home-valuation/actions.ts:258": {
+    "app/home-valuation/actions.ts:259": {
       "kind": "internal",
       "reason": "Internal: new-lead notification to ADMIN_EMAIL (the brokerage), not the lead. The two LEAD-facing sends in this action (auto-CMA + acknowledgment) are gated by isSuppressedByEmail. Permanently allowlisted. Line re-keyed 201->245 when the seller-facing hang fix moved the post-response work (broker alert, auto-CMA, acknowledgment) out of the request path into runValuationFollowUp + after() (buyer-journey audit 2026-07-29). Same internal ADMIN_EMAIL send, same recipient; the two LEAD-facing sends in that function remain gated by isSuppressedByEmail. Line +1 (2026-08-03) when the CONTACT import replaced the hardcoded 541.213.6706 literal. Line shifted +1 by the 2026-08-03 page-contract assertion import. Line re-keyed 247->257 when G2 identity stitch was added above runValuationFollowUp (2026-08-16). Line 257->258 (2026-09-30): an import added above it (lead mail sent as Matt, not noreply@)."
     },
@@ -41,7 +41,7 @@
       "kind": "internal",
       "reason": "Internal: broker-review notification to the assigned broker's email with a signed preview link. processCmaDelivery only builds to 'ready'; it never emails the lead. The lead delivery happens in the gated /api/cma-drafts/[id]/send route and contact-cma.ts. Line shifted in the 2026-07-06 lifecycle-workflows integration (W5). Line shifted +3 by the 2026-08-03 page-contract assertion (import + assertPdfPageSafety call). Line shifted +3 by the 2026-08-06 signing-broker fix (assigned broker resolves; notifyPhone/format edits above the send). Line shifted +1 by the 2026-09-09 rewrite of composeCmaEmail into Matt's register. Line shifted +2 by the 2026-09-09 system-signature wiring (import + signature param)."
     },
-    "lib/cma/request-emails.ts:77": {
+    "lib/cma/request-emails.ts:78": {
       "kind": "internal",
       "reason": "Internal: new-CMA-request notification to the assigned broker (sendBrokerNotification), not the lead \u2014 and skipped entirely for broker kick-offs (notifyBroker=false). The lead confirmation (sendLeadConfirmation) in the same module is gated by isSuppressedByEmail on both transports. Site relocated from lib/cma-request.ts:535 (history: 401 -> 434 D8 kick-off inputs, 434 -> 535 version-chain clobber guard) when the email senders were extracted for the 600-LOC file-size budget on 2026-07-17. Line shifted +1 by the 2026-08-06 signing-broker fix (formatPublishedPhone import). Line shifted +3 on 2026-09-07 when the place-page confirmation (sendPlaceValueConfirmation, routed through sendGovernedEmail) added three imports."
     },
@@ -49,11 +49,11 @@
       "kind": "internal",
       "reason": "Internal: ops alert to MATT_ALERT_EMAIL when production has fallen behind main (a stuck/failed deploy). No lead recipient. Permanently allowlisted."
     },
-    "lib/expired-alert.ts:129": {
+    "lib/expired-alert.ts:130": {
       "kind": "internal",
       "reason": "Internal: expired-listing alert to Matt's inbox (MATT_ALERT_EMAIL), not the homeowner. Permanently allowlisted. Line shifted +21 when resolveAlertFrom() + its doc block were added to fix the unverified-sender bug (expired-workflow audit 2026-07-03)."
     },
-    "lib/fsbo-alert.ts:114": {
+    "lib/fsbo-alert.ts:115": {
       "kind": "internal",
       "reason": "Internal: FSBO alert to Matt's inbox (MATT_ALERT_EMAIL), not the homeowner. Permanently allowlisted."
     },
@@ -61,7 +61,7 @@
       "kind": "internal",
       "reason": "Internal: market-stat consistency alert to MATT_ALERT_EMAIL when the one-number-per-metric contract breaks (design-audit drift gate). No lead recipient. Permanently allowlisted. Line shifted 42 -> 59 -> 61 when the alert params gained subject/heading/intro/context overrides so the weekly-report generator alarm (conversion-audit 2026-07-15 #6) reuses this ONE allowlisted site instead of minting a new ungated sendEmail call. Line shifted 59 -> 61 when the RESEND_FROM double-wrap fix added two lines above the sendEmail call (lambda-shrink tip)."
     },
-    "lib/seller-lead-alert.ts:110": {
+    "lib/seller-lead-alert.ts:111": {
       "kind": "internal",
       "reason": "Internal: new seller-lead alert to Matt's inbox (MATT_ALERT_EMAIL), not the lead. Permanently allowlisted."
     },

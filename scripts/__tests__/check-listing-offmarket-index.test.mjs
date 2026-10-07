@@ -41,6 +41,7 @@ const BY_ADDRESS = 'app/listing/by-address/[...slug]/page.tsx'
 const UNAVAILABLE = 'components/site/listing-detail/ListingUnavailable.tsx'
 const META = 'lib/site/page-metadata.ts'
 const SHARE = 'lib/share-metadata.ts'
+const ORIGIN = 'lib/site-origin.ts'
 
 const LOOKUP_DAL = 'lib/data/listings/getListingDetail.ts'
 const MIDDLEWARE = 'middleware.ts'
@@ -54,6 +55,7 @@ const FILES = [
   UNAVAILABLE,
   META,
   SHARE,
+  ORIGIN,
   LOOKUP_DAL,
   MIDDLEWARE,
   UNAVAILABLE_503,

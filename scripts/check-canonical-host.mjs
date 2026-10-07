@@ -46,6 +46,7 @@ if (!/CANONICAL_HOST\s*=\s*['"]ryan-realty\.com['"]/.test(src)) {
 const setMatch = src.match(/NON_CANONICAL_HOSTS\s*=\s*new Set\(\[([^\]]*)\]/)
 if (!setMatch) fail('middleware.ts must define NON_CANONICAL_HOSTS as a Set of aliases to funnel.')
 const setBody = setMatch[1]
+// staging-host-ok: the incoming hosts middleware must redirect; builds no URL.
 for (const required of ['ryanrealty.vercel.app', 'www.ryan-realty.com']) {
   if (!setBody.includes(required)) {
     fail(`NON_CANONICAL_HOSTS must include '${required}' — dropping it reopens the OAuth PKCE break.`)

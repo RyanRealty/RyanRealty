@@ -1,5 +1,6 @@
 'use server'
 
+import { siteHost, siteOrigin } from '@/lib/site-origin'
 import { sendEvent, type LeadEventPerson } from '@/lib/crm/send-event'
 import { sendContactNotification } from '@/lib/resend'
 import type { LeadLandingAudience } from '@/lib/lead-landing-content'
@@ -10,15 +11,13 @@ import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
 import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
 import { cookies } from 'next/headers'
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const SITE_URL = siteOrigin()
 
 const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
+/** The site's own host as the lead source: 'ryan-realty.com' in production, never the Vercel alias. */
 function websiteSource(): string {
-  return (process.env.NEXT_PUBLIC_SITE_URL ?? '')
-    .replace(/^https?:\/\//, '')
-    .replace(/\/$/, '')
-    .toLowerCase() || 'ryan-realty.com'
+  return siteHost()
 }
 
 type LpContextInput = {
@@ -72,7 +71,7 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
     }
 
     const eventType = input.audience === 'seller' ? 'Seller Inquiry' : 'General Inquiry'
-    const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+    const siteUrl = siteOrigin()
     const sourceUrl = `${siteUrl}${input.pagePath}`
     const details = [
       `intent=${input.leadIntent}`,

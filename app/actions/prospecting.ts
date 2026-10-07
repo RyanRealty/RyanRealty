@@ -1,4 +1,5 @@
 'use server'
+import { siteOrigin } from '@/lib/site-origin'
 import { revalidatePerson } from '@/lib/crm/revalidate-person'
 
 /**
@@ -68,7 +69,7 @@ import {
 import { sendSmsViaMessagingService, toE164 } from '@/lib/crm/twilio'
 import { sendTemplateSelfTestAction } from '@/app/actions/crm-template-test'
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const SITE_URL = siteOrigin()
 
 async function requireAdmin(): Promise<boolean> {
   const session = await getSession()

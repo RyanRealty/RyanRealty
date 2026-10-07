@@ -12,7 +12,20 @@ import { namedSalesPlace } from '@/lib/pricing/comp-area'
 import { printedAdjustedPrice, settingWeight } from '@/lib/pricing/seller-net'
 import type { ContractCheck } from '@/lib/cma/contract'
 
-const MILE_SENTENCE = /\bwithin\s+(?:[\d.]+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s+miles?\s+of your home/i
+/**
+ * The sales caption as a bare ring: "Within one mile of your home." That is
+ * the sentence areaSentence in lib/pricing/comp-area.ts writes for a radius
+ * area, and nothing else on the page starts a sentence that way. The
+ * competition and did-not-sell chapters may widen past a short plat to a
+ * ring (Matt 2026-10-06, lib/cma/assemble-competition.ts) and say so inside
+ * their own sentences ("6 homes are for sale within one mile of your home
+ * between ..."), and a sales caption may name its plats and then the ring
+ * that found one ("Deschutes, and Park Addition within one mile of your
+ * home."). Neither says the sales sit in a ring. cma-61433-linton (2026-10-05)
+ * and cma-711-georgia (2026-10-07) failed on the competition's ring sentence.
+ */
+const BARE_RING_CAPTION =
+  /(?:^|>|[.!?]\s)Within\s+(?:[\d.]+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s+miles?\s+of your home\./
 const WRONG_PRODUCT_LINE = /single-family homes in|single-family sales|single-family listings/i
 const SIZE_STORY_DO_NOT_ADJUST = 'Size and story class do not adjust'
 const ADJUSTED_FOR_DATE_AND_SIZE = 'adjusted for date and size'
@@ -50,7 +63,7 @@ export function letterPlaceChecks(html: string, place: LetterPlaceSource | null 
   const checks: ContractCheck[] = []
   const named = namedSalesPlace(place.compArea)
   if (named) {
-    const mile = MILE_SENTENCE.test(html)
+    const mile = BARE_RING_CAPTION.test(html)
     checks.push({
       id: 'sales-place-not-a-mile-ring',
       severity: 'hard',

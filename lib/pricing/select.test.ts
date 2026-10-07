@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { CmaSubject } from '@/lib/cma/types'
-import { cmaSubjectToPricing, matchToCompSelection, pickCompSource } from '@/lib/pricing/select'
+import { cmaSubjectToPricing, factsOutlastShortListings, matchToCompSelection, pickCompSource } from '@/lib/pricing/select'
 import { isCustomOrNewSubject } from '@/lib/pricing/classes'
 
 function subject(over: Partial<CmaSubject> = {}): CmaSubject {
@@ -211,5 +211,18 @@ describe('pickCompSource — below the document minimum the listings ladder is t
     expect(pickCompSource({ factsReady: true, comps: [1, 2, 3, 4] })).toBe('listings')
     expect(pickCompSource({ factsReady: true, comps: [1, 2, 3, 4, 5] })).toBe('facts')
     expect(pickCompSource({ factsReady: true, comps: [1, 2], customOrNew: true })).toBe('facts')
+  })
+})
+
+describe('factsOutlastShortListings', () => {
+  it('prices from facts when the listings ladder is short and facts reached the minimum', () => {
+    // 1648 Pheasant, 2026-10-07: facts 3, listings 1.
+    expect(factsOutlastShortListings(3, 1)).toBe(true)
+    expect(factsOutlastShortListings(4, 0)).toBe(true)
+  })
+  it('keeps the listings set when it reached the minimum, or when facts did not', () => {
+    expect(factsOutlastShortListings(3, 3)).toBe(false)
+    expect(factsOutlastShortListings(4, 5)).toBe(false)
+    expect(factsOutlastShortListings(2, 1)).toBe(false)
   })
 })

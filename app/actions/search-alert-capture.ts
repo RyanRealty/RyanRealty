@@ -1,5 +1,6 @@
 'use server'
 
+import { siteOrigin } from '@/lib/site-origin'
 import { cookies, headers } from 'next/headers'
 import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
 import { getAuthLimiter } from '@/lib/rate-limit'
@@ -113,7 +114,7 @@ export async function submitSearchAlertSignup(input: {
   const filtersHash = getSavedSearchHash(normalized)
   const name = getFilterNameFallback(normalized)
   const summary = getFiltersSummary(normalized)
-  const base = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const base = siteOrigin()
   const searchUrl = `${base}${buildSearchUrlFromFilters(normalized)}`
 
   // 5. Native buyer lead: sendEvent captures via ensureNativeLead (CRM
@@ -306,7 +307,7 @@ export async function submitListingSaveCapture(input: {
   }
   const addressLine = (input.addressLine ?? '').trim().slice(0, 120)
   const homeLabel = addressLine || 'this home'
-  const base = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const base = siteOrigin()
   // Server-built canonical URL — the client never supplies a URL.
   const listingUrl = `${base}/homes-for-sale/listing/${encodeURIComponent(listingKey)}`
 
@@ -486,7 +487,7 @@ export async function submitListingPriceDropWatch(input: {
     return { ok: false, error: 'We could not set up your alert. Please try again.' }
   }
   const filtersHash = getSavedSearchHash(normalized)
-  const base = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const base = siteOrigin()
   const listingUrl = `${base}${listingByKeyPath(listingKey)}`
 
   let crmPersonId: number | null = null

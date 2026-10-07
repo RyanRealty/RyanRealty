@@ -9,6 +9,7 @@
  * Auth: Authorization: Bearer ${CRON_SECRET} (requireCronAuth).
  * Schedule: vercel.json daily.
  */
+import { siteOrigin } from '@/lib/site-origin'
 import { NextResponse } from 'next/server'
 import { fetchAllRows } from '@/lib/supabase/paginate'
 import { createServiceClient } from '@/lib/supabase/service'
@@ -23,7 +24,7 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
 function siteUrl(): string {
-  return (process.env.NEXT_PUBLIC_SITE_URL || 'https://ryan-realty.com').replace(/\/$/, '')
+  return siteOrigin()
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

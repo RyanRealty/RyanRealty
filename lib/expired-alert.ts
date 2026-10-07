@@ -7,6 +7,7 @@
  * link to the CRM person record.
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import { sendEmail } from '@/lib/resend'
 import { EMAIL_FONT_STACK } from '@/lib/email/brand'
 
@@ -65,7 +66,7 @@ function fmtPrice(n: number | null): string {
 
 export function crmLink(personId: number | null): string {
   if (!personId) return '(no CRM lead yet — owner contact pending skip trace)'
-  const site = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const site = siteOrigin()
   return `${site}/admin/people/${personId}`
 }
 

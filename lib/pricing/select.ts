@@ -24,6 +24,7 @@ import {
   classifyWater,
   citySlug,
   isCustomOrNewSubject,
+  multiUnitFromRemarks,
   normSubdivision,
   type IrrigationClass,
   type StoryClass,
@@ -81,7 +82,8 @@ export function cmaSubjectToPricing(
     lotAcres: subject.lotAcres,
     yearBuilt: subject.yearBuilt,
     storyClass: extras.storyClass ?? classifyStory(extras.levelsRaw ?? subject.levelsRaw, null),
-    productClass: classifyProduct(subject.propertySubType),
+    // A subject the remarks call a duplex is priced from multi-unit sales only.
+    productClass: multiUnitFromRemarks(subject.publicRemarks) ? 'multi-unit' : classifyProduct(subject.propertySubType),
     waterClass: classifyWater(extras.waterRaw ?? subject.waterRaw),
     sewerClass: classifySewer(extras.sewerRaw ?? subject.sewerRaw),
     hoaClass: classifyHoa(subject.associationYn ?? null, subject.associationFee ?? subject.hoaMonthly ?? null),
@@ -460,6 +462,17 @@ export function pickCompSource(match: {
   return 'listings'
 }
 
+/**
+ * Under five facts sales the listings ladder runs too. When it cannot reach
+ * the minimum and the facts walk did, the facts set prices: a home with three
+ * good sales is not failed because the older ladder found fewer. 1648
+ * Pheasant (2026-10-07): facts held 3 inside its neighborhood, listings held 1,
+ * and the build failed on the listings count.
+ */
+export function factsOutlastShortListings(factsComps: number, listingsComps: number): boolean {
+  return factsComps >= PRICING_MIN_COMPS && listingsComps < PRICING_MIN_COMPS
+}
+
 export async function selectCompsPreferringFacts(
   subject: CmaSubject,
   opts: {
@@ -487,5 +500,9 @@ export async function selectCompsPreferringFacts(
   if (pickCompSource({ ...match, customOrNew }) === 'facts') {
     return matchToCompSelection(subject, match, { customOrNew })
   }
-  return selectComps(subject, opts)
+  const listings = await selectComps(subject, opts)
+  if (match.factsReady && factsOutlastShortListings(match.comps.length, listings.comps.length)) {
+    return matchToCompSelection(subject, match, { customOrNew })
+  }
+  return listings
 }

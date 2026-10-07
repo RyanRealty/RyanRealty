@@ -1,3 +1,4 @@
+import { siteOrigin } from '@/lib/site-origin'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import LeadLandingPage from '@/components/landing/LeadLandingPage'
@@ -5,7 +6,7 @@ import { getBuyLanding } from '@/lib/lead-landing-content'
 import { getSession } from '@/app/actions/auth'
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const siteUrl = siteOrigin()
 
 export const revalidate = 3600
 

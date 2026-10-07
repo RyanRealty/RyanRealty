@@ -32,6 +32,7 @@
  * so an empty pull opts out of ISR (noStore) and the page says what it knows:
  * nothing listed on this refresh, never "there is no commercial space".
  */
+import { siteOrigin } from '@/lib/site-origin'
 import type { Metadata } from 'next'
 import { unstable_noStore as noStore } from 'next/cache'
 import { getCommercialLeaseListings } from '@/lib/data'
@@ -113,7 +114,7 @@ export default async function CommercialSpaceForLeasePage() {
   const groups = leaseCityGroups(tiles, rateOptions, leaseTerms, leadPhotos)
   if (groups.length === 0) noStore()
 
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const siteUrl = siteOrigin()
   const itemList = leaseItemList(groups, siteUrl)
   const schemas: SchemaInput[] = [
     {

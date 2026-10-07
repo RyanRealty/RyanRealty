@@ -1178,7 +1178,7 @@ export function subjectHasRecordedSubdivision(subject: {
   return realSubdivision(subject.subdivision) != null
 }
 
-/** Street, own plat, touching plats, and the next touching row. Nothing past that. */
+/** Street, own plat, touching plats, and the next touching row. Nothing past that while they hold the minimum. */
 function tierOutsideRecordedPlatRows(tier: PricingTier): boolean {
   return !(tier.sameStreetOnly || tier.sameSubdivision || tier.adjacentSubdivision || tier.closerSubdivision)
 }
@@ -1282,9 +1282,23 @@ export function walkPricingLadder(
   // still has more than five qualifiers, the closest homes stay. A median
   // close does not choose them.
   let countBeforePocket: number | null = null
+  // How many sales the plat rows (street, own plat, touching plats, the plats
+  // that touch those) held when the walk first reached a rung outside them.
+  // Read once: the running total grows on the rungs after it, and gating on
+  // that total stopped a short plat at the first three sales it met, which a
+  // later pocket drop then cut to two (review, 2026-10-07).
+  let platRowCount: number | null = null
 
   for (const tier of tiers) {
     if (tier.samePocket && countBeforePocket == null) countBeforePocket = byKey.size
+    if (recordedPlat && platRowCount == null && tierOutsideRecordedPlatRows(tier)) {
+      platRowCount = byKey.size
+      if (platRowCount < PRICING_MIN_COMPS) {
+        trace.push(
+          `${subject.subdivision ?? 'The recorded plat'}, the plats that touch it, and the plats that touch those held ${platRowCount} sale${platRowCount === 1 ? '' : 's'}, short of ${PRICING_MIN_COMPS}, so the search went on inside the neighborhood, closest first.`,
+        )
+      }
+    }
     if (
       tier.samePocket &&
       !tier.sameSubdivision &&
@@ -1357,8 +1371,14 @@ export function walkPricingLadder(
               clusterPocket: true,
             })
           ? `the street-cluster pocket already supplied a tight closed+pending set (${exclusiveCount} closed, ${exclusivePending} pending), so the search stayed exclusive`
-        : recordedPlat && tierOutsideRecordedPlatRows(tier)
-          ? 'this home sits in a recorded subdivision, so the search stays in that plat, the plats that touch it, and the plats that touch those. It does not open a quarter-mile pocket, a distance ring, or the rest of the neighborhood'
+        // A recorded plat stays in its own rows (plat, touching plats, the plats
+        // that touch those) once they hold the minimum. Short of it, the walk
+        // goes on through the rest of the neighborhood or community, closest
+        // first and inside the parent wall, before the build fails (rules 15
+        // and 19: "Do not return a short set"). 915 Saginaw and 1648 Pheasant
+        // failed on 2026-10-07 holding one sale each with the neighborhood unread.
+        : recordedPlat && tierOutsideRecordedPlatRows(tier) && (platRowCount ?? 0) >= PRICING_MIN_COMPS
+          ? `this home sits in a recorded subdivision, and that plat, the plats that touch it, and the plats that touch those already hold ${platRowCount} sales, so the search stays there. It does not open a quarter-mile pocket, a distance ring, or the rest of the neighborhood`
         : parentConfines(subject) && (tier.likeCommunity || tier.crossBoundary || tier.whenStarved)
           ? 'this home sits inside a neighborhood or community, so the search does not leave it for another community or a distance past that boundary'
         : tier.closerSubdivision && !(subject.closerSubdivisionSlugs?.length)
