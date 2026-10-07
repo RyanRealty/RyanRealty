@@ -1,4 +1,40 @@
-# Current — 2026-10-07 (Claude Code, Studio motion stage, paper films and the score from prompt-motion.com, true-shape listing video, production ffmpeg, D113 repair, You Should Know plugin)
+# Current — 2026-10-07 (Claude Code, CMA engine: Matt's rulings, reviews, fixes)
+
+Surface: Claude Code. Branch `claude/beautiful-lamport-2x4fjs`, draft PR https://github.com/RyanRealty/RyanRealty/pull/428. Nothing sent, nothing approved, nothing deployed from this work. This block supersedes the CMA block in the Earlier block titled "no sign-in on CMA reports, email link host, CMA report improvements": its worktree branches (five-sales floor, ask-in-band hold, same-area rule) are merged on the branch, and its open questions on Saginaw, curated sets, FSBO asks and the stacked pulls are answered below. Rule numbers are `marketing_brain_skills/producers/cma/SKILL.md` §0.3.
+
+**Matt's rulings 2026-10-07**
+- Five price-setting sales is the floor (rule 8).
+- Walk to seven while the same area holds qualifying sales: own ground across its full 24-month window, and stop widening the area at five (rule 8).
+- The printed band is always the trimmed range (rule 8).
+- An ask inside the trimmed band is a hold for Matt (rule 22).
+- Same property type only; a duplex never prices a detached home (rule 23).
+- Actives and expireds come from the sales' own area and rules; plat membership is the recorded polygon (rule 24).
+- Every engine change is scored on the fleet first (rule 25, `npm run cma:fleet`).
+- A home whose every qualifying sale sits above its failed ask is held for Matt and the letter says both: "Hold, letter says both" (rule 26).
+- Curated sets meet the floor.
+- A FSBO ask in the band is information only.
+- The failed-ask pull and the sitting-actives pull stack (rule 16).
+
+**Work merged on the branch today.** The three engine branches (five-sales floor with the ask-in-band hold and same type; same-area actives and expireds; the fleet scorer). Reviewers' fixes: sentinel plat names, the GLA bracket wall, the printed-band boundary, the hold measured flag, the queue line. The trimmed-band letter contract (`1adca31aa`). Band fixes: the street-anchor twin is never set aside, the set-aside is matched by listing key, the failed ask is re-read after the pin, approve and auto-send refuse held rows. Reader-review fixes: one area for the map with the subject's plat always in it and polygon membership, every pin drawn, one day count per sale, a gated "never got one" line, wording. Walk to seven (`fix/walk-to-seven`: `a8ae03cda`, `f6bdf1fbd`).
+
+**Baseline fleet score on the live engine** (scratch run, 141 open Bend expired CMAs): 112 build, 29 fail. Of the 112 builds, 89 sit on five sales and 23 on three or four. Those 23 fail the new floor unless the walk finds more in their own area.
+
+**Still open**
+- The after-change fleet score, to set beside the baseline.
+- Deploy and `deploy:verify`.
+- Rebuild every Bend draft. None has been sent; nothing sends without Matt's per-report approval.
+- CI tap-target failure from a tiny "Summit West" atlas polygon on /cities/bend. It is live data, not this PR's code; a fix is in progress on `fix/atlas-tap-target`.
+- Jackson pocket-letter notes and percent math (`fix/reader-pocket`).
+- Comp freshness: a sale closed 2026-10-05 is missing from Purcell's pool (`fix/reader-fresh`).
+- Location weight read from the rung name, and half baths counted as full (`fix/weight-location`).
+- Flex gold lock tests in `lib/pricing/match.test.ts` are `it.skip` pending Matt.
+- Google reviewer names on the closing page need Matt's confirmation under CLAUDE.md CMA rule 12.
+- The CLAUDE.md restructure Matt approved, for after the CMA engine work.
+- Carried unchanged from the Earlier CMA block: Burnside's date-adjustment check; 139 Roosevelt and 714 10th finding zero sales inside their neighborhoods.
+
+Skills read this pass: `marketing_brain_skills/producers/cma/SKILL.md`, `marketing_brain_skills/brand-voice/VOICE.md`.
+
+## Earlier — 2026-10-07 (Claude Code, Studio motion stage, paper films and the score from prompt-motion.com, true-shape listing video, production ffmpeg, D113 repair, You Should Know plugin)
 
 Surface: Claude Code. Branch `claude/nifty-rubin-70dvwc`, PR #427, landed on main at `8d3e4f8` (fast-forward, Matt approved "Land, deploy, verify").
 
