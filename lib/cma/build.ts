@@ -51,7 +51,7 @@ import {
 import { buildRejectedSales } from '@/lib/pricing/rejected'
 import { dropPriorSalesOfSameHome } from '@/lib/pricing/same-address'
 import { buildPricingReview, confidenceForVerdict } from '@/lib/pricing/review'
-import { applyAskInBandHold } from '@/lib/cma/gap-hold'
+import { applyAskBelowBandHold, applyAskInBandHold } from '@/lib/cma/gap-hold'
 import { attachSellerNet, reanchorSellerNet } from '@/lib/pricing/seller-net'
 import { pricingFailureMessage } from '@/lib/pricing/price-set'
 import { classifyStory, citySlug, irrigationClassFromOwrd, isCustomOrNewSubject, yearQualityCompatible } from '@/lib/pricing/classes'
@@ -83,6 +83,8 @@ import { buildCmaLocalOutcomes } from '@/lib/pricing/local-outcomes-read'
 import { analyzeListingHistory } from '@/lib/bpo/history'
 import {
   applyFailedAskCap,
+  failedAskBelowRangeNote,
+  reclassifyFailedAskOnPrintedBand,
   buildFailureFindings,
   buildServicesList,
   buildNetSheet,
@@ -623,6 +625,9 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         indexUnavailableReason:
           marketIndex.length > 0 ? null : `no monthly index rows for ${citySlug(subject.city) || 'this city'}`,
         computePricing,
+        // A failed-ask pull under every sale that set the price is held for
+        // Matt after the pin (applyAskBelowBandHold), not failed here.
+        holdFailedAskUnderSaleSet: true,
       })
       // The concession sentence prints under the matrix and names "the sales
       // that set this price", so it counts THAT set — the kept comps the reader
@@ -1439,7 +1444,34 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // persists; the hold on the row is what keeps it from sending
     // (lib/cma/gap-hold.ts). Never widen or reshape the search for this.
     // sanitizeClientProse already ran; the sentence is written clean.
+    // The cap judged the ask before the pin; the hold reads the pinned band.
+    // Re-read below / inside / above on the printed band first, so exactly
+    // one of them holds on the row (review, 2026-10-07).
+    reclassifyFailedAskOnPrintedBand(
+      pricing,
+      pricing.failedAsk ?? (lastCycleFailed ? (subject.lastListPrice ?? null) : null),
+    )
     applyAskInBandHold(pricing, { lastCycleFailed, lastListPrice: subject.lastListPrice, auditVerdict })
+    // A recommendation under the printed band low is not a price (rule 20).
+    // When the failed-ask ceiling put it there the document is held for Matt
+    // ('ask-below-band', 20676 Wild Rose and 915 Saginaw, 2026-10-07); any
+    // other cause fails the build here, before a letter is written.
+    const belowBand = applyAskBelowBandHold(pricing, { lastListPrice: subject.lastListPrice, auditVerdict })
+    if (!belowBand.ok) {
+      const err = `Pricing failed: ${belowBand.error}`
+      await recordBuildFailure(slug, err, { stage: 'pricing', docType, pricing })
+      return { ok: false, error: err, slug }
+    }
+    // Rule 26: the held letter says both facts once (heldUnderBandLead). The
+    // cap's "the recommended list sits on the sales" note is not true of it.
+    if (pricing.hold?.kind === 'ask-below-band') {
+      const stale = new Set(
+        [pricing.failedAsk, subject.lastListPrice]
+          .filter((a): a is number => a != null && a > 0)
+          .map((a) => failedAskBelowRangeNote(a)),
+      )
+      pricing.notes = pricing.notes.filter((n) => !stale.has(n))
+    }
     // A blank client on an expired home is the skip-traced owner. Resolved
     // before render so the letter can keep that name out of the copy, and
     // before persist so a null does not wipe a client already stored.

@@ -17,6 +17,9 @@
  *      to origin 'expired' because rule 16's thesis is about a home that did
  *      not sell; an FSBO's current ask inside the band is information, not a
  *      hold.
+ *   4. The build recorded an ask-below-band hold: the failed-ask ceiling
+ *      pulled the recommendation under every sale that set it (rule 20), and
+ *      Matt has not decided how to treat those homes.
  *
  * None of these can be acknowledged through. The search is never widened or
  * reshaped to move the band away from the ask.
@@ -27,10 +30,44 @@ import { buildPricingReview } from '@/lib/pricing/review'
 import type { CmaPricing, CmaPricingAuditVerdict } from '@/lib/cma/types'
 
 export const ASK_IN_BAND_KIND = 'ask-in-band' as const
-export type CmaHoldKind = typeof ASK_IN_BAND_KIND
+/**
+ * The failed-ask ceiling pulled the recommendation under every sale that set
+ * it (20676 Wild Rose: ask $599,900, recommendation $593,000, band $610,150 to
+ * $678,983; 915 Saginaw failed at pricing for the same reason). Rule 20 says a
+ * price outside the sales that set it is not a price, and Matt has not decided
+ * how to treat these homes, so the build completes and the document waits for
+ * him. Same mechanism as the ask-in-band hold: stored on the row, never
+ * acknowledged through, refused at every approve and send path.
+ */
+export const ASK_BELOW_BAND_KIND = 'ask-below-band' as const
+export type CmaHoldKind = typeof ASK_IN_BAND_KIND | typeof ASK_BELOW_BAND_KIND
+
+/** True for a hold kind the build writes. Anything else on a row is not a hold. */
+export function isCmaHoldKind(v: unknown): v is CmaHoldKind {
+  return v === ASK_IN_BAND_KIND || v === ASK_BELOW_BAND_KIND
+}
+
+/** The hold kind a stored build summary carries (build_summary.hold_kind), or null. */
+export function storedHoldKind(summary: unknown): CmaHoldKind | null {
+  const kind = (summary as { hold_kind?: unknown } | null | undefined)?.hold_kind
+  return isCmaHoldKind(kind) ? kind : null
+}
+
+/**
+ * The build decided the hold: it stored one, or it measured an ask against a
+ * band and found none (build_summary.hold_measured). The send gates run the
+ * live backstop on every row this is false for.
+ */
+export function storedHoldDecided(summary: unknown): boolean {
+  if (summary == null || typeof summary !== 'object') return false
+  return storedHoldKind(summary) != null || (summary as { hold_measured?: unknown }).hold_measured === true
+}
 
 export const ASK_IN_BAND_REASON_PLAIN =
   'The last ask sits inside the sales range the recommendation reads from. It stays with you. It was not queued and it was not sent.'
+
+export const ASK_BELOW_BAND_REASON_PLAIN =
+  'The recommended price sits under the sales range because the last ask did not sell and the price was pulled under it. A price under every sale that set it has not been approved. It stays with you. It was not queued and it was not sent.'
 
 export type RecommendationGapHold =
   | { hold: false }
@@ -45,6 +82,18 @@ export function askInBandReason(ask: number, low: number, high: number): string 
   return (
     `The last ask of ${usd(ask)} sits inside the sales range of ${usd(lo)} to ${usd(hi)} the recommendation reads from. ` +
     "The home did not sell at a price the sales support, so the letter's reason that the ask was too high does not hold. " +
+    'It stays with you. It was not queued and it was not sent.'
+  )
+}
+
+/** The ask-below-band reason Matt reads in the queue: the ask, the price, the band. No em dash. */
+export function askBelowBandReason(ask: number, recommended: number, low: number, high: number): string {
+  const lo = Math.min(low, high)
+  const hi = Math.max(low, high)
+  return (
+    `The recommended price of ${usd(recommended)} sits under the sales range of ${usd(lo)} to ${usd(hi)}, ` +
+    `because the last ask of ${usd(ask)} did not sell and the price was pulled under that ask. ` +
+    'A price under every sale that set it has not been approved. ' +
     'It stays with you. It was not queued and it was not sent.'
   )
 }
@@ -128,13 +177,97 @@ export function applyAskInBandHold(
   return pricing
 }
 
+/**
+ * The recommendation under the printed band low (printedBandBounds), read
+ * AFTER the pin. Null when there is nothing to compare.
+ */
+export function recommendationUnderPrintedBand(pricing: {
+  recommended?: number | null
+  valueLow?: number | null
+  valueHigh?: number | null
+}): { low: number; high: number } | null {
+  if (!positive(pricing.recommended) || !positive(pricing.valueLow) || !positive(pricing.valueHigh)) return null
+  const band = printedBandBounds(pricing.valueLow, pricing.valueHigh)
+  return pricing.recommended < band.low ? band : null
+}
+
+/**
+ * The failed-ask ceiling is what put the recommendation under the band: it
+ * moved the recommended tier from a figure at or above the band low to one
+ * under it. A recommendation under the band for any other reason is not this.
+ */
+export function failedAskPutRecommendationUnderBand(pricing: {
+  recommended?: number | null
+  valueLow?: number | null
+  valueHigh?: number | null
+  clamp?: CmaPricing['clamp']
+}): boolean {
+  const band = recommendationUnderPrintedBand(pricing)
+  if (!band) return false
+  return (pricing.clamp?.applications ?? []).some(
+    (a) => a.tier === 'recommended' && a.after < a.before && a.before >= band.low,
+  )
+}
+
+/**
+ * THE RECOMMENDATION UNDER THE PRINTED BAND, after the pin (review,
+ * 2026-10-07). When the failed-ask ceiling put it there the build completes
+ * as an 'ask-below-band' hold for Matt; a row the ask-in-band hold already
+ * holds stays held and gains this reason. Any other recommendation under the
+ * band low is not a price, and the build fails with the reason returned here.
+ * A broker override is exempt. Mutates `pricing` in place, as
+ * applyAskInBandHold does.
+ */
+export function applyAskBelowBandHold(
+  pricing: CmaPricing,
+  args: { lastListPrice: number | null | undefined; auditVerdict: CmaPricingAuditVerdict },
+): { ok: true } | { ok: false; error: string } {
+  const band = recommendationUnderPrintedBand(pricing)
+  if (!band) return { ok: true }
+  // A broker override is a person choosing the number, exempt from rule 20
+  // (Matt 2026-10-07): how he approves a held price, or sets his own.
+  if (pricing.priceOverride != null && pricing.priceOverride > 0) return { ok: true }
+  const rec = pricing.recommended
+  if (!failedAskPutRecommendationUnderBand(pricing)) {
+    return {
+      ok: false,
+      error:
+        `The recommended price ${usd(rec)} sits under the sales range of ${usd(band.low)} to ${usd(band.high)}, ` +
+        'and no failed-ask ceiling explains it. A price outside the sales that set it is not a price.',
+    }
+  }
+  const ask = pricing.failedAsk ?? args.lastListPrice ?? null
+  const reason = positive(ask) ? askBelowBandReason(ask, rec, band.low, band.high) : ASK_BELOW_BAND_REASON_PLAIN
+  if (!pricing.hold) {
+    pricing.hold = {
+      kind: ASK_BELOW_BAND_KIND,
+      ask: positive(ask) ? ask : 0,
+      bandLow: band.low,
+      bandHigh: band.high,
+      recommended: rec,
+      reason,
+    }
+  }
+  pricing.needsReview = true
+  if (!(pricing.reviewReason ?? '').includes(reason)) {
+    pricing.reviewReason = [pricing.reviewReason, reason].filter(Boolean).join(' ')
+  }
+  pricing.review = buildPricingReview({
+    needsReview: true,
+    reviewReason: pricing.reviewReason,
+    clamp: pricing.clamp ?? null,
+    auditVerdict: args.auditVerdict,
+  })
+  return { ok: true }
+}
+
 export function recommendationGapHold(
   recommended: number | null | undefined,
   lastAsk: number | null | undefined,
   band?: {
     low: number | null
     high: number | null
-    /** The build's own verdict, stored on the row. Wins over the live check. */
+    /** The build's own verdict (either hold kind), stored on the row. Wins over the live check. */
     holdKind?: string | null
     /**
      * True when the build measured the ask against the band and decided
@@ -153,6 +286,21 @@ export function recommendationGapHold(
   if (band?.holdKind === ASK_IN_BAND_KIND) {
     const live = askInBandHold(lastAsk, band.low, band.high)
     return { hold: true, reason: live.hold ? live.reason : ASK_IN_BAND_REASON_PLAIN }
+  }
+  // The stored ask-below-band hold. Restated with dollars only when the row's
+  // own recommendation still sits under its own band.
+  if (band?.holdKind === ASK_BELOW_BAND_KIND) {
+    const under =
+      positive(recommended) && positive(band.low) && positive(band.high)
+        ? recommendationUnderPrintedBand({ recommended, valueLow: band.low, valueHigh: band.high })
+        : null
+    return {
+      hold: true,
+      reason:
+        under && positive(lastAsk) && lastAsk < under.low
+          ? askBelowBandReason(lastAsk, recommended!, under.low, under.high)
+          : ASK_BELOW_BAND_REASON_PLAIN,
+    }
   }
   // SECOND: rule 3, unchanged.
   if (recommended != null && lastAsk != null) {

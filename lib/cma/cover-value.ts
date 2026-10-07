@@ -17,6 +17,23 @@ const esc = escapeHtml
 
 /** Locked cover / hero headline (Matt 2026-09-12 Tip Ready craft). */
 export const COVER_LIST_PRICE_HEADLINE = 'Our Recommended List Price for your home'
+/**
+ * The label over the number on a letter the build holds because the failed
+ * ask pulled the price under every sale that set it (SKILL.md rule 26, Matt
+ * 2026-10-07). That number is the failed-ask result, not a recommendation
+ * anyone has approved; Matt approves it or sets his own.
+ */
+export const HELD_PRICE_HEADLINE = 'The price Matt is reviewing'
+
+/** True on a letter held under rule 26 (pricing.hold kind 'ask-below-band'). */
+export function heldUnderBand(p: Pick<CmaPricing, 'hold'> | null | undefined): boolean {
+  return p?.hold?.kind === 'ask-below-band'
+}
+
+/** The label over the cover number: the recommendation, or on a held letter the price under review. */
+export function coverPriceHeadline(p: Pick<CmaPricing, 'hold'> | null | undefined): string {
+  return heldUnderBand(p) ? HELD_PRICE_HEADLINE : COVER_LIST_PRICE_HEADLINE
+}
 
 type CoverArgs = {
   subject: CmaSubject
@@ -194,11 +211,11 @@ export function coverValueBlockHtml(a: CoverArgs): string {
   return `
     <div class="vb-top">
       <div>
-        <div class="vb-label">${esc(COVER_LIST_PRICE_HEADLINE)}</div>
+        <div class="vb-label">${esc(coverPriceHeadline(p))}</div>
         <p class="vb-price">${usd(p.recommended)}</p>
       </div>
     </div>
-    <div class="vb-range">${esc((() => {
+    ${heldUnderBand(p) ? '' : `<div class="vb-range">${esc((() => {
       // Matt 2026-09-18: same closed-comp band as hero trio — never a second
       // list-tier range beside Low/High (Canter dual-tier refuse).
       const band = closedCompBand(p)
@@ -207,7 +224,7 @@ export function coverValueBlockHtml(a: CoverArgs): string {
       return `List ${usd(lo)} to ${usd(hi)}.`
     })())}${
       range.outOfRange ? ` The sales support ${usd(p.valueLow)} to ${usd(p.valueHigh)}.` : ''
-    }</div>
+    }</div>`}
     ${currentAskLine(p) ? `<div class="vb-detail vb-ask">${esc(currentAskLine(p)!)}</div>` : ''}
     ${range.note ? `<div class="vb-detail">${esc(range.note)}</div>` : ''}
     <div class="vb-detail">${a.comps.length} closed MLS sales. Automated estimates are not used.${a.market?.geoLabel ? ` The market read is ${esc(a.market.geoLabel)}.` : ''} ${esc(story.body)}</div>`
@@ -287,7 +304,7 @@ export function immersiveHeroNumberHtml(a: CoverArgs): string {
   const cause = rangeSpreadCauseSentence(p)
   return `
     <div class="hero-payoff">
-      <div class="ans-l r">${esc(COVER_LIST_PRICE_HEADLINE)}</div>
+      <div class="ans-l r">${esc(coverPriceHeadline(p))}</div>
       ${heroTrioHtml(p, { comps: a.comps })}
       ${cause ? `<div class="hero-why r">${esc(cause)}</div>` : ''}
     </div>`
@@ -304,7 +321,7 @@ export function letterCoverPayoffHtml(
   const trio = heroTrioHtml(p, { comps })
   if (!trio && !cause) return ''
   return `<div class="cover-payoff">
-      <div class="cover-headline">${esc(COVER_LIST_PRICE_HEADLINE)}</div>
+      <div class="cover-headline">${esc(coverPriceHeadline(p))}</div>
       ${trio}
       ${cause ? `<p class="cover-why">${esc(cause)}</p>` : ''}
     </div>`
@@ -319,7 +336,8 @@ export function immersiveAnswerHtml(a: CoverArgs): string {
   const story = describeCompSearch({ subdivision: a.subject.subdivision, tiersUsed: a.tiersUsed ?? [] })
   const bits = [
     currentAskLine(p),
-    range.outOfRange ? `The sales support ${usd(p.valueLow)} to ${usd(p.valueHigh)}.` : null,
+    // A held letter (rule 26) states the band once, in chapter 3.
+    range.outOfRange && !heldUnderBand(p) ? `The sales support ${usd(p.valueLow)} to ${usd(p.valueHigh)}.` : null,
     range.note,
     // A 28-to-33 percent spread on the opening screen with nothing saying why
     // (tasteReview round two, §3.E). One sentence, off `pricing.rangeRule`.

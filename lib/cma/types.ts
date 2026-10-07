@@ -302,6 +302,8 @@ export interface CmaPricingClampApplication {
 export interface CmaPricingStreetAnchor {
   /** The same-street sale or sales the number is held to. */
   addresses: string[]
+  /** Their listing keys, when the pricer wrote them. A sale the anchor holds is never set aside. */
+  listingKeys?: string[]
   /** Median adjusted price of those sales — the anchor itself. */
   anchor: number
   /** The most the recommendation may sit above the anchor. */
@@ -465,10 +467,18 @@ export interface CmaSubjectStatus {
  * out of the weights and out of the printed price, and this is where they go.
  */
 export type CmaPricingHold = {
-  kind: 'ask-in-band'
+  /**
+   * 'ask-in-band': rule 22, the last failed ask inside the printed band.
+   * 'ask-below-band': the failed-ask ceiling pulled the recommendation under
+   * every sale that set it (rule 20 says that is not a price); Matt has not
+   * decided how to treat these homes, so the document waits for him.
+   */
+  kind: 'ask-in-band' | 'ask-below-band'
   ask: number
   bandLow: number
   bandHigh: number
+  /** The recommendation the hold is about. Written on 'ask-below-band'. */
+  recommended?: number
   /** The sentence Matt reads in the queue. No em dash. */
   reason: string
 }

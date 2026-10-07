@@ -33,6 +33,7 @@ export type CmaQueueWhy =
   | 'wide-range'
   | 'failed-ask'
   | 'ask-in-band'
+  | 'ask-below-band'
   | 'search-widened'
   | 'short-comps'
   | 'judge-unstable'
@@ -50,6 +51,7 @@ export const CMA_QUEUE_WHY_LABEL: Record<Exclude<CmaQueueWhy, 'none'>, string> =
   'wide-range': 'Range is wide',
   'failed-ask': 'Ask did not sell',
   'ask-in-band': 'Ask inside the range',
+  'ask-below-band': 'Price under the range',
   'search-widened': 'Search widened',
   'short-comps': 'Not enough sales',
   'judge-unstable': 'Comps did not agree',
@@ -138,6 +140,9 @@ function one(v: string | string[] | undefined): string | undefined {
 
 /** The ask-in-band hold's sentences, as lib/cma/gap-hold.ts writes them (with dollars or plain). */
 const ASK_IN_BAND_START = /The last ask\b[^.]*?inside the sales range/
+/** The ask-below-band hold's first sentence (askBelowBandReason, or the plain reason). */
+const ASK_BELOW_BAND_START = /The recommended price\b[^.]*?under the sales range/
+const HELD_START = new RegExp(`${ASK_IN_BAND_START.source}|${ASK_BELOW_BAND_START.source}`)
 const ASK_IN_BAND_END = 'It was not queued and it was not sent.'
 
 /**
@@ -147,7 +152,7 @@ const ASK_IN_BAND_END = 'It was not queued and it was not sent.'
  * hold (review, 2026-10-07). Other reasons keep their order.
  */
 export function heldReasonFirst(reason: string): string {
-  const at = reason.search(ASK_IN_BAND_START)
+  const at = reason.search(HELD_START)
   if (at <= 0) return reason
   const endAt = reason.indexOf(ASK_IN_BAND_END, at)
   const stop = endAt === -1 ? reason.length : endAt + ASK_IN_BAND_END.length
@@ -169,9 +174,11 @@ export function cmaQueueListReason(
   max: number = CMA_QUEUE_LIST_REASON_CHARS,
 ): string {
   const reason = (r.reviewReason ?? '').trim()
-  if (cmaQueueWhy(r) !== 'ask-in-band') return reason ? reason.slice(0, max) : 'Flagged for review.'
+  const why = cmaQueueWhy(r)
+  if (why !== 'ask-in-band' && why !== 'ask-below-band') return reason ? reason.slice(0, max) : 'Flagged for review.'
   const led = heldReasonFirst(reason)
-  const line = ASK_IN_BAND_START.test(led) ? led : `${CMA_QUEUE_WHY_LABEL['ask-in-band']}. ${led}`.trim()
+  const start = why === 'ask-in-band' ? ASK_IN_BAND_START : ASK_BELOW_BAND_START
+  const line = start.test(led) ? led : `${CMA_QUEUE_WHY_LABEL[why]}. ${led}`.trim()
   return line.slice(0, max)
 }
 
@@ -193,7 +200,7 @@ export function cmaQueueHoldLine(r: {
   if (r.state === 'flagged') {
     const label = why === 'none' ? 'Flagged' : CMA_QUEUE_WHY_LABEL[why]
     const raw = (r.reviewReason ?? '').trim()
-    const reason = why === 'ask-in-band' ? heldReasonFirst(raw) : raw
+    const reason = why === 'ask-in-band' || why === 'ask-below-band' ? heldReasonFirst(raw) : raw
     if (!reason) return `${label}.`
     if (reason.toLowerCase().startsWith(label.toLowerCase())) return reason
     return `${label}. ${reason}`
@@ -239,6 +246,9 @@ export function cmaQueueWhy(r: {
     // Rule 22 first: the stored kind, then the phrase for rows built before
     // the field landed.
     if (r.holdKind === 'ask-in-band' || reason.includes('inside the sales range')) return 'ask-in-band'
+    // The failed-ask ceiling under every sale that set the price: a hold, read
+    // before the failed-ask bucket so the hold is the bucket Matt sees.
+    if (r.holdKind === 'ask-below-band' || reason.includes('under the sales range')) return 'ask-below-band'
     if (reason.includes('wider than 8%')) return 'wide-range'
     if (
       reason.includes('just failed') ||

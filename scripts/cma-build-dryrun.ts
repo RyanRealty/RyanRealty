@@ -457,6 +457,7 @@ async function dryRun(slug: string): Promise<DryRun> {
     indexUnavailableReason:
       marketIndex.length > 0 ? null : `no monthly index rows for ${citySlug(subject.city) || 'this city'}`,
     computePricing,
+    holdFailedAskUnderSaleSet: true,
   })
   if (!pricing) return { ...withSel, stage: 'pricing', error: pricingFailureMessage(subject, adjusted) }
 
@@ -650,19 +651,31 @@ async function dryRun(slug: string): Promise<DryRun> {
       queuedAt: (row.queued_at as string | null) ?? null,
     })
   // EXACTLY lib/cma/build.ts: the band is pinned to the sales that set it
-  // (set-aside rows read by name), then rule 22, the last failed ask inside
-  // that pinned band (Matt 2026-10-07). Same helper as the build.
+  // (set-aside rows read by key), the cap's ask is re-read on that band, then
+  // rule 22, the last failed ask inside that pinned band (Matt 2026-10-07),
+  // then a recommendation under the band: held when the failed ask put it
+  // there, failed otherwise. Same helpers as the build.
   {
     const { pinPrintedBandToSettingSales } = await import('@/lib/pricing/estimate')
-    const { applyAskInBandHold } = await import('@/lib/cma/gap-hold')
+    const { applyAskBelowBandHold, applyAskInBandHold } = await import('@/lib/cma/gap-hold')
+    const { reclassifyFailedAskOnPrintedBand } = await import('@/lib/cma/expired-audit')
     const recommendedBeforePin = pricing.recommended
     pricing = pinPrintedBandToSettingSales(pricing, attachCompConcessions(adjusted))
     if (pricing.recommended !== recommendedBeforePin) reanchorSellerNet(pricing)
+    reclassifyFailedAskOnPrintedBand(
+      pricing,
+      pricing.failedAsk ?? (lastCycleFailed ? (subject.lastListPrice ?? null) : null),
+    )
     applyAskInBandHold(pricing, {
       lastCycleFailed,
       lastListPrice: subject.lastListPrice,
       auditVerdict: storedAudit.verdict,
     })
+    const belowBand = applyAskBelowBandHold(pricing, {
+      lastListPrice: subject.lastListPrice,
+      auditVerdict: storedAudit.verdict,
+    })
+    if (!belowBand.ok) return { ...withSel, stage: 'pricing', error: `Pricing failed: ${belowBand.error}` }
   }
   const review = buildPricingReview({
     needsReview: pricing.needsReview,

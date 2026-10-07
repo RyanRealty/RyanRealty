@@ -34,9 +34,11 @@ vi.mock('@/lib/cma/first-contact-override', () => ({
 
 const getCmaAdminReviewRowBySlug = vi.fn()
 const updateCmaRowFieldsBySlug = vi.fn()
+const getCmaProspectAsk = vi.fn()
 vi.mock('@/lib/data', () => ({
   attachCmaToPerson: vi.fn(),
   getCmaAdminReviewRowBySlug: (...args: unknown[]) => getCmaAdminReviewRowBySlug(...args),
+  getCmaProspectAsk: (...args: unknown[]) => getCmaProspectAsk(...args),
   updateCmaRowFieldsBySlug: (...args: unknown[]) => updateCmaRowFieldsBySlug(...args),
   deleteCmaRowById: vi.fn(),
 }))
@@ -88,6 +90,7 @@ beforeEach(() => {
   adminRole = { role: 'superuser' }
   getCmaAdminReviewRowBySlug.mockReset()
   updateCmaRowFieldsBySlug.mockReset().mockResolvedValue({ ok: true })
+  getCmaProspectAsk.mockReset().mockResolvedValue(null)
 })
 
 afterEach(() => {
@@ -225,5 +228,70 @@ describe('approveCmaAction review acknowledgement', () => {
     expect(res.error).toMatch(/no built document/)
     expect(res.needsReviewAck).toBeUndefined()
     expect(updateCmaRowFieldsBySlug).not.toHaveBeenCalled()
+  })
+})
+
+describe('approveCmaAction refuses every hold the queue refuses (review, 2026-10-07)', () => {
+  // An expired row the build never measured (hold_measured false, no hold_kind)
+  // with the last ask inside the stored band: the report-page Approve button
+  // finalized it, because only a stored hold_kind was refused here.
+  function unmeasuredExpiredRow(over: Record<string, unknown> = {}) {
+    return {
+      id: 'row-1',
+      slug: 'cma-test',
+      html_path: 'db:cmas.html_content:cma-test',
+      status: 'draft',
+      doc_type: 'expired-audit',
+      request_source: null,
+      recommended_list: 905_000,
+      value_low: 893_000,
+      value_high: 951_000,
+      build_summary: { needs_review: false, review_reason: null, hold_kind: null, hold_measured: false },
+      ...over,
+    }
+  }
+
+  it('refuses an unmeasured expired row whose ask sits inside the stored band, even acknowledged', async () => {
+    getCmaAdminReviewRowBySlug.mockResolvedValue(unmeasuredExpiredRow())
+    getCmaProspectAsk.mockResolvedValue(925_000)
+    const res = await approveCmaAction('cma-test', { acknowledgeReview: true })
+    expect(res.error).toContain('The last ask of $925,000 sits inside the sales range of $893,000 to $951,000')
+    expect(res.needsReviewAck).toBeUndefined()
+    expect(getCmaProspectAsk).toHaveBeenCalledWith('row-1')
+    expect(updateCmaRowFieldsBySlug).not.toHaveBeenCalled()
+  })
+
+  it('refuses a rule 3 gap: a recommendation above the last ask', async () => {
+    getCmaAdminReviewRowBySlug.mockResolvedValue(unmeasuredExpiredRow({ recommended_list: 990_000, value_high: 1_000_000 }))
+    getCmaProspectAsk.mockResolvedValue(975_000)
+    const res = await approveCmaAction('cma-test', { acknowledgeReview: true })
+    expect(res.error).toMatch(/above the last ask/)
+    expect(updateCmaRowFieldsBySlug).not.toHaveBeenCalled()
+  })
+
+  it('refuses a stored ask-below-band hold with its stored reason', async () => {
+    const reason =
+      'The recommended price of $593,000 sits under the sales range of $610,000 to $679,000, because the last ask of $599,900 did not sell and the price was pulled under that ask. A price under every sale that set it has not been approved. It stays with you. It was not queued and it was not sent.'
+    getCmaAdminReviewRowBySlug.mockResolvedValue(
+      unmeasuredExpiredRow({
+        recommended_list: 593_000,
+        value_low: 610_150,
+        value_high: 678_983,
+        build_summary: { needs_review: true, review_reason: reason, hold_kind: 'ask-below-band', hold_reason: reason },
+      }),
+    )
+    const res = await approveCmaAction('cma-test', { acknowledgeReview: true })
+    expect(res.error).toBe(reason)
+    expect(updateCmaRowFieldsBySlug).not.toHaveBeenCalled()
+  })
+
+  it('finalizes a measured expired row whose ask sits above the band', async () => {
+    getCmaAdminReviewRowBySlug.mockResolvedValue(
+      unmeasuredExpiredRow({ build_summary: { needs_review: false, review_reason: null, hold_kind: null, hold_measured: true } }),
+    )
+    getCmaProspectAsk.mockResolvedValue(960_000)
+    const res = await approveCmaAction('cma-test')
+    expect(res).toEqual({ error: null })
+    expect(updateCmaRowFieldsBySlug).toHaveBeenCalledTimes(1)
   })
 })

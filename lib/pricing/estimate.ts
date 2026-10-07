@@ -48,7 +48,7 @@ import {
   type ReconcilableSale,
 } from '@/lib/pricing/reconciliation'
 import { applyFailedAskCap as applyExpiredFailedAskCap } from '@/lib/cma/expired-audit'
-import { readSetAsideSales } from '@/lib/cma/set-aside'
+import { setAsideMatcher } from '@/lib/cma/set-aside'
 import {
   applyExclusivePocketDateAdj,
   describeAppliedDateAdjustments,
@@ -987,14 +987,9 @@ export function pinPrintedBandToSettingSales<
     concessionsYn?: string | null
   }[],
 ): T {
-  const key = (v: string | null | undefined): string => (v ?? '').trim().toLowerCase()
-  const asideKeys = new Set(
-    readSetAsideSales(pricing as unknown as CmaPricing).flatMap((r) =>
-      [key(r.listingKey), key(r.address)].filter(Boolean),
-    ),
-  )
-  const notAside = (c: { listingKey?: string | null; address?: string | null }): boolean =>
-    !asideKeys.has(key(c.listingKey)) && !asideKeys.has(key(c.address))
+  // By listing key, never by a unit-less street address (setAsideMatcher).
+  const isAside = setAsideMatcher(pricing as unknown as CmaPricing)
+  const notAside = (c: { listingKey?: string | null; address?: string | null }): boolean => !isAside(c)
   const weighted = comps.filter((c) => settingWeight(c) != null)
   const setters = (weighted.length > 0 ? weighted : comps).filter(
     (c) => (weighted.length === 0 || (settingWeight(c) ?? 0) > 0) && notAside(c),
@@ -1786,6 +1781,105 @@ export function applyEngineCoverToCmaPricing(
   })
 }
 
+/**
+ * THE SALE THAT HOLDS THE PRICE IS NEVER SET ASIDE (review, 2026-10-07).
+ *
+ * applyStreetAnchor fires only when the same-street twin sits about ten
+ * percent or more under the reconciled price, so the twin is nearly always
+ * the lowest adjusted sale and the range rule set it aside. The anchor then
+ * held the recommendation to the twin, the pin drew the band from the sales
+ * left (the pin only pulls a price down, never up), and the letter printed
+ * $550,000 under a $600,000 to $660,000 band while saying the sale holding
+ * the price had been set aside (120 Benaiah at $500,000 beside five sales at
+ * $600,000 to $680,000).
+ *
+ * So when the anchor holds the price its sales come back into the kept set:
+ * off `pricing.setAside`, into the weights, and into the range rule's counts,
+ * ends and sentence, which the hero band then follows.
+ */
+function releaseStreetAnchorFromSetAside(
+  pricing: CmaPricing,
+  part: { priced: readonly CmaAdjustedComp[]; setAside: readonly CmaAdjustedComp[] },
+  ctx: { subjectSqft: number; asOf: string },
+): void {
+  const anchor = pricing.streetAnchor
+  if (!anchor) return
+  const keys = new Set((anchor.listingKeys ?? []).filter(Boolean))
+  const addresses = new Set(anchor.addresses.map((a) => a.trim().toLowerCase()).filter(Boolean))
+  const holdsThePrice = (s: CmaAdjustedComp): boolean =>
+    keys.size > 0 ? keys.has(s.listingKey) : addresses.has((s.address ?? '').trim().toLowerCase())
+  const released = new Set(part.setAside.filter(holdsThePrice))
+  if (released.size === 0) return
+  const stillAside = part.setAside.filter((s) => !released.has(s))
+  const asideSet = new Set(stillAside)
+  // The grid's order, so weight three is still sale three.
+  const kept = part.priced.filter((s) => !asideSet.has(s))
+  const releasedKeys = new Set([...released].map((s) => s.listingKey))
+  pricing.setAside = (pricing.setAside ?? []).filter((e) => !releasedKeys.has(e.listingKey))
+  pricing.reconciliation = reconcileAdjustedSales({
+    sales: kept as unknown as ReconcilableSale[],
+    subjectSqft: ctx.subjectSqft,
+    asOf: ctx.asOf,
+  })
+  const rule = pricing.rangeRule
+  const values = kept.map((s) => s.adjustedPrice).filter((n) => Number.isFinite(n) && n > 0)
+  if (!rule || values.length === 0) return
+  const saleLow = Math.min(...values)
+  const saleHigh = Math.max(...values)
+  // Outward onto the pricing unit, never onto a sale still set aside.
+  const asideBelow = nearestAsideBelow(stillAside, saleLow)
+  const asideAbove = nearestAsideAbove(stillAside, saleHigh)
+  let low = roundPriceDown(saleLow)
+  if (asideBelow != null && low <= asideBelow) low = Math.round(saleLow)
+  let high = roundPriceUp(saleHigh)
+  if (asideAbove != null && high >= asideAbove) high = Math.round(saleHigh)
+  low = Math.min(low, rule.adjustedLow)
+  high = Math.max(high, rule.adjustedHigh)
+  const n = part.priced.length
+  pricing.rangeRule = {
+    ...rule,
+    n,
+    kept: kept.length,
+    adjustedLow: low,
+    adjustedHigh: high,
+    saleLow: Math.round(saleLow),
+    saleHigh: Math.round(saleHigh),
+    sentence: describeRangeSentence({
+      rule: rule.rule,
+      n,
+      kept: kept.length,
+      printedLow: low,
+      printedHigh: high,
+      saleLow: Math.round(saleLow),
+      saleHigh: Math.round(saleHigh),
+      trimmedAside: rule.rule === 'trimmed-one-each-end' ? trimmedAsideClause(n, kept.length) : null,
+      suffix: rangeSentenceSuffix(rule.sentence),
+    }),
+  }
+  // The hero band reaches the sale that holds the price.
+  pricing.valueLow = Math.min(pricing.valueLow, low)
+  pricing.valueHigh = Math.max(pricing.valueHigh, high)
+}
+
+/**
+ * A recommendation under every sale that set it is not a price (rule 20). When
+ * the failed-ask ceiling is what put it there, the build holds it for Matt
+ * instead of failing (lib/cma/gap-hold.ts applyAskBelowBandHold): the ceiling
+ * moved the recommended tier from a figure inside the sales to one under them.
+ */
+export function failedAskPulledUnderSaleSet(
+  pricing: Pick<CmaPricing, 'recommended' | 'clamp'>,
+  salePrices: readonly number[],
+): boolean {
+  if (recommendationOutsideSaleSet(pricing.recommended, salePrices) !== 'under') return false
+  return (pricing.clamp?.applications ?? []).some(
+    (a) =>
+      a.tier === 'recommended' &&
+      a.after < a.before &&
+      recommendationOutsideSaleSet(a.before, salePrices) !== 'under',
+  )
+}
+
 /** computePricing + engine cover. Keeps lib/cma/build.ts from growing. */
 export function priceCmaSet(args: {
   subject: CmaSubject
@@ -1813,6 +1907,13 @@ export function priceCmaSet(args: {
   indexUnavailableReason?: string | null
   /** Build path passes the shared `computePricing` so the valuation-engine gate stays honest. */
   computePricing?: typeof computePricing
+  /**
+   * The CMA build only: a recommendation the failed-ask ceiling pulled under
+   * every sale that set it comes back (not null) so the build can hold it for
+   * Matt with its own reason (lib/cma/gap-hold.ts applyAskBelowBandHold). No
+   * other caller can hold a document, so every other caller still gets null.
+   */
+  holdFailedAskUnderSaleSet?: boolean
 }): CmaPricing | null {
   const priceFn = args.computePricing ?? computePricing
   // No fill: a sale that does not set the price keeps its weight of 0, and
@@ -1937,14 +2038,18 @@ export function priceCmaSet(args: {
       covered.valueHigh = covered.highEnd
       covered.needsReview = true
     }
+    releaseStreetAnchorFromSetAside(covered, part, { subjectSqft: args.subject.sqft ?? 0, asOf: args.asOf })
     const settingPrices = adjusted
       .filter((c) => c.weight > 0 && c.adjustedPrice > 0)
       .map((c) => c.adjustedPrice)
     // A broker override is a person choosing a number. Everything else that
-    // sits under or over every sale that set it is not a price.
+    // sits under or over every sale that set it is not a price. The one
+    // exception is the build's: a failed-ask pull under the sales is held for
+    // Matt there, never printed as approved (915 Saginaw, 2026-10-07).
     if (
       args.input.priceOverride == null &&
-      recommendationOutsideSaleSet(covered.recommended, settingPrices)
+      recommendationOutsideSaleSet(covered.recommended, settingPrices) &&
+      !(args.holdFailedAskUnderSaleSet === true && failedAskPulledUnderSaleSet(covered, settingPrices))
     ) {
       return null
     }
