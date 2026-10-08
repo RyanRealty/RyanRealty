@@ -21,7 +21,7 @@
  * exported piece the walk uses, so the two cannot drift apart.
  */
 
-import { PLAT_WIDE_SQFT_BAND } from '@/lib/pricing/ladder'
+import { PRICE_SET_SQFT_BAND } from '@/lib/pricing/price-set'
 import { classifyAgeBand, normSubdivision } from '@/lib/pricing/classes'
 import { samePlat } from '@/lib/pricing/price-anchor'
 import { roomCountsDecision } from '@/lib/pricing/room-ground'
@@ -58,8 +58,13 @@ export function sameAreaAgeYears(area: CompArea | null): number | null {
   }
 }
 
-/** The admission band on every plat row: the -wide rungs run first (lib/pricing/ladder.ts). */
-export const SAME_AREA_SQFT_BAND = PLAT_WIDE_SQFT_BAND
+/**
+ * One size rule for every home in the letter (Matt 2026-10-08, "25% everywhere",
+ * extended the same day to the competition and came-off homes): a home more
+ * than a quarter larger or smaller than the subject is never shown as like
+ * yours, the same band that decides which sales set the price.
+ */
+export const SAME_AREA_SQFT_BAND = PRICE_SET_SQFT_BAND
 
 export type SameAreaSubject = {
   streetAddress: string | null
