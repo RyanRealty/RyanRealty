@@ -133,6 +133,21 @@ export function expectedSaleFor(input: {
 }
 
 /**
+ * The weighted sale the printed grid produces, or null: every test
+ * `expectedSaleFor` runs except the one against the cover. The failed-ask
+ * clamp sentence names this figure (lib/cma/clamp-line.ts) on a letter whose
+ * cover the ceiling put under it.
+ */
+export function weightedSaleFromGrid(input: {
+  pricing: CmaPricing | null | undefined
+  comps?: readonly CmaAdjustedComp[] | null
+}): ExpectedSale | null {
+  const p = input.pricing
+  if (!p) return null
+  return weightedSaleOnGrid(p, input.comps)?.expected ?? null
+}
+
+/**
  * The weighted sale the printed grid produces, with the band it sits in, or
  * null. Every test `expectedSaleFor` runs except the one against the cover:
  * the stored weighted price (or `predictedClose` when it IS that price), the

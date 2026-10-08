@@ -28,9 +28,10 @@
  *
  * On those letters the sales set the RANGE, and the letter calls them that.
  * An unheld letter whose cover the ceiling moved keeps "in this price": its
- * clamp sentence ("The sales support a value of $X. Because $Y already
- * failed to sell, we recommend the price on the cover") says, under the
- * number, what moved it. A cover the list step carried off the weighted price
+ * clamp sentence ("The sales support a value near $X once each is weighted
+ * by how closely it matches your home. Because $Y already failed to sell, we
+ * recommend the price on the cover", lib/cma/clamp-line.ts) says, under the
+ * number, what the weights blend to and what moved the cover off it. A cover the list step carried off the weighted price
  * is still the weights' number; the expected-sale sentence or the range line
  * says where it sits.
  */

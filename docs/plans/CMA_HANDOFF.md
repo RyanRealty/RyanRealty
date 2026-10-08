@@ -170,7 +170,7 @@ NODE_USE_ENV_PROXY=1 npm run cma:fleet -- --concurrency 4 \
    - **MLS correction blips** (Pending to Closed to Active to Pending within minutes) can make the last stretch 0 days and print "offer 0 days". This predates the fix and needs its own rule.
 
 8. Answered by Matt 2026-10-08 (late):
-   - **Clamp line on unheld letters:** "Name the weighted figure". The sentence names what the weighted sales support (615 Reed Market: $511,000, not $533,000), then why the list sits at the cover. Branch `fix/clamp-line`, in progress.
+   - **Clamp line on unheld letters:** "Name the weighted figure". The sentence names what the weighted sales support (615 Reed Market: $511,000, not $533,000), then why the list sits at the cover. Merged (`fix/clamp-line` `99fa423b7`, SKILL rule 16). It changes wording only, so no fleet run is needed. Open: on 702 Willitts the stored weighted price is figured before seller concessions, so the printed grid doesn't reproduce it, and the sentence names no figure there. Recommendation: leave as is.
    - **On-market grid fallback:** "Keep the list figure". No change.
    - **Price clock:** "Yes, after this landing". Move rule 16's cut test and the sale-to-original-ask ratios to the last-stretch clock (rule 28) as a separate engine change with its own fleet score, after the current landing. It can move Wild Rose's price. **Next engine task.**
 

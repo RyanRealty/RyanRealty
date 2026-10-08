@@ -40,12 +40,12 @@ import {
 import { adjustedCloseRange } from '@/lib/cma/market-area-chapters'
 import { compPinMap } from '@/lib/cma/comp-pin-map'
 import {
-  clampSentence,
   keptCompCount,
   setAsideCompIndexes,
   setAsideRows,
   setAsideSalePredicate,
 } from '@/lib/cma/set-aside'
+import { clampLineFor } from '@/lib/cma/clamp-line'
 import { COVER_PRICE_PHRASE, deRepeatRecommendDollars, isRecommendMark } from '@/lib/cma/recommend-once'
 import { failedAskBelowRangeNote } from '@/lib/cma/expired-audit'
 import { listCeiling } from '@/lib/cma/render-contract'
@@ -982,7 +982,16 @@ export function pricingPage(input: PricingPageInput): CmaPageDef {
   // 2026-10-08). One story, one supported figure, the range.
   // Its place is taken by the two facts the held lead states (heldInBandLead,
   // heldUnderBandLead), and the cover's label carries the rest.
-  const clamp = heldForMatt(p) ? '' : deRepeatRecommendDollars(clampSentence(p), p.recommended)
+  // On an unheld letter its first sentence names what the weighted sales
+  // support, read off the printed grid (lib/cma/clamp-line.ts, Matt
+  // 2026-10-08: 615 Reed Market said $533,000 over weights that blend to
+  // $510,945).
+  const clamp = heldForMatt(p)
+    ? ''
+    : deRepeatRecommendDollars(
+        clampLineFor(p, input.comps, { onMarket: subjectOnMarket({ subject: s }) }),
+        p.recommended,
+      )
   // THE STREET SALE THE COVER IS HELD TO (915 Saginaw, reader review
   // 2026-10-08), said once, under the number it set. Never on a rule 26 hold,
   // which prints no clamp prose.
