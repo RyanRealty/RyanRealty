@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { encodeConsent } from '@/test/consent-fixtures'
 
-const send = vi.hoisted(() => vi.fn(async () => ({ ok: true })))
+const send = vi.hoisted(() => vi.fn(async (..._args: unknown[]) => ({ ok: true })))
 
 vi.mock('@/lib/meta-capi', () => ({
   sendServerEvent: (...args: unknown[]) => send(...args),
