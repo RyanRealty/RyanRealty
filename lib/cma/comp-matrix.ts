@@ -1149,6 +1149,12 @@ export function renderCompMatrixHtml(
     footer?: string
     /** Chapter already owns the H2 — do not emit a duplicate H3. */
     omitHeading?: boolean
+    /**
+     * The chapter's name, without its period, for the matrix's own heads
+     * ("<name>, continued" on a second page). A held letter names it
+     * differently (render-pricing-page.ts salesThatSetItHeading).
+     */
+    heading?: string
   } = {},
 ): string {
   // Fail closed: a recommend needs >= MIN_CLOSED_SALES_FOR_MATRIX closed sales.
@@ -1165,7 +1171,7 @@ export function renderCompMatrixHtml(
   return renderMatrixHtml({
     id: 'sales-that-set-it',
     family: 'closed',
-    heading: 'The sales that set this price',
+    heading: opts.heading ?? 'The sales that set this price',
     omitHeading: opts.omitHeading,
     lead,
     entries,

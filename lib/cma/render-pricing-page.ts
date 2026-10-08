@@ -35,7 +35,7 @@ import {
 import { adjustedCloseRange } from '@/lib/cma/market-area-chapters'
 import { renderCompPinMapHtml } from '@/lib/cma/comp-pin-map'
 import { clampSentence, keptCompCount, setAsideCompIndexes, setAsideRows } from '@/lib/cma/set-aside'
-import { deRepeatRecommendDollars, isRecommendMark } from '@/lib/cma/recommend-once'
+import { COVER_PRICE_PHRASE, deRepeatRecommendDollars, isRecommendMark } from '@/lib/cma/recommend-once'
 import { failedAskBelowRangeNote } from '@/lib/cma/expired-audit'
 import { listCeiling } from '@/lib/cma/render-contract'
 import { closedCompBand } from '@/lib/pricing/recommended-in-band'
@@ -141,6 +141,75 @@ export function heldUnderBandLead(
   return `${first} Buyers passed at the last ask of ${usd(ask)}. The listing ${sat}${how}.`
 }
 
+/** The days a stored step ran, when it is the ask named. */
+function lastAskDays(
+  ask: number,
+  exposure: import('@/lib/cma/expired-audit').ExpiredAskExposure | null | undefined,
+): number | null {
+  const final = exposure?.final
+  if (!final || final.ask !== ask) return null
+  const d = Number(final.days)
+  return Number.isFinite(d) && d > 0 ? Math.round(d) : null
+}
+
+function daysWord(n: number): string {
+  return `${int(n)} ${n === 1 ? 'day' : 'days'}`
+}
+
+/**
+ * RULE 22, THE SAME TWO FACTS (reader review 2026-10-08; SKILL.md rules 22
+ * and 26). 2382 Jackson: the last ask of $639,000 sat inside the $598,620 to
+ * $648,772 the sales support, for 79 of the listing's 227 days, and the
+ * listing was canceled. The build holds that letter for Matt because the
+ * clamp's reason, that the ask was too high, does not hold, so the letter
+ * prints no clamp sentence. With nothing in its place the cover's $624,000
+ * had no story, and the rest of the letter called it the list we recommend.
+ *
+ * The held letter now says what rule 26 has a held letter say, in the same
+ * order and once: the sales that set the price support the band, named in
+ * dollars; and the last ask, named, how long it sat inside that band, that it
+ * did not sell, and how the listing came off. No "capped", no clamp, no "too
+ * high", no list instruction. The cover's label ("The price Matt is
+ * reviewing", HELD_PRICE_HEADLINE) carries the rest.
+ *
+ * Every dollar is the table's: the band is the adjusted sales still in the
+ * grid (tableAdjustedBand), and the ask is the one the subject column prints.
+ * The days are the stored final cycle (expiredAudit.finalCycle.days) and the
+ * last step of the stored ask exposure, both printed in chapter 1. "Inside
+ * that range" is said only when the ask is inside the printed band; the hold
+ * reads a rounded band, and a sentence may not contradict the figures beside
+ * it.
+ */
+export function heldInBandLead(
+  subject: CmaSubject,
+  pricing: CmaPricing,
+  askCtx?: SubjectAskContext,
+  comps?: readonly CmaAdjustedComp[] | null,
+  finalCycle?: import('@/lib/cma/expired-audit').ExpiredFinalCycle | null,
+  askExposure?: import('@/lib/cma/expired-audit').ExpiredAskExposure | null,
+): string {
+  const table = comps && comps.length > 0 ? tableAdjustedBand(comps, pricing) : null
+  const low = table?.low ?? Math.min(pricing.valueLow, pricing.valueHigh)
+  const high = table?.high ?? Math.max(pricing.valueLow, pricing.valueHigh)
+  const n = comps && comps.length > 0 ? keptCompCount(pricing, comps) : 0
+  const who = n > 0 ? `The ${countWord(n)} sales that set the price` : 'The sales that set the price'
+  const first = `${who} support ${usd(low)} to ${usd(high)}.`
+  const heldAsk = pricing.hold?.ask != null && pricing.hold.ask > 0 ? pricing.hold.ask : null
+  const ask = failedSubjectAsk(subject, askCtx) ?? heldAsk ?? pricing.failedAsk ?? null
+  if (ask == null || !(ask > 0)) return first
+  const total = finalCycle?.days ?? subjectDomDays(subject)
+  const last = lastAskDays(ask, askExposure)
+  const inside = low > 0 && high > 0 && ask >= low && ask <= high
+  // The last ask's own days, when it was one step of several. When it was
+  // the whole listing, the days are said once, on the listing.
+  const sat = last != null && (total == null || last < total) ? ` sat ${daysWord(last)}` : ''
+  const where = inside ? (sat ? ' inside that range' : ' was inside that range') : ''
+  const second = `The last ask of ${usd(ask)}${sat}${where}${sat || where ? ' and' : ''} did not sell.`
+  const how = cameOffPhrase(finalCycle?.status ?? subject.standardStatus)
+  const third = total != null && total > 0 ? `The listing ${how} after ${daysWord(total)}.` : `The listing ${how}.`
+  return `${first} ${second} ${third}`
+}
+
 /**
  * The line under the number.
  *
@@ -155,11 +224,17 @@ export function whatItsWorthLead(
   askCtx?: SubjectAskContext,
   comps?: readonly CmaAdjustedComp[] | null,
   finalCycle?: import('@/lib/cma/expired-audit').ExpiredFinalCycle | null,
+  askExposure?: import('@/lib/cma/expired-audit').ExpiredAskExposure | null,
 ): string {
   // A letter held under rule 26 says both facts and nothing that argues with
-  // them: no "list in that range", no capped note, no below-band note.
-  if (heldUnderBand(pricing)) {
-    return [heldUnderBandLead(subject, pricing, askCtx, comps, finalCycle), currentAskLine(pricing)]
+  // them: no "list in that range", no capped note, no below-band note. A
+  // rule 22 hold says the same two facts in the same shape (heldInBandLead):
+  // no expected-sale sentence asking to list at a price nobody approved.
+  if (heldForMatt(pricing)) {
+    const lead = heldUnderBand(pricing)
+      ? heldUnderBandLead(subject, pricing, askCtx, comps, finalCycle)
+      : heldInBandLead(subject, pricing, askCtx, comps, finalCycle, askExposure)
+    return [lead, currentAskLine(pricing)]
       .filter((b): b is string => Boolean(b && b.trim()))
       .join(' ')
   }
@@ -182,14 +257,9 @@ export function whatItsWorthLead(
   // stored worth pair, rounded once.
   const worth = adjustedRangeLine(comps, { afterExpected: expected, pricing }) || worthRangeSentence(pricing, comps)
   // "List in that range." is the instruction when nothing else says where to
-  // list. The expected-sale sentence already says it. A letter held for Matt
-  // under rule 22 (the last failed ask inside the sales range, 2382 Jackson)
-  // gives no list instruction either: the opening already says the ask was
-  // inside the range and the days point away from the number, so the chapter
-  // prints the one supported figure, the range, and stops (reader review
-  // 2026-10-08; rule 26 already drops it for an ask under the range).
-  const listRange =
-    expectedLine || heldForMatt(pricing) ? '' : listRangeSentence(pricing, failedSubjectAsk(subject, askCtx), comps)
+  // list. The expected-sale sentence already says it. (A held letter returned
+  // above with its two facts and no instruction.)
+  const listRange = expectedLine ? '' : listRangeSentence(pricing, failedSubjectAsk(subject, askCtx), comps)
   // A home that is on the market already has an ask. The blueprint gives that
   // case ONE line: what it is listed at, and what the sales support. The ask
   // follows the expected sale, so "that price" can only mean the cover's.
@@ -526,7 +596,10 @@ function tableLead(input: { comps: CmaAdjustedComp[]; pricing: CmaPricing }): st
         } shown below and set aside.`
       : ''
   const move = adjustmentMoveClause(kept.length > 0 ? kept : input.comps)
-  const head = `The ${countWord(n)} closed ${n === 1 ? 'sale' : 'sales'} below set this number`
+  // A held letter's number is under Matt's review: the sales are behind it,
+  // they did not settle it (reader review 2026-10-08).
+  const verb = heldForMatt(input.pricing) ? `${n === 1 ? 'is' : 'are'} behind this number` : 'set this number'
+  const head = `The ${countWord(n)} closed ${n === 1 ? 'sale' : 'sales'} below ${verb}`
   const moved = !move
     ? `${head}.`
     : move.startsWith('each ')
@@ -561,6 +634,14 @@ function dateBasisLine(input: { subject: CmaSubject; comps: readonly CmaAdjusted
 /**
  * The per-square-foot check, as one line the seller can run against the table.
  *
+ * IT NAMES ITS SUBJECT (reader review 2026-10-08). It read "Across 2,016
+ * square feet, that is $310 per square foot." under the weights paragraph,
+ * where "that" pointed at nothing: on 2382 Jackson and 62475 Woodsman because
+ * the clamp sentence it once followed is not printed on a held letter, and on
+ * 3037 Purcell (unheld) because the chapter it sits in never printed the
+ * price at all. The sentence now says which price it divides, without
+ * reprinting the cover's dollars (recommend-once).
+ *
  * It used to read "these sales carry a median of $564 per square foot" — but
  * the figure was `predictedClose / subject.sqft`, which is not a median of
  * anything. On 1617 NW 8th it printed $564 under a chapter that had just said
@@ -573,14 +654,16 @@ function dateBasisLine(input: { subject: CmaSubject; comps: readonly CmaAdjusted
  * sales produce it; this rate stays on the list price, the one figure every
  * document carries.
  */
+export function perSquareFootSentence(sqft: number, price: number): string {
+  const cover = `${COVER_PRICE_PHRASE.charAt(0).toUpperCase()}${COVER_PRICE_PHRASE.slice(1)}`
+  return `${cover} comes to ${usd(Math.round(price / sqft))} per square foot across your home's ${int(sqft)} square feet.`
+}
+
 function perSquareFootLine(input: { subject: CmaSubject; pricing: CmaPricing }): string {
   const sqft = input.subject.sqft
   const price = input.pricing.recommended
   if (sqft == null || !(sqft > 0) || price == null || !(price > 0)) return ''
-  // Tip Ready P0: do not restate the recommend dollars — cover already has them.
-  return `<p class="small">${esc(
-    `Across ${int(sqft)} square feet, that is ${usd(Math.round(price / sqft))} per square foot.`,
-  )}</p>`
+  return `<p class="small">${esc(perSquareFootSentence(sqft, price))}</p>`
 }
 
 /**
@@ -648,6 +731,8 @@ export type PricingPageInput = {
   askCtx?: SubjectAskContext
   /** The seller's own failed listing, for their column's price path. */
   finalCycle?: import('@/lib/cma/expired-audit').ExpiredFinalCycle | null
+  /** How long each ask on that listing ran (a held letter names the last one's days). */
+  askExposure?: import('@/lib/cma/expired-audit').ExpiredAskExposure | null
   /**
    * Closed / Pending / Active / Expired: List, Sold and $/sqft, Low·Avg·
    * Median·High under each status (FlexMLS style, Matt 2026-09-24). Same
@@ -711,13 +796,15 @@ export function pricingPage(input: PricingPageInput): CmaPageDef {
   // something other than the number, and "we recommend the price on the cover,
   // which stays under that ask" told a second story beside it (reader review
   // 2026-10-08). One story, one supported figure, the range.
+  // Its place is taken by the two facts the held lead states (heldInBandLead,
+  // heldUnderBandLead), and the cover's label carries the rest.
   const clamp = heldForMatt(p) ? '' : deRepeatRecommendDollars(clampSentence(p), p.recommended)
   const clampHtml = clamp ? `<p class="worth-lead-note">${esc(clamp)}</p>` : ''
   const lead = input.omitLeadPrices
     ? ''
     : `
   <h2 class="section is-answer">${esc(heading)}</h2>
-  <p class="worth-lead">${esc(whatItsWorthLead(s, p, input.askCtx, input.comps, input.finalCycle))}</p>
+  <p class="worth-lead">${esc(whatItsWorthLead(s, p, input.askCtx, input.comps, input.finalCycle, input.askExposure))}</p>
   ${clampHtml}`
   // THE METHOD MOVED TO BASIS AND LIMITS (Matt 2026-10-07). Under the
   // headline the reader gets the expected sale and the range, and nothing
@@ -764,7 +851,7 @@ export function pricingPage(input: PricingPageInput): CmaPageDef {
     toc: heading,
     body: `
   ${lead}
-  ${input.omitLeadPrices ? `<p class="worth-lead">${esc(whatItsWorthLead(s, p, input.askCtx, input.comps, input.finalCycle))}</p>
+  ${input.omitLeadPrices ? `<p class="worth-lead">${esc(whatItsWorthLead(s, p, input.askCtx, input.comps, input.finalCycle, input.askExposure))}</p>
   ${clampHtml}` : ''}
   ${ageHtml}
   ${neverOwnedHtml}
@@ -796,6 +883,8 @@ export function salesThatSetItPage(input: PricingPageInput): CmaPageDef | null {
       finalCycle: input.finalCycle ?? null,
       // H2.section already names the chapter — skip duplicate H3.subhead.
       omitHeading: true,
+      // A matrix that runs onto a second page heads it "<chapter>, continued".
+      heading: salesThatSetItHeading(p).replace(/\.$/, ''),
       footer: `${concessionsCaption(input.comps)}
   ${dateBasisLine({ subject: s, comps: input.comps, pricing: p })}
   ${renderReconciliationHtml(p)}
@@ -803,11 +892,13 @@ export function salesThatSetItPage(input: PricingPageInput): CmaPageDef | null {
     },
   )
   if (!matrix.trim()) return null
+  const heading = salesThatSetItHeading(p)
+  const label = heading.replace(/\.$/, '')
   return {
-    meta: `${esc(s.streetAddress)} · The sales that set this price`,
-    toc: 'The sales that set this price',
+    meta: `${esc(s.streetAddress)} · ${esc(label)}`,
+    toc: label,
     body: `
-  <h2 class="section">${esc(SALES_THAT_SET_IT_HEADING)}</h2>
+  <h2 class="section">${esc(heading)}</h2>
   ${input.negligibleWeightNote ? `<p class="method-line">${esc(input.negligibleWeightNote)}</p>` : ''}
   ${input.statusPriceBoard ?? ''}
   ${matrix}
@@ -819,6 +910,17 @@ export function salesThatSetItPage(input: PricingPageInput): CmaPageDef | null {
 
 /** The chapter title, in one place so the letter and the scene cannot drift. */
 export const SALES_THAT_SET_IT_HEADING = 'The sales that set this price.'
+/**
+ * The same chapter on a letter held for Matt. Its number is the price under
+ * his review (on 2382 Jackson the failed-ask step, not the sales, put it at
+ * $624,000), so the sales are behind it rather than settling it (reader
+ * review 2026-10-08).
+ */
+export const HELD_SALES_HEADING = 'The sales behind this price.'
+
+export function salesThatSetItHeading(pricing: CmaPricing | null | undefined): string {
+  return heldForMatt(pricing) ? HELD_SALES_HEADING : SALES_THAT_SET_IT_HEADING
+}
 
 /**
  * THE ONE MAP (Delta 3).

@@ -522,7 +522,10 @@ export function pricingRangeDisplay(
   // and the failed ask once, in chapter 3 (heldUnderBandLead). "Capped below
   // this range. See How we got the price." pointed at a section that does
   // not exist and sat beside a sentence saying the opposite.
-  if (p.hold?.kind === 'ask-below-band') {
+  // Any held letter (rule 22 too): its cover number is the price Matt is
+  // reviewing, so no sentence calls it "the recommended list price", and the
+  // section that note pointed at does not exist (reader review 2026-10-08).
+  if (p.hold?.kind === 'ask-below-band' || p.hold?.kind === 'ask-in-band') {
     return { label: 'Comp-supported range', outOfRange: true, note: null }
   }
   const direction = p.recommended < p.valueLow ? 'below' : 'above'

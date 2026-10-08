@@ -11,6 +11,15 @@ import { usd } from '@/lib/cma/render-blocks'
 
 export const THAT_PRICE = 'that price'
 
+/**
+ * How the letter names the cover's number without reprinting it. On a letter
+ * the build holds for Matt it is also the ONLY way the letter names it: that
+ * number is the price under his review (HELD_PRICE_HEADLINE), so no later
+ * sentence may call it the list we recommend or the price we would list at
+ * (reader review 2026-10-08, 62475 Woodsman and 2382 Jackson).
+ */
+export const COVER_PRICE_PHRASE = 'the price on the cover'
+
 /** True when `n` is the same mark as the recommended list (exact or 1k-round). */
 export function isRecommendMark(n: number, recommended: number): boolean {
   if (!(recommended > 0) || !(n > 0) || !Number.isFinite(n) || !Number.isFinite(recommended)) {

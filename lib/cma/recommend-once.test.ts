@@ -83,14 +83,18 @@ describe('net sheet — cover already named the list', () => {
     },
   } as unknown as OpinionPageArgs
 
-  it('heads the column "At the list price" and does not reprint $565,000', () => {
+  it('heads the column with its price, once, and keeps the prose off the dollars', () => {
     const html = sellerNetBodyHtml(a)
-    expect(html).toContain('At the list price')
+    // The money column is the exception: its head names the price it is
+    // worked at (reader review 2026-10-08, "At the list price" never said
+    // which). The sentence above it still points at "that price".
+    expect(html).toContain('At $565,000')
+    expect(html).not.toContain('At the list price')
+    expect(html.split('$565,000')).toHaveLength(2)
     expect(html).toContain('Left from the sale')
     expect(html).toContain('From that price, less $1,500')
     expect(html).toContain('$563,500')
     expect(html).toContain('−$1,500')
-    expect(html).not.toContain('$565,000')
     // Matt 2026-10-07: "that price" in the money column read like a bug.
     expect(html).not.toContain('<td class="v">that price</td>')
   })

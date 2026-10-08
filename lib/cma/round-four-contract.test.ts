@@ -181,8 +181,10 @@ describe('A — the net chapter itemises, or prints no figure at all', () => {
 
   it('itemises every line with its source, and the net is below the list', () => {
     const html = sellerNetBodyHtml(withSheet(NET_SHEET))
-    expect(html).toContain('At the list price')
-    expect(html).not.toContain('$435,000')
+    // The column head names the price it is worked at (reader review
+    // 2026-10-08: "At the list price" never said which price).
+    expect(html).toContain('At $435,000')
+    expect(html).not.toContain('At the list price')
     expect(html).toContain('Listing agreement, 5.0%')
     expect(html).toContain('Payoff quote you provided')
     expect(html).toContain('What you keep')
