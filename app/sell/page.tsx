@@ -1,3 +1,4 @@
+// @no-breadcrumb: Matt 2026-10-08 removed the navy "Sell" strip under the nav on /sell. BreadcrumbList JSON-LD still ships via MetadataBlock.
 /**
  * /sell - the Sell landing page and seller path, on the components/site/v3
  * barrel. Rebuilt top-to-bottom 2026-10-05 from Matt's feedback (hero must make
@@ -39,6 +40,7 @@ import {
   getBrokers,
   getOfficeRecentClosings,
   getProofBlock,
+  getSellBendMarket,
 } from '@/lib/data'
 import type { ProofBlock } from '@/lib/data'
 import { aboutFaceFromBroker } from '@/app/about/_v3/about-faces'
@@ -48,7 +50,6 @@ import { BROKERS } from '@/lib/brand/contact'
 import { uniqueReviewerInitials } from '@/lib/reviews/reviewer-initials'
 import {
   V3_ROOT_CLASS,
-  V3Breadcrumb,
   V3Footer,
   V3_FOOTER_COLUMNS,
   V3ProofBlock,
@@ -61,6 +62,9 @@ import {
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { SellCapture } from './_v3/SellCapture'
+import { SellDirectAnswer } from './_v3/SellDirectAnswer'
+import { sellAsOfLabel, sellFeeLine, sellMarketLine } from './_v3/sell-direct-answer'
+import { getPublicDetachedPace } from '@/lib/data/market-truth/public-pace'
 import { SellValueForm } from './_v3/SellValueForm'
 import { SellHowWeSell } from './_v3/SellHowWeSell'
 import { SellClosings } from './_v3/SellClosings'
@@ -97,7 +101,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return pageMetadata({
     title: 'Sell Your Home in Central Oregon',
     description:
-      'Sell your Central Oregon home with a clear price from nearby closed sales, a complete week-one launch with photos, drone, video and a 3D tour in the 3%, and a written report every week. No contract to talk.',
+      'Sell your Central Oregon home with a local broker who prices it from nearby closed sales and markets it with photos, video and a 3D tour. No contract.',
     path: ROUTE_PATH,
     ogImage: SELL_OG_IMAGE,
     keywords: [
@@ -128,12 +132,29 @@ function withInitialsOnly(block: ProofBlock): ProofBlock {
 }
 
 export default async function SellPage() {
-  const [proofRaw, trackRecord, brokers, closings] = await Promise.all([
+  const [proofRaw, trackRecord, brokers, closings, bendPace, bendMarket] = await Promise.all([
     getProofBlock({ geoType: 'city', geoSlug: 'bend', geoLabel: 'Bend' }).catch(() => null),
     getBrokerageTrackRecord().catch(() => null),
     getBrokers().catch(() => []),
     getOfficeRecentClosings(),
+    getPublicDetachedPace({ geoType: 'city', geoSlug: 'bend' }).catch(() => null),
+    getSellBendMarket().catch(() => null),
   ])
+
+  // The direct answer under the H1 (AEO brief 2026-10-08). Live Bend figures
+  // only; a null figure drops its clause.
+  const asOf = sellAsOfLabel()
+  const answerInput = {
+    city: 'Bend',
+    medianClose: bendPace?.medianClose ?? null,
+    daysToContract: bendPace?.daysToContract ?? null,
+    saleToOriginal: bendPace?.saleToOriginal ?? null,
+    monthsOfSupply: bendMarket?.monthsOfSupply ?? null,
+    verdictKind: bendMarket?.verdictKind ?? null,
+    verdictLabel: bendMarket?.verdictLabel ?? null,
+  }
+  const answerMarketLine = sellMarketLine(answerInput)
+  const answerFeeLine = sellFeeLine(answerInput)
 
   // Faces: Matt only (Matt's ruling). His record comes off the live roster via
   // the DAL; the license falls back to the roster in lib/brand/contact.
@@ -165,9 +186,9 @@ export default async function SellPage() {
   const homesSold = proof?.record?.homesSold ?? trackRecord?.homesSold ?? null
   const heroProofTrace = [
     reviewCount > 0 && reviewAvg != null
-      ? `Google Business Profile reviews for Ryan Realty, read through getReviews(): ${reviewCount} reviews, average ${reviewAvg.toFixed(1)}.`
+      ? `${reviewAvg.toFixed(1)} average from ${reviewCount} Google reviews: every review on our Google Business Profile, read live on ${asOf}.`
       : null,
-    homesSold != null ? `Homes sold: ${TRACK_RECORD_TRACE}` : null,
+    homesSold != null ? `${homesSold.toLocaleString('en-US')} homes sold: ${TRACK_RECORD_TRACE}` : null,
   ]
     .filter(Boolean)
     .join(' ')
@@ -199,9 +220,9 @@ export default async function SellPage() {
     { type: 'faqPage', items: SELL_FAQ_ITEMS },
     {
       type: 'webPage',
-      name: 'Sell your home in Central Oregon with a clear price and a week-one launch',
+      name: 'Sell your Central Oregon home with a local broker who prices it right',
       description:
-        'How Ryan Realty prices a Central Oregon home from nearby closed sales, launches it in week one, and reports every week, with reviews, recent office closings, and a way to talk about your home.',
+        'How Ryan Realty prices a Central Oregon home from nearby closed sales, markets it, and reports every week, with reviews, recent office closings, and a way to talk about your home.',
       url: ROUTE_PATH,
       aboutOrganization: true,
     },
@@ -247,23 +268,25 @@ export default async function SellPage() {
         <MetadataBlock schemas={schemas} />
         <V3SectionTracker />
 
-        <V3Breadcrumb
-          tone="on-media"
-          trail={[{ label: 'Home', href: '/' }, { label: 'Sell' }]}
-        />
 
         <V3Stage
           id="sell-hero"
           headingLevel={1}
           height="tall"
           className="sell-stage-poster sell-landing-hero"
-          headline="Sell your home in Central Oregon with a clear price and a week-one launch"
+          headline="Sell your Central Oregon home with a local broker who prices it right"
           altEyebrow={SELL_CMA_EYEBROW}
           altHeadline={SELL_CMA_HEADLINE}
           posterSrc={SELL_HERO_SRC}
           posterSrcSet={SELL_HERO_SRCSET}
           posterSizes="100vw"
         >
+          <SellDirectAnswer
+            marketLine={answerMarketLine}
+            feeLine={answerFeeLine}
+            asOf={asOf}
+            city="Bend"
+          />
           <p className="sell-hero-sub sell-hero-sub--default">{SELL_HERO_SUB}</p>
           <p className="sell-hero-sub sell-hero-sub--cma">{SELL_CMA_SUB}</p>
           <SellCapture
@@ -327,6 +350,10 @@ export default async function SellPage() {
         {proofView ? (
           <V3ProofBlock
             {...proofView}
+            // AEO brief L7: "Too few recent closings here to chart." is an
+            // internal empty state. With the strips off on /sell, the count
+            // line reads instead.
+            quiet={null}
             // Spelled out as well as carried in the view so ci:page-purpose can
             // read the section id from the route file.
             id="proof"

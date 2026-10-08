@@ -10,13 +10,8 @@
       "blocking": true
     },
     {
-      "name": "V3Breadcrumb",
-      "section": "Chrome. Home / Sell. tone=on-media because the page opens on a dark V3Stage (ci:kb-breadcrumb-overlay).",
-      "blocking": true
-    },
-    {
       "name": "V3Stage",
-      "section": "Opens the page. headingLevel 1, height tall. H1 opens with the seo-shell head term (Sell your home in Central Oregon with a clear price and a week-one launch). altEyebrow/altHeadline carry the ?from=cma copy (For homeowners whose listing ended / Your listing ended. Let's talk about what's next.), both in the static HTML. Poster is a pre-sized srcset of the Drake Park aerial, each file under 300 KB.",
+      "section": "Opens the page. headingLevel 1, height tall. H1 opens with the seo-shell head term (Sell your Central Oregon home with a local broker who prices it right). altEyebrow/altHeadline carry the ?from=cma copy (For homeowners whose listing ended / Your listing ended. Let's talk about what's next.), both in the static HTML. Poster is a pre-sized srcset of the Drake Park aerial, each file under 300 KB.",
       "blocking": true
     },
     {
@@ -100,7 +95,8 @@
     "V3Ledger our listings (active)",
     "V3StickyAsk",
     "aeoHubQuietItems on /sell",
-    "Expand ask shot trigger"
+    "Expand ask shot trigger",
+    "V3Breadcrumb (navy Sell strip under the nav, Matt 2026-10-08; BreadcrumbList JSON-LD stays in MetadataBlock)"
   ],
   "jsonLd": {
     "required": [
@@ -134,8 +130,7 @@
   "sectionOrder": [
     "MetadataBlock",
     "V3SectionTracker",
-    "V3Breadcrumb",
-    "V3Stage id=sell-hero (H1 clear price + week-one launch, sub, first-screen proof + trace, Matt face, address field, Talk to us about your home, small call/text link; the submit opens the Sheet: market read, timing, contact as the final submit, success)",
+    "V3Stage id=sell-hero (H1 local broker who prices it right, sub, first-screen proof + trace, Matt face, address field, Talk to us about your home, small call/text link; the submit opens the Sheet: market read, timing, contact as the final submit, success)",
     "SellHowWeSell (three steps with lead, inclusions behind a toggle)",
     "V3ProofBlock #proof (reviews, initials only)",
     "SellClosings (recent office closings with lead, MLS closed data)",

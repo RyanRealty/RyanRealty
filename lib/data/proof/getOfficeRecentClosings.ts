@@ -42,12 +42,23 @@ function str(v: unknown): string | null {
   return typeof v === 'string' && v.trim().length > 0 ? v.trim() : null
 }
 
+function plainDate(iso: string): string {
+  const d = new Date(`${iso.slice(0, 10)}T12:00:00Z`)
+  if (Number.isNaN(d.getTime())) return iso
+  return d.toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+/**
+ * The visible "how we calculate this" for /sell's closings. Plain words only
+ * (AEO brief 2026-10-08): engines quote this text, so no table, column or
+ * function names. The query itself is documented in the read below.
+ */
 export function officeClosingsTrace(window: { start: string; end: string }): string {
   return (
-    `Oregon Data Share MLS, listings table: "ListOfficeName" ILIKE '%ryan realty%' AND "StandardStatus" = 'Closed' ` +
-    `AND "ClosePrice" IS NOT NULL, CloseDate ${window.start} to ${window.end}, list side only, newest first, up to ${OFFICE_CLOSINGS_LIMIT}. ` +
-    'Days to contract = purchase_contract_date minus OnMarketDate, kept when zero or more. ' +
-    'Sale to list = ClosePrice / ListPrice (final list price).'
+    `Every Ryan Realty listing that closed in the Central Oregon MLS (Oregon Data Share) from ${plainDate(window.start)} to ${plainDate(window.end)}, ` +
+    `newest first, up to ${OFFICE_CLOSINGS_LIMIT}. Homes where we represented the buyer are not counted. ` +
+    'Days to contract run from the day the home went on the market to the accepted offer. ' +
+    'Sale to list is the sale price as a share of the final list price.'
   )
 }
 

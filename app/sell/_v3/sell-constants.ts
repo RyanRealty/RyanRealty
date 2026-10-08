@@ -212,11 +212,11 @@ export const VALUATION_FAQ_ITEMS = [
 ] as const
 
 export const TRACK_RECORD_TRACE =
-  // The WINDOW is stated (2026-08-27 audit: "16 homes sold" carried a filter
-  // trace and no window — career? YTD? — leaving the reader to guess). The
-  // read has no date filter: it is every closed Ryan Realty listing since the
-  // brokerage opened in June 2023.
-  'Central Oregon MLS, every home listed by Ryan Realty and closed since the brokerage opened in June 2023. StandardStatus Closed, ClosePrice.'
+  // The WINDOW is stated (2026-08-27 audit: a count with no window leaves the
+  // reader to guess). Matt 2026-10-08: the company dates from 2014 (Ryan
+  // Realty LLC); what opened in June 2023 is the Bend office, so say that.
+  // Plain words only (AEO brief L6): no MLS field names.
+  'Central Oregon MLS, every home listed by Ryan Realty and closed since the Bend office opened June 2023. Homes where we represented the buyer are not counted.'
 
 /**
  * /sell's own four questions (Matt's brief, 2026-09-28: "FAQ of about 4"). The
@@ -242,13 +242,13 @@ export const SELL_FAQ_ITEMS = [
 /** The ONE primary action on /sell, on the hero submit and the final ask. */
 export const SELL_PRIMARY_LABEL = 'Talk to us about your home'
 
-/** /sell default hero. The H1 must open "Sell your home in Central Oregon" (ci:seo-shell). */
+/** /sell default hero. The H1 must open "Sell your Central Oregon home" (ci:seo-shell). Matt 2026-10-08. */
 export const SELL_HERO_SUB =
-  'We set the list price from nearby closed sales, then put professional photos, drone, video and a 3D tour on the market in week one. Start with your address. No contract to talk.'
+  'We price your home from what similar homes nearby actually sold for, market it with professional photos, video and a 3D tour, and keep you updated in writing every week. Start with your address. No contract to talk, no pressure.'
 
 /** Default H1. States what we do for the seller and why us, in one read. */
 export const SELL_HERO_HEADLINE =
-  'Sell your home in Central Oregon with a clear price and a week-one launch'
+  'Sell your Central Oregon home with a local broker who prices it right'
 
 /** /sell?from=cma hero (Matt, 2026-09-28). ONLY the hero copy changes. */
 export const SELL_CMA_EYEBROW = 'For homeowners whose listing ended'

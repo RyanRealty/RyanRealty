@@ -27,6 +27,7 @@ export const SELL_ROUTE_FILES = [
   'app/sell/_v3/SellHowWeSell.tsx',
   'app/sell/_v3/SellClosings.tsx',
   'app/sell/_v3/SellFinalAsk.tsx',
+  'app/sell/_v3/SellDirectAnswer.tsx',
 ]
 
 const CONTROL_OPEN = /<(a|Link|V3Button|details)(\s[^>]*?)?>/gs

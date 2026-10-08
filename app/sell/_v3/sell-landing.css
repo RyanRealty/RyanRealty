@@ -47,6 +47,61 @@
 .v3.v3-stage .sell-hero-sub--cma {
   display: none;
 }
+
+/* ---------- direct answer (AEO brief 2026-10-08) ----------
+   Two plain sentences right under the H1, then a small source line. Server
+   text, on the photograph, quieter than the H1 and the sub. */
+.v3.v3-stage .sell-hero-answer {
+  display: grid;
+  gap: var(--v3-space-3xs);
+  max-width: 44rem;
+}
+.v3.v3-stage .sell-hero-answer__text,
+.v3.v3-stage .sell-hero-answer__source {
+  margin: 0;
+  font-family: var(--v3-font-body);
+  color: var(--v3-ink-on-media);
+  text-wrap: pretty;
+}
+.v3.v3-stage .sell-hero-answer__text {
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+}
+.v3.v3-stage .sell-hero-answer__source {
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-on-navy-muted);
+}
+/* Desktop: the answer runs wider and a step smaller, and the stage copy packs
+   a little tighter, so "Talk to us about your home" stays above the 1440x900
+   fold with the two answer lines in place (button bottom 866px, checked). */
+@media (min-width: 48rem) {
+  .v3.v3-stage .sell-hero-answer,
+  .v3.v3-stage.sell-landing-hero .sell-hero-sub {
+    max-width: 58rem;
+  }
+  .v3.v3-stage.sell-landing-hero .v3-stage-copy {
+    gap: var(--v3-space-sm);
+    padding-block-start: var(--v3-space-md);
+  }
+}
+/* Phone: two answer sentences under the H1 would push "Talk to us about your
+   home" a full screen down. The brief's own fallback is "after the hero, before
+   the proof", so on a phone the answer shows under the slab (still inside the
+   hero, still first after the H1 in the HTML). The fold reads as it did on
+   Oct 5: H1, sub, proof, Matt, address, button. The source line keeps the dog
+   floater's lane clear when it scrolls past him. Checked 375x812, 390x844,
+   375x667 and 414x896, both entries. */
+@media (max-width: 47.99rem) {
+  .v3.v3-stage.sell-landing-hero .sell-hero-answer {
+    order: 1;
+  }
+  .v3.v3-stage.sell-landing-hero .sell-hero-answer__source {
+    padding-inline-end: calc(
+      var(--v3-dog-fab, 4.25rem) + var(--v3-space-md) + var(--v3-space-xs) - var(--v3-gutter)
+    );
+  }
+}
 html[data-sell-entry='cma'] .v3.v3-stage.sell-landing-hero .v3-stage-line:not(.v3-stage-line--alt),
 html[data-sell-entry='cma'] .v3.v3-stage.sell-landing-hero .sell-hero-sub--default {
   display: none;
@@ -154,6 +209,11 @@ html[data-sell-entry='cma'] .v3.v3-stage.sell-landing-hero .sell-hero-sub--cma {
 }
 /* Element color rules sit in @layer base so utilities still win (ci:css-layers). */
 @layer base {
+  .v3.v3-stage .sell-hero-answer__source a {
+    color: var(--v3-ink-on-media);
+    text-decoration: underline;
+    text-underline-offset: var(--v3-underline-offset);
+  }
   .v3.v3-stage .sell-hero-reach a,
   .v3 .sell-final__reach a,
   .v3 .sell-final__report a {
