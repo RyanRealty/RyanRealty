@@ -8,7 +8,7 @@ This is the Admin-side click trail for everything the codebase wires automatical
 
 ### 2026-08-10 — volume repair (server MP)
 
-First-party `visitor_*` is the product scoreboard. Client gtag undercounts hard under Consent Mode denied-by-default + ad blockers (~30 sessions/week vs thousands of FP sessions/day).
+First-party `visitor_*` is the product scoreboard. Through 2026-10-08 client gtag undercounted hard under Consent Mode denied-by-default + ad blockers (~30 sessions/week vs thousands of FP sessions/day). Region defaults (analytics granted outside EEA/UK/CH) shipped 2026-10-08; see `docs/GTM_CONSENT_REGION_DEFAULTS.md` and `docs/TRACKING_POLICY.md`.
 
 **Shipped:** `POST /api/visitors/track` mirrors `page_view` / `listing_view` to GA4 via Measurement Protocol when the browser does not already have a live `_ga` cookie (or consent is essential-only). Requires `GA4_API_SECRET` (present in Vercel production). See `docs/plans/seo-voice/MEASUREMENT_DUAL_SOURCE.md`.
 

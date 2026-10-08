@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   trackedDocLink,
   CMA_DOC_ORIGIN,
+  CMA_DOC_PARAM,
   cmaCampaignFromUrl,
   type TrackedDocLinkCtx,
 } from './doc-links'
@@ -32,7 +33,8 @@ function expectIdentity(url: string) {
   expectSignedFor(u.searchParams.get('_pid'), 13168)
   expect(u.searchParams.get('utm_source')).toBe('cma')
   expect(u.searchParams.get('utm_medium')).toBe('document')
-  expect(u.searchParams.get('utm_campaign')).toBe('cma-1975-harriman')
+  expect(u.searchParams.get('utm_campaign')).toBe('cma-letter')
+  expect(u.searchParams.get(CMA_DOC_PARAM)).toBe('cma-1975-harriman')
   return u
 }
 
@@ -122,9 +124,10 @@ describe('trackedDocLink — place', () => {
     expect(u.pathname.startsWith('/communities/')).toBe(true)
   })
 
-  it('overrides the place helper own legacy cma-letter utm with the document campaign', () => {
+  it('overrides the place helper UTMs with the document program campaign and rr_doc identity', () => {
     const url = trackedDocLink('place', 'Newport Gardens', CTX)
-    expect(url).not.toContain('utm_campaign=cma-letter')
+    expect(new URL(url).searchParams.get('utm_campaign')).toBe('cma-letter')
+    expect(new URL(url).searchParams.get(CMA_DOC_PARAM)).toBe('cma-1975-harriman')
     expect(url).not.toContain('utm_source=crm')
     expect(new URL(url).searchParams.getAll('utm_source')).toEqual(['cma'])
   })
@@ -167,7 +170,8 @@ describe('trackedDocLink — search, book, site', () => {
     const u = parsed(trackedDocLink('search', null, CTX))
     expect(u.pathname).toBe('/homes-for-sale')
     expect(u.searchParams.get('view')).toBeNull()
-    expect(u.searchParams.get('utm_campaign')).toBe('cma-1975-harriman')
+    expect(u.searchParams.get('utm_campaign')).toBe('cma-letter')
+    expect(u.searchParams.get(CMA_DOC_PARAM)).toBe('cma-1975-harriman')
   })
 
   it('book goes to /book', () => {
@@ -200,9 +204,10 @@ describe('trackedDocLink — partial context', () => {
     }
   })
 
-  it('omits utm_campaign when the document has no slug, and keeps source + medium', () => {
+  it('omits utm_campaign and rr_doc when the document has no slug, and keeps source + medium', () => {
     const u = parsed(trackedDocLink('book', null, { cmaSlug: '  ', brokerSlug: 'matt' }))
     expect(u.searchParams.has('utm_campaign')).toBe(false)
+    expect(u.searchParams.has(CMA_DOC_PARAM)).toBe(false)
     expect(u.searchParams.get('utm_source')).toBe('cma')
     expect(u.searchParams.get('utm_medium')).toBe('document')
   })
@@ -215,12 +220,28 @@ describe('trackedDocLink — partial context', () => {
 })
 
 describe('cmaCampaignFromUrl', () => {
-  it('reads the document slug back out of a tracked arrival URL', () => {
+  it('reads the document slug back out of a tracked arrival URL (rr_doc)', () => {
     const url = trackedDocLink('listing', '20260714190234066850000000', CTX)
     expect(cmaCampaignFromUrl(url)).toBe('cma-1975-harriman')
   })
 
-  it('only accepts a cma- campaign from the document medium', () => {
+  it('reads rr_doc first, even when utm_campaign is the program slug', () => {
+    expect(
+      cmaCampaignFromUrl('https://ryan-realty.com/x?utm_campaign=cma-letter&rr_doc=cma-1975-harriman'),
+    ).toBe('cma-1975-harriman')
+  })
+
+  it('still accepts the legacy utm_campaign=<cmaSlug> form for links already sent', () => {
+    expect(cmaCampaignFromUrl('https://ryan-realty.com/x?utm_campaign=cma-1975-harriman')).toBe(
+      'cma-1975-harriman',
+    )
+  })
+
+  it('does not treat the program slug cma-letter as a document identity', () => {
+    expect(cmaCampaignFromUrl('https://ryan-realty.com/x?utm_campaign=cma-letter')).toBeNull()
+  })
+
+  it('only accepts a cma- document slug', () => {
     expect(cmaCampaignFromUrl('https://ryan-realty.com/x?utm_campaign=spring-sale')).toBeNull()
     expect(cmaCampaignFromUrl('https://ryan-realty.com/x')).toBeNull()
     expect(cmaCampaignFromUrl(null)).toBeNull()
@@ -231,5 +252,6 @@ describe('cmaCampaignFromUrl', () => {
     expect(cmaCampaignFromUrl('https://ryan-realty.com/x?utm_campaign=CMA-1975-Harriman')).toBe(
       'cma-1975-harriman',
     )
+    expect(cmaCampaignFromUrl('https://ryan-realty.com/x?rr_doc=CMA-1975-Harriman')).toBe('cma-1975-harriman')
   })
 })

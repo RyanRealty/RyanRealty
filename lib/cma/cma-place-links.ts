@@ -12,6 +12,7 @@ import { CENTRAL_OREGON_CITY_SLUGS } from '@/lib/central-oregon'
 import { resolveSubdivisionAreaRedirect } from '@/lib/subdivision-area-redirects'
 import { neighborhoodPagePath, slugify } from '@/lib/slug'
 import { communityPath } from '@/lib/communities/community-public-pair'
+import { buildTrackedUrl } from '@/lib/analytics/utm'
 
 /**
  * The production origin, hard-coded on purpose — the same reason
@@ -56,13 +57,11 @@ function clean(s: string | null | undefined): string | null {
   return t
 }
 
-/** Letter / doc attribution — every public place CTA carries UTM for the analytics pipe. */
-const DOC_UTM = 'utm_source=crm&utm_medium=doc&utm_campaign=cma-letter'
-
+/** Letter / doc attribution — every public place CTA carries the CMA program UTMs. */
 function withDocUtm(url: string): string {
   if (!url) return url
   if (/[?&]utm_source=/.test(url)) return url
-  return url.includes('?') ? `${url}&${DOC_UTM}` : `${url}?${DOC_UTM}`
+  return buildTrackedUrl(url, { source: 'cma', medium: 'document', campaign: 'cma-letter' })
 }
 
 function abs(path: string | null): string | null {

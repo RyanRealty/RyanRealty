@@ -1,0 +1,32 @@
+---
+description: UTM tracking convention for every outbound ryan-realty.com link (emails, SMS, CMA documents, social, GBP).
+globs: ["lib/analytics/utm.ts", "lib/cma/doc-links.ts", "lib/cma/first-contact-render.ts", "lib/crm/attributed-links.ts", "lib/identity/outbound-links.ts", "lib/alerts/send.ts", "app/api/social/publish/route.ts", "app/api/cron/publisher-sweep/route.ts"]
+alwaysApply: false
+---
+
+# UTM convention (Analytics fix 8)
+
+Build every outbound ryan-realty.com tracking link with `buildTrackedUrl` in `lib/analytics/utm.ts`. Do not hand-append `utm_*` query strings.
+
+Signature: `buildTrackedUrl(url, { source, medium, campaign, content?, term?, test?, extraParams? })`.
+
+## Vocab
+
+| Param | Allowed values |
+|---|---|
+| utm_source | `crm`, `cma`, `gbp`, `facebook`, `instagram`, `x`, `youtube`, `newsletter`, `zillow`, `realtor`, `referral-<domain>` |
+| utm_medium | `email`, `sms`, `organic`, `social`, `paid_social`, `cpc`, `document`, `referral`, `qr` |
+| utm_campaign | `cma-letter`, `expired-outreach`, `fsbo-outreach`, `market-report-YYYY-MM`, `open-house-weekly`, `listing-launch`, `listing-alerts`, `gbp-profile`, `newsletter`, `social-post`, `crm-outbound` |
+| utm_content | `v2`, `cta-top`, `why-list`, `listing-<listing_key>`, `agent-<slug>` (an ID, never an address) |
+| utm_term | paid keyword only (medium `cpc` or `paid_social`) |
+
+## Rules
+
+1. **One set.** `buildTrackedUrl` deletes every existing `utm_*` on the URL, then writes one set. Path, hash, and non-UTM params stay.
+2. **No addresses or names** in any UTM value. Rejected: digits plus a street suffix (`st`, `ave`, `ne`, `nw`, `rd`, `dr`, `ln`, …), zip-like 5-digit runs, `--v2` per-property slugs (e.g. `cma-2465-ne-7th-redmond-97756--v2`, `61234-sunny-ln`), and two-token first-last names whose first token is an obvious given name (`john-smith`). `bend-sellers` is a keyword, not a name.
+3. **Test sends.** `test: true` rewrites campaign to `test-<campaign>`. Preview / self-test / internal-recipient paths must pass it.
+4. **Validation.** Throws in test/dev. In production, falls back to a known-good value and `console.warn` — a send or render must not fail because a UTM was off-vocab.
+5. **CMA open attribution.** Document identity is `rr_doc=<cmas.slug>` (not `utm_campaign`). `cmaCampaignFromUrl` reads `rr_doc` first, then the legacy `utm_campaign=<slug>` form. `stripGa4UrlParams` removes `rr_doc` from URLs sent to GA4; stored first-party URLs keep it.
+6. **email-click** is identity (`identify_source`), not a UTM source. Links use `crm` / `email`. Medium `doc` is `document`.
+
+Do not change visible email, letter, SMS, or page wording. Tracking lives only in the href.

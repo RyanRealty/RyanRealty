@@ -71,9 +71,18 @@ export async function sendTemplateSelfTestAction(
     person: { assigned_broker: actingSlug, lender_name: null, source: samplePerson.source },
     senderSlug: actingSlug,
   })
-  const renderedBody = renderCrmMerge(rawBody, samplePerson, mergeCtx)
-    // Replace any remaining unresolved standard tokens with bracketed labels.
-    .replace(/%([A-Za-z][A-Za-z0-9_]*)%/g, '[$1]')
+  const { decorateOutboundText } = await import('@/lib/identity/outbound-links')
+  const renderedBody = decorateOutboundText(
+    renderCrmMerge(rawBody, samplePerson, mergeCtx)
+      // Replace any remaining unresolved standard tokens with bracketed labels.
+      .replace(/%([A-Za-z][A-Za-z0-9_]*)%/g, '[$1]'),
+    {
+      brokerSlug: actingSlug,
+      personId: null,
+      channel: channel === 'sms' ? 'sms' : 'email',
+      test: true,
+    },
+  )
 
   if (channel === 'email') {
     const rawSubject = (input.subject ?? '').trim()
