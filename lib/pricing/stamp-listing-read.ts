@@ -127,7 +127,9 @@ export async function stampOneListingPricingRead(
     return error ? 'skipped' : 'stamped'
   }
 
-  const priced = await priceSubjectFromFacts(subject)
+  // The facts cron runs this after its recency lane has rebuilt every missing
+  // close of the last 90 days citywide, so each stamp skips its own catch-up.
+  const priced = await priceSubjectFromFacts(subject, { catchUpRecent: false })
   const tight = sameSubdivisionTight(priced.match.tiersUsed)
   const read = publicListingRead({
     factsReady: priced.match.factsReady,

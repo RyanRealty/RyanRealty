@@ -108,6 +108,7 @@ import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 import type { CmaParcelSet } from '@/lib/cma/parcel-shapes'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import { askStepped, resolveAskPosition } from '@/lib/cma/ask-position'
+import { competitionBandBasisSentence } from '@/lib/cma/competition-band-basis'
 import {
   PRICED_RIGHT_HEADING_OVERPRICED,
   askExposureSentence,
@@ -1881,7 +1882,9 @@ export function competitionBodyMatrixHtml(a: OpinionPageArgs): string {
     competitors: [...activeOnly, ...pendingOnly],
     nonSoliciting: closingIsNonSoliciting(a),
   })
-  return `<p>${esc(sentence)}</p>
+  // What the range is centered on, and whether it opened past ±10% (reader review 2026-10-07).
+  const basis = competitionBandBasisSentence(a.bandRivals?.bandBasis, a.pricing.recommended)
+  return `<p>${esc(sentence)}${basis ? ` ${esc(basis)}` : ''}</p>
   ${cut ? `<p>${esc(cut)}</p>` : ''}
   ${edge ? `<p class="compete-edge">${esc(edge.sentence)}</p>` : ''}
   <p class="small">${esc(sourceLine)}</p>

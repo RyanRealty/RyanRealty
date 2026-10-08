@@ -166,10 +166,14 @@ describe('listing window market', () => {
     expect(move!.late.n).toBe(3)
     expect(move!.sized).toBe(true)
     const told = { ...move!, productNoun: 'townhouse' }
-    expect(listingMarketSentence(told)).toContain('the median townhouse sale in Copperstone')
+    // One sale in the first half is that home's price, not a median.
+    expect(listingMarketSentence(told)).toContain('the one townhouse sale in Copperstone')
+    expect(listingMarketSentence(told)).toContain('the median of the 3 in the second half')
+    expect(listingMarketSentence(told)).not.toMatch(/\b(rose|fell)\b/)
     expect(listingMarketSource(told)).toContain('Townhouses in Copperstone')
+    expect(listingMarketSource(told)).toMatch(/^1 closed sale [A-Z]/)
     expect(listingMarketSource(told)).not.toMatch(/single-family/i)
-    expect(listingMarketSentence(move!)).toContain('the median sale in Copperstone')
+    expect(listingMarketSentence(move!)).toContain('the one sale in Copperstone')
   })
 
   it('does not draw a neighborhood from one close and then three', () => {
@@ -188,6 +192,63 @@ describe('listing window market', () => {
       ],
     })
     expect(move).toBeNull()
+  })
+})
+
+describe('one sale a half (3037 Purcell, Silver Sage, 2026-10-07)', () => {
+  // The letter said "the median sale in Silver Sage rose from $503,000 to
+  // $559,000" over one sale in each half. One sale has no median and no trend.
+  // The two prices are the letter's; the dates and the first sale's size are illustrative.
+  const one: ListingMarketMove = {
+    place: 'Silver Sage',
+    grain: 'subdivision',
+    sized: true,
+    sqftLow: 1200,
+    sqftHigh: 2000,
+    early: { median: 503000, ppsf: 323, sqftMedian: 1558, n: 1, from: '2026-05-01', to: '2026-07-17' },
+    late: { median: 559000, ppsf: 359, sqftMedian: 1558, n: 1, from: '2026-07-18', to: '2026-10-05' },
+    priceMove: 'rose',
+    ppsfMove: 'rose',
+  }
+
+  it('names the one sale and its price, with no median and no rise', () => {
+    const s = listingMarketSentence(one)
+    expect(s).toBe(
+      "While your home was listed, the one sale in Silver Sage for a home about this size in the first half of the listing closed at $503,000, and the one in the second half closed at $559,000. Per square foot, that is $323, then $359. One sale is one home's price, not a trend.",
+    )
+    expect(s).not.toMatch(/median|rose|fell/)
+    expect(s).not.toContain('\u2014')
+  })
+
+  it('counts one closed sale in the singular', () => {
+    expect(listingMarketSource(one)).toMatch(/^1 closed sale May 1–Jul 17, then 1 from /)
+    expect(listingMarketSource({ ...one, early: { ...one.early, n: 2 } })).toMatch(/^2 closed sales /)
+  })
+
+  it('keeps the median wording when both halves hold two or more', () => {
+    const two = { ...one, early: { ...one.early, n: 2 }, late: { ...one.late, n: 3 } }
+    expect(listingMarketSentence(two)).toContain('the median sale in Silver Sage for a home about this size rose from $503,000 to $559,000')
+  })
+
+  it('names a single later sale beside an earlier median', () => {
+    const s = listingMarketSentence({ ...one, early: { ...one.early, n: 4 } })
+    expect(s).toContain('the median of the 4 sales in Silver Sage for a home about this size in the first half of the listing was $503,000')
+    expect(s).toContain('the one in the second half closed at $559,000')
+  })
+
+  it('fits the phone chart with the longer caption', () => {
+    const svg = listingMarketSlopesPhoneSvg({ ...listingMarketSlopes(one), caption: listingMarketSentence(one) })
+    expect(textOutsideViewBox(svg)).toEqual([])
+  })
+
+  it('prints no rise or fall on the chart over one sale a half', () => {
+    const drawn = { ...listingMarketSlopes(one), caption: listingMarketSentence(one) }
+    expect(drawn.panels.every((p) => p.label === 'one sale, not a trend')).toBe(true)
+    const svg = listingMarketSlopesSvg(drawn)
+    expect(svg).toContain('one sale, not a trend')
+    expect(svg).not.toMatch(/>(rose|fell)</)
+    const many = listingMarketSlopes({ ...one, early: { ...one.early, n: 2 }, late: { ...one.late, n: 2 } })
+    expect(many.panels.every((p) => p.label === undefined)).toBe(true)
   })
 })
 

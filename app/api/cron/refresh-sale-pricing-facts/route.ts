@@ -3,6 +3,13 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { stampListingPricingReadsBatch } from '@/lib/pricing/stamp-listing-read'
 import { queueBrokerHealthAlert } from '@/lib/crm/broker-alerts'
+import {
+  catchUpRecentPricingFacts,
+  closeDayBefore,
+  RECENT_CLOSE_CATCH_UP_DAYS,
+  type PricingFactsCatchUp,
+} from '@/lib/data/pricing/facts'
+import { CENTRAL_OREGON_CITIES } from '@/lib/pricing/classes'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -11,13 +18,17 @@ export const maxDuration = 300
 /** Comps one run may remove; more means a listings read gone wrong (see the prune below). */
 const PRUNE_BUDGET = 50
 
+/** Missing recent closes one run rebuilds (see the recency lane below). */
+const RECENT_CATCH_UP_MAX = 300
+
 /**
  * GET /api/cron/refresh-sale-pricing-facts
  *
  * Incremental drain of sale_pricing_facts (all years, Central Oregon closed A),
- * a sweep that drops comps whose listing left the filter
- * (prune_sale_pricing_facts_batch), plus a rebuild of pricing_market_index /
- * pricing_subdivision_cells.
+ * a recency lane that adds every close of the last 90 days with no facts row
+ * (catchUpRecentPricingFacts), a sweep that drops comps whose listing left the
+ * filter (prune_sale_pricing_facts_batch), plus a rebuild of
+ * pricing_market_index / pricing_subdivision_cells.
  * Schedule: every 6 hours via vercel.json.
  */
 export async function GET(request: Request) {
@@ -50,6 +61,36 @@ export async function GET(request: Request) {
       break
     }
   }
+  // RECENCY LANE (2026-10-07, 3037 Purcell). The drain above walks every
+  // closed listing in ListingKey order, 1,600 keys a run, and a new listing's
+  // key sorts last, so a new close waited for the walk to pass the end of the
+  // keyspace: on 2026-10-07 the newest close in the table was 2026-09-28 while
+  // the walk was back at the 2020-02-26 keys, and a CMA priced without a
+  // Silver Sage sale its own chart printed. Every close of the last 90 days
+  // that has no facts row is rebuilt here each run, by the same SQL.
+  let recentCatchUp: PricingFactsCatchUp | null = null
+  try {
+    recentCatchUp = await catchUpRecentPricingFacts({
+      since: closeDayBefore(new Date().toISOString(), RECENT_CLOSE_CATCH_UP_DAYS),
+      cities: CENTRAL_OREGON_CITIES,
+      maxRefresh: RECENT_CATCH_UP_MAX,
+    })
+    if (recentCatchUp.error) console.error('[refresh-sale-pricing-facts] recent closes', recentCatchUp.error)
+  } catch (err) {
+    console.error('[refresh-sale-pricing-facts] recent closes', err)
+  }
+  const recentCloses = recentCatchUp
+    ? {
+        since: recentCatchUp.since,
+        checked: recentCatchUp.checked,
+        missing: recentCatchUp.missing.length,
+        refreshed: recentCatchUp.refreshed.length,
+        skipped: recentCatchUp.skipped.length,
+        failed: recentCatchUp.failed,
+        deferred: recentCatchUp.deferred.length,
+        error: recentCatchUp.error,
+      }
+    : null
   // The refresh above only upserts. A comp whose listing later left the filter
   // (deleted because the MLS removed the sale, back to Pending, re-typed) stays
   // until this sweep drops it; 3 x 20,000 keys a run covers the ~150,000-row
@@ -273,6 +314,7 @@ export async function GET(request: Request) {
   return NextResponse.json({
     ok: pruned.refused == null,
     upserted,
+    recentCloses,
     pruned,
     concessionsUpdated,
     newConstructionStamped,

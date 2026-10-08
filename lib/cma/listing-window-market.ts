@@ -290,10 +290,35 @@ function mixSentence(move: ListingMarketMove): string {
   return `The later homes were ${word}. The median one was ${fmt(late)} square feet, and the earlier median was ${fmt(early)}.`
 }
 
+/**
+ * A half holding one sale has no median and no trend: it is one home's price.
+ * A subdivision chart may draw one sale a half (chooseListingMarket), so the
+ * sentence then names "the one sale" and its price, and claims no median,
+ * no rise and no fall (3037 Purcell, 2026-10-07: "the median sale in Silver
+ * Sage rose from $503,000 to $559,000" was one sale against one sale).
+ */
+function singleSaleSentence(move: ListingMarketMove, product: string, size: string): string {
+  const where = `${product}sale in ${move.place}${size}`
+  const first =
+    move.early.n === 1
+      ? `the one ${where} in the first half of the listing closed at ${usd(move.early.median)}`
+      : `the median of the ${move.early.n} ${product}sales in ${move.place}${size} in the first half of the listing was ${usd(move.early.median)}`
+  const second =
+    move.late.n === 1
+      ? `the one in the second half closed at ${usd(move.late.median)}`
+      : `the median of the ${move.late.n} in the second half was ${usd(move.late.median)}`
+  const foot =
+    move.early.ppsf != null && move.late.ppsf != null
+      ? ` Per square foot, that is ${usd(move.early.ppsf)}, then ${usd(move.late.ppsf)}.`
+      : ''
+  return `While your home was listed, ${first}, and ${second}.${foot} One sale is one home's price, not a trend.`
+}
+
 /** The sentence under the chart. Both halves are named, and the rate per foot when it exists. */
 export function listingMarketSentence(move: ListingMarketMove): string {
   const size = move.sized ? ' for a home about this size' : ''
   const product = move.productNoun ? `${move.productNoun} ` : ''
+  if (move.early.n < 2 || move.late.n < 2) return singleSaleSentence(move, product, size)
   const price = moveClause(move.priceMove, move.early.median, move.late.median)
   const head = `While your home was listed, the median ${product}sale in ${move.place}${size} ${price}.`
   if (move.ppsfMove == null || move.early.ppsf == null || move.late.ppsf == null) return head
@@ -356,7 +381,8 @@ export function listingMarketSource(move: ListingMarketMove): string {
         : move.productNoun
           ? move.productNoun
           : 'Single-family homes'
-  return `${move.early.n} closed sales ${spokenSpan(move.early.from, move.early.to)}, then ${move.late.n} from ${lateLabeled}. ${homes} in ${move.place}${size}. Oregon Data Share MLS.${measured}`
+  const earlySales = `${move.early.n} closed ${move.early.n === 1 ? 'sale' : 'sales'}`
+  return `${earlySales} ${spokenSpan(move.early.from, move.early.to)}, then ${move.late.n} from ${lateLabeled}. ${homes} in ${move.place}${size}. Oregon Data Share MLS.${measured}`
 }
 
 export type ListingMarketSlopePanel = {
@@ -369,6 +395,8 @@ export type ListingMarketSlopePanel = {
   toN: string
   move: ListingMarketMoveWord
   deltaPct: number
+  /** Printed in place of the move word. Set when a half holds one sale: one sale is not a trend. */
+  label?: string
 }
 
 function halfMeta(half: ListingMarketHalf): string {
@@ -376,6 +404,9 @@ function halfMeta(half: ListingMarketHalf): string {
   if (half.sqftMedian == null || !(half.sqftMedian > 0)) return sales
   return `${sales}, ${Math.round(half.sqftMedian).toLocaleString('en-US')} sqft`
 }
+
+/** The slope word when a half holds one sale. */
+export const ONE_SALE_SLOPE_LABEL = 'one sale, not a trend'
 
 /** The two readings under the listing timeline. Dollars and the rate per foot never share an axis. */
 export function listingMarketSlopes(move: ListingMarketMove): {
@@ -387,6 +418,9 @@ export function listingMarketSlopes(move: ListingMarketMove): {
   const toWhen = spokenSpan(move.late.from, move.late.to)
   const fromN = halfMeta(move.early)
   const toN = halfMeta(move.late)
+  // One sale a half is one home's price: the chart does not print "rose" or
+  // "fell" over it, the same as the sentence under it (3037 Purcell, 2026-10-07).
+  const label = move.early.n < 2 || move.late.n < 2 ? ONE_SALE_SLOPE_LABEL : undefined
   const panels: ListingMarketSlopePanel[] = [
     {
       title: 'Sale price',
@@ -398,6 +432,7 @@ export function listingMarketSlopes(move: ListingMarketMove): {
       toN,
       move: move.priceMove,
       deltaPct: move.early.median > 0 ? (move.late.median - move.early.median) / move.early.median : 0,
+      ...(label ? { label } : {}),
     },
   ]
   if (move.ppsfMove && move.early.ppsf != null && move.late.ppsf != null) {
@@ -411,6 +446,7 @@ export function listingMarketSlopes(move: ListingMarketMove): {
       toN,
       move: move.ppsfMove,
       deltaPct: move.early.ppsf > 0 ? (move.late.ppsf - move.early.ppsf) / move.early.ppsf : 0,
+      ...(label ? { label } : {}),
     })
   }
   return { kicker: `${move.place}${size}`, panels }
