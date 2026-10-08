@@ -74,17 +74,6 @@ describe('sizeAdjustmentFor', () => {
       expect(r).toEqual({ sizeAdjustment: 0, ppsfTimeAdjusted: 0, basis: 'no-sale-living-area' })
     }
   })
-
-  it('keeps the exclusive-pocket exception (Matt 2026-09-17)', () => {
-    const r = sizeAdjustmentFor({
-      subjectSqft: 1590,
-      saleSqft: 1880,
-      timeAdjustedPrice: 672_500,
-      exclusivePocket: true,
-    })
-    expect(r.sizeAdjustment).toBe(0)
-    expect(r.basis).toBe('exclusive-pocket')
-  })
 })
 
 describe('one size adjustment on both ladders (Matt 2026-10-08)', () => {
@@ -125,10 +114,20 @@ describe('one size adjustment on both ladders (Matt 2026-10-08)', () => {
     )
   })
 
-  it('the exclusive pocket still moves nothing for size on the facts walk', () => {
-    const facts = factsWalk(sale({ selectionTier: 'subdivision-24mo' }), true)
-    expect(facts.sizeAdjustment).toBe(0)
-    expect(facts.sizeAdjustmentBasis).toBe('exclusive-pocket')
+  it('a pocket sale 18% larger gets the same size dollars as a sale outside the pocket (Matt 2026-10-08, "Yes, adjust pocket sales")', () => {
+    // Own plat only: the set is the exclusive pocket. Its date rule is
+    // unchanged; its size move is the same as any other sale's.
+    const pocketSale = sale({ selectionTier: 'subdivision-24mo' })
+    const widerSale = sale({ selectionTier: 'nearby-1mi-12mo' })
+    const pocket = factsWalk(pocketSale, true)
+    const wider = factsWalk(widerSale, false)
+    expect(pocketSale.sqft).toBe(1880)
+    expect(subject.sqft).toBe(1590)
+    expect(pocket.timeAdjustedPrice).toBe(wider.timeAdjustedPrice)
+    expect(pocket.sizeAdjustment).toBe(-51_868)
+    expect(pocket.sizeAdjustment).toBe(wider.sizeAdjustment)
+    expect(pocket.sizeAdjustmentBasis).toBe('adjusted')
+    expect(pocket.adjustedPrice).toBe(pocket.timeAdjustedPrice - 51_868)
   })
 
   it('the grid prints the size row for a set priced on the listings path', () => {

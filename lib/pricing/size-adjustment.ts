@@ -10,11 +10,13 @@
  * fallback with no city index (lib/cma/pricing.ts adjustComps) both call this,
  * so one sale cannot be priced two ways by the path that found it.
  *
+ * The exclusive pocket (own street or own plat only) is adjusted for size
+ * too (Matt 2026-10-08, "Yes, adjust pocket sales"). That supersedes the size
+ * half of the 2026-09-17 pocket rule; the pocket's date rule is unchanged.
+ *
  * No dollars move when:
  *   - the sale has no living area recorded (the letter says so on its row),
- *   - the subject has no living area recorded,
- *   - the set is the exclusive pocket (Matt 2026-09-17: the pocket recommends
- *     from the pocket as sold).
+ *   - the subject has no living area recorded.
  */
 
 export const SIZE_ADJ_FACTOR = 0.5
@@ -23,7 +25,6 @@ export type SizeAdjustmentBasis =
   | 'adjusted'
   | 'no-sale-living-area'
   | 'no-subject-living-area'
-  | 'exclusive-pocket'
 
 export type SizeAdjustmentResult = {
   /** Whole dollars added to the date-adjusted price. 0 when nothing moved. */
@@ -41,7 +42,6 @@ export function sizeAdjustmentFor(opts: {
   subjectSqft: number | null | undefined
   saleSqft: number | null | undefined
   timeAdjustedPrice: number
-  exclusivePocket?: boolean
 }): SizeAdjustmentResult {
   const saleSqft = opts.saleSqft
   const ppsfTimeAdjusted = positive(saleSqft) ? opts.timeAdjustedPrice / saleSqft : 0
@@ -49,7 +49,6 @@ export function sizeAdjustmentFor(opts: {
   if (!positive(opts.subjectSqft)) {
     return { sizeAdjustment: 0, ppsfTimeAdjusted, basis: 'no-subject-living-area' }
   }
-  if (opts.exclusivePocket === true) return { sizeAdjustment: 0, ppsfTimeAdjusted, basis: 'exclusive-pocket' }
   // `+ 0` folds a -0 from Math.round into 0, so the grid never prints "-$0".
   const sizeAdjustment =
     Math.round((opts.subjectSqft - saleSqft) * ppsfTimeAdjusted * SIZE_ADJ_FACTOR) + 0

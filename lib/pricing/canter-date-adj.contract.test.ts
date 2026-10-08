@@ -307,7 +307,10 @@ describe('1130 E Canter Horse Back date-adj residual', () => {
     expect(basis.pctPerMonth).toBe(0)
     expect(basis.sentence).toMatch(/exclusive pocket/)
     expect(basis.sentence).toMatch(/city index/)
-    expect(basis.sentence).toMatch(/Size and story/)
+    // Matt 2026-10-08 ("Yes, adjust pocket sales"): the pocket is adjusted for
+    // size, so the basis line says only that story class does not adjust.
+    expect(basis.sentence).toMatch(/Story class does not adjust/)
+    expect(basis.sentence).not.toMatch(/Size and story/i)
     expect(basis.sentence).not.toMatch(/Each sale is moved by the change/)
   })
 
@@ -356,12 +359,27 @@ describe('1130 E Canter Horse Back date-adj residual', () => {
         exclusivePocket: true,
       }),
     )
+    // Matt 2026-10-08 ("Yes, adjust pocket sales") supersedes the size half of
+    // the 2026-09-17 pocket rule: every pocket sale is adjusted for size the
+    // same way as any other sale (lib/pricing/size-adjustment.ts). The date
+    // rule is unchanged, so the time move stays 0 here. Re-pinned values, in
+    // set order (1,883 sqft subject): 1025 E Horse Back -$3,020, 945 Horse
+    // Back -$4,870, 995 Horse Back +$526, 994 Horse Back +$2,256, 1010 E Horse
+    // Back -$1,226. Before the ruling every one was $0.
+    const sizeBySale: Record<string, number> = {
+      '1025 E Horse Back': -3020,
+      '945 Horse Back': -4870,
+      '995 Horse Back': 526,
+      '994 Horse Back': 2256,
+      '1010 E Horse Back': -1226,
+    }
     for (const row of rows) {
       expect(row.adjusted.storyAdjustment).toBe(0)
-      expect(row.adjusted.sizeAdjustment).toBe(0)
+      expect(row.adjusted.sizeAdjustment).toBe(sizeBySale[row.adjusted.address])
       expect(row.adjusted.timeAdjustment).toBe(0)
-      expect(row.adjusted.adjustedPrice).toBe(row.adjusted.closePrice)
-      expect(row.pathNote).toMatch(/size and story/)
+      expect(row.adjusted.adjustedPrice).toBe(row.adjusted.closePrice + row.adjusted.sizeAdjustment)
+      // The path note's own wording lives in exclusive-pocket-date-adj.ts.
+      expect(row.pathNote).toMatch(/story class/i)
     }
     const { cover, built, method1Mid } = recommendFrom(
       rows.map((r) => r.adjusted),
@@ -388,6 +406,11 @@ describe('1130 E Canter Horse Back date-adj residual', () => {
       rows.map((r) => r.adjusted),
       true,
     )
+    // Matt 2026-10-08 ("Yes, adjust pocket sales"): with the pocket adjusted
+    // for size this fixture recommends $676,000 (was $677,000 with size held
+    // at $0), still inside the $680,000 gold bar's tolerance.
+    expect(cover.recommended).toBe(676_000)
+    expect(built?.recommended).toBe(676_000)
     expect(canterRecommendNearGold(cover.recommended!)).toBe(true)
     expect(canterRecommendNearGold(built!.recommended!)).toBe(true)
     expect(Math.abs(cover.recommended! - CANTER_GOLD_RECOMMEND)).toBeLessThanOrEqual(

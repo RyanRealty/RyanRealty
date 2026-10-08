@@ -403,8 +403,8 @@ export function buildTimeAdjustmentBasis(opts: {
     const appliedDetail = describeAppliedDateAdjustments(opts.applied ?? [])
     const place = opts.cityName?.trim() || 'this city'
     const sentence = appliedDetail
-      ? `These sales are the exclusive pocket. ${appliedDetail} The ${place} city index is not used to pump prices. Size and story class do not adjust.`
-      : `These sales are the exclusive pocket. Date adjustment does not walk the city index, which includes tracts already excluded from this set. Each sale stays on its own sold and last-ask price. Size and story class do not adjust.${would}`
+      ? `These sales are the exclusive pocket. ${appliedDetail} The ${place} city index is not used to pump prices. Story class does not adjust.`
+      : `These sales are the exclusive pocket. Date adjustment does not walk the city index, which includes tracts already excluded from this set. Each sale stays on its own sold and last-ask price. Story class does not adjust.${would}`
     return {
       pctPerMonth: 0,
       pctOverWindow: 0,
@@ -1299,14 +1299,13 @@ export function adjustCmaCompAlongMarket(opts: {
     (new Date(opts.asOf).getTime() - new Date(sale.closeDate).getTime()) / MS_PER_MONTH,
   )
   const subjectSqft = opts.subject.sqft ?? 0
-  // ONE SIZE ADJUSTMENT on every path (Matt 2026-10-08). Matt 2026-09-17:
-  // exclusive pocket recommends from the pocket as sold, so size does not
-  // inflate there. Widened (starved one-ring) sets still size-adjust.
+  // ONE SIZE ADJUSTMENT on every path and every rung, the exclusive pocket
+  // included (Matt 2026-10-08, "Yes, adjust pocket sales"). The pocket's date
+  // rule above (applyExclusivePocketDateAdj) is unchanged.
   const size = sizeAdjustmentFor({
     subjectSqft,
     saleSqft: sale.sqft,
     timeAdjustedPrice,
-    exclusivePocket,
   })
   const ppsfTimeAdjusted = size.ppsfTimeAdjusted
   const sizeAdjustment = size.sizeAdjustment
