@@ -32,7 +32,7 @@ import {
 import { collapseExpiredPeerCycles, peerMatchesSubject } from '@/lib/cma/market-status'
 import { readAskOutcome } from '@/lib/cma/market-area-chapters'
 import { FAILED_ASK_BACKTEST, askAgainstRangeSentence } from '@/lib/cma/expired-audit'
-import { subjectDomDays, subjectListingFailed } from '@/lib/cma/comp-matrix'
+import { SOLD_PPSF_NET_ROW_LABEL, subjectDomDays, subjectListingFailed } from '@/lib/cma/comp-matrix'
 import { salesAreaIsBounded } from '@/lib/pricing/comp-area'
 import { comparisonSalePrice, concessionOnSale } from '@/lib/pricing/seller-net'
 import type { CmaExpiredPeer } from '@/lib/cma/market-status'
@@ -141,21 +141,28 @@ export function didNotSellLeadSentence(input: {
  */
 export function soldPpsfRange(
   comps: readonly CmaAdjustedComp[],
-): { low: number; high: number; n: number; values: number[] } | null {
-  const values = comps
-    .map((c) =>
-      c.closePrice != null && c.closePrice > 0 && c.sqft != null && c.sqft > 0
-        ? Math.round(comparisonSalePrice(c.closePrice, concessionOnSale(c)) / c.sqft)
-        : null,
-    )
-    .filter((v): v is number => v != null)
+): { low: number; high: number; n: number; values: number[]; credit: boolean } | null {
+  const rated = comps.filter(
+    (c) => c.closePrice != null && c.closePrice > 0 && c.sqft != null && c.sqft > 0,
+  )
+  const values = rated.map((c) =>
+    Math.round(comparisonSalePrice(c.closePrice, concessionOnSale(c)) / c.sqft!),
+  )
   if (values.length < 2) return null
-  return { low: Math.min(...values), high: Math.max(...values), n: values.length, values }
+  // Whether any of these rates had a credit come off: the sales table then
+  // names its row for that, and the legend names the row it means.
+  const credit = rated.some((c) => (concessionOnSale(c) ?? 0) > 0)
+  return { low: Math.min(...values), high: Math.max(...values), n: values.length, values, credit }
 }
 
-/** The legend under a set of dollars-a-foot sentences: which figure, which sales. */
-export function soldPpsfLegend(n: number): string {
-  return `The dollars a foot are the Sold $/sqft row of the ${int(n)} closed sales in this report: each sale price, less any recorded seller concession, over its own living area.`
+/**
+ * The legend under a set of dollars-a-foot sentences: which figure, which
+ * sales. It names the sales table's row by the words that row prints, which
+ * carry "after concessions" when a sale on it had a credit.
+ */
+export function soldPpsfLegend(n: number, credit = false): string {
+  const row = credit ? SOLD_PPSF_NET_ROW_LABEL : 'Sold $/sqft'
+  return `The dollars a foot are the ${row} row of the ${int(n)} closed sales in this report: each sale price, less any recorded seller concession, over its own living area.`
 }
 
 /** "Asked $456 a foot. Homes like it closed at $274 to $320 a foot." */
@@ -360,7 +367,7 @@ export function didNotSellBodyHtml(a: DidNotSellArgs): string {
   const range = soldPpsfRange(a.comps)
   const lead = didNotSellLeadSentence({ market: a.market, city: a.subject.city, compArea: a.compArea })
   const cards = stories.map((story) => storyCard(story, range)).join('\n    ')
-  const legend = range ? `<p class="small">${esc(soldPpsfLegend(range.n))}</p>` : ''
+  const legend = range ? `<p class="small">${esc(soldPpsfLegend(range.n, range.credit))}</p>` : ''
   return `${lead ? `<p class="chart-read">${esc(lead)}</p>` : ''}
   <div class="dns-set">
     ${cards}

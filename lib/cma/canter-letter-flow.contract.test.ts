@@ -546,7 +546,10 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
       'List price',
       'Original list',
       'Sold',
-      'Days on market',
+      // The sales table counts each sale to its accepted offer and says so
+      // (reader review, cma-3037-purcell, 2026-10-08). The locked field is
+      // the same row, named for what it counts.
+      'Days to an offer',
       'Beds',
       'Baths',
       'Size',

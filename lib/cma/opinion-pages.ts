@@ -1186,7 +1186,7 @@ function peerStoriesHtml(a: OpinionPageArgs, peers: readonly MatrixEntry[]): str
     .join('')
   if (!items) return ''
   return `<ul class="peer-stories">${items}</ul>
-  <p class="small">${esc(soldPpsfLegend(range.n))}</p>`
+  <p class="small">${esc(soldPpsfLegend(range.n, range.credit))}</p>`
 }
 
 export function didNotSellPage(a: OpinionPageArgs): CmaPageDef | null {
