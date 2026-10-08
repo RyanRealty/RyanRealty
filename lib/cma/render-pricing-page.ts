@@ -1114,6 +1114,20 @@ export function salesThatSetItHeading(
 }
 
 /**
+ * The same chapter named inside a sentence: its heading's own words, "the
+ * sales that set the range". Basis and limits called it "the price chapter"
+ * while the chapter was titled "The sales that set the range." (reader review
+ * 2026-10-08), so the reader could not find it by that name.
+ */
+export function salesThatSetItPhrase(
+  pricing: CmaPricing | null | undefined,
+  comps?: readonly CmaAdjustedComp[] | null,
+): string {
+  const heading = salesThatSetItHeading(pricing, comps).replace(/\.$/, '')
+  return `${heading.charAt(0).toLowerCase()}${heading.slice(1)}`
+}
+
+/**
  * THE ONE MAP (Delta 3).
  *
  * Matt: "One comprehensive map." It sits under the number and above the three

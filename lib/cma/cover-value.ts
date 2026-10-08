@@ -246,7 +246,12 @@ export function rangeSpreadCauseSentence(
   else if (light > 1) parts.push(`${countWord(light)} sales that carried too little weight to set an end`)
   if (trim === 1 && keptStreet) parts.push(`one sale at the ${keptStreet.asideEnd} end of the prices`)
   else if (trim === 1) parts.push('one sale at the end of the prices so a single sale cannot set the range')
-  else if (trim > 1) parts.push('the sales at each end of the prices so one sale cannot set the range')
+  // The range rule sets aside one sale at each end ('trimmed-one-each-end').
+  // "The sales at each end of the prices so one sale cannot set the range"
+  // read as a puzzle (reader review 2026-10-08); it is the highest and the
+  // lowest sale.
+  else if (trim === 2) parts.push('the highest and the lowest sale, so no single sale sets the range')
+  else if (trim > 2) parts.push('the highest and lowest sales, so no single sale sets the range')
   if (parts.length === 0) {
     // Older rows stored the count and not the reason. Do not call it distance.
     parts.push(

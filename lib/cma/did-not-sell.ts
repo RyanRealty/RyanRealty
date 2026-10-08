@@ -32,6 +32,7 @@ import {
 import { collapseExpiredPeerCycles, peerMatchesSubject } from '@/lib/cma/market-status'
 import { readAskOutcome } from '@/lib/cma/market-area-chapters'
 import { FAILED_ASK_BACKTEST, askAgainstRangeSentence } from '@/lib/cma/expired-audit'
+import { measuresLastOfSeveralAsks } from '@/lib/cma/ask-story'
 import { SOLD_PPSF_NET_ROW_LABEL, subjectDomDays, subjectListingFailed } from '@/lib/cma/comp-matrix'
 import { salesAreaIsBounded } from '@/lib/pricing/comp-area'
 import { comparisonSalePrice, concessionOnSale } from '@/lib/pricing/seller-net'
@@ -317,7 +318,13 @@ export function didNotSellStories(a: DidNotSellArgs): Story[] {
       // when chapter 1 is not in this document to carry it.
       lead: a.askVerdictInChapterOne
         ? ''
-        : askAgainstRangeSentence(s.lastListPrice ?? null, a.rangeLow ?? null, a.rangeHigh ?? null),
+        : askAgainstRangeSentence(s.lastListPrice ?? null, a.rangeLow ?? null, a.rangeHigh ?? null, {
+            // Measured on the last ask: say so when the period opened at another price.
+            lastOfSeveral: measuresLastOfSeveralAsks(s.lastListPrice ?? null, [
+              ...(a.finalCycle?.initialAsk != null ? [a.finalCycle.initialAsk] : []),
+              ...(a.finalCycle?.cuts ?? []).map((c) => c.ask),
+            ]),
+          }),
     })
   }
   const peers = collapseExpiredPeerCycles(

@@ -77,10 +77,12 @@ import {
   mapPage,
   pricingPage,
   salesThatSetItPage,
+  salesThatSetItPhrase,
   whatItsWorthSearchStory,
   worthRangeRounded,
   type PricingPageInput,
 } from '@/lib/cma/render-pricing-page'
+import { lotDifferenceSentence } from '@/lib/cma/lot-disclosure'
 import { activeRivalsFor, competitionSetWithoutSubject, unsoldPeersFor } from '@/lib/cma/matrix-sets'
 import { letterProductMatch, productClass } from '@/lib/cma/market-area'
 import { realSubdivisionName } from '@/lib/pricing/classes'
@@ -622,9 +624,15 @@ export function sellerNetColumns(a: OpinionPageArgs): NetTwoColumns | null {
   return netAtExpectedSale({ pricing: grid.pricing, comps: grid.comps, sheet: base })
 }
 
-/** The chapter title. A list-only sheet is a net at list; two columns are not. */
+/**
+ * The chapter title. A list-only sheet is a net at list; two columns are not.
+ * On a letter held for Matt the one column is "At the price on the cover"
+ * (netListHeader), and the title over it said "Net at list" (reader review
+ * 2026-10-08): the title names the same price its column does.
+ */
 export function sellerNetHeading(a: OpinionPageArgs): string {
-  return sellerNetColumns(a) ? 'Net from the sale' : 'Net at list'
+  if (sellerNetColumns(a)) return 'Net from the sale'
+  return heldForMatt(a.pricing) ? `Net at ${COVER_PRICE_PHRASE}` : 'Net at list'
 }
 
 /** The eyebrow over the immersive twin. Never "What you keep" on a partial net. */
@@ -880,6 +888,8 @@ export function whatHappenedGraphicHtml(a: OpinionPageArgs): string {
     // above the range before it came inside (reader review 2026-10-08). With
     // no exposure on the row the split is unknown and no claim is made.
     segments: askExposureFor(a)?.segments ?? [],
+    // Every price the line draws, so a gap measured on the last ask says so.
+    asks: timeline.steps.map((s) => s.ask),
   })
   return `<div class="szn timeline-wide">${wide}</div>
   ${phone ? `<div class="szn timeline-phone">${phone}</div>` : ''}
@@ -1455,10 +1465,12 @@ export function cityMedianReconciliationHtml(a: OpinionPageArgs): string {
   // On a letter held for Matt the cover number is under his review, not yet
   // the owner's price (reader review 2026-10-08).
   const whose = heldForMatt(a.pricing) ? COVER_PRICE_PHRASE : 'your price'
-  // On a cover the weights did not make (a rule 26 hold, or a cover held to
-  // the sale on the subject's street) the sales set the range, not the cover
-  // (lib/cma/sales-role.ts; reader review, 20676 Wild Rose, 2026-10-08).
-  const which = salesSetOnlyTheRange(a.pricing, a.comps) ? 'that set the range' : `behind ${whose}`
+  // On a cover the weights did not make (a rule 26 hold, a cover held to the
+  // sale on the subject's street, or a held cover the failed-ask ceiling set)
+  // the sales set the range, not the cover (lib/cma/sales-role.ts; reader
+  // reviews, 20676 Wild Rose and 62475 Woodsman, 2026-10-08). Read off the
+  // grid the letter prints, as every other page asks it.
+  const which = salesSetOnlyTheRange(a.pricing, gridSales(a).comps) ? 'that set the range' : `behind ${whose}`
   return `<p class="chart-read">${esc(
     `The ${countWord(keptSaleCount(a.pricing, a.comps))} sales ${which} sold for ${usd(
       Math.min(...closes),
@@ -1649,13 +1661,39 @@ function basisSalesClause(a: OpinionPageArgs): string {
     : `The value range rests on ${sales} from the Oregon Data Share MLS`
 }
 
+/**
+ * The grid the set-aside sales sit in is the one the condition paragraph just
+ * named by its chapter's words (gridPhrase), so this says "the same grid"
+ * rather than a chapter name the letter does not print ("the price chapter",
+ * reader review 2026-10-08).
+ */
 function basisSetAsideSentence(a: OpinionPageArgs): string {
   const { aside } = basisSaleCounts(a)
   if (aside <= 0) return ''
   const word = countWord(aside)
   return ` ${word.charAt(0).toUpperCase()}${word.slice(1)} more ${
-    aside === 1 ? 'is' : 'are'
-  } shown in the price chapter and set aside.`
+    aside === 1 ? 'sale is' : 'sales are'
+  } shown in the same grid and set aside.`
+}
+
+/**
+ * "The grid of the sales that set the range": the closed-sales grid, named by
+ * its chapter's own heading (salesThatSetItPhrase), whichever of the three
+ * headings this letter prints.
+ */
+function gridPhrase(a: OpinionPageArgs): string {
+  const grid = gridSales(a)
+  return `The grid of ${salesThatSetItPhrase(grid.pricing, grid.comps)}`
+}
+
+/**
+ * Rule 20's lot disclosure (lib/cma/lot-disclosure.ts), beside the condition
+ * one: what the grid does not adjust for, said the same way. Empty when no
+ * printed sale's lot differs from the home's.
+ */
+function lotDisclosureHtml(a: OpinionPageArgs): string {
+  const sentence = lotDifferenceSentence(a.subject, gridSales(a).comps)
+  return sentence ? `<p><strong>Lot size was not adjusted for.</strong> ${esc(sentence)}</p>` : ''
 }
 
 /**
@@ -1686,9 +1724,10 @@ export function cmaDisclosureProseHtml(a: OpinionPageArgs): string {
   )}. Every figure in it was pulled that day and reads the market as it stood then.</p>
   <p><strong>What was looked at.</strong> This opinion reads the Oregon Data Share MLS record for your home and for every sale, listing and failed listing named in it: the recorded facts, the price history and the listing photographs${record}. Nobody walked through the inside of your home, or the inside of any home it is measured against. Facts you told us, where they are used, are labeled as yours and should be confirmed independently.</p>
   ${salesMethodHtml(a)}
-  <p><strong>Condition was not adjusted for.</strong> The grid in the price chapter moves each sale ${esc(
+  <p><strong>Condition was not adjusted for.</strong> ${esc(gridPhrase(a))} moves each sale ${esc(
     adjustmentsMadeClause(a.comps),
   )}. It moves none of them for condition, because the MLS record carries no condition rating. Where a sale was in better or worse shape than your home, that difference sits inside its sale price and is not broken out.</p>
+  ${lotDisclosureHtml(a)}
   <p><strong>Basis for the value.</strong> ${esc(basisSalesClause(a))}, ${esc(
     adjustedForClause(a.comps),
   )}, and on verified market statistics for ${esc(a.market?.geoLabel ?? a.subject.city)}.${esc(
