@@ -20,6 +20,17 @@
  *     licenses, profiles; no roster cards)
  * 13. V3Facts #key-facts "Key facts about Ryan Realty" (one <dl>)
  * 14. V3Answers #faq "Frequently asked questions" (H3 questions = FAQPage)
+ *
+ * About upgrade (SEO & AEO Desk brief, 2026-10-08, pending Matt's OK):
+ * - the dek under the H1 is the direct answer (aboutDirectAnswer), with its
+ *   source line and a freshness line;
+ * - AboutTrackRecord #track-record "Track record, sourced" right after the
+ *   closings rail;
+ * - AboutFit #fit "Who Ryan Realty is a good fit for, and who it isn't" right
+ *   after "Who Ryan Realty works with";
+ * - one closings number site-wide: the firm's all-area record (proof.firm,
+ *   once per sale), the rail's count only as "in Central Oregon";
+ * - the FAQ is 13 questions (aboutFaqWithRecord), FAQPage from the same array.
  * Never the sofa interior. No coast-to-coast copy. No competitor named.
  *
  * THE PAGE CONTRACT: generateMetadata through pageMetadata, MetadataBlock
@@ -42,7 +53,7 @@ import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { listingsBrowsePath } from '@/lib/slug'
 import { valuationHref } from '@/lib/site/valuation-href'
-import { BRAND, BROKERS } from '@/lib/brand/contact'
+import { BROKERS } from '@/lib/brand/contact'
 import {
   V3_ROOT_CLASS,
   v3Text,
@@ -66,7 +77,26 @@ import {
 } from '@/components/site/v3'
 import { getCrmCompanySettings } from '@/lib/data/crm/getCrmCompanySettings'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { aboutFaqItems, FIRM_LICENSE } from './_v3/about-constants'
+import { ABOUT_FIRM_STORY, aboutFaqItems, FIRM_LICENSE } from './_v3/about-constants'
+import {
+  ABOUT_FIT_HEADING,
+  ABOUT_FIT_INTRO,
+  ABOUT_TRACK_RECORD_HEADING,
+  ABOUT_TRACK_RECORD_LINKS,
+  aboutDirectAnswer,
+  aboutDirectAnswerSource,
+  aboutFaqAction,
+  aboutFaqWithRecord,
+  aboutFit,
+  aboutFreshnessLine,
+  aboutMetaDescription,
+  aboutTrackRecord,
+  aboutTrackRecordLede,
+  type AboutLiveFigures,
+} from './_v3/about-record'
+import { AboutFit } from './_v3/AboutFit'
+import { AboutTrackRecord } from './_v3/AboutTrackRecord'
+import { zonedDateKey } from '@/lib/format/date'
 import {
   ABOUT_CLIENTS,
   ABOUT_CLIENTS_LEDE,
@@ -95,18 +125,27 @@ import { loadAboutProof } from './_v3/load-about-faces'
 import { basemapFrameForRegions } from '@/lib/geo/basemap-source'
 import { deferredAtlasProps } from '@/lib/atlas/atlas-deferred'
 import './_v3/about-fold.css'
+import './_v3/about-record.css'
 
 const ROUTE_PATH = '/about'
 
 export async function generateMetadata(): Promise<Metadata> {
-  const reviewSummary = await getReviews(6).catch(() => null)
-  const reviewLine =
-    reviewSummary && reviewSummary.count > 0
-      ? `${reviewSummary.averageRating.toFixed(1)} from ${reviewSummary.count} Google reviews. `
-      : ''
+  const [reviewSummary, proof] = await Promise.all([
+    getReviews(6).catch(() => null),
+    loadAboutProof().catch(() => null),
+  ])
+  // The same live figures the page prints (2026-10-08): the firm's all-area
+  // closings and the Google reviews, each dropped when it did not load.
+  const description = aboutMetaDescription({
+    record: proof?.firm ?? null,
+    reviews:
+      reviewSummary && reviewSummary.count > 0
+        ? { average: reviewSummary.averageRating, count: reviewSummary.count, newest: null }
+        : null,
+  })
   return pageMetadata({
     title: 'About Ryan Realty · Bend',
-    description: `${reviewLine}A small boutique brokerage in Central Oregon. We help clients buy and sell. Bend office at ${BRAND.address.street}.`,
+    description,
     path: ROUTE_PATH,
     ogImage: '/images/office/ryan-realty-bend-office-exterior-01.jpg',
     keywords: [
@@ -173,17 +212,39 @@ async function renderAboutPage() {
       ? { average: reviewSummary.averageRating, count: reviewSummary.count }
       : null
   const closingRecord = firmRows.length > 0 ? proof.record : null
+  // The firm's one headline count (2026-10-08): every broker's own closings,
+  // once per sale, any area. closingRecord is the Central Oregon rail.
+  const firmRecord = proof.firm.count > 0 ? proof.firm : null
   const valuation = valuationHref(ROUTE_PATH)
   const services = aboutServices(valuation)
-  const differentiators = aboutDifferentiators({ reviews: reviewsFigure, record: closingRecord, valuationHref: valuation })
+  const differentiators = aboutDifferentiators({
+    reviews: reviewsFigure,
+    record: closingRecord,
+    firm: firmRecord,
+    valuationHref: valuation,
+  })
   const keyFacts = aboutKeyFacts({
     founder,
     people,
     services,
     hours: hoursLine,
     record: closingRecord,
+    firm: firmRecord,
     reviews: reviewsFigure,
   })
+
+  // The sourced facts block: the direct answer, the fit lists, the track
+  // record, and the record questions of the FAQ, from one set of live figures.
+  const live: AboutLiveFigures = {
+    record: firmRecord,
+    centralOregonListed: closingRecord?.count ?? null,
+    reviews: reviewsFigure ? { ...reviewsFigure, newest: newestReviewDate ?? null } : null,
+    brokerCount: people.filter((p) => p.name.trim()).length,
+    asOf: zonedDateKey(new Date()),
+  }
+  const directAnswer = aboutDirectAnswer(live)
+  const fit = aboutFit(live)
+  const trackRecord = aboutTrackRecord(live)
 
   // The team behind Ryan Realty: the origin, the team from the live roster
   // with a door to each broker's page, the licenses, the firm's profiles.
@@ -195,7 +256,8 @@ async function renderAboutPage() {
   ]
 
   const licenseFigures: V3QuietItem[] = [
-    { kind: 'fact', term: 'Firm license', value: FIRM_LICENSE },
+    // OREA lists 201253677 as a Registered Business Name license (2026-10-08).
+    { kind: 'fact', term: 'Brokerage license', value: `${FIRM_LICENSE} (registered business name)` },
     {
       label: `Principal broker OR #${BROKERS.matt.license}`,
       href: '/team',
@@ -207,12 +269,20 @@ async function renderAboutPage() {
   // render already loaded, so the FAQ and its FAQPage name the same people
   // the fold shows. The office hours come from the same booking_hours rows
   // V3OnDuty reads. One array feeds the visible questions (H3s) and FAQPage.
-  const faqItems = aboutFaqItems(proof.faces, { hours: hoursLine })
-  const faqAnswers: V3Answer[] = faqItems.map((item, index) => ({
-    question: item.question,
-    body: item.answer,
-    open: index === 0,
-  }))
+  // 2026-10-08: the record questions join the kept ones, 13 in the brief's
+  // order; the visible doors ride on V3Answers' one action per row, and the
+  // JSON-LD stays plain text.
+  const keptFaq = aboutFaqItems(proof.faces, { hours: hoursLine })
+  const faqItems = aboutFaqWithRecord(keptFaq, live)
+  const faqAnswers: V3Answer[] = faqItems.map((item, index) => {
+    const action = aboutFaqAction(item.question, valuation)
+    return {
+      question: item.question,
+      body: item.answer,
+      open: index === 0,
+      ...(action ? { action } : {}),
+    }
+  })
 
   const faqDoors: V3AnswersDoor[] = [
     { label: 'The brokers', href: '/team' },
@@ -221,6 +291,7 @@ async function renderAboutPage() {
     { label: 'Value my home', href: valuationHref(ROUTE_PATH) },
     { label: 'Homes for sale', href: listingsBrowsePath() },
     { label: 'Central Oregon housing market', href: '/housing-market' },
+    { label: 'Oregon withholding guide', href: '/blog/oregon-withholding-firpta-home-sellers' },
   ]
 
   const schemas: SchemaInput[] = [
@@ -229,8 +300,9 @@ async function renderAboutPage() {
       pageType: 'AboutPage',
       aboutOrganization: true,
       name: 'About Ryan Realty',
-      description:
-        'Ryan Realty is a small boutique brokerage in Bend, Oregon. We cover all of Central Oregon and help clients buy and sell their properties.',
+      // The firm's one-sentence purpose line (Matt 2026-09-14): the fold now
+      // opens on the direct answer, and this sentence describes the page.
+      description: ABOUT_FIRM_STORY,
       url: '/about',
       // Only facts this page prints: the services (What Ryan Realty does),
       // the service area and the licensed-broker count (Key facts).
@@ -259,7 +331,7 @@ async function renderAboutPage() {
       ? [
           {
             type: 'itemList' as const,
-            name: 'Recent Ryan Realty closings',
+            name: 'Ryan Realty closings in Central Oregon',
             items: firmRows.map((row) => ({
               name: `${row.what} · ${row.value}`,
               url: row.href,
@@ -296,6 +368,9 @@ async function renderAboutPage() {
           <AboutFirm
             id="firm"
             heading="About Ryan Realty · Bend"
+            answer={directAnswer}
+            source={aboutDirectAnswerSource()}
+            freshness={aboutFreshnessLine(live)}
             people={proof.faces}
             proof={
               reviewCount > 0
@@ -323,6 +398,15 @@ async function renderAboutPage() {
           ) : null}
           <div className="about-fold__sales">
             <FirmClosings id="firm-sales" rows={firmRows} />
+          </div>
+          <div className="about-fold__record">
+            <AboutTrackRecord
+              id="track-record"
+              heading={ABOUT_TRACK_RECORD_HEADING}
+              lede={aboutTrackRecordLede(live)}
+              items={trackRecord}
+              links={ABOUT_TRACK_RECORD_LINKS}
+            />
           </div>
           <div className="about-fold__reach">
             {hoursLive}
@@ -357,6 +441,8 @@ async function renderAboutPage() {
           items={ABOUT_CLIENTS}
         />
 
+        <AboutFit id="fit" heading={ABOUT_FIT_HEADING} intro={ABOUT_FIT_INTRO} good={fit.good} notFit={fit.notFit} />
+
         <V3Atlas
           id="service-area"
           headingLevel={2}
@@ -386,14 +472,14 @@ async function renderAboutPage() {
           heading="The team behind Ryan Realty"
           headingLevel={2}
           items={[...originItems, ...licenseFigures]}
-          note="Oregon Real Estate Agency. Ryan Realty LLC firm license and the principal broker license on file."
+          note="Oregon Real Estate Agency. Ryan Realty LLC's registered business name license and the principal broker license on file."
         />
 
         <V3Facts
           id="key-facts"
           heading="Key facts about Ryan Realty"
           facts={keyFacts}
-          note="Clients served counts the recorded MLS closings of Ryan Realty brokers in Central Oregon. Reviews are our Google Business Profile reviews, read live."
+          note="Recorded closings counts every closed sale on the regional MLS (Oregon Data Share) where a Ryan Realty broker was the listing broker or the buyer's broker, once per sale. Reviews are our Google Business Profile reviews, read live."
         />
 
         <V3Answers

@@ -48,6 +48,13 @@ export const ABOUT_LOCK_FILES = Object.freeze([
   'components/site/v3/V3Avatar.tsx',
   'lib/brand/contact.ts',
   'app/about/_v3/about-playbook.ts',
+  // 2026-10-08 (SEO & AEO Desk /about brief): the direct answer, the fit
+  // bullets, the sourced track record and the record FAQ live here.
+  'app/about/_v3/about-record.ts',
+  'app/about/_v3/AboutFit.tsx',
+  'app/about/_v3/AboutTrackRecord.tsx',
+  'app/about/_v3/about-record.css',
+  'app/team/_v3/firm-record.ts',
 ])
 
 /**
@@ -59,6 +66,7 @@ export const ABOUT_COPY_FILES = Object.freeze([
   'app/about/page.tsx',
   'app/about/_v3/about-constants.ts',
   'app/about/_v3/about-playbook.ts',
+  'app/about/_v3/about-record.ts',
 ])
 
 /** Brokerages and portals the About copy may not name (Matt 2026-09-23). */
@@ -159,7 +167,9 @@ export const ABOUT_LOCK_BEATS = Object.freeze([
     id: '6',
     text: 'Firm OREA license is on the page. One-line inquiry GET-submits to /contact.',
     tokens: [/OREA/, /\/contact/],
-    sourceRequire: [/FIRM_LICENSE/, /Firm OREA/, /action="\/contact"/, /method="get"/],
+    // 2026-10-08: the office line reads "OREA license 201253677" (OREA lists the
+    // number as a Registered Business Name license, not a firm license).
+    sourceRequire: [/FIRM_LICENSE/, /OREA license \{FIRM_LICENSE/, /action="\/contact"/, /method="get"/],
   },
   {
     id: '7',

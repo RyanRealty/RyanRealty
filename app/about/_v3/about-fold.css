@@ -11,6 +11,7 @@
     "hero"
     "proof"
     "sales"
+    "record"
     "reach"
     "office"
     "write";
@@ -270,6 +271,12 @@
   min-width: 0;
 }
 
+/* Track record, sourced: directly under the closings rail (2026-10-08). */
+.about-fold__record {
+  grid-area: record;
+  min-width: 0;
+}
+
 .about-closings {
   padding: 0 var(--v3-gutter);
 }
@@ -362,6 +369,7 @@
       "hero hero"
       "proof proof"
       "sales sales"
+      "record record"
       "reach reach"
       "office write";
     align-items: start;

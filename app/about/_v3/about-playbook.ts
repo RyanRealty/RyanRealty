@@ -46,6 +46,7 @@ import type {
   V3StepsFact,
 } from '@/components/site/v3'
 import type { FirmClosingRecord } from '@/app/team/[slug]/_v3/sale-rows'
+import type { FirmAllAreaRecord } from '@/app/team/_v3/firm-record'
 import { ABOUT_CITY_LABELS, FIRM_LICENSE, countWord, roleWords } from './about-constants'
 
 /** Matt 2026-09-23: the reply-time promise, in his words. */
@@ -119,6 +120,12 @@ export function aboutClosingSpan(record: FirmClosingRecord | null | undefined): 
   return first === last ? first : `${first} to ${last}`
 }
 
+/** The same span for the firm's all-area record (the headline count). */
+export function aboutFirmSpan(firm: FirmAllAreaRecord | null | undefined): string | null {
+  if (!firm || firm.count === 0) return null
+  return aboutClosingSpan({ count: firm.count, firstClose: firm.firstClose, lastClose: firm.lastClose })
+}
+
 /* -------------------------------------------------------------------------- */
 /* What Ryan Realty does                                                       */
 /* -------------------------------------------------------------------------- */
@@ -178,11 +185,14 @@ export function aboutServices(valuationHref: string): V3Entry[] {
  */
 export function aboutDifferentiators(input: {
   reviews: AboutReviewsFigure
+  /** The Central Oregon rail record: its count is printed only as "in Central Oregon". */
   record: FirmClosingRecord | null
+  /** The firm's all-area record: the headline closings count (2026-10-08). */
+  firm?: FirmAllAreaRecord | null
   valuationHref: string
 }): V3Claim[] {
   const claims: V3Claim[] = []
-  const { reviews, record } = input
+  const { reviews, record, firm } = input
   if (reviews && reviews.count > 0) {
     const average = reviews.average.toFixed(1)
     claims.push({
@@ -207,14 +217,19 @@ export function aboutDifferentiators(input: {
     body: `Ask for your home's value and a broker sends a written comparative market analysis ${SELL_VALUATION_CONFIRM_SLA}, with the closed and active sales behind the range. There is no listing agreement attached.`,
     door: { label: 'Value my home', href: input.valuationHref },
   })
-  const firstYear = record?.firstClose?.slice(0, 4)
-  // The count alone, no drawn record of the closings (Matt 2026-09-24).
-  if (record && record.count > 0 && firstYear) {
+  const firstYear = firm?.firstClose?.slice(0, 4)
+  // The count alone, no drawn record of the closings (Matt 2026-09-24). The
+  // figure is the firm's one headline count (all areas, once per sale); the
+  // rail's count is named only as the Central Oregon homes listed above.
+  if (firm && firm.count > 0 && firstYear) {
+    const listed = record && record.count > 0 ? record.count : null
     claims.push({
       id: 'different-closings',
-      figure: { value: String(record.count), label: `Closings since ${firstYear}` },
+      figure: { value: String(firm.count), label: `Closings since ${firstYear}` },
       title: 'Our closings are public',
-      body: 'Every closing above is a recorded MLS sale, shown with its address, the price it closed at, and the date. Each one links to the home.',
+      body: listed
+        ? `Every closing is a recorded MLS sale. The ${listed} in Central Oregon are listed above with the address, the price it closed at, and the date, and each one links to the home.`
+        : 'Every closing is a recorded MLS sale, with the address, the price it closed at, and the date.',
       door: { label: 'See the closings', href: '#firm-sales' },
     })
   }
@@ -232,12 +247,14 @@ export function aboutDifferentiators(input: {
 export function aboutDifferentiatorsSource(input: {
   reviews: AboutReviewsFigure
   record: FirmClosingRecord | null
+  firm?: FirmAllAreaRecord | null
 }): string | undefined {
   const parts: string[] = []
   if (input.reviews && input.reviews.count > 0) parts.push('Rating and count from our Google Business Profile reviews.')
-  const span = aboutClosingSpan(input.record)
-  if (input.record && input.record.count > 0 && span) {
-    parts.push(`Closings from the MLS record for Ryan Realty brokers, ${span}.`)
+  const span = aboutFirmSpan(input.firm)
+  if (input.firm && input.firm.count > 0 && span) {
+    const listed = input.record && input.record.count > 0 ? ` (${input.record.count} in Central Oregon)` : ''
+    parts.push(`Closings from the MLS record for Ryan Realty brokers, ${span}, counted once per sale${listed}.`)
   }
   return parts.length > 0 ? parts.join(' ') : undefined
 }
@@ -296,7 +313,7 @@ export function aboutHowFacts(hours: string | null): V3StepsFact[] {
 
 /** The origin, as Matt tells it (VOICE.md exemplar bio, 2026-09-07). */
 export function aboutOriginBody(): string {
-  return `${BROKERS.matt.nameShort}, ${roleWords(BROKERS.matt.title)}, started ${BRAND.legalName} in ${BRAND.llcSince} and opened the Bend office in ${BRAND.foundedLabel}, after years in the fire service. He learned the business from his mentor, Hjalmar "Red" Erickson, and runs the brokerage the way Red taught him: every client gets the same care and the same effort.`
+  return `${BROKERS.matt.nameShort}, ${roleWords(BROKERS.matt.title)}, started ${BRAND.name} in ${BRAND.llcSince} and opened the Bend office in ${BRAND.foundedLabel}, after years in the fire service. He learned the business from his mentor, Hjalmar "Red" Erickson, and runs the brokerage the way Red taught him: every client gets the same care and the same effort.`
 }
 
 /** Team composition from the live roster. Null when the roster did not load. */
@@ -391,16 +408,21 @@ export function aboutKeyFacts(input: {
   services: readonly V3Entry[]
   hours: string | null
   record: FirmClosingRecord | null
+  /** The firm's all-area record: the headline closings count (2026-10-08). */
+  firm?: FirmAllAreaRecord | null
   reviews: AboutReviewsFigure
 }): V3Fact[] {
   const facts: V3Fact[] = [
     { id: 'fact-name', term: 'Company name', value: BRAND.name, detail: `Legal name ${BRAND.legalName}` },
     { id: 'fact-type', term: 'Type', value: ABOUT_FIRM_TYPE },
     {
+      // Founded 2014 (Matt 2026-10-08: "Matt Ryan founded Ryan Realty in 2014",
+      // never tied to the LLC filing); the legal name is its own row above.
+      // V3Facts drops a row with no value, so the founder's name carries it.
       id: 'fact-founded',
       term: 'Founded',
       figure: BRAND.llcSince,
-      value: `as ${BRAND.legalName}`,
+      value: `by ${BROKERS.matt.nameShort}`,
       detail: `Bend office opened ${BRAND.foundedLabel}`,
     },
   ]
@@ -449,18 +471,22 @@ export function aboutKeyFacts(input: {
     {
       id: 'fact-license',
       term: 'Brokerage license',
-      value: `Oregon Real Estate Agency firm license ${FIRM_LICENSE_NUMBER}`,
-      detail: `Principal broker license ${BROKERS.matt.license}`,
+      value: `Oregon Real Estate Agency license ${FIRM_LICENSE_NUMBER} (registered business name, ${BRAND.legalName})`,
+      detail: `Principal broker ${BROKERS.matt.nameShort}, license ${BROKERS.matt.license}`,
     },
   )
-  const span = aboutClosingSpan(input.record)
-  if (input.record && input.record.count > 0) {
+  // One closings number site-wide (2026-10-08): the firm's all-area record,
+  // once per sale. The rail's count rides along only as "in Central Oregon".
+  // "Clients served" is gone: 26 closings is not 26 clients.
+  const span = aboutFirmSpan(input.firm)
+  if (input.firm && input.firm.count > 0) {
+    const listed = input.record && input.record.count > 0 ? `${input.record.count} in Central Oregon` : null
     facts.push({
-      id: 'fact-clients',
-      term: 'Clients served',
-      figure: String(input.record.count),
-      value: `recorded ${input.record.count === 1 ? 'closing' : 'closings'} in Central Oregon`,
-      detail: span ? `MLS record, ${span}` : 'MLS record',
+      id: 'fact-closings',
+      term: 'Recorded closings',
+      figure: String(input.firm.count),
+      value: `recorded MLS ${input.firm.count === 1 ? 'closing' : 'closings'} by Ryan Realty brokers`,
+      detail: [span, listed].filter(Boolean).join(', ') || 'MLS record',
     })
   }
   if (input.reviews && input.reviews.count > 0) {
