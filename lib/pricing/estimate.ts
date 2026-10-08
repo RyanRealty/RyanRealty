@@ -53,8 +53,10 @@ import {
   applyExclusivePocketDateAdj,
   describeAppliedDateAdjustments,
   exclusivePocketPathNote,
+  pocketIndexDownClause,
   selectionIsExclusivePocket,
   TIME_ADJUSTMENT_BASIS_POCKET,
+  TIME_ADJUSTMENT_BASIS_POCKET_INDEX,
   TIME_ADJUSTMENT_MEASURE_POCKET,
   type AppliedDateMove,
 } from '@/lib/pricing/exclusive-pocket-date-adj'
@@ -310,7 +312,12 @@ export interface PricingTimeAdjustment {
    * of the last three COMPLETE months of the city index, never the running
    * month (R2d, 2026-09-08).
    */
-  basis: 'city-monthly-index-trailing-3' | 'year-over-year' | 'exclusive-pocket-sold-list' | 'none'
+  basis:
+    | 'city-monthly-index-trailing-3'
+    | 'year-over-year'
+    | 'exclusive-pocket-sold-list'
+    | 'exclusive-pocket-city-index-down'
+    | 'none'
   /**
    * WHAT THIS BASIS MEASURES (round four, class E). The date adjustment and
    * the market chapter's month line are two different city trends, and the
@@ -326,6 +333,15 @@ export interface PricingTimeAdjustment {
   measure: string | null
   /** The complete months the endpoint is the median of, oldest first. */
   referenceMonths?: string[]
+  /**
+   * The index level each moved sale walked FROM, one per close month, oldest
+   * first: the same smoothed $/sqft `marketPath` read for that sale, so the
+   * letter can print the figures the move is the ratio of. Set on the pocket
+   * basis that moved sales (`exclusive-pocket-city-index-down`).
+   */
+  indexLevels?: Array<{ month: string; ppsf: number }>
+  /** The endpoint level those sales walked TO: the median of `referenceMonths`, $/sqft. */
+  referencePpsf?: number | null
   /**
    * The shape of the window, derived from the same smoothed series every sale
    * walks: where it peaked or troughed, how far it has come back, and which
@@ -347,6 +363,35 @@ export interface PricingTimeAdjustment {
   }
   /** The basis in one sentence, for the line beside the first adjusted sale. */
   sentence: string
+}
+
+/**
+ * The index levels a pocket's moved sales walked from, and the level they
+ * walked to, read by the SAME `marketPath` call that moved them, so the
+ * printed figures are the two numbers each sale's date move is the ratio of.
+ * A move with no close date contributes no level.
+ */
+function pocketIndexLevels(
+  points: MarketIndexPoint[],
+  asOf: string,
+  moved: readonly AppliedDateMove[],
+): { indexLevels: Array<{ month: string; ppsf: number }>; referencePpsf: number | null } {
+  const byMonth = new Map<string, number>()
+  let referencePpsf: number | null = null
+  for (const m of moved) {
+    const close = (m.closeDate ?? '').slice(0, 10)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(close)) continue
+    const path = marketPath({ points, fromDate: close, toDate: asOf })
+    if (path.source !== 'index' || path.fromPpsf == null) continue
+    byMonth.set(`${close.slice(0, 7)}-01`, path.fromPpsf)
+    referencePpsf = path.toPpsf
+  }
+  return {
+    indexLevels: [...byMonth.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, ppsf]) => ({ month, ppsf })),
+    referencePpsf,
+  }
 }
 
 /**
@@ -395,16 +440,48 @@ export function buildTimeAdjustmentBasis(opts: {
   const city = opts.cityName?.trim() ? `${opts.cityName.trim()}'s` : "this city's"
   if (opts.exclusivePocket === true) {
     const trend = marketIndexTrend({ points: opts.points, asOf: opts.asOf, windowMonths })
+    const appliedDetail = describeAppliedDateAdjustments(opts.applied ?? [])
+    const place = opts.cityName?.trim() || 'this city'
+    // THE RECORD NAMES THE PATH THAT MOVED THE SALES (reader review, 62475
+    // Woodsman, 2026-10-08). A pocket sale whose month sits above today's
+    // level IS moved, down, along this city's pricing_market_index
+    // (applyExclusivePocketDateAdj keeps a factor at or under 1). The record
+    // used to keep the sold-list basis anyway and say "date adjustment does not
+    // walk pricing_market_index for bend" beside comps stamped
+    // marketPathSource 'index' and moved up to 7 percent by it.
+    const moved = (opts.applied ?? []).filter(
+      (m) => Number.isFinite(m.timeAdjustment) && Math.abs(m.timeAdjustment) >= 1,
+    )
+    if (moved.length > 0) {
+      const { indexLevels, referencePpsf } = pocketIndexLevels(opts.points, opts.asOf, moved)
+      const walked = indexLevels.map((l) => `${l.month.slice(0, 7)} ${l.ppsf.toFixed(2)}`).join(', ')
+      return {
+        pctPerMonth: trend.pctPerMonth,
+        pctOverWindow: trend.pctOverWindow,
+        windowMonths,
+        n: trend.n,
+        basis: TIME_ADJUSTMENT_BASIS_POCKET_INDEX,
+        measure: TIME_ADJUSTMENT_MEASURE_INDEX,
+        referenceMonths: trend.referenceMonths,
+        indexLevels,
+        referencePpsf,
+        source: {
+          table: 'pricing_market_index',
+          filter: `city_slug='${opts.citySlug}', complete months only. Each month reads as the median of the three-month window centred on it; the endpoint is the median of the last three complete months (${trend.referenceMonths.join(', ') || 'none'}). Exclusive pocket: a sale moves only down along this index, and a sale whose month sits at or under the endpoint is not moved. Levels the moved sales walked from: ${walked || 'none'}; endpoint ${referencePpsf != null ? referencePpsf.toFixed(2) : 'none'} $/sqft.`,
+          fetchedAt,
+          query: `select month, n, median_ppsf from pricing_market_index where city_slug = '${opts.citySlug}' order by month`,
+        },
+        sentence: appliedDetail
+          ? `These sales are the exclusive pocket. ${appliedDetail} ${pocketIndexDownClause(place)} Story class does not adjust.`
+          : `These sales are the exclusive pocket. ${pocketIndexDownClause(place)} Story class does not adjust.`,
+      }
+    }
     const wouldMove = trend.pctOverWindow
     const would =
       wouldMove != null && Number.isFinite(wouldMove) && wouldMove !== 0
         ? ` That city index ${wouldMove > 0 ? 'rose' : 'fell'} ${Math.abs(wouldMove).toFixed(1)} percent over the last ${windowMonths} months; it is not applied here.`
         : ''
-    const appliedDetail = describeAppliedDateAdjustments(opts.applied ?? [])
-    const place = opts.cityName?.trim() || 'this city'
-    const sentence = appliedDetail
-      ? `These sales are the exclusive pocket. ${appliedDetail} The ${place} city index is not used to pump prices. Story class does not adjust.`
-      : `These sales are the exclusive pocket. Date adjustment does not walk the city index, which includes tracts already excluded from this set. Each sale stays on its own sold and last-ask price. Story class does not adjust.${would}`
+    const sentence = `These sales are the exclusive pocket. Date adjustment does not walk the city index, which includes tracts already excluded from this set. Each sale stays on its own sold and last-ask price. Story class does not adjust.${would}`
     return {
       pctPerMonth: 0,
       pctOverWindow: 0,
@@ -2001,6 +2078,7 @@ export function priceCmaSet(args: {
       closePrice: c.closePrice,
       timeAdjustment: c.timeAdjustment,
       timeAdjustedPrice: c.timeAdjustedPrice,
+      closeDate: c.closeDate,
     })),
   })
   // THE HOUSE NEXT DOOR IS THE EVIDENCE, AND IT GETS THE LAST WORD BEFORE THE

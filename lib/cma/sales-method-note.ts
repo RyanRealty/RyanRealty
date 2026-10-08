@@ -38,13 +38,23 @@
  * even true of the move. The homeowner gets one plain sentence on how the
  * dates were moved, counted off the grid; the note stays in build_summary and
  * citations.
+ *
+ * AND IT NAMES THE FIGURE THAT MOVED THE SALES (reader review, 62475 Woodsman,
+ * 2026-10-08). A pocket's dated sales are moved down along the CITY's median
+ * price per square foot, every home sale in the city, not the subdivision's
+ * own trend. The letter said only "Bend's median price per square foot",
+ * after a page that told the owner Shevlin West's own price per square foot
+ * held flat, so the move read as Shevlin West's. Both pocket sentences now
+ * name the city-wide figure, the reference months, and, where the build
+ * stored them (`timeAdjustment.indexLevels`, `.referencePpsf`), the levels
+ * each move is the ratio of.
  */
 
 import { cleanText, countWord, int } from '@/lib/cma/render-blocks'
 import { sanitizeLetterEmDash } from '@/lib/cma/voice-sanitize'
 import { FLAT_LOCAL_DATE_SENTENCE } from '@/lib/cma/flat-date-story'
 import { realSubdivisionName } from '@/lib/pricing/classes'
-import { TIME_ADJUSTMENT_BASIS_POCKET } from '@/lib/pricing/exclusive-pocket-date-adj'
+import { isPocketTimeBasis } from '@/lib/pricing/exclusive-pocket-date-adj'
 import { concessionOffClose } from '@/lib/pricing/seller-net'
 import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
 
@@ -150,6 +160,75 @@ function months(v: unknown): string[] {
   return Array.isArray(v) ? v.filter((m): m is string => typeof m === 'string').map((m) => m.slice(0, 7)) : []
 }
 
+/** "July to September 2026", "December 2025 and February 2026", "May 2026". Null on nothing. */
+function monthSpan(list: readonly string[], joiner: 'to' | 'and'): string | null {
+  const labels = list
+    .map((m) => ({ m, label: monthLabel(m) }))
+    .filter((x): x is { m: string; label: string } => x.label != null)
+  if (labels.length === 0) return null
+  const name = (x: { label: string }) => x.label.split(' ')[0]!
+  if (joiner === 'to') {
+    const first = labels[0]!
+    const last = labels[labels.length - 1]!
+    if (first.m === last.m) return first.label
+    return first.m.slice(0, 4) === last.m.slice(0, 4) ? `${name(first)} to ${last.label}` : `${first.label} to ${last.label}`
+  }
+  const years = new Set(labels.map((x) => x.m.slice(0, 4)))
+  return years.size === 1
+    ? `${joinAnd(labels.map(name))} ${labels[0]!.m.slice(0, 4)}`
+    : joinAnd(labels.map((x) => x.label))
+}
+
+/** The last three full months the date move runs to, from the stored reference months. */
+function referenceWindow(ta: Record<string, unknown> | null): string | null {
+  return ta ? monthSpan(months(ta.referenceMonths), 'to') : null
+}
+
+function ppsfUsd(n: number): string {
+  return `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+
+/**
+ * "$389.94 in December 2025 and February 2026, $398.13 in April 2026, $413.30
+ * in May and June 2026, and $384.50 for July to September 2026": the stored
+ * levels each pocket move is the ratio of, months that share a level printed
+ * together. Null when the build stored no levels (rows built before
+ * 2026-10-08), so the sentence prints without figures rather than invented ones.
+ */
+function pocketLevelsClause(ta: Record<string, unknown> | null): string | null {
+  if (!ta) return null
+  const ref = num(ta.referencePpsf)
+  const window = referenceWindow(ta)
+  const raw: unknown[] = Array.isArray(ta.indexLevels) ? ta.indexLevels : []
+  const levels = raw
+    .map((l) => obj(l))
+    .map((l) => ({ month: typeof l?.month === 'string' ? l.month.slice(0, 7) : '', ppsf: num(l?.ppsf) }))
+    .filter((l): l is { month: string; ppsf: number } => /^\d{4}-\d{2}$/.test(l.month) && l.ppsf != null && l.ppsf > 0)
+    .sort((a, b) => a.month.localeCompare(b.month))
+  if (ref == null || !(ref > 0) || !window || levels.length === 0) return null
+  const groups: { ppsf: number; months: string[] }[] = []
+  for (const l of levels) {
+    const g = groups.find((x) => x.ppsf === l.ppsf)
+    if (g) g.months.push(l.month)
+    else groups.push({ ppsf: l.ppsf, months: [l.month] })
+  }
+  const parts = groups
+    .map((g) => {
+      const when = monthSpan(g.months, 'and')
+      return when ? `${ppsfUsd(g.ppsf)} in ${when}` : null
+    })
+    .filter((p): p is string => p != null)
+  if (parts.length === 0) return null
+  return `${parts.join(', ')}, and ${ppsfUsd(ref)} for ${window}`
+}
+
+/** ", not only Shevlin West" when the home has a subdivision, else nothing. */
+function notOnlyHome(subject: Partial<Pick<CmaSubject, 'subdivision'>>, sales: boolean): string {
+  const home = realSubdivisionName(cleanText(subject.subdivision ?? null))
+  if (!home) return ''
+  return sales ? `, not only the sales in ${home}` : `, not only ${home}`
+}
+
 /**
  * How the printed sales moved for date, counted off the grid.
  *
@@ -221,26 +300,41 @@ const POCKET_NOTE = /^these sales are the exclusive pocket\b/i
  * A grid that moved a sale up is not that path, so it gets the plain counted
  * sentence instead of a claim about falling prices.
  */
-function pocketDateSentence(subject: Pick<CmaSubject, 'city'>, comps: readonly CmaAdjustedComp[]): string {
+function pocketDateSentence(
+  subject: Pick<CmaSubject, 'city' | 'subdivision'>,
+  comps: readonly CmaAdjustedComp[],
+  ta: Record<string, unknown> | null,
+): string {
   const total = comps.length
   const down = comps.filter((c) => (c.timeAdjustment ?? 0) <= -1).length
   const up = comps.filter((c) => (c.timeAdjustment ?? 0) >= 1).length
   if (total === 0 || (down === 0 && up === 0)) return 'None of these sales is moved for the month it sold.'
   const city = cleanText(subject.city ?? null)
   const whose = city ? `${city}'s` : "this city's"
+  const window = referenceWindow(ta)
+  const to = window ? `the last three full months, ${window}` : 'the last three full months'
   if (up > 0) {
-    return `Each sale is moved by how much ${whose} median price per square foot changed between the month it sold and the last three full months. ${dateMovesSentence(comps, {})}`.trim()
+    return `Each sale is moved by how much ${whose} median price per square foot changed between the month it sold and ${to}. ${dateMovesSentence(comps, {})}`.trim()
   }
+  // What the figure is: the whole city over the stored window, never only the
+  // home's own subdivision, and only ever a move down.
+  const n = ta ? num(ta.n) : null
+  const windowMonths = ta ? num(ta.windowMonths) : null
+  const over = windowMonths != null && windowMonths > 0 ? ` over the last ${windowMonths} months` : ''
+  const built =
+    n != null && n > 0
+      ? `That figure is built from ${int(n)} home sales across all of ${city ?? 'the city'}${over}${notOnlyHome(subject, true)}, and a rise in it never moves a sale up.`
+      : `That figure covers every home sale in ${city ?? 'the city'}${notOnlyHome(subject, false)}, and a rise in it never moves a sale up.`
   if (down === total) {
-    return `To bring each sale to today's market, we moved it down by how much ${whose} median price per square foot fell between the month it sold and the last three full months.`
+    return `To bring each sale to today's market, we moved it down by how much ${whose} median price per square foot fell between the month it sold and ${to}. ${built}`
   }
   const rest = total - down
-  return `To bring the sales to today's market, we moved ${countWord(down)} of the ${countWord(total)} down by how much ${whose} median price per square foot fell between the month each sold and the last three full months. The other ${countWord(rest)} ${rest === 1 ? 'is' : 'are'} not moved.`
+  return `To bring the sales to today's market, we moved ${countWord(down)} of the ${countWord(total)} down by how much ${whose} median price per square foot fell between the month each sold and ${to}. The other ${countWord(rest)} ${rest === 1 ? 'is' : 'are'} not moved. ${built}`
 }
 
 /** The date paragraph, or the stored sentence when the basis is not the city index. */
 function dateNote(
-  subject: Pick<CmaSubject, 'city'>,
+  subject: Pick<CmaSubject, 'city' | 'subdivision'>,
   comps: readonly CmaAdjustedComp[],
   pricing: CmaPricing,
 ): string[] {
@@ -248,8 +342,8 @@ function dateNote(
   if (!ta) return []
   const stored = str(ta.sentence)
   if (ta.sentence === FLAT_LOCAL_DATE_SENTENCE) return [FLAT_LOCAL_DATE_SENTENCE]
-  if (ta.basis === TIME_ADJUSTMENT_BASIS_POCKET || (stored != null && POCKET_NOTE.test(stored))) {
-    return [pocketDateSentence(subject, comps)]
+  if (isPocketTimeBasis(ta.basis) || (stored != null && POCKET_NOTE.test(stored))) {
+    return [pocketDateSentence(subject, comps, ta)]
   }
   const n = num(ta.n)
   const anyMoved = comps.some((c) => Math.abs(c.timeAdjustment ?? 0) >= 1)
@@ -283,9 +377,13 @@ function dateNote(
  * The pocket basis walks the city figure only down
  * (lib/pricing/exclusive-pocket-date-adj.ts applyExclusivePocketDateAdj), so
  * it says so only while no printed sale moved up.
+ *
+ * The line names which figure (the whole city's, not the subdivision's), the
+ * months it runs to, and on a pocket row that stored them, the levels each
+ * move is the ratio of (reader review, 62475 Woodsman, 2026-10-08).
  */
 export function dateBasisCaption(input: {
-  subject: Pick<CmaSubject, 'city'>
+  subject: Pick<CmaSubject, 'city'> & Partial<Pick<CmaSubject, 'subdivision'>>
   comps: readonly CmaAdjustedComp[]
   pricing: CmaPricing
 }): string | null {
@@ -296,13 +394,19 @@ export function dateBasisCaption(input: {
   const city = cleanText(input.subject.city ?? null)
   const whose = city ? `${city}'s` : "this city's"
   const stored = str(ta.sentence)
-  const pocket = ta.basis === TIME_ADJUSTMENT_BASIS_POCKET || (stored != null && POCKET_NOTE.test(stored))
+  const pocket = isPocketTimeBasis(ta.basis) || (stored != null && POCKET_NOTE.test(stored))
   const up = moved.some((c) => (c.timeAdjustment ?? 0) > 0)
+  const window = referenceWindow(ta)
+  const to = window ? `the last three full months, ${window}` : 'the last three full months'
   if (pocket && !up) {
-    return `Adjusted for date is how much ${whose} median price per square foot fell between the month a sale closed and the last three full months. No sale is moved up for date.`
+    const levels = pocketLevelsClause(ta)
+    const covers = `That figure covers every home sale in ${city ?? 'the city'}${notOnlyHome(input.subject, false)}`
+    return `Adjusted for date is how much ${whose} median price per square foot fell between the month a sale closed and ${to}. ${
+      levels ? `${covers}, with each month read as a three-month median: ${levels}.` : `${covers}.`
+    } No sale is moved up for date.`
   }
   if (pocket || ta.basis === INDEX_BASIS) {
-    return `Adjusted for date is how much ${whose} median price per square foot changed between the month a sale closed and the last three full months.`
+    return `Adjusted for date is how much ${whose} median price per square foot changed between the month a sale closed and ${to}.`
   }
   if (ta.basis === 'year-over-year') {
     return `Adjusted for date is ${whose} year-over-year change in median sale price, spread evenly over the months since a sale closed.`
