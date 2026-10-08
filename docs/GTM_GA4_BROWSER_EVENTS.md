@@ -30,7 +30,8 @@ dataLayer.push({ event: 'section_view', section: 'proof', page_type: 'sell',   /
 - `page_type` and `broker_slug` are page context, read as flat keys (the GTM bootstrap and PageViewTracker stamp
   them on every navigation).
 - Not sent by this tag, on purpose: `generate_lead` (server only, Measurement Protocol, one per real submission),
-  `page_view` (the Google tag owns it), `form_start` (enhanced measurement's Form interactions already sends it; add
+  `page_view` (the Google tag owns it), `valuation_requested` (the server sends it for the same submissions),
+  `form_start` (enhanced measurement's Form interactions already sends it; add
   it to the list in code only after that toggle is off).
 
 ## Option A: import (about 3 minutes)
@@ -89,7 +90,7 @@ Also confirm the built-in variable **Event** is enabled (Variables → Configure
 - Event name (tick **Use regex matching**):
 
 ```
-^(tour_requested|schedule_tour_click|schedule_showing_click|ask_question_click|contact_agent_click|email_agent|call_initiated|text_initiated|cma_downloaded|cma_anchor_click|valuation_requested|place_value_answer|address_submit|sign_up|open_house_rsvp|open_house_page_view|view_listing|save_listing|like_listing|share_listing|compare_listing|compare_add|compare_remove|compare_share|compare_pdf_download|share|view_photo_gallery|play_video|view_similar_listings|search|save_search|view_community|view_city|view_neighborhood|view_blog_post|view_market_report|download_report|scroll_depth|section_view|click_cta|calculator_used|calculator_interact|map_interaction|share_collection|ai_compare_used|return_visit|exit_intent_shown|homepage_view|hero_search|hero_impression|hero_city_chip|featured_impression|view_featured_listings|community_impression|newsletter_signup|community_cta_click|city_cta_click|broker_view|contact_agent|view_landing_page|pulse_feed_entry|pulse_card_view|pulse_card_like|pulse_card_share|pulse_cta_click|pulse_filter_change|nav_interact|dwell|module_interact|page_not_found|LCP|INP|CLS|FCP|TTFB)$
+^(tour_requested|schedule_tour_click|schedule_showing_click|ask_question_click|contact_agent_click|email_agent|call_initiated|text_initiated|cma_downloaded|cma_anchor_click|place_value_answer|address_submit|sign_up|open_house_rsvp|open_house_page_view|view_listing|save_listing|like_listing|share_listing|compare_listing|compare_add|compare_remove|compare_share|compare_pdf_download|share|view_photo_gallery|play_video|view_similar_listings|search|save_search|view_community|view_city|view_neighborhood|view_blog_post|view_market_report|download_report|scroll_depth|section_view|click_cta|calculator_used|calculator_interact|map_interaction|share_collection|ai_compare_used|return_visit|exit_intent_shown|homepage_view|hero_search|hero_impression|hero_city_chip|featured_impression|view_featured_listings|community_impression|newsletter_signup|community_cta_click|city_cta_click|broker_view|contact_agent|view_landing_page|pulse_feed_entry|pulse_card_view|pulse_card_like|pulse_card_share|pulse_cta_click|pulse_filter_change|nav_interact|dwell|module_interact|page_not_found|LCP|INP|CLS|FCP|TTFB)$
 ```
 
 - This trigger fires on: **All Custom Events**.

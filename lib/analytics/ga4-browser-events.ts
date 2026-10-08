@@ -56,7 +56,6 @@ export const GA4_BROWSER_EVENTS = [
   'text_initiated',
   'cma_downloaded',
   'cma_anchor_click',
-  'valuation_requested',
   'place_value_answer',
   'address_submit',
   'sign_up',
@@ -137,6 +136,8 @@ export const GA4_BROWSER_EVENTS_NOT_SENT: Readonly<Record<string, string>> = {
     'Sent once, from the server (Measurement Protocol) with a fixed lead_type. A browser copy would double count every lead (plan B1/B2).',
   form_start:
     "GA4 enhanced measurement's Form interactions already sends form_start. Add it here to the sent list only after Matt turns that toggle off.",
+  valuation_requested:
+    'Sent from the server by lib/cma-request.ts for the same seller-LP, FSBO and place-page submissions. A browser copy would count each one twice.',
   page_view: "GTM's Google tag owns page_view (first paint plus enhanced measurement's history changes). A second one doubles page views.",
 }
 

@@ -40,7 +40,7 @@ describe('GA4 browser events: the GTM trigger covers what the page sends', () =>
 
   it('the trigger regex matches every sent name and nothing it must not send', () => {
     for (const n of GA4_BROWSER_EVENTS) expect(regex.test(n), n).toBe(true)
-    for (const n of ['generate_lead', 'page_view', 'form_start', 'gtm.js', 'gtm.dom', 'gtm.load', 'gtm.historyChange', 'view_item', 'add_to_wishlist', 'section_view_x', 'xsection_view']) {
+    for (const n of ['generate_lead', 'page_view', 'form_start', 'valuation_requested', 'gtm.js', 'gtm.dom', 'gtm.load', 'gtm.historyChange', 'view_item', 'add_to_wishlist', 'section_view_x', 'xsection_view']) {
       expect(regex.test(n), n).toBe(false)
     }
   })
