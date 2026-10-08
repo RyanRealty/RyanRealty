@@ -85,12 +85,11 @@ describe('net sheet — cover already named the list', () => {
 
   it('heads the column with its price, once, and keeps the prose off the dollars', () => {
     const html = sellerNetBodyHtml(a)
-    // The money column is the exception: its head names the price it is
-    // worked at (reader review 2026-10-08, "At the list price" never said
-    // which). The sentence above it still points at "that price".
-    expect(html).toContain('At $565,000')
-    expect(html).not.toContain('At the list price')
-    expect(html.split('$565,000')).toHaveLength(2)
+    // The cover owns the dollars: the head names the price in words, and the
+    // sentence above it points at "that price".
+    expect(html).toContain('At the list price')
+    expect(html).not.toContain('At $565,000')
+    expect(html.split('$565,000')).toHaveLength(1)
     expect(html).toContain('Left from the sale')
     expect(html).toContain('From that price, less $1,500')
     expect(html).toContain('$563,500')

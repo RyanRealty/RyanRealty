@@ -261,11 +261,18 @@ describe('every letter, held or not', () => {
     }
   })
 
-  it('the net column head prints the price the column is worked at', () => {
+  it('the net column head names its price in words, never the cover dollars', () => {
+    // The cover owns the recommended dollars (Matt lock 2026-09-12). An
+    // unheld letter's head reads "At the list price"; a held letter's reads
+    // "At the price on the cover", so it is never read as the last ask.
+    const plain = visible(renderCmaHtml(shape()).html)
+    expect(plain).toContain('At the list price')
+    const heldText = visible(renderCmaHtml(held('ask-in-band')).html)
+    expect(heldText).toContain('At the price on the cover')
+    expect(heldText).not.toContain('At the list price')
     for (const a of [shape(), held('ask-in-band')]) {
       const text = visible(renderCmaHtml(a).html)
-      expect(text).toContain(`At $${(a.pricing as CmaPricing).recommended.toLocaleString('en-US')}`)
-      expect(text).not.toContain('At the list price')
+      expect(text).not.toContain(`At $${(a.pricing as CmaPricing).recommended.toLocaleString('en-US')}`)
       expect(text).not.toContain('of the list price, if you offer it')
     }
   })

@@ -529,18 +529,17 @@ function engineSheet(list: number): { list: number; lines: CmaSellerNetLine[]; n
 }
 
 /**
- * THE LIST COLUMN'S HEAD NAMES ITS PRICE, on every letter (reader review
- * 2026-10-08). "At the list price" over "3% of the list price" never said
- * which price: on 2382 Jackson the cover read $624,000 under "The price Matt
- * is reviewing", and an owner who remembers the $639,000 their last listing
- * asked works the fee out on that number instead. A money column is the one
- * place the figure it is worked at must sit on the column itself, so this is
- * the cover's number printed once more, as a column head (the exception to
- * recommend-once that the money column needs). A cell reading "that price"
- * looked like a bug on screen (Matt 2026-10-07), and it is still never that.
+ * THE LIST COLUMN'S HEAD. The cover owns the recommended dollars (Matt lock
+ * 2026-09-12, lib/cma/recommend-once.ts), and a cell reading "that price"
+ * looked like a bug on screen (Matt 2026-10-07), so the head reads "At the
+ * list price". On a letter held for Matt the cover's number is the price he
+ * is reviewing, not a list we recommend, and "the list price" read as the
+ * $639,000 the last listing asked (reader review 2026-10-08, 2382 Jackson), so
+ * a held letter's head reads "At the price on the cover". The rows say what
+ * each fee is a share of ("3% of the sale price").
  */
-export function netListHeader(list: number): string {
-  return `At ${usd(list)}`
+export function netListHeader(held: boolean): string {
+  return held ? `At ${COVER_PRICE_PHRASE}` : 'At the list price'
 }
 
 /**
@@ -575,7 +574,7 @@ const NET_BEFORE_ESCROW = "Before the escrow company's fee and what you still ow
  * owner's-policy rate). Its credits line explains why no concession is
  * subtracted a second time (lib/cma/expected-sale.ts `netAtExpectedSale`).
  */
-function netTwoColumnsHtml(t: NetTwoColumns): string {
+function netTwoColumnsHtml(t: NetTwoColumns, held: boolean): string {
   const rows = t.lines
     .map(
       (l) =>
@@ -587,7 +586,7 @@ function netTwoColumnsHtml(t: NetTwoColumns): string {
   const credits = netCreditsSentence(t)
   return `<table class="kv netsheet net-two" style="table-layout:fixed;max-width:760px">
     <colgroup><col style="width:40%"><col style="width:30%"><col style="width:30%"></colgroup>
-    ${netHead([netListHeader(t.list), `If it sells near ${usd(expectedSaleNear(t.expected))}`])}
+    ${netHead([netListHeader(held), `If it sells near ${usd(expectedSaleNear(t.expected))}`])}
     <tbody>
     ${rows}
     <tr class="is-net"><th scope="row">Left from the sale</th><td class="v">${usd(t.netAtList)}</td><td class="v">${usd(
@@ -625,7 +624,7 @@ export function sellerNetKick(a: OpinionPageArgs): string {
 function netOneColumnHtml(
   sheet: Pick<SellerNetSheet, 'list' | 'lines' | 'net'> & Partial<Pick<SellerNetSheet, 'sentence' | 'basis' | 'unknowns'>>,
   rec: number,
-  opts: { engine: boolean },
+  opts: { engine: boolean; held: boolean },
 ): string {
   const everything = !opts.engine && netIsEverything(sheet as SellerNetSheet)
   const sentence = sheet.sentence ? deRepeatRecommendDollars(sheet.sentence, rec) : ''
@@ -668,7 +667,7 @@ function netOneColumnHtml(
   ${omits}`
   return `${sentence ? `<p>${esc(sentence)}</p>` : ''}
   <table class="kv netsheet">
-    ${netHead([netListHeader(sheet.list)])}
+    ${netHead([netListHeader(opts.held)])}
     <tbody>
     ${rows}
     <tr class="is-net"><th scope="row">${esc(everything ? 'What you keep' : 'Left from the sale')}</th><td class="v">${usd(
@@ -702,11 +701,11 @@ export function sellerNetBodyHtml(a: OpinionPageArgs): string {
     const sentence = !engine && sheet.sentence ? deRepeatRecommendDollars(sheet.sentence, rec) : ''
     const unknowns = engine ? [] : sheet.unknowns.filter((u) => u.trim())
     return `${sentence ? `<p>${esc(sentence)}</p>` : ''}
-  ${netTwoColumnsHtml(two)}
+  ${netTwoColumnsHtml(two, heldForMatt(a.pricing))}
   ${unknowns.length > 0 ? `<p>${esc(`This does not include ${orList(unknowns)}.`)}</p>` : ''}
   ${credits}`
   }
-  return `${netOneColumnHtml(engine ? engineSheet(sheet.list) : sheet, rec, { engine })}
+  return `${netOneColumnHtml(engine ? engineSheet(sheet.list) : sheet, rec, { engine, held: heldForMatt(a.pricing) })}
   ${credits}`
 }
 

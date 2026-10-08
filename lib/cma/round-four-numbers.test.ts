@@ -344,7 +344,7 @@ describe('E2 — one list ceiling per document', () => {
         }),
       )?.body ?? ''
     // Fixture closed-comp band high is $443,000 (hero High) — a sheet there itemises.
-    expect(at(443_000)).toContain('At $443,000')
+    expect(at(443_000)).toContain('At the list price')
     expect(at(443_000)).toContain('netsheet')
     // Above the hero band, and the chapter prints no figure at all.
     expect(at(452_000)).not.toContain('netsheet')
