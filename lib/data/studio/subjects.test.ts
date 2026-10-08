@@ -11,7 +11,7 @@ vi.mock('@/lib/data/cma/builderReads', () => ({
   findCmaSubjectByMls: vi.fn(),
 }))
 
-const { figuresFromPulse } = await import('./subjects')
+const { figuresFromPulse, studioPlaceLink } = await import('./subjects')
 
 function pulse(over: Partial<MarketPulse>): MarketPulse {
   return {
@@ -74,5 +74,25 @@ describe('figuresFromPulse (audit DATA-7)', () => {
     )
     expect(figures['homes closed in the last 30 days']).toBeUndefined()
     expect(citations.some((c) => c.column === 'sold_count_30d')).toBe(false)
+  })
+})
+
+describe('studioPlaceLink (a caption link is a page that exists)', () => {
+  it('sends the region and the trend film to Bend\'s market page, never the dead /market', () => {
+    // /market answered 404 live on 2026-10-08 while two captions linked it.
+    expect(studioPlaceLink(null)).toBe('https://ryan-realty.com/housing-market/bend')
+  })
+
+  it('sends a Bend district to the page the public inventory read names for it', () => {
+    expect(studioPlaceLink(null, '/cities/bend/old-bend')).toBe('https://ryan-realty.com/cities/bend/old-bend')
+  })
+
+  it('falls back to Bend\'s market page when the district has no inventory row', () => {
+    expect(studioPlaceLink(null, null)).toBe('https://ryan-realty.com/housing-market/bend')
+    expect(studioPlaceLink(null, 'cities/bend/old-bend')).toBe('https://ryan-realty.com/housing-market/bend')
+  })
+
+  it('sends a registry community to its community page', () => {
+    expect(studioPlaceLink({ slug: 'tetherow' })).toMatch(/^https:\/\/ryan-realty\.com\/communities\//)
   })
 })

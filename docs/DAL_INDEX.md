@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-10-08T01:39:41.888Z
+**Generated:** 2026-10-08T04:41:36.274Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -724,7 +724,7 @@ Companion files:
 
 **Tables:** `listings`, `market_stats_cache`, `market_pulse_live`, `brokers`, `sale_pricing_facts`
 
-**Selected columns:** `photos_count`, `geo_type`, `geo_slug`, `geo_label`, `period_start`, `period_end`, `sold_count`, `median_sale_price`, `median_dom`, `median_ppsf`, `median_price_per_sqft_closed`, `avg_sale_to_list_ratio`, `yoy_median_price_delta_pct`, `end_of_period_inventory`, `methodology_version`, `computed_at`, `active_count`, `pending_count`, `median_list_price`, `months_of_supply`, `updated_at`, `id`, `slug`, `display_name`, `title`, `license_number`, `email`, `twilio_number`, `photo_url`, `CloseDate`, `days_to_pending`, `buyer_financing`, `ClosePrice`, `TotalLivingAreaSqFt`, `Latitude`, `Longitude`, `SubdivisionName`, `property_sub_type`, `concessions_amount`, `concessions_yn` (+18 more)
+**Selected columns:** `photos_count`, `geo_type`, `geo_slug`, `geo_label`, `period_start`, `period_end`, `sold_count`, `median_sale_price`, `median_dom`, `median_ppsf`, `median_price_per_sqft_closed`, `avg_sale_to_list_ratio`, `yoy_median_price_delta_pct`, `end_of_period_inventory`, `methodology_version`, `computed_at`, `active_count`, `pending_count`, `median_list_price`, `months_of_supply`, `updated_at`, `id`, `slug`, `display_name`, `title`, `license_number`, `email`, `twilio_number`, `photo_url`, `CloseDate`, `days_to_pending`, `buyer_financing`, `ClosePrice`, `TotalLivingAreaSqFt`, `Latitude`, `Longitude`, `SubdivisionName`, `property_sub_type`, `concessions_amount`, `street_number` (+18 more)
 
 ---
 
@@ -4682,7 +4682,7 @@ Companion files:
 
 ### `lib/data/studio/subjects.ts`
 
-**Exports:** `figuresFromPulse`, `studioListingAgent`, `studioTrend`, `studioOutline`, `resolveStudioSubject`, `studioPlaceOptions`
+**Exports:** `studioPlaceLink`, `figuresFromPulse`, `studioListingAgent`, `studioTrend`, `studioOutline`, `resolveStudioSubject`, `studioPlaceOptions`
 
 ---
 
