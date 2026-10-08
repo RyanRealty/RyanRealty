@@ -49,10 +49,12 @@ import { printedBandBounds } from '@/lib/pricing/price-set'
  */
 export { askAgainstRangeSentence } from '@/lib/cma/ask-story'
 
-// ── Fee facts (Matt, principal broker, 2026-07-14) ──────────────────────────
-/** Listing fee for every expired-listing engagement. */
-export const EXPIRED_LISTING_FEE_PCT = 2.5
-/** Our normal listing fee (the site's Enhanced plan) — stated for contrast. */
+// ── Fee facts ───────────────────────────────────────────────────────────────
+/** Our one listing fee on every letter, expired, canceled and withdrawn homes
+ *  included (Matt 2026-10-08, "3% for everyone"; the 2026-07-14 2.5% expired
+ *  rate is retired with the unprinted net sheet that carried it). The printed
+ *  net page reads NET_LISTING_FEE_PCT in lib/pricing/seller-net.ts, held equal
+ *  to this by lib/pricing/seller-net.test.ts. */
 export const STANDARD_LISTING_FEE_PCT = 3.0
 /** Net-sheet assumption for buyer-broker compensation. Negotiable per offer
  *  under the current rules; the seller decides. Shown as an assumption line. */
@@ -89,25 +91,6 @@ export interface ExpiredFailureFinding {
   meaning: string
 }
 
-export interface ExpiredNetSheetLine {
-  label: string
-  amount: number | null
-  /** true = our fee (fact); false = third-party estimate the seller confirms. */
-  isOurFee: boolean
-  note: string | null
-}
-
-export interface ExpiredNetSheet {
-  salePrice: number
-  lines: ExpiredNetSheetLine[]
-  totalCosts: number
-  estimatedNet: number
-  /** The engine's conservative + high-end nets for the same cost structure. */
-  netConservative: number
-  netHighEnd: number
-  assumptions: string[]
-}
-
 /**
  * The final listing period, as a shape a renderer can draw.
  *
@@ -133,8 +116,6 @@ export interface ExpiredFinalCycle {
 export interface ExpiredAuditData {
   findings: ExpiredFailureFinding[]
   services: string[]
-  netSheet: ExpiredNetSheet
-  feeLine: string
   /**
    * The whole ask exposure: every price the final listing period wore, how
    * long each ran, and which one ran the clock. Round four, class B — the
@@ -767,101 +748,6 @@ export function buildThisHomeMarketingPlan(subject?: ThisHomePlanSubject | null)
 export function buildServicesList(subject?: ThisHomePlanSubject | null): string[] {
   const plan = buildThisHomeMarketingPlan(subject)
   return [...plan.hero, ...plan.secondary]
-}
-
-/**
- * Seller net sheet at the expired rate. Our fees are facts; third-party costs
- * are labeled estimates. Every number computed here, shown with its formula.
- */
-export function buildNetSheet(
-  pricing: CmaPricing,
-  opts?: { expectedConcessions?: number | null },
-): ExpiredNetSheet {
-  const price = pricing.recommended
-  const concessions = opts?.expectedConcessions ?? pricing.sellerNet?.expectedConcessions ?? null
-
-  const listingFee = price * (EXPIRED_LISTING_FEE_PCT / 100)
-  const buyerSide = price * (BUYER_BROKER_ASSUMPTION_PCT / 100)
-  // Owner's title policy + half escrow, Central Oregon typical band. ESTIMATE —
-  // the seller confirms with the title company at listing.
-  const titleEscrowEstimate = Math.round(Math.min(Math.max(price * 0.005, 2000), 6000))
-  const recordingMisc = 350
-
-  const lines: ExpiredNetSheetLine[] = [
-    ...(concessions != null && concessions > 0
-      ? [
-          {
-            label: 'Seller concessions (median of the comparable closed sales, including sales that reported none)',
-            amount: -concessions,
-            isOurFee: false,
-            note: 'Close price is the contract price. This credit comes off that number before commission. It is the comparable-set median, not a quote on this home.',
-          } satisfies ExpiredNetSheetLine,
-        ]
-      : []),
-    {
-      label: `Listing fee at ${EXPIRED_LISTING_FEE_PCT}% (expired-listing rate. Our standard Enhanced plan runs ${STANDARD_LISTING_FEE_PCT}%)`,
-      amount: -listingFee,
-      isOurFee: true,
-      note: `${EXPIRED_LISTING_FEE_PCT}% × ${usd(price)}. Commission is negotiable and every listing agreement is its own conversation.`,
-    },
-    {
-      label: `Buyer-broker compensation (assumption: ${BUYER_BROKER_ASSUMPTION_PCT}%)`,
-      amount: -buyerSide,
-      isOurFee: false,
-      note: 'Negotiated per offer under the current rules. You decide what, if anything, to offer. Shown here so the estimate is conservative.',
-    },
-    {
-      label: 'Title and escrow (estimate)',
-      amount: -titleEscrowEstimate,
-      isOurFee: false,
-      note: 'Owner\'s title policy plus the seller half of escrow, typical Central Oregon band. Confirm the exact quote with the title company.',
-    },
-    {
-      label: 'Recording and miscellaneous (estimate)',
-      amount: -recordingMisc,
-      isOurFee: false,
-      note: null,
-    },
-    {
-      label: 'County transfer tax',
-      amount: 0,
-      isOurFee: false,
-      note: 'Deschutes County has no real estate transfer tax.',
-    },
-  ]
-
-  const totalCosts = lines.reduce((s, l) => s + Math.abs(l.amount ?? 0), 0)
-  const concessionDollars = concessions != null && concessions > 0 ? concessions : 0
-  const costOf = (p: number) =>
-    concessionDollars +
-    p * (EXPIRED_LISTING_FEE_PCT / 100) +
-    p * (BUYER_BROKER_ASSUMPTION_PCT / 100) +
-    Math.round(Math.min(Math.max(p * 0.005, 2000), 6000)) +
-    recordingMisc
-
-  return {
-    salePrice: price,
-    lines,
-    totalCosts,
-    estimatedNet: price - totalCosts,
-    netConservative: pricing.conservative - costOf(pricing.conservative),
-    netHighEnd: pricing.highEnd - costOf(pricing.highEnd),
-    assumptions: [
-      'Sale at the recommended list price. The conservative and high-end columns rerun the same costs at the ends of the supported range.',
-      'Close price is the contract price. Seller concessions, when shown, are the median of the comparable set and come off the close before commission.',
-      'Property-tax prorations, HOA transfer fees, and any repair credits vary by closing date and negotiation, and are not included.',
-      'Your mortgage payoff (if any) comes off the estimated net. Your lender provides the exact payoff figure.',
-      'Every third-party line is an estimate. It is not a quote. This is not a closing statement.',
-    ],
-  }
-}
-
-/** One-line fee statement for the services page. Like-for-like framing: the
- *  site publishes plans at 2.5% to 3.5%, and most sellers choose the 3%
- *  Enhanced plan — so the honest comparison names the plans rather than
- *  presenting 2.5% as an expired-only concession (audit finding 2026-07-14). */
-export function feeLine(): string {
-  return `For an expired listing we list at ${EXPIRED_LISTING_FEE_PCT}% of the sale price, where our standard Enhanced plan runs ${STANDARD_LISTING_FEE_PCT}%. Commission is negotiable and every listing agreement is its own conversation.`
 }
 
 // ── The failed-ask ceiling (Matt 2026-08-05) ────────────────────────────────

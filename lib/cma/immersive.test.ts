@@ -81,7 +81,7 @@ describe('renderImmersiveCmaHtml', () => {
 
   it('the failed-listing scene does not print the regional relist tiles', () => {
     const html = renderImmersiveCmaHtml(
-      args({ expiredAudit: { findings: [{ lens: 'pricing', fact: 'Asked above every sale.', meaning: 'The ask was the ceiling.' }], services: [], netSheet: { lines: [], netLow: 0, netHigh: 0 }, feeLine: '' } as never }),
+      args({ expiredAudit: { findings: [{ lens: 'pricing', fact: 'Asked above every sale.', meaning: 'The ask was the ceiling.' }], services: [] } as never }),
       'https://ryan-realty.com',
     )
     expect(html).toContain('and did not sell.')
