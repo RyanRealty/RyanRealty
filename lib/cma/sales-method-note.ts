@@ -48,9 +48,20 @@
  * name the city-wide figure, the reference months, and, where the build
  * stored them (`timeAdjustment.indexLevels`, `.referencePpsf`), the levels
  * each move is the ratio of.
+ *
+ * AND IT SAYS WHY, OFF THE LOCAL READ (Matt 2026-10-08, "Down only if local
+ * fell"). The pocket moves down with the city figure only when homes like
+ * this one in its own place fell too, on the per-foot read the local page
+ * prints. A row built with that gate stores it (`timeAdjustment.localGate`),
+ * and both pocket sentences then say which way that read went, with its two
+ * figures: "These sales move with Bend's figure only because homes like yours
+ * in Shevlin West also fell", or "None of these sales is moved for the month
+ * it sold. Homes like yours in Shevlin West held flat while your home was
+ * listed, $581 then $572 a square foot, so each sale stands at its sold
+ * price." Rows stored before the gate print as they did.
  */
 
-import { cleanText, countWord, int } from '@/lib/cma/render-blocks'
+import { cleanText, countWord, int, usd } from '@/lib/cma/render-blocks'
 import { sanitizeLetterEmDash } from '@/lib/cma/voice-sanitize'
 import { FLAT_LOCAL_DATE_SENTENCE } from '@/lib/cma/flat-date-story'
 import { realSubdivisionName } from '@/lib/pricing/classes'
@@ -288,6 +299,95 @@ function indexShapeSentence(ta: Record<string, unknown>): string {
   return `${over} it ${move > 0 ? 'rose' : 'fell'} ${Math.abs(move).toFixed(1)} percent.`
 }
 
+// ── the pocket's local gate (Matt 2026-10-08, "Down only if local fell") ───
+
+type LocalGate = {
+  verdict: 'fell' | 'held flat' | 'rose' | null
+  missing: string | null
+  place: string | null
+  sized: boolean
+  productNoun: string | null
+  fromPpsf: number | null
+  toPpsf: number | null
+}
+
+/**
+ * The stored gate, or null on a row built before it. A verdict with no
+ * per-foot figure reads as no verdict: the sentence never prints a word it
+ * cannot show the numbers for.
+ */
+function localGateOf(ta: Record<string, unknown> | null): LocalGate | null {
+  const g = obj(ta?.localGate)
+  if (!g || typeof g.branch !== 'string') return null
+  const early = obj(g.early)
+  const late = obj(g.late)
+  const fromPpsf = num(early?.ppsf)
+  const toPpsf = num(late?.ppsf)
+  const said = g.verdict === 'fell' || g.verdict === 'held flat' || g.verdict === 'rose' ? g.verdict : null
+  const verdict = said && fromPpsf != null && toPpsf != null ? said : null
+  return {
+    verdict,
+    missing: typeof g.missing === 'string' ? g.missing : verdict ? null : 'too-few-sales',
+    place: str(g.place),
+    sized: g.sized === true,
+    productNoun: str(g.productNoun),
+    fromPpsf,
+    toPpsf,
+  }
+}
+
+/** "homes like yours in Shevlin West": the homes the local page measured. */
+function localHomes(g: LocalGate, subject: Partial<Pick<CmaSubject, 'subdivision'>>): string {
+  const noun = g.productNoun === 'townhouse' ? 'townhouses' : g.productNoun === 'condo' ? 'condos' : 'homes'
+  const place = g.place ?? realSubdivisionName(cleanText(subject.subdivision ?? null))
+  const like = g.sized ? `${noun} like yours` : noun
+  return place ? `${like} in ${place}` : `${like} nearby`
+}
+
+/** "held flat while your home was listed, $581 then $572 a square foot", the local page's own words. */
+function localMoveClause(g: LocalGate): string {
+  const from = usd(g.fromPpsf)
+  const to = usd(g.toPpsf)
+  if (g.verdict === 'held flat') return `held flat while your home was listed, ${from} then ${to} a square foot`
+  return `${g.verdict} while your home was listed, from ${from} to ${to} a square foot`
+}
+
+/** Why no sale moved, off the gate. Always ends on the sold price standing. */
+function localNoMoveReason(
+  g: LocalGate,
+  subject: Pick<CmaSubject, 'city'> & Partial<Pick<CmaSubject, 'subdivision'>>,
+): string {
+  const homes = localHomes(g, subject)
+  const Homes = capitalise(homes)
+  const city = cleanText(subject.city ?? null)
+  const whose = city ? `${city}'s` : "this city's"
+  if (g.verdict === 'held flat') return `${Homes} ${localMoveClause(g)}, so each sale stands at its sold price.`
+  if (g.verdict === 'rose') {
+    return `${Homes} ${localMoveClause(g)}, and these sales are never moved up for date, so each sale stands at its sold price.`
+  }
+  if (g.verdict === 'fell') {
+    return `${Homes} ${localMoveClause(g)}, but every sale here closed when ${whose} median price per square foot was already at or under today's level, so each sale stands at its sold price.`
+  }
+  if (g.missing === 'no-listing-window') {
+    return `We move these sales down for date only when ${homes} are falling in price, and there is no recent listing of your home to measure that over, so each sale stands at its sold price.`
+  }
+  if (g.missing === 'no-living-area') {
+    return `We move these sales down for date only when ${homes} fell in price while your home was listed, and those sales carry no living area to measure it by, so each sale stands at its sold price.`
+  }
+  return `We move these sales down for date only when ${homes} fell in price while your home was listed, and too few of them sold then to tell, so each sale stands at its sold price.`
+}
+
+/** The local reason a moved pocket sale moved, or '' when the row has no gate or it did not fall. */
+function localFellSentence(
+  g: LocalGate | null,
+  subject: Pick<CmaSubject, 'city'> & Partial<Pick<CmaSubject, 'subdivision'>>,
+): string {
+  if (!g || g.verdict !== 'fell') return ''
+  const city = cleanText(subject.city ?? null)
+  const whose = city ? `${city}'s` : "this city's"
+  return `These sales move with ${whose} figure only because ${localHomes(g, subject)} also ${localMoveClause(g)}.`
+}
+
 /** The pocket's own engine note, on rows stored before the basis was stamped. */
 const POCKET_NOTE = /^these sales are the exclusive pocket\b/i
 
@@ -308,7 +408,12 @@ function pocketDateSentence(
   const total = comps.length
   const down = comps.filter((c) => (c.timeAdjustment ?? 0) <= -1).length
   const up = comps.filter((c) => (c.timeAdjustment ?? 0) >= 1).length
-  if (total === 0 || (down === 0 && up === 0)) return 'None of these sales is moved for the month it sold.'
+  const gate = localGateOf(ta)
+  if (total === 0 || (down === 0 && up === 0)) {
+    return gate && total > 0
+      ? `None of these sales is moved for the month it sold. ${localNoMoveReason(gate, subject)}`
+      : 'None of these sales is moved for the month it sold.'
+  }
   const city = cleanText(subject.city ?? null)
   const whose = city ? `${city}'s` : "this city's"
   const window = referenceWindow(ta)
@@ -325,11 +430,13 @@ function pocketDateSentence(
     n != null && n > 0
       ? `That figure is built from ${int(n)} home sales across all of ${city ?? 'the city'}${over}${notOnlyHome(subject, true)}, and a rise in it never moves a sale up.`
       : `That figure covers every home sale in ${city ?? 'the city'}${notOnlyHome(subject, false)}, and a rise in it never moves a sale up.`
+  const why = localFellSentence(gate, subject)
+  const tail = why ? ` ${why}` : ''
   if (down === total) {
-    return `To bring each sale to today's market, we moved it down by how much ${whose} median price per square foot fell between the month it sold and ${to}. ${built}`
+    return `To bring each sale to today's market, we moved it down by how much ${whose} median price per square foot fell between the month it sold and ${to}. ${built}${tail}`
   }
   const rest = total - down
-  return `To bring the sales to today's market, we moved ${countWord(down)} of the ${countWord(total)} down by how much ${whose} median price per square foot fell between the month each sold and ${to}. The other ${countWord(rest)} ${rest === 1 ? 'is' : 'are'} not moved. ${built}`
+  return `To bring the sales to today's market, we moved ${countWord(down)} of the ${countWord(total)} down by how much ${whose} median price per square foot fell between the month each sold and ${to}. The other ${countWord(rest)} ${rest === 1 ? 'is' : 'are'} not moved. ${built}${tail}`
 }
 
 /** The date paragraph, or the stored sentence when the basis is not the city index. */
@@ -341,10 +448,12 @@ function dateNote(
   const ta = obj((pricing as unknown as { timeAdjustment?: unknown }).timeAdjustment)
   if (!ta) return []
   const stored = str(ta.sentence)
+  const pocket = isPocketTimeBasis(ta.basis) || (stored != null && POCKET_NOTE.test(stored))
+  // A pocket row that stored its local gate says the gate's own reason, with
+  // the local figures, ahead of the generic flat-story line (Matt 2026-10-08).
+  if (pocket && localGateOf(ta)) return [pocketDateSentence(subject, comps, ta)]
   if (ta.sentence === FLAT_LOCAL_DATE_SENTENCE) return [FLAT_LOCAL_DATE_SENTENCE]
-  if (isPocketTimeBasis(ta.basis) || (stored != null && POCKET_NOTE.test(stored))) {
-    return [pocketDateSentence(subject, comps, ta)]
-  }
+  if (pocket) return [pocketDateSentence(subject, comps, ta)]
   const n = num(ta.n)
   const anyMoved = comps.some((c) => Math.abs(c.timeAdjustment ?? 0) >= 1)
   if (ta.basis === INDEX_BASIS && n != null && n > 0 && comps.length > 0) {
@@ -388,22 +497,30 @@ export function dateBasisCaption(input: {
   pricing: CmaPricing
 }): string | null {
   const moved = input.comps.filter((c) => Math.abs(c.timeAdjustment ?? 0) >= 1)
-  if (moved.length === 0) return null
   const ta = obj((input.pricing as unknown as { timeAdjustment?: unknown }).timeAdjustment)
   if (!ta) return null
-  const city = cleanText(input.subject.city ?? null)
-  const whose = city ? `${city}'s` : "this city's"
   const stored = str(ta.sentence)
   const pocket = isPocketTimeBasis(ta.basis) || (stored != null && POCKET_NOTE.test(stored))
+  const gate = pocket ? localGateOf(ta) : null
+  // Nothing moved on a gated pocket: the grid folds its all-zero date row, so
+  // the line says no sale was adjusted for date and why, off the local read.
+  if (moved.length === 0) {
+    return gate && input.comps.length > 0
+      ? `No sale is adjusted for date. ${localNoMoveReason(gate, input.subject)}`
+      : null
+  }
+  const city = cleanText(input.subject.city ?? null)
+  const whose = city ? `${city}'s` : "this city's"
   const up = moved.some((c) => (c.timeAdjustment ?? 0) > 0)
   const window = referenceWindow(ta)
   const to = window ? `the last three full months, ${window}` : 'the last three full months'
   if (pocket && !up) {
     const levels = pocketLevelsClause(ta)
     const covers = `That figure covers every home sale in ${city ?? 'the city'}${notOnlyHome(input.subject, false)}`
+    const why = localFellSentence(gate, input.subject)
     return `Adjusted for date is how much ${whose} median price per square foot fell between the month a sale closed and ${to}. ${
       levels ? `${covers}, with each month read as a three-month median: ${levels}.` : `${covers}.`
-    } No sale is moved up for date.`
+    } No sale is moved up for date.${why ? ` ${why}` : ''}`
   }
   if (pocket || ta.basis === INDEX_BASIS) {
     return `Adjusted for date is how much ${whose} median price per square foot changed between the month a sale closed and ${to}.`

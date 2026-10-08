@@ -54,11 +54,15 @@ import {
   describeAppliedDateAdjustments,
   exclusivePocketPathNote,
   pocketIndexDownClause,
+  pocketLocalGateRecord,
+  pocketLocalReadNote,
   selectionIsExclusivePocket,
   TIME_ADJUSTMENT_BASIS_POCKET,
   TIME_ADJUSTMENT_BASIS_POCKET_INDEX,
   TIME_ADJUSTMENT_MEASURE_POCKET,
   type AppliedDateMove,
+  type PocketLocalGateRecord,
+  type PocketLocalRead,
 } from '@/lib/pricing/exclusive-pocket-date-adj'
 import { sizeAdjustmentFor } from '@/lib/pricing/size-adjustment'
 
@@ -343,6 +347,14 @@ export interface PricingTimeAdjustment {
   /** The endpoint level those sales walked TO: the median of `referenceMonths`, $/sqft. */
   referencePpsf?: number | null
   /**
+   * DOWN ONLY IF LOCAL FELL (Matt 2026-10-08). On an exclusive-pocket set the
+   * build gates the city-index move on the letter's own local read: the
+   * per-foot verdict, place, figures and sale counts the local page prints,
+   * the branch that verdict set, and whether any sale moved. Absent on rows
+   * built before the gate, and on callers with no local read.
+   */
+  localGate?: PocketLocalGateRecord
+  /**
    * The shape of the window, derived from the same smoothed series every sale
    * walks: where it peaked or troughed, how far it has come back, and which
    * months move a sale up and which move it down. Absent on the fallback
@@ -434,6 +446,13 @@ export function buildTimeAdjustmentBasis(opts: {
    * that refused the city-index pump still has to admit a cooling it did apply.
    */
   applied?: readonly AppliedDateMove[]
+  /**
+   * The letter's own local read, when the build gated the pocket's date move
+   * on it (Matt 2026-10-08, "Down only if local fell"). Recorded on the basis
+   * as `localGate`, with the branch it set. Omitted by a caller that has no
+   * local read; that record keeps the down-only wording.
+   */
+  pocketLocal?: PocketLocalRead
 }): PricingTimeAdjustment {
   const windowMonths = opts.windowMonths ?? TIME_ADJUSTMENT_WINDOW_MONTHS
   const fetchedAt = opts.fetchedAt ?? new Date().toISOString()
@@ -442,6 +461,8 @@ export function buildTimeAdjustmentBasis(opts: {
     const trend = marketIndexTrend({ points: opts.points, asOf: opts.asOf, windowMonths })
     const appliedDetail = describeAppliedDateAdjustments(opts.applied ?? [])
     const place = opts.cityName?.trim() || 'this city'
+    const local = opts.pocketLocal
+    const localNote = local !== undefined ? ` ${pocketLocalReadNote(local)}` : ''
     // THE RECORD NAMES THE PATH THAT MOVED THE SALES (reader review, 62475
     // Woodsman, 2026-10-08). A pocket sale whose month sits above today's
     // level IS moved, down, along this city's pricing_market_index
@@ -455,6 +476,9 @@ export function buildTimeAdjustmentBasis(opts: {
     if (moved.length > 0) {
       const { indexLevels, referencePpsf } = pocketIndexLevels(opts.points, opts.asOf, moved)
       const walked = indexLevels.map((l) => `${l.month.slice(0, 7)} ${l.ppsf.toFixed(2)}`).join(', ')
+      // With the gate, a move happens only on the local-fell branch, so the
+      // record says the local read fell and gives its figures.
+      const why = local !== undefined ? `${localNote} The local read fell, so these sales move down with the ${place} city index.` : ''
       return {
         pctPerMonth: trend.pctPerMonth,
         pctOverWindow: trend.pctOverWindow,
@@ -465,15 +489,16 @@ export function buildTimeAdjustmentBasis(opts: {
         referenceMonths: trend.referenceMonths,
         indexLevels,
         referencePpsf,
+        ...(local !== undefined ? { localGate: pocketLocalGateRecord(local, true) } : {}),
         source: {
           table: 'pricing_market_index',
-          filter: `city_slug='${opts.citySlug}', complete months only. Each month reads as the median of the three-month window centred on it; the endpoint is the median of the last three complete months (${trend.referenceMonths.join(', ') || 'none'}). Exclusive pocket: a sale moves only down along this index, and a sale whose month sits at or under the endpoint is not moved. Levels the moved sales walked from: ${walked || 'none'}; endpoint ${referencePpsf != null ? referencePpsf.toFixed(2) : 'none'} $/sqft.`,
+          filter: `city_slug='${opts.citySlug}', complete months only. Each month reads as the median of the three-month window centred on it; the endpoint is the median of the last three complete months (${trend.referenceMonths.join(', ') || 'none'}). Exclusive pocket: a sale moves only down along this index${local !== undefined ? ', only when the local per-foot read fell' : ''}, and a sale whose month sits at or under the endpoint is not moved.${localNote} Levels the moved sales walked from: ${walked || 'none'}; endpoint ${referencePpsf != null ? referencePpsf.toFixed(2) : 'none'} $/sqft.`,
           fetchedAt,
           query: `select month, n, median_ppsf from pricing_market_index where city_slug = '${opts.citySlug}' order by month`,
         },
         sentence: appliedDetail
-          ? `These sales are the exclusive pocket. ${appliedDetail} ${pocketIndexDownClause(place)} Story class does not adjust.`
-          : `These sales are the exclusive pocket. ${pocketIndexDownClause(place)} Story class does not adjust.`,
+          ? `These sales are the exclusive pocket.${why} ${appliedDetail} ${pocketIndexDownClause(place)} Story class does not adjust.`
+          : `These sales are the exclusive pocket.${why} ${pocketIndexDownClause(place)} Story class does not adjust.`,
       }
     }
     const wouldMove = trend.pctOverWindow
@@ -481,6 +506,36 @@ export function buildTimeAdjustmentBasis(opts: {
       wouldMove != null && Number.isFinite(wouldMove) && wouldMove !== 0
         ? ` That city index ${wouldMove > 0 ? 'rose' : 'fell'} ${Math.abs(wouldMove).toFixed(1)} percent over the last ${windowMonths} months; it is not applied here.`
         : ''
+    // DOWN ONLY IF LOCAL FELL (Matt 2026-10-08). Nothing moved, and the build
+    // gated on the letter's local read: the record says which way that read
+    // went, with its figures, and why that left every sale at its sold price.
+    if (local !== undefined) {
+      const gate = pocketLocalGateRecord(local, false)
+      const fellButNone = local.verdict === 'fell'
+      const sentence = fellButNone
+        ? `These sales are the exclusive pocket.${localNote} The local read fell, but no sale closed in a month the ${place} city index sat above today's level, so no sale is moved for the month it sold. Story class does not adjust.`
+        : `These sales are the exclusive pocket.${localNote} A sale on the home's own ground moves down along the ${place} city index only when that local read fell, so no sale is moved for the month it sold and each one stands at its sold price. Story class does not adjust.${would}`
+      return {
+        pctPerMonth: 0,
+        pctOverWindow: 0,
+        windowMonths,
+        n: trend.n,
+        basis: TIME_ADJUSTMENT_BASIS_POCKET,
+        measure: TIME_ADJUSTMENT_MEASURE_POCKET,
+        referenceMonths: trend.referenceMonths,
+        localGate: gate,
+        source: {
+          table:
+            local.verdict == null
+              ? `none (no local per-foot read: ${local.missing ?? 'unknown'}); pricing_market_index not applied`
+              : 'listings (the letter\'s listing-window read); pricing_market_index not applied',
+          filter: `Exclusive pocket. ${gate.rule} Branch ${gate.branch}.${localNote} pricing_market_index for city_slug='${opts.citySlug}' was read and not applied${fellButNone ? ': every sale closed in a month at or under the endpoint' : ''}.`,
+          fetchedAt,
+          query: `local: Closed listings in the subject's listing window, same place and property subtype (lib/cma/listing-window-market.ts chooseListingMarket, ppsfMove); index: select month, n, median_ppsf from pricing_market_index where city_slug = '${opts.citySlug}' order by month`,
+        },
+        sentence,
+      }
+    }
     const sentence = `These sales are the exclusive pocket. Date adjustment does not walk the city index, which includes tracts already excluded from this set. Each sale stays on its own sold and last-ask price. Story class does not adjust.${would}`
     return {
       pctPerMonth: 0,
@@ -1331,6 +1386,8 @@ export function adjustCompAlongMarket(opts: {
   hydrated?: HydratedClosedCompDom | null
   /** Exclusive pocket: refuse upward city-index pump; allow Flex-style cooling; story lift stays 0. */
   exclusivePocket?: boolean
+  /** The letter's local read: on the pocket, a cooling moves a sale only when it fell (Matt 2026-10-08). */
+  pocketLocal?: PocketLocalRead
 }): { adjusted: CmaAdjustedComp; path: MarketPath; pathNote: string } {
   return adjustCmaCompAlongMarket({
     ...opts,
@@ -1362,11 +1419,19 @@ export function adjustCmaCompAlongMarket(opts: {
   asOf: string
   /** Exclusive pocket: refuse upward city-index pump; allow Flex-style cooling; story lift stays 0. */
   exclusivePocket?: boolean
+  /**
+   * DOWN ONLY IF LOCAL FELL (Matt 2026-10-08). The letter's own local read:
+   * on the exclusive pocket a cooling city path moves the sale only when this
+   * read fell. Held flat, rose or no verdict leaves the sale at its sold
+   * price, and the size line then works off that sold price per foot. A
+   * caller with no local read omits it and keeps the down-only walk.
+   */
+  pocketLocal?: PocketLocalRead
 }): { adjusted: CmaAdjustedComp; path: MarketPath; pathNote: string } {
   const sale = opts.comp
   const exclusivePocket = opts.exclusivePocket === true
   const cityPath = marketPath({ points: opts.points, fromDate: sale.closeDate, toDate: opts.asOf })
-  const path = applyExclusivePocketDateAdj(cityPath, exclusivePocket)
+  const path = applyExclusivePocketDateAdj(cityPath, exclusivePocket, opts.pocketLocal)
   const concessions = concessionOnSale(sale)
   const startPrice = comparisonSalePrice(sale.closePrice, concessions)
   const timeAdjustedPrice = timeAdjustAlongPath(startPrice, path)
@@ -1377,8 +1442,10 @@ export function adjustCmaCompAlongMarket(opts: {
   )
   const subjectSqft = opts.subject.sqft ?? 0
   // ONE SIZE ADJUSTMENT on every path and every rung, the exclusive pocket
-  // included (Matt 2026-10-08, "Yes, adjust pocket sales"). The pocket's date
-  // rule above (applyExclusivePocketDateAdj) is unchanged.
+  // included (Matt 2026-10-08, "Yes, adjust pocket sales"). It is figured off
+  // the date-adjusted price, so a sale the pocket's local gate left unmoved
+  // (Matt 2026-10-08, "Down only if local fell") is sized off its sold price
+  // per foot, after any recorded concession.
   const size = sizeAdjustmentFor({
     subjectSqft,
     saleSqft: sale.sqft,
@@ -1460,7 +1527,7 @@ export function adjustCmaCompAlongMarket(opts: {
   }
   const pathNote =
     opts.exclusivePocket === true
-      ? exclusivePocketPathNote(sale.address, cityPath, path)
+      ? exclusivePocketPathNote(sale.address, cityPath, path, opts.pocketLocal)
       : `${sale.address}: ${describePath(path)}`
   return { adjusted, path, pathNote }
 }
@@ -2008,6 +2075,13 @@ export function priceCmaSet(args: {
    * other caller can hold a document, so every other caller still gets null.
    */
   holdFailedAskUnderSaleSet?: boolean
+  /**
+   * The letter's local read the build gated the pocket's date move on (Matt
+   * 2026-10-08, "Down only if local fell"). Recorded on the time-adjustment
+   * basis with the branch it set. Pass the same read the sales were adjusted
+   * with; omitted by a caller that has no local read.
+   */
+  pocketLocal?: PocketLocalRead
 }): CmaPricing | null {
   const priceFn = args.computePricing ?? computePricing
   // No fill: a sale that does not set the price keeps its weight of 0, and
@@ -2073,6 +2147,7 @@ export function priceCmaSet(args: {
     yoyMedianPriceDeltaPct: args.market?.yoyMedianPriceDeltaPct ?? null,
     indexUnavailableReason: args.indexUnavailableReason ?? null,
     exclusivePocket: selectionIsExclusivePocket(args.selection.tiersUsed),
+    pocketLocal: args.pocketLocal,
     applied: adjusted.map((c) => ({
       address: c.address,
       closePrice: c.closePrice,

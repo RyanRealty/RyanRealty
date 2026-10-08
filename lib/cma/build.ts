@@ -35,19 +35,14 @@ import { selectCompsPreferringFacts } from '@/lib/pricing/select'
 import {
   adjustCmaCompAlongMarket,
   adjustCompAlongMarket,
-  ensureMinBandWidth,
+  preserveHydratedClosedCompDom,
   priceCmaSet,
-  roundPriceDown,
-  roundPriceUp,
+  pricingSaleToCmaComp,
   pinPrintedBandToSettingSales,
   syncRangeRuleToHeroBand,
 } from '@/lib/pricing/estimate'
-import {
-  exclusivePocketSetNote,
-  floorExclusivePocketBandToSameSubCloses,
-  selectionIsExclusivePocket,
-  type AppliedDateMove,
-} from '@/lib/pricing/exclusive-pocket-date-adj'
+import { selectionIsExclusivePocket } from '@/lib/pricing/exclusive-pocket-date-adj'
+import { finishExclusivePocketPricing, localReadForSet } from '@/lib/cma/pocket-pricing'
 import { buildRejectedSales } from '@/lib/pricing/rejected'
 import { dropPriorSalesOfSameHome } from '@/lib/pricing/same-address'
 import { buildPricingReview, confidenceForVerdict } from '@/lib/pricing/review'
@@ -104,7 +99,7 @@ import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
 import { buildSubjectStatus } from '@/lib/pricing/subject-status'
 import type { PlacePricingStory } from '@/lib/cma/place-pricing-types'
 import { readPlacePricingStory } from '@/lib/data/cma/placePricingRead'
-import { loadListingWindowMarket } from '@/lib/cma/listing-window-load'
+import { loadListingWindowCloses } from '@/lib/cma/listing-window-load'
 import { pocketClosedSupportPrice } from '@/lib/pricing/active-dom-nudge'
 import { finishRecommendedAfterActives } from '@/lib/cma/finish-recommended'
 import { assembleCompetition, assembleExpiredPeers } from '@/lib/cma/assemble-competition'
@@ -656,6 +651,37 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       Number(asOf.slice(0, 4)),
     )
     const subjectStory = classifyStory(subject.levelsRaw, null)
+    // THE LOCAL READ COMES BEFORE THE PRICE (Matt 2026-10-08, "Down only if
+    // local fell"). An exclusive-pocket set moves down for date with the city
+    // index only when the letter's own local read fell: the listing-window
+    // read the local page prints. So the window and its closes are read here,
+    // once, and every priced set measures its local read off them through the
+    // same function the page uses (lib/cma/pocket-pricing.ts localReadForSet).
+    // The final cycle is the same one step 4.7 narrates; it is resolved here
+    // and reused there.
+    const finalCycleRead = lastCycleFailed
+      ? await (async () => {
+          const cycle = analyzeListingHistory(cycleRows, subject, null).currentCycle
+          const priceEvents = cycle?.listingKey
+            ? await getCmaListingPriceEvents(cycle.listingKey).catch(() => [])
+            : []
+          const resolved = resolveFinalCycle({
+            cycle,
+            priceEvents,
+            listingKey: cycle?.listingKey ?? subject.listingKey,
+          })
+          return { resolved }
+        })()
+      : null
+    const listingWindow = {
+      city: subject.city,
+      listDate: finalCycleRead?.resolved.cycle?.listDate ?? subject.lastListDate,
+      offDate: finalCycleRead?.resolved.cycle?.offMarketDate ?? null,
+    }
+    const windowCloses = await loadListingWindowCloses({
+      ...listingWindow,
+      propertySubType: subject.propertySubType,
+    }).catch(() => null)
     const priceSet = (set: typeof selection.comps) => {
       const salesByKey = new Map((selection.pricingSales ?? []).map((s) => [s.listingKey, s]))
       // Walk the index whenever the city HAS one. A sale that carries a
@@ -668,6 +694,21 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       // Horse Back closes toward Clearpine ppsf. Admin owns picker exclusivity;
       // this only refuses applying that series to a set that already stayed in.
       const exclusivePocket = selectionIsExclusivePocket(selection.tiersUsed)
+      // The local read for THIS set, off the sales as the adjusters build them
+      // (the facts walk rebuilds a sale from its sale_pricing_facts row), so
+      // its area is the one the letter's competition chapter draws.
+      const { listingMarket: setListingMarket, pocketLocal } = localReadForSet({
+        subject,
+        comps: set.map((c) => {
+          const sale = usePath ? salesByKey.get(c.listingKey) : undefined
+          return sale ? preserveHydratedClosedCompDom(pricingSaleToCmaComp(sale), c) : c
+        }),
+        diagnostics: selection.diagnostics,
+        subjectZone: site.zone,
+        window: listingWindow,
+        closes: windowCloses,
+        asOf: letterDay,
+      })
       const adj = (usePath
         ? set.map((c) => {
             const sale = salesByKey.get(c.listingKey)
@@ -682,6 +723,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
                   // Sale rebuild drops original_entry / history. Keep hydrate.
                   hydrated: c,
                   exclusivePocket,
+                  pocketLocal,
                 }).adjusted
               : adjustCmaCompAlongMarket({
                   subject,
@@ -691,6 +733,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
                   points: marketIndex,
                   asOf,
                   exclusivePocket,
+                  pocketLocal,
                 }).adjusted
           })
         : exclusivePocket
@@ -703,6 +746,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
                 points: [],
                 asOf,
                 exclusivePocket: true,
+                pocketLocal,
               }).adjusted,
             )
           : adjustComps(subject, set, market)
@@ -725,6 +769,8 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         // A failed-ask pull under every sale that set the price is held for
         // Matt after the pin (applyAskBelowBandHold), not failed here.
         holdFailedAskUnderSaleSet: true,
+        // Recorded on the basis only where the gate applies: the pocket.
+        pocketLocal: exclusivePocket ? pocketLocal : undefined,
       })
       // The concession sentence prints under the matrix and names "the sales
       // that set this price", so it counts THAT set — the kept comps the reader
@@ -737,57 +783,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         }
       }
       if (p && exclusivePocket) {
-        const moves: AppliedDateMove[] = adj.map((c) => ({
-          address: c.address,
-          closePrice: c.closePrice,
-          timeAdjustment: c.timeAdjustment,
-          timeAdjustedPrice: c.timeAdjustedPrice,
-        }))
-        const coolingApplied = moves.some((c) => Number.isFinite(c.timeAdjustment) && c.timeAdjustment < 0)
-        p.notes.unshift(exclusivePocketSetNote(subject.city, coolingApplied, moves))
-        const sameSub = (subject.subdivision ?? '').trim().toLowerCase()
-        const sameSubRows = sameSub
-          ? adj.filter((c) => (c.subdivision ?? '').trim().toLowerCase() === sameSub)
-          : []
-        const weightTotal = sameSubRows.reduce((sum, c) => sum + (c.weight > 0 ? c.weight : 0), 0)
-        const topWeight = sameSubRows.reduce((best, c) => (c.weight > best ? c.weight : best), 0)
-        const meaningfulAdjusted = sameSubRows
-          .filter((c) => {
-            const share = weightTotal > 0 ? c.weight / weightTotal : 0
-            return c.adjustedPrice > 0 && (share >= 0.05 || c.weight === topWeight)
-          })
-          .map((c) => c.adjustedPrice)
-        const floored = floorExclusivePocketBandToSameSubCloses({
-          valueLow: p.valueLow,
-          valueHigh: p.valueHigh,
-          sameSubdivisionClosePrices: sameSubRows
-            .map((c) => c.closePrice)
-            .filter((n): n is number => Number.isFinite(n) && n > 0),
-          sameSubdivisionAdjustedPrices: meaningfulAdjusted,
-          coolingApplied,
-        })
-        if (floored.floored && floored.floor != null) {
-          p.valueLow = floored.valueLow
-          p.valueHigh = floored.valueHigh
-          if (p.conservative < floored.valueLow) p.conservative = floored.valueLow
-          if (p.recommended < floored.valueLow) p.recommended = floored.valueLow
-          p.notes.unshift(
-            `The printed low is the lowest meaningful same-subdivision adjusted sale at $${Math.round(floored.floor).toLocaleString('en-US')}. A cooled price below every one of those sales does not set the range.`,
-          )
-          attachSellerNet(p, set)
-        }
-        // Recorded after the same-subdivision floor and before the open.
-        // The open below is presentation. It must not move the recommendation
-        // or the conservative tier. The nudge chases this low.
-        const evidenceLow = Math.min(p.valueLow, p.valueHigh)
-        if (p.rangeRule) p.rangeRule = { ...p.rangeRule, evidenceLow }
-        const widened = ensureMinBandWidth(p.valueLow, p.valueHigh, p.recommended)
-        p.valueLow = roundPriceDown(widened.low)
-        p.valueHigh = roundPriceUp(widened.high)
-        if (p.recommended < p.valueLow) p.recommended = p.valueLow
-        if (p.recommended > p.valueHigh) p.recommended = p.valueHigh
-        const synced = syncRangeRuleToHeroBand(p)
-        p.rangeRule = synced.rangeRule
+        finishExclusivePocketPricing(p, { subject, adj, set, pocketLocal })
       } else if (p && usePath) {
         p.notes.unshift(
           `Time adjustment follows the monthly ${subject.city} sale-price path between each comparable close and ${asOf}.`,
@@ -879,7 +875,9 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           }.${final.narrative ? ` ${final.narrative}` : ''}`,
         )
       }
-      return { adj, p }
+      // The local read this set was gated on IS the local page's read: the
+      // build prints it, never a second one (Matt 2026-10-08).
+      return { adj, p, listingMarket: setListingMarket }
     }
     const excludedForAudit = () =>
       judgment?.verdicts
@@ -899,7 +897,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       differentProduct,
     })
 
-    let { adj: adjusted, p: pricing } = priceSet(compsForPricing)
+    let { adj: adjusted, p: pricing, listingMarket: pricedListingMarket } = priceSet(compsForPricing)
     if (!pricing) {
       const err = pricingFailureMessage(subject, adjusted)
       await recordBuildFailure(slug, err, { stage: 'pricing', docType, compSelection: selection.diagnostics, trace: selection.trace })
@@ -1015,6 +1013,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           compsForPricing = remaining
           adjusted = repriced.adj
           pricing = repriced.p
+          pricedListingMarket = repriced.listingMarket
           if (lastCycleFailed) {
             const row0 = cycleRows[0] ?? {}
             applyFailedAskCap(pricing, {
@@ -1096,6 +1095,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             } else {
               adjusted = rebuilt.adj
               pricing = rebuilt.p
+              pricedListingMarket = rebuilt.listingMarket
               if (lastCycleFailed) {
                 const row0 = cycleRows[0] ?? {}
                 applyFailedAskCap(pricing, {
@@ -1295,25 +1295,20 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // longer changes the document.)
     let expiredAudit: ExpiredAuditData | null = null
     {
-      if (lastCycleFailed) {
+      // finalCycleRead is set exactly when lastCycleFailed is.
+      if (lastCycleFailed && finalCycleRead) {
         const history = analyzeListingHistory(cycleRows, subject, market?.medianDom ?? null)
         const photosCount = subject.listingKey ? await getListingPhotosCount(subject.listingKey) : null
         // Chapter 1's graphic: the final listing period as a stepped line. The
         // dated cuts come from the price-change records for THAT cycle's own
         // ListingKey — not the subject's, which on a relisted address is a
         // different attempt. A cycle with no dated change gets one undated
-        // step rather than a date from convention (§0).
-        const finalCycle = history.currentCycle
-        const priceEvents = finalCycle?.listingKey
-          ? await getCmaListingPriceEvents(finalCycle.listingKey).catch(() => [])
-          : []
-        // A cycle older than FAILED_ASK_RECENCY_MONTHS is nulled with a reason
-        // rather than narrated (round four, class B).
-        const resolvedCycle = resolveFinalCycle({
-          cycle: finalCycle,
-          priceEvents,
-          listingKey: finalCycle?.listingKey ?? subject.listingKey,
-        })
+        // step rather than a date from convention (§0). A cycle older than
+        // FAILED_ASK_RECENCY_MONTHS is nulled with a reason rather than
+        // narrated (round four, class B). Resolved once, before pricing, so
+        // the local read the pocket's date move is gated on reads this same
+        // listing window (finalCycleRead).
+        const resolvedCycle = finalCycleRead.resolved
         expiredAudit = {
           findings: buildFailureFindings({ subject, pricing, market, history, photosCount, ownershipSince: await getExpiredOwnershipSince(subject.mlsNumber) }),
           services: buildServicesList(subject),
@@ -1511,19 +1506,11 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       placePricing = null
     }
 
-    const listingMarket = await loadListingWindowMarket({
-      city: subject.city,
-      subdivision: subject.subdivision,
-      sqft: subject.sqft,
-      latitude: subject.latitude,
-      longitude: subject.longitude,
-      listDate: expiredAudit?.finalCycle?.listDate ?? subject.lastListDate,
-      offDate: expiredAudit?.finalCycle?.offMarketDate ?? null,
-      asOf: letterDay,
-      areaKind: compArea?.kind ?? null,
-      areaName: compArea?.names?.[0] ?? null,
-      propertySubType: subject.propertySubType,
-    }).catch(() => null)
+    // The local page prints the read the price was gated on (Matt 2026-10-08,
+    // "Down only if local fell"): the same closes, the same window and the
+    // same sales area, measured by priceSet for the set that priced. One read,
+    // so the two pages cannot disagree about which way homes like this went.
+    const listingMarket = pricedListingMarket
 
     const recommendedBeforePin = pricing.recommended
     pricing = pinPrintedBandToSettingSales(pricing, renderComps)
@@ -1656,6 +1643,9 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           .map((group) => group.n)
           .filter((n) => n > 0),
       },
+      // Down only if local fell (Matt 2026-10-08): the printed grid against
+      // the local page it sits a page after.
+      pocketDate: { timeAdjustment: pricing.timeAdjustment ?? null, comps: renderComps, listingMarket },
     })
     for (const check of letterContract.checks) {
       contract.checks.push(check)

@@ -13,6 +13,7 @@ import { usd } from '@/lib/cma/render-blocks'
 import { formatCalendarDay } from '@/lib/format/date'
 import { realSubdivisionName } from '@/lib/pricing/classes'
 import { resolveConcessions } from '@/lib/pricing/seller-net'
+import type { PocketLocalMissing, PocketLocalRead } from '@/lib/pricing/exclusive-pocket-date-adj'
 
 export const LISTING_MARKET_MIN_HALF = 8
 const FLAT = 0.03
@@ -334,11 +335,65 @@ function singleSaleSentence(move: ListingMarketMove, product: string, size: stri
   return `While your home was listed, ${first}, and ${second}.${foot} One sale is one home's price, not a trend.`
 }
 
+/** A stored move, or null when the value is not one the local page could print. */
+export function readListingMarketMove(value: unknown): ListingMarketMove | null {
+  if (!value || typeof value !== 'object') return null
+  const m = value as ListingMarketMove
+  if (m.priceMove !== 'rose' && m.priceMove !== 'fell' && m.priceMove !== 'held flat') return null
+  if (typeof m.place !== 'string' || !m.place.trim()) return null
+  if (!m.early || !m.late) return null
+  if (!(m.early.median > 0) || !(m.late.median > 0)) return null
+  if (!(m.early.n > 0) || !(m.late.n > 0)) return null
+  return m
+}
+
+/**
+ * True when a half holds one sale. The local page then prints that sale's
+ * price and "one sale is one home's price, not a trend", never a rise, fall
+ * or flat (3037 Purcell, 2026-10-07). The sentence, the slope label and the
+ * pocket date gate all read this one test, so the gate can never act on a
+ * verdict the page did not print.
+ */
+export function listingMarketOneSaleAHalf(move: Pick<ListingMarketMove, 'early' | 'late'>): boolean {
+  return move.early.n < 2 || move.late.n < 2
+}
+
+/**
+ * The per-foot verdict the local page prints, or why it prints none
+ * (Matt 2026-10-08, "Down only if local fell"). The pocket date gate reads
+ * this, built from the same move the page draws, so the two pages of a letter
+ * cannot disagree about which way homes like this one went.
+ *
+ * `ifMissing` names why there is no move at all: the build knows whether it
+ * had a listing window to read over.
+ */
+export function pocketLocalReadOf(
+  move: ListingMarketMove | null,
+  ifMissing: PocketLocalMissing = 'too-few-sales',
+): PocketLocalRead {
+  if (!move) {
+    return { verdict: null, missing: ifMissing, place: null, sized: false, productNoun: null, early: null, late: null }
+  }
+  const half = (h: ListingMarketHalf) => ({ ppsf: h.ppsf, n: h.n, from: h.from, to: h.to })
+  const base = {
+    place: move.place,
+    sized: move.sized,
+    productNoun: move.productNoun ?? null,
+    early: half(move.early),
+    late: half(move.late),
+  }
+  if (listingMarketOneSaleAHalf(move)) return { ...base, verdict: null, missing: 'one-sale-a-half' }
+  if (move.ppsfMove == null || move.early.ppsf == null || move.late.ppsf == null) {
+    return { ...base, verdict: null, missing: 'no-living-area' }
+  }
+  return { ...base, verdict: move.ppsfMove, missing: null }
+}
+
 /** The sentence under the chart. Both halves are named, and the rate per foot when it exists. */
 export function listingMarketSentence(move: ListingMarketMove): string {
   const size = move.sized ? ' for a home about this size' : ''
   const product = move.productNoun ? `${move.productNoun} ` : ''
-  if (move.early.n < 2 || move.late.n < 2) return singleSaleSentence(move, product, size)
+  if (listingMarketOneSaleAHalf(move)) return singleSaleSentence(move, product, size)
   const price = moveClause(move.priceMove, move.early.median, move.late.median)
   const head = `While your home was listed, the median ${product}sale in ${move.place}${size} ${price}.`
   if (move.ppsfMove == null || move.early.ppsf == null || move.late.ppsf == null) return head
@@ -444,7 +499,7 @@ export function listingMarketSlopes(move: ListingMarketMove): {
   const toN = halfMeta(move.late)
   // One sale a half is one home's price: the chart does not print "rose" or
   // "fell" over it, the same as the sentence under it (3037 Purcell, 2026-10-07).
-  const label = move.early.n < 2 || move.late.n < 2 ? ONE_SALE_SLOPE_LABEL : undefined
+  const label = listingMarketOneSaleAHalf(move) ? ONE_SALE_SLOPE_LABEL : undefined
   const panels: ListingMarketSlopePanel[] = [
     {
       title: 'Sale price',
