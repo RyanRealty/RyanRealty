@@ -56,18 +56,28 @@ function rowsInBand(rows: readonly CmaBandListingRow[], band: { lo: number; hi: 
   })
 }
 
-export async function assembleCompetition(args: {
+/** The fields of a priced sale the search story and the sales area read. */
+type SalesAreaComp = Pick<
+  CmaAdjustedComp,
+  'address' | 'subdivision' | 'subdivisionSlug' | 'selectionTier' | 'latitude' | 'longitude'
+>
+
+/**
+ * The search story and the one sales area, off the sales that price. Pure.
+ *
+ * assembleCompetition reads it for the letter, and the build reads it BEFORE
+ * any sale is adjusted for date, so the local listing-window read the
+ * exclusive-pocket date gate acts on (Matt 2026-10-08, "Down only if local
+ * fell") is measured over the same area as the local page that prints it.
+ * None of the fields it reads moves with an adjustment.
+ */
+export function salesSearchAndArea(args: {
   subject: CmaSubject
-  comps: readonly CmaAdjustedComp[]
-  verdicts: readonly { listingKey?: string; tier?: string; reason?: string }[]
+  comps: readonly SalesAreaComp[]
   diagnostics: CompSelectionDiagnostics
-  recommended: number
   subjectZone: string | null
-  generatedAtIso: string
 }) {
   const { subject } = args
-  const renderComps = attachCompConcessions(applyCompVerdicts(args.comps, args.verdicts))
-  const parcels = await resolveCmaParcels({ subject, comps: renderComps }).catch(() => null)
   const compSearch = buildCompSearch({
     subdivision: args.diagnostics.subject.subdivision ?? subject.subdivision,
     subjectStreet: subject.streetAddress,
@@ -77,7 +87,7 @@ export async function assembleCompetition(args: {
       monthsBack: t.months_back,
       compsAdded: t.comps_added,
     })),
-    keptComps: renderComps.map((c) => ({
+    keptComps: args.comps.map((c) => ({
       address: c.address,
       subdivision: c.subdivision,
       selectionTier: c.selectionTier,
@@ -97,13 +107,34 @@ export async function assembleCompetition(args: {
       city: subject.city,
     },
     rungs: (compSearch?.rungs ?? []).map((r) => ({ key: r.key, kept: r.kept, added: r.added })),
-    keptComps: renderComps.map((c) => ({
+    keptComps: args.comps.map((c) => ({
       subdivision: c.subdivision,
       subdivisionSlug: c.subdivisionSlug ?? null,
       selectionTier: c.selectionTier,
       latitude: c.latitude,
       longitude: c.longitude,
     })),
+  })
+  return { compSearch, compArea }
+}
+
+export async function assembleCompetition(args: {
+  subject: CmaSubject
+  comps: readonly CmaAdjustedComp[]
+  verdicts: readonly { listingKey?: string; tier?: string; reason?: string }[]
+  diagnostics: CompSelectionDiagnostics
+  recommended: number
+  subjectZone: string | null
+  generatedAtIso: string
+}) {
+  const { subject } = args
+  const renderComps = attachCompConcessions(applyCompVerdicts(args.comps, args.verdicts))
+  const parcels = await resolveCmaParcels({ subject, comps: renderComps }).catch(() => null)
+  const { compSearch, compArea } = salesSearchAndArea({
+    subject,
+    comps: renderComps,
+    diagnostics: args.diagnostics,
+    subjectZone: args.subjectZone,
   })
   const competitionRings = compArea
     ? resolveCompetitionArea({

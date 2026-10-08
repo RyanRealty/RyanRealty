@@ -12,6 +12,14 @@
  *
  *   npx tsx scripts/cma-build-dryrun.ts cma-16083-dyke-la-pine [more slugs...]
  *   npx tsx scripts/cma-build-dryrun.ts --json <slug>
+ *   npx tsx scripts/cma-build-dryrun.ts --pocket-legacy <slug>
+ *
+ * An exclusive-pocket set is priced the way the build prices it: the letter's
+ * local read is measured first, and a sale moves down with the city index
+ * only when that read fell (Matt 2026-10-08, "Down only if local fell"), then
+ * the pocket's band finish runs (lib/cma/pocket-pricing.ts). `--pocket-legacy`
+ * prices the pocket without the local gate, the always-down walk the build
+ * used before that ruling, so the two can be compared on one home.
  *
  * NOT a full build: the LLM comparability judge and the adversarial audit are
  * skipped on purpose (they cost money and they can only REMOVE comps, so a
@@ -56,7 +64,23 @@ type DryRun = {
   customOrNew: boolean | null
   pricingSource: string | null
   compCount: number
-  comps: Array<{ key: string; address: string; baths: number | null; sqft: number; closePrice: number; closeDate: string; adjusted: number; concessions: number | null }>
+  comps: Array<{ key: string; address: string; baths: number | null; sqft: number; closePrice: number; closeDate: string; adjusted: number; concessions: number | null; date?: number; size?: number }>
+  /**
+   * The exclusive pocket's date gate (Matt 2026-10-08): whether the set is a
+   * pocket, which mode priced it, and the local read the gate acted on.
+   */
+  pocketDate?: {
+    exclusivePocket: boolean
+    mode: 'gated' | 'legacy'
+    branch: string | null
+    verdict: string | null
+    missing: string | null
+    place: string | null
+    sized: boolean
+    early: unknown
+    late: unknown
+    listingWindow: { listDate: string | null; offDate: string | null }
+  } | null
   recommended: number | null
   /** The list tiers: conservative and high end. */
   range: [number | null, number | null]
@@ -301,7 +325,7 @@ function domFromHistoryLine(line: string | null | undefined): number | null {
   return Number.isFinite(n) && n >= 0 ? n : null
 }
 
-async function dryRun(slug: string): Promise<DryRun> {
+async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Promise<DryRun> {
   const { getCmaAdminRowBySlug } = await import('@/lib/data')
   const { resolveCmaSubject } = await import('@/lib/cma/subject')
   const { selectCompsPreferringFacts } = await import('@/lib/pricing/select')
@@ -479,19 +503,65 @@ async function dryRun(slug: string): Promise<DryRun> {
   const salesByKey = new Map((selection.pricingSales ?? []).map((s) => [s.listingKey, s]))
   const usePath = marketIndex.length > 0
   const subjectStory = classifyStory(subject.levelsRaw, null)
+  // EXACTLY lib/cma/build.ts priceSet's pocket path (Matt 2026-10-08, "Down
+  // only if local fell"): the listing window and its closes, read once, the
+  // local read for the set off the sales as the adjusters build them, then the
+  // gate. The build's set is the judged one; here it is the ladder's.
+  const { selectionIsExclusivePocket } = await import('@/lib/pricing/exclusive-pocket-date-adj')
+  const { loadListingWindowCloses } = await import('@/lib/cma/listing-window-load')
+  const { localReadForSet, finishExclusivePocketPricing } = await import('@/lib/cma/pocket-pricing')
+  const { preserveHydratedClosedCompDom, pricingSaleToCmaComp } = await import('@/lib/pricing/estimate')
+  const exclusivePocket = selectionIsExclusivePocket(selection.tiersUsed ?? [])
+  const finalCycleForWindow = lastCycleFailed
+    ? await (async () => {
+        const cycle = analyzeListingHistory(cycleRows, subject, null).currentCycle
+        const priceEvents = cycle?.listingKey ? await getCmaListingPriceEvents(cycle.listingKey).catch(() => []) : []
+        return resolveFinalCycle({ cycle, priceEvents, listingKey: cycle?.listingKey ?? subject.listingKey }).cycle
+      })()
+    : null
+  const listingWindow = {
+    city: subject.city,
+    listDate: finalCycleForWindow?.listDate ?? subject.lastListDate,
+    offDate: finalCycleForWindow?.offMarketDate ?? null,
+  }
+  const windowCloses = await loadListingWindowCloses({ ...listingWindow, propertySubType: subject.propertySubType }).catch(
+    () => null,
+  )
+  const { zonedDateKey } = await import('@/lib/format/date')
+  const local = localReadForSet({
+    subject,
+    comps: selection.comps.map((c) => {
+      const sale = usePath ? salesByKey.get(c.listingKey) : undefined
+      return sale ? preserveHydratedClosedCompDom(pricingSaleToCmaComp(sale), c) : c
+    }),
+    diagnostics: selection.diagnostics,
+    subjectZone: null,
+    window: listingWindow,
+    closes: windowCloses,
+    asOf: zonedDateKey(new Date().toISOString()),
+  })
+  const pocketLocal = opts.pocketLegacy ? undefined : local.pocketLocal
   const adjusted = usePath
     ? selection.comps.map((c) => {
         const sale = salesByKey.get(c.listingKey)
         return sale
           ? adjustCompAlongMarket({
               subject, subjectStory, sale, saleStory: sale.storyClass, points: marketIndex, asOf,
-              hydrated: c,
+              hydrated: c, exclusivePocket, pocketLocal,
             }).adjusted
           : adjustCmaCompAlongMarket({
               subject, subjectStory, comp: c, saleStory: 'unknown', points: marketIndex, asOf,
+              exclusivePocket, pocketLocal,
             }).adjusted
       })
-    : adjustComps(subject, selection.comps, market)
+    : exclusivePocket
+      ? selection.comps.map((c) =>
+          adjustCmaCompAlongMarket({
+            subject, subjectStory, comp: c, saleStory: 'unknown', points: [], asOf,
+            exclusivePocket: true, pocketLocal,
+          }).adjusted,
+        )
+      : adjustComps(subject, selection.comps, market)
   let pricing = priceCmaSet({
     subject, adjusted, market, input: {}, site: null,
     selection: { pricingSales: selection.pricingSales ?? [], tiersUsed: selection.tiersUsed ?? [] },
@@ -500,8 +570,25 @@ async function dryRun(slug: string): Promise<DryRun> {
       marketIndex.length > 0 ? null : `no monthly index rows for ${citySlug(subject.city) || 'this city'}`,
     computePricing,
     holdFailedAskUnderSaleSet: true,
+    pocketLocal: exclusivePocket ? pocketLocal : undefined,
   })
   if (!pricing) return { ...withSel, stage: 'pricing', error: pricingFailureMessage(subject, adjusted) }
+  if (exclusivePocket) {
+    attachSellerNet(pricing, selection.comps)
+    finishExclusivePocketPricing(pricing, { subject, adj: adjusted, set: selection.comps, pocketLocal })
+  }
+  const pocketDate = {
+    exclusivePocket,
+    mode: (opts.pocketLegacy ? 'legacy' : 'gated') as 'gated' | 'legacy',
+    branch: pricing.timeAdjustment?.localGate?.branch ?? null,
+    verdict: local.pocketLocal.verdict,
+    missing: local.pocketLocal.missing,
+    place: local.pocketLocal.place,
+    sized: local.pocketLocal.sized,
+    early: local.pocketLocal.early,
+    late: local.pocketLocal.late,
+    listingWindow: { listDate: listingWindow.listDate ?? null, offDate: listingWindow.offDate ?? null },
+  }
 
   // EXACTLY the ceiling lib/cma/build.ts applies after priceSet (step 4, the
   // `lastCycleFailed` branch). Without it this script printed the ask itself
@@ -758,7 +845,10 @@ async function dryRun(slug: string): Promise<DryRun> {
       key: c.listingKey, address: c.address, baths: c.baths, sqft: c.sqft,
       closePrice: Math.round(c.closePrice), closeDate: c.closeDate, adjusted: Math.round(c.adjustedPrice),
       concessions: c.concessions,
+      date: Math.round(c.timeAdjustment),
+      size: Math.round(c.sizeAdjustment),
     })),
+    pocketDate,
     recommended: pricing.recommended,
     range: [pricing.conservative, pricing.highEnd],
     valueRange: [pricing.valueLow, pricing.valueHigh],
@@ -858,6 +948,7 @@ async function dryRun(slug: string): Promise<DryRun> {
 async function main() {
   const argv = process.argv.slice(2)
   const asJson = argv.includes('--json')
+  const pocketLegacy = argv.includes('--pocket-legacy')
   const slugs = argv.filter((a) => !a.startsWith('--')).map((s) => s.trim().toLowerCase())
   if (!slugs.length) {
     console.error('usage: npx tsx scripts/cma-build-dryrun.ts [--json] <slug> [slug...]')
@@ -865,7 +956,7 @@ async function main() {
   }
   const out: DryRun[] = []
   for (const slug of slugs) {
-    const r = await dryRun(slug).catch((e): DryRun => ({
+    const r = await dryRun(slug, { pocketLegacy }).catch((e): DryRun => ({
       slug, ok: false, stage: 'subject', address: null, city: null, subjectBaths: null, subjectSqft: null,
       customOrNew: null, pricingSource: null, compCount: 0, comps: [], recommended: null,
       range: [null, null], valueRange: [null, null], confidence: null, compPpsfCv: null, needsReview: false, reviewReason: null,

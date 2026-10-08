@@ -14,11 +14,17 @@
  *    on which figure that is, after a page that told the owner Shevlin West's
  *    own price per square foot held flat.
  *
- * These run Woodsman's seven sales through the walk the build uses, on the
- * Bend pricing_market_index rows read for the review, and hold the stored
- * basis, each comp's path source and the printed sentences to one account.
- * The prices are pinned to the stored draft: this changes words, never a
- * number.
+ * These run Woodsman's seven sales through the city-index walk, on the Bend
+ * pricing_market_index rows read for the review, and hold the stored basis,
+ * each comp's path source and the printed sentences to one account. The
+ * prices are pinned to the stored draft: this changes words, never a number.
+ *
+ * Since Matt's 2026-10-08 ruling ("Down only if local fell") the build walks
+ * a pocket down only when the letter's local read fell, and Woodsman's held
+ * flat, so a rebuild moves none of these sales (lib/cma/pocket-local-gate.test.ts
+ * holds that). The walk here passes no local read: it is the record of a
+ * pocket the index DID move (the local-fell branch moves exactly these
+ * dollars), and of the rows stored before the gate, which still print.
  */
 import { describe, expect, it } from 'vitest'
 import { adjustCmaCompAlongMarket, buildTimeAdjustmentBasis, TIME_ADJUSTMENT_MEASURE_INDEX } from '@/lib/pricing/estimate'
