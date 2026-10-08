@@ -75,9 +75,10 @@ export type PlatGround = {
    */
   parent: string | null
   /**
-   * The town the ground is in (citySlug), when the caller named one. Off the
-   * mesh (no parent) a family plat counts only in this town, so a namesake in
-   * another town is never this ground. Absent: no town test.
+   * The town the ground is in (citySlug), when the caller named one. A family
+   * plat on a row that names another town is never this ground, so a namesake
+   * in another town stays out; off the mesh (no parent) this is the family's
+   * only wall. Absent, or a row with no town: no town test.
    */
   town?: string | null
 }
