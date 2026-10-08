@@ -242,9 +242,9 @@ export const SELL_FAQ_ITEMS = [
 /** The ONE primary action on /sell, on the hero submit and the final ask. */
 export const SELL_PRIMARY_LABEL = 'Talk to us about your home'
 
-/** /sell default hero. The H1 must open "Sell your Central Oregon home" (ci:seo-shell). Matt 2026-10-08. */
+/** /sell default hero sub: two short sentences (Matt 2026-10-08). The H1 must open "Sell your Central Oregon home" (ci:seo-shell). */
 export const SELL_HERO_SUB =
-  'We price your home from what similar homes nearby actually sold for, market it with professional photos, video and a 3D tour, and keep you updated in writing every week. Start with your address. No contract to talk, no pressure.'
+  "We price your home from what nearby homes sold for, market it professionally, and update you every week. Start with your address; there's no contract to talk."
 
 /** Default H1. States what we do for the seller and why us, in one read. */
 export const SELL_HERO_HEADLINE =

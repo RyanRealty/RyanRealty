@@ -20,6 +20,11 @@
       "blocking": true
     },
     {
+      "name": "SellDirectAnswer",
+      "section": "AEO brief 2026-10-08: two plain sentences (Bend median sale, days to contract, sale to first ask, months of supply; the 3% fee with its worked example and buyer-agent note), live-bound with null clauses dropped, then a source line with links to /housing-market/bend and the cost-to-sell guide. Its own section #sell-direct-answer on cream directly under the hero card, never inside the Stage (Matt 2026-10-08: the hero is the H1, the sub and the card).",
+      "blocking": true
+    },
+    {
       "name": "SellHowWeSell",
       "section": "How we sell in 3 steps (price from closed sales; complete launch in week one with photo, drone, video and 3D in the 3%; a written weekly report). Lead line under the heading. Full PLAN_GROUPS inclusions behind one native details toggle. Eyebrow is process, not the fee.",
       "blocking": true
@@ -130,7 +135,8 @@
   "sectionOrder": [
     "MetadataBlock",
     "V3SectionTracker",
-    "V3Stage id=sell-hero (H1 local broker who prices it right, sub, first-screen proof + trace, Matt face, address field, Talk to us about your home, small call/text link; the submit opens the Sheet: market read, timing, contact as the final submit, success)",
+    "V3Stage id=sell-hero (H1 local broker who prices it right, two-sentence sub, first-screen proof + trace, Matt face, address field, Talk to us about your home, small call/text link; the submit opens the Sheet: market read, timing, contact as the final submit, success)",
+    "SellDirectAnswer #sell-direct-answer (two-line direct answer with its source line, on cream under the hero card)",
     "SellHowWeSell (three steps with lead, inclusions behind a toggle)",
     "V3ProofBlock #proof (reviews, initials only)",
     "SellClosings (recent office closings with lead, MLS closed data)",

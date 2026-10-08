@@ -281,12 +281,6 @@ export default async function SellPage() {
           posterSrcSet={SELL_HERO_SRCSET}
           posterSizes="100vw"
         >
-          <SellDirectAnswer
-            marketLine={answerMarketLine}
-            feeLine={answerFeeLine}
-            asOf={asOf}
-            city="Bend"
-          />
           <p className="sell-hero-sub sell-hero-sub--default">{SELL_HERO_SUB}</p>
           <p className="sell-hero-sub sell-hero-sub--cma">{SELL_CMA_SUB}</p>
           <SellCapture
@@ -344,6 +338,17 @@ export default async function SellPage() {
             ) : null}
           </SellCapture>
         </V3Stage>
+
+        {/* AEO brief 2026-10-08: the two-line direct answer, high in the page
+            but out of the hero (Matt 2026-10-08: the hero is the H1, the sub
+            and the card). Calm reading text on cream, with its source line. */}
+        <SellDirectAnswer
+          id="sell-direct-answer"
+          marketLine={answerMarketLine}
+          feeLine={answerFeeLine}
+          asOf={asOf}
+          city="Bend"
+        />
 
         <SellHowWeSell />
 
