@@ -1,35 +1,41 @@
 /**
  * WHAT THE COMPETITION RANGE IS CENTERED ON (reader review, 2026-10-07).
  *
- * The competition chapter's price range is read around the list the closed
- * sales set, BEFORE the homes for sale in that range are weighed: those homes
- * are what the active-days pull (finishRecommendedAfterActives) reads, so the
+ * The competition chapter's price range is read around the list the build
+ * had BEFORE the homes for sale in that range are weighed: those homes are
+ * what the active-days pull (finishRecommendedAfterActives) reads, so the
  * range cannot be centered on the list that pull produces without the range
- * depending on itself. The final rounding, band clamp and failed-ask cap also
- * come after. So the center can differ from the list the letter recommends
- * (Jackson: ±15% of $629,000 beside a $624,000 recommendation; Purcell ±10%
- * of $556,000 beside $545,000; Coho ±10% of $556,000 beside $551,000).
+ * depending on itself. The band clamp and the thousand-dollar rounding also
+ * come after (lib/cma/build.ts settleRecommended passes `current.recommended`
+ * to assembleCompetition, which stores it as `bandBasis.center`). So the
+ * center can differ from the list the letter prints.
  *
- * THE CENTER IS A STARTING POINT, NOT A SUPPORTED PRICE (reader review,
- * 2026-10-08). The center is the weighted sale over the list-to-sale share,
- * before the band clamp, so it can sit ABOVE the top of the range the sales
- * support (Purcell $556,000 over $545,350; Coho $556,000 over $551,876;
- * Aldrich $480,000 over $479,161). Calling that number "the list price the
- * closed sales supported" gave a seller two ceilings. The sentence now says
- * what the center is in plain words, and when it sits outside the range the
- * sales support it says so and names the end the reader already has from the
- * opinion chapter. Every dollar it prints is the band's own center or an end
- * of the printed sales range.
+ * THE CENTER IS NOT PRINTED (reader review 2026-10-08). It printed as
+ * "10% either side of $735,000, the list we started from before the homes
+ * for sale were weighed" on 3062 NW Kelly Hill, under a $713,000 cover: a
+ * figure that appears nowhere else on the page, is not the recommended price,
+ * the weighted price or any method's output, and happened to equal one sale's
+ * sold price, so a reader could not trace it. Jackson's $629,000 and
+ * Purcell's $551,000 were the same kind of figure, and "That starting point
+ * is above $550,951, the top of the range the sales support, so the list
+ * price we recommend, set after that, sits under the center" rested on a $49
+ * rounding difference and left "the center" ambiguous.
  *
- * The letter says what the range is centered on, and when the range opened
- * past the base ±10% because fewer than five homes like this one were for
- * sale or under contract inside it, it says that too. When the center is the
- * recommended list (same dollars, or the same thousand), the figure is not
- * reprinted: the cover owns it (lib/cma/recommend-once.ts).
+ * So the sentence speaks only in figures the reader already has: the range's
+ * two ends (printed in the sentence before it) and the price on the cover.
+ * When those put the cover price in the middle at whole-percent precision, it
+ * says the range is that share either side of it (Purcell: $496,000 to
+ * $606,000 is 10% either side of $550,000). When they do not, it says how the
+ * range was set and how far each end sits from the cover price (Kelly Hill:
+ * 7% under it to 13% over it), so the reader can check both from the page.
+ * When the range opened past the base ±10% because fewer than five homes like
+ * this one were for sale or under contract inside it, it says that too.
+ *
+ * A letter held for Matt names the cover number "the price on the cover",
+ * never "the list price we recommend" (`opts.held`).
  */
 
-import { usd } from '@/lib/cma/render-blocks'
-import { isRecommendMark } from '@/lib/cma/recommend-once'
+import { COVER_PRICE_PHRASE, isRecommendMark } from '@/lib/cma/recommend-once'
 
 export type CompetitionBandBasis = {
   /** The list the range was read around. */
@@ -40,13 +46,13 @@ export type CompetitionBandBasis = {
   baseHalfWidth: number
 }
 
-/** The range the sales support, as the opinion chapter prints it (valueLow / valueHigh). */
-export type SupportedBand = {
-  low?: number | null
-  high?: number | null
+/** The range the chapter prints (bandRivals.lo / bandRivals.hi), the ends the sentence before this one names. */
+export type PrintedWindow = {
+  lo?: number | null
+  hi?: number | null
 }
 
-/** The center's plain description. Never "the list price the closed sales supported". */
+/** The center's plain description. Never "the list price the closed sales supported", and never in dollars. */
 export const BAND_CENTER_DESCRIPTION = 'the list we started from before the homes for sale were weighed'
 
 function pct(halfWidth: number): string {
@@ -58,54 +64,45 @@ function num(v: unknown): number | null {
   return Number.isFinite(n) && n > 0 ? n : null
 }
 
-/**
- * Where the center sits against the range the sales support. `null` when the
- * band is unknown or the center is inside it (inclusive at both ends).
- */
-function centerOffBand(
-  center: number,
-  band: SupportedBand | null | undefined,
-): { side: 'above' | 'below'; edge: number } | null {
-  const a = num(band?.low)
-  const b = num(band?.high)
-  if (a == null || b == null) return null
-  const low = Math.min(a, b)
-  const high = Math.max(a, b)
-  if (center > high) return { side: 'above', edge: high }
-  if (center < low) return { side: 'below', edge: low }
-  return null
+/** How far each printed end sits from the printed list, in whole percent of the list. */
+export function windowSplit(
+  window: PrintedWindow | null | undefined,
+  list: number | null | undefined,
+): { under: number; over: number } | null {
+  const lo = num(window?.lo)
+  const hi = num(window?.hi)
+  const rec = num(list)
+  if (lo == null || hi == null || rec == null || lo > rec || rec > hi) return null
+  return {
+    under: Math.round(((rec - lo) / rec) * 100),
+    over: Math.round(((hi - rec) / rec) * 100),
+  }
 }
 
 export function competitionBandBasisSentence(
   basis: Partial<CompetitionBandBasis> | null | undefined,
   finalRecommended: number | null | undefined,
-  band?: SupportedBand | null,
+  window?: PrintedWindow | null,
+  opts?: { held?: boolean },
 ): string {
   const center = Number(basis?.center)
   const halfWidth = Number(basis?.halfWidth)
   const base = Number(basis?.baseHalfWidth)
   if (!(center > 0) || !(halfWidth > 0) || !(halfWidth < 1)) return ''
   const rec = Number(finalRecommended)
-  const atRec = rec > 0 && isRecommendMark(center, rec)
+  const listed = opts?.held ? COVER_PRICE_PHRASE : 'the list price we recommend'
+  const Listed = `${listed.charAt(0).toUpperCase()}${listed.slice(1)}`
+  const split = windowSplit(window, rec)
   let head: string
-  if (atRec) {
-    head = `This range is ${pct(halfWidth)} either side of the list price we recommend.`
+  if (split ? split.under === split.over : rec > 0 && isRecommendMark(center, rec)) {
+    // The printed ends sit the same share either side of the printed list.
+    // A row with no printed ends falls back to the stored center's own mark.
+    head = `This range is ${split ? `${split.under}%` : pct(halfWidth)} either side of ${listed}.`
   } else {
-    const what = `This range is ${pct(halfWidth)} either side of ${usd(center)}, ${BAND_CENTER_DESCRIPTION}.`
-    const off = centerOffBand(center, band)
-    if (off) {
-      const end = off.side === 'above' ? 'the top' : 'the bottom'
-      // The recommended list was set after the clamp to the sales range, so
-      // against a center outside that range it sits back toward the range.
-      // Said only when the final figure actually does (rec is on the row).
-      const where = rec > 0 && rec < center ? 'under' : rec > 0 && rec > center ? 'above' : null
-      const consequence = where
-        ? `, so the list price we recommend, set after that, sits ${where} the center.`
-        : '.'
-      head = `${what} That starting point is ${off.side} ${usd(off.edge)}, ${end} of the range the sales support${consequence}`
-    } else {
-      head = `${what} The list price we recommend was set after that, so it can sit off center.`
-    }
+    const what = `This range was set ${pct(halfWidth)} either side of ${BAND_CENTER_DESCRIPTION}.`
+    head = split
+      ? `${what} ${Listed} was set after they were weighed, so the range runs from ${split.under}% under it to ${split.over}% over it.`
+      : `${what} ${Listed} was set after they were weighed, so it can sit off center.`
   }
   const opened =
     base > 0 && Math.round(halfWidth * 100) > Math.round(base * 100)

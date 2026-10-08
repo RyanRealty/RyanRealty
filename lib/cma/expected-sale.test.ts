@@ -410,14 +410,18 @@ describe('net from the sale: the list, and the expected sale (Keats arithmetic)'
     )
   })
 
-  it('renders two columns, heads the list column without reprinting the cover dollars', () => {
+  it('renders two columns, each head naming the price it is worked at', () => {
     const html = sellerNetBodyHtml(opinion())
-    expect(html).toContain('At the list price')
+    // Reader review 2026-10-08: "At the list price" never said which price,
+    // so the head prints it, once; no other cell or line reprints it.
+    expect(html).toContain('At $639,000')
+    expect(html).not.toContain('At the list price')
     expect(html).toContain('If it sells near $622,000')
     for (const v of ['−$19,170', '−$18,660', '−$15,975', '−$15,550', '−$1,559', '−$1,533', '$602,296', '$586,257']) {
       expect(html).toContain(v)
     }
-    for (const form of recommendUsdForms(639000)) expect(html).not.toContain(form)
+    expect(html.split('$639,000')).toHaveLength(2)
+    for (const form of recommendUsdForms(639000).filter((f) => f !== '$639,000')) expect(html).not.toContain(form)
     expect(html).not.toContain('<td class="v">that price</td>')
     expect(sellerVisibleText(html)).toContain("Both columns are before the escrow company's fee and what you still owe on the home.")
     expect(sellerNetPage(opinion())!.toc).toBe('Net from the sale')
@@ -433,7 +437,7 @@ describe('net from the sale: the list, and the expected sale (Keats arithmetic)'
     const a = opinion({ pricing: { ...PRICING, sellerNet: handSheet } as CmaPricing })
     const html = sellerNetBodyHtml(a)
     expect(html).not.toContain('If it sells near')
-    expect(html).toContain('At the list price')
+    expect(html).toContain('At $639,000')
     expect(html).toContain('Left from the sale')
     expect(sellerNetPage(a)!.toc).toBe('Net at list')
     // A stored sheet that names nothing it leaves out still leaves out escrow

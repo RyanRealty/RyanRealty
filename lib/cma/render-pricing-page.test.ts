@@ -73,12 +73,15 @@ describe('pricingPage', () => {
     expect(html).not.toMatch(/Confidence:/)
     expect(html).not.toContain('15 percent')
     expect(html).not.toContain('Cap is')
-    expect(html).toContain('Across 1,631 square feet')
     // The Sunstone contract keeps predicted close off the seller document, so
-    // the per-foot rate is taken over the recommended list — the one number
-    // this chapter is titled with — and the sentence names that basis.
+    // the per-foot rate is taken over the recommended list, and the sentence
+    // names that basis itself. "Across 1,631 square feet, that is $402" had no
+    // antecedent under the weights paragraph (reader review 2026-10-08).
     expect(html).not.toContain('$640,000')
-    expect(html).toContain('Across 1,631 square feet, that is $402 per square foot.')
+    expect(html).toContain(
+      'The price on the cover comes to $402 per square foot across your home&#39;s 1,631 square feet.',
+    )
+    expect(html).not.toContain('that is $402 per square foot')
     expect(html).not.toContain('At $655,000 across')
     // The sale-to-list figure moved to chapter 5 (This market), where the
     // rest of the city's numbers live.

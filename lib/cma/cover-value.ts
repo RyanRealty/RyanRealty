@@ -205,11 +205,14 @@ export function rangeSpreadCauseSentence(pricing: CmaPricing | null | undefined)
     )
   }
   const joined = parts.length === 1 ? parts[0]! : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`
+  // On a letter held for Matt the number beside this sentence is the price
+  // under his review, not a recommendation (reader review 2026-10-08).
+  const inPrice = heldForMatt(pricing) ? 'in this price' : 'in the recommended price'
   const stillCarries =
     ppsf + light > 0 && trim === 0
       ? ppsf + light === 1
-        ? ' That sale still carries weight in the recommended price.'
-        : ' Those sales still carry weight in the recommended price.'
+        ? ` That sale still carries weight ${inPrice}.`
+        : ` Those sales still carry weight ${inPrice}.`
       : ''
   return `${spread}, and that is after setting aside ${joined}.${stillCarries}`
 }

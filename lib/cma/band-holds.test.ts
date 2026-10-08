@@ -643,7 +643,12 @@ describe('rule 22: a letter held because the ask sat inside the range tells one 
 
   it('the chapter prints the range once and no list instruction', () => {
     const lead = whatItsWorthLead(subject, jackson(), { asOfIso: '2026-10-07', hasFinalCycle: true }, comps, finalCycle)
-    expect(lead).toContain('run from $598,620 to $648,772')
+    // Rule 22 says rule 26's two facts in rule 26's shape (reader review
+    // 2026-10-08): the band the sales support, then the last ask, that it sat
+    // inside that band and did not sell, and how the listing came off.
+    expect(lead).toBe(
+      'The three sales that set the price support $598,620 to $648,772. The last ask of $639,000 was inside that range and did not sell. The listing expired after 227 days.',
+    )
     for (const bad of FORBIDDEN) expect(lead).not.toContain(bad)
     expect(lead).not.toMatch(/[—–]/)
   })
@@ -652,7 +657,7 @@ describe('rule 22: a letter held because the ask sat inside the range tells one 
     const p = jackson()
     const page = pricingPage({ subject, comps, market: null, pricing: p, finalCycle, askCtx: { asOfIso: '2026-10-07', hasFinalCycle: true } })
     for (const bad of FORBIDDEN) expect(page.body).not.toContain(bad)
-    expect(page.body.match(/run from \$598,620 to \$648,772/g)?.length).toBe(1)
+    expect(page.body.match(/support \$598,620 to \$648,772/g)?.length).toBe(1)
     const lead = whatItsWorthLead(subject, p, { asOfIso: '2026-10-07', hasFinalCycle: true }, comps, finalCycle)
     const dollars = lead.match(/\$\d[\d,]*\d/g) ?? []
     const table = new Set(['$598,620', '$624,000', '$648,772', '$639,000'])

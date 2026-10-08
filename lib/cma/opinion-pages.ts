@@ -94,7 +94,8 @@ import { setAsideCompIndexes, setAsideSalePredicate } from '@/lib/cma/set-aside'
 import { statusPriceBoardHtml, statusPriceSummaries, splitActivePending } from '@/lib/cma/status-price-summary'
 import type { LikeHomeCredit } from '@/lib/cma/like-home-credits'
 import { sellerCostLines } from '@/lib/pricing/seller-net'
-import { deRepeatRecommendDollars, isRecommendMark } from '@/lib/cma/recommend-once'
+import { COVER_PRICE_PHRASE, deRepeatRecommendDollars } from '@/lib/cma/recommend-once'
+import { heldForMatt } from '@/lib/cma/cover-value'
 import { expectedSaleNear, netAtExpectedSale, netCreditsSentence, type NetTwoColumns } from '@/lib/cma/expected-sale'
 import { SALES_METHOD_LABEL, adjustedForPhrase, salesMethodSentences } from '@/lib/cma/sales-method-note'
 import type { CmaBroker, CmaClient, CmaSellerNetLine } from '@/lib/cma/types'
@@ -363,6 +364,7 @@ export function salesThatSetItArgs(a: OpinionPageArgs): PricingPageInput {
     compTrace: a.compTrace,
     askCtx: subjectAskContext(a),
     finalCycle: a.expiredAudit?.finalCycle ?? null,
+    askExposure: a.expiredAudit?.askExposure ?? null,
     asOfIso: a.generatedAtIso,
     rivals: activeRivalsFor(
       a.bandRivals?.rivals ?? a.extras?.band?.rivals,
@@ -526,14 +528,18 @@ function engineSheet(list: number): { list: number; lines: CmaSellerNetLine[]; n
 }
 
 /**
- * THE LIST COLUMN'S HEAD. The cover owns the recommended dollars
- * (lib/cma/recommend-once.ts), so a sheet at the recommend says "At the list
- * price" and prints no dollar figure for it. A cell reading "that price" in
- * the money column looked like a bug on screen (Matt 2026-10-07). A sheet at
- * any other price names it.
+ * THE LIST COLUMN'S HEAD NAMES ITS PRICE, on every letter (reader review
+ * 2026-10-08). "At the list price" over "3% of the list price" never said
+ * which price: on 2382 Jackson the cover read $624,000 under "The price Matt
+ * is reviewing", and an owner who remembers the $639,000 their last listing
+ * asked works the fee out on that number instead. A money column is the one
+ * place the figure it is worked at must sit on the column itself, so this is
+ * the cover's number printed once more, as a column head (the exception to
+ * recommend-once that the money column needs). A cell reading "that price"
+ * looked like a bug on screen (Matt 2026-10-07), and it is still never that.
  */
-function netListHeader(list: number, rec: number): string {
-  return isRecommendMark(list, rec) ? 'At the list price' : `At ${usd(list)}`
+export function netListHeader(list: number): string {
+  return `At ${usd(list)}`
 }
 
 /**
@@ -568,7 +574,7 @@ const NET_BEFORE_ESCROW = "Before the escrow company's fee and what you still ow
  * owner's-policy rate). Its credits line explains why no concession is
  * subtracted a second time (lib/cma/expected-sale.ts `netAtExpectedSale`).
  */
-function netTwoColumnsHtml(t: NetTwoColumns, rec: number): string {
+function netTwoColumnsHtml(t: NetTwoColumns): string {
   const rows = t.lines
     .map(
       (l) =>
@@ -580,7 +586,7 @@ function netTwoColumnsHtml(t: NetTwoColumns, rec: number): string {
   const credits = netCreditsSentence(t)
   return `<table class="kv netsheet net-two" style="table-layout:fixed;max-width:760px">
     <colgroup><col style="width:40%"><col style="width:30%"><col style="width:30%"></colgroup>
-    ${netHead([netListHeader(t.list, rec), `If it sells near ${usd(expectedSaleNear(t.expected))}`])}
+    ${netHead([netListHeader(t.list), `If it sells near ${usd(expectedSaleNear(t.expected))}`])}
     <tbody>
     ${rows}
     <tr class="is-net"><th scope="row">Left from the sale</th><td class="v">${usd(t.netAtList)}</td><td class="v">${usd(
@@ -623,12 +629,13 @@ function netOneColumnHtml(
   const everything = !opts.engine && netIsEverything(sheet as SellerNetSheet)
   const sentence = sheet.sentence ? deRepeatRecommendDollars(sheet.sentence, rec) : ''
   // A stored source names the price it was worked at ("3% of $639,000"); the
-  // header already says which price, and the cover owns those dollars.
+  // header already prints that price, so the row says what the fee is a share
+  // of, the same words the two-column sheet uses ("3% of the sale price").
   const rows = sheet.lines
     .map(
       (l) =>
         `<tr><th scope="row">${esc(l.label)}<span class="ln-src">${esc(
-          deRepeatRecommendDollars(l.source, rec, 'the list price'),
+          deRepeatRecommendDollars(l.source, rec, 'the sale price'),
         )}</span></th><td class="v">${netCost(l.amount)}</td></tr>`,
     )
     .join('\n    ')
@@ -660,7 +667,7 @@ function netOneColumnHtml(
   ${omits}`
   return `${sentence ? `<p>${esc(sentence)}</p>` : ''}
   <table class="kv netsheet">
-    ${netHead([netListHeader(sheet.list, rec)])}
+    ${netHead([netListHeader(sheet.list)])}
     <tbody>
     ${rows}
     <tr class="is-net"><th scope="row">${esc(everything ? 'What you keep' : 'Left from the sale')}</th><td class="v">${usd(
@@ -694,7 +701,7 @@ export function sellerNetBodyHtml(a: OpinionPageArgs): string {
     const sentence = !engine && sheet.sentence ? deRepeatRecommendDollars(sheet.sentence, rec) : ''
     const unknowns = engine ? [] : sheet.unknowns.filter((u) => u.trim())
     return `${sentence ? `<p>${esc(sentence)}</p>` : ''}
-  ${netTwoColumnsHtml(two, rec)}
+  ${netTwoColumnsHtml(two)}
   ${unknowns.length > 0 ? `<p>${esc(`This does not include ${orList(unknowns)}.`)}</p>` : ''}
   ${credits}`
   }
@@ -1344,8 +1351,11 @@ export function cityMedianReconciliationHtml(a: OpinionPageArgs): string {
         ? `${supported} ${usd(worth.low)}`
         : `${supported} ${usd(worth.low)} to ${usd(worth.high)}`
       : ''
+  // On a letter held for Matt the cover number is under his review, not yet
+  // the owner's price (reader review 2026-10-08).
+  const whose = heldForMatt(a.pricing) ? COVER_PRICE_PHRASE : 'your price'
   return `<p class="chart-read">${esc(
-    `The ${countWord(keptSaleCount(a.pricing, a.comps))} sales behind your price sold for ${usd(
+    `The ${countWord(keptSaleCount(a.pricing, a.comps))} sales behind ${whose} sold for ${usd(
       Math.min(...closes),
     )} to ${usd(Math.max(...closes))}${adjustedFor ? ` before adjusting for ${adjustedFor}` : ''}${adjusted}.`,
   )}</p>`
@@ -1952,19 +1962,25 @@ export function competitionBodyMatrixHtml(a: OpinionPageArgs): string {
       ? competitionAreaSourceLine({ area: a.compArea, lo: b.lo, hi: b.hi, asOfIso: a.generatedAtIso })
       : (a.bandRivals?.source ?? competitionSourceLine(args))
   const cut = competitorCutLine(args.rivals)
+  const held = heldForMatt(a.pricing)
   const edge = competitionEdge({
     subjectSqft: a.subject.sqft,
     recommended: a.pricing.recommended,
     competitors: [...activeOnly, ...pendingOnly],
     nonSoliciting: closingIsNonSoliciting(a),
+    held,
   })
-  // What the range is centered on, and whether it opened past ±10% (reader review 2026-10-07).
-  // The sales range is passed so a center above its top is named as a starting
-  // point, never as a price the sales supported (reader review 2026-10-08).
-  const basis = competitionBandBasisSentence(a.bandRivals?.bandBasis, a.pricing.recommended, {
-    low: a.pricing.valueLow,
-    high: a.pricing.valueHigh,
-  })
+  // What the range is centered on, and whether it opened past ±10% (reader review 2026-10-07),
+  // told in the figures the reader already has: the range's printed ends and
+  // the cover price, never the unprinted center (reader review 2026-10-08,
+  // 3062 NW Kelly Hill). A held letter names its cover number as the price on
+  // the cover, never as the list we recommend.
+  const basis = competitionBandBasisSentence(
+    a.bandRivals?.bandBasis,
+    a.pricing.recommended,
+    { lo: b.lo, hi: b.hi },
+    { held },
+  )
   // Nothing drawn: the sentence says so, and the note under it names the
   // source and the day, not a caption for a table that is not there (62475
   // Woodsman, reader review 2026-10-08).
@@ -2015,6 +2031,8 @@ export function competitionEdge(input: {
   competitors: ReadonlyArray<Pick<MatrixEntry, 'sqft' | 'listPrice'>>
   /** A home listed with another brokerage: no "we recommend" in the sentence. */
   nonSoliciting?: boolean
+  /** A letter held for Matt: the cover number is under his review, not recommended. */
+  held?: boolean
 }): CompetitionEdge | null {
   const sqft = input.subjectSqft
   const n = input.competitors.length
@@ -2040,7 +2058,11 @@ export function competitionEdge(input: {
   const anyOfThem = n === 1 ? 'that home' : n === 2 ? 'either of them' : 'any of them'
   const anyBelow =
     n === 1 ? 'the one home below' : n === 2 ? 'either of the 2 homes below' : `any of the ${int(n)} homes below`
-  const atPrice = input.nonSoliciting ? 'at this price' : 'at the list price we recommend'
+  const atPrice = input.nonSoliciting
+    ? 'at this price'
+    : input.held
+      ? `at ${COVER_PRICE_PHRASE}`
+      : 'at the list price we recommend'
   const range =
     competitorPpsf == null
       ? ''
