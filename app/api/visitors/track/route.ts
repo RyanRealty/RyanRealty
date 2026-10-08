@@ -76,7 +76,7 @@ import {
   hasAutomationMarker,
   hasInternalUserCookie,
 } from '@/lib/analytics/ga-suppression'
-import { isNonProductionPageLocation } from '@/lib/analytics/non-production-host'
+import { isNonProductionPageLocation, isNonProductionRequestHost } from '@/lib/analytics/non-production-host'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -377,9 +377,20 @@ export async function POST(request: NextRequest) {
   // A local `next build && next start` holds production credentials, so its
   // tracker wrote to the production visitor tables: 2,594 sessions landing on
   // 127.0.0.1 / localhost in the 2026-10-05 audit, 2,306 of them not flagged.
-  // The same host rule the GA4 mirror applies (isNonProductionPageLocation):
-  // a page on localhost, 127.0.0.1 or a *.vercel.app preview records nothing.
-  if (isNonProductionPageLocation(pageUrl)) {
+  // The same host rule the GA4 mirror applies: a page on localhost, 127.0.0.1
+  // (any port), a LAN IP, [::1], or a *.vercel.app preview records nothing.
+  // Also the request Host: a client that spoofs pageUrl as ryan-realty.com
+  // while posting to a local `next start` still drops.
+  const requestHost =
+    request.headers.get('host') ||
+    (() => {
+      try {
+        return new URL(request.url).host
+      } catch {
+        return null
+      }
+    })()
+  if (isNonProductionPageLocation(pageUrl) || isNonProductionRequestHost(requestHost)) {
     return NextResponse.json(
       { ok: true, dropped: true, reason: 'non_production_host' },
       { headers: corsHeaders(origin) },
