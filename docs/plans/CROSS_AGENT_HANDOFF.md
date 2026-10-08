@@ -1,6 +1,6 @@
-# Current — 2026-10-07 (Claude Code, CMA engine: Matt's rulings, reviews, fixes)
+# Current — 2026-10-08 (Claude Code, CMA engine: Matt's rulings, reviews, fixes)
 
-Surface: Claude Code. Branch `claude/beautiful-lamport-2x4fjs`, draft PR https://github.com/RyanRealty/RyanRealty/pull/428. Nothing sent, nothing approved, nothing deployed from this work. This block supersedes the CMA block in the Earlier block titled "no sign-in on CMA reports, email link host, CMA report improvements": its worktree branches (five-sales floor, ask-in-band hold, same-area rule) are merged on the branch, and its open questions on Saginaw, curated sets, FSBO asks and the stacked pulls are answered below. Rule numbers are `marketing_brain_skills/producers/cma/SKILL.md` §0.3.
+Surface: Claude Code. Branch `claude/beautiful-lamport-2x4fjs`, draft PR https://github.com/RyanRealty/RyanRealty/pull/428. Nothing sent, nothing approved, nothing deployed from this work. This block supersedes the CMA block in the Earlier block titled "no sign-in on CMA reports, email link host, CMA report improvements": its worktree branches (five-sales floor, ask-in-band hold, same-area rule) are merged on the branch, and its open questions on Saginaw, curated sets, FSBO asks and the stacked pulls are answered below. Rule numbers are `marketing_brain_skills/producers/cma/SKILL.md` §0.3. Merges marked pending below are not on the branch yet.
 
 **Matt's rulings 2026-10-07**
 - Five price-setting sales is the floor (rule 8).
@@ -15,20 +15,32 @@ Surface: Claude Code. Branch `claude/beautiful-lamport-2x4fjs`, draft PR https:/
 - A FSBO ask in the band is information only.
 - The failed-ask pull and the sitting-actives pull stack (rule 16).
 
-**Work merged on the branch today.** The three engine branches (five-sales floor with the ask-in-band hold and same type; same-area actives and expireds; the fleet scorer). Reviewers' fixes: sentinel plat names, the GLA bracket wall, the printed-band boundary, the hold measured flag, the queue line. The trimmed-band letter contract (`1adca31aa`). Band fixes: the street-anchor twin is never set aside, the set-aside is matched by listing key, the failed ask is re-read after the pin, approve and auto-send refuse held rows. Reader-review fixes: one area for the map with the subject's plat always in it and polygon membership, every pin drawn, one day count per sale, a gated "never got one" line, wording. Walk to seven (`fix/walk-to-seven`: `a8ae03cda`, `f6bdf1fbd`).
+**Rulings added since the block was written**
+- Matt 2026-10-07, "Walk to 7, price on 5+", refined: an over-full own ground (own street, own plat, pocket windows) keeps its newest closes first, distance breaking ties. A rung that widens the area adds only the sales needed to reach five, so seats six and seven come only from the home's own ground (rule 8). Consequence: a set reached through a widening rung has exactly five, so one comparability-review drop is a comp shortage.
+- Matt 2026-10-08, "25% everywhere": one 25% size band for every sale that sets the price (rule 20) and, the same day, for the homes shown as competition and came off unsold (rule 24). 2382 Jackson's 1,393 sqft sale no longer prices the 2,016 sqft home.
+- Matt 2026-10-07: Google reviewer names on the closing page stay. Reviewers are not buyers or sellers (rule 12).
+
+**Work merged on the branch** (SHAs are the fix commit, then the merge commit)
+- Earlier on 2026-10-07: the three engine branches (five-sales floor with the ask-in-band hold and same type; same-area actives and expireds; the fleet scorer), the reviewers' fixes (sentinel plat names, the GLA bracket wall, the printed-band boundary, the hold measured flag, the queue line), and the trimmed-band letter contract (`1adca31aa`).
+- Band fixes and rule 26: `fix/band-review` `2bcaffb3d`, merge `3ecce563d`.
+- Walk to seven, plus wording and day-count fixes: `fix/walk-to-seven` `f6bdf1fbd`, `fix/reader-clocks` `f9e902a70`, merge `66291e912`.
+- Rule 24 wording and the first handoff block: `docs/cma-handoff-1007` `75bfc9e35`, merge `37544804b`.
+- The CI race fix, an ignore rule for the perf-budget test sandbox: `a99fbd358`.
+- Pocket-letter fixes: `fix/reader-pocket` `254894f21`, merge `36182fb3c`.
+- Atlas tap-target CI fix: `fix/atlas-tap-target` `c868a1f08`, merge `eea9341fa`. Rail rows past the fold are one hidden list. A polygon is a control only with its full-size partner.
+- Location weight by where the sale sits, whole baths from `baths_full` and `baths_half`, rung windows in the trace: `fix/weight-location` `7d3c7f253`, merge `f9ac2b976`.
+- Walk-to-seven review fixes and the seating rulings: `fix/walk7-review` `fbf910633`, merge in progress.
+- Comp-pool freshness: `fix/reader-fresh` `fbc79a481`, merge pending. Root cause: `sale_pricing_facts` is refreshed by a sweep in ListingKey order, so a new close reaches the pool only when the sweep passes the end of the keyspace (the newest close was 2026-09-28). Every comp search now catches up closes from the last 90 days before reading the pool, and the cron does the same citywide.
+- The 25% size band: `fix/size-25` `53d0a3d7c` plus a second commit for the competition fit, merge pending.
 
 **Baseline fleet score on the live engine** (scratch run, 141 open Bend expired CMAs): 112 build, 29 fail. Of the 112 builds, 89 sit on five sales and 23 on three or four. Those 23 fail the new floor unless the walk finds more in their own area.
 
 **Still open**
-- The after-change fleet score, to set beside the baseline.
-- Deploy and `deploy:verify`.
+- After the pending merges: one full type check and unit run, push, fast-forward main, `deploy:verify`.
+- The after-change fleet score against the 2026-10-07 baseline. The first after-run was lost to a worker restart at 85 of 141.
 - Rebuild every Bend draft. None has been sent; nothing sends without Matt's per-report approval.
-- CI tap-target failure from a tiny "Summit West" atlas polygon on /cities/bend. It is live data, not this PR's code; a fix is in progress on `fix/atlas-tap-target`.
-- Jackson pocket-letter notes and percent math (`fix/reader-pocket`).
-- Comp freshness: a sale closed 2026-10-05 is missing from Purcell's pool (`fix/reader-fresh`).
-- Location weight read from the rung name, and half baths counted as full (`fix/weight-location`).
+- A second reader review.
 - Flex gold lock tests in `lib/pricing/match.test.ts` are `it.skip` pending Matt.
-- Google reviewer names on the closing page need Matt's confirmation under CLAUDE.md CMA rule 12.
 - The CLAUDE.md restructure Matt approved, for after the CMA engine work.
 - Carried unchanged from the Earlier CMA block: Burnside's date-adjustment check; 139 Roosevelt and 714 10th finding zero sales inside their neighborhoods.
 
