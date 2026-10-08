@@ -309,7 +309,8 @@ type StatusChangeClient = NonNullable<ReturnType<typeof client>>
 /**
  * The status changes for a set of keys, both writers merged, keyed by listing.
  * The change-log read is filtered to status lines so a listing with hundreds
- * of remark edits cannot push its Pending line past the page cap.
+ * of remark edits cannot push its Pending line past the page cap. Both callers
+ * hand in keys already through resolveCanonicalListingKey.
  */
 async function fetchStatusChanges(
   sb: StatusChangeClient,
@@ -323,6 +324,7 @@ async function fetchStatusChanges(
         sb
           .from('listing_history')
           .select('listing_key, event_date, description')
+          // @canonical-key: the callers resolve every key first.
           .in('listing_key', keys as string[])
           .like('description', 'MlsStatus:%')
           .order('event_date', { ascending: true })
@@ -335,6 +337,7 @@ async function fetchStatusChanges(
         sb
           .from('status_history')
           .select('listing_key, old_status, new_status, changed_at')
+          // @canonical-key: the callers resolve every key first.
           .in('listing_key', keys as string[])
           .order('changed_at', { ascending: true })
           .order('listing_key', { ascending: true })
@@ -382,11 +385,33 @@ async function fetchStatusChanges(
 export async function getListingStatusChanges(
   listingKeys: readonly string[],
 ): Promise<Map<string, ListingStatusChange[]>> {
-  const keys = Array.from(new Set(listingKeys.map((k) => k.trim()).filter(Boolean)))
-  if (keys.length === 0) return new Map()
+  const raw = Array.from(new Set(listingKeys.map((k) => k.trim()).filter(Boolean)))
+  if (raw.length === 0) return new Map()
   const sb = client()
   if (!sb) return new Map()
-  return fetchStatusChanges(sb, keys)
+  // Both history tables are keyed by the RETS ListingKey; a ListNumber here
+  // would return nothing with no error. The resolver returns a canonical key
+  // unchanged. Outside a request (scripts) it can throw; the keys callers pass
+  // are ListingKeys off listings rows, so they stand.
+  let keys: string[]
+  const resolvedFrom = new Map<string, string>()
+  try {
+    const resolved = await Promise.all(raw.map((k) => resolveCanonicalListingKey(k)))
+    keys = []
+    raw.forEach((k, i) => {
+      const key = (resolved[i] ?? '').trim() || k
+      resolvedFrom.set(key, k)
+      if (!keys.includes(key)) keys.push(key)
+    })
+  } catch (err) {
+    console.error('[getListingStatusChanges] resolveCanonicalListingKey', err)
+    keys = raw
+  }
+  const byKey = await fetchStatusChanges(sb, keys)
+  // Keyed by what the caller asked for.
+  const out = new Map<string, ListingStatusChange[]>()
+  for (const [key, changes] of byKey) out.set(resolvedFrom.get(key) ?? key, changes)
+  return out
 }
 
 export type ClosedCompListStartRow = {
