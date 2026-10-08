@@ -117,6 +117,13 @@ export type CmaCompArea = {
   centre?: { lat: number; lng: number } | null
   source?: string | null
   sentence?: string | null
+  /** The recorded plats a plat area holds whole (`CompArea.platSlugs`). */
+  platSlugs?: readonly string[] | null
+  /**
+   * A plat only the subject's own street reached (`CompArea.street`). The map
+   * does not draw it: it is in the area on that street only (rule 24).
+   */
+  street?: { key: string; names: readonly string[]; platSlugs: readonly string[] } | null
 }
 
 function finite(v: unknown): number | null {
@@ -132,8 +139,14 @@ export function readCompArea(args: unknown): CmaCompArea | null {
   const centreRaw = o.centre as Record<string, unknown> | null | undefined
   const lat = centreRaw ? finite(centreRaw.lat) : null
   const lng = centreRaw ? finite(centreRaw.lng) : null
-  const names = Array.isArray(o.names)
-    ? o.names.map((n) => String(n ?? '').trim()).filter(Boolean)
+  const strings = (v: unknown): string[] =>
+    Array.isArray(v) ? v.map((n) => String(n ?? '').trim()).filter(Boolean) : []
+  const names = Array.isArray(o.names) ? strings(o.names) : null
+  const platSlugs = strings(o.platSlugs)
+  const streetRaw = o.street && typeof o.street === 'object' ? (o.street as Record<string, unknown>) : null
+  const streetKey = typeof streetRaw?.key === 'string' ? streetRaw.key.trim() : ''
+  const street = streetRaw && streetKey
+    ? { key: streetKey, names: strings(streetRaw.names), platSlugs: strings(streetRaw.platSlugs) }
     : null
   return {
     kind: typeof o.kind === 'string' ? o.kind : null,
@@ -142,6 +155,8 @@ export function readCompArea(args: unknown): CmaCompArea | null {
     centre: lat != null && lng != null ? { lat, lng } : null,
     source: typeof o.source === 'string' ? o.source : null,
     sentence: typeof o.sentence === 'string' && o.sentence.trim() ? o.sentence.trim() : null,
+    platSlugs: platSlugs.length > 0 ? platSlugs : null,
+    street,
   }
 }
 
