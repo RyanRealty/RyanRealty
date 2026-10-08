@@ -323,8 +323,12 @@ describe('land columns', () => {
     expect(html).toMatch(/31,363/)
   })
 
-  it('labels the adjusted-price row as sale price today', () => {
-    expect(renderCompMatrixHtml(landSubject, padSales(landComp))).toContain('Sale price today')
+  it('labels the adjusted-price row sale price today only when a sale moved for date (reader review 2026-10-08)', () => {
+    // The land sales moved for nothing: the row is the adjusted price.
+    const land = renderCompMatrixHtml(landSubject, padSales(landComp))
+    expect(land).toContain('Adjusted price')
+    expect(land).not.toContain('Sale price today')
+    // These moved for date: the row is the sale price today.
     expect(renderCompMatrixHtml(subject, padSales(comp))).toContain('Sale price today')
     expect(renderCompMatrixHtml(subject, padSales(comp))).not.toMatch(/as your house/i)
   })

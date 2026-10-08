@@ -1366,7 +1366,7 @@ export function resolveListingTimeline(input: {
     rangeLabel: input.rangeLabel,
     status,
     days: cycle?.days ?? input.domDays,
-    caption: 'Your asking price against what homes like yours sold for',
+    caption: 'Your asking price against the range the sales support',
   }
 }
 

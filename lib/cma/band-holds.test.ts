@@ -503,7 +503,7 @@ describe('rule 26: the held letter says both, once (Matt 2026-10-07, "Hold, lett
     it('chapter 3 states the band, then the failed ask, how long and how it came off', () => {
       const lead = whatItsWorthLead(subject, held(), { asOfIso: '2026-10-07', hasFinalCycle: true }, comps, finalCycle)
       expect(lead).toBe(
-        'The five sales that set the price support $610,150 to $678,983. Buyers passed at the last ask of $599,900. The listing sat 25 days and was withdrawn.',
+        'The five sales that set the range support $610,150 to $678,983. Buyers passed at the last ask of $599,900. The listing sat 25 days and was withdrawn.',
       )
       for (const bad of FORBIDDEN) expect(lead).not.toContain(bad)
       expect(lead).not.toMatch(/[—–]/)
@@ -517,7 +517,7 @@ describe('rule 26: the held letter says both, once (Matt 2026-10-07, "Hold, lett
       const p = held()
       const page = pricingPage({ subject, comps, market: null, pricing: p, finalCycle, askCtx: { asOfIso: '2026-10-07', hasFinalCycle: true } })
       for (const bad of FORBIDDEN) expect(page.body).not.toContain(bad)
-      expect(page.body).toContain('The five sales that set the price support $610,150 to $678,983.')
+      expect(page.body).toContain('The five sales that set the range support $610,150 to $678,983.')
       expect(page.body.match(/support \$610,150 to \$678,983/g)?.length).toBe(1)
       const cover = letterCoverPayoffHtml(p, comps)
       expect(cover).toContain(HELD_PRICE_HEADLINE)
@@ -573,7 +573,7 @@ describe('rule 26: the held letter says both, once (Matt 2026-10-07, "Hold, lett
       expect(p.valueHigh).toBe(966_000)
       const lead = whatItsWorthLead(subject, p, { asOfIso: '2026-10-07', hasFinalCycle: true }, adjusted, finalCycle)
       expect(lead).toBe(
-        'The four sales that set the price support $942,000 to $966,000. Buyers passed at the last ask of $925,000. The listing sat 120 days and expired.',
+        'The four sales that set the range support $942,000 to $966,000. Buyers passed at the last ask of $925,000. The listing sat 120 days and expired.',
       )
       for (const bad of FORBIDDEN) expect(lead).not.toContain(bad)
       const letter = evaluateLetterConsistencyContract({ html: `<p>${lead}</p>`, names: null, identity: null, pricing: p, closedComps: adjusted })

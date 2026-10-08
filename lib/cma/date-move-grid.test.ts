@@ -18,7 +18,7 @@ import { pricingPage, salesThatSetItPage } from '@/lib/cma/render-pricing-page'
 import { setAsideRows } from '@/lib/cma/set-aside'
 import { tableAdjustedBand } from '@/lib/cma/cover-value'
 import { FLAT_LOCAL_DATE_SENTENCE } from '@/lib/cma/flat-date-story'
-import { salesMethodSentences } from '@/lib/cma/sales-method-note'
+import { DATE_REASON_UNDER_GRID, salesMethodSentences } from '@/lib/cma/sales-method-note'
 import { TIME_ADJUSTMENT_BASIS_POCKET } from '@/lib/pricing/exclusive-pocket-date-adj'
 import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
 
@@ -311,7 +311,7 @@ describe('the flat grid: the same sales when no date move ran', () => {
   })
 
   it('still reads the range and the set-aside off the printed rows', () => {
-    const today = rowCells(html, 'Sale price today').map(dollars)
+    const today = rowCells(html, 'Adjusted price').map(dollars)
     expect(today).toContain(pricing.valueLow)
     expect(today).toContain(pricing.valueHigh)
     const rows = setAsideRows(grid.pricing, grid.comps)
@@ -392,11 +392,12 @@ describe('the gated grid: Woodsman priced after the local gate (Matt 2026-10-08,
     expect(text).not.toContain("Bend's median price per square foot fell")
   })
 
-  it('names the same reason in Basis and limits, not the generic flat line', () => {
+  // Said once (reader review, 62475 Woodsman, 2026-10-08): the grid's note
+  // carries the reason, and Basis and limits points back to it.
+  it('points back to the reason under the grid in Basis and limits, not the generic flat line', () => {
     const method = salesMethodSentences({ subject, comps: grid.comps, pricing: grid.pricing }).join(' ')
-    expect(method).toBe(
-      'None of these sales is moved for the month it sold. Homes like yours in Shevlin West held flat while your home was listed, $581 then $572 a square foot, so each sale stands at its sold price.',
-    )
+    expect(method).toBe(`None of these sales is moved for the month it sold. ${DATE_REASON_UNDER_GRID}`)
     expect(method).not.toContain(FLAT_LOCAL_DATE_SENTENCE)
+    expect(text.match(/held flat while your home was listed, \$581 then \$572 a square foot/g)?.length).toBe(1)
   })
 })

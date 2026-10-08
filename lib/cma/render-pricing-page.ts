@@ -36,17 +36,26 @@ import {
 } from '@/lib/cma/expected-sale'
 import { adjustedCloseRange } from '@/lib/cma/market-area-chapters'
 import { compPinMap } from '@/lib/cma/comp-pin-map'
-import { clampSentence, keptCompCount, setAsideCompIndexes, setAsideRows } from '@/lib/cma/set-aside'
+import {
+  clampSentence,
+  keptCompCount,
+  setAsideCompIndexes,
+  setAsideRows,
+  setAsideSalePredicate,
+} from '@/lib/cma/set-aside'
 import { COVER_PRICE_PHRASE, deRepeatRecommendDollars, isRecommendMark } from '@/lib/cma/recommend-once'
 import { failedAskBelowRangeNote } from '@/lib/cma/expired-audit'
 import { listCeiling } from '@/lib/cma/render-contract'
 import { subjectOnMarket } from '@/lib/cma/subject-on-market'
 import { closedCompBand } from '@/lib/pricing/recommended-in-band'
-import { concessionOnSale, printedAdjustedPrice } from '@/lib/pricing/seller-net'
+import { concessionOffClose, concessionOnSale, printedAdjustedPrice } from '@/lib/pricing/seller-net'
+import { joinAnd, movesADollar } from '@/lib/cma/adjustments-applied'
 import { compSearchSentence } from '@/lib/cma/render-comp-search'
 import { newHomeRateParagraph } from '@/lib/cma/new-home-rate'
 import { resaleNeverOwnedParagraph } from '@/lib/cma/resale-never-owned'
 import { dateBasisCaption } from '@/lib/cma/sales-method-note'
+import { salesSetOnlyTheRange, weightRowLabel } from '@/lib/cma/sales-role'
+import { streetAnchorRead } from '@/lib/cma/street-anchor'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CmaPageDef } from '@/lib/cma/render-use-of-property'
@@ -102,6 +111,24 @@ function cameOffPhrase(status: string | null | undefined): string {
 }
 
 /**
+ * The first of a held letter's two facts: the sales and the band, in the
+ * table's dollars. "The three sales that set the price support $627,332 to
+ * $724,442" sat under 20676 Wild Rose's $593,000 cover, which those sales did
+ * not set: the failed-ask step put it under every one of them (rule 26). On a
+ * letter whose cover the weights did not make (lib/cma/sales-role.ts) the
+ * sales are the ones that set the range (reader review 2026-10-08).
+ */
+function heldBandSentence(pricing: CmaPricing, comps?: readonly CmaAdjustedComp[] | null): string {
+  const table = comps && comps.length > 0 ? tableAdjustedBand(comps, pricing) : null
+  const low = table?.low ?? Math.min(pricing.valueLow, pricing.valueHigh)
+  const high = table?.high ?? Math.max(pricing.valueLow, pricing.valueHigh)
+  const n = comps && comps.length > 0 ? keptCompCount(pricing, comps) : 0
+  const set = salesSetOnlyTheRange(pricing, comps) ? 'set the range' : 'set the price'
+  const who = n > 0 ? `The ${countWord(n)} sales that ${set}` : `The sales that ${set}`
+  return `${who} support ${usd(low)} to ${usd(high)}.`
+}
+
+/**
  * RULE 26 (Matt 2026-10-07, "Hold, letter says both"). 915 Saginaw: every sale
  * that set the price adjusts above the $925,000 failed ask. 20676 Wild Rose:
  * withdrawn after 25 days at $599,900, under a band of $610,150 to $678,983.
@@ -128,12 +155,7 @@ export function heldUnderBandLead(
   comps?: readonly CmaAdjustedComp[] | null,
   finalCycle?: import('@/lib/cma/expired-audit').ExpiredFinalCycle | null,
 ): string {
-  const table = comps && comps.length > 0 ? tableAdjustedBand(comps, pricing) : null
-  const low = table?.low ?? Math.min(pricing.valueLow, pricing.valueHigh)
-  const high = table?.high ?? Math.max(pricing.valueLow, pricing.valueHigh)
-  const n = comps && comps.length > 0 ? keptCompCount(pricing, comps) : 0
-  const who = n > 0 ? `The ${countWord(n)} sales that set the price` : 'The sales that set the price'
-  const first = `${who} support ${usd(low)} to ${usd(high)}.`
+  const first = heldBandSentence(pricing, comps)
   const heldAsk = pricing.hold?.ask != null && pricing.hold.ask > 0 ? pricing.hold.ask : null
   const ask = failedSubjectAsk(subject, askCtx) ?? heldAsk ?? pricing.failedAsk ?? null
   if (ask == null || !(ask > 0)) return first
@@ -193,9 +215,7 @@ export function heldInBandLead(
   const table = comps && comps.length > 0 ? tableAdjustedBand(comps, pricing) : null
   const low = table?.low ?? Math.min(pricing.valueLow, pricing.valueHigh)
   const high = table?.high ?? Math.max(pricing.valueLow, pricing.valueHigh)
-  const n = comps && comps.length > 0 ? keptCompCount(pricing, comps) : 0
-  const who = n > 0 ? `The ${countWord(n)} sales that set the price` : 'The sales that set the price'
-  const first = `${who} support ${usd(low)} to ${usd(high)}.`
+  const first = heldBandSentence(pricing, comps)
   const heldAsk = pricing.hold?.ask != null && pricing.hold.ask > 0 ? pricing.hold.ask : null
   const ask = failedSubjectAsk(subject, askCtx) ?? heldAsk ?? pricing.failedAsk ?? null
   if (ask == null || !(ask > 0)) return first
@@ -611,33 +631,40 @@ export function tablesHoldingPins(
  * Both ends of the range print in the table's own Sale price today row, so
  * this introduces no figure the seller cannot check, and no figure is computed
  * here — the adjusted sales and the recommend both arrive from lib/pricing.
+ * A move is one the grid prints as at least a dollar (movesADollar).
  */
-const MOVE_MIN_DOLLARS = 1
 
-/** How many of these sales actually moved, by adjustment. Not "each" unless each did. */
+/**
+ * How many of these sales actually moved, by adjustment. Not "each" unless
+ * each did. Every adjustment the grid prints is named, seller concessions
+ * included: 3177 Coho's lead said "One moved for size, and each moved for
+ * date." over two sales the grid took a recorded credit off (reader review
+ * 2026-10-08). A move counts when its cell prints a dollar.
+ */
 export function adjustmentMoveClause(comps: readonly CmaAdjustedComp[]): string {
   const total = comps.length
   if (total === 0) return ''
   const groups: Array<{ label: string; n: number }> = []
-  const date = comps.filter((c) => Math.abs(c.timeAdjustment ?? 0) >= MOVE_MIN_DOLLARS).length
-  const size = comps.filter((c) => Math.abs(c.sizeAdjustment ?? 0) >= MOVE_MIN_DOLLARS).length
-  const story = comps.filter((c) => Math.abs(c.storyAdjustment ?? 0) >= MOVE_MIN_DOLLARS).length
+  const date = comps.filter((c) => movesADollar(c.timeAdjustment)).length
+  const size = comps.filter((c) => movesADollar(c.sizeAdjustment)).length
+  const story = comps.filter((c) => movesADollar(c.storyAdjustment)).length
+  const credit = comps.filter((c) => movesADollar(concessionOffClose(c))).length
   if (size > 0) groups.push({ label: 'size', n: size })
   if (date > 0) groups.push({ label: 'date', n: date })
   if (story > 0) groups.push({ label: 'style', n: story })
+  if (credit > 0) groups.push({ label: 'seller concessions', n: credit })
   if (groups.length === 0) return ''
   const one = (g: { label: string; n: number }) => {
-    if (g.n === total) return `each moved for ${g.label}`
     if (g.n === 1) return `one moved for ${g.label}`
     return `${countWord(g.n)} of the ${countWord(total)} moved for ${g.label}`
   }
-  if (groups.length === 1) return one(groups[0]!)
-  if (groups.every((g) => g.n === total)) {
-    const labels = groups.map((g) => g.label)
-    const label = labels.length === 2 ? `${labels[0]} and ${labels[1]}` : `${labels.slice(0, -1).join(', ')} and ${labels[labels.length - 1]}`
-    return `each moved for ${label}`
-  }
-  return groups.map(one).join(', and ')
+  const every = groups.filter((g) => g.n === total).map((g) => g.label)
+  const parts = [
+    ...(every.length > 0 ? [`each moved for ${joinAnd(every)}`] : []),
+    ...groups.filter((g) => g.n !== total).map(one),
+  ]
+  if (parts.length <= 2) return parts.join(', and ')
+  return `${parts.slice(0, -1).join(', ')}, and ${parts[parts.length - 1]}`
 }
 
 function tableLead(input: { comps: CmaAdjustedComp[]; pricing: CmaPricing }): string {
@@ -658,8 +685,14 @@ function tableLead(input: { comps: CmaAdjustedComp[]; pricing: CmaPricing }): st
       : ''
   const move = adjustmentMoveClause(kept.length > 0 ? kept : input.comps)
   // A held letter's number is under Matt's review: the sales are behind it,
-  // they did not settle it (reader review 2026-10-08).
-  const verb = heldForMatt(input.pricing) ? `${n === 1 ? 'is' : 'are'} behind this number` : 'set this number'
+  // they did not settle it (reader review 2026-10-08). On a cover the weights
+  // did not make (a rule 26 hold, or a cover held to the sale on the
+  // subject's street) they set the range and nothing about the cover.
+  const verb = salesSetOnlyTheRange(input.pricing, input.comps)
+    ? 'set the range'
+    : heldForMatt(input.pricing)
+      ? `${n === 1 ? 'is' : 'are'} behind this number`
+      : 'set this number'
   const head = `The ${countWord(n)} closed ${n === 1 ? 'sale' : 'sales'} below ${verb}`
   const moved = !move
     ? `${head}.`
@@ -781,9 +814,10 @@ function renderSetAsideHtml(pricing: CmaPricing, comps: readonly CmaAdjustedComp
         `<li><span class="rj-addr">${esc(r.address)}</span><span class="rj-why">${esc(r.reason)}</span></li>`,
     )
     .join('')
+  const what = salesSetOnlyTheRange(pricing, comps) ? 'the range' : 'the number'
   return `<h4 class="sale-paths-h">Set aside</h4>
   <p class="small">${esc(
-    `${rows.length === 1 ? 'This sale is' : `These ${rows.length} sales are`} shown above and did not set the number.`,
+    `${rows.length === 1 ? 'This sale is' : `These ${rows.length} sales are`} shown above and did not set ${what}.`,
   )}</p>
   <ul class="rejected-list">${items}</ul>`
 }
@@ -826,6 +860,47 @@ export type PricingPageInput = {
   }>
   /** A sale under one percent of the weight, left out of the seller letter. */
   negligibleWeightNote?: string | null
+}
+
+/** The price chapter's name: its running header on every sheet. */
+export const WHAT_ITS_WORTH_CHAPTER = 'What the sales say'
+
+/**
+ * WHEN THE COVER IS HELD TO THE SALE ON THE SUBJECT'S STREET, THE CHAPTER SAYS
+ * SO (reader review, 915 Saginaw, 2026-10-08).
+ *
+ * The pricer holds the recommendation to the street sale plus
+ * SAME_STREET_PREMIUM_MAX, rounded to $5,000 (lib/cma/pricing.ts
+ * applyStreetAnchor). Saginaw's cover is $800,000, 536 Saginaw's adjusted
+ * $727,148 plus 10 percent, rounded, while the grid's weights blend to about
+ * $960,000, and nothing on the page joined the two. One plain sentence, from
+ * the stored anchor checked against the grid (lib/cma/street-anchor.ts): which
+ * sale, its adjusted price as the grid prints it, and the limit. The cover's
+ * own dollars are not repeated (recommend-once).
+ *
+ * Only when the cover IS that ceiling, and never on a rule 26 hold: its cover
+ * is the failed-ask result, and it prints no clamp prose.
+ */
+export function streetHoldSentence(
+  pricing: CmaPricing,
+  comps?: readonly CmaAdjustedComp[] | null,
+): string {
+  if (heldUnderBand(pricing)) return ''
+  const street = streetAnchorRead(pricing, comps)
+  if (!street?.holdsCover) return ''
+  const pct = Math.round(street.premium * 100)
+  const limit = `the price on the cover is that figure plus ${pct} percent, rounded to the nearest $5,000`
+  if (street.sales.length === 1) {
+    const sale = street.sales[0]!
+    return `The price on the cover is held to ${sale.address}, on your street and close to your home's size. Adjusted to your home, that sale is worth ${usd(
+      street.anchor,
+    )}, and ${limit}.`
+  }
+  const names = street.sales.map((c) => c.address)
+  const list = names.length === 2 ? `${names[0]} and ${names[1]}` : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
+  return `The price on the cover is held to ${list}, on your street and close to your home's size. Adjusted to your home, the middle of their prices is ${usd(
+    street.anchor,
+  )}, and ${limit}.`
 }
 
 /**
@@ -874,7 +949,14 @@ export function pricingPage(input: PricingPageInput): CmaPageDef {
   // Its place is taken by the two facts the held lead states (heldInBandLead,
   // heldUnderBandLead), and the cover's label carries the rest.
   const clamp = heldForMatt(p) ? '' : deRepeatRecommendDollars(clampSentence(p), p.recommended)
-  const clampHtml = clamp ? `<p class="worth-lead-note">${esc(clamp)}</p>` : ''
+  // THE STREET SALE THE COVER IS HELD TO (915 Saginaw, reader review
+  // 2026-10-08), said once, under the number it set. Never on a rule 26 hold,
+  // which prints no clamp prose.
+  const street = streetHoldSentence(p, input.comps)
+  const clampHtml = [clamp, street]
+    .filter(Boolean)
+    .map((line) => `<p class="worth-lead-note">${esc(line)}</p>`)
+    .join('\n  ')
   const lead = input.omitLeadPrices
     ? ''
     : `
@@ -922,7 +1004,10 @@ export function pricingPage(input: PricingPageInput): CmaPageDef {
   // Tip Ready P0: cover already carries recommend + range. The worth-strip's
   // "list $521K" mark was the fold repeating the number (~8× on Falcon).
   return {
-    meta: `${esc(s.streetAddress)} · ${esc(heading)}`,
+    // The running header is the chapter's name, never its sentence heading:
+    // 20676 Wild Rose's header repeated a 250-character heading on every
+    // sheet of the chapter (reader review 2026-10-08).
+    meta: `${esc(s.streetAddress)} · ${esc(WHAT_ITS_WORTH_CHAPTER)}`,
     toc: heading,
     body: `
   ${lead}
@@ -959,15 +1044,19 @@ export function salesThatSetItPage(input: PricingPageInput): CmaPageDef | null {
       // H2.section already names the chapter — skip duplicate H3.subhead.
       omitHeading: true,
       // A matrix that runs onto a second page heads it "<chapter>, continued".
-      heading: salesThatSetItHeading(p).replace(/\.$/, ''),
+      heading: salesThatSetItHeading(p, input.comps).replace(/\.$/, ''),
+      // The set-aside columns carry the map's own mark (reader review, 3177
+      // Coho, 2026-10-08), by the decision the map and the list below read.
+      isSetAside: setAsideSalePredicate(p, input.comps),
+      weightLabel: weightRowLabel(p, input.comps),
       footer: `${concessionsCaption(input.comps)}
   ${dateBasisLine({ subject: s, comps: input.comps, pricing: p })}
-  ${renderReconciliationHtml(p)}
+  ${renderReconciliationHtml(p, input.comps)}
   ${perSquareFootLine({ subject: s, pricing: p })}`,
     },
   )
   if (!matrix.trim()) return null
-  const heading = salesThatSetItHeading(p)
+  const heading = salesThatSetItHeading(p, input.comps)
   const label = heading.replace(/\.$/, '')
   return {
     meta: `${esc(s.streetAddress)} · ${esc(label)}`,
@@ -992,8 +1081,20 @@ export const SALES_THAT_SET_IT_HEADING = 'The sales that set this price.'
  * review 2026-10-08).
  */
 export const HELD_SALES_HEADING = 'The sales behind this price.'
+/**
+ * The same chapter when the sales set only the range (lib/cma/sales-role.ts):
+ * a rule 26 hold, whose cover sits under every one of them (20676 Wild Rose,
+ * $593,000 under $627,332 to $724,442), or a cover held to the sale on the
+ * subject's street (915 Saginaw). "Behind this price" claimed the cover was
+ * built from them (reader review 2026-10-08).
+ */
+export const RANGE_SALES_HEADING = 'The sales that set the range.'
 
-export function salesThatSetItHeading(pricing: CmaPricing | null | undefined): string {
+export function salesThatSetItHeading(
+  pricing: CmaPricing | null | undefined,
+  comps?: readonly CmaAdjustedComp[] | null,
+): string {
+  if (salesSetOnlyTheRange(pricing, comps)) return RANGE_SALES_HEADING
   return heldForMatt(pricing) ? HELD_SALES_HEADING : SALES_THAT_SET_IT_HEADING
 }
 
@@ -1012,6 +1113,7 @@ export function mapPage(input: {
   mapOverlay?: import('@/lib/cma/comp-pin-map').CompPinMapOverlay | null
   /** `render_args.compArea.sentence`, when the row carries one. */
   areaSentence?: string | null
+  closedLabel?: string | null
 }): CmaPageDef | null {
   const body = mapBodyHtml(input)
   if (!body.trim()) return null
@@ -1061,6 +1163,8 @@ export function mapBodyHtml(input: {
   mapDataUri?: string | null
   mapOverlay?: import('@/lib/cma/comp-pin-map').CompPinMapOverlay | null
   areaSentence?: string | null
+  /** The legend's closed-sales line when the sales set the range and not the cover (lib/cma/sales-role.ts). */
+  closedLabel?: string | null
 }): string {
   // The alt text, the legend and the caption all read the pins the map drew.
   const map = compPinMap({
@@ -1068,6 +1172,7 @@ export function mapBodyHtml(input: {
     facts: input.facts,
     mapDataUri: input.mapDataUri ?? null,
     overlay: input.mapOverlay ?? null,
+    closedLabel: input.closedLabel ?? null,
   })
   if (!map.html.trim()) return ''
   const area = cleanText(input.areaSentence ?? null)

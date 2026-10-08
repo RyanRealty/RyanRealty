@@ -285,7 +285,9 @@ function renderArgs() {
 // sale prints to the thousand where it says "near" (reader review 2026-10-07).
 const EXPECTED_SENTENCE =
   "We'd list at the price on the cover and expect it to sell near $622,000, which is what the five sales point to once each is weighted by how closely it matches your home."
-const RANGE_LINE = "Adjusted to today's market and your home's size, they run from $603,227 to $639,871."
+// Three of the five carry a seller concession the grid takes off first, so
+// the line names it (reader review, 3177 Coho, 2026-10-08).
+const RANGE_LINE = "After seller concessions and adjusted to today's market and your home's size, they run from $603,227 to $639,871."
 
 /** The worth-lead paragraph as a reader sees it. */
 function worthLead(html: string): string {
@@ -311,7 +313,7 @@ describe('the price chapter says why the list sits where it does (Keats)', () =>
     for (const form of recommendUsdForms(639000)) expect(EXPECTED_SENTENCE).not.toContain(form)
     expect(adjustedRangeLine(COMPS, { afterExpected: e })).toBe(RANGE_LINE)
     expect(adjustedRangeLine(COMPS)).toBe(
-      "The five sales, adjusted to today's market and your home's size, run from $603,227 to $639,871.",
+      "The five sales, after seller concessions and adjusted to today's market and your home's size, run from $603,227 to $639,871.",
     )
   })
 
@@ -532,7 +534,7 @@ describe('the method moves to Basis and limits, in plain English (Keats)', () =>
     } as unknown as CmaPricing
     const line = adjustedRangeLine(COMPS, { pricing: aside })
     expect(line).not.toContain('$603,227')
-    expect(line).toMatch(/^The four sales, adjusted to today's market and your home's size, run from \$[\d,]+ to \$639,871\./)
+    expect(line).toMatch(/^The four sales, after seller concessions and adjusted to today's market and your home's size, run from \$[\d,]+ to \$639,871\./)
     expect(line).toContain('The highest and the lowest sale are set aside, so the range runs between the rest.')
   })
 

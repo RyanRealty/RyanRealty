@@ -179,11 +179,16 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
       expect(html).toContain('>High<')
       // Matt 2026-10-07: the recommended list is the first and biggest figure
       // under the list-price headline, printed once. Low and High follow,
-      // labelled as where similar homes sold, adjusted to today.
-      expect(html).toContain('>Where similar homes sold, adjusted to today<')
+      // labelled as where similar homes sold.
+      expect(html).toContain('>Where similar homes sold')
       expect((html.match(/\$659,000/g) ?? []).length).toBe(1)
       expect(html.indexOf('$659,000')).toBeLessThan(html.indexOf('>Low<'))
     }
+    // The label names only the adjustments the sales behind the pair carry
+    // (reader review 2026-10-08). These sales moved for nothing; a cover given
+    // no sales keeps the label it always carried.
+    expect(immersive).toContain('>Where similar homes sold<')
+    expect(cover).toContain('>Where similar homes sold, adjusted to today<')
   })
 
   it('contract: recommended-inside-closed-comp-band', () => {

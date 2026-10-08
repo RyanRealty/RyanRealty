@@ -66,6 +66,12 @@ function pct1(ratio: number): string {
  * on a dollars-a-foot measure. Both were true and, a minute apart, they
  * cancelled. Chapter 2 now leads with this sentence and puts its own
  * dollars-a-foot line after it.
+ *
+ * THE RANGE IS ADJUSTED, SO IT IS WHAT THE SALES SUPPORT, NOT WHAT HOMES SOLD
+ * IN (reader review 2026-10-08). The two ends are each sale adjusted to this
+ * home; 20676 Wild Rose's sales sold for $675,000 to $715,000 and adjust to
+ * $627,332 to $724,442. "The range homes like yours sold in" named the
+ * adjusted figures as sold prices.
  */
 export function askAgainstRangeSentence(
   ask: number | null,
@@ -77,12 +83,12 @@ export function askAgainstRangeSentence(
   const high = Math.max(rangeLow, rangeHigh)
   if (!(low > 0) || !(high > 0)) return ''
   if (ask > high) {
-    return `You were asking ${pct1((ask - high) / high)} percent above the top of the range homes like yours sold in.`
+    return `You were asking ${pct1((ask - high) / high)} percent above the top of the range the sales support.`
   }
   if (ask < low) {
-    return `You were asking ${pct1((low - ask) / low)} percent below the bottom of the range homes like yours sold in.`
+    return `You were asking ${pct1((low - ask) / low)} percent below the bottom of the range the sales support.`
   }
-  return 'You were asking inside the range homes like yours sold in.'
+  return 'You were asking inside the range the sales support.'
 }
 
 /**
@@ -283,7 +289,7 @@ function rangeSplitSentences(split: AskRangeSplit, own: 'inside' | 'below'): str
   if (others.length === 0) return null
   const out: string[] = []
   others.forEach((k, i) => {
-    const range = i === 0 ? 'the range homes like yours sold in' : 'it'
+    const range = i === 0 ? 'the range the sales support' : 'it'
     out.push(
       `For ${dayCount(split[k].days)} of your ${dayCount(split.total)} days you were asking ${k} ${range}, ${atAsks(split[k].asks)}.`,
     )
@@ -363,6 +369,20 @@ function usd(n: number): string {
 }
 
 /**
+ * The adjusted range, said as what it is: what homes like this one are worth
+ * once each sale is adjusted to it. Never "sold for" (reader review
+ * 2026-10-08).
+ */
+export function adjustedWorthSentence(rangeLow: number, rangeHigh: number): string {
+  const low = Math.min(rangeLow, rangeHigh)
+  const high = Math.max(rangeLow, rangeHigh)
+  if (!(low > 0) || !(high > 0)) return ''
+  return low === high
+    ? `Adjusted to your home, homes like yours are worth ${usd(low)}.`
+    : `Adjusted to your home, homes like yours are worth ${usd(low)} to ${usd(high)}.`
+}
+
+/**
  * The ask, the range, and the days. Nothing else.
  *
  * The chapter a document gets when it may not argue about the price: the home
@@ -381,11 +401,10 @@ export function neutralAskReading(input: {
   const low = Math.min(input.rangeLow, input.rangeHigh)
   const high = Math.max(input.rangeLow, input.rangeHigh)
   if (low > 0 && high > 0) {
-    bits.push(
-      low === high
-        ? `Homes like yours sold for ${usd(low)}.`
-        : `Homes like yours sold for ${usd(low)} to ${usd(high)}.`,
-    )
+    // The range is each sale adjusted to this home, never what they sold for
+    // (20676 Wild Rose printed "Homes like yours sold for $627,332 to
+    // $724,442" over sales that sold for $675,000 to $715,000).
+    bits.push(adjustedWorthSentence(low, high))
   }
   if (input.days != null && input.days > 0) {
     bits.push(`You were on the market ${Math.round(input.days).toLocaleString('en-US')} days.`)

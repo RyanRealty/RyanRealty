@@ -797,7 +797,7 @@ describe('chapter order', () => {
     expect(html).not.toContain('id="listing-trend"')
     expect(html).not.toContain('id="status-grid"')
     expect(html).not.toContain('id="photo-set"')
-    expect(html).toContain('Sale price today')
+    expect(html).toContain('Adjusted price')
     expect(html).not.toMatch(/\bN\/A\b/)
     expect(html).not.toContain('2,420,000')
     expect(html).toMatch(/\.page-num,\.pg-num/)
@@ -1342,15 +1342,19 @@ describe('the peer sentence counts the rows it shows', () => {
       },
       area: AREA,
       asOf: ASOF,
+      priceBand: { lo: 660_000, hi: 2_220_000 },
     })
     expect(set.areaTotal).toBe(7)
     expect(set.found).toBe(0)
     expect(set.likeYours).toBe(false)
     expect(set.count).toBe(0)
     expect(set.peers).toHaveLength(0)
+    // The seven are the homes listed inside the read's price window, and the
+    // sentence says so (reader review, 1355 Jacksonville, 2026-10-08).
     expect(set.sentence).toBe(
-      'Seven homes in River West came off the market without selling in the last 24 months. None were close to this home in bedrooms, bathrooms, size or age, so they are not compared here.',
+      'Seven homes in River West listed between $660,000 and $2,220,000 came off the market without selling in the last 24 months. None were close to this home in bedrooms, bathrooms, size or age, so they are not compared here.',
     )
+    expect(set.priceBand).toEqual({ lo: 660_000, hi: 2_220_000 })
     expect(set.sentence).not.toMatch(/No home /)
     expect(set.sentence).not.toContain('—')
     expect(set.sentence).not.toContain('like yours')

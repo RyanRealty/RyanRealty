@@ -454,6 +454,9 @@ export function assembleExpiredPeers(args: {
           // A house that came off, relisted and sold (or is listed again) did
           // not come off unsold (cma-1648-pheasant, 2026-10-08).
           laterCycles: competition.unsoldRead.laterCycles ?? [],
+          // The list-price window the unsold read counted, so the sentence
+          // that says its count names it (reader review 2026-10-08).
+          priceBand: competition.peerBand,
         })
       : null
   return { expiredPeers, compsLookbackMonths }

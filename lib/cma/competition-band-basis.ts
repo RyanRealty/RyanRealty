@@ -23,9 +23,13 @@
  *
  * So the sentence speaks only in figures the reader already has: the range's
  * two ends (printed in the sentence before it) and the price on the cover.
- * When those put the cover price in the middle at whole-percent precision, it
- * says the range is that share either side of it (Purcell: $496,000 to
- * $606,000 is 10% either side of $550,000). When they do not, it says how the
+ * When the printed ends are exactly the cover price a whole percent either
+ * way, rounded to the thousand as the range is drawn, it says the range is
+ * that share either side of it. Equal at whole-percent rounding is not enough
+ * (reader review 2026-10-08): Purcell's $496,000 to $606,000 is not 10% either
+ * side of $550,000 ($495,000 to $605,000), and Jacksonville's $623,000 to
+ * $843,000 is not 15% either side of $732,000; those say the cover sits near
+ * the middle of the range, not exactly on it. When they do not, it says how the
  * range was set and how far each end sits from the cover price (Kelly Hill:
  * 7% under it to 13% over it), so the reader can check both from the page.
  * When the range opened past the base ±10% because fewer than five homes like
@@ -36,6 +40,7 @@
  */
 
 import { COVER_PRICE_PHRASE, isRecommendMark } from '@/lib/cma/recommend-once'
+import { bandAroundListAt } from '@/lib/cma/band-rivals'
 
 export type CompetitionBandBasis = {
   /** The list the range was read around. */
@@ -79,6 +84,14 @@ export function windowSplit(
   }
 }
 
+/** True when the printed ends are exactly `list` ± `share`, drawn the way the range is (bandAroundListAt). */
+function printedEndsAre(window: PrintedWindow | null | undefined, list: number, share: number): boolean {
+  const lo = num(window?.lo)
+  const hi = num(window?.hi)
+  const drawn = bandAroundListAt(list, share)
+  return lo != null && hi != null && drawn != null && drawn.lo === lo && drawn.hi === hi
+}
+
 export function competitionBandBasisSentence(
   basis: Partial<CompetitionBandBasis> | null | undefined,
   finalRecommended: number | null | undefined,
@@ -93,15 +106,25 @@ export function competitionBandBasisSentence(
   const listed = opts?.held ? COVER_PRICE_PHRASE : 'the list price we recommend'
   const Listed = `${listed.charAt(0).toUpperCase()}${listed.slice(1)}`
   const split = windowSplit(window, rec)
+  // "X% either side" is said only when it is exactly true at the printed
+  // dollars: the printed ends ARE the cover price X% either way, rounded to
+  // the thousand the way the range is drawn (bandAroundListAt). 1355
+  // Jacksonville printed "15% either side of the list price we recommend"
+  // over $623,000 to $843,000, which is 15% of $733,000 (the stored center),
+  // under a $732,000 cover; whole-percent rounding called 14.9% and 15.2%
+  // both 15 (reader review 2026-10-08).
+  const exact = split != null && split.under === split.over && printedEndsAre(window, rec, split.under / 100)
   let head: string
-  if (split ? split.under === split.over : rec > 0 && isRecommendMark(center, rec)) {
+  if (split ? exact : rec > 0 && isRecommendMark(center, rec)) {
     // The printed ends sit the same share either side of the printed list.
     // A row with no printed ends falls back to the stored center's own mark.
     head = `This range is ${split ? `${split.under}%` : pct(halfWidth)} either side of ${listed}.`
   } else {
     const what = `This range was set ${pct(halfWidth)} either side of ${BAND_CENTER_DESCRIPTION}.`
     head = split
-      ? `${what} ${Listed} was set after they were weighed, so the range runs from ${split.under}% under it to ${split.over}% over it.`
+      ? split.under === split.over
+        ? `${what} ${Listed} was set after they were weighed, so it sits near the middle of the range, not exactly on it.`
+        : `${what} ${Listed} was set after they were weighed, so the range runs from ${split.under}% under it to ${split.over}% over it.`
       : `${what} ${Listed} was set after they were weighed, so it can sit off center.`
   }
   const opened =
