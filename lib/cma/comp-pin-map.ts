@@ -71,6 +71,64 @@ export type CmaPinFact = {
   priceChangesExact?: boolean
   latitude?: number | null
   longitude?: number | null
+  /** Matrix 3's split: an active pin's row is in the Active or the Pending table. */
+  status?: 'active' | 'pending'
+  /**
+   * A closed sale the range trim set aside (lib/cma/set-aside.ts). Its pin is
+   * drawn lighter and the legend says it is shown but set aside, so a map
+   * under "Closed sales: these set the price" never claims a sale the table
+   * says did not set the number (reader review 2026-10-08).
+   */
+  setAside?: boolean
+}
+
+/**
+ * The four ways a pin is drawn. A set-aside sale keeps its family (it closed,
+ * it is numbered, its row is in the sales table) and is drawn lighter.
+ */
+export type PinStyle = 'closed' | 'closed-aside' | 'active' | 'unsold'
+
+export function pinStyleOf(fact: Pick<CmaPinFact, 'family' | 'setAside'>): PinStyle {
+  if (fact.family === 'closed') return fact.setAside ? 'closed-aside' : 'closed'
+  return fact.family
+}
+
+/** Legend words per style. The three family lines are the matrices' own. */
+export const PIN_STYLE_LABEL: Record<PinStyle, string> = {
+  closed: FAMILY_LABEL.closed,
+  'closed-aside': 'Closed sales shown but set aside',
+  active: FAMILY_LABEL.active,
+  unsold: FAMILY_LABEL.unsold,
+}
+
+const PIN_STYLE_ORDER: readonly PinStyle[] = ['closed', 'closed-aside', 'active', 'unsold']
+
+/** The pin's class list: its family, and `is-aside` for a set-aside sale. */
+function pinClass(fact: Pick<CmaPinFact, 'family' | 'setAside'>): string {
+  return `is-${fact.family}${pinStyleOf(fact) === 'closed-aside' ? ' is-aside' : ''}`
+}
+
+/** One word per style the reader can see, for the map's alt text. */
+const ALT_PART: Record<CmaMapFamily, string> = {
+  closed: 'the sales',
+  active: 'the homes for sale',
+  unsold: 'the listings that came off',
+}
+
+/**
+ * The alt text, naming only what the map draws: a map that promised "the
+ * listings that came off" when none was drawn (3037 Purcell, reader review
+ * 2026-10-08) described a picture the reader was not shown.
+ */
+export function pinMapAlt(drawn: readonly Pick<CmaPinFact, 'family'>[]): string {
+  const parts = [
+    'your home',
+    ...(['closed', 'active', 'unsold'] as const)
+      .filter((f) => drawn.some((d) => d.family === f))
+      .map((f) => ALT_PART[f]),
+  ]
+  const list = parts.length === 1 ? parts[0]! : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`
+  return `Map of ${list}`
 }
 
 function finitePoint(lat: number | null | undefined, lng: number | null | undefined): Pt | null {
@@ -111,6 +169,12 @@ export type CompPinMapOverlay = {
   parentShown?: boolean
   /** Whether the search radius was drawn as a ring. */
   radiusShown?: boolean
+  /**
+   * The place named, with no outline, beside the homes held to the subject's
+   * street (`CmaMapResult.streetPlaceShown`). The caption says why it has no
+   * line. Absent or null: no such name on the map.
+   */
+  streetPlaceShown?: string | null
 }
 
 /**
@@ -137,10 +201,15 @@ export function pinRevealLine(fact: CmaPinFact): string {
   return bits.join(' · ')
 }
 
+/** Said on a set-aside sale's pin, on tap and to a screen reader. */
+export const SET_ASIDE_PIN_NOTE = 'Set aside: did not set the price'
+
 /** The whole pin, in words, for a screen reader and for the button's label. */
 export function pinReading(fact: CmaPinFact): string {
   const line = pinRevealLine(fact)
-  return [`${fact.key}. ${fact.address}`, fact.outcome, line].filter(Boolean).join('. ')
+  return [`${fact.key}. ${fact.address}`, fact.outcome, line, fact.setAside ? SET_ASIDE_PIN_NOTE : '']
+    .filter(Boolean)
+    .join('. ')
 }
 
 /**
@@ -163,6 +232,8 @@ function pinButton(input: {
   key: string
   glyph: string
   family: CmaMapFamily | 'subject'
+  /** `is-aside` on a set-aside sale. */
+  extraClass?: string
   label: string
   reveal: string
   xPct: number
@@ -179,7 +250,9 @@ function pinButton(input: {
   const phoneVars = input.phone
     ? `;--px:${input.phone.xPct.toFixed(2)}%;--py:${input.phone.yPct.toFixed(2)}%`
     : ''
-  return `<button type="button" class="pin-hit is-${esc(input.family)}" data-comp="${esc(input.key)}" data-pin="${esc(input.key)}"${notes} style="left:${input.xPct.toFixed(
+  return `<button type="button" class="pin-hit is-${esc(input.family)}${
+    input.extraClass ? ` ${esc(input.extraClass)}` : ''
+  }" data-comp="${esc(input.key)}" data-pin="${esc(input.key)}"${notes} style="left:${input.xPct.toFixed(
     2,
   )}%;top:${input.yPct.toFixed(2)}%${phoneVars}" aria-label="${esc(input.label)}"><span class="pin-dot" aria-hidden="true">${pinMark(
     input.glyph,
@@ -223,27 +296,29 @@ function revealHtml(fact: CmaPinFact): string {
   const line = pinRevealLine(fact)
   return `<span class="pn-a">${esc(fact.address)}</span>${
     fact.outcome ? `<span class="pn-o">${esc(fact.outcome)}</span>` : ''
-  }${line ? `<span class="pn-d">${esc(line)}</span>` : ''}`
+  }${line ? `<span class="pn-d">${esc(line)}</span>` : ''}${
+    fact.setAside ? `<span class="pn-d">${esc(SET_ASIDE_PIN_NOTE)}</span>` : ''
+  }`
 }
 
 /**
  * The legend, keyed to the three matrices.
  *
- * Only the families this document actually drew: a legend naming a set with
- * no pin on the map is the same defect as an outline containing nothing.
+ * Only the styles this map actually drew, read off the pins drawn: a legend
+ * naming a set with no pin on the map is the same defect as an outline
+ * containing nothing. A set-aside sale is its own line, so "these set the
+ * price" covers only the sales that did.
  */
-export function pinLegendHtml(facts: readonly CmaPinFact[]): string {
-  const present: CmaMapFamily[] = (['closed', 'active', 'unsold'] as const).filter((f) =>
-    facts.some((x) => x.family === f),
-  )
+export function pinLegendHtml(drawn: readonly CmaPinFact[]): string {
+  const present = PIN_STYLE_ORDER.filter((style) => drawn.some((x) => pinStyleOf(x) === style))
   if (present.length === 0) return ''
   const items = present
-    .map(
-      (f) =>
-        `<li class="pl-i is-${f}"><span class="pl-k" aria-hidden="true">${esc(
-          f === 'closed' ? '1' : f === 'active' ? 'A' : 'i',
-        )}</span>${esc(FAMILY_LABEL[f])}</li>`,
-    )
+    .map((style) => {
+      const family: CmaMapFamily = style === 'closed-aside' ? 'closed' : style
+      return `<li class="pl-i ${pinClass({ family, setAside: style === 'closed-aside' })}"><span class="pl-k" aria-hidden="true">${esc(
+        family === 'closed' ? '1' : family === 'active' ? 'A' : 'i',
+      )}</span>${esc(PIN_STYLE_LABEL[style])}</li>`
+    })
     .join('')
   return `<ul class="pin-legend"><li class="pl-i is-subject"><span class="pl-k" aria-hidden="true">${SUBJECT_STAR_SVG}</span>Your home</li>${items}</ul>`
 }
@@ -304,13 +379,28 @@ export type CompPinMapInput = {
   overlay?: CompPinMapOverlay | null
 }
 
-export function renderCompPinMapHtml(input: CompPinMapInput): string {
+/**
+ * The map, and the pins it actually drew.
+ *
+ * The legend, the alt text and the caption under the map (how many tables
+ * hold these pins) are all read off `drawn`, never off every home offered:
+ * a home with no address, one projected off the tile, or a tile with no
+ * overlay draws no pin, and a sentence about pins it did not draw is a claim
+ * the reader cannot find (2382 Jackson: "one of the three tables" over two).
+ * `pinsShown` is false when the map is a bare tile with no pins on it.
+ */
+export type CompPinMapDrawing = { html: string; drawn: CmaPinFact[]; pinsShown: boolean }
+
+export function compPinMap(input: CompPinMapInput): CompPinMapDrawing {
   const { subject, facts, overlay } = input
-  const alt = input.alt ?? 'Map of the sales, the competition and the listings that came off'
   const byKey = new Map(facts.map((f) => [f.key, f]))
   if (input.mapDataUri) {
-    const img = `<img class="pin-map" src="${esc(input.mapDataUri)}" alt="${esc(alt)}" />`
-    if (!overlay?.view) return img
+    const bare = (): CompPinMapDrawing => ({
+      html: `<img class="pin-map" src="${esc(input.mapDataUri!)}" alt="${esc(input.alt ?? pinMapAlt(facts))}" />`,
+      drawn: [],
+      pinsShown: false,
+    })
+    if (!overlay?.view) return bare()
     // The pins the tile was drawn FOR, so a nudged rooftop pin lands where the
     // tile expects it. `key` is null on the subject.
     //
@@ -331,6 +421,7 @@ export function renderCompPinMapHtml(input: CompPinMapInput): string {
       overlay.pins.map(isSubject),
       overlay.view.width / overlay.view.height,
     )
+    const drawn: CmaPinFact[] = []
     const marks = overlay.pins
       .map((pin, pi) => {
         const at = layout.wide[pi]
@@ -351,10 +442,12 @@ export function renderCompPinMapHtml(input: CompPinMapInput): string {
           })
         }
         const fact = byKey.get(pin.key!)!
+        drawn.push(fact)
         return pinButton({
           key: pin.key!,
           glyph: pin.key!,
           family: pin.family,
+          extraClass: pin.family === 'closed' && fact.setAside ? 'is-aside' : undefined,
           label: pinReading(fact),
           reveal: revealHtml(fact),
           xPct: at.xPct,
@@ -364,7 +457,8 @@ export function renderCompPinMapHtml(input: CompPinMapInput): string {
       })
       .filter(Boolean)
       .join('\n      ')
-    if (!marks) return img
+    if (!marks) return bare()
+    const img = `<img class="pin-map" src="${esc(input.mapDataUri)}" alt="${esc(input.alt ?? pinMapAlt(drawn))}" />`
     const c = layout.crop
     const cropped = c.w < 1 || c.h < 1
     // The phone's closer view of the SAME image, as four fractions and the
@@ -373,13 +467,17 @@ export function renderCompPinMapHtml(input: CompPinMapInput): string {
     const cropVars = `--cx:${c.x0.toFixed(4)};--cy:${c.y0.toFixed(4)};--cw:${c.w.toFixed(4)};--ch:${c.h.toFixed(
       4,
     )};--car:${layout.phoneAspect.toFixed(4)}`
-    return `<div class="pin-map-frame"${cropped ? ' data-crop="phone"' : ''} style="${cropVars}">
+    return {
+      html: `<div class="pin-map-frame"${cropped ? ' data-crop="phone"' : ''} style="${cropVars}">
       <div class="pin-map-clip">${img}</div>
       ${leaderSvg(layout.wide, 'wide')}
       ${leaderSvg(layout.phone, 'phone')}
       ${marks}
     </div>
-    ${pinLegendHtml(facts)}`
+    ${pinLegendHtml(drawn)}`,
+      drawn,
+      pinsShown: true,
+    }
   }
   const subjectPt = finitePoint(subject.latitude, subject.longitude)
   const pins = facts
@@ -389,7 +487,9 @@ export function renderCompPinMapHtml(input: CompPinMapInput): string {
     })
     .filter((p): p is { fact: CmaPinFact; pt: Pt } => p != null)
   const points = [...(subjectPt ? [subjectPt] : []), ...pins.map((p) => p.pt)]
-  if (points.length < 2) return ''
+  if (points.length < 2) return { html: '', drawn: [], pinsShown: false }
+  const drawn = pins.map((p) => p.fact)
+  const alt = input.alt ?? pinMapAlt(drawn)
   const xy = project(points)
   const subjectMark = subjectPt
     ? (() => {
@@ -409,13 +509,18 @@ export function renderCompPinMapHtml(input: CompPinMapInput): string {
       // that closed, a solid ring for one on the market, a DASHED ring for
       // one that came off. The bar that used to cross the numeral struck
       // through the very thing a reader matches to the row (Matt 2026-10-07).
+      // A set-aside sale is the filled glyph drawn lighter: the navy at the
+      // muted share the stylesheet uses (--muted), over the cream field.
       const filled = fact.family === 'closed'
+      const aside = filled && fact.setAside === true
       const body = filled
-        ? `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="14" fill="#102742"/>`
+        ? `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="14" fill="#102742"${
+            aside ? ' fill-opacity="0.62"' : ''
+          }/>`
         : `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="13" fill="#faf8f4" stroke="#102742" stroke-width="2"${
             fact.family === 'unsold' ? ' stroke-dasharray="4 3"' : ''
           }/>`
-      return `<g class="pin-sale is-${fact.family}" data-pin="${esc(fact.key)}" data-comp="${esc(
+      return `<g class="pin-sale ${pinClass(fact)}" data-pin="${esc(fact.key)}" data-comp="${esc(
         fact.key,
       )}" tabindex="0" role="button" aria-label="${esc(pinReading(fact))}">
         <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="24" fill="transparent"/>
@@ -426,12 +531,20 @@ export function renderCompPinMapHtml(input: CompPinMapInput): string {
       </g>`
     })
     .join('')
-  return `<svg class="pin-map" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(alt)}">
+  return {
+    html: `<svg class="pin-map" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(alt)}">
     <rect width="${W}" height="${H}" fill="#faf8f4"/>
     ${subjectMark}
     ${saleMarks}
   </svg>
-  ${pinLegendHtml(facts)}`
+  ${pinLegendHtml(drawn)}`,
+    drawn,
+    pinsShown: true,
+  }
+}
+
+export function renderCompPinMapHtml(input: CompPinMapInput): string {
+  return compPinMap(input).html
 }
 
 export function renderCompPinMapScript(): string {

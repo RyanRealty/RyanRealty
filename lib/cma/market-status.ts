@@ -936,10 +936,14 @@ function peerSetSentence(input: {
     const cameOff = input.areaTotal ?? 0
     if (cameOff > 0) {
       const came = cameOff === 1 ? 'One home' : `${countWord(cameOff, true)} homes`
-      return `${came} ${where} came off the market without selling in the last ${w} months. None were close to this home in bedrooms, bathrooms, size or age, so none are on this map.`
+      return `${came} ${where} came off the market without selling in the last ${w} months. None were close to this home in bedrooms, bathrooms, size or age, so they are not compared here.`
     }
-    // The subject is the home that came off. Do not say none did.
-    if (input.subjectCameOff) return ''
+    // The subject is the home that came off, so the sentence says no OTHER
+    // home did. It used to say nothing, which left the chapter as one line
+    // about the seller's own listing under a heading about the listings near
+    // them (3037 Purcell, reader review 2026-10-08; rule 24: an area that
+    // holds none says so plainly).
+    if (input.subjectCameOff) return noOtherPeerSentence(input.searchArea, input.windowMonths)
     return `No home ${whereOr} came off the market without selling in the last ${w} months.`
   }
   const homes = `${countWord(n)} ${n === 1 ? 'home' : 'homes'}${like}`
@@ -966,6 +970,20 @@ function peerSetSentence(input: {
  * not on the row prints nothing: an absence with no window is not a fact the
  * row supports (§0).
  */
+/**
+ * No listing other than the seller's own came off unsold in the area, over the
+ * longest window the search tried. "Like yours" always: the read behind it is
+ * the subject's own property type inside the price band
+ * (getCmaAreaUnsoldCycles), so a bare "no other home" would claim more than
+ * the search looked at (CLAUDE.md §0).
+ */
+export function noOtherPeerSentence(area: CompArea, windowMonths: number | null | undefined): string {
+  if (windowMonths == null || !Number.isFinite(windowMonths) || windowMonths <= 0) return ''
+  return `No other home like yours ${compAreaIn(area, { negative: true })} came off the market without selling in the last ${monthsWord(
+    Math.round(windowMonths),
+  )} months.`
+}
+
 export function noPeerInAreaSentence(windowMonths: number | null | undefined): string {
   if (windowMonths == null || !Number.isFinite(windowMonths) || windowMonths <= 0) return ''
   return `No home like yours in this area came off the market without selling in the last ${monthsWord(

@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   assembleOpinionPages,
   closingComplianceSentence,
+  mapArgs,
+  mapSharesPricePage,
   nextStepButtonsHtml,
   nextStepHeading,
   nextStepNoteHtml,
@@ -13,6 +15,7 @@ import {
   type OpinionPageArgs,
 } from '@/lib/cma/opinion-pages'
 import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
+import { chapterIsLeadOnly, mapSubsectionHtml } from '@/lib/cma/render-pricing-page'
 
 const subject: CmaSubject = {
   listingKey: null,
@@ -167,16 +170,49 @@ describe('assembleOpinionPages format', () => {
       subjectMapDataUri: 'data:image/png;base64,subjmap',
       mapDataUri: 'data:image/png;base64,compsmap',
     })
-    // Delta 3: the map is its own chapter, under the number, and there is
-    // still exactly one of it in the whole document.
-    const map = pages.find((p) => p.toc === 'Comparable homes near you')
-    expect(map?.body).toContain('data:image/png;base64,compsmap')
-    expect(map?.body).toContain('pin-map')
+    // Delta 3: the map sits under the number, and there is still exactly one
+    // of it in the whole document. This price chapter is its heading and one
+    // paragraph, so the map shares its page (2382 Jackson, reader review
+    // 2026-10-08) under its own subhead.
+    const price = pages.findIndex((p) => p.body.includes('is-answer'))
+    const map = pages.findIndex((p) => p.body.includes('pin-map'))
+    expect(map).toBe(price)
+    expect(pages[map]?.body).toContain('data:image/png;base64,compsmap')
+    expect(pages[map]?.body).toContain('<h3 class="subhead">Comparable homes near you</h3>')
+    expect(pages.map((p) => p.toc)).not.toContain('Comparable homes near you')
     const all = pages.map((p) => p.body).join('')
     expect(all).not.toContain('data:image/png;base64,subjmap')
     expect((all.match(/data:image\/png;base64,compsmap/g) ?? []).length).toBe(1)
+  })
+
+  it('keeps the map its own chapter when the price chapter says more than its lead', () => {
+    const base = args()
+    const a = {
+      ...base,
+      pricing: {
+        ...base.pricing,
+        clamp: { sentence: 'The sales point above the ask that did not sell, so the price stays under it.' },
+      } as typeof base.pricing,
+      mapDataUri: 'data:image/png;base64,compsmap',
+    }
+    const pages = assembleOpinionPages(a)
     const price = pages.findIndex((p) => p.body.includes('is-answer'))
+    expect(pages[price]?.body).toContain('worth-lead-note')
+    expect(pages[price]?.body).not.toContain('pin-map')
     expect(pages.findIndex((p) => p.toc === 'Comparable homes near you')).toBe(price + 1)
+  })
+
+  it('folds a lead-only price chapter onto the map page in the immersive too, so the two stay one list', () => {
+    const a = { ...args(), mapDataUri: 'data:image/png;base64,compsmap' }
+    expect(mapSharesPricePage(a)).toBe(true)
+    expect(chapterIsLeadOnly('<h2 class="section is-answer">X.</h2><p class="worth-lead">One.</p>')).toBe(true)
+    expect(
+      chapterIsLeadOnly('<h2 class="section is-answer">X.</h2><p class="worth-lead">One.</p><p class="worth-lead-note">Two.</p>'),
+    ).toBe(false)
+    // No map, nothing to fold.
+    expect(mapSharesPricePage({ ...args(), mapDataUri: null })).toBe(
+      Boolean(mapSubsectionHtml(mapArgs({ ...args(), mapDataUri: null }))),
+    )
   })
 
   it('runs the number, the map, then the three matrices in Delta 3 order', () => {
@@ -191,12 +227,15 @@ describe('assembleOpinionPages format', () => {
     })
     const tocs = pages.map((p) => p.toc)
     const price = pages.findIndex((p) => p.body.includes('is-answer'))
-    const map = tocs.indexOf('Comparable homes near you')
+    // The map is on the price chapter's page when that chapter is one
+    // paragraph, and the next page otherwise. Either way it is under the
+    // number and before the sales.
+    const map = pages.findIndex((p) => p.body.includes('pin-map'))
     const closed = tocs.indexOf('The sales that set this price')
     const competition = tocs.findIndex((t) => t?.startsWith('Who you would compete with at'))
     const market = tocs.findIndex((t) => t?.endsWith('right now'))
     expect(price).toBeGreaterThanOrEqual(0)
-    expect(map).toBe(price + 1)
+    expect(map === price || map === price + 1).toBe(true)
     expect(closed).toBe(map + 1)
     expect(competition).toBeGreaterThan(closed)
     if (market >= 0) expect(market).toBeGreaterThan(competition)
@@ -643,6 +682,140 @@ describe('unsoldMatrixLead counts its rows (2745 Aldrich, reader review 2026-10-
   it('counts the ones that never came down when some did', () => {
     expect(unsoldMatrixLead([row('2812 Aldrich', 495_000), row('3223 Spring Creek', 475_000)], range)).toContain(
       '1 of these 2 listings never came down to the range.',
+    )
+  })
+})
+
+describe('the map and the pages around it (reader review 2026-10-08)', () => {
+  const area = {
+    kind: 'subdivision',
+    names: ['Diamond Bar Ranch'],
+    radiusMiles: null,
+    centre: { lat: 44.27, lng: -121.17 },
+    source: 'test',
+    sentence: 'Diamond Bar Ranch, your own subdivision.',
+  } as const
+
+  function fiveSales(): CmaAdjustedComp[] {
+    // Two units in one building print the same street address (no unit on
+    // either ladder): 101 Test St is K1 and K2.
+    return [0, 1, 2, 3, 4].map((i) => ({
+      ...comp,
+      listingKey: `K${i}`,
+      address: i === 2 ? '101 Test St' : `${100 + i} Test St`,
+      adjustedPrice: 400_000 + i * 10_000,
+      latitude: 44.27 + i * 0.001,
+      longitude: -121.17,
+    }))
+  }
+
+  it('draws the sales the table sets aside as set aside, by listing key (62475 Woodsman, 2382 Jackson)', () => {
+    const a: OpinionPageArgs = {
+      ...args(),
+      comps: fiveSales(),
+      pricing: {
+        ...pricing,
+        setAside: [
+          { listingKey: 'K0', address: '100 Test St', reason: 'lowest of the adjusted sales', adjustedPrice: 400_000 },
+          { listingKey: 'K1', address: '101 Test St', reason: 'highest of the adjusted sales', adjustedPrice: 410_000 },
+        ],
+      } as unknown as CmaPricing,
+      mapDataUri: null,
+    }
+    const closed = mapArgs(a).facts.filter((f) => f.family === 'closed')
+    // K2 shares K1's address and is not set aside: the key decides.
+    expect(closed.filter((f) => f.setAside).map((f) => f.key)).toEqual(['1', '2'])
+    expect(closed.find((f) => f.key === '3')?.setAside).toBeUndefined()
+    // The table names the same two.
+    const all = assembleOpinionPages(a)
+      .map((p) => p.body)
+      .join('')
+    expect(all).toContain('These 2 sales are shown above and did not set the number.')
+    const map = mapSubsectionHtml(mapArgs(a))
+    expect(map).toContain('Closed sales: these set the price')
+    expect(map).toContain('Closed sales shown but set aside')
+    expect((map.match(/class="pin-sale is-closed is-aside"/g) ?? []).length).toBe(2)
+  })
+
+  it('keeps one closed legend line when nothing is set aside', () => {
+    const map = mapSubsectionHtml(mapArgs({ ...args(), comps: fiveSales(), mapDataUri: null }))
+    expect(map).toContain('Closed sales: these set the price')
+    expect(map).not.toContain('set aside')
+  })
+
+  it('says plainly that no other listing came off, under a heading that is not plural over nothing (3037 Purcell)', () => {
+    const a: OpinionPageArgs = {
+      ...args(),
+      subject: { ...subject, standardStatus: 'Expired' },
+      expiredPeers: {
+        area,
+        windowMonths: 18,
+        windowsTried: [3, 6, 9, 12, 18],
+        widenedTo: null,
+        count: 0,
+        areaTotal: 0,
+        found: 0,
+        likeYours: false,
+        shortfall: true,
+        sentence: '',
+        peers: [],
+      } as unknown as OpinionPageArgs['expiredPeers'],
+    }
+    const page = assembleOpinionPages(a).find((p) => p.meta.endsWith('Did not sell'))
+    expect(page?.toc).toBe('No other listing like yours near you came off unsold.')
+    expect(page?.body).not.toContain('The listings near you that did not sell.')
+    expect(page?.body).toContain(
+      'No other home like yours in Diamond Bar Ranch came off the market without selling in the last 18 months.',
+    )
+  })
+
+  it('never points at "this map" on a page without one (2382 Jackson, 62475 Woodsman)', () => {
+    const a: OpinionPageArgs = {
+      ...args(),
+      subject: { ...subject, standardStatus: 'Expired' },
+      expiredPeers: {
+        area,
+        windowMonths: 18,
+        windowsTried: [3, 6, 9, 12, 18],
+        widenedTo: null,
+        count: 0,
+        areaTotal: 2,
+        found: 0,
+        likeYours: false,
+        shortfall: true,
+        sentence:
+          'Two homes in Diamond Bar Ranch came off the market without selling in the last 18 months. None were close to this home in bedrooms, bathrooms, size or age, so none are on this map.',
+        peers: [],
+      } as unknown as OpinionPageArgs['expiredPeers'],
+      bandRivals: {
+        area,
+        lo: 386_000,
+        hi: 472_000,
+        activeCount: 0,
+        pendingCount: 0,
+        rivals: [],
+        unlikeCount: 1,
+        sentence:
+          'No home like yours in Diamond Bar Ranch is for sale or under contract between $386,000 and $472,000. One other home is listed there in that range, but it is not close to this home in bedrooms, bathrooms, size or age, so it is not on this map.',
+        source:
+          'Homes for sale and under contract in Diamond Bar Ranch between $386,000 and $472,000, from the Oregon Data Share MLS as of Sep 5, 2026.',
+        widenedFrom: null,
+        ringsTried: [],
+      } as unknown as OpinionPageArgs['bandRivals'],
+    }
+    const pages = assembleOpinionPages(a)
+    const unsold = pages.find((p) => p.meta.endsWith('Did not sell'))!
+    const compete = pages.find((p) => p.meta.endsWith('At this price'))!
+    for (const p of [unsold, compete]) {
+      expect(p.body).not.toContain('this map')
+      expect(p.body).not.toContain('pin-map')
+    }
+    expect(unsold.toc).toBe('No other listing like yours near you came off unsold.')
+    expect(unsold.body).toContain('so they are not compared here.')
+    expect(compete.body).toContain('so it is not compared here.')
+    // No table, so the trace prints as the count's source, not a caption.
+    expect(compete.body).toContain(
+      '<p class="small">Source: homes for sale and under contract in Diamond Bar Ranch between $386,000 and $472,000, from the Oregon Data Share MLS as of Sep 5, 2026.</p>',
     )
   })
 })

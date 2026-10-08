@@ -493,7 +493,7 @@ describe('buildBandRivalSet — the competition is the neighborhood, never the c
     expect(set.rivals).toEqual([])
     expect(set.sentence).toBe(
       // countWord spells one through nine; past that the letter prints digits.
-      'No home like yours in Rooster Rock or Madison Park is for sale or under contract between $494,000 and $604,000. 12 other homes are listed there in that range, but none is close to this home in bedrooms, bathrooms, size or age, so none are on this map.',
+      'No home like yours in Rooster Rock or Madison Park is for sale or under contract between $494,000 and $604,000. 12 other homes are listed there in that range, but none is close to this home in bedrooms, bathrooms, size or age, so they are not compared here.',
     )
     expect(set.sentence).not.toMatch(/[—–]/)
     expect(set.unlikeCount).toBe(12)
@@ -557,7 +557,7 @@ describe('buildBandRivalSet — the competition is the neighborhood, never the c
       rivals: [],
     })
     expect(one.sentence).toBe(
-      'No home like yours in Rooster Rock or Madison Park is for sale or under contract between $494,000 and $604,000. One other home is listed there in that range, but it is not close to this home in bedrooms, bathrooms, size or age, so it is not on this map.',
+      'No home like yours in Rooster Rock or Madison Park is for sale or under contract between $494,000 and $604,000. One other home is listed there in that range, but it is not close to this home in bedrooms, bathrooms, size or age, so it is not compared here.',
     )
     expect(one.sentence).not.toContain('none is close')
     expect(one.sentence).not.toMatch(/[—–]/)
@@ -571,7 +571,7 @@ describe('buildBandRivalSet — the competition is the neighborhood, never the c
       rivals: [],
     })
     expect(two.sentence).toBe(
-      'No home like yours in Rooster Rock or Madison Park is for sale or under contract between $494,000 and $604,000. Two other homes are listed there in that range, but none is close to this home in bedrooms, bathrooms, size or age, so none are on this map.',
+      'No home like yours in Rooster Rock or Madison Park is for sale or under contract between $494,000 and $604,000. Two other homes are listed there in that range, but none is close to this home in bedrooms, bathrooms, size or age, so they are not compared here.',
     )
   })
 

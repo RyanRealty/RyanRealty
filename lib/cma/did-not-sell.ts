@@ -44,6 +44,21 @@ const esc = escapeHtml
 export const DID_NOT_SELL_HEADING = 'The listings near you that did not sell.'
 
 /**
+ * The chapter's heading, never plural over nothing.
+ *
+ * "The listings near you that did not sell." over a page that showed no
+ * listing (3037 Purcell, 2382 Jackson, reader review 2026-10-08) named a set
+ * the reader could not find. With no peer drawn the heading says so: "other"
+ * when the seller's own listing is the one that came off, and "like yours"
+ * because the search reads the subject's own type and price band, and an
+ * area can hold unsold homes that are not like it (Jackson's two).
+ */
+export function didNotSellHeading(input: { shown: number; ownFailed: boolean }): string {
+  if (input.shown > 0) return DID_NOT_SELL_HEADING
+  return `No ${input.ownFailed ? 'other ' : ''}listing like yours near you came off unsold.`
+}
+
+/**
  * `render_args.market.localFailedThenSold`, validated.
  *
  * The city's OWN failed-then-sold pairs. Preferred over the regional backtest

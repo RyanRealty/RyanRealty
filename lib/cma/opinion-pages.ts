@@ -14,11 +14,13 @@ import {
   competitionHeading,
   competitionSentence,
   competitionSourceLine,
+  competitionEmptySourceLine,
   competitorCutLine,
   nearestOpening,
+  withoutMapPointer,
   type BandRivalsInput,
 } from '@/lib/cma/band-rivals'
-import { noPeerInAreaSentence } from '@/lib/cma/market-status'
+import { noOtherPeerSentence, noPeerInAreaSentence } from '@/lib/cma/market-status'
 import { formatClientMlsField } from '@/lib/cma/client-facing'
 import { trackedDocLink } from '@/lib/cma/doc-links'
 import { daysOnMarketFrom } from '@/lib/cma/listing-history-line'
@@ -37,8 +39,8 @@ import {
   renderOfferTimingHtml,
 } from '@/lib/cma/market-area-chapters'
 import {
-  DID_NOT_SELL_HEADING,
   askAgainstSoldSentence,
+  didNotSellHeading,
   didNotSellLeadSentence,
   soldPpsfLegend,
   soldPpsfRange,
@@ -62,6 +64,8 @@ import { subjectDomDays, type SubjectAskContext } from '@/lib/cma/comp-matrix'
 import {
   MAP_HEADING,
   SALES_THAT_SET_IT_HEADING,
+  chapterIsLeadOnly,
+  mapSubsectionHtml,
   failedSubjectAsk,
   keptSaleCount,
   listRangeBounds,
@@ -86,7 +90,7 @@ import {
 } from '@/lib/cma/matrix-entry'
 import { renderMatrixHtml, subjectListingFailed, subjectPrintableAsk } from '@/lib/cma/comp-matrix'
 import { compAreaSentence } from '@/lib/cma/matrix-sets'
-import { setAsideCompIndexes } from '@/lib/cma/set-aside'
+import { setAsideCompIndexes, setAsideSalePredicate } from '@/lib/cma/set-aside'
 import { statusPriceBoardHtml, statusPriceSummaries, splitActivePending } from '@/lib/cma/status-price-summary'
 import type { LikeHomeCredit } from '@/lib/cma/like-home-credits'
 import { sellerCostLines } from '@/lib/pricing/seller-net'
@@ -245,6 +249,11 @@ export function matrixEntriesFor(a: OpinionPageArgs): {
   active: MatrixEntry[]
 } {
   const askCtx = subjectAskContext(a)
+  // The table's own set-aside decision, by listing key, so a pin and the
+  // "Set aside" list under the grid name the same sales (reader review,
+  // 2026-10-08: every pin sat under "these set the price").
+  const grid = gridSales(a)
+  const isSetAside = setAsideSalePredicate(grid.pricing, grid.comps)
   return {
     subject: subjectEntry({
       subject: a.subject,
@@ -260,6 +269,7 @@ export function matrixEntriesFor(a: OpinionPageArgs): {
       ),
       a.docLinks ?? null,
       a.subject,
+      isSetAside,
     ),
     unsold: unsoldEntries(
       unsoldPeersFor({
@@ -1108,12 +1118,14 @@ export function didNotSellBodyMatrixHtml(a: OpinionPageArgs): string {
     // That row gets the build's zero sentence naming no place, or nothing
     // when the subject itself came off, as the build does.
     const ownFailed = subjectListingFailed(a.subject) && Boolean(sets.subject.outcome)
-    const storedSentence = a.expiredPeers?.sentence?.trim() ?? ''
+    // A stored "so none are on this map" points at a map this page does not
+    // have (2382 Jackson); the counts and places stay as stored.
+    const storedSentence = withoutMapPointer(a.expiredPeers?.sentence?.trim() ?? '')
     const storedCount = a.expiredPeers ? (a.expiredPeers.count ?? a.expiredPeers.peers?.length ?? 0) : 0
     const said = !a.expiredPeers
       ? ''
       : storedCount === 0
-        ? storedSentence
+        ? storedSentence || (ownFailed ? noOtherPeerOnRow(a) : '')
         : ownFailed
           ? ''
           : noPeerInAreaSentence(a.expiredPeers.windowMonths)
@@ -1166,6 +1178,32 @@ export function didNotSellBodyMatrixHtml(a: OpinionPageArgs): string {
 }
 
 /**
+ * The search found no other listing that came off, and the row stored no
+ * sentence saying so: the build wrote nothing when the seller's own listing
+ * was the one that came off (3037 Purcell, reader review 2026-10-08). Said
+ * plainly from the stored search: the area it read and the longest window it
+ * tried. Nothing when the row carries neither.
+ */
+function noOtherPeerOnRow(a: OpinionPageArgs): string {
+  const peers = a.expiredPeers
+  if (!peers) return ''
+  const area = (peers.area ?? a.compArea ?? null) as import('@/lib/pricing/comp-area').CompArea | null
+  if (!area) return ''
+  const tried = (peers.windowsTried ?? []).filter((m): m is number => typeof m === 'number' && Number.isFinite(m) && m > 0)
+  const longest = tried.length > 0 ? Math.max(...tried) : peers.windowMonths
+  return noOtherPeerSentence(area, longest)
+}
+
+/** The did-not-sell heading for this row (`didNotSellHeading`). */
+export function didNotSellHeadingFor(a: OpinionPageArgs): string {
+  const sets = matrixEntriesFor(a)
+  return didNotSellHeading({
+    shown: sets.unsold.length,
+    ownFailed: subjectListingFailed(a.subject) && Boolean(sets.subject.outcome),
+  })
+}
+
+/**
  * Each peer's story line: what it asked a foot against what homes like it
  * actually closed at. The same sentence the cards printed, off the same
  * function, keyed to the pin so a reader can find the row and the pin.
@@ -1192,11 +1230,12 @@ function peerStoriesHtml(a: OpinionPageArgs, peers: readonly MatrixEntry[]): str
 export function didNotSellPage(a: OpinionPageArgs): CmaPageDef | null {
   const body = didNotSellBodyMatrixHtml(a)
   if (!body.trim()) return null
+  const heading = didNotSellHeadingFor(a)
   return {
     meta: `${esc(a.subject.streetAddress)} · Did not sell`,
-    toc: DID_NOT_SELL_HEADING,
+    toc: heading,
     body: `
-  <h2 class="section">${esc(DID_NOT_SELL_HEADING)}</h2>
+  <h2 class="section">${esc(heading)}</h2>
   ${body}`,
   }
 }
@@ -1897,7 +1936,7 @@ export function competitionBodyMatrixHtml(a: OpinionPageArgs): string {
           stored.startsWith(`${nearestOpening(drawnActive)} `))
   const useStored = stored.length > 0 && sameRows && forSaleAgrees
   const sentence = useStored
-    ? stored
+    ? withoutMapPointer(stored)
     : competitionSentence({
         lo: b.lo,
         hi: b.hi,
@@ -1926,10 +1965,14 @@ export function competitionBodyMatrixHtml(a: OpinionPageArgs): string {
     low: a.pricing.valueLow,
     high: a.pricing.valueHigh,
   })
+  // Nothing drawn: the sentence says so, and the note under it names the
+  // source and the day, not a caption for a table that is not there (62475
+  // Woodsman, reader review 2026-10-08).
+  const note = matrix.trim() ? sourceLine : competitionEmptySourceLine(sourceLine)
   return `<p>${esc(sentence)}${basis ? ` ${esc(basis)}` : ''}</p>
   ${cut ? `<p>${esc(cut)}</p>` : ''}
   ${edge ? `<p class="compete-edge">${esc(edge.sentence)}</p>` : ''}
-  <p class="small">${esc(sourceLine)}</p>
+  <p class="small">${esc(note)}</p>
   ${matrix}`
 }
 
@@ -2121,6 +2164,18 @@ export const OPINION_CHAPTER_ORDER = [
 export type OpinionChapterId = (typeof OPINION_CHAPTER_ORDER)[number]
 
 
+/**
+ * A price chapter that is its heading and one paragraph shares its page with
+ * the map under it (2382 Jackson, reader review 2026-10-08): the heading names
+ * where the sales are, the map shows them, and the number still arrives
+ * before its evidence. Read by both documents, so the letter's chapters and
+ * the immersive's scenes stay one list.
+ */
+export function mapSharesPricePage(a: OpinionPageArgs): boolean {
+  if (!mapSubsectionHtml(mapArgs(a))) return false
+  return chapterIsLeadOnly(pricingPage(salesThatSetItArgs(a)).body)
+}
+
 export function assembleOpinionPages(a: OpinionPageArgs): CmaPageDef[] {
   const build: Record<OpinionChapterId, () => CmaPageDef | null> = {
     'what-happened': () => whatHappenedPage(a),
@@ -2135,9 +2190,16 @@ export function assembleOpinionPages(a: OpinionPageArgs): CmaPageDef[] {
     disclosure: () => disclosurePage(a),
     'next-step': () => nextStepPage(a),
   }
+  const built = new Map<OpinionChapterId, CmaPageDef | null>()
+  for (const id of OPINION_CHAPTER_ORDER) built.set(id, build[id]())
+  const worth = built.get('what-its-worth')
+  if (worth && built.get('the-map') && mapSharesPricePage(a)) {
+    built.set('what-its-worth', { ...worth, body: `${worth.body}${mapSubsectionHtml(mapArgs(a))}` })
+    built.set('the-map', null)
+  }
   const pages: CmaPageDef[] = []
   for (const id of OPINION_CHAPTER_ORDER) {
-    const page = build[id]()
+    const page = built.get(id)
     if (page) pages.push(page)
   }
   return pages

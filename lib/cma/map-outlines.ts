@@ -105,6 +105,59 @@ export function ringLabelAnchor(rings: readonly MapPoint[][], frame?: MapFrame |
   return { lat: lat / vertices.length, lng: lng / vertices.length }
 }
 
+/**
+ * County and city land-use file numbers that ride on a recorded plat name.
+ *
+ * The boundaries table carries the plat's recorded label, and for plats filed
+ * since about 2017 that label often ends in the planning case that approved
+ * it: "Shevlin West Phase 4 Pz-20-0010" (City of Bend), "Canyon Trails Phase
+ * 1 711-21-000194-sub" (City of Redmond), "Caldera Springs, Phase D
+ * 247-24-000360-tp" (Deschutes County), "Sisters Woodlands Phase 2 Sub 21-01"
+ * (City of Sisters), "Kampstra Replat Of Parcel 3 Plat. No. 2002-61". A
+ * homeowner reads the case number as part of the neighborhood's name (62475
+ * Woodsman's map, reader review 2026-10-08), so the letter prints the name
+ * without it. Phase, addition, block, lot and "No. 2" numbers are the name
+ * and stay: each pattern needs a case prefix or the county's three-part file
+ * shape, which no phase or lot range has.
+ */
+const PLAT_FILE_NUMBERS: readonly RegExp[] = [
+  // 711-21-000260-sub, 247-25-00292-tp, 711-20-000109-plng-e, 711-21-000185-plng-sub
+  /\b\d{3}-\d{2}-\d{3,6}(?:-[a-z]+)*\b/gi,
+  // PZ-20-0010, Pz 20-0569, Pz20-0183, Sub 24-02, Sub-21-01, sub20-01, Mod 20-02, Mp-80-93
+  /\b(?:pz|sub|mod|mp)[- ]?\d{2}-\d{2,4}\b/gi,
+  // A recording number written into the name: Plat. No. 2002-61
+  /\bplat\.?\s+no\.?\s+\d{4}-\d+\b/gi,
+]
+
+/**
+ * A recorded plat name as the letter prints it: the county or city file
+ * number taken off, the name and its phase left exactly as recorded. Numerals
+ * are not normalized: "Silver Sage Phase I" and "Silver Sage Phase 2" are the
+ * two plats' recorded names, and the record is the only source for them.
+ */
+export function printedPlatName(label: string | null | undefined): string {
+  const raw = (label ?? '').replace(/\s+/g, ' ').trim()
+  if (!raw) return ''
+  let out = raw
+  let stripped = false
+  for (const re of PLAT_FILE_NUMBERS) {
+    out = out.replace(re, () => {
+      stripped = true
+      return ' '
+    })
+  }
+  if (!stripped) return raw
+  out = out
+    // The designation word a removed file number left behind ("... 711-22-000209-plng Sub").
+    .replace(/\s+sub\s*$/i, ' ')
+    // Separators between two removed numbers ("Pz 20-0027 , Pz 20-0028", "Mod 20-02/sub20-01").
+    .replace(/[\s,/;&]+$/g, '')
+    .replace(/\s+,/g, ',')
+    .replace(/\s+/g, ' ')
+    .trim()
+  return out || raw
+}
+
 /** A machine slug such as own-street-24mo. A seller name has a space or a capital. */
 function isMachineSlug(text: string): boolean {
   return /^[a-z0-9]+(?:-[a-z0-9]+)+$/.test(text)
@@ -126,14 +179,14 @@ export function labelsForUsedPlats(
   const out: OutlineMapLabel[] = []
   const seen = new Set<string>()
   for (const plat of input.plats) {
-    const text = plat.label?.trim() ?? ''
+    const text = printedPlatName(plat.label)
     if (!text || isMachineSlug(text) || seen.has(text)) continue
     const at = ringLabelAnchor(plat.rings, opts.frame)
     if (!at) continue
     seen.add(text)
     out.push({ text, lat: at.lat, lng: at.lng, kind: 'subdivision', rank: 80 })
   }
-  const parentText = input.parent?.label?.trim() ?? ''
+  const parentText = printedPlatName(input.parent?.label)
   if (parentText && !isMachineSlug(parentText) && !parentText.includes('.')) {
     const at = input.parent ? ringLabelAnchor(input.parent.rings, opts.frame) : null
     if (at) out.push({ text: parentText, lat: at.lat, lng: at.lng, kind: 'parent', rank: 90 })
