@@ -79,9 +79,12 @@ describe('cost to sell: answer-first block (accept test 2)', () => {
 
   it('is the brief copy word for word', () => {
     expect(COST_TO_SELL_ANSWER).toBe(
-      "Selling a $765,000 home in Bend, which is the city's median sale price over the last 12 months, costs about $26,200 to $45,300, or 3.4% to 5.9% of the price, before your loan payoff and property-tax proration. The low end is our 3% listing fee plus about $3,200 for the owner's title policy, your half of escrow, the lien search, and recording the release of your mortgage. The high end adds 2.5% if you agree to cover the buyer's agent, an illustrative figure because that fee is negotiated offer by offer, and Deschutes County charges no transfer tax.",
+      "Selling a $765,000 home in Bend, which is the city's median sale price over the last 12 months, costs about $26,200 to $45,300, or 3.4% to 5.9% of the price, before your loan payoff and property-tax proration. The low end is our 3% listing fee plus about $3,200 for the owner's title policy, your half of escrow, the lien search, and recording the release of your mortgage. The high end adds 2.5% if you agree to cover the buyer's agent, an illustrative figure because that fee is negotiated offer by offer, and Deschutes County charges no transfer tax. To the dollar, the table below totals $26,165 to $45,290, including $1,748 for the owner's title policy.",
     )
-    for (const needle of ['$765,000', '$26,200 to $45,300', '3.4% to 5.9%', 'illustrative', 'no transfer tax']) {
+    for (const needle of [
+      '$765,000', '$26,200 to $45,300', '3.4% to 5.9%', 'illustrative', 'no transfer tax',
+      '$26,165 to $45,290', '$1,748',
+    ]) {
       expect(COST_TO_SELL_ANSWER).toContain(needle)
     }
     expect(lifted.answerHtml).toContain(
@@ -108,7 +111,7 @@ describe('cost to sell: illustrative labels and traceability (accept tests 5, 6)
       '$1,340', '$2,679', '$102', '$5', '$26,165', '$45,290', '$3,215', '$5,340', '$1,785', '$1',
       '$1,000',
     ])
-    const tracedPct = new Set(['3%', '2.5%', '3.4%', '5.9%', '5%'])
+    const tracedPct = new Set(['3%', '2.5%', '3.4%', '5.9%'])
     for (const d of text.match(/\$\d{1,3}(?:,\d{3})*/g) ?? []) expect(traced, d).toContain(d)
     for (const p of text.match(/\d+(?:\.\d+)?%/g) ?? []) expect(tracedPct, p).toContain(p)
   })
@@ -116,6 +119,35 @@ describe('cost to sell: illustrative labels and traceability (accept tests 5, 6)
   it('says the escrow figure is from a 2023 card and to get a current quote', () => {
     expect(text).toContain("Deschutes County Title's published rate card (revised March 2023)")
     expect(text).toContain('so ask for a current quote')
+  })
+})
+
+describe('cost to sell: desk review 2026-10-08 (PR #429)', () => {
+  it('drops the combined-commission calculator sentence', () => {
+    expect(text).not.toMatch(/online calculators|combined commission/i)
+    expect(text).toContain(
+      "Your number depends on whether, and how much, you agree to cover the buyer's agent in the offer you accept.",
+    )
+  })
+
+  it('carries the title figure and the exact totals in the table as well as the answer block', () => {
+    expect(COST_TO_SELL_CONTENT).toContain(
+      '<tr><th scope="row">Owner\'s title policy, standard coverage</th><td>$1,748</td><td>$1,748</td></tr>',
+    )
+    expect(COST_TO_SELL_CONTENT).toContain('<td>$26,165</td><td>$45,290</td>')
+  })
+
+  it('cites AmeriTitle for the recording wording and the county table for the $25 lien search', () => {
+    expect(COST_TO_SELL_CONTENT).toContain(
+      'AmeriTitle, Closing Costs: Homeowner Manual (Nov. 2019), for who customarily records the deed and the mortgage release: <a href="https://www.amerititle.com/2019/11/closing-costs-homeowner-manual/"',
+    )
+    expect(COST_TO_SELL_CONTENT).toContain('\u00a71.008(A) county lien search table, $25 per account in Deschutes')
+  })
+
+  it('links the withholding sentence to the live withholding guide', () => {
+    expect(COST_TO_SELL_CONTENT).toContain(
+      'Our <a href="/blog/oregon-withholding-firpta-home-sellers">withholding guide</a> explains it.',
+    )
   })
 })
 

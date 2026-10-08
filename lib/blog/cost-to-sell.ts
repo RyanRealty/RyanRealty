@@ -35,7 +35,10 @@ export const COST_TO_SELL_INPUTS = {
   listingFeeRate: 0.03,
   /** T2: ILLUSTRATIVE only. Not a typical, standard, or average rate; commission is negotiable. */
   illustrativeBuyerAgentRate: 0.025,
-  /** T4: OTIRO Rating Manual (eff. 2025-09-01) section 1.008(A), Deschutes, per account. */
+  /**
+   * T4: OTIRO Rating Manual (eff. 2025-09-01) section 1.008(A), the county
+   * lien search fee table currently in force: Deschutes, $25 per account.
+   */
   lienSearchFee: 25,
   /** T5: Deschutes County Title rate card (rev. 03/2023), "Sale (Total Fee)" row at medianSalePrice. Look it up again when the price changes. */
   escrowSaleTotalFee: 2_679,
@@ -178,7 +181,7 @@ export const COST_TO_SELL_FAQS: readonly BlogFaqItem[] = [
 ]
 
 /** Answer-first block (brief section 4). render-blog-post lifts it above the rail. */
-export const COST_TO_SELL_ANSWER = `Selling a ${usd(F.price)} home in Bend, which is the city's median sale price over the last 12 months, costs about ${usdHundreds(F.totalWithoutBuyerAgent)} to ${usdHundreds(F.totalWithBuyerAgent)}, or ${SHARE_LOW} to ${SHARE_HIGH} of the price, before your loan payoff and property-tax proration. The low end is our ${LISTING} listing fee plus about ${usdHundreds(F.fixedCosts)} for the owner's title policy, your half of escrow, the lien search, and recording the release of your mortgage. The high end adds ${BUYER_AGENT} if you agree to cover the buyer's agent, an illustrative figure because that fee is negotiated offer by offer, and Deschutes County charges no transfer tax.`
+export const COST_TO_SELL_ANSWER = `Selling a ${usd(F.price)} home in Bend, which is the city's median sale price over the last 12 months, costs about ${usdHundreds(F.totalWithoutBuyerAgent)} to ${usdHundreds(F.totalWithBuyerAgent)}, or ${SHARE_LOW} to ${SHARE_HIGH} of the price, before your loan payoff and property-tax proration. The low end is our ${LISTING} listing fee plus about ${usdHundreds(F.fixedCosts)} for the owner's title policy, your half of escrow, the lien search, and recording the release of your mortgage. The high end adds ${BUYER_AGENT} if you agree to cover the buyer's agent, an illustrative figure because that fee is negotiated offer by offer, and Deschutes County charges no transfer tax. To the dollar, the table below totals ${usd(F.totalWithoutBuyerAgent)} to ${usd(F.totalWithBuyerAgent)}, including ${usd(F.ownersTitlePolicy)} for the owner's title policy.`
 
 const escapeHtml = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
@@ -228,7 +231,7 @@ export const COST_TO_SELL_CONTENT = `
 ${TABLE}
 <p>Not in the total: your loan payoff, <a href="/blog/property-taxes-deschutes-county">prorated property taxes</a>, any HOA transfer fee, and anything you agree to credit the buyer. On an October 30 closing with the 2026\u201327 tax bill still unpaid, your share of a roughly ${usd(F.annualTaxIllustrative)} annual bill would be about ${usd(F.prorationIllustrative)}. That is illustrative, so use your own bill on DIAL. If you have already paid the year, the buyer's share comes back to you.</p>
 <p>Where the numbers come from: the ${LISTING} is our listing fee. The owner's title premium is the rate filed for Oregon by the Oregon Title Insurance Rating Organization (manual effective Sept. 1, 2025), so every title company charges the same premium. The escrow fee is from Deschutes County Title's published rate card (revised March 2023), split 50/50 by local custom, so ask for a current quote. Recording is the Deschutes County Clerk's fee effective July 1, 2026. Oregon law (ORS 306.815) bars new local transfer taxes, and Washington County's is the only one in the state. The ${BUYER_AGENT} is an example, not a standard rate. Commission is negotiable.</p>
-<p>Some online calculators assume a 5% combined commission. Your number depends on whether, and how much, you agree to cover the buyer's agent in the offer you accept.</p>
+<p>Your number depends on whether, and how much, you agree to cover the buyer's agent in the offer you accept.</p>
 
 <h2>Listing fee versus buyer-agent compensation</h2>
 <p>These used to be one number. They are two now. Our listing fee is 3% of the sale price with no add-on fees, and it covers the MLS listing, professional photography, a 3D tour, the marketing plan, every showing, and transaction management through close. Buyer-agent compensation is separate. Under the rules that took effect in August 2024, offers of compensation to the buyer's agent no longer appear in the MLS, and buyers sign a <a href="/blog/buyers-agent-bend-buyer-broker-agreement">written agreement</a> with their own agent that states what that agent will be paid. Whether you offer to cover some or all of that is a term of each offer, and you decide it offer by offer. We walk you through the trade before the first one arrives. Commission is negotiable and every listing agreement is its own conversation.</p>
@@ -252,9 +255,10 @@ ${QUESTIONS}
 <h2>Sources</h2>
 <ul>
 <li>Ryan Realty, <a href="/housing-market/bend">Bend housing market</a> (Oregon Data Share MLS), as of ${AS_OF}</li>
-<li>Oregon Title Insurance Rating Organization, Oregon Rating Manual, effective Sept. 1, 2025 (\u00a71.008, \u00a72.010, \u00a73.002, Schedule One): <a href="https://wfgunderwriting.com/wp-content/uploads/filebase/oregon/rates/OTIRO%20Rate%20Manual%20effective%20%209-1-2025.pdf" target="_blank" rel="noopener nofollow">rating manual PDF</a></li>
+<li>Oregon Title Insurance Rating Organization, Oregon Rating Manual, effective Sept. 1, 2025 (\u00a71.008(A) county lien search table, ${usd(I.lienSearchFee)} per account in Deschutes; \u00a72.010, \u00a73.002, Schedule One): <a href="https://wfgunderwriting.com/wp-content/uploads/filebase/oregon/rates/OTIRO%20Rate%20Manual%20effective%20%209-1-2025.pdf" target="_blank" rel="noopener nofollow">rating manual PDF</a></li>
 <li>Deschutes County Title, Central Oregon Rates for Deschutes County (rate card, revised 03/2023): <a href="https://deschutescountytitle.com/wp-content/uploads/2023/04/Rate-Cards-Deschutes-County.pdf" target="_blank" rel="noopener nofollow">rate card PDF</a></li>
 <li>Deschutes County Clerk, Recording Fees, effective July 1, 2026 (Ordinance 2026-003): <a href="https://www.deschutescounty.gov/531/Recording-Fees" target="_blank" rel="noopener nofollow">Recording Fees</a></li>
+<li>AmeriTitle, Closing Costs: Homeowner Manual (Nov. 2019), for who customarily records the deed and the mortgage release: <a href="https://www.amerititle.com/2019/11/closing-costs-homeowner-manual/" target="_blank" rel="noopener nofollow">homeowner guide</a></li>
 <li>ORS 306.815, Tax on transfer of real property prohibited; exceptions: <a href="https://www.oregonlegislature.gov/bills_laws/ors/ors306.html" target="_blank" rel="noopener nofollow">Oregon Revised Statutes, chapter 306</a></li>
 <li>Washington County, Transfer Tax: <a href="https://www.washingtoncountyor.gov/at/recording/transfer-tax-exemption" target="_blank" rel="noopener nofollow">transfer tax</a></li>
 <li>Oregon Department of Revenue, FY 2025-26 Oregon Property Tax Statistics Report (via our <a href="/blog/property-taxes-deschutes-county">property-tax guide</a>)</li>
