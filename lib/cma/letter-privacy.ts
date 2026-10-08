@@ -26,9 +26,14 @@
  *     the document's own record, and a house number before it or a suffix
  *     after it clears only a word that is one of those street names. Leave
  *     them out and that number or suffix clears any word.
+ *   - A place is not a name either. A name word that only ever prints inside a
+ *     place name the document printed from its data ("Miller Heights", a
+ *     recorded subdivision, for an owner named Miller) is the place. The places
+ *     are handed in (printedPlaces) the way the addresses are; a phrase that is
+ *     only the owner's own words, or carries family or trust, clears nothing.
  * A real printed name (a greeting, a sign-off, the full name) still fails, and
- * so does the same word anywhere off the street ("the Russell family",
- * "Russell's home", "Russell called us").
+ * so does the same word anywhere off the street or the place ("the Russell
+ * family", "the Russells", "Russell's home", "Russell called us").
  */
 
 import { BRAND, BROKERS } from '@/lib/brand/contact'
@@ -515,6 +520,65 @@ export type OwnerNameGradeOptions = {
    * must pass them, or it grades the same letter more strictly than the build did.
    */
   printedAddresses?: readonly (string | null | undefined)[] | null
+  /**
+   * The place names the document prints from its data: the subdivision and
+   * plat of every printed home, the comp area's names, the neighborhood,
+   * community and city names, the street names (printedPlacesOf in
+   * street-context.ts). A name word is cleared only where it prints inside one
+   * of these phrases ("Miller Heights" for an owner named Miller), and only a
+   * phrase that carries a word that is not the owner's: "Miller" alone, or a
+   * phrase made only of the owner's name words, clears nothing. Leave it out
+   * and no place clears anything, which is the strict side.
+   */
+  printedPlaces?: readonly (string | null | undefined)[] | null
+}
+
+/** Words that make a phrase a person's or a trust's name, never a place: "the Miller Family", "Miller Living Trust". */
+const PERSON_PHRASE_WORDS = new Set(['family', 'trust', 'trustee', 'trustees', 'rev', 'revocable', 'liv', 'living'])
+
+/**
+ * Where the printed places sit in the graded text, for the places that can
+ * clear one of the owner's words. A place qualifies when it carries a word
+ * that is not one of the owner's name words and no word that makes it a
+ * person's or a trust's name. Each phrase matches whole, in any letter case,
+ * inside one text node ([ \t] between its words, as the street rules read).
+ */
+function printedPlaceSpans(
+  text: string,
+  places: readonly (string | null | undefined)[] | null | undefined,
+  tokens: readonly string[],
+): TextSpan[] {
+  const own = new Set(tokens.map((token) => token.toLowerCase()))
+  const seen = new Set<string>()
+  const spans: TextSpan[] = []
+  for (const raw of places ?? []) {
+    const place = (raw ?? '').trim().replace(/\s+/g, ' ')
+    const key = place.toLowerCase()
+    if (!place || seen.has(key)) continue
+    seen.add(key)
+    const words = significantWords(place).map((word) => word.toLowerCase())
+    if (!words.some((word) => own.has(word))) continue
+    if (words.every((word) => own.has(word))) continue
+    if (words.some((word) => PERSON_PHRASE_WORDS.has(word))) continue
+    const phrase = place.split(' ').map(escapeRegExp).join('[ \\t]+')
+    const re = new RegExp(`(?<![A-Za-z0-9'-])${phrase}(?![A-Za-z0-9-])`, 'gi')
+    for (const match of text.matchAll(re)) {
+      const start = match.index ?? 0
+      spans.push([start, start + match[0].length])
+    }
+  }
+  return spans
+}
+
+/**
+ * "the Millers": a capitalized plural of the owner's word after "the" names the
+ * family. It is not the word itself, so the whole-word match and the street
+ * and place rules never see it; this does.
+ */
+function familyPluralPrints(text: string, token: string): boolean {
+  const re = new RegExp(`\\bthe\\s+(${escapeRegExp(token)}(?:s|es)'?)(?![A-Za-z])`, 'gi')
+  for (const match of text.matchAll(re)) if (/^[A-Z]/.test(match[1]!)) return true
+  return false
 }
 
 /**
@@ -528,9 +592,11 @@ export type OwnerNameGradeOptions = {
  * one grader: letterOwnerNameCheck and letterContainsOwnerContactNames both
  * read it, so they cannot disagree.
  *
- * A name word that prints ONLY as a street is not a hit ("20726 Russell Rd" for
- * an owner named Russell). One occurrence that is not a street (the Russell
- * family, Russell's home, Russell called) is enough to hit. And name-shaped use
+ * A name word that prints ONLY as a street or inside a printed place is not a
+ * hit ("20726 Russell Rd" for an owner named Russell, "Miller Heights" for one
+ * named Miller). One occurrence that is neither (the Russell family, Russell's
+ * home, Russell called) is enough to hit, and so is a family plural ("the
+ * Russells") anywhere. And name-shaped use
  * always wins: a greeting, an honorific, a sign-off or a pair beside another
  * name word is a hit whatever else the word is doing. This can only clear a
  * token the older rule refused, never add one.
@@ -554,13 +620,19 @@ export function ownerNameTokenHits(
   // The copy the street rules read, with the tag boundaries kept. Built on the
   // first token that gets that far: most letters have no hit at all.
   let streets: { text: string; spans: TextSpan[]; words: ReadonlySet<string> | null } | null = null
-  const onlyEverAStreet = (token: string): boolean => {
+  const onlyEverAStreetOrPlace = (token: string): boolean => {
     if (!streets) {
       const streetText = withoutOurOwnIdentity(textOf(htmlOrText, NODE_BREAK), tokens)
       const printed = opts?.printedAddresses
       streets = {
         text: streetText,
-        spans: printedAddressSpans(streetText, printedAddressMatchers(printed)),
+        // A place the document printed from its data is cleared the way a
+        // printed address is: an occurrence wholly inside the phrase. One
+        // occurrence outside every phrase still fails.
+        spans: [
+          ...printedAddressSpans(streetText, printedAddressMatchers(printed)),
+          ...printedPlaceSpans(streetText, opts?.printedPlaces, tokens),
+        ],
         // Addresses handed in, even none usable, mean the document's own record
         // is known: the number and suffix signals may clear only a word that is
         // one of its street names, so a record that came back empty is strict,
@@ -572,10 +644,13 @@ export function ownerNameTokenHits(
   }
   const hits: string[] = []
   for (const token of tokens) {
-    if (!words.has(token.toLowerCase())) continue
     if (isCommonNameWord(token)) {
-      if (!commonWordInNamePosition(text, token, tokens)) continue
-    } else if (onlyEverAStreet(token) && !commonWordInNamePosition(text, token, tokens)) {
+      if (!words.has(token.toLowerCase()) || !commonWordInNamePosition(text, token, tokens)) continue
+    } else if (familyPluralPrints(text, token)) {
+      // "the Millers" is the family, whatever a street or a place does with the word elsewhere.
+    } else if (!words.has(token.toLowerCase())) {
+      continue
+    } else if (onlyEverAStreetOrPlace(token) && !commonWordInNamePosition(text, token, tokens)) {
       continue
     }
     hits.push(token)

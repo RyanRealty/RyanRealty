@@ -478,11 +478,16 @@ export function evaluateLetterConsistencyContract(args: {
   expiredAddresses?: readonly (string | null | undefined)[] | null
   /** The addresses the letter prints (printedAddressesOf). Lets the owner-name check tell a street from a name. */
   printedAddresses?: readonly (string | null | undefined)[] | null
+  /** The place names the letter prints from its data (printedPlacesOf). Lets the owner-name check tell a place from a name. */
+  printedPlaces?: readonly (string | null | undefined)[] | null
   /** Where the sales sit, and the chart. Absent on older callers, which skip these checks. */
   place?: LetterPlaceSource | null
 }): { pass: boolean; checks: ContractCheck[] } {
   const checks: ContractCheck[] = [
-    letterOwnerNameCheck(args.html, args.names, { printedAddresses: args.printedAddresses }),
+    letterOwnerNameCheck(args.html, args.names, {
+      printedAddresses: args.printedAddresses,
+      printedPlaces: args.printedPlaces,
+    }),
     letterLinkTrackingCheck(args.html, args.identity),
     highEndAtOrBelowBandCheck(args.pricing),
     recommendedAtOrBelowBandCheck(args.pricing),

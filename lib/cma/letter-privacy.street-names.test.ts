@@ -19,6 +19,7 @@ import {
   printedAddressesOf,
   printedAddressMatchers,
   printedAddressSpans,
+  printedPlacesOf,
   printedStreetWords,
   streetSignalAt,
 } from '@/lib/cma/street-context'
@@ -617,5 +618,151 @@ describe('the real letter, with comps on the owner’s surname', () => {
     expect(letterOwnerNameCheck(`${html}<p>Hi Russell, the range is ready.</p>`, OWNER, { printedAddresses: printed }).pass).toBe(false)
     expect(letterOwnerNameCheck(`${html}<p>The Russell family listed in January.</p>`, OWNER, { printedAddresses: printed }).pass).toBe(false)
     expect(letterOwnerNameCheck(`${html}<p>Ada Russell asked about the roof.</p>`, OWNER, { printedAddresses: printed }).pass).toBe(false)
+  })
+})
+
+/**
+ * A place is not the owner either. The live case (2026-10-08): an owner whose
+ * surname is Miller, and comps in Miller Heights, a recorded subdivision on
+ * Bend's west side. The letter names the subdivision in the sales table and
+ * the area caption, and the check refused it for the place. The first name
+ * below is made up.
+ */
+describe('a place named like the owner is not the owner', () => {
+  const MILLER = { clientName: 'Zelda Miller' }
+  const PLACES = ['Miller Heights', 'Park Place', 'Bend']
+  const ADDRESSES = ['915 Saginaw Ave', '335 NW 17th St', '1665 NW Albany Ave']
+  const table =
+    '<table><tr><th>Address</th><th>Subdivision</th><th>Sold</th></tr>' +
+    '<tr><td class="addr">335 NW 17th St</td><td>Miller Heights</td><td>$640,000</td></tr>' +
+    '<tr><td class="addr">1665 NW Albany Ave</td><td>MILLER HEIGHTS</td><td>$655,000</td></tr></table>'
+  const caption = '<p class="caption">Closed sales in Miller Heights and Park Place, Bend.</p>'
+  const letter = `<article>${table}${caption}</article>`
+  const grade = (html: string, printedPlaces?: string[] | null) =>
+    letterOwnerNameCheck(html, MILLER, { printedAddresses: ADDRESSES, printedPlaces })
+
+  it('passes the subdivision in a sales table and in the area caption', () => {
+    expect(grade(letter, PLACES).pass).toBe(true)
+    expect(ownerNameTokenHits(letter, MILLER, { printedAddresses: ADDRESSES, printedPlaces: PLACES })).toEqual([])
+    expect(letterContainsOwnerContactNames(letter, MILLER, { printedPlaces: PLACES })).toBe(false)
+  })
+
+  it('fails closed without the places, or with a place list that does not hold the printed place', () => {
+    expect(grade(letter).pass).toBe(false)
+    expect(grade(letter, null).pass).toBe(false)
+    expect(grade(letter, []).pass).toBe(false)
+    expect(grade(letter, ['Park Place', 'Bend']).pass).toBe(false)
+    // A different place that merely shares the word clears nothing here.
+    expect(grade(letter, ['Miller Ranch', 'Park Place']).pass).toBe(false)
+    expect(grade(letter, ['Miller Heights Phase 2']).pass).toBe(false)
+  })
+
+  it.each([
+    'Miller called us about the roof.',
+    'The Millers listed in January.',
+    'the Millers',
+    "Miller's home sat for 143 days.",
+    'Miller’s home sat for 143 days.',
+    'Dear Miller,',
+    'Hi Miller, the range is ready.',
+    'Dear Ms. Miller,',
+    'Sincerely, Miller',
+    'Prepared for Miller by Matt Ryan.',
+    'Zelda Miller asked about the roof.',
+    'the Miller family',
+  ])('still fails beside the printed place: %s', (text) => {
+    expect(grade(`${letter}<p>${text}</p>`, PLACES).pass).toBe(false)
+    expect(grade(`<p>${text}</p>`, PLACES).pass).toBe(false)
+  })
+
+  it('a family plural is the family even when the word itself never prints', () => {
+    expect(letterOwnerNameCheck('<p>The Millers listed in January.</p>', MILLER).pass).toBe(false)
+    expect(ownerNameTokenHits('Thanks to the Millers.', MILLER)).toEqual(['Miller'])
+    // A lower-case plural is a common noun ("the millers ground the grain"), not the family.
+    expect(letterOwnerNameCheck('<p>the millers ground the grain</p>', MILLER).pass).toBe(true)
+  })
+
+  it('a place made only of the owner words, or naming a family or a trust, clears nothing', () => {
+    expect(grade('<p>Sales in Miller.</p>', ['Miller']).pass).toBe(false)
+    expect(grade('<p>Sales near Zelda Miller.</p>', ['Zelda Miller']).pass).toBe(false)
+    expect(grade('<p>Owned by the Miller Family.</p>', ['Miller Family']).pass).toBe(false)
+    expect(grade('<p>Miller Living Trust</p>', ['Miller Living Trust']).pass).toBe(false)
+  })
+
+  it('the email draft and free text stay strict', () => {
+    const email = 'Hi Miller,\n\nThe report for 915 Saginaw Ave is ready. Comps sit in Miller Heights.'
+    expect(grade(email, PLACES).pass).toBe(false)
+    expect(grade('Miller, the comps in Miller Heights sold fast.', PLACES).pass).toBe(false)
+    expect(grade('Comps in Miller Heights sold fast.', PLACES).pass).toBe(true)
+  })
+
+  it('a place split across two cells, or a hyphenated name beside the place, is not the place', () => {
+    expect(grade('<table><tr><td>Miller</td><td>Heights</td></tr></table>', PLACES).pass).toBe(false)
+    expect(grade(`${letter}<p>Ask Zelda Miller-Smith.</p>`, PLACES).pass).toBe(false)
+  })
+
+  it('collects every place the render args print, never a party name', () => {
+    const places = printedPlacesOf({
+      subject: { streetAddress: '915 Saginaw Ave, Bend, OR 97703', subdivision: 'Park Place', city: 'Bend' },
+      comps: [{ address: '335 NW 17th St', subdivision: 'Miller Heights' }, { address: '1665 NW Albany Ave', subdivision: '  ' }],
+      bandRivals: { rivals: [{ address: '9 Fir St', subdivision: 'Rival Plat' }] },
+      expiredPeers: { peers: [{ address: '14 Cedar Lane', subdivisionName: 'Peer Plat' }] },
+      compArea: {
+        kind: 'subdivisions',
+        names: ['Miller Heights', 'Park Place'],
+        namesWithoutPlat: ['Unrecorded Acres'],
+        street: { key: 'saginaw', names: ['Street Plat'], platSlugs: [] },
+      },
+      market: { neighborhoodName: 'West Side', communityName: 'Sample Community', placeName: 'Old Bend' },
+      client: { name: 'Zelda Miller', subdivision: 'Client Plat', address: '5 Miller Ln' },
+      ownerInfo: { community: 'Owner Community' },
+      // A `names` list outside the comp area is not a place list.
+      notes: { names: ['Zelda Miller'] },
+    })
+    expect(places).toEqual(
+      expect.arrayContaining([
+        'Saginaw Ave',
+        'Park Place',
+        'Bend',
+        'NW 17th St',
+        'Miller Heights',
+        'NW Albany Ave',
+        'Fir St',
+        'Rival Plat',
+        'Cedar Lane',
+        'Peer Plat',
+        'Unrecorded Acres',
+        'Street Plat',
+        'West Side',
+        'Sample Community',
+        'Old Bend',
+      ]),
+    )
+    for (const party of ['Zelda Miller', 'Client Plat', 'Miller Ln', 'Owner Community', '']) {
+      expect(places).not.toContain(party)
+    }
+    for (const empty of [undefined, null, '', 42, {}, []]) expect(printedPlacesOf(empty)).toEqual([])
+  })
+
+  it('build.ts hands the contract the places of its own render args', () => {
+    const src = readFileSync(join(process.cwd(), 'lib/cma/build.ts'), 'utf8')
+    const call = src.slice(src.indexOf('evaluateLetterConsistencyContract({'))
+    expect(call.slice(0, 1100)).toMatch(/printedPlaces:\s*printedPlacesOf\(renderArgs\)/)
+  })
+
+  it('the contract clears the place only when it is given the places', () => {
+    const base = {
+      html: letter,
+      names: MILLER,
+      identity: { personId: null },
+      pricing: { recommended: 640000, highEnd: 670000, valueLow: 610000, valueHigh: 670000 },
+      printedAddresses: ADDRESSES,
+    }
+    const name = (out: ReturnType<typeof evaluateLetterConsistencyContract>) =>
+      out.checks.find((c) => c.id === 'letter-no-owner-names')
+    expect(name(evaluateLetterConsistencyContract(base))?.pass).toBe(false)
+    expect(name(evaluateLetterConsistencyContract({ ...base, printedPlaces: PLACES }))?.pass).toBe(true)
+    const dirty = { ...base, html: `${letter}<p>Hi Miller, the range is ready.</p>`, printedPlaces: PLACES }
+    expect(name(evaluateLetterConsistencyContract(dirty))?.pass).toBe(false)
   })
 })
