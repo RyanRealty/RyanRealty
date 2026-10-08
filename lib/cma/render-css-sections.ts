@@ -374,6 +374,13 @@ export function cmaSectionStyles(): string {
     box-shadow: 0 0 0 2px var(--navy);
   }
   .pin-hit.is-unsold .pin-dot { box-shadow: none; border: 1.5px dashed var(--navy); }
+  /* A closed sale the range trim set aside: the same filled, numbered pin,
+     drawn lighter (the muted navy over cream, opaque so the map does not
+     show through), so the legend can say it did not set the price. */
+  .pin-hit.is-aside:not(.is-on) .pin-dot {
+    background: linear-gradient(var(--muted), var(--muted)) var(--cream);
+    color: var(--cream);
+  }
   /* Every pin tells the tale on tap: days on market, price changes, outcome.
      Print has no hover, so the sheet shows nothing until a pin is lit — the
      matrix under it carries the same three facts as columns. */
@@ -426,6 +433,7 @@ export function cmaSectionStyles(): string {
     box-shadow: inset 0 0 0 1.5px var(--navy);
   }
   .pin-legend .is-unsold .pl-k { box-shadow: none; border: 1.5px dashed var(--navy); }
+  .pin-legend .is-aside .pl-k { background: linear-gradient(var(--muted), var(--muted)) var(--cream); color: var(--cream); }
   .pin-legend .is-subject .pl-k { background: transparent; color: var(--navy); }
   /* Each unsold peer's dollars-a-foot story, keyed to its pin. */
   .peer-stories { list-style: none; margin: 8px 0 0; padding: 0; }

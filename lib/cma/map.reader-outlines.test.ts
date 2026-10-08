@@ -166,6 +166,12 @@ describe('the one map, reader review 2026-10-08: every pin inside a drawn line',
     expect(svg).toContain('Silver Sage Phase I')
     expect(svg).toContain('Silver Sage Phase 2')
     expect(svg).not.toContain('Holliday Park Third Addition Phase III')
+    // The street-held home is not outlined, but the place the caption names
+    // for it is on the map beside it (third reader review 2026-10-08: "pin 5
+    // sits in Holliday Park but the map does not label Holliday Park"), and
+    // the result says so for the caption.
+    expect(svg).toContain('>Holliday Park</text>')
+    expect(map!.streetPlaceShown).toBe('Holliday Park')
     // Every pin is inside a drawn line, except the one the caption holds to the street.
     expect(pinsOutsideOutlines({ pins: map!.pins, rings: map!.outlineRings })).toEqual(['5'])
     expect(pinsOutsideOutlines({ pins: map!.pins, rings: map!.outlineRings, streetKeys: ['5'] })).toEqual([])

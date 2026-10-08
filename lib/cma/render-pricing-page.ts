@@ -33,7 +33,7 @@ import {
   priceSettingComps,
 } from '@/lib/cma/expected-sale'
 import { adjustedCloseRange } from '@/lib/cma/market-area-chapters'
-import { renderCompPinMapHtml } from '@/lib/cma/comp-pin-map'
+import { compPinMap } from '@/lib/cma/comp-pin-map'
 import { clampSentence, keptCompCount, setAsideCompIndexes, setAsideRows } from '@/lib/cma/set-aside'
 import { deRepeatRecommendDollars, isRecommendMark } from '@/lib/cma/recommend-once'
 import { failedAskBelowRangeNote } from '@/lib/cma/expired-audit'
@@ -459,18 +459,61 @@ function listRangeSentence(
  * before anyone knew, and a sentence that hedges about something visible on
  * the page reads as the document not having looked.
  */
-function mapLegend(boundaryShown?: boolean, parentShown?: boolean, pinsDrawn = true): string {
+export function mapLegend(input: {
+  boundaryShown?: boolean
+  parentShown?: boolean
+  /** The map carries its pins. False for a bare tile. */
+  pinsShown: boolean
+  /** How many of the tables that follow hold a row for a home on this map. */
+  tables: number
+  /** A place named beside street-held homes with no outline (rule 24). */
+  streetPlace?: string | null
+}): string {
   // A tile with no overlay is a picture with no pins on it; the caption may
   // not promise them (2026-10-07: the stored html_content read "Every pin
   // below is a row" over a bare image).
-  const pins = pinsDrawn
-    ? 'Every pin below is a row in one of the three tables that follow.'
-    : 'The three tables that follow list every home this map was drawn for.'
-  if (boundaryShown !== true) return pins
-  const lines = parentShown
+  //
+  // THE COUNT AND THE DIRECTION ARE THE PAGE'S (2382 Jackson, reader review
+  // 2026-10-08). The caption sits under the map, so the pins are above it,
+  // and it counts the tables that hold a drawn pin: Jackson drew sales and
+  // homes for sale and no listing that came off, and "one of the three
+  // tables" sent the reader looking for a third.
+  const n = input.tables
+  const pins =
+    n <= 0
+      ? ''
+      : input.pinsShown
+        ? n === 1
+          ? 'Every pin above is a row in the table that follows.'
+          : `Every pin above is a row in one of the ${countWord(n)} tables that follow.`
+        : n === 1
+          ? 'The table that follows lists every home this map was drawn for.'
+          : `The ${countWord(n)} tables that follow list every home this map was drawn for.`
+  if (input.boundaryShown !== true) return pins
+  const lines = input.parentShown
     ? 'The lines are the subdivisions these homes sit in, and the neighborhood around them.'
     : 'The lines are the subdivisions these homes sit in.'
-  return `${pins} ${lines}`
+  // The street-held homes sit in no line (rule 24 draws no outline round a
+  // plat the area holds only on the subject's street). Their place is named on
+  // the map, and the caption says why it has no line.
+  const place = input.streetPlace?.trim()
+  const street = place
+    ? ` ${place} is named on the map but not outlined, because only its homes on your street are part of the area.`
+    : ''
+  return [pins, `${lines}${street}`].filter(Boolean).join(' ')
+}
+
+/**
+ * How many tables hold the homes these pins name: the sales, the listings
+ * that came off, and the competition's two tables, Active and Pending
+ * (`splitActivePending`). One per kind present.
+ */
+export function tablesHoldingPins(
+  pins: ReadonlyArray<Pick<import('@/lib/cma/comp-pin-map').CmaPinFact, 'family' | 'status'>>,
+): number {
+  const tables = new Set<string>()
+  for (const p of pins) tables.add(p.family === 'active' ? (p.status === 'pending' ? 'pending' : 'active') : p.family)
+  return tables.size
 }
 
 /**
@@ -849,6 +892,34 @@ export function mapPage(input: {
 
 export const MAP_HEADING = 'Comparable homes near you'
 
+/**
+ * The map as the second half of the price chapter's page, under its own
+ * subhead. Empty when there is no map to draw.
+ */
+export function mapSubsectionHtml(input: Parameters<typeof mapBodyHtml>[0]): string {
+  const body = mapBodyHtml(input)
+  if (!body.trim()) return ''
+  return `
+  <h3 class="subhead">${esc(MAP_HEADING)}</h3>
+  ${body}`
+}
+
+/**
+ * A chapter that is its heading and one paragraph and nothing else.
+ *
+ * 2382 Jackson's price chapter printed "Four of the five sales are in
+ * Holliday Park, and all three that set the price are." over one sentence
+ * and nothing more: the held letter (rule 22) prints no list instruction and
+ * no clamp, and the expected sale sat above the list, so the only thing left
+ * was the range (reader review 2026-10-08). The heading says where the sales
+ * are, which is what the map under it shows, so a chapter this short takes
+ * the map onto its own page rather than standing as a near-empty sheet.
+ */
+export function chapterIsLeadOnly(body: string): boolean {
+  const blocks = body.match(/<(?:p|ul|ol|table|div|svg|figure|section|details|h3|h4)\b/gi) ?? []
+  return blocks.length <= 1
+}
+
 /** Shared by the letter chapter and its immersive twin. */
 export function mapBodyHtml(input: {
   subject: CmaSubject
@@ -857,25 +928,27 @@ export function mapBodyHtml(input: {
   mapOverlay?: import('@/lib/cma/comp-pin-map').CompPinMapOverlay | null
   areaSentence?: string | null
 }): string {
-  const pinMap = renderCompPinMapHtml({
+  // The alt text, the legend and the caption all read the pins the map drew.
+  const map = compPinMap({
     subject: input.subject,
     facts: input.facts,
     mapDataUri: input.mapDataUri ?? null,
-    alt: 'Map of the sales, the homes for sale and the listings that came off',
     overlay: input.mapOverlay ?? null,
   })
-  if (!pinMap.trim()) return ''
+  if (!map.html.trim()) return ''
   const area = cleanText(input.areaSentence ?? null)
-  return `<div class="pin-map-wrap">${pinMap}</div>
+  return `<div class="pin-map-wrap">${map.html}</div>
   <p class="small">${esc(
     [
       area,
-      mapLegend(
-        input.mapOverlay?.boundaryShown,
-        input.mapOverlay?.parentShown,
-        // The SVG fallback draws its own pins; a tile draws them only with its overlay.
-        !input.mapDataUri || Boolean(input.mapOverlay?.view),
-      ),
+      mapLegend({
+        boundaryShown: input.mapOverlay?.boundaryShown,
+        parentShown: input.mapOverlay?.parentShown,
+        pinsShown: map.pinsShown,
+        // A bare tile was drawn for every home offered; a pinned map counts what it pinned.
+        tables: tablesHoldingPins(map.pinsShown ? map.drawn : input.facts),
+        streetPlace: map.pinsShown ? input.mapOverlay?.streetPlaceShown : null,
+      }),
     ]
       .filter(Boolean)
       .join(' '),

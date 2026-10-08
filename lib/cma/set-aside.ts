@@ -155,6 +155,44 @@ export function setAsideCompIndexes(
   return out
 }
 
+/**
+ * THE GRID'S SET-ASIDE DECISION, CARRIED TO ANOTHER LIST OF THE SAME SALES.
+ *
+ * The map draws its closed pins from a list keyed the map's way, and the
+ * table under it prints "These 2 sales are shown above and did not set the
+ * number." Both have to name the same two homes (reader review, 62475
+ * Woodsman and 2382 Jackson, 2026-10-08: every closed pin sat under "Closed
+ * sales: these set the price"). So the decision is made once, by
+ * `setAsideCompIndexes` over the grid's own rows, and handed on by listing
+ * key. The address is read only for a grid row that carries no key.
+ *
+ * `setsPrice` on a comp is a different fact and is not read or written here:
+ * it is rule 20's admission stamp from the comp walk, and the weight reads it
+ * to skip re-grading a sale (lib/pricing/closed-comp-weight.ts). A set-aside
+ * sale passed rule 20; it is the range trim that sets it aside.
+ */
+export function setAsideSalePredicate(
+  pricing: CmaPricing | null | undefined,
+  comps: readonly CmaAdjustedComp[],
+): (sale: { listingKey?: string | null; address?: string | null }) => boolean {
+  const indexes = setAsideCompIndexes(pricing, comps)
+  if (indexes.size === 0) return () => false
+  const keys = new Set<string>()
+  const addresses = new Set<string>()
+  comps.forEach((c, i) => {
+    if (!indexes.has(i)) return
+    const k = key(c.listingKey)
+    if (k) keys.add(k)
+    else if (key(c.address)) addresses.add(key(c.address))
+  })
+  return (sale) => {
+    const k = key(sale.listingKey)
+    if (k && keys.has(k)) return true
+    const a = key(sale.address)
+    return !k && a !== '' && addresses.has(a)
+  }
+}
+
 /** The sales that set the number: everything the grid prints, less those. */
 export function keptCompCount(
   pricing: CmaPricing | null | undefined,

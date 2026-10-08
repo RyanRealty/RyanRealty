@@ -879,7 +879,12 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
     )
   })
 
-  it('does not say no home came off when the subject is the home that came off', () => {
+  it('says no OTHER home came off when the subject is the home that came off (rule 24, 3037 Purcell)', () => {
+    // It used to say nothing, which left the chapter one line about the
+    // seller's own listing under a heading about the listings near them
+    // (reader review 2026-10-08). "No home came off" would be about the
+    // seller's own home, so the sentence says no other home like it did, over
+    // the area and the longest window the search tried.
     const off = buildExpiredPeerSet({
       rows: [],
       subject: subj,
@@ -888,9 +893,10 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
       subjectCameOff: true,
     })
     expect(off.count).toBe(0)
-    expect(off.sentence).toBe('')
-    expect(off.sentence).not.toMatch(/No home/i)
-    expect(off.sentence).not.toMatch(/came off the market without selling/)
+    expect(off.sentence).toBe(
+      'No other home like yours in Diamond Bar Ranch came off the market without selling in the last 24 months.',
+    )
+    expect(off.sentence).not.toMatch(/^No home/)
 
     const stayed = buildExpiredPeerSet({
       rows: [],
@@ -1082,7 +1088,7 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
     expect(set.sentence).not.toMatch(/[—–]/)
   })
 
-  it('says nothing for a neighborhood set when the subject is the home that came off', () => {
+  it('says no other home came off for a neighborhood set when the subject is the home that came off', () => {
     const set = buildExpiredPeerSet({
       rows: [],
       subject: subj,
@@ -1091,7 +1097,9 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
       subjectCameOff: true,
     })
     expect(set.peers).toEqual([])
-    expect(set.sentence).toBe('')
+    expect(set.sentence).toBe(
+      'No other home like yours in River West came off the market without selling in the last 24 months.',
+    )
   })
 
   it('never prints a plat outside the sales area (Matt 2026-10-07, 3177 Coho)', () => {
@@ -1254,7 +1262,7 @@ describe('the peer sentence counts the rows it shows', () => {
     expect(set.count).toBe(0)
     expect(set.peers).toHaveLength(0)
     expect(set.sentence).toBe(
-      'Seven homes in River West came off the market without selling in the last 24 months. None were close to this home in bedrooms, bathrooms, size or age, so none are on this map.',
+      'Seven homes in River West came off the market without selling in the last 24 months. None were close to this home in bedrooms, bathrooms, size or age, so they are not compared here.',
     )
     expect(set.sentence).not.toMatch(/No home /)
     expect(set.sentence).not.toContain('—')

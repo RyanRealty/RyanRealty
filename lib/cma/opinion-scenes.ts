@@ -5,6 +5,7 @@
 
 import { competitionHeading } from '@/lib/cma/band-rivals'
 import {
+  MAP_HEADING,
   mapBodyHtml,
   pricingPage,
   salesThatSetItPage,
@@ -15,8 +16,10 @@ import {
   OPINION_CHAPTER_ORDER,
   competitionBodyMatrixHtml,
   didNotSellBodyMatrixHtml,
+  didNotSellHeadingFor,
   failedAskBacktestHtml,
   mapArgs,
+  mapSharesPricePage,
   salesThatSetItArgs,
 
   nextStepButtonsHtml,
@@ -33,7 +36,6 @@ import {
   whatHappenedHeading,
   type OpinionChapterId,
 } from '@/lib/cma/opinion-pages'
-import { DID_NOT_SELL_HEADING } from '@/lib/cma/did-not-sell'
 import { salesGlanceHtml } from '@/lib/cma/sales-glance'
 import { statusPriceBoardDisclosureHtml } from '@/lib/cma/status-price-summary'
 import { escapeHtml } from '@/lib/cma/render-blocks'
@@ -54,19 +56,28 @@ export type OpinionSceneArgs = OpinionPageArgs & {
   client?: { name?: string | null }
 }
 
-function priceScene(a: OpinionSceneArgs): string {
+function priceScene(a: OpinionSceneArgs, withMap: boolean): string {
   const page = pricingPage({
     ...salesThatSetItArgs(a),
     // The immersive prints the number as the chapter title, so the letter's
     // own heading block is suppressed and the lead line reprinted below it.
     omitLeadPrices: true,
   })
+  // The letter's page carries the map when the chapter is one paragraph
+  // (mapSharesPricePage); the scene does the same, so the two stay one list.
+  const map = withMap ? mapBodyHtml(mapArgs(a)) : ''
   return `
   <section class="sc sc-cream pack" id="what-its-worth">
     <div class="in wide">
       <div class="kick r">The number</div>
       <h2 class="h r">${esc(page.toc ?? '')}</h2>
-      <div class="r">${page.body}</div>
+      <div class="r">${page.body}</div>${
+        map
+          ? `
+      <div class="kick r">${esc(MAP_HEADING)}</div>
+      <div class="r">${map}</div>`
+          : ''
+      }
     </div>
   </section>`
 }
@@ -78,7 +89,7 @@ function mapScene(a: OpinionSceneArgs): string {
   return `
   <section class="sc sc-cream pack" id="the-map">
     <div class="in wide">
-      <div class="kick r">Comparable homes near you</div>
+      <div class="kick r">${esc(MAP_HEADING)}</div>
       <div class="r">${body}</div>
     </div>
   </section>`
@@ -171,7 +182,7 @@ function didNotSellScene(a: OpinionSceneArgs): string {
   <section class="sc sc-cream pack" id="did-not-sell">
     <div class="in wide">
       <div class="kick r">Near you</div>
-      <h2 class="h r">${esc(DID_NOT_SELL_HEADING)}</h2>
+      <h2 class="h r">${esc(didNotSellHeadingFor(a))}</h2>
       <div class="r">${body}</div>
     </div>
   </section>`
@@ -282,11 +293,12 @@ export function assembleOpinionScenes(a: OpinionSceneArgs): string {
   // The SAME order the letter walks (OPINION_CHAPTER_ORDER), built from the
   // same helpers under the same gates. A chapter that renders here and not
   // there is a defect the doc-punchlist test fails on.
+  const mapWithPrice = mapSharesPricePage(a)
   const build: Record<OpinionChapterId, () => string> = {
     'what-happened': () => whatHappenedScene(a),
     'did-not-sell': () => didNotSellScene(a),
-    'what-its-worth': () => priceScene(a),
-    'the-map': () => mapScene(a),
+    'what-its-worth': () => priceScene(a, mapWithPrice),
+    'the-map': () => (mapWithPrice ? '' : mapScene(a)),
     'sales-that-set-it': () => salesThatSetItScene(a),
     competition: () => competitionScene(a),
     'priced-right': () => pricedRightScene(a),

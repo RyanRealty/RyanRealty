@@ -387,6 +387,40 @@ export function competitionSourceLine(
   )}, from the Oregon Data Share MLS${when}.`
 }
 
+/**
+ * A stored sentence, with any pointer at "this map" rewritten.
+ *
+ * The competition and the did-not-sell chapters print on their own pages and
+ * the map is two sheets earlier, so "so it is not on this map" pointed at a
+ * map that page does not have (62475 Woodsman, 2382 Jackson, reader review
+ * 2026-10-08). Rows built before the wording changed carry the old clause and
+ * re-render at serve, so the render rewrites it. Nothing else in the sentence
+ * moves: the counts and places it states are the stored ones.
+ */
+export function withoutMapPointer(sentence: string): string {
+  return sentence
+    .replace(/,\s*so it is not on (?:this|the) map\./gi, ', so it is not compared here.')
+    .replace(/,\s*so none (?:are|is) on (?:this|the) map\./gi, ', so they are not compared here.')
+}
+
+/**
+ * The source note when the competition chapter draws no home at all.
+ *
+ * "Homes for sale and under contract in Shevlin West between $1,418,000 and
+ * $1,734,000, from the Oregon Data Share MLS as of Oct 7, 2026." printed alone
+ * under the chapter's sentence reads as the caption of a table or map, and
+ * with nothing drawn it promised one (62475 Woodsman, reader review
+ * 2026-10-08). The same trace still prints, because it is what the count of
+ * none was taken over (the area, the band, the source and the day), marked as
+ * the source of that count rather than as a caption.
+ */
+export function competitionEmptySourceLine(sourceLine: string | null | undefined): string {
+  const line = (sourceLine ?? '').trim()
+  if (!line) return ''
+  if (/^source:/i.test(line)) return line
+  return `Source: ${line.charAt(0).toLowerCase()}${line.slice(1)}`
+}
+
 export function renderBandRivalsHtml(input: BandRivalsInput): string {
   return `
   <h2 class="section">${esc(competitionHeading(input.recommendedList ?? input.subject?.recommendedList))}</h2>
@@ -549,8 +583,8 @@ export function competitionAreaSentence(input: {
     // One unlike home is "it", never "none" (Matt 2026-10-07 review).
     const notClose =
       unlike === 1
-        ? 'One other home is listed there in that range, but it is not close to this home in bedrooms, bathrooms, size or age, so it is not on this map.'
-        : `${countWord(unlike, true)} other homes are listed there in that range, but none is close to this home in bedrooms, bathrooms, size or age, so none are on this map.`
+        ? 'One other home is listed there in that range, but it is not close to this home in bedrooms, bathrooms, size or age, so it is not compared here.'
+        : `${countWord(unlike, true)} other homes are listed there in that range, but none is close to this home in bedrooms, bathrooms, size or age, so they are not compared here.`
     return `No home like yours ${whereOr} is for sale or under contract ${band}. ${notClose}${tail}`
   }
   if (input.activeCount === 0) {

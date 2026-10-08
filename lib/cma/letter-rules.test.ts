@@ -425,8 +425,12 @@ describe('a stored sentence prints only over the rows it counted (rule 17, rule 
     expect(body).not.toContain('3 homes are for sale')
     expect(body).not.toContain('within one mile of your home')
     expect(body).not.toContain('High Pointe')
-    // The trace names the area the drawn count was taken inside.
-    expect(body).toContain('Homes for sale and under contract in Rooster Rock and Madison Park between $494,000 and $604,000')
+    // The trace names the area the drawn count was taken inside. Nothing is
+    // drawn, so it prints as the count's source, not as a caption for a table
+    // that is not there (62475 Woodsman, reader review 2026-10-08).
+    expect(body).toContain(
+      '<p class="small">Source: homes for sale and under contract in Rooster Rock and Madison Park between $494,000 and $604,000',
+    )
     const checks = letterPlaceChecks(body, { compArea: rooster })
     expect(checks.find((c) => c.id === 'competition-not-a-mile-ring')?.pass).toBe(true)
   })
@@ -458,7 +462,7 @@ describe('a stored sentence prints only over the rows it counted (rule 17, rule 
     expect(zero).toContain(
       '<p>No home in Rooster Rock or Madison Park is for sale between $494,000 and $604,000, and none is under contract.</p>',
     )
-    expect(zero).toContain('stored trace')
+    expect(zero).toContain('<p class="small">Source: stored trace</p>')
     const full = competitionBody({
       area: rooster,
       activeCount: 2,

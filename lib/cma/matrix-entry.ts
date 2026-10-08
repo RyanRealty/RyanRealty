@@ -121,6 +121,12 @@ export type MatrixEntry = {
   status?: 'active' | 'pending'
   /** MLS StandardStatus on an unsold row. Canceled and Withdrawn stay those words. */
   mlsStatus?: string | null
+  /**
+   * A closed sale the range trim set aside (lib/cma/set-aside.ts): printed and
+   * pinned, but not one of the sales the number is the spread of. The map
+   * draws its pin lighter and the legend names it. Absent on every other row.
+   */
+  setAside?: boolean
 }
 
 /** The MLS status word a seller letter may print. Anything else stays unlabeled. */
@@ -281,6 +287,8 @@ export function closedEntries(
   comps: readonly CmaAdjustedComp[],
   ctx?: TrackedDocLinkCtx | null,
   subject?: { latitude?: number | null; longitude?: number | null } | null,
+  /** The grid's set-aside decision (`setAsideSalePredicate`). Absent marks none. */
+  isSetAside?: (sale: CmaAdjustedComp) => boolean,
 ): MatrixEntry[] {
   return comps.map((c, i) => {
     const path = pricePathFromSale(c)
@@ -369,6 +377,7 @@ export function closedEntries(
         ['size', c.sqft != null && Number.isFinite(c.sqft) ? Math.round(c.sqft) : null],
         ['days', toOffer ?? ran],
       ]),
+      ...(isSetAside?.(c) ? { setAside: true } : {}),
     }
   })
 }
@@ -636,5 +645,7 @@ export function pinFactsFor(entries: readonly MatrixEntry[]): CmaPinFact[] {
       priceChangesExact: e.priceChangesExact,
       latitude: e.latitude,
       longitude: e.longitude,
+      ...(e.status ? { status: e.status } : {}),
+      ...(e.setAside ? { setAside: true } : {}),
     }))
 }
