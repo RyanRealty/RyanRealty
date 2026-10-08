@@ -16,6 +16,7 @@ import {
   type CmaSubdivisionSaleRow,
 } from '@/lib/data/cma/builderReads'
 import { getCmaAreaBandInventory } from '@/lib/data/cma/bandInventory'
+import { rowPlatSlugs, rowStreetAddress } from '@/lib/data/cma/areaUnsoldReads'
 import { bandAroundList, pickBandRivals, rivalAddress, type CmaBandRival } from '@/lib/cma/band-rivals'
 import { compAreaContains, compAreaPhrase, type CompArea } from '@/lib/pricing/comp-area'
 import { listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
@@ -23,7 +24,7 @@ import { bathCountCompatible, keepSameProductType } from '@/lib/cma/market-area'
 import { realSubdivision } from '@/lib/cma/comp-tiers'
 import type { CmaAdjustedComp, CmaSubject, CmaPricing } from '@/lib/cma/types'
 import { getCmaMarketAreaRows, type CmaMarketAreaRow } from '@/lib/data/cma/marketAreaReads'
-import { computeMarketArea, type CmaMarketArea, type CmaSoldBand } from '@/lib/cma/market-status'
+import { computeMarketArea, peerMatchesSubject, type CmaMarketArea, type CmaSoldBand } from '@/lib/cma/market-status'
 
 export const MONTH_NAMES = [
   'January',
@@ -251,6 +252,9 @@ function rowToRival(row: CmaBandListingRow, status: 'Active' | 'Pending'): CmaBa
     longitude: row.Longitude,
     beds: finiteOrNull(row.BedroomsTotal),
     baths: finiteOrNull(row.BathroomsTotal),
+    // The split prints 2 full and 1 half as 2.5, the way the sales print it.
+    bathsFull: finiteOrNull(row.baths_full),
+    bathsHalf: finiteOrNull(row.baths_half),
     sqft: finiteOrNull(row.TotalLivingAreaSqFt),
     yearBuilt: finiteOrNull(row.year_built),
     lotAcres: finiteOrNull(row.lot_size_acres),
@@ -276,19 +280,40 @@ export function computeBandPosition(
     truncated: boolean
     activeRows?: CmaBandListingRow[]
     pendingRows?: CmaBandListingRow[]
+    /**
+     * True when these rows are the competition assembly's set: the listings
+     * in the band that passed the sales rules inside the sales area
+     * (lib/cma/assemble-competition.ts, rule 24), not every listing in it.
+     */
+    sameAreaFit?: boolean
   } | null,
   city: string,
   lo: number,
   hi: number,
-  subject?: { latitude: number | null; longitude: number | null; propertySubType?: string | null } | null,
+  subject?: {
+    latitude: number | null
+    longitude: number | null
+    propertySubType?: string | null
+    listingKey?: string | null
+    mlsNumber?: string | null
+    streetAddress?: string | null
+  } | null,
   area?: CompArea | null,
 ): CmaBandPosition | null {
   if (!inv) return null
+  // The subject's own listing is not in its own band (3062 NW Kelly Hill,
+  // reader review 2026-10-08): by listing key, or the same house by address.
+  const own = subject
+    ? { listingKey: subject.listingKey ?? null, mlsNumber: subject.mlsNumber ?? null, streetAddress: subject.streetAddress ?? '' }
+    : null
+  const notSubject = (row: CmaBandListingRow) =>
+    !(own && peerMatchesSubject({ listingKey: row.ListingKey, address: rivalAddress(row) }, own))
   const sameType = (row: CmaBandListingRow) =>
     keepSameProductType(subject?.propertySubType ?? null, row.property_sub_type ?? null)
   const hasRows = (inv.activeRows?.length ?? 0) + (inv.pendingRows?.length ?? 0) > 0
-  const activeRows = hasRows ? (inv.activeRows ?? []).filter(sameType) : []
-  const pendingRows = hasRows ? (inv.pendingRows ?? []).filter(sameType) : []
+  const activeRows = hasRows ? (inv.activeRows ?? []).filter(notSubject).filter(sameType) : []
+  const pendingRows = hasRows ? (inv.pendingRows ?? []).filter(notSubject).filter(sameType) : []
+  const activeOthers = hasRows ? (inv.activeRows ?? []).filter(notSubject).length : inv.activeCount
   const raw = [
     ...activeRows.map((r) => rowToRival(r, 'Active')),
     ...pendingRows.map((r) => rowToRival(r, 'Pending')),
@@ -306,7 +331,11 @@ export function computeBandPosition(
   // database counts when the subject has no property sub type, because
   // keepSameProductType() then narrows to detached in JS — so report the
   // filtered length and let the source line say what was measured.
-  const typeFiltered = hasRows && activeRows.length !== inv.activeCount
+  const typeFiltered = hasRows && activeRows.length !== activeOthers
+  const ownLeftOut =
+    hasRows &&
+    activeOthers + (inv.pendingRows ?? []).filter(notSubject).length <
+      (inv.activeRows ?? []).length + (inv.pendingRows ?? []).length
   return {
     lo,
     hi,
@@ -322,7 +351,11 @@ export function computeBandPosition(
     }, same property type${subject?.propertySubType ? ` (${subject.propertySubType})` : ''}, Active + Pending, ListPrice ${lo}..${hi}, pulled at build time — ${
       inv.truncated
         ? `band exceeded the read ceiling, so these figures cover the first ${activeRows.length} of ${inv.activeCount} active listings`
-        : `all ${inv.activeCount} active listings in the band${typeFiltered ? `, ${activeRows.length} after the same-product-type filter` : ''}`
+        : `${
+            inv.sameAreaFit
+              ? `the ${inv.activeCount} active listings in the band that passed the sales rules (sameAreaFit) inside the sales area, not every listing in the band`
+              : `all ${inv.activeCount} active listings in the band`
+          }${ownLeftOut ? ", this home's own listing left out" : ''}${typeFiltered ? `, ${activeRows.length} after the same-product-type filter` : ''}`
     }; days on market measured from OnMarketDate`,
   }
 }
@@ -441,6 +474,8 @@ export async function buildCmaExtras(args: {
     truncated: boolean
     activeRows?: CmaBandListingRow[]
     pendingRows?: CmaBandListingRow[]
+    /** Set by the competition assembly: these are the fitting homes, not the whole band. */
+    sameAreaFit?: boolean
   } | null
   band?: { lo: number; hi: number } | null
 }): Promise<CmaExtras> {
@@ -484,15 +519,20 @@ export async function buildCmaExtras(args: {
 
   const photoUrl = args.subject.photoUrl?.trim() ?? ''
   const area = args.compArea ?? null
+  // The city-wide rows narrow to the area by name first (cheap), then by the
+  // recorded plat polygon each survivor sits in (rule 24, the same exact test
+  // the area reads apply).
+  const rowGeo = (r: CmaMarketAreaRow) => ({
+    latitude: r.Latitude ?? null,
+    longitude: r.Longitude ?? null,
+    subdivision: r.SubdivisionName ?? null,
+    city: r.City ?? args.subject.city,
+    address: rowStreetAddress(r),
+  })
+  const named = area ? areaRows.filter((r) => compAreaContains(area, rowGeo(r))) : areaRows
+  const namedPlats = area ? await rowPlatSlugs(area, named) : []
   const pocketRows = area
-    ? areaRows.filter((r) =>
-        compAreaContains(area, {
-          latitude: r.Latitude ?? null,
-          longitude: r.Longitude ?? null,
-          subdivision: r.SubdivisionName ?? null,
-          city: r.City ?? args.subject.city,
-        }),
-      )
+    ? named.filter((r, i) => compAreaContains(area, { ...rowGeo(r), platSlug: namedPlats[i] }))
     : areaRows
   return {
     seasonality: computeSeasonality(skinny, args.subject.city, since36),

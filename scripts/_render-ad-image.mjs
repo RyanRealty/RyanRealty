@@ -3,7 +3,7 @@
  * Render an HTML ad mockup to a 1080×1080 JPG via Playwright.
  * Usage: node scripts/_render-ad-image.mjs <input.html> <output.jpg>
  */
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 

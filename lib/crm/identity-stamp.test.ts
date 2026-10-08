@@ -83,7 +83,7 @@ describe('attributeSiteLinks — a link we send must identify who we sent it to'
     const out = attributeSiteLinks(existing, 'rebecca', null, 7)
     expect(out).toContain('utm_source=crm')
     expect(out).toContain('utm_medium=email')
-    expect(out).toContain('utm_campaign=market-report')
+    expect(out).toMatch(/utm_campaign=market-report-\d{4}-(0[1-9]|1[0-2])/)
     expect(out).toContain('utm_content=agent-rebecca')
     expect((out.match(/utm_source=/g) ?? []).length).toBe(1)
   })

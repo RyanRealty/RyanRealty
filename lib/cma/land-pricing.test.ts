@@ -10,6 +10,7 @@ import {
   priceLandSubject,
 } from './land-pricing'
 import { adjustComps, computePricing } from './pricing'
+import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
 
 const AS_OF = Date.parse('2026-08-27T00:00:00Z')
 
@@ -112,7 +113,7 @@ describe('adjustLandComps', () => {
 describe('priceLandSubject — lots', () => {
   const subject = { streetAddress: 'Lot 12', sqft: null, lotAcres: 0.23, propertySubType: 'Residential Lots' } as never
 
-  it('prices a platted lot from the comp set', () => {
+  it('prices a platted lot from the comp set (five price-setting sales, Matt 2026-10-07)', () => {
     const p = priceLandSubject({
       subject,
       comps: [
@@ -120,8 +121,10 @@ describe('priceLandSubject — lots', () => {
         comp({ closePrice: 235_000, lotAcres: 0.22 }),
         comp({ closePrice: 199_000, lotAcres: 0.25 }),
         comp({ closePrice: 221_000, lotAcres: 0.23 }),
+        comp({ closePrice: 215_000, lotAcres: 0.24 }),
+        comp({ closePrice: 228_000, lotAcres: 0.22 }),
       ] as never,
-      market: null, minComps: 3, asOfMs: AS_OF,
+      market: null, minComps: PRICING_MIN_COMPS, asOfMs: AS_OF,
     })
     expect(p).not.toBeNull()
     expect(p!.recommended).toBeGreaterThan(150_000)
@@ -132,11 +135,13 @@ describe('priceLandSubject — lots', () => {
     expect(p!.needsReview).toBe(false)
   })
 
-  it('refuses to price under the comp floor', () => {
-    const p = priceLandSubject({
-      subject, comps: [comp(), comp()] as never, market: null, minComps: 3, asOfMs: AS_OF,
-    })
-    expect(p).toBeNull()
+  it('refuses to price under the comp floor of five (Matt 2026-10-07)', () => {
+    for (const n of [2, 3, 4]) {
+      const p = priceLandSubject({
+        subject, comps: Array.from({ length: n }, () => comp()) as never, market: null, minComps: PRICING_MIN_COMPS, asOfMs: AS_OF,
+      })
+      expect(p, `${n} comps`).toBeNull()
+    }
   })
 
   it('flags a set that is not one market', () => {
@@ -146,8 +151,10 @@ describe('priceLandSubject — lots', () => {
         comp({ closePrice: 90_000, lotAcres: 0.25 }),
         comp({ closePrice: 240_000, lotAcres: 0.24 }),
         comp({ closePrice: 610_000, lotAcres: 0.23 }),
+        comp({ closePrice: 150_000, lotAcres: 0.24 }),
+        comp({ closePrice: 420_000, lotAcres: 0.22 }),
       ] as never,
-      market: null, minComps: 3, asOfMs: AS_OF,
+      market: null, minComps: PRICING_MIN_COMPS, asOfMs: AS_OF,
     })
     expect(p!.needsReview).toBe(true)
     expect(p!.reviewReason).toMatch(/per-acre/)
@@ -160,17 +167,19 @@ describe('priceLandSubject — acreage', () => {
     comp({ closePrice: 520_000, lotAcres: 20, propertySubType: 'Recreational' }),
     comp({ closePrice: 610_000, lotAcres: 24, propertySubType: 'Recreational' }),
     comp({ closePrice: 445_000, lotAcres: 17, propertySubType: 'Recreational' }),
+    comp({ closePrice: 540_000, lotAcres: 21, propertySubType: 'Recreational' }),
+    comp({ closePrice: 580_000, lotAcres: 22, propertySubType: 'Recreational' }),
   ] as never
 
   it('always routes acreage to broker review', () => {
-    const p = priceLandSubject({ subject, comps, market: null, site: BARE_SITE, minComps: 3, asOfMs: AS_OF })
+    const p = priceLandSubject({ subject, comps, market: null, site: BARE_SITE, minComps: PRICING_MIN_COMPS, asOfMs: AS_OF })
     expect(p!.needsReview).toBe(true)
     expect(p!.confidence).toBe('Supportable')
   })
 
   it('carries the infrastructure of record and never a dollar value for it', () => {
     const p = priceLandSubject({
-      subject, comps, market: null, minComps: 3, asOfMs: AS_OF,
+      subject, comps, market: null, minComps: PRICING_MIN_COMPS, asOfMs: AS_OF,
       site: { ...(BARE_SITE as never as Record<string, unknown>), septic: { status: 'site-evaluation-only', permit: '247-21-000123' } } as never,
     })
     const schedule = p!.notes.filter((n) => n.startsWith('Septic'))
@@ -188,22 +197,24 @@ describe('the published band follows the same convention as a home', () => {
     comp({ closePrice: 240_000, lotAcres: 0.24 }),
     comp({ closePrice: 610_000, lotAcres: 0.23 }),
     comp({ closePrice: 180_000, lotAcres: 0.22 }),
+    comp({ closePrice: 330_000, lotAcres: 0.24 }),
+    comp({ closePrice: 270_000, lotAcres: 0.23 }),
   ] as never
 
   it('reports one band, not two pairs of numbers', () => {
-    const p = priceLandSubject({ subject, comps: wide, market: null, minComps: 3, asOfMs: AS_OF })!
+    const p = priceLandSubject({ subject, comps: wide, market: null, minComps: PRICING_MIN_COMPS, asOfMs: AS_OF })!
     expect(p.valueLow).toBe(p.conservative)
     expect(p.valueHigh).toBe(p.highEnd)
   })
 
   it('keeps the band ordered around the recommendation', () => {
-    const p = priceLandSubject({ subject, comps: wide, market: null, minComps: 3, asOfMs: AS_OF })!
+    const p = priceLandSubject({ subject, comps: wide, market: null, minComps: PRICING_MIN_COMPS, asOfMs: AS_OF })!
     expect(p.conservative).toBeLessThanOrEqual(p.recommended)
     expect(p.recommended).toBeLessThanOrEqual(p.highEnd)
   })
 
   it('caps the ceiling at 8% over the recommendation', () => {
-    const p = priceLandSubject({ subject, comps: wide, market: null, minComps: 3, asOfMs: AS_OF })!
+    const p = priceLandSubject({ subject, comps: wide, market: null, minComps: PRICING_MIN_COMPS, asOfMs: AS_OF })!
     expect(p.highEnd).toBeLessThanOrEqual(Math.ceil(p.recommended * 1.08) + 1000)
   })
 })
@@ -237,6 +248,8 @@ describe('the shared engine dispatches land', () => {
       comp({ closePrice: 210_000, lotAcres: 0.24 }),
       comp({ closePrice: 235_000, lotAcres: 0.22 }),
       comp({ closePrice: 199_000, lotAcres: 0.25 }),
+      comp({ closePrice: 221_000, lotAcres: 0.23 }),
+      comp({ closePrice: 228_000, lotAcres: 0.24 }),
     ] as never
     const p = computePricing(subject, adjustComps(subject, comps, null, AS_OF), null)
     expect(p).not.toBeNull()
@@ -249,6 +262,8 @@ describe('the shared engine dispatches land', () => {
       comp({ closePrice: 600_000, sqft: 1950, propertySubType: 'Single Family Residence', lotAcres: 0.2 }),
       comp({ closePrice: 640_000, sqft: 2100, propertySubType: 'Single Family Residence', lotAcres: 0.21 }),
       comp({ closePrice: 585_000, sqft: 1900, propertySubType: 'Single Family Residence', lotAcres: 0.19 }),
+      comp({ closePrice: 615_000, sqft: 2000, propertySubType: 'Single Family Residence', lotAcres: 0.2 }),
+      comp({ closePrice: 625_000, sqft: 2050, propertySubType: 'Single Family Residence', lotAcres: 0.2 }),
     ] as never
     const p = computePricing(subject, adjustComps(subject, comps, null, AS_OF), null)
     expect(p).not.toBeNull()

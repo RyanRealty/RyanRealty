@@ -7,9 +7,9 @@
  * p50 / p95 / p99 along with the spec's pass/fail thresholds.
  *
  * Usage:
- *   node scripts/probe-route-ttfb.mjs [--samples=20] [--base=https://ryanrealty.vercel.app]
+ *   node scripts/probe-route-ttfb.mjs [--samples=20] [--base=https://ryan-realty.com]
  *
- * Default samples=10, default base=production Vercel URL.
+ * Default samples=10, default base=production (https://ryan-realty.com).
  */
 
 const args = Object.fromEntries(
@@ -20,7 +20,7 @@ const args = Object.fromEntries(
 )
 
 const SAMPLES = Number(args.samples ?? 10)
-const BASE = (args.base ?? 'https://ryanrealty.vercel.app').replace(/\/$/, '')
+const BASE = (args.base ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
 // Each entry: [label, path, p95_budget_ms]. Budgets pulled from SITE_SPEC §45-47.
 const ROUTES = [

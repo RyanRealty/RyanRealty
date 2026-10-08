@@ -36,6 +36,7 @@ import { SparkSafeImage } from '@/lib/listing/SparkSafeImage'
 import { LISTING_FIELD_LEAD_PHOTO_SIZE, listingRowPhotoSrc } from '@/lib/listing/row-photo'
 import type { SubdivisionRailEntry } from '@/lib/place/place-child-stock'
 import { firstListedPhoto } from '@/lib/place/rail-photo'
+import { RAIL_FOLD_AT, railDoorNames, railFold } from '@/lib/place/rail-fold'
 import { V3_ROOT_CLASS, V3Button, V3Heading } from './atoms'
 import { V3Atlas, type V3AtlasProps } from './V3Atlas.client'
 import { V3Carousel } from './V3Carousel.client'
@@ -127,6 +128,83 @@ export function PlaceSubdivisionRail({
   const bars = layout !== 'rails'
   const railMost = Math.max(1, ...rail.map((entry) => keysBySlug[entry.id]?.length ?? 0))
   const detailBase = useId()
+  const restId = useId()
+  // Matt 2026-10-04: the Sunriver rail ran 7,759px down the desktop fold and
+  // pushed the homes several screens away. Past RAIL_FOLD_AT the rows stay in
+  // the served HTML (every place name and its page link is still crawlable).
+  //
+  // THE FOLD IS ONE DISCLOSURE, NOT A ROW OF HIDDEN ROWS (CI 2026-10-07, see
+  // lib/place/rail-fold.ts). The folded rows sit in their own list, which is
+  // what "Show all" controls (aria-controls) and what carries `hidden`, so
+  // each stays the full-size partner of its map polygon one disclosure away
+  // (WCAG 2.5.8 Equivalent; ci:tap-targets measures it there). A row the map
+  // selected stays at rest while the fold is closed.
+  const [railOpen, setRailOpen] = useState(false)
+  const folds = rail.length > RAIL_FOLD_AT
+  const { atRest, folded } = railFold(rail, { open: railOpen, selectedId })
+
+  const row = (entry: SubdivisionRailEntry) => {
+    const photo = firstListedPhoto(homes, keysBySlug[entry.id])
+    const listed = keysBySlug[entry.id]?.length ?? 0
+    return (
+      <li key={entry.id} className={cn(entry.href && 'place-subdiv-rail__item--linked')}>
+        <button
+          type="button"
+          className={cn('place-subdiv-rail__button', selectedId === entry.id && 'is-selected')}
+          aria-pressed={selectedId === entry.id}
+          /* The button's name is the place's name, exactly as the map
+             polygon's: that is how WCAG 2.5.8 Equivalent pairs a small
+             polygon with this full-size control. With the detail line in
+             the name, /cities/bend "Old Bend" (39x31 on the map) had no
+             partner and failed ci:tap-targets (visibility audit
+             2026-09-22, PR #352). The detail stays as a description.
+             PlaceSubdivisionAtlas hands the map this same name. */
+          aria-label={entry.name}
+          aria-describedby={nameOnly && entry.detail ? `${detailBase}-${entry.id}` : undefined}
+          onClick={() => setSelected(entry.id)}
+        >
+          {photo ? (
+            <span className="place-subdiv-rail__photo">
+              <SparkSafeImage
+                src={listingRowPhotoSrc(photo)}
+                alt=""
+                fill
+                sizes="96px"
+              />
+            </span>
+          ) : null}
+          <span className="place-subdiv-rail__copy">
+            <span className="place-subdiv-rail__name">{entry.name}</span>
+            {nameOnly && entry.detail ? (
+              <span id={`${detailBase}-${entry.id}`} className="place-subdiv-rail__detail">
+                {entry.detail}
+              </span>
+            ) : null}
+            {/* How many of the map's homes are in this place, as a bar
+                on one scale down the rail (2026-09-25: a column of names
+                and captions with nothing to compare). The figure is the
+                detail line's; the bar only draws it. */}
+            {bars && listed > 0 ? (
+              <span className="place-subdiv-rail__bar" aria-hidden="true">
+                <span style={{ width: `${((listed / railMost) * 100).toFixed(1)}%` }} />
+              </span>
+            ) : null}
+          </span>
+        </button>
+        {/* THE DOOR (visibility audit 2026-09-22, EXP-3). The row's button
+            selects the place on the map; this anchor opens the place's
+            own page, and it is a real <a href> in the served HTML, which
+            the button can never be. The name is the anchor text. */}
+        {entry.href ? (
+          <Link className="place-subdiv-rail__open" href={entry.href}>
+            <span className="place-subdiv-rail__open-label">{`${entry.name} page`}</span>
+            <span aria-hidden="true">›</span>
+          </Link>
+        ) : null}
+      </li>
+    )
+  }
+
   return (
     <nav
       id={id}
@@ -157,78 +235,40 @@ export function PlaceSubdivisionRail({
             </span>
           </button>
         </li>
-        {rail.map((entry) => {
-          const photo = firstListedPhoto(homes, keysBySlug[entry.id])
-          const listed = keysBySlug[entry.id]?.length ?? 0
-          return (
-            <li key={entry.id} className={cn(entry.href && 'place-subdiv-rail__item--linked')}>
-              <button
-                type="button"
-                className={cn('place-subdiv-rail__button', selectedId === entry.id && 'is-selected')}
-                aria-pressed={selectedId === entry.id}
-                /* The button's name is the place's name, exactly as the map
-                   polygon's: that is how WCAG 2.5.8 Equivalent pairs a small
-                   polygon with this full-size control. With the detail line in
-                   the name, /cities/bend "Old Bend" (39x31 on the map) had no
-                   partner and failed ci:tap-targets (visibility audit
-                   2026-09-22, PR #352). The detail stays as a description. */
-                aria-label={entry.name}
-                aria-describedby={nameOnly && entry.detail ? `${detailBase}-${entry.id}` : undefined}
-                onClick={() => setSelected(entry.id)}
-              >
-                {photo ? (
-                  <span className="place-subdiv-rail__photo">
-                    <SparkSafeImage
-                      src={listingRowPhotoSrc(photo)}
-                      alt=""
-                      fill
-                      sizes="96px"
-                    />
-                  </span>
-                ) : null}
-                <span className="place-subdiv-rail__copy">
-                  <span className="place-subdiv-rail__name">{entry.name}</span>
-                  {nameOnly && entry.detail ? (
-                    <span id={`${detailBase}-${entry.id}`} className="place-subdiv-rail__detail">
-                      {entry.detail}
-                    </span>
-                  ) : null}
-                  {/* How many of the map's homes are in this place, as a bar
-                      on one scale down the rail (2026-09-25: a column of names
-                      and captions with nothing to compare). The figure is the
-                      detail line's; the bar only draws it. */}
-                  {bars && listed > 0 ? (
-                    <span className="place-subdiv-rail__bar" aria-hidden="true">
-                      <span style={{ width: `${((listed / railMost) * 100).toFixed(1)}%` }} />
-                    </span>
-                  ) : null}
-                </span>
-              </button>
-              {/* THE DOOR (visibility audit 2026-09-22, EXP-3). The row's button
-                  selects the place on the map; this anchor opens the place's
-                  own page, and it is a real <a href> in the served HTML, which
-                  the button can never be. The name is the anchor text. */}
-              {entry.href ? (
-                <Link className="place-subdiv-rail__open" href={entry.href}>
-                  <span className="place-subdiv-rail__open-label">{`${entry.name} page`}</span>
-                  <span aria-hidden="true">›</span>
-                </Link>
-              ) : null}
-            </li>
-          )
-        })}
+        {atRest.map(row)}
       </ul>
+      {folds ? (
+        <>
+          <ul id={restId} className="place-subdiv-rail__list" hidden={!railOpen}>
+            {folded.map(row)}
+          </ul>
+          <button
+            type="button"
+            className="place-subdiv-rail__more"
+            aria-expanded={railOpen}
+            aria-controls={restId}
+            onClick={() => setRailOpen((open) => !open)}
+          >
+            {railOpen ? 'Show fewer' : `Show all ${formatCount(rail.length)}`}
+          </button>
+        </>
+      ) : null}
     </nav>
   )
 }
 
 export function PlaceSubdivisionAtlas(props: V3AtlasProps) {
-  const { selectedId, setSelected, keysBySlug } = usePlaceMap()
+  const { selectedId, setSelected, keysBySlug, rail } = usePlaceMap()
+  const childDoorNames = useMemo(() => railDoorNames(rail), [rail])
   return (
     <V3Atlas
       {...props}
       selectedSubdivisionId={selectedId}
       onSubdivisionSelect={setSelected}
+      /* The rail beside the map is every child polygon's full-size partner:
+         the polygon takes its row's name, and a child with no row is not a
+         control (WCAG 2.5.8 Equivalent, ci:tap-targets). */
+      childDoorNames={childDoorNames}
       /* Matt 2026-09-23: the SAME membership PlaceSubdivisionHomes filters
          its dials by (childListingKeys), so the map's focused homes and the
          dials below it can never disagree about who belongs to the
@@ -339,7 +379,19 @@ function homesByBuyerGroup(listings: readonly V3ListingRowData[]): Array<{
  * buyer group is instead the card carousel it shipped as, counted "N for
  * sale" as it was.
  */
-export function PlaceSubdivisionHomes({ id }: { id: string }) {
+export function PlaceSubdivisionHomes({
+  id,
+  countScope,
+}: {
+  id: string
+  /**
+   * Names the whole place's count ("on the map") where the page prints other
+   * counts of the same place (Matt 2026-10-04). Only on a page whose map and
+   * homes block share one population (lib/place/place-count-label.test.tsx);
+   * dropped while a subdivision is selected, which the map does not count alone.
+   */
+  countScope?: string
+}) {
   const { layout, placeName, rail, homes, leases, keysBySlug, source, asOf, selectedId } = usePlaceMap()
   const selected = rail.find((entry) => entry.id === selectedId) ?? null
   const title = selected?.name ?? placeName
@@ -360,7 +412,7 @@ export function PlaceSubdivisionHomes({ id }: { id: string }) {
   const typeSections = useMemo(() => homesByBuyerGroup(visible), [visible])
   // For sale is Active, under contract is Active Under Contract: the buckets
   // the map above draws its marks in (placeHomesCountLabel, SITE-193).
-  const countLabel = placeHomesCountLabel(visible)
+  const countLabel = placeHomesCountLabel(visible, selectedId ? null : countScope)
   const typed = typeSections.length > 1
   const dialKey = selectedId ?? 'all'
   // The lease dial comes after every for-sale dial drawn above it.

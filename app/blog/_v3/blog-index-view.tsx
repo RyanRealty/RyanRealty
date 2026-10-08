@@ -20,6 +20,7 @@
  * getPublishedBlogPosts, getPopularBlogSlugs). No per-visitor read.
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import type { GetPublishedBlogPostsResult, getPopularBlogSlugs } from '@/lib/data'
@@ -49,7 +50,7 @@ import {
   type BlogIndexLocator,
 } from './blog-index-paths'
 
-export const BLOG_SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+export const BLOG_SITE_URL = siteOrigin()
 /** Every index view canonicalizes to the bare index, as the query form did. */
 export const BLOG_INDEX_CANONICAL = `${BLOG_SITE_URL}/blog`
 const defaultOgImage = `${BLOG_SITE_URL}/api/og?type=default`

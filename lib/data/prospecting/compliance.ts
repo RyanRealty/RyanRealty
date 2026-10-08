@@ -14,6 +14,7 @@ import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { isSuppressed, isSuppressedByEmail, isSuppressedByPhone } from '@/lib/crm/suppressions'
 import { isClosedStatus } from '@/lib/listing-status'
+import { emailBlockedByFlags, phoneBlockedByFlags } from '@/lib/prospecting/intake-gate'
 import {
   blockAllChannels,
   hasSendableEmail,
@@ -282,6 +283,68 @@ export async function isFsboRelistedNow(prospect: {
   }
 }
 
+/**
+ * Intake live-status probe. Fail closed: a listings read error is unreadable,
+ * so the processor retries and does not create a person or a CMA.
+ * An empty street cannot match, and is readable.
+ * Worklist paint stays fail-open in isRelistedNow / isFsboRelistedNow.
+ */
+export async function probeIntakeBackOnMarket(opts: {
+  kind: ProspectKind
+  streetAddress: string | null
+  city: string | null
+  expiryComparator: string | null
+  parcelNumber?: string | null
+}): Promise<{ onMarket: boolean; unreadable: boolean }> {
+  const street = (opts.streetAddress ?? '').trim()
+  if (!street) return { onMarket: false, unreadable: false }
+  try {
+    const sb = createServiceClient()
+    const num = street.split(' ')[0]
+    const namePrefix = street.slice(num.length + 1).split(' ')[0]?.toUpperCase() ?? ''
+    const cityUpper = String(opts.city ?? '').toUpperCase()
+    const subjectParcel = normalizeParcelNumber(opts.parcelNumber)
+    const streetQ = sb
+      .from('listings')
+      .select(EXPIRED_OUTREACH_LISTING_SELECT)
+      .eq('StreetNumber', num)
+      .or(EXPIRED_OUTREACH_STATUS_OR)
+    const parcelQ = subjectParcel
+      ? sb
+          .from('listings')
+          .select(EXPIRED_OUTREACH_LISTING_SELECT)
+          .eq('parcel_number', subjectParcel)
+          .or(EXPIRED_OUTREACH_STATUS_OR)
+      : Promise.resolve({ data: [] as ExpiredOutreachListing[], error: null })
+    const [streetRes, parcelRes] = await Promise.all([streetQ, parcelQ])
+    if (streetRes.error || parcelRes.error) {
+      console.error(
+        '[prospecting] probeIntakeBackOnMarket read failed:',
+        streetRes.error?.message ?? parcelRes.error?.message,
+      )
+      return { onMarket: false, unreadable: true }
+    }
+    const rows = [
+      ...((streetRes.data ?? []) as ExpiredOutreachListing[]),
+      ...((parcelRes.data ?? []) as ExpiredOutreachListing[]),
+    ]
+    const onMarket = rows.some((l) =>
+      expiredOutreachListingHits({
+        kind: opts.kind,
+        listing: l,
+        namePrefix,
+        cityUpper,
+        expiryComparator: opts.expiryComparator,
+        subjectParcel,
+      }),
+    )
+    return { onMarket, unreadable: false }
+  } catch (e) {
+    console.error('[prospecting] probeIntakeBackOnMarket threw:', e instanceof Error ? e.message : e)
+    return { onMarket: false, unreadable: true }
+  }
+}
+
 // ── Assembled compliance state ──────────────────────────────────────────────
 
 export interface ProspectComplianceInput {
@@ -390,15 +453,20 @@ export async function resolveComplianceState(
   const noPhone = !hasSendablePhone(prospect.contact_phone)
   const noEmail = !hasSendableEmail(prospect.contact_email ?? null)
 
-  const channels: ProspectChannelBlocks = prospect.compliance_hard_stop === true
-    ? blockAllChannels('Compliance hard stop on the record')
+  const emailHard = emailBlockedByFlags(flags, prospect.compliance_hard_stop === true)
+  const phoneHard = emailHard ? null : phoneBlockedByFlags(flags)
+  const channels: ProspectChannelBlocks = emailHard
+    ? blockAllChannels(emailHard)
     : {
         sms: {
-          blocked: hardStop || phoneKeyedSmsBlock != null,
-          reason: hardStop ? 'Blocked for SMS' : phoneKeyedSmsBlock,
+          blocked: hardStop || phoneKeyedSmsBlock != null || phoneHard != null,
+          reason: hardStop ? 'Blocked for SMS' : (phoneKeyedSmsBlock ?? phoneHard),
         },
         email: { blocked: emailBlockReason != null, reason: emailBlockReason },
-        call: { blocked: callBlockReason != null, reason: callBlockReason },
+        call: {
+          blocked: callBlockReason != null || phoneHard != null,
+          reason: callBlockReason ?? phoneHard,
+        },
       }
   if (noPhone) {
     for (const c of ['sms', 'call'] as ProspectChannel[]) {

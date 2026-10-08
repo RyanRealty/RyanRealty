@@ -19,7 +19,10 @@ describe('sitemap canonical contract', () => {
       // SITE-187: a self-city community's plain search page canonicals to the
       // community page, so the file lists the winner and not the twin.
       expect(urls).toContain('https://example.com/homes-for-sale/bend')
-      expect(urls).toContain('https://example.com/cities/sunriver')
+      // Matt 2026-10-04: /cities/sunriver 301s to the community page.
+      expect(urls).not.toContain('https://example.com/cities/sunriver')
+      expect(urls).not.toContain('https://example.com/cities/black-butte-ranch')
+      expect(urls).toContain('https://example.com/cities/sisters')
       expect(urls).not.toContain('https://example.com/homes-for-sale/sunriver')
       // SITE-184: same rule for Black Butte Ranch, its own MLS city under
       // Sisters (the community URL itself is DB-fed and not asserted here).

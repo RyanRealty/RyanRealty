@@ -57,6 +57,7 @@ import { promises as fs } from 'node:fs'
 // Type-only: erased at compile time, so this does not trigger the
 // `import 'server-only'` side effect in lib/data/cma/documents.ts at runtime.
 import type { CmaRenderSource } from '@/lib/data/cma/documents'
+import { siteOrigin } from '../lib/site-origin'
 
 // `server-only` throws by design outside a Next server component, and
 // lib/data (which the render glue below pulls in) imports it; several of
@@ -73,7 +74,8 @@ installServerOnlyShim()
 
 const REPO_ROOT = path.resolve(__dirname, '..')
 const OUT_ROOT = path.join(REPO_ROOT, 'out', 'cma-look')
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+// Production hosts (the Vercel alias included) fold to https://ryan-realty.com.
+const SITE_URL = siteOrigin()
 
 const CHROME =
   process.env.PUPPETEER_EXECUTABLE_PATH ||
@@ -1096,7 +1098,7 @@ async function main(): Promise<void> {
     }
   }
   const slugs = argv
-    .filter((a, i) => !a.startsWith('--') && i !== overlayAt + 1)
+    .filter((a, i) => !a.startsWith('--') && (overlayAt < 0 || i !== overlayAt + 1))
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean)
   if (slugs.length === 0) {
@@ -1111,7 +1113,7 @@ async function main(): Promise<void> {
   const { immersiveFromRow } = await import('@/lib/cma/serve-document')
   const { extractChapters } = await import('@/lib/cma/lookpass-chapters')
   const { findSellerBannedWords } = await import('@/lib/cma/seller-text')
-  const puppeteerModule = await import('puppeteer-core')
+  const puppeteerModule = await import('./lib/marked-puppeteer.mjs')
   const puppeteer = puppeteerModule.default
 
   const fsExists = await fs

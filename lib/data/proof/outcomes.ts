@@ -69,6 +69,13 @@ export const PROOF_MIN_CLOSES = 6
 /** The window the block reports on, and the window its context median must match. */
 export const PROOF_WINDOW_MONTHS = 12
 
+/**
+ * What the block says in place of the strips when the window is too thin to
+ * draw. Visitor copy, not an internal empty-state note (sell brief 2026-10-08,
+ * L7). The view prints it only where the strips are switched on.
+ */
+export const PROOF_QUIET_LINE = 'We show every closing as a list rather than a chart.'
+
 const MIN_ORIGINAL_LIST_PRICE = 100
 const MS_PER_DAY = 86_400_000
 
@@ -206,8 +213,6 @@ export function computeProofOutcomes(input: {
     medianDaysToContract: medianCont(dayValues),
     cities,
     publishable,
-    quietReason: publishable
-      ? null
-      : 'Too few recent closings here to chart.',
+    quietReason: publishable ? null : PROOF_QUIET_LINE,
   }
 }

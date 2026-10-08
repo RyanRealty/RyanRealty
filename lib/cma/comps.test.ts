@@ -60,38 +60,21 @@ describe('realSubdivision — the MLS placeholder trap', () => {
 })
 
 describe('compTierLadder', () => {
-  it('stays in the subdivision, then adjacent, then the neighborhood, and widens dates before the zip', () => {
+  it('finishes a named plat, then the touching plats, and does not open the neighborhood or a distance ring', () => {
     const names = compTierLadder('Kenwood').map((t) => t.name)
     expect(names).toEqual([
       'subdivision-6mo',
       'subdivision-12mo',
       'subdivision-18mo',
       'subdivision-24mo',
-      'pocket-6mo',
-      'pocket-12mo',
-      'pocket-24mo',
       'adjacent-subdivision-6mo',
       'adjacent-subdivision-12mo',
       'adjacent-subdivision-18mo',
       'adjacent-subdivision-24mo',
-      'neighborhood-6mo',
-      'neighborhood-12mo',
-      'neighborhood-18mo',
-      'neighborhood-24mo',
-      'community-6mo',
-      'community-12mo',
-      'community-24mo',
-      'like-community-24mo',
-      'competing-area-12mo',
-      'citywide-12mo',
-      // The disclosed widening (Matt 2026-09-09): last in town, and its rural
-      // twin last of all. Both run ONLY when the bounded ladder came up short.
-      'widened-disclosed-24mo',
-      'rural-county-12mo',
-      'rural-county-24mo',
-      'rural-widened-disclosed-24mo',
     ])
-    expect(names.indexOf('subdivision-12mo')).toBeLessThan(names.indexOf('neighborhood-6mo'))
+    expect(names.some((n) => n.startsWith('neighborhood-') || n.startsWith('nearby-') || n.startsWith('pocket-'))).toBe(
+      false,
+    )
   })
 
   it('keeps the city bound on every rung except the rural ones', () => {
@@ -198,6 +181,7 @@ function diag(over: Partial<CompSelectionDiagnostics> = {}): CompSelectionDiagno
     min_comps: 5,
     candidates: 2,
     excluded_totals: emptyExclusions(),
+    not_price_setting: 0,
     outliers_excluded: 0,
     final_count: 2,
     final_tier_counts: {},
@@ -273,13 +257,17 @@ describe('diagnoseStarvation — name the constraint, not the count', () => {
 })
 
 describe('the parent level on the listings ladder (Matt 2026-09-09)', () => {
-  it('holds the plat, then adjacent, then the neighborhood, before the community leaves for the city', () => {
+  it('finishes the named plat before the touching plats, and leaves distance to a home with no plat', () => {
     const names = compTierLadder('Tetherow').map((t) => t.name)
-    expect(names.indexOf('adjacent-subdivision-24mo')).toBeLessThan(names.indexOf('neighborhood-6mo'))
-    expect(names.indexOf('neighborhood-24mo')).toBeLessThan(names.indexOf('community-6mo'))
-    expect(names.indexOf('community-24mo')).toBeLessThan(names.indexOf('like-community-24mo'))
-    expect(names.indexOf('like-community-24mo')).toBeLessThan(names.indexOf('competing-area-12mo'))
-    expect(names.indexOf('competing-area-12mo')).toBeLessThan(names.indexOf('citywide-12mo'))
+    expect(names.indexOf('subdivision-24mo')).toBeLessThan(names.indexOf('adjacent-subdivision-6mo'))
+    expect(names).not.toContain('community-24mo')
+    expect(names).not.toContain('like-community-24mo')
+    const open = compTierLadder(null).map((t) => t.name)
+    expect(open.indexOf('nearby-0.25mi-6mo')).toBeLessThan(open.indexOf('nearby-1mi-6mo'))
+    expect(open.indexOf('pocket-24mo')).toBeLessThan(open.indexOf('nearby-0.25mi-6mo'))
+    expect(open.indexOf('nearby-2mi-24mo')).toBeLessThan(open.indexOf('neighborhood-6mo'))
+    expect(open.indexOf('like-community-24mo')).toBeLessThan(open.indexOf('competing-area-12mo'))
+    expect(open.indexOf('competing-area-12mo')).toBeLessThan(open.indexOf('citywide-12mo'))
   })
 
   it('marks membership on the community rungs and nowhere else', () => {

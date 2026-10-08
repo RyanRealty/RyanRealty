@@ -10,12 +10,11 @@
  * Zillow via Apify, Craigslist via the static search fallback in
  * lib/fsbo-craigslist.ts; Facebook Marketplace dropped by decision
  * 2026-07-21 — no API, ToS-fragile):
- *   detect → owner contact (direct from the listing page, else the county +
- *   BatchData skip-trace chain with compliance tags + demographics) →
- *   ensureNativeLead (NO placeholder leads without a real phone/email) →
- *   enrichNativeLead (tags + demographics custom + origin note) →
- *   60-min Call task → auto-CMA (createCmaRequest, notifyLead=false) →
- *   Matt alert email → upsert fsbo_listings (audit row).
+ *   detect → live status → owner contact (direct from the listing page, else
+ *   the county + BatchData skip-trace chain with compliance tags) →
+ *   compliance and a sendable email → ensureNativeLead only when the intake
+ *   decision proceeds → enrichNativeLead → 60-min Call task → auto-CMA
+ *   (notifyLead false) → Matt alert email → upsert fsbo_listings (audit row).
  *
  * NO AUTO-TEXTING: outreach is manual approve-and-send from /admin/fsbos.
  * The auto-enroll sweep only scans people with fub_created_at set; native
@@ -28,7 +27,11 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { detectFsboListings, FSBO_SERVICE_AREA_CITIES, FSBO_MIN_LIST_PRICE, type FsboListing } from '@/lib/fsbo-detector'
 import { detectCraigslistFsboListings } from '@/lib/fsbo-craigslist'
 import { lookupOwnerForExpiredListing, type OwnerLookupResult } from '@/lib/expired-owner-lookup'
+import { isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data/crm/ensureNativeLead'
+import { normalizeParcelNumber, probeIntakeBackOnMarket } from '@/lib/data/prospecting/compliance'
+import { hasSendableEmail } from '@/lib/data/prospecting/types'
+import { decideProspectIntake, intakeBuildsCma } from '@/lib/prospecting/intake-gate'
 import { sendFsboAlertEmail } from '@/lib/fsbo-alert'
 
 const MAX_PER_RUN = 15
@@ -110,8 +113,23 @@ export async function processNewFsboListings(supabase: SupabaseClient): Promise<
     try {
       stats.new_processed++
 
-      // 3. Owner contact — prefer direct from the listing page, else the
-      // county-records + BatchData skip-trace chain (shared with expireds).
+      // 3. Live status first. A page contact still has to clear it. Skip-trace
+      // runs only when the page has no contact and the home is not already
+      // back on the market.
+      const pageHasContact = Boolean(l.ownerName || l.contactPhone || l.contactEmail)
+      const detectAt = new Date().toISOString()
+      const live = await probeIntakeBackOnMarket({
+        kind: 'fsbo',
+        streetAddress: l.streetAddress || null,
+        city: l.city,
+        expiryComparator: detectAt,
+        parcelNumber: null,
+      })
+      if (live.unreadable) {
+        stats.errors++
+        continue
+      }
+      let onMarket = live.onMarket
       let ownerName = l.ownerName ?? null
       let ownerPhone = l.contactPhone ?? null
       let ownerEmail = l.contactEmail ?? null
@@ -121,7 +139,9 @@ export async function processNewFsboListings(supabase: SupabaseClient): Promise<
       let ownerNotes: string | null = null
       let ownerLookup: OwnerLookupResult | null = null
 
-      if (ownerName || ownerPhone || ownerEmail) {
+      if (onMarket) {
+        ownerNotes = 'Back on the market. Owner lookup skipped.'
+      } else if (pageHasContact) {
         ownerStatus = 'direct-from-listing'
         ownerSource = `${l.fsboSource}-page`
         ownerNotes = 'Owner contact surfaced directly from the FSBO listing page.'
@@ -142,15 +162,65 @@ export async function processNewFsboListings(supabase: SupabaseClient): Promise<
         ownerPhone = ownerLookup.ownerPhone ?? ownerPhone
         ownerEmail = ownerLookup.ownerEmail ?? ownerEmail
         ownerMailingAddress = ownerLookup.ownerMailingAddress ?? null
+        const taxlot = normalizeParcelNumber(ownerLookup.taxlot)
+        if (taxlot) {
+          const again = await probeIntakeBackOnMarket({
+            kind: 'fsbo',
+            streetAddress: l.streetAddress || null,
+            city: l.city,
+            expiryComparator: detectAt,
+            parcelNumber: taxlot,
+          })
+          if (again.unreadable) {
+            stats.errors++
+            continue
+          }
+          if (again.onMarket) onMarket = true
+        }
       }
 
-      // 4. Native CRM record — never a placeholder without real contact.
+      let emailSuppressed = false
+      if (!onMarket && hasSendableEmail(ownerEmail)) {
+        try {
+          const sup = await isSuppressedByEmail(ownerEmail!, 'email')
+          if (sup.reasons.some((r) => r.startsWith('email-suppression-check-failed'))) {
+            stats.errors++
+            continue
+          }
+          emailSuppressed = sup.suppressed
+        } catch (err) {
+          console.error('[fsbo-processor] email suppression unread', l.fsboUrl, err)
+          stats.errors++
+          continue
+        }
+      }
+      const intakeFlags = ownerLookup?.complianceFlags ?? []
+      const decision = decideProspectIntake({
+        onMarket,
+        litigator: intakeFlags.includes('litigator'),
+        deceased: intakeFlags.includes('deceased'),
+        dncTcpa: intakeFlags.includes('dnc:tcpa'),
+        dncPhone: intakeFlags.includes('dnc'),
+        email: ownerEmail,
+        emailSuppressed,
+        phones: ownerLookup?.allPhones ?? [],
+      })
+      const skipReason = decision.action === 'skip' ? decision.reason : 'proceed'
+
+      // 4. Native CRM record only when the intake decision proceeds.
       let crmPersonId: number | null = null
-      const hasContact = Boolean(ownerPhone || ownerEmail)
-      if (hasContact) {
+      let clientEmail: string | null = ownerEmail
+      if (intakeBuildsCma(decision)) {
+        if (decision.channel === 'sms') {
+          clientEmail = null
+          ownerPhone = decision.phone
+        } else {
+          clientEmail = decision.email
+          ownerEmail = decision.email
+        }
         const native = await ensureNativeLead({
           name: ownerName ?? `Owner of ${l.streetAddress || l.fullAddress}`,
-          email: ownerEmail,
+          email: clientEmail,
           phone: ownerPhone,
           source: 'fsbo-cron',
           assignedBroker: 'matt',
@@ -203,7 +273,11 @@ export async function processNewFsboListings(supabase: SupabaseClient): Promise<
             ownerStatus === 'pending' ? 'owner-lookup:pending' : 'owner-lookup:resolved',
             ...(ownerLookup?.absentee ? ['owner:absentee'] : []),
             ...(ownerLookup?.outOfState ? ['geo:out-of-state'] : []),
-            ...(ownerLookup?.complianceTags ?? []),
+            ...(intakeBuildsCma(decision) && decision.channel === 'sms'
+              ? decision.tags
+              : ownerLookup?.complianceTags?.length
+                ? ownerLookup.complianceTags
+                : decision.tags),
           ],
           assignedBroker: 'matt',
           originNote: {
@@ -238,7 +312,7 @@ export async function processNewFsboListings(supabase: SupabaseClient): Promise<
             parsedCity: l.city ?? null,
             parsedState: 'OR',
             parsedPostalCode: l.postalCode ?? null,
-            leadEmail: ownerEmail,
+            leadEmail: clientEmail,
             leadName: ownerName,
             leadPhone: ownerPhone,
             leadTimeline: 'ready-now',
@@ -317,14 +391,17 @@ export async function processNewFsboListings(supabase: SupabaseClient): Promise<
           description: l.description,
           owner_name: ownerName,
           contact_phone: ownerPhone,
-          contact_email: ownerEmail,
+          contact_email: decision.action === 'proceed' ? clientEmail : ownerEmail,
           contact_source: ownerSource,
+          compliance_hard_stop: decision.emailHardStop,
+          compliance_flags: decision.flags,
+          compliance_source: ownerLookup ? 'skip-trace' : onMarket ? 'live-status' : null,
           enrichment_notes: ownerNotes,
           fub_person_id: crmPersonId,
-          fub_person_matched_by: crmPersonId ? `${ownerSource}-native` : 'no-contact-skip',
+          fub_person_matched_by: crmPersonId ? `${ownerSource}-native` : `intake-skip:${skipReason}`,
           alert_sent_at: alertRes.ok ? nowIso : null,
           alert_method: alertRes.ok ? 'resend-email' : null,
-          owner_lookup_status: ownerStatus === 'pending' ? 'pending' : 'resolved',
+          owner_lookup_status: onMarket && !ownerLookup ? 'skipped-back-on-market' : ownerStatus === 'pending' ? 'pending' : 'resolved',
           owner_lookup_attempts: 1,
           last_owner_lookup_at: nowIso,
           detected_at: nowIso,

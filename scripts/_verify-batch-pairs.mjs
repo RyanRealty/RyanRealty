@@ -1,6 +1,6 @@
 // Read-only: render Yahson (52283) + Mary (12967) contact pages on prod with a
 // minted session; assert the split is visible. Run from repo root.
-import { chromium, devices } from 'playwright'
+import { chromium, devices } from './lib/marked-playwright.mjs'
 import { createClient as createSb } from '@supabase/supabase-js'
 import { createServerClient } from '@supabase/ssr'
 import { readFileSync } from 'node:fs'

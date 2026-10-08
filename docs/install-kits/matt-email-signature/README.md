@@ -11,8 +11,8 @@ Locked design v6, approved 2026-05-14. Standardized across three accounts:
 | File | Purpose |
 |---|---|
 | `signature.html` | Paste-ready HTML block. Drop into FUB signature editor's source-mode, or use Gmail's compose-trick install (see below). |
-| `../../public/images/brokers/ryan-matt.png` | Inline headshot (transparent PNG, 800×1200). Served from `https://ryanrealty.vercel.app/images/brokers/ryan-matt.png`. |
-| `../../public/images/brand/logo-blue.png` | Inline stacked logo (navy on white, 959×629). Served from `https://ryanrealty.vercel.app/images/brand/logo-blue.png`. |
+| `../../public/images/brokers/ryan-matt.png` | Inline headshot (transparent PNG, 800×1200). Served from `https://ryan-realty.com/images/brokers/ryan-matt.png`. |
+| `../../public/images/brand/logo-blue.png` | Inline stacked logo (navy on white, 959×629). Served from `https://ryan-realty.com/images/brand/logo-blue.png`. |
 | `../../public/images/brokers/ryan-matt-profile-512.jpg` | 512×512 square profile photo (white background, 64 KB). For Google Account + FUB profile photo upload. |
 
 The signature HTML pulls images from production Vercel URLs, so every render is byte-identical across mail clients and survives the recipient client's image proxy.
@@ -82,13 +82,13 @@ Propagation: Google takes 5–60 minutes to push the new photo to Gmail recipien
 - **Mission statement:** `Building community through authentic relationships and exceptional customer service.` (verbatim, locked — [bio-drafts.md:29](../../design_system/ryan-realty/assets/social/bio-drafts.md:29))
 - **Phone:** `541.703.3095` (FUB-tracked — inbound calls route to the in-house CRM attribution)
 - **Email:** `matt@ryan-realty.com` (canonical brand address — display on both Gmail accounts)
-- **Web:** `ryan-realty.com` (consumer-facing AgentFire WordPress site; the Vercel app at `ryanrealty.vercel.app` hosts the inline signature images)
+- **Web:** `ryan-realty.com` (the Next.js site; it also hosts the inline signature images)
 - **License disclosure:** `Ryan Realty LLC · Oregon Principal Broker #201206613 · Equal Housing Opportunity` (matches [OregonDisclosure.tsx](../../components/legal/OregonDisclosure.tsx))
 - **Google reviews URL:** `https://www.google.com/maps/search/?api=1&query=Ryan+Realty+Bend+OR` (canonical from [lib/testimonials.ts:76](../../lib/testimonials.ts:76))
 - **OR Initial Agency Disclosure Pamphlet:** `https://www.oregon.gov/rea/licensing/Documents/Initial-Agency-Disclosure-Pamphlet.pdf` (verified live; OREA refreshed it in 2025 to include fair-housing complaint filing language)
 
 ## Updating the signature later
 
-The image URLs hard-code `ryanrealty.vercel.app`. When the custom domain `ryan-realty.com` migrates off AgentFire to serve the Next.js app, swap the two image URLs in `signature.html` from `ryanrealty.vercel.app/images/...` to `ryan-realty.com/images/...` and re-install across all three surfaces.
+The image URLs load from `ryan-realty.com/images/...` (swapped from the Vercel alias 2026-10-07, once the apex served the Next.js app). A signature installed before that swap still carries the alias host: CRM and CMA sends rewrite it at send time (`lib/email/link-origin.ts`), and mail sent straight from Gmail keeps it until the signature is re-installed from `signature.html` on all three surfaces.
 
 If the headshot or logo asset itself changes, the URLs stay the same and recipients see the new image after Gmail's proxy cache expires (typically within 24 hours).

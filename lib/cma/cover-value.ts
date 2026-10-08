@@ -6,15 +6,64 @@
 import { countWord, escapeHtml, usd } from '@/lib/cma/render-blocks'
 import { pricingRangeDisplay } from '@/lib/cma/pricing'
 import { closedCompBand } from '@/lib/pricing/recommended-in-band'
+import { printedAdjustedPrice } from '@/lib/pricing/seller-net'
+import { setAsideCompIndexes } from '@/lib/cma/set-aside'
 import { describeCompSearch } from '@/lib/pricing/search-story'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CmaEquityPosition } from '@/lib/cma/equity'
 import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
+import { subjectOnMarket } from '@/lib/cma/subject-on-market'
+import { adjustmentsApplied, anySaleMovedForDate } from '@/lib/cma/adjustments-applied'
+import { streetAnchorRead } from '@/lib/cma/street-anchor'
 
 const esc = escapeHtml
 
 /** Locked cover / hero headline (Matt 2026-09-12 Tip Ready craft). */
 export const COVER_LIST_PRICE_HEADLINE = 'Our Recommended List Price for your home'
+/**
+ * The label over the number on a letter the build holds for Matt: because the
+ * failed ask pulled the price under every sale that set it (SKILL.md rule 26,
+ * Matt 2026-10-07), or because the last failed ask sits inside the sales range
+ * (rule 22, 2382 Jackson, reader review 2026-10-08). That number is not a
+ * recommendation anyone has approved; Matt approves it or sets his own.
+ */
+export const HELD_PRICE_HEADLINE = 'The price Matt is reviewing'
+
+/** True on a letter held under rule 26 (pricing.hold kind 'ask-below-band'). */
+export function heldUnderBand(p: Pick<CmaPricing, 'hold'> | null | undefined): boolean {
+  return p?.hold?.kind === 'ask-below-band'
+}
+
+/**
+ * True on any letter the build holds for Matt (rule 22 'ask-in-band' or rule
+ * 26 'ask-below-band'). A held letter gives no list instruction and prints no
+ * clamp sentence: its cover price is the one Matt is reviewing.
+ */
+export function heldForMatt(p: Pick<CmaPricing, 'hold'> | null | undefined): boolean {
+  const kind = p?.hold?.kind
+  return kind === 'ask-in-band' || kind === 'ask-below-band'
+}
+
+/**
+ * The label over the number on a home that is on the market today
+ * (lib/cma/subject-on-market.ts). 3062 NW Kelly Hill, listed with another
+ * brokerage, opened on "Our Recommended List Price for your home": a list
+ * price we recommend to an owner who already has a listing agreement. The
+ * figure is the same; it is stated as what it is, an opinion of value.
+ */
+export const COVER_ON_MARKET_HEADLINE = 'Our opinion of value'
+
+/**
+ * The label over the cover number: the recommendation, on a held letter the
+ * price under review, and on a home on the market our opinion of value.
+ */
+export function coverPriceHeadline(
+  p: Pick<CmaPricing, 'hold'> | null | undefined,
+  opts?: { onMarket?: boolean },
+): string {
+  if (heldForMatt(p)) return HELD_PRICE_HEADLINE
+  return opts?.onMarket ? COVER_ON_MARKET_HEADLINE : COVER_LIST_PRICE_HEADLINE
+}
 
 type CoverArgs = {
   subject: CmaSubject
@@ -24,6 +73,49 @@ type CoverArgs = {
   equity?: CmaEquityPosition | null
   expiredAudit?: ExpiredAuditData | null
   tiersUsed?: string[]
+  /** `render_args.subjectStatus`, read by `subjectOnMarket`. */
+  subjectStatus?: unknown
+}
+
+
+/**
+ * The sales the printed band is drawn from: the weighted rows of the grid,
+ * less the rows `pricing.setAside` names (the band is always the trimmed
+ * range, Matt 2026-10-07; a set-aside sale still carries its weight on the
+ * grid, so it is read by name, as the pin in lib/pricing/estimate.ts does).
+ */
+export function tableBandSales(
+  comps: readonly CmaAdjustedComp[],
+  pricing?: CmaPricing | null,
+): CmaAdjustedComp[] {
+  const aside = pricing ? setAsideCompIndexes(pricing, comps) : new Set<number>()
+  const rows = comps.filter((_, i) => !aside.has(i))
+  const weighted = rows.filter((c) => typeof c.weight === 'number')
+  return weighted.some((c) => c.weight > 0) ? weighted.filter((c) => c.weight > 0) : rows
+}
+
+export function tableAdjustedBand(
+  comps: readonly CmaAdjustedComp[],
+  pricing?: CmaPricing | null,
+): { low: number; high: number } | null {
+  const setters = tableBandSales(comps, pricing)
+  const values = setters
+    .map((c) => printedAdjustedPrice(c))
+    .filter((n) => Number.isFinite(n) && n > 0)
+  if (values.length === 0) return null
+  return { low: Math.min(...values), high: Math.max(...values) }
+}
+
+/** One end accounts for at least half the span. That is not a range to list in. */
+export function oneOutlierMakesTheSpan(values: readonly number[]): boolean {
+  if (values.length < 3) return false
+  const sorted = [...values].filter((n) => n > 0).sort((a, b) => a - b)
+  if (sorted.length < 3) return false
+  const span = sorted[sorted.length - 1]! - sorted[0]!
+  if (!(span > 0)) return false
+  const dropHigh = sorted[sorted.length - 2]! - sorted[0]!
+  const dropLow = sorted[sorted.length - 1]! - sorted[1]!
+  return Math.min(dropHigh, dropLow) <= span * 0.5
 }
 
 export function expectedSale(p: CmaPricing): number {
@@ -96,7 +188,18 @@ export function coverWorthSentence(p: CmaPricing, opts?: { omitAsk?: boolean }):
  * Nothing here computes a valuation.
  */
 export const WIDE_RANGE_THRESHOLD = 0.15
-export function rangeSpreadCauseSentence(pricing: CmaPricing | null | undefined): string {
+export function rangeSpreadCauseSentence(
+  pricing: CmaPricing | null | undefined,
+  opts?: {
+    onMarket?: boolean
+    /**
+     * The printed grid. With it the sentence says only the adjustments its
+     * sales carry ("moved to today" only when one moved for date) and names
+     * the street sale a trim kept (reader review 2026-10-08).
+     */
+    comps?: readonly CmaAdjustedComp[] | null
+  },
+): string {
   if (!pricing) return ''
   const lo = Math.min(pricing.valueLow, pricing.valueHigh)
   const hi = Math.max(pricing.valueLow, pricing.valueHigh)
@@ -111,19 +214,38 @@ export function rangeSpreadCauseSentence(pricing: CmaPricing | null | undefined)
   const kept = num(rule.kept)
   if (n == null || kept == null || !(kept > 0)) return ''
   const setAside = Math.max(n - kept, 0)
+  const comps = opts?.comps && opts.comps.length > 0 ? opts.comps : null
+  const bandSales = comps ? tableBandSales(comps, pricing) : null
+  // "Moved to today" only when a sale behind the range moved for date (3037
+  // Purcell moved none, reader review 2026-10-08).
+  const moved = !bandSales
+    ? ' once each is moved to today'
+    : anySaleMovedForDate(bandSales)
+      ? ' once each is moved to today'
+      : adjustmentsApplied(bandSales).length > 0
+        ? ' once each is adjusted to your home'
+        : ''
   const spread = `That range is wide because the ${countWord(kept)} sales behind it still land ${usd(
     Math.round(hi - lo),
-  )} apart once each is moved to today`
+  )} apart${moved}`
   if (setAside <= 0) return `${spread}.`
   const ppsf = Math.max(0, num(rule.endpointPpsfAside) ?? 0)
   const light = Math.max(0, num(rule.endpointWeightAside) ?? 0)
   const trim = Math.max(0, setAside - ppsf - light)
+  // THE STREET SALE THE TRIM KEPT (915 Saginaw, reader review 2026-10-08).
+  // The trim sets aside the highest and the lowest sale, but never the sale on
+  // the subject's street the price is held to (lib/pricing/estimate.ts
+  // releaseStreetAnchorFromSetAside). Saginaw set aside only its high sale,
+  // and "one sale at the end of the prices so a single sale cannot set the
+  // range" was false at the low end, where 536 Saginaw alone sets it.
+  const keptStreet = trim === 1 ? keptStreetEnd(pricing, comps) : null
   const parts: string[] = []
   if (ppsf === 1) parts.push('one sale whose price per square foot sat more than 25 percent off the others')
   else if (ppsf > 1) parts.push(`${countWord(ppsf)} sales whose price per square foot sat more than 25 percent off the others`)
   if (light === 1) parts.push('one sale that carried too little weight to set an end')
   else if (light > 1) parts.push(`${countWord(light)} sales that carried too little weight to set an end`)
-  if (trim === 1) parts.push('one sale at the end of the prices so a single sale cannot set the range')
+  if (trim === 1 && keptStreet) parts.push(`one sale at the ${keptStreet.asideEnd} end of the prices`)
+  else if (trim === 1) parts.push('one sale at the end of the prices so a single sale cannot set the range')
   else if (trim > 1) parts.push('the sales at each end of the prices so one sale cannot set the range')
   if (parts.length === 0) {
     // Older rows stored the count and not the reason. Do not call it distance.
@@ -134,13 +256,51 @@ export function rangeSpreadCauseSentence(pricing: CmaPricing | null | undefined)
     )
   }
   const joined = parts.length === 1 ? parts[0]! : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`
+  // A home on the market gets an opinion of value, not a recommended price;
+  // on a letter held for Matt the number beside this sentence is the price
+  // under his review (reader review 2026-10-08).
+  const inPrice = opts?.onMarket ? 'in this value' : heldForMatt(pricing) ? 'in this price' : 'in the recommended price'
   const stillCarries =
     ppsf + light > 0 && trim === 0
       ? ppsf + light === 1
-        ? ' That sale still carries weight in the recommended price.'
-        : ' Those sales still carry weight in the recommended price.'
+        ? ` That sale still carries weight ${inPrice}.`
+        : ` Those sales still carry weight ${inPrice}.`
       : ''
-  return `${spread}, and that is after setting aside ${joined}.${stillCarries}`
+  const street = keptStreet ? ` ${keptStreet.sentence}` : ''
+  return `${spread}, and that is after setting aside ${joined}.${street}${stillCarries}`
+}
+
+/**
+ * The street sale a one-sale trim kept at the other end of the range, and the
+ * sentence that says so, or null. Read off the stored anchor and the printed
+ * grid: the anchored sale must be the band's own low or high, and the sale
+ * set aside must sit at the other end.
+ */
+function keptStreetEnd(
+  pricing: CmaPricing,
+  comps: readonly CmaAdjustedComp[] | null,
+): { asideEnd: 'high' | 'low'; sentence: string } | null {
+  if (!comps) return null
+  const street = streetAnchorRead(pricing, comps)
+  if (!street || street.sales.length !== 1) return null
+  const band = tableAdjustedBand(comps, pricing)
+  if (!band) return null
+  const sale = street.sales[0]!
+  const value = printedAdjustedPrice(sale)
+  const keptEnd = value === band.low ? 'low' : value === band.high ? 'high' : null
+  if (!keptEnd) return null
+  const aside = [...setAsideCompIndexes(pricing, comps)].map((i) => comps[i]!).filter(Boolean)
+  if (aside.length !== 1) return null
+  const asideValue = printedAdjustedPrice(aside[0]!)
+  const asideEnd = asideValue > band.high ? 'high' : asideValue < band.low ? 'low' : null
+  if (!asideEnd || asideEnd === keptEnd) return null
+  const why = street.holdsCover
+    ? 'because the price on the cover is held to it'
+    : 'because a sale on your street this close to your home in size is never set aside'
+  return {
+    asideEnd,
+    sentence: `${sale.address}, on your street, is kept as the ${keptEnd} end ${why}.`,
+  }
 }
 
 
@@ -151,11 +311,11 @@ export function coverValueBlockHtml(a: CoverArgs): string {
   return `
     <div class="vb-top">
       <div>
-        <div class="vb-label">${esc(COVER_LIST_PRICE_HEADLINE)}</div>
+        <div class="vb-label">${esc(coverPriceHeadline(p))}</div>
         <p class="vb-price">${usd(p.recommended)}</p>
       </div>
     </div>
-    <div class="vb-range">${esc((() => {
+    ${heldForMatt(p) ? '' : `<div class="vb-range">${esc((() => {
       // Matt 2026-09-18: same closed-comp band as hero trio — never a second
       // list-tier range beside Low/High (Canter dual-tier refuse).
       const band = closedCompBand(p)
@@ -164,22 +324,67 @@ export function coverValueBlockHtml(a: CoverArgs): string {
       return `List ${usd(lo)} to ${usd(hi)}.`
     })())}${
       range.outOfRange ? ` The sales support ${usd(p.valueLow)} to ${usd(p.valueHigh)}.` : ''
-    }</div>
+    }</div>`}
     ${currentAskLine(p) ? `<div class="vb-detail vb-ask">${esc(currentAskLine(p)!)}</div>` : ''}
     ${range.note ? `<div class="vb-detail">${esc(range.note)}</div>` : ''}
     <div class="vb-detail">${a.comps.length} closed MLS sales. Automated estimates are not used.${a.market?.geoLabel ? ` The market read is ${esc(a.market.geoLabel)}.` : ''} ${esc(story.body)}</div>`
 }
 
+/** The label over the low and high pair: a SOLD range, not a list range. */
+export const HERO_SOLD_RANGE_LABEL = 'Where similar homes sold, adjusted to today'
 /**
- * Low · High · Recommended once — FlexMLS letter FLOW labels, Ryan craft.
- * Shared by immersive hero and letter cover so renderCmaHtml cannot skip the trio.
+ * The same label when no sale behind the pair moved for date. 3037 Purcell
+ * moved no sale for date (its own-ground local read held, Matt 2026-10-08,
+ * "Down only if local fell"), and the cover still said "adjusted to today"
+ * over two figures adjusted only for size and seller concessions (reader
+ * review 2026-10-08). The pair is adjusted to the home, so it says that.
+ */
+export const HERO_SOLD_RANGE_LABEL_TO_HOME = 'Where similar homes sold, adjusted to your home'
+/** The label when the sales behind the pair carry no adjustment at all. */
+export const HERO_SOLD_RANGE_LABEL_PLAIN = 'Where similar homes sold'
+
+/**
+ * The sold pair's label, read off the sales the pair is drawn from: "adjusted
+ * to today" only when one of them moved for date, "adjusted to your home"
+ * when they moved for anything else, and no adjustment named when none did.
+ * With no sales in hand the label is the one the pair always carried.
+ */
+export function heroSoldRangeLabel(sales: readonly CmaAdjustedComp[] | null | undefined): string {
+  if (!sales || sales.length === 0) return HERO_SOLD_RANGE_LABEL
+  if (anySaleMovedForDate(sales)) return HERO_SOLD_RANGE_LABEL
+  return adjustmentsApplied(sales).length > 0 ? HERO_SOLD_RANGE_LABEL_TO_HOME : HERO_SOLD_RANGE_LABEL_PLAIN
+}
+/** The pair's label when no sold band exists and it falls back to the list tiers. */
+export const HERO_LIST_RANGE_LABEL = 'List price range'
+
+/**
+ * The recommended list price, then where similar homes sold.
+ *
+ * Shared by immersive hero and letter cover so renderCmaHtml cannot skip it.
  * Matt 2026-09-17: Low/High from closed-comp band (valueLow/valueHigh).
  * Recommended must stay inside that band (Tip Ready refuse if outside).
  * Falls back to list tiers only when the closed band is missing.
+ *
+ * ORDER (Matt 2026-10-07). This used to print Low · High · Recommended under
+ * "Our Recommended List Price for your home", so the first two figures under a
+ * list-price label were the adjusted SOLD prices of the sales. The
+ * recommended list is now the first and biggest thing under that label, and
+ * the pair sits under its own label saying what it is. The markup reuses the
+ * hero-trio classes both stylesheets already size (lib/cma/immersive-css.ts,
+ * lib/cma/render-css.ts), so no stylesheet changes with it: the recommend is a
+ * one-item trio, and the sold pair is a trio inside a labelled column. The one
+ * inline margin is the gap between the two: the letter's trio rule sets 4px,
+ * which sat the sold label on the big number.
  */
-export function heroTrioHtml(p: CmaPricing, opts?: { singleClass?: string }): string {
+export function heroTrioHtml(
+  p: CmaPricing,
+  opts?: { singleClass?: string; comps?: readonly CmaAdjustedComp[] | null },
+): string {
   // Same closedCompBand listRangeBounds / Tip Ready parity reads.
-  const band = closedCompBand(p)
+  // When the table is in hand, low and high are the adjusted sales still on it.
+  const table = opts?.comps && opts.comps.length > 0 ? tableAdjustedBand(opts.comps, p) : null
+  const band = table ?? closedCompBand(p)
+  const soldLabel = heroSoldRangeLabel(table ? tableBandSales(opts!.comps!, p) : null)
   const loRaw = band?.low ?? (p.conservative ?? 0)
   const hiRaw = band?.high ?? (p.highEnd ?? 0)
   const low = Math.min(loRaw, hiRaw)
@@ -187,17 +392,23 @@ export function heroTrioHtml(p: CmaPricing, opts?: { singleClass?: string }): st
   const rec = p.recommended
   if (low > 0 && high > 0 && rec > 0) {
     return `<div class="hero-trio" data-recommend-once="1">
-      <div class="ht">
-        <div class="ht-l">Low</div>
-        <div class="ht-v">${usd(low)}</div>
-      </div>
-      <div class="ht">
-        <div class="ht-l">High</div>
-        <div class="ht-v">${usd(high)}</div>
-      </div>
       <div class="ht is-rec">
-        <div class="ht-l">Recommended</div>
         <div class="ans-n r ht-v">${usd(rec)}</div>
+      </div>
+    </div>
+    <div class="hero-trio hero-sold" style="margin-top:14px">
+      <div class="ht">
+        <div class="ht-l">${esc(band ? soldLabel : HERO_LIST_RANGE_LABEL)}</div>
+        <div class="hero-trio">
+          <div class="ht">
+            <div class="ht-l">Low</div>
+            <div class="ht-v">${usd(low)}</div>
+          </div>
+          <div class="ht">
+            <div class="ht-l">High</div>
+            <div class="ht-v">${usd(high)}</div>
+          </div>
+        </div>
       </div>
     </div>`
   }
@@ -213,11 +424,12 @@ export function heroTrioHtml(p: CmaPricing, opts?: { singleClass?: string }): st
  */
 export function immersiveHeroNumberHtml(a: CoverArgs): string {
   const p = a.pricing
-  const cause = rangeSpreadCauseSentence(p)
+  const onMarket = subjectOnMarket(a)
+  const cause = rangeSpreadCauseSentence(p, { onMarket, comps: a.comps })
   return `
     <div class="hero-payoff">
-      <div class="ans-l r">${esc(COVER_LIST_PRICE_HEADLINE)}</div>
-      ${heroTrioHtml(p)}
+      <div class="ans-l r">${esc(coverPriceHeadline(p, { onMarket }))}</div>
+      ${heroTrioHtml(p, { comps: a.comps })}
       ${cause ? `<div class="hero-why r">${esc(cause)}</div>` : ''}
     </div>`
 }
@@ -225,12 +437,17 @@ export function immersiveHeroNumberHtml(a: CoverArgs): string {
 /**
  * Letter cover payoff (renderCmaHtml): same FLOW trio as immersive — never sole cover-price.
  */
-export function letterCoverPayoffHtml(p: CmaPricing): string {
-  const cause = rangeSpreadCauseSentence(p)
-  const trio = heroTrioHtml(p)
+export function letterCoverPayoffHtml(
+  p: CmaPricing,
+  comps?: readonly CmaAdjustedComp[] | null,
+  opts?: { onMarket?: boolean },
+): string {
+  const onMarket = opts?.onMarket === true
+  const cause = rangeSpreadCauseSentence(p, { onMarket, comps })
+  const trio = heroTrioHtml(p, { comps })
   if (!trio && !cause) return ''
   return `<div class="cover-payoff">
-      <div class="cover-headline">${esc(COVER_LIST_PRICE_HEADLINE)}</div>
+      <div class="cover-headline">${esc(coverPriceHeadline(p, { onMarket }))}</div>
       ${trio}
       ${cause ? `<p class="cover-why">${esc(cause)}</p>` : ''}
     </div>`
@@ -245,11 +462,12 @@ export function immersiveAnswerHtml(a: CoverArgs): string {
   const story = describeCompSearch({ subdivision: a.subject.subdivision, tiersUsed: a.tiersUsed ?? [] })
   const bits = [
     currentAskLine(p),
-    range.outOfRange ? `The sales support ${usd(p.valueLow)} to ${usd(p.valueHigh)}.` : null,
+    // A held letter (rule 26) states the band once, in chapter 3.
+    range.outOfRange && !heldUnderBand(p) ? `The sales support ${usd(p.valueLow)} to ${usd(p.valueHigh)}.` : null,
     range.note,
     // A 28-to-33 percent spread on the opening screen with nothing saying why
     // (tasteReview round two, §3.E). One sentence, off `pricing.rangeRule`.
-    rangeSpreadCauseSentence(p),
+    rangeSpreadCauseSentence(p, { comps: a.comps }),
     story.body,
   ].filter((b): b is string => Boolean(b && String(b).trim()))
   if (bits.length === 0) return ''

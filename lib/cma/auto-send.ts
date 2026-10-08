@@ -32,6 +32,7 @@ import { isSendableQueueState, type CmaQueueRow, type CmaQueueState } from '@/li
 import type { CmaOrigin } from '@/lib/cma/origin'
 import type { LaneSettings } from '@/lib/data/cma/lane-settings'
 import { isAutoSendLane } from '@/lib/data/cma/lane-settings'
+import { recommendationGapHold } from '@/lib/cma/gap-hold'
 
 export type AutoSendOutcome =
   | 'not-found'
@@ -157,6 +158,22 @@ export async function autoSendBuiltCma(slug: string, injected?: AutoSendDeps): P
         lane: row.origin,
         state: row.state,
       }
+    }
+
+    // The holds, after the readiness gate and before anything finalizes: rule
+    // 3, the build's stored holds (ask in band, price under the band), and the
+    // live ask-in-band backstop on a row whose build never measured the ask
+    // against the band. The same call the queue's send path makes
+    // (app/actions/cma-queue.ts). A ready row is not a row Matt has cleared.
+    const gap = recommendationGapHold(row.recommendedList, row.theirPrice, {
+      low: row.valueLow,
+      high: row.valueHigh,
+      holdKind: row.holdKind,
+      holdDecided: row.holdDecided,
+      origin: row.origin,
+    })
+    if (gap.hold) {
+      return { outcome: 'not-ready', reason: `Not sent: ${gap.reason}`, lane: row.origin, state: row.state }
     }
 
     if (!row.contactEmail) {

@@ -43,13 +43,6 @@ export const PLACE_ENTITY_SAME_AS: readonly PlaceEntitySameAs[] = [
     ],
   },
   {
-    path: '/cities/sunriver',
-    sameAs: [
-      'https://en.wikipedia.org/wiki/Sunriver,_Oregon',
-      'https://www.wikidata.org/wiki/Q3459533',
-    ],
-  },
-  {
     path: '/cities/la-pine',
     sameAs: [
       'https://en.wikipedia.org/wiki/La_Pine,_Oregon',

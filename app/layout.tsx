@@ -44,7 +44,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(getCanonicalSiteUrl()),
   title: {
     default: "Ryan Realty, Central Oregon Real Estate",
-    template: "%s | Ryan Realty, Central Oregon",
+    template: "%s | Ryan Realty",
   },
   description:
     "Find your next home in Bend, Redmond, Sisters, and across Central Oregon. Ryan Realty offers expert local real estate service, listings, and market insights.",

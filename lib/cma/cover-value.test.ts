@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { coverValueBlockHtml, expectedSale, immersiveAnswerHtml, immersiveHeroNumberHtml, letterCoverPayoffHtml, rangeSpreadCauseSentence } from '@/lib/cma/cover-value'
+import { HERO_SOLD_RANGE_LABEL, coverValueBlockHtml, expectedSale, immersiveAnswerHtml, immersiveHeroNumberHtml, letterCoverPayoffHtml, rangeSpreadCauseSentence } from '@/lib/cma/cover-value'
 import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
 
 const subject = {
@@ -27,7 +27,7 @@ const pricing = {
 
 const args = {
   subject,
-  comps: [{ address: '1 Comp', closePrice: 490000, adjustedPrice: 492000, weight: 1 }] as CmaAdjustedComp[],
+  comps: [{ address: '1 Comp', closePrice: 490000, timeAdjustment: 2000, adjustedPrice: 492000, weight: 1 }] as CmaAdjustedComp[],
   market: null,
   pricing,
   tiersUsed: ['subdivision-9mo', 'nearby-1mi-3mo'],
@@ -65,16 +65,22 @@ describe('cover and immersive value blocks', () => {
     expect(html).not.toMatch(/stayed inside/)
   })
 
-  it('puts Low · High · Recommended on the immersive hero payoff', () => {
+  it('puts the recommended list first on the immersive hero, then where similar homes sold', () => {
     const html = immersiveHeroNumberHtml(args)
     expect(html).toContain('hero-payoff')
     expect(html).toContain('hero-trio')
     expect(html).toContain('Our Recommended List Price for your home')
     expect(html).toContain('>Low<')
     expect(html).toContain('>High<')
-    expect(html).toContain('>Recommended<')
-    expect(html).toContain('$470,000')
-    expect(html).toContain('$515,000')
+    // Matt 2026-10-07: Low/High are the adjusted SOLD range, so they sit under
+    // their own label, after the list price the headline names.
+    expect(html).toContain(`>${HERO_SOLD_RANGE_LABEL}<`)
+    expect(html.indexOf('$505,000')).toBeLessThan(html.indexOf('>Low<'))
+    expect(html.indexOf('Our Recommended List Price')).toBeLessThan(html.indexOf('$505,000'))
+    expect(html).not.toContain('>Recommended<')
+    expect(html).toContain('$492,000')
+    expect(html).not.toContain('$470,000')
+    expect(html).not.toContain('$515,000')
     expect(html).toContain('$505,000')
     expect(html).not.toContain('Expected close')
     expect(html).not.toMatch(/[—;]/)
@@ -82,7 +88,7 @@ describe('cover and immersive value blocks', () => {
     expect(html).not.toMatch(/>Recommended list</)
   })
 
-  it('puts the same Low · High · Recommended trio on the letter cover payoff', () => {
+  it('puts the same list-first block on the letter cover payoff', () => {
     const html = letterCoverPayoffHtml(args.pricing)
     expect(html).toContain('cover-payoff')
     expect(html).toContain('cover-headline')
@@ -90,7 +96,9 @@ describe('cover and immersive value blocks', () => {
     expect(html).toContain('data-recommend-once')
     expect(html).toContain('>Low<')
     expect(html).toContain('>High<')
-    expect(html).toContain('>Recommended<')
+    expect(html).toContain(`>${HERO_SOLD_RANGE_LABEL}<`)
+    expect(html.indexOf('$505,000')).toBeLessThan(html.indexOf('>Low<'))
+    expect(html).not.toContain('>Recommended<')
     expect(html).toContain('$470,000')
     expect(html).toContain('$515,000')
     expect(html).toContain('$505,000')

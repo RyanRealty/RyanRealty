@@ -1,5 +1,6 @@
 'use server'
 
+import { siteOrigin } from '@/lib/site-origin'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import {
   sendEvent,
@@ -19,6 +20,7 @@ import { isHardStopped } from '@/lib/canonical-lead-tagger'
 import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
 import { sendSellerLeadAlertEmail } from '@/lib/seller-lead-alert'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
+import { visitorCapiConsent } from '@/lib/meta-capi-visitor'
 import { resolveLeadSource, resolvePaidAttributionTags } from '@/lib/crm/lead-source'
 import { cookies, headers } from 'next/headers'
 
@@ -39,7 +41,7 @@ import { cookies, headers } from 'next/headers'
 
 const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const siteUrl = siteOrigin()
 const source = siteUrl.replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase() || 'ryan-realty.com'
 
 const CRM_DESK_MATT = 1
@@ -387,39 +389,44 @@ export async function submitFsboLPForm(submission: FsboLPSubmission): Promise<Fs
     const capiReqHeaders = await headers()
     const capiClientIp = capiReqHeaders.get('x-forwarded-for')?.split(',')[0]?.trim() || undefined
     const capiClientUa = capiReqHeaders.get('user-agent') || undefined
-    void fetch(`${siteUrl}/api/meta-capi`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        eventName: 'Lead',
-        email,
-        phone: phone || undefined,
-        firstName,
-        lastName,
-        eventId,
-        eventSourceUrl: `${siteUrl}/lp/fsbo`,
-        fbp: capiCookies.get('_fbp')?.value,
-        fbc: capiCookies.get('_fbc')?.value ?? capiCookies.get('rr_fbc')?.value,
-        clientIp: capiClientIp,
-        clientUserAgent: capiClientUa,
-        customData: {
-          content_name: 'fsbo_lp_pricing_report',
-          lead_type: 'fsbo_seller',
-          property_address: parsed.full,
-          assigned_broker: assignment.broker,
-          value: 500,
-          currency: 'USD',
-        },
-      }),
-    }).catch((err) => console.warn('[fsbo-lp] CAPI call failed:', err))
+    const sharing = await visitorCapiConsent()
+    if (sharing.allowed) {
+      void fetch(`${siteUrl}/api/meta-capi`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventName: 'Lead',
+          email,
+          phone: phone || undefined,
+          firstName,
+          lastName,
+          eventId,
+          eventSourceUrl: `${siteUrl}/lp/fsbo`,
+          fbp: capiCookies.get('_fbp')?.value,
+          fbc: capiCookies.get('_fbc')?.value ?? capiCookies.get('rr_fbc')?.value,
+          clientIp: capiClientIp,
+          clientUserAgent: capiClientUa,
+          consentCookie: sharing.consentCookie,
+          secGpc: sharing.secGpc,
+          customData: {
+            content_name: 'fsbo_lp_pricing_report',
+            lead_type: 'fsbo_seller',
+            property_address: parsed.full,
+            assigned_broker: assignment.broker,
+            value: 500,
+            currency: 'USD',
+          },
+        }),
+      }).catch((err) => console.warn('[fsbo-lp] CAPI call failed:', err))
+    }
 
     // ─── GA4 Measurement Protocol mirror ───────────────────────────────────
     await fireLeadGenerated({
       lp_variant: 'fsbo',
-      lead_type: 'seller',
+      lead_type: 'seller_listing',
+      form_id: 'fsbo_lp',
       lead_classification: 'hot',
       broker_slug: assignment.broker,
-      value: 500,
       event_id: eventId,
       fub_person_id: fubPersonId,
       extra: {

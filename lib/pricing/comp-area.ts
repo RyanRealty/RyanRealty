@@ -38,6 +38,8 @@ import {
 } from '@/lib/cma/market-area'
 import { usableSubdivision } from '@/lib/pricing/comp-search'
 import { countWord } from '@/lib/pricing/estimate'
+import { POCKET_RADIUS_MILES } from '@/lib/pricing/infer-pocket'
+import { samePlat, streetKey } from '@/lib/pricing/price-anchor'
 
 export type CompAreaKind =
   | 'subdivision'
@@ -59,6 +61,23 @@ export type CompArea = {
   source: string
   /** The area in seller language, as one sentence. */
   sentence: string
+  /**
+   * The recorded plat polygons a plat area holds whole: the subject's own
+   * plat and every plat a printed sale sits in, except a plat only the
+   * subject's own street reached (Matt 2026-10-07, rule 24). A row with a
+   * recorded polygon is a member when its plat is one of these, or a phase of
+   * the same ordinary subdivision (`samePlat`, the walk's own test). Absent
+   * on an area stored before this landed; the names then decide alone.
+   */
+  platSlugs?: string[]
+  /** Names in the area whose sales carry no recorded polygon. Those are tested by name. */
+  namesWithoutPlat?: string[]
+  /**
+   * A plat only the own-street rung reached is in the area on the subject's
+   * street and nowhere else. The street sale does not make its whole
+   * subdivision the competition area (3037 Purcell, 2026-10-07).
+   */
+  street?: { key: string; names: string[]; platSlugs: string[] } | null
 }
 
 /** One rung of the counted ladder — the shape `compSearch.rungs` already has. */
@@ -67,6 +86,8 @@ export type CompAreaRung = { key: string; kept: number; added: number }
 /** A sale the document prints. */
 export type CompAreaKeptComp = {
   subdivision?: string | null
+  /** The recorded plat polygon the sale sits in, when one holds it. */
+  subdivisionSlug?: string | null
   selectionTier?: string | null
   latitude?: number | null
   longitude?: number | null
@@ -76,6 +97,10 @@ export type CompAreaSubject = {
   latitude: number | null
   longitude: number | null
   subdivision?: string | null
+  /** The recorded plat polygon the subject sits in. */
+  subdivisionSlug?: string | null
+  /** "3037 Purcell": the street a street-only plat is held to. */
+  streetAddress?: string | null
   city: string
 }
 
@@ -138,11 +163,24 @@ function isSubdivisionRung(key: string): boolean {
 }
 
 /**
- * Rungs whose membership test IS the GIS boundary the subject sits in. The
- * adjacent-plat rungs count: their members are inside the polygon by rule.
+ * Rungs whose membership test IS the whole GIS neighborhood or community.
+ * A touching plat, and the next row of plats that touch those, are specific
+ * subdivisions. They do not open the parent polygon. The parent is the wall,
+ * and the map labels it. It is not the search disk.
  */
 function isBoundaryRung(key: string): boolean {
-  return key.startsWith('neighborhood-') || key.startsWith('adjacent-sub')
+  return key.startsWith('neighborhood-')
+}
+
+/**
+ * Rungs whose membership test IS a distance from the subject: the pricing
+ * ladder's quarter-mile steps and its exits (nearby-, beyond-, city-, rural-).
+ * A plat, a touching plat, a street, a mapped pocket and the listings
+ * ladder's named areas are not.
+ */
+function isDistanceRung(key: string): boolean {
+  if (isSubdivisionRung(key) || key.startsWith('adjacent-sub') || key.startsWith('competing-area')) return false
+  return rungRadiusMiles(key) != null
 }
 
 function clean(s: string | null | undefined): string | null {
@@ -157,49 +195,145 @@ export function milesPhrase(miles: number): string {
   return `${n} ${miles === 1 ? 'mile' : 'miles'}`
 }
 
-/** "a, b and c" — no Oxford comma. */
-function joinNames(parts: readonly string[]): string {
+/** "a, b and c" — no Oxford comma. A negative sentence joins on "or". */
+function joinNames(parts: readonly string[], conjunction: 'and' | 'or' = 'and'): string {
   if (parts.length === 0) return ''
   if (parts.length === 1) return parts[0]!
-  return `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`
+  return `${parts.slice(0, -1).join(', ')} ${conjunction} ${parts[parts.length - 1]}`
 }
 
 /**
  * The area as a phrase that drops into a longer sentence: "Homes for sale in
  * Old Bend between $X and $Y", "three homes within one mile of your home".
  * The peer and competition sentences both read off this, so the three
- * chapters cannot describe the same geography two different ways.
+ * chapters cannot describe the same geography two different ways. A negative
+ * sentence ("No home in Rooster Rock or Madison Park") joins the names on
+ * "or"; a single name and a radius read the same either way.
  */
-export function compAreaPhrase(area: CompArea): string {
+export function compAreaPhrase(area: CompArea, opts?: { negative?: boolean }): string {
   switch (area.kind) {
     case 'radius':
       return area.radiusMiles != null
         ? `within ${milesPhrase(area.radiusMiles)} of your home`
         : 'near your home'
     case 'subdivision':
-    case 'subdivisions':
+    case 'subdivisions': {
+      // A plat held to the subject's street is named as that street, never as
+      // the whole subdivision (3037 Purcell).
+      const streetNames = area.street?.names ?? []
+      const parts = area.names.map((n) => (streetNames.includes(n) ? `your street in ${n}` : n))
+      return joinNames(parts, opts?.negative ? 'or' : 'and') || 'your area'
+    }
     case 'neighborhood':
     case 'community':
     case 'city':
-      return joinNames(area.names) || 'your area'
+      return joinNames(area.names, opts?.negative ? 'or' : 'and') || 'your area'
   }
 }
 
-function areaSentence(area: Omit<CompArea, 'sentence'>, subjectSubdivision: string | null): string {
+/**
+ * How a plat in the area is related to the subject's home, by the rung that
+ * reached it (Matt 2026-10-07, 3037 Purcell: "Silver Sage and the two
+ * subdivisions next to it" was false for Holliday Park, which does not touch
+ * Silver Sage and came in only through a sale on the subject's street).
+ * A plat several rungs reached takes the closest relation.
+ */
+export type PlatRelation = 'own' | 'adjacent' | 'closer' | 'pocket' | 'ring' | 'other' | 'street'
+
+export type PlacedPlat = { relation: PlatRelation; miles: number | null }
+
+const RELATION_RANK: Record<PlatRelation, number> = {
+  own: 0,
+  adjacent: 1,
+  closer: 2,
+  pocket: 3,
+  ring: 4,
+  other: 5,
+  street: 6,
+}
+
+export function rungRelation(tier: string | null | undefined): PlacedPlat {
+  const t = clean(tier)
+  if (!t) return { relation: 'other', miles: null }
+  if (t.startsWith('subdivision-')) return { relation: 'own', miles: null }
+  if (t.startsWith('own-street-')) return { relation: 'street', miles: null }
+  if (t.startsWith('adjacent-sub')) return { relation: 'adjacent', miles: null }
+  if (t.startsWith('closer-sub-')) return { relation: 'closer', miles: null }
+  if (t.startsWith('pocket-')) return { relation: 'pocket', miles: POCKET_RADIUS_MILES }
+  if (t.startsWith('similar-sub') || isDistanceRung(t)) return { relation: 'ring', miles: rungRadiusMiles(t) }
+  return { relation: 'other', miles: null }
+}
+
+/** Each usable plat name in the printed set, with the closest relation a rung gave it. */
+function placeRelations(
+  kept: readonly CompAreaKeptComp[],
+  subjectSubdivision: string | null,
+): Map<string, PlacedPlat> {
+  const out = new Map<string, PlacedPlat>()
+  for (const c of kept) {
+    const n = usableSubdivision(c.subdivision)
+    if (!n) continue
+    const r: PlacedPlat = n === subjectSubdivision ? { relation: 'own', miles: null } : rungRelation(c.selectionTier)
+    const prev = out.get(n)
+    if (!prev || RELATION_RANK[r.relation] < RELATION_RANK[prev.relation]) {
+      out.set(n, { ...r })
+    } else if (prev.relation === r.relation && r.miles != null) {
+      prev.miles = Math.max(prev.miles ?? 0, r.miles)
+    }
+  }
+  return out
+}
+
+/**
+ * A plat area in seller language. Each plat is named with what it is to the
+ * subject's home: its own subdivision, next to it (a touching plat), one
+ * subdivision further out (a plat touching those), within a distance (a
+ * pocket or ring rung), or the homes on the subject's street (a plat only the
+ * own-street rung reached). Nothing here may imply a relationship the rungs
+ * have not established (CMA rule 17).
+ */
+function plattedSentence(
+  names: readonly string[],
+  subjectSubdivision: string | null,
+  relations: ReadonlyMap<string, PlacedPlat> | null,
+): string {
+  const rel = (n: string): PlacedPlat =>
+    n === subjectSubdivision ? { relation: 'own', miles: null } : relations?.get(n) ?? { relation: 'other', miles: null }
+  const of = (r: PlatRelation) => names.filter((n) => rel(n).relation === r)
+  const widest = (group: readonly string[]) => Math.max(...group.map((n) => rel(n).miles ?? 0))
+  const own = of('own')
+  const clauses: string[] = []
+  const adjacent = of('adjacent')
+  if (adjacent.length > 0) clauses.push(`${joinNames(adjacent)} next to ${own.length > 0 ? 'it' : 'your subdivision'}`)
+  const closer = of('closer')
+  if (closer.length > 0) clauses.push(`${joinNames(closer)} one subdivision further out`)
+  for (const r of ['pocket', 'ring'] as const) {
+    const group = of(r)
+    if (group.length === 0) continue
+    const miles = widest(group)
+    clauses.push(miles > 0 ? `${joinNames(group)} within ${milesPhrase(miles)} of your home` : joinNames(group))
+  }
+  const other = of('other')
+  if (other.length > 0) clauses.push(joinNames(other))
+  const street = of('street')
+  if (street.length > 0) clauses.push(`the ${joinNames(street)} homes on your street`)
+  if (own.length > 0) {
+    const lead = `${joinNames(own)}, your own subdivision`
+    return clauses.length === 0 ? `${lead}.` : `${lead}, with ${joinNames(clauses)}.`
+  }
+  const body = joinNames(clauses)
+  return body ? `${body.charAt(0).toUpperCase()}${body.slice(1)}.` : 'Your area.'
+}
+
+function areaSentence(
+  area: Omit<CompArea, 'sentence'>,
+  subjectSubdivision: string | null,
+  relations: ReadonlyMap<string, PlacedPlat> | null = null,
+): string {
   switch (area.kind) {
     case 'subdivision':
-      return `${area.names[0]}, your own subdivision.`
-    case 'subdivisions': {
-      const head = area.names[0]!
-      const rest = area.names.length - 1
-      // When the subject's own subdivision leads the list, the rest are "next
-      // to it" — the seller's own frame. Otherwise name them all; nothing here
-      // may imply a relationship the data has not established.
-      if (subjectSubdivision && head === subjectSubdivision) {
-        return `${head} and the ${countWord(rest)} ${rest === 1 ? 'subdivision' : 'subdivisions'} next to it.`
-      }
-      return `${joinNames(area.names)}.`
-    }
+    case 'subdivisions':
+      return plattedSentence(area.names, subjectSubdivision, relations)
     case 'neighborhood':
       return `${area.names[0]}, the neighborhood around your home.`
     case 'community':
@@ -220,6 +354,55 @@ function centreOf(subject: CompAreaSubject): { lat: number; lng: number } | null
 }
 
 /**
+ * The plat keys of a plat area (Matt 2026-10-07, rule 24): the subject's own
+ * plat always, then each plat a printed sale sits in. A plat only the subject's
+ * own street reached is held to that street. The subject's own plat is never
+ * a street-only plat.
+ */
+function platKeys(input: {
+  names: readonly string[]
+  subjectSubdivision: string | null
+  subject: CompAreaSubject
+  kept: readonly CompAreaKeptComp[]
+  relations: ReadonlyMap<string, PlacedPlat>
+}): Pick<CompArea, 'platSlugs' | 'namesWithoutPlat' | 'street'> {
+  const subjectSlug = clean(input.subject.subdivisionSlug)
+  const ownPlat = (slug: string) => subjectSlug != null && samePlat({ subdivisionSlug: subjectSlug }, { subdivisionSlug: slug })
+  const isStreetName = (n: string) => n !== input.subjectSubdivision && input.relations.get(n)?.relation === 'street'
+  const whole: string[] = subjectSlug ? [subjectSlug] : []
+  const streetSlugs: string[] = []
+  const slugged = new Set<string>()
+  if (subjectSlug && input.subjectSubdivision) slugged.add(input.subjectSubdivision)
+  for (const c of input.kept) {
+    const slug = clean(c.subdivisionSlug)
+    if (!slug) continue
+    const n = usableSubdivision(c.subdivision)
+    if (n && !input.names.includes(n)) continue
+    if (n) slugged.add(n)
+    const streetOnly = n ? isStreetName(n) : rungRelation(c.selectionTier).relation === 'street'
+    const bucket = streetOnly && !ownPlat(slug) ? streetSlugs : whole
+    if (!bucket.includes(slug)) bucket.push(slug)
+  }
+  const key = streetKey(input.subject.streetAddress)
+  const streetNames = input.names.filter(isStreetName)
+  const street =
+    key && (streetNames.length > 0 || streetSlugs.length > 0)
+      ? { key, names: streetNames, platSlugs: streetSlugs }
+      : null
+  return {
+    platSlugs: whole,
+    namesWithoutPlat: input.names.filter((n) => !slugged.has(n)),
+    street,
+  }
+}
+
+/** The subject's own subdivision first, always (rule 24: the area includes the subject's plat). */
+function subjectFirst(names: readonly string[], subjectSubdivision: string | null): string[] {
+  const rest = names.filter((n) => n !== subjectSubdivision)
+  return subjectSubdivision ? [subjectSubdivision, ...rest] : rest
+}
+
+/**
  * Derive the one area. Null when the document printed no sale — there is no
  * search to name, and an area on `render_args` would read as one.
  */
@@ -232,6 +415,7 @@ export function buildCompArea(input: {
   if (kept.length === 0) return null
   const centre = centreOf(input.subject)
   const subjectSubdivision = usableSubdivision(input.subject.subdivision)
+  const relations = placeRelations(kept, subjectSubdivision)
 
   // The rungs THAT KEPT A SALE. A rung that ran and contributed nothing to the
   // printed set describes no part of the area the document is about.
@@ -256,6 +440,28 @@ export function buildCompArea(input: {
       kept.length === 1 ? 'sale' : 'sales'
     }; ${rule}`
 
+  // A plat area: the subject's own plat first, then the plats the printed
+  // sales sit in, each named with the rung relation that reached it.
+  const platted = (saleNames: readonly string[], rule: string): CompArea => {
+    const names = subjectFirst(saleNames, subjectSubdivision)
+    const keys = platKeys({ names, subjectSubdivision, subject: input.subject, kept, relations })
+    const own = subjectSubdivision && !saleNames.includes(subjectSubdivision)
+      ? `; the subject's own subdivision ${subjectSubdivision} is in the area though no printed sale sits there`
+      : ''
+    const streetTrace = keys.street
+      ? `; ${keys.street.names.join(', ') || 'a plat'} reached only by the own-street rung, so it is in the area on the subject's street (${keys.street.key}) only`
+      : ''
+    const base = {
+      kind: (names.length === 1 ? 'subdivision' : 'subdivisions') as CompAreaKind,
+      names,
+      radiusMiles: null,
+      centre,
+      source: trace(`${rule}${own}${streetTrace}`),
+      ...keys,
+    }
+    return { ...base, sentence: areaSentence(base, subjectSubdivision, relations) }
+  }
+
   // 1. Every kept sale came from a subdivision rung.
   const allSubdivisionRungs =
     rungKeys.length > 0 && rungKeys.every((k) => isSubdivisionRung(k)) &&
@@ -265,33 +471,39 @@ export function buildCompArea(input: {
     })
   if (allSubdivisionRungs) {
     // Union, in the order the printed set carries them, with the subject's own
-    // subdivision first when it is in the set.
+    // subdivision first.
     const names: string[] = []
     for (const c of kept) {
       const n = usableSubdivision(c.subdivision)
       if (n && !names.includes(n)) names.push(n)
     }
-    if (subjectSubdivision && names.includes(subjectSubdivision)) {
-      names.splice(names.indexOf(subjectSubdivision), 1)
-      names.unshift(subjectSubdivision)
-    }
     if (names.length > 0) {
-      const kind: CompAreaKind = names.length === 1 ? 'subdivision' : 'subdivisions'
-      const base = {
-        kind,
+      return platted(
         names,
-        radiusMiles: null,
-        centre,
-        source: trace(
-          `every printed sale came from a subdivision rung, so the area is the ${
-            names.length === 1 ? 'subdivision' : `${names.length} subdivisions`
-          } those sales sit in: ${names.join(', ')}`,
-        ),
-      }
-      return { ...base, sentence: areaSentence(base, subjectSubdivision) }
+        `every printed sale came from a subdivision rung, so the area is the ${
+          names.length === 1 ? 'subdivision' : `${names.length} subdivisions`
+        } those sales sit in: ${names.join(', ')}`,
+      )
     }
     // The rungs were subdivision rungs but no printed sale carries a usable
     // subdivision name (an MLS placeholder is not a place). Fall through.
+  }
+
+  // Every printed sale is the same subdivision, including a later phase that
+  // arrived on the adjacent rung. That phase is still this place. Mixed names
+  // fall through to the neighborhood the search stayed inside.
+  const oneName: string[] = []
+  const oneSubdivision =
+    kept.length > 0 &&
+    kept.every((c) => {
+      const n = usableSubdivision(c.subdivision)
+      if (!n) return false
+      if (!oneName.includes(n)) oneName.push(n)
+      return true
+    }) &&
+    oneName.length === 1
+  if (oneSubdivision) {
+    return platted(oneName, `every printed sale is in ${oneName[0]}, so the area is that subdivision`)
   }
 
   // 2. A boundary rung supplied a kept sale.
@@ -313,6 +525,29 @@ export function buildCompArea(input: {
       }
       return { ...base, sentence: areaSentence(base, subjectSubdivision) }
     }
+  }
+
+  // The printed sales name the place. A street rung or a distance rung does
+  // not widen the letter past those subdivisions. A sale with no usable name
+  // falls through to the radius below. N/A is not a name.
+  const saleNames: string[] = []
+  const everySaleNamed = kept.every((c) => {
+    const n = usableSubdivision(c.subdivision)
+    if (!n) return false
+    if (!saleNames.includes(n)) saleNames.push(n)
+    return true
+  })
+  if (everySaleNamed && saleNames.length > 0) {
+    const ringNames = saleNames.filter((n) => relations.get(n)?.relation === 'ring')
+    const ringMiles = ringNames.length > 0 ? Math.max(...ringNames.map((n) => relations.get(n)?.miles ?? 0)) : 0
+    return platted(
+      saleNames,
+      `every printed sale carries a subdivision name, so the area is ${
+        saleNames.length === 1 ? 'that subdivision' : `those ${saleNames.length} subdivisions`
+      }: ${saleNames.join(', ')}${
+        ringNames.length > 0 ? `; ${ringNames.join(', ')} reached only by a distance rung (${milesPhrase(ringMiles)})` : ''
+      }`,
+    )
   }
 
   // 3. The radius the widest kept rung used.
@@ -349,82 +584,83 @@ export function buildCompArea(input: {
 }
 
 /**
- * Round a measured distance UP to a radius a seller can read. Never down: the
- * circle has to hold every sale the price was built on.
+ * A subdivision, a recorded plat, a neighborhood polygon, or the radius the
+ * sales already used. The city is not a boundary.
  */
-function radiusStep(miles: number): number {
-  if (miles <= 1) return 1
-  if (miles <= 2) return 2
-  return Math.ceil(miles * 2) / 2
+export function salesAreaIsBounded(area: { kind?: string | null } | null | undefined): boolean {
+  const kind = area?.kind
+  return (
+    kind === 'subdivision' ||
+    kind === 'subdivisions' ||
+    kind === 'neighborhood' ||
+    kind === 'community' ||
+    kind === 'radius'
+  )
 }
 
-/** Bend competition never leaves this radius. A city-wide pull is not a comp set. */
-export const COMPETITION_BEND_CAP_MILES = 5
-
-/** Outside Bend the ladder may follow a rural comp search, and then it stops. */
-export const COMPETITION_RURAL_CAP_MILES = 15
+/**
+ * The sales sit in a named place: a subdivision, a recorded plat, a
+ * neighborhood, or a community. A radius and the city are not that place.
+ * Citywide charts do not belong on a letter whose sales are already here.
+ */
+export function namedSalesPlace(area: { kind?: string | null } | null | undefined): boolean {
+  const kind = area?.kind
+  return (
+    kind === 'subdivision' ||
+    kind === 'subdivisions' ||
+    kind === 'neighborhood' ||
+    kind === 'community'
+  )
+}
 
 /**
- * THE COMPETITION LADDER. Same idea as the closed-comp pocket, then a radius.
+ * The neighborhood or community the subject sits in, for the map's parent
+ * label and the place-pricing story. It is not a competition ring and not an
+ * expired ring (Matt 2026-10-07).
+ */
+export function parentPlaceArea(input: {
+  latitude: number | null
+  longitude: number | null
+}): CompArea | null {
+  const centre = centreOf({ latitude: input.latitude, longitude: input.longitude, city: '' })
+  if (!centre) return null
+  const slug = resolveMarketArea(centre.lat, centre.lng)
+  const kind = marketAreaKind(slug)
+  const name = marketAreaLabel(slug)
+  if (!kind || !name) return null
+  const bare: Omit<CompArea, 'sentence'> = {
+    kind,
+    names: [name],
+    radiusMiles: null,
+    centre,
+    source: 'parent of a short sales subdivision',
+  }
+  return { ...bare, sentence: areaSentence(bare, null) }
+}
+
+/**
+ * Competition and expireds use the sales boundary. One ring, and the same
+ * rules the sales passed (lib/cma/same-area-fit.ts).
  *
- * Pocket (the subdivision the closed sales came from) first, then 0.5 / 1 / 2
- * / 5 miles. Widen only while the caller is starved. In Bend the cap is 5
- * miles. Elsewhere the cap is the comp search's own reach, and never more
- * than 15. Never the city. A subject with no coordinates returns no ring:
- * there is nothing to draw, and the city is not a substitute.
- *
- * This function does not read inventory. The caller queries once at the
- * widest ring and walks this order (see `pickCompetitionRing`).
+ * If the sales that set the price sit in a subdivision or a recorded plat,
+ * that place is the ring. A radius search keeps that radius. There is no
+ * 0.5 / 1 / 2 / 5 mile ladder past it, no parent-neighborhood step, no
+ * competitor-plat step, and the city is not a ring. A price-band step inside
+ * the ring is the only opening (lib/cma/assemble-competition.ts). Matt
+ * 2026-10-07, reversing c72d6f567 and e858fd5e0 for area. `keptComps` stays
+ * on the signature so callers do not grow a second ladder.
  */
 export function resolveCompetitionArea(input: {
   compArea: CompArea
   subject: { latitude: number | null; longitude: number | null; city: string }
   keptComps: readonly CompAreaKeptComp[]
 }): CompArea[] {
+  void input.keptComps
   const centre = centreOf({ ...input.subject, subdivision: null })
   if (!centre) return []
-
-  const bend = input.subject.city.trim().toLowerCase() === 'bend'
-  const farthest = input.keptComps
-    .map((c) => distanceMiles(centre, { lat: c.latitude ?? null, lng: c.longitude ?? null }))
-    .filter((d): d is number => d != null && Number.isFinite(d))
-  const measured = farthest.length > 0 ? Math.max(...farthest) : 0
-  const compSearchRadiusMiles = radiusStep(Math.max(input.compArea.radiusMiles ?? 0, measured, 0.5))
-  const cap = bend
-    ? COMPETITION_BEND_CAP_MILES
-    : Math.min(COMPETITION_RURAL_CAP_MILES, Math.max(compSearchRadiusMiles, 0.5))
-
-  const steps = bend
-    ? [0.5, 1, 2, 5]
-    : cap < 5
-      ? [0.5, 1, 2, cap].filter((m) => m <= cap + 1e-9)
-      : [0.5, 1, 2, 5, 10, cap].filter((m) => m <= cap + 1e-9)
-  const miles = [...new Set(steps.map((m) => (m >= 5 ? radiusStep(m) : m)))].sort((a, b) => a - b)
-
-  const rings: CompArea[] = []
-  if (input.compArea.kind === 'subdivision' || input.compArea.kind === 'subdivisions') {
-    rings.push({
-      ...input.compArea,
-      centre,
-      sentence: input.compArea.sentence || areaSentence({ ...input.compArea, centre }, null),
-    })
-  }
-  for (const radiusMiles of miles) {
-    const widest = radiusMiles === miles[miles.length - 1]
-    const base = {
-      kind: 'radius' as const,
-      names: [],
-      radiusMiles,
-      centre,
-      source: `competition: pocket then radius, ring of ${milesPhrase(radiusMiles)}${
-        widest
-          ? `, the widest this search may go (${bend ? 'Bend cap 5 miles' : `cap ${milesPhrase(cap)}`})`
-          : ', widened only when the tighter ring is short of homes'
-      }`,
-    }
-    rings.push({ ...base, sentence: areaSentence(base, null) })
-  }
-  return rings
+  if (!salesAreaIsBounded(input.compArea)) return []
+  const withCentre: Omit<CompArea, 'sentence'> = { ...input.compArea, centre: input.compArea.centre ?? centre }
+  return [{ ...withCentre, sentence: input.compArea.sentence || areaSentence(withCentre, null) }]
 }
 
 /**
@@ -432,8 +668,8 @@ export function resolveCompetitionArea(input: {
  * Ranch", "for sale within one mile of your home". A radius phrase already
  * carries its own preposition; a name does not.
  */
-export function compAreaIn(area: CompArea): string {
-  const phrase = compAreaPhrase(area)
+export function compAreaIn(area: CompArea, opts?: { negative?: boolean }): string {
+  const phrase = compAreaPhrase(area, opts)
   return area.kind === 'radius' ? phrase : `in ${phrase}`
 }
 
@@ -471,6 +707,53 @@ export type CompAreaRow = {
   longitude?: number | null
   subdivision?: string | null
   city?: string | null
+  /**
+   * The recorded plat polygon the row's point sits in (`assignSubdivisionSlugs`).
+   * A slug when one holds it; null when the point was tested and none does;
+   * undefined when the caller did not test it. Only a slug is a polygon.
+   */
+  platSlug?: string | null
+  /** "2591 Purcell". Undefined when the caller has none; then the street is not tested. */
+  address?: string | null
+}
+
+/** Same recorded plat, or a phase of the same ordinary subdivision: the walk's own test. */
+function samePlatSlug(a: string, b: string): boolean {
+  return samePlat({ subdivisionSlug: a }, { subdivisionSlug: b })
+}
+
+/**
+ * A plat area's membership (Matt 2026-10-07, rule 24). The recorded polygon
+ * first, when the row has one and the area recorded its plats: the row's plat
+ * is the subject's or a sale's plat. The MLS name only as the fallback: for a
+ * row no polygon holds, for a row nobody tested, and for an area plat with no
+ * recorded polygon. A plat the own-street rung alone reached holds only the
+ * subject's street.
+ */
+function plattedContains(area: CompArea, row: CompAreaRow): boolean {
+  const name = usableSubdivision(row.subdivision)
+  const street = area.street ?? null
+  const streetNames = street?.names ?? []
+  const onStreet = (): boolean => {
+    if (!street) return false
+    // A caller that carries no address already read the row through a test
+    // that did; the read is where the street is decided.
+    if (row.address === undefined) return true
+    const key = streetKey(row.address)
+    return key != null && key === street.key
+  }
+  const plat = typeof row.platSlug === 'string' && row.platSlug.trim() ? row.platSlug.trim() : null
+  const recorded = area.platSlugs ?? []
+  if (plat && (recorded.length > 0 || (street?.platSlugs.length ?? 0) > 0)) {
+    if (recorded.some((s) => samePlatSlug(s, plat))) return true
+    if (street && street.platSlugs.some((s) => samePlatSlug(s, plat))) return onStreet()
+    // The row sits in a recorded plat that is not the area's. Only an area
+    // plat with no polygon of its own is still read by its name.
+    if (name == null || !(area.namesWithoutPlat ?? []).includes(name)) return false
+    return streetNames.includes(name) ? onStreet() : true
+  }
+  if (name == null || !area.names.includes(name)) return false
+  return streetNames.includes(name) ? onStreet() : true
 }
 
 /**
@@ -482,10 +765,8 @@ export type CompAreaRow = {
 export function compAreaContains(area: CompArea, row: CompAreaRow): boolean {
   switch (area.kind) {
     case 'subdivision':
-    case 'subdivisions': {
-      const name = usableSubdivision(row.subdivision)
-      return name != null && area.names.includes(name)
-    }
+    case 'subdivisions':
+      return plattedContains(area, row)
     case 'neighborhood':
     case 'community': {
       const slug = compAreaSlug(area)

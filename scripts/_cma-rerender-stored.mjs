@@ -27,7 +27,7 @@
  */
 import { createClient } from '@supabase/supabase-js'
 import { readFileSync, writeFileSync } from 'node:fs'
-import puppeteer from 'puppeteer-core'
+import puppeteer from './lib/marked-puppeteer.mjs'
 
 for (const line of readFileSync('.env.local', 'utf8').split('\n')) {
   const m = /^([A-Z0-9_]+)=(.*)$/.exec(line.trim())

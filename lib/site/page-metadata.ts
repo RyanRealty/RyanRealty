@@ -17,8 +17,9 @@ import { getCanonicalSiteUrl, shareDescription } from '@/lib/share-metadata'
 /**
  * THE TITLE BUDGET IS THE WHOLE DOCUMENT TITLE, SUFFIX INCLUDED (SITE-25).
  *
- * app/layout.tsx appends `title.template` — " | Ryan Realty, Central Oregon",
- * 30 characters — to every page title that is not `title: { absolute }`. The
+ * app/layout.tsx appends `title.template` — " | Ryan Realty", 14 characters
+ * (30 with ", Central Oregon" until Matt 2026-10-04) — to every page title that
+ * is not `title: { absolute }`. The
  * old code capped the page's OWN title at 60 and then let those 31 land on top,
  * so the cap bought nothing and only sheared the phrase people search:
  *
@@ -27,10 +28,9 @@ import { getCanonicalSiteUrl, shareDescription } from '@/lib/share-metadata'
  *     — the word "Ranch" cut off the end of a place name, on a 91-char title.
  *
  * The rule now:
- *   1. A trailing "| Central Oregon…" segment is dropped. The brand suffix
- *      already says Central Oregon; carrying it twice is the defect, not the
- *      style. This is why the registry pages pass a bare entity name — one
- *      region in the document title, contributed by the suffix.
+ *   1. A trailing "| Central Oregon…" segment is dropped. A region tail is
+ *      cut off in the SERP; the place name at the FRONT is what ranks, so a
+ *      page names its own town there (area pages: "… in Bend").
  *   2. A place name is NEVER cut. An over-budget title truncates in the SERP
  *      display, which costs the brand at the tail; a sheared one loses the
  *      phrase entirely, which costs the match. Losing the tail is the cheaper
@@ -53,7 +53,7 @@ import { getCanonicalSiteUrl, shareDescription } from '@/lib/share-metadata'
  * ci:title-brand-once exempts pageMetadata() arguments, so this stays green.
  */
 /** Exactly what app/layout.tsx's title.template appends. Keep the two in sync. */
-export const BRAND_SUFFIX = ' | Ryan Realty, Central Oregon'
+export const BRAND_SUFFIX = ' | Ryan Realty'
 /** The whole document title, suffix included. ~600px SERP proxy, not a hard limit. */
 const MAX_TITLE = 60
 /**
@@ -61,6 +61,8 @@ const MAX_TITLE = 60
  * scripts/check-content-metadata.mjs holds the registry names to this.
  */
 export const TITLE_BUDGET = MAX_TITLE - BRAND_SUFFIX.length
+/** The live SEO audit's hard ceiling for a whole document title (scripts/lib/live-seo-audit.mjs). */
+const HARD_TITLE = 90
 /** Backstop only — double the budget. A document title past it is a content bug. */
 const DOC_CEILING = MAX_TITLE * 2
 const MAX_DESC = 155
@@ -186,6 +188,18 @@ export function documentTitle(raw: string): string {
 }
 
 /**
+ * The first of `forms` that fits TITLE_BUDGET, so the whole document title
+ * stays inside the 60 chars Google shows (Matt 2026-10-05, "shorten them now").
+ * Callers list the full form first and each later form sheds a qualifier
+ * (", Oregon", the town, a "| Homes for Sale" tail), never a recorded name.
+ * When none fits, the LAST form wins: the shortest honest title, uncut.
+ */
+export function fitTitle(...forms: ReadonlyArray<string | null | undefined>): string {
+  const list = forms.map((f) => (f ?? '').trim()).filter(Boolean)
+  return list.find((f) => f.length <= TITLE_BUDGET) ?? list[list.length - 1] ?? ''
+}
+
+/**
  * Place-page document title. Do not emit "Central Oregon, Oregon" — that
  * truncates to "Central Oregon," and the layout suffix becomes
  * "Central Oregon, | Ryan Realty".
@@ -205,7 +219,12 @@ export function publishPlaceHomesTitle(name: string, city: string | null | undef
   if (!place) return heading
   if (!cityName || /^central oregon$/i.test(cityName)) return heading
   if (place.toLowerCase().endsWith(cityName.toLowerCase())) return heading
-  return `${heading} · ${cityName}, Oregon`
+  // Fit the 60-char SERP width (Matt 2026-10-05): ", Oregon" goes first, then
+  // the town; the place name is never cut.
+  const fitted = fitTitle(`${heading} · ${cityName}, Oregon`, `${heading} · ${cityName}`, heading)
+  // A recorded plat name long enough that even "{name} homes for sale" passes
+  // the live audit's hard ceiling prints the bare name.
+  return fitted.length + BRAND_SUFFIX.length <= HARD_TITLE ? fitted : place
 }
 
 /** City document title. Does not bid "{city} homes for sale". */

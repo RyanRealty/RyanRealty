@@ -29,6 +29,7 @@ import {
   resolveCanonicalCommunityPath,
   resolveCityNeighborhoodCommunityPath,
 } from '@/lib/communities/canonical-community-slug'
+import { selfCityCommunityPath } from '@/lib/communities/self-city-community'
 import { resolveLegacyReportGeoRedirect } from '@/lib/routing/legacy-report-geo'
 import { resolveMarketCommunityHop } from '@/lib/market/canonical-market-path'
 import {
@@ -91,6 +92,24 @@ export const PRE_RENDER_HOPS: readonly PreRenderHop[] = [
     id: 'city-neighborhood-community',
     routes: ['/cities/[slug]/[neighborhoodSlug]'],
     resolve: resolveCityNeighborhoodCommunityPath,
+  },
+  {
+    // A self-city community has ONE page (Matt 2026-10-04). /cities/sunriver
+    // and /cities/black-butte-ranch were indexed beside /communities/<slug>,
+    // each self-canonical: Search Console 2026-07-04..10-01 had "sunriver homes
+    // for sale" on /cities/sunriver at 41 and /communities/sunriver at 57, the
+    // query's credit split across two weak pages. The registry decides
+    // membership (lib/communities/self-city-community.ts); Crooked River Ranch
+    // is self_city:false and keeps its own next.config hop. 301: both URLs were
+    // indexed as documents, the consolidation signal the market hop uses too.
+    id: 'self-city-community',
+    routes: ['/cities/[slug]'],
+    resolve(pathname) {
+      const m = pathname.match(/^\/cities\/([^/]+)\/?$/)
+      if (!m) return null
+      return selfCityCommunityPath(decodeSegment(m[1]))
+    },
+    status: 301,
   },
   {
     // Bend-district alias. Live reports live at /cities/bend/{slug}.

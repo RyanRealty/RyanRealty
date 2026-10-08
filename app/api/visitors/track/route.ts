@@ -43,7 +43,7 @@ import { recordGpcSuppression } from '@/lib/data/crm/recordGpcSuppression'
 // bridge, has to be the mechanism.
 import { AGENT_ATTRIB_COOKIE } from '@/lib/agent-attribution'
 import { resolveVisitBrokerSlug, visitBrokerGa4Fields } from '@/lib/analytics/visit-broker'
-import { stripIdentityParams, visitorEventMetadata } from './strip-identity'
+import { stripGa4UrlParams, stripIdentityParams, visitorEventMetadata } from './strip-identity'
 // P7 identity loop (2026-09-23, docs/TRACKING_POLICY.md "The known-contact
 // identity loop"): a SIGNED ?_pid= token on a link we sent identifies the visit
 // here, server-side, on the landing page view; the durable rr_vid and the
@@ -71,6 +71,13 @@ import {
   classifyAutomation,
 } from '@/lib/analytics/automation'
 import { campaignDetailsParams, ga4SessionParams, parseVisit } from '@/lib/analytics/ga4-visit'
+import {
+  decideGaSuppressionForPage,
+  hasAutomationMarker,
+  hasInternalUserCookie,
+} from '@/lib/analytics/ga-suppression'
+import { isNonProductionPageLocation, isNonProductionRequestHost } from '@/lib/analytics/non-production-host'
+import { CONSENT_COOKIE, effectiveTrackingConsent } from '@/lib/identity/consent'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -272,12 +279,14 @@ const ALLOWED_EVENT_TYPES = new Set<string>([
 // snippets safe; the schema stays open for adding more domains later.
 function resolveSourceDomain(pageUrl: string, explicit?: string): string {
   const exp = explicit?.trim().toLowerCase()
+  // source_domain bucket labels for the INCOMING page host (a stored classification,
+  // the schema's existing value), never a URL anyone is sent to. staging-host-ok
   if (exp === 'ryan-realty.com' || exp === 'ryanrealty.vercel.app') return exp
   try {
     const host = new URL(pageUrl).hostname.toLowerCase().replace(/^www\./, '')
     if (host === 'ryan-realty.com') return 'ryan-realty.com'
-    if (host === 'ryanrealty.vercel.app') return 'ryanrealty.vercel.app'
-    if (host.endsWith('.vercel.app')) return 'ryanrealty.vercel.app'
+    if (host === 'ryanrealty.vercel.app') return 'ryanrealty.vercel.app' // staging-host-ok: bucket label, see above
+    if (host.endsWith('.vercel.app')) return 'ryanrealty.vercel.app' // staging-host-ok: bucket label, see above
   } catch {
     // fall through to default
   }
@@ -365,13 +374,43 @@ export async function POST(request: NextRequest) {
     return jsonError(400, 'pageUrl must be a full URL', origin)
   }
 
+  // ─── Our own development never lands in production (Matt 2026-10-05) ────
+  // A local `next build && next start` holds production credentials, so its
+  // tracker wrote to the production visitor tables: 2,594 sessions landing on
+  // 127.0.0.1 / localhost in the 2026-10-05 audit, 2,306 of them not flagged.
+  // The same host rule the GA4 mirror applies: a page on localhost, 127.0.0.1
+  // (any port), a LAN IP, [::1], or a *.vercel.app preview records nothing.
+  // Also the request Host: a client that spoofs pageUrl as ryan-realty.com
+  // while posting to a local `next start` still drops.
+  const requestHost =
+    request.headers.get('host') ||
+    (() => {
+      try {
+        return new URL(request.url).host
+      } catch {
+        return null
+      }
+    })()
+  if (isNonProductionPageLocation(pageUrl) || isNonProductionRequestHost(requestHost)) {
+    return NextResponse.json(
+      { ok: true, dropped: true, reason: 'non_production_host' },
+      { headers: corsHeaders(origin) },
+    )
+  }
+
   // ─── Consent gate (server-side enforcement) ─────────────────────────────
-  // Snippet MUST send a consent level. We refuse 'declined' and untyped
-  // events entirely so even a buggy or compromised client cannot store
-  // visitor data when the user has not opted in.
-  const consent: ConsentLevel = (body.consent === 'all' || body.consent === 'analytics' || body.consent === 'essential' || body.consent === 'declined')
-    ? body.consent
-    : 'declined'
+  // The client names a tier; the server clamps it to the stored banner answer
+  // and the region default (lib/identity/consent.ts effectiveTrackingConsent).
+  // A client cannot widen past a decline or a restricted-region default.
+  // Untyped events are declined. US / unrestricted, no answer, no GPC is
+  // analytics (geo may be stored). Restricted, GPC (already dropped above),
+  // and declined stay essential or dropped.
+  const country = request.headers.get('x-vercel-ip-country') || request.headers.get('cf-ipcountry')
+  const consent: ConsentLevel = effectiveTrackingConsent({
+    posted: body.consent,
+    cookieValue: request.cookies.get(CONSENT_COOKIE)?.value,
+    country,
+  })
   if (consent === 'declined') {
     return NextResponse.json(
       { ok: true, dropped: true, reason: 'consent_declined_or_missing' },
@@ -445,9 +484,15 @@ export async function POST(request: NextRequest) {
   // ─── Automation class + arrival identity (P7) ──────────────────────────
   // Classified from the UA HEADER at every tier; only the class label is
   // stored, never the UA string itself at essential (docs/TRACKING_POLICY.md).
+  // Our own scripts carry an explicit marker (`rr_automation=1` cookie or query,
+  // lib/analytics/ga-suppression.ts), so a capture that spoofs a desktop user
+  // agent is still flagged (Matt 2026-10-05: 1,232 Chrome/124-Mac sessions from
+  // the capture tool were not).
+  const cookieHeader = request.headers.get('cookie')
   const automation = classifyAutomation({
     userAgent: request.headers.get('user-agent'),
     webdriver: body.webdriver,
+    marker: hasAutomationMarker({ cookieHeader, search: (() => { try { return new URL(pageUrl).search } catch { return '' } })() }),
   })
   const rawToken = arrivalTokenFrom({ identityToken: body.identityToken, pageUrl })
   const token = rawToken ? verifyPersonLinkToken(rawToken) : null
@@ -457,7 +502,16 @@ export async function POST(request: NextRequest) {
   const arrivalShape = automation.automated
     ? { automated: false, reason: null }
     : classifyArrivalShape({ landingPage: body.landingPage, referrer: body.referrer, hasToken: !!rawToken })
-  const birthClass = automation.automated ? automation : arrivalShape
+  // A signed-in broker's browser (`rr_internal=1`, set on admin sign-in) is
+  // flagged `internal` at birth: left out of counts of outside visitors and
+  // never mirrored to GA4, but still a person, so identification proceeds
+  // (NON_BLOCKING_FLAG_REASONS in lib/analytics/automation.ts).
+  const internalBrowser = !automation.automated && hasInternalUserCookie(cookieHeader)
+  const birthClass = automation.automated
+    ? automation
+    : internalBrowser
+      ? { automated: true, reason: 'internal' as const }
+      : arrivalShape
   let tokenPersonExists = true
   if (token && !automation.automated) {
     const [owner, exists] = await Promise.all([
@@ -598,15 +652,22 @@ export async function POST(request: NextRequest) {
   }
 
   // ─── GA4 Measurement Protocol page_view mirror (2026-08-10) ─────────────
-  // Client gtag is consent-denied by default + often ad-blocked → GA4 shows
-  // ~1–2 users while first-party sees ~3.7k sessions. Mirror view events from
-  // this server path so GA4 volume tracks product truth WITHOUT changing the
-  // locked Consent Mode defaults.
+  // Mirror view events when the browser is not counting them.
   //
-  // Double-count guard: if consent is analytics/all AND the browser already
-  // has a `_ga` cookie, client gtag is live — skip MP. If essential-only or
-  // no `_ga` (denied / blocked / never loaded), server-fill the gap.
-  // Never blocks the visitor response. No-op without GA4_API_SECRET.
+  // At analytics/all on a site page, skip page_view/listing_view regardless of
+  // `_ga`. US visitors are analytics-granted by default, so the Google tag
+  // counts the first view; `_ga` is often not set yet when this POST lands, and
+  // gating on the cookie double-counted that first view (browser client_id plus
+  // an rr_session_id-derived client_id). Trade-off: an ad-blocked visitor at
+  // the analytics tier is no longer mirrored; first-party Supabase still has
+  // them.
+  //
+  // Essential-tier views are still mirrored (browser gtag is consent-denied).
+  // Client documents (`pageCategory: 'client-document'`) load no gtag, so they
+  // are always mirrored, whatever the tier. Non-view mirrored events
+  // (intent_declared, welcome_back, email_opt, sms_opt) are unchanged.
+  // A decline never reaches here. Never blocks the visitor response.
+  // No-op without GA4_API_SECRET.
   const mirrorGa4 =
     eventType === 'page_view' ||
     eventType === 'listing_view' ||
@@ -618,7 +679,22 @@ export async function POST(request: NextRequest) {
   // exactly the inflation TRACK-1 measured, and GA4's known-bot filter does
   // not see Measurement Protocol hits. A provisional contact-deep-link session
   // loses only its first view; a later event proves a person and mirrors.
-  if (mirrorGa4 && !automation.automated && !(sessionWrite.inserted && arrivalShape.automated)) {
+  // ONE suppression decision with the browser's Google tag loader
+  // (lib/analytics/ga-suppression.ts, Matt 2026-10-05): never /admin, never a
+  // non-production host, never automation (user agent, navigator.webdriver, our
+  // marker), never a signed-in broker's browser.
+  const gaSuppression = decideGaSuppressionForPage({
+    pageUrl,
+    userAgent: request.headers.get('user-agent'),
+    webdriver: body.webdriver,
+    cookieHeader,
+  })
+  if (
+    mirrorGa4 &&
+    !gaSuppression.suppress &&
+    !automation.automated &&
+    !(sessionWrite.inserted && arrivalShape.automated)
+  ) {
     try {
       const { fireGa4Event, clientIdFromGaCookie, clientIdFromSessionId } = await import(
         '@/lib/ga4-measurement-protocol'
@@ -632,7 +708,7 @@ export async function POST(request: NextRequest) {
       // 'essential' and every report open was mirrored; it now posts the visitor's
       // real tier, and a consented reader with a _ga cookie would have dropped out
       // of GA4 entirely (the most engaged recipients).
-      const clientHasGtag = isView && !minimalOnly && !!fromCookie && body.pageCategory !== 'client-document'
+      const clientHasGtag = isView && !minimalOnly && body.pageCategory !== 'client-document'
       if (!clientHasGtag) {
         const pagePath = (() => {
           try {
@@ -673,9 +749,9 @@ export async function POST(request: NextRequest) {
           eventParams: {
             // Identity-stripped: GA4 is a third party and a contact id must not
             // leave the building inside a URL (same rule as the stored row).
-            page_location: storedPageUrl,
+            page_location: stripGa4UrlParams(pageUrl) ?? storedPageUrl,
             page_title: body.pageTitle ?? undefined,
-            page_referrer: stripIdentityParams(body.referrer),
+            page_referrer: stripGa4UrlParams(body.referrer),
             page_path: pagePath,
             page_type: pageType,
             ...ga4SessionParams(visit, sessionId),
@@ -799,11 +875,11 @@ export async function POST(request: NextRequest) {
   // fail-closed long before this line.
   //
   // A TAP ON A COMP COUNTS TOO (2026-09-07). Every address, place and CTA the
-  // document prints goes through `trackedDocLink`, which stamps
-  // `utm_campaign=<cmaSlug>` — so a seller who skimmed the report and then
-  // opened three comps on the site is the strongest signal the send produced,
-  // and it arrives on a listing page, not on `/cma/<slug>`. The campaign tag is
-  // what makes that arrival attributable to the document. Same rail, same
+  // document prints goes through `trackedDocLink`, which stamps `rr_doc=<cmaSlug>`
+  // (and, on links already sent, the legacy `utm_campaign=<cmaSlug>`). A seller
+  // who skimmed the report and then opened three comps on the site is the
+  // strongest signal the send produced, and it arrives on a listing page, not
+  // on `/cma/<slug>`. `cmaCampaignFromUrl` reads that identity. Same rail, same
   // `return-visit:cma:<slug>` kind, so the queueBrokerAlert dedupe still means
   // ONE alert per document per contact, ever — a reader who opens five comps
   // does not text the broker five times.

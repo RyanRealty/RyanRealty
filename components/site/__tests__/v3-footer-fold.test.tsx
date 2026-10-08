@@ -189,7 +189,9 @@ describe('the footer fold', () => {
     ])
     // SITE-187: the Sunriver cluster carries one extra door, "Sunriver homes
     // for sale" -> /communities/sunriver (the one winner for that query).
-    expect(markets?.links.length).toBe(19)
+    // Matt 2026-10-04: /cities/sunriver 301s there, so the Sunriver heading is
+    // text and the column has one destination fewer (18, was 19).
+    expect(markets?.links.length).toBe(18)
     expect(markets?.groups?.flatMap((g) => g.links).length).toBe(11)
   })
 })

@@ -18,6 +18,7 @@
 import 'server-only'
 import { createHmac, timingSafeEqual, randomBytes } from 'node:crypto'
 import { isPrivateLink } from '@/lib/analytics/private-paths'
+import { emailLinkOrigin } from '@/lib/email/link-origin'
 
 const SECRET =
   process.env.EMAIL_TRACKING_SECRET ||
@@ -46,7 +47,8 @@ export function assertTrackingSecret(): void {
   }
 }
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+// Email links resolve on the canonical origin, never the Vercel alias (lib/email/link-origin.ts).
+const SITE_URL = emailLinkOrigin()
 
 export interface EmailTrackContext {
   /** crm_people.id of the recipient. */

@@ -61,7 +61,7 @@ describe('listing window market', () => {
       listDate: '2026-03-06',
       offDate: '2026-09-21',
       subjectSqft: null,
-      subdivision: 'Countryside Phase 2',
+      subdivision: 'Somewhere Else',
       neighborhoodSlug: 'bend-old-farm-district',
       neighborhoodName: 'Old Farm District',
       city: 'Bend',
@@ -72,10 +72,10 @@ describe('listing window market', () => {
     expect(move!.late.from).toBe('2026-06-13')
     expect(move!.early.n).toBe(8)
     expect(move!.late.n).toBe(8)
-    expect(move!.grain).toBe('neighborhood')
+    expect(move!.grain).toBe('subdivision')
   })
 
-  it('steps past a subdivision that can only speak by mixing sizes', () => {
+  it('stays on a subdivision even when the only readable set mixes sizes', () => {
     const tiny = { sqft: 1000, subdivision: 'Countryside Phase 2' as string | null }
     const like = { sqft: 2468, subdivision: 'Other Plat' as string | null }
     const rows = [
@@ -94,22 +94,10 @@ describe('listing window market', () => {
       city: 'Bend',
       rows,
     })
-    expect(move?.grain).toBe('neighborhood')
-    expect(move?.sized).toBe(true)
-    expect(listingMarketSentence(move!)).toBe(
-      'While your home was listed, the median sale in Old Farm District for a home about this size rose from $726,425 to $779,950. The later homes were larger. The median one was 2,483 square feet, and the earlier median was 2,242. The price per square foot fell from $324 to $314.',
-    )
-    const unsigned = {
-      ...move!,
-      early: { ...move!.early, sqftMedian: null },
-      late: { ...move!.late, sqftMedian: null },
-    }
-    expect(listingMarketSentence(unsigned)).toBe(
-      'While your home was listed, the median sale in Old Farm District for a home about this size rose from $726,425 to $779,950. The price per square foot fell from $324 to $314.',
-    )
-    expect(listingMarketSource(move!)).toContain('8 closed sales')
-    expect(listingMarketSource({ ...move!, asOf: '2026-09-22' })).toContain('Measured 2026-09-22')
-    expect(listingMarketSource(move!)).toContain('Oregon Data Share MLS')
+    expect(move).not.toBeNull()
+    expect(move!.place).toBe('Countryside Phase 2')
+    expect(move!.grain).toBe('subdivision')
+    expect(move!.place).not.toBe('Old Farm District')
   })
 
   it('uses the city when the subdivision and the neighborhood are too thin', () => {
@@ -126,9 +114,141 @@ describe('listing window market', () => {
       city: 'Bend',
       rows,
     })
-    expect(move?.grain).toBe('city')
-    expect(move?.place).toBe('Bend')
-    expect(move?.priceMove).toBe('held flat')
+    expect(move).toBeNull()
+  })
+
+  it('draws the subdivision from one close and then three, and does not step up to a parent or the city', () => {
+    const rows = [
+      close({
+        closeDate: '2026-06-10',
+        closePrice: 732000,
+        sqft: 2018,
+        subdivision: 'Copperstone',
+        propertySubType: 'Townhouse',
+      }),
+      close({
+        closeDate: '2026-07-14',
+        closePrice: 699000,
+        sqft: 2275,
+        subdivision: 'Copperstone',
+        propertySubType: 'Townhouse',
+      }),
+      close({
+        closeDate: '2026-08-05',
+        closePrice: 670000,
+        sqft: 2386,
+        subdivision: 'Copperstone',
+        propertySubType: 'Townhouse',
+      }),
+      close({
+        closeDate: '2026-09-23',
+        closePrice: 600000,
+        sqft: 2275,
+        subdivision: 'Copperstone',
+        propertySubType: 'Townhouse',
+      }),
+    ]
+    const move = chooseListingMarket({
+      listDate: '2026-03-27',
+      offDate: '2026-09-30',
+      subjectSqft: 2275,
+      subdivision: 'Copperstone',
+      neighborhoodSlug: 'awbrey-butte',
+      neighborhoodName: 'Awbrey Butte',
+      city: 'Bend',
+      rows,
+      propertySubType: 'Townhouse',
+    })
+    expect(move).not.toBeNull()
+    expect(move!.place).toBe('Copperstone')
+    expect(move!.grain).toBe('subdivision')
+    expect(move!.early.n).toBe(1)
+    expect(move!.late.n).toBe(3)
+    expect(move!.sized).toBe(true)
+    const told = { ...move!, productNoun: 'townhouse' }
+    // One sale in the first half is that home's price, not a median.
+    expect(listingMarketSentence(told)).toContain('the one townhouse sale in Copperstone')
+    expect(listingMarketSentence(told)).toContain('the median of the 3 in the second half')
+    expect(listingMarketSentence(told)).not.toMatch(/\b(rose|fell)\b/)
+    expect(listingMarketSource(told)).toContain('Townhouses in Copperstone')
+    expect(listingMarketSource(told)).toMatch(/^1 closed sale [A-Z]/)
+    expect(listingMarketSource(told)).not.toMatch(/single-family/i)
+    expect(listingMarketSentence(move!)).toContain('the one sale in Copperstone')
+  })
+
+  it('does not draw a neighborhood from one close and then three', () => {
+    const move = chooseListingMarket({
+      listDate: '2026-03-06',
+      offDate: '2026-09-21',
+      subjectSqft: null,
+      subdivision: null,
+      areaKind: 'neighborhood',
+      neighborhoodSlug: 'bend-old-farm-district',
+      neighborhoodName: 'Old Farm District',
+      city: 'Bend',
+      rows: [
+        close({ closeDate: '2026-04-01', closePrice: 700000, subdivision: 'Other' }),
+        ...repeat(3, close({ closeDate: '2026-08-01', closePrice: 710000, subdivision: 'Other' })),
+      ],
+    })
+    expect(move).toBeNull()
+  })
+})
+
+describe('one sale a half (3037 Purcell, Silver Sage, 2026-10-07)', () => {
+  // The letter said "the median sale in Silver Sage rose from $503,000 to
+  // $559,000" over one sale in each half. One sale has no median and no trend.
+  // The two prices are the letter's; the dates and the first sale's size are illustrative.
+  const one: ListingMarketMove = {
+    place: 'Silver Sage',
+    grain: 'subdivision',
+    sized: true,
+    sqftLow: 1200,
+    sqftHigh: 2000,
+    early: { median: 503000, ppsf: 323, sqftMedian: 1558, n: 1, from: '2026-05-01', to: '2026-07-17' },
+    late: { median: 559000, ppsf: 359, sqftMedian: 1558, n: 1, from: '2026-07-18', to: '2026-10-05' },
+    priceMove: 'rose',
+    ppsfMove: 'rose',
+  }
+
+  it('names the one sale and its price, with no median and no rise', () => {
+    const s = listingMarketSentence(one)
+    expect(s).toBe(
+      "While your home was listed, the one sale in Silver Sage for a home about this size in the first half of the listing closed at $503,000, and the one in the second half closed at $559,000. Per square foot, that is $323, then $359. One sale is one home's price, not a trend.",
+    )
+    expect(s).not.toMatch(/median|rose|fell/)
+    expect(s).not.toContain('\u2014')
+  })
+
+  it('counts one closed sale in the singular', () => {
+    expect(listingMarketSource(one)).toMatch(/^1 closed sale May 1–Jul 17, then 1 from /)
+    expect(listingMarketSource({ ...one, early: { ...one.early, n: 2 } })).toMatch(/^2 closed sales /)
+  })
+
+  it('keeps the median wording when both halves hold two or more', () => {
+    const two = { ...one, early: { ...one.early, n: 2 }, late: { ...one.late, n: 3 } }
+    expect(listingMarketSentence(two)).toContain('the median sale in Silver Sage for a home about this size rose from $503,000 to $559,000')
+  })
+
+  it('names a single later sale beside an earlier median', () => {
+    const s = listingMarketSentence({ ...one, early: { ...one.early, n: 4 } })
+    expect(s).toContain('the median of the 4 sales in Silver Sage for a home about this size in the first half of the listing was $503,000')
+    expect(s).toContain('the one in the second half closed at $559,000')
+  })
+
+  it('fits the phone chart with the longer caption', () => {
+    const svg = listingMarketSlopesPhoneSvg({ ...listingMarketSlopes(one), caption: listingMarketSentence(one) })
+    expect(textOutsideViewBox(svg)).toEqual([])
+  })
+
+  it('prints no rise or fall on the chart over one sale a half', () => {
+    const drawn = { ...listingMarketSlopes(one), caption: listingMarketSentence(one) }
+    expect(drawn.panels.every((p) => p.label === 'one sale, not a trend')).toBe(true)
+    const svg = listingMarketSlopesSvg(drawn)
+    expect(svg).toContain('one sale, not a trend')
+    expect(svg).not.toMatch(/>(rose|fell)</)
+    const many = listingMarketSlopes({ ...one, early: { ...one.early, n: 2 }, late: { ...one.late, n: 2 } })
+    expect(many.panels.every((p) => p.label === undefined)).toBe(true)
   })
 })
 
@@ -137,7 +257,8 @@ describe('the market slopes', () => {
     listDate: '2026-03-06',
     offDate: '2026-09-21',
     subjectSqft: 2468,
-    subdivision: 'Countryside Phase 2',
+    subdivision: null,
+    areaKind: 'neighborhood',
     neighborhoodSlug: 'bend-old-farm-district',
     neighborhoodName: 'Old Farm District',
     city: 'Bend',
@@ -182,7 +303,7 @@ describe('the market slopes', () => {
       listDate: '2026-03-06',
       offDate: '2026-09-21',
       subjectSqft: null,
-      subdivision: null,
+      subdivision: 'Somewhere Else',
       neighborhoodSlug: null,
       neighborhoodName: null,
       city: 'Bend',
@@ -213,7 +334,7 @@ describe('the market slopes', () => {
   })
 })
 
-describe('chapter one keeps the regional figures and adds the market', () => {
+describe('chapter one keeps the market and does not print the regional tiles', () => {
   const base = {
     subject: {
       streetAddress: '20506 Murphy',
@@ -246,7 +367,8 @@ describe('chapter one keeps the regional figures and adds the market', () => {
     listDate: '2026-03-06',
     offDate: '2026-09-21',
     subjectSqft: 2468,
-    subdivision: 'Countryside Phase 2',
+    subdivision: null,
+    areaKind: 'neighborhood',
     neighborhoodSlug: 'bend-old-farm-district',
     neighborhoodName: 'Old Farm District',
     city: 'Bend',
@@ -256,14 +378,67 @@ describe('chapter one keeps the regional figures and adds the market', () => {
     ],
   })!
 
-  it('prints the market sentence under the ask, and still prints the three regional figures', () => {
+  it('prints the market sentence under the ask, and does not print the regional tiles', () => {
     const page = whatHappenedPage({ ...base, listingMarket: move })
     expect(page?.body).toContain('rose from $726,425 to $779,950')
     expect(page?.body).toContain('fell from $324 to $314')
-    expect(page?.body).toContain('3,394')
-    expect(page?.body).toContain('94.2%')
-    expect(page?.body).toContain('12.3%')
+    expect(page?.body).not.toContain('3,394')
+    expect(page?.body).not.toContain('94.2%')
+    expect(page?.body).not.toContain('12.3%')
     const graphic = whatHappenedGraphicHtml(base)
     expect(graphic).not.toContain('While your home was listed')
+  })
+})
+
+describe('the rate per foot is net of recorded concessions, like the table (reader review 2026-10-08)', () => {
+  // The table's Sold $/sqft row is the sale price less any recorded seller
+  // concession over living area; the chart printed the gross rate beside it.
+  const rows = [
+    ...repeat(8, close({ closeDate: '2026-04-01', closePrice: 500000, sqft: 2000, concessions: 10000 })),
+    ...repeat(8, close({ closeDate: '2026-08-01', closePrice: 500000, sqft: 2000, concessions: null })),
+  ]
+  const move = chooseListingMarket({
+    listDate: '2026-03-06',
+    offDate: '2026-09-21',
+    subjectSqft: null,
+    subdivision: 'Somewhere Else',
+    neighborhoodSlug: 'bend-old-farm-district',
+    neighborhoodName: 'Old Farm District',
+    city: 'Bend',
+    rows,
+  })
+
+  it('takes the concession off the rate per foot and leaves the sale price gross', () => {
+    expect(move).not.toBeNull()
+    expect(move!.early.median).toBe(500000)
+    expect(move!.early.ppsf).toBe(245)
+    expect(move!.late.ppsf).toBe(250)
+    expect(move!.ppsfNet).toBe(true)
+  })
+
+  it('says so on the source line, and prints the measured day the way the letter writes a date', () => {
+    const source = listingMarketSource({ ...move!, asOf: '2026-10-07' })
+    expect(source).toContain('Per square foot is the sale price less any recorded seller concession, over living area.')
+    expect(source).toContain('Measured October 7, 2026.')
+    expect(source).not.toContain('2026-10-07')
+    expect(source).not.toMatch(/Measured \d{4}-\d{2}-\d{2}/)
+  })
+
+  it('claims nothing about concessions on a row measured before this (stored figures are gross)', () => {
+    const stored: ListingMarketMove = {
+      place: 'Silver Sage',
+      grain: 'subdivision',
+      sized: false,
+      sqftLow: null,
+      sqftHigh: null,
+      early: { median: 503000, ppsf: 323, n: 2, from: '2026-05-01', to: '2026-07-17' },
+      late: { median: 559000, ppsf: 359, n: 3, from: '2026-07-18', to: '2026-10-05' },
+      priceMove: 'rose',
+      ppsfMove: 'rose',
+      asOf: '2026-10-08',
+    }
+    const source = listingMarketSource(stored)
+    expect(source).not.toContain('concession')
+    expect(source).toContain('Measured October 8, 2026.')
   })
 })

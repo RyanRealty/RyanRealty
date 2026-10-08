@@ -23,6 +23,7 @@
  * Access-guarded. Never throws: every failure returns { ok: false, error }.
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getCrmAccess, requirePersonInScope, type CrmActionResult } from '@/app/actions/crm'
 import { withSendIdempotency } from '@/lib/crm/idempotency'
@@ -35,7 +36,7 @@ import { NEWSLETTER_FROM_ADDRESS } from '@/lib/newsletter/send-queue'
 import { getCurrentNewsletterIssue } from '@/lib/data/newsletter/current-issue'
 import { subscribeToNewsletter, recordRecipientSend } from '@/lib/data'
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const SITE_URL = siteOrigin()
 // Bulk newsletter identity sends from the isolated news. subdomain (audit A4).
 const NEWSLETTER_FROM = `Ryan Realty <${NEWSLETTER_FROM_ADDRESS}>`
 /** One-click newsletter links live 180 days (T-5). */

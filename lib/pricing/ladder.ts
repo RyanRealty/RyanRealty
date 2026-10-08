@@ -58,7 +58,13 @@ export type PricingTier = {
    * Top home, not a subdivision across the highway"). Disclosed.
    */
   likeCommunity?: boolean
-  /** May cross the neighborhood/community polygon. Runs only once the boundary is exhausted. */
+  /**
+   * Plats that touch the touching plats. Not every other plat in the parent,
+   * and not a sale's distance from the subject. A parent neighborhood or
+   * community never gives this rung a sale from outside it.
+   */
+  closerSubdivision?: boolean
+  /** May cross the neighborhood/community polygon. Runs only once the boundary is exhausted, and never when a parent neighborhood or community confines the home. */
   crossBoundary?: boolean
   disclosure?: string
   /**
@@ -67,6 +73,16 @@ export type PricingTier = {
    * outright while the bounded ladder is still reaching the minimum.
    */
   whenStarved?: boolean
+}
+
+/**
+ * The 5-mile city rungs' trace line, read off the rung itself. One sentence
+ * once served all three rungs and said "9 months" on the 18- and 24-month
+ * rungs and "eight sales" after the target became five (915 Saginaw trace,
+ * 2026-10-07).
+ */
+export function cityRungDisclosure(months: number): string {
+  return `The tighter rungs did not fill ${PRICING_TARGET_COMPS} sales, so the search opened to 5 miles and ${months} months inside the same city, still dropping a different product, a rural/urban mix, a resort mismatch, and a subdivision whose prices are in a different tier.`
 }
 
 export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): PricingTier[] {
@@ -119,9 +135,9 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
     bedSlop: apples === 'strict' ? 1 : 2,
     bathSlop: apples === 'strict' ? 1 : 2,
   })
-  // Containment (Matt 2026-09-08): the plats that touch the subject's, inside
-  // the same neighborhood or community, walked 3 → 12 months before any
-  // distance ring. Old Bend never again prices off Southwest Crossing.
+  // The plats that touch the subject's, closest first. Months widen inside
+  // this row before the next row. A parent neighborhood or community still
+  // refuses a touching plat that sits outside that parent.
   const adjacent = (months: number, apples: AppleStrictness): PricingTier => ({
     name: `adjacent-sub-${months}mo`,
     monthsBack: months,
@@ -136,7 +152,25 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
     bedSlop: apples === 'strict' ? 1 : 2,
     bathSlop: apples === 'strict' ? 1 : 2,
     disclosure:
-      'These sales are in the subdivisions that touch yours, inside the same neighborhood, walked before any distance ring.',
+      'These sales are in the subdivisions that touch yours, the closest one first. Your own subdivision is finished before any of them.',
+  })
+  // After the touching plats: only the plats that touch those plats. Not every
+  // other plat in the parent, and not a sale's distance from the subject.
+  const closer = (months: number, apples: AppleStrictness): PricingTier => ({
+    name: `closer-sub-${months}mo`,
+    monthsBack: months,
+    maxMiles: null,
+    sameSubdivision: false,
+    similarSubdivision: false,
+    closerSubdivision: true,
+    apples,
+    sqftBand: PLAT_WIDE_SQFT_BAND,
+    ageYears: apples === 'strict' ? 15 : 25,
+    sameStory: apples === 'strict',
+    bedSlop: apples === 'strict' ? 1 : 2,
+    bathSlop: apples === 'strict' ? 1 : 2,
+    disclosure:
+      'These sales are in the subdivisions that touch the subdivisions next to yours. A subdivision that only sits in the same neighborhood is not included.',
   })
   const pocket = (months: number, apples: AppleStrictness): PricingTier => ({
     name: `pocket-${months}mo`,
@@ -169,7 +203,7 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
     sameStory: false,
     bedSlop: 2,
     bathSlop: 2,
-    disclosure: `The subject's own neighborhood did not supply enough sales in 12 months, so the search crossed its boundary to ${miles} miles. Every sale here is outside the neighborhood and is weighed as such.`,
+    disclosure: `The subject's own neighborhood did not supply enough sales in ${months} months, so the search crossed its boundary to ${miles} miles. Every sale here is outside the neighborhood and is weighed as such.`,
   })
   const similar = (months: number): PricingTier => ({
     name: `similar-sub-${months}mo`,
@@ -244,55 +278,68 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
     disclosure:
       'This home sits in a golf or resort community, and that community did not have enough of its own sales even across two years. The sales below come from comparable golf and resort communities in Central Oregon rather than from ordinary neighborhoods nearby, because that is the market a buyer of this home shops against.',
   })
+  // Integer quarters so 0.25 + 0.25 does not drift. Through 2 miles.
+  const distanceRings: PricingTier[] = []
+  for (let quarter = 1; quarter <= 8; quarter++) {
+    const miles = quarter / 4
+    const apples: AppleStrictness = miles <= 1 ? 'strict' : 'utilities'
+    for (const months of [3, 6, 9] as const) distanceRings.push(near(miles, months, apples))
+  }
   const tiers: PricingTier[] = [
     // YOUR OWN STREET, FIRST, WHATEVER THE MLS CALLS THE TRACT (Matt
     // 2026-09-10: "We want to look specifically at that address or in that
     // subdivision"). 23 Benaiah carries "N/A" for a subdivision, so every plat
-    // rung below skips, and 31 Benaiah — the identical 2,080 sqft plan next
-    // door — was only reachable on the five-mile eighteen-month rung, eight
+    // rung below skips, and 31 Benaiah, the identical 2,080 sqft plan next
+    // door, was only reachable on the five-mile eighteen-month rung, eight
     // sales deep. Whether it made the set at all then depended on how fast the
     // rings above filled, and it moved between builds. A street is a place;
-    // this rung finds it before any of that.
+    // this rung finds it before any other plat. It is not a quarter-mile ring.
     street(24),
+    // The subject's own plat, the whole clock, including the wide living-area
+    // band, before any other plat (Matt 2026-10-06). A sale in another plat
+    // is not taken while this clock is still unopened.
     sub(3),
     sub(6),
     sub(9),
-    // Same street, different floorplan, before the next tract. Hayloft 2500 vs
-    // 1927 is 23% — inside 30%, outside the tight 15% band.
+    // Same street, different floorplan, still inside the plat. Hayloft 2500 vs
+    // 1927 is 23%, inside 35%, outside the tight 25% band.
     sub(3, PLAT_WIDE_SQFT_BAND, '-wide'),
     sub(6, PLAT_WIDE_SQFT_BAND, '-wide'),
     sub(9, PLAT_WIDE_SQFT_BAND, '-wide'),
     sub(12),
     sub(12, PLAT_WIDE_SQFT_BAND, '-wide'),
-    // TIME BEFORE LOCATION, ALL THE WAY TO TWO YEARS INSIDE THE PLAT (Matt
-    // 2026-09-09: exhaust the boundary out to 24 months before leaving it).
     sub(18),
-    sub(24),
-    // Still the plat. The 35% cutoff, out to two years, before any other place.
     sub(18, PLAT_WIDE_SQFT_BAND, '-wide'),
+    sub(24),
     sub(24, PLAT_WIDE_SQFT_BAND, '-wide'),
-    // Same subdiv + ~0.25 mi street cluster, before adjacent plats or mile rings
-    // (Matt 2026-09-15: named SaddleStone stays exclusive when Horse Back / Ranch exist).
-    pocket(3, 'strict'),
-    pocket(6, 'strict'),
-    pocket(9, 'utilities'),
-    pocket(12, 'utilities'),
+    // Touching plats, closest first, every month of that row before the next row.
     adjacent(3, 'strict'),
     adjacent(6, 'strict'),
     adjacent(9, 'utilities'),
     adjacent(12, 'utilities'),
     adjacent(18, 'utilities'),
     adjacent(24, 'utilities'),
-    // The community the plat sits inside, before any ring or polygon rung.
+    // The next row only: plats that touch the touching plats. Not every other
+    // plat in the parent, and not a distance ring.
+    closer(3, 'strict'),
+    closer(6, 'strict'),
+    closer(9, 'utilities'),
+    closer(12, 'utilities'),
+    closer(18, 'utilities'),
+    closer(24, 'utilities'),
+    // No recorded plat (and rural acreage with no plat): the distance ladder.
+    // A recorded subdivision opens these only when its plat rows above hold
+    // fewer than the minimum; the parent wall still holds on every one.
+    pocket(3, 'strict'),
+    pocket(6, 'strict'),
+    pocket(9, 'utilities'),
+    pocket(12, 'utilities'),
     community(6, 'strict'),
     community(12, 'utilities'),
     community(24, 'utilities'),
-    near(1, 3, 'strict'),
-    near(1, 6, 'strict'),
-    near(1, 9, 'strict'),
-    near(2, 3, 'utilities'),
-    near(2, 6, 'utilities'),
-    near(2, 9, 'utilities'),
+    // Distance starts at a quarter mile and steps by a quarter mile.
+    // Do not open with a 1-mile ring. One mile and two miles are later steps.
+    ...distanceRings,
     ...customTimeFirst,
     // The community is exhausted; its peers are other communities of its kind.
     likeCommunity(24),
@@ -311,8 +358,7 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
       sameStory: false,
       bedSlop: null,
       bathSlop: null,
-      disclosure:
-        'The tighter rungs did not fill eight sales, so the search opened to 5 miles and 9 months inside the same city, still dropping a different product, a rural/urban mix, a resort mismatch, and a subdivision whose prices are in a different tier.',
+      disclosure: cityRungDisclosure(9),
     },
     // INSIDE THE BOUNDARY, ALL THE WAY TO TWO YEARS, BEFORE ANY EXIT (Matt
     // 2026-09-09). The polygon wall in passesTier holds on these rungs, so an
@@ -330,8 +376,7 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
       sameStory: false,
       bedSlop: null,
       bathSlop: null,
-      disclosure:
-        'The tighter rungs did not fill eight sales, so the search opened to 5 miles and 9 months inside the same city, still dropping a different product, a rural/urban mix, a resort mismatch, and a subdivision whose prices are in a different tier.',
+      disclosure: cityRungDisclosure(18),
     },
     {
       name: 'city-5mi-24mo',
@@ -345,8 +390,7 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
       sameStory: false,
       bedSlop: null,
       bathSlop: null,
-      disclosure:
-        'The tighter rungs did not fill eight sales, so the search opened to 5 miles and 9 months inside the same city, still dropping a different product, a rural/urban mix, a resort mismatch, and a subdivision whose prices are in a different tier.',
+      disclosure: cityRungDisclosure(24),
     },
     beyond(2, 12),
     beyond(5, 12),
@@ -381,8 +425,7 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
       bathSlop: null,
       ignoreCity: true,
       ruralOnly: true,
-      disclosure:
-        'Rural sales inside 10 miles and 9 months were still short of eight, so the search extended to 15 miles and 18 months. Older sales carry a larger time adjustment and less weight.',
+      disclosure: `Rural sales inside 10 miles and 9 months were still short of ${PRICING_TARGET_COMPS}, so the search extended to 15 miles and 18 months. Older sales carry a larger time adjustment and less weight.`,
     },
     // THE DISCLOSED WIDENING (Matt 2026-09-09), the last rung on the facts
     // path. Reached only when everything above left the set under the
@@ -411,18 +454,64 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
 }
 
 /**
- * Five closed sales, then stop (Matt 2026-09-22, on 20506 Murphy).
- * Every sale past five is bought by a wider rung, and that wider rung is
- * what stretched the shaded range. The listings ladder already stopped at
- * five (`lib/cma/comps.ts` TARGET_COMPS).
+ * Five price-setting sales stop the AREA widening (Matt 2026-09-22, on 20506
+ * Murphy: every sale past five is bought by a wider rung, and that wider rung
+ * is what stretched the shaded range). Once the set holds five, no rung that
+ * widens the area runs on either ladder: no touching plats, no next plat
+ * ring, no distance ring, no neighborhood or community step, no boundary
+ * exit, no starved rung. The subject's own ground (own street, own plat, its
+ * pocket) is the same area across its whole window and keeps walking. Own
+ * ground keeps up to PRICING_WALK_CAP (Matt 2026-10-07, below). The listings ladder
+ * stops at the same five (`lib/cma/comps.ts` TARGET_COMPS).
  */
 export const PRICING_TARGET_COMPS = 5
-export const PRICING_MIN_COMPS = 3
+/**
+ * Five price-setting sales is the floor (Matt 2026-10-07), reversing the
+ * 2026-09-10 lowering to 3 that rescued 63 thin documents: a three-sale
+ * letter printed a raw min-to-max band and one stray sale put the failed ask
+ * inside it, which contradicts the letter. Equal to PRICING_TARGET_COMPS by
+ * that rule: the floor and the point where widening stops are one number. A
+ * sale that does not set the price (lib/pricing/price-set.ts) never counts
+ * toward it; the walks refuse it at admission and go on in order.
+ */
+export const PRICING_MIN_COMPS = 5
+/**
+ * WALK TO 7, PRICE ON 5+ (Matt 2026-10-07). Asked: "with five as both the
+ * floor and the stop, the search ends at exactly five sales; if the
+ * comparability review drops or splits on one, the build fails. How should
+ * the search handle that?" Ruling: "Walk to 7, price on 5+": keep walking
+ * past five, up to seven, while the same area still holds qualifying sales,
+ * so the review (lib/cma/judge.ts, lib/cma/judgment-prune.ts) can drop one or
+ * two and still leave five. Nothing widens the area to get them.
+ *
+ * Mechanically, on both ladders: the subject's own ground (own street, own
+ * plat, its pocket) walks its whole window, and no rung that widens the area
+ * runs once the set holds PRICING_TARGET_COMPS. Every sale admitted before
+ * the rung that reached five keeps its seat. Seats six and seven come only
+ * from own ground (only what's needed, Matt 2026-10-07): when own ground
+ * reached five it fills up to this many, newest closes first and nearest on a
+ * tie (Matt 2026-10-07); when a rung that widens the area reached five, that
+ * rung adds only the shortfall and the set is five (its closest homes on the
+ * facts ladder, the tightest prices on the listings ladder). Own ground that
+ * holds fewer leaves the set at five or six. Every wall (community, neighborhood polygon,
+ * recorded plat, 24 months, the room rule, rule 20, the same product type) is
+ * unchanged. The floor stays PRICING_MIN_COMPS.
+ */
+export const PRICING_WALK_CAP = 7
+/**
+ * The floor is the trim threshold: every priced set sets its highest and
+ * lowest aside (Matt 2026-10-07, the band is always the trimmed range). A
+ * future floor change moves the trim with it on purpose.
+ */
+export const RANGE_TRIM_MIN_N = PRICING_MIN_COMPS
+/** Never peel the range below three kept sales. A five-sale set keeps three. */
+export const RANGE_MIN_KEPT = 3
 /**
  * The search may cross the subject's neighborhood/community boundary only
  * when everything inside it supplied fewer sales than a document needs
- * (lib/cma/comps.ts MIN_COMPS = 5). Matt 2026-09-08: "we would go back up to
- * 12 months within that boundary before we would ever leave it."
+ * (lib/cma/comps.ts MIN_COMPS = 5, since 2026-10-07). Matt 2026-09-08: "we
+ * would go back up to 12 months within that boundary before we would ever
+ * leave it."
  */
 export const BOUNDARY_EXIT_BELOW = 5
 /**
@@ -437,14 +526,14 @@ export const POCKET_STARVE_BELOW = BOUNDARY_EXIT_BELOW
 export const POCKET_TIGHT_SET_MIN = 2
 /**
  * How many sales the facts ladder must hold to price a document on its own.
- * Below this the listings ladder (lib/cma/comps.ts, MIN_COMPS = 5) is the
- * fallback. Was 3 until 2026-09-09: Merle's 1617 NW 8th reached exactly 3 on
- * facts once the 12-month subdivision rung landed, the fallback that used to
- * supply 5 never ran, and the build failed the document's own minimum.
+ * Below this the listings ladder (lib/cma/comps.ts, MIN_COMPS = 5 since
+ * 2026-10-07) is the fallback. Was 3 until 2026-09-09: Merle's 1617 NW 8th
+ * reached exactly 3 on facts once the 12-month subdivision rung landed, the
+ * fallback that used to supply 5 never ran, and the build failed the
+ * document's own minimum. Equal to PRICING_MIN_COMPS since 2026-10-07: under
+ * five on both ladders the build is a comp shortage.
  */
 export const FACTS_STANDALONE_MIN = BOUNDARY_EXIT_BELOW
-/** The priced set is five. A rung that overshoots is cut back to the tightest prices. */
-export const PRICING_MAX_COMPS = 5
 
 /**
  * Keep the `max` sales whose close prices sit together.
@@ -453,11 +542,23 @@ export const PRICING_MAX_COMPS = 5
  * that happens to match today's prices does not hold a slot a recent sale
  * should have. The list should already be best-first. When two sales are
  * equally far, the later one goes.
+ *
+ * `removable`, when given, names the only sales the cut may take (walk to 7,
+ * Matt 2026-10-07: the place that reached five fills the open seats, and a
+ * sale from an earlier place, own ground first, keeps its seat). The middle
+ * price is still read over the whole set. With nothing left that may go, the
+ * cut stops.
+ *
+ * `onRemove` sees each sale as the cut takes it, worst first. The last one
+ * taken is the rung's next-best sale, which is what the review refills from
+ * (Matt 2026-10-08, lib/cma/review-refill.ts).
  */
 export function keepTightestByClosePrice<T extends { closePrice: number; closeDate?: string | null }>(
   comps: readonly T[],
   max: number,
   asOf?: string,
+  removable?: (comp: T) => boolean,
+  onRemove?: (comp: T) => void,
 ): T[] {
   const kept = [...comps]
   while (kept.length > max) {
@@ -473,15 +574,22 @@ export function keepTightestByClosePrice<T extends { closePrice: number; closeDa
       const stale = months > 12 ? (months - 12) / 12 : 0
       return price + stale
     }
-    let worst = kept.length - 1
+    // The last sale that may go is the starting candidate, so a tie with it
+    // still drops the later sale, exactly as before `removable` existed.
+    let last = kept.length - 1
+    while (last >= 0 && removable && !removable(kept[last]!)) last--
+    if (last < 0) break
+    let worst = last
     let worstDist = dist(kept[worst]!)
-    for (let i = 0; i < kept.length - 1; i++) {
+    for (let i = 0; i < last; i++) {
+      if (removable && !removable(kept[i]!)) continue
       const d = dist(kept[i]!)
       if (d > worstDist) {
         worstDist = d
         worst = i
       }
     }
+    onRemove?.(kept[worst]!)
     kept.splice(worst, 1)
   }
   return kept
@@ -540,7 +648,7 @@ export function isPocketExclusiveTier(tier: Pick<PricingTier, 'sameSubdivision' 
 export function isGeographyWidenTier(tier: PricingTier): boolean {
   if (tier.whenStarved || tier.ruralOnly) return false
   if (isPocketExclusiveTier(tier)) return false
-  if (tier.sameCommunity || tier.likeCommunity || tier.adjacentSubdivision) return false
+  if (tier.sameCommunity || tier.likeCommunity || tier.adjacentSubdivision || tier.closerSubdivision) return false
   return true
 }
 
@@ -611,6 +719,12 @@ export function pocketStopsLaterRungs(args: {
  * it, so the plat rungs carry 25% and the wider same-street rungs 35%. Inside
  * the plat this band is the ONLY dimensional test: beds, baths, vintage and
  * story count are all disclosed rather than refused (lib/pricing/match.ts).
+ *
+ * PLAT_WIDE_SQFT_BAND is a SEARCH band only (Matt 2026-10-08, "25%
+ * everywhere"). A sale a wide rung reads past 25% passes the rung's walls and
+ * is refused at the door by rule 20 (PRICE_SET_SQFT_BAND in
+ * lib/pricing/price-set.ts, equal to PLAT_SQFT_BAND): it never sets the
+ * price and never counts toward the five.
  */
 export const PLAT_SQFT_BAND = 0.25
 export const PLAT_WIDE_SQFT_BAND = 0.35

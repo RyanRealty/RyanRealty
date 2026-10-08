@@ -27,6 +27,7 @@
  * SmoothScrollProvider, region pulse read that rendered only on KbSell.
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import { cache } from 'react'
 import type { Metadata } from 'next'
 import {
@@ -167,7 +168,7 @@ export default async function OpenHousesPage({
   const count = openHouses.length
   const fieldItems = openHouseFieldItems(openHouses)
   const medianList = medianPositive(openHouses.map((oh) => oh.listPrice))
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const siteUrl = siteOrigin()
 
   const figures: V3InstrumentFigure[] = []
   if (count > 0) {

@@ -16,6 +16,7 @@ import {
   didNotSellLeadSentence,
   didNotSellStories,
   readLocalFailedThenSold,
+  soldPpsfLegend,
   soldPpsfRange,
 } from '@/lib/cma/did-not-sell'
 import type { CmaExpiredPeer } from '@/lib/cma/market-status'
@@ -135,7 +136,24 @@ describe('the chapter sentence', () => {
 
 describe('what homes like it closed at', () => {
   it('takes the sale prices already printed, over their own living area', () => {
-    expect(soldPpsfRange(comps)).toEqual({ low: 274, high: 320, n: 3 })
+    expect(soldPpsfRange(comps)).toEqual({ low: 274, high: 320, n: 3, values: [274, 320, 306], credit: false })
+  })
+
+  it('uses the Sold $/sqft row: the price after a recorded concession (reader review 2026-10-07)', () => {
+    // 3037 Purcell printed $318 to $359 in prose under a table of $317 to $357:
+    // the prose divided the close, the table the close less the concession.
+    const withCredit = [
+      { address: 'a', closePrice: 457000, sqft: 1665, concessionsAmount: 10000 },
+      { address: 'b', closePrice: 410000, sqft: 1280, concessionsAmount: 0 },
+    ] as unknown as CmaAdjustedComp[]
+    // (457,000 - 10,000) / 1,665 = 268.47
+    expect(soldPpsfRange(withCredit)).toEqual({ low: 268, high: 320, n: 2, values: [268, 320], credit: true })
+    // The legend names the table's row by the words it prints, which carry
+    // "after concessions" when a sale on it had a credit (cma-2382-jackson).
+    expect(soldPpsfLegend(2, true)).toBe(
+      'The dollars a foot are the Sold $/sqft after concessions row of the 2 closed sales in this report: each sale price, less any recorded seller concession, over its own living area.',
+    )
+    expect(soldPpsfLegend(2)).toContain('the Sold $/sqft row of the 2 closed sales')
   })
 
   it('needs two sales before it states a range', () => {
@@ -143,22 +161,22 @@ describe('what homes like it closed at', () => {
   })
 
   it('places an ask above, inside, or below what they closed at', () => {
-    const range = { low: 274, high: 320 }
+    const range = { low: 274, high: 320, values: [274, 306, 320] }
     expect(askAgainstSoldSentence({ ask: 360000, sqft: 789, range })).toBe(
-      'Asked $360,000 for 789 sqft, $456 a foot. Homes like it closed at $274 to $320 a foot, unadjusted. A foot at a time, that is above every one of them.',
+      'Asked $360,000 for 789 sqft, $456 a foot. Homes like it closed at $274 to $320 a foot, net of seller concessions and not adjusted for date or size. A foot at a time, that is above every one of them.',
     )
-    // Inside is not one answer: $294 a foot sits in the middle of $274 to $320,
-    // $319 at the top of it, $278 at the bottom.
+    // Inside, it counts the sales that closed higher rather than naming a
+    // position: $351 under a $375 top was printed "at the top" (Wild Rose).
     expect(askAgainstSoldSentence({ ask: 470000, sqft: 1600, range })).toContain(
-      'in the middle of what they closed at',
+      'A foot at a time, 2 of the 3 closed higher.',
     )
     expect(askAgainstSoldSentence({ ask: 460000, sqft: 1440, range })).toContain(
-      'at the top of what they closed at',
+      'A foot at a time, 1 of the 3 closed higher.',
     )
-    expect(askAgainstSoldSentence({ ask: 400000, sqft: 1440, range })).toContain(
-      'at the bottom of what they closed at',
-    )
+    expect(askAgainstSoldSentence({ ask: 320000, sqft: 1000, range })).toContain('level with the highest of them')
+    expect(askAgainstSoldSentence({ ask: 274000, sqft: 1000, range })).toContain('level with the lowest of them')
     expect(askAgainstSoldSentence({ ask: 200000, sqft: 1600, range })).toContain('below every one of them')
+    expect(askAgainstSoldSentence({ ask: 460000, sqft: 1440, range })).not.toContain('at the top')
   })
 
   it('says nothing without a size or a range', () => {

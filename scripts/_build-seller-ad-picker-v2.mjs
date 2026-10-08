@@ -16,7 +16,7 @@
  *
  * Output: out/seller-ad-concepts/picker-v2/picker.html
  */
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { resolve, dirname, basename } from 'node:path'

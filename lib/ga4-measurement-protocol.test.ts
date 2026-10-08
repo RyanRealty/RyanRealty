@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fireGa4Event, isNonProductionPageLocation } from './ga4-measurement-protocol'
+import { isNonProductionRequestHost } from './analytics/non-production-host'
 
 describe('isNonProductionPageLocation — our own browsing is not analytics', () => {
   // Measured 2026-08-26: 43 sessions reached the production GA4 property as a
@@ -9,9 +10,14 @@ describe('isNonProductionPageLocation — our own browsing is not analytics', ()
     'http://localhost:3000/housing-market/bend',
     'http://127.0.0.1:8777/',
     'http://0.0.0.0:3000/search',
+    'http://[::1]:3000/',
     'http://mac-mini.local:3000/',
     'https://ryanrealty-abc123.vercel.app/listings', // staging-host-ok: fixture asserting we BLOCK this host, not a link we emit
     'http://site.test/',
+    'http://192.168.1.20:3000/',
+    'http://10.0.0.8:3000/',
+    'http://172.16.0.4:8777/',
+    'https://ryan-realty.com.evil.example/',
   ])('blocks %s', (url) => {
     expect(isNonProductionPageLocation(url)).toBe(true)
   })
@@ -34,6 +40,27 @@ describe('isNonProductionPageLocation — our own browsing is not analytics', ()
   it('does not block a production host that merely CONTAINS a dev word', () => {
     expect(isNonProductionPageLocation('https://localhost.ryan-realty.com/')).toBe(false)
     expect(isNonProductionPageLocation('https://ryan-realty.com/localhost')).toBe(false)
+  })
+})
+
+describe('isNonProductionRequestHost — spoofed pageUrl vs the request Host', () => {
+  it.each(['127.0.0.1:3000', '127.0.0.1:8777', 'localhost:3000', '0.0.0.0:3000', '[::1]:3000', '192.168.1.20:3000'])(
+    'blocks Host %s',
+    (host) => {
+      expect(isNonProductionRequestHost(host)).toBe(true)
+    },
+  )
+
+  it.each(['ryan-realty.com', 'www.ryan-realty.com', 'seller.ryan-realty.com', 'ryan-realty.com:443'])(
+    'allows Host %s',
+    (host) => {
+      expect(isNonProductionRequestHost(host)).toBe(false)
+    },
+  )
+
+  it('fails OPEN on a missing Host so a stripped header cannot drop real visitors', () => {
+    expect(isNonProductionRequestHost(null)).toBe(false)
+    expect(isNonProductionRequestHost('')).toBe(false)
   })
 })
 
@@ -60,6 +87,20 @@ describe('fireGa4Event — per-visit session + campaign_details (TRACK-1, P7)', 
     expect(body.events.map((e: { name: string }) => e.name)).toEqual(['campaign_details', 'page_view'])
     expect(body.events[0].params).toMatchObject({ source: 'google', medium: 'organic', session_id: 1790000000, session_number: 3 })
     expect(body.events[1].params).toMatchObject({ session_id: 1790000000, session_number: 3, engagement_time_msec: 100 })
+  })
+
+  it('refuses a LAN page_location the denylist used to miss', async () => {
+    vi.stubEnv('GA4_MEASUREMENT_ID', 'G-TEST')
+    vi.stubEnv('GA4_API_SECRET', 'secret')
+    const fetchMock = vi.fn(async () => new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const res = await fireGa4Event({
+      eventName: 'page_view',
+      clientId: '1.2',
+      eventParams: { page_location: 'http://192.168.1.20:3000/' },
+    })
+    expect(res).toMatchObject({ ok: false, error: 'NON_PRODUCTION_HOST' })
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('sends only the event itself when nothing precedes it', async () => {

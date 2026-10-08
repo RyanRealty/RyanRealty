@@ -1,0 +1,253 @@
+{
+  "note": "Pinned SEO decisions, checked against PRODUCTION on every deploy (npm run deploy:verify -> seo:live, scripts/lib/live-seo-audit.mjs). Each entry is a decision Matt made; the live site must keep it. Adding an entry is free. Changing or removing one needs an `SEO-decision: <who, when, why>` commit trailer (scripts/check-seo-decisions.mjs, commit-msg hook), because a failing check here means the SITE regressed, not that the entry is wrong. expect: status (HTTP), location (redirect target path), index (robots), canonical ('self' or a path), title / h1 (regex), html (regexes the served HTML must contain).",
+  "decisions": [
+    {
+      "id": "home-title",
+      "path": "/",
+      "expect": {
+        "status": 200,
+        "index": true,
+        "canonical": "self",
+        "title": "^Ryan Realty \\| Bend Oregon Real Estate & Homes for Sale$"
+      },
+      "decided": "Matt 2026-10-04",
+      "why": "Homepage leads with the brand, then the Bend head terms."
+    },
+    {
+      "id": "self-city-sunriver-redirect",
+      "path": "/cities/sunriver",
+      "expect": {
+        "status": 301,
+        "location": "/communities/sunriver"
+      },
+      "decided": "Matt 2026-10-04",
+      "why": "One page per place. GSC 2026-07-04..10-01 split 'sunriver homes for sale' across /cities/sunriver (41) and /communities/sunriver (57)."
+    },
+    {
+      "id": "self-city-black-butte-ranch-redirect",
+      "path": "/cities/black-butte-ranch",
+      "expect": {
+        "status": 301,
+        "location": "/communities/black-butte-ranch"
+      },
+      "decided": "Matt 2026-10-04",
+      "why": "One page per place, same split as Sunriver."
+    },
+    {
+      "id": "sunriver-one-page",
+      "path": "/communities/sunriver",
+      "expect": {
+        "status": 200,
+        "index": true,
+        "canonical": "self",
+        "title": "^Sunriver real estate \\| Homes for Sale"
+      },
+      "decided": "Matt 2026-10-04",
+      "why": "Sunriver's only page carries both 'real estate' and 'homes for sale'."
+    },
+    {
+      "id": "black-butte-ranch-one-page",
+      "path": "/communities/black-butte-ranch",
+      "expect": {
+        "status": 200,
+        "index": true,
+        "canonical": "self",
+        "title": "^Black Butte Ranch real estate \\| Homes for Sale"
+      },
+      "decided": "Matt 2026-10-04",
+      "why": "Black Butte Ranch's only page carries both queries."
+    },
+    {
+      "id": "sunriver-search-noindex",
+      "path": "/homes-for-sale/sunriver",
+      "expect": {
+        "status": 200,
+        "index": false
+      },
+      "decided": "Matt 2026-10-04",
+      "why": "A search tool, not a document. Google ignored its canonical and indexed it beside the community page."
+    },
+    {
+      "id": "black-butte-ranch-search-noindex",
+      "path": "/homes-for-sale/black-butte-ranch",
+      "expect": {
+        "status": 200,
+        "index": false
+      },
+      "decided": "Matt 2026-10-04",
+      "why": "Same as the Sunriver search page."
+    },
+    {
+      "id": "resort-under-city-redirect",
+      "path": "/cities/bend/sunriver",
+      "expect": {
+        "status": 308,
+        "location": "/communities/sunriver"
+      },
+      "decided": "2026-08 (pre-render hop city-neighborhood-community)",
+      "why": "A resort is never a neighborhood page under a city."
+    },
+    {
+      "id": "market-title-price",
+      "path": "/housing-market/bend",
+      "expect": {
+        "status": 200,
+        "index": true,
+        "canonical": "self",
+        "title": "^Bend housing market: \\$[0-9.]+[KM] median list price"
+      },
+      "decided": "Matt 2026-10-04",
+      "why": "GSC: position 14-20 for 'median home price bend oregon' and 'bend home prices'. Title leads with the price people search."
+    },
+    {
+      "id": "bend-search-indexed",
+      "path": "/homes-for-sale/bend",
+      "expect": {
+        "status": 200,
+        "index": true,
+        "canonical": "self",
+        "title": "^Bend homes for sale"
+      },
+      "decided": "2026-09 (ci:seo-shell, Matt 2026-09-07/17)",
+      "why": "Owns 'Bend homes for sale'. Google last saw it noindex on 2026-09-12; it must stay indexable."
+    },
+    {
+      "id": "bend-city-indexed",
+      "path": "/cities/bend",
+      "expect": {
+        "status": 200,
+        "index": true,
+        "canonical": "self",
+        "title": "^Bend real estate"
+      },
+      "decided": "2026-09 (ci:seo-shell)",
+      "why": "Owns 'Bend real estate'."
+    },
+    {
+      "id": "resort-brasada-ranch",
+      "path": "/communities/brasada-ranch",
+      "expect": {
+        "status": 200,
+        "index": true,
+        "canonical": "self",
+        "title": "^Brasada Ranch real estate"
+      },
+      "decided": "Matt 2026-09-24",
+      "why": "Registered community page owns '{name} real estate' and '{name} homes for sale'."
+    },
+    {
+      "id": "resort-tetherow",
+      "path": "/communities/tetherow",
+      "expect": {
+        "status": 200,
+        "index": true,
+        "canonical": "self",
+        "title": "^Tetherow real estate"
+      },
+      "decided": "Matt 2026-09-22",
+      "why": "Same rule; Tetherow first."
+    },
+    {
+      "id": "resort-broken-top",
+      "path": "/communities/broken-top",
+      "expect": {
+        "status": 200,
+        "index": true,
+        "canonical": "self",
+        "title": "^Broken Top real estate"
+      },
+      "decided": "Matt 2026-09-24",
+      "why": "Same rule."
+    },
+    {
+      "id": "resort-caldera-springs",
+      "path": "/communities/caldera-springs",
+      "expect": {
+        "status": 200,
+        "index": true,
+        "canonical": "self",
+        "title": "^Caldera Springs real estate"
+      },
+      "decided": "Matt 2026-09-24",
+      "why": "Same rule."
+    },
+    {
+      "id": "resort-eagle-crest",
+      "path": "/communities/eagle-crest",
+      "expect": {
+        "status": 200,
+        "index": true,
+        "canonical": "self",
+        "title": "^Eagle Crest real estate"
+      },
+      "decided": "Matt 2026-09-24",
+      "why": "Same rule."
+    },
+    {
+      "id": "top-blog-indexed",
+      "path": "/blog/sunriver-year-round-living-vs-vacation",
+      "expect": {
+        "status": 200,
+        "index": true,
+        "canonical": "self"
+      },
+      "decided": "GSC 2026-10-04",
+      "why": "Top organic page by clicks (44 in 90 days). Losing it is a visible traffic drop."
+    },
+    {
+      "id": "aeo-city-takeaways",
+      "path": "/cities/bend",
+      "expect": {
+        "status": 200,
+        "html": [
+          "id=\"takeaways\"",
+          "class=\"v3-takeaways__lead\""
+        ]
+      },
+      "decided": "Matt 2026-10-04",
+      "why": "AEO: the short answer (V3Takeaways) after the opening, in the served HTML, so answer engines cite a real answer from the top of the page."
+    },
+    {
+      "id": "aeo-community-takeaways",
+      "path": "/communities/sunriver",
+      "expect": {
+        "status": 200,
+        "html": [
+          "id=\"takeaways\"",
+          "class=\"v3-takeaways__lead\""
+        ]
+      },
+      "decided": "Matt 2026-10-04",
+      "why": "AEO: same short answer on community pages, inside the top 30% of the page text."
+    },
+    {
+      "id": "aeo-market-lead-and-tables",
+      "path": "/housing-market/bend",
+      "expect": {
+        "status": 200,
+        "html": [
+          "id=\"takeaways\"",
+          "class=\"v3-takeaways__lead\"",
+          "class=\"v3-chart__table\"",
+          "Are home prices going up in Bend\\?"
+        ]
+      },
+      "decided": "Matt 2026-10-04",
+      "why": "AEO: the short answer right after the opening, every chart's numbers as a real table, and the appreciation question people search."
+    },
+    {
+      "id": "out-of-area-listing-indexed",
+      "path": "/homes-for-sale/medford/619-main-220103111",
+      "expect": {
+        "status": 200,
+        "index": true,
+        "canonical": "self",
+        "html": [
+          "Outside our home market"
+        ]
+      },
+      "decided": "Matt 2026-10-05",
+      "why": "Undo SITE-33's out-of-area noindex: Search Console showed it cost ~36% of the impression drop since Sep 12 (~2,500 impressions, ~30 clicks a week). Out-of-area listings are index, follow with a self canonical, in /sitemaps/listings.xml, and keep the honesty block. Sample: an Active Medford listing on the feed since 2020."
+    }
+  ]
+}

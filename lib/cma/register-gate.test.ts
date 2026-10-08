@@ -1,25 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { blamesPriorAgent, isWorthQuestionCopy } from '@/lib/crm/first-touch-copy'
-import { decideCmaAccess, renderConsentBarHtml, renderConsentShell, renderRegisterShell } from './register-gate'
-
-describe('CMA register shell — inbound packet', () => {
-  it('names THIS home and the comparative market analysis, never a worth-question', () => {
-    const html = renderRegisterShell({
-      slug: 'cma-1842-nw-foo',
-      address: '1842 NW Foo St',
-      clientName: 'Pat',
-    })
-    expect(html).toContain('Your report on 1842 NW Foo St')
-    expect(html).toContain('The recommended list for 1842 NW Foo St')
-    expect(html).toContain('Who you are competing with at that price')
-    expect(html).toContain('How we got the price')
-    expect(html).not.toMatch(/how we would market|listing video|flyers/i)
-    expect(html).not.toMatch(/what your home is worth/i)
-    expect(html).not.toMatch(/What every listing gets/i)
-    expect(isWorthQuestionCopy(html)).toBe(false)
-    expect(blamesPriorAgent(html)).toBe(false)
-  })
-})
+import { decideCmaAccess, renderConsentBarHtml } from './register-gate'
 
 describe('CMA access gate — Google comms cookie skips Almost there', () => {
   const matched = {
@@ -70,18 +50,6 @@ describe('CMA access gate — Google comms cookie skips Almost there', () => {
     ).toEqual({ kind: 'serve' })
   })
 
-  it('keeps the consent shell free of Almost there and worth-questions', () => {
-    const html = renderConsentShell({
-      slug: 'cma-1842-nw-foo',
-      address: '1842 NW Foo St',
-      viewerEmail: 'pat@example.com',
-      smsConsentText: 'I agree to receive text messages from Ryan Realty',
-      claiming: false,
-    })
-    expect(html).not.toMatch(/Almost there/i)
-    expect(html).toContain('I agree to receive text messages from Ryan Realty')
-    expect(isWorthQuestionCopy(html)).toBe(false)
-  })
 })
 
 describe('CMA access gate — the recipient reads without the door (Matt 2026-09-09)', () => {

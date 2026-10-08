@@ -465,6 +465,42 @@ function readings(plot: AnyPlot): { key: string; text: string }[] {
   return plot.bars.map((b, i) => ({ key: `${i}-${b.tick}`, text: `${b.tick}, ${b.label}` }))
 }
 
+/**
+ * The same readings as a table (AEO review 2026-10-04: answer engines cite
+ * pages with real tables far more often than pages whose numbers live only in
+ * a drawing). Rows are the ticks; a line chart gets one column per series.
+ * Exported for tests.
+ */
+export function v3ChartTable(plot: AnyPlot): { head: string[]; rows: { key: string; cells: string[] }[] } {
+  if (plot.kind === 'line') {
+    // Rows group by plotted x, the way the hover readout does, never by the
+    // tick text: a weekly series repeats its month tick on every point, and
+    // keying on the tick printed one week's rate under the whole month.
+    const names = plot.lines.map((line) => String(line.name))
+    const byX = new Map<string, { x: number; tick: string; cells: string[] }>()
+    plot.lines.forEach((line, i) => {
+      for (const p of line.points) {
+        if (!p.plot) continue
+        const key = p.x.toFixed(3)
+        const row = byX.get(key) ?? { x: p.x, tick: String(p.tick), cells: names.map(() => '') }
+        row.cells[i] = String(p.label)
+        byX.set(key, row)
+      }
+    })
+    const rows = [...byX.entries()]
+      .sort((a, b) => a[1].x - b[1].x)
+      .map(([key, r]) => ({ key, cells: [r.tick, ...r.cells] }))
+    return { head: ['', ...names], rows }
+  }
+  if (plot.kind === 'mix') {
+    return { head: ['', ''], rows: plot.segments.map((s, i) => ({ key: `${i}-${s.tick}`, cells: [String(s.tick), String(s.label)] })) }
+  }
+  if (plot.kind === 'range') {
+    return { head: ['', ''], rows: plot.rows.map((r, i) => ({ key: `${i}-${r.tick}`, cells: [String(r.tick), rangeReading(r)] })) }
+  }
+  return { head: ['', ''], rows: plot.bars.map((b, i) => ({ key: `${i}-${b.tick}`, cells: [String(b.tick), String(b.label)] })) }
+}
+
 export function V3Chart({
   caption,
   series,
@@ -547,6 +583,7 @@ export function V3Chart({
     callouts,
   })
   const placedCallouts = plot ? placeCallouts(plot, series, callouts) : []
+  const table = plot ? v3ChartTable(plot) : { head: [] as string[], rows: [] as { key: string; cells: string[] }[] }
   const captionId = id ? `${id}-caption` : undefined
   const yoy = overlay === 'yoy'
   const lineCount = plot && plot.kind === 'line' ? plot.lines.length : 0
@@ -1197,6 +1234,37 @@ export function V3Chart({
           <li key={row.key}>{row.text}</li>
         ))}
       </ol>
+      {table.rows.length > 0 ? (
+        <details className="v3-chart__numbers">
+          <summary className="v3-chart__numbers-summary">See the numbers</summary>
+          <div className="v3-chart__table-scroll">
+            <table className="v3-chart__table">
+              <caption className="v3-chart__table-caption">{caption}</caption>
+              {table.head.some((h) => h) ? (
+                <thead>
+                  <tr>
+                    {table.head.map((h, i) => (
+                      <th key={i} scope="col">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+              ) : null}
+              <tbody>
+                {table.rows.map((row) => (
+                  <tr key={row.key}>
+                    <th scope="row">{row.cells[0]}</th>
+                    {row.cells.slice(1).map((c, i) => (
+                      <td key={i}>{c}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </details>
+      ) : null}
     </figure>
   )
 }

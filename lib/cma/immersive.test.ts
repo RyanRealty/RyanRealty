@@ -53,9 +53,9 @@ describe('renderImmersiveCmaHtml', () => {
     expect(html).toMatch(/class="[^"]*ans-n[^"]*"[^>]*>\$609,000</)
     expect(html).not.toMatch(/class="ans-n[^"]*"[^>]*data-count/)
     expect(html).not.toMatch(/pin numbers match the map/i)
-    // Hero Low/High are valueLow/valueHigh, not conservative/highEnd.
-    expect(html).toContain('$620,000')
-    expect(html).toContain('$635,000')
+    // Hero Low/High are the adjusted sale still in the table, not a rounded band past it.
+    expect(html).toContain('$619,675')
+    expect(html).not.toContain('$635,000')
     expect(html).toContain('$619,999')
     expect(html).toContain('Prepared for the owners of 20513 Byron by Matt Ryan, Ryan Realty')
     expect(html).not.toContain('Prepared for Eric Demello')
@@ -79,14 +79,19 @@ describe('renderImmersiveCmaHtml', () => {
     expect(html).not.toContain('$609,000.')
   })
 
-  it('the failed-listing scene renders with the backtest constants', () => {
+  it('the failed-listing scene does not print the regional relist tiles', () => {
     const html = renderImmersiveCmaHtml(
-      args({ expiredAudit: { findings: [{ lens: 'pricing', fact: 'Asked above every sale.', meaning: 'The ask was the ceiling.' }], services: [], netSheet: { lines: [], netLow: 0, netHigh: 0 }, feeLine: '' } as never }),
+      args({ expiredAudit: { findings: [{ lens: 'pricing', fact: 'Asked above every sale.', meaning: 'The ask was the ceiling.' }], services: [] } as never }),
       'https://ryan-realty.com',
     )
     expect(html).toContain('and did not sell.')
-    expect(html).toContain('3,394')
-    expect(html).toContain('94.2%')
+    const start = html.indexOf('id="what-happened"')
+    expect(start).toBeGreaterThan(-1)
+    const end = html.indexOf('<section', start + 1)
+    const scene = html.slice(start, end > 0 ? end : undefined)
+    expect(scene).not.toContain('3,394')
+    expect(scene).not.toContain('94.2%')
+    expect(scene).not.toContain('12.3%')
   })
 
   it('gives the subdivision no scene of its own', () => {

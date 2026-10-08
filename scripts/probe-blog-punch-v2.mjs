@@ -6,7 +6,7 @@
  *   BASE_URL=https://ryan-realty.com PREFIX=before_ node scripts/probe-blog-punch-v2.mjs
  */
 import { mkdirSync, writeFileSync } from 'node:fs'
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { CI_PROBE_HEADERS } from './lib/ci-probe-ua.mjs'
 
 const BASE = (process.env.BASE_URL || 'https://ryan-realty.com').replace(/\/$/, '')
@@ -30,7 +30,7 @@ function textish(html) {
 }
 
 async function dismissChrome(page) {
-  for (const label of ['Not now', 'Essential only', 'Accept all']) {
+  for (const label of ['Not now', 'Essential only']) {
     const btn = page.getByRole('button', { name: new RegExp(`^${label}$`, 'i') }).first()
     if (await btn.isVisible().catch(() => false)) {
       await btn.click({ timeout: 2000 }).catch(() => {})

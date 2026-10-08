@@ -35,16 +35,17 @@
  */
 import { supabaseAnon } from '@/lib/data/client'
 import { PUBLIC_ACTIVE_STATUSES } from '@/lib/listing-status-public'
-import { isServiceAreaCity } from '@/lib/data/listings/service-area'
 import {
+  applyRecrawlLastmod,
   assembleListingSitemapRows,
+  type ListingRecrawlFlag,
   type ListingSitemapRow,
   type ListingSitemapTile,
 } from '@/lib/data/sitemap/listing-sitemap-path'
 
 const PAGE_SIZE = 1000
 const SELECT_COLS =
-  'listing_key, list_number, street_number, street_name, city, subdivision_name, boundary_city, boundary_neighborhood, modified_at'
+  'listing_key, list_number, street_number, street_name, city, subdivision_name, boundary_city, boundary_neighborhood, modified_at, photo_url'
 
 // Exponential backoff with jitter. A statement-timeout is a contention
 // signal, not a fluke: retrying instantly (the old flat 150ms backoff) just
@@ -163,38 +164,77 @@ async function fetchActiveListingTiles(): Promise<ListingSitemapTile[]> {
   return rows
 }
 
-/**
- * SITE-33 (Matt 2026-09-08). A noindexed URL does not belong in a sitemap.
- *
- * The listing detail page for a home outside the Central Oregon service area
- * now renders "noindex, follow" and carries an honesty block
- * (lib/data/listings/service-area.ts, `outOfAreaListingPolicy`). Submitting
- * those URLs asks Google to crawl pages we have told it not to index. Measured
- * live 2026-09-08 against https://ryan-realty.com/sitemaps/listings.xml: 4,190
- * of 7,506 listing URLs (56%) were out-of-area — Medford 730, Klamath Falls
- * 635, Grants Pass 541, Ashland 275, Chiloquin 184, Eagle Point 165, Central
- * Point 149.
- *
- * THE FILTER IS IN JS, NOT IN THE QUERY, ON PURPOSE. The MV read above is
- * pinned by ci:sitemap-listings-honest to a shape measured against production
- * (count + ORDER BY listing_key + keyset pages, 2026-09-16); adding an
- * `.in('city_lower', …)` predicate beside that ORDER BY changes the plan on a
- * 589K-row MV under a build deadline. Verified this session: a `city_lower`
- * equality filter with `.order('listing_key')` on this MV hit the statement
- * timeout, while the same filter without the order returned instantly. The rows
- * are already fetched and already carry `city`; dropping them here costs
- * nothing and cannot regress the read.
- *
- * This is the SAME predicate the page's robots directive uses, so a URL cannot
- * be in the sitemap and noindexed at the same time.
+/*
+ * NO GEOGRAPHY FILTER HERE (Matt 2026-10-05, "Undo it"). SITE-33 (2026-09-09)
+ * dropped out-of-area rows (Medford, Klamath Falls, Grants Pass, ...) from this
+ * sitemap and noindexed their pages, taking listings.xml from 7,501 to 3,312
+ * URLs. Search Console then showed that noindex cost about 36% of the
+ * impression drop since Sep 12 (~2,500 impressions and ~30 clicks a week), so
+ * Matt reverted it: every Active/AUC listing with an assembled path ships,
+ * whatever its city. The page keeps its honesty block and is index, follow.
+ * Held by ci:listing-offmarket-index (no `noindex` in the listing
+ * generateMetadata, no service-area filter in this read).
  */
-export function serviceAreaSitemapTiles(
-  tiles: readonly ListingSitemapTile[],
-): ListingSitemapTile[] {
-  return tiles.filter((tile) => isServiceAreaCity(tile.city))
+
+/**
+ * Listing keys whose photos a broker has suppressed (admin listing editor).
+ * listing_tile_mv does not carry the flag, so the sitemap reads it here and
+ * withholds those photos from `<image:image>`. A tiny set (one row on
+ * 2026-10-04). A failed read withholds EVERY image rather than risk listing a
+ * suppressed one; the page URLs still ship.
+ */
+async function fetchMediaSuppressedKeys(): Promise<ReadonlySet<string> | null> {
+  const supabase = supabaseAnon()
+  if (!supabase) return null
+  const { data, error } = await withRetry(() =>
+    // Narrowed to the sitemap's own statuses: media_suppressed has no index,
+    // and the bare flag filter over all of `listings` hit the statement
+    // timeout (2026-10-04). With the status filter it returned in 573ms.
+    supabase
+      .from('listings')
+      .select('ListingKey')
+      .in('StandardStatus', PUBLIC_ACTIVE_STATUSES)
+      .eq('media_suppressed', true)
+      .limit(1000),
+    2,
+  )
+  if (error) {
+    console.error(`[getListingSitemapRows] media_suppressed read failed, omitting images: ${errorMessage(error)}`)
+    return null
+  }
+  return new Set(((data ?? []) as Array<{ ListingKey: string | null }>).map((r) => String(r.ListingKey ?? '').trim()))
+}
+
+/**
+ * GSC slide fix (2026-10-05). Listing URLs Google still holds as "Excluded by
+ * 'noindex' tag" or under another listing's canonical, recorded by
+ * scripts/gsc-listing-noindex-sweep.mjs. A small table (one row per flagged
+ * URL, deleted when a re-inspection finds it healthy). A failed read bumps
+ * nothing and never fails the sitemap.
+ */
+async function fetchRecrawlFlags(): Promise<ListingRecrawlFlag[]> {
+  const supabase = supabaseAnon()
+  if (!supabase) return []
+  const { data, error } = await withRetry(
+    // One page is enough: at most one row per sitemap listing URL that Google
+    // holds badly (12 of a random 150 on 2026-10-05).
+    () => supabase.from('gsc_listing_index_flags').select('url, listing_number, recrawl_after').limit(1000),
+    2,
+  )
+  if (error) {
+    console.error(`[getListingSitemapRows] gsc_listing_index_flags read failed, no lastmod bump: ${errorMessage(error)}`)
+    return []
+  }
+  return (data ?? []) as ListingRecrawlFlag[]
 }
 
 export async function getListingSitemapRows(now: Date = new Date()): Promise<ListingSitemapRow[]> {
-  const tiles = await fetchActiveListingTiles()
-  return assembleListingSitemapRows(serviceAreaSitemapTiles(tiles), now)
+  const [tiles, suppressed, flags] = await Promise.all([
+    fetchActiveListingTiles(),
+    fetchMediaSuppressedKeys(),
+    fetchRecrawlFlags(),
+  ])
+  const assembled = assembleListingSitemapRows(tiles, now, suppressed ?? new Set())
+  const rows = applyRecrawlLastmod(assembled, flags, now)
+  return suppressed ? rows : rows.map((r) => ({ ...r, imageUrl: null }))
 }

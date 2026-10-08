@@ -19,6 +19,7 @@
  */
 
 import { formatPriceExact } from '@/lib/format/money'
+import { printedBaths } from '@/lib/pricing/bath-count'
 import { formatDate } from '@/lib/format/date'
 import type { CmaSiteData } from '@/lib/cma/county'
 import type { DevelopmentOpportunities } from '@/lib/cma/development'
@@ -49,8 +50,15 @@ const esc = escapeHtml
 
 export const usd = formatPriceExact
 
+/**
+ * A signed dollar move, to the dollar. A move that rounds to nothing prints
+ * "$0" like every other zero in its row: 2258 6th's date move of +$0.21
+ * printed "+$0" beside four columns of "$0" (reader review, 915 Saginaw,
+ * 2026-10-08), a sign on a figure with nothing to sign.
+ */
 export function usdSigned(n: number): string {
-  if (n === 0) return '$0'
+  if (!Number.isFinite(n)) return usd(n)
+  if (Math.round(Math.abs(n)) === 0) return '$0'
   const abs = usd(Math.abs(n))
   return n > 0 ? `+${abs}` : `−${abs}`
 }
@@ -466,10 +474,15 @@ export function propertyDescription(subject: {
   postalCode: string | null
   beds: number | null
   baths: number | null
+  bathsFull?: number | null
+  bathsHalf?: number | null
   sqft: number | null
   lotAcres: number | null
   yearBuilt: number | null
 }): string {
+  // The MLS's own reading: 2 full baths and a powder room prints 2.5, not the
+  // 3 BathroomsTotal records (lib/pricing/bath-count.ts).
+  const baths = printedBaths(subject)
   const head = [
     escapeHtml(subject.streetAddress),
     escapeHtml(subject.city),
@@ -480,9 +493,7 @@ export function propertyDescription(subject: {
   const facts = [
     // "1 bathrooms" shipped on the disclosure page of a real document.
     subject.beds != null ? `${int(subject.beds)} bedroom${subject.beds === 1 ? '' : 's'}` : null,
-    subject.baths != null
-      ? `${dec(subject.baths, subject.baths % 1 !== 0 ? 1 : 0)} bathroom${subject.baths === 1 ? '' : 's'}`
-      : null,
+    baths != null ? `${dec(baths, baths % 1 !== 0 ? 1 : 0)} bathroom${baths === 1 ? '' : 's'}` : null,
     subject.sqft != null ? `${int(subject.sqft)} sqft` : null,
     subject.lotAcres != null ? `${dec(subject.lotAcres, 2)} acres` : null,
     subject.yearBuilt != null ? `built ${subject.yearBuilt}` : null,

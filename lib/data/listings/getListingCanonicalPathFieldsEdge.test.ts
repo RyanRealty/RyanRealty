@@ -105,6 +105,26 @@ describe('getListingCanonicalPathFieldsEdge', () => {
     expect((await getListingCanonicalPathFieldsEdge('220000005', { supabaseUrl: '', anonKey: '', fetchImpl: jsonFetch([]) })).kind).toBe('error')
   })
 
+  it('marks the database not answering as transient, and a configuration fault as not (2026-10-05)', async () => {
+    const transient = async (id: string, opts: Parameters<typeof getListingCanonicalPathFieldsEdge>[1]) => {
+      const r = await getListingCanonicalPathFieldsEdge(id, opts)
+      return r.kind === 'error' ? r.transient : null
+    }
+    for (const [i, status] of [500, 502, 503, 504, 408, 429].entries()) {
+      expect(await transient(`22100000${i}`, { ...ENV, fetchImpl: jsonFetch({ message: 'x' }, status) }), String(status)).toBe(true)
+    }
+    for (const [i, status] of [400, 401, 403, 404].entries()) {
+      expect(await transient(`22200000${i}`, { ...ENV, fetchImpl: jsonFetch({ message: 'x' }, status) }), String(status)).toBe(false)
+    }
+    const thrower = vi.fn(async () => {
+      throw new TypeError('fetch failed')
+    })
+    expect(await transient('223000001', { ...ENV, fetchImpl: thrower })).toBe(true)
+    const html = vi.fn(async () => new Response('<html>Bad gateway</html>', { status: 200 }))
+    expect(await transient('223000002', { ...ENV, fetchImpl: html })).toBe(true)
+    expect(await transient('223000003', { supabaseUrl: '', anonKey: '', fetchImpl: jsonFetch([]) })).toBe(false)
+  })
+
   it('memoises hits for 5 minutes and misses for 1, never errors, and shares one in-flight read', async () => {
     let clock = 1_000_000
     const now = () => clock

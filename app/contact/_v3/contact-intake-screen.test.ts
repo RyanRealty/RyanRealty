@@ -15,6 +15,7 @@ const h = vi.hoisted(() => ({
   sendContactConfirmation: vi.fn(),
   stitchFormSubmitIdentity: vi.fn(),
   fireLeadGenerated: vi.fn(),
+  fireNonLeadEvent: vi.fn(),
   recordJoinConversion: vi.fn(),
   tagRecruitJoin: vi.fn(),
   fetch: vi.fn(),
@@ -32,7 +33,10 @@ vi.mock('@/lib/resend', () => ({ sendContactNotification: (...a: unknown[]) => h
 vi.mock('@/lib/canonical-lead-tagger', () => ({ canonicallyTagLead: (...a: unknown[]) => h.canonicallyTagLead(...a) }))
 vi.mock('@/lib/referral-geo', () => ({ classifyPropertyGeo: () => 'local', referralIntakeTags: () => [] }))
 vi.mock('@/lib/visitor-backfill', () => ({ stitchFormSubmitIdentity: (...a: unknown[]) => h.stitchFormSubmitIdentity(...a) }))
-vi.mock('@/lib/lead-tracking', () => ({ fireLeadGenerated: (...a: unknown[]) => h.fireLeadGenerated(...a) }))
+vi.mock('@/lib/lead-tracking', () => ({
+  fireLeadGenerated: (...a: unknown[]) => h.fireLeadGenerated(...a),
+  fireNonLeadEvent: (...a: unknown[]) => h.fireNonLeadEvent(...a),
+}))
 vi.mock('@/lib/crm/enroll', () => ({ autoEnrollByPersonId: (...a: unknown[]) => h.autoEnrollByPersonId(...a) }))
 vi.mock('@/lib/comms/site-confirmations', () => ({
   sendContactConfirmation: (...a: unknown[]) => h.sendContactConfirmation(...a),
@@ -69,6 +73,7 @@ beforeEach(() => {
     h.sendContactConfirmation,
     h.stitchFormSubmitIdentity,
     h.fireLeadGenerated,
+    h.fireNonLeadEvent,
     h.recordJoinConversion,
     h.tagRecruitJoin,
     h.fetch,
@@ -93,11 +98,21 @@ describe('contact form intake', () => {
     expect(h.autoEnrollByPersonId).toHaveBeenCalledWith(77, { smsConsent: false })
     expect(h.sendContactConfirmation).toHaveBeenCalledTimes(1)
     expect(h.fireLeadGenerated).toHaveBeenCalledTimes(1)
+    expect(h.fireLeadGenerated.mock.calls[0][0]).toMatchObject({ form_id: 'contact' })
+    expect(h.fireNonLeadEvent).not.toHaveBeenCalled()
   })
 
   it("a join inquiry's door is 'join'", async () => {
     await submitContactForm(form({ ...PERSON, inquiryType: 'Join the team' }))
     expect(h.sendEvent.mock.calls[0][0]).toMatchObject({ source: 'join' })
+  })
+
+  it('a join inquiry is recruit_inquiry in GA4, never generate_lead (Matt 2026-10-08)', async () => {
+    await submitContactForm(form({ ...PERSON, inquiryType: 'Join the team' }))
+    await drainAfter()
+    expect(h.fireLeadGenerated).not.toHaveBeenCalled()
+    expect(h.fireNonLeadEvent).toHaveBeenCalledTimes(1)
+    expect(h.fireNonLeadEvent.mock.calls[0][0]).toMatchObject({ event_name: 'recruit_inquiry', form_id: 'contact' })
   })
 
   it('passes a filled trap to the screen', async () => {

@@ -1,13 +1,15 @@
 'use server'
 
+import { siteHost, siteOrigin } from '@/lib/site-origin'
 import { sendEvent, type LeadEventPerson } from '@/lib/crm/send-event'
 import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
 import { cookies } from 'next/headers'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
+import { visitorCapiConsent } from '@/lib/meta-capi-visitor'
 import { canonicallyTagLead, type LeadSource } from '@/lib/canonical-lead-tagger'
-import { fireLeadGenerated } from '@/lib/lead-tracking'
+import { fireLeadGenerated, fireNonLeadEvent } from '@/lib/lead-tracking'
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const SITE_URL = siteOrigin()
 
 async function fireCapiLead(args: {
   eventName: 'Lead' | 'ViewContent'
@@ -21,6 +23,8 @@ async function fireCapiLead(args: {
 }): Promise<string | null> {
   const eventId = generateEventId()
   try {
+    const sharing = await visitorCapiConsent()
+    if (!sharing.allowed) return eventId
     await fetch(`${SITE_URL}/api/meta-capi`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -32,6 +36,8 @@ async function fireCapiLead(args: {
         lastName: args.lastName ?? undefined,
         eventId,
         eventSourceUrl: args.eventSourceUrl,
+        consentCookie: sharing.consentCookie,
+        secGpc: sharing.secGpc,
         customData: {
           content_name: args.contentName,
           value: args.value,
@@ -54,11 +60,9 @@ type CampaignInput = {
   content?: string
 }
 
+/** The site's own host as the lead source: 'ryan-realty.com' in production, never the Vercel alias. */
 function websiteSource(): string {
-  return (process.env.NEXT_PUBLIC_SITE_URL ?? '')
-    .replace(/^https?:\/\//, '')
-    .replace(/\/$/, '')
-    .toLowerCase() || 'ryan-realty.com'
+  return siteHost()
 }
 
 /**
@@ -159,16 +163,27 @@ export async function submitPageCTA(input: {
 
     await stitchCapturedLead(result.ok ? result.personId : null, email)
 
-    // GA4 Measurement Protocol mirror.
-    await fireLeadGenerated({
-      lp_variant: `page-cta-${input.leadType ?? 'general'}${input.area ? `-${input.area}` : ''}`,
-      lead_type: input.leadType === 'seller' ? 'seller' : input.leadType === 'buyer' ? 'buyer' : 'page_cta',
-      value,
-      extra: {
-        area: input.area,
-        context: input.context,
-      },
-    })
+    // GA4 Measurement Protocol mirror. A newsletter signup is not a lead
+    // (lib/analytics/lead-event.ts): its own event, never generate_lead.
+    const pageCtaVariant = `page-cta-${input.leadType ?? 'general'}${input.area ? `-${input.area}` : ''}`
+    if (input.leadType === 'newsletter') {
+      await fireNonLeadEvent({
+        event_name: 'newsletter_signup',
+        form_id: 'page_cta',
+        lp_variant: pageCtaVariant,
+        extra: { area: input.area, context: input.context },
+      })
+    } else {
+      await fireLeadGenerated({
+        lp_variant: pageCtaVariant,
+        lead_type: input.leadType === 'seller' ? 'seller_listing' : input.leadType === 'buyer' ? 'buyer_question' : 'contact_general',
+        form_id: 'page_cta',
+        extra: {
+          area: input.area,
+          context: input.context,
+        },
+      })
+    }
 
     return { error: null }
   } catch (err) {
@@ -277,8 +292,8 @@ export async function submitRentalLead(input: {
 
     await fireLeadGenerated({
       lp_variant: 'rental-calculator',
-      lead_type: 'buyer',
-      value: 300,
+      lead_type: 'buyer_question',
+      form_id: 'rental_calculator',
       extra: { listing_key: input.listingKey, property: input.propertyLabel },
     })
 
@@ -410,8 +425,8 @@ export async function submitTetherowLead(input: {
 
     await fireLeadGenerated({
       lp_variant: 'tetherow-landing-v1',
-      lead_type: isSeller ? 'seller' : 'buyer',
-      value,
+      lead_type: isSeller ? 'seller_listing' : 'buyer_question',
+      form_id: 'tetherow_lp',
       extra: { resort: input.resort ?? 'tetherow', campaign: input.campaign, intent: input.intent },
     })
 

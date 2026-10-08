@@ -19,6 +19,7 @@ import type { CompJudgment } from '@/lib/cma/judge'
 import type { CmaAudit } from '@/lib/cma/audit'
 import type { CmaSiteData } from '@/lib/cma/county'
 import type { BpoListingHistory, BpoOpinion } from '@/lib/bpo/types'
+import type { RoomGroundLocation } from '@/lib/pricing/room-ground'
 
 export function evaluateBpoAccuracyContract(args: {
   comps: CmaAdjustedComp[]
@@ -32,6 +33,16 @@ export function evaluateBpoAccuracyContract(args: {
    *  check fails closed without it (Matt 2026-09-08: apples to apples only),
    *  so the BPO build forwards it exactly as the CMA build does. */
   subjectSubType?: string | null
+  /** The subject's room counts, MLS bath split and recorded plat, forwarded
+   *  as the CMA build forwards them, so the room gate reads the picker's own
+   *  inputs (rule 4) instead of skipping for want of them. */
+  subjectBaths?: number | null
+  subjectBathsFull?: number | null
+  subjectBathsHalf?: number | null
+  subjectBeds?: number | null
+  subjectSubdivisionSlug?: string | null
+  /** Where the subject sits, so an unstamped sale is graded on the picker's own ground. */
+  subjectGround?: RoomGroundLocation | null
   minComps: number
   marketContextPresent: boolean
 }): AccuracyContract {

@@ -2,7 +2,7 @@
  * Live UI/UX audit — https://ryan-realty.com
  * Usage: node scripts/_uiux-live-audit-2026-08-06.mjs
  */
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { mkdirSync, writeFileSync } from 'node:fs'
 
 const BASE = 'https://ryan-realty.com'
@@ -38,7 +38,7 @@ function add(f) {
 }
 
 async function dismissOverlays(page) {
-  for (const label of ['Maybe later', 'Essential only', 'Decline', 'Reject all', 'Accept All', 'Accept all', 'Got it', 'Close']) {
+  for (const label of ['Maybe later', 'Essential only', 'Decline', 'Reject all', 'Got it', 'Close']) {
     try {
       const btn = page.getByRole('button', { name: label }).first()
       if (await btn.isVisible({ timeout: 300 })) await btn.click({ timeout: 800 })

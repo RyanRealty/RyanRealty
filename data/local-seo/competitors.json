@@ -1,0 +1,416 @@
+{
+  "fetched_at": "2026-10-04T09:11:27+00:00",
+  "source": "Google Places API searchText, location bias 20km around Bend (44.0582,-121.3153); a proxy for the map pack, not identical to it",
+  "queries": {
+    "real estate agency bend": [
+      {
+        "position": 1,
+        "name": "Bend Premier Real Estate",
+        "rating": 4.9,
+        "reviews": 78,
+        "type": "Real Estate Agency",
+        "place_id": "ChIJobIq5SfGuFQR9-Bu5MSEzZg"
+      },
+      {
+        "position": 2,
+        "name": "Brook Gardner Real Estate Broker",
+        "rating": 5,
+        "reviews": 138,
+        "type": "Services",
+        "place_id": "ChIJVVWV7SfGuFQR2nqq6Byjmfs"
+      },
+      {
+        "position": 3,
+        "name": "High Desert Realty",
+        "rating": 5,
+        "reviews": 484,
+        "type": "Real Estate Agency",
+        "place_id": "ChIJ08XOliDGuFQR6O9Sw8C6EGI"
+      },
+      {
+        "position": 4,
+        "name": "Mr Bend Oregon - Real Estate",
+        "rating": 5,
+        "reviews": 88,
+        "type": "Services",
+        "place_id": "ChIJS9DdW5PHuFQR5LEXKEl1b5U"
+      },
+      {
+        "position": 5,
+        "name": "Varsity Real Estate",
+        "rating": 5,
+        "reviews": 130,
+        "type": "Real Estate Agency",
+        "place_id": "ChIJaTZ9yjPGuFQROrCQ-F3bbOQ"
+      },
+      {
+        "position": 6,
+        "name": "Ladd Group at Cascade Hasson Sotheby's Realty",
+        "rating": 5,
+        "reviews": 272,
+        "type": "Real Estate Agency",
+        "place_id": "ChIJSf0uZzPGuFQRWrAePpmApz0"
+      },
+      {
+        "position": 7,
+        "name": "Haley Ann Overton",
+        "rating": 5,
+        "reviews": 63,
+        "type": "Real Estate Agency",
+        "place_id": "ChIJC4S7yNXHuFQR3xWOuqE8KN8"
+      },
+      {
+        "position": 8,
+        "name": "Ryan Hoover/ Broker at Bend Premier Real Estate",
+        "rating": 5,
+        "reviews": 13,
+        "type": "Real Estate Agency",
+        "place_id": "ChIJ8REyfIfHuFQRRbIc5TxAk0w"
+      },
+      {
+        "position": 9,
+        "name": "Bend Brokers Realty",
+        "rating": 4.9,
+        "reviews": 68,
+        "type": "Real Estate Agency",
+        "place_id": "ChIJ0edYaPbGuFQRqAq1sSYpcds"
+      },
+      {
+        "position": 10,
+        "name": "Stellar Realty Northwest",
+        "rating": 4.7,
+        "reviews": 26,
+        "type": "Real Estate Agency",
+        "place_id": "ChIJQVPXDZ3IuFQRCTYOMLlRo0M"
+      }
+    ],
+    "real estate agent bend oregon": [
+      {
+        "position": 1,
+        "name": "Brook Gardner Real Estate Broker",
+        "rating": 5,
+        "reviews": 138,
+        "type": "Services",
+        "place_id": "ChIJVVWV7SfGuFQR2nqq6Byjmfs"
+      },
+      {
+        "position": 2,
+        "name": "High Desert Realty",
+        "rating": 5,
+        "reviews": 484,
+        "type": "Real Estate Agency",
+        "place_id": "ChIJ08XOliDGuFQR6O9Sw8C6EGI"
+      },
+      {
+        "position": 3,
+        "name": "Central Oregon Property Hunter / Kenny Roberts / Bend OR Area Real Estate Agent",
+        "rating": 5,
+        "reviews": 64,
+        "type": "Services",
+        "place_id": "ChIJg_ik5c7JuFQRXo9FhvhqoZI"
+      },
+      {
+        "position": 4,
+        "name": "Haley Ann Overton",
+        "rating": 5,
+        "reviews": 63,
+        "type": "Real Estate Agency",
+        "place_id": "ChIJC4S7yNXHuFQR3xWOuqE8KN8"
+      },
+      {
+        "position": 5,
+        "name": "Mr Bend Oregon - Real Estate",
+        "rating": 5,
+        "reviews": 88,
+        "type": "Services",
+        "place_id": "ChIJS9DdW5PHuFQR5LEXKEl1b5U"
+      },
+      {
+        "position": 6,
+        "name": "Taylor Dyer Real Estate, LLC",
+        "rating": 5,
+        "reviews": 86,
+        "type": "Services",
+        "place_id": "ChIJn5pVsxzHuFQRpMJ4oMdaTkg"
+      },
+      {
+        "position": 7,
+        "name": "Bend Premier Real Estate",
+        "rating": 4.9,
+        "reviews": 78,
+        "type": "Real Estate Agency",
+        "place_id": "ChIJobIq5SfGuFQR9-Bu5MSEzZg"
+      },
+      {
+        "position": 8,
+        "name": "Erika Ruegamer - Cascade Hasson SIR",
+        "rating": 5,
+        "reviews": 31,
+        "type": "Services",
+        "place_id": "ChIJ4bW3xMUrv1QRNaHOUqgcpGU"
+      },
+      {
+        "position": 9,
+        "name": "Central Oregon Living",
+        "rating": 5,
+        "reviews": 104,
+        "type": "Services",
+        "place_id": "ChIJz0navNPHuFQRG6MN-TCf9sI"
+      },
+      {
+        "position": 10,
+        "name": "Tiffany Clark | Bend Real Estate Agent",
+        "rating": 5,
+        "reviews": 33,
+        "type": "Services",
+        "place_id": "ChIJn5iwOpPHuFQRa0S6ZLRWvFQ"
+      }
+    ],
+    "real estate agent sisters oregon": [
+      {
+        "position": 1,
+        "name": "The Arends Realty Group",
+        "rating": 5,
+        "reviews": 45,
+        "type": "Real Estate Agency",
+        "place_id": "ChIJkR2CDCExv1QRRCAkg3lTO7g"
+      },
+      {
+        "position": 2,
+        "name": "Central Oregon Realty Group - Sisters Oregon Real Estate",
+        "rating": 5,
+        "reviews": 26,
+        "type": "Services",
+        "place_id": "ChIJx6XkQHpShScRppL7yGXFOeE"
+      },
+      {
+        "position": 3,
+        "name": "Avenir Realty | Suzanne Carvlin and Maddie Fischer",
+        "rating": 5,
+        "reviews": 25,
+        "type": "Services",
+        "place_id": "ChIJw350y6Qxv1QRAl8Xsybjb-4"
+      },
+      {
+        "position": 4,
+        "name": "Next Phase Realty",
+        "rating": 5,
+        "reviews": 15,
+        "type": "Services",
+        "place_id": "ChIJxyFcbSMrv1QRkCXfQbWlsrg"
+      },
+      {
+        "position": 5,
+        "name": "Ross Kennedy, REALTOR | Stellar Realty NW",
+        "rating": 4.9,
+        "reviews": 17,
+        "type": "Services",
+        "place_id": "ChIJAQBkN7Uwv1QR5hl33ogCxWg"
+      },
+      {
+        "position": 6,
+        "name": "Ponderosa Properties, LLC",
+        "rating": 4.5,
+        "reviews": 15,
+        "type": "Real Estate Agency",
+        "place_id": "ChIJM-rfx0o3v1QRxPHT-8m8zlk"
+      },
+      {
+        "position": 7,
+        "name": "Cascade Hasson Sotheby's International Realty",
+        "rating": 4.2,
+        "reviews": 5,
+        "type": "Real Estate Agency",
+        "place_id": "ChIJZdmdZLUwv1QRteyZqB-YOK4"
+      },
+      {
+        "position": 8,
+        "name": "Kizziar Property Co",
+        "rating": 5,
+        "reviews": 1,
+        "type": "Real Estate Agency",
+        "place_id": "ChIJq6qaWbUwv1QRyBOb88utJXo"
+      },
+      {
+        "position": 9,
+        "name": "Black Butte Realty Group",
+        "rating": 2.9,
+        "reviews": 12,
+        "type": "Real Estate Agency",
+        "place_id": "ChIJKZ7nD6A-v1QRJ9QLE3MFoCQ"
+      },
+      {
+        "position": 10,
+        "name": "Legacy Realty LLC",
+        "rating": 5,
+        "reviews": 1,
+        "type": "Real Estate Agency",
+        "place_id": "ChIJWZB7x8owv1QRqyItyrT6UaQ"
+      }
+    ],
+    "realtor bend oregon": [
+      {
+        "position": 1,
+        "name": "Bend Premier Real Estate",
+        "rating": 4.9,
+        "reviews": 78,
+        "type": "Real Estate Agency",
+        "place_id": "ChIJobIq5SfGuFQR9-Bu5MSEzZg"
+      },
+      {
+        "position": 2,
+        "name": "High Desert Realty",
+        "rating": 5,
+        "reviews": 484,
+        "type": "Real Estate Agency",
+        "place_id": "ChIJ08XOliDGuFQR6O9Sw8C6EGI"
+      },
+      {
+        "position": 3,
+        "name": "Stellar Realty Northwest",
+        "rating": 4.7,
+        "reviews": 26,
+        "type": "Real Estate Agency",
+        "place_id": "ChIJQVPXDZ3IuFQRCTYOMLlRo0M"
+      },
+      {
+        "position": 4,
+        "name": "Mr Bend Oregon - Real Estate",
+        "rating": 5,
+        "reviews": 88,
+        "type": "Services",
+        "place_id": "ChIJS9DdW5PHuFQR5LEXKEl1b5U"
+      },
+      {
+        "position": 5,
+        "name": "Ladd Group at Cascade Hasson Sotheby's Realty",
+        "rating": 5,
+        "reviews": 272,
+        "type": "Real Estate Agency",
+        "place_id": "ChIJSf0uZzPGuFQRWrAePpmApz0"
+      },
+      {
+        "position": 6,
+        "name": "Varsity Real Estate",
+        "rating": 5,
+        "reviews": 130,
+        "type": "Real Estate Agency",
+        "place_id": "ChIJaTZ9yjPGuFQROrCQ-F3bbOQ"
+      },
+      {
+        "position": 7,
+        "name": "Haley Ann Overton",
+        "rating": 5,
+        "reviews": 63,
+        "type": "Real Estate Agency",
+        "place_id": "ChIJC4S7yNXHuFQR3xWOuqE8KN8"
+      },
+      {
+        "position": 8,
+        "name": "Brook Gardner Real Estate Broker",
+        "rating": 5,
+        "reviews": 138,
+        "type": "Services",
+        "place_id": "ChIJVVWV7SfGuFQR2nqq6Byjmfs"
+      },
+      {
+        "position": 9,
+        "name": "RE/MAX Key Properties Oregon",
+        "rating": 4,
+        "reviews": 29,
+        "type": "Real Estate Agency",
+        "place_id": "ChIJWaOw2yfGuFQR6umveNVcPSM"
+      },
+      {
+        "position": 10,
+        "name": "EXIT Realty Bend",
+        "rating": 4.8,
+        "reviews": 35,
+        "type": "Services",
+        "place_id": "ChIJtdQJIyDGuFQR0jdIKc0bKgw"
+      }
+    ],
+    "realtor redmond oregon": [
+      {
+        "position": 1,
+        "name": "Jeff Larkin Realty",
+        "rating": 5,
+        "reviews": 46,
+        "type": "Real Estate Agency",
+        "place_id": "ChIJF3_OGOgqv1QRSUSPHGBv9Tg"
+      },
+      {
+        "position": 2,
+        "name": "Relevant Real Estate",
+        "rating": 5,
+        "reviews": 68,
+        "type": "Real Estate Agency",
+        "place_id": "ChIJ2X_0DNmDVoARoulS09N6nPo"
+      },
+      {
+        "position": 3,
+        "name": "Keller Williams Realty Central Oregon",
+        "rating": 4.7,
+        "reviews": 11,
+        "type": "Real Estate Agency",
+        "place_id": "ChIJh7jvGyUrv1QR4-Ht1ibZKS4"
+      },
+      {
+        "position": 4,
+        "name": "High Desert Realty",
+        "rating": 5,
+        "reviews": 484,
+        "type": "Real Estate Agency",
+        "place_id": "ChIJ08XOliDGuFQR6O9Sw8C6EGI"
+      },
+      {
+        "position": 5,
+        "name": "Trout Realty, Inc.",
+        "rating": 4.6,
+        "reviews": 17,
+        "type": "Real Estate Agency",
+        "place_id": "ChIJ1z8cdigrv1QRSQN1aIzDRh0"
+      },
+      {
+        "position": 6,
+        "name": "CENTURY 21 North Homes Realty- Redmond Oregon",
+        "rating": 3.8,
+        "reviews": 11,
+        "type": "Real Estate Agency",
+        "place_id": "ChIJm4UyHszUuFQRRh4NHYMhrUI"
+      },
+      {
+        "position": 7,
+        "name": "Windermere Realty Trust",
+        "rating": 4.9,
+        "reviews": 37,
+        "type": "Real Estate Agency",
+        "place_id": "ChIJyZ6_jcwrv1QRJFqkAWTNqDk"
+      },
+      {
+        "position": 8,
+        "name": "Tim Davis Group Central Oregon Realty",
+        "rating": 4.7,
+        "reviews": 29,
+        "type": "Real Estate Agency",
+        "place_id": "ChIJA3TlMSYrv1QR41RWA2mYYBI"
+      },
+      {
+        "position": 9,
+        "name": "Coldwell Banker Mayfield Realty",
+        "rating": 5,
+        "reviews": 1,
+        "type": "Real Estate Agency",
+        "place_id": "ChIJvYxFuyUrv1QRz-2VB0DA2p8"
+      },
+      {
+        "position": 10,
+        "name": "Desert Sky Real Estate LLC",
+        "rating": 5,
+        "reviews": 3,
+        "type": "Real Estate Agency",
+        "place_id": "ChIJV-hm_mgrv1QR298fC6k9YBk"
+      }
+    ]
+  }
+}

@@ -17,6 +17,7 @@ import {
 } from '@/lib/place/publish-place-type-cards'
 import type { PlaceTypeKey } from '@/lib/place/place-type-style'
 import type { SchemaInput } from '@/lib/site/json-ld'
+import { fitTitle } from '@/lib/site/page-metadata'
 import { displaySubdivision, listingTileHref } from '@/lib/slug'
 
 export type PlaceTypePageSpec = {
@@ -322,7 +323,7 @@ export function placeTypeMetadataCopy(input: {
    */
   where?: string
 }): { title: string; description: string } {
-  const title = `${input.spec.h1Type} in ${input.placeName}, Oregon`
+  const title = fitTitle(`${input.spec.h1Type} in ${input.placeName}, Oregon`, `${input.spec.h1Type} in ${input.placeName}`)
   const noun =
     input.count === 1 ? input.spec.nounOne : input.spec.nounMany
   const where = input.where?.trim() || `in ${input.placeName}, Oregon`

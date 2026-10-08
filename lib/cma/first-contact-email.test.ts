@@ -18,22 +18,20 @@ const NATE_PLACE: FirstContactPlace = {
 
 const NATE_PLAIN = `Hi there,
 
-My name is Matt Ryan, owner and principal broker of Ryan Realty in Bend. We keep tabs on the MLS and noticed your home at 62017 Nate's came off the market recently without selling. We're sorry it didn't sell, and we would like the opportunity to earn your business should you decide to relist.
+My name is Matt Ryan, and I own Ryan Realty here in Bend. We're a local brokerage, and careful market analysis is at the core of how we price homes. Your home at 62017 Nate's came off the market recently, so we put together an analysis we thought might be useful.
 
-We researched your property and the comparable sales to see what we would do to get a better result. We found four sales of homes like yours in Clarendon Place, and they support $346,000 to $372,000. The last listing asked $405,000, about 9% above what those sales support. That gap is usually the whole story, and it says nothing bad about the house. We would recommend listing at $358,000.
+The market has shifted this year. Price reductions are up, but the bigger change is seller concessions, where the seller pays money back to the buyer at closing for things like closing costs, repairs, or a lower interest rate. The recorded sale price stays the same, so values can look steadier than they are. A home that sells at full price with a 3% concession leaves the seller with 3% less than the record shows.
 
-In today's market, the price is everything. Priced too high, a home sits, and every week it sits weakens your position when an offer finally comes. Priced right, it draws real activity and often more than one offer, so pricing low is rarely the danger people think it is. That line is a fine one, and finding it takes brokers who know exactly what is happening around your home. We believe we are the most knowledgeable brokers in Central Oregon when it comes to market performance, and that is what went into this analysis.
+Our report accounts for that. It shows where your listing sat against the competition, what nearby homes actually sold for after concessions, the homes you'd be competing with today, and where we'd price it.
 
-The full report is attached as a PDF, and you can also read it online. It walks through each of those sales, the listings near you that did not sell and what happened to their prices, and who you would be competing with right now at that price. Every address in it links back to our site if you want to look closer.
+See the full market analysis
 
-Again, we are sorry your home did not sell. Nothing about that points to a problem with the house itself. Over the past few months the market has been shifting in a way that has been less favorable for sellers, and that has made it harder for good homes to sell at the prices they would have brought before. If you are ever considering selling in the future, we would love the opportunity to earn your business. You can see how we sell homes, read our reviews, and learn about our business.
+Please let me know if you have any questions about the numbers or how we put this together. If you consider selling in the future, we'd love the opportunity to earn your business, and we're here anytime.
 
-In Clarendon Place itself, six homes sold in the last twelve months, two are for sale right now, and three came off the market without selling. Our Clarendon Place page keeps the running picture, what is for sale there, what has sold, and what did not. The Bend page shows the wider market it sits in.
-
-Please let me know if you have any questions. Best of luck in the future.`
+If you've already chosen a broker for your next step, please consider this information only. We hope it goes well for you.`
 
 function linksOf(paragraphs: FirstContactRun[][]): Array<{ text: string; href: string }> {
-  return paragraphs.flat().flatMap((r) => (typeof r === 'string' ? [] : [{ text: r.text, href: r.href }]))
+  return paragraphs.flat().flatMap((r) => (typeof r === 'string' || !('href' in r) ? [] : [{ text: r.text, href: r.href }]))
 }
 
 describe('Nate first-contact letter (expired, 62017 Nate\'s)', () => {
@@ -61,15 +59,13 @@ describe('Nate first-contact letter (expired, 62017 Nate\'s)', () => {
     expect(copy.bodyText).not.toContain('Someone')
   })
 
-  it('links the short words to clean hrefs', () => {
-    expect(linksOf(copy.paragraphs)).toEqual([
-      { text: 'read it online', href: 'https://ryan-realty.com/cma/cma-62017-nate-s' },
-      { text: 'see how we sell homes', href: 'https://ryan-realty.com/sell' },
-      { text: 'read our reviews', href: 'https://ryan-realty.com/reviews' },
-      { text: 'learn about our business', href: 'https://ryan-realty.com/about' },
-      { text: 'Clarendon Place page', href: 'https://ryan-realty.com/subdivisions/clarendon-place' },
-      { text: 'Bend page', href: 'https://ryan-realty.com/cities/bend' },
-    ])
+  it('keeps the note free of links; the button carries the report', () => {
+    expect(linksOf(copy.paragraphs)).toEqual([])
+    expect(copy.previewText).toBe('What nearby homes sold for after concessions, and the homes you would be competing with.')
+    expect(copy.previewText).not.toMatch(/\$/)
+    expect(copy.previewText).not.toContain('$358,000')
+    expect(copy.bodyText).not.toContain('$358,000')
+    expect(copy.mastheadLine).toBe('MARKET ANALYSIS')
   })
 
   it('drops the online sentence when that constant is emptied, and does not invent a link', () => {

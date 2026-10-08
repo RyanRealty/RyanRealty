@@ -100,6 +100,21 @@ export function marketAreaBounds(areaId: string | null): LatLngBounds | null {
 }
 
 /**
+ * Bounding box of a recorded outline (a plat, or the union of several), the
+ * same superset trick as marketAreaBounds: the box never drops a row the
+ * outline holds, and the caller still makes the exact membership call.
+ */
+export function geometryBounds(
+  geometry: { type: 'Polygon'; coordinates: Ring[] } | { type: 'MultiPolygon'; coordinates: Ring[][] } | null | undefined,
+): LatLngBounds | null {
+  if (!geometry) return null
+  const b: LatLngBounds = { latMin: 90, latMax: -90, lngMin: 180, lngMax: -180 }
+  if (geometry.type === 'Polygon') for (const ring of geometry.coordinates) extendBounds(b, ring)
+  else for (const poly of geometry.coordinates) for (const ring of poly) extendBounds(b, ring)
+  return b.latMin > b.latMax ? null : b
+}
+
+/**
  * Bounding box covering a radius in miles around a point — the same
  * push-into-the-query trick for the distance-bounded fallback tiers, which
  * otherwise capped at 100 citywide rows before applying the mileage bound.
@@ -300,6 +315,19 @@ export function productClass(subType: string | null): ProductClass | null {
  */
 export type AttachedKind = 'townhouse' | 'condo' | 'tic' | 'other-attached'
 
+/**
+ * The noun a letter uses for this product. Detached stays unset so the
+ * existing single-family lines keep their wording. Townhouse and condo are
+ * named, because a single-family line on those letters is the wrong house.
+ */
+export function letterProductNoun(subType: string | null | undefined): 'townhouse' | 'condo' | null {
+  if (productClass(subType ?? null) !== 'attached') return null
+  const kind = attachedKind(subType!)
+  if (kind === 'townhouse') return 'townhouse'
+  if (kind === 'condo') return 'condo'
+  return null
+}
+
 export function attachedKind(subType: string): AttachedKind {
   const s = subType.toLowerCase()
   if (s.includes('town')) return 'townhouse'
@@ -324,6 +352,29 @@ export function keepSameProductType(subjectSubType: string | null, otherSubType:
   if (productClass(subjectSubType) != null) return productTypeCompatible(subjectSubType, otherSubType)
   const other = productClass(otherSubType)
   return other == null || other === 'detached'
+}
+
+/**
+ * The letter rule for sales, rivals, and expireds.
+ *
+ * Detached only against detached, townhouse only against townhouse, condo only
+ * against condo, and the same for lots, multifamily, and commercial.
+ * `keepSameProductType` on a known subject already does this, and the letter
+ * calls this function so a rival path cannot skip it. A blank other subtype
+ * is not treated as a different product. An unknown subject still drops a
+ * townhouse, condo, or other attached product.
+ */
+export function letterProductMatch(
+  subjectSubType: string | null | undefined,
+  otherSubType: string | null | undefined,
+): boolean {
+  const subject = subjectSubType ?? null
+  const other = otherSubType ?? null
+  // A known other product has to be the same product. A blank other subtype
+  // is not a townhouse or a condo, so it is not dropped here. The sales
+  // boundary still applies.
+  if (productClass(subject) != null && productClass(other) == null) return true
+  return keepSameProductType(subject, other)
 }
 
 /** D1: detached is this MLS value, not PropertyType A. */

@@ -10,8 +10,10 @@
  *     it the page is `/oregon/<slug>` — and 308s either shape used for the other
  *     kind of city.
  *  2. `middleware.ts` also runs `resolvePreRenderHop`, which consolidates a
- *     registry-community neighborhood slug onto `/communities/<slug>` and a
- *     marketing-area subdivision slug onto its real page.
+ *     registry-community neighborhood slug onto `/communities/<slug>`, a
+ *     self-city community's own `/cities/<slug>` (Sunriver, Black Butte Ranch)
+ *     onto its community page, and a marketing-area subdivision slug onto its
+ *     real page.
  *  3. `next.config.ts` hops individual city slugs on top of both.
  *
  * So `/cities/${slug}` written inline is right for Bend and costs a round trip
@@ -73,10 +75,11 @@ export function cityHref(citySlug: string | null | undefined): string | null {
   if (!slug) return null
   const override = CITY_HREF_OVERRIDES[slug]
   if (override) return override
-  // No pre-render hop covers a single-segment city path, so this is the end of
-  // the chain. The test asserts that with resolvePreRenderHop.
+  // A self-city community's /cities/<slug> 301s to /communities/<slug>
+  // (pre-render hop 'self-city-community', Matt 2026-10-04), so settle the
+  // path through the hops: the door lands on the community page in one request.
   const encoded = encodeURIComponent(slug)
-  return CENTRAL_OREGON_CITY_SLUGS.has(slug) ? `/cities/${encoded}` : `/oregon/${encoded}`
+  return CENTRAL_OREGON_CITY_SLUGS.has(slug) ? settle(`/cities/${encoded}`) : `/oregon/${encoded}`
 }
 
 /**

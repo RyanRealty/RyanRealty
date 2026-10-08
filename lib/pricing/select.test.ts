@@ -149,7 +149,7 @@ describe('pickCompSource', () => {
     expect(pickCompSource({ factsReady: true, comps: [] })).toBe('listings')
   })
 
-  it('stays on facts for custom/new even under 3 — listings would re-starve Perspective', () => {
+  it('stays on facts for custom/new even under the five-sale floor; listings would re-starve Perspective', () => {
     expect(pickCompSource({ factsReady: true, customOrNew: true, comps: [{}, {}] })).toBe('facts')
     expect(pickCompSource({ factsReady: true, customOrNew: true, comps: [] })).toBe('facts')
   })
@@ -211,5 +211,16 @@ describe('pickCompSource — below the document minimum the listings ladder is t
     expect(pickCompSource({ factsReady: true, comps: [1, 2, 3, 4] })).toBe('listings')
     expect(pickCompSource({ factsReady: true, comps: [1, 2, 3, 4, 5] })).toBe('facts')
     expect(pickCompSource({ factsReady: true, comps: [1, 2], customOrNew: true })).toBe('facts')
+  })
+})
+
+describe('pickCompSource: under five price-setting sales on facts the listings ladder runs, and under five on both the build is a comp shortage (Matt 2026-10-07)', () => {
+  it('three or four facts sales fall to the listings ladder; five stays on facts', () => {
+    // which let a three- or four-sale facts set
+    // price when listings found fewer (1648 Pheasant, 2026-10-07), is deleted.
+    // The floor is five on both ladders.
+    expect(pickCompSource({ factsReady: true, comps: [1, 2, 3] })).toBe('listings')
+    expect(pickCompSource({ factsReady: true, comps: [1, 2, 3, 4] })).toBe('listings')
+    expect(pickCompSource({ factsReady: true, comps: [1, 2, 3, 4, 5] })).toBe('facts')
   })
 })

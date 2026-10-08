@@ -48,6 +48,11 @@
  * pure and unit-tested), the Status control offers the row's own state so a
  * save cannot collapse it, and the strip counts what is live rather than what
  * is dated.
+ *
+ * 2026-10-05 (Matt, "Admin draft preview"): every row links to
+ * /admin/blog/preview/<slug>, which renders the row through the public post's
+ * own render path whatever its status. A non-published title links there too,
+ * since its /blog/<slug> URL 404s.
  */
 
 import { useEffect, useState, useTransition } from 'react'
@@ -358,7 +363,14 @@ export default function AdminBlogPage() {
         rows={visiblePosts.map((post) => ({
           key: post.id,
           cells: [
-            <Link key="t" href={`/blog/${post.slug}`} style={{ color: 'var(--a-accent)' }}>
+            // A post that is not live 404s at /blog/<slug>, so its title opens
+            // the login-only draft preview instead (Matt 2026-10-05). A live
+            // post keeps its public link.
+            <Link
+              key="t"
+              href={post.status === 'published' ? `/blog/${post.slug}` : `/admin/blog/preview/${post.slug}`}
+              style={{ color: 'var(--a-accent)' }}
+            >
               {post.title}
             </Link>,
             post.category || 'Uncategorized',
@@ -377,6 +389,12 @@ export default function AdminBlogPage() {
                 : 'Not set'}
             </span>,
             <span key="a" className="av2-wordrow">
+              <Link
+                href={`/admin/blog/preview/${post.slug}`}
+                style={{ color: 'var(--a-accent)', fontSize: 'var(--a-text-sm)' }}
+              >
+                {post.status === 'published' ? 'Preview' : 'Preview draft'}
+              </Link>
               <Button type="button" variant="quiet" onClick={() => openEdit(post)} disabled={isPending}>
                 Edit
               </Button>

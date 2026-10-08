@@ -98,6 +98,9 @@ next-env.d.ts
 # ...and dataviz — TASTE.md names this method. An untracked skill is how CMA
 # charts get invented from memory (2026-09-05).
 !.claude/skills/dataviz/
+# ...and motion-design — how the Studio draws and scores films (2026-10-07,
+# prompt-motion.com research). CLAUDE.md §9 routes every video build to it.
+!.claude/skills/motion-design/
 .claude/worktrees
 .worktrees
 /worktrees/
@@ -229,3 +232,10 @@ data/basemap/central-oregon-detail.ndjson
 design_system/public/taste-table.json.lock/
 !.claude/skills/site-queue/
 !.claude/skills/loop-status/
+
+# Session temp scripts at the repo root (run from root so node_modules resolves); never committed.
+/.tmp-*
+# The search perf-budget gate test copies files into a sandbox at the repo root
+# (so its imports resolve through node_modules) and deletes it. Ignored so a
+# concurrent `git ls-files --others` never opens it mid-delete (CI 2026-10-07).
+/.perf-budget-gate-sandbox-*/

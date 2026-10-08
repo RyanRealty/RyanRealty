@@ -202,7 +202,7 @@ describe('CMA letter copy has no em dash', () => {
 
   it('rewrites a stored method sentence that still carries an em dash', () => {
     const stored =
-      'These sales are the exclusive pocket. Date adjustment does not walk the city index, which includes tracts already excluded from this set. Each sale stays on its own sold and last-ask price — size and story class do not adjust.'
+      'Each sale is moved by the year-over-year change in the city median sale price — that change is 3.1 percent.'
     const { html } = renderCmaHtml({
       ...args(),
       pricing: {
@@ -211,8 +211,23 @@ describe('CMA letter copy has no em dash', () => {
       } as never,
     })
     const body = html.replace(/<style\b[\s\S]*?<\/style>/gi, '')
-    expect(body).toContain('price. Size and story class do not adjust.')
+    expect(body).toContain('price. That change is 3.1 percent.')
     expect(body).not.toContain('\u2014')
     expect(body).not.toContain(stored)
+  })
+
+  it('never prints the stored exclusive-pocket engine note to the reader (2382 Jackson, 2026-10-07)', () => {
+    const stored =
+      'These sales are the exclusive pocket. Date adjustment does not walk the city index, which includes tracts already excluded from this set. Each sale stays on its own sold and last-ask price — size and story class do not adjust.'
+    const { html } = renderCmaHtml({
+      ...args(),
+      pricing: {
+        ...args().pricing,
+        timeAdjustment: { sentence: stored, basis: 'exclusive-pocket-sold-list', measure: 'sold and last-ask prices in this exclusive pocket' },
+      } as never,
+    })
+    const body = html.replace(/<style\b[\s\S]*?<\/style>/gi, '')
+    expect(body).not.toMatch(/exclusive pocket|story class|That index is/i)
+    expect(body).not.toContain('\u2014')
   })
 })

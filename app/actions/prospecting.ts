@@ -1,4 +1,5 @@
 'use server'
+import { siteOrigin } from '@/lib/site-origin'
 import { revalidatePerson } from '@/lib/crm/revalidate-person'
 
 /**
@@ -67,8 +68,9 @@ import {
 } from '@/lib/crm/first-touch-copy'
 import { sendSmsViaMessagingService, toE164 } from '@/lib/crm/twilio'
 import { sendTemplateSelfTestAction } from '@/app/actions/crm-template-test'
+import { buildTrackedUrl, CMA_DOC_PARAM, prospectCampaign } from '@/lib/analytics/utm'
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const SITE_URL = siteOrigin()
 
 async function requireAdmin(): Promise<boolean> {
   const session = await getSession()
@@ -261,7 +263,12 @@ export async function sendProspectingIntro(
     const sb = createServiceClient()
     // Identity is stamped by the one decoration helper below (signed token, P7);
     // the doc URL itself carries only the campaign.
-    const docUrlForPerson = `${docUrl}?utm_source=crm&utm_medium=sms&utm_campaign=${kind}`
+    const docUrlForPerson = buildTrackedUrl(docUrl, {
+      source: 'crm',
+      medium: 'sms',
+      campaign: prospectCampaign(kind),
+      extraParams: { [CMA_DOC_PARAM]: clientReady.slug },
+    })
     let merged: string
     if (args.bodyOverride && args.bodyOverride.trim()) {
       // Broker-edited body (already shown to them in the preview). Still gated by
@@ -756,6 +763,10 @@ export async function buildProspectDoc(
       },
       requestSource: kind === 'expired' ? 'expired-dashboard' : 'fsbo-dashboard',
       docType: expectedDocTypeFor(kind),
+      // The prospect row already resolved the CRM person (outreach id, else
+      // the native id stored on fub_person_id). The build fills a blank email
+      // from that person. Passing the id is what attaches the contact.
+      personId: prospect.personId,
     })
     if (!res.ok) return { ok: false, error: res.error ?? 'Build failed.' }
 
@@ -782,7 +793,13 @@ export async function approveProspectDoc(
     const safe = slug.trim().toLowerCase()
     const { rows } = await listCmaQueue({ limit: 1000, includeArchived: true })
     const queuedRow = rows.find((r) => r.docKind === 'cma' && r.slug.toLowerCase() === safe)
-    const gap = recommendationGapHold(queuedRow?.recommendedList ?? null, queuedRow?.theirPrice ?? null)
+    const gap = recommendationGapHold(queuedRow?.recommendedList ?? null, queuedRow?.theirPrice ?? null, {
+      low: queuedRow?.valueLow ?? null,
+      high: queuedRow?.valueHigh ?? null,
+      holdKind: queuedRow?.holdKind ?? null,
+      holdDecided: queuedRow?.holdDecided ?? false,
+      origin: queuedRow?.origin ?? null,
+    })
     if (gap.hold) return { ok: false, error: gap.reason }
     const { approveCmaAction } = await import('@/app/actions/cma-admin')
     const res = await approveCmaAction(slug)

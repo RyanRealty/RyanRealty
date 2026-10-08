@@ -180,12 +180,13 @@ const LEDGER_READ = 36
 /** The home-market towns the honest block names. Dead text naming a linkable
  *  thing is a defect (PUBLIC-PRODUCT-OS), and pattern 6 is the block that carries
  *  the graph's outbound edges, so each town named in the prose is a door. Every
- *  slug here has a real /cities page (lib/central-oregon.ts SITE_CITY_SLUGS). */
+ *  slug here has a real /cities page (lib/central-oregon.ts SITE_CITY_SLUGS),
+ *  except Sunriver, whose one page is its community page (Matt 2026-10-04). */
 const HOME_MARKET_EDGES: readonly V3QuietItem[] = [
   { label: 'Bend', href: '/cities/bend' },
   { label: 'Redmond', href: '/cities/redmond' },
   { label: 'Sisters', href: '/cities/sisters' },
-  { label: 'Sunriver', href: '/cities/sunriver' },
+  { label: 'Sunriver', href: '/communities/sunriver' },
   { label: 'La Pine', href: '/cities/la-pine' },
 ]
 

@@ -19,6 +19,10 @@ import {
   type PlatFamilyRole,
 } from '@/lib/market/plat-family'
 import { platPageTitle } from './plat-title'
+import { BRAND_SUFFIX, TITLE_BUDGET } from '@/lib/site/page-metadata'
+
+/** The live SEO audit's hard ceiling (90) less the layout suffix. */
+const PHASE_TITLE_MAX = 90 - BRAND_SUFFIX.length
 
 export type FamilyCrumb = { label: string; href: string }
 
@@ -63,7 +67,15 @@ export function platDocumentTitle(input: {
     const phase = platMemberDisplayName(input.role.member.label)
     const city = (input.cityName ?? '').trim()
     const withCity = city && !/^central oregon$/i.test(city) ? `, ${city}` : ''
-    return `${phase} · part of ${family}${withCity}`
+    // Fit the hard ceiling (live SEO audit 2026-10-04: "Greens at Redmond (the)
+    // Phase 1 & 2 Replat Lots 3-8 · part of Greens at Redmond, Redmond" ran
+    // 102 chars). Drop the city, then the family, then cut the phase name at a
+    // word: the page's own name is the last thing to go.
+    // Then fit the 60-char SERP width the same way (Matt 2026-10-05): the
+    // first form inside TITLE_BUDGET wins, the phase name alone when none is.
+    const forms = [`${phase} · part of ${family}${withCity}`, `${phase} · part of ${family}`, phase]
+    const fits = forms.find((t) => t.length <= TITLE_BUDGET) ?? forms.find((t) => t.length <= PHASE_TITLE_MAX)
+    return fits ?? cutAtWord(phase, PHASE_TITLE_MAX)
   }
   return platPageTitle(input.displayName, input.cityName)
 }
@@ -165,4 +177,12 @@ export function platAtlasClaim(input: {
     return `${houseCount.toLocaleString('en-US')} ${houseCount === 1 ? 'home' : 'homes'} for sale in ${displayName}.`
   }
   return `Homes for sale in ${displayName}.`
+}
+
+/** Cut at the last word boundary inside `max`, no ellipsis, trailing punctuation trimmed. */
+function cutAtWord(text: string, max: number): string {
+  if (text.length <= max) return text
+  const cut = text.slice(0, max + 1)
+  const space = cut.lastIndexOf(' ')
+  return (space > 0 ? cut.slice(0, space) : text.slice(0, max)).replace(/[\s,·&(-]+$/, '')
 }

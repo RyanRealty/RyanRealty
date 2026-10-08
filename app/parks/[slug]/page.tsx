@@ -71,7 +71,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // variable was the name (sawyer-park and big-sky-park were byte-identical
   // apart from it). See lib/site/registry-metadata.ts.
   return pageMetadata({
-    title: registryTitle(park.name),
+    title: registryTitle(park.name, park.city),
     description: registryDescription(park.blurb),
     path: `/parks/${slug}`,
   })

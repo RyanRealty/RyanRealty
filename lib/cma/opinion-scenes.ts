@@ -4,7 +4,9 @@
  */
 
 import { competitionHeading } from '@/lib/cma/band-rivals'
+import { subjectOnMarket } from '@/lib/cma/subject-on-market'
 import {
+  MAP_HEADING,
   mapBodyHtml,
   pricingPage,
   salesThatSetItPage,
@@ -15,8 +17,10 @@ import {
   OPINION_CHAPTER_ORDER,
   competitionBodyMatrixHtml,
   didNotSellBodyMatrixHtml,
+  didNotSellHeadingFor,
   failedAskBacktestHtml,
   mapArgs,
+  mapSharesPricePage,
   salesThatSetItArgs,
 
   nextStepButtonsHtml,
@@ -33,7 +37,8 @@ import {
   whatHappenedHeading,
   type OpinionChapterId,
 } from '@/lib/cma/opinion-pages'
-import { DID_NOT_SELL_HEADING } from '@/lib/cma/did-not-sell'
+import { salesGlanceHtml } from '@/lib/cma/sales-glance'
+import { statusPriceBoardDisclosureHtml } from '@/lib/cma/status-price-summary'
 import { escapeHtml } from '@/lib/cma/render-blocks'
 import type { CmaBroker } from '@/lib/cma/types'
 import { formatDate } from '@/lib/format/date'
@@ -52,19 +57,28 @@ export type OpinionSceneArgs = OpinionPageArgs & {
   client?: { name?: string | null }
 }
 
-function priceScene(a: OpinionSceneArgs): string {
+function priceScene(a: OpinionSceneArgs, withMap: boolean): string {
   const page = pricingPage({
     ...salesThatSetItArgs(a),
     // The immersive prints the number as the chapter title, so the letter's
     // own heading block is suppressed and the lead line reprinted below it.
     omitLeadPrices: true,
   })
+  // The letter's page carries the map when the chapter is one paragraph
+  // (mapSharesPricePage); the scene does the same, so the two stay one list.
+  const map = withMap ? mapBodyHtml(mapArgs(a)) : ''
   return `
   <section class="sc sc-cream pack" id="what-its-worth">
     <div class="in wide">
       <div class="kick r">The number</div>
       <h2 class="h r">${esc(page.toc ?? '')}</h2>
-      <div class="r">${page.body}</div>
+      <div class="r">${page.body}</div>${
+        map
+          ? `
+      <div class="kick r">${esc(MAP_HEADING)}</div>
+      <div class="r">${map}</div>`
+          : ''
+      }
     </div>
   </section>`
 }
@@ -76,16 +90,45 @@ function mapScene(a: OpinionSceneArgs): string {
   return `
   <section class="sc sc-cream pack" id="the-map">
     <div class="in wide">
-      <div class="kick r">Comparable homes near you</div>
+      <div class="kick r">${esc(MAP_HEADING)}</div>
       <div class="r">${body}</div>
     </div>
   </section>`
 }
 
-/** Matrix 1. Web twin of salesThatSetItPage. */
+/**
+ * Matrix 1. Web twin of salesThatSetItPage.
+ *
+ * PHONE FIRST (Matt 2026-10-07). The letter opens this chapter on the status
+ * table, which on a phone pushed the sales that set the price two screens down.
+ * The web chapter reorders the SAME parts, built by the same helpers off the
+ * same args: the sales at a glance first, then the matrix and everything the
+ * letter prints under it, then the status table behind one tap. Nothing is
+ * dropped; the letter keeps its own order.
+ */
 function salesThatSetItScene(a: OpinionSceneArgs): string {
-  const page = salesThatSetItPage(salesThatSetItArgs(a))
-  return page ? wrapLetterBody('sales-that-set-it', 'The evidence', page.body) : ''
+  const args = salesThatSetItArgs(a)
+  // The note and the board are printed by this scene, in its own order, so
+  // the letter body is asked for without them.
+  const page = salesThatSetItPage({ ...args, statusPriceBoard: '', negligibleWeightNote: null })
+  if (!page) return ''
+  const note = args.negligibleWeightNote
+    ? `<p class="method-line">${esc(args.negligibleWeightNote)}</p>`
+    : ''
+  const glance = salesGlanceHtml({
+    subject: args.subject,
+    comps: args.comps,
+    pricing: args.pricing,
+    docLinks: args.docLinks ?? null,
+  })
+  const heading = /<h2 class="section[^"]*">[\s\S]*?<\/h2>/.exec(page.body)?.[0] ?? ''
+  const rest = heading ? page.body.replace(heading, '') : page.body
+  const body = `${heading}
+  ${note}
+  ${glance}
+  ${rest}
+  ${statusPriceBoardDisclosureHtml(args.statusPriceBoard)}`
+  return wrapLetterBody('sales-that-set-it', 'The evidence', body)
 }
 
 /** Matrix 3. Web twin of competitionPage. */
@@ -96,7 +139,7 @@ function competitionScene(a: OpinionSceneArgs): string {
   <section class="sc sc-cream pack" id="competition">
     <div class="in wide">
       <div class="kick r">At this price</div>
-      <h2 class="h r">${esc(competitionHeading(a.pricing.recommended))}</h2>
+      <h2 class="h r">${esc(competitionHeading(a.pricing.recommended, { onMarket: subjectOnMarket(a) }))}</h2>
       <div class="r">${body}</div>
     </div>
   </section>`
@@ -140,7 +183,7 @@ function didNotSellScene(a: OpinionSceneArgs): string {
   <section class="sc sc-cream pack" id="did-not-sell">
     <div class="in wide">
       <div class="kick r">Near you</div>
-      <h2 class="h r">${esc(DID_NOT_SELL_HEADING)}</h2>
+      <h2 class="h r">${esc(didNotSellHeadingFor(a))}</h2>
       <div class="r">${body}</div>
     </div>
   </section>`
@@ -222,23 +265,17 @@ function disclosureScene(a: OpinionSceneArgs): string {
 /** Chapter 7. The closing, and the only navy scene. Web twin of nextStepPage. */
 function nextScene(a: OpinionSceneArgs): string {
   const br = a.broker
-  const site = 'https://ryan-realty.com'
-  const photo = br.photoUrl
-    ? `<img class="br-img" src="${esc(br.photoUrl.startsWith('http') ? br.photoUrl : `${site}${br.photoUrl}`)}" alt="${esc(br.displayName)}"/>`
-    : ''
-  // `pack`: the closing is CONTENT height, not viewport height. It was an
-  // 812-to-1400px navy panel holding about 300px of content floated right of
-  // centre — the last thing the seller sees and the only place the document
-  // asks for anything (tasteReview item 3).
+  // One column: heading, the one next step (book a time, with Call and Text
+  // beside it), two short paragraphs, reviews, then a small photo with the
+  // contact card. The leading portrait left a navy void beside the heading.
   const actions = nextStepButtonsHtml(a)
   return `
   <section class="sc sc-navy pack" id="next-step">
     <div class="in next-in">
-      ${photo}
       <div class="next-b">
         <div class="kick r">Your next step</div>
         <h2 class="h r">${esc(nextStepHeading(a))}</h2>
-        ${actions ? `<div class="cta r">${actions}</div>` : ''}
+        ${actions ? `<div class="cta next-cta r">${actions}</div>` : ''}
         <div class="r">${nextStepNoteHtml(a)}</div>
         <div class="sig r">${esc(br.displayName)} · ${esc(br.title)}${br.licenseNumber ? ` · Oregon Real Estate License # ${esc(br.licenseNumber)}` : ''}</div>
         <div class="fine r">${esc(
@@ -257,11 +294,12 @@ export function assembleOpinionScenes(a: OpinionSceneArgs): string {
   // The SAME order the letter walks (OPINION_CHAPTER_ORDER), built from the
   // same helpers under the same gates. A chapter that renders here and not
   // there is a defect the doc-punchlist test fails on.
+  const mapWithPrice = mapSharesPricePage(a)
   const build: Record<OpinionChapterId, () => string> = {
     'what-happened': () => whatHappenedScene(a),
     'did-not-sell': () => didNotSellScene(a),
-    'what-its-worth': () => priceScene(a),
-    'the-map': () => mapScene(a),
+    'what-its-worth': () => priceScene(a, mapWithPrice),
+    'the-map': () => (mapWithPrice ? '' : mapScene(a)),
     'sales-that-set-it': () => salesThatSetItScene(a),
     competition: () => competitionScene(a),
     'priced-right': () => pricedRightScene(a),

@@ -1,4 +1,4 @@
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 
 const URL = 'https://jackson-real-estate-photography.aryeo.com/videos/01901324-0269-7223-9f62-314b7a1d07b6'
 const b = await chromium.launch({ args: ['--no-sandbox', '--autoplay-policy=no-user-gesture-required'] })

@@ -29,8 +29,9 @@ import Image from 'next/image'
 import { useState } from 'react'
 import { updateBrokerageLogoUrl, uploadBrokerageLogo } from '@/app/actions/brokerage'
 import { Button, TextField } from '@/components/admin/v2'
+import { configuredSiteOrigin } from '@/lib/site-origin'
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ?? ''
+const siteUrl = configuredSiteOrigin() ?? ''
 
 /** The section card: a hairline-held surface one step up from the page. */
 const CARD_STYLE = { borderColor: 'var(--a-border)', background: 'var(--a-surface)' } as const

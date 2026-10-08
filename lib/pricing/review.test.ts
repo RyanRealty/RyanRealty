@@ -234,3 +234,22 @@ describe('the widened search reads as a sentence a seller can read', () => {
     }
   })
 })
+
+describe('the ask-in-band reason (SKILL.md rule 22, Matt 2026-10-07)', () => {
+  it('maps a reviewReason that names the sales range to the askInBand sentence, not other', () => {
+    const r = buildPricingReview({
+      needsReview: true,
+      reviewReason:
+        'The last ask of $925,000 sits inside the sales range of $893,000 to $951,000 the recommendation reads from. It stays with you.',
+      auditVerdict: 'pass',
+    })
+    expect(r.reasons).toContain(REVIEW_REASONS.askInBand)
+    expect(r.reasons).not.toContain(REVIEW_REASONS.other)
+    expect(REVIEW_REASONS.askInBand).not.toMatch(/[—–]/)
+  })
+
+  it('reads the stored kind word as well', () => {
+    const r = buildPricingReview({ needsReview: true, reviewReason: 'hold: ask-in-band', auditVerdict: 'pass' })
+    expect(r.reasons).toContain(REVIEW_REASONS.askInBand)
+  })
+})

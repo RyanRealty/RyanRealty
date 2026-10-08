@@ -13,7 +13,7 @@
  *
  * All 4 variants drive to /lp/seller-home-value (confirmed with Matt).
  */
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { writeFile, mkdir } from 'node:fs/promises'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'

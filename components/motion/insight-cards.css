@@ -39,16 +39,24 @@
   line-height: 1.45;
 }
 
+/* One explicit minmax(0, 1fr) column: the implicit auto column took the
+   chart stage's 364px min-content, and every row in the card (the legend
+   included) followed it 9px past a 375px screen (2026-10-04). */
 .insight-cards__card {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
   gap: var(--v3-space-sm);
   padding: var(--v3-space-md) 0 0;
   border-top: var(--v3-rule-hairline);
 }
 
+/* minmax(0, 1fr), not 1fr: a bare 1fr column will not shrink under its
+   content, and the big price numerals pushed the card 9px past a 375px
+   screen on /housing-market/bend (2026-10-04, a page that scrolled sideways). */
 .insight-cards__legend {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--v3-space-sm);
 }
 
@@ -103,13 +111,17 @@
   display: none !important;
 }
 
+/* The readout wraps BETWEEN readings, never inside one (each row stays
+   nowrap): at 375 the two "Oct 2025 – Sep 2026 $725K" rows ran into each other
+   once the card stopped spilling 9px past the screen (2026-10-04). */
 .insight-tooltip {
   position: absolute;
   top: 0.35rem;
   left: 50%;
   z-index: 2;
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
+  row-gap: 0.15rem;
   gap: 0.75rem;
   max-width: calc(100% - 0.5rem);
   padding: 0.35rem 0.6rem;
@@ -126,6 +138,7 @@
   align-items: baseline;
   gap: 0.35rem;
   min-width: 0;
+  white-space: nowrap;
 }
 
 .insight-tooltip__swatch {

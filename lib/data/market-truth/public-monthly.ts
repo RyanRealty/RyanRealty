@@ -24,7 +24,7 @@ function hyphenSlug(raw: string): string {
     .replace(/^-+|-+$/g, '')
 }
 
-function lastDayOfMonth(year: number, monthIndex: number): string {
+export function lastDayOfMonth(year: number, monthIndex: number): string {
   const d = new Date(Date.UTC(year, monthIndex + 1, 0))
   return d.toISOString().slice(0, 10)
 }
@@ -47,7 +47,8 @@ export function completeMonthKeys(currentMonthKey: string, count = PUBLIC_MONTHL
   return keys.reverse()
 }
 
-function publishedNumber(cell: MetricResult | null | undefined): number | null {
+/** A cell the public charts plot: publishable, finite and above zero; else null. */
+export function publishedNumber(cell: MetricResult | null | undefined): number | null {
   if (!cell?.isPublishable || cell.value == null || !Number.isFinite(cell.value) || cell.value <= 0) {
     return null
   }
@@ -134,10 +135,12 @@ export async function getPublicDetachedMonthly(opts: {
   geoType: 'city' | 'region' | 'neighborhood' | 'zip'
   geoSlug: string
   currentMonthKey: string
+  /** Complete months to read, newest last. The public charts read 36; a CMA month line reads 12. */
+  months?: number
 }): Promise<PublicMonthlyPoint[]> {
   const geoSlug = hyphenSlug(opts.geoSlug)
   if (!geoSlug) return []
-  const keys = completeMonthKeys(opts.currentMonthKey)
+  const keys = completeMonthKeys(opts.currentMonthKey, opts.months ?? PUBLIC_MONTHLY_MONTHS)
   if (keys.length === 0) return []
 
   const inputs = keys.flatMap((key) => {

@@ -129,58 +129,99 @@ export function realSubdivision(value: string | null | undefined): string | null
  * falls short fail rather than print a wide guess.
  */
 export const WIDENED_SQFT_BAND = 0.25
-/** The picker's one living-area cutoff. About 35%. Location rungs use this. */
+/**
+ * The location rungs' SEARCH band. Not the price-setting cutoff: a sale read
+ * past PRICE_SET_SQFT_BAND (25%, lib/pricing/price-set.ts) passes these rungs
+ * and is refused at the door by rule 20 (Matt 2026-10-08, "25% everywhere").
+ */
 export const LOCATION_SQFT_BAND = 0.35
 
+
+/** 0.25 through 2 miles, dates widened at each ring before the next distance. */
+function quarterMileCompRings(): CompTier[] {
+  const tiers: CompTier[] = []
+  for (let quarter = 1; quarter <= 8; quarter++) {
+    const miles = quarter / 4
+    for (const months of [6, 12, 24] as const) {
+      tiers.push({
+        name: `nearby-${miles}mi-${months}mo`,
+        monthsBack: months,
+        sqftBand: 0.25,
+        sameArea: false,
+        competing: true,
+        maxMiles: miles,
+      })
+    }
+  }
+  return tiers
+}
+
+function subdivisionMonths(subdivisionIlike: string | null, months: readonly number[]): CompTier[] {
+  return months.map((monthsBack) => ({
+    name: `subdivision-${monthsBack}mo`,
+    subdivisionIlike,
+    monthsBack,
+    sqftBand: LOCATION_SQFT_BAND,
+    sameArea: false,
+    competing: false,
+    maxMiles: null,
+  }))
+}
+
+const ADJACENT_DISCLOSURE =
+  'These sales are in the subdivisions that touch yours, the closest one first. Your own subdivision is finished before any of them.'
+
+function adjacentMonths(months: readonly number[]): CompTier[] {
+  return months.map((monthsBack) => ({
+    name: `adjacent-subdivision-${monthsBack}mo`,
+    monthsBack,
+    sqftBand: LOCATION_SQFT_BAND,
+    sameArea: false,
+    competing: false,
+    maxMiles: null,
+    adjacentSubdivisions: true,
+    disclosure: ADJACENT_DISCLOSURE,
+  }))
+}
+
+function pocketMonths(months: readonly number[]): CompTier[] {
+  return months.map((monthsBack) => ({
+    name: `pocket-${monthsBack}mo`,
+    monthsBack,
+    sqftBand: LOCATION_SQFT_BAND,
+    sameArea: false,
+    competing: false,
+    maxMiles: POCKET_RADIUS_MILES,
+    samePocket: true,
+    disclosure:
+      'These sales are in the mapped pockets next to this home, inside a quarter mile, walked before any mile ring.',
+  }))
+}
+
+/**
+ * Listings competition ladder.
+ *
+ * A named plat finishes its own months, then the plats that touch it. This
+ * ladder has no second-row membership test, so it stops there. A closer rung
+ * would be queried as an unbounded city sale. Pocket, the neighborhood grab,
+ * distance rings, and the city widening stay off.
+ *
+ * No recorded name (null): the distance ladder. Rings start at 0.25 miles.
+ * Do not invent plats.
+ */
 export function compTierLadder(subdivisionIlike: string | null): CompTier[] {
-    const band = LOCATION_SQFT_BAND
-    const tiers: CompTier[] = [
-    // Same subdivision. Dates widen here, through two years, before the search
-    // leaves the plat for an adjacent plat, the neighborhood, or the zip.
-    { name: 'subdivision-6mo', subdivisionIlike, monthsBack: 6, sqftBand: band, sameArea: false, competing: false, maxMiles: null },
-    { name: 'subdivision-12mo', subdivisionIlike, monthsBack: 12, sqftBand: band, sameArea: false, competing: false, maxMiles: null },
-    { name: 'subdivision-18mo', subdivisionIlike, monthsBack: 18, sqftBand: band, sameArea: false, competing: false, maxMiles: null },
-    { name: 'subdivision-24mo', subdivisionIlike, monthsBack: 24, sqftBand: band, sameArea: false, competing: false, maxMiles: null },
-    // Quarter-mile pocket after the plat's own dates are exhausted, before adjacent plats.
-    {
-      name: 'pocket-6mo',
-      monthsBack: 6,
-      sqftBand: band,
-      sameArea: false,
-      competing: false,
-      maxMiles: POCKET_RADIUS_MILES,
-      samePocket: true,
-      disclosure:
-        'These sales are in the mapped pockets next to this home, inside a quarter mile, walked before any mile ring.',
-    },
-    {
-      name: 'pocket-12mo',
-      monthsBack: 12,
-      sqftBand: band,
-      sameArea: false,
-      competing: false,
-      maxMiles: POCKET_RADIUS_MILES,
-      samePocket: true,
-      disclosure:
-        'These sales are in the mapped pockets next to this home, inside a quarter mile, walked before any mile ring.',
-    },
-    {
-      name: 'pocket-24mo',
-      monthsBack: 24,
-      sqftBand: band,
-      sameArea: false,
-      competing: false,
-      maxMiles: POCKET_RADIUS_MILES,
-      samePocket: true,
-      disclosure:
-        'These sales are in the mapped pockets next to this home, inside a quarter mile, walked before any mile ring.',
-    },
-    // Adjacent subdivisions, dates widened before the rest of the neighborhood.
-    { name: 'adjacent-subdivision-6mo', monthsBack: 6, sqftBand: band, sameArea: false, competing: false, maxMiles: 2, adjacentSubdivisions: true },
-    { name: 'adjacent-subdivision-12mo', monthsBack: 12, sqftBand: band, sameArea: false, competing: false, maxMiles: 2, adjacentSubdivisions: true },
-    { name: 'adjacent-subdivision-18mo', monthsBack: 18, sqftBand: band, sameArea: false, competing: false, maxMiles: 2, adjacentSubdivisions: true },
-    { name: 'adjacent-subdivision-24mo', monthsBack: 24, sqftBand: band, sameArea: false, competing: false, maxMiles: 2, adjacentSubdivisions: true },
-    // The neighborhood or community. Same date widening. The city and the zip come after this.
+  const named = Boolean(subdivisionIlike?.trim())
+  const band = LOCATION_SQFT_BAND
+  const platMonths = [6, 12, 18, 24] as const
+  if (named) {
+    const tiers = [...subdivisionMonths(subdivisionIlike, platMonths), ...adjacentMonths(platMonths)]
+    assertRungsClassified(tiers.map((tier) => tier.name))
+    return tiers
+  }
+  const tiers: CompTier[] = [
+    ...subdivisionMonths(null, platMonths),
+    ...pocketMonths([6, 12, 24]),
+    ...quarterMileCompRings(),
     { name: 'neighborhood-6mo', monthsBack: 6, sqftBand: band, sameArea: true, competing: false, maxMiles: null },
     { name: 'neighborhood-12mo', monthsBack: 12, sqftBand: band, sameArea: true, competing: false, maxMiles: null },
     { name: 'neighborhood-18mo', monthsBack: 18, sqftBand: band, sameArea: true, competing: false, maxMiles: null },
@@ -201,13 +242,14 @@ export function compTierLadder(subdivisionIlike: string | null): CompTier[] {
       disclosure:
         'Your home sits in a golf or resort community, and that community did not have enough of its own sales even across two years. The sales below come from comparable golf and resort communities in Central Oregon rather than from ordinary neighborhoods nearby, because that is the market a buyer of your home shops against.',
     },
-    // 5. Competing market area — permitted, but disclosed and distance-bounded.
+    // Competing market area, after the quarter-mile rings above.
     { name: 'competing-area-12mo', monthsBack: 12, sqftBand: 0.25, sameArea: false, competing: true, maxMiles: 2 },
     // 6. Last resort for a subject inside a mapped city. Still bounded — the
     // old ladder ended at "anywhere in the city".
     { name: 'citywide-12mo', monthsBack: 12, sqftBand: 0.35, sameArea: false, competing: true, maxMiles: 5 },
     // 6b. THE DISCLOSED WIDENING (Matt 2026-09-09). Reached only when every
-    // rung above left the set below MIN_COMPS — a fifth of expired owners were
+    // rung above left the set below MIN_COMPS (five price-setting sales since
+    // 2026-10-07) — a fifth of expired owners were
     // getting no document at all, and a wider search that says what it did
     // beats no answer. It trades exactly three things, each named in the
     // disclosure the report prints: age (24 months), size (45% either way),

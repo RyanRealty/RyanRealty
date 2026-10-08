@@ -7,12 +7,27 @@ import type { MatrixEntry } from '@/lib/cma/matrix-entry'
 
 /** Exact matrix row labels (must match SHARED_ROWS in comp-matrix.ts). */
 export const COMPARABLE_DOM_ROW_LABEL = 'Days on market'
+/**
+ * The same row in the sales table, named for what a sale's count is: first
+ * list to an accepted offer (comp-matrix.ts, DAYS_TO_OFFER_ROW_LABEL). The
+ * field Matt locked on 2026-09-17 is still there, under the words that say
+ * what it counts.
+ */
+export const COMPARABLE_DAYS_TO_OFFER_ROW_LABEL = 'Days to an offer'
 export const COMPARABLE_PRICE_HISTORY_ROW_LABEL = 'First ask \u2192 last ask \u2192 outcome'
 
 /** Matrix HTML must carry both shared rows. */
 export function matrixHtmlHasDomAndPriceHistory(html: string): boolean {
   if (!html || html.trim().length === 0) return false
-  return html.includes(COMPARABLE_DOM_ROW_LABEL) && html.includes(COMPARABLE_PRICE_HISTORY_ROW_LABEL)
+  const hasHistory =
+    html.includes(COMPARABLE_PRICE_HISTORY_ROW_LABEL) ||
+    (html.includes('First ask') &&
+      html.includes('last ask') &&
+      html.includes('outcome') &&
+      html.includes('class="arc-arrow"'))
+  const hasDays =
+    html.includes(COMPARABLE_DOM_ROW_LABEL) || html.includes(COMPARABLE_DAYS_TO_OFFER_ROW_LABEL)
+  return hasDays && hasHistory
 }
 
 /**

@@ -2,6 +2,8 @@
 
 **Do not start a session by executing ALL-OPEN.** Next work is `npx tsx scripts/loop-brief.ts` plus `CROSS_AGENT_HANDOFF.md` Current.
 
+**Access:** never ask Matt what access you have (Matt 2026-10-07). Read [`docs/ACCESS_INVENTORY.md`](../../ACCESS_INVENTORY.md).
+
 This file + `ALL-OPEN-ITEMS.md` + `inventories/` are a **2026-08-08 photograph**. Gates still require `VERSION-1.md` / `REQUIREMENTS.md` to exist. They do not require you to grind map residuals.
 
 Runtime photograph: [`docs/audits/RUNTIME_CROSSWALK_2026-08-18.md`](../../audits/RUNTIME_CROSSWALK_2026-08-18.md).

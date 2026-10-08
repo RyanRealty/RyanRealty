@@ -6,6 +6,7 @@
  * address + city + price so the alert is scannable in the inbox.
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import { sendEmail } from '@/lib/resend'
 import { EMAIL_FONT_STACK, EMAIL_BORDER } from '@/lib/email/brand'
 
@@ -52,7 +53,7 @@ function fmtPhone(digits: string | null): string {
 
 function crmPersonLink(personId: number | null): string {
   if (!personId) return '(no CRM record)'
-  const site = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const site = siteOrigin()
   return `${site}/admin/people/${personId}`
 }
 

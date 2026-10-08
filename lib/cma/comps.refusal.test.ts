@@ -39,6 +39,7 @@ function diag(over: Partial<CompSelectionDiagnostics> = {}): CompSelectionDiagno
     min_comps: 5,
     candidates: 1,
     excluded_totals: emptyExclusions(),
+    not_price_setting: 0,
     outliers_excluded: 0,
     final_count: 1,
     final_tier_counts: {},
@@ -69,7 +70,8 @@ describe('brokerCompRefusal', () => {
     expect(line).toContain('No sold 2-bath home')
     expect(line).toContain('within 2 miles of the subject, sold within 12 months')
     expect(line).toContain('16 were cut for a different bathroom count')
-    expect(line).toContain('Found 1 of the 5 closed sales')
+    // The count leads (2026-10-08): the best path's price-setting sales and the five.
+    expect(line.startsWith('The search found 1 price-setting sale; 5 are needed.')).toBe(true)
     expect(line.length).toBeLessThan(320)
   })
 
@@ -120,5 +122,24 @@ describe('brokerCompRefusal', () => {
     x.bath_count = 9
     const line = brokerCompRefusal({ diagnostics: diag({ excluded_totals: x }), found: 2, minComps: 5, subjectBaths: 2 })
     expect(line).not.toMatch(/ILIKE|StandardStatus|SubdivisionName|TotalLivingAreaSqFt|nearby-2mi/)
+  })
+
+  it('reads the listings ladder\'s SQL-shaped geography out in plain words (711 Georgia, 2026-10-08)', () => {
+    const x = emptyExclusions()
+    x.not_touching_plat = 113
+    const line = brokerCompRefusal({
+      diagnostics: diag({
+        excluded_totals: x,
+        ladder: [tier({ geography: "SubdivisionName ILIKE 'Deschutes', City ILIKE 'Bend', market area = Old Bend", months_back: 24, rows_returned: 148 })],
+      }),
+      found: 4,
+      minComps: 5,
+      subjectBaths: 2,
+      sales: ['266 Riverside', '342 Florida', '232 Congress', '240 Georgia'],
+    })
+    expect(line).toBe(
+      'The search found 4 price-setting sales (266 Riverside, 342 Florida, 232 Congress, 240 Georgia); 5 are needed. Not enough comparable sales in subdivision Deschutes, Bend, Old Bend, sold within 24 months: of the 148 sales searched, 113 were cut for sitting in a subdivision that does not touch yours.',
+    )
+    expect(line).not.toMatch(/ILIKE|SubdivisionName|market area =/)
   })
 })

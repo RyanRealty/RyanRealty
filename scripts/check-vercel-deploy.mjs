@@ -38,7 +38,10 @@ import { classifyDiff, isVercelSkippable, listChangedFiles } from './lib/product
 // The live probe speaks the shared CI user agent: the middleware bot screen
 // 403s an unknown UA, and ci:probe-ua fails any raw-HTTP probe without it.
 import { CI_PROBE_USER_AGENT } from './lib/ci-probe-ua.mjs'
+// One retry on a dropped tunnel; an HTTP status is never retried (scripts/lib/transport-retry.mjs).
+import { fetchWithTransportRetry } from './lib/transport-retry.mjs'
 import { formatSitemapSmoke, probeSitemapClasses } from './lib/sitemap-smoke.mjs'
+import { LIVE_SEO_UA, runLiveSeoAudit } from './lib/live-seo-audit.mjs'
 import { checkInlineScripts, formatInlineScriptReport } from './lib/inline-script-health.mjs'
 import {
   DEFAULT_TIMEOUT_MS,
@@ -198,7 +201,7 @@ function getHeadSha() {
 
 async function vercelGet(token, path) {
   const url = `https://api.vercel.com${path}`
-  const resp = await fetch(url, {
+  const resp = await fetchWithTransportRetry(url, {
     headers: { Authorization: `Bearer ${token}` },
   })
   if (!resp.ok) {
@@ -420,7 +423,7 @@ async function main() {
         out('check production URL: https://ryan-realty.com')
         let homeHtml = ''
         try {
-          const live = await fetch('https://ryan-realty.com/', {
+          const live = await fetchWithTransportRetry('https://ryan-realty.com/', {
             method: 'GET',
             redirect: 'follow',
             headers: { 'user-agent': CI_PROBE_USER_AGENT },
@@ -466,7 +469,7 @@ async function main() {
           out('legacy /_next/image: SKIPPED (LEGACY_IMAGE_SMOKE_SKIP=1)')
         } else {
           try {
-            const probe = await fetch('https://ryan-realty.com/_next/image?url=%2Ffavicon.ico&w=64&q=75', {
+            const probe = await fetchWithTransportRetry('https://ryan-realty.com/_next/image?url=%2Ffavicon.ico&w=64&q=75', {
               method: 'GET',
               redirect: 'manual',
               headers: { 'user-agent': CI_PROBE_USER_AGENT },
@@ -504,6 +507,26 @@ async function main() {
             err('  Google cannot discover the affected URL class while this is red.')
             process.exit(1)
           }
+        }
+
+        // ── live SEO baseline (Matt 2026-10-04) ────────────────────────────
+        // robots groups, the image sitemap, and a sample of every sitemap's
+        // pages as Google is served them: title, description, canonical, one
+        // H1, BreadcrumbList, alt attributes, the listing lead photo's
+        // priority. Rules: scripts/lib/live-seo-audit.mjs. LIVE_SEO_SKIP=1 is
+        // the acknowledged-outage escape, same as the sitemap smoke.
+        if (process.env.LIVE_SEO_SKIP === '1') {
+          out('live seo: SKIPPED (LIVE_SEO_SKIP=1)')
+        } else {
+          const seo = await runLiveSeoAudit('https://ryan-realty.com', { ua: LIVE_SEO_UA })
+          for (const l of seo.lines) out(`live seo: ${l}`)
+          for (const w of seo.warns) out(`live seo: warn · ${w}`)
+          if (seo.fails.length > 0) {
+            err(`✗ LIVE SEO FAILED (${seo.fails.length}) — production serves a page below the SEO baseline:`)
+            for (const f of seo.fails) err(`  - ${f}`)
+            process.exit(1)
+          }
+          out('live seo: ✓ baseline holds')
         }
 
         const regressed = usingCliFallback

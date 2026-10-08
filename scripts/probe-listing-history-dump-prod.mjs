@@ -5,7 +5,7 @@
  *   node scripts/probe-listing-history-dump-prod.mjs
  */
 import { mkdirSync, writeFileSync } from 'node:fs'
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 
 const BASE = (process.env.BASE_URL || 'https://ryan-realty.com').replace(/\/$/, '')
 const ART = '/opt/cursor/artifacts'
@@ -20,7 +20,7 @@ const CASES = [
 ]
 
 async function dismissChrome(page) {
-  for (const label of ['Not now', 'Essential only', 'Accept all', 'NOT NOW']) {
+  for (const label of ['Not now', 'Essential only', 'NOT NOW']) {
     const btn = page.getByRole('button', { name: new RegExp(label, 'i') }).first()
     if (await btn.isVisible().catch(() => false)) {
       await btn.click({ timeout: 2000 }).catch(() => {})

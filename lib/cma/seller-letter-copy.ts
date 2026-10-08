@@ -7,6 +7,7 @@
  */
 
 import { sellerVisibleText } from '@/lib/cma/seller-text'
+import { pacificDay } from '@/lib/cma/listing-status'
 
 const COUNT = 'one|two|three|four|five|six|seven|eight|nine|\\d+'
 
@@ -80,16 +81,18 @@ export function plainSearchLabel(tier: string): string {
 
 /**
  * The day a home came off, or null. A list date is not an off-market date.
- * When the only date on the row is the list date, the cell stays blank.
+ * When the only date on the row is the list date, the cell stays blank. Both
+ * dates are read as the Pacific day they fell on: a list at 7:13 PM on Dec 1
+ * is stamped 03:13 UTC on Dec 2 (reader review 2026-10-08).
  */
 export function sellerOffMarketDate(args: {
   listDate: string | null | undefined
   offMarketDate: string | null | undefined
   days: number | null | undefined
 }): string | null {
-  const list = (args.listDate ?? '').slice(0, 10)
+  const list = pacificDay(args.listDate ?? null) ?? ''
   const listOk = /^\d{4}-\d{2}-\d{2}$/.test(list)
-  const off = (args.offMarketDate ?? '').slice(0, 10)
+  const off = pacificDay(args.offMarketDate ?? null) ?? ''
   if (/^\d{4}-\d{2}-\d{2}$/.test(off) && (!listOk || off !== list)) return off
   const days = args.days
   if (!listOk || days == null || !(days > 0)) return null
@@ -106,23 +109,21 @@ export function withoutNegligibleWeight<T extends { listingKey?: string | null }
   comps: readonly T[],
   weights: ReadonlyMap<string, { weight: number | null }>,
 ): { comps: T[]; note: string | null } {
-  const kept: T[] = []
-  let dropped = 0
+  // The price counted these sales. The table shows the same list. A weight
+  // under one percent does not take a sale out of the grid, or the letter
+  // would say five and print four.
+  let light = 0
   for (const c of comps) {
     const key = c.listingKey ?? ''
     const weight = key ? weights.get(key)?.weight : null
-    if (weight != null && weight < NEGLIGIBLE_WEIGHT_PERCENT) {
-      dropped += 1
-      continue
-    }
-    kept.push(c)
+    if (weight != null && weight < NEGLIGIBLE_WEIGHT_PERCENT) light += 1
   }
-  if (dropped === 0) return { comps: [...comps], note: null }
+  if (light === 0) return { comps: [...comps], note: null }
   const note =
-    dropped === 1
-      ? 'One other sale is not in this letter. Its weight is under one percent, so it does not set the price.'
-      : `${dropped} other sales are not in this letter. Each is under one percent of the weight, so they do not set the price.`
-  return { comps: kept, note }
+    light === 1
+      ? 'One sale in this table is under one percent of the weight, so it barely moves the price.'
+      : `${light} sales in this table are under one percent of the weight, so they barely move the price.`
+  return { comps: [...comps], note }
 }
 
 export type SellerLetterMoney = { recommended?: number | null; failedAsk?: number | null }

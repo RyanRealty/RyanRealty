@@ -88,6 +88,8 @@ function row(over: Partial<CmaQueueRow> = {}): CmaQueueRow {
     emailSentAt: null,
     prospectKind: 'expired',
     prospectId: 'LK123',
+    holdKind: null,
+    holdDecided: true,
     ...over,
   }
 }
@@ -129,6 +131,19 @@ describe('approveAndDeliverCma: Send now on a row already waiting in the drip', 
       error: 'Send failed: Not sent. This owner was already emailed for this home, so a second first-contact email is blocked.',
     })
     expect(hardSkipQueuedFirstTouch).not.toHaveBeenCalled()
+  })
+})
+
+describe('approveAndDeliverCma: Send now on a draft already in the drip', () => {
+  it('finalizes the draft before the send', async () => {
+    listCmaQueue.mockResolvedValue({
+      rows: [row({ status: 'draft', state: 'queued' })],
+      total: 1,
+    })
+    const res = await approveAndDeliverCma('cma-test', undefined, { delivery: 'now' })
+    expect(res).toEqual({ ok: true, outcome: 'sent', transport: 'gmail' })
+    expect(approveCmaAction).toHaveBeenCalledTimes(1)
+    expect(sendCmaToLeadAction).toHaveBeenCalledWith('cma-test', undefined)
   })
 })
 

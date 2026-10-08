@@ -13,7 +13,7 @@
  * Output: out/carousel/weekend-events-2026-07-17/slide-01.png ... slide-09.png
  */
 
-import { chromium } from 'playwright';
+import { chromium } from './lib/marked-playwright.mjs';
 import { readFileSync, existsSync, mkdirSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';

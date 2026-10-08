@@ -10,6 +10,7 @@
  * the action row with the reason recorded.
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import {
   listOpenCmaActions,
   listOpenCmaActionsForSlug,
@@ -32,7 +33,7 @@ import { slugifyAddress } from '@/lib/cma-request'
 const STALE_BUILD_MS = 10 * 60 * 1000
 
 const MAX_ATTEMPTS = 3
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const SITE_URL = siteOrigin()
 
 export interface CmaWorkerRunResult {
   scanned: number

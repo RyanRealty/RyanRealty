@@ -2,7 +2,7 @@
 // dev server, reports HTTP status + whether the page rendered or threw an error
 // boundary. Auto-discovers a few real detail slugs (listing, blog, report, guide,
 // school) from index pages so dynamic routes are checked with real data.
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 
 const BASE = process.env.BASE || 'http://localhost:3000'
 const browser = await chromium.launch()

@@ -1,7 +1,7 @@
 // Browser verification for the saved-search + subscriptions build (W5).
 // Mints a session for matt@ryan-realty.com against the local dev server,
 // walks the new surfaces, and writes screenshots to out/saved-search-verify/.
-import { chromium, devices } from 'playwright'
+import { chromium, devices } from './lib/marked-playwright.mjs'
 import { createClient as createSb } from '@supabase/supabase-js'
 import { createServerClient } from '@supabase/ssr'
 import { readFileSync, mkdirSync } from 'node:fs'

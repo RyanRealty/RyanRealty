@@ -21,10 +21,14 @@
  * memory cache holds hits for 5 minutes and misses for 1 minute, and
  * concurrent requests for one id share one fetch.
  *
- * FAILURE IS A PASS-THROUGH. Every error, timeout, missing env or refused row
- * returns a non-row result and the hop does nothing, so the request renders
- * exactly as it did before P14. The hop can cost latency; it can never 404 or
- * 5xx a listing.
+ * FAILURE NEVER 404s. A miss or a refused row returns { kind: 'miss' } and the
+ * page renders its refusal exactly as before P14. An error is split in two
+ * (2026-10-05): `transient: true` is the database not answering (timeout,
+ * network failure, HTTP 5xx / 408 / 429, a non-JSON gateway body), and
+ * middleware.ts answers it with a 503 + Retry-After so a crawler retries
+ * instead of indexing a failure page (lib/routing/listing-unavailable.ts).
+ * `transient: false` (missing env, any other 4xx) is a configuration fault a
+ * retry cannot fix, so it stays a pass-through and the page decides.
  */
 
 import {
@@ -37,7 +41,7 @@ import {
 export type EdgeCanonicalLookup =
   | { kind: 'row'; row: ListingCanonicalPathFields }
   | { kind: 'miss' }
-  | { kind: 'error'; reason: string }
+  | { kind: 'error'; reason: string; transient: boolean }
 
 /**
  * ListNumber (9 digits) or RETS ListingKey (26 digits). Anything else is not a
@@ -79,10 +83,15 @@ export type EdgeLookupOptions = {
   anonKey?: string | undefined
 }
 
+/** 5xx, 408 and 429 are the server not answering now; other 4xx are our fault and permanent. */
+export function isTransientHttpStatus(status: number): boolean {
+  return status >= 500 || status === 408 || status === 429
+}
+
 async function fetchRow(id: string, opts: EdgeLookupOptions): Promise<EdgeCanonicalLookup> {
   const url = (opts.supabaseUrl ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').trim().replace(/\/$/, '')
   const key = (opts.anonKey ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '').trim()
-  if (!url || !key) return { kind: 'error', reason: 'supabase env missing' }
+  if (!url || !key) return { kind: 'error', reason: 'supabase env missing', transient: false }
   const fetchImpl = opts.fetchImpl ?? fetch
   const params = new URLSearchParams({
     select: LISTING_CANONICAL_PATH_COLUMNS.join(','),
@@ -98,9 +107,11 @@ async function fetchRow(id: string, opts: EdgeLookupOptions): Promise<EdgeCanoni
       headers: { apikey: key, Authorization: `Bearer ${key}`, Accept: 'application/json' },
       signal: ctrl.signal,
     })
-    if (!res.ok) return { kind: 'error', reason: `HTTP ${res.status}` }
+    if (!res.ok) {
+      return { kind: 'error', reason: `HTTP ${res.status}`, transient: isTransientHttpStatus(res.status) }
+    }
     const data = (await res.json()) as unknown
-    if (!Array.isArray(data)) return { kind: 'error', reason: 'non-array body' }
+    if (!Array.isArray(data)) return { kind: 'error', reason: 'non-array body', transient: true }
     const rows = data.filter((r): r is Record<string, unknown> => !!r && typeof r === 'object')
     const byNumber = rows.filter((r) => String(r.ListNumber ?? '').trim() === id)
     // Two rows under one ListNumber: resolveCanonicalListingKey's maybeSingle()
@@ -113,7 +124,9 @@ async function fetchRow(id: string, opts: EdgeLookupOptions): Promise<EdgeCanoni
     const mapped = mapListingCanonicalPathRow(row)
     return mapped ? { kind: 'row', row: mapped } : { kind: 'miss' }
   } catch (err) {
-    return { kind: 'error', reason: err instanceof Error ? err.message : String(err) }
+    // An abort (our timeout), a refused connection or a body that is not JSON
+    // (a gateway's HTML error page): the database did not answer.
+    return { kind: 'error', reason: err instanceof Error ? err.message : String(err), transient: true }
   } finally {
     clearTimeout(timer)
   }

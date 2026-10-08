@@ -4,7 +4,6 @@ import { composeCmaBottomWhyList, composeCmaCoverIntro, emptyFsboCmaMergeFacts }
 import { whyThisListPrice } from '@/lib/cma/client-facing'
 import { renderCmaHtml } from '@/lib/cma/render'
 import { renderImmersiveCmaHtml } from '@/lib/cma/immersive'
-import { renderConsentShell, renderRegisterShell } from '@/lib/cma/register-gate'
 import { findSellerBannedWords } from '@/lib/cma/seller-text'
 import type { CmaAdjustedComp, CmaBroker, CmaPricing, CmaSubject } from '@/lib/cma/types'
 
@@ -167,16 +166,6 @@ describe('CMA seller copy has no mannered prose', () => {
       expiredAudit: {
         findings: [{ lens: 'pricing', fact: 'Listed at $800,000.', meaning: 'The ask sat above the closed sales.' }],
         services: [],
-        netSheet: {
-          salePrice: 472000,
-          lines: [],
-          totalCosts: 0,
-          estimatedNet: 472000,
-          netConservative: 464000,
-          netHighEnd: 481000,
-          assumptions: [],
-        },
-        feeLine: '',
       },
     })
     assertPlain('print-html', html)
@@ -199,21 +188,6 @@ describe('CMA seller copy has no mannered prose', () => {
       'https://ryan-realty.com',
     )
     assertPlain('immersive-html', immersive)
-
-    assertPlain(
-      'register-shell',
-      renderRegisterShell({ slug: 'cma-x', address: '2465 7th', clientName: 'Blair Auld' }),
-    )
-    assertPlain(
-      'consent-shell',
-      renderConsentShell({
-        slug: 'cma-x',
-        address: '2465 7th',
-        viewerEmail: 'blair@example.com',
-        smsConsentText: 'I agree to receive text messages from Ryan Realty',
-        claiming: false,
-      }),
-    )
   })
 })
 
@@ -352,16 +326,6 @@ const expiredArgs = bannedWordArgs({
   expiredAudit: {
     findings: [{ lens: 'pricing', fact: 'Listed at $460,000.', meaning: '' }],
     services: [],
-    netSheet: {
-      salePrice: 472000,
-      lines: [],
-      totalCosts: 0,
-      estimatedNet: 472000,
-      netConservative: 464000,
-      netHighEnd: 481000,
-      assumptions: [],
-    },
-    feeLine: '',
   },
 })
 
@@ -419,5 +383,12 @@ describe('the overpricing folklore never reaches a seller', () => {
       '<p>Homes that took 17 or more weeks closed at 92.1 percent.</p>',
     ]
     for (const html of fine) expect(findSellerBannedWords(html)).toEqual([])
+  })
+
+  it('does not treat a published review as our wording', () => {
+    const quote =
+      '<blockquote class="close-quote"><p>Matt kept me informed. He is the best broker I have ever worked with.</p></blockquote>'
+    expect(findSellerBannedWords(quote)).toEqual([])
+    expect(findSellerBannedWords(`<p>The sales we kept.</p>${quote}`).map((h) => h.label)).toEqual(['kept'])
   })
 })

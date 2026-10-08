@@ -28,16 +28,24 @@ const getPricingMarketIndex = vi.hoisted(() => vi.fn(async () => []))
 const getPricingSubdivisionCells = vi.hoisted(() => vi.fn(async () => new Map()))
 
 vi.mock('@/lib/pricing/sale-zoning', () => ({ resolveSaleZones: async () => new Map() }))
-vi.mock('@/lib/data/geo/subdivision-ring', () => ({
-  getSubdivisionRing,
-  assignSubdivisionSlugs,
-}))
+vi.mock('@/lib/data/geo/subdivision-ring', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/data/geo/subdivision-ring')>()
+  return {
+    ...actual,
+    getSubdivisionRing,
+    assignSubdivisionSlugs,
+    assignCommunitySlugs: async () => null,
+    // The Canter ring fixture is empty. Do not probe boundary_geojson.
+    readNeighborRings: async () => [],
+  }
+})
 vi.mock('@/lib/cma/comps', () => ({
   selectComps: vi.fn(async () => {
     throw new Error('listings selectComps must not run for Canter custom/new')
   }),
   selectCompsByKeys: vi.fn(),
-  MIN_COMPS: 3,
+  // Five price-setting sales (Matt 2026-10-07); the Canter contract already holds five facts rows.
+  MIN_COMPS: 5,
 }))
 vi.mock('@/lib/data/pricing/facts', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/data/pricing/facts')>()
@@ -330,8 +338,11 @@ describe('1130 E Canter live selectPricingComps path', () => {
     expect(sel.diagnostics.subject.subdivision).not.toMatch(/rolling horse meadow/i)
     const keys = sel.comps.map((c) => c.listingKey)
     const numbers = sel.comps.map((c) => c.mlsNumber)
-    expect(keys).toContain('RANCH-1058')
-    expect(keys).toContain('HB-1025')
+    // Walk to 7, price on 5+ (Matt 2026-10-07). The pocket is this home's own
+    // ground, so it walks its whole 24-month window: seven sales, seven seats.
+    // 1058 E Ranch, the sixth closest, now prices; under the five-seat cap it
+    // was cut on distance. 994 E Horse Back, past 18 months, still competes.
+    expect([...keys].sort()).toEqual(['HB-1025', 'HB-1104', 'HB-945', 'HB-994', 'HB-995', 'RANCH-1058', 'RHM-MEADOW'])
     expect(numbers).toContain('220218584')
     expect(numbers).toContain('220214720')
     expect(keys).not.toContain('UP-Clearpine')

@@ -1,0 +1,6 @@
+-- The catalog comment of delete_mls_removed_sales, lost when 20261002010548
+-- dropped the five-argument function for the six-argument one; now with the
+-- status class (Matt 2026-10-01, "Treat like removed sales").
+
+COMMENT ON FUNCTION public.delete_mls_removed_sales(text[], integer, date, date, boolean, text[]) IS
+  'Deletes listings the MLS no longer serves, by class: closed sales by default (Matt 2026-09-30, "Delete it automatically"), or, with p_statuses = Active, Coming Soon, Active Under Contract, Pending, listings we hold for sale or under contract (Matt 2026-10-01, "Treat like removed sales"). A key is due when its row is still of the class, was found missing on three daily checks (confirmations), the first 36 hours or more ago, and was confirmed missing within 26 hours (an approval skips that last rule). Each whole row goes to listing_mls_repair_log first (source absent-from-mls-delete), then the listing and its derived rows, in one transaction. p_max_delete is the budget per Bend calendar day, counted within the class. Over it, or while a held listing of the class is still confirmed missing, nothing is deleted and the due keys are held (held_at). p_approve deletes the named due keys, held or not, outside the budget. Called by lib/sync/closingsReconcile.ts and lib/sync/onMarketReconcile.ts.';

@@ -244,7 +244,7 @@ describe('Falcon letter residuals (C1/C3/C4/C9)', () => {
     for (const doc of [html, immersive]) {
       expect(doc).toContain('The sales that set this price')
       expect(doc).toContain('comp-stack-card')
-      expect(doc).toContain('Sale price today')
+      expect(doc).toContain('Adjusted price')
       expect(doc).not.toContain('class="flyer-title"')
       expect(doc).not.toContain('class="comp-strip"')
       expect(doc).not.toContain('comp-stack-cols')

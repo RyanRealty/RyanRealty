@@ -120,15 +120,17 @@ export function bendNewConSubdivisionHrefs(): { name: string; href: string }[] {
 }
 
 /** Document title — one of the SITE-132 SEO brief options. Layout adds the brand suffix. */
-export const BEND_NEW_CONSTRUCTION_TITLE = 'New Homes in Bend: Builder Savings'
+export const BEND_NEW_CONSTRUCTION_TITLE = 'New Construction Homes in Bend, Oregon'
 /** Visible H1 from the SITE-132 SEO brief. */
 export const BEND_NEW_CONSTRUCTION_H1 =
-  'New homes in Bend: inventory and builder savings'
+  'New construction homes in Bend: inventory and builder savings'
 export const BEND_NEW_CONSTRUCTION_DESCRIPTION =
-  'New homes in Bend: live Active inventory plus published builder savings. Snapshot researched 2026-09-16. Not a loan offer. Verify every term with the builder and lender.'
+  'New construction homes for sale in Bend, with the savings each builder has published as of September 16, 2026. Not a loan offer: confirm with the builder.'
 
 export const BEND_NEW_CONSTRUCTION_KEYWORDS = [
   'Bend new construction',
+  'new construction Bend Oregon',
+  'new construction homes Bend',
   'new homes Bend Oregon',
   'builder savings Bend',
   'rate buydown closing cost credit',

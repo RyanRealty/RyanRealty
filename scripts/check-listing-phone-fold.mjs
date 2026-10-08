@@ -80,7 +80,7 @@
  * PHONE_FOLD_TIMEOUT_MS (60s per page load).
  */
 
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { CI_PROBE_HEADERS } from './lib/ci-probe-ua.mjs'
 import { openGateContext } from './lib/gate-browser.mjs'
 import {

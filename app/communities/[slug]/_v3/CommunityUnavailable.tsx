@@ -1,4 +1,5 @@
 import { V3_ROOT_CLASS, V3Footer, V3_FOOTER_COLUMNS, V3Quiet } from '@/components/site/v3'
+import { cityHref } from '@/lib/site/place-href'
 import { valuationHref } from '@/lib/site/valuation-href'
 
 /**
@@ -38,7 +39,7 @@ export function CommunityUnavailable({
 }) {
   const cityDoor =
     city && citySlug
-      ? [{ label: `Homes for sale in ${city}`, href: `/cities/${citySlug}` }]
+      ? [{ label: `Homes for sale in ${city}`, href: cityHref(citySlug) ?? `/cities/${citySlug}` }]
       : []
   return (
     <>

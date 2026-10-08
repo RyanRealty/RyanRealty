@@ -13,7 +13,8 @@ import { listSubdivisionsWithFlags } from '@/app/actions/subdivision-flags'
 import type { CommunityForIndex, CommunityDetail } from '@/lib/communities'
 import { entityKeyToSlug } from '@/lib/community-slug'
 import { isResidentialInventoryType } from '@/lib/inventory-filters'
-import { getCanonicalCityForSubdivision } from '@/lib/data/communities/registry'
+import { getCanonicalCityForSubdivision, getResortCommunityBySlug } from '@/lib/data/communities/registry'
+import { resolveDurableCommunitySlug } from '@/lib/communities/community-public-pair'
 import { isCentralOregonCity } from '@/lib/central-oregon'
 import { getCommunityHeroUrlsBySlug, getGeoSnapshot, getCommunityListings as getCommunityListingsDAL } from '@/lib/data'
 import type { ListingTile } from '@/lib/data'
@@ -182,7 +183,16 @@ export const getCommunitiesForIndex = cache(async (): Promise<CommunityForIndex[
 /** Get community by slug; returns null if not found. */
 async function _getCommunityBySlugUncached(slug: string): Promise<CommunityDetail | null> {
   const citySlugs = await getCitySlugs()
-  const parsed = parseCommunitySlug(slug, citySlugs)
+  // SITE-214: a slug the committed registry names (bare public slug such as
+  // "tetherow" or "juniper-preserve", or its durable key) is a real community
+  // whatever the database says. Every read below swallows a database failure to
+  // null/empty, so without this a registered page under an outage fell through
+  // the junk-slug guard to null and was cached as a 404 for the whole window.
+  const registered =
+    getResortCommunityBySlug(slug) ?? getResortCommunityBySlug(resolveDurableCommunitySlug(slug))
+  const parsed =
+    parseCommunitySlug(slug, citySlugs) ??
+    (registered ? { city: registered.city, subdivision: registered.label } : null)
   if (!parsed) return null
   const { city, subdivision } = parsed
   const entityKey = subdivisionEntityKey(city, subdivision)
@@ -225,14 +235,19 @@ async function _getCommunityBySlugUncached(slug: string): Promise<CommunityDetai
     neighborhoods?: { name: string; slug: string } | null
   } | null
   const flags = await listSubdivisionsWithFlags()
-  const isResort = flags.some((f) => f.entity_key === entityKey && f.is_resort) || comm?.is_resort === true
+  const isResort =
+    flags.some((f) => f.entity_key === entityKey && f.is_resort) ||
+    comm?.is_resort === true ||
+    registered?.is_resort === true
 
   // Junk-slug guard: a REAL community has at least one signal — active listings,
   // a community DB row, a geo snapshot, or resort-registry membership. A bare
   // (city, subdivision) string with NONE of those is a fabricated page (e.g.
   // "Industrial, Madras Oregon" from an MLS subdivision artifact). Return null so
   // the page notFound()s instead of rendering invented content.
-  if (anyInventorySignal <= 0 && !comm && !snapshot && !isResort) {
+  // A registered community is never junk (SITE-214): the registry is committed
+  // evidence that does not depend on a database read answering.
+  if (anyInventorySignal <= 0 && !comm && !snapshot && !isResort && !registered) {
     return null
   }
 
@@ -260,7 +275,7 @@ async function _getCommunityBySlugUncached(slug: string): Promise<CommunityDetai
     city,
     citySlug,
     subdivision,
-    name: comm?.name ?? subdivision,
+    name: comm?.name ?? registered?.label ?? subdivision,
     description: comm?.description ?? null,
     heroImageUrl: normalizeBannerLikeUrl(comm?.hero_image_url ?? null) ?? bannerUrl ?? null,
     boundaryGeojson: comm?.boundary_geojson ?? null,

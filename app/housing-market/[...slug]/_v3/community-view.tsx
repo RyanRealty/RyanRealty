@@ -23,6 +23,7 @@ import {
   V3Instrument,
   V3Ledger,
   V3Quiet,
+  V3Takeaways,
   type V3ChartProps,
   type V3InstrumentFigure,
 } from '@/components/site/v3'
@@ -53,6 +54,8 @@ type Props = {
   faqs: ReadonlyArray<{ question: string; answer: string }>
   chart?: V3ChartProps
   sheet: ReactNode
+  /** The short answer after the opening (lib/site/place-takeaways, AEO 2026-10-04). */
+  takeaways?: readonly string[]
 }
 
 export function CommunityMarketView({
@@ -60,6 +63,7 @@ export function CommunityMarketView({
   cityName,
   citySlug,
   communitySlug = null,
+  takeaways = [],
   hud,
   mosText,
   verdict,
@@ -156,6 +160,15 @@ export function CommunityMarketView({
           ]}
         />
       )}
+
+      {/* The short answer right after the opening (AEO, Matt 2026-10-04): the
+          same primitive and builder the city and community pages use. */}
+      <V3Takeaways
+        id="takeaways"
+        heading={`${geoName} at a glance`}
+        items={takeaways}
+        source={refreshedAt ? `Single-family homes, Oregon Data Share MLS, as of ${formatDate(refreshedAt)}.` : null}
+      />
 
       {firstCityRow ? (
         <V3Ledger

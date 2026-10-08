@@ -17,6 +17,16 @@ export function cmaStylesheet(siteUrl: string): string {
   return `
   ${pageContractCss(CMA_MARGIN_IN)}
 
+  /* The contract reserves the bands and leaves them unpainted, so every sheet
+     sat in a white frame. Paint the sheet color through the margin. A named
+     page does not inherit the contract margin, so the navy sheets restate it. */
+  @page { background: #faf8f4; }
+  @page cma-navy {
+    size: Letter;
+    margin: ${CMA_MARGIN_IN.top}in ${CMA_MARGIN_IN.right}in ${CMA_MARGIN_IN.bottom}in ${CMA_MARGIN_IN.left}in;
+    background: #102742;
+  }
+
   @font-face {
     font-family: 'Amboqia Boriango';
     src: url('${siteUrl}/fonts/Amboqia_Boriango.otf') format('opentype');
@@ -63,11 +73,11 @@ export function cmaStylesheet(siteUrl: string): string {
     break-before: auto;
     page-break-before: auto;
   }
-  .page-cover { break-after: page; page-break-after: always; }
+  .page-cover { break-after: page; page-break-after: always; page: cma-navy; }
   .page-flyer { break-before: page; page-break-before: always; }
   /* Navy close is its own sheet. Leftover basis/disclosure lines must not
      sit above the closing header. */
-  .page-closing { break-before: page; page-break-before: always; }
+  .page-closing { break-before: page; page-break-before: always; page: cma-navy; }
 
   @media screen {
     /* Screen only: show sheets on a desk. Print takes its box from @page. */
@@ -616,9 +626,9 @@ export function cmaStylesheet(siteUrl: string): string {
 
   .signature-page {
     display: grid;
-    /* minmax(0, …) so a fixed name plate cannot inflate the letter past the
-       viewport when the phone stack media query loses (16+200+36+260 = 512). */
-    grid-template-columns: minmax(0, 200px) minmax(0, 1fr);
+    /* The portrait column is gone. One track, so the name plate cannot
+       leave an empty 200px gap beside the sign-off. */
+    grid-template-columns: minmax(0, 1fr);
     gap: 36px;
     align-items: end;
     margin-top: 22px;
@@ -688,8 +698,7 @@ export function cmaStylesheet(siteUrl: string): string {
     color: var(--muted);
     letter-spacing: 0.08em;
   }
-  /* 200px portrait + 36px gap + fixed 260px name plate is 496px — past a 375
-     content box. Collapse to one column and let the name use the row width. */
+  /* Phone: the name uses the row width instead of a fixed 260px plate. */
   @media screen and (max-width: 700px) {
     .signature-page {
       grid-template-columns: minmax(0, 1fr);
@@ -751,7 +760,7 @@ export function cmaStylesheet(siteUrl: string): string {
   }
 
   @media print {
-    body { background: white; margin: 0; padding: 0; }
+    html, body { background: transparent; margin: 0; padding: 0; }
     .page {
       box-shadow: none;
       margin: 0;
@@ -770,17 +779,13 @@ export function cmaStylesheet(siteUrl: string): string {
       break-after: auto;
       page-break-after: auto;
     }
-    /* A forced break before the close left the last disclosure paragraph
-       alone on its own sheet. Let the close follow that paragraph when the
-       two fit. The close itself stays whole: heading, reach list, signature.
-       Starting it in the leftover under basis-and-limits split the reach
-       list and left the signature on the next sheet. It is under a page, so
-       if it does not fit it moves, at the section boundary. */
+    /* A tall close continues on the next navy sheet. A quote, the reach
+       block, and the signature stay whole. */
     .page-closing {
       break-before: auto;
       page-break-before: auto;
-      break-inside: avoid;
-      page-break-inside: avoid;
+      break-inside: auto;
+      page-break-inside: auto;
     }
     /* The cover photo must not push "Prepared for" onto a blank next page.
        The content box is 9.9in. A loaded photo used to add its own height
@@ -846,6 +851,36 @@ export function cmaStylesheet(siteUrl: string): string {
     color: var(--cream);
     border-color: rgba(250, 248, 244, 0.55);
   }
+  /* The one next step: a time on the broker's calendar, then Call and Text.
+     Sentence case, not the uppercase CTA style (VOICE.md: a Call control says
+     Call), and a 44px target on screen and in a PDF read on a phone. */
+  .cta-actions.next-cta { margin: 16px 0 20px; gap: 10px; }
+  .cta-actions a.next-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    min-width: 88px;
+    box-sizing: border-box;
+    padding: 0 22px;
+    font-size: 13px;
+    letter-spacing: 0;
+    text-transform: none;
+    text-align: center;
+  }
+  @media screen and (max-width: 700px) {
+    .cta-actions.next-cta { display: grid; grid-template-columns: 1fr 1fr; }
+    .cta-actions.next-cta a.next-btn:not(.ghost),
+    .cta-actions.next-cta a.next-btn:only-child { grid-column: 1 / -1; }
+  }
+  .reach-block {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .reach-photo { width: 72px; height: auto; flex: 0 0 auto; display: block; }
   .page-closing .reach { margin: 6px 0 16px; max-width: 460px; }
   .page-closing .reach-row {
     display: grid;
@@ -854,6 +889,11 @@ export function cmaStylesheet(siteUrl: string): string {
     align-items: baseline;
     padding: 6px 0;
     border-top: 1px solid rgba(250, 248, 244, 0.22);
+  }
+  .page-closing .reach dd { min-width: 0; overflow-wrap: anywhere; }
+  @media screen and (max-width: 700px) {
+    .reach-block { flex-direction: column; gap: 10px; }
+    .page-closing .reach { width: 100%; max-width: none; }
   }
   .page-closing .reach-row:last-child { border-bottom: 1px solid rgba(250, 248, 244, 0.22); }
   .page-closing .reach dt {

@@ -153,6 +153,14 @@ export function composeBuildSummary(i: BuildSummaryInput): Record<string, unknow
     // without digging into the pricing sub-object.
     needs_review: i.pricing.needsReview,
     review_reason: i.pricing.reviewReason,
+    // The build's own hold (rule 22, ask inside the band), top-level so the
+    // queue can read the kind without digging into pricing. hold_measured
+    // says whether the build had an ask and a band to measure at all: a null
+    // hold_kind on a row that never measured is not a decision, and the send
+    // gates run the live backstop on it (holdDecidedFromSummary).
+    hold_kind: i.pricing.hold?.kind ?? null,
+    hold_reason: i.pricing.hold?.reason ?? null,
+    hold_measured: i.pricing.askInBandMeasured === true,
     // The adversarial audit (or a note that it was unavailable).
     audit: auditSummaryBlock(i.audit, i.firstRoundAudit, i.repairedKeys),
     // The full accuracy-contract evaluation — every check, pass or fail.
@@ -166,6 +174,9 @@ export function composeBuildSummary(i: BuildSummaryInput): Record<string, unknow
       comp_ppsf_cv: i.pricing.compPpsfCv,
       needs_review: i.pricing.needsReview,
       review_reason: i.pricing.reviewReason,
+      hold_kind: i.pricing.hold?.kind ?? null,
+      hold_reason: i.pricing.hold?.reason ?? null,
+      hold_measured: i.pricing.askInBandMeasured === true,
       method1_mid: i.pricing.method1Mid,
       method2: i.pricing.method2,
       method3: i.pricing.method3,
@@ -207,15 +218,29 @@ export function composeFailureSummary(opts: {
   docType: 'cma' | 'expired-audit'
   stage: 'subject' | 'comps' | 'pricing' | 'contract'
   error: string
+  at: string
   compSelection?: CompSelectionDiagnostics | null
+  /** selection.trace: the search's own sentences, rung by rung. */
+  trace?: readonly string[] | null
+  /** The comparability review that ended the build, when it did. */
+  review?: {
+    kept: string[]
+    verdicts: Array<{ listingKey: string; tier: string; basis?: string | null; reason: string }>
+    unstableKeys?: string[]
+  } | null
+  contractChecks?: ReadonlyArray<{ id: string; severity: string; pass: boolean; detail: string }> | null
 }): Record<string, unknown> {
   return {
     builder: opts.builder,
     doc_type: opts.docType,
     build_failed: true,
+    failed_at: opts.at,
     failed_at_stage: opts.stage,
     build_error: opts.error.slice(0, 2000),
     comp_selection: opts.compSelection ?? null,
+    trace: opts.trace ? [...opts.trace] : null,
+    review: opts.review ?? null,
+    failed_checks: (opts.contractChecks ?? []).filter((c) => c.severity === 'hard' && !c.pass),
   }
 }
 

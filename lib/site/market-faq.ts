@@ -52,6 +52,14 @@ export type MarketFaqInput = {
   medianSalePrice?: number | null
   /** "August 2026". Required with medianSalePrice. */
   medianSaleMonthLabel?: string | null
+  /**
+   * 12-month median sale price over the 12 months before, as a fraction
+   * (market_metric yoy_median_price: median_close(t)/median_close(t-12m)-1,
+   * withheld under 30 closes on either side). Emits "Are home prices going up
+   * in {place}?", the appreciation question Search Console shows people ask
+   * (AEO review 2026-10-04). Null emits nothing.
+   */
+  yoyMedianPrice?: number | null
   monthsOfSupply?: number | null
   /** Pulse row active_count when it differs from the page's displayed count. */
   pulseActiveCount?: number | null
@@ -189,6 +197,9 @@ export function buildMarketFaq(geoName: string, pulse: MarketFaqInput | null): M
         `The median sale price for a single-family home in ${geoName} was ${formatPriceExact(salePrice)} in ${pulse.medianSaleMonthLabel}.`,
       )
       datasetVariables.push({ name: 'Median Sale Price', value: Math.round(salePrice), unitText: 'USD' })
+      // People search "average home price" more than "median" (Search Console
+      // 2026-10-04). Answer that search honestly: say which figure this is.
+      sentences.push('That is the median, the middle sale, rather than the average, which a few very large sales would pull up.')
     }
     if (listPrice != null) {
       const basis = pulse.source === 'market-truth' ? 'a direct count of the active MLS listings' : 'live MLS data'
@@ -200,6 +211,19 @@ export function buildMarketFaq(geoName: string, pulse: MarketFaqInput | null): M
       datasetVariables.push({ name: 'Median List Price', value: Math.round(listPrice), unitText: 'USD' })
     }
     faqs.push({ question: `What is the median home price in ${geoName}?`, answer: sentences.join(' ') })
+  }
+
+  if (pulse.yoyMedianPrice != null && Number.isFinite(pulse.yoyMedianPrice)) {
+    // The pace tiles' rounding (formatPaceDelta), so the answer and the tile agree.
+    const pct = Math.round(pulse.yoyMedianPrice * 1000) / 10
+    const shown = Math.abs(pct).toFixed(1)
+    const lead =
+      pct === 0
+        ? `They are holding level. The median sale price of single-family homes in ${geoName} over the last 12 months matches the 12 months before.`
+        : pulse.yoyMedianPrice > 0
+          ? `Yes. The median sale price of single-family homes in ${geoName} over the last 12 months is up ${shown}% from the 12 months before.`
+          : `No. The median sale price of single-family homes in ${geoName} over the last 12 months is down ${shown}% from the 12 months before.`
+    faqs.push({ question: `Are home prices going up in ${geoName}?`, answer: lead })
   }
 
   const sfrPublished = publishSearchCount({ value: pulse.activeCount, grain: 'sfr' })

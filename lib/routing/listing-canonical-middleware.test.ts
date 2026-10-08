@@ -69,13 +69,50 @@ describe('middleware listing canonical hop', () => {
     expect(res.headers.get('x-middleware-next')).toBe('1')
   })
 
-  it('an unknown key or a failed lookup renders as before (no hop, no 404)', async () => {
+  it('an unknown key or a configuration fault renders as before (no hop, no 404, no 503)', async () => {
     let res = await middleware(req('/homes-for-sale/bend/rr-smoke-no-such-listing-999999999'))
     expect(res.status).toBe(200)
-    lookup.mockImplementation(async () => ({ kind: 'error', reason: 'timeout' }))
+    lookup.mockImplementation(async () => ({ kind: 'error', reason: 'supabase env missing', transient: false }))
     res = await middleware(req('/homes-for-sale/bend/1522-locksley-220226356'))
     expect(res.status).toBe(200)
     expect(res.headers.get('location')).toBeNull()
+  })
+
+  // GSC slide fix 2026-10-05: a failed listing read used to render a 200 page
+  // Google noindexed and merged across listings. Now it is a 503.
+  it('a database that does not answer is a 503 with Retry-After and no-store, after one retry', async () => {
+    lookup.mockImplementation(async () => ({ kind: 'error', reason: 'HTTP 503', transient: true }))
+    for (const p of [CANONICAL, '/homes-for-sale/bend/1522-locksley-220226356', `/listing/${LOCKSLEY.ListingKey}`]) {
+      lookup.mockClear()
+      const res = await middleware(req(p))
+      expect(res.status, p).toBe(503)
+      expect(res.headers.get('retry-after')).toBe('120')
+      expect(res.headers.get('cache-control')).toBe('no-store')
+      expect(res.headers.get('location')).toBeNull()
+      const body = await res.text()
+      expect(body).not.toMatch(/noindex/i)
+      expect(body).toContain('taking a moment')
+      expect(lookup).toHaveBeenCalledTimes(2)
+    }
+  })
+
+  it('a transient failure that clears on the retry renders (or hops) as normal', async () => {
+    let calls = 0
+    lookup.mockImplementation(async () =>
+      ++calls === 1 ? { kind: 'error', reason: 'timeout', transient: true } : { kind: 'row', row: LOCKSLEY },
+    )
+    let res = await middleware(req(CANONICAL))
+    expect(res.status).toBe(200)
+    expect(res.headers.get('x-middleware-next')).toBe('1')
+    calls = 0
+    res = await middleware(req('/homes-for-sale/bend/1522-locksley-220226356'))
+    expect(res.status).toBe(308)
+  })
+
+  it('a miss on a down-looking day is still the page refusal, never a 503', async () => {
+    lookup.mockImplementation(async () => ({ kind: 'miss' }))
+    const res = await middleware(req('/homes-for-sale/bend/1-nowhere-999999998'))
+    expect(res.status).toBe(200)
   })
 
   it('a screened bot gets its 403 without costing a lookup', async () => {

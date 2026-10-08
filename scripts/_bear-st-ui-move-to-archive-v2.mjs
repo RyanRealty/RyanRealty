@@ -12,7 +12,7 @@
  */
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 
 const STATE_PATH = 'tmp/skyslope-session.json'
 const OUT_DIR = 'tmp/bear-st-ui-archive-v2'

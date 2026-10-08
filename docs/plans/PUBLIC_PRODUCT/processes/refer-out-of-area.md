@@ -167,8 +167,9 @@ time (nothing aggregates it — `app/oregon/[city]/page.tsx:19-22`); the rendere
   noindex. Thin-content protection is a policy branch, not an accident.
 - **Out-of-area LISTING — the tier below the city page** (`lib/data/listings/service-area.ts`,
   `outOfAreaListingPolicy`): a listing detail page whose `City` is outside
-  `CENTRAL_OREGON_CITY_SLUGS` renders the honesty block, goes `noindex, follow`, and
-  leaves `listings.xml`. See §8a for the ruling and the numbers behind it. The predicate
+  `CENTRAL_OREGON_CITY_SLUGS` renders the honesty block and is `index, follow` with a
+  self canonical and a `listings.xml` row (the 2026-09-09 noindex and sitemap drop were
+  reverted by Matt 2026-10-05, see §8b). See §8a for the original ruling. The predicate
   is the SAME `isServiceAreaCity` the tile and feed reads use and the same membership
   `isOutOfAreaCityKey` gives the city tier, so the two tiers cannot disagree about a
   market (pinned by `lib/data/listings/service-area.test.ts`).
@@ -211,7 +212,18 @@ Terminal states:
 - **(c) Rejected submit** — validation error surfaced inline; visitor may retry.
 - **(d) Honeypot drop** — bot saw success, nothing was written.
 
-## 8a. The listing tier — Matt's ruling, 2026-09-08 (SITE-33)
+## 8b. REVERTED — Matt, 2026-10-05 ("Undo it")
+
+Out-of-area listing pages are **indexed again** (`index, follow`, self canonical) and back
+in `/sitemaps/listings.xml`. Reason: Search Console showed the out-of-area noindex cost
+about 36% of the impression drop since Sep 12 (~2,500 impressions and ~30 clicks a week).
+The honesty block (part 1), the page serving in full (part 3) and `/oregon/[city]` staying
+indexed (part 4) all stand; parts 2 and 5 below are undone. Held by
+`ci:listing-offmarket-index` (no `noindex` in the listing `generateMetadata`, no
+service-area filter in `getListingSitemapRows.ts`) and by the live pin
+`out-of-area-listing-indexed` in `data/seo/decisions.json`.
+
+## 8a. The listing tier — Matt's ruling, 2026-09-08 (SITE-33; parts 2 and 5 reverted 2026-10-05, §8b)
 
 This process owned the CITY page and stopped there. The listing detail pages the city
 page links to — the inventory it exists to show — carried none of its honesty and all of

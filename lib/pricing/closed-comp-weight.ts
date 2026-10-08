@@ -8,17 +8,36 @@
  *   1. same subdivision
  *   2. adjacent subdivisions
  *   3. the neighborhood or community
- * Size and bedrooms come after that. Recency comes after those. Each of those
- * adds less than one location step, so a same-subdivision sale outweighs a
- * similar-size sale from only the neighborhood, and an adjacent-subdivision
- * sale sits between those two.
+ * Size, year built, bedrooms, bathrooms, lot size, and recency come after
+ * that. Each of those adds less than one location step, so a same-subdivision
+ * sale outweighs a similar-size sale from only the neighborhood, and an
+ * adjacent-subdivision sale sits between those two. A 4-bedroom in the same
+ * subdivision still counts for a 3-bedroom subject. The extra bedroom lowers
+ * the weight more than one bath apart does. Neither removes the sale, and
+ * neither lets an adjacent sale pass it.
  *
- * Recency half-life is still ~3 months when location is the same: a 6-month-old
- * sale carries about a quarter of the recency of a fresh close. Pending and
- * active sales never enter this weight.
+ * Within about 350 square feet, within 5 years, and within one bath is the
+ * close match, and it weighs more than a home outside those bands. A full
+ * match on size, year, subdivision, bedrooms, bathrooms, and lot weighs more
+ * than an adjacent sale with an extra bedroom.
+ *
+ * Recency follows the market path that already moved the sale price to today.
+ * A quiet index, under about 1% a month, keeps a 12-month sale of the same
+ * house nearly as heavy as its 3-month twin. A market that is actually
+ * running, a path that reversed, a capped path, or no index at all keeps the
+ * 3-month half-life: a 6-month sale carries about a quarter of the recency
+ * of a fresh close. Pending and active sales never enter this weight.
+ *
+ * A sale that does not set the price (lib/pricing/price-set.ts) weighs 0,
+ * however short the set. The fill that once re-weighted such a sale when
+ * fewer than three set the price was deleted 2026-10-07 (Matt: five
+ * price-setting sales is the floor; under it the build is a comp shortage).
  */
 
+import { wholeBathPair } from '@/lib/pricing/bath-count'
 import { normSubdivision } from '@/lib/pricing/classes'
+import { REGIME_MONTHLY_CUT } from '@/lib/pricing/market-path'
+import { saleSetsThePrice } from '@/lib/pricing/price-set'
 
 export type ClosedCompWeightInput = {
   subjectSqft: number
@@ -26,16 +45,62 @@ export type ClosedCompWeightInput = {
   monthsSinceClose: number
   subjectBeds?: number | null
   saleBeds?: number | null
+  subjectBaths?: number | null
+  saleBaths?: number | null
+  /**
+   * MLS full baths. When both are present the bath step compares them, so a
+   * powder room is not a whole bath (lib/pricing/bath-count.ts).
+   */
+  subjectBathsFull?: number | null
+  saleBathsFull?: number | null
+  subjectYearBuilt?: number | null
+  saleYearBuilt?: number | null
   subjectSubdivision?: string | null
   saleSubdivision?: string | null
   selectionTier?: string | null
   ownPlat?: boolean | null
+  /**
+   * The walk already admitted this sale on rule 20 with its fullest inputs
+   * (containing plat slugs, the member-plat map). True means the weight
+   * does not re-grade it; absent or false, the weight runs the test itself.
+   */
+  setsPrice?: boolean | null
+  /**
+   * The subject sits in a recorded plat. Its quarter-mile pocket is walked
+   * after the touching rows, so a pocket sale weighs as the neighborhood
+   * step there, not as a touching plat.
+   */
+  subjectRecordedPlat?: boolean | null
   /** Set when the caller already classified the sale. Wins over the fields above. */
   locationMatch?: LocationMatch | null
+  /** Community whose boundary contains the address. Not the MLS plat name. */
+  subjectCommunity?: string | null
+  saleCommunity?: string | null
+  subjectCommunityLocated?: boolean
+  saleCommunityLocated?: boolean
+  subjectLotAcres?: number | null
+  saleLotAcres?: number | null
+  /**
+   * The path that moved this sale's price to the as-of date. Absent, not from
+   * the index, reversed, or capped keeps the 3-month half-life.
+   */
+  marketPathSource?: 'index' | 'none' | null
+  /** Average monthly index rate over this sale's own span. */
+  marketMonthlyRate?: number | null
+  /** The index turned around between the sale and today. */
+  marketReversed?: boolean | null
+  /** The move was capped, or an upward city move was refused. Not a flat market. */
+  marketCapped?: boolean | null
 }
 
-/** Months for recency to halve, inside one location step. */
+/** Months for recency to halve when the market is running, or the index is missing. */
 export const CLOSED_COMP_RECENCY_HALF_LIFE_MONTHS = 3
+
+/**
+ * A quiet index stretches the half-life this far. A 12-month sale of the same
+ * house still counts. It does not catch a fresh close.
+ */
+const CALM_RECENCY_HALF_LIFE_MONTHS = 36
 
 /**
  * No single closed sale may carry more than this share of the weighted
@@ -60,6 +125,16 @@ export type LocationMatch = keyof typeof LOCATION_MATCH_WEIGHT
 
 /** Less than one location step. A perfect secondary match cannot cross a class. */
 export const LOCATION_SECONDARY_SPAN = 0.99
+
+/** Living area this close still counts as the same size for weight. */
+export const SQFT_CLOSE_BAND = 350
+
+/** Year built this close still counts as the same age for weight. */
+export const AGE_CLOSE_YEARS = 5
+
+/** A lot this close, by share of the subject's lot or by acres, still matches. */
+export const LOT_CLOSE_RATIO = 0.25
+export const LOT_CLOSE_ACRES = 0.05
 
 /** Cap raw shares, then renormalize. Equal shares when nothing is usable. */
 export function capClosedCompShares(raw: readonly number[]): number[] {
@@ -89,7 +164,10 @@ export function capClosedCompShares(raw: readonly number[]): number[] {
       }
       return s
     })
-    const roomIdx = next.map((s, i) => (s < floorCap ? i : -1)).filter((i) => i >= 0)
+    // A sale that weighed nothing does not receive the excess. The cap trims
+    // a heavy sale; it does not hand that share to a sale that does not set
+    // the price.
+    const roomIdx = next.map((s, i) => (positive[i]! > 0 && s < floorCap ? i : -1)).filter((i) => i >= 0)
     const room = roomIdx.reduce((sum, i) => sum + (floorCap - next[i]!), 0)
     if (room <= 0 || excess <= 0) {
       shares = next
@@ -109,12 +187,17 @@ export function capClosedCompShares(raw: readonly number[]): number[] {
  * community. A pocket sale in another plat is the adjacent step: the ladder
  * walks that street cluster after the subject's own plat and before the
  * neighborhood. Anything past the community is wider and weighs less.
+ *
+ * Both ladders stamp `locationMatch` at admission from where the sale sits
+ * (locationMatchFromFacts), and that stamp wins. The rung-name reading below
+ * is only for a sale nobody located (a broker-picked set, an older caller).
  */
 export function resolveLocationMatch(input: {
   subjectSubdivision?: string | null
   saleSubdivision?: string | null
   selectionTier?: string | null
   ownPlat?: boolean | null
+  subjectRecordedPlat?: boolean | null
   locationMatch?: LocationMatch | null
 }): LocationMatch {
   if (input.locationMatch) return input.locationMatch
@@ -125,10 +208,14 @@ export function resolveLocationMatch(input: {
   if (input.ownPlat === true || sameName || tier.startsWith('subdivision-')) {
     return 'same-subdivision'
   }
-  if (tier.startsWith('adjacent-subdivision') || tier.startsWith('pocket-')) {
+  if (tier.startsWith('pocket-') && input.subjectRecordedPlat === true) {
+    return 'neighborhood-or-community'
+  }
+  if (tier.startsWith('adjacent-sub') || tier.startsWith('pocket-')) {
     return 'adjacent-subdivision'
   }
   if (
+    tier.startsWith('closer-sub') ||
     tier.startsWith('neighborhood-') ||
     tier.startsWith('community-') ||
     tier.startsWith('like-community')
@@ -138,13 +225,123 @@ export function resolveLocationMatch(input: {
   return 'wider'
 }
 
-function bedProximity(subjectBeds: number | null | undefined, saleBeds: number | null | undefined): number {
-  if (subjectBeds == null || saleBeds == null) return 1
-  if (!Number.isFinite(subjectBeds) || !Number.isFinite(saleBeds)) return 1
-  const gap = Math.abs(Math.floor(subjectBeds) - Math.floor(saleBeds))
+/**
+ * Where a sale sits relative to the subject, by the walk's own membership
+ * tests (lib/pricing/match.ts saleLocationMatch, lib/cma/comps.ts on the
+ * listings ladder): the same-subdivision rung's plat test, the adjacent rung's
+ * touching ring, the closer rung's next row, the pocket rung's street cluster,
+ * and the parent wall's community line and neighborhood polygon
+ * (parentWallAdmits, resolveMarketArea).
+ */
+export type SaleLocationFacts = {
+  /** The subject's own recorded plat (the same-subdivision rung's test). */
+  ownPlat: boolean
+  /** A plat that touches the subject's plat (the adjacent rung's ring). */
+  touchingPlat: boolean
+  /** A subject with no recorded plat: the sale is in its street-cluster pocket. */
+  streetPocket?: boolean
+  /** A plat that touches a touching plat (the closer rung's row, inside the parent). */
+  platRow?: boolean
+  /** Inside the subject's community boundary or its neighborhood polygon. */
+  insideParent: boolean
+}
+
+/**
+ * Rule 15's location step from where the SALE sits, not from the name of the
+ * rung that happened to admit it. 915 Saginaw (River West, 2026-10-07): four
+ * sales inside River West came in on the 1.25-mile and 5-mile rungs and
+ * weighed as wider (0) instead of the neighborhood (1).
+ */
+export function locationMatchFromFacts(facts: SaleLocationFacts): LocationMatch {
+  if (facts.ownPlat) return 'same-subdivision'
+  if (facts.touchingPlat || facts.streetPocket === true) return 'adjacent-subdivision'
+  if (facts.insideParent || facts.platRow === true) return 'neighborhood-or-community'
+  return 'wider'
+}
+
+/** One whole bedroom apart still counts. It weighs less than one bath apart. */
+const BED_ONE_APART = 0.85
+/**
+ * One whole bath apart is still the close match: same subdivision, within
+ * about 350 square feet, and within 5 years. It weighs more than an extra
+ * bedroom and less than the same bath count.
+ */
+const BATH_ONE_APART = 0.9
+
+/** Whole rooms. A missing count is not a mismatch. One apart still weighs. */
+function roomProximity(
+  subject: number | null | undefined,
+  sale: number | null | undefined,
+  oneApart: number,
+): number {
+  if (subject == null || sale == null) return 1
+  if (!Number.isFinite(subject) || !Number.isFinite(sale) || subject <= 0 || sale <= 0) return 1
+  const gap = Math.abs(Math.floor(subject) - Math.floor(sale))
   if (gap === 0) return 1
-  if (gap === 1) return 0.85
+  if (gap === 1) return oneApart
   return 0.7
+}
+
+function yearBuilt(value: number | null | undefined): number | null {
+  if (value == null || !Number.isFinite(value)) return null
+  const year = Math.floor(value)
+  if (year < 1800 || year > 2100) return null
+  return year
+}
+
+/**
+ * Within 5 years is the same age, and a closer year still weighs a little
+ * more. The sixth year steps down. Unknown year does not lower the weight.
+ */
+function ageProximity(subjectYear: number | null | undefined, saleYear: number | null | undefined): number {
+  const subject = yearBuilt(subjectYear)
+  const sale = yearBuilt(saleYear)
+  if (subject == null || sale == null) return 1
+  const gap = Math.abs(subject - sale)
+  if (gap <= AGE_CLOSE_YEARS) return 1 - 0.04 * (gap / AGE_CLOSE_YEARS)
+  if (gap <= 15) return 0.85
+  return 0.7
+}
+
+function acres(value: number | null | undefined): number | null {
+  if (value == null || !Number.isFinite(value) || value <= 0) return null
+  return value
+}
+
+/**
+ * Within a quarter of the subject's lot, or 0.05 acres, is the same lot, and
+ * a closer lot still weighs a little more. Past that the factor falls. A
+ * missing lot does not lower the weight.
+ */
+const LOT_BAND_EDGE = 0.96
+
+function lotProximity(subjectLot: number | null | undefined, saleLot: number | null | undefined): number {
+  const subject = acres(subjectLot)
+  const sale = acres(saleLot)
+  if (subject == null || sale == null) return 1
+  const gap = Math.abs(subject - sale)
+  const rel = gap / subject
+  const bandT = Math.min(rel / LOT_CLOSE_RATIO, gap / LOT_CLOSE_ACRES)
+  if (bandT <= 1) return 1 - (1 - LOT_BAND_EDGE) * bandT
+  const over = Math.max(0, rel - LOT_CLOSE_RATIO)
+  return LOT_BAND_EDGE / (1 + 1.5 * over)
+}
+
+/**
+ * Within 350 square feet is the same size: the factor stays high, and a
+ * closer living area still weighs a little more. Past 350 it falls, so a
+ * home about twice that far does not pull like a same-size sale. One square
+ * foot across the line does not jump.
+ */
+const SQFT_BAND_EDGE = 0.92
+const SQFT_PAST_SLOPE = 2.5
+
+function sizeProximity(subjectSqft: number, saleSqft: number): number {
+  if (!(subjectSqft > 0) || !(saleSqft > 0)) return 1
+  const gap = Math.abs(subjectSqft - saleSqft)
+  if (gap <= SQFT_CLOSE_BAND) return 1 - (1 - SQFT_BAND_EDGE) * (gap / SQFT_CLOSE_BAND)
+  const past = (gap - SQFT_CLOSE_BAND) / subjectSqft
+  return SQFT_BAND_EDGE / (1 + SQFT_PAST_SLOPE * past)
 }
 
 function locationFieldsPresent(input: ClosedCompWeightInput): boolean {
@@ -160,19 +357,71 @@ function locationFieldsPresent(input: ClosedCompWeightInput): boolean {
 }
 
 /**
+ * Age of the sale, after the index has already moved its price.
+ * A quiet index stretches the half-life. A running market, a reversal, a
+ * capped path, or no index keeps the 3-month half-life.
+ */
+function recencyFactor(months: number, input: ClosedCompWeightInput): number {
+  const indexed =
+    input.marketPathSource === 'index' && input.marketReversed !== true && input.marketCapped !== true
+  const rate = Math.abs(Number(input.marketMonthlyRate) || 0)
+  if (!indexed || rate > REGIME_MONTHLY_CUT) {
+    return Math.pow(0.5, months / CLOSED_COMP_RECENCY_HALF_LIFE_MONTHS)
+  }
+  const t = rate / REGIME_MONTHLY_CUT
+  const halfLife =
+    CALM_RECENCY_HALF_LIFE_MONTHS +
+    (CLOSED_COMP_RECENCY_HALF_LIFE_MONTHS - CALM_RECENCY_HALF_LIFE_MONTHS) * t
+  return Math.pow(0.5, months / halfLife)
+}
+
+/**
  * Location step, then size, bedrooms, and recency inside that step.
  * Callers that pass only size and recency keep the prior size-times-recency
  * product, so a number with no location class does not grow a false step.
  */
 export function closedCompWeight(input: ClosedCompWeightInput): number {
+  // A sale that is a different community, or a clearly different size or product,
+  // does not set the price. Weight 0 is not averaged back in by this function.
+  // A sale the walk stamped setsPrice was graded there on the same rule with
+  // fuller inputs; re-grading it here with fewer could weigh a counted sale
+  // at zero and fail a set the walk reported complete.
+  if (
+    input.setsPrice !== true &&
+    !saleSetsThePrice({
+      ownPlat: input.ownPlat,
+      subjectSubdivision: input.subjectSubdivision,
+      saleSubdivision: input.saleSubdivision,
+      subjectCommunity: input.subjectCommunity,
+      saleCommunity: input.saleCommunity,
+      subjectCommunityLocated: input.subjectCommunityLocated,
+      saleCommunityLocated: input.saleCommunityLocated,
+      subjectSqft: input.subjectSqft,
+      saleSqft: input.saleSqft,
+      subjectLotAcres: input.subjectLotAcres,
+      saleLotAcres: input.saleLotAcres,
+    })
+  ) {
+    return 0
+  }
   const months = Math.max(0, Number(input.monthsSinceClose) || 0)
   const subjectSqft = Number(input.subjectSqft) || 0
   const saleSqft = Number(input.saleSqft) || 0
-  const sizeProximity =
-    subjectSqft > 0 ? 1 / (1 + Math.abs(subjectSqft - saleSqft) / subjectSqft) : 1
-  const recency = Math.pow(0.5, months / CLOSED_COMP_RECENCY_HALF_LIFE_MONTHS)
-  const secondary = sizeProximity * bedProximity(input.subjectBeds, input.saleBeds) * recency
-  if (!locationFieldsPresent(input)) return +(sizeProximity * recency).toFixed(4)
+  const size = sizeProximity(subjectSqft, saleSqft)
+  const recency = recencyFactor(months, input)
+  const baths = wholeBathPair(
+    { baths: input.subjectBaths, bathsFull: input.subjectBathsFull },
+    { baths: input.saleBaths, bathsFull: input.saleBathsFull },
+  )
+  const secondary =
+    size *
+    roomProximity(input.subjectBeds, input.saleBeds, BED_ONE_APART) *
+    roomProximity(baths.subject, baths.sale, BATH_ONE_APART) *
+    ageProximity(input.subjectYearBuilt, input.saleYearBuilt) *
+    lotProximity(input.subjectLotAcres, input.saleLotAcres) *
+    recency
+  // No location class: keep the similarity product, and do not invent a step.
+  if (!locationFieldsPresent(input)) return +secondary.toFixed(4)
   const base = LOCATION_MATCH_WEIGHT[resolveLocationMatch(input)]
   return +(base + LOCATION_SECONDARY_SPAN * secondary).toFixed(4)
 }

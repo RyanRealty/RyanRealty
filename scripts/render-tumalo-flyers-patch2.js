@@ -3,7 +3,7 @@
  * Patch 2 — F6 and F7 fixes only
  */
 
-const { chromium } = require('playwright');
+const { chromium } = require('./lib/marked-playwright.mjs');
 const fs = require('fs');
 const path = require('path');
 

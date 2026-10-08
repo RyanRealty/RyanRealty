@@ -8,16 +8,16 @@
  *
  * Design notes:
  * - `id` is the natural key the actions use: expired → `listing_key`, fsbo → `fsbo_url`.
- * - Compliance is fail-closed and structured: the authoritative send gate is the
- *   live `isSuppressed(personId,'sms')` tag read UNION the persisted
- *   `compliance_hard_stop` column (spec §4.3/§6.1). `sendable` is a display
- *   convenience; the server action re-checks every gate live at send time.
+ * - Compliance is fail-closed and structured. Email hard stop is a litigator,
+ *   a deceased owner, email suppression, or the persisted `compliance_hard_stop`
+ *   column. DNC and TCPA phone flags block sms and call only. `sendable` is a
+ *   display convenience; the server action re-checks every gate live at send time.
  * - Photo/lat/lng: FSBO rows carry them natively; expired rows join `listings`.
  */
 
 export type ProspectKind = 'expired' | 'fsbo'
 
-/** Structured skip-trace compliance flags, e.g. 'litigator' | 'dnc:tcpa' | 'deceased'. */
+/** Structured skip-trace flags. Email hard stop: 'litigator' | 'deceased' | 'hard-stop'. Phone only: 'dnc' | 'dnc:tcpa'. */
 export type ComplianceFlag = string
 
 /** The document (expired-audit for expired, CMA for FSBO) state for a prospect row. */

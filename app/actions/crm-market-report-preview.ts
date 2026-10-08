@@ -14,6 +14,7 @@
  * shows BELOW the iframe. Traces never ship in a recipient email.
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import { getCrmAccess } from '@/app/actions/crm'
 import { getMarketReportData } from '@/lib/data/crm/getMarketReportData'
 import {
@@ -22,7 +23,7 @@ import {
 } from '@/lib/crm/market-report-email'
 import { shellBrokerFor } from '@/lib/email/broker-identity'
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const SITE_URL = siteOrigin()
 
 export type MarketReportEmailPreview = {
   subject: string

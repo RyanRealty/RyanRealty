@@ -160,7 +160,7 @@ to 09-18. Otherwise copy is judged by one question: does it sound like a person 
 Central Oregon and wants to help. What still binds is not style: real numbers (§0), real
 quotes, fair housing, and MLS remarks shown as written.
 
-**Seller CMA letters:** full rule in [`.cursor/rules/cma-seller-letter.mdc`](.cursor/rules/cma-seller-letter.mdc) and AGENTS.md item 17. Do not put the bad shapes back.
+**Seller CMA letters:** `.cursor/rules/cma-seller-letter.mdc` and AGENTS.md 17–23. Expired and FSBO intake is AGENTS.md 24 and `.cursor/rules/expired-fsbo-intake.mdc`.
 
 ---
 
@@ -295,7 +295,7 @@ or override?" Research sources at `docs/research/best-practices-*.md`.
 
 # §4. Media — Grok surface + Studio (2026-08-26)
 
-Never add a second video factory; Remotion is deleted.
+One video factory, lib/studio: footage, drawn scenes, type, score.
 **Every Grok call goes through [`lib/grok/`](lib/grok/)** (text, JSON, search,
 vision, stills, edits, motion). Model ids sit in `lib/grok/client.ts`, gated by
 `ci:grok-models`. Never call `api.x.ai` elsewhere.
@@ -425,11 +425,7 @@ and silently returns nothing. Enforced by `check-dal-column-quoting.mjs`.
 
 ## Methodology version — cite the stamp, not the definition
 
-`public.cache_methodology_definitions` holds 3 rows and the newest definition is
-`v4-2026-05-15`. **But no live cache row is stamped v4.** Every row the site serves carries
-`methodology_version = 'v3-2026-05-07'`: `market_pulse_live` 17/17 rows,
-`market_stats_cache` 10,955 rows, plus 70 legacy `v1-pre-fix` and 5 NULL. **State
-`v3-2026-05-07` — that is the stamp on the row — and never claim v4 for a served figure.**
+Served cache rows are stamped `methodology_version = 'v3-2026-05-07'`, not the newer unused `v4-2026-05-15` definition. State v3. Never claim v4 for a served figure.
 
 ---
 
@@ -444,13 +440,11 @@ and silently returns nothing. Enforced by `check-dal-column-quoting.mjs`.
 - **Truthful and accurate, always.** If you're not sure, say so. Never state something as fact
   unless you've confirmed it.
 - **All code work is pushed to GitHub as a branch right away (locked process rule 14).**
-  Main lands only by fast-forward from the Mini after the push gate. No rebase, force-push, or
-  reset. Do not merge to `main` yourself. Worktrees only for parallel work; push the branch, or
-  hand off in `CROSS_AGENT_HANDOFF.md` before stop. See
-  [`AGENTS.md`](AGENTS.md). **R-221:** do not poll GitHub Actions.
-- **Never ask Matt to run anything, and never queue found work for him (Matt 2026-09-25).**
-  Git, terminal and deploys are yours; a defect found on the way ships this session, not as a
-  suggested task.
+  Land main with a fast-forward when the work is ready. Any machine may do it. No rebase, force-push, or reset.
+  See [`AGENTS.md`](AGENTS.md). **R-221:** do not poll GitHub Actions.
+- **Never ask Matt to run anything or what access you have; never queue found work for him
+  (Matt 2026-09-25, 10-07).** Access: [`docs/ACCESS_INVENTORY.md`](docs/ACCESS_INVENTORY.md).
+  Git, terminal, deploys are yours; a found defect ships this session.
 - **Always ask Matt questions to get what you need (Matt 2026-09-24).** A call that is his
   goes to him as a question (AskUserQuestion, recommended option first), not a guess or a
   closing "say X if you want".
@@ -518,7 +512,7 @@ else fires on trigger match.
 
 | Trigger | Load this |
 |---|---|
-| Any video build | **§4** — Grok Imagine / Grok Video. Remotion factory is gone. |
+| Any video build | **§4** and the `motion-design` skill. Remotion is gone. |
 | SEO blog post | [`social_media_skills/blog-post/SKILL.md`](social_media_skills/blog-post/SKILL.md). Publishing path is Supabase `blog_posts` rendered by the live Next site. |
 | Paid Meta pipeline, marketing automation, weekly optimization crons, seller funnel | [`docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`](docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md) first, then [`docs/MARKETING_LEAD_FLOW.md`](docs/MARKETING_LEAD_FLOW.md), `.cursor/skills/facebook-seller-growth/SKILL.md` |
 | Facebook lead-gen ad | the two docs above for live wiring, then `social_media_skills/facebook-lead-gen-ad/SKILL.md` |
@@ -544,12 +538,13 @@ else fires on trigger match.
 5. Pocket rungs are skipped when the plat and the street already have five sales before the first quarter-mile pocket rung. A cheap different-plat pocket sale drops when no own-plat sale remains in the set that is actually priced. Do not check only the pre-review set.
 6. Do not build or send a CMA if the home is listed again. Live status first. Active, pending, or otherwise on the market means skip.
 7. A rebuild does not send, enqueue, or approve.
-8. Minimum 3 good comp sales. No 2-comp letters. Comp-shortage stays build-failed.
+8. Minimum 5 price-setting sales (Matt 2026-10-07). Comp-shortage stays build-failed.
 9. Nothing enters the send queue without Matt's review.
 10. No owner email until a real owner-path send to matt@ryan-realty.com shows, on that contact, sent, delivered, opened, each link click, and the sell-page visit, with timestamps. Tests must use that production path, not a separate test sender. Every outbound email link is click-tracked. Links are short linked words, never raw tracking URLs. Approved CMA email wording does not change without Matt's sign-off.
 11. Approved CMAs send only in the weekday 9:03 AM PT window.
 12. Never use buyer or seller names in social, email, or public copy.
 13. No em dashes in public site copy.
-14. All code work is pushed to GitHub as a branch right away. Main lands only by fast-forward from the Mini after the push gate. No rebase, force-push, or reset.
+14. All code work is pushed to GitHub as a branch right away. Land main with a fast-forward when the work is ready. Any machine may do it. No rebase, force-push, or reset.
+15. A townhouse subject uses closed townhouse sales. sale_pricing_facts stores those closes as product_class attached, not townhouse, so the facts pool filters property_sub_type to townhouse and classes the row as townhouse. Do not pull condos, apartments, or other attached homes just because they share product_class attached. Do not change how single-family comps are chosen.
 
 **CRM is in-house** `public.crm_people` via `sendEvent()` in [`lib/crm/send-event.ts`](lib/crm/send-event.ts). Review at `/admin/crm`.

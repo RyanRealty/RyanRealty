@@ -4,6 +4,7 @@
  */
 
 import { escapeHtml, int } from '@/lib/cma/render-blocks'
+import { pacificDay, type CameOffFacts } from '@/lib/cma/listing-status'
 
 const esc = escapeHtml
 
@@ -31,6 +32,14 @@ function chartUsd(n: number): string {
     return `$${m >= 10 || n % 1_000_000 === 0 ? m.toFixed(0) : m.toFixed(1)}M`
   }
   return `$${Math.round(n / 1000)}K`
+}
+
+/** Two asks that would round to the same short label print their own dollars. */
+function timelineAskLabel(ask: number, asks: readonly number[]): string {
+  const short = chartUsd(ask)
+  const shared = asks.filter((n) => chartUsd(n) === short).length > 1
+  if (!shared) return short
+  return `$${Math.round(ask).toLocaleString('en-US')}`
 }
 
 function linePath(xs: number[], ys: number[]): string {
@@ -85,6 +94,21 @@ function niceStep(span: number): number {
   return mult * mag
 }
 
+/** Months since year zero, so two months a gap apart sit a gap apart. */
+function monthOrdinal(iso: string | null | undefined): number {
+  // Stored render_args are untyped JSON; a point without a month is not drawn.
+  if (typeof iso !== 'string' || !/^\d{4}-\d{2}/.test(iso)) return Number.NaN
+  const y = Number(iso.slice(0, 4))
+  const m = Number(iso.slice(5, 7))
+  return Number.isFinite(y) && Number.isFinite(m) ? y * 12 + (m - 1) : Number.NaN
+}
+
+function ordinalIso(ord: number): string {
+  const y = Math.floor(ord / 12)
+  const m = (ord % 12) + 1
+  return `${y}-${String(m).padStart(2, '0')}-01`
+}
+
 /**
  * Median close over completed months. Needs six priced months.
  *
@@ -92,11 +116,20 @@ function niceStep(span: number): number {
  * 360 drawn to fit below 700px. It was the last chart on the document still
  * held in a pan box on a phone, which cropped six of its twelve months —
  * nothing a seller reads sits in a scroll box (blueprint § The register).
+ *
+ * KEEP THE CALENDAR (2026-10-08). The month line reads Market Truth, which
+ * withholds a month's median under ten sales. Dropping that month and joining
+ * its neighbours drew Sunriver's February one step after November, a line
+ * through three months nobody measured (dataviz anti-patterns: "Empty months
+ * dropped so a line can connect"). Each month sits at its own place on the
+ * axis, the line breaks where a month has no median, and the axis still
+ * names it.
  */
 export function medianCloseLineSvg(points: TrendPoint[], opts?: { width?: number }): string {
-  const priced = [...points]
-    .filter((p) => p.medianSalePrice != null && p.medianSalePrice > 0)
+  const dated = [...points]
+    .filter((p) => Number.isFinite(monthOrdinal(p.periodStart)))
     .sort((a, b) => a.periodStart.localeCompare(b.periodStart))
+  const priced = dated.filter((p) => p.medianSalePrice != null && p.medianSalePrice > 0)
   if (priced.length < 6) return ''
   const W = opts?.width ?? 720
   const phone = W <= 400
@@ -111,39 +144,59 @@ export function medianCloseLineSvg(points: TrendPoint[], opts?: { width?: number
   const vals = priced.map((p) => p.medianSalePrice!)
   const axis = niceAxis(vals)
   const y = (v: number) => bottom - ((bottom - top) * (v - axis.floor)) / Math.max(axis.ceil - axis.floor, 1)
-  const xs = priced.map((_, i) => left + ((right - left) * i) / Math.max(priced.length - 1, 1))
+  // The calendar runs from the first month in the series to the last, priced
+  // or not, so a withheld month keeps its width.
+  const firstOrd = monthOrdinal(dated[0]!.periodStart)
+  const lastOrd = monthOrdinal(dated[dated.length - 1]!.periodStart)
+  const span = Math.max(lastOrd - firstOrd, 1)
+  const xAt = (ord: number) => left + ((right - left) * (ord - firstOrd)) / span
+  const ords = priced.map((p) => monthOrdinal(p.periodStart))
+  const xs = ords.map(xAt)
   const ys = vals.map(y)
-  const path = linePath(xs, ys)
+  // One run per stretch of consecutive priced months; a lone month is a dot.
+  const runs: Array<{ xs: number[]; ys: number[] }> = []
+  ords.forEach((ord, i) => {
+    const run = runs[runs.length - 1]
+    if (run && i > 0 && ord - ords[i - 1]! === 1) {
+      run.xs.push(xs[i]!)
+      run.ys.push(ys[i]!)
+    } else {
+      runs.push({ xs: [xs[i]!], ys: [ys[i]!] })
+    }
+  })
+  const path = runs
+    .filter((r) => r.xs.length > 1)
+    .map((r) => linePath(r.xs, r.ys))
+    .join(' ')
   // Thin the month axis so two labels never overlap on a phone.
   // Thin the month axis from the RIGHT, so the newest month always carries a
   // label. Thinning left-to-right dropped it, and the line then ran to an
-  // unnamed point past the last tick.
-  const tickAt = new Set<number>()
+  // unnamed point past the last tick. Every calendar month is a candidate,
+  // a withheld one included: the axis names the month the line skips.
+  // Collected right to left, emitted left to right so the text reads in calendar order.
+  const ticks: string[] = []
   let nextTickX = Number.POSITIVE_INFINITY
-  for (let i = xs.length - 1; i >= 0; i--) {
-    const label = monthLabel(priced[i]!.periodStart)
+  for (let ord = lastOrd; ord >= firstOrd; ord--) {
+    const x = xAt(ord)
+    const label = monthLabel(ordinalIso(ord))
     const halfW = label.length * fs * 0.58
-    if (nextTickX - xs[i]! >= halfW * 2 + 3) {
-      tickAt.add(i)
-      nextTickX = xs[i]!
+    if (nextTickX - x >= halfW * 2 + 3) {
+      nextTickX = x
+      // The newest month's mark sits ON the right edge of the plot, so a
+      // centred label runs half its width past the frame — "Aug" printed
+      // 1.1px outside the viewBox at 375 on all four documents. The tick at
+      // either end anchors to the edge instead of hanging over it.
+      const anchor = x + halfW > W - 2 ? 'end' : x - halfW < 2 ? 'start' : 'middle'
+      const tx = anchor === 'end' ? W - 2 : anchor === 'start' ? 2 : x
+      ticks.push(
+        `<text x="${tx.toFixed(1)}" y="${bottom + 22}" text-anchor="${anchor}" font-size="${fs}" fill="#102742" opacity="0.75">${label}</text>`,
+      )
     }
   }
-  // The gap between two months, which is how wide a per-month target may be.
-  const hitSpan = xs.length > 1 ? Math.abs(xs[1]! - xs[0]!) : 44
+  // The width of one calendar month, which is how wide a per-month target may be.
+  const hitSpan = (right - left) / span
   const dots = xs
     .map((x, i) => {
-      const label = monthLabel(priced[i]!.periodStart)
-      let tick = ''
-      if (tickAt.has(i)) {
-        // The newest month's mark sits ON the right edge of the plot, so a
-        // centred label runs half its width past the frame — "Aug" printed
-        // 1.1px outside the viewBox at 375 on all four documents. The tick at
-        // either end anchors to the edge instead of hanging over it.
-        const halfW = label.length * fs * 0.58
-        const anchor = x + halfW > W - 2 ? 'end' : x - halfW < 2 ? 'start' : 'middle'
-        const tx = anchor === 'end' ? W - 2 : anchor === 'start' ? 2 : x
-        tick = `<text x="${tx.toFixed(1)}" y="${bottom + 22}" text-anchor="${anchor}" font-size="${fs}" fill="#102742" opacity="0.75">${label}</text>`
-      }
       // Delta 2: "Hover or tap the month line: the value and the month." The
       // reading is the month and the figure already plotted at that point.
       const read = `${monthLabel(priced[i]!.periodStart)}: ${chartUsd(vals[i]!)} median close`
@@ -160,7 +213,7 @@ export function medianCloseLineSvg(points: TrendPoint[], opts?: { width?: number
       return `<g class="month-mark" data-read="${esc(read)}" tabindex="0" role="button" aria-label="${esc(read)}">
       <rect x="${(x - hitW / 2).toFixed(1)}" y="${(ys[i]! - hitH / 2).toFixed(1)}" width="${hitW.toFixed(1)}" height="${hitH}" fill="transparent"/>
       <circle cx="${x.toFixed(1)}" cy="${ys[i]!.toFixed(1)}" r="${phone ? 3 : 4}" fill="#102742"/>
-    </g>${tick}`
+    </g>`
     })
     .join('')
   // DRAW THE AXIS, NOT JUST ITS TWO ENDS (Matt 2026-09-10). The plot carried a
@@ -180,8 +233,8 @@ export function medianCloseLineSvg(points: TrendPoint[], opts?: { width?: number
     <text x="${left - 10}" y="${(y(axis.ceil) + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="#102742" opacity="0.7">${chartUsd(axis.ceil)}</text>
     <text x="${left - 10}" y="${(y(mid) + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="#102742" opacity="0.55">${chartUsd(mid)}</text>
     <text x="${left - 10}" y="${(y(axis.floor) + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="#102742" opacity="0.7">${chartUsd(axis.floor)}</text>
-    <path d="${path}" fill="none" stroke="#102742" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
-    ${dots}
+    ${path ? `<path d="${path}" fill="none" stroke="#102742" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>` : ''}
+    ${dots}${ticks.reverse().join('')}
   </svg>`
 }
 
@@ -198,9 +251,23 @@ export function medianCloseCaption(points: TrendPoint[]): string {
     .map((p) => p.medianSalePrice)
     .filter((v): v is number => v != null && v > 0)
   if (vals.length < 6) return ''
+  // A broken line says why it is broken.
+  const blank = monthsWithoutMedian(points)
   return `<p class="small">Median close by month. Range ${chartUsd(Math.min(...vals))} to ${chartUsd(
     Math.max(...vals),
-  )}.</p>`
+  )}.${blank > 0 ? ' A month with too few sales for a middle price is left blank.' : ''}</p>`
+}
+
+/** Calendar months inside the drawn span that carry no median. */
+export function monthsWithoutMedian(points: readonly TrendPoint[]): number {
+  const priced = points
+    .filter((p) => p.medianSalePrice != null && p.medianSalePrice > 0)
+    .map((p) => monthOrdinal(p.periodStart))
+    .filter((o) => Number.isFinite(o))
+  const all = points.map((p) => monthOrdinal(p.periodStart)).filter((o) => Number.isFinite(o))
+  if (priced.length === 0 || all.length === 0) return 0
+  const span = Math.max(...all) - Math.min(...all) + 1
+  return span - new Set(priced).size
 }
 
 export function medianCloseLinePhoneSvg(points: TrendPoint[]): string {
@@ -225,6 +292,12 @@ export function monthsOfSupplyBarsSvg(input: {
   perMonth: number
   place: string
   width?: number
+  /**
+   * The closed-sale window the pace is an average over (CLAUDE.md §0: months
+   * of supply divides by closed_last_6_months / 6). The bar says so instead
+   * of "a typical month" (reader review 2026-10-07).
+   */
+  windowMonths?: number
 }): string {
   const { activeCount, perMonth } = input
   if (!(activeCount > 0) || !(perMonth > 0)) return ''
@@ -246,18 +319,41 @@ export function monthsOfSupplyBarsSvg(input: {
     <line x1="${plotL}" y1="${barY}" x2="${Math.max(x(value), plotL + 1).toFixed(1)}" y2="${barY}" stroke="${tint}" stroke-width="${weight}" stroke-linecap="butt"/>
     <text x="${W - 2}" y="${barY + 5}" text-anchor="end" font-size="${fs + 2}" font-weight="600" fill="${TL_INK}">${int(Math.round(value))}</text>`
   }
+  const months = monthsWord(input.windowMonths ?? 6)
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(
-    `${int(Math.round(activeCount))} homes for sale in ${input.place}, and about ${int(Math.round(perMonth))} sell in a typical month`,
+    `${int(Math.round(activeCount))} single-family homes for sale in ${input.place}, and an average of ${int(
+      Math.round(perMonth),
+    )} sold each month over the last ${months} months`,
   )}" class="trend-svg mos-bars">
-    ${bar(0, activeCount, `Homes for sale in ${input.place} right now`, TL_INK, 14)}
-    ${bar(1, perMonth, 'Homes that sell in a typical month', TL_INK, 14)}
+    ${bar(0, activeCount, activeBarLabel(input.place, W, fs), TL_INK, 14)}
+    ${bar(1, perMonth, `Sold each month, average of the last ${months} months`, TL_INK, 14)}
   </svg>`
+}
+
+/**
+ * The count bar names what it counts: the single-family homes for sale, the
+ * same population as the pace under it (2026-10-08). A long place name on a
+ * phone drops "right now" (the sentence above already says it) before the
+ * label would run past the drawing; the 0.58em glyph estimate is the one the
+ * month line thins its ticks by.
+ */
+export function activeBarLabel(place: string, width: number, fontSize: number): string {
+  const full = `Single-family homes for sale in ${place} right now`
+  if (full.length * fontSize * 0.58 <= width - 4) return full
+  return `Single-family homes for sale in ${place}`
+}
+
+/** "six", "twelve": a window a reader reads as words. */
+export function monthsWord(n: number): string {
+  const words: Record<number, string> = { 3: 'three', 6: 'six', 12: 'twelve' }
+  return words[n] ?? int(n)
 }
 
 export function monthsOfSupplyBarsPhoneSvg(input: {
   activeCount: number
   perMonth: number
   place: string
+  windowMonths?: number
 }): string {
   return monthsOfSupplyBarsSvg({ ...input, width: 360 })
 }
@@ -304,14 +400,14 @@ function fitText(
 
 // ── How fast homes like yours went ──────────────────────────────────────────
 // Named rows on one days axis. Each kept sale is the days it waited for an
-// offer; the subject is the days it waited and never got one. It replaces a
+// offer; the subject is the days it was on the market and did not sell. It replaces a
 // month ledger of one-to-three listings and a row of dashes, which answered
 // no question a seller has.
 
 export type DaysRow = {
   label: string
   days: number
-  /** The subject's own row. Full navy, and the bar says no offer arrived. */
+  /** The subject's own row. Full navy, and the bar says how the listing ended (expired, canceled, withdrawn). */
   subject: boolean
   /** Printed at the bar end. */
   valueLabel: string
@@ -453,7 +549,7 @@ export function daysToOfferSvg(
   )
   const plotL = gutter
   // Reserve the right margin for the longest value label. The subject's reads
-  // "192 days, no offer" and used to run off the frame.
+  // "192 days, did not sell" and used to run off the frame.
   const longest = Math.max(...kept.map((r) => labelWidth(r.valueLabel, DAYS_FS, r.subject)))
   const plotR = W - Math.min(Math.max(longest + 16, 70), 190)
   const x = (v: number) => plotL + ((plotR - plotL) * v) / max
@@ -502,7 +598,7 @@ export function daysToOfferSvg(
  * F8, 2026-09-07: the 720-unit strip was held at `min-width` inside a pan box
  * below 700px. That is the right call for a wide chart whose reading survives
  * a cropped tail — but this chart's punchline is the subject's own bar and its
- * label ("192 days, no offer"), and at 375 both that label and the market
+ * label ("192 days, expired"), and at 375 both that label and the market
  * median's label sat outside the visible width of a box no seller scrolls.
  *
  * So this layout is drawn to fit, the way `priceRulerPhoneSvg` is. The row
@@ -623,10 +719,22 @@ export type ListingTimelineInput = {
   rangeHigh: number
   /** What the shaded zone is, in the seller's words. */
   rangeLabel: string
-  /** "withdrawn" / "expired" / "canceled". Printed at the end of the line. */
+  /**
+   * "withdrawn" / "expired" / "canceled": how it came off, printed at the end
+   * of the line. "off market" when it left Active under one status and took
+   * another later (lib/cma/listing-status.ts cameOffStatus), printed "came off".
+   */
   status: string | null
   /** Days the period ran. Printed beside the end. */
   days: number | null
+  /**
+   * The day it came off, the status it left Active for, and its status of
+   * record with the day that took effect. The reading under the chart turns
+   * them into "It came off the market on Feb 10 after 71 days, and the listing
+   * expired on Sep 30." when the status of record came later
+   * (lib/cma/listing-status.ts cameOffThenSentence).
+   */
+  cameOff?: CameOffFacts | null
   caption: string
 }
 
@@ -640,11 +748,10 @@ type TimelineGeometry = {
   high: number
 }
 
+/** UTC midnight of the Pacific day a date or MLS timestamp falls on (never its UTC day). */
 function timelineDay(value: string | null | undefined): number | null {
-  const raw = String(value ?? '').trim()
-  if (!raw) return null
-  const day = raw.slice(0, 10)
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return null
+  const day = pacificDay(value ?? null)
+  if (!day) return null
   const t = Date.parse(`${day}T00:00:00.000Z`)
   return Number.isNaN(t) ? null : t
 }
@@ -692,18 +799,34 @@ function timelineStepPath(
 }
 
 function monthDay(iso: string): string {
-  const d = new Date(`${iso.slice(0, 10)}T12:00:00.000Z`)
-  return Number.isNaN(d.getTime())
+  const day = pacificDay(iso)
+  const d = new Date(`${day ?? ''}T12:00:00.000Z`)
+  return day == null || Number.isNaN(d.getTime())
     ? ''
     : d.toLocaleString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
 }
 
-/** The end of the line: "came off withdrawn · 187 days". */
+/**
+ * The end of the line, as a person says it: "withdrawn after 187 days".
+ *
+ * It printed "came off withdrawn · 25 days", the MLS status word bolted onto a
+ * verb and a bare count (reader review 2026-10-07, 20676 Wild Rose).
+ */
 export function timelineEndLabel(input: ListingTimelineInput): string {
   const status = (input.status ?? '').trim().toLowerCase()
-  const days = input.days != null && input.days > 0 ? `${int(input.days)} days` : null
-  const off = status ? `came off ${status}` : input.offMarketDate ? 'came off' : 'still listed'
-  return days ? `${off} · ${days}` : off
+  const n = input.days != null && input.days > 0 ? Math.round(input.days) : null
+  const span = n != null ? `${int(n)} ${n === 1 ? 'day' : 'days'}` : null
+  const ended = /^withdrawn/.test(status)
+    ? 'withdrawn'
+    : /^expired/.test(status)
+      ? 'expired'
+      : /^cancell?ed/.test(status)
+        ? 'canceled'
+        : status || input.offMarketDate
+          ? 'came off'
+          : null
+  if (ended == null) return span ? `on the market ${span}` : 'still listed'
+  return span ? `${ended} after ${span}` : ended
 }
 
 export function listingTimelineSvg(input: ListingTimelineInput): string {
@@ -746,6 +869,27 @@ export function listingTimelinePhoneSvg(input: ListingTimelineInput): string {
  * asking-price label, so the sentence does not run through a dollar figure.
  * A short zone has no room inside; the caption goes just above it.
  */
+/** Geist's measured width a character at these sizes, in em (see timelineBody). */
+const ZONE_CHAR_EM = 0.62
+/** The smallest the zone label is drawn. */
+const ZONE_MIN_FS = 8
+
+/**
+ * The zone label as one line, shrunk to fit, or, when one line would still
+ * run past the frame at the smallest size, as two lines broken after the
+ * first comma ("where homes like yours sold," / "adjusted for date, size and
+ * seller concessions"). Exported so a test can measure every line.
+ */
+export function zoneLabelLines(label: string, available: number, fs: number): { lines: string[]; fs: number } {
+  const fit = (longest: number) => Math.min(fs, available / Math.max(longest * ZONE_CHAR_EM, 1))
+  const one = fit(label.length)
+  if (one >= ZONE_MIN_FS) return { lines: [label], fs: one }
+  const cut = label.indexOf(', ')
+  if (cut <= 0) return { lines: [label], fs: ZONE_MIN_FS }
+  const lines = [label.slice(0, cut + 1), label.slice(cut + 2)]
+  return { lines, fs: Math.max(ZONE_MIN_FS, fit(Math.max(...lines.map((l) => l.length)))) }
+}
+
 function zoneCaptionY(
   zoneTop: number,
   zoneBottom: number,
@@ -785,11 +929,12 @@ function timelineBody(o: {
   // Only the asks carry a number. A price on every point is unread chaos
   // (dataviz skill, step 4) — the zone is named, not numbered on both edges.
   const last = g.steps[g.steps.length - 1]!
+  const askAmounts = g.steps.map((s) => s.ask)
   const marks = g.steps
     .map((s, i) => {
       const cx = x(s.t)
       const cy = y(s.ask)
-      const label = chartUsd(s.ask)
+      const label = timelineAskLabel(s.ask, askAmounts)
       const w = label.length * fs * 0.58
       // The first ask labels above its own run, from the left. A cut labels to
       // the RIGHT of its drop: centred, the label would sit inside the vertical
@@ -830,7 +975,6 @@ function timelineBody(o: {
   // 20506 Murphy. Above the zone, the same caption sat under an ask near the
   // top and the line struck through it.
   const askLabelYs = [...g.steps.map((s) => y(s.ask) - 9), endLabelY]
-  const zoneLabelY = zoneCaptionY(zoneTop, zoneBottom, askLabelYs, fs, top)
   // The zone label NAMES which range this is — the adjusted one — and that is
   // a longer string than the plot is wide on a phone. It shrinks to fit rather
   // than running off the right edge; the look-pass measures every label's own
@@ -839,16 +983,28 @@ function timelineBody(o: {
   // at plotL + 6 and the viewBox ends at W. 0.62em a character is what Geist
   // actually measures at these sizes — 0.55 fitted on paper and overflowed by
   // 3.4 units in the browser, which the phone-frame test caught.
-  const zoneLabelFs = Math.max(
-    8,
-    Math.min(fs, (W - plotL - 8) / Math.max(input.rangeLabel.length * 0.62, 1)),
-  ).toFixed(1)
+  // When it names every adjustment the sales carry ("adjusted for date, size
+  // and seller concessions", 3177 Coho) it can be too long for one line even
+  // at the 8-unit floor, so it breaks once after "sold," onto a second line.
+  const zone = zoneLabelLines(input.rangeLabel, W - plotL - 8, fs)
+  const zoneLineH = zone.fs * 1.2
+  const zoneBlock = zone.fs + zoneLineH * (zone.lines.length - 1)
+  const zoneLabelY = zoneCaptionY(zoneTop, zoneBottom, askLabelYs, zoneBlock, top)
+  const zoneLabelFs = zone.fs.toFixed(1)
+  const zoneTspans = zone.lines
+    .map((line, i) => {
+      const dy = i === 0 ? -zoneLineH * (zone.lines.length - 1) : zoneLineH
+      return zone.lines.length === 1
+        ? esc(line)
+        : `<tspan x="${plotL + 6}" dy="${dy.toFixed(1)}">${esc(line)}</tspan>`
+    })
+    .join('')
 
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(input.caption)}" class="trend-svg tl-figure" data-draw="1">
     <rect x="${plotL}" y="${zoneTop.toFixed(1)}" width="${(plotR - plotL).toFixed(1)}" height="${Math.max(zoneBottom - zoneTop, 2).toFixed(1)}" fill="${TL_INK}" fill-opacity="0.13"/>
     <line x1="${plotL}" y1="${zoneTop.toFixed(1)}" x2="${plotR}" y2="${zoneTop.toFixed(1)}" stroke="${TL_INK}" stroke-opacity="0.34" stroke-width="1"/>
     <line x1="${plotL}" y1="${zoneBottom.toFixed(1)}" x2="${plotR}" y2="${zoneBottom.toFixed(1)}" stroke="${TL_INK}" stroke-opacity="0.34" stroke-width="1"/>
-    <text x="${plotL + 6}" y="${zoneLabelY.toFixed(1)}" font-size="${zoneLabelFs}" fill="${TL_INK}">${esc(input.rangeLabel)}</text>
+    <text x="${plotL + 6}" y="${zoneLabelY.toFixed(1)}" font-size="${zoneLabelFs}" fill="${TL_INK}">${zoneTspans}</text>
     <text x="${plotL - 8}" y="${(zoneTop + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${TL_MUTED}">${esc(chartUsd(g.high))}</text>
     <text x="${plotL - 8}" y="${(zoneBottom + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${TL_MUTED}">${esc(chartUsd(g.low))}</text>
     <line x1="${plotL}" y1="${bottom.toFixed(1)}" x2="${plotR}" y2="${bottom.toFixed(1)}" stroke="${TL_EDGE}" stroke-width="0.75"/>
@@ -884,6 +1040,8 @@ export type MarketSlopePanel = {
   toN: string
   move: 'rose' | 'fell' | 'held flat'
   deltaPct: number
+  /** Printed in place of the move word (a half of one sale is not a trend). */
+  label?: string
 }
 
 export type MarketSlopesInput = {
@@ -919,8 +1077,9 @@ function slopePanel(
   const rightY = midY + (panel.move === 'rose' ? -travel / 2 : panel.move === 'fell' ? travel / 2 : 0)
   const xL = x0 + 8
   const xR = x0 + w - 8
-  const ink = panel.move === 'fell' ? SLOPE_DOWN : TL_INK
-  const word = panel.move === 'held flat' ? 'held flat' : panel.move
+  // A labelled panel (one sale a half) states no move, so it is never inked as a decline.
+  const ink = panel.move === 'fell' && !panel.label ? SLOPE_DOWN : TL_INK
+  const word = panel.label ?? (panel.move === 'held flat' ? 'held flat' : panel.move)
   const wordY = y0 + 98
   const mx = (xL + xR) / 2
   return `<text x="${xL.toFixed(1)}" y="${titleY.toFixed(1)}" font-size="11" fill="${TL_MUTED}">${esc(panel.title)}</text>

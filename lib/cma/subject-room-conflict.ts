@@ -151,5 +151,9 @@ export function applyReconciledRoomCounts(
   subject: CmaSubject,
   resolved: { beds: number | null; baths: number | null },
 ): CmaSubject {
-  return { ...subject, beds: resolved.beds ?? subject.beds, baths: resolved.baths ?? subject.baths }
+  const baths = resolved.baths ?? subject.baths
+  // A bath count taken from the home's own sale record no longer matches the
+  // listing's full / half split, so the split goes with the listing count.
+  const split = baths !== subject.baths ? { bathsFull: null, bathsHalf: null } : {}
+  return { ...subject, beds: resolved.beds ?? subject.beds, baths, ...split }
 }

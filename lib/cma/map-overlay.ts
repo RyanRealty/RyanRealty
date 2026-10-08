@@ -54,16 +54,31 @@ export function simplifyRing(ring: MapLatLng[], maxPoints = 40): MapLatLng[] {
   return out
 }
 
-export function ringsFromGeometry(geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon | null | undefined): MapLatLng[][] {
+/**
+ * The outer ring of each polygon. The defaults sample each ring to 40 points
+ * and keep two polygons, which is what a Static Maps URL can carry. A
+ * point-in-polygon test and a drawn SVG must not use that sample: a lot-traced
+ * plat sampled to 40 points can leave its own homes outside (Larkspur Village
+ * Phases III and IV, 744 vertices, left 20676 Wild Rose's star outside its
+ * own subdivision, 2026-10-07). Pass `{ maxPoints: Infinity, maxPolygons:
+ * Infinity }` for the recorded shape.
+ */
+export function ringsFromGeometry(
+  geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon | null | undefined,
+  opts: { maxPoints?: number; maxPolygons?: number } = {},
+): MapLatLng[][] {
   if (!geometry) return []
+  const maxPoints = opts.maxPoints ?? 40
+  const maxPolygons = opts.maxPolygons ?? 2
+  const sample = (ring: MapLatLng[]) => (Number.isFinite(maxPoints) ? simplifyRing(ring, maxPoints) : ring)
   if (geometry.type === 'Polygon') {
     const ring = ringFromCoords(geometry.coordinates[0] ?? [])
-    return ring.length >= 4 ? [simplifyRing(ring)] : []
+    return ring.length >= 4 ? [sample(ring)] : []
   }
-  return geometry.coordinates
-    .map((poly) => simplifyRing(ringFromCoords(poly[0] ?? [])))
+  const rings = geometry.coordinates
+    .map((poly) => sample(ringFromCoords(poly[0] ?? [])))
     .filter((ring) => ring.length >= 4)
-    .slice(0, 2)
+  return Number.isFinite(maxPolygons) ? rings.slice(0, maxPolygons) : rings
 }
 
 export function pathParam(color: string, fill: string, ring: MapLatLng[]): string | null {

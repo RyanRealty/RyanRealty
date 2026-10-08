@@ -14,7 +14,8 @@
  * or omitted. Mountain High is the one title that names that listed count.
  */
 
-import type { pageMetadata } from '@/lib/site/page-metadata'
+import { cityHref } from '@/lib/site/place-href'
+import { fitTitle, type pageMetadata } from '@/lib/site/page-metadata'
 import { shareDescription } from '@/lib/share-metadata'
 import { isCanonicalCommunitySlug } from '@/lib/communities/canonical-community-slug'
 import { isSelfCityCommunity } from '@/lib/communities/self-city-community'
@@ -74,11 +75,12 @@ export function communitySerpTitle(input: {
   listedCount?: number | null
 }): string {
   const { name, city, slug, listedCount } = input
-  // A self-city community's /cities/<slug> page is titled "{place} real
-  // estate" (publishCityRealEstateTitle), so this page keeps the inventory
-  // title and the two never share a title again (SITE-187 / SITE-184). A
-  // compound slug is noindex and not a registered community: unchanged.
-  if (isSelfCityCommunity(slug) || !isCanonicalCommunitySlug(slug)) {
+  // A compound slug is noindex and not a registered community: unchanged.
+  // A self-city community (Sunriver, Black Butte Ranch) took the inventory-only
+  // title while its /cities/<slug> twin held "{place} real estate" (SITE-187 /
+  // SITE-184). That twin now 301s here (Matt 2026-10-04), so this page carries
+  // both queries like every other registered community.
+  if (!isCanonicalCommunitySlug(slug)) {
     return `${name} Homes for Sale | ${city}, OR`
   }
   // Mountain High GSC: title at pos 5–15 with 0 CTR. Name the on-page listed
@@ -90,7 +92,9 @@ export function communitySerpTitle(input: {
   // "{name} real estate" is the other query for the same URL: Tetherow first
   // (Matt 2026-09-22), every registered community since (Matt 2026-09-24).
   // The heading stays "{name} homes for sale".
-  return `${name} real estate | ${homes} | ${city}, OR`
+  // Fit the 60-char SERP width (Matt 2026-10-05): the town tail goes first,
+  // then "| Homes for Sale"; "{name} real estate" always leads.
+  return fitTitle(`${name} real estate | ${homes} | ${city}, OR`, `${name} real estate | ${homes}`, `${name} real estate`)
 }
 
 export function communitySerpDescription(input: {
@@ -378,7 +382,11 @@ export function buildCommunitySchemas(input: {
       items: [
         { name: 'Home', url: '/' },
         { name: 'Communities', url: '/communities' },
-        ...(cityName ? [{ name: cityName, url: citySlug ? `/cities/${citySlug}` : '/cities' }] : []),
+        // The city level resolves where the city page lives; a self-city
+        // community's city IS this page, so it has no separate level.
+        ...(cityName && (!citySlug || cityHref(citySlug) !== `/communities/${slug}`)
+          ? [{ name: cityName, url: citySlug ? (cityHref(citySlug) ?? `/cities/${citySlug}`) : '/cities' }]
+          : []),
         { name, url: `/communities/${slug}` },
       ],
     },

@@ -34,10 +34,22 @@ import type {
 import type { CmaMarketContext } from '@/lib/cma/types'
 import type { BpoListingCycle, BpoListingHistory } from '@/lib/bpo/types'
 import { listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
+import {
+  cameOffStatus,
+  cameOffThenSentence,
+  lastActiveRun,
+  mergeStatusChanges,
+  pacificDay,
+  pacificDaysBetween,
+  sameStatus,
+  type ListingStatusChange,
+} from '@/lib/cma/listing-status'
 import type { ListingTimelineInput, ListingTimelineStep } from '@/lib/cma/market-charts'
 import { askStoryReading } from '@/lib/cma/ask-story'
+import { askStepIsOwnEra } from '@/lib/cma/price-path'
 import { reanchorSellerNet } from '@/lib/pricing/seller-net'
 import { priceUnderFailedAsk, type FailedAskPullFacts } from '@/lib/pricing/failed-ask-under'
+import { printedBandBounds } from '@/lib/pricing/price-set'
 
 /**
  * Where the seller's own ask sat against what homes like theirs sold for, in
@@ -47,10 +59,12 @@ import { priceUnderFailedAsk, type FailedAskPullFacts } from '@/lib/pricing/fail
  */
 export { askAgainstRangeSentence } from '@/lib/cma/ask-story'
 
-// ── Fee facts (Matt, principal broker, 2026-07-14) ──────────────────────────
-/** Listing fee for every expired-listing engagement. */
-export const EXPIRED_LISTING_FEE_PCT = 2.5
-/** Our normal listing fee (the site's Enhanced plan) — stated for contrast. */
+// ── Fee facts ───────────────────────────────────────────────────────────────
+/** Our one listing fee on every letter, expired, canceled and withdrawn homes
+ *  included (Matt 2026-10-08, "3% for everyone"; the 2026-07-14 2.5% expired
+ *  rate is retired with the unprinted net sheet that carried it). The printed
+ *  net page reads NET_LISTING_FEE_PCT in lib/pricing/seller-net.ts, held equal
+ *  to this by lib/pricing/seller-net.test.ts. */
 export const STANDARD_LISTING_FEE_PCT = 3.0
 /** Net-sheet assumption for buyer-broker compensation. Negotiable per offer
  *  under the current rules; the seller decides. Shown as an assumption line. */
@@ -87,25 +101,6 @@ export interface ExpiredFailureFinding {
   meaning: string
 }
 
-export interface ExpiredNetSheetLine {
-  label: string
-  amount: number | null
-  /** true = our fee (fact); false = third-party estimate the seller confirms. */
-  isOurFee: boolean
-  note: string | null
-}
-
-export interface ExpiredNetSheet {
-  salePrice: number
-  lines: ExpiredNetSheetLine[]
-  totalCosts: number
-  estimatedNet: number
-  /** The engine's conservative + high-end nets for the same cost structure. */
-  netConservative: number
-  netHighEnd: number
-  assumptions: string[]
-}
-
 /**
  * The final listing period, as a shape a renderer can draw.
  *
@@ -131,8 +126,6 @@ export interface ExpiredFinalCycle {
 export interface ExpiredAuditData {
   findings: ExpiredFailureFinding[]
   services: string[]
-  netSheet: ExpiredNetSheet
-  feeLine: string
   /**
    * The whole ask exposure: every price the final listing period wore, how
    * long each ran, and which one ran the clock. Round four, class B — the
@@ -150,10 +143,15 @@ export interface ExpiredAuditData {
 
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`
 
-/** UTC midnight of the YYYY-MM-DD a date or timestamp falls on, else null. */
+/**
+ * UTC midnight of the Pacific calendar day a date or timestamp falls on, else
+ * null. A timestamp is read as the day it was in Bend (lib/cma/listing-status.ts
+ * pacificDay): 3177 Coho went on the market at 03:13 UTC on Dec 2, which is
+ * 7:13 PM on Dec 1, and the letter printed Dec 2 (reader review 2026-10-08).
+ */
 function utcDay(value: string | null | undefined): number | null {
-  const day = String(value ?? '').trim().slice(0, 10)
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return null
+  const day = pacificDay(value ?? null)
+  if (!day) return null
   const t = Date.parse(`${day}T00:00:00.000Z`)
   return Number.isNaN(t) ? null : t
 }
@@ -186,13 +184,11 @@ export function finalCycleDaysOnMarket(
   // as a timestamp ("2026-02-26T23:27:57+00:00") and the other as a bare date
   // ("2026-09-01"); subtracting those directly makes the answer depend on the
   // time of day the listing was keyed in, which moved this subject's DOM by a
-  // day. Whole days between the two dates is the number a broker can check.
-  const start = utcDay(cycle.listDate)
-  const end = utcDay(cycle.offMarketDate)
-  if (start != null && end != null) {
-    const d = Math.round((end - start) / 86_400_000)
-    if (Number.isFinite(d) && d >= 0) return d
-  }
+  // day. Whole days between the two Pacific days is the number a broker can
+  // check. A cycle that went through `cycleOnTheMarket` ends the day it left
+  // Active, so a withdrawn-then-expired listing counts its days on the market.
+  const d = pacificDaysBetween(cycle.listDate, cycle.offMarketDate)
+  if (d != null) return d
   const reported = cycle.daysOnMarket
   return reported != null && Number.isFinite(reported) && reported >= 0 ? Math.round(reported) : null
 }
@@ -220,10 +216,16 @@ export function stampFinalCycleDom(
 ): number | null {
   const dom = finalCycleDaysOnMarket(cycle)
   if (dom == null || !cycle) return null
+  // How it came off, beside the status of record: a listing withdrawn Feb 10
+  // whose listing expired Sep 30 "came off the market", never "came off
+  // expired" after the days it was on (lib/cma/listing-status.ts).
+  const leftAs = cycle.leftActiveAs?.trim() || null
+  const record = subject.standardStatus ?? cycle.status
+  if (leftAs && record && !sameStatus(leftAs, record)) subject.cameOffAs = leftAs
   const line = buildListingHistoryLine({
     listPrice: cycle.finalListPrice ?? subject.lastListPrice,
     originalListPrice: cycle.originalListPrice,
-    status: subject.standardStatus ?? cycle.status,
+    status: cameOffStatus(record, leftAs),
     onMarketDate: cycle.listDate ?? subject.lastListDate,
     daysOnMarket: dom,
   })
@@ -266,14 +268,72 @@ export interface ExpiredFinalCycle {
   cutsDated: boolean
   /** The ask it came off at (`ListPrice`). */
   finalAsk: number | null
-  /** YYYY-MM-DD it came off the market. */
+  /**
+   * YYYY-MM-DD (Pacific) it came off the market: the day it left Active, from
+   * the MLS status log when the log has it (`cycleOnTheMarket`).
+   */
   offMarketDate: string | null
-  /** Expired / Canceled / Withdrawn. */
+  /** Expired / Canceled / Withdrawn: the MLS status of record. */
   status: string | null
+  /**
+   * The status it left Active for, when the status log says and it differs
+   * from `status` (3177 Coho: 'Withdrawn' Feb 10, beside 'Expired'). Absent on
+   * rows built before the log was read.
+   */
+  leftActiveAs?: string | null
+  /**
+   * YYYY-MM-DD (Pacific) `status` took effect, when that is after
+   * `offMarketDate` (Coho's listing expired Sep 30, months after it came off).
+   */
+  statusDate?: string | null
   /** List date to off-market date — `finalCycleDaysOnMarket`, one definition. */
   days: number | null
   /** §0 trace: where each field came from. */
   source: { table: string; filter: string; fetchedAt: string; query: string }
+}
+
+/**
+ * THE LAST LISTING'S DAYS ON THE MARKET, FROM ITS STATUS LOG (reader review
+ * 2026-10-08).
+ *
+ * `listings.off_market_date` is the day the listing took its status of record.
+ * For a listing that was withdrawn and later expired, that is the expiry:
+ * 3177 Coho was withdrawn Feb 10 and expired Sep 30, and the letter counted
+ * Dec 1 to Sep 30, "Your home sat 302 days", "$569,000 for 271". The status
+ * log says when it left Active. This returns the cycle with its list date and
+ * off-market date moved to the Pacific days of its last Active stretch, the
+ * status it left Active for, and the day its status of record took effect when
+ * that came later, so every reader of the cycle (the days, the ask segments,
+ * the chart, the review's time-on-market line) counts the days it was on the
+ * market. With no status log the cycle keeps its own dates, read as Pacific
+ * days.
+ */
+export function cycleOnTheMarket(
+  cycle: BpoListingCycle,
+  changes: readonly ListingStatusChange[] | null | undefined,
+): BpoListingCycle {
+  const log = mergeStatusChanges(changes ?? [])
+  const run = lastActiveRun({
+    changes: log,
+    onMarketDate: cycle.listDate,
+    offMarketDate: cycle.offMarketDate,
+    status: cycle.status,
+  })
+  if (!run || run.source !== 'status-history' || !run.from) return cycle
+  const tookRecord = [...log].reverse().find((c) => sameStatus(c.to, cycle.status))
+  const recordDay = pacificDay(tookRecord?.at ?? null) ?? pacificDay(cycle.offMarketDate)
+  if (!run.to) return { ...cycle, listDate: run.from }
+  // Only a status that differs from the record's is worth carrying: the same
+  // status is already the word every surface prints.
+  const leftActiveAs = run.leftAs && !sameStatus(run.leftAs, cycle.status) ? run.leftAs : null
+  return {
+    ...cycle,
+    listDate: run.from,
+    offMarketDate: run.to,
+    leftActiveAs,
+    statusDate: leftActiveAs && recordDay && recordDay > run.to ? recordDay : null,
+    daysOnMarket: run.days ?? cycle.daysOnMarket,
+  }
 }
 
 function positiveAsk(value: unknown): number | null {
@@ -281,9 +341,9 @@ function positiveAsk(value: unknown): number | null {
   return Number.isFinite(n) && n > 0 ? Math.round(n) : null
 }
 
+/** The Pacific calendar day of a date or MLS timestamp (lib/cma/listing-status.ts). */
 function dayString(value: string | null | undefined): string | null {
-  const s = String(value ?? '').trim().slice(0, 10)
-  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : null
+  return pacificDay(value ?? null)
 }
 
 /**
@@ -334,6 +394,8 @@ export function buildFinalCycle(args: {
       ? [{ date: null, ask: finalAsk }]
       : []
 
+  const leftActiveAs = cycle.leftActiveAs?.trim() || null
+  const statusDate = dayString(cycle.statusDate ?? null)
   return {
     listDate,
     initialAsk,
@@ -342,13 +404,17 @@ export function buildFinalCycle(args: {
     finalAsk,
     offMarketDate,
     status: cycle.status ?? null,
+    ...(leftActiveAs ? { leftActiveAs } : {}),
+    ...(statusDate ? { statusDate } : {}),
     days,
     source: {
-      table: 'listings + price_history + listing_history',
+      table: 'listings + price_history + listing_history + status_history',
       filter:
         `ListingKey='${args.listingKey ?? cycle.listingKey ?? ''}'. ` +
-        `listDate from listings."ListDate" (falling back to "OnMarketDate"), offMarketDate from listings.off_market_date ` +
-        `(falling back to status_change_timestamp), initialAsk from "OriginalListPrice", finalAsk from "ListPrice", ` +
+        `listDate and offMarketDate are the Pacific days the last Active stretch began and ended, from the MLS ` +
+        `status log (listing_history 'MlsStatus: A → B' and status_history), else listings."ListDate" (falling back ` +
+        `to "OnMarketDate") and listings.off_market_date (falling back to status_change_timestamp); ` +
+        `initialAsk from "OriginalListPrice", finalAsk from "ListPrice", ` +
         `days = list date to off-market date in whole calendar days. ` +
         (cutsDated
           ? `${dated.length} dated ask change(s) inside the cycle window from price_history.new_price and the ` +
@@ -358,7 +424,8 @@ export function buildFinalCycle(args: {
       query:
         `select "ListingKey", "StandardStatus", "ListDate", "OnMarketDate", off_market_date, status_change_timestamp, "OriginalListPrice", "ListPrice", "DaysOnMarket" from listings where "ListingKey" = '${args.listingKey ?? cycle.listingKey ?? ''}'` +
         ` ;; select old_price, new_price, changed_at from price_history where listing_key = '${args.listingKey ?? cycle.listingKey ?? ''}' order by changed_at` +
-        ` ;; select event, event_date, price, description from listing_history where listing_key = '${args.listingKey ?? cycle.listingKey ?? ''}' order by event_date`,
+        ` ;; select event, event_date, price, description from listing_history where listing_key = '${args.listingKey ?? cycle.listingKey ?? ''}' order by event_date` +
+        ` ;; select old_status, new_status, changed_at from status_history where listing_key = '${args.listingKey ?? cycle.listingKey ?? ''}' order by changed_at`,
     },
   }
 }
@@ -514,6 +581,19 @@ export function buildAskExposure(args: {
     spans.push({ ask: step.ask, from: step.date, to, days })
   }
   if (spans.length === 0) return null
+
+  const merged: typeof spans = []
+  for (const span of spans) {
+    const prev = merged[merged.length - 1]
+    if (!prev || askStepIsOwnEra(prev.ask, span.ask)) {
+      merged.push({ ...span })
+      continue
+    }
+    prev.to = span.to
+    prev.days += span.days
+  }
+  spans.length = 0
+  spans.push(...merged)
 
   const total = spans.reduce((sum, s) => sum + s.days, 0)
   const high = args.rangeHigh != null && args.rangeHigh > 0 ? args.rangeHigh : null
@@ -754,101 +834,6 @@ export function buildServicesList(subject?: ThisHomePlanSubject | null): string[
   return [...plan.hero, ...plan.secondary]
 }
 
-/**
- * Seller net sheet at the expired rate. Our fees are facts; third-party costs
- * are labeled estimates. Every number computed here, shown with its formula.
- */
-export function buildNetSheet(
-  pricing: CmaPricing,
-  opts?: { expectedConcessions?: number | null },
-): ExpiredNetSheet {
-  const price = pricing.recommended
-  const concessions = opts?.expectedConcessions ?? pricing.sellerNet?.expectedConcessions ?? null
-
-  const listingFee = price * (EXPIRED_LISTING_FEE_PCT / 100)
-  const buyerSide = price * (BUYER_BROKER_ASSUMPTION_PCT / 100)
-  // Owner's title policy + half escrow, Central Oregon typical band. ESTIMATE —
-  // the seller confirms with the title company at listing.
-  const titleEscrowEstimate = Math.round(Math.min(Math.max(price * 0.005, 2000), 6000))
-  const recordingMisc = 350
-
-  const lines: ExpiredNetSheetLine[] = [
-    ...(concessions != null && concessions > 0
-      ? [
-          {
-            label: 'Seller concessions (median of the comparable closed sales, including sales that reported none)',
-            amount: -concessions,
-            isOurFee: false,
-            note: 'Close price is the contract price. This credit comes off that number before commission. It is the comparable-set median, not a quote on this home.',
-          } satisfies ExpiredNetSheetLine,
-        ]
-      : []),
-    {
-      label: `Listing fee at ${EXPIRED_LISTING_FEE_PCT}% (expired-listing rate. Our standard Enhanced plan runs ${STANDARD_LISTING_FEE_PCT}%)`,
-      amount: -listingFee,
-      isOurFee: true,
-      note: `${EXPIRED_LISTING_FEE_PCT}% × ${usd(price)}. Commission is negotiable and every listing agreement is its own conversation.`,
-    },
-    {
-      label: `Buyer-broker compensation (assumption: ${BUYER_BROKER_ASSUMPTION_PCT}%)`,
-      amount: -buyerSide,
-      isOurFee: false,
-      note: 'Negotiated per offer under the current rules. You decide what, if anything, to offer. Shown here so the estimate is conservative.',
-    },
-    {
-      label: 'Title and escrow (estimate)',
-      amount: -titleEscrowEstimate,
-      isOurFee: false,
-      note: 'Owner\'s title policy plus the seller half of escrow, typical Central Oregon band. Confirm the exact quote with the title company.',
-    },
-    {
-      label: 'Recording and miscellaneous (estimate)',
-      amount: -recordingMisc,
-      isOurFee: false,
-      note: null,
-    },
-    {
-      label: 'County transfer tax',
-      amount: 0,
-      isOurFee: false,
-      note: 'Deschutes County has no real estate transfer tax.',
-    },
-  ]
-
-  const totalCosts = lines.reduce((s, l) => s + Math.abs(l.amount ?? 0), 0)
-  const concessionDollars = concessions != null && concessions > 0 ? concessions : 0
-  const costOf = (p: number) =>
-    concessionDollars +
-    p * (EXPIRED_LISTING_FEE_PCT / 100) +
-    p * (BUYER_BROKER_ASSUMPTION_PCT / 100) +
-    Math.round(Math.min(Math.max(p * 0.005, 2000), 6000)) +
-    recordingMisc
-
-  return {
-    salePrice: price,
-    lines,
-    totalCosts,
-    estimatedNet: price - totalCosts,
-    netConservative: pricing.conservative - costOf(pricing.conservative),
-    netHighEnd: pricing.highEnd - costOf(pricing.highEnd),
-    assumptions: [
-      'Sale at the recommended list price. The conservative and high-end columns rerun the same costs at the ends of the supported range.',
-      'Close price is the contract price. Seller concessions, when shown, are the median of the comparable set and come off the close before commission.',
-      'Property-tax prorations, HOA transfer fees, and any repair credits vary by closing date and negotiation, and are not included.',
-      'Your mortgage payoff (if any) comes off the estimated net. Your lender provides the exact payoff figure.',
-      'Every third-party line is an estimate. It is not a quote. This is not a closing statement.',
-    ],
-  }
-}
-
-/** One-line fee statement for the services page. Like-for-like framing: the
- *  site publishes plans at 2.5% to 3.5%, and most sellers choose the 3%
- *  Enhanced plan — so the honest comparison names the plans rather than
- *  presenting 2.5% as an expired-only concession (audit finding 2026-07-14). */
-export function feeLine(): string {
-  return `For an expired listing we list at ${EXPIRED_LISTING_FEE_PCT}% of the sale price, where our standard Enhanced plan runs ${STANDARD_LISTING_FEE_PCT}%. Commission is negotiable and every listing agreement is its own conversation.`
-}
-
 // ── The failed-ask ceiling (Matt 2026-08-05) ────────────────────────────────
 
 /** How long a failed asking price stays binding evidence. Past this, the
@@ -933,6 +918,45 @@ export function closedSaleLow(pricing: {
  */
 export function failedAskBelowRangeNote(ask: number): string {
   return `The last listing asked ${usd(ask)}, below the sales band. The recommended list sits on the sales, not on that ask.`
+}
+
+/**
+ * THE CAP'S CLASSIFICATION, RE-READ ON THE PRINTED BAND (review, 2026-10-07).
+ *
+ * applyFailedAskCap runs before the pin and judges the ask against the band
+ * it sees then; the ask-in-band hold (lib/cma/gap-hold.ts) runs after the pin
+ * on the band the reader sees. When the pin moved the band the two could
+ * disagree: one row carried both "the ask sat below the range" and the rule 22
+ * hold, or an ask the cap read as inside ended up under the printed band with
+ * no flag. This re-reads below / inside / above on printedBandBounds of the
+ * pinned band, the hold's own boundary, and corrects `failedAskBelowRange` and
+ * its note so exactly one of the three holds. Mutates `pricing` in place.
+ */
+export function reclassifyFailedAskOnPrintedBand(
+  pricing: {
+    valueLow?: number
+    valueHigh?: number
+    notes: string[]
+    failedAskBelowRange?: boolean
+  },
+  ask: number | null | undefined,
+): 'below' | 'inside' | 'above' | null {
+  const band = heroBandFromPricing(pricing)
+  const askValue = positivePrice(ask)
+  if (!band || askValue == null) return null
+  const printed = printedBandBounds(band.low, band.high)
+  const where: 'below' | 'inside' | 'above' =
+    askValue < printed.low ? 'below' : askValue > printed.high ? 'above' : 'inside'
+  const note = failedAskBelowRangeNote(askValue)
+  if (where === 'below') {
+    pricing.failedAskBelowRange = true
+    if (!pricing.notes.includes(note)) pricing.notes.push(note)
+  } else {
+    pricing.failedAskBelowRange = false
+    const at = pricing.notes.indexOf(note)
+    if (at !== -1) pricing.notes.splice(at, 1)
+  }
+  return where
 }
 
 function hasStoredBelowRangeReason(pricing: {
@@ -1125,11 +1149,16 @@ export function applyFailedAskCap(
   // The sales' own low. A minimum-width open can put the printed low under
   // this. The ask is judged against the sales, not against that open.
   const salesLow = closedSaleLow(pricing)
+  // The ask is judged against the band the reader sees (printedBandBounds),
+  // the same boundary the ask-in-band hold reads (lib/cma/gap-hold.ts). An
+  // ask on the printed low is inside, never below: against an exact pinned
+  // low it fell between this test and the hold (review, 2026-10-07).
+  const askBand = band && salesLow != null ? printedBandBounds(salesLow, band.high) : null
   // An ask already below the sales is not a reason to pin the recommendation
   // up onto a sale. If the comps are already under that ask, leave them.
   // If they sit on the ask or above it, the pull below still applies: an
   // expired does not keep a price the market refused.
-  if (band && salesLow != null && ask < salesLow) {
+  if (askBand && ask < askBand.low) {
     pricing.failedAskBelowRange = true
     const note = failedAskBelowRangeNote(ask)
     if (!pricing.notes.includes(note)) pricing.notes.push(note)
@@ -1160,7 +1189,7 @@ export function applyFailedAskCap(
   let consCeil = ceilings.conservative.value
   // Inside the band the haircut may still bind, but the recommend never
   // drops below the hero low unless a stored broker override said so.
-  const askInsideBand = band != null && salesLow != null && ask >= salesLow && ask <= band.high
+  const askInsideBand = askBand != null && ask >= askBand.low && ask <= askBand.high
   const insideFloor = salesLow ?? band?.low ?? 0
   let recCeil =
     askInsideBand && !hasStoredBelowRangeReason(pricing)
@@ -1194,13 +1223,17 @@ export function applyFailedAskCap(
   } else {
     recCeil = underAsk
     highCeil = underAsk
-    consCeil = pricing.conservative < ask ? pricing.conservative : underAsk
+    // The floor tier follows the list under the ask. A tier an earlier pass
+    // left at ask minus $1,000 (lib/pricing/estimate.ts clips with no cycle
+    // facts) is under the ask and still above a 1.5 percent pull: 915 Saginaw
+    // held conservative $924,000 over recommended $911,000 (2026-10-07).
+    consCeil = Math.min(pricing.conservative, underAsk)
     ceilings.recommended = { ...ceilings.recommended, value: underAsk, ratio: pullRatio, phrase: null }
     ceilings.highEnd = { ...ceilings.highEnd, value: underAsk, ratio: pullRatio, phrase: null }
     ceilings.conservative = {
       ...ceilings.conservative,
       value: consCeil,
-      ratio: pricing.conservative < ask ? ceilings.conservative.ratio : pullRatio,
+      ratio: pricing.conservative < underAsk ? ceilings.conservative.ratio : pullRatio,
       phrase: null,
     }
   }
@@ -1391,12 +1424,35 @@ export function resolveListingTimeline(input: {
   }
   if (steps.length === 0) return null
 
+  // Every ask the listing carried is its own stretch; only a repeated ask (no
+  // change) stays on the one already running (askStepIsOwnEra).
+  const drawn: ListingTimelineStep[] = []
+  for (const step of steps) {
+    const prev = drawn[drawn.length - 1]
+    if (prev && !askStepIsOwnEra(prev.ask, step.ask)) continue
+    drawn.push(step)
+  }
+  steps.length = 0
+  steps.push(...drawn)
+
   const offMarket = sellerOffMarketDate({
     listDate,
     offMarketDate: cycle?.offMarketDate ?? offMarketFromDays(listDate, input.domDays),
     days: cycle?.days ?? input.domDays,
   })
-  const status = (cycle?.status ?? s.standardStatus ?? '').trim().toLowerCase() || null
+  // How it came off, in the one word every surface uses for that day: the
+  // status of record, or "came off" when it left Active under one status and
+  // took another later (lib/cma/listing-status.ts cameOffStatus).
+  const record = cycle?.status ?? s.standardStatus ?? null
+  const status = (cameOffStatus(record, cycle?.leftActiveAs ?? s.cameOffAs ?? null) ?? '').trim().toLowerCase() || null
+  const days = cycle?.days ?? input.domDays
+  const cameOff = {
+    offMarketDate: offMarket,
+    days,
+    leftAs: cycle?.leftActiveAs ?? s.cameOffAs ?? null,
+    status: record,
+    statusDate: cycle?.statusDate ?? null,
+  }
   return {
     listDate,
     offMarketDate: offMarket,
@@ -1405,8 +1461,9 @@ export function resolveListingTimeline(input: {
     rangeHigh: input.rangeHigh,
     rangeLabel: input.rangeLabel,
     status,
-    days: cycle?.days ?? input.domDays,
-    caption: 'Your asking price against what homes like yours sold for',
+    days,
+    ...(cameOffThenSentence(cameOff) ? { cameOff } : {}),
+    caption: 'Your asking price against the range the sales support',
   }
 }
 
@@ -1448,6 +1505,30 @@ export function listingTimelineReading(input: {
     days: t.days,
     city: input.city,
     marketMedianDom: input.marketMedianDom,
+    status: t.status,
+    cameOff: t.cameOff ?? null,
+    segments: timelineSegments(t),
   })
+}
+
+/**
+ * The days each drawn ask ran, from the same dated steps the line is drawn
+ * from: one step to the next, the last to the day it came off. Empty when the
+ * period has no off-market date to end on, so the reading claims nothing
+ * about the days at any one price.
+ */
+export function timelineSegments(t: ListingTimelineInput): Array<{ ask: number; days: number }> {
+  const end = dayString(t.offMarketDate)
+  if (!end) return []
+  const out: Array<{ ask: number; days: number }> = []
+  for (let i = 0; i < t.steps.length; i += 1) {
+    const from = dayString(t.steps[i]!.date)
+    const to = i + 1 < t.steps.length ? dayString(t.steps[i + 1]!.date) : end
+    if (!from || !to) return []
+    const days = daysBetween(from, to)
+    if (days == null || days < 0) return []
+    out.push({ ask: t.steps[i]!.ask, days })
+  }
+  return out
 }
 

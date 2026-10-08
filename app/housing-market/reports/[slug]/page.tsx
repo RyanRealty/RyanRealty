@@ -15,6 +15,7 @@
  * the unoptimized banner (serverless-safe) are unchanged.
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import Image from 'next/image'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
@@ -35,7 +36,7 @@ import {
 } from '@/components/site/v3'
 import { ReportsInquirySheet } from '../_v3/ReportsInquirySheet.client'
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const siteUrl = siteOrigin()
 
 export const revalidate = 3600
 

@@ -5,7 +5,8 @@ import { resolveBendNewConstructionSearchTwinHop } from '@/lib/routing/bend-new-
 import { shouldRefuseDevRoute, DEV_NOT_FOUND_HTML } from '@/lib/routing/dev-only'
 import { CENTRAL_OREGON_CITY_SLUGS, isCentralOregonCommunitySlug } from '@/lib/central-oregon'
 import { isPresetSlug } from '@/lib/search-presets'
-import { isInvalidBlogIndexPath } from '@/lib/blog/index-path-guard'
+import { blogPostSlugFromPath, isInvalidBlogIndexPath } from '@/lib/blog/index-path-guard'
+import { lookupPublishedBlogSlugEdge } from '@/lib/data/blog/publishedBlogSlugsEdge'
 import { allowedCommunityUrlSlugs } from '@/lib/communities/community-public-pair'
 import { FIRST_EDITION_LABEL, isInvalidEditionPath } from '@/lib/market-report/edition-path-guard'
 import {
@@ -14,8 +15,17 @@ import {
   LEGACY_NEXT_IMAGE_PATH,
   resolveLegacyNextImage,
 } from '@/lib/routing/legacy-next-image'
-import { isRouterFlightRequest, resolveListingCanonicalHop } from '@/lib/routing/listing-canonical-hop'
+import { isRouterFlightRequest, listingIdFromRequestPath, resolveListingCanonicalHop } from '@/lib/routing/listing-canonical-hop'
+import {
+  isListingLookupUnavailable,
+  listingTemporarilyUnavailableResponse,
+  readListingForRequest,
+} from '@/lib/routing/listing-unavailable'
 import { getListingCanonicalPathFieldsEdge } from '@/lib/data/listings/getListingCanonicalPathFieldsEdge'
+import {
+  CONSENT_REGION_COOKIE,
+  consentRegionCookieValue,
+} from '@/lib/analytics/consent-regions'
 
 /**
  * Next.js Edge Middleware.
@@ -409,6 +419,7 @@ const GEO_NOT_FOUND_HTML =
 // callers (Meta CAPI, Spark webhooks, Vercel crons) that may hit the alias
 // and not follow redirects keep working. Also consolidates SEO to one hostname.
 const CANONICAL_HOST = 'ryan-realty.com'
+// staging-host-ok: the INCOMING hosts this file 308s to the apex; builds no URL.
 const NON_CANONICAL_HOSTS = new Set(['ryanrealty.vercel.app', 'www.ryan-realty.com'])
 
 function buildNextResponse(pathname: string, request: NextRequest): NextResponse {
@@ -473,6 +484,34 @@ function attachVidCookie(response: NextResponse, request: NextRequest, host: str
     ...(isProd ? { domain: 'ryan-realty.com' } : {}),
   })
   return response
+}
+
+/**
+ * One-bit region class for the Meta Pixel and the client tracking tier.
+ * Google Consent Mode region defaults do not need this (Google resolves geo
+ * itself). Missing/unknown country is restricted (`1`). Not identifying.
+ * Set on HTML page responses so the first inline script can read it; skipped
+ * on /api/* . Matcher already covers HTML page requests.
+ */
+function attachConsentRegionCookie(response: NextResponse, request: NextRequest, host: string): NextResponse {
+  if (request.nextUrl.pathname.startsWith('/api/')) return response
+  const country = request.headers.get('x-vercel-ip-country') ?? request.headers.get('cf-ipcountry')
+  const value = consentRegionCookieValue(country)
+  if (request.cookies.get(CONSENT_REGION_COOKIE)?.value === value) return response
+  const isProd = host.endsWith('ryan-realty.com')
+  response.cookies.set(CONSENT_REGION_COOKIE, value, {
+    maxAge: 24 * 60 * 60,
+    path: '/',
+    sameSite: 'lax',
+    httpOnly: false,
+    secure: isProd,
+    ...(isProd ? { domain: 'ryan-realty.com' } : {}),
+  })
+  return response
+}
+
+function attachTrackingCookies(response: NextResponse, request: NextRequest, host: string): NextResponse {
+  return attachConsentRegionCookie(attachVidCookie(attachFbcCookie(response, request, host), request, host), request, host)
 }
 
 export async function middleware(request: NextRequest): Promise<NextResponse> {
@@ -595,6 +634,31 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     })
   }
 
+  // ─── (0b2b) Unknown or draft blog post → REAL 404 (soft-404 2026-10-05) ──
+  // /blog/<slug> is on-demand ISR with an empty generateStaticParams. Its own
+  // notFound() (generateMetadata and the page body) runs under app/loading.tsx
+  // with streamed metadata, so the 200 shell flushes first and ISR caches a
+  // 200 "Page not found" for browsers and Googlebot alike (measured on
+  // production 2026-10-05). The published-slug set answers here instead, before
+  // render (lib/data/blog/publishedBlogSlugsEdge.ts). A failed read passes
+  // through to the route, so a published post is never 404'd by a blip.
+  // Runs before the bot screen: a 404 for a URL that does not exist is the
+  // answer for every client. next.config redirects (/guides/:slug, retired
+  // slugs) already ran, so they never reach this.
+  if (!pathname.startsWith('/api/')) {
+    const blogSlug = blogPostSlugFromPath(pathname)
+    if (blogSlug && (await lookupPublishedBlogSlugEdge(blogSlug)) === 'missing') {
+      return new NextResponse(BLOG_NOT_FOUND_HTML, {
+        status: 404,
+        headers: {
+          'content-type': 'text/html; charset=utf-8',
+          'cache-control': 'no-store',
+          'x-robots-tag': 'noindex',
+        },
+      })
+    }
+  }
+
   // ─── (0b3) Invalid monthly report edition → REAL 404 (SEO-9) ────────────
   // /housing-market/reports/monthly/<YYYY-MM> is the same soft-404 class: a
   // month no edition can have (the wrong shape, before 2006-01, the current
@@ -654,19 +718,31 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   // a displayable listing and is not that listing's canonical now gets a real
   // 308 here; the page body cannot do it (app/loading.tsx flushes a 200 first).
   // One indexed PostgREST read per id per isolate (lib/data/listings/
-  // getListingCanonicalPathFieldsEdge.ts). A miss, a refused row, an error or a
-  // timeout passes the request through untouched, so no real listing is ever
-  // 404'd and an unknown key renders exactly as it did before. Runs after the
+  // getListingCanonicalPathFieldsEdge.ts). A miss or a refused row passes the
+  // request through untouched, so no real listing is ever 404'd and an unknown
+  // key renders exactly as it did before. Runs after the
   // bot screen so a blocked scraper never costs a lookup, and skips the App
   // Router's own prefetch/navigation requests (they follow hrefs the site built
   // canonical). The query string is kept (utm tags on ad and email links).
   // Browser caching of the 308 is capped at a day because the MLS can still
   // edit a field the path is built from.
+  //
+  // (0e') A DATABASE THAT DOES NOT ANSWER IS A 503, NOT A PAGE (2026-10-05).
+  // When the read fails because the database is down or timing out (after one
+  // retry at the page's own 4s ceiling), the listing page could only render a
+  // failure state, and the page cannot set its own status (the shell flushes
+  // 200 first). A 200 failure page is what Google noindexed and merged across
+  // listings from 09-05 (lib/routing/listing-unavailable.ts). So the answer is
+  // 503 + Retry-After + no-store here, and Google comes back later.
   if (!pathname.startsWith('/api/') && !isRouterFlightRequest(request.headers, url.searchParams)) {
-    const listingDest = await resolveListingCanonicalHop(pathname, async (id) => {
-      const r = await getListingCanonicalPathFieldsEdge(id)
-      return r.kind === 'row' ? r.row : null
-    })
+    const listingId = listingIdFromRequestPath(pathname)
+    const listingLookup = listingId ? await readListingForRequest(listingId, getListingCanonicalPathFieldsEdge) : null
+    if (listingLookup && isListingLookupUnavailable(listingLookup)) {
+      return listingTemporarilyUnavailableResponse(listingLookup.kind === 'error' ? listingLookup.reason : undefined)
+    }
+    const listingDest = await resolveListingCanonicalHop(pathname, async () =>
+      listingLookup?.kind === 'row' ? listingLookup.row : null,
+    )
     if (listingDest) {
       const redirectUrl = url.clone()
       redirectUrl.pathname = listingDest
@@ -690,7 +766,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     // INBOUND headers, so without this a client-sent x-search would pass
     // through to any future consumer on this branch (review hygiene).
     requestHeaders.set('x-search', request.nextUrl.search ?? '')
-    return attachVidCookie(attachFbcCookie(NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } }), request, host), request, host)
+    return attachTrackingCookies(NextResponse.rewrite(rewriteUrl, { request: { headers: requestHeaders } }), request, host)
   }
 
   // ─── (2) Rate limiting for /api/* ──────────────────────────────────────
@@ -730,7 +806,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   }
 
   // ─── (3) Default: forward x-pathname so server components can branch ───
-  return attachVidCookie(attachFbcCookie(buildNextResponse(pathname, request), request, host), request, host)
+  return attachTrackingCookies(buildNextResponse(pathname, request), request, host)
 }
 
 // Run on everything that isn't a Next.js internal or static asset.

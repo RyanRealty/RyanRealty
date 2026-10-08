@@ -1,6 +1,7 @@
 /**
  * Meta Pixel client-side helpers: cookie management, event ID generation, and dual-track (fbq + CAPI).
  */
+import { CONSENT_COOKIE, gpcFromNavigator, marketingSharingAllowed } from '@/lib/identity/consent'
 
 /**
  * Generate a UUID v4 event ID for deduplication.
@@ -19,7 +20,8 @@ export function generateEventId(): string {
 
 /**
  * Fire event to both Meta Pixel (fbq) and Conversions API (server).
- * Deduplicates using a shared eventId.
+ * Deduplicates using a shared eventId. No send without an explicit marketing
+ * grant, and never under Global Privacy Control.
  */
 export async function trackEventWithCAPI(
   eventName: string,
@@ -35,6 +37,21 @@ export async function trackEventWithCAPI(
   const eventId = generateEventId()
   let pixelFired = false
   let capiSent = false
+
+  if (typeof window !== 'undefined') {
+    const raw = document.cookie
+      .split('; ')
+      .find((row) => row.startsWith(`${CONSENT_COOKIE}=`))
+      ?.split('=')[1]
+    if (
+      !marketingSharingAllowed({
+        consentCookie: raw,
+        gpc: gpcFromNavigator(typeof navigator !== 'undefined' ? navigator : undefined),
+      })
+    ) {
+      return { eventId, pixelFired: false, capiSent: false }
+    }
+  }
 
   // Fire fbq
   if (typeof window !== 'undefined' && window.fbq) {

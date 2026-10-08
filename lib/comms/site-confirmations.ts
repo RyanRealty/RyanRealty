@@ -27,8 +27,10 @@
 import 'server-only'
 import { sendGovernedEmail } from '@/lib/comms/sendGovernedEmail'
 import { resolveSigningBrokerForPerson } from '@/lib/data/cma/signing-broker'
+import { emailLinkOrigin } from '@/lib/email/link-origin'
 
-const SITE_ORIGIN = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+// Email links resolve on the canonical origin, never the Vercel alias (lib/email/link-origin.ts).
+const SITE_ORIGIN = emailLinkOrigin()
 
 export type SiteConfirmationResult = {
   ok: boolean

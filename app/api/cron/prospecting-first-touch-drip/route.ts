@@ -6,6 +6,10 @@
  * empty. Before each send: fail-closed live-status hard-skip (verifyNotRelisted
  * + FSBO still-active probe).
  *
+ * A second queue (lib/data/prospecting/drip-sunday-drain.ts) rides this same
+ * minute tick but is not the weekday drip. It cannot send before Sunday
+ * 2026-10-04 08:00 America/Los_Angeles, and its rows are not status `queued`.
+ *
  * Schedule ticks every minute; the spacing constant is the real cadence knob.
  * Do NOT switch vercel cron to a 5-minute crontab until Matt locks spacing.
  * Each tick first settles any send whose function died mid-flight, and stands
@@ -31,12 +35,14 @@ import { NextResponse } from 'next/server'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { createServiceClient } from '@/lib/supabase/service'
 import { drainProspectingFirstTouchDrip } from '@/lib/data/prospecting/drip-drain'
+import { drainSundayFirstTouchQueue } from '@/lib/data/prospecting/drip-sunday-drain'
 import {
   DRIP_LEASE_NAME,
   DRIP_LEASE_SECONDS,
   DRIP_SPACING_MINUTES,
   DRIP_TIMEZONE,
   DRIP_WEEKDAY_START_MINUTES,
+  SUNDAY_QUEUE_OPENS_AT_ISO,
 } from '@/lib/data/prospecting/drip-schedule'
 
 export const runtime = 'nodejs'
@@ -59,7 +65,14 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: true, action: 'busy', reason: 'lease' })
   }
   try {
-    const result = await drainProspectingFirstTouchDrip(new Date())
+    const now = new Date()
+    const result = await drainProspectingFirstTouchDrip(now)
+    // Sunday queue is a separate FIFO (status sunday-queue, own open instant).
+    // This tick is only the clock. Skip it when the weekday drain already sent
+    // or is still inside a claim, so one invocation still sends at most one email.
+    const weekdayOwnsTick =
+      !result.ok || result.action === 'sent' || result.action === 'busy' || result.action === 'recovered'
+    const sundayQueue = weekdayOwnsTick ? null : await drainSundayFirstTouchQueue(now)
     const { ok: _ignored, ...rest } = result as { ok: boolean } & Record<string, unknown>
     return NextResponse.json({
       ok: result.ok,
@@ -67,6 +80,9 @@ export async function GET(request: Request) {
       weekdayStartMinutes: DRIP_WEEKDAY_START_MINUTES,
       spacingMinutes: DRIP_SPACING_MINUTES,
       spacingNote: 'TBD — Matt must confirm DRIP_SPACING_MINUTES before treating as locked',
+      sundayQueueOpensAt: SUNDAY_QUEUE_OPENS_AT_ISO,
+      sundayQueueSpacingMinutes: DRIP_SPACING_MINUTES,
+      sundayQueue,
       ...rest,
     })
   } catch (err) {

@@ -23,6 +23,7 @@
  * Chrome: layout owns V3Chrome. V3Footer outside main.
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import type { Metadata } from 'next'
 import { getListingTiles, getCityListings, type ListingTile } from '@/lib/data'
 import { tileToCardData } from '@/lib/site/listing-card'
@@ -43,7 +44,7 @@ import { resolveCity, resolveView, resolveStart } from './_v3/videos-constants'
 import { tilesToFeedItems } from './_v3/feed-items'
 import { VideosOpening } from './_v3/VideosOpening'
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const siteUrl = siteOrigin()
 const ogImage = `${siteUrl}/api/og?type=default`
 
 export const revalidate = 3600

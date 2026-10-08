@@ -203,7 +203,7 @@
           "all": ["Questions", "How much are closing costs for buyers in Bend?"]
         },
         {
-          "file": "app/blog/[slug]/page.tsx",
+          "file": "app/blog/[slug]/_v3/render-blog-post.tsx",
           "all": ["publishBlogFaq"]
         }
       ],

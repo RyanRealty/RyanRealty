@@ -8,6 +8,9 @@
  */
 
 import type { CmaMartYearFigure } from '@/lib/cma/market-board-mart'
+import type { LocationMatch } from '@/lib/pricing/closed-comp-weight'
+import type { RoomDecision } from '@/lib/pricing/room-ground'
+import type { SizeAdjustmentBasis } from '@/lib/pricing/size-adjustment'
 
 export interface CmaSubject {
   listingKey: string | null
@@ -19,10 +22,18 @@ export interface CmaSubject {
   state: string
   postalCode: string | null
   subdivision: string | null
+  /** Recorded plat polygon. Phases of one ordinary subdivision share a family. */
+  subdivisionSlug?: string | null
   latitude: number | null
   longitude: number | null
   beds: number | null
   baths: number | null
+  /**
+   * MLS full and half bath counts (listings.baths_full / baths_half). `baths`
+   * is BathroomsTotal, which counts a half bath whole (lib/pricing/bath-count.ts).
+   */
+  bathsFull?: number | null
+  bathsHalf?: number | null
   sqft: number | null
   lotAcres: number | null
   /** MLS property_sub_type — drives product-class comparability. */
@@ -35,8 +46,19 @@ export interface CmaSubject {
   taxAnnual: number | null
   standardStatus: string | null
   lastListPrice: number | null
+  /** MLS OriginalListPrice. The ask story starts here when the exposure opens later. */
+  originalListPrice?: number | null
   lastListDate: string | null
   listingHistoryLine: string | null
+  /**
+   * The status the last listing left Active for, from the MLS status log, when
+   * it is not the status of record: 3177 Coho was withdrawn Feb 10 and its
+   * listing expired Sep 30, so this is 'Withdrawn' beside a standardStatus of
+   * 'Expired'. Every sentence about the day it came off reads the two through
+   * lib/cma/listing-status.ts cameOffStatus. Absent on rows built before the
+   * status log was read.
+   */
+  cameOffAs?: string | null
   /**
    * MLS association fields. Optional so existing fixtures keep compiling.
    * The MLS reports whether an association EXISTS and what it charges. It does
@@ -66,6 +88,12 @@ export interface CmaSubject {
   listAgentName?: string | null
   listAgentEmail?: string | null
   listOfficeName?: string | null
+  /**
+   * Community whose boundary contains this address. Set when lat/lng was
+   * tested. Not the MLS subdivision name, and not a remark.
+   */
+  communitySlug?: string | null
+  communityLocated?: boolean
 }
 
 export interface CmaComp {
@@ -76,15 +104,25 @@ export interface CmaComp {
   address: string
   city: string
   subdivision: string | null
+  /** Recorded plat the sale sits in. The room rule reads a phase family from this. */
+  subdivisionSlug?: string | null
   latitude: number | null
   longitude: number | null
   beds: number | null
   baths: number | null
+  /**
+   * MLS full and half bath counts (listings.baths_full / baths_half). `baths`
+   * is BathroomsTotal, which counts a half bath whole (lib/pricing/bath-count.ts).
+   */
+  bathsFull?: number | null
+  bathsHalf?: number | null
   sqft: number
   lotAcres: number | null
   /** MLS property_sub_type — drives product-class comparability. */
   propertySubType: string | null
   yearBuilt: number | null
+  /** MLS NewConstructionYN. True is never-owned new construction. Null means the feed did not say. */
+  newConstructionYn?: boolean | null
   garageSpaces?: number | null
   photoUrl: string | null
   publicRemarks: string | null
@@ -99,9 +137,8 @@ export interface CmaComp {
   /**
    * The seller concession as the grid prints it: a dollar amount when one was
    * reported, 0 when the sale reported none, null when nothing was recorded.
-   * Resolved by `resolveConcessions`, the same function the seller-net caption
-   * reads, so the line and the caption cannot disagree (research brief
-   * 2026-09-07, item 8; D14).
+   * Resolved by `resolveConcessions`. The comparison matrix subtracts a
+   * recorded amount from the sale before date and size; it does not invent one.
    */
   concessions?: number | null
   /** ClosePrice minus resolved seller concessions. Null when concessions are unknown. */
@@ -115,6 +152,13 @@ export interface CmaComp {
   listingHistoryLine?: string | null
   /** On-market date when known (comp list cycle). */
   onMarketDate?: string | null
+  /**
+   * The Pacific day the listing period that produced the sale went Active: the
+   * day `daysToOffer` counts from (lib/cma/listing-status.ts offerRun). Later
+   * than `onMarketDate` when the home was withdrawn or fell out of contract and
+   * came back. Absent on rows built before the status log was read.
+   */
+  offerFrom?: string | null
   selectionTier: string
   /** "1.75 miles NW" — Fannie Mae B4-1.3-08 requires distance + direction be reported. */
   proximity?: string | null
@@ -130,6 +174,14 @@ export interface CmaComp {
    */
   roomDifference?: Array<'beds' | 'baths'> | null
   /**
+   * The picker's one-room decision for this sale with the counts it compared
+   * (lib/pricing/room-ground.ts). Every check after the picker reads it
+   * through `carriedRoomDecision`, so the review and the contract call the
+   * decision the picker called (rule 4) whatever subset of the bath split
+   * reached them. Absent on a sale no picker admitted.
+   */
+  roomDecision?: RoomDecision | null
+  /**
    * The selector's own-plat decision for this sale (lib/pricing/price-anchor.ts
    * samePlat, or the street-cluster pocket), stamped by whichever ladder found
    * it. A sale in the subject's own plat is exempt from price-tier grading, so
@@ -138,11 +190,41 @@ export interface CmaComp {
    */
   ownPlat?: boolean | null
   /**
+   * Rule 15's location step from where the sale sits (own plat, touching plat,
+   * inside the subject's neighborhood or community, else wider), stamped at
+   * admission by either ladder (lib/pricing/closed-comp-weight.ts
+   * locationMatchFromFacts). Absent on a broker-picked comp; the weight then
+   * reads the rung name.
+   */
+  locationMatch?: LocationMatch | null
+  /**
+   * The walk admitted this sale on rule 20 (lib/pricing/price-set.ts) with
+   * its fullest inputs, so the weight does not re-grade it (Matt 2026-10-07).
+   * Absent on a set no walk graded, such as a broker-picked one, where the
+   * weight runs the test itself.
+   */
+  setsPrice?: boolean | null
+  /**
    * MLS SeniorCommunityYN for this sale. True walls it out of an ordinary
    * subject's pricing (lib/pricing/age-restricted.ts); false and null are not
    * evidence either way.
    */
   seniorCommunityYn?: boolean | null
+  /** Community whose boundary contains this sale. Not the MLS plat name. */
+  communitySlug?: string | null
+  communityLocated?: boolean
+  /**
+   * Whether the sale's MLS row reports an HOA ('hoa' | 'no_hoa' | 'unknown',
+   * classifyHoa). A community made up from a plat name walls the search only
+   * when the home carries one (lib/cma/community-location.ts
+   * searchCommunitySlug, Matt 2026-10-08). Absent on a row that did not say.
+   */
+  hoaClass?: string | null
+  /**
+   * Printed when this sale is inside the recorded plat and its sewer is not
+   * the subject's. Names which is which. No dollar adjustment.
+   */
+  sewerNote?: string | null
 }
 
 export type CmaCompKeepTier = 'strong' | 'weak'
@@ -154,6 +236,13 @@ export interface CmaAdjustedComp extends CmaComp {
   ppsfTimeAdjusted: number
   sizeAdjustment: number
   /**
+   * Why the size move is what it is (lib/pricing/size-adjustment.ts). A sale
+   * with no living area recorded is not adjusted for size, and the grid says
+   * so on its row instead of printing a dollar figure. Absent on rows stored
+   * before 2026-10-08.
+   */
+  sizeAdjustmentBasis?: SizeAdjustmentBasis | null
+  /**
    * One-story vs two-story premium (±13.5% of the time-adjusted price,
    * measured — lib/pricing/classes.ts). It was folded into adjustedPrice but
    * never printed, so on two Tumalo comps the itemized Time + Size failed to
@@ -164,6 +253,14 @@ export interface CmaAdjustedComp extends CmaComp {
   storyAdjustment?: number
   adjustedPrice: number
   weight: number
+  /**
+   * The market path that moved this sale's price, kept so a short-set reweight
+   * uses the same age rule as the first pass.
+   */
+  marketPathSource?: 'index' | 'none' | null
+  marketMonthlyRate?: number | null
+  marketReversed?: boolean | null
+  marketCapped?: boolean | null
   /** Display-only judge tier. Does not change pricing math. */
   keepTier?: CmaCompKeepTier | null
   /** Display-only judge reason. Does not change pricing math. */
@@ -174,6 +271,11 @@ export interface CmaMarketTrendPoint {
   periodStart: string
   medianSalePrice: number | null
   soldCount: number | null
+  /**
+   * Null on builds since 2026-10-08: the month line reads Market Truth, which
+   * has no monthly inventory cell. Rows built before carry the cache's
+   * polygon-clipped figure, which no renderer prints.
+   */
   endOfPeriodInventory: number | null
 }
 
@@ -194,13 +296,24 @@ export interface CmaMarketContext {
   /** Live median ask from market_pulse_live. Null when the pulse row has none. */
   medianListPrice?: number | null
   monthsOfSupply: number | null
+  /**
+   * The closes in the 180 days `monthsOfSupply` divides by (Market Truth
+   * `sample_n`), so activeCount / (closedSixMonths / 6) = monthsOfSupply.
+   * Null when the figure is withheld or the row predates 2026-10-08.
+   */
+  closedSixMonths?: number | null
   /** Which formula/source produced monthsOfSupply (canonical pulse vs 365d fallback). */
   mosFormula: string | null
   marketVerdict: 'seller' | 'balanced' | 'buyer' | null
   methodologyVersion: string | null
   computedAt: string | null
   pulseUpdatedAt: string | null
-  /** Completed months only. A chart renders only when six priced months exist. */
+  /**
+   * Completed months only, from the same Market Truth detached membership as
+   * activeCount and monthsOfSupply (2026-10-08; earlier rows carry
+   * market_stats_cache monthly). A chart renders only when six priced months
+   * exist.
+   */
   trend?: CmaMarketTrendPoint[]
   /**
    * What `trend` MEASURES, in the document's own words (round four, class E).
@@ -264,8 +377,24 @@ export interface CmaPricingClampApplication {
  * it rather than set it.
  */
 export interface CmaPricingStreetAnchor {
-  /** The same-street sale or sales the number is held to. */
+  /** The same-street sale or sales the number is held to (or, when `setAside`, would have been). */
   addresses: string[]
+  /** Their listing keys, when the pricer wrote them. */
+  listingKeys?: string[]
+  /**
+   * TRIM NORMALLY (Matt 2026-10-08, 915 Saginaw). True when every same-street
+   * sale was an end of the adjusted sales and the range rule set it aside
+   * like any end sale. It then does not cap the price and does not set the
+   * floor: `before` and `after` are the same number and `ceiling` is only
+   * what the cap would have been. Absent on rows built before this ruling.
+   */
+  setAside?: boolean
+  /**
+   * True when the anchor held the recommendation to `ceiling` when it was
+   * applied. False on a set-aside record. Absent on rows built before
+   * 2026-10-08, where every stored anchor was one that capped.
+   */
+  capped?: boolean
   /** Median adjusted price of those sales — the anchor itself. */
   anchor: number
   /** The most the recommendation may sit above the anchor. */
@@ -280,6 +409,11 @@ export interface CmaPricingStreetAnchor {
   floor: number
   /** What the three methods supported before the anchor bound them. */
   before: number
+  /**
+   * The recommendation after the anchor: `ceiling` when it capped, `before`
+   * when it was set aside. Read when the anchor was applied in the pricer; a
+   * later failed-ask pass in the build can still move the printed price.
+   */
   after: number
   /** One sentence, for the document and the review page. */
   sentence: string
@@ -428,6 +562,23 @@ export interface CmaSubjectStatus {
  * the prose beside them told the reader they had been removed. They are now
  * out of the weights and out of the printed price, and this is where they go.
  */
+export type CmaPricingHold = {
+  /**
+   * 'ask-in-band': rule 22, the last failed ask inside the printed band.
+   * 'ask-below-band': the failed-ask ceiling pulled the recommendation under
+   * every sale that set it (rule 20 says that is not a price); Matt has not
+   * decided how to treat these homes, so the document waits for him.
+   */
+  kind: 'ask-in-band' | 'ask-below-band'
+  ask: number
+  bandLow: number
+  bandHigh: number
+  /** The recommendation the hold is about. Written on 'ask-below-band'. */
+  recommended?: number
+  /** The sentence Matt reads in the queue. No em dash. */
+  reason: string
+}
+
 export interface CmaSetAsideSale {
   listingKey: string
   address: string
@@ -525,10 +676,10 @@ export interface CmaPricing {
   timeAdjustment?: import('@/lib/pricing/estimate').PricingTimeAdjustment | null
   /**
    * The sales the range rule set aside — the single highest and the single
-   * lowest adjusted price, once there are six of them. They are printed as
-   * evidence and carry NONE of the price: not a weight in
-   * `reconciliation.weights`, not a dollar in `recommended`. Empty under
-   * `min-max`, where nothing is set aside and nothing says it was.
+   * lowest adjusted price, once there are five of them (Matt 2026-10-07: the
+   * band is always the trimmed range). They are printed as evidence and carry
+   * NONE of the range: not an end of `valueLow`..`valueHigh`, and the grid
+   * marks them with their reason and no weight row.
    */
   setAside?: CmaSetAsideSale[] | null
   /**
@@ -537,6 +688,20 @@ export interface CmaPricing {
    * false and `reasons` empty on a clean one.
    */
   review?: CmaPricingReview | null
+  /**
+   * The build's own hold for Matt (SKILL.md rule 22, Matt 2026-10-07): the
+   * subject's last failed ask sits inside the trimmed band the recommendation
+   * reads from. The build completes and the document persists; nothing sends
+   * (lib/cma/gap-hold.ts reads it at every send gate).
+   */
+  hold?: CmaPricingHold | null
+  /**
+   * True when the build measured the last failed ask against the printed band
+   * for rule 22 (a failed last cycle, an ask, and a band), whatever it found.
+   * False or absent when there was nothing to measure; the send gates then run
+   * the live backstop on the row's own ask and band (lib/cma/gap-hold.ts).
+   */
+  askInBandMeasured?: boolean
   /**
    * Sales considered and not used, capped at eight, each with a reason
    * composed from the sale's own recorded facts. An appraisal shows what it

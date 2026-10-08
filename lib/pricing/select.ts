@@ -6,7 +6,14 @@
 import { isRuralAcreage } from '@/lib/cma/comp-tiers'
 import { marketAreaName, resolveMarketArea } from '@/lib/cma/market-area'
 import type { CmaSubject } from '@/lib/cma/types'
-import { getSubdivisionRing, assignSubdivisionSlugs } from '@/lib/data/geo/subdivision-ring'
+import {
+  assignCommunitySlugs,
+  assignSubdivisionSlugs,
+  getSubdivisionRing,
+  nextRowSubdivisionSlugs,
+  readNeighborRings,
+  touchingPlatsForSearch,
+} from '@/lib/data/geo/subdivision-ring'
 import { resolveSaleZones } from '@/lib/pricing/sale-zoning'
 import {
   classifyHoa,
@@ -15,13 +22,17 @@ import {
   classifySewer,
   classifyStory,
   classifyWater,
+  CENTRAL_OREGON_CITIES,
   citySlug,
   isCustomOrNewSubject,
+  multiUnitFromRemarks,
   normSubdivision,
   type IrrigationClass,
   type StoryClass,
 } from '@/lib/pricing/classes'
 import {
+  catchUpRecentPricingFacts,
+  closeDayBefore,
   countSalePricingFacts,
   getListingWaterSource,
   getPricingMarketIndex,
@@ -29,14 +40,20 @@ import {
   selectPricingFactsNear,
   selectPricingFactsPool,
   selectSeniorCommunityListingKeys,
+  selectListingBathSplits,
+  RECENT_CLOSE_CATCH_UP_DAYS,
+  type PricingFactsCatchUp,
 } from '@/lib/data/pricing/facts'
 import { estimateClosePrice, pricingSaleToCmaComp } from '@/lib/pricing/estimate'
+import { anchorPlacePhrase } from '@/lib/pricing/price-anchor'
 import type { SelectedPricingComp } from '@/lib/pricing/match'
 import type { CompSelection } from '@/lib/cma/comps'
-import { emptyExclusions } from '@/lib/cma/comp-trace'
+import { diagnoseStarvation, emptyExclusions, factsStopReason, type FactsPathHold } from '@/lib/cma/comp-trace'
 import {
+  CUSTOM_FACTS_POOL_MONTHS,
   FACTS_STANDALONE_MIN,
   factsPoolCloseAfter,
+  ORDINARY_FACTS_POOL_MONTHS,
   LOCAL_POOL_RADIUS_MILES,
   PRICING_MIN_COMPS,
   PRICING_TARGET_COMPS,
@@ -70,11 +87,14 @@ export function cmaSubjectToPricing(
     longitude: subject.longitude,
     beds: subject.beds,
     baths: subject.baths,
+    bathsFull: subject.bathsFull ?? null,
+    bathsHalf: subject.bathsHalf ?? null,
     sqft: subject.sqft ?? 0,
     lotAcres: subject.lotAcres,
     yearBuilt: subject.yearBuilt,
     storyClass: extras.storyClass ?? classifyStory(extras.levelsRaw ?? subject.levelsRaw, null),
-    productClass: classifyProduct(subject.propertySubType),
+    // A subject the remarks call a duplex is priced from multi-unit sales only.
+    productClass: multiUnitFromRemarks(subject.publicRemarks) ? 'multi-unit' : classifyProduct(subject.propertySubType),
     waterClass: classifyWater(extras.waterRaw ?? subject.waterRaw),
     sewerClass: classifySewer(extras.sewerRaw ?? subject.sewerRaw),
     hoaClass: classifyHoa(subject.associationYn ?? null, subject.associationFee ?? subject.hoaMonthly ?? null),
@@ -100,6 +120,12 @@ export async function selectPricingComps(
     sewerRaw?: unknown
     levelsRaw?: unknown
     subjectIrrigation?: IrrigationClass | null
+    /**
+     * Rebuild missing recent closes before reading the pool (default true).
+     * Only the facts cron's listing stamp passes false: the same run has just
+     * caught up every Central Oregon close of the window citywide.
+     */
+    catchUpRecent?: boolean
   } = {},
 ): Promise<PricingMatchResult & { factsReady: boolean }> {
   const factsReady = (await countSalePricingFacts()) >= 1000
@@ -141,6 +167,27 @@ export async function selectPricingComps(
   // stays at 30 so those 24-month rungs still have a pool. Do not shrink the 30.
   const closeAfterIso = factsPoolCloseAfter(asOf, customOrNew)
   const sqft = pricingSubject.sqft
+  // THE POOL IS NEVER OLDER THAN THE CHARTS (2026-10-07, 3037 Purcell). The
+  // letter's hero chart and subdivision box read live listings; the pool
+  // below reads sale_pricing_facts, whose sweep reaches a new close only when
+  // it next passes the end of the keyspace. Before reading, every close of the
+  // last RECENT_CLOSE_CATCH_UP_DAYS in the subject's box and city that has no
+  // facts row is rebuilt into the table by the facts SQL itself, so the pool
+  // holds every sale those charts can print.
+  const catchUpTrace =
+    opts.catchUpRecent === false
+      ? []
+      : catchUpTraceLines(
+          await catchUpRecentPricingFacts({
+            since: closeDayBefore(asOf, RECENT_CLOSE_CATCH_UP_DAYS),
+            cities: pricingSubject.ruralAcreage ? CENTRAL_OREGON_CITIES : [subject.city].filter(Boolean),
+            near:
+              pricingSubject.latitude != null && pricingSubject.longitude != null
+                ? { latitude: pricingSubject.latitude, longitude: pricingSubject.longitude, radiusMiles: LOCAL_POOL_RADIUS_MILES }
+                : null,
+            maxRefresh: BUILD_CATCH_UP_MAX_REFRESH,
+          }),
+        )
   // THE SUBJECT'S OWN GROUND, COMPLETE, ALONGSIDE THE CITYWIDE READ (Matt
   // 2026-09-10). The citywide pool below is ordered newest-first and capped at
   // 800 rows, so for a Bend subject it reaches back about six months against
@@ -197,25 +244,61 @@ export async function selectPricingComps(
   // it (lib/pricing/age-restricted.ts), so the pool's true flags come from
   // listings. Only TRUE is read: false and null are the MLS default and are not
   // evidence either way.
-  const seniorKeys = await selectSeniorCommunityListingKeys([...byKey.keys()])
+  // The MLS full / half bath split, also only on listings: the room rule
+  // compares full baths, and facts `baths` counts a powder room whole.
+  const [seniorKeys, bathSplits] = await Promise.all([
+    selectSeniorCommunityListingKeys([...byKey.keys()]),
+    selectListingBathSplits([...byKey.keys()]),
+  ])
   const sales = [...byKey.values()].map((s) => ({
     ...s,
     marketArea: s.marketArea ?? resolveMarketArea(s.latitude, s.longitude),
     seniorCommunityYn: seniorKeys.has(s.listingKey) ? true : null,
+    bathsFull: bathSplits.get(s.listingKey)?.full ?? null,
+    bathsHalf: bathSplits.get(s.listingKey)?.half ?? null,
   }))
-  // Containment (Matt 2026-09-08): the subject's plat and the plats next to it
-  // inside its boundary, and each sale's plat, so the adjacent rung can run.
-  // A plat outside the neighborhood polygon is not "next to" for this purpose.
+  // Touching plats, closest first. When this home has a neighborhood, a plat
+  // with inNeighborhood false stays out. Null means no polygon was tested and
+  // does not exclude. The next row is only the plats that touch those plats.
+  // A plat that merely sits in the parent is not in that row. The walk still
+  // refuses a plat outside the parent community.
   if (ring) {
+    const hasNeighborhood = Boolean(ring.neighborhoodSlug) || Boolean(pricingSubject.marketArea)
+    const touching = touchingPlatsForSearch(ring.ring, hasNeighborhood)
     pricingSubject.subdivisionSlug = ring.homeSlug
+    subject.subdivisionSlug = ring.homeSlug
     pricingSubject.platLabel = ring.homeLabel
-    pricingSubject.adjacentSubdivisionSlugs = ring.ring
-      .filter((r) => r.inNeighborhood !== false)
-      .map((r) => r.slug)
-    const slugs = await assignSubdivisionSlugs(sales.map((s) => ({ lat: s.latitude, lng: s.longitude })))
+    pricingSubject.adjacentSubdivisionSlugs = touching.map((p) => p.slug)
+    const [neighborRings, slugs] = await Promise.all([
+      readNeighborRings(touching),
+      assignSubdivisionSlugs(sales.map((s) => ({ lat: s.latitude, lng: s.longitude }))),
+    ])
+    pricingSubject.closerSubdivisionSlugs = nextRowSubdivisionSlugs({
+      subjectSlug: ring.homeSlug,
+      firstRingSlugs: touching.map((p) => p.slug),
+      neighborRings,
+      subjectHasNeighborhood: hasNeighborhood,
+    })
     sales.forEach((s, i) => {
       s.subdivisionSlug = slugs[i]
     })
+  }
+  // Community membership is the boundary that contains the address, for every
+  // community. A failed read leaves the registry-name fallback in place.
+  const communityPoints = [
+    { lat: pricingSubject.latitude, lng: pricingSubject.longitude },
+    ...sales.map((s) => ({ lat: s.latitude, lng: s.longitude })),
+  ]
+  const communitySlugs = await assignCommunitySlugs(communityPoints)
+  if (communitySlugs) {
+    pricingSubject.communityLocated = true
+    pricingSubject.communitySlug = communitySlugs[0]
+    sales.forEach((s, i) => {
+      s.communityLocated = true
+      s.communitySlug = communitySlugs[i + 1] ?? null
+    })
+    subject.communityLocated = true
+    subject.communitySlug = communitySlugs[0] ?? null
   }
   // Delta 4 (Matt 2026-09-09): a rural sale's zoning class is a hard split,
   // and the facts table carries no zone. Nearest rural sales first, county
@@ -233,8 +316,39 @@ export async function selectPricingComps(
       if (z !== undefined) x.zoning = z
     }
   }
-  const walked = walkPricingLadder(pricingSubject, sales, { asOf, cells })
-  return { ...walked, factsReady: true }
+  const walked = walkPricingLadder(pricingSubject, sales, {
+    asOf,
+    cells,
+    anchorWindowMonths: customOrNew ? CUSTOM_FACTS_POOL_MONTHS : ORDINARY_FACTS_POOL_MONTHS,
+  })
+  return { ...walked, trace: [...catchUpTrace, ...walked.trace], factsReady: true }
+}
+
+/** Missing recent closes one comp search may rebuild before it reads (the 6-hourly cron takes the rest). */
+export const BUILD_CATCH_UP_MAX_REFRESH = 60
+
+/**
+ * The search's own record of the catch-up: what it added, and what it could
+ * not, so a reviewer can tell a pool that holds the charts' sales from one
+ * that may not.
+ */
+export function catchUpTraceLines(c: PricingFactsCatchUp): string[] {
+  const lines: string[] = []
+  if (c.refreshed.length > 0) {
+    lines.push(
+      `Recent closes caught up: ${c.refreshed.length} sale(s) closed since ${c.since} had no row in sale_pricing_facts and were added before the search (${c.refreshed.join(', ')}).`,
+    )
+  }
+  const short = c.failed.length + c.deferred.length
+  if (short > 0 || c.error) {
+    const keys = [...c.failed.map((f) => f.listingKey), ...c.deferred]
+    lines.push(
+      `Recent closes NOT caught up: ${short} sale(s) closed since ${c.since} are in listings but not in sale_pricing_facts${
+        keys.length > 0 ? ` (${keys.slice(0, 20).join(', ')}${keys.length > 20 ? ', ...' : ''})` : ''
+      }${c.error ? `; ${c.error}` : ''}. The charts can print a sale this search did not see.`,
+    )
+  }
+  return lines
 }
 
 export async function priceSubjectFromFacts(
@@ -246,6 +360,8 @@ export async function priceSubjectFromFacts(
     levelsRaw?: unknown
     market?: CmaMarketContext | null
     subjectIrrigation?: IrrigationClass | null
+    /** See selectPricingComps. */
+    catchUpRecent?: boolean
   } = {},
 ): Promise<{
   match: PricingMatchResult & { factsReady: boolean }
@@ -323,12 +439,18 @@ export function matchToCompSelection(
       propertySubType: subject.propertySubType,
       standardStatus: subject.standardStatus,
     })
+  // The floor and the target are one number (PRICING_MIN_COMPS equals
+  // PRICING_TARGET_COMPS, Matt 2026-10-07), so a starved set is a short set.
   const underMin = match.comps.length < PRICING_MIN_COMPS
+  const factsPath = factsPathHold(match)
   const starvedReason = underMin
-    ? `facts path: only ${match.comps.length} apples-to-apples sale(s) after the full pricing ladder (minimum ${PRICING_MIN_COMPS}). Custom/new stays on facts — listings SQL tiers are not a fallback.`
-    : match.starved
-      ? `facts path: reached ${match.comps.length} sale(s) but not the ${PRICING_TARGET_COMPS}-sale target. The set is still priceable.`
-      : null
+    ? `facts path: only ${match.comps.length} price-setting sale(s)${
+        factsPath.sales.length > 0 ? ` (${factsPath.sales.join(', ')})` : ''
+      } after the full pricing ladder (minimum ${PRICING_MIN_COMPS})${
+        factsPath.stop_reason ? `; it stopped because ${factsPath.stop_reason}` : ''
+      }. Comp shortage. Custom/new stays on facts; listings SQL tiers are not a fallback.`
+    : null
+  const bench = match.bench ?? []
   return {
     comps: match.comps.map(pricingSaleToCmaComp),
     excludedOutliers: [],
@@ -337,7 +459,16 @@ export function matchToCompSelection(
     pricingSource: 'facts',
     pricingSales: match.comps,
     ownPlatAgeRestrictedShare: match.ownPlatAgeRestrictedShare ?? null,
+    // Refill from the same rung (Matt 2026-10-08): the reach rung's remaining
+    // qualifying sales, in the rung's order, for the comparability review.
+    refill: {
+      rung: match.reachedOnTier ?? null,
+      widening: match.reachedOnWidening === true,
+      comps: bench.map(pricingSaleToCmaComp),
+      pricingSales: bench,
+    },
     diagnostics: {
+      refill_bench: { rung: match.reachedOnTier ?? null, widening: match.reachedOnWidening === true, held: bench.length },
       market_area: marketAreaName(area),
       market_area_resolved: area != null,
       rural_acreage: isRuralAcreage(subject, area),
@@ -357,7 +488,10 @@ export function matchToCompSelection(
       // story was written from the tier names alone. `excluded` stays at zero
       // here because the facts ladder rejects inside passesTier without
       // categorising the reason, the same convention `excluded_totals` above
-      // already carries on this path. It is "not counted", never "none".
+      // already carries on this path. It is "not counted", never "none". The
+      // one reason this ladder does count is the ADU wall (Matt 2026-10-08):
+      // sales the rung would have taken, skipped because their remarks state
+      // an ADU and the subject's do not.
       ladder: match.rungs.map((r) => ({
         tier: r.tier,
         ran: r.ran,
@@ -371,23 +505,38 @@ export function matchToCompSelection(
         rows_returned: r.scanned,
         comps_added: r.added,
         running_total: r.runningTotal,
-        excluded: emptyExclusions(),
+        excluded: { ...emptyExclusions(), adu_sale: r.aduSkipped ?? 0, price_tier: r.priceTier ?? 0 },
+        not_setting: r.notSetting,
       })),
       price_anchor: match.priceAnchor
-        ? { ppsf: Math.round(match.priceAnchor.ppsf), n: match.priceAnchor.n }
+        ? {
+            ppsf: Math.round(match.priceAnchor.ppsf),
+            n: match.priceAnchor.n,
+            level: match.priceAnchor.source,
+            where: anchorPlacePhrase(match.priceAnchor),
+          }
         : null,
       tiers_used: match.tiersUsed,
       reached_target: match.reachedTarget,
       starved: match.starved,
       starved_at: match.starved ? match.tiersUsed[match.tiersUsed.length - 1] ?? null : null,
       starved_reason: starvedReason,
+      facts_path: factsPath,
       target_comps: PRICING_TARGET_COMPS,
       min_comps: PRICING_MIN_COMPS,
       candidates: match.comps.length,
       // The facts ladder rejects inside passesTier without a reason, so the
       // totals stay at zero — except the acreage splits, which the walk counts
-      // once over the rural pool for the reader's story (Delta 4).
-      excluded_totals: { ...emptyExclusions(), ...(match.ruralSplits ?? {}) },
+      // once over the rural pool for the reader's story (Delta 4), the ADU
+      // wall and the one 20% price line, each counted once per distinct sale
+      // however many rungs reached it (one sale is re-read on every rung).
+      excluded_totals: {
+        ...emptyExclusions(),
+        ...(match.ruralSplits ?? {}),
+        adu_sale: match.aduSkipped ?? 0,
+        price_tier: match.priceTierSkipped ?? 0,
+      },
+      not_price_setting: match.rungs.reduce((n, r) => n + (r.notSetting ?? 0), 0),
       outliers_excluded: 0,
       final_count: match.comps.length,
       final_tier_counts: Object.fromEntries(
@@ -399,8 +548,53 @@ export function matchToCompSelection(
 }
 
 /**
- * Facts win when they produced a priceable set. Under 3 sales, ordinary resale
- * falls back to the listings ladder.
+ * What the facts walk held, in the shape the selection's diagnostics keep
+ * (diagnostics.facts_path): the price-setting sales it seated by address, the
+ * rungs that added them, the sales that passed a rung and did not set the
+ * price, and why it stopped short of five.
+ */
+export function factsPathHold(match: PricingMatchResult): FactsPathHold {
+  return {
+    held: match.comps.length,
+    sales: match.comps.map((c) => c.address),
+    tiers_used: [...match.tiersUsed],
+    not_setting: match.rungs.reduce((n, r) => n + (r.notSetting ?? 0), 0),
+    stop_reason: factsStopReason(match.rungs, match.comps.length >= PRICING_MIN_COMPS),
+  }
+}
+
+/**
+ * THE FACTS WALK IS KEPT ON A LISTINGS FALLBACK (2026-10-08). Under five
+ * price-setting sales the facts result used to be thrown away and only the
+ * listings selection returned, so the shortage message ("Only 0 qualifying
+ * closed comps found ... listings path ...") described the weaker search
+ * while the facts walk had held sales of its own. The listings selection now
+ * carries the facts walk on diagnostics.facts_path, and its starved reason is
+ * rewritten so the path that held more leads (diagnoseStarvation). Nothing
+ * else about the listings selection changes: its comps still price the home
+ * when it holds five.
+ */
+export function withFactsPath(
+  selection: CompSelection,
+  match: PricingMatchResult & { factsReady: boolean },
+): CompSelection {
+  if (!match.factsReady) return selection
+  const before = selection.diagnostics.starved_reason
+  selection.diagnostics.facts_path = factsPathHold(match)
+  const after = diagnoseStarvation(selection.diagnostics)
+  selection.diagnostics.starved_reason = after
+  if (before && after && before !== after) {
+    const at = selection.trace.indexOf(before)
+    if (at >= 0) selection.trace[at] = after
+  }
+  return selection
+}
+
+/**
+ * Facts win when they produced a priceable set. Under five price-setting
+ * sales (FACTS_STANDALONE_MIN, equal to PRICING_MIN_COMPS since 2026-10-07),
+ * ordinary resale falls back to the listings ladder; under five on both
+ * ladders the build fails as a comp shortage.
  *
  * Custom/new must NOT fall back: the listings ladder still uses
  * unmappedCrossesKnownBank, which re-starves Perspective-class peers and can
@@ -423,6 +617,12 @@ export function pickCompSource(match: {
   if (n >= FACTS_STANDALONE_MIN) return 'facts'
   return 'listings'
 }
+
+// factsOutlastShortListings was deleted 2026-10-07. It let a three- or
+// four-sale facts set price when the listings ladder found fewer (1648
+// Pheasant: facts held 3, listings held 1). With PRICING_MIN_COMPS equal to
+// FACTS_STANDALONE_MIN (5), pickCompSource already keeps a five-sale facts
+// set, and under five on both ladders the build fails as a comp shortage.
 
 export async function selectCompsPreferringFacts(
   subject: CmaSubject,
@@ -451,5 +651,5 @@ export async function selectCompsPreferringFacts(
   if (pickCompSource({ ...match, customOrNew }) === 'facts') {
     return matchToCompSelection(subject, match, { customOrNew })
   }
-  return selectComps(subject, opts)
+  return withFactsPath(await selectComps(subject, opts), match)
 }

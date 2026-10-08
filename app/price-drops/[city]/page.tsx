@@ -17,6 +17,7 @@
  * .catch() into an empty result, which published "Nothing in {city}".
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { formatDate } from '@/lib/format/date'
@@ -110,7 +111,7 @@ export default async function PriceDropsCityPage({ params }: Props) {
     windowDays: 7,
     fetchedAt: fetchedAt ? formatDate(fetchedAt) : null,
   })
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const siteUrl = siteOrigin()
   const pageUrl = `${siteUrl}${path}`
 
   const totalReducedLabel =

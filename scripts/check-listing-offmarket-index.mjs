@@ -42,16 +42,21 @@
  *     the whole class while the AST below stayed spotless. Reading the source
  *     cannot catch that; running it can.
  *
- *  2. NO STATUS INPUT AT THE CHOKEPOINT. In app/listing/[listingKey]/page.tsx
- *     generateMetadata, the `noindex` passed to pageMetadata is a function of
- *     GEOGRAPHY ONLY. Its expression — resolved through a local const if it was
- *     written as a shorthand — may reference only the out-of-area policy, may
- *     not touch a `status` property, may not name any off-market predicate, and
- *     may not contain an off-market status literal. Three filters, because one
- *     is not enough: an identifier allowlist alone passes
- *     `outOfArea !== null || listing.status === 'Closed'` (every identifier in
- *     it is allowlisted), and a name blocklist alone passes a status compared
- *     through a helper. `nofollow` may not be set at all.
+ *  2. NO NOINDEX AT THE CHOKEPOINT. In app/listing/[listingKey]/page.tsx
+ *     generateMetadata, NOTHING is passed as `noindex` to pageMetadata — not
+ *     a status test, and since Matt's 2026-10-05 revert of SITE-33 ("Undo
+ *     it"), not geography either. Out-of-area listings (Medford, Klamath
+ *     Falls, Grants Pass, ...) are index, follow: the 2026-09-09 out-of-area
+ *     noindex cost about 36% of the Search Console impression drop since
+ *     Sep 12 (~2,500 impressions and ~30 clicks a week). Any `noindex`
+ *     property or shorthand in generateMetadata fails, whatever it computes.
+ *     `nofollow` may not be set at all.
+ *
+ *  7. OUT-OF-AREA ROWS SHIP IN listings.xml (Matt 2026-10-05).
+ *     lib/data/sitemap/getListingSitemapRows.ts may not import or call a
+ *     service-area predicate (isServiceAreaCity, outOfAreaListingPolicy,
+ *     SERVICE_AREA_CITIES_*, serviceAreaSitemapTiles): the listings sitemap is
+ *     every Active/AUC listing, whatever its city.
  *
  *  3. NO SECOND ROBOTS DIRECTIVE IN EITHER FILE. Neither chokepoint may
  *     hand-build a robots object. The by-address route in particular must keep
@@ -71,6 +76,22 @@
  *     that refuses none of those things, and it is what let the off-market
  *     state be believed handled while the live page sold a closed house.
  *
+ *  6. A DATABASE FAILURE IS NEVER A 200 NOINDEX (GSC slide fix, 2026-10-05).
+ *     Until 7e392cc4 a failed listing lookup rendered the noindexed refusal as
+ *     HTTP 200; URL Inspection found 12 of a random 150 sitemap listing URLs
+ *     still "Excluded by 'noindex' tag" weeks later, 8 of them with a Google
+ *     canonical pointing at a different listing. So:
+ *       a. getListingLookup's catch returns { kind: 'error' }, never 'missing'.
+ *       b. In the page, an `.kind === 'error'` guard never reaches the refusal
+ *          (LISTING_UNAVAILABLE_METADATA / <ListingUnavailable />), and
+ *          generateMetadata does return LISTING_TEMPORARILY_UNAVAILABLE_METADATA
+ *          under one.
+ *       c. LISTING_TEMPORARILY_UNAVAILABLE_METADATA declares no robots.
+ *       d. middleware.ts answers a transient edge lookup failure through
+ *          readListingForRequest / isListingLookupUnavailable /
+ *          listingTemporarilyUnavailableResponse, and that response is a 503
+ *          with Retry-After and no-store whose strings never say noindex.
+ *
  * Usage:
  *   node scripts/check-listing-offmarket-index.mjs            # CI
  *   node scripts/check-listing-offmarket-index.mjs --json
@@ -89,22 +110,7 @@ const BY_ADDRESS = 'app/listing/by-address/[...slug]/page.tsx'
 const UNAVAILABLE = 'components/site/listing-detail/ListingUnavailable.tsx'
 const METADATA_MODULE = 'lib/site/page-metadata.ts'
 const SHARE_MODULE = 'lib/share-metadata.ts'
-
-/**
- * The ONLY thing `noindex` at the listing chokepoint may depend on: SITE-33's
- * out-of-area geography. Widening this set is a policy change — it needs Matt,
- * and it needs docs/MASTER_SPEC.md §4.9 edited in the same commit.
- */
-const GEOGRAPHY_ALLOWLIST = new Set([
-  'outOfArea',
-  'outOfAreaListingPolicy',
-  'listing',
-  'undefined',
-  'null',
-  // Coercions, so `Boolean(outOfArea)` and `!!outOfArea` are not read as a
-  // second input. A gate that fails on an honest rewrite gets deleted.
-  'Boolean',
-])
+const ORIGIN_MODULE = 'lib/site-origin.ts'
 
 /** Names that mean "this home is off the market". None may reach the directive. */
 const STATUS_NAMES = [
@@ -170,15 +176,17 @@ function walk(node, fn) {
 /* ── 1. the default, executed ──────────────────────────────────────────────── */
 
 async function loadPageMetadata() {
+  const originSrc = read(ORIGIN_MODULE)
   const shareSrc = read(SHARE_MODULE)
   const metaSrc = read(METADATA_MODULE)
-  if (!shareSrc || !metaSrc) return null
+  if (!originSrc || !shareSrc || !metaSrc) return null
 
-  // share-metadata.ts imports nothing; page-metadata.ts imports only from it
-  // and a `type` from next (which transpileModule erases). Transpile the two
-  // SEPARATELY and rewrite the one specifier to the first module's data URL —
-  // esbuild is not guaranteed present in every lane, and concatenating them
-  // collides on the private const both files happen to name MAX_DESC.
+  // site-origin.ts imports nothing; share-metadata.ts imports only from it;
+  // page-metadata.ts imports only from share-metadata and a `type` from next
+  // (which transpileModule erases). Transpile the three SEPARATELY and rewrite
+  // each one specifier to the module below's data URL — esbuild is not
+  // guaranteed present in every lane, and concatenating them collides on the
+  // private const both metadata files happen to name MAX_DESC.
   const asModule = (src) =>
     `data:text/javascript;base64,${Buffer.from(
       ts.transpileModule(src, {
@@ -186,7 +194,8 @@ async function loadPageMetadata() {
       }).outputText,
     ).toString('base64')}`
 
-  const metaOnly = metaSrc.replace(/'@\/lib\/share-metadata'/, JSON.stringify(asModule(shareSrc)))
+  const shareOnly = shareSrc.replace(/'@\/lib\/site-origin'/, JSON.stringify(asModule(originSrc)))
+  const metaOnly = metaSrc.replace(/'@\/lib\/share-metadata'/, JSON.stringify(asModule(shareOnly)))
   try {
     return await import(asModule(metaOnly))
   } catch (error) {
@@ -228,30 +237,6 @@ async function loadPageMetadata() {
 }
 
 /* ── 2 + 4. the [listingKey] chokepoint ────────────────────────────────────── */
-
-/** Every identifier named anywhere inside an expression. */
-function identifiersIn(node, acc = new Set()) {
-  walk(node, (n) => {
-    if (ts.isIdentifier(n)) {
-      // `a.b` — `b` is a property name, not a free identifier.
-      if (ts.isPropertyAccessExpression(n.parent) && n.parent.name === n) return
-      acc.add(n.text)
-    }
-    if (n.kind === ts.SyntaxKind.NullKeyword) acc.add('null')
-  })
-  return acc
-}
-
-/** Property names read off an expression (`listing.status` → `status`). */
-function propertiesIn(node, acc = new Set()) {
-  walk(node, (n) => {
-    if (ts.isPropertyAccessExpression(n)) acc.add(n.name.text)
-    if (ts.isElementAccessExpression(n) && ts.isStringLiteral(n.argumentExpression)) {
-      acc.add(n.argumentExpression.text)
-    }
-  })
-  return acc
-}
 
 /** String literals inside an expression, template spans included. */
 function stringsIn(node, acc = new Set()) {
@@ -308,105 +293,31 @@ function functionNamed(sf, name) {
           `renamed or moved, re-point this gate in the same commit.`,
       )
     } else {
-      // Local `const x = <expr>` inside generateMetadata, so a shorthand
-      // `noindex` in the pageMetadata argument resolves back to its expression.
-      const locals = new Map()
+      // Any `noindex` in generateMetadata is a failure (Matt 2026-10-05): not
+      // status (SITE-32) and no longer geography (SITE-33 reverted). The one
+      // sanctioned noindex is the refusal constant, checked in section 4.
       walk(genMeta, (n) => {
-        if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer) {
-          locals.set(n.name.text, n.initializer)
-        }
-      })
-
-      /** The expression actually handed to `noindex`, shorthand resolved. */
-      const directives = []
-      walk(genMeta, (n) => {
-        if (ts.isPropertyAssignment(n) && propertyName(n) === 'noindex') {
-          directives.push({ node: n, expr: n.initializer, spelling: 'noindex: <expr>' })
-        }
-        if (ts.isShorthandPropertyAssignment(n) && n.name.text === 'noindex') {
-          const local = locals.get('noindex')
-          if (local) {
-            directives.push({ node: n, expr: local, spelling: 'noindex, (shorthand for a local)' })
-          } else {
-            failures.push(
-              `${PAGE}:${lineOf(sf, n)}: \`noindex\` is passed as a shorthand this gate cannot ` +
-                `resolve to an expression. Pass it inline, or declare the local in generateMetadata.`,
-            )
-          }
-        }
-      })
-
-      if (directives.length === 0) {
+        const isNoindex =
+          (ts.isPropertyAssignment(n) && propertyName(n) === 'noindex') ||
+          (ts.isShorthandPropertyAssignment(n) && n.name.text === 'noindex')
+        if (!isNoindex) return
+        const text = n.getText(sf)
+        const statusy =
+          STATUS_NAMES.some((name) => new RegExp(`\\b${name}\\b`).test(text)) ||
+          STATUS_LITERALS.some((lit) => text.toLowerCase().includes(lit.toLowerCase()))
         failures.push(
-          `${PAGE}: generateMetadata passes no \`noindex\` at all. SITE-33's out-of-area branch is ` +
-            `expected here (\`noindex: outOfArea !== null\`) — if it was removed, out-of-area ` +
-            `listings re-entered the index. Restore it, or amend this gate and the ruling together.`,
+          `${PAGE}:${lineOf(sf, n)}: generateMetadata passes \`${text.replace(/\s+/g, ' ').slice(0, 120)}\`. ` +
+            (statusy
+              ? `Status is not an input to indexing on this page (Matt 2026-09-08, SITE-32): off-market ` +
+                `URLs carry 46% of listing-detail impressions and an address query has no Active ` +
+                `substitute, so a noindex deletes those clicks. `
+              : '') +
+            `No listing page passes noindex: out-of-area listings are index, follow too (Matt ` +
+            `2026-10-05 reverted SITE-33; the out-of-area noindex cost ~36% of the Search Console ` +
+            `impression drop since Sep 12). The only noindex on a listing URL is the refusal ` +
+            `(LISTING_UNAVAILABLE_METADATA). See docs/MASTER_SPEC.md §4.9.`,
         )
-      }
-
-      /**
-       * The directive's expression AND every local const it reaches through,
-       * transitively. `noindex: hidden` where `const hidden = outOfArea !== null`
-       * is honest and must pass; the same shape hiding
-       * `isPublicOffMarketStatus(listing.status)` one hop away must not. The
-       * 2026-09-08 canonical-gate failure is why: that gate held the exact
-       * spelling it was tested against and passed against the same defect
-       * written one character apart.
-       */
-      const RESOLUTION_TERMINALS = new Set(['listing'])
-      function reach(expr) {
-        const exprs = [expr]
-        const seen = new Set()
-        for (let i = 0; i < exprs.length; i++) {
-          for (const id of identifiersIn(exprs[i])) {
-            if (seen.has(id) || RESOLUTION_TERMINALS.has(id)) continue
-            seen.add(id)
-            const local = locals.get(id)
-            if (local) exprs.push(local)
-          }
-        }
-        return exprs
-      }
-
-      const union = (expr, fn) => {
-        const acc = new Set()
-        for (const e of reach(expr)) for (const v of fn(e)) acc.add(v)
-        return acc
-      }
-
-      for (const { node, expr, spelling } of directives) {
-        const line = lineOf(sf, node)
-        const stray = [...union(expr, identifiersIn)].filter(
-          (id) => !GEOGRAPHY_ALLOWLIST.has(id) && !locals.has(id),
-        )
-        if (stray.length) {
-          failures.push(
-            `${PAGE}:${line}: \`${spelling}\` reaches for ${stray.map((s) => `\`${s}\``).join(', ')}. ` +
-              `The robots directive on a listing page is a function of GEOGRAPHY ONLY ` +
-              `(${[...GEOGRAPHY_ALLOWLIST].join(', ')}). Matt ruled 2026-09-08 that off-market URLs ` +
-              `stay index,follow — see docs/MASTER_SPEC.md §4.9.`,
-          )
-        }
-        const statusProps = [...union(expr, propertiesIn)].filter((p) => STATUS_NAMES.includes(p))
-        if (statusProps.length) {
-          failures.push(
-            `${PAGE}:${line}: \`${spelling}\` reads ${statusProps.map((s) => `\`.${s}\``).join(', ')}. ` +
-              `Status is not an input to indexing on this page. Closed, Expired, Canceled and ` +
-              `Withdrawn URLs carry 46% of listing-detail impressions and a CTR at or above Active; ` +
-              `an address query has no Active substitute, so a noindex deletes those clicks.`,
-          )
-        }
-        const statusStrings = [...union(expr, stringsIn)].filter((s) =>
-          STATUS_LITERALS.some((lit) => s.toLowerCase().includes(lit.toLowerCase())),
-        )
-        if (statusStrings.length) {
-          failures.push(
-            `${PAGE}:${line}: \`${spelling}\` compares against the status literal(s) ` +
-              `${statusStrings.map((s) => JSON.stringify(s)).join(', ')}. Same ruling: off-market is ` +
-              `not a reason to leave the index.`,
-          )
-        }
-      }
+      })
 
       // `nofollow` is a separate field on purpose (SITE-25). Never set here.
       walk(genMeta, (n) => {
@@ -582,6 +493,201 @@ function functionNamed(sf, name) {
   }
 }
 
+/* ── 6. a database failure is never a 200 noindex ─────────────────────────── */
+
+const LOOKUP_DAL = 'lib/data/listings/getListingDetail.ts'
+const MIDDLEWARE = 'middleware.ts'
+const UNAVAILABLE_503 = 'lib/routing/listing-unavailable.ts'
+
+/** The nearest enclosing if-guard's text, or null. */
+function guardTextOf(sf, node) {
+  for (let p = node.parent; p; p = p.parent) {
+    if (ts.isIfStatement(p)) return p.expression.getText(sf)
+  }
+  return null
+}
+
+const ERROR_GUARD = /\.kind\s*===\s*['"]error['"]/
+
+{
+  const src = read(LOOKUP_DAL)
+  if (src) {
+    const sf = parse(LOOKUP_DAL, src)
+    const fn = functionNamed(sf, 'getListingLookupUncoalesced')
+    if (!fn) {
+      failures.push(
+        `${LOOKUP_DAL}: getListingLookupUncoalesced not found. It is the lookup that keeps a database ` +
+          `failure apart from a missing home; if it moved, re-point this gate in the same commit.`,
+      )
+    } else {
+      let catches = 0
+      walk(fn, (n) => {
+        if (!ts.isCatchClause(n)) return
+        catches++
+        const literals = stringsIn(n.block)
+        if (!literals.has('error') || literals.has('missing')) {
+          failures.push(
+            `${LOOKUP_DAL}:${lineOf(sf, n)}: getListingLookup's catch must return { kind: 'error' } and ` +
+              `nothing else. A failed read reported as 'missing' renders the noindexed refusal on a ` +
+              `live listing, which is how 12 of 150 sampled sitemap listings sat "Excluded by noindex" ` +
+              `(URL Inspection, 2026-10-05).`,
+          )
+        }
+      })
+      if (catches === 0) {
+        failures.push(
+          `${LOOKUP_DAL}: getListingLookupUncoalesced has no catch; a failed read must become { kind: 'error' }.`,
+        )
+      }
+    }
+  }
+}
+
+{
+  const src = read(PAGE)
+  if (src) {
+    const sf = parse(PAGE, src)
+    let tempMetaOnError = false
+    walk(sf, (n) => {
+      const isRefusalMeta =
+        ts.isIdentifier(n) && n.text === 'LISTING_UNAVAILABLE_METADATA' && n.parent && ts.isReturnStatement(n.parent)
+      const isRefusalJsx =
+        (ts.isJsxSelfClosingElement(n) || ts.isJsxOpeningElement(n)) && n.tagName.getText(sf) === 'ListingUnavailable'
+      if (isRefusalMeta || isRefusalJsx) {
+        const guard = guardTextOf(sf, n)
+        if (guard && ERROR_GUARD.test(guard)) {
+          failures.push(
+            `${PAGE}:${lineOf(sf, n)}: the refusal is reached on a lookup ERROR (\`${guard}\`). A ` +
+              `database failure is not a missing home: it must never render the noindexed refusal.`,
+          )
+        }
+      }
+      if (
+        ts.isIdentifier(n) &&
+        n.text === 'LISTING_TEMPORARILY_UNAVAILABLE_METADATA' &&
+        n.parent &&
+        ts.isReturnStatement(n.parent)
+      ) {
+        const guard = guardTextOf(sf, n)
+        if (guard && ERROR_GUARD.test(guard)) tempMetaOnError = true
+      }
+    })
+    if (!tempMetaOnError) {
+      failures.push(
+        `${PAGE}: generateMetadata no longer returns LISTING_TEMPORARILY_UNAVAILABLE_METADATA under a ` +
+          `\`.kind === 'error'\` guard. A failed lookup must get the robots-free temporary metadata.`,
+      )
+    }
+  }
+}
+
+{
+  const src = read(UNAVAILABLE)
+  if (src) {
+    const sf = parse(UNAVAILABLE, src)
+    let declared = false
+    walk(sf, (n) => {
+      if (
+        ts.isVariableDeclaration(n) &&
+        ts.isIdentifier(n.name) &&
+        n.name.text === 'LISTING_TEMPORARILY_UNAVAILABLE_METADATA'
+      ) {
+        declared = true
+        if (!n.initializer) return
+        walk(n.initializer, (m) => {
+          if (
+            (ts.isPropertyAssignment(m) || ts.isShorthandPropertyAssignment(m)) &&
+            (propertyName(m) ?? m.name?.text) === 'robots'
+          ) {
+            failures.push(
+              `${UNAVAILABLE}:${lineOf(sf, m)}: LISTING_TEMPORARILY_UNAVAILABLE_METADATA declares robots. ` +
+                `A temporary failure must never carry a robots directive.`,
+            )
+          }
+        })
+      }
+    })
+    if (!declared) failures.push(`${UNAVAILABLE}: LISTING_TEMPORARILY_UNAVAILABLE_METADATA is missing.`)
+  }
+}
+
+{
+  const mw = read(MIDDLEWARE)
+  if (mw) {
+    const sf = parse(MIDDLEWARE, mw)
+    const called = new Set()
+    walk(sf, (n) => {
+      if (ts.isCallExpression(n) && ts.isIdentifier(n.expression)) called.add(n.expression.text)
+    })
+    for (const name of ['readListingForRequest', 'isListingLookupUnavailable', 'listingTemporarilyUnavailableResponse']) {
+      if (!called.has(name)) {
+        failures.push(
+          `${MIDDLEWARE}: no call to ${name}(). A listing path whose database read fails must answer 503 ` +
+            `with Retry-After before the page streams a 200 (lib/routing/listing-unavailable.ts).`,
+        )
+      }
+    }
+  }
+  const resp = read(UNAVAILABLE_503)
+  if (resp) {
+    const sf = parse(UNAVAILABLE_503, resp)
+    const fn = functionNamed(sf, 'listingTemporarilyUnavailableResponse')
+    if (!fn) {
+      failures.push(`${UNAVAILABLE_503}: listingTemporarilyUnavailableResponse is missing.`)
+    } else {
+      const text = fn.getText(sf)
+      if (!/status:\s*503\b/.test(text)) failures.push(`${UNAVAILABLE_503}: the response must be status 503.`)
+      if (!/['"]retry-after['"]/i.test(text)) failures.push(`${UNAVAILABLE_503}: the response must carry Retry-After.`)
+      if (!/no-store/.test(text)) failures.push(`${UNAVAILABLE_503}: the response must be cache-control no-store.`)
+    }
+    for (const lit of stringsIn(sf)) {
+      if (/noindex/i.test(lit)) {
+        failures.push(
+          `${UNAVAILABLE_503}: a string says ${JSON.stringify(lit.slice(0, 60))}. The 503 must never carry ` +
+            `noindex, in a header or the body.`,
+        )
+      }
+    }
+  }
+}
+
+/* ── 7. out-of-area rows ship in listings.xml (Matt 2026-10-05) ───────────── */
+
+const SITEMAP_ROWS = 'lib/data/sitemap/getListingSitemapRows.ts'
+const SERVICE_AREA_NAMES = [
+  'isServiceAreaCity',
+  'outOfAreaListingPolicy',
+  'serviceAreaSitemapTiles',
+  'SERVICE_AREA_CITIES_LOWER',
+  'SERVICE_AREA_CITIES_PROPER',
+  'CENTRAL_OREGON_CITY_SLUGS',
+]
+
+{
+  const src = read(SITEMAP_ROWS)
+  if (src) {
+    const sf = parse(SITEMAP_ROWS, src)
+    walk(sf, (n) => {
+      if (ts.isImportDeclaration(n) && ts.isStringLiteral(n.moduleSpecifier)) {
+        const spec = n.moduleSpecifier.text
+        if (/service-area|central-oregon|out-of-area/.test(spec)) {
+          failures.push(
+            `${SITEMAP_ROWS}:${lineOf(sf, n)}: imports ${spec}. The listings sitemap carries every ` +
+              `Active/AUC listing whatever its city; Matt reverted SITE-33's out-of-area sitemap drop ` +
+              `on 2026-10-05 (it cost ~36% of the Search Console impression drop since Sep 12).`,
+          )
+        }
+      }
+      if (ts.isIdentifier(n) && SERVICE_AREA_NAMES.includes(n.text)) {
+        failures.push(
+          `${SITEMAP_ROWS}:${lineOf(sf, n)}: names \`${n.text}\`. No geography filter on listings.xml ` +
+            `(Matt 2026-10-05, SITE-33 reverted).`,
+        )
+      }
+    })
+  }
+}
+
 /* ── report ────────────────────────────────────────────────────────────────── */
 
 if (JSON_OUT) {
@@ -604,6 +710,7 @@ if (failures.length) {
   process.exit(1)
 }
 
-console.log('OK — indexing on a listing page depends on geography and the refusal path, not status.')
+console.log('OK — no listing page passes noindex (status or geography); only the refusal is noindexed.')
+console.log('     listings.xml carries no service-area filter (out-of-area listings indexed, Matt 2026-10-05).')
 console.log('     pageMetadata default executed: index, follow. Refusal: index: false, follow: true.')
 process.exit(0)

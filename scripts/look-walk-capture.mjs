@@ -7,7 +7,7 @@
  */
 import { mkdirSync, writeFileSync, copyFileSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 
 const BASE = process.env.LOOK_WALK_BASE || 'https://ryan-realty.com'
 const OUT = resolve(process.env.LOOK_WALK_OUT || 'out/look-walk')

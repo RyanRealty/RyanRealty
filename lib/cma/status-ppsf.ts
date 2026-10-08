@@ -10,6 +10,7 @@
 import { countWord, escapeHtml, usd } from '@/lib/cma/render-blocks'
 import { median } from '@/lib/cma/market-status'
 import type { MatrixEntry } from '@/lib/cma/matrix-entry'
+import { comparisonSalePrice } from '@/lib/pricing/seller-net'
 
 const esc = escapeHtml
 
@@ -79,7 +80,11 @@ function closedRow(entries: readonly MatrixEntry[]): StatusPpsfRow | null {
   )
   const sold = ppsfBand(
     homes
-      .map((e) => ppsfOf(e.closePrice, e.sqft))
+      .map((e) => {
+        const close = e.closePrice
+        if (close == null || !(close > 0)) return null
+        return ppsfOf(comparisonSalePrice(close, e.concessionsAmount), e.sqft)
+      })
       .filter((v): v is number => v != null),
   )
   if (!list && !sold) return null
@@ -135,6 +140,16 @@ function aFoot(band: PpsfBand): string {
   return `${usd(band.low)} to ${usd(band.high)} a foot (median ${usd(band.median)})`
 }
 
+/**
+ * A closed sale whose recorded credit came off the price the rate divides.
+ * The table row's name and the caption's words both turn on this one test.
+ */
+export function saleCarriesConcession(e: MatrixEntry): boolean {
+  if (e.family !== 'closed' || e.closePrice == null || !(e.closePrice > 0)) return false
+  const c = e.concessionsAmount
+  return c != null && Number.isFinite(c) && c > 0
+}
+
 /** One sentence under a matrix, for the status that table is. */
 export function statusPpsfCaptionHtml(family: 'closed' | 'unsold' | 'active', entries: readonly MatrixEntry[]): string {
   const rows = statusPpsfSummaries({
@@ -147,11 +162,18 @@ export function statusPpsfCaptionHtml(family: 'closed' | 'unsold' | 'active', en
   const list = row.list
   const sold = row.sold
   const listVerb = row.homes === 1 ? 'lists' : 'list'
+  // The sold rate is the price after a recorded credit, the same figure the
+  // table's row prints under "Sold $/sqft after concessions". "Sold at $293 to
+  // $386 a foot" over 2224 Indigo, a $503,000 sale on 1,676 sqft ($300 before
+  // its $11,250 credit), read as the sold price (reader review,
+  // cma-2382-jackson). With no credit on any sale the two are one number and
+  // the sentence says nothing more.
+  const net = family === 'closed' && entries.some(saleCarriesConcession) ? ', net of seller concessions' : ''
   let sentence = ''
   if (family === 'closed' && list && sold) {
-    sentence = `${theseHomes(row.homes, 'sale')} ${listVerb} at ${aFoot(list)} and sold at ${aFoot(sold)}.`
+    sentence = `${theseHomes(row.homes, 'sale')} ${listVerb} at ${aFoot(list)} and sold at ${aFoot(sold)}${net}.`
   } else if (family === 'closed' && sold) {
-    sentence = `${theseHomes(row.homes, 'sale')} sold at ${aFoot(sold)}.`
+    sentence = `${theseHomes(row.homes, 'sale')} sold at ${aFoot(sold)}${net}.`
   } else if (list) {
     sentence = `${theseHomes(row.homes, 'listing')} ${listVerb} at ${aFoot(list)}.`
   }

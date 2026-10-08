@@ -1,5 +1,6 @@
 'use server'
 
+import { siteOrigin } from '@/lib/site-origin'
 import { createHash } from 'node:crypto'
 import { headers } from 'next/headers'
 import { getAuthLimiter } from '@/lib/rate-limit'
@@ -106,7 +107,7 @@ export async function registerForCmaDocumentAction(input: CmaDownloadInput): Pro
   const attributed = await readAttributedAgentServer()
   const assignedBroker = attributed?.broker ?? 'matt'
 
-  const base = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const base = siteOrigin()
   const sourceUrl = `${base}/listing/${encodeURIComponent(listingKey)}`
 
   // 5. The one lead pipeline: sendEvent → ensureNativeLead, with the same
@@ -195,8 +196,8 @@ export async function registerForCmaDocumentAction(input: CmaDownloadInput): Pro
   try {
     await fireLeadGenerated({
       lp_variant: 'published-cma',
-      lead_type: 'buyer',
-      value: 0,
+      lead_type: 'listing_inquiry',
+      form_id: 'listing_cma_download',
       fub_person_id: personId ?? undefined,
     })
   } catch {
@@ -254,7 +255,7 @@ export async function requestListingCmaAction(input: CmaDownloadInput): Promise<
   const smsTag = input.smsConsent === true ? 'sms-consent:yes' : 'sms-consent:no'
   const attributed = await readAttributedAgentServer()
   const assignedBroker = attributed?.broker ?? 'matt'
-  const base = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const base = siteOrigin()
   const sourceUrl = `${base}/listing/${encodeURIComponent(listingKey)}`
 
   let personId: number | null = null
@@ -321,8 +322,8 @@ export async function requestListingCmaAction(input: CmaDownloadInput): Promise<
   try {
     await fireLeadGenerated({
       lp_variant: 'listing-pricing-read',
-      lead_type: 'buyer',
-      value: 0,
+      lead_type: 'listing_inquiry',
+      form_id: 'listing_cma_request',
       fub_person_id: personId ?? undefined,
     })
   } catch {

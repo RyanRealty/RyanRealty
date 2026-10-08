@@ -402,8 +402,8 @@ export function renderCrmMerge(
  * comms. Admin links and links that already carry an agent are untouched.
  *
  * Also stamps GA campaign UTMs when missing (`utm_source=crm&utm_medium=email`
- * plus `utm_content=agent-<slug>` / `utm_term` fallback) so the click is a
- * CRM-email session, not Direct. Existing channel UTMs are never overwritten.
+ * plus `utm_content=agent-<slug>`) so the click is a CRM-email session, not
+ * Direct. Existing channel UTMs are rebuilt onto the closed vocab (lib/analytics/utm.ts).
  */
 export function attributeSiteLinks(
   text: string,
@@ -413,6 +413,7 @@ export function attributeSiteLinks(
   // helper, lib/identity/outbound-links.ts (P7, 2026-09-23). Send paths never
   // call this directly any more; ci:identity-loop holds that.
   crmPersonId?: number | string | null,
+  test?: boolean,
 ): string {
   const slug = (brokerSlug ?? '').trim()
   const fuid = typeof fubPersonId === 'number' && Number.isInteger(fubPersonId) && fubPersonId > 0 ? String(fubPersonId) : ''
@@ -442,9 +443,10 @@ export function attributeSiteLinks(
     // Signed person token from decorateOutboundText. Send paths do not call
     // this function, and they do not stamp _pid themselves.
     if (pid && !hasQueryParam(out, '_pid')) out = appendQueryParam(out, '_pid', pid)
-    // GA channel + broker UTMs. Only fill gaps. A CMA email that already
-    // carries utm_source / utm_medium / utm_campaign keeps them.
-    out = stampCrmOutboundUtms(out, slug || null)
+    // GA channel + broker UTMs. Rebuilds through the one helper so a link
+    // never carries two UTM sets. A CMA email that already carries source /
+    // medium / campaign keeps them (after vocab remap).
+    out = stampCrmOutboundUtms(out, slug || null, { test })
     return out + fragment
   })
 }

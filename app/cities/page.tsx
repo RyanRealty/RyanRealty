@@ -28,6 +28,7 @@
  * Parity contract: design_system/ryan-realty/ui_kits/cities/parity.json
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import { valuationHref } from '@/lib/site/valuation-href'
 import type { Metadata } from 'next'
 import { getCitiesForIndex } from '@/app/actions/cities'
@@ -97,7 +98,7 @@ import type { SchemaInput } from '@/lib/site/json-ld'
 
 export const revalidate = 3600
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const siteUrl = siteOrigin()
 
 export const metadata: Metadata = pageMetadata({
   title: 'Central Oregon cities: live inventory in Bend, Redmond, Sisters',

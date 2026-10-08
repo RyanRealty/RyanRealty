@@ -1,9 +1,10 @@
+import { siteOrigin } from '@/lib/site-origin'
 import { NextResponse } from 'next/server'
 import { getIndexableSubdivisions } from '@/lib/data/subdivisions/getIndexableSubdivisions'
 import { subdivisionLlmsLines } from '@/lib/data/subdivisions/subdivision-index'
 import { BRAND } from '@/lib/brand/contact'
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const SITE_URL = siteOrigin()
 
 export const revalidate = 3600
 

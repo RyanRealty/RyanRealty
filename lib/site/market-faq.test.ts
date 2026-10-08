@@ -38,6 +38,19 @@ describe('buildMarketFaq', () => {
   // "median home price" beside four peers' SALE medians. When the page has the
   // closed-sale month, the sale price answers the question and the list price
   // follows, named as the price of homes for sale.
+  it('answers whether prices are going up from the 12-month change, and only when it is published', () => {
+    const q = (yoy: number | null) =>
+      buildMarketFaq('Bend', { grain: 'city', source: 'market-truth', activeCount: 600, yoyMedianPrice: yoy }).faqs.find(
+        (f) => f.question === 'Are home prices going up in Bend?',
+      )
+    expect(q(0.0321)?.answer).toBe(
+      'Yes. The median sale price of single-family homes in Bend over the last 12 months is up 3.2% from the 12 months before.',
+    )
+    expect(q(-0.057)?.answer).toMatch(/^No\. .* is down 5\.7% from the 12 months before\.$/)
+    expect(q(0.0002)?.answer).toMatch(/^They are holding level\./)
+    expect(q(null)).toBeUndefined()
+  })
+
   it('leads the price answer with the sale price when the month is known', () => {
     const r = buildMarketFaq('Bend', {
       grain: 'city',
@@ -53,6 +66,7 @@ describe('buildMarketFaq', () => {
     const price = r.faqs.find((f) => f.question === 'What is the median home price in Bend?')
     expect(price?.answer).toBe(
       'The median sale price for a single-family home in Bend was $750,000 in August 2026. ' +
+        'That is the median, the middle sale, rather than the average, which a few very large sales would pull up. ' +
         'The median list price of the single-family homes for sale is $950,000 as of September 2026, ' +
         'based on a direct count of the active MLS listings.',
     )

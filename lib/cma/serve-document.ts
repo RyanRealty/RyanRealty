@@ -24,13 +24,7 @@ import { listingMarketForDocument } from '@/lib/cma/listing-window-load'
 import type { RenderCmaArgs } from '@/lib/cma/render'
 import type { CmaBroker } from '@/lib/cma/types'
 import { GOOGLE_COMMS_COOKIE, hasGoogleCommsConsentRecorded } from '@/lib/auth/google-comms-consent'
-import {
-  decideCmaAccess,
-  renderRegisterShell,
-  renderConsentShell,
-  renderConsentBarHtml,
-  renderWrongPersonShell,
-} from '@/lib/cma/register-gate'
+import { renderConsentBarHtml } from '@/lib/cma/register-gate'
 import { SMS_CONSENT_TEXT } from '@/lib/crm/sms-consent-text'
 import type { CmaRenderSource } from '@/lib/data/cma/documents'
 import { adminReviewBannerHtml, injectAdminReviewBanner } from '@/lib/cma/review-banner'
@@ -133,6 +127,7 @@ export async function immersiveFromRow(
                   boundaryShown: map.boundaryShown,
                   parentShown: map.parentShown,
                   radiusShown: map.radiusShown,
+                  streetPlaceShown: map.streetPlaceShown,
                 } satisfies CompPinMapOverlay,
               }
             } catch {
@@ -257,36 +252,22 @@ async function serveCmaDocumentResult(opts: CmaServeOpts): Promise<CmaServeResul
   const wantsPrint = new URL(opts.requestUrl).searchParams.has('print')
   const publicReady = isCmaClientReady(head.status)
 
-  // The consent bar for a recipient who came in on the tracked link and has
-  // not answered the ask yet; empty for everyone else. Appended beside the
-  // tracker on the document paths below (never on the print path).
+  // NO SIGN-IN TO VIEW (Matt 2026-10-07): a client-ready report opens for
+  // anyone with the link. The only thing identity still decides is the
+  // consent bar: the recipient who came in on the tracked link (`?_pid=`
+  // token, or the signed rr_pid cookie it set) and has not answered the ask
+  // gets an optional bar inside the report. Everyone else gets no bar.
   let consentBar = ''
   if (publicReady && !opts.isAdmin && !opts.skipRegisterGate) {
     const identity = await getCmaAccessIdentity(safeSlug)
     const jar = await cookies()
     const commsCookie = jar.get(GOOGLE_COMMS_COOKIE)?.value
-    // Matt 2026-09-09: the person the email went to reads the report without
-    // the Google door. `?_pid=` rides on every tracked send (lib/cma/send.ts →
-    // attributeOutbound); PersonIdentityBridge copies it into rr_pid, so a
-    // return visit without the parameter still matches.
     const recipientPersonId =
       recipientFromParam(new URL(opts.requestUrl).searchParams.get(IDENTITY_LINK_PARAM)) ??
       signedPersonIdFromCookie(jar.get(PERSON_COOKIE)?.value)
-    const decision = decideCmaAccess({
-      isAdmin: false,
-      viewerEmail: opts.viewerEmail,
-      clientEmail: identity?.clientEmail ?? null,
-      personEmails: identity?.personEmails ?? [],
-      claimedBy: identity?.claimedBy ?? null,
-      consentRecorded: identity?.consentRecorded ?? false,
-      commsConsentRecorded: hasGoogleCommsConsentRecorded(commsCookie),
-      personId: identity?.personId ?? null,
-      recipientPersonId,
-    })
     if (
-      decision.kind === 'serve' &&
-      decision.via === 'recipient' &&
       identity?.personId &&
+      recipientPersonId === identity.personId &&
       !identity.consentRecorded &&
       !hasGoogleCommsConsentRecorded(commsCookie)
     ) {
@@ -296,37 +277,6 @@ async function serveCmaDocumentResult(opts: CmaServeOpts): Promise<CmaServeResul
         address: identity.subjectAddress ?? null,
         smsConsentText: SMS_CONSENT_TEXT,
       })
-    }
-    if (decision.kind === 'register') {
-      return {
-        kind: 'html',
-        status: 200,
-        html: renderRegisterShell({
-          slug: safeSlug,
-          address: identity?.subjectAddress ?? null,
-          clientName: identity?.clientName ?? null,
-        }),
-      }
-    }
-    if (decision.kind === 'consent' || decision.kind === 'claim-and-consent') {
-      return {
-        kind: 'html',
-        status: 200,
-        html: renderConsentShell({
-          slug: safeSlug,
-          address: identity?.subjectAddress ?? null,
-          viewerEmail: opts.viewerEmail ?? '',
-          smsConsentText: SMS_CONSENT_TEXT,
-          claiming: decision.kind === 'claim-and-consent',
-        }),
-      }
-    }
-    if (decision.kind === 'wrong-person') {
-      return {
-        kind: 'html',
-        status: 403,
-        html: renderWrongPersonShell({ viewerEmail: opts.viewerEmail ?? '' }),
-      }
     }
   }
 

@@ -53,6 +53,10 @@ export default async function AdminCmaNewPage() {
         three-method price, full report. The draft opens immediately and builds in the background.
         Nothing sends.
       </p>
+      <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '0 0 4px' }}>
+        After it builds, you review the letter on its own page. Schedule or send is a separate press
+        on that page. Building one does not email anyone.
+      </p>
 
       <SectionHead>Subject and client</SectionHead>
       <BuildCmaForm brokers={brokers} />

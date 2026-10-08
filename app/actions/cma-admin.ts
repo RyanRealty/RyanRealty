@@ -10,6 +10,16 @@
  * emails or texts the household. Nothing in this file is called from a cron.
  */
 
+import {
+  ASK_BELOW_BAND_REASON_PLAIN,
+  ASK_IN_BAND_KIND,
+  ASK_IN_BAND_REASON_PLAIN,
+  recommendationGapHold,
+  storedHoldDecided,
+  storedHoldKind,
+} from '@/lib/cma/gap-hold'
+import { classifyCmaOrigin } from '@/lib/cma/origin'
+import { resolveTheirPrice } from '@/lib/cma/queue-view'
 import { revalidatePath } from 'next/cache'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
@@ -25,6 +35,7 @@ import { parsePositiveInt, parsePositiveNumber, resolveCmaClientName } from '@/l
 import {
   attachCmaToPerson,
   getCmaAdminReviewRowBySlug,
+  getCmaProspectAsk,
   updateCmaRowFieldsBySlug,
   deleteCmaRowById,
 } from '@/lib/data'
@@ -259,6 +270,11 @@ export async function rebuildCmaAction(
 
 // ─── Approve / delete ────────────────────────────────────────────────────────
 
+function numberOrNull(v: unknown): number | null {
+  const n = typeof v === 'number' ? v : typeof v === 'string' && v.trim() ? Number(v) : NaN
+  return Number.isFinite(n) ? n : null
+}
+
 export async function approveCmaAction(
   slug: string,
   opts?: { acknowledgeReview?: boolean; flagReason?: string | null },
@@ -281,6 +297,32 @@ export async function approveCmaAction(
       row.build_summary && typeof row.build_summary === 'object' && !Array.isArray(row.build_summary)
         ? (row.build_summary as Record<string, unknown>)
         : null
+    // RULE 22 (Matt 2026-10-07): the build's own ask-in-band hold is not a
+    // flag a broker acknowledges. A held document is never finalized, and the
+    // send rail (lib/cma/send.ts) requires finalized, so it never sends.
+    const storedKind = storedHoldKind(summary)
+    if (storedKind) {
+      const plain = storedKind === ASK_IN_BAND_KIND ? ASK_IN_BAND_REASON_PLAIN : ASK_BELOW_BAND_REASON_PLAIN
+      const held = typeof summary?.hold_reason === 'string' && summary.hold_reason.trim() ? summary.hold_reason : plain
+      return { error: held }
+    }
+    // The same gate the queue's send path runs (app/actions/cma-queue.ts):
+    // rule 3 and the live ask-in-band backstop for a row whose build never
+    // measured the ask against the band. The report-page Approve button
+    // finalized such a row before (review, 2026-10-07). Not acknowledgeable.
+    const origin = classifyCmaOrigin(
+      (row.request_source as string | null) ?? null,
+      (row.doc_type as string | null) ?? null,
+    )
+    const lastAsk = resolveTheirPrice(origin, summary, await getCmaProspectAsk(String(row.id)))
+    const gap = recommendationGapHold(numberOrNull(row.recommended_list), lastAsk, {
+      low: numberOrNull(row.value_low),
+      high: numberOrNull(row.value_high),
+      holdKind: storedKind,
+      holdDecided: storedHoldDecided(summary),
+      origin,
+    })
+    if (gap.hold) return { error: gap.reason }
     const needsReview = Boolean(summary?.needs_review)
     const reviewReason = typeof summary?.review_reason === 'string' ? summary.review_reason : null
     const storedReason = reviewReason?.trim() ? reviewReason : null

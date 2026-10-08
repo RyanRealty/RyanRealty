@@ -6,11 +6,13 @@ import { recordNewsletterEngagement } from '@/lib/newsletter/track-ledger'
 import { channelFromEmailKey, decorateOutboundUrl } from '@/lib/identity/outbound-links'
 import { stripIdentityParams, withoutIdentityOnOwnSite } from '@/app/api/visitors/track/strip-identity'
 import { classifyAutomation } from '@/lib/analytics/automation'
+import { emailLinkOrigin } from '@/lib/email/link-origin'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+// A bad token lands on the canonical home page, not the Vercel alias (lib/email/link-origin.ts).
+const SITE_URL = emailLinkOrigin()
 
 /**
  * Email click tracker. The destination URL is signed INSIDE the token (never a

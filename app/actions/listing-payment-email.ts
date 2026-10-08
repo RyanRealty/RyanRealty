@@ -29,6 +29,7 @@
  * closed in production, email validation, native dedup through sendEvent.
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import { getListingDetail } from '@/lib/data'
 import { getAuthLimiter } from '@/lib/rate-limit'
 import { headers } from 'next/headers'
@@ -133,7 +134,7 @@ export async function submitListingPaymentEmail(input: {
   })
   if (!breakdown) return { ok: false, error: 'We could not price that home.' }
 
-  const base = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const base = siteOrigin()
   const listingUrl = `${base}${listingByKeyPath(listingKey)}`
   const totalLine = `${formatPriceExact(Math.round(breakdown.total))} per month`
   const lines = [
@@ -202,8 +203,8 @@ export async function submitListingPaymentEmail(input: {
   try {
     await fireLeadGenerated({
       lp_variant: 'listing-payment-email',
-      lead_type: 'buyer',
-      value: 0,
+      lead_type: 'listing_inquiry',
+      form_id: 'listing_payment_email',
       fub_person_id: crmPersonId,
     })
   } catch {

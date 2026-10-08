@@ -64,6 +64,6 @@ describe('photographedNewConHomeItemList (SITE-175)', () => {
     expect(page).toContain('Live Active Bend new-construction communities')
     expect(page).toContain('BEND_NEW_CONSTRUCTION_H1')
     expect(page).not.toContain("headline: '")
-    expect(BEND_NEW_CONSTRUCTION_H1).toBe('New homes in Bend: inventory and builder savings')
+    expect(BEND_NEW_CONSTRUCTION_H1).toBe('New construction homes in Bend: inventory and builder savings')
   })
 })

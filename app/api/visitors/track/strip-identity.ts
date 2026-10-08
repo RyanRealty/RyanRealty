@@ -16,9 +16,10 @@
  * exactly why those rows exist. The server strips, so the timing cannot matter.
  *
  * Everything else stays. `utm_*`, `agent`, `fbclid` and `gclid` describe the
- * CLICK, not the person — the rule the route's campaign block already states —
- * and `utm_campaign` is load-bearing now: it is what tells the CMA outcome
- * reader which document sent this visitor to this page.
+ * CLICK, not the person — the rule the route's campaign block already states.
+ * `rr_doc` is first-party CMA document identity: it stays on stored URLs so
+ * outcomes can attribute a comp tap, and `stripGa4UrlParams` takes it off
+ * anything forwarded to GA4. Legacy `utm_campaign=<cmaSlug>` is still read.
  *
  * Lives beside the route rather than inside it because `route.ts` may only
  * export HTTP handlers, and a privacy rule this load-bearing gets its own test.
@@ -26,6 +27,14 @@
 
 /** Params that name a person. Extend here, nowhere else. */
 export const IDENTITY_PARAMS = ['_pid', '_fuid'] as const
+
+/**
+ * Params that must not leave the building inside a URL handed to GA4.
+ * `rr_doc` is first-party CMA document identity (not a person, not a UTM);
+ * stored visitor_events keep it so outcomes can attribute a comp tap, but
+ * Measurement Protocol page_location must not.
+ */
+export const GA4_STRIP_PARAMS = ['_pid', '_fuid', 'rr_doc'] as const
 
 /**
  * The URL as it may be stored. Returns undefined only for an absent input, so
@@ -57,13 +66,13 @@ export function visitorEventMetadata(
   return dest ? { ...raw, destination: dest } : (raw ?? undefined)
 }
 
-export function stripIdentityParams(url: string | null | undefined): string | undefined {
+function stripParams(url: string | null | undefined, names: readonly string[]): string | undefined {
   const raw = typeof url === 'string' ? url.trim() : ''
   if (!raw) return undefined
   try {
     const u = new URL(raw)
     let touched = false
-    for (const p of IDENTITY_PARAMS) {
+    for (const p of names) {
       if (u.searchParams.has(p)) {
         u.searchParams.delete(p)
         touched = true
@@ -73,6 +82,15 @@ export function stripIdentityParams(url: string | null | undefined): string | un
   } catch {
     return raw
   }
+}
+
+export function stripIdentityParams(url: string | null | undefined): string | undefined {
+  return stripParams(url, IDENTITY_PARAMS)
+}
+
+/** Identity + first-party document id, for URLs forwarded to GA4. */
+export function stripGa4UrlParams(url: string | null | undefined): string | undefined {
+  return stripParams(url, GA4_STRIP_PARAMS)
 }
 
 /**

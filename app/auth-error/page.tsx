@@ -16,6 +16,7 @@
  */
 
 // @data-free static utility page, no DAL access needed.
+import { siteOrigin } from '@/lib/site-origin'
 import type { Metadata } from 'next'
 import { adminLoginHref, isSafeAdminReturnPath } from '@/lib/auth/admin-return-path'
 import {
@@ -26,8 +27,8 @@ import {
   V3SectionTracker,
 } from '@/components/site/v3'
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-const callbackUrl = `${(process.env.NEXT_PUBLIC_SITE_URL || 'https://yoursite.com').replace(/\/$/, '')}/auth/callback`
+const siteUrl = siteOrigin()
+const callbackUrl = `${siteUrl}/auth/callback`
 
 export const metadata: Metadata = {
   title: 'Sign-in issue',

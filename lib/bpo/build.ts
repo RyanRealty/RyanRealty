@@ -27,11 +27,12 @@ import {
   type BpoCompInsert,
 } from '@/lib/data/bpo/reads'
 import { resolveCmaSubject } from '@/lib/cma/subject'
-import { selectComps, MIN_COMPS } from '@/lib/cma/comps'
+import { brokerCompRefusal, selectComps, MIN_COMPS } from '@/lib/cma/comps'
 import { adjustComps, computePricing } from '@/lib/cma/pricing'
+import { pricingFailureMessage } from '@/lib/pricing/price-set'
 import { loadBpoEngineInputs, priceBpoAdjusted, bpoCompMap } from '@/lib/bpo/engine'
 import { judgeComps } from '@/lib/cma/judge'
-import { pricingCompsAfterJudgment } from '@/lib/cma/judgment-prune'
+import { reviewWithRefill } from '@/lib/cma/review-refill'
 import { comparabilityNarrativeGate } from '@/lib/cma/narrative-final'
 import { selectionIsExclusivePocket } from '@/lib/pricing/exclusive-pocket-date-adj'
 import { auditCma } from '@/lib/cma/audit'
@@ -123,38 +124,47 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
     const { selection, market, site, marketIndex } = await loadBpoEngineInputs(subject)
     void selectComps
     if (selection.comps.length < MIN_COMPS) {
-      const err = `Only ${selection.comps.length} qualifying closed comps found (minimum ${MIN_COMPS}). ${selection.trace.join(' ')}`
+      // The CMA build's sentence: it leads with the path that held the most
+      // price-setting sales, by address (the facts walk rides on a listings
+      // fallback as facts_path), then the search trace for the record.
+      const err = `${brokerCompRefusal({
+        diagnostics: selection.diagnostics,
+        found: selection.comps.length,
+        minComps: MIN_COMPS,
+        subjectBaths: subject.baths,
+        subjectCity: subject.city,
+        sales: selection.comps.map((c) => c.address),
+      })} ${selection.trace.join(' ')}`
       await recordFailure(slug, err)
       return { ok: false, error: err, slug }
     }
 
     // 2.5. LLM comparability judgment (shared with the CMA engine, fail-open).
     // Vets every candidate comp on the full feature set before any math.
-    const judgment = await judgeComps(subject, selection.comps, market)
+    // REFILL FROM THE SAME RUNG (Matt 2026-10-08): the one helper the CMA
+    // build uses (lib/cma/review-refill.ts). A drop or a split on an
+    // exactly-five set a widening rung reached refills from that rung's bench
+    // and reviews again; an unstable review after that fails the build as
+    // before (the outer catch records it).
+    const review = await reviewWithRefill({
+      subject,
+      selection,
+      minComps: MIN_COMPS,
+      exclusivePocket: selectionIsExclusivePocket(selection.tiersUsed),
+      // The same one 20% price line the comp search admitted on (Matt 2026-10-08).
+      judge: (comps) => judgeComps(subject, comps, market, { priceAnchor: selection.diagnostics?.price_anchor ?? null }),
+    })
+    selection.comps = review.candidates
+    if (review.pricingSales) selection.pricingSales = review.pricingSales
+    selection.trace.push(...review.trace)
+    if (review.refill) selection.diagnostics.review_refill = review.refill
+    if (review.unstable) throw review.unstable
+    const judgment = review.judgment
     let compsForPricing = selection.comps
     // Candidates the product wall kept out before pricing (see the CMA build).
     let differentProduct = 0
     {
-      const keep = new Set(judgment?.keptKeys ?? [])
-      const vetted = judgment ? selection.comps.filter((c) => keep.has(c.listingKey)) : selection.comps
-      const gated = pricingCompsAfterJudgment({
-        selected: selection.comps,
-        vetted,
-        verdicts: judgment?.verdicts ?? [],
-        subject: {
-          propertySubType: subject.propertySubType,
-          yearBuilt: subject.yearBuilt,
-          newConstructionYn: subject.newConstructionYn,
-          publicRemarks: subject.publicRemarks,
-          subdivision: subject.subdivision,
-          seniorCommunityYn: subject.seniorCommunityYn,
-        },
-        minComps: MIN_COMPS,
-        exclusivePocket: selectionIsExclusivePocket(selection.tiersUsed),
-        ...(selection.ownPlatAgeRestrictedShare !== undefined
-          ? { ownPlatAgeRestrictedShare: selection.ownPlatAgeRestrictedShare }
-          : {}),
-      })
+      const gated = review.gated
       if (gated.shortage) {
         const err =
           gated.droppedProduct > 0
@@ -213,12 +223,12 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
         subject, set, market, selection, marketIndex, asOf: generatedAtIso.slice(0, 10), tierByKey,
         priceOverride: input.priceOverride ?? null, adjustComps, computePricing,
       })
-      if (!priced) return null
-      return { ...priced, op: deriveOpinion(subject, priced.p, market, history, { priceOverride: input.priceOverride ?? null }) }
+      if (!priced.p) return { adj: priced.adj, p: null, op: null }
+      return { ...priced, p: priced.p, op: deriveOpinion(subject, priced.p, market, history, { priceOverride: input.priceOverride ?? null }) }
     }
     const derived = deriveAll(compsForPricing)
-    if (!derived) {
-      const err = 'Pricing could not be computed (subject sqft missing).'
+    if (!derived?.p || !derived.op) {
+      const err = pricingFailureMessage(subject, derived?.adj ?? [])
       await recordFailure(slug, err)
       return { ok: false, error: err, slug }
     }
@@ -305,13 +315,18 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
         ),
       ]
       const remaining = compsForPricing.filter((c) => !flagged.includes(c.listingKey))
+      // A five-sale set cannot lose a sale and still price (the cap equals the
+      // floor, Matt 2026-10-07): a flagged comp falls through to the review
+      // flag, never a silent reprice.
       if (flagged.length > 0 && remaining.length >= MIN_COMPS) {
         const rederived = deriveAll(remaining)
-        if (rederived) {
+        if (rederived.p && rederived.op) {
           firstRoundAudit = audit
           repairedKeys = flagged
           compsForPricing = remaining
-          ;({ adj: adjusted, p: pricing, op: opinion } = rederived)
+          adjusted = rederived.adj
+          pricing = rederived.p
+          opinion = rederived.op
           selection.trace.push(
             `Adversarial audit repair: ${flagged.length} comp(s) flagged by the independent audit were removed, the opinion re-derived on the ${remaining.length}-comp set, then re-audited.`,
           )
@@ -333,6 +348,12 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
       history,
       site,
       subjectSubType: subject.propertySubType,
+      subjectBaths: subject.baths,
+      subjectBathsFull: subject.bathsFull ?? null,
+      subjectBathsHalf: subject.bathsHalf ?? null,
+      subjectBeds: subject.beds,
+      subjectSubdivisionSlug: subject.subdivisionSlug ?? null,
+      subjectGround: subject,
       minComps: MIN_COMPS,
       marketContextPresent: market != null,
     })

@@ -54,8 +54,14 @@ export const REPLY_TIMELINE_KINDS = ['email_in', 'sms_in'] as const
 export type CmaOutcome = {
   cmaId: string
   slug: string
-  /** cmas.delivered_at — when the broker's send left the building. */
+  /** cmas.delivered_at — the letter row's own send stamp. */
   sentAt: string | null
+  /**
+   * email_events `sent` for `cma:<slug>`. A letter can leave without the row
+   * stamp. The screen treats either stamp as "it left". Reply and visit
+   * cutoffs use the row stamp when it exists, and this log when it does not.
+   */
+  emailEventSentAt: string | null
   /** Provider delivery receipt, or inferred (no bounce in 24h / any open or click). */
   deliveredAt: string | null
   /** True when deliveredAt came from the Gmail inferred rule, not a Resend receipt. */
@@ -100,6 +106,7 @@ export function emptyCmaOutcome(cmaId: string, slug: string): CmaOutcome {
     cmaId,
     slug,
     sentAt: null,
+    emailEventSentAt: null,
     deliveredAt: null,
     deliveredInferred: false,
     firstOpenAt: null,
@@ -180,10 +187,12 @@ async function computeCmaOutcomes(cmaIds: string[]): Promise<CmaOutcomeMap> {
   // 3. Replies. A reply is inbound traffic from the linked person AFTER the
   //    send — scoped by the earliest send in this set so the read never walks
   //    the contact's whole history. Per-CMA the stamp is re-tested against that
-  //    document's own sentAt below, so a contact with two CMAs cannot inherit
-  //    the older document's reply onto the newer one.
+  //    document's own send below, so a contact with two CMAs cannot inherit
+  //    the older document's reply onto the newer one. The letter-row stamp
+  //    wins when it exists. An email-log send with no row stamp still opens
+  //    the window, or a real send the row forgot would look like silence.
   const sentStamps = docs
-    .map((d) => str(d.delivered_at))
+    .map((d) => earlier(str(d.delivered_at), engagement[String(d.id)]?.emailSentAt ?? null))
     .filter((v): v is string => !!v)
     .sort()
   const earliestSend = sentStamps[0] ?? null
@@ -289,16 +298,17 @@ async function computeCmaOutcomes(cmaIds: string[]): Promise<CmaOutcomeMap> {
     const slug = str(d.slug) ?? cmaId
     const eng = engagement[cmaId] ?? EMPTY_DOC_ENGAGEMENT_DETAIL
     const sentAt = str(d.delivered_at)
+    const leftAt = sentAt ?? eng.emailSentAt
     const pid = d.person_id == null ? null : Number(d.person_id)
 
     // Earliest inbound strictly after this document's own send. No send stamp
     // means no "reply to it" can be claimed — the row shows nothing rather
     // than crediting the document with a conversation it did not start.
     let repliedAt: string | null = null
-    if (pid != null && sentAt) {
+    if (pid != null && leftAt) {
       const list = inboundByPid.get(pid) ?? []
       for (const at of list) {
-        if (at > sentAt) {
+        if (at > leftAt) {
           repliedAt = at
           break // the list is ordered ascending
         }
@@ -310,9 +320,9 @@ async function computeCmaOutcomes(cmaIds: string[]): Promise<CmaOutcomeMap> {
     let visits = eng.reportViews + eng.siteViews
     let siteViewCount = eng.siteViews
     const recent = [...eng.recentSitePaths]
-    if (pid != null && sentAt) {
+    if (pid != null && leftAt) {
       for (const hit of sessionHitsByPid.get(pid) ?? []) {
-        if (hit.at <= sentAt) continue
+        if (hit.at <= leftAt) continue
         // Already counted as a campaign-tagged arrival or the document itself.
         if (cmaCampaignFromUrl(hit.pageUrl)) continue
         if (hit.path.includes(`/cma/${slug}`)) continue
@@ -328,6 +338,7 @@ async function computeCmaOutcomes(cmaIds: string[]): Promise<CmaOutcomeMap> {
       cmaId,
       slug,
       sentAt,
+      emailEventSentAt: eng.emailSentAt,
       deliveredAt: eng.emailDeliveredAt,
       deliveredInferred: eng.deliveredInferred,
       firstOpenAt: eng.firstOpenAt,
@@ -360,7 +371,7 @@ async function computeCmaOutcomes(cmaIds: string[]): Promise<CmaOutcomeMap> {
  */
 export const getCmaOutcomes = makeResilientCached<[string[]], CmaOutcomeMap>(
   computeCmaOutcomes,
-  ['cma-outcomes-v2'],
+  ['cma-outcomes-v3'],
   { revalidate: 60, tags: ['cma:engagement'] },
   {},
 )

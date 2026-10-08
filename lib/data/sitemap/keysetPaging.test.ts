@@ -71,10 +71,15 @@ function mockSupabase(opts: { countResults: CountResult[]; pageResults: PageResu
 
   return {
     client: {
-      from: () => ({
-        select: (_cols: string, selectOpts?: { count?: string; head?: boolean }) =>
-          selectOpts?.head ? countBuilder() : dataBuilder(),
-      }),
+      from: (table: string) =>
+        // Only the MV pages are under test here; the recrawl-flag side read
+        // (gsc_listing_index_flags) answers empty and consumes no page result.
+        table === 'gsc_listing_index_flags'
+          ? { select: () => ({ limit: async () => ({ data: [], error: null }) }) }
+          : {
+              select: (_cols: string, selectOpts?: { count?: string; head?: boolean }) =>
+                selectOpts?.head ? countBuilder() : dataBuilder(),
+            },
     },
     gtCalls,
     pageCallCount: () => pageIdx,
@@ -123,6 +128,27 @@ describe('getListingSitemapRows keyset paging', () => {
     expect(result).toHaveLength(3)
     expect(sb.pageCallCount()).toBe(1) // one page, no follow-up call
     expect(sb.gtCalls).toEqual([null])
+  })
+
+  it('ships out-of-area rows: no geography filter (Matt 2026-10-05 reverted SITE-33)', async () => {
+    const rows = [
+      tile(1),
+      { ...tile(2), city: 'Medford', boundary_city: 'Outside Boundaries' },
+      { ...tile(3), city: 'Grants Pass', boundary_city: 'Outside Boundaries' },
+      { ...tile(4), city: 'Klamath Falls', boundary_city: 'Outside Boundaries' },
+    ]
+    const sb = mockSupabase({
+      countResults: [{ count: rows.length, error: null }],
+      pageResults: [{ data: rows, error: null }],
+    })
+    setSb(sb.client)
+
+    const result = await getListingSitemapRows(NOW)
+
+    expect(result.map((r) => r.listingKey)).toEqual(rows.map((t) => t.listing_key))
+    expect(result.some((r) => /\/medford\//.test(r.path))).toBe(true)
+    expect(result.some((r) => /\/grants-pass\//.test(r.path))).toBe(true)
+    expect(result.some((r) => /\/klamath-falls\//.test(r.path))).toBe(true)
   })
 
   it('a full page continues from the last key of the previous page', async () => {

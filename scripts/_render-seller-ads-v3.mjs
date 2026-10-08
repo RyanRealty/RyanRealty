@@ -22,7 +22,7 @@
  *
  * Output: out/seller-ad-concepts/v3/seller-v3-{slug}.jpg + contact sheet
  */
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { writeFile, mkdir } from 'node:fs/promises'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'

@@ -69,9 +69,12 @@ function footerFromGroups(heading: string, groups: FooterCluster[]): FooterGroup
 }
 
 function footerCity(label: string): NavLink {
-  const city = CITY_LINKS.find((c) => c.label === label)
+  // Sunriver is a city cluster whose one page is its community page (Matt
+  // 2026-10-04), so it lives in COMMUNITY_LINKS, not CITY_LINKS.
+  const city =
+    CITY_LINKS.find((c) => c.label === label) ?? COMMUNITY_LINKS.find((c) => c.label === label)
   if (!city) {
-    throw new Error(`site-nav footer: "${label}" is not in CITY_LINKS`)
+    throw new Error(`site-nav footer: "${label}" is not in CITY_LINKS or COMMUNITY_LINKS`)
   }
   return city
 }
@@ -91,10 +94,14 @@ function cityFooterCluster(
   extra: NavLink[] = [],
 ): FooterCluster {
   const city = footerCity(label)
+  const links = [...extra, ...communityLabels.map(footerCommunity)]
+  // Sunriver's heading and its "Sunriver homes for sale" link are one page
+  // since 2026-10-04; the descriptive link keeps the URL, the heading is text.
+  const headingIsALink = links.some((l) => l.href === city.href)
   return {
     heading: label,
-    href: city.href,
-    links: [...extra, ...communityLabels.map(footerCommunity)],
+    ...(headingIsALink ? {} : { href: city.href }),
+    links,
     depth: 1,
   }
 }
@@ -108,7 +115,6 @@ const CITY_LINKS: NavLink[] = [
   { href: '/cities/bend', label: 'Bend' },
   { href: '/cities/redmond', label: 'Redmond' },
   { href: '/cities/sisters', label: 'Sisters' },
-  { href: '/cities/sunriver', label: 'Sunriver' },
   { href: '/cities/la-pine', label: 'La Pine' },
   { href: '/cities/terrebonne', label: 'Terrebonne' },
   { href: '/cities/prineville', label: 'Prineville' },
@@ -376,7 +382,8 @@ export const KB_FOOTER_COLUMNS: FooterGroup[] = [
       { href: '/communities/black-butte-ranch', label: 'Black Butte Ranch homes for sale' },
     ]),
     // SITE-187: the Sunriver community page is the one winner for "Sunriver
-    // homes for sale"; the cluster heading stays the city guide.
+    // homes for sale". Since 2026-10-04 it is Sunriver's only page, so the
+    // heading lands there too; the link keeps the exact phrase.
     cityFooterCluster(
       'Sunriver',
       ['Caldera Springs', 'Crosswater'],

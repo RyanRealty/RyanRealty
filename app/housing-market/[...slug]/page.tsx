@@ -63,7 +63,8 @@ import { marketVerdict } from '@/lib/market/classify'
 import { leftoverHudKpis, leftoverHudPublishes } from '@/lib/market/publish-leftover-hud'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { formatPriceExact } from '@/lib/format/money'
-import { zonedDateKey } from '@/lib/format/date'
+import { formatDate, zonedDateKey } from '@/lib/format/date'
+import { placeTakeaways } from '@/lib/site/place-takeaways'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import {
@@ -225,10 +226,25 @@ const loadGeoMarket = cache(async (slugKey: string) => {
       medianListPrice: hud.medianList,
       medianSalePrice: saleMedian?.value ?? null,
       medianSaleMonthLabel: saleMedian?.monthLabel ?? null,
+      yoyMedianPrice: publicPace.yoyMedian,
       medianDaysToPending: hud.daysToPending,
       refreshedAt,
     },
   )
+
+  // The short answer under the H1 (AEO, Matt 2026-10-04): this read's own
+  // figures in plain sentences (lib/site/place-takeaways), the same values the
+  // FAQ and the Dataset print, so the lead cannot disagree with them.
+  const takeaways = placeTakeaways({
+    place: geoName,
+    addressScope: isCity,
+    asOfLabel: refreshedAt ? formatDate(refreshedAt) : null,
+    active: hud.active,
+    medianList: hud.medianList,
+    monthsOfSupply: mosRaw,
+    saleMedian: saleMedian ? { value: saleMedian.value, when: `in ${saleMedian.monthLabel}` } : null,
+    yoyMedian: publicPace.yoyMedian,
+  })
 
   // HOW HOMES HERE GET BOUGHT (2026-08-27). The full report is the ONE surface
   // for the all-property-types financing mix: the six-brokerage sweep found no
@@ -275,6 +291,7 @@ const loadGeoMarket = cache(async (slugKey: string) => {
     homes,
     insightClause,
     insightVariables,
+    takeaways,
   }
 })
 
@@ -462,6 +479,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
             publicMix={publicMix}
             insightBoard={insightBoard}
             homes={homes}
+            takeaways={data.takeaways}
           />
         ) : (
           <CommunityMarketView
@@ -481,6 +499,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
             faqs={faqs}
             chart={communityChart}
             sheet={sheet}
+            takeaways={data.takeaways}
           />
         )}
         {financingMix && financingMix.source === 'rpc' && financingMix.totalSales >= 50 ? (

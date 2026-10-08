@@ -28,6 +28,7 @@ import {
   getCmaAdminRowBySlug,
   getCmaBrokerBySlugOrEmail,
   getCmaProspectAsk,
+  getCmaRenderSourceBySlug,
   updateCmaRowFieldsBySlug,
   findCrmPersonIdByEmail,
   stampCmaLinkOnPerson,
@@ -43,15 +44,19 @@ import { isSuppressed } from '@/lib/crm/suppressions'
 import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'
 import { sendEmail } from '@/lib/resend'
 import { sendGmailMessage } from '@/lib/gmail-draft'
-import { composeCmaFirstContact, type CmaFirstContactFacts } from '@/lib/cma/first-contact'
+import { composeCmaFirstContact, streetOnly, type CmaFirstContactFacts } from '@/lib/cma/first-contact'
+import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { acquireCmaProspectLease, type CmaProspectLease } from '@/lib/cma/prospect-send-claim'
+import { isInternalRecipientEmail } from '@/lib/email/internal-recipient'
 import { cmaFirstContactFactsForSend, cmaSendBrokerSlug } from '@/lib/cma/first-contact-for-send'
 import { paragraphsForLetterBody, paragraphsToPlain, renderCmaLetterBlock } from '@/lib/cma/first-contact-render'
 import { screenAddressForSolicitation } from '@/lib/cma/solicit-screen'
 import { buildSignature } from '@/lib/crm/email-signature'
 import { getBrokers } from '@/lib/data'
-import { previewTextFromCustomBody } from '@/lib/cma/report-button'
+import { cmaEmailGalleryUrls } from '@/lib/cma/email-gallery'
+import { cmaEmailPhotoHtml, previewTextFromCustomBody } from '@/lib/cma/report-button'
 import { classifyCmaOrigin, type CmaOrigin } from '@/lib/cma/origin'
+import { resolveSendableClientEmail } from '@/lib/cma/send-client-email'
 import { resolveTheirPrice } from '@/lib/cma/queue-view'
 import { formatPublishedPhone } from '@/lib/cma/format-phone'
 
@@ -91,6 +96,14 @@ export interface CmaSendContext {
   /** Decides the opening only. The pricing is identical across origins. */
   origin: CmaOrigin
   facts: CmaFirstContactFacts
+  /** HTTPS listing photo. Omitted when the row has none. */
+  heroUrl?: string | null
+  /**
+   * Up to three HTTPS photos of the subject. The expired letter draws these
+   * inside the analysis button. Empty falls back to heroUrl, then to the
+   * text button.
+   */
+  galleryUrls?: string[] | null
 }
 
 async function resolveSendContext(
@@ -102,7 +115,11 @@ async function resolveSendContext(
   if (status !== 'finalized' && status !== 'delivered') {
     return { ctx: null, error: `This CMA is not approved yet (status ${status}). Approve it before sending.` }
   }
-  const clientEmail = (row.client_email as string | null)?.trim().toLowerCase() ?? null
+  const clientEmail = await resolveSendableClientEmail({
+    slug,
+    columnEmail: row.client_email as string | null,
+    personId: row.person_id as number | string | null,
+  })
   if (!clientEmail) {
     return { ctx: null, error: 'This CMA has no client email on file. Add one on the review page first.' }
   }
@@ -131,11 +148,17 @@ async function resolveSendContext(
     lastListPrice,
     brokerSlug: cmaSendBrokerSlug(brokerRow.email),
   })
+  await attachCitySupply(facts)
+  const listingKey = (row.subject_listing_key as string | null) ?? null
+  const [heroUrl, galleryUrls] = await Promise.all([
+    listingHeroFromSlug(slug),
+    origin === 'expired' ? cmaEmailGalleryUrls(listingKey) : Promise.resolve(undefined),
+  ])
   return {
     ctx: {
       slug,
       subjectAddress: (row.subject_address as string) ?? slug,
-      subjectListingKey: (row.subject_listing_key as string | null) ?? null,
+      subjectListingKey: listingKey,
       clientName,
       clientEmail,
       brokerRow,
@@ -145,6 +168,8 @@ async function resolveSendContext(
       origin,
       lastListPrice,
       facts,
+      heroUrl,
+      galleryUrls,
     },
     error: null,
   }
@@ -160,6 +185,61 @@ export interface CmaSendOverride {
 
 function inboundFacts(ctx: CmaSendContext): CmaFirstContactFacts {
   return ctx.facts
+}
+
+/** The house, when the build stored an HTTPS photo. Anything else stays out of the inbox. */
+export function listingHeroUrl(url: string | null | undefined): string | null {
+  const photo = (url ?? '').trim()
+  return photo.startsWith('https://') ? photo : null
+}
+
+/** Two or three subject photos for the expired button. The hero fills a gap of zero. */
+function expiredCardPhotos(ctx: CmaSendContext): string[] {
+  if (ctx.origin !== 'expired') return []
+  const out: string[] = []
+  for (const raw of ctx.galleryUrls ?? []) {
+    const url = listingHeroUrl(raw)
+    if (!url || out.includes(url)) continue
+    out.push(url)
+    if (out.length === 3) return out
+  }
+  if (out.length > 0) return out
+  const hero = listingHeroUrl(ctx.heroUrl)
+  return hero ? [hero] : []
+}
+
+async function listingHeroFromSlug(slug: string): Promise<string | null> {
+  try {
+    const source = await getCmaRenderSourceBySlug(slug)
+    const args = source?.render_args
+    if (!args || typeof args !== 'object') return null
+    const subject = (args as { subject?: { photoUrl?: unknown } }).subject
+    return listingHeroUrl(typeof subject?.photoUrl === 'string' ? subject.photoUrl : null)
+  } catch {
+    return null
+  }
+}
+
+/**
+ * City pulse for the supply sentence. A miss or a thrown read omits the
+ * sentence. The email does not invent a market.
+ */
+export async function attachCitySupply(facts: CmaFirstContactFacts): Promise<void> {
+  const city = (facts.city ?? '').trim()
+  if (!city || facts.monthsOfSupply != null) return
+  try {
+    const { getMarketPulseRowForGeo } = await import('@/lib/data/market/getMarketStatsCacheRows')
+    const row = await getMarketPulseRowForGeo({
+      geoType: 'city',
+      geoSlug: canonicalCityCacheSlug(city),
+      propertyType: 'A',
+      columns: 'months_of_supply',
+    })
+    const mos = row?.months_of_supply
+    if (typeof mos === 'number' && Number.isFinite(mos) && mos > 0) facts.monthsOfSupply = mos
+  } catch {
+    // The price and the report still go out.
+  }
 }
 
 /**
@@ -217,13 +297,22 @@ export function buildLeadBody(
   })
   const letterPlain = paragraphsToPlain(paragraphs)
   const uneditedBody = !raw || raw === copy.bodyText.trim() || raw === copy.bodyMarkers.trim()
+  const cardPhotos = expiredCardPhotos(ctx)
   const block = renderCmaLetterBlock({
     paragraphs,
     address: ctx.subjectAddress,
     slug: ctx.slug,
+    photos: cardPhotos,
   })
+  // The expired card already shows the house. A second photo above the
+  // greeting would show it twice. Other letters keep the one small photo.
+  const photo = cardPhotos.length > 0 ? null : listingHeroUrl(ctx.heroUrl)
+  const photoHtml = photo
+    ? cmaEmailPhotoHtml(photo, streetOnly(ctx.subjectAddress) ?? 'The home')
+    : ''
   const bodyHtml = `
-<div style="padding:32px 34px 8px;">
+${photoHtml}
+<div style="padding:${photoHtml ? '18px' : '28px'} 34px 8px;">
   ${block}
   ${signature?.html ?? ''}
 </div>`
@@ -233,7 +322,10 @@ ${signature?.plain ?? ''}${brandedTextFooter()}`
     bodyHtml,
     previewText: uneditedBody ? copy.previewText : previewTextFromCustomBody(raw, copy.previewText),
     mastheadLine: copy.mastheadLine,
+    // The house is the small photo above the note. Null keeps the Old Mill
+    // frame out of a letter about someone else's home.
     heroUrl: null,
+    heroAlt: streetOnly(ctx.subjectAddress) ?? 'The home',
     // One close: the broker's own signature, appended above. The navy
     // "talk to" card would be a second sign-off under it (Matt 2026-09-09).
     senderBroker: null,
@@ -525,6 +617,7 @@ async function deliverCmaToLead(
     // open and click landed unattributed in email_events and crm_timeline, and
     // per-broker engagement could not see them.
     broker: crmBrokerSlug,
+    test: isInternalRecipientEmail(ctx.clientEmail),
   })
 
   // Primary rail: the signing broker's real mailbox (same DWD transport the

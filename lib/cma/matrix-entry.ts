@@ -21,6 +21,7 @@
  */
 
 import { UNADDRESSED_DOC_LINKS, cleanText, escapeHtml, int, usd } from '@/lib/cma/render-blocks'
+import { printedBaths } from '@/lib/pricing/bath-count'
 import { trackedDocLink, type TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import { proximityLabel } from '@/lib/cma/market-area'
 import { publishStreetNumber, publishUnparsedStreetLine } from '@/lib/listing/publish-street-line'
@@ -37,11 +38,14 @@ import {
 import { keyFor, type CmaMapFamily } from '@/lib/cma/map-families'
 import type { CmaPinFact } from '@/lib/cma/comp-pin-map'
 import type { ExpiredFinalCycle } from '@/lib/cma/expired-audit'
+import { closedSaleDaysToOffer } from '@/lib/cma/listing-history-line'
+import { pacificDay } from '@/lib/cma/listing-status'
 import { sellerOffMarketDate } from '@/lib/cma/seller-letter-copy'
 import type { AskExposureLike } from '@/lib/cma/ask-position'
 import type { CmaExpiredPeer } from '@/lib/cma/market-status'
-import type { CmaBandRival } from '@/lib/cma/band-rivals'
+import { rivalDays, type CmaBandRival } from '@/lib/cma/band-rivals'
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
+import { concessionOnSale, printedAdjustedPrice } from '@/lib/pricing/seller-net'
 
 const esc = escapeHtml
 
@@ -66,6 +70,15 @@ export type MatrixEntry = {
   baths: number | null
   domDays: number | null
   /**
+   * What `domDays` counts. `offer` is Active to an accepted offer on the
+   * listing period that produced it: a closed sale's days before it sold, and
+   * a home under contract's days to its contract. `listed-to-closed` is first
+   * list to close, printed only when the offer day is unknown, and the cell
+   * says so beside the number. Absent on unsold and live rows, where the count
+   * is the days on market.
+   */
+  domMeasure?: 'offer' | 'listed-to-closed'
+  /**
    * How many times the ask moved — and whether that count is EXACT.
    *
    * The record carries two different things. A dated cycle (the seller's own
@@ -84,7 +97,7 @@ export type MatrixEntry = {
   closePrice: number | null
   /** List/ask used for list $/sqft. */
   listPrice: number | null
-  /** Seller concessions $ on a closed sale; null when unknown or not a sale. */
+  /** Seller concessions $ on a closed sale; 0 when none; null when unknown or not a sale. */
   concessionsAmount: number | null
   /** Flex FLOW: distance + direction when known ("0.2 mi NW"). */
   proximity: string | null
@@ -108,6 +121,26 @@ export type MatrixEntry = {
    * every closed sale closed, and every unsold listing came off.
    */
   status?: 'active' | 'pending'
+  /** MLS StandardStatus on an unsold row. Canceled and Withdrawn stay those words. */
+  mlsStatus?: string | null
+  /**
+   * A closed sale the range trim set aside (lib/cma/set-aside.ts): printed and
+   * pinned, but not one of the sales the number is the spread of. The map
+   * draws its pin lighter and the legend names it. Absent on every other row.
+   */
+  setAside?: boolean
+}
+
+/** The MLS status word a seller letter may print. Anything else stays unlabeled. */
+export function mlsStatusLabel(raw: string | null | undefined): string | null {
+  const s = (raw ?? '').trim()
+  if (/^expired\b/i.test(s)) return 'Expired'
+  if (/^withdrawn\b/i.test(s)) return 'Withdrawn'
+  if (/^cancell?ed\b/i.test(s)) return 'Canceled'
+  if (/^closed\b/i.test(s)) return 'Closed'
+  if (/^pending\b/i.test(s)) return 'Pending'
+  if (/^active\b/i.test(s)) return 'Active'
+  return null
 }
 
 // ── the remodel fragment ────────────────────────────────────────────────────
@@ -256,11 +289,23 @@ export function closedEntries(
   comps: readonly CmaAdjustedComp[],
   ctx?: TrackedDocLinkCtx | null,
   subject?: { latitude?: number | null; longitude?: number | null } | null,
+  /** The grid's set-aside decision (`setAsideSalePredicate`). Absent marks none. */
+  isSetAside?: (sale: CmaAdjustedComp) => boolean,
 ): MatrixEntry[] {
   return comps.map((c, i) => {
     const path = pricePathFromSale(c)
-    const toOffer = days(c.daysToOffer)
+    // ONE clock per sale (reader review 2026-10-07). The row and the outcome
+    // line print the same count: days to an accepted offer when the record
+    // knows it, else first list to close, labeled as that. An offer count
+    // longer than the run to close is not one (2107 Carrie, 67 of 66).
     const ran = days(c.domTotal)
+    const toOffer = closedSaleDaysToOffer({
+      daysToOffer: c.daysToOffer,
+      measuredFrom: c.offerFrom ?? null,
+      domTotal: ran,
+      firstListDate: c.onMarketDate,
+      closeDate: c.closeDate,
+    })
     const outcome = [
       c.closePrice > 0 ? `sold ${shortOrExactUsd(c.closePrice)}` : 'sold',
       toOffer != null
@@ -268,6 +313,7 @@ export function closedEntries(
         : ran != null
           ? `listed to closed, ${int(ran)} ${ran === 1 ? 'day' : 'days'}`
           : '',
+      c.sewerNote?.trim() || '',
     ]
       .filter(Boolean)
       .join(' · ')
@@ -297,10 +343,13 @@ export function closedEntries(
       lotAcres: c.lotAcres ?? null,
       rooms: roomsOf(c),
       beds: c.beds ?? null,
-      baths: c.baths ?? null,
-      // ON MARKET, not to offer: this row is the same measure in all three
-      // matrices, and an unsold listing has no offer to count days to.
-      domDays: ran ?? toOffer,
+      baths: printedBaths(c),
+      // Days on market for a sale ends at the accepted offer, the same place
+      // an unsold listing's count ends when it comes off with none. The raw
+      // list-to-close figure is never printed as days on market (CLAUDE.md
+      // §7); when it is the only count, the cell names it.
+      domDays: toOffer ?? ran,
+      domMeasure: toOffer != null ? ('offer' as const) : ran != null ? ('listed-to-closed' as const) : undefined,
       // `pricePathFromSale` draws from the ask the sale went under contract
       // at; no original ask reaches the renderer for a comparable sale, so the
       // path's own change count is always zero and would assert something the
@@ -312,18 +361,16 @@ export function closedEntries(
       lastAsk: num(c.listPrice),
       closePrice: c.closePrice > 0 ? c.closePrice : null,
       listPrice: num(c.listPrice) ?? num(c.originalListPrice),
-      concessionsAmount: (() => {
-        const v = c.concessions ?? c.concessionsAmount ?? null
-        return v != null && Number.isFinite(v) ? Number(v) : null
-      })(),
+      concessionsAmount: concessionOnSale(c),
       proximity: (c.proximity ?? '').trim() || entryProximity(subject, c),
       garageSpaces: c.garageSpaces != null && Number.isFinite(c.garageSpaces) ? Number(c.garageSpaces) : null,
-      cdomDays: days(c.domTotal),
+      // The same count as the row above: a second clock in the next row was
+      // the disagreement this replaced.
+      cdomDays: toOffer ?? ran,
       statusDate: /^\d{4}-\d{2}-\d{2}/.test((c.closeDate ?? '').slice(0, 10))
         ? (c.closeDate ?? '').slice(0, 10)
         : null,
-      adjustedPrice:
-        c.adjustedPrice != null && Number.isFinite(c.adjustedPrice) ? Number(c.adjustedPrice) : null,
+      adjustedPrice: printedAdjustedPrice(c),
       endLabel: c.closePrice > 0 ? `sold ${shortOrExactUsd(c.closePrice)}` : 'sold',
       latitude: c.latitude ?? null,
       longitude: c.longitude ?? null,
@@ -331,8 +378,9 @@ export function closedEntries(
         ['date', /^\d{4}-\d{2}-\d{2}$/.test((c.closeDate ?? '').slice(0, 10)) ? (c.closeDate ?? '').slice(0, 10) : null],
         ['price', c.adjustedPrice != null && Number.isFinite(c.adjustedPrice) ? Math.round(c.adjustedPrice) : null],
         ['size', c.sqft != null && Number.isFinite(c.sqft) ? Math.round(c.sqft) : null],
-        ['days', ran ?? toOffer],
+        ['days', toOffer ?? ran],
       ]),
+      ...(isSetAside?.(c) ? { setAside: true } : {}),
     }
   })
 }
@@ -383,7 +431,7 @@ export function unsoldEntries(
       lotAcres: p.lotAcres ?? null,
       rooms: roomsOf(p),
       beds: p.beds ?? null,
-      baths: p.baths ?? null,
+      baths: printedBaths(p),
       domDays: dom,
       priceChanges: movedOrNull(num(p.originalListPrice), num(p.listPrice)),
       priceChangesExact: false,
@@ -396,13 +444,19 @@ export function unsoldEntries(
       proximity: (p as { proximity?: string | null }).proximity?.trim() || entryProximity(subject, p),
       garageSpaces: null,
       cdomDays: dom,
-      statusDate: sellerOffMarketDate({
-        listDate: p.onMarketDate,
-        offMarketDate: null,
-        days: dom,
-      }),
+      // The date beside the status the column prints: the day the listing took
+      // its status of record (3204 Spring Creek, expired Jul 31), not the day
+      // its days on the market ended (withdrawn Jan 20) when those differ.
+      statusDate:
+        p.statusDate ??
+        sellerOffMarketDate({
+          listDate: p.onMarketDate,
+          offMarketDate: p.offMarketDate ?? null,
+          days: dom,
+        }),
       adjustedPrice: null,
       endLabel: 'came off',
+      mlsStatus: p.status,
       latitude: p.latitude ?? null,
       longitude: p.longitude ?? null,
       sort: sortAttrs([
@@ -427,16 +481,24 @@ export function activeEntries(
   subject?: Pick<CmaSubject, 'latitude' | 'longitude'> | null,
 ): MatrixEntry[] {
   return rivals.map((r, i) => {
+    const pending = r.status === 'Pending'
+    // A HOME UNDER CONTRACT IS DATED THE DAY IT WENT UNDER CONTRACT, AND ITS
+    // DAYS ARE THE DAYS TO THAT OFFER (reader review 2026-10-08). 2820 Aldrich
+    // went Pending Sep 11 after 18 days and printed "Status date Aug 24, 2026"
+    // and "44 days", its list date and the days since. A stored row without
+    // the pending day has neither fact, so it prints neither (rivalDays).
+    const pendingDay = pending ? (r.pendingDate ?? null) : null
+    const told = rivalDays(r)
+    const dom = told.days
     const path = pricePathFromListing({
       address: r.address,
       listPrice: r.listPrice,
       originalListPrice: r.originalListPrice ?? null,
       onMarketDate: r.onMarketDate ?? null,
-      daysOnMarket: r.daysOnMarket,
+      daysOnMarket: dom,
       status: r.status,
+      daysMeasure: told.measure,
     })
-    const dom = days(r.daysOnMarket)
-    const pending = r.status === 'Pending'
     const remarks = remarksOf(r)
     return {
       key: keyFor('active', i),
@@ -455,7 +517,11 @@ export function activeEntries(
       photoUrl: r.photoUrl?.trim() || null,
       outcome: [
         pending ? `under contract at ${shortUsd(r.listPrice)}` : `asking ${shortUsd(r.listPrice)}`,
-        dom != null ? `${int(dom)} ${dom === 1 ? 'day' : 'days'}` : '',
+        dom != null
+          ? pending
+            ? `offer in ${int(dom)} ${dom === 1 ? 'day' : 'days'}`
+            : `${int(dom)} ${dom === 1 ? 'day' : 'days'}`
+          : '',
       ]
         .filter(Boolean)
         .join(' · '),
@@ -466,8 +532,9 @@ export function activeEntries(
       lotAcres: r.lotAcres ?? null,
       rooms: roomsOf(r),
       beds: r.beds ?? null,
-      baths: r.baths ?? null,
+      baths: printedBaths(r),
       domDays: dom,
+      ...(pending && dom != null ? { domMeasure: 'offer' as const } : {}),
       priceChanges: movedOrNull(num(r.originalListPrice), num(r.listPrice)),
       priceChangesExact: false,
       path,
@@ -479,9 +546,7 @@ export function activeEntries(
       proximity: (r as { proximity?: string | null }).proximity?.trim() || entryProximity(subject, r),
       garageSpaces: null,
       cdomDays: dom,
-      statusDate: /^\d{4}-\d{2}-\d{2}/.test((r.onMarketDate ?? '').slice(0, 10))
-        ? (r.onMarketDate ?? '').slice(0, 10)
-        : null,
+      statusDate: pending ? pendingDay : pacificDay(r.onMarketDate ?? null),
       adjustedPrice: null,
       endLabel: pending ? 'under contract' : 'still for sale',
       latitude: r.latitude ?? null,
@@ -522,6 +587,7 @@ export function subjectEntry(input: {
     daysOnMarket: input.domDays,
     status: s.standardStatus,
     printableAsk: input.printableAsk,
+    originalListPrice: s.originalListPrice,
   })
   const status = (s.standardStatus ?? '').trim().toLowerCase()
   const cameOff = /^(expired|withdrawn|cancell?ed)/.test(status)
@@ -551,7 +617,7 @@ export function subjectEntry(input: {
     lotAcres: s.lotAcres ?? null,
     rooms: roomsOf(s),
     beds: s.beds ?? null,
-    baths: s.baths ?? null,
+    baths: printedBaths(s),
     domDays: input.domDays,
     // The one row whose changes ARE dated: the seller's own final cycle.
     priceChanges: path ? priceChangeCountOf(path) : null,
@@ -565,17 +631,19 @@ export function subjectEntry(input: {
     proximity: null,
     garageSpaces: s.garageSpaces != null && Number.isFinite(s.garageSpaces) ? Number(s.garageSpaces) : null,
     cdomDays: input.domDays,
+    // The date beside the status the column prints: Coho's listing expired
+    // Sep 30, months after it came off on Feb 10, and its Status reads Expired.
     statusDate: cameOff
-      ? sellerOffMarketDate({
+      ? (input.finalCycle?.statusDate ??
+        sellerOffMarketDate({
           listDate: input.finalCycle?.listDate ?? s.lastListDate,
           offMarketDate: input.finalCycle?.offMarketDate,
           days: input.finalCycle?.days ?? null,
-        })
-      : s.lastListDate && /^\d{4}-\d{2}-\d{2}/.test(s.lastListDate.slice(0, 10))
-        ? s.lastListDate.slice(0, 10)
-        : null,
+        }))
+      : pacificDay(s.lastListDate ?? null),
     adjustedPrice: null,
     endLabel: cameOff ? 'came off' : input.printableAsk != null ? 'still asking' : '',
+    mlsStatus: s.standardStatus ?? null,
     latitude: s.latitude ?? null,
     longitude: s.longitude ?? null,
     // The reader's own home never sorts: it is the first column, always.
@@ -593,9 +661,12 @@ export function pinFactsFor(entries: readonly MatrixEntry[]): CmaPinFact[] {
       address: e.address,
       outcome: e.outcome,
       domDays: e.domDays,
+      domMeasure: e.domMeasure,
       priceChanges: e.priceChanges,
       priceChangesExact: e.priceChangesExact,
       latitude: e.latitude,
       longitude: e.longitude,
+      ...(e.status ? { status: e.status } : {}),
+      ...(e.setAside ? { setAside: true } : {}),
     }))
 }

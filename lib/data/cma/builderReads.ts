@@ -51,6 +51,10 @@ const LISTING_CMA_COLUMNS = [
   'PhotoURL',
   'BedroomsTotal',
   'BathroomsTotal',
+  // The MLS full / half split. BathroomsTotal counts a half bath whole; the
+  // one-room rule compares full baths (lib/pricing/bath-count.ts).
+  'baths_full',
+  'baths_half',
   'TotalLivingAreaSqFt',
   'year_built',
   'lot_size_acres',
@@ -346,50 +350,21 @@ export async function getCmaMarketPulseRow(
  * price a SQUARE FOOT over every closed PropertyType='A' sale with 300+ sqft
  * — townhouses, condos and manufactured homes included (the MV has no
  * product_class filter; `sale_pricing_facts_sfr` is the separate detached
- * cut). The month line below walks `market_stats_cache` monthly, a median SALE
- * PRICE over single-family sales only (`compute_and_cache_period_stats` filters
- * PropertyType='A' AND property_sub_type='Single Family Residence', clipped to
- * the city polygon). On Bend today the first peaked in May 2026 and the second
- * bottomed in April, and a reader handed both without a label is right to call
- * that a contradiction. The label rides with the figure so a renderer never has
- * to name the measure itself.
+ * cut). The month line walks Market Truth detached one-month `median_close`
+ * (getPublicDetachedMonthly, lib/cma/market.ts), a median SALE PRICE over
+ * single-family sales only (PropertyType='A' AND property_sub_type='Single
+ * Family Residence', a city by its MLS City text), the same membership as the
+ * homes-for-sale count and months of supply printed beside it. Round four
+ * found the two lines turning in different months on Bend, and a reader
+ * handed both without a label is right to call that a contradiction. The
+ * label rides with the figure so a renderer never has to name the measure
+ * itself.
+ *
+ * Until 2026-10-08 the line read `market_stats_cache` monthly, which clips a
+ * city to its TIGER polygon: a second population under the same "Bend" label
+ * as the counts. That read (getCmaMarketTrendRows) is gone.
  */
 export const CMA_MARKET_TREND_MEASURE = 'median sale price, single-family homes'
-
-export type CmaMarketTrendRow = {
-  period_start: string
-  median_sale_price: number | null
-  sold_count: number | null
-  end_of_period_inventory: number | null
-}
-
-/** Completed monthly cache rows for the CMA market board. Drops the in-progress month. */
-export async function getCmaMarketTrendRows(
-  geoSlug: string,
-  geoType: 'city' | 'neighborhood',
-  months = 12,
-): Promise<CmaMarketTrendRow[]> {
-  const sb = client()
-  if (!sb || !geoSlug.trim()) return []
-  const { data, error } = await sb
-    .from('market_stats_cache')
-    .select('period_start, median_sale_price, sold_count, end_of_period_inventory')
-    .eq('geo_slug', geoSlug)
-    .eq('geo_type', geoType)
-    .eq('period_type', 'monthly')
-    .order('period_start', { ascending: false })
-    .limit(months + 1)
-  if (error) {
-    console.error('[getCmaMarketTrendRows]', error.message)
-    return []
-  }
-  const now = new Date()
-  return ((data ?? []) as CmaMarketTrendRow[]).filter((row) => {
-    const d = new Date(row.period_start)
-    if (Number.isNaN(d.getTime())) return false
-    return d.getUTCFullYear() !== now.getUTCFullYear() || d.getUTCMonth() !== now.getUTCMonth()
-  })
-}
 
 /** Active broker row for the CMA signature block. */
 export async function getCmaBrokerBySlugOrEmail(opts: {
@@ -489,6 +464,13 @@ export type CmaWindowCloseRow = {
   Latitude: number | null
   Longitude: number | null
   SubdivisionName: string | null
+  property_sub_type?: string | null
+  /**
+   * Recorded seller concession, so the chart's rate per foot is net like the
+   * table's. listings carries the amount only; the yes/no lives on
+   * sale_pricing_facts, and resolveConcessions reads a missing yes/no by date.
+   */
+  concessions_amount?: number | null
 }
 
 /**
@@ -500,19 +482,24 @@ export async function getCmaCityClosedDuring(
   city: string,
   fromIso: string,
   toIso: string,
+  propertySubType?: string | null,
 ): Promise<CmaWindowCloseRow[]> {
   const sb = client()
   if (!sb || !city.trim() || !fromIso || !toIso) return []
   const out: CmaWindowCloseRow[] = []
   const SIZE = 1000
+  const sub = propertySubType === undefined ? 'Single Family Residence' : propertySubType
   for (let from = 0; from < 20000; from += SIZE) {
-    const { data, error } = await sb
+    let q = sb
       .from('listings')
-      .select('ClosePrice, CloseDate, TotalLivingAreaSqFt, Latitude, Longitude, SubdivisionName')
+      .select(
+        'ClosePrice, CloseDate, TotalLivingAreaSqFt, Latitude, Longitude, SubdivisionName, property_sub_type, concessions_amount',
+      )
       .eq('City', city)
       .eq('PropertyType', 'A')
-      .eq('property_sub_type', 'Single Family Residence')
       .eq('StandardStatus', 'Closed')
+    if (sub) q = q.eq('property_sub_type', sub)
+    const { data, error } = await q
       .gte('CloseDate', fromIso)
       .lte('CloseDate', toIso)
       .gt('ClosePrice', 0)

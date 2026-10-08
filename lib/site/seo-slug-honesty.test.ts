@@ -146,22 +146,22 @@ describe('GTM and gtag do not both configure GA4', () => {
   // Re-pinned 2026-09-01: load-suppression ("only after consent") made every
   // non-consenting visitor invisible to GA4 from 2026-08-18 on, because the
   // GA4 config tag lives inside the GTM container. The policy-correct shape is
-  // Consent Mode v2 — always load on production with denied defaults pushed
+  // Consent Mode v2 — always load on production with region defaults pushed
   // BEFORE gtm.js, consent updates on the banner event.
-  it('loads GTM with Consent Mode v2, never load-suppression', () => {
+  it('loads GTM with Consent Mode v2, never load-suppression', async () => {
+    const { gtmBootstrapScript } = await import('../analytics/gtm-bootstrap')
+    const shipped = gtmBootstrapScript('home', 'GTM-TEST123')
     expect(gtm).toMatch(/hasAnalyticsConsent/)
     expect(gtm).toMatch(/__html: gtmBootstrapScript\(/)
-    expect(bootstrap).toMatch(/consent','default'/)
-    expect(bootstrap).toMatch(/wait_for_update/)
+    expect(bootstrap).toMatch(/consentModeDefaultJs\(/)
+    expect(shipped).toMatch(/consent','default'/)
+    expect(shipped).toMatch(/wait_for_update/)
     expect(gtm).not.toMatch(/if \(!GTM_ID \|\| !consent\) return null/)
-    // The defaults must be in the same inline script, ahead of the gtm.js bootstrap.
-    const inline = bootstrap.slice(bootstrap.indexOf('return `'))
-    expect(inline.indexOf("consent','default'")).toBeGreaterThan(-1)
-    expect(inline.indexOf("consent','default'")).toBeLessThan(inline.indexOf('gtm.js'))
-    // First-paint broker user property must queue before gtm.js page_view.
-    expect(inline).toMatch(/user_properties[\s\S]*assigned_broker/)
-    expect(inline.indexOf('assigned_broker')).toBeGreaterThan(-1)
-    expect(inline.indexOf('assigned_broker')).toBeLessThan(inline.indexOf('gtm.js'))
+    expect(shipped.indexOf("consent','default'")).toBeGreaterThan(-1)
+    expect(shipped.indexOf("consent','default'")).toBeLessThan(shipped.indexOf('gtm.js'))
+    expect(shipped).toMatch(/user_properties[\s\S]*assigned_broker/)
+    expect(shipped.indexOf('assigned_broker')).toBeGreaterThan(-1)
+    expect(shipped.indexOf('assigned_broker')).toBeLessThan(shipped.indexOf('gtm.js'))
   })
 })
 

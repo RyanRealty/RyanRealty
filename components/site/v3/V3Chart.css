@@ -1227,3 +1227,96 @@
 .v3 .v3-chart__frame[data-off~='4'] .v3-chart__s4 {
   display: none;
 }
+
+/* ---------------------------------------------------------------------------
+   The numbers, for everyone. The drawing stays the design; this disclosure
+   opens the same readings as a real table (AEO review 2026-10-04): a reader
+   can check a value without hovering, and an answer engine can cite it.
+   The summary keeps the 44px tap floor; wide tables scroll inside their box.
+   --------------------------------------------------------------------------- */
+.v3 .v3-chart__numbers {
+  margin-top: var(--v3-space-xs);
+  border-top: var(--v3-rule-hairline);
+}
+
+.v3 .v3-chart__numbers-summary {
+  display: flex;
+  align-items: center;
+  min-height: var(--v3-tap);
+  cursor: pointer;
+  list-style: none;
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-strong);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-chart__numbers-summary::-webkit-details-marker {
+  display: none;
+}
+
+.v3 .v3-chart__numbers-summary::after {
+  content: '+';
+  margin-left: var(--v3-space-2xs);
+}
+
+.v3 .v3-chart__numbers[open] > .v3-chart__numbers-summary::after {
+  content: '\2212';
+}
+
+.v3 .v3-chart__numbers-summary:focus-visible {
+  outline: 3px solid var(--v3-focus);
+  outline-offset: 2px;
+}
+
+.v3 .v3-chart__table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  padding-bottom: var(--v3-space-xs);
+}
+
+.v3 .v3-chart__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--v3-ink);
+}
+
+.v3 .v3-chart__table-caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.v3 .v3-chart__table th,
+.v3 .v3-chart__table td {
+  padding: var(--v3-space-2xs) var(--v3-space-sm) var(--v3-space-2xs) 0;
+  border-bottom: var(--v3-rule-hairline);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.v3 .v3-chart__table td {
+  text-align: right;
+}
+
+.v3 .v3-chart__table thead th {
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-strong);
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-chart__table thead th:not(:first-child) {
+  text-align: right;
+}
+
+.v3 .v3-chart__table tbody th {
+  font-weight: var(--v3-weight-body);
+  color: var(--v3-ink-muted);
+}

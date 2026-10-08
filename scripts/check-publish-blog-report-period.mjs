@@ -9,6 +9,7 @@
  *   node scripts/check-publish-blog-report-period.mjs
  */
 import { readFileSync } from 'node:fs'
+import { routeRenderSource } from './lib/route-render-source.mjs'
 
 const checks = []
 
@@ -28,7 +29,10 @@ checks.push({
     helper.includes('closings. Published'),
 })
 
-const page = src('app/blog/[slug]/page.tsx')
+// The post body renders in app/blog/[slug]/_v3/render-blog-post.tsx (one render path
+// shared with the admin draft preview, 2026-10-05); the route file keeps metadata + ISR.
+// routeRenderSource reads the route plus the render module it imports.
+const page = routeRenderSource(new URL('../app/blog/[slug]/page.tsx', import.meta.url).pathname)
 checks.push({
   label: 'blog post page publishes H1, meta, and JSON-LD through the period helper',
   ok:

@@ -4,6 +4,7 @@
  * Conditional legal, photos, permits, and seller-net omit when unknown.
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import { cmaStylesheet } from '@/lib/cma/render-css'
 import {
   dateLong,
@@ -26,12 +27,14 @@ import type { ListingPlan } from '@/lib/cma/listing-plan'
 import type { CmaSiteData } from '@/lib/cma/county'
 import type { CmaParcelSet } from '@/lib/cma/parcel-shapes'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
+import type { PlacePricingStory } from '@/lib/cma/place-pricing-types'
 import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 import type { DevelopmentOpportunities } from '@/lib/cma/development'
 import type { RentalPotential } from '@/lib/cma/rental-potential'
 import { assembleOpinionPages } from '@/lib/cma/opinion-pages'
 import { scrubSellerLetterHtml } from '@/lib/cma/seller-letter-copy'
 import { letterCoverPayoffHtml } from '@/lib/cma/cover-value'
+import { subjectOnMarket } from '@/lib/cma/subject-on-market'
 import {
   cmaCoverLabelHtml,
 } from '@/lib/cma/fsbo-cma-render'
@@ -43,7 +46,7 @@ import {
   scrubMlsTextRow,
 } from '@/lib/cma/letter-privacy'
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const SITE_URL = siteOrigin()
 
 export {
   escapeHtml,
@@ -128,6 +131,11 @@ export interface RenderCmaArgs {
   listingMarket?: import('@/lib/cma/listing-window-market').ListingMarketMove | null
   /** What homes like this one credited the buyer. Measured at serve for a draft. */
   likeHomeCredits?: { sentence: string; source: string } | null
+  /**
+   * Twelve-month pricing story for the parent neighborhood or community.
+   * Null when that place has no matching rows. Absent on older letters.
+   */
+  placePricing?: PlacePricingStory | null
 }
 
 interface PageDef {
@@ -390,7 +398,7 @@ function coverPage(a: RenderCmaArgs): PageDef {
   })
   // FlexMLS letter FLOW on the letter cover (same trio as immersive hero):
   // Low · High · Recommended once. Never sole legacy cover-price.
-  const payoff = letterCoverPayoffHtml(a.pricing)
+  const payoff = letterCoverPayoffHtml(a.pricing, a.comps, { onMarket: subjectOnMarket(a) })
   return {
     cover: true,
     meta: `Pricing report · ${dateLong(a.generatedAtIso)}`,

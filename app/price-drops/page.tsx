@@ -21,6 +21,7 @@
  * HTTP 500 (lib/site/degraded-isr.ts).
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import type { Metadata } from 'next'
 import { formatDate } from '@/lib/format/date'
 import { getPriceDrops } from '@/lib/data'
@@ -108,7 +109,7 @@ export default async function PriceDropsRegionPage() {
     windowDays: 7,
     fetchedAt: fetchedAt ? formatDate(fetchedAt) : null,
   })
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const siteUrl = siteOrigin()
   const pageUrl = `${siteUrl}/price-drops`
 
   const totalReducedLabel =

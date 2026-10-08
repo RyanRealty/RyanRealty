@@ -46,7 +46,8 @@ import type { CmaComp, CmaMarketContext, CmaSubject } from '@/lib/cma/types'
 import { setJudgeUnavailableReason } from '@/lib/cma/llm-unavailable'
 import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
 import { SAME_STREET_SIZE_BAND, sameStreetPeer } from '@/lib/pricing/price-anchor'
-import { roomCountsDecision } from '@/lib/pricing/room-ground'
+import { carriedRoomDecision } from '@/lib/pricing/room-ground'
+import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
 import { roomDifferenceSentence } from '@/lib/pricing/room-counts'
 import {
   EXCLUSION_BASES,
@@ -61,6 +62,8 @@ import {
   type ExclusionBasis,
 } from '@/lib/cma/judge-consistency'
 import { groundVote, isRoomCountExclusion } from '@/lib/cma/judge-ground'
+import { PRICE_TIER_BAND, insidePriceTier, priceTierLine, salePpsf, type PriceTierLine } from '@/lib/pricing/price-tier'
+import { isCustomOrNewSubject } from '@/lib/pricing/classes'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { claimCompOf, narrativeClaimFindings, stripRefutedSentences, type ClaimComp } from '@/lib/cma/narrative-claims'
 import {
@@ -113,7 +116,19 @@ export type JudgeCompsOptions = {
    */
   enforceKeepMinimum?: boolean
   callModel?: JudgeModelCall
+  /**
+   * The home's INDEPENDENT price anchor, the figure the comp search graded
+   * every sale against (selection.diagnostics.price_anchor). With it the
+   * review holds the one 20% line (Matt 2026-10-08, lib/pricing/price-tier.ts):
+   * the brief states the line, the model declares it as its band, a price-tier
+   * cut of a sale inside it is overridden, and no sale inside it is dropped by
+   * the band cut below. Null or absent: the review derives its band as before.
+   */
+  priceAnchor?: JudgePriceAnchor | null
 }
+
+/** The anchor the review is told about: whole dollars a square foot and the sales it was read over. */
+export type JudgePriceAnchor = { ppsf: number; n?: number | null }
 
 // The consistency vocabulary is defined next to the check that enforces it;
 // re-exported here so every existing caller keeps importing from one place.
@@ -126,10 +141,11 @@ export { checkJudgmentConsistency } from '@/lib/cma/judge-consistency'
 const MODEL = GROK_MODELS.text
 
 /** Below this many kept comps the deterministic band cut stops pruning. The
- *  pricing minimum is the same three (MIN_COMPS), and buildCma prices only the
- *  sales this review keeps (lib/cma/judgment-prune.ts): a keep under three is
- *  a comp shortage, never a reason to price the excluded sales. */
-const RESOLVE_KEEP_FLOOR = 3
+ *  pricing minimum is the same five (PRICING_MIN_COMPS, Matt 2026-10-07), and
+ *  buildCma prices only the sales this review keeps (lib/cma/judgment-prune.ts):
+ *  a keep under five is a comp shortage, never a reason to price the excluded
+ *  sales. */
+const RESOLVE_KEEP_FLOOR = PRICING_MIN_COMPS
 
 export interface CompJudgment {
   verdicts: CompVerdict[]
@@ -207,12 +223,12 @@ const JUDGE_SCHEMA: Record<string, unknown> = {
       ppsfFloor: {
         type: 'number',
         description:
-          'The LOWEST $/sqft this analysis treats as the subject\'s market tier. Every comp you keep must sell at or above it, and every comp you exclude for being a cheaper tier must sell below it. A whole number of dollars per square foot.',
+          'The LOWEST $/sqft this analysis treats as the subject\'s market tier. Every comp you keep must sell at or above it, and every comp you exclude for being a cheaper tier must sell below it. A whole number of dollars per square foot. When the brief gives a PRICE TIER LINE, this is that line\'s floor.',
       },
       ppsfCeiling: {
         type: 'number',
         description:
-          'The HIGHEST $/sqft this analysis treats as the subject\'s market tier. Every comp you keep must sell at or below it, and every comp you exclude for being a premium tier must sell above it. A whole number of dollars per square foot.',
+          'The HIGHEST $/sqft this analysis treats as the subject\'s market tier. Every comp you keep must sell at or below it, and every comp you exclude for being a premium tier must sell above it. A whole number of dollars per square foot. When the brief gives a PRICE TIER LINE, this is that line\'s ceiling.',
       },
       exclusionRule: {
         type: 'string',
@@ -287,8 +303,19 @@ const SYSTEM =
   'ceiling has to be at least $631, and then you cannot call $650 a premium tier — you need a different, real ' +
   'reason for the ones above, or you keep them too. And do not strand a kept comp: if one retained sale sits far ' +
   'above the rest of the retained cluster and near the sales you threw out, it belongs with the ones you threw ' +
-  'out. Apply the same discipline to every non-numeric criterion. Do not exclude a sale for living area inside ' +
-  'about 35 percent of the subject, and do not exclude one for year built. The picker already made those cuts, ' +
+  'out. ' +
+  'THE PRICE TIER LINE. When the brief gives a PRICE TIER LINE, that line IS the band: the home\'s own area sells ' +
+  'at the stated figure per square foot, and its price tier is that figure plus or minus 20 percent. Declare the ' +
+  'line\'s two numbers as ppsfFloor and ppsfCeiling. Do not draw a band from the sales you keep or from the other ' +
+  'candidates. A sale inside the line is this home\'s price tier, and price alone does not exclude it. Use ' +
+  'basis=price-tier only for a sale outside the line. The comp search admitted every sale on that same line, and ' +
+  'code holds you to it. ' +
+  'LOT SIZE UNDER AN ACRE IS NOT A CUT. When the subject and a sale both sit on less than one acre, the lot ' +
+  'difference is shown beside the sale and never excludes it: a half-acre sale stays on a small-lot home. Do not ' +
+  'exclude for lot size there, on any basis. Weigh it less if you must. At one acre and above on either side, a ' +
+  'lot of a materially different size may still be excluded with basis=lot. ' +
+  'Apply the same discipline to every non-numeric criterion. Do not exclude a sale for living area inside ' +
+  '25 percent of the subject, and do not exclude one for year built. The picker already made those cuts, ' +
   'and it widens closed-sale age and date when the first location search is short of 3. A looser match stays. ' +
   'Weigh it less. Do not drop it. ' +
   'WHAT REVIEWERS CATCH MOST OFTEN, in order: a kept comp in an amenity-bearing planned community or resort when the subject is not, or the reverse; ' +
@@ -439,6 +466,7 @@ export function buildJudgeUserPrompt(
   subject: CmaSubject,
   comps: CmaComp[],
   market: CmaMarketContext | null,
+  priceAnchor: JudgePriceAnchor | null = null,
 ): string {
   const subjectParts = [
     `${subject.streetAddress}, ${subject.city}`,
@@ -467,8 +495,19 @@ export function buildJudgeUserPrompt(
     ? `Market: ${market.geoLabel}, ${market.marketVerdict}, ${mosForPrompt(market.monthsOfSupply)} months supply, median $${market.medianPpsf ?? '?'}/sqft, ${market.yoyMedianPriceDeltaPct ?? '?'}% YoY.`
     : 'Market: no cache row for this geography.'
 
+  // THE ONE 20% LINE (Matt 2026-10-08). Stated only when the search had an
+  // anchor, so a home without one gets the brief it always got.
+  const line = priceTierLine(priceAnchor?.ppsf)
+  const lineText = line
+    ? `\nPRICE TIER LINE: this home's own area sells for $${line.anchor} a square foot${
+        priceAnchor?.n != null && priceAnchor.n > 0 ? ` (median of ${priceAnchor.n} closed sales)` : ''
+      }, the figure the comp search graded every candidate against. The line is that figure plus or minus ${Math.round(
+        PRICE_TIER_BAND * 100,
+      )} percent: $${line.floor} to $${line.ceiling} a square foot. Declare ppsfFloor ${line.floor} and ppsfCeiling ${line.ceiling}. A candidate inside the line is not a different price tier. In the narrative, say the kept sales sit inside that line rather than calling the line their range.`
+    : ''
+
   return (
-    `SUBJECT: ${subjectLine}\n${marketLine}\n${conditionEvidence}\n\n` +
+    `SUBJECT: ${subjectLine}\n${marketLine}${lineText}\n${conditionEvidence}\n\n` +
     `CANDIDATE COMPS (${comps.length}) — judge each by its listing key:\n` +
     comps.map((c, i) => `${i + 1}. ${describeComp(c)}`).join('\n') +
     `\n\nClassify every comp (strong / weak / exclude), declare the $/sqft band and the rule you applied, give an overall confidence, and write the comparability narrative.`
@@ -490,9 +529,11 @@ export async function judgeComps(
   if (comps.length === 0) return null
   if (!options.callModel && !grokConfigured()) return null
 
-  const user = buildJudgeUserPrompt(subject, comps, market)
+  const priceAnchor = options.priceAnchor ?? null
+  const line = priceTierLine(priceAnchor?.ppsf)
+  const user = buildJudgeUserPrompt(subject, comps, market, priceAnchor)
   const inputChecksum = judgePromptChecksum(user, MODEL)
-  const minComps = options.minComps ?? 3
+  const minComps = options.minComps ?? PRICING_MIN_COMPS
   const enforce = options.enforceKeepMinimum !== false
   const candidateKeys = comps.map((c) => c.listingKey)
   const prior = options.priorCache && options.priorCache.model === MODEL && cacheHit(options.priorCache, inputChecksum)
@@ -540,6 +581,7 @@ export async function judgeComps(
         minComps,
         costUsd: 0,
         cacheHit: true,
+        line,
       })
     }
 
@@ -551,10 +593,16 @@ export async function judgeComps(
       if (turn.payload == null) throw new Error('judge returned no payload')
       const parsed = parseJudgment(turn.payload, comps)
       if (!parsed) throw new Error('judge returned no usable verdicts')
-      const grounds = groundVote(subject, comps, parsed.verdicts, {
-        floor: parsed.ppsfFloor,
-        ceiling: parsed.ppsfCeiling,
-      })
+      const grounds = groundVote(
+        subject,
+        comps,
+        parsed.verdicts,
+        {
+          floor: parsed.ppsfFloor,
+          ceiling: parsed.ppsfCeiling,
+        },
+        line,
+      )
       votes.push(
         storedVoteFromGround(grounds, {
           confidence: parsed.confidence,
@@ -576,7 +624,7 @@ export async function judgeComps(
       })
       throw new JudgeUnstableError(aggregate.message ?? 'JUDGE_UNSTABLE. The build was not priced.', record, false)
     }
-    return finalizeJudgment({ subject, comps, votes, aggregate, inputChecksum, minComps, costUsd, cacheHit: false })
+    return finalizeJudgment({ subject, comps, votes, aggregate, inputChecksum, minComps, costUsd, cacheHit: false, line })
   } catch (err) {
     if (err instanceof JudgeUnstableError) throw err
     const reason = err instanceof Error ? err.message : String(err)
@@ -605,14 +653,20 @@ function finalizeJudgment(args: {
   minComps: number
   costUsd: number
   cacheHit: boolean
+  /** The one 20% line around the home's anchor, or null with no anchor. */
+  line?: PriceTierLine | null
 }): CompJudgment {
   const { subject, comps, votes, aggregate, inputChecksum, minComps, costUsd } = args
+  const line = args.line ?? null
   const judged: RawJudgment = {
     verdicts: aggregate.verdicts.map((v) => ({ ...v })),
     confidence: aggregate.confidence,
     narrative: aggregate.narrative,
-    ppsfFloor: aggregate.ppsfFloor,
-    ppsfCeiling: aggregate.ppsfCeiling,
+    // With an anchor the declared band IS the line, whatever the model wrote:
+    // the review grades price on the line the search admitted on, never on a
+    // band drawn from the sales it kept (Matt 2026-10-08).
+    ppsfFloor: line ? line.floor : aggregate.ppsfFloor,
+    ppsfCeiling: line ? line.ceiling : aggregate.ppsfCeiling,
     exclusionRule: aggregate.exclusionRule,
   }
 
@@ -645,6 +699,24 @@ function finalizeJudgment(args: {
     }
   }
 
+  // ONE 20% LINE: a sale inside it is this home's price tier, so the band and
+  // strand cut below (a price-tier cut by another name) never drops it. The
+  // search admitted it on the same line; dropping it here is the split vote
+  // this ruling ended. A custom or new subject keeps the floor and loses the
+  // ceiling, as the search does (lib/pricing/price-tier.ts insidePriceTier).
+  const insideLineKeys: string[] = []
+  if (line) {
+    const floorOnly = isCustomOrNewSubject({
+      yearBuilt: subject.yearBuilt,
+      newConstructionYn: subject.newConstructionYn,
+      remarks: subject.publicRemarks,
+    })
+    for (const c of comps) {
+      const p = salePpsf(c.closePrice, c.sqft)
+      if (p != null && insidePriceTier(p, line, { floorOnly })) insideLineKeys.push(c.listingKey)
+    }
+  }
+
   // Custom/new year-quality peers the model tossed as luxury come back.
   const restored = restoreCustomYearQualityPeers({
     subject: {
@@ -656,7 +728,7 @@ function finalizeJudgment(args: {
     verdicts: judged.verdicts,
   })
   judged.verdicts = restored.verdicts
-  const protectedKeys = new Set<string>([...restored.restoredKeys, ...aggregate.protectedKeys])
+  const protectedKeys = new Set<string>([...restored.restoredKeys, ...aggregate.protectedKeys, ...insideLineKeys])
   // Same-street and own-plat restorations below; a restoration retires the declared rule.
   let restoredByRule = 0
   if (restored.restoredKeys.length > 0) {
@@ -731,13 +803,14 @@ function finalizeJudgment(args: {
   }
 
   // THE ONE ROOM RULE IS NOT A JUDGE CALL (Matt 2026-09-10, skill 0.1).
-  // The picker and this review share roomCountsDecision. A one-room gap on
-  // own ground that the picker kept cannot be dropped for the room; a gap
-  // the rule refuses cannot stay, whatever the model said.
+  // This review reads the picker's own decision for the sale, re-run on the
+  // counts the picker compared (carriedRoomDecision). A one-room gap on own
+  // ground that the picker kept cannot be dropped for the room; a gap the
+  // rule refuses cannot stay, whatever the model said.
   for (const v of judged.verdicts) {
     const c = byKey.get(v.listingKey)
     if (!c) continue
-    const rooms = roomCountsDecision(subject, c)
+    const rooms = carriedRoomDecision(subject, c)
     if (!rooms.ok) {
       if (v.tier === 'exclude') continue
       v.tier = 'exclude'
@@ -962,11 +1035,13 @@ export async function repairNarrativeAgainstAudit(args: {
   judgment: CompJudgment
   /** Auditor findings about the prose, rendered one per line. */
   findings: string[]
+  /** The same anchor the judgment was briefed with, so the repair sees the same brief. */
+  priceAnchor?: JudgePriceAnchor | null
 }): Promise<{ narrative: string; costUsd: number; model: string } | null> {
   if (!grokConfigured() || args.findings.length === 0 || args.comps.length === 0) return null
   if (!args.judgment.narrative?.trim()) return null
 
-  const user = buildJudgeUserPrompt(args.subject, args.comps, args.market)
+  const user = buildJudgeUserPrompt(args.subject, args.comps, args.market, args.priceAnchor ?? null)
   const repairUser =
     `An independent adversarial audit read the comparability narrative you wrote and found claims the ` +
     `comp set does not support. Return ONE corrected judgment whose narrative survives the same audit.\n\n` +

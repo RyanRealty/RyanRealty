@@ -11,6 +11,7 @@ import 'server-only'
  * getProspect (single row) keeps the simple per-row path.
  */
 
+import { emailBlockedByFlags, phoneBlockedByFlags } from '@/lib/prospecting/intake-gate'
 import { createServiceClient } from '@/lib/supabase/service'
 import { slugifyAddress } from '@/lib/cma/address-slug'
 import { TAG_CHANNEL } from '@/lib/crm/suppressions'
@@ -206,20 +207,6 @@ const TAG_REASON: Record<string, string> = {
 function reasonForTag(tag: string): string {
   return TAG_REASON[tag] ?? `Tag: ${tag}`
 }
-
-// Defense-in-depth (review F5): a structured skip-trace flag that names a
-// dangerous condition blocks a send even if the writer forgot to also flip the
-// compliance_hard_stop boolean. Matched case-insensitively against compliance_flags.
-const DANGEROUS_FLAGS = new Set([
-  'litigator',
-  'deceased',
-  'dnc',
-  'dnc:tcpa',
-  'do-not-call',
-  'do_not_call',
-  'do-not-text',
-  'hard-stop',
-])
 
 function streetNumber(street: string | null): string | null {
   if (!street) return null
@@ -423,16 +410,12 @@ export async function resolveComplianceBatch(
     const persistedHardStop = (raw.compliance_hard_stop as boolean | null) === true
     const flags = Array.isArray(raw.compliance_flags) ? (raw.compliance_flags as unknown[]).map((f) => String(f)) : []
 
-    const dangerousFlag = flags.find((f) => DANGEROUS_FLAGS.has(f.toLowerCase())) ?? null
-    // A dangerous skip-trace flag (litigator / deceased / DNC) and the persisted
-    // compliance_hard_stop column are BOTH all-channel conditions.
-    const allChannelReason = persistedHardStop
-      ? 'Compliance hard stop on the record'
-      : dangerousFlag
-        ? `Skip-trace flag: ${dangerousFlag}`
-        : suppressionReadFailed && personId != null
-          ? 'Compliance check unavailable'
-          : null
+    // Email hard stop is the column, a litigator, or deceased. TCPA and DNC
+    // phone flags close sms and call only.
+    const emailHard = emailBlockedByFlags(flags, persistedHardStop)
+    const allChannelReason =
+      emailHard ??
+      (suppressionReadFailed && personId != null ? 'Compliance check unavailable' : null)
 
     const blockFor = (c: ProspectChannel) => {
       const why = personId != null ? (blockedByChannel[c].get(personId) ?? null) : null
@@ -453,6 +436,14 @@ export async function resolveComplianceBatch(
       if (why) {
         for (const c of ['sms', 'call'] as ProspectChannel[]) {
           if (!channels[c].blocked) channels[c] = { blocked: true, reason: why }
+        }
+      }
+    }
+    if (!allChannelReason) {
+      const phoneHard = phoneBlockedByFlags(flags)
+      if (phoneHard) {
+        for (const c of ['sms', 'call'] as ProspectChannel[]) {
+          if (!channels[c].blocked) channels[c] = { blocked: true, reason: phoneHard }
         }
       }
     }

@@ -259,7 +259,8 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
       ['Black Butte Ranch homes for sale', '/communities/black-butte-ranch'],
     ])
     const sunriverGroup = KB_FOOTER_COLUMNS[0]!.groups?.find((g) => g.heading === 'Sunriver')
-    expect(sunriverGroup?.href).toBe('/cities/sunriver')
+    // The heading would repeat the exact-phrase link's URL, so it is text.
+    expect(sunriverGroup?.href).toBeUndefined()
     expect(sunriverGroup?.links.map((l) => [l.label, l.href])).toEqual([
       ['Sunriver homes for sale', '/communities/sunriver'],
       ['Caldera Springs', '/communities/caldera-springs'],
@@ -283,10 +284,10 @@ describe('getPlaceLinks', () => {
     expect(links.browseUrl).toContain('/homes-for-sale/')
   })
 
-  it('keeps Sunriver city and community distinct', () => {
+  it('sends Sunriver the city to its one page, the community (Matt 2026-10-04)', () => {
     const city = getPlaceLinks({ type: 'city', slug: 'sunriver' })
     const community = getPlaceLinks({ type: 'community', slug: 'sunriver' })
-    expect(city.placeUrl).toBe('/cities/sunriver')
+    expect(city.placeUrl).toBe('/communities/sunriver')
     expect(community.placeUrl).toBe('/communities/sunriver')
   })
 

@@ -22,6 +22,7 @@
  *   - webdriver         the page reported navigator.webdriver === true (set by
  *                       Selenium, Puppeteer and Playwright unless deliberately hidden)
  *   - empty-ua          no user agent at all
+ *   - marker            our own script set the `rr_automation=1` marker
  * plus one PROVISIONAL behavioural class, contact-deep-link
  * (classifyArrivalShape below), which the session's second event clears.
  * Reading the UA header to classify is not storing it: the essential-tier rule
@@ -42,22 +43,32 @@ export type AutomationReason =
   | 'headless'
   | 'webdriver'
   | 'empty-ua'
+  | 'marker'
   | 'contact-deep-link'
+  | 'internal'
 
 export type AutomationClass = { automated: boolean; reason: AutomationReason | null }
 
-const DECLARED_CRAWLER_RE =
+export const DECLARED_CRAWLER_RE =
   /(bot\b|bot\/|crawler|spider|slurp|googleother|google-inspectiontool|google-extended|storebot-google|adsbot|mediapartners-google|feedfetcher|bingpreview|facebookexternalhit|facebookcatalog|meta-externalagent|gptbot|oai-searchbot|chatgpt-user|perplexity|claude-(?:web|user|searchbot)|anthropic-ai|cohere-ai|ccbot|bytespider|amazonbot|applebot|yandex|baiduspider|petalbot|semrush|ahrefs|mj12bot|dotbot|dataforseo|screaming frog|embedly|whatsapp|telegram|skypeuripreview|slack-imgproxy|vercel-screenshot|vercelbot)/i
 
-const TOOL_RE =
+export const TOOL_RE =
   /(curl\/|wget|python-requests|python-urllib|aiohttp|httpx|libwww-perl|java\/|okhttp|go-http-client|node-fetch|axios|undici|guzzlehttp|apache-httpclient|scrapy|httrack|zgrab|masscan|nmap|nikto|sqlmap|nuclei|wpscan|censys)/i
 
-const HEADLESS_RE = /(headlesschrome|headless|phantomjs|puppeteer|playwright|selenium|webdriver|chrome-lighthouse|lighthouse|pagespeed|prerender|rendertron)/i
+export const HEADLESS_RE = /(headlesschrome|headless|phantomjs|puppeteer|playwright|selenium|webdriver|chrome-lighthouse|lighthouse|pagespeed|prerender|rendertron)/i
 
 export function classifyAutomation(args: {
   userAgent: string | null | undefined
   webdriver?: unknown
+  /**
+   * Our own scripts' explicit marker (the `rr_automation=1` cookie or query,
+   * lib/analytics/ga-suppression.ts): every Playwright / Puppeteer launcher in
+   * this repo sets it, so a capture that spoofs a desktop user agent and hides
+   * navigator.webdriver is still known to be ours (Matt 2026-10-05, GA cleanup).
+   */
+  marker?: boolean
 }): AutomationClass {
+  if (args.marker === true) return { automated: true, reason: 'marker' }
   const ua = typeof args.userAgent === 'string' ? args.userAgent.trim() : ''
   if (!ua) return { automated: true, reason: 'empty-ua' }
   if (TOOL_RE.test(ua)) return { automated: true, reason: 'tool' }
@@ -109,10 +120,22 @@ type IdentifiableTerm =
   | { column: 'is_automated'; op: 'eq'; value: false }
   | { column: 'automation_reason'; op: 'in'; value: readonly string[] }
 
+/**
+ * `internal`: the browser carries the `rr_internal` cookie, set when a broker or
+ * admin signs in to /admin (lib/analytics/ga-suppression.ts). The session is
+ * flagged so counts of outside visitors leave it out and GA4 never sees it, but
+ * it is a real person and never blocks identification: Matt clicking a tracked
+ * link we sent him is how the owner-path send test is proven (Matt 2026-10-05).
+ */
+export const NON_BLOCKING_FLAG_REASONS: ReadonlySet<AutomationReason> = new Set<AutomationReason>([
+  ...PROVISIONAL_AUTOMATION_REASONS,
+  'internal',
+])
+
 const IDENTIFIABLE_SESSION: readonly IdentifiableTerm[] = [
   { column: 'is_automated', op: 'is', value: null },
   { column: 'is_automated', op: 'eq', value: false },
-  { column: 'automation_reason', op: 'in', value: [...PROVISIONAL_AUTOMATION_REASONS] },
+  { column: 'automation_reason', op: 'in', value: [...NON_BLOCKING_FLAG_REASONS] },
 ]
 
 /** The rule as a PostgREST `or` filter: the sessions automation does not block. */

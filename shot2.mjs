@@ -1,4 +1,4 @@
-import { chromium } from 'playwright'
+import { chromium } from './scripts/lib/marked-playwright.mjs'
 const b = await chromium.launch()
 const ctx = await b.newContext({ viewport:{width:1440,height:1000}, userAgent:'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36', reducedMotion:'reduce' })
 const out=[]

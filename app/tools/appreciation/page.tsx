@@ -21,6 +21,7 @@
  * exists to stop. This page is a tool, so it opens on Quiet.
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import type { Metadata } from 'next'
 import AppreciationCalculator from '@/components/tools/AppreciationCalculator'
 import AdUnit from '@/components/AdUnit'
@@ -35,7 +36,7 @@ import {
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { valuationHref } from '@/lib/site/valuation-href'
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const siteUrl = siteOrigin()
 const ogImage = `${siteUrl}/api/og?type=default`
 const VALUATION_HREF = valuationHref('/tools/appreciation')
 

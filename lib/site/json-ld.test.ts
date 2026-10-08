@@ -13,6 +13,24 @@ const rec = (v: unknown) => v as Record<string, unknown> | undefined
 // places (rich results + AI citation). The offer rule is data-accuracy/honesty:
 // an off-market home must NOT advertise a live purchasable price. Audit p3.2.
 describe('buildJsonLd', () => {
+  describe('freshness dates (AEO)', () => {
+    it('emits datePosted and dateModified on a listing only when given', () => {
+      const withDates = buildJsonLd({
+        type: 'realEstateListing', name: 'x', datePosted: '2026-09-01T00:00:00.000Z', dateModified: '2026-10-01T00:00:00.000Z',
+      })
+      expect(withDates.datePosted).toBe('2026-09-01T00:00:00.000Z')
+      expect(withDates.dateModified).toBe('2026-10-01T00:00:00.000Z')
+      const without = buildJsonLd({ type: 'realEstateListing', name: 'x' })
+      expect('datePosted' in without).toBe(false)
+      expect('dateModified' in without).toBe(false)
+    })
+    it('emits dateModified on a WebPage only when given', () => {
+      expect(buildJsonLd({ type: 'webPage', name: 'p', url: '/p', dateModified: '2026-10-04T00:00:00.000Z' }).dateModified)
+        .toBe('2026-10-04T00:00:00.000Z')
+      expect('dateModified' in buildJsonLd({ type: 'webPage', name: 'p' })).toBe(false)
+    })
+  })
+
   describe('realEstateListing offers (a sold/pending home is not for sale)', () => {
     const base = { type: 'realEstateListing', name: '123 Main St', listPrice: 750000 } as const
 

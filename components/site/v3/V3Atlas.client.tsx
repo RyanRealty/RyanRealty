@@ -45,7 +45,19 @@
  *            the map on a phone, under the head in the desktop column — so
  *            the map keeps its full height.
  */
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
+  type ReactNode,
+} from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
@@ -88,6 +100,7 @@ import {
   hierarchyChildIdSet,
 } from '@/lib/place/map-hierarchy'
 import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
+import { atlasDoorIndices, atlasNextDoor, atlasPlaceDoors } from '@/lib/atlas/atlas-doors'
 
 export type { AtlasViewBounds }
 import {
@@ -465,6 +478,16 @@ export type V3AtlasProps = {
   selectedSubdivisionId?: string | null
   onSubdivisionSelect?: (id: string | null) => void
   /**
+   * Paired selection only: the accessible name of each child's full-size
+   * control (its rail row), keyed by the row id (childSelectionId of the
+   * shape id). A child polygon is a door only when its row is here, and it
+   * carries exactly that name, so the small polygon and the row pair as one
+   * control (WCAG 2.5.8 Equivalent, ci:tap-targets). PlaceSubdivisionAtlas
+   * passes the rail it sits beside; a paired map without it has no doors.
+   * See lib/atlas/atlas-doors.ts.
+   */
+  childDoorNames?: Readonly<Record<string, string>> | null
+  /**
    * Matt 2026-09-23: "also focus the maps homes on that neighborhood." The
    * listing keys inside each child boundary — EXACTLY the map
    * childListingKeys (lib/place/place-child-stock.ts) builds the rail's own
@@ -708,6 +731,7 @@ export function V3Atlas({
   hidePriceScrubber = false,
   selectedSubdivisionId = null,
   onSubdivisionSelect,
+  childDoorNames = null,
   memberKeysBySlug = null,
   taxlotBoundaries,
 }: V3AtlasProps) {
@@ -1510,6 +1534,27 @@ export function V3Atlas({
             .slice(0, Math.max(24, drawnPlaces.length)),
     [places, regionStats, incomplete, closingsMap, drawnPlaces.length],
   )
+  /* THE DOORS: a drawn polygon is a control only when its full-size partner
+     is on the page, and it carries the partner's name (lib/atlas/atlas-doors).
+     Paired, the partner is the rail row beside the map; otherwise it is the
+     chip above. CI 2026-10-07: on a short listing read /cities/bend framed
+     the region and drew Summit West, Southern Crossing and Southwest Bend
+     under 44px (the smallest 8.8x9.3) as role="button" while their rail rows
+     sat folded with nothing tying them to "Show all"; and a short read prints
+     no chips at all while every polygon here stayed a button. */
+  const doors = useMemo(
+    () =>
+      atlasPlaceDoors({
+        drawn: drawnPlaces,
+        paired: pairedSelection ? { childIds: childIdSet, railNames: childDoorNames ?? {} } : null,
+        chips: chipPlaces.map((r) => r.shape),
+        chipLabel: doorLabel,
+      }),
+    [drawnPlaces, pairedSelection, childIdSet, childDoorNames, chipPlaces, doorLabel],
+  )
+  const doorIndices = useMemo(() => atlasDoorIndices(drawnPlaces, doors), [drawnPlaces, doors])
+  /* The one tab stop always sits on a door, never on a drawn non-control. */
+  const rovingDoor = doorIndices.includes(roving) ? roving : (doorIndices[0] ?? -1)
   /* One chip. Rendered twice over (the first eight, then the folded rest), so
      the two halves cannot drift apart. */
   const chipButton = (r: (typeof chipPlaces)[number]) => (
@@ -2545,28 +2590,32 @@ export function V3Atlas({
                     takes the taps landing in the gaps between fills on a phone.
                     An interior tap reaches the place itself first (R1). */}
                 <g className="v3-atlas__hits" aria-hidden="true">
-                  {drawnPlaces.map((s, i) => (
-                    <use
-                      key={`t-${s.id}`}
-                      href={`#${uid}-p-${i}`}
-                      className="v3-atlas__hit"
-                      /* A `use` clones a focusable path, so the clone becomes a
-                         tab stop of its own — twenty-seven silent, invisible
-                         stops before the keyboard reached a real door
-                         (evaluator round five, HOMEPAGE-1). The clones are
-                         pointer targets and nothing else. */
-                      focusable="false"
-                      tabIndex={-1}
-                      onPointerEnter={() => setHover(s.id)}
-                      onClick={(e) => {
-                        if (dotHit != null && dots[dotHit]?.href) {
-                          e.stopPropagation()
-                          return
-                        }
-                        openPlace(s)
-                      }}
-                    />
-                  ))}
+                  {drawnPlaces.map((s, i) =>
+                    /* A place that is not a door has no hit edge either: a
+                       thumb must not open what the keyboard cannot reach. */
+                    doors.has(s.id) ? (
+                      <use
+                        key={`t-${s.id}`}
+                        href={`#${uid}-p-${i}`}
+                        className="v3-atlas__hit"
+                        /* A `use` clones a focusable path, so the clone becomes a
+                           tab stop of its own — twenty-seven silent, invisible
+                           stops before the keyboard reached a real door
+                           (evaluator round five, HOMEPAGE-1). The clones are
+                           pointer targets and nothing else. */
+                        focusable="false"
+                        tabIndex={-1}
+                        onPointerEnter={() => setHover(s.id)}
+                        onClick={(e) => {
+                          if (dotHit != null && dots[dotHit]?.href) {
+                            e.stopPropagation()
+                            return
+                          }
+                          openPlace(s)
+                        }}
+                      />
+                    ) : null,
+                  )}
                 </g>
                 {/* 4. Halos: the same places cloned in cream, so every outline
                     reads over the field. */}
@@ -2576,71 +2625,87 @@ export function V3Atlas({
                   ))}
                 </g>
                 {/* 5. Places: the doors, and the one copy of every path. A place
-                    with nothing on it stays a door but wears less ink. */}
+                    with nothing on it stays a door but wears less ink. A place
+                    with no full-size partner on the page (`doors`, above) is
+                    drawn but is not a control: no role, no tab stop, no name,
+                    no pointer. */}
                 <g className="v3-atlas__places" ref={placesRef}>
-                  {drawnPlaces.map((s, i) => (
-                    <path
-                      key={s.id}
-                      id={`${uid}-p-${i}`}
-                      d={s.d}
-                      className={cn(
-                        'v3-atlas__place',
-                        `v3-atlas__place--${s.kind}`,
-                        childIdSet.has(s.id) && 'v3-atlas__place--child',
-                        (regionStats.get(s.id)?.n ?? 0) === 0 && 'is-empty',
-                        active === s.id && 'is-active',
-                        selectedChildShape?.id === s.id && 'is-selected',
-                      )}
-                      data-map-hierarchy={
-                        childIdSet.has(s.id)
-                          ? active === s.id
-                            ? 'selected-child'
-                            : 'child-hit'
-                          : undefined
-                      }
-                      /* One tab stop for the whole map; arrows walk the places.
-                         Twenty-seven stops here plus twenty-four chips below
-                         put fifty-one presses between the chrome and the search
-                         box (evaluator round five, HOMEPAGE-1). */
-                      tabIndex={i === roving ? 0 : -1}
-                      role="button"
-                      /* The door label, not the county line: the same name
-                         the chip carries, so the two pair as one control. */
-                      aria-label={doorLabel(s)}
-                      onFocus={() => {
-                        setHover(s.id)
-                        setRoving(i)
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault()
-                          openPlace(s)
-                          return
+                  {drawnPlaces.map((s, i) => {
+                    const door = doors.get(s.id)
+                    return (
+                      <path
+                        key={s.id}
+                        id={`${uid}-p-${i}`}
+                        d={s.d}
+                        className={cn(
+                          'v3-atlas__place',
+                          `v3-atlas__place--${s.kind}`,
+                          childIdSet.has(s.id) && 'v3-atlas__place--child',
+                          !door && 'v3-atlas__place--inert',
+                          (regionStats.get(s.id)?.n ?? 0) === 0 && 'is-empty',
+                          active === s.id && 'is-active',
+                          selectedChildShape?.id === s.id && 'is-selected',
+                        )}
+                        data-map-hierarchy={
+                          childIdSet.has(s.id)
+                            ? active === s.id
+                              ? 'selected-child'
+                              : 'child-hit'
+                            : undefined
                         }
-                        const step =
-                          e.key === 'ArrowRight' || e.key === 'ArrowDown'
-                            ? 1
-                            : e.key === 'ArrowLeft' || e.key === 'ArrowUp'
-                              ? -1
-                              : 0
-                        if (step === 0 && e.key !== 'Home' && e.key !== 'End') return
-                        e.preventDefault()
-                        const last = drawnPlaces.length - 1
-                        const next =
-                          e.key === 'Home' ? 0 : e.key === 'End' ? last : (i + step + drawnPlaces.length) % drawnPlaces.length
-                        setRoving(next)
-                        placesRef.current?.querySelectorAll<SVGPathElement>('.v3-atlas__place')[next]?.focus()
-                      }}
-                      onPointerEnter={() => setHover(s.id)}
-                      onClick={(e) => {
-                        if (dotHit != null && dots[dotHit]?.href) {
-                          e.stopPropagation()
-                          return
-                        }
-                        openPlace(s)
-                      }}
-                    />
-                  ))}
+                        {...(door
+                          ? {
+                              /* One tab stop for the whole map; arrows walk the
+                                 doors. Twenty-seven stops here plus twenty-four
+                                 chips below put fifty-one presses between the
+                                 chrome and the search box (evaluator round five,
+                                 HOMEPAGE-1). */
+                              tabIndex: i === rovingDoor ? 0 : -1,
+                              role: 'button',
+                              /* The partner's own name (the chip's door label,
+                                 or the rail row's name on a paired map), so the
+                                 two pair as one control. */
+                              'aria-label': door,
+                              onFocus: () => {
+                                setHover(s.id)
+                                setRoving(i)
+                              },
+                              onKeyDown: (e: ReactKeyboardEvent<SVGPathElement>) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault()
+                                  openPlace(s)
+                                  return
+                                }
+                                const move =
+                                  e.key === 'ArrowRight' || e.key === 'ArrowDown'
+                                    ? 'next'
+                                    : e.key === 'ArrowLeft' || e.key === 'ArrowUp'
+                                      ? 'prev'
+                                      : e.key === 'Home'
+                                        ? 'first'
+                                        : e.key === 'End'
+                                          ? 'last'
+                                          : null
+                                if (!move) return
+                                e.preventDefault()
+                                const next = atlasNextDoor(doorIndices, i, move)
+                                if (next < 0) return
+                                setRoving(next)
+                                placesRef.current?.querySelectorAll<SVGPathElement>('.v3-atlas__place')[next]?.focus()
+                              },
+                              onPointerEnter: () => setHover(s.id),
+                              onClick: (e: ReactMouseEvent<SVGPathElement>) => {
+                                if (dotHit != null && dots[dotHit]?.href) {
+                                  e.stopPropagation()
+                                  return
+                                }
+                                openPlace(s)
+                              },
+                            }
+                          : {})}
+                      />
+                    )
+                  })}
                 </g>
                 {/* Homes in the hovered/pinned place, painted ON TOP of the
                     fill so the inventory that belongs here is the thing you

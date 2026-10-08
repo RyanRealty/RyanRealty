@@ -24,6 +24,15 @@ export function cityDetachedSlug(geoSlug: string): string {
 export type SellBendMarket = {
   activeCount: number
   monthsOfSupply: number
+  /**
+   * The detached closes in the 180 days months of supply divides by: the
+   * cell's `sample_n` under its method `active / (closed_180d / 6)`, so
+   * activeCount / (closedSixMonths / 6) IS monthsOfSupply. Carried so a
+   * document can cite the denominator it printed a pace from (city:bend on
+   * 2026-10-08: 712 active, 1224 closed, 3.49). Optional: overlays built
+   * before it existed, and test fixtures, leave it out.
+   */
+  closedSixMonths?: number | null
   mosLabel: string
   verdictKind: MarketKind
   verdictLabel: string
@@ -108,7 +117,15 @@ function publishable(row: MetricRow | undefined): boolean {
   })
 }
 
-function assemble(geoType: string, geoSlug: string, byKey: Map<string, MetricRow>): SellBendMarket | null {
+/**
+ * The headline cells (active, months of supply, verdict) for one place, or
+ * null unless all three publish and the stored verdict matches the figure.
+ */
+export function assembleDetachedHeadlines(
+  geoType: string,
+  geoSlug: string,
+  byKey: Map<string, MetricRow>,
+): SellBendMarket | null {
   const active = byKey.get(metricKey(geoType, geoSlug, 'active_count'))
   const mos = byKey.get(metricKey(geoType, geoSlug, 'months_of_supply'))
   const verdict = byKey.get(metricKey(geoType, geoSlug, 'market_verdict'))
@@ -117,9 +134,11 @@ function assemble(geoType: string, geoSlug: string, byKey: Map<string, MetricRow
   const classified = marketVerdict(Number(mos!.value))
   if (classified.kind === 'unknown') return null
   if (storedVerdictKind(verdict!.value_text) !== classified.kind) return null
+  const closedSixMonths = Number(mos!.sample_n)
   return {
     activeCount: Math.round(Number(active!.value)),
     monthsOfSupply: Number(mos!.value),
+    closedSixMonths: Number.isInteger(closedSixMonths) && closedSixMonths > 0 ? closedSixMonths : null,
     mosLabel: formatMonthsOfSupply(Number(mos!.value)),
     verdictKind: classified.kind,
     verdictLabel: classified.label,
@@ -248,7 +267,7 @@ export async function getDetachedMarkets(
   const out = new Map<string, SellBendMarket>()
   const { normalized, latest } = await loadOverlayRows(keys)
   for (const k of normalized) {
-    const assembled = assemble(k.geoType, k.geoSlug, latest)
+    const assembled = assembleDetachedHeadlines(k.geoType, k.geoSlug, latest)
     if (assembled) out.set(`${k.geoType}:${k.geoSlug}`, assembled)
   }
   return out
@@ -281,7 +300,7 @@ export async function getDetachedOverlays(
   const { normalized, latest } = await loadOverlayRows(keys)
   for (const k of normalized) {
     out.set(`${k.geoType}:${k.geoSlug}`, {
-      headlines: assemble(k.geoType, k.geoSlug, latest),
+      headlines: assembleDetachedHeadlines(k.geoType, k.geoSlug, latest),
       inventory: assembleInventory(k.geoType, k.geoSlug, latest),
       supplyFloor: assembleSupplyFloor(k.geoType, k.geoSlug, latest),
     })

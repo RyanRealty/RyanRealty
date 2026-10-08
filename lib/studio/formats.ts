@@ -13,12 +13,15 @@ import type { ShotSpec } from './craft'
 import { STILL_ASPECT, VIDEO_ASPECT } from './craft'
 import type { GrokAspect } from '@/lib/grok/image'
 import type { GrokVideoAspect } from '@/lib/grok/video'
+import type { MotionSpec } from './motion/cues'
 
 export type StudioFormatId =
   | 'listing_film'
   | 'listing_motion'
   | 'market_pulse'
+  | 'market_trend'
   | 'place_video'
+  | 'place_map'
   | 'trend_reactive'
 
 export type StudioMediaKind = 'video' | 'image'
@@ -39,8 +42,10 @@ export type StudioFormat = {
    * Where the hero frame comes from.
    * 'mls_photo' is the real listing photograph, never a generated house.
    * 'generated' builds a still and inspects it before animating.
+   * 'code' is a paper film drawn whole by lib/studio/motion from verified
+   * data: no generator, no footage, no spend but the caption.
    */
-  frameSource: 'mls_photo' | 'generated'
+  frameSource: 'mls_photo' | 'generated' | 'code'
   stillAspect: GrokAspect
   videoAspect: GrokVideoAspect
   seconds: number
@@ -55,13 +60,18 @@ export type StudioFormat = {
    * from the listing's own photo set (lib/studio/film.ts).
    */
   shots?: number
+  /**
+   * The type layer (lib/studio/motion): the cards drawn over the finished
+   * footage. Absent means the footage ships with no type, as before.
+   */
+  motion?: MotionSpec
 }
 
 export const STUDIO_FORMATS: Record<StudioFormatId, StudioFormat> = {
   listing_film: {
     id: 'listing_film',
     label: 'Listing film',
-    what: 'Four beats cut from the listing\u2019s own photos: outside, in, the room that sells it, back out.',
+    what: 'Four of the listing\u2019s own photos, each panned at its true shape and cut together: outside, in, the room that sells it, back out.',
     media: 'video',
     subject: 'listing',
     frameSource: 'mls_photo',
@@ -75,11 +85,12 @@ export const STUDIO_FORMATS: Record<StudioFormatId, StudioFormat> = {
       'the house has been altered from the source photograph',
       'furniture, landscaping, or structures that were not in the source photograph',
     ],
+    motion: { lead: 'listing', closer: 'listing-agent', sound: 'calm' },
   },
   listing_motion: {
     id: 'listing_motion',
     label: 'Listing motion',
-    what: 'A live listing photo, given a slow push. Price and address from the MLS row.',
+    what: 'A live listing photo, panned across at its true shape. Price and address from the MLS row.',
     media: 'video',
     subject: 'listing',
     frameSource: 'mls_photo',
@@ -92,6 +103,7 @@ export const STUDIO_FORMATS: Record<StudioFormatId, StudioFormat> = {
       'the house has been altered from the source photograph',
       'furniture, landscaping, or structures that were not in the source photograph',
     ],
+    motion: { lead: 'listing', closer: 'listing-agent', sound: 'calm' },
   },
   market_pulse: {
     id: 'market_pulse',
@@ -106,6 +118,22 @@ export const STUDIO_FORMATS: Record<StudioFormatId, StudioFormat> = {
     platforms: ['instagram', 'facebook', 'google_business_profile'],
     carriesFigures: true,
     alsoReject: ['any house, building, or for-sale sign', 'any chart, graph, or number rendered in the image'],
+    motion: { lead: 'market', closer: 'brand', sound: 'measured' },
+  },
+  market_trend: {
+    id: 'market_trend',
+    label: 'Price trend',
+    what: 'What Bend homes sold for, each published month of the last two years drawn on as a line in our own colors, then the months-of-supply meter. Withheld months stay gaps.',
+    media: 'video',
+    subject: 'none',
+    frameSource: 'code',
+    stillAspect: STILL_ASPECT.story,
+    videoAspect: VIDEO_ASPECT.story,
+    seconds: 15,
+    platforms: ['instagram', 'facebook', 'google_business_profile'],
+    carriesFigures: true,
+    alsoReject: [],
+    motion: { lead: 'trend', closer: 'brand', sound: 'measured' },
   },
   place_video: {
     id: 'place_video',
@@ -123,6 +151,22 @@ export const STUDIO_FORMATS: Record<StudioFormatId, StudioFormat> = {
       'any identifiable real house presented as a specific listing',
       'any street sign, address number, or community entry sign',
     ],
+    motion: { lead: 'market', closer: 'brand', sound: 'measured' },
+  },
+  place_map: {
+    id: 'place_map',
+    label: 'Place map',
+    what: 'The camera moves in from the city to one neighborhood or resort community, its recorded outline draws on, and its live inventory follows.',
+    media: 'video',
+    subject: 'place',
+    frameSource: 'code',
+    stillAspect: STILL_ASPECT.story,
+    videoAspect: VIDEO_ASPECT.story,
+    seconds: 12,
+    platforms: ['instagram', 'facebook'],
+    carriesFigures: true,
+    alsoReject: [],
+    motion: { lead: 'map', closer: 'brand', sound: 'measured' },
   },
   trend_reactive: {
     id: 'trend_reactive',

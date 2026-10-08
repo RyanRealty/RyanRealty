@@ -19,6 +19,7 @@
  * Parity: design_system/ryan-realty/ui_kits/reviews/parity.json
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import type { Metadata } from 'next'
 import { getReviews } from '@/lib/data'
 import { GOOGLE_REVIEWS_URL } from '@/lib/testimonials'
@@ -38,7 +39,7 @@ import {
 import { buildReviewsJsonLd } from './_v3/reviews-jsonld'
 import { toReviewQuotes } from '@/lib/reviews/review-quotes'
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const siteUrl = siteOrigin()
 const ogImage = `${siteUrl}/api/og?type=default`
 const ROUTE_PATH = '/reviews'
 
@@ -62,7 +63,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const description = span
     ? `${n} verified Google reviews of Ryan Realty in Central Oregon (${average.toFixed(1)} of 5, ${span}). Every review in full on this page. Nothing picked, nothing trimmed.`
     : `${n} verified Google reviews of Ryan Realty in Central Oregon (${average.toFixed(1)} of 5). Every review in full on this page. Nothing picked, nothing trimmed.`
-  // The layout template appends "| Ryan Realty, Central Oregon", so the
+  // The layout template appends "| Ryan Realty", so the
   // document title carries the brand once. The brand twice here made /reviews
   // the stronger brand match than / (SITE-198). Social cards get no template,
   // so they keep it.

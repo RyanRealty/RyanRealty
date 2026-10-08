@@ -5,7 +5,7 @@
  * Post this as the FIRST carousel item (video) with slides 2-10 as stills, so
  * the swipe arrows actually move. Renders frames -> ffmpeg loop.
  */
-import { chromium } from 'playwright';
+import { chromium } from './lib/marked-playwright.mjs';
 import { readFileSync, existsSync, mkdirSync, rmSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';

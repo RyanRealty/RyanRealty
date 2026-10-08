@@ -50,6 +50,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'CRON_SECRET not set' }, { status: 500 })
   }
 
+  // Raw deployment host on purpose: a cron-bearer fan-out to sibling /api routes on THIS deployment, never shown to anyone.
   const baseUrl = process.env.VERCEL_URL
     ? `https://${process.env.VERCEL_URL}`
     : (process.env.MARKETING_DASHBOARD_BASE_URL || 'http://localhost:3000')

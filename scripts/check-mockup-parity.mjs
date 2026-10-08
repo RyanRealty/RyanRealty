@@ -50,6 +50,7 @@
 
 import { readFileSync, readdirSync, statSync, existsSync, writeFileSync } from 'node:fs'
 import { join, resolve, relative } from 'node:path'
+import { routeRenderSource } from './lib/route-render-source.mjs'
 
 const ROOT = resolve(new URL('.', import.meta.url).pathname, '..')
 const UI_KITS = join(ROOT, 'design_system/ryan-realty/ui_kits')
@@ -118,7 +119,9 @@ function checkPage(contract) {
       reason: `Route file does not exist at ${contract.route}`,
     }
   }
-  const src = readFileSync(pagePath, 'utf8')
+  // A route that renders through its own render-*.tsx module is judged on both
+  // (scripts/lib/route-render-source.mjs).
+  const src = routeRenderSource(pagePath)
   const chromeGlobal = layoutOwnsChrome()
   const missing = []
   for (const comp of contract.requiredComponents) {

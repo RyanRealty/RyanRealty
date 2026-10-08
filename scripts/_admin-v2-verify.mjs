@@ -5,7 +5,7 @@
 //   - console errors captured
 // Usage: node scripts/_admin-v2-verify.mjs /admin/newsletters /admin/media ...
 // Auth: mints a fresh magic-link session for matt@ (the storage state expires).
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { createClient as createSb } from '@supabase/supabase-js'
 import { createServerClient } from '@supabase/ssr'
 import { readFileSync } from 'node:fs'

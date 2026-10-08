@@ -34,7 +34,7 @@
 import { productTypeCompatible } from '@/lib/cma/market-area'
 import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
 import { crossesUs97 } from '@/lib/pricing/highway-cross'
-import { roomCountsDecision } from '@/lib/pricing/room-ground'
+import { carriedRoomDecision, type RoomDecision } from '@/lib/pricing/room-ground'
 
 const MAX_REJECTED = 8
 
@@ -58,14 +58,19 @@ export interface RejectedCandidate {
   yearBuilt?: number | null
   beds?: number | null
   baths?: number | null
+  bathsFull?: number | null
+  bathsHalf?: number | null
   propertySubType?: string | null
   closeDate?: string | null
   latitude?: number | null
   longitude?: number | null
   city?: string | null
   subdivision?: string | null
+  subdivisionSlug?: string | null
   ownPlat?: boolean | null
   roomDifference?: Array<'beds' | 'baths'> | null
+  /** The picker's one-room decision, when a picker admitted this sale. */
+  roomDecision?: RoomDecision | null
 }
 
 export interface RejectionSubject {
@@ -73,12 +78,15 @@ export interface RejectionSubject {
   yearBuilt?: number | null
   beds?: number | null
   baths?: number | null
+  bathsFull?: number | null
+  bathsHalf?: number | null
   propertySubType?: string | null
   latitude?: number | null
   longitude?: number | null
   streetAddress?: string | null
   city?: string | null
   subdivision?: string | null
+  subdivisionSlug?: string | null
 }
 
 /**
@@ -212,13 +220,16 @@ export function rejectionReason(
       .toLowerCase()}`
   }
 
-  const rooms = roomCountsDecision(
+  const rooms = carriedRoomDecision(
     {
       beds: subject.beds,
       baths: subject.baths,
+      bathsFull: subject.bathsFull ?? null,
+      bathsHalf: subject.bathsHalf ?? null,
       streetAddress: subject.streetAddress,
       city: subject.city,
       subdivision: subject.subdivision,
+      subdivisionSlug: subject.subdivisionSlug,
       latitude: subject.latitude,
       longitude: subject.longitude,
       sqft: subject.sqft,
@@ -226,13 +237,16 @@ export function rejectionReason(
     sale,
   )
   if (!rooms.ok) {
-    const saleBaths = num(sale.baths)
-    const subjectBaths = num(subject.baths)
+    // The counts the rule compared: full baths when both carry the MLS split.
+    const { compared } = rooms
+    const full = compared.bathBasis === 'full'
+    const saleBaths = num(compared.saleBaths)
+    const subjectBaths = num(compared.subjectBaths)
     if (saleBaths != null && subjectBaths != null && Math.floor(saleBaths) !== Math.floor(subjectBaths)) {
-      return `${bathLabel(saleBaths)} baths against your ${bathLabel(subjectBaths)}`
+      return `${bathLabel(saleBaths)} ${full ? 'full baths' : 'baths'} against your ${bathLabel(subjectBaths)}`
     }
-    const saleBeds = num(sale.beds)
-    const subjectBeds = num(subject.beds)
+    const saleBeds = num(compared.saleBeds)
+    const subjectBeds = num(compared.subjectBeds)
     if (saleBeds != null && subjectBeds != null && Math.floor(saleBeds) !== Math.floor(subjectBeds)) {
       return `${Math.floor(saleBeds)} beds against your ${Math.floor(subjectBeds)}`
     }

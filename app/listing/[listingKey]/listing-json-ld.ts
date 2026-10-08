@@ -24,6 +24,7 @@
  * cap at 5 matches the builder's own slice.
  */
 
+import { toIsoTimestamp } from '@/lib/format/date'
 import { listingShareSummary } from '@/lib/share-metadata'
 import { publishListingStatusWord } from '@/lib/listing/publish-listing-published-price'
 import { listingCanonicalHref } from '@/lib/slug'
@@ -71,6 +72,10 @@ export type ListingJsonLdInput = {
     lat: number | null
     lng: number | null
     status: string | null
+    /** MLS OnMarketDate (ISO). Feeds RealEstateListing.datePosted. */
+    onMarketDate?: string | null
+    /** MLS ModificationTimestamp (ISO). Feeds RealEstateListing.dateModified. */
+    modifiedAt?: string | null
   }
   photoUrls: readonly string[]
   agent: { fullName: string; email: string | null; phoneDirect: string | null } | null
@@ -150,6 +155,8 @@ export function buildListingJsonLd(input: ListingJsonLdInput): SchemaInput[] {
           }
         : undefined,
       availability: listing.status ?? undefined,
+      datePosted: toIsoTimestamp(listing.onMarketDate) ?? undefined,
+      dateModified: toIsoTimestamp(listing.modifiedAt) ?? undefined,
     },
   ]
 }

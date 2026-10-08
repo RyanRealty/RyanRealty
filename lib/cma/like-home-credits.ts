@@ -171,22 +171,24 @@ export function likeHomeCredits(args: {
   const lead = `${numWord(n)} ${place} ${home} about this size, ${yearWords(
     sales.map((s) => s.yearBuilt),
   )}, ${verb} sold in the last 18 months.`
+  // One order for every branch (Matt 2026-10-07, 3177 Coho): the sales that
+  // gave a credit, by name; then the ones that gave nothing; then why the
+  // sheet takes nothing off. The why is the sheet's own fact: a credit is
+  // agreed in the offer, and these sales are not turned into a number to
+  // subtract. Hanging the no-deduction on the one sale that gave a credit
+  // read as a contradiction.
+  const why = 'A credit is agreed in the offer, not in the list price, so this sheet takes nothing off for one.'
+  const named = andList(given.map((s) => `${s.address} gave the buyer ${usd(s.concessions)}`))
   let rest: string
   if (given.length === 0) {
     rest =
       n === 1
-        ? 'It gave the buyer nothing, so nothing is taken off here for a credit.'
-        : 'None of them gave the buyer a credit, so nothing is taken off here for one.'
+        ? 'It gave the buyer nothing. This sheet takes nothing off for a credit.'
+        : 'None of them gave the buyer a credit. This sheet takes nothing off for one.'
   } else if (none === 0) {
-    rest = `${andList(given.map((s) => `${s.address} gave ${usd(s.concessions)}`))}. Nothing is taken off here for a credit.`
-  } else if (given.length === 1) {
-    const one = given[0]!
-    const quiet =
-      none === 1 ? 'The other one gave the buyer nothing' : `${numWord(none)} gave the buyer nothing`
-    rest = `${quiet}. ${one.address} gave ${usd(one.concessions)}, so nothing is taken off here for a credit.`
+    rest = `${named}. ${why}`
   } else {
-    const other = none === 1 ? 'The other one gave the buyer nothing' : `The other ${none} gave the buyer nothing`
-    rest = `${andList(given.map((s) => `${s.address} gave ${usd(s.concessions)}`))}. ${other}, so nothing is taken off here for a credit.`
+    rest = `${named}. ${none === 1 ? 'The other one' : `The other ${numWord(none).toLowerCase()}`} gave nothing. ${why}`
   }
   return {
     place,

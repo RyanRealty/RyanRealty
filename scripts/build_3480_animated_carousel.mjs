@@ -6,7 +6,7 @@
  * chevrons; CTA is a clean hold. Post as an all-video carousel.
  * Figures trace to Supabase listings (ListingKey 20260708114552589824000000).
  */
-import { chromium } from 'playwright';
+import { chromium } from './lib/marked-playwright.mjs';
 import { readFileSync, existsSync, mkdirSync, rmSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';

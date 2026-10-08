@@ -108,6 +108,103 @@ export function sellerNetFromPrice(closePrice: number, concessions: number | nul
   return Math.round(closePrice - concessions)
 }
 
+export type ConcessionSale = {
+  concessions?: number | null
+  concessionsAmount?: number | null
+  concessionsYn?: string | null
+  closeDate?: string | null
+}
+
+/**
+ * The MLS concession on a sale, already resolved. Null only when nothing was
+ * recorded. 0 means the sale reported none. Never invents a positive amount.
+ */
+export function concessionOnSale(sale: ConcessionSale): number | null {
+  if (sale.concessions != null && Number.isFinite(sale.concessions)) {
+    return money(sale.concessions)
+  }
+  return resolveConcessions({
+    amount: sale.concessionsAmount,
+    yn: sale.concessionsYn,
+    closeDate: sale.closeDate,
+  })
+}
+
+/**
+ * Dollars that come off ClosePrice for comparison. 0 when the sale reported
+ * none or the amount is unknown. A missing record is not a credit.
+ */
+export function concessionOffClose(sale: ConcessionSale): number {
+  const resolved = concessionOnSale(sale)
+  return resolved != null && resolved > 0 ? resolved : 0
+}
+
+/**
+ * The sale price a comparison uses. ClosePrice is the contract / sold price.
+ * A recorded seller concession (or seller-paid closing cost the MLS stored)
+ * comes off it. Unknown or none leaves the close unchanged. Do not invent a
+ * credit.
+ */
+export function comparisonSalePrice(
+  closePrice: number,
+  concessions: number | null | undefined,
+): number {
+  if (!(closePrice > 0) || !Number.isFinite(closePrice)) return closePrice
+  if (concessions == null || !Number.isFinite(concessions) || concessions <= 0) return closePrice
+  return Math.max(0, Math.round(closePrice - concessions))
+}
+
+/**
+ * Adjusted comparable price: concession-adjusted close, then the stored date,
+ * size, and style lines. The grid's "Sale price today" and the engine's
+ * adjustedPrice must both be this number.
+ */
+export function comparableAdjustedPrice(comp: ConcessionSale & {
+  closePrice: number
+  timeAdjustment?: number | null
+  sizeAdjustment?: number | null
+  storyAdjustment?: number | null
+}): number {
+  const start = comparisonSalePrice(comp.closePrice, concessionOffClose(comp))
+  const time = Number.isFinite(comp.timeAdjustment) ? (comp.timeAdjustment as number) : 0
+  const size = Number.isFinite(comp.sizeAdjustment) ? (comp.sizeAdjustment as number) : 0
+  const story = Number.isFinite(comp.storyAdjustment) ? (comp.storyAdjustment as number) : 0
+  return Math.round(start + time + size + story)
+}
+
+/**
+ * Weight the table prints. A printed figure wins. Otherwise the stored
+ * weight. Null when neither is a finite number.
+ */
+export function settingWeight(comp: {
+  printedWeight?: number | null
+  weight?: number | null
+}): number | null {
+  if (typeof comp.printedWeight === 'number' && Number.isFinite(comp.printedWeight)) return comp.printedWeight
+  if (typeof comp.weight === 'number' && Number.isFinite(comp.weight)) return comp.weight
+  return null
+}
+
+/**
+ * What the matrix prints as the adjusted sale. Prefer the engine's stored
+ * figure. If that figure still equals close plus the other lines — a sale
+ * price that ignored a recorded concession — take the credit off.
+ */
+export function printedAdjustedPrice(comp: ConcessionSale & {
+  closePrice: number
+  adjustedPrice?: number | null
+  timeAdjustment?: number | null
+  sizeAdjustment?: number | null
+  storyAdjustment?: number | null
+}): number {
+  const fromLines = comparableAdjustedPrice(comp)
+  const stored = comp.adjustedPrice
+  if (stored == null || !Number.isFinite(stored) || !(stored > 0)) return fromLines
+  const conc = concessionOffClose(comp)
+  if (conc > 0 && Math.abs(stored - (fromLines + conc)) <= 1) return fromLines
+  return Math.round(stored)
+}
+
 export type ConcessionSummary = {
   knownCount: number
   givenCount: number

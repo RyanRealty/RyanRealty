@@ -73,12 +73,15 @@ describe('pricingPage', () => {
     expect(html).not.toMatch(/Confidence:/)
     expect(html).not.toContain('15 percent')
     expect(html).not.toContain('Cap is')
-    expect(html).toContain('Across 1,631 square feet')
     // The Sunstone contract keeps predicted close off the seller document, so
-    // the per-foot rate is taken over the recommended list — the one number
-    // this chapter is titled with — and the sentence names that basis.
+    // the per-foot rate is taken over the recommended list, and the sentence
+    // names that basis itself. "Across 1,631 square feet, that is $402" had no
+    // antecedent under the weights paragraph (reader review 2026-10-08).
     expect(html).not.toContain('$640,000')
-    expect(html).toContain('Across 1,631 square feet, that is $402 per square foot.')
+    expect(html).toContain(
+      'The price on the cover comes to $402 per square foot across your home&#39;s 1,631 square feet.',
+    )
+    expect(html).not.toContain('that is $402 per square foot')
     expect(html).not.toContain('At $655,000 across')
     // The sale-to-list figure moved to chapter 5 (This market), where the
     // rest of the city's numbers live.
@@ -87,13 +90,17 @@ describe('pricingPage', () => {
     expect(html).toContain('The sales that set this price')
     expect(html).toContain('3344 SW Cascade Vista')
     expect(html).toContain('$636,000')
-    expect(html).toContain('Sale price today')
-    // ONE statement of the range, off pricing.valueLow/valueHigh — and on this
-    // row the list range IS that pair, so the instruction prints without the
-    // figures a second time (tasteReview round two, §1 Words).
-    expect(html).toContain('The sales support $639,000 to $669,000.')
+    expect(html).toContain('Adjusted price')
+    // ONE statement of the range: the lowest and highest adjusted sales still
+    // in the table. The list range is that same pair, so the instruction
+    // prints without the figures a second time.
+    // Since 2026-10-07 the line counts the sales and names the adjustments
+    // the grid made. With no weighted price on this row there is no expected
+    // sale, so the list instruction stays.
+    expect(html).toContain('The five sales, adjusted to your home&#39;s size, run from $636,000 to $638,000.')
     expect(html).toContain('List in that range.')
-    expect(html).not.toContain('List between $639,000 and $669,000.')
+    expect(html).not.toContain('List between $636,000 and $638,000.')
+    expect(html).not.toContain('$669,000')
     // The three-stat strip is gone: the number IS the chapter title and the
     // range is the line under it (CMA_REIMAGINED_2026-09-07.md chapter 3).
     expect(html).not.toContain('List low')
@@ -106,7 +113,8 @@ describe('pricingPage', () => {
     expect(html).not.toMatch(/anchors the recommendation/)
     expect(html).not.toContain('a check against the expected close, not the list')
     expect(html).not.toContain('Method 1 ·')
-    expect(html.replace(/&[a-zA-Z]+;/g, '')).not.toMatch(/;/)
+    // An entity (&#39; is the apostrophe in "your home's size") is markup, not a semicolon.
+    expect(html.replace(/&(?:[a-zA-Z]+|#\d+);/g, '')).not.toMatch(/;/)
   })
 })
 

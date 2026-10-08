@@ -179,7 +179,7 @@ export async function getAbsentFromMlsKeys(window?: { from: string; to: string }
 const REMOVED_SOURCE = 'absent-from-mls-delete'
 const RESTORED_SOURCE = 'absent-from-mls-restore'
 
-/** A closed sale deleted from our copy because the MLS no longer serves it. */
+/** A listing deleted from our copy because the MLS no longer serves it: a closed sale, or one for sale or under contract. */
 export type RemovedSale = {
   /** listing_mls_repair_log id holding the whole row (undo: re-insert before_row). */
   logId: number
@@ -190,24 +190,27 @@ export type RemovedSale = {
   city: string | null
   closeDate: string | null
   closePrice: number | null
+  /** Our row's status when it was deleted (Closed for a sale). */
+  status: string | null
+  listPrice: number | null
   firstDetectedAt: string | null
 }
 
 export type RemovedSalesResult = {
   removed: RemovedSale[]
   /**
-   * Why nothing was deleted although sales were due: 'budget' (more due than
-   * the day may delete) or 'hold' (an earlier hold still waits for a person).
-   * Either way the due sales are now held.
+   * Why nothing was deleted although listings of the class were due: 'budget'
+   * (more due than the day may delete) or 'hold' (an earlier hold of the class
+   * still waits for a person). Either way the due listings are now held.
    */
   refused: 'budget' | 'hold' | null
   /** Due this call. */
   due: number
-  /** Sales held for a person's approval (still Closed rows of ours), after this call. */
+  /** Listings of the class held for a person's approval (rows of ours still of the class), after this call. */
   held: number
-  /** Recorded missing and still a Closed row of ours, but not due yet. */
+  /** Recorded missing and still a row of ours of the class, but not due yet. */
   waiting: number
-  /** Deletions left in today's budget (Bend calendar day). */
+  /** Deletions of the class left in today's budget (Bend calendar day). */
   budget: number | null
 }
 
@@ -220,23 +223,68 @@ type RemovedRow = {
   city: string | null
   close_date: string | null
   close_price: number | string | null
+  status?: string | null
+  list_price?: number | string | null
   first_detected_at: string | null
 }
 
+/** Every absent-from-MLS record: a closed sale's carries its close date, a for-sale or under-contract listing's none. */
+export async function getAbsentRecords(): Promise<{ listingKey: string; closeDate: string | null }[]> {
+  const sb = createServiceClient()
+  const { rows, error } = await fetchPagedRows<{ listing_key: string; close_date: string | null }>((from, to) =>
+    sb.from('market_listing_absent_from_mls').select('listing_key, close_date').order('listing_key').range(from, to),
+  )
+  if (error) throw new Error(`[getAbsentRecords] ${error.message}`)
+  return rows.map((r) => ({ listingKey: r.listing_key, closeDate: r.close_date }))
+}
+
+/** The repair-log source of a released absent-from-MLS record (the MLS serves the listing again). */
+export const RELEASED_SOURCE = 'absent-from-mls-release'
+
 /**
- * Delete the closed sales the MLS no longer serves (Matt 2026-09-30, "Delete it
- * automatically"), from keys the caller just confirmed missing. The SQL function
- * (migrations 20260930220000, 20260930230000) holds every rule: a key is due
- * when it is still Closed, was found missing on three daily checks, the first 36
- * hours or more ago, and was confirmed missing in the last 26 hours; each whole
- * row goes to listing_mls_repair_log first, in the same transaction as the
- * delete of the listing and its derived rows. More due than today's budget
- * (maxDelete), or any earlier hold still standing, deletes nothing and holds
- * the due sales until a person approves them by name (approve: true).
+ * Releases whose on-market episodes are not rebuilt yet (outcome pending): the
+ * record is gone, so this marker is what carries the rebuild to the next run.
+ */
+export async function getPendingAbsentReleases(limit = 500): Promise<{ id: number; listingKey: string }[]> {
+  const sb = createServiceClient()
+  const { data, error } = await sb
+    .from('listing_mls_repair_log')
+    .select('id, listing_key')
+    .eq('source', RELEASED_SOURCE)
+    .eq('outcome', 'pending')
+    .order('id')
+    .limit(limit)
+  if (error) throw new Error(`[getPendingAbsentReleases] ${error.message}`)
+  return ((data ?? []) as { id: number; listing_key: string }[]).map((r) => ({ id: Number(r.id), listingKey: r.listing_key }))
+}
+
+/**
+ * Delete the listings of one class the MLS no longer serves, from keys the
+ * caller just confirmed missing: closed sales by default (Matt 2026-09-30,
+ * "Delete it automatically"), or with `statuses` the listings we hold for sale
+ * or under contract (Matt 2026-10-01, "Treat like removed sales"). The SQL
+ * function (latest definition 20261002010548) holds every rule: a key is due
+ * when its row is still of the class, was found missing on three daily checks,
+ * the first 36 hours or more ago, and was confirmed missing in the last 26
+ * hours; each whole row goes to listing_mls_repair_log first, in the same
+ * transaction as the delete of the listing and its derived rows. More due than
+ * today's budget for the class (maxDelete), or an earlier hold of the class
+ * still standing, deletes nothing and holds the due keys until a person
+ * approves them by name (approve: true, with the same statuses).
  */
 export async function deleteMlsRemovedSales(
   keys: string[],
-  opts: { maxDelete: number; window?: { from: string; to: string }; approve?: boolean },
+  opts: {
+    maxDelete: number
+    window?: { from: string; to: string }
+    approve?: boolean
+    /**
+     * Which rows of ours the call may delete: closed sales by default; the
+     * on-market check passes the for-sale and under-contract statuses (Matt
+     * 2026-10-01). The day's budget, the hold and the due list count within it.
+     */
+    statuses?: readonly string[]
+  },
 ): Promise<RemovedSalesResult> {
   // An empty list still calls: the answer carries the standing hold and the day's budget.
   const unique = [...new Set(keys.filter(Boolean))]
@@ -247,6 +295,7 @@ export async function deleteMlsRemovedSales(
     p_window_from: opts.window?.from ?? null,
     p_window_to: opts.window?.to ?? null,
     p_approve: opts.approve === true,
+    p_statuses: opts.statuses && opts.statuses.length > 0 ? [...opts.statuses] : null,
   })
   if (error) throw new Error(`[deleteMlsRemovedSales] ${error.message}`)
   const r = (data ?? {}) as {
@@ -269,6 +318,8 @@ export async function deleteMlsRemovedSales(
         city: row.city,
         closeDate: row.close_date,
         closePrice: row.close_price == null ? null : Number(row.close_price),
+        status: row.status ?? null,
+        listPrice: row.list_price == null ? null : Number(row.list_price),
         firstDetectedAt: row.first_detected_at,
       }))
   return {
@@ -392,6 +443,9 @@ export type MlsRemovalNotice = {
   /** YYYY-MM-DD (close dates are stored as midnight UTC). */
   closeDate: string | null
   closePrice: number | null
+  /** The saved row's status (a removal); a restore log does not record it. */
+  status: string | null
+  listPrice: number | null
 }
 
 type NoticeRow = {
@@ -404,6 +458,8 @@ type NoticeRow = {
   b_city: string | null
   b_close_date: string | null
   b_close_price: string | null
+  b_status?: string | null
+  b_list_price?: string | null
   m_street_number: string | null
   m_street_name: string | null
   m_city: string | null
@@ -427,6 +483,7 @@ export async function getUnreportedMlsRemovalNotices(limit = 1000): Promise<MlsR
       'id, source, listing_key, list_number, ' +
         'b_street_number:before_row->>StreetNumber, b_street_name:before_row->>StreetName, b_city:before_row->>City, ' +
         'b_close_date:before_row->>CloseDate, b_close_price:before_row->>ClosePrice, ' +
+        'b_status:before_row->>StandardStatus, b_list_price:before_row->>ListPrice, ' +
         'm_street_number:mls->>streetNumber, m_street_name:mls->>streetName, m_city:mls->>city, ' +
         'm_close_date:mls->>closeDate, m_close_price:mls->>closePrice',
     )
@@ -456,6 +513,8 @@ export async function getUnreportedMlsRemovalNotices(limit = 1000): Promise<MlsR
       city: restored ? r.m_city : r.b_city,
       closeDate,
       closePrice: num(restored ? r.m_close_price : r.b_close_price),
+      status: restored ? null : (r.b_status ?? null),
+      listPrice: restored ? null : num(r.b_list_price ?? null),
     }
   })
 }
@@ -473,13 +532,19 @@ export async function markMlsRemovalNoticesReported(ids: number[]): Promise<numb
   return ids.length
 }
 
-/** Remove keys the MLS serves again. */
+/** Remove keys the MLS serves again, 150 to a request (a key list rides in the URL). */
 export async function clearAbsentFromMls(keys: string[]): Promise<number> {
-  if (keys.length === 0) return 0
+  const unique = [...new Set(keys.filter(Boolean))]
+  if (unique.length === 0) return 0
   const sb = createServiceClient()
-  const { error } = await sb.from('market_listing_absent_from_mls').delete().in('listing_key', keys) // @canonical-key — Spark ListingKey values
-  if (error) throw new Error(`[clearAbsentFromMls] ${error.message}`)
-  return keys.length
+  for (let i = 0; i < unique.length; i += 150) {
+    const { error } = await sb
+      .from('market_listing_absent_from_mls')
+      .delete()
+      .in('listing_key', unique.slice(i, i + 150)) // @canonical-key — Spark ListingKey values
+    if (error) throw new Error(`[clearAbsentFromMls] ${error.message}`)
+  }
+  return unique.length
 }
 
 /** One listing a repair is about to rewrite: what we held and what the MLS serves. */

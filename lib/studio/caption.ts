@@ -34,6 +34,13 @@ export type CaptionRequest = {
    * landscape clip.
    */
   mediaDescription?: string
+  /**
+   * Every figure names what it measures. A listing's "$849,900." after its
+   * address is plainly its price; a market post's bare "$879,900." is not (the
+   * first live trend draft printed exactly that, 2026-10-07). On for every
+   * format that is not a single listing.
+   */
+  labelEveryFigure?: boolean
 }
 
 export type CaptionResult = {
@@ -71,6 +78,43 @@ const SYSTEM = [
   'altText plainly describes the media for a screen reader in one sentence, using only what you are told the media shows. Never guess at the media. If you are not told, describe the subject plainly instead.',
 ].join('\n')
 
+/** Words in a figure's label that can stand for it in a sentence. */
+const LABEL_STOPWORDS = new Set(['with', 'from', 'that', 'this', 'than', 'into', 'over', 'last', 'days', 'homes'])
+function labelWords(label: string): string[] {
+  return label
+    .toLowerCase()
+    .split(/[^a-z]+/)
+    .filter((w) => w.length >= 4 && !LABEL_STOPWORDS.has(w))
+}
+
+/**
+ * Figures the caption printed without saying what they measure: the
+ * sentence holding the number carries no word of its label. "Median list
+ * price $879,900." passes; "$879,900." alone fails. Exported for tests.
+ */
+export function unlabeledFigures(caption: string, figures: Record<string, string> = {}): string[] {
+  const digits = (token: string) => token.replace(/[^\d.]/g, '').replace(/\.$/, '')
+  const labelsByDigits = new Map<string, string[]>()
+  for (const [label, value] of Object.entries(figures)) {
+    for (const number of value.match(/\d[\d,]*(?:\.\d+)?/g) ?? []) {
+      const key = digits(number)
+      labelsByDigits.set(key, [...(labelsByDigits.get(key) ?? []), label])
+    }
+  }
+  const out: string[] = []
+  // A sentence ends at a full stop followed by space, or a line break; "3.5" stays whole.
+  for (const sentence of caption.split(/(?<=[.!?])\s+|\n+/)) {
+    const lower = sentence.toLowerCase()
+    for (const token of sentence.match(/\$?\d[\d,]*(?:\.\d+)?%?/g) ?? []) {
+      const labels = labelsByDigits.get(digits(token))
+      if (!labels) continue
+      const named = labels.some((label) => labelWords(label).some((word) => lower.includes(word)))
+      if (!named) out.push(token)
+    }
+  }
+  return out
+}
+
 function buildPrompt(request: CaptionRequest): string {
   const figures = request.figures && Object.keys(request.figures).length > 0
     ? Object.entries(request.figures)
@@ -88,6 +132,9 @@ function buildPrompt(request: CaptionRequest): string {
     request.context ? `Context for tone only, never a source for a number:\n${request.context}\n` : '',
     `Destination: ${request.platforms.join(', ')}`,
     request.cta ? `End with this call to action, verbatim: ${request.cta}` : '',
+    request.labelEveryFigure
+      ? 'Name what every figure measures, in the words of its label: "Median list price $879,900." A number on its own, with no label, is wrong here. Keep "single-family" when the label says it.'
+      : '',
   ]
     .filter(Boolean)
     .join('\n')
@@ -192,6 +239,12 @@ export async function writeCaption(
     })
     if (stray.length > 0) {
       feedback = `it invented figures we did not verify: ${stray.join(', ')}. Use only the figures listed, exactly as written.`
+      continue
+    }
+
+    const bare = request.labelEveryFigure ? unlabeledFigures(caption, request.figures) : []
+    if (bare.length > 0) {
+      feedback = `it printed ${bare.join(', ')} without saying what it measures. Put each figure's label in the same sentence, for example "Median list price $879,900."`
       continue
     }
 

@@ -16,6 +16,7 @@ import {
   type CmaQueueSort,
   type CmaQueueViewFilters,
   type CmaQueueViewState,
+  type CmaQueueWhy,
   type CmaRecBand,
 } from '@/lib/cma/queue-view'
 
@@ -26,17 +27,21 @@ export function QueueFilters({
   cities,
   stateOptions,
   originOptions,
+  whyOptions,
 }: {
   filters: CmaQueueViewFilters
   cities: string[]
   stateOptions: Option[]
   originOptions: Option[]
+  whyOptions: Option[]
 }) {
   const router = useRouter()
 
   const go = useCallback(
     (patch: Partial<CmaQueueViewFilters>) => {
-      router.push(cmaQueueHref({ ...filters, ...patch }))
+      const next = { ...filters, ...patch, page: undefined }
+      if (patch.state && patch.state !== filters.state) next.why = undefined
+      router.push(cmaQueueHref(next))
     },
     [filters, router],
   )
@@ -74,6 +79,22 @@ export function QueueFilters({
           </option>
         ))}
       </ToolbarSelect>
+
+      {whyOptions.length > 0 ? (
+        <ToolbarSelect
+          aria-label="Why it is held"
+          value={filters.why ?? 'all'}
+          onChange={(e) => go({ why: e.target.value === 'all' ? undefined : (e.target.value as CmaQueueWhy) })}
+        >
+          <option value="all">Any reason</option>
+          {whyOptions.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+              {o.count == null ? '' : ` (${o.count})`}
+            </option>
+          ))}
+        </ToolbarSelect>
+      ) : null}
 
       <ToolbarSelect
         aria-label="Origin"

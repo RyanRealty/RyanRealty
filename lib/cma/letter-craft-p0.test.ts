@@ -141,12 +141,12 @@ describe('letter craft P0 — cover headline once', () => {
     expect(html).toContain('data-recommend-once')
     expect(html).toContain('>Low<')
     expect(html).toContain('>High<')
-    expect(html).toContain('>Recommended<')
+    expect(html).toContain('>Where similar homes sold<')
     expect(html).not.toContain('cover-price')
     expect(html).not.toContain('We recommend listing at')
     // Fold chapter is not titled with the recommend dollars.
     expect(html).not.toContain('class="section is-answer">$497,800')
-    expect(html).toContain('The sales support')
+    expect(html).toMatch(/\brun from \$[\d,]+ to \$[\d,]+\./)
     const hero = immersiveHeroNumberHtml({
       subject,
       comps: five(),
@@ -157,7 +157,7 @@ describe('letter craft P0 — cover headline once', () => {
     expect(hero).toContain('hero-trio')
     expect(hero).toContain('>Low<')
     expect(hero).toContain('>High<')
-    expect(hero).toContain('>Recommended<')
+    expect(hero).toContain('>Where similar homes sold<')
     expect(hero).toContain('$497,800')
     expect(hero).not.toMatch(/>Recommended list</)
     const fold = immersiveAnswerHtml({
@@ -222,20 +222,57 @@ describe('letter craft P0 — close voice', () => {
       generatedAtIso: '2026-09-12T00:00:00.000Z',
       expiredAudit: args().expiredAudit,
     }
-    expect(nextStepHeading(a as never)).toBe("Sorry your home didn't sell.")
+    expect(nextStepHeading(a as never)).toBe(
+      "We're sorry your home didn't sell this go-around.",
+    )
     const note = nextStepNoteHtml(a as never)
-    expect(note).toContain('If you decide to list again, we&#39;re glad to help.')
-    expect(note).toContain('here for any questions you have')
-    expect(note).not.toContain('earn your business')
-    expect(note).not.toContain('this go-around')
-    expect(note).toContain('>Call<')
-    expect(note).toContain('>Text<')
+    expect(note).toContain(
+      'If you decide to list again, we would love the opportunity to earn your business.',
+    )
+    expect(note).toContain('sit down with you, go through the house')
+    expect(note).toContain('detailed marketing plan')
+    expect(note).toContain('Who you list with is your decision')
+    // Matt 2026-10-07: the close said it twice. Once now, in two paragraphs.
+    expect(note.match(/would love the opportunity/g)?.length).toBe(1)
+    expect(note.match(/earn (?:your business|it)\b/g)?.length).toBe(1)
+    expect(note).not.toContain('grateful for the chance')
+    expect(note).not.toContain('Please feel free to call')
+    expect(note.match(/<p class="next-note"/g)?.length).toBe(2)
+    expect(note).toContain('close-review-row')
+    expect(note).toContain('close-lead')
+    expect(note).toContain('E Oster')
+    expect(note).toContain('You will not be disappointed')
+    expect(note).toContain('art of the negotiations')
+    expect(note).toContain('Douglas Grant')
+    expect(note).toContain('Matt is the best!!')
+    expect(note).toContain('most professional, communicative, and honest')
+    expect(note).not.toContain('kept me informed')
+    expect(note).not.toContain('navigate the process')
+    expect(note).toContain('Here&#39;s what our clients have to say')
+    expect(note).toContain('Gary Timms')
+    expect(note).toContain('We would not hesitate to recommend')
+    expect(note).toContain('Matt did a great job helping us sell our home.')
+    expect(note).toContain('Doug Millard')
+    expect(note).toContain('I highly recommend Ryan Realty for both buying and selling!')
+    expect(note).toContain('From the start of our journey to the end, Matt was right at every turn.')
+    expect(note).toContain('Read the rest of the Google reviews')
+    expect(note).toContain('class="google-g"')
+    expect(note).toContain('close-stars')
+    expect(note).toContain('aria-hidden="true"')
+    expect(note).toContain('5 star Google review')
+    expect(note).not.toContain('Audra')
+    expect(note).not.toContain('Kim Anderson')
+    expect(note).toContain('data-rr-track="cma-reviews"')
+    expect(note).toContain('/reviews')
+    expect(note).not.toContain('glad to help')
+    // The contact card prints the number once; Call and Text are buttons.
+    expect(note).toContain('>Phone<')
     expect(note).toContain('>Email<')
+    expect(note).not.toContain('>Calendar<')
     const { html } = renderCmaHtml(args())
-    expect(html).toContain('Sorry your home didn&#39;t sell.')
-    expect(html).toContain('If you decide to list again, we&#39;re glad to help.')
-    expect(html).not.toContain('earn your business')
-    expect(html).not.toContain('this go-around')
+    expect(html).toContain('We&#39;re sorry your home didn&#39;t sell this go-around.')
+    expect(html).toContain('we would love the opportunity to earn your business')
+    expect(html).toContain('cma-reviews')
   })
 })
 
@@ -294,6 +331,7 @@ describe('letter craft Matt ADD 2026-09-12', () => {
     expect(html).toContain('List $/sqft')
     expect(html).toContain('Sold $/sqft')
     expect(html).toContain('Seller concessions')
+    expect(html).toContain('Sold after concessions')
     expect(html).toContain('Lot size')
   })
 
@@ -359,12 +397,17 @@ describe('letter craft Matt ADD 2026-09-12', () => {
       expect(doc).toContain('data-status-price="board"')
       expect(doc).not.toContain('data-ppsf-status="board"')
       expect(doc).not.toContain('Dollars a square foot')
-      expect(doc).toMatch(/scope="col">List<\/th><th class="n" scope="col">Sold<\/th><th class="n" scope="col">\$\/sqft<\/th>/)
+      expect(doc).toMatch(
+        /scope="col">List<\/th><th class="n" scope="col">Sold<\/th><th class="n" scope="col">Concessions<\/th><th class="n" scope="col">\$\/sqft<\/th>/,
+      )
       expect(doc).toContain('<tbody data-status="closed">')
       expect(doc).toContain('<tbody data-status="active">')
       expect(doc).toContain('<tbody data-status="expired">')
-      // 500000/1580 sold on the five closed sales = $316 a foot.
-      expect(doc).toMatch(/<tbody data-status="closed">[\s\S]*?<th scope="row">Median<\/th><td class="n">\$510,000<\/td><td class="n">\$500,000<\/td><td class="n">\$316<\/td>/)
+      // These closes report none, so the net equals the sold price.
+      // 500000/1580 on the five closed sales = $316 a foot.
+      expect(doc).toMatch(
+        /<tbody data-status="closed">[\s\S]*?<th scope="row">Median<\/th><td class="n">\$510,000<\/td><td class="n">\$500,000<\/td><td class="n">\$0<\/td><td class="n">\$316<\/td>/,
+      )
       // Active 520000/1600 = 325; expired 540000/1500 = 360.
       expect(doc).toMatch(/<tbody data-status="active">[\s\S]*?<td class="n">\$325<\/td>/)
       expect(doc).toMatch(/<tbody data-status="expired">[\s\S]*?<td class="n">\$360<\/td>/)

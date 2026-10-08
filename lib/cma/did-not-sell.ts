@@ -32,7 +32,10 @@ import {
 import { collapseExpiredPeerCycles, peerMatchesSubject } from '@/lib/cma/market-status'
 import { readAskOutcome } from '@/lib/cma/market-area-chapters'
 import { FAILED_ASK_BACKTEST, askAgainstRangeSentence } from '@/lib/cma/expired-audit'
-import { subjectDomDays, subjectListingFailed } from '@/lib/cma/comp-matrix'
+import { SOLD_PPSF_NET_ROW_LABEL, subjectDomDays, subjectListingFailed } from '@/lib/cma/comp-matrix'
+import { salesAreaIsBounded } from '@/lib/pricing/comp-area'
+import { comparisonSalePrice, concessionOnSale } from '@/lib/pricing/seller-net'
+import { printedBaths } from '@/lib/pricing/bath-count'
 import type { CmaExpiredPeer } from '@/lib/cma/market-status'
 import type { ExpiredFinalCycle } from '@/lib/cma/expired-audit'
 import type { CmaAdjustedComp, CmaMarketContext, CmaSubject } from '@/lib/cma/types'
@@ -41,8 +44,20 @@ const esc = escapeHtml
 
 export const DID_NOT_SELL_HEADING = 'The listings near you that did not sell.'
 
-/** At most this many stories. Past it the chapter is a list again. */
-const MAX_STORIES = 5
+/**
+ * The chapter's heading, never plural over nothing.
+ *
+ * "The listings near you that did not sell." over a page that showed no
+ * listing (3037 Purcell, 2382 Jackson, reader review 2026-10-08) named a set
+ * the reader could not find. With no peer drawn the heading says so: "other"
+ * when the seller's own listing is the one that came off, and "like yours"
+ * because the search reads the subject's own type and price band, and an
+ * area can hold unsold homes that are not like it (Jackson's two).
+ */
+export function didNotSellHeading(input: { shown: number; ownFailed: boolean }): string {
+  if (input.shown > 0) return DID_NOT_SELL_HEADING
+  return `No ${input.ownFailed ? 'other ' : ''}listing like yours near you came off unsold.`
+}
 
 /**
  * `render_args.market.localFailedThenSold`, validated.
@@ -92,7 +107,10 @@ export function readLocalFailedThenSold(
 export function didNotSellLeadSentence(input: {
   market: CmaMarketContext | null
   city: string
+  /** When the sales sit in a plat, a polygon, or a radius, do not print a citywide came-off count. */
+  compArea?: { kind?: string | null } | null
 }): string {
+  if (salesAreaIsBounded(input.compArea)) return ''
   const outcome = readAskOutcome(input.market)
   const failed = outcome?.groups.find((g) => g.key === 'did-not-sell') ?? null
   const local = readLocalFailedThenSold(input.market)
@@ -126,60 +144,78 @@ export function didNotSellLeadSentence(input: {
 /**
  * What homes like these actually closed at, a square foot at a time.
  *
- * The same closed sales chapter 3 prints, at their own sale price over their
- * own living area — nothing adjusted, because the comparison the sentence
+ * The same figure the sales table's "Sold $/sqft" row prints for each sale:
+ * the sale price less any recorded seller concession, over its own living
+ * area, rounded to the dollar (`soldPpsfCell`, lib/cma/comp-matrix.ts).
+ * Nothing adjusted for date or size, because the comparison the sentence
  * makes is against an ASK, and an ask was never adjusted either.
+ *
+ * It was close price over living area, before the concession, so the prose
+ * said $318 to $359 under a table that printed $317 to $357 (3037 Purcell,
+ * reader review 2026-10-07). One basis now, and the per-sale values ride
+ * along so a sentence can count sales rather than guess a position.
  */
 export function soldPpsfRange(
   comps: readonly CmaAdjustedComp[],
-): { low: number; high: number; n: number } | null {
-  const values = comps
-    .map((c) =>
-      c.closePrice != null && c.closePrice > 0 && c.sqft != null && c.sqft > 0
-        ? c.closePrice / c.sqft
-        : null,
-    )
-    .filter((v): v is number => v != null)
+): { low: number; high: number; n: number; values: number[]; credit: boolean } | null {
+  const rated = comps.filter(
+    (c) => c.closePrice != null && c.closePrice > 0 && c.sqft != null && c.sqft > 0,
+  )
+  const values = rated.map((c) =>
+    Math.round(comparisonSalePrice(c.closePrice, concessionOnSale(c)) / c.sqft!),
+  )
   if (values.length < 2) return null
-  return { low: Math.round(Math.min(...values)), high: Math.round(Math.max(...values)), n: values.length }
+  // Whether any of these rates had a credit come off: the sales table then
+  // names its row for that, and the legend names the row it means.
+  const credit = rated.some((c) => (concessionOnSale(c) ?? 0) > 0)
+  return { low: Math.min(...values), high: Math.max(...values), n: values.length, values, credit }
+}
+
+/**
+ * The legend under a set of dollars-a-foot sentences: which figure, which
+ * sales. It names the sales table's row by the words that row prints, which
+ * carry "after concessions" when a sale on it had a credit.
+ */
+export function soldPpsfLegend(n: number, credit = false): string {
+  const row = credit ? SOLD_PPSF_NET_ROW_LABEL : 'Sold $/sqft'
+  return `The dollars a foot are the ${row} row of the ${int(n)} closed sales in this report: each sale price, less any recorded seller concession, over its own living area.`
 }
 
 /** "Asked $456 a foot. Homes like it closed at $274 to $320 a foot." */
 export function askAgainstSoldSentence(input: {
   ask: number | null
   sqft: number | null
-  range: { low: number; high: number } | null
+  range: { low: number; high: number; values?: readonly number[] } | null
 }): string {
   const { ask, sqft, range } = input
   if (ask == null || !(ask > 0) || sqft == null || !(sqft > 0) || !range) return ''
   const ppsf = Math.round(ask / sqft)
-  // Inside the range is not one answer. A home asking at the very top of what
-  // its peers closed at is a different story from one asking at the bottom,
-  // and "inside" alone flattens the two into the same sentence.
-  const span = Math.max(range.high - range.low, 1)
-  const position = (ppsf - range.low) / span
   // Name the measure. "That is at the top of what they closed at" sitting
   // under chapter 1's "15.3 percent above the top of the range" reads as two
   // answers to one question; a foot at a time is a different question, and
   // saying so is the whole fix.
+  //
+  // Inside the range, COUNT. "At the top of what they closed at" printed for
+  // $351 a foot when the top was $375 (20676 Wild Rose, reader review
+  // 2026-10-07). How many of the printed sales closed higher is a fact the
+  // reader can check against the row; a position word was not.
+  const values = range.values ?? []
+  const higher = values.filter((v) => v > ppsf).length
   const where =
     ppsf > range.high
       ? 'A foot at a time, that is above every one of them.'
       : ppsf < range.low
         ? 'A foot at a time, that is below every one of them.'
-        : position >= 2 / 3
-          ? 'A foot at a time, that is at the top of what they closed at.'
-          : position <= 1 / 3
-            ? 'A foot at a time, that is at the bottom of what they closed at.'
-            : 'A foot at a time, that is in the middle of what they closed at.'
-  // "unadjusted" is the whole point of the word: chapter 1's shaded zone is
-  // the range adjusted for date and size, and this line is the same homes at
-  // their own sale price over their own feet. One phrase, "homes like yours",
-  // was carrying both readings (tasteReview round two, §3.B), so each printed
-  // range now says which of the two it is where the reader meets it.
+        : ppsf === range.high
+          ? 'A foot at a time, that is level with the highest of them.'
+          : ppsf === range.low
+            ? 'A foot at a time, that is level with the lowest of them.'
+            : values.length > 0
+              ? `A foot at a time, ${int(higher)} of the ${int(values.length)} closed higher.`
+              : 'A foot at a time, that is inside what they closed at.'
   return `Asked ${usd(ask)} for ${int(sqft)} sqft, ${usd(ppsf)} a foot. Homes like it closed at ${usd(
     range.low,
-  )} to ${usd(range.high)} a foot, unadjusted. ${where}`
+  )} to ${usd(range.high)} a foot, net of seller concessions and not adjusted for date or size. ${where}`
 }
 
 type Story = {
@@ -200,12 +236,17 @@ function factsLine(f: {
   sqft?: number | null
   beds?: number | null
   baths?: number | null
+  bathsFull?: number | null
+  bathsHalf?: number | null
   yearBuilt?: number | null
 }): string {
+  // The bath count the sales table prints (2 full and 1 half is 2.5), never
+  // BathroomsTotal raw, which counts the half bath whole.
+  const baths = printedBaths(f)
   return [
     f.sqft != null && f.sqft > 0 ? `${int(f.sqft)} sqft` : null,
     f.beds != null ? `${int(f.beds)} bd` : null,
-    f.baths != null ? `${f.baths % 1 === 0 ? int(f.baths) : f.baths.toFixed(1)} ba` : null,
+    baths != null ? `${baths % 1 === 0 ? int(baths) : baths.toFixed(1)} ba` : null,
     f.yearBuilt != null ? `built ${f.yearBuilt}` : null,
   ]
     .filter(Boolean)
@@ -230,6 +271,7 @@ export type DidNotSellArgs = {
   /** What homes like this one sold for. Chapter 1 measures the ask against it. */
   rangeLow?: number | null
   rangeHigh?: number | null
+  compArea?: { kind?: string | null } | null
   /**
    * True when chapter 1 renders in this document and already states where the
    * ask sat against that range. The subject card then carries the
@@ -281,7 +323,7 @@ export function didNotSellStories(a: DidNotSellArgs): Story[] {
   const peers = collapseExpiredPeerCycles(
     (a.peers ?? []).filter((p) => p.address.trim() && p.listPrice > 0 && !peerMatchesSubject(p, s)),
   )
-  for (const p of peers.slice(0, MAX_STORIES)) {
+  for (const p of peers) {
     stories.push({
       id: p.listingKey || p.address,
       title: p.address,
@@ -344,13 +386,9 @@ export function didNotSellBodyHtml(a: DidNotSellArgs): string {
   const stories = didNotSellStories(a)
   if (stories.length === 0) return ''
   const range = soldPpsfRange(a.comps)
-  const lead = didNotSellLeadSentence({ market: a.market, city: a.subject.city })
+  const lead = didNotSellLeadSentence({ market: a.market, city: a.subject.city, compArea: a.compArea })
   const cards = stories.map((story) => storyCard(story, range)).join('\n    ')
-  const legend = range
-    ? `<p class="small">${esc(
-        `The dollars a foot come from the ${int(range.n)} closed sales in this report, at their own sale price over their own living area.`,
-      )}</p>`
-    : ''
+  const legend = range ? `<p class="small">${esc(soldPpsfLegend(range.n, range.credit))}</p>` : ''
   return `${lead ? `<p class="chart-read">${esc(lead)}</p>` : ''}
   <div class="dns-set">
     ${cards}

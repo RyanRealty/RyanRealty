@@ -40,12 +40,14 @@ import {
   ENQUEUE_GRACE_MS,
   type FinalizeResult,
 } from '@/lib/data/newsletter/queue'
+import { emailLinkOrigin } from '@/lib/email/link-origin'
 
 // ── config ───────────────────────────────────────────────────────────────────
 
 /** Bulk newsletter sends from the ISOLATED news. subdomain (audit A4 — was mail.). */
 export const NEWSLETTER_FROM_ADDRESS = 'newsletter@news.ryan-realty.com'
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+// Email links resolve on the canonical origin, never the Vercel alias (lib/email/link-origin.ts).
+const SITE_URL = emailLinkOrigin()
 /** Above this recipient count a send is "large" → tranched over days (§6.5). */
 export const LARGE_SEND_THRESHOLD = 1000
 export const ONE_OFF_MAX = 5000 // hard cap on a single one-off blast (matches bulk-enroll)

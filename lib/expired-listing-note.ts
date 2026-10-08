@@ -5,6 +5,7 @@
  * via publishListingHistoryDescription (admin-crm plane of the same class).
  */
 
+import { siteOrigin } from '@/lib/site-origin'
 import { publishListingHistoryDescription } from '@/lib/listing/publish-listing-history'
 
 export type ExpiredNoteListing = {
@@ -201,7 +202,7 @@ export function buildListingNote(
 ): string {
   const lines: string[] = []
   const addr = `${l.StreetNumber ?? ''} ${l.StreetName ?? ''}`.trim()
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com'
+  const siteUrl = siteOrigin()
   lines.push(`EXPIRED LISTING ALERT. ${l.StandardStatus} on ${l.status_change_timestamp.slice(0, 10)}.`)
   lines.push('')
   lines.push(`Property: ${addr}, ${l.City}, OR ${l.PostalCode ?? ''}`)

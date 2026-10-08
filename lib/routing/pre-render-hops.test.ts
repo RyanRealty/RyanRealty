@@ -110,4 +110,16 @@ describe('resolvePreRenderHop', () => {
       expect(resolvePreRenderHop(p)).toBeNull()
     }
   })
+
+  it('301s a self-city community\'s /cities page onto its one community page (Matt 2026-10-04)', () => {
+    expect(resolvePreRenderHop('/cities/sunriver')).toBe('/communities/sunriver')
+    expect(resolvePreRenderHop('/cities/black-butte-ranch/')).toBe('/communities/black-butte-ranch')
+    expect(resolvePreRenderHopStatus('/cities/sunriver')).toBe(301)
+    // Real cities and Crooked River Ranch (self_city:false, next.config) pass through.
+    for (const p of ['/cities/bend', '/cities/sisters', '/cities/redmond', '/cities/crooked-river-ranch']) {
+      expect(resolvePreRenderHop(p), p).toBeNull()
+    }
+    // The destination never hops again.
+    expect(resolvePreRenderHop('/communities/sunriver')).toBeNull()
+  })
 })

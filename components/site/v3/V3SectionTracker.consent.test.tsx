@@ -236,7 +236,7 @@ describe('V3SectionTracker carries the consent VisitTracker computes', () => {
 describe('a session born from a section or scroll event is attributed, and follows the session rule', () => {
   beforeEach(() => {
     // a consented visitor: a campaign link with no banner answer is granted this tier by
-    // VisitTracker's mount effect (autoGrantConsentForAdTraffic), which is not mounted here
+    // VisitTracker's mount effect, which is not mounted here
     setConsent(ALL)
   })
 

@@ -232,6 +232,24 @@ describe('getCmaOutcomes — one row-level answer per document', () => {
     const map = await getCmaOutcomes(['c1'])
     expect(map.c1.repliedAt).toBeNull()
     expect(map.c1.sentAt).toBeNull()
+    expect(map.c1.emailEventSentAt).toBeNull()
+  })
+
+  it('keeps an email-log send when the letter row has no send stamp', async () => {
+    state.cmas = [{ id: 'c1', slug: 'doc-one', person_id: 7, client_email: 'a@b.com', delivered_at: null }]
+    state.emailEvents = [
+      { email_key: 'cma:doc-one', event: 'sent', occurred_at: '2026-09-01T10:00:00Z' },
+      { email_key: 'cma:doc-one', event: 'open', occurred_at: '2026-09-01T12:00:00Z' },
+    ]
+    state.timeline = [
+      { person_id: 7, kind: 'email_in', ts: '2026-08-01T10:00:00Z' },
+      { person_id: 7, kind: 'email_in', ts: '2026-09-01T15:00:00Z' },
+    ]
+    const map = await getCmaOutcomes(['c1'])
+    expect(map.c1.sentAt).toBeNull()
+    expect(map.c1.emailEventSentAt).toBe('2026-09-01T10:00:00Z')
+    expect(map.c1.opens).toBe(1)
+    expect(map.c1.repliedAt).toBe('2026-09-01T15:00:00Z')
   })
 
   it('surfaces a bounce and an unsubscribe as exceptions, not as activity', async () => {

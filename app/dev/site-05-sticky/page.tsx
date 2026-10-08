@@ -13,6 +13,7 @@
  * There is no fixture and no fallback figure — if the row is missing, the
  * control renders with no tail, which is the behaviour the real pages get.
  */
+import { siteOrigin } from '@/lib/site-origin'
 import type { Metadata } from 'next'
 import { getMarketPulse } from '@/lib/data'
 import { stickyAskVerdict } from '@/lib/sticky-ask'
@@ -29,7 +30,7 @@ export const metadata: Metadata = {
   title: 'SITE-05 sticky ask harness',
   robots: 'noindex, nofollow',
   alternates: {
-    canonical: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com'}/dev/site-05-sticky`,
+    canonical: `${siteOrigin()}/dev/site-05-sticky`,
   },
 }
 

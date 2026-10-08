@@ -1,4 +1,4 @@
-/* SITE-153 — mid-end dog-head circle + six-door sheet.
+/* SITE-153 — mid-end broker-headshot circle + six-door sheet.
    Material FAB is bottom-end and must not cover a snackbar/banner.
    Cookie chip+bar own that corner, and a cream disc on cream chrome
    hid the dog. Mid-trailing-edge (top: 50%, inline-end) is the
@@ -69,31 +69,25 @@
   animation: none;
 }
 
-.v3-dog-floater__dog {
+.v3-dog-floater__broker {
   grid-area: 1 / 1;
+  justify-self: center;
+  align-self: center;
   display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  object-position: 42% 48%;
+  width: 90%;
+  height: 90%;
+  /* 800x1200 portraits fill a 90% disc without stretching. 10% from the
+     top, plus the 5% navy inset, keeps the crown inside the circle. */
+  object-fit: cover;
+  object-position: 50% 10%;
   pointer-events: none;
 }
 
-.v3-dog-floater__dog--navy {
-  opacity: 0;
-  animation: v3-dog-notice-ink 1.35s ease-in-out 1;
-}
-
-.v3-dog-floater--open .v3-dog-floater__dog--navy {
-  animation: none;
-  opacity: 0;
-}
-
 /* Matt 2026-09-24: "whole dog rotates so that its eyes are following ball,
-   not eyes moving, eyes are fixed." Both dog layers sit in one aim box that
+   not eyes moving, eyes are fixed." The broker photo sits in one aim box that
    JS turns about its center toward the pointer (V3DogFloater.client.tsx,
    lib/geo/aim-at-pointer.ts). The turn eases at the state duration so a
-   quick flick reads as the dog looking, not snapping. Reduced motion never
+   quick flick reads as a look, not snapping. Reduced motion never
    starts the tracking, and the transition goes with it below. */
 .v3-dog-floater__aim {
   grid-area: 1 / 1;
@@ -138,21 +132,9 @@
   }
 }
 
-@keyframes v3-dog-notice-ink {
-  0%,
-  100% {
-    opacity: 0;
-  }
-  48%,
-  78% {
-    opacity: 1;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .v3-dog-floater,
-  .v3-dog-floater__head,
-  .v3-dog-floater__dog--navy {
+  .v3-dog-floater__head {
     animation: none;
   }
 

@@ -1,9 +1,24 @@
 import { defineConfig, devices } from '@playwright/test'
+import { automationStorageState } from './scripts/lib/automation-marker.mjs'
 
 const HAS_AUTH_CREDENTIALS = Boolean(
   process.env.E2E_SIGNED_IN_EMAIL?.trim() && process.env.E2E_SIGNED_IN_PASSWORD?.trim()
 )
 const AUTH_STATE_FILE = 'e2e/.auth/user.json'
+const BASE_URL = process.env.BASE_URL ?? 'http://127.0.0.1:3000'
+
+/**
+ * Every context these runs open carries our automation marker cookies
+ * (`rr_automation=1` and `rr_internal=1`, scripts/lib/automation-marker.mjs)
+ * and a declined consent answer, so the site loads no Google tag for them and
+ * flags their first-party sessions (Matt 2026-10-05: GA4 counts only real
+ * outside visitors). The post-deploy smoke and the nightly E2E run against
+ * production. navigator.webdriver already flags them; the marker makes it
+ * explicit and survives a script that hides it. The setup project carries it
+ * too, so the signed-in state it saves keeps it.
+ * Held by `ci:analytics-suppression`.
+ */
+const MARKED = automationStorageState(BASE_URL)
 
 /**
  * Playwright configuration for E2E and visual regression testing.
@@ -38,7 +53,8 @@ export default defineConfig({
   use: {
     // When BASE_URL is set (CI against a deployed site, or local override),
     // use it. Otherwise fall back to the local dev server.
-    baseURL: process.env.BASE_URL ?? 'http://127.0.0.1:3000',
+    baseURL: BASE_URL,
+    storageState: MARKED,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'on-first-retry',
@@ -72,6 +88,7 @@ export default defineConfig({
             testMatch: /auth\.setup\.ts/,
             use: {
               ...devices['Desktop Chrome'],
+              storageState: MARKED,
             },
           },
           {

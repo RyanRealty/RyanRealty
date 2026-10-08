@@ -39,6 +39,8 @@
 import { formatPriceExact } from '@/lib/format/money'
 import { escapeHtml, int } from '@/lib/cma/render-blocks'
 import { resolveAskPosition, type AskExposureLike } from '@/lib/cma/ask-position'
+import { closedSaleDaysToOffer } from '@/lib/cma/listing-history-line'
+import { pacificDay } from '@/lib/cma/listing-status'
 
 const esc = escapeHtml
 
@@ -95,11 +97,9 @@ const OUTCOME_WORD: Record<PricePathOutcome, string> = {
   'under-contract': 'under contract',
 }
 
+/** The Pacific day of a date or MLS timestamp, never its UTC day (reader review 2026-10-08). */
 function day(value: string | null | undefined): string | null {
-  const raw = String(value ?? '').trim()
-  if (!raw) return null
-  const d = raw.slice(0, 10)
-  return /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : null
+  return pacificDay(value ?? null)
 }
 
 function utc(d: string): number {
@@ -115,8 +115,25 @@ function plusDays(d: string, days: number): string {
   return new Date(utc(d) + days * 86_400_000).toISOString().slice(0, 10)
 }
 
+/**
+ * A price step is its own era whenever the ask changed. Only a repeated ask
+ * (the same dollars recorded again) stays on the era already running.
+ *
+ * Every ask the MLS recorded is a stretch the market saw and the owner lived
+ * through. This used to demand a move of at least 1 percent, and that erased a
+ * real cut: 62475 Woodsman went $1,695,000 to $1,680,000 on Apr 30 (0.9
+ * percent) and held it 40 days, but the letter said "You asked $1,695,000 for
+ * 95 days, then $1,660,000" and the step chart drew four asks where the
+ * listing carried five (reader review 2026-10-08). The chart, the headline,
+ * the ask exposure and the did-not-sell price path all read this one rule.
+ */
+export function askStepIsOwnEra(previous: number, next: number): boolean {
+  if (!(previous > 0) || !(next > 0)) return false
+  return Math.round(next) !== Math.round(previous)
+}
+
 function today(): string {
-  return new Date().toISOString().slice(0, 10)
+  return pacificDay(new Date()) ?? new Date().toISOString().slice(0, 10)
 }
 
 /** $465K. Thousands, because a price path is read at a glance, not audited. */
@@ -167,14 +184,21 @@ export function pricePathFromFinalCycle(cycle: {
   const startDate = day(cycle.listDate)
   const startPrice = price(cycle.initialAsk) ?? price(cycle.finalAsk)
   if (!startDate || startPrice == null) return null
-  const cuts: PricePathCut[] = cycle.cutsDated
+  const dated: PricePathCut[] = cycle.cutsDated
     ? cycle.cuts
         .map((c) => ({ date: day(c.date), price: price(c.ask) }))
         .filter((c): c is PricePathCut => c.date != null && c.price != null)
     : []
+  const cuts: PricePathCut[] = []
+  let era = startPrice
+  for (const cut of dated) {
+    if (!askStepIsOwnEra(era, cut.price)) continue
+    cuts.push(cut)
+    era = cut.price
+  }
   const finalAsk = price(cycle.finalAsk)
   const undatedCutTo =
-    !cycle.cutsDated && finalAsk != null && finalAsk !== startPrice ? finalAsk : null
+    !cycle.cutsDated && finalAsk != null && askStepIsOwnEra(startPrice, finalAsk) ? finalAsk : null
   const endDate =
     day(cycle.offMarketDate) ??
     (cycle.days != null && cycle.days >= 0 ? plusDays(startDate, cycle.days) : today())
@@ -201,9 +225,14 @@ export function pricePathFromFinalCycle(cycle: {
  * the line runs flat at that ask and lands on the close, and the chapter says
  * so rather than implying the ask never moved.
  *
- * The start of the period is the close date less the days it ran, which is
- * arithmetic on two recorded figures, the same derivation `offMarketFromDays`
- * already makes for the subject.
+ * The start of the period is the day the offer clock started when the row
+ * carries it (`offerFrom`, the day the listing period that produced the sale
+ * went Active), so a line that ends "offer in 47 days" starts on the day
+ * those 47 days began (61197 Cottonwood came back Nov 13; its first list in
+ * April is a different listing period, reader review 2026-10-08). Otherwise it
+ * is the close date less the days it ran, which is arithmetic on two recorded
+ * figures, the same derivation `offMarketFromDays` already makes for the
+ * subject.
  */
 export function pricePathFromSale(sale: {
   address: string
@@ -212,22 +241,30 @@ export function pricePathFromSale(sale: {
   closeDate?: string | null
   domTotal?: number | null
   daysToOffer?: number | null
+  onMarketDate?: string | null
+  offerFrom?: string | null
 }): PricePath | null {
   const closeDate = day(sale.closeDate)
   const closePrice = price(sale.closePrice)
   const ask = price(sale.listPrice) ?? closePrice
   if (!closeDate || closePrice == null || ask == null) return null
   const ran = sale.domTotal != null && sale.domTotal > 0 ? Math.round(sale.domTotal) : null
-  const startDate = plusDays(closeDate, -(ran ?? 30))
   // ONE measure per sale, and it is the one the grid already labels: days to
   // an accepted offer. The line still spans the listing period, and its two
   // date labels say so; the end label names an event, and says which event it
   // is naming. When the row carries no days-to-offer the line falls back to
   // the period it drew and labels itself "listed to closed".
-  const toOffer =
-    sale.daysToOffer != null && Number.isFinite(sale.daysToOffer) && sale.daysToOffer >= 0
-      ? Math.round(sale.daysToOffer)
-      : null
+  // An offer count longer than the run to close is not one (2107 Carrie).
+  const toOffer = closedSaleDaysToOffer({
+    daysToOffer: sale.daysToOffer,
+    measuredFrom: sale.offerFrom ?? null,
+    domTotal: ran,
+    firstListDate: sale.onMarketDate,
+    closeDate: sale.closeDate,
+  })
+  const offerStart = toOffer != null ? day(sale.offerFrom) : null
+  const startDate =
+    offerStart != null && offerStart <= closeDate ? offerStart : plusDays(closeDate, -(ran ?? 30))
   return {
     startDate,
     startPrice: ask,
@@ -254,6 +291,8 @@ export function pricePathFromListing(listing: {
   onMarketDate?: string | null
   daysOnMarket?: number | null
   status?: string | null
+  /** What `daysOnMarket` counts. 'offer' for a home under contract counted to its contract. */
+  daysMeasure?: 'offer' | 'on-market'
 }): PricePath | null {
   const startDate = day(listing.onMarketDate)
   const ask = price(listing.listPrice)
@@ -276,7 +315,9 @@ export function pricePathFromListing(listing: {
     closePrice: null,
     outcome,
     days,
-    daysMeasure: 'on-market',
+    // A home under contract whose days count to its offer (band-rivals.ts
+    // rivalDays) says so at the end of its line.
+    daysMeasure: listing.daysMeasure === 'offer' ? 'offer' : 'on-market',
     label: listing.address,
   }
 }
@@ -313,7 +354,9 @@ export function finalAskOf(path: PricePath): number {
 export function alignPricePathToLastAsk(path: PricePath | null, lastAsk: number | null): PricePath | null {
   if (!path || lastAsk == null || !(lastAsk > 0)) return path
   const end = Math.round(lastAsk)
-  if (finalAskOf(path) === end) return path
+  const current = finalAskOf(path)
+  if (current === end) return path
+  if (!askStepIsOwnEra(current, end)) return path
   return { ...path, undatedCutTo: end }
 }
 
@@ -332,9 +375,18 @@ export function subjectPricePath(args: {
   status?: string | null
   /** When the column is not allowed to print an ask, the fallback path stays blank. */
   printableAsk?: number | null
+  /**
+   * The listing's own first ask (MLS OriginalListPrice). 3062 NW Kelly Hill
+   * opened at $775,000 and is asking $699,999; with no cycle and no exposure
+   * the column printed "Original list $699,999", the ask as its own start,
+   * beside the same listing's $775,000 two tables later (reader review
+   * 2026-10-08).
+   */
+  originalListPrice?: number | null
 }): PricePath | null {
   const position = resolveAskPosition({
     lastListPrice: args.lastListPrice,
+    originalListPrice: args.originalListPrice,
     exposure: args.exposure,
   })
   const fromCycle = alignPricePathToLastAsk(pricePathFromFinalCycle(args.cycle, args.label), position.lastAsk)

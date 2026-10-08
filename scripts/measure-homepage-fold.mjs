@@ -9,7 +9,7 @@
  */
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { HOME_FOLD_LOCK } from './lib/homepage-fold-density.mjs'
 import { openGateContext } from './lib/gate-browser.mjs'
 

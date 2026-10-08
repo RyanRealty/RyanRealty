@@ -4,6 +4,7 @@ import {
   TITLE_BUDGET,
   cleanTitle,
   documentTitle,
+  fitTitle,
   pageMetadata,
   publishPlaceHomesTitle,
 } from './page-metadata'
@@ -14,6 +15,14 @@ function rendered(pageTitle: string): string {
 }
 
 describe('publishPlaceHomesTitle', () => {
+  it('drops the town before a long plat name crosses the 90-char live ceiling (2026-10-04)', () => {
+    const name = 'Greens at Redmond (the) Phase 1 & 2 Replat Lots 3-8'
+    const title = publishPlaceHomesTitle(name, 'Redmond')
+    expect(title).toBe(`${name} homes for sale`)
+    expect(title.length + ' | Ryan Realty'.length).toBeLessThanOrEqual(90)
+    expect(publishPlaceHomesTitle('Woodridge', 'Bend')).toBe('Woodridge homes for sale · Bend, Oregon')
+  })
+
   it('does not emit Central Oregon, Oregon', () => {
     expect(publishPlaceHomesTitle('8th Street Cottages', 'Central Oregon')).toBe(
       '8th Street Cottages homes for sale',
@@ -22,6 +31,30 @@ describe('publishPlaceHomesTitle', () => {
 
   it('keeps a real city with Oregon', () => {
     expect(publishPlaceHomesTitle('Tetherow', 'Bend')).toBe('Tetherow homes for sale · Bend, Oregon')
+  })
+
+  it('sheds ", Oregon", then the town, to fit the 60-char SERP width; never cuts the name (2026-10-05)', () => {
+    expect(publishPlaceHomesTitle('Ridge at Eagle Crest', 'Redmond')).toBe('Ridge at Eagle Crest homes for sale · Redmond')
+    expect(publishPlaceHomesTitle('Courtyard Garages at Broken Top', 'Bend')).toBe(
+      'Courtyard Garages at Broken Top homes for sale',
+    )
+    const long = 'South Meadow Homesite Section Third Addition of Black Butte Ranch Replat'
+    expect(publishPlaceHomesTitle(long, 'Sisters')).toBe(long)
+  })
+})
+
+describe('fitTitle', () => {
+  it('returns the first form inside TITLE_BUDGET', () => {
+    expect(fitTitle('x'.repeat(TITLE_BUDGET + 1), 'short', 's')).toBe('short')
+    expect(fitTitle('x'.repeat(TITLE_BUDGET))).toBe('x'.repeat(TITLE_BUDGET))
+  })
+
+  it('returns the last form uncut when none fits, and skips empty forms', () => {
+    const a = 'a'.repeat(TITLE_BUDGET + 5)
+    const b = 'b'.repeat(TITLE_BUDGET + 2)
+    expect(fitTitle(a, b)).toBe(b)
+    expect(fitTitle(null, '  ', 'ok')).toBe('ok')
+    expect(fitTitle()).toBe('')
   })
 })
 
@@ -60,16 +93,16 @@ describe('documentTitle — one brand line, and no sheared place names', () => {
     expect(rendered(documentTitle('Sawyer Park')).length).toBeLessThanOrEqual(60)
   })
 
-  it('drops a duplicated Central Oregon segment rather than shipping it twice', () => {
+  it('drops a trailing Central Oregon segment: a region tail is cut off in the SERP anyway', () => {
     expect(documentTitle('Smith Rock State Park | Central Oregon Parks')).toBe('Smith Rock State Park')
-    expect(rendered(documentTitle('Smith Rock State Park | Central Oregon Parks')).match(/Central Oregon/g)).toHaveLength(1)
+    expect(rendered(documentTitle('Smith Rock State Park | Central Oregon Parks'))).toBe('Smith Rock State Park | Ryan Realty')
   })
 
   it('keeps a long plat name whole instead of shearing it', () => {
     const long = 'Homes for Sale in Rock Ridge Cabin Sites of Black Butte Ranch | Central Oregon'
     const out = rendered(documentTitle(long))
     expect(out).toContain('Black Butte Ranch')
-    expect(out.match(/Central Oregon/g)).toHaveLength(1)
+    expect(out).not.toContain('Central Oregon')
   })
 
   it('keeps the city segment on an over-budget plat title', () => {
@@ -89,9 +122,10 @@ describe('documentTitle — one brand line, and no sheared place names', () => {
   })
 
   it('sheds a whole trailing segment before it ever cuts inside one', () => {
-    // 92 chars + the 31-char suffix is past the backstop; the qualifier goes,
+    // 116 chars + the 14-char suffix is past the backstop; the qualifier goes,
     // the recorded plat name does not.
-    const long = 'Homes for Sale in River Ridge Two Condominiums at Mt Bachelor Village Stage B | Bend, Oregon'
+    const long =
+      'Homes for Sale in River Ridge Two Condominiums at Mt Bachelor Village Stage B Second Addition Replat | Bend, Oregon'
     const out = documentTitle(long)
     expect(out).toContain('Mt Bachelor Village Stage B')
     expect(out).not.toContain('Bend, Oregon')
@@ -105,9 +139,9 @@ describe('documentTitle — one brand line, and no sheared place names', () => {
     expect(out).not.toMatch(/[&+|,]\s*$/)
   })
 
-  it('budgets 30 characters — the number the registry gate enforces', () => {
+  it('budgets 46 characters — the number the registry gate enforces', () => {
     expect(TITLE_BUDGET).toBe(60 - BRAND_SUFFIX.length)
-    expect(TITLE_BUDGET).toBe(30)
+    expect(TITLE_BUDGET).toBe(46)
   })
 })
 

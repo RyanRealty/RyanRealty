@@ -10,10 +10,24 @@ import {
   pocketStarvedForYearQuality,
   POCKET_STARVE_BELOW,
   POCKET_TIGHT_SET_MIN,
-  PRICING_MAX_COMPS,
+  PRICING_MIN_COMPS,
   PRICING_TARGET_COMPS,
+  PRICING_WALK_CAP,
   pricingTierLadder,
+  RANGE_MIN_KEPT,
+  RANGE_TRIM_MIN_N,
 } from '@/lib/pricing/ladder'
+
+describe('five price-setting sales is the floor and where widening stops (Matt 2026-10-07, reversing the 2026-09-10 lowering to 3)', () => {
+  it('pins the floor, the target, the trim threshold and the kept floor to one rule', () => {
+    expect(PRICING_MIN_COMPS).toBe(5)
+    expect(PRICING_MIN_COMPS).toBe(PRICING_TARGET_COMPS)
+    // The band is always the trimmed range: the floor is the trim threshold,
+    // and a five-sale set keeps three.
+    expect(RANGE_TRIM_MIN_N).toBe(PRICING_MIN_COMPS)
+    expect(RANGE_MIN_KEPT).toBe(3)
+  })
+})
 
 describe('pricingTierLadder — time before distance', () => {
   it('walks 3 then 6 then 9 months inside the subdivision before any mile ring', () => {
@@ -27,6 +41,15 @@ describe('pricingTierLadder — time before distance', () => {
     expect(names.indexOf('subdivision-9mo')).toBeLessThan(names.indexOf('nearby-1mi-3mo'))
     expect(names.indexOf('nearby-1mi-9mo')).toBeLessThan(names.indexOf('nearby-2mi-3mo'))
     expect(names.indexOf('nearby-2mi-9mo')).toBeLessThan(names.indexOf('similar-sub-3mo'))
+    const nearby = names.filter((name) => name.startsWith('nearby-'))
+    expect(nearby[0]).toBe('nearby-0.25mi-3mo')
+    expect(nearby[0]?.startsWith('nearby-1mi-')).toBe(false)
+    const radii: string[] = []
+    for (let quarter = 1; quarter <= 8; quarter++) {
+      const miles = quarter / 4
+      for (const months of [3, 6, 9]) radii.push(`nearby-${miles}mi-${months}mo`)
+    }
+    expect(nearby).toEqual(radii)
   })
 
   it('resets the clock when distance opens', () => {
@@ -43,9 +66,11 @@ describe('pricingTierLadder — time before distance', () => {
     }
   })
 
-  it('stops at five sales, and never prices more than five', () => {
+  it('stops widening the area at five sales, and keeps up to seven (walk to 7, price on 5+, Matt 2026-10-07)', () => {
     expect(PRICING_TARGET_COMPS).toBe(5)
-    expect(PRICING_MAX_COMPS).toBe(5)
+    expect(PRICING_WALK_CAP).toBe(7)
+    // Seven candidates leave room for the review to drop two and still price on the floor.
+    expect(PRICING_WALK_CAP - 2).toBe(PRICING_MIN_COMPS)
   })
 
   it('inserts wider custom time-first rungs before similar-sub for custom/new', () => {
@@ -61,8 +86,9 @@ describe('pricingTierLadder — containment (Matt 2026-09-08)', () => {
   it('exhausts the subdivision to 12 months, then the plats next to it, before any mile ring', () => {
     const names = pricingTierLadder().map((t) => t.name)
     expect(names.indexOf('subdivision-9mo-wide')).toBeLessThan(names.indexOf('subdivision-12mo'))
-    expect(names.indexOf('subdivision-12mo-wide')).toBeLessThan(names.indexOf('pocket-3mo'))
-    expect(names.indexOf('pocket-12mo')).toBeLessThan(names.indexOf('adjacent-sub-3mo'))
+    expect(names.indexOf('subdivision-24mo-wide')).toBeLessThan(names.indexOf('adjacent-sub-3mo'))
+    expect(names.indexOf('adjacent-sub-24mo')).toBeLessThan(names.indexOf('closer-sub-3mo'))
+    expect(names.indexOf('closer-sub-24mo')).toBeLessThan(names.indexOf('pocket-3mo'))
     expect(names.filter((n) => n.startsWith('adjacent-sub-'))).toEqual([
       'adjacent-sub-3mo',
       'adjacent-sub-6mo',
@@ -71,6 +97,7 @@ describe('pricingTierLadder — containment (Matt 2026-09-08)', () => {
       'adjacent-sub-18mo',
       'adjacent-sub-24mo',
     ])
+    expect(names.indexOf('pocket-12mo')).toBeLessThan(names.indexOf('nearby-0.25mi-3mo'))
     expect(names.indexOf('adjacent-sub-12mo')).toBeLessThan(names.indexOf('nearby-1mi-3mo'))
   })
 
@@ -92,18 +119,24 @@ describe('pricingTierLadder — the parent level (Matt 2026-09-09)', () => {
   const names = pricingTierLadder().map((t) => t.name)
 
   it('holds a plat to its community before any ring, and reaches two years inside first', () => {
-    expect(names.indexOf('subdivision-24mo')).toBeLessThan(names.indexOf('pocket-3mo'))
-    expect(names.indexOf('pocket-12mo')).toBeLessThan(names.indexOf('adjacent-sub-3mo'))
+    expect(names.indexOf('subdivision-24mo-wide')).toBeLessThan(names.indexOf('adjacent-sub-3mo'))
+    expect(names.indexOf('adjacent-sub-24mo')).toBeLessThan(names.indexOf('closer-sub-3mo'))
+    expect(names.indexOf('closer-sub-24mo')).toBeLessThan(names.indexOf('pocket-3mo'))
+    expect(names.indexOf('pocket-12mo')).toBeLessThan(names.indexOf('community-6mo'))
+    expect(names.indexOf('community-24mo')).toBeLessThan(names.indexOf('nearby-0.25mi-3mo'))
     expect(names.filter((n) => n.startsWith('pocket-'))).toEqual([
       'pocket-3mo',
       'pocket-6mo',
       'pocket-9mo',
       'pocket-12mo',
     ])
-    expect(names.indexOf('adjacent-sub-24mo')).toBeLessThan(names.indexOf('community-6mo'))
+    expect(names.indexOf('adjacent-sub-12mo')).toBeLessThan(names.indexOf('community-6mo'))
+    expect(names.indexOf('subdivision-24mo-wide')).toBeLessThan(names.indexOf('adjacent-sub-3mo'))
+    expect(names.indexOf('adjacent-sub-24mo')).toBeLessThan(names.indexOf('closer-sub-3mo'))
     expect(names.indexOf('pocket-12mo')).toBeLessThan(names.indexOf('community-6mo'))
     expect(names.filter((n) => n.startsWith('community-'))).toEqual(['community-6mo', 'community-12mo', 'community-24mo'])
-    expect(names.indexOf('community-24mo')).toBeLessThan(names.indexOf('nearby-1mi-3mo'))
+    expect(names.indexOf('community-24mo')).toBeLessThan(names.indexOf('nearby-0.25mi-3mo'))
+    expect(names.indexOf('nearby-0.25mi-3mo')).toBeLessThan(names.indexOf('nearby-1mi-3mo'))
   })
 
   it('exhausts the boundary to two years before any rung may leave it', () => {
@@ -133,7 +166,7 @@ describe('pricingTierLadder — the parent level (Matt 2026-09-09)', () => {
         expect(isGeographyWidenTier(t)).toBe(true)
         expect(isPocketExclusiveTier(t)).toBe(false)
       }
-      if (t.name.startsWith('community-') || t.name.startsWith('adjacent-') || t.name.startsWith('like-community')) {
+      if (t.name.startsWith('community-') || t.name.startsWith('adjacent-') || t.name.startsWith('closer-sub') || t.name.startsWith('like-community')) {
         expect(isGeographyWidenTier(t)).toBe(false)
       }
     }
@@ -156,8 +189,9 @@ describe('pricingTierLadder — the parent level (Matt 2026-09-09)', () => {
     expect(pocketHoldsGeographyExclusive(2, 0, true)).toBe(true)
     expect(pocketHoldsGeographyExclusive(1, 0, true)).toBe(false)
     // Two closed sales inside a quarter mile are a tight cluster and still
-    // short of the 3-sale floor. The ladder keeps walking. Three or more
-    // may stop, which is what keeps Canter off the mile rings.
+    // short of the five-sale floor (Matt 2026-10-07). The ladder keeps
+    // walking. A tight closed-plus-pending cluster may stop, which is what
+    // keeps Canter off the mile rings.
     expect(pocketStopsLaterRungs({ kept: 2, exclusiveClosed: 2, clusterPocket: true })).toBe(false)
     expect(
       pocketStopsLaterRungs({ kept: 2, exclusiveClosed: 2, exclusivePending: 1, clusterPocket: true }),
@@ -201,5 +235,59 @@ describe('keepTightestByClosePrice — as-of date (WP5 item d, back-dated CMA)',
     // ~24 months stale and loses its slot to E instead.
     const kept = keepTightestByClosePrice(comps, 5, '2026-06-15')
     expect(kept.map((c) => c.key).sort()).toEqual(['A', 'B', 'C', 'D', 'E'])
+  })
+})
+
+describe('keepTightestByClosePrice — only the place that reached five gives up a seat (walk to 7, Matt 2026-10-07)', () => {
+  const comps = [
+    { key: 'EARLY', rung: 'early', closePrice: 640_000, closeDate: '2026-06-01' },
+    { key: 'R1', rung: 'reach', closePrice: 500_000, closeDate: '2026-06-01' },
+    { key: 'R2', rung: 'reach', closePrice: 505_000, closeDate: '2026-06-01' },
+    { key: 'R3', rung: 'reach', closePrice: 495_000, closeDate: '2026-06-01' },
+    { key: 'R4', rung: 'reach', closePrice: 510_000, closeDate: '2026-06-01' },
+    { key: 'R5', rung: 'reach', closePrice: 490_000, closeDate: '2026-06-01' },
+    { key: 'R6', rung: 'reach', closePrice: 515_000, closeDate: '2026-06-01' },
+    { key: 'R7', rung: 'reach', closePrice: 560_000, closeDate: '2026-06-01' },
+    { key: 'R8', rung: 'reach', closePrice: 440_000, closeDate: '2026-06-01' },
+  ]
+
+  it('without a limit the price-far earlier sale is the first to go', () => {
+    const kept = keepTightestByClosePrice(comps, 7)
+    expect(kept.map((c) => c.key)).not.toContain('EARLY')
+  })
+
+  it('with the reaching rung named, the earlier sale keeps its seat and the reaching rung keeps its tightest', () => {
+    const kept = keepTightestByClosePrice(comps, 7, undefined, (c) => c.rung === 'reach')
+    expect(kept).toHaveLength(7)
+    expect(kept.map((c) => c.key)).toContain('EARLY')
+    expect(kept.map((c) => c.key)).not.toContain('R7')
+    expect(kept.map((c) => c.key)).not.toContain('R8')
+  })
+
+  it('stops when nothing left may go', () => {
+    const kept = keepTightestByClosePrice(comps, 3, undefined, (c) => c.key === 'R8')
+    expect(kept).toHaveLength(comps.length - 1)
+    expect(kept.map((c) => c.key)).not.toContain('R8')
+  })
+})
+
+describe('pricingTierLadder — each rung states its own window (915 Saginaw trace, 2026-10-07)', () => {
+  it('prints the months the rung actually reached, not 9 on every city rung', () => {
+    const tiers = pricingTierLadder()
+    const city = tiers.filter((t) => /^city-5mi-\d+mo$/.test(t.name))
+    expect(city.map((t) => t.name)).toEqual(['city-5mi-9mo', 'city-5mi-18mo', 'city-5mi-24mo'])
+    for (const t of city) {
+      expect(t.disclosure).toContain(`5 miles and ${t.monthsBack} months`)
+      expect(t.disclosure).toContain(`did not fill ${PRICING_TARGET_COMPS} sales`)
+      expect(t.disclosure).not.toMatch(/\beight\b/)
+    }
+    const eighteen = tiers.find((t) => t.name === 'city-5mi-18mo')!
+    expect(eighteen.disclosure).not.toContain('9 months')
+    for (const t of tiers.filter((x) => x.name.startsWith('beyond-'))) {
+      expect(t.disclosure).toContain(`in ${t.monthsBack} months`)
+    }
+    const rural = tiers.find((t) => t.name === 'rural-15mi-18mo')!
+    expect(rural.disclosure).toContain(`short of ${PRICING_TARGET_COMPS},`)
+    expect(rural.disclosure).not.toMatch(/\beight\b/)
   })
 })

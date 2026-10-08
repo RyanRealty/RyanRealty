@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-10-02T00:00:48.228Z
+**Generated:** 2026-10-08T17:58:16.442Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -59,7 +59,7 @@ One row per MLS-history event for a listing. snake_case columns; `listing_key` r
 | `sort_order` | integer | no | 0 |
 | `created_at` | timestamp with time zone | no | now() |
 
-### `listings` · **rows ≈ 618,213**
+### `listings` · **rows ≈ 691,812**
 
 Source-of-truth RETS-style listings table (~589K rows). **Quotable mixed-case columns** — `"ListingKey"`, `"StreetNumber"`, `"StreetName"`, `"ListPrice"`, `"StandardStatus"`, `"Latitude"`, `"Longitude"`, etc. The `details` jsonb column carries the raw RETS payload. **Never aggregate from this table at request time** — use `listing_tile_mv` / `market_pulse_live` / `market_stats_cache`.
 
@@ -242,7 +242,7 @@ Source-of-truth RETS-style listings table (~589K rows). **Quotable mixed-case co
 
 ## Listings — derived (materialized views)
 
-### `listing_tile_mv` · **rows ≈ 597,754**
+### `listing_tile_mv` · **rows ≈ 599,280**
 
 Pre-projected single-row-per-listing view for tile + map rendering. snake_case columns. A view over the table listing_tile_mv_src, kept current every minute by pg_cron `listing-mv-drain` (20260924173000; a matview refreshed every 30 minutes before that). The canonical read path for any "list of listings" surface — homepage Featured, search results, similar-listings hydration.
 
@@ -287,7 +287,7 @@ Pre-projected single-row-per-listing view for tile + map rendering. snake_case c
 | `search_vector` | tsvector | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `similar_listings_mv` · **rows ≈ 72,749**
+### `similar_listings_mv` · **rows ≈ 74,105**
 
 (anchor_key, similar_key, rank, similarity_score) — precomputed nearest 12 active comparables per anchor. Refreshed nightly via `/api/cron/refresh-similar-listings`. Active-set only (closed anchors return empty).
 
@@ -356,7 +356,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `methodology_version` | text | yes |  |
 | `methodology` | jsonb | yes |  |
 
-### `market_stats_cache` · **rows ≈ 19,947**
+### `market_stats_cache` · **rows ≈ 20,748**
 
 6-hour freshness. Per-geo + per-window aggregated stats. **DAL:** `getMarketStats(...)`. **Known issue 2026-05-28:** column list in the current DAL does not match the cache schema — fix deferred.
 
@@ -539,7 +539,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `dom_total` | smallint | yes |  |
 | `price_per_sqft` | numeric | yes |  |
 
-### `cmas` · **rows ≈ 607**
+### `cmas` · **rows ≈ 679**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -630,7 +630,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `pulled_at` | timestamp with time zone | yes |  |
 | `north_star_attributed_buyer_leads` | integer | no | 0 |
 
-### `expired_listings` · **rows ≈ 598**
+### `expired_listings` · **rows ≈ 650**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -691,7 +691,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `outreach_email_queued_at` | timestamp with time zone | yes |  |
 | `outreach_email_verify_attempts` | integer | no | 0 |
 
-### `marketing_brain_actions` · **rows ≈ 1,073**
+### `marketing_brain_actions` · **rows ≈ 1,151**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -2549,6 +2549,20 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `scope` | text | yes |  |
 | `created_at` | timestamp with time zone | no | now() |
 | `updated_at` | timestamp with time zone | no | now() |
+
+### `gsc_listing_index_flags`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `url` | text | no |  |
+| `listing_number` | text | no |  |
+| `flag` | text | no |  |
+| `coverage_state` | text | yes |  |
+| `google_canonical` | text | yes |  |
+| `user_canonical` | text | yes |  |
+| `last_crawl_at` | timestamp with time zone | yes |  |
+| `inspected_at` | timestamp with time zone | no | now() |
+| `recrawl_after` | timestamp with time zone | no | now() |
 
 ### `gsc_page_daily`
 

@@ -32,10 +32,13 @@
  */
 
 import { selectCmaCompsPool, selectCmaCompsByKeys } from '@/lib/data/cma/builderReads'
-import { getSubdivisionRing, assignSubdivisionSlugs } from '@/lib/data/geo/subdivision-ring'
-import { keepTightestByClosePrice } from '@/lib/pricing/ladder'
+import { getSubdivisionRing, assignSubdivisionSlugs, assignCommunitySlugs } from '@/lib/data/geo/subdivision-ring'
+import { getPlatFamilyFootprint } from '@/lib/data/subdivisions/getPlatFamilyFootprint'
+import { keepTightestByClosePrice, PRICING_MIN_COMPS, PRICING_TARGET_COMPS, PRICING_WALK_CAP } from '@/lib/pricing/ladder'
+import type { CompRefillBench } from '@/lib/cma/review-refill'
 import { resolveConcessions, sellerNetFromPrice } from '@/lib/pricing/seller-net'
 import {
+  closedSaleDaysToOffer,
   closedSaleDomTotal,
   earliestClosedCompListDate,
   listingHistoryLine as buildListingHistoryLine,
@@ -43,7 +46,7 @@ import {
 import { hydrateClosedCompDaysOnMarket } from '@/lib/cma/hydrate-closed-comp-dom'
 import type { CmaListingRow } from '@/lib/data/cma/builderReads'
 import type { CmaComp, CmaSubject } from '@/lib/cma/types'
-import { saneYearBuilt } from '@/lib/cma/subject'
+import { mlsTriBool, saneYearBuilt } from '@/lib/cma/subject'
 import { ACREAGE_THRESHOLD_ACRES, landProduct } from '@/lib/cma/land-pricing'
 import {
   distanceMiles,
@@ -53,8 +56,10 @@ import {
   yearQualityCompatible,
   acreageInfrastructureCompatible,
   marketAreaBounds,
+  geometryBounds,
   radiusBounds,
   marketAreaName,
+  type LatLngBounds,
   proximityLabel,
   resolveMarketArea,
   compPoolPropertySubType,
@@ -64,6 +69,7 @@ import {
   countByTier,
   diagnoseStarvation,
   emptyExclusions,
+  shortageLead,
   type CompExclusionCounts,
   type CompSelectionDiagnostics,
   type CompTierTrace,
@@ -77,56 +83,79 @@ import {
 } from '@/lib/cma/comp-tiers'
 import { outbuildingsCompatible, terrainCompatible, zoningClassCompatible } from '@/lib/pricing/rural'
 import { resolveSaleZones } from '@/lib/pricing/sale-zoning'
-import { communitySlugForSubdivision, isResortCommunity, resortCommunityCompatible } from '@/lib/cma/resort-guard'
+import { resortMembershipCompatible, saleSearchCommunitySlug, searchCommunitySlug } from '@/lib/cma/community-location'
+import { communitySlugForSubdivision, isResortCommunity } from '@/lib/cma/resort-guard'
 import {
-  ANCHOR_MIN_N,
+  anchorFromSamples,
+  anchorPlaceNames,
+  anchorPlacePhrase,
+  anchorSampler,
   ANCHOR_RADIUS_MILES,
   ANCHOR_RURAL_RADII_MILES,
   isOwnPlatRung,
   samePlat,
   sameStreetPeer,
   streetKey,
+  type AnchorSample,
+  type PriceAnchorSource,
 } from '@/lib/pricing/price-anchor'
 import { ageRestrictedMismatch, ownPlatAgeRestrictedShare } from '@/lib/pricing/age-restricted'
 import { roomCountsDecision } from '@/lib/pricing/room-ground'
-import { SAME_NEIGHBORHOOD_TIER_RATIO, STARVED_TIER_WIDEN, SUBDIVISION_TIER_RATIO, normSubdivision } from '@/lib/pricing/classes'
+import { citySlug, normSubdivision } from '@/lib/pricing/classes'
+import { describePriceTierLine, insidePriceTier, priceTierLine, salePpsf, type PriceTierLine } from '@/lib/pricing/price-tier'
 import { inferSubdivisionPocket, POCKET_RADIUS_MILES } from '@/lib/pricing/infer-pocket'
-import { isClusterPocket, pocketStopsLaterRungs } from '@/lib/pricing/ladder'
+import { isClusterPocket, LOCAL_POOL_RADIUS_MILES, pocketStopsLaterRungs } from '@/lib/pricing/ladder'
+import { locationMatchFromFacts } from '@/lib/pricing/closed-comp-weight'
+import { subjectHasRecordedSubdivision } from '@/lib/pricing/match'
+import { printedBaths } from '@/lib/pricing/bath-count'
+import { saleSetsThePrice } from '@/lib/pricing/price-set'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
 import { crossesNamedRiver } from '@/lib/pricing/river-cross'
 import {
+  aduSaleRefused,
+  classifyHoa,
   customLotCompatible,
+  dropsResaleVersusNewBuild,
   isCustomOrNewSubject,
-  isNewBuild,
-  newConstructionCompatible,
+  multiUnitFromRemarks,
   type IrrigationClass,
 } from '@/lib/pricing/classes'
 
 export { realSubdivision }
 
 /**
- * Floor for a priced set. Thin sets must widen before the letter paints.
+ * Floor for a priced set: five price-setting sales, one number across both
+ * ladders (lib/pricing/ladder.ts PRICING_MIN_COMPS).
  *
- * ONE FLOOR ACROSS BOTH PATHS (Matt 2026-09-10). This was 5 while the facts
- * ladder's PRICING_MIN_COMPS was 3, and the difference was drift, not a
- * decision: the same home priced or failed depending on which ladder
- * pickCompSource sent it down. 63 queue documents were failing for want of
- * comparable sales, every one of them a person who asked for a value and got
- * nothing. A three-sale document is thin, and it still carries the dispersion
- * guard, the accuracy contract and a review flag before anyone sees it.
+ * History. This was 5 while the facts ladder's PRICING_MIN_COMPS was 3, and
+ * on 2026-09-10 Matt lowered both to 3 to rescue 63 queue documents failing
+ * for want of comparable sales. On 2026-10-07 he reversed that: a three-sale
+ * letter printed a raw min-to-max band and one stray sale put the failed ask
+ * inside it, which contradicts the letter. The floor is five price-setting
+ * sales, the band is always the trimmed range, and a sale that does not set
+ * the price (lib/pricing/price-set.ts) never counts toward the five.
  */
-export const MIN_COMPS = 3
+export const MIN_COMPS = PRICING_MIN_COMPS
 /**
  * Stop climbing the ladder at 5 (Matt 2026-07-30). The target is not "as many
  * comps as possible" — every extra comp is bought by widening geography or
  * time, so a target of 6 forced one more descent down the ladder than the
  * analysis needed. Five closed sales support the three pricing methods, and
- * stopping there keeps the set in the tightest tier that can fill it.
+ * stopping there keeps the set in the tightest tier that can fill it. The
+ * facts ladder stops widening at the same five (PRICING_TARGET_COMPS).
  */
-export const TARGET_COMPS = 5
-/** Same cap as the facts ladder. A rung that overshoots is cut to five tight prices. */
-export const MAX_COMPS = 5
+export const TARGET_COMPS = PRICING_TARGET_COMPS
+/**
+ * Same cap as the facts ladder: walk to 7, price on 5+ (Matt 2026-10-07).
+ * The subject's own plat and pocket walk their whole window; once the set
+ * holds five, no rung that widens the area runs. Own ground that reached
+ * five keeps up to seven, newest closes first, so the comparability review
+ * can drop one or two and the set still prices on the five-sale floor. A
+ * widening rung that reached five adds only the shortfall: the set is five
+ * (only what's needed, Matt 2026-10-07). An earlier place keeps its seats.
+ */
+export const MAX_COMPS = PRICING_WALK_CAP
 
 function num(v: unknown): number | null {
   if (v == null) return null
@@ -201,6 +230,15 @@ function rowToComp(row: CmaListingRow, tier: string, land = false): CmaComp | nu
     originalEntryTimestamp: originalEntry,
     originalOnMarketTimestamp: originalOnMarket,
   })
+  // days_to_pending counts from the current OnMarketDate; put it on the
+  // first-list start the DOM above uses, or drop it when it outruns the close.
+  daysToOffer = closedSaleDaysToOffer({
+    daysToOffer,
+    measuredFrom: onMarket,
+    firstListDate: onMarketDate,
+    domTotal,
+    closeDate: closeDay,
+  })
   return {
     listingKey,
     mlsNumber: str(row['ListNumber']),
@@ -212,10 +250,17 @@ function rowToComp(row: CmaListingRow, tier: string, land = false): CmaComp | nu
     longitude: num(row['Longitude']),
     beds: num(row['BedroomsTotal']),
     baths: num(row['BathroomsTotal']),
+    bathsFull: num(row['baths_full']),
+    bathsHalf: num(row['baths_half']),
     sqft,
     lotAcres,
     propertySubType: str(row['property_sub_type']),
     yearBuilt: saneYearBuilt(num(row['year_built'])),
+    newConstructionYn: (() => {
+      const fromCol = mlsTriBool(row['new_construction_yn'])
+      if (fromCol != null) return fromCol
+      return mlsTriBool(row['new_construction_details'])
+    })(),
     garageSpaces: num(row['garage_spaces']),
     photoUrl: str(row['PhotoURL']),
     publicRemarks: str(row['public_remarks']),
@@ -243,6 +288,13 @@ function rowToComp(row: CmaListingRow, tier: string, land = false): CmaComp | nu
     }),
     selectionTier: tier,
     photosCount: num(row['photos_count']),
+    // The MLS association fields, read the way the facts walk reads them. A
+    // community made up from a plat name walls the search only for a home
+    // that carries an HOA (lib/cma/community-location.ts searchCommunitySlug).
+    hoaClass: classifyHoa(
+      mlsTriBool(row['association_yn']),
+      num(row['association_fee']) ?? num(row['hoa_monthly']),
+    ),
   }
 }
 
@@ -262,13 +314,6 @@ function isoMonthsAgo(months: number): string {
 function unitRate(comp: CmaComp, land: boolean): number {
   const size = land ? (comp.lotAcres ?? 0) : comp.sqft
   return size > 0 ? comp.closePrice / size : 0
-}
-
-function medianOf(values: readonly number[]): number {
-  if (values.length === 0) return 0
-  const sorted = [...values].sort((a, b) => a - b)
-  const mid = Math.floor(sorted.length / 2)
-  return sorted.length % 2 === 0 ? (sorted[mid - 1]! + sorted[mid]!) / 2 : sorted[mid]!
 }
 
 function similarityScore(subjectSize: number, comp: CmaComp, land = false): number {
@@ -297,6 +342,13 @@ export interface CompSelection {
    * build measures it over the candidates (lib/cma/judgment-prune.ts).
    */
   ownPlatAgeRestrictedShare?: number | null
+  /**
+   * REFILL FROM THE SAME RUNG (Matt 2026-10-08): the rung that reached five,
+   * whether it widened the area, and its remaining qualifying sales in the
+   * rung's order, for the comparability review (lib/cma/review-refill.ts).
+   * Absent on a broker-picked set.
+   */
+  refill?: CompRefillBench
 }
 
 function emptyDiagnostics(
@@ -327,6 +379,7 @@ function emptyDiagnostics(
     min_comps: MIN_COMPS,
     candidates: 0,
     excluded_totals: emptyExclusions(),
+    not_price_setting: 0,
     outliers_excluded: 0,
     final_count: 0,
     final_tier_counts: {},
@@ -363,11 +416,15 @@ export async function selectComps(
     subjectIrrigation?: IrrigationClass | null
     subjectZoning?: string | null
     /** The CMA's own as-of date (lib/pricing/select.ts threads this through
-     *  from selectCompsPreferringFacts). Undefined keeps keepTightestByClosePrice's
-     *  no-asOf behavior (no staleness penalty) rather than assuming today. */
+     *  from selectCompsPreferringFacts; lib/cma/build.ts passes the build
+     *  date). Omitted means today, so the dry run, the BPO engine, place comps
+     *  and the sell page cull exactly as a build made today would: the
+     *  staleness penalty in keepTightestByClosePrice applies on every path
+     *  (review 2026-10-07). */
     asOf?: string
   } = {},
 ): Promise<CompSelection> {
+  const asOf = (opts.asOf ?? new Date().toISOString()).slice(0, 10)
   const sqft = subject.sqft ?? 0
   // Land is priced per ACRE, not per square foot, so a land subject legitimately
   // has no living area and must not fall into the bail below. Selection used to
@@ -431,11 +488,14 @@ export async function selectComps(
   )
 
   const ruralAcreage = isRuralAcreage(subject, subjectArea)
-  // Containment (Matt 2026-09-08): the plats next to the subject's, inside its
-  // neighborhood polygon when it has one. Fail-open: no ring, no adjacent rung.
+  // Every plat that touches the subject's, closest first. The parent wall
+  // refuses one that sits outside the subject's community. A neighborhood
+  // line does not hide a touching plat.
   const ring = await getSubdivisionRing(subject.latitude, subject.longitude)
   const adjacentSlugs = new Set(
-    (ring?.ring ?? []).filter((r) => r.inNeighborhood !== false).map((r) => r.slug),
+    [...(ring?.ring ?? [])]
+      .sort((a, b) => a.pointM - b.pointM || a.rank - b.rank)
+      .map((r) => r.slug),
   )
   if (ring) {
     trace.push(
@@ -443,6 +503,36 @@ export async function selectComps(
         ? `Subject plat: ${ring.homeLabel}. ${adjacentSlugs.size} plat(s) touch it${subjectArea ? ' inside the same neighborhood' : ''}: ${[...(ring.ring ?? [])].filter((r) => adjacentSlugs.has(r.slug)).slice(0, 8).map((r) => r.label).join(', ')}${adjacentSlugs.size > 8 ? ', …' : ''}.`
         : `Subject plat: ${ring.homeLabel}. No plat touches it inside the boundary, so the adjacent-subdivision rung is skipped.`,
     )
+  }
+  /**
+   * THE TOUCHING-PLAT READ IS BOUNDED BY THE TOUCHING PLATS (2026-10-08). The
+   * adjacent rung has no radius and no polygon of its own, so it read the 100
+   * newest closes in the whole city and kept the few inside a touching plat:
+   * on 1355 Jacksonville that was four rungs of 100 city-wide rows, printed as
+   * "400 outside the subject's neighborhood boundary". The read is now the box
+   * around the touching plats' recorded outline (public.subdivision_footprint
+   * through the plat-family DAL), up to the bounded 500-row page; when that
+   * outline cannot be read, the neighborhood's box; when there is neither,
+   * the old city-wide read.
+   */
+  let touchingBounds: LatLngBounds | null | undefined
+  const readTouchingBounds = async (): Promise<LatLngBounds | null> => {
+    if (touchingBounds !== undefined) return touchingBounds
+    let outline: LatLngBounds | null = null
+    if (ring && adjacentSlugs.size > 0) {
+      try {
+        const footprint = await getPlatFamilyFootprint({
+          familySlug: `touching-${ring.homeSlug}`,
+          memberSlugs: [...adjacentSlugs],
+        })
+        outline = geometryBounds(footprint?.geometry ?? null)
+      } catch (err) {
+        console.error('[selectComps] touching-plat outline', err instanceof Error ? err.message : err)
+        outline = null
+      }
+    }
+    touchingBounds = outline ?? marketAreaBounds(subjectArea)
+    return touchingBounds
   }
   const customOrNew = isCustomOrNewSubject({
     yearBuilt: subject.yearBuilt,
@@ -547,29 +637,88 @@ export async function selectComps(
    */
   let anchorPpsf: number | null = null
   let anchorN = 0
+  /** Which level held the median, and where, as the trace says it (lib/pricing/price-anchor.ts). */
+  let anchorLevel: PriceAnchorSource | null = null
+  let anchorWhere: string | null = null
   /**
-   * ONE SALE against a MEDIAN, so the wider ratio. The 1.15 neighborhood ratio
-   * grades a subdivision median against another median — stable figures. A
-   * single sale swings much further than that on condition alone: at 1.15 the
-   * cut threw out 31 Benaiah, the same 2,080 sqft plan on the subject's own
-   * street, which is the best evidence this document has.
+   * ONE 20% LINE (Matt 2026-10-08, lib/pricing/price-tier.ts). A sale's own
+   * closed $/sqft (closePrice / sqft, before date adjustment) must sit within
+   * 20% of the anchor, the same line the comparability review grounds a
+   * price-tier cut on, so the search never seats a sale the review would drop
+   * for price. It replaced a 30% gap (SUBDIVISION_TIER_RATIO), which seated
+   * sales the review then cut and split its vote on. The same-street twin is
+   * still exempt (31 Benaiah), and so is the subject's own plat rung.
    */
-  const anchorTierRatio = SUBDIVISION_TIER_RATIO
-  /** Sentences the starved widening added, folded into the disclosures below. */
-  const disclosedWidening: string[] = []
+  let priceLine: PriceTierLine | null = null
   // Sales set aside for sitting across a river from an unmapped subject.
   let crossedFeature = 0
-  // The parent the subject's plat sits inside, from the recorded-plat registry.
-  const subjectCommunity = communitySlugForSubdivision(subject.subdivision)
+  // The community whose boundary contains the address. The MLS name is only
+  // the fallback when the point was not tested. Remarks are never membership.
+  // membershipCommunity is where the address sits; subjectCommunity is that
+  // community only when it walls the search (Matt 2026-10-08, "Only real
+  // communities": the registry, the named real derived communities, or a home
+  // that carries an HOA). A community made up from a plat name, with no HOA,
+  // is an ordinary plat here exactly as on the facts walk.
+  let membershipCommunity = communitySlugForSubdivision(subject.subdivision)
+  let subjectCommunityLocated = false
+  const subjectLocated = await assignCommunitySlugs([
+    { lat: subject.latitude ?? null, lng: subject.longitude ?? null },
+  ])
+  if (subjectLocated) {
+    subjectCommunityLocated = true
+    membershipCommunity = subjectLocated[0] ?? null
+    subject.communityLocated = true
+    subject.communitySlug = membershipCommunity
+  }
+  const subjectCommunityAddress = {
+    communitySlug: membershipCommunity,
+    communityLocated: subjectCommunityLocated,
+    subdivision: subject.subdivision,
+    subdivisionSlug: subject.subdivisionSlug ?? null,
+    hoaClass: classifyHoa(subject.associationYn ?? null, subject.associationFee ?? subject.hoaMonthly ?? null),
+  }
+  const subjectCommunity = searchCommunitySlug(subjectCommunityAddress)
+  const communityByKey = new Map<string, string | null>()
+  const saleMembershipOf = (listingKey: string, subdivision: string | null): string | null =>
+    communityByKey.has(listingKey)
+      ? (communityByKey.get(listingKey) ?? null)
+      : communitySlugForSubdivision(subdivision)
+  /** The sale's wall community, read against the subject (one place, one answer). */
+  const saleCommunityOf = (comp: Pick<CmaComp, 'listingKey' | 'subdivision' | 'subdivisionSlug' | 'hoaClass'>): string | null =>
+    saleSearchCommunitySlug(subjectCommunityAddress, {
+      communitySlug: saleMembershipOf(comp.listingKey, comp.subdivision),
+      communityLocated: communityByKey.has(comp.listingKey),
+      subdivision: comp.subdivision,
+      subdivisionSlug: comp.subdivisionSlug ?? null,
+      hoaClass: comp.hoaClass ?? null,
+    })
+  const resortOk = (listingKey: string, subdivision: string | null): boolean =>
+    resortMembershipCompatible(
+      {
+        communitySlug: membershipCommunity,
+        communityLocated: subjectCommunityLocated,
+        subdivision: subject.subdivision,
+      },
+      {
+        communitySlug: saleMembershipOf(listingKey, subdivision),
+        communityLocated: communityByKey.has(listingKey),
+        subdivision,
+      },
+    )
 
   // THE PRICE TIER, READ ONCE, BEFORE THE LADDER WALKS.
   //
   // It has to be one deterministic read, not a sample accumulated as the rungs
   // fetch: an anchor that grows mid-walk depends on which rung happened to run
   // first, and two builds of the same home minutes apart chose different comp
-  // sets because of it. This asks one question — what does a home of roughly
-  // this size sell for per square foot in your home's own neighborhood, or
-  // within a mile of it — over twelve months and a wide size band.
+  // sets because of it. This asks one question, what does a home of roughly
+  // this size sell for per square foot in your home's own area, over twelve
+  // months and a wide size band, and answers it at the narrowest level that
+  // holds a fair median: the home's plat, its subdivision family, its MLS
+  // subdivision, its community, its neighborhood, a ring around it, its city
+  // (Matt 2026-10-08, anchorFromSamples in lib/pricing/price-anchor.ts, the
+  // same walk the facts ladder runs). 3062 NW Kelly Hill was graded against
+  // Summit West's $609 while its own Westside Meadows sells near $380.
   const subjectSqft = subject.sqft ?? 0
   if (!land && subjectSqft > 0) {
     // ONE READ, wide enough to hold every ring the anchor may fall back to. A
@@ -579,54 +728,135 @@ export async function selectComps(
     // the county. Houses are further apart there, so the tier is measured over
     // more ground, never over fewer sales: ANCHOR_MIN_N binds at every ring.
     const widestRadius = ANCHOR_RURAL_RADII_MILES[ANCHOR_RURAL_RADII_MILES.length - 1]!
-    const anchorRows = await selectCmaCompsPool({
+    const anchorRead = {
       cityIlike: subject.city,
       closeDateGte: isoMonthsAgo(12),
       sqftMin: Math.round(subjectSqft * 0.6),
       sqftMax: Math.round(subjectSqft * 1.6),
-      bounds: radiusBounds(subjectPoint, widestRadius),
+      // Every anchor read asks for 800 rows; the bounded read returns at most
+      // 500, newest closes first (selectCmaCompsPool).
       limit: 800,
       // The SAME population the ladder itself reads. A tier median sampled from
       // a different property segment is a different market's number.
       propertySubType: sqlSubType,
       propertyType: segment,
+    }
+    // THE HOME'S OWN GROUND, COMPLETE. The wide read is the newest closes in
+    // an eight-mile box, which in Bend is the last few months, not twelve: a
+    // plat's year of sales would mostly fall off its end. So the narrow levels
+    // (plat, family, MLS name, community) also read the mile around the home
+    // and the home's own MLS subdivision name over the full twelve months, two
+    // small reads that do not reach the row cap. The neighborhood, ring and
+    // city levels read the wide read alone, exactly as before.
+    const subjectName = realSubdivision(subject.subdivision)
+    const [wideRows, nearRows, nameRows] = await Promise.all([
+      selectCmaCompsPool({ ...anchorRead, bounds: radiusBounds(subjectPoint, widestRadius) }),
+      subject.latitude != null && subject.longitude != null
+        ? selectCmaCompsPool({ ...anchorRead, bounds: radiusBounds(subjectPoint, ANCHOR_RADIUS_MILES) })
+        : Promise.resolve([] as CmaListingRow[]),
+      subjectName
+        ? selectCmaCompsPool({
+            ...anchorRead,
+            subdivisionIlike: subjectName,
+            bounds: radiusBounds(subjectPoint, widestRadius),
+          })
+        : Promise.resolve([] as CmaListingRow[]),
+    ])
+    const graded: Array<{ comp: CmaComp; rate: number; wide: boolean }> = []
+    const gradedKeys = new Set<string>()
+    for (const [rows, wide] of [
+      [wideRows, true],
+      [nearRows, false],
+      [nameRows, false],
+    ] as const) {
+      for (const row of rows) {
+        const comp = rowToComp(row, 'price-anchor', false)
+        if (!comp || gradedKeys.has(comp.listingKey)) continue
+        const rate = unitRate(comp, false)
+        if (!(rate > 0)) continue
+        gradedKeys.add(comp.listingKey)
+        graded.push({ comp, rate, wide })
+      }
+    }
+    // Each sale's recorded plat (the plat and family levels) and its community
+    // (the community level), from the same point lookups the rungs use, read
+    // together. Plats are read only when the home sits in a recorded plat, and
+    // only for sales within LOCAL_POOL_RADIUS_MILES, the ground the facts walk
+    // reads in full; communities only when the home's search walls on one, and
+    // into the same cache the rungs read (communityByKey), so a rung that
+    // meets these rows again cannot get a different answer.
+    const homePlat = ring?.homeSlug ?? null
+    const platIndex = homePlat
+      ? graded
+          .map((g, i) => ({ g, i }))
+          .filter(({ g }) => {
+            const miles = distanceMiles(subjectPoint, { lat: g.comp.latitude, lng: g.comp.longitude })
+            return miles != null && miles <= LOCAL_POOL_RADIUS_MILES
+          })
+      : []
+    const pendingCommunity = subjectCommunity
+      ? graded.filter(
+          (g) => !communityByKey.has(g.comp.listingKey) && g.comp.latitude != null && g.comp.longitude != null,
+        )
+      : []
+    const [platSlugs, located] = await Promise.all([
+      platIndex.length > 0
+        ? assignSubdivisionSlugs(platIndex.map(({ g }) => ({ lat: g.comp.latitude, lng: g.comp.longitude })))
+        : Promise.resolve([] as Array<string | null>),
+      pendingCommunity.length > 0
+        ? assignCommunitySlugs(pendingCommunity.map((g) => ({ lat: g.comp.latitude, lng: g.comp.longitude })))
+        : Promise.resolve(null),
+    ])
+    if (located) pendingCommunity.forEach((g, i) => communityByKey.set(g.comp.listingKey, located[i] ?? null))
+    const platOf = new Map<number, string | null>()
+    platIndex.forEach(({ i }, at) => platOf.set(i, platSlugs[at] ?? null))
+    const sample = anchorSampler({
+      platSlug: homePlat,
+      // The MLS name on the home's own record, not a pocket the search inferred.
+      subdivisionNorm: normSubdivision(subject.subdivision),
+      citySlug: citySlug(subject.city),
+      communitySlug: subjectCommunity,
+      marketArea: subjectArea,
+      latitude: subject.latitude ?? null,
+      longitude: subject.longitude ?? null,
+      ruralAcreage,
     })
-    type AnchorRow = { rate: number; inArea: boolean; miles: number | null }
-    const graded: AnchorRow[] = []
-    for (const row of anchorRows) {
-      const comp = rowToComp(row, 'price-anchor', false)
-      if (!comp) continue
-      const rate = unitRate(comp, false)
-      if (!(rate > 0)) continue
-      graded.push({
-        rate,
-        inArea: subjectArea != null && resolveMarketArea(comp.latitude, comp.longitude) === subjectArea,
-        miles: distanceMiles(subjectPoint, { lat: comp.latitude, lng: comp.longitude }),
+    const samples: AnchorSample[] = graded.map((g, i) => {
+      const s = sample({
+        ppsf: g.rate,
+        platSlug: platOf.get(i) ?? null,
+        subdivisionNorm: normSubdivision(g.comp.subdivision),
+        citySlug: citySlug(g.comp.city ?? ''),
+        communitySlug: subjectCommunity ? saleCommunityOf(g.comp) : null,
+        marketArea: resolveMarketArea(g.comp.latitude, g.comp.longitude),
+        latitude: g.comp.latitude,
+        longitude: g.comp.longitude,
       })
-    }
-    // The subject's own neighborhood first, then the mile around it, then out
-    // by rings — the same order as resolvePriceAnchor on the facts path.
-    const rings: Array<{ where: string; rates: number[] }> = []
-    if (subjectArea != null) {
-      rings.push({
-        where: `inside ${subjectAreaName ?? 'the neighborhood'}`,
-        rates: graded.filter((g) => g.inArea).map((g) => g.rate),
-      })
-    }
-    for (const radius of [ANCHOR_RADIUS_MILES, ...ANCHOR_RURAL_RADII_MILES]) {
-      rings.push({
-        where: `within ${radius} ${radius === 1 ? 'mile' : 'miles'}`,
-        rates: graded.filter((g) => g.miles != null && g.miles <= radius).map((g) => g.rate),
-      })
-    }
-    for (const ring of rings) {
-      if (ring.rates.length < ANCHOR_MIN_N) continue
-      anchorPpsf = medianOf(ring.rates)
-      anchorN = ring.rates.length
+      // A row only the narrow reads found counts toward the narrow levels.
+      return g.wide ? s : { ...s, inNeighborhood: false, miles: null, inCity: false }
+    })
+    const anchor = anchorFromSamples(
+      samples,
+      anchorPlaceNames({
+        platSlug: homePlat,
+        platLabel: ring?.homeLabel ?? null,
+        subdivision: subject.subdivision,
+        communitySlug: subjectCommunity,
+        marketArea: subjectArea,
+        city: subject.city,
+      }),
+    )
+    if (anchor) {
+      anchorPpsf = anchor.ppsf
+      anchorN = anchor.n
+      anchorLevel = anchor.source
+      anchorWhere = anchorPlacePhrase(anchor)
+      priceLine = priceTierLine(anchorPpsf)
       trace.push(
-        `Price tier: homes of this size sell for about $${Math.round(anchorPpsf)} a square foot ${ring.where} (median of ${anchorN} sales, last 12 months). Sales more than ${Math.round((anchorTierRatio - 1) * 100)}% either side of that are a different market and are not used.`,
+        priceLine
+          ? `Price tier: homes of this size sell for about $${priceLine.anchor} a square foot ${anchorWhere} (median of ${anchorN} sales that closed in the last 12 months). Sales outside ${describePriceTierLine(priceLine)} are a different market and are not used.`
+          : `Price tier: no usable median ${anchorWhere}, so no sale was graded on price.`,
       )
-      break
     }
   }
 
@@ -640,7 +870,27 @@ export async function selectComps(
     { listingKey: string; publicRemarks: string | null; subdivision: string | null; seniorCommunityYn: boolean | null }
   >()
   let ownPlatAgeShare: number | null | undefined = undefined
+  /**
+   * The rung that brought the set to TARGET_COMPS, and whether it was own
+   * ground. The seats may cut only that place: all of own ground (up to
+   * seven, newest first) when own ground reached five, otherwise only the
+   * wider rung that did (down to five).
+   */
+  let reachedOnTier: string | null = null
+  let reachedOnOwnGround = false
+  /**
+   * How many price-setting sales the walk held when it first read a window
+   * older than six months. Under five, an older sale in the printed set is
+   * there because the six-month set fell short; at five or more it is there
+   * because own ground walks its whole window.
+   */
+  let heldWhenOlderOpened: number | null = null
   for (const tier of tiers) {
+    // THE AREA STOPS WIDENING AT FIVE (walk to 7, Matt 2026-10-07: "while the
+    // same area still holds qualifying sales"). The subject's own plat and
+    // pocket walk their whole window; the first rung that would widen the
+    // area once five are held ends the walk, and every rung after it is wider.
+    if (byKey.size >= TARGET_COMPS && !isListingsPocketExclusiveTier(tier)) break
     const skip =
       // THE WIDENING RUNS ONLY WHEN THE BOUNDED LADDER CAME UP SHORT.
       tier.whenStarved && byKey.size >= MIN_COMPS
@@ -662,7 +912,7 @@ export async function selectComps(
         : tier.name.startsWith('subdivision') && !tier.subdivisionIlike
         ? 'the subject has no usable SubdivisionName on its MLS record'
         : (tier.name.startsWith('citywide-') || tier.name.startsWith('competing-area')) && byKey.size >= MIN_COMPS
-        ? 'the subdivision, the adjacent plats, and the neighborhood already supplied 3 sales, so the search did not fall back to the same zip'
+        ? `the subdivision, the adjacent plats, and the neighborhood already supplied ${MIN_COMPS} price-setting sales, so the search did not fall back to the same zip`
         : tier.samePocket && pocketNeighborNorms.length === 0
         ? 'no nearby mapped pocket cluster sits inside a quarter mile'
         : isListingsGeographyWidenTier(tier) &&
@@ -675,7 +925,10 @@ export async function selectComps(
         ? `the pocket already supplied a tight closed set (${exclusiveCount} closed), so the search stayed exclusive`
         : tier.sameArea && !subjectArea
           ? 'the subject sits outside every mapped neighborhood polygon'
-          : tier.adjacentSubdivisions && adjacentSlugs.size === 0
+          : (subjectArea || subjectCommunity) &&
+            (isListingsGeographyWidenTier(tier) || tier.likeCommunity || tier.whenStarved)
+          ? 'this home sits inside a neighborhood or community, so the search stays in the subdivisions there and does not open a distance ring'
+        : tier.adjacentSubdivisions && adjacentSlugs.size === 0
             ? 'no plat next to the subject\'s is known'
             : tier.ruralOnly && !ruralAcreage
             ? 'this rung is reserved for rural acreage subjects outside every mapped neighborhood'
@@ -710,19 +963,14 @@ export async function selectComps(
       ladder.push(rung)
       continue
     }
-    // THE PRICE BAND WIDENS WITH THE REST, ON THE LAST RUNG ONLY (Matt
-    // 2026-09-09: widen with a disclosure instead of failing). The starved
-    // widening rung already trades away age, size band and geography to reach
-    // the minimum; holding the price band fixed while it does made 120 Sisemore
-    // fail to build at four comps. Read ONCE per rung, before any comp is
-    // added, so the band cannot change partway through a rung.
-    const starvedRung = Boolean(tier.whenStarved) && byKey.size < MIN_COMPS
-    const rungTierRatio = starvedRung ? anchorTierRatio * STARVED_TIER_WIDEN : anchorTierRatio
-    if (starvedRung && anchorPpsf != null) {
-      const d = `The bounded search came up short, so the last step also widened what counts as your home's price tier: from ${Math.round((anchorTierRatio - 1) * 100)}% either side of $${Math.round(anchorPpsf)} a square foot to ${Math.round((rungTierRatio - 1) * 100)}%. Sales outside even that are still not used.`
-      trace.push(d)
-      disclosedWidening.push(d)
-    }
+    if (heldWhenOlderOpened == null && tier.monthsBack > 6) heldWhenOlderOpened = byKey.size
+    // THE PRICE LINE DOES NOT WIDEN (Matt 2026-10-08, "one 20% line"). The
+    // starved rung trades away age, size band and geography to reach the
+    // minimum, and it used to open the price band from 30% to about 50% as well
+    // (Matt 2026-09-09, 120 Sisemore). A sale it let in that way was one the
+    // comparability review then dropped for price, so the widened band never
+    // priced a home: it split the review's vote instead. The line stays at 20%
+    // of the anchor on every rung, this one included.
     // Push the tier's geography INTO the query. The row limit is applied
     // before any in-memory filter, so without this a polygon or radius tier
     // only sees whichever recent citywide sales happen to fall inside it.
@@ -730,7 +978,9 @@ export async function selectComps(
       ? marketAreaBounds(subjectArea)
       : tier.maxMiles != null
         ? radiusBounds(subjectPoint, tier.maxMiles)
-        : null
+        : tier.adjacentSubdivisions
+          ? await readTouchingBounds()
+          : null
     const rows = await selectCmaCompsPool({
       cityIlike: tier.ignoreCity ? null : subject.city,
       subdivisionIlike: tier.subdivisionIlike ?? null,
@@ -775,6 +1025,18 @@ export async function selectComps(
     const rowPlats = tier.adjacentSubdivisions
       ? await assignSubdivisionSlugs(rows.map((r) => ({ lat: num(r['Latitude']), lng: num(r['Longitude']) })))
       : null
+    const pendingLocate: { key: string; lat: number; lng: number }[] = []
+    for (const row of rows) {
+      const key = str(row['ListingKey'])
+      const lat = num(row['Latitude'])
+      const lng = num(row['Longitude'])
+      if (!key || communityByKey.has(key) || lat == null || lng == null) continue
+      pendingLocate.push({ key, lat, lng })
+    }
+    if (pendingLocate.length > 0) {
+      const located = await assignCommunitySlugs(pendingLocate.map((point) => ({ lat: point.lat, lng: point.lng })))
+      if (located) pendingLocate.forEach((point, i) => communityByKey.set(point.key, located[i] ?? null))
+    }
     let added = 0
     for (const [rowIndex, row] of rows.entries()) {
       const comp = rowToComp(row, tier.name, Boolean(land))
@@ -782,10 +1044,16 @@ export async function selectComps(
         rung.excluded.unusable_row++
         continue
       }
+      if (communityByKey.has(comp.listingKey)) {
+        comp.communityLocated = true
+        comp.communitySlug = communityByKey.get(comp.listingKey) ?? null
+      }
       if (rowPlats) {
         const plat = rowPlats[rowIndex]
         if (!plat || !adjacentSlugs.has(plat)) {
-          rung.excluded.market_area++
+          // Not a touching plat. That says nothing about the neighborhood
+          // line, so it is not counted as market_area (2026-10-08).
+          rung.excluded.not_touching_plat++
           continue
         }
       }
@@ -795,7 +1063,7 @@ export async function selectComps(
         const saleStreet = streetKey(comp.address)
         const streetHit = Boolean(saleStreet && pocketStreetKeys.includes(saleStreet))
         if (!nameHit && !streetHit) {
-          rung.excluded.market_area++
+          rung.excluded.not_in_pocket++
           continue
         }
       }
@@ -909,29 +1177,22 @@ export async function selectComps(
         { streetAddress: subject.streetAddress, city: subject.city, sqft: subject.sqft ?? 0 },
         { address: comp.address, city: comp.city, sqft: comp.sqft },
       )
-      if (!land && !tightRung && !ownStreetPeer && anchorPpsf != null) {
-        const rate = unitRate(comp, false)
-        if (anchorPpsf > 0 && rate > 0) {
-          // THE WIDENING DOES NOT STACK WITH THE RESORT CROSSING. The starved
-          // rung relaxes the resort wall so a home near Sunriver can find
-          // PRODUCT peers; widening the price band on top of that let a
-          // $595/sqft Caldera Springs sale price a $427/sqft plat (55442
-          // Heierman). A sale in a resort community the subject is not in is
-          // held to the ordinary band, whatever else the last rung relaxes.
-          const crossesResort = !resortCommunityCompatible(subject.subdivision, comp.subdivision)
-          const ratio = crossesResort ? anchorTierRatio : rungTierRatio
-          const gap = rate / anchorPpsf
-          if (gap < 1 / ratio || gap > ratio) {
-            rung.excluded.price_tier++
-            continue
-          }
+      // The one 20% line (lib/pricing/price-tier.ts), on the sale's own closed
+      // $/sqft before any date adjustment. It does not widen on the starved
+      // rung or across a resort crossing (55442 Heierman: a $595/sqft Caldera
+      // Springs sale must never price a $427/sqft plat). No anchor, no line:
+      // nothing is graded on price, as before this ruling.
+      if (!land && !tightRung && !ownStreetPeer && priceLine) {
+        if (!insidePriceTier(salePpsf(comp.closePrice, comp.sqft), priceLine)) {
+          rung.excluded.price_tier++
+          continue
         }
       }
 
       // THE PARENT LEVEL (Matt 2026-09-09). The community rung takes the
       // subject's own community and nothing else; the peer rung takes another
       // community of the same kind and never a plain neighborhood.
-      const compCommunity = communitySlugForSubdivision(comp.subdivision)
+      const compCommunity = saleCommunityOf(comp)
       if (tier.sameCommunity && compCommunity !== subjectCommunity) {
         rung.excluded.resort_premium++
         continue
@@ -947,7 +1208,7 @@ export async function selectComps(
       // resort-community sale (Crosswater, Caldera Springs, ...) only prices
       // a home in the SAME resort community — and a plain-town sale never
       // prices a resort subject. Registry-driven, symmetric.
-      if (!resortCommunityCompatible(subject.subdivision, comp.subdivision)) {
+      if (!resortOk(comp.listingKey, comp.subdivision)) {
         // Matt 2026-09-09: cross only when starved, and say so. Outside the
         // widening rung the guard is absolute, exactly as it was.
         if (!tier.relaxResort && !tier.likeCommunity) {
@@ -999,9 +1260,14 @@ export async function selectComps(
 
       // HARD EXCLUSION at every tier. SQL already eq's the subject's product
       // type; keepSameProductType is belt-and-suspenders if a mixed row slips in.
+      // The remarks are read too (rule 23, Matt 2026-10-07): a duplex or any
+      // multi-unit entered as Single Family Residence never prices a detached
+      // home, and the test is symmetric. Null remarks fail open here; an
+      // unknown sub type still fails closed above.
       if (
         !productTypeCompatible(subject.propertySubType, comp.propertySubType) ||
-        !keepSameProductType(subject.propertySubType, comp.propertySubType)
+        !keepSameProductType(subject.propertySubType, comp.propertySubType) ||
+        multiUnitFromRemarks(comp.publicRemarks) !== multiUnitFromRemarks(subject.publicRemarks)
       ) {
         rung.excluded.product_type++
         continue
@@ -1023,6 +1289,15 @@ export async function selectComps(
         rung.excluded.product_type++
         continue
       }
+      // A SALE WITH AN ADU NEVER PRICES A HOME WITHOUT ONE (Matt 2026-10-08,
+      // "ADU sale skips"). The same reader the facts walk, the review and the
+      // backstop apply (aduSaleRefused, lib/pricing/classes.ts). Not
+      // symmetric: a subject with an ADU may use sales with and without one.
+      // The sale is not held, so it is skipped like one that never qualified.
+      if (aduSaleRefused(subject.publicRemarks, comp.publicRemarks)) {
+        rung.excluded.adu_sale++
+        continue
+      }
 
       // ONE ROOM RULE for beds and baths alike, custom/new included
       // (Matt 2026-09-10, skill 0.1). Same function the comparability review uses.
@@ -1036,6 +1311,9 @@ export async function selectComps(
         continue
       }
       comp.roomDifference = rooms.notes.length > 0 ? rooms.notes : null
+      // The decision travels with the sale: every later check reads it
+      // (lib/pricing/room-ground.ts carriedRoomDecision).
+      comp.roomDecision = rooms
 
       // HARD EXCLUSION at every tier for custom / new-construction subjects
       // (Matt 2026-09-03, 19365 Rim View). Year-built and quality outrank a
@@ -1045,12 +1323,22 @@ export async function selectComps(
       // does, and a listings fallback must not price the new build the facts
       // path dropped. An exclusive pocket still keeps the mix it was given.
       if (!(isListingsPocketExclusiveTier(tier) && clusterPocket)) {
-        const asOfYear = Number((opts.asOf ?? new Date().toISOString().slice(0, 10)).slice(0, 4))
+        const asOfYear = Number(asOf.slice(0, 4))
         if (
-          !customOrNew &&
-          !newConstructionCompatible(
-            isNewBuild(subject.yearBuilt, asOfYear, subject.newConstructionYn),
-            isNewBuild(comp.yearBuilt, asOfYear, null),
+          dropsResaleVersusNewBuild(
+            {
+              yearBuilt: subject.yearBuilt,
+              newConstructionYn: subject.newConstructionYn,
+              remarks: subject.publicRemarks,
+              propertySubType: subject.propertySubType,
+            },
+            {
+              yearBuilt: comp.yearBuilt,
+              newConstructionYn: comp.newConstructionYn,
+              remarks: comp.publicRemarks,
+              propertySubType: comp.propertySubType,
+            },
+            asOfYear,
           )
         ) {
           rung.excluded.year_quality++
@@ -1072,7 +1360,10 @@ export async function selectComps(
       }
 
       const compArea = resolveMarketArea(comp.latitude, comp.longitude)
-      if ((tier.sameArea || (tier.adjacentSubdivisions && subjectArea)) && compArea !== subjectArea) {
+      // A touching plat is the adjacent step even when the neighborhood
+      // polygon puts it on the other side of the line. Farther rungs that
+      // are limited to the subject's polygon still refuse a different area.
+      if (tier.sameArea && subjectArea && compArea !== subjectArea) {
         rung.excluded.market_area++
         continue
       }
@@ -1089,6 +1380,48 @@ export async function selectComps(
       comp.competingArea =
         tier.competing && compArea && compArea !== subjectArea ? marketAreaName(compArea) : null
       comp.ownPlat = inOwnPlat
+      // Rule 15's location step from where the sale sits, not the rung name
+      // (915 Saginaw, 2026-10-07). rowPlats is read only on the adjacent rung,
+      // and that rung admitted this sale off the touching ring.
+      comp.locationMatch = locationMatchFromFacts({
+        ownPlat: inOwnPlat,
+        touchingPlat: rowPlats != null,
+        streetPocket: Boolean(tier.samePocket) && !subjectHasRecordedSubdivision(subject),
+        platRow: Boolean(tier.samePocket) && subjectHasRecordedSubdivision(subject),
+        insideParent:
+          (subjectCommunity != null && compCommunity === subjectCommunity) ||
+          (subjectArea != null && compArea === subjectArea),
+      })
+
+      // RULE 20 AT THE DOOR (Matt 2026-10-07). A sale that passed every wall
+      // above and does not set the price (another community, or a clearly
+      // different size or product) is not admitted and does not count toward
+      // the five; the walk goes on in order. This count reads
+      // subject.communitySlug / comp.communitySlug as stamped above, while the
+      // facts ladder (lib/pricing/match.ts, the primary path at
+      // FACTS_STANDALONE_MIN) reads searchCommunitySlug with the member-plat
+      // map. Missing data fails open on both: saleSetsThePrice treats an
+      // unknown community on both sides as a match.
+      if (
+        !saleSetsThePrice({
+          ownPlat: comp.ownPlat,
+          subjectSubdivision: subject.subdivision,
+          saleSubdivision: comp.subdivision,
+          subjectCommunity,
+          saleCommunity: compCommunity,
+          subjectCommunityLocated: subject.communityLocated === true || subjectCommunity != null,
+          saleCommunityLocated: comp.communityLocated === true || compCommunity != null,
+          subjectSqft: subject.sqft,
+          saleSqft: comp.sqft,
+          subjectLotAcres: subject.lotAcres,
+          saleLotAcres: comp.lotAcres,
+        })
+      ) {
+        rung.excluded.not_price_setting++
+        bySale.add(saleKey(comp))
+        continue
+      }
+      comp.setsPrice = true
 
       byKey.set(comp.listingKey, comp)
       bySale.add(saleKey(comp))
@@ -1104,7 +1437,12 @@ export async function selectComps(
     )
     if (added > 0) tiersUsed.push(tier.name)
     if (isListingsPocketExclusiveTier(tier)) exclusiveCount = byKey.size
-    if (byKey.size >= TARGET_COMPS) break
+    // This rung added every qualifier it returned; the seats below keep own
+    // ground up to MAX_COMPS and a widening rung only up to TARGET_COMPS.
+    if (reachedOnTier == null && byKey.size >= TARGET_COMPS) {
+      reachedOnTier = tier.name
+      reachedOnOwnGround = isListingsPocketExclusiveTier(tier)
+    }
   }
 
   const disclosures: string[] = []
@@ -1112,6 +1450,11 @@ export async function selectComps(
   if (x.product_type > 0) {
     trace.push(
       `Excluded ${x.product_type} comp(s) on product type. A townhome, condo, or manufactured home is not comparable to a detached house at any distance, per Fannie Mae B4-1.3-08.`,
+    )
+  }
+  if (x.adu_sale > 0) {
+    trace.push(
+      `Skipped ${x.adu_sale} sale(s) whose remarks state an ADU, guest house or other second living unit: this home's remarks state none, so a sale carrying a second unit does not set its price (Matt 2026-10-08).`,
     )
   }
   if (x.year_quality > 0) {
@@ -1127,53 +1470,57 @@ export async function selectComps(
   if (x.lot_character > 0) {
     trace.push(`Excluded ${x.lot_character} comp(s) on lot character (acreage vs in-town lot is not comparable at any distance).`)
   }
-  if (x.price_tier > 0) {
-    const at = anchorPpsf != null && anchorPpsf > 0 ? ` The neighborhood's own sales run about $${Math.round(anchorPpsf)} a square foot.` : ''
+  if (x.price_tier > 0 && priceLine) {
     trace.push(
-      `Excluded ${x.price_tier} sale(s) on price tier: more than ${Math.round((anchorTierRatio - 1) * 100)}% away from what your home's own area sells for per square foot.${at}`,
+      `Excluded ${x.price_tier} sale(s) on price tier: they sold outside ${describePriceTierLine(priceLine)}, what your home's own area sells for.`,
     )
   }
   if (x.market_area > 0) trace.push(`Excluded ${x.market_area} comp(s) outside the subject's market area.`)
+  if ((x.not_touching_plat ?? 0) > 0) {
+    trace.push(
+      `The touching-plat step read ${x.not_touching_plat} sale(s) in plats that do not touch this home's plat and did not use them there.`,
+    )
+  }
+  if ((x.not_in_pocket ?? 0) > 0) {
+    trace.push(
+      `The quarter-mile pocket step read ${x.not_in_pocket} sale(s) off the pocket's streets and subdivisions and did not use them there.`,
+    )
+  }
   if (x.distance > 0) trace.push(`Excluded ${x.distance} comp(s) beyond the tier's distance bound.`)
+  if (x.not_price_setting > 0) {
+    trace.push(
+      `Excluded ${x.not_price_setting} sale(s) that do not set the price: another community, or a clearly different size or product. They do not count toward the five.`,
+    )
+  }
   if (subject.subdivision && !subdivisionIlike) {
     trace.push(
       `The subject's SubdivisionName is "${subject.subdivision}", an MLS placeholder rather than a named subdivision, so the subdivision tiers were skipped and the ladder started at the neighborhood. Selecting on that placeholder would have matched unrelated sales across the whole city and labeled them same-subdivision comps.`,
     )
   }
-  if (tiersUsed.some((t) => t.includes('12mo') || t.includes('24mo'))) {
-    const older =
-      'Comps older than 6 months were used because the 6-month set did not reach the minimum. Fannie Mae B4-1.3-08 requires this be stated.'
-    trace.push(older)
-    disclosures.push(older)
-  }
-  for (const t of tiers) {
-    if (t.disclosure && tiersUsed.includes(t.name)) {
-      trace.push(t.disclosure)
-      disclosures.push(t.disclosure)
-    }
-  }
-  for (const d of disclosedWidening) if (!disclosures.includes(d)) disclosures.push(d)
-  const roomNotedCount = [...byKey.values()].filter((c) => (c.roomDifference ?? []).length > 0).length
-  if (roomNotedCount > 0) {
-    const d = `${roomNotedCount} sale(s) are one bedroom or bathroom different from your home. They are used because they sit on your home's own ground — its plat, its neighborhood or its street — and each is marked on the report. No dollar value is applied to the room: paired sales in this market do not support one.`
-    trace.push(d)
-    disclosures.push(d)
-  }
-  const competingCount = [...byKey.values()].filter((c) => c.competingArea).length
-  if (competingCount > 0) {
-    const d = `${competingCount} comp(s) come from a COMPETING market area and are labeled as such on the report, per Fannie Mae B4-1.3-08.`
-    trace.push(d)
-    disclosures.push(d)
-  }
-
   let comps = Array.from(byKey.values())
   const candidateCount = comps.length
 
   // Outlier exclusion: drop $/sqft beyond 2 standard deviations OR far from the
   // peer median band (Tip Ready P1: $201/sf beside $498–561k peers must go),
-  // only when the set stays at or above MIN_COMPS afterward.
+  // only when the set stays at MIN_COMPS or above afterward. This runs on the
+  // pre-cap set (the cap is below), so it fires only when the walk holds more
+  // than five; on an exactly-five set an end outlier is handled by the trimmed
+  // range (lib/pricing/estimate.ts partitionByRangeRule), never a drop.
   const excludedOutliers: CompSelection['excludedOutliers'] = []
   const OUTLIER_MEDIAN_BAND = 0.35
+  // AN EARLIER PLACE KEEPS ITS SEATS, on this ladder as on the facts ladder
+  // (lib/pricing/match.ts capPricingSet). Every sale admitted before the rung
+  // that reached five is seated; only that rung, or own ground when own ground
+  // reached five, competes. The outlier drop and the cap read the same test,
+  // so a wider rung reaching five never costs an own-plat sale its seat here
+  // while the facts ladder keeps it (review 2026-10-07).
+  const ownGroundTiers = new Set(tiers.filter(isListingsPocketExclusiveTier).map((t) => t.name))
+  const competesForSeat: ((c: CmaComp) => boolean) | undefined =
+    reachedOnTier == null
+      ? undefined
+      : reachedOnOwnGround
+        ? (c) => ownGroundTiers.has(c.selectionTier)
+        : (c) => c.selectionTier === reachedOnTier
   if (comps.length >= TARGET_COMPS) {
     const ppsfs = comps.map((c) => unitRate(c, Boolean(land)))
     const mean = ppsfs.reduce((a, b) => a + b, 0) / ppsfs.length
@@ -1189,7 +1536,11 @@ export async function selectComps(
       const farMedian =
         median > 0 &&
         (ppsf < median * (1 - OUTLIER_MEDIAN_BAND) || ppsf > median * (1 + OUTLIER_MEDIAN_BAND))
-      if ((farSd || farMedian) && comps.length - excludedOutliers.length > MIN_COMPS) {
+      if (
+        (farSd || farMedian) &&
+        (competesForSeat == null || competesForSeat(c)) &&
+        comps.length - excludedOutliers.length > MIN_COMPS
+      ) {
         excludedOutliers.push({
           address: c.address,
           closePrice: c.closePrice,
@@ -1212,14 +1563,97 @@ export async function selectComps(
     }
   }
 
-  // Rank by similarity (size proximity x recency), then keep five
-  // whose close prices sit together. A rung that dumped a high outlier
-  // does not get to set the range.
+  // THE SEATS (Matt 2026-10-07: walk to 7, price on 5+; only what's needed;
+  // newest first, then nearest). The same rule as the facts ladder
+  // (lib/pricing/match.ts capPricingSet). Every sale admitted before the rung
+  // that reached five keeps its seat: together they held fewer than five.
+  // Seats six and seven come only from own ground. When own ground reached
+  // five, it fills up to seven, newest closes first, nearest on a tie, then
+  // the close nearest the set's middle price. When a rung that widens the
+  // area reached five, that rung adds only the shortfall to five, its
+  // tightest prices first (a rung that dumped a high outlier does not get to
+  // set the range), and the set is five.
   const rankBy = land ? (subject.lotAcres ?? 0) : sqft
   comps.sort((a, b) => similarityScore(rankBy, b, Boolean(land)) - similarityScore(rankBy, a, Boolean(land)))
-  comps = keepTightestByClosePrice(comps, MAX_COMPS, opts.asOf)
+  /** The reach rung's unseated qualifiers, next-best first. Own ground has none: it seats up to seven. */
+  let bench: CmaComp[] = []
+  if (competesForSeat != null && reachedOnOwnGround) {
+    const seated = comps.filter((c) => !competesForSeat(c))
+    const open = comps.filter(competesForSeat)
+    const slots = Math.max(0, MAX_COMPS - seated.length)
+    if (open.length > slots) {
+      const prices = comps.map((c) => c.closePrice).filter((n) => Number.isFinite(n) && n > 0).sort((a, b) => a - b)
+      const half = Math.floor(prices.length / 2)
+      const middle = prices.length === 0 ? 0 : prices.length % 2 === 1 ? prices[half]! : (prices[half - 1]! + prices[half]!) / 2
+      const milesOf = (c: CmaComp) => distanceMiles(subjectPoint, { lat: c.latitude, lng: c.longitude }) ?? Number.POSITIVE_INFINITY
+      open.sort((a, b) => {
+        const date = b.closeDate.slice(0, 10).localeCompare(a.closeDate.slice(0, 10))
+        if (date !== 0) return date
+        const miles = milesOf(a) - milesOf(b)
+        if (Math.abs(miles) > 0.01) return miles
+        const price = Math.abs(a.closePrice - middle) - Math.abs(b.closePrice - middle)
+        if (price !== 0) return price
+        return a.listingKey.localeCompare(b.listingKey)
+      })
+      comps = [...seated, ...open.slice(0, slots)]
+    }
+  } else {
+    // THE BENCH (Matt 2026-10-08, refill from the same rung): on a widening
+    // rung the cut takes the loosest price first, so the last sale it took is
+    // the rung's next-best. Reversed, that is the order the review refills in.
+    const cutOrder: CmaComp[] = []
+    comps = keepTightestByClosePrice(
+      comps,
+      competesForSeat != null ? Math.min(MAX_COMPS, TARGET_COMPS) : MAX_COMPS,
+      asOf,
+      competesForSeat,
+      (c) => cutOrder.push(c),
+    )
+    if (competesForSeat != null) bench = cutOrder.reverse()
+  }
+  if (bench.length > 0) {
+    trace.push(
+      `${reachedOnTier} widened the area and seated only what reached ${TARGET_COMPS}; it holds ${bench.length} more qualifying sale${bench.length === 1 ? '' : 's'} the comparability review can refill from, in that rung's order, and the search never widens past it.`,
+    )
+  }
   // Present most recent first (matches the exemplar ordering).
   comps.sort((a, b) => b.closeDate.localeCompare(a.closeDate))
+
+  // THE DISCLOSURES COUNT THE PRINTED SET (review 2026-10-07). They land in
+  // selection.trace, the citations' comp_selection.trace, render_args.compTrace
+  // and the build summary, so §0 holds them to the sales the reader sees: a
+  // candidate the outlier drop or the cap removed is not described here.
+  const sixMonthsBeforeAsOf = (() => {
+    const d = new Date(`${asOf}T00:00:00Z`)
+    d.setUTCMonth(d.getUTCMonth() - 6)
+    return d.toISOString().slice(0, 10)
+  })()
+  if (comps.some((c) => c.closeDate.slice(0, 10) < sixMonthsBeforeAsOf)) {
+    const older =
+      heldWhenOlderOpened == null || heldWhenOlderOpened < MIN_COMPS
+        ? 'Comps older than 6 months were used because the 6-month set did not reach the minimum. Fannie Mae B4-1.3-08 requires this be stated.'
+        : `Comps older than 6 months were used. The 6-month set held ${heldWhenOlderOpened} sales; the search reads this home's own ground across its whole window, out to 24 months, and keeps up to ${MAX_COMPS}, newest first, so an older sale there kept a seat. Fannie Mae B4-1.3-08 requires this be stated.`
+    trace.push(older)
+    disclosures.push(older)
+  }
+  for (const t of tiers) {
+    if (t.disclosure && tiersUsed.includes(t.name)) {
+      trace.push(t.disclosure)
+      disclosures.push(t.disclosure)
+    }
+  }
+  const roomNotedCount = comps.filter((c) => (c.roomDifference ?? []).length > 0).length
+  if (roomNotedCount > 0) {
+    const d = `${roomNotedCount} sale(s) are one bedroom or bathroom different from your home. They are used because they sit on your home's own ground — its plat, its neighborhood or its street — and each is marked on the report. No dollar value is applied to the room: paired sales in this market do not support one.`
+    trace.push(d)
+    disclosures.push(d)
+  }
+  const competingCount = comps.filter((c) => c.competingArea).length
+  if (competingCount > 0) {
+    const d = `${competingCount} comp(s) come from a COMPETING market area and are labeled as such on the report, per Fannie Mae B4-1.3-08.`
+    trace.push(d)
+    disclosures.push(d)
+  }
 
   trace.push(`Final comp set: ${comps.length} closed sales (tiers: ${tiersUsed.join(', ') || 'none'}).`)
 
@@ -1229,7 +1663,7 @@ export async function selectComps(
   // sentence in a seller-facing report (§0 applies to a count in prose exactly
   // as to a price). Only the printed set is countable here.
   if (resortCrossed > 0) {
-    const crossedKept = comps.filter((c) => !resortCommunityCompatible(subject.subdivision, c.subdivision)).length
+    const crossedKept = comps.filter((c) => !resortOk(c.listingKey, c.subdivision)).length
     if (crossedKept > 0) {
       const d =
         crossedKept === 1
@@ -1245,7 +1679,15 @@ export async function selectComps(
   const diagnostics: CompSelectionDiagnostics = {
     market_area: subjectAreaName,
     market_area_resolved: subjectArea != null,
-    price_anchor: anchorPpsf != null ? { ppsf: Math.round(anchorPpsf), n: anchorN } : null,
+    price_anchor:
+      anchorPpsf != null
+        ? {
+            ppsf: Math.round(anchorPpsf),
+            n: anchorN,
+            ...(anchorLevel ? { level: anchorLevel } : {}),
+            ...(anchorWhere ? { where: anchorWhere } : {}),
+          }
+        : null,
     rural_acreage: ruralAcreage,
     pricing_source: 'listings',
     custom_or_new: false,
@@ -1266,10 +1708,12 @@ export async function selectComps(
     min_comps: MIN_COMPS,
     candidates: candidateCount,
     excluded_totals: excludedTotals,
+    not_price_setting: excludedTotals.not_price_setting,
     outliers_excluded: excludedOutliers.length,
     final_count: comps.length,
     final_tier_counts: countByTier(comps),
     disclosures,
+    refill_bench: { rung: reachedOnTier, widening: reachedOnTier != null && !reachedOnOwnGround, held: bench.length },
   }
   diagnostics.starved_reason = diagnoseStarvation(diagnostics)
   if (diagnostics.starved_reason && comps.length < MIN_COMPS) trace.push(diagnostics.starved_reason)
@@ -1282,6 +1726,7 @@ export async function selectComps(
     diagnostics,
     pricingSource: 'listings',
     ...(ownPlatAgeShare !== undefined ? { ownPlatAgeRestrictedShare: ownPlatAgeShare } : {}),
+    refill: { rung: reachedOnTier, widening: reachedOnTier != null && !reachedOnOwnGround, comps: bench },
   }
 }
 
@@ -1319,14 +1764,18 @@ export async function selectCompsByKeys(subject: CmaSubject, keys: string[]): Pr
     const rooms = roomCountsDecision(subject, { ...comp, selectionTier: 'broker-selected' })
     if (!rooms.ok) {
       refused.push(
-        `${comp.address} is ${comp.beds ?? '?'} bed / ${comp.baths ?? '?'} bath against your home's ${subject.beds ?? '?'} / ${subject.baths ?? '?'}, two or more rooms apart`,
+        `${comp.address} is ${comp.beds ?? '?'} bed / ${printedBaths(comp) ?? '?'} bath against your home's ${subject.beds ?? '?'} / ${printedBaths(subject) ?? '?'}, two or more rooms apart`,
       )
       continue
     }
     comp.roomDifference = rooms.notes.length > 0 ? rooms.notes : null
+    comp.roomDecision = rooms
     if (!byKey.has(comp.listingKey)) byKey.set(comp.listingKey, comp)
   }
   // Most-recent-first, matching the exemplar ordering. No cap, no outlier drop.
+  // The floor still applies (rule 8 is the floor for every set; SKILL 0.1's
+  // "not capped" is about the ceiling): a three- or four-pick set reads
+  // starved here and lib/cma/build.ts refuses it with brokerCompRefusal.
   const comps = Array.from(byKey.values()).sort((a, b) => b.closeDate.localeCompare(a.closeDate))
   const found = new Set(comps.map((c) => c.listingKey))
   const missing = requested.filter((k) => !found.has(k))
@@ -1398,6 +1847,24 @@ const REFUSAL_CUT_LABELS: Partial<Record<keyof CompExclusionCounts, string>> = {
   price_tier: 'a different price tier than your home\'s own area',
   outbuildings: 'different outbuildings',
   terrain: 'different land',
+  not_price_setting: 'sitting in a different community, or a clearly different size or product, so they do not set the price',
+  adu_sale: 'carrying an ADU or other second living unit your home does not have',
+  not_touching_plat: 'sitting in a subdivision that does not touch yours',
+  not_in_pocket: 'sitting off the streets and subdivisions right around your home',
+}
+
+/**
+ * A rung's geography in a broker's words. The listings ladder records it in
+ * the SQL shape it queried ("City ILIKE 'Bend', market area = River West"),
+ * and the refusal printed that on the row (711 Georgia, 2026-10-08: "Not
+ * enough comparable sales in City ILIKE 'Bend', sold within 24 months").
+ */
+export function plainGeography(geography: string): string {
+  return geography
+    .replace(/SubdivisionName ILIKE '([^']*)'/g, (_m, name: string) => `subdivision ${name.replace(/%/g, '').trim()}`)
+    .replace(/City ILIKE '([^']*)'/g, (_m, city: string) => city.replace(/%/g, '').trim())
+    .replace(/market area = /g, '')
+    .replace(/any mailing city/g, 'any city')
 }
 
 export function brokerCompRefusal(args: {
@@ -1406,37 +1873,59 @@ export function brokerCompRefusal(args: {
   minComps: number
   subjectBaths?: number | null
   subjectCity?: string | null
+  /** Street addresses of the sales the returned selection holds, so the lead can name them. */
+  sales?: readonly string[]
 }): string {
   const { diagnostics: d, found, minComps } = args
-  const need = `Found ${found} of the ${minComps} closed sales this home needs to be priced.`
+  // THE BEST PATH LEADS (2026-10-08). On a listings fallback the selection
+  // carries the facts walk (facts_path); whichever path held more
+  // price-setting sales is the count the sentence opens with, naming them.
+  // Facts leads on a tie, and on a facts-sourced set.
+  const facts = d.facts_path
+  if (facts && (d.pricing_source === 'facts' || facts.held >= found)) {
+    const lead = shortageLead({ marketArea: d.market_area, held: facts.held, sales: facts.sales, minComps })
+    const why = facts.stop_reason ? ` It stopped because ${facts.stop_reason}.` : ''
+    const notSetting =
+      facts.not_setting > 0
+        ? ` ${facts.not_setting} more sale(s) were found but do not set the price (a different community, or a clearly different size or product), so they do not count.`
+        : ''
+    return `${lead}${why}${notSetting}`
+  }
+
+  const notSetting = d.not_price_setting ?? 0
+  const lead = shortageLead({ marketArea: d.market_area, held: found, sales: args.sales ?? [], minComps })
+  const notSettingNote =
+    notSetting > 0
+      ? ` ${notSetting} more sale(s) were found but do not set the price (a different community, or a clearly different size or product), so they do not count.`
+      : ''
   const ran = d.ladder.filter((t) => t.ran)
   const widest = ran[ran.length - 1]
   const where = widest
-    ? `${widest.geography}, sold within ${widest.months_back} months`
+    ? `${plainGeography(widest.geography)}, sold within ${widest.months_back} months`
     : `${args.subjectCity ?? 'this market'}`
 
   if (ran.length === 0) {
     const why = d.ladder.map((t) => t.skipped_reason).find(Boolean)
-    return `No comparable search could run for this home${why ? `, because ${why}` : ''}. ${need}`
+    return `${lead} No comparable search could run for this home${why ? `, because ${why}` : ''}.${notSettingNote}`
   }
 
   const searched = ran.reduce((a, t) => a + t.rows_returned, 0)
   if (searched === 0) {
-    return `No closed sale in ${where} matched your home's size and property type. Nothing on record prices it. ${need}`
+    return `${lead} No closed sale in ${where} matched your home's size and property type. Nothing on record prices it.${notSettingNote}`
   }
 
   const ranked = (Object.keys(d.excluded_totals) as Array<keyof CompExclusionCounts>)
-    .map((k) => ({ k, n: d.excluded_totals[k] }))
+    .map((k) => ({ k, n: d.excluded_totals[k] ?? 0 }))
     .filter((e) => e.n > 0 && e.k !== 'duplicate' && e.k !== 'self' && REFUSAL_CUT_LABELS[e.k])
     .sort((a, b) => b.n - a.n)
   const top = ranked[0]
   if (!top) {
-    return `Only ${found} of the ${searched} sales in ${where} were close enough on size and type to price your home. ${need}`
+    return `${lead} Only ${found} of the ${searched} sales in ${where} were close enough on size and type to price your home.${notSettingNote}`
   }
 
   const bathLead =
     top.k === 'bath_count' && args.subjectBaths != null
       ? `No sold ${args.subjectBaths}-bath home in ${where} could price this one: `
       : `Not enough comparable sales in ${where}: `
-  return `${bathLead}of the ${searched} sales searched, ${top.n} were cut for ${REFUSAL_CUT_LABELS[top.k]}. ${need}`
+  return `${lead} ${bathLead}of the ${searched} sales searched, ${top.n} were cut for ${REFUSAL_CUT_LABELS[top.k]}.${notSettingNote}`
 }

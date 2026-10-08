@@ -287,6 +287,9 @@ export function cmaSectionStyles(): string {
     max-width: 100%;
     min-width: 0;
     overflow-wrap: anywhere;
+    /* The value column used to escape the card (nowrap) and paint the next
+       sale's weight on top of this one. Clip it. The lines wrap instead. */
+    overflow: clip;
     box-sizing: border-box;
   }
   .comp-stack-addr { font-weight: 600; margin: 0 0 6px; color: var(--navy); font-size: 14px; line-height: 1.25; }
@@ -299,7 +302,11 @@ export function cmaSectionStyles(): string {
   .comp-stack-card .matrix-thumb { width: 100%; max-width: 100%; aspect-ratio: 16 / 10; object-fit: cover; display: block; margin: 0 0 8px; }
   @media print {
     .comp-stack { display: none !important; }
-    .comp-matrix-wrap { display: block !important; overflow-x: visible; }
+    /* 4pt inside the content box. A right-aligned room sentence
+       ("One bedroom off yours. No dollar adjustment.") was landing 0.04in
+       past the right margin on a full-width last column. The sentence stays
+       whole. The table moves in. */
+    .comp-matrix-wrap { display: block !important; overflow-x: visible; max-width: calc(100% - 4pt); }
     .matrix-group-h { display: block !important; }
   }
   /* Chapter 3's title IS the number, so it is set as the answer rather than as
@@ -357,24 +364,22 @@ export function cmaSectionStyles(): string {
   .pin-hit.is-on, .pin-hit:focus-visible { z-index: 3; }
   .pin-hit.is-subject .pin-dot { border-radius: 2px; }
   /* THREE FAMILIES, THREE GLYPHS (Delta 3). Filled navy for a sale that
-     closed, hollow for a home on the market, hollow with a bar across it for a
-     listing that came off unsold — one look per set, so a reader never has to
-     consult the legend twice. */
+     closed, hollow for a home on the market, a dashed ring for a listing that
+     came off unsold (2026-10-07: the bar through the numeral read as a
+     strike-through; the web report, legend and badges use the same ring). */
   .pin-hit.is-active .pin-dot,
   .pin-hit.is-unsold .pin-dot {
     background: var(--cream);
     color: var(--navy);
     box-shadow: 0 0 0 2px var(--navy);
   }
-  .pin-hit.is-unsold .pin-dot { position: relative; }
-  .pin-hit.is-unsold .pin-dot::after {
-    content: '';
-    position: absolute;
-    left: -4px;
-    right: -4px;
-    top: 50%;
-    height: 1.5px;
-    background: var(--navy);
+  .pin-hit.is-unsold .pin-dot { box-shadow: none; border: 1.5px dashed var(--navy); }
+  /* A closed sale the range trim set aside: the same filled, numbered pin,
+     drawn lighter (the muted navy over cream, opaque so the map does not
+     show through), so the legend can say it did not set the price. */
+  .pin-hit.is-aside:not(.is-on) .pin-dot {
+    background: linear-gradient(var(--muted), var(--muted)) var(--cream);
+    color: var(--cream);
   }
   /* Every pin tells the tale on tap: days on market, price changes, outcome.
      Print has no hover, so the sheet shows nothing until a pin is lit — the
@@ -427,6 +432,8 @@ export function cmaSectionStyles(): string {
     color: var(--navy);
     box-shadow: inset 0 0 0 1.5px var(--navy);
   }
+  .pin-legend .is-unsold .pl-k { box-shadow: none; border: 1.5px dashed var(--navy); }
+  .pin-legend .is-aside .pl-k { background: linear-gradient(var(--muted), var(--muted)) var(--cream); color: var(--cream); }
   .pin-legend .is-subject .pl-k { background: transparent; color: var(--navy); }
   /* Each unsold peer's dollars-a-foot story, keyed to its pin. */
   .peer-stories { list-style: none; margin: 8px 0 0; padding: 0; }
@@ -475,10 +482,13 @@ export function cmaSectionStyles(): string {
   ul.rejected-list .rj-addr { font-weight: 600; }
   ul.rejected-list .rj-why { color: var(--muted); }
   /* The phone card carries the same grid lines as the column. */
-  .comp-stack-grid { display: grid; gap: 2px; margin-top: 6px; }
-  .comp-stack-line { display: flex; justify-content: space-between; gap: 12px; font-size: 11px; flex-wrap: nowrap; white-space: nowrap; }
-  .comp-stack-line .k { color: var(--muted); }
-  .comp-stack-line .v { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .comp-stack-grid { display: grid; gap: 2px; margin-top: 6px; min-width: 0; max-width: 100%; }
+  /* Two columns inside the card. nowrap let the weight figures escape and
+     draw on the next sale. A long room sentence wraps in its own column. */
+  .comp-stack-line { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: baseline; column-gap: 12px; font-size: 11px; min-width: 0; max-width: 100%; }
+  .comp-stack-line .k { color: var(--muted); min-width: 0; white-space: normal; }
+  .comp-stack-line .v { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 0; white-space: normal; overflow-wrap: anywhere; text-align: right; }
+  .comp-stack-line .arc-asks, .comp-stack-line .arc-tail { display: block; white-space: normal; text-align: right; }
   /* Chapter 2b's centrepiece: what the first ask realized, by weeks. */
   table.realization { width: 100%; table-layout: fixed; border-collapse: collapse; margin: 8px 0 4px; font-size: 11.5px; }
   table.realization col.rz-weeks { width: 38%; }
@@ -541,6 +551,32 @@ export function cmaSectionStyles(): string {
     .mos-phone, .worth-phone { display: none !important; }
   }
   .next-note { font-size: 12px; line-height: 1.7; max-width: 62ch; margin: 12px 0 0; color: var(--navy); }
+  /* The competition chapter's one claim about this home. */
+  .compete-edge { font-weight: 600; }
+  /* Reviews in the palette (Matt 2026-10-07): a translucent cream panel on the
+     navy close, cream stars, Geist. No white card, no gold, no Georgia italic.
+     The reviewer's words are unchanged. Two up on the sheet, one on a phone. */
+  .close-reviews { margin: 14px 0 6px; max-width: none; }
+  .close-reviews-head { font-size: 13px; font-weight: 600; letter-spacing: 0; text-transform: none; line-height: 1.3; margin: 0 0 8px; }
+  .close-review-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  @media screen and (max-width: 700px) {
+    .close-review-row { grid-template-columns: 1fr; }
+  }
+  .close-quote { position: relative; margin: 0; padding: 10px 12px 9px; background: rgba(16, 39, 66, 0.04); color: var(--navy); border: 1px solid var(--navy-line); break-inside: avoid; page-break-inside: avoid; overflow-wrap: break-word; display: flex; flex-direction: column; }
+  .page-closing .close-reviews .close-quote { background: rgba(250, 248, 244, 0.07); color: var(--cream); border-color: rgba(250, 248, 244, 0.2); }
+  .close-reviews .close-quote p,
+  .close-reviews .close-quote cite,
+  .page-closing .close-reviews .close-quote p,
+  .page-closing .close-reviews .close-quote cite { color: inherit; }
+  .close-reviews .close-quote p.close-stars,
+  .page-closing .close-reviews .close-quote p.close-stars { margin: 0 0 6px; color: inherit; font-size: 10px; letter-spacing: 0.2em; line-height: 1; }
+  .close-lead { margin: 0; font-family: 'Geist', system-ui, sans-serif; font-style: normal; font-weight: 600; font-size: 12px; line-height: 1.3; }
+  .close-line { margin: 4px 0 0; font-family: 'Geist', system-ui, sans-serif; font-style: normal; font-weight: 400; font-size: 10.5px; line-height: 1.45; opacity: 0.85; }
+  .close-quote cite { display: block; margin-top: auto; padding-top: 7px; font-family: 'Geist', system-ui, sans-serif; font-style: normal; font-size: 9px; letter-spacing: 0.02em; opacity: 0.72; }
+  .close-reviews-more { margin: 6px 0 0; font-size: 11px; font-weight: 600; }
+  .close-reviews-more a { display: inline-flex; align-items: center; gap: 8px; text-decoration: underline; text-underline-offset: 2px; }
+  .close-reviews .google-g { width: 22px; height: 22px; flex: 0 0 auto; display: block; }
+  .close-sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
   /* Chapter 1's timeline. Same two-layout mechanism: the reading is the gap
      between a line and a zone, and a cropped right edge deletes the day it
      came off. Exactly one layout is ever visible. */
@@ -637,6 +673,12 @@ export function cmaSectionStyles(): string {
     color: var(--navy);
     box-shadow: inset 0 0 0 1.5px var(--navy);
   }
+  .pin-badge.is-unsold { box-shadow: none; border: 1.5px dashed var(--navy); }
+  /* A sale the range trim set aside: the map's set-aside pin on its column,
+     with the words under the address (reader review, 3177 Coho, 2026-10-08). */
+  .pin-badge.is-closed.is-aside { background: linear-gradient(var(--muted), var(--muted)) var(--cream); color: var(--cream); }
+  .matrix-aside { display: block; margin-top: 2px; font-size: 8.5px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); text-align: right; white-space: nowrap; }
+  .comp-stack-card .matrix-aside { text-align: left; margin: -2px 0 6px; }
   .pin-badge.is-subject { background: transparent; color: var(--navy); }
   /* The adjustment grid repeats the columns and drops the photographs. */
   table.comp-matrix.is-adjustments thead th.v { padding-top: 2px; }
@@ -651,7 +693,7 @@ export function cmaSectionStyles(): string {
   }
   /* Matt ADD 2026-09-12 tension: figures nowrap; LABEL + long prose wrap. */
   table.comp-matrix tbody th { white-space: normal; overflow: visible; text-overflow: clip; }
-  table.comp-matrix td.v:not(.n) { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.35; }
+  table.comp-matrix td.v:not(.n) { white-space: normal; overflow-wrap: break-word; overflow: visible; text-overflow: clip; line-height: 1.35; }
   table.comp-matrix td.n { white-space: nowrap; }
   /* The column HEAD is the address, and an address is neither a label nor a
      number: under nowrap + overflow hidden a long one ("401 Comparable Street
@@ -672,6 +714,8 @@ export function cmaSectionStyles(): string {
      "offer in 12 days" did the same. The path breaks only after an arrow and a
      day count never leaves its unit; both are held by no-break spaces. */
   table.comp-matrix .arc-asks, table.comp-matrix .arc-tail { display: block; white-space: normal; text-align: right; }
+  .arc-arrow { display: inline-block; vertical-align: -1px; }
+  .pin-star { display: block; width: 12px; height: 12px; }
   table.comp-matrix td.is-note { text-align: left; font-size: 9.5px; line-height: 1.35; }
   table.comp-matrix th[hidden], table.comp-matrix td[hidden] { display: none; }
   table.comp-matrix thead th:first-child, table.comp-matrix tbody th { text-align: left; }

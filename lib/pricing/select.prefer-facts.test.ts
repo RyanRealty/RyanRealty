@@ -11,11 +11,13 @@ vi.mock('@/lib/pricing/sale-zoning', () => ({ resolveSaleZones: async () => new 
 vi.mock('@/lib/data/geo/subdivision-ring', () => ({
   getSubdivisionRing: async () => null,
   assignSubdivisionSlugs: async (pts: ReadonlyArray<unknown>) => pts.map(() => null),
+  assignCommunitySlugs: async () => null,
 }))
 vi.mock('@/lib/cma/comps', () => ({
   selectComps,
   selectCompsByKeys: vi.fn(),
-  MIN_COMPS: 3,
+  // Five price-setting sales (Matt 2026-10-07).
+  MIN_COMPS: 5,
 }))
 
 const countSalePricingFacts = vi.hoisted(() => vi.fn(async () => 5000))

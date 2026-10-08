@@ -13,7 +13,7 @@
  *
  * Exit 0 = every scanned page works + no overflow.
  */
-import { chromium, devices } from 'playwright'
+import { chromium, devices } from './lib/marked-playwright.mjs'
 import { createClient as createSb } from '@supabase/supabase-js'
 import { createServerClient } from '@supabase/ssr'
 import { mkdirSync, readFileSync, readdirSync, statSync } from 'node:fs'

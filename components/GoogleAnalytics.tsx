@@ -5,7 +5,10 @@ import Script from 'next/script'
 import { usePathname } from 'next/navigation'
 import { IS_NON_PRODUCTION_BUILD } from '@/lib/analytics/non-production-build'
 import { isPrivatePath } from '@/lib/analytics/private-paths'
-import { hasAnalyticsConsent, hasMarketingConsent } from './CookieConsentBanner'
+import { GA_SUPPRESS_JS } from '@/lib/analytics/ga-suppression'
+import { getStoredConsent, hasAnalyticsConsent, hasMarketingConsent } from './CookieConsentBanner'
+import { consentModeDefaultJs } from '@/lib/analytics/consent-defaults'
+import { gpcFromNavigator } from '@/lib/identity/consent'
 
 const GA4_ID = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID?.trim()
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_CONTAINER_ID?.trim()
@@ -37,8 +40,9 @@ const GOOGLE_ADS_ID = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID?.trim()
  *
  * Consent Mode v2 pattern (now wired here):
  *
- *   1. **Before gtag.js loads** — push consent defaults of `denied` for
- *      every advertising / analytics category. `wait_for_update: 500ms`
+ *   1. **Before gtag.js loads** — push Consent Mode v2 region defaults
+ *      (analytics granted outside EEA/UK/CH, ad_* denied everywhere;
+ *      GPC and a stored decline deny analytics). `wait_for_update: 500ms`
  *      gives the CookieConsentBanner a brief moment to read its cookie
  *      and update the consent state before any tracking pings fire.
  *   2. **Always load gtag.js + GA4 config.** Data collection respects
@@ -61,6 +65,11 @@ export default function GoogleAnalytics() {
       if (typeof window === 'undefined') return
       const w = window as Window & { gtag?: (...args: unknown[]) => void }
       if (typeof w.gtag !== 'function') return
+      const gpc = gpcFromNavigator(typeof navigator !== 'undefined' ? navigator : undefined)
+      // No stored answer and no GPC: leave the region-specific defaults the
+      // bootstrap (or this block's own default) already pushed. An update to
+      // denied would wipe analytics_storage granted for US visitors.
+      if (!gpc && getStoredConsent() === null) return
       const analytics = hasAnalyticsConsent()
       const marketing = hasMarketingConsent()
       w.gtag('consent', 'update', {
@@ -96,27 +105,26 @@ export default function GoogleAnalytics() {
       {/* 1. Consent Mode v2 DEFAULTS — must inject before gtag.js so the
               first tracking ping carries the correct consent state. Uses
               `beforeInteractive` so it runs synchronously before any other
-              tracking script gets to fire its initial event. */}
+              tracking script gets to fire its initial event.
+              With GTM (production), the ONE default is the GTM bootstrap's
+              (lib/analytics/gtm-bootstrap.ts), pushed before gtm.js. This
+              block's own default ran after gtm.js had loaded, a second, late
+              default Google ignores at best (GA4 audit 2026-10-08, plan B6),
+              so it only renders on a build with no GTM container, where it
+              is the only default. Both paths use the same shared region
+              defaults (lib/analytics/consent-defaults.ts, settled in #437,
+              2026-10-08), so they hold the same values. */}
       <Script id="gtag-consent-defaults" strategy="beforeInteractive">
         {`
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date()); // hydration-safe — injected gtag bootstrap, not React render clock
-          // Default every advertising + analytics category to DENIED. The
-          // useEffect above re-applies the stored cookie consent via
-          // gtag('consent', 'update', ...) as soon as gtag is ready.
-          // wait_for_update tells Google to hold any tracking pings for up
-          // to 500ms while we read the consent cookie — avoids a "denied"
-          // ping firing before the visitor's prior opt-in is applied.
-          gtag('consent', 'default', {
-            ad_storage: 'denied',
-            ad_user_data: 'denied',
-            ad_personalization: 'denied',
-            analytics_storage: 'denied',
-            functionality_storage: 'granted',
-            security_storage: 'granted',
-            wait_for_update: 500
-          });
+          // Consent Mode v2 defaults (lib/analytics/consent-defaults.ts): region-scoped
+          // denied for EEA/UK/CH, analytics granted elsewhere, ad_* denied everywhere.
+          // GPC and a stored decline deny analytics before any tag. wait_for_update
+          // holds the first ping while a stored accept is applied. With GTM, the GTM
+          // bootstrap sets the same defaults before gtm.js, so this block skips them.
+          ${hasGTM ? `// Consent defaults: the GTM bootstrap (lib/analytics/gtm-bootstrap.ts) sets them before gtm.js loads.` : consentModeDefaultJs()}
           // URL-passthrough: when consent is denied, GA4 still propagates
           // gclid/dclid/utm_* across navigation via the URL instead of a
           // cookie. Keeps attribution intact for cookieless visitors.
@@ -155,15 +163,22 @@ export default function GoogleAnalytics() {
 
       {/* 2. gtag.js + GA4 config — loaded always now, since consent state
               is communicated via the defaults block above. Cookieless
-              modeling kicks in automatically when consent is denied. */}
+              modeling kicks in automatically when consent is denied.
+              Never on a page GA4 must not count (lib/analytics/ga-suppression.ts,
+              Matt 2026-10-05): the decision runs in the browser BEFORE gtag.js
+              is requested, so /admin, a non-production host, automation and a
+              signed-in broker's browser load no Google tag at all. */}
       {(hasGA4 || hasGoogleAds) && gtagScriptId && (
         <>
-          <Script
-            src={`https://www.googletagmanager.com/gtag/js?id=${gtagScriptId}`}
-            strategy="afterInteractive"
-          />
           <Script id="ga4-gads-config" strategy="afterInteractive">
             {`
+              if (!${GA_SUPPRESS_JS}) {
+              (function() {
+                var tag = document.createElement('script');
+                tag.async = true;
+                tag.src = 'https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(gtagScriptId)}';
+                document.head.appendChild(tag);
+              })();
               (function() {
                 var params = new URLSearchParams(window.location.search || '');
                 var utmSource = params.get('utm_source');
@@ -188,11 +203,10 @@ export default function GoogleAnalytics() {
 
                 var gaConfig = {
                   // Cross-domain linker: keep client_id stable when a
-                  // visitor hops between ryan-realty.com (WordPress) and
-                  // ryanrealty.vercel.app (Next.js). Prevents the same
-                  // person from showing as two sessions.
+                  // visitor hops between the apex and its subdomains.
+                  // Prevents the same person from showing as two sessions.
                   linker: {
-                    domains: ['ryan-realty.com', 'www.ryan-realty.com', 'seller.ryan-realty.com', 'buyer.ryan-realty.com', 'ryanrealty.vercel.app'],
+                    domains: ['ryan-realty.com', 'www.ryan-realty.com', 'seller.ryan-realty.com', 'buyer.ryan-realty.com'],
                     accept_incoming: true
                   }
                 };
@@ -205,6 +219,7 @@ export default function GoogleAnalytics() {
                 ${hasGA4 ? `gtag('config', '${GA4_ID!.replace(/'/g, "\\'")}', gaConfig);` : ''}
               })();
               ${hasGoogleAds ? `gtag('config', '${GOOGLE_ADS_ID!.replace(/'/g, "\\'")}');` : ''}
+              }
             `}
           </Script>
         </>

@@ -154,3 +154,24 @@ describe('community map and homes: one for-sale population (2026-09-25)', () => 
     expect(SRC).not.toMatch(/getGeoBoundaryMapData\(/)
   })
 })
+
+describe('SITE-214 community body read is raced like the head', () => {
+  it('races the body community read and renders a degraded body when it did not answer', () => {
+    expect(SRC).toMatch(
+      /withTimeoutFallbackResult\(\s*getCommunityBySlug\(slug\),\s*null,\s*PLACE_HEAD_READ_MS,\s*'comm:body-community'/,
+    )
+    expect(SRC).toMatch(/if \(!communityRead\.ok\)[\s\S]{0,300}<CommunityDegraded/)
+    expect(SRC).not.toMatch(/const community = await getCommunityBySlug\(slug\)/)
+    expect(SRC).not.toMatch(/unstable_noStore\(|noStore\(\)/)
+  })
+
+  it('degraded body prints no figure and no em dash', () => {
+    const body = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), '_v3/CommunityDegraded.tsx'),
+      'utf8',
+    )
+    expect(body).toMatch(/headingLevel=\{1\}/)
+    expect(body).not.toMatch(/—/)
+    expect(body).not.toMatch(/0 homes|activeCount|medianPrice/)
+  })
+})

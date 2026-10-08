@@ -2,7 +2,7 @@
  * UI/UX trust audit — production Playwright sweep (desktop + mobile).
  * Usage: node scripts/uiux-trust-audit.mjs
  */
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 
@@ -42,7 +42,7 @@ function addFinding(f) {
 }
 
 async function dismissOverlays(page) {
-  for (const label of ['Maybe later', 'Essential only', 'Decline', 'Reject all', 'Accept All', 'Got it', 'Close']) {
+  for (const label of ['Maybe later', 'Essential only', 'Decline', 'Reject all', 'Got it', 'Close']) {
     try {
       const btn = page.getByRole('button', { name: label }).first()
       if (await btn.isVisible({ timeout: 300 })) {

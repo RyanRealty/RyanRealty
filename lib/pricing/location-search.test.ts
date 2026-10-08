@@ -77,16 +77,18 @@ function sale(over: Partial<PricingSale> = {}): PricingSale {
 }
 
 describe('location search', () => {
-  it('stays in the subdivision, then adjacent, then the neighborhood, and widens dates when short of 3, and does not jump to same-zip while a closer place still has sales', () => {
+  it('stays in the subdivision, then adjacent, then the neighborhood, and widens dates when short of 5 price-setting sales (Matt 2026-10-07), and does not jump to same-zip while a closer place still has sales', () => {
     const asOf = '2026-08-01'
     const pool = [
-      // Twenty months old and 30% larger. The tight 25% band misses it.
-      // Widening the plat's dates and the 35% cutoff has to take it before any zip sale.
+      // Twenty months old and 20% larger, inside the one 25% price-setting
+      // band (Matt 2026-10-08: a sale past 25% never sets the price, so the
+      // old 30%-larger fixture would now be refused at the door). Widening
+      // the plat's dates has to take it before any zip sale.
       sale({
         listingKey: 'OLD_WIDE',
         address: '20 Kenwood',
         closeDate: '2024-12-01',
-        sqft: 2600,
+        sqft: 2400,
         closePrice: 700_000,
       }),
       sale({
@@ -96,6 +98,15 @@ describe('location search', () => {
         sqft: 2000,
         closePrice: 705_000,
       }),
+      // A third plat sale and a second touching-plat sale: the plat rows hold
+      // five, so the neighborhood never opens (five price-setting sales).
+      sale({
+        listingKey: 'OLD_TIGHT2',
+        address: '22 Kenwood',
+        closeDate: '2025-01-10',
+        sqft: 2000,
+        closePrice: 702_000,
+      }),
       sale({
         listingKey: 'ADJ',
         address: '1 Next',
@@ -104,6 +115,15 @@ describe('location search', () => {
         subdivisionNorm: 'next plat',
         subdivisionSlug: 'next-plat',
         latitude: 44.066,
+      }),
+      sale({
+        listingKey: 'ADJ2',
+        address: '2 Next',
+        closeDate: '2026-06-20',
+        subdivision: 'Next Plat',
+        subdivisionNorm: 'next plat',
+        subdivisionSlug: 'next-plat',
+        latitude: 44.0661,
       }),
       sale({
         listingKey: 'NEI',
@@ -150,27 +170,36 @@ describe('location search', () => {
     const keys = out.comps.map((c) => c.listingKey)
     expect(keys).toContain('OLD_WIDE')
     expect(keys).toContain('OLD_TIGHT')
+    expect(keys).toContain('OLD_TIGHT2')
     expect(keys).toContain('ADJ')
+    expect(keys).toContain('ADJ2')
+    expect(keys).toHaveLength(5)
+    expect(keys).not.toContain('NEI')
+    expect(keys).not.toContain('NEI2')
     expect(keys).not.toContain('ZIP1')
     expect(keys).not.toContain('ZIP2')
 
     const added = out.rungs.filter((r) => r.added > 0).map((r) => r.tier)
-    const subdivAt = added.findIndex((t) => t.startsWith('subdivision-'))
     const adjAt = added.findIndex((t) => t.startsWith('adjacent-'))
-    expect(subdivAt).toBeGreaterThanOrEqual(0)
-    expect(adjAt).toBeGreaterThan(subdivAt)
-    expect(added.some((t) => /^(city-|similar-sub|beyond-|citywide-|competing-area-)/.test(t))).toBe(false)
+    const oldSubAt = added.findIndex((t) => t === 'subdivision-18mo' || t === 'subdivision-24mo' || t === 'subdivision-24mo-wide')
+    expect(adjAt).toBeGreaterThanOrEqual(0)
+    expect(oldSubAt).toBeGreaterThanOrEqual(0)
+    expect(oldSubAt).toBeLessThan(adjAt)
+    expect(added.some((t) => /^(city-|similar-sub|beyond-|citywide-|competing-area-|nearby-|pocket-|community-)/.test(t))).toBe(false)
 
     const facts = pricingTierLadder().map((t) => t.name)
-    expect(facts.indexOf('subdivision-24mo-wide')).toBeGreaterThan(facts.indexOf('subdivision-3mo'))
     expect(facts.indexOf('subdivision-24mo-wide')).toBeLessThan(facts.indexOf('adjacent-sub-3mo'))
-    expect(facts.indexOf('adjacent-sub-24mo')).toBeLessThan(facts.indexOf('community-6mo'))
-    expect(facts.indexOf('community-24mo')).toBeLessThan(facts.indexOf('city-5mi-9mo'))
+    expect(facts.indexOf('adjacent-sub-24mo')).toBeLessThan(facts.indexOf('closer-sub-3mo'))
+    expect(facts.indexOf('closer-sub-24mo')).toBeLessThan(facts.indexOf('pocket-3mo'))
+    expect(facts.indexOf('community-24mo')).toBeLessThan(facts.indexOf('nearby-0.25mi-3mo'))
 
     const listings = compTierLadder('Kenwood').map((t) => t.name)
     expect(listings.indexOf('subdivision-24mo')).toBeLessThan(listings.indexOf('adjacent-subdivision-6mo'))
-    expect(listings.indexOf('adjacent-subdivision-24mo')).toBeLessThan(listings.indexOf('neighborhood-6mo'))
-    expect(listings.indexOf('neighborhood-24mo')).toBeLessThan(listings.indexOf('citywide-12mo'))
-    expect(listings.indexOf('community-24mo')).toBeLessThan(listings.indexOf('competing-area-12mo'))
+    expect(listings).not.toContain('neighborhood-12mo')
+    expect(listings).not.toContain('pocket-6mo')
+    expect(listings).not.toContain('nearby-0.25mi-6mo')
+    const unplatted = compTierLadder(null).map((t) => t.name)
+    expect(unplatted.indexOf('nearby-0.25mi-6mo')).toBeLessThan(unplatted.indexOf('nearby-1mi-6mo'))
+    expect(unplatted[0]).toBe('subdivision-6mo')
   })
 })

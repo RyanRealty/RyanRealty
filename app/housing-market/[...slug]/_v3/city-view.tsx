@@ -24,6 +24,7 @@ import {
   V3ListingRow,
   V3MosBars,
   V3Quiet,
+  V3Takeaways,
   type V3ChartProps,
   type V3InstrumentFigure,
   type V3ListingRowData,
@@ -62,6 +63,8 @@ type Props = {
   publicMix?: PublicMixRow | null
   insightBoard?: RegionInsightBoard | null
   homes?: readonly V3ListingRowData[]
+  /** The short answer after the opening (lib/site/place-takeaways, AEO 2026-10-04). */
+  takeaways?: readonly string[]
 }
 
 export function CityMarketView({
@@ -83,6 +86,7 @@ export function CityMarketView({
   publicPace = null,
   insightBoard = null,
   homes = [],
+  takeaways = [],
   // publicMix is not destructured: SITE-41 round two drops mix cells from this
   // view's fold (see the comment below). The Props field stays for callers and for
   // a future dedicated mix section; unread here on purpose.
@@ -238,6 +242,15 @@ export function CityMarketView({
           ]}
         />
       )}
+
+      {/* The short answer right after the opening (AEO, Matt 2026-10-04): the
+          same primitive and builder the city and community pages use. */}
+      <V3Takeaways
+        id="takeaways"
+        heading={`${cityName} at a glance`}
+        items={takeaways}
+        source={refreshedAt ? `Single-family homes, Oregon Data Share MLS, as of ${formatDate(refreshedAt)}.` : null}
+      />
 
       {homes.length > 0 ? (
         <section id="city-homes" className="city-homes" aria-labelledby="city-homes-heading">

@@ -5,7 +5,7 @@
  * photos don't crop, sharp photo centered) + stats card + Matt-headshot CTA.
  * Figures trace to Supabase listings (ListingKey 20260708114552589824000000).
  */
-import { chromium } from 'playwright';
+import { chromium } from './lib/marked-playwright.mjs';
 import { readFileSync, existsSync, mkdirSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';

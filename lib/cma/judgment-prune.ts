@@ -18,8 +18,9 @@
  * cma-714-wrangler-sisters, the 2020 Arena Acres sale at 0.35 on
  * cma-3153-cromwell) beside prose saying four sales were kept. It also broke
  * two of Matt's recorded rulings (marketing_brain_skills/producers/cma/SKILL.md
- * 0.1): ONE comp floor of 3 across both ladders, and "two exemptions and only
- * two" from price-tier grading. The case Falcon was compensating for, the judge
+ * 0.1): ONE comp floor across both ladders (five price-setting sales since
+ * 2026-10-07), and "two exemptions and only two" from price-tier grading. The
+ * case Falcon was compensating for, the judge
  * cutting the subject's own-plat peers on price, is now a deterministic
  * restoration inside lib/cma/judge.ts, next to the same-street one. That puts
  * the sale back as a kept comp with a reason, instead of putting every excluded
@@ -27,17 +28,24 @@
  *
  * A different product never prices the house, whatever the review said and
  * whether or not the review ran: a structure-type exclusion, a sub-type the
- * product class rejects, age-restricted housing the subject is not part of
+ * product class rejects, a duplex or any multi-unit by its public remarks
+ * (rule 23, Matt 2026-10-07, multiUnitFromRemarks; symmetric, an ADU is not
+ * a unit), a sale whose remarks state an ADU against a subject whose remarks
+ * state none (Matt 2026-10-08, "ADU sale skips", aduSaleRefused; not
+ * symmetric), age-restricted housing the subject is not part of
  * (lib/pricing/age-restricted.ts), and a new build against an ordinary resale.
+ * The multi-unit and ADU words are read only by those two readers, the same
+ * ones both search ladders and the review grounding read; PRODUCT_REASON below
+ * carries the attached, condo and manufactured words of a review reason only.
  * When the review did not run, the product-matched pool prices with the
  * dispersion guard and the contract's review flag as the backstop.
  */
-import { isCustomOrNewSubject, isNewBuild, newConstructionCompatible } from '@/lib/pricing/classes'
+import { aduSaleRefused, dropsResaleVersusNewBuild, multiUnitFromRemarks } from '@/lib/pricing/classes'
 import { productTypeCompatible } from '@/lib/cma/market-area'
 import { ageRestrictedMismatch, ownPlatAgeRestrictedShare } from '@/lib/pricing/age-restricted'
 
 const PRODUCT_REASON =
-  /\b(product type|different product|townhomes?|townhouses?|condominiums?|condos?|rowhouses?|row houses?|manufactured|duplex|triplex|quadruplex|lodges?|shared wall|common wall|structure type)\b/i
+  /\b(product type|different product|townhomes?|townhouses?|condominiums?|condos?|rowhouses?|row houses?|manufactured|lodges?|shared wall|common wall|structure type)\b/i
 
 export type ProductVerdict = {
   listingKey: string
@@ -57,6 +65,7 @@ type ProductComp = {
   listingKey: string
   propertySubType?: string | null
   yearBuilt?: number | null
+  newConstructionYn?: boolean | null
   publicRemarks?: string | null
   subdivision?: string | null
   /** The selector's own-plat decision (lib/cma/types.ts CmaComp.ownPlat). */
@@ -93,14 +102,6 @@ export function pricingCompsAfterJudgment<T extends ProductComp>(args: {
 }): { comps: T[]; shortage: boolean; droppedProduct: number; trace: string } {
   const year = args.asOfYear ?? new Date().getFullYear()
   const byVerdict = new Map(args.verdicts.map((v) => [v.listingKey, v]))
-  const subjectNew = isCustomOrNewSubject(
-    {
-      yearBuilt: args.subject.yearBuilt,
-      newConstructionYn: args.subject.newConstructionYn,
-      propertySubType: args.subject.propertySubType,
-    },
-    year,
-  )
   const platShare =
     args.ownPlatAgeRestrictedShare !== undefined
       ? args.ownPlatAgeRestrictedShare
@@ -112,6 +113,12 @@ export function pricingCompsAfterJudgment<T extends ProductComp>(args: {
     seniorCommunityYn: args.subject.seniorCommunityYn,
   }
   const hard = (comp: T): boolean => {
+    // Rule 23: the remarks are read for a multi-unit on both sides. Null
+    // remarks on a comp fail open (false on both sides is a match).
+    if (multiUnitFromRemarks(comp.publicRemarks) !== multiUnitFromRemarks(args.subject.publicRemarks)) return true
+    // The ADU wall: a sale whose remarks state an ADU never prices a subject
+    // whose remarks state none. A subject with an ADU keeps both kinds.
+    if (aduSaleRefused(args.subject.publicRemarks, comp.publicRemarks)) return true
     if (!productTypeCompatible(args.subject.propertySubType, comp.propertySubType ?? null)) return true
     const verdict = byVerdict.get(comp.listingKey)
     if (verdict && isHardProductExclusion(verdict)) return true
@@ -125,10 +132,21 @@ export function pricingCompsAfterJudgment<T extends ProductComp>(args: {
     ) {
       return true
     }
-    if (args.exclusivePocket || subjectNew) return false
-    return !newConstructionCompatible(
-      isNewBuild(args.subject.yearBuilt, year, args.subject.newConstructionYn),
-      isNewBuild(comp.yearBuilt, year, null),
+    if (args.exclusivePocket) return false
+    return dropsResaleVersusNewBuild(
+      {
+        yearBuilt: args.subject.yearBuilt,
+        newConstructionYn: args.subject.newConstructionYn,
+        remarks: args.subject.publicRemarks,
+        propertySubType: args.subject.propertySubType,
+      },
+      {
+        yearBuilt: comp.yearBuilt,
+        newConstructionYn: comp.newConstructionYn,
+        remarks: comp.publicRemarks,
+        propertySubType: comp.propertySubType,
+      },
+      year,
     )
   }
   const pool = args.selected.filter((c) => !hard(c))

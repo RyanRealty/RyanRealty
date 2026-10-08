@@ -179,7 +179,9 @@ describe('applySubjectFactOverrides', () => {
       BedroomsTotal: null,
       BathroomsTotal: null,
       TotalLivingAreaSqFt: null,
+      OriginalListPrice: 1_025_000,
     })
+    expect(subject.originalListPrice).toBe(1_025_000)
     const next = applySubjectFactOverrides(subject, { beds: 3, baths: 1, sqft: 1056 })
     expect(next.beds).toBe(3)
     expect(next.baths).toBe(1)

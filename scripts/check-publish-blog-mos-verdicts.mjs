@@ -10,6 +10,7 @@
  *   node scripts/check-publish-blog-mos-verdicts.mjs
  */
 import { readFileSync } from 'node:fs'
+import { routeRenderSource } from './lib/route-render-source.mjs'
 
 const checks = []
 
@@ -28,7 +29,10 @@ checks.push({
     helper.includes("are firmly in buyer's territory"),
 })
 
-const page = src('app/blog/[slug]/page.tsx')
+// The post body renders in app/blog/[slug]/_v3/render-blog-post.tsx (one render path
+// shared with the admin draft preview, 2026-10-05); the route file keeps metadata + ISR.
+// routeRenderSource reads the route plus the render module it imports.
+const page = routeRenderSource(new URL('../app/blog/[slug]/page.tsx', import.meta.url).pathname)
 checks.push({
   label: 'blog post page rewrites MOS verdicts after the current-MOS list',
   ok:

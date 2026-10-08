@@ -28,12 +28,17 @@
  * which is exactly the shape that splits the query.
  *
  * THE RULE, one place: for a self-city community
- *   - /communities/<slug> is the inventory winner ("{place} homes for sale").
- *   - /cities/<slug> keeps "{place} real estate" and routes its plain
- *     inventory doors to the community page (filtered searches stay on
- *     /homes-for-sale/<slug>, which is a tool, not a document).
- *   - /homes-for-sale/<slug> (the plain city search) canonicals to the
- *     community page and leaves the sitemap; it still renders for the
+ *   - /communities/<slug> is the place's ONE page, for "{place} homes for
+ *     sale" and "{place} real estate" both (Matt 2026-10-04).
+ *   - /cities/<slug> 301s to it (lib/routing/pre-render-hops.ts
+ *     'self-city-community') and leaves the sitemap; cityHref builds the
+ *     community URL directly. WHY: the SITE-187 split (city page kept "real
+ *     estate", community page took "homes for sale") still left two indexed
+ *     pages per place. Search Console 2026-07-04..10-01: "sunriver homes for
+ *     sale" ranked /cities/sunriver at 41 and /communities/sunriver at 57.
+ *   - /homes-for-sale/<slug> (the plain city search) is noindex,follow with a
+ *     self canonical and leaves the sitemap. Google ignored its old canonical
+ *     to the community page and indexed it anyway. It still renders for the
  *     search app's own city switcher, under a "Search {place} homes" heading
  *     so no second page carries the winner's exact h1.
  *   - /homes-for-sale/<slug>/<slug> and /homes-for-sale/<registry city>/<slug>

@@ -14,7 +14,8 @@ import type { CmaListingRow } from '@/lib/data/cma/builderReads'
 import type { CmaSubject } from '@/lib/cma/types'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatDate } from '@/lib/format/date'
-import { daysOnMarketFrom, listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
+import { daysOnMarketFrom, liveListingDays, listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
+import { statusIsOnMarket } from '@/lib/cma/subject-on-market'
 // The suffix and directional words are shared with the owner-name check, so the
 // two never disagree on what a street word is (lib/cma/street-words.ts).
 import { STREET_DIRECTIONALS as DIRECTIONALS, STREET_SUFFIXES } from '@/lib/cma/street-words'
@@ -95,7 +96,7 @@ function mlsText(v: unknown): string | null {
 }
 
 /** Strict tri-state read. Anything the MLS did not say stays null, never false. */
-function bool(v: unknown): boolean | null {
+export function mlsTriBool(v: unknown): boolean | null {
   if (typeof v === 'boolean') return v
   if (typeof v === 'string') {
     const s = v.trim().toLowerCase()
@@ -176,10 +177,16 @@ export function rowToSubject(row: CmaListingRow): CmaSubject {
   const originalListPrice = num(row['OriginalListPrice'])
   const listDate = str(row['OnMarketDate']) ?? str(row['ListDate'])
   const listedWhen = fmtDate(listDate)
-  const dom = daysOnMarketFrom({
-    daysOnMarket: num(row['CumulativeDaysOnMarket']) ?? num(row['DaysOnMarket']),
-    onMarketDate: listDate,
-  })
+  // A live listing counts from its on-market day to today (liveListingDays),
+  // never off the MLS DaysOnMarket field, which is stale between feed updates
+  // (3062 NW Kelly Hill: 156 stored, 159 by the dates).
+  const live = statusIsOnMarket(status) ? liveListingDays(listDate) : null
+  const dom =
+    live ??
+    daysOnMarketFrom({
+      daysOnMarket: num(row['CumulativeDaysOnMarket']) ?? num(row['DaysOnMarket']),
+      onMarketDate: listDate,
+    })
   let historyLine: string | null = buildListingHistoryLine({
     listPrice,
     originalListPrice,
@@ -208,6 +215,8 @@ export function rowToSubject(row: CmaListingRow): CmaSubject {
     longitude: num(row['Longitude']),
     beds: num(row['BedroomsTotal']),
     baths: num(row['BathroomsTotal']),
+    bathsFull: num(row['baths_full']),
+    bathsHalf: num(row['baths_half']),
     sqft: num(row['TotalLivingAreaSqFt']),
     lotAcres: num(row['lot_size_acres']),
     propertySubType: str(row['property_sub_type']),
@@ -219,6 +228,7 @@ export function rowToSubject(row: CmaListingRow): CmaSubject {
     taxAnnual: num(row['tax_annual_amount']),
     standardStatus: status,
     lastListPrice: listPrice,
+    originalListPrice,
     lastListDate: listDate,
     listingHistoryLine: historyLine,
     // Who holds this listing. Read only by the compliance carve-out
@@ -227,7 +237,7 @@ export function rowToSubject(row: CmaListingRow): CmaSubject {
     listAgentName: str(row['ListAgentName']),
     listAgentEmail: str(row['list_agent_email']),
     listOfficeName: str(row['ListOfficeName']),
-    associationYn: bool(row['association_yn']),
+    associationYn: mlsTriBool(row['association_yn']),
     associationFee: num(row['association_fee']),
     associationFeeFrequency: str(row['association_fee_frequency']),
     hoaMonthly: num(row['hoa_monthly']),
@@ -236,11 +246,11 @@ export function rowToSubject(row: CmaListingRow): CmaSubject {
     sewerRaw: row['sewer'] ?? null,
     levelsRaw: row['levels'] ?? null,
     newConstructionYn: (() => {
-      const fromCol = bool(row['new_construction_yn'])
+      const fromCol = mlsTriBool(row['new_construction_yn'])
       if (fromCol != null) return fromCol
-      return bool(row['new_construction_details'])
+      return mlsTriBool(row['new_construction_details'])
     })(),
-    seniorCommunityYn: bool(row['senior_community_yn']),
+    seniorCommunityYn: mlsTriBool(row['senior_community_yn']),
   }
 }
 
@@ -518,6 +528,8 @@ export function applySubjectFactOverrides(
     ...subject,
     beds: beds ?? subject.beds,
     baths: baths ?? subject.baths,
+    // A broker's bath count replaces the MLS one, split and all.
+    ...(baths != null ? { bathsFull: null, bathsHalf: null } : {}),
     sqft: sqft ?? subject.sqft,
   }
 }

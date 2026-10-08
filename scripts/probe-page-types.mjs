@@ -24,7 +24,7 @@
  *
  * Exit 0 = every page type clean. Exit 1 = at least one broken page (details printed).
  */
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 
 const BASE = (process.env.SMOKE_BASE_URL || 'http://127.0.0.1:3000').replace(/\/$/, '')
 const NAV_TIMEOUT = 45_000

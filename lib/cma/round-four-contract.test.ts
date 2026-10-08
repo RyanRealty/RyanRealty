@@ -21,6 +21,7 @@ import { describe, expect, it } from 'vitest'
 import { renderCmaHtml, type RenderCmaArgs } from '@/lib/cma/render'
 import { renderImmersiveCmaHtml } from '@/lib/cma/immersive'
 import {
+  NON_SOLICITATION_LISTED_SENTENCE,
   NON_SOLICITATION_SENTENCE,
   WITHDRAWN_AGREEMENT_SENTENCE,
   closingIsNonSoliciting,
@@ -181,12 +182,13 @@ describe('A — the net chapter itemises, or prints no figure at all', () => {
 
   it('itemises every line with its source, and the net is below the list', () => {
     const html = sellerNetBodyHtml(withSheet(NET_SHEET))
-    expect(html).toContain('List price')
-    expect(html).toContain('that price')
-    expect(html).not.toContain('$435,000')
+    // The cover owns the dollars (Matt lock 2026-09-12): the column head
+    // names the price in words.
+    expect(html).toContain('At the list price')
+    expect(html).not.toContain('At $435,000')
     expect(html).toContain('Listing agreement, 5.0%')
     expect(html).toContain('Payoff quote you provided')
-    expect(html).toContain('What you keep at that price')
+    expect(html).toContain('What you keep')
     expect(html).toContain('$198,700')
     // The one figure a seller quotes back may never exceed the price above it.
     expect(198_700).toBeLessThan(435_000)
@@ -195,7 +197,7 @@ describe('A — the net chapter itemises, or prints no figure at all', () => {
   it('refuses the phrase and names the gap when a deduction is missing', () => {
     const a = withSheet({ ...NET_SHEET, unknowns: ['what you still owe on the home'] })
     const html = sellerNetBodyHtml(a)
-    expect(html).toContain('Net at that price')
+    expect(html).toContain('Left from the sale')
     expect(html).not.toContain('What you keep')
     expect(html).toContain('This does not include what you still owe on the home.')
     expect(sellerNetKick(a)).toBe('Net at list')
@@ -204,7 +206,7 @@ describe('A — the net chapter itemises, or prints no figure at all', () => {
   it('prints no figure at all when the column does not add up', () => {
     // A net ABOVE the list — Concorde shipped $1,707,603 on a $1,473,000 list.
     const html = sellerNetBodyHtml(withSheet({ ...NET_SHEET, net: 1_707_603 }))
-    expect(html).not.toContain('List price')
+    expect(html).not.toContain('netsheet')
     expect(html).toContain('A net at that price needs')
     expect(html).not.toMatch(/\$1,707,603/)
   })
@@ -322,7 +324,11 @@ describe('D — the closing never solicits a listing it may not solicit', () => 
     expect(buttons).not.toContain('cma-book')
     expect(buttons).not.toContain('Talk with')
     for (const html of [letter(active), immersive(active)]) {
-      expect(html).toContain(NON_SOLICITATION_SENTENCE)
+      // The row says another brokerage holds the listing, so the closing says
+      // so as a fact, not "If your home is listed" (3062 NW Kelly Hill,
+      // reader review 2026-10-08).
+      expect(html).toContain(NON_SOLICITATION_LISTED_SENTENCE)
+      expect(html).not.toContain(NON_SOLICITATION_SENTENCE)
       expect(html).not.toContain('Bring this report.')
       expect(html).not.toContain('Sorry this listing did not sell.')
       expect(html).not.toContain('did not sell this go-around')
@@ -332,12 +338,13 @@ describe('D — the closing never solicits a listing it may not solicit', () => 
 
   it('carries the non-interference sentence on a withdrawn listing', () => {
     const a = opinion(withdrawn)
-    // Withdrawn is not somebody else's live listing, so the ask survives — but
-    // the agreement may still be running and the document says so.
+    // Withdrawn is not somebody else's live listing, so the ask survives.
+    // The agreement sentence does not.
     expect(closingIsNonSoliciting(a)).toBe(false)
     for (const html of [letter(withdrawn), immersive(withdrawn)]) {
-      expect(html).toContain(WITHDRAWN_AGREEMENT_SENTENCE)
+      expect(html).not.toContain(WITHDRAWN_AGREEMENT_SENTENCE)
       expect(html).not.toContain(NON_SOLICITATION_SENTENCE)
+      expect(html).toContain('class="reach"')
     }
   })
 

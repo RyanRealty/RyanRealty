@@ -27,8 +27,9 @@
 
 import { getCmaAdminRowBySlug, updateCmaRowFieldsBySlug, getCmaBrokerBySlugOrEmail } from '@/lib/data'
 import { renderCmaHtml, type RenderCmaArgs } from '@/lib/cma/render'
-import { buildCmaMapDataUri } from '@/lib/cma/map'
+import { buildCmaMapDataUri, cmaMapOptionsFromArgs } from '@/lib/cma/map'
 import type { CmaBroker } from '@/lib/cma/types'
+import type { CompPinMapOverlay } from '@/lib/cma/comp-pin-map'
 
 export type RebrandResult =
   | { ok: true; slug: string; brokerSlug: string; recommendedUnchanged: true }
@@ -109,11 +110,17 @@ export async function rebrandCma(input: { slug: string; brokerSlug: string }): P
   // reuse the one already embedded in the previous render rather than dropping
   // the map because an unrelated API had a bad minute.
   let mapDataUri: string | null = null
+  // The pins ride with the tile they were drawn on; a reused tile has none,
+  // and its caption then does not promise them.
+  let mapOverlay: CompPinMapOverlay | null = null
   try {
-    const map = await buildCmaMapDataUri(storedArgs.subject, storedArgs.comps, {
-      tiersUsed: storedArgs.tiersUsed,
-    })
+    const map = await buildCmaMapDataUri(
+      storedArgs.subject,
+      storedArgs.comps,
+      cmaMapOptionsFromArgs(storedArgs),
+    )
     mapDataUri = map?.dataUri ?? null
+    mapOverlay = map
   } catch {
     mapDataUri = null
   }
@@ -122,7 +129,7 @@ export async function rebrandCma(input: { slug: string; brokerSlug: string }): P
   let html: string
   try {
     // C9: subject-only map stays off the letter.
-    const rendered = renderCmaHtml({ ...storedArgs, broker, mapDataUri, subjectMapDataUri: null })
+    const rendered = renderCmaHtml({ ...storedArgs, broker, mapDataUri, mapOverlay, subjectMapDataUri: null })
     html = rendered.html
   } catch (err) {
     return {

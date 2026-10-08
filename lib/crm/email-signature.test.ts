@@ -52,6 +52,15 @@ describe('buildSignature — Gmail-synced signature (2026-07-09)', () => {
     expect(sig.html).not.toContain('/images/brokers/ryan-matt.png')
   })
 
+  it('moves the installed signature images off the Vercel alias onto ryan-realty.com (2026-10-07)', () => {
+    const alias = ['https://ryanrealty', 'vercel', 'app'].join('.')
+    const installed = `<img src="${alias}/images/brokers/ryan-matt.png"><img src="${alias}/images/brand/logo-blue.png">`
+    const sig = buildSignature(broker({ gmailSignatureHtml: installed }))
+    expect(sig.html).toContain('https://ryan-realty.com/images/brokers/ryan-matt.png')
+    expect(sig.html).toContain('https://ryan-realty.com/images/brand/logo-blue.png')
+    expect(sig.html).not.toContain(alias)
+  })
+
   it('ALWAYS appends the Oregon pamphlet compliance line (ORS 696.820)', () => {
     const sig = buildSignature(broker({ gmailSignatureHtml: GMAIL_SIG }))
     expect(sig.html).toContain(AGENCY_PAMPHLET_URL)

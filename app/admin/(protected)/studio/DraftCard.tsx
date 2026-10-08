@@ -11,6 +11,7 @@
 import { useState, useTransition } from 'react'
 import { Button, StateWord } from '@/components/admin/v2'
 import { approveStudioDraftAction, killStudioDraftAction } from './actions'
+import type { StudioTypeLayer } from '@/lib/data/studio/drafts'
 
 export type DraftCardModel = {
   id: string
@@ -27,6 +28,7 @@ export type DraftCardModel = {
   citationCount: number
   origin: string | null
   createdAt: string
+  typeLayer: StudioTypeLayer | null
 }
 
 function qaTone(score: number | null): string {
@@ -123,6 +125,8 @@ export function DraftCard({ draft }: { draft: DraftCardModel }) {
         {draft.origin ? ` · ${draft.origin}` : ''}
       </p>
 
+      {draft.typeLayer ? <TypeLayerLine layer={draft.typeLayer} /> : null}
+
       {draft.status === 'ready' && !done ? (
         <div style={{ display: 'flex', gap: 8 }}>
           <Button type="button" onClick={approve} disabled={pending}>
@@ -141,5 +145,54 @@ export function DraftCard({ draft }: { draft: DraftCardModel }) {
         <p style={{ margin: '8px 0 0', color: 'var(--a-danger)', fontSize: 'var(--a-text-sm)' }}>{error}</p>
       ) : null}
     </article>
+  )
+}
+
+/**
+ * What the type layer drew, as one still per card, so every number on screen
+ * can be checked against its trace without scrubbing the video (CLAUDE.md §0,
+ * step 6). When it did not run, say why: the footage shipped without type.
+ */
+function TypeLayerLine({ layer }: { layer: StudioTypeLayer }) {
+  const small = { margin: '0 0 10px', fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }
+  if (!layer.applied) {
+    return <p style={small}>Type layer did not run ({layer.reason ?? 'unknown'}). This is the plain footage.</p>
+  }
+  return (
+    <div style={{ marginBottom: 10 }}>
+      <p style={{ ...small, margin: '0 0 6px' }}>
+        Type layer: {layer.stills.length} {layer.stills.length === 1 ? 'card' : 'cards'}
+        {layer.plateUrl ? (
+          <>
+            {' · '}
+            <a href={layer.plateUrl} target="_blank" rel="noreferrer">
+              footage without type
+            </a>
+          </>
+        ) : null}
+      </p>
+      {layer.stills.length ? (
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {layer.stills.map((still) => (
+            <a key={still.cueId} href={still.url} target="_blank" rel="noreferrer" title={`Still: ${still.cueId}`}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={still.url} alt={`Still of the ${still.cueId} card`} style={{ width: 72, borderRadius: 4, display: 'block' }} />
+            </a>
+          ))}
+        </div>
+      ) : null}
+      {layer.score ? (
+        <p style={{ ...small, margin: '6px 0 0' }}>
+          {'silent' in layer.score
+            ? `Silent: ${layer.score.silent}`
+            : `Score in ${layer.score.key}, ${layer.score.lufs.toFixed(1)} LUFS, peak ${layer.score.truePeakDb.toFixed(1)} dBTP`}
+        </p>
+      ) : null}
+      {layer.notes.map((note) => (
+        <p key={note} style={{ ...small, margin: '6px 0 0' }}>
+          {note}
+        </p>
+      ))}
+    </div>
   )
 }

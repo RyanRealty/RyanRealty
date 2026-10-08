@@ -121,11 +121,11 @@ Daily 15:00 UTC (08:00 PT summer / 07:00 PT winter) per `vercel.json`. Runs AFTE
 ```sh
 # Dry run.  show candidates, don't write
 curl -H "Authorization: Bearer $CRON_SECRET" \
-  "https://ryanrealty.vercel.app/api/cron/marketing-measurement-loop?dryRun=true"
+  "https://ryan-realty.com/api/cron/marketing-measurement-loop?dryRun=true"
 
 # Bounded run
 curl -H "Authorization: Bearer $CRON_SECRET" \
-  "https://ryanrealty.vercel.app/api/cron/marketing-measurement-loop?maxCandidates=50"
+  "https://ryan-realty.com/api/cron/marketing-measurement-loop?maxCandidates=50"
 ```
 
 ---

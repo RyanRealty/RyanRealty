@@ -1,3 +1,4 @@
+import { siteOrigin } from '@/lib/site-origin'
 import type { Metadata } from 'next'
 import { getBannerUrl } from '../../actions/banners'
 import { getSubdivisionDescription } from '../../actions/subdivision-descriptions'
@@ -12,6 +13,7 @@ import { withTimeout } from './fetch-guards'
 import { refusalPlatDoor, searchAreaUnavailableHeading } from './sections/AreaUnavailable'
 import { resolveSlug, buildCanonicalPath, printableAreaName, unnamedAreaPhrase } from './resolve-slug'
 import { placeHomesForSaleHeading } from '@/lib/site/place-homes-heading'
+import { fitTitle } from '@/lib/site/page-metadata'
 import { selfCitySearchCanonicalPath, selfCitySearchHeading } from '@/lib/communities/self-city-community'
 import { luxuryPresetDescription, luxuryPresetHeading } from '@/lib/site/bend-luxury-homes'
 import {
@@ -37,6 +39,20 @@ export const SEARCH_AREA_UNAVAILABLE_METADATA = {
  * contract stays pinned in the route file (ci:seo-routes file contract). A null
  * canonicalUrl is the refusal: the wrapper emits no canonical.
  */
+/**
+ * "{title} in {town}" for an area (plat / neighborhood) page whose title does
+ * not already name its town, when it fits TITLE_BUDGET. City pages and titles
+ * that already carry the town pass through unchanged.
+ */
+export function withAreaTown(title: string, town: string | null | undefined): string {
+  const t = (town ?? '').trim()
+  if (!t) return title
+  if (title.toLowerCase().includes(t.toLowerCase())) return title
+  // The town goes when it would push the title past the 60-char SERP width
+  // (Matt 2026-10-05): "Homes Under $1 Million in Old Farm District".
+  return fitTitle(`${title} in ${t}`, title)
+}
+
 export async function buildSearchSlugMetadata({
   params,
   searchParams,
@@ -81,7 +97,9 @@ export async function buildSearchSlugMetadata({
   const rawMetaDesc =
     luxuryPresetDescription(preset, placeName) ??
     (areaPrint && subdivisionDisplayName ? (subdivisionDesc ?? getSubdivisionBlurb(subdivisionDisplayName)) : null) ??
-    (subdivisionSlug ? null : content?.metaDescription) ??
+    // SEO review 2026-10-04: same leak for a preset. /homes-for-sale/bend/residential-lots
+    // and /homes-for-sale/bend/manufactured both printed Bend's city description.
+    (subdivisionSlug || preset ? null : content?.metaDescription) ??
     (preset
       ? `${preset.label} in ${placeName}, Central Oregon. Live listings from the regional MLS, with price, size, and the map.`
       : subdivisionSlug && areaPrint && city
@@ -93,7 +111,7 @@ export async function buildSearchSlugMetadata({
     (subdivisionDisplayName
       ? await withTimeout(getBannerUrl('subdivision', subdivisionEntityKey(city, subdivisionDisplayName)), null, 1200)
       : await withTimeout(getBannerUrl('city', cityEntityKey(city)), null, 1200))
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const siteUrl = siteOrigin()
   const defaultOgImage = `${siteUrl}/api/og?type=default`
   const isBendNewConstructionTwin = isBendNewConstructionSearchTwinSlug(slug, sp)
 
@@ -128,7 +146,9 @@ export async function buildSearchSlugMetadata({
     : typeTwinPath
       ? typeTwinPath
       : selfCityCanonical
-        ? selfCityCanonical
+        ? // Noindexed below; a noindex page names itself, never the page we
+          // want ranked (Matt 2026-10-04).
+          buildCanonicalPath(city, subdivisionDisplayName, subdivisionSlug, presetSlug)
         : area && slug.length === 2
           ? // EXP-4 / SEO-6: a plat twin or a community twin consolidates onto its
             // place page; every other pair is self-canonical.
@@ -144,12 +164,16 @@ export async function buildSearchSlugMetadata({
   // ("Bend luxury homes for sale"); the layout template adds the brand.
   // SITE-184: the plain city search of a self-city community reads "Search
   // {place} homes" so no second page carries the community's title.
-  const title =
+  const baseTitle =
     luxuryPresetHeading(preset, placeName) ??
     (preset
       ? `${preset.label} in ${placeName}`
       : (selfCityTitle ??
         (areaPrint || !subdivisionSlug ? placeHomesForSaleHeading(placeName) : `Homes for sale in ${placeName}`)))
+  // The brand suffix stopped carrying "Central Oregon" (Matt 2026-10-04), so an
+  // area page names its own town: "Woodridge homes for sale in Bend", not a
+  // bare plat name the searcher cannot place.
+  const title = withAreaTown(baseTitle, subdivisionSlug ? city : null)
   // W3.2 search-matrix noindex: a 3-segment {city}/{area}/{preset} combo with a
   // VERIFIED zero active-inventory count stays renderable but is noindexed —
   // the sitemap (lib/seo/getSearchMatrixEntries.ts) only submits combos with
@@ -181,7 +205,12 @@ export async function buildSearchSlugMetadata({
         (!!preset && isSortOnlyPreset(preset)) ||
         shouldNoIndexSearchVariant(sp) ||
         matrixNoIndex ||
-        areaNoIndex
+        areaNoIndex ||
+        // Self-city plain search (/homes-for-sale/sunriver, /black-butte-
+        // ranch): Search Console 2026-10-04 showed Google ignoring the old
+        // canonical to /communities/<slug> and indexing both, so the search
+        // tool now says noindex outright and the community page stands alone.
+        selfCityCanonical != null
           ? { index: false, follow: true }
           : { index: true, follow: true },
       openGraph: {

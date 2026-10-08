@@ -17,6 +17,8 @@
  */
 
 import type { CmaAdjustedComp, CmaPricing } from '@/lib/cma/types'
+import { RANGE_MIN_KEPT, RANGE_TRIM_MIN_N } from '@/lib/pricing/ladder'
+import { anySaleMovedForDate } from '@/lib/cma/adjustments-applied'
 
 export type SetAsideSale = {
   listingKey: string | null
@@ -70,8 +72,12 @@ export function readSetAsideSales(pricing: CmaPricing | null | undefined): SetAs
   return []
 }
 
-/** True when `pricing.rangeRule` says the extremes were trimmed. */
-function trimsEachEnd(pricing: CmaPricing | null | undefined): boolean {
+/**
+ * True when `pricing.rangeRule` says the extremes were trimmed. A stored
+ * `min-max` row reads false here: that rule has had no production writer since
+ * 2026-10-07 (the band is always trimmed), so it is read, never written.
+ */
+export function trimsEachEnd(pricing: CmaPricing | null | undefined): boolean {
   return bag(pricing, 'rangeRule')?.rule === 'trimmed-one-each-end'
 }
 
@@ -80,12 +86,51 @@ function key(v: string | null | undefined): string {
 }
 
 /**
+ * THE ONE MATCHER from a set-aside entry to a printed sale (review,
+ * 2026-10-07). Comp addresses carry no unit on either ladder, so two units in
+ * one building print the same street address: matching by address sent a kept
+ * unit out of the band beside the set-aside one ($470,000 under "100 Main St"
+ * dropped with the $500,000 unit). The pricer writes the listing key on every
+ * entry it sets aside, so the key decides. The address is read only for an
+ * entry that has no key (a row stored before the key was written).
+ *
+ * Every reader of the set-aside list goes through this: the band pin
+ * (lib/pricing/estimate.ts), the letter contract (lib/cma/letter-consistency.ts),
+ * setAsideCompIndexes below, and through it the cover band
+ * (lib/cma/cover-value.ts tableBandSales).
+ */
+export function setAsideEntryFor(
+  named: readonly SetAsideSale[],
+  sale: { listingKey?: string | null; address?: string | null },
+): SetAsideSale | null {
+  const saleKey = key(sale.listingKey)
+  if (saleKey) {
+    const byKey = named.find((r) => key(r.listingKey) === saleKey)
+    if (byKey) return byKey
+  }
+  const saleAddress = key(sale.address)
+  if (!saleAddress) return null
+  return named.find((r) => !key(r.listingKey) && key(r.address) === saleAddress) ?? null
+}
+
+/** A predicate over printed sales: true for a sale the pricing unit set aside. */
+export function setAsideMatcher(
+  pricing: CmaPricing | null | undefined,
+): (sale: { listingKey?: string | null; address?: string | null }) => boolean {
+  const named = readSetAsideSales(pricing)
+  if (named.length === 0) return () => false
+  return (sale) => setAsideEntryFor(named, sale) != null
+}
+
+/**
  * WHICH PRINTED SALES ARE SET ASIDE, by their index in the grid.
  *
- * The field wins. When it is absent the rule is read the way it always was:
- * `trimmed-one-each-end` sets aside the highest and the lowest adjusted sale,
- * which is the sentence the pricing unit itself prints in the method block.
- * Nothing is decided here.
+ * The field wins. When it is absent (rows built before `pricing.setAside`
+ * landed) the rule is read the way it always was: `trimmed-one-each-end` sets
+ * aside the highest and the lowest adjusted sale, which is the sentence the
+ * pricing unit itself prints in the method block, under the same five-sale
+ * trimmed rule the pricer uses (RANGE_TRIM_MIN_N, RANGE_MIN_KEPT). Nothing is
+ * decided here.
  */
 export function setAsideCompIndexes(
   pricing: CmaPricing | null | undefined,
@@ -94,9 +139,8 @@ export function setAsideCompIndexes(
   const out = new Set<number>()
   const named = readSetAsideSales(pricing)
   if (named.length > 0) {
-    const keys = new Set(named.flatMap((r) => [key(r.listingKey), key(r.address)].filter(Boolean)))
     comps.forEach((c, i) => {
-      if (keys.has(key(c.listingKey)) || keys.has(key(c.address))) out.add(i)
+      if (setAsideEntryFor(named, c) != null) out.add(i)
     })
     if (out.size > 0) return out
   }
@@ -105,14 +149,49 @@ export function setAsideCompIndexes(
     .map((c, i) => ({ i, v: c.adjustedPrice }))
     .filter((r) => r.v != null && Number.isFinite(r.v) && r.v > 0)
     .sort((a, b) => a.v - b.v)
-  // Tip Ready P0 / Cos Falcon smoke: screen needs ≥5 stacked sold comps. Do not
-  // trim ends when that would leave fewer than 5 kept sales on the grid.
-  const MIN_KEPT_ON_STACK = 5
-  if (ranked.length < 4) return out
-  if (ranked.length - 2 < MIN_KEPT_ON_STACK) return out
+  if (ranked.length < RANGE_TRIM_MIN_N) return out
+  if (ranked.length - 2 < RANGE_MIN_KEPT) return out
   out.add(ranked[0]!.i)
   out.add(ranked[ranked.length - 1]!.i)
   return out
+}
+
+/**
+ * THE GRID'S SET-ASIDE DECISION, CARRIED TO ANOTHER LIST OF THE SAME SALES.
+ *
+ * The map draws its closed pins from a list keyed the map's way, and the
+ * table under it prints "These 2 sales are shown above and did not set the
+ * number." Both have to name the same two homes (reader review, 62475
+ * Woodsman and 2382 Jackson, 2026-10-08: every closed pin sat under "Closed
+ * sales: these set the price"). So the decision is made once, by
+ * `setAsideCompIndexes` over the grid's own rows, and handed on by listing
+ * key. The address is read only for a grid row that carries no key.
+ *
+ * `setsPrice` on a comp is a different fact and is not read or written here:
+ * it is rule 20's admission stamp from the comp walk, and the weight reads it
+ * to skip re-grading a sale (lib/pricing/closed-comp-weight.ts). A set-aside
+ * sale passed rule 20; it is the range trim that sets it aside.
+ */
+export function setAsideSalePredicate(
+  pricing: CmaPricing | null | undefined,
+  comps: readonly CmaAdjustedComp[],
+): (sale: { listingKey?: string | null; address?: string | null }) => boolean {
+  const indexes = setAsideCompIndexes(pricing, comps)
+  if (indexes.size === 0) return () => false
+  const keys = new Set<string>()
+  const addresses = new Set<string>()
+  comps.forEach((c, i) => {
+    if (!indexes.has(i)) return
+    const k = key(c.listingKey)
+    if (k) keys.add(k)
+    else if (key(c.address)) addresses.add(key(c.address))
+  })
+  return (sale) => {
+    const k = key(sale.listingKey)
+    if (k && keys.has(k)) return true
+    const a = key(sale.address)
+    return !k && a !== '' && addresses.has(a)
+  }
 }
 
 /** The sales that set the number: everything the grid prints, less those. */
@@ -128,7 +207,8 @@ export function keptCompCount(
  *
  * When the pricing unit supplies a reason it is printed as written. When only
  * the rule is on the row, the reason is the rule's own words — the highest and
- * the lowest, which is what `rangeRule.sentence` says three lines above.
+ * the lowest, which the range line states too (adjustedRangeLine in
+ * lib/cma/expected-sale.ts).
  */
 export function setAsideRows(
   pricing: CmaPricing | null | undefined,
@@ -136,27 +216,26 @@ export function setAsideRows(
 ): Array<{ address: string; reason: string }> {
   const indexes = [...setAsideCompIndexes(pricing, comps)]
   if (indexes.length === 0) return []
-  const named = new Map(
-    readSetAsideSales(pricing).flatMap((r) =>
-      [key(r.listingKey), key(r.address)].filter(Boolean).map((k) => [k, r] as const),
-    ),
-  )
+  const named = readSetAsideSales(pricing)
   const values = indexes
     .map((i) => comps[i]?.adjustedPrice ?? null)
     .filter((v): v is number => v != null && Number.isFinite(v))
   const high = values.length ? Math.max(...values) : null
   const low = values.length ? Math.min(...values) : null
+  // "Moved to today" only when a printed sale moved for date (3037 Purcell
+  // moved none, reader review 2026-10-08).
+  const moved = anySaleMovedForDate(comps) ? 'moved to today' : 'adjusted to your home'
   return indexes
     .map((i) => {
       const c = comps[i]
       if (!c) return null
-      const supplied = named.get(key(c.listingKey)) ?? named.get(key(c.address)) ?? null
+      const supplied = setAsideEntryFor(named, c)
       const price = c.adjustedPrice ?? null
       const fallback =
         price != null && high != null && price === high
-          ? 'The highest of these sales once each is moved to today. The range is the spread of the rest.'
+          ? `The highest of these sales once each is ${moved}. The range is the spread of the rest.`
           : price != null && low != null && price === low
-            ? 'The lowest of these sales once each is moved to today. The range is the spread of the rest.'
+            ? `The lowest of these sales once each is ${moved}. The range is the spread of the rest.`
             : 'Not one of the sales the range is the spread of.'
       return { address: c.address, reason: supplied?.reason ?? fallback }
     })

@@ -25,7 +25,9 @@ import {
   type CmaOrigin,
   type CmaSendMode,
 } from '@/lib/cma/origin'
-import { theirPriceFromBuildSummary } from '@/lib/cma/queue-view'
+import { cmaQueueReachFromFacts, type CmaQueueReach, theirPriceFromBuildSummary } from '@/lib/cma/queue-view'
+import { storedHoldDecided, storedHoldKind } from '@/lib/cma/gap-hold'
+import { pickSendableCell, type IntakePhone } from '@/lib/prospecting/intake-gate'
 
 function client() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -99,6 +101,11 @@ export type CmaQueueRow = {
 
   contactName: string | null
   contactEmail: string | null
+  /**
+   * Email wins. `text` only when a stored line type is mobile, wireless, or cell
+   * and the number is not DNC. A phone with no line type is `unconfirmed-phone`.
+   */
+  contactReach?: CmaQueueReach
   brokerSlug: string | null
 
   recommendedList: number | null
@@ -137,13 +144,47 @@ export type CmaQueueRow = {
   /** Set when this CMA is joined to a prospect row, so send can address it. */
   prospectKind: 'expired' | 'fsbo' | null
   prospectId: string | null
+  /**
+   * The build's own hold for Matt: 'ask-in-band' (SKILL.md rule 22, the last
+   * failed ask sat inside the trimmed band) or 'ask-below-band' (the failed-ask
+   * ceiling pulled the recommendation under every sale that set it, rule 20).
+   * The state stays 'flagged'; this is what makes the flag unacknowledgeable
+   * at every send gate.
+   */
+  holdKind: 'ask-in-band' | 'ask-below-band' | null
+  /**
+   * True when the build measured the last failed ask against the band and
+   * decided (build_summary.hold_measured, or a stored hold kind). False on a
+   * row built before the field and on a row whose build had no failed cycle,
+   * no ask or no band to measure; the send gates run a live backstop on the
+   * row's own ask and band there.
+   */
+  holdDecided: boolean
+}
+
+/** Only the kinds the build writes map through; anything else is null. */
+export function holdKindFromSummary(
+  summary: CmaBuildSummary | null | undefined,
+): 'ask-in-band' | 'ask-below-band' | null {
+  return storedHoldKind(summary)
+}
+
+/**
+ * The build decided rule 22: it stored the hold, or it measured an ask against
+ * a band and found none. The presence of the hold_kind key is not enough: every
+ * build since 2026-10-07 wrote hold_kind null, including the ones that had no
+ * failed cycle, no ask or no band to measure, and reading the key as a
+ * decision skipped the live backstop on exactly those rows (review, 2026-10-07).
+ */
+export function holdDecidedFromSummary(summary: CmaBuildSummary | null | undefined): boolean {
+  return storedHoldDecided(summary)
 }
 
 type Row = Record<string, unknown>
 
 const CMA_COLUMNS =
   'id, slug, doc_type, subject_address, subject_subdivision, subject_city, subject_listing_key, ' +
-  'client_name, client_email, broker_slug, value_low, value_high, recommended_list, ' +
+  'client_name, client_email, client_phone, person_id, broker_slug, value_low, value_high, recommended_list, ' +
   'comps_count, status, created_at, delivered_at, build_error, html_path, ' +
   'build_summary, request_source, archived_at'
 
@@ -195,6 +236,10 @@ export function resolveCmaQueueState(args: {
 export type CmaBuildSummary = {
   needs_review?: boolean
   review_reason?: string | null
+  /** The build's own hold, when it recorded one (lib/cma/gap-hold.ts). */
+  hold_kind?: string | null
+  /** True when the build measured the last failed ask against the band (lib/cma/build-summary.ts). */
+  hold_measured?: boolean
   audit?: {
     used_llm?: boolean
     verdict?: string | null
@@ -245,6 +290,7 @@ async function fetchProspectContext(
   queuedAt: string | null
   emailSentAt: string | null
   contactEmail: string | null
+  contactPhone: string | null
   ownerName: string | null
 }>> {
   const out = new Map<string, {
@@ -255,6 +301,7 @@ async function fetchProspectContext(
     queuedAt: string | null
     emailSentAt: string | null
     contactEmail: string | null
+    contactPhone: string | null
     ownerName: string | null
   }>()
 
@@ -267,7 +314,7 @@ async function fetchProspectContext(
         .from('expired_listings')
         .select(
           'cma_id, listing_key, list_price, original_list_price, expired_at, status_change_timestamp, ' +
-            'outreach_email_queued_at, outreach_email_sent_at, contact_email, owner_name',
+            'outreach_email_queued_at, outreach_email_sent_at, contact_email, contact_phone, owner_name',
         )
         .not('cma_id', 'is', null)
         .order('listing_key', { ascending: true })
@@ -278,7 +325,7 @@ async function fetchProspectContext(
         .from('fsbo_listings')
         .select(
           'cma_id, fsbo_url, list_price, detected_at, ' +
-            'outreach_email_queued_at, outreach_email_sent_at, contact_email, owner_name',
+            'outreach_email_queued_at, outreach_email_sent_at, contact_email, contact_phone, owner_name',
         )
         .not('cma_id', 'is', null)
         .order('fsbo_url', { ascending: true })
@@ -300,6 +347,7 @@ async function fetchProspectContext(
       queuedAt: str(r.outreach_email_queued_at),
       emailSentAt: str(r.outreach_email_sent_at),
       contactEmail: str(r.contact_email),
+      contactPhone: str(r.contact_phone),
       ownerName: str(r.owner_name),
     })
   }
@@ -314,6 +362,7 @@ async function fetchProspectContext(
       queuedAt: str(r.outreach_email_queued_at),
       emailSentAt: str(r.outreach_email_sent_at),
       contactEmail: str(r.contact_email),
+      contactPhone: str(r.contact_phone),
       ownerName: str(r.owner_name),
     })
   }
@@ -386,6 +435,7 @@ export function mapBpoQueueRow(r: Record<string, unknown>): CmaQueueRow {
 
     contactName: str(r.requested_by),
     contactEmail: null,
+    contactReach: 'none',
     brokerSlug: str(r.broker_slug),
 
     recommendedList: num(r.opinion_value),
@@ -413,6 +463,8 @@ export function mapBpoQueueRow(r: Record<string, unknown>): CmaQueueRow {
 
     prospectKind: null,
     prospectId: null,
+    holdKind: holdKindFromSummary(summary),
+    holdDecided: holdDecidedFromSummary(summary),
   }
 }
 
@@ -442,31 +494,149 @@ async function fetchBpoQueueRows(
  * row carries `docKind` + `detailHref` so a caller can never send a BPO down a
  * CMA path.
  */
+/** How many CMA rows the admin queue asks for. The read pages under PostgREST's 1,000-row ceiling. */
+export const CMA_QUEUE_READ_LIMIT = 5000
+
+function nationalPhone(raw: string | null | undefined): string | null {
+  if (!raw) return null
+  const digits = raw.replace(/\D/g, '')
+  if (digits.length === 10) return digits
+  if (digits.length === 11 && digits.startsWith('1')) return digits.slice(1)
+  return null
+}
+
+function phoneValues(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return []
+  const out: string[] = []
+  for (const item of raw) {
+    if (typeof item === 'string' && item.trim()) out.push(item)
+    else if (item && typeof item === 'object' && 'value' in item) {
+      const value = (item as { value?: unknown }).value
+      if (typeof value === 'string' && value.trim()) out.push(value)
+    }
+  }
+  return out
+}
+
+/**
+ * Email wins. A cell is `text` only when crm_phone_dnc_checks says the line
+ * is mobile, wireless, or cell and the number is not DNC. An untyped phone
+ * stays unconfirmed. The phone number itself is not copied onto the row.
+ */
+async function fillQueueReach(
+  sb: NonNullable<ReturnType<typeof client>>,
+  rows: CmaQueueRow[],
+  scratch: Map<string, { phones: string[]; personId: number | null }>,
+): Promise<void> {
+  const needPerson: number[] = []
+  for (const row of rows) {
+    if ((row.contactEmail ?? '').trim()) {
+      row.contactReach = 'email'
+      continue
+    }
+    const bag = scratch.get(row.id)
+    const hasDirect = (bag?.phones ?? []).some((phone) => nationalPhone(phone))
+    if (!hasDirect && bag?.personId) needPerson.push(bag.personId)
+  }
+
+  const personPhones = new Map<number, string[]>()
+  const personIds = [...new Set(needPerson)]
+  for (let i = 0; i < personIds.length; i += 80) {
+    const chunk = personIds.slice(i, i + 80)
+    const { data, error } = await sb.from('crm_people').select('id, phones').in('id', chunk)
+    if (error) {
+      console.warn('[cma queue] person phone read failed:', error.message)
+      break
+    }
+    for (const person of data ?? []) personPhones.set(Number(person.id), phoneValues(person.phones))
+  }
+
+  const numbersFor = new Map<string, string[]>()
+  const keys = new Set<string>()
+  for (const row of rows) {
+    if ((row.contactEmail ?? '').trim()) continue
+    const bag = scratch.get(row.id)
+    const nums = [...(bag?.phones ?? [])]
+    if (bag?.personId) nums.push(...(personPhones.get(bag.personId) ?? []))
+    numbersFor.set(row.id, nums)
+    for (const phone of nums) {
+      const key = nationalPhone(phone)
+      if (key) keys.add(key)
+    }
+  }
+
+  const lines = new Map<string, { type: string | null; dnc: boolean }>()
+  const keyList = [...keys]
+  for (let i = 0; i < keyList.length; i += 80) {
+    const chunk = keyList.slice(i, i + 80)
+    const { data, error } = await sb
+      .from('crm_phone_dnc_checks')
+      .select('phone_last10, line_type, on_dnc')
+      .in('phone_last10', chunk)
+    if (error) {
+      console.warn('[cma queue] line type read failed:', error.message)
+      break
+    }
+    for (const check of data ?? []) {
+      lines.set(String(check.phone_last10), { type: str(check.line_type), dnc: check.on_dnc === true })
+    }
+  }
+
+  for (const row of rows) {
+    if ((row.contactEmail ?? '').trim()) continue
+    const intake: IntakePhone[] = []
+    let hasAnyPhone = false
+    for (const phone of numbersFor.get(row.id) ?? []) {
+      const key = nationalPhone(phone)
+      if (!key) continue
+      hasAnyPhone = true
+      const line = lines.get(key)
+      intake.push({ number: key, type: line?.type ?? null, dnc: line?.dnc === true })
+    }
+    row.contactReach = cmaQueueReachFromFacts({
+      email: row.contactEmail,
+      hasConfirmedCell: pickSendableCell(intake) != null,
+      hasAnyPhone,
+    })
+  }
+}
+
 export async function listCmaQueue(options: {
   limit?: number
   includeArchived?: boolean
-} = {}): Promise<{ rows: CmaQueueRow[]; total: number }> {
+} = {}): Promise<{ rows: CmaQueueRow[]; total: number; truncated: boolean }> {
   const sb = client()
-  if (!sb) return { rows: [], total: 0 }
-  // Clamped to PostgREST's response ceiling: a larger window would come back
-  // short without saying so. 418 CMAs exist as of 2026-09-04, so one page is
-  // the whole table — revisit with real paging when it approaches 1,000.
-  const limit = Math.min(options.limit ?? 500, 1000)
+  if (!sb) return { rows: [], total: 0, truncated: false }
+  // Page under the PostgREST ceiling. A caller that asks for 500 still gets
+  // 500. The admin queue asks for CMA_QUEUE_READ_LIMIT so the screen is the
+  // whole non-archived table, and `truncated` is true when the cap still cut it.
+  const limit = options.limit != null && options.limit > 0 ? options.limit : 500
+  const includeArchived = options.includeArchived === true
 
-  let q = sb.from('cmas').select(CMA_COLUMNS, { count: 'exact' })
-  if (!options.includeArchived) q = q.is('archived_at', null)
+  const countQuery = sb.from('cmas').select('id', { count: 'exact', head: true })
+  const counted = includeArchived ? countQuery : countQuery.is('archived_at', null)
 
-  const { data, count, error } = await q
-    .order('created_at', { ascending: false })
-    .range(0, limit - 1)
-  if (error) throw new Error(`cma queue read failed: ${error.message}`)
-
-  const cmaRows = (data ?? []) as unknown as Row[]
-  const [context, bpoRows] = await Promise.all([
+  const [countRes, pageRes, context, bpoRows] = await Promise.all([
+    counted,
+    fetchPagedRows<Row>((from, to) => {
+      let q = sb
+        .from('cmas')
+        .select(CMA_COLUMNS)
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
+      if (!includeArchived) q = q.is('archived_at', null)
+      return q.range(from, to)
+    }, limit),
     fetchProspectContext(sb),
-    fetchBpoQueueRows(sb, options.includeArchived === true),
+    fetchBpoQueueRows(sb, includeArchived),
   ])
+  if (countRes.error) throw new Error(`cma queue read failed: ${countRes.error.message}`)
+  if (pageRes.error) throw new Error(`cma queue read failed: ${pageRes.error.message}`)
 
+  const cmaRows = pageRes.rows
+  const count = countRes.count
+
+  const phoneScratch = new Map<string, { phones: string[]; personId: number | null }>()
   const rows: CmaQueueRow[] = cmaRows.map((r) => {
     const id = String(r.id)
     const docType = str(r.doc_type)
@@ -481,6 +651,11 @@ export async function listCmaQueue(options: {
     const deliveredAt = str(r.delivered_at)
     const emailSentAt = ctx?.emailSentAt ?? null
     const queuedAt = ctx?.queuedAt ?? null
+    const contactEmail = ctx?.contactEmail ?? str(r.client_email)
+    phoneScratch.set(id, {
+      phones: [ctx?.contactPhone ?? null, str(r.client_phone)].filter((phone): phone is string => !!phone),
+      personId: num(r.person_id),
+    })
 
     return {
       id,
@@ -511,7 +686,12 @@ export async function listCmaQueue(options: {
       // The prospect row is the better contact of record for cold origins —
       // it is what the send rail addresses — so it wins when both are set.
       contactName: ctx?.ownerName ?? str(r.client_name),
-      contactEmail: ctx?.contactEmail ?? str(r.client_email),
+      contactEmail,
+      contactReach: cmaQueueReachFromFacts({
+        email: contactEmail,
+        hasConfirmedCell: false,
+        hasAnyPhone: false,
+      }),
       brokerSlug: str(r.broker_slug),
 
       recommendedList,
@@ -542,12 +722,21 @@ export async function listCmaQueue(options: {
 
       prospectKind: ctx?.kind ?? prospectKindForOrigin(origin),
       prospectId: ctx?.id ?? null,
+      holdKind: holdKindFromSummary(summary),
+      holdDecided: holdDecidedFromSummary(summary),
     }
   })
+
+  await fillQueueReach(sb, rows, phoneScratch)
 
   // Newest first across both tables, so the union reads as one list.
   const all = [...rows, ...bpoRows].sort((a, b) =>
     (b.createdAt ?? '').localeCompare(a.createdAt ?? ''),
   )
-  return { rows: all, total: (count ?? rows.length) + bpoRows.length }
+  const cmaTotal = count ?? rows.length
+  return {
+    rows: all,
+    total: cmaTotal + bpoRows.length,
+    truncated: cmaTotal > rows.length,
+  }
 }

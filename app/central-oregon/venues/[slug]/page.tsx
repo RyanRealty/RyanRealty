@@ -72,7 +72,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!venue) notFound()
   // Registry-only, and the venue's OWN words (lib/site/registry-metadata.ts).
   return pageMetadata({
-    title: registryTitle(venue.name),
+    title: registryTitle(venue.name, venue.city),
     description: registryDescription(venue.blurb),
     path: `/central-oregon/venues/${slug}`,
   })

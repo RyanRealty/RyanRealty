@@ -1,15 +1,12 @@
 /**
  * The GA4 page_view mirror and the client-document tracker (Matt 2026-09-29).
  *
- * /api/visitors/track mirrors page views to GA4 through the Measurement Protocol,
- * except when the browser's own gtag is already counting the view: a consented
- * tier (analytics or all) AND a `_ga` cookie means "client gtag is live, do not
- * double count". A raw-HTML client document (/cma/<slug>, /bpo/<slug>) loads no
- * gtag at all. Until the document tracker sent the visitor's real tier it always
- * posted at 'essential', so every report open was mirrored; sending the real tier
- * would have made a consented reader with a `_ga` cookie vanish from GA4. The
- * guard's premise is false on a document, so a client-document view is always
- * mirrored, and every other page keeps the double-count guard.
+ * /api/visitors/track mirrors page views to GA4 through the Measurement Protocol
+ * when the browser is not counting them. On a site page, analytics/all view
+ * events are not mirrored (the Google tag counts them; gating on `_ga` double-
+ * counted the first hit). Essential-tier views are still mirrored. A raw-HTML
+ * client document (/cma/<slug>, /bpo/<slug>) loads no gtag, so its views are
+ * always mirrored, whatever the tier.
  */
 import { NextRequest } from 'next/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -104,6 +101,11 @@ describe('a client document view is always mirrored to GA4 (the document runs no
 describe('every other page keeps the double-count guard', () => {
   it.each(['all', 'analytics'])('a %s-tier visitor with a _ga cookie on a site page is NOT mirrored (client gtag is counting it)', async (consent) => {
     await track(pageView({ pageUrl: 'https://ryan-realty.com/homes-for-sale/bend', pageCategory: 'search', consent }), { _ga: GA_COOKIE })
+    expect(ga4.fire).not.toHaveBeenCalled()
+  })
+
+  it.each(['all', 'analytics'])('a %s-tier visitor without a _ga cookie on a site page is NOT mirrored (first hit would double-count)', async (consent) => {
+    await track(pageView({ pageUrl: 'https://ryan-realty.com/homes-for-sale/bend', pageCategory: 'search', consent }))
     expect(ga4.fire).not.toHaveBeenCalled()
   })
 

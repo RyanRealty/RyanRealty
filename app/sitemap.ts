@@ -1,3 +1,4 @@
+import { siteOrigin } from '@/lib/site-origin'
 import type { MetadataRoute } from 'next'
 import { createClient } from '@supabase/supabase-js'
 import { cityEntityKey, cityNeighborhoodPath, listingsBrowsePath, teamPath, valuationPath } from '../lib/slug'
@@ -15,7 +16,7 @@ import { fetchAllRows } from '@/lib/supabase/paginate'
 import { CENTRAL_OREGON_CITY_SLUGS, isCentralOregonCity, SITE_CITY_SLUGS } from '@/lib/central-oregon'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
 import { publicCommunitySlug } from '@/lib/communities/community-public-pair'
-import { selfCitySearchUrlLeavesSitemap } from '@/lib/communities/self-city-community'
+import { selfCityCommunitySlug, selfCitySearchUrlLeavesSitemap } from '@/lib/communities/self-city-community'
 import { redirectsAwayFromSearch } from '@/lib/search/publish-place-browse-href'
 import { getAllNeighborhoodsWithCity } from '@/lib/data'
 import { getIndexableSubdivisions } from '@/lib/data/subdivisions/getIndexableSubdivisions'
@@ -80,7 +81,7 @@ const RESORT_COMMUNITY_SLUGS: string[] = getAllResortCommunities().map((c) => pu
 export const dynamic = 'force-dynamic'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const baseUrl = siteOrigin()
   const now = new Date()
   return buildAllUrls(baseUrl, now)
 }
@@ -257,7 +258,11 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
   // inventory or a dynamic-section timeout (the listings query can be heavy).
   for (const citySlug of SITE_CITY_SLUGS) {
     staticPages.push(
-      { url: `${baseUrl}/cities/${citySlug}`, lastModified: now, changeFrequency: 'daily', priority: 0.8 },
+      // A self-city community's /cities/<slug> 301s to /communities/<slug>
+      // (Matt 2026-10-04); only the community page is submitted.
+      ...(selfCityCommunitySlug(citySlug)
+        ? []
+        : [{ url: `${baseUrl}/cities/${citySlug}`, lastModified: now, changeFrequency: 'daily' as const, priority: 0.8 }]),
       // SITE-187: a self-city community's plain search page canonicals to
       // /communities/<slug> (already listed below); a sitemap lists canonicals.
       ...(selfCitySearchUrlLeavesSitemap(citySlug)
@@ -418,7 +423,9 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     for (const city of cities) {
       const key = cityEntityKey(city)
       dynamicPages.push(
-        { url: `${baseUrl}/cities/${key}`, lastModified: now, changeFrequency: 'daily', priority: 0.8 },
+        ...(selfCityCommunitySlug(key)
+          ? []
+          : [{ url: `${baseUrl}/cities/${key}`, lastModified: now, changeFrequency: 'daily' as const, priority: 0.8 }]),
         ...(selfCitySearchUrlLeavesSitemap(key)
           ? []
           : [{ url: `${baseUrl}/homes-for-sale/${key}`, lastModified: now, changeFrequency: 'daily' as const, priority: 0.85 }]),

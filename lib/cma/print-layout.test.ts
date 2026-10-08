@@ -278,7 +278,7 @@ describe('print CMA layout', () => {
     expect(css).toMatch(/\.page-open\.is-chart-follow\s*\{[^}]*break-after:\s*auto !important/)
     expect(css).toMatch(/table\.comp-matrix thead\s*\{[^}]*display:\s*table-header-group/)
     expect(css).toMatch(
-      /break-before:\s*auto;\s*page-break-before:\s*auto;\s*break-inside:\s*avoid;\s*page-break-inside:\s*avoid;/,
+      /break-before:\s*auto;\s*page-break-before:\s*auto;\s*break-inside:\s*auto;\s*page-break-inside:\s*auto;/,
     )
   })
 })

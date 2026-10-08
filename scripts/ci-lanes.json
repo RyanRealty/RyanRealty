@@ -28,6 +28,7 @@
     "ci:hidden-exclusion-surfaces",
     "ci:hooks-installed",
     "ci:identity-stitch-paths",
+    "ci:analytics-suppression",
     "ci:jsonb-cast-guard",
     "ci:jsonb-contains",
     "ci:listing-alert-enroll",
@@ -47,6 +48,7 @@
     "ci:listing-key-lookup",
     "ci:listing-offmarket-index",
     "ci:listing-photo-alt",
+    "ci:listing-href-number",
     "ci:maps-safety",
     "ci:market-formula",
     "ci:market-truth",
@@ -54,6 +56,7 @@
     "ci:no-public-em-dash",
     "ci:no-report-rpc",
     "ci:no-staging-host",
+    "ci:site-origin",
     "ci:no-vendor-name",
     "ci:ods-compliance",
     "ci:offmarket-listing-cta",
@@ -1202,6 +1205,10 @@
       "lib/data/**",
       "app/site-index/**",
       "app/**/site-index/**"
+    ],
+    "ci:seo-decisions": [
+      "data/seo/**",
+      "scripts/check-seo-decisions.mjs"
     ],
     "ci:site-node": [
       "app/**",

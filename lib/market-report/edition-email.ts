@@ -20,6 +20,7 @@
  * close, unsubscribe) wraps it at preview and send time.
  */
 import { editionPath, editionPdfHref, hasPdf, MONTHLY_REPORT_PATH } from '@/app/housing-market/reports/monthly/_v3/edition-keys'
+import { buildTrackedUrl, marketReportCampaign } from '@/lib/analytics/utm'
 import type { EditionRow } from '@/lib/data/market-report/editions'
 import type { NewsletterCitationEntry } from '@/lib/data/newsletter'
 import { EMAIL_BODY_MUTED, EMAIL_CREAM, EMAIL_INK, EMAIL_NAVY, EMAIL_SERIF } from '@/lib/email/brand'
@@ -166,9 +167,19 @@ export function buildEditionEmail(edition: EditionInput, opts: { site?: string }
   const cityNames = payload.monthly.filter((s) => s.kpis.median.v != null).map((s) => s.geo.label)
 
   // ── Links ─────────────────────────────────────────────────────────────────
-  const reportUrl = `${site}${editionPath(key)}`
-  const pdfUrl = hasPdf(edition) ? `${site}${editionPdfHref(key)}` : null
-  const archiveUrl = `${site}${MONTHLY_REPORT_PATH}`
+  const editionUtm = {
+    source: 'newsletter' as const,
+    medium: 'email' as const,
+    campaign: marketReportCampaign(key),
+  }
+  // Tracking rides only in the HTML hrefs. The plain-text part prints these
+  // URLs as visible text, so it keeps the clean addresses (no visible change).
+  const reportTextUrl = `${site}${editionPath(key)}`
+  const pdfTextUrl = hasPdf(edition) ? `${site}${editionPdfHref(key)}` : null
+  const archiveTextUrl = `${site}${MONTHLY_REPORT_PATH}`
+  const reportUrl = buildTrackedUrl(reportTextUrl, editionUtm)
+  const pdfUrl = pdfTextUrl ? buildTrackedUrl(pdfTextUrl, editionUtm) : null
+  const archiveUrl = buildTrackedUrl(archiveTextUrl, editionUtm)
   const segment = `${NOUN_SFR.many.charAt(0).toUpperCase()}${NOUN_SFR.many.slice(1)}, the report's main measure.`
 
   // ── Subject and preheader ─────────────────────────────────────────────────
@@ -238,9 +249,9 @@ export function buildEditionEmail(edition: EditionInput, opts: { site?: string }
   if (cells.length > 0) text.push('')
   if (supplyLine) text.push(supplyLine, '')
   if (cities.length > 0) text.push(...cities, '')
-  text.push(`Read the ${month} report: ${reportUrl}`)
-  if (pdfUrl) text.push(`Download the PDF: ${pdfUrl}`)
-  text.push(`Every monthly report since ${FIRST_EDITION_LABEL}: ${archiveUrl}`, '')
+  text.push(`Read the ${month} report: ${reportTextUrl}`)
+  if (pdfTextUrl) text.push(`Download the PDF: ${pdfTextUrl}`)
+  text.push(`Every monthly report since ${FIRST_EDITION_LABEL}: ${archiveTextUrl}`, '')
   text.push(CLOSING)
 
   return {

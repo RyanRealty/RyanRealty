@@ -69,6 +69,18 @@ on either, that is a bug to fix, not a domain to add.
 `api.spotify.com`) were reachable, so the environment's current access level
 is broader than this list. Nothing the app calls was blocked.
 
+**Node's built-in `fetch` ignores `HTTPS_PROXY` (observed 2026-10-07).** A
+plain `node` script reaches production from the container's own egress
+address, and Vercel's platform mitigation denies that address once it has
+seen enough automation from it: `deploy:verify`'s sitemap smoke went from
+200 to 403 on every sitemap (`x-vercel-mitigated: deny`) within one day while
+`curl`, which honors the proxy, kept getting 200. The fix is the proxy
+README's: run node with `NODE_USE_ENV_PROXY=1` (Node 22.21+), which
+`npm run deploy:verify` now sets for itself. The relay also drops about one
+of six concurrent tunnels to the same host (`ws_closed_mid_exchange` in
+`curl -sS "$HTTPS_PROXY/__agentproxy/status"`), so the smoke retries a
+transport error once; an HTTP status is never retried.
+
 ## 2. Environment variables
 
 The **Environment variables** field takes `.env` format, one `KEY=value` per

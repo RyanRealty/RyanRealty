@@ -1,16 +1,19 @@
 /**
  * What sale prices did while this home was listed.
  *
- * The tightest grain that can say up, down, or flat: the subdivision, then
- * the neighborhood polygon, then the city. Each half of the listing has to
- * hold enough closes for a median. Homes about the subject's size are tried
- * at every grain before any mixed-size set, so a mix of cottages and large
- * houses does not decide the story.
+ * The chart uses the same place as the sales, and the same subtype. It does
+ * not step up to a parent polygon or the city, and it never prints N/A.
+ * Each half of the listing has to hold enough closes for a median. Homes
+ * about the subject's size are tried before a mixed-size set.
  */
 
 import type { CmaWindowCloseRow } from '@/lib/data/cma/builderReads'
-import { marketAreaName, resolveMarketArea } from '@/lib/cma/market-area'
+import { marketAreaName, productTypeCompatible, resolveMarketArea } from '@/lib/cma/market-area'
 import { usd } from '@/lib/cma/render-blocks'
+import { formatCalendarDay } from '@/lib/format/date'
+import { realSubdivisionName } from '@/lib/pricing/classes'
+import { resolveConcessions } from '@/lib/pricing/seller-net'
+import type { PocketLocalMissing, PocketLocalRead } from '@/lib/pricing/exclusive-pocket-date-adj'
 
 export const LISTING_MARKET_MIN_HALF = 8
 const FLAT = 0.03
@@ -37,17 +40,32 @@ export type ListingMarketMove = {
   late: ListingMarketHalf
   priceMove: ListingMarketMoveWord
   ppsfMove: ListingMarketMoveWord | null
-  /** The day these closes were read. Printed on the source line. */
+  /** The day these closes were read: the letter's calendar day. Printed on the source line. */
   asOf?: string | null
+  /**
+   * True when each half's rate per foot is the sale price less its recorded
+   * seller concession, the way the table's Sold $/sqft row reads (reader
+   * review 2026-10-08: the chart printed the gross rate beside a net table).
+   * Absent on rows measured before this, whose stored figures are gross.
+   */
+  ppsfNet?: boolean
+  /**
+   * Singular product for the sentence, when the subject is not a detached
+   * house. Absent keeps the single-family wording the older letters use.
+   */
+  productNoun?: string | null
 }
 
 export type ListingMarketClose = {
   closeDate: string
   closePrice: number
+  /** Recorded seller concession, resolved (lib/pricing/seller-net.ts). Null when nothing was recorded. */
+  concessions?: number | null
   sqft: number | null
   subdivision: string | null
   lat: number | null
   lng: number | null
+  propertySubType?: string | null
 }
 
 function dayMs(iso: string): number | null {
@@ -75,12 +93,20 @@ export function listingMarketMoveWord(from: number, to: number): ListingMarketMo
   return delta > 0 ? 'rose' : 'fell'
 }
 
+/** The sale price after a recorded seller concession, or the sale price when none was recorded. */
+function netPrice(row: ListingMarketClose): number {
+  const c = row.concessions
+  return c != null && Number.isFinite(c) && c > 0 ? row.closePrice - c : row.closePrice
+}
+
 function halfOf(rows: ListingMarketClose[], from: string, to: string): ListingMarketHalf | null {
   const prices = rows.map((r) => r.closePrice).filter((n) => n > 0)
   const mid = median(prices)
   if (mid == null) return null
   const withSize = rows.filter((r) => r.sqft != null && r.sqft > 0)
-  const ppsf = median(withSize.map((r) => r.closePrice / r.sqft!))
+  // Net of concessions, the table's Sold $/sqft definition. The median sale
+  // price above stays the closing price, as the table's Sold row does.
+  const ppsf = median(withSize.map((r) => netPrice(r) / r.sqft!))
   const sqftMedian = median(withSize.map((r) => r.sqft!))
   return {
     median: Math.round(mid),
@@ -126,8 +152,8 @@ function splitHalves(
   return { early, late }
 }
 
-function enough(early: ListingMarketClose[], late: ListingMarketClose[]): boolean {
-  return early.length >= LISTING_MARKET_MIN_HALF && late.length >= LISTING_MARKET_MIN_HALF
+function enough(early: ListingMarketClose[], late: ListingMarketClose[], min: number): boolean {
+  return early.length >= min && late.length >= min
 }
 
 function inSize(rows: ListingMarketClose[], low: number, high: number): ListingMarketClose[] {
@@ -160,6 +186,7 @@ function finish(
     late,
     priceMove: listingMarketMoveWord(early.median, late.median),
     ppsfMove: early.ppsf != null && late.ppsf != null ? listingMarketMoveWord(early.ppsf, late.ppsf) : null,
+    ppsfNet: true,
   }
 }
 
@@ -176,6 +203,9 @@ export function chooseListingMarket(input: {
   neighborhoodName: string | null
   city: string
   rows: readonly ListingMarketClose[]
+  /** The sales boundary. A subdivision does not fall through to its parent polygon. */
+  areaKind?: string | null
+  propertySubType?: string | null
 }): ListingMarketMove | null {
   const start = dayMs(input.listDate)
   const end = dayMs(input.offDate)
@@ -194,31 +224,39 @@ export function chooseListingMarket(input: {
   const lo = sized ? Math.round(sqft * 0.75) : null
   const hi = sized ? Math.round(sqft * 1.25) : null
 
+  const typed = input.propertySubType
+    ? windowed.filter(
+        (r) => !r.propertySubType || productTypeCompatible(input.propertySubType!, r.propertySubType),
+      )
+    : windowed
   const grains: Array<{ rows: ListingMarketClose[]; place: string; grain: ListingMarketMove['grain'] }> = []
-  const subdivision = input.subdivision?.trim()
-  if (subdivision) {
+  const subdivision = realSubdivisionName(input.subdivision)
+  const kind = (input.areaKind ?? '').trim()
+  const slug = input.neighborhoodSlug
+  const neighborhood = input.neighborhoodName?.trim()
+  const polygon = kind === 'neighborhood' || kind === 'community'
+  if (!polygon && subdivision) {
     grains.push({
-      rows: windowed.filter((r) => (r.subdivision ?? '').trim() === subdivision),
+      rows: typed.filter((r) => (r.subdivision ?? '').trim() === subdivision),
       place: subdivision,
       grain: 'subdivision',
     })
-  }
-  const slug = input.neighborhoodSlug
-  const neighborhood = input.neighborhoodName?.trim()
-  if (slug && neighborhood) {
+  } else if (polygon && slug && neighborhood && realSubdivisionName(neighborhood)) {
     grains.push({
-      rows: windowed.filter((r) => resolveMarketArea(r.lat, r.lng) === slug),
+      rows: typed.filter((r) => resolveMarketArea(r.lat, r.lng) === slug),
       place: neighborhood,
       grain: 'neighborhood',
     })
   }
-  grains.push({ rows: windowed, place: input.city.trim() || 'this city', grain: 'city' })
 
   const attempt = (useSize: boolean): ListingMarketMove | null => {
     for (const grain of grains) {
       const rows = useSize && lo != null && hi != null ? inSize(grain.rows, lo, hi) : grain.rows
       const halves = splitHalves(rows, start, end, midDay)
-      if (!enough(halves.early, halves.late)) continue
+      // A subdivision chart can be two real medians. A parent polygon still
+      // needs a full half, so a thin plat does not become the neighborhood.
+      const min = grain.grain === 'subdivision' ? 1 : LISTING_MARKET_MIN_HALF
+      if (!enough(halves.early, halves.late, min)) continue
       return finish(
         grain.place,
         grain.grain,
@@ -236,9 +274,8 @@ export function chooseListingMarket(input: {
     return null
   }
 
-  // Similar size at every grain before any mixed-size set. A subdivision
-  // whose only readable median mixes cottages with large houses steps up,
-  // instead of letting that mix decide the direction.
+  // Similar size first. If that set is too thin, stay on the same place
+  // and read the mixed sizes. Never step up to a parent polygon or the city.
   if (lo != null && hi != null) {
     const sizedHit = attempt(true)
     if (sizedHit) return sizedHit
@@ -274,11 +311,91 @@ function mixSentence(move: ListingMarketMove): string {
   return `The later homes were ${word}. The median one was ${fmt(late)} square feet, and the earlier median was ${fmt(early)}.`
 }
 
+/**
+ * A half holding one sale has no median and no trend: it is one home's price.
+ * A subdivision chart may draw one sale a half (chooseListingMarket), so the
+ * sentence then names "the one sale" and its price, and claims no median,
+ * no rise and no fall (3037 Purcell, 2026-10-07: "the median sale in Silver
+ * Sage rose from $503,000 to $559,000" was one sale against one sale).
+ */
+function singleSaleSentence(move: ListingMarketMove, product: string, size: string): string {
+  const where = `${product}sale in ${move.place}${size}`
+  const first =
+    move.early.n === 1
+      ? `the one ${where} in the first half of the listing closed at ${usd(move.early.median)}`
+      : `the median of the ${move.early.n} ${product}sales in ${move.place}${size} in the first half of the listing was ${usd(move.early.median)}`
+  const second =
+    move.late.n === 1
+      ? `the one in the second half closed at ${usd(move.late.median)}`
+      : `the median of the ${move.late.n} in the second half was ${usd(move.late.median)}`
+  const foot =
+    move.early.ppsf != null && move.late.ppsf != null
+      ? ` Per square foot, that is ${usd(move.early.ppsf)}, then ${usd(move.late.ppsf)}.`
+      : ''
+  return `While your home was listed, ${first}, and ${second}.${foot} One sale is one home's price, not a trend.`
+}
+
+/** A stored move, or null when the value is not one the local page could print. */
+export function readListingMarketMove(value: unknown): ListingMarketMove | null {
+  if (!value || typeof value !== 'object') return null
+  const m = value as ListingMarketMove
+  if (m.priceMove !== 'rose' && m.priceMove !== 'fell' && m.priceMove !== 'held flat') return null
+  if (typeof m.place !== 'string' || !m.place.trim()) return null
+  if (!m.early || !m.late) return null
+  if (!(m.early.median > 0) || !(m.late.median > 0)) return null
+  if (!(m.early.n > 0) || !(m.late.n > 0)) return null
+  return m
+}
+
+/**
+ * True when a half holds one sale. The local page then prints that sale's
+ * price and "one sale is one home's price, not a trend", never a rise, fall
+ * or flat (3037 Purcell, 2026-10-07). The sentence, the slope label and the
+ * pocket date gate all read this one test, so the gate can never act on a
+ * verdict the page did not print.
+ */
+export function listingMarketOneSaleAHalf(move: Pick<ListingMarketMove, 'early' | 'late'>): boolean {
+  return move.early.n < 2 || move.late.n < 2
+}
+
+/**
+ * The per-foot verdict the local page prints, or why it prints none
+ * (Matt 2026-10-08, "Down only if local fell"). The pocket date gate reads
+ * this, built from the same move the page draws, so the two pages of a letter
+ * cannot disagree about which way homes like this one went.
+ *
+ * `ifMissing` names why there is no move at all: the build knows whether it
+ * had a listing window to read over.
+ */
+export function pocketLocalReadOf(
+  move: ListingMarketMove | null,
+  ifMissing: PocketLocalMissing = 'too-few-sales',
+): PocketLocalRead {
+  if (!move) {
+    return { verdict: null, missing: ifMissing, place: null, sized: false, productNoun: null, early: null, late: null }
+  }
+  const half = (h: ListingMarketHalf) => ({ ppsf: h.ppsf, n: h.n, from: h.from, to: h.to })
+  const base = {
+    place: move.place,
+    sized: move.sized,
+    productNoun: move.productNoun ?? null,
+    early: half(move.early),
+    late: half(move.late),
+  }
+  if (listingMarketOneSaleAHalf(move)) return { ...base, verdict: null, missing: 'one-sale-a-half' }
+  if (move.ppsfMove == null || move.early.ppsf == null || move.late.ppsf == null) {
+    return { ...base, verdict: null, missing: 'no-living-area' }
+  }
+  return { ...base, verdict: move.ppsfMove, missing: null }
+}
+
 /** The sentence under the chart. Both halves are named, and the rate per foot when it exists. */
 export function listingMarketSentence(move: ListingMarketMove): string {
   const size = move.sized ? ' for a home about this size' : ''
+  const product = move.productNoun ? `${move.productNoun} ` : ''
+  if (listingMarketOneSaleAHalf(move)) return singleSaleSentence(move, product, size)
   const price = moveClause(move.priceMove, move.early.median, move.late.median)
-  const head = `While your home was listed, the median sale in ${move.place}${size} ${price}.`
+  const head = `While your home was listed, the median ${product}sale in ${move.place}${size} ${price}.`
   if (move.ppsfMove == null || move.early.ppsf == null || move.late.ppsf == null) return head
   const foot = `The price per square foot ${moveClause(move.ppsfMove, move.early.ppsf, move.late.ppsf)}.`
   const mix = mixSentence(move)
@@ -327,11 +444,24 @@ export function listingMarketSource(move: ListingMarketMove): string {
     move.sized && move.sqftLow != null && move.sqftHigh != null
       ? `, ${move.sqftLow.toLocaleString('en-US')}–${move.sqftHigh.toLocaleString('en-US')} sqft`
       : ''
-  const measured = move.asOf ? ` Measured ${move.asOf}.` : ''
+  // The letter's calendar day, written the way the rest of the letter writes a
+  // date ("October 7, 2026"), never the ISO key (reader review 2026-10-08).
+  const measuredDay = move.asOf ? formatCalendarDay(move.asOf, { month: 'long', day: 'numeric', year: 'numeric' }) : ''
+  const measured = measuredDay ? ` Measured ${measuredDay}.` : ''
+  const net = move.ppsfNet ? ' Per square foot is the sale price less any recorded seller concession, over living area.' : ''
   const lateSpan = spokenSpan(move.late.from, move.late.to)
   const year = move.late.to.slice(0, 4)
   const lateLabeled = year && !lateSpan.includes(year) ? `${lateSpan}, ${year}` : lateSpan
-  return `${move.early.n} closed sales ${spokenSpan(move.early.from, move.early.to)}, then ${move.late.n} from ${lateLabeled}. Single-family homes in ${move.place}${size}. Oregon Data Share MLS.${measured}`
+  const homes =
+    move.productNoun === 'townhouse'
+      ? 'Townhouses'
+      : move.productNoun === 'condo'
+        ? 'Condos'
+        : move.productNoun
+          ? move.productNoun
+          : 'Single-family homes'
+  const earlySales = `${move.early.n} closed ${move.early.n === 1 ? 'sale' : 'sales'}`
+  return `${earlySales} ${spokenSpan(move.early.from, move.early.to)}, then ${move.late.n} from ${lateLabeled}. ${homes} in ${move.place}${size}.${net} Oregon Data Share MLS.${measured}`
 }
 
 export type ListingMarketSlopePanel = {
@@ -344,6 +474,8 @@ export type ListingMarketSlopePanel = {
   toN: string
   move: ListingMarketMoveWord
   deltaPct: number
+  /** Printed in place of the move word. Set when a half holds one sale: one sale is not a trend. */
+  label?: string
 }
 
 function halfMeta(half: ListingMarketHalf): string {
@@ -351,6 +483,9 @@ function halfMeta(half: ListingMarketHalf): string {
   if (half.sqftMedian == null || !(half.sqftMedian > 0)) return sales
   return `${sales}, ${Math.round(half.sqftMedian).toLocaleString('en-US')} sqft`
 }
+
+/** The slope word when a half holds one sale. */
+export const ONE_SALE_SLOPE_LABEL = 'one sale, not a trend'
 
 /** The two readings under the listing timeline. Dollars and the rate per foot never share an axis. */
 export function listingMarketSlopes(move: ListingMarketMove): {
@@ -362,6 +497,9 @@ export function listingMarketSlopes(move: ListingMarketMove): {
   const toWhen = spokenSpan(move.late.from, move.late.to)
   const fromN = halfMeta(move.early)
   const toN = halfMeta(move.late)
+  // One sale a half is one home's price: the chart does not print "rose" or
+  // "fell" over it, the same as the sentence under it (3037 Purcell, 2026-10-07).
+  const label = listingMarketOneSaleAHalf(move) ? ONE_SALE_SLOPE_LABEL : undefined
   const panels: ListingMarketSlopePanel[] = [
     {
       title: 'Sale price',
@@ -373,6 +511,7 @@ export function listingMarketSlopes(move: ListingMarketMove): {
       toN,
       move: move.priceMove,
       deltaPct: move.early.median > 0 ? (move.late.median - move.early.median) / move.early.median : 0,
+      ...(label ? { label } : {}),
     },
   ]
   if (move.ppsfMove && move.early.ppsf != null && move.late.ppsf != null) {
@@ -386,6 +525,7 @@ export function listingMarketSlopes(move: ListingMarketMove): {
       toN,
       move: move.ppsfMove,
       deltaPct: move.early.ppsf > 0 ? (move.late.ppsf - move.early.ppsf) / move.early.ppsf : 0,
+      ...(label ? { label } : {}),
     })
   }
   return { kicker: `${move.place}${size}`, panels }
@@ -395,9 +535,14 @@ export function closesFromRows(rows: readonly CmaWindowCloseRow[]): ListingMarke
   return rows.map((r) => ({
     closeDate: String(r.CloseDate ?? ''),
     closePrice: Number(r.ClosePrice),
+    concessions: resolveConcessions({
+      amount: r.concessions_amount,
+      closeDate: String(r.CloseDate ?? ''),
+    }),
     sqft: r.TotalLivingAreaSqFt != null ? Number(r.TotalLivingAreaSqFt) : null,
     subdivision: r.SubdivisionName,
     lat: r.Latitude != null ? Number(r.Latitude) : null,
     lng: r.Longitude != null ? Number(r.Longitude) : null,
+    propertySubType: r.property_sub_type ?? null,
   }))
 }

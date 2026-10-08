@@ -85,6 +85,9 @@ function row(over: Partial<CmaQueueRow> = {}): CmaQueueRow {
     emailSentAt: null,
     prospectKind: 'expired',
     prospectId: 'LK123',
+    holdKind: null,
+    // A row built before the field: the gate's live backstop applies.
+    holdDecided: false,
     ...over,
   }
 }
@@ -129,15 +132,67 @@ describe('approveAndDeliverCma gap hold', () => {
     expect(sendCmaToLeadAction).not.toHaveBeenCalled()
   })
 
-  it('still enqueues a recommendation inside the band when the other gates pass', async () => {
+  it('still enqueues a recommendation inside the 15% band when the ask sits above the sales', async () => {
+    // The ask has to sit above the sales band: an ask inside it is rule 22's
+    // hold (Matt 2026-10-07), tested below.
     listCmaQueue.mockResolvedValue({
-      rows: [row({ recommendedList: 800_000, theirPrice: 849_000 })],
+      rows: [row({ recommendedList: 800_000, theirPrice: 879_000, valueLow: 770_000, valueHigh: 850_000 })],
       total: 1,
     })
     const res = await approveAndDeliverCma('cma-test')
     expect(res).toEqual({ ok: true, outcome: 'queued', position: 1 })
     expect(enqueueProspectFirstTouchEmail).toHaveBeenCalledWith('expired', 'LK123')
     expect(sendCmaToLeadAction).not.toHaveBeenCalled()
+  })
+
+  it('refuses a row the build held for an ask inside the band, even when the flag is acknowledged (rule 22, Matt 2026-10-07)', async () => {
+    listCmaQueue.mockResolvedValue({
+      rows: [
+        row({
+          state: 'flagged',
+          needsReview: true,
+          holdKind: 'ask-in-band',
+          reviewReason:
+            'The last ask of $849,000 sits inside the sales range of $770,000 to $850,000 the recommendation reads from.',
+          recommendedList: 800_000,
+          theirPrice: 849_000,
+          valueLow: 770_000,
+          valueHigh: 850_000,
+        }),
+      ],
+      total: 1,
+    })
+    const res = await approveAndDeliverCma('cma-test', undefined, { acknowledgeReview: true })
+    expect(res.ok).toBe(false)
+    if (!res.ok) {
+      expect(res.blocked).toBe('state')
+      expect(res.needsReviewAck).toBeUndefined()
+      expect(res.error).toMatch(/inside the sales range/)
+      expect(res.error).toContain('$849,000')
+    }
+    expect(approveCmaAction).not.toHaveBeenCalled()
+    expect(enqueueProspectFirstTouchEmail).not.toHaveBeenCalled()
+    expect(sendCmaToLeadAction).not.toHaveBeenCalled()
+  })
+
+  it('holds an expired row built before the field when its ask sits inside the stored band', async () => {
+    listCmaQueue.mockResolvedValue({
+      rows: [row({ recommendedList: 800_000, theirPrice: 849_000, valueLow: 770_000, valueHigh: 850_000, holdKind: null, holdDecided: false })],
+      total: 1,
+    })
+    const res = await approveAndDeliverCma('cma-test')
+    expect(res.ok).toBe(false)
+    if (!res.ok) expect(res.error).toMatch(/inside the sales range/)
+    expect(enqueueProspectFirstTouchEmail).not.toHaveBeenCalled()
+  })
+
+  it('does not second-guess a build that decided no hold, even when the row\'s own ask sits inside the band', async () => {
+    listCmaQueue.mockResolvedValue({
+      rows: [row({ recommendedList: 800_000, theirPrice: 849_000, valueLow: 770_000, valueHigh: 850_000, holdKind: null, holdDecided: true })],
+      total: 1,
+    })
+    const res = await approveAndDeliverCma('cma-test')
+    expect(res).toEqual({ ok: true, outcome: 'queued', position: 1 })
   })
 
   it('still sends now when the recommendation is not a gap hold', async () => {

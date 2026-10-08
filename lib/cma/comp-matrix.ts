@@ -37,14 +37,19 @@ import {
   type PricePathRange,
 } from '@/lib/cma/price-path'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
-import { daysOnMarketFrom } from '@/lib/cma/listing-history-line'
+import { daysOnMarketFrom, liveListingDays } from '@/lib/cma/listing-history-line'
+import { pacificDay } from '@/lib/cma/listing-status'
+import { COMPARABLE_DAYS_TO_OFFER_ROW_LABEL } from '@/lib/cma/comparable-dom-history'
+import { ON_MARKET_STATUS } from '@/lib/cma/subject-on-market'
 import { roomAdjustmentWords } from '@/lib/cma/seller-letter-copy'
-import { closedEntries, subjectEntry, type MatrixEntry } from '@/lib/cma/matrix-entry'
-import { statusPpsfCaptionHtml } from '@/lib/cma/status-ppsf'
+import { closedEntries, mlsStatusLabel, subjectEntry, type MatrixEntry } from '@/lib/cma/matrix-entry'
+import { saleCarriesConcession, statusPpsfCaptionHtml } from '@/lib/cma/status-ppsf'
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
 import { formatDate } from '@/lib/format/date'
 import type { ExpiredFinalCycle } from '@/lib/cma/expired-audit'
 import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
+import { anySaleMovedForDate } from '@/lib/cma/adjustments-applied'
+import { comparisonSalePrice, concessionOffClose, concessionOnSale, printedAdjustedPrice } from '@/lib/pricing/seller-net'
 
 const esc = escapeHtml
 
@@ -52,11 +57,12 @@ const esc = escapeHtml
  * The floor is the PRICING unit's floor, not the selector's target.
  *
  * It used to be MIN_COMPS (5), the selector's target set size, while
- * lib/pricing publishes a recommend from PRICING_MIN_COMPS (3). Every CMA
- * built on three or four sales therefore shipped a recommended list with no
- * comparable sales visible anywhere in the document — caught on
- * cma-19968 and cma-1617-nw-8th, 2026-09-07, both of which printed a price
- * chapter containing a map and nothing else.
+ * lib/pricing published a recommend from PRICING_MIN_COMPS (3 at the time;
+ * five price-setting sales since 2026-10-07, when MIN_COMPS became an alias
+ * of it). Every CMA built on three or four sales therefore shipped a
+ * recommended list with no comparable sales visible anywhere in the
+ * document — caught on cma-19968 and cma-1617-nw-8th, 2026-09-07, both of
+ * which printed a price chapter containing a map and nothing else.
  *
  * If the pricing unit trusted the set enough to publish a number, the seller
  * sees that set. A thin matrix is honest; an invisible one is not.
@@ -84,13 +90,24 @@ function domFromHistoryLine(line: string | null | undefined): number | null {
  * a listing that is on market or recently off it.
  */
 const DOM_ELAPSED_CEILING_DAYS = 1095
-const ON_MARKET = /^(active|pending|coming)/i
+const ON_MARKET = ON_MARKET_STATUS
 const CAME_OFF_UNSOLD = /^(expired|withdrawn|cancell?ed)/i
 
-export function subjectDomDays(subject: CmaSubject): number | null {
+export function subjectDomDays(subject: CmaSubject, asOfIso?: string | null): number | null {
+  const status = subject.standardStatus?.trim() ?? ''
+  // A LISTING THAT IS STILL LIVE counts to the letter's date, from its
+  // on-market day (liveListingDays). The history line's count is the MLS
+  // DaysOnMarket field as of the last feed update: 3062 NW Kelly Hill printed
+  // "156 days" for its own listing beside "159 days" for the same listing in
+  // the competition table (reader review 2026-10-08). `asOfIso` is the
+  // letter's date; every place the subject's days print passes it, so they
+  // all print one number.
+  if (ON_MARKET.test(status)) {
+    const live = liveListingDays(subject.lastListDate, asOfIso ?? null)
+    if (live != null && live <= DOM_ELAPSED_CEILING_DAYS) return live
+  }
   const stated = domFromHistoryLine(subject.listingHistoryLine)
   if (stated != null) return stated
-  const status = subject.standardStatus?.trim() ?? ''
   if (!ON_MARKET.test(status) && !CAME_OFF_UNSOLD.test(status)) return null
   const elapsed = daysOnMarketFrom({ onMarketDate: subject.lastListDate })
   if (elapsed == null || elapsed > DOM_ELAPSED_CEILING_DAYS) return null
@@ -199,13 +216,31 @@ type Col = {
   photoUrl: string | null
   /** Matrix 3 only: what the chapter's filter hides a column by. */
   status?: 'active' | 'pending'
+  /** Matrix 1 only: the range trim set this sale aside (lib/cma/set-aside.ts). */
+  aside?: boolean
 }
 
-/** The map's pin, at reading size, so the two read as one object. */
-function pinBadge(pin: string | null, family?: string): string {
+/**
+ * The map's pin, at reading size, so the two read as one object. A closed
+ * sale the range trim set aside takes the map's set-aside pin (`is-aside`,
+ * drawn lighter), never the filled pin of a sale that set the price.
+ */
+export function pinBadge(pin: string | null, family?: string, aside = false): string {
   return pin
-    ? `<span class="pin-badge${family ? ` is-${esc(family)}` : ''}" aria-hidden="true">${esc(pin)}</span>`
+    ? `<span class="pin-badge${family ? ` is-${esc(family)}` : ''}${aside ? ' is-aside' : ''}" aria-hidden="true">${esc(pin)}</span>`
     : ''
+}
+
+/**
+ * The words under a set-aside sale's address, in the column head and on its
+ * phone card (reader review, 3177 Coho, 2026-10-08: two of five columns were
+ * set aside and nothing on the columns said so; only a dash in the Weight row
+ * and the list under the grid did).
+ */
+export const SET_ASIDE_COLUMN_TAG = 'Set aside'
+
+function asideTagHtml(aside: boolean | undefined): string {
+  return aside ? `<span class="matrix-aside">${esc(SET_ASIDE_COLUMN_TAG)}</span>` : ''
 }
 
 /**
@@ -213,7 +248,22 @@ function pinBadge(pin: string | null, family?: string): string {
  * a line of the adjustment grid, which the phone card repeats verbatim.
  */
 type MatrixRow = {
+  /** The row's key. Fold rules, the phone card's open set and its dedupe read this. */
   label: string
+  /**
+   * The words a reader sees, when they differ from the key in this matrix.
+   * The sales table counts days to an offer and divides the price after a
+   * credit, and its rows say so; the key stays put so every rule keyed on it
+   * still finds the row.
+   */
+  display?: string
+  /**
+   * Printed after the reader's own figure on the desktop row, and the reader's
+   * own phone card keeps the key as its label instead. For a row whose words
+   * describe the other homes and not this one ("Days to an offer" over a home
+   * that never had one).
+   */
+  subjectSuffix?: string
   figure: boolean
   fact?: 'dom' | 'listing-history'
   rule?: boolean
@@ -245,6 +295,9 @@ const SHARED_ROWS: ReadonlyArray<MatrixRow> = [
   { label: 'List price', figure: true },
   { label: 'Original list', figure: true },
   { label: 'Sold', figure: true },
+  { label: 'Seller concessions', figure: true },
+  // Net of a recorded concession. Null or zero leaves this equal to Sold.
+  { label: 'Sold after concessions', figure: true },
   { label: 'Days on market', figure: true, fact: 'dom' },
   { label: 'CDOM', figure: true },
   { label: 'Beds', figure: true },
@@ -257,12 +310,36 @@ const SHARED_ROWS: ReadonlyArray<MatrixRow> = [
   // Matt ADD 2026-09-12: list $/sqft AND sold $/sqft + concession $ on sold.
   { label: 'List $/sqft', figure: true },
   { label: 'Sold $/sqft', figure: true },
-  { label: 'Seller concessions', figure: true },
   { label: 'Adjusted', figure: true },
   // Asks on one line, then each clause of the outcome on its own. One
   // sentence in a six-column cell was breaking in a different place in every
   // column. The full sentence stays in the title.
   { label: 'First ask → last ask → outcome', figure: false, html: true },
+]
+
+/**
+ * The grid's concession line: the credit, signed, as the first dollar move.
+ *
+ * It printed as "Seller concessions $11,250" between the sale date and the
+ * date move, an amount and not a move, so the column did not add up: 2224
+ * Indigo read date −$6,884 and size +$49,181 over a Net adjustment of
+ * +$31,047 (reader review, cma-2382-jackson, 2026-10-08). The net was right;
+ * the line that made it right did not read as part of the sum, and on the
+ * phone card it was dropped as a repeat of the fact row's label. Its own name,
+ * a sign, and a place straight under the sale price fix all three.
+ */
+export const CONCESSION_ADJUSTMENT_ROW_LABEL = 'Adjusted for seller concessions'
+
+/**
+ * A grid row whose dollar moves sit between "Sold for" and "Net adjustment".
+ * Sold for plus every one of them is Sale price today, and the net is their
+ * sum. Exported so a test can add the printed column up.
+ */
+export const ADJUSTMENT_MOVE_ROW_LABELS: readonly string[] = [
+  CONCESSION_ADJUSTMENT_ROW_LABEL,
+  'Adjusted for date',
+  'Adjusted for size (theirs vs yours)',
+  'Adjusted for style (theirs vs yours)',
 ]
 
 /**
@@ -276,9 +353,11 @@ const SHARED_ROWS: ReadonlyArray<MatrixRow> = [
  * was never adjusted for anything.
  */
 const ADJUSTMENT_ROWS: ReadonlyArray<MatrixRow> = [
-  { label: 'Sold for', figure: true, grid: true },
+  // The date first, so the dollar lines run unbroken in the order the math
+  // runs: the sale price, the credit off it, then date, size and style.
   { label: 'Sold', figure: true, grid: true },
-  { label: 'Seller concessions', figure: true, grid: true },
+  { label: 'Sold for', figure: true, grid: true },
+  { label: CONCESSION_ADJUSTMENT_ROW_LABEL, figure: true, grid: true },
   { label: 'Adjusted for date', figure: true, grid: true },
   { label: 'Adjusted for size (theirs vs yours)', figure: true, grid: true },
   { label: 'Adjusted for style (theirs vs yours)', figure: true, grid: true },
@@ -286,14 +365,44 @@ const ADJUSTMENT_ROWS: ReadonlyArray<MatrixRow> = [
   // ground and is NOT priced for the room (lib/pricing/room-counts.ts: paired
   // sales in this market put the extra bath slightly below its pair at the
   // median). The reader asks "what did you adjust for" in this grid, so the
-  // honest $0 belongs in it. Folds away when no sale carries a difference.
-  { label: 'Adjusted for rooms (theirs vs yours)', figure: true, grid: true },
+  // sentence belongs in it. Folds away when no sale carries a difference.
+  // Prose, not a figure: nowrap painted "One bedroom off yours. No dollar
+  // adjustment." past the right margin (Golden Market, page 5, 0.04in).
+  { label: 'Adjusted for rooms (theirs vs yours)', figure: false, grid: true },
   { label: 'Net adjustment', figure: true, grid: true },
   { label: 'Net, as a share of the sale', figure: true, grid: true },
   { label: 'Every adjustment added up', figure: true, grid: true },
   { label: 'Sale price today', figure: true, rule: true, grid: true },
   { label: 'Weight in this price', figure: true, grid: true },
 ]
+
+/** The grid's last row, by its key. Rules keyed on it find it whatever it is called. */
+export const SALE_PRICE_TODAY_ROW_LABEL = 'Sale price today'
+/**
+ * The same row when no sale in the grid moved for date. 3037 Purcell moved no
+ * sale for date (its own-ground local read held) and the row still read "Sale
+ * price today" over figures adjusted only for size and seller concessions
+ * (reader review 2026-10-08).
+ */
+export const ADJUSTED_PRICE_ROW_LABEL = 'Adjusted price'
+export const WEIGHT_ROW_KEY = 'Weight in this price'
+
+/**
+ * The adjustment rows as this grid words them: the last row says "today" only
+ * when a sale in it moved for date, and the weight row takes the letter's own
+ * words for what its weights are (lib/cma/sales-role.ts). The keys stay put.
+ */
+export function adjustmentRowWords(
+  comps: readonly CmaAdjustedComp[],
+  weightLabel?: string | null,
+): ReadonlyArray<MatrixRow> {
+  const dated = anySaleMovedForDate(comps)
+  return ADJUSTMENT_ROWS.map((row) => {
+    if (row.label === SALE_PRICE_TODAY_ROW_LABEL && !dated) return { ...row, display: ADJUSTED_PRICE_ROW_LABEL }
+    if (row.label === WEIGHT_ROW_KEY && weightLabel && weightLabel !== row.label) return { ...row, display: weightLabel }
+    return row
+  })
+}
 
 const ACRES_TO_SQFT = 43560
 
@@ -341,6 +450,19 @@ function escCell(s: string): string {
     .replace(/"/g, '&quot;')
 }
 
+/**
+ * The ask change, drawn. Geist has no U+2192, and the PDF embeds no font for
+ * the system fallback, so the character prints as a blank gap.
+ */
+const ARC_ARROW_SVG =
+  '<svg class="arc-arrow" viewBox="0 0 14 8" width="14" height="8" aria-hidden="true" focusable="false"><path d="M0 4h10M7 1l4 3-4 3" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="square" stroke-linejoin="miter"/></svg>'
+
+/** The row name a reader sees. The data key stays the words with an arrow. */
+function matrixRowLabelHtml(label: string): string {
+  if (label !== 'First ask → last ask → outcome') return esc(label)
+  return `First ask ${ARC_ARROW_SVG} last ask ${ARC_ARROW_SVG} outcome`
+}
+
 const ARC_LINE = 18
 
 function arcTokens(clause: string): string[] {
@@ -383,7 +505,7 @@ export function askArcCell(entry: MatrixEntry): string {
   // nowrap path ran 3pt past the right margin on a six-column sheet
   // (cma-20506-murphy) under the stylesheet's own face.
   const asksHtml = path
-    ? `<span class="arc-asks">${escCell(path).replace(/ → /g, '&nbsp;→ ')}</span>`
+    ? `<span class="arc-asks">${escCell(path).replace(/ → /g, `&nbsp;${ARC_ARROW_SVG} `)}</span>`
     : ''
   const lines = full ? arcLines(full) : []
   const tailHtml = lines
@@ -402,17 +524,54 @@ function ppsfCell(price: number | null | undefined, sqft: number | null | undefi
   return usd(Math.round(price / sqft))
 }
 
+/**
+ * A sale that reported no concession, and a sale with none on record.
+ *
+ * They are different facts and the status table under this chapter says so:
+ * "A blank means nothing was recorded, and zero means the sale reported
+ * none." Both printed "none" here, which told a reader a sale with no record
+ * had reported none. A sale with nothing recorded now says that in words, and
+ * the grid takes nothing off it (`concessionOffClose`).
+ */
+export const CONCESSION_NONE_CELL = 'none'
+export const CONCESSION_NOT_RECORDED_CELL = 'not recorded'
+
 function sharedConcessionCell(entry: MatrixEntry): string {
   if (entry.family !== 'closed') return '-'
   const c = entry.concessionsAmount
-  if (c == null || !Number.isFinite(c)) return '-'
-  return c > 0 ? usd(c) : 'none'
+  if (c == null || !Number.isFinite(c) || c < 0) return CONCESSION_NOT_RECORDED_CELL
+  if (c === 0) return CONCESSION_NONE_CELL
+  return usd(c)
+}
+
+/**
+ * Close minus a positive recorded concession. Unsold rows stay blank.
+ *
+ * Exported so the web chapter's at-a-glance list prints the SAME string this
+ * row prints for the same sale, never a figure computed a second way.
+ */
+export function soldAfterConcessionsCell(entry: MatrixEntry): string {
+  if (entry.family !== 'closed') return '-'
+  const close = entry.closePrice
+  if (close == null || !(close > 0)) return '-'
+  return usd(comparisonSalePrice(close, entry.concessionsAmount))
+}
+
+function soldPpsfCell(entry: MatrixEntry): string {
+  if (entry.family !== 'closed') return '-'
+  const close = entry.closePrice
+  if (close == null || !(close > 0)) return '-'
+  return ppsfCell(comparisonSalePrice(close, entry.concessionsAmount), entry.sqft)
 }
 
 function statusCell(entry: MatrixEntry): string {
   if (entry.family === 'closed') return 'Sold'
-  if (entry.family === 'unsold') return 'Expired'
+  if (entry.family === 'unsold') {
+    return mlsStatusLabel(entry.mlsStatus) ?? 'Off market'
+  }
   if (entry.family === 'subject') {
+    const word = mlsStatusLabel(entry.mlsStatus)
+    if (word === 'Canceled' || word === 'Expired' || word === 'Withdrawn') return word
     if (entry.endLabel === 'came off') return 'Off market'
     if (entry.listPrice != null && entry.listPrice > 0) return 'Listed'
     return 'Your home'
@@ -422,13 +581,40 @@ function statusCell(entry: MatrixEntry): string {
 }
 
 function statusDateCell(entry: MatrixEntry): string {
-  const raw = entry.statusDate
-  if (!raw || !/^\d{4}-\d{2}-\d{2}/.test(raw)) return '-'
-  return formatDate(raw.slice(0, 10)) || raw.slice(0, 10)
+  // The Pacific day: a timestamp's UTC day can be the next day in Bend.
+  const day = pacificDay(entry.statusDate ?? null)
+  if (!day) return '-'
+  return formatDate(day) || day
 }
 
-function moneyCell(n: number | null | undefined): string {
+/** A dollar figure, or the dash a blank cell prints. The Adjusted row's own cell. */
+export function moneyCell(n: number | null | undefined): string {
   return n != null && n > 0 ? usd(n) : '-'
+}
+
+/** The "Weight in this price" cell: the reconciliation's own figure, one decimal. */
+export function weightCell(weight: number | null | undefined): string {
+  return weight != null && Number.isFinite(weight) ? `${weight.toFixed(1)}%` : '-'
+}
+
+/**
+ * The Days on market cell. A closed sale counts to its accepted offer, the
+ * same number its outcome line prints, in a row the sales table names for
+ * that. When only first list to close is known, the cell says that is what it
+ * counts: that figure is not days on market (CLAUDE.md §7), and a bare number
+ * under that label would claim it. A home under contract, in a table whose row
+ * is days on market, counts to its offer and says so (2820 Aldrich, "18 days
+ * to an offer", reader review 2026-10-08).
+ */
+export function domCell(
+  entry: Pick<MatrixEntry, 'domMeasure'> & Partial<Pick<MatrixEntry, 'family'>>,
+  n: number | null | undefined,
+): string {
+  if (n == null || !Number.isFinite(n) || n < 0) return '-'
+  const count = `${int(n)} ${n === 1 ? 'day' : 'days'}`
+  if (entry.domMeasure === 'listed-to-closed') return `${count}, listed to closed`
+  if (entry.domMeasure === 'offer' && entry.family === 'active') return `${count} to an offer`
+  return count
 }
 
 function sharedCells(entry: MatrixEntry, _range?: PricePathRange | null): string[] {
@@ -443,8 +629,10 @@ function sharedCells(entry: MatrixEntry, _range?: PricePathRange | null): string
     moneyCell(entry.listPrice ?? entry.lastAsk),
     moneyCell(entry.firstAsk),
     moneyCell(entry.closePrice),
-    entry.domDays != null ? `${int(entry.domDays)} ${entry.domDays === 1 ? 'day' : 'days'}` : '-',
-    cdom != null ? `${int(cdom)} ${cdom === 1 ? 'day' : 'days'}` : '-',
+    sharedConcessionCell(entry),
+    soldAfterConcessionsCell(entry),
+    domCell(entry, entry.domDays),
+    domCell(entry, cdom),
     entry.beds != null ? int(entry.beds) : '-',
     entry.baths != null ? dec(entry.baths, entry.baths % 1 !== 0 ? 1 : 0) : '-',
     sizeCell(entry.sqft, entry.lotAcres),
@@ -452,8 +640,7 @@ function sharedCells(entry: MatrixEntry, _range?: PricePathRange | null): string
     entry.yearBuilt != null ? String(entry.yearBuilt) : '-',
     entry.garageSpaces != null ? int(entry.garageSpaces) : '-',
     ppsfCell(listForPpsf, entry.sqft),
-    ppsfCell(entry.closePrice, entry.sqft),
-    sharedConcessionCell(entry),
+    soldPpsfCell(entry),
     entry.family === 'closed' ? moneyCell(entry.adjustedPrice) : '-',
     askArcCell(entry),
   ]
@@ -478,6 +665,9 @@ function colFor(entry: MatrixEntry, range?: PricePathRange | null): Col {
     sort: entry.sort,
     status: entry.status,
     cells: sharedCells(entry, range),
+    // A closed sale the range trim set aside is marked on its own column
+    // (reader review, 3177 Coho, 2026-10-08), by the map's own decision.
+    aside: entry.family === 'closed' && entry.setAside === true,
   }
 }
 
@@ -496,9 +686,13 @@ function adjustmentLines(comp: CmaAdjustedComp): {
   netPct: number | null
   grossPct: number | null
 } {
-  const parts = [comp.timeAdjustment, comp.sizeAdjustment, comp.storyAdjustment].filter(
-    (v): v is number => v != null && Number.isFinite(v),
-  )
+  const concession = concessionOffClose(comp)
+  const parts = [
+    concession > 0 ? -concession : null,
+    comp.timeAdjustment,
+    comp.sizeAdjustment,
+    comp.storyAdjustment,
+  ].filter((v): v is number => v != null && Number.isFinite(v))
   if (parts.length === 0) return { net: null, netPct: null, grossPct: null }
   const close = comp.closePrice
   const net = parts.reduce((sum, v) => sum + v, 0)
@@ -508,14 +702,19 @@ function adjustmentLines(comp: CmaAdjustedComp): {
 }
 
 /**
- * The 1004's FIRST value adjustment, and the one this document printed nowhere
- * (research item 8) while the net sheet quoted two concession figures with no
- * basis on the page.
+ * The 1004's FIRST value adjustment, as the move it is: a recorded credit
+ * comes off the sale price, so it prints negative, the same signed form as
+ * every other line between Sold for and the net. The amount it takes off is
+ * `concessionOffClose`, the figure the net and Sale price today are built on,
+ * so the printed column adds up to them. A sale that reported none says none,
+ * and one with nothing recorded says so; neither moves the price.
  */
 function concessionCell(comp: CmaAdjustedComp): string {
-  const c = comp.concessions ?? comp.concessionsAmount ?? null
-  if (c == null || !Number.isFinite(c)) return '-'
-  return c > 0 ? usd(c) : 'none'
+  const c = concessionOnSale(comp)
+  if (c == null || !Number.isFinite(c) || c < 0) return CONCESSION_NOT_RECORDED_CELL
+  const off = concessionOffClose(comp)
+  if (!(off > 0)) return CONCESSION_NONE_CELL
+  return usdSigned(-off)
 }
 
 function signedCell(v: number | null | undefined): string {
@@ -529,6 +728,21 @@ function dateCell(iso: string | null | undefined): string {
   return Number.isNaN(parsed.getTime())
     ? '-'
     : parsed.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+}
+
+/**
+ * The size move, in dollars, or why there is none. A sale with no living area
+ * on record is not adjusted for size (Matt 2026-10-08), and its cell says that
+ * rather than printing a $0 a reader would take for a measured match. Short,
+ * because figure cells do not wrap.
+ */
+export const NO_LIVING_AREA_CELL = 'No living area'
+
+export function sizeAdjustmentCell(
+  comp: Pick<CmaAdjustedComp, 'sizeAdjustment' | 'sizeAdjustmentBasis'>,
+): string {
+  if (comp.sizeAdjustmentBasis === 'no-sale-living-area') return NO_LIVING_AREA_CELL
+  return signedCell(comp.sizeAdjustment)
 }
 
 /**
@@ -549,11 +763,11 @@ function adjustmentCells(
   const weight = weights?.get(comp.listingKey ?? '') ?? null
   const gross = weight?.grossAdjustmentPct ?? adj.grossPct
   return [
-    usd(comp.closePrice),
     dateCell(comp.closeDate),
+    usd(comp.closePrice),
     concessionCell(comp),
     signedCell(comp.timeAdjustment),
-    signedCell(comp.sizeAdjustment),
+    sizeAdjustmentCell(comp),
     signedCell(comp.storyAdjustment),
     roomAdjustmentCell(comp),
     adj.net != null ? usdSigned(adj.net) : '-',
@@ -561,8 +775,8 @@ function adjustmentCells(
       ? `${adj.netPct > 0 ? '+' : adj.netPct < 0 ? '−' : ''}${Math.abs(adj.netPct).toFixed(1)}%`
       : '-',
     gross != null ? `${gross.toFixed(1)}%` : '-',
-    usd(comp.adjustedPrice),
-    weight?.weight != null ? `${weight.weight.toFixed(1)}%` : '-',
+    usd(printedAdjustedPrice(comp)),
+    weightCell(weight?.weight),
   ]
 }
 
@@ -593,6 +807,66 @@ const SHARED_PHRASE: Record<string, (v: string) => string> = {
 // (even when identical). Only Rooms + Size may still fold into one sentence.
 const SHARED_ORDER = ['Rooms', 'Size']
 
+/**
+ * The cumulative count, in words a homeowner reads. "CDOM" is the MLS's own
+ * abbreviation and means nothing to the person this table is for.
+ */
+export const CDOM_ROW_LABEL = 'Days on market, all listings'
+
+/**
+ * The days row, in the sales table, says what it counts.
+ *
+ * A sale's count ends at its accepted offer (matrix-entry.ts), and the reader's
+ * own count is days on market. One row headed "Days on market" printed the
+ * reader's 39 days beside sales that took 39, 23 and 15 days to an offer, two
+ * measures under one name (reader review, cma-3037-purcell, 2026-10-08). The
+ * row is named for the sales; the reader's own cell names its own measure.
+ * The listings that came off and the homes for sale count days on market,
+ * and keep that name.
+ */
+export const DAYS_TO_OFFER_ROW_LABEL = COMPARABLE_DAYS_TO_OFFER_ROW_LABEL
+/**
+ * "227 days on market" is wider than a sales-table column at five sales (about
+ * 77px of a 10.5px face), so the row wraps, and only between "227 days" and
+ * "on market": the no-break space keeps each half whole. A nowrap figure cell
+ * would have run into the next home's column.
+ */
+export const SUBJECT_DAYS_SUFFIX = ' on\u00a0market'
+
+/**
+ * The sold rate, named for what it divides.
+ *
+ * The letter prices every closed square foot after a recorded credit: the
+ * status table, the "sold at $293 to $386 a foot" caption, the did-not-sell
+ * sentences and the market chart all read that net (status-price-summary.ts,
+ * status-ppsf.ts, did-not-sell.ts, listing-window-market.ts). The row said
+ * "Sold $/sqft" over $293 for 2224 Indigo, where $503,000 over 1,676 sqft is
+ * $300 (reader review, cma-2382-jackson). The figure stays the net; the row
+ * says so whenever a sale on it carried a credit. With none, the net IS the
+ * sold price, and "after concessions" would claim a deduction nobody made
+ * (the same call sales-glance.ts makes for its Sold column).
+ */
+export const SOLD_PPSF_NET_ROW_LABEL = 'Sold $/sqft after concessions'
+
+/** The shared rows as the sales table words them. The other two tables keep the keys. */
+function sharedRowWords(
+  family: 'closed' | 'unsold' | 'active',
+  entries: readonly MatrixEntry[],
+  rows: ReadonlyArray<MatrixRow>,
+): ReadonlyArray<MatrixRow> {
+  if (family !== 'closed') return rows
+  const credit = entries.some(saleCarriesConcession)
+  return rows.map((row) => {
+    if (row.fact === 'dom') {
+      // Not a nowrap figure here: the reader's cell carries words, and a sale
+      // counted to close says so in the cell ("169 days, listed to closed").
+      return { ...row, figure: false, display: DAYS_TO_OFFER_ROW_LABEL, subjectSuffix: SUBJECT_DAYS_SUFFIX }
+    }
+    if (row.label === 'Sold $/sqft' && credit) return { ...row, display: SOLD_PPSF_NET_ROW_LABEL }
+    return row
+  })
+}
+
 function foldIdenticalRows(
   cols: readonly Col[],
   rows: ReadonlyArray<MatrixRow>,
@@ -600,13 +874,40 @@ function foldIdenticalRows(
   const kept: Array<(typeof rows)[number]> = []
   const shared: Array<{ label: string; clause: string }> = []
   const keptIndexes: number[] = []
+  const domIndex = rows.findIndex((r) => r.label === 'Days on market')
   rows.forEach((row, i) => {
-    // Matt ADD 2026-09-12: these rows stay on every sold matrix even when blank.
+    // A ROW NO OTHER HOME FILLS IS NOT A COMPARISON (Matt 2026-10-07). On the
+    // listings that came off and the homes for sale, Sold, Seller concessions,
+    // Sold after concessions, Sold $/sqft and Adjusted printed a full row of
+    // dashes under every home, and Garage printed one figure (yours) over five
+    // dashes. Each one was a phone screen of nothing. The reader's own column
+    // does not make a row a comparison, so it is the OTHER homes that decide.
+    // This outranks the always-keep list below: those rows stay when they
+    // carry a figure, never as a row of blanks. (The same rule first landed
+    // for "Remodel or update notes", one cell and four dashes on a live rival,
+    // look-pass 2026-09-08.)
+    if (cols.slice(1).every((c) => (c.cells[i] ?? '-') === '-')) return
+    // CDOM IS ONLY A FACT WHEN IT DIFFERS. Every home in every table the
+    // record can fill today carries the same count in both rows, so the
+    // second row repeated the first under an MLS abbreviation. When any home
+    // counts differently it stays, in plain words.
+    if (row.label === 'CDOM') {
+      const same =
+        domIndex >= 0 && cols.every((c) => (c.cells[i] ?? '-') === (c.cells[domIndex] ?? '-'))
+      if (same) return
+      kept.push({ ...row, label: CDOM_ROW_LABEL })
+      keptIndexes.push(i)
+      return
+    }
+    // Matt ADD 2026-09-12: these rows stay on every matrix that fills them,
+    // even when a cell is blank or every home shares the value. A row no
+    // other home fills at all went above (Matt 2026-10-07).
     if (
       row.label === 'Lot size' ||
       row.label === 'List $/sqft' ||
       row.label === 'Sold $/sqft' ||
       row.label === 'Seller concessions' ||
+      row.label === 'Sold after concessions' ||
       // Matt 2026-09-17 Flex FLOW: keep side-by-side identity/price rows even when identical.
       row.label === 'Beds' ||
       row.label === 'Baths' ||
@@ -618,7 +919,6 @@ function foldIdenticalRows(
       row.label === 'List price' ||
       row.label === 'Original list' ||
       row.label === 'Sold' ||
-      row.label === 'CDOM' ||
       row.label === 'Adjusted' ||
       row.label === 'Days on market' ||
       row.label === 'First ask → last ask → outcome'
@@ -633,10 +933,6 @@ function foldIdenticalRows(
     // that no style adjustment was made, which the legend already covers.
     if (values.length === 0) return
     if (values.every((v) => v === '$0')) return
-    // A row only the reader's own home fills is not a comparison either: the
-    // MLS carries no remarks on a live rival, so "Remodel or update notes"
-    // arrived as one cell and four dashes (look-pass, 2026-09-08).
-    if (cols.slice(1).every((c) => (c.cells[i] ?? '-') === '-')) return
     const phrase = SHARED_PHRASE[row.label]
     const same = phrase != null && values.length >= 2 && values.every((v) => v === values[0])
     if (same) {
@@ -677,7 +973,7 @@ function matrixTable(
   cols: Col[],
   rows: ReadonlyArray<MatrixRow>,
   family: string,
-  opts: { heads?: boolean; adjustments?: boolean } = {},
+  opts: { heads?: boolean; adjustments?: boolean; matrix?: string } = {},
 ): string {
   // Fixed layout reads its widths from the colgroup, so the table is exactly
   // 100% of the content box no matter what any cell holds.
@@ -706,7 +1002,7 @@ function matrixTable(
       // number into the address (tasteReview round three, §4 item 6). It is
       // aria-hidden either way; this puts it out of the text as well, and the
       // row it draws keeps the badge beside the address.
-      const badge = pinBadge(c.pin, c.key === 'subject' ? 'subject' : family)
+      const badge = pinBadge(c.pin, c.key === 'subject' ? 'subject' : family, c.aside === true)
       const name = c.href
         ? `<span class="addr-row">${badge}<a class="matrix-addr" href="${esc(
             c.href,
@@ -726,7 +1022,8 @@ function matrixTable(
               `Show ${c.label} on the map`,
             )}" data-comp="${esc(pin)}" data-pin="${esc(pin)}"></span>`
       const status = c.status ? ` data-status="${esc(c.status)}"` : ''
-      return `<th class="v" data-comp="${esc(pin)}" data-pin="${esc(pin)}"${status}${c.sort}>${control}${img}${name}${
+      const aside = c.aside === true ? ' data-aside="1"' : ''
+      return `<th class="v" data-comp="${esc(pin)}" data-pin="${esc(pin)}"${status}${aside}${c.sort}>${control}${img}${name}${asideTagHtml(c.aside)}${
         // `sub` is composed here, from figures already escaped by usd()/int(),
         // and carries one <br/> of our own — never reader input.
         c.sub ? `<span class="matrix-sub">${c.sub}</span>` : ''
@@ -741,7 +1038,12 @@ function matrixTable(
           const val = c.cells[i] ?? '-'
           const diff =
             row.html !== true && ci > 0 && val !== subjectVal && val !== '-' && subjectVal !== '-'
-          const cell = row.html === true ? val : esc(val)
+          // The reader's own figure names its own measure when the row's
+          // words describe the other homes ("39 days on market" on a row of
+          // days to an offer).
+          const shown =
+            c.key === 'subject' && row.subjectSuffix && val !== '-' ? `${val}${row.subjectSuffix}` : val
+          const cell = row.html === true ? shown : esc(shown)
           return `<td class="v${row.figure ? ' n' : ''}${
             row.note === true ? ' is-note' : ''
           }${diff ? ' is-diff' : ''}">${cell}</td>`
@@ -754,11 +1056,11 @@ function matrixTable(
       // prices to see what the adjustments do.' The toggle hides the working,
       // never the conclusion — the sale price today keeps its row.
       const adjAttr = row.grid === true && row.rule !== true ? ' data-adj="1"' : ''
-      return `<tr${factAttr}${cls}${adjAttr}><th>${esc(row.label)}</th>${tds}</tr>`
+      return `<tr${factAttr}${cls}${adjAttr}><th>${matrixRowLabelHtml(row.display ?? row.label)}</th>${tds}</tr>`
     })
     .join('')
   return `
-  <div class="comp-matrix-wrap">
+  <div class="comp-matrix-wrap"${opts.matrix ? ` data-matrix="${esc(opts.matrix)}"` : ''}>
     <table class="kv is-wide comp-matrix is-${esc(family)}${opts.adjustments ? ' is-adjustments' : ''}">
       ${colgroup}
       <thead>${head}</thead>
@@ -772,6 +1074,8 @@ function matrixTable(
  * same order (Delta 3). A seven-column table is a desktop object.
  */
 function matrixStack(input: {
+  /** The matrix this list belongs to, so a sort reorders the right cards. */
+  id: string
   family: string
   subject: Col
   cols: readonly Col[]
@@ -785,7 +1089,7 @@ function matrixStack(input: {
   const line = (label: string, value: string, html: boolean, adj: boolean, rule: boolean) =>
     `<div class="comp-stack-line${rule ? ' is-total' : ''}"${
       adj ? ' data-adj="1"' : ''
-    }><span class="k">${esc(label)}</span><span class="v${html ? '' : ' n'}">${
+    }><span class="k">${matrixRowLabelHtml(label)}</span><span class="v${html ? '' : ' n'}">${
       html ? value : esc(value)
     }</span></div>`
   const cardFor = (col: Col, entry: MatrixEntry | null, i: number): string => {
@@ -811,6 +1115,11 @@ function matrixStack(input: {
     const facts = input.rows
       .map((row, ri) => ({ row, value: col.cells[ri] ?? '-' }))
       .filter(({ value }) => value !== '-')
+    // The words on the line. A row whose words describe the other homes keeps
+    // its plain key on the reader's own card: "Days on market 39 days", not
+    // "Days to an offer" over a home that never had one.
+    const shownLabel = (row: MatrixRow): string =>
+      col.key === 'subject' && row.subjectSuffix ? row.label : (row.display ?? row.label)
     // THE CARD IS A CONCLUSION; THE WORKING IS ONE TAP UNDER IT.
     //
     // tasteReview round two, item 3: the phone document went the wrong way,
@@ -835,26 +1144,48 @@ function matrixStack(input: {
       'List $/sqft',
       'Sold $/sqft',
       'Seller concessions',
+      'Sold after concessions',
       'Adjusted',
     ])
+    // ONE LABEL, ONCE. The fact rows and the adjustment grid share Sold (the
+    // close price) and Sold for (that same price again). Printing both blocks
+    // put the sale's fields on the card twice. The close date stays on Status
+    // date, so the grid's second "Sold" (the date) does not come back under
+    // another name. The credit is two things, and both stay: Seller
+    // concessions is the amount on record, and Adjusted for seller
+    // concessions is that amount coming off in the working. When the working
+    // shared the fact's label it was dropped here, and the card's net no
+    // longer added up from the lines above it (cma-3037-purcell, 2124 Carrie:
+    // date $0, size +$5,601, net −$8,049). Adjusted for rooms stays too,
+    // sentence and all.
+    const seenLabels = new Set<string>()
+    const keepLabel = (label: string): boolean => {
+      if (seenLabels.has(label)) return false
+      if (label === 'Sold for' && seenLabels.has('Sold')) return false
+      seenLabels.add(label)
+      return true
+    }
     const headline = facts
-      .filter(({ row }) => row.label === 'Status')
-      .map(({ row, value }) => line(row.label, value, row.html === true, false, false))
+      .filter(({ row }) => row.label === 'Status' && keepLabel(row.label))
+      .map(({ row, value }) => line(shownLabel(row), value, row.html === true, false, false))
       .join('')
     const body = facts
-      .filter(({ row }) => row.label !== 'Status' && OPEN.has(row.label))
-      .map(({ row, value }) => line(row.label, value, row.html === true, false, false))
+      .filter(({ row }) => row.label !== 'Status' && OPEN.has(row.label) && keepLabel(row.label))
+      .map(({ row, value }) => line(shownLabel(row), value, row.html === true, false, false))
       .join('')
     const rest = facts
-      .filter(({ row }) => !OPEN.has(row.label))
-      .map(({ row, value }) => line(row.label, value, row.html === true, false, false))
+      .filter(({ row }) => !OPEN.has(row.label) && keepLabel(row.label))
+      .map(({ row, value }) => line(shownLabel(row), value, row.html === true, false, false))
       .join('')
+    // The working under the card. Its dollar lines are the desktop grid's, in
+    // the same order, so the card's Sold plus every line down to the net is
+    // Sale price today, and the net is the sum of the lines above it.
     const adjCol = input.adjustment?.cols[i] ?? null
     const adjLines = adjCol
       ? (input.adjustment?.rows ?? [])
           .map((row, ri) => ({ row, value: adjCol.cells[ri] ?? '-' }))
-          .filter(({ value }) => value !== '-')
-          .map(({ row, value }) => line(row.label, value, false, row.rule !== true, row.rule === true))
+          .filter(({ row, value }) => value !== '-' && keepLabel(row.label))
+          .map(({ row, value }) => line(shownLabel(row), value, false, row.rule !== true, row.rule === true))
           .join('')
       : ''
     // Matt ADD 2026-09-12: no "how the price moved" chart on the stack either.
@@ -865,10 +1196,11 @@ function matrixStack(input: {
       col.key === 'subject' ? ' is-yours' : ''
     }" data-comp="${esc(pin)}" data-pin="${esc(pin)}"${
       col.status ? ` data-status="${esc(col.status)}"` : ''
-    }${col.sort}>${img}<span class="addr-row is-card">${pinBadge(
+    }${col.aside === true ? ' data-aside="1"' : ''}${col.sort}>${img}<span class="addr-row is-card">${pinBadge(
       col.pin,
       col.key === 'subject' ? 'subject' : input.family,
-    )}${addr}</span>${headline ? `<div class="comp-stack-grid is-answer">${headline}</div>` : ''}${
+      col.aside === true,
+    )}${addr}</span>${asideTagHtml(col.aside)}${headline ? `<div class="comp-stack-grid is-answer">${headline}</div>` : ''}${
       body ? `<div class="comp-stack-grid">${body}</div>` : ''
     }${fold}</article>`
   }
@@ -876,8 +1208,35 @@ function matrixStack(input: {
   // the phone drawing dropped it entirely, so at 375 the price chapter held
   // five sales and the string "Your home" appeared nowhere (tasteReview item 1).
   const yours = cardFor(input.subject, input.entries[0] ?? null, -1)
-  const cards = input.cols.map((c, i) => cardFor(c, input.entries[i + 1] ?? null, i)).join('')
-  return `<div class="comp-stack" aria-label="${esc(input.label)}">${yours}${cards}</div>`
+  const cards = input.cols.map((c, i) => cardFor(c, input.entries[i + 1] ?? null, i))
+  return `<div class="comp-stack" aria-label="${esc(input.label)}" data-matrix="${esc(input.id)}">${yours}${stackFoldHtml(cards)}</div>`
+}
+
+/**
+ * How many homes a phone card list opens with, after the reader's own.
+ *
+ * Three matrices of full cards were 15,475 of the 23,800 pixels the Keats
+ * document ran at 375 (look-pass, 2026-10-07). The first homes stay open and
+ * the rest sit one tap under them. Nothing is removed and nothing needs
+ * script: a <details> opens without it, and the print letter never draws the
+ * phone cards at all, so every column is on the sheet regardless.
+ */
+export const STACK_OPEN_CARDS = 2
+
+/**
+ * The cards past the first few, behind "Show all N homes".
+ *
+ * A fold that would hide a single card saves less than the control costs, so
+ * a list of three homes or fewer prints whole. N counts every home in the
+ * table, so the label names the total the reader will see once it opens.
+ */
+export function stackFoldHtml(cards: readonly string[]): string {
+  if (cards.length <= STACK_OPEN_CARDS + 1) return cards.join('')
+  const open = cards.slice(0, STACK_OPEN_CARDS).join('')
+  const rest = cards.slice(STACK_OPEN_CARDS).join('')
+  return `${open}<details class="comp-more" data-visible="${STACK_OPEN_CARDS}"><summary class="comp-more-s">${esc(
+    `Show all ${cards.length} homes`,
+  )}</summary><div class="comp-more-in">${rest}</div></details>`
 }
 
 /**
@@ -905,12 +1264,15 @@ export function renderMatrixHtml(input: {
   } | null
   /** Under the adjustment table, in the letter. */
   adjustmentsFooter?: string
+  /** Matrix 1: the weight row's words on this letter (lib/cma/sales-role.ts weightRowLabel). */
+  weightLabel?: string | null
 }): string {
   const [subject, ...rest] = input.entries
   if (!subject || rest.length === 0) return ''
   const subjectCol = colFor(subject, input.range)
   const cols = rest.map((e) => colFor(e, input.range))
   const folded = foldIdenticalRows([subjectCol, ...cols], SHARED_ROWS)
+  const rows = sharedRowWords(input.family, input.entries, folded.rows)
   const groups = splitEvenly(cols)
   const tables = groups
     .map((group, gi) => {
@@ -921,7 +1283,7 @@ export function renderMatrixHtml(input: {
         groups.length > 1 && gi > 0
           ? `<h4 class="subhead matrix-group-h">${esc(`${input.heading}, continued`)}</h4>`
           : ''
-      return `${heading}${matrixTable([subjectCol, ...group], folded.rows, input.family)}`
+      return `${heading}${matrixTable([subjectCol, ...group], rows, input.family, { matrix: input.id })}`
     })
     .join('')
   // The adjustment grid, in the SAME column order, under matrix 1 only.
@@ -938,7 +1300,10 @@ export function renderMatrixHtml(input: {
     }))
     // The same drop rules the shared rows get: a row every column left empty,
     // or a row of five "$0" cells, is not a comparison (foldIdenticalRows).
-    const adjFolded = foldIdenticalRows([subjAdj, ...adjCols], ADJUSTMENT_ROWS)
+    const adjFolded = foldIdenticalRows(
+      [subjAdj, ...adjCols],
+      adjustmentRowWords(input.adjustments.comps, input.weightLabel ?? null),
+    )
     adjustment = { cols: adjCols, rows: adjFolded.rows }
     const adjGroups = splitEvenly(adjCols)
     adjustmentHtml = `<h4 class="subhead adjustments-h">How each sale was adjusted</h4>
@@ -947,6 +1312,7 @@ export function renderMatrixHtml(input: {
       matrixTable([subjAdj, ...group], adjFolded.rows, input.family, {
         heads: false,
         adjustments: true,
+        matrix: input.id,
       }),
     )
     .join('')}
@@ -963,11 +1329,12 @@ export function renderMatrixHtml(input: {
   ${folded.sentence ? `<p>${esc(folded.sentence)}</p>` : ''}
   ${tables}
   ${matrixStack({
+    id: input.id,
     family: input.family,
     subject: subjectCol,
     cols,
     entries: input.entries,
-    rows: folded.rows,
+    rows,
     adjustment,
     range: input.range,
     label: input.heading,
@@ -996,6 +1363,20 @@ export function renderCompMatrixHtml(
     footer?: string
     /** Chapter already owns the H2 — do not emit a duplicate H3. */
     omitHeading?: boolean
+    /**
+     * The chapter's name, without its period, for the matrix's own heads
+     * ("<name>, continued" on a second page). A held letter names it
+     * differently (render-pricing-page.ts salesThatSetItHeading).
+     */
+    heading?: string
+    /**
+     * The set-aside decision the map and the list under the grid use
+     * (lib/cma/set-aside.ts setAsideSalePredicate), so the same sales are
+     * marked on their columns.
+     */
+    isSetAside?: ((sale: { listingKey?: string | null; address?: string | null }) => boolean) | null
+    /** The weight row's words on this letter (lib/cma/sales-role.ts weightRowLabel). */
+    weightLabel?: string | null
   } = {},
 ): string {
   // Fail closed: a recommend needs >= MIN_CLOSED_SALES_FOR_MATRIX closed sales.
@@ -1004,20 +1385,23 @@ export function renderCompMatrixHtml(
     subjectEntry({
       subject,
       finalCycle: opts.finalCycle ?? null,
-      domDays: subjectDomDays(subject),
+      domDays: subjectDomDays(subject, askCtx?.asOfIso),
       printableAsk: subjectPrintableAsk(subject, askCtx),
     }),
-    ...closedEntries(comps, ctx, subject),
+    // The entry carries the set-aside mark the map's pins carry (the same
+    // predicate), and the column reads it off the entry.
+    ...closedEntries(comps, ctx, subject, opts.isSetAside ?? undefined),
   ]
   return renderMatrixHtml({
     id: 'sales-that-set-it',
     family: 'closed',
-    heading: 'The sales that set this price',
+    heading: opts.heading ?? 'The sales that set this price',
     omitHeading: opts.omitHeading,
     lead,
     entries,
     range: opts.range ?? null,
     adjustments: { comps, weights },
     adjustmentsFooter: opts.footer,
+    weightLabel: opts.weightLabel ?? null,
   })
 }

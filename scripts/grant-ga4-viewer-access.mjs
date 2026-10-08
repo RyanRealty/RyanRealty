@@ -59,7 +59,7 @@
 //     the full email including the @ryanrealty.iam.gserviceaccount.com suffix
 //     is correct and the service account exists in the GCP project.
 
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'

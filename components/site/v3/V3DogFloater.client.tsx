@@ -1,24 +1,31 @@
 'use client'
 /**
- * V3DogFloater — SITE-153 (placement + six doors; crop lock SITE-146).
+ * V3DogFloater — SITE-153 (placement + six doors).
  *
  * Mid-end circle (vertical center, trailing edge). Material FAB is
  * bottom-end, 16dp from the edge, and must not cover a snackbar / banner;
  * a cookie chip+bar owns that corner here, and cream-on-cream hid the dog.
  * Mid-trailing-edge is the researched alternative when the bottom-end is
- * occupied (help / a11y launchers). Navy disc, cream head — not a cream
- * disc on cream chrome.
+ * occupied (help / a11y launchers). Navy disc. The face is the attributed
+ * broker's existing headshot (Matt when the visit is not attributed).
  *
- * Click the dog to open, click the dog again to close. No Close link.
+ * Click the disc to open, click it again to close. No Close link.
  * Esc and the scrim still dismiss. Six doors, this order. Brief
- * flip / spin / invert on the head (not a continuous idle). Inner head
- * from the full seals. `prefers-reduced-motion: reduce` stills it.
+ * flip / spin / invert on the head (not a continuous idle).
+ * `prefers-reduced-motion: reduce` stills it.
  */
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
+import type { BrokerSlug } from '@/lib/agent-attribution'
+import { agentAttributionCookieFromCookieString } from '@/lib/analytics/visit-broker'
 import { CONTACT } from '@/lib/brand/contact'
+import {
+  DEFAULT_FLOATER_BROKER,
+  floaterBrokerHeadshot,
+  floaterBrokerSlug,
+} from '@/lib/site/floater-broker'
 import { shouldHidePublicChrome } from '@/lib/site/public-chrome-hide'
 import { trackEvent } from '@/lib/tracking'
 import { aimAtPointer, headAimTransform, HEAD_AT_REST, type HeadAim } from '@/lib/geo/aim-at-pointer'
@@ -56,6 +63,9 @@ export function V3DogFloater() {
   const pathname = usePathname()
   const hidden = shouldHidePublicChrome(pathname)
   const [open, setOpen] = useState(false)
+  // First paint is Matt so the static shell never reads cookies. After mount
+  // the visit resolver swaps in the attributed broker when one is present.
+  const [broker, setBroker] = useState<BrokerSlug>(DEFAULT_FLOATER_BROKER)
   const titleId = useId()
   const headRef = useRef<HTMLSpanElement>(null)
   /* Matt 2026-09-24: "whole dog rotates so that its eyes are following ball,
@@ -244,6 +254,19 @@ export function V3DogFloater() {
   }, [hidden])
 
   useEffect(() => {
+    if (hidden || typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search || '')
+    const next = floaterBrokerSlug({
+      agentParam: params.get('agent'),
+      cookieValue: agentAttributionCookieFromCookieString(document.cookie),
+      pageUrl: window.location.href,
+      utmContent: params.get('utm_content'),
+      utmTerm: params.get('utm_term'),
+    })
+    setBroker((prev) => (prev === next ? prev : next))
+  }, [hidden, pathname])
+
+  useEffect(() => {
     if (!open) return
     const onDown = (event: PointerEvent) => {
       const t = event.target
@@ -284,28 +307,22 @@ export function V3DogFloater() {
             style={stepY !== 0 ? { translate: `0 ${stepY}px` } : undefined}
             data-v3-dog-head="inner"
             data-v3-dog-place="mid-end"
+            data-v3-floater-broker={broker}
             aria-haspopup="dialog"
             aria-expanded={open}
             aria-controls={open ? titleId : undefined}
           >
             <span className="sr-only">Open Ryan Realty menu</span>
             <span className="v3-dog-floater__head" data-v3-dog-idle="notice" aria-hidden="true" ref={headRef}>
-              {/* The aim turns BOTH dog layers as one piece, inside the head's
+              {/* The aim turns the broker photo as one piece, inside the head's
                   own flip/spin, so the notice animation and the look compose. */}
               <span className="v3-dog-floater__aim" style={{ transform: headAimTransform(aim) }}>
                 <img
-                  src="/brand/jax-head-cream.png"
+                  src={floaterBrokerHeadshot(broker)}
                   alt=""
                   width={68}
                   height={68}
-                  className="v3-dog-floater__dog v3-dog-floater__dog--cream"
-                />
-                <img
-                  src="/brand/jax-head-navy.png"
-                  alt=""
-                  width={68}
-                  height={68}
-                  className="v3-dog-floater__dog v3-dog-floater__dog--navy"
+                  className="v3-dog-floater__broker"
                 />
               </span>
             </span>

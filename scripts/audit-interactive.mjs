@@ -3,7 +3,7 @@
  * Navigates pages, clicks buttons, fills forms, checks console errors
  * Captures screenshots at every step as evidence
  */
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import fs from 'fs'
 import path from 'path'
 

@@ -198,7 +198,7 @@ import { subdivisionPageTrail } from '@/lib/site/place-trail'
 import { refuseDegradedIsr, runPublishedPageRender } from '@/lib/site/degraded-isr'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { formatCount } from '@/lib/format/count'
-import { formatDate } from '@/lib/format/date'
+import { formatDate, toIsoTimestamp } from '@/lib/format/date'
 import { formatPriceExact } from '@/lib/format/money'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import {
@@ -1404,6 +1404,12 @@ async function renderSubdivisionPage({ params }: Props) {
     when: undefined,
   }))
 
+  // AEO freshness: the time the plat's figures were last refreshed (the
+  // market_stats_cache row the page prints), never the moment of this render:
+  // inventory.readAt is new Date() at read time, so it would claim "changed
+  // now" on every request. It rides the FAQPage node below (a WebPage type);
+  // a second WebPage node would give this URL two page entities.
+  const platDateModified = toIsoTimestamp(subdivisionStats?.refreshedAt)
   const schemas: SchemaInput[] = [
     {
       type: 'breadcrumb',
@@ -1568,7 +1574,9 @@ async function renderSubdivisionPage({ params }: Props) {
   })
   const platFaqs = answersFaqItems(platAnswers)
   // Derived FROM the rendered rows, never beside them.
-  if (platFaqs.length > 0) schemas.push({ type: 'faqPage', items: platFaqs })
+  if (platFaqs.length > 0) {
+    schemas.push({ type: 'faqPage', items: platFaqs, ...(platDateModified ? { dateModified: platDateModified } : {}) })
+  }
   if (process.env.NODE_ENV !== 'production') {
     for (const line of platAnswerTraces) console.log(`[plat:${slug}] ${line}`)
   }

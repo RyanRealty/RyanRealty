@@ -30,6 +30,7 @@ export const WIDEN_RUNG_PREFIXES = [
   'neighborhood-',
   'adjacent-subdivision-',
   'adjacent-sub-',
+  'closer-sub-',
   'community-',
 ] as const
 

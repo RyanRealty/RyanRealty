@@ -10,7 +10,7 @@
 import { mkdirSync } from 'node:fs'
 import { createClient } from '@supabase/supabase-js'
 import { config } from 'dotenv'
-import { chromium } from 'playwright'
+import { chromium } from './lib/marked-playwright.mjs'
 import { formatPrice } from '../lib/format/money'
 import { canonicalCityCacheSlug, cityUrlSlug } from '../lib/market/city-cache-slug'
 

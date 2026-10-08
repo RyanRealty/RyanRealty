@@ -11,7 +11,8 @@ import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { resolveCanonicalListingKey } from '@/lib/data/listings/resolveCanonicalListingKey'
 import type { MarketIndexPoint } from '@/lib/pricing/market-path'
 import type { PricingSale, SubdivisionCell } from '@/lib/pricing/match'
-import { plausibleListedClose, type HoaClass, type LotClass, type ProductKey, type SewerClass, type StoryClass, type WaterClass } from '@/lib/pricing/classes'
+import { CENTRAL_OREGON_CITIES, factsProductClauses, plausibleListedClose, productClassFromFactsRow, type HoaClass, type LotClass, type SewerClass, type StoryClass, type WaterClass } from '@/lib/pricing/classes'
+import { refreshSalePricingFactsForKeys } from '@/lib/data/sync/closingsReconcile'
 
 function client() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -32,6 +33,7 @@ const FACT_COLS = [
   'latitude',
   'longitude',
   'product_class',
+  'property_sub_type',
   'beds',
   'baths',
   'sqft',
@@ -84,7 +86,11 @@ function rowToSale(r: Record<string, unknown>): PricingSale | null {
     lotAcres: r.lot_acres != null ? Number(r.lot_acres) : null,
     yearBuilt: r.year_built != null ? Number(r.year_built) : null,
     storyClass: (r.story_class as StoryClass) ?? 'unknown',
-    productClass: (r.product_class as ProductKey) ?? 'unknown',
+    productClass: productClassFromFactsRow(
+      typeof r.product_class === 'string' ? r.product_class : null,
+      typeof r.property_sub_type === 'string' ? r.property_sub_type : null,
+      typeof r.public_remarks === 'string' ? r.public_remarks : null,
+    ),
     waterClass: (r.water_class as WaterClass) ?? 'unknown',
     sewerClass: (r.sewer_class as SewerClass) ?? 'unknown',
     hoaClass: (r.hoa_class as HoaClass) ?? 'unknown',
@@ -122,6 +128,17 @@ export async function countSalePricingFacts(): Promise<number> {
   return count ?? 0
 }
 
+
+function applyFactsProductClause<Q extends { eq: (col: string, val: string) => Q; or: (filters: string) => Q }>(
+  q: Q,
+  productClass: string | null | undefined,
+): Q {
+  const clause = factsProductClauses(productClass)
+  if (clause.or) return q.or(clause.or)
+  if (clause.eq) return q.eq(clause.eq[0], clause.eq[1])
+  return q
+}
+
 export async function selectPricingFactsPool(opts: {
   citySlug: string | null
   closeBefore: string
@@ -143,7 +160,7 @@ export async function selectPricingFactsPool(opts: {
     .lte('sqft', opts.sqftMax)
     .gt('close_price', 0)
   if (!opts.ignoreCity && opts.citySlug) q = q.eq('city_slug', opts.citySlug)
-  if (opts.productClass && opts.productClass !== 'unknown') q = q.eq('product_class', opts.productClass)
+  q = applyFactsProductClause(q, opts.productClass)
   const { data, error } = await q.order('close_date', { ascending: false }).limit(Math.min(opts.limit ?? 800, 1000))
   if (error) {
     console.error('[selectPricingFactsPool]', error.message)
@@ -203,7 +220,7 @@ export async function selectPricingFactsNear(opts: {
       .lte('latitude', opts.latitude + dLat)
       .gte('longitude', opts.longitude - dLng)
       .lte('longitude', opts.longitude + dLng)
-    if (opts.productClass && opts.productClass !== 'unknown') q = q.eq('product_class', opts.productClass)
+    q = applyFactsProductClause(q, opts.productClass)
     // Stable total order — range paging without one skips and duplicates rows.
     return q
       .order('close_date', { ascending: false })
@@ -215,6 +232,214 @@ export async function selectPricingFactsNear(opts: {
     return []
   }
   return rows.map((r) => rowToSale(r)).filter((r): r is PricingSale => r != null)
+}
+
+/**
+ * How many days of closes the catch-up below covers. The same 90 days as the
+ * Market Truth recency lane in the facts cron (app/api/cron/refresh-sale-pricing-facts).
+ */
+export const RECENT_CLOSE_CATCH_UP_DAYS = 90
+
+/** The cities refresh_sale_pricing_facts_batch admits (pricing_is_central_oregon_city, lower-cased and trimmed). */
+const PRICING_CITY_SET = new Set<string>(CENTRAL_OREGON_CITIES.map((c) => c.toLowerCase()))
+
+export function isPricingFactsCity(city: unknown): boolean {
+  return typeof city === 'string' && PRICING_CITY_SET.has(city.trim().toLowerCase())
+}
+
+/** The calendar day `days` before `asOf` (YYYY-MM-DD). */
+export function closeDayBefore(asOf: string, days: number): string {
+  const t = Date.parse(`${asOf.slice(0, 10)}T00:00:00.000Z`)
+  const base = Number.isNaN(t) ? Date.now() : t
+  return new Date(base - days * 86_400_000).toISOString().slice(0, 10)
+}
+
+/** Candidate keys, in order, that have no facts row. Each key once. */
+export function missingFactKeys(candidates: readonly string[], present: ReadonlySet<string>): string[] {
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const k of candidates) {
+    if (!k || seen.has(k)) continue
+    seen.add(k)
+    if (!present.has(k)) out.push(k)
+  }
+  return out
+}
+
+export type PricingFactsCatchUp = {
+  /** First close day the catch-up read (inclusive). */
+  since: string
+  /** Closed listings the window held (after the city test). */
+  checked: number
+  /** Of those, the keys with no facts row, nearest first. */
+  missing: string[]
+  /** Rebuilt into sale_pricing_facts by refresh_sale_pricing_facts_for_keys. */
+  refreshed: string[]
+  /** The comp filter left them out (the facts table would never hold them). */
+  skipped: string[]
+  failed: { listingKey: string; error: string }[]
+  /** Missing keys past the cap, left for the next call or the 6-hourly cron. */
+  deferred: string[]
+  /** A read or the refresh call failed. The pool may still lack recent closes. */
+  error: string | null
+}
+
+const CATCH_UP_COLS = 'ListingKey, City, Latitude, Longitude, CloseDate'
+
+/**
+ * THE COMP POOL IS NEVER OLDER THAN THE CHARTS (2026-10-07, 3037 Purcell).
+ *
+ * refresh_sale_pricing_facts_batch walks every closed Central Oregon listing
+ * in ListingKey order, 1,600 keys a cron run, and a new listing's key sorts
+ * last, so a new close reached sale_pricing_facts only when that walk next
+ * passed the end of the keyspace. On 2026-10-07 the newest close in the table
+ * was 2026-09-28 (written 2026-09-29 06:20 UTC) while the walk was back at
+ * the 2020-02-26 keys, so 2124 Carrie (Silver Sage, closed 2026-10-05) sat in
+ * listings, in the letter's hero chart and in its subdivision box, and not in
+ * the pool the comps came from.
+ *
+ * This reads the closed listings of the last `since` days (the subject's
+ * box, then its cities), finds the ones with no facts row, and rebuilds those
+ * rows with refresh_sale_pricing_facts_for_keys: the same SQL that builds
+ * every facts row, so a caught-up close is the row the sweep would have
+ * written, never a second mapping. Nearest first, at most `maxRefresh` a call.
+ * Never throws: a failure comes back in `error` / `failed` for the trace.
+ */
+type CatchUpOpts = {
+  since: string
+  cities?: readonly string[] | null
+  near?: { latitude: number; longitude: number; radiusMiles: number } | null
+  maxRefresh?: number
+}
+
+export async function catchUpRecentPricingFacts(opts: CatchUpOpts): Promise<PricingFactsCatchUp> {
+  try {
+    return await catchUpRecentPricingFactsOnce(opts)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    console.error('[catchUpRecentPricingFacts]', message)
+    return { since: opts.since, checked: 0, missing: [], refreshed: [], skipped: [], failed: [], deferred: [], error: message }
+  }
+}
+
+async function catchUpRecentPricingFactsOnce(opts: CatchUpOpts): Promise<PricingFactsCatchUp> {
+  const out: PricingFactsCatchUp = {
+    since: opts.since,
+    checked: 0,
+    missing: [],
+    refreshed: [],
+    skipped: [],
+    failed: [],
+    deferred: [],
+    error: null,
+  }
+  const sb = client()
+  if (!sb) return out
+  const base = () =>
+    sb
+      .from('listings')
+      .select(CATCH_UP_COLS)
+      .eq('StandardStatus', 'Closed')
+      .eq('PropertyType', 'A')
+      .gt('ClosePrice', 0)
+      .gte('TotalLivingAreaSqFt', 300)
+      .gte('CloseDate', opts.since)
+  type Row = { ListingKey?: unknown; City?: unknown; Latitude?: unknown; Longitude?: unknown }
+  const near = opts.near
+  const cities = (opts.cities ?? []).filter((c) => typeof c === 'string' && c.trim())
+  const nearRead =
+    near && Number.isFinite(near.latitude) && Number.isFinite(near.longitude)
+      ? fetchPagedRows<Row>((from, to) => {
+          const dLat = near.radiusMiles / 69
+          const cos = Math.abs(Math.cos((near.latitude * Math.PI) / 180))
+          const dLng = near.radiusMiles / (69 * Math.max(cos, 0.1))
+          return base()
+            .gte('Latitude', near.latitude - dLat)
+            .lte('Latitude', near.latitude + dLat)
+            .gte('Longitude', near.longitude - dLng)
+            .lte('Longitude', near.longitude + dLng)
+            .order('ListingKey', { ascending: true })
+            .range(from, to)
+        }, 5000)
+      : Promise.resolve({ rows: [] as Row[], error: null })
+  const cityRead =
+    cities.length > 0
+      ? fetchPagedRows<Row>(
+          (from, to) => base().in('City', cities).order('ListingKey', { ascending: true }).range(from, to),
+          20000,
+        )
+      : Promise.resolve({ rows: [] as Row[], error: null })
+  const [nearRows, cityRows] = await Promise.all([nearRead, cityRead])
+  const readError = nearRows.error?.message ?? cityRows.error?.message ?? null
+  if (readError) {
+    console.error('[catchUpRecentPricingFacts] listings', readError)
+    out.error = `listings read: ${readError}`
+  }
+  const dist = (r: Row): number => {
+    if (!near) return 0
+    const lat = Number(r.Latitude)
+    const lng = Number(r.Longitude)
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return Number.POSITIVE_INFINITY
+    return (lat - near.latitude) ** 2 + ((lng - near.longitude) * Math.cos((near.latitude * Math.PI) / 180)) ** 2
+  }
+  const keyOf = (r: Row): string | null =>
+    typeof r.ListingKey === 'string' && r.ListingKey.trim() ? r.ListingKey : null
+  const ordered = [
+    ...[...nearRows.rows].filter((r) => isPricingFactsCity(r.City)).sort((a, b) => dist(a) - dist(b)),
+    ...cityRows.rows.filter((r) => isPricingFactsCity(r.City)),
+  ]
+    .map(keyOf)
+    .filter((k): k is string => k != null)
+  const candidates = [...new Set(ordered)]
+  out.checked = candidates.length
+  if (candidates.length === 0) return out
+
+  const present = new Set<string>()
+  const CHUNK = 150
+  const PARALLEL = 4
+  const chunks: string[][] = []
+  for (let i = 0; i < candidates.length; i += CHUNK) chunks.push(candidates.slice(i, i + CHUNK))
+  for (let i = 0; i < chunks.length; i += PARALLEL) {
+    const results = await Promise.all(
+      chunks.slice(i, i + PARALLEL).map((chunk) =>
+        // @canonical-key — the keys are listings."ListingKey" read just above.
+        sb.from('sale_pricing_facts').select('listing_key').in('listing_key', chunk),
+      ),
+    )
+    for (const { data, error } of results) {
+      if (error) {
+        // An unread chunk is not "missing": refreshing it blind would rebuild
+        // rows that may be fine. Say so and leave it for the next call.
+        console.error('[catchUpRecentPricingFacts] facts', error.message)
+        out.error = out.error ?? `facts read: ${error.message}`
+        return out
+      }
+      for (const r of (data ?? []) as Array<{ listing_key?: unknown }>) {
+        if (typeof r.listing_key === 'string') present.add(r.listing_key)
+      }
+    }
+  }
+  out.missing = missingFactKeys(candidates, present)
+  if (out.missing.length === 0) return out
+  const cap = Math.max(0, Math.floor(opts.maxRefresh ?? 60))
+  const take = out.missing.slice(0, cap)
+  out.deferred = out.missing.slice(cap)
+  const CALL = 50
+  for (let i = 0; i < take.length; i += CALL) {
+    try {
+      const r = await refreshSalePricingFactsForKeys(take.slice(i, i + CALL))
+      out.refreshed.push(...r.refreshed)
+      out.skipped.push(...r.skipped)
+      out.failed.push(...r.failed)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      console.error('[catchUpRecentPricingFacts] refresh', message)
+      out.error = out.error ?? `refresh: ${message}`
+      out.deferred = [...take.slice(i), ...out.deferred]
+      break
+    }
+  }
+  return out
 }
 
 export async function getPricingMarketIndex(citySlug: string): Promise<MarketIndexPoint[]> {
@@ -303,6 +528,56 @@ export async function selectSeniorCommunityListingKeys(listingKeys: readonly str
       }
       for (const r of (data ?? []) as Array<{ ListingKey?: unknown }>) {
         if (typeof r.ListingKey === 'string') out.add(r.ListingKey)
+      }
+    }
+  }
+  return out
+}
+
+/**
+ * The MLS full / half bath split for pool sales (listings.baths_full /
+ * baths_half). sale_pricing_facts carries only `baths`, copied from
+ * BathroomsTotal, which counts a half bath whole: 2 full baths and a powder
+ * room read 3 (lib/pricing/bath-count.ts). The one-room rule compares full
+ * baths when both homes carry the split. Bounded by ListingKey, in chunks.
+ * A key with neither count is left out; a failed read fails open to the
+ * totals, the comparison before the split was read.
+ */
+export async function selectListingBathSplits(
+  listingKeys: readonly string[],
+): Promise<Map<string, { full: number | null; half: number | null }>> {
+  const out = new Map<string, { full: number | null; half: number | null }>()
+  const sb = client()
+  if (!sb || listingKeys.length === 0) return out
+  const keys = [...new Set(listingKeys.filter((k) => typeof k === 'string' && k.trim()))]
+  const CHUNK = 150
+  const chunks: string[][] = []
+  for (let i = 0; i < keys.length; i += CHUNK) chunks.push(keys.slice(i, i + CHUNK))
+  const PARALLEL = 4
+  const toCount = (v: unknown): number | null => {
+    if (v == null || v === '') return null
+    const n = Number(v)
+    return Number.isFinite(n) && n >= 0 ? n : null
+  }
+  for (let i = 0; i < chunks.length; i += PARALLEL) {
+    const results = await Promise.all(
+      chunks.slice(i, i + PARALLEL).map((chunk) =>
+        // @canonical-key — sale_pricing_facts.listing_key is copied from
+        // listings."ListingKey" by the facts refresh (migration 20260814020000).
+        sb.from('listings').select('ListingKey, baths_full, baths_half').in('ListingKey', chunk),
+      ),
+    )
+    for (const { data, error } of results) {
+      if (error) {
+        console.error('[selectListingBathSplits]', error.message)
+        continue
+      }
+      for (const r of (data ?? []) as Array<{ ListingKey?: unknown; baths_full?: unknown; baths_half?: unknown }>) {
+        if (typeof r.ListingKey !== 'string') continue
+        const full = toCount(r.baths_full)
+        const half = toCount(r.baths_half)
+        if (full == null && half == null) continue
+        out.set(r.ListingKey, { full, half })
       }
     }
   }

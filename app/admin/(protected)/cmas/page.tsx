@@ -5,11 +5,13 @@
 // selects (address, city, origin, date, recommended price).
 import Link from 'next/link'
 import { requireAdminPage } from '@/lib/admin/require-admin'
-import { listCmaQueue, type CmaQueueRow, type CmaQueueState } from '@/lib/data'
+import { CMA_QUEUE_READ_LIMIT, listCmaQueue, type CmaQueueRow, type CmaQueueState } from '@/lib/data'
 import { CMA_ORIGIN_LABEL, type CmaOrigin } from '@/lib/cma/origin'
 import { approveAndDeliverCma, setCmaLaneAutoSendAction } from '@/app/actions/cma-queue'
 import { getLaneSettings, AUTO_SEND_LANES } from '@/lib/data/cma/lane-settings'
-import { getCmaLaneFunnel } from '@/lib/data/cma/outcomes'
+import { getCmaLaneFunnel, getCmaOutcomes } from '@/lib/data/cma/outcomes'
+import { CmaOutcomeCell } from '@/components/admin/cma/CmaOutcomeCell'
+import { cmaQueueSendBanner, cmaQueueSendNote, cmaSentPageLine } from '@/lib/cma/process-place'
 import { CmaLaneFunnel } from '@/components/admin/cma/CmaLaneFunnel'
 import { isColdOrigin } from '@/lib/cma/origin'
 import { hasCapability } from '@/lib/admin/capabilities'
@@ -21,23 +23,23 @@ import { dripEtaFor, DRIP_CADENCE_LINE } from '@/lib/cma/drip-eta'
 import { QueueFilters } from '@/app/admin/(protected)/cmas/_components/queue/QueueFilters.client'
 import type { AdminState } from '@/components/admin/v2'
 import {
-  CMA_QUEUE_DEFAULT_STATE,
+  CMA_QUEUE_WHY_LABEL,
+  cmaQueueFiltersFromSearch,
   cmaQueueHref,
+  cmaQueueListReason,
   cmaQueueMoneyLine,
+  cmaQueueReachNote,
   cmaQueueWhoLine,
+  cmaReviewHref,
   filterCmaQueueRows,
+  sliceCmaQueuePage,
   sortCmaQueueRows,
-  type CmaCreatedWindow,
-  type CmaQueueSort,
+  toCmaQueueViewRow,
   type CmaQueueViewFilters,
-  type CmaQueueViewRow,
-  type CmaQueueViewState,
-  type CmaRecBand,
+  type CmaQueueWhy,
 } from '@/lib/cma/queue-view'
 
 export const dynamic = 'force-dynamic'
-
-const WINDOW = 500
 
 const STATE_LABEL: Record<CmaQueueState, string> = {
   ready: 'Ready',
@@ -75,12 +77,6 @@ const ORIGIN_ORDER: CmaOrigin[] = [
   'unknown',
 ]
 
-function str(v: string | string[] | undefined): string | undefined {
-  const s = Array.isArray(v) ? v[0] : v
-  const t = s?.trim()
-  return t || undefined
-}
-
 function age(iso: string | null): string {
   if (!iso) return ''
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000)
@@ -98,7 +94,8 @@ function whyLine(r: CmaQueueRow): string | null {
   }
   if (r.state === 'unvetted') return 'Audit did not run. Nothing has checked this one.'
   if (r.state === 'failed') return r.buildError ? `Build failed: ${r.buildError.slice(0, 140)}` : 'Build failed.'
-  if (r.state === 'flagged') return r.reviewReason ? r.reviewReason.slice(0, 140) : 'Flagged for review.'
+  // A held row leads with the hold, so the cut keeps the reason (cmaQueueListReason).
+  if (r.state === 'flagged') return cmaQueueListReason(r)
   if (r.state === 'queued') return null // filled with ETA at render
   return null
 }
@@ -113,25 +110,6 @@ function actionLabelFor(r: CmaQueueRow): string | null {
   if (r.sendMode === 'now') return 'Send now'
   if (r.sendMode === 'drip') return 'Schedule'
   return 'Approve'
-}
-
-function asView(r: CmaQueueRow): CmaQueueViewRow {
-  return {
-    id: r.id,
-    address: r.address,
-    city: r.city,
-    origin: r.origin,
-    state: r.state,
-    recommendedList: r.recommendedList,
-    valueLow: r.valueLow,
-    valueHigh: r.valueHigh,
-    theirPrice: r.theirPrice,
-    theirPriceLabel: r.theirPriceLabel,
-    theirPriceDelta: r.theirPriceDelta,
-    contactName: r.contactName,
-    contactEmail: r.contactEmail,
-    createdAt: r.createdAt,
-  }
 }
 
 /**
@@ -231,18 +209,10 @@ export default async function CmaQueuePage({
 }) {
   const admin = await requireAdminPage('prospecting.view')
   const sp = await searchParams
-  const filters: CmaQueueViewFilters = {
-    q: str(sp.q),
-    city: str(sp.city),
-    origin: str(sp.origin) as CmaOrigin | 'all' | undefined,
-    state: (str(sp.state) as CmaQueueViewState | 'all' | 'work' | undefined) ?? CMA_QUEUE_DEFAULT_STATE,
-    created: str(sp.created) as CmaCreatedWindow | undefined,
-    rec: str(sp.rec) as CmaRecBand | undefined,
-    sort: str(sp.sort) as CmaQueueSort | undefined,
-  }
+  const filters: CmaQueueViewFilters = cmaQueueFiltersFromSearch(sp)
 
-  const [{ rows, total }, laneSettings, laneFunnel] = await Promise.all([
-    listCmaQueue({ limit: WINDOW }),
+  const [{ rows, total, truncated }, laneSettings, laneFunnel] = await Promise.all([
+    listCmaQueue({ limit: CMA_QUEUE_READ_LIMIT }),
     getLaneSettings(),
     getCmaLaneFunnel(),
   ])
@@ -266,6 +236,8 @@ export default async function CmaQueuePage({
 
   const counts = {
     ready: rows.filter((r) => r.state === 'ready').length,
+    flagged: rows.filter((r) => r.state === 'flagged').length,
+    failed: rows.filter((r) => r.state === 'failed').length,
     auditFailed: rows.filter((r) => r.state === 'audit-failed').length,
     unvetted: rows.filter((r) => r.state === 'unvetted').length,
     queued: rows.filter((r) => r.state === 'queued').length,
@@ -280,9 +252,33 @@ export default async function CmaQueuePage({
   )
 
   const byId = new Map(rows.map((r) => [r.id, r]))
-  const visible = sortCmaQueueRows(filterCmaQueueRows(rows.map(asView), filters), filters.sort)
-    .map((v) => byId.get(v.id))
-    .filter((r): r is CmaQueueRow => !!r)
+  const views = rows.map((r) => toCmaQueueViewRow(r))
+  const matched = sortCmaQueueRows(filterCmaQueueRows(views, filters), filters.sort)
+  const pageSlice = sliceCmaQueuePage(matched, filters.page)
+  const sentOnPage = pageSlice.rows
+    .map((view) => byId.get(view.id))
+    .filter((r): r is CmaQueueRow => !!r && r.docKind === 'cma' && r.state === 'sent')
+  const outcomeMap = sentOnPage.length > 0 ? await getCmaOutcomes(sentOnPage.map((r) => r.id)) : {}
+  const sendBanner = cmaQueueSendBanner(pageSlice.rows)
+  const sentLine =
+    filters.state === 'sent'
+      ? cmaSentPageLine({
+          shown: sentOnPage.length,
+          opened: sentOnPage.filter((r) => (outcomeMap[r.id]?.opens ?? 0) > 0).length,
+          clicked: sentOnPage.filter((r) => (outcomeMap[r.id]?.clicks ?? 0) > 0).length,
+          replied: sentOnPage.filter((r) => Boolean(outcomeMap[r.id]?.repliedAt)).length,
+          bad: sentOnPage.filter((r) => outcomeMap[r.id]?.bounced || outcomeMap[r.id]?.unsubscribed).length,
+        })
+      : null
+  const listFilters = { ...filters, page: pageSlice.page }
+  const whyCounts = new Map<CmaQueueWhy, number>()
+  for (const view of filterCmaQueueRows(views, { ...filters, why: undefined })) {
+    if (view.why === 'none') continue
+    whyCounts.set(view.why, (whyCounts.get(view.why) ?? 0) + 1)
+  }
+  const whyOptions = (Object.keys(CMA_QUEUE_WHY_LABEL) as Exclude<CmaQueueWhy, 'none'>[])
+    .filter((why) => (whyCounts.get(why) ?? 0) > 0 || filters.why === why)
+    .map((why) => ({ value: why, label: CMA_QUEUE_WHY_LABEL[why], count: whyCounts.get(why) ?? 0 }))
 
   const door = (href: string, label: string) => (
     <Link href={href} style={{ color: 'var(--a-accent)', textDecoration: 'none' }}>
@@ -292,26 +288,36 @@ export default async function CmaQueuePage({
 
   return (
     <div style={{ paddingBottom: 88 }}>
-      <VerdictLine tone={counts.auditFailed > counts.ready ? 'attention' : 'ok'}>
-        {door(cmaQueueHref({ state: 'ready' }), String(counts.ready))} Ready ·{' '}
-        {door(cmaQueueHref({ state: 'queued' }), String(counts.queued))} In drip ·{' '}
-        {door(cmaQueueHref({ state: 'sent' }), String(counts.sent))} sent ·{' '}
+      <VerdictLine tone={counts.flagged + counts.failed + counts.auditFailed > 0 ? 'attention' : 'ok'}>
+        {door(cmaQueueHref({ state: 'flagged' }), String(counts.flagged))} flagged ·{' '}
+        {door(cmaQueueHref({ state: 'failed' }), String(counts.failed))} build failed ·{' '}
+        {door(cmaQueueHref({ state: 'ready' }), String(counts.ready))} ready ·{' '}
         {door(cmaQueueHref({ state: 'audit-failed' }), String(counts.auditFailed))} failed audit ·{' '}
         {door(cmaQueueHref({ state: 'unvetted' }), String(counts.unvetted))} unvetted ·{' '}
+        {door(cmaQueueHref({ state: 'queued' }), String(counts.queued))} in drip ·{' '}
+        {door(cmaQueueHref({ state: 'sent' }), String(counts.sent))} sent ·{' '}
         {door(cmaQueueHref({ state: 'all' }), String(total))} CMAs.
+        {truncated ? ' Some older CMAs are past this screen.' : ''}
         {' · '}
         <Link href="/admin/prospecting" style={{ color: 'var(--a-accent)', textDecoration: 'none' }}>
           Prospecting
         </Link>
       </VerdictLine>
 
-      <LaneStrip
-        rows={rows}
-        settings={laneSettings}
-        canFlip={hasCapability(admin, 'settings.compliance')}
-      />
-
-      <CmaLaneFunnel funnel={laneFunnel} />
+      <details className="av2-fold">
+        <summary>
+          Lane totals and auto-send
+          <span className="av2-fold__hint">{AUTO_SEND_LANES.length} lanes</span>
+        </summary>
+        <div className="av2-fold__body">
+          <LaneStrip
+            rows={rows}
+            settings={laneSettings}
+            canFlip={hasCapability(admin, 'settings.compliance')}
+          />
+          <CmaLaneFunnel funnel={laneFunnel} />
+        </div>
+      </details>
 
       <QueueFilters
         filters={filters}
@@ -324,10 +330,11 @@ export default async function CmaQueuePage({
           label: CMA_ORIGIN_LABEL[o],
           count: originCounts.get(o),
         }))}
+        whyOptions={whyOptions}
       />
 
       <SectionHead>
-        {visible.length} shown
+        {matched.length === 0 ? '0 shown' : `Showing ${pageSlice.start}-${pageSlice.end} of ${matched.length}`}
         {' · '}
         {door(cmaQueueHref({ state: 'ready' }), 'Ready')}
         {' · '}
@@ -342,9 +349,24 @@ export default async function CmaQueuePage({
         </Link>
       </SectionHead>
 
+      {sentLine ? (
+        <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '0 0 8px' }}>{sentLine}</p>
+      ) : null}
+      {sendBanner ? (
+        <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text)', margin: '0 0 8px', maxWidth: 640 }}>
+          {sendBanner}
+        </p>
+      ) : null}
+
+      <QueuePager filters={listFilters} page={pageSlice.page} pages={pageSlice.pages} />
+
       <ul className="av2-queue">
-        {visible.map((r) => {
+        {pageSlice.rows.map((view) => {
+          const r = byId.get(view.id)
+          if (!r) return null
           const label = actionLabelFor(r)
+          const reachNote = r.docKind === 'cma' ? cmaQueueReachNote(r.contactReach) : null
+          const href = r.docKind === 'cma' ? cmaReviewHref(r.slug, listFilters) : r.detailHref
           let why = whyLine(r)
           if (r.state === 'queued' && r.prospectKind && r.prospectId) {
             const etaLabel = dripEtaByKey.get(`${r.prospectKind}:${r.prospectId}`)
@@ -357,13 +379,15 @@ export default async function CmaQueuePage({
           const money = cmaQueueMoneyLine(r)
           const recBit = money.split(' · ')[0]
           const restBit = money.split(' · ').slice(1).join(' · ')
+          const sendNote = cmaQueueSendNote(r.state, r.origin)
+          const outcome = r.docKind === 'cma' && r.state === 'sent' ? outcomeMap[r.id] ?? null : null
           return (
             <QueueRow
               key={r.id}
               kind={r.state === 'queued' ? STATE_LABEL.queued : CMA_ORIGIN_LABEL[r.origin]}
               kindTone={STATE_TONE[r.state]}
               title={
-                <Link href={r.detailHref} style={{ color: 'inherit', textDecoration: 'none' }}>
+                <Link href={href} style={{ color: 'inherit', textDecoration: 'none' }}>
                   {r.address || r.slug}
                 </Link>
               }
@@ -377,11 +401,23 @@ export default async function CmaQueuePage({
                   </span>
                   {' · '}
                   <span>{cmaQueueWhoLine(r)}</span>
-                  {!r.contactEmail ? ' · no email' : ''}
+                  {reachNote ? ` · ${reachNote}` : ''}
                   {why ? (
                     <>
                       <br />
                       <span>{why}</span>
+                    </>
+                  ) : null}
+                  {sendNote ? (
+                    <>
+                      <br />
+                      <span>{sendNote}</span>
+                    </>
+                  ) : null}
+                  {outcome || (r.docKind === 'cma' && r.state === 'sent') ? (
+                    <>
+                      <br />
+                      <CmaOutcomeCell outcome={outcome} />
                     </>
                   ) : null}
                 </>
@@ -394,7 +430,7 @@ export default async function CmaQueuePage({
                 ) : label ? (
                   <QueueAction slug={r.slug} label={label} approve={approveAndDeliverCma} />
                 ) : (
-                  <Link className="av2-btn av2-btn--quiet av2-btn--touch" href={r.detailHref}>
+                  <Link className="av2-btn av2-btn--quiet av2-btn--touch" href={href}>
                     Review
                   </Link>
                 )
@@ -404,7 +440,44 @@ export default async function CmaQueuePage({
         })}
       </ul>
 
-      {visible.length === 0 ? <p>Nothing matches that filter.</p> : null}
+      <QueuePager filters={listFilters} page={pageSlice.page} pages={pageSlice.pages} />
+
+      {matched.length === 0 ? <p>Nothing matches that filter.</p> : null}
     </div>
+  )
+}
+
+function QueuePager({
+  filters,
+  page,
+  pages,
+}: {
+  filters: CmaQueueViewFilters
+  page: number
+  pages: number
+}) {
+  if (pages <= 1) return null
+  const quiet = { color: 'var(--a-text-2)', textDecoration: 'none' as const }
+  const live = { color: 'var(--a-accent)', textDecoration: 'none' as const }
+  return (
+    <p style={{ display: 'flex', gap: 16, alignItems: 'center', fontSize: 'var(--a-text-sm)', margin: '8px 0' }}>
+      {page > 1 ? (
+        <Link href={cmaQueueHref({ ...filters, page: page - 1 })} style={live}>
+          Previous
+        </Link>
+      ) : (
+        <span style={quiet}>Previous</span>
+      )}
+      <span style={{ color: 'var(--a-text-2)', fontVariantNumeric: 'tabular-nums' }}>
+        Page {page} of {pages}
+      </span>
+      {page < pages ? (
+        <Link href={cmaQueueHref({ ...filters, page: page + 1 })} style={live}>
+          Next
+        </Link>
+      ) : (
+        <span style={quiet}>Next</span>
+      )}
+    </p>
   )
 }

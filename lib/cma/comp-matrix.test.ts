@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { renderCompMatrixHtml } from '@/lib/cma/comp-matrix'
+import { askArcCell, renderCompMatrixHtml } from '@/lib/cma/comp-matrix'
+import type { MatrixEntry } from '@/lib/cma/matrix-entry'
+import { cmaSectionStyles } from '@/lib/cma/render-css-sections'
+import { immersiveStylesheet } from '@/lib/cma/immersive-css'
 import { salesThatSetItPage, SALES_THAT_SET_IT_HEADING } from '@/lib/cma/render-pricing-page'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 
@@ -51,6 +54,31 @@ function padSales(seed: CmaAdjustedComp, n = 5): CmaAdjustedComp[] {
     adjustedPrice: seed.adjustedPrice + i * 1000,
   }))
 }
+
+describe('askArcCell', () => {
+  it('draws an ask change as a painted arrow and leaves a single ask without one', () => {
+    const changed = askArcCell({
+      firstAsk: 1_700_000,
+      lastAsk: 1_600_000,
+      outcome: 'Came off after 68 days',
+      endLabel: '',
+    } as MatrixEntry)
+    expect(changed).toContain('$1.70M')
+    expect(changed).toContain('$1.60M')
+    expect(changed).toContain('class="arc-arrow"')
+    expect(changed).not.toContain('\u2192')
+
+    const single = askArcCell({
+      firstAsk: 1_480_000,
+      lastAsk: 1_480_000,
+      outcome: 'offer in 0 days',
+      endLabel: '',
+    } as MatrixEntry)
+    expect(single).toContain('$1.48M')
+    expect(single).not.toContain('class="arc-arrow"')
+    expect(single).not.toContain('\u2192')
+  })
+})
 
 describe('renderCompMatrixHtml', () => {
   it('ends the subject banner on the last ask, not the cycle step before it', () => {
@@ -111,18 +139,21 @@ describe('renderCompMatrixHtml', () => {
       'Sold',
       'Size',
       'Days on market',
-      'CDOM',
       'Garage',
       'List $/sqft',
       'Sold $/sqft',
       'Seller concessions',
+      'Sold after concessions',
       'Adjusted',
-      'First ask \u2192 last ask \u2192 outcome',
       'Sold for',
       'Sale price today',
     ]) {
       expect(html, row).toContain(row)
     }
+    // Every home counts the same days in both rows, so the second one goes
+    // (Matt 2026-10-07): an MLS abbreviation repeating the row above it.
+    expect(html).not.toContain('CDOM')
+    expect(html).not.toContain('Days on market, all listings')
     // Flex FLOW keeps Beds / Baths / Year built as rows; Size may still fold.
     expect(html).toContain('<th>Beds</th>')
     expect(html).toContain('<th>Baths</th>')
@@ -139,6 +170,11 @@ describe('renderCompMatrixHtml', () => {
     // on the next.
     expect(html).toContain('>offer in 8&nbsp;days</span>')
     expect(html).toContain('class="arc-asks">$499K</span>')
+    expect(html).toContain('First ask')
+    expect(html).toContain('last ask')
+    expect(html).toContain('outcome')
+    expect(html).toContain('class="arc-arrow"')
+    expect(html).not.toContain('\u2192')
     expect(html).toContain('Jun 25, 2026')
     expect(html).not.toContain('Adjusted to subject')
     // No MLS photo on the fixture → honest empty thumb boxes so column heights align.
@@ -149,22 +185,25 @@ describe('renderCompMatrixHtml', () => {
   })
 
   it('keeps the CMA a seller actually gets to one undivided table', () => {
-    // TARGET_COMPS is 5 and MIN_COMPS is 5 (lib/cma/comps.ts), so the priced
-    // set renders as a single table with no group captions.
+    // MIN_COMPS is 5 (lib/cma/comps.ts), so a five-sale priced set renders as
+    // a single table with no group captions. A walk-to-7 set of six or seven
+    // (Matt 2026-10-07) splits three and three, or four and three, below.
     const html = renderCompMatrixHtml(subject, padSales(comp, 5))
     expect(html.match(/<table class="kv is-wide comp-matrix is-closed">/g)).toHaveLength(1)
     expect(html).not.toContain('matrix-group-h')
   })
 
-  // The floor is the pricing unit's floor (PRICING_MIN_COMPS = 3), not the
-  // selector's target of five. At five, cma-19968 and cma-1617-nw-8th shipped
-  // a recommended list with no comparable sales anywhere in the document
-  // (2026-09-07). A thin matrix is honest; an invisible one is not.
-  it('shows the set the pricing unit priced from, and nothing thinner', () => {
+  // The floor is the pricing unit's floor (PRICING_MIN_COMPS, five
+  // price-setting sales since Matt 2026-10-07), not a separate matrix number.
+  // When it was five against a pricing floor of three, cma-19968 and
+  // cma-1617-nw-8th shipped a recommended list with no comparable sales
+  // anywhere in the document (2026-09-07). The two numbers are one again.
+  it('shows the set the pricing unit priced from, and nothing thinner (five price-setting sales, Matt 2026-10-07)', () => {
     expect(renderCompMatrixHtml(subject, [])).toBe('')
     expect(renderCompMatrixHtml(subject, padSales(comp, 1))).toBe('')
     expect(renderCompMatrixHtml(subject, padSales(comp, 2))).toBe('')
-    expect(renderCompMatrixHtml(subject, padSales(comp, 3))).toContain('The sales that set this price')
+    expect(renderCompMatrixHtml(subject, padSales(comp, 3))).toBe('')
+    expect(renderCompMatrixHtml(subject, padSales(comp, 4))).toBe('')
     expect(renderCompMatrixHtml(subject, padSales(comp, 5))).toContain('The sales that set this price')
   })
 
@@ -284,8 +323,12 @@ describe('land columns', () => {
     expect(html).toMatch(/31,363/)
   })
 
-  it('labels the adjusted-price row as sale price today', () => {
-    expect(renderCompMatrixHtml(landSubject, padSales(landComp))).toContain('Sale price today')
+  it('labels the adjusted-price row sale price today only when a sale moved for date (reader review 2026-10-08)', () => {
+    // The land sales moved for nothing: the row is the adjusted price.
+    const land = renderCompMatrixHtml(landSubject, padSales(landComp))
+    expect(land).toContain('Adjusted price')
+    expect(land).not.toContain('Sale price today')
+    // These moved for date: the row is the sale price today.
     expect(renderCompMatrixHtml(subject, padSales(comp))).toContain('Sale price today')
     expect(renderCompMatrixHtml(subject, padSales(comp))).not.toMatch(/as your house/i)
   })
@@ -467,6 +510,63 @@ describe('the adjustment grid, line by line', () => {
     expect(html).toContain('none')
   })
 
+  it('shows the recorded concession on a sold comp', () => {
+    const html = renderCompMatrixHtml(
+      subj,
+      five({ ...sale, concessions: 12_500, concessionsAmount: 12_500 }),
+    )
+    expect(html).toContain('Seller concessions')
+    expect(html).toContain('$12,500')
+    // 457000 - 12500 = 444500. 444500 / 1665 = 266.966, so the sold rate is
+    // $267, and with a credit on the table the row says it is after one
+    // (reader review, cma-2382-jackson: "Sold $/sqft" over a net figure).
+    // List $/sqft stays on the $465,000 ask: 465000 / 1665 rounds to $279.
+    const net = /<tr><th>Sold after concessions<\/th>([\s\S]*?)<\/tr>/.exec(html)?.[1] ?? ''
+    const soldRate = /<tr><th>Sold \$\/sqft after concessions<\/th>([\s\S]*?)<\/tr>/.exec(html)?.[1] ?? ''
+    const listRate = /<tr><th>List \$\/sqft<\/th>([\s\S]*?)<\/tr>/.exec(html)?.[1] ?? ''
+    expect(net).toContain('$444,500')
+    expect(soldRate).toContain('$267')
+    expect(soldRate).not.toContain('$274')
+    expect(listRate).toContain('$279')
+    const soldAt = html.indexOf('<th>Sold</th>')
+    const concessionAt = html.indexOf('<th>Seller concessions</th>')
+    const netAt = html.indexOf('<th>Sold after concessions</th>')
+    // The sales table counts days to an offer and names the row for it.
+    const daysAt = html.indexOf('<th>Days to an offer</th>')
+    expect(soldAt).toBeGreaterThan(-1)
+    expect(concessionAt).toBeGreaterThan(soldAt)
+    expect(netAt).toBeGreaterThan(concessionAt)
+    expect(daysAt).toBeGreaterThan(netAt)
+    expect(html).not.toMatch(/<th>Seller concessions<\/th>(?:<td[^>]*>none<\/td>){6}/)
+  })
+
+  it('shows none when a sold comp reported no concession, and keeps the line', () => {
+    const html = renderCompMatrixHtml(subj, five({ ...sale, concessions: 0, concessionsAmount: 0 }))
+    expect(html).toContain('<th>Seller concessions</th>')
+    expect(html).toContain('none')
+    expect(html).not.toContain('$4,000')
+    expect(html).toContain('$389,560')
+    // A reported zero leaves the net equal to the close, and Sold $/sqft on it.
+    // 457000 / 1665 = 274.47, so $274.
+    const net = /<tr><th>Sold after concessions<\/th>([\s\S]*?)<\/tr>/.exec(html)?.[1] ?? ''
+    const soldRate = /<tr><th>Sold \$\/sqft<\/th>([\s\S]*?)<\/tr>/.exec(html)?.[1] ?? ''
+    expect(net).toContain('$457,000')
+    expect(soldRate).toContain('$274')
+  })
+
+  it('lowers the matrix adjusted figure when a concession is present', () => {
+    const noneHtml = renderCompMatrixHtml(subj, five({ ...sale, concessions: 0 }))
+    const givenHtml = renderCompMatrixHtml(
+      subj,
+      five({ ...sale, concessions: 4_000, concessionsAmount: 4_000 }),
+    )
+    expect(noneHtml).toContain('$389,560')
+    expect(givenHtml).toContain('$385,560')
+    expect(givenHtml).toContain('$4,000')
+    expect(givenHtml).toContain('−$71,440')
+    expect(noneHtml).not.toContain('$385,560')
+  })
+
   it('drops an adjustment row nobody adjusted rather than printing five zeros', () => {
     const html = renderCompMatrixHtml(subj, five(sale))
     expect(html).not.toContain('Adjusted for style')
@@ -497,6 +597,7 @@ describe('the adjustment grid, line by line', () => {
     expect(html).toContain('List $/sqft')
     expect(html).toContain('Sold $/sqft')
     expect(html).toContain('Seller concessions')
+    expect(html).toContain('Sold after concessions')
   })
 
   it('leads the phone stack with their own home, then the sales', () => {
@@ -522,6 +623,48 @@ describe('the adjustment grid, line by line', () => {
     expect(cards[0]).toContain('https://cdn.example/subject.jpg')
     expect(cards[1]).toContain('https://cdn.example/comp.jpg')
     expect(cards[0]).toContain('loading="eager"')
+  })
+
+  it('prints each sold-comp field once on the phone card', () => {
+    const html = renderCompMatrixHtml(
+      subject,
+      padSales({
+        ...comp,
+        roomDifference: ['beds'],
+      } as CmaAdjustedComp),
+      '',
+      null,
+      new Map([['P1', { weight: 29.2, grossAdjustmentPct: 7 }]]),
+    )
+    const stack = html.slice(html.indexOf('class="comp-stack"'))
+    const card = stack.split('comp-stack-card')[2] ?? ''
+    const count = (label: string) => card.split(`class="k">${label}<`).length - 1
+    expect(count('Sold')).toBe(1)
+    expect(count('Seller concessions')).toBe(1)
+    expect(count('Sold after concessions')).toBe(1)
+    expect(count('Sold for')).toBe(0)
+    expect(count('Adjusted for rooms (theirs vs yours)')).toBe(1)
+    expect(card).toContain('One bedroom off yours. No dollar adjustment.')
+    // The desktop cell wraps. Class n is nowrap, and that sentence ran past
+    // the right margin on the printed adjustment grid.
+    expect(html).not.toMatch(
+      /<td class="v n[^"]*">One bedroom off yours\. No dollar adjustment\.<\/td>/,
+    )
+    expect(html).toContain('>One bedroom off yours. No dollar adjustment.</td>')
+    expect(count('Sale price today')).toBe(1)
+    expect(count('Weight in this price')).toBe(1)
+    expect(card.indexOf('matrix-thumb')).toBeLessThan(card.indexOf('class="k">Weight in this price'))
+  })
+
+  it('keeps a phone card from painting the next card\'s weight column', () => {
+    for (const css of [cmaSectionStyles(), immersiveStylesheet()]) {
+      expect(css).toContain('.comp-stack-card')
+      expect(css).toMatch(/\.comp-stack-card\s*\{[^}]*overflow:\s*clip/)
+      expect(css).not.toMatch(/\.comp-stack-line\s*\{[^}]*white-space:\s*nowrap/)
+      expect(css).not.toMatch(/\.comp-stack-line\s*\{[^}]*flex-wrap:\s*nowrap/)
+      expect(css).toMatch(/\.comp-stack-line\s*\{[^}]*grid-template-columns/)
+      expect(css).toMatch(/\.comp-stack-line \.v\s*\{[^}]*white-space:\s*normal/)
+    }
   })
 })
 

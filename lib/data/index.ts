@@ -166,7 +166,7 @@ export { getRepeatSalesAppreciation } from '@/lib/data/listings/getRepeatSalesAp
 export type { RepeatSale, RepeatSalesResult } from '@/lib/data/listings/getRepeatSalesAppreciation'
 
 // Listings — detail page (stub today; real impl with listing_detail_mv in Wave 1.5)
-export { getListingDetail } from '@/lib/data/listings/getListingDetail'
+export { getListingDetail, getListingLookup, type ListingLookup } from '@/lib/data/listings/getListingDetail'
 export { getListingPhotos, getListingFloorPlans } from '@/lib/data/listings/getListingPhotos'
 export {
   attachListingCardExtras,
@@ -257,6 +257,10 @@ export { getPublishedBlogPosts } from '@/lib/data/blog/getPublishedBlogPosts'
 export type { BlogPostWithAuthor, GetPublishedBlogPostsResult } from '@/lib/data/blog/getPublishedBlogPosts'
 export { getBlogPostBySlug } from '@/lib/data/blog/getBlogPostBySlug'
 export type { BlogPostFull } from '@/lib/data/blog/getBlogPostBySlug'
+// Blog — ONE row by slug, any status, UNCACHED, service role. Admin draft
+// preview only (/admin/blog/preview/[slug]); never a public route.
+export { getBlogPostDraftBySlug } from '@/lib/data/blog/getBlogPostDraftBySlug'
+export type { BlogPostDraft } from '@/lib/data/blog/getBlogPostDraftBySlug'
 export { getPopularBlogSlugs } from '@/lib/data/blog/getPopularBlogSlugs'
 export { getRelatedBlogPosts } from '@/lib/data/blog/getRelatedBlogPosts'
 
@@ -650,10 +654,11 @@ export {
 export type { CmaAdminRow, CmaCompInsert, CmaServeHead, CmaRenderSource, CmaVersionSnapshotResult } from '@/lib/data/cma/documents'
 export { listOpenCmaActions, listOpenCmaActionsForSlug, claimCmaAction, updateCmaActionRow, findOpenCmaActionBySlug, appendCmaActionNotify, getCmaActionPayload, mergeCmaActionContact } from '@/lib/data/cma/queue'
 // THE one CMA queue — every origin in a single list (Matt 2026-09-04).
-export { listCmaQueue, isSendableQueueState } from '@/lib/data/cma/unified-queue'
+export { listCmaQueue, isSendableQueueState, CMA_QUEUE_READ_LIMIT } from '@/lib/data/cma/unified-queue'
 export type { CmaQueueRow, CmaQueueState, CmaAuditVerdict } from '@/lib/data/cma/unified-queue'
 export type { CmaActionRow } from '@/lib/data/cma/queue'
-export { findCrmPersonIdByEmail, stampCmaLinkOnPerson, stampCmaPersonId, attachCmaToPerson, logCmaTimelineEvent } from '@/lib/data/cma/crm'
+export { findCrmPersonIdByEmail, getExpiredOwnerForCma, stampCmaLinkOnPerson, stampCmaPersonId, attachCmaToPerson, logCmaTimelineEvent } from '@/lib/data/cma/crm'
+export type { ExpiredOwnerContact } from '@/lib/data/cma/crm'
 
 // CMA — the /account overview's view of delivered-to-me reports (never drafts).
 export { getMyCmas } from '@/lib/data/cma/getMyCmas'

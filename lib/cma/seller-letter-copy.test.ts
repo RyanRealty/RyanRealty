@@ -10,9 +10,9 @@ import { REVIEW_REASONS } from '@/lib/pricing/review'
 import { newHomeRateParagraph } from '@/lib/cma/new-home-rate'
 import { subjectEntry, unsoldEntries } from '@/lib/cma/matrix-entry'
 import {
-  cityDateCutsFightFlatLocal,
-  compsWithoutCityDateMove,
-  pricingWithoutCityDateMove,
+  FLAT_LOCAL_DATE_SENTENCE,
+  flatLocalDateStory,
+  withFlatLocalDateStory,
 } from '@/lib/cma/flat-date-story'
 import {
   roomAdjustmentWords,
@@ -76,8 +76,9 @@ describe('the generators write plain English', () => {
       ],
     })
     expect(search?.sentence).toBe(
-      'Four of the five sales are in North Plat. One more was added from your own street.',
+      'Four of the five sales are in North Plat. One more was added from Other Plat.',
     )
+    expect(search?.sentence).not.toContain('your own street')
     expect(search?.sentence).not.toContain('own-street-24mo')
     expect(sellerLetterDefects(search?.sentence ?? '')).toEqual([])
   })
@@ -149,6 +150,7 @@ describe('the generators write plain English', () => {
       printableAsk: 650_000,
     })
     expect(row.outcome).toMatch(/Came off/)
+    expect(row.mlsStatus).toBe('Expired')
     expect(row.statusDate).toBeNull()
     const peer = {
       address: '20 North Lane',
@@ -185,53 +187,34 @@ describe('the generators write plain English', () => {
     expect(text).not.toContain('3 houses built in 2026')
   })
 
-  it('does not move a sale for date when the local rate held flat', () => {
-    const comps = [
-      {
-        listingKey: 'a',
-        address: '30 North Lane',
-        closePrice: 700_000,
-        timeAdjustment: -45_000,
-        timeAdjustedPrice: 655_000,
-        adjustedPrice: 655_000,
-      },
-      {
-        listingKey: 'b',
-        address: '40 North Lane',
-        closePrice: 620_000,
-        timeAdjustment: 0,
-        timeAdjustedPrice: 620_000,
-        adjustedPrice: 620_000,
-      },
+  it('tells the flat local date story only when no sale was moved for date', () => {
+    // 62475 Woodsman (reader review 2026-10-08): the band was built on the
+    // date-moved prices, so a date move that ran stays in the grid and the
+    // flat story may not say no sale was moved.
+    const moved = [
+      { timeAdjustment: -45_000 },
+      { timeAdjustment: 0 },
     ]
-    expect(cityDateCutsFightFlatLocal({ ppsfMove: 'held flat', comps })).toBe(true)
-    const next = compsWithoutCityDateMove(comps)
-    expect(next[0]!.timeAdjustment).toBe(0)
-    expect(next[0]!.adjustedPrice).toBe(700_000)
-    const pricing = pricingWithoutCityDateMove(
-      {
-        recommended: 625_000,
-        valueLow: 599_000,
-        valueHigh: 659_000,
-        timeAdjustment: { sentence: 'Each sale is moved by the city index, a path that fell 8.0 percent.' },
-        rangeRule: {
-          rule: 'min-max',
-          n: 2,
-          kept: 2,
-          sentence: 'old',
-          adjustedLow: 599_000,
-          adjustedHigh: 659_000,
-        },
-      } as unknown as CmaPricing,
-      next,
-    )
-    expect(pricing.timeAdjustment?.sentence).toContain('held flat')
-    expect(pricing.timeAdjustment?.sentence).not.toContain('fell 8.0')
-    expect(pricing.rangeRule?.sentence).not.toContain('-$45,000')
-    expect(sellerLetterDefects(`${pricing.timeAdjustment?.sentence} ${pricing.rangeRule?.sentence}`)).toEqual([])
+    const still = [{ timeAdjustment: 0 }, { timeAdjustment: null }]
+    expect(flatLocalDateStory({ ppsfMove: 'held flat', comps: moved })).toBe(false)
+    expect(flatLocalDateStory({ ppsfMove: 'held flat', comps: still })).toBe(true)
+    expect(flatLocalDateStory({ ppsfMove: 'rose', comps: still })).toBe(false)
+    expect(flatLocalDateStory({ ppsfMove: 'held flat', comps: [] })).toBe(false)
+    const pricing = withFlatLocalDateStory({
+      recommended: 625_000,
+      valueLow: 599_000,
+      valueHigh: 659_000,
+      timeAdjustment: { sentence: 'Each sale is moved by the city index, a path that fell 8.0 percent.', pctPerMonth: -0.5 },
+      rangeRule: { rule: 'trimmed-one-each-end', sentence: 'kept' },
+    } as unknown as CmaPricing)
+    expect(pricing.timeAdjustment?.sentence).toBe(FLAT_LOCAL_DATE_SENTENCE)
+    // Nothing moved, so nothing priced changes: the band and the range rule stay.
+    expect(pricing.valueLow).toBe(599_000)
+    expect(pricing.rangeRule?.sentence).toBe('kept')
+    expect(sellerLetterDefects(`${pricing.timeAdjustment?.sentence}`)).toEqual([])
   })
 
-  it('leaves a negligible-weight sale out of the letter', () => {
+  it('keeps a negligible-weight sale in the table and says the weight', () => {
     const weights = new Map<string, { weight: number | null }>([
       ['near', { weight: 40 }],
       ['far', { weight: 0.1 }],
@@ -243,10 +226,10 @@ describe('the generators write plain English', () => {
       ],
       weights,
     )
-    expect(out.comps.map((c) => c.listingKey)).toEqual(['near'])
-    expect(out.note).toContain('does not set the price')
-    expect(out.note).not.toContain('543')
-    expect(out.note).not.toContain('90 Far')
+    expect(out.comps.map((c) => c.listingKey)).toEqual(['near', 'far'])
+    expect(out.note).toContain('under one percent')
+    expect(out.note).toContain('in this table')
+    expect(out.note).not.toContain('not in this letter')
   })
 
   it('explains a bedroom difference instead of a zero', () => {

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /** build_3480_flyer.mjs — standalone Just-Listed flyer (1080x1350) with contact bar.
  * For Pinterest / X / GBP / print share. Figures trace to Supabase listings. */
-import { chromium } from 'playwright';
+import { chromium } from './lib/marked-playwright.mjs';
 import { readFileSync, existsSync, mkdirSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';

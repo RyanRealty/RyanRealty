@@ -1,5 +1,6 @@
 'use server'
 
+import { siteOrigin } from '@/lib/site-origin'
 import { cookies, headers } from 'next/headers'
 import { earlierSigningGroupPending, hashSigningToken, sharedAddressCosigners, type EnvelopeField, type SignFieldValue } from '@/lib/tc/signing'
 import { advanceOrSeal } from '@/lib/tc/seal-envelope'
@@ -244,7 +245,7 @@ export async function declineSigning(token: string, reason: string): Promise<{ o
   const broker = recip.envelope.createdBy && recip.envelope.createdBy.includes('@') ? recip.envelope.createdBy : null
   if (broker) {
     const deal = await getSigningDeal(recip.envelope.cycleId)
-    const site = (process.env.NEXT_PUBLIC_SITE_URL || 'https://ryan-realty.com').replace(/\/$/, '')
+    const site = siteOrigin()
     await sendBrokerDeclinedNotice({
       to: broker,
       envelopeName: recip.envelope.name,

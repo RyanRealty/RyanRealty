@@ -169,8 +169,6 @@ describe('the single-doc fold', () => {
           { lens: 'pricing', fact: 'Listed at $800,000 against a supported $715,000.', meaning: 'The ask priced past the evidence.' },
         ],
         services: ['SERVICES_SENTINEL'],
-        netSheet: { salePrice: 715000, lines: [], totalCosts: 0, estimatedNet: 715000, netConservative: 705000, netHighEnd: 735000, assumptions: ['NET_SHEET_SENTINEL'] },
-        feeLine: 'FEE_SENTINEL',
       },
     },
   )
@@ -180,11 +178,11 @@ describe('the single-doc fold', () => {
     // Heading depends on whether the row carries the failed ask, so assert
     // the chapter's own content instead.
     expect(html).toMatch(/did not sell|without selling/)
-    expect(html).toContain('3,394')
+    expect(html).not.toContain('3,394')
+    expect(html).not.toContain('94.2%')
     expect(html).not.toContain('What Every Listing Gets')
     expect(html).not.toContain('Estimated Seller Net Sheet')
     expect(html).not.toContain('SERVICES_SENTINEL')
-    expect(html).not.toContain('NET_SHEET_SENTINEL')
   })
 
   it('names THIS home on the cover, once', () => {
@@ -200,7 +198,7 @@ describe('the single-doc fold', () => {
     expect(html).not.toMatch(/what your home is worth/i)
     const coverAt = html.indexOf('cover-title')
     const priceAt = html.indexOf('Our Recommended List Price for your home')
-    const chapterAt = html.indexOf('The sales support')
+    const chapterAt = html.search(/\b(?:run from|all come to|comes to) \$[\d,]+/)
     expect(coverAt).toBeGreaterThan(0)
     expect(priceAt).toBeGreaterThan(coverAt - 1)
     expect(html).toContain('$715,000')
@@ -365,7 +363,8 @@ describe('report extras pages (when-to-list + competition)', () => {
     const { html } = renderCmaHtml(args({}, { extras }))
     expect(html).not.toContain('When to List')
     expect(html).toContain('Who you would compete with at')
-    expect(html).toContain('14 homes are for sale')
+    expect(html).not.toContain('14 homes are for sale')
+    expect(html).toContain('0 homes are for sale')
     expect(html).not.toContain('31.5% closed in cash')
     expect(html).not.toContain('median of 40 photos')
     expect(html).not.toMatch(/Supabase|seasonality fixture|band fixture|financing fixture/)

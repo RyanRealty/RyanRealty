@@ -1,5 +1,6 @@
 'use server'
 
+import { siteHost, siteOrigin } from '@/lib/site-origin'
 import React from 'react'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { assertPdfPageSafety } from '@/lib/pdf/assert-page-safety'
@@ -13,14 +14,15 @@ import { CMAPdfDocument } from '@/lib/pdf/cma-pdf'
 import { CONTACT } from '@/lib/brand/contact'
 import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
+import { visitorCapiConsent } from '@/lib/meta-capi-visitor'
 import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
 import { isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { cookies, headers } from 'next/headers'
 import { after } from 'next/server'
 import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
 
-const source = (process.env.NEXT_PUBLIC_SITE_URL ?? 'ryan-realty.com').replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase()
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const source = siteHost()
+const siteUrl = siteOrigin()
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? process.env.RESEND_ADMIN_EMAIL ?? ''
 
 export type ValuationFormState = { error?: string; success?: boolean; cmaSent?: boolean; eventId?: string }
@@ -407,35 +409,42 @@ async function runValuationFollowUp(ctx: {
   // Seller leads (valuation requests) are the highest-intent funnel entry,
   // so they carry the highest value per event. Meta's bid algorithm uses
   // this to push budget toward seller-acquisition campaigns.
-  await fetch(`${siteUrl}/api/meta-capi`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      eventName: 'Lead',
-      email,
-      phone,
-      firstName: name.split(/\s+/)[0] ?? undefined,
-      lastName: name.split(/\s+/).slice(1).join(' ') || undefined,
-      eventId,
-      customData: {
-        property_address: fullAddress,
-        lead_type: 'seller_valuation',
-        value: 500,
-        currency: 'USD',
-      },
-      eventSourceUrl: `${siteUrl}/home-valuation`,
-    }),
-  }).catch((err) => {
-    console.warn('[Valuation Form] CAPI call failed:', err)
-  })
+  {
+    const sharing = await visitorCapiConsent()
+    if (sharing.allowed) {
+      await fetch(`${siteUrl}/api/meta-capi`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventName: 'Lead',
+          email,
+          phone,
+          firstName: name.split(/\s+/)[0] ?? undefined,
+          lastName: name.split(/\s+/).slice(1).join(' ') || undefined,
+          eventId,
+          consentCookie: sharing.consentCookie,
+          secGpc: sharing.secGpc,
+          customData: {
+            property_address: fullAddress,
+            lead_type: 'seller_valuation',
+            value: 500,
+            currency: 'USD',
+          },
+          eventSourceUrl: `${siteUrl}/home-valuation`,
+        }),
+      }).catch((err) => {
+        console.warn('[Valuation Form] CAPI call failed:', err)
+      })
+    }
+  }
 
   // GA4 Measurement Protocol mirror — server-side generate_lead so
   // attribution survives ad-blockers. Mirrors the gold-standard seller LP.
   await fireLeadGenerated({
     lp_variant: 'home-valuation',
-    lead_type: 'seller',
+    lead_type: 'seller_valuation',
+    form_id: 'home_valuation',
     lead_classification: 'warm',
-    value: 500,
     event_id: eventId,
     extra: {
       cma_sent: cmaSent,

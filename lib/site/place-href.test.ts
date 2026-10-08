@@ -67,6 +67,14 @@ describe('cityHref', () => {
   })
 })
 
+describe('self-city communities (Matt 2026-10-04)', () => {
+  it('builds the community page, never the /cities twin that 301s to it', () => {
+    expect(cityHref('sunriver')).toBe('/communities/sunriver')
+    expect(cityHref('black-butte-ranch')).toBe('/communities/black-butte-ranch')
+    expect(cityHref('sisters')).toBe('/cities/sisters')
+  })
+})
+
 describe('hasCityNeighborhoodPages', () => {
   it('is true only for cities whose own page is /cities/<slug>', () => {
     expect(hasCityNeighborhoodPages('bend')).toBe(true)
@@ -118,6 +126,8 @@ describe('no door this module builds is itself a pre-render hop', () => {
       cityHref('bend'),
       cityHref('medford'),
       cityHref('crooked-river-ranch'),
+      cityHref('sunriver'),
+      cityHref('black-butte-ranch'),
       cityNeighborhoodHref('bend', 'awbrey-butte'),
       cityNeighborhoodHref('bend', 'northwest-crossing'),
       subdivisionHref('awbrey-butte'),

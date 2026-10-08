@@ -1,18 +1,32 @@
 import { describe, expect, it } from 'vitest'
 import {
+  cmaQueueFiltersFromSearch,
+  cmaQueueHoldLine,
   cmaQueueHref,
+  cmaQueueListReason,
+  CMA_QUEUE_LIST_REASON_CHARS,
   cmaQueueMoneyLine,
+  cmaQueueReachFromFacts,
+  cmaQueueReachNote,
+  cmaQueueWalk,
   cmaQueueWhoLine,
+  cmaQueueWhy,
+  CMA_QUEUE_WHY_LABEL,
+  cmaReviewHref,
   filterCmaQueueRows,
   resolveTheirPrice,
+  sliceCmaQueuePage,
   sortCmaQueueRows,
   theirPriceFromBuildSummary,
+  toCmaQueueViewRow,
   type CmaQueueViewRow,
 } from '@/lib/cma/queue-view'
 
 function row(over: Partial<CmaQueueViewRow> = {}): CmaQueueViewRow {
   return {
     id: over.id ?? over.address ?? 'row',
+    slug: over.slug ?? 'cma-123-main',
+    why: over.why ?? 'none',
     address: '123 Main St',
     city: 'Bend',
     origin: 'expired',
@@ -139,6 +153,162 @@ describe('sortCmaQueueRows', () => {
   })
 })
 
+describe('cma queue paging and why', () => {
+  it('pages 50 at a time and clamps a page past the end', () => {
+    const rows = Array.from({ length: 55 }, (_, i) => row({ id: String(i), slug: `cma-${i}`, address: String(i) }))
+    const first = sliceCmaQueuePage(rows, undefined)
+    expect(first.pages).toBe(2)
+    expect(first.rows).toHaveLength(50)
+    expect(first.start).toBe(1)
+    expect(first.end).toBe(50)
+    const second = sliceCmaQueuePage(rows, 2)
+    expect(second.rows.map((r) => r.address)).toEqual(['50', '51', '52', '53', '54'])
+    expect(sliceCmaQueuePage(rows, 9).page).toBe(2)
+    expect(sliceCmaQueuePage([], 3)).toMatchObject({ page: 1, pages: 0, start: 0, end: 0, rows: [] })
+  })
+
+  it('walks the filtered list without skipping', () => {
+    const slugs = ['a', 'b', 'c']
+    expect(cmaQueueWalk(slugs, 'b')).toMatchObject({ index: 1, prev: 'a', next: 'c', page: 1, total: 3 })
+    expect(cmaQueueWalk(slugs, 'missing').index).toBe(-1)
+  })
+
+  it('keeps a wide range distinct from an ask that did not sell', () => {
+    expect(cmaQueueWhy({ state: 'flagged', reviewReason: 'The value range is wider than 8% of the recommended list' })).toBe(
+      'wide-range',
+    )
+    expect(cmaQueueWhy({ state: 'flagged', reviewReason: 'Comp evidence supported $630,000 against the $625,000 asking that just failed.' })).toBe(
+      'failed-ask',
+    )
+    expect(cmaQueueWhy({ state: 'failed', buildError: 'JUDGE_UNSTABLE. The comparability review did not agree' })).toBe(
+      'judge-unstable',
+    )
+    expect(cmaQueueWhy({ state: 'failed', buildError: 'Not enough comparable sales the review would keep.' })).toBe(
+      'short-comps',
+    )
+    expect(cmaQueueWhy({ state: 'ready', reviewReason: 'wider than 8%' })).toBe('none')
+    expect(cmaQueueWhy({ state: 'audit-failed' })).toBe('audit')
+  })
+
+  it('filters to one why and puts that why and the page on the url', () => {
+    const rows = [
+      row({ address: 'wide', state: 'flagged', why: 'wide-range' }),
+      row({ address: 'short', state: 'failed', why: 'short-comps' }),
+    ]
+    expect(filterCmaQueueRows(rows, { state: 'all', why: 'wide-range' }).map((r) => r.address)).toEqual(['wide'])
+    expect(cmaQueueHref({ state: 'flagged', why: 'wide-range', page: 2 })).toBe(
+      '/admin/cmas?state=flagged&why=wide-range&page=2',
+    )
+    expect(cmaReviewHref('cma-1', { state: 'flagged', why: 'wide-range', page: 2 })).toBe(
+      '/admin/cmas/cma-1?state=flagged&why=wide-range&page=2',
+    )
+    expect(cmaQueueHref({ page: 1, why: 'none' })).toBe('/admin/cmas')
+  })
+
+  it('drops a garbage filter and keeps a real page', () => {
+    expect(
+      cmaQueueFiltersFromSearch({ state: 'nope', why: 'wide-range', page: '2', rec: 'nope', sort: 'newest' }),
+    ).toEqual({
+      why: 'wide-range',
+      sort: 'newest',
+      page: 2,
+    })
+  })
+
+  it('calls a number a cell only when the line type already confirmed it', () => {
+    expect(cmaQueueReachFromFacts({ email: 'a@b.co', hasConfirmedCell: true, hasAnyPhone: true })).toBe('email')
+    expect(cmaQueueReachFromFacts({ email: null, hasConfirmedCell: true, hasAnyPhone: true })).toBe('text')
+    expect(cmaQueueReachFromFacts({ email: '  ', hasConfirmedCell: false, hasAnyPhone: true })).toBe('unconfirmed-phone')
+    expect(cmaQueueReachFromFacts({ email: null, hasConfirmedCell: false, hasAnyPhone: false })).toBe('none')
+    expect(cmaQueueReachNote('text')).toBe('text')
+    expect(cmaQueueReachNote('unconfirmed-phone')).toBe('phone on file, not a confirmed cell')
+    expect(cmaQueueReachNote('none')).toBe('no email')
+    expect(cmaQueueReachNote('email')).toBeNull()
+  })
+})
+
+describe('the ask-in-band hold in the queue (SKILL.md rule 22, Matt 2026-10-07)', () => {
+  const reason =
+    "The last ask of $925,000 sits inside the sales range of $893,000 to $951,000 the recommendation reads from. The home did not sell at a price the sales support, so the letter's reason that the ask was too high does not hold. It stays with you. It was not queued and it was not sent."
+
+  it('reads the stored kind first on a flagged row, with its own chip label', () => {
+    expect(cmaQueueWhy({ state: 'flagged', holdKind: 'ask-in-band', reviewReason: reason })).toBe('ask-in-band')
+    expect(CMA_QUEUE_WHY_LABEL['ask-in-band']).toBe('Ask inside the range')
+    expect(cmaQueueHoldLine({ state: 'flagged', holdKind: 'ask-in-band', reviewReason: reason })).toBe(
+      `Ask inside the range. ${reason}`,
+    )
+  })
+
+  it('falls back to the phrase for a row built before the field landed', () => {
+    expect(cmaQueueWhy({ state: 'flagged', reviewReason: reason })).toBe('ask-in-band')
+  })
+
+  it('wins over the failed-ask phrases on the same row', () => {
+    expect(
+      cmaQueueWhy({
+        state: 'flagged',
+        holdKind: 'ask-in-band',
+        reviewReason: `Comp evidence supported $630,000 against the asking that just failed. ${reason}`,
+      }),
+    ).toBe('ask-in-band')
+  })
+
+  it('reads every comp-shortage sentence the build writes as short-comps', () => {
+    for (const err of [
+      'Not enough comparable sales in Bend: of the 40 sales searched, 12 were cut for a different property type. Found 3 of the 5 closed sales this home needs to be priced.',
+      'Pricing could not be computed (4 of 5 comps set the price, and this home needs 5).',
+      'Not enough sales of the same product type to price this home. 4 of 6 candidates matched, and this home needs 5.',
+      'Comp shortage: only 4 price-setting sale(s) after the full ladder. This home needs 5.',
+    ]) {
+      expect(cmaQueueWhy({ state: 'failed', buildError: err }), err).toBe('short-comps')
+    }
+  })
+
+  it('carries the kind onto the view row', () => {
+    const view = toCmaQueueViewRow({
+      id: 'r',
+      slug: 'cma-915-saginaw',
+      address: '915 Saginaw',
+      city: 'Bend',
+      origin: 'expired',
+      state: 'flagged',
+      recommendedList: 915_000,
+      valueLow: 893_000,
+      valueHigh: 951_000,
+      theirPrice: 925_000,
+      theirPriceLabel: 'Last list',
+      theirPriceDelta: null,
+      contactName: null,
+      contactEmail: null,
+      createdAt: null,
+      reviewReason: reason,
+      holdKind: 'ask-in-band',
+    })
+    expect(view.why).toBe('ask-in-band')
+  })
+})
+
+describe('cmaQueueHoldLine', () => {
+  it('puts the hold on the letter and stays quiet when nothing is held', () => {
+    expect(
+      cmaQueueHoldLine({
+        state: 'flagged',
+        reviewReason: 'The value range is wider than 8% of the recommended list.',
+      }),
+    ).toBe('Range is wide. The value range is wider than 8% of the recommended list.')
+    expect(
+      cmaQueueHoldLine({
+        state: 'audit-failed',
+        auditSummary: 'The price sits outside the sales.',
+        auditCriticalCount: 2,
+      }),
+    ).toBe('Audit failed. 2 critical. The price sits outside the sales.')
+    expect(cmaQueueHoldLine({ state: 'unvetted' })).toBe('Audit did not run. Nothing has checked this one.')
+    expect(cmaQueueHoldLine({ state: 'ready' })).toBeNull()
+    expect(cmaQueueHoldLine({ state: 'failed', buildError: 'not enough comparable sales' })).toBeNull()
+  })
+})
+
 describe('theirPriceFromBuildSummary', () => {
   it('reads last list from the summary only for expired and FSBO', () => {
     const summary = { subject: { last_list_price: 749_900 } }
@@ -156,5 +326,43 @@ describe('resolveTheirPrice', () => {
     expect(resolveTheirPrice('expired', summary, null)).toBe(749_900)
     expect(resolveTheirPrice('expired', {}, null)).toBeNull()
     expect(resolveTheirPrice('seller-valuation', summary, 774_900)).toBeNull()
+  })
+})
+
+describe('the queue list line leads with the hold (review, 2026-10-07)', () => {
+  const clamp =
+    'Comp evidence supported $951,000 against the $925,000 asking that just failed. The recommendation is under that ask.'
+  const hold =
+    "The last ask of $925,000 sits inside the sales range of $893,000 to $951,000 the recommendation reads from. The home did not sell at a price the sales support, so the letter's reason that the ask was too high does not hold. It stays with you. It was not queued and it was not sent."
+  // The build writes the clamp first and appends the hold (applyAskInBandHold).
+  const stored = `${clamp} ${hold}`
+
+  it('prints the hold first on a held row, so the cut keeps it', () => {
+    const line = cmaQueueListReason({ state: 'flagged', holdKind: 'ask-in-band', reviewReason: stored })
+    expect(line.startsWith('The last ask of $925,000 sits inside the sales range of $893,000 to $951,000')).toBe(true)
+    expect(line.length).toBeLessThanOrEqual(CMA_QUEUE_LIST_REASON_CHARS)
+    // The old cut showed only the clamp.
+    expect(stored.slice(0, CMA_QUEUE_LIST_REASON_CHARS)).not.toContain('inside the sales range')
+  })
+
+  it('reads a row built before the stored kind by its phrase, and the letter line keeps the clamp after the hold', () => {
+    expect(cmaQueueListReason({ state: 'flagged', reviewReason: stored })).toMatch(/^The last ask of \$925,000/)
+    expect(cmaQueueHoldLine({ state: 'flagged', holdKind: 'ask-in-band', reviewReason: stored })).toBe(
+      `Ask inside the range. ${hold} ${clamp}`,
+    )
+  })
+
+  it('names the hold when the stored kind has no sentence on the row', () => {
+    expect(cmaQueueListReason({ state: 'flagged', holdKind: 'ask-in-band', reviewReason: clamp })).toMatch(
+      /^Ask inside the range\. Comp evidence supported/,
+    )
+    expect(cmaQueueListReason({ state: 'flagged', holdKind: 'ask-in-band', reviewReason: null })).toBe('Ask inside the range.')
+  })
+
+  it('leaves every other flagged reason in its order, cut the same way', () => {
+    const wide = `The value range is wider than 8% of the recommended list. ${'x'.repeat(200)}`
+    expect(cmaQueueListReason({ state: 'flagged', reviewReason: wide })).toBe(wide.slice(0, CMA_QUEUE_LIST_REASON_CHARS))
+    expect(cmaQueueListReason({ state: 'flagged', reviewReason: clamp })).toBe(clamp)
+    expect(cmaQueueListReason({ state: 'flagged', reviewReason: null })).toBe('Flagged for review.')
   })
 })

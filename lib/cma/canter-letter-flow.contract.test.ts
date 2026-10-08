@@ -124,6 +124,20 @@ const coverArgs = {
   tiersUsed: ['pocket-6mo', 'pocket-12mo'],
 }
 
+
+/**
+ * Five price-setting sales is the floor (Matt 2026-10-07), and the matrix
+ * renders nothing thinner. The Horse Back fixtures were written at three
+ * rows; two more Horse Back rows, cloned from the last, bring them to five.
+ */
+function fiveOf<T extends { listingKey: string; address: string }>(rows: T[]): T[] {
+  const last = rows[rows.length - 1]!
+  return [
+    ...rows,
+    ...[4, 5].map((n) => ({ ...last, listingKey: `C${n}`, mlsNumber: String(n), address: `${900 + n} Horse Back` }) as T),
+  ]
+}
+
 describe('1130 E Canter FlexMLS letter FLOW', () => {
   it('contract: split-closed-pending-active-summary-tables', () => {
     const closed = [
@@ -146,10 +160,10 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
     expect(html).toContain('data-status="pending"')
     expect(html).toContain('data-status="active"')
     expect(html).toContain('data-status="closed"')
-    // Matt 2026-09-24, FlexMLS style: List, Sold and $/sqft across the top,
-    // the four figures down each status, one table (the $/sqft board folded in).
+    // Matt 2026-09-24, FlexMLS style: List, Sold, Concessions, and $/sqft
+    // across the top, the four figures down each status, one table.
     expect(html).toMatch(
-      /scope="col">List<\/th><th class="n" scope="col">Sold<\/th><th class="n" scope="col">\$\/sqft<\/th>/,
+      /scope="col">List<\/th><th class="n" scope="col">Sold<\/th><th class="n" scope="col">Concessions<\/th><th class="n" scope="col">\$\/sqft<\/th>/,
     )
     expect(html.match(/<tbody data-status=/g)).toHaveLength(3)
     expect(html.match(/<th scope="row">Median<\/th>/g)).toHaveLength(3)
@@ -163,10 +177,18 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
       expect(html).toContain('hero-trio')
       expect(html).toContain('>Low<')
       expect(html).toContain('>High<')
-      expect(html).toContain('>Recommended<')
-      expect(html).toContain('$659,000')
-      expect((html.match(/>Recommended</g) ?? []).length).toBe(1)
+      // Matt 2026-10-07: the recommended list is the first and biggest figure
+      // under the list-price headline, printed once. Low and High follow,
+      // labelled as where similar homes sold.
+      expect(html).toContain('>Where similar homes sold')
+      expect((html.match(/\$659,000/g) ?? []).length).toBe(1)
+      expect(html.indexOf('$659,000')).toBeLessThan(html.indexOf('>Low<'))
     }
+    // The label names only the adjustments the sales behind the pair carry
+    // (reader review 2026-10-08). These sales moved for nothing; a cover given
+    // no sales keeps the label it always carried.
+    expect(immersive).toContain('>Where similar homes sold<')
+    expect(cover).toContain('>Where similar homes sold, adjusted to today<')
   })
 
   it('contract: recommended-inside-closed-comp-band', () => {
@@ -392,7 +414,11 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
       address: '1100 Horse Back',
       listPrice: 729_000,
       status: 'Pending' as const,
+      // Active Jun 1 to under contract Sep 4: a home under contract counts its
+      // days to that offer and is dated the day it went under contract
+      // (reader review 2026-10-08).
       daysOnMarket: 95,
+      pendingDate: '2026-09-04',
       photoUrl: null,
       latitude: 44.294,
       longitude: -121.535,
@@ -434,7 +460,7 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
       },
     })
     expect(rivalsHtml).toContain('1100 Horse Back')
-    expect(rivalsHtml).toMatch(/95 days on market/)
+    expect(rivalsHtml).toMatch(/95 days to an offer/)
     // Pending ask must not become Recommended.
     expect(letterCoverPayoffHtml(pricing)).toContain('$659,000')
     expect(letterCoverPayoffHtml(pricing)).not.toContain('$729,000')
@@ -468,7 +494,7 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
       sizeAdjustment: 0,
       weight: 1,
     }
-    const closedComps = [
+    const closedComps = fiveOf([
       {
         ...seed,
         listingKey: 'C1',
@@ -520,7 +546,7 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
         adjustedPrice: 705000,
         listingHistoryLine: 'Sold Jun 12, 2025 · 72 days on market',
       },
-    ] as CmaAdjustedComp[]
+    ] as CmaAdjustedComp[])
     const html = renderCompMatrixHtml(subject, closedComps)
     for (const label of [
       'Distance',
@@ -529,8 +555,10 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
       'List price',
       'Original list',
       'Sold',
-      'Days on market',
-      'CDOM',
+      // The sales table counts each sale to its accepted offer and says so
+      // (reader review, cma-3037-purcell, 2026-10-08). The locked field is
+      // the same row, named for what it counts.
+      'Days to an offer',
       'Beds',
       'Baths',
       'Size',
@@ -540,11 +568,17 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
       'List $/sqft',
       'Sold $/sqft',
       'Seller concessions',
+      'Sold after concessions',
       'Adjusted',
-      'First ask \u2192 last ask \u2192 outcome',
     ]) {
       expect(html, label).toContain(label)
     }
+    // Matt 2026-10-07: the cumulative count prints only when it differs from
+    // Days on market, and then in words. Every sale here counts the same days.
+    expect(html).not.toContain('CDOM')
+    expect(html).toContain('First ask')
+    expect(html).toContain('class="arc-arrow"')
+    expect(html).toContain('outcome')
     expect(html).toContain('0.2 miles NW')
     expect(html).not.toContain('>Outcome<')
     expect(html).not.toContain('Remodel or update notes')
@@ -555,7 +589,7 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
     expect(COMPARABLE_DOM_ROW_LABEL).toBe('Days on market')
     expect(COMPARABLE_PRICE_HISTORY_ROW_LABEL).toContain('First ask')
 
-    const closedComps = [
+    const closedComps = fiveOf([
       {
         listingKey: 'C1',
         mlsNumber: '1',
@@ -625,7 +659,7 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
         weight: 1,
         listingHistoryLine: 'Sold Jun 12, 2025 at $705,000 · 72 days on market',
       },
-    ] as CmaAdjustedComp[]
+    ] as CmaAdjustedComp[])
 
     const closedHtml = renderCompMatrixHtml(subject, closedComps)
     expect(matrixHtmlHasDomAndPriceHistory(closedHtml)).toBe(true)
@@ -717,7 +751,7 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
 
   it('contract: matrix-empty-thumb-align', () => {
     // Canter @1280: missing MLS photo still reserves 4/3 so headers do not float.
-    const html = renderCompMatrixHtml(subject, [
+    const html = renderCompMatrixHtml(subject, fiveOf([
       {
         listingKey: 'C1',
         mlsNumber: '1',
@@ -787,7 +821,7 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
         photoUrl: null,
         listingHistoryLine: 'Sold Jun 12, 2025 · 72 days on market',
       },
-    ] as CmaAdjustedComp[])
+    ] as CmaAdjustedComp[]))
     expect(html).toContain('matrix-thumb is-empty')
     expect(html).toContain('https://cdn.example/comp.jpg')
     expect(html).not.toMatch(/cdn\.example\/(?!comp\.jpg)/)
@@ -801,7 +835,7 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
     expect(matrixSrc).toMatch(/const LABEL_COL_PCT = 24/)
     const immersive = readFileSync(join(process.cwd(), 'lib/cma/immersive-css.ts'), 'utf8')
     expect(immersive).toContain('table.comp-matrix tbody th{white-space:normal')
-    expect(immersive).toContain('table.comp-matrix td.v:not(.n){white-space:normal')
+    expect(immersive).toContain('table.comp-matrix td.v:not(.n){white-space:normal;overflow-wrap:break-word')
     expect(immersive).toContain('table.comp-matrix td.n{white-space:nowrap}')
     // No blanket nowrap+ellipsis on every th/td.
     expect(immersive).not.toMatch(
@@ -809,7 +843,8 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
     )
     const printCss = readFileSync(join(process.cwd(), 'lib/cma/render-css-sections.ts'), 'utf8')
     expect(printCss).toContain('table.comp-matrix tbody th { white-space: normal')
-    expect(printCss).toContain('table.comp-matrix td.v:not(.n) { white-space: normal')
+    expect(printCss).toContain('table.comp-matrix td.v:not(.n) { white-space: normal; overflow-wrap: break-word;')
+    expect(printCss).toContain('.comp-matrix-wrap { display: block !important; overflow-x: visible; max-width: calc(100% - 4pt); }')
   })
 
   it('contract: sales-that-set-it-one-heading', () => {
@@ -827,7 +862,7 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
       confidence: 'High',
       notes: [],
     } as unknown as CmaPricing
-    const comps = [
+    const comps = fiveOf([
       {
         listingKey: 'C1',
         mlsNumber: '1',
@@ -894,7 +929,7 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
         weight: 1,
         listingHistoryLine: 'Sold Jun 12, 2025 · 72 days on market',
       },
-    ] as CmaAdjustedComp[]
+    ] as CmaAdjustedComp[])
     const page = salesThatSetItPage({
       subject,
       comps,
@@ -941,12 +976,23 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
     })
     expect(letter.bodyText).not.toContain('utm_')
     expect(letter.bodyText).not.toMatch(/https?:/)
-    expect(letter.bodyText).toContain('Our SaddleStone page keeps the running picture')
-    expect(letter.bodyText).toContain('The Sisters page shows the wider market it sits in.')
-    const hrefs = letter.paragraphs.flat().flatMap((r) => (typeof r === 'string' ? [] : [r.href]))
-    expect(hrefs).toContain('https://ryan-realty.com/subdivisions/saddlestone')
-    expect(hrefs).toContain('https://ryan-realty.com/cities/sisters')
-    expect(hrefs).toContain('https://ryan-realty.com/cma/cma-1130-e-canter')
-    expect(hrefs.every((h) => !h.includes('utm_'))).toBe(true)
+    expect(letter.bodyText.startsWith('Hi Pat,')).toBe(true)
+    expect(letter.bodyText).toContain('My name is Matt Ryan, and I own Ryan Realty here in Bend.')
+    expect(letter.bodyText).toContain('Your home at 1130 E Canter came off the market recently')
+    expect(letter.bodyText).toContain('A home that sells at full price with a 3% concession leaves the seller with 3% less than the record shows.')
+    expect(letter.bodyText).toContain("the homes you'd be competing with today")
+    expect(letter.bodyText).not.toContain('support a value between')
+    expect(letter.bodyText).toContain('See the full market analysis')
+    expect(letter.bodyText).toContain("If you've already chosen a broker for your next step, please consider this information only. We hope it goes well for you.")
+    expect(letter.bodyText.trimEnd().endsWith('We hope it goes well for you.')).toBe(true)
+    expect(letter.bodyText.trimEnd().endsWith('Matt')).toBe(false)
+    expect(letter.bodyText).not.toContain('comparative market analysis')
+    expect(letter.bodyText).not.toContain("We're sorry")
+    expect(letter.bodyText).not.toContain('$659,000')
+    expect(letter.bodyText).not.toContain('SaddleStone page')
+    expect(letter.bodyText).not.toContain('Sisters page')
+    expect(letter.bodyText).not.toContain('months of supply')
+    const hrefs = letter.paragraphs.flat().flatMap((r) => (typeof r === 'string' || !('href' in r) ? [] : [r.href]))
+    expect(hrefs).toEqual([])
   })
 })

@@ -1,48 +1,73 @@
 /**
- * First-contact copy for a delivered CMA, by origin.
+ * First-contact email for a CMA, by origin.
  *
- * Matt, 2026-09-09, after two clipped drafts: "We're professionals. We're
- * sorry their home didn't sell. This is a big deal. This is someone's home.
- * We're not going to say, 'Hey, your home came off the market. Here's what we
- * got.'" His own expired letter is the register for every lane: who we are,
- * sorry it did not sell, the pricing philosophy, the most knowledgeable
- * brokers in Central Oregon, the analysis, the ask to earn their business,
- * and best of luck. The numbers paragraph, the report paragraph and the place
- * page are what he kept from the 2026-09-09 draft. Links in the letter are
- * words. Hrefs here are clean ryan-realty.com URLs, with no UTM params.
+ * Matt, 2026-10-06: an expired letter is his template. The assigned broker
+ * introduces it. Matt owns Ryan Realty. Any other broker works here and does
+ * not say they own it. The greeting uses a first name when one is safe. The
+ * 3% concession line is his illustration, not this house's measured
+ * concession. The letter does not print the sales range, the last ask, the
+ * months of supply, the recommended list price, or the acronym CMA. The
+ * system signature is the sign-off, so the letter does not add a first name
+ * after the close. The report button sits on its own run and reads
+ * "See the full market analysis".
  *
- * Every figure is off the cmas row (value range, recommended list, the count
- * of priced sales and the tier they came from, the last list price). Nothing
- * in here estimates. No mannered prose, no phrasing no one says. The report
- * is described only as what it holds: the sales that set the number, the
- * listings near you that did not sell, and who you are competing with.
- *
- * Voice: marketing_brain_skills/brand-voice/VOICE.md.
+ * Every figure is off the cmas row or the city pulse. Nothing in here
+ * estimates. Voice: marketing_brain_skills/brand-voice/VOICE.md.
  */
 
 import { type InboundPacketFacts, type InboundValuationCopy } from '@/lib/cma/inbound-packet'
 import type { FirstContactPlace } from '@/lib/cma/first-contact-place'
 import { isAskedOrigin, type CmaOrigin } from '@/lib/cma/origin'
 import { formatFirstTouchUsd } from '@/lib/crm/first-touch-copy'
+import { isPlaceholderLeadName, isPlausibleFirstName } from '@/lib/crm/merge'
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
+import { marketVerdict } from '@/lib/market/classify'
 import {
-  cleanFirstPartyHref,
+  EXPIRED_ANALYSIS_BUTTON,
   paragraphsToMarkers,
   paragraphsToPlain,
   type FirstContactRun,
 } from '@/lib/cma/first-contact-render'
 
-const PUBLIC_SITE = 'https://ryan-realty.com'
-const ABOUT_HREF = `${PUBLIC_SITE}/about`
-const REVIEWS_HREF = `${PUBLIC_SITE}/reviews`
-const SELL_HREF = `${PUBLIC_SITE}/sell`
-
-function publicHref(href: string): string {
-  return cleanFirstPartyHref(href)
-}
-
 function trim(v: string | null | undefined): string | null {
   const s = (v ?? '').trim()
   return s || null
+}
+
+/** A trust, a company, or a placeholder is not a person we greet by name. */
+const NOT_A_PERSON =
+  /\b(?:LLC|TRUSTEE|TRUST|INC|CORP|LLP|LP|PARTNERSHIP|PROPERTIES|HOLDINGS|ESTATE|BANK|HOA|ASSOC|REVOCABLE|LIVING)\b/i
+
+const NOT_A_GREETING = new Set([
+  'owner',
+  'owners',
+  'homeowner',
+  'seller',
+  'client',
+  'resident',
+  'occupant',
+  'the',
+  'and',
+  'mr',
+  'mrs',
+  'ms',
+  'dr',
+])
+
+/**
+ * A greeting name, or null. "First Last" uses the first word. "LAST, FIRST"
+ * uses the word after the comma. A trust, a placeholder lead, or a generic
+ * word ("owner", "seller") stays unnamed so the letter says "Hi there,".
+ */
+export function greetingFirstName(name: string | null | undefined): string | null {
+  const raw = (name ?? '').trim().replace(/\s+/g, ' ')
+  if (!raw || isPlaceholderLeadName(raw) || NOT_A_PERSON.test(raw)) return null
+  const comma = raw.indexOf(',')
+  const side = comma >= 0 ? raw.slice(comma + 1) : raw
+  const word = (side.trim().split(/\s+/)[0] ?? '').replace(/\.+$/g, '')
+  if (!word || NOT_A_GREETING.has(word.toLowerCase())) return null
+  if (!isPlausibleFirstName(word)) return null
+  return word
 }
 
 /** "2465 7th, Redmond, OR 97756" reads as "2465 7th" inside a sentence. */
@@ -58,6 +83,11 @@ export type CmaSalesScope = 'subdivision' | 'near' | 'area'
 export type CmaFirstContactFacts = InboundPacketFacts & {
   brokerName?: string | null
   city?: string | null
+  /**
+   * Served city pulse, `market_pulse_live.months_of_supply` for property type A.
+   * Absent means the email does not guess a market.
+   */
+  monthsOfSupply?: number | null
   subdivision?: string | null
   neighborhoodName?: string | null
   neighborhoodSlug?: string | null
@@ -92,32 +122,11 @@ function countWord(n: number): string {
 
 export function composeCmaFirstContactSubject(origin: CmaOrigin, address: string | null): string {
   const named = streetOnly(address)
+  if (origin === 'expired') return named ? `An analysis of your home at ${named}` : 'An analysis of your home'
   if (!named) return 'Your report on this home'
-  if (origin === 'expired' || origin === 'fsbo') return `A market analysis for ${named}`
+  if (origin === 'fsbo') return `A market analysis for ${named}`
   if (origin === 'place-page') return `Your ${named} valuation`
   return `Your report on ${named}`
-}
-
-function introFor(brokerName: string | null): string {
-  const name = trim(brokerName) ?? 'Matt Ryan'
-  if (/^matt ryan$/i.test(name)) {
-    return 'My name is Matt Ryan, owner and principal broker of Ryan Realty in Bend.'
-  }
-  return `My name is ${name}, a broker with Ryan Realty in Bend.`
-}
-
-/** Why we are writing. Expired and FSBO say it with respect. Asked reports say thank you. */
-function planFor(origin: CmaOrigin, named: string): string {
-  if (origin === 'expired') {
-    return `We keep tabs on the MLS and noticed your home at ${named} came off the market recently without selling. We're sorry it didn't sell, and we would like the opportunity to earn your business should you decide to relist.`
-  }
-  if (origin === 'fsbo') {
-    return `We noticed your home at ${named} is for sale by owner. We respect that, and a lot of people who sell on their own still want a second set of numbers, so we put one together for you, no charge and no strings.`
-  }
-  if (origin === 'place-page') {
-    return `Thank you for asking what ${named} would sell for. We researched your property and the comparable sales, and here is what we found.`
-  }
-  return `Thank you for asking what ${named} is worth. We researched your property and the comparable sales, and here is what we found.`
 }
 
 function finiteMoney(v: number | null | undefined): number | null {
@@ -221,123 +230,68 @@ export function firstContactReportRuns(
   return [`${lead} ${rest}`]
 }
 
-function reportHref(facts: CmaFirstContactFacts): string | null {
-  const slug = trim(facts.cmaSlug)
-  return slug ? `${PUBLIC_SITE}/cma/${slug}` : null
-}
-
-const ASK_LINKS: FirstContactRun[] = [
-  'You can ',
-  { text: 'see how we sell homes', href: SELL_HREF },
-  ', ',
-  { text: 'read our reviews', href: REVIEWS_HREF },
-  ', and ',
-  { text: 'learn about our business', href: ABOUT_HREF },
-  '.',
-]
-
-function askRuns(origin: CmaOrigin): FirstContactRun[] {
-  if (origin === 'expired') {
-    return [
-      'Again, we are sorry your home did not sell. Nothing about that points to a problem with the house itself. Over the past few months the market has been shifting in a way that has been less favorable for sellers, and that has made it harder for good homes to sell at the prices they would have brought before. If you are ever considering selling in the future, we would love the opportunity to earn your business. ',
-      ...ASK_LINKS,
-    ]
-  }
-  if (origin === 'fsbo') {
-    return [
-      'If at some point you would rather have someone handle the showings, the paperwork and the negotiation, we would love the opportunity to earn your business. ',
-      ...ASK_LINKS,
-    ]
-  }
-  return ['If you are considering selling, we would love the opportunity to earn your business. ', ...ASK_LINKS]
-}
-
 function honestNote(origin: CmaOrigin): string | null {
   if (!isAskedOrigin(origin)) return null
   return 'The range is what the sales support, not a promise. The right list price also depends on the condition of the home, and we would want to walk it before putting a number in front of a buyer.'
 }
 
 /**
- * The subdivision, then the wider place. Matt 2026-09-09: show we are true market
- * experts by diving into the subdivision they are in, not just the neighborhood,
- * then the broader picture it sits in. Every count is the one the subdivision page
- * prints, and a subdivision link appears only when that page renders.
+ * Inbox preview. The sold range, when the letter will actually print it.
+ * An expired letter does not print the range, so its preview does not either.
+ * The recommended list price stays out. An FSBO preview stays free of a dollar.
  */
-function placeRuns(facts: CmaFirstContactFacts): FirstContactRun[] | null {
-  const place = facts.place ?? null
-  if (!place) return null
-  const sub = place.subdivision
-  const wider = place.wider
-  const runs: FirstContactRun[] = []
-  if (sub) {
-    const counts: string[] = []
-    // The instrument's twelve-month figures when the page publishes them; else
-    // the "Closed sales in {name}" figures, this year to date and since the
-    // first recorded year. Both are the page's own words for the same plat.
-    if (sub.closed12mo != null && sub.closed12mo > 0) {
-      counts.push(`${countWord(sub.closed12mo)} ${sub.closed12mo === 1 ? 'home' : 'homes'} sold in the last twelve months`)
-    } else if (sub.history && sub.history.closedThisYear != null && sub.history.closedThisYear > 0) {
-      counts.push(
-        `${countWord(sub.history.closedThisYear)} ${sub.history.closedThisYear === 1 ? 'home has' : 'homes have'} sold so far in ${sub.history.thisYear}`,
-      )
-    }
-    if (sub.history && sub.history.closedSince > 0 && (counts.length === 0 || sub.history.closedSince > (sub.history.closedThisYear ?? 0))) {
-      counts.push(`${sub.history.closedSince.toLocaleString('en-US')} have closed there since ${sub.history.sinceYear}`)
-    }
-    if (sub.active != null && sub.active > 0) {
-      counts.push(`${countWord(sub.active)} ${sub.active === 1 ? 'is' : 'are'} for sale right now`)
-    }
-    if (sub.pending != null && sub.pending > 0) {
-      counts.push(`${countWord(sub.pending)} ${sub.pending === 1 ? 'is' : 'are'} under contract`)
-    }
-    // SITE-55: the half that matters most to a seller whose own listing came
-    // off. Same MV the plat page reads, so the letter and the page cannot
-    // disagree. Zero is worth saying out loud. It is the strongest version of
-    // this sentence when it is true.
-    if (sub.unsold12mo != null && sub.unsold12mo > 0) {
-      counts.push(
-        `${countWord(sub.unsold12mo)} came off the market without selling`,
-      )
-    }
-    if (counts.length) {
-      const joined = counts.length === 1 ? counts[0]! : `${counts.slice(0, -1).join(', ')}, and ${counts[counts.length - 1]!}`
-      runs.push(`In ${sub.label} itself, ${joined}. `)
-      if (sub.unsold12mo === 0) {
-        runs.push('Every home that came off the market there in that stretch sold. ')
-      }
-      runs.push('Our ', { text: `${sub.label} page`, href: publicHref(sub.href) }, ' keeps the running picture, what is for sale there, what has sold, and what did not.')
-    } else {
-      runs.push('Our ', { text: `${sub.label} page`, href: publicHref(sub.href) }, ' has the running picture.')
-    }
-    if (wider) {
-      runs.push(' The ', { text: `${wider.label} page`, href: publicHref(wider.href) }, ' shows the wider market it sits in.')
-    }
-    return runs
+function salesPreview(named: string, count: number | null, lo: number, hi: number): string {
+  const range = `${formatFirstTouchUsd(lo)} to ${formatFirstTouchUsd(hi)}`
+  if (count == null) return `${named}: sales support ${range}.`
+  const noun = count === 1 ? 'sale' : 'sales'
+  const word = countWord(count)
+  const head = /^\d/.test(word) ? word : word.charAt(0).toUpperCase() + word.slice(1)
+  const verb = count === 1 ? 'supports' : 'support'
+  return `${head} ${noun} on ${named} ${verb} ${range}.`
+}
+
+export function cmaFirstContactPreview(
+  origin: CmaOrigin,
+  address: string | null,
+  recommendedList?: number | null,
+  closedSalesCount?: number | null,
+  band?: { valueLow?: number | null; valueHigh?: number | null } | null,
+): string {
+  const named = streetOnly(address) ?? 'this home'
+  const rec = finiteMoney(recommendedList)
+  if (origin === 'expired') {
+    return 'What nearby homes sold for after concessions, and the homes you would be competing with.'
   }
-  if (wider) {
-    return ['Our ', { text: `${wider.label} page`, href: publicHref(wider.href) }, ' has the wider market.']
+  if (origin === 'fsbo') {
+    return rec != null
+      ? `A second look at ${named}, no charge and no strings.`
+      : `A second set of numbers for ${named}, no charge and no strings.`
   }
-  return null
+  const lo = finiteMoney(band?.valueLow)
+  const hi = finiteMoney(band?.valueHigh)
+  if (rec != null && lo != null && hi != null) {
+    return salesPreview(named, saleCount(closedSalesCount), lo, hi)
+  }
+  if (rec == null) {
+    return `${named}: the number, and the sales behind it.`
+  }
+  return `${named}: the report is attached.`
+}
+
+function saleCount(n: number | null | undefined): number | null {
+  return typeof n === 'number' && Number.isInteger(n) && n > 0 ? n : null
 }
 
 /**
- * Matt 2026-09-09: "we will always use my signature from the system." The rail
- * appends `buildSignature` (Gmail-synced, else the broker's saved signature,
- * else the generated identity block, always with the Oregon pamphlet line), so
- * the letter never prints a phone, an email or a name of its own. The closing
- * is his: questions, and best of luck.
+ * The city pulse, in the same words the market pages use.
+ * `formatMonthsOfSupply` is what keeps 4.05 from printing as a seller's market.
  */
-function closingFor(origin: CmaOrigin): string {
-  if (origin === 'expired') return 'Please let me know if you have any questions. Best of luck in the future.'
-  if (origin === 'fsbo') return 'Please let me know if you have any questions. Best of luck with the sale.'
-  return 'Please let me know if you have any questions.'
-}
-
-export function cmaFirstContactPreview(origin: CmaOrigin, address: string | null): string {
-  const named = streetOnly(address) ?? 'this home'
-  if (origin === 'expired') return `We're sorry your home didn't sell. Our market analysis for ${named} is inside.`
-  if (origin === 'fsbo') return `A second set of numbers for ${named}, no charge and no strings.`
-  return `${named}: the number, and the sales behind it.`
+export function citySupplySentence(city: string | null | undefined, months: number | null | undefined): string | null {
+  const place = trim(city)
+  if (!place || months == null || !Number.isFinite(months) || months <= 0) return null
+  const verdict = marketVerdict(months)
+  if (verdict.kind === 'unknown') return null
+  return `${place} has ${formatMonthsOfSupply(months)} months of supply right now. That is a ${verdict.label}.`
 }
 
 export type CmaFirstContactCopy = InboundValuationCopy & {
@@ -353,36 +307,167 @@ function pushParagraph(out: FirstContactRun[][], runs: FirstContactRun[] | null 
 }
 
 /**
- * Origin-aware first-contact copy. bodyText is words only. The report URL is
- * a link on "read it online" when CMA_REPORT_ONLINE_LINE still contains that
- * phrase, and always the report button at send. The rail does not splice a URL.
+ * What the attached report holds. One sentence, above the button.
+ * It must not say "our price": that phrase switches the button to a teaser.
  */
+const REPORT_HOLDS =
+  'The full report is attached. It has the price we would list at, the homes you would be competing with, and what happened to nearby homes that did not sell.'
+
+/**
+ * Expired letter, Matt 2026-10-06. The 3% line is his illustration of how a
+ * concession works. It is not this house's measured concession.
+ */
+const EXPIRED_SHIFT =
+  'The market has shifted this year. Price reductions are up, but the bigger change is seller concessions, where the seller pays money back to the buyer at closing for things like closing costs, repairs, or a lower interest rate. The recorded sale price stays the same, so values can look steadier than they are. A home that sells at full price with a 3% concession leaves the seller with 3% less than the record shows.'
+
+const EXPIRED_REPORT =
+  "Our report accounts for that. It shows where your listing sat against the competition, what nearby homes actually sold for after concessions, the homes you'd be competing with today, and where we'd price it."
+
+const EXPIRED_QUESTIONS_EARN =
+  "Please let me know if you have any questions about the numbers or how we put this together. If you consider selling in the future, we'd love the opportunity to earn your business, and we're here anytime."
+
+const EXPIRED_CHOSEN_BROKER =
+  "If you've already chosen a broker for your next step, please consider this information only. We hope it goes well for you."
+
+const OWNER_BROKER_SLUGS = new Set(['matt', 'matthew', 'matthew-ryan'])
+
+/**
+ * What we did. The recommended price itself stays in the report.
+ */
+function workFor(origin: CmaOrigin, named: string, facts: CmaFirstContactFacts): string {
+  if (origin === 'fsbo') {
+    return `We noticed your home at ${named} is for sale by owner. We put a second set of numbers together from the MLS, no charge and no strings.`
+  }
+  if (isAskedOrigin(origin) || origin === 'place-page') {
+    return `Thank you for asking what ${named} is worth. We spent time in the MLS and put this report together for you.`
+  }
+  return `We went through the homes and the sales ${scopePhrase(facts)} and put this report together. We thought you might find it useful, and we're happy to go through the numbers with you.`
+}
+
+/**
+ * The sales, and where the last price sat against them. The opener already
+ * said we did the work. The list price is not repeated here.
+ */
+function emailEvidence(origin: CmaOrigin, facts: CmaFirstContactFacts): string | null {
+  const full = composeFirstContactNumbers(origin, facts)
+  if (!full) return null
+  const trimmed = full
+    .replace(/^We researched your property and the comparable sales to see what we would do to get a better result\. /, '')
+    .replace(/ We would recommend listing at \$[\d,]+\.$/, '')
+    .trim()
+  return trimmed || null
+}
+
+function reportSentence(_origin: CmaOrigin, named: string, hasPrice: boolean): string {
+  if (hasPrice) return REPORT_HOLDS
+  return `The full report on ${named} is attached as a PDF.`
+}
+
+function emailClose(origin: CmaOrigin): string[] {
+  if (origin === 'fsbo') {
+    return [
+      'If at some point you would rather have someone handle the showings, the paperwork and the negotiation, we would love the opportunity to earn your business.',
+      'Please let me know if you have any questions. Best of luck with the sale.',
+    ]
+  }
+  return [
+    'We would love the opportunity to earn your business.',
+    'Please let me know if you have any questions.',
+  ]
+}
+
+function cameOffSentence(street: string | null): string {
+  if (street) {
+    return `Your home at ${street} came off the market recently, so we put together an analysis we thought might be useful.`
+  }
+  return 'Your home came off the market recently, so we put together an analysis we thought might be useful.'
+}
+
+/**
+ * Matt owns the brokerage. A missing broker is his, because the send path
+ * already falls back to him. Anyone else works at Ryan Realty. The system
+ * signature carries the name, so this line is the introduction only.
+ */
+function brokerIntro(facts: CmaFirstContactFacts): string {
+  const slug = (facts.brokerSlug ?? '').trim().toLowerCase()
+  const name = trim(facts.brokerName)
+  const ownerName = name != null && /^(matt|matthew)\s+ryan$/i.test(name)
+  const owner = OWNER_BROKER_SLUGS.has(slug) || (!slug && (ownerName || !name))
+  if (owner) return 'My name is Matt Ryan, and I own Ryan Realty here in Bend.'
+  if (name) return `My name is ${name}, and I'm a broker at Ryan Realty here in Bend.`
+  return "I'm a broker at Ryan Realty here in Bend."
+}
+
+// The brokerage line (Matt 2026-10-07): "careful market analysis is at the
+// core of how we price homes" replaced "we spend our days studying this market
+// closely", which read as unprofessional. Approved wording; change only with
+// Matt's sign-off (CMA rule 10).
+function composeExpiredFirstContact(facts: CmaFirstContactFacts): CmaFirstContactCopy {
+  const street = streetOnly(facts.address)
+  const greeted = greetingFirstName(facts.firstName)
+  const greeting = greeted ? `Hi ${greeted},` : 'Hi there,'
+  const plan = `${brokerIntro(facts)} We're a local brokerage, and careful market analysis is at the core of how we price homes. ${cameOffSentence(street)}`
+  const paragraphs: FirstContactRun[][] = []
+  pushParagraph(paragraphs, [greeting])
+  pushParagraph(paragraphs, [plan])
+  pushParagraph(paragraphs, [EXPIRED_SHIFT])
+  pushParagraph(paragraphs, [EXPIRED_REPORT])
+  pushParagraph(paragraphs, [EXPIRED_ANALYSIS_BUTTON])
+  pushParagraph(paragraphs, [EXPIRED_QUESTIONS_EARN])
+  pushParagraph(paragraphs, [EXPIRED_CHOSEN_BROKER])
+  const bodyText = paragraphsToPlain(paragraphs)
+  return {
+    subject: composeCmaFirstContactSubject('expired', facts.address),
+    previewText: cmaFirstContactPreview(
+      'expired',
+      facts.address,
+      facts.recommendedList,
+      facts.closedSalesCount,
+      facts,
+    ),
+    mastheadLine: 'MARKET ANALYSIS',
+    greeting,
+    plan,
+    numbers: composeFirstContactNumbers('expired', facts),
+    close: EXPIRED_QUESTIONS_EARN,
+    bodyText,
+    paragraphs,
+    bodyMarkers: paragraphsToMarkers(paragraphs),
+  }
+}
+
 export function composeCmaFirstContact(
   origin: CmaOrigin,
   facts: CmaFirstContactFacts,
 ): CmaFirstContactCopy {
+  if (origin === 'expired') return composeExpiredFirstContact(facts)
   const greeting = 'Hi there,'
   const named = streetOnly(facts.address) ?? 'this home'
-  const intro = introFor(facts.brokerName ?? null)
-  const plan = planFor(origin, named)
+  const plan = workFor(origin, named, facts)
   const numbers = composeFirstContactNumbers(origin, facts)
-  const close = CMA_REPORT_ONLINE_LINE.trim()
+  const hasPrice = finiteMoney(facts.recommendedList) != null
+  const close = reportSentence(origin, named, hasPrice)
   const paragraphs: FirstContactRun[][] = []
   pushParagraph(paragraphs, [greeting])
-  pushParagraph(paragraphs, [`${intro} ${plan}`])
-  if (numbers) pushParagraph(paragraphs, [numbers])
-  pushParagraph(paragraphs, [CMA_PRICING_PHILOSOPHY])
-  pushParagraph(paragraphs, firstContactReportRuns(origin, reportHref(facts)))
+  pushParagraph(paragraphs, [plan])
+  pushParagraph(paragraphs, emailEvidence(origin, facts) ? [emailEvidence(origin, facts)!] : null)
+  const supply = citySupplySentence(facts.city, facts.monthsOfSupply)
+  if (supply) pushParagraph(paragraphs, [supply])
+  pushParagraph(paragraphs, [close])
   const note = honestNote(origin)
   if (note) pushParagraph(paragraphs, [note])
-  pushParagraph(paragraphs, askRuns(origin))
-  pushParagraph(paragraphs, placeRuns(facts))
-  pushParagraph(paragraphs, [closingFor(origin)])
+  for (const line of emailClose(origin)) pushParagraph(paragraphs, [line])
   const bodyText = paragraphsToPlain(paragraphs)
   return {
     subject: composeCmaFirstContactSubject(origin, facts.address),
-    previewText: cmaFirstContactPreview(origin, facts.address),
-    mastheadLine: 'THIS HOME',
+    previewText: cmaFirstContactPreview(
+      origin,
+      facts.address,
+      facts.recommendedList,
+      facts.closedSalesCount,
+      facts,
+    ),
+    mastheadLine: 'MARKET ANALYSIS',
     greeting,
     plan,
     numbers,
@@ -418,7 +503,16 @@ function countField(v: unknown): number | null {
   return Number.isInteger(n) && n > 0 ? n : null
 }
 
-const LOCAL_TIER = /^(subdivision-|adjacent-subdivision-|neighborhood-|similar-sub-|nearby-[12]mi-)/
+const LOCAL_TIER = /^(subdivision-|adjacent-subdivision-|neighborhood-|similar-sub-)/
+const NEARBY_MILES = /^nearby-(\d+(?:\.\d+)?)mi-/
+
+function isLocalTier(tier: string): boolean {
+  if (LOCAL_TIER.test(tier)) return true
+  const miles = NEARBY_MILES.exec(tier)
+  if (!miles) return false
+  const n = Number(miles[1])
+  return n > 0 && n <= 2
+}
 
 /**
  * Where the priced sales came from, off `build_summary.comp_selection.final_tier_counts`
@@ -435,7 +529,7 @@ export function salesScopeFromTierCounts(counts: unknown): CmaSalesScope | null 
     .map(([k]) => k)
   if (!tiers.length) return null
   if (tiers.every((t) => t.startsWith('subdivision-'))) return 'subdivision'
-  if (tiers.every((t) => LOCAL_TIER.test(t))) return 'near'
+  if (tiers.every((t) => isLocalTier(t))) return 'near'
   return 'area'
 }
 

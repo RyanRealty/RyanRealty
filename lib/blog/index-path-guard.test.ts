@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isInvalidBlogIndexPath } from './index-path-guard'
+import { blogPostSlugFromPath, isInvalidBlogIndexPath } from './index-path-guard'
 
 describe('isInvalidBlogIndexPath', () => {
   it('passes real categories and pages of two or more, in either spelling of a space', () => {
@@ -25,5 +25,21 @@ describe('isInvalidBlogIndexPath', () => {
     expect(isInvalidBlogIndexPath('/blog/sunriver-year-round-living-vs-vacation')).toBe(false)
     expect(isInvalidBlogIndexPath('/blog/category')).toBe(false)
     expect(isInvalidBlogIndexPath('/communities/nope')).toBe(false)
+  })
+})
+
+describe('blogPostSlugFromPath', () => {
+  it('returns the decoded slug of a one-segment post path', () => {
+    expect(blogPostSlugFromPath('/blog/understanding-home-appraisals')).toBe('understanding-home-appraisals')
+    expect(blogPostSlugFromPath('/blog/understanding-home-appraisals/')).toBe('understanding-home-appraisals')
+    expect(blogPostSlugFromPath('/blog/a%20b')).toBe('a b')
+  })
+  it('is null for the index, deeper paths, other routes and an undecodable segment', () => {
+    expect(blogPostSlugFromPath('/blog')).toBeNull()
+    expect(blogPostSlugFromPath('/blog/')).toBeNull()
+    expect(blogPostSlugFromPath('/blog/category/Market%20Reports')).toBeNull()
+    expect(blogPostSlugFromPath('/blog/page/2')).toBeNull()
+    expect(blogPostSlugFromPath('/communities/x')).toBeNull()
+    expect(blogPostSlugFromPath('/blog/%E0%A4%A')).toBeNull()
   })
 })

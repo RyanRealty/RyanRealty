@@ -10,7 +10,7 @@
  * Outputs a route × size table for SITE_SPEC §50 budget tracking. The
  * 250 KB target is uncompressed; transferred is for "what users actually pay".
  *
- * Usage:  node scripts/measure-route-bundle.mjs [--base=https://ryanrealty.vercel.app]
+ * Usage:  node scripts/measure-route-bundle.mjs [--base=https://ryan-realty.com]
  */
 
 const args = Object.fromEntries(
@@ -20,7 +20,7 @@ const args = Object.fromEntries(
   }),
 )
 
-const BASE = (args.base ?? 'https://ryanrealty.vercel.app').replace(/\/$/, '')
+const BASE = (args.base ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
 const ROUTES = [
   ['homepage', '/'],

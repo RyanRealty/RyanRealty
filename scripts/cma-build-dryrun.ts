@@ -12,6 +12,14 @@
  *
  *   npx tsx scripts/cma-build-dryrun.ts cma-16083-dyke-la-pine [more slugs...]
  *   npx tsx scripts/cma-build-dryrun.ts --json <slug>
+ *   npx tsx scripts/cma-build-dryrun.ts --pocket-legacy <slug>
+ *
+ * An exclusive-pocket set is priced the way the build prices it: the letter's
+ * local read is measured first, and a sale moves down with the city index
+ * only when that read fell (Matt 2026-10-08, "Down only if local fell"), then
+ * the pocket's band finish runs (lib/cma/pocket-pricing.ts). `--pocket-legacy`
+ * prices the pocket without the local gate, the always-down walk the build
+ * used before that ruling, so the two can be compared on one home.
  *
  * NOT a full build: the LLM comparability judge and the adversarial audit are
  * skipped on purpose (they cost money and they can only REMOVE comps, so a
@@ -56,7 +64,23 @@ type DryRun = {
   customOrNew: boolean | null
   pricingSource: string | null
   compCount: number
-  comps: Array<{ key: string; address: string; baths: number | null; sqft: number; closePrice: number; closeDate: string; adjusted: number; concessions: number | null }>
+  comps: Array<{ key: string; address: string; baths: number | null; sqft: number; closePrice: number; closeDate: string; adjusted: number; concessions: number | null; date?: number; size?: number; onMarketDate?: string | null; offerFrom?: string | null; daysToOffer?: number | null; domTotal?: number | null }>
+  /**
+   * The exclusive pocket's date gate (Matt 2026-10-08): whether the set is a
+   * pocket, which mode priced it, and the local read the gate acted on.
+   */
+  pocketDate?: {
+    exclusivePocket: boolean
+    mode: 'gated' | 'legacy'
+    branch: string | null
+    verdict: string | null
+    missing: string | null
+    place: string | null
+    sized: boolean
+    early: unknown
+    late: unknown
+    listingWindow: { listDate: string | null; offDate: string | null }
+  } | null
   recommended: number | null
   /** The list tiers: conservative and high end. */
   range: [number | null, number | null]
@@ -80,6 +104,30 @@ type DryRun = {
   matrixSubjectDom: number | null
   reviewSubjectDom: number | null
   keptCompCount: number
+  /**
+   * Refill from the same rung (Matt 2026-10-08, lib/cma/review-refill.ts):
+   * the rung that reached five, whether it widened the area, and the sales
+   * it still holds for the comparability review to refill from, in the rung's
+   * order. The judge is skipped here, so this is the same bench the build
+   * would draw on, not a refill that happened.
+   */
+  refillBench: { rung: string | null; widening: boolean; held: number; keys: string[] } | null
+  /**
+   * The home's independent price anchor and the one 20% line around it (Matt
+   * 2026-10-08, lib/pricing/price-tier.ts): the line the search admitted on and
+   * the review grounds a price-tier cut on. `skipped` is the distinct sales the
+   * line kept out (excluded_totals.price_tier). Null when there is no anchor.
+   */
+  priceAnchor?: {
+    ppsf: number
+    n: number
+    /** The level that held the median (lib/pricing/price-anchor.ts) and where, as the trace says it. */
+    level: string | null
+    where: string | null
+    floor: number
+    ceiling: number
+    skipped: number
+  } | null
   concessionSentence: string | null
   /** Same sentence over a MIN_COMPS-sized kept set (judge-trim simulation). */
   concessionSentenceTrimmed: string | null
@@ -150,6 +198,12 @@ type DryRun = {
   renderArgsPricingClamp: unknown
   /** render_args.pricing.setAside — the sales the range rule removed from the price. */
   renderArgsPricingSetAside: unknown
+  /**
+   * render_args.pricing.streetAnchor: the same-street sale and whether it
+   * capped the price, or was a trimmed end set aside like any other
+   * (Matt 2026-10-08, "Trim normally").
+   */
+  renderArgsPricingStreetAnchor?: unknown
   /** render_args.pricing.review — the flag a document must not be able to hide. */
   renderArgsPricingReview: unknown
   /**
@@ -181,6 +235,8 @@ type DryRun = {
   renderArgsPricingRejected: unknown
   renderArgsMarketLocalFailedThenSold: unknown
   renderArgsExpiredAuditFinalCycle: unknown
+  /** The build's own hold (rule 22): the last failed ask inside the band. */
+  hold: { kind: string; ask: number; bandLow: number; bandHigh: number; reason: string } | null
   error: string | null
 }
 
@@ -284,12 +340,14 @@ function domFromHistoryLine(line: string | null | undefined): number | null {
   return Number.isFinite(n) && n >= 0 ? n : null
 }
 
-async function dryRun(slug: string): Promise<DryRun> {
+async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Promise<DryRun> {
   const { getCmaAdminRowBySlug } = await import('@/lib/data')
   const { resolveCmaSubject } = await import('@/lib/cma/subject')
   const { selectCompsPreferringFacts } = await import('@/lib/pricing/select')
+  const { priceTierLine } = await import('@/lib/pricing/price-tier')
   const { isCustomOrNewSubject } = await import('@/lib/pricing/classes')
   const { adjustComps, computePricing } = await import('@/lib/cma/pricing')
+  const { pricingFailureMessage } = await import('@/lib/pricing/price-set')
   const { adjustCmaCompAlongMarket, adjustCompAlongMarket, priceCmaSet } = await import('@/lib/pricing/estimate')
   const { classifyStory } = await import('@/lib/pricing/classes')
   const { checkDateAdjustments } = await import('@/lib/pricing/market-path')
@@ -297,13 +355,14 @@ async function dryRun(slug: string): Promise<DryRun> {
   const { citySlug } = await import('@/lib/pricing/classes')
   const { getCmaMarketContext } = await import('@/lib/cma/market')
   const { evaluateAccuracyContract } = await import('@/lib/cma/contract')
-  const { MIN_COMPS } = await import('@/lib/cma/comps')
+  const { MIN_COMPS, brokerCompRefusal } = await import('@/lib/cma/comps')
   const { getBpoListingCyclesByAddress } = await import('@/lib/data/bpo/reads')
   const { analyzeListingHistory } = await import('@/lib/bpo/history')
+  const { readFailedListingCycle, withFailedCycle } = await import('@/lib/cma/failed-cycle-read')
   const { buildFailureFindings, stampFinalCycleDom, resolveFinalCycle, buildAskExposure, applyFailedAskCap, FAILED_ASK_RECENCY_MONTHS } =
     await import('@/lib/cma/expired-audit')
   const { buildSubjectStatus } = await import('@/lib/pricing/subject-status')
-  const { attachCompConcessions, attachSellerNet } = await import('@/lib/pricing/seller-net')
+  const { attachCompConcessions, attachSellerNet, reanchorSellerNet } = await import('@/lib/pricing/seller-net')
   const { buildCmaLocalOutcomes } = await import('@/lib/pricing/local-outcomes-read')
   const { getCmaListingPriceEvents } = await import('@/lib/data/cma/localOutcomeReads')
 
@@ -312,7 +371,7 @@ async function dryRun(slug: string): Promise<DryRun> {
     subjectSqft: null, customOrNew: null, pricingSource: null, compCount: 0, comps: [],
     recommended: null, range: [null, null], valueRange: [null, null], confidence: null, compPpsfCv: null,
     needsReview: false, reviewReason: null, hardFailures: [],
-    matrixSubjectDom: null, reviewSubjectDom: null, keptCompCount: 0, concessionSentence: null,
+    matrixSubjectDom: null, reviewSubjectDom: null, keptCompCount: 0, refillBench: null, concessionSentence: null,
     concessionSentenceTrimmed: null, renderArgsMarketOfferTiming: null,
     renderArgsMarketAskOutcome: null, renderArgsMarketOriginalAskRealization: null,
     renderArgsMarketLocalFailedThenSold: null, renderArgsPricingReconciliation: null,
@@ -326,7 +385,7 @@ async function dryRun(slug: string): Promise<DryRun> {
     subjectLastAsk: { price: null, date: null, historyLine: null },
     queueState: null, queueStateStored: null,
     renderArgsPricingRejected: null, renderArgsExpiredAuditFinalCycle: null,
-    dateAdjustments: [], dateAdjustmentCheckOk: true, dateAdjustmentFailures: [], error: null,
+    dateAdjustments: [], dateAdjustmentCheckOk: true, dateAdjustmentFailures: [], hold: null, error: null,
   }
 
   const row = await getCmaAdminRowBySlug(slug)
@@ -356,12 +415,15 @@ async function dryRun(slug: string): Promise<DryRun> {
       : []
   const cycleStatus = String(cycleRows[0]?.['StandardStatus'] ?? subject.standardStatus ?? '')
   const lastCycleFailed = ['Expired', 'Canceled', 'Withdrawn'].includes(cycleStatus)
+  // EXACTLY lib/cma/build.ts: the failed cycle on the days it was on the
+  // market, from its MLS status log, read once.
+  const failedCycle = lastCycleFailed ? await readFailedListingCycle(cycleRows, subject) : null
   if (lastCycleFailed) {
     const row0 = cycleRows[0] ?? {}
     const cycleAsk = Number(row0['ListPrice'] ?? row0['OriginalListPrice'])
     if (Number.isFinite(cycleAsk) && cycleAsk > 0) subject.lastListPrice = cycleAsk
     subject.standardStatus = cycleStatus
-    stampFinalCycleDom(subject, analyzeListingHistory(cycleRows, subject, null).currentCycle)
+    stampFinalCycleDom(subject, failedCycle)
   }
 
   // EXACTLY lib/cma/build.ts step 1's stale-cycle suppression (round four,
@@ -419,9 +481,37 @@ async function dryRun(slug: string): Promise<DryRun> {
     }
   }
 
-  const withSel = { ...head, pricingSource: selection.pricingSource, compCount: selection.comps.length }
+  const anchorLine = priceTierLine(selection.diagnostics?.price_anchor?.ppsf)
+  const withSel = {
+    ...head,
+    pricingSource: selection.pricingSource,
+    compCount: selection.comps.length,
+    priceAnchor:
+      anchorLine && selection.diagnostics?.price_anchor
+        ? {
+            ppsf: anchorLine.anchor,
+            n: selection.diagnostics.price_anchor.n,
+            level: selection.diagnostics.price_anchor.level ?? null,
+            where: selection.diagnostics.price_anchor.where ?? null,
+            floor: anchorLine.floor,
+            ceiling: anchorLine.ceiling,
+            skipped: selection.diagnostics.excluded_totals?.price_tier ?? 0,
+          }
+        : null,
+  }
   if (selection.comps.length < MIN_COMPS) {
-    return { ...withSel, error: `Only ${selection.comps.length} qualifying closed comps found (minimum ${MIN_COMPS}). ${selection.diagnostics.starved_reason ?? ''}`.trim() }
+    // EXACTLY the sentence lib/cma/build.ts stores on the row (it leads with
+    // the path that held the most price-setting sales, by address), then the
+    // engineering diagnosis, which leads the same way.
+    const refusal = brokerCompRefusal({
+      diagnostics: selection.diagnostics,
+      found: selection.comps.length,
+      minComps: MIN_COMPS,
+      subjectBaths: subject.baths,
+      subjectCity: subject.city,
+      sales: selection.comps.map((c) => c.address),
+    })
+    return { ...withSel, error: `${refusal} ${selection.diagnostics.starved_reason ?? ''}`.replace(/\s+/g, ' ').trim() }
   }
 
   // The index is a fact about the CITY, not about which ladder found the sales
@@ -434,28 +524,92 @@ async function dryRun(slug: string): Promise<DryRun> {
   const salesByKey = new Map((selection.pricingSales ?? []).map((s) => [s.listingKey, s]))
   const usePath = marketIndex.length > 0
   const subjectStory = classifyStory(subject.levelsRaw, null)
+  // EXACTLY lib/cma/build.ts priceSet's pocket path (Matt 2026-10-08, "Down
+  // only if local fell"): the listing window and its closes, read once, the
+  // local read for the set off the sales as the adjusters build them, then the
+  // gate. The build's set is the judged one; here it is the ladder's.
+  const { selectionIsExclusivePocket } = await import('@/lib/pricing/exclusive-pocket-date-adj')
+  const { loadListingWindowCloses } = await import('@/lib/cma/listing-window-load')
+  const { localReadForSet, finishExclusivePocketPricing } = await import('@/lib/cma/pocket-pricing')
+  const { preserveHydratedClosedCompDom, pricingSaleToCmaComp } = await import('@/lib/pricing/estimate')
+  const exclusivePocket = selectionIsExclusivePocket(selection.tiersUsed ?? [])
+  const finalCycleForWindow = lastCycleFailed
+    ? await (async () => {
+        const cycle = failedCycle
+        const priceEvents = cycle?.listingKey ? await getCmaListingPriceEvents(cycle.listingKey).catch(() => []) : []
+        return resolveFinalCycle({ cycle, priceEvents, listingKey: cycle?.listingKey ?? subject.listingKey }).cycle
+      })()
+    : null
+  const listingWindow = {
+    city: subject.city,
+    listDate: finalCycleForWindow?.listDate ?? subject.lastListDate,
+    offDate: finalCycleForWindow?.offMarketDate ?? null,
+  }
+  const windowCloses = await loadListingWindowCloses({ ...listingWindow, propertySubType: subject.propertySubType }).catch(
+    () => null,
+  )
+  const { zonedDateKey } = await import('@/lib/format/date')
+  const local = localReadForSet({
+    subject,
+    comps: selection.comps.map((c) => {
+      const sale = usePath ? salesByKey.get(c.listingKey) : undefined
+      return sale ? preserveHydratedClosedCompDom(pricingSaleToCmaComp(sale), c) : c
+    }),
+    diagnostics: selection.diagnostics,
+    subjectZone: null,
+    window: listingWindow,
+    closes: windowCloses,
+    asOf: zonedDateKey(new Date().toISOString()),
+  })
+  const pocketLocal = opts.pocketLegacy ? undefined : local.pocketLocal
   const adjusted = usePath
     ? selection.comps.map((c) => {
         const sale = salesByKey.get(c.listingKey)
         return sale
           ? adjustCompAlongMarket({
               subject, subjectStory, sale, saleStory: sale.storyClass, points: marketIndex, asOf,
-              hydrated: c,
+              hydrated: c, exclusivePocket, pocketLocal,
             }).adjusted
           : adjustCmaCompAlongMarket({
               subject, subjectStory, comp: c, saleStory: 'unknown', points: marketIndex, asOf,
+              exclusivePocket, pocketLocal,
             }).adjusted
       })
-    : adjustComps(subject, selection.comps, market)
-  const pricing = priceCmaSet({
+    : exclusivePocket
+      ? selection.comps.map((c) =>
+          adjustCmaCompAlongMarket({
+            subject, subjectStory, comp: c, saleStory: 'unknown', points: [], asOf,
+            exclusivePocket: true, pocketLocal,
+          }).adjusted,
+        )
+      : adjustComps(subject, selection.comps, market)
+  let pricing = priceCmaSet({
     subject, adjusted, market, input: {}, site: null,
     selection: { pricingSales: selection.pricingSales ?? [], tiersUsed: selection.tiersUsed ?? [] },
     marketIndex, asOf,
     indexUnavailableReason:
       marketIndex.length > 0 ? null : `no monthly index rows for ${citySlug(subject.city) || 'this city'}`,
     computePricing,
+    holdFailedAskUnderSaleSet: true,
+    pocketLocal: exclusivePocket ? pocketLocal : undefined,
   })
-  if (!pricing) return { ...withSel, stage: 'pricing', error: 'Pricing could not be computed (subject sqft missing).' }
+  if (!pricing) return { ...withSel, stage: 'pricing', error: pricingFailureMessage(subject, adjusted) }
+  if (exclusivePocket) {
+    attachSellerNet(pricing, selection.comps)
+    finishExclusivePocketPricing(pricing, { subject, adj: adjusted, set: selection.comps, pocketLocal })
+  }
+  const pocketDate = {
+    exclusivePocket,
+    mode: (opts.pocketLegacy ? 'legacy' : 'gated') as 'gated' | 'legacy',
+    branch: pricing.timeAdjustment?.localGate?.branch ?? null,
+    verdict: local.pocketLocal.verdict,
+    missing: local.pocketLocal.missing,
+    place: local.pocketLocal.place,
+    sized: local.pocketLocal.sized,
+    early: local.pocketLocal.early,
+    late: local.pocketLocal.late,
+    listingWindow: { listDate: listingWindow.listDate ?? null, offDate: listingWindow.offDate ?? null },
+  }
 
   // EXACTLY the ceiling lib/cma/build.ts applies after priceSet (step 4, the
   // `lastCycleFailed` branch). Without it this script printed the ask itself
@@ -464,9 +618,15 @@ async function dryRun(slug: string): Promise<DryRun> {
   // blocking was invisible in the only tool that can see it without a build.
   if (lastCycleFailed) {
     const row0 = cycleRows[0] ?? {}
+    const { subjectDomDays } = await import('@/lib/cma/comp-matrix')
     applyFailedAskCap(pricing, {
       lastFailedListPrice: subject.lastListPrice,
       offMarketDate: String(row0['off_market_date'] ?? row0['status_change_timestamp'] ?? '') || null,
+      // The rule-16 pull reads these. Without them this printed the bare
+      // $1,000 step where the build pulls by days on market (3037 Purcell,
+      // $564,000 here against $555,000 in the build, 2026-10-07).
+      daysOnMarket: subjectDomDays(subject),
+      originalListPrice: Number(row0['OriginalListPrice']) || null,
     })
   }
 
@@ -511,132 +671,63 @@ async function dryRun(slug: string): Promise<DryRun> {
     })),
   })
 
-  // render_args.compSearch — the ladder as counts, built by the same function
-  // lib/cma/build.ts calls. The judge is skipped here, so the kept set is the
-  // full ladder result and the counts are the widest the document could print.
-  const { buildCompSearch } = await import('@/lib/pricing/comp-search')
-  const compSearch = buildCompSearch({
-    subdivision: selection.diagnostics.subject.subdivision ?? subject.subdivision,
-    ladder: selection.diagnostics.ladder.map((t) => ({
-      tier: t.tier,
-      ran: t.ran,
-      monthsBack: t.months_back,
-      compsAdded: t.comps_added,
-    })),
-    keptComps: adjusted.map((c) => ({ subdivision: c.subdivision, selectionTier: c.selectionTier })),
+  // render_args.compSearch, render_args.compArea, render_args.expiredPeers and
+  // render_args.bandRivals through the same two functions lib/cma/build.ts
+  // calls, so a dry-run score equals a build's for these blocks. The judge is
+  // skipped here, so the kept set is the full ladder result and the counts are
+  // the widest the document could print. Both reads are scoped to the sales
+  // area and to nothing wider (Matt 2026-10-07, rule 24).
+  const { assembleCompetition, assembleExpiredPeers } = await import('@/lib/cma/assemble-competition')
+  const competition = await assembleCompetition({
+    subject,
+    comps: adjusted,
+    verdicts: [],
+    diagnostics: selection.diagnostics,
+    recommended: pricing.recommended,
+    subjectZone: null,
+    generatedAtIso: new Date().toISOString(),
   })
-
-  // R2h — render_args.compArea, render_args.expiredPeers, render_args.bandRivals,
-  // through the same functions lib/cma/build.ts calls. Both reads are scoped to
-  // the derived area and to nothing wider.
-  const { buildCompArea, resolveCompetitionArea } = await import('@/lib/pricing/comp-area')
-  const { getCmaAreaUnsoldCycles } = await import('@/lib/data/cma/areaUnsoldReads')
-  const { getCmaAreaBandInventory } = await import('@/lib/data/cma/bandInventory')
-  const { buildExpiredPeerSet, keptCompMedianPpsf, marketAreaPriceBand } = await import('@/lib/cma/market-status')
-  const { bandAroundList, bandRowToRival, buildBandRivalSet, pickCompetitionRing } = await import(
-    '@/lib/cma/band-rivals'
-  )
-
-  const compArea = buildCompArea({
-    subject: {
-      latitude: subject.latitude,
-      longitude: subject.longitude,
-      subdivision: selection.diagnostics.subject.subdivision ?? subject.subdivision,
-      city: subject.city,
-    },
-    rungs: (compSearch?.rungs ?? []).map((r) => ({ key: r.key, kept: r.kept, added: r.added })),
-    keptComps: adjusted.map((c) => ({
-      subdivision: c.subdivision,
-      selectionTier: c.selectionTier,
-      latitude: c.latitude,
-      longitude: c.longitude,
-    })),
-  })
-  // Matt 2026-09-08: rural competition widens only as far as it has to.
-  // `resolveCompetitionArea` returns the ring order to try; the widest one
-  // bounds the single read, and `pickCompetitionRing` walks the rest.
-  const competitionRings = compArea
-    ? resolveCompetitionArea({
-        compArea,
-        subject: { latitude: subject.latitude, longitude: subject.longitude, city: subject.city },
-        keptComps: adjusted.map((c) => ({ latitude: c.latitude, longitude: c.longitude })),
-      })
-    : []
-  const widestCompetitionRing = competitionRings[competitionRings.length - 1] ?? null
-  const peerBand = marketAreaPriceBand(pricing.recommended || subject.lastListPrice || 0)
-  const rivalBand = bandAroundList(pricing.recommended)
-  const [unsoldRead, widestAreaInventory] = await Promise.all([
-    compArea && peerBand
-      ? getCmaAreaUnsoldCycles({
-          area: compArea,
-          city: subject.city,
-          propertySubType: subject.propertySubType,
-          priceLo: peerBand.lo,
-          priceHi: peerBand.hi,
-        }).catch(() => null)
-      : Promise.resolve(null),
-    widestCompetitionRing && rivalBand
-      ? getCmaAreaBandInventory({
-          area: widestCompetitionRing,
-          city: subject.city,
-          lo: rivalBand.lo,
-          hi: rivalBand.hi,
-          propertySubType: subject.propertySubType,
-        }).catch(() => null)
-      : Promise.resolve(null),
-  ])
-  const expiredPeers =
-    compArea && unsoldRead
-      ? buildExpiredPeerSet({
-          rows: unsoldRead.rows,
-          subject: {
-            beds: subject.beds,
-            sqft: subject.sqft,
-            latitude: subject.latitude,
-            longitude: subject.longitude,
-            listingKey: subject.listingKey,
-            mlsNumber: subject.mlsNumber,
-            streetAddress: subject.streetAddress,
-          },
-          area: compArea,
-          keptCompMedianPpsf: keptCompMedianPpsf(adjusted),
-        })
-      : null
-  const competitionRing =
-    widestAreaInventory && competitionRings.length > 0
-      ? pickCompetitionRing({
-          rings: competitionRings,
-          activeRows: widestAreaInventory.activeRows,
-          pendingRows: widestAreaInventory.pendingRows,
-        })
-      : null
-  const competitionArea = competitionRing?.area ?? widestCompetitionRing
-  const bandRivals =
-    competitionRing && widestAreaInventory
-      ? buildBandRivalSet({
-          area: competitionRing.area,
-          lo: widestAreaInventory.lo,
-          hi: widestAreaInventory.hi,
-          activeCount: competitionRing.activeCount,
-          pendingCount: competitionRing.pendingCount,
-          rivals: [
-            ...competitionRing.activeRows.map((r) => bandRowToRival(r, 'Active')),
-            ...competitionRing.pendingRows.map((r) => bandRowToRival(r, 'Pending')),
-          ].filter((r): r is NonNullable<typeof r> => r != null),
-          subject: {
-            latitude: subject.latitude,
-            longitude: subject.longitude,
-            beds: subject.beds,
-            sqft: subject.sqft,
-          },
-          asOfIso: new Date().toISOString(),
-          widenedFrom: competitionRing.widenedFrom,
-          ringsTried: competitionRing.ringsTried,
-        })
-      : null
+  const {
+    compSearch,
+    compArea,
+    peerBand,
+    rivalBand,
+    unsoldRead,
+    widestAreaInventory,
+    competitionRing,
+    competitionArea,
+    bandRivals,
+  } = competition
+  const { expiredPeers } = assembleExpiredPeers({ competition, subject, lastCycleFailed })
 
   // §0 rule 5 cross-checks, computed off the same objects render_args carries.
   attachSellerNet(pricing, selection.comps)
+  // EXACTLY build.ts settleRecommended: sitting actives can still move the
+  // list, then the band clamp and the round. Without it this printed a
+  // recommendation the build moves (3037 Purcell, 2026-10-07). The dry run's
+  // rivals come from its own competition ring, not the judged set.
+  {
+    const { finishRecommendedAfterActives } = await import('@/lib/cma/finish-recommended')
+    const { pocketClosedSupportPrice } = await import('@/lib/pricing/active-dom-nudge')
+    const { syncRangeRuleToHeroBand } = await import('@/lib/pricing/estimate')
+    const beforeActives = pricing.recommended
+    pricing = syncRangeRuleToHeroBand(
+      finishRecommendedAfterActives(pricing, {
+        actives: (bandRivals?.rivals ?? []).map((r) => ({
+          status: r.status,
+          listPrice: r.listPrice,
+          daysOnMarket: r.daysOnMarket,
+        })),
+        pocketClosedSupport: pocketClosedSupportPrice(adjusted, subject.subdivision),
+        ask: pricing.failedAsk ?? (lastCycleFailed ? subject.lastListPrice : null),
+      }),
+    )
+    if (pricing.recommended !== beforeActives) {
+      console.log(
+        `   actives settle · recommended $${beforeActives.toLocaleString('en-US')} → $${pricing.recommended.toLocaleString('en-US')}`,
+      )
+    }
+  }
   const concessionLine = (n: { knownCount: number; givenCount: number; medianWhenGiven: number | null } | undefined) => {
     if (!n || n.knownCount === 0) return null
     const whenGiven =
@@ -652,7 +743,7 @@ async function dryRun(slug: string): Promise<DryRun> {
   const concessionSentenceTrimmed = concessionLine(trimmed?.sellerNet)
   const reviewSubjectDom = (() => {
     if (!lastCycleFailed) return null
-    const history = analyzeListingHistory(cycleRows, subject, market?.medianDom ?? null)
+    const history = withFailedCycle(analyzeListingHistory(cycleRows, subject, market?.medianDom ?? null), failedCycle)
     const findings = buildFailureFindings({
       subject, pricing, market, history, photosCount: null, ownershipSince: null,
     })
@@ -670,8 +761,7 @@ async function dryRun(slug: string): Promise<DryRun> {
   }))
   const resolvedCycle = await (async () => {
     if (!lastCycleFailed) return { cycle: null, suppressedReason: null }
-    const history = analyzeListingHistory(cycleRows, subject, market?.medianDom ?? null)
-    const cycle = history.currentCycle
+    const cycle = failedCycle
     const priceEvents = cycle?.listingKey ? await getCmaListingPriceEvents(cycle.listingKey).catch(() => []) : []
     return resolveFinalCycle({ cycle, priceEvents, listingKey: cycle?.listingKey ?? subject.listingKey })
   })()
@@ -709,6 +799,33 @@ async function dryRun(slug: string): Promise<DryRun> {
       emailSentAt: (row.email_sent_at as string | null) ?? null,
       queuedAt: (row.queued_at as string | null) ?? null,
     })
+  // EXACTLY lib/cma/build.ts: the band is pinned to the sales that set it
+  // (set-aside rows read by key), the cap's ask is re-read on that band, then
+  // rule 22, the last failed ask inside that pinned band (Matt 2026-10-07),
+  // then a recommendation under the band: held when the failed ask put it
+  // there, failed otherwise. Same helpers as the build.
+  {
+    const { pinPrintedBandToSettingSales } = await import('@/lib/pricing/estimate')
+    const { applyAskBelowBandHold, applyAskInBandHold } = await import('@/lib/cma/gap-hold')
+    const { reclassifyFailedAskOnPrintedBand } = await import('@/lib/cma/expired-audit')
+    const recommendedBeforePin = pricing.recommended
+    pricing = pinPrintedBandToSettingSales(pricing, attachCompConcessions(adjusted))
+    if (pricing.recommended !== recommendedBeforePin) reanchorSellerNet(pricing)
+    reclassifyFailedAskOnPrintedBand(
+      pricing,
+      pricing.failedAsk ?? (lastCycleFailed ? (subject.lastListPrice ?? null) : null),
+    )
+    applyAskInBandHold(pricing, {
+      lastCycleFailed,
+      lastListPrice: subject.lastListPrice,
+      auditVerdict: storedAudit.verdict,
+    })
+    const belowBand = applyAskBelowBandHold(pricing, {
+      lastListPrice: subject.lastListPrice,
+      auditVerdict: storedAudit.verdict,
+    })
+    if (!belowBand.ok) return { ...withSel, stage: 'pricing', error: `Pricing failed: ${belowBand.error}` }
+  }
   const review = buildPricingReview({
     needsReview: pricing.needsReview,
     reviewReason: pricing.reviewReason,
@@ -725,7 +842,15 @@ async function dryRun(slug: string): Promise<DryRun> {
     minComps: MIN_COMPS,
     marketContextPresent: market != null,
     subjectSubType: subject.propertySubType,
+    // EXACTLY the subject lib/cma/build.ts hands the contract: beds, the MLS
+    // bath split and the recorded plat, not the bath total alone (which made
+    // this script compare totals the picker never compared, 2026-10-08).
     subjectBaths: subject.baths,
+    subjectBathsFull: subject.bathsFull ?? null,
+    subjectBathsHalf: subject.bathsHalf ?? null,
+    subjectBeds: subject.beds,
+    subjectSubdivisionSlug: subject.subdivisionSlug ?? null,
+    subjectGround: subject,
     subjectIsCustomOrNew: customOrNew,
     failedAsk: pricing.failedAsk ?? null,
   })
@@ -740,7 +865,14 @@ async function dryRun(slug: string): Promise<DryRun> {
       key: c.listingKey, address: c.address, baths: c.baths, sqft: c.sqft,
       closePrice: Math.round(c.closePrice), closeDate: c.closeDate, adjusted: Math.round(c.adjustedPrice),
       concessions: c.concessions,
+      date: Math.round(c.timeAdjustment),
+      size: Math.round(c.sizeAdjustment),
+      onMarketDate: c.onMarketDate ?? null,
+      offerFrom: c.offerFrom ?? null,
+      daysToOffer: c.daysToOffer,
+      domTotal: c.domTotal,
     })),
+    pocketDate,
     recommended: pricing.recommended,
     range: [pricing.conservative, pricing.highEnd],
     valueRange: [pricing.valueLow, pricing.valueHigh],
@@ -752,6 +884,17 @@ async function dryRun(slug: string): Promise<DryRun> {
     matrixSubjectDom: domFromHistoryLine(subject.listingHistoryLine),
     reviewSubjectDom,
     keptCompCount: adjusted.length,
+    // EXACTLY what lib/cma/build.ts hands lib/cma/review-refill.ts: the
+    // selection's bench, so the fleet scorer sees whether a review drop on
+    // this home would refill from the same rung or fail as a shortage.
+    refillBench: selection.refill
+      ? {
+          rung: selection.refill.rung,
+          widening: selection.refill.widening,
+          held: selection.refill.comps.length,
+          keys: selection.refill.comps.map((c) => c.listingKey),
+        }
+      : null,
     concessionSentence,
     concessionSentenceTrimmed,
     renderArgsMarketOfferTiming: localOutcomes.offerTiming,
@@ -784,7 +927,9 @@ async function dryRun(slug: string): Promise<DryRun> {
     marketTrendMeasure: market?.trendMeasure ?? null,
     renderArgsPricingClamp: pricing.clamp ?? null,
     renderArgsPricingSetAside: pricing.setAside ?? null,
+    renderArgsPricingStreetAnchor: pricing.streetAnchor ?? null,
     renderArgsPricingReview: review,
+    hold: pricing.hold ?? null,
     renderArgsPricingSellerNet: pricing.sellerNet ?? null,
     // THE INVARIANT: what the seller keeps can never exceed the price we told
     // them to ask. Round four class A shipped four documents where it did.
@@ -828,6 +973,7 @@ async function dryRun(slug: string): Promise<DryRun> {
 async function main() {
   const argv = process.argv.slice(2)
   const asJson = argv.includes('--json')
+  const pocketLegacy = argv.includes('--pocket-legacy')
   const slugs = argv.filter((a) => !a.startsWith('--')).map((s) => s.trim().toLowerCase())
   if (!slugs.length) {
     console.error('usage: npx tsx scripts/cma-build-dryrun.ts [--json] <slug> [slug...]')
@@ -835,7 +981,7 @@ async function main() {
   }
   const out: DryRun[] = []
   for (const slug of slugs) {
-    const r = await dryRun(slug).catch((e): DryRun => ({
+    const r = await dryRun(slug, { pocketLegacy }).catch((e): DryRun => ({
       slug, ok: false, stage: 'subject', address: null, city: null, subjectBaths: null, subjectSqft: null,
       customOrNew: null, pricingSource: null, compCount: 0, comps: [], recommended: null,
       range: [null, null], valueRange: [null, null], confidence: null, compPpsfCv: null, needsReview: false, reviewReason: null,
@@ -864,6 +1010,16 @@ async function main() {
       console.log(`   recommended $${r.recommended.toLocaleString()} (list tiers $${r.range[0]?.toLocaleString()}–$${r.range[1]?.toLocaleString()}) · confidence ${r.confidence} · $/sqft CV ${r.compPpsfCv}${r.needsReview ? ' · FLAGGED' : ''}`)
       console.log(`   worth $${r.valueRange[0]?.toLocaleString()}–$${r.valueRange[1]?.toLocaleString()} (the printed adjusted sale prices)`)
     }
+    if (r.hold) {
+      console.log(
+        `   hold = ${r.hold.kind} · ask $${r.hold.ask.toLocaleString('en-US')} inside $${r.hold.bandLow.toLocaleString('en-US')} to $${r.hold.bandHigh.toLocaleString('en-US')}`,
+      )
+    }
+    if (r.priceAnchor) {
+      console.log(
+        `   price anchor $${r.priceAnchor.ppsf}/sqft (n=${r.priceAnchor.n}${r.priceAnchor.level ? `, ${r.priceAnchor.level} ${r.priceAnchor.where ?? ''}`.trimEnd() : ''}) · line $${r.priceAnchor.floor} to $${r.priceAnchor.ceiling} · ${r.priceAnchor.skipped} sale(s) skipped on the line`,
+      )
+    }
     if (r.comps.length) {
       console.log(`   comps (${r.comps.length}):`)
       for (const c of r.comps) {
@@ -881,6 +1037,11 @@ async function main() {
       const m = r.concessionSentence.match(/\bof (\d+) sales\b/)
       const denom = m ? Number(m[1]) : null
       console.log(`   concessions · kept comps ${r.keptCompCount} · "${r.concessionSentence}" · ${denom === r.keptCompCount ? 'SAME SET' : 'DIFFERENT SET'}`)
+      if (r.refillBench) {
+        console.log(
+          `   refill bench · reached five on ${r.refillBench.rung ?? 'no rung'} (${r.refillBench.widening ? 'widening rung' : 'own ground'}) · ${r.refillBench.held} sale(s) the review can refill from${r.refillBench.keys.length ? `: ${r.refillBench.keys.join(', ')}` : ''}`,
+        )
+      }
       if (r.concessionSentenceTrimmed) console.log(`   concessions · 5-comp kept set · "${r.concessionSentenceTrimmed}"`)
     }
     console.log('   render_args.market.offerTiming =')

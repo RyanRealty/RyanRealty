@@ -1,16 +1,20 @@
 import { describe, expect, it } from 'vitest'
 import {
+  COMPETITION_SHOWN_CAP,
   bandAroundList,
+  bandAroundListAt,
   buildBandRivalSet,
-  competitionAreaSentence,
+  chooseCompetitionBand,
   competitorCutLine,
   pickBandRivals,
   pickCompetitionRing,
   renderBandRivalsHtml,
   rivalAddress,
+  bandRowToRival,
   type CmaBandRival,
 } from '@/lib/cma/band-rivals'
 import type { CompArea } from '@/lib/pricing/comp-area'
+import { sameAreaFit } from '@/lib/cma/same-area-fit'
 
 /** A rural radius ring — the only kind `pickCompetitionRing`'s ladder narrows past the widest. */
 function ring(radiusMiles: number, centre = { lat: 44.2726, lng: -121.1739 }): CompArea {
@@ -45,6 +49,8 @@ function rival(over: Partial<CmaBandRival> = {}): CmaBandRival {
     yearBuilt: over.yearBuilt ?? 1974,
     lotAcres: over.lotAcres ?? 0.16,
     propertySubType: over.propertySubType ?? 'Single Family Residence',
+    subdivision: over.subdivision ?? null,
+    roomDifference: over.roomDifference ?? null,
     originalListPrice: over.originalListPrice ?? null,
     onMarketDate: over.onMarketDate ?? null,
   }
@@ -125,6 +131,78 @@ describe('pickBandRivals', () => {
 
   it('drops unnamed rows', () => {
     expect(pickBandRivals([rival({ address: '  ' })])).toEqual([])
+  })
+
+  it("keeps a home one bedroom off only on the subject's own ground, and drops one two bedrooms off (rule 4, Matt 2026-10-07)", () => {
+    const rivals = (duffyPlat: string) => [
+      rival({
+        listingKey: 'TWO',
+        address: '5 Craftsman',
+        beds: 5,
+        sqft: 3600,
+        latitude: 44.2701,
+        longitude: -121.17,
+      }),
+      rival({
+        listingKey: 'ONE',
+        address: '4 Duffy',
+        beds: 4,
+        sqft: 3700,
+        subdivision: duffyPlat,
+        latitude: 44.271,
+        longitude: -121.17,
+      }),
+      rival({
+        listingKey: 'SAME',
+        address: '3 Fairway',
+        beds: 3,
+        sqft: 3500,
+        latitude: 44.28,
+        longitude: -121.17,
+      }),
+    ]
+    const subject = { latitude: 44.27, longitude: -121.17, beds: 3, sqft: 3600, subdivision: 'Diamond Bar Ranch' }
+    expect(pickBandRivals(rivals('Diamond Bar Ranch'), subject).map((r) => r.address)).toEqual(['4 Duffy', '3 Fairway'])
+    expect(pickBandRivals(rivals('Other Plat'), subject).map((r) => r.address)).toEqual(['3 Fairway'])
+  })
+
+  it('never falls back to unlike homes (Matt 2026-10-07)', () => {
+    const picked = pickBandRivals(
+      [rival({ listingKey: 'FIVE', address: '5 Craftsman', beds: 5, latitude: 44.2701, longitude: -121.17 })],
+      { latitude: 44.27, longitude: -121.17, beds: 3, sqft: 1280 },
+    )
+    expect(picked).toEqual([])
+  })
+
+  it('ranks a closer east-west home ahead of a farther north-south home', () => {
+    const picked = pickBandRivals(
+      [
+        rival({
+          address: 'Due south',
+          latitude: 44.01,
+          longitude: -121,
+        }),
+        rival({
+          address: 'Due east',
+          latitude: 44,
+          longitude: -121.012,
+          listingKey: 'E',
+        }),
+      ],
+      { latitude: 44, longitude: -121, beds: 3, sqft: 1280 },
+    )
+    expect(picked.map((r) => r.address)).toEqual(['Due east', 'Due south'])
+  })
+
+  it('drops a house past the living-area cutoff', () => {
+    const picked = pickBandRivals(
+      [
+        rival({ address: 'Small', beds: 3, sqft: 2000, latitude: 44.2701, longitude: -121.17 }),
+        rival({ address: 'Fit', beds: 3, sqft: 3400, latitude: 44.272, longitude: -121.17 }),
+      ],
+      { latitude: 44.27, longitude: -121.17, beds: 3, sqft: 3600 },
+    )
+    expect(picked.map((r) => r.address)).toEqual(['Fit'])
   })
 })
 
@@ -254,8 +332,18 @@ describe('who has already come down', () => {
       listed({ listingKey: 'A', originalListPrice: 500000, listPrice: 470000 }),
       listed({ listingKey: 'B', originalListPrice: null, listPrice: 470000 }),
     ])
-    expect(line).toBe('The one home below has already come down, a median cut of $30,000, or 6.0 percent.')
+    expect(line).toBe('The one home below has already come down, a cut of $30,000, or 6.0 percent.')
     expect(competitorCutLine([listed({ originalListPrice: null })])).toBeNull()
+  })
+
+  it('calls one home\'s cut a cut, never a median (reader review 2026-10-07)', () => {
+    const line = competitorCutLine([
+      listed({ listingKey: 'A', originalListPrice: 600000, listPrice: 480000 }),
+      listed({ listingKey: 'B', originalListPrice: 470000, listPrice: 470000 }),
+      listed({ listingKey: 'C', originalListPrice: 460000, listPrice: 460000 }),
+    ])
+    expect(line).toBe('1 of the 3 homes below has already come down, a cut of $120,000, or 20.0 percent.')
+    expect(line).not.toContain('median')
   })
 
   it('draws each competitor its own price path on the card', () => {
@@ -289,6 +377,13 @@ describe('buildBandRivalSet — the competition is the neighborhood, never the c
     source: 'test',
     sentence: 'Old Bend, the neighborhood around your home.',
   }
+  // Points inside the City of Bend's Old Bend polygon (resolveMarketArea ===
+  // 'bend-old-bend'), nearest the subject first.
+  const IN_OLD_BEND = [
+    { latitude: 44.0558, longitude: -121.315 },
+    { latitude: 44.056, longitude: -121.316 },
+    { latitude: 44.055, longitude: -121.3156 },
+  ] as const
   const CIRCLE: CompArea = {
     kind: 'radius',
     names: [],
@@ -299,6 +394,9 @@ describe('buildBandRivalSet — the competition is the neighborhood, never the c
   }
 
   it('names the area in the sentence and carries the area on the set', () => {
+    // The draw runs the assembly's fit over the same area, so a rival has to
+    // sit inside the Old Bend polygon to be drawn (as the River West fixture
+    // in market-status.test.ts does).
     const set = buildBandRivalSet({
       area: OLD_BEND,
       lo: 350_000,
@@ -306,16 +404,19 @@ describe('buildBandRivalSet — the competition is the neighborhood, never the c
       activeCount: 27,
       pendingCount: 14,
       rivals: [
-        rival({ listingKey: 'A1', address: '10 Aspen', status: 'Active' }),
-        rival({ listingKey: 'A2', address: '20 Birch', status: 'Active' }),
-        rival({ listingKey: 'P1', address: '30 Cedar', status: 'Pending' }),
+        rival({ listingKey: 'A1', address: '10 Aspen', status: 'Active', ...IN_OLD_BEND[0] }),
+        rival({ listingKey: 'A2', address: '20 Birch', status: 'Active', ...IN_OLD_BEND[1] }),
+        rival({ listingKey: 'P1', address: '30 Cedar', status: 'Pending', ...IN_OLD_BEND[2] }),
       ],
       subject: { latitude: 44.0554, longitude: -121.3153, beds: 3, sqft: 1280 },
     })
     expect(set.area).toBe(OLD_BEND)
+    // "The nearest N" counts the homes drawn for sale: two, not the three
+    // cards with the one under contract (rule 17).
     expect(set.sentence).toBe(
-      '27 homes are for sale in Old Bend between $350,000 and $428,000. 14 are under contract. The nearest three like yours are below.',
+      'The nearest two like yours are for sale in Old Bend between $350,000 and $428,000. 14 are under contract.',
     )
+    expect(set.sentence).not.toContain('27 homes')
     expect(set.rivals.map((r) => r.address)).toEqual(['10 Aspen', '20 Birch', '30 Cedar'])
     // A mapped boundary never widens: no ladder, nothing to report.
     expect(set.widenedFrom).toBeNull()
@@ -368,74 +469,217 @@ describe('buildBandRivalSet — the competition is the neighborhood, never the c
     expect(set.source).toContain('Oregon Data Share MLS')
   })
 
-  it('says so in the sentence and carries widenedFrom/ringsTried when a rural ring widened', () => {
-    const TEN_MILE: CompArea = ring(10)
-    const set = buildBandRivalSet({
-      area: TEN_MILE,
-      lo: 400_000,
-      hi: 480_000,
-      activeCount: 1,
-      pendingCount: 4,
-      rivals: [rival({ listingKey: 'A1', address: '10 Aspen', status: 'Active' })],
-      subject: { latitude: 44.2726, longitude: -121.1739, beds: 3, sqft: 1280 },
-      widenedFrom: 5,
-      ringsTried: [5, 10],
-    })
-    expect(set.sentence).toContain('within 10 miles of your home')
-    expect(set.sentence).toContain('We widened from five miles to find three.')
-    expect(set.widenedFrom).toBe(5)
-    expect(set.ringsTried).toEqual([5, 10])
-  })
+  // 3177 Coho (Matt 2026-10-07, rule 24): the sales area is Rooster Rock and
+  // the one plat next to it, and every count below is a home inside it that
+  // passed the sales rules.
+  const ROOSTER: CompArea = {
+    kind: 'subdivisions',
+    names: ['Rooster Rock', 'Madison Park'],
+    radiusMiles: null,
+    centre: { lat: 44.03, lng: -121.27 },
+    source: 'test',
+    sentence: 'Rooster Rock and the one subdivision next to it.',
+  }
 
-  it('says nothing about widening when the first ring already held three', () => {
-    const FIVE_MILE: CompArea = ring(5)
+  it('says no home like yours is for sale when the band holds only unlike homes (Matt 2026-10-07)', () => {
     const set = buildBandRivalSet({
-      area: FIVE_MILE,
-      lo: 400_000,
-      hi: 480_000,
-      activeCount: 3,
-      pendingCount: 0,
-      rivals: [],
-      subject: null,
-      widenedFrom: null,
-      ringsTried: [5],
-    })
-    expect(set.sentence).not.toContain('widened')
-  })
-})
-
-describe('competitionAreaSentence — widening note', () => {
-  it('appends the widened note even when nothing is for sale', () => {
-    const sentence = competitionAreaSentence({
-      area: ring(10),
-      lo: 400_000,
-      hi: 480_000,
+      area: ROOSTER,
+      lo: 494_000,
+      hi: 604_000,
       activeCount: 0,
       pendingCount: 0,
-      shown: 0,
-      widenedFrom: 5,
+      unlikeCount: 12,
+      rivals: [],
     })
-    expect(sentence).toBe(
-      'No home within 10 miles of your home is for sale between $400,000 and $480,000, and none is under contract. We widened from five miles to find three.',
+    expect(set.rivals).toEqual([])
+    expect(set.sentence).toBe(
+      // countWord spells one through nine; past that the letter prints digits.
+      'No home like yours in Rooster Rock or Madison Park is for sale or under contract between $494,000 and $604,000. 12 other homes are listed there in that range, but none is close to this home in bedrooms, bathrooms, size or age, so they are not compared here.',
+    )
+    expect(set.sentence).not.toMatch(/[—–]/)
+    expect(set.unlikeCount).toBe(12)
+  })
+
+  it('says the short case inside the same place and names a noted room once (Matt 2026-10-07)', () => {
+    const set = buildBandRivalSet({
+      area: ROOSTER,
+      lo: 494_000,
+      hi: 604_000,
+      activeCount: 0,
+      pendingCount: 1,
+      shortOfFive: true,
+      rivals: [
+        rival({
+          listingKey: 'ALD',
+          address: '2820 Aldrich',
+          status: 'Pending',
+          subdivision: 'Rooster Rock',
+          roomDifference: ['baths'],
+        }),
+      ],
+    })
+    expect(set.rivals.map((r) => r.address)).toEqual(['2820 Aldrich'])
+    expect(set.sentence).toBe(
+      'No home like yours in Rooster Rock or Madison Park is for sale between $494,000 and $604,000, but one is under contract. Nothing from outside Rooster Rock and Madison Park was added to make up the number. 2820 Aldrich is one bathroom different from yours. No dollar value is applied to the room.',
+    )
+    expect(set.sentence).not.toMatch(/[—–]/)
+    expect(set.shortOfFive).toBe(true)
+    expect(set.widenedFrom).toBeNull()
+    expect(set.ringsTried).toEqual([])
+  })
+
+  it('counts the full set like yours when the table is that set (Matt 2026-10-07)', () => {
+    const set = buildBandRivalSet({
+      area: ROOSTER,
+      lo: 494_000,
+      hi: 604_000,
+      activeCount: 2,
+      pendingCount: 1,
+      rivals: [
+        rival({ listingKey: 'A1', address: '10 Aspen', status: 'Active', subdivision: 'Rooster Rock' }),
+        rival({ listingKey: 'A2', address: '20 Birch', status: 'Active', subdivision: 'Madison Park' }),
+        rival({ listingKey: 'P1', address: '30 Cedar', status: 'Pending', subdivision: 'Rooster Rock' }),
+      ],
+    })
+    expect(set.sentence).toBe(
+      '2 homes like yours are for sale in Rooster Rock and Madison Park between $494,000 and $604,000. 1 is under contract.',
+    )
+    expect(set.sentence).not.toMatch(/[—–]/)
+  })
+
+  it('says one unlike home in the singular, and keeps the plural for two or more (Matt 2026-10-07 review)', () => {
+    const one = buildBandRivalSet({
+      area: ROOSTER,
+      lo: 494_000,
+      hi: 604_000,
+      activeCount: 0,
+      pendingCount: 0,
+      unlikeCount: 1,
+      rivals: [],
+    })
+    expect(one.sentence).toBe(
+      'No home like yours in Rooster Rock or Madison Park is for sale or under contract between $494,000 and $604,000. One other home is listed there in that range, but it is not close to this home in bedrooms, bathrooms, size or age, so it is not compared here.',
+    )
+    expect(one.sentence).not.toContain('none is close')
+    expect(one.sentence).not.toMatch(/[—–]/)
+    const two = buildBandRivalSet({
+      area: ROOSTER,
+      lo: 494_000,
+      hi: 604_000,
+      activeCount: 0,
+      pendingCount: 0,
+      unlikeCount: 2,
+      rivals: [],
+    })
+    expect(two.sentence).toBe(
+      'No home like yours in Rooster Rock or Madison Park is for sale or under contract between $494,000 and $604,000. Two other homes are listed there in that range, but none is close to this home in bedrooms, bathrooms, size or age, so they are not compared here.',
     )
   })
 
-  it('never claims a widening the ring did not do', () => {
-    // area.radiusMiles (5) does not exceed widenedFrom (5) — same ring, no widening.
-    const sentence = competitionAreaSentence({
-      area: ring(5),
-      lo: 400_000,
-      hi: 480_000,
-      activeCount: 3,
-      pendingCount: 0,
-      shown: 0,
-      widenedFrom: 5,
+  // The reviewer's case (2026-10-07): the assembly stamps a neighborhood set
+  // with sameAreaAgeYears(area), which is no year test, and the draw used to
+  // re-fit with no area, so the 25-year plat band. A 1925 home the sentence
+  // counted against a 2015 subject fell out of the table and the map.
+  it('draws every home the assembly counted: the same area, so the same year band (rule 17, rule 24)', () => {
+    const subject = {
+      latitude: 44.0554,
+      longitude: -121.3153,
+      beds: 3,
+      baths: 2,
+      sqft: 1500,
+      yearBuilt: 2015,
+      propertySubType: 'Single Family Residence',
+    }
+    const old = rival({
+      listingKey: 'OLD',
+      address: '40 Delaware',
+      status: 'Active',
+      beds: 3,
+      baths: 2,
+      sqft: 1500,
+      yearBuilt: 1925,
+      ...IN_OLD_BEND[0],
     })
-    expect(sentence).not.toContain('widened')
+    // The assembly's count: the one fit, over the one area.
+    const counted = [old].filter((r) => sameAreaFit(OLD_BEND, subject, r).ok)
+    expect(counted).toHaveLength(1)
+    const set = buildBandRivalSet({
+      area: OLD_BEND,
+      lo: 360_000,
+      hi: 440_000,
+      activeCount: counted.length,
+      pendingCount: 0,
+      rivals: counted,
+      subject,
+      cap: COMPETITION_SHOWN_CAP,
+    })
+    expect(set.activeCount).toBe(1)
+    expect(set.rivals.map((r) => r.listingKey)).toEqual(['OLD'])
+    expect(set.sentence).toBe(
+      '1 home like yours is for sale in Old Bend between $360,000 and $440,000. None are under contract right now.',
+    )
+
+    // A 1978 pending against a 1950 subject: 28 years, past the plat band,
+    // inside a neighborhood with no year test.
+    const pending = rival({ listingKey: 'P78', address: '50 Kansas', status: 'Pending', yearBuilt: 1978, sqft: 1500, ...IN_OLD_BEND[1] })
+    const subject1950 = { ...subject, yearBuilt: 1950 }
+    expect(sameAreaFit(OLD_BEND, subject1950, pending).ok).toBe(true)
+    const pend = buildBandRivalSet({
+      area: OLD_BEND,
+      lo: 360_000,
+      hi: 440_000,
+      activeCount: 0,
+      pendingCount: 1,
+      rivals: [pending],
+      subject: subject1950,
+      cap: COMPETITION_SHOWN_CAP,
+    })
+    expect(pend.rivals.map((r) => r.listingKey)).toEqual(['P78'])
+    expect(pend.sentence).toBe(
+      'No home like yours in Old Bend is for sale between $360,000 and $440,000, but one is under contract.',
+    )
+
+    // The same 1925 home in a recorded-plat area is past the 25-year band
+    // there, and the assembly never counts it: the area sets the band.
+    const plat: CompArea = { ...ROOSTER, names: ['Old Bend Plat'], kind: 'subdivision' }
+    expect(sameAreaFit(plat, subject, { ...old, subdivision: 'Old Bend Plat' }).ok).toBe(false)
+  })
+
+  it('says "the nearest eight" over eight drawn for sale when the area holds more, whatever is under contract (rule 17)', () => {
+    const actives = Array.from({ length: 10 }, (_, i) =>
+      rival({
+        listingKey: `A${i}`,
+        address: `${10 + i} Aspen`,
+        status: 'Active',
+        subdivision: 'Rooster Rock',
+        latitude: 44.03 + i * 0.001,
+        longitude: -121.27,
+      }),
+    )
+    const pendings = [
+      rival({ listingKey: 'P1', address: '30 Cedar', status: 'Pending', subdivision: 'Rooster Rock' }),
+      rival({ listingKey: 'P2', address: '31 Cedar', status: 'Pending', subdivision: 'Madison Park' }),
+    ]
+    const set = buildBandRivalSet({
+      area: ROOSTER,
+      lo: 494_000,
+      hi: 604_000,
+      activeCount: 10,
+      pendingCount: 2,
+      rivals: [...actives, ...pendings],
+      subject: { latitude: 44.03, longitude: -121.27 },
+      cap: COMPETITION_SHOWN_CAP,
+    })
+    expect(set.rivals.filter((r) => r.status === 'Active')).toHaveLength(8)
+    expect(set.rivals.filter((r) => r.status === 'Pending')).toHaveLength(2)
+    expect(set.sentence).toBe(
+      'The nearest eight like yours are for sale in Rooster Rock and Madison Park between $494,000 and $604,000. 2 are under contract.',
+    )
+    expect(set.sentence).not.toContain('nearest ten')
   })
 })
 
-describe('pickCompetitionRing — the rural ring ladder', () => {
+describe('pickCompetitionRing: the rural ring ladder, kept as a pass-through (one ring since 2026-10-07)', () => {
   it('stops at five miles when it already holds three', () => {
     const rings = [ring(5), ring(10), ring(15)]
     const pick = pickCompetitionRing({
@@ -519,5 +763,81 @@ describe('bandAroundList', () => {
   it('is the same ten percent either side the competition chapter has always used', () => {
     expect(bandAroundList(475_000)).toEqual({ lo: 428_000, hi: 523_000 })
     expect(bandAroundList(0)).toBeNull()
+  })
+
+  it('opens the price band one step at a time inside the sales area and stops at five fitting homes (a price step, never an area step; Matt 2026-10-07)', () => {
+    expect(bandAroundListAt(639_000, 0.15)).toEqual({ lo: 543_000, hi: 735_000 })
+    expect(bandAroundListAt(639_000, 0)).toBeNull()
+    const picked = chooseCompetitionBand([
+      { halfWidth: 0.1, fitting: ['a', 'b'] },
+      { halfWidth: 0.15, fitting: ['a', 'b', 'c', 'd', 'e'] },
+      { halfWidth: 0.2, fitting: ['a', 'b', 'c', 'd', 'e', 'f', 'g'] },
+    ])
+    expect(picked?.halfWidth).toBe(0.15)
+    const thin = chooseCompetitionBand([
+      { halfWidth: 0.1, fitting: ['a'] },
+      { halfWidth: 0.15, fitting: ['a', 'b'] },
+      { halfWidth: 0.2, fitting: ['a', 'b'] },
+    ])
+    expect(thin?.halfWidth).toBe(0.15)
+  })
+})
+
+describe('the competition passes the ADU wall the sales pass (Matt 2026-10-08, "ADU sale skips", rule 24)', () => {
+  const CIRCLE: CompArea = {
+    kind: 'radius',
+    names: [],
+    radiusMiles: 1,
+    centre: { lat: 44.2726, lng: -121.1739 },
+    source: 'test',
+    sentence: 'Within one mile of your home.',
+  }
+  const ADU = 'Craftsman with a permitted detached ADU over the garage.'
+  const rivals = [
+    { ...rival({ listingKey: 'A1', address: '10 Aspen' }), publicRemarks: ADU },
+    { ...rival({ listingKey: 'A2', address: '20 Birch' }), publicRemarks: 'Single level home with a fenced yard.' },
+  ]
+
+  it('never draws an ADU home for a subject whose remarks state none, and the stored set carries no remarks', () => {
+    const set = buildBandRivalSet({
+      area: CIRCLE,
+      lo: 400_000,
+      hi: 480_000,
+      activeCount: 2,
+      pendingCount: 0,
+      rivals,
+      subject: { latitude: 44.2726, longitude: -121.1739, beds: 3, sqft: 1280, publicRemarks: 'Room to build an ADU.' },
+    })
+    expect(set.rivals.map((r) => r.address)).toEqual(['20 Birch'])
+    expect(set.rivals.every((r) => !('publicRemarks' in r))).toBe(true)
+  })
+
+  it('draws both for a subject with its own ADU', () => {
+    const set = buildBandRivalSet({
+      area: CIRCLE,
+      lo: 400_000,
+      hi: 480_000,
+      activeCount: 2,
+      pendingCount: 0,
+      rivals,
+      subject: { latitude: 44.2726, longitude: -121.1739, beds: 3, sqft: 1280, publicRemarks: 'Home with a guest house out back.' },
+    })
+    expect(set.rivals.map((r) => r.address).sort()).toEqual(['10 Aspen', '20 Birch'])
+  })
+
+  it('an MLS row carries its remarks onto the rival only when the read selected them', () => {
+    const row = {
+      ListingKey: 'K9',
+      StreetNumber: '9',
+      StreetName: 'Elm',
+      ListPrice: 450_000,
+      DaysOnMarket: 3,
+      OnMarketDate: null,
+      PhotoURL: null,
+      Latitude: 44.27,
+      Longitude: -121.17,
+    }
+    expect(bandRowToRival({ ...row, public_remarks: ADU }, 'Active')?.publicRemarks).toBe(ADU)
+    expect(bandRowToRival(row, 'Active')).not.toHaveProperty('publicRemarks')
   })
 })

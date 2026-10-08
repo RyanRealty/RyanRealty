@@ -76,7 +76,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // caches for weeks. The date is on the page, in the Event JSON-LD, and in the
   // FAQ, where it stays current.
   return pageMetadata({
-    title: registryTitle(event.name),
+    title: registryTitle(event.name, event.city),
     description: registryDescription(event.blurb),
     path: `/central-oregon/events/${slug}`,
   })

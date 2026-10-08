@@ -19,8 +19,8 @@
  *   --live-sitemap     also assert coverage against the live legacy Yoast
  *                      sitemap (WARN-tolerant unless --strict).
  *   --strict           with --live-sitemap, an unreachable sitemap is a hard FAIL.
- *   --live-200=URL     resolve each DESTINATION against a host (e.g. the staging
- *                      https://ryanrealty.vercel.app) and FAIL on any non-200.
+ *   --live-200=URL     resolve each DESTINATION against a host (e.g.
+ *                      https://ryan-realty.com) and FAIL on any non-200.
  *
  * Regenerate the map when the fixtures change:
  *   node scripts/build-legacy-redirects.mjs

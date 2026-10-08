@@ -23,6 +23,7 @@
  * pile. Miss omits. Do not pass alias length as an active override.
  */
 
+import { cityHref } from '@/lib/site/place-href'
 import { notFound } from 'next/navigation'
 import { readCityOpenHouses, openHouseRows, OPEN_HOUSE_TRACE } from '@/lib/kb/place-open-houses'
 import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
@@ -112,6 +113,7 @@ import {
   V3Ledger,
   V3PlaceCharacter,
   V3Answers,
+  V3Takeaways,
   V3Quiet,
   type AtlasRegion,
   V3Amenities,
@@ -119,6 +121,7 @@ import {
   type V3InstrumentFigure,
   type V3MosBarsProps,
 } from '@/components/site/v3'
+import { placeTakeaways } from '@/lib/site/place-takeaways'
 import {
   PlaceSubdivisionAtlas,
   PlaceSubdivisionHomes,
@@ -154,6 +157,7 @@ import {
 } from './_v3/community-stock-types'
 import { resolveCommunityDisplayName } from './_v3/community-display-name'
 import { CommunityUnavailable } from './_v3/CommunityUnavailable'
+import { CommunityDegraded } from './_v3/CommunityDegraded'
 import { isCanonicalCommunitySlug } from '@/lib/communities/canonical-community-slug'
 import { publicCommunitySlug } from '@/lib/communities/community-public-pair'
 import { getRecordedPlatLabel } from '@/lib/data/subdivisions/getRecordedPlatLabel'
@@ -314,7 +318,29 @@ export default async function CommunityDetailPage(props: Props) {
 async function renderCommunityDetail({ params }: Props) {
   const { slug } = await params
 
-  const community = await getCommunityBySlug(slug)
+  // RACED like generateMetadata above (SITE-214). A read that threw or hung used
+  // to end in error.tsx, a hollow 200 titled "This community didn't load" that a
+  // crawler indexed as the page. Unknown renders a small honest body with no
+  // figures; only a read that ANSWERED with no community is a 404. The degrade
+  // is noted by withTimeoutFallbackResult, so this copy's ISR lifetime is the
+  // 60 s window (lib/site/degraded-isr.ts), and robots stay as the head set them.
+  const communityRead = await withTimeoutFallbackResult(
+    getCommunityBySlug(slug),
+    null,
+    PLACE_HEAD_READ_MS,
+    'comm:body-community',
+  )
+  if (!communityRead.ok) {
+    const entry = getResortCommunityBySlug(slug)
+    return (
+      <CommunityDegraded
+        name={entry?.label ?? placeNameFromSlug(slug)}
+        city={entry?.city ?? null}
+        citySlug={entry?.city_slug ?? null}
+      />
+    )
+  }
+  const community = communityRead.value
   if (!community) notFound()
 
   // SITE-28 — NAME FIRST, BEFORE ANY OTHER READ. If this URL has no real place
@@ -594,6 +620,7 @@ async function renderCommunityDetail({ params }: Props) {
     pulseActiveCount: hud.active,
     medianListPrice: hud.medianList,
     monthsOfSupply: null,
+    yoyMedianPrice: publicPace.yoyMedian,
     medianDaysToPending: hud.daysToPending,
     medianDaysOnMarket: null,
     refreshedAt: leftoverStamp,
@@ -607,6 +634,24 @@ async function renderCommunityDetail({ params }: Props) {
     attendanceSchools: placeSchools.map((school) => school.name),
   }
   const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(publicName, marketFaqInput)
+  // The short answer between the composed fold and the homes (AEO, Matt
+  // 2026-10-04). The community's own figures only: hud.monthsSupply is null
+  // below the 30-sale floor and its sentence drops, and the sale median is the
+  // community's 12-month close (publicPace.medianClose), the same value the
+  // page's answers print as "median sale price over the past 12 months"
+  // (buildPlaceAnswers medianSalePrice below, which also feeds the FAQPage).
+  const takeaways = placeTakeaways({
+    place: publicName,
+    asOfLabel: mosAsOf,
+    active: hud.active,
+    medianList: hud.medianList,
+    monthsOfSupply: hud.monthsSupply,
+    saleMedian:
+      publicPace.medianClose != null && publicPace.medianClose > 0
+        ? { value: publicPace.medianClose, when: 'over the last 12 months' }
+        : null,
+    yoyMedian: publicPace.yoyMedian,
+  })
 
   const placeLinks = getPlaceLinks({
     type: 'community',
@@ -1055,9 +1100,11 @@ async function renderCommunityDetail({ params }: Props) {
             </V3Heading>
             {/* SITE-87 SEO: crawlable city + inventory doors in the opening. */}
             <p className="place-opening__caption place-opening__caption--doors">
-              {citySlug ? (
+              {/* A self-city community IS "{city} real estate" (Matt
+                  2026-10-04): its city URL 301s here, so no door to itself. */}
+              {citySlug && cityHref(citySlug) !== `/communities/${slug}` ? (
                 <>
-                  <a href={`/cities/${citySlug}`}>{cityName} real estate</a>
+                  <a href={cityHref(citySlug) ?? `/cities/${citySlug}`}>{cityName} real estate</a>
                   {' · '}
                 </>
               ) : null}
@@ -1142,6 +1189,12 @@ async function renderCommunityDetail({ params }: Props) {
             />
             </div>
           </div>
+          <V3Takeaways
+            id="takeaways"
+            heading={`${publicName} at a glance`}
+            items={takeaways}
+            source={mosAsOf ? `Single-family homes, Oregon Data Share MLS, as of ${mosAsOf}.` : null}
+          />
           {fieldTypeIndex.length > 1 ? (
             <nav className="community-field-types" aria-label={`${publicName} listing types`}>
               <ul>
@@ -1160,7 +1213,9 @@ async function renderCommunityDetail({ params }: Props) {
               per buyer group (each type link above lands on its dial), the
               same as every other place page, still filtered by the
               subdivision chosen on the map. */}
-          <PlaceSubdivisionHomes id="homes" />
+          {/* "699 for sale on the map": the same set the Atlas above counts, and not
+              the market figure's houses (Matt 2026-10-04, reconcile the counts). */}
+          <PlaceSubdivisionHomes id="homes" countScope="on the map" />
         </PlaceSubdivisionMap>
 
         <div className="community-fold">
