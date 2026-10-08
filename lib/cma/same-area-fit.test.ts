@@ -279,3 +279,119 @@ describe('sameAreaFit: the actives and expireds pass the area and the rules the 
     expect(two).not.toMatch(/[—–]/)
   })
 })
+
+describe('sameAreaFit reads the polygon the area read placed the home in (reader review 2026-10-08)', () => {
+  // cma-915-saginaw: 915 Saginaw, its stored area, and the two homes under
+  // contract the letter said did not exist. Facts from listings, 2026-10-08.
+  const SAGINAW: SameAreaSubject = {
+    streetAddress: '915 Saginaw',
+    city: 'Bend',
+    subdivision: 'Park Place',
+    subdivisionSlug: 'park-place',
+    latitude: 44.06569,
+    longitude: -121.32545,
+    beds: 4,
+    baths: 3,
+    bathsFull: 2,
+    bathsHalf: 1,
+    sqft: 2085,
+    yearBuilt: 1992,
+    propertySubType: 'Single Family Residence',
+    marketArea: 'bend-river-west',
+  }
+  const SAGINAW_AREA: CompArea = {
+    kind: 'subdivisions',
+    names: ['Park Place', 'Miller Heights', 'Kenwood', 'West Hills', 'Bend View'],
+    radiusMiles: null,
+    centre: { lat: 44.06569, lng: -121.32545 },
+    source: 'test',
+    sentence: 'test',
+    platSlugs: ['park-place', 'miller-heights-phase-ii', 'kenwood', 'west-hills-fifth-addition', 'bend-view-addition'],
+    namesWithoutPlat: [],
+    street: null,
+  }
+
+  it('733 Saginaw (Kenwood First Addition, Pending $995,000) fits: one bedroom apart on own ground, 2,118 sqft', () => {
+    const fit = sameAreaFit(SAGINAW_AREA, SAGINAW, {
+      address: '733 Saginaw',
+      city: 'Bend',
+      subdivision: 'Kenwood',
+      subdivisionSlug: 'kenwood-first-addition',
+      latitude: 44.065697,
+      longitude: -121.322645,
+      beds: 3,
+      baths: 2,
+      bathsFull: 2,
+      bathsHalf: 0,
+      sqft: 2118,
+      yearBuilt: 1979,
+      propertySubType: 'Single Family Residence',
+    })
+    expect(fit).toEqual({ ok: true, ownPlat: false, roomDifference: ['beds'] })
+  })
+
+  it('1340 Trenton (West Hills, Pending $989,900) fits: one bedroom apart in the same neighborhood, 1,600 sqft', () => {
+    const fit = sameAreaFit(SAGINAW_AREA, SAGINAW, {
+      address: '1340 Trenton',
+      city: 'Bend',
+      subdivision: 'West Hills',
+      subdivisionSlug: 'west-hills',
+      latitude: 44.06695,
+      longitude: -121.331249,
+      beds: 3,
+      baths: 2,
+      bathsFull: 2,
+      bathsHalf: 0,
+      sqft: 1600,
+      yearBuilt: 1970,
+      propertySubType: 'Single Family Residence',
+    })
+    expect(fit.ok).toBe(true)
+  })
+
+  it("1425 Fresno is inside 1355 Jacksonville's area by its polygon, and the 25% size rule still refuses it (1,121 sqft against 876)", () => {
+    const JACKSONVILLE: SameAreaSubject = {
+      streetAddress: '1355 Jacksonville',
+      city: 'Bend',
+      subdivision: 'Northwest Townsite',
+      subdivisionSlug: 'northwest-townsite-second-addition',
+      latitude: 44.058868,
+      longitude: -121.331289,
+      beds: 3,
+      baths: 2,
+      sqft: 876,
+      yearBuilt: 1919,
+      propertySubType: 'Single Family Residence',
+    }
+    const area: CompArea = {
+      kind: 'subdivisions',
+      names: ['Northwest Townsite', 'Grandview'],
+      radiusMiles: null,
+      centre: { lat: 44.058868, lng: -121.331289 },
+      source: 'test',
+      sentence: 'test',
+      platSlugs: ['northwest-townsite-second-addition'],
+      namesWithoutPlat: ['Grandview'],
+      street: null,
+    }
+    const fresno: SameAreaCandidate = {
+      address: '1425 Fresno',
+      city: 'Bend',
+      subdivision: 'Northwest Townsite Co 2nd Addt',
+      subdivisionSlug: 'northwest-townsite-second-addition',
+      latitude: 44.055588,
+      longitude: -121.332439,
+      beds: 3,
+      baths: 2,
+      sqft: 1121,
+      yearBuilt: 1924,
+      propertySubType: 'Single Family Residence',
+    }
+    // By name alone ("Co 2nd Addt" is not an area name) it was outside.
+    expect(sameAreaFit(area, JACKSONVILLE, { ...fresno, subdivisionSlug: undefined })).toEqual({ ok: false, reason: 'area' })
+    // By its polygon it is inside; 1,121 is 28% over 876, past the one 25% band.
+    expect(sameAreaFit(area, JACKSONVILLE, fresno)).toEqual({ ok: false, reason: 'size' })
+    // The same home at the subject's size would be like it, and own plat.
+    expect(sameAreaFit(area, JACKSONVILLE, { ...fresno, sqft: 900 })).toEqual({ ok: true, ownPlat: true, roomDifference: [] })
+  })
+})

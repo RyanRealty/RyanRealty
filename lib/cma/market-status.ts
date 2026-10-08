@@ -98,6 +98,13 @@ export type CmaExpiredPeer = {
   propertySubType: string | null
   /** MLS subdivision, so a plat boundary can be re-tested at render. */
   subdivision?: string | null
+  /**
+   * The recorded plat polygon the area read put the home in (null when tested
+   * and none holds it), so the render re-tests the polygon, not the MLS
+   * spelling (rule 24; reader review 2026-10-08). Absent on rows stored
+   * before then, which keep the name test.
+   */
+  platSlug?: string | null
   latitude: number | null
   longitude: number | null
   /** Rule 4: one room apart on the subject's own ground, kept and disclosed, zero dollars. */
@@ -437,6 +444,8 @@ function rowToCandidate(row: CmaMarketAreaRow): SameAreaCandidate {
     address: peerAddress(row) || null,
     city: row.City ?? null,
     subdivision: row.SubdivisionName ?? null,
+    // The polygon the area read placed it in, when it read one.
+    subdivisionSlug: row.plat_slug,
     latitude: row.Latitude ?? null,
     longitude: row.Longitude ?? null,
     beds: countOrNull(row.BedroomsTotal),
@@ -598,6 +607,7 @@ export function pickExpiredPeers(
         lotAcres: row.lot_size_acres ?? null,
         propertySubType: row.property_sub_type ?? null,
         subdivision: row.SubdivisionName ?? null,
+        ...(row.plat_slug !== undefined ? { platSlug: row.plat_slug } : {}),
         latitude: row.Latitude ?? null,
         longitude: row.Longitude ?? null,
       }
@@ -1067,6 +1077,8 @@ export function buildExpiredPeerSet(input: {
       longitude: r.Longitude ?? null,
       subdivision: r.SubdivisionName ?? null,
       city: r.City ?? null,
+      // The polygon the area read placed it in, when it read one.
+      platSlug: r.plat_slug,
       // A plat held to the subject's street holds only that street.
       address: r.StreetName?.trim() ? `${(r.StreetNumber ?? '').trim()} ${r.StreetName.trim()}`.trim() : null,
     })
