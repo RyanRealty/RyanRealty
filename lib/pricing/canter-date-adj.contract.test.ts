@@ -361,7 +361,7 @@ describe('1130 E Canter Horse Back date-adj residual', () => {
       expect(row.adjusted.sizeAdjustment).toBe(0)
       expect(row.adjusted.timeAdjustment).toBe(0)
       expect(row.adjusted.adjustedPrice).toBe(row.adjusted.closePrice)
-      expect(row.pathNote).toMatch(/size and story/)
+      expect(row.pathNote).toMatch(/Story class does not adjust/)
     }
     const { cover, built, method1Mid } = recommendFrom(
       rows.map((r) => r.adjusted),

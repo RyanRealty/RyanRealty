@@ -355,8 +355,10 @@ describe('the price chapter says why the list sits where it does (Keats)', () =>
     // The grid moved after the build (one sale $10,000 lower than the weights saw).
     const moved = COMPS.map((c, i) => (i === 0 ? { ...c, adjustedPrice: c.adjustedPrice - 10000 } : c))
     expect(at({}, moved)).toBeNull()
-    // The letter took the city date move out of the grid.
-    expect(at({ timeAdjustment: { ...(PRICING.timeAdjustment as object), sentence: FLAT_LOCAL_DATE_SENTENCE } } as Partial<CmaPricing>)).toBeNull()
+    // The flat local date story is a sentence, not a moved grid: it prints
+    // only when no sale moved (lib/cma/flat-date-story.ts), so it leaves the
+    // figure to the grid check above.
+    expect(at({ timeAdjustment: { ...(PRICING.timeAdjustment as object), sentence: FLAT_LOCAL_DATE_SENTENCE } } as Partial<CmaPricing>)).toEqual(at({}))
   })
 })
 

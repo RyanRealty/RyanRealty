@@ -6,6 +6,7 @@ import {
   applyExclusivePocketStoryAdj,
   canterRecommendNearGold,
   exclusivePocketPathNote,
+  exclusivePocketSetNote,
   selectionIsExclusivePocket,
 } from '@/lib/pricing/exclusive-pocket-date-adj'
 import { pricingTierLadder } from '@/lib/pricing/ladder'
@@ -108,6 +109,25 @@ describe('applyExclusivePocketDateAdj', () => {
     expect(applied.regime).toBe('falling')
     expect(exclusivePocketPathNote('1025 E Horse Back', cooling, applied)).toMatch(/Flex-style cooling/)
     expect(exclusivePocketPathNote('1025 E Horse Back', cooling, applied)).toMatch(/-6\.0%/)
+  })
+})
+
+describe('pocket notes after the size ruling (Matt 2026-10-08)', () => {
+  it('say only that story class does not adjust, never size', () => {
+    const notes = [
+      exclusivePocketPathNote('1025 E Horse Back', rising, applyExclusivePocketDateAdj(rising, true)),
+      exclusivePocketPathNote('1025 E Horse Back', cooling, applyExclusivePocketDateAdj(cooling, true)),
+      exclusivePocketSetNote('Bend', true, [
+        { address: '1025 E Horse Back', closePrice: 600_000, timeAdjustment: -36_000, timeAdjustedPrice: 564_000 },
+      ]),
+      exclusivePocketSetNote('Bend', true),
+      exclusivePocketSetNote('Bend', false),
+    ]
+    for (const note of notes) {
+      expect(note).toContain('Story class does not adjust.')
+      expect(note).not.toMatch(/size and story/i)
+      expect(note).not.toMatch(/stays? (?:on its|as recorded)/i)
+    }
   })
 })
 

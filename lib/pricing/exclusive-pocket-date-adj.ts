@@ -10,9 +10,11 @@
  * nearer list/sold without that pump.
  *
  * Matt 2026-09-17 Flex-style cool: exclusive pocket refuses upward city-index
- * pump (factor > 1 → flat) but allows downward cooling (factor ≤ 1). Size and
- * story stay 0 on the exclusive pocket. Story is killed entirely — even when
- * the pocket is starved and widens one ring.
+ * pump (factor > 1 → flat) but allows downward cooling (factor ≤ 1). Story
+ * stays 0 on the exclusive pocket. Story is killed entirely — even when
+ * the pocket is starved and widens one ring. Matt 2026-10-08: size adjusts on
+ * the pocket too, so the notes below say only that story class does not
+ * adjust (lib/pricing/size-adjustment.ts owns the size line).
  */
 
 import type { MarketPath } from '@/lib/pricing/market-path'
@@ -101,14 +103,14 @@ export function exclusivePocketPathNote(
   if (used.factor < 1) {
     const appliedPct = ((used.factor - 1) * 100).toFixed(1)
     if (cityPath.factor > 1) {
-      return `${address}: exclusive pocket — Flex-style cooling date adjustment ${appliedPct}% (city index refused upward pump of ${cityPct}%). Size and story class do not adjust.`
+      return `${address}: exclusive pocket — Flex-style cooling date adjustment ${appliedPct}% (city index refused upward pump of ${cityPct}%). Story class does not adjust.`
     }
-    return `${address}: exclusive pocket — Flex-style cooling date adjustment ${appliedPct}% along the market path. Size and story class do not adjust.`
+    return `${address}: exclusive pocket — Flex-style cooling date adjustment ${appliedPct}% along the market path. Story class does not adjust.`
   }
   if (cityPath.factor > 1) {
-    return `${address}: exclusive pocket — date adjustment not applied along the city index (would have pumped ${cityPct}%). Sold and last-ask stay as recorded — size and story class do not adjust.`
+    return `${address}: exclusive pocket — date adjustment not applied along the city index (would have pumped ${cityPct}%). No date move. Story class does not adjust.`
   }
-  return `${address}: exclusive pocket — date adjustment flat. Sold and last-ask stay as recorded — size and story class do not adjust.`
+  return `${address}: exclusive pocket — date adjustment flat. No date move. Story class does not adjust.`
 }
 
 /** One closed sale the date adjustment did or did not move. */
@@ -185,12 +187,12 @@ export function exclusivePocketSetNote(
   const place = (city ?? '').trim() || 'this city'
   const detail = describeAppliedDateAdjustments(applied ?? [])
   if (coolingApplied && detail) {
-    return `These sales are the exclusive pocket. ${detail} The ${place} city index is not used to pump prices. Size and story class do not adjust.`
+    return `These sales are the exclusive pocket. ${detail} The ${place} city index is not used to pump prices. Story class does not adjust.`
   }
   if (coolingApplied) {
-    return `These sales are the exclusive pocket. Flex-style cooling date adjustment is applied to every sale in this window along the market path. The ${place} city index is not used to pump prices. Size and story class do not adjust.`
+    return `These sales are the exclusive pocket. Flex-style cooling date adjustment is applied to every sale in this window along the market path. The ${place} city index is not used to pump prices. Story class does not adjust.`
   }
-  return `These sales are the exclusive pocket. Date adjustment is not applied along the ${place} city index. That series includes tracts already excluded from this set. Each sale stays on its sold and last-ask price. Size and story class do not adjust.`
+  return `These sales are the exclusive pocket. Date adjustment is not applied along the ${place} city index. That series includes tracts already excluded from this set. No sale is moved for the month it sold. Story class does not adjust.`
 }
 
 /**

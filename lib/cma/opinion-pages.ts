@@ -47,11 +47,7 @@ import {
 import { FAILED_ASK_BACKTEST, resolveListingTimeline } from '@/lib/cma/expired-audit'
 import { placePricingStoryHtml } from '@/lib/cma/place-pricing-story'
 import type { PlacePricingStory } from '@/lib/cma/place-pricing-types'
-import {
-  cityDateCutsFightFlatLocal,
-  compsWithoutCityDateMove,
-  pricingWithoutCityDateMove,
-} from '@/lib/cma/flat-date-story'
+import { flatLocalDateStory, withFlatLocalDateStory } from '@/lib/cma/flat-date-story'
 import { withoutNegligibleWeight } from '@/lib/cma/seller-letter-copy'
 import { compWeightIndex } from '@/lib/cma/pricing-method'
 import { preparedClosingLine } from '@/lib/cma/letter-privacy'
@@ -311,10 +307,19 @@ export function mapArgs(a: OpinionPageArgs) {
 }
 
 /**
- * The sales and the pricing the grid prints, after the flat-date story.
+ * The sales and the pricing the grid prints.
  *
  * One resolution, so the price chapter, the net and the method paragraph in
  * Basis and limits read the same rows the reader can count.
+ *
+ * THE GRID IS THE PRICED SET (reader review, 62475 Woodsman, 2026-10-08). The
+ * band, the set-aside, the weights, the cover and the reconciliation are all
+ * computed on the date-moved prices, so the grid prints those prices with the
+ * date move on its own row. It used to take a date move back out when the
+ * local price per square foot held flat, which left the printed low in no
+ * table and a set-aside name over the wrong row (lib/cma/flat-date-story.ts).
+ * The flat story now only changes the method sentence, and only when no sale
+ * moved.
  */
 export function gridSales(a: OpinionPageArgs): {
   comps: CmaAdjustedComp[]
@@ -322,13 +327,12 @@ export function gridSales(a: OpinionPageArgs): {
   negligibleWeightNote: string | null
 } {
   const comps = a.comps ?? []
-  const flat = cityDateCutsFightFlatLocal({
+  const flat = flatLocalDateStory({
     ppsfMove: a.listingMarket?.ppsfMove ?? null,
     comps,
   })
-  const datedComps = flat ? compsWithoutCityDateMove(comps) : comps
-  const pricing = flat ? pricingWithoutCityDateMove(a.pricing, datedComps) : a.pricing
-  const weighed = withoutNegligibleWeight(datedComps, compWeightIndex(pricing))
+  const pricing = flat ? withFlatLocalDateStory(a.pricing) : a.pricing
+  const weighed = withoutNegligibleWeight(comps, compWeightIndex(pricing))
   return { comps: weighed.comps, pricing, negligibleWeightNote: weighed.note }
 }
 

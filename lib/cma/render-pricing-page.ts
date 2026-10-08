@@ -43,6 +43,7 @@ import { printedAdjustedPrice } from '@/lib/pricing/seller-net'
 import { compSearchSentence } from '@/lib/cma/render-comp-search'
 import { newHomeRateParagraph } from '@/lib/cma/new-home-rate'
 import { resaleNeverOwnedParagraph } from '@/lib/cma/resale-never-owned'
+import { dateBasisCaption } from '@/lib/cma/sales-method-note'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CmaPageDef } from '@/lib/cma/render-use-of-property'
@@ -548,6 +549,16 @@ function concessionsCaption(comps: readonly CmaAdjustedComp[]): string {
 }
 
 /**
+ * What the "Adjusted for date" row is, under the grid that prints it. The
+ * date move is part of every "Sale price today", so the figure it follows is
+ * named where the reader meets it (lib/cma/sales-method-note.ts).
+ */
+function dateBasisLine(input: { subject: CmaSubject; comps: readonly CmaAdjustedComp[]; pricing: CmaPricing }): string {
+  const line = dateBasisCaption(input)
+  return line ? `<p class="small">${esc(line)}</p>` : ''
+}
+
+/**
  * The per-square-foot check, as one line the seller can run against the table.
  *
  * It used to read "these sales carry a median of $564 per square foot" — but
@@ -786,6 +797,7 @@ export function salesThatSetItPage(input: PricingPageInput): CmaPageDef | null {
       // H2.section already names the chapter — skip duplicate H3.subhead.
       omitHeading: true,
       footer: `${concessionsCaption(input.comps)}
+  ${dateBasisLine({ subject: s, comps: input.comps, pricing: p })}
   ${renderReconciliationHtml(p)}
   ${perSquareFootLine({ subject: s, pricing: p })}`,
     },
