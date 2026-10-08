@@ -528,17 +528,23 @@ export const SAME_STREET_SIZE_BAND = 0.1
 export const SAME_STREET_PREMIUM_MAX = 0.1
 
 export function streetKey(address: string | null | undefined): string | null {
-  const s = (address ?? '').trim().toLowerCase()
+  // Only the street line: anything after the first comma is city, state, zip.
+  const s = (address ?? '').split(',')[0]!.trim().toLowerCase()
   if (!s) return null
-  // "23 Benaiah" / "23 NW Benaiah Ave" → "benaiah". The house number goes, the
-  // directional and the suffix go, what identifies the street stays.
-  const withoutNumber = s.replace(/^\s*\d+[a-z]?\s+/, '')
+  // "23 Benaiah" / "23 NW Benaiah Ave" → "benaiah"; "20886 King David Ave" →
+  // "king david". The house number goes, the directional and the suffix go,
+  // a unit designator and what follows it go, and EVERY word that names the
+  // street stays. It used to keep only the first word, so King David, King
+  // Josiah and King Hezekiah were one street and "Cascade View" matched any
+  // Cascade street (reader review 2026-10-08, 20886 King David's street anchor).
+  const withoutNumber = s.replace(/^\s*\d+[a-z]?\s+/, '').replace(/\s+(?:unit|apt|apartment|suite|ste|#)\b.*$|\s+#.*$/, '')
   const tokens = withoutNumber
     .split(/[\s,]+/)
     .filter(Boolean)
+    .map((t) => t.replace(/\.$/, ''))
     .filter((t) => !/^(n|s|e|w|ne|nw|se|sw|north|south|east|west)$/.test(t))
-    .filter((t) => !/^(st|street|ave|avenue|rd|road|dr|drive|ln|lane|ct|court|pl|place|way|blvd|loop|cir|circle|ter|terrace|hwy|highway)\.?$/.test(t))
-  return tokens[0] ?? null
+    .filter((t) => !/^(st|street|ave|avenue|rd|road|dr|drive|ln|lane|ct|court|pl|place|way|blvd|loop|cir|circle|ter|terrace|hwy|highway)$/.test(t))
+  return tokens.length > 0 ? tokens.join(' ') : null
 }
 
 /**
