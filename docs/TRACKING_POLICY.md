@@ -113,9 +113,10 @@ of these holds:
 3. **Automation.** `navigator.webdriver` is true, the user agent is a crawler, an HTTP
    tool or a headless browser (the classifier in `lib/analytics/automation.ts`), or
    our own marker is present: the cookie `rr_automation=1` or `?rr_automation=1`.
-   Every browser this repo launches carries the cookie (`scripts/lib/marked-playwright.mjs`,
-   `scripts/lib/marked-puppeteer.mjs`, and `playwright.config.ts` for the E2E and
-   post-deploy smoke runs), and no automation answers the banner with a grant.
+   Every browser this repo launches carries `rr_automation=1` and `rr_internal=1`
+   (`scripts/lib/marked-playwright.mjs`, `scripts/lib/marked-puppeteer.mjs`, and
+   `playwright.config.ts` for the E2E and post-deploy smoke runs) and a declined
+   consent cookie — no automation answers the banner with a grant.
 4. **Internal user.** The browser holds `rr_internal=1`, a first-party flag (a year,
    SameSite=Lax, Secure on production, no identity in it) set server-side when a
    broker or admin signs in (`app/auth/callback`, the One Tap form) and refreshed on

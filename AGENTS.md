@@ -227,6 +227,8 @@ Required details:
 | CRM | In-house (`public.crm_people`). |
 | Data Feed | Spark/MLS API |
 
+**GA4 / automation browsers.** Any script that opens our site (ryan-realty.com, localhost, 127.0.0.1, `*.vercel.app`) in a browser sets `rr_automation=1` and `rr_internal=1` before the first page load and never grants analytics consent; use `scripts/lib/marked-playwright.mjs`.
+
 ### Running Locally
 
 ```bash
