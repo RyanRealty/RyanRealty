@@ -419,8 +419,11 @@ function sizeCell(sqft: number | null | undefined, lotAcres: number | null | und
   return '-'
 }
 
-/** The lot, in the unit a Central Oregon seller reads it in. */
-function lotCell(lotAcres: number | null | undefined): string {
+/**
+ * The lot, in the unit a Central Oregon seller reads it in. Exported so a
+ * sentence naming a lot prints the figure the Lot size row prints.
+ */
+export function lotCell(lotAcres: number | null | undefined): string {
   if (lotAcres == null || !(lotAcres > 0)) return '-'
   return lotAcres >= 1
     ? `${dec(lotAcres, 2)} ac`

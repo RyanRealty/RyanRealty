@@ -198,7 +198,10 @@ describe('reconcileAdjustedSales', () => {
       subjectSqft: 1_700,
       asOf: '2026-10-05',
     })
-    expect(dated.sentence).toContain('sold 3 months ago')
+    // July 28 to October 5 is 2 months and 7 days: whole months, by the day,
+    // never the calendar count of 3 (reader review 2026-10-08, 3062 NW Kelly Hill).
+    expect(dated.sentence).toContain('sold 2 months ago')
+    expect(dated.sentence).not.toContain('sold 3 months ago')
     expect(dated.sentence).not.toContain('sold this month')
 
     const sameMonth = reconcileAdjustedSales({
@@ -395,7 +398,8 @@ describe('location first when the step is why a sale leads (rule 15, reader revi
       asOf: '2026-10-07',
     })
     expect(out.mostWeighted).toBe('A')
-    expect(out.sentence).toMatch(/^2254 Indigo carries the most weight of the three sales behind this price, at [\d.]+ percent: it is in your subdivision, it is 75 square feet larger than yours, it sold 9 months ago, and /)
+    // January 15 to October 7 is 8 whole months and 22 days.
+    expect(out.sentence).toMatch(/^2254 Indigo carries the most weight of the three sales behind this price, at [\d.]+ percent: it is in your subdivision, it is 75 square feet larger than yours, it sold 8 months ago, and /)
     expect(readsLikeSellerProse(out.sentence ?? '')).toBe(true)
   })
 

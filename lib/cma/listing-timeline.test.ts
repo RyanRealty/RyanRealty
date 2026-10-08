@@ -196,8 +196,22 @@ describe('listingTimelineReading', () => {
     caption: 'c',
   }
 
-  it('measures the final ask against the top of the range', () => {
+  it('measures the final ask against the top of the range, and calls it the last ask', () => {
+    // $475,000 came before the $460,000 it measures, so the sentence says it
+    // is the last ask (reader review 2026-10-08, 2382 Jackson and 2745 Aldrich).
     expect(listingTimelineReading({ timeline: base, city: 'Redmond', marketMedianDom: 21 })).toBe(
+      'Your last ask was 15.6 percent above the top of the range the sales support. Your home sat 187 days. The median home in Redmond has an accepted offer in 21 days.',
+    )
+  })
+
+  it('keeps "You were asking" when the listing had one price', () => {
+    expect(
+      listingTimelineReading({
+        timeline: { ...base, steps: [{ date: '2026-02-26', ask: 460000 }] },
+        city: 'Redmond',
+        marketMedianDom: 21,
+      }),
+    ).toBe(
       'You were asking 15.6 percent above the top of the range the sales support. Your home sat 187 days. The median home in Redmond has an accepted offer in 21 days.',
     )
   })

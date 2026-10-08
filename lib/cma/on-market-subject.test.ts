@@ -375,7 +375,11 @@ describe('3062 NW Kelly Hill, on the market with another brokerage', () => {
     expect(text).toContain(
       'The value range rests on the three closed comparable sales that set the price, from the Oregon Data Share MLS',
     )
-    expect(text).toContain('Two more are shown in the price chapter and set aside.')
+    // The grid is named by its chapter's heading, never "the price chapter"
+    // (reader review 2026-10-08).
+    expect(text).toContain('The grid of the sales that set this price moves each sale')
+    expect(text).toContain('Two more sales are shown in the same grid and set aside.')
+    expect(text).not.toContain('the price chapter')
     expect(text).not.toContain('rests on 5 closed comparable sales')
   })
 
