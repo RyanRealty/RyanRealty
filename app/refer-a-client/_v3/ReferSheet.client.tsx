@@ -9,7 +9,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { V3Sheet, type V3SheetAdvance, type V3SheetStep } from '@/components/site/v3'
 import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
-import { trackEvent } from '@/lib/tracking'
 import { submitInboundAgentReferral } from '@/app/actions/inbound-agent-referral'
 
 type Status = 'asking' | 'sending' | 'sent' | 'failed'
@@ -165,14 +164,7 @@ export function ReferSheet() {
           smsConsent,
         })
         if (result.ok) {
-          try {
-            trackEvent('generate_lead', {
-              source: 'inbound_agent_referral',
-              intent: answers.intent,
-            })
-          } catch {
-            // Tracking helper unavailable. Server-side lead still landed.
-          }
+          // GA4 generate_lead is sent once, by the server action (lib/lead-tracking.ts).
           setStatus('sent')
           return
         }

@@ -163,7 +163,11 @@ export async function assembleCompetition(args: {
           propertySubType: subject.propertySubType,
           priceLo: peerBand.lo,
           priceHi: peerBand.hi,
-        }).catch(() => null)
+        })
+          // A read that threw is not evidence that nothing came off (§0):
+          // no set, and the citation says `source: none`.
+          .then((read) => (read?.failed ? null : read))
+          .catch(() => null)
       : Promise.resolve(null),
     widestCompetitionRing && firstBand
       ? getCmaAreaBandInventory({
@@ -196,6 +200,8 @@ export async function assembleCompetition(args: {
       longitude: r.longitude,
       beds: r.beds,
       baths: r.baths,
+      bathsFull: r.bathsFull ?? null,
+      bathsHalf: r.bathsHalf ?? null,
       sqft: r.sqft,
       yearBuilt: r.yearBuilt,
       propertySubType: r.propertySubType,
@@ -445,6 +451,12 @@ export function assembleExpiredPeers(args: {
           closedSaleAddresses: competition.renderComps.map((c) => c.address),
           subjectCameOff: args.lastCycleFailed,
           liveAddresses: (competition.bandRivals?.rivals ?? []).map((rival) => rival.address),
+          // A house that came off, relisted and sold (or is listed again) did
+          // not come off unsold (cma-1648-pheasant, 2026-10-08).
+          laterCycles: competition.unsoldRead.laterCycles ?? [],
+          // The list-price window the unsold read counted, so the sentence
+          // that says its count names it (reader review 2026-10-08).
+          priceBand: competition.peerBand,
         })
       : null
   return { expiredPeers, compsLookbackMonths }

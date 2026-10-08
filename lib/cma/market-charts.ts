@@ -4,6 +4,7 @@
  */
 
 import { escapeHtml, int } from '@/lib/cma/render-blocks'
+import { pacificDay, type CameOffFacts } from '@/lib/cma/listing-status'
 
 const esc = escapeHtml
 
@@ -718,10 +719,22 @@ export type ListingTimelineInput = {
   rangeHigh: number
   /** What the shaded zone is, in the seller's words. */
   rangeLabel: string
-  /** "withdrawn" / "expired" / "canceled". Printed at the end of the line. */
+  /**
+   * "withdrawn" / "expired" / "canceled": how it came off, printed at the end
+   * of the line. "off market" when it left Active under one status and took
+   * another later (lib/cma/listing-status.ts cameOffStatus), printed "came off".
+   */
   status: string | null
   /** Days the period ran. Printed beside the end. */
   days: number | null
+  /**
+   * The day it came off, the status it left Active for, and its status of
+   * record with the day that took effect. The reading under the chart turns
+   * them into "It came off the market on Feb 10 after 71 days, and the listing
+   * expired on Sep 30." when the status of record came later
+   * (lib/cma/listing-status.ts cameOffThenSentence).
+   */
+  cameOff?: CameOffFacts | null
   caption: string
 }
 
@@ -735,11 +748,10 @@ type TimelineGeometry = {
   high: number
 }
 
+/** UTC midnight of the Pacific day a date or MLS timestamp falls on (never its UTC day). */
 function timelineDay(value: string | null | undefined): number | null {
-  const raw = String(value ?? '').trim()
-  if (!raw) return null
-  const day = raw.slice(0, 10)
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return null
+  const day = pacificDay(value ?? null)
+  if (!day) return null
   const t = Date.parse(`${day}T00:00:00.000Z`)
   return Number.isNaN(t) ? null : t
 }
@@ -787,8 +799,9 @@ function timelineStepPath(
 }
 
 function monthDay(iso: string): string {
-  const d = new Date(`${iso.slice(0, 10)}T12:00:00.000Z`)
-  return Number.isNaN(d.getTime())
+  const day = pacificDay(iso)
+  const d = new Date(`${day ?? ''}T12:00:00.000Z`)
+  return day == null || Number.isNaN(d.getTime())
     ? ''
     : d.toLocaleString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
 }
@@ -856,6 +869,27 @@ export function listingTimelinePhoneSvg(input: ListingTimelineInput): string {
  * asking-price label, so the sentence does not run through a dollar figure.
  * A short zone has no room inside; the caption goes just above it.
  */
+/** Geist's measured width a character at these sizes, in em (see timelineBody). */
+const ZONE_CHAR_EM = 0.62
+/** The smallest the zone label is drawn. */
+const ZONE_MIN_FS = 8
+
+/**
+ * The zone label as one line, shrunk to fit, or, when one line would still
+ * run past the frame at the smallest size, as two lines broken after the
+ * first comma ("where homes like yours sold," / "adjusted for date, size and
+ * seller concessions"). Exported so a test can measure every line.
+ */
+export function zoneLabelLines(label: string, available: number, fs: number): { lines: string[]; fs: number } {
+  const fit = (longest: number) => Math.min(fs, available / Math.max(longest * ZONE_CHAR_EM, 1))
+  const one = fit(label.length)
+  if (one >= ZONE_MIN_FS) return { lines: [label], fs: one }
+  const cut = label.indexOf(', ')
+  if (cut <= 0) return { lines: [label], fs: ZONE_MIN_FS }
+  const lines = [label.slice(0, cut + 1), label.slice(cut + 2)]
+  return { lines, fs: Math.max(ZONE_MIN_FS, fit(Math.max(...lines.map((l) => l.length)))) }
+}
+
 function zoneCaptionY(
   zoneTop: number,
   zoneBottom: number,
@@ -941,7 +975,6 @@ function timelineBody(o: {
   // 20506 Murphy. Above the zone, the same caption sat under an ask near the
   // top and the line struck through it.
   const askLabelYs = [...g.steps.map((s) => y(s.ask) - 9), endLabelY]
-  const zoneLabelY = zoneCaptionY(zoneTop, zoneBottom, askLabelYs, fs, top)
   // The zone label NAMES which range this is — the adjusted one — and that is
   // a longer string than the plot is wide on a phone. It shrinks to fit rather
   // than running off the right edge; the look-pass measures every label's own
@@ -950,16 +983,28 @@ function timelineBody(o: {
   // at plotL + 6 and the viewBox ends at W. 0.62em a character is what Geist
   // actually measures at these sizes — 0.55 fitted on paper and overflowed by
   // 3.4 units in the browser, which the phone-frame test caught.
-  const zoneLabelFs = Math.max(
-    8,
-    Math.min(fs, (W - plotL - 8) / Math.max(input.rangeLabel.length * 0.62, 1)),
-  ).toFixed(1)
+  // When it names every adjustment the sales carry ("adjusted for date, size
+  // and seller concessions", 3177 Coho) it can be too long for one line even
+  // at the 8-unit floor, so it breaks once after "sold," onto a second line.
+  const zone = zoneLabelLines(input.rangeLabel, W - plotL - 8, fs)
+  const zoneLineH = zone.fs * 1.2
+  const zoneBlock = zone.fs + zoneLineH * (zone.lines.length - 1)
+  const zoneLabelY = zoneCaptionY(zoneTop, zoneBottom, askLabelYs, zoneBlock, top)
+  const zoneLabelFs = zone.fs.toFixed(1)
+  const zoneTspans = zone.lines
+    .map((line, i) => {
+      const dy = i === 0 ? -zoneLineH * (zone.lines.length - 1) : zoneLineH
+      return zone.lines.length === 1
+        ? esc(line)
+        : `<tspan x="${plotL + 6}" dy="${dy.toFixed(1)}">${esc(line)}</tspan>`
+    })
+    .join('')
 
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(input.caption)}" class="trend-svg tl-figure" data-draw="1">
     <rect x="${plotL}" y="${zoneTop.toFixed(1)}" width="${(plotR - plotL).toFixed(1)}" height="${Math.max(zoneBottom - zoneTop, 2).toFixed(1)}" fill="${TL_INK}" fill-opacity="0.13"/>
     <line x1="${plotL}" y1="${zoneTop.toFixed(1)}" x2="${plotR}" y2="${zoneTop.toFixed(1)}" stroke="${TL_INK}" stroke-opacity="0.34" stroke-width="1"/>
     <line x1="${plotL}" y1="${zoneBottom.toFixed(1)}" x2="${plotR}" y2="${zoneBottom.toFixed(1)}" stroke="${TL_INK}" stroke-opacity="0.34" stroke-width="1"/>
-    <text x="${plotL + 6}" y="${zoneLabelY.toFixed(1)}" font-size="${zoneLabelFs}" fill="${TL_INK}">${esc(input.rangeLabel)}</text>
+    <text x="${plotL + 6}" y="${zoneLabelY.toFixed(1)}" font-size="${zoneLabelFs}" fill="${TL_INK}">${zoneTspans}</text>
     <text x="${plotL - 8}" y="${(zoneTop + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${TL_MUTED}">${esc(chartUsd(g.high))}</text>
     <text x="${plotL - 8}" y="${(zoneBottom + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="${TL_MUTED}">${esc(chartUsd(g.low))}</text>
     <line x1="${plotL}" y1="${bottom.toFixed(1)}" x2="${plotR}" y2="${bottom.toFixed(1)}" stroke="${TL_EDGE}" stroke-width="0.75"/>

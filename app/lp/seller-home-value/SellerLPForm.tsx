@@ -8,7 +8,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
-import { trackEvent, readRrSessionId } from '@/lib/tracking'
+import { readRrSessionId } from '@/lib/tracking'
 import { submitSellerLPForm, type SellerLPTimeline } from './actions'
 import AddressAutocomplete from '@/components/seller-lp/AddressAutocomplete'
 import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
@@ -184,11 +184,7 @@ export default function SellerLPForm({
           // Pixel suppressed (consent gate) — server CAPI still fires.
         }
       }
-      try {
-        trackEvent('generate_lead', { source: 'seller_lp', classification: result.classification })
-      } catch {
-        // tracking helper missing in some envs; ignore.
-      }
+      // GA4 generate_lead is sent once, by the server action (lib/lead-tracking.ts).
       setResultClassification(result.classification)
       setStep('success')
     })

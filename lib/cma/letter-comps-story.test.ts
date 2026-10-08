@@ -234,7 +234,7 @@ describe('Matt HARD LOCK — comps story beats in letter HTML', () => {
     expect(html).toContain('The sales that set this price')
     expect(html).toContain('Sold for')
     expect(html).toContain('Days on market')
-    expect(html).toContain('Sale price today')
+    expect(html).toContain('Adjusted price')
     expect(html).toContain('20 days')
     // The listing-history paragraph stays cut — a paragraph inside a table
     // cell is the wall of text this document is not (blueprint chapter 3).

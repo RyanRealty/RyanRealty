@@ -18,6 +18,7 @@
 
 import type { CmaAdjustedComp, CmaPricing } from '@/lib/cma/types'
 import { RANGE_MIN_KEPT, RANGE_TRIM_MIN_N } from '@/lib/pricing/ladder'
+import { anySaleMovedForDate } from '@/lib/cma/adjustments-applied'
 
 export type SetAsideSale = {
   listingKey: string | null
@@ -221,6 +222,9 @@ export function setAsideRows(
     .filter((v): v is number => v != null && Number.isFinite(v))
   const high = values.length ? Math.max(...values) : null
   const low = values.length ? Math.min(...values) : null
+  // "Moved to today" only when a printed sale moved for date (3037 Purcell
+  // moved none, reader review 2026-10-08).
+  const moved = anySaleMovedForDate(comps) ? 'moved to today' : 'adjusted to your home'
   return indexes
     .map((i) => {
       const c = comps[i]
@@ -229,9 +233,9 @@ export function setAsideRows(
       const price = c.adjustedPrice ?? null
       const fallback =
         price != null && high != null && price === high
-          ? 'The highest of these sales once each is moved to today. The range is the spread of the rest.'
+          ? `The highest of these sales once each is ${moved}. The range is the spread of the rest.`
           : price != null && low != null && price === low
-            ? 'The lowest of these sales once each is moved to today. The range is the spread of the rest.'
+            ? `The lowest of these sales once each is ${moved}. The range is the spread of the rest.`
             : 'Not one of the sales the range is the spread of.'
       return { address: c.address, reason: supplied?.reason ?? fallback }
     })

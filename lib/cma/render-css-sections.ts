@@ -674,6 +674,11 @@ export function cmaSectionStyles(): string {
     box-shadow: inset 0 0 0 1.5px var(--navy);
   }
   .pin-badge.is-unsold { box-shadow: none; border: 1.5px dashed var(--navy); }
+  /* A sale the range trim set aside: the map's set-aside pin on its column,
+     with the words under the address (reader review, 3177 Coho, 2026-10-08). */
+  .pin-badge.is-closed.is-aside { background: linear-gradient(var(--muted), var(--muted)) var(--cream); color: var(--cream); }
+  .matrix-aside { display: block; margin-top: 2px; font-size: 8.5px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); text-align: right; white-space: nowrap; }
+  .comp-stack-card .matrix-aside { text-align: left; margin: -2px 0 6px; }
   .pin-badge.is-subject { background: transparent; color: var(--navy); }
   /* The adjustment grid repeats the columns and drops the photographs. */
   table.comp-matrix.is-adjustments thead th.v { padding-top: 2px; }

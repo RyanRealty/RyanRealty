@@ -38,6 +38,7 @@ import {
 } from '@/lib/cma/price-path'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import { daysOnMarketFrom, liveListingDays } from '@/lib/cma/listing-history-line'
+import { pacificDay } from '@/lib/cma/listing-status'
 import { COMPARABLE_DAYS_TO_OFFER_ROW_LABEL } from '@/lib/cma/comparable-dom-history'
 import { ON_MARKET_STATUS } from '@/lib/cma/subject-on-market'
 import { roomAdjustmentWords } from '@/lib/cma/seller-letter-copy'
@@ -47,6 +48,7 @@ import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
 import { formatDate } from '@/lib/format/date'
 import type { ExpiredFinalCycle } from '@/lib/cma/expired-audit'
 import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
+import { anySaleMovedForDate } from '@/lib/cma/adjustments-applied'
 import { comparisonSalePrice, concessionOffClose, concessionOnSale, printedAdjustedPrice } from '@/lib/pricing/seller-net'
 
 const esc = escapeHtml
@@ -214,13 +216,31 @@ type Col = {
   photoUrl: string | null
   /** Matrix 3 only: what the chapter's filter hides a column by. */
   status?: 'active' | 'pending'
+  /** Matrix 1 only: the range trim set this sale aside (lib/cma/set-aside.ts). */
+  aside?: boolean
 }
 
-/** The map's pin, at reading size, so the two read as one object. */
-export function pinBadge(pin: string | null, family?: string): string {
+/**
+ * The map's pin, at reading size, so the two read as one object. A closed
+ * sale the range trim set aside takes the map's set-aside pin (`is-aside`,
+ * drawn lighter), never the filled pin of a sale that set the price.
+ */
+export function pinBadge(pin: string | null, family?: string, aside = false): string {
   return pin
-    ? `<span class="pin-badge${family ? ` is-${esc(family)}` : ''}" aria-hidden="true">${esc(pin)}</span>`
+    ? `<span class="pin-badge${family ? ` is-${esc(family)}` : ''}${aside ? ' is-aside' : ''}" aria-hidden="true">${esc(pin)}</span>`
     : ''
+}
+
+/**
+ * The words under a set-aside sale's address, in the column head and on its
+ * phone card (reader review, 3177 Coho, 2026-10-08: two of five columns were
+ * set aside and nothing on the columns said so; only a dash in the Weight row
+ * and the list under the grid did).
+ */
+export const SET_ASIDE_COLUMN_TAG = 'Set aside'
+
+function asideTagHtml(aside: boolean | undefined): string {
+  return aside ? `<span class="matrix-aside">${esc(SET_ASIDE_COLUMN_TAG)}</span>` : ''
 }
 
 /**
@@ -355,6 +375,34 @@ const ADJUSTMENT_ROWS: ReadonlyArray<MatrixRow> = [
   { label: 'Sale price today', figure: true, rule: true, grid: true },
   { label: 'Weight in this price', figure: true, grid: true },
 ]
+
+/** The grid's last row, by its key. Rules keyed on it find it whatever it is called. */
+export const SALE_PRICE_TODAY_ROW_LABEL = 'Sale price today'
+/**
+ * The same row when no sale in the grid moved for date. 3037 Purcell moved no
+ * sale for date (its own-ground local read held) and the row still read "Sale
+ * price today" over figures adjusted only for size and seller concessions
+ * (reader review 2026-10-08).
+ */
+export const ADJUSTED_PRICE_ROW_LABEL = 'Adjusted price'
+export const WEIGHT_ROW_KEY = 'Weight in this price'
+
+/**
+ * The adjustment rows as this grid words them: the last row says "today" only
+ * when a sale in it moved for date, and the weight row takes the letter's own
+ * words for what its weights are (lib/cma/sales-role.ts). The keys stay put.
+ */
+export function adjustmentRowWords(
+  comps: readonly CmaAdjustedComp[],
+  weightLabel?: string | null,
+): ReadonlyArray<MatrixRow> {
+  const dated = anySaleMovedForDate(comps)
+  return ADJUSTMENT_ROWS.map((row) => {
+    if (row.label === SALE_PRICE_TODAY_ROW_LABEL && !dated) return { ...row, display: ADJUSTED_PRICE_ROW_LABEL }
+    if (row.label === WEIGHT_ROW_KEY && weightLabel && weightLabel !== row.label) return { ...row, display: weightLabel }
+    return row
+  })
+}
 
 const ACRES_TO_SQFT = 43560
 
@@ -533,9 +581,10 @@ function statusCell(entry: MatrixEntry): string {
 }
 
 function statusDateCell(entry: MatrixEntry): string {
-  const raw = entry.statusDate
-  if (!raw || !/^\d{4}-\d{2}-\d{2}/.test(raw)) return '-'
-  return formatDate(raw.slice(0, 10)) || raw.slice(0, 10)
+  // The Pacific day: a timestamp's UTC day can be the next day in Bend.
+  const day = pacificDay(entry.statusDate ?? null)
+  if (!day) return '-'
+  return formatDate(day) || day
 }
 
 /** A dollar figure, or the dash a blank cell prints. The Adjusted row's own cell. */
@@ -550,14 +599,22 @@ export function weightCell(weight: number | null | undefined): string {
 
 /**
  * The Days on market cell. A closed sale counts to its accepted offer, the
- * same number its outcome line prints. When only first list to close is
- * known, the cell says that is what it counts: that figure is not days on
- * market (CLAUDE.md §7), and a bare number under that label would claim it.
+ * same number its outcome line prints, in a row the sales table names for
+ * that. When only first list to close is known, the cell says that is what it
+ * counts: that figure is not days on market (CLAUDE.md §7), and a bare number
+ * under that label would claim it. A home under contract, in a table whose row
+ * is days on market, counts to its offer and says so (2820 Aldrich, "18 days
+ * to an offer", reader review 2026-10-08).
  */
-export function domCell(entry: Pick<MatrixEntry, 'domMeasure'>, n: number | null | undefined): string {
+export function domCell(
+  entry: Pick<MatrixEntry, 'domMeasure'> & Partial<Pick<MatrixEntry, 'family'>>,
+  n: number | null | undefined,
+): string {
   if (n == null || !Number.isFinite(n) || n < 0) return '-'
   const count = `${int(n)} ${n === 1 ? 'day' : 'days'}`
-  return entry.domMeasure === 'listed-to-closed' ? `${count}, listed to closed` : count
+  if (entry.domMeasure === 'listed-to-closed') return `${count}, listed to closed`
+  if (entry.domMeasure === 'offer' && entry.family === 'active') return `${count} to an offer`
+  return count
 }
 
 function sharedCells(entry: MatrixEntry, _range?: PricePathRange | null): string[] {
@@ -608,6 +665,9 @@ function colFor(entry: MatrixEntry, range?: PricePathRange | null): Col {
     sort: entry.sort,
     status: entry.status,
     cells: sharedCells(entry, range),
+    // A closed sale the range trim set aside is marked on its own column
+    // (reader review, 3177 Coho, 2026-10-08), by the map's own decision.
+    aside: entry.family === 'closed' && entry.setAside === true,
   }
 }
 
@@ -942,7 +1002,7 @@ function matrixTable(
       // number into the address (tasteReview round three, §4 item 6). It is
       // aria-hidden either way; this puts it out of the text as well, and the
       // row it draws keeps the badge beside the address.
-      const badge = pinBadge(c.pin, c.key === 'subject' ? 'subject' : family)
+      const badge = pinBadge(c.pin, c.key === 'subject' ? 'subject' : family, c.aside === true)
       const name = c.href
         ? `<span class="addr-row">${badge}<a class="matrix-addr" href="${esc(
             c.href,
@@ -962,7 +1022,8 @@ function matrixTable(
               `Show ${c.label} on the map`,
             )}" data-comp="${esc(pin)}" data-pin="${esc(pin)}"></span>`
       const status = c.status ? ` data-status="${esc(c.status)}"` : ''
-      return `<th class="v" data-comp="${esc(pin)}" data-pin="${esc(pin)}"${status}${c.sort}>${control}${img}${name}${
+      const aside = c.aside === true ? ' data-aside="1"' : ''
+      return `<th class="v" data-comp="${esc(pin)}" data-pin="${esc(pin)}"${status}${aside}${c.sort}>${control}${img}${name}${asideTagHtml(c.aside)}${
         // `sub` is composed here, from figures already escaped by usd()/int(),
         // and carries one <br/> of our own — never reader input.
         c.sub ? `<span class="matrix-sub">${c.sub}</span>` : ''
@@ -1135,10 +1196,11 @@ function matrixStack(input: {
       col.key === 'subject' ? ' is-yours' : ''
     }" data-comp="${esc(pin)}" data-pin="${esc(pin)}"${
       col.status ? ` data-status="${esc(col.status)}"` : ''
-    }${col.sort}>${img}<span class="addr-row is-card">${pinBadge(
+    }${col.aside === true ? ' data-aside="1"' : ''}${col.sort}>${img}<span class="addr-row is-card">${pinBadge(
       col.pin,
       col.key === 'subject' ? 'subject' : input.family,
-    )}${addr}</span>${headline ? `<div class="comp-stack-grid is-answer">${headline}</div>` : ''}${
+      col.aside === true,
+    )}${addr}</span>${asideTagHtml(col.aside)}${headline ? `<div class="comp-stack-grid is-answer">${headline}</div>` : ''}${
       body ? `<div class="comp-stack-grid">${body}</div>` : ''
     }${fold}</article>`
   }
@@ -1202,6 +1264,8 @@ export function renderMatrixHtml(input: {
   } | null
   /** Under the adjustment table, in the letter. */
   adjustmentsFooter?: string
+  /** Matrix 1: the weight row's words on this letter (lib/cma/sales-role.ts weightRowLabel). */
+  weightLabel?: string | null
 }): string {
   const [subject, ...rest] = input.entries
   if (!subject || rest.length === 0) return ''
@@ -1236,7 +1300,10 @@ export function renderMatrixHtml(input: {
     }))
     // The same drop rules the shared rows get: a row every column left empty,
     // or a row of five "$0" cells, is not a comparison (foldIdenticalRows).
-    const adjFolded = foldIdenticalRows([subjAdj, ...adjCols], ADJUSTMENT_ROWS)
+    const adjFolded = foldIdenticalRows(
+      [subjAdj, ...adjCols],
+      adjustmentRowWords(input.adjustments.comps, input.weightLabel ?? null),
+    )
     adjustment = { cols: adjCols, rows: adjFolded.rows }
     const adjGroups = splitEvenly(adjCols)
     adjustmentHtml = `<h4 class="subhead adjustments-h">How each sale was adjusted</h4>
@@ -1302,6 +1369,14 @@ export function renderCompMatrixHtml(
      * differently (render-pricing-page.ts salesThatSetItHeading).
      */
     heading?: string
+    /**
+     * The set-aside decision the map and the list under the grid use
+     * (lib/cma/set-aside.ts setAsideSalePredicate), so the same sales are
+     * marked on their columns.
+     */
+    isSetAside?: ((sale: { listingKey?: string | null; address?: string | null }) => boolean) | null
+    /** The weight row's words on this letter (lib/cma/sales-role.ts weightRowLabel). */
+    weightLabel?: string | null
   } = {},
 ): string {
   // Fail closed: a recommend needs >= MIN_CLOSED_SALES_FOR_MATRIX closed sales.
@@ -1313,7 +1388,9 @@ export function renderCompMatrixHtml(
       domDays: subjectDomDays(subject, askCtx?.asOfIso),
       printableAsk: subjectPrintableAsk(subject, askCtx),
     }),
-    ...closedEntries(comps, ctx, subject),
+    // The entry carries the set-aside mark the map's pins carry (the same
+    // predicate), and the column reads it off the entry.
+    ...closedEntries(comps, ctx, subject, opts.isSetAside ?? undefined),
   ]
   return renderMatrixHtml({
     id: 'sales-that-set-it',
@@ -1325,5 +1402,6 @@ export function renderCompMatrixHtml(
     range: opts.range ?? null,
     adjustments: { comps, weights },
     adjustmentsFooter: opts.footer,
+    weightLabel: opts.weightLabel ?? null,
   })
 }
