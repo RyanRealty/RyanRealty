@@ -924,6 +924,8 @@ export type MarketSlopePanel = {
   toN: string
   move: 'rose' | 'fell' | 'held flat'
   deltaPct: number
+  /** Printed in place of the move word (a half of one sale is not a trend). */
+  label?: string
 }
 
 export type MarketSlopesInput = {
@@ -959,8 +961,9 @@ function slopePanel(
   const rightY = midY + (panel.move === 'rose' ? -travel / 2 : panel.move === 'fell' ? travel / 2 : 0)
   const xL = x0 + 8
   const xR = x0 + w - 8
-  const ink = panel.move === 'fell' ? SLOPE_DOWN : TL_INK
-  const word = panel.move === 'held flat' ? 'held flat' : panel.move
+  // A labelled panel (one sale a half) states no move, so it is never inked as a decline.
+  const ink = panel.move === 'fell' && !panel.label ? SLOPE_DOWN : TL_INK
+  const word = panel.label ?? (panel.move === 'held flat' ? 'held flat' : panel.move)
   const wordY = y0 + 98
   const mx = (xL + xR) / 2
   return `<text x="${xL.toFixed(1)}" y="${titleY.toFixed(1)}" font-size="11" fill="${TL_MUTED}">${esc(panel.title)}</text>

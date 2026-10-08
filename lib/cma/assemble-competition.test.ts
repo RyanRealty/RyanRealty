@@ -262,4 +262,58 @@ describe('assembleCompetition: the sentence counts what the table draws (rule 17
     )
     expect(sentence).not.toMatch(/[—–]/)
   })
+
+  it('records what the range is centered on, and the step it opened to (reader review 2026-10-07)', async () => {
+    const coho = subject({
+      streetAddress: '3177 Coho',
+      subdivision: 'Rooster Rock',
+      latitude: 44.03,
+      longitude: -121.27,
+      yearBuilt: 2018,
+      sqft: 1458,
+    })
+    const args = {
+      ...oldBendArgs(coho),
+      comps: [
+        comp({ listingKey: 'C1', address: '1 Coho', subdivision: 'Rooster Rock', selectionTier: 'subdivision-12mo', latitude: 44.03, longitude: -121.27 }),
+        comp({ listingKey: 'C2', address: '2 Mink', subdivision: 'Madison Park', selectionTier: 'subdivision-12mo', latitude: 44.031, longitude: -121.27 }),
+      ],
+      diagnostics: diagnostics([{ tier: 'subdivision-12mo', added: 2 }], 'Rooster Rock'),
+      recommended: 549_000,
+    }
+    const like = (key: string, price: number) =>
+      row({
+        ListingKey: key,
+        StreetNumber: key,
+        StreetName: 'Aldrich',
+        ListPrice: price,
+        SubdivisionName: 'Rooster Rock',
+        Latitude: 44.03,
+        Longitude: -121.271,
+        TotalLivingAreaSqFt: 1500,
+        year_built: 2016,
+      })
+    // One home inside ±10% ($494,000..$604,000); four more inside ±15%.
+    const all = [like('1', 550_000), like('2', 480_000), like('3', 470_000), like('4', 620_000), like('5', 625_000)]
+    getCmaAreaBandInventory.mockImplementation(async (q: { lo: number; hi: number }) =>
+      inventory({
+        lo: q.lo,
+        hi: q.hi,
+        activeRows: all.filter((r) => Number(r.ListPrice) >= q.lo && Number(r.ListPrice) <= q.hi),
+        pendingRows: [],
+      }),
+    )
+    const opened = await assembleCompetition(args)
+    expect(opened.bandRivals?.lo).toBe(467_000)
+    expect(opened.bandRivals?.hi).toBe(631_000)
+    expect(opened.bandRivals?.bandBasis).toEqual({ center: 549_000, halfWidth: 0.15, baseHalfWidth: 0.1 })
+
+    // A ±10% band that held five needs no opening; the basis says ±10%.
+    getCmaAreaBandInventory.mockReset()
+    getCmaAreaBandInventory.mockImplementation(async (q: { lo: number; hi: number }) =>
+      inventory({ lo: q.lo, hi: q.hi, activeRows: [1, 2, 3, 4, 5].map((i) => like(String(i), 550_000)), pendingRows: [] }),
+    )
+    const tight = await assembleCompetition(args)
+    expect(tight.bandRivals?.bandBasis).toEqual({ center: 549_000, halfWidth: 0.1, baseHalfWidth: 0.1 })
+  })
 })

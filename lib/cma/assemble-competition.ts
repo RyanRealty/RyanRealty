@@ -329,6 +329,21 @@ export async function assembleCompetition(args: {
       hi: rivalBand.hi,
     })
   }
+  // The range is read around the list BEFORE the homes in it are weighed
+  // (they are what the active-days pull reads), so it cannot be centered on
+  // the final list without depending on itself. The letter says what it is
+  // centered on, and whether it opened past ±10% (competition-band-basis.ts).
+  if (bandRivals && rivalBand && args.recommended > 0) {
+    bandRivals = {
+      ...bandRivals,
+      bandBasis: {
+        center: args.recommended,
+        // rivalBand is chosen.band whenever a step was chosen, else the ±10% band.
+        halfWidth: chosen?.halfWidth ?? COMPETITION_BAND_STEPS[0],
+        baseHalfWidth: COMPETITION_BAND_STEPS[0],
+      },
+    }
+  }
   return {
     renderComps,
     parcels,

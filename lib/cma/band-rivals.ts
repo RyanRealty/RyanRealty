@@ -485,6 +485,8 @@ export type CmaBandRivalSet = {
   unlikeCount?: number
   /** True when the band opened to its last step and still holds fewer than five fitting homes. */
   shortOfFive?: boolean
+  /** What lo..hi is centered on and how wide it opened; the letter states it (lib/cma/competition-band-basis.ts). */
+  bandBasis?: import('@/lib/cma/competition-band-basis').CompetitionBandBasis | null
 }
 
 /**

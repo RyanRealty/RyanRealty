@@ -22,6 +22,7 @@ import {
   classifySewer,
   classifyStory,
   classifyWater,
+  CENTRAL_OREGON_CITIES,
   citySlug,
   isCustomOrNewSubject,
   multiUnitFromRemarks,
@@ -30,6 +31,8 @@ import {
   type StoryClass,
 } from '@/lib/pricing/classes'
 import {
+  catchUpRecentPricingFacts,
+  closeDayBefore,
   countSalePricingFacts,
   getListingWaterSource,
   getPricingMarketIndex,
@@ -38,6 +41,8 @@ import {
   selectPricingFactsPool,
   selectSeniorCommunityListingKeys,
   selectListingBathSplits,
+  RECENT_CLOSE_CATCH_UP_DAYS,
+  type PricingFactsCatchUp,
 } from '@/lib/data/pricing/facts'
 import { estimateClosePrice, pricingSaleToCmaComp } from '@/lib/pricing/estimate'
 import type { SelectedPricingComp } from '@/lib/pricing/match'
@@ -112,6 +117,12 @@ export async function selectPricingComps(
     sewerRaw?: unknown
     levelsRaw?: unknown
     subjectIrrigation?: IrrigationClass | null
+    /**
+     * Rebuild missing recent closes before reading the pool (default true).
+     * Only the facts cron's listing stamp passes false: the same run has just
+     * caught up every Central Oregon close of the window citywide.
+     */
+    catchUpRecent?: boolean
   } = {},
 ): Promise<PricingMatchResult & { factsReady: boolean }> {
   const factsReady = (await countSalePricingFacts()) >= 1000
@@ -153,6 +164,27 @@ export async function selectPricingComps(
   // stays at 30 so those 24-month rungs still have a pool. Do not shrink the 30.
   const closeAfterIso = factsPoolCloseAfter(asOf, customOrNew)
   const sqft = pricingSubject.sqft
+  // THE POOL IS NEVER OLDER THAN THE CHARTS (2026-10-07, 3037 Purcell). The
+  // letter's hero chart and subdivision box read live listings; the pool
+  // below reads sale_pricing_facts, whose sweep reaches a new close only when
+  // it next passes the end of the keyspace. Before reading, every close of the
+  // last RECENT_CLOSE_CATCH_UP_DAYS in the subject's box and city that has no
+  // facts row is rebuilt into the table by the facts SQL itself, so the pool
+  // holds every sale those charts can print.
+  const catchUpTrace =
+    opts.catchUpRecent === false
+      ? []
+      : catchUpTraceLines(
+          await catchUpRecentPricingFacts({
+            since: closeDayBefore(asOf, RECENT_CLOSE_CATCH_UP_DAYS),
+            cities: pricingSubject.ruralAcreage ? CENTRAL_OREGON_CITIES : [subject.city].filter(Boolean),
+            near:
+              pricingSubject.latitude != null && pricingSubject.longitude != null
+                ? { latitude: pricingSubject.latitude, longitude: pricingSubject.longitude, radiusMiles: LOCAL_POOL_RADIUS_MILES }
+                : null,
+            maxRefresh: BUILD_CATCH_UP_MAX_REFRESH,
+          }),
+        )
   // THE SUBJECT'S OWN GROUND, COMPLETE, ALONGSIDE THE CITYWIDE READ (Matt
   // 2026-09-10). The citywide pool below is ordered newest-first and capped at
   // 800 rows, so for a Bend subject it reaches back about six months against
@@ -282,7 +314,34 @@ export async function selectPricingComps(
     }
   }
   const walked = walkPricingLadder(pricingSubject, sales, { asOf, cells })
-  return { ...walked, factsReady: true }
+  return { ...walked, trace: [...catchUpTrace, ...walked.trace], factsReady: true }
+}
+
+/** Missing recent closes one comp search may rebuild before it reads (the 6-hourly cron takes the rest). */
+export const BUILD_CATCH_UP_MAX_REFRESH = 60
+
+/**
+ * The search's own record of the catch-up: what it added, and what it could
+ * not, so a reviewer can tell a pool that holds the charts' sales from one
+ * that may not.
+ */
+export function catchUpTraceLines(c: PricingFactsCatchUp): string[] {
+  const lines: string[] = []
+  if (c.refreshed.length > 0) {
+    lines.push(
+      `Recent closes caught up: ${c.refreshed.length} sale(s) closed since ${c.since} had no row in sale_pricing_facts and were added before the search (${c.refreshed.join(', ')}).`,
+    )
+  }
+  const short = c.failed.length + c.deferred.length
+  if (short > 0 || c.error) {
+    const keys = [...c.failed.map((f) => f.listingKey), ...c.deferred]
+    lines.push(
+      `Recent closes NOT caught up: ${short} sale(s) closed since ${c.since} are in listings but not in sale_pricing_facts${
+        keys.length > 0 ? ` (${keys.slice(0, 20).join(', ')}${keys.length > 20 ? ', ...' : ''})` : ''
+      }${c.error ? `; ${c.error}` : ''}. The charts can print a sale this search did not see.`,
+    )
+  }
+  return lines
 }
 
 export async function priceSubjectFromFacts(
@@ -294,6 +353,8 @@ export async function priceSubjectFromFacts(
     levelsRaw?: unknown
     market?: CmaMarketContext | null
     subjectIrrigation?: IrrigationClass | null
+    /** See selectPricingComps. */
+    catchUpRecent?: boolean
   } = {},
 ): Promise<{
   match: PricingMatchResult & { factsReady: boolean }
