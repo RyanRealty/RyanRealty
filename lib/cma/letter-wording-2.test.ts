@@ -389,7 +389,7 @@ describe('3. on a whole held letter (rule 26), chapter 1 does not restate the tw
     const text = visible(renderCmaHtml(heldBelow()).html)
     expect(text).not.toContain('You were asking')
     expect(text).not.toMatch(/Homes like yours sold for/)
-    expect(text.match(/Buyers passed at the last ask of \$429,000\./g)?.length).toBe(1)
+    expect(text.match(/Your home did not sell at its last ask of \$429,000\./g)?.length).toBe(1)
     expect(text).toContain('that set the range support')
     expect(text).toContain('The sales that set the range.')
     expect(text).not.toContain('The sales behind this price.')
@@ -430,9 +430,12 @@ describe('8. the unsold count names the window it counted, re-rendered from a st
       generatedAtIso: '2026-10-08T12:00:00.000Z',
     } as unknown as OpinionPageArgs)
     // 0.55 and 1.85 times $733,000 (the stored center), to the thousand: the
-    // window the stored citation recorded (ListPrice 403000..1356000).
+    // window the stored citation recorded (ListPrice 403000..1356000). Said as
+    // the search, never as the homes' prices, and with no reason the stored
+    // row cannot back (3062 NW Kelly Hill, reader review 2026-10-08).
     expect(page?.body).toContain(
-      'Two homes in Northwest Townsite, Grandview, Highland and Bonne Home listed between $403,000 and $1,356,000 came off the market without selling in the last 18 months.',
+      'We searched listings in Northwest Townsite, Grandview, Highland and Bonne Home between $403,000 and $1,356,000. Two homes came off the market without selling in the last 18 months. Neither is enough like this home to compare here.',
     )
+    expect(page?.body).not.toContain('bedrooms, bathrooms, size or age')
   })
 })

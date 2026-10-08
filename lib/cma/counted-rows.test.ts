@@ -94,8 +94,11 @@ describe('expired rows match the count', () => {
     expect(set.likeYours).toBe(false)
     expect(set.peers).toHaveLength(0)
     expect(set.sentence).not.toMatch(/No home /)
-    expect(set.sentence).toContain('listed between $403,000 and $1,356,000')
-    expect(set.sentence).toContain('None were close')
+    expect(set.sentence).toContain('We searched listings in')
+    expect(set.sentence).toContain('between $403,000 and $1,356,000.')
+    // The reason is the one the fit returned, never a list of four.
+    expect(set.sentence).not.toContain('None were close')
+    expect(set.sentence).not.toContain('bedrooms, bathrooms, size or age')
     const shown = unsoldPeersFor({
       subject: { listingKey: 'SUBJ', mlsNumber: '1', streetAddress: '1617 NW 8th' },
       peers: set.peers,

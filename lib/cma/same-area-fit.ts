@@ -116,7 +116,16 @@ export type SameAreaReason = 'area' | 'product' | 'adu' | 'size' | 'rooms' | 'ag
 
 export type SameAreaFit =
   | { ok: true; ownPlat: boolean; roomDifference: Array<'beds' | 'baths'> }
-  | { ok: false; reason: SameAreaReason }
+  | {
+      ok: false
+      reason: SameAreaReason
+      /**
+       * On a rooms refusal, the counts that differ, compared the way rule 4
+       * compares them (whole baths when both homes carry the split), so a
+       * sentence can name the room that is actually different.
+       */
+      rooms?: Array<'beds' | 'baths'>
+    }
 
 /**
  * The subject fields this fit reads, picked off the build's subject. The
@@ -244,7 +253,14 @@ export function sameAreaFit(
       ownPlat,
     },
   )
-  if (!rooms.ok) return { ok: false, reason: 'rooms' }
+  if (!rooms.ok) {
+    const c = rooms.compared
+    const differs = (a: number | null | undefined, b: number | null | undefined) => a != null && b != null && a !== b
+    const which: Array<'beds' | 'baths'> = []
+    if (differs(c.subjectBeds, c.saleBeds)) which.push('beds')
+    if (differs(c.subjectBaths, c.saleBaths)) which.push('baths')
+    return { ok: false, reason: 'rooms', rooms: which }
+  }
   if (
     !ownPlat &&
     !ageOk(subject.yearBuilt ?? null, c.yearBuilt ?? null, new Date().getUTCFullYear(), sameAreaAgeYears(area))

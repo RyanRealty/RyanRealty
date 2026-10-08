@@ -182,7 +182,8 @@ describe('1. a listing\'s time on the market ends the day it left Active', () =>
       domDays: 71,
       printableAsk: 569000,
     })
-    expect(entry.outcome).toBe('Came off after 71 days')
+    // Lower case, like every other family's outcome beside it (2745 Aldrich, reader review 2026-10-08).
+    expect(entry.outcome).toBe('came off after 71 days')
     expect(entry.statusDate).toBe('2026-09-30')
     expect(entry.mlsStatus).toBe('Expired')
   })
@@ -289,7 +290,8 @@ describe('3. a home under contract is dated the day it went under contract', () 
     expect(rival.daysOnMarket).toBe(18)
     const [entry] = activeEntries([rival])
     expect(entry!.statusDate).toBe('2026-09-11')
-    expect(entry!.outcome).toBe('under contract at $549K · offer in 18 days')
+    // The MLS carries a pending home's list price, not its contract price (reader review 2026-10-08).
+    expect(entry!.outcome).toBe('listed at $549K, under contract · offer in 18 days')
     expect(domCell(entry!, entry!.domDays)).toBe('18 days to an offer')
   })
 
@@ -298,7 +300,7 @@ describe('3. a home under contract is dated the day it went under contract', () 
     const [entry] = activeEntries([stored])
     expect(entry!.statusDate).toBeNull()
     expect(entry!.domDays).toBeNull()
-    expect(entry!.outcome).toBe('under contract at $549K')
+    expect(entry!.outcome).toBe('listed at $549K, under contract')
   })
 
   it('an Active home keeps its days on the market and its list day', () => {

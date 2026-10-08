@@ -13,6 +13,7 @@ import { compAreaContains, compAreaIn, compAreaPhrase, type CompArea } from '@/l
 import { countWord } from '@/lib/pricing/estimate'
 import { publishStreetNumber, publishStreetPart } from '@/lib/listing/publish-street-line'
 import { roomNotedSentence, sameAreaFit, type SameAreaSubject } from '@/lib/cma/same-area-fit'
+import { unlikeReasonSentence, type CmaUnlikeHome } from '@/lib/cma/unlike-reason'
 import { printedBaths } from '@/lib/pricing/bath-count'
 
 const esc = escapeHtml
@@ -323,7 +324,61 @@ function rivalCard(
   </article>`
 }
 
-/** "27 homes are for sale between $350,000 and $428,000. 14 are under contract." */
+/**
+ * The under-contract clause that follows a for-sale count. When homes were
+ * just counted for sale it says "other", so the two counts read as different
+ * homes: "1 home like yours is for sale ... 1 is under contract." read as one
+ * home (1355 Jacksonville, reader review 2026-10-08).
+ */
+export function underContractClause(pending: number, opts: { afterForSale: boolean; like?: string }): string {
+  if (!(pending > 0)) return 'None are under contract right now.'
+  const verb = pending === 1 ? 'is' : 'are'
+  if (!opts.afterForSale) return `${int(pending)} ${verb} under contract.`
+  return `${int(pending)} other ${pending === 1 ? 'home' : 'homes'}${opts.like ?? ''} ${verb} under contract.`
+}
+
+const COUNT_WORD_VALUES: Record<string, number> = {
+  one: 1,
+  two: 2,
+  three: 3,
+  four: 4,
+  five: 5,
+  six: 6,
+  seven: 7,
+  eight: 8,
+  nine: 9,
+}
+
+/**
+ * The stored competition sentence as it prints today. Rows built before the
+ * under-contract clause said "other" carry "1 home like yours is for sale ...
+ * 1 is under contract."; the render rewrites that clause from the numbers the
+ * sentence already states, and changes nothing else.
+ */
+export function storedCompetitionSentenceToday(sentence: string): string {
+  // Rows built before the unlike homes were described said four reasons
+  // ("not close to this home in bedrooms, bathrooms, size or age") that were
+  // not all true of them (reader review 2026-10-08). The count stays; the
+  // reason becomes the one thing true of every one of them.
+  const s = withoutMapPointer(sentence).replace(
+    /\b(One other home is|([A-Z][a-z]+|\d[\d,]*) other homes are) listed there in that range, but (?:it is not|none is) close to this home in bedrooms, bathrooms, size or age, so (?:it is|they are) not compared here\./,
+    (_all, phrase: string, word: string | undefined) => {
+      const n = word ? (/^\d/.test(word) ? Number(word.replace(/,/g, '')) : COUNT_WORD_VALUES[word.toLowerCase()] ?? 3) : 1
+      return `${phrase} listed there in that range. ${unlikeReasonSentence(null, n)}`
+    },
+  )
+  const m = /^(.*?\bfor sale\b[^.]*\.)(\s+)(\d[\d,]*) (is|are) under contract\./.exec(s)
+  if (!m) return s
+  const forSale = m[1]!
+  // A for-sale count of nothing ("No home ...", "0 homes ...") is not followed by "other".
+  if (/^(?:No home|0 homes)\b/.test(forSale)) return s
+  const pending = Number(m[3]!.replace(/,/g, ''))
+  if (!(pending > 0)) return s
+  const like = /\blike yours\b/.test(forSale) ? ' like yours' : ''
+  return `${forSale}${m[2]}${underContractClause(pending, { afterForSale: true, like })}${s.slice(m[0].length)}`
+}
+
+/** "27 homes are for sale between $350,000 and $428,000. 14 other homes are under contract." */
 export function competitionSentence(input: {
   lo: number
   hi: number
@@ -335,9 +390,7 @@ export function competitionSentence(input: {
 }): string {
   const bits = [
     `${int(input.activeCount)} home${input.activeCount === 1 ? ' is' : 's are'} for sale between ${usd(input.lo)} and ${usd(input.hi)}.`,
-    input.pendingCount > 0
-      ? `${int(input.pendingCount)} ${input.pendingCount === 1 ? 'is' : 'are'} under contract.`
-      : 'None are under contract right now.',
+    underContractClause(input.pendingCount, { afterForSale: input.activeCount > 0 }),
   ]
   if (input.shown > 0 && input.shown < input.activeCount + input.pendingCount) {
     bits.push(`The nearest ${int(input.shown)} are below.`)
@@ -413,9 +466,22 @@ export type BandRivalsInput = {
  * A home on the market (lib/cma/subject-on-market.ts) is not deciding where to
  * list: "Who you would compete with at this price" read as listing it at ours.
  * Its chapter is the other homes for sale near the value, said as that.
+ *
+ * The heading covers what is listed under it (reader review 2026-10-08):
+ * 3062 NW Kelly Hill printed "Other homes for sale near this value" over one
+ * home that was under contract and none for sale. With the drawn counts the
+ * on-market heading names the homes it heads; without them it stays as it was.
  */
-export function competitionHeading(_recommendedList?: number | null, opts?: { onMarket?: boolean }): string {
-  return opts?.onMarket ? 'Other homes for sale near this value' : 'Who you would compete with at this price'
+export function competitionHeading(
+  _recommendedList?: number | null,
+  opts?: { onMarket?: boolean; active?: number | null; pending?: number | null },
+): string {
+  if (!opts?.onMarket) return 'Who you would compete with at this price'
+  const active = opts.active ?? null
+  const pending = opts.pending ?? 0
+  if (pending > 0 && active === 0) return 'Other homes under contract near this value'
+  if (pending > 0 && active != null && active > 0) return 'Other homes for sale or under contract near this value'
+  return 'Other homes for sale near this value'
 }
 
 function competitionBody(input: BandRivalsInput): string {
@@ -588,6 +654,12 @@ export type CmaBandRivalSet = {
   ringsTried: number[]
   /** Homes in the band and the area that did not pass the sales rules. They are counted, never drawn. */
   unlikeCount?: number
+  /**
+   * Those homes, each with its ask and the refusal the fit returned
+   * (lib/cma/unlike-reason.ts), so the sentence names the reason that is true
+   * of them. Absent on rows built before 2026-10-08.
+   */
+  unlike?: CmaUnlikeHome[]
   /** True when the band opened to its last step and still holds fewer than five fitting homes. */
   shortOfFive?: boolean
   /** What lo..hi is centered on and how wide it opened; the letter states it (lib/cma/competition-band-basis.ts). */
@@ -625,6 +697,8 @@ export function competitionAreaSentence(input: {
   widenedFrom?: number | null
   /** Homes in the band and the area that did not pass the rules. */
   unlikeCount?: number
+  /** Those homes with the refusal the fit returned for each (lib/cma/unlike-reason.ts). */
+  unlike?: readonly CmaUnlikeHome[] | null
   /** True when the band opened to its last step and still holds fewer than five. */
   shortOfFive?: boolean
   /** The homes drawn: the one-room disclosure, and how many of them are for sale. */
@@ -637,10 +711,6 @@ export function competitionAreaSentence(input: {
   const where = compAreaIn(input.area)
   const whereOr = compAreaIn(input.area, { negative: true })
   const band = `between ${usd(input.lo)} and ${usd(input.hi)}`
-  const pend =
-    input.pendingCount > 0
-      ? `${int(input.pendingCount)} ${input.pendingCount === 1 ? 'is' : 'are'} under contract.`
-      : 'None are under contract right now.'
   const tail = input.shortOfFive
     ? ` Nothing from outside ${compAreaPhrase(input.area)} was added to make up the number.`
     : ''
@@ -651,12 +721,19 @@ export function competitionAreaSentence(input: {
     if (unlike === 0) {
       return `No home ${whereOr} is for sale ${band}, and none is under contract.${tail}`
     }
-    // One unlike home is "it", never "none" (Matt 2026-10-07 review).
-    const notClose =
+    // One unlike home is "it", never "none" (Matt 2026-10-07 review). The
+    // reason is the one the fit returned for each home, never a list of four
+    // ("bedrooms, bathrooms, size or age") a reader takes as all true (reader
+    // review 2026-10-08).
+    const listed =
       unlike === 1
-        ? 'One other home is listed there in that range, but it is not close to this home in bedrooms, bathrooms, size or age, so it is not compared here.'
-        : `${countWord(unlike, true)} other homes are listed there in that range, but none is close to this home in bedrooms, bathrooms, size or age, so they are not compared here.`
-    return `No home like yours ${whereOr} is for sale or under contract ${band}. ${notClose}${tail}`
+        ? 'One other home is listed there in that range.'
+        : `${countWord(unlike, true)} other homes are listed there in that range.`
+    const described = input.unlike && input.unlike.length === unlike ? input.unlike : null
+    return `No home like yours ${whereOr} is for sale or under contract ${band}. ${listed} ${unlikeReasonSentence(
+      described,
+      unlike,
+    )}${tail}`
   }
   if (input.activeCount === 0) {
     return `No home like yours ${whereOr} is for sale ${band}, but ${countWord(input.pendingCount)} ${
@@ -678,11 +755,14 @@ export function competitionAreaSentence(input: {
     const n = drawnActive ?? input.shown
     const like = input.likeYours ? ' like yours' : ''
     const verb = n === 1 ? 'is' : 'are'
-    return `${nearestOpening(n)}${like} ${verb} for sale ${where} ${band}. ${pend}${tail}${rooms}`
+    return `${nearestOpening(n)}${like} ${verb} for sale ${where} ${band}. ${underContractClause(input.pendingCount, {
+      afterForSale: true,
+      like,
+    })}${tail}${rooms}`
   }
   return `${int(input.activeCount)} home${
     input.activeCount === 1 ? ' like yours is' : 's like yours are'
-  } for sale ${where} ${band}. ${pend}${tail}${rooms}`
+  } for sale ${where} ${band}. ${underContractClause(input.pendingCount, { afterForSale: true, like: ' like yours' })}${tail}${rooms}`
 }
 
 /** The §0 trace for the two counts: the area, the band, the source and the day. */
@@ -723,6 +803,8 @@ export function buildBandRivalSet(input: {
   ringsTried?: number[]
   /** Homes in the band and the area that did not pass the sales rules. */
   unlikeCount?: number
+  /** Those homes with the refusal the fit returned for each (lib/cma/unlike-reason.ts). */
+  unlike?: CmaUnlikeHome[]
   /** True when the band opened to its last step and still holds fewer than five. */
   shortOfFive?: boolean
 }): CmaBandRivalSet {
@@ -755,6 +837,7 @@ export function buildBandRivalSet(input: {
       likeYours,
       widenedFrom,
       unlikeCount: input.unlikeCount,
+      unlike: input.unlike ?? null,
       shortOfFive: input.shortOfFive,
       rivals,
     }),
@@ -767,6 +850,7 @@ export function buildBandRivalSet(input: {
     widenedFrom,
     ringsTried: input.ringsTried ?? [],
     unlikeCount: input.unlikeCount,
+    ...(input.unlike ? { unlike: input.unlike } : {}),
     shortOfFive: input.shortOfFive,
   }
 }
