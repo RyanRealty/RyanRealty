@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { latestSaleMedian } from './latest-sale-median'
+import { latestSaleMedian, sameMonthYearBefore } from './latest-sale-median'
 
 describe('latestSaleMedian', () => {
   const series = [
@@ -30,5 +30,21 @@ describe('latestSaleMedian', () => {
       '2026-09',
     )
     expect(r).toBeNull()
+  })
+})
+
+describe('sameMonthYearBefore', () => {
+  const months = [
+    { periodStart: '2025-09-01', medianSalePrice: 766_750 },
+    { periodStart: '2026-08-01', medianSalePrice: 749_500 },
+    { periodStart: '2026-09-01', medianSalePrice: 759_000 },
+  ]
+  it('reads the same month a year earlier off the same series', () => {
+    expect(sameMonthYearBefore(months, '2026-09')).toEqual({ value: 766_750, monthLabel: 'September 2025', monthKey: '2025-09' })
+  })
+  it('returns null when that month is missing or empty', () => {
+    expect(sameMonthYearBefore(months, '2026-08')).toBeNull()
+    expect(sameMonthYearBefore([{ periodStart: '2025-09-01', medianSalePrice: null }], '2026-09')).toBeNull()
+    expect(sameMonthYearBefore(months, 'bad')).toBeNull()
   })
 })
