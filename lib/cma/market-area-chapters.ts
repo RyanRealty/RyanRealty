@@ -26,6 +26,7 @@ import {
 } from '@/lib/cma/market-charts'
 import { subjectDomDays, subjectListingFailed } from '@/lib/cma/comp-matrix'
 import { closedSaleDaysToOffer } from '@/lib/cma/listing-history-line'
+import { cameOffStatus } from '@/lib/cma/listing-status'
 import { readTrendMeasure } from '@/lib/cma/render-contract'
 import type { CmaMarketArea, CmaSoldBand, CmaStatusBucket } from '@/lib/cma/market-status'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
@@ -459,6 +460,7 @@ export function renderDaysToOfferHtml(
     // it outruns the sale's own run to close.
     const toOffer = closedSaleDaysToOffer({
       daysToOffer: c.daysToOffer,
+      measuredFrom: c.offerFrom ?? null,
       domTotal: c.domTotal,
       firstListDate: c.onMarketDate,
       closeDate: c.closeDate,
@@ -486,7 +488,7 @@ export function renderDaysToOfferHtml(
   const marketMedian = printedMedian != null && printedMedian > 0 ? Math.round(printedMedian) : null
   const against = subjectDaysAgainst({
     days: subjectDays,
-    status: a.subject.standardStatus,
+    status: cameOffStatus(a.subject.standardStatus, a.subject.cameOffAs),
     figures: [slowest, marketMedian],
   })
   if (against) {
@@ -892,7 +894,7 @@ export function renderOfferTimingHtml(a: {
   const offerMedian = printedOfferMedianDays(a.market)
   const against = subjectDaysAgainst({
     days: subjectDays,
-    status: a.subject.standardStatus,
+    status: cameOffStatus(a.subject.standardStatus, a.subject.cameOffAs),
     figures: [offerMedian],
   })
   const reading = [
@@ -1109,7 +1111,7 @@ export function renderAskRealizationHtml(a: {
   const against = failed
     ? subjectDaysAgainst({
         days: subjectDays,
-        status: a.subject.standardStatus,
+        status: cameOffStatus(a.subject.standardStatus, a.subject.cameOffAs),
         figures: [printedOfferMedianDays(a.market)],
       })
     : null

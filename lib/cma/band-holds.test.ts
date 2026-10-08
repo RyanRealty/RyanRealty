@@ -2,9 +2,12 @@
  * The printed band after the 2026-10-07 trimmed-range ruling, as the review of
  * that change found it, pinned so it cannot come back:
  *
- *  1. The same-street twin the anchor holds the price to is never set aside,
- *     and a recommendation under the printed band low is a hold (when the
- *     failed-ask ceiling put it there) or a build failure (anything else).
+ *  1. A same-street twin that is an end of the adjusted sales is set aside
+ *     like any end sale and does not cap the price (Matt 2026-10-08, 915
+ *     Saginaw, "Trim normally"; this replaced the 2026-10-07 release of the
+ *     twin back into the range), and a recommendation under the printed band
+ *     low is a hold (when the failed-ask ceiling put it there) or a build
+ *     failure (anything else).
  *  2. Set-aside rows are matched by listing key, so a kept unit at the same
  *     unit-less street address stays in the band.
  *  3. After the pin the failed ask reads exactly one of below / inside (the
@@ -116,10 +119,14 @@ function price(subject: CmaSubject, adjusted: CmaAdjustedComp[], holdFailedAskUn
   })
 }
 
-describe('1. the street-anchor twin is never set aside (120 Benaiah)', () => {
-  // The review's repro: the twin at $500,000 and five sales at $600,000 to
-  // $680,000 printed $550,000 under a $600,000 to $660,000 band, and the
-  // letter said the sale holding the price had been set aside.
+describe('1. the street-anchor twin at the low end is set aside like any end sale (120 Benaiah)', () => {
+  // The 2026-10-07 review's repro: the twin at $500,000 and five sales at
+  // $600,000 to $680,000 printed $550,000 under a $600,000 to $660,000 band.
+  // That review released the twin back into the range so the band reached
+  // the capped price. Matt's ruling on 915 Saginaw (2026-10-08, "Trim
+  // normally") replaced that: the printed range is always the trimmed range,
+  // the twin is the lowest adjusted sale, so it is set aside with the highest
+  // and the same-street cap does not set the price. One sale never decides it.
   const adjusted = [
     sale('T', '120 Benaiah Ln', 500_000),
     sale('A', '1 Other St', 600_000),
@@ -129,24 +136,25 @@ describe('1. the street-anchor twin is never set aside (120 Benaiah)', () => {
     sale('E', '5 Other St', 680_000),
   ]
 
-  it('keeps the twin in the kept set, the weights, the counts and the band', () => {
+  it('sets the twin aside with the high end, keeps it out of the weights, and does not cap', () => {
     const p = price(subjectOf(), adjusted)
     expect(p).not.toBeNull()
-    expect(p!.streetAnchor?.listingKeys).toEqual(['T'])
-    expect(p!.recommended).toBe(550_000)
-    expect((p!.setAside ?? []).map((s) => s.listingKey)).toEqual(['E'])
-    expect(p!.reconciliation?.weights.map((w) => w.listingKey)).toContain('T')
+    expect(p!.streetAnchor).toMatchObject({ listingKeys: ['T'], setAside: true, capped: false, ceiling: 550_000 })
+    expect(p!.recommended).not.toBe(550_000)
+    expect(p!.recommended).toBeGreaterThanOrEqual(600_000)
+    expect((p!.setAside ?? []).map((s) => s.listingKey)).toEqual(['T', 'E'])
+    expect(p!.reconciliation?.weights.map((w) => w.listingKey)).not.toContain('T')
     expect(p!.rangeRule?.n).toBe(6)
-    expect(p!.rangeRule?.kept).toBe(5)
-    expect(p!.rangeRule?.sentence).toContain('One of the six sales sat outside every one of them and was set aside')
-    expect(p!.valueLow).toBeLessThanOrEqual(500_000)
+    expect(p!.rangeRule?.kept).toBe(4)
+    expect(p!.rangeRule?.sentence).toContain('Two of the six sales sat outside every one of them and were set aside')
+    expect(p!.valueLow).toBeGreaterThan(500_000)
 
     const pinned = pinPrintedBandToSettingSales(p!, adjusted)
-    expect(pinned.valueLow).toBe(500_000)
+    expect(pinned.valueLow).toBe(600_000)
     expect(pinned.valueHigh).toBe(660_000)
     expect(pinned.recommended).toBeGreaterThanOrEqual(pinned.valueLow)
-    expect(pinned.rangeRule?.sentence).toContain('$500,000 to $660,000')
-    expect(setAsideRows(pinned, adjusted).map((r) => r.address)).toEqual(['5 Other St'])
+    expect(pinned.rangeRule?.sentence).toContain('$600,000 to $660,000')
+    expect(setAsideRows(pinned, adjusted).map((r) => r.address)).toEqual(['120 Benaiah Ln', '5 Other St'])
 
     const letter = evaluateLetterConsistencyContract({
       html: '<p></p>',
@@ -158,7 +166,7 @@ describe('1. the street-anchor twin is never set aside (120 Benaiah)', () => {
     const byId = new Map(letter.checks.map((c) => [c.id, c]))
     expect(byId.get('recommended-at-or-above-band-low')?.pass).toBe(true)
     expect(byId.get('band-overlaps-closed-comps')?.pass).toBe(true)
-    expect(byId.get('band-overlaps-closed-comps')?.detail).toContain('one sale set aside')
+    expect(byId.get('band-overlaps-closed-comps')?.detail).toContain('the highest and lowest set aside')
   })
 
   it('a recommendation under the printed band low with no failed-ask ceiling fails the build and the letter', () => {
@@ -495,7 +503,7 @@ describe('rule 26: the held letter says both, once (Matt 2026-10-07, "Hold, lett
     it('chapter 3 states the band, then the failed ask, how long and how it came off', () => {
       const lead = whatItsWorthLead(subject, held(), { asOfIso: '2026-10-07', hasFinalCycle: true }, comps, finalCycle)
       expect(lead).toBe(
-        'The five sales that set the price support $610,150 to $678,983. Buyers passed at the last ask of $599,900. The listing sat 25 days and was withdrawn.',
+        'The five sales that set the range support $610,150 to $678,983. Buyers passed at the last ask of $599,900. The listing sat 25 days and was withdrawn.',
       )
       for (const bad of FORBIDDEN) expect(lead).not.toContain(bad)
       expect(lead).not.toMatch(/[—–]/)
@@ -509,7 +517,7 @@ describe('rule 26: the held letter says both, once (Matt 2026-10-07, "Hold, lett
       const p = held()
       const page = pricingPage({ subject, comps, market: null, pricing: p, finalCycle, askCtx: { asOfIso: '2026-10-07', hasFinalCycle: true } })
       for (const bad of FORBIDDEN) expect(page.body).not.toContain(bad)
-      expect(page.body).toContain('The five sales that set the price support $610,150 to $678,983.')
+      expect(page.body).toContain('The five sales that set the range support $610,150 to $678,983.')
       expect(page.body.match(/support \$610,150 to \$678,983/g)?.length).toBe(1)
       const cover = letterCoverPayoffHtml(p, comps)
       expect(cover).toContain(HELD_PRICE_HEADLINE)
@@ -565,7 +573,7 @@ describe('rule 26: the held letter says both, once (Matt 2026-10-07, "Hold, lett
       expect(p.valueHigh).toBe(966_000)
       const lead = whatItsWorthLead(subject, p, { asOfIso: '2026-10-07', hasFinalCycle: true }, adjusted, finalCycle)
       expect(lead).toBe(
-        'The four sales that set the price support $942,000 to $966,000. Buyers passed at the last ask of $925,000. The listing sat 120 days and expired.',
+        'The four sales that set the range support $942,000 to $966,000. Buyers passed at the last ask of $925,000. The listing sat 120 days and expired.',
       )
       for (const bad of FORBIDDEN) expect(lead).not.toContain(bad)
       const letter = evaluateLetterConsistencyContract({ html: `<p>${lead}</p>`, names: null, identity: null, pricing: p, closedComps: adjusted })

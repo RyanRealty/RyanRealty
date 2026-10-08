@@ -27,7 +27,7 @@ const pricing = {
 
 const args = {
   subject,
-  comps: [{ address: '1 Comp', closePrice: 490000, adjustedPrice: 492000, weight: 1 }] as CmaAdjustedComp[],
+  comps: [{ address: '1 Comp', closePrice: 490000, timeAdjustment: 2000, adjustedPrice: 492000, weight: 1 }] as CmaAdjustedComp[],
   market: null,
   pricing,
   tiersUsed: ['subdivision-9mo', 'nearby-1mi-3mo'],

@@ -34,6 +34,13 @@ import {
 } from '@/lib/pricing/comp-area'
 import type { CmaMarketAreaRow } from '@/lib/data/cma/marketAreaReads'
 import { assignSubdivisionSlugs } from '@/lib/data/geo/subdivision-ring'
+import {
+  dropRelistedUnsoldCycles,
+  RELIST_OUTCOME_STATUSES,
+  type HouseCycleRecord,
+} from '@/lib/cma/market-status'
+import { getListingStatusChanges } from '@/lib/data/cma/localOutcomeReads'
+import type { ListingStatusChange } from '@/lib/cma/listing-status'
 
 /** The three MLS statuses that mean "came off without selling". */
 export const UNSOLD_STATUSES = ['Expired', 'Withdrawn', 'Canceled'] as const
@@ -42,7 +49,14 @@ export const UNSOLD_STATUSES = ['Expired', 'Withdrawn', 'Canceled'] as const
 export const UNSOLD_MAX_MONTHS = 24
 
 const COLS =
-  'ListingKey, StreetNumber, StreetName, City, PhotoURL, OriginalListPrice, Latitude, Longitude, StandardStatus, ListPrice, ClosePrice, CloseDate, ListDate, OnMarketDate, TotalLivingAreaSqFt, BedroomsTotal, BathroomsTotal, DaysOnMarket, CumulativeDaysOnMarket, status_change_timestamp, SubdivisionName, property_sub_type, year_built, lot_size_acres, public_remarks'
+  'ListingKey, StreetNumber, StreetName, City, PhotoURL, OriginalListPrice, Latitude, Longitude, StandardStatus, ListPrice, ClosePrice, CloseDate, ListDate, OnMarketDate, TotalLivingAreaSqFt, BedroomsTotal, BathroomsTotal, baths_full, baths_half, DaysOnMarket, CumulativeDaysOnMarket, status_change_timestamp, off_market_date, SubdivisionName, property_sub_type, year_built, lot_size_acres, public_remarks, parcel_number'
+
+/** What the relist test reads of every other record of the same houses. */
+const LATER_COLS =
+  'ListingKey, StreetNumber, StreetName, City, parcel_number, StandardStatus, OnMarketDate, ListDate, CloseDate, status_change_timestamp'
+
+/** Street numbers per relist read: one short IN list, never a URL the API refuses. */
+const LATER_CHUNK = 100
 
 const PAGE_SIZE = 1000
 const CEILING = 4000
@@ -58,11 +72,43 @@ export type CmaAreaReadCitation = {
   truncated: boolean
 }
 
+/**
+ * The second read behind the came-off count: every later record of the same
+ * houses that closed or is on the market now (lib/cma/market-status.ts
+ * laterOutcomeCycle). `dropped` names each cycle it takes out and the record
+ * that took it out, so a reviewer can check the trace (CLAUDE.md §0).
+ */
+export type CmaRelistCitation = {
+  filter: string
+  rows: number
+  truncated: boolean
+  dropped: Array<{
+    listingKey: string | null
+    address: string | null
+    status: string
+    laterListingKey: string | null
+    laterStatus: string
+    laterOnMarket: string | null
+    laterCloseDate: string | null
+  }>
+}
+
 export type CmaAreaUnsoldRead = {
   rows: CmaMarketAreaRow[]
+  /**
+   * Other records of the same houses that closed or are on the market now.
+   * buildExpiredPeerSet drops a cycle whose house relisted later and sold or
+   * is listed again: it did not come off unsold.
+   */
+  laterCycles: HouseCycleRecord[]
   sinceIso: string
   months: number
-  citation: CmaAreaReadCitation
+  citation: CmaAreaReadCitation & { relist?: CmaRelistCitation }
+  /**
+   * True when a read threw. Its empty rows are not evidence that nothing came
+   * off (§0), so the assembly prints no came-off set at all.
+   */
+  failed?: boolean
 }
 
 type ListingQuery = {
@@ -153,8 +199,8 @@ export function rowStreetAddress(r: { StreetNumber?: string | null; StreetName?:
   return `${(r.StreetNumber ?? '').trim()} ${street}`.trim()
 }
 
-async function pageQuery(build: () => ListingQuery): Promise<{ rows: CmaMarketAreaRow[]; truncated: boolean }> {
-  const rows: CmaMarketAreaRow[] = []
+async function pageQuery<T = CmaMarketAreaRow>(build: () => ListingQuery): Promise<{ rows: T[]; truncated: boolean }> {
+  const rows: T[] = []
   for (let from = 0; from < CEILING; from += PAGE_SIZE) {
     // `.order()` is not decoration: an unordered range is an arbitrary slice,
     // so paging without it repeats and skips rows.
@@ -162,7 +208,7 @@ async function pageQuery(build: () => ListingQuery): Promise<{ rows: CmaMarketAr
       .order('ListingKey', { ascending: true })
       .range(from, from + PAGE_SIZE - 1)
     if (error) throw new Error(error.message)
-    const page = (data ?? []) as CmaMarketAreaRow[]
+    const page = (data ?? []) as T[]
     rows.push(...page)
     if (page.length < PAGE_SIZE) return { rows, truncated: false }
   }
@@ -170,9 +216,60 @@ async function pageQuery(build: () => ListingQuery): Promise<{ rows: CmaMarketAr
 }
 
 /**
+ * Every later record of the houses in `rows` that closed or is on the market
+ * now: same street number, same city, a status in RELIST_OUTCOME_STATUSES,
+ * and a status change on or after the earliest day one of these cycles went
+ * on the market (a later cycle changed status after it started, and it
+ * started after this one). The street name, the parcel and "later" are
+ * decided in memory by laterOutcomeCycle. A record with no status change date
+ * is not read, so its cycle stays counted, as before this read existed.
+ */
+async function readLaterCycles(
+  sb: NonNullable<ReturnType<typeof client>>,
+  rows: readonly CmaMarketAreaRow[],
+): Promise<{ records: HouseCycleRecord[]; filter: string; truncated: boolean }> {
+  const numbers = [...new Set(rows.map((r) => (r.StreetNumber ?? '').trim()).filter((n) => n.length > 0))].sort()
+  const cities = [...new Set(rows.map((r) => (r.City ?? '').trim()).filter((c) => c.length > 0))].sort()
+  const starts = rows
+    .map((r) => (r.OnMarketDate ?? r.ListDate ?? r.status_change_timestamp ?? '').slice(0, 10))
+    .filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d))
+    .sort()
+  const since = starts[0] ?? null
+  const filter = [
+    `StandardStatus IN (${RELIST_OUTCOME_STATUSES.join(', ')})`,
+    `StreetNumber IN (${numbers.join(', ')})`,
+    cities.length > 0 ? `City IN (${cities.map((c) => `'${c}'`).join(', ')})` : 'any city',
+    since ? `status_change_timestamp >= ${since}` : 'any status change date',
+    'then the same parcel, or the same street address, on a cycle that went on the market after the unsold one',
+  ].join(' AND ')
+  if (numbers.length === 0) return { records: [], filter, truncated: false }
+  const records: HouseCycleRecord[] = []
+  let truncated = false
+  for (let i = 0; i < numbers.length; i += LATER_CHUNK) {
+    const chunk = numbers.slice(i, i + LATER_CHUNK)
+    const page = await pageQuery<HouseCycleRecord>(() => {
+      let q = sb
+        .from('listings')
+        .select(LATER_COLS)
+        .in('StandardStatus', RELIST_OUTCOME_STATUSES as unknown as string[])
+        .in('StreetNumber', chunk) as unknown as ListingQuery
+      if (cities.length > 0) q = q.in('City', cities)
+      if (since) q = q.gte('status_change_timestamp', since)
+      return q
+    })
+    records.push(...page.rows)
+    truncated = truncated || page.truncated
+  }
+  return { records, filter, truncated }
+}
+
+/**
  * Expired, withdrawn and canceled cycles inside `area`, in the subject's price
- * band and product sub type, over the widest window the peer ladder can reach.
- * Returns an empty set (never throws) when Supabase is not configured.
+ * band and product sub type, over the widest window the peer ladder can reach,
+ * with every later record of the same houses (`laterCycles`), so a house that
+ * relisted and sold is not counted as one that came off unsold.
+ * Returns an empty set (never throws) when Supabase is not configured, and an
+ * empty set marked `failed` when a read throws.
  */
 export async function getCmaAreaUnsoldCycles(input: {
   area: CompArea
@@ -191,6 +288,7 @@ export async function getCmaAreaUnsoldCycles(input: {
   const subType = input.propertySubType?.trim() || null
   const empty: CmaAreaUnsoldRead = {
     rows: [],
+    laterCycles: [],
     sinceIso,
     months,
     citation: {
@@ -260,8 +358,29 @@ export async function getCmaAreaUnsoldCycles(input: {
         address: rowStreetAddress(r),
       }),
     )
+    // WHEN EACH ONE LEFT THE MARKET (reader review 2026-10-08). 3204 Spring
+    // Creek was withdrawn Jan 20 and its listing expired Jul 31; its row's
+    // DaysOnMarket ran to the expiry, and the letter said it "came off after
+    // 288 days" when it was on the market 96. The status log for the homes
+    // inside the area says when each left Active. Additive: an unread log
+    // leaves each row on its own dates.
+    const statusChanges = await getListingStatusChanges(
+      inside.map((r) => String(r.ListingKey ?? '').trim()).filter(Boolean),
+    ).catch((err) => {
+      console.error('[getCmaAreaUnsoldCycles] status changes', err instanceof Error ? err.message : String(err))
+      return new Map<string, ListingStatusChange[]>()
+    })
+    const withChanges = inside.map((r) => {
+      const changes = statusChanges.get(String(r.ListingKey ?? '').trim())
+      return changes && changes.length > 0 ? { ...r, statusChanges: changes } : r
+    })
+    // A cancel and relist is a re-entry, not a failure: 2639 Harvey and 1382
+    // Drost each came off and then sold within weeks (cma-1648-pheasant).
+    const later = await readLaterCycles(sb, inside)
+    const { dropped } = dropRelistedUnsoldCycles(inside, later.records)
     return {
-      rows: inside,
+      rows: withChanges,
+      laterCycles: later.records,
       sinceIso,
       months,
       citation: {
@@ -270,12 +389,26 @@ export async function getCmaAreaUnsoldCycles(input: {
         rows: rows.length,
         rowsAfterAreaTest: inside.length,
         fetchedAt: new Date().toISOString(),
-        query: `supabase.from('listings').select(...).where(${filter})`,
+        query: `supabase.from('listings').select(...).where(${filter}) ;; listing_history (MlsStatus changes) + status_history for the rows inside the area`,
         truncated,
+        relist: {
+          filter: later.filter,
+          rows: later.records.length,
+          truncated: later.truncated,
+          dropped: dropped.map(({ row, later: by }) => ({
+            listingKey: row.ListingKey ?? null,
+            address: rowStreetAddress(row),
+            status: row.StandardStatus,
+            laterListingKey: by.ListingKey ?? null,
+            laterStatus: by.StandardStatus,
+            laterOnMarket: by.OnMarketDate ?? by.ListDate ?? null,
+            laterCloseDate: by.CloseDate ?? null,
+          })),
+        },
       },
     }
   } catch (e) {
     console.error('[getCmaAreaUnsoldCycles]', e instanceof Error ? e.message : String(e))
-    return { ...empty, citation: { ...empty.citation, filter, query: filter } }
+    return { ...empty, failed: true, citation: { ...empty.citation, filter, query: filter } }
   }
 }

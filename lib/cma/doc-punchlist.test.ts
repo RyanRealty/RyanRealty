@@ -1145,7 +1145,7 @@ describe('tasteReview 1 — nothing in the document argues with itself', () => {
     // they closed at" four lines apart in one paragraph. One verdict, one
     // place; the dollars-a-foot reading stays on the card.
     expect(
-      (html.match(/above the top of the range homes like yours sold in\./g) ?? []).length,
+      (html.match(/above the top of the range the sales support\./g) ?? []).length,
     ).toBe(1)
     expect(html).toContain('a foot, net of seller concessions and not adjusted for date or size.')
   })
@@ -1212,8 +1212,9 @@ describe('tasteReview 2 — the answer is drawn, and nothing floats over it', ()
     expect(html).toMatch(/<button type="button" class="pin-hit is-closed" data-comp="1" data-pin="1"/)
     // Delta 3: every pin tells the tale — days on market, price changes, and
     // the outcome — on tap and on hover.
-    // 730 Quince had its offer in 1 day: the pin's count is the row's count.
-    expect(html).toMatch(/aria-label="1\. 730 Quince[^"]*days? on market/)
+    // 730 Quince had its offer in 1 day: the pin's count is the row's count,
+    // named for what it counts (reader review 2026-10-08).
+    expect(html).toMatch(/aria-label="1\. 730 Quince[^"]*days? to an offer/)
     expect(html).toContain('class="pin-legend"')
     // A cropped tile and a percentage-positioned pin cannot both be right.
     for (const css of [cmaStylesheet('https://ryan-realty.com'), immersiveStylesheet()]) {
@@ -1541,7 +1542,7 @@ describe('chapter 1 — the story the numbers carry', () => {
 
   it('keeps the overpricing story when the ask was more than 10 percent above the range', () => {
     for (const html of [letter(withRange(380000, 398000)), immersive(withRange(380000, 398000))]) {
-      expect(html).toContain('15.6 percent above the top of the range homes like yours sold in.')
+      expect(html).toContain('15.6 percent above the top of the range the sales support.')
       expect(html).toContain('Your home sat 187 days.')
       expect(html).toContain('What overpricing costs.')
       expect(html).not.toContain(WALK)
@@ -1550,7 +1551,7 @@ describe('chapter 1 — the story the numbers carry', () => {
 
   it('states the facts and stops when the ask was near the range', () => {
     for (const html of [letter(withRange(420000, 445000)), immersive(withRange(420000, 445000))]) {
-      expect(html).toContain('3.4 percent above the top of the range homes like yours sold in.')
+      expect(html).toContain('3.4 percent above the top of the range the sales support.')
       expect(html).toContain('Your home sat 187 days and did not sell.')
       expect(html).not.toContain('without an offer')
       expect(html).toContain('Half of the homes that sold in Redmond had an offer inside 21 days.')
@@ -1572,11 +1573,11 @@ describe('chapter 1 — the story the numbers carry', () => {
     // (reader review 2026-10-08), and 110 is past twice Redmond's 21-day median.
     for (const html of [letter(withRange(440000, 470000)), immersive(withRange(440000, 470000))]) {
       expect(html).toContain(
-        'For 77 of your 187 days you were asking above the range homes like yours sold in, at $475,000.',
+        'For 77 of your 187 days you were asking above the range the sales support, at $475,000.',
       )
       expect(html).toContain('You asked $460,000, inside the range, for the last 110 days, and your home did not sell.')
       expect(html).toContain(`At a price inside the range, 110 days without a sale ${WALK}`)
-      expect(html).not.toContain('You were asking inside the range homes like yours sold in.')
+      expect(html).not.toContain('You were asking inside the range the sales support.')
       expect(html).not.toContain('without an offer')
       expect(html).toContain('What price and time look like in Redmond.')
       expect(html).not.toContain('What overpricing costs.')

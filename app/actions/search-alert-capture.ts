@@ -242,8 +242,8 @@ export async function submitSearchAlertSignup(input: {
     try {
       await fireLeadGenerated({
         lp_variant: 'search-alert',
-        lead_type: 'buyer',
-        value: 0,
+        lead_type: 'buyer_alerts',
+        form_id: 'search_alert',
         fub_person_id: fubPersonId ?? undefined,
       })
     } catch {
@@ -392,8 +392,8 @@ export async function submitListingSaveCapture(input: {
     try {
       await fireLeadGenerated({
         lp_variant: 'listing-save',
-        lead_type: 'buyer',
-        value: 0,
+        lead_type: 'buyer_alerts',
+        form_id: 'listing_save',
       })
     } catch {
       // best-effort
@@ -595,8 +595,8 @@ export async function submitListingPriceDropWatch(input: {
     try {
       await fireLeadGenerated({
         lp_variant: 'listing-price-watch',
-        lead_type: 'buyer',
-        value: 0,
+        lead_type: 'buyer_alerts',
+        form_id: 'listing_price_watch',
         fub_person_id: crmPersonId ?? undefined,
       })
     } catch {

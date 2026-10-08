@@ -252,6 +252,9 @@ function rowToRival(row: CmaBandListingRow, status: 'Active' | 'Pending'): CmaBa
     longitude: row.Longitude,
     beds: finiteOrNull(row.BedroomsTotal),
     baths: finiteOrNull(row.BathroomsTotal),
+    // The split prints 2 full and 1 half as 2.5, the way the sales print it.
+    bathsFull: finiteOrNull(row.baths_full),
+    bathsHalf: finiteOrNull(row.baths_half),
     sqft: finiteOrNull(row.TotalLivingAreaSqFt),
     yearBuilt: finiteOrNull(row.year_built),
     lotAcres: finiteOrNull(row.lot_size_acres),

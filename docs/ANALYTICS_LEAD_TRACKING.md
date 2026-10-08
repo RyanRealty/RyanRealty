@@ -6,6 +6,23 @@
 
 ---
 
+## The lead event (locked, Matt 2026-10-08)
+
+One GA4 `generate_lead` per real submission, sent **only from the server** by `fireLeadGenerated` (`lib/lead-tracking.ts`). No browser `trackEvent('generate_lead')`, no direct `fireGa4Event('generate_lead')`. `lib/analytics/lead-event.test.ts` fails the build otherwise.
+
+Every lead carries:
+
+| Param | Values |
+|---|---|
+| `lead_type` | `seller_valuation`, `seller_listing`, `buyer_showing`, `buyer_question`, `buyer_alerts`, `listing_inquiry`, `contact_general` (fixed list, `LEAD_TYPES` in `lib/analytics/lead-event.ts`; an unknown value is never sent) |
+| `form_id` | the form that produced it (`LEAD_FORM_IDS`, e.g. `contact`, `sell_value`, `home_valuation`, `place_value`, `fsbo_lp`, `search_alert`, `meta_lead_ad`) |
+
+Matt 2026-10-08: no dollar values on leads; generate_lead carries lead_type and form_id only.
+
+Not leads, their own events: `recruit_inquiry` (a "Join the team" contact), `newsletter_signup` (a newsletter page CTA). `valuation_requested` (lib/cma-request.ts) stays as a separate step event and is not a key event.
+
+---
+
 ## TL;DR — where the name lives vs where the number lives
 
 There are two analytics surfaces, and they answer different questions.

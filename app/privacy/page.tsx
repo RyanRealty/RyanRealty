@@ -91,6 +91,7 @@ const ITEMS: V3QuietItem[] = [
       'Resend, transactional and marketing email.',
       'Google Analytics (GA4), site analytics, including Google Signals.',
       'Meta, advertising and analytics when you interact with our ads or use Meta products.',
+      'Once you accept marketing cookies, Meta and Google may collect information about your online activities over time and across different websites and online services.',
       'Each has its own privacy policy. We do not sell your personal information.',
     ],
   },
@@ -115,9 +116,9 @@ const ITEMS: V3QuietItem[] = [
     term: 'Cookies',
     body: [
       'Essential: sign-in session, cookie-consent choice. Required for the site to work.',
-      'Analytics: with your consent, to understand how the site is used.',
-      'Marketing: with your consent, for advertising and retargeting.',
-      'Whatever you choose, we record how each visit reached us: the page you came from and any campaign tag on the link you clicked. That tells us which of our ads, emails and posts are working. It describes the link, not you. If you decline cookies, or your browser sends a Global Privacy Control signal, we record nothing at all.',
+      'Analytics: on by default outside the European Economic Area, the UK, and Switzerland, unless you decline or your browser sends a Global Privacy Control signal. In those regions, analytics stays off until you accept.',
+      'Marketing: off until you accept, everywhere. Clicking an ad is not consent. The Meta Pixel and advertising cookies stay off until you accept marketing cookies.',
+      'Whatever you choose, we record how each visit reached us in our own first-party logs: the page you came from and any campaign tag or click id on the link you clicked (utm_*, gclid, fbclid). That tells us which of our ads, emails and posts are working. It describes the link, not you. If you decline cookies, or your browser sends a Global Privacy Control signal, we record nothing at all.',
       'You can change your cookie preferences via the cookie banner or your browser settings.',
     ],
   },
@@ -140,6 +141,14 @@ const ITEMS: V3QuietItem[] = [
     kind: 'prose',
     term: 'Recognizing you and targeted advertising',
     body: 'Once you sign in, contact us, or follow a link we send, we may recognize you on later visits using a first-party cookie and associate the pages and listings you view with your contact record in our own client-relationship system, so our team can follow up on the homes you care about. We may also send a one-way hashed version of your email or phone to Meta and Google so they can match you to your visit and measure or target advertising. We never send them your raw email or phone. We may use this information to build advertising audiences and to tailor the ads you see. You can opt out as described below.',
+  },
+  {
+    kind: 'prose',
+    term: 'Global Privacy Control and Do Not Track',
+    body: [
+      'If your browser sends a Global Privacy Control (GPC) signal, we turn off analytics and marketing for that visit. Tags do not load, we do not write a marketing or analytics consent cookie from that signal, our server sends nothing about the visit to Google Analytics or to Meta’s Conversions API, and it records no browsing activity, only a notice so we can stop sharing for a contact we already know. If you send us a form, we still keep what you send so we can reply. GPC wins over the United States analytics-on-by-default setting. If you have previously accepted marketing cookies, GPC still keeps analytics and marketing off in the browser and on the server until the signal is gone.',
+      'This site does not respond to Do Not Track (DNT) signals. GPC is the signal we honor.',
+    ],
   },
   {
     kind: 'prose',
@@ -190,7 +199,7 @@ export default function PrivacyPage() {
           <div id="donotsell">
             <V3Quiet
               id="privacy"
-              eyebrow="Updated June 1, 2026"
+              eyebrow="Updated October 8, 2026"
               heading="Privacy and cookies"
               headingLevel={1}
               items={ITEMS}

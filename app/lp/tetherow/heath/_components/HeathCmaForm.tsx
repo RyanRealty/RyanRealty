@@ -8,7 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { cn } from '@/lib/utils'
 import { submitHeathCmaForm, type HeathCmaTimeline } from '../actions'
-import { trackEvent } from '@/lib/tracking'
 import { CONTACT } from '@/lib/brand/contact'
 import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 
@@ -75,15 +74,7 @@ export default function HeathCmaForm() {
       // Client-side Lead tracking. Shares result.eventId with the server CAPI
       // Lead so Meta de-duplicates the browser + server events into one
       // conversion. Both halves were previously missing on this LP.
-      try {
-        trackEvent('generate_lead', {
-          source: 'tetherow_heath_cma',
-          lead_classification: result.classification,
-          value: 500,
-        })
-      } catch {
-        // tracking suppressed — server-side lead + CAPI still landed
-      }
+      // GA4 generate_lead is sent once, by the server action (lib/lead-tracking.ts).
       if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
         try {
           window.fbq('track', 'Lead', {

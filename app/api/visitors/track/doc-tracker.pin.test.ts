@@ -12,8 +12,8 @@
  * moment they disagree. It names the side to change.
  *
  * What is compared is behaviour, not text: the script is executed, and the
- * TypeScript side is the real code (the banner's autoGrantConsentForAdTraffic,
- * VisitTracker's currentConsentLevel, advanceSession, captureSource). A page load
+ * TypeScript side is the real code (VisitTracker's currentConsentLevel,
+ * advanceSession, captureSource). A page load
  * is a page load on both sides: the script runs afresh, and the module's page
  * state starts over (resetSessionMemory), with the same address, referrer and
  * navigation type, because only the first event of a load the browser navigated
@@ -30,9 +30,9 @@ vi.mock('next/navigation', () => ({
 vi.mock('next/link', () => ({ default: () => null }))
 vi.mock('@/app/actions/track-user-event', () => ({ trackUserEvent: vi.fn(async () => undefined) }))
 
-import { autoGrantConsentForAdTraffic } from '@/components/CookieConsentBanner'
 import { currentConsentLevel, fireFirstPartyEvent, firstPartyEventContext } from '@/components/VisitTracker'
 import { CONSENT_COOKIE, arrivalConsent } from '@/lib/identity/consent'
+import { CONSENT_REGION_COOKIE } from '@/lib/analytics/consent-regions'
 import {
   SESSION_BINDING_KEY,
   SESSION_ID_KEY,
@@ -80,12 +80,11 @@ describe('consent: the script and the site read the banner the same way', () => 
   const cases = COOKIE_MATRIX.flatMap((c) => SEARCH_MATRIX.map((search) => ({ ...c, search })))
 
   it.each(cases)('$label $search', async ({ raw, search }) => {
-    // 1. What the site does: VisitTracker's mount effect calls the banner's
-    //    autoGrantConsentForAdTraffic, then reads currentConsentLevel.
+    // 1. What the site does: VisitTracker reads currentConsentLevel. An ad click
+    //    is not consent and does not write the cookie.
     clearBrowserState()
     setConsentCookie(raw)
     window.history.replaceState({}, '', `/homes-for-sale${search}`)
-    autoGrantConsentForAdTraffic()
     const siteLevel = currentConsentLevel()
     const siteCookie = readConsentCookieRaw()
 
@@ -120,7 +119,6 @@ describe('consent: the script and the site read the banner the same way', () => 
     setGpc(true)
     setConsentCookie(raw)
     window.history.replaceState({}, '', `/homes-for-sale${withToken}`)
-    expect(autoGrantConsentForAdTraffic()).toBe(false)
     const siteCookie = readConsentCookieRaw()
     const rule = arrivalConsent({ cookieValue: raw, search, gpc: true })
     expect(rule.grant).toBe(false)
@@ -700,7 +698,6 @@ describe('the script sends what the site sends, in the fields the route already 
     resetSessionMemory()
     window.history.replaceState({}, '', '/homes-for-sale?utm_source=crm&utm_medium=email')
     setReferrer('https://mail.google.com/')
-    autoGrantConsentForAdTraffic()
     const site = firstPartyEventContext()!
     expect(Object.keys(site).sort()).toEqual(
       ['campaign', 'consent', 'fbclid', 'gclid', 'landingPage', 'referrer', 'sessionId', 'sourceDomain', 'visit', 'webdriver'].sort(),
@@ -750,10 +747,11 @@ describe('the literals the mirror must share', () => {
     expect(capture(/var SOURCE_KEY = '([^']+)'/)).toBe(SOURCE_CACHE_KEY)
   })
 
-  it('the cookie name, and how long a grant lasts, are the banner\'s', () => {
+  it('the cookie name matches the banner, and the script does not write a grant', () => {
     expect(capture(/var CONSENT_COOKIE = '([^']+)'/)).toBe(CONSENT_COOKIE)
     expect(/const COOKIE_CONSENT_KEY = '([^']+)'/.exec(banner)![1]).toBe(CONSENT_COOKIE)
-    expect(capture(/var CONSENT_EXPIRY_YEARS = (\d+)/)).toBe(/const CONSENT_EXPIRY_YEARS = (\d+)/.exec(banner)![1])
+    expect(capture(/var REGION_COOKIE = '([^']+)'/)).toBe(CONSENT_REGION_COOKIE)
+    expect(DOC_TRACKER_SRC).not.toContain('writeConsentGrant')
   })
 
   it('the idle timeout and the session id shape', () => {
@@ -762,8 +760,8 @@ describe('the literals the mirror must share', () => {
     expect(uuid).toBe(SESSION_UUID_V4.source.replace(/\\\//g, '/'))
   })
 
-  it('the campaign-link grant writes the cookie exactly as the banner does', () => {
-    expect(DOC_TRACKER_SRC).toContain("'; path=/; expires=' + expires.toUTCString() + '; SameSite=Lax'")
+  it('an ad click is not consent: the script never writes ryan_realty_cookie_consent', () => {
+    expect(DOC_TRACKER_SRC).not.toMatch(/ryan_realty_cookie_consent.*=.*analytics:\s*true/)
     expect(banner).toContain('; path=/; expires=${expires.toUTCString()}; SameSite=Lax')
   })
 })

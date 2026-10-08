@@ -90,7 +90,7 @@ describe('pricingPage', () => {
     expect(html).toContain('The sales that set this price')
     expect(html).toContain('3344 SW Cascade Vista')
     expect(html).toContain('$636,000')
-    expect(html).toContain('Sale price today')
+    expect(html).toContain('Adjusted price')
     // ONE statement of the range: the lowest and highest adjusted sales still
     // in the table. The list range is that same pair, so the instruction
     // prints without the figures a second time.

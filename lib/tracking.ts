@@ -8,6 +8,8 @@
 import { resolveClientVisitBroker, visitBrokerGa4Fields } from '@/lib/analytics/visit-broker'
 import { trackEventWithCAPI } from '@/lib/meta-pixel-helpers'
 import { readSessionId } from '@/lib/analytics/visitor-session'
+import { pushDataLayerEvent } from '@/lib/analytics/ga4-browser-events'
+import { CONSENT_COOKIE, gpcFromNavigator, marketingSharingAllowed } from '@/lib/identity/consent'
 
 declare global {
   interface Window {
@@ -102,6 +104,9 @@ export type EventName =
   | 'pulse_filter_change'   // user changed a feed filter (city, event type)
   // Nav telemetry — locked 2026-06-09. Top conversion surface; every open + click measured.
   | 'nav_interact'          // panel open/close or link click inside the mega-menu
+  // Experience-archetype engagement (components/site/experience/useEngagementTracking.ts).
+  | 'dwell'
+  | 'module_interact'
 
 function pushDataLayer(obj: Record<string, unknown>) {
   if (typeof window === 'undefined') return
@@ -109,16 +114,23 @@ function pushDataLayer(obj: Record<string, unknown>) {
   window.dataLayer.push(obj)
 }
 
-function fireGaEvent(eventName: string, params: Record<string, unknown> = {}) {
-  if (typeof window === 'undefined' || !window.gtag) return
-  window.gtag('event', eventName, params)
-}
-
 /**
  * Fire a Google Ads conversion (when send_to env is set). Only call from client after consent.
  */
 function fireGoogleAdsConversion(sendTo: string | undefined) {
   if (typeof window === 'undefined' || !sendTo?.trim() || !window.gtag) return
+  const raw = document.cookie
+    .split('; ')
+    .find((row) => row.startsWith(`${CONSENT_COOKIE}=`))
+    ?.split('=')[1]
+  if (
+    !marketingSharingAllowed({
+      consentCookie: raw,
+      gpc: gpcFromNavigator(typeof navigator !== 'undefined' ? navigator : undefined),
+    })
+  ) {
+    return
+  }
   window.gtag('event', 'conversion', { send_to: sendTo.trim() })
 }
 
@@ -128,11 +140,14 @@ const GOOGLE_ADS_CONVERSION_SIGNUP = process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSI
 /**
  * Push a typed event to window.dataLayer for GTM/GA4.
  * Also fires Google Ads conversion when event is generate_lead and NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LEAD is set.
+ *
+ * GA4 gets the event from GTM's GA4 Event tag, never from a gtag('event') here
+ * (lib/analytics/ga4-browser-events.ts). Since 1224b1f (2026-08-18) GTM's Google
+ * tag is the only GA4 config, so a bare gtag('event') reached nothing; once the
+ * GTM tag is published, a gtag copy would be the double count.
  */
 export function trackEvent(eventName: EventName, params: Record<string, unknown> = {}) {
-  pushDataLayer({ event: eventName, ...params })
-  // Direct GA4 event dispatch keeps analytics working even without GTM tags.
-  fireGaEvent(eventName, params)
+  pushDataLayerEvent(eventName, params)
   if (eventName === 'generate_lead' && GOOGLE_ADS_CONVERSION_LEAD) {
     fireGoogleAdsConversion(GOOGLE_ADS_CONVERSION_LEAD)
   }
@@ -163,8 +178,10 @@ export function applyVisitBrokerToGtag(): { broker_slug: string; assigned_broker
 export function trackPageView(pageType: string, params: Record<string, unknown> = {}) {
   const broker = applyVisitBrokerToGtag()
   const withBroker = broker ? { broker_slug: broker.broker_slug, ...params } : params
+  // GTM's Google tag sends page_view (enhanced measurement's browser-history
+  // setting covers SPA navigations, on per the 2026-10-08 GA4 audit). This push
+  // only stamps the dataLayer; page_view is not on the GTM GA4 Event trigger.
   pushDataLayer({ event: 'page_view', page_type: pageType, ...withBroker })
-  fireGaEvent('page_view', { page_type: pageType, ...withBroker })
 }
 
 // ----------------------------------------------------------------------------
@@ -436,10 +453,7 @@ export function trackSaveListing(params: {
 
 /** User signed up / created account. */
 export function trackSignUp() {
-  pushDataLayer({
-    event: 'sign_up',
-    method: 'Google',
-  })
+  pushDataLayerEvent('sign_up', { method: 'Google' })
   void trackEventWithCAPI('CompleteRegistration', { content_name: 'Account created' }, { customData: { content_name: 'Account created' } })
   if (GOOGLE_ADS_CONVERSION_SIGNUP) fireGoogleAdsConversion(GOOGLE_ADS_CONVERSION_SIGNUP)
 }

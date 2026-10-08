@@ -179,11 +179,16 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
       expect(html).toContain('>High<')
       // Matt 2026-10-07: the recommended list is the first and biggest figure
       // under the list-price headline, printed once. Low and High follow,
-      // labelled as where similar homes sold, adjusted to today.
-      expect(html).toContain('>Where similar homes sold, adjusted to today<')
+      // labelled as where similar homes sold.
+      expect(html).toContain('>Where similar homes sold')
       expect((html.match(/\$659,000/g) ?? []).length).toBe(1)
       expect(html.indexOf('$659,000')).toBeLessThan(html.indexOf('>Low<'))
     }
+    // The label names only the adjustments the sales behind the pair carry
+    // (reader review 2026-10-08). These sales moved for nothing; a cover given
+    // no sales keeps the label it always carried.
+    expect(immersive).toContain('>Where similar homes sold<')
+    expect(cover).toContain('>Where similar homes sold, adjusted to today<')
   })
 
   it('contract: recommended-inside-closed-comp-band', () => {
@@ -409,7 +414,11 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
       address: '1100 Horse Back',
       listPrice: 729_000,
       status: 'Pending' as const,
+      // Active Jun 1 to under contract Sep 4: a home under contract counts its
+      // days to that offer and is dated the day it went under contract
+      // (reader review 2026-10-08).
       daysOnMarket: 95,
+      pendingDate: '2026-09-04',
       photoUrl: null,
       latitude: 44.294,
       longitude: -121.535,
@@ -451,7 +460,7 @@ describe('1130 E Canter FlexMLS letter FLOW', () => {
       },
     })
     expect(rivalsHtml).toContain('1100 Horse Back')
-    expect(rivalsHtml).toMatch(/95 days on market/)
+    expect(rivalsHtml).toMatch(/95 days to an offer/)
     // Pending ask must not become Recommended.
     expect(letterCoverPayoffHtml(pricing)).toContain('$659,000')
     expect(letterCoverPayoffHtml(pricing)).not.toContain('$729,000')

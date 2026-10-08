@@ -64,7 +64,7 @@ type DryRun = {
   customOrNew: boolean | null
   pricingSource: string | null
   compCount: number
-  comps: Array<{ key: string; address: string; baths: number | null; sqft: number; closePrice: number; closeDate: string; adjusted: number; concessions: number | null; date?: number; size?: number }>
+  comps: Array<{ key: string; address: string; baths: number | null; sqft: number; closePrice: number; closeDate: string; adjusted: number; concessions: number | null; date?: number; size?: number; onMarketDate?: string | null; offerFrom?: string | null; daysToOffer?: number | null; domTotal?: number | null }>
   /**
    * The exclusive pocket's date gate (Matt 2026-10-08): whether the set is a
    * pocket, which mode priced it, and the local read the gate acted on.
@@ -118,7 +118,16 @@ type DryRun = {
    * the review grounds a price-tier cut on. `skipped` is the distinct sales the
    * line kept out (excluded_totals.price_tier). Null when there is no anchor.
    */
-  priceAnchor?: { ppsf: number; n: number; floor: number; ceiling: number; skipped: number } | null
+  priceAnchor?: {
+    ppsf: number
+    n: number
+    /** The level that held the median (lib/pricing/price-anchor.ts) and where, as the trace says it. */
+    level: string | null
+    where: string | null
+    floor: number
+    ceiling: number
+    skipped: number
+  } | null
   concessionSentence: string | null
   /** Same sentence over a MIN_COMPS-sized kept set (judge-trim simulation). */
   concessionSentenceTrimmed: string | null
@@ -189,6 +198,12 @@ type DryRun = {
   renderArgsPricingClamp: unknown
   /** render_args.pricing.setAside — the sales the range rule removed from the price. */
   renderArgsPricingSetAside: unknown
+  /**
+   * render_args.pricing.streetAnchor: the same-street sale and whether it
+   * capped the price, or was a trimmed end set aside like any other
+   * (Matt 2026-10-08, "Trim normally").
+   */
+  renderArgsPricingStreetAnchor?: unknown
   /** render_args.pricing.review — the flag a document must not be able to hide. */
   renderArgsPricingReview: unknown
   /**
@@ -343,6 +358,7 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
   const { MIN_COMPS, brokerCompRefusal } = await import('@/lib/cma/comps')
   const { getBpoListingCyclesByAddress } = await import('@/lib/data/bpo/reads')
   const { analyzeListingHistory } = await import('@/lib/bpo/history')
+  const { readFailedListingCycle, withFailedCycle } = await import('@/lib/cma/failed-cycle-read')
   const { buildFailureFindings, stampFinalCycleDom, resolveFinalCycle, buildAskExposure, applyFailedAskCap, FAILED_ASK_RECENCY_MONTHS } =
     await import('@/lib/cma/expired-audit')
   const { buildSubjectStatus } = await import('@/lib/pricing/subject-status')
@@ -399,12 +415,15 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
       : []
   const cycleStatus = String(cycleRows[0]?.['StandardStatus'] ?? subject.standardStatus ?? '')
   const lastCycleFailed = ['Expired', 'Canceled', 'Withdrawn'].includes(cycleStatus)
+  // EXACTLY lib/cma/build.ts: the failed cycle on the days it was on the
+  // market, from its MLS status log, read once.
+  const failedCycle = lastCycleFailed ? await readFailedListingCycle(cycleRows, subject) : null
   if (lastCycleFailed) {
     const row0 = cycleRows[0] ?? {}
     const cycleAsk = Number(row0['ListPrice'] ?? row0['OriginalListPrice'])
     if (Number.isFinite(cycleAsk) && cycleAsk > 0) subject.lastListPrice = cycleAsk
     subject.standardStatus = cycleStatus
-    stampFinalCycleDom(subject, analyzeListingHistory(cycleRows, subject, null).currentCycle)
+    stampFinalCycleDom(subject, failedCycle)
   }
 
   // EXACTLY lib/cma/build.ts step 1's stale-cycle suppression (round four,
@@ -472,6 +491,8 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
         ? {
             ppsf: anchorLine.anchor,
             n: selection.diagnostics.price_anchor.n,
+            level: selection.diagnostics.price_anchor.level ?? null,
+            where: selection.diagnostics.price_anchor.where ?? null,
             floor: anchorLine.floor,
             ceiling: anchorLine.ceiling,
             skipped: selection.diagnostics.excluded_totals?.price_tier ?? 0,
@@ -514,7 +535,7 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
   const exclusivePocket = selectionIsExclusivePocket(selection.tiersUsed ?? [])
   const finalCycleForWindow = lastCycleFailed
     ? await (async () => {
-        const cycle = analyzeListingHistory(cycleRows, subject, null).currentCycle
+        const cycle = failedCycle
         const priceEvents = cycle?.listingKey ? await getCmaListingPriceEvents(cycle.listingKey).catch(() => []) : []
         return resolveFinalCycle({ cycle, priceEvents, listingKey: cycle?.listingKey ?? subject.listingKey }).cycle
       })()
@@ -722,7 +743,7 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
   const concessionSentenceTrimmed = concessionLine(trimmed?.sellerNet)
   const reviewSubjectDom = (() => {
     if (!lastCycleFailed) return null
-    const history = analyzeListingHistory(cycleRows, subject, market?.medianDom ?? null)
+    const history = withFailedCycle(analyzeListingHistory(cycleRows, subject, market?.medianDom ?? null), failedCycle)
     const findings = buildFailureFindings({
       subject, pricing, market, history, photosCount: null, ownershipSince: null,
     })
@@ -740,8 +761,7 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
   }))
   const resolvedCycle = await (async () => {
     if (!lastCycleFailed) return { cycle: null, suppressedReason: null }
-    const history = analyzeListingHistory(cycleRows, subject, market?.medianDom ?? null)
-    const cycle = history.currentCycle
+    const cycle = failedCycle
     const priceEvents = cycle?.listingKey ? await getCmaListingPriceEvents(cycle.listingKey).catch(() => []) : []
     return resolveFinalCycle({ cycle, priceEvents, listingKey: cycle?.listingKey ?? subject.listingKey })
   })()
@@ -847,6 +867,10 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
       concessions: c.concessions,
       date: Math.round(c.timeAdjustment),
       size: Math.round(c.sizeAdjustment),
+      onMarketDate: c.onMarketDate ?? null,
+      offerFrom: c.offerFrom ?? null,
+      daysToOffer: c.daysToOffer,
+      domTotal: c.domTotal,
     })),
     pocketDate,
     recommended: pricing.recommended,
@@ -903,6 +927,7 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
     marketTrendMeasure: market?.trendMeasure ?? null,
     renderArgsPricingClamp: pricing.clamp ?? null,
     renderArgsPricingSetAside: pricing.setAside ?? null,
+    renderArgsPricingStreetAnchor: pricing.streetAnchor ?? null,
     renderArgsPricingReview: review,
     hold: pricing.hold ?? null,
     renderArgsPricingSellerNet: pricing.sellerNet ?? null,
@@ -992,7 +1017,7 @@ async function main() {
     }
     if (r.priceAnchor) {
       console.log(
-        `   price anchor $${r.priceAnchor.ppsf}/sqft (n=${r.priceAnchor.n}) · line $${r.priceAnchor.floor} to $${r.priceAnchor.ceiling} · ${r.priceAnchor.skipped} sale(s) skipped on the line`,
+        `   price anchor $${r.priceAnchor.ppsf}/sqft (n=${r.priceAnchor.n}${r.priceAnchor.level ? `, ${r.priceAnchor.level} ${r.priceAnchor.where ?? ''}`.trimEnd() : ''}) · line $${r.priceAnchor.floor} to $${r.priceAnchor.ceiling} · ${r.priceAnchor.skipped} sale(s) skipped on the line`,
       )
     }
     if (r.comps.length) {
