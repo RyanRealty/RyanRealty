@@ -10,7 +10,7 @@ Commit 1224b1f (2026-08-18, "stop dual GA4 tags") removed the in-page `gtag('con
 Google tag inside GTM-WV6R4NZ5 became the only GA4 config. From then on every browser `gtag('event', …)` had no
 destination: `section_view`, `scroll_depth`, `call_initiated`, `click_cta`, web vitals and the rest reached the
 dataLayer and never reached GA4 (`section_view`'s last GA4 data is the week of 2026-08-17; `call_initiated` read 0
-for Sep 10 to Oct 7). A live headless probe on 2026-10-08 (every beacon aborted, nothing reached Google) confirmed:
+for Sep 10 to Oct 7). A live headless probe on 2026-10-08 (every outgoing hit was blocked, nothing reached Google) confirmed:
 a bare `gtag('event')` sent nothing, a dataLayer-only event sent nothing, and only the Google tag's own `page_view`
 and `scroll` went out.
 

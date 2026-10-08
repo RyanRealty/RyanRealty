@@ -7,8 +7,8 @@
  * had no destination: the events sat in dataLayer and no /g/collect hit ever
  * carried them. section_view's last GA4 data is the week of 2026-08-17 and
  * call_initiated read 0 for Sep 10 to Oct 7 (Analytics audit 2026-10-08,
- * /home/box/agent-data/analytics/optimization-plan.md B1). A headless probe on
- * the live site on 2026-10-08, every beacon aborted, confirmed it: a bare
+ * optimization plan B1). A headless probe on
+ * the live site on 2026-10-08, with every outgoing hit blocked, confirmed it: a bare
  * gtag('event') sent nothing, a plain dataLayer event sent nothing (the
  * container has no event tag), and only a page_view and scroll went out.
  *
