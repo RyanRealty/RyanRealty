@@ -482,7 +482,6 @@ export function closesFromRows(rows: readonly CmaWindowCloseRow[]): ListingMarke
     closePrice: Number(r.ClosePrice),
     concessions: resolveConcessions({
       amount: r.concessions_amount,
-      yn: r.concessions_yn,
       closeDate: String(r.CloseDate ?? ''),
     }),
     sqft: r.TotalLivingAreaSqFt != null ? Number(r.TotalLivingAreaSqFt) : null,

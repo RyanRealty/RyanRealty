@@ -494,9 +494,12 @@ export type CmaWindowCloseRow = {
   Longitude: number | null
   SubdivisionName: string | null
   property_sub_type?: string | null
-  /** Recorded seller concession, so the chart's rate per foot is net like the table's. */
+  /**
+   * Recorded seller concession, so the chart's rate per foot is net like the
+   * table's. listings carries the amount only; the yes/no lives on
+   * sale_pricing_facts, and resolveConcessions reads a missing yes/no by date.
+   */
   concessions_amount?: number | null
-  concessions_yn?: string | null
 }
 
 /**
@@ -519,7 +522,7 @@ export async function getCmaCityClosedDuring(
     let q = sb
       .from('listings')
       .select(
-        'ClosePrice, CloseDate, TotalLivingAreaSqFt, Latitude, Longitude, SubdivisionName, property_sub_type, concessions_amount, concessions_yn',
+        'ClosePrice, CloseDate, TotalLivingAreaSqFt, Latitude, Longitude, SubdivisionName, property_sub_type, concessions_amount',
       )
       .eq('City', city)
       .eq('PropertyType', 'A')
