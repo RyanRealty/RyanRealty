@@ -287,6 +287,26 @@ All rules in `.cursor/rules/` are mandatory. Key rules:
 | `sliders-no-scrollbars.mdc` | Arrow navigation, no visible scrollbars on carousels |
 | `master-plan-protocol.mdc` | File ownership matrix enforcement |
 
+### Firm facts (one number per fact, Matt 2026-10-08)
+
+- **Founded 2014, everywhere.** JSON-LD `foundingDate` is `BRAND.llcSince` ("2014"). Prose says
+  "Matt Ryan founded Ryan Realty in 2014" (Matt confirmed the wording 2026-10-08; never tie 2014
+  to the LLC filing) and "opened the Bend office in June 2023". June 2023
+  (`BRAND.bendOfficeOpened`, the OREA affiliation date) is the Bend office, never the founding.
+- **Firm closings: one headline count.** Every closed MLS sale where a Ryan Realty broker was the
+  listing or buyer's broker, once per ListingKey, any area (`app/team/_v3/firm-record.ts`). A
+  977-zip subset is printed only as "N in Central Oregon". Never sum per-broker counts; never
+  label closings as "clients served".
+- **License 201253677 is a "registered business name" license** (OREA License Lookup), not a
+  "firm license" (`BRAND.firmLicense`). No new "licensed since" year or year count: the issue
+  date is not on the lookup.
+- **Hand-counted facts carry their count date** (review themes, neighborhood names): print the
+  date they were counted, and re-count when the underlying total moves.
+- **Counts bind live.** Never hard-code a closings or review count in copy; read it from the
+  record on render, and re-check it against live data on the day a change ships.
+- **Public copy never says who Ryan Realty is not a fit for** (Matt 2026-10-08: "we're the right
+  fit for every single person"). Say who we help; no "not the right fit" lists or fit/no-fit framing.
+
 ### Design System (Zero Exceptions)
 
 - **Components**: Only use shadcn/ui from `@/components/ui/`. See `CLAUDE.md` for the full mapping.

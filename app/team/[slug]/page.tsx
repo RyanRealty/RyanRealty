@@ -10,8 +10,8 @@
  * 6. Doors: team · reviews · sell
  *
  * THE PAGE CONTRACT: generateMetadata with the canonical-slug fix,
- * BrokerAttributionSetter, RealEstateAgent JSON-LD on worksFor (brokerage
- * aggregate), BreadcrumbList, V3SectionTracker pageType="broker",
+ * BrokerAttributionSetter, Person + RealEstateAgent JSON-LD (brokerPersonNode:
+ * worksFor by @id only, no aggregateRating, 2026-10-08), BreadcrumbList, V3SectionTracker pageType="broker",
  * revalidate 60. publishOwnClosingRows is the whole MLS set (C7).
  *
  * D11: no virtue names. No invented quote. MLS remarks N/A.
@@ -66,7 +66,7 @@ import { buildRegionAtlasRegions } from '@/app/_v3/region-atlas'
 import { toReviewQuotes } from '@/lib/reviews/review-quotes'
 import { basemapForRegions } from '@/lib/geo/basemap-source'
 import { valuationHref } from '@/lib/site/valuation-href'
-import { brokerPersonId, brokerSameAs } from '@/lib/site/broker-entity'
+import { brokerPersonNode } from '@/lib/site/broker-entity'
 
 const siteUrl = siteOrigin()
 const OFFICE_NAME = 'Ryan Realty'
@@ -119,8 +119,6 @@ export default async function TeamMemberPage({ params }: Props) {
   const broker = await getAgentBySlug(slug)
   if (!broker) notFound()
 
-  const brokerage = await getBrokerageSettings()
-  const siteName = brokerage?.name ?? 'Ryan Realty'
   const firstName = broker.display_name.split(' ')[0] ?? broker.display_name
   const canonicalPathSlug = broker.slug || slug
   const canonicalUrl = `${siteUrl}/team/${canonicalPathSlug}`
@@ -245,40 +243,24 @@ export default async function TeamMemberPage({ params }: Props) {
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'RealEstateAgent',
-              // AEO-6: the same @id the site-wide Organization gives this
-              // broker as founder/employee, so the two nodes merge into one
-              // entity, plus the profiles verified to be this person.
-              '@id': brokerPersonId(siteUrl, canonicalPathSlug),
-              ...(brokerSameAs(canonicalPathSlug).length > 0
-                ? { sameAs: brokerSameAs(canonicalPathSlug) }
-                : {}),
-              name: broker.display_name,
-              jobTitle: broker.title ?? 'Real Estate Broker',
-              image: broker.photo_url ?? HEADSHOT[broker.slug] ?? undefined,
-              telephone: broker.phone ?? undefined,
-              email: broker.email ?? undefined,
-              url: canonicalUrl,
-              areaServed: { '@type': 'Place', name: 'Central Oregon' },
-              worksFor: {
-                '@id': `${siteUrl}#organization`,
-                '@type': ['LocalBusiness', 'RealEstateAgent'],
-                name: siteName,
-                url: siteUrl,
-                ...(reviews.count > 0
-                  ? {
-                      aggregateRating: {
-                        '@type': 'AggregateRating',
-                        ratingValue: reviews.averageRating,
-                        reviewCount: reviews.count,
-                        bestRating: 5,
-                      },
-                    }
-                  : {}),
-              },
-            }),
+            // 2026-10-08 (SEO & AEO Desk /about brief): one Person +
+            // RealEstateAgent node under the same @id the site-wide
+            // Organization gives this broker. worksFor is the org's @id only:
+            // no restated org name and no aggregateRating on a broker page.
+            __html: JSON.stringify(
+              brokerPersonNode({
+                baseUrl: siteUrl,
+                slug: canonicalPathSlug,
+                name: broker.display_name,
+                jobTitle: broker.title ?? 'Real Estate Broker',
+                url: canonicalUrl,
+                image: broker.photo_url ?? HEADSHOT[broker.slug] ?? null,
+                phone: broker.phone,
+                email: broker.email,
+                license: broker.license_number,
+                isPrincipal: /principal/i.test(broker.title ?? ''),
+              }),
+            ),
           }}
         />
         <V3SectionTracker />
