@@ -493,7 +493,7 @@ export function matchToCompSelection(
         rows_returned: r.scanned,
         comps_added: r.added,
         running_total: r.runningTotal,
-        excluded: { ...emptyExclusions(), adu_sale: r.aduSkipped ?? 0 },
+        excluded: { ...emptyExclusions(), adu_sale: r.aduSkipped ?? 0, price_tier: r.priceTier ?? 0 },
         not_setting: r.notSetting,
       })),
       price_anchor: match.priceAnchor
@@ -509,9 +509,15 @@ export function matchToCompSelection(
       candidates: match.comps.length,
       // The facts ladder rejects inside passesTier without a reason, so the
       // totals stay at zero — except the acreage splits, which the walk counts
-      // once over the rural pool for the reader's story (Delta 4), and the ADU
-      // wall, counted once per distinct sale however many rungs reached it.
-      excluded_totals: { ...emptyExclusions(), ...(match.ruralSplits ?? {}), adu_sale: match.aduSkipped ?? 0 },
+      // once over the rural pool for the reader's story (Delta 4), the ADU
+      // wall and the one 20% price line, each counted once per distinct sale
+      // however many rungs reached it (one sale is re-read on every rung).
+      excluded_totals: {
+        ...emptyExclusions(),
+        ...(match.ruralSplits ?? {}),
+        adu_sale: match.aduSkipped ?? 0,
+        price_tier: match.priceTierSkipped ?? 0,
+      },
       not_price_setting: match.rungs.reduce((n, r) => n + (r.notSetting ?? 0), 0),
       outliers_excluded: 0,
       final_count: match.comps.length,
