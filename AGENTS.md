@@ -30,7 +30,7 @@ Every session — Claude Code, Cursor, or Grok — starts here:
 11. Approved CMAs send only in the weekday 9:03 AM PT window.
 12. Never use buyer or seller names in social, email, or public copy.
 13. No em dashes in public site copy.
-14. All code work is pushed to GitHub as a branch right away. Land main with a fast-forward when the work is ready. Any machine may do it. No rebase, force-push, or reset.
+14. Every change ships as a branch + PR (Matt 2026-10-08). Push the branch to GitHub right away and open a PR to `main`. Matt merges. Nobody pushes to `main`, including admins. No rebase, force-push, or reset.
 15. Recommended price is the weighted price of the sales the picker kept. A closer match weighs more. A looser match stays. Location order, heaviest first, is the long-standing search order: same subdivision (weight 3), adjacent subdivisions (weight 2), the neighborhood or community (weight 1). Size and bedrooms come after that and cannot reorder it. A same-subdivision sale outweighs a similar-size neighborhood sale. An adjacent-subdivision sale sits between those two. One size cutoff, the picker's, about 35% living area. The review does not drop a picker-kept sale for a tighter size gap or a 15-year vintage wall. When the first location search is short of 3 comps, widen the closed-sale age and date range. Do not return a short set. The pull walks same subdivision, then adjacent subdivisions, then the neighborhood community, and widens the closed-sale age and date inside each before the next. After that community, distance rings start at 0.25 miles and step up by 0.25 miles. Do not open with a 1-mile ring. Do not fall back to same-zip while a closer place still has sales.
 **One rule set (Matt 2026-10-08).** There is no second review. The picker rules are the process. "One rule set. The picker's size cutoff, sales kept out to about a 35% living-area gap, is the only size cutoff. Nothing re-judges a sale the picker kept. If the first search returns fewer than 3 comps that pass, widen the closed-sale age and date range and search again. Do not return a short set with no recovery, and do not run a token-burning review that uses different cuts."
 16. An expired, canceled, or withdrawn home that did not sell was overpriced. The recommended price must come out under the last ask. A number that matches the ask, or sits over it, is wrong. The comps still set the price. Location weights stay same subdivision 3, adjacent 2, neighborhood 1, and size and bedrooms cannot reorder that. If the weighted comp price is already under the last ask, leave it. Do not add a second discount. If it is at the last ask or above it, pull it under. With no days on market and no original ask, the pull is $1,000, not a percent. When days on market or an original ask is already on the subject, start at 1% under and deepen with days on market toward 120 days. No price cut, when the original ask is known and did not come down, adds up to 2% more, so 3% at 120 days. A known price cut, or no original ask to judge a cut by, adds at most 0.5% more, so 1.5% at 120 days. The pull floors to the thousand and stays inside 3%. This is only for a home that failed to sell. Do not apply it to a normal comp sale. The hold is separate and unchanged: a rec more than 15% under last ask, or any amount over last ask, is a hold. Exactly 15% under is not a hold. Recommended price is still the house from comps only. ADU, second lot, and rental stay notes, not dollars.
@@ -51,6 +51,7 @@ Every session — Claude Code, Cursor, or Grok — starts here:
 | utm_campaign | stable program slug: `cma-letter`, `expired-outreach`, `fsbo-outreach`, `market-report-YYYY-MM`, `open-house-weekly`, `listing-launch`, plus `listing-alerts`, `gbp-profile`, `newsletter`, `social-post`, `crm-outbound` |
 | utm_content | variant: `v2`, `cta-top`, `listing-<listing_key>`, `agent-<slug>` (never an address) |
 | utm_term | paid keyword only (medium `cpc` or `paid_social`) |
+26. **Grok fallback when Cursor is out (Matt 2026-10-08).** Bots never stop because Cursor is out. When a Cursor cloud agent or CLI hits a usage, credit, spend or on-demand limit (or a 402), or stalls for 20 minutes, switch at once to the Grok CLI on Matt's Grok subscription: `env -u XAI_API_KEY ~/.grok/bin/grok -m grok-4.6 --reasoning-effort xhigh --always-approve -p ...`, run in a fresh worktree branched from origin/main (skill: grok-fallback-when-cursor-is-out; helper: `/home/box/agent-data/tools/grok-code-pr.sh`). Never use XAI_API_KEY, ANTHROPIC_API_KEY or OPENAI_API_KEY to get past a limit. Every other rule still holds: land per rule 14, DB read-only unless Matt says otherwise, no secrets printed, no sends. Tell Matt you switched, with the exact Cursor error, and the PR link. If Grok's login is also out, stop and ask Matt to re-login. Don't wait silently.
 
 
 `docs/EXECUTION_PLAN.md` and `docs/SITE_SPEC.md` are 2026-05-22 fossils (SITE_SPEC still describes an AgentFire WordPress cutover that already shipped). Do not execute them.
@@ -84,8 +85,8 @@ Matt alternates between **Claude Code** and **Cursor**. Both are the same repo a
 
 ### Ship discipline (non-negotiable)
 
-1. **Production truth is `origin/main`.** All code work is pushed to GitHub as a branch right away. Land main with a fast-forward when the work is ready. Any machine may do it. No rebase, force-push, or reset. Unfinished work still gets a line in `docs/plans/CROSS_AGENT_HANDOFF.md`. Network failure is the only excuse for the branch not being on origin yet. Say that explicitly.
-2. **Production follows Git.** Pushing `main` triggers Vercel production when the diff affects the Next app; “shipped” means remote `main` is updated and, when app code changed, the production deploy is **READY** (see `.cursor/rules/deploy-verify-before-done.mdc`). Docs/skills/changelog-only pushes are skipped by `scripts/vercel-ignore-build.mjs` (`vercel.json` → `ignoreCommand`).
+1. **Production truth is `origin/main`.** All code work is pushed to GitHub as a branch right away. Every change ships as a branch + PR to `main`; Matt merges. Nobody pushes to `main`, including admins (Matt 2026-10-08). No rebase, force-push, or reset. Unfinished work still gets a line in `docs/plans/CROSS_AGENT_HANDOFF.md`. Network failure is the only excuse for the branch not being on origin yet. Say that explicitly.
+2. **Production follows Git.** Pushing `main` triggers Vercel production when the diff affects the Next app; “shipped” means Matt merged the PR and remote `main` is updated and, when app code changed, the production deploy is **READY** (see `.cursor/rules/deploy-verify-before-done.mdc`). Docs/skills/changelog-only pushes are skipped by `scripts/vercel-ignore-build.mjs` (`vercel.json` → `ignoreCommand`).
 3. **No hanging migrations.** New files under `supabase/migrations/` are not real until they run on **hosted** Supabase. Apply them in the **same delivery effort** as the code that needs them — never “commit now, migrate later” (`.cursor/rules/supabase-migrations-auto.mdc`, `.cursor/rules/production-parity.mdc`).
 4. **Branch, then push.** Day-to-day edits go on a branch from current `origin/main` and that branch is pushed to GitHub right away. Use linked worktrees for parallel agents, not as a silent parking lot. See **Worktrees** below.
 
@@ -93,13 +94,13 @@ Matt alternates between **Claude Code** and **Cursor**. Both are the same repo a
 
 July 2026 Pro spend was dominated by **Build CPU Minutes**, not traffic. Change *when* and *what* you push:
 
-1. **Runtime changes** (`app/`, `components/`, `lib/`, `public/` used by the app, `package.json` / lockfile, `next.config.*`, `vercel.json`, `supabase/migrations/`) → finish the task, **one commit on the branch**, `NODE_OPTIONS=--max-old-space-size=8192 npm run push` (pushes that branch, not `main`), then `npm run deploy:verify` when the user-facing app changed and `main` has the fast-forward.
+1. **Runtime changes** (`app/`, `components/`, `lib/`, `public/` used by the app, `package.json` / lockfile, `next.config.*`, `vercel.json`, `supabase/migrations/`) → finish the task, **one commit on the branch**, `NODE_OPTIONS=--max-old-space-size=8192 npm run push` (pushes that branch, not `main`), then `npm run deploy:verify` when the user-facing app changed and Matt has merged the PR.
 2. **Docs / skills / rules / plans / handoffs only** → **batch into one commit**, then push once. Local `npm run push` already skips `next build` for non-buildable diffs; Vercel skips the remote build via `ignoreCommand`. Do not drip many docs commits that each burn local `ci:gates`.
 3. **Do not push mid-thought.** Commit locally while iterating if you need a restore point; push when the unit of work is coherent.
 4. **Ship class (fleet / loop):** same-category bot findings share one isolated verify + one production deploy. `loop-brief` prints the class. Do not run `npm run push` after each finding.
 5. **R-221 — do not poll GitHub Actions.** One `ci:gates` per ship. After a green local stamp + push, stop. Do not `gh run view` in a loop. Do not rematch `origin/main` unless GitHub says CONFLICTING. Live-DB int tests are nightly (`test:int`), not a reason to sit idle.
 6. **Release / changelog:** GitHub Releases carry the notes. Do not recreate a `chore: update changelog` commit on `main` — that path burned hundreds of full production builds.
-7. **Worktree branches:** push them to GitHub right away. Do not keep the only copy local. Do not merge them to `main` yourself. Land main with a fast-forward when the work is ready. Any machine may do it.
+7. **Worktree branches:** push them to GitHub right away. Do not keep the only copy local. Do not merge them to `main` yourself. Open a PR to `main`; Matt merges.
 
 ### Worktrees (allowed — design against stranded work)
 
@@ -432,9 +433,9 @@ NODE_OPTIONS=--max-old-space-size=8192 npm run push   # the branch, not main
 
 `orchestrate.ts complete` is retired. The work graph updates from loop/sentinel, not from that CLI.
 
-## CRITICAL: Push the branch, then fast-forward `main` when the work is ready.
+## CRITICAL: Push the branch and open a PR. Matt merges. Nobody pushes `main`.
 
-**Production deploys from `main` only. Land `main` with a fast-forward when the work is ready. Any machine may do it.** Routine work: commit on a branch from current `origin/main` and `npm run push` that branch. Do not merge, rebase, force-push, or reset. Do not leave the only copy of valued work unpushed. Unfinished work gets a line in `CROSS_AGENT_HANDOFF.md`.
+**Production deploys from `main` only. Every change reaches `main` only through a PR that Matt merges. Nobody pushes to `main`, including admins (Matt 2026-10-08).** Routine work: commit on a branch from current `origin/main` and `npm run push` that branch, then open a PR to `main`. Do not merge, rebase, force-push, or reset. Do not leave the only copy of valued work unpushed. Unfinished work gets a line in `CROSS_AGENT_HANDOFF.md`.
 
 ```bash
 # DEFAULT: push the branch, not main
