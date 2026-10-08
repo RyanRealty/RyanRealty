@@ -30,17 +30,22 @@
  * whether or not the review ran: a structure-type exclusion, a sub-type the
  * product class rejects, a duplex or any multi-unit by its public remarks
  * (rule 23, Matt 2026-10-07, multiUnitFromRemarks; symmetric, an ADU is not
- * a unit), age-restricted housing the subject is not part of
+ * a unit), a sale whose remarks state an ADU against a subject whose remarks
+ * state none (Matt 2026-10-08, "ADU sale skips", aduSaleRefused; not
+ * symmetric), age-restricted housing the subject is not part of
  * (lib/pricing/age-restricted.ts), and a new build against an ordinary resale.
+ * The multi-unit and ADU words are read only by those two readers, the same
+ * ones both search ladders and the review grounding read; PRODUCT_REASON below
+ * carries the attached, condo and manufactured words of a review reason only.
  * When the review did not run, the product-matched pool prices with the
  * dispersion guard and the contract's review flag as the backstop.
  */
-import { dropsResaleVersusNewBuild, multiUnitFromRemarks } from '@/lib/pricing/classes'
+import { aduSaleRefused, dropsResaleVersusNewBuild, multiUnitFromRemarks } from '@/lib/pricing/classes'
 import { productTypeCompatible } from '@/lib/cma/market-area'
 import { ageRestrictedMismatch, ownPlatAgeRestrictedShare } from '@/lib/pricing/age-restricted'
 
 const PRODUCT_REASON =
-  /\b(product type|different product|townhomes?|townhouses?|condominiums?|condos?|rowhouses?|row houses?|manufactured|duplex|triplex|quadruplex|lodges?|shared wall|common wall|structure type)\b/i
+  /\b(product type|different product|townhomes?|townhouses?|condominiums?|condos?|rowhouses?|row houses?|manufactured|lodges?|shared wall|common wall|structure type)\b/i
 
 export type ProductVerdict = {
   listingKey: string
@@ -111,6 +116,9 @@ export function pricingCompsAfterJudgment<T extends ProductComp>(args: {
     // Rule 23: the remarks are read for a multi-unit on both sides. Null
     // remarks on a comp fail open (false on both sides is a match).
     if (multiUnitFromRemarks(comp.publicRemarks) !== multiUnitFromRemarks(args.subject.publicRemarks)) return true
+    // The ADU wall: a sale whose remarks state an ADU never prices a subject
+    // whose remarks state none. A subject with an ADU keeps both kinds.
+    if (aduSaleRefused(args.subject.publicRemarks, comp.publicRemarks)) return true
     if (!productTypeCompatible(args.subject.propertySubType, comp.propertySubType ?? null)) return true
     const verdict = byVerdict.get(comp.listingKey)
     if (verdict && isHardProductExclusion(verdict)) return true

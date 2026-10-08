@@ -25,10 +25,16 @@ import type { CmaAdjustedComp, CmaComp, CmaMarketContext, CmaSubject } from '@/l
 
 // ── 1. one clock per sale ───────────────────────────────────────────────────
 
-describe('the offer clock and the days on market share one start', () => {
-  it('moves a relist-day offer count back to the first list (3169 Coho)', () => {
-    // Listed Jun 1, 2024, relisted later; the record's 3 days counted from the
-    // relist. Pending on Sep 23 is 114 days from the first list.
+// The 2026-10-07 review moved the offer clock back to the first list so it
+// matched a first-list-to-close count beside it. The 2026-10-08 review found
+// that printed 61197 Cottonwood's offer at 264 days when it came back Nov 13
+// and went Pending Dec 30, 47 days later. The clock is Active to Pending on
+// the listing period that produced the sale (lib/cma/listing-status.ts), and
+// the sale's price path starts on the day that clock started.
+describe('the offer clock is counted on the listing period that produced the sale', () => {
+  it('keeps a relist-day offer count on the relist (3169 Coho)', () => {
+    // Listed Jun 1, 2024, relisted Sep 20; Pending Sep 23 is 3 days after the
+    // relist. It is never moved back to the first list.
     expect(
       closedSaleDaysToOffer({
         daysToOffer: 3,
@@ -36,7 +42,7 @@ describe('the offer clock and the days on market share one start', () => {
         firstListDate: '2024-06-01',
         domTotal: 146,
       }),
-    ).toBe(114)
+    ).toBe(3)
   })
 
   it('drops an offer count longer than the run to close (2107 Carrie, 67 of 66)', () => {
@@ -46,25 +52,16 @@ describe('the offer clock and the days on market share one start', () => {
     expect(closedSaleDaysToOffer({ daysToOffer: 12 })).toBe(12)
   })
 
-  it('drops an offer count whose start is after an undated earlier listing', () => {
-    // The MLS counts 146 days, the row's dates only 35: an earlier listing the
-    // row has no date for. Shifting by the gap would be an estimate.
+  it('drops an offer count that, from the day it started, ends after the close', () => {
     expect(
-      closedSaleDaysToOffer({ daysToOffer: 3, firstListDate: '2024-09-20', closeDate: '2024-10-25', domTotal: 146 }),
+      closedSaleDaysToOffer({ daysToOffer: 40, measuredFrom: '2024-09-20', closeDate: '2024-10-25', domTotal: 146 }),
     ).toBeNull()
-    // Dated, the same sale keeps its (shifted) count.
     expect(
-      closedSaleDaysToOffer({
-        daysToOffer: 3,
-        measuredFrom: '2024-09-20',
-        firstListDate: '2024-06-01',
-        closeDate: '2024-10-25',
-        domTotal: 146,
-      }),
-    ).toBe(114)
+      closedSaleDaysToOffer({ daysToOffer: 35, measuredFrom: '2024-09-20', closeDate: '2024-10-25', domTotal: 146 }),
+    ).toBe(35)
   })
 
-  it('stamps the shifted offer count with the first-list DOM, once', () => {
+  it('stamps the offer on the relist and the first list on the DOM, once', () => {
     const comp = {
       listingKey: 'K',
       closeDate: '2024-10-25',
@@ -75,19 +72,28 @@ describe('the offer clock and the days on market share one start', () => {
       originalListPrice: 650000,
       closePrice: 599000,
     } as unknown as CmaComp
-    const once = stampClosedCompDom(comp, { originalEntryTimestamp: '2024-06-01T10:00:00Z' })
+    const extras = {
+      onMarketDate: '2024-09-20T17:00:00Z',
+      originalEntryTimestamp: '2024-06-01T17:00:00Z',
+      pendingTimestamp: '2024-09-23T18:00:00Z',
+      daysToPending: 3,
+    }
+    const once = stampClosedCompDom(comp, extras)
     expect(once.onMarketDate).toBe('2024-06-01')
     expect(once.domTotal).toBe(146)
-    expect(once.daysToOffer).toBe(114)
-    // Idempotent: a second stamp starts from the first list already.
-    const twice = stampClosedCompDom(once, { originalEntryTimestamp: '2024-06-01T10:00:00Z' })
-    expect(twice.daysToOffer).toBe(114)
+    expect(once.daysToOffer).toBe(3)
+    expect(once.offerFrom).toBe('2024-09-20')
+    // Idempotent.
+    const twice = stampClosedCompDom(once, extras)
+    expect(twice.daysToOffer).toBe(3)
+    expect(twice.offerFrom).toBe('2024-09-20')
   })
 
   it('keeps the hydrated offer count through a pricing rebuild', () => {
     const rebuilt = { daysToOffer: 3, domTotal: 35, onMarketDate: '2024-09-20' } as unknown as CmaComp
     const hydrated = { daysToOffer: 114, domTotal: 146, onMarketDate: '2024-06-01', listingHistoryLine: null }
     expect(preserveHydratedClosedCompDom(rebuilt, hydrated).daysToOffer).toBe(114)
+    expect(preserveHydratedClosedCompDom(rebuilt, { ...hydrated, offerFrom: '2024-09-20' }).offerFrom).toBe('2024-09-20')
     // A hydrate that dropped a broken count keeps it dropped.
     expect(preserveHydratedClosedCompDom(rebuilt, { ...hydrated, daysToOffer: null }).daysToOffer).toBeNull()
     // An older hydrate without the field leaves the rebuilt one.
@@ -117,7 +123,8 @@ describe('the offer clock and the days on market share one start', () => {
     expect(row!.outcome).toContain('offer in 114 days')
     expect(domCell(row!, row!.domDays)).toBe('114 days')
     const [pin] = pinFactsFor([row!])
-    expect(pinRevealLine(pin!)).toContain('114 days on market')
+    // The pin names its measure: an offer count is not days on market.
+    expect(pinRevealLine(pin!)).toContain('114 days to an offer')
     expect(row!.outcome).not.toContain('146')
   })
 
@@ -144,8 +151,14 @@ describe('the offer clock and the days on market share one start', () => {
       ],
       market: null,
     })
-    expect(html).toContain('inside 30 days')
+    // The caption counts the bars actually drawn, and "within" is true of the
+    // slowest bar sitting exactly on the figure (reader review 2026-10-08).
+    expect(html).toContain('All three sales shown had an offer within 30 days.')
     expect(html).not.toContain('67 days')
+    // The sale left off is named under the chart rather than skipped silently.
+    expect(html).toContain(
+      'Sale 4, 4 D, is not on the chart: its recorded offer date does not fit its listing and closing dates.',
+    )
   })
 })
 
@@ -180,7 +193,7 @@ describe('the subject\'s days against the figures beside them', () => {
 
   it('says the plain fact when the subject sat less than the figures it is set beside (Wild Rose)', () => {
     const html = renderDaysToOfferHtml({ subject: subject('Withdrawn', 25), comps, market })
-    expect(html).toContain('Every sale below had an offer inside 43 days.')
+    expect(html).toContain('All five sales shown had an offer within 43 days.')
     expect(html).toContain('median is 26.')
     expect(html).toContain('Yours was withdrawn after 25 days.')
     expect(html).not.toContain('never got one')
@@ -192,11 +205,16 @@ describe('the subject\'s days against the figures beside them', () => {
 
   it('keeps the contrast when the subject outran every figure (3177 Coho)', () => {
     const html = renderDaysToOfferHtml({ subject: subject('Expired', 302), comps, market })
-    expect(html).toContain('Yours sat 302 days and never got one.')
-    expect(html).toContain('302 days, no offer')
+    // The contrast says what the MLS status says. It does not record whether an
+    // offer came in, so nothing says "never got one" (reader review 2026-10-08).
+    expect(html).toContain('Yours sat 302 days and did not sell.')
+    expect(html).toContain('302 days, expired')
+    expect(html).not.toContain('never got one')
+    expect(html).not.toContain('no offer')
     const withdrawnLong = renderDaysToOfferHtml({ subject: subject('Withdrawn', 302), comps, market })
     // A long run tested the market, withdrawn or not.
-    expect(withdrawnLong).toContain('Yours sat 302 days and never got one.')
+    expect(withdrawnLong).toContain('Yours sat 302 days and did not sell.')
+    expect(withdrawnLong).toContain('302 days, withdrawn')
   })
 
   it('gates the offer-timing line the same way', () => {
@@ -204,7 +222,7 @@ describe('the subject\'s days against the figures beside them', () => {
       'Yours was withdrawn after 25 days.',
     )
     expect(renderOfferTimingHtml({ market, subject: subject('Expired', 40) })).toContain(
-      'Yours went 40 days without one.',
+      'Yours sat 40 days and did not sell.',
     )
   })
 
@@ -215,7 +233,8 @@ describe('the subject\'s days against the figures beside them', () => {
     expect(short).not.toContain('without an offer')
     expect(short).not.toContain('that long')
     const long = askStoryReading({ ...base, days: 120, status: 'Expired' })
-    expect(long).toContain('Your home sat 120 days without an offer.')
+    expect(long).toContain('Your home sat 120 days and did not sell.')
+    expect(long).not.toContain('without an offer')
   })
 
   it('counts only figures that are there', () => {
@@ -277,7 +296,7 @@ describe('wording a person would use', () => {
       mosFormula: 'getMetric months_of_supply mt-v1 detached MLS-city (same path as /sell)',
     } as unknown as CmaMarketContext)
     // 707 / 3.477 = 203.3 a month, the six-month close pace the figure divides by.
-    expect(html).toContain('707 homes are for sale in Bend right now. Over the last six months, an average of 203 sold each month.')
+    expect(html).toContain('707 single-family homes are for sale in Bend right now. Over the last six months, an average of 203 sold each month.')
     expect(html).not.toContain('typical month')
   })
 })

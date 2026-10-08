@@ -25,12 +25,13 @@
  *
  * - more than 10 percent above the top of the range → the overpricing story,
  *   unchanged. The gap is the finding and the chapter says so.
- * - inside 10 percent above → the ask was near what the market would pay, and
- *   187 days without an offer is then a fact about something else. The chapter
- *   states the facts and states the limit of what they support. It never names
- *   a cause: nothing on the row measures condition, access, photography or
- *   terms, and inventing one would be the §0 failure in the other direction.
- * - inside or below the range → the same, with the ask sentence saying so.
+ * - inside 10 percent above → the ask was near what the market would pay. The
+ *   chapter states the facts and hands the rest to a walk-through. It never
+ *   names a cause: nothing on the row measures condition, access, photography
+ *   or terms, and inventing one would be the §0 failure in the other direction.
+ * - inside or below the range → the days are split by where each ask sat
+ *   (`askRangeSplit`), and only a long enough stretch at a price on that side
+ *   (`inRangeStretchSpeaks`) may point away from the number.
  *
  * The graphics do not move. The offer-timing curve, the three-bar outcome and
  * the realization strip are measurements of this city, true whatever this one
@@ -48,6 +49,7 @@
  * chapter chooses it.
  */
 import { askStepIsOwnEra } from '@/lib/cma/price-path'
+import { cameOffThenSentence, type CameOffFacts } from '@/lib/cma/listing-status'
 
 export type AskGapClass = 'far-above' | 'near-above' | 'inside' | 'below' | 'neutral'
 
@@ -65,6 +67,12 @@ function pct1(ratio: number): string {
  * on a dollars-a-foot measure. Both were true and, a minute apart, they
  * cancelled. Chapter 2 now leads with this sentence and puts its own
  * dollars-a-foot line after it.
+ *
+ * THE RANGE IS ADJUSTED, SO IT IS WHAT THE SALES SUPPORT, NOT WHAT HOMES SOLD
+ * IN (reader review 2026-10-08). The two ends are each sale adjusted to this
+ * home; 20676 Wild Rose's sales sold for $675,000 to $715,000 and adjust to
+ * $627,332 to $724,442. "The range homes like yours sold in" named the
+ * adjusted figures as sold prices.
  */
 export function askAgainstRangeSentence(
   ask: number | null,
@@ -76,12 +84,12 @@ export function askAgainstRangeSentence(
   const high = Math.max(rangeLow, rangeHigh)
   if (!(low > 0) || !(high > 0)) return ''
   if (ask > high) {
-    return `You were asking ${pct1((ask - high) / high)} percent above the top of the range homes like yours sold in.`
+    return `You were asking ${pct1((ask - high) / high)} percent above the top of the range the sales support.`
   }
   if (ask < low) {
-    return `You were asking ${pct1((low - ask) / low)} percent below the bottom of the range homes like yours sold in.`
+    return `You were asking ${pct1((low - ask) / low)} percent below the bottom of the range the sales support.`
   }
-  return 'You were asking inside the range homes like yours sold in.'
+  return 'You were asking inside the range the sales support.'
 }
 
 /**
@@ -115,6 +123,15 @@ function atThatPrice(cls: AskGapClass): string {
   return 'At a price inside the range'
 }
 
+function dayCount(n: number): string {
+  return Math.round(n).toLocaleString('en-US')
+}
+
+function daysWord(n: number): string {
+  const d = Math.round(n)
+  return `${dayCount(d)} ${d === 1 ? 'day' : 'days'}`
+}
+
 /**
  * The stated limit.
  *
@@ -122,8 +139,22 @@ function atThatPrice(cls: AskGapClass): string {
  * document that changed its story and one that swapped one unfounded claim for
  * another: the row carries the days and the city's median, and it carries
  * nothing at all about the house's condition or how it was shown.
+ *
+ * `days` is the stretch the claim is about. On the inside story that is ONLY
+ * the days spent at an ask inside the range (reader review 2026-10-08), never
+ * the whole listing, and the caller decides whether that stretch may carry the
+ * claim at all (`inRangeStretchSpeaks`).
+ *
+ * NO OFFER IS NOT A FACT ON THE ROW. The MLS records that a listing expired,
+ * was canceled or was withdrawn; it does not record whether an offer came in.
+ * "Without an offer" said more than the data does, so the sentence says what
+ * the status says: the home did not sell.
  */
-export function walkTheHouseSentence(cls: AskGapClass, days: number | null): string {
+export function walkTheHouseSentence(
+  cls: AskGapClass,
+  days: number | null,
+  opts?: { daysAlreadySaid?: boolean },
+): string {
   if (days == null || !(days > 0)) return ''
   // An ask above what the sales support that then sat is the overpricing story
   // the data carries (Matt 2026-09-07: "if you overprice you will sit or not
@@ -134,14 +165,144 @@ export function walkTheHouseSentence(cls: AskGapClass, days: number | null): str
   if (cls === 'near-above') {
     return 'That starts with the price. We would walk it with you before saying more.'
   }
-  return `${atThatPrice(cls)}, that long without an offer points at something other than the number. We would walk it with you before saying more.`
+  const span = opts?.daysAlreadySaid ? 'that long' : daysWord(days)
+  return `${atThatPrice(cls)}, ${span} without a sale points at something other than the number. We would walk it with you before saying more.`
 }
 
-/** "Your home sat 187 days." — and, off the overpricing story, what it sat without. */
+/** "Your home sat 187 days." — and, off the overpricing story, how it ended. */
 function satSentence(cls: AskGapClass, days: number | null): string {
   if (days == null || !(days > 0)) return ''
-  const n = Math.round(days).toLocaleString('en-US')
-  return cls === 'far-above' ? `Your home sat ${n} days.` : `Your home sat ${n} days without an offer.`
+  const n = dayCount(days)
+  return cls === 'far-above' ? `Your home sat ${n} days.` : `Your home sat ${n} days and did not sell.`
+}
+
+// ── Where each ask sat against the range, and for how long ──────────────────
+
+/** The asks on one side of the range, in the order the listing carried them. */
+export type AskRangeStretch = {
+  asks: number[]
+  days: number
+  /** These asks were the listing's last run: no ask on another side came after them. */
+  trailing: boolean
+}
+
+export type AskRangeSplit = {
+  above: AskRangeStretch
+  inside: AskRangeStretch
+  below: AskRangeStretch
+  total: number
+}
+
+type RangeSide = 'above' | 'inside' | 'below'
+
+/**
+ * How the listing's days split across the range, ask by ask.
+ *
+ * THE INSIDE STORY HAS TO BE TRUE TO EVERY ASK, NOT ONLY THE LAST ONE (reader
+ * review 2026-10-08). 62475 Woodsman's page said "You were asking inside the
+ * range homes like yours sold in. Your home sat 208 days without an offer"
+ * when only its last 32 of 208 days were at an in-range ask; 2382 Jackson's
+ * said it of 227 days when only the last 79 were. The page's own chart drew
+ * the line above the zone most of the time, and two lines later the place
+ * story said "A home that starts high and then cuts sits longer." The story
+ * class is still the last ask's (it is what the hold and the gap measure);
+ * this says how the days split underneath it.
+ *
+ * Null when any ask has no day count: a split with a hole in it is not a
+ * split, and the reading then makes no claim about the days at all.
+ */
+export function askRangeSplit(
+  segments: ReadonlyArray<{ ask: number; days: number | null }>,
+  rangeLow: number,
+  rangeHigh: number,
+): AskRangeSplit | null {
+  const low = Math.min(rangeLow, rangeHigh)
+  const high = Math.max(rangeLow, rangeHigh)
+  if (!(low > 0) || !(high > 0)) return null
+  const runs = segments.filter((s) => s.ask > 0)
+  if (runs.length === 0) return null
+  if (!runs.every((s) => s.days != null && Number.isFinite(s.days) && s.days >= 0)) return null
+  const side = (ask: number): RangeSide => (ask > high ? 'above' : ask < low ? 'below' : 'inside')
+  const split: AskRangeSplit = {
+    above: { asks: [], days: 0, trailing: false },
+    inside: { asks: [], days: 0, trailing: false },
+    below: { asks: [], days: 0, trailing: false },
+    total: 0,
+  }
+  for (const s of runs) {
+    const bucket = split[side(s.ask)]
+    bucket.asks.push(s.ask)
+    bucket.days += Math.round(s.days!)
+    split.total += Math.round(s.days!)
+  }
+  if (!(split.total > 0)) return null
+  // The side the listing ended on is "the last" run only when every one of
+  // its asks comes after every ask on the other sides.
+  const lastSide = side(runs[runs.length - 1]!.ask)
+  const firstOfLast = runs.findIndex((s) => side(s.ask) === lastSide)
+  split[lastSide].trailing = runs.slice(firstOfLast).every((s) => side(s.ask) === lastSide)
+  return split
+}
+
+/**
+ * WHEN THE DAYS INSIDE THE RANGE MAY SAY ANYTHING ABOUT THE HOUSE.
+ *
+ * The rule: the stretch spent at in-range asks must run MORE THAN TWICE the
+ * city's median days to an accepted offer, the same median the sentence before
+ * it prints. One median is not enough: at the median, half of the city's sales
+ * are still waiting for their offer, and this file already reads a run that
+ * does not outlast the median as no sit at all (`short` in askStoryReading).
+ * Past twice the median the stretch is plainly beyond the usual wait, not at
+ * its edge. With no median on the row there is nothing to measure the stretch
+ * against, so no claim is made.
+ *
+ * On the reviewed letters, against Bend's 26-day median: Woodsman's 32 days at
+ * $1,600,000 make no claim; Jackson's 79 days at $639,000 do.
+ */
+export const IN_RANGE_STRETCH_MEDIANS = 2
+
+export function inRangeStretchSpeaks(stretchDays: number, medianDays: number | null | undefined): boolean {
+  if (!(stretchDays > 0)) return false
+  if (medianDays == null || !(medianDays > 0)) return false
+  return Math.round(stretchDays) > IN_RANGE_STRETCH_MEDIANS * Math.round(medianDays)
+}
+
+const COUNT_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten']
+
+function countWord(n: number): string {
+  return Number.isInteger(n) && n >= 0 && n < COUNT_WORDS.length ? COUNT_WORDS[n]! : n.toLocaleString('en-US')
+}
+
+/** "at $699,000" · "at $699,000, then $679,000" · "at three asks from $699,000 to $659,000". */
+function atAsks(asks: readonly number[]): string {
+  if (asks.length === 1) return `at ${usd(asks[0]!)}`
+  if (asks.length === 2) return `at ${usd(asks[0]!)}, then ${usd(asks[1]!)}`
+  return `at ${countWord(asks.length)} asks from ${usd(asks[0]!)} to ${usd(asks[asks.length - 1]!)}`
+}
+
+/**
+ * The days, side by side: how long the ask sat on the far side of the range
+ * and at which asks, then how long at the asks on the story's own side. Null
+ * when every day sat on one side, so the plain one-side reading stands.
+ */
+function rangeSplitSentences(split: AskRangeSplit, own: 'inside' | 'below'): string[] | null {
+  const others = (['above', 'inside', 'below'] as const).filter((k) => k !== own && split[k].days > 0)
+  if (others.length === 0) return null
+  const out: string[] = []
+  others.forEach((k, i) => {
+    const range = i === 0 ? 'the range the sales support' : 'it'
+    out.push(
+      `For ${dayCount(split[k].days)} of your ${dayCount(split.total)} days you were asking ${k} ${range}, ${atAsks(split[k].asks)}.`,
+    )
+  })
+  const mine = split[own]
+  const span = `for ${mine.trailing ? 'the last ' : ''}${daysWord(mine.days)}`
+  out.push(
+    mine.asks.length === 1
+      ? `You asked ${usd(mine.asks[0]!)}, ${own} the range, ${span}, and your home did not sell.`
+      : `You asked ${own} the range ${span}, ${atAsks(mine.asks)}, and your home did not sell.`,
+  )
+  return out
 }
 
 /**
@@ -209,6 +370,20 @@ function usd(n: number): string {
 }
 
 /**
+ * The adjusted range, said as what it is: what homes like this one are worth
+ * once each sale is adjusted to it. Never "sold for" (reader review
+ * 2026-10-08).
+ */
+export function adjustedWorthSentence(rangeLow: number, rangeHigh: number): string {
+  const low = Math.min(rangeLow, rangeHigh)
+  const high = Math.max(rangeLow, rangeHigh)
+  if (!(low > 0) || !(high > 0)) return ''
+  return low === high
+    ? `Adjusted to your home, homes like yours are worth ${usd(low)}.`
+    : `Adjusted to your home, homes like yours are worth ${usd(low)} to ${usd(high)}.`
+}
+
+/**
  * The ask, the range, and the days. Nothing else.
  *
  * The chapter a document gets when it may not argue about the price: the home
@@ -227,11 +402,10 @@ export function neutralAskReading(input: {
   const low = Math.min(input.rangeLow, input.rangeHigh)
   const high = Math.max(input.rangeLow, input.rangeHigh)
   if (low > 0 && high > 0) {
-    bits.push(
-      low === high
-        ? `Homes like yours sold for ${usd(low)}.`
-        : `Homes like yours sold for ${usd(low)} to ${usd(high)}.`,
-    )
+    // The range is each sale adjusted to this home, never what they sold for
+    // (20676 Wild Rose printed "Homes like yours sold for $627,332 to
+    // $724,442" over sales that sold for $675,000 to $715,000).
+    bits.push(adjustedWorthSentence(low, high))
   }
   if (input.days != null && input.days > 0) {
     bits.push(`You were on the market ${Math.round(input.days).toLocaleString('en-US')} days.`)
@@ -270,6 +444,23 @@ export function askStoryReading(input: {
   exposureKnown?: boolean
   /** The listing's MLS status, so a short withdrawal reads as one. */
   status?: string | null
+  /**
+   * When the listing came off the market on one day and took its status of
+   * record on a later one (3177 Coho: withdrawn Feb 10 after 71 days, expired
+   * Sep 30), the days are told with both dates, "It came off the market on
+   * Feb 10 after 71 days, and the listing expired on Sep 30.", in place of the
+   * plain days sentence (reader review 2026-10-08). Ignored otherwise.
+   */
+  cameOff?: CameOffFacts | null
+  /**
+   * Every ask the listing carried and the days each ran, oldest first
+   * (`expiredAudit.askExposure.segments`). The inside story splits the days by
+   * where each ask sat against the range and makes its claim only about the
+   * days at an in-range ask. Omitted means the caller is saying one ask held
+   * every day; an empty list means the split is not known, and no claim about
+   * the days at a price is made.
+   */
+  segments?: ReadonlyArray<{ ask: number; days: number | null }> | null
 }): string {
   // A LISTING THAT DID NOT OUTLAST THE MEDIAN DID NOT SIT (reader review
   // 2026-10-07). "Your home sat 25 days without an offer" beside a 26-day
@@ -283,12 +474,17 @@ export function askStoryReading(input: {
     median != null &&
     median > 0 &&
     Math.round(input.days) <= Math.round(median)
+  const cameOffLine = input.cameOff ? cameOffThenSentence(input.cameOff) : null
   const plainDays = (days: number) => {
+    if (cameOffLine) return cameOffLine
     const n = Math.round(days).toLocaleString('en-US')
     return /^withdrawn/i.test((input.status ?? '').trim())
       ? `Your listing was withdrawn after ${n} days.`
       : `Your home was on the market ${n} days.`
   }
+  // The days, said once: with both dates when the status of record came
+  // after the day it came off, else as the story tells them.
+  const satLine = (cls: AskGapClass) => cameOffLine ?? satSentence(cls, input.days)
   if (input.neutral) {
     return neutralAskReading({
       ask: input.ask,
@@ -302,7 +498,7 @@ export function askStoryReading(input: {
       input.days != null && input.days > 0
         ? short
           ? plainDays(input.days)
-          : `Your home sat ${Math.round(input.days).toLocaleString('en-US')} days.`
+          : (cameOffLine ?? `Your home sat ${Math.round(input.days).toLocaleString('en-US')} days.`)
         : ''
     return [days, medianSentence('near-above', input.city, input.marketMedianDom)]
       .filter((s) => s.trim())
@@ -310,13 +506,42 @@ export function askStoryReading(input: {
   }
   const cls = askGapClass(input.ask, input.rangeLow, input.rangeHigh)
   if (!cls) return ''
-  const bits = [
-    askAgainstRangeSentence(input.ask, input.rangeLow, input.rangeHigh),
-    short && input.days != null ? plainDays(input.days) : satSentence(cls, input.days),
-    medianSentence(cls, input.city, input.marketMedianDom),
-    cls === 'far-above' || short ? '' : walkTheHouseSentence(cls, input.days),
-  ]
-  return bits.filter((s) => s.trim()).join(' ')
+  const join = (bits: string[]) => bits.filter((s) => s.trim()).join(' ')
+  const against = askAgainstRangeSentence(input.ask, input.rangeLow, input.rangeHigh)
+  const medianLine = medianSentence(cls, input.city, input.marketMedianDom)
+  if (short && input.days != null) return join([against, plainDays(input.days), medianLine])
+  if (cls === 'far-above') return join([against, satLine(cls), medianLine])
+  if (cls === 'near-above') {
+    return join([against, satLine(cls), medianLine, walkTheHouseSentence(cls, input.days)])
+  }
+  // Inside or below: the sentence that points away from the number is about
+  // the days spent at a price on this side of the range, so the days are
+  // split by where each ask sat (reader review 2026-10-08).
+  const own = cls === 'below' ? 'below' : 'inside'
+  const segments =
+    input.segments ?? (input.ask != null && input.days != null ? [{ ask: input.ask, days: input.days }] : [])
+  const split = askRangeSplit(segments, input.rangeLow, input.rangeHigh)
+  if (!split || split[own].days <= 0) {
+    // Which days sat at which price is not known, so the days print as the
+    // plain fact and nothing causal hangs on them.
+    return join([against, satLine(cls), medianLine])
+  }
+  const stretch = split[own].days
+  const speaks = inRangeStretchSpeaks(stretch, input.marketMedianDom)
+  const told = rangeSplitSentences(split, own)
+  // The split sentences already count the days; the two dates are said once
+  // ahead of them, without the count.
+  const datesLine = input.cameOff ? cameOffThenSentence(input.cameOff, { withDays: false }) : null
+  if (told) return join([datesLine ?? '', ...told, medianLine, speaks ? walkTheHouseSentence(cls, stretch) : ''])
+  // Every day sat on this side. The days were just said by the sat sentence,
+  // so the claim refers back to them rather than printing the count twice
+  // (Matt 2026-10-07: each is said once).
+  return join([
+    against,
+    satLine(cls),
+    medianLine,
+    speaks ? walkTheHouseSentence(cls, stretch, { daysAlreadySaid: true }) : '',
+  ])
 }
 
 /**

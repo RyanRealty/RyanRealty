@@ -284,7 +284,7 @@ describe('print CMA price-opinion spine', () => {
     expect(cover).toContain('hero-trio')
     expect(cover).toContain('>Low<')
     expect(cover).toContain('>High<')
-    expect(cover).toContain('>Where similar homes sold, adjusted to today<')
+    expect(cover).toContain('>Where similar homes sold, adjusted to your home<')
     expect(cover).toContain('$487,000')
     expect(cover).toContain('$491,000')
     expect(cover).not.toContain('$470,000')

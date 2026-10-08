@@ -51,6 +51,15 @@ export interface CmaSubject {
   lastListDate: string | null
   listingHistoryLine: string | null
   /**
+   * The status the last listing left Active for, from the MLS status log, when
+   * it is not the status of record: 3177 Coho was withdrawn Feb 10 and its
+   * listing expired Sep 30, so this is 'Withdrawn' beside a standardStatus of
+   * 'Expired'. Every sentence about the day it came off reads the two through
+   * lib/cma/listing-status.ts cameOffStatus. Absent on rows built before the
+   * status log was read.
+   */
+  cameOffAs?: string | null
+  /**
    * MLS association fields. Optional so existing fixtures keep compiling.
    * The MLS reports whether an association EXISTS and what it charges. It does
    * NOT report what the recorded CC&Rs say — see lib/cma/development.ts.
@@ -143,6 +152,13 @@ export interface CmaComp {
   listingHistoryLine?: string | null
   /** On-market date when known (comp list cycle). */
   onMarketDate?: string | null
+  /**
+   * The Pacific day the listing period that produced the sale went Active: the
+   * day `daysToOffer` counts from (lib/cma/listing-status.ts offerRun). Later
+   * than `onMarketDate` when the home was withdrawn or fell out of contract and
+   * came back. Absent on rows built before the status log was read.
+   */
+  offerFrom?: string | null
   selectionTier: string
   /** "1.75 miles NW" — Fannie Mae B4-1.3-08 requires distance + direction be reported. */
   proximity?: string | null
@@ -198,6 +214,13 @@ export interface CmaComp {
   communitySlug?: string | null
   communityLocated?: boolean
   /**
+   * Whether the sale's MLS row reports an HOA ('hoa' | 'no_hoa' | 'unknown',
+   * classifyHoa). A community made up from a plat name walls the search only
+   * when the home carries one (lib/cma/community-location.ts
+   * searchCommunitySlug, Matt 2026-10-08). Absent on a row that did not say.
+   */
+  hoaClass?: string | null
+  /**
    * Printed when this sale is inside the recorded plat and its sewer is not
    * the subject's. Names which is which. No dollar adjustment.
    */
@@ -248,6 +271,11 @@ export interface CmaMarketTrendPoint {
   periodStart: string
   medianSalePrice: number | null
   soldCount: number | null
+  /**
+   * Null on builds since 2026-10-08: the month line reads Market Truth, which
+   * has no monthly inventory cell. Rows built before carry the cache's
+   * polygon-clipped figure, which no renderer prints.
+   */
   endOfPeriodInventory: number | null
 }
 
@@ -268,13 +296,24 @@ export interface CmaMarketContext {
   /** Live median ask from market_pulse_live. Null when the pulse row has none. */
   medianListPrice?: number | null
   monthsOfSupply: number | null
+  /**
+   * The closes in the 180 days `monthsOfSupply` divides by (Market Truth
+   * `sample_n`), so activeCount / (closedSixMonths / 6) = monthsOfSupply.
+   * Null when the figure is withheld or the row predates 2026-10-08.
+   */
+  closedSixMonths?: number | null
   /** Which formula/source produced monthsOfSupply (canonical pulse vs 365d fallback). */
   mosFormula: string | null
   marketVerdict: 'seller' | 'balanced' | 'buyer' | null
   methodologyVersion: string | null
   computedAt: string | null
   pulseUpdatedAt: string | null
-  /** Completed months only. A chart renders only when six priced months exist. */
+  /**
+   * Completed months only, from the same Market Truth detached membership as
+   * activeCount and monthsOfSupply (2026-10-08; earlier rows carry
+   * market_stats_cache monthly). A chart renders only when six priced months
+   * exist.
+   */
   trend?: CmaMarketTrendPoint[]
   /**
    * What `trend` MEASURES, in the document's own words (round four, class E).
@@ -338,10 +377,24 @@ export interface CmaPricingClampApplication {
  * it rather than set it.
  */
 export interface CmaPricingStreetAnchor {
-  /** The same-street sale or sales the number is held to. */
+  /** The same-street sale or sales the number is held to (or, when `setAside`, would have been). */
   addresses: string[]
-  /** Their listing keys, when the pricer wrote them. A sale the anchor holds is never set aside. */
+  /** Their listing keys, when the pricer wrote them. */
   listingKeys?: string[]
+  /**
+   * TRIM NORMALLY (Matt 2026-10-08, 915 Saginaw). True when every same-street
+   * sale was an end of the adjusted sales and the range rule set it aside
+   * like any end sale. It then does not cap the price and does not set the
+   * floor: `before` and `after` are the same number and `ceiling` is only
+   * what the cap would have been. Absent on rows built before this ruling.
+   */
+  setAside?: boolean
+  /**
+   * True when the anchor held the recommendation to `ceiling` when it was
+   * applied. False on a set-aside record. Absent on rows built before
+   * 2026-10-08, where every stored anchor was one that capped.
+   */
+  capped?: boolean
   /** Median adjusted price of those sales — the anchor itself. */
   anchor: number
   /** The most the recommendation may sit above the anchor. */
@@ -356,6 +409,11 @@ export interface CmaPricingStreetAnchor {
   floor: number
   /** What the three methods supported before the anchor bound them. */
   before: number
+  /**
+   * The recommendation after the anchor: `ceiling` when it capped, `before`
+   * when it was set aside. Read when the anchor was applied in the pricer; a
+   * later failed-ask pass in the build can still move the printed price.
+   */
   after: number
   /** One sentence, for the document and the review page. */
   sentence: string

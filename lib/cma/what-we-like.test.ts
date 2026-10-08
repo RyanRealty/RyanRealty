@@ -169,8 +169,6 @@ describe('the single-doc fold', () => {
           { lens: 'pricing', fact: 'Listed at $800,000 against a supported $715,000.', meaning: 'The ask priced past the evidence.' },
         ],
         services: ['SERVICES_SENTINEL'],
-        netSheet: { salePrice: 715000, lines: [], totalCosts: 0, estimatedNet: 715000, netConservative: 705000, netHighEnd: 735000, assumptions: ['NET_SHEET_SENTINEL'] },
-        feeLine: 'FEE_SENTINEL',
       },
     },
   )
@@ -185,7 +183,6 @@ describe('the single-doc fold', () => {
     expect(html).not.toContain('What Every Listing Gets')
     expect(html).not.toContain('Estimated Seller Net Sheet')
     expect(html).not.toContain('SERVICES_SENTINEL')
-    expect(html).not.toContain('NET_SHEET_SENTINEL')
   })
 
   it('names THIS home on the cover, once', () => {

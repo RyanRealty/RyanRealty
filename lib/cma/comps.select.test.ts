@@ -26,6 +26,21 @@ vi.mock('@/lib/data/geo/subdivision-ring', () => ({
   assignCommunitySlugs: async () => null,
 }))
 
+// The touching plats' recorded outline (the plat-family footprint DAL). The
+// adjacent rung's read is bounded by its box (2026-10-08); unmocked it would
+// reach the live database from a unit test.
+const TOUCHING_OUTLINE = {
+  type: 'Polygon' as const,
+  coordinates: [[[-121.31, 44.04], [-121.29, 44.04], [-121.29, 44.06], [-121.31, 44.06], [-121.31, 44.04]]],
+}
+const TOUCHING_BOUNDS = { latMin: 44.04, latMax: 44.06, lngMin: -121.31, lngMax: -121.29 }
+const footprintMock = vi.hoisted(() => ({
+  getPlatFamilyFootprint: vi.fn(async (_input: { familySlug: string; memberSlugs: readonly string[] }): Promise<unknown> => null),
+}))
+vi.mock('@/lib/data/subdivisions/getPlatFamilyFootprint', () => ({
+  getPlatFamilyFootprint: footprintMock.getPlatFamilyFootprint,
+}))
+
 vi.mock('@/lib/cma/hydrate-closed-comp-dom', () => ({
   hydrateClosedCompDaysOnMarket: async <T,>(comps: T) => comps,
 }))
@@ -56,6 +71,7 @@ vi.mock('@/lib/pricing/ladder', async (importOriginal) => {
 })
 
 import { selectComps, selectCompsByKeys } from '@/lib/cma/comps'
+import { marketAreaBounds } from '@/lib/cma/market-area'
 
 const subject = (over: Partial<CmaSubject> = {}): CmaSubject =>
   ({
@@ -598,15 +614,18 @@ describe('selectComps — walk to 7, price on 5+ (Matt 2026-10-07)', () => {
   const PLAT_TIERS = ['subdivision-6mo', 'subdivision-12mo', 'subdivision-18mo', 'subdivision-24mo']
 
   /**
-   * The plat query answers with the plat's rows, the touching-plat query
-   * (no subdivision, no bounds: limit 100) with the touching plat's, each by
-   * its own close-date window. The anchor and pocket reads get nothing.
+   * The plat query answers with the plat's rows, the touching-plat query (no
+   * subdivision, bounded by the touching plats' outline since 2026-10-08)
+   * with the touching plat's, each by its own close-date window. The anchor
+   * and pocket reads get nothing.
    */
   function poolOf(platRows: CmaListingRow[], touchingRows: CmaListingRow[] = []) {
     selectCmaCompsPool.mockImplementation(async (opts: Record<string, unknown>) => {
       const since = String(opts.closeDateGte ?? '')
       if (opts.subdivisionIlike === 'Kenwood') return platRows.filter((r) => String(r.CloseDate) >= since)
-      if (opts.limit === 100) return touchingRows.filter((r) => String(r.CloseDate) >= since)
+      if (JSON.stringify(opts.bounds) === JSON.stringify(TOUCHING_BOUNDS)) {
+        return touchingRows.filter((r) => String(r.CloseDate) >= since)
+      }
       return []
     })
   }
@@ -624,10 +643,49 @@ describe('selectComps — walk to 7, price on 5+ (Matt 2026-10-07)', () => {
       ring: [{ slug: 'aubrey', label: 'Aubrey', pointM: 10, rank: 1 }],
     }))
     ringMocks.assignSubdivisionSlugs.mockImplementation(async (pts: ReadonlyArray<unknown>) => pts.map(() => 'aubrey'))
+    footprintMock.getPlatFamilyFootprint.mockImplementation(async () => ({ geometry: TOUCHING_OUTLINE }))
   })
   afterEach(() => {
     ringMocks.getSubdivisionRing.mockImplementation(async () => null)
     ringMocks.assignSubdivisionSlugs.mockImplementation(async (pts: ReadonlyArray<unknown>) => pts.map(() => null))
+    footprintMock.getPlatFamilyFootprint.mockImplementation(async () => null)
+  })
+
+  it('reads the touching-plat rung inside the touching plats\' outline, and counts a row from another plat as not touching, not as outside the neighborhood (2026-10-08)', async () => {
+    // Three plat sales, so the touching rung runs. Its read is bounded by the
+    // outline's box at the 500-row page, never the 100 newest closes city-wide.
+    // Two of its rows sit in a plat that does not touch Kenwood.
+    poolOf(
+      [0, 1, 2].map((i) => plat(`O${i}`, i, 500_000, SIX_MO)),
+      [0, 1, 2, 3].map((i) => touching(`E${i}`, i, 500_000 + i * 1_000, SIX_MO)),
+    )
+    ringMocks.assignSubdivisionSlugs.mockImplementation(async (pts: ReadonlyArray<unknown>) =>
+      pts.map((_p, i) => (i < 2 ? 'aubrey' : 'not-touching-plat')),
+    )
+    const sel = await selectComps(kenwood)
+    expect(footprintMock.getPlatFamilyFootprint).toHaveBeenCalledWith({ familySlug: 'touching-kenwood', memberSlugs: ['aubrey'] })
+    const touchingReads = selectCmaCompsPool.mock.calls
+      .map(([opts]) => opts)
+      .filter((opts) => JSON.stringify(opts.bounds) === JSON.stringify(TOUCHING_BOUNDS))
+    expect(touchingReads.length).toBeGreaterThan(0)
+    expect(touchingReads.every((opts) => opts.limit === 500 && opts.subdivisionIlike == null)).toBe(true)
+    const rung = sel.diagnostics.ladder.find((t) => t.tier === 'adjacent-subdivision-6mo')!
+    expect(rung.excluded.not_touching_plat).toBe(2)
+    expect(rung.excluded.market_area).toBe(0)
+    expect(keys(sel)).toEqual(['E0', 'E1', 'O0', 'O1', 'O2'])
+  })
+
+  it('falls back to the neighborhood box when the touching outline cannot be read', async () => {
+    footprintMock.getPlatFamilyFootprint.mockImplementation(async () => {
+      throw new Error('rpc down')
+    })
+    poolOf([0, 1, 2].map((i) => plat(`O${i}`, i, 500_000, SIX_MO)))
+    const riverWest = subject({ subdivision: 'Kenwood', latitude: 44.0645, longitude: -121.3237 })
+    await selectComps(riverWest)
+    const riverWestBox = JSON.stringify(marketAreaBounds('bend-river-west'))
+    const reads = selectCmaCompsPool.mock.calls.map(([opts]) => opts)
+    expect(reads.some((opts) => JSON.stringify(opts.bounds) === riverWestBox && opts.limit === 500)).toBe(true)
+    expect(reads.some((opts) => JSON.stringify(opts.bounds) === JSON.stringify(TOUCHING_BOUNDS))).toBe(false)
   })
 
   it('an over-full plat yields seven: newest first, then nearest, then the tightest price', async () => {
@@ -866,5 +924,49 @@ describe('selectComps — a sale more than 25% off the subject never sets the pr
     expect(keys(sel)).toEqual(['A', 'B', 'C', 'D', 'FIFTH'])
     expect(sel.diagnostics.excluded_totals.not_price_setting).toBe(1)
     expect(sel.diagnostics.reached_target).toBe(true)
+  })
+})
+
+describe('selectComps — a sale with an ADU never prices a home without one (Matt 2026-10-08, "ADU sale skips")', () => {
+  // The listings ladder applies the same reader as the facts walk
+  // (aduSaleRefused, lib/pricing/classes.ts), at the door, counted as
+  // adu_sale, and the sale is skipped like one that never qualified.
+  const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10)
+  const RECENT = daysAgo(45)
+  const NORTON =
+    'Excellent Midtown Bend multi-unit property featuring a permitted ADU, offering flexibility for a variety of living or investment possibilities. Both units feature attractive finishes and functional living spaces.'
+  const PHEASANT =
+    "Single level house in Midtown Bend on a huge lot with room to dream. Outside, you've got space to build an ADU, a 2 car garage, RV parking. Whether you're buying your first home, downsizing, or eyeing ADU rental income, this is a lot of house and land."
+  const plat = (key: string, i: number, over: Record<string, unknown> = {}) =>
+    closedRow({ ListingKey: key, StreetNumber: String(100 + i), ClosePrice: 500_000, CloseDate: RECENT, ...over })
+  const norton = plat('NORTON', 9, { StreetNumber: '644', StreetName: 'Norton', public_remarks: NORTON })
+  const keys = (sel: Awaited<ReturnType<typeof selectComps>>) => sel.comps.map((c) => c.listingKey).sort()
+
+  beforeEach(() => {
+    selectCmaCompsPool.mockReset()
+    selectCmaCompsByKeys.mockReset()
+    selectCmaCompsByKeys.mockResolvedValue([])
+    selectCmaCompsPool.mockImplementation(async (opts: Record<string, unknown>) =>
+      opts.subdivisionIlike === 'Kenwood'
+        ? [plat('A', 0), plat('B', 1), plat('C', 2), plat('D', 3), plat('E', 4), norton]
+        : [],
+    )
+  })
+
+  it('skips the ADU sale for a subject whose remarks only hope for one, and counts it', async () => {
+    const sel = await selectComps(subject({ subdivision: 'Kenwood', publicRemarks: PHEASANT }))
+    expect(keys(sel)).toEqual(['A', 'B', 'C', 'D', 'E'])
+    expect(sel.diagnostics.excluded_totals.adu_sale).toBeGreaterThan(0)
+    expect(sel.diagnostics.excluded_totals.product_type).toBe(0)
+    expect(sel.diagnostics.excluded_totals.not_price_setting).toBe(0)
+    expect(sel.trace.some((t) => t.includes('whose remarks state an ADU'))).toBe(true)
+  })
+
+  it('keeps it for a subject whose remarks state its own ADU (not symmetric)', async () => {
+    const sel = await selectComps(
+      subject({ subdivision: 'Kenwood', publicRemarks: 'Craftsman with a permitted detached ADU over the garage.' }),
+    )
+    expect(keys(sel)).toContain('NORTON')
+    expect(sel.diagnostics.excluded_totals.adu_sale).toBe(0)
   })
 })

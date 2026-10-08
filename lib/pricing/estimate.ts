@@ -10,8 +10,8 @@
  * Beds/baths/age: match filters, not stacked dollar lines.
  */
 
-import { searchCommunitySlug } from '@/lib/cma/community-location'
-import { applyStreetAnchor, computePricing } from '@/lib/cma/pricing'
+import { saleSearchCommunitySlug, searchCommunitySlug } from '@/lib/cma/community-location'
+import { applyStreetAnchor, computePricing, streetAnchorHolds } from '@/lib/cma/pricing'
 import type { CmaSiteData } from '@/lib/cma/county'
 import {
   attachSellerNet,
@@ -23,7 +23,7 @@ import {
   sellerNetFromPrice,
 } from '@/lib/pricing/seller-net'
 import type { CmaAdjustedComp, CmaComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
-import { citySlug, storyAdjustment, type StoryClass } from '@/lib/pricing/classes'
+import { citySlug, classifyHoa, storyAdjustment, type StoryClass } from '@/lib/pricing/classes'
 import { capClosedCompShares, closedCompWeight } from '@/lib/pricing/closed-comp-weight'
 import { recommendationOutsideSaleSet } from '@/lib/pricing/price-set'
 import { PRICING_MIN_COMPS, RANGE_MIN_KEPT, RANGE_TRIM_MIN_N } from '@/lib/pricing/ladder'
@@ -53,10 +53,16 @@ import {
   applyExclusivePocketDateAdj,
   describeAppliedDateAdjustments,
   exclusivePocketPathNote,
+  pocketIndexDownClause,
+  pocketLocalGateRecord,
+  pocketLocalReadNote,
   selectionIsExclusivePocket,
   TIME_ADJUSTMENT_BASIS_POCKET,
+  TIME_ADJUSTMENT_BASIS_POCKET_INDEX,
   TIME_ADJUSTMENT_MEASURE_POCKET,
   type AppliedDateMove,
+  type PocketLocalGateRecord,
+  type PocketLocalRead,
 } from '@/lib/pricing/exclusive-pocket-date-adj'
 import { sizeAdjustmentFor } from '@/lib/pricing/size-adjustment'
 
@@ -310,7 +316,12 @@ export interface PricingTimeAdjustment {
    * of the last three COMPLETE months of the city index, never the running
    * month (R2d, 2026-09-08).
    */
-  basis: 'city-monthly-index-trailing-3' | 'year-over-year' | 'exclusive-pocket-sold-list' | 'none'
+  basis:
+    | 'city-monthly-index-trailing-3'
+    | 'year-over-year'
+    | 'exclusive-pocket-sold-list'
+    | 'exclusive-pocket-city-index-down'
+    | 'none'
   /**
    * WHAT THIS BASIS MEASURES (round four, class E). The date adjustment and
    * the market chapter's month line are two different city trends, and the
@@ -326,6 +337,23 @@ export interface PricingTimeAdjustment {
   measure: string | null
   /** The complete months the endpoint is the median of, oldest first. */
   referenceMonths?: string[]
+  /**
+   * The index level each moved sale walked FROM, one per close month, oldest
+   * first: the same smoothed $/sqft `marketPath` read for that sale, so the
+   * letter can print the figures the move is the ratio of. Set on the pocket
+   * basis that moved sales (`exclusive-pocket-city-index-down`).
+   */
+  indexLevels?: Array<{ month: string; ppsf: number }>
+  /** The endpoint level those sales walked TO: the median of `referenceMonths`, $/sqft. */
+  referencePpsf?: number | null
+  /**
+   * DOWN ONLY IF LOCAL FELL (Matt 2026-10-08). On an exclusive-pocket set the
+   * build gates the city-index move on the letter's own local read: the
+   * per-foot verdict, place, figures and sale counts the local page prints,
+   * the branch that verdict set, and whether any sale moved. Absent on rows
+   * built before the gate, and on callers with no local read.
+   */
+  localGate?: PocketLocalGateRecord
   /**
    * The shape of the window, derived from the same smoothed series every sale
    * walks: where it peaked or troughed, how far it has come back, and which
@@ -347,6 +375,35 @@ export interface PricingTimeAdjustment {
   }
   /** The basis in one sentence, for the line beside the first adjusted sale. */
   sentence: string
+}
+
+/**
+ * The index levels a pocket's moved sales walked from, and the level they
+ * walked to, read by the SAME `marketPath` call that moved them, so the
+ * printed figures are the two numbers each sale's date move is the ratio of.
+ * A move with no close date contributes no level.
+ */
+function pocketIndexLevels(
+  points: MarketIndexPoint[],
+  asOf: string,
+  moved: readonly AppliedDateMove[],
+): { indexLevels: Array<{ month: string; ppsf: number }>; referencePpsf: number | null } {
+  const byMonth = new Map<string, number>()
+  let referencePpsf: number | null = null
+  for (const m of moved) {
+    const close = (m.closeDate ?? '').slice(0, 10)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(close)) continue
+    const path = marketPath({ points, fromDate: close, toDate: asOf })
+    if (path.source !== 'index' || path.fromPpsf == null) continue
+    byMonth.set(`${close.slice(0, 7)}-01`, path.fromPpsf)
+    referencePpsf = path.toPpsf
+  }
+  return {
+    indexLevels: [...byMonth.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, ppsf]) => ({ month, ppsf })),
+    referencePpsf,
+  }
 }
 
 /**
@@ -389,22 +446,100 @@ export function buildTimeAdjustmentBasis(opts: {
    * that refused the city-index pump still has to admit a cooling it did apply.
    */
   applied?: readonly AppliedDateMove[]
+  /**
+   * The letter's own local read, when the build gated the pocket's date move
+   * on it (Matt 2026-10-08, "Down only if local fell"). Recorded on the basis
+   * as `localGate`, with the branch it set. Omitted by a caller that has no
+   * local read; that record keeps the down-only wording.
+   */
+  pocketLocal?: PocketLocalRead
 }): PricingTimeAdjustment {
   const windowMonths = opts.windowMonths ?? TIME_ADJUSTMENT_WINDOW_MONTHS
   const fetchedAt = opts.fetchedAt ?? new Date().toISOString()
   const city = opts.cityName?.trim() ? `${opts.cityName.trim()}'s` : "this city's"
   if (opts.exclusivePocket === true) {
     const trend = marketIndexTrend({ points: opts.points, asOf: opts.asOf, windowMonths })
+    const appliedDetail = describeAppliedDateAdjustments(opts.applied ?? [])
+    const place = opts.cityName?.trim() || 'this city'
+    const local = opts.pocketLocal
+    const localNote = local !== undefined ? ` ${pocketLocalReadNote(local)}` : ''
+    // THE RECORD NAMES THE PATH THAT MOVED THE SALES (reader review, 62475
+    // Woodsman, 2026-10-08). A pocket sale whose month sits above today's
+    // level IS moved, down, along this city's pricing_market_index
+    // (applyExclusivePocketDateAdj keeps a factor at or under 1). The record
+    // used to keep the sold-list basis anyway and say "date adjustment does not
+    // walk pricing_market_index for bend" beside comps stamped
+    // marketPathSource 'index' and moved up to 7 percent by it.
+    const moved = (opts.applied ?? []).filter(
+      (m) => Number.isFinite(m.timeAdjustment) && Math.abs(m.timeAdjustment) >= 1,
+    )
+    if (moved.length > 0) {
+      const { indexLevels, referencePpsf } = pocketIndexLevels(opts.points, opts.asOf, moved)
+      const walked = indexLevels.map((l) => `${l.month.slice(0, 7)} ${l.ppsf.toFixed(2)}`).join(', ')
+      // With the gate, a move happens only on the local-fell branch, so the
+      // record says the local read fell and gives its figures.
+      const why = local !== undefined ? `${localNote} The local read fell, so these sales move down with the ${place} city index.` : ''
+      return {
+        pctPerMonth: trend.pctPerMonth,
+        pctOverWindow: trend.pctOverWindow,
+        windowMonths,
+        n: trend.n,
+        basis: TIME_ADJUSTMENT_BASIS_POCKET_INDEX,
+        measure: TIME_ADJUSTMENT_MEASURE_INDEX,
+        referenceMonths: trend.referenceMonths,
+        indexLevels,
+        referencePpsf,
+        ...(local !== undefined ? { localGate: pocketLocalGateRecord(local, true) } : {}),
+        source: {
+          table: 'pricing_market_index',
+          filter: `city_slug='${opts.citySlug}', complete months only. Each month reads as the median of the three-month window centred on it; the endpoint is the median of the last three complete months (${trend.referenceMonths.join(', ') || 'none'}). Exclusive pocket: a sale moves only down along this index${local !== undefined ? ', only when the local per-foot read fell' : ''}, and a sale whose month sits at or under the endpoint is not moved.${localNote} Levels the moved sales walked from: ${walked || 'none'}; endpoint ${referencePpsf != null ? referencePpsf.toFixed(2) : 'none'} $/sqft.`,
+          fetchedAt,
+          query: `select month, n, median_ppsf from pricing_market_index where city_slug = '${opts.citySlug}' order by month`,
+        },
+        sentence: appliedDetail
+          ? `These sales are the exclusive pocket.${why} ${appliedDetail} ${pocketIndexDownClause(place)} Story class does not adjust.`
+          : `These sales are the exclusive pocket.${why} ${pocketIndexDownClause(place)} Story class does not adjust.`,
+      }
+    }
     const wouldMove = trend.pctOverWindow
     const would =
       wouldMove != null && Number.isFinite(wouldMove) && wouldMove !== 0
         ? ` That city index ${wouldMove > 0 ? 'rose' : 'fell'} ${Math.abs(wouldMove).toFixed(1)} percent over the last ${windowMonths} months; it is not applied here.`
         : ''
-    const appliedDetail = describeAppliedDateAdjustments(opts.applied ?? [])
-    const place = opts.cityName?.trim() || 'this city'
-    const sentence = appliedDetail
-      ? `These sales are the exclusive pocket. ${appliedDetail} The ${place} city index is not used to pump prices. Story class does not adjust.`
-      : `These sales are the exclusive pocket. Date adjustment does not walk the city index, which includes tracts already excluded from this set. Each sale stays on its own sold and last-ask price. Story class does not adjust.${would}`
+    // DOWN ONLY IF LOCAL FELL (Matt 2026-10-08). Nothing moved, and the build
+    // gated on the letter's local read: the record says which way that read
+    // went, with its figures, and why that left every sale at its sold price.
+    if (local !== undefined) {
+      const gate = pocketLocalGateRecord(local, false)
+      const fellButNone = local.verdict === 'fell'
+      const noIndex = !(trend.n > 0)
+      const sentence = fellButNone
+        ? noIndex
+          ? `These sales are the exclusive pocket.${localNote} The local read fell, but there is no ${place} city index to move a sale by, so no sale is moved for the month it sold. Story class does not adjust.`
+          : `These sales are the exclusive pocket.${localNote} The local read fell, but no sale closed in a month the ${place} city index sat above today's level, so no sale is moved for the month it sold. Story class does not adjust.`
+        : `These sales are the exclusive pocket.${localNote} A sale on the home's own ground moves down along the ${place} city index only when that local read fell, so no sale is moved for the month it sold and each one stands at its sold price. Story class does not adjust.${would}`
+      return {
+        pctPerMonth: 0,
+        pctOverWindow: 0,
+        windowMonths,
+        n: trend.n,
+        basis: TIME_ADJUSTMENT_BASIS_POCKET,
+        measure: TIME_ADJUSTMENT_MEASURE_POCKET,
+        referenceMonths: trend.referenceMonths,
+        localGate: gate,
+        source: {
+          table:
+            local.verdict == null
+              ? `none (no local per-foot read: ${local.missing ?? 'unknown'}); pricing_market_index not applied`
+              : 'listings (the letter\'s listing-window read); pricing_market_index not applied',
+          filter: `Exclusive pocket. ${gate.rule} Branch ${gate.branch}.${localNote} pricing_market_index for city_slug='${opts.citySlug}' ${noIndex ? 'has no rows in the window' : `was read and not applied${fellButNone ? ': every sale closed in a month at or under the endpoint' : ''}`}.`,
+          fetchedAt,
+          query: `local: Closed listings in the subject's listing window, same place and property subtype (lib/cma/listing-window-market.ts chooseListingMarket, ppsfMove); index: select month, n, median_ppsf from pricing_market_index where city_slug = '${opts.citySlug}' order by month`,
+        },
+        sentence,
+      }
+    }
+    const sentence = `These sales are the exclusive pocket. Date adjustment does not walk the city index, which includes tracts already excluded from this set. Each sale stays on its own sold and last-ask price. Story class does not adjust.${would}`
     return {
       pctPerMonth: 0,
       pctOverWindow: 0,
@@ -1159,7 +1294,7 @@ export function reconcileAskAndComps(opts: {
 
 /** First-list DOM hydrate stamps these; market-path rebuild must not drop them. */
 export type HydratedClosedCompDom = Pick<CmaComp, 'onMarketDate' | 'domTotal' | 'listingHistoryLine'> &
-  Partial<Pick<CmaComp, 'daysToOffer'>>
+  Partial<Pick<CmaComp, 'daysToOffer' | 'offerFrom'>>
 
 /**
  * Overlay earliest-list DOM onto a CmaComp rebuilt from a pricing sale.
@@ -1176,9 +1311,11 @@ export function preserveHydratedClosedCompDom<T extends CmaComp>(
     ...rebuilt,
     onMarketDate: hydrated.onMarketDate ?? rebuilt.onMarketDate,
     domTotal: hydrated.domTotal ?? rebuilt.domTotal,
-    // The offer clock moved to the first list with the DOM; a rebuilt sale
-    // would put it back on the relist day (3169 Coho, offer in 3 of 146).
+    // The offer clock the hydrate read off the status log: Active to Pending
+    // on the listing period that produced the sale, and the day it started.
+    // A rebuilt sale carries only the record's days-to-offer.
     daysToOffer: hydrated.daysToOffer !== undefined ? hydrated.daysToOffer : rebuilt.daysToOffer,
+    offerFrom: hydrated.offerFrom !== undefined ? hydrated.offerFrom : rebuilt.offerFrom,
     listingHistoryLine: hydrated.listingHistoryLine ?? rebuilt.listingHistoryLine,
   }
 }
@@ -1239,6 +1376,7 @@ export function pricingSaleToCmaComp(sale: SelectedPricingComp): CmaComp {
     seniorCommunityYn: sale.seniorCommunityYn ?? null,
     communitySlug: sale.communitySlug ?? null,
     communityLocated: sale.communityLocated,
+    hoaClass: sale.hoaClass,
     sewerNote: sale.sewerNote ?? null,
   }
 }
@@ -1254,6 +1392,8 @@ export function adjustCompAlongMarket(opts: {
   hydrated?: HydratedClosedCompDom | null
   /** Exclusive pocket: refuse upward city-index pump; allow Flex-style cooling; story lift stays 0. */
   exclusivePocket?: boolean
+  /** The letter's local read: on the pocket, a cooling moves a sale only when it fell (Matt 2026-10-08). */
+  pocketLocal?: PocketLocalRead
 }): { adjusted: CmaAdjustedComp; path: MarketPath; pathNote: string } {
   return adjustCmaCompAlongMarket({
     ...opts,
@@ -1285,11 +1425,29 @@ export function adjustCmaCompAlongMarket(opts: {
   asOf: string
   /** Exclusive pocket: refuse upward city-index pump; allow Flex-style cooling; story lift stays 0. */
   exclusivePocket?: boolean
+  /**
+   * DOWN ONLY IF LOCAL FELL (Matt 2026-10-08). The letter's own local read:
+   * on the exclusive pocket a cooling city path moves the sale only when this
+   * read fell. Held flat, rose or no verdict leaves the sale at its sold
+   * price, and the size line then works off that sold price per foot. A
+   * caller with no local read omits it and keeps the down-only walk.
+   */
+  pocketLocal?: PocketLocalRead
 }): { adjusted: CmaAdjustedComp; path: MarketPath; pathNote: string } {
   const sale = opts.comp
+  const subjectCommunityAddress = {
+    communitySlug: opts.subject.communitySlug,
+    communityLocated: opts.subject.communityLocated,
+    subdivisionSlug: opts.subject.subdivisionSlug,
+    // The same HOA reading the walk gave the subject (cmaSubjectToPricing).
+    hoaClass: classifyHoa(
+      opts.subject.associationYn ?? null,
+      opts.subject.associationFee ?? opts.subject.hoaMonthly ?? null,
+    ),
+  }
   const exclusivePocket = opts.exclusivePocket === true
   const cityPath = marketPath({ points: opts.points, fromDate: sale.closeDate, toDate: opts.asOf })
-  const path = applyExclusivePocketDateAdj(cityPath, exclusivePocket)
+  const path = applyExclusivePocketDateAdj(cityPath, exclusivePocket, opts.pocketLocal)
   const concessions = concessionOnSale(sale)
   const startPrice = comparisonSalePrice(sale.closePrice, concessions)
   const timeAdjustedPrice = timeAdjustAlongPath(startPrice, path)
@@ -1300,8 +1458,10 @@ export function adjustCmaCompAlongMarket(opts: {
   )
   const subjectSqft = opts.subject.sqft ?? 0
   // ONE SIZE ADJUSTMENT on every path and every rung, the exclusive pocket
-  // included (Matt 2026-10-08, "Yes, adjust pocket sales"). The pocket's date
-  // rule above (applyExclusivePocketDateAdj) is unchanged.
+  // included (Matt 2026-10-08, "Yes, adjust pocket sales"). It is figured off
+  // the date-adjusted price, so a sale the pocket's local gate left unmoved
+  // (Matt 2026-10-08, "Down only if local fell") is sized off its sold price
+  // per foot, after any recorded concession.
   const size = sizeAdjustmentFor({
     subjectSqft,
     saleSqft: sale.sqft,
@@ -1333,18 +1493,16 @@ export function adjustCmaCompAlongMarket(opts: {
     locationMatch: sale.locationMatch ?? null,
     setsPrice: sale.setsPrice,
     subjectRecordedPlat: subjectHasRecordedSubdivision(opts.subject),
-    // A phase stem is the subdivision, not a parent community. The weight
-    // uses the same community the search used, or a next-row neighbor is
-    // kept in the table at weight 0 and the letter refuses.
-    subjectCommunity: searchCommunitySlug({
-      communitySlug: opts.subject.communitySlug,
-      communityLocated: opts.subject.communityLocated,
-      subdivisionSlug: opts.subject.subdivisionSlug,
-    }),
-    saleCommunity: searchCommunitySlug({
+    // A phase stem is the subdivision, not a parent community, and a
+    // community made up from a plat name walls only with an HOA (Matt
+    // 2026-10-08). The weight uses the same community the search used, or a
+    // next-row neighbor is kept in the table at weight 0 and the letter refuses.
+    subjectCommunity: searchCommunitySlug(subjectCommunityAddress),
+    saleCommunity: saleSearchCommunitySlug(subjectCommunityAddress, {
       communitySlug: sale.communitySlug,
       communityLocated: sale.communityLocated,
       subdivisionSlug: sale.subdivisionSlug,
+      hoaClass: sale.hoaClass ?? null,
     }),
     subjectCommunityLocated: opts.subject.communityLocated,
     saleCommunityLocated: sale.communityLocated,
@@ -1383,7 +1541,7 @@ export function adjustCmaCompAlongMarket(opts: {
   }
   const pathNote =
     opts.exclusivePocket === true
-      ? exclusivePocketPathNote(sale.address, cityPath, path)
+      ? exclusivePocketPathNote(sale.address, cityPath, path, opts.pocketLocal)
       : `${sale.address}: ${describePath(path)}`
   return { adjusted, path, pathNote }
 }
@@ -1799,86 +1957,6 @@ export function applyEngineCoverToCmaPricing(
 }
 
 /**
- * THE SALE THAT HOLDS THE PRICE IS NEVER SET ASIDE (review, 2026-10-07).
- *
- * applyStreetAnchor fires only when the same-street twin sits about ten
- * percent or more under the reconciled price, so the twin is nearly always
- * the lowest adjusted sale and the range rule set it aside. The anchor then
- * held the recommendation to the twin, the pin drew the band from the sales
- * left (the pin only pulls a price down, never up), and the letter printed
- * $550,000 under a $600,000 to $660,000 band while saying the sale holding
- * the price had been set aside (120 Benaiah at $500,000 beside five sales at
- * $600,000 to $680,000).
- *
- * So when the anchor holds the price its sales come back into the kept set:
- * off `pricing.setAside`, into the weights, and into the range rule's counts,
- * ends and sentence, which the hero band then follows.
- */
-function releaseStreetAnchorFromSetAside(
-  pricing: CmaPricing,
-  part: { priced: readonly CmaAdjustedComp[]; setAside: readonly CmaAdjustedComp[] },
-  ctx: { subjectSqft: number; asOf: string },
-): void {
-  const anchor = pricing.streetAnchor
-  if (!anchor) return
-  const keys = new Set((anchor.listingKeys ?? []).filter(Boolean))
-  const addresses = new Set(anchor.addresses.map((a) => a.trim().toLowerCase()).filter(Boolean))
-  const holdsThePrice = (s: CmaAdjustedComp): boolean =>
-    keys.size > 0 ? keys.has(s.listingKey) : addresses.has((s.address ?? '').trim().toLowerCase())
-  const released = new Set(part.setAside.filter(holdsThePrice))
-  if (released.size === 0) return
-  const stillAside = part.setAside.filter((s) => !released.has(s))
-  const asideSet = new Set(stillAside)
-  // The grid's order, so weight three is still sale three.
-  const kept = part.priced.filter((s) => !asideSet.has(s))
-  const releasedKeys = new Set([...released].map((s) => s.listingKey))
-  pricing.setAside = (pricing.setAside ?? []).filter((e) => !releasedKeys.has(e.listingKey))
-  pricing.reconciliation = reconcileAdjustedSales({
-    sales: kept as unknown as ReconcilableSale[],
-    subjectSqft: ctx.subjectSqft,
-    asOf: ctx.asOf,
-  })
-  const rule = pricing.rangeRule
-  const values = kept.map((s) => s.adjustedPrice).filter((n) => Number.isFinite(n) && n > 0)
-  if (!rule || values.length === 0) return
-  const saleLow = Math.min(...values)
-  const saleHigh = Math.max(...values)
-  // Outward onto the pricing unit, never onto a sale still set aside.
-  const asideBelow = nearestAsideBelow(stillAside, saleLow)
-  const asideAbove = nearestAsideAbove(stillAside, saleHigh)
-  let low = roundPriceDown(saleLow)
-  if (asideBelow != null && low <= asideBelow) low = Math.round(saleLow)
-  let high = roundPriceUp(saleHigh)
-  if (asideAbove != null && high >= asideAbove) high = Math.round(saleHigh)
-  low = Math.min(low, rule.adjustedLow)
-  high = Math.max(high, rule.adjustedHigh)
-  const n = part.priced.length
-  pricing.rangeRule = {
-    ...rule,
-    n,
-    kept: kept.length,
-    adjustedLow: low,
-    adjustedHigh: high,
-    saleLow: Math.round(saleLow),
-    saleHigh: Math.round(saleHigh),
-    sentence: describeRangeSentence({
-      rule: rule.rule,
-      n,
-      kept: kept.length,
-      printedLow: low,
-      printedHigh: high,
-      saleLow: Math.round(saleLow),
-      saleHigh: Math.round(saleHigh),
-      trimmedAside: rule.rule === 'trimmed-one-each-end' ? trimmedAsideClause(n, kept.length) : null,
-      suffix: rangeSentenceSuffix(rule.sentence),
-    }),
-  }
-  // The hero band reaches the sale that holds the price.
-  pricing.valueLow = Math.min(pricing.valueLow, low)
-  pricing.valueHigh = Math.max(pricing.valueHigh, high)
-}
-
-/**
  * A recommendation under every sale that set it is not a price (rule 20). When
  * the failed-ask ceiling is what put it there, the build holds it for Matt
  * instead of failing (lib/cma/gap-hold.ts applyAskBelowBandHold): the ceiling
@@ -1931,20 +2009,18 @@ export function priceCmaSet(args: {
    * other caller can hold a document, so every other caller still gets null.
    */
   holdFailedAskUnderSaleSet?: boolean
+  /**
+   * The letter's local read the build gated the pocket's date move on (Matt
+   * 2026-10-08, "Down only if local fell"). Recorded on the time-adjustment
+   * basis with the branch it set. Pass the same read the sales were adjusted
+   * with; omitted by a caller that has no local read.
+   */
+  pocketLocal?: PocketLocalRead
 }): CmaPricing | null {
   const priceFn = args.computePricing ?? computePricing
   // No fill: a sale that does not set the price keeps its weight of 0, and
   // under five that do the pricer returns null (Matt 2026-10-07).
   const adjusted = args.adjusted
-  const pricing = priceFn(args.subject, adjusted, args.market, {
-    sellerImprovementsTotal: args.input.sellerImprovementsTotal ?? null,
-    priceOverride: args.input.priceOverride ?? null,
-    site: args.site ?? null,
-  })
-  if (!pricing) return null
-  // Which sale carried the price. Attached BEFORE the engine cover so the
-  // weights the document prints are the weights the value was built from.
-  //
   // The range rule runs FIRST, and the sales it sets aside never reach the
   // reconciliation: a sale the document says was removed carries none of the
   // price (tasteReview round three, §2 item 1). `listPriceFromEngine` runs the
@@ -1952,6 +2028,26 @@ export function priceCmaSet(args: {
   // printed number come from one set.
   const priceSetting = adjusted.filter((c) => c.weight > 0)
   const part = partitionByRangeRule(priceSetting)
+  // TRIM NORMALLY (Matt 2026-10-08, 915 Saginaw). A sale on the subject's own
+  // street that the rule set aside as an end (the lowest or highest adjusted
+  // sale) is set aside like any end sale: it is never released back into the
+  // range, it carries no weight, and the same-street cap and the street floor
+  // do not touch the price. One sale never decides the price. The street sale
+  // INSIDE the kept set still anchors exactly as before (lib/cma/pricing.ts
+  // applyStreetAnchor); this ruling is about the trimmed ends only.
+  const asideRefs = new Set<CmaAdjustedComp>(part.setAside)
+  const asideKeys = new Set(part.setAside.map((s) => s.listingKey).filter(Boolean))
+  const rangeSetAside = (c: CmaAdjustedComp): boolean =>
+    asideRefs.has(c) || (Boolean(c.listingKey) && asideKeys.has(c.listingKey))
+  const pricing = priceFn(args.subject, adjusted, args.market, {
+    sellerImprovementsTotal: args.input.sellerImprovementsTotal ?? null,
+    priceOverride: args.input.priceOverride ?? null,
+    site: args.site ?? null,
+    streetAnchorSetAside: rangeSetAside,
+  })
+  if (!pricing) return null
+  // Which sale carried the price. Attached BEFORE the engine cover so the
+  // weights the document prints are the weights the value was built from.
   pricing.reconciliation = reconcileAdjustedSales({
     sales: part.kept as unknown as ReconcilableSale[],
     subjectSqft: args.subject.sqft ?? 0,
@@ -1996,11 +2092,13 @@ export function priceCmaSet(args: {
     yoyMedianPriceDeltaPct: args.market?.yoyMedianPriceDeltaPct ?? null,
     indexUnavailableReason: args.indexUnavailableReason ?? null,
     exclusivePocket: selectionIsExclusivePocket(args.selection.tiersUsed),
+    pocketLocal: args.pocketLocal,
     applied: adjusted.map((c) => ({
       address: c.address,
       closePrice: c.closePrice,
       timeAdjustment: c.timeAdjustment,
       timeAdjustedPrice: c.timeAdjustedPrice,
+      closeDate: c.closeDate,
     })),
   })
   // THE HOUSE NEXT DOOR IS THE EVIDENCE, AND IT GETS THE LAST WORD BEFORE THE
@@ -2042,11 +2140,17 @@ export function priceCmaSet(args: {
         priceOverride: args.input.priceOverride ?? null,
         notes: covered.notes,
         prior: covered.streetAnchor ?? null,
+        // A trimmed end never anchors (Matt 2026-10-08, "Trim normally"). The
+        // sale stays on pricing.setAside, the range rule keeps its counts,
+        // ends and sentence, and the record says it was set aside and did not
+        // cap. Nothing releases it back into the range: the street sale that
+        // anchors is always one the range rule kept.
+        setAside: rangeSetAside,
       },
       { conservative: covered.conservative, recommended: covered.recommended, highEnd: covered.highEnd },
     )
     covered.streetAnchor = anchored
-    if (anchored && covered.recommended > anchored.after) {
+    if (streetAnchorHolds(anchored) && covered.recommended > anchored.after) {
       covered.recommended = anchored.after
       // The twin is the floor, not the number.
       covered.conservative = Math.min(covered.conservative, anchored.floor)
@@ -2055,7 +2159,12 @@ export function priceCmaSet(args: {
       covered.valueHigh = covered.highEnd
       covered.needsReview = true
     }
-    releaseStreetAnchorFromSetAside(covered, part, { subjectSqft: args.subject.sqft ?? 0, asOf: args.asOf })
+    // The coarse pre-pin check reads every sale that passed rule 20, trimmed
+    // ends included: a list carried to an ask may sit over the kept sales
+    // until the pin pulls it onto them. The band check that decides the hold
+    // reads the printed (trimmed) band after the pin (lib/cma/gap-hold.ts
+    // applyAskBelowBandHold): 915 Saginaw's failed-ask pull under all three
+    // kept sales is the rule 26 ask-below-band hold there.
     const settingPrices = adjusted
       .filter((c) => c.weight > 0 && c.adjustedPrice > 0)
       .map((c) => c.adjustedPrice)

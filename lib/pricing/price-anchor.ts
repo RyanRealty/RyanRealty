@@ -1,5 +1,5 @@
 /**
- * THE SUBJECT'S PRICE TIER, WHEN ITS SUBDIVISION CANNOT SUPPLY ONE.
+ * THE SUBJECT'S PRICE TIER: WHAT ITS OWN AREA SELLS FOR.
  *
  * Matt 2026-09-10, on 23 Benaiah (a 2,080 sqft Larkspur-area home that asked
  * $665,000 and printed a range of $523,000 to $1,165,000): "we should never
@@ -12,11 +12,37 @@
  * cut never bound: a $579/sqft downtown sale and a $234/sqft sale out on China
  * Hat both priced a $320/sqft tract home, and the range printed the spread.
  *
- * A home always sits in SOME price tier. When its plat cannot say what that is,
- * the neighborhood around it can: the median $/sqft of the sales already in the
- * pool that share the subject's mapped market area, and failing that the sales
- * within a mile of it. Both are computed from the pool the ladder was handed —
- * no extra read, no new source of truth.
+ * A home always sits in SOME price tier, read from the sales already in the
+ * pool the ladder was handed: no extra read, no new source of truth.
+ *
+ * THE NARROWEST LEVEL THAT HOLDS A FAIR MEDIAN (Matt 2026-10-08, "One 20%
+ * line": the anchor is "what your home's own area sells for"). The first cut
+ * read the neighborhood polygon first, so a modest subdivision inside a pricey
+ * neighborhood was graded against the neighborhood. 3062 NW Kelly Hill sits in
+ * Westside Meadows II, an older tract inside Summit West. Summit West's median
+ * was $609 a square foot (42 sales), so the line ran $487 to $731, and every
+ * Westside Meadows sale ($345 to $457 a square foot) fell outside its own
+ * home's price line: only the own-plat rungs, which the line does not grade,
+ * held any sale, and the search died at four. The levels, narrowest first,
+ * each taken only when it holds ANCHOR_MIN_N sales:
+ *
+ *   1. plat          the recorded plat the home sits in (boundaries polygon);
+ *   2. family        that plat's subdivision family: its phases, numbered
+ *                    plats and additions (sameSubdivisionFamily below), in
+ *                    the same city: Westside Meadows and Westside Meadows II;
+ *   3. subdivision   the MLS SubdivisionName on the home's own record;
+ *   4. community     the community the home sits in, when it is one the search
+ *                    walls on (searchCommunitySlug, the walk's own test);
+ *   5. neighborhood  the City of Bend neighborhood polygon;
+ *   6. within-a-mile then rural-radius: the ground around a home no polygon
+ *                    holds, measured over more ground, never over fewer sales;
+ *   7. city          the home's city, the last resort, and never on rural
+ *                    acreage, where a city median is in-town tract homes.
+ *
+ * The quantity is unchanged at every level: each sale's close price over its
+ * living area, before any date adjustment, over the window the caller read
+ * (the facts pool on the facts walk, 24 months or 30 for a custom or new
+ * home; twelve months on the listings ladder).
  *
  * The subject's own asking price is deliberately NOT an anchor. An expired
  * listing is, by definition, a price the market refused; 120 Sisemore asked
@@ -24,10 +50,35 @@
  * have admitted the luxury comps that produced it.
  */
 
-import { sameOrdinaryPhaseFamily } from '@/lib/cma/community-location'
+import { CENTRAL_OREGON_CITY_SLUGS } from '@/lib/central-oregon'
+import {
+  ordinaryPhaseFamilyKey,
+  sameOrdinaryPhaseFamily,
+  saleSearchCommunitySlug,
+  searchCommunitySlug,
+} from '@/lib/cma/community-location'
+import { marketAreaName } from '@/lib/cma/market-area'
+import { getResortCommunityBySlug } from '@/lib/data/communities/registry'
+import {
+  platFamilyBaseName,
+  platFamilyDisplayName,
+  platFamilyKey,
+  platFamilySlug,
+  platMemberDisplayName,
+} from '@/lib/market/plat-family'
+import { publishPlatDisplayName } from '@/lib/market/publish-plat-display-name'
+import { displaySubdivision } from '@/lib/slug'
 import type { PricingSale, PricingSubject } from '@/lib/pricing/match'
 
-export type PriceAnchorSource = 'subdivision' | 'neighborhood' | 'within-a-mile' | 'rural-radius'
+export type PriceAnchorSource =
+  | 'plat'
+  | 'family'
+  | 'subdivision'
+  | 'community'
+  | 'neighborhood'
+  | 'within-a-mile'
+  | 'rural-radius'
+  | 'city'
 
 export type PriceAnchor = {
   ppsf: number
@@ -35,9 +86,19 @@ export type PriceAnchor = {
   source: PriceAnchorSource
   /** How far the read had to reach, in miles, when it reached by radius. */
   radiusMiles?: number
+  /**
+   * The place the median was read over, named for a reader ("Westside
+   * Meadows", "Summit West", "Bend"). Null on a radius read, and when the
+   * level has no publishable name.
+   */
+  where?: string | null
 }
 
-/** A tier read on fewer sales than this is noise, not a market. */
+/**
+ * A tier read on fewer sales than this is noise, not a market. The same five
+ * the subdivision cells hold their median to (SUBDIVISION_TIER_MIN_N in
+ * lib/pricing/classes.ts), and it binds at every level below.
+ */
 export const ANCHOR_MIN_N = 5
 
 /** How far out the last-resort anchor looks when no polygon holds the subject. */
@@ -88,58 +149,355 @@ function milesBetween(
   return Math.sqrt(dx * dx + dy * dy)
 }
 
+
+/** True when a family base reads as a Central Oregon city's own name. */
+function isCityName(key: string | null | undefined): boolean {
+  return Boolean(key) && CENTRAL_OREGON_CITY_SLUGS.has(platFamilySlug(key!))
+}
+
 /**
- * The price tier to grade comps against when the subject's own plat has no
- * cell. Null when neither the neighborhood nor the mile around the home holds
- * enough sales to say — and a null anchor keeps today's fail-open behaviour
- * rather than inventing a tier from three sales.
+ * THE SUBDIVISION FAMILY KEY of one recorded plat, read from its slug, or
+ * null when the plat has none.
+ *
+ * This is the site's own family rule (lib/market/plat-family.ts, Matt
+ * 2026-09-23: "When there are multiple phases in a subdivision, we want all
+ * those to go into the same main neighborhood page"): the county label with
+ * the recording residue stripped (Phase, Unit, Stage, "Second Addition", a
+ * trailing number in digits, roman numerals or words), compared on
+ * platFamilyKey. "Westside Meadows II" and "Westside Meadows" share the base
+ * "Westside Meadows". It is read from the slug because the comp pools carry
+ * each sale's plat slug, not its label; measured 2026-10-08 over all 3,427
+ * recorded plats in public.boundaries, the slug gives the label's key for
+ * 3,374, and the other 53 (land-use file numbers, dotted initials) come out
+ * narrower, never wider, so a slug can only miss a family, never invent one.
+ *
+ * A base that is a Central Oregon city's own name is not a family: the
+ * townsite additions of Bend are not "Bend", and an anchor named "in Bend"
+ * would read as the whole city. Those plats fall through to the next level.
  */
-export function resolvePriceAnchor(subject: PricingSubject, pool: readonly PricingSale[]): PriceAnchor | null {
-  const area = subject.marketArea ?? null
-  if (area) {
-    const inArea = pool
-      .filter((s) => (s.marketArea ?? null) === area)
-      .map(ppsfOf)
-      .filter((v): v is number => v != null)
-    const m = median(inArea)
-    if (m != null && inArea.length >= ANCHOR_MIN_N) {
-      return { ppsf: m, n: inArea.length, source: 'neighborhood' }
+export function subdivisionFamilyKey(platSlug: string | null | undefined): string | null {
+  const raw = (platSlug ?? '').trim().toLowerCase()
+  if (!raw) return null
+  const base = platFamilyBaseName(raw.replace(/-+/g, ' '))
+  if (!base) return null
+  const key = platFamilyKey(base)
+  if (!key || isCityName(key)) return null
+  return key
+}
+
+/**
+ * The family test for one home's plat, built once and asked once per sale.
+ * True for the plat itself, for the phases of one ordinary subdivision the
+ * walk already treats as one plat (sameOrdinaryPhaseFamily, Matt 2026-10-06),
+ * and for plats sharing the site's family base (subdivisionFamilyKey).
+ * Location only: the MLS name is not read. Never a family named for a city.
+ */
+export function subdivisionFamilyOf(platSlug: string | null | undefined): (salePlat: string | null | undefined) => boolean {
+  const home = (platSlug ?? '').trim().toLowerCase()
+  if (!home) return () => false
+  const homeKey = subdivisionFamilyKey(home)
+  const phaseStemIsCity = isCityName((ordinaryPhaseFamilyKey(home) ?? '').replace(/-+/g, ' '))
+  const seen = new Map<string, boolean>()
+  return (salePlat) => {
+    const sale = (salePlat ?? '').trim().toLowerCase()
+    if (!sale) return false
+    if (sale === home) return true
+    const known = seen.get(sale)
+    if (known != null) return known
+    const same =
+      (!phaseStemIsCity && sameOrdinaryPhaseFamily(home, sale)) ||
+      (homeKey != null && subdivisionFamilyKey(sale) === homeKey)
+    seen.set(sale, same)
+    return same
+  }
+}
+
+/** True when two recorded plats are one subdivision family (subdivisionFamilyOf). */
+export function sameSubdivisionFamily(a: string | null | undefined, b: string | null | undefined): boolean {
+  return subdivisionFamilyOf(a)(b)
+}
+
+/**
+ * One sale as the anchor reads it: its own $/sqft and which of the subject's
+ * places it sits in. Both ladders build these with anchorSampler, so they
+ * walk the same levels in the same order (anchorFromSamples).
+ */
+export type AnchorSample = {
+  ppsf: number | null
+  /** In the subject's own recorded plat. */
+  inPlat: boolean
+  /** In the subject's subdivision family (the plat itself included). */
+  inFamily: boolean
+  /** Carries the subject's own MLS SubdivisionName, in the subject's city. */
+  sameSubdivisionName: boolean
+  /** Inside the community the subject's search walls on. */
+  inCommunity: boolean
+  /** Inside the subject's City of Bend neighborhood polygon. */
+  inNeighborhood: boolean
+  /** Miles from the subject, or null without coordinates. */
+  miles: number | null
+  /** In the subject's city. */
+  inCity: boolean
+}
+
+/** Where the subject sits, as the anchor reads it. */
+export type AnchorSubjectPlace = {
+  /** The recorded plat the home sits in (boundaries.geo_slug), from the plat read. */
+  platSlug: string | null
+  /** normSubdivision of the MLS SubdivisionName on the home's own record (not an inferred pocket). */
+  subdivisionNorm: string | null
+  citySlug: string | null
+  /** The community the home's search walls on (searchCommunitySlug), or null. */
+  communitySlug: string | null
+  /** City of Bend neighborhood mesh slug, or null outside the mesh. */
+  marketArea: string | null
+  latitude: number | null
+  longitude: number | null
+  /**
+   * Rural acreage reads no city level. Out in the county a city median is
+   * in-town tract homes, not this home's market, and Matt's 2026-09-10 rule
+   * holds there: a home the widest ring cannot price on five sales gets no
+   * anchor rather than an invented one.
+   */
+  ruralAcreage: boolean
+}
+
+/** One sale's place, as the anchor reads it. */
+export type AnchorSalePlace = {
+  ppsf: number | null
+  platSlug: string | null
+  subdivisionNorm: string | null
+  citySlug: string | null
+  /**
+   * The sale's community read against the subject by the ladder's own test
+   * (saleSearchCommunitySlug on the facts walk, saleCommunityOf on the
+   * listings ladder), or null.
+   */
+  communitySlug: string | null
+  marketArea: string | null
+  latitude: number | null
+  longitude: number | null
+}
+
+/** A city slug, or null for a blank one (citySlug writes 'unknown' for no city). */
+function knownCity(slug: string | null | undefined): string | null {
+  const s = (slug ?? '').trim()
+  return s && s !== 'unknown' ? s : null
+}
+
+/**
+ * THE ONE SAMPLE BUILDER both ladders use: which of the subject's places a
+ * sale sits in. The family and subdivision levels hold to the subject's own
+ * city, as the site's families do (a phase is never grouped with a namesake
+ * in another town), so a sale with no city does not join them.
+ */
+export function anchorSampler(subject: AnchorSubjectPlace): (sale: AnchorSalePlace) => AnchorSample {
+  const city = knownCity(subject.citySlug)
+  const inFamily = subdivisionFamilyOf(subject.platSlug)
+  const plat = (subject.platSlug ?? '').trim() || null
+  return (sale) => {
+    const sameCity = Boolean(city && knownCity(sale.citySlug) === city)
+    const salePlat = (sale.platSlug ?? '').trim() || null
+    const inPlat = Boolean(plat && salePlat && salePlat === plat)
+    return {
+      ppsf: sale.ppsf,
+      inPlat,
+      inFamily: inPlat || (sameCity && inFamily(salePlat)),
+      sameSubdivisionName: Boolean(subject.subdivisionNorm && sameCity && sale.subdivisionNorm === subject.subdivisionNorm),
+      inCommunity: Boolean(subject.communitySlug && sale.communitySlug === subject.communitySlug),
+      inNeighborhood: Boolean(subject.marketArea && sale.marketArea === subject.marketArea),
+      miles: milesBetween(
+        { lat: subject.latitude, lng: subject.longitude },
+        { lat: sale.latitude, lng: sale.longitude },
+      ),
+      inCity: !subject.ruralAcreage && sameCity,
     }
   }
-  const near = pool
-    .filter((s) => {
-      const miles = milesBetween(
-        { lat: subject.latitude, lng: subject.longitude },
-        { lat: s.latitude, lng: s.longitude },
-      )
-      return miles != null && miles <= ANCHOR_RADIUS_MILES
-    })
-    .map(ppsfOf)
-    .filter((v): v is number => v != null)
-  const nearMedian = median(near)
-  if (nearMedian != null && near.length >= ANCHOR_MIN_N) {
-    return { ppsf: nearMedian, n: near.length, source: 'within-a-mile', radiusMiles: ANCHOR_RADIUS_MILES }
-  }
-  // Rural ground: reach further for the SAME number of sales, never settle for
-  // fewer. Each step is tried in order and the first that reaches ANCHOR_MIN_N
-  // wins, so the tier is always read over the tightest ring that can support it.
-  for (const radius of ANCHOR_RURAL_RADII_MILES) {
-    const ring = pool
-      .filter((s) => {
-        const miles = milesBetween(
-          { lat: subject.latitude, lng: subject.longitude },
-          { lat: s.latitude, lng: s.longitude },
-        )
-        return miles != null && miles <= radius
-      })
-      .map(ppsfOf)
-      .filter((v): v is number => v != null)
-    const m = median(ring)
-    if (m != null && ring.length >= ANCHOR_MIN_N) {
-      return { ppsf: m, n: ring.length, source: 'rural-radius', radiusMiles: radius }
+}
+
+/** The reader's name for each of the subject's places, when it has one. */
+export type AnchorPlaceNames = {
+  plat?: string | null
+  family?: string | null
+  subdivision?: string | null
+  community?: string | null
+  neighborhood?: string | null
+  city?: string | null
+}
+
+function usablePpsf(v: number | null): v is number {
+  return v != null && Number.isFinite(v) && v > 0
+}
+
+/**
+ * THE ONE LEVEL WALK both ladders share. The first level, narrowest first,
+ * that holds ANCHOR_MIN_N sales with a usable $/sqft sets the anchor. Null
+ * when none does, which every caller reads as "no line": nothing here invents
+ * a tier from a thin sample.
+ */
+export function anchorFromSamples(
+  samples: readonly AnchorSample[],
+  names: AnchorPlaceNames = {},
+): PriceAnchor | null {
+  const rates = (pick: (s: AnchorSample) => boolean): number[] =>
+    samples
+      .filter(pick)
+      .map((s) => s.ppsf)
+      .filter(usablePpsf)
+  const levels: Array<{ source: PriceAnchorSource; where: string | null; rates: () => number[]; radiusMiles?: number }> = [
+    { source: 'plat', where: names.plat ?? null, rates: () => rates((s) => s.inPlat) },
+    { source: 'family', where: names.family ?? null, rates: () => rates((s) => s.inPlat || s.inFamily) },
+    { source: 'subdivision', where: names.subdivision ?? null, rates: () => rates((s) => s.sameSubdivisionName) },
+    { source: 'community', where: names.community ?? null, rates: () => rates((s) => s.inCommunity) },
+    { source: 'neighborhood', where: names.neighborhood ?? null, rates: () => rates((s) => s.inNeighborhood) },
+    {
+      source: 'within-a-mile',
+      where: null,
+      radiusMiles: ANCHOR_RADIUS_MILES,
+      rates: () => rates((s) => s.miles != null && s.miles <= ANCHOR_RADIUS_MILES),
+    },
+    // Rural ground: reach further for the SAME number of sales, never settle
+    // for fewer. The tier is always read over the tightest ring that can
+    // support it.
+    ...ANCHOR_RURAL_RADII_MILES.map((radius) => ({
+      source: 'rural-radius' as const,
+      where: null,
+      radiusMiles: radius,
+      rates: () => rates((s) => s.miles != null && s.miles <= radius),
+    })),
+    { source: 'city', where: names.city ?? null, rates: () => rates((s) => s.inCity) },
+  ]
+  for (const level of levels) {
+    const values = level.rates()
+    if (values.length < ANCHOR_MIN_N) continue
+    const m = median(values)
+    if (m == null) continue
+    return {
+      ppsf: m,
+      n: values.length,
+      source: level.source,
+      ...(level.radiusMiles != null ? { radiusMiles: level.radiusMiles } : {}),
+      where: level.where,
     }
   }
   return null
+}
+
+function titleCaseWords(text: string): string {
+  return text
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ')
+}
+
+/**
+ * The reader's names for a subject's places, from what the ladders already
+ * hold: the county label of its plat (getSubdivisionRing), its MLS
+ * SubdivisionName, the community slug its search walls on, its neighborhood
+ * mesh slug, and its city. A family base that reads as a city's own name is
+ * never printed as the family (it would read as the whole city).
+ */
+export function anchorPlaceNames(input: {
+  platSlug?: string | null
+  platLabel?: string | null
+  subdivision?: string | null
+  communitySlug?: string | null
+  marketArea?: string | null
+  city?: string | null
+}): AnchorPlaceNames {
+  const label = (input.platLabel ?? '').trim() || (input.platSlug ? titleCaseWords(input.platSlug.replace(/-+/g, ' ')) : '')
+  const familyBase = label ? platFamilyBaseName(label) : null
+  const familyName = familyBase && !isCityName(platFamilyKey(familyBase)) ? familyBase : null
+  const community = (input.communitySlug ?? '').trim()
+  return {
+    plat: label ? platMemberDisplayName(label) || label : null,
+    family: familyName ? platFamilyDisplayName({ name: familyName }) || familyName : null,
+    subdivision: publishPlatDisplayName(input.subdivision) ?? displaySubdivision(input.subdivision),
+    community: community
+      ? (getResortCommunityBySlug(community)?.label ?? titleCaseWords(community.replace(/-+/g, ' ')))
+      : null,
+    neighborhood: marketAreaName(input.marketArea ?? null),
+    city: (input.city ?? '').trim() || null,
+  }
+}
+
+/**
+ * Where the anchor was read, as the trace and the letter say it: "in
+ * Westside Meadows", "in Summit West", "within 1 mile", "in Bend". A level
+ * with no publishable name says what kind of place it was.
+ */
+export function anchorPlacePhrase(anchor: Pick<PriceAnchor, 'source' | 'radiusMiles' | 'where'>): string {
+  if (anchor.radiusMiles != null) {
+    return `within ${anchor.radiusMiles} ${anchor.radiusMiles === 1 ? 'mile' : 'miles'}`
+  }
+  const where = (anchor.where ?? '').trim()
+  if (where) return `in ${where}`
+  switch (anchor.source) {
+    case 'plat':
+      return "in your home's own plat"
+    case 'family':
+      return "in your home's plat and its phases"
+    case 'subdivision':
+      return "in the tract your home's listing names"
+    case 'community':
+      return "in your home's community"
+    case 'neighborhood':
+      return "in your home's neighborhood"
+    case 'city':
+      return "in your home's city"
+    default:
+      return "in your home's area"
+  }
+}
+
+/**
+ * The price tier to grade comps against on the facts walk, read over the pool
+ * the walk was handed, narrowest level first (anchorFromSamples). Null when no
+ * level holds enough sales, and a null anchor keeps today's fail-open
+ * behaviour rather than inventing a tier from three sales.
+ *
+ * Pass the subject as the MLS row and the plat read left it, before any
+ * inferred pocket: the subdivision level is the home's own MLS name, and the
+ * plat level is the polygon the home sits in.
+ */
+export function resolvePriceAnchor(subject: PricingSubject, pool: readonly PricingSale[]): PriceAnchor | null {
+  const platSlug = (subject.subdivisionSlug ?? '').trim() || null
+  const community = searchCommunitySlug(subject)
+  const sample = anchorSampler({
+    platSlug,
+    subdivisionNorm: subject.subdivisionNorm ?? null,
+    citySlug: subject.citySlug ?? null,
+    communitySlug: community,
+    marketArea: subject.marketArea ?? null,
+    latitude: subject.latitude,
+    longitude: subject.longitude,
+    ruralAcreage: subject.ruralAcreage === true,
+  })
+  const samples = pool.map((sale) =>
+    sample({
+      ppsf: ppsfOf(sale),
+      platSlug: sale.subdivisionSlug ?? null,
+      subdivisionNorm: sale.subdivisionNorm ?? null,
+      citySlug: sale.citySlug ?? null,
+      // The walk's own community test (the community rung reads the same).
+      communitySlug: community ? saleSearchCommunitySlug(subject, sale) : null,
+      marketArea: sale.marketArea ?? null,
+      latitude: sale.latitude,
+      longitude: sale.longitude,
+    }),
+  )
+  return anchorFromSamples(
+    samples,
+    anchorPlaceNames({
+      platSlug,
+      platLabel: subject.platLabel ?? null,
+      subdivision: subject.subdivision,
+      communitySlug: community,
+      marketArea: subject.marketArea ?? null,
+      city: subject.city,
+    }),
+  )
 }
 
 /**
@@ -170,17 +528,23 @@ export const SAME_STREET_SIZE_BAND = 0.1
 export const SAME_STREET_PREMIUM_MAX = 0.1
 
 export function streetKey(address: string | null | undefined): string | null {
-  const s = (address ?? '').trim().toLowerCase()
+  // Only the street line: anything after the first comma is city, state, zip.
+  const s = (address ?? '').split(',')[0]!.trim().toLowerCase()
   if (!s) return null
-  // "23 Benaiah" / "23 NW Benaiah Ave" → "benaiah". The house number goes, the
-  // directional and the suffix go, what identifies the street stays.
-  const withoutNumber = s.replace(/^\s*\d+[a-z]?\s+/, '')
+  // "23 Benaiah" / "23 NW Benaiah Ave" → "benaiah"; "20886 King David Ave" →
+  // "king david". The house number goes, the directional and the suffix go,
+  // a unit designator and what follows it go, and EVERY word that names the
+  // street stays. It used to keep only the first word, so King David, King
+  // Josiah and King Hezekiah were one street and "Cascade View" matched any
+  // Cascade street (reader review 2026-10-08, 20886 King David's street anchor).
+  const withoutNumber = s.replace(/^\s*\d+[a-z]?\s+/, '').replace(/\s+(?:unit|apt|apartment|suite|ste|#)\b.*$|\s+#.*$/, '')
   const tokens = withoutNumber
     .split(/[\s,]+/)
     .filter(Boolean)
+    .map((t) => t.replace(/\.$/, ''))
     .filter((t) => !/^(n|s|e|w|ne|nw|se|sw|north|south|east|west)$/.test(t))
-    .filter((t) => !/^(st|street|ave|avenue|rd|road|dr|drive|ln|lane|ct|court|pl|place|way|blvd|loop|cir|circle|ter|terrace|hwy|highway)\.?$/.test(t))
-  return tokens[0] ?? null
+    .filter((t) => !/^(st|street|ave|avenue|rd|road|dr|drive|ln|lane|ct|court|pl|place|way|blvd|loop|cir|circle|ter|terrace|hwy|highway)$/.test(t))
+  return tokens.length > 0 ? tokens.join(' ') : null
 }
 
 /**

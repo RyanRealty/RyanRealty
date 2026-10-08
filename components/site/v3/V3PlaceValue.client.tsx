@@ -121,7 +121,6 @@ export function V3PlaceValue({ slug, placeName, answer, request, activity, id, c
           setSent(result)
           setStatus('sent')
           trackEvent('valuation_requested', { source: 'place_page', place: slug })
-          trackEvent('generate_lead', { source: 'place_page', place: slug })
           return
         }
         setProblem(result.error)

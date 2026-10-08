@@ -4,12 +4,22 @@ import {
   computeMarketArea,
   marketAreaPriceBand,
   buildExpiredPeerSet,
+  dropRelistedUnsoldCycles,
   keptCompMedianPpsf,
+  laterOutcomeCycle,
   pickExpiredPeers,
   similarBedRange,
   type CmaExpiredPeer,
+  type HouseCycleRecord,
 } from './market-status'
-import { askOutcomeBarsSvg, daysToOfferSvg, labelWidth, medianCloseLineSvg } from './market-charts'
+import {
+  activeBarLabel,
+  askOutcomeBarsSvg,
+  daysToOfferSvg,
+  labelWidth,
+  medianCloseCaption,
+  medianCloseLineSvg,
+} from './market-charts'
 import { immersiveWiderMarketChapters, renderStatusGridHtml } from './market-area-chapters'
 import { renderImmersiveCmaHtml } from './immersive'
 import type { RenderCmaArgs } from './render'
@@ -364,6 +374,36 @@ describe('pickExpiredPeers', () => {
     expect(peers.every((p) => p.listingKey !== 'FALCON-15991')).toBe(true)
   })
 
+  it('a home that came off with an ADU is not like a subject whose remarks state none (Matt 2026-10-08, rule 24)', () => {
+    const offMarket = (key: string, number: string, remarks: string | null) =>
+      row({
+        ListingKey: key,
+        StreetNumber: number,
+        StreetName: 'Wren',
+        StandardStatus: 'Expired',
+        ListPrice: 519_000,
+        ClosePrice: null,
+        CloseDate: null,
+        DaysOnMarket: 97,
+        CumulativeDaysOnMarket: 97,
+        BedroomsTotal: 3,
+        TotalLivingAreaSqFt: 1420,
+        public_remarks: remarks,
+      })
+    const rows = [
+      offMarket('ADU', '88', 'Single level home plus a permitted ADU with its own entrance.'),
+      offMarket('PLAIN', '90', 'Single level home with a fenced yard.'),
+      offMarket('UNREAD', '92', null),
+    ]
+    expect(pickExpiredPeers(rows, { ...subj, publicRemarks: 'Room for an ADU on the big lot.' }).map((p) => p.address).sort()).toEqual([
+      '90 Wren',
+      '92 Wren',
+    ])
+    expect(
+      pickExpiredPeers(rows, { ...subj, publicRemarks: 'Home with a detached guest house.' }).map((p) => p.address).sort(),
+    ).toEqual(['88 Wren', '90 Wren', '92 Wren'])
+  })
+
   it('collapses same-address cycles into one peer with both histories (U2)', () => {
     const peers = pickExpiredPeers(
       [
@@ -492,6 +532,53 @@ describe('market charts', () => {
     // No BAR. The only rects are the transparent 44-unit-tall tap bands behind
     // each month's dot (tasteReview round two, item 3) — they carry no fill.
     expect(svg).not.toMatch(/<rect(?![^>]*fill="transparent")/)
+  })
+
+  it('keeps the calendar: a withheld month keeps its width, the line breaks there, and the caption says why', () => {
+    // Sunriver, Market Truth neighborhood detached one-month medians read
+    // 2026-10-08: Dec, Jan, Apr and May withheld under ten sales. Joined
+    // up, February drew one step after November.
+    const months: Array<[string, number | null]> = [
+      ['2025-10-01', 829500],
+      ['2025-11-01', 723000],
+      ['2025-12-01', null],
+      ['2026-01-01', null],
+      ['2026-02-01', 860000],
+      ['2026-03-01', 757500],
+      ['2026-04-01', null],
+      ['2026-05-01', null],
+      ['2026-06-01', 1100000],
+      ['2026-07-01', 885000],
+      ['2026-08-01', 972500],
+      ['2026-09-01', 860000],
+    ]
+    const points = months.map(([periodStart, medianSalePrice]) => ({ periodStart, medianSalePrice, soldCount: 10 }))
+    const svg = medianCloseLineSvg(points)
+    const cx = [...svg.matchAll(/<circle cx="([\d.]+)"/g)].map((m) => Number(m[1]))
+    expect(cx).toHaveLength(8)
+    const step = (cx[1]! - cx[0]!)
+    // February sits three months after November, not one.
+    expect(cx[2]! - cx[1]!).toBeCloseTo(step * 3, 5)
+    // Three runs (Oct-Nov, Feb-Mar, Jun-Sep): the path lifts its pen twice.
+    const d = /<path d="([^"]+)"/.exec(svg)?.[1] ?? ''
+    expect(d.match(/M/g)).toHaveLength(3)
+    // The axis still names a month the line skips.
+    expect(svg).toContain('>Dec<')
+    expect(medianCloseCaption(points)).toContain('A month with too few sales for a middle price is left blank.')
+    // A full year draws one unbroken line and says nothing about blanks.
+    const full = points.map((p) => ({ ...p, medianSalePrice: p.medianSalePrice ?? 800000 }))
+    expect((/<path d="([^"]+)"/.exec(medianCloseLineSvg(full))?.[1] ?? '').match(/M/g)).toHaveLength(1)
+    expect(medianCloseCaption(full)).not.toContain('left blank')
+  })
+
+  it('the count bar says single-family, and a long place drops "right now" on a phone before it overruns', () => {
+    expect(activeBarLabel('Bend', 360, 12)).toBe('Single-family homes for sale in Bend right now')
+    expect(activeBarLabel('Crooked River Ranch', 720, 13.5)).toBe(
+      'Single-family homes for sale in Crooked River Ranch right now',
+    )
+    const phone = activeBarLabel('Crooked River Ranch', 360, 12)
+    expect(phone).toBe('Single-family homes for sale in Crooked River Ranch')
+    expect(phone.length * 12 * 0.58).toBeLessThanOrEqual(356)
   })
 
   // The new-listing month ledger was deleted 2026-09-07 (P4, Matt): one to
@@ -710,7 +797,7 @@ describe('chapter order', () => {
     expect(html).not.toContain('id="listing-trend"')
     expect(html).not.toContain('id="status-grid"')
     expect(html).not.toContain('id="photo-set"')
-    expect(html).toContain('Sale price today')
+    expect(html).toContain('Adjusted price')
     expect(html).not.toMatch(/\bN\/A\b/)
     expect(html).not.toContain('2,420,000')
     expect(html).toMatch(/\.page-num,\.pg-num/)
@@ -879,7 +966,12 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
     )
   })
 
-  it('does not say no home came off when the subject is the home that came off', () => {
+  it('says no OTHER home came off when the subject is the home that came off (rule 24, 3037 Purcell)', () => {
+    // It used to say nothing, which left the chapter one line about the
+    // seller's own listing under a heading about the listings near them
+    // (reader review 2026-10-08). "No home came off" would be about the
+    // seller's own home, so the sentence says no other home like it did, over
+    // the area and the longest window the search tried.
     const off = buildExpiredPeerSet({
       rows: [],
       subject: subj,
@@ -888,9 +980,10 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
       subjectCameOff: true,
     })
     expect(off.count).toBe(0)
-    expect(off.sentence).toBe('')
-    expect(off.sentence).not.toMatch(/No home/i)
-    expect(off.sentence).not.toMatch(/came off the market without selling/)
+    expect(off.sentence).toBe(
+      'No other home like yours in Diamond Bar Ranch came off the market without selling in the last 24 months.',
+    )
+    expect(off.sentence).not.toMatch(/^No home/)
 
     const stayed = buildExpiredPeerSet({
       rows: [],
@@ -985,8 +1078,16 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
   })
 
   it('writes whyItSat from the data on the row and nothing else', () => {
+    // Mar 12 to Aug 9 is 150 calendar days: the days are the row's own dates.
     const set = buildExpiredPeerSet({
-      rows: [unsold('A', '10 Aspen', 1, { ListPrice: 500_000, OriginalListPrice: 525_000 })],
+      rows: [
+        unsold('A', '10 Aspen', 1, {
+          ListPrice: 500_000,
+          OriginalListPrice: 525_000,
+          OnMarketDate: '2026-03-12',
+          status_change_timestamp: '2026-08-09',
+        }),
+      ],
       subject: subj,
       area: AREA,
       asOf: ASOF,
@@ -998,6 +1099,59 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
     // 500,000 / 1,450 sqft = $345/sqft, 15% above the $300 the sales closed at.
     expect(why).toContain('$345 a square foot')
     expect(why).toContain('15 percent above the $300')
+  })
+
+  it('ends a peer\'s days the day it left Active, not the day its listing expired (3204 Spring Creek)', () => {
+    // Reader review 2026-10-08: Active Oct 16, withdrawn Jan 20, expired Jul
+    // 31. Both letters said it "came off after 288 days". It was on the market
+    // 96 days; its status column still reads Expired, dated Jul 31.
+    const set = buildExpiredPeerSet({
+      rows: [
+        unsold('A', '3204 Spring Creek', 1, {
+          OnMarketDate: '2025-10-16T21:18:46+00:00',
+          ListDate: '2025-10-16T21:18:46+00:00',
+          status_change_timestamp: '2026-08-01T05:00:00+00:00',
+          off_market_date: '2026-07-31',
+          DaysOnMarket: 288,
+          CumulativeDaysOnMarket: null,
+          statusChanges: [
+            { at: '2026-01-20T18:37:48+00:00', from: 'Active', to: 'Withdrawn' },
+            { at: '2026-08-01T05:00:00+00:00', from: 'Withdrawn', to: 'Expired' },
+          ],
+        }),
+      ],
+      subject: subj,
+      area: AREA,
+      asOf: ASOF,
+      keptCompMedianPpsf: 300,
+    })
+    const peer = set.peers[0]!
+    expect(peer.daysOnMarket).toBe(96)
+    expect(peer.offMarketDate).toBe('2026-01-20')
+    expect(peer.cameOffAs).toBe('Withdrawn')
+    expect(peer.statusDate).toBe('2026-07-31')
+    expect(peer.whyItSat).toContain('96 days on the market')
+    expect(peer.whyItSat).not.toContain('288')
+    expect(peer.listingHistoryLine).toContain('came off the market · 96 days on market')
+  })
+
+  it('counts a peer with no status log on its own dates, in Pacific days', () => {
+    // Listed 7:13 PM Dec 1 Pacific (03:13 UTC Dec 2), off Aug 9: 251 days,
+    // whatever the row's DaysOnMarket says.
+    const set = buildExpiredPeerSet({
+      rows: [
+        unsold('A', '10 Aspen', 1, {
+          OnMarketDate: '2025-12-02T03:13:18+00:00',
+          status_change_timestamp: '2026-08-09',
+          off_market_date: '2026-08-09',
+          DaysOnMarket: 200,
+        }),
+      ],
+      subject: subj,
+      area: AREA,
+      asOf: ASOF,
+    })
+    expect(set.peers[0]!.daysOnMarket).toBe(251)
   })
 
   it('says a home never came down when the opening ask is on the record and equal', () => {
@@ -1082,7 +1236,7 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
     expect(set.sentence).not.toMatch(/[—–]/)
   })
 
-  it('says nothing for a neighborhood set when the subject is the home that came off', () => {
+  it('says no other home came off for a neighborhood set when the subject is the home that came off', () => {
     const set = buildExpiredPeerSet({
       rows: [],
       subject: subj,
@@ -1091,7 +1245,9 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
       subjectCameOff: true,
     })
     expect(set.peers).toEqual([])
-    expect(set.sentence).toBe('')
+    expect(set.sentence).toBe(
+      'No other home like yours in River West came off the market without selling in the last 24 months.',
+    )
   })
 
   it('never prints a plat outside the sales area (Matt 2026-10-07, 3177 Coho)', () => {
@@ -1247,17 +1403,215 @@ describe('the peer sentence counts the rows it shows', () => {
       },
       area: AREA,
       asOf: ASOF,
+      priceBand: { lo: 660_000, hi: 2_220_000 },
     })
     expect(set.areaTotal).toBe(7)
     expect(set.found).toBe(0)
     expect(set.likeYours).toBe(false)
     expect(set.count).toBe(0)
     expect(set.peers).toHaveLength(0)
+    // The seven are the homes listed inside the read's price window, and the
+    // sentence says so (reader review, 1355 Jacksonville, 2026-10-08).
     expect(set.sentence).toBe(
-      'Seven homes in River West came off the market without selling in the last 24 months. None were close to this home in bedrooms, bathrooms, size or age, so none are on this map.',
+      'Seven homes in River West listed between $660,000 and $2,220,000 came off the market without selling in the last 24 months. None were close to this home in bedrooms, bathrooms, size or age, so they are not compared here.',
     )
+    expect(set.priceBand).toEqual({ lo: 660_000, hi: 2_220_000 })
     expect(set.sentence).not.toMatch(/No home /)
     expect(set.sentence).not.toContain('—')
     expect(set.sentence).not.toContain('like yours')
+  })
+})
+
+describe('a house that came off, relisted and sold did not come off unsold (cma-1648-pheasant, reader review 2026-10-08)', () => {
+  // The stored sales area of cma-1648-pheasant, named plats only.
+  const AREA: CompArea = {
+    kind: 'subdivisions',
+    names: ['Pheasant Hill', 'Neal', 'Meadowview Estate', 'North Pilot Butte'],
+    radiusMiles: null,
+    centre: { lat: 44.071089, lng: -121.281442 },
+    source: 'test',
+    sentence: 'Pheasant Hill, your own subdivision, with Meadowview Estate next to it.',
+  }
+  const ASOF = new Date('2026-10-01T23:48:27.000Z')
+  const PHEASANT = {
+    beds: 3,
+    baths: 1,
+    sqft: 1092,
+    yearBuilt: 1972,
+    subdivision: 'Pheasant Hill',
+    city: 'Bend',
+    latitude: 44.071089,
+    longitude: -121.281442,
+    listingKey: '20260915190229551056000000',
+    mlsNumber: null,
+    streetAddress: '1648 Pheasant',
+    propertySubType: 'Single Family Residence',
+  }
+
+  // The listings rows as stored (read 2026-10-08), the fields the read selects.
+  const cycle = (over: Partial<AreaRow>): AreaRow =>
+    row({
+      City: 'Bend',
+      SubdivisionName: 'North Pilot Butte',
+      property_sub_type: 'Single Family Residence',
+      ClosePrice: null,
+      CloseDate: null,
+      DaysOnMarket: null,
+      CumulativeDaysOnMarket: null,
+      ...over,
+    })
+  const HARVEY_CANCELED = cycle({
+    ListingKey: '20260304180508627129000000',
+    StreetNumber: '2639',
+    StreetName: 'Harvey',
+    StandardStatus: 'Canceled',
+    ListPrice: 599_000,
+    OnMarketDate: '2026-06-07 23:30:27+00',
+    ListDate: '2026-06-07 23:30:27+00',
+    status_change_timestamp: '2026-06-08 23:04:07+00',
+    parcel_number: '100566',
+    BedroomsTotal: 3,
+    BathroomsTotal: 3,
+    TotalLivingAreaSqFt: 1123,
+    year_built: 1969,
+  })
+  const DROST_CANCELED = cycle({
+    ListingKey: '20260402204906041951000000',
+    StreetNumber: '1382',
+    StreetName: 'Drost',
+    StandardStatus: 'Canceled',
+    ListPrice: 659_900,
+    OnMarketDate: '2026-04-08 18:04:53+00',
+    ListDate: '2026-04-08 18:04:53+00',
+    status_change_timestamp: '2026-06-09 22:40:16+00',
+    parcel_number: '100471',
+    BedroomsTotal: 3,
+    BathroomsTotal: 2,
+    TotalLivingAreaSqFt: 1700,
+    year_built: 1968,
+  })
+  const SUBJECT_WITHDRAWN = cycle({
+    ListingKey: '20260915190229551056000000',
+    StreetNumber: '1648',
+    StreetName: 'Pheasant',
+    SubdivisionName: 'Pheasant Hill',
+    StandardStatus: 'Withdrawn',
+    ListPrice: 599_900,
+    OnMarketDate: '2026-09-22 16:24:38+00',
+    ListDate: '2026-09-22 16:24:38+00',
+    status_change_timestamp: '2026-10-01 23:36:41+00',
+    parcel_number: '100258',
+    BedroomsTotal: 3,
+    BathroomsTotal: 1,
+    TotalLivingAreaSqFt: 1092,
+    year_built: 1972,
+  })
+  // Every other record of those houses the relist read returns, older sales included.
+  const LATER: HouseCycleRecord[] = [
+    { ListingKey: '20260612214218799263000000', StreetNumber: '2639', StreetName: 'Harvey', City: 'Bend', parcel_number: '100566', StandardStatus: 'Closed', OnMarketDate: '2026-06-12 22:49:57+00', ListDate: '2026-06-12 22:49:57+00', CloseDate: '2026-07-31 00:00:00+00', status_change_timestamp: '2026-07-31 17:22:01+00' },
+    { ListingKey: '20200314183043871703000000', StreetNumber: '2639', StreetName: 'Harvey', City: 'Bend', parcel_number: '100566', StandardStatus: 'Closed', OnMarketDate: '2020-03-23 17:30:04+00', ListDate: '2020-03-23 17:30:04+00', CloseDate: '2020-05-06 00:00:00+00', status_change_timestamp: '2020-05-07 16:55:29+00' },
+    // Entered Jun 5, before the old cycle was canceled on Jun 9; on the market Jun 10.
+    { ListingKey: '20260605215653342393000000', StreetNumber: '1382', StreetName: 'Drost', City: 'Bend', parcel_number: '100471', StandardStatus: 'Closed', OnMarketDate: '2026-06-10 14:13:46+00', ListDate: '2026-06-10 14:13:46+00', CloseDate: '2026-07-16 00:00:00+00', status_change_timestamp: '2026-07-16 16:42:13+00' },
+    { ListingKey: '20240719205939812901000000', StreetNumber: '1382', StreetName: 'Drost', City: 'Bend', parcel_number: '100471', StandardStatus: 'Closed', OnMarketDate: '2024-07-19 21:53:52+00', ListDate: '2024-07-19 21:53:52+00', CloseDate: '2024-08-09 00:00:00+00', status_change_timestamp: '2024-08-09 17:31:39+00' },
+    { ListingKey: '20230531021349455600000000', StreetNumber: '1648', StreetName: 'Pheasant', City: 'Bend', parcel_number: '100258', StandardStatus: 'Closed', OnMarketDate: '2023-05-31 05:01:48+00', ListDate: '2023-05-31 05:01:48+00', CloseDate: '2023-07-07 00:00:00+00', status_change_timestamp: '2023-07-30 18:15:09+00' },
+  ]
+
+  it('names the later sale that took each canceled cycle out', () => {
+    expect(laterOutcomeCycle(HARVEY_CANCELED, LATER)?.ListingKey).toBe('20260612214218799263000000')
+    expect(laterOutcomeCycle(DROST_CANCELED, LATER)?.ListingKey).toBe('20260605215653342393000000')
+    const { kept, dropped } = dropRelistedUnsoldCycles([HARVEY_CANCELED, DROST_CANCELED, SUBJECT_WITHDRAWN], LATER)
+    expect(dropped.map((d) => d.row.StreetName)).toEqual(['Harvey', 'Drost'])
+    // The subject's 2023 sale came before its own cycle, so it never takes that cycle out.
+    expect(kept).toEqual([SUBJECT_WITHDRAWN])
+  })
+
+  it('counts neither house, and never the subject, so the letter says no other home came off', () => {
+    const set = buildExpiredPeerSet({
+      rows: [HARVEY_CANCELED, DROST_CANCELED, SUBJECT_WITHDRAWN],
+      subject: PHEASANT,
+      area: AREA,
+      asOf: ASOF,
+      maxWindowMonths: 12,
+      subjectCameOff: true,
+      laterCycles: LATER,
+    })
+    expect(set.areaTotal).toBe(0)
+    expect(set.count).toBe(0)
+    expect(set.peers).toEqual([])
+    expect(set.sentence).toBe(
+      'No other home like yours in Pheasant Hill, Neal, Meadowview Estate or North Pilot Butte came off the market without selling in the last 12 months.',
+    )
+    // The read before the relist records: both canceled cycles counted.
+    const before = buildExpiredPeerSet({
+      rows: [HARVEY_CANCELED, DROST_CANCELED, SUBJECT_WITHDRAWN],
+      subject: PHEASANT,
+      area: AREA,
+      asOf: ASOF,
+      maxWindowMonths: 12,
+      subjectCameOff: true,
+    })
+    expect(before.areaTotal).toBe(2)
+  })
+
+  it('keeps a cycle whose house sold only before it, and drops one listed again now', () => {
+    const DROST_2024_SALE = LATER[3]!
+    expect(laterOutcomeCycle(DROST_CANCELED, [DROST_2024_SALE])).toBeNull()
+    const relistedActive: HouseCycleRecord = {
+      ListingKey: 'RELIST',
+      StreetNumber: '1382',
+      StreetName: 'NE Drost Way',
+      City: 'Bend',
+      parcel_number: null,
+      StandardStatus: 'Active',
+      OnMarketDate: '2026-09-01 16:00:00+00',
+    }
+    expect(laterOutcomeCycle(DROST_CANCELED, [relistedActive])?.ListingKey).toBe('RELIST')
+    // A cycle that came off unsold again is not a sale and not a relist that sold.
+    expect(laterOutcomeCycle(DROST_CANCELED, [{ ...relistedActive, StandardStatus: 'Expired' }])).toBeNull()
+  })
+
+  it('is one house only: same parcel, or same street address the parcels do not contradict, in the same city', () => {
+    const sale: HouseCycleRecord = { ...LATER[0]! }
+    // Another city with the same street address is another house.
+    expect(laterOutcomeCycle(HARVEY_CANCELED, [{ ...sale, City: 'Redmond', parcel_number: null }])).toBeNull()
+    // Two parcels at one street address (units in one building) are two homes.
+    expect(laterOutcomeCycle(HARVEY_CANCELED, [{ ...sale, parcel_number: '100567' }])).toBeNull()
+    // The parcel ties records whose street lines differ.
+    expect(laterOutcomeCycle(HARVEY_CANCELED, [{ ...sale, StreetName: 'Harvey Pl' }])?.ListingKey).toBe(sale.ListingKey)
+    // No parcel on one side: the street address decides, directional and suffix folded.
+    expect(
+      laterOutcomeCycle({ ...HARVEY_CANCELED, parcel_number: null }, [{ ...sale, StreetName: 'NE Harvey Place' }])?.ListingKey,
+    ).toBe(sale.ListingKey)
+    // The cycle itself is never its own later cycle.
+    expect(laterOutcomeCycle(HARVEY_CANCELED, [{ ...HARVEY_CANCELED, StandardStatus: 'Closed' }])).toBeNull()
+  })
+
+  it("never counts the subject's own earlier unsold cycle, under another listing key or street line", () => {
+    const priorOwnCycle = cycle({
+      ListingKey: 'OLDER-OWN-CYCLE',
+      StreetNumber: '1648',
+      StreetName: 'NE Pheasant Ln',
+      SubdivisionName: 'Pheasant Hill',
+      StandardStatus: 'Expired',
+      ListPrice: 615_000,
+      OnMarketDate: '2026-03-01',
+      ListDate: '2026-03-01',
+      status_change_timestamp: '2026-06-01',
+      BedroomsTotal: 3,
+      BathroomsTotal: 1,
+      TotalLivingAreaSqFt: 1092,
+      year_built: 1972,
+    })
+    const set = buildExpiredPeerSet({
+      rows: [priorOwnCycle, SUBJECT_WITHDRAWN],
+      subject: PHEASANT,
+      area: AREA,
+      asOf: ASOF,
+      maxWindowMonths: 12,
+      subjectCameOff: true,
+      laterCycles: LATER,
+    })
+    expect(set.areaTotal).toBe(0)
+    expect(set.peers).toEqual([])
   })
 })

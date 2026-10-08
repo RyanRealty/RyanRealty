@@ -18,7 +18,7 @@ import { pricingPage, salesThatSetItPage } from '@/lib/cma/render-pricing-page'
 import { setAsideRows } from '@/lib/cma/set-aside'
 import { tableAdjustedBand } from '@/lib/cma/cover-value'
 import { FLAT_LOCAL_DATE_SENTENCE } from '@/lib/cma/flat-date-story'
-import { salesMethodSentences } from '@/lib/cma/sales-method-note'
+import { DATE_REASON_UNDER_GRID, salesMethodSentences } from '@/lib/cma/sales-method-note'
 import { TIME_ADJUSTMENT_BASIS_POCKET } from '@/lib/pricing/exclusive-pocket-date-adj'
 import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
 
@@ -215,6 +215,11 @@ function chapter(a: OpinionPageArgs): { html: string; text: string; grid: Return
   return { html, text: stripTags(html), grid }
 }
 
+// The stored Woodsman draft, priced before Matt's 2026-10-08 ruling ("Down
+// only if local fell"). A rebuild now moves none of these sales, because the
+// local per-foot held flat (lib/cma/pocket-local-gate.test.ts). These hold the
+// renderer for a row that WAS priced on date moves: it prints what the price
+// was built on and never takes a move back out.
 describe('the dated grid: 62475 Woodsman, seven sales, the pocket date move', () => {
   const comps = SALES.map((s) => comp(s, true))
   const pricing = pricingFor(comps, POCKET_TIME)
@@ -231,8 +236,10 @@ describe('the dated grid: 62475 Woodsman, seven sales, the pocket date move', ()
     const date = rowCells(html, 'Adjusted for date').map(dollars)
     expect(date).toContain(-116_239)
     expect(date).toContain(-101_065)
+    // Names whose figure it is (reader review, 62475 Woodsman, 2026-10-08):
+    // the city's, not Shevlin West's, whose own per-foot held flat.
     expect(text).toContain(
-      "Adjusted for date is how much Bend's median price per square foot fell between the month a sale closed and the last three full months. No sale is moved up for date.",
+      "Adjusted for date is how much Bend's median price per square foot fell between the month a sale closed and the last three full months. That figure covers every home sale in Bend, not only Shevlin West. No sale is moved up for date.",
     )
   })
 
@@ -304,7 +311,7 @@ describe('the flat grid: the same sales when no date move ran', () => {
   })
 
   it('still reads the range and the set-aside off the printed rows', () => {
-    const today = rowCells(html, 'Sale price today').map(dollars)
+    const today = rowCells(html, 'Adjusted price').map(dollars)
     expect(today).toContain(pricing.valueLow)
     expect(today).toContain(pricing.valueHigh)
     const rows = setAsideRows(grid.pricing, grid.comps)
@@ -355,5 +362,42 @@ describe('the dated pocket grid with a size line (Matt 2026-10-08: the pocket ad
     expect(rows.map((r) => byAddress.get(r.address)).sort()).toEqual(
       [Math.min(...today), Math.max(...today)].sort(),
     )
+  })
+})
+
+describe('the gated grid: Woodsman priced after the local gate (Matt 2026-10-08, "Down only if local fell")', () => {
+  // A rebuild moves none of the seven sales, because Shevlin West's per-foot
+  // held flat while the home was listed. The stored basis carries the gate.
+  const comps = SALES.map((s) => comp(s, false))
+  const localGate = {
+    branch: 'local-held-flat',
+    verdict: 'held flat',
+    missing: null,
+    place: 'Shevlin West',
+    sized: true,
+    productNoun: null,
+    early: { ppsf: 581, n: 4, from: '2026-03-06', to: '2026-06-17' },
+    late: { ppsf: 572, n: 2, from: '2026-06-18', to: '2026-09-30' },
+    moved: false,
+    rule: 'Matt 2026-10-08, down only if local fell',
+  }
+  const pricing = pricingFor(comps, { ...POCKET_TIME, localGate })
+  const { html, text, grid } = chapter(args(comps, pricing))
+
+  it('prints no date row, and says under the grid why, with the local page figures', () => {
+    expect(rowCells(html, 'Adjusted for date').map(dollars).filter((n) => n !== 0)).toEqual([])
+    expect(text).toContain(
+      'No sale is adjusted for date. Homes like yours in Shevlin West held flat while your home was listed, $581 then $572 a square foot, so each sale stands at its sold price.',
+    )
+    expect(text).not.toContain("Bend's median price per square foot fell")
+  })
+
+  // Said once (reader review, 62475 Woodsman, 2026-10-08): the grid's note
+  // carries the reason, and Basis and limits points back to it.
+  it('points back to the reason under the grid in Basis and limits, not the generic flat line', () => {
+    const method = salesMethodSentences({ subject, comps: grid.comps, pricing: grid.pricing }).join(' ')
+    expect(method).toBe(`None of these sales is moved for the month it sold. ${DATE_REASON_UNDER_GRID}`)
+    expect(method).not.toContain(FLAT_LOCAL_DATE_SENTENCE)
+    expect(text.match(/held flat while your home was listed, \$581 then \$572 a square foot/g)?.length).toBe(1)
   })
 })
