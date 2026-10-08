@@ -95,6 +95,37 @@ function round1(n: number): number {
   return Math.round(n * 10) / 10
 }
 
+/**
+ * ONE ROUNDING FOR THE WEIGHT COLUMN (reader review, 2382 Jackson,
+ * 2026-10-07). Shares become tenths of a percent by the largest remainder, so
+ * the printed column adds to exactly 100.0 and the sentence quotes the same
+ * figure the table prints. Rounding each share on its own let three equal
+ * sales print 33.3, 33.3 and 33.3, a column that adds to 99.9. Ties in the
+ * remainder go to the larger share, then to the earlier sale.
+ */
+export function printedWeightPercents(shares: readonly number[]): number[] {
+  const tenths = shares.map((s) => (Number.isFinite(s) && s > 0 ? s * 1000 : 0))
+  const total = tenths.reduce((sum, t) => sum + t, 0)
+  if (!(total > 0)) return shares.map(() => 0)
+  const floors = tenths.map((t) => Math.floor(t + 1e-9))
+  let left = Math.round(total) - floors.reduce((sum, t) => sum + t, 0)
+  const order = tenths
+    .map((t, i) => ({ i, rem: t - floors[i]!, t }))
+    .sort((a, b) => b.rem - a.rem || b.t - a.t || a.i - b.i)
+  for (const { i } of order) {
+    if (left <= 0) break
+    floors[i] = floors[i]! + 1
+    left -= 1
+  }
+  return floors.map((t) => t / 10)
+}
+
+function joinAnd(parts: readonly string[]): string {
+  if (parts.length <= 1) return parts[0] ?? ''
+  if (parts.length === 2) return `${parts[0]} and ${parts[1]}`
+  return `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`
+}
+
 /** "five", not "5", under ten. Mirrors lib/pricing/estimate.ts `countWord`. */
 const COUNT_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine']
 function countWord(n: number): string {
@@ -213,6 +244,7 @@ export function reconcileAdjustedSales(args: {
     args.subjectSqft > 0 ? Math.min(...usable.map((s) => Math.abs(s.sqft - args.subjectSqft))) : null
   const mostRecent = Math.min(...usable.map((s) => s.monthsSinceClose))
 
+  const printed = printedWeightPercents(shares)
   const weights: ReconciliationWeight[] = usable.map((s, i) => {
     const gross = grossAdjustmentPct(s)
     const parts = [sizePhrase(s, args.subjectSqft), recencyPhrase(s, args.asOf), movementPhrase(s, gross)]
@@ -227,7 +259,7 @@ export function reconcileAdjustedSales(args: {
     return {
       listingKey: s.listingKey,
       address: s.address,
-      weight: round1(share(s, i) * 100),
+      weight: printed[i] ?? round1(share(s, i) * 100),
       weightRaw: +rawOf(s).toFixed(4),
       adjustedPrice: Math.round(s.adjustedPrice),
       grossAdjustmentPct: gross,
@@ -238,6 +270,27 @@ export function reconcileAdjustedSales(args: {
   const leader = [...weights].sort(
     (a, b) => b.weight - a.weight || a.listingKey.localeCompare(b.listingKey),
   )[0]!
+  // A SUPERLATIVE ONLY WHEN IT IS TRUE OF THE SHARES. When the leader's share
+  // equals another sale's, no one sale carries the most weight, and the
+  // largest remainder may still print one of them a tenth higher.
+  const topShare = Math.max(...shares)
+  const tied = usable
+    .map((s, i) => ({ s, i }))
+    .filter(({ i }) => Math.abs((shares[i] ?? 0) - topShare) <= 1e-9)
+  if (tied.length > 1) {
+    const figures = tied.map(({ i }) => weights[i]!.weight.toFixed(1))
+    const same = figures.every((f) => f === figures[0])
+    const who =
+      tied.length === usable.length
+        ? `The ${countWord(usable.length)} sales behind this price carry equal weight`
+        : `${joinAnd(tied.map(({ s }) => s.address))} carry equal weight, the most of the ${countWord(
+            usable.length,
+          )} sales behind this price`
+    const sentence = same
+      ? `${who}, at ${figures[0]} percent each.`
+      : `${who}. Rounded to add up to 100, the table shows ${joinAnd(figures)} percent.`
+    return { weights, mostWeighted: leader.listingKey, weightedPrice, sentence }
+  }
   const leaderSale = usable.find((s) => s.listingKey === leader.listingKey)!
   const why = [
     sizePhrase(leaderSale, args.subjectSqft),

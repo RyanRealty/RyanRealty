@@ -130,6 +130,17 @@ function usd(n: number): string {
  * moved. Names the percentage and the comps, so a grid that walked a sale
  * from $621,000 to $594,000 cannot sit under a line that says no date
  * adjustment was applied.
+ *
+ * EVERY "MOVED X PERCENT, FROM A TO B" IS TRUE OF A AND B (reader review,
+ * 2382 Jackson, 2026-10-07). The date move starts from the sale price after
+ * a recorded seller concession (comparisonSalePrice), and `timeAdjustedPrice`
+ * is that start plus the date move. The line used to print the date move as a
+ * share of the CLOSE and run it from the close to the post-concession price:
+ * "2266 Jackson moved -8.1 percent, from $690,000 to $619,448", where
+ * $690,000 to $619,448 is really -10.2 percent and the date move alone is
+ * -8.2 percent of $675,000. Now the percent is the date move over the price
+ * it moved from, the "from" is that price, and a concession that came off
+ * first is named with the close it came off.
  */
 export function describeAppliedDateAdjustments(moves: readonly AppliedDateMove[]): string | null {
   const moved = moves.filter((m) => {
@@ -138,11 +149,21 @@ export function describeAppliedDateAdjustments(moves: readonly AppliedDateMove[]
   })
   if (moved.length === 0) return null
   const bits = moved.map((m) => {
-    const to = m.timeAdjustedPrice != null && m.timeAdjustedPrice > 0 ? m.timeAdjustedPrice : m.closePrice + m.timeAdjustment
-    const pct = (m.timeAdjustment / m.closePrice) * 100
+    const hasTo = m.timeAdjustedPrice != null && Number.isFinite(m.timeAdjustedPrice) && m.timeAdjustedPrice > 0
+    // The price the date move started from: the close, less any recorded
+    // seller concession. Read back off the stored pair so the line and the
+    // grid can never disagree about it.
+    const from = hasTo ? Math.round((m.timeAdjustedPrice as number) - m.timeAdjustment) : m.closePrice
+    const to = hasTo ? (m.timeAdjustedPrice as number) : m.closePrice + m.timeAdjustment
+    const base = from > 0 ? from : m.closePrice
+    const pct = (m.timeAdjustment / base) * 100
     const sign = pct > 0 ? '+' : ''
     const where = m.address.trim() || 'one sale'
-    return `${where} moved ${sign}${pct.toFixed(1)} percent, from ${usd(m.closePrice)} to ${usd(to)}`
+    const concession = Math.round(m.closePrice - base)
+    const move = `${where} moved ${sign}${pct.toFixed(1)} percent for date, from ${usd(base)} to ${usd(to)}`
+    return concession >= 1
+      ? `${move}, after ${usd(concession)} in seller concessions came off its ${usd(m.closePrice)} sale`
+      : move
   })
   const head =
     moved.length === 1

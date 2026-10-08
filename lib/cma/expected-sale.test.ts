@@ -531,13 +531,24 @@ describe('the method moves to Basis and limits, in plain English (Keats)', () =>
   })
 
   it('prints a basis it does not know as the pricing side wrote it', () => {
-    const pocket = {
+    const yoy = {
       ...PRICING,
-      timeAdjustment: { basis: 'exclusive-pocket', sentence: 'These sales are the exclusive pocket.', n: 0 },
+      timeAdjustment: { basis: 'yoy-median', sentence: 'Each sale is moved by the year-over-year median move.', n: 0 },
     } as unknown as CmaPricing
-    expect(salesMethodSentences({ subject: SUBJECT, comps: COMPS, pricing: pocket })).toContain(
-      'These sales are the exclusive pocket.',
+    expect(salesMethodSentences({ subject: SUBJECT, comps: COMPS, pricing: yoy })).toContain(
+      'Each sale is moved by the year-over-year median move.',
     )
+  })
+
+  it('never prints the exclusive-pocket engine note; the reader gets one date sentence (2382 Jackson)', () => {
+    for (const basis of ['exclusive-pocket-sold-list', 'exclusive-pocket']) {
+      const pocket = {
+        ...PRICING,
+        timeAdjustment: { basis, sentence: 'These sales are the exclusive pocket. Size and story class do not adjust.', n: 0 },
+      } as unknown as CmaPricing
+      const text = salesMethodSentences({ subject: SUBJECT, comps: COMPS, pricing: pocket }).join(' ')
+      expect(text).not.toMatch(/exclusive pocket|story class|That index is/i)
+    }
   })
 })
 

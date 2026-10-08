@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { reconcileAdjustedSales, grossAdjustmentPct, type ReconcilableSale } from './reconciliation'
+import { reconcileAdjustedSales, grossAdjustmentPct, printedWeightPercents, type ReconcilableSale } from './reconciliation'
 // The mechanical voice module was retired (main, 2026-09). What it enforced on
 // these strings is checked here directly: no display punctuation, no jargon.
 const BANNED_PUNCTUATION = /[—–;]/
@@ -319,5 +319,62 @@ describe('set aside means set aside (tasteReview round three, §2 item 1)', () =
     const out = reconcileAdjustedSales({ sales: part.kept, subjectSqft: 1_668 })
     const prose = [out.sentence ?? '', ...out.weights.map((w) => w.reason)].join('\n')
     expect(prose).not.toContain('any sale here')
+  })
+
+  it('2382 Jackson: one rounding, the column adds to 100.0 and the sentence quotes the column', () => {
+    // Raw weights stored on cma-2382-jackson (2026-10-07): 1.5076, 1.5024,
+    // 1.5014, shares 33.418, 33.302 and 33.280 percent.
+    const out = reconcileAdjustedSales({
+      sales: [
+        sale({ listingKey: 'J', address: '2266 Jackson', sqft: 2_002, weight: 1.5076, adjustedPrice: 619_448 }),
+        sale({ listingKey: 'I', address: '2225 Indigo', sqft: 1_393, weight: 1.5024, adjustedPrice: 538_569 }),
+        sale({ listingKey: 'P', address: '2591 Purcell', sqft: 1_655, weight: 1.5014, adjustedPrice: 539_753 }),
+      ],
+      subjectSqft: 2_016,
+    })
+    const printed = out.weights.map((w) => w.weight)
+    expect(printed).toEqual([33.4, 33.3, 33.3])
+    expect(Math.round(printed.reduce((a, b) => a + b, 0) * 10)).toBe(1000)
+    expect(out.weightedPrice).toBe(565_991)
+    expect(out.sentence).toContain('2266 Jackson carries the most weight of the three sales behind this price, at 33.4 percent')
+  })
+
+  it('the printed column always adds to exactly 100.0, where rounding each share would not', () => {
+    // Rounded one at a time these print 33.3 x3 (99.9) and 16.7 x6 (100.2).
+    for (const shares of [[1 / 3, 1 / 3, 1 / 3], Array(6).fill(1 / 6), [0.40049, 0.29951, 0.15, 0.15], [0.12345, 0.87655]]) {
+      const printed = printedWeightPercents(shares)
+      expect(Math.round(printed.reduce((a, b) => a + b, 0) * 10)).toBe(1000)
+      printed.forEach((p, i) => expect(Math.abs(p - shares[i]! * 100)).toBeLessThan(0.1 + 1e-9))
+    }
+  })
+
+  it('claims no single heaviest sale when the shares tie', () => {
+    const out = reconcileAdjustedSales({
+      sales: [
+        sale({ listingKey: 'A', address: '1 Elm', weight: 1 }),
+        sale({ listingKey: 'B', address: '2 Elm', weight: 1 }),
+        sale({ listingKey: 'C', address: '3 Elm', weight: 1 }),
+      ],
+      subjectSqft: 1_700,
+    })
+    expect(out.weights.map((w) => w.weight)).toEqual([33.4, 33.3, 33.3])
+    expect(out.sentence).not.toContain('carries the most weight')
+    expect(out.sentence).toBe(
+      'The three sales behind this price carry equal weight. Rounded to add up to 100, the table shows 33.4, 33.3 and 33.3 percent.',
+    )
+    expect(readsLikeSellerProse(out.sentence!)).toBe(true)
+
+    const four = reconcileAdjustedSales({
+      sales: [
+        sale({ listingKey: 'A', address: '1 Elm', weight: 2 }),
+        sale({ listingKey: 'B', address: '2 Elm', weight: 2 }),
+        sale({ listingKey: 'C', address: '3 Elm', weight: 1 }),
+        sale({ listingKey: 'D', address: '4 Elm', weight: 1 }),
+      ],
+      subjectSqft: 1_700,
+    })
+    expect(four.sentence).toBe(
+      '1 Elm and 2 Elm carry equal weight, the most of the four sales behind this price, at 33.3 percent each.',
+    )
   })
 })
