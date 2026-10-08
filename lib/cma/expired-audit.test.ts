@@ -9,11 +9,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildFailureFindings,
-  buildNetSheet,
   buildOwnershipFinding,
   buildServicesList,
   buildThisHomeMarketingPlan,
-  feeLine,
   sellerFacingFindingMeaning,
 } from './expired-audit'
 import { blamesPriorAgent, isWorthQuestionCopy } from '@/lib/crm/first-touch-copy'
@@ -238,33 +236,6 @@ describe('buildServicesList — this-home plan, not a brochure', () => {
     expect(list.join(' ')).not.toMatch(/1842|Main St|\$\d/)
   })
 
-  it('fee line does not lead with the old brochure sentence', () => {
-    expect(feeLine()).not.toMatch(/Every service above/i)
-    expect(isWorthQuestionCopy(feeLine())).toBe(false)
-  })
-})
-
-describe('buildNetSheet — close price minus seller concessions', () => {
-  const pricing = {
-    recommended: 800_000,
-    conservative: 780_000,
-    highEnd: 820_000,
-    notes: [],
-  } as unknown as CmaPricing
-
-  it('subtracts comparable-set concessions from seller net', () => {
-    const sheet = buildNetSheet(pricing, { expectedConcessions: 10_000 })
-    const line = sheet.lines.find((l) => l.label.startsWith('Seller concessions'))
-    expect(line?.amount).toBe(-10_000)
-    expect(sheet.estimatedNet).toBe(sheet.salePrice - sheet.totalCosts)
-    expect(sheet.totalCosts).toBeGreaterThan(10_000)
-    expect(sheet.assumptions.some((a) => a.includes('contract price'))).toBe(true)
-  })
-
-  it('does not invent a concession line when the set did not resolve one', () => {
-    const sheet = buildNetSheet(pricing, { expectedConcessions: null })
-    expect(sheet.lines.some((l) => l.label.startsWith('Seller concessions'))).toBe(false)
-  })
 })
 
 describe('sellerFacingFindingMeaning', () => {

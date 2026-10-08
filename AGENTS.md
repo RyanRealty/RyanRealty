@@ -305,6 +305,8 @@ export async function doThing(): Promise<{ data: Result | null; error: string | 
 }
 ```
 
+**Lead event (locked, Matt 2026-10-08):** GA4 `generate_lead` is sent only from the server through `fireLeadGenerated` (`lib/lead-tracking.ts`), with a `lead_type` from the fixed list and a `form_id` in `lib/analytics/lead-event.ts`; never `value` or `currency` (no dollar values on leads); never from the browser, never `fireGa4Event('generate_lead')` directly, and a non-lead (recruit, newsletter) uses `fireNonLeadEvent`. `lib/analytics/lead-event.test.ts` holds it.
+
 ### File Ownership
 
 The ownership matrix in `docs/plans/master-plan.md` is enforced. Check it before modifying files owned by another workstream:

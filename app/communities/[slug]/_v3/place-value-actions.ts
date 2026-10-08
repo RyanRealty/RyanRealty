@@ -30,7 +30,7 @@ import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
 import { createCmaRequest } from '@/lib/cma-request'
 import { sendPlaceValueConfirmation } from '@/lib/cma/request-emails'
 import { resolveSigningBrokerForPerson } from '@/lib/data/cma/signing-broker'
-import { fireGa4Event, readGa4ClientIdFromCookies } from '@/lib/ga4-measurement-protocol'
+import { fireLeadGenerated } from '@/lib/lead-tracking'
 import { buildAnswerFigures, salesPerMonthFrom } from '@/lib/site/answer-figures'
 import { slugify } from '@/lib/slug'
 import type {
@@ -335,24 +335,14 @@ export async function requestPlaceValuation(input: PlaceValueRequestInput): Prom
     console.log(`[place-value] confirmation sent via ${confirmation.via} — cma ${created.slug}`)
   }
 
-  try {
-    const cookieStore = await cookies()
-    void fireGa4Event({
-      eventName: 'generate_lead',
-      clientId: readGa4ClientIdFromCookies(cookieStore) ?? undefined,
-      eventParams: {
-        lp_variant: 'place-page',
-        place_slug: place.slug,
-        broker_slug: brokerSlug,
-        lead_type: 'seller',
-        value: 500,
-        currency: 'USD',
-      },
-      userProperties: { assigned_broker: brokerSlug },
-    })
-  } catch (e) {
-    console.warn('[place-value] GA4 MP fire prep failed:', e)
-  }
+  // GA4: the one server-side generate_lead (lib/lead-tracking.ts). Never throws.
+  void fireLeadGenerated({
+    lp_variant: 'place-page',
+    lead_type: 'seller_valuation',
+    form_id: 'place_value',
+    broker_slug: brokerSlug,
+    extra: { place_slug: place.slug },
+  })
 
   return { ok: true, brokerFirst, bookHref }
 }

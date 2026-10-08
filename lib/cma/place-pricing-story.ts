@@ -5,6 +5,8 @@
 
 import type { PlacePricingStory } from '@/lib/cma/place-pricing-types'
 import { escapeHtml } from '@/lib/cma/render-blocks'
+import { marketAreaName, resolveMarketArea } from '@/lib/cma/market-area'
+import { realSubdivisionName } from '@/lib/pricing/classes'
 
 const esc = escapeHtml
 
@@ -39,17 +41,67 @@ function paragraph(text: string): string {
   return `<p>${esc(text)}</p>`
 }
 
+/** The subject, as the place story needs it to say where the home sits. */
+export type PlaceStoryHome = {
+  subdivision?: string | null
+  city?: string | null
+  latitude?: number | null
+  longitude?: number | null
+}
+
+function possessive(name: string): string {
+  return /s$/i.test(name) ? `${name}'` : `${name}'s`
+}
+
+/**
+ * The first line, which introduces the place before it tells its story.
+ *
+ * The story is about the mapped neighborhood or community around the home, a
+ * different name from the subdivision the rest of the letter uses. "Here's
+ * what happened in Summit West" on a letter that otherwise says Shevlin West
+ * named a place the owner was never told they live in (reader review
+ * 2026-10-08; Mountain View on 2382 Jackson in Holliday Park and 3037 Purcell
+ * in Silver Sage). So the line says where the home sits first.
+ *
+ * MEMBERSHIP IS READ, NOT ASSUMED. The build resolved the place by putting the
+ * subject's stored coordinates through the polygon mesh
+ * (data/bend/bend-neighborhood-polygons.json, `resolveMarketArea`). The same
+ * test runs here on the same stored coordinates, and the home is said to sit
+ * in the place only when it lands in the polygon of that exact name. When it
+ * does not, or the row has no coordinates, the line still names the place for
+ * what it is and makes no claim about the home.
+ */
+export function placeStoryLead(story: PlacePricingStory, home?: PlaceStoryHome | null): string {
+  const place = story.placeName.trim()
+  const span = `over the last ${story.windowMonths} months`
+  const kind = story.placeKind === 'community' ? 'community' : 'neighborhood'
+  const slug = resolveMarketArea(home?.latitude ?? null, home?.longitude ?? null)
+  const inside = slug != null && marketAreaName(slug)?.trim() === place
+  if (!inside) return `Here's what happened in the ${place} ${kind} ${span}.`
+  const city = (home?.city ?? '').trim()
+  const where =
+    kind === 'neighborhood' && city ? `${possessive(city)} ${place} neighborhood` : `the ${place} ${kind}`
+  const sub = realSubdivisionName(home?.subdivision ?? null)
+  // A subdivision that IS the place (Broken Top in Broken Top) needs no
+  // introduction; the letter already uses the name.
+  if (sub && sub.toLowerCase() === place.toLowerCase()) return `Here's what happened in ${place} ${span}.`
+  const lead = sub ? `Your home in ${sub} is in ${where}.` : `Your home is in ${where}.`
+  return `${lead} Here's what happened there ${span}.`
+}
+
 /**
  * The place story, or '' when there is nothing to count.
  * `doc` picks the source-line class the rest of that document already uses.
+ * `home` lets the first line say where the home sits (`placeStoryLead`).
  */
 export function placePricingStoryHtml(
   story: PlacePricingStory | null | undefined,
   doc: 'letter' | 'immersive',
+  home?: PlaceStoryHome | null,
 ): string {
   if (!story || !(story.listedHomes > 0)) return ''
   const lines: string[] = [
-    `Here's what happened in ${story.placeName} over the last ${story.windowMonths} months.`,
+    placeStoryLead(story, home),
     `${count(story.listedHomes)} homes were listed. ${count(story.didNotSell)} of them came off the market without selling.`,
   ]
   if (story.droppedPrice > 0) {

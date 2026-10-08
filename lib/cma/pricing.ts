@@ -149,6 +149,20 @@ export function adjustComps(
  * re-derives the tiers, then priceCmaSet applies it again. The first `before`
  * survives so the sentence names the whole distance once instead of half of it
  * twice.
+ *
+ * TRIM NORMALLY (Matt 2026-10-08, 915 Saginaw). The printed range is always
+ * the trimmed range, and one sale never decides the price. A same-street sale
+ * that is the lowest (or highest) adjusted sale is set aside by the range rule
+ * like any end sale (lib/pricing/estimate.ts partitionByRangeRule), and a sale
+ * that was set aside does not anchor: no cap, no floor, no weight. 536 Saginaw
+ * at $727,148 under four sales at $987,577 to $1,298,050 used to be released
+ * back into the range and cap the price at $800,000; it now stays set aside
+ * and the price comes from the sales that set the range. `setAside` names the
+ * range rule's set-aside sales; when every same-street sale is among them and
+ * the cap would have bound, the record says so (`setAside: true`,
+ * `capped: false`) and nothing moves. This ruling is about the trimmed ends
+ * only: a same-street sale INSIDE the kept set anchors exactly as before (23
+ * Benaiah). A caller with no range rule passes no `setAside`.
  */
 export function applyStreetAnchor(
   ctx: {
@@ -158,24 +172,31 @@ export function applyStreetAnchor(
     notes: string[]
     /** A previous application, when one has already run on this pricing. */
     prior?: CmaPricingStreetAnchor | null
+    /** True for a sale the range rule set aside (a trimmed end). It never anchors. */
+    setAside?: (sale: CmaAdjustedComp) => boolean
   },
   tiers: { conservative: number; recommended: number; highEnd: number },
 ): CmaPricingStreetAnchor | null {
   const subjectSqft = ctx.subject.sqft ?? 0
   if (ctx.priceOverride != null || subjectSqft <= 0) return null
-  const peers = ctx.adjusted.filter((c) =>
+  const sameStreet = ctx.adjusted.filter((c) =>
     sameStreetPeer(
       { streetAddress: ctx.subject.streetAddress, city: ctx.subject.city, sqft: subjectSqft },
       { address: c.address, city: c.city, sqft: c.sqft },
     ),
   )
-  if (peers.length === 0) return null
+  if (sameStreet.length === 0) return null
+  const isAside = ctx.setAside ?? (() => false)
+  const peers = sameStreet.filter((c) => !isAside(c))
+  if (peers.length === 0) return streetSalesSetAside(sameStreet, tiers)
   const prices = peers.map((c) => c.adjustedPrice).filter((v) => v > 0)
   if (prices.length === 0) return null
+  // A set-aside record is not an application: it never carries forward.
+  const prior = ctx.prior && ctx.prior.setAside !== true ? ctx.prior : null
   const anchor = median(prices)
   const ceiling = round5000(anchor * (1 + SAME_STREET_PREMIUM_MAX))
-  if (!(anchor > 0) || tiers.recommended <= ceiling) return ctx.prior ?? null
-  const before = ctx.prior?.before ?? tiers.recommended
+  if (!(anchor > 0) || tiers.recommended <= ceiling) return prior
+  const before = prior?.before ?? tiers.recommended
   const addresses = peers.map((c) => c.address)
   const list = addresses.join(', ')
   const sentence =
@@ -187,24 +208,78 @@ export function applyStreetAnchor(
   }
   return {
     addresses,
-    // By key as well as by address: comp addresses carry no unit, and the
-    // pricer releases these sales from the set-aside list by key
-    // (lib/pricing/estimate.ts releaseStreetAnchorFromSetAside).
+    // By key as well as by address: comp addresses carry no unit.
     listingKeys: peers.map((c) => c.listingKey).filter((k): k is string => Boolean(k)),
     anchor: Math.round(anchor),
     ceiling,
     floor: round5000(anchor),
     before,
     after: ceiling,
+    setAside: false,
+    capped: true,
     sentence,
   }
+}
+
+/**
+ * Every same-street sale was an end of the adjusted sales and the range rule
+ * set it aside (Matt 2026-10-08, "Trim normally"). It does not cap and does
+ * not set the floor. Recorded only when the cap WOULD have bound, so the row
+ * says why the price is not held to the street; null otherwise, as before. No
+ * note is written: the grid already gives the set-aside sale its reason, and
+ * the cap sentence would name a price the document does not print.
+ */
+function streetSalesSetAside(
+  sales: CmaAdjustedComp[],
+  tiers: { recommended: number },
+): CmaPricingStreetAnchor | null {
+  const prices = sales.map((c) => c.adjustedPrice).filter((v) => v > 0)
+  if (prices.length === 0) return null
+  const anchor = median(prices)
+  const ceiling = round5000(anchor * (1 + SAME_STREET_PREMIUM_MAX))
+  if (!(anchor > 0) || tiers.recommended <= ceiling) return null
+  const addresses = sales.map((c) => c.address)
+  const usd = (n: number) => `$${Math.round(n).toLocaleString('en-US')}`
+  const sentence =
+    sales.length === 1
+      ? `${addresses[0]} is the same size as this home and sits on the same street. Its adjusted price of ${usd(anchor)} is an end of the adjusted sales, so it was set aside like any end sale and does not set the price.`
+      : `${addresses.join(', ')} are the same size as this home and sit on the same street. Their adjusted prices, a median of ${usd(anchor)}, are ends of the adjusted sales, so they were set aside like any end sale and do not set the price.`
+  return {
+    addresses,
+    listingKeys: sales.map((c) => c.listingKey).filter((k): k is string => Boolean(k)),
+    anchor: Math.round(anchor),
+    ceiling,
+    floor: round5000(anchor),
+    before: tiers.recommended,
+    after: tiers.recommended,
+    setAside: true,
+    capped: false,
+    sentence,
+  }
+}
+
+/** The anchor holds the price: it applied, and its sales were not set aside. */
+export function streetAnchorHolds(
+  anchor: CmaPricingStreetAnchor | null | undefined,
+): anchor is CmaPricingStreetAnchor {
+  return anchor != null && anchor.setAside !== true
 }
 
 export function computePricing(
   subject: CmaSubject,
   adjusted: CmaAdjustedComp[],
   market: CmaMarketContext | null,
-  opts: { sellerImprovementsTotal?: number | null; priceOverride?: number | null; site?: CmaSiteData | null } = {},
+  opts: {
+    sellerImprovementsTotal?: number | null
+    priceOverride?: number | null
+    site?: CmaSiteData | null
+    /**
+     * The sales the caller's range rule set aside (priceCmaSet passes the
+     * trimmed ends). A same-street sale among them does not anchor (Matt
+     * 2026-10-08, "Trim normally"). Omitted, every same-street sale anchors.
+     */
+    streetAnchorSetAside?: (sale: CmaAdjustedComp) => boolean
+  } = {},
 ): CmaPricing | null {
   const subjectSqft = subject.sqft ?? 0
 
@@ -366,11 +441,13 @@ export function computePricing(
   // in priceCmaSet, which re-derives the tiers from the range rule and would
   // otherwise undo it. The function is idempotent and keeps the first
   // `before`, so a reader is told the whole distance once.
+  // A same-street sale the caller's range rule set aside does not anchor
+  // (Matt 2026-10-08, "Trim normally"); the record says so and nothing moves.
   const streetAnchor = applyStreetAnchor(
-    { subject, adjusted, priceOverride, notes },
+    { subject, adjusted, priceOverride, notes, setAside: opts.streetAnchorSetAside },
     { conservative, recommended, highEnd },
   )
-  if (streetAnchor) {
+  if (streetAnchorHolds(streetAnchor)) {
     recommended = streetAnchor.after
     // The twin is the floor, not the number. Pulling conservative to the
     // recommendation instead would print the number at the bottom of its own
@@ -416,7 +493,7 @@ export function computePricing(
   }
 
   // The dispersion guard: floor confidence and flag for broker review.
-  let needsReview = streetAnchor != null
+  let needsReview = streetAnchorHolds(streetAnchor)
   let reviewReason: string | null = null
   if (highDispersion) {
     confidence = 'Supportable'
@@ -522,7 +599,10 @@ export function pricingRangeDisplay(
   // and the failed ask once, in chapter 3 (heldUnderBandLead). "Capped below
   // this range. See How we got the price." pointed at a section that does
   // not exist and sat beside a sentence saying the opposite.
-  if (p.hold?.kind === 'ask-below-band') {
+  // Any held letter (rule 22 too): its cover number is the price Matt is
+  // reviewing, so no sentence calls it "the recommended list price", and the
+  // section that note pointed at does not exist (reader review 2026-10-08).
+  if (p.hold?.kind === 'ask-below-band' || p.hold?.kind === 'ask-in-band') {
     return { label: 'Comp-supported range', outOfRange: true, note: null }
   }
   const direction = p.recommended < p.valueLow ? 'below' : 'above'

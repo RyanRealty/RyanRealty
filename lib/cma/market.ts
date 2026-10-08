@@ -11,6 +11,19 @@
  * those fields. Pulse days-to-pending and 30-day sold stay off this object
  * (do not map them onto 12-month days to contract).
  *
+ * ONE POPULATION ON THE PAGE (2026-10-08). The month line is the same
+ * Market Truth detached membership as the counts beside it
+ * (getPublicDetachedMonthly, one-month median_close and closed_count, the
+ * read the public city page draws, D20/D27). It used to be
+ * market_stats_cache monthly, which clips a city to its TIGER polygon: on
+ * 2026-10-08 Bend's letter printed "712 homes are for sale in Bend" and "an
+ * average of 204 sold each month" (MLS City text, 712 active, 1224 closed in
+ * 180 days) while its stored month line carried the polygon's 140 to 198
+ * sales a month from April to September (978 in all, 163 a month). Two
+ * reviewers divided 712 by 163, got 4.4 months, and read a verdict flip that
+ * no single population supports. A leftover miss omits the line; the cache
+ * does not fill it.
+ *
  * Cache rolling_365d is optional. Market Truth leftover or inventory is
  * enough to assemble a context. Verdict thresholds (CLAUDE.md §0): <= 4
  * seller's, 4-6 balanced, >= 6 buyer's.
@@ -19,11 +32,9 @@
 import {
   getCmaMarketPulseRow,
   getCmaMarketStatsRow,
-  getCmaMarketTrendRows,
   CMA_MARKET_TREND_MEASURE,
   type CmaMarketPulseRow,
   type CmaMarketStatsRow,
-  type CmaMarketTrendRow,
 } from '@/lib/data/cma/builderReads'
 import { getCityDetachedMarket, getDetachedMarket, type SellBendMarket } from '@/lib/data/market-truth/getSellBendMarket'
 import {
@@ -32,9 +43,11 @@ import {
   publicPaceHasRow,
   type PublicPaceRow,
 } from '@/lib/data/market-truth/public-pace'
+import { getPublicDetachedMonthly, type PublicMonthlyPoint } from '@/lib/data/market-truth/public-monthly'
+import { zonedDateKey } from '@/lib/format/date'
 import { resortSlugForSubdivision } from '@/lib/cma/resort-guard'
 import { getCmaMarketBoardYear } from '@/lib/cma/market-board-mart'
-import type { CmaMarketContext } from '@/lib/cma/types'
+import type { CmaMarketContext, CmaMarketTrendPoint } from '@/lib/cma/types'
 import { isSoldAttributionTrusted, publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import { monthsOfSupplyVerdict } from '@/lib/format/months-of-supply'
 
@@ -121,6 +134,54 @@ async function readCmaLeftover(
   }
 }
 
+/**
+ * The population every market figure in a CMA counts, named for the citation
+ * so a reviewer reconciles the letter against the right store (2026-10-08).
+ */
+export const CMA_MARKET_POPULATION =
+  "Market Truth mt-v1 segment detached: PropertyType 'A' and property_sub_type 'Single Family Residence'. " +
+  'A city is its MLS City text (D5), a resort community its primary place membership. ' +
+  "Active is StandardStatus 'Active' only (pre-market and pending listings are not inventory). " +
+  'Months of supply = active / (closed_180d / 6). The month line is one-month median_close and closed_count on the same membership.'
+
+/** The month line covers the last year: twelve complete months. */
+export const CMA_TREND_MONTHS = 12
+
+async function readCmaMonthly(
+  geoType: 'city' | 'neighborhood',
+  geoSlug: string,
+): Promise<PublicMonthlyPoint[]> {
+  if (!geoSlug.trim()) return []
+  try {
+    return await getPublicDetachedMonthly({
+      geoType,
+      geoSlug,
+      // Pacific, the same in-progress month the public city page drops.
+      currentMonthKey: zonedDateKey(new Date()).slice(0, 7),
+      months: CMA_TREND_MONTHS,
+    })
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Market Truth months as the CMA trend, every calendar month kept. A month
+ * whose median Market Truth withheld (under its floor of ten sales) keeps its
+ * place with a null median, never a value from the cache, so the chart breaks
+ * the line there instead of joining across it; the chart needs six priced
+ * months. There is no monthly inventory cell, so `endOfPeriodInventory` is
+ * null rather than another population's count.
+ */
+export function cmaTrendFromMonthly(points: readonly PublicMonthlyPoint[]): CmaMarketTrendPoint[] {
+  return points.map((p) => ({
+    periodStart: p.periodStart,
+    medianSalePrice: p.medianClose,
+    soldCount: p.closedCount,
+    endOfPeriodInventory: null,
+  }))
+}
+
 export type CmaMarketAssembleInput = {
   city: string
   geoType: 'city' | 'neighborhood'
@@ -129,7 +190,8 @@ export type CmaMarketAssembleInput = {
   pulse: CmaMarketPulseRow | null
   detached: SellBendMarket | null
   leftover: PublicPaceRow
-  trendRows: CmaMarketTrendRow[]
+  /** Market Truth detached one-month cells for the same geography (getPublicDetachedMonthly). */
+  monthly: PublicMonthlyPoint[]
   yearMart: CmaMarketContext['yearMart']
 }
 
@@ -139,7 +201,7 @@ export type CmaMarketAssembleInput = {
  * may be missing.
  */
 export function assembleCmaMarketContext(input: CmaMarketAssembleInput): CmaMarketContext {
-  const { geoType, geoSlug, stats, pulse, detached, leftover, trendRows, yearMart, city } = input
+  const { geoType, geoSlug, stats, pulse, detached, leftover, monthly, yearMart, city } = input
   const publishedMos =
     detached != null
       ? publishMonthsOfSupply({
@@ -192,6 +254,8 @@ export function assembleCmaMarketContext(input: CmaMarketAssembleInput): CmaMark
     pendingCount: leftover.pendingCount,
     medianListPrice: detached?.medianListPrice ?? num(pulse?.median_list_price),
     monthsOfSupply,
+    // The denominator of the printed pace, only beside a published figure.
+    closedSixMonths: publishedMos != null ? (detached?.closedSixMonths ?? null) : null,
     mosFormula,
     marketVerdict: verdict,
     methodologyVersion: stats?.methodology_version ?? null,
@@ -199,12 +263,7 @@ export function assembleCmaMarketContext(input: CmaMarketAssembleInput): CmaMark
     pulseUpdatedAt: pulse?.updated_at ?? null,
     yearMart,
     trendMeasure: CMA_MARKET_TREND_MEASURE,
-    trend: trendRows.map((row) => ({
-      periodStart: row.period_start,
-      medianSalePrice: num(row.median_sale_price),
-      soldCount: num(row.sold_count),
-      endOfPeriodInventory: num(row.end_of_period_inventory),
-    })),
+    trend: cmaTrendFromMonthly(monthly),
   }
 }
 
@@ -243,8 +302,10 @@ export async function getCmaMarketContext(
   const geoType =
     stats?.geo_type === 'neighborhood' || chosen.geoType === 'neighborhood' ? 'neighborhood' : 'city'
   const geoSlug = stats?.geo_slug ?? chosen.slugs[0] ?? slugCandidates(city)[0] ?? ''
-  const [trendRows, yearMart] = await Promise.all([
-    getCmaMarketTrendRows(geoSlug, geoType),
+  // The month line reads the slug the detached counts were read with, so the
+  // line and the counts are one membership.
+  const [monthly, yearMart] = await Promise.all([
+    readCmaMonthly(geoType, chosen.slugs[0] ?? geoSlug),
     getCmaMarketBoardYear({ city }),
   ])
 
@@ -256,7 +317,7 @@ export async function getCmaMarketContext(
     pulse,
     detached,
     leftover,
-    trendRows,
+    monthly,
     yearMart,
   })
 }
@@ -290,9 +351,12 @@ export function cmaMarketSources(ctx: CmaMarketContext): Record<string, string> 
     sold_count_365: ctx.soldCount365 == null ? 'none' : MT,
     // Leftover first, pulse only if the detached board had no median list.
     median_list_price: ctx.medianListPrice == null ? 'none' : ctx.computedAt ? MT : PULSE,
-    // D17 carve-out: days on market and the monthly trend stay cache.
+    // D17 carve-out: days on market stays cache.
     median_dom: ctx.medianDom == null ? 'none' : CACHE,
-    trend: ctx.trend && ctx.trend.length > 0 ? CACHE : 'none',
+    // The month line is the counts' own membership (D20/D27), never the cache.
+    trend: (ctx.trend ?? []).some((t) => t.medianSalePrice != null)
+      ? `${MT}, one-month median_close + closed_count`
+      : 'none',
   }
 }
 

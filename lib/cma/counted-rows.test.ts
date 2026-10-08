@@ -87,11 +87,14 @@ describe('expired rows match the count', () => {
       subject,
       area,
       asOf: new Date('2026-09-08T12:00:00.000Z'),
+      // The list-price window the read counted; the count sentence names it.
+      priceBand: { lo: 403_000, hi: 1_356_000 },
     })
     expect(set.count).toBe(0)
     expect(set.likeYours).toBe(false)
     expect(set.peers).toHaveLength(0)
     expect(set.sentence).not.toMatch(/No home /)
+    expect(set.sentence).toContain('listed between $403,000 and $1,356,000')
     expect(set.sentence).toContain('None were close')
     const shown = unsoldPeersFor({
       subject: { listingKey: 'SUBJ', mlsNumber: '1', streetAddress: '1617 NW 8th' },

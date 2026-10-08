@@ -7,7 +7,9 @@ import {
   canterRecommendNearGold,
   exclusivePocketPathNote,
   exclusivePocketSetNote,
+  missingPocketLocalRead,
   selectionIsExclusivePocket,
+  type PocketLocalRead,
 } from '@/lib/pricing/exclusive-pocket-date-adj'
 import { pricingTierLadder } from '@/lib/pricing/ladder'
 import { classifyRungName, type RungClass } from '@/lib/pricing/rung-class'
@@ -122,12 +124,43 @@ describe('pocket notes after the size ruling (Matt 2026-10-08)', () => {
       ]),
       exclusivePocketSetNote('Bend', true),
       exclusivePocketSetNote('Bend', false),
+      // With the local gate (Matt 2026-10-08, "Down only if local fell").
+      exclusivePocketPathNote('1025 E Horse Back', cooling, applyExclusivePocketDateAdj(cooling, true, HELD), HELD),
+      exclusivePocketSetNote('Bend', false, [], HELD),
+      exclusivePocketSetNote('Bend', false, [], missingPocketLocalRead('no-listing-window')),
+      exclusivePocketSetNote('Bend', true, [
+        { address: '1025 E Horse Back', closePrice: 600_000, timeAdjustment: -36_000, timeAdjustedPrice: 564_000 },
+      ], { ...HELD, verdict: 'fell' }),
     ]
     for (const note of notes) {
       expect(note).toContain('Story class does not adjust.')
       expect(note).not.toMatch(/size and story/i)
       expect(note).not.toMatch(/stays? (?:on its|as recorded)/i)
     }
+  })
+})
+
+const HELD: PocketLocalRead = {
+  verdict: 'held flat',
+  missing: null,
+  place: 'Shevlin West',
+  sized: true,
+  productNoun: null,
+  early: { ppsf: 581, n: 4, from: '2026-03-06', to: '2026-06-17' },
+  late: { ppsf: 572, n: 2, from: '2026-06-18', to: '2026-09-30' },
+}
+
+describe('the pocket notes with the local gate (Matt 2026-10-08)', () => {
+  it('name the local read and why no sale moved when it did not fall', () => {
+    const path = exclusivePocketPathNote('62467 Woodsman', cooling, applyExclusivePocketDateAdj(cooling, true, HELD), HELD)
+    expect(path).toContain('not moved for date')
+    expect(path).toContain('held flat, from $581 a square foot (4 sales, 2026-03-06 to 2026-06-17) to $572 (2 sales, 2026-06-18 to 2026-09-30)')
+    expect(path).toContain('-6.0%')
+    const set = exclusivePocketSetNote('Bend', false, [], HELD)
+    expect(set).toContain('only when that local read fell, so no sale is moved for the month it sold')
+    expect(exclusivePocketSetNote('Bend', false, [], missingPocketLocalRead('no-listing-window'))).toContain(
+      'No local per-foot read: the home has no dated listing period to read over',
+    )
   })
 })
 

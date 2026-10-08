@@ -111,7 +111,7 @@ describe('2a — when homes like yours get their offer', () => {
     // The shares the curve DRAWS, in the order it draws them — never a rounded
     // fraction fitted to a point ("nine in ten inside 60" over a 90.0 pct).
     expect(html).toContain(
-      'Half of the 188 homes that sold in Redmond had an offer inside 12 days. 95.0 percent had one inside 90 days. By day 180, 99.0 percent did. Yours went 187 days without one.',
+      'Half of the 188 homes that sold in Redmond had an offer inside 12 days. 95.0 percent had one inside 90 days. By day 180, 99.0 percent did. Yours sat 187 days and did not sell.',
     )
     // Every figure traces to a named source, at seller grain (CLAUDE.md §0).
     expect(html).toContain('188 closed sales. Single-family sales in Redmond over the last 12 months')
@@ -230,8 +230,12 @@ describe('2b — what the first asking price realized', () => {
       subject,
     })
     expect(html).toContain('<tr class="is-mine">')
-    expect(html).toContain('your home ran 187 days and never got one')
-    expect(html).toContain('Your listing ran 187 days, which is the last row, and it never reached an offer at all.')
+    // The MLS records the status, not whether an offer came in (reader review
+    // 2026-10-08), so the mark says the home did not sell.
+    expect(html).toContain('your home ran 187 days and did not sell')
+    expect(html).toContain('Your listing ran 187 days, which is the last row, and it did not sell.')
+    expect(html).not.toContain('never got one')
+    expect(html).not.toContain('never reached an offer')
   })
 
   it('reads the first row against the last, both with their counts', () => {

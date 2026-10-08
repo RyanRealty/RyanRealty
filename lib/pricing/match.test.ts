@@ -706,14 +706,17 @@ describe('walkPricingLadder', () => {
   it('walks the community after short plat rows, and never takes a remarks mention', () => {
     // A recorded plat's own rows come first. They hold nothing here, so the
     // community is the next step (rules 15 and 19), and membership is the
-    // boundary or a member plat, never a remark.
+    // boundary or a member plat, never a remark. The community is Bend Golf
+    // Club, a real derived community (REAL_DERIVED_COMMUNITIES): since
+    // 2026-10-08 only a real community walls the search, and a placeholder
+    // slug with no HOA is an ordinary plat ("Only real communities").
     const inside = (listingKey: string, subdivision: string, over: Partial<PricingSale> = {}) =>
       sale({
         listingKey,
         subdivision,
         subdivisionNorm: subdivision.toLowerCase(),
         address: `${listingKey} Fairway`,
-        communitySlug: 'sample-community',
+        communitySlug: 'bend-golf-club',
         communityLocated: true,
         marketArea: 'test-area',
         latitude: 44.06,
@@ -725,7 +728,7 @@ describe('walkPricingLadder', () => {
       subject({
         subdivision: 'Subject Plat',
         subdivisionNorm: 'subject plat',
-        communitySlug: 'sample-community',
+        communitySlug: 'bend-golf-club',
         communityLocated: true,
         communityMemberPlats: ['member-plat'],
         marketArea: 'test-area',
@@ -753,7 +756,7 @@ describe('walkPricingLadder', () => {
           latitude: 44.06,
           longitude: -121.29,
           closeDate: '2026-06-02',
-          publicRemarks: 'Charming home in the sample community, walk to the clubhouse.',
+          publicRemarks: 'Charming home near the Bend Golf Club course, walk to the clubhouse.',
         }),
       ],
       { asOf },
@@ -3309,6 +3312,57 @@ describe('five price-setting sales is the floor, and a sale that does not set th
     const out = walkPricingLadder(plain(), pool, { asOf })
     expect(out.comps.map((c) => c.listingKey)).not.toContain('TENTH-1531')
     expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['A', 'B', 'C', 'D', 'E'])
+  })
+
+  describe('a sale with an ADU never prices a home without one (Matt 2026-10-08, "ADU sale skips")', () => {
+    // 644 Norton's and 1648 Pheasant's stored remarks. Pheasant only hopes
+    // for an ADU ("space to build", "eyeing ADU rental income").
+    const NORTON =
+      'Excellent Midtown Bend multi-unit property featuring a permitted ADU, offering flexibility for a variety of living or investment possibilities. Both units feature attractive finishes and functional living spaces.'
+    const PHEASANT =
+      "Single level house in Midtown Bend on a huge lot with room to dream. Outside, you've got space to build an ADU, a 2 car garage, RV parking. Whether you're buying your first home, downsizing, or eyeing ADU rental income, this is a lot of house and land."
+    const norton = () => ({ ...own('NORTON', 0), address: '644 Norton', publicRemarks: NORTON })
+    const pool = () => [norton(), own('A', 1), own('B', 2), own('C', 3), own('D', 4), touching('E', 0)]
+
+    it('skips it at the door like a sale that never qualified, counts it, and walks on in the same order', () => {
+      const subj = plain({ publicRemarks: PHEASANT })
+      const out = walkPricingLadder(subj, pool(), { asOf })
+      const keys = out.comps.map((c) => c.listingKey).sort()
+      expect(keys).toEqual(['A', 'B', 'C', 'D', 'E'])
+      // The same set the walk finds when the ADU sale is not in the pool at all.
+      const without = walkPricingLadder(plain({ publicRemarks: PHEASANT }), pool().slice(1), { asOf })
+      expect(without.comps.map((c) => c.listingKey).sort()).toEqual(keys)
+      expect(out.reachedOnTier).toBe(without.reachedOnTier)
+      // Counted once over the walk, and on each rung that would have taken it.
+      expect(out.aduSkipped).toBe(1)
+      expect(out.rungs.some((r) => r.ran && (r.aduSkipped ?? 0) > 0)).toBe(true)
+      expect(out.rungs.reduce((n, r) => n + (r.notSetting ?? 0), 0)).toBe(0)
+      expect(out.trace.some((t) => t.startsWith('Skipped 1 sale(s) whose remarks state an ADU'))).toBe(true)
+      // Blank subject remarks state no ADU either.
+      expect(walkPricingLadder(plain(), pool(), { asOf }).comps.map((c) => c.listingKey)).not.toContain('NORTON')
+    })
+
+    it('keeps it for a subject whose remarks state its own ADU (not symmetric)', () => {
+      const out = walkPricingLadder(plain({ publicRemarks: 'Craftsman with a permitted detached ADU over the garage.' }), pool(), {
+        asOf,
+      })
+      expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['A', 'B', 'C', 'D', 'NORTON'])
+      expect(out.aduSkipped).toBe(0)
+    })
+
+    it('the GLA bracket does not import the ADU sale the walk skipped', () => {
+      // Every kept sale is larger than the subject; the only smaller candidate
+      // states an ADU. Without the wall the size swap would seat it.
+      const larger = [0, 1, 2, 3, 4].map((i) => own(`BIG${i}`, i))
+      const small = { ...own('SMALL', 5), address: '99 Plain Rd', publicRemarks: NORTON, sqft: 1700, closePpsf: 700_000 / 1700 }
+      const subj = plain({ sqft: 1850, publicRemarks: PHEASANT })
+      const out = walkPricingLadder(subj, [...larger, small], { asOf })
+      expect(out.comps.map((c) => c.listingKey)).not.toContain('SMALL')
+      expect(out.tiersUsed).not.toContain('gla-bracket')
+      // The control: a plain small sale is what the bracket swaps in.
+      const control = walkPricingLadder(subj, [...larger, { ...small, publicRemarks: null }], { asOf })
+      expect(control.comps.map((c) => c.listingKey)).toContain('SMALL')
+    })
   })
 })
 

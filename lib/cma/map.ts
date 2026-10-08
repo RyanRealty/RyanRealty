@@ -17,7 +17,7 @@
 import { getBoundaryGeoJSON } from '@/lib/data/geo/getBoundaryGeoJSON'
 import { getResortCommunityBySlug } from '@/lib/data/communities/registry'
 import { assignSubdivisionSlugs, getSubdivisionRing, readBoundaryLabel } from '@/lib/data/geo/subdivision-ring'
-import { labelsForUsedPlats, platSlugsToDraw, type OutlineLabelInputs } from '@/lib/cma/map-outlines'
+import { labelsForUsedPlats, platSlugsToDraw, printedPlatName, type OutlineLabelInputs } from '@/lib/cma/map-outlines'
 import { parentPlaceArea } from '@/lib/pricing/comp-area'
 import type { CmaMapPoint } from '@/lib/cma-map'
 import { circlePath, pathParam, ringsFromGeometry, simplifyRing, type MapLatLng } from '@/lib/cma/map-overlay'
@@ -69,6 +69,17 @@ export interface CmaMapResult {
    * so a check can hold each pin to a line (`pinsOutsideOutlines`).
    */
   outlineRings: MapLatLng[][]
+  /**
+   * The place named, with no outline, beside the homes the area holds to the
+   * subject's street (rule 24), when the map drew that name. Null otherwise.
+   *
+   * 3037 Purcell's caption said "with the Holliday Park homes on your street"
+   * over a pin that sat in no line and under no name (reader review
+   * 2026-10-08). The plat is still not outlined, because the area holds only
+   * the street, but the name the caption uses is on the map beside it, and
+   * the caption says why it has no line.
+   */
+  streetPlaceShown: string | null
 }
 
 /**
@@ -193,6 +204,8 @@ type DrawnOutlines = {
   parentShown: boolean
   /** The named shapes, for `labelsForUsedPlats` once the frame is known. */
   labels: OutlineLabelInputs
+  /** The name set beside the street-held homes, and where they sit. */
+  street: { label: string; at: MapLatLng } | null
 }
 
 /**
@@ -219,6 +232,8 @@ async function outlinesFor(
     others?: readonly MapLatLng[]
     /** Plats only the subject's own street reached (`compArea.street.platSlugs`). */
     heldToStreet?: readonly string[] | null
+    /** The place names the caption gives those homes (`compArea.street.names`). */
+    streetNames?: readonly string[] | null
   } = {},
 ): Promise<DrawnOutlines> {
   const platArea = area?.kind === 'subdivision' || area?.kind === 'subdivisions'
@@ -242,6 +257,7 @@ async function outlinesFor(
     console.warn('[buildCmaMapDataUri] plats', e instanceof Error ? e.message : String(e))
     assigned = []
   }
+  const street = await streetPlaceLabel(located, assigned, opts.heldToStreet, opts.streetNames)
   const plats: MapLatLng[][] = []
   const drawnPlats: Array<{ slug: string; rings: MapLatLng[][] }> = []
   for (const slug of platSlugsToDraw(assigned, { heldToStreet: opts.heldToStreet })) {
@@ -300,7 +316,46 @@ async function outlinesFor(
       plats: labeled,
       parent: parentLabel ? { label: parentLabel, rings: parentAnchor } : null,
     },
+    street,
   }
+}
+
+/**
+ * The homes the area holds to the subject's street sit in a plat the map does
+ * not outline (rule 24). They still sit somewhere a reader can be told: the
+ * caption calls them "the Holliday Park homes on your street", so that name
+ * goes beside them, at their middle. The caption's own name when it gives
+ * exactly one, else the recorded name of the plat they sit in, printed
+ * without its file number.
+ */
+async function streetPlaceLabel(
+  located: ReadonlyArray<{ lat: number | null; lng: number | null }>,
+  assigned: ReadonlyArray<string | null>,
+  heldToStreet: readonly string[] | null | undefined,
+  streetNames: readonly string[] | null | undefined,
+): Promise<{ label: string; at: MapLatLng } | null> {
+  const held = new Set((heldToStreet ?? []).map((s) => s.trim()).filter(Boolean))
+  if (held.size === 0) return null
+  const own = (assigned[0] ?? '').trim()
+  const points: MapLatLng[] = []
+  const slugs: string[] = []
+  located.forEach((p, i) => {
+    const slug = (assigned[i] ?? '').trim()
+    if (!slug || slug === own || !held.has(slug)) return
+    if (p.lat == null || p.lng == null) return
+    points.push({ lat: p.lat, lng: p.lng })
+    if (!slugs.includes(slug)) slugs.push(slug)
+  })
+  if (points.length === 0) return null
+  const named = (streetNames ?? []).map((n) => n.trim()).filter(Boolean)
+  let label = named.length === 1 ? named[0]! : ''
+  if (!label && slugs.length === 1) label = printedPlatName(await readBoundaryLabel('subdivision', slugs[0]!))
+  if (!label) return null
+  const at = {
+    lat: points.reduce((sum, p) => sum + p.lat, 0) / points.length,
+    lng: points.reduce((sum, p) => sum + p.lng, 0) / points.length,
+  }
+  return { label, at }
 }
 
 /**
@@ -391,6 +446,7 @@ export async function buildCmaMapDataUri(
       .filter((_, i) => families[i]?.family === 'active' || families[i]?.family === 'unsold')
       .map((p) => ({ lat: p.lat, lng: p.lng })),
     heldToStreet: area?.street?.platSlugs ?? null,
+    streetNames: area?.street?.names ?? null,
   })
   const boundaryShown = outlines.shown
   const parentShown = outlines.parentShown
@@ -456,9 +512,14 @@ export async function buildCmaMapDataUri(
         radius: radiusCentre && radiusDrawnMiles != null ? { centre: radiusCentre, miles: radiusDrawnMiles } : null,
         // Named on the part of each shape the frame shows, so a plat that
         // runs off the edge keeps its name on the map (2382 Jackson).
-        labels: labelsForUsedPlats(outlines.labels, {
-          frame: { minLat: bbox.minLat, maxLat: bbox.maxLat, minLng: bbox.minLon, maxLng: bbox.maxLon },
-        }),
+        labels: [
+          ...labelsForUsedPlats(outlines.labels, {
+            frame: { minLat: bbox.minLat, maxLat: bbox.maxLat, minLng: bbox.minLon, maxLng: bbox.maxLon },
+          }),
+          ...(outlines.street
+            ? [{ text: outlines.street.label, lat: outlines.street.at.lat, lng: outlines.street.at.lng, kind: 'subdivision' as const, rank: 80 }]
+            : []),
+        ],
         pins: rooftops,
       })
       if (ground.featureCount > 0) {
@@ -476,6 +537,8 @@ export async function buildCmaMapDataUri(
           parentShown,
           radiusShown,
           outlineRings,
+          streetPlaceShown:
+            outlines.street && ground.labelsDrawn.includes(outlines.street.label) ? outlines.street.label : null,
         }
       }
     }
@@ -504,6 +567,8 @@ export async function buildCmaMapDataUri(
       parentShown,
       radiusShown,
       outlineRings,
+      // The Static Maps fallback draws no labels of ours.
+      streetPlaceShown: null,
     }
   } catch (e) {
     console.warn('[buildCmaMapDataUri]', e instanceof Error ? e.message : String(e))

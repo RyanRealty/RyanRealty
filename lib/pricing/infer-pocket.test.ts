@@ -120,7 +120,7 @@ describe('inferSubdivisionPocket', () => {
     expect(['SaddleStone', 'Horse Back', 'Ranch']).toContain(pocket.subdivision)
     const cluster = [pocket.subdivisionNorm, ...pocket.neighborNorms]
     expect(cluster).toEqual(expect.arrayContaining(['saddlestone', 'horse back', 'ranch']))
-    expect(pocket.pocketStreetKeys).toEqual(expect.arrayContaining(['canter', 'horse', 'ranch']))
+    expect(pocket.pocketStreetKeys).toEqual(expect.arrayContaining(['canter', 'horse back', 'ranch']))
   })
 
   it('picks the nearest mapped neighbor inside 0.35 mi when MLS and plat are blank', () => {
@@ -250,8 +250,8 @@ describe('street-cluster exclusive streets (Flex HARD LOCK residual)', () => {
     })
     expect(pocket.source).toBe('street-cluster')
     expect(pocket.subdivision).toBe('SaddleStone')
-    expect(pocket.pocketStreetKeys).toEqual(expect.arrayContaining(['canter', 'horse']))
-    expect(pocket.pocketStreetKeys).not.toContain('timber')
+    expect(pocket.pocketStreetKeys).toEqual(expect.arrayContaining(['canter', 'horse back']))
+    expect(pocket.pocketStreetKeys).not.toContain('timber pine')
     expect(pocket.pocketStreetKeys).not.toContain('cascade')
     expect(pocket.neighborNorms).not.toContain('timber creek')
   })
@@ -280,10 +280,10 @@ describe('street-cluster exclusive streets (Flex HARD LOCK residual)', () => {
     expect(pocket.source).toBe('street-cluster')
     expect(pocket.subdivision).toBe('SaddleStone')
     expect(pocket.subdivisionSlug).toBeNull()
-    expect(pocket.pocketStreetKeys).toEqual(expect.arrayContaining(['canter', 'horse', 'ranch']))
-    expect(pocket.pocketStreetKeys).not.toContain('timber')
+    expect(pocket.pocketStreetKeys).toEqual(expect.arrayContaining(['canter', 'horse back', 'ranch']))
+    expect(pocket.pocketStreetKeys).not.toContain('timber pine')
     expect(pocket.pocketStreetKeys).not.toContain('cascade')
-    expect(pocket.pocketStreetKeys).not.toContain('black')
+    expect(pocket.pocketStreetKeys).not.toContain('black butte')
     expect(pocket.neighborNorms).not.toContain('timber creek')
   })
 })

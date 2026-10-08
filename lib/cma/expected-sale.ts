@@ -33,6 +33,7 @@ import { countWord, usd } from '@/lib/cma/render-blocks'
 import { tableAdjustedBand, tableBandSales } from '@/lib/cma/cover-value'
 import { isRecommendMark } from '@/lib/cma/recommend-once'
 import { setAsideCompIndexes, trimsEachEnd } from '@/lib/cma/set-aside'
+import { adjustmentsApplied } from '@/lib/cma/adjustments-applied'
 import {
   NET_BUYER_AGENT_FEE_PCT,
   NET_LISTING_FEE_PCT,
@@ -227,19 +228,23 @@ export function headingWithPriceSet(
 
 // ── the range line ──────────────────────────────────────────────────────────
 
-/** Which adjustments the printed grid actually made, in reading order. */
-function adjustedToWords(comps: readonly CmaAdjustedComp[]): string[] {
-  const moved = (pick: (c: CmaAdjustedComp) => number | null | undefined) =>
-    comps.some((c) => {
-      const v = pick(c)
-      // Same test as adjustmentsMade (opinion-pages.ts): any non-zero move.
-      return v != null && Number.isFinite(v) && v !== 0
-    })
+/**
+ * Which adjustments the printed grid actually made, as one clause: "after
+ * seller concessions and adjusted to today's market and your home's size".
+ * Read off the same reader as every other place the letter names them
+ * (lib/cma/adjustments-applied.ts). 3177 Coho said "Adjusted to today's
+ * market and your home's size" over two sales the grid took a recorded credit
+ * off (reader review 2026-10-08). Empty when the grid moved nothing.
+ */
+function adjustedClause(comps: readonly CmaAdjustedComp[]): string {
+  const made = adjustmentsApplied(comps)
   const words: string[] = []
-  if (moved((c) => c.timeAdjustment)) words.push("today's market")
-  if (moved((c) => c.sizeAdjustment)) words.push("your home's size")
-  if (moved((c) => c.storyAdjustment)) words.push("your home's style")
-  return words
+  if (made.includes('date')) words.push("today's market")
+  if (made.includes('size')) words.push("your home's size")
+  if (made.includes('style')) words.push("your home's style")
+  const to = words.length > 0 ? `adjusted to ${joinAnd(words)}` : ''
+  const credit = made.includes('concessions') ? 'after seller concessions' : ''
+  return [credit, to].filter(Boolean).join(' and ')
 }
 
 function joinAnd(parts: readonly string[]): string {
@@ -278,8 +283,8 @@ export function adjustedRangeLine(
   const sales = bandSales(rows, opts?.pricing)
   const n = sales.length
   if (n === 0) return ''
-  const words = adjustedToWords(rows)
-  const adjusted = words.length > 0 ? `adjusted to ${joinAnd(words)}` : ''
+  // Named off the sales the two figures are drawn from.
+  const adjusted = adjustedClause(sales)
   const one = n === 1
   const span =
     band.low === band.high

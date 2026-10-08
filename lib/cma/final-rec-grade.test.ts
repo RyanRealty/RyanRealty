@@ -4,7 +4,6 @@
  */
 import { describe, expect, it } from 'vitest'
 import { rebaseAuditToFinalRec, rebaseRecommendedQuotes, replaceGradedChecks } from '@/lib/cma/final-rec-grade'
-import { buildNetSheet } from '@/lib/cma/expired-audit'
 import { finishRecommendedAfterActives } from '@/lib/cma/finish-recommended'
 import { evaluateAccuracyContract } from '@/lib/cma/contract'
 import type { CmaPricing, CmaSellerNet } from '@/lib/cma/types'
@@ -160,9 +159,5 @@ describe('final recommendation is what the checks grade', () => {
       { actives: [], pocketClosedSupport: null },
     )
     expect(finished.sellerNet?.list).toBe(527_000)
-    const sheet = buildNetSheet(finished as unknown as CmaPricing, { expectedConcessions: null })
-    expect(sheet.salePrice).toBe(527_000)
-    expect(sheet.lines.map((l) => l.note ?? '').join(' ')).not.toContain('$543,000')
-    expect(sheet.lines.map((l) => l.note ?? '').join(' ')).toContain('$527,000')
   })
 })

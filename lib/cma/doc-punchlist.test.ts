@@ -455,8 +455,11 @@ describe('P4 — how fast homes like yours went, not a month ledger', () => {
     }
     expect(svg).toContain('2465 7th')
     expect(svg).toContain('51 days')
-    // The subject's bar is the one that never terminates in an offer.
-    expect(svg).toMatch(/\d+ days, no offer/)
+    // The subject's bar ends in how the listing ended, the MLS status word.
+    // The MLS does not record whether an offer came in, so the bar never says
+    // "no offer" (reader review 2026-10-08).
+    expect(svg).toMatch(/\d+ days, withdrawn/)
+    expect(svg).not.toContain('no offer')
   })
 
   it('is in the immersive too', () => {
@@ -675,7 +678,7 @@ describe('the subject only has days-without-an-offer when it actually sat', () =
   })
 
   it('keeps the subject row when the listing actually failed', () => {
-    expect(letter()).toMatch(/\d+ days, no offer/)
+    expect(letter()).toMatch(/\d+ days, withdrawn/)
   })
 })
 
@@ -788,7 +791,7 @@ describe('F7 / tasteReview 2 — this market is sentences and two bars, not a KP
     // sentence saying what it means".
     expect(block).not.toMatch(/<div class="stat-strip is-4">/)
     expect(block).not.toContain('class="stat3"')
-    expect(block).toContain('40 homes are for sale in Redmond right now')
+    expect(block).toContain('40 single-family homes are for sale in Redmond right now')
     // A monthly average over the window months of supply divides by.
     expect(block).toMatch(/Over the last six months, an average of 13 sold each month/)
     expect(block).toMatch(/3\.2 months to sell what is listed/)
@@ -812,7 +815,7 @@ describe('F7 / tasteReview 2 — this market is sentences and two bars, not a KP
   it('draws months of supply as two bars, whose ratio IS the published figure', () => {
     const block = marketBlock(letter())
     expect(block).toContain('class="szn mos-wide"')
-    expect(block).toContain('Homes for sale in Redmond right now')
+    expect(block).toContain('Single-family homes for sale in Redmond right now')
     expect(block).toContain('Sold each month, average of the last six months')
   })
 
@@ -887,7 +890,7 @@ describe('the market median is a tick on the days chart', () => {
   it('reads the tick in the caption, between the kept sales and the subject', () => {
     const html = letter()
     expect(html).toMatch(
-      /Every sale below had an offer inside 51 days\. Redmond&#39;s median is 21\. Yours sat [\d,]+ days and never got one\./,
+      /All five sales shown had an offer within 51 days\. Redmond&#39;s median is 21\. Yours sat [\d,]+ days and did not sell\./,
     )
   })
 
@@ -899,7 +902,7 @@ describe('the market median is a tick on the days chart', () => {
     expect(svg).not.toContain('days-median')
     expect(svg).not.toContain('median 21 days')
     expect(html).not.toContain('median is 21')
-    expect(html).toContain('Every sale below had an offer inside 51 days.')
+    expect(html).toContain('All five sales shown had an offer within 51 days.')
   })
 })
 
@@ -992,7 +995,7 @@ describe('F8 — the days-to-offer strip fits a phone', () => {
       for (const addr of ['730 Quince', '840 Quince', '1737 7th', '2485 7th', '735 Oak']) {
         expect(labels.some((l) => l.includes(addr)), `${addr} lost its row`).toBe(true)
       }
-      expect(labels.some((l) => /days, no offer$/.test(l)), 'the punchline label').toBe(true)
+      expect(labels.some((l) => /days, withdrawn$/.test(l)), 'the punchline label').toBe(true)
       expect(labels).toContain('Redmond median 21 days')
 
       // Six bars plus the axis plus the median hairline, none off the frame.
@@ -1142,7 +1145,7 @@ describe('tasteReview 1 — nothing in the document argues with itself', () => {
     // they closed at" four lines apart in one paragraph. One verdict, one
     // place; the dollars-a-foot reading stays on the card.
     expect(
-      (html.match(/above the top of the range homes like yours sold in\./g) ?? []).length,
+      (html.match(/above the top of the range the sales support\./g) ?? []).length,
     ).toBe(1)
     expect(html).toContain('a foot, net of seller concessions and not adjusted for date or size.')
   })
@@ -1209,8 +1212,9 @@ describe('tasteReview 2 — the answer is drawn, and nothing floats over it', ()
     expect(html).toMatch(/<button type="button" class="pin-hit is-closed" data-comp="1" data-pin="1"/)
     // Delta 3: every pin tells the tale — days on market, price changes, and
     // the outcome — on tap and on hover.
-    // 730 Quince had its offer in 1 day: the pin's count is the row's count.
-    expect(html).toMatch(/aria-label="1\. 730 Quince[^"]*days? on market/)
+    // 730 Quince had its offer in 1 day: the pin's count is the row's count,
+    // named for what it counts (reader review 2026-10-08).
+    expect(html).toMatch(/aria-label="1\. 730 Quince[^"]*days? to an offer/)
     expect(html).toContain('class="pin-legend"')
     // A cropped tile and a percentage-positioned pin cannot both be right.
     for (const css of [cmaStylesheet('https://ryan-realty.com'), immersiveStylesheet()]) {
@@ -1534,12 +1538,11 @@ describe('chapter 1 — the story the numbers carry', () => {
     } as unknown as Partial<RenderCmaArgs>
   }
 
-  const WALK =
-    'that long without an offer points at something other than the number. We would walk it with you before saying more.'
+  const WALK = 'points at something other than the number. We would walk it with you before saying more.'
 
   it('keeps the overpricing story when the ask was more than 10 percent above the range', () => {
     for (const html of [letter(withRange(380000, 398000)), immersive(withRange(380000, 398000))]) {
-      expect(html).toContain('15.6 percent above the top of the range homes like yours sold in.')
+      expect(html).toContain('15.6 percent above the top of the range the sales support.')
       expect(html).toContain('Your home sat 187 days.')
       expect(html).toContain('What overpricing costs.')
       expect(html).not.toContain(WALK)
@@ -1548,8 +1551,9 @@ describe('chapter 1 — the story the numbers carry', () => {
 
   it('states the facts and stops when the ask was near the range', () => {
     for (const html of [letter(withRange(420000, 445000)), immersive(withRange(420000, 445000))]) {
-      expect(html).toContain('3.4 percent above the top of the range homes like yours sold in.')
-      expect(html).toContain('Your home sat 187 days without an offer.')
+      expect(html).toContain('3.4 percent above the top of the range the sales support.')
+      expect(html).toContain('Your home sat 187 days and did not sell.')
+      expect(html).not.toContain('without an offer')
       expect(html).toContain('Half of the homes that sold in Redmond had an offer inside 21 days.')
       // The ask claim and the day count are said once each (Matt 2026-10-07).
       expect(html).toContain('That starts with the price. We would walk it with you before saying more.')
@@ -1563,11 +1567,18 @@ describe('chapter 1 — the story the numbers carry', () => {
     }
   })
 
-  it('says the ask was inside the range when it was, and still asks the question', () => {
+  it('says how long the ask sat above the range before it came inside, and asks the question only of those days', () => {
+    // $475,000 sat above a $470,000 top for 77 days; $460,000 sat inside for
+    // the last 110. The claim is about the 110 days, never the whole 187
+    // (reader review 2026-10-08), and 110 is past twice Redmond's 21-day median.
     for (const html of [letter(withRange(440000, 470000)), immersive(withRange(440000, 470000))]) {
-      expect(html).toContain('You were asking inside the range homes like yours sold in.')
-      expect(html).toContain('Your home sat 187 days without an offer.')
-      expect(html).toContain(`At a price inside the range, ${WALK}`)
+      expect(html).toContain(
+        'For 77 of your 187 days you were asking above the range the sales support, at $475,000.',
+      )
+      expect(html).toContain('You asked $460,000, inside the range, for the last 110 days, and your home did not sell.')
+      expect(html).toContain(`At a price inside the range, 110 days without a sale ${WALK}`)
+      expect(html).not.toContain('You were asking inside the range the sales support.')
+      expect(html).not.toContain('without an offer')
       expect(html).toContain('What price and time look like in Redmond.')
       expect(html).not.toContain('What overpricing costs.')
     }
