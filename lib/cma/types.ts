@@ -8,6 +8,7 @@
  */
 
 import type { CmaMartYearFigure } from '@/lib/cma/market-board-mart'
+import type { LocationMatch } from '@/lib/pricing/closed-comp-weight'
 
 export interface CmaSubject {
   listingKey: string | null
@@ -25,6 +26,12 @@ export interface CmaSubject {
   longitude: number | null
   beds: number | null
   baths: number | null
+  /**
+   * MLS full and half bath counts (listings.baths_full / baths_half). `baths`
+   * is BathroomsTotal, which counts a half bath whole (lib/pricing/bath-count.ts).
+   */
+  bathsFull?: number | null
+  bathsHalf?: number | null
   sqft: number | null
   lotAcres: number | null
   /** MLS property_sub_type — drives product-class comparability. */
@@ -92,6 +99,12 @@ export interface CmaComp {
   longitude: number | null
   beds: number | null
   baths: number | null
+  /**
+   * MLS full and half bath counts (listings.baths_full / baths_half). `baths`
+   * is BathroomsTotal, which counts a half bath whole (lib/pricing/bath-count.ts).
+   */
+  bathsFull?: number | null
+  bathsHalf?: number | null
   sqft: number
   lotAcres: number | null
   /** MLS property_sub_type — drives product-class comparability. */
@@ -150,6 +163,14 @@ export interface CmaComp {
    * Absent on a broker-picked comp, which no search admitted.
    */
   ownPlat?: boolean | null
+  /**
+   * Rule 15's location step from where the sale sits (own plat, touching plat,
+   * inside the subject's neighborhood or community, else wider), stamped at
+   * admission by either ladder (lib/pricing/closed-comp-weight.ts
+   * locationMatchFromFacts). Absent on a broker-picked comp; the weight then
+   * reads the rung name.
+   */
+  locationMatch?: LocationMatch | null
   /**
    * The walk admitted this sale on rule 20 (lib/pricing/price-set.ts) with
    * its fullest inputs, so the weight does not re-grade it (Matt 2026-10-07).

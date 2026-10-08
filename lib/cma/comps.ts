@@ -94,6 +94,9 @@ import { roomCountsDecision } from '@/lib/pricing/room-ground'
 import { SAME_NEIGHBORHOOD_TIER_RATIO, STARVED_TIER_WIDEN, SUBDIVISION_TIER_RATIO, normSubdivision } from '@/lib/pricing/classes'
 import { inferSubdivisionPocket, POCKET_RADIUS_MILES } from '@/lib/pricing/infer-pocket'
 import { isClusterPocket, pocketStopsLaterRungs } from '@/lib/pricing/ladder'
+import { locationMatchFromFacts } from '@/lib/pricing/closed-comp-weight'
+import { subjectHasRecordedSubdivision } from '@/lib/pricing/match'
+import { printedBaths } from '@/lib/pricing/bath-count'
 import { saleSetsThePrice } from '@/lib/pricing/price-set'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
@@ -233,6 +236,8 @@ function rowToComp(row: CmaListingRow, tier: string, land = false): CmaComp | nu
     longitude: num(row['Longitude']),
     beds: num(row['BedroomsTotal']),
     baths: num(row['BathroomsTotal']),
+    bathsFull: num(row['baths_full']),
+    bathsHalf: num(row['baths_half']),
     sqft,
     lotAcres,
     propertySubType: str(row['property_sub_type']),
@@ -1197,6 +1202,18 @@ export async function selectComps(
       comp.competingArea =
         tier.competing && compArea && compArea !== subjectArea ? marketAreaName(compArea) : null
       comp.ownPlat = inOwnPlat
+      // Rule 15's location step from where the sale sits, not the rung name
+      // (915 Saginaw, 2026-10-07). rowPlats is read only on the adjacent rung,
+      // and that rung admitted this sale off the touching ring.
+      comp.locationMatch = locationMatchFromFacts({
+        ownPlat: inOwnPlat,
+        touchingPlat: rowPlats != null,
+        streetPocket: Boolean(tier.samePocket) && !subjectHasRecordedSubdivision(subject),
+        platRow: Boolean(tier.samePocket) && subjectHasRecordedSubdivision(subject),
+        insideParent:
+          (subjectCommunity != null && compCommunity === subjectCommunity) ||
+          (subjectArea != null && compArea === subjectArea),
+      })
 
       // RULE 20 AT THE DOOR (Matt 2026-10-07). A sale that passed every wall
       // above and does not set the price (another community, or a clearly
@@ -1483,7 +1500,7 @@ export async function selectCompsByKeys(subject: CmaSubject, keys: string[]): Pr
     const rooms = roomCountsDecision(subject, { ...comp, selectionTier: 'broker-selected' })
     if (!rooms.ok) {
       refused.push(
-        `${comp.address} is ${comp.beds ?? '?'} bed / ${comp.baths ?? '?'} bath against your home's ${subject.beds ?? '?'} / ${subject.baths ?? '?'}, two or more rooms apart`,
+        `${comp.address} is ${comp.beds ?? '?'} bed / ${printedBaths(comp) ?? '?'} bath against your home's ${subject.beds ?? '?'} / ${printedBaths(subject) ?? '?'}, two or more rooms apart`,
       )
       continue
     }

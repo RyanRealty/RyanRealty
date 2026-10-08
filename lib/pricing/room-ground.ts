@@ -12,6 +12,7 @@ import { resolveMarketArea } from '@/lib/cma/market-area'
 import { samePlat, sameStreetPeer } from '@/lib/pricing/price-anchor'
 import { normSubdivision } from '@/lib/pricing/classes'
 import { roomCountsUsable } from '@/lib/pricing/room-counts'
+import { wholeBathPair } from '@/lib/pricing/bath-count'
 
 export type RoomGroundSubject = {
   streetAddress?: string | null
@@ -24,6 +25,9 @@ export type RoomGroundSubject = {
   marketArea?: string | null
   beds?: number | null
   baths?: number | null
+  /** MLS full / half bath split (listings.baths_full / baths_half), when read. */
+  bathsFull?: number | null
+  bathsHalf?: number | null
   subdivisionSlug?: string | null
 }
 
@@ -42,6 +46,8 @@ export type RoomGroundSale = {
   roomDifference?: Array<'beds' | 'baths'> | null
   beds?: number | null
   baths?: number | null
+  bathsFull?: number | null
+  bathsHalf?: number | null
   subdivisionSlug?: string | null
 }
 
@@ -76,9 +82,12 @@ export function saleOnOwnRoomGround(subject: RoomGroundSubject, sale: RoomGround
  */
 export function roomCountsDecision(subject: RoomGroundSubject, sale: RoomGroundSale) {
   const phaseFamily = sameOrdinaryPhaseFamily(subject.subdivisionSlug, sale.subdivisionSlug)
+  // Whole baths: full baths when both homes carry the MLS split, so a powder
+  // room is never a whole bath (lib/pricing/bath-count.ts).
+  const baths = wholeBathPair(subject, sale)
   return roomCountsUsable(
-    { beds: subject.beds, baths: subject.baths },
-    { beds: sale.beds, baths: sale.baths },
+    { beds: subject.beds, baths: baths.subject },
+    { beds: sale.beds, baths: baths.sale },
     { local: saleOnOwnRoomGround(subject, sale) || phaseFamily, phaseFamily },
   )
 }

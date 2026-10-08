@@ -325,6 +325,56 @@ export async function selectSeniorCommunityListingKeys(listingKeys: readonly str
   return out
 }
 
+/**
+ * The MLS full / half bath split for pool sales (listings.baths_full /
+ * baths_half). sale_pricing_facts carries only `baths`, copied from
+ * BathroomsTotal, which counts a half bath whole: 2 full baths and a powder
+ * room read 3 (lib/pricing/bath-count.ts). The one-room rule compares full
+ * baths when both homes carry the split. Bounded by ListingKey, in chunks.
+ * A key with neither count is left out; a failed read fails open to the
+ * totals, the comparison before the split was read.
+ */
+export async function selectListingBathSplits(
+  listingKeys: readonly string[],
+): Promise<Map<string, { full: number | null; half: number | null }>> {
+  const out = new Map<string, { full: number | null; half: number | null }>()
+  const sb = client()
+  if (!sb || listingKeys.length === 0) return out
+  const keys = [...new Set(listingKeys.filter((k) => typeof k === 'string' && k.trim()))]
+  const CHUNK = 150
+  const chunks: string[][] = []
+  for (let i = 0; i < keys.length; i += CHUNK) chunks.push(keys.slice(i, i + CHUNK))
+  const PARALLEL = 4
+  const toCount = (v: unknown): number | null => {
+    if (v == null || v === '') return null
+    const n = Number(v)
+    return Number.isFinite(n) && n >= 0 ? n : null
+  }
+  for (let i = 0; i < chunks.length; i += PARALLEL) {
+    const results = await Promise.all(
+      chunks.slice(i, i + PARALLEL).map((chunk) =>
+        // @canonical-key — sale_pricing_facts.listing_key is copied from
+        // listings."ListingKey" by the facts refresh (migration 20260814020000).
+        sb.from('listings').select('ListingKey, baths_full, baths_half').in('ListingKey', chunk),
+      ),
+    )
+    for (const { data, error } of results) {
+      if (error) {
+        console.error('[selectListingBathSplits]', error.message)
+        continue
+      }
+      for (const r of (data ?? []) as Array<{ ListingKey?: unknown; baths_full?: unknown; baths_half?: unknown }>) {
+        if (typeof r.ListingKey !== 'string') continue
+        const full = toCount(r.baths_full)
+        const half = toCount(r.baths_half)
+        if (full == null && half == null) continue
+        out.set(r.ListingKey, { full, half })
+      }
+    }
+  }
+  return out
+}
+
 /** One-row WaterSource read. Safe: bounded by ListingKey. */
 export async function getListingWaterSource(listingKey: string): Promise<unknown> {
   const sb = client()

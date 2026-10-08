@@ -35,6 +35,7 @@ import { productTypeCompatible } from '@/lib/cma/market-area'
 import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
 import { crossesUs97 } from '@/lib/pricing/highway-cross'
 import { roomCountsDecision } from '@/lib/pricing/room-ground'
+import { fullBaths, wholeBathPair } from '@/lib/pricing/bath-count'
 
 const MAX_REJECTED = 8
 
@@ -58,6 +59,8 @@ export interface RejectedCandidate {
   yearBuilt?: number | null
   beds?: number | null
   baths?: number | null
+  bathsFull?: number | null
+  bathsHalf?: number | null
   propertySubType?: string | null
   closeDate?: string | null
   latitude?: number | null
@@ -74,6 +77,8 @@ export interface RejectionSubject {
   yearBuilt?: number | null
   beds?: number | null
   baths?: number | null
+  bathsFull?: number | null
+  bathsHalf?: number | null
   propertySubType?: string | null
   latitude?: number | null
   longitude?: number | null
@@ -218,6 +223,8 @@ export function rejectionReason(
     {
       beds: subject.beds,
       baths: subject.baths,
+      bathsFull: subject.bathsFull ?? null,
+      bathsHalf: subject.bathsHalf ?? null,
       streetAddress: subject.streetAddress,
       city: subject.city,
       subdivision: subject.subdivision,
@@ -229,10 +236,13 @@ export function rejectionReason(
     sale,
   )
   if (!rooms.ok) {
-    const saleBaths = num(sale.baths)
-    const subjectBaths = num(subject.baths)
+    // The counts the rule compared: full baths when both carry the MLS split.
+    const pair = wholeBathPair(subject, sale)
+    const full = fullBaths(subject) != null && fullBaths(sale) != null
+    const saleBaths = num(pair.sale)
+    const subjectBaths = num(pair.subject)
     if (saleBaths != null && subjectBaths != null && Math.floor(saleBaths) !== Math.floor(subjectBaths)) {
-      return `${bathLabel(saleBaths)} baths against your ${bathLabel(subjectBaths)}`
+      return `${bathLabel(saleBaths)} ${full ? 'full baths' : 'baths'} against your ${bathLabel(subjectBaths)}`
     }
     const saleBeds = num(sale.beds)
     const subjectBeds = num(subject.beds)

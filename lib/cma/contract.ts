@@ -70,6 +70,9 @@ export function evaluateAccuracyContract(args: {
   marketContextPresent: boolean
   subjectSubType?: string | null
   subjectBaths?: number | null
+  /** MLS full / half baths. The room rule compares full baths when both homes carry them. */
+  subjectBathsFull?: number | null
+  subjectBathsHalf?: number | null
   subjectBeds?: number | null
   /** Recorded plat. A phase-family sale is graded with this, not the MLS name. */
   subjectSubdivisionSlug?: string | null
@@ -237,7 +240,13 @@ export function evaluateAccuracyContract(args: {
   const crossRoom = comps.find(
     (c) =>
       !roomCountsDecision(
-        { beds: subjectBeds, baths: subjectBaths, subdivisionSlug: subjectSubdivisionSlug },
+        {
+          beds: subjectBeds,
+          baths: subjectBaths,
+          bathsFull: args.subjectBathsFull ?? null,
+          bathsHalf: args.subjectBathsHalf ?? null,
+          subdivisionSlug: subjectSubdivisionSlug,
+        },
         c,
       ).ok,
   )

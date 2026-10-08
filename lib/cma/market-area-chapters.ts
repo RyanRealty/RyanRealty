@@ -4,6 +4,7 @@
 
 import { cleanText, dec, escapeHtml, int, propertyIntelligenceBlock, usd } from '@/lib/cma/render-blocks'
 import { clientAreaLabel, clientSourceLine } from '@/lib/cma/client-facing'
+import { printedBaths } from '@/lib/pricing/bath-count'
 import { formatMonthsOfSupply, monthsOfSupplyVerdict } from '@/lib/format/months-of-supply'
 import {
   askOutcomeBarsPhoneSvg,
@@ -205,9 +206,11 @@ function monthLineAgainstPriceHtml(
     .map((t) => t.medianSalePrice)
     .filter((v): v is number => v != null && Number.isFinite(v) && v > 0)
   if (months.length < 6 || Math.min(...months) <= rec) return ''
+  // The MLS's own reading: 2 full and a powder room is 2.5 (lib/pricing/bath-count.ts).
+  const baths = printedBaths(s)
   const facts = [
     s.beds != null && s.beds > 0 ? `${int(s.beds)} bed` : null,
-    s.baths != null && s.baths > 0 ? `${dec(s.baths, s.baths % 1 !== 0 ? 1 : 0)} bath` : null,
+    baths != null ? `${dec(baths, baths % 1 !== 0 ? 1 : 0)} bath` : null,
   ]
     .filter(Boolean)
     .join(' ')

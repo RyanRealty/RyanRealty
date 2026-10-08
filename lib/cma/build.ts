@@ -329,6 +329,9 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       const brokerCorrected = applySubjectFactOverrides(applied, input.subjectFacts)
       subject.beds = brokerCorrected.beds
       subject.baths = brokerCorrected.baths
+      // A count taken from the record or the broker drops the listing's split.
+      subject.bathsFull = brokerCorrected.bathsFull ?? null
+      subject.bathsHalf = brokerCorrected.bathsHalf ?? null
     }
 
     // 2 + 3. Comps, market context, and authoritative site data (zoning / well
@@ -726,6 +729,8 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             yearBuilt: subject.yearBuilt,
             beds: subject.beds,
             baths: subject.baths,
+            bathsFull: subject.bathsFull ?? null,
+            bathsHalf: subject.bathsHalf ?? null,
             propertySubType: subject.propertySubType,
             latitude: subject.latitude,
             longitude: subject.longitude,
@@ -1084,6 +1089,8 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       marketContextPresent: market != null,
       subjectSubType: subject.propertySubType,
       subjectBaths: subject.baths,
+      subjectBathsFull: subject.bathsFull ?? null,
+      subjectBathsHalf: subject.bathsHalf ?? null,
       subjectBeds: subject.beds,
       subjectSubdivisionSlug: subject.subdivisionSlug ?? null,
       subjectIsCustomOrNew,

@@ -208,6 +208,8 @@ export function rowToSubject(row: CmaListingRow): CmaSubject {
     longitude: num(row['Longitude']),
     beds: num(row['BedroomsTotal']),
     baths: num(row['BathroomsTotal']),
+    bathsFull: num(row['baths_full']),
+    bathsHalf: num(row['baths_half']),
     sqft: num(row['TotalLivingAreaSqFt']),
     lotAcres: num(row['lot_size_acres']),
     propertySubType: str(row['property_sub_type']),
@@ -519,6 +521,8 @@ export function applySubjectFactOverrides(
     ...subject,
     beds: beds ?? subject.beds,
     baths: baths ?? subject.baths,
+    // A broker's bath count replaces the MLS one, split and all.
+    ...(baths != null ? { bathsFull: null, bathsHalf: null } : {}),
     sqft: sqft ?? subject.sqft,
   }
 }

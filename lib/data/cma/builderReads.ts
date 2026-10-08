@@ -51,6 +51,10 @@ const LISTING_CMA_COLUMNS = [
   'PhotoURL',
   'BedroomsTotal',
   'BathroomsTotal',
+  // The MLS full / half split. BathroomsTotal counts a half bath whole; the
+  // one-room rule compares full baths (lib/pricing/bath-count.ts).
+  'baths_full',
+  'baths_half',
   'TotalLivingAreaSqFt',
   'year_built',
   'lot_size_acres',
