@@ -7,7 +7,7 @@
  * later ask before a reduction is named.
  */
 
-import { formatDate } from '@/lib/format/date'
+import { formatDate, zonedDateKey } from '@/lib/format/date'
 import { formatPriceExact } from '@/lib/format/money'
 
 export type ListingHistoryFacts = {
@@ -62,6 +62,37 @@ export function calendarDaysBetween(
   if (start == null || end == null) return null
   const days = Math.floor((end.getTime() - start.getTime()) / 86_400_000)
   return days >= 0 ? days : null
+}
+
+/** The Pacific calendar day of a timestamp. A bare YYYY-MM-DD stays as written. */
+function pacificDay(value: string | Date | null | undefined): string | null {
+  if (value == null) return null
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : zonedDateKey(value) || null
+  const raw = value.trim()
+  if (!raw) return null
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw
+  return zonedDateKey(raw) || null
+}
+
+/**
+ * Days a listing that is still on the market has been on it, as of the
+ * letter's date: calendar days from its on-market day to the day the letter
+ * is dated, both read in Pacific time as the letter prints them.
+ *
+ * Never the MLS DaysOnMarket field. On a live listing that field is the count
+ * as of the last feed update, and it goes stale between updates: 3062 NW
+ * Kelly Hill went on the market May 1, 2026 and its letter, dated Oct 7, 2026,
+ * printed 156 days off the field where the dates give 159 (reader review
+ * 2026-10-08). CLAUDE.md §7 also warns that field is list-to-close on a sale.
+ * Null when either day is missing or the on-market day is after the letter's.
+ */
+export function liveListingDays(
+  onMarketDate: string | null | undefined,
+  asOf?: string | Date | null,
+): number | null {
+  const from = pacificDay(onMarketDate)
+  const to = pacificDay(asOf ?? new Date())
+  return calendarDaysBetween(from, to)
 }
 
 const LIST_START_EVENTS = new Set(['newlisting', 'backonmarket', 'originalentry'])

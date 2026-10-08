@@ -349,9 +349,15 @@ export type BandRivalsInput = {
   asOfIso?: string | null
 }
 
-/** Tip Ready P0: cover already carries the recommend — do not bang it in the title. */
-export function competitionHeading(_recommendedList?: number | null): string {
-  return 'Who you would compete with at this price'
+/**
+ * Tip Ready P0: cover already carries the recommend — do not bang it in the title.
+ *
+ * A home on the market (lib/cma/subject-on-market.ts) is not deciding where to
+ * list: "Who you would compete with at this price" read as listing it at ours.
+ * Its chapter is the other homes for sale near the value, said as that.
+ */
+export function competitionHeading(_recommendedList?: number | null, opts?: { onMarket?: boolean }): string {
+  return opts?.onMarket ? 'Other homes for sale near this value' : 'Who you would compete with at this price'
 }
 
 function competitionBody(input: BandRivalsInput): string {

@@ -18,6 +18,7 @@ import {
   buildExpiredPeerSet,
   keptCompMedianPpsf,
   marketAreaPriceBand,
+  peerMatchesSubject,
   type CmaExpiredPeerSet,
 } from '@/lib/cma/market-status'
 import {
@@ -172,11 +173,15 @@ export async function assembleCompetition(args: {
     fits.set(r.listingKey, fit)
     return fit
   }
+  // The subject's own listing is never its competition: a home on the market
+  // sits inside its own band and came back as "1 home like yours is for sale"
+  // (3062 NW Kelly Hill, reader review 2026-10-08). Out by listing key, and by
+  // address for any other record of the same house.
   const toRivals = (inv: CmaAreaBandInventory): CmaBandRival[] =>
     [
       ...inv.activeRows.map((r) => bandRowToRival(r, 'Active')),
       ...inv.pendingRows.map((r) => bandRowToRival(r, 'Pending')),
-    ].filter((r): r is CmaBandRival => r != null)
+    ].filter((r): r is CmaBandRival => r != null && !peerMatchesSubject(r, subject))
   const stamp = (all: readonly CmaBandRival[]): CmaBandRival[] =>
     all.flatMap((r) => {
       const fit = fitOf(r)

@@ -40,6 +40,7 @@ import { clampSentence, keptCompCount, setAsideCompIndexes, setAsideRows } from 
 import { COVER_PRICE_PHRASE, deRepeatRecommendDollars, isRecommendMark } from '@/lib/cma/recommend-once'
 import { failedAskBelowRangeNote } from '@/lib/cma/expired-audit'
 import { listCeiling } from '@/lib/cma/render-contract'
+import { subjectOnMarket } from '@/lib/cma/subject-on-market'
 import { closedCompBand } from '@/lib/pricing/recommended-in-band'
 import { concessionOnSale, printedAdjustedPrice } from '@/lib/pricing/seller-net'
 import { compSearchSentence } from '@/lib/cma/render-comp-search'
@@ -52,7 +53,6 @@ import type { CmaPageDef } from '@/lib/cma/render-use-of-property'
 
 const esc = escapeHtml
 
-const ON_MARKET = /^(active|pending|coming)/i
 
 /**
  * Tip Ready P0 (Matt 2026-09-12 / Cos Falcon smoke): the recommend lives ONCE
@@ -213,6 +213,23 @@ export function heldInBandLead(
 }
 
 /**
+ * Where a live ask sits against the range the sales support, as a fact.
+ *
+ * On a home listed with another brokerage the document may not tell the owner
+ * to list at, price at, cut or raise anything (lib/cma/subject-on-market.ts).
+ * It says what the home is listed at and whether that is inside, under or over
+ * the range the chapter just printed, and stops.
+ */
+export function onMarketAskSentence(ask: number, band: { low: number; high: number } | null): string {
+  const listed = `Your home is listed at ${usd(ask)}`
+  if (!band || !(band.low > 0) || !(band.high > 0)) return `${listed}.`
+  const low = Math.min(band.low, band.high)
+  const high = Math.max(band.low, band.high)
+  const where = ask < low ? 'below' : ask > high ? 'above' : 'inside'
+  return `${listed}, ${where} the range the sales support.`
+}
+
+/**
  * The line under the number.
  *
  * On a home that is on the market right now the seller already has an ask, and
@@ -246,7 +263,8 @@ export function whatItsWorthLead(
   // and the list stays "that price" (the cover owns those dollars).
   const expected = expectedSaleFor({ pricing, comps })
   const liveAsk = subjectPrintableAsk(subject, askCtx)
-  const onMarket = ON_MARKET.test(subject.standardStatus ?? '') && liveAsk != null && liveAsk > 0
+  // ONE on-market decision for the document (lib/cma/subject-on-market.ts).
+  const onMarket = subjectOnMarket({ subject })
   // Name the sales behind the expected sale when the grid prints more than
   // set it, so "the three sales" points at three addresses on the page.
   const setters = priceSettingComps(pricing, comps)
@@ -263,16 +281,14 @@ export function whatItsWorthLead(
   // above with its two facts and no instruction.)
   const listRange = expectedLine ? '' : listRangeSentence(pricing, failedSubjectAsk(subject, askCtx), comps)
   // A home that is on the market already has an ask. The blueprint gives that
-  // case ONE line: what it is listed at, and what the sales support. The ask
-  // follows the expected sale, so "that price" can only mean the cover's.
-  if (onMarket && liveAsk != null) {
-    return (
-      expectedLine
-        ? [expectedLine, worth, `Listed at ${usd(liveAsk)}.`]
-        : [`Listed at ${usd(liveAsk)}.`, worth, listRange]
-    )
-      .filter(Boolean)
-      .join(' ')
+  // case ONE line: what the sales support, and where the ask sits against it,
+  // stated and never steered (onMarketAskSentence). No list instruction of any
+  // kind: 3062 NW Kelly Hill printed "List in that range." under another
+  // brokerage's listing.
+  if (onMarket) {
+    const askLine =
+      liveAsk != null && liveAsk > 0 ? onMarketAskSentence(liveAsk, worth ? worthRangeRounded(pricing, comps) : null) : ''
+    return [expectedLine, worth, askLine].filter(Boolean).join(' ')
   }
   // A subject whose ASK is on the pricing row rather than its MLS status —
   // an owner-supplied ask on an off-market home. The blueprint puts that line

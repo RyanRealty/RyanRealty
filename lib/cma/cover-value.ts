@@ -12,6 +12,7 @@ import { describeCompSearch } from '@/lib/pricing/search-story'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CmaEquityPosition } from '@/lib/cma/equity'
 import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
+import { subjectOnMarket } from '@/lib/cma/subject-on-market'
 
 const esc = escapeHtml
 
@@ -41,9 +42,25 @@ export function heldForMatt(p: Pick<CmaPricing, 'hold'> | null | undefined): boo
   return kind === 'ask-in-band' || kind === 'ask-below-band'
 }
 
-/** The label over the cover number: the recommendation, or on a held letter the price under review. */
-export function coverPriceHeadline(p: Pick<CmaPricing, 'hold'> | null | undefined): string {
-  return heldForMatt(p) ? HELD_PRICE_HEADLINE : COVER_LIST_PRICE_HEADLINE
+/**
+ * The label over the number on a home that is on the market today
+ * (lib/cma/subject-on-market.ts). 3062 NW Kelly Hill, listed with another
+ * brokerage, opened on "Our Recommended List Price for your home": a list
+ * price we recommend to an owner who already has a listing agreement. The
+ * figure is the same; it is stated as what it is, an opinion of value.
+ */
+export const COVER_ON_MARKET_HEADLINE = 'Our opinion of value'
+
+/**
+ * The label over the cover number: the recommendation, on a held letter the
+ * price under review, and on a home on the market our opinion of value.
+ */
+export function coverPriceHeadline(
+  p: Pick<CmaPricing, 'hold'> | null | undefined,
+  opts?: { onMarket?: boolean },
+): string {
+  if (heldForMatt(p)) return HELD_PRICE_HEADLINE
+  return opts?.onMarket ? COVER_ON_MARKET_HEADLINE : COVER_LIST_PRICE_HEADLINE
 }
 
 type CoverArgs = {
@@ -54,6 +71,8 @@ type CoverArgs = {
   equity?: CmaEquityPosition | null
   expiredAudit?: ExpiredAuditData | null
   tiersUsed?: string[]
+  /** `render_args.subjectStatus`, read by `subjectOnMarket`. */
+  subjectStatus?: unknown
 }
 
 
@@ -167,7 +186,10 @@ export function coverWorthSentence(p: CmaPricing, opts?: { omitAsk?: boolean }):
  * Nothing here computes a valuation.
  */
 export const WIDE_RANGE_THRESHOLD = 0.15
-export function rangeSpreadCauseSentence(pricing: CmaPricing | null | undefined): string {
+export function rangeSpreadCauseSentence(
+  pricing: CmaPricing | null | undefined,
+  opts?: { onMarket?: boolean },
+): string {
   if (!pricing) return ''
   const lo = Math.min(pricing.valueLow, pricing.valueHigh)
   const hi = Math.max(pricing.valueLow, pricing.valueHigh)
@@ -205,9 +227,10 @@ export function rangeSpreadCauseSentence(pricing: CmaPricing | null | undefined)
     )
   }
   const joined = parts.length === 1 ? parts[0]! : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`
-  // On a letter held for Matt the number beside this sentence is the price
-  // under his review, not a recommendation (reader review 2026-10-08).
-  const inPrice = heldForMatt(pricing) ? 'in this price' : 'in the recommended price'
+  // A home on the market gets an opinion of value, not a recommended price;
+  // on a letter held for Matt the number beside this sentence is the price
+  // under his review (reader review 2026-10-08).
+  const inPrice = opts?.onMarket ? 'in this value' : heldForMatt(pricing) ? 'in this price' : 'in the recommended price'
   const stillCarries =
     ppsf + light > 0 && trim === 0
       ? ppsf + light === 1
@@ -315,10 +338,11 @@ export function heroTrioHtml(
  */
 export function immersiveHeroNumberHtml(a: CoverArgs): string {
   const p = a.pricing
-  const cause = rangeSpreadCauseSentence(p)
+  const onMarket = subjectOnMarket(a)
+  const cause = rangeSpreadCauseSentence(p, { onMarket })
   return `
     <div class="hero-payoff">
-      <div class="ans-l r">${esc(coverPriceHeadline(p))}</div>
+      <div class="ans-l r">${esc(coverPriceHeadline(p, { onMarket }))}</div>
       ${heroTrioHtml(p, { comps: a.comps })}
       ${cause ? `<div class="hero-why r">${esc(cause)}</div>` : ''}
     </div>`
@@ -330,12 +354,14 @@ export function immersiveHeroNumberHtml(a: CoverArgs): string {
 export function letterCoverPayoffHtml(
   p: CmaPricing,
   comps?: readonly CmaAdjustedComp[] | null,
+  opts?: { onMarket?: boolean },
 ): string {
-  const cause = rangeSpreadCauseSentence(p)
+  const onMarket = opts?.onMarket === true
+  const cause = rangeSpreadCauseSentence(p, { onMarket })
   const trio = heroTrioHtml(p, { comps })
   if (!trio && !cause) return ''
   return `<div class="cover-payoff">
-      <div class="cover-headline">${esc(coverPriceHeadline(p))}</div>
+      <div class="cover-headline">${esc(coverPriceHeadline(p, { onMarket }))}</div>
       ${trio}
       ${cause ? `<p class="cover-why">${esc(cause)}</p>` : ''}
     </div>`

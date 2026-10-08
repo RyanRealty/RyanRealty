@@ -37,8 +37,9 @@ import {
   type PricePathRange,
 } from '@/lib/cma/price-path'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
-import { daysOnMarketFrom } from '@/lib/cma/listing-history-line'
+import { daysOnMarketFrom, liveListingDays } from '@/lib/cma/listing-history-line'
 import { COMPARABLE_DAYS_TO_OFFER_ROW_LABEL } from '@/lib/cma/comparable-dom-history'
+import { ON_MARKET_STATUS } from '@/lib/cma/subject-on-market'
 import { roomAdjustmentWords } from '@/lib/cma/seller-letter-copy'
 import { closedEntries, mlsStatusLabel, subjectEntry, type MatrixEntry } from '@/lib/cma/matrix-entry'
 import { saleCarriesConcession, statusPpsfCaptionHtml } from '@/lib/cma/status-ppsf'
@@ -87,13 +88,24 @@ function domFromHistoryLine(line: string | null | undefined): number | null {
  * a listing that is on market or recently off it.
  */
 const DOM_ELAPSED_CEILING_DAYS = 1095
-const ON_MARKET = /^(active|pending|coming)/i
+const ON_MARKET = ON_MARKET_STATUS
 const CAME_OFF_UNSOLD = /^(expired|withdrawn|cancell?ed)/i
 
-export function subjectDomDays(subject: CmaSubject): number | null {
+export function subjectDomDays(subject: CmaSubject, asOfIso?: string | null): number | null {
+  const status = subject.standardStatus?.trim() ?? ''
+  // A LISTING THAT IS STILL LIVE counts to the letter's date, from its
+  // on-market day (liveListingDays). The history line's count is the MLS
+  // DaysOnMarket field as of the last feed update: 3062 NW Kelly Hill printed
+  // "156 days" for its own listing beside "159 days" for the same listing in
+  // the competition table (reader review 2026-10-08). `asOfIso` is the
+  // letter's date; every place the subject's days print passes it, so they
+  // all print one number.
+  if (ON_MARKET.test(status)) {
+    const live = liveListingDays(subject.lastListDate, asOfIso ?? null)
+    if (live != null && live <= DOM_ELAPSED_CEILING_DAYS) return live
+  }
   const stated = domFromHistoryLine(subject.listingHistoryLine)
   if (stated != null) return stated
-  const status = subject.standardStatus?.trim() ?? ''
   if (!ON_MARKET.test(status) && !CAME_OFF_UNSOLD.test(status)) return null
   const elapsed = daysOnMarketFrom({ onMarketDate: subject.lastListDate })
   if (elapsed == null || elapsed > DOM_ELAPSED_CEILING_DAYS) return null
@@ -1298,7 +1310,7 @@ export function renderCompMatrixHtml(
     subjectEntry({
       subject,
       finalCycle: opts.finalCycle ?? null,
-      domDays: subjectDomDays(subject),
+      domDays: subjectDomDays(subject, askCtx?.asOfIso),
       printableAsk: subjectPrintableAsk(subject, askCtx),
     }),
     ...closedEntries(comps, ctx, subject),
