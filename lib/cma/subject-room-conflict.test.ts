@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
   ROOM_HISTORY_MAX_AGE_YEARS,
+  applyReconciledRoomCounts,
   mostRecentClosedRecord,
   reconcileSubjectRoomCounts,
 } from '@/lib/cma/subject-room-conflict'
+import type { CmaSubject } from '@/lib/cma/types'
 
 const asOf = '2026-09-10'
 
@@ -86,5 +88,22 @@ describe('reconcileSubjectRoomCounts — flag it, use the history', () => {
 
   it('holds the staleness bound at ten years', () => {
     expect(ROOM_HISTORY_MAX_AGE_YEARS).toBe(10)
+  })
+})
+
+describe('applyReconciledRoomCounts — the MLS bath split follows the listing count', () => {
+  const base = { baths: 3, bathsFull: 2, bathsHalf: 1, beds: 4 } as unknown as CmaSubject
+
+  it('keeps the split when the bath count is unchanged', () => {
+    const out = applyReconciledRoomCounts(base, { beds: 4, baths: 3 })
+    expect(out.bathsFull).toBe(2)
+    expect(out.bathsHalf).toBe(1)
+  })
+
+  it('drops the split when the record replaces the bath count', () => {
+    const out = applyReconciledRoomCounts(base, { beds: 4, baths: 2 })
+    expect(out.baths).toBe(2)
+    expect(out.bathsFull).toBeNull()
+    expect(out.bathsHalf).toBeNull()
   })
 })

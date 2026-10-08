@@ -37,6 +37,7 @@ import {
   selectPricingFactsNear,
   selectPricingFactsPool,
   selectSeniorCommunityListingKeys,
+  selectListingBathSplits,
 } from '@/lib/data/pricing/facts'
 import { estimateClosePrice, pricingSaleToCmaComp } from '@/lib/pricing/estimate'
 import type { SelectedPricingComp } from '@/lib/pricing/match'
@@ -78,6 +79,8 @@ export function cmaSubjectToPricing(
     longitude: subject.longitude,
     beds: subject.beds,
     baths: subject.baths,
+    bathsFull: subject.bathsFull ?? null,
+    bathsHalf: subject.bathsHalf ?? null,
     sqft: subject.sqft ?? 0,
     lotAcres: subject.lotAcres,
     yearBuilt: subject.yearBuilt,
@@ -206,11 +209,18 @@ export async function selectPricingComps(
   // it (lib/pricing/age-restricted.ts), so the pool's true flags come from
   // listings. Only TRUE is read: false and null are the MLS default and are not
   // evidence either way.
-  const seniorKeys = await selectSeniorCommunityListingKeys([...byKey.keys()])
+  // The MLS full / half bath split, also only on listings: the room rule
+  // compares full baths, and facts `baths` counts a powder room whole.
+  const [seniorKeys, bathSplits] = await Promise.all([
+    selectSeniorCommunityListingKeys([...byKey.keys()]),
+    selectListingBathSplits([...byKey.keys()]),
+  ])
   const sales = [...byKey.values()].map((s) => ({
     ...s,
     marketArea: s.marketArea ?? resolveMarketArea(s.latitude, s.longitude),
     seniorCommunityYn: seniorKeys.has(s.listingKey) ? true : null,
+    bathsFull: bathSplits.get(s.listingKey)?.full ?? null,
+    bathsHalf: bathSplits.get(s.listingKey)?.half ?? null,
   }))
   // Touching plats, closest first. When this home has a neighborhood, a plat
   // with inNeighborhood false stays out. Null means no polygon was tested and

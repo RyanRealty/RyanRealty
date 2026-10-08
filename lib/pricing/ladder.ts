@@ -75,6 +75,16 @@ export type PricingTier = {
   whenStarved?: boolean
 }
 
+/**
+ * The 5-mile city rungs' trace line, read off the rung itself. One sentence
+ * once served all three rungs and said "9 months" on the 18- and 24-month
+ * rungs and "eight sales" after the target became five (915 Saginaw trace,
+ * 2026-10-07).
+ */
+export function cityRungDisclosure(months: number): string {
+  return `The tighter rungs did not fill ${PRICING_TARGET_COMPS} sales, so the search opened to 5 miles and ${months} months inside the same city, still dropping a different product, a rural/urban mix, a resort mismatch, and a subdivision whose prices are in a different tier.`
+}
+
 export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): PricingTier[] {
   const customOrNew = opts.customOrNew === true
   const sub = (months: number, sqftBand = PLAT_SQFT_BAND, suffix = ''): PricingTier => ({
@@ -193,7 +203,7 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
     sameStory: false,
     bedSlop: 2,
     bathSlop: 2,
-    disclosure: `The subject's own neighborhood did not supply enough sales in 12 months, so the search crossed its boundary to ${miles} miles. Every sale here is outside the neighborhood and is weighed as such.`,
+    disclosure: `The subject's own neighborhood did not supply enough sales in ${months} months, so the search crossed its boundary to ${miles} miles. Every sale here is outside the neighborhood and is weighed as such.`,
   })
   const similar = (months: number): PricingTier => ({
     name: `similar-sub-${months}mo`,
@@ -348,8 +358,7 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
       sameStory: false,
       bedSlop: null,
       bathSlop: null,
-      disclosure:
-        'The tighter rungs did not fill eight sales, so the search opened to 5 miles and 9 months inside the same city, still dropping a different product, a rural/urban mix, a resort mismatch, and a subdivision whose prices are in a different tier.',
+      disclosure: cityRungDisclosure(9),
     },
     // INSIDE THE BOUNDARY, ALL THE WAY TO TWO YEARS, BEFORE ANY EXIT (Matt
     // 2026-09-09). The polygon wall in passesTier holds on these rungs, so an
@@ -367,8 +376,7 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
       sameStory: false,
       bedSlop: null,
       bathSlop: null,
-      disclosure:
-        'The tighter rungs did not fill eight sales, so the search opened to 5 miles and 9 months inside the same city, still dropping a different product, a rural/urban mix, a resort mismatch, and a subdivision whose prices are in a different tier.',
+      disclosure: cityRungDisclosure(18),
     },
     {
       name: 'city-5mi-24mo',
@@ -382,8 +390,7 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
       sameStory: false,
       bedSlop: null,
       bathSlop: null,
-      disclosure:
-        'The tighter rungs did not fill eight sales, so the search opened to 5 miles and 9 months inside the same city, still dropping a different product, a rural/urban mix, a resort mismatch, and a subdivision whose prices are in a different tier.',
+      disclosure: cityRungDisclosure(24),
     },
     beyond(2, 12),
     beyond(5, 12),
@@ -418,8 +425,7 @@ export function pricingTierLadder(opts: { customOrNew?: boolean } = {}): Pricing
       bathSlop: null,
       ignoreCity: true,
       ruralOnly: true,
-      disclosure:
-        'Rural sales inside 10 miles and 9 months were still short of eight, so the search extended to 15 miles and 18 months. Older sales carry a larger time adjustment and less weight.',
+      disclosure: `Rural sales inside 10 miles and 9 months were still short of ${PRICING_TARGET_COMPS}, so the search extended to 15 miles and 18 months. Older sales carry a larger time adjustment and less weight.`,
     },
     // THE DISCLOSED WIDENING (Matt 2026-09-09), the last rung on the facts
     // path. Reached only when everything above left the set under the

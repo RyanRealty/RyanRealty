@@ -9,6 +9,7 @@ import { communityForAddress, memberPlatMap, saleInsideSubjectCommunity, searchC
 import { isResortCommunity } from '@/lib/cma/resort-guard'
 import { resolvePriceAnchor, samePlat, sameStreetPeer, streetKey, type PriceAnchor } from '@/lib/pricing/price-anchor'
 import { saleSetsThePrice } from '@/lib/pricing/price-set'
+import { locationMatchFromFacts, type LocationMatch } from '@/lib/pricing/closed-comp-weight'
 import { ageRestrictedMismatch, ownPlatAgeRestrictedShare } from '@/lib/pricing/age-restricted'
 import { distanceMiles, proximityLabel, resolveMarketArea } from '@/lib/cma/market-area'
 import { roomCountsDecision } from '@/lib/pricing/room-ground'
@@ -78,6 +79,12 @@ export type PricingSubject = {
   longitude: number | null
   beds: number | null
   baths: number | null
+  /**
+   * MLS full and half bath counts (listings.baths_full / baths_half). `baths`
+   * is BathroomsTotal, which counts a half bath whole (lib/pricing/bath-count.ts).
+   */
+  bathsFull?: number | null
+  bathsHalf?: number | null
   sqft: number
   lotAcres: number | null
   yearBuilt: number | null
@@ -159,6 +166,12 @@ export type PricingSale = {
   longitude: number | null
   beds: number | null
   baths: number | null
+  /**
+   * MLS full and half bath counts (listings.baths_full / baths_half). `baths`
+   * is BathroomsTotal, which counts a half bath whole (lib/pricing/bath-count.ts).
+   */
+  bathsFull?: number | null
+  bathsHalf?: number | null
   sqft: number
   lotAcres: number | null
   yearBuilt: number | null
@@ -223,6 +236,11 @@ export type SelectedPricingComp = PricingSale & {
    * tier (Matt 2026-09-10, the first of the two exemptions).
    */
   ownPlat?: boolean
+  /**
+   * Rule 15's location step from where the sale sits (saleLocationMatch), not
+   * from the rung that admitted it. The closed-sale weight reads it.
+   */
+  locationMatch?: LocationMatch
   /**
    * Set when this sale stays inside the recorded plat even though its sewer
    * is not the subject's. The letter prints it. Absent when they match, when
@@ -766,12 +784,45 @@ const GLA_BRACKET_BAND = 0.25
  */
 const BRACKET_OFF_PLAT_MAX_MILES = 1
 
+/**
+ * Rule 15's location step from where the sale sits, read by the walls' own
+ * tests: the same-subdivision rung's plat test (inSubjectPlat), the adjacent
+ * rung's touching ring, the closer rung's next row, the pocket rung's street
+ * cluster for a subject with no recorded plat, and parentWallAdmits'
+ * community line and neighborhood polygon. The rung that admitted the sale
+ * does not decide it: 915 Saginaw's River West sales came in on radius rungs
+ * and weighed as wider (2026-10-07).
+ */
+export function saleLocationMatch(subject: PricingSubject, sale: PricingSale): LocationMatch {
+  const plat = sale.subdivisionSlug?.trim() || null
+  const subjectCommunity = searchCommunitySlug(subject)
+  const saleCommunity = searchCommunitySlug(sale, memberPlatMap(subjectCommunity, subject.communityMemberPlats))
+  const subjectArea = areaOf(subject)
+  const saleStreet = streetKey(sale.address)
+  const recordedPlat = subjectHasRecordedSubdivision(subject) && subject.inferredPocket?.inferred !== true
+  const inPocket =
+    (Boolean(sale.subdivisionNorm) && (subject.pocketSubdivisionNorms ?? []).includes(sale.subdivisionNorm!)) ||
+    Boolean(saleStreet && (subject.pocketStreetKeys ?? []).includes(saleStreet))
+  return locationMatchFromFacts({
+    ownPlat: inSubjectPlat(subject, sale),
+    touchingPlat: plat != null && (subject.adjacentSubdivisionSlugs ?? []).includes(plat),
+    // A recorded plat walks its quarter-mile pocket after the touching rows,
+    // so a pocket sale there is the neighborhood step, as the rung reading had it.
+    platRow: (plat != null && (subject.closerSubdivisionSlugs ?? []).includes(plat)) || (recordedPlat && inPocket),
+    streetPocket: !recordedPlat && inPocket,
+    insideParent:
+      (subjectCommunity != null && saleCommunity === subjectCommunity) ||
+      (subjectArea != null && areaOf(sale) === subjectArea),
+  })
+}
+
 function toSelected(subject: PricingSubject, sale: PricingSale, asOf: string, tierName: string): SelectedPricingComp {
   return {
     ...sale,
     selectionTier: tierName,
     setsPrice: true,
     ownPlat: inSubjectPlat(subject, sale),
+    locationMatch: saleLocationMatch(subject, sale),
     proximity: proximityLabel(
       { lat: subject.latitude, lng: subject.longitude },
       { lat: sale.latitude, lng: sale.longitude },

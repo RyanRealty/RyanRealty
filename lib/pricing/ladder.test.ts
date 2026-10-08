@@ -235,3 +235,24 @@ describe('keepTightestByClosePrice — as-of date (WP5 item d, back-dated CMA)',
     expect(kept.map((c) => c.key).sort()).toEqual(['A', 'B', 'C', 'D', 'E'])
   })
 })
+
+describe('pricingTierLadder — each rung states its own window (915 Saginaw trace, 2026-10-07)', () => {
+  it('prints the months the rung actually reached, not 9 on every city rung', () => {
+    const tiers = pricingTierLadder()
+    const city = tiers.filter((t) => /^city-5mi-\d+mo$/.test(t.name))
+    expect(city.map((t) => t.name)).toEqual(['city-5mi-9mo', 'city-5mi-18mo', 'city-5mi-24mo'])
+    for (const t of city) {
+      expect(t.disclosure).toContain(`5 miles and ${t.monthsBack} months`)
+      expect(t.disclosure).toContain(`did not fill ${PRICING_TARGET_COMPS} sales`)
+      expect(t.disclosure).not.toMatch(/\beight\b/)
+    }
+    const eighteen = tiers.find((t) => t.name === 'city-5mi-18mo')!
+    expect(eighteen.disclosure).not.toContain('9 months')
+    for (const t of tiers.filter((x) => x.name.startsWith('beyond-'))) {
+      expect(t.disclosure).toContain(`in ${t.monthsBack} months`)
+    }
+    const rural = tiers.find((t) => t.name === 'rural-15mi-18mo')!
+    expect(rural.disclosure).toContain(`short of ${PRICING_TARGET_COMPS},`)
+    expect(rural.disclosure).not.toMatch(/\beight\b/)
+  })
+})

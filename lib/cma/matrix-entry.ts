@@ -21,6 +21,7 @@
  */
 
 import { UNADDRESSED_DOC_LINKS, cleanText, escapeHtml, int, usd } from '@/lib/cma/render-blocks'
+import { printedBaths } from '@/lib/pricing/bath-count'
 import { trackedDocLink, type TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import { proximityLabel } from '@/lib/cma/market-area'
 import { publishStreetNumber, publishUnparsedStreetLine } from '@/lib/listing/publish-street-line'
@@ -313,7 +314,7 @@ export function closedEntries(
       lotAcres: c.lotAcres ?? null,
       rooms: roomsOf(c),
       beds: c.beds ?? null,
-      baths: c.baths ?? null,
+      baths: printedBaths(c),
       // ON MARKET, not to offer: this row is the same measure in all three
       // matrices, and an unsold listing has no offer to count days to.
       domDays: ran ?? toOffer,
@@ -395,7 +396,7 @@ export function unsoldEntries(
       lotAcres: p.lotAcres ?? null,
       rooms: roomsOf(p),
       beds: p.beds ?? null,
-      baths: p.baths ?? null,
+      baths: printedBaths(p),
       domDays: dom,
       priceChanges: movedOrNull(num(p.originalListPrice), num(p.listPrice)),
       priceChangesExact: false,
@@ -479,7 +480,7 @@ export function activeEntries(
       lotAcres: r.lotAcres ?? null,
       rooms: roomsOf(r),
       beds: r.beds ?? null,
-      baths: r.baths ?? null,
+      baths: printedBaths(r),
       domDays: dom,
       priceChanges: movedOrNull(num(r.originalListPrice), num(r.listPrice)),
       priceChangesExact: false,
@@ -564,7 +565,7 @@ export function subjectEntry(input: {
     lotAcres: s.lotAcres ?? null,
     rooms: roomsOf(s),
     beds: s.beds ?? null,
-    baths: s.baths ?? null,
+    baths: printedBaths(s),
     domDays: input.domDays,
     // The one row whose changes ARE dated: the seller's own final cycle.
     priceChanges: path ? priceChangeCountOf(path) : null,

@@ -34,6 +34,7 @@
  * price-setting sales is the floor; under it the build is a comp shortage).
  */
 
+import { wholeBathPair } from '@/lib/pricing/bath-count'
 import { normSubdivision } from '@/lib/pricing/classes'
 import { REGIME_MONTHLY_CUT } from '@/lib/pricing/market-path'
 import { saleSetsThePrice } from '@/lib/pricing/price-set'
@@ -46,6 +47,12 @@ export type ClosedCompWeightInput = {
   saleBeds?: number | null
   subjectBaths?: number | null
   saleBaths?: number | null
+  /**
+   * MLS full baths. When both are present the bath step compares them, so a
+   * powder room is not a whole bath (lib/pricing/bath-count.ts).
+   */
+  subjectBathsFull?: number | null
+  saleBathsFull?: number | null
   subjectYearBuilt?: number | null
   saleYearBuilt?: number | null
   subjectSubdivision?: string | null
@@ -180,6 +187,10 @@ export function capClosedCompShares(raw: readonly number[]): number[] {
  * community. A pocket sale in another plat is the adjacent step: the ladder
  * walks that street cluster after the subject's own plat and before the
  * neighborhood. Anything past the community is wider and weighs less.
+ *
+ * Both ladders stamp `locationMatch` at admission from where the sale sits
+ * (locationMatchFromFacts), and that stamp wins. The rung-name reading below
+ * is only for a sale nobody located (a broker-picked set, an older caller).
  */
 export function resolveLocationMatch(input: {
   subjectSubdivision?: string | null
@@ -211,6 +222,40 @@ export function resolveLocationMatch(input: {
   ) {
     return 'neighborhood-or-community'
   }
+  return 'wider'
+}
+
+/**
+ * Where a sale sits relative to the subject, by the walk's own membership
+ * tests (lib/pricing/match.ts saleLocationMatch, lib/cma/comps.ts on the
+ * listings ladder): the same-subdivision rung's plat test, the adjacent rung's
+ * touching ring, the closer rung's next row, the pocket rung's street cluster,
+ * and the parent wall's community line and neighborhood polygon
+ * (parentWallAdmits, resolveMarketArea).
+ */
+export type SaleLocationFacts = {
+  /** The subject's own recorded plat (the same-subdivision rung's test). */
+  ownPlat: boolean
+  /** A plat that touches the subject's plat (the adjacent rung's ring). */
+  touchingPlat: boolean
+  /** A subject with no recorded plat: the sale is in its street-cluster pocket. */
+  streetPocket?: boolean
+  /** A plat that touches a touching plat (the closer rung's row, inside the parent). */
+  platRow?: boolean
+  /** Inside the subject's community boundary or its neighborhood polygon. */
+  insideParent: boolean
+}
+
+/**
+ * Rule 15's location step from where the SALE sits, not from the name of the
+ * rung that happened to admit it. 915 Saginaw (River West, 2026-10-07): four
+ * sales inside River West came in on the 1.25-mile and 5-mile rungs and
+ * weighed as wider (0) instead of the neighborhood (1).
+ */
+export function locationMatchFromFacts(facts: SaleLocationFacts): LocationMatch {
+  if (facts.ownPlat) return 'same-subdivision'
+  if (facts.touchingPlat || facts.streetPocket === true) return 'adjacent-subdivision'
+  if (facts.insideParent || facts.platRow === true) return 'neighborhood-or-community'
   return 'wider'
 }
 
@@ -364,10 +409,14 @@ export function closedCompWeight(input: ClosedCompWeightInput): number {
   const saleSqft = Number(input.saleSqft) || 0
   const size = sizeProximity(subjectSqft, saleSqft)
   const recency = recencyFactor(months, input)
+  const baths = wholeBathPair(
+    { baths: input.subjectBaths, bathsFull: input.subjectBathsFull },
+    { baths: input.saleBaths, bathsFull: input.saleBathsFull },
+  )
   const secondary =
     size *
     roomProximity(input.subjectBeds, input.saleBeds, BED_ONE_APART) *
-    roomProximity(input.subjectBaths, input.saleBaths, BATH_ONE_APART) *
+    roomProximity(baths.subject, baths.sale, BATH_ONE_APART) *
     ageProximity(input.subjectYearBuilt, input.saleYearBuilt) *
     lotProximity(input.subjectLotAcres, input.saleLotAcres) *
     recency
