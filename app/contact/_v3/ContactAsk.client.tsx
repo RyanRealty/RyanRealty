@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 import './contact-ask.css'
-import { trackEvent, readRrSessionId } from '@/lib/tracking'
+import { readRrSessionId } from '@/lib/tracking'
 import { submitContactForm } from '../actions'
 import { publishTourConfirmation } from '@/lib/contact/publish-tour-confirmation'
 import { CONTACT_FIELD_IDS, CONTACT_TRAP } from './contact-constants'
@@ -159,7 +159,7 @@ export function ContactAsk({
         if (typeof window !== 'undefined' && window.fbq) {
           window.fbq('track', 'Lead', { content_name: formData.get('inquiryType') }, { eventID: result.eventId })
         }
-        trackEvent('generate_lead', { source: 'contact_page', inquiry: formData.get('inquiryType') })
+        // GA4 generate_lead is sent once, by the server action (lib/lead-tracking.ts).
       }
       // SITE-09: the sent state says what is happening now. No duration promise.
       return {

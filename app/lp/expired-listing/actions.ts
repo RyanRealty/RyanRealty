@@ -374,10 +374,10 @@ export async function submitExpiredLPForm(submission: ExpiredLPSubmission): Prom
     // server-side so attribution survives ad-blockers.
     await fireLeadGenerated({
       lp_variant: 'expired-listing',
-      lead_type: 'seller',
+      lead_type: 'seller_listing',
+      form_id: 'expired_lp',
       lead_classification: 'hot',
       broker_slug: assignment.broker,
-      value: 500,
       event_id: eventId,
       fub_person_id: fubPersonId,
       extra: {

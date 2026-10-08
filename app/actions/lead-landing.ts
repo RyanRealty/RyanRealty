@@ -187,8 +187,13 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
     // GA4 Measurement Protocol mirror.
     await fireLeadGenerated({
       lp_variant: `lead-landing-${input.audience}`,
-      lead_type: input.audience === 'seller' ? 'seller' : 'buyer',
-      value: leadValue,
+      lead_type:
+        input.audience === 'seller'
+          ? /valu|worth|cma|apprais/i.test(input.leadIntent)
+            ? 'seller_valuation'
+            : 'seller_listing'
+          : 'buyer_question',
+      form_id: 'lead_landing',
       event_id: eventId,
       extra: {
         intent: input.leadIntent,

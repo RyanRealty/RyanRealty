@@ -9,7 +9,8 @@ import { sendContactNotification } from '@/lib/resend'
 import { canonicallyTagLead, type LeadAudience } from '@/lib/canonical-lead-tagger'
 import { classifyPropertyGeo, referralIntakeTags } from '@/lib/referral-geo'
 import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
-import { fireLeadGenerated } from '@/lib/lead-tracking'
+import { fireLeadGenerated, fireNonLeadEvent } from '@/lib/lead-tracking'
+import { contactLeadType } from '@/lib/analytics/lead-event'
 import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
 import { isJoinInquiry, recordJoinConversion, tagRecruitJoin } from '@/lib/data/loop/join-conversion'
 import { CONTACT_TRAP } from './_v3/contact-constants'
@@ -291,22 +292,26 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
     console.warn('[Contact Form] CAPI call failed:', err)
   })
 
-  // GA4 Measurement Protocol mirror — server-side generate_lead so the
-  // conversion still lands when gtag is blocked (ad blockers, denied consent).
-  const leadType = recruit
-    ? 'recruit'
-    : listingKey || inquiryLower.includes('property') || inquiryLower.includes('listing')
-      ? 'listing_inquiry'
-    : inquiryLower.includes('seller') || inquiryLower.includes('valuation')
-      ? 'seller'
-      : 'general'
-  await fireLeadGenerated({
-    lp_variant: 'contact',
-    lead_type: leadType,
-    value: leadValue,
-    event_id: eventId,
-    extra: { inquiry_type: inquiryType },
-  })
+  // GA4: the one server-side generate_lead (lib/analytics/lead-event.ts). A
+  // recruit inquiry is not a lead: its own recruit_inquiry event. "general" is
+  // gone: a tour is buyer_showing, a home named is listing_inquiry, a selling or
+  // buying inquiry says so, and only the rest is contact_general.
+  if (recruit) {
+    await fireNonLeadEvent({
+      event_name: 'recruit_inquiry',
+      form_id: 'contact',
+      lp_variant: 'contact',
+      extra: { inquiry_type: inquiryType },
+    })
+  } else {
+    await fireLeadGenerated({
+      lp_variant: 'contact',
+      lead_type: contactLeadType({ isTour, listingKey, inquiryType }),
+      form_id: 'contact',
+      event_id: eventId,
+      extra: { inquiry_type: inquiryType },
+    })
+  }
 
   return { success: true, eventId }
 }

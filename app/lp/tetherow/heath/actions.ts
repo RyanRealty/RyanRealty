@@ -175,10 +175,10 @@ export async function submitHeathCmaForm(
     // GA4 Measurement Protocol mirror — server-side generate_lead.
     await fireLeadGenerated({
       lp_variant: 'tetherow-heath-cma',
-      lead_type: 'seller',
+      lead_type: 'seller_valuation',
+      form_id: 'tetherow_heath_cma',
       lead_classification: classification,
       broker_slug: attribution?.broker ?? 'matt',
-      value: 500,
       event_id: eventId,
       fub_person_id: existing?.id ?? null,
       extra: {

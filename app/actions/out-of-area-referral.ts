@@ -115,8 +115,8 @@ export async function submitOutOfAreaReferral(
     // GA4 Measurement Protocol mirror (analytics, not a message).
     await fireLeadGenerated({
       lp_variant: 'out-of-area-city',
-      lead_type: 'buyer',
-      value: 100,
+      lead_type: 'buyer_question',
+      form_id: 'out_of_area_referral',
       fub_person_id: personId,
       extra: { city: city.slug, referral: 'out-of-area' },
     }).catch(() => {})

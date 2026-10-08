@@ -46,7 +46,9 @@ checks.push({
     /isJoinInquiry/.test(contact) &&
     /recordJoinConversion/.test(contact) &&
     /tagRecruitJoin/.test(contact) &&
-    (/lead_type: 'recruit'/.test(contact) || /\? 'recruit'/.test(contact)),
+    // GA4: a recruit inquiry is its own recruit_inquiry event, never a
+    // generate_lead (Matt 2026-10-08, lib/analytics/lead-event.ts).
+    /event_name: 'recruit_inquiry'/.test(contact),
 })
 
 const track = src('app/api/visitors/track/route.ts')
