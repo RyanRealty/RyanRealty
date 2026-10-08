@@ -294,6 +294,33 @@ describe('the same sales when the local page says rose: no sale moves', () => {
   })
 })
 
+describe('the local page says fell, but the city figure has nothing to move', () => {
+  const local = pocketLocalReadOf(localWith(600, 570, 'fell'))
+
+  it('every sale closed at or under today\'s level: nothing moves, and the letter says why', () => {
+    // The same months, rising into the reference: every move would be up, and a rise is never applied.
+    const rising = BEND.map((p, i) => ({ ...p, ppsf: 300 + i * 10 }))
+    const { comps, basis, pricing } = walk(local, { points: rising })
+    expect(comps.every((c) => c.timeAdjustment === 0)).toBe(true)
+    expect(basis.localGate).toMatchObject({ branch: 'local-fell', moved: false })
+    expect(basis.source.filter).toContain('every sale closed in a month at or under the endpoint')
+    expect(dateBasisCaption({ subject, comps, pricing })).toBe(
+      "No sale is adjusted for date. Homes like yours in Shevlin West fell while your home was listed, from $600 to $570 a square foot, but every sale here closed when Bend's median price per square foot was already at or under today's level, so each sale stands at its sold price.",
+    )
+  })
+
+  it('no monthly index for the city: nothing moves, and the letter does not claim a level it never read', () => {
+    const { comps, basis, pricing } = walk(local, { points: [] })
+    expect(comps.every((c) => c.timeAdjustment === 0)).toBe(true)
+    expect(basis.n).toBe(0)
+    expect(basis.source.filter).toContain("pricing_market_index for city_slug='bend' has no rows in the window")
+    expect(basis.sentence).toContain('there is no Bend city index to move a sale by')
+    const caption = dateBasisCaption({ subject, comps, pricing }) ?? ''
+    expect(caption).toContain('but there is no monthly price figure for Bend to move the sales by')
+    expect(caption).not.toContain("today's level")
+  })
+})
+
 describe('no local read: the sold price stands (the documented default)', () => {
   it('no listing window: moves nothing and says there is nothing to measure over', () => {
     const local = pocketLocalReadOf(null, 'no-listing-window')

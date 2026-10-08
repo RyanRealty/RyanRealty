@@ -309,6 +309,8 @@ type LocalGate = {
   productNoun: string | null
   fromPpsf: number | null
   toPpsf: number | null
+  /** Sales behind the city index on this basis. Zero when the city has no index. */
+  indexN: number
 }
 
 /**
@@ -333,6 +335,7 @@ function localGateOf(ta: Record<string, unknown> | null): LocalGate | null {
     productNoun: str(g.productNoun),
     fromPpsf,
     toPpsf,
+    indexN: num(ta?.n) ?? 0,
   }
 }
 
@@ -366,7 +369,9 @@ function localNoMoveReason(
     return `${Homes} ${localMoveClause(g)}, and these sales are never moved up for date, so each sale stands at its sold price.`
   }
   if (g.verdict === 'fell') {
-    return `${Homes} ${localMoveClause(g)}, but every sale here closed when ${whose} median price per square foot was already at or under today's level, so each sale stands at its sold price.`
+    return g.indexN > 0
+      ? `${Homes} ${localMoveClause(g)}, but every sale here closed when ${whose} median price per square foot was already at or under today's level, so each sale stands at its sold price.`
+      : `${Homes} ${localMoveClause(g)}, but there is no monthly price figure for ${city ?? 'this city'} to move the sales by, so each sale stands at its sold price.`
   }
   if (g.missing === 'no-listing-window') {
     return `We move these sales down for date only when ${homes} are falling in price, and there is no recent listing of your home to measure that over, so each sale stands at its sold price.`

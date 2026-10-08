@@ -512,8 +512,11 @@ export function buildTimeAdjustmentBasis(opts: {
     if (local !== undefined) {
       const gate = pocketLocalGateRecord(local, false)
       const fellButNone = local.verdict === 'fell'
+      const noIndex = !(trend.n > 0)
       const sentence = fellButNone
-        ? `These sales are the exclusive pocket.${localNote} The local read fell, but no sale closed in a month the ${place} city index sat above today's level, so no sale is moved for the month it sold. Story class does not adjust.`
+        ? noIndex
+          ? `These sales are the exclusive pocket.${localNote} The local read fell, but there is no ${place} city index to move a sale by, so no sale is moved for the month it sold. Story class does not adjust.`
+          : `These sales are the exclusive pocket.${localNote} The local read fell, but no sale closed in a month the ${place} city index sat above today's level, so no sale is moved for the month it sold. Story class does not adjust.`
         : `These sales are the exclusive pocket.${localNote} A sale on the home's own ground moves down along the ${place} city index only when that local read fell, so no sale is moved for the month it sold and each one stands at its sold price. Story class does not adjust.${would}`
       return {
         pctPerMonth: 0,
@@ -529,7 +532,7 @@ export function buildTimeAdjustmentBasis(opts: {
             local.verdict == null
               ? `none (no local per-foot read: ${local.missing ?? 'unknown'}); pricing_market_index not applied`
               : 'listings (the letter\'s listing-window read); pricing_market_index not applied',
-          filter: `Exclusive pocket. ${gate.rule} Branch ${gate.branch}.${localNote} pricing_market_index for city_slug='${opts.citySlug}' was read and not applied${fellButNone ? ': every sale closed in a month at or under the endpoint' : ''}.`,
+          filter: `Exclusive pocket. ${gate.rule} Branch ${gate.branch}.${localNote} pricing_market_index for city_slug='${opts.citySlug}' ${noIndex ? 'has no rows in the window' : `was read and not applied${fellButNone ? ': every sale closed in a month at or under the endpoint' : ''}`}.`,
           fetchedAt,
           query: `local: Closed listings in the subject's listing window, same place and property subtype (lib/cma/listing-window-market.ts chooseListingMarket, ppsfMove); index: select month, n, median_ppsf from pricing_market_index where city_slug = '${opts.citySlug}' order by month`,
         },

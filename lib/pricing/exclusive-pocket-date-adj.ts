@@ -363,6 +363,8 @@ export function exclusivePocketSetNote(
   applied?: readonly AppliedDateMove[],
   /** The letter's local read, when the build gated on it (Matt 2026-10-08). */
   local?: PocketLocalRead,
+  /** False when the city has no monthly index to move a sale by. */
+  indexAvailable = true,
 ): string {
   const place = (city ?? '').trim() || 'this city'
   const detail = describeAppliedDateAdjustments(applied ?? [])
@@ -378,7 +380,9 @@ export function exclusivePocketSetNote(
     return `These sales are the exclusive pocket.${gate} A sale on the home's own ground moves down along the ${place} city index only when that local read fell, so no sale is moved for the month it sold and each one stands at its sold price. Story class does not adjust.`
   }
   if (local !== undefined) {
-    return `These sales are the exclusive pocket.${gate} The local read fell, but no sale closed in a month the ${place} city index sat above today's level, so no sale is moved for the month it sold. Story class does not adjust.`
+    return indexAvailable
+      ? `These sales are the exclusive pocket.${gate} The local read fell, but no sale closed in a month the ${place} city index sat above today's level, so no sale is moved for the month it sold. Story class does not adjust.`
+      : `These sales are the exclusive pocket.${gate} The local read fell, but there is no ${place} city index to move a sale by, so no sale is moved for the month it sold. Story class does not adjust.`
   }
   return `These sales are the exclusive pocket. Date adjustment is not applied along the ${place} city index. That series includes tracts already excluded from this set. No sale is moved for the month it sold. Story class does not adjust.`
 }

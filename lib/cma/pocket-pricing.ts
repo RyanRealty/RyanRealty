@@ -111,7 +111,9 @@ export function finishExclusivePocketPricing(
     timeAdjustedPrice: c.timeAdjustedPrice,
   }))
   const coolingApplied = moves.some((c) => Number.isFinite(c.timeAdjustment) && c.timeAdjustment < 0)
-  p.notes.unshift(exclusivePocketSetNote(subject.city, coolingApplied, moves, args.pocketLocal))
+  p.notes.unshift(
+    exclusivePocketSetNote(subject.city, coolingApplied, moves, args.pocketLocal, (p.timeAdjustment?.n ?? 0) > 0),
+  )
   const sameSub = (subject.subdivision ?? '').trim().toLowerCase()
   const sameSubRows = sameSub
     ? adj.filter((c) => (c.subdivision ?? '').trim().toLowerCase() === sameSub)
