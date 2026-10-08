@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from 'react'
 import { submitRentalLead } from '@/app/actions/lead-capture'
-import { trackEvent } from '@/lib/tracking'
 import { V3Button } from '@/components/site/v3'
 import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 import './rental-calculator.css'
@@ -55,13 +54,7 @@ export default function RentalLeadForm({
         return
       }
       setDone(true)
-      // Client-side mirror of the server fireLeadGenerated call inside
-      // submitRentalLead — keeps GA4 client/session attribution intact.
-      trackEvent('generate_lead', {
-        source: 'rental_calculator',
-        listing_key: listingKey,
-        page_path: typeof window !== 'undefined' ? window.location.pathname : undefined,
-      })
+      // GA4 generate_lead is sent once, by the server action (lib/lead-tracking.ts).
     })
   }
 

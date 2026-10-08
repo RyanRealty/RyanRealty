@@ -409,10 +409,13 @@ describe('the form asks in the order the nodes fixed', () => {
 
   it('stamps the ask source without touching the source key (SITE-05)', () => {
     expect(form).toContain('readAskSource()')
-    expect(form).toContain('withAskSource(')
     expect(form).toContain('askSource,')
-    // `source` still means WHICH FORM.
-    expect(form).toContain("source: 'seller_lp'")
+    // The one GA4 lead event is the server's (Matt 2026-10-08): the ask source
+    // rides on it as `ask_source`, and `source` still means WHICH FORM.
+    expect(form).not.toContain("trackEvent('generate_lead'")
+    const sellerAction = read('app/lp/seller-home-value/actions.ts')
+    expect(sellerAction).toContain('ask_source: askSource')
+    expect(sellerAction).toContain("form_id: 'sell_value'")
   })
 
   it('never puts a price on the page for a typed address', () => {

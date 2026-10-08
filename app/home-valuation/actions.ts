@@ -434,9 +434,9 @@ async function runValuationFollowUp(ctx: {
   // attribution survives ad-blockers. Mirrors the gold-standard seller LP.
   await fireLeadGenerated({
     lp_variant: 'home-valuation',
-    lead_type: 'seller',
+    lead_type: 'seller_valuation',
+    form_id: 'home_valuation',
     lead_classification: 'warm',
-    value: 500,
     event_id: eventId,
     extra: {
       cma_sent: cmaSent,
