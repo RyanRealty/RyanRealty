@@ -144,7 +144,7 @@ type MarketDoc = {
   } | null
   listingMarket?: unknown
   /** The stored pricing; only `timeAdjustment.localGate` is read here. */
-  pricing?: { timeAdjustment?: { localGate?: unknown } | null } | null
+  pricing?: { timeAdjustment?: { basis?: unknown; localGate?: unknown } | null } | null
 }
 
 async function measureDocument(doc: MarketDoc, readBudgetMs?: number): Promise<ListingMarketMove | null> {
