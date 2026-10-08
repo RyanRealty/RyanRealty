@@ -37,21 +37,21 @@ export type ClosedCompListStartExtras = {
 }
 
 /** The day the listing left Coming Soon, when the status log shows it did. */
-function comingSoonUntil(changes: readonly ListingStatusChange[]): string | null {
+function preMarketUntil(changes: readonly ListingStatusChange[]): string | null {
   const exit = mergeStatusChanges(changes).find((c) => statusKind(c.from) === 'pre' && statusKind(c.to) !== 'pre')
   return exit ? pacificDay(exit.at) : null
 }
 
 export function stampClosedCompDom(comp: CmaComp, extras: ClosedCompListStartExtras): CmaComp {
   const changes = extras.statusChanges ?? []
-  const preUntil = comingSoonUntil(changes)
+  const preUntil = preMarketUntil(changes)
   const start = earliestClosedCompListDate({
     onMarketDate: extras.onMarketDate ?? comp.onMarketDate,
     listDate: extras.listDate,
     originalEntryTimestamp: extras.originalEntryTimestamp,
     originalOnMarketTimestamp: extras.originalOnMarketTimestamp,
     historyListDates: extras.historyListDates,
-    comingSoonUntil: preUntil,
+    preMarketUntil: preUntil,
   })
   const closeDate = comp.closeDate
   const domTotal = closedSaleDomTotal({
@@ -62,7 +62,7 @@ export function stampClosedCompDom(comp: CmaComp, extras: ClosedCompListStartExt
     originalEntryTimestamp: extras.originalEntryTimestamp,
     originalOnMarketTimestamp: extras.originalOnMarketTimestamp,
     historyListDates: extras.historyListDates,
-    comingSoonUntil: preUntil,
+    preMarketUntil: preUntil,
   })
   // DAYS TO AN OFFER ARE COUNTED ON THE LISTING PERIOD THAT PRODUCED THE SALE
   // (reader review 2026-10-08): Active to Pending, from the status log, else

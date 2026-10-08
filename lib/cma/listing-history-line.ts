@@ -140,7 +140,7 @@ export type ClosedCompListStartFacts = {
    * start before that day is a Coming Soon day, not a market day, and is
    * dropped.
    */
-  comingSoonUntil?: string | null
+  preMarketUntil?: string | null
 }
 
 /**
@@ -152,7 +152,7 @@ export type ClosedCompListStartFacts = {
  * Calendar DOM from that date undercounts when history still holds the first list.
  */
 export function earliestClosedCompListDate(facts: ClosedCompListStartFacts): string | null {
-  const floor = closedCompCivilDay(facts.comingSoonUntil)
+  const floor = closedCompCivilDay(facts.preMarketUntil)
   const dates = [
     facts.onMarketDate,
     facts.listDate,
@@ -182,7 +182,7 @@ export function closedSaleDomTotal(facts: {
   originalEntryTimestamp?: string | null
   originalOnMarketTimestamp?: string | null
   historyListDates?: readonly (string | null | undefined)[]
-  comingSoonUntil?: string | null
+  preMarketUntil?: string | null
 }): number | null {
   const mls =
     facts.daysOnMarket != null && Number.isFinite(facts.daysOnMarket) && facts.daysOnMarket >= 0

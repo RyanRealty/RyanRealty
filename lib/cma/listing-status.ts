@@ -30,6 +30,7 @@
  * Pure. Every date here is a recorded MLS event; nothing is estimated.
  */
 import { formatDate, zonedDateKey } from '@/lib/format/date'
+import { isComingSoonStatus } from '@/lib/listing-status-public'
 
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/
 /** A date-only column stored as a timestamp lands on midnight UTC. */
@@ -103,7 +104,8 @@ export type StatusKind = 'active' | 'offer' | 'sold' | 'off' | 'pre' | 'unknown'
 export function statusKind(raw: string | null | undefined): StatusKind {
   const s = (raw ?? '').trim().toLowerCase()
   if (!s) return 'unknown'
-  if (/^coming soon/.test(s)) return 'pre'
+  // The pre-marketing status, by the one predicate the site uses for it.
+  if (isComingSoonStatus(s)) return 'pre'
   if (/under contract|pending|contingent/.test(s)) return 'offer'
   if (/^active\b|^back on market/.test(s)) return 'active'
   if (/^closed\b|^sold\b/.test(s)) return 'sold'
