@@ -297,9 +297,13 @@ describe('9. a one-sale trim that kept the street sale says which sale and why',
     )
   })
 
-  it('says the old trim sentence when no street sale was kept', () => {
+  it('names the end the one trimmed sale came off when no street sale was kept', () => {
+    // "One sale at the end of the prices so a single sale cannot set the
+    // range" read as a puzzle (reader review 2026-10-08). It says which sale,
+    // the way the two-sale trim does.
     const s = rangeSpreadCauseSentence(saginawPricing({ streetAnchor: null }), { comps: SAGINAW_COMPS })
-    expect(s).toContain('one sale at the end of the prices so a single sale cannot set the range')
+    expect(s).toContain('after setting aside the highest sale, so no single sale sets the range.')
+    expect(s).not.toContain('one sale at the end of the prices')
   })
 
   it('says "adjusted to your home" when no sale behind the range moved for date', () => {
