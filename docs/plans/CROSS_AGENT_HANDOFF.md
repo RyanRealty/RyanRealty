@@ -48,6 +48,21 @@ Surface: Claude Code. Branch `claude/beautiful-lamport-2x4fjs`. Main was fast-fo
 
 **Baseline fleet score on the live engine** (scratch run, 141 open Bend expired CMAs): 112 build, 29 fail. Of the 112 builds, 89 sit on five sales and 23 on three or four. Those 23 fail the new floor unless the walk finds more in their own area.
 
+**Later on 2026-10-08 (branch at `31382ad9e`, pushed; main still at `055307bea`, deploy `dpl_Fawmm7GctKY8GfeAmpscB4dGquYB` verified).** Three reader reviews (Purcell, Jackson, Woodsman) and one of a new regular CMA (3062 NW Kelly Hill, built at Matt's request while listed with eXp Realty, slug `cma-3062-nw-kelly-hill`) found letter defects; all fixed on branches and merged here, nothing rebuilt or sent yet:
+- Ask history drops sub-1% cuts (Woodsman's Apr 30 $1,680,000) and the in-range story claimed a whole listing sat inside the range: `fix/ask-story` `36f0b30e4` (any ask change is a step; days above vs inside the range are counted; "without an offer" is gone; the neighborhood is introduced).
+- Held letters read as settled, orphan per-foot sentence, untraceable band center: `fix/held-wording` `4c815d451`. The net column head stays words, not dollars (`50a1bd36a`): "At the list price", "At the price on the cover" when held (Matt lock 2026-09-12).
+- Map legend called set-aside sales price-setting, pages pointed at maps they lacked, empty did-not-sell pages: `fix/map-pages` `c263a6fbb`.
+- Grid columns did not foot where a sale had a seller credit: `fix/grid-concession` `b8eef9e04`.
+- "712 homes" did not say single-family and the month line read a different population: `fix/market-supply` `110e7cf68` (712 / 204 / 3.5 are right under Market Truth D1/D5/D27; the reviewers' 4.4 mixed two populations).
+- Pocket date record said the Bend index was unused while it moved sales: `fix/date-basis` `002a63591`.
+- A home on the market got a pitch (Our Recommended List Price, List in that range, our fee) and counted its own listing as competition: `fix/on-market-subject` `879746c8b`, SKILL rule 27.
+- Picker vs contract room decision (20435 Powder Mountain, 63264 Rossby): `fix/room-contract` `f3af0799a`.
+- A failed build now keeps its reason trail on `build_summary.last_failure`: `fix/failure-trace` `3d4c4d0db` (main).
+
+**Matt's rulings 2026-10-08 (all in SKILL.md §0.3, all merged here):** ADU sale skips (rule 23, `fix/adu-skip` `598a785c5`); one 20% price line from the independent anchor for search and review, and lot size under one acre is disclosed, never a drop (rule 20, `fix/tier-lot` `b2f7133e5`); refill stays on the same rung (rule 8); 3% for everyone, the 2.5% expired sheet retired (rule 27, `fix/fee-3pct` `62cd60de8`); only real communities wall the search (rule 8, `fix/community-wall` `aded296cc`; 1355 Jacksonville builds at $732,000 on five River West sales in the dry run); own-ground sales move down with the Bend index only when the letter's own local read fell (rule 15, `fix/pocket-local-date` `faf3362b5`; Woodsman's sales now stand at sold price, Shevlin West held flat). Fleet result on `055307bea` accepted by Matt (101 of 140 build; the new failures were his five-sale floor).
+
+**Next:** the final fleet score on `31382ad9e` (rule 25) goes to Matt; on his yes, fast-forward main, `npm run deploy:verify`, rebuild Coho, Aldrich, Purcell, Jackson, Woodsman, Saginaw, Pheasant, Wild Rose, Jacksonville and Kelly Hill (drafts only), a reader pass, then links to Matt. Open: the public listing read (`lib/pricing/select.ts` `priceSubjectFromFacts`, cron stamp) still walks pocket sales down with no local read; whether Matt's own-ground date rule applies to the public listing page is his call. Cedar Ridge is on the real-derived-community list but no recorded plat carries it.
+
 **Still open**
 - The after-change fleet score against the 2026-10-07 baseline. The first run was lost to a worker restart at 85 of 141. The rerun on `b3132caf5` is in progress. It will be run again on the fixed code for the affected homes.
 - Matt's per-report approval for every rebuilt draft. None has been sent; nothing sends without it.
