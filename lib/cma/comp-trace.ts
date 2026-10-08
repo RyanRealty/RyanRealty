@@ -68,18 +68,39 @@ export interface CompExclusionCounts {
    * count toward the five price-setting sales (Matt 2026-10-07).
    */
   not_price_setting: number
+  /**
+   * A sale whose public remarks state an ADU, guest house or other second
+   * living unit, against a subject whose remarks state none (Matt 2026-10-08,
+   * "ADU sale skips", aduSaleRefused in lib/pricing/classes.ts). Absent on a
+   * row stored before that ruling; readers treat absent as zero.
+   */
+  adu_sale: number
+  /**
+   * Listings ladder, touching-plat rung: a row the rung read whose recorded
+   * plat is not one of the plats touching the subject's. It says nothing about
+   * the neighborhood; until 2026-10-08 these were counted as market_area,
+   * which printed "400 outside the subject's neighborhood boundary" for rows
+   * that were mostly inside it. Absent on a row stored before then.
+   */
+  not_touching_plat: number
+  /**
+   * Listings ladder, pocket rung: a row inside the quarter-mile read that is
+   * neither on a pocket street nor in a pocket subdivision. Counted as
+   * market_area until 2026-10-08. Absent on a row stored before then.
+   */
+  not_in_pocket: number
 }
 
 export function emptyExclusions(): CompExclusionCounts {
-  return { product_type: 0, bath_count: 0, lot_character: 0, resort_premium: 0, market_area: 0, crossed_divide: 0, distance: 0, duplicate: 0, self: 0, unusable_row: 0, year_quality: 0, acreage_infrastructure: 0, zoning_class: 0, outbuildings: 0, terrain: 0, price_tier: 0, not_price_setting: 0 }
+  return { product_type: 0, bath_count: 0, lot_character: 0, resort_premium: 0, market_area: 0, crossed_divide: 0, distance: 0, duplicate: 0, self: 0, unusable_row: 0, year_quality: 0, acreage_infrastructure: 0, zoning_class: 0, outbuildings: 0, terrain: 0, price_tier: 0, not_price_setting: 0, adu_sale: 0, not_touching_plat: 0, not_in_pocket: 0 }
 }
 
 export function addExclusions(into: CompExclusionCounts, from: CompExclusionCounts): void {
-  for (const k of Object.keys(into) as Array<keyof CompExclusionCounts>) into[k] += from[k]
+  for (const k of Object.keys(into) as Array<keyof CompExclusionCounts>) into[k] += from[k] ?? 0
 }
 
 export function totalExclusions(x: CompExclusionCounts): number {
-  return x.product_type + x.bath_count + x.lot_character + x.resort_premium + x.market_area + x.crossed_divide + x.distance + x.duplicate + x.self + x.unusable_row + x.year_quality + x.acreage_infrastructure + x.zoning_class + x.outbuildings + x.terrain + x.price_tier + x.not_price_setting
+  return x.product_type + x.bath_count + x.lot_character + x.resort_premium + x.market_area + x.crossed_divide + x.distance + x.duplicate + x.self + x.unusable_row + x.year_quality + x.acreage_infrastructure + x.zoning_class + x.outbuildings + x.terrain + x.price_tier + x.not_price_setting + (x.adu_sale ?? 0) + (x.not_touching_plat ?? 0) + (x.not_in_pocket ?? 0)
 }
 
 /** One rung of the ladder, whether it ran or was skipped. */
@@ -108,16 +129,46 @@ export interface CompTierTrace {
   not_setting?: number | null
 }
 
+/**
+ * What the facts walk held, kept on a selection the listings ladder returned
+ * (2026-10-08). selectCompsPreferringFacts walks the facts ladder first and,
+ * under five price-setting sales, falls back to the listings ladder. Before
+ * this the facts result was thrown away, so a shortage message described only
+ * the weaker listings search ("Only 0 qualifying closed comps found ...")
+ * while the facts walk held sales of its own. The shortage sentences
+ * (diagnoseStarvation, brokerCompRefusal) lead with whichever path held more.
+ */
+export interface FactsPathHold {
+  /** Price-setting sales the facts walk seated. */
+  held: number
+  /** Their street addresses, newest close first. */
+  sales: string[]
+  tiers_used: string[]
+  /** Sales that passed a rung and did not set the price (rule 20), over the walk. */
+  not_setting: number
+  /** Why the walk stopped short of five, in plain words. Null when it reached five. */
+  stop_reason: string | null
+}
+
 export interface CompSelectionDiagnostics {
   /** Display name of the subject's GIS market area, null when it sits outside every polygon. */
   market_area: string | null
   /**
    * The price tier this build graded comps against: the median $/sqft of sales
-   * in the subject's own neighborhood (or within a mile), and how many sales
-   * that median came from. Null when the area could not supply enough sales to
-   * state one, in which case no price cut ran.
+   * in the narrowest place around the subject that held enough of them (its
+   * plat, its subdivision family, its MLS subdivision, its community, its
+   * neighborhood, a ring around it, its city: lib/pricing/price-anchor.ts),
+   * and how many sales that median came from. Null when no level could supply
+   * enough sales to state one, in which case no price cut ran.
    */
-  price_anchor?: { ppsf: number; n: number } | null
+  price_anchor?: {
+    ppsf: number
+    n: number
+    /** The level that held the median (PriceAnchorSource), absent on rows stored before 2026-10-08. */
+    level?: string
+    /** Where it was read, as the trace says it: "in Westside Meadows", "within 1 mile". */
+    where?: string
+  } | null
   market_area_resolved: boolean
   /** Acreage subject outside every mapped polygon — the class the rural tiers exist for. */
   rural_acreage: boolean
@@ -162,6 +213,12 @@ export interface CompSelectionDiagnostics {
   /** Every relaxation taken, in the words the report discloses them. */
   disclosures: string[]
   /**
+   * The facts walk's result when this selection came from the listings
+   * fallback, or the facts walk itself. Absent on a broker-picked set and on
+   * rows stored before 2026-10-08.
+   */
+  facts_path?: FactsPathHold
+  /**
    * The rung that reached five, whether it widened the area, and how many
    * qualifying sales it still held past the seats (Matt 2026-10-08, refill
    * from the same rung; lib/cma/review-refill.ts). Absent on a broker-picked set.
@@ -201,6 +258,11 @@ const EXCLUSION_LABELS: Record<keyof CompExclusionCounts, string> = {
   price_tier: 'their price per square foot sits outside the tier this home\'s own area sells in',
   not_price_setting:
     'they sit in a different community, or are a clearly different size or product, so they do not set the price and do not count toward the five',
+  adu_sale:
+    "their remarks state an ADU, guest house or other second living unit and this home's remarks state none, so their price carries a unit this home lacks",
+  not_touching_plat:
+    "the touching-plat step read them and their recorded plat does not touch this home's plat (they may still sit inside the neighborhood)",
+  not_in_pocket: "the quarter-mile pocket step read them and they sit on no pocket street and in no pocket subdivision",
 }
 
 function band(d: CompSelectionDiagnostics): string {
@@ -219,9 +281,23 @@ function band(d: CompSelectionDiagnostics): string {
  * Name the constraint that starved the selection, in language a broker can act
  * on. A bare "only 2 qualifying comps found" tells the reader nothing about
  * whether the subject is genuinely unpriceable or the search was too narrow.
+ *
+ * When the selection carries the facts walk (facts_path) and it came from the
+ * listings fallback, the path that held more price-setting sales leads, named
+ * with its sales (2026-10-08). Facts leads on a tie: it is the primary path.
  */
 export function diagnoseStarvation(d: CompSelectionDiagnostics): string | null {
   if (!d.starved) return null
+  const own = diagnoseOwnPath(d)
+  const facts = d.facts_path
+  if (!facts || d.pricing_source === 'facts') return own
+  const factsLine = `facts path: ${facts.held} price-setting sale(s)${
+    facts.sales.length > 0 ? ` (${facts.sales.join(', ')})` : ''
+  }, short of ${d.min_comps}${facts.stop_reason ? `; it stopped because ${facts.stop_reason}` : ''}.`
+  return facts.held >= d.candidates ? `${factsLine} ${own}` : `${own} ${factsLine}`
+}
+
+function diagnoseOwnPath(d: CompSelectionDiagnostics): string {
   const path =
     d.pricing_source === 'facts'
       ? 'facts path'
@@ -239,7 +315,7 @@ export function diagnoseStarvation(d: CompSelectionDiagnostics): string | null {
     return `${path}: no closed sale anywhere in the database matched the search at any of the ${ran.length} tier(s) walked. The binding constraints were ${band(d)}. This subject has no comparable sales on record. It is not a search problem.`
   }
   const ranked = (Object.keys(d.excluded_totals) as Array<keyof CompExclusionCounts>)
-    .map((k) => ({ k, n: d.excluded_totals[k] }))
+    .map((k) => ({ k, n: d.excluded_totals[k] ?? 0 }))
     .filter((e) => e.n > 0 && e.k !== 'duplicate' && e.k !== 'self')
     .sort((a, b) => b.n - a.n)
   const top = ranked[0]
@@ -252,6 +328,59 @@ export function diagnoseStarvation(d: CompSelectionDiagnostics): string | null {
     .map((e) => `${e.n} on ${e.k.replace(/_/g, ' ')}, because ${EXCLUSION_LABELS[e.k]}`)
     .join('. ')
   return `${scarcity}, and ${held} survived. The comps that were dropped went out as follows: ${listed}. The single largest constraint was ${top.k.replace(/_/g, ' ')}.`
+}
+
+/**
+ * Why the facts walk stopped short of five, in plain words and without rung
+ * names: the most common reason the rungs after the last one that ran were
+ * skipped (the first such reason on a tie). Null when the walk reached five.
+ */
+export function factsStopReason(
+  rungs: ReadonlyArray<{ ran: boolean; skippedReason: string | null }>,
+  reachedTarget: boolean,
+): string | null {
+  if (reachedTarget) return null
+  let lastRan = -1
+  rungs.forEach((r, i) => {
+    if (r.ran) lastRan = i
+  })
+  if (lastRan === -1) {
+    return rungs.map((r) => r.skippedReason).find(Boolean) ?? 'no step of the search could run'
+  }
+  const counts = new Map<string, number>()
+  for (const r of rungs.slice(lastRan + 1)) {
+    if (!r.ran && r.skippedReason) counts.set(r.skippedReason, (counts.get(r.skippedReason) ?? 0) + 1)
+  }
+  let best: string | null = null
+  let bestN = 0
+  for (const [reason, n] of counts) {
+    if (n > bestN) {
+      best = reason
+      bestN = n
+    }
+  }
+  return best ?? 'every step of the search ran and no other sale qualified'
+}
+
+/**
+ * The shortage sentence's lead: the count the best path held, the sales by
+ * address, and the five (2026-10-08). "The search in River West found 3
+ * price-setting sales (1501 Newport, 1411 Newport, 1367 Milwaukee); 5 are
+ * needed."
+ */
+export function shortageLead(args: {
+  marketArea: string | null
+  held: number
+  sales: readonly string[]
+  minComps: number
+}): string {
+  const place = args.marketArea ? `The search in ${args.marketArea}` : 'The search'
+  const names = args.sales.filter((a) => a.trim()).join(', ')
+  const count =
+    args.held === 0
+      ? 'no price-setting sales'
+      : `${args.held} price-setting sale${args.held === 1 ? '' : 's'}${names ? ` (${names})` : ''}`
+  return `${place} found ${count}; ${args.minComps} are needed.`
 }
 
 /** Tier -> count over a priced comp set, for `final_tier_counts`. */

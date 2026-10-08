@@ -20,7 +20,7 @@ import {
 } from '@/lib/data/cma/areaUnsoldReads'
 
 const BAND_SELECT =
-  'ListingKey, StreetNumber, StreetName, ListPrice, OriginalListPrice, StandardStatus, DaysOnMarket, OnMarketDate, PhotoURL, Latitude, Longitude, property_sub_type, BedroomsTotal, BathroomsTotal, TotalLivingAreaSqFt, year_built, lot_size_acres'
+  'ListingKey, StreetNumber, StreetName, ListPrice, OriginalListPrice, StandardStatus, DaysOnMarket, OnMarketDate, PhotoURL, Latitude, Longitude, property_sub_type, BedroomsTotal, BathroomsTotal, baths_full, baths_half, TotalLivingAreaSqFt, year_built, lot_size_acres'
 
 // The band is one city, one property type, one status, inside a +/- price
 // window, so it is bounded in practice. Page it rather than truncating: the
@@ -48,9 +48,14 @@ export type CmaBandListingRow = {
   SubdivisionName?: string | null
   BedroomsTotal?: number | null
   BathroomsTotal?: number | null
+  /** MLS full / half bath split: printed and room-tested the way the sales are (lib/pricing/bath-count.ts). */
+  baths_full?: number | null
+  baths_half?: number | null
   TotalLivingAreaSqFt?: number | null
   year_built?: number | null
   lot_size_acres?: number | null
+  /** Selected only by the area-scoped read: the competition fit reads it for the multi-unit and ADU walls (rule 24). */
+  public_remarks?: string | null
 }
 
 export type CmaBandInventory = {
@@ -175,7 +180,11 @@ function daysOnMarket(onMarketDate: string | null): number | null {
  * shape, not inside the box. That is also why there is no `head:true` count
  * here: a database count would count the box.
  */
-const AREA_SELECT = `${BAND_SELECT}, City, SubdivisionName`
+// public_remarks: the competition passes the same multi-unit and ADU walls as
+// the sales (rule 24, Matt 2026-10-08), and those walls read the remarks.
+// pending_timestamp + days_to_pending: a home under contract is dated the day
+// it went under contract and counts its days to that offer (band-rivals.ts).
+const AREA_SELECT = `${BAND_SELECT}, City, SubdivisionName, public_remarks, pending_timestamp, days_to_pending`
 
 export type CmaAreaBandInventory = {
   area: CompArea

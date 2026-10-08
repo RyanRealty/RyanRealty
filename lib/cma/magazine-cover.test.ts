@@ -154,7 +154,7 @@ describe('print CMA magazine cover', () => {
     expect(cover).toContain('data-recommend-once')
     expect(cover).toContain('>Low<')
     expect(cover).toContain('>High<')
-    expect(cover).toContain('>Where similar homes sold, adjusted to today<')
+    expect(cover).toContain('>Where similar homes sold<')
     expect(cover).toContain('$472,000')
     expect(cover).not.toContain('cover-price')
     expect(cover).not.toContain('We recommend listing at')

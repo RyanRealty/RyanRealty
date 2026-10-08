@@ -36,7 +36,9 @@ function page(over: Partial<OpinionPageArgs> = {}): OpinionPageArgs {
 describe('placePricingStoryHtml', () => {
   it('prints the place and the counts, and not the regional tiles', () => {
     const html = placePricingStoryHtml(story, 'letter')
-    expect(html).toContain('Here&#39;s what happened in Old Farm over the last 12 months.')
+    // With no home to place, the line names the place for what it is and says
+    // nothing about where the home sits.
+    expect(html).toContain('Here&#39;s what happened in the Old Farm neighborhood over the last 12 months.')
     expect(html).toContain('48 homes were listed. 11 of them came off the market without selling.')
     expect(html).toContain('9 dropped the price. The typical cut was 3.5% of the first ask.')
     expect(html).toContain('6 gave the buyer a concession at closing. The typical concession was 2% of the list price.')

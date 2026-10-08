@@ -323,8 +323,12 @@ describe('land columns', () => {
     expect(html).toMatch(/31,363/)
   })
 
-  it('labels the adjusted-price row as sale price today', () => {
-    expect(renderCompMatrixHtml(landSubject, padSales(landComp))).toContain('Sale price today')
+  it('labels the adjusted-price row sale price today only when a sale moved for date (reader review 2026-10-08)', () => {
+    // The land sales moved for nothing: the row is the adjusted price.
+    const land = renderCompMatrixHtml(landSubject, padSales(landComp))
+    expect(land).toContain('Adjusted price')
+    expect(land).not.toContain('Sale price today')
+    // These moved for date: the row is the sale price today.
     expect(renderCompMatrixHtml(subject, padSales(comp))).toContain('Sale price today')
     expect(renderCompMatrixHtml(subject, padSales(comp))).not.toMatch(/as your house/i)
   })
@@ -513,10 +517,12 @@ describe('the adjustment grid, line by line', () => {
     )
     expect(html).toContain('Seller concessions')
     expect(html).toContain('$12,500')
-    // 457000 - 12500 = 444500. 444500 / 1665 = 266.966, so Sold $/sqft is $267.
+    // 457000 - 12500 = 444500. 444500 / 1665 = 266.966, so the sold rate is
+    // $267, and with a credit on the table the row says it is after one
+    // (reader review, cma-2382-jackson: "Sold $/sqft" over a net figure).
     // List $/sqft stays on the $465,000 ask: 465000 / 1665 rounds to $279.
     const net = /<tr><th>Sold after concessions<\/th>([\s\S]*?)<\/tr>/.exec(html)?.[1] ?? ''
-    const soldRate = /<tr><th>Sold \$\/sqft<\/th>([\s\S]*?)<\/tr>/.exec(html)?.[1] ?? ''
+    const soldRate = /<tr><th>Sold \$\/sqft after concessions<\/th>([\s\S]*?)<\/tr>/.exec(html)?.[1] ?? ''
     const listRate = /<tr><th>List \$\/sqft<\/th>([\s\S]*?)<\/tr>/.exec(html)?.[1] ?? ''
     expect(net).toContain('$444,500')
     expect(soldRate).toContain('$267')
@@ -525,7 +531,8 @@ describe('the adjustment grid, line by line', () => {
     const soldAt = html.indexOf('<th>Sold</th>')
     const concessionAt = html.indexOf('<th>Seller concessions</th>')
     const netAt = html.indexOf('<th>Sold after concessions</th>')
-    const daysAt = html.indexOf('<th>Days on market</th>')
+    // The sales table counts days to an offer and names the row for it.
+    const daysAt = html.indexOf('<th>Days to an offer</th>')
     expect(soldAt).toBeGreaterThan(-1)
     expect(concessionAt).toBeGreaterThan(soldAt)
     expect(netAt).toBeGreaterThan(concessionAt)

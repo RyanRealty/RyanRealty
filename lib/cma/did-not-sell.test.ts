@@ -16,6 +16,7 @@ import {
   didNotSellLeadSentence,
   didNotSellStories,
   readLocalFailedThenSold,
+  soldPpsfLegend,
   soldPpsfRange,
 } from '@/lib/cma/did-not-sell'
 import type { CmaExpiredPeer } from '@/lib/cma/market-status'
@@ -135,7 +136,7 @@ describe('the chapter sentence', () => {
 
 describe('what homes like it closed at', () => {
   it('takes the sale prices already printed, over their own living area', () => {
-    expect(soldPpsfRange(comps)).toEqual({ low: 274, high: 320, n: 3, values: [274, 320, 306] })
+    expect(soldPpsfRange(comps)).toEqual({ low: 274, high: 320, n: 3, values: [274, 320, 306], credit: false })
   })
 
   it('uses the Sold $/sqft row: the price after a recorded concession (reader review 2026-10-07)', () => {
@@ -146,7 +147,13 @@ describe('what homes like it closed at', () => {
       { address: 'b', closePrice: 410000, sqft: 1280, concessionsAmount: 0 },
     ] as unknown as CmaAdjustedComp[]
     // (457,000 - 10,000) / 1,665 = 268.47
-    expect(soldPpsfRange(withCredit)).toEqual({ low: 268, high: 320, n: 2, values: [268, 320] })
+    expect(soldPpsfRange(withCredit)).toEqual({ low: 268, high: 320, n: 2, values: [268, 320], credit: true })
+    // The legend names the table's row by the words it prints, which carry
+    // "after concessions" when a sale on it had a credit (cma-2382-jackson).
+    expect(soldPpsfLegend(2, true)).toBe(
+      'The dollars a foot are the Sold $/sqft after concessions row of the 2 closed sales in this report: each sale price, less any recorded seller concession, over its own living area.',
+    )
+    expect(soldPpsfLegend(2)).toContain('the Sold $/sqft row of the 2 closed sales')
   })
 
   it('needs two sales before it states a range', () => {

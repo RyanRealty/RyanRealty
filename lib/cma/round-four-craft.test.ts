@@ -211,25 +211,31 @@ describe('F2 — a place polygon is suppressed when it holds neither the subject
         mapDataUri: 'data:image/png;base64,AAAA',
         mapOverlay: {
           view: { centerLat: 44.05, centerLng: -121.05, zoom: 14, width: 640, height: 400 },
-          pins: [],
+          pins: [
+            { key: null, family: 'subject', lat: 44.0505, lng: -121.0505 },
+            { key: '1', family: 'closed', lat: 44.05, lng: -121.05 },
+          ],
           boundaryShown,
         } as never,
       })?.body ?? ''
-    return /<p class="small">(Every pin below[^<]*)<\/p>/.exec(body)?.[1] ?? ''
+    return /<p class="small">(Every pin above[^<]*)<\/p>/.exec(body)?.[1] ?? ''
   }
 
+  // The caption sits under the map and counts the tables that hold a drawn
+  // pin: one closed sale here, so one table (2382 Jackson printed "one of the
+  // three tables" over two, reader review 2026-10-08).
   it('drops the boundary sentence when the outline was suppressed', () => {
-    expect(legendOf(false)).toBe('Every pin below is a row in one of the three tables that follow.')
+    expect(legendOf(false)).toBe('Every pin above is a row in the table that follows.')
   })
 
   it('names the outline plainly when it was drawn', () => {
     expect(legendOf(true)).toBe(
-      'Every pin below is a row in one of the three tables that follow. The lines are the subdivisions these homes sit in.',
+      'Every pin above is a row in the table that follows. The lines are the subdivisions these homes sit in.',
     )
   })
 
   it('does not claim an outline when the tile predates the check', () => {
-    expect(legendOf(undefined)).toBe('Every pin below is a row in one of the three tables that follow.')
+    expect(legendOf(undefined)).toBe('Every pin above is a row in the table that follows.')
     expect(legendOf(undefined)).not.toContain('when that boundary is on file')
   })
 
@@ -243,7 +249,7 @@ describe('F2 — a place polygon is suppressed when it holds neither the subject
         mapDataUri: 'data:image/png;base64,AAAA',
         mapOverlay: null,
       })?.body ?? ''
-    expect(body).not.toContain('Every pin below')
-    expect(body).toContain('The three tables that follow list every home this map was drawn for.')
+    expect(body).not.toContain('Every pin')
+    expect(body).toContain('The table that follows lists every home this map was drawn for.')
   })
 })

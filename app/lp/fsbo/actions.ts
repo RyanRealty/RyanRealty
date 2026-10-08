@@ -417,10 +417,10 @@ export async function submitFsboLPForm(submission: FsboLPSubmission): Promise<Fs
     // ─── GA4 Measurement Protocol mirror ───────────────────────────────────
     await fireLeadGenerated({
       lp_variant: 'fsbo',
-      lead_type: 'seller',
+      lead_type: 'seller_listing',
+      form_id: 'fsbo_lp',
       lead_classification: 'hot',
       broker_slug: assignment.broker,
-      value: 500,
       event_id: eventId,
       fub_person_id: fubPersonId,
       extra: {

@@ -35,6 +35,8 @@ import {
   waterCompatible,
   multiUnitFromRemarks,
   productClassFromFactsRow,
+  aduFromRemarks,
+  aduSaleRefused,
 } from '@/lib/pricing/classes'
 
 describe('classifyWater', () => {
@@ -496,9 +498,134 @@ describe('multiUnitFromRemarks: the remarks say this home is a duplex (Matt 2026
     expect(multiUnitFromRemarks('Rare duplex with ADU on the back of the lot, three rentable doors.')).toBe(true)
     expect(productClassFromFactsRow('single-family', 'Single Family Residence', 'Rare duplex with ADU on the back of the lot.')).toBe('multi-unit')
   })
+  it('a list of options a lot may offer is not a duplex (1345 Jacksonville, reader review 2026-10-08)', () => {
+    // Stored MLS remarks of 1345 Jacksonville, listing 220228911, line breaks included.
+    expect(multiUnitFromRemarks('The generous lot may offer possibilities for a lot split, duplex, multi-unit development,\r\nADU, or new custom home, subject to City approval.')).toBe(false)
+    expect(multiUnitFromRemarks('Options include a remodel or a duplex.')).toBe(false)
+    // However far down the list, a hedge governs every option it opens.
+    expect(multiUnitFromRemarks('This lot offers possibilities for a lot split, a cottage cluster, two townhomes, or a fourplex.')).toBe(false)
+    // A list that turns into a statement is not a list of options.
+    expect(multiUnitFromRemarks('Possible shop site, garden beds, mature trees, and the property includes a duplex with two 2 bed units.')).toBe(true)
+  })
   it('blank remarks and a plain house are not multi-unit', () => {
     expect(multiUnitFromRemarks(null)).toBe(false)
     expect(multiUnitFromRemarks('Charming single level home on a quiet street with a fenced yard.')).toBe(false)
     expect(productClassFromFactsRow('detached', 'Single Family Residence', null)).toBe('detached')
+  })
+})
+
+describe('aduFromRemarks: the remarks state a second living unit on the lot (Matt 2026-10-08, "ADU sale skips")', () => {
+  // The case. 644 Norton seated on both ladders for 1648 Pheasant; the review
+  // dropped it 3 of 3 passes. Both texts are the stored MLS remarks.
+  const NORTON =
+    'Excellent Midtown Bend multi-unit property featuring a permitted ADU, offering flexibility for a variety of living or investment possibilities. Major improvements include a new roof this year along with fresh interior and exterior paint, providing added value and peace of mind. Both units feature attractive finishes and functional living spaces.'
+  const PHEASANT =
+    "Single level house in Midtown Bend on a huge lot with room to dream. This updated 3 bed, 1 bath home features a mini-split for efficient AC and heat in the main living room. Outside, you've got space to build an ADU, a 2 car garage, RV parking, plus room for 3+ more large vehicles. Whether you're buying your first home, downsizing, or eyeing ADU rental income, this is a lot of house and land for under $600K in Bend, Oregon."
+
+  it('reads 644 Norton as an ADU home and 1648 Pheasant as a home without one', () => {
+    expect(aduFromRemarks(NORTON)).toBe(true)
+    expect(aduFromRemarks(PHEASANT)).toBe(false)
+    expect(aduSaleRefused(PHEASANT, NORTON)).toBe(true)
+    // Rule 23 is a different question: an ADU home is still not a duplex.
+    expect(multiUnitFromRemarks(NORTON)).toBe(false)
+  })
+
+  it('counts a unit the remarks state the home has (real Bend remarks, 2025-2026 closes)', () => {
+    for (const text of [
+      'Incredibly rare single-level home w/ permitted ADU on a quiet dead-end street in NE Bend.',
+      'Main house went through complete remodel 6 years ago and ADU built at the same time.',
+      'Above the 3-car garage, a 908sf, 2-bed, 1-bath guest house offers built-in income potential as an active Airbnb.',
+      'A detached ADU adds flexibility and future potential. A set of plans may be included in the purchase price.',
+      'plus a 495 sq. ft. ADU with Bosch appliances and its own bathroom.',
+      'The permitted 394 sq ft attached ADU is separately metered and includes its own private outdoor space.',
+      'Fabulous 750 SF one bedroom ADU for guest or possible income opportunity.',
+      'complemented by a 2718 sqft. 3-bedroom guesthouse, creating exceptional flexibility for guests.',
+      'A furnished 2-bdrm guest casita w/ kitchenette, full bath, & new flooring provides exceptional flexibility.',
+      'A detached garage with guest quarters adds exceptional versatility.',
+      'Rare opportunity to acquire a 1954-built investment property featuring a detached ADU and multiple income-generating possibilities.',
+      'Classic Bend Bungalow + ADU on one of the premier streets.',
+      'set on .46 acres with an ADU/Casita perfect for MULTI-GENERATIONAL living.',
+      'Perfect for multigenerational living, this home features a detached ADU.',
+      'Strong rental income potential from the ADU.',
+      'An accessory dwelling unit sits behind the main home.',
+      'No HOA and a detached ADU out back.',
+    ]) {
+      expect(aduFromRemarks(text), text).toBe(true)
+    }
+  })
+
+  it('never counts hedged or prospective wording', () => {
+    for (const text of [
+      'Excellent ADU potential which presents a rare opportunity for both homeowners & investors.',
+      'Remodeled single level + flex space + big shop + RV parking + ADU potential + no HOA rarely comes available in SE Bend.',
+      'alley access at the rear of the lot, making it the perfect property on which to build an ADU behind the house.',
+      'with future possibilities including potential ADU opportunities subject to buyer due diligence.',
+      'There is ample room for additional parking, RVs/toys, along with potential for an ADU.',
+      'plenty of level space for a future shop or ADU (buyer to verify).',
+      "There's also potential to add an ADU, all subject to city approval.",
+      'or explore ADU possibilities in the future.',
+      'The large lot offers room for a future shop or ADU, to create your personalized retreat.',
+      'Large lot size would allow for an ADU or other development potential.',
+      'Room for shop, arena, or ADU.',
+      'fully finished 1,500 sq ft shop with upstairs office (potential ADU), plus an attached garage.',
+      'ADU?  Second story? What are you dreaming of?',
+      'ADU-ready lot with utilities stubbed.',
+      'Zoned for an ADU.',
+      'You could add a casita in the back.',
+      'Possible ADU site.',
+      'Approved plans for a detached ADU convey.',
+      'ADU plans approved by the city.',
+      'No ADU or short term rentals allowed per CC&Rs.',
+      // A use pitch for a flex space or a studio, not a unit by name.
+      'The versatile 1,350 sq ft flex space is ideal for additional garage bays, guest quarters, a home office, or workshop.',
+      'includes a two-car garage with the studio above--perfect for rental income, a home office, or guest quarters.',
+      // Quarters the clause places inside the house.
+      'An office with a closet offers flexibility, and upstairs guest quarters include two bedrooms and a full bath.',
+      'Charming single level home on a quiet street with a fenced yard.',
+      null,
+      '',
+    ]) {
+      expect(aduFromRemarks(text), String(text)).toBe(false)
+    }
+  })
+
+  it('a hedge governs every item of the list it opens, past the look-back window (1345 Jacksonville, reader review 2026-10-08)', () => {
+    // Stored MLS remarks of 1345 Jacksonville (listing 220228911). "ADU" sits
+    // 63 characters past "possibilities", beyond the 60-character window,
+    // and the competition fit dropped the subject's next-door neighbor.
+    const JACKSONVILLE_1345 =
+      "Rare opportunity in one of Bend's most desirable Westside neighborhoods. At .21 acres, this is the largest lot in the subdivision,\r\nwhere most lots are approx .14 acres. Conveniently located near\r\nshopping, dining,\r\nservices and downtown Bend, the property offers exceptional flexibility.\r\nThe property includes a 1924-built, 3-beds, 1-bath home with 1,056 sq ft that can be lived in as-is, renovated, or incorporated into a larger vision for the site. The generous lot may offer possibilities for a lot split, duplex, multi-unit development,\r\nADU, or new custom home, subject to City approval.\r\nStreet and alley frontage add flexibility for access, parking and site design. Whether improving the existing home or exploring redevelopment potential, this oversized Westside property presents a unique opportunity in an established Bend neighborhood."
+    const JACKSONVILLE_1355 =
+      "The lot's size and prime location support a range of possibilities, from an extensive renovation, to a full tear-down for a custom new home. There's also potential to add an ADU, all subject to city approval."
+    expect(aduFromRemarks(JACKSONVILLE_1345)).toBe(false)
+    expect(multiUnitFromRemarks(JACKSONVILLE_1345)).toBe(false)
+    expect(aduFromRemarks(JACKSONVILLE_1355)).toBe(false)
+    expect(aduSaleRefused(JACKSONVILLE_1355, JACKSONVILLE_1345)).toBe(false)
+    expect(aduFromRemarks('Room for a shop, an arena, a second garage, RV parking, horse stalls, or a guest house.')).toBe(false)
+    // Not a bare list: the run turns into a statement of what the home has.
+    expect(aduFromRemarks('Possible shop site, garden beds, mature trees, and the home includes a detached ADU.')).toBe(true)
+  })
+
+  it('mother-in-law: a unit, apartment or cottage counts, a suite, quarters or wing inside the house does not', () => {
+    expect(aduFromRemarks('The lowest level houses a fully permitted mother-in-law unit with private entrance, wet bar, and W/D.')).toBe(true)
+    expect(aduFromRemarks('Mother in law apartment over the garage.')).toBe(true)
+    expect(aduFromRemarks('Detached in-law cottage with its own kitchen.')).toBe(true)
+    expect(aduFromRemarks('A detached in-law suite with a kitchenette sits behind the shop.')).toBe(true)
+    // Ambiguous, so not counted: usually a bedroom suite already in the living area.
+    expect(aduFromRemarks('a private mother-in-law suite/multi-generational living space offers flexibility for guests.')).toBe(false)
+    expect(aduFromRemarks('while a separate in-law suite includes a fireplace, deck access, and en suite bath.')).toBe(false)
+    expect(aduFromRemarks('Features include 4 bedrooms, 3.5 baths, an in-law wing with separate entrance.')).toBe(false)
+    expect(aduFromRemarks('ideal for a home office, guest retreat, or mother-in-law suite with full bath.')).toBe(false)
+  })
+
+  it('the wall is one way: an ADU subject keeps both kinds, a blank sale states nothing', () => {
+    const plain = 'Single level home with a fenced yard.'
+    const adu = 'Craftsman with a permitted detached ADU over the garage.'
+    expect(aduSaleRefused(plain, adu)).toBe(true)
+    expect(aduSaleRefused(null, adu)).toBe(true)
+    expect(aduSaleRefused(adu, adu)).toBe(false)
+    expect(aduSaleRefused(adu, plain)).toBe(false)
+    expect(aduSaleRefused(plain, null)).toBe(false)
+    expect(aduSaleRefused(plain, plain)).toBe(false)
   })
 })

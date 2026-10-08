@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { sendEvent } from '@/lib/crm/send-event'
 import { createCmaRequest } from '@/lib/cma-request'
 import { getMetaPageToken } from '@/lib/meta-env'
-import { fireGa4Event } from '@/lib/ga4-measurement-protocol'
+import { fireLeadGenerated } from '@/lib/lead-tracking'
 import { normalizeAgentSlug, brokerSlugFromText, CRM_DESK_ID_BY_BROKER, type BrokerSlug } from '@/lib/agent-attribution'
 import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data/crm/ensureNativeLead'
 import { recordMarketingAssignment } from '@/lib/data/crm/recordMarketingAssignment'
@@ -679,25 +679,25 @@ async function processLead(leadId: string, adName?: string): Promise<void> {
     console.log(`[lead-webhook] Hot-lead 5-min task created for person ${personId}`)
   }
 
-  // GA4 Measurement Protocol mirror — fire generate_lead server-side.
-  // Webhook context has no browser cookies (Meta calls us directly), so the
-  // client_id is a fresh uuid. The event still counts toward the
-  // generate_lead conversion and carries the campaign attribution.
-  void fireGa4Event({
-    eventName: 'generate_lead',
-    eventParams: {
-      lp_variant: 'meta-leadgen-form',
+  // GA4: the one server-side generate_lead (lib/lead-tracking.ts). Webhook
+  // context has no browser cookies (Meta calls us directly), so the client_id
+  // is a fresh uuid; the campaign attribution rides in `extra`. Never throws.
+  void fireLeadGenerated({
+    lp_variant: 'meta-leadgen-form',
+    lead_type:
+      parsed.audience === 'buyer' ? 'buyer_question' : parsed.audience === 'seller' ? 'seller_listing' : 'contact_general',
+    form_id: 'meta_lead_ad',
+    extra: {
       lp_source: 'facebook',
       lp_medium: 'paid_social',
       lp_campaign: parsed.campaignName ?? undefined,
       lp_content: parsed.adSetName ?? undefined,
       lead_classification: parsed.intent ?? undefined,
-      lead_type: parsed.audience === 'buyer' ? 'buyer' : parsed.audience === 'seller' ? 'seller' : undefined,
       fub_person_id: personId,
       meta_lead_id: parsed.leadId,
       possible_realtor: parsed.possibleRealtor,
     },
-  }).catch((e) => console.warn('[lead-webhook] GA4 event failed:', e))
+  })
 
   console.log(`[lead-webhook] Lead ${leadId} → crm person ${personId} (${parsed.email || 'no email'}) intent=${parsed.intent ?? 'n/a'} audience=${parsed.audience} realtor=${parsed.possibleRealtor}`)
 

@@ -124,8 +124,8 @@ export async function submitInboundAgentReferral(
 
     await fireLeadGenerated({
       lp_variant: 'inbound-agent-referral',
-      lead_type: parsed.intent === 'sell' ? 'seller' : 'buyer',
-      value: 500,
+      lead_type: parsed.intent === 'sell' ? 'seller_listing' : 'buyer_question',
+      form_id: 'inbound_agent_referral',
       extra: {
         referral: 'inbound',
         area: parsed.area,

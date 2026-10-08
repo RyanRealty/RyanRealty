@@ -2,7 +2,7 @@
  * Web + print chapters for market-area density. Our look. Our number.
  */
 
-import { cleanText, dec, escapeHtml, int, propertyIntelligenceBlock, usd } from '@/lib/cma/render-blocks'
+import { cleanText, countWord, dec, escapeHtml, int, propertyIntelligenceBlock, usd } from '@/lib/cma/render-blocks'
 import { clientAreaLabel, clientSourceLine } from '@/lib/cma/client-facing'
 import { printedBaths } from '@/lib/pricing/bath-count'
 import { formatMonthsOfSupply, monthsOfSupplyVerdict } from '@/lib/format/months-of-supply'
@@ -26,6 +26,7 @@ import {
 } from '@/lib/cma/market-charts'
 import { subjectDomDays, subjectListingFailed } from '@/lib/cma/comp-matrix'
 import { closedSaleDaysToOffer } from '@/lib/cma/listing-history-line'
+import { cameOffStatus } from '@/lib/cma/listing-status'
 import { readTrendMeasure } from '@/lib/cma/render-contract'
 import type { CmaMarketArea, CmaSoldBand, CmaStatusBucket } from '@/lib/cma/market-status'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
@@ -276,10 +277,15 @@ export function renderInventoryBoardHtml(
       }`
     : ''
 
+  // IT NAMES WHAT IT COUNTS (2026-10-08). "712 homes are for sale in Bend"
+  // was the single-family count (Market Truth segment detached); every
+  // residential listing in Bend that night was 896, and two reviewers could
+  // not tell which one the letter meant. The count, the pace and the verdict
+  // are one population, and the sentence says which.
   const sentences: string[] = []
   if (mos != null && active != null && perMonth != null && verdict) {
     sentences.push(
-      `${int(active)} homes are for sale in ${place} right now. Over the last ${monthsWord(
+      `${int(active)} single-family ${active === 1 ? 'home is' : 'homes are'} for sale in ${place} right now. Over the last ${monthsWord(
         windowMonths,
       )} months, an average of ${int(Math.round(perMonth))} sold each month. At that pace it would take ${formatMonthsOfSupply(
         mos,
@@ -290,7 +296,7 @@ export function renderInventoryBoardHtml(
     // still may not print the trade term: "months of supply" as a bare label
     // is the jargon the taste review named.
     sentences.push(
-      `At the pace homes are selling in ${place} it would take ${formatMonthsOfSupply(
+      `At the pace single-family homes are selling in ${place} it would take ${formatMonthsOfSupply(
         mos,
       )} months to sell what is listed, which is ${verdict.label.toLowerCase()} territory.`,
     )
@@ -372,14 +378,20 @@ export function adjustedCloseRange(
  * all, it read as the market turning the home down.
  *
  * `outran` is true only when the subject's days exceed EVERY figure the
- * sentence sets them beside. Only then may a reading say "never got one".
- * Otherwise it states the plain fact of how the listing ended.
+ * sentence sets them beside. Only then may a reading set them against those
+ * figures ("Yours sat 208 days and did not sell."). Otherwise it states the
+ * plain fact of how the listing ended.
+ *
+ * NO OFFER IS NOT ON THE ROW (reader review 2026-10-08). The MLS says the
+ * listing expired, was canceled or was withdrawn. It does not say whether an
+ * offer came in, so no reading says "never got one" or "no offer": `ended` is
+ * the status word the bar prints, and the contrast says the home did not sell.
  */
 export function subjectDaysAgainst(opts: {
   days: number | null | undefined
   status: string | null | undefined
   figures: readonly (number | null | undefined)[]
-}): { days: number; outran: boolean; withdrawn: boolean; plain: string } | null {
+}): { days: number; outran: boolean; withdrawn: boolean; plain: string; ended: string } | null {
   const days = opts.days
   if (days == null || !Number.isFinite(days) || days <= 0) return null
   const n = Math.round(days)
@@ -387,15 +399,18 @@ export function subjectDaysAgainst(opts: {
   const outran = figures.length > 0 && figures.every((f) => n > Math.round(f))
   const status = (opts.status ?? '').trim()
   const withdrawn = /^withdrawn/i.test(status)
+  const expired = /^expired/i.test(status)
+  const canceled = /^cancell?ed/i.test(status)
   const span = `${int(n)} ${n === 1 ? 'day' : 'days'}`
   const plain = withdrawn
     ? `Yours was withdrawn after ${span}.`
-    : /^expired/i.test(status)
+    : expired
       ? `Yours expired after ${span}.`
-      : /^cancell?ed/i.test(status)
+      : canceled
         ? `Yours was canceled after ${span}.`
         : `Yours came off after ${span}.`
-  return { days: n, outran, withdrawn, plain }
+  const ended = withdrawn ? 'withdrawn' : expired ? 'expired' : canceled ? 'canceled' : 'did not sell'
+  return { days: n, outran, withdrawn, plain, ended }
 }
 
 /**
@@ -415,7 +430,7 @@ export function subjectDaysReading(
 /**
  * How fast homes like yours went. One days axis, one named row per kept sale
  * at the days it waited for an offer, and the subject's own listing at the
- * days it waited and never got one.
+ * days it was on the market and did not sell.
  *
  * P4, Matt 2026-09-07: this is the "what happens when it is overpriced" chart.
  * It replaces a twelve-month ledger of one-to-three new listings and a row of
@@ -434,37 +449,46 @@ export function subjectDaysReading(
 export function renderDaysToOfferHtml(
   a: Pick<MarketChapterArgs, 'subject' | 'comps' | 'market'>,
 ): string {
-  const rows: DaysRow[] = a.comps
-    .map((c, i) => {
-      // The same offer count the sales table prints for this sale: none when
-      // it outruns the sale's own run to close.
-      const toOffer = closedSaleDaysToOffer({
-        daysToOffer: c.daysToOffer,
-        domTotal: c.domTotal,
-        firstListDate: c.onMarketDate,
-        closeDate: c.closeDate,
-      })
-      return toOffer != null
-        ? {
-            label: `${i + 1}. ${c.address}`,
-            days: toOffer,
-            subject: false,
-            valueLabel: `${int(toOffer)} ${toOffer === 1 ? 'day' : 'days'}`,
-          }
-        : null
+  const rows: DaysRow[] = []
+  // A sale with no offer count keeps its number on the sales table, so the
+  // chart's numbering skips it. The gap is said under the chart, never left
+  // silent (reader review 2026-10-08: Woodsman's bars ran 1, 3, 4, 5, 6, 7
+  // with nothing saying where sale 2 went).
+  const missing: Array<{ n: number; address: string; recorded: boolean }> = []
+  a.comps.forEach((c, i) => {
+    // The same offer count the sales table prints for this sale: none when
+    // it outruns the sale's own run to close.
+    const toOffer = closedSaleDaysToOffer({
+      daysToOffer: c.daysToOffer,
+      measuredFrom: c.offerFrom ?? null,
+      domTotal: c.domTotal,
+      firstListDate: c.onMarketDate,
+      closeDate: c.closeDate,
     })
-    .filter((r): r is DaysRow => r != null)
+    if (toOffer == null) {
+      const raw = c.daysToOffer
+      missing.push({ n: i + 1, address: c.address, recorded: raw != null && Number.isFinite(raw) && raw >= 0 })
+      return
+    }
+    rows.push({
+      label: `${i + 1}. ${c.address}`,
+      days: toOffer,
+      subject: false,
+      valueLabel: `${int(toOffer)} ${toOffer === 1 ? 'day' : 'days'}`,
+    })
+  })
   if (rows.length < 3) return ''
   const slowest = Math.max(...rows.map((r) => r.days))
-  // The subject's bar is "days it waited and never got an offer". That figure
-  // exists only for a listing that actually failed — on a house that sold, the
-  // same arithmetic is the age of the sale, not time on market.
+  const shownSales = rows.length
+  // The subject's bar is the days it was on the market and did not sell. That
+  // figure exists only for a listing that actually failed — on a house that
+  // sold, the same arithmetic is the age of the sale, not time on market.
   const subjectDays = subjectListingFailed(a.subject) ? subjectDomDays(a.subject) : null
   const printedMedian = printedOfferMedianDays(a.market)
   const marketMedian = printedMedian != null && printedMedian > 0 ? Math.round(printedMedian) : null
   const against = subjectDaysAgainst({
     days: subjectDays,
-    status: a.subject.standardStatus,
+    status: cameOffStatus(a.subject.standardStatus, a.subject.cameOffAs),
     figures: [slowest, marketMedian],
   })
   if (against) {
@@ -472,12 +496,10 @@ export function renderDaysToOfferHtml(
       label: a.subject.streetAddress,
       days: against.days,
       subject: true,
-      // A short withdrawal is not "no offer" from the market; it is the owner
-      // taking the home off. The bar says which.
-      valueLabel:
-        against.withdrawn && !against.outran
-          ? `${int(against.days)} days, withdrawn`
-          : `${int(against.days)} days, no offer`,
+      // The bar says how the listing ended, in the MLS status's own word. The
+      // MLS does not record whether an offer came in, so "no offer" was a
+      // claim the row cannot back (reader review 2026-10-08).
+      valueLabel: `${int(against.days)} days, ${against.ended}`,
     })
   }
   const marketPlace = cleanText(a.market?.geoLabel) ?? cleanText(a.subject.city)
@@ -488,9 +510,9 @@ export function renderDaysToOfferHtml(
   const svg = daysToOfferSvg(rows, 'How fast homes like yours went', tick)
   if (!svg) return ''
   const reading = [
-    `Every sale below had an offer inside ${int(slowest)} days.`,
+    daysToOfferCaption(shownSales, slowest),
     tick ? `${possessive(marketPlace!)} median is ${int(marketMedian!)}.` : null,
-    subjectDaysReading(against, (d) => `Yours sat ${int(d)} days and never got one.`),
+    subjectDaysReading(against, (d) => `Yours sat ${int(d)} days and did not sell.`),
   ]
     .filter(Boolean)
     .join(' ')
@@ -499,9 +521,42 @@ export function renderDaysToOfferHtml(
   // wide strip in a pan box put the subject's own bar label, the punchline of
   // the chart, outside the visible width of a box nobody scrolls.
   const phone = daysToOfferPhoneSvg(rows, 'How fast homes like yours went', tick)
+  const gap = daysToOfferMissingLine(missing)
   return `<div class="szn days-wide">${svg}</div>
   ${phone ? `<div class="szn days-phone">${phone}</div>` : ''}
-  <p class="chart-read">${esc(reading)}</p>`
+  <p class="chart-read">${esc(reading)}</p>${gap ? `\n  <p class="small">${esc(gap)}</p>` : ''}`
+}
+
+/**
+ * "All six sales shown had an offer within 104 days."
+ *
+ * The count is the bars on the chart, so a sale left off cannot make the
+ * caption claim more sales than the reader can see. "Within" because the
+ * slowest bar sits exactly on the figure: Jackson's caption said "inside 146
+ * days" over a sale that took exactly 146 (reader review 2026-10-08).
+ */
+export function daysToOfferCaption(shown: number, slowest: number): string {
+  return `All ${countWord(shown)} sales shown had an offer within ${int(slowest)} ${Math.round(slowest) === 1 ? 'day' : 'days'}.`
+}
+
+/**
+ * One short line for each sale the chart leaves off, by its number on the
+ * sales table: "Sale 2, 62467 Woodsman, is not on the chart: its offer date
+ * was not recorded." A sale whose recorded offer count runs past its own
+ * listed-to-closed days says that instead, because the date is on the record
+ * and it is the dates that disagree.
+ */
+export function daysToOfferMissingLine(
+  missing: ReadonlyArray<{ n: number; address: string; recorded: boolean }>,
+): string {
+  return missing
+    .map((m) => {
+      const why = m.recorded
+        ? 'its recorded offer date does not fit its listing and closing dates'
+        : 'its offer date was not recorded'
+      return `Sale ${int(m.n)}, ${m.address}, is not on the chart: ${why}.`
+    })
+    .join(' ')
 }
 
 export function renderPhotoSetHtml(a: Pick<MarketChapterArgs, 'subject' | 'comps'>): string {
@@ -839,7 +894,7 @@ export function renderOfferTimingHtml(a: {
   const offerMedian = printedOfferMedianDays(a.market)
   const against = subjectDaysAgainst({
     days: subjectDays,
-    status: a.subject.standardStatus,
+    status: cameOffStatus(a.subject.standardStatus, a.subject.cameOffAs),
     figures: [offerMedian],
   })
   const reading = [
@@ -852,7 +907,7 @@ export function renderOfferTimingHtml(a: {
     last && (!ninety || last.days !== ninety.days)
       ? `By day ${int(last.days)}, ${last.pct.toFixed(1)} percent did.`
       : null,
-    subjectDaysReading(against, (d) => `Yours went ${int(d)} days without one.`),
+    subjectDaysReading(against, (d) => `Yours sat ${int(d)} days and did not sell.`),
   ]
     .filter(Boolean)
     .join(' ')
@@ -1026,10 +1081,12 @@ export function subjectRealizationBucket(
 /**
  * The table, with the seller's own weeks marked.
  *
- * The mark says what it is. A listing that came off without an offer does not
- * BELONG in a bucket of homes that got one — the buckets measure weeks to an
- * accepted offer — so the row it lands on is labelled "your home ran N days
- * and never got one" rather than implying it realized that share.
+ * The mark says what it is. A listing that came off unsold does not BELONG in
+ * a bucket of homes that sold — the buckets measure weeks to an accepted offer
+ * — so the row it lands on is labelled "your home ran N days and did not sell"
+ * rather than implying it realized that share. The MLS records the status, not
+ * whether an offer came in, so the label says the status (reader review
+ * 2026-10-08).
  */
 export function renderAskRealizationHtml(a: {
   market: CmaMarketContext | null
@@ -1054,7 +1111,7 @@ export function renderAskRealizationHtml(a: {
   const against = failed
     ? subjectDaysAgainst({
         days: subjectDays,
-        status: a.subject.standardStatus,
+        status: cameOffStatus(a.subject.standardStatus, a.subject.cameOffAs),
         figures: [printedOfferMedianDays(a.market)],
       })
     : null
@@ -1075,7 +1132,7 @@ export function renderAskRealizationHtml(a: {
               failed && subjectDays != null
                 ? shortWithdrawal
                   ? `your home, withdrawn after ${int(subjectDays)} days`
-                  : `your home ran ${int(subjectDays)} days and never got one`
+                  : `your home ran ${int(subjectDays)} days and did not sell`
                 : `your home`,
             )}</span>`
           : ''
@@ -1203,7 +1260,7 @@ function realizationReading(
   }
   if (mine != null && failed && subjectDays != null && subjectDays > 0) {
     bits.push(
-      `Your listing ran ${int(subjectDays)} days, which is the last row, and it never reached an offer at all.`,
+      `Your listing ran ${int(subjectDays)} days, which is the last row, and it did not sell.`,
     )
   }
   return `<p class="chart-read">${esc(bits.join(' '))}</p>`

@@ -135,10 +135,12 @@ export async function getPublicDetachedMonthly(opts: {
   geoType: 'city' | 'region' | 'neighborhood' | 'zip'
   geoSlug: string
   currentMonthKey: string
+  /** Complete months to read, newest last. The public charts read 36; a CMA month line reads 12. */
+  months?: number
 }): Promise<PublicMonthlyPoint[]> {
   const geoSlug = hyphenSlug(opts.geoSlug)
   if (!geoSlug) return []
-  const keys = completeMonthKeys(opts.currentMonthKey)
+  const keys = completeMonthKeys(opts.currentMonthKey, opts.months ?? PUBLIC_MONTHLY_MONTHS)
   if (keys.length === 0) return []
 
   const inputs = keys.flatMap((key) => {

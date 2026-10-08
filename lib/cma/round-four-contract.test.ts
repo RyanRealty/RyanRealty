@@ -21,6 +21,7 @@ import { describe, expect, it } from 'vitest'
 import { renderCmaHtml, type RenderCmaArgs } from '@/lib/cma/render'
 import { renderImmersiveCmaHtml } from '@/lib/cma/immersive'
 import {
+  NON_SOLICITATION_LISTED_SENTENCE,
   NON_SOLICITATION_SENTENCE,
   WITHDRAWN_AGREEMENT_SENTENCE,
   closingIsNonSoliciting,
@@ -181,8 +182,10 @@ describe('A — the net chapter itemises, or prints no figure at all', () => {
 
   it('itemises every line with its source, and the net is below the list', () => {
     const html = sellerNetBodyHtml(withSheet(NET_SHEET))
+    // The cover owns the dollars (Matt lock 2026-09-12): the column head
+    // names the price in words.
     expect(html).toContain('At the list price')
-    expect(html).not.toContain('$435,000')
+    expect(html).not.toContain('At $435,000')
     expect(html).toContain('Listing agreement, 5.0%')
     expect(html).toContain('Payoff quote you provided')
     expect(html).toContain('What you keep')
@@ -321,7 +324,11 @@ describe('D — the closing never solicits a listing it may not solicit', () => 
     expect(buttons).not.toContain('cma-book')
     expect(buttons).not.toContain('Talk with')
     for (const html of [letter(active), immersive(active)]) {
-      expect(html).toContain(NON_SOLICITATION_SENTENCE)
+      // The row says another brokerage holds the listing, so the closing says
+      // so as a fact, not "If your home is listed" (3062 NW Kelly Hill,
+      // reader review 2026-10-08).
+      expect(html).toContain(NON_SOLICITATION_LISTED_SENTENCE)
+      expect(html).not.toContain(NON_SOLICITATION_SENTENCE)
       expect(html).not.toContain('Bring this report.')
       expect(html).not.toContain('Sorry this listing did not sell.')
       expect(html).not.toContain('did not sell this go-around')

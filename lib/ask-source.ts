@@ -20,9 +20,12 @@
  *      untouched when it is not, so an unattributed submit never grows an
  *      `ask_source: undefined` key that GA4 would report as a distinct value.
  *
- * WHY THE KEY IS `ask_source` AND NOT `source`. /sell's submit already fires
- * `trackEvent('generate_lead', { source: 'seller_lp', ... })`
- * (app/sell/_v3/SellValueForm.tsx). `source` on that event is taken, and it
+ * Since 2026-10-08 the one GA4 generate_lead is the server's: /sell passes the
+ * stamp to submitSellerLPForm, which sends it as `ask_source` on that event.
+ *
+ * WHY THE KEY IS `ask_source` AND NOT `source`. /sell's lead event already
+ * carried `source: 'seller_lp'` (app/sell/_v3/SellValueForm.tsx, before the
+ * server-only move). `source` on that event is taken, and it
  * means something else — WHICH FORM this was, not WHICH CONTROL sent the
  * visitor to it. Merging a second meaning into the same key would overwrite a
  * live dimension every existing seller-lead report reads, and the two facts are

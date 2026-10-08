@@ -27,7 +27,7 @@ import {
   type BpoCompInsert,
 } from '@/lib/data/bpo/reads'
 import { resolveCmaSubject } from '@/lib/cma/subject'
-import { selectComps, MIN_COMPS } from '@/lib/cma/comps'
+import { brokerCompRefusal, selectComps, MIN_COMPS } from '@/lib/cma/comps'
 import { adjustComps, computePricing } from '@/lib/cma/pricing'
 import { pricingFailureMessage } from '@/lib/pricing/price-set'
 import { loadBpoEngineInputs, priceBpoAdjusted, bpoCompMap } from '@/lib/bpo/engine'
@@ -124,7 +124,17 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
     const { selection, market, site, marketIndex } = await loadBpoEngineInputs(subject)
     void selectComps
     if (selection.comps.length < MIN_COMPS) {
-      const err = `Only ${selection.comps.length} qualifying closed comps found (minimum ${MIN_COMPS}). ${selection.trace.join(' ')}`
+      // The CMA build's sentence: it leads with the path that held the most
+      // price-setting sales, by address (the facts walk rides on a listings
+      // fallback as facts_path), then the search trace for the record.
+      const err = `${brokerCompRefusal({
+        diagnostics: selection.diagnostics,
+        found: selection.comps.length,
+        minComps: MIN_COMPS,
+        subjectBaths: subject.baths,
+        subjectCity: subject.city,
+        sales: selection.comps.map((c) => c.address),
+      })} ${selection.trace.join(' ')}`
       await recordFailure(slug, err)
       return { ok: false, error: err, slug }
     }
@@ -141,7 +151,8 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
       selection,
       minComps: MIN_COMPS,
       exclusivePocket: selectionIsExclusivePocket(selection.tiersUsed),
-      judge: (comps) => judgeComps(subject, comps, market),
+      // The same one 20% price line the comp search admitted on (Matt 2026-10-08).
+      judge: (comps) => judgeComps(subject, comps, market, { priceAnchor: selection.diagnostics?.price_anchor ?? null }),
     })
     selection.comps = review.candidates
     if (review.pricingSales) selection.pricingSales = review.pricingSales
@@ -342,6 +353,7 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
       subjectBathsHalf: subject.bathsHalf ?? null,
       subjectBeds: subject.beds,
       subjectSubdivisionSlug: subject.subdivisionSlug ?? null,
+      subjectGround: subject,
       minComps: MIN_COMPS,
       marketContextPresent: market != null,
     })

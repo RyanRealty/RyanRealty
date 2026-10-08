@@ -275,8 +275,12 @@ describe('pricing comps stay on the product the audit can defend', () => {
         "Exceptional opportunity on Bend's highly desirable Westside! This beautifully updated duplex features a 3 bed/2 bath upper unit and a 1 bed/1 bath lower unit.",
     })
     const rented = sfr('both-units', { publicRemarks: 'Duplex, both units rented.' })
+    // A casita home is still detached for rule 23 (not a multi-unit), but its
+    // remarks state a second unit, so since Matt 2026-10-08 ("ADU sale
+    // skips") it never prices a subject whose remarks state none. This case
+    // used to keep it; the ADU wall below drops it.
     const casita = sfr('casita', { publicRemarks: 'Main home with a detached casita; both units freshly painted.' })
-    const plain = ['saginaw-1', 'saginaw-2', 'saginaw-3', 'saginaw-4'].map((k) => sfr(k, { ownPlat: true }))
+    const plain = ['saginaw-1', 'saginaw-2', 'saginaw-3', 'saginaw-4', 'saginaw-5'].map((k) => sfr(k, { ownPlat: true }))
     const selected = [duplex, rented, casita, ...plain]
     const gated = pricingCompsAfterJudgment({
       selected,
@@ -286,8 +290,8 @@ describe('pricing comps stay on the product the audit can defend', () => {
       minComps: MIN_COMPS,
       asOfYear: 2026,
     })
-    expect(gated.droppedProduct).toBe(2)
-    expect(gated.comps.map((c) => c.listingKey)).toEqual(['casita', 'saginaw-1', 'saginaw-2', 'saginaw-3', 'saginaw-4'])
+    expect(gated.droppedProduct).toBe(3)
+    expect(gated.comps.map((c) => c.listingKey)).toEqual(['saginaw-1', 'saginaw-2', 'saginaw-3', 'saginaw-4', 'saginaw-5'])
     expect(gated.shortage).toBe(false)
     // Symmetric: a duplex subject does not price from detached sales either.
     const reverse = pricingCompsAfterJudgment({
@@ -300,6 +304,62 @@ describe('pricing comps stay on the product the audit can defend', () => {
     })
     expect(reverse.comps.map((c) => c.listingKey)).toEqual(['tenth-1531', 'both-units'])
     expect(reverse.shortage).toBe(true)
+  })
+})
+
+describe('a sale with an ADU never prices a home without one at the backstop (Matt 2026-10-08, "ADU sale skips")', () => {
+  // 644 Norton's own remarks, and 1648 Pheasant's: "space to build an ADU" and
+  // "eyeing ADU rental income" are prospective, so Pheasant has no ADU.
+  const NORTON =
+    'Excellent Midtown Bend multi-unit property featuring a permitted ADU, offering flexibility for a variety of living or investment possibilities. Both units feature attractive finishes and functional living spaces.'
+  const PHEASANT =
+    "Single level house in Midtown Bend on a huge lot with room to dream. Outside, you've got space to build an ADU, a 2 car garage, RV parking. Whether you're buying your first home, downsizing, or eyeing ADU rental income, this is a lot of house and land."
+  const norton = sfr('norton-644', { publicRemarks: NORTON })
+  const plain = ['p1', 'p2', 'p3', 'p4', 'p5'].map((k) => sfr(k))
+  const selected = [norton, ...plain]
+
+  it('drops the ADU sale for a subject whose remarks only hope for one, even when the review kept it', () => {
+    const gated = pricingCompsAfterJudgment({
+      selected,
+      vetted: selected,
+      verdicts: selected.map((c) => kept(c.listingKey)),
+      subject: { ...SFR_SUBJECT, publicRemarks: PHEASANT },
+      minComps: MIN_COMPS,
+      asOfYear: 2026,
+    })
+    expect(gated.droppedProduct).toBe(1)
+    expect(gated.comps.map((c) => c.listingKey)).toEqual(['p1', 'p2', 'p3', 'p4', 'p5'])
+    expect(gated.shortage).toBe(false)
+  })
+
+  it('keeps both kinds for a subject whose remarks state its own ADU (not symmetric)', () => {
+    const gated = pricingCompsAfterJudgment({
+      selected,
+      vetted: selected,
+      verdicts: selected.map((c) => kept(c.listingKey)),
+      subject: { ...SFR_SUBJECT, publicRemarks: 'Craftsman with a permitted detached ADU over the garage.' },
+      minComps: MIN_COMPS,
+      asOfYear: 2026,
+    })
+    expect(gated.droppedProduct).toBe(0)
+    expect(gated.comps.map((c) => c.listingKey)).toEqual(['norton-644', 'p1', 'p2', 'p3', 'p4', 'p5'])
+  })
+
+  it('applies with no review at all, and an ADU sale is not a hard product exclusion by its reason words alone', () => {
+    const gated = pricingCompsAfterJudgment({
+      selected,
+      vetted: [],
+      verdicts: [],
+      subject: { ...SFR_SUBJECT, publicRemarks: PHEASANT },
+      minComps: MIN_COMPS,
+      asOfYear: 2026,
+    })
+    expect(gated.comps.map((c) => c.listingKey)).toEqual(['p1', 'p2', 'p3', 'p4', 'p5'])
+    // The multi-unit and ADU words are read off the remarks by the readers,
+    // not off the review's reason text.
+    expect(
+      isHardProductExclusion({ listingKey: 'x', tier: 'exclude', basis: 'size', reason: 'A duplex 30% larger than the subject.' }),
+    ).toBe(false)
   })
 })
 
