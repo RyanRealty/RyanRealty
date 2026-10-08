@@ -653,9 +653,12 @@ describe('rule 22: a letter held because the ask sat inside the range tells one 
     const lead = whatItsWorthLead(subject, jackson(), { asOfIso: '2026-10-07', hasFinalCycle: true }, comps, finalCycle)
     // Rule 22 says rule 26's two facts in rule 26's shape (reader review
     // 2026-10-08): the band the sales support, then the last ask, that it sat
-    // inside that band and did not sell, and how the listing came off.
+    // inside that band and did not sell, and how the listing came off. The
+    // failed-ask ceiling set this $624,000 cover, and a held letter prints no
+    // clamp sentence, so the sales set the range (lib/cma/sales-role.ts,
+    // reader review 2026-10-08, 62475 Woodsman).
     expect(lead).toBe(
-      'The three sales that set the price support $598,620 to $648,772. The last ask of $639,000 was inside that range and did not sell. The listing expired after 227 days.',
+      'The three sales that set the range support $598,620 to $648,772. The last ask of $639,000 was inside that range and did not sell. The listing expired after 227 days.',
     )
     for (const bad of FORBIDDEN) expect(lead).not.toContain(bad)
     expect(lead).not.toMatch(/[—–]/)

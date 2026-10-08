@@ -1508,6 +1508,7 @@ export function listingTimelineReading(input: {
     status: t.status,
     cameOff: t.cameOff ?? null,
     segments: timelineSegments(t),
+    asks: t.steps.map((s) => s.ask),
   })
 }
 

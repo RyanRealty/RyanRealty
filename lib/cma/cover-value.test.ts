@@ -172,12 +172,15 @@ describe('rangeSpreadCauseSentence names the exclusion that happened', () => {
     expect(sentence).not.toMatch(/furthest/)
   })
 
-  it('says the high and low were set aside so one sale cannot set the range', () => {
+  it('says the highest and the lowest sale were set aside so no single sale sets the range', () => {
     const sentence = rangeSpreadCauseSentence({
       ...wide,
       rangeRule: { rule: 'trimmed-one-each-end', n: 6, kept: 4, endpointPpsfAside: 0, endpointWeightAside: 0 },
     } as unknown as import('@/lib/cma/types').CmaPricing)
-    expect(sentence).toContain('one sale cannot set the range')
+    // "the sales at each end of the prices so one sale cannot set the range"
+    // read as a puzzle (reader review 2026-10-08).
+    expect(sentence).toContain('after setting aside the highest and the lowest sale, so no single sale sets the range.')
+    expect(sentence).not.toContain('at each end of the prices')
     expect(sentence).not.toContain('still carries weight')
     expect(sentence).not.toMatch(/furthest/)
   })

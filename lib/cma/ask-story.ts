@@ -78,18 +78,49 @@ export function askAgainstRangeSentence(
   ask: number | null,
   rangeLow: number | null,
   rangeHigh: number | null,
+  opts?: {
+    /**
+     * The ask measured is the listing's last, and an earlier ask was a
+     * different price. 2382 Jackson asked $699,000, $679,000 and $659,000
+     * before $639,000, and "You were asking 0.6 percent above the top of the
+     * range" measured only the $639,000 (reader review 2026-10-08). The
+     * sentence then says it is the last ask.
+     */
+    lastOfSeveral?: boolean
+  },
 ): string {
   if (ask == null || !(ask > 0) || rangeLow == null || rangeHigh == null) return ''
   const low = Math.min(rangeLow, rangeHigh)
   const high = Math.max(rangeLow, rangeHigh)
   if (!(low > 0) || !(high > 0)) return ''
+  const last = opts?.lastOfSeveral === true
   if (ask > high) {
-    return `You were asking ${pct1((ask - high) / high)} percent above the top of the range the sales support.`
+    const pct = pct1((ask - high) / high)
+    return last
+      ? `Your last ask was ${pct} percent above the top of the range the sales support.`
+      : `You were asking ${pct} percent above the top of the range the sales support.`
   }
   if (ask < low) {
-    return `You were asking ${pct1((low - ask) / low)} percent below the bottom of the range the sales support.`
+    const pct = pct1((low - ask) / low)
+    return last
+      ? `Your last ask was ${pct} percent below the bottom of the range the sales support.`
+      : `You were asking ${pct} percent below the bottom of the range the sales support.`
   }
-  return 'You were asking inside the range the sales support.'
+  return last ? 'Your last ask was inside the range the sales support.' : 'You were asking inside the range the sales support.'
+}
+
+/**
+ * True when `ask` is the last of the asks the listing carried and an earlier
+ * one was a different price, read off the same asks the story is told from
+ * (oldest first). False when there is one price, or when the asks are not
+ * known.
+ */
+export function measuresLastOfSeveralAsks(ask: number | null | undefined, asks: readonly number[] | null | undefined): boolean {
+  if (ask == null || !(ask > 0)) return false
+  const seen = (asks ?? []).filter((n) => Number.isFinite(n) && n > 0).map((n) => Math.round(n))
+  if (seen.length < 2) return false
+  if (seen[seen.length - 1] !== Math.round(ask)) return false
+  return seen.some((n) => n !== Math.round(ask))
 }
 
 /**
@@ -461,6 +492,12 @@ export function askStoryReading(input: {
    * the days at a price is made.
    */
   segments?: ReadonlyArray<{ ask: number; days: number | null }> | null
+  /**
+   * Every ask the listing carried, oldest first, whether or not their days
+   * are known (the timeline's steps). Read with `segments` only to say
+   * whether the ask measured is the last of several prices.
+   */
+  asks?: readonly number[] | null
 }): string {
   // A LISTING THAT DID NOT OUTLAST THE MEDIAN DID NOT SIT (reader review
   // 2026-10-07). "Your home sat 25 days without an offer" beside a 26-day
@@ -507,7 +544,12 @@ export function askStoryReading(input: {
   const cls = askGapClass(input.ask, input.rangeLow, input.rangeHigh)
   if (!cls) return ''
   const join = (bits: string[]) => bits.filter((s) => s.trim()).join(' ')
-  const against = askAgainstRangeSentence(input.ask, input.rangeLow, input.rangeHigh)
+  // Measured on the last ask only: say so when an earlier ask was another price.
+  const segmentAsks = (input.segments ?? []).map((s) => s.ask)
+  const against = askAgainstRangeSentence(input.ask, input.rangeLow, input.rangeHigh, {
+    lastOfSeveral:
+      measuresLastOfSeveralAsks(input.ask, segmentAsks) || measuresLastOfSeveralAsks(input.ask, input.asks),
+  })
   const medianLine = medianSentence(cls, input.city, input.marketMedianDom)
   if (short && input.days != null) return join([against, plainDays(input.days), medianLine])
   if (cls === 'far-above') return join([against, satLine(cls), medianLine])
