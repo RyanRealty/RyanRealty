@@ -165,7 +165,9 @@ async function bridgeIdentifiedPerson(
     clientId: ga4ClientId,
     eventParams: {
       person_id: id,
-      source: 'email-click',
+      identify_source: 'email-click',
+      source: 'crm',
+      medium: 'email',
     },
   }).catch((e) => console.warn('[identity-bridge] GA4 event failed:', e))
 

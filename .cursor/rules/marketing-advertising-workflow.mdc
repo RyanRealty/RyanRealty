@@ -14,6 +14,7 @@ Use this rule whenever the user asks for **marketing**, **advertising**, **paid 
 3. **`docs/FB_SELLER_CAMPAIGN_PLAYBOOK.md`** — Launch playbook when the task is “how do we run the seller campaign.”
 4. **`.cursor/skills/facebook-seller-growth/SKILL.md`** — Recurring optimization routine; append outcomes to **`docs/marketing/facebook-seller-growth-LEARNINGS.md`** after a cycle.
 5. **`social_media_skills/facebook-lead-gen-ad/SKILL.md`** — When building lead-gen **creative**, form fields, or Ads Manager steps for report-style lead magnets.
+6. **`.cursor/rules/utm-convention.mdc`** — Closed UTM vocab and `buildTrackedUrl` for every outbound ryan-realty.com link (GA4 source/medium/campaign).
 
 ## Browsable diagram export
 

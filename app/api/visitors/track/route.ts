@@ -43,7 +43,7 @@ import { recordGpcSuppression } from '@/lib/data/crm/recordGpcSuppression'
 // bridge, has to be the mechanism.
 import { AGENT_ATTRIB_COOKIE } from '@/lib/agent-attribution'
 import { resolveVisitBrokerSlug, visitBrokerGa4Fields } from '@/lib/analytics/visit-broker'
-import { stripIdentityParams, visitorEventMetadata } from './strip-identity'
+import { stripGa4UrlParams, stripIdentityParams, visitorEventMetadata } from './strip-identity'
 // P7 identity loop (2026-09-23, docs/TRACKING_POLICY.md "The known-contact
 // identity loop"): a SIGNED ?_pid= token on a link we sent identifies the visit
 // here, server-side, on the landing page view; the durable rr_vid and the
@@ -76,7 +76,7 @@ import {
   hasAutomationMarker,
   hasInternalUserCookie,
 } from '@/lib/analytics/ga-suppression'
-import { isNonProductionPageLocation } from '@/lib/analytics/non-production-host'
+import { isNonProductionPageLocation, isNonProductionRequestHost } from '@/lib/analytics/non-production-host'
 import { CONSENT_COOKIE, effectiveTrackingConsent } from '@/lib/identity/consent'
 
 export const runtime = 'nodejs'
@@ -378,9 +378,20 @@ export async function POST(request: NextRequest) {
   // A local `next build && next start` holds production credentials, so its
   // tracker wrote to the production visitor tables: 2,594 sessions landing on
   // 127.0.0.1 / localhost in the 2026-10-05 audit, 2,306 of them not flagged.
-  // The same host rule the GA4 mirror applies (isNonProductionPageLocation):
-  // a page on localhost, 127.0.0.1 or a *.vercel.app preview records nothing.
-  if (isNonProductionPageLocation(pageUrl)) {
+  // The same host rule the GA4 mirror applies: a page on localhost, 127.0.0.1
+  // (any port), a LAN IP, [::1], or a *.vercel.app preview records nothing.
+  // Also the request Host: a client that spoofs pageUrl as ryan-realty.com
+  // while posting to a local `next start` still drops.
+  const requestHost =
+    request.headers.get('host') ||
+    (() => {
+      try {
+        return new URL(request.url).host
+      } catch {
+        return null
+      }
+    })()
+  if (isNonProductionPageLocation(pageUrl) || isNonProductionRequestHost(requestHost)) {
     return NextResponse.json(
       { ok: true, dropped: true, reason: 'non_production_host' },
       { headers: corsHeaders(origin) },
@@ -738,9 +749,9 @@ export async function POST(request: NextRequest) {
           eventParams: {
             // Identity-stripped: GA4 is a third party and a contact id must not
             // leave the building inside a URL (same rule as the stored row).
-            page_location: storedPageUrl,
+            page_location: stripGa4UrlParams(pageUrl) ?? storedPageUrl,
             page_title: body.pageTitle ?? undefined,
-            page_referrer: stripIdentityParams(body.referrer),
+            page_referrer: stripGa4UrlParams(body.referrer),
             page_path: pagePath,
             page_type: pageType,
             ...ga4SessionParams(visit, sessionId),
@@ -864,11 +875,11 @@ export async function POST(request: NextRequest) {
   // fail-closed long before this line.
   //
   // A TAP ON A COMP COUNTS TOO (2026-09-07). Every address, place and CTA the
-  // document prints goes through `trackedDocLink`, which stamps
-  // `utm_campaign=<cmaSlug>` — so a seller who skimmed the report and then
-  // opened three comps on the site is the strongest signal the send produced,
-  // and it arrives on a listing page, not on `/cma/<slug>`. The campaign tag is
-  // what makes that arrival attributable to the document. Same rail, same
+  // document prints goes through `trackedDocLink`, which stamps `rr_doc=<cmaSlug>`
+  // (and, on links already sent, the legacy `utm_campaign=<cmaSlug>`). A seller
+  // who skimmed the report and then opened three comps on the site is the
+  // strongest signal the send produced, and it arrives on a listing page, not
+  // on `/cma/<slug>`. `cmaCampaignFromUrl` reads that identity. Same rail, same
   // `return-visit:cma:<slug>` kind, so the queueBrokerAlert dedupe still means
   // ONE alert per document per contact, ever — a reader who opens five comps
   // does not text the broker five times.
