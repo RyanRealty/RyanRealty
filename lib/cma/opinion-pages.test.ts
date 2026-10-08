@@ -811,9 +811,13 @@ describe('the map and the pages around it (reader review 2026-10-08)', () => {
       expect(p.body).not.toContain('this map')
       expect(p.body).not.toContain('pin-map')
     }
-    expect(unsold.toc).toBe('No other listing like yours near you came off unsold.')
-    expect(unsold.body).toContain('so they are not compared here.')
-    expect(compete.body).toContain('so it is not compared here.')
+    // Two homes came off and neither is like this one, so the heading says
+    // that, not that none came off (1355 Jacksonville, reader review 2026-10-08).
+    expect(unsold.toc).toBe('The other listings near you that did not sell are not like yours.')
+    // The stored rows carry no reason per home, so neither page names one.
+    expect(unsold.body).toContain('is enough like this home to compare here.')
+    expect(compete.body).toContain('It is not enough like this home to compare here.')
+    for (const p of [unsold, compete]) expect(p.body).not.toContain('bedrooms, bathrooms, size or age')
     // No table, so the trace prints as the count's source, not a caption.
     expect(compete.body).toContain(
       '<p class="small">Source: homes for sale and under contract in Diamond Bar Ranch between $386,000 and $472,000, from the Oregon Data Share MLS as of Sep 5, 2026.</p>',

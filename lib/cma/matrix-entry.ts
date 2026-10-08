@@ -516,7 +516,10 @@ export function activeEntries(
       ),
       photoUrl: r.photoUrl?.trim() || null,
       outcome: [
-        pending ? `under contract at ${shortUsd(r.listPrice)}` : `asking ${shortUsd(r.listPrice)}`,
+        // The MLS carries a pending home's LIST price, not its contract price
+        // (reader review 2026-10-08: "under contract at $799K" read as the
+        // price it went under contract at).
+        pending ? `listed at ${shortUsd(r.listPrice)}, under contract` : `asking ${shortUsd(r.listPrice)}`,
         dom != null
           ? pending
             ? `offer in ${int(dom)} ${dom === 1 ? 'day' : 'days'}`
@@ -591,17 +594,20 @@ export function subjectEntry(input: {
   })
   const status = (s.standardStatus ?? '').trim().toLowerCase()
   const cameOff = /^(expired|withdrawn|cancell?ed)/.test(status)
-  // Capitalised, unlike the other three families: this cell is a statement
-  // about the reader's own home rather than a label under a pin.
+  // Lower case, like the other three families. The outcome is a label in a
+  // cell or under a pin, beside the peers' own ("came off after 96 days"), and
+  // a sentence that opens with it capitalises it there. 2745 Aldrich printed
+  // "Came off after 108 days" in the subject's column beside a peer's "came
+  // off after 96 days" (reader review 2026-10-08).
   const outcome = cameOff
     ? input.domDays != null
-      ? `Came off after ${int(input.domDays)} ${input.domDays === 1 ? 'day' : 'days'}`
-      : 'Came off unsold'
+      ? `came off after ${int(input.domDays)} ${input.domDays === 1 ? 'day' : 'days'}`
+      : 'came off unsold'
     : input.printableAsk != null && input.printableAsk > 0
-      ? `Listed ${usd(input.printableAsk)}${
+      ? `listed ${usd(input.printableAsk)}${
           input.domDays != null ? ` · ${int(input.domDays)} ${input.domDays === 1 ? 'day' : 'days'}` : ''
         }`
-      : 'Not on the market'
+      : 'not on the market'
   const remarks = remarksOf(s)
   return {
     key: 'subject',

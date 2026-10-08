@@ -32,10 +32,8 @@ import {
   usd,
   usdSigned,
 } from '@/lib/cma/render-blocks'
-import {
-  shortUsd,
-  type PricePathRange,
-} from '@/lib/cma/price-path'
+import { type PricePathRange } from '@/lib/cma/price-path'
+import { compactUsdLabels } from '@/lib/cma/compact-usd'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import { daysOnMarketFrom, liveListingDays } from '@/lib/cma/listing-history-line'
 import { pacificDay } from '@/lib/cma/listing-status'
@@ -497,9 +495,11 @@ function arcLines(text: string): string[] {
 
 export function askArcCell(entry: MatrixEntry): string {
   const asks: string[] = []
-  if (entry.firstAsk != null && entry.firstAsk > 0) asks.push(shortUsd(entry.firstAsk))
+  // Two different asks never print the same label ("$1.62M → $1.62M").
+  const money = compactUsdLabels([entry.firstAsk, entry.lastAsk])
+  if (entry.firstAsk != null && entry.firstAsk > 0) asks.push(money(entry.firstAsk))
   if (entry.lastAsk != null && entry.lastAsk > 0 && entry.lastAsk !== entry.firstAsk) {
-    asks.push(shortUsd(entry.lastAsk))
+    asks.push(money(entry.lastAsk))
   }
   const path = asks.join(' → ')
   const full = entry.outcome.trim() || entry.endLabel.trim()

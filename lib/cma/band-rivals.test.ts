@@ -414,7 +414,7 @@ describe('buildBandRivalSet — the competition is the neighborhood, never the c
     // "The nearest N" counts the homes drawn for sale: two, not the three
     // cards with the one under contract (rule 17).
     expect(set.sentence).toBe(
-      'The nearest two like yours are for sale in Old Bend between $350,000 and $428,000. 14 are under contract.',
+      'The nearest two like yours are for sale in Old Bend between $350,000 and $428,000. 14 other homes like yours are under contract.',
     )
     expect(set.sentence).not.toContain('27 homes')
     expect(set.rivals.map((r) => r.address)).toEqual(['10 Aspen', '20 Birch', '30 Cedar'])
@@ -494,7 +494,7 @@ describe('buildBandRivalSet — the competition is the neighborhood, never the c
     expect(set.rivals).toEqual([])
     expect(set.sentence).toBe(
       // countWord spells one through nine; past that the letter prints digits.
-      'No home like yours in Rooster Rock or Madison Park is for sale or under contract between $494,000 and $604,000. 12 other homes are listed there in that range, but none is close to this home in bedrooms, bathrooms, size or age, so they are not compared here.',
+      'No home like yours in Rooster Rock or Madison Park is for sale or under contract between $494,000 and $604,000. 12 other homes are listed there in that range. None is enough like this home to compare here.',
     )
     expect(set.sentence).not.toMatch(/[—–]/)
     expect(set.unlikeCount).toBe(12)
@@ -542,7 +542,7 @@ describe('buildBandRivalSet — the competition is the neighborhood, never the c
       ],
     })
     expect(set.sentence).toBe(
-      '2 homes like yours are for sale in Rooster Rock and Madison Park between $494,000 and $604,000. 1 is under contract.',
+      '2 homes like yours are for sale in Rooster Rock and Madison Park between $494,000 and $604,000. 1 other home like yours is under contract.',
     )
     expect(set.sentence).not.toMatch(/[—–]/)
   })
@@ -558,9 +558,9 @@ describe('buildBandRivalSet — the competition is the neighborhood, never the c
       rivals: [],
     })
     expect(one.sentence).toBe(
-      'No home like yours in Rooster Rock or Madison Park is for sale or under contract between $494,000 and $604,000. One other home is listed there in that range, but it is not close to this home in bedrooms, bathrooms, size or age, so it is not compared here.',
+      'No home like yours in Rooster Rock or Madison Park is for sale or under contract between $494,000 and $604,000. One other home is listed there in that range. It is not enough like this home to compare here.',
     )
-    expect(one.sentence).not.toContain('none is close')
+    expect(one.sentence).not.toContain('None is')
     expect(one.sentence).not.toMatch(/[—–]/)
     const two = buildBandRivalSet({
       area: ROOSTER,
@@ -572,7 +572,7 @@ describe('buildBandRivalSet — the competition is the neighborhood, never the c
       rivals: [],
     })
     expect(two.sentence).toBe(
-      'No home like yours in Rooster Rock or Madison Park is for sale or under contract between $494,000 and $604,000. Two other homes are listed there in that range, but none is close to this home in bedrooms, bathrooms, size or age, so they are not compared here.',
+      'No home like yours in Rooster Rock or Madison Park is for sale or under contract between $494,000 and $604,000. Two other homes are listed there in that range. Neither is enough like this home to compare here.',
     )
   })
 
@@ -673,7 +673,7 @@ describe('buildBandRivalSet — the competition is the neighborhood, never the c
     expect(set.rivals.filter((r) => r.status === 'Active')).toHaveLength(8)
     expect(set.rivals.filter((r) => r.status === 'Pending')).toHaveLength(2)
     expect(set.sentence).toBe(
-      'The nearest eight like yours are for sale in Rooster Rock and Madison Park between $494,000 and $604,000. 2 are under contract.',
+      'The nearest eight like yours are for sale in Rooster Rock and Madison Park between $494,000 and $604,000. 2 other homes like yours are under contract.',
     )
     expect(set.sentence).not.toContain('nearest ten')
   })
