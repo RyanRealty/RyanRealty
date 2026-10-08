@@ -159,9 +159,9 @@ describe('a held letter reads the cover number as the price under review, everyw
     expect(text).not.toMatch(/expect it to sell near/)
   })
 
-  it('ask-below-band (915 Saginaw shape): the rule 26 lead is unchanged', () => {
+  it('ask-below-band (915 Saginaw shape): the rule 26 lead names the sales that set the range, not the price', () => {
     const text = visible(renderCmaHtml(held('ask-below-band')).html)
-    expect(text).toMatch(/The five sales that set the price support \$[\d,]+ to \$[\d,]+\. Buyers passed at the last ask of \$429,000\. The listing /)
+    expect(text).toMatch(/The five sales that set the range support \$[\d,]+ to \$[\d,]+\. Buyers passed at the last ask of \$429,000\. The listing /)
     expect(text).not.toMatch(/\bcapped\b|too high|already failed to sell/i)
   })
 })

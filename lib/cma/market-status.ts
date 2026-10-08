@@ -690,6 +690,13 @@ export type CmaExpiredPeerSet = {
   shortfall: boolean
   sentence: string
   peers: CmaExpiredPeer[]
+  /**
+   * The list-price window the read counted (marketAreaPriceBand of the list
+   * the competition was read around). `areaTotal` counts only homes listed
+   * inside it, so a sentence that says that count names it. Absent on rows
+   * built before 2026-10-08.
+   */
+  priceBand?: { lo: number; hi: number } | null
 }
 
 function usd(n: number): string {
@@ -822,6 +829,8 @@ export function buildExpiredPeerSet(input: {
    * older cycle that came off. The address is enough. The listing keys differ.
    */
   liveAddresses?: readonly (string | null | undefined)[]
+  /** The list-price window `rows` were read inside (getCmaAreaUnsoldCycles priceLo..priceHi). */
+  priceBand?: { lo: number; hi: number } | null
 }): CmaExpiredPeerSet {
   const asOf = input.asOf ?? new Date()
   const liveNorms = new Set(
@@ -931,9 +940,41 @@ export function buildExpiredPeerSet(input: {
         shortfall,
         likeYours,
         subjectCameOff: input.subjectCameOff === true,
+        priceBand: input.priceBand ?? null,
       }) + roomNote,
     peers: withWhy,
+    ...(input.priceBand ? { priceBand: { lo: input.priceBand.lo, hi: input.priceBand.hi } } : {}),
   }
+}
+
+/**
+ * "Two homes in Northwest Townsite, Grandview, Highland and Bonne Home listed
+ * between $403,000 and $1,356,000 came off the market without selling in the
+ * last 18 months. None were close to this home ..."
+ *
+ * THE COUNT NAMES THE WINDOW IT COUNTED (reader review, 1355 Jacksonville and
+ * 2745 Aldrich, 2026-10-08). The read behind it is held to a list-price window
+ * (marketAreaPriceBand, 0.55 to 1.85 times the list the competition was read
+ * around); four more homes in Jacksonville's area came off unsold outside it,
+ * so "Two homes in ... came off the market" was false as written. With no
+ * window on the row there is no count it can truthfully say, so it says that
+ * homes came off near this price and none were close, without a number.
+ */
+export function unsoldAreaTotalSentence(input: {
+  area: CompArea
+  areaTotal: number
+  windowMonths: number
+  priceBand: { lo: number; hi: number } | null
+}): string {
+  const where = compAreaIn(input.area)
+  const w = monthsWord(input.windowMonths)
+  if (!input.priceBand) {
+    return `Homes ${where} came off the market without selling in the last ${w} months. None of those near this price were close to this home in bedrooms, bathrooms, size or age, so they are not compared here.`
+  }
+  const cameOff = input.areaTotal
+  const came = cameOff === 1 ? 'One home' : `${countWord(cameOff, true)} homes`
+  const listed = `listed between ${usd(input.priceBand.lo)} and ${usd(input.priceBand.hi)}`
+  return `${came} ${where} ${listed} came off the market without selling in the last ${w} months. None were close to this home in bedrooms, bathrooms, size or age, so they are not compared here.`
 }
 
 function peerSetSentence(input: {
@@ -947,6 +988,7 @@ function peerSetSentence(input: {
   shortfall: boolean
   likeYours: boolean
   subjectCameOff?: boolean
+  priceBand?: { lo: number; hi: number } | null
 }): string {
   const where = compAreaIn(input.area)
   const whereOr = compAreaIn(input.area, { negative: true })
@@ -960,8 +1002,15 @@ function peerSetSentence(input: {
   if (n === 0) {
     const cameOff = input.areaTotal ?? 0
     if (cameOff > 0) {
-      const came = cameOff === 1 ? 'One home' : `${countWord(cameOff, true)} homes`
-      return `${came} ${where} came off the market without selling in the last ${w} months. None were close to this home in bedrooms, bathrooms, size or age, so they are not compared here.`
+      // The count is of homes inside the read's list-price window, so the
+      // sentence says the window (unsoldAreaTotalSentence). A count with no
+      // window to name is not said at all.
+      return unsoldAreaTotalSentence({
+        area: input.area,
+        areaTotal: cameOff,
+        windowMonths: input.windowMonths,
+        priceBand: input.priceBand ?? null,
+      })
     }
     // The subject is the home that came off, so the sentence says no OTHER
     // home did. It used to say nothing, which left the chapter as one line

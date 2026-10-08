@@ -50,8 +50,15 @@ const esc = escapeHtml
 
 export const usd = formatPriceExact
 
+/**
+ * A signed dollar move, to the dollar. A move that rounds to nothing prints
+ * "$0" like every other zero in its row: 2258 6th's date move of +$0.21
+ * printed "+$0" beside four columns of "$0" (reader review, 915 Saginaw,
+ * 2026-10-08), a sign on a figure with nothing to sign.
+ */
 export function usdSigned(n: number): string {
-  if (n === 0) return '$0'
+  if (!Number.isFinite(n)) return usd(n)
+  if (Math.round(Math.abs(n)) === 0) return '$0'
   const abs = usd(Math.abs(n))
   return n > 0 ? `+${abs}` : `−${abs}`
 }

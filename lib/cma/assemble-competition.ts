@@ -445,6 +445,9 @@ export function assembleExpiredPeers(args: {
           closedSaleAddresses: competition.renderComps.map((c) => c.address),
           subjectCameOff: args.lastCycleFailed,
           liveAddresses: (competition.bandRivals?.rivals ?? []).map((rival) => rival.address),
+          // The list-price window the unsold read counted, so the sentence
+          // that says its count names it (reader review 2026-10-08).
+          priceBand: competition.peerBand,
         })
       : null
   return { expiredPeers, compsLookbackMonths }

@@ -19,7 +19,8 @@
 
 import { escapeHtml } from '@/lib/cma/render-blocks'
 import { sanitizeLetterEmDash } from '@/lib/cma/voice-sanitize'
-import type { CmaPricing } from '@/lib/cma/types'
+import type { CmaAdjustedComp, CmaPricing } from '@/lib/cma/types'
+import { reconciliationSentenceFor, weightMeaningSentence } from '@/lib/cma/sales-role'
 
 const esc = escapeHtml
 
@@ -108,10 +109,18 @@ export function pricingMethodSentences(input: {
  * and why. `lib/pricing` writes the sentence; this prints it beside the
  * "Weight in this price" row so a reader can see the two together.
  */
-export function renderReconciliationHtml(pricing: CmaPricing | null | undefined): string {
+export function renderReconciliationHtml(
+  pricing: CmaPricing | null | undefined,
+  comps?: readonly CmaAdjustedComp[] | null,
+): string {
   const sentence = readReconciliation(pricing)?.sentence ?? null
   if (!sentence) return ''
-  return `<p class="small">${esc(sentence)} Weight is how much each sale moved the number, over the sales in this chapter.</p>`
+  // On a letter whose cover the weights did not make (a rule 26 hold, or a
+  // cover held to the sale on the subject's street), the sales set the range
+  // and the weights do not move the number (lib/cma/sales-role.ts).
+  return `<p class="small">${esc(reconciliationSentenceFor(sentence, pricing, comps))} ${esc(
+    weightMeaningSentence(pricing, comps),
+  )}</p>`
 }
 
 export function renderPricingMethodHtml(input: {
