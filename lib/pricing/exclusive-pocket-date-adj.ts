@@ -22,7 +22,28 @@ import { classifyRungName } from '@/lib/pricing/rung-class'
 
 export const TIME_ADJUSTMENT_MEASURE_POCKET = 'sold and last-ask prices in this exclusive pocket'
 
+/**
+ * The pocket basis when NO sale moved for date: every rise in the city index
+ * was refused and no sale's month sat above today's level, so each sale is
+ * priced on its own sold figure.
+ */
 export const TIME_ADJUSTMENT_BASIS_POCKET = 'exclusive-pocket-sold-list' as const
+
+/**
+ * The pocket basis when at least one sale DID move for date. Those moves are
+ * the city's pricing_market_index (every home sale in the city), walked only
+ * down (applyExclusivePocketDateAdj). The record used to keep the sold-list
+ * basis and say "date adjustment does not walk pricing_market_index for bend
+ * ... The Bend city index is not used" over seven comps stamped
+ * marketPathSource 'index', six of them moved by that index (reader review,
+ * 62475 Woodsman, 2026-10-08). The basis now names the path that moved them.
+ */
+export const TIME_ADJUSTMENT_BASIS_POCKET_INDEX = 'exclusive-pocket-city-index-down' as const
+
+/** Either exclusive-pocket basis, the one that moved sales or the one that moved none. */
+export function isPocketTimeBasis(basis: unknown): boolean {
+  return basis === TIME_ADJUSTMENT_BASIS_POCKET || basis === TIME_ADJUSTMENT_BASIS_POCKET_INDEX
+}
 
 /**
  * Matt 2026-09-17 re-anchor: Canter gold bar = live market-cool Rec ~$680
@@ -105,7 +126,7 @@ export function exclusivePocketPathNote(
     if (cityPath.factor > 1) {
       return `${address}: exclusive pocket — Flex-style cooling date adjustment ${appliedPct}% (city index refused upward pump of ${cityPct}%). Story class does not adjust.`
     }
-    return `${address}: exclusive pocket — Flex-style cooling date adjustment ${appliedPct}% along the market path. Story class does not adjust.`
+    return `${address}: exclusive pocket — Flex-style cooling date adjustment ${appliedPct}% along the city index (pricing_market_index, ${used.fromPpsf} to ${used.toPpsf} $/sqft). Story class does not adjust.`
   }
   if (cityPath.factor > 1) {
     return `${address}: exclusive pocket — date adjustment not applied along the city index (would have pumped ${cityPct}%). No date move. Story class does not adjust.`
@@ -119,6 +140,8 @@ export type AppliedDateMove = {
   closePrice: number
   timeAdjustment: number
   timeAdjustedPrice?: number | null
+  /** The close date, so the basis can record the index level the sale moved from. */
+  closeDate?: string | null
 }
 
 const DATE_MOVE_MIN_DOLLARS = 500
@@ -175,9 +198,20 @@ export function describeAppliedDateAdjustments(moves: readonly AppliedDateMove[]
 }
 
 /**
+ * What the pocket did with the city index, when it moved at least one sale.
+ * The moves ARE that index, walked down, so the note says so; it used to say
+ * "The Bend city index is not used to pump prices." beside six sales the Bend
+ * index had just moved down (reader review, 62475 Woodsman, 2026-10-08).
+ */
+export function pocketIndexDownClause(city: string | null | undefined): string {
+  const place = (city ?? '').trim() || 'this city'
+  return `Each moved sale walked the ${place} city index (pricing_market_index, every home sale in ${place}) down to the median of its last three complete months; a rise in that index is never applied to these sales.`
+}
+
+/**
  * Set-level note. Must match the math: when sales were cooled, name those
- * sales and the percentage. When nothing moved, say the city index was not
- * used to pump and each sale stays on its sold price.
+ * sales and the percentage and the city index that moved them. When nothing
+ * moved, say the city index was not walked.
  */
 export function exclusivePocketSetNote(
   city: string,
@@ -187,10 +221,10 @@ export function exclusivePocketSetNote(
   const place = (city ?? '').trim() || 'this city'
   const detail = describeAppliedDateAdjustments(applied ?? [])
   if (coolingApplied && detail) {
-    return `These sales are the exclusive pocket. ${detail} The ${place} city index is not used to pump prices. Story class does not adjust.`
+    return `These sales are the exclusive pocket. ${detail} ${pocketIndexDownClause(place)} Story class does not adjust.`
   }
   if (coolingApplied) {
-    return `These sales are the exclusive pocket. Flex-style cooling date adjustment is applied to every sale in this window along the market path. The ${place} city index is not used to pump prices. Story class does not adjust.`
+    return `These sales are the exclusive pocket. Flex-style cooling date adjustment moves a sale down along the ${place} city index where its month sat above today's level. ${pocketIndexDownClause(place)} Story class does not adjust.`
   }
   return `These sales are the exclusive pocket. Date adjustment is not applied along the ${place} city index. That series includes tracts already excluded from this set. No sale is moved for the month it sold. Story class does not adjust.`
 }

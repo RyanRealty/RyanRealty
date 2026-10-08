@@ -231,8 +231,10 @@ describe('the dated grid: 62475 Woodsman, seven sales, the pocket date move', ()
     const date = rowCells(html, 'Adjusted for date').map(dollars)
     expect(date).toContain(-116_239)
     expect(date).toContain(-101_065)
+    // Names whose figure it is (reader review, 62475 Woodsman, 2026-10-08):
+    // the city's, not Shevlin West's, whose own per-foot held flat.
     expect(text).toContain(
-      "Adjusted for date is how much Bend's median price per square foot fell between the month a sale closed and the last three full months. No sale is moved up for date.",
+      "Adjusted for date is how much Bend's median price per square foot fell between the month a sale closed and the last three full months. That figure covers every home sale in Bend, not only Shevlin West. No sale is moved up for date.",
     )
   })
 
