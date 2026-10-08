@@ -12,6 +12,7 @@ import { compAreaContains, compAreaIn, compAreaPhrase, type CompArea } from '@/l
 import { countWord } from '@/lib/pricing/estimate'
 import { publishStreetNumber, publishStreetPart } from '@/lib/listing/publish-street-line'
 import { roomNotedSentence, sameAreaFit, type SameAreaSubject } from '@/lib/cma/same-area-fit'
+import { printedBaths } from '@/lib/pricing/bath-count'
 
 const esc = escapeHtml
 
@@ -27,7 +28,11 @@ export type CmaBandRival = {
   latitude: number | null
   longitude: number | null
   beds?: number | null
+  /** BathroomsTotal, which counts a half bath whole. Print through `printedBaths`, never raw. */
   baths?: number | null
+  /** MLS full / half bath split (listings.baths_full / baths_half), when read. */
+  bathsFull?: number | null
+  bathsHalf?: number | null
   sqft?: number | null
   yearBuilt?: number | null
   lotAcres?: number | null
@@ -52,6 +57,8 @@ export type CmaBandRival = {
 export type CmaBandSubject = {
   beds: number | null
   baths: number | null
+  bathsFull?: number | null
+  bathsHalf?: number | null
   sqft: number | null
   yearBuilt: number | null
   lotAcres: number | null
@@ -96,6 +103,8 @@ export function rivalFitsSubject(
     longitude: r.longitude,
     beds: r.beds,
     baths: r.baths,
+    bathsFull: r.bathsFull ?? null,
+    bathsHalf: r.bathsHalf ?? null,
     sqft: r.sqft,
     yearBuilt: r.yearBuilt,
     propertySubType: r.propertySubType,
@@ -154,10 +163,20 @@ function joinFacts(parts: Array<string | null | undefined>): string | null {
   return kept.length ? kept.join(' · ') : null
 }
 
+/**
+ * "2.5 ba": the bath count the way the MLS prints it and the sales table
+ * prints it (printedBaths), never BathroomsTotal raw, which counts a half
+ * bath whole (3446 Jackwood, 2 full and 1 half, printed "3", 2026-10-08).
+ */
+function bathsFact(r: { baths?: number | null; bathsFull?: number | null; bathsHalf?: number | null }): string | null {
+  const b = printedBaths(r)
+  return b != null ? `${b % 1 === 0 ? int(b) : b.toFixed(1)} ba` : null
+}
+
 export function rivalFactsLine(r: CmaBandRival): string | null {
   return joinFacts([
     r.beds != null ? `${int(r.beds)} bd` : null,
-    r.baths != null ? `${r.baths % 1 === 0 ? int(r.baths) : r.baths.toFixed(1)} ba` : null,
+    bathsFact(r),
     r.sqft != null && r.sqft > 0 ? `${int(r.sqft)} sqft` : null,
     r.yearBuilt != null ? String(r.yearBuilt) : null,
     r.lotAcres != null && r.lotAcres > 0 ? `${r.lotAcres.toFixed(2)} ac` : null,
@@ -189,8 +208,10 @@ export function rivalVsSubjectLine(r: CmaBandRival, subject: CmaBandSubject | nu
     const d = r.beds - subject.beds
     bits.push(d > 0 ? `${int(d)} more bed${d === 1 ? '' : 's'}` : `${int(-d)} fewer bed${d === -1 ? '' : 's'}`)
   }
-  if (r.baths != null && subject.baths != null && r.baths !== subject.baths) {
-    const d = r.baths - subject.baths
+  const rBaths = printedBaths(r)
+  const sBaths = printedBaths(subject)
+  if (rBaths != null && sBaths != null && rBaths !== sBaths) {
+    const d = rBaths - sBaths
     const abs = Math.abs(d)
     const n = abs % 1 === 0 ? int(abs) : abs.toFixed(1)
     bits.push(`${n} ${d > 0 ? 'more' : 'fewer'} bath${abs === 1 ? '' : 's'}`)
@@ -230,7 +251,7 @@ function rivalCard(
   const facts = joinFacts([
     r.sqft != null && r.sqft > 0 ? `${int(r.sqft)} sqft` : null,
     r.beds != null ? `${int(r.beds)} bd` : null,
-    r.baths != null ? `${r.baths % 1 === 0 ? int(r.baths) : r.baths.toFixed(1)} ba` : null,
+    bathsFact(r),
     r.daysOnMarket != null && r.daysOnMarket >= 0
       ? `${int(r.daysOnMarket)} ${r.daysOnMarket === 1 ? 'day' : 'days'} on market`
       : null,
@@ -869,6 +890,8 @@ export type BandInventoryRow = BandStreetRow & {
   Longitude: number | null
   BedroomsTotal?: number | null
   BathroomsTotal?: number | null
+  baths_full?: number | null
+  baths_half?: number | null
   TotalLivingAreaSqFt?: number | null
   year_built?: number | null
   lot_size_acres?: number | null
@@ -878,7 +901,9 @@ export type BandInventoryRow = BandStreetRow & {
   public_remarks?: string | null
 }
 
+/** A blank MLS field is unknown, never zero: Number(null) is 0, and a null bed count read as 0 beds. */
 function finiteOrNull(v: unknown): number | null {
+  if (v == null || (typeof v === 'string' && v.trim() === '')) return null
   const n = Number(v)
   return Number.isFinite(n) ? n : null
 }
@@ -915,6 +940,8 @@ export function bandRowToRival(row: BandInventoryRow, status: 'Active' | 'Pendin
     longitude: row.Longitude,
     beds: finiteOrNull(row.BedroomsTotal),
     baths: finiteOrNull(row.BathroomsTotal),
+    bathsFull: finiteOrNull(row.baths_full),
+    bathsHalf: finiteOrNull(row.baths_half),
     sqft: finiteOrNull(row.TotalLivingAreaSqFt),
     yearBuilt: finiteOrNull(row.year_built),
     lotAcres: finiteOrNull(row.lot_size_acres),

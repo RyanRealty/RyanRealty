@@ -2223,6 +2223,8 @@ export function competitionArgs(a: OpinionPageArgs): BandRivalsInput {
     subject: {
       beds: a.subject.beds,
       baths: a.subject.baths,
+      bathsFull: a.subject.bathsFull ?? null,
+      bathsHalf: a.subject.bathsHalf ?? null,
       sqft: a.subject.sqft,
       yearBuilt: a.subject.yearBuilt,
       lotAcres: a.subject.lotAcres,

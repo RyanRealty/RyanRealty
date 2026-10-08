@@ -75,6 +75,9 @@ export type SameAreaSubject = {
   longitude: number | null
   beds: number | null
   baths: number | null
+  /** MLS full / half bath split: rule 4 compares whole baths when both homes carry it (lib/pricing/bath-count.ts). */
+  bathsFull?: number | null
+  bathsHalf?: number | null
   sqft: number | null
   yearBuilt: number | null
   propertySubType: string | null
@@ -93,6 +96,9 @@ export type SameAreaCandidate = {
   longitude?: number | null
   beds?: number | null
   baths?: number | null
+  /** MLS full / half bath split, when read. Without it the totals are compared, as before. */
+  bathsFull?: number | null
+  bathsHalf?: number | null
   sqft?: number | null
   yearBuilt?: number | null
   propertySubType?: string | null
@@ -121,6 +127,8 @@ export function sameAreaSubject(s: CmaSubject): SameAreaSubject {
     longitude: s.longitude,
     beds: s.beds,
     baths: s.baths,
+    bathsFull: s.bathsFull ?? null,
+    bathsHalf: s.bathsHalf ?? null,
     sqft: s.sqft,
     yearBuilt: s.yearBuilt,
     propertySubType: s.propertySubType,
@@ -208,6 +216,8 @@ export function sameAreaFit(
       sqft: subject.sqft ?? null,
       beds: subject.beds ?? null,
       baths: subject.baths ?? null,
+      bathsFull: subject.bathsFull ?? null,
+      bathsHalf: subject.bathsHalf ?? null,
       marketArea: subject.marketArea ?? null,
     },
     {
@@ -220,6 +230,8 @@ export function sameAreaFit(
       sqft: c.sqft ?? null,
       beds: c.beds ?? null,
       baths: c.baths ?? null,
+      bathsFull: c.bathsFull ?? null,
+      bathsHalf: c.bathsHalf ?? null,
       ownPlat,
     },
   )

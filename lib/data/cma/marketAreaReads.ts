@@ -33,6 +33,13 @@ export type CmaMarketAreaRow = {
   TotalLivingAreaSqFt: number | null
   BedroomsTotal: number | null
   BathroomsTotal: number | null
+  /**
+   * MLS full / half bath split. BathroomsTotal counts a half bath whole
+   * (lib/pricing/bath-count.ts), so a home is printed and room-tested from the
+   * split, the way the sales are.
+   */
+  baths_full?: number | null
+  baths_half?: number | null
   DaysOnMarket: number | null
   CumulativeDaysOnMarket: number | null
   status_change_timestamp: string | null
@@ -42,10 +49,12 @@ export type CmaMarketAreaRow = {
   lot_size_acres?: number | null
   /** Selected only by the area-scoped unsold read: the came-off fit reads it for the multi-unit and ADU walls (rule 24). */
   public_remarks?: string | null
+  /** Selected only by the area-scoped unsold read: one house is one parcel when the relist test matches cycles. */
+  parcel_number?: string | null
 }
 
 const COLS =
-  'ListingKey, StreetNumber, StreetName, PhotoURL, OriginalListPrice, Latitude, Longitude, StandardStatus, ListPrice, ClosePrice, CloseDate, ListDate, OnMarketDate, TotalLivingAreaSqFt, BedroomsTotal, BathroomsTotal, DaysOnMarket, CumulativeDaysOnMarket, status_change_timestamp, SubdivisionName, property_sub_type, year_built, lot_size_acres'
+  'ListingKey, StreetNumber, StreetName, PhotoURL, OriginalListPrice, Latitude, Longitude, StandardStatus, ListPrice, ClosePrice, CloseDate, ListDate, OnMarketDate, TotalLivingAreaSqFt, BedroomsTotal, BathroomsTotal, baths_full, baths_half, DaysOnMarket, CumulativeDaysOnMarket, status_change_timestamp, SubdivisionName, property_sub_type, year_built, lot_size_acres'
 
 type ListingQuery = {
   eq: (col: string, val: string) => ListingQuery
