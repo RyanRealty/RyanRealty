@@ -87,13 +87,10 @@ import {
   reclassifyFailedAskOnPrintedBand,
   buildFailureFindings,
   buildServicesList,
-  buildNetSheet,
   buildAskExposure,
   resolveFinalCycle,
   stampFinalCycleDom,
   FAILED_ASK_RECENCY_MONTHS,
-  feeLine,
-  EXPIRED_LISTING_FEE_PCT,
   STANDARD_LISTING_FEE_PCT,
   BUYER_BROKER_ASSUMPTION_PCT,
   type ExpiredAuditData,
@@ -1320,10 +1317,6 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         expiredAudit = {
           findings: buildFailureFindings({ subject, pricing, market, history, photosCount, ownershipSince: await getExpiredOwnershipSince(subject.mlsNumber) }),
           services: buildServicesList(subject),
-          netSheet: buildNetSheet(pricing, {
-            expectedConcessions: pricing.sellerNet?.expectedConcessions ?? null,
-          }),
-          feeLine: feeLine(),
           finalCycle: resolvedCycle.cycle,
           // The WHOLE exposure, not the last cut (round four, class B). Measured
           // against the top of the evidence range the cover prints, so the
@@ -1980,13 +1973,11 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         ? {
             expired_audit: {
               fee_facts: {
-                expired_listing_fee_pct: EXPIRED_LISTING_FEE_PCT,
                 standard_listing_fee_pct: STANDARD_LISTING_FEE_PCT,
                 buyer_broker_assumption_pct: BUYER_BROKER_ASSUMPTION_PCT,
-                source: 'Ryan Realty published rates (app/sell plans; expired rate per broker directive 2026-07-14)',
+                source: 'Ryan Realty published rates (app/sell plans). One fee on every letter, 3% (Matt 2026-10-08).',
               },
               failure_findings: expiredAudit.findings,
-              net_sheet: expiredAudit.netSheet,
               services_source: `This-home list-kit plan for ${subject.streetAddress}. Photos, 3D, and weekly report stay secondary.`,
             },
           }

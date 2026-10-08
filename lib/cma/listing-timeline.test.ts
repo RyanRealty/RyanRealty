@@ -50,7 +50,7 @@ const cycle = (
 })
 
 const audit = (finalCycle: ExpiredAuditData['finalCycle']): ExpiredAuditData =>
-  ({ findings: [], services: [], netSheet: {}, feeLine: '', finalCycle }) as unknown as ExpiredAuditData
+  ({ findings: [], services: [], finalCycle }) as unknown as ExpiredAuditData
 
 const RANGE = { rangeLow: 380000, rangeHigh: 398000, rangeLabel: 'where homes like yours sold' }
 
