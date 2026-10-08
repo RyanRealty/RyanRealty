@@ -273,6 +273,43 @@ function dateNote(
     : [stored]
 }
 
+/**
+ * The line under the grid that names what its "Adjusted for date" row is.
+ *
+ * The grid prints the date move the price was built on (reader review,
+ * 62475 Woodsman, 2026-10-08), so the reader is told which figure moved it,
+ * beside the row. Read off the stored basis and the printed rows: null when no
+ * printed sale moved for date, or when the basis is one this line cannot name.
+ * The pocket basis walks the city figure only down
+ * (lib/pricing/exclusive-pocket-date-adj.ts applyExclusivePocketDateAdj), so
+ * it says so only while no printed sale moved up.
+ */
+export function dateBasisCaption(input: {
+  subject: Pick<CmaSubject, 'city'>
+  comps: readonly CmaAdjustedComp[]
+  pricing: CmaPricing
+}): string | null {
+  const moved = input.comps.filter((c) => Math.abs(c.timeAdjustment ?? 0) >= 1)
+  if (moved.length === 0) return null
+  const ta = obj((input.pricing as unknown as { timeAdjustment?: unknown }).timeAdjustment)
+  if (!ta) return null
+  const city = cleanText(input.subject.city ?? null)
+  const whose = city ? `${city}'s` : "this city's"
+  const stored = str(ta.sentence)
+  const pocket = ta.basis === TIME_ADJUSTMENT_BASIS_POCKET || (stored != null && POCKET_NOTE.test(stored))
+  const up = moved.some((c) => (c.timeAdjustment ?? 0) > 0)
+  if (pocket && !up) {
+    return `Adjusted for date is how much ${whose} median price per square foot fell between the month a sale closed and the last three full months. No sale is moved up for date.`
+  }
+  if (pocket || ta.basis === INDEX_BASIS) {
+    return `Adjusted for date is how much ${whose} median price per square foot changed between the month a sale closed and the last three full months.`
+  }
+  if (ta.basis === 'year-over-year') {
+    return `Adjusted for date is ${whose} year-over-year change in median sale price, spread evenly over the months since a sale closed.`
+  }
+  return null
+}
+
 // ── what the printed adjustments were ───────────────────────────────────────
 
 /**

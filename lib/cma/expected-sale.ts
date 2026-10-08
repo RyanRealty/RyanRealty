@@ -31,7 +31,6 @@
 
 import { countWord, usd } from '@/lib/cma/render-blocks'
 import { tableAdjustedBand, tableBandSales } from '@/lib/cma/cover-value'
-import { FLAT_LOCAL_DATE_SENTENCE } from '@/lib/cma/flat-date-story'
 import { isRecommendMark } from '@/lib/cma/recommend-once'
 import { setAsideCompIndexes, trimsEachEnd } from '@/lib/cma/set-aside'
 import {
@@ -59,12 +58,6 @@ function num(v: unknown): number | null {
 
 function obj(v: unknown): Record<string, unknown> | null {
   return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : null
-}
-
-/** The letter removed the city date move from the grid. */
-function flatDateStory(pricing: CmaPricing): boolean {
-  const ta = obj((pricing as unknown as { timeAdjustment?: unknown }).timeAdjustment)
-  return ta?.sentence === FLAT_LOCAL_DATE_SENTENCE
 }
 
 /**
@@ -132,7 +125,6 @@ export function expectedSaleFor(input: {
   if (!p) return null
   const rec = num(p.recommended)
   if (rec == null || !(rec > 0)) return null
-  if (flatDateStory(p)) return null
   const recon = obj((p as unknown as { reconciliation?: unknown }).reconciliation)
   const weighted = num(recon?.weightedPrice)
   if (weighted == null || !(weighted > 0)) return null

@@ -378,8 +378,7 @@ describe('1130 E Canter Horse Back date-adj residual', () => {
       expect(row.adjusted.sizeAdjustment).toBe(sizeBySale[row.adjusted.address])
       expect(row.adjusted.timeAdjustment).toBe(0)
       expect(row.adjusted.adjustedPrice).toBe(row.adjusted.closePrice + row.adjusted.sizeAdjustment)
-      // The path note's own wording lives in exclusive-pocket-date-adj.ts.
-      expect(row.pathNote).toMatch(/story class/i)
+      expect(row.pathNote).toMatch(/Story class does not adjust/)
     }
     const { cover, built, method1Mid } = recommendFrom(
       rows.map((r) => r.adjusted),
