@@ -11,7 +11,7 @@
  */
 
 import { saleSearchCommunitySlug, searchCommunitySlug } from '@/lib/cma/community-location'
-import { applyStreetAnchor, computePricing } from '@/lib/cma/pricing'
+import { applyStreetAnchor, computePricing, streetAnchorHolds } from '@/lib/cma/pricing'
 import type { CmaSiteData } from '@/lib/cma/county'
 import {
   attachSellerNet,
@@ -1955,86 +1955,6 @@ export function applyEngineCoverToCmaPricing(
 }
 
 /**
- * THE SALE THAT HOLDS THE PRICE IS NEVER SET ASIDE (review, 2026-10-07).
- *
- * applyStreetAnchor fires only when the same-street twin sits about ten
- * percent or more under the reconciled price, so the twin is nearly always
- * the lowest adjusted sale and the range rule set it aside. The anchor then
- * held the recommendation to the twin, the pin drew the band from the sales
- * left (the pin only pulls a price down, never up), and the letter printed
- * $550,000 under a $600,000 to $660,000 band while saying the sale holding
- * the price had been set aside (120 Benaiah at $500,000 beside five sales at
- * $600,000 to $680,000).
- *
- * So when the anchor holds the price its sales come back into the kept set:
- * off `pricing.setAside`, into the weights, and into the range rule's counts,
- * ends and sentence, which the hero band then follows.
- */
-function releaseStreetAnchorFromSetAside(
-  pricing: CmaPricing,
-  part: { priced: readonly CmaAdjustedComp[]; setAside: readonly CmaAdjustedComp[] },
-  ctx: { subjectSqft: number; asOf: string },
-): void {
-  const anchor = pricing.streetAnchor
-  if (!anchor) return
-  const keys = new Set((anchor.listingKeys ?? []).filter(Boolean))
-  const addresses = new Set(anchor.addresses.map((a) => a.trim().toLowerCase()).filter(Boolean))
-  const holdsThePrice = (s: CmaAdjustedComp): boolean =>
-    keys.size > 0 ? keys.has(s.listingKey) : addresses.has((s.address ?? '').trim().toLowerCase())
-  const released = new Set(part.setAside.filter(holdsThePrice))
-  if (released.size === 0) return
-  const stillAside = part.setAside.filter((s) => !released.has(s))
-  const asideSet = new Set(stillAside)
-  // The grid's order, so weight three is still sale three.
-  const kept = part.priced.filter((s) => !asideSet.has(s))
-  const releasedKeys = new Set([...released].map((s) => s.listingKey))
-  pricing.setAside = (pricing.setAside ?? []).filter((e) => !releasedKeys.has(e.listingKey))
-  pricing.reconciliation = reconcileAdjustedSales({
-    sales: kept as unknown as ReconcilableSale[],
-    subjectSqft: ctx.subjectSqft,
-    asOf: ctx.asOf,
-  })
-  const rule = pricing.rangeRule
-  const values = kept.map((s) => s.adjustedPrice).filter((n) => Number.isFinite(n) && n > 0)
-  if (!rule || values.length === 0) return
-  const saleLow = Math.min(...values)
-  const saleHigh = Math.max(...values)
-  // Outward onto the pricing unit, never onto a sale still set aside.
-  const asideBelow = nearestAsideBelow(stillAside, saleLow)
-  const asideAbove = nearestAsideAbove(stillAside, saleHigh)
-  let low = roundPriceDown(saleLow)
-  if (asideBelow != null && low <= asideBelow) low = Math.round(saleLow)
-  let high = roundPriceUp(saleHigh)
-  if (asideAbove != null && high >= asideAbove) high = Math.round(saleHigh)
-  low = Math.min(low, rule.adjustedLow)
-  high = Math.max(high, rule.adjustedHigh)
-  const n = part.priced.length
-  pricing.rangeRule = {
-    ...rule,
-    n,
-    kept: kept.length,
-    adjustedLow: low,
-    adjustedHigh: high,
-    saleLow: Math.round(saleLow),
-    saleHigh: Math.round(saleHigh),
-    sentence: describeRangeSentence({
-      rule: rule.rule,
-      n,
-      kept: kept.length,
-      printedLow: low,
-      printedHigh: high,
-      saleLow: Math.round(saleLow),
-      saleHigh: Math.round(saleHigh),
-      trimmedAside: rule.rule === 'trimmed-one-each-end' ? trimmedAsideClause(n, kept.length) : null,
-      suffix: rangeSentenceSuffix(rule.sentence),
-    }),
-  }
-  // The hero band reaches the sale that holds the price.
-  pricing.valueLow = Math.min(pricing.valueLow, low)
-  pricing.valueHigh = Math.max(pricing.valueHigh, high)
-}
-
-/**
  * A recommendation under every sale that set it is not a price (rule 20). When
  * the failed-ask ceiling is what put it there, the build holds it for Matt
  * instead of failing (lib/cma/gap-hold.ts applyAskBelowBandHold): the ceiling
@@ -2099,15 +2019,6 @@ export function priceCmaSet(args: {
   // No fill: a sale that does not set the price keeps its weight of 0, and
   // under five that do the pricer returns null (Matt 2026-10-07).
   const adjusted = args.adjusted
-  const pricing = priceFn(args.subject, adjusted, args.market, {
-    sellerImprovementsTotal: args.input.sellerImprovementsTotal ?? null,
-    priceOverride: args.input.priceOverride ?? null,
-    site: args.site ?? null,
-  })
-  if (!pricing) return null
-  // Which sale carried the price. Attached BEFORE the engine cover so the
-  // weights the document prints are the weights the value was built from.
-  //
   // The range rule runs FIRST, and the sales it sets aside never reach the
   // reconciliation: a sale the document says was removed carries none of the
   // price (tasteReview round three, §2 item 1). `listPriceFromEngine` runs the
@@ -2115,6 +2026,26 @@ export function priceCmaSet(args: {
   // printed number come from one set.
   const priceSetting = adjusted.filter((c) => c.weight > 0)
   const part = partitionByRangeRule(priceSetting)
+  // TRIM NORMALLY (Matt 2026-10-08, 915 Saginaw). A sale on the subject's own
+  // street that the rule set aside as an end (the lowest or highest adjusted
+  // sale) is set aside like any end sale: it is never released back into the
+  // range, it carries no weight, and the same-street cap and the street floor
+  // do not touch the price. One sale never decides the price. The street sale
+  // INSIDE the kept set still anchors exactly as before (lib/cma/pricing.ts
+  // applyStreetAnchor); this ruling is about the trimmed ends only.
+  const asideRefs = new Set<CmaAdjustedComp>(part.setAside)
+  const asideKeys = new Set(part.setAside.map((s) => s.listingKey).filter(Boolean))
+  const rangeSetAside = (c: CmaAdjustedComp): boolean =>
+    asideRefs.has(c) || (Boolean(c.listingKey) && asideKeys.has(c.listingKey))
+  const pricing = priceFn(args.subject, adjusted, args.market, {
+    sellerImprovementsTotal: args.input.sellerImprovementsTotal ?? null,
+    priceOverride: args.input.priceOverride ?? null,
+    site: args.site ?? null,
+    streetAnchorSetAside: rangeSetAside,
+  })
+  if (!pricing) return null
+  // Which sale carried the price. Attached BEFORE the engine cover so the
+  // weights the document prints are the weights the value was built from.
   pricing.reconciliation = reconcileAdjustedSales({
     sales: part.kept as unknown as ReconcilableSale[],
     subjectSqft: args.subject.sqft ?? 0,
@@ -2207,11 +2138,17 @@ export function priceCmaSet(args: {
         priceOverride: args.input.priceOverride ?? null,
         notes: covered.notes,
         prior: covered.streetAnchor ?? null,
+        // A trimmed end never anchors (Matt 2026-10-08, "Trim normally"). The
+        // sale stays on pricing.setAside, the range rule keeps its counts,
+        // ends and sentence, and the record says it was set aside and did not
+        // cap. Nothing releases it back into the range: the street sale that
+        // anchors is always one the range rule kept.
+        setAside: rangeSetAside,
       },
       { conservative: covered.conservative, recommended: covered.recommended, highEnd: covered.highEnd },
     )
     covered.streetAnchor = anchored
-    if (anchored && covered.recommended > anchored.after) {
+    if (streetAnchorHolds(anchored) && covered.recommended > anchored.after) {
       covered.recommended = anchored.after
       // The twin is the floor, not the number.
       covered.conservative = Math.min(covered.conservative, anchored.floor)
@@ -2220,7 +2157,12 @@ export function priceCmaSet(args: {
       covered.valueHigh = covered.highEnd
       covered.needsReview = true
     }
-    releaseStreetAnchorFromSetAside(covered, part, { subjectSqft: args.subject.sqft ?? 0, asOf: args.asOf })
+    // The coarse pre-pin check reads every sale that passed rule 20, trimmed
+    // ends included: a list carried to an ask may sit over the kept sales
+    // until the pin pulls it onto them. The band check that decides the hold
+    // reads the printed (trimmed) band after the pin (lib/cma/gap-hold.ts
+    // applyAskBelowBandHold): 915 Saginaw's failed-ask pull under all three
+    // kept sales is the rule 26 ask-below-band hold there.
     const settingPrices = adjusted
       .filter((c) => c.weight > 0 && c.adjustedPrice > 0)
       .map((c) => c.adjustedPrice)
