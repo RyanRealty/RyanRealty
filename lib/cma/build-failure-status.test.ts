@@ -8,7 +8,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { statusAfterBuildFailure } from '@/lib/cma/build-summary'
+import { composeFailureSummary, statusAfterBuildFailure } from '@/lib/cma/build-summary'
 
 const src = readFileSync(join(process.cwd(), 'lib/cma/build.ts'), 'utf8')
 
@@ -62,5 +62,43 @@ describe('the failure path keeps the prior document', () => {
     expect(fn).not.toMatch(/value_high: null/)
     expect(fn).not.toMatch(/comps_count: 0/)
     expect(fn).not.toMatch(/replaceCmaComps\(/)
+  })
+})
+
+describe('the failure path keeps the reason trail (2026-10-08)', () => {
+  it('stores the trace, the review verdicts and the failed hard checks', () => {
+    const summary = composeFailureSummary({
+      builder: 'b',
+      docType: 'expired-audit',
+      stage: 'comps',
+      error: 'Not enough comparable sales the review would keep. 4 of 6 stayed, and this home needs 5.',
+      at: '2026-10-08T03:00:00.000Z',
+      trace: ['own plat: 6 sales'],
+      review: {
+        kept: ['a', 'b', 'c', 'd'],
+        verdicts: [{ listingKey: 'e', tier: 'exclude', basis: 'price-tier', reason: 'outside the band' }],
+      },
+      contractChecks: [
+        { id: 'x', severity: 'hard', pass: false, detail: 'failed' },
+        { id: 'y', severity: 'hard', pass: true, detail: 'ok' },
+        { id: 'z', severity: 'soft', pass: false, detail: 'soft' },
+      ],
+    })
+    expect(summary.failed_at).toBe('2026-10-08T03:00:00.000Z')
+    expect(summary.failed_at_stage).toBe('comps')
+    expect(summary.trace).toEqual(['own plat: 6 sales'])
+    expect((summary.review as { kept: string[] }).kept).toHaveLength(4)
+    expect(summary.failed_checks).toEqual([{ id: 'x', severity: 'hard', pass: false, detail: 'failed' }])
+  })
+
+  it('merges last_failure onto the prior summary instead of replacing it', () => {
+    const fn = src.slice(src.indexOf('async function recordBuildFailure'), src.indexOf('export async function buildCma'))
+    expect(fn).toMatch(/composeFailureSummary\(/)
+    expect(fn).toMatch(/\.\.\.\(current \?\? \{\}\), last_failure: lastFailure/)
+  })
+
+  it('hands the review verdicts to both review failure paths', () => {
+    expect(src).toMatch(/review: failureReviewOf\(null, unstable\)/)
+    expect(src).toMatch(/review: failureReviewOf\(judgment, null\)/)
   })
 })

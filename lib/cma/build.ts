@@ -56,10 +56,10 @@ import { attachSellerNet, reanchorSellerNet } from '@/lib/pricing/seller-net'
 import { pricingFailureMessage } from '@/lib/pricing/price-set'
 import { classifyStory, citySlug, irrigationClassFromOwrd, isCustomOrNewSubject, yearQualityCompatible } from '@/lib/pricing/classes'
 import type { CompSelectionDiagnostics } from '@/lib/cma/comp-trace'
-import { composeBuildSummary } from '@/lib/cma/build-summary'
+import { composeBuildSummary, composeFailureSummary } from '@/lib/cma/build-summary'
 import { getCmaMarketContext, yearMartCite, cmaMarketSources } from '@/lib/cma/market'
 import { adjustComps, computePricing } from '@/lib/cma/pricing'
-import { judgeComps, readJudgeCache, repairNarrativeAgainstAudit } from '@/lib/cma/judge'
+import { judgeComps, readJudgeCache, repairNarrativeAgainstAudit, type CompJudgment } from '@/lib/cma/judge'
 import type { JudgeDecisionRecord, JudgeUnstableError } from '@/lib/cma/judge-vote'
 import { comparabilityNarrativeGate } from '@/lib/cma/narrative-final'
 import { hydratePhotoUrls } from '@/lib/cma/photos'
@@ -163,16 +163,29 @@ async function resolveBroker(input: CmaBuildInput): Promise<CmaBroker> {
  * exactly the one whose selection ladder someone needs to read, and before
  * 2026-07-30 the failure path wrote only a prose `build_error` — so "which
  * constraint starved this" was unanswerable without re-running the build.
+ *
+ * The prior document stays (a failed rebuild keeps what was already built), so
+ * the trace goes on `build_summary.last_failure`, next to the prior letter's
+ * summary: the stage, the reason, the selection diagnostics with its trace,
+ * the review's verdicts when the review ended it, and the failed hard checks
+ * when the contract did. A successful build writes a fresh summary, which
+ * clears it. 1648 Pheasant and 20676 Wild Rose failed at the review on
+ * 2026-10-08 and nothing on the row said which sales were seated or why the
+ * review dropped them.
  */
+type BuildFailureReview = NonNullable<Parameters<typeof composeFailureSummary>[0]['review']>
+
 async function recordBuildFailure(
   slug: string,
   error: string,
-  _meta?: {
+  meta?: {
     stage: 'subject' | 'comps' | 'pricing' | 'contract'
     docType: 'cma' | 'expired-audit'
     compSelection?: CompSelectionDiagnostics | null
     pricing?: CmaPricing | null
     contractChecks?: Array<{ id: string; severity: string; pass: boolean; detail: string }> | null
+    trace?: readonly string[] | null
+    review?: BuildFailureReview | null
   },
 ): Promise<void> {
   // A failed rebuild keeps the prior document, pricing and comps. Only the
@@ -191,6 +204,54 @@ async function recordBuildFailure(
     await updateCmaRowFieldsBySlug(slug, { build_error: reason }).catch((err) => {
       console.error('[recordBuildFailure] build_error fallback failed', slug, err)
     })
+  }
+  if (!meta) return
+  const lastFailure = composeFailureSummary({
+    builder: CMA_BUILDER_VERSION,
+    docType: meta.docType,
+    stage: meta.stage,
+    error: reason,
+    at: withStamp.build_failed_at,
+    compSelection: meta.compSelection ?? null,
+    trace: meta.trace ?? null,
+    review: meta.review ?? null,
+    contractChecks: meta.contractChecks ?? null,
+  })
+  // Same merge as the judge cache: the prior summary's keys stay, one key is
+  // added. A failed merge never hides the build_error written above.
+  await getCmaBuildSummaryBySlug(slug)
+    .then((current) => updateCmaRowFieldsBySlug(slug, { build_summary: { ...(current ?? {}), last_failure: lastFailure } }))
+    .catch((err) => {
+      console.error('[recordBuildFailure] last_failure merge failed', slug, err)
+    })
+}
+
+/** The review's verdicts in the shape `last_failure.review` stores. */
+function failureReviewOf(
+  judgment: CompJudgment | null,
+  unstable: JudgeUnstableError | null,
+): BuildFailureReview | null {
+  if (unstable) {
+    return {
+      kept: [...unstable.record.keptKeys],
+      unstableKeys: [...unstable.record.unstableKeys],
+      verdicts: unstable.record.verdicts.map((v) => ({
+        listingKey: v.listingKey,
+        tier: v.tier,
+        basis: v.basis ?? null,
+        reason: v.reason,
+      })),
+    }
+  }
+  if (!judgment) return null
+  return {
+    kept: [...judgment.keptKeys],
+    verdicts: judgment.verdicts.map((v) => ({
+      listingKey: v.listingKey,
+      tier: v.tier,
+      basis: v.basis ?? null,
+      reason: v.reason,
+    })),
   }
 }
 
@@ -426,7 +487,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       })
         .replace(/\s+/g, ' ')
         .trim()
-      await recordBuildFailure(slug, err, { stage: 'comps', docType, compSelection: selection.diagnostics })
+      await recordBuildFailure(slug, err, { stage: 'comps', docType, compSelection: selection.diagnostics, trace: selection.trace })
       return { ok: false, error: err, slug }
     }
 
@@ -498,7 +559,13 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           console.error('[cma/judge] could not store the unstable decision', slug, cacheErr)
         })
         const message = unstable.message
-        await recordBuildFailure(slug, message, { stage: 'comps', docType, compSelection: selection.diagnostics })
+        await recordBuildFailure(slug, message, {
+          stage: 'comps',
+          docType,
+          compSelection: selection.diagnostics,
+          trace: selection.trace,
+          review: failureReviewOf(null, unstable),
+        })
         return { ok: false, error: message, slug }
       }
       judgment = review.judgment
@@ -508,7 +575,13 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           gated.droppedProduct > 0
             ? `Not enough sales of the same product type to price this home. ${gated.comps.length} of ${selection.comps.length} candidates matched, and this home needs ${MIN_COMPS}.`
             : `Not enough comparable sales the review would keep. ${gated.comps.length} of ${selection.comps.length} stayed, and this home needs ${MIN_COMPS}.`
-        await recordBuildFailure(slug, err, { stage: 'comps', docType, compSelection: selection.diagnostics })
+        await recordBuildFailure(slug, err, {
+          stage: 'comps',
+          docType,
+          compSelection: selection.diagnostics,
+          trace: selection.trace,
+          review: failureReviewOf(judgment, null),
+        })
         return { ok: false, error: err, slug }
       }
       compsForPricing = gated.comps
@@ -824,7 +897,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     let { adj: adjusted, p: pricing } = priceSet(compsForPricing)
     if (!pricing) {
       const err = pricingFailureMessage(subject, adjusted)
-      await recordBuildFailure(slug, err, { stage: 'pricing', docType, compSelection: selection.diagnostics })
+      await recordBuildFailure(slug, err, { stage: 'pricing', docType, compSelection: selection.diagnostics, trace: selection.trace })
       return { ok: false, error: err, slug }
     }
     if (lastCycleFailed) {
@@ -1126,6 +1199,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         stage: 'contract',
         docType,
         compSelection: selection.diagnostics,
+        trace: selection.trace,
         pricing,
         contractChecks: contract.checks,
       })
@@ -1140,6 +1214,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         stage: 'pricing',
         docType,
         compSelection: selection.diagnostics,
+        trace: selection.trace,
       })
       return { ok: false, error: err, slug }
     }
