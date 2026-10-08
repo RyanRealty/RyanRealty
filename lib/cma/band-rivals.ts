@@ -50,6 +50,13 @@ export type CmaBandRival = {
   propertySubType?: string | null
   /** MLS subdivision. Lets the letter drop a rival outside the sales plat. */
   subdivision?: string | null
+  /**
+   * The recorded plat polygon the home sits in, from the area read (null when
+   * tested and none holds it). The area test reads it before the MLS name
+   * (rule 24; reader review 2026-10-08, 915 Saginaw). Absent on rows stored
+   * before then, which keep the name test.
+   */
+  platSlug?: string | null
   originalListPrice?: number | null
   onMarketDate?: string | null
   listingHistoryLine?: string | null
@@ -110,6 +117,7 @@ export function rivalFitsSubject(
   return sameAreaFit(area ?? null, subject ?? {}, {
     address: r.address,
     subdivision: r.subdivision,
+    subdivisionSlug: r.platSlug,
     latitude: r.latitude,
     longitude: r.longitude,
     beds: r.beds,
@@ -844,6 +852,7 @@ export function pickCompetitionRing<
     Longitude?: number | null
     SubdivisionName?: string | null
     City?: string | null
+    plat_slug?: string | null
   },
 >(
   input: {
@@ -862,6 +871,7 @@ export function pickCompetitionRing<
     longitude: r.Longitude ?? null,
     subdivision: r.SubdivisionName ?? null,
     city: r.City ?? null,
+    platSlug: r.plat_slug,
   })
   for (let i = 0; i < rings.length; i++) {
     const ring = rings[i]!
@@ -932,6 +942,8 @@ export type BandInventoryRow = BandStreetRow & {
   pending_timestamp?: string | null
   /** MLS days from its OnMarketDate to Pending, on a Pending row. */
   days_to_pending?: number | null
+  /** The recorded plat polygon the area read put the row in (lib/data/cma/bandInventory.ts). */
+  plat_slug?: string | null
 }
 
 /** A blank MLS field is unknown, never zero: Number(null) is 0, and a null bed count read as 0 beds. */
@@ -1008,5 +1020,8 @@ export function bandRowToRival(row: BandInventoryRow, status: 'Active' | 'Pendin
     }),
     // Only while the build fits the home (rule 24's multi-unit and ADU walls).
     ...(row.public_remarks != null ? { publicRemarks: row.public_remarks } : {}),
+    // The polygon the area read placed it in, so every later area test (the
+    // fit, the ring pick, the render) reads the polygon, not the MLS spelling.
+    ...(row.plat_slug !== undefined ? { platSlug: row.plat_slug } : {}),
   }
 }

@@ -59,7 +59,7 @@ function rowsInBand(rows: readonly CmaBandListingRow[], band: { lo: number; hi: 
 /** The fields of a priced sale the search story and the sales area read. */
 type SalesAreaComp = Pick<
   CmaAdjustedComp,
-  'address' | 'subdivision' | 'subdivisionSlug' | 'selectionTier' | 'latitude' | 'longitude'
+  'address' | 'subdivision' | 'subdivisionSlug' | 'selectionTier' | 'latitude' | 'longitude' | 'ownPlat'
 >
 
 /**
@@ -91,6 +91,9 @@ export function salesSearchAndArea(args: {
       address: c.address,
       subdivision: c.subdivision,
       selectionTier: c.selectionTier,
+      // The selector's own-plat call: a sale on the subject's plat under
+      // another MLS spelling is inside the subdivision (reader review 2026-10-08).
+      ownPlat: c.ownPlat ?? null,
     })),
     rural:
       args.diagnostics.rural_acreage || (subject.lotAcres ?? 0) >= 1
@@ -113,6 +116,7 @@ export function salesSearchAndArea(args: {
       selectionTier: c.selectionTier,
       latitude: c.latitude,
       longitude: c.longitude,
+      ownPlat: c.ownPlat ?? null,
     })),
   })
   return { compSearch, compArea }
@@ -196,6 +200,8 @@ export async function assembleCompetition(args: {
     const fit = sameAreaFit(widestCompetitionRing, fitSubject, {
       address: r.address,
       subdivision: r.subdivision,
+      // The polygon the band read placed it in (reader review 2026-10-08).
+      subdivisionSlug: r.platSlug,
       latitude: r.latitude,
       longitude: r.longitude,
       beds: r.beds,

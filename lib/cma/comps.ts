@@ -34,6 +34,8 @@
 import { selectCmaCompsPool, selectCmaCompsByKeys } from '@/lib/data/cma/builderReads'
 import { getSubdivisionRing, assignSubdivisionSlugs, assignCommunitySlugs } from '@/lib/data/geo/subdivision-ring'
 import { getPlatFamilyFootprint } from '@/lib/data/subdivisions/getPlatFamilyFootprint'
+import { getPlatGroundBounds } from '@/lib/data/cma/platGroundBounds'
+import { platGround, platGroundReach, platGroundTrace } from '@/lib/pricing/plat-ground'
 import { keepTightestByClosePrice, PRICING_MIN_COMPS, PRICING_TARGET_COMPS, PRICING_WALK_CAP } from '@/lib/pricing/ladder'
 import type { CompRefillBench } from '@/lib/cma/review-refill'
 import { resolveConcessions, sellerNetFromPrice } from '@/lib/pricing/seller-net'
@@ -93,7 +95,6 @@ import {
   ANCHOR_RADIUS_MILES,
   ANCHOR_RURAL_RADII_MILES,
   isOwnPlatRung,
-  samePlat,
   sameStreetPeer,
   streetKey,
   type AnchorSample,
@@ -156,6 +157,21 @@ export const TARGET_COMPS = PRICING_TARGET_COMPS
  * (only what's needed, Matt 2026-10-07). An earlier place keeps its seats.
  */
 export const MAX_COMPS = PRICING_WALK_CAP
+
+/** Two reads of the listings table, each listing once (the first read's row wins). */
+function mergeListingRows(first: readonly CmaListingRow[], second: readonly CmaListingRow[]): CmaListingRow[] {
+  const seen = new Set<string>()
+  const out: CmaListingRow[] = []
+  for (const r of [...first, ...second]) {
+    const key = typeof r['ListingKey'] === 'string' ? (r['ListingKey'] as string).trim() : ''
+    if (key) {
+      if (seen.has(key)) continue
+      seen.add(key)
+    }
+    out.push(r)
+  }
+  return out
+}
 
 function num(v: unknown): number | null {
   if (v == null) return null
@@ -624,6 +640,42 @@ export async function selectComps(
   })
   const tiers = compTierLadder(subdivisionIlike)
 
+  // THE SUBJECT'S OWN GROUND (reader review 2026-10-08, lib/pricing/plat-ground.ts):
+  // the recorded plat the home sits in, its phases and alias-map siblings
+  // (any MLS spelling), the plats of its subdivision family inside its own
+  // neighborhood polygon, and the MLS name the rungs search for a row no
+  // polygon holds. A home in no recorded plat keeps the name alone.
+  const ownGround = platGround({
+    platSlugs: ring?.homeSlug ? [ring.homeSlug] : [],
+    names: [subdivisionIlike],
+    city: subject.city,
+    parent: subjectArea,
+  })
+  let ownGroundBox: LatLngBounds | null | undefined
+  const readOwnGroundBox = async (): Promise<LatLngBounds | null> => {
+    if (ownGroundBox === undefined) ownGroundBox = await getPlatGroundBounds(ownGround, { city: subject.city })
+    return ownGroundBox
+  }
+  /** Each row's recorded plat, read once per walk (null: tested, no polygon holds it). */
+  const platByKey = new Map<string, string | null>()
+  const platsOfRows = async (rows: readonly CmaListingRow[]): Promise<Array<string | null>> => {
+    const pending = rows.filter((r) => {
+      const key = str(r['ListingKey'])
+      return key == null || !platByKey.has(key)
+    })
+    if (pending.length > 0) {
+      const found = await assignSubdivisionSlugs(pending.map((r) => ({ lat: num(r['Latitude']), lng: num(r['Longitude']) })))
+      pending.forEach((r, i) => {
+        const key = str(r['ListingKey'])
+        if (key) platByKey.set(key, found[i] ?? null)
+      })
+    }
+    return rows.map((r) => {
+      const key = str(r['ListingKey'])
+      return key ? (platByKey.get(key) ?? null) : null
+    })
+  }
+
   // How many sales the widening rung crossed the resort-membership rule for.
   // Counted so the disclosure can name it rather than imply it.
   let resortCrossed = 0
@@ -937,7 +989,13 @@ export async function selectComps(
     const sqftMax = Math.round(sqft * (1 + tier.sqftBand))
     const closeDateGte = isoMonthsAgo(tier.monthsBack)
     const geography = [
-      tier.subdivisionIlike ? `SubdivisionName ILIKE '${tier.subdivisionIlike}'` : null,
+      tier.subdivisionIlike
+        ? `SubdivisionName ILIKE '${tier.subdivisionIlike}'${
+            isOwnPlatRung(tier.name) && ownGround.platSlugs.length > 0
+              ? ` or inside its recorded plat and that plat's subdivision family under any MLS spelling`
+              : ''
+          }`
+        : null,
       tier.ignoreCity ? 'any mailing city' : `City ILIKE '${subject.city}'`,
       tier.sameArea ? `market area = ${subjectAreaName}` : null,
       tier.maxMiles != null ? `within ${tier.maxMiles} miles of the subject` : null,
@@ -981,7 +1039,7 @@ export async function selectComps(
         : tier.adjacentSubdivisions
           ? await readTouchingBounds()
           : null
-    const rows = await selectCmaCompsPool({
+    const rungRead = {
       cityIlike: tier.ignoreCity ? null : subject.city,
       subdivisionIlike: tier.subdivisionIlike ?? null,
       postalCode: null,
@@ -994,8 +1052,39 @@ export async function selectComps(
       limit: tierBounds ? 500 : 100,
       propertySubType: sqlSubType,
       propertyType: segment,
-    })
-    rung.rows_returned = rows.length
+    }
+    const namedRows = await selectCmaCompsPool(rungRead)
+    // THE OWN-PLAT RUNG READS THE SUBJECT'S GROUND, NOT ONE MLS SPELLING
+    // (reader review 2026-10-08, 1355 Jacksonville). It also reads the rows
+    // inside the box around the subject's recorded plat and its family, and
+    // the one ground decision (platGroundReach, lib/pricing/plat-ground.ts)
+    // keeps the rows the polygon puts on the ground, whatever the MLS calls
+    // them. A row the name read returned from another subdivision's polygon
+    // is not the subject's plat, as on the facts walk (samePlat).
+    let rows = namedRows
+    if (isOwnPlatRung(tier.name) && ownGround.platSlugs.length > 0) {
+      const box = await readOwnGroundBox()
+      const boxedRows = box
+        ? await selectCmaCompsPool({ ...rungRead, subdivisionIlike: null, bounds: box, limit: 500 })
+        : []
+      const named = new Set(namedRows.map((r) => str(r['ListingKey'])).filter((k): k is string => k != null))
+      const merged = mergeListingRows(namedRows, boxedRows)
+      const plats = await platsOfRows(merged)
+      rows = merged.filter((r, i) => {
+        const onGround =
+          platGroundReach(ownGround, {
+            platSlug: plats[i],
+            subdivision: str(r['SubdivisionName']),
+            latitude: num(r['Latitude']),
+            longitude: num(r['Longitude']),
+          }) != null
+        if (!onGround && named.has(str(r['ListingKey']) ?? '')) {
+          rung.excluded.not_own_plat = (rung.excluded.not_own_plat ?? 0) + 1
+        }
+        return onGround
+      })
+    }
+    rung.rows_returned = rows.length + (rung.excluded.not_own_plat ?? 0)
     if (isOwnPlatRung(tier.name) && rows.length > 0) {
       for (const r of rows) {
         const key = str(r['ListingKey'])
@@ -1022,9 +1111,7 @@ export async function selectComps(
         )
       : null
     // The adjacent rung needs each row's plat; one batched point lookup.
-    const rowPlats = tier.adjacentSubdivisions
-      ? await assignSubdivisionSlugs(rows.map((r) => ({ lat: num(r['Latitude']), lng: num(r['Longitude']) })))
-      : null
+    const rowPlats = tier.adjacentSubdivisions ? await platsOfRows(rows) : null
     const pendingLocate: { key: string; lat: number; lng: number }[] = []
     for (const row of rows) {
       const key = str(row['ListingKey'])
@@ -1164,15 +1251,17 @@ export async function selectComps(
       // from being graded on price. The facts ladder already drew the line
       // here (`tier.sameSubdivision` in lib/pricing/match.ts).
       const tightRung = isOwnPlatRung(tier.name)
-      // THE SUBJECT'S OWN PLAT on this ladder: the plat rung itself, or the same
-      // MLS subdivision name the rung searched (samePlat's fallback key; this
-      // ladder resolves no recorded-plat slug per row).
+      // THE SUBJECT'S OWN PLAT on this ladder: the plat rung itself, or the one
+      // ground decision (lib/pricing/plat-ground.ts) on the row: its recorded
+      // polygon when a rung read it, else the MLS name the rung searched.
       const inOwnPlat =
         tightRung ||
-        samePlat(
-          { subdivisionNorm: normSubdivision(subdivisionIlike) },
-          { subdivisionNorm: normSubdivision(comp.subdivision) },
-        )
+        platGroundReach(ownGround, {
+          platSlug: platByKey.get(comp.listingKey),
+          subdivision: comp.subdivision,
+          latitude: comp.latitude,
+          longitude: comp.longitude,
+        }) != null
       const ownStreetPeer = sameStreetPeer(
         { streetAddress: subject.streetAddress, city: subject.city, sqft: subject.sqft ?? 0 },
         { address: comp.address, city: comp.city, sqft: comp.sqft },
@@ -1422,6 +1511,10 @@ export async function selectComps(
         continue
       }
       comp.setsPrice = true
+      // The recorded plat a rung placed it in, so the area the letter draws
+      // from these sales tests the polygon (lib/pricing/comp-area.ts).
+      const recordedPlat = platByKey.get(comp.listingKey)
+      if (recordedPlat && !comp.subdivisionSlug) comp.subdivisionSlug = recordedPlat
 
       byKey.set(comp.listingKey, comp)
       bySale.add(saleKey(comp))
@@ -1432,7 +1525,7 @@ export async function selectComps(
     addExclusions(excludedTotals, rung.excluded)
     ladder.push(rung)
     trace.push(
-      `Tier ${tier.name}: listings WHERE StandardStatus ILIKE '%Closed%' AND PropertyType='${segment}'${subTypeSql} AND ClosePrice>0 AND CloseDate>='${closeDateGte}'${tier.ignoreCity ? '' : ` AND City ILIKE '${subject.city}'`}${tier.subdivisionIlike ? ` AND SubdivisionName ILIKE '${tier.subdivisionIlike}'` : ''}${land ? '' : ` AND TotalLivingAreaSqFt BETWEEN ${sqftMin} AND ${sqftMax}`}${lotMin != null ? ` AND lot_size_acres BETWEEN ${lotMin} AND ${landLotMax}` : landLotMax != null ? ` AND lot_size_acres <= ${landLotMax}` : ''}` +
+      `Tier ${tier.name}: listings WHERE StandardStatus ILIKE '%Closed%' AND PropertyType='${segment}'${subTypeSql} AND ClosePrice>0 AND CloseDate>='${closeDateGte}'${tier.ignoreCity ? '' : ` AND City ILIKE '${subject.city}'`}${tier.subdivisionIlike ? ` AND (SubdivisionName ILIKE '${tier.subdivisionIlike}'${isOwnPlatRung(tier.name) && ownGround.platSlugs.length > 0 ? ` OR inside the box around the subject's plat), each row kept by ${platGroundTrace(ownGround)}` : ')'}` : ''}${land ? '' : ` AND TotalLivingAreaSqFt BETWEEN ${sqftMin} AND ${sqftMax}`}${lotMin != null ? ` AND lot_size_acres BETWEEN ${lotMin} AND ${landLotMax}` : landLotMax != null ? ` AND lot_size_acres <= ${landLotMax}` : ''}` +
         `${tier.sameArea ? ` AND market area = ${subjectAreaName}` : ''}${tier.maxMiles != null ? ` AND distance <= ${tier.maxMiles} miles` : ''}. Returned ${rows.length} rows, ${added} new comps.`,
     )
     if (added > 0) tiersUsed.push(tier.name)
@@ -1479,6 +1572,11 @@ export async function selectComps(
   if ((x.not_touching_plat ?? 0) > 0) {
     trace.push(
       `The touching-plat step read ${x.not_touching_plat} sale(s) in plats that do not touch this home's plat and did not use them there.`,
+    )
+  }
+  if ((x.not_own_plat ?? 0) > 0) {
+    trace.push(
+      `The own-subdivision step read ${x.not_own_plat} sale(s) under this home's MLS subdivision name whose recorded plat is another subdivision's, and did not use them there.`,
     )
   }
   if ((x.not_in_pocket ?? 0) > 0) {
@@ -1851,6 +1949,7 @@ const REFUSAL_CUT_LABELS: Partial<Record<keyof CompExclusionCounts, string>> = {
   adu_sale: 'carrying an ADU or other second living unit your home does not have',
   not_touching_plat: 'sitting in a subdivision that does not touch yours',
   not_in_pocket: 'sitting off the streets and subdivisions right around your home',
+  not_own_plat: "sitting in another subdivision's recorded plat under your subdivision's name",
 }
 
 /**

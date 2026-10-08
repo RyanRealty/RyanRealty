@@ -16,7 +16,8 @@ import {
   type CmaSubdivisionSaleRow,
 } from '@/lib/data/cma/builderReads'
 import { getCmaAreaBandInventory } from '@/lib/data/cma/bandInventory'
-import { rowPlatSlugs, rowStreetAddress } from '@/lib/data/cma/areaUnsoldReads'
+import { areaPlatOutline, rowPlatSlugs, rowStreetAddress } from '@/lib/data/cma/areaUnsoldReads'
+import { subdivisionScopeTrace, subjectPlatGround } from '@/lib/pricing/plat-ground'
 import { bandAroundList, pickBandRivals, rivalAddress, type CmaBandRival } from '@/lib/cma/band-rivals'
 import { compAreaContains, compAreaPhrase, type CompArea } from '@/lib/pricing/comp-area'
 import { listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
@@ -374,6 +375,8 @@ export function computeSubdivisionPulse(
   subdivision: string,
   months: number,
   sinceIso: string,
+  /** How the read scoped the subdivision, when not by the MLS name alone (subdivisionScopeTrace). */
+  scope?: string | null,
 ): CmaSubdivisionPulse | null {
   const prices = rows.map((r) => Number(r.ClosePrice)).filter((n) => Number.isFinite(n) && n > 0)
   if (prices.length < 3) return null
@@ -384,7 +387,7 @@ export function computeSubdivisionPulse(
     low: Math.min(...prices),
     high: Math.max(...prices),
     months,
-    source: `Supabase listings, SubdivisionName='${subdivision}', detached (PropertyType='A' AND property_sub_type='Single Family Residence'), Closed, CloseDate ≥ ${sinceIso}: ${prices.length} sales`,
+    source: `Supabase listings, ${scope ?? `SubdivisionName='${subdivision}'`}, detached (PropertyType='A' AND property_sub_type='Single Family Residence'), Closed, CloseDate ≥ ${sinceIso}: ${prices.length} sales`,
   }
 }
 
@@ -513,15 +516,21 @@ export async function buildCmaExtras(args: {
             propertySubType: args.subject.propertySubType,
           }).catch(() => null)
         : getCmaBandInventory(args.subject.city, lo, hi, args.subject.propertySubType).catch(() => null),
-    subdivision ? getCmaSubdivisionClosed(subdivision, since12).catch(() => []) : Promise.resolve([]),
+    subdivision
+      ? getCmaSubdivisionClosed(subdivision, since12, {
+          ground: subjectPlatGround(args.subject),
+          city: args.subject.city ?? null,
+        }).catch(() => [])
+      : Promise.resolve([]),
     getCmaMarketAreaRows(args.subject.city, sinceComps).catch(() => []),
   ])
 
   const photoUrl = args.subject.photoUrl?.trim() ?? ''
   const area = args.compArea ?? null
-  // The city-wide rows narrow to the area by name first (cheap), then by the
-  // recorded plat polygon each survivor sits in (rule 24, the same exact test
-  // the area reads apply).
+  // The city-wide rows narrow to the area by name first (cheap), or by the box
+  // around the area's recorded plats (a row on an area plat under another MLS
+  // spelling, reader review 2026-10-08), then by the recorded plat polygon
+  // each survivor sits in (rule 24, the same exact test the area reads apply).
   const rowGeo = (r: CmaMarketAreaRow) => ({
     latitude: r.Latitude ?? null,
     longitude: r.Longitude ?? null,
@@ -529,7 +538,16 @@ export async function buildCmaExtras(args: {
     city: r.City ?? args.subject.city,
     address: rowStreetAddress(r),
   })
-  const named = area ? areaRows.filter((r) => compAreaContains(area, rowGeo(r))) : areaRows
+  const outline = area ? await areaPlatOutline(area, args.subject.city) : null
+  const inOutline = (r: CmaMarketAreaRow): boolean =>
+    outline != null &&
+    r.Latitude != null &&
+    r.Longitude != null &&
+    r.Latitude >= outline.latMin &&
+    r.Latitude <= outline.latMax &&
+    r.Longitude >= outline.lngMin &&
+    r.Longitude <= outline.lngMax
+  const named = area ? areaRows.filter((r) => compAreaContains(area, rowGeo(r)) || inOutline(r)) : areaRows
   const namedPlats = area ? await rowPlatSlugs(area, named) : []
   const pocketRows = area
     ? named.filter((r, i) => compAreaContains(area, { ...rowGeo(r), platSlug: namedPlats[i] }))
@@ -537,7 +555,15 @@ export async function buildCmaExtras(args: {
   return {
     seasonality: computeSeasonality(skinny, args.subject.city, since36),
     band: computeBandPosition(bandInv, args.subject.city, lo, hi, args.subject, area),
-    subdivisionPulse: subdivision ? computeSubdivisionPulse(subRows, subdivision, SUBDIVISION_MONTHS, since12) : null,
+    subdivisionPulse: subdivision
+      ? computeSubdivisionPulse(
+          subRows,
+          subdivision,
+          SUBDIVISION_MONTHS,
+          since12,
+          subdivisionScopeTrace(subdivision, subjectPlatGround(args.subject)),
+        )
+      : null,
     financing: computeFinancing(skinny, args.subject.city, since12),
     photoBench: computePhotoBench(args.subjectPhotosCount, args.comps),
     marketArea: computeMarketArea({

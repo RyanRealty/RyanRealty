@@ -90,7 +90,13 @@ export type SameAreaCandidate = {
   address: string | null
   city?: string | null
   subdivision?: string | null
-  /** Recorded plat slug. Candidates carry none today; the field waits for a slug-first read. */
+  /**
+   * The recorded plat polygon the home sits in, as the area read placed it (a
+   * slug; null when tested and none holds it; undefined when nobody tested
+   * it). The area test and the own-plat test read it before the MLS name, so
+   * a home on an area plat under another MLS spelling stays in (rule 24;
+   * reader review 2026-10-08).
+   */
   subdivisionSlug?: string | null
   latitude?: number | null
   longitude?: number | null
@@ -141,7 +147,8 @@ export function sameAreaSubject(s: CmaSubject): SameAreaSubject {
  * In this order; the first refusal is the reason.
  *
  * 1. AREA. A bounded sales area is tested exactly (`compAreaContains`): the
- *    plat names for a subdivision area, the polygon for a neighborhood or
+ *    recorded plat polygon the read placed the home in for a subdivision
+ *    area (the plat names only where no polygon holds it), the polygon for a neighborhood or
  *    community, the circle for a radius. A null or city area skips this test;
  *    the reads bind City.
  * 2. PRODUCT. `letterProductMatch`: a known other product has to be the same
@@ -180,6 +187,8 @@ export function sameAreaFit(
       longitude: c.longitude ?? null,
       subdivision: c.subdivision ?? null,
       city: c.city ?? null,
+      // The polygon the read put it in, when it read one.
+      platSlug: c.subdivisionSlug,
       // A plat only the own-street rung reached holds only the subject's street.
       address: c.address ?? undefined,
     })

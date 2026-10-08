@@ -22,6 +22,7 @@ import type { CmaSubject } from '@/lib/cma/types'
 import type { CmaSubdivisionHistoryRow } from '@/lib/data/cma/builderReads'
 import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
 import { sparkPhotoAt } from '@/lib/cma/render-blocks'
+import { subdivisionScopeTrace, subjectPlatGround } from '@/lib/pricing/plat-ground'
 
 const MODEL = GROK_MODELS.vision
 const INPUT_COST_PER_TOKEN = 0.000003
@@ -87,6 +88,8 @@ export function computeSubdivisionFacts(
   subdivision: string,
   subject: CmaSubject,
   sinceIso: string,
+  /** How the read scoped the subdivision, when not by the MLS name alone (subdivisionScopeTrace). */
+  scope?: string | null,
 ): SubdivisionStoryFacts | null {
   const sales = rows.filter((r) => Number.isFinite(Number(r.ClosePrice)) && Number(r.ClosePrice) > 0)
   if (sales.length < 5) return null
@@ -142,7 +145,7 @@ export function computeSubdivisionFacts(
     saleToListRecentPct: stlMed != null ? Math.round(stlMed * 1000) / 10 : null,
     subjectSqftPercentile: sqftPct,
     vintageSpan: vintages.length >= 5 ? { min: Math.min(...vintages), max: Math.max(...vintages) } : null,
-    source: `Supabase listings, SubdivisionName='${subdivision}', detached (PropertyType='A' AND property_sub_type='Single Family Residence'), Closed, CloseDate ≥ ${sinceIso}: ${sales.length} sales, aggregated by close year`,
+    source: `Supabase listings, ${scope ?? `SubdivisionName='${subdivision}'`}, detached (PropertyType='A' AND property_sub_type='Single Family Residence'), Closed, CloseDate ≥ ${sinceIso}: ${sales.length} sales, aggregated by close year`,
   }
 }
 
@@ -330,7 +333,13 @@ export async function buildSubdivisionStory(args: {
 }): Promise<SubdivisionStory | null> {
   const subdivision = args.subject.subdivision?.trim()
   if (!subdivision) return null
-  const facts = computeSubdivisionFacts(args.rows, subdivision, args.subject, args.sinceIso)
+  const facts = computeSubdivisionFacts(
+    args.rows,
+    subdivision,
+    args.subject,
+    args.sinceIso,
+    subdivisionScopeTrace(subdivision, subjectPlatGround(args.subject)),
+  )
   if (!facts) return null
   const ai = await generateSubdivisionStory({ subject: args.subject, facts, rows: args.rows })
   return { facts, ...ai }

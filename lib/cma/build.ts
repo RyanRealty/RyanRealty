@@ -32,6 +32,7 @@ import { brokerCompRefusal, selectCompsByKeys, MIN_COMPS } from '@/lib/cma/comps
 import { reviewWithRefill } from '@/lib/cma/review-refill'
 import { reviewWeightFactor } from '@/lib/cma/review-weight'
 import { selectCompsPreferringFacts } from '@/lib/pricing/select'
+import { subjectPlatGround } from '@/lib/pricing/plat-ground'
 import {
   adjustCmaCompAlongMarket,
   adjustCompAlongMarket,
@@ -1386,8 +1387,14 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // deterministic over the FULL history; the AI narrative is grounded on
     // those facts + remarks + recent-sale photos, and fails open.
     const storySince = new Date(Date.now() - SUBDIVISION_STORY_YEARS * 365.25 * 24 * 3600e3).toISOString().slice(0, 10)
+    // The subject's ground, not one MLS spelling (reader review 2026-10-08,
+    // 1355 Jacksonville): every close on its recorded plat, whatever the MLS
+    // calls it, and the name alone only where no polygon holds the home.
     const storyRows = subject.subdivision?.trim()
-      ? await getCmaSubdivisionHistory(subject.subdivision, storySince).catch(() => [])
+      ? await getCmaSubdivisionHistory(subject.subdivision, storySince, {
+          ground: subjectPlatGround(subject),
+          city: subject.city ?? null,
+        }).catch(() => [])
       : []
     const subdivisionStory = storyRows.length
       ? await buildSubdivisionStory({ subject, rows: storyRows, sinceIso: storySince })
