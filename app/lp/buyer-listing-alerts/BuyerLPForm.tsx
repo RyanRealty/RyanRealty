@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { trackEvent, getLpContext, readRrSessionId } from '@/lib/tracking'
+import { readRrSessionId } from '@/lib/tracking'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -60,20 +60,7 @@ export default function BuyerLPForm() {
     startTransition(async () => {
       const r = await submitBuyerLPForm(submission)
       if (r.success) {
-        const lp = getLpContext('buyer-listing-alerts') // hydration-safe (event-handler body, not render)
-        try {
-          trackEvent('generate_lead', {
-            source: 'buyer_lp',
-            lp_variant: lp.lp_variant,
-            lp_source: lp.lp_source,
-            lp_campaign: lp.lp_campaign,
-            timeline: submission.timeline,
-            budget_max: submission.budgetMax,
-            search_area_count: submission.searchAreas.length,
-          })
-        } catch {
-          // Tracking helper unavailable (no consent) — server-side lead still landed.
-        }
+        // GA4 generate_lead is sent once, by the server action (lib/lead-tracking.ts).
         if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
           try {
             window.fbq('track', 'Lead', {

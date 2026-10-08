@@ -92,7 +92,9 @@ describe('the listings ladder admits on the one 20% price line', () => {
       row('OUT', 250 * 0.79, 11),
     ])
     const sel = await selectComps(subject())
-    expect(sel.diagnostics.price_anchor).toEqual({ ppsf: 250, n: 5 })
+    // The level that held the median rides with it (lib/pricing/price-anchor.ts):
+    // these rows carry no plat or MLS name, so the neighborhood polygon holds it.
+    expect(sel.diagnostics.price_anchor).toEqual({ ppsf: 250, n: 5, level: 'neighborhood', where: 'in Larkspur' })
     expect(keys(sel)).toContain('IN')
     expect(keys(sel)).not.toContain('OUT')
     expect(sel.diagnostics.excluded_totals.price_tier).toBeGreaterThan(0)

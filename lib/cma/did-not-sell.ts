@@ -35,6 +35,7 @@ import { FAILED_ASK_BACKTEST, askAgainstRangeSentence } from '@/lib/cma/expired-
 import { SOLD_PPSF_NET_ROW_LABEL, subjectDomDays, subjectListingFailed } from '@/lib/cma/comp-matrix'
 import { salesAreaIsBounded } from '@/lib/pricing/comp-area'
 import { comparisonSalePrice, concessionOnSale } from '@/lib/pricing/seller-net'
+import { printedBaths } from '@/lib/pricing/bath-count'
 import type { CmaExpiredPeer } from '@/lib/cma/market-status'
 import type { ExpiredFinalCycle } from '@/lib/cma/expired-audit'
 import type { CmaAdjustedComp, CmaMarketContext, CmaSubject } from '@/lib/cma/types'
@@ -235,12 +236,17 @@ function factsLine(f: {
   sqft?: number | null
   beds?: number | null
   baths?: number | null
+  bathsFull?: number | null
+  bathsHalf?: number | null
   yearBuilt?: number | null
 }): string {
+  // The bath count the sales table prints (2 full and 1 half is 2.5), never
+  // BathroomsTotal raw, which counts the half bath whole.
+  const baths = printedBaths(f)
   return [
     f.sqft != null && f.sqft > 0 ? `${int(f.sqft)} sqft` : null,
     f.beds != null ? `${int(f.beds)} bd` : null,
-    f.baths != null ? `${f.baths % 1 === 0 ? int(f.baths) : f.baths.toFixed(1)} ba` : null,
+    baths != null ? `${baths % 1 === 0 ? int(baths) : baths.toFixed(1)} ba` : null,
     f.yearBuilt != null ? `built ${f.yearBuilt}` : null,
   ]
     .filter(Boolean)

@@ -49,10 +49,10 @@
  * a working surface that appears only once the data lands reads as a page that
  * swallowed the tap. The reading state is the sheet's first frame.
  *
- * ATTRIBUTION. `readAskSource()` is read once at submit and feeds BOTH the GA4
- * event (`ask_source`, never `source` — that key is taken and means the form)
- * and the CMA request metadata, so a submit the sticky control sent can be
- * counted in GA4 and audited in the row it created.
+ * ATTRIBUTION. `readAskSource()` is read once at submit and goes to the server
+ * action, which puts it on the one GA4 generate_lead (`ask_source`, never
+ * `source`) and on the CMA request metadata, so a submit the sticky control
+ * sent can be counted in GA4 and audited in the row it created.
  */
 import { useEffect, useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
@@ -72,7 +72,6 @@ import {
   markAskSource,
   peekAskSource,
   readAskSource,
-  withAskSource,
   type AskSource,
 } from '@/lib/ask-source'
 import {
@@ -441,17 +440,7 @@ export function SellValueForm({
           // Pixel suppressed (consent gate). Server CAPI still fires.
         }
       }
-      try {
-        trackEvent(
-          'generate_lead',
-          withAskSource(
-            { source: 'seller_lp', classification: result.classification, timeframe: chosen },
-            askSource,
-          ),
-        )
-      } catch {
-        // tracking helper missing in some envs
-      }
+      // GA4 generate_lead is sent once, by the server action (lib/lead-tracking.ts).
       setIsHot(result.classification === 'hot')
       setBookLane(chosen === NEAR_TERM)
       setStep('success')

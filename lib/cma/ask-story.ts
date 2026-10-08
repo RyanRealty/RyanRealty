@@ -49,6 +49,7 @@
  * chapter chooses it.
  */
 import { askStepIsOwnEra } from '@/lib/cma/price-path'
+import { cameOffThenSentence, type CameOffFacts } from '@/lib/cma/listing-status'
 
 export type AskGapClass = 'far-above' | 'near-above' | 'inside' | 'below' | 'neutral'
 
@@ -66,6 +67,12 @@ function pct1(ratio: number): string {
  * on a dollars-a-foot measure. Both were true and, a minute apart, they
  * cancelled. Chapter 2 now leads with this sentence and puts its own
  * dollars-a-foot line after it.
+ *
+ * THE RANGE IS ADJUSTED, SO IT IS WHAT THE SALES SUPPORT, NOT WHAT HOMES SOLD
+ * IN (reader review 2026-10-08). The two ends are each sale adjusted to this
+ * home; 20676 Wild Rose's sales sold for $675,000 to $715,000 and adjust to
+ * $627,332 to $724,442. "The range homes like yours sold in" named the
+ * adjusted figures as sold prices.
  */
 export function askAgainstRangeSentence(
   ask: number | null,
@@ -77,12 +84,12 @@ export function askAgainstRangeSentence(
   const high = Math.max(rangeLow, rangeHigh)
   if (!(low > 0) || !(high > 0)) return ''
   if (ask > high) {
-    return `You were asking ${pct1((ask - high) / high)} percent above the top of the range homes like yours sold in.`
+    return `You were asking ${pct1((ask - high) / high)} percent above the top of the range the sales support.`
   }
   if (ask < low) {
-    return `You were asking ${pct1((low - ask) / low)} percent below the bottom of the range homes like yours sold in.`
+    return `You were asking ${pct1((low - ask) / low)} percent below the bottom of the range the sales support.`
   }
-  return 'You were asking inside the range homes like yours sold in.'
+  return 'You were asking inside the range the sales support.'
 }
 
 /**
@@ -283,7 +290,7 @@ function rangeSplitSentences(split: AskRangeSplit, own: 'inside' | 'below'): str
   if (others.length === 0) return null
   const out: string[] = []
   others.forEach((k, i) => {
-    const range = i === 0 ? 'the range homes like yours sold in' : 'it'
+    const range = i === 0 ? 'the range the sales support' : 'it'
     out.push(
       `For ${dayCount(split[k].days)} of your ${dayCount(split.total)} days you were asking ${k} ${range}, ${atAsks(split[k].asks)}.`,
     )
@@ -363,6 +370,20 @@ function usd(n: number): string {
 }
 
 /**
+ * The adjusted range, said as what it is: what homes like this one are worth
+ * once each sale is adjusted to it. Never "sold for" (reader review
+ * 2026-10-08).
+ */
+export function adjustedWorthSentence(rangeLow: number, rangeHigh: number): string {
+  const low = Math.min(rangeLow, rangeHigh)
+  const high = Math.max(rangeLow, rangeHigh)
+  if (!(low > 0) || !(high > 0)) return ''
+  return low === high
+    ? `Adjusted to your home, homes like yours are worth ${usd(low)}.`
+    : `Adjusted to your home, homes like yours are worth ${usd(low)} to ${usd(high)}.`
+}
+
+/**
  * The ask, the range, and the days. Nothing else.
  *
  * The chapter a document gets when it may not argue about the price: the home
@@ -381,11 +402,10 @@ export function neutralAskReading(input: {
   const low = Math.min(input.rangeLow, input.rangeHigh)
   const high = Math.max(input.rangeLow, input.rangeHigh)
   if (low > 0 && high > 0) {
-    bits.push(
-      low === high
-        ? `Homes like yours sold for ${usd(low)}.`
-        : `Homes like yours sold for ${usd(low)} to ${usd(high)}.`,
-    )
+    // The range is each sale adjusted to this home, never what they sold for
+    // (20676 Wild Rose printed "Homes like yours sold for $627,332 to
+    // $724,442" over sales that sold for $675,000 to $715,000).
+    bits.push(adjustedWorthSentence(low, high))
   }
   if (input.days != null && input.days > 0) {
     bits.push(`You were on the market ${Math.round(input.days).toLocaleString('en-US')} days.`)
@@ -425,6 +445,14 @@ export function askStoryReading(input: {
   /** The listing's MLS status, so a short withdrawal reads as one. */
   status?: string | null
   /**
+   * When the listing came off the market on one day and took its status of
+   * record on a later one (3177 Coho: withdrawn Feb 10 after 71 days, expired
+   * Sep 30), the days are told with both dates, "It came off the market on
+   * Feb 10 after 71 days, and the listing expired on Sep 30.", in place of the
+   * plain days sentence (reader review 2026-10-08). Ignored otherwise.
+   */
+  cameOff?: CameOffFacts | null
+  /**
    * Every ask the listing carried and the days each ran, oldest first
    * (`expiredAudit.askExposure.segments`). The inside story splits the days by
    * where each ask sat against the range and makes its claim only about the
@@ -446,12 +474,17 @@ export function askStoryReading(input: {
     median != null &&
     median > 0 &&
     Math.round(input.days) <= Math.round(median)
+  const cameOffLine = input.cameOff ? cameOffThenSentence(input.cameOff) : null
   const plainDays = (days: number) => {
+    if (cameOffLine) return cameOffLine
     const n = Math.round(days).toLocaleString('en-US')
     return /^withdrawn/i.test((input.status ?? '').trim())
       ? `Your listing was withdrawn after ${n} days.`
       : `Your home was on the market ${n} days.`
   }
+  // The days, said once: with both dates when the status of record came
+  // after the day it came off, else as the story tells them.
+  const satLine = (cls: AskGapClass) => cameOffLine ?? satSentence(cls, input.days)
   if (input.neutral) {
     return neutralAskReading({
       ask: input.ask,
@@ -465,7 +498,7 @@ export function askStoryReading(input: {
       input.days != null && input.days > 0
         ? short
           ? plainDays(input.days)
-          : `Your home sat ${Math.round(input.days).toLocaleString('en-US')} days.`
+          : (cameOffLine ?? `Your home sat ${Math.round(input.days).toLocaleString('en-US')} days.`)
         : ''
     return [days, medianSentence('near-above', input.city, input.marketMedianDom)]
       .filter((s) => s.trim())
@@ -477,9 +510,9 @@ export function askStoryReading(input: {
   const against = askAgainstRangeSentence(input.ask, input.rangeLow, input.rangeHigh)
   const medianLine = medianSentence(cls, input.city, input.marketMedianDom)
   if (short && input.days != null) return join([against, plainDays(input.days), medianLine])
-  if (cls === 'far-above') return join([against, satSentence(cls, input.days), medianLine])
+  if (cls === 'far-above') return join([against, satLine(cls), medianLine])
   if (cls === 'near-above') {
-    return join([against, satSentence(cls, input.days), medianLine, walkTheHouseSentence(cls, input.days)])
+    return join([against, satLine(cls), medianLine, walkTheHouseSentence(cls, input.days)])
   }
   // Inside or below: the sentence that points away from the number is about
   // the days spent at a price on this side of the range, so the days are
@@ -491,18 +524,21 @@ export function askStoryReading(input: {
   if (!split || split[own].days <= 0) {
     // Which days sat at which price is not known, so the days print as the
     // plain fact and nothing causal hangs on them.
-    return join([against, satSentence(cls, input.days), medianLine])
+    return join([against, satLine(cls), medianLine])
   }
   const stretch = split[own].days
   const speaks = inRangeStretchSpeaks(stretch, input.marketMedianDom)
   const told = rangeSplitSentences(split, own)
-  if (told) return join([...told, medianLine, speaks ? walkTheHouseSentence(cls, stretch) : ''])
+  // The split sentences already count the days; the two dates are said once
+  // ahead of them, without the count.
+  const datesLine = input.cameOff ? cameOffThenSentence(input.cameOff, { withDays: false }) : null
+  if (told) return join([datesLine ?? '', ...told, medianLine, speaks ? walkTheHouseSentence(cls, stretch) : ''])
   // Every day sat on this side. The days were just said by the sat sentence,
   // so the claim refers back to them rather than printing the count twice
   // (Matt 2026-10-07: each is said once).
   return join([
     against,
-    satSentence(cls, input.days),
+    satLine(cls),
     medianLine,
     speaks ? walkTheHouseSentence(cls, stretch, { daysAlreadySaid: true }) : '',
   ])

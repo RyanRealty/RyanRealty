@@ -6,7 +6,7 @@ import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
 import { cookies } from 'next/headers'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import { canonicallyTagLead, type LeadSource } from '@/lib/canonical-lead-tagger'
-import { fireLeadGenerated } from '@/lib/lead-tracking'
+import { fireLeadGenerated, fireNonLeadEvent } from '@/lib/lead-tracking'
 
 const SITE_URL = siteOrigin()
 
@@ -158,16 +158,27 @@ export async function submitPageCTA(input: {
 
     await stitchCapturedLead(result.ok ? result.personId : null, email)
 
-    // GA4 Measurement Protocol mirror.
-    await fireLeadGenerated({
-      lp_variant: `page-cta-${input.leadType ?? 'general'}${input.area ? `-${input.area}` : ''}`,
-      lead_type: input.leadType === 'seller' ? 'seller' : input.leadType === 'buyer' ? 'buyer' : 'page_cta',
-      value,
-      extra: {
-        area: input.area,
-        context: input.context,
-      },
-    })
+    // GA4 Measurement Protocol mirror. A newsletter signup is not a lead
+    // (lib/analytics/lead-event.ts): its own event, never generate_lead.
+    const pageCtaVariant = `page-cta-${input.leadType ?? 'general'}${input.area ? `-${input.area}` : ''}`
+    if (input.leadType === 'newsletter') {
+      await fireNonLeadEvent({
+        event_name: 'newsletter_signup',
+        form_id: 'page_cta',
+        lp_variant: pageCtaVariant,
+        extra: { area: input.area, context: input.context },
+      })
+    } else {
+      await fireLeadGenerated({
+        lp_variant: pageCtaVariant,
+        lead_type: input.leadType === 'seller' ? 'seller_listing' : input.leadType === 'buyer' ? 'buyer_question' : 'contact_general',
+        form_id: 'page_cta',
+        extra: {
+          area: input.area,
+          context: input.context,
+        },
+      })
+    }
 
     return { error: null }
   } catch (err) {
@@ -276,8 +287,8 @@ export async function submitRentalLead(input: {
 
     await fireLeadGenerated({
       lp_variant: 'rental-calculator',
-      lead_type: 'buyer',
-      value: 300,
+      lead_type: 'buyer_question',
+      form_id: 'rental_calculator',
       extra: { listing_key: input.listingKey, property: input.propertyLabel },
     })
 
@@ -409,8 +420,8 @@ export async function submitTetherowLead(input: {
 
     await fireLeadGenerated({
       lp_variant: 'tetherow-landing-v1',
-      lead_type: isSeller ? 'seller' : 'buyer',
-      value,
+      lead_type: isSeller ? 'seller_listing' : 'buyer_question',
+      form_id: 'tetherow_lp',
       extra: { resort: input.resort ?? 'tetherow', campaign: input.campaign, intent: input.intent },
     })
 

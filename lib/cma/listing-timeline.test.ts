@@ -198,7 +198,7 @@ describe('listingTimelineReading', () => {
 
   it('measures the final ask against the top of the range', () => {
     expect(listingTimelineReading({ timeline: base, city: 'Redmond', marketMedianDom: 21 })).toBe(
-      'You were asking 15.6 percent above the top of the range homes like yours sold in. Your home sat 187 days. The median home in Redmond has an accepted offer in 21 days.',
+      'You were asking 15.6 percent above the top of the range the sales support. Your home sat 187 days. The median home in Redmond has an accepted offer in 21 days.',
     )
   })
 
@@ -217,7 +217,7 @@ describe('listingTimelineReading', () => {
       city: 'Redmond',
       marketMedianDom: 21,
     })
-    expect(reading).toContain('You were asking inside the range homes like yours sold in')
+    expect(reading).toContain('You were asking inside the range the sales support')
     // The MLS says the listing came off; it does not say no offer came in.
     expect(reading).toContain('Your home sat 187 days and did not sell.')
     expect(reading).not.toContain('without an offer')
@@ -235,7 +235,7 @@ describe('listingTimelineReading', () => {
       city: 'Redmond',
       marketMedianDom: null,
     })
-    expect(reading).toBe('You were asking inside the range homes like yours sold in. Your home sat 187 days and did not sell.')
+    expect(reading).toBe('You were asking inside the range the sales support. Your home sat 187 days and did not sell.')
   })
 
   it('splits the days at the asks the line draws when only the last cut came inside the range', () => {
@@ -254,7 +254,7 @@ describe('listingTimelineReading', () => {
       marketMedianDom: 21,
     })
     expect(reading).toBe(
-      'For 77 of your 187 days you were asking above the range homes like yours sold in, at $475,000. ' +
+      'For 77 of your 187 days you were asking above the range the sales support, at $475,000. ' +
         'You asked $390,000, inside the range, for the last 110 days, and your home did not sell. ' +
         'Half of the homes that sold in Redmond had an offer inside 21 days. ' +
         'At a price inside the range, 110 days without a sale points at something other than the number. We would walk it with you before saying more.',
@@ -271,7 +271,7 @@ describe('listingTimelineReading', () => {
       city: 'Redmond',
       marketMedianDom: 26,
     })
-    expect(reading).toContain('percent above the top of the range homes like yours sold in')
+    expect(reading).toContain('percent above the top of the range the sales support')
     expect(reading).toContain('Half of the homes that sold in Redmond had an offer inside 26 days.')
     expect(reading).toContain('That starts with the price. We would walk it with you before saying more.')
     expect(reading).not.toContain('above what the sales support')

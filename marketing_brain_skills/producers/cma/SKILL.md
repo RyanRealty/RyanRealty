@@ -150,6 +150,7 @@ comp-supported floor so the number never prints at the bottom of its own range.
 Applied in `computePricing` AND again in `priceCmaSet`, because the engine cover
 re-derives every tier in between; it is idempotent and keeps the first baseline.
 23 Benaiah went from $653,000 to $565,000 against a twin that sold at $512,000.
+Trim normally (Matt 2026-10-08, 915 Saginaw): when the street sale is the lowest or the highest adjusted sale, the normal trim sets it aside like any end sale; it is not released back into the printed range and the same-street cap does not set the price. One sale never decides the price. Saginaw's street sale (536 Saginaw, adjusted $727,148) sat under three River West sales at $987,577 to $1,113,820 and had capped the cover at $800,000. The anchor still applies when the street sale is inside the kept set.
 
 **The last-resort rung stops at 25% on size** (`WIDENED_SQFT_BAND`), down from
 45%. A sale half again the subject's size cleared the old band while only half

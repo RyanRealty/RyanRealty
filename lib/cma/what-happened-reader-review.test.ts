@@ -136,7 +136,7 @@ describe('2. the inside-the-range story is true to every ask', () => {
     const e = buildAskExposure({ cycle: WOODSMAN_CYCLE, ...WOODSMAN_RANGE })!
     const reading = askStoryReading({ ...base, ask: 1_600_000, ...WOODSMAN_RANGE, days: 208, segments: e.segments })
     expect(reading).toBe(
-      'For 176 of your 208 days you were asking above the range homes like yours sold in, at four asks from $1,695,000 to $1,629,000. ' +
+      'For 176 of your 208 days you were asking above the range the sales support, at four asks from $1,695,000 to $1,629,000. ' +
         'You asked $1,600,000, inside the range, for the last 32 days, and your home did not sell. ' +
         'Half of the homes that sold in Bend had an offer inside 26 days.',
     )
@@ -153,7 +153,7 @@ describe('2. the inside-the-range story is true to every ask', () => {
       segments: e.segments,
     })
     expect(reading).toBe(
-      'For 148 of your 227 days you were asking above the range homes like yours sold in, at three asks from $699,000 to $659,000. ' +
+      'For 148 of your 227 days you were asking above the range the sales support, at three asks from $699,000 to $659,000. ' +
         'You asked $639,000, inside the range, for the last 79 days, and your home did not sell. ' +
         'Half of the homes that sold in Bend had an offer inside 26 days. ' +
         'At a price inside the range, 79 days without a sale points at something other than the number. We would walk it with you before saying more.',
@@ -168,7 +168,7 @@ describe('2. the inside-the-range story is true to every ask', () => {
       const e = buildAskExposure({ cycle, ...range })!
       const reading = askStoryReading({ ...base, ask, ...range, days, segments: e.segments })
       expect(reading).not.toMatch(/without an offer|never got|no offer/)
-      expect(reading).not.toContain('You were asking inside the range homes like yours sold in.')
+      expect(reading).not.toContain('You were asking inside the range the sales support.')
       expect(reading).not.toMatch(/[—]/)
     }
   })
@@ -176,7 +176,7 @@ describe('2. the inside-the-range story is true to every ask', () => {
   it('makes no claim about the days at a price when the split is not known', () => {
     const reading = askStoryReading({ ...base, ask: 639_000, ...JACKSON_RANGE, days: 227, segments: [] })
     expect(reading).toBe(
-      'You were asking inside the range homes like yours sold in. Your home sat 227 days and did not sell. ' +
+      'You were asking inside the range the sales support. Your home sat 227 days and did not sell. ' +
         'Half of the homes that sold in Bend had an offer inside 26 days.',
     )
   })

@@ -37,8 +37,8 @@ import {
 } from '@/lib/cma/listing-window-market'
 import { measureListingWindowMarket } from '@/lib/cma/listing-window-load'
 import { localReadForSet } from '@/lib/cma/pocket-pricing'
-import { dateBasisCaption, salesMethodSentences } from '@/lib/cma/sales-method-note'
-import { withFlatLocalDateStory } from '@/lib/cma/flat-date-story'
+import { DATE_REASON_UNDER_GRID, dateBasisCaption, salesMethodSentences } from '@/lib/cma/sales-method-note'
+import { FLAT_LOCAL_DATE_SENTENCE, withFlatLocalDateStory } from '@/lib/cma/flat-date-story'
 import { pocketDateFollowsLocalReadCheck } from '@/lib/cma/letter-consistency'
 import type { CompSelectionDiagnostics } from '@/lib/cma/comp-trace'
 import type { CmaComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
@@ -228,20 +228,26 @@ describe('62475 Woodsman: the local page says held flat, so no sale moves for da
     expect(basis.indexLevels).toBeUndefined()
   })
 
-  it('says so under the grid and in Basis and limits, with the local figures', () => {
+  // The reason prints once, under the grid; Basis and limits points back to
+  // it (reader review, 3037 Purcell and 62475 Woodsman, 2026-10-08: the same
+  // sentence printed in both places).
+  it('says so under the grid with the local figures, and Basis and limits points back to it', () => {
     expect(dateBasisCaption({ subject, comps, pricing })).toBe(
       'No sale is adjusted for date. Homes like yours in Shevlin West held flat while your home was listed, $581 then $572 a square foot, so each sale stands at its sold price.',
     )
     expect(salesMethodSentences({ subject, comps, pricing })).toEqual([
-      'None of these sales is moved for the month it sold. Homes like yours in Shevlin West held flat while your home was listed, $581 then $572 a square foot, so each sale stands at its sold price.',
+      `None of these sales is moved for the month it sold. ${DATE_REASON_UNDER_GRID}`,
     ])
   })
 
-  it('keeps that sentence when the letter applies the flat local story to the same row', () => {
+  it('keeps the gate over the generic flat line when the letter applies the flat local story to the same row', () => {
     // opinion-pages gridSales swaps in the generic flat sentence when the
-    // local page held flat and nothing moved; the gate's own reason wins.
+    // local page held flat and nothing moved; the gate's own reason wins,
+    // and it is the one under the grid.
     const flat = withFlatLocalDateStory(pricing)
-    expect(salesMethodSentences({ subject, comps, pricing: flat })[0]).toContain('Homes like yours in Shevlin West held flat')
+    const method = salesMethodSentences({ subject, comps, pricing: flat })[0]
+    expect(method).toBe(`None of these sales is moved for the month it sold. ${DATE_REASON_UNDER_GRID}`)
+    expect(method).not.toContain(FLAT_LOCAL_DATE_SENTENCE)
   })
 })
 
@@ -270,14 +276,15 @@ describe('the same sales when the local page says fell: the Bend index moves the
     expect(basis.sentence).toContain('The local read fell, so these sales move down with the Bend city index.')
   })
 
-  it('names the local fall beside the Bend figure, under the grid and in Basis and limits', () => {
+  it('names the local fall beside the Bend figure under the grid, once, and Basis and limits points back to it', () => {
     const why =
       "These sales move with Bend's figure only because homes like yours in Shevlin West also fell while your home was listed, from $600 to $570 a square foot."
     expect(dateBasisCaption({ subject, comps, pricing })).toMatch(new RegExp(`No sale is moved up for date\\. ${why.replace(/[.$]/g, '\\$&')}$`))
     const method = salesMethodSentences({ subject, comps, pricing })
     expect(method).toHaveLength(1)
     expect(method[0]).toContain('we moved six of the seven down by how much Bend')
-    expect(method[0]!.endsWith(why)).toBe(true)
+    expect(method[0]!.endsWith(DATE_REASON_UNDER_GRID)).toBe(true)
+    expect(method[0]).not.toContain(why)
   })
 })
 
@@ -329,8 +336,12 @@ describe('no local read: the sold price stands (the documented default)', () => 
     expect(comps.every((c) => c.timeAdjustment === 0)).toBe(true)
     expect(basis.localGate).toMatchObject({ branch: 'no-local-read', missing: 'no-listing-window', moved: false })
     expect(basis.source.table).toContain('no local per-foot read: no-listing-window')
+    // The reason prints under the grid; Basis and limits points back to it.
+    expect(dateBasisCaption({ subject, comps, pricing })).toBe(
+      'No sale is adjusted for date. We move these sales down for date only when homes in Shevlin West are falling in price, and there is no recent listing of your home to measure that over, so each sale stands at its sold price.',
+    )
     expect(salesMethodSentences({ subject, comps, pricing })).toEqual([
-      'None of these sales is moved for the month it sold. We move these sales down for date only when homes in Shevlin West are falling in price, and there is no recent listing of your home to measure that over, so each sale stands at its sold price.',
+      `None of these sales is moved for the month it sold. ${DATE_REASON_UNDER_GRID}`,
     ])
   })
 
@@ -369,17 +380,19 @@ describe('the two pages agree, whatever the local page says', () => {
       expect(comps.some((c) => c.timeAdjustment > 0)).toBe(false)
       const caption = dateBasisCaption({ subject, comps, pricing }) ?? ''
       const method = salesMethodSentences({ subject, comps, pricing }).join(' ')
-      for (const text of [caption, method]) {
-        expect(text).not.toContain(EM_DASH)
-        if (footPanel.label == null) {
-          // The same word and the same two figures as the page.
-          expect(text).toContain(`${footPanel.move} while your home was listed`)
-          expect(text).toContain(footPanel.fromText)
-          expect(text).toContain(footPanel.toText)
-        } else {
-          expect(text).toContain('too few of them sold then to tell')
-        }
+      for (const text of [caption, method]) expect(text).not.toContain(EM_DASH)
+      // The reason, with the page's own word and figures, prints once, under
+      // the grid; Basis and limits points back to it.
+      if (footPanel.label == null) {
+        // The same word and the same two figures as the page.
+        expect(caption).toContain(`${footPanel.move} while your home was listed`)
+        expect(caption).toContain(footPanel.fromText)
+        expect(caption).toContain(footPanel.toText)
+      } else {
+        expect(caption).toContain('too few of them sold then to tell')
       }
+      expect(method).toContain(DATE_REASON_UNDER_GRID)
+      expect(method).not.toContain('while your home was listed')
     })
   }
 })
