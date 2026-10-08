@@ -53,10 +53,20 @@ export const DID_NOT_SELL_HEADING = 'The listings near you that did not sell.'
  * when the seller's own listing is the one that came off, and "like yours"
  * because the search reads the subject's own type and price band, and an
  * area can hold unsold homes that are not like it (Jackson's two).
+ *
+ * When the chapter's sentence counts homes that did come off unsold and are
+ * not like this one, the heading says that, not that none came off: 1355
+ * Jacksonville printed "No other listing like yours near you came off
+ * unsold." directly over "One home ... came off the market without selling"
+ * (reader review 2026-10-08), which read as a contradiction.
  */
-export function didNotSellHeading(input: { shown: number; ownFailed: boolean }): string {
+export function didNotSellHeading(input: { shown: number; ownFailed: boolean; unlikeCount?: number }): string {
   if (input.shown > 0) return DID_NOT_SELL_HEADING
-  return `No ${input.ownFailed ? 'other ' : ''}listing like yours near you came off unsold.`
+  const other = input.ownFailed ? 'other ' : ''
+  const unlike = input.unlikeCount ?? 0
+  if (unlike === 1) return `The ${other}listing near you that did not sell is not like yours.`
+  if (unlike > 1) return `The ${other}listings near you that did not sell are not like yours.`
+  return `No ${other}listing like yours near you came off unsold.`
 }
 
 /**

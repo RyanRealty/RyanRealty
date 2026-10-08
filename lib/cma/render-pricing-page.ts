@@ -149,8 +149,8 @@ function heldBandSentence(pricing: CmaPricing, comps?: readonly CmaAdjustedComp[
  * withdrawn after 25 days at $599,900, under a band of $610,150 to $678,983.
  * The build holds the letter for Matt (lib/cma/gap-hold.ts
  * applyAskBelowBandHold), and the letter states both facts plainly and once,
- * in this order: the sales that set the price support the band, and buyers
- * passed at the last ask, how long it sat and how it came off. The number on
+ * in this order: the sales that set the price support the band, and the home
+ * did not sell at its last ask, how long it sat and how it came off. The number on
  * the cover is the failed-ask result under the ask, labeled as the price Matt
  * is reviewing (coverPriceHeadline); nothing here repeats it.
  *
@@ -177,7 +177,12 @@ export function heldUnderBandLead(
   const days = finalCycle?.days ?? subjectDomDays(subject)
   const how = cameOffHow(subject, finalCycle)
   const sat = days != null && days > 0 ? `sat ${int(days)} ${days === 1 ? 'day' : 'days'} and ` : ''
-  return `${first} Buyers passed at the last ask of ${usd(ask)}. The listing ${sat}${how}.`
+  // The fact, never buyer intent (reader review 2026-10-08, 20676 Wild Rose:
+  // the MLS shows Active then Withdrawn and nothing between). "Buyers passed"
+  // claimed a judgment no record holds, and "did not go under contract" is not
+  // known for every listing: the subject's status log is not on the row, and
+  // one that fell out of contract and came back still failed at its ask.
+  return `${first} Your home did not sell at its last ask of ${usd(ask)}. The listing ${sat}${how}.`
 }
 
 /** The days a stored step ran, when it is the ask named. */

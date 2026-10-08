@@ -92,13 +92,20 @@ describe('sameAreaFit: the actives and expireds pass the area and the rules the 
       roomDifference: ['baths'],
     })
     // No own ground without coordinates: not the plat, not the street.
+    // The refusal names the counts that differ, so a sentence can say which
+    // room is different and no other (reader review 2026-10-08).
     expect(sameAreaFit(AREA, COHO, { ...ALDRICH, baths: 3, subdivision: 'Madison Park' })).toEqual({
       ok: false,
       reason: 'rooms',
+      rooms: ['baths'],
     })
     // One apart on both counts is two rooms.
-    expect(sameAreaFit(AREA, COHO, { ...ALDRICH, beds: 2, baths: 3 })).toEqual({ ok: false, reason: 'rooms' })
-    expect(sameAreaFit(AREA, COHO, { ...ALDRICH, beds: 5 })).toEqual({ ok: false, reason: 'rooms' })
+    expect(sameAreaFit(AREA, COHO, { ...ALDRICH, beds: 2, baths: 3 })).toEqual({
+      ok: false,
+      reason: 'rooms',
+      rooms: ['beds', 'baths'],
+    })
+    expect(sameAreaFit(AREA, COHO, { ...ALDRICH, beds: 5 })).toEqual({ ok: false, reason: 'rooms', rooms: ['beds'] })
   })
 
   it('holds the plat-wide living-area band, and lets an unknown size through', () => {

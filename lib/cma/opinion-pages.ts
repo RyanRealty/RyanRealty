@@ -17,6 +17,7 @@ import {
   competitionEmptySourceLine,
   competitorCutLine,
   nearestOpening,
+  storedCompetitionSentenceToday,
   withoutMapPointer,
   type BandRivalsInput,
 } from '@/lib/cma/band-rivals'
@@ -32,7 +33,7 @@ import { daysOnMarketFrom } from '@/lib/cma/listing-history-line'
 import { normalizeAgentSlug } from '@/lib/agent-attribution'
 import { BRAND } from '@/lib/brand/contact'
 import { TESTIMONIALS } from '@/lib/testimonials'
-import { UNADDRESSED_DOC_LINKS, cleanText, countWord, dateLong, dottedPhone, escapeHtml, int, phoneHref, propertyDescription, usd } from '@/lib/cma/render-blocks'
+import { UNADDRESSED_DOC_LINKS, cleanText, countWord, dateLong, dottedPhone, escapeHtml, int, monthYear, phoneHref, propertyDescription, usd } from '@/lib/cma/render-blocks'
 import { clientSourceLine } from '@/lib/cma/client-facing'
 import {
   chapter2bSourceLine,
@@ -1200,7 +1201,7 @@ export function didNotSellBodyMatrixHtml(a: OpinionPageArgs): string {
     const ownFailed = subjectListingFailed(a.subject) && Boolean(sets.subject.outcome)
     // A stored "so none are on this map" points at a map this page does not
     // have (2382 Jackson); the counts and places stay as stored.
-    const storedSentence = unsoldCountSentence(a) ?? withoutMapPointer(a.expiredPeers?.sentence?.trim() ?? '')
+    const storedSentence = unsoldCountSentence(a, ownFailed) ?? withoutMapPointer(a.expiredPeers?.sentence?.trim() ?? '')
     const storedCount = a.expiredPeers ? (a.expiredPeers.count ?? a.expiredPeers.peers?.length ?? 0) : 0
     const said = !a.expiredPeers
       ? ''
@@ -1269,20 +1270,44 @@ export function didNotSellBodyMatrixHtml(a: OpinionPageArgs): string {
  * off near this price with no count. Null when the row's stored
  * sentence is not that count.
  */
-function unsoldCountSentence(a: OpinionPageArgs): string | null {
+function unsoldCountSentence(a: OpinionPageArgs, ownFailed = false): string | null {
   const peers = a.expiredPeers
   if (!peers) return null
   const count = peers.count ?? peers.peers?.length ?? 0
   const total = peers.areaTotal ?? 0
   if (count !== 0 || !(total > 0)) return null
   // Only the stored count of unlike homes is rewritten; any other stored
-  // zero sentence prints as it was written.
-  if (!/None were close to this home/.test(peers.sentence ?? '')) return null
+  // zero sentence prints as it was written. The old sentence named four
+  // reasons ("close to this home in bedrooms, bathrooms, size or age") that
+  // were not all true of the homes it counted (3062 NW Kelly Hill, reader
+  // review 2026-10-08), so it is rewritten with the homes' own reasons when
+  // the row carries them, and with no reason it cannot back when it does not.
+  if (!/close to this home in bedrooms, bathrooms, size or age/.test(peers.sentence ?? '')) return null
   const area = (peers.area ?? null) as import('@/lib/pricing/comp-area').CompArea | null
   const center = Number(a.bandRivals?.bandBasis?.center)
   const band = peers.priceBand ?? (center > 0 ? marketAreaPriceBand(center) : null)
   if (!area) return null
-  return unsoldAreaTotalSentence({ area, areaTotal: total, windowMonths: peers.windowMonths, priceBand: band })
+  return unsoldAreaTotalSentence({
+    area,
+    areaTotal: total,
+    windowMonths: peers.windowMonths,
+    priceBand: band,
+    unlike: peers.unlike ?? null,
+    other: ownFailed,
+  })
+}
+
+/**
+ * The homes the did-not-sell chapter counts as came off in the area and not
+ * like this one, when that count is the chapter's sentence: no peer drawn,
+ * the stored peer count zero, and an area total above zero.
+ */
+function unlikeUnsoldCount(a: OpinionPageArgs, shown: number): number {
+  const peers = a.expiredPeers
+  if (!peers || shown > 0) return 0
+  const count = peers.count ?? peers.peers?.length ?? 0
+  const total = peers.areaTotal ?? 0
+  return count === 0 && total > 0 ? total : 0
 }
 
 /**
@@ -1308,6 +1333,7 @@ export function didNotSellHeadingFor(a: OpinionPageArgs): string {
   return didNotSellHeading({
     shown: sets.unsold.length,
     ownFailed: subjectListingFailed(a.subject) && Boolean(sets.subject.outcome),
+    unlikeCount: unlikeUnsoldCount(a, sets.unsold.length),
   })
 }
 
@@ -1467,6 +1493,28 @@ export function cityMedianReconciliationHtml(a: OpinionPageArgs): string {
 }
 
 /**
+ * "17 sales closed in Pheasant Hill between 2017 and 2026." The count is of
+ * closed sales (`computeSubdivisionFacts` counts sale rows), and one home can
+ * sell twice inside the window, so the sentence never says "17 homes have
+ * sold" (1648 Pheasant, reader review 2026-10-08).
+ */
+export function subdivisionSalesCountSentence(totalSales: number, name: string, span: string): string {
+  const n = Math.round(totalSales)
+  return `${int(n)} ${n === 1 ? 'sale' : 'sales'} closed in ${name}${span}.`
+}
+
+/**
+ * "Mar 2022": the month a street sale closed. Read off the calendar day, so a
+ * close stored as UTC midnight on the 1st never prints the month before.
+ */
+export function streetSaleMonth(closeDate: string | null | undefined): string {
+  const day = (closeDate ?? '').trim().slice(0, 10)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return ''
+  const said = monthYear(day)
+  return /\d{4}$/.test(said) ? said : ''
+}
+
+/**
  * The street, in one sentence: how many have sold here and the four most
  * recent, each a tracked link. It is what survives of the ten-year subdivision
  * table the blueprint cut.
@@ -1502,10 +1550,13 @@ function subdivisionLineHtml(a: OpinionPageArgs, headingTag: 'h3' | 'sub'): stri
       )
       // 21px tall inline links were the last sub-44px targets on the phone
       // (tasteReview round two, item 3). The address and its price travel as
-      // ONE tappable chip, which is also how they read.
+      // ONE tappable chip, which is also how they read. The chip carries the
+      // month it closed: 2745 Aldrich's "2757 Aldrich $550,000" was a March
+      // 2022 sale printed beside current numbers (reader review 2026-10-08).
+      const when = streetSaleMonth(n.closeDate)
       return `<a class="street-sale" href="${esc(href)}" data-rr-track="cma-street-sale">${esc(
         n.address,
-      )} <span class="n">${usd(n.closePrice)}</span></a>`
+      )} <span class="n">${usd(n.closePrice)}</span>${when ? ` <span class="d">${esc(when)}</span>` : ''}</a>`
     })
     .join('')
   const sub = (text: string) =>
@@ -1519,7 +1570,7 @@ function subdivisionLineHtml(a: OpinionPageArgs, headingTag: 'h3' | 'sub'): stri
       ? ` between ${Math.min(...years)} and ${Math.max(...years)}`
       : ''
   return `${sub(name)}
-  <p>${int(f.totalSales)} homes have sold in ${esc(name)}${esc(span)}.${
+  <p>${esc(subdivisionSalesCountSentence(f.totalSales, name, span))}${
     links ? ` The most recent ${recent.length === 1 ? 'one' : countWord(recent.length)}:` : ''
   }</p>
   ${links ? `<p class="street-sales">${links}</p>` : ''}
@@ -1709,14 +1760,29 @@ export function cmaDisclosureProseHtml(a: OpinionPageArgs): string {
   </div>`
 }
 
+/**
+ * The closing chapter's eyebrow and contents entry. "Your next step" asks the
+ * owner to act, and a home on the market with another brokerage gets an
+ * opinion of value, never a pitch (SKILL.md §0.3 rule 27). 3062 NW Kelly Hill
+ * printed "Your next step" over "See homes for sale near you" (reader review
+ * 2026-10-08). The same decision the closing's heading and buttons read.
+ */
+export const NEXT_STEP_EYEBROW = 'Your next step'
+export const NEUTRAL_CLOSE_EYEBROW = 'About this report'
+
+export function nextStepEyebrow(a: OpinionPageArgs): string {
+  return closingIsNonSoliciting(a) ? NEUTRAL_CLOSE_EYEBROW : NEXT_STEP_EYEBROW
+}
+
 /** What we would like them to do next. We, never I (VOICE.md). */
 export function nextStepPage(a: OpinionPageArgs): CmaPageDef | null {
   const br = a.broker
   if (!br) return null
+  const eyebrow = nextStepEyebrow(a)
   return {
     closing: true,
-    meta: `${esc(a.subject.streetAddress)} · Your next step`,
-    toc: 'Your next step',
+    meta: `${esc(a.subject.streetAddress)} · ${esc(eyebrow)}`,
+    toc: eyebrow,
     body: `
   <h2 class="section">${esc(nextStepHeading(a))}</h2>
   ${nextStepActionsHtml(a)}
@@ -2114,7 +2180,7 @@ export function competitionBodyMatrixHtml(a: OpinionPageArgs): string {
           stored.startsWith(`${nearestOpening(drawnActive)} `))
   const useStored = stored.length > 0 && sameRows && forSaleAgrees
   const sentence = useStored
-    ? withoutMapPointer(stored)
+    ? storedCompetitionSentenceToday(stored)
     : competitionSentence({
         lo: b.lo,
         hi: b.hi,
@@ -2245,14 +2311,28 @@ export function competitionEdge(input: {
   return { sentence, largest, lowestPpsf, subjectPpsf, competitorPpsf }
 }
 
+/**
+ * The competition chapter's heading for this row: the on-market heading names
+ * the homes the chapter draws, for sale, under contract, or both
+ * (`competitionHeading`).
+ */
+export function competitionHeadingFor(a: OpinionPageArgs): string {
+  const { active, pending } = splitActivePending(matrixEntriesFor(a).active)
+  return competitionHeading(a.pricing.recommended, {
+    onMarket: subjectOnMarket(a),
+    active: active.length,
+    pending: pending.length,
+  })
+}
+
 export function competitionPage(a: OpinionPageArgs): CmaPageDef | null {
   const body = competitionBodyMatrixHtml(a)
   if (!body.trim()) return null
   return {
     meta: `${esc(a.subject.streetAddress)} · At this price`,
-    toc: competitionHeading(a.pricing.recommended, { onMarket: subjectOnMarket(a) }),
+    toc: competitionHeadingFor(a),
     body: `
-  <h2 class="section">${esc(competitionHeading(a.pricing.recommended, { onMarket: subjectOnMarket(a) }))}</h2>
+  <h2 class="section">${esc(competitionHeadingFor(a))}</h2>
   ${body}`,
   }
 }
