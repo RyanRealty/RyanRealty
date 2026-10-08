@@ -10,6 +10,7 @@ import {
   pickCompetitionRing,
   renderBandRivalsHtml,
   rivalAddress,
+  bandRowToRival,
   type CmaBandRival,
 } from '@/lib/cma/band-rivals'
 import type { CompArea } from '@/lib/pricing/comp-area'
@@ -779,5 +780,64 @@ describe('bandAroundList', () => {
       { halfWidth: 0.2, fitting: ['a', 'b'] },
     ])
     expect(thin?.halfWidth).toBe(0.15)
+  })
+})
+
+describe('the competition passes the ADU wall the sales pass (Matt 2026-10-08, "ADU sale skips", rule 24)', () => {
+  const CIRCLE: CompArea = {
+    kind: 'radius',
+    names: [],
+    radiusMiles: 1,
+    centre: { lat: 44.2726, lng: -121.1739 },
+    source: 'test',
+    sentence: 'Within one mile of your home.',
+  }
+  const ADU = 'Craftsman with a permitted detached ADU over the garage.'
+  const rivals = [
+    { ...rival({ listingKey: 'A1', address: '10 Aspen' }), publicRemarks: ADU },
+    { ...rival({ listingKey: 'A2', address: '20 Birch' }), publicRemarks: 'Single level home with a fenced yard.' },
+  ]
+
+  it('never draws an ADU home for a subject whose remarks state none, and the stored set carries no remarks', () => {
+    const set = buildBandRivalSet({
+      area: CIRCLE,
+      lo: 400_000,
+      hi: 480_000,
+      activeCount: 2,
+      pendingCount: 0,
+      rivals,
+      subject: { latitude: 44.2726, longitude: -121.1739, beds: 3, sqft: 1280, publicRemarks: 'Room to build an ADU.' },
+    })
+    expect(set.rivals.map((r) => r.address)).toEqual(['20 Birch'])
+    expect(set.rivals.every((r) => !('publicRemarks' in r))).toBe(true)
+  })
+
+  it('draws both for a subject with its own ADU', () => {
+    const set = buildBandRivalSet({
+      area: CIRCLE,
+      lo: 400_000,
+      hi: 480_000,
+      activeCount: 2,
+      pendingCount: 0,
+      rivals,
+      subject: { latitude: 44.2726, longitude: -121.1739, beds: 3, sqft: 1280, publicRemarks: 'Home with a guest house out back.' },
+    })
+    expect(set.rivals.map((r) => r.address).sort()).toEqual(['10 Aspen', '20 Birch'])
+  })
+
+  it('an MLS row carries its remarks onto the rival only when the read selected them', () => {
+    const row = {
+      ListingKey: 'K9',
+      StreetNumber: '9',
+      StreetName: 'Elm',
+      ListPrice: 450_000,
+      DaysOnMarket: 3,
+      OnMarketDate: null,
+      PhotoURL: null,
+      Latitude: 44.27,
+      Longitude: -121.17,
+    }
+    expect(bandRowToRival({ ...row, public_remarks: ADU }, 'Active')?.publicRemarks).toBe(ADU)
+    expect(bandRowToRival(row, 'Active')).not.toHaveProperty('publicRemarks')
   })
 })

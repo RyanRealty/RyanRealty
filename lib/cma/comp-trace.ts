@@ -68,18 +68,25 @@ export interface CompExclusionCounts {
    * count toward the five price-setting sales (Matt 2026-10-07).
    */
   not_price_setting: number
+  /**
+   * A sale whose public remarks state an ADU, guest house or other second
+   * living unit, against a subject whose remarks state none (Matt 2026-10-08,
+   * "ADU sale skips", aduSaleRefused in lib/pricing/classes.ts). Absent on a
+   * row stored before that ruling; readers treat absent as zero.
+   */
+  adu_sale: number
 }
 
 export function emptyExclusions(): CompExclusionCounts {
-  return { product_type: 0, bath_count: 0, lot_character: 0, resort_premium: 0, market_area: 0, crossed_divide: 0, distance: 0, duplicate: 0, self: 0, unusable_row: 0, year_quality: 0, acreage_infrastructure: 0, zoning_class: 0, outbuildings: 0, terrain: 0, price_tier: 0, not_price_setting: 0 }
+  return { product_type: 0, bath_count: 0, lot_character: 0, resort_premium: 0, market_area: 0, crossed_divide: 0, distance: 0, duplicate: 0, self: 0, unusable_row: 0, year_quality: 0, acreage_infrastructure: 0, zoning_class: 0, outbuildings: 0, terrain: 0, price_tier: 0, not_price_setting: 0, adu_sale: 0 }
 }
 
 export function addExclusions(into: CompExclusionCounts, from: CompExclusionCounts): void {
-  for (const k of Object.keys(into) as Array<keyof CompExclusionCounts>) into[k] += from[k]
+  for (const k of Object.keys(into) as Array<keyof CompExclusionCounts>) into[k] += from[k] ?? 0
 }
 
 export function totalExclusions(x: CompExclusionCounts): number {
-  return x.product_type + x.bath_count + x.lot_character + x.resort_premium + x.market_area + x.crossed_divide + x.distance + x.duplicate + x.self + x.unusable_row + x.year_quality + x.acreage_infrastructure + x.zoning_class + x.outbuildings + x.terrain + x.price_tier + x.not_price_setting
+  return x.product_type + x.bath_count + x.lot_character + x.resort_premium + x.market_area + x.crossed_divide + x.distance + x.duplicate + x.self + x.unusable_row + x.year_quality + x.acreage_infrastructure + x.zoning_class + x.outbuildings + x.terrain + x.price_tier + x.not_price_setting + (x.adu_sale ?? 0)
 }
 
 /** One rung of the ladder, whether it ran or was skipped. */
@@ -201,6 +208,8 @@ const EXCLUSION_LABELS: Record<keyof CompExclusionCounts, string> = {
   price_tier: 'their price per square foot sits outside the tier this home\'s own area sells in',
   not_price_setting:
     'they sit in a different community, or are a clearly different size or product, so they do not set the price and do not count toward the five',
+  adu_sale:
+    "their remarks state an ADU, guest house or other second living unit and this home's remarks state none, so their price carries a unit this home lacks",
 }
 
 function band(d: CompSelectionDiagnostics): string {

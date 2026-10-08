@@ -42,7 +42,7 @@ export const UNSOLD_STATUSES = ['Expired', 'Withdrawn', 'Canceled'] as const
 export const UNSOLD_MAX_MONTHS = 24
 
 const COLS =
-  'ListingKey, StreetNumber, StreetName, City, PhotoURL, OriginalListPrice, Latitude, Longitude, StandardStatus, ListPrice, ClosePrice, CloseDate, ListDate, OnMarketDate, TotalLivingAreaSqFt, BedroomsTotal, BathroomsTotal, DaysOnMarket, CumulativeDaysOnMarket, status_change_timestamp, SubdivisionName, property_sub_type, year_built, lot_size_acres'
+  'ListingKey, StreetNumber, StreetName, City, PhotoURL, OriginalListPrice, Latitude, Longitude, StandardStatus, ListPrice, ClosePrice, CloseDate, ListDate, OnMarketDate, TotalLivingAreaSqFt, BedroomsTotal, BathroomsTotal, DaysOnMarket, CumulativeDaysOnMarket, status_change_timestamp, SubdivisionName, property_sub_type, year_built, lot_size_acres, public_remarks'
 
 const PAGE_SIZE = 1000
 const CEILING = 4000

@@ -22,7 +22,7 @@
  */
 
 import { PRICE_SET_SQFT_BAND } from '@/lib/pricing/price-set'
-import { classifyAgeBand, normSubdivision } from '@/lib/pricing/classes'
+import { aduSaleRefused, classifyAgeBand, multiUnitFromRemarks, normSubdivision } from '@/lib/pricing/classes'
 import { samePlat } from '@/lib/pricing/price-anchor'
 import { roomCountsDecision } from '@/lib/pricing/room-ground'
 import { letterProductMatch, resolveMarketArea } from '@/lib/cma/market-area'
@@ -79,6 +79,8 @@ export type SameAreaSubject = {
   yearBuilt: number | null
   propertySubType: string | null
   marketArea?: string | null
+  /** MLS public remarks: the multi-unit and ADU readers the sales walk applies read them. */
+  publicRemarks?: string | null
 }
 
 export type SameAreaCandidate = {
@@ -94,9 +96,11 @@ export type SameAreaCandidate = {
   sqft?: number | null
   yearBuilt?: number | null
   propertySubType?: string | null
+  /** MLS public remarks. Absent remarks state nothing, so neither remarks wall refuses the home. */
+  publicRemarks?: string | null
 }
 
-export type SameAreaReason = 'area' | 'product' | 'size' | 'rooms' | 'age'
+export type SameAreaReason = 'area' | 'product' | 'adu' | 'size' | 'rooms' | 'age'
 
 export type SameAreaFit =
   | { ok: true; ownPlat: boolean; roomDifference: Array<'beds' | 'baths'> }
@@ -121,6 +125,7 @@ export function sameAreaSubject(s: CmaSubject): SameAreaSubject {
     yearBuilt: s.yearBuilt,
     propertySubType: s.propertySubType,
     marketArea: resolveMarketArea(s.latitude, s.longitude),
+    publicRemarks: s.publicRemarks ?? null,
   }
 }
 
@@ -135,7 +140,13 @@ export function sameAreaSubject(s: CmaSubject): SameAreaSubject {
  *    product, a blank candidate subtype passes. Both reads already pin
  *    `property_sub_type` to the subject's in SQL, and the render-time filters
  *    use this same function, so a home the build admits is never dropped at
- *    render.
+ *    render. Then the remarks, read by the readers both sales ladders use
+ *    (lib/pricing/classes.ts): a duplex or other multi-unit on one side and
+ *    not the other (rule 23, multiUnitFromRemarks) is a different product.
+ * 2a. ADU. A home whose remarks state an ADU, guest house or other second
+ *    living unit is not like a subject whose remarks state none (Matt
+ *    2026-10-08, "ADU sale skips", aduSaleRefused). A subject with an ADU
+ *    keeps homes with and without one. Absent remarks state nothing.
  * 3. SIZE. Living area within the plat-wide band. Unknown size passes.
  * 4. OWN PLAT. `samePlat` on the slug when both carry one, else the MLS name,
  *    the same fallback the walk takes.
@@ -168,6 +179,12 @@ export function sameAreaFit(
   }
   if (!letterProductMatch(subject.propertySubType ?? null, c.propertySubType ?? null)) {
     return { ok: false, reason: 'product' }
+  }
+  if (c.publicRemarks != null && multiUnitFromRemarks(c.publicRemarks) !== multiUnitFromRemarks(subject.publicRemarks)) {
+    return { ok: false, reason: 'product' }
+  }
+  if (aduSaleRefused(subject.publicRemarks, c.publicRemarks)) {
+    return { ok: false, reason: 'adu' }
   }
   const subjectSqft = subject.sqft ?? null
   const candidateSqft = c.sqft ?? null

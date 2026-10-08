@@ -476,7 +476,10 @@ export function matchToCompSelection(
       // story was written from the tier names alone. `excluded` stays at zero
       // here because the facts ladder rejects inside passesTier without
       // categorising the reason, the same convention `excluded_totals` above
-      // already carries on this path. It is "not counted", never "none".
+      // already carries on this path. It is "not counted", never "none". The
+      // one reason this ladder does count is the ADU wall (Matt 2026-10-08):
+      // sales the rung would have taken, skipped because their remarks state
+      // an ADU and the subject's do not.
       ladder: match.rungs.map((r) => ({
         tier: r.tier,
         ran: r.ran,
@@ -490,7 +493,7 @@ export function matchToCompSelection(
         rows_returned: r.scanned,
         comps_added: r.added,
         running_total: r.runningTotal,
-        excluded: emptyExclusions(),
+        excluded: { ...emptyExclusions(), adu_sale: r.aduSkipped ?? 0 },
         not_setting: r.notSetting,
       })),
       price_anchor: match.priceAnchor
@@ -506,8 +509,9 @@ export function matchToCompSelection(
       candidates: match.comps.length,
       // The facts ladder rejects inside passesTier without a reason, so the
       // totals stay at zero — except the acreage splits, which the walk counts
-      // once over the rural pool for the reader's story (Delta 4).
-      excluded_totals: { ...emptyExclusions(), ...(match.ruralSplits ?? {}) },
+      // once over the rural pool for the reader's story (Delta 4), and the ADU
+      // wall, counted once per distinct sale however many rungs reached it.
+      excluded_totals: { ...emptyExclusions(), ...(match.ruralSplits ?? {}), adu_sale: match.aduSkipped ?? 0 },
       not_price_setting: match.rungs.reduce((n, r) => n + (r.notSetting ?? 0), 0),
       outliers_excluded: 0,
       final_count: match.comps.length,

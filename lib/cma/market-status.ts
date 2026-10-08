@@ -213,6 +213,8 @@ export type ExpiredPeerSubject = Pick<
   subdivision?: string | null
   subdivisionSlug?: string | null
   city?: string | null
+  /** The subject's remarks: the multi-unit and ADU walls read them (rule 24). Absent states no ADU. */
+  publicRemarks?: string | null
 }
 
 function peerAddress(row: CmaMarketAreaRow): string {
@@ -283,6 +285,7 @@ function rowToCandidate(row: CmaMarketAreaRow): SameAreaCandidate {
     sqft: num(row.TotalLivingAreaSqFt),
     yearBuilt: row.year_built ?? null,
     propertySubType: row.property_sub_type ?? null,
+    publicRemarks: row.public_remarks ?? null,
   }
 }
 

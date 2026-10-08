@@ -97,6 +97,8 @@ async function main() {
     if (solo.comps.length > 0) {
       const c = solo.comps[0]!
       console.log(`  SELECTED at ${c.selectionTier}${c.roomDifference?.length ? ` (noted ${c.roomDifference.join('+')})` : ''}`)
+    } else if (solo.aduSkipped) {
+      console.log("  SKIPPED by the ADU wall: its remarks state an ADU and the subject's do not (aduSaleRefused)")
     } else {
       console.log('  REFUSED by every rung that ran')
     }

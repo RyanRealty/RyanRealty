@@ -167,6 +167,7 @@ export async function assembleCompetition(args: {
       sqft: r.sqft,
       yearBuilt: r.yearBuilt,
       propertySubType: r.propertySubType,
+      publicRemarks: r.publicRemarks ?? null,
     })
     fits.set(r.listingKey, fit)
     return fit

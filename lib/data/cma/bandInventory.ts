@@ -51,6 +51,8 @@ export type CmaBandListingRow = {
   TotalLivingAreaSqFt?: number | null
   year_built?: number | null
   lot_size_acres?: number | null
+  /** Selected only by the area-scoped read: the competition fit reads it for the multi-unit and ADU walls (rule 24). */
+  public_remarks?: string | null
 }
 
 export type CmaBandInventory = {
@@ -175,7 +177,9 @@ function daysOnMarket(onMarketDate: string | null): number | null {
  * shape, not inside the box. That is also why there is no `head:true` count
  * here: a database count would count the box.
  */
-const AREA_SELECT = `${BAND_SELECT}, City, SubdivisionName`
+// public_remarks: the competition passes the same multi-unit and ADU walls as
+// the sales (rule 24, Matt 2026-10-08), and those walls read the remarks.
+const AREA_SELECT = `${BAND_SELECT}, City, SubdivisionName, public_remarks`
 
 export type CmaAreaBandInventory = {
   area: CompArea

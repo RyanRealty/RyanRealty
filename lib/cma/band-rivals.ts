@@ -41,6 +41,12 @@ export type CmaBandRival = {
   proximity?: string | null
   /** Rule 4: one room apart on the subject's own ground, kept and disclosed, zero dollars. */
   roomDifference?: Array<'beds' | 'baths'> | null
+  /**
+   * MLS public remarks, carried only while the build fits the home (the
+   * multi-unit and ADU walls read them, rule 24). buildBandRivalSet drops them
+   * from the set it returns, so a stored letter does not carry remarks text.
+   */
+  publicRemarks?: string | null
 }
 
 export type CmaBandSubject = {
@@ -93,6 +99,7 @@ export function rivalFitsSubject(
     sqft: r.sqft,
     yearBuilt: r.yearBuilt,
     propertySubType: r.propertySubType,
+    publicRemarks: r.publicRemarks ?? null,
   }).ok
 }
 
@@ -630,6 +637,12 @@ export function competitionAreaSourceLine(input: {
   )}, from the Oregon Data Share MLS${when}.`
 }
 
+function withoutRemarks(rival: CmaBandRival): CmaBandRival {
+  const out = { ...rival }
+  delete out.publicRemarks
+  return out
+}
+
 export function buildBandRivalSet(input: {
   area: CompArea
   lo: number
@@ -654,7 +667,10 @@ export function buildBandRivalSet(input: {
   // or community, 30 years for a radius inside ten miles, 25 for plats). With
   // no area the fit fell back to the 25-year plat band, and a home the
   // sentence counted fell out of the table and the map (rule 17).
-  const rivals = pickBandRivals(input.rivals, input.subject ?? null, input.cap ?? BAND_RIVAL_CAP, input.area)
+  // The remarks did their work in the fit; the stored set does not carry them.
+  const rivals = pickBandRivals(input.rivals, input.subject ?? null, input.cap ?? BAND_RIVAL_CAP, input.area).map(
+    withoutRemarks,
+  )
   // Every drawn home passed the rules, so a drawn set is like yours.
   const likeYours = rivals.length > 0
   const widenedFrom = input.widenedFrom ?? null
@@ -853,6 +869,7 @@ export type BandInventoryRow = BandStreetRow & {
   property_sub_type?: string | null
   SubdivisionName?: string | null
   City?: string | null
+  public_remarks?: string | null
 }
 
 function finiteOrNull(v: unknown): number | null {
@@ -906,5 +923,7 @@ export function bandRowToRival(row: BandInventoryRow, status: 'Active' | 'Pendin
       onMarketDate: row.OnMarketDate,
       daysOnMarket,
     }),
+    // Only while the build fits the home (rule 24's multi-unit and ADU walls).
+    ...(row.public_remarks != null ? { publicRemarks: row.public_remarks } : {}),
   }
 }
