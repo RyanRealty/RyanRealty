@@ -80,6 +80,54 @@
   margin: var(--v3-space-lg) 0 0;
 }
 
+/* The answer a guide opens with (./answer-first.ts): plain paragraphs under
+   the dek and above the rail, so the first screen on a phone is the answer. */
+.v3 .v3-blog-answer {
+  max-width: var(--v3-measure-text);
+  margin: var(--v3-space-lg) 0 0;
+  padding: var(--v3-space-md) 0;
+  border-top: var(--v3-rule-section);
+  border-bottom: var(--v3-rule-hairline);
+}
+
+.v3 .v3-blog-answer p {
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body-lg);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink);
+  margin: 0;
+}
+
+.v3 .v3-blog-answer p.v3-blog-answer-source {
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+  margin-top: var(--v3-space-sm);
+}
+
+/* A worked-example table in the body: figures right-aligned in tabular
+   numerals, the row label on the left. It stays display: table (a block table
+   loses its table role in some screen readers) and the cells wrap at 375. */
+.v3 .v3-blog-prose table {
+  font-variant-numeric: tabular-nums;
+}
+
+.v3 .v3-blog-prose caption {
+  caption-side: top;
+  text-align: left;
+  font-size: var(--v3-size-source);
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-blog-prose td {
+  text-align: right;
+}
+
+.v3 .v3-blog-prose tfoot th,
+.v3 .v3-blog-prose tfoot td {
+  font-weight: var(--v3-weight-medium);
+}
+
 /* ---------------------------------------------------------------------------
    2. THE TWO-COLUMN READ — prose at the text measure, apparatus beside it.
    --------------------------------------------------------------------------- */
