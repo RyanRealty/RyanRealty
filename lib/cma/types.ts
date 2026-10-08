@@ -206,9 +206,11 @@ export interface CmaComp {
    */
   roomDecision?: RoomDecision | null
   /**
-   * The selector's own-plat decision for this sale (lib/pricing/price-anchor.ts
-   * samePlat, or the street-cluster pocket), stamped by whichever ladder found
-   * it. A sale in the subject's own plat is exempt from price-tier grading, so
+   * The selector's own-plat decision for this sale (onOwnPlat in
+   * lib/pricing/plat-ground.ts, the same decision on both ladders: the plat, a
+   * phase, an alias sibling, or a recorded addition or phase of its family
+   * inside the subject's neighborhood, Matt 2026-10-08; or the street-cluster
+   * pocket), stamped by whichever ladder found it. A sale in the subject's own plat is exempt from price-tier grading, so
    * the comparability judge restores one it excluded on price (lib/cma/judge.ts).
    * Absent on a broker-picked comp, which no search admitted.
    */

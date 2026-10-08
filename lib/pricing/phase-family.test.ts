@@ -184,7 +184,14 @@ describe('ordinary subdivision phases', () => {
     expect(picked('OUTSIDE_LARGER')?.selectionTier).toMatch(/^nearby-/)
     expect(out.tiersUsed).not.toContain('gla-bracket')
 
-    // A registry community's phases stay neighboring plats.
+    // A registry community's phases were neighboring plats here until Matt's
+    // 2026-10-08 ruling ("Yes, everywhere"): this ladder now asks the one
+    // ground decision the listings ladder asks (onOwnPlat,
+    // lib/pricing/plat-ground.ts), and the reviewed alias map files every
+    // Tetherow plat, Phase 2 included, under the MLS name Tetherow
+    // (data/subdivision-alias-plats.json, membership by geometry). So Tetherow
+    // Phase 2 is the subject's own subdivision on both ladders, on the
+    // own-plat rung, stamped own plat.
     const tetherow = home()
     tetherow.subdivision = 'Tetherow'
     tetherow.subdivisionNorm = 'tetherow'
@@ -209,8 +216,8 @@ describe('ordinary subdivision phases', () => {
       asOf,
       tiers: pricingTierLadder().filter((tier) => tier.sameSubdivision || tier.adjacentSubdivision),
     })
-    expect(resort.comps[0]?.selectionTier.startsWith('adjacent-sub-')).toBe(true)
-    expect(resort.comps[0]?.ownPlat).toBe(false)
+    expect(resort.comps[0]?.selectionTier.startsWith('subdivision-')).toBe(true)
+    expect(resort.comps[0]?.ownPlat).toBe(true)
   })
 
   it('gives a next-row phase neighbor weight, and still gives a different community none', () => {

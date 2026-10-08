@@ -35,7 +35,7 @@ import { selectCmaCompsPool, selectCmaCompsByKeys } from '@/lib/data/cma/builder
 import { getSubdivisionRing, assignSubdivisionSlugs, assignCommunitySlugs } from '@/lib/data/geo/subdivision-ring'
 import { getPlatFamilyFootprint } from '@/lib/data/subdivisions/getPlatFamilyFootprint'
 import { getPlatGroundBounds } from '@/lib/data/cma/platGroundBounds'
-import { platGround, platGroundReach, platGroundTrace } from '@/lib/pricing/plat-ground'
+import { ownGroundSeatRank, platGround, platGroundReach, platGroundTrace } from '@/lib/pricing/plat-ground'
 import { keepTightestByClosePrice, PRICING_MIN_COMPS, PRICING_TARGET_COMPS, PRICING_WALK_CAP } from '@/lib/pricing/ladder'
 import type { CompRefillBench } from '@/lib/cma/review-refill'
 import { resolveConcessions, sellerNetFromPrice } from '@/lib/pricing/seller-net'
@@ -1060,7 +1060,8 @@ export async function selectComps(
     // the one ground decision (platGroundReach, lib/pricing/plat-ground.ts)
     // keeps the rows the polygon puts on the ground, whatever the MLS calls
     // them. A row the name read returned from another subdivision's polygon
-    // is not the subject's plat, as on the facts walk (samePlat).
+    // is not the subject's plat, as on the facts walk, which asks the same
+    // decision (onOwnPlat, Matt 2026-10-08 "Yes, everywhere").
     let rows = namedRows
     if (isOwnPlatRung(tier.name) && ownGround.platSlugs.length > 0) {
       const box = await readOwnGroundBox()
@@ -1261,6 +1262,8 @@ export async function selectComps(
           subdivision: comp.subdivision,
           latitude: comp.latitude,
           longitude: comp.longitude,
+          // Off the mesh a family plat counts only in the subject's town, as on the facts walk.
+          city: comp.city ?? null,
         }) != null
       const ownStreetPeer = sameStreetPeer(
         { streetAddress: subject.streetAddress, city: subject.city, sqft: subject.sqft ?? 0 },
@@ -1666,8 +1669,10 @@ export async function selectComps(
   // (lib/pricing/match.ts capPricingSet). Every sale admitted before the rung
   // that reached five keeps its seat: together they held fewer than five.
   // Seats six and seven come only from own ground. When own ground reached
-  // five, it fills up to seven, newest closes first, nearest on a tie, then
-  // the close nearest the set's middle price. When a rung that widens the
+  // five, it fills up to seven, own-street and exact-plat sales first, then
+  // the rest of the own subdivision, then the pocket (Matt 2026-10-08), each
+  // newest closes first, nearest on a tie, then the close nearest the set's
+  // middle price. When a rung that widens the
   // area reached five, that rung adds only the shortfall to five, its
   // tightest prices first (a rung that dumped a high outlier does not get to
   // set the range), and the set is five.
@@ -1684,7 +1689,22 @@ export async function selectComps(
       const half = Math.floor(prices.length / 2)
       const middle = prices.length === 0 ? 0 : prices.length % 2 === 1 ? prices[half]! : (prices[half - 1]! + prices[half]!) / 2
       const milesOf = (c: CmaComp) => distanceMiles(subjectPoint, { lat: c.latitude, lng: c.longitude }) ?? Number.POSITIVE_INFINITY
+      // OWN STREET AND EXACT PLAT FIRST (Matt 2026-10-08): the subject's
+      // own-street and exact-plat sales seat before the rest of its own
+      // subdivision (alias siblings, family plats in its neighborhood), then
+      // the pocket, newest first within each, by the same rank the facts
+      // ladder seats on (ownGroundSeatRank, lib/pricing/plat-ground.ts). A
+      // street-cluster subject's exclusive pocket is one place and is not ranked.
+      const seatSubject = {
+        streetAddress: subject.streetAddress,
+        city: subject.city,
+        subdivisionSlug: ring?.homeSlug ?? null,
+        subdivision: subdivisionIlike,
+      }
+      const rankOf = (c: CmaComp): number => (clusterPocket ? 0 : ownGroundSeatRank(seatSubject, c))
       open.sort((a, b) => {
+        const order = rankOf(a) - rankOf(b)
+        if (order !== 0) return order
         const date = b.closeDate.slice(0, 10).localeCompare(a.closeDate.slice(0, 10))
         if (date !== 0) return date
         const miles = milesOf(a) - milesOf(b)

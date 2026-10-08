@@ -22,8 +22,8 @@
  */
 
 import { PRICE_SET_SQFT_BAND } from '@/lib/pricing/price-set'
-import { aduSaleRefused, classifyAgeBand, multiUnitFromRemarks, normSubdivision } from '@/lib/pricing/classes'
-import { samePlat } from '@/lib/pricing/price-anchor'
+import { aduSaleRefused, classifyAgeBand, multiUnitFromRemarks } from '@/lib/pricing/classes'
+import { onOwnPlat } from '@/lib/pricing/plat-ground'
 import { roomCountsDecision } from '@/lib/pricing/room-ground'
 import { letterProductMatch, resolveMarketArea } from '@/lib/cma/market-area'
 import { compAreaContains, salesAreaIsBounded, type CompArea } from '@/lib/pricing/comp-area'
@@ -172,8 +172,12 @@ export function sameAreaSubject(s: CmaSubject): SameAreaSubject {
  *    2026-10-08, "ADU sale skips", aduSaleRefused). A subject with an ADU
  *    keeps homes with and without one. Absent remarks state nothing.
  * 3. SIZE. Living area within the plat-wide band. Unknown size passes.
- * 4. OWN PLAT. `samePlat` on the slug when both carry one, else the MLS name,
- *    the same fallback the walk takes.
+ * 4. OWN PLAT. `onOwnPlat` (lib/pricing/plat-ground.ts), the one decision
+ *    both sales walks seat own-plat sales on: the recorded polygon first (the
+ *    plat, a phase, an alias sibling, or a recorded addition or phase of its
+ *    family inside the subject's neighborhood or community polygon, Matt
+ *    2026-10-08 "Yes, everywhere"), the MLS name only where no polygon holds
+ *    the home.
  * 5. ROOMS. Rule 4 verbatim through `roomCountsDecision`: same whole count
  *    anywhere; one bedroom OR one bathroom apart only on the subject's own
  *    ground (own plat, the same mapped polygon, the same street), kept and
@@ -219,10 +223,17 @@ export function sameAreaFit(
       return { ok: false, reason: 'size' }
     }
   }
-  const ownPlat = samePlat(
-    { subdivisionSlug: subject.subdivisionSlug ?? null, subdivisionNorm: normSubdivision(subject.subdivision ?? null) },
-    { subdivisionSlug: c.subdivisionSlug ?? null, subdivisionNorm: normSubdivision(c.subdivision ?? null) },
-  )
+  // The subject's own subdivision by the one decision the sales walks seat
+  // own-plat sales on (Matt 2026-10-08, "Yes, everywhere"): a home in a
+  // recorded addition or phase of the subject's subdivision inside its own
+  // neighborhood is on its own plat here too.
+  const ownPlat = onOwnPlat(subject, {
+    subdivisionSlug: c.subdivisionSlug,
+    subdivision: c.subdivision ?? null,
+    city: c.city ?? null,
+    latitude: c.latitude ?? null,
+    longitude: c.longitude ?? null,
+  })
   const rooms = roomCountsDecision(
     {
       streetAddress: subject.streetAddress ?? null,

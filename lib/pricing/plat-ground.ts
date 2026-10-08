@@ -55,7 +55,7 @@ import { ALIAS_PLAT_ENTRIES } from '@/lib/market/alias-plat-graph'
 import { ordinaryPhaseFamilyKey } from '@/lib/cma/community-location'
 import { resolveMarketArea } from '@/lib/cma/market-area'
 import { citySlug, normSubdivision } from '@/lib/pricing/classes'
-import { subdivisionFamilyKey } from '@/lib/pricing/price-anchor'
+import { samePlat, streetKey, subdivisionFamilyKey } from '@/lib/pricing/price-anchor'
 
 export type PlatGround = {
   /** The recorded plats the ground is, with their alias-map siblings. Lower case, unique. */
@@ -74,6 +74,13 @@ export type PlatGround = {
    * and nowhere else. Null when the ground sits in no polygon.
    */
   parent: string | null
+  /**
+   * The town the ground is in (citySlug), when the caller named one. A family
+   * plat on a row that names another town is never this ground, so a namesake
+   * in another town stays out; off the mesh (no parent) this is the family's
+   * only wall. Absent, or a row with no town: no town test.
+   */
+  town?: string | null
 }
 
 export type PlatGroundInput = {
@@ -101,6 +108,14 @@ export type PlatGroundRow = {
   subdivision?: string | null
   latitude?: number | null
   longitude?: number | null
+  /**
+   * The neighborhood or community polygon the row's point sits in, when the
+   * caller already resolved it (parentOf, as the facts pool stamps
+   * `marketArea`). Absent: resolved from the point.
+   */
+  marketArea?: string | null
+  /** The row's town. Off the mesh a family plat in another town is not the ground. Absent: no town test. */
+  city?: string | null
 }
 
 function slugKey(slug: string | null | undefined): string | null {
@@ -156,13 +171,24 @@ export function platGround(input: PlatGroundInput): PlatGround {
     names: unique(names),
     unplattedNames: unique(unplatted),
     parent: slugKey(input.parent),
+    town,
   }
 }
 
-function insideParent(parent: string | null, row: Pick<PlatGroundRow, 'latitude' | 'longitude'>): boolean {
-  if (!parent) return true
-  const here = parentOf(row.latitude, row.longitude)
-  return here != null && here === parent
+type PlatGroundPoint = Pick<PlatGroundRow, 'latitude' | 'longitude' | 'marketArea' | 'city'>
+
+/**
+ * Where a family plat may count: in the ground's own town when both towns are
+ * known (the family is grouped by name and town, and the reads' own city
+ * bound is made explicit so a stamp read off any rung holds it too), and
+ * inside the ground's parent polygon when it has one.
+ */
+function familyWallAdmits(ground: PlatGround, row: PlatGroundPoint): boolean {
+  const town = ground.town ?? null
+  if (town && row.city?.trim() && citySlug(row.city) !== town) return false
+  if (!ground.parent) return true
+  const here = row.marketArea !== undefined ? slugKey(row.marketArea) : parentOf(row.latitude, row.longitude)
+  return here != null && here === ground.parent
 }
 
 /**
@@ -220,12 +246,12 @@ function matcherOf(ground: PlatGround): PlatMatcher {
 export function platReach(
   ground: PlatGround,
   platSlug: string | null | undefined,
-  at: Pick<PlatGroundRow, 'latitude' | 'longitude'> = {},
+  at: PlatGroundPoint = {},
 ): 'plat' | 'family' | null {
   const plat = slugKey(platSlug)
   if (!plat || ground.platSlugs.length === 0) return null
   const relation = matcherOf(ground)(plat)
-  if (relation === 'family') return insideParent(ground.parent, at) ? 'family' : null
+  if (relation === 'family') return familyWallAdmits(ground, at) ? 'family' : null
   return relation
 }
 
@@ -292,6 +318,162 @@ export function subjectPlatGround(subject: {
     city: subject.city ?? null,
     parent: parentOf(subject.latitude, subject.longitude),
   })
+}
+
+/**
+ * THE SUBJECT'S OWN SUBDIVISION, FOR EVERY RULE THAT ASKS (Matt 2026-10-08,
+ * "Yes, everywhere"): a recorded addition or phase of the subject's
+ * subdivision that sits in the same neighborhood counts as the subject's own
+ * subdivision in the comp search (both ladders' own-plat rungs), the pricing
+ * weights (same subdivision, weight 3), the price-line exemption, the room
+ * rule's own ground (rule 4), the pocket rules (rule 5), the price anchor's
+ * plat level, the own-ground date gate, the review, and the competition and
+ * came-off homes. One decision, `platGroundReach` on the subject's ground:
+ * the recorded polygon first (the plat, a phase of it, an alias sibling, or a
+ * family plat inside the subject's neighborhood or community polygon), the
+ * MLS name only for a row no polygon holds. Before this ruling the facts
+ * ladder asked `samePlat` (the plat or a phase of it) while the listings
+ * ladder asked this, so for a Kenwood subject a Kenwood First Addition sale
+ * weighed 3 on one ladder and 2 on the other.
+ *
+ * A superset of `samePlat`: every pair samePlat calls own plat stays own
+ * plat, except that a subject the alias map gives recorded plats by name
+ * decides by polygon, as the listings ladder does.
+ *
+ * The whole community counts (Matt 2026-10-08, "Yes, whole community"): every
+ * plat the alias map files under a community's MLS name (all 22 Tetherow
+ * plats, all 40 NorthWest Crossing plats) and every phase of its family
+ * (Caldera Springs) is own plat. This reverses the 2026-10-06 note that a
+ * phase of a registry community is not. Do not narrow it. Inside own ground
+ * the exact plat and the own street still seat first (ownGroundSeatRank).
+ */
+export type OwnPlatSubject = {
+  subdivision?: string | null
+  /** normSubdivision of the MLS name (or an inferred pocket's), preferred over `subdivision` when present. */
+  subdivisionNorm?: string | null
+  /** The recorded plat the subject's point sits in. */
+  subdivisionSlug?: string | null
+  city?: string | null
+  latitude?: number | null
+  longitude?: number | null
+  /** The subject's neighborhood or community polygon, when already resolved; read from the point when absent. */
+  marketArea?: string | null
+}
+
+export type OwnPlatSale = {
+  /** The recorded plat the sale's point sits in: a slug, null when none holds it, undefined when untested. */
+  subdivisionSlug?: string | null
+  subdivision?: string | null
+  subdivisionNorm?: string | null
+  city?: string | null
+  latitude?: number | null
+  longitude?: number | null
+  /** The sale's neighborhood or community polygon, when already resolved; read from the point when absent. */
+  marketArea?: string | null
+}
+
+const ownGrounds = new WeakMap<object, { key: string; ground: PlatGround }>()
+
+function ownNameOf(x: { subdivisionNorm?: string | null; subdivision?: string | null }): string | null {
+  return x.subdivisionNorm ?? x.subdivision ?? null
+}
+
+/**
+ * The subject's own ground (subjectPlatGround), built once per subject object
+ * and rebuilt when a field it reads changes, so a walk can ask it per sale.
+ */
+export function ownPlatGround(subject: OwnPlatSubject): PlatGround {
+  const name = ownNameOf(subject)
+  // A resolved polygon is taken as given; a blank one is read from the point
+  // (parentOf returns null off the mesh, so the answer is the same).
+  const area = subject.marketArea?.trim() || null
+  const where = area ? `area:${area}` : `at:${subject.latitude ?? ''},${subject.longitude ?? ''}`
+  const key = `${subject.subdivisionSlug ?? ''}|${name ?? ''}|${subject.city ?? ''}|${where}`
+  const known = ownGrounds.get(subject)
+  if (known && known.key === key) return known.ground
+  const ground = platGround({
+    platSlugs: [subject.subdivisionSlug],
+    names: [name],
+    city: subject.city ?? null,
+    parent: area ?? parentOf(subject.latitude, subject.longitude),
+  })
+  ownGrounds.set(subject, { key, ground })
+  return ground
+}
+
+/** How a sale reached the subject's own subdivision ('plat', 'family' or 'name'), or null when it is not in it. */
+export function ownPlatReach(subject: OwnPlatSubject, sale: OwnPlatSale): PlatGroundReach | null {
+  const area = sale.marketArea?.trim() || null
+  return platGroundReach(ownPlatGround(subject), {
+    platSlug: sale.subdivisionSlug,
+    subdivision: ownNameOf(sale),
+    latitude: sale.latitude ?? null,
+    longitude: sale.longitude ?? null,
+    ...(area ? { marketArea: area } : {}),
+    city: sale.city ?? null,
+  })
+}
+
+/** True when the sale is in the subject's own subdivision (ownPlatReach). */
+export function onOwnPlat(subject: OwnPlatSubject, sale: OwnPlatSale): boolean {
+  return ownPlatReach(subject, sale) != null
+}
+
+/**
+ * SEAT ORDER INSIDE OWN GROUND (Matt 2026-10-08, "Own street and exact plat
+ * first"). When the subject's own ground holds more qualifying sales than
+ * seats, both ladders seat in this order, newest first within each:
+ *
+ *   0  a sale on the subject's own street (the same street name in the same
+ *      town, lib/pricing/price-anchor.ts streetKey) or in its exact plat
+ *      (samePlat: the recorded plat it sits in or a phase of it; the MLS name
+ *      where no polygon holds the sale);
+ *   1  the rest of its own subdivision: an alias sibling or a recorded
+ *      addition or phase of its family inside its neighborhood (the picker's
+ *      own-plat stamp, onOwnPlat);
+ *   2  anything else own ground holds (the pocket).
+ *
+ * 20617 Foxborough (Phase 1): once the Foxborough phases in Old Farm District
+ * became its own subdivision, newest-first seating gave the own-street sale
+ * 20624 Foxborough Ln ($575,000) and the Phase 1 sale 20645 Hummingbird
+ * ($649,900) to newer Phase 3, 4 and 6 sales.
+ */
+export type OwnGroundSeatSubject = {
+  streetAddress?: string | null
+  city?: string | null
+  subdivisionSlug?: string | null
+  subdivisionNorm?: string | null
+  subdivision?: string | null
+}
+
+export type OwnGroundSeatSale = {
+  address?: string | null
+  city?: string | null
+  subdivisionSlug?: string | null
+  subdivisionNorm?: string | null
+  subdivision?: string | null
+  /** The picker's own-plat stamp (onOwnPlat, or the street-cluster pocket). */
+  ownPlat?: boolean | null
+}
+
+export function ownGroundSeatRank(subject: OwnGroundSeatSubject, sale: OwnGroundSeatSale): 0 | 1 | 2 {
+  const a = streetKey(subject.streetAddress)
+  const b = streetKey(sale.address)
+  const subjectTown = subject.city?.trim() ? citySlug(subject.city) : null
+  const saleTown = sale.city?.trim() ? citySlug(sale.city) : null
+  if (a && b && a === b && (subjectTown == null || saleTown == null || subjectTown === saleTown)) return 0
+  const exact = samePlat(
+    {
+      subdivisionSlug: slugKey(subject.subdivisionSlug),
+      subdivisionNorm: subject.subdivisionNorm ?? normSubdivision(subject.subdivision ?? null),
+    },
+    {
+      subdivisionSlug: slugKey(sale.subdivisionSlug),
+      subdivisionNorm: sale.subdivisionNorm ?? normSubdivision(sale.subdivision ?? null),
+    },
+  )
+  if (exact) return 0
+  return sale.ownPlat === true ? 1 : 2
 }
 
 /**

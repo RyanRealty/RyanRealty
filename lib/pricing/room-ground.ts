@@ -27,6 +27,7 @@
  */
 import { sameOrdinaryPhaseFamily } from '@/lib/cma/community-location'
 import { resolveMarketArea } from '@/lib/cma/market-area'
+import { onOwnPlat } from '@/lib/pricing/plat-ground'
 import { samePlat, sameStreetPeer } from '@/lib/pricing/price-anchor'
 import { normSubdivision } from '@/lib/pricing/classes'
 import { roomCountsUsable } from '@/lib/pricing/room-counts'
@@ -127,6 +128,13 @@ export function saleOnOwnRoomGround(subject: RoomGroundSubject, sale: RoomGround
   const subjectNorm = subject.subdivisionNorm ?? normSubdivision(subject.subdivision ?? null)
   const saleNorm = sale.subdivisionNorm ?? normSubdivision(sale.subdivision ?? null)
   if (samePlat({ subdivisionNorm: subjectNorm }, { subdivisionNorm: saleNorm })) return true
+  // The subject's own subdivision by the one ground decision both ladders seat
+  // own-plat sales on (Matt 2026-10-08, "Yes, everywhere"): the recorded plat,
+  // a phase, an alias sibling, or a recorded addition or phase of its family
+  // inside its own neighborhood or community polygon. A sale that reaches a
+  // check without the picker's stamp is decided here exactly as the picker
+  // would have stamped it.
+  if (onOwnPlat(subject, sale)) return true
   const subjectArea = subject.marketArea ?? resolveMarketArea(subject.latitude ?? null, subject.longitude ?? null)
   const saleArea = sale.marketArea ?? resolveMarketArea(sale.latitude ?? null, sale.longitude ?? null)
   if (subjectArea != null && saleArea === subjectArea) return true

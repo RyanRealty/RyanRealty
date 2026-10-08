@@ -626,7 +626,15 @@ describe('selectComps — walk to 7, price on 5+ (Matt 2026-10-07)', () => {
   // touching rows in Aubrey, and a third point in a plat that touches neither
   // (2026-10-08: the own-plat rung keeps a row by its polygon, as the facts
   // walk does, so the mock has to place rows the way the county does).
-  const PLAT_AT: Record<string, string> = { '44.051': 'kenwood', '44.0525': 'aubrey', '44.0535': 'not-touching-plat' }
+  // 44.0515 is Kenwood First Addition, a plat of Kenwood's family in the same
+  // neighborhood polygon (Larkspur at these points): the subject's own
+  // subdivision since Matt's 2026-10-08 ruling.
+  const PLAT_AT: Record<string, string> = {
+    '44.051': 'kenwood',
+    '44.0515': 'kenwood-first-addition',
+    '44.0525': 'aubrey',
+    '44.0535': 'not-touching-plat',
+  }
   const platAt = async (pts: ReadonlyArray<unknown>) =>
     pts.map((p) => PLAT_AT[String((p as { lat: number | null }).lat)] ?? null)
   const kenwood = subject({ subdivision: 'Kenwood' })
@@ -735,6 +743,33 @@ describe('selectComps — walk to 7, price on 5+ (Matt 2026-10-07)', () => {
     const sel = await selectComps(kenwood)
     expect(keys(sel)).toEqual(['F0', 'F1', 'F2', 'F3', 'F4', 'W0', 'W1'])
     expect(ran(sel)).toEqual(PLAT_TIERS)
+  })
+
+  it('own street and exact plat seat first, then the rest of the own subdivision, newest first within each (Matt 2026-10-08)', async () => {
+    // Seven newer sales in Kenwood First Addition (MLS "Kenwood") and two
+    // older ones the subject owns outright: one in its exact plat, one on its
+    // own street (1 Main) in the addition. Newest first alone would seat the
+    // seven addition sales; the facts ladder seats these the same way
+    // (ownGroundSeatRank, lib/pricing/own-plat-everywhere.test.ts, 20617
+    // Foxborough).
+    const addition = (key: string, i: number, closeDate: string, street = 'Elm', closePrice = 501_000 + i * 1_000) =>
+      closedRow({
+        ListingKey: key,
+        StreetNumber: String(300 + i),
+        StreetName: street,
+        Latitude: 44.0515,
+        ClosePrice: closePrice,
+        CloseDate: closeDate,
+      })
+    poolOf([
+      // Priced inside the others, so the outlier drop leaves it alone.
+      addition('OWNST', 9, daysAgo(400), 'Main', 504_000),
+      plat('EXACT', 1, 502_000, daysAgo(380)),
+      ...[0, 1, 2, 3, 4, 5, 6].map((i) => addition(`ADD${i}`, i, daysAgo(20 + i * 10))),
+    ])
+    const sel = await selectComps(kenwood)
+    expect(keys(sel)).toEqual(['ADD0', 'ADD1', 'ADD2', 'ADD3', 'ADD4', 'EXACT', 'OWNST'])
+    expect(sel.comps.filter((c) => c.subdivisionSlug === 'kenwood-first-addition').every((c) => c.ownPlat === true)).toBe(true)
   })
 
   it('once five is reached no touching-plat sale enters; a wider rung that reaches five exactly stays five', async () => {
