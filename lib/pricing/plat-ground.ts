@@ -55,7 +55,7 @@ import { ALIAS_PLAT_ENTRIES } from '@/lib/market/alias-plat-graph'
 import { ordinaryPhaseFamilyKey } from '@/lib/cma/community-location'
 import { resolveMarketArea } from '@/lib/cma/market-area'
 import { citySlug, normSubdivision } from '@/lib/pricing/classes'
-import { subdivisionFamilyKey } from '@/lib/pricing/price-anchor'
+import { samePlat, streetKey, subdivisionFamilyKey } from '@/lib/pricing/price-anchor'
 
 export type PlatGround = {
   /** The recorded plats the ground is, with their alias-map siblings. Lower case, unique. */
@@ -339,6 +339,13 @@ export function subjectPlatGround(subject: {
  * A superset of `samePlat`: every pair samePlat calls own plat stays own
  * plat, except that a subject the alias map gives recorded plats by name
  * decides by polygon, as the listings ladder does.
+ *
+ * The whole community counts (Matt 2026-10-08, "Yes, whole community"): every
+ * plat the alias map files under a community's MLS name (all 22 Tetherow
+ * plats, all 40 NorthWest Crossing plats) and every phase of its family
+ * (Caldera Springs) is own plat. This reverses the 2026-10-06 note that a
+ * phase of a registry community is not. Do not narrow it. Inside own ground
+ * the exact plat and the own street still seat first (ownGroundSeatRank).
  */
 export type OwnPlatSubject = {
   subdivision?: string | null
@@ -410,6 +417,63 @@ export function ownPlatReach(subject: OwnPlatSubject, sale: OwnPlatSale): PlatGr
 /** True when the sale is in the subject's own subdivision (ownPlatReach). */
 export function onOwnPlat(subject: OwnPlatSubject, sale: OwnPlatSale): boolean {
   return ownPlatReach(subject, sale) != null
+}
+
+/**
+ * SEAT ORDER INSIDE OWN GROUND (Matt 2026-10-08, "Own street and exact plat
+ * first"). When the subject's own ground holds more qualifying sales than
+ * seats, both ladders seat in this order, newest first within each:
+ *
+ *   0  a sale on the subject's own street (the same street name in the same
+ *      town, lib/pricing/price-anchor.ts streetKey) or in its exact plat
+ *      (samePlat: the recorded plat it sits in or a phase of it; the MLS name
+ *      where no polygon holds the sale);
+ *   1  the rest of its own subdivision: an alias sibling or a recorded
+ *      addition or phase of its family inside its neighborhood (the picker's
+ *      own-plat stamp, onOwnPlat);
+ *   2  anything else own ground holds (the pocket).
+ *
+ * 20617 Foxborough (Phase 1): once the Foxborough phases in Old Farm District
+ * became its own subdivision, newest-first seating gave the own-street sale
+ * 20624 Foxborough Ln ($575,000) and the Phase 1 sale 20645 Hummingbird
+ * ($649,900) to newer Phase 3, 4 and 6 sales.
+ */
+export type OwnGroundSeatSubject = {
+  streetAddress?: string | null
+  city?: string | null
+  subdivisionSlug?: string | null
+  subdivisionNorm?: string | null
+  subdivision?: string | null
+}
+
+export type OwnGroundSeatSale = {
+  address?: string | null
+  city?: string | null
+  subdivisionSlug?: string | null
+  subdivisionNorm?: string | null
+  subdivision?: string | null
+  /** The picker's own-plat stamp (onOwnPlat, or the street-cluster pocket). */
+  ownPlat?: boolean | null
+}
+
+export function ownGroundSeatRank(subject: OwnGroundSeatSubject, sale: OwnGroundSeatSale): 0 | 1 | 2 {
+  const a = streetKey(subject.streetAddress)
+  const b = streetKey(sale.address)
+  const subjectTown = subject.city?.trim() ? citySlug(subject.city) : null
+  const saleTown = sale.city?.trim() ? citySlug(sale.city) : null
+  if (a && b && a === b && (subjectTown == null || saleTown == null || subjectTown === saleTown)) return 0
+  const exact = samePlat(
+    {
+      subdivisionSlug: slugKey(subject.subdivisionSlug),
+      subdivisionNorm: subject.subdivisionNorm ?? normSubdivision(subject.subdivision ?? null),
+    },
+    {
+      subdivisionSlug: slugKey(sale.subdivisionSlug),
+      subdivisionNorm: sale.subdivisionNorm ?? normSubdivision(sale.subdivision ?? null),
+    },
+  )
+  if (exact) return 0
+  return sale.ownPlat === true ? 1 : 2
 }
 
 /**

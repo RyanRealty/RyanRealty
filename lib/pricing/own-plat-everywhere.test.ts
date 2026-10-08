@@ -24,6 +24,7 @@ import { keptOnOwnGround } from '@/lib/pricing/comp-area'
 import { walkPricingLadder, type PricingSale, type PricingSubject, type SelectedPricingComp } from '@/lib/pricing/match'
 import {
   onOwnPlat,
+  ownGroundSeatRank,
   ownPlatReach,
   parentOf,
   platGround,
@@ -445,5 +446,97 @@ describe('the picker and the review call the same decision on an addition sale (
     const roomV = result!.verdicts.find((v) => v.listingKey === 'ADD_ROOM')!
     expect(roomV.tier).toBe('strong')
     expect(roomV.reason).toMatch(/One bedroom different from yours/)
+  })
+})
+
+describe('own street and exact plat seat first inside own ground (Matt 2026-10-08, 20617 Foxborough)', () => {
+  // 20617 Foxborough sits in Foxborough Phase 1, in Old Farm District. Its
+  // stored letter priced on the own-street sale 20624 Foxborough Ln ($575,000,
+  // Mar 2025) and the Phase 1 sale 20645 Hummingbird ($649,900, Oct 2024).
+  // Once Foxborough Phases 3 to 6 became its own subdivision, newer phase
+  // sales took every seat newest first. The subject, those two sales and
+  // 61343 Woodbury are the stored letter's; the other phase sales are modeled
+  // on the read-only walk of 2026-10-08 (Brookhollow, White Dove, Couples,
+  // Songbird).
+  const OLD_FARM = 'bend-old-farm-district'
+  const fox = (): PricingSubject =>
+    subject({
+      streetAddress: '20617 Foxborough',
+      subdivision: 'Foxborough',
+      subdivisionNorm: 'foxborough',
+      subdivisionSlug: 'foxborough-phase-1',
+      latitude: 44.026204,
+      longitude: -121.292513,
+      marketArea: OLD_FARM,
+      beds: 3,
+      baths: 2,
+      sqft: 1314,
+      yearBuilt: 2000,
+      lotAcres: 0.14,
+      adjacentSubdivisionSlugs: ['foxborough-phase-5'],
+    })
+  const foxSale = (
+    key: string,
+    address: string,
+    slug: string,
+    closePrice: number,
+    closeDate: string,
+    sqft: number,
+    yearBuilt: number,
+  ): PricingSale =>
+    sale(key, Math.round(closePrice / sqft), {
+      address,
+      subdivision: 'Foxborough',
+      subdivisionNorm: 'foxborough',
+      subdivisionSlug: slug,
+      latitude: 44.0268,
+      longitude: -121.2918,
+      marketArea: OLD_FARM,
+      closePrice,
+      lastAsk: closePrice,
+      closeDate,
+      sqft,
+      yearBuilt,
+      lotAcres: 0.14,
+    })
+  const foxPool = (): PricingSale[] => [
+    foxSale('FOXLN', '20624 Foxborough Ln', 'foxborough-phase-1', 575_000, '2025-03-14', 1334, 2001),
+    foxSale('HUMMING', '20645 Hummingbird', 'foxborough-phase-1', 649_900, '2024-10-10', 1335, 2001),
+    foxSale('BROOK1', '61242 Brookhollow', 'foxborough-phase-3', 564_900, '2026-09-20', 1350, 2004),
+    foxSale('BROOK2', '61198 Brookhollow', 'foxborough-phase-4', 550_000, '2026-09-05', 1300, 2004),
+    foxSale('DOVE1', '20627 White Dove', 'foxborough-phase-4', 489_100, '2026-07-20', 1250, 2004),
+    foxSale('DOVE2', '20688 White Dove', 'foxborough-phase-4', 545_000, '2026-06-30', 1320, 2004),
+    foxSale('COUPLES', '20657 Couples', 'foxborough-phase-6', 569_000, '2026-05-15', 1380, 2005),
+    foxSale('SONG', '20653 Songbird', 'foxborough-phase-3', 510_000, '2026-02-10', 1280, 2004),
+    foxSale('WOODBURY', '61343 Woodbury', 'foxborough-phase-5', 549_000, '2025-09-19', 1355, 2004),
+  ]
+
+  it('the phases are its own subdivision, and the rank puts own street and Phase 1 first', () => {
+    const s = fox()
+    const rows = foxPool()
+    expect(rows.every((r) => onOwnPlat(s, r))).toBe(true)
+    expect(ownGroundSeatRank(s, rows[0]!)).toBe(0)
+    expect(ownGroundSeatRank(s, rows[1]!)).toBe(0)
+    expect(ownGroundSeatRank(s, { ...rows[2]!, ownPlat: true })).toBe(1)
+    expect(ownGroundSeatRank(s, { ...rows[2]!, ownPlat: false })).toBe(2)
+  })
+
+  it('keeps 20624 Foxborough Ln and 20645 Hummingbird, then the five newest phase sales', () => {
+    const out = walkPricingLadder(fox(), foxPool(), { asOf, anchorWindowMonths: 24 })
+    expect(out.comps).toHaveLength(7)
+    expect(out.comps.map((c) => c.listingKey).sort()).toEqual([
+      'BROOK1',
+      'BROOK2',
+      'COUPLES',
+      'DOVE1',
+      'DOVE2',
+      'FOXLN',
+      'HUMMING',
+    ])
+    const foxLn = out.comps.find((c) => c.listingKey === 'FOXLN')!
+    expect(foxLn.closePrice).toBe(575_000)
+    expect(foxLn.selectionTier).toBe('own-street-24mo')
+    // Every seat came from own ground; nothing widened.
+    expect(out.reachedOnWidening).toBe(false)
   })
 })
