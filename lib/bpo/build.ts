@@ -32,7 +32,7 @@ import { adjustComps, computePricing } from '@/lib/cma/pricing'
 import { pricingFailureMessage } from '@/lib/pricing/price-set'
 import { loadBpoEngineInputs, priceBpoAdjusted, bpoCompMap } from '@/lib/bpo/engine'
 import { judgeComps } from '@/lib/cma/judge'
-import { pricingCompsAfterJudgment } from '@/lib/cma/judgment-prune'
+import { reviewWithRefill } from '@/lib/cma/review-refill'
 import { comparabilityNarrativeGate } from '@/lib/cma/narrative-final'
 import { selectionIsExclusivePocket } from '@/lib/pricing/exclusive-pocket-date-adj'
 import { auditCma } from '@/lib/cma/audit'
@@ -131,31 +131,29 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
 
     // 2.5. LLM comparability judgment (shared with the CMA engine, fail-open).
     // Vets every candidate comp on the full feature set before any math.
-    const judgment = await judgeComps(subject, selection.comps, market)
+    // REFILL FROM THE SAME RUNG (Matt 2026-10-08): the one helper the CMA
+    // build uses (lib/cma/review-refill.ts). A drop or a split on an
+    // exactly-five set a widening rung reached refills from that rung's bench
+    // and reviews again; an unstable review after that fails the build as
+    // before (the outer catch records it).
+    const review = await reviewWithRefill({
+      subject,
+      selection,
+      minComps: MIN_COMPS,
+      exclusivePocket: selectionIsExclusivePocket(selection.tiersUsed),
+      judge: (comps) => judgeComps(subject, comps, market),
+    })
+    selection.comps = review.candidates
+    if (review.pricingSales) selection.pricingSales = review.pricingSales
+    selection.trace.push(...review.trace)
+    if (review.refill) selection.diagnostics.review_refill = review.refill
+    if (review.unstable) throw review.unstable
+    const judgment = review.judgment
     let compsForPricing = selection.comps
     // Candidates the product wall kept out before pricing (see the CMA build).
     let differentProduct = 0
     {
-      const keep = new Set(judgment?.keptKeys ?? [])
-      const vetted = judgment ? selection.comps.filter((c) => keep.has(c.listingKey)) : selection.comps
-      const gated = pricingCompsAfterJudgment({
-        selected: selection.comps,
-        vetted,
-        verdicts: judgment?.verdicts ?? [],
-        subject: {
-          propertySubType: subject.propertySubType,
-          yearBuilt: subject.yearBuilt,
-          newConstructionYn: subject.newConstructionYn,
-          publicRemarks: subject.publicRemarks,
-          subdivision: subject.subdivision,
-          seniorCommunityYn: subject.seniorCommunityYn,
-        },
-        minComps: MIN_COMPS,
-        exclusivePocket: selectionIsExclusivePocket(selection.tiersUsed),
-        ...(selection.ownPlatAgeRestrictedShare !== undefined
-          ? { ownPlatAgeRestrictedShare: selection.ownPlatAgeRestrictedShare }
-          : {}),
-      })
+      const gated = review.gated
       if (gated.shortage) {
         const err =
           gated.droppedProduct > 0

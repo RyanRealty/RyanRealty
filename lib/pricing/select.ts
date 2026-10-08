@@ -438,6 +438,7 @@ export function matchToCompSelection(
   const starvedReason = underMin
     ? `facts path: only ${match.comps.length} price-setting sale(s) after the full pricing ladder (minimum ${PRICING_MIN_COMPS}). Comp shortage. Custom/new stays on facts; listings SQL tiers are not a fallback.`
     : null
+  const bench = match.bench ?? []
   return {
     comps: match.comps.map(pricingSaleToCmaComp),
     excludedOutliers: [],
@@ -446,7 +447,16 @@ export function matchToCompSelection(
     pricingSource: 'facts',
     pricingSales: match.comps,
     ownPlatAgeRestrictedShare: match.ownPlatAgeRestrictedShare ?? null,
+    // Refill from the same rung (Matt 2026-10-08): the reach rung's remaining
+    // qualifying sales, in the rung's order, for the comparability review.
+    refill: {
+      rung: match.reachedOnTier ?? null,
+      widening: match.reachedOnWidening === true,
+      comps: bench.map(pricingSaleToCmaComp),
+      pricingSales: bench,
+    },
     diagnostics: {
+      refill_bench: { rung: match.reachedOnTier ?? null, widening: match.reachedOnWidening === true, held: bench.length },
       market_area: marketAreaName(area),
       market_area_resolved: area != null,
       rural_acreage: isRuralAcreage(subject, area),

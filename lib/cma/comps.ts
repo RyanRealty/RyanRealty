@@ -34,6 +34,7 @@
 import { selectCmaCompsPool, selectCmaCompsByKeys } from '@/lib/data/cma/builderReads'
 import { getSubdivisionRing, assignSubdivisionSlugs, assignCommunitySlugs } from '@/lib/data/geo/subdivision-ring'
 import { keepTightestByClosePrice, PRICING_MIN_COMPS, PRICING_TARGET_COMPS, PRICING_WALK_CAP } from '@/lib/pricing/ladder'
+import type { CompRefillBench } from '@/lib/cma/review-refill'
 import { resolveConcessions, sellerNetFromPrice } from '@/lib/pricing/seller-net'
 import {
   closedSaleDaysToOffer,
@@ -329,6 +330,13 @@ export interface CompSelection {
    * build measures it over the candidates (lib/cma/judgment-prune.ts).
    */
   ownPlatAgeRestrictedShare?: number | null
+  /**
+   * REFILL FROM THE SAME RUNG (Matt 2026-10-08): the rung that reached five,
+   * whether it widened the area, and its remaining qualifying sales in the
+   * rung's order, for the comparability review (lib/cma/review-refill.ts).
+   * Absent on a broker-picked set.
+   */
+  refill?: CompRefillBench
 }
 
 function emptyDiagnostics(
@@ -1400,6 +1408,8 @@ export async function selectComps(
   // set the range), and the set is five.
   const rankBy = land ? (subject.lotAcres ?? 0) : sqft
   comps.sort((a, b) => similarityScore(rankBy, b, Boolean(land)) - similarityScore(rankBy, a, Boolean(land)))
+  /** The reach rung's unseated qualifiers, next-best first. Own ground has none: it seats up to seven. */
+  let bench: CmaComp[] = []
   if (competesForSeat != null && reachedOnOwnGround) {
     const seated = comps.filter((c) => !competesForSeat(c))
     const open = comps.filter(competesForSeat)
@@ -1421,11 +1431,22 @@ export async function selectComps(
       comps = [...seated, ...open.slice(0, slots)]
     }
   } else {
+    // THE BENCH (Matt 2026-10-08, refill from the same rung): on a widening
+    // rung the cut takes the loosest price first, so the last sale it took is
+    // the rung's next-best. Reversed, that is the order the review refills in.
+    const cutOrder: CmaComp[] = []
     comps = keepTightestByClosePrice(
       comps,
       competesForSeat != null ? Math.min(MAX_COMPS, TARGET_COMPS) : MAX_COMPS,
       asOf,
       competesForSeat,
+      (c) => cutOrder.push(c),
+    )
+    if (competesForSeat != null) bench = cutOrder.reverse()
+  }
+  if (bench.length > 0) {
+    trace.push(
+      `${reachedOnTier} widened the area and seated only what reached ${TARGET_COMPS}; it holds ${bench.length} more qualifying sale${bench.length === 1 ? '' : 's'} the comparability review can refill from, in that rung's order, and the search never widens past it.`,
     )
   }
   // Present most recent first (matches the exemplar ordering).
@@ -1518,6 +1539,7 @@ export async function selectComps(
     final_count: comps.length,
     final_tier_counts: countByTier(comps),
     disclosures,
+    refill_bench: { rung: reachedOnTier, widening: reachedOnTier != null && !reachedOnOwnGround, held: bench.length },
   }
   diagnostics.starved_reason = diagnoseStarvation(diagnostics)
   if (diagnostics.starved_reason && comps.length < MIN_COMPS) trace.push(diagnostics.starved_reason)
@@ -1530,6 +1552,7 @@ export async function selectComps(
     diagnostics,
     pricingSource: 'listings',
     ...(ownPlatAgeShare !== undefined ? { ownPlatAgeRestrictedShare: ownPlatAgeShare } : {}),
+    refill: { rung: reachedOnTier, widening: reachedOnTier != null && !reachedOnOwnGround, comps: bench },
   }
 }
 

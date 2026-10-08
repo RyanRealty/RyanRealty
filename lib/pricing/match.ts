@@ -317,6 +317,25 @@ export type PricingMatchResult = {
    * Year/quality outranks radius only then (rural/custom).
    */
   pocketStarved?: boolean
+  /** The rung that first brought the set to PRICING_TARGET_COMPS; null when the walk never reached it. */
+  reachedOnTier?: string | null
+  /**
+   * True when that rung widened the area (touching plats, the next row, a
+   * ring, the neighborhood, the community, the boundary exit, the widening).
+   * False when own ground reached five, which seats up to seven on its own.
+   */
+  reachedOnWidening?: boolean
+  /**
+   * REFILL FROM THE SAME RUNG (Matt 2026-10-08). The rung that reached five
+   * widened the area and seated only the shortfall; these are that rung's
+   * remaining qualifying, price-setting sales the cap did not seat, in the
+   * rung's own order (closest matches first). When the comparability review
+   * drops a seated sale, the build takes the next one from here, never from a
+   * wider rung (lib/cma/review-refill.ts). Empty when own ground reached five.
+   * Optional only so a stub result (the facts table still backfilling) and
+   * test literals stay valid; the walk always sets it.
+   */
+  bench?: SelectedPricingComp[]
 }
 
 function monthsBetween(laterIso: string, earlierIso: string): number {
@@ -1364,8 +1383,10 @@ function capPricingSet(
   comps: readonly SelectedPricingComp[],
   max: number,
   reachedOnTier: string | null,
-): SelectedPricingComp[] {
-  if (reachedOnTier == null) return comps.length <= max ? [...comps] : seatByPlace(subject, comps, max)
+): { kept: SelectedPricingComp[]; bench: SelectedPricingComp[]; widening: boolean } {
+  if (reachedOnTier == null) {
+    return { kept: comps.length <= max ? [...comps] : seatByPlace(subject, comps, max), bench: [], widening: false }
+  }
   const reachGroup = pricingLocationGroup(reachedOnTier)
   const ownGround = ownGroundGroup(reachGroup)
   const competes = (comp: SelectedPricingComp) =>
@@ -1378,16 +1399,22 @@ function capPricingSet(
   const open = comps.filter(competes)
   const limit = ownGround ? max : Math.min(max, PRICING_TARGET_COMPS)
   const slots = Math.max(0, limit - kept.length)
-  if (slots > 0 && open.length > 0) {
-    kept.push(
-      ...(open.length <= slots
-        ? open
-        : ownGround
-          ? pickNewestThenNearest(subject, open, slots)
-          : pickClosestMatches(subject, open, slots, reachGroup === 1 || reachGroup === 2)),
-    )
+  // THE BENCH (Matt 2026-10-08, refill from the same rung): on a widening
+  // rung, the sales it qualified past the shortfall, in the rung's own order.
+  // Own ground has no bench: it already seats up to PRICING_WALK_CAP.
+  let bench: SelectedPricingComp[] = []
+  if (open.length > 0) {
+    if (open.length <= slots) {
+      kept.push(...open)
+    } else if (ownGround) {
+      kept.push(...pickNewestThenNearest(subject, open, slots))
+    } else {
+      const ordered = pickClosestMatches(subject, open, open.length, reachGroup === 1 || reachGroup === 2)
+      kept.push(...ordered.slice(0, slots))
+      bench = ordered.slice(slots)
+    }
   }
-  return kept
+  return { kept, bench, widening: !ownGround }
 }
 
 /** A neighborhood polygon or a community boundary confines the search. */
@@ -1513,7 +1540,7 @@ export function walkPricingLadder(
 
   if (!subject.sqft || subject.sqft < 300) {
     const note = 'Subject has no usable living area, so there is nothing to compare.'
-    return { comps: [], tiersUsed, trace: [note], reachedTarget: false, starved: true, rungs }
+    return { comps: [], tiersUsed, trace: [note], reachedTarget: false, starved: true, rungs, bench: [] }
   }
 
   // Delta 4: the splits, counted over the rural pool for the reader's story.
@@ -1806,7 +1833,8 @@ export function walkPricingLadder(
   // pass runs only when that median was never there.
   const hadOwnPlat = ranked.some((c) => c.ownPlat)
   const sitting = hadOwnPlat ? ranked : pocketSalesSitWithKept(ranked, customLadder)
-  const sliced = capPricingSet(subject, sitting, PRICING_WALK_CAP, reachedOnTier)
+  const seats = capPricingSet(subject, sitting, PRICING_WALK_CAP, reachedOnTier)
+  const sliced = seats.kept
   const bracketed = bracketGla(subject, sliced, pool, asOf, priceAnchor, cells, customLadder, setsPrice)
   if (bracketed.note) {
     if (!tiersUsed.includes('gla-bracket')) tiersUsed.push('gla-bracket')
@@ -1833,6 +1861,14 @@ export function walkPricingLadder(
   } else {
     trace.push(`Final set: ${comps.length} closed sales from ${tiersUsed.join(', ') || 'none'}.`)
   }
+  // The bench never holds a seated sale (the GLA bracket can seat one of them).
+  const seated = new Set(comps.map((c) => c.listingKey))
+  const bench = seats.bench.filter((c) => !seated.has(c.listingKey))
+  if (seats.widening && bench.length > 0) {
+    trace.push(
+      `${reachedOnTier} widened the area and seated only what reached ${PRICING_TARGET_COMPS}; it holds ${bench.length} more qualifying sale${bench.length === 1 ? '' : 's'} the comparability review can refill from, in that rung's order, and the search never widens past it.`,
+    )
+  }
   return {
     comps,
     tiersUsed,
@@ -1840,6 +1876,9 @@ export function walkPricingLadder(
     reachedTarget,
     starved: !reachedTarget,
     rungs,
+    reachedOnTier,
+    reachedOnWidening: seats.widening,
+    bench,
     priceAnchor,
     inferredPocket: subject.inferredPocket ?? null,
     ownPlatAgeRestrictedShare: subject.ownPlatAgeRestrictedShare ?? null,
