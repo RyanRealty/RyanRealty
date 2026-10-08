@@ -62,6 +62,10 @@ describe('SITE-163 /about faces fold', () => {
     // the direct answer; the one-sentence purpose line describes the page in
     // its AboutPage JSON-LD.
     expect(FIRM).toContain('about-firm__answer')
+    expect(FIRM).toContain('about-firm__head')
+    expect(FIRM).toContain('about-firm__dek')
+    expect(FOLD).toContain('"head head"')
+    expect(FOLD).toContain('"faces dek"')
     expect(PAGE).toContain('answer={directAnswer}')
     expect(PAGE).toContain('description: ABOUT_FIRM_STORY')
     expect(FIRM).toContain('AboutFirmFaces')

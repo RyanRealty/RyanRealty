@@ -95,10 +95,17 @@
 
 .about-firm__claim {
   display: grid;
-  gap: var(--v3-space-xs);
+  gap: var(--v3-space-sm);
   align-content: end;
   min-width: 0;
   padding: 0 var(--v3-gutter);
+}
+
+.about-firm__head,
+.about-firm__dek {
+  display: grid;
+  gap: var(--v3-space-xs);
+  min-width: 0;
 }
 
 .about-firm__heading {
@@ -376,21 +383,50 @@
     column-gap: var(--v3-space-lg);
   }
 
+  /*
+    The content-floor gate reads the widest <img> whose top is in the first
+    1200px. That winner is the closings-rail lead at ~416×1536. The 2026-10-08
+    direct-answer dek made the claim column taller than the faces, which pushed
+    those photos to ~1256px so a 232×800 avatar won. Full-width H1 (one line)
+    plus faces beside the dek, and a tighter proof pad, keeps the rail in the
+    fold. Faces stay first in the DOM, so the phone still opens on faces.
+  */
   .about-firm {
-    padding-top: var(--v3-space-xl);
-    grid-template-columns: minmax(0, 1.05fr) minmax(16rem, 1fr);
-    align-items: end;
+    padding-top: var(--v3-space-md);
+    grid-template-columns: max-content minmax(20rem, 1fr);
+    grid-template-areas:
+      "head head"
+      "faces dek";
+    align-items: start;
     column-gap: var(--v3-space-lg);
-  }
-
-  .about-firm__faces-wrap {
-    grid-column: 1;
-    grid-row: 1;
+    row-gap: var(--v3-space-sm);
   }
 
   .about-firm__claim {
-    grid-column: 2;
-    grid-row: 1;
+    display: contents;
+  }
+
+  .about-firm__head {
+    grid-area: head;
+    padding: 0 var(--v3-gutter);
+  }
+
+  .about-firm__faces-wrap {
+    grid-area: faces;
+    padding-inline: var(--v3-gutter) 0;
+  }
+
+  .about-firm__dek {
+    grid-area: dek;
+    padding-inline: 0 var(--v3-gutter);
+  }
+
+  .about-fold__proof {
+    padding-block: 0;
+  }
+
+  .about-fold__proof .v3-proof {
+    padding-block: var(--v3-space-md);
   }
 
   .about-fold__write {

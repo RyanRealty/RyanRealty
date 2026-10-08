@@ -50,25 +50,29 @@ export function AboutFirm({
     >
       <AboutFirmFaces people={people} proof={proof} />
       <div className="about-firm__claim">
-        <V3Eyebrow>Ryan Realty · Central Oregon</V3Eyebrow>
-        <V3Heading level={1} id="firm-heading" className="about-firm__heading">
-          {heading}
-        </V3Heading>
-        <p className="about-firm__purpose about-firm__answer">{answer}</p>
-        {source && source.length > 0 ? (
-          <p className="about-firm__source">
-            {source.map((part, index) =>
-              typeof part === 'string' ? (
-                <span key={index}>{part}</span>
-              ) : (
-                <Link key={index} href={part.href}>
-                  {part.label}
-                </Link>
-              ),
-            )}
-          </p>
-        ) : null}
-        {freshness ? <p className="about-firm__fresh">{freshness}</p> : null}
+        <div className="about-firm__head">
+          <V3Eyebrow>Ryan Realty · Central Oregon</V3Eyebrow>
+          <V3Heading level={1} id="firm-heading" className="about-firm__heading">
+            {heading}
+          </V3Heading>
+        </div>
+        <div className="about-firm__dek">
+          <p className="about-firm__purpose about-firm__answer">{answer}</p>
+          {source && source.length > 0 ? (
+            <p className="about-firm__source">
+              {source.map((part, index) =>
+                typeof part === 'string' ? (
+                  <span key={index}>{part}</span>
+                ) : (
+                  <Link key={index} href={part.href}>
+                    {part.label}
+                  </Link>
+                ),
+              )}
+            </p>
+          ) : null}
+          {freshness ? <p className="about-firm__fresh">{freshness}</p> : null}
+        </div>
       </div>
     </section>
   )
