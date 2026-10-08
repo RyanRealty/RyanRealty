@@ -29,7 +29,7 @@ import { applySlugStreetDirectional, formatPersistedCmaAddress } from '@/lib/cma
 import { applyCmaClientIntent, isCmaClientIntent, parseCmaClientIntent } from '@/lib/cma/client-intent'
 import { cmaClientPersistFields, resolveLinkedCmaClient } from '@/lib/cma/expired-owner-link'
 import { brokerCompRefusal, selectCompsByKeys, MIN_COMPS } from '@/lib/cma/comps'
-import { pricingCompsAfterJudgment } from '@/lib/cma/judgment-prune'
+import { reviewWithRefill } from '@/lib/cma/review-refill'
 import { reviewWeightFactor } from '@/lib/cma/review-weight'
 import { selectCompsPreferringFacts } from '@/lib/pricing/select'
 import {
@@ -59,8 +59,8 @@ import type { CompSelectionDiagnostics } from '@/lib/cma/comp-trace'
 import { composeBuildSummary } from '@/lib/cma/build-summary'
 import { getCmaMarketContext, yearMartCite, cmaMarketSources } from '@/lib/cma/market'
 import { adjustComps, computePricing } from '@/lib/cma/pricing'
-import { judgeComps, readJudgeCache, repairNarrativeAgainstAudit, JudgeUnstableError } from '@/lib/cma/judge'
-import type { JudgeDecisionRecord } from '@/lib/cma/judge-vote'
+import { judgeComps, readJudgeCache, repairNarrativeAgainstAudit } from '@/lib/cma/judge'
+import type { JudgeDecisionRecord, JudgeUnstableError } from '@/lib/cma/judge-vote'
 import { comparabilityNarrativeGate } from '@/lib/cma/narrative-final'
 import { hydratePhotoUrls } from '@/lib/cma/photos'
 import { hydrateClosedCompDaysOnMarket } from '@/lib/cma/hydrate-closed-comp-dom'
@@ -442,55 +442,60 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     const priorCache = await getCmaBuildSummaryBySlug(slug)
       .then((summary) => readJudgeCache(summary))
       .catch(() => null)
-    let judgment: Awaited<ReturnType<typeof judgeComps>>
-    try {
-      judgment = await judgeComps(subject, selection.comps, market, {
-        priorCache,
-        minComps: MIN_COMPS,
-        // A broker-picked set is priced as chosen. The minimum is not in play.
-        enforceKeepMinimum: !isCurated,
-      })
-    } catch (err) {
-      if (err instanceof JudgeUnstableError) {
-        await persistJudgeCache(slug, err.record).catch((cacheErr) => {
-          console.error('[cma/judge] could not store the unstable decision', slug, cacheErr)
-        })
-        const message = err.message
-        await recordBuildFailure(slug, message, { stage: 'comps', docType, compSelection: selection.diagnostics })
-        return { ok: false, error: message, slug }
-      }
-      throw err
+    const judgeOptions = {
+      priorCache,
+      minComps: MIN_COMPS,
+      // A broker-picked set is priced as chosen. The minimum is not in play.
+      enforceKeepMinimum: !isCurated,
     }
+    let judgment: Awaited<ReturnType<typeof judgeComps>> = null
     let compsForPricing = selection.comps
     // Candidates the product wall kept out before pricing. With the set the
     // review let through (the narrative gate's gatedKeys, below) it splits
     // every candidate that does not price by the one step that took it out.
     let differentProduct = 0
     if (!isCurated) {
-      const keep = new Set(judgment?.keptKeys ?? [])
-      const vetted = judgment ? selection.comps.filter((c) => keep.has(c.listingKey)) : selection.comps
       // The review's keep prices the house, and nothing it excluded comes
       // back (the Falcon re-admission is retired, lib/cma/judgment-prune.ts).
       // A different product, age-restricted housing included, never prices
       // it. Fewer than the minimum is the existing comp shortage, not a price.
-      const gated = pricingCompsAfterJudgment({
-        selected: selection.comps,
-        vetted,
-        verdicts: judgment?.verdicts ?? [],
-        subject: {
-          propertySubType: subject.propertySubType,
-          yearBuilt: subject.yearBuilt,
-          newConstructionYn: subject.newConstructionYn,
-          publicRemarks: subject.publicRemarks,
-          subdivision: subject.subdivision,
-          seniorCommunityYn: subject.seniorCommunityYn,
-        },
+      //
+      // REFILL FROM THE SAME RUNG (Matt 2026-10-08, lib/cma/review-refill.ts).
+      // When the review drops a sale, or splits on one, from an exactly-five
+      // set a widening rung reached, the next sale on that same rung is taken
+      // and the refilled set is reviewed again, at most twice and never past
+      // the rung's bench. `selection.comps` becomes every candidate the
+      // review saw, so the letter's "N of M candidate sales kept" and the
+      // rejected list describe the final set.
+      const review = await reviewWithRefill({
+        subject,
+        selection,
         minComps: MIN_COMPS,
         exclusivePocket: selectionIsExclusivePocket(selection.tiersUsed),
-        ...(selection.ownPlatAgeRestrictedShare !== undefined
-          ? { ownPlatAgeRestrictedShare: selection.ownPlatAgeRestrictedShare }
-          : {}),
+        judge: (comps) => judgeComps(subject, comps, market, judgeOptions),
+        prepare: async (comps) => {
+          await hydratePhotoUrls(comps)
+          return hydrateClosedCompDaysOnMarket(comps)
+        },
       })
+      selection.comps = review.candidates
+      if (review.pricingSales) selection.pricingSales = review.pricingSales
+      selection.trace.push(...review.trace)
+      if (review.refill) selection.diagnostics.review_refill = review.refill
+      // JUDGE_UNSTABLE after every refill the rung allowed (JudgeUnstableError,
+      // lib/cma/judge-vote.ts): store the decision on the row and fail the
+      // build with the judge's own sentence, as before the refill existed.
+      const unstable: JudgeUnstableError | null = review.unstable
+      if (unstable) {
+        await persistJudgeCache(slug, unstable.record).catch((cacheErr) => {
+          console.error('[cma/judge] could not store the unstable decision', slug, cacheErr)
+        })
+        const message = unstable.message
+        await recordBuildFailure(slug, message, { stage: 'comps', docType, compSelection: selection.diagnostics })
+        return { ok: false, error: message, slug }
+      }
+      judgment = review.judgment
+      const gated = review.gated
       if (gated.shortage) {
         const err =
           gated.droppedProduct > 0
@@ -516,21 +521,25 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           'Comparability judgment unavailable for this build. Priced on the full selection with the dispersion guard as backstop, and broker review is required.',
         )
       }
-    } else if (judgment && isCurated) {
+    } else {
       // Broker-curated set: the broker already vetted these, so every curated
       // comp is kept. The judge still narrates and its `weak` verdicts still
       // down-weight in the Method 3 reconciliation — it just does not drop a
-      // comp the broker deliberately chose.
-      const weak = judgment.verdicts.filter(
-        (v) => reviewWeightFactor(v.tier) < 1 && compsForPricing.some((c) => c.listingKey === v.listingKey),
-      ).length
-      selection.trace.push(
-        `Broker-selected set of ${compsForPricing.length} comps priced as chosen. Comparability judgment (${judgment.model}) applied for the narrative${weak ? ` and down-weighted ${weak} comp(s) to bracket the range` : ''}; no selected comp was dropped.`,
-      )
-    } else {
-      selection.trace.push(
-        'Comparability judgment unavailable for this build. Priced on the full selection with the dispersion guard as backstop, and broker review is required.',
-      )
+      // comp the broker deliberately chose. enforceKeepMinimum is false here,
+      // so the review never throws unstable and nothing refills.
+      judgment = await judgeComps(subject, selection.comps, market, judgeOptions)
+      if (judgment) {
+        const weak = judgment.verdicts.filter(
+          (v) => reviewWeightFactor(v.tier) < 1 && compsForPricing.some((c) => c.listingKey === v.listingKey),
+        ).length
+        selection.trace.push(
+          `Broker-selected set of ${compsForPricing.length} comps priced as chosen. Comparability judgment (${judgment.model}) applied for the narrative${weak ? ` and down-weighted ${weak} comp(s) to bracket the range` : ''}; no selected comp was dropped.`,
+        )
+      } else {
+        selection.trace.push(
+          'Comparability judgment unavailable for this build. Priced on the full selection with the dispersion guard as backstop, and broker review is required.',
+        )
+      }
     }
 
     // 4. Adjustments + pricing (on the vetted comp set). Judge verdicts feed

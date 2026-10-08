@@ -548,12 +548,17 @@ export const FACTS_STANDALONE_MIN = BOUNDARY_EXIT_BELOW
  * sale from an earlier place, own ground first, keeps its seat). The middle
  * price is still read over the whole set. With nothing left that may go, the
  * cut stops.
+ *
+ * `onRemove` sees each sale as the cut takes it, worst first. The last one
+ * taken is the rung's next-best sale, which is what the review refills from
+ * (Matt 2026-10-08, lib/cma/review-refill.ts).
  */
 export function keepTightestByClosePrice<T extends { closePrice: number; closeDate?: string | null }>(
   comps: readonly T[],
   max: number,
   asOf?: string,
   removable?: (comp: T) => boolean,
+  onRemove?: (comp: T) => void,
 ): T[] {
   const kept = [...comps]
   while (kept.length > max) {
@@ -584,6 +589,7 @@ export function keepTightestByClosePrice<T extends { closePrice: number; closeDa
         worst = i
       }
     }
+    onRemove?.(kept[worst]!)
     kept.splice(worst, 1)
   }
   return kept

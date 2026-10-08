@@ -80,6 +80,14 @@ type DryRun = {
   matrixSubjectDom: number | null
   reviewSubjectDom: number | null
   keptCompCount: number
+  /**
+   * Refill from the same rung (Matt 2026-10-08, lib/cma/review-refill.ts):
+   * the rung that reached five, whether it widened the area, and the sales
+   * it still holds for the comparability review to refill from, in the rung's
+   * order. The judge is skipped here, so this is the same bench the build
+   * would draw on, not a refill that happened.
+   */
+  refillBench: { rung: string | null; widening: boolean; held: number; keys: string[] } | null
   concessionSentence: string | null
   /** Same sentence over a MIN_COMPS-sized kept set (judge-trim simulation). */
   concessionSentenceTrimmed: string | null
@@ -315,7 +323,7 @@ async function dryRun(slug: string): Promise<DryRun> {
     subjectSqft: null, customOrNew: null, pricingSource: null, compCount: 0, comps: [],
     recommended: null, range: [null, null], valueRange: [null, null], confidence: null, compPpsfCv: null,
     needsReview: false, reviewReason: null, hardFailures: [],
-    matrixSubjectDom: null, reviewSubjectDom: null, keptCompCount: 0, concessionSentence: null,
+    matrixSubjectDom: null, reviewSubjectDom: null, keptCompCount: 0, refillBench: null, concessionSentence: null,
     concessionSentenceTrimmed: null, renderArgsMarketOfferTiming: null,
     renderArgsMarketAskOutcome: null, renderArgsMarketOriginalAskRealization: null,
     renderArgsMarketLocalFailedThenSold: null, renderArgsPricingReconciliation: null,
@@ -720,6 +728,17 @@ async function dryRun(slug: string): Promise<DryRun> {
     matrixSubjectDom: domFromHistoryLine(subject.listingHistoryLine),
     reviewSubjectDom,
     keptCompCount: adjusted.length,
+    // EXACTLY what lib/cma/build.ts hands lib/cma/review-refill.ts: the
+    // selection's bench, so the fleet scorer sees whether a review drop on
+    // this home would refill from the same rung or fail as a shortage.
+    refillBench: selection.refill
+      ? {
+          rung: selection.refill.rung,
+          widening: selection.refill.widening,
+          held: selection.refill.comps.length,
+          keys: selection.refill.comps.map((c) => c.listingKey),
+        }
+      : null,
     concessionSentence,
     concessionSentenceTrimmed,
     renderArgsMarketOfferTiming: localOutcomes.offerTiming,
@@ -855,6 +874,11 @@ async function main() {
       const m = r.concessionSentence.match(/\bof (\d+) sales\b/)
       const denom = m ? Number(m[1]) : null
       console.log(`   concessions · kept comps ${r.keptCompCount} · "${r.concessionSentence}" · ${denom === r.keptCompCount ? 'SAME SET' : 'DIFFERENT SET'}`)
+      if (r.refillBench) {
+        console.log(
+          `   refill bench · reached five on ${r.refillBench.rung ?? 'no rung'} (${r.refillBench.widening ? 'widening rung' : 'own ground'}) · ${r.refillBench.held} sale(s) the review can refill from${r.refillBench.keys.length ? `: ${r.refillBench.keys.join(', ')}` : ''}`,
+        )
+      }
       if (r.concessionSentenceTrimmed) console.log(`   concessions · 5-comp kept set · "${r.concessionSentenceTrimmed}"`)
     }
     console.log('   render_args.market.offerTiming =')

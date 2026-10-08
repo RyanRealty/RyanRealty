@@ -161,6 +161,21 @@ export interface CompSelectionDiagnostics {
   final_tier_counts: Record<string, number>
   /** Every relaxation taken, in the words the report discloses them. */
   disclosures: string[]
+  /**
+   * The rung that reached five, whether it widened the area, and how many
+   * qualifying sales it still held past the seats (Matt 2026-10-08, refill
+   * from the same rung; lib/cma/review-refill.ts). Absent on a broker-picked set.
+   */
+  refill_bench?: { rung: string | null; widening: boolean; held: number }
+  /**
+   * What the comparability review refilled, round by round, and how many
+   * bench sales were left. Absent when nothing was refilled.
+   */
+  review_refill?: {
+    rung: string
+    rounds: Array<{ round: number; reason: 'excluded' | 'split'; dropped: string[]; refilled: string[] }>
+    bench_left: number
+  }
 }
 
 const EXCLUSION_LABELS: Record<keyof CompExclusionCounts, string> = {
