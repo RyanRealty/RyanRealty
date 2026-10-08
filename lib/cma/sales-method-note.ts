@@ -66,7 +66,7 @@ import { sanitizeLetterEmDash } from '@/lib/cma/voice-sanitize'
 import { FLAT_LOCAL_DATE_SENTENCE } from '@/lib/cma/flat-date-story'
 import { realSubdivisionName } from '@/lib/pricing/classes'
 import { isPocketTimeBasis } from '@/lib/pricing/exclusive-pocket-date-adj'
-import { concessionOffClose } from '@/lib/pricing/seller-net'
+import { adjustmentNouns, adjustmentsApplied } from '@/lib/cma/adjustments-applied'
 import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
 
 const INDEX_BASIS = 'city-monthly-index-trailing-3'
@@ -405,6 +405,16 @@ const POCKET_NOTE = /^these sales are the exclusive pocket\b/i
  * A grid that moved a sale up is not that path, so it gets the plain counted
  * sentence instead of a claim about falling prices.
  */
+/**
+ * Where Basis and limits points for the local reason a gated pocket did or did
+ * not move for date. The note under the sales grid (dateBasisCaption) says the
+ * reason in full, with the local figures, beside the row it explains; this
+ * paragraph used to say the same sentence again (reader review, 3037 Purcell
+ * and 62475 Woodsman, 2026-10-08: "We move these sales down for date only
+ * when homes like yours in Silver Sage fell in price ..." printed twice).
+ */
+export const DATE_REASON_UNDER_GRID = 'The note under the sales grid says why.'
+
 function pocketDateSentence(
   subject: Pick<CmaSubject, 'city' | 'subdivision'>,
   comps: readonly CmaAdjustedComp[],
@@ -415,8 +425,9 @@ function pocketDateSentence(
   const up = comps.filter((c) => (c.timeAdjustment ?? 0) >= 1).length
   const gate = localGateOf(ta)
   if (total === 0 || (down === 0 && up === 0)) {
+    // The grid's note gives the gate's reason in full (dateBasisCaption).
     return gate && total > 0
-      ? `None of these sales is moved for the month it sold. ${localNoMoveReason(gate, subject)}`
+      ? `None of these sales is moved for the month it sold. ${DATE_REASON_UNDER_GRID}`
       : 'None of these sales is moved for the month it sold.'
   }
   const city = cleanText(subject.city ?? null)
@@ -435,8 +446,10 @@ function pocketDateSentence(
     n != null && n > 0
       ? `That figure is built from ${int(n)} home sales across all of ${city ?? 'the city'}${over}${notOnlyHome(subject, true)}, and a rise in it never moves a sale up.`
       : `That figure covers every home sale in ${city ?? 'the city'}${notOnlyHome(subject, false)}, and a rise in it never moves a sale up.`
+  // The local reason prints once, in the grid's note (dateBasisCaption prints
+  // localFellSentence on every gated pocket that moved only down).
   const why = localFellSentence(gate, subject)
-  const tail = why ? ` ${why}` : ''
+  const tail = why ? ` ${DATE_REASON_UNDER_GRID}` : ''
   if (down === total) {
     return `To bring each sale to today's market, we moved it down by how much ${whose} median price per square foot fell between the month it sold and ${to}. ${built}${tail}`
   }
@@ -549,11 +562,10 @@ export function dateBasisCaption(input: {
  * names what the letter was actually priced on.
  */
 export function adjustedForPhrase(comps: readonly CmaAdjustedComp[]): string | null {
-  const parts: string[] = []
-  if (comps.some((c) => Math.abs(c.timeAdjustment ?? 0) >= 1)) parts.push('date')
-  if (comps.some((c) => Math.abs(c.sizeAdjustment ?? 0) >= 1)) parts.push('size')
-  if (comps.some((c) => Math.abs(c.storyAdjustment ?? 0) >= 1)) parts.push('story')
-  if (comps.some((c) => concessionOffClose(c) >= 1)) parts.push('seller concessions')
+  // The same reader, and the same names, as every other place the letter
+  // names its adjustments (lib/cma/adjustments-applied.ts). "story" was this
+  // phrase's own word for the grid's "Adjusted for style" row.
+  const parts = adjustmentNouns(adjustmentsApplied(comps))
   return parts.length > 0 ? joinAnd(parts) : null
 }
 

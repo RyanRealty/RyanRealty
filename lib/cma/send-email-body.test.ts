@@ -264,7 +264,8 @@ describe('CMA first-contact send body', () => {
       const dest = new URL(token!.url!)
       expect(dest.searchParams.getAll('utm_source')).toEqual(['cma'])
       expect(dest.searchParams.getAll('utm_medium')).toEqual(['email'])
-      expect(dest.searchParams.getAll('utm_campaign')).toEqual([SLUG])
+      expect(dest.searchParams.getAll('utm_campaign')).toEqual(['cma-letter'])
+      expect(dest.searchParams.getAll('rr_doc')).toEqual([SLUG])
       expect(dest.searchParams.getAll('utm_content')).toEqual(['agent-matt'])
       expect(dest.searchParams.getAll('agent')).toEqual(['matt'])
       expect(dest.searchParams.getAll('_pid')).toHaveLength(1)
@@ -333,7 +334,8 @@ describe('CMA first-contact send body', () => {
     for (const dest of [reviews, about]) {
       expect(dest.searchParams.getAll('utm_medium')).toEqual(['email'])
       expect(dest.searchParams.getAll('utm_source')).toEqual(['cma'])
-      expect(dest.searchParams.getAll('utm_campaign')).toEqual([SLUG])
+      expect(dest.searchParams.getAll('utm_campaign')).toEqual(['cma-letter'])
+      expect(dest.searchParams.getAll('rr_doc')).toEqual([SLUG])
       expect(dest.search).not.toContain('utm_medium=document')
     }
   })

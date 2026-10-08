@@ -64,7 +64,7 @@ export type CmaPinFact = {
   /** "sold $457K · offer in 25 days" / "asking $417K · 13 days" */
   outcome: string
   domDays: number | null
-  /** On a closed sale, what `domDays` counts (see MatrixEntry.domMeasure). */
+  /** On a closed sale or a home under contract, what `domDays` counts (see MatrixEntry.domMeasure). */
   domMeasure?: 'offer' | 'listed-to-closed'
   priceChanges: number | null
   /** False when the record says only THAT the price moved, not how often. */
@@ -186,8 +186,15 @@ export function pinRevealLine(fact: CmaPinFact): string {
   const bits: string[] = []
   if (fact.domDays != null && fact.domDays >= 0) {
     const n = `${int(fact.domDays)} ${fact.domDays === 1 ? 'day' : 'days'}`
-    // First list to close is not days on market (CLAUDE.md §7): name it.
-    bits.push(fact.domMeasure === 'listed-to-closed' ? `${n} listed to closed` : `${n} on market`)
+    // First list to close is not days on market (CLAUDE.md §7), and neither
+    // are the days to an offer: name each.
+    bits.push(
+      fact.domMeasure === 'listed-to-closed'
+        ? `${n} listed to closed`
+        : fact.domMeasure === 'offer'
+          ? `${n} to an offer`
+          : `${n} on market`,
+    )
   }
   if (fact.priceChanges != null && fact.priceChanges >= 0) {
     bits.push(
@@ -309,15 +316,16 @@ function revealHtml(fact: CmaPinFact): string {
  * containing nothing. A set-aside sale is its own line, so "these set the
  * price" covers only the sales that did.
  */
-export function pinLegendHtml(drawn: readonly CmaPinFact[]): string {
+export function pinLegendHtml(drawn: readonly CmaPinFact[], opts?: { closedLabel?: string | null }): string {
   const present = PIN_STYLE_ORDER.filter((style) => drawn.some((x) => pinStyleOf(x) === style))
   if (present.length === 0) return ''
   const items = present
     .map((style) => {
       const family: CmaMapFamily = style === 'closed-aside' ? 'closed' : style
+      const label = style === 'closed' && opts?.closedLabel ? opts.closedLabel : PIN_STYLE_LABEL[style]
       return `<li class="pl-i ${pinClass({ family, setAside: style === 'closed-aside' })}"><span class="pl-k" aria-hidden="true">${esc(
         family === 'closed' ? '1' : family === 'active' ? 'A' : 'i',
-      )}</span>${esc(PIN_STYLE_LABEL[style])}</li>`
+      )}</span>${esc(label)}</li>`
     })
     .join('')
   return `<ul class="pin-legend"><li class="pl-i is-subject"><span class="pl-k" aria-hidden="true">${SUBJECT_STAR_SVG}</span>Your home</li>${items}</ul>`
@@ -377,7 +385,16 @@ export type CompPinMapInput = {
   mapDataUri?: string | null
   alt?: string
   overlay?: CompPinMapOverlay | null
+  /**
+   * The legend line for the closed pins that set the range and not the cover
+   * (lib/cma/sales-role.ts): a rule 26 hold, or a cover held to the sale on
+   * the subject's street. Default: "Closed sales: these set the price".
+   */
+  closedLabel?: string | null
 }
+
+/** The legend line for closed sales on a letter whose cover the sales did not set. */
+export const CLOSED_SET_RANGE_LABEL = 'Closed sales: these set the range'
 
 /**
  * The map, and the pins it actually drew.
@@ -474,7 +491,7 @@ export function compPinMap(input: CompPinMapInput): CompPinMapDrawing {
       ${leaderSvg(layout.phone, 'phone')}
       ${marks}
     </div>
-    ${pinLegendHtml(drawn)}`,
+    ${pinLegendHtml(drawn, { closedLabel: input.closedLabel })}`,
       drawn,
       pinsShown: true,
     }
@@ -537,7 +554,7 @@ export function compPinMap(input: CompPinMapInput): CompPinMapDrawing {
     ${subjectMark}
     ${saleMarks}
   </svg>
-  ${pinLegendHtml(drawn)}`,
+  ${pinLegendHtml(drawn, { closedLabel: input.closedLabel })}`,
     drawn,
     pinsShown: true,
   }

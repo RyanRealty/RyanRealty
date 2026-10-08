@@ -40,6 +40,7 @@ import { formatPriceExact } from '@/lib/format/money'
 import { escapeHtml, int } from '@/lib/cma/render-blocks'
 import { resolveAskPosition, type AskExposureLike } from '@/lib/cma/ask-position'
 import { closedSaleDaysToOffer } from '@/lib/cma/listing-history-line'
+import { pacificDay } from '@/lib/cma/listing-status'
 
 const esc = escapeHtml
 
@@ -96,11 +97,9 @@ const OUTCOME_WORD: Record<PricePathOutcome, string> = {
   'under-contract': 'under contract',
 }
 
+/** The Pacific day of a date or MLS timestamp, never its UTC day (reader review 2026-10-08). */
 function day(value: string | null | undefined): string | null {
-  const raw = String(value ?? '').trim()
-  if (!raw) return null
-  const d = raw.slice(0, 10)
-  return /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : null
+  return pacificDay(value ?? null)
 }
 
 function utc(d: string): number {
@@ -134,7 +133,7 @@ export function askStepIsOwnEra(previous: number, next: number): boolean {
 }
 
 function today(): string {
-  return new Date().toISOString().slice(0, 10)
+  return pacificDay(new Date()) ?? new Date().toISOString().slice(0, 10)
 }
 
 /** $465K. Thousands, because a price path is read at a glance, not audited. */
@@ -226,9 +225,14 @@ export function pricePathFromFinalCycle(cycle: {
  * the line runs flat at that ask and lands on the close, and the chapter says
  * so rather than implying the ask never moved.
  *
- * The start of the period is the close date less the days it ran, which is
- * arithmetic on two recorded figures, the same derivation `offMarketFromDays`
- * already makes for the subject.
+ * The start of the period is the day the offer clock started when the row
+ * carries it (`offerFrom`, the day the listing period that produced the sale
+ * went Active), so a line that ends "offer in 47 days" starts on the day
+ * those 47 days began (61197 Cottonwood came back Nov 13; its first list in
+ * April is a different listing period, reader review 2026-10-08). Otherwise it
+ * is the close date less the days it ran, which is arithmetic on two recorded
+ * figures, the same derivation `offMarketFromDays` already makes for the
+ * subject.
  */
 export function pricePathFromSale(sale: {
   address: string
@@ -238,13 +242,13 @@ export function pricePathFromSale(sale: {
   domTotal?: number | null
   daysToOffer?: number | null
   onMarketDate?: string | null
+  offerFrom?: string | null
 }): PricePath | null {
   const closeDate = day(sale.closeDate)
   const closePrice = price(sale.closePrice)
   const ask = price(sale.listPrice) ?? closePrice
   if (!closeDate || closePrice == null || ask == null) return null
   const ran = sale.domTotal != null && sale.domTotal > 0 ? Math.round(sale.domTotal) : null
-  const startDate = plusDays(closeDate, -(ran ?? 30))
   // ONE measure per sale, and it is the one the grid already labels: days to
   // an accepted offer. The line still spans the listing period, and its two
   // date labels say so; the end label names an event, and says which event it
@@ -253,10 +257,14 @@ export function pricePathFromSale(sale: {
   // An offer count longer than the run to close is not one (2107 Carrie).
   const toOffer = closedSaleDaysToOffer({
     daysToOffer: sale.daysToOffer,
+    measuredFrom: sale.offerFrom ?? null,
     domTotal: ran,
     firstListDate: sale.onMarketDate,
     closeDate: sale.closeDate,
   })
+  const offerStart = toOffer != null ? day(sale.offerFrom) : null
+  const startDate =
+    offerStart != null && offerStart <= closeDate ? offerStart : plusDays(closeDate, -(ran ?? 30))
   return {
     startDate,
     startPrice: ask,
@@ -283,6 +291,8 @@ export function pricePathFromListing(listing: {
   onMarketDate?: string | null
   daysOnMarket?: number | null
   status?: string | null
+  /** What `daysOnMarket` counts. 'offer' for a home under contract counted to its contract. */
+  daysMeasure?: 'offer' | 'on-market'
 }): PricePath | null {
   const startDate = day(listing.onMarketDate)
   const ask = price(listing.listPrice)
@@ -305,7 +315,9 @@ export function pricePathFromListing(listing: {
     closePrice: null,
     outcome,
     days,
-    daysMeasure: 'on-market',
+    // A home under contract whose days count to its offer (band-rivals.ts
+    // rivalDays) says so at the end of its line.
+    daysMeasure: listing.daysMeasure === 'offer' ? 'offer' : 'on-market',
     label: listing.address,
   }
 }

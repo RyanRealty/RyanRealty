@@ -736,6 +736,11 @@ details.status-price-more .status-price{margin-top:4px}
 .pin-hit.is-aside:not(.is-on) .pin-dot{background:linear-gradient(var(--ink70),var(--ink70)) var(--cream);color:var(--cream)}
 .pin-legend .is-aside .pl-k{background:linear-gradient(var(--ink70),var(--ink70)) var(--cream);color:var(--cream)}
 .pin-badge.is-unsold{box-shadow:none;border:1.5px dashed var(--navy)}
+/* A sale the range trim set aside: the map's set-aside pin on its column,
+   with the words under the address (reader review, 3177 Coho, 2026-10-08). */
+.pin-badge.is-closed.is-aside{background:linear-gradient(var(--ink70),var(--ink70)) var(--cream);color:var(--cream)}
+.matrix-aside{display:block;margin-top:3px;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink70);text-align:right;white-space:nowrap}
+.comp-stack-card .matrix-aside{text-align:left;margin:-2px 0 8px}
 /* A pin near an edge opens its card toward the middle of the map. */
 .pin-hit[data-note="l"] .pin-note{left:0;transform:translate(0,8px)}
 .pin-hit[data-note="r"] .pin-note{left:auto;right:0;transform:translate(0,8px)}

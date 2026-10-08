@@ -27,6 +27,7 @@ import {
 import { closedEntries } from '@/lib/cma/matrix-entry'
 import { compWeightIndex } from '@/lib/cma/pricing-method'
 import { setAsideCompIndexes } from '@/lib/cma/set-aside'
+import { weightRowLabel } from '@/lib/cma/sales-role'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import type { CmaAdjustedComp, CmaPricing, CmaSubject } from '@/lib/cma/types'
 
@@ -114,7 +115,10 @@ export function salesGlanceHtml(input: SalesGlanceInput): string {
   <h3 class="subhead">${esc(salesGlanceHeading(rows.length))}</h3>
   <table class="glance">
     <thead><tr><th scope="col" class="g-addr">Sale</th><th scope="col" class="n">${esc(soldHead)}</th><th scope="col" class="n">Adjusted</th>${
-      showWeight ? '<th scope="col" class="n">Weight in this price</th>' : ''
+      // The grid's own words for its weight row on this letter: on a cover
+      // the weights did not make, they are not "in this price"
+      // (lib/cma/sales-role.ts).
+      showWeight ? `<th scope="col" class="n">${esc(weightRowLabel(input.pricing, input.comps))}</th>` : ''
     }</tr></thead>
     <tbody>${body}</tbody>
   </table>

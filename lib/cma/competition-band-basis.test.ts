@@ -33,15 +33,53 @@ describe('competitionBandBasisSentence', () => {
     expect(s).not.toContain('center')
   })
 
-  it('3037 Purcell as rebuilt: $496,000 to $606,000 is 10% either side of the $550,000 cover, so it says so', () => {
+  // "X% either side" only when it is exact at the printed dollars (reader
+  // review, 1355 Jacksonville and 2745 Aldrich, 2026-10-08). 10% either side
+  // of $550,000 is $495,000 to $605,000, not the printed $496,000 to $606,000.
+  it('3037 Purcell as rebuilt: $496,000 to $606,000 is not exactly 10% either side of $550,000, so it says the cover sits near the middle', () => {
     const s = competitionBandBasisSentence(
       { center: 551_000, halfWidth: 0.1, baseHalfWidth: 0.1 },
       550_000,
       { lo: 496_000, hi: 606_000 },
     )
-    expect(s).toBe('This range is 10% either side of the list price we recommend.')
+    expect(s).toBe(
+      'This range was set 10% either side of the list we started from before the homes for sale were weighed. The list price we recommend was set after they were weighed, so it sits near the middle of the range, not exactly on it.',
+    )
     expect(s).not.toContain('$551,000')
     expect(s).not.toContain('$550,951')
+  })
+
+  it('1355 Jacksonville: $623,000 to $843,000 is 15% of $733,000, not of the $732,000 cover, so no "15% either side"', () => {
+    const s = competitionBandBasisSentence(
+      { center: 733_000, halfWidth: 0.15, baseHalfWidth: 0.1 },
+      732_000,
+      { lo: 623_000, hi: 843_000 },
+    )
+    // Whole-percent rounding calls 14.9% and 15.2% both 15.
+    expect(windowSplit({ lo: 623_000, hi: 843_000 }, 732_000)).toEqual({ under: 15, over: 15 })
+    expect(s).not.toContain('This range is 15% either side')
+    expect(s).toBe(
+      'This range was set 15% either side of the list we started from before the homes for sale were weighed. The list price we recommend was set after they were weighed, so it sits near the middle of the range, not exactly on it. It opened from 10% because fewer than five homes like yours were for sale or under contract inside 10%.',
+    )
+  })
+
+  it('2745 Aldrich: $408,000 to $552,000 is 15% of $480,000, not of the $479,000 cover', () => {
+    const s = competitionBandBasisSentence(
+      { center: 480_000, halfWidth: 0.15, baseHalfWidth: 0.1 },
+      479_000,
+      { lo: 408_000, hi: 552_000 },
+    )
+    expect(s).not.toContain('either side of the list price we recommend')
+    expect(s).toContain('near the middle of the range, not exactly on it')
+  })
+
+  it('says "X% either side" when the printed ends are exactly the cover price that share either way', () => {
+    const s = competitionBandBasisSentence(
+      { center: 733_000, halfWidth: 0.15, baseHalfWidth: 0.15 },
+      733_000,
+      { lo: 623_000, hi: 843_000 },
+    )
+    expect(s).toBe('This range is 15% either side of the list price we recommend.')
   })
 
   it('2382 Jackson (held): opened to 15%, $535,000 to $723,000 around $624,000', () => {

@@ -13,6 +13,7 @@ import { saveAnonymousPartialAddress } from '@/lib/data'
 import { isHardStopped } from '@/lib/canonical-lead-tagger'
 import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
+import { visitorCapiConsent } from '@/lib/meta-capi-visitor'
 import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
 import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data/crm/ensureNativeLead'
 import { recordMarketingAssignment } from '@/lib/data/crm/recordMarketingAssignment'
@@ -344,40 +345,45 @@ export async function submitExpiredLPForm(submission: ExpiredLPSubmission): Prom
     // ─── Meta CAPI Lead $500 (high-intent seller signal) ──────────────────
     const eventId = generateEventId()
     const capiCookies = await cookies()
-    void fetch(`${siteUrl}/api/meta-capi`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        eventName: 'Lead',
-        email,
-        phone: phone || undefined,
-        firstName,
-        lastName,
-        eventId,
-        eventSourceUrl: `${siteUrl}/lp/expired-listing`,
-        fbp: capiCookies.get('_fbp')?.value,
-        fbc: capiCookies.get('_fbc')?.value,
-        customData: {
-          content_name: 'expired_listing_lp',
-          lead_type: 'expired_listing',
-          property_address: address || 'unspecified',
-          contact_path: contactPath,
-          assigned_broker: assignment.broker,
-          value: 500,
-          currency: 'USD',
-        },
-      }),
-    }).catch((err) => console.warn('[expired-lp] CAPI call failed:', err))
+    const sharing = await visitorCapiConsent()
+    if (sharing.allowed) {
+      void fetch(`${siteUrl}/api/meta-capi`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventName: 'Lead',
+          email,
+          phone: phone || undefined,
+          firstName,
+          lastName,
+          eventId,
+          eventSourceUrl: `${siteUrl}/lp/expired-listing`,
+          fbp: capiCookies.get('_fbp')?.value,
+          fbc: capiCookies.get('_fbc')?.value,
+          consentCookie: sharing.consentCookie,
+          secGpc: sharing.secGpc,
+          customData: {
+            content_name: 'expired_listing_lp',
+            lead_type: 'expired_listing',
+            property_address: address || 'unspecified',
+            contact_path: contactPath,
+            assigned_broker: assignment.broker,
+            value: 500,
+            currency: 'USD',
+          },
+        }),
+      }).catch((err) => console.warn('[expired-lp] CAPI call failed:', err))
+    }
 
     // ─── GA4 Measurement Protocol mirror ───────────────────────────────────
     // Expired listings are high-intent seller leads. Mirror generate_lead
     // server-side so attribution survives ad-blockers.
     await fireLeadGenerated({
       lp_variant: 'expired-listing',
-      lead_type: 'seller',
+      lead_type: 'seller_listing',
+      form_id: 'expired_lp',
       lead_classification: 'hot',
       broker_slug: assignment.broker,
-      value: 500,
       event_id: eventId,
       fub_person_id: fubPersonId,
       extra: {

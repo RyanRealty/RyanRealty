@@ -7,17 +7,52 @@
  *
  * Same API: `launch`, `launchPersistentContext`, `connectOverCDP` and `connect`
  * return the real objects; every context they hand out (including the one
- * `browser.newPage()` creates) gets the marker cookie before the caller can
- * navigate it.
+ * `browser.newPage()` creates) gets rr_automation=1, rr_internal=1 and a
+ * declined consent cookie before the caller can navigate it.
  */
 import * as playwright from 'playwright'
-import { markerCookies } from './automation-marker.mjs'
+import { isOwnSiteHost, markerCookies, plantFlagsScript } from './automation-marker.mjs'
+
+function wrapPage(page) {
+  if (page.__rrGotoWrapped) return page
+  page.__rrGotoWrapped = true
+  const origGoto = page.goto.bind(page)
+  page.goto = async (url, ...rest) => {
+    if (url) {
+      try {
+        const host = new URL(String(url), 'http://127.0.0.1').hostname
+        if (isOwnSiteHost(host)) await page.context().addCookies(markerCookies([host]))
+      } catch {
+        /* a relative or invalid URL still navigates; cookies are already on the context */
+      }
+    }
+    return origGoto(url, ...rest)
+  }
+  return page
+}
 
 async function mark(context) {
-  try {
-    await context.addCookies(markerCookies())
-  } catch (err) {
-    console.warn('[marked-playwright] could not set the automation marker:', err?.message ?? err)
+  if (!context.__rrMarked) {
+    context.__rrMarked = true
+    try {
+      await context.addCookies(markerCookies())
+    } catch (err) {
+      console.warn('[marked-playwright] could not set the automation marker:', err?.message ?? err)
+    }
+    try {
+      await context.addInitScript({ content: plantFlagsScript() })
+    } catch (err) {
+      console.warn('[marked-playwright] could not plant page flags:', err?.message ?? err)
+    }
+    const origNewPage = context.newPage.bind(context)
+    context.newPage = async (...args) => wrapPage(await origNewPage(...args))
+    for (const page of context.pages()) wrapPage(page)
+  } else {
+    try {
+      await context.addCookies(markerCookies())
+    } catch {
+      /* already marked; a second pass is best-effort */
+    }
   }
   return context
 }
@@ -29,7 +64,7 @@ function wrapBrowser(browser) {
   browser.newPage = async (...args) => {
     const page = await newPage(...args)
     await mark(page.context())
-    return page
+    return wrapPage(page)
   }
   return browser
 }

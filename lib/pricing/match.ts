@@ -7,7 +7,7 @@ import { realSubdivision } from '@/lib/cma/comp-tiers'
 import { resortCommunityCompatible } from '@/lib/cma/resort-guard'
 import { saleInsideSubjectCommunity, saleSearchCommunitySlug, searchCommunitySlug } from '@/lib/cma/community-location'
 import { isResortCommunity } from '@/lib/cma/resort-guard'
-import { resolvePriceAnchor, samePlat, sameStreetPeer, streetKey, type PriceAnchor } from '@/lib/pricing/price-anchor'
+import { anchorPlacePhrase, resolvePriceAnchor, samePlat, sameStreetPeer, streetKey, type PriceAnchor } from '@/lib/pricing/price-anchor'
 import { describePriceTierLine, insidePriceTier, priceTierLine } from '@/lib/pricing/price-tier'
 import { saleSetsThePrice } from '@/lib/pricing/price-set'
 import { locationMatchFromFacts, type LocationMatch } from '@/lib/pricing/closed-comp-weight'
@@ -1673,6 +1673,12 @@ export function walkPricingLadder(
     tiers?: PricingTier[]
     /** Pending listings in the same pocket — hold exclusivity, never enter the closed set. */
     pendingPool?: PricingSale[]
+    /**
+     * How many months of closes the pool holds (selectPricingComps reads 24,
+     * or 30 for a custom or new home). Only the trace's anchor sentence reads
+     * it, so the window it states is the one the pool was read over.
+     */
+    anchorWindowMonths?: number
   },
 ): PricingMatchResult {
   const recordedPlat = subjectHasRecordedSubdivision(rawSubject)
@@ -1692,8 +1698,11 @@ export function walkPricingLadder(
   // The subject's price tier, resolved once (lib/pricing/price-anchor.ts). With
   // it, every sale off the own plat and the street twin is graded on the one
   // 20% line around it, whether or not the plats have cells (Matt 2026-10-08).
-  // Without it, the plat cells grade as before.
-  const priceAnchor = resolvePriceAnchor(subject, pool)
+  // Without it, the plat cells grade as before. Read from the home as its MLS
+  // row and plat read left it, not the inferred pocket: the anchor's levels are
+  // its own recorded plat, that plat's family, and its own MLS subdivision name
+  // before any wider ground.
+  const priceAnchor = resolvePriceAnchor(rawSubject, pool)
   // The one 20% line around it (lib/pricing/price-tier.ts), or null with no anchor.
   const priceLine = priceTierLine(priceAnchor?.ppsf)
   /** Distinct sales the price line skipped, across every rung. */
@@ -1719,6 +1728,14 @@ export function walkPricingLadder(
   const trace: string[] = [
     `As-of ${asOf}. Named subdivision and its street cluster first (own street, same plat, pocket names and streets), exclusive while that set holds a tight closed+pending group. Then the plats next to it inside the same neighborhood or community, then distance inside that boundary, then similar-performing subdivisions; the boundary is crossed only when it supplied fewer than ${BOUNDARY_EXIT_BELOW} sales. Year and quality outrank radius only when exclusive closed sales sit below ${BOUNDARY_EXIT_BELOW}. Hard cuts: product (townhouse ≠ condo ≠ detached), rural/urban, resort, water, sewer, whole baths, US-97/Parkway and Deschutes banks, irrigated vs dry, horse/barn infrastructure on acreage, and on acreage the zoning class (farm or forest against rural residential), outbuildings, and usable land, zoning when both sides have a zone in town, new vs resale, custom/new year-and-quality, neighborhood once the search leaves the subdivision, HOA on the tight rungs, a subdivision $/sqft tier gap between plats, and ${priceLine ? `off the subject's own plat and street twin, a sale's own $/sqft inside ${describePriceTierLine(priceLine)} (one 20% line around this home's price anchor, the same line the comparability review holds)` : 'no price line around the home itself, because no price anchor could be resolved'}.`,
   ]
+  if (priceAnchor && priceLine) {
+    // Where the line was read, by name (Matt 2026-10-08): the narrowest level
+    // that held a fair median, so a reader can see it is this home's own area.
+    const windowText = opts.anchorWindowMonths ? ` that closed in the last ${opts.anchorWindowMonths} months` : ''
+    trace.push(
+      `Price tier: homes of this size sell for about $${priceLine.anchor} a square foot ${anchorPlacePhrase(priceAnchor)} (median of ${priceAnchor.n} sales${windowText}). Off this home's own plat and street, sales outside ${describePriceTierLine(priceLine)} are a different market and are not used.`,
+    )
+  }
   if (subject.inferredPocket?.inferred && subject.inferredPocket.subdivision) {
     trace.push(
       `MLS SubdivisionName was blank, so the search inferred ${subject.inferredPocket.subdivision} (${subject.inferredPocket.source}) before any mile ring.`,

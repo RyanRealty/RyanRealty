@@ -196,15 +196,27 @@ describe('subject days on market — one definition, one number', () => {
   it('differences calendar dates, so a keyed-in timestamp cannot move the count', () => {
     // The live shape on cma-2465-7th-redmond-97756: ListDate is a timestamp,
     // off_market_date is a bare date. 2026-02-26 → 2026-09-01 is 187 days
-    // whatever time of day the listing was entered.
+    // whatever time of day on Feb 26 the listing was entered.
     const live = {
       listDate: '2026-02-26T23:27:57+00:00',
       offMarketDate: '2026-09-01',
       daysOnMarket: 186,
     }
     expect(finalCycleDaysOnMarket(live)).toBe(187)
-    expect(finalCycleDaysOnMarket({ ...live, listDate: '2026-02-26T00:04:00+00:00' })).toBe(187)
+    expect(finalCycleDaysOnMarket({ ...live, listDate: '2026-02-26T08:04:00+00:00' })).toBe(187)
     expect(finalCycleDaysOnMarket({ ...live, listDate: '2026-02-26' })).toBe(187)
+  })
+
+  it('reads a timestamp as the Pacific day it fell on (reader review 2026-10-08)', () => {
+    // 00:04 UTC on Feb 26 is 4:04 PM on Feb 25 in Bend: the listing went on
+    // the market Feb 25, and Feb 25 → Sep 1 is 188 days. Counting from the
+    // UTC day printed 3177 Coho's Dec 1 list as Dec 2.
+    expect(
+      finalCycleDaysOnMarket({ listDate: '2026-02-26T00:04:00+00:00', offMarketDate: '2026-09-01', daysOnMarket: 186 }),
+    ).toBe(188)
+    expect(
+      finalCycleDaysOnMarket({ listDate: '2025-12-02T03:13:18+00:00', offMarketDate: '2026-02-10', daysOnMarket: 303 }),
+    ).toBe(71)
   })
 
   it('never returns a negative span', () => {

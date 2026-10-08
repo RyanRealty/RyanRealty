@@ -153,8 +153,13 @@ export function classifyProduct(subType: string | null | undefined): ProductKey 
  */
 const MULTI_UNIT_RE =
   /\b(duplex|tri-?plex|four-?plex|quad-?plex|multi-?family|two units|both units|upper unit|lower unit|second unit)\b/gi
-const MULTI_UNIT_HEDGE_RE =
-  /\b(potential(?:ly)?|possib(?:le|ly|ility)|could|can be|may be|option(?:al)?|opportunity to|redevelop\w*|convert\w*|zoned for|zoning (?:allows|permits)|allows? (?:for )?an?|future)\b/i
+// "possibilities" and "options" are the same hedge as "possibility" and
+// "option": 1345 Jacksonville's "may offer possibilities for a lot split,
+// duplex, ..." read as a stated duplex while the singular never did.
+const MULTI_UNIT_HEDGE_SOURCE =
+  String.raw`\b(potential(?:ly)?|possib(?:le|ly|ility|ilities)|could|can be|may be|options?|optional|opportunity to|redevelop\w*|convert\w*|zoned for|zoning (?:allows|permits)|allows? (?:for )?an?|future)\b`
+const MULTI_UNIT_HEDGE_RE = new RegExp(MULTI_UNIT_HEDGE_SOURCE, 'i')
+const MULTI_UNIT_HEDGE_ALL_RE = new RegExp(MULTI_UNIT_HEDGE_SOURCE, 'gi')
 const ADU_RE = /\b(adu|accessory dwelling|guest house|guesthouse|casita|guest quarters|mother-in-law)\b/i
 
 export function multiUnitFromRemarks(remarks: string | null | undefined): boolean {
@@ -165,6 +170,7 @@ export function multiUnitFromRemarks(remarks: string | null | undefined): boolea
     const word = m[1]!.toLowerCase()
     const before = text.slice(Math.max(0, m.index! - 60), m.index!)
     if (MULTI_UNIT_HEDGE_RE.test(before)) continue
+    if (hedgeGovernsList(clauseBefore(text, m.index!, HEDGED_LIST_LOOKBACK), MULTI_UNIT_HEDGE_ALL_RE)) continue
     // A unit word alone describes an ADU home as often as a duplex.
     if (/\bunits?\b/.test(word) && hasAdu) continue
     return true
@@ -207,8 +213,11 @@ export function multiUnitFromRemarks(remarks: string | null | undefined): boolea
  * income", a use pitch ("ideal for ... guest quarters"), a negation ("no
  * ADUs"), and "ADU?". A hedge governs the unit word only when nothing between
  * them states a feature ("Perfect for multigenerational living, this home
- * features a detached ADU" counts). Ambiguous wording does not count, so a
- * comp is kept rather than dropped on a guess.
+ * features a detached ADU" counts). A hedge reaches every item of the list it
+ * opens, however far down the list the unit word sits ("may offer
+ * possibilities for a lot split, duplex, multi-unit development, ADU, or new
+ * custom home", hedgeGovernsList below). Ambiguous wording does not count, so
+ * a comp is kept rather than dropped on a guess.
  */
 const SECOND_UNIT_RE =
   /\b(?:adus?|accessory dwelling(?: units?)?|guest ?houses?|guest cottages?|casitas?|guest quarters|granny flats?|(?:mother[- ]in[- ]law|in[- ]law)(?:'?s)?\s+(?:units?|apartments?|apts?|cottages?|house|home|dwelling|cabin|casita|adu)|detached\s+(?:mother[- ])?in[- ]law)\b/gi
@@ -228,10 +237,49 @@ const SECOND_UNIT_INSIDE_HOUSE =
   /\b(?:upstairs|downstairs|lower[- ]level|main[- ]level|main[- ]floor|second[- ]floor|basement|in[- ]home)\s+(?:[\w'-]+\s+)?$/i
 
 function secondUnitClauseBefore(text: string, at: number): string {
-  const slice = text.slice(Math.max(0, at - SECOND_UNIT_BEFORE_WINDOW), at)
+  return clauseBefore(text, at, SECOND_UNIT_BEFORE_WINDOW)
+}
+
+/**
+ * The text of the clause that holds `at`, up to `at`, looking back at most
+ * `window` characters, with its whitespace folded. A line break is not a
+ * clause end: MLS remarks wrap mid-sentence ("Conveniently located near\r\n
+ * shopping, dining,\r\nservices").
+ */
+function clauseBefore(text: string, at: number, window: number): string {
+  const slice = text.slice(Math.max(0, at - window), at).replace(/\s+/g, ' ')
   let cut = 0
   for (const m of slice.matchAll(SECOND_UNIT_CLAUSE_END)) cut = (m.index ?? 0) + m[0].length
   return slice.slice(cut)
+}
+
+/**
+ * THE HEDGE GOVERNS ITS LIST (1345 Jacksonville, reader review 2026-10-08).
+ * "The generous lot may offer possibilities for a lot split, duplex,
+ * multi-unit development, ADU, or new custom home, subject to City approval"
+ * offers five options and states none. The ADU sits 63 characters past
+ * "possibilities", beyond the 60-character window the readers look back over,
+ * so the window alone read a stated ADU, and the competition fit dropped the
+ * subject's next-door neighbor as unlike.
+ *
+ * True when the last hedge in the clause opens a bare list the unit word is
+ * an item of: from the hedge to the unit word there are only short
+ * comma-separated items, then nothing but "or", "and" or an article, and no
+ * word that states a feature. A run that turns into a statement ("room for RV
+ * parking, a garden and a detached guest house", "possible shop site, and the
+ * home includes an ADU") is not a bare list, so the window alone decides it,
+ * as it did before.
+ */
+const HEDGED_LIST_LOOKBACK = 300
+const HEDGED_LIST_TAIL = /^(?:\s*[^,\s][^,]{0,39},)+\s*(?:(?:and\/or|or|and)\s+)?(?:(?:an?|the)\s+)?$/i
+
+function hedgeGovernsList(clause: string, hedgeAll: RegExp): boolean {
+  let last: RegExpMatchArray | null = null
+  for (const m of clause.matchAll(hedgeAll)) last = m
+  if (!last) return false
+  const tail = clause.slice((last.index ?? 0) + last[0].length)
+  if (SECOND_UNIT_STATEMENT_BREAK.test(tail)) return false
+  return HEDGED_LIST_TAIL.test(tail)
 }
 
 function secondUnitHedgedBefore(before: string): boolean {
@@ -248,6 +296,7 @@ function readSecondUnit(remarks: string): boolean {
     const at = m.index ?? 0
     const before = secondUnitClauseBefore(text, at)
     if (secondUnitHedgedBefore(before)) continue
+    if (hedgeGovernsList(clauseBefore(text, at, HEDGED_LIST_LOOKBACK), SECOND_UNIT_HEDGE_BEFORE)) continue
     if (SECOND_UNIT_NEGATED_BEFORE.test(before)) continue
     if (SECOND_UNIT_HEDGE_AFTER.test(text.slice(at + m[0].length, at + m[0].length + 40))) continue
     if (/quarters/i.test(m[0]) && SECOND_UNIT_INSIDE_HOUSE.test(before)) continue

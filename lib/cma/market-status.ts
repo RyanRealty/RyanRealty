@@ -12,6 +12,7 @@ import { realSubdivision } from '@/lib/cma/comp-tiers'
 import { roomNotedSentence, sameAreaFit, sameAreaSubject, type SameAreaCandidate } from '@/lib/cma/same-area-fit'
 import type { CmaMarketAreaRow } from '@/lib/data/cma/marketAreaReads'
 import { daysOnMarketFrom, listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
+import { cameOffStatus, lastActiveRun, pacificDay, sameStatus, type ActiveRun } from '@/lib/cma/listing-status'
 
 export type CmaStatusBucket = {
   key: 'selected' | 'active' | 'pending' | 'expired' | 'closed'
@@ -62,9 +63,19 @@ export type CmaExpiredPeer = {
   listPrice: number
   originalListPrice: number | null
   status: string
+  /** Days on the market: the day it went Active to the day it left Active. */
   daysOnMarket: number | null
   /** Cycle start — used to label or collapse multi-cycle peers. */
   onMarketDate: string | null
+  /**
+   * YYYY-MM-DD (Pacific) it left Active, from the MLS status log. Absent on rows
+   * built before the log was read.
+   */
+  offMarketDate?: string | null
+  /** The status it left Active for, when that differs from `status` (withdrawn, then expired). */
+  cameOffAs?: string | null
+  /** YYYY-MM-DD (Pacific) `status` took effect: the date the column prints beside it. */
+  statusDate?: string | null
   photoUrl: string | null
   listingHistoryLine: string | null
   /**
@@ -75,7 +86,11 @@ export type CmaExpiredPeer = {
    */
   whyItSat?: string | null
   beds: number | null
+  /** BathroomsTotal, which counts a half bath whole. Print through `printedBaths`, never raw. */
   baths: number | null
+  /** MLS full / half bath split (listings.baths_full / baths_half), when read. */
+  bathsFull?: number | null
+  bathsHalf?: number | null
   sqft: number | null
   yearBuilt: number | null
   lotAcres: number | null
@@ -193,6 +208,16 @@ function num(v: unknown): number | null {
   return Number.isFinite(n) ? n : null
 }
 
+/**
+ * A count off an MLS row, blank kept blank. `num` reads null as 0, and a blank
+ * bed or bath count read as zero would fail the one-room rule a blank passes
+ * (an unknown count is a match, rule 4).
+ */
+function countOrNull(v: unknown): number | null {
+  if (v == null || (typeof v === 'string' && v.trim() === '')) return null
+  return num(v)
+}
+
 
 
 export type ExpiredPeerSubject = Pick<
@@ -258,6 +283,117 @@ function sameHouse(a: string | null | undefined, b: string | null | undefined): 
   return x !== '' && x === y
 }
 
+/**
+ * THE HOUSE SOLD AFTER IT CAME OFF (cma-1648-pheasant, reader review
+ * 2026-10-08). The letter said "One home in Pheasant Hill, Neal, Meadowview
+ * Estate and North Pilot Butte came off the market without selling in the
+ * last 12 months." The only unsold cycles there besides the subject's own
+ * were 2639 Harvey (canceled Jun 8, 2026, relisted Jun 12, closed Jul 31 at
+ * $549,000) and 1382 Drost (canceled Jun 9, relisted Jun 10, closed Jul 16 at
+ * $645,000). Both houses sold. A cancel and relist is a re-entry, not a home
+ * that failed to sell.
+ *
+ * So an unsold cycle is not a came-off home when a LATER cycle of the same
+ * house closed, or is for sale or under contract now (the rule the live band
+ * already applies through `liveAddresses`, for every relist). Later means it
+ * went on the market after this cycle did: an earlier sale of the same house
+ * (1382 Drost closed in 2024 too) never counts. The same house is the same
+ * parcel, or the same street address (sameHouseAddressKey, the fold the
+ * subject test uses) when the parcels do not say otherwise, in the same city
+ * when both rows carry one.
+ */
+export const RELIST_OUTCOME_STATUSES = ['Closed', 'Active', 'Coming Soon', 'Active Under Contract', 'Pending'] as const
+const RELIST_OUTCOME = new Set<string>(RELIST_OUTCOME_STATUSES)
+
+/** One MLS record of a house, as the relist test reads it. */
+export type HouseCycleRecord = {
+  ListingKey?: string | null
+  StreetNumber?: string | null
+  StreetName?: string | null
+  City?: string | null
+  parcel_number?: string | null
+  StandardStatus: string
+  OnMarketDate?: string | null
+  ListDate?: string | null
+  CloseDate?: string | null
+  status_change_timestamp?: string | null
+}
+
+function isoMs(raw: string | null | undefined): number | null {
+  const s = raw?.trim()
+  if (!s) return null
+  const t = new Date(s.length <= 10 ? `${s}T12:00:00.000Z` : s).getTime()
+  return Number.isFinite(t) ? t : null
+}
+
+function parcelKey(raw: string | null | undefined): string {
+  return (raw ?? '').toLowerCase().replace(/[^a-z0-9]/g, '')
+}
+
+function recordAddressKey(r: Pick<HouseCycleRecord, 'StreetNumber' | 'StreetName'>): string {
+  const street = (r.StreetName ?? '').trim()
+  if (!street) return ''
+  return sameHouseAddressKey(`${(r.StreetNumber ?? '').trim()} ${street}`.trim())
+}
+
+function sameHouseRecord(a: HouseCycleRecord, b: HouseCycleRecord): boolean {
+  const ca = (a.City ?? '').trim().toLowerCase()
+  const cb = (b.City ?? '').trim().toLowerCase()
+  if (ca && cb && ca !== cb) return false
+  const pa = parcelKey(a.parcel_number)
+  const pb = parcelKey(b.parcel_number)
+  if (pa && pb) return pa === pb
+  const xa = recordAddressKey(a)
+  return xa !== '' && xa === recordAddressKey(b)
+}
+
+/**
+ * The later cycle of the same house that closed or is on the market now, or
+ * null when there is none (or the dates cannot say which came first).
+ */
+export function laterOutcomeCycle(
+  row: HouseCycleRecord,
+  records: readonly HouseCycleRecord[],
+): HouseCycleRecord | null {
+  const key = (row.ListingKey ?? '').trim()
+  const rowStart = isoMs(row.OnMarketDate) ?? isoMs(row.ListDate)
+  const rowOff = isoMs(row.status_change_timestamp)
+  for (const other of records) {
+    if (!RELIST_OUTCOME.has(other.StandardStatus)) continue
+    const otherKey = (other.ListingKey ?? '').trim()
+    if (key && otherKey === key) continue
+    if (!sameHouseRecord(row, other)) continue
+    const otherStart = isoMs(other.OnMarketDate) ?? isoMs(other.ListDate)
+    if (otherStart != null && rowStart != null) {
+      if (otherStart > rowStart) return other
+      continue
+    }
+    if (otherStart != null && rowOff != null) {
+      if (otherStart >= rowOff) return other
+      continue
+    }
+    const closed = other.StandardStatus === 'Closed' ? isoMs(other.CloseDate) : null
+    const after = rowOff ?? rowStart
+    if (closed != null && after != null && closed > after) return other
+  }
+  return null
+}
+
+/** The unsold cycles whose house did not later sell or come back on the market, and the ones that did. */
+export function dropRelistedUnsoldCycles<T extends HouseCycleRecord>(
+  rows: readonly T[],
+  records: readonly HouseCycleRecord[],
+): { kept: T[]; dropped: Array<{ row: T; later: HouseCycleRecord }> } {
+  const kept: T[] = []
+  const dropped: Array<{ row: T; later: HouseCycleRecord }> = []
+  for (const row of rows) {
+    const later = records.length > 0 ? laterOutcomeCycle(row, records) : null
+    if (later) dropped.push({ row, later })
+    else kept.push(row)
+  }
+  return { kept, dropped }
+}
+
 function peerKeyIds(subject: Pick<CmaSubject, 'listingKey' | 'mlsNumber'>): Set<string> {
   const ids = new Set<string>()
   for (const raw of [subject.listingKey, subject.mlsNumber]) {
@@ -302,9 +438,11 @@ function rowToCandidate(row: CmaMarketAreaRow): SameAreaCandidate {
     subdivision: row.SubdivisionName ?? null,
     latitude: row.Latitude ?? null,
     longitude: row.Longitude ?? null,
-    beds: num(row.BedroomsTotal),
-    baths: num(row.BathroomsTotal),
-    sqft: num(row.TotalLivingAreaSqFt),
+    beds: countOrNull(row.BedroomsTotal),
+    baths: countOrNull(row.BathroomsTotal),
+    bathsFull: countOrNull(row.baths_full),
+    bathsHalf: countOrNull(row.baths_half),
+    sqft: countOrNull(row.TotalLivingAreaSqFt),
     yearBuilt: row.year_built ?? null,
     propertySubType: row.property_sub_type ?? null,
     publicRemarks: row.public_remarks ?? null,
@@ -318,19 +456,33 @@ function peerDist2(row: CmaMarketAreaRow, lat: number, lng: number): number {
   return dLat * dLat + dLng * dLng
 }
 
-/** MLS DOM when present; else on-market → off-market (status change) sit-time. */
-function peerDom(row: CmaMarketAreaRow): number | null {
+/**
+ * The last stretch an unsold listing was on the market, from its status log
+ * when the read attached one, else its own on-market and off-market days.
+ */
+function peerRun(row: CmaMarketAreaRow): ActiveRun | null {
+  return lastActiveRun({
+    changes: row.statusChanges ?? [],
+    onMarketDate: row.OnMarketDate ?? row.ListDate,
+    offMarketDate: row.off_market_date ?? row.status_change_timestamp ?? row.CloseDate,
+    status: row.StandardStatus,
+  })
+}
+
+/**
+ * DAYS ON THE MARKET END THE DAY IT LEFT ACTIVE (reader review 2026-10-08).
+ *
+ * 3204 Spring Creek went Active Oct 16, was withdrawn Jan 20 and expired Jul
+ * 31. Its MLS DaysOnMarket ran to the expiry, and both letters said it "came
+ * off after 288 days". The status log gives 96. Without a log the count is its
+ * on-market day to its off-market day, as calendar days between Pacific days,
+ * and the MLS figure only when neither date is on the row.
+ */
+function peerDom(row: CmaMarketAreaRow, run: ActiveRun | null): number | null {
+  if (run?.days != null) return run.days
   const d = num(row.CumulativeDaysOnMarket) ?? num(row.DaysOnMarket)
   if (d != null && d > 0) return d
-  const on = row.OnMarketDate ?? row.ListDate
-  const offRaw = row.status_change_timestamp ?? row.CloseDate
-  if (on && offRaw) {
-    const off = new Date(offRaw.length <= 10 ? `${offRaw}T12:00:00.000Z` : offRaw)
-    if (!Number.isNaN(off.getTime())) {
-      return daysOnMarketFrom({ onMarketDate: on, asOf: off })
-    }
-  }
-  return daysOnMarketFrom({ onMarketDate: on })
+  return daysOnMarketFrom({ onMarketDate: row.OnMarketDate ?? row.ListDate })
 }
 
 function onMarketSortKey(iso: string | null | undefined): number {
@@ -410,9 +562,13 @@ export function pickExpiredPeers(
         row.OriginalListPrice != null && Number.isFinite(Number(row.OriginalListPrice))
           ? Number(row.OriginalListPrice)
           : null
-      const onMarketDate = row.OnMarketDate ?? row.ListDate ?? null
-      const daysOnMarket = peerDom(row)
+      const run = peerRun(row)
+      const onMarketDate = (run?.source === 'status-history' ? run.from : null) ?? row.OnMarketDate ?? row.ListDate ?? null
+      const daysOnMarket = peerDom(row, run)
       const status = row.StandardStatus
+      const leftAs = run?.source === 'status-history' ? run.leftAs : null
+      const cameOffAs = leftAs && !sameStatus(leftAs, status) ? leftAs : null
+      const statusDay = pacificDay(row.status_change_timestamp ?? row.off_market_date ?? null)
       const peer: CmaExpiredPeer = {
         listingKey: key,
         address,
@@ -421,16 +577,21 @@ export function pickExpiredPeers(
         status,
         daysOnMarket,
         onMarketDate,
+        ...(run?.to ? { offMarketDate: run.to } : {}),
+        ...(cameOffAs ? { cameOffAs } : {}),
+        ...(statusDay ? { statusDate: statusDay } : {}),
         photoUrl: row.PhotoURL ?? null,
         listingHistoryLine: buildListingHistoryLine({
           listPrice,
           originalListPrice,
-          status,
+          status: cameOffStatus(status, cameOffAs),
           onMarketDate,
           daysOnMarket,
         }),
         beds: row.BedroomsTotal,
         baths: row.BathroomsTotal,
+        bathsFull: countOrNull(row.baths_full),
+        bathsHalf: countOrNull(row.baths_half),
         sqft: row.TotalLivingAreaSqFt,
         yearBuilt: row.year_built ?? null,
         lotAcres: row.lot_size_acres ?? null,
@@ -619,9 +780,11 @@ export function computeMarketArea(input: {
 
   // These rows are citywide and read only when the document carries no
   // expiredPeers set (lib/cma/matrix-sets.ts), so no area is tested here; the
-  // product, room, size and year rules still are.
+  // product, room, size and year rules still are. A cycle whose house later
+  // closed or is listed again (in the same twelve-month read) is not a
+  // came-off home.
   const expiredPeers = pickExpiredPeers(
-    expired,
+    dropRelistedUnsoldCycles(expired, input.rows).kept,
     {
       ...sameAreaSubject(input.subject),
       streetAddress: input.subject.streetAddress,
@@ -690,6 +853,13 @@ export type CmaExpiredPeerSet = {
   shortfall: boolean
   sentence: string
   peers: CmaExpiredPeer[]
+  /**
+   * The list-price window the read counted (marketAreaPriceBand of the list
+   * the competition was read around). `areaTotal` counts only homes listed
+   * inside it, so a sentence that says that count names it. Absent on rows
+   * built before 2026-10-08.
+   */
+  priceBand?: { lo: number; hi: number } | null
 }
 
 function usd(n: number): string {
@@ -750,9 +920,15 @@ export function whyItSat(
   return bits.length > 0 ? `${joinBits(bits)}.` : null
 }
 
-/** Months between an off-market day and as-of. Null when the row carries no date. */
+/**
+ * Months between the day it came off the market and as-of. Null when the row
+ * carries no date. The day it left Active when the status log says, so a home
+ * withdrawn 25 months ago whose listing expired 23 months ago did not come off
+ * "in the last 24 months".
+ */
 function offMarketMonths(row: CmaMarketAreaRow, asOf: Date): number | null {
-  const raw = row.status_change_timestamp?.trim()
+  const run = row.statusChanges?.length ? peerRun(row) : null
+  const raw = (run?.source === 'status-history' ? run.to : null) ?? row.status_change_timestamp?.trim()
   if (!raw) return null
   const t = new Date(raw.length <= 10 ? `${raw}T12:00:00.000Z` : raw)
   if (Number.isNaN(t.getTime())) return null
@@ -822,31 +998,42 @@ export function buildExpiredPeerSet(input: {
    * older cycle that came off. The address is enough. The listing keys differ.
    */
   liveAddresses?: readonly (string | null | undefined)[]
+  /**
+   * Other MLS records of the houses in `rows` (getCmaAreaUnsoldCycles reads
+   * them). A cycle whose house relisted later and closed, or is on the market
+   * now, did not come off unsold (laterOutcomeCycle). Omitted drops nothing.
+   */
+  laterCycles?: readonly HouseCycleRecord[]
+  /** The list-price window `rows` were read inside (getCmaAreaUnsoldCycles priceLo..priceHi). */
+  priceBand?: { lo: number; hi: number } | null
 }): CmaExpiredPeerSet {
   const asOf = input.asOf ?? new Date()
+  // One house key for every "same street" test here: "3062 NW Kelly Hill" on a
+  // priced sale and "3062 Kelly Hill" on an MLS row are the same house.
   const liveNorms = new Set(
     (input.liveAddresses ?? [])
-      .map((address) => normalizePeerAddress(address ?? ''))
+      .map((address) => sameHouseAddressKey(address ?? ''))
       .filter((address) => address.length > 0),
   )
   const closedSaleNorms = new Set(
     (input.closedSaleAddresses ?? [])
-      .map((address) => normalizePeerAddress(address ?? ''))
+      .map((address) => sameHouseAddressKey(address ?? ''))
       .filter((address) => address.length > 0),
   )
   const soldAtThisStreet = (row: CmaMarketAreaRow): boolean => {
     if (closedSaleNorms.size === 0) return false
-    const address = normalizePeerAddress(peerAddress(row))
+    const address = sameHouseAddressKey(peerAddress(row))
     return address.length > 0 && closedSaleNorms.has(address)
   }
-  const dated = input.rows
+  const unsoldRows = dropRelistedUnsoldCycles(input.rows, input.laterCycles ?? []).kept
+  const dated = unsoldRows
     .map((row) => ({ row, months: offMarketMonths(row, asOf) }))
     // A row with no off-market date cannot support "in the last N months", so
     // it is not evidence for any window. It is dropped, never dated.
     // A street that already closed in the priced set is a sale, not a failure.
     .filter((x): x is { row: CmaMarketAreaRow; months: number } => {
       if (x.months == null || soldAtThisStreet(x.row)) return false
-      const address = normalizePeerAddress(peerAddress(x.row))
+      const address = sameHouseAddressKey(peerAddress(x.row))
       return address.length === 0 || !liveNorms.has(address)
     })
 
@@ -931,9 +1118,41 @@ export function buildExpiredPeerSet(input: {
         shortfall,
         likeYours,
         subjectCameOff: input.subjectCameOff === true,
+        priceBand: input.priceBand ?? null,
       }) + roomNote,
     peers: withWhy,
+    ...(input.priceBand ? { priceBand: { lo: input.priceBand.lo, hi: input.priceBand.hi } } : {}),
   }
+}
+
+/**
+ * "Two homes in Northwest Townsite, Grandview, Highland and Bonne Home listed
+ * between $403,000 and $1,356,000 came off the market without selling in the
+ * last 18 months. None were close to this home ..."
+ *
+ * THE COUNT NAMES THE WINDOW IT COUNTED (reader review, 1355 Jacksonville and
+ * 2745 Aldrich, 2026-10-08). The read behind it is held to a list-price window
+ * (marketAreaPriceBand, 0.55 to 1.85 times the list the competition was read
+ * around); four more homes in Jacksonville's area came off unsold outside it,
+ * so "Two homes in ... came off the market" was false as written. With no
+ * window on the row there is no count it can truthfully say, so it says that
+ * homes came off near this price and none were close, without a number.
+ */
+export function unsoldAreaTotalSentence(input: {
+  area: CompArea
+  areaTotal: number
+  windowMonths: number
+  priceBand: { lo: number; hi: number } | null
+}): string {
+  const where = compAreaIn(input.area)
+  const w = monthsWord(input.windowMonths)
+  if (!input.priceBand) {
+    return `Homes ${where} came off the market without selling in the last ${w} months. None of those near this price were close to this home in bedrooms, bathrooms, size or age, so they are not compared here.`
+  }
+  const cameOff = input.areaTotal
+  const came = cameOff === 1 ? 'One home' : `${countWord(cameOff, true)} homes`
+  const listed = `listed between ${usd(input.priceBand.lo)} and ${usd(input.priceBand.hi)}`
+  return `${came} ${where} ${listed} came off the market without selling in the last ${w} months. None were close to this home in bedrooms, bathrooms, size or age, so they are not compared here.`
 }
 
 function peerSetSentence(input: {
@@ -947,6 +1166,7 @@ function peerSetSentence(input: {
   shortfall: boolean
   likeYours: boolean
   subjectCameOff?: boolean
+  priceBand?: { lo: number; hi: number } | null
 }): string {
   const where = compAreaIn(input.area)
   const whereOr = compAreaIn(input.area, { negative: true })
@@ -960,8 +1180,15 @@ function peerSetSentence(input: {
   if (n === 0) {
     const cameOff = input.areaTotal ?? 0
     if (cameOff > 0) {
-      const came = cameOff === 1 ? 'One home' : `${countWord(cameOff, true)} homes`
-      return `${came} ${where} came off the market without selling in the last ${w} months. None were close to this home in bedrooms, bathrooms, size or age, so they are not compared here.`
+      // The count is of homes inside the read's list-price window, so the
+      // sentence says the window (unsoldAreaTotalSentence). A count with no
+      // window to name is not said at all.
+      return unsoldAreaTotalSentence({
+        area: input.area,
+        areaTotal: cameOff,
+        windowMonths: input.windowMonths,
+        priceBand: input.priceBand ?? null,
+      })
     }
     // The subject is the home that came off, so the sentence says no OTHER
     // home did. It used to say nothing, which left the chapter as one line

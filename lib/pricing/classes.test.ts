@@ -498,6 +498,15 @@ describe('multiUnitFromRemarks: the remarks say this home is a duplex (Matt 2026
     expect(multiUnitFromRemarks('Rare duplex with ADU on the back of the lot, three rentable doors.')).toBe(true)
     expect(productClassFromFactsRow('single-family', 'Single Family Residence', 'Rare duplex with ADU on the back of the lot.')).toBe('multi-unit')
   })
+  it('a list of options a lot may offer is not a duplex (1345 Jacksonville, reader review 2026-10-08)', () => {
+    // Stored MLS remarks of 1345 Jacksonville, listing 220228911, line breaks included.
+    expect(multiUnitFromRemarks('The generous lot may offer possibilities for a lot split, duplex, multi-unit development,\r\nADU, or new custom home, subject to City approval.')).toBe(false)
+    expect(multiUnitFromRemarks('Options include a remodel or a duplex.')).toBe(false)
+    // However far down the list, a hedge governs every option it opens.
+    expect(multiUnitFromRemarks('This lot offers possibilities for a lot split, a cottage cluster, two townhomes, or a fourplex.')).toBe(false)
+    // A list that turns into a statement is not a list of options.
+    expect(multiUnitFromRemarks('Possible shop site, garden beds, mature trees, and the property includes a duplex with two 2 bed units.')).toBe(true)
+  })
   it('blank remarks and a plain house are not multi-unit', () => {
     expect(multiUnitFromRemarks(null)).toBe(false)
     expect(multiUnitFromRemarks('Charming single level home on a quiet street with a fenced yard.')).toBe(false)
@@ -578,6 +587,23 @@ describe('aduFromRemarks: the remarks state a second living unit on the lot (Mat
     ]) {
       expect(aduFromRemarks(text), String(text)).toBe(false)
     }
+  })
+
+  it('a hedge governs every item of the list it opens, past the look-back window (1345 Jacksonville, reader review 2026-10-08)', () => {
+    // Stored MLS remarks of 1345 Jacksonville (listing 220228911). "ADU" sits
+    // 63 characters past "possibilities", beyond the 60-character window,
+    // and the competition fit dropped the subject's next-door neighbor.
+    const JACKSONVILLE_1345 =
+      "Rare opportunity in one of Bend's most desirable Westside neighborhoods. At .21 acres, this is the largest lot in the subdivision,\r\nwhere most lots are approx .14 acres. Conveniently located near\r\nshopping, dining,\r\nservices and downtown Bend, the property offers exceptional flexibility.\r\nThe property includes a 1924-built, 3-beds, 1-bath home with 1,056 sq ft that can be lived in as-is, renovated, or incorporated into a larger vision for the site. The generous lot may offer possibilities for a lot split, duplex, multi-unit development,\r\nADU, or new custom home, subject to City approval.\r\nStreet and alley frontage add flexibility for access, parking and site design. Whether improving the existing home or exploring redevelopment potential, this oversized Westside property presents a unique opportunity in an established Bend neighborhood."
+    const JACKSONVILLE_1355 =
+      "The lot's size and prime location support a range of possibilities, from an extensive renovation, to a full tear-down for a custom new home. There's also potential to add an ADU, all subject to city approval."
+    expect(aduFromRemarks(JACKSONVILLE_1345)).toBe(false)
+    expect(multiUnitFromRemarks(JACKSONVILLE_1345)).toBe(false)
+    expect(aduFromRemarks(JACKSONVILLE_1355)).toBe(false)
+    expect(aduSaleRefused(JACKSONVILLE_1355, JACKSONVILLE_1345)).toBe(false)
+    expect(aduFromRemarks('Room for a shop, an arena, a second garage, RV parking, horse stalls, or a guest house.')).toBe(false)
+    // Not a bare list: the run turns into a statement of what the home has.
+    expect(aduFromRemarks('Possible shop site, garden beds, mature trees, and the home includes a detached ADU.')).toBe(true)
   })
 
   it('mother-in-law: a unit, apartment or cottage counts, a suite, quarters or wing inside the house does not', () => {
