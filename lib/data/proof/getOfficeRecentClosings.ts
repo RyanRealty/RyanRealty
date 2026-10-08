@@ -10,6 +10,7 @@
  * Shaping (what prints, and what never prints) lives in ./office-closings.
  */
 import 'server-only'
+import { formatCalendarDay } from '@/lib/format/date'
 import { createServiceClient } from '@/lib/data/client'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
 import { proofWindow } from '@/lib/data/proof/getProofBlock'
@@ -43,9 +44,7 @@ function str(v: unknown): string | null {
 }
 
 function plainDate(iso: string): string {
-  const d = new Date(`${iso.slice(0, 10)}T12:00:00Z`)
-  if (Number.isNaN(d.getTime())) return iso
-  return d.toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' })
+  return formatCalendarDay(iso.slice(0, 10)) || iso
 }
 
 /**

@@ -10,6 +10,7 @@
  * published LISTING_FEE_PERCENT, and the worked example is that rate times the
  * live median, rounded.
  */
+import { formatDate } from '@/lib/format/date'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatPaceShare } from '@/lib/data/market-truth/public-pace'
 import type { MarketKind } from '@/lib/market/classify'
@@ -77,10 +78,5 @@ export function sellFeeLine(i: Pick<SellDirectAnswerInput, 'medianClose'>): stri
 
 /** "Oct 8, 2026", in Pacific time. */
 export function sellAsOfLabel(now: Date = new Date()): string {
-  return now.toLocaleDateString('en-US', {
-    timeZone: 'America/Los_Angeles',
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
+  return formatDate(now)
 }
