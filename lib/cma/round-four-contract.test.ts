@@ -21,6 +21,7 @@ import { describe, expect, it } from 'vitest'
 import { renderCmaHtml, type RenderCmaArgs } from '@/lib/cma/render'
 import { renderImmersiveCmaHtml } from '@/lib/cma/immersive'
 import {
+  NON_SOLICITATION_LISTED_SENTENCE,
   NON_SOLICITATION_SENTENCE,
   WITHDRAWN_AGREEMENT_SENTENCE,
   closingIsNonSoliciting,
@@ -321,7 +322,11 @@ describe('D — the closing never solicits a listing it may not solicit', () => 
     expect(buttons).not.toContain('cma-book')
     expect(buttons).not.toContain('Talk with')
     for (const html of [letter(active), immersive(active)]) {
-      expect(html).toContain(NON_SOLICITATION_SENTENCE)
+      // The row says another brokerage holds the listing, so the closing says
+      // so as a fact, not "If your home is listed" (3062 NW Kelly Hill,
+      // reader review 2026-10-08).
+      expect(html).toContain(NON_SOLICITATION_LISTED_SENTENCE)
+      expect(html).not.toContain(NON_SOLICITATION_SENTENCE)
       expect(html).not.toContain('Bring this report.')
       expect(html).not.toContain('Sorry this listing did not sell.')
       expect(html).not.toContain('did not sell this go-around')

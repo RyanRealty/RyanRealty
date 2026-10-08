@@ -232,6 +232,30 @@ export function normalizePeerAddress(address: string): string {
     .trim()
 }
 
+const ADDRESS_DIRECTIONALS = new Set(['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw', 'north', 'south', 'east', 'west'])
+
+/**
+ * One house's street address with the directional folded away as well.
+ *
+ * The MLS stores StreetName without the directional on most rows, and the
+ * subject's own line carries it: 3062 NW Kelly Hill's own Active listing came
+ * back from the band read as "3062 Kelly Hill" and was drawn as its own
+ * competitor at 0.00 miles (reader review 2026-10-08). Only for telling
+ * whether two records are the same house; the printed address is untouched.
+ */
+export function sameHouseAddressKey(address: string): string {
+  return normalizePeerAddress(address)
+    .split(' ')
+    .filter((w, _i, all) => !(ADDRESS_DIRECTIONALS.has(w) && all.length > 2))
+    .join(' ')
+}
+
+function sameHouse(a: string | null | undefined, b: string | null | undefined): boolean {
+  const x = a?.trim() ? sameHouseAddressKey(a) : ''
+  const y = b?.trim() ? sameHouseAddressKey(b) : ''
+  return x !== '' && x === y
+}
+
 function peerKeyIds(subject: Pick<CmaSubject, 'listingKey' | 'mlsNumber'>): Set<string> {
   const ids = new Set<string>()
   for (const raw of [subject.listingKey, subject.mlsNumber]) {
@@ -249,25 +273,23 @@ export function isSubjectExpiredRow(
   const ids = peerKeyIds(subject)
   const key = String(row.ListingKey ?? '').trim().toLowerCase()
   if (key && ids.has(key)) return true
-  const addr = peerAddress(row)
-  const subjAddr = subject.streetAddress?.trim()
-  if (addr && subjAddr && normalizePeerAddress(addr) === normalizePeerAddress(subjAddr)) return true
-  return false
+  return sameHouse(peerAddress(row), subject.streetAddress)
 }
 
-/** True when a named peer is the subject (defense for stored args). */
+/**
+ * True when a named record (an unsold peer, a home for sale or under
+ * contract) is the subject itself: its own listing key or MLS number, or any
+ * other record of the same house by address (an earlier cycle, a duplicate
+ * entry). Every competition, came-off and status set excludes it.
+ */
 export function peerMatchesSubject(
-  peer: Pick<CmaExpiredPeer, 'listingKey' | 'address'>,
+  peer: { listingKey?: string | null; address?: string | null },
   subject: Pick<CmaSubject, 'listingKey' | 'mlsNumber' | 'streetAddress'>,
 ): boolean {
   const ids = peerKeyIds(subject)
-  const key = peer.listingKey.trim().toLowerCase()
+  const key = (peer.listingKey ?? '').trim().toLowerCase()
   if (key && ids.has(key)) return true
-  const subjAddr = subject.streetAddress?.trim()
-  if (peer.address.trim() && subjAddr && normalizePeerAddress(peer.address) === normalizePeerAddress(subjAddr)) {
-    return true
-  }
-  return false
+  return sameHouse(peer.address, subject.streetAddress)
 }
 
 /** An unsold MLS row as the one fit reads it (lib/cma/same-area-fit.ts). */

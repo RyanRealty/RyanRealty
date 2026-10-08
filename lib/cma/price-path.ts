@@ -356,9 +356,18 @@ export function subjectPricePath(args: {
   status?: string | null
   /** When the column is not allowed to print an ask, the fallback path stays blank. */
   printableAsk?: number | null
+  /**
+   * The listing's own first ask (MLS OriginalListPrice). 3062 NW Kelly Hill
+   * opened at $775,000 and is asking $699,999; with no cycle and no exposure
+   * the column printed "Original list $699,999", the ask as its own start,
+   * beside the same listing's $775,000 two tables later (reader review
+   * 2026-10-08).
+   */
+  originalListPrice?: number | null
 }): PricePath | null {
   const position = resolveAskPosition({
     lastListPrice: args.lastListPrice,
+    originalListPrice: args.originalListPrice,
     exposure: args.exposure,
   })
   const fromCycle = alignPricePathToLastAsk(pricePathFromFinalCycle(args.cycle, args.label), position.lastAsk)

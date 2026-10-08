@@ -34,6 +34,7 @@ import type { RentalPotential } from '@/lib/cma/rental-potential'
 import { assembleOpinionPages } from '@/lib/cma/opinion-pages'
 import { scrubSellerLetterHtml } from '@/lib/cma/seller-letter-copy'
 import { letterCoverPayoffHtml } from '@/lib/cma/cover-value'
+import { subjectOnMarket } from '@/lib/cma/subject-on-market'
 import {
   cmaCoverLabelHtml,
 } from '@/lib/cma/fsbo-cma-render'
@@ -397,7 +398,7 @@ function coverPage(a: RenderCmaArgs): PageDef {
   })
   // FlexMLS letter FLOW on the letter cover (same trio as immersive hero):
   // Low · High · Recommended once. Never sole legacy cover-price.
-  const payoff = letterCoverPayoffHtml(a.pricing, a.comps)
+  const payoff = letterCoverPayoffHtml(a.pricing, a.comps, { onMarket: subjectOnMarket(a) })
   return {
     cover: true,
     meta: `Pricing report · ${dateLong(a.generatedAtIso)}`,

@@ -14,7 +14,8 @@ import type { CmaListingRow } from '@/lib/data/cma/builderReads'
 import type { CmaSubject } from '@/lib/cma/types'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatDate } from '@/lib/format/date'
-import { daysOnMarketFrom, listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
+import { daysOnMarketFrom, liveListingDays, listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
+import { statusIsOnMarket } from '@/lib/cma/subject-on-market'
 // The suffix and directional words are shared with the owner-name check, so the
 // two never disagree on what a street word is (lib/cma/street-words.ts).
 import { STREET_DIRECTIONALS as DIRECTIONALS, STREET_SUFFIXES } from '@/lib/cma/street-words'
@@ -176,10 +177,16 @@ export function rowToSubject(row: CmaListingRow): CmaSubject {
   const originalListPrice = num(row['OriginalListPrice'])
   const listDate = str(row['OnMarketDate']) ?? str(row['ListDate'])
   const listedWhen = fmtDate(listDate)
-  const dom = daysOnMarketFrom({
-    daysOnMarket: num(row['CumulativeDaysOnMarket']) ?? num(row['DaysOnMarket']),
-    onMarketDate: listDate,
-  })
+  // A live listing counts from its on-market day to today (liveListingDays),
+  // never off the MLS DaysOnMarket field, which is stale between feed updates
+  // (3062 NW Kelly Hill: 156 stored, 159 by the dates).
+  const live = statusIsOnMarket(status) ? liveListingDays(listDate) : null
+  const dom =
+    live ??
+    daysOnMarketFrom({
+      daysOnMarket: num(row['CumulativeDaysOnMarket']) ?? num(row['DaysOnMarket']),
+      onMarketDate: listDate,
+    })
   let historyLine: string | null = buildListingHistoryLine({
     listPrice,
     originalListPrice,

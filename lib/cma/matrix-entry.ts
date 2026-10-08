@@ -559,6 +559,7 @@ export function subjectEntry(input: {
     daysOnMarket: input.domDays,
     status: s.standardStatus,
     printableAsk: input.printableAsk,
+    originalListPrice: s.originalListPrice,
   })
   const status = (s.standardStatus ?? '').trim().toLowerCase()
   const cameOff = /^(expired|withdrawn|cancell?ed)/.test(status)

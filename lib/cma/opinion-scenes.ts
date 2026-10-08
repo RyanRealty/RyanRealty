@@ -4,6 +4,7 @@
  */
 
 import { competitionHeading } from '@/lib/cma/band-rivals'
+import { subjectOnMarket } from '@/lib/cma/subject-on-market'
 import {
   mapBodyHtml,
   pricingPage,
@@ -127,7 +128,7 @@ function competitionScene(a: OpinionSceneArgs): string {
   <section class="sc sc-cream pack" id="competition">
     <div class="in wide">
       <div class="kick r">At this price</div>
-      <h2 class="h r">${esc(competitionHeading(a.pricing.recommended))}</h2>
+      <h2 class="h r">${esc(competitionHeading(a.pricing.recommended, { onMarket: subjectOnMarket(a) }))}</h2>
       <div class="r">${body}</div>
     </div>
   </section>`

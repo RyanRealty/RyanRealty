@@ -333,7 +333,7 @@ export function adjustedForPhrase(comps: readonly CmaAdjustedComp[]): string | n
 
 // ── the sale-to-ask share ───────────────────────────────────────────────────
 
-function askShareNote(subject: Pick<CmaSubject, 'city'>, pricing: CmaPricing): string[] {
+function askShareNote(subject: Pick<CmaSubject, 'city'>, pricing: CmaPricing, onMarket = false): string[] {
   const rr = obj((pricing as unknown as { rangeRule?: unknown }).rangeRule)
   const ratio = num(rr?.saleToAskRatio)
   if (ratio == null || !(ratio > 0.5) || !(ratio < 1.5)) return []
@@ -346,7 +346,11 @@ function askShareNote(subject: Pick<CmaSubject, 'city'>, pricing: CmaPricing): s
       : source === 'city-index' || source === 'market-context'
         ? `Homes in ${city ?? 'this city'} are selling for ${pct} percent of the price they first asked.`
         : null
-  return fact ? [fact, 'That matters for the list price, not for the range.'] : []
+  // A home on the market already has its list price, set with its own broker:
+  // the share is stated as a fact about the range and nothing about a list
+  // (3062 NW Kelly Hill, reader review 2026-10-08).
+  if (!fact) return []
+  return [fact, onMarket ? 'It does not change the range.' : 'That matters for the list price, not for the range.']
 }
 
 // ── the paragraph ───────────────────────────────────────────────────────────
@@ -360,10 +364,12 @@ export function salesMethodSentences(input: {
   pricing: CmaPricing
   /** The search story after its first sentence (the price chapter's heading). */
   searchTail?: string | null
+  /** The subject is on the market today (lib/cma/subject-on-market.ts). */
+  onMarket?: boolean
 }): string[] {
   return [
     ...searchNote(input.subject, input.comps, input.searchTail),
     ...dateNote(input.subject, input.comps, input.pricing),
-    ...askShareNote(input.subject, input.pricing),
+    ...askShareNote(input.subject, input.pricing, input.onMarket === true),
   ].map((s) => sanitizeLetterEmDash(s))
 }

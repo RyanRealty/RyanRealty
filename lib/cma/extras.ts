@@ -24,7 +24,7 @@ import { bathCountCompatible, keepSameProductType } from '@/lib/cma/market-area'
 import { realSubdivision } from '@/lib/cma/comp-tiers'
 import type { CmaAdjustedComp, CmaSubject, CmaPricing } from '@/lib/cma/types'
 import { getCmaMarketAreaRows, type CmaMarketAreaRow } from '@/lib/data/cma/marketAreaReads'
-import { computeMarketArea, type CmaMarketArea, type CmaSoldBand } from '@/lib/cma/market-status'
+import { computeMarketArea, peerMatchesSubject, type CmaMarketArea, type CmaSoldBand } from '@/lib/cma/market-status'
 
 export const MONTH_NAMES = [
   'January',
@@ -287,15 +287,30 @@ export function computeBandPosition(
   city: string,
   lo: number,
   hi: number,
-  subject?: { latitude: number | null; longitude: number | null; propertySubType?: string | null } | null,
+  subject?: {
+    latitude: number | null
+    longitude: number | null
+    propertySubType?: string | null
+    listingKey?: string | null
+    mlsNumber?: string | null
+    streetAddress?: string | null
+  } | null,
   area?: CompArea | null,
 ): CmaBandPosition | null {
   if (!inv) return null
+  // The subject's own listing is not in its own band (3062 NW Kelly Hill,
+  // reader review 2026-10-08): by listing key, or the same house by address.
+  const own = subject
+    ? { listingKey: subject.listingKey ?? null, mlsNumber: subject.mlsNumber ?? null, streetAddress: subject.streetAddress ?? '' }
+    : null
+  const notSubject = (row: CmaBandListingRow) =>
+    !(own && peerMatchesSubject({ listingKey: row.ListingKey, address: rivalAddress(row) }, own))
   const sameType = (row: CmaBandListingRow) =>
     keepSameProductType(subject?.propertySubType ?? null, row.property_sub_type ?? null)
   const hasRows = (inv.activeRows?.length ?? 0) + (inv.pendingRows?.length ?? 0) > 0
-  const activeRows = hasRows ? (inv.activeRows ?? []).filter(sameType) : []
-  const pendingRows = hasRows ? (inv.pendingRows ?? []).filter(sameType) : []
+  const activeRows = hasRows ? (inv.activeRows ?? []).filter(notSubject).filter(sameType) : []
+  const pendingRows = hasRows ? (inv.pendingRows ?? []).filter(notSubject).filter(sameType) : []
+  const activeOthers = hasRows ? (inv.activeRows ?? []).filter(notSubject).length : inv.activeCount
   const raw = [
     ...activeRows.map((r) => rowToRival(r, 'Active')),
     ...pendingRows.map((r) => rowToRival(r, 'Pending')),
@@ -313,7 +328,11 @@ export function computeBandPosition(
   // database counts when the subject has no property sub type, because
   // keepSameProductType() then narrows to detached in JS — so report the
   // filtered length and let the source line say what was measured.
-  const typeFiltered = hasRows && activeRows.length !== inv.activeCount
+  const typeFiltered = hasRows && activeRows.length !== activeOthers
+  const ownLeftOut =
+    hasRows &&
+    activeOthers + (inv.pendingRows ?? []).filter(notSubject).length <
+      (inv.activeRows ?? []).length + (inv.pendingRows ?? []).length
   return {
     lo,
     hi,
@@ -333,7 +352,7 @@ export function computeBandPosition(
             inv.sameAreaFit
               ? `the ${inv.activeCount} active listings in the band that passed the sales rules (sameAreaFit) inside the sales area, not every listing in the band`
               : `all ${inv.activeCount} active listings in the band`
-          }${typeFiltered ? `, ${activeRows.length} after the same-product-type filter` : ''}`
+          }${ownLeftOut ? ", this home's own listing left out" : ''}${typeFiltered ? `, ${activeRows.length} after the same-product-type filter` : ''}`
     }; days on market measured from OnMarketDate`,
   }
 }
