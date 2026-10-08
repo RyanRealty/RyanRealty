@@ -118,6 +118,35 @@ function daysLabel(days: number): string {
 }
 
 /**
+ * Tokens that must never reach a visitor or a crawler through the disclosure:
+ * table names, SQL, file paths, function calls, the data platform, and internal
+ * layer names. `traceText` prints only each entry's `plain` sentence, and the
+ * unit test holds every rendered trace to this list (sell brief 2026-10-08, 4a).
+ */
+export const PROOF_TRACE_BANNED = [
+  'public.',
+  'ILIKE',
+  'is_hidden',
+  'lib/',
+  '.ts',
+  '()',
+  'Supabase',
+  'Market Truth',
+  'Leftover',
+  'sample-gated',
+  'StandardStatus',
+  'ClosePrice',
+  'ListOfficeName',
+  'OriginalListPrice',
+  'OnMarketDate',
+  'CloseDate',
+  'stat_id',
+  'market_metric',
+  'getMetrics',
+  'Too few recent closings',
+] as const
+
+/**
  * The disclosure text: one line per figure the section actually PUBLISHES.
  *
  * `showOutcomes` is a publishing decision, so it has to reach the trace too.
@@ -127,14 +156,14 @@ function daysLabel(days: number): string {
  * Publishing their provenance under a section that draws neither restates the
  * comparison in prose. So the trace covers what is drawn, and nothing else.
  */
-function traceText(block: ProofBlock, showOutcomes: boolean): string {
+export function traceText(block: ProofBlock, showOutcomes: boolean): string {
+  // Only the plain sentence. `table`, `filter`, `query`, `rows` and the raw
+  // `fetchedAt` stay on the entry for reviewers and never print.
   return block.trace
     .filter((t) => t.scope === 'always' || showOutcomes)
-    .map(
-      (t) =>
-        `${t.figure} — ${t.source}; ${t.table}; ${t.filter}; ${t.window}; ${t.rows} rows; pulled ${t.fetchedAt}; ${t.query}`,
-    )
-    .join(' · ')
+    .map((t) => t.plain.trim())
+    .filter((line) => line.length > 0)
+    .join(' ')
 }
 
 export type ProofBlockViewInput = {
@@ -359,6 +388,9 @@ export function proofBlockView(input: ProofBlockViewInput): V3ProofBlockProps | 
     reach: input.reach ?? [],
     attribution: input.attribution,
     trace: traceText(block, showOutcomes),
-    quiet: o.publishable ? null : o.quietReason,
+    // The quiet line stands in for the strips, so it only means anything where
+    // the strips are switched on. With them held (/sell), the count line takes
+    // the slot instead, as the quiet form's claim already expects.
+    quiet: showOutcomes && !o.publishable ? o.quietReason : null,
   }
 }

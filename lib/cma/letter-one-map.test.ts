@@ -141,8 +141,8 @@ describe('CMA letter — tracked place links', () => {
     const links = resolveCmaPlaceLinks({ city: 'Bend', subdivisionName: 'Awbrey Glen' })
     expect(links.length).toBeGreaterThan(0)
     for (const l of links) {
-      expect(l.href).toMatch(/utm_source=crm/)
-      expect(l.href).toMatch(/utm_medium=doc/)
+      expect(l.href).toMatch(/utm_source=cma/)
+      expect(l.href).toMatch(/utm_medium=document/)
       expect(l.href).toMatch(/utm_campaign=cma-letter/)
     }
   })

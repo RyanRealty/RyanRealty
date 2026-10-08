@@ -14,8 +14,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { cn } from '@/lib/utils'
-import { arrivalConsent, gpcFromNavigator, parseConsentCookie, type ConsentState } from '@/lib/identity/consent'
-import { pageArrival } from '@/lib/analytics/visitor-session'
+import { gpcFromNavigator, parseConsentCookie, type ConsentState } from '@/lib/identity/consent'
+import { consentRegionRestrictedFromCookieHeader } from '@/lib/analytics/consent-regions'
 
 const COOKIE_CONSENT_KEY = 'ryan_realty_cookie_consent'
 const CONSENT_EXPIRY_YEARS = 1
@@ -102,42 +102,18 @@ export function hasTrackingConsent(): boolean {
 }
 
 export function hasAnalyticsConsent(): boolean {
+  if (typeof window === 'undefined') return false
+  if (gpcFromNavigator(typeof navigator !== 'undefined' ? navigator : undefined)) return false
   const c = getConsent()
-  return c !== null && c.analytics
+  if (c !== null) return c.analytics
+  return !consentRegionRestrictedFromCookieHeader(document.cookie)
 }
 
 export function hasMarketingConsent(): boolean {
+  if (typeof window === 'undefined') return false
+  if (gpcFromNavigator(typeof navigator !== 'undefined' ? navigator : undefined)) return false
   const c = getConsent()
   return c !== null && c.marketing
-}
-
-/**
- * Aggressive ad-traffic consent (Matt directive 2026-06-02): a visitor arriving
- * from a paid/marketing click (fbclid / gclid / msclkid / ttclid / any utm_*)
- * who has NOT yet made an explicit consent choice gets analytics+marketing
- * auto-granted, so first-party behavioral intent tracking (visitor_events
- * scoring -> hot-lead alerts) fires on the same page load. Does NOT override an
- * explicit prior decision (essential-only / declined are respected), and never
- * grants anything to a browser sending Global Privacy Control, a legally binding
- * opt-out. Returns true if it just granted consent.
- *
- * The rule is lib/identity/consent.ts arrivalConsent, the one the document
- * tracker mirrors; this only reads its inputs and writes the cookie. The link is
- * the one the page ARRIVED on (pageArrival): VisitTracker, which calls this, is
- * loaded lazily, and a visitor who taps a link before it mounts is no longer on
- * the campaign link they arrived by.
- */
-export function autoGrantConsentForAdTraffic(): boolean {
-  if (typeof window === 'undefined') return false
-  const { grant } = arrivalConsent({
-    cookieValue: readConsentCookie(),
-    search: pageArrival()?.search ?? window.location.search,
-    gpc: gpcFromNavigator(typeof navigator !== 'undefined' ? navigator : undefined),
-  })
-  if (!grant) return false
-  setConsentState({ analytics: true, marketing: true })
-  try { window.dispatchEvent(new CustomEvent('cookie-consent', { detail: 'all' })) } catch {}
-  return true
 }
 
 export function getOrCreateVisitId(): string | null {

@@ -7,6 +7,7 @@ import type { LeadLandingAudience } from '@/lib/lead-landing-content'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
+import { visitorCapiConsent } from '@/lib/meta-capi-visitor'
 import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
 import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
 import { cookies } from 'next/headers'
@@ -125,28 +126,35 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
 
     const eventId = generateEventId()
     const leadValue = input.audience === 'seller' ? 500 : 300
-    fetch(`${SITE_URL}/api/meta-capi`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        eventName: 'Lead',
-        email,
-        phone: phone || undefined,
-        firstName: nameParts[0] ?? undefined,
-        lastName: nameParts.slice(1).join(' ') || undefined,
-        eventId,
-        eventSourceUrl: sourceUrl,
-        customData: {
-          content_name: `lead_landing_${input.audience}`,
-          lead_type: input.audience === 'seller' ? 'seller_inquiry' : 'buyer_inquiry',
-          intent: input.leadIntent,
-          value: leadValue,
-          currency: 'USD',
-        },
-      }),
-    }).catch((err) => {
-      console.warn('[Lead Landing CAPI]', err)
-    })
+    {
+      const sharing = await visitorCapiConsent()
+      if (sharing.allowed) {
+        fetch(`${SITE_URL}/api/meta-capi`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            eventName: 'Lead',
+            email,
+            phone: phone || undefined,
+            firstName: nameParts[0] ?? undefined,
+            lastName: nameParts.slice(1).join(' ') || undefined,
+            eventId,
+            eventSourceUrl: sourceUrl,
+            consentCookie: sharing.consentCookie,
+            secGpc: sharing.secGpc,
+            customData: {
+              content_name: `lead_landing_${input.audience}`,
+              lead_type: input.audience === 'seller' ? 'seller_inquiry' : 'buyer_inquiry',
+              intent: input.leadIntent,
+              value: leadValue,
+              currency: 'USD',
+            },
+          }),
+        }).catch((err) => {
+          console.warn('[Lead Landing CAPI]', err)
+        })
+      }
+    }
 
     await sendContactNotification({
       name,

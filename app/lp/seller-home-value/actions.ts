@@ -18,6 +18,7 @@ import { isHardStopped } from '@/lib/canonical-lead-tagger'
 import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
 import { sendSellerLeadAlertEmail } from '@/lib/seller-lead-alert'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
+import { visitorCapiConsent } from '@/lib/meta-capi-visitor'
 import { resolveLeadSource, resolvePaidAttributionTags } from '@/lib/crm/lead-source'
 import { cookies, headers } from 'next/headers'
 import { findCrmPersonIdByEmail } from '@/lib/data/cma/crm'
@@ -263,7 +264,7 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
         originUtmCampaign = refUrl.searchParams.get('utm_campaign') ?? undefined
         originUtmContent = refUrl.searchParams.get('utm_content') ?? undefined
         const passthrough = new URLSearchParams()
-        for (const k of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term']) {
+        for (const k of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'gclid', 'fbclid']) {
           const v = refUrl.searchParams.get(k)
           if (v) passthrough.set(k, v)
         }
@@ -671,37 +672,42 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
       ? `${siteUrl}/lp/sell-your-home`
       : `${siteUrl}/lp/seller-home-value`
     const capiContentName = isListNowLp ? 'seller_lp_list_now' : 'seller_lp_home_value'
-    void fetch(`${siteUrl}/api/meta-capi`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        eventName: 'Lead',
-        email: email || undefined,
-        phone: phone || undefined,
-        firstName,
-        lastName,
-        eventId,
-        eventSourceUrl: capiSourceUrl,
-        fbp: capiCookies.get('_fbp')?.value,
-        // Fall back to the middleware-captured rr_fbc (derived from ?fbclid) when
-        // the Meta pixel never set _fbc, so paid clicks attribute. See middleware.
-        fbc: capiCookies.get('_fbc')?.value ?? capiCookies.get('rr_fbc')?.value,
-        clientIp: capiClientIp,
-        clientUserAgent: capiClientUa,
-        customData: {
-          content_name: capiContentName,
-          lead_type: isListNowLp ? 'seller_listing_intent' : 'seller_valuation',
-          property_address: parsed.full,
-          timeline: timeline ?? 'unspecified',
-          classification,
-          assigned_broker: assignment.broker,
-          value: 500,
-          currency: 'USD',
-        },
-      }),
-    }).catch((err) => {
-      console.warn('[seller-lp] CAPI call failed:', err)
-    })
+    const sharing = await visitorCapiConsent()
+    if (sharing.allowed) {
+      void fetch(`${siteUrl}/api/meta-capi`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventName: 'Lead',
+          email: email || undefined,
+          phone: phone || undefined,
+          firstName,
+          lastName,
+          eventId,
+          eventSourceUrl: capiSourceUrl,
+          fbp: capiCookies.get('_fbp')?.value,
+          // Fall back to the middleware-captured rr_fbc (derived from ?fbclid) when
+          // the Meta pixel never set _fbc, so paid clicks attribute. See middleware.
+          fbc: capiCookies.get('_fbc')?.value ?? capiCookies.get('rr_fbc')?.value,
+          clientIp: capiClientIp,
+          clientUserAgent: capiClientUa,
+          consentCookie: sharing.consentCookie,
+          secGpc: sharing.secGpc,
+          customData: {
+            content_name: capiContentName,
+            lead_type: isListNowLp ? 'seller_listing_intent' : 'seller_valuation',
+            property_address: parsed.full,
+            timeline: timeline ?? 'unspecified',
+            classification,
+            assigned_broker: assignment.broker,
+            value: 500,
+            currency: 'USD',
+          },
+        }),
+      }).catch((err) => {
+        console.warn('[seller-lp] CAPI call failed:', err)
+      })
+    }
 
     // ─── GA4: the one server-side generate_lead (lib/lead-tracking.ts) ────
     // The browser no longer sends its own copy (lead-event.test.ts); this is

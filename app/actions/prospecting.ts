@@ -68,6 +68,7 @@ import {
 } from '@/lib/crm/first-touch-copy'
 import { sendSmsViaMessagingService, toE164 } from '@/lib/crm/twilio'
 import { sendTemplateSelfTestAction } from '@/app/actions/crm-template-test'
+import { buildTrackedUrl, CMA_DOC_PARAM, prospectCampaign } from '@/lib/analytics/utm'
 
 const SITE_URL = siteOrigin()
 
@@ -262,7 +263,12 @@ export async function sendProspectingIntro(
     const sb = createServiceClient()
     // Identity is stamped by the one decoration helper below (signed token, P7);
     // the doc URL itself carries only the campaign.
-    const docUrlForPerson = `${docUrl}?utm_source=crm&utm_medium=sms&utm_campaign=${kind}`
+    const docUrlForPerson = buildTrackedUrl(docUrl, {
+      source: 'crm',
+      medium: 'sms',
+      campaign: prospectCampaign(kind),
+      extraParams: { [CMA_DOC_PARAM]: clientReady.slug },
+    })
     let merged: string
     if (args.bodyOverride && args.bodyOverride.trim()) {
       // Broker-edited body (already shown to them in the preview). Still gated by

@@ -51,6 +51,20 @@ describe('fireQualifiedLeadEvent — dry-run safety', () => {
     expect(out.reason).toBe('no-contact-key')
   })
 
+  it('does not send to Meta when the person is sharing-suppressed', async () => {
+    const send = vi.fn()
+    const out = await fireQualifiedLeadEvent({
+      personId: 4,
+      stage: 'Active Client',
+      readContact: async () => contact,
+      readSuppressions: async () => [{ channel: 'all', reason: 'gpc' }] as never,
+      send: send as never,
+    })
+    expect(send).not.toHaveBeenCalled()
+    expect(out.fired).toBe(false)
+    expect(out.reason).toBe('sharing-suppressed')
+  })
+
   it('never throws even if the contact reader fails', async () => {
     const out = await fireQualifiedLeadEvent({
       personId: 3,

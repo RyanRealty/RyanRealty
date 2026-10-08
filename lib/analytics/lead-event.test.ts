@@ -25,7 +25,7 @@ import {
   LEAD_TYPES,
   NON_LEAD_EVENTS,
 } from './lead-event'
-import { leadEventParams, type FireLeadParams } from '@/lib/lead-tracking'
+import { attributionParamsFromSearch, leadEventParams, type FireLeadParams } from '@/lib/lead-tracking'
 
 const ROOT = process.cwd()
 
@@ -110,6 +110,22 @@ describe('leadEventParams', () => {
   it('sends nothing for an unknown lead_type or form_id', () => {
     expect(leadEventParams({ ...ok, lead_type: 'general' as never })).toBeNull()
     expect(leadEventParams({ ...ok, form_id: 'mystery_form' as never })).toBeNull()
+  })
+
+  it('attaches first-party gclid, fbclid and utm_* from the arrival query, allowlisted', () => {
+    const fromAd = attributionParamsFromSearch('?gclid=G1&fbclid=F1&utm_source=google&utm_medium=cpc&utm_campaign=spring&utm_content=ad&utm_term=bend&email=no@no.com')
+    expect(fromAd).toEqual({
+      lp_source: 'google',
+      lp_medium: 'cpc',
+      lp_campaign: 'spring',
+      lp_content: 'ad',
+      lp_term: 'bend',
+      gclid: 'G1',
+      fbclid: 'F1',
+    })
+    const p = leadEventParams(ok, fromAd)
+    expect(p).toMatchObject({ gclid: 'G1', fbclid: 'F1', lp_source: 'google' })
+    expect(p).not.toHaveProperty('email')
   })
 
   it('never lets extra change what the lead is or inject dollar values', () => {

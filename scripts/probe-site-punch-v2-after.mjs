@@ -12,7 +12,7 @@ const BASE = (process.env.BASE_URL || 'https://ryan-realty.com').replace(/\/$/, 
 const ART = '/opt/cursor/artifacts'
 
 async function dismissChrome(page) {
-  for (const label of ['Not now', 'Essential only', 'Accept all', 'NOT NOW']) {
+  for (const label of ['Not now', 'Essential only', 'NOT NOW']) {
     const btn = page.getByRole('button', { name: new RegExp(`^${label}$`, 'i') }).first()
     if (await btn.isVisible().catch(() => false)) {
       await btn.click({ timeout: 2000 }).catch(() => {})

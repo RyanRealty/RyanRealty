@@ -42,6 +42,15 @@ Every session — Claude Code, Cursor, or Grok — starts here:
 22. Community membership is the location of the address, for every community. It is not the MLS SubdivisionName and not a one-community exception. A sale belongs to the subject's community when its latitude and longitude sit inside that community boundary, or inside a plat that sits in that community, even when the MLS subdivision name is a different plat. A sale does not belong because the remarks mention the community. The search order is own subdivision, then adjacent subdivisions, then the neighborhood community, then distance. A point inside a recorded plat is a member of that community even when the MLS subdivision name differs. A remarks mention of the community or the golf course is not membership. Distance rings start at 0.25 miles and step up by 0.25 miles. Do not open with a 1-mile ring. Do not replace that order with a radius search.
 23. A recommended price under every sale that set it, or above every one of them, is not a price. The set is wrong, or the result is a hold. Do not print a number outside that set. A sale does not set the price when it is a different community than the subject, or a clearly different size or product: a house much larger or much smaller than the one living-area cutoff, a cottage versus acreage, or a different plat that is not the subject's community. A different MLS name inside the subject's community still sets the price. Community membership stays the location of the address. The search order is unchanged.
 24. Expired and FSBO intake (Matt 2026-10-05). A CMA is built when we hold a sendable owner email, or a cell number we can text. Before `createCmaRequest` and before the CRM person is created, in this order: live status, then compliance, then email, then a cell. Live status skips Active, Pending, Coming Soon, and Closed after the expiry, matched on the same address or the same parcel or taxlot. Compliance skips a litigator and a deceased owner. The litigator tag is applied only when the skip-trace says the person is a litigator. TCPA-only and a DNC phone block calls and texts. They do not block email and they do not set `compliance:hard-stop`. A sendable, non-suppressed email still builds the CMA and the send stays email. With no sendable email, a non-DNC cell whose line type is mobile, wireless, or cell builds the CMA and the send is SMS. A landline, a VOIP number, or a phone with no line type does not. An untyped listing-page phone is not a cell. A suppressed email is not used. A clean cell still builds, and that send is SMS. Nothing texts the owner from intake. The existing prospect SMS intro sends after the letter is approved. Do not put this gate in `sendCmaToLead` or `createCmaRequest`. Those also serve inbound seller and lead-form CMAs. The source of truth is `expired_listings.compliance_hard_stop` and `compliance_flags`, and the same columns on `fsbo_listings`. Every expired and FSBO send path reads them. A litigator or deceased owner sets the column so the send stays blocked. See `.cursor/rules/expired-fsbo-intake.mdc`.
+25. **UTM convention (Analytics fix 8, 2026-10-08).** Every outbound ryan-realty.com link is built with `buildTrackedUrl` in `lib/analytics/utm.ts`. One UTM set per URL (existing `utm_*` are replaced, never appended). No street addresses, person names, or per-property slugs in any `utm_*` value. Test/preview sends use `test: true` so `utm_campaign=test-<campaign>`. CMA document identity rides in first-party `rr_doc=<cmas.slug>`, not in `utm_campaign`. Details: `.cursor/rules/utm-convention.mdc`.
+
+| Param | Allowed values |
+|---|---|
+| utm_source | `crm`, `cma`, `gbp`, `facebook`, `instagram`, `x`, `youtube`, `newsletter`, `zillow`, `realtor`, `referral-<domain>` |
+| utm_medium | `email`, `sms`, `organic`, `social`, `paid_social`, `cpc`, `document`, `referral`, `qr` |
+| utm_campaign | stable program slug: `cma-letter`, `expired-outreach`, `fsbo-outreach`, `market-report-YYYY-MM`, `open-house-weekly`, `listing-launch`, plus `listing-alerts`, `gbp-profile`, `newsletter`, `social-post`, `crm-outbound` |
+| utm_content | variant: `v2`, `cta-top`, `listing-<listing_key>`, `agent-<slug>` (never an address) |
+| utm_term | paid keyword only (medium `cpc` or `paid_social`) |
 
 
 `docs/EXECUTION_PLAN.md` and `docs/SITE_SPEC.md` are 2026-05-22 fossils (SITE_SPEC still describes an AgentFire WordPress cutover that already shipped). Do not execute them.
@@ -228,6 +237,8 @@ Required details:
 | CRM | In-house (`public.crm_people`). |
 | Data Feed | Spark/MLS API |
 
+**GA4 / automation browsers.** Any script that opens our site (ryan-realty.com, localhost, 127.0.0.1, `*.vercel.app`) in a browser sets `rr_automation=1` and `rr_internal=1` before the first page load and never grants analytics consent; use `scripts/lib/marked-playwright.mjs`.
+
 ### Running Locally
 
 ```bash
@@ -283,6 +294,10 @@ All rules in `.cursor/rules/` are mandatory. Key rules:
 - **Colors**: Only semantic tokens (`bg-primary`, `text-foreground`, `border-border`). No hex, no `bg-white`, no `bg-gray-*`.
 - **Utilities**: Use `cn()` from `@/lib/utils` for conditional classes.
 - **Fonts**: Geist Sans (`font-sans`) and Geist Mono (`font-mono`) only.
+
+### Browser analytics events (locked, Matt 2026-10-08)
+
+- Browser events reach GA4 only through GTM's GA4 Event tag: push them with `trackEvent()` / `pushDataLayerEvent()` (`lib/analytics/ga4-browser-events.ts`), never `gtag('event', …)` for GA4, and add a new event name to `GA4_BROWSER_EVENTS` plus the GTM steps in `docs/GTM_GA4_BROWSER_EVENTS.md` (Matt publishes GTM). Held by `lib/analytics/ga4-browser-events.test.ts`.
 
 ### Server Actions
 

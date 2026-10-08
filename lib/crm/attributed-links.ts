@@ -56,6 +56,8 @@ export interface AttributeOutboundOptions {
   ttlSeconds?: number
   /** Identity-loop channel for the signed ?_pid= token; derived from emailKey when omitted. */
   channel?: LinkChannel
+  /** Preview / self-test send: campaign becomes `test-<campaign>`. */
+  test?: boolean
 }
 
 /**
@@ -86,6 +88,7 @@ export function attributeOutbound(html: string, opts: AttributeOutboundOptions):
     brokerSlug: opts.brokerSlug,
     personId,
     channel: opts.channel ?? channelFromEmailKey(opts.emailKey),
+    test: opts.test,
   })
 
   // 2) Open + click tracking — only when we have a recipient to attribute it to.
@@ -118,7 +121,8 @@ export function attributeUrl(
   _legacyPersonId?: number | null,
   crmPersonId?: number | null,
   channel: LinkChannel = 'email',
+  test?: boolean,
 ): string {
   if (typeof url !== 'string' || url.length === 0) return url
-  return decorateOutboundText(url, { brokerSlug, personId: crmPersonId ?? null, channel })
+  return decorateOutboundText(url, { brokerSlug, personId: crmPersonId ?? null, channel, test })
 }
