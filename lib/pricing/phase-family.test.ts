@@ -91,7 +91,10 @@ function sale(over: Partial<PricingSale>): PricingSale {
 
 describe('ordinary subdivision phases', () => {
   it('keeps a phase sale that is one bedroom and one bathroom off, then a next-row neighbor the phase name used to wall out', () => {
-    const phase = sale({ listingKey: 'PHASE_I', address: '700 Phase One' })
+    // 1,900 sqft, 20.4% under the 2,388 subject: the fixture's 1,704 (28.6%)
+    // is past the one 25% price-setting band and would never set the price
+    // (Matt 2026-10-08). This test is about rooms and phases, not size.
+    const phase = sale({ listingKey: 'PHASE_I', address: '700 Phase One', sqft: 1900 })
     const tooFar = sale({
       listingKey: 'PHASE_FAR',
       address: '9 Phase One',

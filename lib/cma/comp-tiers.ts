@@ -129,7 +129,11 @@ export function realSubdivision(value: string | null | undefined): string | null
  * falls short fail rather than print a wide guess.
  */
 export const WIDENED_SQFT_BAND = 0.25
-/** The picker's one living-area cutoff. About 35%. Location rungs use this. */
+/**
+ * The location rungs' SEARCH band. Not the price-setting cutoff: a sale read
+ * past PRICE_SET_SQFT_BAND (25%, lib/pricing/price-set.ts) passes these rungs
+ * and is refused at the door by rule 20 (Matt 2026-10-08, "25% everywhere").
+ */
 export const LOCATION_SQFT_BAND = 0.35
 
 
