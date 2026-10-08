@@ -86,20 +86,25 @@ import { resolveSaleZones } from '@/lib/pricing/sale-zoning'
 import { resortMembershipCompatible, saleSearchCommunitySlug, searchCommunitySlug } from '@/lib/cma/community-location'
 import { communitySlugForSubdivision, isResortCommunity } from '@/lib/cma/resort-guard'
 import {
-  ANCHOR_MIN_N,
+  anchorFromSamples,
+  anchorPlaceNames,
+  anchorPlacePhrase,
+  anchorSampler,
   ANCHOR_RADIUS_MILES,
   ANCHOR_RURAL_RADII_MILES,
   isOwnPlatRung,
   samePlat,
   sameStreetPeer,
   streetKey,
+  type AnchorSample,
+  type PriceAnchorSource,
 } from '@/lib/pricing/price-anchor'
 import { ageRestrictedMismatch, ownPlatAgeRestrictedShare } from '@/lib/pricing/age-restricted'
 import { roomCountsDecision } from '@/lib/pricing/room-ground'
-import { normSubdivision } from '@/lib/pricing/classes'
+import { citySlug, normSubdivision } from '@/lib/pricing/classes'
 import { describePriceTierLine, insidePriceTier, priceTierLine, salePpsf, type PriceTierLine } from '@/lib/pricing/price-tier'
 import { inferSubdivisionPocket, POCKET_RADIUS_MILES } from '@/lib/pricing/infer-pocket'
-import { isClusterPocket, pocketStopsLaterRungs } from '@/lib/pricing/ladder'
+import { isClusterPocket, LOCAL_POOL_RADIUS_MILES, pocketStopsLaterRungs } from '@/lib/pricing/ladder'
 import { locationMatchFromFacts } from '@/lib/pricing/closed-comp-weight'
 import { subjectHasRecordedSubdivision } from '@/lib/pricing/match'
 import { printedBaths } from '@/lib/pricing/bath-count'
@@ -309,13 +314,6 @@ function isoMonthsAgo(months: number): string {
 function unitRate(comp: CmaComp, land: boolean): number {
   const size = land ? (comp.lotAcres ?? 0) : comp.sqft
   return size > 0 ? comp.closePrice / size : 0
-}
-
-function medianOf(values: readonly number[]): number {
-  if (values.length === 0) return 0
-  const sorted = [...values].sort((a, b) => a - b)
-  const mid = Math.floor(sorted.length / 2)
-  return sorted.length % 2 === 0 ? (sorted[mid - 1]! + sorted[mid]!) / 2 : sorted[mid]!
 }
 
 function similarityScore(subjectSize: number, comp: CmaComp, land = false): number {
@@ -639,6 +637,9 @@ export async function selectComps(
    */
   let anchorPpsf: number | null = null
   let anchorN = 0
+  /** Which level held the median, and where, as the trace says it (lib/pricing/price-anchor.ts). */
+  let anchorLevel: PriceAnchorSource | null = null
+  let anchorWhere: string | null = null
   /**
    * ONE 20% LINE (Matt 2026-10-08, lib/pricing/price-tier.ts). A sale's own
    * closed $/sqft (closePrice / sqft, before date adjustment) must sit within
@@ -710,9 +711,14 @@ export async function selectComps(
   // It has to be one deterministic read, not a sample accumulated as the rungs
   // fetch: an anchor that grows mid-walk depends on which rung happened to run
   // first, and two builds of the same home minutes apart chose different comp
-  // sets because of it. This asks one question — what does a home of roughly
-  // this size sell for per square foot in your home's own neighborhood, or
-  // within a mile of it — over twelve months and a wide size band.
+  // sets because of it. This asks one question, what does a home of roughly
+  // this size sell for per square foot in your home's own area, over twelve
+  // months and a wide size band, and answers it at the narrowest level that
+  // holds a fair median: the home's plat, its subdivision family, its MLS
+  // subdivision, its community, its neighborhood, a ring around it, its city
+  // (Matt 2026-10-08, anchorFromSamples in lib/pricing/price-anchor.ts, the
+  // same walk the facts ladder runs). 3062 NW Kelly Hill was graded against
+  // Summit West's $609 while its own Westside Meadows sells near $380.
   const subjectSqft = subject.sqft ?? 0
   if (!land && subjectSqft > 0) {
     // ONE READ, wide enough to hold every ring the anchor may fall back to. A
@@ -722,57 +728,135 @@ export async function selectComps(
     // the county. Houses are further apart there, so the tier is measured over
     // more ground, never over fewer sales: ANCHOR_MIN_N binds at every ring.
     const widestRadius = ANCHOR_RURAL_RADII_MILES[ANCHOR_RURAL_RADII_MILES.length - 1]!
-    const anchorRows = await selectCmaCompsPool({
+    const anchorRead = {
       cityIlike: subject.city,
       closeDateGte: isoMonthsAgo(12),
       sqftMin: Math.round(subjectSqft * 0.6),
       sqftMax: Math.round(subjectSqft * 1.6),
-      bounds: radiusBounds(subjectPoint, widestRadius),
+      // Every anchor read asks for 800 rows; the bounded read returns at most
+      // 500, newest closes first (selectCmaCompsPool).
       limit: 800,
       // The SAME population the ladder itself reads. A tier median sampled from
       // a different property segment is a different market's number.
       propertySubType: sqlSubType,
       propertyType: segment,
+    }
+    // THE HOME'S OWN GROUND, COMPLETE. The wide read is the newest closes in
+    // an eight-mile box, which in Bend is the last few months, not twelve: a
+    // plat's year of sales would mostly fall off its end. So the narrow levels
+    // (plat, family, MLS name, community) also read the mile around the home
+    // and the home's own MLS subdivision name over the full twelve months, two
+    // small reads that do not reach the row cap. The neighborhood, ring and
+    // city levels read the wide read alone, exactly as before.
+    const subjectName = realSubdivision(subject.subdivision)
+    const [wideRows, nearRows, nameRows] = await Promise.all([
+      selectCmaCompsPool({ ...anchorRead, bounds: radiusBounds(subjectPoint, widestRadius) }),
+      subject.latitude != null && subject.longitude != null
+        ? selectCmaCompsPool({ ...anchorRead, bounds: radiusBounds(subjectPoint, ANCHOR_RADIUS_MILES) })
+        : Promise.resolve([] as CmaListingRow[]),
+      subjectName
+        ? selectCmaCompsPool({
+            ...anchorRead,
+            subdivisionIlike: subjectName,
+            bounds: radiusBounds(subjectPoint, widestRadius),
+          })
+        : Promise.resolve([] as CmaListingRow[]),
+    ])
+    const graded: Array<{ comp: CmaComp; rate: number; wide: boolean }> = []
+    const gradedKeys = new Set<string>()
+    for (const [rows, wide] of [
+      [wideRows, true],
+      [nearRows, false],
+      [nameRows, false],
+    ] as const) {
+      for (const row of rows) {
+        const comp = rowToComp(row, 'price-anchor', false)
+        if (!comp || gradedKeys.has(comp.listingKey)) continue
+        const rate = unitRate(comp, false)
+        if (!(rate > 0)) continue
+        gradedKeys.add(comp.listingKey)
+        graded.push({ comp, rate, wide })
+      }
+    }
+    // Each sale's recorded plat (the plat and family levels) and its community
+    // (the community level), from the same point lookups the rungs use, read
+    // together. Plats are read only when the home sits in a recorded plat, and
+    // only for sales within LOCAL_POOL_RADIUS_MILES, the ground the facts walk
+    // reads in full; communities only when the home's search walls on one, and
+    // into the same cache the rungs read (communityByKey), so a rung that
+    // meets these rows again cannot get a different answer.
+    const homePlat = ring?.homeSlug ?? null
+    const platIndex = homePlat
+      ? graded
+          .map((g, i) => ({ g, i }))
+          .filter(({ g }) => {
+            const miles = distanceMiles(subjectPoint, { lat: g.comp.latitude, lng: g.comp.longitude })
+            return miles != null && miles <= LOCAL_POOL_RADIUS_MILES
+          })
+      : []
+    const pendingCommunity = subjectCommunity
+      ? graded.filter(
+          (g) => !communityByKey.has(g.comp.listingKey) && g.comp.latitude != null && g.comp.longitude != null,
+        )
+      : []
+    const [platSlugs, located] = await Promise.all([
+      platIndex.length > 0
+        ? assignSubdivisionSlugs(platIndex.map(({ g }) => ({ lat: g.comp.latitude, lng: g.comp.longitude })))
+        : Promise.resolve([] as Array<string | null>),
+      pendingCommunity.length > 0
+        ? assignCommunitySlugs(pendingCommunity.map((g) => ({ lat: g.comp.latitude, lng: g.comp.longitude })))
+        : Promise.resolve(null),
+    ])
+    if (located) pendingCommunity.forEach((g, i) => communityByKey.set(g.comp.listingKey, located[i] ?? null))
+    const platOf = new Map<number, string | null>()
+    platIndex.forEach(({ i }, at) => platOf.set(i, platSlugs[at] ?? null))
+    const sample = anchorSampler({
+      platSlug: homePlat,
+      // The MLS name on the home's own record, not a pocket the search inferred.
+      subdivisionNorm: normSubdivision(subject.subdivision),
+      citySlug: citySlug(subject.city),
+      communitySlug: subjectCommunity,
+      marketArea: subjectArea,
+      latitude: subject.latitude ?? null,
+      longitude: subject.longitude ?? null,
+      ruralAcreage,
     })
-    type AnchorRow = { rate: number; inArea: boolean; miles: number | null }
-    const graded: AnchorRow[] = []
-    for (const row of anchorRows) {
-      const comp = rowToComp(row, 'price-anchor', false)
-      if (!comp) continue
-      const rate = unitRate(comp, false)
-      if (!(rate > 0)) continue
-      graded.push({
-        rate,
-        inArea: subjectArea != null && resolveMarketArea(comp.latitude, comp.longitude) === subjectArea,
-        miles: distanceMiles(subjectPoint, { lat: comp.latitude, lng: comp.longitude }),
+    const samples: AnchorSample[] = graded.map((g, i) => {
+      const s = sample({
+        ppsf: g.rate,
+        platSlug: platOf.get(i) ?? null,
+        subdivisionNorm: normSubdivision(g.comp.subdivision),
+        citySlug: citySlug(g.comp.city ?? ''),
+        communitySlug: subjectCommunity ? saleCommunityOf(g.comp) : null,
+        marketArea: resolveMarketArea(g.comp.latitude, g.comp.longitude),
+        latitude: g.comp.latitude,
+        longitude: g.comp.longitude,
       })
-    }
-    // The subject's own neighborhood first, then the mile around it, then out
-    // by rings — the same order as resolvePriceAnchor on the facts path.
-    const rings: Array<{ where: string; rates: number[] }> = []
-    if (subjectArea != null) {
-      rings.push({
-        where: `inside ${subjectAreaName ?? 'the neighborhood'}`,
-        rates: graded.filter((g) => g.inArea).map((g) => g.rate),
-      })
-    }
-    for (const radius of [ANCHOR_RADIUS_MILES, ...ANCHOR_RURAL_RADII_MILES]) {
-      rings.push({
-        where: `within ${radius} ${radius === 1 ? 'mile' : 'miles'}`,
-        rates: graded.filter((g) => g.miles != null && g.miles <= radius).map((g) => g.rate),
-      })
-    }
-    for (const ring of rings) {
-      if (ring.rates.length < ANCHOR_MIN_N) continue
-      anchorPpsf = medianOf(ring.rates)
-      anchorN = ring.rates.length
+      // A row only the narrow reads found counts toward the narrow levels.
+      return g.wide ? s : { ...s, inNeighborhood: false, miles: null, inCity: false }
+    })
+    const anchor = anchorFromSamples(
+      samples,
+      anchorPlaceNames({
+        platSlug: homePlat,
+        platLabel: ring?.homeLabel ?? null,
+        subdivision: subject.subdivision,
+        communitySlug: subjectCommunity,
+        marketArea: subjectArea,
+        city: subject.city,
+      }),
+    )
+    if (anchor) {
+      anchorPpsf = anchor.ppsf
+      anchorN = anchor.n
+      anchorLevel = anchor.source
+      anchorWhere = anchorPlacePhrase(anchor)
       priceLine = priceTierLine(anchorPpsf)
       trace.push(
         priceLine
-          ? `Price tier: homes of this size sell for about $${priceLine.anchor} a square foot ${ring.where} (median of ${anchorN} sales, last 12 months). Sales outside ${describePriceTierLine(priceLine)} are a different market and are not used.`
-          : `Price tier: no usable median ${ring.where}, so no sale was graded on price.`,
+          ? `Price tier: homes of this size sell for about $${priceLine.anchor} a square foot ${anchorWhere} (median of ${anchorN} sales that closed in the last 12 months). Sales outside ${describePriceTierLine(priceLine)} are a different market and are not used.`
+          : `Price tier: no usable median ${anchorWhere}, so no sale was graded on price.`,
       )
-      break
     }
   }
 
@@ -1595,7 +1679,15 @@ export async function selectComps(
   const diagnostics: CompSelectionDiagnostics = {
     market_area: subjectAreaName,
     market_area_resolved: subjectArea != null,
-    price_anchor: anchorPpsf != null ? { ppsf: Math.round(anchorPpsf), n: anchorN } : null,
+    price_anchor:
+      anchorPpsf != null
+        ? {
+            ppsf: Math.round(anchorPpsf),
+            n: anchorN,
+            ...(anchorLevel ? { level: anchorLevel } : {}),
+            ...(anchorWhere ? { where: anchorWhere } : {}),
+          }
+        : null,
     rural_acreage: ruralAcreage,
     pricing_source: 'listings',
     custom_or_new: false,

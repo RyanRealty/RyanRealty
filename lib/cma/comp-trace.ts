@@ -155,11 +155,20 @@ export interface CompSelectionDiagnostics {
   market_area: string | null
   /**
    * The price tier this build graded comps against: the median $/sqft of sales
-   * in the subject's own neighborhood (or within a mile), and how many sales
-   * that median came from. Null when the area could not supply enough sales to
-   * state one, in which case no price cut ran.
+   * in the narrowest place around the subject that held enough of them (its
+   * plat, its subdivision family, its MLS subdivision, its community, its
+   * neighborhood, a ring around it, its city: lib/pricing/price-anchor.ts),
+   * and how many sales that median came from. Null when no level could supply
+   * enough sales to state one, in which case no price cut ran.
    */
-  price_anchor?: { ppsf: number; n: number } | null
+  price_anchor?: {
+    ppsf: number
+    n: number
+    /** The level that held the median (PriceAnchorSource), absent on rows stored before 2026-10-08. */
+    level?: string
+    /** Where it was read, as the trace says it: "in Westside Meadows", "within 1 mile". */
+    where?: string
+  } | null
   market_area_resolved: boolean
   /** Acreage subject outside every mapped polygon — the class the rural tiers exist for. */
   rural_acreage: boolean
