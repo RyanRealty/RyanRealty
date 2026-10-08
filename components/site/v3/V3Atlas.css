@@ -1169,6 +1169,14 @@
   --atlas-stroke-d: color-mix(in srgb, var(--v3-navy) 34%, transparent);
 }
 
+/* A drawn place with no full-size partner on the page is not a control
+   (lib/atlas/atlas-doors.ts): no pointer, so no hover ink and no cursor
+   promising a door the keyboard cannot reach. */
+.v3-atlas__place--inert {
+  pointer-events: none;
+  cursor: default;
+}
+
 /* Matt 2026-09-23, requirement 1: the RAIL-selected district — distinct
    from hover/pinned (.is-active) and unaffected by .is-empty: a district
    with no matching listings still gets shaded once selected. Placed after

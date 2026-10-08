@@ -73,7 +73,9 @@
   display: grid;
 }
 
-.place-subdiv-rail__list > li[hidden] {
+/* The folded rows' own list, closed: `hidden` loses to the list's grid
+   above, so it is restated. "Show all" opens it (aria-controls). */
+.place-subdiv-rail__list[hidden] {
   display: none;
 }
 
