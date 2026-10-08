@@ -690,6 +690,7 @@ table.realization tr.is-mine th,table.realization tr.is-mine td{border-bottom:2p
 a.street-sale{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:10px 14px;border:1px solid var(--ink12);border-radius:10px;color:inherit;text-decoration:none;font-size:15px}
 a.street-sale:hover{border-color:var(--navy)}
 a.street-sale .n{font-variant-numeric:tabular-nums;font-weight:600}
+a.street-sale .d{color:var(--ink70);font-variant-numeric:tabular-nums}
 .print-out a{display:inline-block;min-height:44px;padding:12px 0;box-sizing:border-box}
 @media print{.comp-stack-card a.comp-stack-addr,a.dns-addr,.rival-card .rival-addr{min-height:0;padding:0}}
 /* ── phone first (Matt 2026-10-07) ───────────────────────────────────────── */

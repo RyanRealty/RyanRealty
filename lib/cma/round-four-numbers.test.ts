@@ -590,7 +590,7 @@ describe('E6 — the subject column never prints a stale cycle as "listed"', () 
     expect(html).toContain('1,440 sqft')
     expect(html).toContain('2004')
     // The phone card says what is true of a home nobody is selling.
-    expect(html).toContain('Not on the market')
+    expect(html).toContain('not on the market')
   })
 
   it('still prints a current ask', () => {

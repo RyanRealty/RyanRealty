@@ -149,7 +149,7 @@ describe('the generators write plain English', () => {
       domDays: null,
       printableAsk: 650_000,
     })
-    expect(row.outcome).toMatch(/Came off/)
+    expect(row.outcome).toMatch(/^came off/)
     expect(row.mlsStatus).toBe('Expired')
     expect(row.statusDate).toBeNull()
     const peer = {

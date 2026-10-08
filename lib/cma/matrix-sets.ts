@@ -34,16 +34,28 @@ function insideSalesBoundary(
     longitude?: number | null
     subdivision?: string | null
     city?: string | null
+    /** The recorded plat polygon the build's area read placed the home in, when it read one. */
+    platSlug?: string | null
   },
 ): boolean {
   if (!area || !salesAreaIsBounded(area)) return true
   // A blank place is not inside the sales boundary. Keeping it would be a
-  // second path around the plat, the polygon, or the radius.
+  // second path around the plat, the polygon, or the radius. A home the
+  // build placed in a recorded polygon is re-tested on that polygon, so an
+  // area plat under another MLS spelling stays drawn (reader review
+  // 2026-10-08).
+  const tested = {
+    latitude: row.latitude,
+    longitude: row.longitude,
+    subdivision: row.subdivision,
+    city: row.city,
+    platSlug: row.platSlug,
+  }
   if (area.kind === 'subdivision' || area.kind === 'subdivisions') {
-    return compAreaContains(area, row)
+    return compAreaContains(area, tested)
   }
   if (row.latitude == null || row.longitude == null) return false
-  return compAreaContains(area, row)
+  return compAreaContains(area, tested)
 }
 
 export function unsoldPeersFor(input: {

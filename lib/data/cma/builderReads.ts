@@ -9,6 +9,10 @@
 
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
+import type { LatLngBounds } from '@/lib/cma/market-area'
+import { getPlatGroundBounds } from '@/lib/data/cma/platGroundBounds'
+import { assignSubdivisionSlugs } from '@/lib/data/geo/subdivision-ring'
+import { onPlatGround, type PlatGround } from '@/lib/pricing/plat-ground'
 
 function client() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -573,28 +577,126 @@ export async function getLikeHomeSales(args: {
 export type CmaSubdivisionSaleRow = {
   ClosePrice: number
   CloseDate: string
+  ListingKey?: string | null
+  SubdivisionName?: string | null
+  Latitude?: number | null
+  Longitude?: number | null
 }
 
-/** Closed sales inside the subject's exact MLS subdivision since sinceIso. */
-export async function getCmaSubdivisionClosed(subdivision: string, sinceIso: string): Promise<CmaSubdivisionSaleRow[]> {
+/**
+ * THE SUBJECT'S GROUND, NOT ONE MLS SPELLING (reader review 2026-10-08).
+ * The subdivision reads below matched SubdivisionName exactly, so 1355
+ * Jacksonville's place block counted the five closes typed "Northwest
+ * Townsite" and missed the twenty its own recorded plat holds under
+ * "Northwest Townsite Co 2nd Addt". With a ground, the read also takes the
+ * rows inside the box around the ground's recorded plats, in the ground's
+ * town, and keeps every row the one ground decision (onPlatGround,
+ * lib/pricing/plat-ground.ts) puts on the ground: the polygon first, the
+ * MLS name only for a row no polygon holds.
+ */
+export type CmaGroundScope = {
+  ground: PlatGround
+  city: string | null
+}
+
+type GroundRow = {
+  ListingKey?: string | null
+  SubdivisionName?: string | null
+  Latitude?: number | null
+  Longitude?: number | null
+  CloseDate: string
+}
+
+/**
+ * Run a paged subdivision read by name, and by the ground's outline when the
+ * ground has recorded plats; keep the rows on the ground, newest close first.
+ * Without a ground (or with no recorded plat) the name read is the answer, as
+ * before.
+ */
+async function readOnGround<T extends GroundRow>(
+  scope: CmaGroundScope | null | undefined,
+  read: (box: LatLngBounds | null) => Promise<T[]>,
+): Promise<T[]> {
+  const named = await read(null)
+  if (!scope || scope.ground.platSlugs.length === 0) return named
+  const box = await getPlatGroundBounds(scope.ground, { city: scope.city })
+  const boxed = box ? await read(box) : []
+  const seen = new Set<string>()
+  const merged: T[] = []
+  for (const r of [...named, ...boxed]) {
+    const key = String(r.ListingKey ?? '').trim()
+    if (key) {
+      if (seen.has(key)) continue
+      seen.add(key)
+    }
+    merged.push(r)
+  }
+  let plats: Array<string | null>
+  try {
+    plats = await assignSubdivisionSlugs(merged.map((r) => ({ lat: r.Latitude ?? null, lng: r.Longitude ?? null })))
+  } catch (err) {
+    // No polygon read: the rows the name read returned stand, as before.
+    console.error('[readOnGround]', err instanceof Error ? err.message : String(err))
+    return named
+  }
+  return merged
+    .filter((r, i) =>
+      onPlatGround(scope.ground, {
+        platSlug: plats[i] ?? null,
+        subdivision: r.SubdivisionName ?? null,
+        latitude: r.Latitude ?? null,
+        longitude: r.Longitude ?? null,
+      }),
+    )
+    .sort(
+      (x, y) =>
+        String(y.CloseDate ?? '').localeCompare(String(x.CloseDate ?? '')) ||
+        String(x.ListingKey ?? '').localeCompare(String(y.ListingKey ?? '')),
+    )
+}
+
+/**
+ * Closed sales inside the subject's subdivision since sinceIso: the exact
+ * MLS name, and with a ground, every row the ground decision puts on the
+ * subject's recorded plat whatever its spelling.
+ */
+export async function getCmaSubdivisionClosed(
+  subdivision: string,
+  sinceIso: string,
+  scope?: CmaGroundScope | null,
+): Promise<CmaSubdivisionSaleRow[]> {
   const sb = client()
   if (!sb || !subdivision.trim()) return []
-  const { data, error } = await sb
-    .from('listings')
-    .select('ClosePrice, CloseDate')
-    .eq('SubdivisionName', subdivision)
-    .eq('PropertyType', 'A')
-    .eq('property_sub_type', 'Single Family Residence')
-    .eq('StandardStatus', 'Closed')
-    .gte('CloseDate', sinceIso)
-    .not('ClosePrice', 'is', null)
-    .order('CloseDate', { ascending: false })
-    .limit(500)
-  if (error) {
-    console.error('[getCmaSubdivisionClosed]', error.message)
-    return []
+  const read = async (box: LatLngBounds | null): Promise<CmaSubdivisionSaleRow[]> => {
+    let q = sb
+      .from('listings')
+      .select('ListingKey, ClosePrice, CloseDate, SubdivisionName, Latitude, Longitude')
+      .eq('PropertyType', 'A')
+      .eq('property_sub_type', 'Single Family Residence')
+      .eq('StandardStatus', 'Closed')
+      .gte('CloseDate', sinceIso)
+      .not('ClosePrice', 'is', null)
+    if (box) {
+      q = q
+        .gte('Latitude', box.latMin)
+        .lte('Latitude', box.latMax)
+        .gte('Longitude', box.lngMin)
+        .lte('Longitude', box.lngMax)
+      if (scope?.city?.trim()) q = q.eq('City', scope.city.trim())
+    } else {
+      q = q.eq('SubdivisionName', subdivision)
+    }
+    const { data, error } = await q
+      .order('CloseDate', { ascending: false })
+      .order('ListingKey', { ascending: true })
+      .limit(500)
+    if (error) {
+      console.error('[getCmaSubdivisionClosed]', error.message)
+      return []
+    }
+    return (data ?? []) as unknown as CmaSubdivisionSaleRow[]
   }
-  return (data ?? []) as unknown as CmaSubdivisionSaleRow[]
+  return readOnGround(scope, read)
 }
 
 export type CmaSubdivisionHistoryRow = {
@@ -615,6 +717,10 @@ export type CmaSubdivisionHistoryRow = {
   lot_size_acres: number | null
   public_remarks: string | null
   PhotoURL: string | null
+  /** Read so the ground decision can place the row by its polygon (lib/pricing/plat-ground.ts). */
+  SubdivisionName?: string | null
+  Latitude?: number | null
+  Longitude?: number | null
 }
 
 /**
@@ -624,37 +730,56 @@ export type CmaSubdivisionHistoryRow = {
  * subdivision-story engine: deterministic aggregates from these rows, AI
  * narrative grounded on them.
  */
-export async function getCmaSubdivisionHistory(subdivision: string, sinceIso: string): Promise<CmaSubdivisionHistoryRow[]> {
+export async function getCmaSubdivisionHistory(
+  subdivision: string,
+  sinceIso: string,
+  scope?: CmaGroundScope | null,
+): Promise<CmaSubdivisionHistoryRow[]> {
   const sb = client()
   if (!sb || !subdivision.trim()) return []
   // Paged to completion: a hard limit silently truncates large subdivisions
   // and drops the OLDEST sales (found live 2026-08-05: Stone Creek holds 450,
   // a 400 cap skewed the 2019 median). Ceiling guards pathological inputs.
-  const out: CmaSubdivisionHistoryRow[] = []
-  const SIZE = 400
-  for (let from = 0; from < 2000; from += SIZE) {
-    const { data, error } = await sb
-      .from('listings')
-      .select(
-        'ListingKey, ListNumber, StreetNumber, StreetName, ClosePrice, CloseDate, ListPrice, OriginalListPrice, TotalLivingAreaSqFt, BedroomsTotal, BathroomsTotal, year_built, CumulativeDaysOnMarket, days_to_pending, lot_size_acres, public_remarks, PhotoURL',
-      )
-      .eq('SubdivisionName', subdivision)
-      .eq('PropertyType', 'A')
-      .eq('property_sub_type', 'Single Family Residence')
-      .eq('StandardStatus', 'Closed')
-      .gte('CloseDate', sinceIso)
-      .not('ClosePrice', 'is', null)
-      .order('CloseDate', { ascending: false })
-      .order('ListingKey', { ascending: true })
-      .range(from, from + SIZE - 1)
-    if (error) {
-      console.error('[getCmaSubdivisionHistory]', error.message)
-      return out
+  // With a ground, the box read runs the same pages over the ground's outline
+  // (readOnGround), and the polygon decides which rows are the subdivision.
+  const read = async (box: LatLngBounds | null): Promise<CmaSubdivisionHistoryRow[]> => {
+    const out: CmaSubdivisionHistoryRow[] = []
+    const SIZE = 400
+    for (let from = 0; from < 2000; from += SIZE) {
+      let q = sb
+        .from('listings')
+        .select(
+          'ListingKey, ListNumber, StreetNumber, StreetName, ClosePrice, CloseDate, ListPrice, OriginalListPrice, TotalLivingAreaSqFt, BedroomsTotal, BathroomsTotal, year_built, CumulativeDaysOnMarket, days_to_pending, lot_size_acres, public_remarks, PhotoURL, SubdivisionName, Latitude, Longitude',
+        )
+        .eq('PropertyType', 'A')
+        .eq('property_sub_type', 'Single Family Residence')
+        .eq('StandardStatus', 'Closed')
+        .gte('CloseDate', sinceIso)
+        .not('ClosePrice', 'is', null)
+      if (box) {
+        q = q
+          .gte('Latitude', box.latMin)
+          .lte('Latitude', box.latMax)
+          .gte('Longitude', box.lngMin)
+          .lte('Longitude', box.lngMax)
+        if (scope?.city?.trim()) q = q.eq('City', scope.city.trim())
+      } else {
+        q = q.eq('SubdivisionName', subdivision)
+      }
+      const { data, error } = await q
+        .order('CloseDate', { ascending: false })
+        .order('ListingKey', { ascending: true })
+        .range(from, from + SIZE - 1)
+      if (error) {
+        console.error('[getCmaSubdivisionHistory]', error.message)
+        return out
+      }
+      out.push(...((data ?? []) as unknown as CmaSubdivisionHistoryRow[]))
+      if (!data || data.length < SIZE) break
     }
-    out.push(...((data ?? []) as unknown as CmaSubdivisionHistoryRow[]))
-    if (!data || data.length < SIZE) break
+    return out
   }
-  return out
+  return readOnGround(scope, read)
 }
 
 // ── Prior-sale read (Matt 2026-08-06: CMA equity-position section — "what

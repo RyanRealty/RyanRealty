@@ -21,6 +21,7 @@
  */
 
 import { escapeHtml, int, usd } from '@/lib/cma/render-blocks'
+import { compactUsd, compactUsdLabels } from '@/lib/cma/compact-usd'
 
 const esc = escapeHtml
 
@@ -80,13 +81,9 @@ export type WorthStripLayout = { width: number; height: number; fontSize: number
 export const WORTH_STRIP_WIDE: WorthStripLayout = { width: 720, height: 182, fontSize: 12 }
 export const WORTH_STRIP_PHONE: WorthStripLayout = { width: 360, height: 206, fontSize: 11 }
 
-/** $475K. A price axis is read at a glance, not audited — the grid audits it. */
+/** $475K. A price axis is read at a glance, not audited; the grid audits it. */
 function shortUsd(n: number): string {
-  if (n >= 1_000_000) {
-    const m = n / 1_000_000
-    return `$${m >= 10 || n % 1_000_000 === 0 ? m.toFixed(0) : m.toFixed(2)}M`
-  }
-  return `$${Math.round(n / 1000)}K`
+  return compactUsd(n)
 }
 
 type Geometry = {
@@ -189,6 +186,9 @@ export function worthStripSvg(
   const zoneBottom = H - 64
   const dotY = zoneTop - 16
   const x = (v: number) => left + ((right - left) * (v - g.lo)) / Math.max(g.hi - g.lo, 1)
+  // The four numbers this drawing prints (the two ends, the list, the ask)
+  // are one set of labels: two different prices never print the same text.
+  const money = compactUsdLabels([g.low, g.high, input.recommended, input.lastAsk])
 
   // Dots. Only the two ends carry a number — five prices along 700 units with
   // a label each is unread chaos (dataviz skill, step 4). Every dot names
@@ -242,7 +242,7 @@ export function worthStripSvg(
   const labelHalf = (t: string, size: number) => (t.length * size * 0.58) / 2
   const asideHalf = labelHalf(ASIDE_LABEL, fs - 1)
   const endSpans: Array<[number, number]> = [g.low, g.high].map((v) => {
-    const half = labelHalf(shortUsd(v), fs)
+    const half = labelHalf(money(v), fs)
     return [x(v) - half, x(v) + half]
   })
   const labelWouldSitOnAnAxisEnd = (cx: number): boolean =>
@@ -308,7 +308,7 @@ export function worthStripSvg(
   // document states. They are now the ends of the shaded zone, which is what
   // they sit over.
   const endLabel = (v: number, side: 'low' | 'high', pushOut: boolean) => {
-    const label = shortUsd(v)
+    const label = money(v)
     const f = fit(x(v), label, fs, W)
     // When the zone is narrow the pair would print through each other, so they
     // step OUTWARD rather than onto a second line: a range label that leaves
@@ -320,17 +320,17 @@ export function worthStripSvg(
   // Their own boxes, to decide whether they collide at all.
   const zoneLabelsCollide =
     Math.abs(x(g.high) - x(g.low)) <
-    (shortUsd(g.low).length + shortUsd(g.high).length) * fs * 0.58 * 0.5 + 6
+    (money(g.low).length + money(g.high).length) * fs * 0.58 * 0.5 + 6
 
   // The two vertical marks label themselves on ONE line under the axis. They
   // used to sit on two lines five units apart with the zone caption between
   // them, and "asked $1.50M" printed straight through "what it is worth".
   const recX = x(input.recommended)
-  const recLabel = `list ${shortUsd(input.recommended)}`
+  const recLabel = `list ${money(input.recommended)}`
   const recFit = fit(recX, recLabel, fs, W)
   const ask = input.lastAsk != null && input.lastAsk > 0 ? input.lastAsk : null
   const askX = ask != null ? x(ask) : 0
-  const askLabel = ask != null ? `asked ${shortUsd(ask)}` : ''
+  const askLabel = ask != null ? `asked ${money(ask)}` : ''
   const askFit = ask != null ? fit(askX, askLabel, fs, W) : null
   const markY = zoneBottom + 16
   // A second line only when the two labels' own boxes would collide.
