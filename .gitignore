@@ -235,3 +235,7 @@ design_system/public/taste-table.json.lock/
 
 # Session temp scripts at the repo root (run from root so node_modules resolves); never committed.
 /.tmp-*
+# The search perf-budget gate test copies files into a sandbox at the repo root
+# (so its imports resolve through node_modules) and deletes it. Ignored so a
+# concurrent `git ls-files --others` never opens it mid-delete (CI 2026-10-07).
+/.perf-budget-gate-sandbox-*/
