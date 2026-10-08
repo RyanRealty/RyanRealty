@@ -10,7 +10,7 @@
 import { cleanText, countWord, escapeHtml, int, usd } from '@/lib/cma/render-blocks'
 import { sanitizeLetterEmDash } from '@/lib/cma/voice-sanitize'
 import { pricingRangeDisplay } from '@/lib/cma/pricing'
-import { currentAskLine, heldUnderBand } from '@/lib/cma/cover-value'
+import { currentAskLine, heldForMatt, heldUnderBand } from '@/lib/cma/cover-value'
 import { oneOutlierMakesTheSpan, tableAdjustedBand } from '@/lib/cma/cover-value'
 import { describeCompSearch } from '@/lib/pricing/search-story'
 import {
@@ -181,8 +181,14 @@ export function whatItsWorthLead(
   // stored worth pair, rounded once.
   const worth = adjustedRangeLine(comps, { afterExpected: expected, pricing }) || worthRangeSentence(pricing, comps)
   // "List in that range." is the instruction when nothing else says where to
-  // list. The expected-sale sentence already says it.
-  const listRange = expectedLine ? '' : listRangeSentence(pricing, failedSubjectAsk(subject, askCtx), comps)
+  // list. The expected-sale sentence already says it. A letter held for Matt
+  // under rule 22 (the last failed ask inside the sales range, 2382 Jackson)
+  // gives no list instruction either: the opening already says the ask was
+  // inside the range and the days point away from the number, so the chapter
+  // prints the one supported figure, the range, and stops (reader review
+  // 2026-10-08; rule 26 already drops it for an ask under the range).
+  const listRange =
+    expectedLine || heldForMatt(pricing) ? '' : listRangeSentence(pricing, failedSubjectAsk(subject, askCtx), comps)
   // A home that is on the market already has an ask. The blueprint gives that
   // case ONE line: what it is listed at, and what the sales support. The ask
   // follows the expected sale, so "that price" can only mean the cover's.
@@ -686,9 +692,15 @@ export function pricingPage(input: PricingPageInput): CmaPageDef {
   // stated a method yielding $1,973,000 and printed $1,473,000 with nothing
   // between them (tasteReview round three, §2 item 1). lib/pricing writes the
   // sentence; it prints where the reader meets the number, and nowhere else.
-  // A held letter (rule 26) prints no clamp sentence: its "sales support a
+  // A held letter prints no clamp sentence. Under rule 26 its "sales support a
   // value of" figure is printed nowhere else, and the held lead says it once.
-  const clamp = heldUnderBand(p) ? '' : deRepeatRecommendDollars(clampSentence(p), p.recommended)
+  // Under rule 22 (the ask inside the sales range, 2382 Jackson) the clamp's
+  // reason, that the home did not sell because the ask was too high, does not
+  // hold: the opening says the ask was inside the range and the days point at
+  // something other than the number, and "we recommend the price on the cover,
+  // which stays under that ask" told a second story beside it (reader review
+  // 2026-10-08). One story, one supported figure, the range.
+  const clamp = heldForMatt(p) ? '' : deRepeatRecommendDollars(clampSentence(p), p.recommended)
   const clampHtml = clamp ? `<p class="worth-lead-note">${esc(clamp)}</p>` : ''
   const lead = input.omitLeadPrices
     ? ''

@@ -112,6 +112,7 @@ import { pocketClosedSupportPrice } from '@/lib/pricing/active-dom-nudge'
 import { finishRecommendedAfterActives } from '@/lib/cma/finish-recommended'
 import { assembleCompetition, assembleExpiredPeers } from '@/lib/cma/assemble-competition'
 import type { CmaBroker, CmaBuildInput, CmaBuildResult, CmaPricing } from '@/lib/cma/types'
+import { zonedDateKey } from '@/lib/format/date'
 
 export const CMA_BUILDER_VERSION = 'deterministic-v1 (2026-07-07)'
 const DEFAULT_BROKER_SLUG = (process.env.CMA_DEFAULT_BROKER_SLUG ?? 'matthew-ryan').trim().toLowerCase()
@@ -207,6 +208,12 @@ async function persistJudgeCache(slug: string, record: JudgeDecisionRecord): Pro
 export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
   const slug = input.slug.trim().toLowerCase()
   const generatedAtIso = new Date().toISOString()
+  // The letter's calendar day in Pacific time, the day every printed date on
+  // the document reads (formatDate). A UTC slice of an evening build is the
+  // next day, which is how a letter dated October 7 printed "Measured
+  // 2026-10-08" and "listed ... through October 8, 2026" (reader review
+  // 2026-10-08). The reads that print a day take this.
+  const letterDay = zonedDateKey(generatedAtIso)
   // Hoisted: every failure path stamps it on the row alongside the comp trace.
   const docType: 'cma' | 'expired-audit' = input.docType === 'expired-audit' ? 'expired-audit' : 'cma'
   // Held outside the try so the catch-all below can still write the comp trace.
@@ -1409,7 +1416,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         latitude: subject.latitude,
         longitude: subject.longitude,
         propertySubType: subject.propertySubType,
-        asOf: generatedAtIso.slice(0, 10),
+        asOf: letterDay,
       })
     } catch (err) {
       console.error('[buildCma] placePricing', err)
@@ -1424,7 +1431,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       longitude: subject.longitude,
       listDate: expiredAudit?.finalCycle?.listDate ?? subject.lastListDate,
       offDate: expiredAudit?.finalCycle?.offMarketDate ?? null,
-      asOf: generatedAtIso.slice(0, 10),
+      asOf: letterDay,
       areaKind: compArea?.kind ?? null,
       areaName: compArea?.names?.[0] ?? null,
       propertySubType: subject.propertySubType,
@@ -1700,7 +1707,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             late: listingMarket.late,
             price_move: listingMarket.priceMove,
             ppsf_move: listingMarket.ppsfMove,
-            source: `Supabase listings. ${listingMarket.place} (${listingMarket.grain}), same property subtype as the subject, Closed, ClosePrice > 0, CloseDate ${listingMarket.early.from} through ${listingMarket.late.to}. Measured ${listingMarket.asOf ?? generatedAtIso.slice(0, 10)}.`,
+            source: `Supabase listings. ${listingMarket.place} (${listingMarket.grain}), same property subtype as the subject, Closed, ClosePrice > 0, CloseDate ${listingMarket.early.from} through ${listingMarket.late.to}. Measured ${listingMarket.asOf ?? letterDay}.`,
           }
         : { source: 'none' },
       equity_position: equity ?? { source: 'none' },

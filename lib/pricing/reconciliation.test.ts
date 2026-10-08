@@ -378,3 +378,58 @@ describe('set aside means set aside (tasteReview round three, §2 item 1)', () =
     )
   })
 })
+
+describe('location first when the step is why a sale leads (rule 15, reader review 2026-10-08)', () => {
+  // Weights are a location step plus a similarity fraction under one, so a
+  // same-subdivision sale (3.x) outweighs every adjacent (2.x) or neighborhood
+  // (1.x) sale whatever their size and date. The sentence gave size, date and
+  // movement as the reasons even then.
+  it('names the subdivision first when another priced sale sits a step further out', () => {
+    const out = reconcileAdjustedSales({
+      sales: [
+        sale({ listingKey: 'A', address: '2254 Indigo', sqft: 2_091, weight: 3.134, adjustedPrice: 598_620, locationMatch: 'same-subdivision', closeDate: '2026-01-15', monthsSinceClose: 9 }),
+        sale({ listingKey: 'B', address: '2799 Baroness', sqft: 2_016, weight: 2.9, adjustedPrice: 620_000, locationMatch: 'adjacent-subdivision', closeDate: '2026-09-15', monthsSinceClose: 1, timeAdjustment: 0, sizeAdjustment: 0 }),
+        sale({ listingKey: 'C', address: '2591 Purcell', sqft: 1_655, weight: 1.5, adjustedPrice: 648_772, locationMatch: 'neighborhood-or-community' }),
+      ],
+      subjectSqft: 2_016,
+      asOf: '2026-10-07',
+    })
+    expect(out.mostWeighted).toBe('A')
+    expect(out.sentence).toMatch(/^2254 Indigo carries the most weight of the three sales behind this price, at [\d.]+ percent: it is in your subdivision, it is 75 square feet larger than yours, it sold 9 months ago, and /)
+    expect(readsLikeSellerProse(out.sentence ?? '')).toBe(true)
+  })
+
+  it('says "next to yours" for an adjacent leader over a neighborhood sale', () => {
+    const out = reconcileAdjustedSales({
+      sales: [
+        sale({ listingKey: 'A', weight: 2.5, locationMatch: 'adjacent-subdivision' }),
+        sale({ listingKey: 'B', address: '9 Far St', weight: 1.9, locationMatch: 'neighborhood-or-community' }),
+      ],
+      subjectSqft: 1_700,
+    })
+    expect(out.sentence).toContain('percent: it is in the subdivision next to yours, it is the same size as yours')
+  })
+
+  it('stays on size, date and movement when every sale shares the step (2382 Jackson, all Holliday Park)', () => {
+    const out = reconcileAdjustedSales({
+      sales: [
+        sale({ listingKey: 'A', address: '2254 Indigo', sqft: 2_091, weight: 3.134, adjustedPrice: 598_620, locationMatch: 'same-subdivision' }),
+        sale({ listingKey: 'B', address: '2266 Jackson', sqft: 2_002, weight: 3.015, adjustedPrice: 624_000, locationMatch: 'same-subdivision' }),
+        sale({ listingKey: 'C', address: '2591 Purcell', sqft: 1_655, weight: 1.5015, adjustedPrice: 648_772, locationMatch: 'same-subdivision' }),
+      ],
+      subjectSqft: 2_016,
+    })
+    expect(out.sentence).toMatch(/percent: it is 75 square feet larger than yours, it sold/)
+    expect(out.sentence).not.toContain('subdivision')
+  })
+
+  it('says nothing about location on rows that never classed the sales', () => {
+    const out = reconcileAdjustedSales({
+      sales: [sale({ listingKey: 'A', weight: 0.8 }), sale({ listingKey: 'B', address: '9 Far St', weight: 0.3 })],
+      subjectSqft: 1_700,
+    })
+    expect(out.sentence).toMatch(/percent: it is the same size as yours, it sold/)
+    expect(out.sentence).not.toContain('subdivision')
+    expect(out.sentence).not.toContain('neighborhood')
+  })
+})

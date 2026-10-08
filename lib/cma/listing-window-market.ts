@@ -10,7 +10,9 @@
 import type { CmaWindowCloseRow } from '@/lib/data/cma/builderReads'
 import { marketAreaName, productTypeCompatible, resolveMarketArea } from '@/lib/cma/market-area'
 import { usd } from '@/lib/cma/render-blocks'
+import { formatCalendarDay } from '@/lib/format/date'
 import { realSubdivisionName } from '@/lib/pricing/classes'
+import { resolveConcessions } from '@/lib/pricing/seller-net'
 
 export const LISTING_MARKET_MIN_HALF = 8
 const FLAT = 0.03
@@ -37,8 +39,15 @@ export type ListingMarketMove = {
   late: ListingMarketHalf
   priceMove: ListingMarketMoveWord
   ppsfMove: ListingMarketMoveWord | null
-  /** The day these closes were read. Printed on the source line. */
+  /** The day these closes were read: the letter's calendar day. Printed on the source line. */
   asOf?: string | null
+  /**
+   * True when each half's rate per foot is the sale price less its recorded
+   * seller concession, the way the table's Sold $/sqft row reads (reader
+   * review 2026-10-08: the chart printed the gross rate beside a net table).
+   * Absent on rows measured before this, whose stored figures are gross.
+   */
+  ppsfNet?: boolean
   /**
    * Singular product for the sentence, when the subject is not a detached
    * house. Absent keeps the single-family wording the older letters use.
@@ -49,6 +58,8 @@ export type ListingMarketMove = {
 export type ListingMarketClose = {
   closeDate: string
   closePrice: number
+  /** Recorded seller concession, resolved (lib/pricing/seller-net.ts). Null when nothing was recorded. */
+  concessions?: number | null
   sqft: number | null
   subdivision: string | null
   lat: number | null
@@ -81,12 +92,20 @@ export function listingMarketMoveWord(from: number, to: number): ListingMarketMo
   return delta > 0 ? 'rose' : 'fell'
 }
 
+/** The sale price after a recorded seller concession, or the sale price when none was recorded. */
+function netPrice(row: ListingMarketClose): number {
+  const c = row.concessions
+  return c != null && Number.isFinite(c) && c > 0 ? row.closePrice - c : row.closePrice
+}
+
 function halfOf(rows: ListingMarketClose[], from: string, to: string): ListingMarketHalf | null {
   const prices = rows.map((r) => r.closePrice).filter((n) => n > 0)
   const mid = median(prices)
   if (mid == null) return null
   const withSize = rows.filter((r) => r.sqft != null && r.sqft > 0)
-  const ppsf = median(withSize.map((r) => r.closePrice / r.sqft!))
+  // Net of concessions, the table's Sold $/sqft definition. The median sale
+  // price above stays the closing price, as the table's Sold row does.
+  const ppsf = median(withSize.map((r) => netPrice(r) / r.sqft!))
   const sqftMedian = median(withSize.map((r) => r.sqft!))
   return {
     median: Math.round(mid),
@@ -166,6 +185,7 @@ function finish(
     late,
     priceMove: listingMarketMoveWord(early.median, late.median),
     ppsfMove: early.ppsf != null && late.ppsf != null ? listingMarketMoveWord(early.ppsf, late.ppsf) : null,
+    ppsfNet: true,
   }
 }
 
@@ -369,7 +389,11 @@ export function listingMarketSource(move: ListingMarketMove): string {
     move.sized && move.sqftLow != null && move.sqftHigh != null
       ? `, ${move.sqftLow.toLocaleString('en-US')}–${move.sqftHigh.toLocaleString('en-US')} sqft`
       : ''
-  const measured = move.asOf ? ` Measured ${move.asOf}.` : ''
+  // The letter's calendar day, written the way the rest of the letter writes a
+  // date ("October 7, 2026"), never the ISO key (reader review 2026-10-08).
+  const measuredDay = move.asOf ? formatCalendarDay(move.asOf, { month: 'long', day: 'numeric', year: 'numeric' }) : ''
+  const measured = measuredDay ? ` Measured ${measuredDay}.` : ''
+  const net = move.ppsfNet ? ' Per square foot is the sale price less any recorded seller concession, over living area.' : ''
   const lateSpan = spokenSpan(move.late.from, move.late.to)
   const year = move.late.to.slice(0, 4)
   const lateLabeled = year && !lateSpan.includes(year) ? `${lateSpan}, ${year}` : lateSpan
@@ -382,7 +406,7 @@ export function listingMarketSource(move: ListingMarketMove): string {
           ? move.productNoun
           : 'Single-family homes'
   const earlySales = `${move.early.n} closed ${move.early.n === 1 ? 'sale' : 'sales'}`
-  return `${earlySales} ${spokenSpan(move.early.from, move.early.to)}, then ${move.late.n} from ${lateLabeled}. ${homes} in ${move.place}${size}. Oregon Data Share MLS.${measured}`
+  return `${earlySales} ${spokenSpan(move.early.from, move.early.to)}, then ${move.late.n} from ${lateLabeled}. ${homes} in ${move.place}${size}.${net} Oregon Data Share MLS.${measured}`
 }
 
 export type ListingMarketSlopePanel = {
@@ -456,6 +480,11 @@ export function closesFromRows(rows: readonly CmaWindowCloseRow[]): ListingMarke
   return rows.map((r) => ({
     closeDate: String(r.CloseDate ?? ''),
     closePrice: Number(r.ClosePrice),
+    concessions: resolveConcessions({
+      amount: r.concessions_amount,
+      yn: r.concessions_yn,
+      closeDate: String(r.CloseDate ?? ''),
+    }),
     sqft: r.TotalLivingAreaSqFt != null ? Number(r.TotalLivingAreaSqFt) : null,
     subdivision: r.SubdivisionName,
     lat: r.Latitude != null ? Number(r.Latitude) : null,

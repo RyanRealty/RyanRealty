@@ -581,3 +581,121 @@ describe('rule 26: the held letter says both, once (Matt 2026-10-07, "Hold, lett
     expect(recommendedAtOrAboveBandLowCheck(p).pass).toBe(true)
   })
 })
+
+describe('rule 22: a letter held because the ask sat inside the range tells one story (2382 Jackson, reader review 2026-10-08)', () => {
+  // cma-2382-jackson as stored on b3132caf5: three price-setting sales
+  // adjusted to $598,620 to $648,772, the last ask $639,000 inside that range
+  // after 227 days, the failed-ask clamp $649,000 to $624,000. The opening
+  // says the ask was inside the range and the days point at something other
+  // than the number. The opinion chapter then said "List in that range" and
+  // "The sales support a value of $649,000. Because $639,000 already failed
+  // to sell, we recommend the price on the cover, which stays under that
+  // ask": two stories and a figure printed nowhere else.
+  const FORBIDDEN = ['List in that range', 'support a value of', '$649,000', 'already failed to sell', 'stays under that ask']
+  const subject = subjectOf({
+    streetAddress: '2382 Jackson',
+    subdivision: 'Holliday Park',
+    standardStatus: 'Expired',
+    lastListPrice: 639_000,
+    sqft: 2016,
+  } as Partial<CmaSubject>)
+  const comps = [
+    sale('J1', '2254 Indigo', 598_620, { sqft: 2091 }),
+    sale('J2', '2266 Jackson', 624_000, { sqft: 2002 }),
+    sale('J3', '2591 Purcell', 648_772, { sqft: 1655 }),
+  ]
+  const finalCycle = {
+    listDate: '2026-02-17',
+    initialAsk: 639_000,
+    cuts: [],
+    offMarketDate: '2026-10-02',
+    status: 'Expired',
+    days: 227,
+  } as unknown as ExpiredFinalCycle
+  function jackson(): CmaPricing {
+    const p = {
+      recommended: 624_000,
+      conservative: 624_000,
+      highEnd: 629_000,
+      valueLow: 598_620,
+      valueHigh: 648_772,
+      failedAsk: 639_000,
+      needsReview: false,
+      reviewReason: null,
+      notes: [],
+      priceOverride: null,
+      clamp: {
+        kind: 'failed-ask',
+        appliedTo: 'recommended',
+        before: 649_000,
+        after: 624_000,
+        basis: { ratio: 0.9843505477308294, source: 'test' },
+        applications: [{ tier: 'recommended', before: 649_000, after: 624_000, ratio: 0.9843505477308294, phrase: null }],
+        sentence: 'The sales support a value of $649,000. Because $639,000 already failed to sell, we recommend the price on the cover, which stays under that ask.',
+      },
+      hold: null,
+    } as unknown as CmaPricing
+    applyAskInBandHold(p, { lastCycleFailed: true, lastListPrice: 639_000, auditVerdict: 'pass' })
+    expect(p.hold?.kind).toBe('ask-in-band')
+    expect(p.hold?.ask).toBe(639_000)
+    return p
+  }
+
+  it('the chapter prints the range once and no list instruction', () => {
+    const lead = whatItsWorthLead(subject, jackson(), { asOfIso: '2026-10-07', hasFinalCycle: true }, comps, finalCycle)
+    expect(lead).toContain('run from $598,620 to $648,772')
+    for (const bad of FORBIDDEN) expect(lead).not.toContain(bad)
+    expect(lead).not.toMatch(/[—–]/)
+  })
+
+  it('the page prints no clamp sentence, and every dollar on the lead is a table figure', () => {
+    const p = jackson()
+    const page = pricingPage({ subject, comps, market: null, pricing: p, finalCycle, askCtx: { asOfIso: '2026-10-07', hasFinalCycle: true } })
+    for (const bad of FORBIDDEN) expect(page.body).not.toContain(bad)
+    expect(page.body.match(/run from \$598,620 to \$648,772/g)?.length).toBe(1)
+    const lead = whatItsWorthLead(subject, p, { asOfIso: '2026-10-07', hasFinalCycle: true }, comps, finalCycle)
+    const dollars = lead.match(/\$\d[\d,]*\d/g) ?? []
+    const table = new Set(['$598,620', '$624,000', '$648,772', '$639,000'])
+    for (const d of dollars) expect(table.has(d)).toBe(true)
+  })
+
+  it('the cover labels the price as the one Matt is reviewing and gives no list instruction', () => {
+    const p = jackson()
+    const cover = letterCoverPayoffHtml(p, comps)
+    expect(cover).toContain(HELD_PRICE_HEADLINE)
+    expect(cover).not.toContain('Our Recommended List Price')
+    const block = coverValueBlockHtml({ pricing: p, subject, comps, tiersUsed: [], market: null } as never)
+    expect(block).toContain(HELD_PRICE_HEADLINE)
+    expect(block).not.toMatch(/\bList \$/)
+  })
+
+  it('an expired home whose ask sat above the range keeps the clamp sentence and the recommend label', () => {
+    const p = {
+      recommended: 624_000,
+      conservative: 624_000,
+      highEnd: 629_000,
+      valueLow: 598_620,
+      valueHigh: 648_772,
+      failedAsk: 699_000,
+      needsReview: false,
+      reviewReason: null,
+      notes: [],
+      priceOverride: null,
+      clamp: {
+        kind: 'failed-ask',
+        appliedTo: 'recommended',
+        before: 649_000,
+        after: 624_000,
+        basis: { ratio: 0.9843505477308294, source: 'test' },
+        applications: [{ tier: 'recommended', before: 649_000, after: 624_000, ratio: 0.9843505477308294, phrase: null }],
+        sentence: 'The sales support a value of $649,000. Because $699,000 already failed to sell, we recommend the price on the cover, which stays under that ask.',
+      },
+      hold: null,
+    } as unknown as CmaPricing
+    applyAskInBandHold(p, { lastCycleFailed: true, lastListPrice: 699_000, auditVerdict: 'pass' })
+    expect(p.hold ?? null).toBeNull()
+    const page = pricingPage({ subject, comps, market: null, pricing: p, finalCycle, askCtx: { asOfIso: '2026-10-07', hasFinalCycle: true } })
+    expect(page.body).toContain('already failed to sell')
+    expect(letterCoverPayoffHtml(p, comps)).toContain('Our Recommended List Price')
+  })
+})

@@ -389,3 +389,56 @@ describe('chapter one keeps the market and does not print the regional tiles', (
     expect(graphic).not.toContain('While your home was listed')
   })
 })
+
+describe('the rate per foot is net of recorded concessions, like the table (reader review 2026-10-08)', () => {
+  // The table's Sold $/sqft row is the sale price less any recorded seller
+  // concession over living area; the chart printed the gross rate beside it.
+  const rows = [
+    ...repeat(8, close({ closeDate: '2026-04-01', closePrice: 500000, sqft: 2000, concessions: 10000 })),
+    ...repeat(8, close({ closeDate: '2026-08-01', closePrice: 500000, sqft: 2000, concessions: null })),
+  ]
+  const move = chooseListingMarket({
+    listDate: '2026-03-06',
+    offDate: '2026-09-21',
+    subjectSqft: null,
+    subdivision: 'Somewhere Else',
+    neighborhoodSlug: 'bend-old-farm-district',
+    neighborhoodName: 'Old Farm District',
+    city: 'Bend',
+    rows,
+  })
+
+  it('takes the concession off the rate per foot and leaves the sale price gross', () => {
+    expect(move).not.toBeNull()
+    expect(move!.early.median).toBe(500000)
+    expect(move!.early.ppsf).toBe(245)
+    expect(move!.late.ppsf).toBe(250)
+    expect(move!.ppsfNet).toBe(true)
+  })
+
+  it('says so on the source line, and prints the measured day the way the letter writes a date', () => {
+    const source = listingMarketSource({ ...move!, asOf: '2026-10-07' })
+    expect(source).toContain('Per square foot is the sale price less any recorded seller concession, over living area.')
+    expect(source).toContain('Measured October 7, 2026.')
+    expect(source).not.toContain('2026-10-07')
+    expect(source).not.toMatch(/Measured \d{4}-\d{2}-\d{2}/)
+  })
+
+  it('claims nothing about concessions on a row measured before this (stored figures are gross)', () => {
+    const stored: ListingMarketMove = {
+      place: 'Silver Sage',
+      grain: 'subdivision',
+      sized: false,
+      sqftLow: null,
+      sqftHigh: null,
+      early: { median: 503000, ppsf: 323, n: 2, from: '2026-05-01', to: '2026-07-17' },
+      late: { median: 559000, ppsf: 359, n: 3, from: '2026-07-18', to: '2026-10-05' },
+      priceMove: 'rose',
+      ppsfMove: 'rose',
+      asOf: '2026-10-08',
+    }
+    const source = listingMarketSource(stored)
+    expect(source).not.toContain('concession')
+    expect(source).toContain('Measured October 8, 2026.')
+  })
+})
