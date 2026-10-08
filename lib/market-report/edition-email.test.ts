@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { checkCitations, extractInternalLinks } from '@/lib/newsletter/pre-send-gates'
 import { buildEditionEmail } from './edition-email'
+import { marketReportCampaign } from '@/lib/analytics/utm'
 import type { EditionPayload, Fig, Kpis, MarketSection } from './types'
 
 /**
@@ -150,12 +151,14 @@ describe('buildEditionEmail', () => {
   })
 
   it('links the edition page, its PDF and the archive on our domain', () => {
+    const campaign = marketReportCampaign('2026-08')
+    const q = `utm_source=newsletter&utm_medium=email&utm_campaign=${campaign}`
     expect(extractInternalLinks(email.bodyHtml)).toEqual([
-      'https://ryan-realty.com/housing-market/reports/monthly/2026-08',
-      'https://ryan-realty.com/housing-market/reports/monthly/2026-08/pdf',
-      'https://ryan-realty.com/housing-market/reports/monthly',
+      `https://ryan-realty.com/housing-market/reports/monthly/2026-08?${q}`,
+      `https://ryan-realty.com/housing-market/reports/monthly/2026-08/pdf?${q}`,
+      `https://ryan-realty.com/housing-market/reports/monthly?${q}`,
     ])
-    expect(email.bodyText).toContain('Download the PDF: https://ryan-realty.com/housing-market/reports/monthly/2026-08/pdf')
+    expect(email.bodyText).toContain('Download the PDF: https://ryan-realty.com/housing-market/reports/monthly/2026-08/pdf\n')
     expect(email.bodyText).toContain('Every monthly report since January 2006')
   })
 
