@@ -140,7 +140,10 @@ describe('resolveListingTimeline', () => {
     expect(t!.steps).toEqual([{ date: '2026-02-26', ask: 475000 }])
   })
 
-  it('does not give a price change under 1 percent its own stretch', () => {
+  it('gives every recorded ask its own stretch, even a change under 1 percent', () => {
+    // The old 1 percent floor dropped 62475 Woodsman's $1,680,000 ask from the
+    // step chart (reader review 2026-10-08). Every ask the listing carried is
+    // drawn.
     const t = resolveListingTimeline({
       subject,
       expiredAudit: audit(
@@ -162,11 +165,12 @@ describe('resolveListingTimeline', () => {
     expect(t!.steps).toEqual([
       { date: '2026-03-27', ask: 749000 },
       { date: '2026-04-21', ask: 699000 },
+      { date: '2026-05-21', ask: 698000 },
     ])
     const svg = listingTimelineSvg(t!)
     expect(svg).toContain('$749K')
     expect(svg).toContain('$699K')
-    expect(svg).not.toContain('$698K')
+    expect(svg).toContain('$698K')
   })
 
   it('returns null when the row carries neither a list date nor an ask', () => {
@@ -211,16 +215,50 @@ describe('listingTimelineReading', () => {
     const reading = listingTimelineReading({
       timeline: { ...base, steps: [{ date: '2026-02-26', ask: 390000 }] },
       city: 'Redmond',
-      marketMedianDom: null,
+      marketMedianDom: 21,
     })
     expect(reading).toContain('You were asking inside the range homes like yours sold in')
-    expect(reading).toContain('Your home sat 187 days without an offer.')
+    // The MLS says the listing came off; it does not say no offer came in.
+    expect(reading).toContain('Your home sat 187 days and did not sell.')
+    expect(reading).not.toContain('without an offer')
     expect(reading).toContain(
-      'At a price inside the range, that long without an offer points at something other than the number. We would walk it with you before saying more.',
+      'At a price inside the range, that long without a sale points at something other than the number. We would walk it with you before saying more.',
     )
     // The days are said once, by the sat sentence (Matt 2026-10-07).
     expect(reading.match(/187 days/g)).toHaveLength(1)
     expect(reading).not.toContain('accepted offer in')
+  })
+
+  it('makes no claim about the days inside the range with no median to measure them by', () => {
+    const reading = listingTimelineReading({
+      timeline: { ...base, steps: [{ date: '2026-02-26', ask: 390000 }] },
+      city: 'Redmond',
+      marketMedianDom: null,
+    })
+    expect(reading).toBe('You were asking inside the range homes like yours sold in. Your home sat 187 days and did not sell.')
+  })
+
+  it('splits the days at the asks the line draws when only the last cut came inside the range', () => {
+    // $475,000 from Feb 26 to May 14 is above the $398,000 top; $390,000 from
+    // May 14 to Sep 1 is inside. 77 days above, 110 inside, both off the
+    // dated steps the chart draws.
+    const reading = listingTimelineReading({
+      timeline: {
+        ...base,
+        steps: [
+          { date: '2026-02-26', ask: 475000 },
+          { date: '2026-05-14', ask: 390000 },
+        ],
+      },
+      city: 'Redmond',
+      marketMedianDom: 21,
+    })
+    expect(reading).toBe(
+      'For 77 of your 187 days you were asking above the range homes like yours sold in, at $475,000. ' +
+        'You asked $390,000, inside the range, for the last 110 days, and your home did not sell. ' +
+        'Half of the homes that sold in Redmond had an offer inside 21 days. ' +
+        'At a price inside the range, 110 days without a sale points at something other than the number. We would walk it with you before saying more.',
+    )
   })
 
   it('says the ask and the days once when the ask was near the range (Matt 2026-10-07)', () => {

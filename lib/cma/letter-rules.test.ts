@@ -232,7 +232,10 @@ describe('letter rules that cannot be skipped', () => {
     expect(kept.map((r) => r.address)).toEqual(['1 Glen'])
   })
 
-  it('does not give a price change under 1 percent its own era', () => {
+  it('gives every recorded ask its own era, even a cut under 1 percent', () => {
+    // 62475 Woodsman's $1,695,000 to $1,680,000 cut was 0.9 percent and ran 40
+    // days; the old 1 percent floor erased it from the letter (reader review
+    // 2026-10-08). Every ask the listing carried is told.
     const path = pricePathFromFinalCycle(
       {
         listDate: '2026-01-01',
@@ -249,11 +252,22 @@ describe('letter rules that cannot be skipped', () => {
       },
       '9 Subject',
     )!
-    expect(path.cuts).toEqual([{ date: '2026-03-01', price: 470000 }])
+    expect(path.cuts).toEqual([
+      { date: '2026-02-01', price: 498000 },
+      { date: '2026-03-01', price: 470000 },
+    ])
     expect(
       askExposureSentence([
         { ask: 500000, days: 30 },
         { ask: 498000, days: 10 },
+        { ask: 470000, days: 20 },
+      ]),
+    ).toBe('You asked $500,000 for 30 days, then $498,000 for 10, then $470,000 for 20.')
+    // A repeated ask is not a new era.
+    expect(
+      askExposureSentence([
+        { ask: 500000, days: 30 },
+        { ask: 500000, days: 10 },
         { ask: 470000, days: 20 },
       ]),
     ).toBe('You asked $500,000 for 40 days, then $470,000 for 20.')

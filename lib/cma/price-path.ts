@@ -117,13 +117,20 @@ function plusDays(d: string, days: number): string {
 }
 
 /**
- * A price step is its own era only when it moves the ask by at least 1 percent.
- * No change, and a change under 1 percent, stay on the era already running.
+ * A price step is its own era whenever the ask changed. Only a repeated ask
+ * (the same dollars recorded again) stays on the era already running.
+ *
+ * Every ask the MLS recorded is a stretch the market saw and the owner lived
+ * through. This used to demand a move of at least 1 percent, and that erased a
+ * real cut: 62475 Woodsman went $1,695,000 to $1,680,000 on Apr 30 (0.9
+ * percent) and held it 40 days, but the letter said "You asked $1,695,000 for
+ * 95 days, then $1,660,000" and the step chart drew four asks where the
+ * listing carried five (reader review 2026-10-08). The chart, the headline,
+ * the ask exposure and the did-not-sell price path all read this one rule.
  */
 export function askStepIsOwnEra(previous: number, next: number): boolean {
   if (!(previous > 0) || !(next > 0)) return false
-  if (next === previous) return false
-  return Math.abs(next - previous) / previous >= 0.01
+  return Math.round(next) !== Math.round(previous)
 }
 
 function today(): string {

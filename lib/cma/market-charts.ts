@@ -328,14 +328,14 @@ function fitText(
 
 // ── How fast homes like yours went ──────────────────────────────────────────
 // Named rows on one days axis. Each kept sale is the days it waited for an
-// offer; the subject is the days it waited and never got one. It replaces a
+// offer; the subject is the days it was on the market and did not sell. It replaces a
 // month ledger of one-to-three listings and a row of dashes, which answered
 // no question a seller has.
 
 export type DaysRow = {
   label: string
   days: number
-  /** The subject's own row. Full navy, and the bar says no offer arrived. */
+  /** The subject's own row. Full navy, and the bar says how the listing ended (expired, canceled, withdrawn). */
   subject: boolean
   /** Printed at the bar end. */
   valueLabel: string
@@ -477,7 +477,7 @@ export function daysToOfferSvg(
   )
   const plotL = gutter
   // Reserve the right margin for the longest value label. The subject's reads
-  // "192 days, no offer" and used to run off the frame.
+  // "192 days, did not sell" and used to run off the frame.
   const longest = Math.max(...kept.map((r) => labelWidth(r.valueLabel, DAYS_FS, r.subject)))
   const plotR = W - Math.min(Math.max(longest + 16, 70), 190)
   const x = (v: number) => plotL + ((plotR - plotL) * v) / max
@@ -526,7 +526,7 @@ export function daysToOfferSvg(
  * F8, 2026-09-07: the 720-unit strip was held at `min-width` inside a pan box
  * below 700px. That is the right call for a wide chart whose reading survives
  * a cropped tail — but this chart's punchline is the subject's own bar and its
- * label ("192 days, no offer"), and at 375 both that label and the market
+ * label ("192 days, expired"), and at 375 both that label and the market
  * median's label sat outside the visible width of a box no seller scrolls.
  *
  * So this layout is drawn to fit, the way `priceRulerPhoneSvg` is. The row

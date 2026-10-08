@@ -1454,8 +1454,8 @@ export function resolveListingTimeline(input: {
   }
   if (steps.length === 0) return null
 
-  // A change under 1 percent, or no change, stays on the era already running.
-  // $699,000 then $698,000 is one stretch, not two labels.
+  // Every ask the listing carried is its own stretch; only a repeated ask (no
+  // change) stays on the one already running (askStepIsOwnEra).
   const drawn: ListingTimelineStep[] = []
   for (const step of steps) {
     const prev = drawn[drawn.length - 1]
@@ -1522,6 +1522,28 @@ export function listingTimelineReading(input: {
     days: t.days,
     city: input.city,
     marketMedianDom: input.marketMedianDom,
+    segments: timelineSegments(t),
   })
+}
+
+/**
+ * The days each drawn ask ran, from the same dated steps the line is drawn
+ * from: one step to the next, the last to the day it came off. Empty when the
+ * period has no off-market date to end on, so the reading claims nothing
+ * about the days at any one price.
+ */
+export function timelineSegments(t: ListingTimelineInput): Array<{ ask: number; days: number }> {
+  const end = dayString(t.offMarketDate)
+  if (!end) return []
+  const out: Array<{ ask: number; days: number }> = []
+  for (let i = 0; i < t.steps.length; i += 1) {
+    const from = dayString(t.steps[i]!.date)
+    const to = i + 1 < t.steps.length ? dayString(t.steps[i + 1]!.date) : end
+    if (!from || !to) return []
+    const days = daysBetween(from, to)
+    if (days == null || days < 0) return []
+    out.push({ ask: t.steps[i]!.ask, days })
+  }
+  return out
 }
 

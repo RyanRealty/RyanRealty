@@ -44,7 +44,7 @@ import {
   soldPpsfRange,
   type DidNotSellArgs,
 } from '@/lib/cma/did-not-sell'
-import { FAILED_ASK_BACKTEST, resolveListingTimeline } from '@/lib/cma/expired-audit'
+import { FAILED_ASK_BACKTEST, buildAskExposure, resolveListingTimeline } from '@/lib/cma/expired-audit'
 import { placePricingStoryHtml } from '@/lib/cma/place-pricing-story'
 import type { PlacePricingStory } from '@/lib/cma/place-pricing-types'
 import { flatLocalDateStory, withFlatLocalDateStory } from '@/lib/cma/flat-date-story'
@@ -748,7 +748,12 @@ export function whatHappenedPage(a: OpinionPageArgs): CmaPageDef | null {
  */
 export function failedAskBacktestHtml(a: OpinionPageArgs, doc: 'letter' | 'immersive'): string {
   if (storyClassFor(a) === 'neutral') return ''
-  return placePricingStoryHtml(a.placePricing, doc)
+  return placePricingStoryHtml(a.placePricing, doc, {
+    subdivision: a.subject.subdivision,
+    city: a.subject.city,
+    latitude: a.subject.latitude,
+    longitude: a.subject.longitude,
+  })
 }
 
 /**
@@ -822,6 +827,10 @@ export function whatHappenedGraphicHtml(a: OpinionPageArgs): string {
     neutral: storyClassFor(a) === 'neutral',
     exposureKnown: askExposureKnown(a),
     status: a.subject.standardStatus,
+    // Every ask and its days, so the inside story says how long the ask sat
+    // above the range before it came inside (reader review 2026-10-08). With
+    // no exposure on the row the split is unknown and no claim is made.
+    segments: askExposureFor(a)?.segments ?? [],
   })
   return `<div class="szn timeline-wide">${wide}</div>
   ${phone ? `<div class="szn timeline-phone">${phone}</div>` : ''}
@@ -864,8 +873,40 @@ export function askExposureKnown(a: OpinionPageArgs): boolean {
   return askExposureFor(a) != null && a.expiredAudit?.finalCycle != null
 }
 
+/**
+ * The ask exposure this document tells.
+ *
+ * Present only when the build measured one (`expiredAudit.askExposure`), so
+ * which rows tell an exposure story does not change here. Its SEGMENTS are
+ * re-derived from the stored final cycle with the build's own function and the
+ * same inputs the build passed (lib/cma/build.ts: the cycle and the printed
+ * range after the pin), so the sentence and the step chart, which draws that
+ * same cycle, name the same asks. A row stored under the old 1 percent rule
+ * dropped 62475 Woodsman's $1,680,000 ask from its segments while the cycle
+ * still carried it (reader review 2026-10-08); on a row built under the
+ * current rule the derivation equals what is stored.
+ *
+ * The derivation is used only when it describes the same listing period as
+ * the stored segments: same opening ask, same closing ask, same total days.
+ * Anything else means the stored cycle is not the one the segments were cut
+ * from, and the stored segments stand.
+ */
 export function askExposureFor(a: OpinionPageArgs): AskExposure | null {
-  return readAskExposure(a.expiredAudit)
+  const stored = readAskExposure(a.expiredAudit)
+  if (!stored) return null
+  const built = buildAskExposure({
+    cycle: a.expiredAudit?.finalCycle ?? null,
+    rangeLow: a.pricing.valueLow,
+    rangeHigh: a.pricing.valueHigh,
+  })
+  const derived = built ? readAskExposure({ askExposure: built }) : null
+  if (!derived) return stored
+  const totalDays = (e: AskExposure) => e.segments.reduce((sum, s) => sum + (s.days ?? 0), 0)
+  const samePeriod =
+    derived.segments[0]!.ask === stored.segments[0]!.ask &&
+    derived.segments[derived.segments.length - 1]!.ask === stored.segments[stored.segments.length - 1]!.ask &&
+    totalDays(derived) === totalDays(stored)
+  return samePeriod ? derived : stored
 }
 
 /**
