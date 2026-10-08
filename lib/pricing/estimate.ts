@@ -10,7 +10,7 @@
  * Beds/baths/age: match filters, not stacked dollar lines.
  */
 
-import { searchCommunitySlug } from '@/lib/cma/community-location'
+import { saleSearchCommunitySlug, searchCommunitySlug } from '@/lib/cma/community-location'
 import { applyStreetAnchor, computePricing } from '@/lib/cma/pricing'
 import type { CmaSiteData } from '@/lib/cma/county'
 import {
@@ -23,7 +23,7 @@ import {
   sellerNetFromPrice,
 } from '@/lib/pricing/seller-net'
 import type { CmaAdjustedComp, CmaComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
-import { citySlug, storyAdjustment, type StoryClass } from '@/lib/pricing/classes'
+import { citySlug, classifyHoa, storyAdjustment, type StoryClass } from '@/lib/pricing/classes'
 import { capClosedCompShares, closedCompWeight } from '@/lib/pricing/closed-comp-weight'
 import { recommendationOutsideSaleSet } from '@/lib/pricing/price-set'
 import { PRICING_MIN_COMPS, RANGE_MIN_KEPT, RANGE_TRIM_MIN_N } from '@/lib/pricing/ladder'
@@ -1316,6 +1316,7 @@ export function pricingSaleToCmaComp(sale: SelectedPricingComp): CmaComp {
     seniorCommunityYn: sale.seniorCommunityYn ?? null,
     communitySlug: sale.communitySlug ?? null,
     communityLocated: sale.communityLocated,
+    hoaClass: sale.hoaClass,
     sewerNote: sale.sewerNote ?? null,
   }
 }
@@ -1364,6 +1365,16 @@ export function adjustCmaCompAlongMarket(opts: {
   exclusivePocket?: boolean
 }): { adjusted: CmaAdjustedComp; path: MarketPath; pathNote: string } {
   const sale = opts.comp
+  const subjectCommunityAddress = {
+    communitySlug: opts.subject.communitySlug,
+    communityLocated: opts.subject.communityLocated,
+    subdivisionSlug: opts.subject.subdivisionSlug,
+    // The same HOA reading the walk gave the subject (cmaSubjectToPricing).
+    hoaClass: classifyHoa(
+      opts.subject.associationYn ?? null,
+      opts.subject.associationFee ?? opts.subject.hoaMonthly ?? null,
+    ),
+  }
   const exclusivePocket = opts.exclusivePocket === true
   const cityPath = marketPath({ points: opts.points, fromDate: sale.closeDate, toDate: opts.asOf })
   const path = applyExclusivePocketDateAdj(cityPath, exclusivePocket)
@@ -1410,18 +1421,16 @@ export function adjustCmaCompAlongMarket(opts: {
     locationMatch: sale.locationMatch ?? null,
     setsPrice: sale.setsPrice,
     subjectRecordedPlat: subjectHasRecordedSubdivision(opts.subject),
-    // A phase stem is the subdivision, not a parent community. The weight
-    // uses the same community the search used, or a next-row neighbor is
-    // kept in the table at weight 0 and the letter refuses.
-    subjectCommunity: searchCommunitySlug({
-      communitySlug: opts.subject.communitySlug,
-      communityLocated: opts.subject.communityLocated,
-      subdivisionSlug: opts.subject.subdivisionSlug,
-    }),
-    saleCommunity: searchCommunitySlug({
+    // A phase stem is the subdivision, not a parent community, and a
+    // community made up from a plat name walls only with an HOA (Matt
+    // 2026-10-08). The weight uses the same community the search used, or a
+    // next-row neighbor is kept in the table at weight 0 and the letter refuses.
+    subjectCommunity: searchCommunitySlug(subjectCommunityAddress),
+    saleCommunity: saleSearchCommunitySlug(subjectCommunityAddress, {
       communitySlug: sale.communitySlug,
       communityLocated: sale.communityLocated,
       subdivisionSlug: sale.subdivisionSlug,
+      hoaClass: sale.hoaClass ?? null,
     }),
     subjectCommunityLocated: opts.subject.communityLocated,
     saleCommunityLocated: sale.communityLocated,

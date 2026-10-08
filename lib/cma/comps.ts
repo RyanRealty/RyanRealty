@@ -33,6 +33,7 @@
 
 import { selectCmaCompsPool, selectCmaCompsByKeys } from '@/lib/data/cma/builderReads'
 import { getSubdivisionRing, assignSubdivisionSlugs, assignCommunitySlugs } from '@/lib/data/geo/subdivision-ring'
+import { getPlatFamilyFootprint } from '@/lib/data/subdivisions/getPlatFamilyFootprint'
 import { keepTightestByClosePrice, PRICING_MIN_COMPS, PRICING_TARGET_COMPS, PRICING_WALK_CAP } from '@/lib/pricing/ladder'
 import type { CompRefillBench } from '@/lib/cma/review-refill'
 import { resolveConcessions, sellerNetFromPrice } from '@/lib/pricing/seller-net'
@@ -55,8 +56,10 @@ import {
   yearQualityCompatible,
   acreageInfrastructureCompatible,
   marketAreaBounds,
+  geometryBounds,
   radiusBounds,
   marketAreaName,
+  type LatLngBounds,
   proximityLabel,
   resolveMarketArea,
   compPoolPropertySubType,
@@ -66,6 +69,7 @@ import {
   countByTier,
   diagnoseStarvation,
   emptyExclusions,
+  shortageLead,
   type CompExclusionCounts,
   type CompSelectionDiagnostics,
   type CompTierTrace,
@@ -79,7 +83,7 @@ import {
 } from '@/lib/cma/comp-tiers'
 import { outbuildingsCompatible, terrainCompatible, zoningClassCompatible } from '@/lib/pricing/rural'
 import { resolveSaleZones } from '@/lib/pricing/sale-zoning'
-import { resortMembershipCompatible } from '@/lib/cma/community-location'
+import { resortMembershipCompatible, saleSearchCommunitySlug, searchCommunitySlug } from '@/lib/cma/community-location'
 import { communitySlugForSubdivision, isResortCommunity } from '@/lib/cma/resort-guard'
 import {
   ANCHOR_MIN_N,
@@ -105,6 +109,7 @@ import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
 import { crossesNamedRiver } from '@/lib/pricing/river-cross'
 import {
   aduSaleRefused,
+  classifyHoa,
   customLotCompatible,
   dropsResaleVersusNewBuild,
   isCustomOrNewSubject,
@@ -278,6 +283,13 @@ function rowToComp(row: CmaListingRow, tier: string, land = false): CmaComp | nu
     }),
     selectionTier: tier,
     photosCount: num(row['photos_count']),
+    // The MLS association fields, read the way the facts walk reads them. A
+    // community made up from a plat name walls the search only for a home
+    // that carries an HOA (lib/cma/community-location.ts searchCommunitySlug).
+    hoaClass: classifyHoa(
+      mlsTriBool(row['association_yn']),
+      num(row['association_fee']) ?? num(row['hoa_monthly']),
+    ),
   }
 }
 
@@ -494,6 +506,36 @@ export async function selectComps(
         : `Subject plat: ${ring.homeLabel}. No plat touches it inside the boundary, so the adjacent-subdivision rung is skipped.`,
     )
   }
+  /**
+   * THE TOUCHING-PLAT READ IS BOUNDED BY THE TOUCHING PLATS (2026-10-08). The
+   * adjacent rung has no radius and no polygon of its own, so it read the 100
+   * newest closes in the whole city and kept the few inside a touching plat:
+   * on 1355 Jacksonville that was four rungs of 100 city-wide rows, printed as
+   * "400 outside the subject's neighborhood boundary". The read is now the box
+   * around the touching plats' recorded outline (public.subdivision_footprint
+   * through the plat-family DAL), up to the bounded 500-row page; when that
+   * outline cannot be read, the neighborhood's box; when there is neither,
+   * the old city-wide read.
+   */
+  let touchingBounds: LatLngBounds | null | undefined
+  const readTouchingBounds = async (): Promise<LatLngBounds | null> => {
+    if (touchingBounds !== undefined) return touchingBounds
+    let outline: LatLngBounds | null = null
+    if (ring && adjacentSlugs.size > 0) {
+      try {
+        const footprint = await getPlatFamilyFootprint({
+          familySlug: `touching-${ring.homeSlug}`,
+          memberSlugs: [...adjacentSlugs],
+        })
+        outline = geometryBounds(footprint?.geometry ?? null)
+      } catch (err) {
+        console.error('[selectComps] touching-plat outline', err instanceof Error ? err.message : err)
+        outline = null
+      }
+    }
+    touchingBounds = outline ?? marketAreaBounds(subjectArea)
+    return touchingBounds
+  }
   const customOrNew = isCustomOrNewSubject({
     yearBuilt: subject.yearBuilt,
     newConstructionYn: subject.newConstructionYn,
@@ -611,31 +653,53 @@ export async function selectComps(
   let crossedFeature = 0
   // The community whose boundary contains the address. The MLS name is only
   // the fallback when the point was not tested. Remarks are never membership.
-  let subjectCommunity = communitySlugForSubdivision(subject.subdivision)
+  // membershipCommunity is where the address sits; subjectCommunity is that
+  // community only when it walls the search (Matt 2026-10-08, "Only real
+  // communities": the registry, the named real derived communities, or a home
+  // that carries an HOA). A community made up from a plat name, with no HOA,
+  // is an ordinary plat here exactly as on the facts walk.
+  let membershipCommunity = communitySlugForSubdivision(subject.subdivision)
   let subjectCommunityLocated = false
   const subjectLocated = await assignCommunitySlugs([
     { lat: subject.latitude ?? null, lng: subject.longitude ?? null },
   ])
   if (subjectLocated) {
     subjectCommunityLocated = true
-    subjectCommunity = subjectLocated[0] ?? null
+    membershipCommunity = subjectLocated[0] ?? null
     subject.communityLocated = true
-    subject.communitySlug = subjectCommunity
+    subject.communitySlug = membershipCommunity
   }
+  const subjectCommunityAddress = {
+    communitySlug: membershipCommunity,
+    communityLocated: subjectCommunityLocated,
+    subdivision: subject.subdivision,
+    subdivisionSlug: subject.subdivisionSlug ?? null,
+    hoaClass: classifyHoa(subject.associationYn ?? null, subject.associationFee ?? subject.hoaMonthly ?? null),
+  }
+  const subjectCommunity = searchCommunitySlug(subjectCommunityAddress)
   const communityByKey = new Map<string, string | null>()
-  const saleCommunityOf = (listingKey: string, subdivision: string | null): string | null =>
+  const saleMembershipOf = (listingKey: string, subdivision: string | null): string | null =>
     communityByKey.has(listingKey)
       ? (communityByKey.get(listingKey) ?? null)
       : communitySlugForSubdivision(subdivision)
+  /** The sale's wall community, read against the subject (one place, one answer). */
+  const saleCommunityOf = (comp: Pick<CmaComp, 'listingKey' | 'subdivision' | 'subdivisionSlug' | 'hoaClass'>): string | null =>
+    saleSearchCommunitySlug(subjectCommunityAddress, {
+      communitySlug: saleMembershipOf(comp.listingKey, comp.subdivision),
+      communityLocated: communityByKey.has(comp.listingKey),
+      subdivision: comp.subdivision,
+      subdivisionSlug: comp.subdivisionSlug ?? null,
+      hoaClass: comp.hoaClass ?? null,
+    })
   const resortOk = (listingKey: string, subdivision: string | null): boolean =>
     resortMembershipCompatible(
       {
-        communitySlug: subjectCommunity,
+        communitySlug: membershipCommunity,
         communityLocated: subjectCommunityLocated,
         subdivision: subject.subdivision,
       },
       {
-        communitySlug: saleCommunityOf(listingKey, subdivision),
+        communitySlug: saleMembershipOf(listingKey, subdivision),
         communityLocated: communityByKey.has(listingKey),
         subdivision,
       },
@@ -830,7 +894,9 @@ export async function selectComps(
       ? marketAreaBounds(subjectArea)
       : tier.maxMiles != null
         ? radiusBounds(subjectPoint, tier.maxMiles)
-        : null
+        : tier.adjacentSubdivisions
+          ? await readTouchingBounds()
+          : null
     const rows = await selectCmaCompsPool({
       cityIlike: tier.ignoreCity ? null : subject.city,
       subdivisionIlike: tier.subdivisionIlike ?? null,
@@ -901,7 +967,9 @@ export async function selectComps(
       if (rowPlats) {
         const plat = rowPlats[rowIndex]
         if (!plat || !adjacentSlugs.has(plat)) {
-          rung.excluded.market_area++
+          // Not a touching plat. That says nothing about the neighborhood
+          // line, so it is not counted as market_area (2026-10-08).
+          rung.excluded.not_touching_plat++
           continue
         }
       }
@@ -911,7 +979,7 @@ export async function selectComps(
         const saleStreet = streetKey(comp.address)
         const streetHit = Boolean(saleStreet && pocketStreetKeys.includes(saleStreet))
         if (!nameHit && !streetHit) {
-          rung.excluded.market_area++
+          rung.excluded.not_in_pocket++
           continue
         }
       }
@@ -1040,7 +1108,7 @@ export async function selectComps(
       // THE PARENT LEVEL (Matt 2026-09-09). The community rung takes the
       // subject's own community and nothing else; the peer rung takes another
       // community of the same kind and never a plain neighborhood.
-      const compCommunity = saleCommunityOf(comp.listingKey, comp.subdivision)
+      const compCommunity = saleCommunityOf(comp)
       if (tier.sameCommunity && compCommunity !== subjectCommunity) {
         rung.excluded.resort_premium++
         continue
@@ -1324,6 +1392,16 @@ export async function selectComps(
     )
   }
   if (x.market_area > 0) trace.push(`Excluded ${x.market_area} comp(s) outside the subject's market area.`)
+  if ((x.not_touching_plat ?? 0) > 0) {
+    trace.push(
+      `The touching-plat step read ${x.not_touching_plat} sale(s) in plats that do not touch this home's plat and did not use them there.`,
+    )
+  }
+  if ((x.not_in_pocket ?? 0) > 0) {
+    trace.push(
+      `The quarter-mile pocket step read ${x.not_in_pocket} sale(s) off the pocket's streets and subdivisions and did not use them there.`,
+    )
+  }
   if (x.distance > 0) trace.push(`Excluded ${x.distance} comp(s) beyond the tier's distance bound.`)
   if (x.not_price_setting > 0) {
     trace.push(
@@ -1679,6 +1757,22 @@ const REFUSAL_CUT_LABELS: Partial<Record<keyof CompExclusionCounts, string>> = {
   terrain: 'different land',
   not_price_setting: 'sitting in a different community, or a clearly different size or product, so they do not set the price',
   adu_sale: 'carrying an ADU or other second living unit your home does not have',
+  not_touching_plat: 'sitting in a subdivision that does not touch yours',
+  not_in_pocket: 'sitting off the streets and subdivisions right around your home',
+}
+
+/**
+ * A rung's geography in a broker's words. The listings ladder records it in
+ * the SQL shape it queried ("City ILIKE 'Bend', market area = River West"),
+ * and the refusal printed that on the row (711 Georgia, 2026-10-08: "Not
+ * enough comparable sales in City ILIKE 'Bend', sold within 24 months").
+ */
+export function plainGeography(geography: string): string {
+  return geography
+    .replace(/SubdivisionName ILIKE '([^']*)'/g, (_m, name: string) => `subdivision ${name.replace(/%/g, '').trim()}`)
+    .replace(/City ILIKE '([^']*)'/g, (_m, city: string) => city.replace(/%/g, '').trim())
+    .replace(/market area = /g, '')
+    .replace(/any mailing city/g, 'any city')
 }
 
 export function brokerCompRefusal(args: {
@@ -1687,42 +1781,59 @@ export function brokerCompRefusal(args: {
   minComps: number
   subjectBaths?: number | null
   subjectCity?: string | null
+  /** Street addresses of the sales the returned selection holds, so the lead can name them. */
+  sales?: readonly string[]
 }): string {
   const { diagnostics: d, found, minComps } = args
+  // THE BEST PATH LEADS (2026-10-08). On a listings fallback the selection
+  // carries the facts walk (facts_path); whichever path held more
+  // price-setting sales is the count the sentence opens with, naming them.
+  // Facts leads on a tie, and on a facts-sourced set.
+  const facts = d.facts_path
+  if (facts && (d.pricing_source === 'facts' || facts.held >= found)) {
+    const lead = shortageLead({ marketArea: d.market_area, held: facts.held, sales: facts.sales, minComps })
+    const why = facts.stop_reason ? ` It stopped because ${facts.stop_reason}.` : ''
+    const notSetting =
+      facts.not_setting > 0
+        ? ` ${facts.not_setting} more sale(s) were found but do not set the price (a different community, or a clearly different size or product), so they do not count.`
+        : ''
+    return `${lead}${why}${notSetting}`
+  }
+
   const notSetting = d.not_price_setting ?? 0
-  const need =
-    `Found ${found} of the ${minComps} closed sales this home needs to be priced.` +
-    (notSetting > 0
+  const lead = shortageLead({ marketArea: d.market_area, held: found, sales: args.sales ?? [], minComps })
+  const notSettingNote =
+    notSetting > 0
       ? ` ${notSetting} more sale(s) were found but do not set the price (a different community, or a clearly different size or product), so they do not count.`
-      : '')
+      : ''
   const ran = d.ladder.filter((t) => t.ran)
   const widest = ran[ran.length - 1]
   const where = widest
-    ? `${widest.geography}, sold within ${widest.months_back} months`
+    ? `${plainGeography(widest.geography)}, sold within ${widest.months_back} months`
     : `${args.subjectCity ?? 'this market'}`
 
   if (ran.length === 0) {
     const why = d.ladder.map((t) => t.skipped_reason).find(Boolean)
-    return `No comparable search could run for this home${why ? `, because ${why}` : ''}. ${need}`
+    return `${lead} No comparable search could run for this home${why ? `, because ${why}` : ''}.${notSettingNote}`
   }
 
   const searched = ran.reduce((a, t) => a + t.rows_returned, 0)
   if (searched === 0) {
-    return `No closed sale in ${where} matched your home's size and property type. Nothing on record prices it. ${need}`
+    return `${lead} No closed sale in ${where} matched your home's size and property type. Nothing on record prices it.${notSettingNote}`
   }
 
   const ranked = (Object.keys(d.excluded_totals) as Array<keyof CompExclusionCounts>)
-    .map((k) => ({ k, n: d.excluded_totals[k] }))
+    .map((k) => ({ k, n: d.excluded_totals[k] ?? 0 }))
     .filter((e) => e.n > 0 && e.k !== 'duplicate' && e.k !== 'self' && REFUSAL_CUT_LABELS[e.k])
     .sort((a, b) => b.n - a.n)
   const top = ranked[0]
   if (!top) {
-    return `Only ${found} of the ${searched} sales in ${where} were close enough on size and type to price your home. ${need}`
+    return `${lead} Only ${found} of the ${searched} sales in ${where} were close enough on size and type to price your home.${notSettingNote}`
   }
 
   const bathLead =
     top.k === 'bath_count' && args.subjectBaths != null
       ? `No sold ${args.subjectBaths}-bath home in ${where} could price this one: `
       : `Not enough comparable sales in ${where}: `
-  return `${bathLead}of the ${searched} sales searched, ${top.n} were cut for ${REFUSAL_CUT_LABELS[top.k]}. ${need}`
+  return `${lead} ${bathLead}of the ${searched} sales searched, ${top.n} were cut for ${REFUSAL_CUT_LABELS[top.k]}.${notSettingNote}`
 }

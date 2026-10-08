@@ -47,7 +47,7 @@ import {
 import { estimateClosePrice, pricingSaleToCmaComp } from '@/lib/pricing/estimate'
 import type { SelectedPricingComp } from '@/lib/pricing/match'
 import type { CompSelection } from '@/lib/cma/comps'
-import { emptyExclusions } from '@/lib/cma/comp-trace'
+import { diagnoseStarvation, emptyExclusions, factsStopReason, type FactsPathHold } from '@/lib/cma/comp-trace'
 import {
   FACTS_STANDALONE_MIN,
   factsPoolCloseAfter,
@@ -435,8 +435,13 @@ export function matchToCompSelection(
   // The floor and the target are one number (PRICING_MIN_COMPS equals
   // PRICING_TARGET_COMPS, Matt 2026-10-07), so a starved set is a short set.
   const underMin = match.comps.length < PRICING_MIN_COMPS
+  const factsPath = factsPathHold(match)
   const starvedReason = underMin
-    ? `facts path: only ${match.comps.length} price-setting sale(s) after the full pricing ladder (minimum ${PRICING_MIN_COMPS}). Comp shortage. Custom/new stays on facts; listings SQL tiers are not a fallback.`
+    ? `facts path: only ${match.comps.length} price-setting sale(s)${
+        factsPath.sales.length > 0 ? ` (${factsPath.sales.join(', ')})` : ''
+      } after the full pricing ladder (minimum ${PRICING_MIN_COMPS})${
+        factsPath.stop_reason ? `; it stopped because ${factsPath.stop_reason}` : ''
+      }. Comp shortage. Custom/new stays on facts; listings SQL tiers are not a fallback.`
     : null
   const bench = match.bench ?? []
   return {
@@ -504,6 +509,7 @@ export function matchToCompSelection(
       starved: match.starved,
       starved_at: match.starved ? match.tiersUsed[match.tiersUsed.length - 1] ?? null : null,
       starved_reason: starvedReason,
+      facts_path: factsPath,
       target_comps: PRICING_TARGET_COMPS,
       min_comps: PRICING_MIN_COMPS,
       candidates: match.comps.length,
@@ -527,6 +533,49 @@ export function matchToCompSelection(
       disclosures: match.trace.filter((t) => t.includes('Fannie') || t.includes('subdivision')),
     },
   }
+}
+
+/**
+ * What the facts walk held, in the shape the selection's diagnostics keep
+ * (diagnostics.facts_path): the price-setting sales it seated by address, the
+ * rungs that added them, the sales that passed a rung and did not set the
+ * price, and why it stopped short of five.
+ */
+export function factsPathHold(match: PricingMatchResult): FactsPathHold {
+  return {
+    held: match.comps.length,
+    sales: match.comps.map((c) => c.address),
+    tiers_used: [...match.tiersUsed],
+    not_setting: match.rungs.reduce((n, r) => n + (r.notSetting ?? 0), 0),
+    stop_reason: factsStopReason(match.rungs, match.comps.length >= PRICING_MIN_COMPS),
+  }
+}
+
+/**
+ * THE FACTS WALK IS KEPT ON A LISTINGS FALLBACK (2026-10-08). Under five
+ * price-setting sales the facts result used to be thrown away and only the
+ * listings selection returned, so the shortage message ("Only 0 qualifying
+ * closed comps found ... listings path ...") described the weaker search
+ * while the facts walk had held sales of its own. The listings selection now
+ * carries the facts walk on diagnostics.facts_path, and its starved reason is
+ * rewritten so the path that held more leads (diagnoseStarvation). Nothing
+ * else about the listings selection changes: its comps still price the home
+ * when it holds five.
+ */
+export function withFactsPath(
+  selection: CompSelection,
+  match: PricingMatchResult & { factsReady: boolean },
+): CompSelection {
+  if (!match.factsReady) return selection
+  const before = selection.diagnostics.starved_reason
+  selection.diagnostics.facts_path = factsPathHold(match)
+  const after = diagnoseStarvation(selection.diagnostics)
+  selection.diagnostics.starved_reason = after
+  if (before && after && before !== after) {
+    const at = selection.trace.indexOf(before)
+    if (at >= 0) selection.trace[at] = after
+  }
+  return selection
 }
 
 /**
@@ -590,5 +639,5 @@ export async function selectCompsPreferringFacts(
   if (pickCompSource({ ...match, customOrNew }) === 'facts') {
     return matchToCompSelection(subject, match, { customOrNew })
   }
-  return selectComps(subject, opts)
+  return withFactsPath(await selectComps(subject, opts), match)
 }

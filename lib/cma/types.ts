@@ -198,6 +198,13 @@ export interface CmaComp {
   communitySlug?: string | null
   communityLocated?: boolean
   /**
+   * Whether the sale's MLS row reports an HOA ('hoa' | 'no_hoa' | 'unknown',
+   * classifyHoa). A community made up from a plat name walls the search only
+   * when the home carries one (lib/cma/community-location.ts
+   * searchCommunitySlug, Matt 2026-10-08). Absent on a row that did not say.
+   */
+  hoaClass?: string | null
+  /**
    * Printed when this sale is inside the recorded plat and its sewer is not
    * the subject's. Names which is which. No dollar adjustment.
    */
