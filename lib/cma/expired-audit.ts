@@ -34,6 +34,16 @@ import type {
 import type { CmaMarketContext } from '@/lib/cma/types'
 import type { BpoListingCycle, BpoListingHistory } from '@/lib/bpo/types'
 import { listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
+import {
+  cameOffStatus,
+  cameOffThenSentence,
+  lastActiveRun,
+  mergeStatusChanges,
+  pacificDay,
+  pacificDaysBetween,
+  sameStatus,
+  type ListingStatusChange,
+} from '@/lib/cma/listing-status'
 import type { ListingTimelineInput, ListingTimelineStep } from '@/lib/cma/market-charts'
 import { askStoryReading } from '@/lib/cma/ask-story'
 import { askStepIsOwnEra } from '@/lib/cma/price-path'
@@ -133,10 +143,15 @@ export interface ExpiredAuditData {
 
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`
 
-/** UTC midnight of the YYYY-MM-DD a date or timestamp falls on, else null. */
+/**
+ * UTC midnight of the Pacific calendar day a date or timestamp falls on, else
+ * null. A timestamp is read as the day it was in Bend (lib/cma/listing-status.ts
+ * pacificDay): 3177 Coho went on the market at 03:13 UTC on Dec 2, which is
+ * 7:13 PM on Dec 1, and the letter printed Dec 2 (reader review 2026-10-08).
+ */
 function utcDay(value: string | null | undefined): number | null {
-  const day = String(value ?? '').trim().slice(0, 10)
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return null
+  const day = pacificDay(value ?? null)
+  if (!day) return null
   const t = Date.parse(`${day}T00:00:00.000Z`)
   return Number.isNaN(t) ? null : t
 }
@@ -169,13 +184,11 @@ export function finalCycleDaysOnMarket(
   // as a timestamp ("2026-02-26T23:27:57+00:00") and the other as a bare date
   // ("2026-09-01"); subtracting those directly makes the answer depend on the
   // time of day the listing was keyed in, which moved this subject's DOM by a
-  // day. Whole days between the two dates is the number a broker can check.
-  const start = utcDay(cycle.listDate)
-  const end = utcDay(cycle.offMarketDate)
-  if (start != null && end != null) {
-    const d = Math.round((end - start) / 86_400_000)
-    if (Number.isFinite(d) && d >= 0) return d
-  }
+  // day. Whole days between the two Pacific days is the number a broker can
+  // check. A cycle that went through `cycleOnTheMarket` ends the day it left
+  // Active, so a withdrawn-then-expired listing counts its days on the market.
+  const d = pacificDaysBetween(cycle.listDate, cycle.offMarketDate)
+  if (d != null) return d
   const reported = cycle.daysOnMarket
   return reported != null && Number.isFinite(reported) && reported >= 0 ? Math.round(reported) : null
 }
@@ -203,10 +216,16 @@ export function stampFinalCycleDom(
 ): number | null {
   const dom = finalCycleDaysOnMarket(cycle)
   if (dom == null || !cycle) return null
+  // How it came off, beside the status of record: a listing withdrawn Feb 10
+  // whose listing expired Sep 30 "came off the market", never "came off
+  // expired" after the days it was on (lib/cma/listing-status.ts).
+  const leftAs = cycle.leftActiveAs?.trim() || null
+  const record = subject.standardStatus ?? cycle.status
+  if (leftAs && record && !sameStatus(leftAs, record)) subject.cameOffAs = leftAs
   const line = buildListingHistoryLine({
     listPrice: cycle.finalListPrice ?? subject.lastListPrice,
     originalListPrice: cycle.originalListPrice,
-    status: subject.standardStatus ?? cycle.status,
+    status: cameOffStatus(record, leftAs),
     onMarketDate: cycle.listDate ?? subject.lastListDate,
     daysOnMarket: dom,
   })
@@ -249,14 +268,72 @@ export interface ExpiredFinalCycle {
   cutsDated: boolean
   /** The ask it came off at (`ListPrice`). */
   finalAsk: number | null
-  /** YYYY-MM-DD it came off the market. */
+  /**
+   * YYYY-MM-DD (Pacific) it came off the market: the day it left Active, from
+   * the MLS status log when the log has it (`cycleOnTheMarket`).
+   */
   offMarketDate: string | null
-  /** Expired / Canceled / Withdrawn. */
+  /** Expired / Canceled / Withdrawn: the MLS status of record. */
   status: string | null
+  /**
+   * The status it left Active for, when the status log says and it differs
+   * from `status` (3177 Coho: 'Withdrawn' Feb 10, beside 'Expired'). Absent on
+   * rows built before the log was read.
+   */
+  leftActiveAs?: string | null
+  /**
+   * YYYY-MM-DD (Pacific) `status` took effect, when that is after
+   * `offMarketDate` (Coho's listing expired Sep 30, months after it came off).
+   */
+  statusDate?: string | null
   /** List date to off-market date — `finalCycleDaysOnMarket`, one definition. */
   days: number | null
   /** §0 trace: where each field came from. */
   source: { table: string; filter: string; fetchedAt: string; query: string }
+}
+
+/**
+ * THE LAST LISTING'S DAYS ON THE MARKET, FROM ITS STATUS LOG (reader review
+ * 2026-10-08).
+ *
+ * `listings.off_market_date` is the day the listing took its status of record.
+ * For a listing that was withdrawn and later expired, that is the expiry:
+ * 3177 Coho was withdrawn Feb 10 and expired Sep 30, and the letter counted
+ * Dec 1 to Sep 30, "Your home sat 302 days", "$569,000 for 271". The status
+ * log says when it left Active. This returns the cycle with its list date and
+ * off-market date moved to the Pacific days of its last Active stretch, the
+ * status it left Active for, and the day its status of record took effect when
+ * that came later, so every reader of the cycle (the days, the ask segments,
+ * the chart, the review's time-on-market line) counts the days it was on the
+ * market. With no status log the cycle keeps its own dates, read as Pacific
+ * days.
+ */
+export function cycleOnTheMarket(
+  cycle: BpoListingCycle,
+  changes: readonly ListingStatusChange[] | null | undefined,
+): BpoListingCycle {
+  const log = mergeStatusChanges(changes ?? [])
+  const run = lastActiveRun({
+    changes: log,
+    onMarketDate: cycle.listDate,
+    offMarketDate: cycle.offMarketDate,
+    status: cycle.status,
+  })
+  if (!run || run.source !== 'status-history' || !run.from) return cycle
+  const tookRecord = [...log].reverse().find((c) => sameStatus(c.to, cycle.status))
+  const recordDay = pacificDay(tookRecord?.at ?? null) ?? pacificDay(cycle.offMarketDate)
+  if (!run.to) return { ...cycle, listDate: run.from }
+  // Only a status that differs from the record's is worth carrying: the same
+  // status is already the word every surface prints.
+  const leftActiveAs = run.leftAs && !sameStatus(run.leftAs, cycle.status) ? run.leftAs : null
+  return {
+    ...cycle,
+    listDate: run.from,
+    offMarketDate: run.to,
+    leftActiveAs,
+    statusDate: leftActiveAs && recordDay && recordDay > run.to ? recordDay : null,
+    daysOnMarket: run.days ?? cycle.daysOnMarket,
+  }
 }
 
 function positiveAsk(value: unknown): number | null {
@@ -264,9 +341,9 @@ function positiveAsk(value: unknown): number | null {
   return Number.isFinite(n) && n > 0 ? Math.round(n) : null
 }
 
+/** The Pacific calendar day of a date or MLS timestamp (lib/cma/listing-status.ts). */
 function dayString(value: string | null | undefined): string | null {
-  const s = String(value ?? '').trim().slice(0, 10)
-  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : null
+  return pacificDay(value ?? null)
 }
 
 /**
@@ -317,6 +394,8 @@ export function buildFinalCycle(args: {
       ? [{ date: null, ask: finalAsk }]
       : []
 
+  const leftActiveAs = cycle.leftActiveAs?.trim() || null
+  const statusDate = dayString(cycle.statusDate ?? null)
   return {
     listDate,
     initialAsk,
@@ -325,13 +404,17 @@ export function buildFinalCycle(args: {
     finalAsk,
     offMarketDate,
     status: cycle.status ?? null,
+    ...(leftActiveAs ? { leftActiveAs } : {}),
+    ...(statusDate ? { statusDate } : {}),
     days,
     source: {
-      table: 'listings + price_history + listing_history',
+      table: 'listings + price_history + listing_history + status_history',
       filter:
         `ListingKey='${args.listingKey ?? cycle.listingKey ?? ''}'. ` +
-        `listDate from listings."ListDate" (falling back to "OnMarketDate"), offMarketDate from listings.off_market_date ` +
-        `(falling back to status_change_timestamp), initialAsk from "OriginalListPrice", finalAsk from "ListPrice", ` +
+        `listDate and offMarketDate are the Pacific days the last Active stretch began and ended, from the MLS ` +
+        `status log (listing_history 'MlsStatus: A → B' and status_history), else listings."ListDate" (falling back ` +
+        `to "OnMarketDate") and listings.off_market_date (falling back to status_change_timestamp); ` +
+        `initialAsk from "OriginalListPrice", finalAsk from "ListPrice", ` +
         `days = list date to off-market date in whole calendar days. ` +
         (cutsDated
           ? `${dated.length} dated ask change(s) inside the cycle window from price_history.new_price and the ` +
@@ -341,7 +424,8 @@ export function buildFinalCycle(args: {
       query:
         `select "ListingKey", "StandardStatus", "ListDate", "OnMarketDate", off_market_date, status_change_timestamp, "OriginalListPrice", "ListPrice", "DaysOnMarket" from listings where "ListingKey" = '${args.listingKey ?? cycle.listingKey ?? ''}'` +
         ` ;; select old_price, new_price, changed_at from price_history where listing_key = '${args.listingKey ?? cycle.listingKey ?? ''}' order by changed_at` +
-        ` ;; select event, event_date, price, description from listing_history where listing_key = '${args.listingKey ?? cycle.listingKey ?? ''}' order by event_date`,
+        ` ;; select event, event_date, price, description from listing_history where listing_key = '${args.listingKey ?? cycle.listingKey ?? ''}' order by event_date` +
+        ` ;; select old_status, new_status, changed_at from status_history where listing_key = '${args.listingKey ?? cycle.listingKey ?? ''}' order by changed_at`,
     },
   }
 }
@@ -1356,7 +1440,19 @@ export function resolveListingTimeline(input: {
     offMarketDate: cycle?.offMarketDate ?? offMarketFromDays(listDate, input.domDays),
     days: cycle?.days ?? input.domDays,
   })
-  const status = (cycle?.status ?? s.standardStatus ?? '').trim().toLowerCase() || null
+  // How it came off, in the one word every surface uses for that day: the
+  // status of record, or "came off" when it left Active under one status and
+  // took another later (lib/cma/listing-status.ts cameOffStatus).
+  const record = cycle?.status ?? s.standardStatus ?? null
+  const status = (cameOffStatus(record, cycle?.leftActiveAs ?? s.cameOffAs ?? null) ?? '').trim().toLowerCase() || null
+  const days = cycle?.days ?? input.domDays
+  const cameOff = {
+    offMarketDate: offMarket,
+    days,
+    leftAs: cycle?.leftActiveAs ?? s.cameOffAs ?? null,
+    status: record,
+    statusDate: cycle?.statusDate ?? null,
+  }
   return {
     listDate,
     offMarketDate: offMarket,
@@ -1365,7 +1461,8 @@ export function resolveListingTimeline(input: {
     rangeHigh: input.rangeHigh,
     rangeLabel: input.rangeLabel,
     status,
-    days: cycle?.days ?? input.domDays,
+    days,
+    ...(cameOffThenSentence(cameOff) ? { cameOff } : {}),
     caption: 'Your asking price against the range the sales support',
   }
 }
@@ -1408,6 +1505,8 @@ export function listingTimelineReading(input: {
     days: t.days,
     city: input.city,
     marketMedianDom: input.marketMedianDom,
+    status: t.status,
+    cameOff: t.cameOff ?? null,
     segments: timelineSegments(t),
   })
 }

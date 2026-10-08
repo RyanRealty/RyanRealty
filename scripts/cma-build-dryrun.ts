@@ -64,7 +64,7 @@ type DryRun = {
   customOrNew: boolean | null
   pricingSource: string | null
   compCount: number
-  comps: Array<{ key: string; address: string; baths: number | null; sqft: number; closePrice: number; closeDate: string; adjusted: number; concessions: number | null; date?: number; size?: number }>
+  comps: Array<{ key: string; address: string; baths: number | null; sqft: number; closePrice: number; closeDate: string; adjusted: number; concessions: number | null; date?: number; size?: number; onMarketDate?: string | null; offerFrom?: string | null; daysToOffer?: number | null; domTotal?: number | null }>
   /**
    * The exclusive pocket's date gate (Matt 2026-10-08): whether the set is a
    * pocket, which mode priced it, and the local read the gate acted on.
@@ -358,6 +358,7 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
   const { MIN_COMPS, brokerCompRefusal } = await import('@/lib/cma/comps')
   const { getBpoListingCyclesByAddress } = await import('@/lib/data/bpo/reads')
   const { analyzeListingHistory } = await import('@/lib/bpo/history')
+  const { readFailedListingCycle, withFailedCycle } = await import('@/lib/cma/failed-cycle-read')
   const { buildFailureFindings, stampFinalCycleDom, resolveFinalCycle, buildAskExposure, applyFailedAskCap, FAILED_ASK_RECENCY_MONTHS } =
     await import('@/lib/cma/expired-audit')
   const { buildSubjectStatus } = await import('@/lib/pricing/subject-status')
@@ -414,12 +415,15 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
       : []
   const cycleStatus = String(cycleRows[0]?.['StandardStatus'] ?? subject.standardStatus ?? '')
   const lastCycleFailed = ['Expired', 'Canceled', 'Withdrawn'].includes(cycleStatus)
+  // EXACTLY lib/cma/build.ts: the failed cycle on the days it was on the
+  // market, from its MLS status log, read once.
+  const failedCycle = lastCycleFailed ? await readFailedListingCycle(cycleRows, subject) : null
   if (lastCycleFailed) {
     const row0 = cycleRows[0] ?? {}
     const cycleAsk = Number(row0['ListPrice'] ?? row0['OriginalListPrice'])
     if (Number.isFinite(cycleAsk) && cycleAsk > 0) subject.lastListPrice = cycleAsk
     subject.standardStatus = cycleStatus
-    stampFinalCycleDom(subject, analyzeListingHistory(cycleRows, subject, null).currentCycle)
+    stampFinalCycleDom(subject, failedCycle)
   }
 
   // EXACTLY lib/cma/build.ts step 1's stale-cycle suppression (round four,
@@ -531,7 +535,7 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
   const exclusivePocket = selectionIsExclusivePocket(selection.tiersUsed ?? [])
   const finalCycleForWindow = lastCycleFailed
     ? await (async () => {
-        const cycle = analyzeListingHistory(cycleRows, subject, null).currentCycle
+        const cycle = failedCycle
         const priceEvents = cycle?.listingKey ? await getCmaListingPriceEvents(cycle.listingKey).catch(() => []) : []
         return resolveFinalCycle({ cycle, priceEvents, listingKey: cycle?.listingKey ?? subject.listingKey }).cycle
       })()
@@ -739,7 +743,7 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
   const concessionSentenceTrimmed = concessionLine(trimmed?.sellerNet)
   const reviewSubjectDom = (() => {
     if (!lastCycleFailed) return null
-    const history = analyzeListingHistory(cycleRows, subject, market?.medianDom ?? null)
+    const history = withFailedCycle(analyzeListingHistory(cycleRows, subject, market?.medianDom ?? null), failedCycle)
     const findings = buildFailureFindings({
       subject, pricing, market, history, photosCount: null, ownershipSince: null,
     })
@@ -757,8 +761,7 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
   }))
   const resolvedCycle = await (async () => {
     if (!lastCycleFailed) return { cycle: null, suppressedReason: null }
-    const history = analyzeListingHistory(cycleRows, subject, market?.medianDom ?? null)
-    const cycle = history.currentCycle
+    const cycle = failedCycle
     const priceEvents = cycle?.listingKey ? await getCmaListingPriceEvents(cycle.listingKey).catch(() => []) : []
     return resolveFinalCycle({ cycle, priceEvents, listingKey: cycle?.listingKey ?? subject.listingKey })
   })()
@@ -864,6 +867,10 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
       concessions: c.concessions,
       date: Math.round(c.timeAdjustment),
       size: Math.round(c.sizeAdjustment),
+      onMarketDate: c.onMarketDate ?? null,
+      offerFrom: c.offerFrom ?? null,
+      daysToOffer: c.daysToOffer,
+      domTotal: c.domTotal,
     })),
     pocketDate,
     recommended: pricing.recommended,

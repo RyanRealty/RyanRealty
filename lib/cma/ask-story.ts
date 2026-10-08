@@ -49,6 +49,7 @@
  * chapter chooses it.
  */
 import { askStepIsOwnEra } from '@/lib/cma/price-path'
+import { cameOffThenSentence, type CameOffFacts } from '@/lib/cma/listing-status'
 
 export type AskGapClass = 'far-above' | 'near-above' | 'inside' | 'below' | 'neutral'
 
@@ -444,6 +445,14 @@ export function askStoryReading(input: {
   /** The listing's MLS status, so a short withdrawal reads as one. */
   status?: string | null
   /**
+   * When the listing came off the market on one day and took its status of
+   * record on a later one (3177 Coho: withdrawn Feb 10 after 71 days, expired
+   * Sep 30), the days are told with both dates, "It came off the market on
+   * Feb 10 after 71 days, and the listing expired on Sep 30.", in place of the
+   * plain days sentence (reader review 2026-10-08). Ignored otherwise.
+   */
+  cameOff?: CameOffFacts | null
+  /**
    * Every ask the listing carried and the days each ran, oldest first
    * (`expiredAudit.askExposure.segments`). The inside story splits the days by
    * where each ask sat against the range and makes its claim only about the
@@ -465,12 +474,17 @@ export function askStoryReading(input: {
     median != null &&
     median > 0 &&
     Math.round(input.days) <= Math.round(median)
+  const cameOffLine = input.cameOff ? cameOffThenSentence(input.cameOff) : null
   const plainDays = (days: number) => {
+    if (cameOffLine) return cameOffLine
     const n = Math.round(days).toLocaleString('en-US')
     return /^withdrawn/i.test((input.status ?? '').trim())
       ? `Your listing was withdrawn after ${n} days.`
       : `Your home was on the market ${n} days.`
   }
+  // The days, said once: with both dates when the status of record came
+  // after the day it came off, else as the story tells them.
+  const satLine = (cls: AskGapClass) => cameOffLine ?? satSentence(cls, input.days)
   if (input.neutral) {
     return neutralAskReading({
       ask: input.ask,
@@ -484,7 +498,7 @@ export function askStoryReading(input: {
       input.days != null && input.days > 0
         ? short
           ? plainDays(input.days)
-          : `Your home sat ${Math.round(input.days).toLocaleString('en-US')} days.`
+          : (cameOffLine ?? `Your home sat ${Math.round(input.days).toLocaleString('en-US')} days.`)
         : ''
     return [days, medianSentence('near-above', input.city, input.marketMedianDom)]
       .filter((s) => s.trim())
@@ -496,9 +510,9 @@ export function askStoryReading(input: {
   const against = askAgainstRangeSentence(input.ask, input.rangeLow, input.rangeHigh)
   const medianLine = medianSentence(cls, input.city, input.marketMedianDom)
   if (short && input.days != null) return join([against, plainDays(input.days), medianLine])
-  if (cls === 'far-above') return join([against, satSentence(cls, input.days), medianLine])
+  if (cls === 'far-above') return join([against, satLine(cls), medianLine])
   if (cls === 'near-above') {
-    return join([against, satSentence(cls, input.days), medianLine, walkTheHouseSentence(cls, input.days)])
+    return join([against, satLine(cls), medianLine, walkTheHouseSentence(cls, input.days)])
   }
   // Inside or below: the sentence that points away from the number is about
   // the days spent at a price on this side of the range, so the days are
@@ -510,18 +524,21 @@ export function askStoryReading(input: {
   if (!split || split[own].days <= 0) {
     // Which days sat at which price is not known, so the days print as the
     // plain fact and nothing causal hangs on them.
-    return join([against, satSentence(cls, input.days), medianLine])
+    return join([against, satLine(cls), medianLine])
   }
   const stretch = split[own].days
   const speaks = inRangeStretchSpeaks(stretch, input.marketMedianDom)
   const told = rangeSplitSentences(split, own)
-  if (told) return join([...told, medianLine, speaks ? walkTheHouseSentence(cls, stretch) : ''])
+  // The split sentences already count the days; the two dates are said once
+  // ahead of them, without the count.
+  const datesLine = input.cameOff ? cameOffThenSentence(input.cameOff, { withDays: false }) : null
+  if (told) return join([datesLine ?? '', ...told, medianLine, speaks ? walkTheHouseSentence(cls, stretch) : ''])
   // Every day sat on this side. The days were just said by the sat sentence,
   // so the claim refers back to them rather than printing the count twice
   // (Matt 2026-10-07: each is said once).
   return join([
     against,
-    satSentence(cls, input.days),
+    satLine(cls),
     medianLine,
     speaks ? walkTheHouseSentence(cls, stretch, { daysAlreadySaid: true }) : '',
   ])

@@ -7,6 +7,7 @@
  */
 
 import { sellerVisibleText } from '@/lib/cma/seller-text'
+import { pacificDay } from '@/lib/cma/listing-status'
 
 const COUNT = 'one|two|three|four|five|six|seven|eight|nine|\\d+'
 
@@ -80,16 +81,18 @@ export function plainSearchLabel(tier: string): string {
 
 /**
  * The day a home came off, or null. A list date is not an off-market date.
- * When the only date on the row is the list date, the cell stays blank.
+ * When the only date on the row is the list date, the cell stays blank. Both
+ * dates are read as the Pacific day they fell on: a list at 7:13 PM on Dec 1
+ * is stamped 03:13 UTC on Dec 2 (reader review 2026-10-08).
  */
 export function sellerOffMarketDate(args: {
   listDate: string | null | undefined
   offMarketDate: string | null | undefined
   days: number | null | undefined
 }): string | null {
-  const list = (args.listDate ?? '').slice(0, 10)
+  const list = pacificDay(args.listDate ?? null) ?? ''
   const listOk = /^\d{4}-\d{2}-\d{2}$/.test(list)
-  const off = (args.offMarketDate ?? '').slice(0, 10)
+  const off = pacificDay(args.offMarketDate ?? null) ?? ''
   if (/^\d{4}-\d{2}-\d{2}$/.test(off) && (!listOk || off !== list)) return off
   const days = args.days
   if (!listOk || days == null || !(days > 0)) return null

@@ -39,6 +39,8 @@ import {
   RELIST_OUTCOME_STATUSES,
   type HouseCycleRecord,
 } from '@/lib/cma/market-status'
+import { getListingStatusChanges } from '@/lib/data/cma/localOutcomeReads'
+import type { ListingStatusChange } from '@/lib/cma/listing-status'
 
 /** The three MLS statuses that mean "came off without selling". */
 export const UNSOLD_STATUSES = ['Expired', 'Withdrawn', 'Canceled'] as const
@@ -47,7 +49,7 @@ export const UNSOLD_STATUSES = ['Expired', 'Withdrawn', 'Canceled'] as const
 export const UNSOLD_MAX_MONTHS = 24
 
 const COLS =
-  'ListingKey, StreetNumber, StreetName, City, PhotoURL, OriginalListPrice, Latitude, Longitude, StandardStatus, ListPrice, ClosePrice, CloseDate, ListDate, OnMarketDate, TotalLivingAreaSqFt, BedroomsTotal, BathroomsTotal, baths_full, baths_half, DaysOnMarket, CumulativeDaysOnMarket, status_change_timestamp, SubdivisionName, property_sub_type, year_built, lot_size_acres, public_remarks, parcel_number'
+  'ListingKey, StreetNumber, StreetName, City, PhotoURL, OriginalListPrice, Latitude, Longitude, StandardStatus, ListPrice, ClosePrice, CloseDate, ListDate, OnMarketDate, TotalLivingAreaSqFt, BedroomsTotal, BathroomsTotal, baths_full, baths_half, DaysOnMarket, CumulativeDaysOnMarket, status_change_timestamp, off_market_date, SubdivisionName, property_sub_type, year_built, lot_size_acres, public_remarks, parcel_number'
 
 /** What the relist test reads of every other record of the same houses. */
 const LATER_COLS =
@@ -356,12 +358,28 @@ export async function getCmaAreaUnsoldCycles(input: {
         address: rowStreetAddress(r),
       }),
     )
+    // WHEN EACH ONE LEFT THE MARKET (reader review 2026-10-08). 3204 Spring
+    // Creek was withdrawn Jan 20 and its listing expired Jul 31; its row's
+    // DaysOnMarket ran to the expiry, and the letter said it "came off after
+    // 288 days" when it was on the market 96. The status log for the homes
+    // inside the area says when each left Active. Additive: an unread log
+    // leaves each row on its own dates.
+    const statusChanges = await getListingStatusChanges(
+      inside.map((r) => String(r.ListingKey ?? '').trim()).filter(Boolean),
+    ).catch((err) => {
+      console.error('[getCmaAreaUnsoldCycles] status changes', err instanceof Error ? err.message : String(err))
+      return new Map<string, ListingStatusChange[]>()
+    })
+    const withChanges = inside.map((r) => {
+      const changes = statusChanges.get(String(r.ListingKey ?? '').trim())
+      return changes && changes.length > 0 ? { ...r, statusChanges: changes } : r
+    })
     // A cancel and relist is a re-entry, not a failure: 2639 Harvey and 1382
     // Drost each came off and then sold within weeks (cma-1648-pheasant).
     const later = await readLaterCycles(sb, inside)
     const { dropped } = dropRelistedUnsoldCycles(inside, later.records)
     return {
-      rows: inside,
+      rows: withChanges,
       laterCycles: later.records,
       sinceIso,
       months,
@@ -371,7 +389,7 @@ export async function getCmaAreaUnsoldCycles(input: {
         rows: rows.length,
         rowsAfterAreaTest: inside.length,
         fetchedAt: new Date().toISOString(),
-        query: `supabase.from('listings').select(...).where(${filter})`,
+        query: `supabase.from('listings').select(...).where(${filter}) ;; listing_history (MlsStatus changes) + status_history for the rows inside the area`,
         truncated,
         relist: {
           filter: later.filter,

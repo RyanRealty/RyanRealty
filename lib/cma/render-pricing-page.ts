@@ -47,6 +47,7 @@ import { COVER_PRICE_PHRASE, deRepeatRecommendDollars, isRecommendMark } from '@
 import { failedAskBelowRangeNote } from '@/lib/cma/expired-audit'
 import { listCeiling } from '@/lib/cma/render-contract'
 import { subjectOnMarket } from '@/lib/cma/subject-on-market'
+import { cameOffStatus } from '@/lib/cma/listing-status'
 import { closedCompBand } from '@/lib/pricing/recommended-in-band'
 import { concessionOffClose, concessionOnSale, printedAdjustedPrice } from '@/lib/pricing/seller-net'
 import { joinAnd, movesADollar } from '@/lib/cma/adjustments-applied'
@@ -101,7 +102,21 @@ export function whatItsWorthHeading(input: {
   return sanitizeLetterEmDash(sentencesOf(logic)[0] ?? 'What the sales say')
 }
 
-/** How the last listing came off, in the words a seller uses. */
+/**
+ * How the last listing came off, in the words a seller uses. A listing
+ * withdrawn on one day whose listing expired on a later one "came off the
+ * market" after its days; it did not expire after them (reader review
+ * 2026-10-08, 3177 Coho).
+ */
+function cameOffHow(
+  subject: CmaSubject,
+  finalCycle: import('@/lib/cma/expired-audit').ExpiredFinalCycle | null | undefined,
+): string {
+  return cameOffPhrase(
+    cameOffStatus(finalCycle?.status ?? subject.standardStatus, finalCycle?.leftActiveAs ?? subject.cameOffAs),
+  )
+}
+
 function cameOffPhrase(status: string | null | undefined): string {
   const s = (status ?? '').trim().toLowerCase()
   if (s.startsWith('expired')) return 'expired'
@@ -160,7 +175,7 @@ export function heldUnderBandLead(
   const ask = failedSubjectAsk(subject, askCtx) ?? heldAsk ?? pricing.failedAsk ?? null
   if (ask == null || !(ask > 0)) return first
   const days = finalCycle?.days ?? subjectDomDays(subject)
-  const how = cameOffPhrase(finalCycle?.status ?? subject.standardStatus)
+  const how = cameOffHow(subject, finalCycle)
   const sat = days != null && days > 0 ? `sat ${int(days)} ${days === 1 ? 'day' : 'days'} and ` : ''
   return `${first} Buyers passed at the last ask of ${usd(ask)}. The listing ${sat}${how}.`
 }
@@ -227,7 +242,7 @@ export function heldInBandLead(
   const sat = last != null && (total == null || last < total) ? ` sat ${daysWord(last)}` : ''
   const where = inside ? (sat ? ' inside that range' : ' was inside that range') : ''
   const second = `The last ask of ${usd(ask)}${sat}${where}${sat || where ? ' and' : ''} did not sell.`
-  const how = cameOffPhrase(finalCycle?.status ?? subject.standardStatus)
+  const how = cameOffHow(subject, finalCycle)
   const third = total != null && total > 0 ? `The listing ${how} after ${daysWord(total)}.` : `The listing ${how}.`
   return `${first} ${second} ${third}`
 }

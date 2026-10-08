@@ -76,6 +76,7 @@ import { getExpiredOwnershipSince } from '@/lib/data/prospecting/get'
 import { getCmaListingPriceEvents } from '@/lib/data/cma/localOutcomeReads'
 import { buildCmaLocalOutcomes } from '@/lib/pricing/local-outcomes-read'
 import { analyzeListingHistory } from '@/lib/bpo/history'
+import { readFailedListingCycle, withFailedCycle } from '@/lib/cma/failed-cycle-read'
 import {
   applyFailedAskCap,
   failedAskBelowRangeNote,
@@ -324,6 +325,11 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         : []
     const cycleStatus = String(cycleRows[0]?.['StandardStatus'] ?? subject.standardStatus ?? '')
     const lastCycleFailed = ['Expired', 'Canceled', 'Withdrawn'].includes(cycleStatus)
+    // The failed cycle, on the days it was on the market: its MLS status log
+    // ends it the day it left Active (3177 Coho, withdrawn Feb 10 and expired
+    // Sep 30, counts 71 days, not 302). Read once and reused by the stamp
+    // below, the listing window and the review (reader review 2026-10-08).
+    const failedCycle = lastCycleFailed ? await readFailedListingCycle(cycleRows, subject) : null
     if (lastCycleFailed) {
       const row0 = cycleRows[0] ?? {}
       const cycleAsk = Number(row0['ListPrice'] ?? row0['OriginalListPrice'])
@@ -336,7 +342,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       // (2026-09-07 look pass: 192 in the matrix, 186 in the review). Stamp the
       // final cycle's span here, before anything reads the subject, so the
       // matrix (which reads the line) and the review carry one number.
-      stampFinalCycleDom(subject, analyzeListingHistory(cycleRows, subject, null).currentCycle)
+      stampFinalCycleDom(subject, failedCycle)
     }
 
     // A STALE CYCLE TELLS NO STORY (round four, class B). cma-19968's newest
@@ -664,7 +670,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // and reused there.
     const finalCycleRead = lastCycleFailed
       ? await (async () => {
-          const cycle = analyzeListingHistory(cycleRows, subject, null).currentCycle
+          const cycle = failedCycle
           const priceEvents = cycle?.listingKey
             ? await getCmaListingPriceEvents(cycle.listingKey).catch(() => [])
             : []
@@ -1300,7 +1306,10 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     {
       // finalCycleRead is set exactly when lastCycleFailed is.
       if (lastCycleFailed && finalCycleRead) {
-        const history = analyzeListingHistory(cycleRows, subject, market?.medianDom ?? null)
+        const history = withFailedCycle(
+          analyzeListingHistory(cycleRows, subject, market?.medianDom ?? null),
+          failedCycle,
+        )
         const photosCount = subject.listingKey ? await getListingPhotosCount(subject.listingKey) : null
         // Chapter 1's graphic: the final listing period as a stepped line. The
         // dated cuts come from the price-change records for THAT cycle's own
