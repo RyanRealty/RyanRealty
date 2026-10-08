@@ -105,7 +105,15 @@ export default function GoogleAnalytics() {
       {/* 1. Consent Mode v2 DEFAULTS — must inject before gtag.js so the
               first tracking ping carries the correct consent state. Uses
               `beforeInteractive` so it runs synchronously before any other
-              tracking script gets to fire its initial event. */}
+              tracking script gets to fire its initial event.
+              With GTM (production), the ONE default is the GTM bootstrap's
+              (lib/analytics/gtm-bootstrap.ts), pushed before gtm.js. This
+              block's own default ran after gtm.js had loaded, a second, late
+              default Google ignores at best (GA4 audit 2026-10-08, plan B6),
+              so it only renders on a build with no GTM container, where it
+              is the only default. Both paths use the same shared region
+              defaults (lib/analytics/consent-defaults.ts, settled in #437,
+              2026-10-08), so they hold the same values. */}
       <Script id="gtag-consent-defaults" strategy="beforeInteractive">
         {`
           window.dataLayer = window.dataLayer || [];
@@ -114,8 +122,9 @@ export default function GoogleAnalytics() {
           // Consent Mode v2 defaults (lib/analytics/consent-defaults.ts): region-scoped
           // denied for EEA/UK/CH, analytics granted elsewhere, ad_* denied everywhere.
           // GPC and a stored decline deny analytics before any tag. wait_for_update
-          // holds the first ping while a stored accept is applied.
-          ${consentModeDefaultJs()}
+          // holds the first ping while a stored accept is applied. With GTM, the GTM
+          // bootstrap sets the same defaults before gtm.js, so this block skips them.
+          ${hasGTM ? `// Consent defaults: the GTM bootstrap (lib/analytics/gtm-bootstrap.ts) sets them before gtm.js loads.` : consentModeDefaultJs()}
           // URL-passthrough: when consent is denied, GA4 still propagates
           // gclid/dclid/utm_* across navigation via the URL instead of a
           // cookie. Keeps attribution intact for cookieless visitors.
