@@ -16,7 +16,8 @@ Every lead carries:
 |---|---|
 | `lead_type` | `seller_valuation`, `seller_listing`, `buyer_showing`, `buyer_question`, `buyer_alerts`, `listing_inquiry`, `contact_general` (fixed list, `LEAD_TYPES` in `lib/analytics/lead-event.ts`; an unknown value is never sent) |
 | `form_id` | the form that produced it (`LEAD_FORM_IDS`, e.g. `contact`, `sell_value`, `home_valuation`, `place_value`, `fsbo_lp`, `search_alert`, `meta_lead_ad`) |
-| `value` / `currency` | set from `lead_type` (`LEAD_VALUE_USD`), USD |
+
+Matt 2026-10-08: no dollar values on leads; generate_lead carries lead_type and form_id only.
 
 Not leads, their own events: `recruit_inquiry` (a "Join the team" contact), `newsletter_signup` (a newsletter page CTA). `valuation_requested` (lib/cma-request.ts) stays as a separate step event and is not a key event.
 

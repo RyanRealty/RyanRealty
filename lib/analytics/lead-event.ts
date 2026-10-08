@@ -1,7 +1,8 @@
 /**
  * The one GA4 lead event: `generate_lead`, sent once per real submission, from
  * the server only (lib/lead-tracking.ts fireLeadGenerated), with a lead_type
- * from the fixed list below, the form's form_id, and a value per lead_type.
+ * from the fixed list below and the form's form_id. Matt 2026-10-08: no dollar
+ * values on leads.
  *
  * WHY (Analytics audit 2026-10-08, plan B2): GA4 held 126 generate_lead for
  * Sep 10 to Oct 7 with lead_type general 55, buyer 51, recruit 9,
@@ -29,21 +30,6 @@ export type LeadType = (typeof LEAD_TYPES)[number]
 
 export function isLeadType(value: unknown): value is LeadType {
   return typeof value === 'string' && (LEAD_TYPES as readonly string[]).includes(value)
-}
-
-/**
- * GA4 `value` (USD) per lead_type. PROPOSAL from the audit (seller 500,
- * buyer 200, general 50); Matt sets the final numbers (plan C2). Meta CAPI
- * values are separate and unchanged.
- */
-export const LEAD_VALUE_USD: Readonly<Record<LeadType, number>> = {
-  seller_valuation: 500,
-  seller_listing: 500,
-  buyer_showing: 200,
-  buyer_question: 200,
-  buyer_alerts: 50,
-  listing_inquiry: 200,
-  contact_general: 50,
 }
 
 /** Every form that can produce a lead. form_id is a GA4 event parameter (register it as a custom dimension). */

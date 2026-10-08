@@ -1,7 +1,8 @@
 /**
  * Server-side lead-tracking helper. THE ONLY sender of GA4 `generate_lead`
  * (Matt 2026-10-08): one event per real submission, lead_type from the fixed
- * list in lib/analytics/lead-event.ts, the form's form_id, value per lead_type.
+ * list in lib/analytics/lead-event.ts, the form's form_id. Matt 2026-10-08: no
+ * dollar values on leads.
  * The browser never sends generate_lead (lead-event.test.ts).
  *
  * Wraps `fireGa4Event` from `@/lib/ga4-measurement-protocol` with the
@@ -13,8 +14,8 @@
  * etc.) so we never report a conversion that did not happen.
  *
  * Why this helper exists: one place reads the `_ga` cookie and referer UTMs,
- * checks lead_type and form_id against the fixed lists, sets the value, and
- * sends. Every lead surface calls it; none calls fireGa4Event('generate_lead').
+ * checks lead_type and form_id against the fixed lists, and sends. Every lead
+ * surface calls it; none calls fireGa4Event('generate_lead').
  *
  * Usage:
  *   ```
@@ -37,7 +38,6 @@ import { fireGa4Event, readGa4ClientIdFromCookies } from '@/lib/ga4-measurement-
 import {
   isLeadFormId,
   isLeadType,
-  LEAD_VALUE_USD,
   type LeadFormId,
   type LeadType,
   type NonLeadEvent,
@@ -65,7 +65,11 @@ export type FireLeadParams = {
   crm_person_id?: number | null
   /** @deprecated alias for crm_person_id. */
   fub_person_id?: number | null
-  /** Extra event-scoped params (form fields, intent, etc.). Cannot override lead_type, form_id or value. */
+  /**
+   * Extra event-scoped params (form fields, intent, etc.). Cannot override
+   * lead_type or form_id. `value` and `currency` are stripped (Matt 2026-10-08:
+   * no dollar values on leads).
+   */
   extra?: Record<string, string | number | boolean | undefined | null>
 }
 
@@ -99,7 +103,11 @@ export function leadEventParams(
   utm: { lp_source?: string; lp_medium?: string; lp_campaign?: string; lp_content?: string } = {},
 ): Record<string, string | number | boolean | undefined | null> | null {
   if (!isLeadType(params.lead_type) || !isLeadFormId(params.form_id)) return null
-  const value = LEAD_VALUE_USD[params.lead_type]
+  const extra = { ...(params.extra ?? {}) }
+  delete extra.lead_type
+  delete extra.form_id
+  delete extra.value
+  delete extra.currency
   return {
     lp_variant: params.lp_variant,
     ...utm,
@@ -107,12 +115,10 @@ export function leadEventParams(
     lead_classification: params.lead_classification,
     event_id: params.event_id,
     crm_person_id: params.crm_person_id ?? params.fub_person_id ?? undefined,
-    ...(params.extra ?? {}),
+    ...extra,
     // Last, so `extra` can never change what the lead is.
     lead_type: params.lead_type,
     form_id: params.form_id,
-    value,
-    currency: 'USD',
   }
 }
 

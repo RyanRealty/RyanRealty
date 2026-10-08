@@ -23,7 +23,6 @@ import {
   isLeadType,
   LEAD_FORM_IDS,
   LEAD_TYPES,
-  LEAD_VALUE_USD,
   NON_LEAD_EVENTS,
 } from './lead-event'
 import { leadEventParams, type FireLeadParams } from '@/lib/lead-tracking'
@@ -89,8 +88,7 @@ describe('the fixed lead_type list', () => {
     }
   })
 
-  it('gives every lead_type a value and keeps non-leads off the list', () => {
-    for (const t of LEAD_TYPES) expect(LEAD_VALUE_USD[t]).toBeGreaterThan(0)
+  it('keeps non-leads off the list', () => {
     for (const n of NON_LEAD_EVENTS) expect(isLeadType(n)).toBe(false)
     expect([...NON_LEAD_EVENTS]).toEqual(['recruit_inquiry', 'newsletter_signup'])
   })
@@ -99,13 +97,14 @@ describe('the fixed lead_type list', () => {
 describe('leadEventParams', () => {
   const ok: FireLeadParams = { lp_variant: 'home-valuation', lead_type: 'seller_valuation', form_id: 'home_valuation' }
 
-  it('sends lead_type, form_id, value and currency', () => {
-    expect(leadEventParams(ok)).toMatchObject({
+  it('sends lead_type and form_id, never value or currency', () => {
+    const p = leadEventParams(ok)
+    expect(p).toMatchObject({
       lead_type: 'seller_valuation',
       form_id: 'home_valuation',
-      value: LEAD_VALUE_USD.seller_valuation,
-      currency: 'USD',
     })
+    expect(p).not.toHaveProperty('value')
+    expect(p).not.toHaveProperty('currency')
   })
 
   it('sends nothing for an unknown lead_type or form_id', () => {
@@ -113,9 +112,14 @@ describe('leadEventParams', () => {
     expect(leadEventParams({ ...ok, form_id: 'mystery_form' as never })).toBeNull()
   })
 
-  it('never lets extra change what the lead is', () => {
-    const p = leadEventParams({ ...ok, extra: { lead_type: 'recruit', value: 9999, form_id: 'x' } })
-    expect(p).toMatchObject({ lead_type: 'seller_valuation', form_id: 'home_valuation', value: LEAD_VALUE_USD.seller_valuation })
+  it('never lets extra change what the lead is or inject dollar values', () => {
+    const p = leadEventParams({
+      ...ok,
+      extra: { lead_type: 'recruit', value: 9999, currency: 'USD', form_id: 'x' },
+    })
+    expect(p).toMatchObject({ lead_type: 'seller_valuation', form_id: 'home_valuation' })
+    expect(p).not.toHaveProperty('value')
+    expect(p).not.toHaveProperty('currency')
   })
 
   it('every form_id is snake_case and unique', () => {
@@ -181,5 +185,22 @@ describe('generate_lead is server-only and sent in one place', () => {
     }
     expect(bad).toEqual([])
     expect(calls).toBeGreaterThan(15)
+  })
+
+  it('puts no dollar value on generate_lead (Matt 2026-10-08)', () => {
+    const bannedToken = ['LEAD', 'VALUE', 'USD'].join('_')
+    for (const rel of ['lib/analytics/lead-event.ts', 'lib/lead-tracking.ts']) {
+      const src = readFileSync(join(ROOT, rel), 'utf8')
+      expect(src, rel).not.toContain(bannedToken)
+    }
+    const bad: string[] = []
+    for (const f of FILES) {
+      for (const call of fireLeadGeneratedArgs(f.src)) {
+        if (/\bvalue\s*:/.test(call) || /\bcurrency\s*:/.test(call)) {
+          bad.push(`${f.rel}: value/currency in fireLeadGenerated`)
+        }
+      }
+    }
+    expect(bad).toEqual([])
   })
 })
