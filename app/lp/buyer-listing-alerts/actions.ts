@@ -12,6 +12,7 @@ import { resolveSubmittedIdentity } from '@/lib/crm/submitted-identity'
 import { isHardStopped } from '@/lib/canonical-lead-tagger'
 import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
+import { visitorCapiConsent } from '@/lib/meta-capi-visitor'
 import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
 import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data/crm/ensureNativeLead'
 import { recordMarketingAssignment } from '@/lib/data/crm/recordMarketingAssignment'
@@ -205,7 +206,7 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
         originUtmCampaign = refUrl.searchParams.get('utm_campaign') ?? undefined
         originUtmContent = refUrl.searchParams.get('utm_content') ?? undefined
         const passthrough = new URLSearchParams()
-        for (const k of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term']) {
+        for (const k of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'gclid', 'fbclid']) {
           const v = refUrl.searchParams.get(k)
           if (v) passthrough.set(k, v)
         }
@@ -411,35 +412,40 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
     // ─── Meta CAPI Lead $300 ───────────────────────────────────────────────
     const eventId = generateEventId()
     const capiCookies = await cookies()
-    void fetch(`${siteUrl}/api/meta-capi`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        eventName: 'Lead',
-        email,
-        phone: phone || undefined,
-        firstName,
-        lastName,
-        eventId,
-        eventSourceUrl: `${siteUrl}/lp/buyer-listing-alerts`,
-        fbp: capiCookies.get('_fbp')?.value,
-        // Fall back to the middleware-captured rr_fbc (derived from ?fbclid) when
-        // the Meta pixel never set _fbc, so paid clicks attribute. See middleware.
-        fbc: capiCookies.get('_fbc')?.value ?? capiCookies.get('rr_fbc')?.value,
-        customData: {
-          content_name: 'buyer_lp_listing_alerts',
-          lead_type: 'buyer_listing_alerts',
-          budget_min: budgetMin,
-          budget_max: budgetMax,
-          search_areas: searchAreasArr,
-          timeline: timeline ?? 'unspecified',
-          classification,
-          assigned_broker: assignment.broker,
-          value: 300,
-          currency: 'USD',
-        },
-      }),
-    }).catch((err) => console.warn('[buyer-lp] CAPI call failed:', err))
+    const sharing = await visitorCapiConsent()
+    if (sharing.allowed) {
+      void fetch(`${siteUrl}/api/meta-capi`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventName: 'Lead',
+          email,
+          phone: phone || undefined,
+          firstName,
+          lastName,
+          eventId,
+          eventSourceUrl: `${siteUrl}/lp/buyer-listing-alerts`,
+          fbp: capiCookies.get('_fbp')?.value,
+          // Fall back to the middleware-captured rr_fbc (derived from ?fbclid) when
+          // the Meta pixel never set _fbc, so paid clicks attribute. See middleware.
+          fbc: capiCookies.get('_fbc')?.value ?? capiCookies.get('rr_fbc')?.value,
+          consentCookie: sharing.consentCookie,
+          secGpc: sharing.secGpc,
+          customData: {
+            content_name: 'buyer_lp_listing_alerts',
+            lead_type: 'buyer_listing_alerts',
+            budget_min: budgetMin,
+            budget_max: budgetMax,
+            search_areas: searchAreasArr,
+            timeline: timeline ?? 'unspecified',
+            classification,
+            assigned_broker: assignment.broker,
+            value: 300,
+            currency: 'USD',
+          },
+        }),
+      }).catch((err) => console.warn('[buyer-lp] CAPI call failed:', err))
+    }
 
     // ─── GA4 Measurement Protocol mirror ───────────────────────────────────
     // Server-side generate_lead so attribution survives ad-blockers.

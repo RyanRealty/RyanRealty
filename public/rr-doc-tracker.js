@@ -7,12 +7,12 @@
  * exactly the way the site's own tracker (components/VisitTracker.tsx) records a
  * page view, because both write the same session in the same table:
  *   1. Works out the visitor's tracking tier from the cookie banner's answer, with
- *      the same rules as VisitTracker, including the campaign-link grant. A
- *      visitor who DECLINED gets nothing from this script: no page view, no click
- *      event, no identification. A browser sending Global Privacy Control gets the
- *      same, and no consent cookie either (the grant never applies to it); the one
- *      thing sent is the notice the site tracker sends too, `{ gpc: true }` and
- *      nothing else, so the track route can suppress a contact it already knows.
+ *      the same rules as VisitTracker. An ad or campaign click is not consent and
+ *      does not write the consent cookie. A visitor who DECLINED gets nothing from
+ *      this script: no page view, no click event, no identification. A browser
+ *      sending Global Privacy Control gets the same; the one thing sent is the
+ *      notice the site tracker sends too, `{ gpc: true }` and nothing else, so the
+ *      track route can suppress a contact it already knows.
  *   2. Applies the session rule (a new session after 30 minutes idle, on an
  *      arrival from a different campaign, or when the stored id is one the rule
  *      did not start) to the 'rr_session_id' every tracker shares. Only the page
@@ -37,8 +37,8 @@
  * and those functions over the same cookies, URLs and timelines and fails when
  * they disagree:
  *   consent      lib/identity/consent.ts   parseConsentCookie, trackingLevelFromConsent,
- *                                          isAdTrafficSearch, arrivalConsent, gpcFromNavigator
- *                components/CookieConsentBanner.tsx   getConsent, setConsentState
+ *                                          arrivalConsent, gpcFromNavigator
+ *                components/CookieConsentBanner.tsx   getConsent
  *   session      lib/analytics/visitor-session.ts     campaignKeyFromSearch,
  *                                          referrerIsThisSite, isExternalArrival,
  *                                          pageNavigationType, pageArrival, readState,
@@ -59,7 +59,7 @@
   try {
     // ── consent: mirror of lib/identity/consent.ts ────────────────────────────
     var CONSENT_COOKIE = 'ryan_realty_cookie_consent'
-    var CONSENT_EXPIRY_YEARS = 1
+    var REGION_COOKIE = 'rr_cr'
 
     // parseConsentCookie
     var parseConsentCookie = function (raw) {
@@ -73,23 +73,22 @@
         return { analytics: false, marketing: false }
       }
     }
+    // consentRegionRestrictedFromCookieHeader (lib/analytics/consent-regions.ts):
+    // missing or not "0" is restricted. Mirror of trackingLevelFromConsent context.
+    var regionRestricted = function () {
+      var rows = document.cookie.split('; ')
+      for (var r = 0; r < rows.length; r++) {
+        if (rows[r].indexOf(REGION_COOKIE + '=') === 0) return rows[r].split('=')[1] !== '0'
+      }
+      return true
+    }
     // trackingLevelFromConsent
     var trackingLevelFromConsent = function (stored) {
-      if (stored === null) return 'essential'
+      if (stored === null) return regionRestricted() ? 'essential' : 'analytics'
       if (stored.analytics && stored.marketing) return 'all'
       if (stored.analytics) return 'analytics'
       if (stored.marketing) return 'essential'
       return 'declined'
-    }
-    // isAdTrafficSearch
-    var isAdTrafficSearch = function (search) {
-      var qs = new URLSearchParams(search || '')
-      if (qs.has('fbclid') || qs.has('gclid') || qs.has('msclkid') || qs.has('ttclid')) return true
-      var keys = Array.from(qs.keys())
-      for (var i = 0; i < keys.length; i++) {
-        if (keys[i].toLowerCase().indexOf('utm_') === 0) return true
-      }
-      return false
     }
     // gpcFromNavigator: Global Privacy Control, a legally binding opt-out of sale and sharing
     var gpcOn = function () {
@@ -103,28 +102,11 @@
       }
       return undefined
     }
-    // CookieConsentBanner setConsentState (the campaign-link grant writes this cookie)
-    var writeConsentGrant = function () {
-      var expires = new Date()
-      expires.setFullYear(expires.getFullYear() + CONSENT_EXPIRY_YEARS)
-      document.cookie =
-        CONSENT_COOKIE + '=' + encodeURIComponent(JSON.stringify({ analytics: true, marketing: true })) +
-        '; path=/; expires=' + expires.toUTCString() + '; SameSite=Lax'
-    }
-    // The tier right now (VisitTracker currentConsentLevel).
+    // The tier right now (VisitTracker currentConsentLevel). An ad click is not consent.
     var consentNow = function () {
       return trackingLevelFromConsent(parseConsentCookie(readConsentCookie()))
     }
-    // The tier for THIS page load (VisitTracker's mount effect: autoGrantConsentForAdTraffic,
-    // then currentConsentLevel; the rule is arrivalConsent, on the link the page arrived by).
-    // A visitor who never answered the banner and arrived on a campaign or ad link is granted
-    // analytics + marketing; an explicit answer, a decline included, is never overridden, and
-    // Global Privacy Control is never read as a grant.
     var consentAtArrival = function () {
-      if (parseConsentCookie(readConsentCookie()) === null && !gpcOn() && isAdTrafficSearch(loaded.search)) {
-        try { writeConsentGrant() } catch (e) { /* the grant still applies to this view */ }
-        return 'all'
-      }
       return consentNow()
     }
 
@@ -389,13 +371,12 @@
       } catch (e) { /* ignore */ }
     }
 
-    // Global Privacy Control is an opt-out we honor before anything else: no consent
-    // cookie is written (the campaign-link grant never applies to it), no identifier
-    // is stored, no event is posted and nobody is identified (docs/TRACKING_POLICY.md,
-    // the GPC tier). Checked before consentAtArrival, which is what writes the grant.
-    // One notice carries the signal and nothing else, as the site tracker's does
-    // (VisitTracker sendGpcNotice): the track route records a durable suppression for
-    // a contact this browser was already identified as, from its own cookies.
+    // Global Privacy Control is an opt-out we honor before anything else: no
+    // identifier is stored, no event is posted and nobody is identified
+    // (docs/TRACKING_POLICY.md, the GPC tier). One notice carries the signal and
+    // nothing else, as the site tracker's does (VisitTracker sendGpcNotice): the
+    // track route records a durable suppression for a contact this browser was
+    // already identified as, from its own cookies.
     var sendGpcNotice = function () {
       try {
         fetch('/api/visitors/track', {

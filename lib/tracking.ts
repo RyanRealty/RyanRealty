@@ -9,6 +9,7 @@ import { resolveClientVisitBroker, visitBrokerGa4Fields } from '@/lib/analytics/
 import { trackEventWithCAPI } from '@/lib/meta-pixel-helpers'
 import { readSessionId } from '@/lib/analytics/visitor-session'
 import { pushDataLayerEvent } from '@/lib/analytics/ga4-browser-events'
+import { CONSENT_COOKIE, gpcFromNavigator, marketingSharingAllowed } from '@/lib/identity/consent'
 
 declare global {
   interface Window {
@@ -118,6 +119,18 @@ function pushDataLayer(obj: Record<string, unknown>) {
  */
 function fireGoogleAdsConversion(sendTo: string | undefined) {
   if (typeof window === 'undefined' || !sendTo?.trim() || !window.gtag) return
+  const raw = document.cookie
+    .split('; ')
+    .find((row) => row.startsWith(`${CONSENT_COOKIE}=`))
+    ?.split('=')[1]
+  if (
+    !marketingSharingAllowed({
+      consentCookie: raw,
+      gpc: gpcFromNavigator(typeof navigator !== 'undefined' ? navigator : undefined),
+    })
+  ) {
+    return
+  }
   window.gtag('event', 'conversion', { send_to: sendTo.trim() })
 }
 

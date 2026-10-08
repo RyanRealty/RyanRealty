@@ -94,7 +94,12 @@ export function generateBlogSchema(post: {
   updated_at?: string | null
   image?: string | null
   author_name?: string | null
+  /** brokers.slug of the byline broker; gives the author Person its /team page @id and url. */
+  author_slug?: string | null
 }): Record<string, unknown> {
+  const authorUrl = post.author_slug?.trim()
+    ? `${SITE_URL}/team/${encodeURIComponent(post.author_slug.trim())}`
+    : null
   return {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
@@ -106,7 +111,17 @@ export function generateBlogSchema(post: {
     // dateModified drives the AI/Google recency preference; fall back to the
     // publish date so the field is always present (no freshness cliff on edits).
     dateModified: post.updated_at ?? post.published_at ?? undefined,
-    author: post.author_name ? { '@type': 'Person', name: post.author_name } : undefined,
+    // The @id is the one the organization schema already names its founder by
+    // (`/team/matthew-ryan#person`), so the byline joins that entity instead of
+    // being an anonymous name (AIV #1, 2026-10-08).
+    author: post.author_name
+      ? {
+          '@type': 'Person',
+          ...(authorUrl ? { '@id': `${authorUrl}#person` } : {}),
+          name: post.author_name,
+          ...(authorUrl ? { url: authorUrl } : {}),
+        }
+      : undefined,
   }
 }
 

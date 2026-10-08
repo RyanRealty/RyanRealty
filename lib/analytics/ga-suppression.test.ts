@@ -35,7 +35,13 @@ const CASES: Array<[string, Partial<GaSuppressionInput>, string | null]> = [
   ['under /admin', { pathname: '/admin/crm/people/12' }, 'admin-path'],
   ['/admin/login', { pathname: '/admin/login' }, 'admin-path'],
   ['127.0.0.1', { host: '127.0.0.1' }, 'non-production-host'],
+  ['127.0.0.1 with a port (stripped)', { host: '127.0.0.1:8777' }, 'non-production-host'],
   ['localhost', { host: 'localhost' }, 'non-production-host'],
+  ['localhost:3000', { host: 'localhost:3000' }, 'non-production-host'],
+  ['0.0.0.0', { host: '0.0.0.0' }, 'non-production-host'],
+  ['IPv6 loopback', { host: '[::1]' }, 'non-production-host'],
+  ['a LAN IPv4', { host: '192.168.1.20' }, 'non-production-host'],
+  ['a 10.x LAN IPv4', { host: '10.0.0.8' }, 'non-production-host'],
   ['a vercel preview', { host: 'ryanrealty-git-main-ryan.vercel.app' }, 'non-production-host'],
   ['the vercel alias', { host: 'ryanrealty.vercel.app' }, 'non-production-host'],
   ['a lookalike host', { host: 'ryan-realty.com.evil.example' }, 'non-production-host'],
@@ -89,7 +95,10 @@ describe('decideGaSuppression (Matt 2026-10-05: GA4 counts only real outside vis
     expect(page('https://ryan-realty.com/sell?utm_source=crm')).toBe(null)
     expect(page('https://ryan-realty.com/admin/visitors/live')).toBe('admin-path')
     expect(page('http://127.0.0.1:3000/')).toBe('non-production-host')
+    expect(page('http://127.0.0.1:8777/')).toBe('non-production-host')
     expect(page('http://localhost:3199/cities/bend')).toBe('non-production-host')
+    expect(page('http://192.168.1.20:3000/')).toBe('non-production-host')
+    expect(page('http://[::1]:3000/')).toBe('non-production-host')
     expect(page('https://ryan-realty.com/?rr_automation=1')).toBe('automation')
     expect(page('https://ryan-realty.com/', { webdriver: true })).toBe('automation')
     expect(page('https://ryan-realty.com/', { cookieHeader: 'rr_automation=1' })).toBe('automation')

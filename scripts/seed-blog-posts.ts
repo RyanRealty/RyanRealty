@@ -2,6 +2,7 @@
  * Seed blog posts into the database.
  * Run: npx tsx scripts/seed-blog-posts.ts            (every seed file)
  *      npx tsx scripts/seed-blog-posts.ts --only <file-without-.ts>   (one file)
+ *      npx tsx scripts/seed-blog-posts.ts --only <file> --slug <slug>   (one post)
  * Requires SUPABASE_SERVICE_ROLE_KEY and NEXT_PUBLIC_SUPABASE_URL in env or .env.local.
  *
  * Idempotent: uses upsert on slug. Safe to run multiple times.
@@ -84,6 +85,23 @@ async function seedPosts() {
     const posts = mod.default || mod.posts
     if (Array.isArray(posts)) {
       allPosts = [...allPosts, ...posts]
+    }
+  }
+
+  // `--slug <slug>` seeds one post and leaves the rest of the file alone. A
+  // whole-file reseed rewrites every row in it from its seed, which would put
+  // back seo_titles changed live by migration since (AIV #1, 2026-10-08).
+  const slugArg = process.argv.indexOf('--slug')
+  const onlySlug = slugArg >= 0 ? process.argv[slugArg + 1] : null
+  if (slugArg >= 0 && !onlySlug) {
+    console.error('--slug needs a post slug, e.g. --slug cost-to-sell-house-bend-oregon')
+    process.exit(2)
+  }
+  if (onlySlug) {
+    allPosts = allPosts.filter((post) => post.slug === onlySlug)
+    if (allPosts.length === 0) {
+      console.error(`--slug ${onlySlug}: no seed post has that slug`)
+      process.exit(2)
     }
   }
 

@@ -17,6 +17,7 @@
  */
 
 import { CMA_PRICING_PHILOSOPHY } from '@/lib/cma/first-contact'
+import { buildTrackedUrl } from '@/lib/analytics/utm'
 
 export const FSBO_CMA_FIRST_TOUCH_V1 = 'fsbo_cma_first_touch_v1' as const
 export const CMA_COVER_INTRO_V1 = 'cma_cover_intro_v1' as const
@@ -334,7 +335,7 @@ export function composeCmaBottomWhyList(facts: FsboCmaMergeFacts): {
  <li>Contract, disclosure, and closing coordination</li>
  </ul>
  <p class="cta-lead">We would be glad to walk through these sales with you on a call.</p>
- ${calendar ? `<p><a href="${esc(calendar.includes('utm_') ? calendar : (calendar.includes('?') ? calendar + '&utm_source=crm&utm_medium=doc&utm_campaign=cma-letter&utm_content=why-list' : calendar + '?utm_source=crm&utm_medium=doc&utm_campaign=cma-letter&utm_content=why-list'))}" data-rr-track="cma-why-list-book">Book a time</a>${phone || email ? ` · ${esc([phone, email].filter(Boolean).join(' · '))}` : ''}</p>` : (ctaBits ? `<p>${esc(ctaBits)}</p>` : '')}
+ ${calendar ? `<p><a href="${esc(calendar.includes('utm_') ? calendar : buildTrackedUrl(calendar, { source: 'cma', medium: 'document', campaign: 'cma-letter', content: 'why-list' }))}" data-rr-track="cma-why-list-book">Book a time</a>${phone || email ? ` · ${esc([phone, email].filter(Boolean).join(' · '))}` : ''}</p>` : (ctaBits ? `<p>${esc(ctaBits)}</p>` : '')}
  <p>${esc(agent ? `${agent}, Ryan Realty` : 'Ryan Realty')}</p>
  <div class="trace"><div class="t-hd">Sources</div>${esc(footnotes).replace(/\n/g, '<br/>')}</div>
  </section>`.trim()

@@ -13,7 +13,7 @@ const ART = '/opt/cursor/artifacts'
 const FLEET_EMAIL = 'fleet-test+flow@ryan-realty.com'
 
 async function dismissChrome(page) {
-  for (const label of ['Not now', 'Essential only', 'Accept all']) {
+  for (const label of ['Not now', 'Essential only']) {
     const btn = page.getByRole('button', { name: new RegExp(`^${label}$`, 'i') }).first()
     if (await btn.isVisible().catch(() => false)) {
       await btn.click({ timeout: 2000 }).catch(() => {})
