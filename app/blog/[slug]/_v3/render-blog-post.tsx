@@ -36,6 +36,7 @@ import {
 import { publishBlogReportPeriod } from '@/lib/blog/publish-blog-report-period'
 import { blogRelatedHomeRows } from './blog-related-homes'
 import { buildBlogArticleView } from './article-view'
+import { extractAnswerFirst } from './answer-first'
 import { BlogArticleRail } from './BlogArticleRail.client'
 import './blog-article.css'
 import {
@@ -132,6 +133,7 @@ export async function renderBlogPost(
       ? `${siteUrl}/api/og?type=blog&id=${encodeURIComponent(post.slug)}`
       : undefined,
     author_name: post.author_name,
+    author_slug: post.author_slug,
   })
   // AEO: the Questions section of a guide is also its FAQPage schema. Same
   // markup, one source, so the schema cannot drift from the visible answers.
@@ -175,11 +177,14 @@ export async function renderBlogPost(
       )
     : rawBody
   const articleBody = rewriteBlogMosVerdicts(currentMosBody)
+  // A guide that opens with an answer block gets it under the dek, above the
+  // rail: on a phone the rail renders before the prose (./answer-first.ts).
+  const answerFirst = extractAnswerFirst(articleBody)
   // The reading apparatus, derived from the body and from nothing else: the
   // figures the writer already sourced in a sentence, the questions the post
   // answers, the Questions block as disclosures, every citation wearing its
   // host. ./_v3/article-view.ts states what it refuses to infer.
-  const view = buildBlogArticleView(articleBody)
+  const view = buildBlogArticleView(answerFirst.body)
   const title = period.displayTitle.trim()
   if (!title) notFound()
   const category = post.category?.trim()
@@ -207,6 +212,7 @@ export async function renderBlogPost(
     post.author_name?.trim() ? post.author_name.trim() : 'Ryan Realty',
     publishedLabel ?? 'Date not recorded',
     ...(updatedLabel ? [updatedLabel] : []),
+    ...(answerFirst.figuresAsOf ? [`Figures as of ${formatDate(answerFirst.figuresAsOf)}`] : []),
     `${readMinutes} min read`,
   ].join(' · ')
 
@@ -330,6 +336,13 @@ export async function renderBlogPost(
 
             {post.excerpt?.trim() ? <p className="v3-blog-dek">{post.excerpt.trim()}</p> : null}
             {period.periodNote ? <p className="v3-blog-dek">{period.periodNote}</p> : null}
+
+            {answerFirst.answerHtml ? (
+              <div
+                className="v3-blog-answer"
+                dangerouslySetInnerHTML={{ __html: answerFirst.answerHtml }}
+              />
+            ) : null}
 
             {view.html ? (
               <div className="v3-blog-layout">
