@@ -35,7 +35,8 @@ export function AboutOffice({ id = 'office' }: { id?: string } = {}) {
         </CardHeader>
         <CardContent>
           <p>
-            {street}, {cityLine}. Firm OREA {FIRM_LICENSE.replace(/^OREA\s+/, '')}.
+            {/* OREA lists the firm number as a Registered Business Name license (2026-10-08). */}
+            {street}, {cityLine}. OREA license {FIRM_LICENSE.replace(/^OREA\s+/, '')}.
           </p>
         </CardContent>
         <CardFooter>

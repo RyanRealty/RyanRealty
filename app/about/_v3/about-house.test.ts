@@ -58,7 +58,16 @@ describe('SITE-163 /about faces fold', () => {
     expect(PAGE).not.toContain('size="proof"')
     expect(PAGE).not.toContain('size="editorial"')
     expect(PAGE).not.toContain('openingFigures')
-    expect(FIRM).toContain('ABOUT_FIRM_STORY')
+    // 2026-10-08 (SEO & AEO Desk brief, pending Matt): the dek under the H1 is
+    // the direct answer; the one-sentence purpose line describes the page in
+    // its AboutPage JSON-LD.
+    expect(FIRM).toContain('about-firm__answer')
+    expect(FIRM).toContain('about-firm__head')
+    expect(FIRM).toContain('about-firm__dek')
+    expect(FOLD).toContain('"head head"')
+    expect(FOLD).toContain('"faces dek"')
+    expect(PAGE).toContain('answer={directAnswer}')
+    expect(PAGE).toContain('description: ABOUT_FIRM_STORY')
     expect(FIRM).toContain('AboutFirmFaces')
     expect(ABOUT_FIRM_STORY).toBe(
       'Ryan Realty is a boutique brokerage in Central Oregon that helps clients buy and sell their properties.',
@@ -130,7 +139,7 @@ describe('SITE-163 /about faces fold', () => {
     expect(FOLD).not.toContain('.about-firm__hero img')
   })
 
-  it('prints the Bend office and firm OREA, not a broker roster', () => {
+  it('prints the Bend office and the firm OREA license, not a broker roster', () => {
     expect(PAGE).toContain('<AboutOffice')
     expect(OFFICE).toContain("from '@/components/ui/card'")
     expect(OFFICE).toContain('CardFooter')
@@ -139,7 +148,9 @@ describe('SITE-163 /about faces fold', () => {
     expect(OFFICE).toContain('FIRM_LICENSE')
     expect(OFFICE).toContain('>The brokers<')
     expect(OFFICE).toContain('teamPath()')
-    expect((OFFICE.match(/Firm OREA/g) ?? []).length).toBe(1)
+    // 2026-10-08: "OREA license 201253677", never "Firm OREA" (registered business name).
+    expect((OFFICE.match(/OREA license \{FIRM_LICENSE/g) ?? []).length).toBe(1)
+    expect(OFFICE).not.toMatch(/>[^<]*Firm OREA/)
     expect(OFFICE).toContain("FIRM_LICENSE.replace(/^OREA\\s+/, '')")
     expect(OFFICE).not.toContain('about-office__facts')
     expect(OFFICE).not.toContain('<dl')
@@ -175,7 +186,7 @@ describe('SITE-163 /about faces fold', () => {
 
   it('adds crawlable team, closing, and review lists to JSON-LD', () => {
     expect(PAGE).toContain("name: 'Ryan Realty brokers'")
-    expect(PAGE).toContain("name: 'Recent Ryan Realty closings'")
+    expect(PAGE).toContain("name: 'Ryan Realty closings in Central Oregon'")
     expect(PAGE).toContain("type: 'dataset'")
     expect(PAGE).toContain('Average Google rating')
   })
