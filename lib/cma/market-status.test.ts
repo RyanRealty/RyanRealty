@@ -4,10 +4,13 @@ import {
   computeMarketArea,
   marketAreaPriceBand,
   buildExpiredPeerSet,
+  dropRelistedUnsoldCycles,
   keptCompMedianPpsf,
+  laterOutcomeCycle,
   pickExpiredPeers,
   similarBedRange,
   type CmaExpiredPeer,
+  type HouseCycleRecord,
 } from './market-status'
 import {
   activeBarLabel,
@@ -1351,5 +1354,199 @@ describe('the peer sentence counts the rows it shows', () => {
     expect(set.sentence).not.toMatch(/No home /)
     expect(set.sentence).not.toContain('—')
     expect(set.sentence).not.toContain('like yours')
+  })
+})
+
+describe('a house that came off, relisted and sold did not come off unsold (cma-1648-pheasant, reader review 2026-10-08)', () => {
+  // The stored sales area of cma-1648-pheasant, named plats only.
+  const AREA: CompArea = {
+    kind: 'subdivisions',
+    names: ['Pheasant Hill', 'Neal', 'Meadowview Estate', 'North Pilot Butte'],
+    radiusMiles: null,
+    centre: { lat: 44.071089, lng: -121.281442 },
+    source: 'test',
+    sentence: 'Pheasant Hill, your own subdivision, with Meadowview Estate next to it.',
+  }
+  const ASOF = new Date('2026-10-01T23:48:27.000Z')
+  const PHEASANT = {
+    beds: 3,
+    baths: 1,
+    sqft: 1092,
+    yearBuilt: 1972,
+    subdivision: 'Pheasant Hill',
+    city: 'Bend',
+    latitude: 44.071089,
+    longitude: -121.281442,
+    listingKey: '20260915190229551056000000',
+    mlsNumber: null,
+    streetAddress: '1648 Pheasant',
+    propertySubType: 'Single Family Residence',
+  }
+
+  // The listings rows as stored (read 2026-10-08), the fields the read selects.
+  const cycle = (over: Partial<AreaRow>): AreaRow =>
+    row({
+      City: 'Bend',
+      SubdivisionName: 'North Pilot Butte',
+      property_sub_type: 'Single Family Residence',
+      ClosePrice: null,
+      CloseDate: null,
+      DaysOnMarket: null,
+      CumulativeDaysOnMarket: null,
+      ...over,
+    })
+  const HARVEY_CANCELED = cycle({
+    ListingKey: '20260304180508627129000000',
+    StreetNumber: '2639',
+    StreetName: 'Harvey',
+    StandardStatus: 'Canceled',
+    ListPrice: 599_000,
+    OnMarketDate: '2026-06-07 23:30:27+00',
+    ListDate: '2026-06-07 23:30:27+00',
+    status_change_timestamp: '2026-06-08 23:04:07+00',
+    parcel_number: '100566',
+    BedroomsTotal: 3,
+    BathroomsTotal: 3,
+    TotalLivingAreaSqFt: 1123,
+    year_built: 1969,
+  })
+  const DROST_CANCELED = cycle({
+    ListingKey: '20260402204906041951000000',
+    StreetNumber: '1382',
+    StreetName: 'Drost',
+    StandardStatus: 'Canceled',
+    ListPrice: 659_900,
+    OnMarketDate: '2026-04-08 18:04:53+00',
+    ListDate: '2026-04-08 18:04:53+00',
+    status_change_timestamp: '2026-06-09 22:40:16+00',
+    parcel_number: '100471',
+    BedroomsTotal: 3,
+    BathroomsTotal: 2,
+    TotalLivingAreaSqFt: 1700,
+    year_built: 1968,
+  })
+  const SUBJECT_WITHDRAWN = cycle({
+    ListingKey: '20260915190229551056000000',
+    StreetNumber: '1648',
+    StreetName: 'Pheasant',
+    SubdivisionName: 'Pheasant Hill',
+    StandardStatus: 'Withdrawn',
+    ListPrice: 599_900,
+    OnMarketDate: '2026-09-22 16:24:38+00',
+    ListDate: '2026-09-22 16:24:38+00',
+    status_change_timestamp: '2026-10-01 23:36:41+00',
+    parcel_number: '100258',
+    BedroomsTotal: 3,
+    BathroomsTotal: 1,
+    TotalLivingAreaSqFt: 1092,
+    year_built: 1972,
+  })
+  // Every other record of those houses the relist read returns, older sales included.
+  const LATER: HouseCycleRecord[] = [
+    { ListingKey: '20260612214218799263000000', StreetNumber: '2639', StreetName: 'Harvey', City: 'Bend', parcel_number: '100566', StandardStatus: 'Closed', OnMarketDate: '2026-06-12 22:49:57+00', ListDate: '2026-06-12 22:49:57+00', CloseDate: '2026-07-31 00:00:00+00', status_change_timestamp: '2026-07-31 17:22:01+00' },
+    { ListingKey: '20200314183043871703000000', StreetNumber: '2639', StreetName: 'Harvey', City: 'Bend', parcel_number: '100566', StandardStatus: 'Closed', OnMarketDate: '2020-03-23 17:30:04+00', ListDate: '2020-03-23 17:30:04+00', CloseDate: '2020-05-06 00:00:00+00', status_change_timestamp: '2020-05-07 16:55:29+00' },
+    // Entered Jun 5, before the old cycle was canceled on Jun 9; on the market Jun 10.
+    { ListingKey: '20260605215653342393000000', StreetNumber: '1382', StreetName: 'Drost', City: 'Bend', parcel_number: '100471', StandardStatus: 'Closed', OnMarketDate: '2026-06-10 14:13:46+00', ListDate: '2026-06-10 14:13:46+00', CloseDate: '2026-07-16 00:00:00+00', status_change_timestamp: '2026-07-16 16:42:13+00' },
+    { ListingKey: '20240719205939812901000000', StreetNumber: '1382', StreetName: 'Drost', City: 'Bend', parcel_number: '100471', StandardStatus: 'Closed', OnMarketDate: '2024-07-19 21:53:52+00', ListDate: '2024-07-19 21:53:52+00', CloseDate: '2024-08-09 00:00:00+00', status_change_timestamp: '2024-08-09 17:31:39+00' },
+    { ListingKey: '20230531021349455600000000', StreetNumber: '1648', StreetName: 'Pheasant', City: 'Bend', parcel_number: '100258', StandardStatus: 'Closed', OnMarketDate: '2023-05-31 05:01:48+00', ListDate: '2023-05-31 05:01:48+00', CloseDate: '2023-07-07 00:00:00+00', status_change_timestamp: '2023-07-30 18:15:09+00' },
+  ]
+
+  it('names the later sale that took each canceled cycle out', () => {
+    expect(laterOutcomeCycle(HARVEY_CANCELED, LATER)?.ListingKey).toBe('20260612214218799263000000')
+    expect(laterOutcomeCycle(DROST_CANCELED, LATER)?.ListingKey).toBe('20260605215653342393000000')
+    const { kept, dropped } = dropRelistedUnsoldCycles([HARVEY_CANCELED, DROST_CANCELED, SUBJECT_WITHDRAWN], LATER)
+    expect(dropped.map((d) => d.row.StreetName)).toEqual(['Harvey', 'Drost'])
+    // The subject's 2023 sale came before its own cycle, so it never takes that cycle out.
+    expect(kept).toEqual([SUBJECT_WITHDRAWN])
+  })
+
+  it('counts neither house, and never the subject, so the letter says no other home came off', () => {
+    const set = buildExpiredPeerSet({
+      rows: [HARVEY_CANCELED, DROST_CANCELED, SUBJECT_WITHDRAWN],
+      subject: PHEASANT,
+      area: AREA,
+      asOf: ASOF,
+      maxWindowMonths: 12,
+      subjectCameOff: true,
+      laterCycles: LATER,
+    })
+    expect(set.areaTotal).toBe(0)
+    expect(set.count).toBe(0)
+    expect(set.peers).toEqual([])
+    expect(set.sentence).toBe(
+      'No other home like yours in Pheasant Hill, Neal, Meadowview Estate or North Pilot Butte came off the market without selling in the last 12 months.',
+    )
+    // The read before the relist records: both canceled cycles counted.
+    const before = buildExpiredPeerSet({
+      rows: [HARVEY_CANCELED, DROST_CANCELED, SUBJECT_WITHDRAWN],
+      subject: PHEASANT,
+      area: AREA,
+      asOf: ASOF,
+      maxWindowMonths: 12,
+      subjectCameOff: true,
+    })
+    expect(before.areaTotal).toBe(2)
+  })
+
+  it('keeps a cycle whose house sold only before it, and drops one listed again now', () => {
+    const DROST_2024_SALE = LATER[3]!
+    expect(laterOutcomeCycle(DROST_CANCELED, [DROST_2024_SALE])).toBeNull()
+    const relistedActive: HouseCycleRecord = {
+      ListingKey: 'RELIST',
+      StreetNumber: '1382',
+      StreetName: 'NE Drost Way',
+      City: 'Bend',
+      parcel_number: null,
+      StandardStatus: 'Active',
+      OnMarketDate: '2026-09-01 16:00:00+00',
+    }
+    expect(laterOutcomeCycle(DROST_CANCELED, [relistedActive])?.ListingKey).toBe('RELIST')
+    // A cycle that came off unsold again is not a sale and not a relist that sold.
+    expect(laterOutcomeCycle(DROST_CANCELED, [{ ...relistedActive, StandardStatus: 'Expired' }])).toBeNull()
+  })
+
+  it('is one house only: same parcel, or same street address the parcels do not contradict, in the same city', () => {
+    const sale: HouseCycleRecord = { ...LATER[0]! }
+    // Another city with the same street address is another house.
+    expect(laterOutcomeCycle(HARVEY_CANCELED, [{ ...sale, City: 'Redmond', parcel_number: null }])).toBeNull()
+    // Two parcels at one street address (units in one building) are two homes.
+    expect(laterOutcomeCycle(HARVEY_CANCELED, [{ ...sale, parcel_number: '100567' }])).toBeNull()
+    // The parcel ties records whose street lines differ.
+    expect(laterOutcomeCycle(HARVEY_CANCELED, [{ ...sale, StreetName: 'Harvey Pl' }])?.ListingKey).toBe(sale.ListingKey)
+    // No parcel on one side: the street address decides, directional and suffix folded.
+    expect(
+      laterOutcomeCycle({ ...HARVEY_CANCELED, parcel_number: null }, [{ ...sale, StreetName: 'NE Harvey Place' }])?.ListingKey,
+    ).toBe(sale.ListingKey)
+    // The cycle itself is never its own later cycle.
+    expect(laterOutcomeCycle(HARVEY_CANCELED, [{ ...HARVEY_CANCELED, StandardStatus: 'Closed' }])).toBeNull()
+  })
+
+  it("never counts the subject's own earlier unsold cycle, under another listing key or street line", () => {
+    const priorOwnCycle = cycle({
+      ListingKey: 'OLDER-OWN-CYCLE',
+      StreetNumber: '1648',
+      StreetName: 'NE Pheasant Ln',
+      SubdivisionName: 'Pheasant Hill',
+      StandardStatus: 'Expired',
+      ListPrice: 615_000,
+      OnMarketDate: '2026-03-01',
+      ListDate: '2026-03-01',
+      status_change_timestamp: '2026-06-01',
+      BedroomsTotal: 3,
+      BathroomsTotal: 1,
+      TotalLivingAreaSqFt: 1092,
+      year_built: 1972,
+    })
+    const set = buildExpiredPeerSet({
+      rows: [priorOwnCycle, SUBJECT_WITHDRAWN],
+      subject: PHEASANT,
+      area: AREA,
+      asOf: ASOF,
+      maxWindowMonths: 12,
+      subjectCameOff: true,
+      laterCycles: LATER,
+    })
+    expect(set.areaTotal).toBe(0)
+    expect(set.peers).toEqual([])
   })
 })

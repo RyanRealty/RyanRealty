@@ -199,6 +199,63 @@ describe('sameAreaFit: the actives and expireds pass the area and the rules the 
     expect(sameAreaAgeYears(null)).toBe(25)
   })
 
+  it('keeps 1345 Jacksonville beside 1355 Jacksonville: a remarks list of options states no duplex and no ADU (reader review 2026-10-08)', () => {
+    // The stored subject of cma-1355-jacksonville and its next-door
+    // neighbor's MLS row (listing 220228911, Pending since Sep 21, 2026),
+    // remarks as stored, line breaks included. The letter said "None are
+    // under contract right now" because the fit refused this home as
+    // another product.
+    const area: CompArea = {
+      kind: 'subdivisions',
+      names: ['Northwest Townsite', 'Grandview', 'Highland', 'Bonne Home'],
+      radiusMiles: null,
+      centre: { lat: 44.058868, lng: -121.331289 },
+      source: 'test',
+      sentence: 'Northwest Townsite, your own subdivision, with Grandview, Highland and Bonne Home next to it.',
+      platSlugs: ['northwest-townsite-second-addition'],
+      namesWithoutPlat: ['Grandview', 'Highland', 'Bonne Home'],
+    }
+    const subject: SameAreaSubject = {
+      streetAddress: '1355 Jacksonville',
+      city: 'Bend',
+      subdivision: 'Northwest Townsite',
+      subdivisionSlug: 'northwest-townsite-second-addition',
+      latitude: 44.058868,
+      longitude: -121.331289,
+      beds: 3,
+      baths: 2,
+      sqft: 876,
+      yearBuilt: 1919,
+      propertySubType: 'Single Family Residence',
+      publicRemarks:
+        "The lot's size and prime location support a range of possibilities, from an extensive renovation, to a full tear-down for a custom new home. There's also potential to add an ADU, all subject to city approval.",
+    }
+    const neighbor: SameAreaCandidate = {
+      address: '1345 Jacksonville',
+      city: 'Bend',
+      subdivision: 'Northwest Townsite',
+      latitude: 44.058868,
+      longitude: -121.331052,
+      beds: 3,
+      baths: 1,
+      sqft: 1056,
+      yearBuilt: 1924,
+      propertySubType: 'Single Family Residence',
+      publicRemarks:
+        'The property includes a 1924-built, 3-beds, 1-bath home with 1,056 sq ft that can be lived in as-is, renovated, or incorporated into a larger vision for the site. The generous lot may offer possibilities for a lot split, duplex, multi-unit development,\r\nADU, or new custom home, subject to City approval.\r\nStreet and alley frontage add flexibility for access, parking and site design.',
+    }
+    // Own plat, 1,056 sqft is 20.5% over 876 (inside 25%), one bathroom
+    // apart on own ground: kept and disclosed, no year test on the own plat.
+    expect(sameAreaFit(area, subject, neighbor)).toEqual({ ok: true, ownPlat: true, roomDifference: ['baths'] })
+    // A home that does state a duplex or an ADU is still refused.
+    expect(
+      sameAreaFit(area, subject, { ...neighbor, publicRemarks: 'This updated duplex features two 2 bed units.' }),
+    ).toEqual({ ok: false, reason: 'product' })
+    expect(
+      sameAreaFit(area, subject, { ...neighbor, publicRemarks: 'The property includes a detached ADU over the garage.' }),
+    ).toEqual({ ok: false, reason: 'adu' })
+  })
+
   it('names a noted room once, with no dollar value, and no em dash', () => {
     expect(roomNotedSentence([])).toBe('')
     expect(roomNotedSentence([{ address: '2820 Aldrich', roomDifference: ['baths'] }])).toBe(
