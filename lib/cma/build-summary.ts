@@ -218,15 +218,29 @@ export function composeFailureSummary(opts: {
   docType: 'cma' | 'expired-audit'
   stage: 'subject' | 'comps' | 'pricing' | 'contract'
   error: string
+  at: string
   compSelection?: CompSelectionDiagnostics | null
+  /** selection.trace: the search's own sentences, rung by rung. */
+  trace?: readonly string[] | null
+  /** The comparability review that ended the build, when it did. */
+  review?: {
+    kept: string[]
+    verdicts: Array<{ listingKey: string; tier: string; basis?: string | null; reason: string }>
+    unstableKeys?: string[]
+  } | null
+  contractChecks?: ReadonlyArray<{ id: string; severity: string; pass: boolean; detail: string }> | null
 }): Record<string, unknown> {
   return {
     builder: opts.builder,
     doc_type: opts.docType,
     build_failed: true,
+    failed_at: opts.at,
     failed_at_stage: opts.stage,
     build_error: opts.error.slice(0, 2000),
     comp_selection: opts.compSelection ?? null,
+    trace: opts.trace ? [...opts.trace] : null,
+    review: opts.review ?? null,
+    failed_checks: (opts.contractChecks ?? []).filter((c) => c.severity === 'hard' && !c.pass),
   }
 }
 
