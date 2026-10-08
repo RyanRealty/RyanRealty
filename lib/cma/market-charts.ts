@@ -93,6 +93,21 @@ function niceStep(span: number): number {
   return mult * mag
 }
 
+/** Months since year zero, so two months a gap apart sit a gap apart. */
+function monthOrdinal(iso: string | null | undefined): number {
+  // Stored render_args are untyped JSON; a point without a month is not drawn.
+  if (typeof iso !== 'string' || !/^\d{4}-\d{2}/.test(iso)) return Number.NaN
+  const y = Number(iso.slice(0, 4))
+  const m = Number(iso.slice(5, 7))
+  return Number.isFinite(y) && Number.isFinite(m) ? y * 12 + (m - 1) : Number.NaN
+}
+
+function ordinalIso(ord: number): string {
+  const y = Math.floor(ord / 12)
+  const m = (ord % 12) + 1
+  return `${y}-${String(m).padStart(2, '0')}-01`
+}
+
 /**
  * Median close over completed months. Needs six priced months.
  *
@@ -100,11 +115,20 @@ function niceStep(span: number): number {
  * 360 drawn to fit below 700px. It was the last chart on the document still
  * held in a pan box on a phone, which cropped six of its twelve months —
  * nothing a seller reads sits in a scroll box (blueprint § The register).
+ *
+ * KEEP THE CALENDAR (2026-10-08). The month line reads Market Truth, which
+ * withholds a month's median under ten sales. Dropping that month and joining
+ * its neighbours drew Sunriver's February one step after November, a line
+ * through three months nobody measured (dataviz anti-patterns: "Empty months
+ * dropped so a line can connect"). Each month sits at its own place on the
+ * axis, the line breaks where a month has no median, and the axis still
+ * names it.
  */
 export function medianCloseLineSvg(points: TrendPoint[], opts?: { width?: number }): string {
-  const priced = [...points]
-    .filter((p) => p.medianSalePrice != null && p.medianSalePrice > 0)
+  const dated = [...points]
+    .filter((p) => Number.isFinite(monthOrdinal(p.periodStart)))
     .sort((a, b) => a.periodStart.localeCompare(b.periodStart))
+  const priced = dated.filter((p) => p.medianSalePrice != null && p.medianSalePrice > 0)
   if (priced.length < 6) return ''
   const W = opts?.width ?? 720
   const phone = W <= 400
@@ -119,39 +143,59 @@ export function medianCloseLineSvg(points: TrendPoint[], opts?: { width?: number
   const vals = priced.map((p) => p.medianSalePrice!)
   const axis = niceAxis(vals)
   const y = (v: number) => bottom - ((bottom - top) * (v - axis.floor)) / Math.max(axis.ceil - axis.floor, 1)
-  const xs = priced.map((_, i) => left + ((right - left) * i) / Math.max(priced.length - 1, 1))
+  // The calendar runs from the first month in the series to the last, priced
+  // or not, so a withheld month keeps its width.
+  const firstOrd = monthOrdinal(dated[0]!.periodStart)
+  const lastOrd = monthOrdinal(dated[dated.length - 1]!.periodStart)
+  const span = Math.max(lastOrd - firstOrd, 1)
+  const xAt = (ord: number) => left + ((right - left) * (ord - firstOrd)) / span
+  const ords = priced.map((p) => monthOrdinal(p.periodStart))
+  const xs = ords.map(xAt)
   const ys = vals.map(y)
-  const path = linePath(xs, ys)
+  // One run per stretch of consecutive priced months; a lone month is a dot.
+  const runs: Array<{ xs: number[]; ys: number[] }> = []
+  ords.forEach((ord, i) => {
+    const run = runs[runs.length - 1]
+    if (run && i > 0 && ord - ords[i - 1]! === 1) {
+      run.xs.push(xs[i]!)
+      run.ys.push(ys[i]!)
+    } else {
+      runs.push({ xs: [xs[i]!], ys: [ys[i]!] })
+    }
+  })
+  const path = runs
+    .filter((r) => r.xs.length > 1)
+    .map((r) => linePath(r.xs, r.ys))
+    .join(' ')
   // Thin the month axis so two labels never overlap on a phone.
   // Thin the month axis from the RIGHT, so the newest month always carries a
   // label. Thinning left-to-right dropped it, and the line then ran to an
-  // unnamed point past the last tick.
-  const tickAt = new Set<number>()
+  // unnamed point past the last tick. Every calendar month is a candidate,
+  // a withheld one included: the axis names the month the line skips.
+  // Collected right to left, emitted left to right so the text reads in calendar order.
+  const ticks: string[] = []
   let nextTickX = Number.POSITIVE_INFINITY
-  for (let i = xs.length - 1; i >= 0; i--) {
-    const label = monthLabel(priced[i]!.periodStart)
+  for (let ord = lastOrd; ord >= firstOrd; ord--) {
+    const x = xAt(ord)
+    const label = monthLabel(ordinalIso(ord))
     const halfW = label.length * fs * 0.58
-    if (nextTickX - xs[i]! >= halfW * 2 + 3) {
-      tickAt.add(i)
-      nextTickX = xs[i]!
+    if (nextTickX - x >= halfW * 2 + 3) {
+      nextTickX = x
+      // The newest month's mark sits ON the right edge of the plot, so a
+      // centred label runs half its width past the frame — "Aug" printed
+      // 1.1px outside the viewBox at 375 on all four documents. The tick at
+      // either end anchors to the edge instead of hanging over it.
+      const anchor = x + halfW > W - 2 ? 'end' : x - halfW < 2 ? 'start' : 'middle'
+      const tx = anchor === 'end' ? W - 2 : anchor === 'start' ? 2 : x
+      ticks.push(
+        `<text x="${tx.toFixed(1)}" y="${bottom + 22}" text-anchor="${anchor}" font-size="${fs}" fill="#102742" opacity="0.75">${label}</text>`,
+      )
     }
   }
-  // The gap between two months, which is how wide a per-month target may be.
-  const hitSpan = xs.length > 1 ? Math.abs(xs[1]! - xs[0]!) : 44
+  // The width of one calendar month, which is how wide a per-month target may be.
+  const hitSpan = (right - left) / span
   const dots = xs
     .map((x, i) => {
-      const label = monthLabel(priced[i]!.periodStart)
-      let tick = ''
-      if (tickAt.has(i)) {
-        // The newest month's mark sits ON the right edge of the plot, so a
-        // centred label runs half its width past the frame — "Aug" printed
-        // 1.1px outside the viewBox at 375 on all four documents. The tick at
-        // either end anchors to the edge instead of hanging over it.
-        const halfW = label.length * fs * 0.58
-        const anchor = x + halfW > W - 2 ? 'end' : x - halfW < 2 ? 'start' : 'middle'
-        const tx = anchor === 'end' ? W - 2 : anchor === 'start' ? 2 : x
-        tick = `<text x="${tx.toFixed(1)}" y="${bottom + 22}" text-anchor="${anchor}" font-size="${fs}" fill="#102742" opacity="0.75">${label}</text>`
-      }
       // Delta 2: "Hover or tap the month line: the value and the month." The
       // reading is the month and the figure already plotted at that point.
       const read = `${monthLabel(priced[i]!.periodStart)}: ${chartUsd(vals[i]!)} median close`
@@ -168,7 +212,7 @@ export function medianCloseLineSvg(points: TrendPoint[], opts?: { width?: number
       return `<g class="month-mark" data-read="${esc(read)}" tabindex="0" role="button" aria-label="${esc(read)}">
       <rect x="${(x - hitW / 2).toFixed(1)}" y="${(ys[i]! - hitH / 2).toFixed(1)}" width="${hitW.toFixed(1)}" height="${hitH}" fill="transparent"/>
       <circle cx="${x.toFixed(1)}" cy="${ys[i]!.toFixed(1)}" r="${phone ? 3 : 4}" fill="#102742"/>
-    </g>${tick}`
+    </g>`
     })
     .join('')
   // DRAW THE AXIS, NOT JUST ITS TWO ENDS (Matt 2026-09-10). The plot carried a
@@ -188,8 +232,8 @@ export function medianCloseLineSvg(points: TrendPoint[], opts?: { width?: number
     <text x="${left - 10}" y="${(y(axis.ceil) + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="#102742" opacity="0.7">${chartUsd(axis.ceil)}</text>
     <text x="${left - 10}" y="${(y(mid) + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="#102742" opacity="0.55">${chartUsd(mid)}</text>
     <text x="${left - 10}" y="${(y(axis.floor) + 4).toFixed(1)}" text-anchor="end" font-size="${fs}" fill="#102742" opacity="0.7">${chartUsd(axis.floor)}</text>
-    <path d="${path}" fill="none" stroke="#102742" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
-    ${dots}
+    ${path ? `<path d="${path}" fill="none" stroke="#102742" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>` : ''}
+    ${dots}${ticks.reverse().join('')}
   </svg>`
 }
 
@@ -206,9 +250,23 @@ export function medianCloseCaption(points: TrendPoint[]): string {
     .map((p) => p.medianSalePrice)
     .filter((v): v is number => v != null && v > 0)
   if (vals.length < 6) return ''
+  // A broken line says why it is broken.
+  const blank = monthsWithoutMedian(points)
   return `<p class="small">Median close by month. Range ${chartUsd(Math.min(...vals))} to ${chartUsd(
     Math.max(...vals),
-  )}.</p>`
+  )}.${blank > 0 ? ' A month with too few sales for a middle price is left blank.' : ''}</p>`
+}
+
+/** Calendar months inside the drawn span that carry no median. */
+export function monthsWithoutMedian(points: readonly TrendPoint[]): number {
+  const priced = points
+    .filter((p) => p.medianSalePrice != null && p.medianSalePrice > 0)
+    .map((p) => monthOrdinal(p.periodStart))
+    .filter((o) => Number.isFinite(o))
+  const all = points.map((p) => monthOrdinal(p.periodStart)).filter((o) => Number.isFinite(o))
+  if (priced.length === 0 || all.length === 0) return 0
+  const span = Math.max(...all) - Math.min(...all) + 1
+  return span - new Set(priced).size
 }
 
 export function medianCloseLinePhoneSvg(points: TrendPoint[]): string {
@@ -262,13 +320,26 @@ export function monthsOfSupplyBarsSvg(input: {
   }
   const months = monthsWord(input.windowMonths ?? 6)
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(
-    `${int(Math.round(activeCount))} homes for sale in ${input.place}, and an average of ${int(
+    `${int(Math.round(activeCount))} single-family homes for sale in ${input.place}, and an average of ${int(
       Math.round(perMonth),
     )} sold each month over the last ${months} months`,
   )}" class="trend-svg mos-bars">
-    ${bar(0, activeCount, `Homes for sale in ${input.place} right now`, TL_INK, 14)}
+    ${bar(0, activeCount, activeBarLabel(input.place, W, fs), TL_INK, 14)}
     ${bar(1, perMonth, `Sold each month, average of the last ${months} months`, TL_INK, 14)}
   </svg>`
+}
+
+/**
+ * The count bar names what it counts: the single-family homes for sale, the
+ * same population as the pace under it (2026-10-08). A long place name on a
+ * phone drops "right now" (the sentence above already says it) before the
+ * label would run past the drawing; the 0.58em glyph estimate is the one the
+ * month line thins its ticks by.
+ */
+export function activeBarLabel(place: string, width: number, fontSize: number): string {
+  const full = `Single-family homes for sale in ${place} right now`
+  if (full.length * fontSize * 0.58 <= width - 4) return full
+  return `Single-family homes for sale in ${place}`
 }
 
 /** "six", "twelve": a window a reader reads as words. */

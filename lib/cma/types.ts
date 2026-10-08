@@ -248,6 +248,11 @@ export interface CmaMarketTrendPoint {
   periodStart: string
   medianSalePrice: number | null
   soldCount: number | null
+  /**
+   * Null on builds since 2026-10-08: the month line reads Market Truth, which
+   * has no monthly inventory cell. Rows built before carry the cache's
+   * polygon-clipped figure, which no renderer prints.
+   */
   endOfPeriodInventory: number | null
 }
 
@@ -268,13 +273,24 @@ export interface CmaMarketContext {
   /** Live median ask from market_pulse_live. Null when the pulse row has none. */
   medianListPrice?: number | null
   monthsOfSupply: number | null
+  /**
+   * The closes in the 180 days `monthsOfSupply` divides by (Market Truth
+   * `sample_n`), so activeCount / (closedSixMonths / 6) = monthsOfSupply.
+   * Null when the figure is withheld or the row predates 2026-10-08.
+   */
+  closedSixMonths?: number | null
   /** Which formula/source produced monthsOfSupply (canonical pulse vs 365d fallback). */
   mosFormula: string | null
   marketVerdict: 'seller' | 'balanced' | 'buyer' | null
   methodologyVersion: string | null
   computedAt: string | null
   pulseUpdatedAt: string | null
-  /** Completed months only. A chart renders only when six priced months exist. */
+  /**
+   * Completed months only, from the same Market Truth detached membership as
+   * activeCount and monthsOfSupply (2026-10-08; earlier rows carry
+   * market_stats_cache monthly). A chart renders only when six priced months
+   * exist.
+   */
   trend?: CmaMarketTrendPoint[]
   /**
    * What `trend` MEASURES, in the document's own words (round four, class E).

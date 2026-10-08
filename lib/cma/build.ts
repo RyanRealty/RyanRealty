@@ -57,7 +57,7 @@ import { pricingFailureMessage } from '@/lib/pricing/price-set'
 import { classifyStory, citySlug, irrigationClassFromOwrd, isCustomOrNewSubject, yearQualityCompatible } from '@/lib/pricing/classes'
 import type { CompSelectionDiagnostics } from '@/lib/cma/comp-trace'
 import { composeBuildSummary, composeFailureSummary } from '@/lib/cma/build-summary'
-import { getCmaMarketContext, yearMartCite, cmaMarketSources } from '@/lib/cma/market'
+import { getCmaMarketContext, yearMartCite, cmaMarketSources, CMA_MARKET_POPULATION } from '@/lib/cma/market'
 import { adjustComps, computePricing } from '@/lib/cma/pricing'
 import { judgeComps, readJudgeCache, repairNarrativeAgainstAudit, type CompJudgment } from '@/lib/cma/judge'
 import type { JudgeDecisionRecord, JudgeUnstableError } from '@/lib/cma/judge-vote'
@@ -1895,8 +1895,10 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             computed_at: market.computedAt,
             pulse_updated_at: market.pulseUpdatedAt,
             sold_count_365: market.soldCount365, year_volume: yearMartCite(market.yearMart),
+            population: CMA_MARKET_POPULATION,
             active_count: market.activeCount,
             months_of_supply: market.monthsOfSupply,
+            months_of_supply_closed_6mo: market.closedSixMonths ?? null,
             months_of_supply_formula: market.mosFormula,
             yoy_median_price_delta_pct: market.yoyMedianPriceDeltaPct,
           }

@@ -161,6 +161,36 @@ describe('leftover monthly chart overlay', () => {
     expect(leftover.find((row) => row.periodStart.startsWith('2026-06'))?.medianClose).toBeNull()
   })
 
+  it('reads only the months asked for: twelve complete months for a CMA month line', async () => {
+    getMetricsMock.mockImplementation(async (inputs: GetMetricInput[]) =>
+      inputs.map((input) => metric({ statId: input.stat, value: input.stat === 'closed_count' ? 199 : 759000 })),
+    )
+    const twelve = await getPublicDetachedMonthly({
+      geoType: 'city',
+      geoSlug: 'bend',
+      currentMonthKey: '2026-10',
+      months: 12,
+    })
+    expect(twelve.map((row) => row.periodStart)).toEqual([
+      '2025-10-01',
+      '2025-11-01',
+      '2025-12-01',
+      '2026-01-01',
+      '2026-02-01',
+      '2026-03-01',
+      '2026-04-01',
+      '2026-05-01',
+      '2026-06-01',
+      '2026-07-01',
+      '2026-08-01',
+      '2026-09-01',
+    ])
+    // Two cells a month (median_close, closed_count), and no in-progress October.
+    expect((getMetricsMock.mock.calls[0]![0] as GetMetricInput[]).length).toBe(24)
+    const all = await getPublicDetachedMonthly({ geoType: 'city', geoSlug: 'bend', currentMonthKey: '2026-10' })
+    expect(all.length).toBe(36)
+  })
+
   it('omits the series when leftover cannot plot, rather than mixing cache', () => {
     const picked = leftoverOrCacheMonthly(
       [{ periodStart: '2026-07-01', periodEnd: '2026-07-31', medianClose: 750000, closedCount: 80 }],

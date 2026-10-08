@@ -4,9 +4,12 @@ import { describe, expect, it } from 'vitest'
 import {
   assembleCmaMarketContext,
   cmaMarketSources,
+  cmaTrendFromMonthly,
+  CMA_MARKET_POPULATION,
   resolveCmaMarketTargets,
   type CmaMarketAssembleInput,
 } from '@/lib/cma/market'
+import type { PublicMonthlyPoint } from '@/lib/data/market-truth/public-monthly'
 import type { CmaMarketPulseRow, CmaMarketStatsRow } from '@/lib/data/cma/builderReads'
 import type { SellBendMarket } from '@/lib/data/market-truth/getSellBendMarket'
 import { EMPTY_PUBLIC_PACE, type PublicPaceRow } from '@/lib/data/market-truth/public-pace'
@@ -82,7 +85,7 @@ function assemble(over: Partial<CmaMarketAssembleInput> = {}) {
     pulse: PULSE,
     detached: CITY_DETACHED,
     leftover: CITY_LEFTOVER,
-    trendRows: [],
+    monthly: [],
     yearMart: null,
     ...over,
   })
@@ -405,5 +408,128 @@ describe('months of supply is stored raw, printed through one helper, and graded
     const admin = readFileSync(resolve('app/admin/(protected)/bpo/[slug]/page.tsx'), 'utf8')
     expect(admin).not.toMatch(/String\(market\.months_of_supply\)/)
     expect(admin).toMatch(/formatMonthsOfSupply\(/)
+  })
+})
+
+describe('one population on the Bend right now page (2026-10-08)', () => {
+  // cma-2382-jackson and every Bend letter built that night printed "712 homes
+  // are for sale in Bend right now. Over the last six months, an average of
+  // 204 sold each month. At that pace it would take 3.5 months". Read the same
+  // night: Market Truth city:bend detached held active 712 and
+  // months_of_supply 3.49019607843137 over sample_n 1224 closes in 180 days
+  // (1224 / 6 = 204), and all residential held 896. The letter's stored month
+  // line was market_stats_cache monthly, Bend clipped to its TIGER polygon
+  // (Apr to Sep 2026: 140, 157, 198, 188, 147, 148 sold, 978 in all), and
+  // market_pulse_live (the same polygon, counting pre-market listings too) held 472 at
+  // 2.95. Two reviewers divided 712 by the polygon's 163 a month and got 4.4,
+  // a balanced verdict no single population supports. The fix keeps the
+  // counts on Market Truth, puts the month line on the same membership, and
+  // has the sentence say what it counts.
+  const BEND_2026_10_08: SellBendMarket = {
+    activeCount: 712,
+    monthsOfSupply: 3.49019607843137,
+    closedSixMonths: 1224,
+    mosLabel: '3.5',
+    verdictKind: 'sellers',
+    verdictLabel: "seller's market",
+    medianListPrice: 884900,
+    computedAt: '2026-10-08T00:22:44.125613+00:00',
+    completeThrough: '2026-10-06',
+  }
+  // getPublicDetachedMonthly city:bend, one-month cells computed 2026-10-07.
+  const BEND_MONTHLY: PublicMonthlyPoint[] = (
+    [
+      ['2025-10-01', 773750, 196],
+      ['2025-11-01', 737450, 166],
+      ['2025-12-01', 732727.5, 162],
+      ['2026-01-01', 716500, 121],
+      ['2026-02-01', 745000, 143],
+      ['2026-03-01', 708047, 183],
+      ['2026-04-01', 725000, 179],
+      ['2026-05-01', 855000, 197],
+      ['2026-06-01', 772500, 250],
+      ['2026-07-01', 800000, 230],
+      ['2026-08-01', 749500, 196],
+      ['2026-09-01', 759000, 199],
+    ] as const
+  ).map(([start, median, closed]) => ({
+    periodStart: start,
+    periodEnd: `${start.slice(0, 7)}-28`,
+    medianClose: median,
+    closedCount: closed,
+  }))
+
+  const bend = () => assemble({ detached: BEND_2026_10_08, monthly: BEND_MONTHLY })
+
+  it('prints what it counts, and the pace and verdict are the same numbers', () => {
+    const row = bend()
+    const html = renderInventoryBoardHtml(row)
+    expect(html).toContain(
+      '712 single-family homes are for sale in Bend right now. Over the last six months, an average of 204 sold each month. At that pace it would take 3.5 months to sell what is listed, which is seller&#39;s market territory.',
+    )
+    expect(html).not.toMatch(/712 homes are for sale/)
+    expect(html).toContain('Single-family homes for sale in Bend right now')
+    expect(html).toContain(
+      'aria-label="712 single-family homes for sale in Bend, and an average of 204 sold each month',
+    )
+    // 712 / (1224 / 6) is the stored figure, and the verdict is graded on it (CLAUDE.md §0: <= 4 seller's).
+    expect(row.closedSixMonths).toBe(1224)
+    expect(712 / (1224 / 6)).toBeCloseTo(row.monthsOfSupply!, 10)
+    expect(row.marketVerdict).toBe('seller')
+    expect(monthsOfSupplyVerdict(row.monthsOfSupply!)?.key).toBe('seller')
+  })
+
+  it('draws the month line from the same membership, never the polygon cache', () => {
+    const row = bend()
+    expect(row.trend).toHaveLength(12)
+    expect(row.trend?.map((t) => t.soldCount)).toEqual([196, 166, 162, 121, 143, 183, 179, 197, 250, 230, 196, 199])
+    // No monthly inventory cell exists in Market Truth; another population's count is not borrowed.
+    expect(row.trend?.every((t) => t.endOfPeriodInventory === null)).toBe(true)
+    const sixMonths = (row.trend ?? []).slice(-6).reduce((sum, t) => sum + (t.soldCount ?? 0), 0)
+    expect(sixMonths).toBe(1251)
+    // Calendar Apr to Sep on the same membership grades the same way the 180-day figure does.
+    expect(monthsOfSupplyVerdict(712 / (sixMonths / 6))?.key).toBe(row.marketVerdict)
+    const html = renderInventoryBoardHtml(row)
+    expect(html).toContain('The line below is median sale price, single-family homes in Bend, month by month')
+    expect(cmaMarketSources(row).trend).toContain('market-truth leftover detached membership')
+    expect(cmaMarketSources(row).trend).not.toContain('market_stats_cache')
+  })
+
+  it('keeps a withheld month blank rather than filling it, and draws nothing under six', () => {
+    const thin = BEND_MONTHLY.map((p, i) => (i % 3 === 0 ? p : { ...p, medianClose: null }))
+    const trend = cmaTrendFromMonthly(thin)
+    expect(trend).toHaveLength(12)
+    expect(trend.filter((t) => t.medianSalePrice != null)).toHaveLength(4)
+    // The closed count is a count (Market Truth publishes it at one sale); only the median is withheld.
+    expect(trend[1]).toMatchObject({ periodStart: '2025-11-01', medianSalePrice: null, soldCount: 166 })
+    const row = assemble({ detached: BEND_2026_10_08, monthly: thin })
+    const html = renderInventoryBoardHtml(row)
+    expect(html).not.toContain('month-line')
+    expect(html).not.toContain('The line below is')
+    const none = assemble({ detached: BEND_2026_10_08, monthly: thin.map((p) => ({ ...p, medianClose: null })) })
+    expect(cmaMarketSources(none).trend).toBe('none')
+  })
+
+  it('cites the closed count only beside a published figure', () => {
+    const withheld = assemble({ detached: null, monthly: BEND_MONTHLY })
+    expect(withheld.monthsOfSupply).toBeNull()
+    expect(withheld.closedSixMonths).toBeNull()
+  })
+
+  it('names the population the citation is reconciled against', () => {
+    expect(CMA_MARKET_POPULATION).toContain("property_sub_type 'Single Family Residence'")
+    expect(CMA_MARKET_POPULATION).toContain('MLS City text')
+    expect(CMA_MARKET_POPULATION).toContain('active / (closed_180d / 6)')
+    const build = readFileSync(resolve('lib/cma/build.ts'), 'utf8')
+    expect(build).toMatch(/population: CMA_MARKET_POPULATION/)
+    expect(build).toMatch(/months_of_supply_closed_6mo: market\.closedSixMonths/)
+  })
+
+  it('reads the month line from Market Truth, not market_stats_cache monthly', () => {
+    const src = readFileSync(resolve('lib/cma/market.ts'), 'utf8')
+    expect(src).toMatch(/getPublicDetachedMonthly\(/)
+    expect(src).not.toMatch(/getCmaMarketTrendRows\(/)
+    const dal = readFileSync(resolve('lib/data/cma/builderReads.ts'), 'utf8')
+    expect(dal).not.toMatch(/export async function getCmaMarketTrendRows/)
   })
 })
