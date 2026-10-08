@@ -35,7 +35,11 @@ The work branch is `claude/beautiful-lamport-2x4fjs`. Main is landed from it by 
 - Push with `CI_GATES_SERIAL=1 npm run push`. Parallel tsc runs get OOM-killed.
 - After a production deploy, run `npm run deploy:verify`. Retry once on "fetch failed".
 
-## Where things are (2026-10-08 ~21:50 UTC)
+## Where things are (2026-10-08 ~23:30 UTC)
+
+- **All four ruling fixes are merged** on the branch at `3b1c7b036`: plat-identity, wording 3 and 4, on-market-value, relist-clock and plat-ground-facts with seat order. The final fleet score on `3b1c7b036` was started 23:2x UTC in the cloud against `docs/plans/cma-handoff/fleet-baseline-2026-10-08.json`. If no result is recorded below, rerun it (see Fleet), show Matt the result, and land on his yes.
+
+### Earlier state
 
 - **Main:** `95af9d7bd`. Deploy `dpl_33tipxiwy9fhkoDr9UgkMZ2KQSSP` is verified.
 - **Branch head:** `994e3722a` plus the handoff commit. On top of main it carries:
@@ -164,6 +168,11 @@ NODE_USE_ENV_PROXY=1 npm run cma:fleet -- --concurrency 4 \
    - Recommendation: move both to the last stretch, scored with `cma:fleet` first. This moves prices, so it is Matt's call.
    - **"95.7 percent of the price they first asked"** is a city statistic measured from each listing's first ask. Bend's median days use the last stretch. This is a methodology call.
    - **MLS correction blips** (Pending to Closed to Active to Pending within minutes) can make the last stretch 0 days and print "offer 0 days". This predates the fix and needs its own rule.
+
+8. Answered by Matt 2026-10-08 (late):
+   - **Clamp line on unheld letters:** "Name the weighted figure". The sentence names what the weighted sales support (615 Reed Market: $511,000, not $533,000), then why the list sits at the cover. Branch `fix/clamp-line`, in progress.
+   - **On-market grid fallback:** "Keep the list figure". No change.
+   - **Price clock:** "Yes, after this landing". Move rule 16's cut test and the sale-to-original-ask ratios to the last-stretch clock (rule 28) as a separate engine change with its own fleet score, after the current landing. It can move Wild Rose's price. **Next engine task.**
 
 ## Backlog (after the drafts ship)
 
