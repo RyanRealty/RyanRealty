@@ -19,6 +19,10 @@ vi.mock('@/lib/data/cma/bandInventory', () => ({
 vi.mock('@/lib/data/cma/areaUnsoldReads', () => ({
   getCmaAreaUnsoldCycles: async () => null,
 }))
+const getListingAskChanges = vi.fn(async (): Promise<Map<string, unknown[]>> => new Map())
+vi.mock('@/lib/data/cma/localOutcomeReads', () => ({
+  getListingAskChanges: (...args: unknown[]) => (getListingAskChanges as AnyFn)(...args),
+}))
 vi.mock('@/lib/cma/parcel-shapes', () => ({
   resolveCmaParcels: async () => null,
 }))
@@ -173,6 +177,44 @@ describe('assembleCompetition: the sentence counts what the table draws (rule 17
     // buildCmaExtras reads this flag so citations.price_band.source calls
     // these the fitting homes, not the whole band.
     expect(out.widestAreaInventory?.sameAreaFit).toBe(true)
+  })
+
+  it('stamps each printed competitor with its last stretch off its ask history (Matt 2026-10-08)', async () => {
+    // 2260 Indigo's shape: Active Jan 29 at $670,000, back Jun 15 at $645,000, asking $550,000.
+    getCmaAreaBandInventory.mockImplementation(async (q: { lo: number; hi: number }) =>
+      inventory({
+        lo: q.lo,
+        hi: q.hi,
+        activeRows: [
+          row({
+            ListingKey: 'BACK',
+            ListPrice: 400_000,
+            OriginalListPrice: 470_000,
+            OnMarketDate: '2026-06-15T16:16:30+00:00',
+            original_on_market_timestamp: '2026-01-29T21:47:23+00:00',
+            year_built: 1925,
+          }),
+        ],
+        pendingRows: [],
+      }),
+    )
+    getListingAskChanges.mockImplementationOnce(
+      async () =>
+        new Map([
+          [
+            'BACK',
+            [
+              { at: '2026-05-22T15:30:58+00:00', from: 470_000, to: 445_000 },
+              { at: '2026-06-15T16:16:49+00:00', from: 445_000, to: 400_000 },
+            ],
+          ],
+        ]),
+    )
+    const out = await assembleCompetition(oldBendArgs(subject({ yearBuilt: 2015 })))
+    const [rival] = out.bandRivals?.rivals ?? []
+    expect(rival?.stretch).toEqual({ from: '2026-06-15', firstAsk: 445_000, restarted: true })
+    // The MLS original stays on the row; the letter prints the stretch's.
+    expect(rival?.originalListPrice).toBe(470_000)
   })
 
   it('draws the 1978 pending a neighborhood area counted against a 1950 subject', async () => {

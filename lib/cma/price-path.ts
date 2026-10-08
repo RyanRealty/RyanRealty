@@ -200,13 +200,18 @@ export function pricePathFromFinalCycle(cycle: {
 } | null | undefined, label: string): PricePath | null {
   if (!cycle) return null
   const startDate = day(cycle.listDate)
-  const startPrice = price(cycle.initialAsk) ?? price(cycle.finalAsk)
+  let startPrice = price(cycle.initialAsk) ?? price(cycle.finalAsk)
   if (!startDate || startPrice == null) return null
   const dated: PricePathCut[] = cycle.cutsDated
     ? cycle.cuts
         .map((c) => ({ date: day(c.date), price: price(c.ask) }))
         .filter((c): c is PricePathCut => c.date != null && c.price != null)
     : []
+  // An ask changed on the day the stretch began is its opening ask: the one
+  // before it never ran a day (the ask exposure's own rule). 20676 Wild Rose
+  // drew "Asked $625K on Sep 2", its Coming Soon price, changed to $599,900
+  // the moment before it went Active (Matt 2026-10-08).
+  while (dated.length > 0 && dated[0]!.date === startDate) startPrice = dated.shift()!.price
   const cuts: PricePathCut[] = []
   let era = startPrice
   for (const cut of dated) {
@@ -238,10 +243,10 @@ export function pricePathFromFinalCycle(cycle: {
  * A closed sale, as `render_args.comps` carries it.
  *
  * The row holds the ask it was under when it went under contract and what it
- * closed at, not the ask it opened on — the build writes `listPrice`, and no
- * original ask or price event reaches the renderer for a comparable sale. So
- * the line runs flat at that ask and lands on the close, and the chapter says
- * so rather than implying the ask never moved.
+ * closed at. The ask its last stretch opened at (`firstAsk`, Matt 2026-10-08)
+ * starts the line when the caller has it; no dated price event reaches the
+ * renderer for a comparable sale, so a change between the two is drawn
+ * dashed, and without it the line runs flat at the contract ask.
  *
  * The start of the period is the day the offer clock started when the row
  * carries it (`offerFrom`, the day the listing period that produced the sale
@@ -261,10 +266,18 @@ export function pricePathFromSale(sale: {
   daysToOffer?: number | null
   onMarketDate?: string | null
   offerFrom?: string | null
+  /**
+   * The ask in effect when the listing period that produced the sale began
+   * (lib/cma/last-stretch.ts saleStretch). When it differs from the ask the
+   * sale went under contract at, the line opens on it and steps down dashed:
+   * the row carries no date for the change.
+   */
+  firstAsk?: number | null
 }): PricePath | null {
   const closeDate = day(sale.closeDate)
   const closePrice = price(sale.closePrice)
   const ask = price(sale.listPrice) ?? closePrice
+  const opening = price(sale.firstAsk) ?? ask
   if (!closeDate || closePrice == null || ask == null) return null
   const ran = sale.domTotal != null && sale.domTotal > 0 ? Math.round(sale.domTotal) : null
   // ONE measure per sale, and it is the one the grid already labels: days to
@@ -285,9 +298,9 @@ export function pricePathFromSale(sale: {
     offerStart != null && offerStart <= closeDate ? offerStart : plusDays(closeDate, -(ran ?? 30))
   return {
     startDate,
-    startPrice: ask,
+    startPrice: opening ?? ask,
     cuts: [],
-    undatedCutTo: null,
+    undatedCutTo: opening != null && opening !== ask ? ask : null,
     endDate: closeDate,
     closePrice,
     outcome: 'sold',

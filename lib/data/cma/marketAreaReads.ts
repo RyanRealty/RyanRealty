@@ -5,7 +5,7 @@
  */
 
 import 'server-only'
-import type { ListingStatusChange } from '@/lib/cma/listing-status'
+import type { AskChange, ListingStatusChange } from '@/lib/cma/listing-status'
 import { createServiceClient } from '@/lib/supabase/service'
 
 function client() {
@@ -31,6 +31,12 @@ export type CmaMarketAreaRow = {
   CloseDate: string | null
   ListDate: string | null
   OnMarketDate: string | null
+  /**
+   * Selected only by the area-scoped unsold read: the first day the listing
+   * was on the market (Active, never Coming Soon). Earlier than OnMarketDate
+   * when it came back, which the letter labels (Matt 2026-10-08).
+   */
+  original_on_market_timestamp?: string | null
   TotalLivingAreaSqFt: number | null
   BedroomsTotal: number | null
   BathroomsTotal: number | null
@@ -60,6 +66,12 @@ export type CmaMarketAreaRow = {
    * left Active (lib/cma/listing-status.ts), not the day it expired.
    */
   statusChanges?: ListingStatusChange[]
+  /**
+   * Attached only by the area-scoped unsold read: the listing's recorded ask
+   * changes with their timestamps, so the first ask printed is the one its
+   * last stretch on the market began at (Matt 2026-10-08).
+   */
+  askChanges?: AskChange[]
   /**
    * Attached only by the area-scoped reads of a plat area: the recorded plat
    * polygon the row's point sits in (a slug; null when the point was tested

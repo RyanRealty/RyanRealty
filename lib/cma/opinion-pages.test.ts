@@ -522,12 +522,26 @@ describe('chapter one reads the ask that ran the clock', () => {
     expect(whatHappenedHeading(a)).toBe('You asked $500,000 for 152 days, then $460,000 for 35.')
   })
 
-  it('names the original list when the exposure starts at a later ask', () => {
+  it('names the first ask of the last stretch, never an MLS original list from before it (Matt 2026-10-08)', () => {
+    // The exposure is the listing's last stretch on the market. An original
+    // list the MLS carries from before it (an earlier stretch, or a Coming
+    // Soon price changed before it went Active) is a different clock.
     const a = withAudit({ findings: FINDINGS, askExposure: EXPOSURE, finalCycle: { days: 187 } })
     a.subject = { ...a.subject, originalListPrice: 1_025_000 }
     const heading = whatHappenedHeading(a)
-    expect(heading).toContain('$1,025,000')
-    expect(heading).toContain('You asked $500,000 for 152 days, then $460,000 for 35.')
+    expect(heading).not.toContain('$1,025,000')
+    expect(heading).toBe('You asked $500,000 for 152 days, then $460,000 for 35.')
+  })
+
+  it('says when the last stretch is not the listing\'s first', () => {
+    const a = withAudit({
+      findings: FINDINGS,
+      askExposure: EXPOSURE,
+      finalCycle: { days: 187, listDate: '2025-08-01', restarted: true },
+    })
+    expect(whatHappenedHeading(a)).toBe(
+      'You asked $500,000 for 152 days, then $460,000 for 35. Counted from Aug 1, when your home last came on the market.',
+    )
   })
 
   it('measures the gap off the last ask, not the original list', () => {

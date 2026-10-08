@@ -30,6 +30,7 @@ import {
   type PricePath,
 } from '@/lib/cma/price-path'
 import { collapseExpiredPeerCycles, peerMatchesSubject } from '@/lib/cma/market-status'
+import { listingStretchRead } from '@/lib/cma/last-stretch'
 import { readAskOutcome } from '@/lib/cma/market-area-chapters'
 import { FAILED_ASK_BACKTEST, askAgainstRangeSentence } from '@/lib/cma/expired-audit'
 import { measuresLastOfSeveralAsks } from '@/lib/cma/ask-story'
@@ -362,7 +363,8 @@ export function didNotSellStories(a: DidNotSellArgs): Story[] {
       path: pricePathFromListing({
         address: p.address,
         listPrice: p.listPrice,
-        originalListPrice: p.originalListPrice,
+        // The first ask of the stretch its days count (Matt 2026-10-08).
+        originalListPrice: listingStretchRead(p).firstAsk,
         onMarketDate: p.onMarketDate,
         daysOnMarket: p.daysOnMarket,
         status: p.status,

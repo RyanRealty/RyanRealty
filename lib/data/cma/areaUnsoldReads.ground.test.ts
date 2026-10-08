@@ -55,7 +55,10 @@ vi.mock('@/lib/data/cma/platGroundBounds', () => ({
   getPlatGroundBounds: (ground: unknown, opts?: unknown) => outline(ground, opts),
 }))
 // The status log and the relist read are not what this file tests.
-vi.mock('@/lib/data/cma/localOutcomeReads', () => ({ getListingStatusChanges: async () => new Map() }))
+vi.mock('@/lib/data/cma/localOutcomeReads', () => ({
+  getListingStatusChanges: async () => new Map(),
+  getListingAskChanges: async () => new Map(),
+}))
 
 import { getCmaAreaUnsoldCycles } from '@/lib/data/cma/areaUnsoldReads'
 import { getCmaAreaBandInventory } from '@/lib/data/cma/bandInventory'

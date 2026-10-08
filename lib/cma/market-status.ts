@@ -13,7 +13,16 @@ import { roomNotedSentence, sameAreaFit, sameAreaSubject, type SameAreaCandidate
 import { describeUnlikeHome, unlikeAsksPhrase, unlikeReasonSentence, type CmaUnlikeHome } from '@/lib/cma/unlike-reason'
 import type { CmaMarketAreaRow } from '@/lib/data/cma/marketAreaReads'
 import { daysOnMarketFrom, listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
-import { cameOffStatus, lastActiveRun, pacificDay, sameStatus, type ActiveRun } from '@/lib/cma/listing-status'
+import {
+  cameOffStatus,
+  lastActiveRunTimed,
+  listingStretch,
+  pacificDay,
+  sameStatus,
+  type ActiveRun,
+  type ListingStretch,
+} from '@/lib/cma/listing-status'
+import { listingStretchRead } from '@/lib/cma/last-stretch'
 
 export type CmaStatusBucket = {
   key: 'selected' | 'active' | 'pending' | 'expired' | 'closed'
@@ -66,6 +75,13 @@ export type CmaExpiredPeer = {
   status: string
   /** Days on the market: the day it went Active to the day it left Active. */
   daysOnMarket: number | null
+  /**
+   * Its last stretch on the market (Matt 2026-10-08, "Last stretch, labeled"):
+   * the stretch `daysOnMarket` counts, the ask in effect when it began, and
+   * whether the home had been on the market before it. Print through
+   * last-stretch.ts listingStretchRead. Absent on rows built before.
+   */
+  stretch?: ListingStretch | null
   /** Cycle start — used to label or collapse multi-cycle peers. */
   onMarketDate: string | null
   /**
@@ -470,12 +486,34 @@ function peerDist2(row: CmaMarketAreaRow, lat: number, lng: number): number {
  * The last stretch an unsold listing was on the market, from its status log
  * when the read attached one, else its own on-market and off-market days.
  */
-function peerRun(row: CmaMarketAreaRow): ActiveRun | null {
-  return lastActiveRun({
+function peerRun(row: CmaMarketAreaRow): (ActiveRun & { fromAt: string | null }) | null {
+  return lastActiveRunTimed({
     changes: row.statusChanges ?? [],
     onMarketDate: row.OnMarketDate ?? row.ListDate,
     offMarketDate: row.off_market_date ?? row.status_change_timestamp ?? row.CloseDate,
     status: row.StandardStatus,
+  })
+}
+
+/**
+ * The stretch a came-off home's days count (Matt 2026-10-08): the ask in
+ * effect when it began, off the ask history the area read attached, and
+ * whether it had been on the market before.
+ */
+function peerStretch(
+  row: CmaMarketAreaRow,
+  run: (ActiveRun & { fromAt: string | null }) | null,
+  originalListPrice: number | null,
+  listPrice: number,
+): ListingStretch | null {
+  return listingStretch({
+    startAt: run?.fromAt ?? row.OnMarketDate ?? row.ListDate ?? null,
+    changes: row.statusChanges ?? [],
+    firstOnMarketAt: row.original_on_market_timestamp ?? null,
+    listedAt: row.OnMarketDate ?? row.ListDate ?? null,
+    askChanges: row.askChanges ?? [],
+    openingAsk: originalListPrice,
+    currentAsk: listPrice,
   })
 }
 
@@ -579,6 +617,7 @@ export function pickExpiredPeers(
       const leftAs = run?.source === 'status-history' ? run.leftAs : null
       const cameOffAs = leftAs && !sameStatus(leftAs, status) ? leftAs : null
       const statusDay = pacificDay(row.status_change_timestamp ?? row.off_market_date ?? null)
+      const stretch = peerStretch(row, run, originalListPrice, listPrice)
       const peer: CmaExpiredPeer = {
         listingKey: key,
         address,
@@ -586,6 +625,7 @@ export function pickExpiredPeers(
         originalListPrice,
         status,
         daysOnMarket,
+        ...(stretch ? { stretch } : {}),
         onMarketDate,
         ...(run?.to ? { offMarketDate: run.to } : {}),
         ...(cameOffAs ? { cameOffAs } : {}),
@@ -593,7 +633,8 @@ export function pickExpiredPeers(
         photoUrl: row.PhotoURL ?? null,
         listingHistoryLine: buildListingHistoryLine({
           listPrice,
-          originalListPrice,
+          // The first ask of the stretch the days count (Matt 2026-10-08).
+          originalListPrice: stretch ? stretch.firstAsk : originalListPrice,
           status: cameOffStatus(status, cameOffAs),
           onMarketDate,
           daysOnMarket,
@@ -910,7 +951,8 @@ export function whyItSat(
   if (peer.daysOnMarket != null && peer.daysOnMarket > 0) {
     bits.push(`${peer.daysOnMarket} ${peer.daysOnMarket === 1 ? 'day' : 'days'} on the market`)
   }
-  const open = peer.originalListPrice
+  // The opening ask of the stretch the days count (Matt 2026-10-08).
+  const open = listingStretchRead(peer).firstAsk
   if (open != null && Number.isFinite(open) && open > 0 && peer.listPrice > 0) {
     if (open > peer.listPrice) bits.push(`came down ${usd(open - peer.listPrice)} from ${usd(open)}`)
     else if (open === peer.listPrice) bits.push(`never came down from ${usd(open)}`)

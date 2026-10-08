@@ -37,15 +37,20 @@ import { listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing
 import {
   cameOffStatus,
   cameOffThenSentence,
-  lastActiveRun,
+  askInEffectAt,
+  lastActiveRunTimed,
+  mlsEventMillis,
+  stretchRestarted,
   mergeStatusChanges,
   pacificDay,
   pacificDaysBetween,
   sameStatus,
+  type AskChange,
   type ListingStatusChange,
 } from '@/lib/cma/listing-status'
 import type { ListingTimelineInput, ListingTimelineStep } from '@/lib/cma/market-charts'
 import { askStoryReading } from '@/lib/cma/ask-story'
+import { cycleOpeningAsk } from '@/lib/cma/last-stretch'
 import { askStepIsOwnEra } from '@/lib/cma/price-path'
 import { reanchorSellerNet } from '@/lib/pricing/seller-net'
 import { priceUnderFailedAsk, type FailedAskPullFacts } from '@/lib/pricing/failed-ask-under'
@@ -288,6 +293,13 @@ export interface ExpiredFinalCycle {
   statusDate?: string | null
   /** List date to off-market date — `finalCycleDaysOnMarket`, one definition. */
   days: number | null
+  /**
+   * True when this stretch is not the listing's first: it was withdrawn,
+   * expired, canceled or out of contract and came back (Matt 2026-10-08). The
+   * letter says the days and the first ask run from when it last came on the
+   * market. Absent on rows built before.
+   */
+  restarted?: boolean
   /** §0 trace: where each field came from. */
   source: { table: string; filter: string; fetchedAt: string; query: string }
 }
@@ -313,21 +325,37 @@ export function cycleOnTheMarket(
   changes: readonly ListingStatusChange[] | null | undefined,
 ): BpoListingCycle {
   const log = mergeStatusChanges(changes ?? [])
-  const run = lastActiveRun({
+  const run = lastActiveRunTimed({
     changes: log,
     onMarketDate: cycle.listDate,
     offMarketDate: cycle.offMarketDate,
     status: cycle.status,
   })
-  if (!run || run.source !== 'status-history' || !run.from) return cycle
+  // ONE CLOCK, THE LAST STRETCH (Matt 2026-10-08): the moment it began, so
+  // the first ask is the ask in effect then, and whether it is the listing's
+  // first stretch, so the letter can say when it is not.
+  const stretchOf = (from: string | null, at: string | null) => ({
+    listedAt: at ?? cycle.listDate,
+    restarted: stretchRestarted({
+      from: from ?? cycle.listDate,
+      changes: log,
+      firstOnMarketAt: cycle.firstOnMarketAt ?? null,
+      listedAt: cycle.listDate,
+    }),
+  })
+  if (!run || run.source !== 'status-history' || !run.from) {
+    return { ...cycle, ...stretchOf(null, cycle.listDate) }
+  }
+  const stretch = stretchOf(run.from, run.fromAt)
   const tookRecord = [...log].reverse().find((c) => sameStatus(c.to, cycle.status))
   const recordDay = pacificDay(tookRecord?.at ?? null) ?? pacificDay(cycle.offMarketDate)
-  if (!run.to) return { ...cycle, listDate: run.from }
+  if (!run.to) return { ...cycle, ...stretch, listDate: run.from }
   // Only a status that differs from the record's is worth carrying: the same
   // status is already the word every surface prints.
   const leftActiveAs = run.leftAs && !sameStatus(run.leftAs, cycle.status) ? run.leftAs : null
   return {
     ...cycle,
+    ...stretch,
     listDate: run.from,
     offMarketDate: run.to,
     leftActiveAs,
@@ -358,7 +386,8 @@ function dayString(value: string | null | undefined): string | null {
  */
 export function buildFinalCycle(args: {
   cycle: BpoListingCycle | null | undefined
-  priceEvents?: ReadonlyArray<{ date: string; ask: number }>
+  /** `at` is the change's timestamp and `previousAsk` the ask before it, when the read carries them. */
+  priceEvents?: ReadonlyArray<{ date: string; ask: number; at?: string | null; previousAsk?: number | null }>
   listingKey?: string | null
   fetchedAt?: string
 }): ExpiredFinalCycle | null {
@@ -366,7 +395,29 @@ export function buildFinalCycle(args: {
   if (!cycle) return null
   const listDate = dayString(cycle.listDate)
   const offMarketDate = dayString(cycle.offMarketDate)
-  const initialAsk = positiveAsk(cycle.originalListPrice) ?? positiveAsk(cycle.finalListPrice)
+  // THE FIRST ASK IS THE ASK IN EFFECT WHEN THE LAST STRETCH BEGAN (Matt
+  // 2026-10-08). 20676 Wild Rose was Coming Soon at $625,000, changed to
+  // $599,900 at 04:05:49 UTC and went Active 14 seconds later; the letter said
+  // "You first asked $625,000" and "Asked $625K on Sep 2". OriginalListPrice
+  // is the opening ask of the listing, Coming Soon included, so it stands only
+  // when no recorded change places the ask at that moment.
+  const opening = positiveAsk(cycle.originalListPrice) ?? positiveAsk(cycle.finalListPrice)
+  const startAt = cycle.listedAt ?? cycle.listDate ?? null
+  const startMs = mlsEventMillis(startAt)
+  const timed: AskChange[] = (args.priceEvents ?? []).flatMap((e) => {
+    const to = positiveAsk(e.ask)
+    return e.at && to != null ? [{ at: e.at, from: positiveAsk(e.previousAsk), to }] : []
+  })
+  // A stretch that came back with no recorded change to place its ask has no
+  // known opening ask unless the ask never moved: never the earlier stretch's.
+  const initialAsk =
+    Number.isFinite(startMs) && (timed.length > 0 || cycle.restarted === true)
+      ? askInEffectAt(timed, startAt, {
+          openingAsk: cycle.originalListPrice,
+          currentAsk: cycle.finalListPrice,
+          restarted: cycle.restarted === true,
+        })
+      : opening
   const finalAsk = positiveAsk(cycle.finalListPrice)
   const days = finalCycleDaysOnMarket(cycle)
 
@@ -378,6 +429,9 @@ export function buildFinalCycle(args: {
     if (!date || ask == null) continue
     if (listDate && date < listDate) continue
     if (offMarketDate && date > offMarketDate) continue
+    // A change at or before the moment the stretch began is already its
+    // opening ask, not a step the market saw.
+    if (e.at && Number.isFinite(startMs) && mlsEventMillis(e.at) <= startMs) continue
     // The opening ask is the line's start, not a step in it.
     if (initialAsk != null && ask === initialAsk && dated.length === 0) continue
     const k = `${date}|${ask}`
@@ -407,6 +461,7 @@ export function buildFinalCycle(args: {
     ...(leftActiveAs ? { leftActiveAs } : {}),
     ...(statusDate ? { statusDate } : {}),
     days,
+    ...(cycle.restarted ? { restarted: true } : {}),
     source: {
       table: 'listings + price_history + listing_history + status_history',
       filter:
@@ -414,7 +469,8 @@ export function buildFinalCycle(args: {
         `listDate and offMarketDate are the Pacific days the last Active stretch began and ended, from the MLS ` +
         `status log (listing_history 'MlsStatus: A → B' and status_history), else listings."ListDate" (falling back ` +
         `to "OnMarketDate") and listings.off_market_date (falling back to status_change_timestamp); ` +
-        `initialAsk from "OriginalListPrice", finalAsk from "ListPrice", ` +
+        `initialAsk is the ask in effect when the last Active stretch began (the last recorded ask change at or before that ` +
+        `moment), else "OriginalListPrice"; finalAsk from "ListPrice", ` +
         `days = list date to off-market date in whole calendar days. ` +
         (cutsDated
           ? `${dated.length} dated ask change(s) inside the cycle window from price_history.new_price and the ` +
@@ -611,8 +667,19 @@ export function buildAskExposure(args: {
   const final = segments[segments.length - 1]!
 
   // Second person: this is the reader's own listing (VOICE.md, Matt 2026-09-10).
-  const sentence =
-    segments.length === 1
+  // A listing that came back is told on its last stretch, and says so (Matt
+  // 2026-10-08, "Last stretch, labeled").
+  const sentence = cycle.restarted
+    ? segments.length === 1
+      ? `You asked ${usd(dominant.ask)} for all ${total.toLocaleString('en-US')} days since your home last came on the market.`
+      : `You asked ${usd(dominant.ask)} for ${dominant.days.toLocaleString(
+          'en-US',
+        )} of the ${total.toLocaleString('en-US')} days since your home last came on the market, ${pct1(
+          dominant.sharePct,
+        )} percent of that time. You came off at ${usd(final.ask)}, which you held for ${final.days.toLocaleString(
+          'en-US',
+        )}.`
+    : segments.length === 1
       ? `You asked ${usd(dominant.ask)} for all ${total.toLocaleString('en-US')} days you were on the market.`
       : `You asked ${usd(dominant.ask)} for ${dominant.days.toLocaleString(
           'en-US',
@@ -751,19 +818,26 @@ export function buildFailureFindings(args: {
   // MATERIAL path (3%+ or multiple cuts); a modest single trim gets a neutral
   // meaning, and the static-price observation only matters when the ask sat
   // above the supported range (fairness finding 2026-07-14).
-  if (cycle && cycle.originalListPrice && cycle.finalListPrice && cycle.originalListPrice > cycle.finalListPrice) {
-    const cut = cycle.originalListPrice - cycle.finalListPrice
-    const cutPct = (cut / cycle.originalListPrice) * 100
-    const cuts = cycle.priceCutCount ?? 0
+  // Measured from the first ask of the last stretch on the market (Matt
+  // 2026-10-08), the stretch the days above count: 20676 Wild Rose's
+  // $625,000 was a Coming Soon price it never went Active at. The MLS cut
+  // count covers the whole listing, so it is said only when the stretch
+  // opened at the listing's own original ask.
+  const stretchAsk = subject.stretch ? subject.stretch.firstAsk : (cycle?.originalListPrice ?? null)
+  const sinceBack = subject.stretch?.restarted ? ' since your home last came on the market' : ''
+  if (cycle && stretchAsk && cycle.finalListPrice && stretchAsk > cycle.finalListPrice) {
+    const cut = stretchAsk - cycle.finalListPrice
+    const cutPct = (cut / stretchAsk) * 100
+    const cuts = stretchAsk === cycle.originalListPrice ? (cycle.priceCutCount ?? 0) : 0
     findings.push({
       lens: 'price-cuts',
-      fact: `The asking price moved from ${usd(cycle.originalListPrice)} to ${usd(cycle.finalListPrice)}, a ${usd(cut)} reduction (${cutPct.toFixed(1)}%)${cuts > 0 ? ` over ${cuts} cut${cuts === 1 ? '' : 's'}` : ''}.`,
+      fact: `The asking price moved from ${usd(stretchAsk)} to ${usd(cycle.finalListPrice)}${sinceBack}, a ${usd(cut)} reduction (${cutPct.toFixed(1)}%)${cuts > 0 ? ` over ${cuts} cut${cuts === 1 ? '' : 's'}` : ''}.`,
       meaning: '',
     })
-  } else if (cycle && cycle.originalListPrice && cycle.originalListPrice === cycle.finalListPrice && askAboveRange) {
+  } else if (cycle && stretchAsk && stretchAsk === cycle.finalListPrice && askAboveRange) {
     findings.push({
       lens: 'price-cuts',
-      fact: `The asking price never moved from ${usd(cycle.originalListPrice)} across the full listing period.`,
+      fact: `The asking price never moved from ${usd(stretchAsk)} across the ${sinceBack ? `listing period${sinceBack}` : 'full listing period'}.`,
       meaning: '',
     })
   }
@@ -1412,10 +1486,17 @@ export function resolveListingTimeline(input: {
 
   const steps: ListingTimelineStep[] = []
   if (cycle) {
-    if (cycle.initialAsk != null && cycle.initialAsk > 0) {
-      steps.push({ date: listDate, ask: cycle.initialAsk })
+    // The opening ask as the market saw it: an ask changed on the day the
+    // stretch began replaces the one before it, which never ran a day (Matt
+    // 2026-10-08; 20676 Wild Rose drew "Asked $625K on Sep 2", its Coming
+    // Soon price). The ask exposure reads the cycle the same way.
+    const opening = cycleOpeningAsk(cycle)
+    if (opening != null && opening > 0) {
+      steps.push({ date: listDate, ask: opening })
     }
+    const startDay = pacificDay(listDate)
     for (const cut of cycle.cuts ?? []) {
+      if (cycle.cutsDated !== false && startDay && pacificDay(cut.date) === startDay) continue
       if (cut.ask > 0 && cut.date) steps.push({ date: cut.date, ask: cut.ask })
     }
   }

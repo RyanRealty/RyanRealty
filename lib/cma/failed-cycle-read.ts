@@ -13,8 +13,9 @@
 import { analyzeListingHistory } from '@/lib/bpo/history'
 import type { BpoListingCycle } from '@/lib/bpo/types'
 import type { BpoListingRow } from '@/lib/data/bpo/reads'
-import { getListingStatusChanges } from '@/lib/data/cma/localOutcomeReads'
+import { getListingAskChanges, getListingStatusChanges } from '@/lib/data/cma/localOutcomeReads'
 import { cycleOnTheMarket } from '@/lib/cma/expired-audit'
+import { listingStretch, type ListingStretch } from '@/lib/cma/listing-status'
 import type { CmaSubject } from '@/lib/cma/types'
 
 export async function readFailedListingCycle(
@@ -44,4 +45,34 @@ export function withFailedCycle<T extends { currentCycle: BpoListingCycle | null
   if (!cycle || !history.currentCycle) return history
   if (cycle.listingKey !== history.currentCycle.listingKey) return history
   return { ...history, currentCycle: cycle }
+}
+
+/**
+ * The last stretch of a subject that is on the market (Matt 2026-10-08, "Last
+ * stretch, labeled"): its days run from `lastListDate`, the day it last came
+ * on the market, so the first ask the letter prints is the ask in effect at
+ * that moment, and the letter says when that stretch is not its first. Both
+ * reads are additive: without the ask history a home that came back has no
+ * first ask unless its ask never moved, and never one from an earlier stretch.
+ */
+export async function readSubjectStretch(subject: CmaSubject): Promise<ListingStretch | null> {
+  const key = subject.listingKey?.trim()
+  if (!key || !subject.lastListDate) return null
+  const [changes, asks] = await Promise.all([
+    getListingStatusChanges([key])
+      .then((byKey) => byKey.get(key) ?? [])
+      .catch(() => []),
+    getListingAskChanges([key])
+      .then((byKey) => byKey.get(key) ?? [])
+      .catch(() => []),
+  ])
+  return listingStretch({
+    startAt: subject.lastListDate,
+    changes,
+    firstOnMarketAt: subject.firstOnMarketAt ?? null,
+    listedAt: subject.lastListDate,
+    askChanges: asks,
+    openingAsk: subject.originalListPrice ?? null,
+    currentAsk: subject.lastListPrice,
+  })
 }

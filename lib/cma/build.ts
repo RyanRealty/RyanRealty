@@ -77,7 +77,8 @@ import { getExpiredOwnershipSince } from '@/lib/data/prospecting/get'
 import { getCmaListingPriceEvents } from '@/lib/data/cma/localOutcomeReads'
 import { buildCmaLocalOutcomes } from '@/lib/pricing/local-outcomes-read'
 import { analyzeListingHistory } from '@/lib/bpo/history'
-import { readFailedListingCycle, withFailedCycle } from '@/lib/cma/failed-cycle-read'
+import { readFailedListingCycle, readSubjectStretch, withFailedCycle } from '@/lib/cma/failed-cycle-read'
+import { statusIsOnMarket } from '@/lib/cma/subject-on-market'
 import {
   applyFailedAskCap,
   failedAskBelowRangeNote,
@@ -372,6 +373,16 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         subject.lastListDate = null
         subject.listingHistoryLine = null
       }
+    }
+
+    // THE SUBJECT'S LAST STRETCH (Matt 2026-10-08, "Last stretch, labeled").
+    // A home on the market counts its days from the day it last came on the
+    // market, so the first ask the letter prints is the ask in effect then,
+    // not its Coming Soon price or an earlier stretch's. A failed listing's
+    // stretch is stamped from its final cycle below, where the same rule
+    // resolves its opening ask off its price events.
+    if (!lastCycleFailed && subject.lastListDate && statusIsOnMarket(subject.standardStatus)) {
+      subject.stretch = await readSubjectStretch(subject).catch(() => null)
     }
 
     // WHEN THE LISTING AND THE HOUSE'S OWN RECORD DISAGREE (Matt 2026-09-10:
@@ -683,6 +694,17 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           return { resolved }
         })()
       : null
+    // The failed listing's last stretch, as its final cycle resolved it (Matt
+    // 2026-10-08): the day it began, the ask in effect then, and whether it
+    // came back.
+    const resolvedCycle = finalCycleRead?.resolved.cycle ?? null
+    if (resolvedCycle?.listDate) {
+      subject.stretch = {
+        from: resolvedCycle.listDate,
+        firstAsk: resolvedCycle.initialAsk,
+        restarted: resolvedCycle.restarted === true,
+      }
+    }
     const listingWindow = {
       city: subject.city,
       listDate: finalCycleRead?.resolved.cycle?.listDate ?? subject.lastListDate,

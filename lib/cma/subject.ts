@@ -230,6 +230,7 @@ export function rowToSubject(row: CmaListingRow): CmaSubject {
     lastListPrice: listPrice,
     originalListPrice,
     lastListDate: listDate,
+    firstOnMarketAt: str(row['original_on_market_timestamp']),
     listingHistoryLine: historyLine,
     // Who holds this listing. Read only by the compliance carve-out
     // (lib/pricing/subject-status.ts): a report may not solicit an owner whose

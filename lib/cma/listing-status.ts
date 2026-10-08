@@ -130,6 +130,11 @@ function eventTime(value: string): number {
   return Number.isNaN(t) ? Number.NaN : t
 }
 
+/** Epoch milliseconds of an MLS timestamp in either shape the reads return (a bare day reads as its noon). NaN when unusable. */
+export function mlsEventMillis(value: string | null | undefined): number {
+  return value ? eventTime(value) : Number.NaN
+}
+
 /**
  * The two writers' status changes as one log, oldest first.
  *
@@ -181,28 +186,46 @@ export function activePeriods(
   changes: readonly ListingStatusChange[],
   opts: { listedAt?: string | null } = {},
 ): ActivePeriod[] {
+  return timedActivePeriods(changes, opts).map(({ from, to, endedAs }) => ({ from, to, endedAs }))
+}
+
+/** An Active stretch with the exact moment it opened: the status change's timestamp, or the listing's own on-market timestamp. */
+type TimedPeriod = ActivePeriod & { fromAt: string }
+
+function timedActivePeriods(
+  changes: readonly ListingStatusChange[],
+  opts: { listedAt?: string | null } = {},
+): TimedPeriod[] {
   const sorted = mergeStatusChanges(changes)
-  const out: ActivePeriod[] = []
+  const out: TimedPeriod[] = []
   let open: string | null = null
+  let openAt: string | null = null
   const first = sorted[0]
   if (first && statusKind(first.from) === 'active' && opts.listedAt) {
     const start = pacificDay(opts.listedAt)
     const firstDay = pacificDay(first.at)
-    if (start && firstDay && start <= firstDay) open = start
+    if (start && firstDay && start <= firstDay) {
+      open = start
+      openAt = opts.listedAt
+    }
   }
   for (const c of sorted) {
     const day = pacificDay(c.at)
     if (!day) continue
     if (statusKind(c.to) === 'active') {
-      if (open == null) open = day
+      if (open == null) {
+        open = day
+        openAt = c.at
+      }
       continue
     }
     if (open != null) {
-      out.push({ from: open, to: day, endedAs: c.to.trim() })
+      out.push({ from: open, fromAt: openAt ?? open, to: day, endedAs: c.to.trim() })
       open = null
+      openAt = null
     }
   }
-  if (open != null) out.push({ from: open, to: null, endedAs: null })
+  if (open != null) out.push({ from: open, fromAt: openAt ?? open, to: null, endedAs: null })
   return out
 }
 
@@ -223,7 +246,7 @@ export type ActiveRun = {
   source: 'status-history' | 'listing-dates'
 }
 
-export function lastActiveRun(input: {
+type ActiveRunInput = {
   changes?: readonly ListingStatusChange[] | null
   /** The listing row's on-market day (OnMarketDate, else ListDate). */
   onMarketDate?: string | null
@@ -233,14 +256,30 @@ export function lastActiveRun(input: {
   offMarketDate?: string | null
   /** The listing's status of record. */
   status?: string | null
-}): ActiveRun | null {
-  const periods = activePeriods(input.changes ?? [], {
+}
+
+export function lastActiveRun(input: ActiveRunInput): ActiveRun | null {
+  const run = lastActiveRunTimed(input)
+  if (!run) return null
+  return { from: run.from, to: run.to, leftAs: run.leftAs, days: run.days, source: run.source }
+}
+
+/**
+ * `lastActiveRun` with the exact moment the stretch began (`fromAt`): the
+ * status change that put it on the market, or the row's own on-market
+ * timestamp. The ask in effect at that moment is the stretch's first ask
+ * (`listingStretch`), so it needs the time of day, not the day: 2260 Indigo
+ * came back at 16:16:30 UTC and was cut 19 seconds later.
+ */
+export function lastActiveRunTimed(input: ActiveRunInput): (ActiveRun & { fromAt: string | null }) | null {
+  const periods = timedActivePeriods(input.changes ?? [], {
     listedAt: input.firstOnMarketAt ?? input.onMarketDate ?? null,
   })
   const last = periods[periods.length - 1]
   if (last) {
     return {
       from: last.from,
+      fromAt: last.fromAt,
       to: last.to,
       leftAs: last.endedAs,
       days: last.to ? pacificDaysBetween(last.from, last.to) : null,
@@ -252,6 +291,7 @@ export function lastActiveRun(input: {
   if (!from && !to) return null
   return {
     from,
+    fromAt: from ? (input.onMarketDate ?? null) : null,
     to,
     leftAs: to ? (input.status?.trim() || null) : null,
     days: from && to ? pacificDaysBetween(from, to) : null,
@@ -276,7 +316,7 @@ export type OfferRun = {
   source: 'status-history' | 'listing-dates' | 'mls-days-to-pending'
 }
 
-export function offerRun(input: {
+type OfferRunInput = {
   changes?: readonly ListingStatusChange[] | null
   onMarketDate?: string | null
   firstOnMarketAt?: string | null
@@ -284,26 +324,220 @@ export function offerRun(input: {
   mlsDaysToPending?: number | null
   /** An offer after the close is not this sale's. */
   closeDate?: string | null
-}): OfferRun | null {
+}
+
+export function offerRun(input: OfferRunInput): OfferRun | null {
+  const run = offerRunTimed(input)
+  if (!run) return null
+  return { from: run.from, to: run.to, days: run.days, source: run.source }
+}
+
+/** `offerRun` with the exact moment its clock started (see `lastActiveRunTimed`). */
+export function offerRunTimed(input: OfferRunInput): (OfferRun & { fromAt: string | null }) | null {
   const close = pacificDay(input.closeDate)
-  const periods = activePeriods(input.changes ?? [], {
+  const periods = timedActivePeriods(input.changes ?? [], {
     listedAt: input.firstOnMarketAt ?? input.onMarketDate ?? null,
   }).filter((p) => p.to != null && statusKind(p.endedAs) === 'offer' && (!close || p.to <= close))
   const last = periods[periods.length - 1]
   if (last) {
-    return { from: last.from, to: last.to, days: pacificDaysBetween(last.from, last.to), source: 'status-history' }
+    return {
+      from: last.from,
+      fromAt: last.fromAt,
+      to: last.to,
+      days: pacificDaysBetween(last.from, last.to),
+      source: 'status-history',
+    }
   }
   const from = pacificDay(input.onMarketDate)
+  const fromAt = from ? (input.onMarketDate ?? null) : null
   const to = pacificDay(input.pendingAt)
   if (from && to && (!close || to <= close)) {
     const days = pacificDaysBetween(from, to)
-    if (days != null) return { from, to, days, source: 'listing-dates' }
+    if (days != null) return { from, fromAt, to, days, source: 'listing-dates' }
   }
   const mls = input.mlsDaysToPending
   if (mls != null && Number.isFinite(mls) && mls >= 0) {
-    return { from, to: null, days: Math.round(mls), source: 'mls-days-to-pending' }
+    return { from, fromAt, to: null, days: Math.round(mls), source: 'mls-days-to-pending' }
   }
   return null
+}
+
+// ── The last stretch on the market (Matt 2026-10-08, "Last stretch, labeled") ──
+
+/**
+ * ONE CLOCK PER HOME: ITS LAST STRETCH ON THE MARKET (Matt 2026-10-08).
+ *
+ * A home that was withdrawn, expired or fell out of contract and came back is
+ * measured on its last stretch: its days run from the last time it came on the
+ * market (as Bend's 26-day median is measured, off days_to_pending), and the
+ * first ask printed for it is the price in effect when that stretch began.
+ * Reader reviews found the two clocks mixed on every surface: 61197 Cottonwood
+ * printed "First ask $850K" (April's listing) beside "offer in 47 days" (from
+ * Nov 13, when it came back at $774,900); 628 Portland printed $1.48M for a
+ * stretch that began at $1,395,000; competitor 2260 Indigo printed "Original
+ * list $670,000" and a $120,000 cut over 115 days that began Jun 15 at
+ * $645,000; and 20676 Wild Rose's own letter said "You first asked $625,000",
+ * its Coming Soon price, changed to $599,900 fourteen seconds before it went
+ * Active. Where the stretch is not the listing's first, the letter says so.
+ */
+export type ListingStretch = {
+  /** The Pacific day the stretch began. */
+  from: string
+  /** The ask in effect the moment it began. Null when the record cannot say. */
+  firstAsk: number | null
+  /** True when the listing had been on the market before this stretch: withdrawn, expired, canceled or out of contract, and back. */
+  restarted: boolean
+}
+
+/** One recorded change to a listing's ask. `at` is the event's timestamp; `from` is the ask before it, when recorded. */
+export type AskChange = {
+  at: string
+  from: number | null
+  to: number
+}
+
+function positiveAsk(value: unknown): number | null {
+  const n = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(n) && n > 0 ? Math.round(n) : null
+}
+
+/**
+ * `ListPrice: 475000.00 → 460000.00`, the MLS change-log line the Spark sync
+ * stores in `listing_history.description`.
+ */
+const LIST_PRICE_CHANGE_RE = /^\s*ListPrice:\s*([\d.,]+)\s*(?:→|->|=>)\s*([\d.,]+)/i
+
+export function parseListPriceChange(
+  description: string | null | undefined,
+): { from: number | null; to: number } | null {
+  const m = LIST_PRICE_CHANGE_RE.exec(description ?? '')
+  if (!m) return null
+  const to = positiveAsk(Number(m[2]!.replace(/,/g, '')))
+  if (to == null) return null
+  return { from: positiveAsk(Number(m[1]!.replace(/,/g, ''))), to }
+}
+
+/**
+ * The two writers' ask changes as one log, oldest first. `listing_history`
+ * carries the MLS's own timestamps; `price_history` is what the delta sync saw,
+ * minutes later (20676 Wild Rose's cut is 04:05:49 in the MLS log and 04:18:13
+ * in the sync's), and the sync sometimes writes one change more than once. A
+ * sync row that repeats a logged change inside a day is that change, and the
+ * MLS timestamp wins.
+ */
+export function mergeAskChanges(
+  logged: readonly AskChange[],
+  synced: readonly AskChange[] = [],
+): AskChange[] {
+  const valid = (c: AskChange) => positiveAsk(c.to) != null && Number.isFinite(eventTime(c.at))
+  const out: AskChange[] = logged.filter(valid)
+  for (const c of synced) {
+    if (!valid(c)) continue
+    const t = eventTime(c.at)
+    const repeat = out.some(
+      (o) =>
+        Math.round(o.to) === Math.round(c.to) &&
+        (o.from == null || c.from == null || Math.round(o.from) === Math.round(c.from)) &&
+        Math.abs(eventTime(o.at) - t) < 86_400_000,
+    )
+    if (!repeat) out.push(c)
+  }
+  // A change to the ask already in effect is no change: the sync wrote 628
+  // Portland's May 14 cut again on May 15 and May 21.
+  const kept: AskChange[] = []
+  let state: number | null = null
+  for (const c of out.sort((a, b) => eventTime(a.at) - eventTime(b.at))) {
+    const to = Math.round(c.to)
+    if (state != null && to === state) continue
+    kept.push(c)
+    state = to
+  }
+  return kept
+}
+
+/**
+ * The ask in effect at one moment: the last recorded change at or before it,
+ * else the ask the first later change moved off of, else the listing's opening
+ * ask (OriginalListPrice). With no change on record the ask never moved, so the
+ * opening ask stands for a first stretch; for a stretch that restarted it
+ * stands only when the opening and current asks agree, and otherwise the
+ * record cannot say (null, never a guess). A row with no opening ask on record
+ * has none here either: the current ask is not evidence the ask never moved.
+ */
+export function askInEffectAt(
+  changes: readonly AskChange[],
+  at: string | null | undefined,
+  opts: { openingAsk?: number | null; currentAsk?: number | null; restarted?: boolean } = {},
+): number | null {
+  const opening = positiveAsk(opts.openingAsk)
+  const current = positiveAsk(opts.currentAsk)
+  const t = at ? eventTime(at) : Number.NaN
+  const sorted = mergeAskChanges(changes)
+  if (sorted.length > 0 && Number.isFinite(t)) {
+    let before: AskChange | null = null
+    for (const c of sorted) if (eventTime(c.at) <= t) before = c
+    if (before) return positiveAsk(before.to)
+    const after = sorted.find((c) => eventTime(c.at) > t)
+    return positiveAsk(after?.from) ?? opening
+  }
+  if (!opts.restarted) return opening
+  return opening != null && current != null && opening === current ? current : null
+}
+
+/**
+ * Whether the listing had been on the market before the stretch that began on
+ * `from`: its first on-market day (original_on_market_timestamp, which is the
+ * day it went Active, never a Coming Soon day) is earlier, or the status log
+ * shows an Active stretch that began on an earlier day.
+ */
+export function stretchRestarted(input: {
+  from: string | null | undefined
+  changes?: readonly ListingStatusChange[] | null
+  firstOnMarketAt?: string | null
+  listedAt?: string | null
+}): boolean {
+  const day = pacificDay(input.from)
+  if (!day) return false
+  const first = pacificDay(input.firstOnMarketAt)
+  if (first && first < day) return true
+  return timedActivePeriods(input.changes ?? [], {
+    listedAt: input.firstOnMarketAt ?? input.listedAt ?? null,
+  }).some((p) => p.from < day)
+}
+
+/**
+ * The stretch that began at `startAt`: its day, the ask in effect at that
+ * moment, and whether it is the listing's first. `startAt` is the moment the
+ * days are counted from (`offerRunTimed` / `lastActiveRunTimed`'s `fromAt`, or
+ * the row's OnMarketDate for a live listing), so the first ask and the days
+ * are one clock.
+ */
+export function listingStretch(input: {
+  startAt: string | null | undefined
+  changes?: readonly ListingStatusChange[] | null
+  firstOnMarketAt?: string | null
+  /** The row's on-market timestamp, for a status log that opens mid-listing. */
+  listedAt?: string | null
+  askChanges?: readonly AskChange[] | null
+  /** MLS OriginalListPrice: the ask the listing opened at. */
+  openingAsk?: number | null
+  /** MLS ListPrice. */
+  currentAsk?: number | null
+}): ListingStretch | null {
+  const from = pacificDay(input.startAt)
+  if (!from) return null
+  const restarted = stretchRestarted({
+    from,
+    changes: input.changes,
+    firstOnMarketAt: input.firstOnMarketAt,
+    listedAt: input.listedAt,
+  })
+  const firstAsk = askInEffectAt(input.askChanges ?? [], input.startAt, {
+    openingAsk: input.openingAsk,
+    currentAsk: input.currentAsk,
+    restarted,
+  })
+  return { from, firstAsk, restarted }
 }
 
 /**
