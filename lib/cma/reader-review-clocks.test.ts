@@ -144,8 +144,14 @@ describe('the offer clock and the days on market share one start', () => {
       ],
       market: null,
     })
-    expect(html).toContain('inside 30 days')
+    // The caption counts the bars actually drawn, and "within" is true of the
+    // slowest bar sitting exactly on the figure (reader review 2026-10-08).
+    expect(html).toContain('All three sales shown had an offer within 30 days.')
     expect(html).not.toContain('67 days')
+    // The sale left off is named under the chart rather than skipped silently.
+    expect(html).toContain(
+      'Sale 4, 4 D, is not on the chart: its recorded offer date does not fit its listing and closing dates.',
+    )
   })
 })
 
@@ -180,7 +186,7 @@ describe('the subject\'s days against the figures beside them', () => {
 
   it('says the plain fact when the subject sat less than the figures it is set beside (Wild Rose)', () => {
     const html = renderDaysToOfferHtml({ subject: subject('Withdrawn', 25), comps, market })
-    expect(html).toContain('Every sale below had an offer inside 43 days.')
+    expect(html).toContain('All five sales shown had an offer within 43 days.')
     expect(html).toContain('median is 26.')
     expect(html).toContain('Yours was withdrawn after 25 days.')
     expect(html).not.toContain('never got one')
@@ -192,11 +198,16 @@ describe('the subject\'s days against the figures beside them', () => {
 
   it('keeps the contrast when the subject outran every figure (3177 Coho)', () => {
     const html = renderDaysToOfferHtml({ subject: subject('Expired', 302), comps, market })
-    expect(html).toContain('Yours sat 302 days and never got one.')
-    expect(html).toContain('302 days, no offer')
+    // The contrast says what the MLS status says. It does not record whether an
+    // offer came in, so nothing says "never got one" (reader review 2026-10-08).
+    expect(html).toContain('Yours sat 302 days and did not sell.')
+    expect(html).toContain('302 days, expired')
+    expect(html).not.toContain('never got one')
+    expect(html).not.toContain('no offer')
     const withdrawnLong = renderDaysToOfferHtml({ subject: subject('Withdrawn', 302), comps, market })
     // A long run tested the market, withdrawn or not.
-    expect(withdrawnLong).toContain('Yours sat 302 days and never got one.')
+    expect(withdrawnLong).toContain('Yours sat 302 days and did not sell.')
+    expect(withdrawnLong).toContain('302 days, withdrawn')
   })
 
   it('gates the offer-timing line the same way', () => {
@@ -204,7 +215,7 @@ describe('the subject\'s days against the figures beside them', () => {
       'Yours was withdrawn after 25 days.',
     )
     expect(renderOfferTimingHtml({ market, subject: subject('Expired', 40) })).toContain(
-      'Yours went 40 days without one.',
+      'Yours sat 40 days and did not sell.',
     )
   })
 
@@ -215,7 +226,8 @@ describe('the subject\'s days against the figures beside them', () => {
     expect(short).not.toContain('without an offer')
     expect(short).not.toContain('that long')
     const long = askStoryReading({ ...base, days: 120, status: 'Expired' })
-    expect(long).toContain('Your home sat 120 days without an offer.')
+    expect(long).toContain('Your home sat 120 days and did not sell.')
+    expect(long).not.toContain('without an offer')
   })
 
   it('counts only figures that are there', () => {
