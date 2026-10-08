@@ -46,7 +46,7 @@ import type { CmaComp, CmaMarketContext, CmaSubject } from '@/lib/cma/types'
 import { setJudgeUnavailableReason } from '@/lib/cma/llm-unavailable'
 import { sanitizeClientProse } from '@/lib/cma/voice-sanitize'
 import { SAME_STREET_SIZE_BAND, sameStreetPeer } from '@/lib/pricing/price-anchor'
-import { roomCountsDecision } from '@/lib/pricing/room-ground'
+import { carriedRoomDecision } from '@/lib/pricing/room-ground'
 import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
 import { roomDifferenceSentence } from '@/lib/pricing/room-counts'
 import {
@@ -733,13 +733,14 @@ function finalizeJudgment(args: {
   }
 
   // THE ONE ROOM RULE IS NOT A JUDGE CALL (Matt 2026-09-10, skill 0.1).
-  // The picker and this review share roomCountsDecision. A one-room gap on
-  // own ground that the picker kept cannot be dropped for the room; a gap
-  // the rule refuses cannot stay, whatever the model said.
+  // This review reads the picker's own decision for the sale, re-run on the
+  // counts the picker compared (carriedRoomDecision). A one-room gap on own
+  // ground that the picker kept cannot be dropped for the room; a gap the
+  // rule refuses cannot stay, whatever the model said.
   for (const v of judged.verdicts) {
     const c = byKey.get(v.listingKey)
     if (!c) continue
-    const rooms = roomCountsDecision(subject, c)
+    const rooms = carriedRoomDecision(subject, c)
     if (!rooms.ok) {
       if (v.tier === 'exclude') continue
       v.tier = 'exclude'

@@ -1150,6 +1150,9 @@ export async function selectComps(
         continue
       }
       comp.roomDifference = rooms.notes.length > 0 ? rooms.notes : null
+      // The decision travels with the sale: every later check reads it
+      // (lib/pricing/room-ground.ts carriedRoomDecision).
+      comp.roomDecision = rooms
 
       // HARD EXCLUSION at every tier for custom / new-construction subjects
       // (Matt 2026-09-03, 19365 Rim View). Year-built and quality outrank a
@@ -1569,6 +1572,7 @@ export async function selectCompsByKeys(subject: CmaSubject, keys: string[]): Pr
       continue
     }
     comp.roomDifference = rooms.notes.length > 0 ? rooms.notes : null
+    comp.roomDecision = rooms
     if (!byKey.has(comp.listingKey)) byKey.set(comp.listingKey, comp)
   }
   // Most-recent-first, matching the exemplar ordering. No cap, no outlier drop.

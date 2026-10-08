@@ -693,7 +693,14 @@ async function dryRun(slug: string): Promise<DryRun> {
     minComps: MIN_COMPS,
     marketContextPresent: market != null,
     subjectSubType: subject.propertySubType,
+    // EXACTLY the subject lib/cma/build.ts hands the contract: beds, the MLS
+    // bath split and the recorded plat, not the bath total alone (which made
+    // this script compare totals the picker never compared, 2026-10-08).
     subjectBaths: subject.baths,
+    subjectBathsFull: subject.bathsFull ?? null,
+    subjectBathsHalf: subject.bathsHalf ?? null,
+    subjectBeds: subject.beds,
+    subjectSubdivisionSlug: subject.subdivisionSlug ?? null,
     subjectIsCustomOrNew: customOrNew,
     failedAsk: pricing.failedAsk ?? null,
   })

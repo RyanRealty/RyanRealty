@@ -18,7 +18,8 @@
 
 import type { CmaAdjustedComp, CmaPricing } from '@/lib/cma/types'
 import { productTypeCompatible } from '@/lib/cma/market-area'
-import { roomCountsDecision } from '@/lib/pricing/room-ground'
+import { carriedRoomDecision, type RoomCompared } from '@/lib/pricing/room-ground'
+import { printedBaths } from '@/lib/pricing/bath-count'
 import type { CompJudgment } from '@/lib/cma/judge'
 import type { CmaAudit } from '@/lib/cma/audit'
 import type { CmaSiteData } from '@/lib/cma/county'
@@ -59,6 +60,21 @@ export interface AccuracyContract {
 
 /** The rungs whose presence means the search had to widen (lib/cma/comp-tiers.ts). */
 export const WIDENED_TIER_MARK = 'widened-disclosed'
+
+/** "2 bed / 1 bath", dropping any count that is not known. Never "?". */
+function roomCountsText(beds: number | null | undefined, baths: number | null | undefined, bathWord = 'bath'): string {
+  const parts: string[] = []
+  if (beds != null) parts.push(`${beds} bed`)
+  if (baths != null) parts.push(`${baths} ${bathWord}`)
+  return parts.join(' / ')
+}
+
+/** One side of the counts the rule compared, full baths named as such. */
+function comparedRoomsText(compared: RoomCompared, side: 'subject' | 'sale'): string {
+  const beds = side === 'subject' ? compared.subjectBeds : compared.saleBeds
+  const baths = side === 'subject' ? compared.subjectBaths : compared.saleBaths
+  return roomCountsText(beds, baths, compared.bathBasis === 'full' ? 'full bath' : 'bath')
+}
 
 export function evaluateAccuracyContract(args: {
   comps: CmaAdjustedComp[]
@@ -236,33 +252,44 @@ export function evaluateAccuracyContract(args: {
           ? `Comp ${crossType.address} is ${crossType.propertySubType ?? 'an unknown type'} and cannot price a ${subjectSubType}.`
           : `Every priced sale is the same property type as the subject (${subjectSubType}).`,
   })
-  // ONE ROOM RULE (skill 0.1). Same function the picker and the review use.
-  const crossRoom = comps.find(
-    (c) =>
-      !roomCountsDecision(
-        {
-          beds: subjectBeds,
-          baths: subjectBaths,
-          bathsFull: args.subjectBathsFull ?? null,
-          bathsHalf: args.subjectBathsHalf ?? null,
-          subdivisionSlug: subjectSubdivisionSlug,
-        },
-        c,
-      ).ok,
-  )
-  const roomNoted = comps.filter((c) => (c.roomDifference ?? []).length > 0).length
+  // ONE ROOM RULE (skill 0.1). The picker's own decision for each sale, re-run
+  // on the counts the picker compared (lib/pricing/room-ground.ts
+  // carriedRoomDecision), so this gate cannot refuse a sale the picker kept
+  // because the MLS bath split reached one of them and not the other
+  // (cma-1117-milwaukee, 2026-10-08). A sale with no stamp is decided here.
+  const roomSubject = {
+    beds: subjectBeds,
+    baths: subjectBaths,
+    bathsFull: args.subjectBathsFull ?? null,
+    bathsHalf: args.subjectBathsHalf ?? null,
+    subdivisionSlug: subjectSubdivisionSlug,
+  }
+  const roomDecisions = comps.map((c) => ({ comp: c, decision: carriedRoomDecision(roomSubject, c) }))
+  const crossRoom = roomDecisions.find((d) => !d.decision.ok)
+  const roomNoted = roomDecisions.filter(
+    (d) => (d.comp.roomDifference ?? []).length > 0 || d.decision.notes.length > 0,
+  ).length
+  const roomsSkipped = subjectBaths == null && subjectBeds == null
+  // Only the counts this home carries print. An unknown count is stated as
+  // not compared (the rule treats it as a match), never printed as "?".
+  const subjectRooms = roomCountsText(subjectBeds, printedBaths(roomSubject))
+  const notCompared =
+    subjectBeds == null
+      ? " This home's bedroom count was not stored, so bedrooms were not compared."
+      : subjectBaths == null
+        ? " This home's bath count was not stored, so baths were not compared."
+        : ''
   checks.push({
     id: 'bath-count-match',
     severity: 'hard',
-    pass: (subjectBaths == null && subjectBeds == null) || !crossRoom,
-    detail:
-      subjectBaths == null && subjectBeds == null
-        ? 'Subject room counts were not stored. Room-count gate skipped.'
-        : crossRoom
-          ? `Comp ${crossRoom.address} is ${crossRoom.beds ?? '?'} bed / ${crossRoom.baths ?? '?'} bath against this home's ${subjectBeds ?? '?'} / ${subjectBaths ?? '?'}, a room gap the one-room rule refuses.`
-          : roomNoted > 0
-            ? `Every priced sale matches the subject's ${subjectBeds ?? '?'} bed / ${subjectBaths ?? '?'} bath counts, except ${roomNoted} on this home's own ground that sit one room away and are disclosed as such.`
-            : `Every priced sale has a room count the one-room rule allows (${subjectBeds ?? '?'} bed / ${subjectBaths ?? '?'} bath).`,
+    pass: roomsSkipped || !crossRoom,
+    detail: roomsSkipped
+      ? 'Subject room counts were not stored. Room-count gate skipped.'
+      : crossRoom
+        ? `Comp ${crossRoom.comp.address} is ${comparedRoomsText(crossRoom.decision.compared, 'sale')} against this home's ${comparedRoomsText(crossRoom.decision.compared, 'subject')}, a room gap the one-room rule refuses.${notCompared}`
+        : roomNoted > 0
+          ? `Every priced sale matches the subject's ${subjectRooms} counts, except ${roomNoted} on this home's own ground that sit one room away and are disclosed as such.${notCompared}`
+          : `Every priced sale has a room count the one-room rule allows (${subjectRooms}).${notCompared}`,
   })
   checks.push({
     id: 'dispersion-computed',
