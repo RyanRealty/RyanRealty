@@ -33,9 +33,9 @@ import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { SAME_STREET_PREMIUM_MAX, sameStreetPeer } from '@/lib/pricing/price-anchor'
 import { landProduct, priceLandSubject } from '@/lib/cma/land-pricing'
 import type { CmaSiteData } from '@/lib/cma/county'
+import { sizeAdjustmentFor } from '@/lib/pricing/size-adjustment'
 
 const MS_PER_MONTH = 30.44 * 86_400_000
-const SIZE_ADJ_FACTOR = 0.5
 const IMPROVEMENT_RECOVERY = 0.65
 // Comparable-heterogeneity guard: coefficient of variation of the comps'
 // adjusted $/sqft. Above this, the "comparables" span different quality or
@@ -101,9 +101,12 @@ export function adjustComps(
     // Land comps have no living area. Dividing by it yielded Infinity, which
     // then flowed into the citations blob. Land prices per ACRE, in
     // lib/cma/land-pricing.ts; here the rate is simply not defined.
-    const ppsfTimeAdjusted = comp.sqft > 0 ? timeAdjustedPrice / comp.sqft : 0
-    const sizeAdjustment =
-      subjectSqft > 0 ? Math.round((subjectSqft - comp.sqft) * ppsfTimeAdjusted * SIZE_ADJ_FACTOR) : 0
+    // The size move is the facts walk's, through the same function (Matt
+    // 2026-10-08: every sale is adjusted for size the same way, whichever
+    // search found it).
+    const size = sizeAdjustmentFor({ subjectSqft, saleSqft: comp.sqft, timeAdjustedPrice })
+    const ppsfTimeAdjusted = size.ppsfTimeAdjusted
+    const sizeAdjustment = size.sizeAdjustment
     const adjustedPrice = timeAdjustedPrice + sizeAdjustment
     const sizeProximity = subjectSqft > 0 ? 1 / (1 + Math.abs(subjectSqft - comp.sqft) / subjectSqft) : 1
     const recency = 1 / (1 + monthsSinceClose / 12)
@@ -117,6 +120,7 @@ export function adjustComps(
       timeAdjustedPrice,
       ppsfTimeAdjusted: +ppsfTimeAdjusted.toFixed(2),
       sizeAdjustment,
+      sizeAdjustmentBasis: size.basis,
       adjustedPrice,
       weight: +(sizeProximity * recency).toFixed(4),
       _timeAdjCapped: timeAdjustmentCapped,

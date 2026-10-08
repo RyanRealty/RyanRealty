@@ -10,6 +10,7 @@
 import type { CmaMartYearFigure } from '@/lib/cma/market-board-mart'
 import type { LocationMatch } from '@/lib/pricing/closed-comp-weight'
 import type { RoomDecision } from '@/lib/pricing/room-ground'
+import type { SizeAdjustmentBasis } from '@/lib/pricing/size-adjustment'
 
 export interface CmaSubject {
   listingKey: string | null
@@ -211,6 +212,13 @@ export interface CmaAdjustedComp extends CmaComp {
   timeAdjustedPrice: number
   ppsfTimeAdjusted: number
   sizeAdjustment: number
+  /**
+   * Why the size move is what it is (lib/pricing/size-adjustment.ts). A sale
+   * with no living area recorded is not adjusted for size, and the grid says
+   * so on its row instead of printing a dollar figure. Absent on rows stored
+   * before 2026-10-08.
+   */
+  sizeAdjustmentBasis?: SizeAdjustmentBasis | null
   /**
    * One-story vs two-story premium (±13.5% of the time-adjusted price,
    * measured — lib/pricing/classes.ts). It was folded into adjustedPrice but

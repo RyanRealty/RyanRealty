@@ -58,8 +58,8 @@ import {
   TIME_ADJUSTMENT_MEASURE_POCKET,
   type AppliedDateMove,
 } from '@/lib/pricing/exclusive-pocket-date-adj'
+import { sizeAdjustmentFor } from '@/lib/pricing/size-adjustment'
 
-const SIZE_ADJ_FACTOR = 0.5
 const MS_PER_MONTH = 30.44 * 86_400_000
 /** Drop a comp whose time-adjusted $/sqft is this far from the set median. */
 const PPSF_OUTLIER = 0.12
@@ -1299,12 +1299,17 @@ export function adjustCmaCompAlongMarket(opts: {
     (new Date(opts.asOf).getTime() - new Date(sale.closeDate).getTime()) / MS_PER_MONTH,
   )
   const subjectSqft = opts.subject.sqft ?? 0
-  const ppsfTimeAdjusted = sale.sqft > 0 ? timeAdjustedPrice / sale.sqft : 0
-  // Matt 2026-09-17: exclusive pocket recommends from the pocket as sold —
-  // size and story do not inflate. Widened (starved one-ring) sets still size-adjust.
-  const rawSize =
-    subjectSqft > 0 ? Math.round((subjectSqft - sale.sqft) * ppsfTimeAdjusted * SIZE_ADJ_FACTOR) : 0
-  const sizeAdjustment = exclusivePocket ? 0 : rawSize
+  // ONE SIZE ADJUSTMENT on every path (Matt 2026-10-08). Matt 2026-09-17:
+  // exclusive pocket recommends from the pocket as sold, so size does not
+  // inflate there. Widened (starved one-ring) sets still size-adjust.
+  const size = sizeAdjustmentFor({
+    subjectSqft,
+    saleSqft: sale.sqft,
+    timeAdjustedPrice,
+    exclusivePocket,
+  })
+  const ppsfTimeAdjusted = size.ppsfTimeAdjusted
+  const sizeAdjustment = size.sizeAdjustment
   // Matt 2026-09-17: storyAdjustment is permanently 0 (kill story-adj entirely).
   const storyAdj = storyAdjustment(opts.subjectStory, opts.saleStory, timeAdjustedPrice)
   const adjustedPrice = timeAdjustedPrice + sizeAdjustment + storyAdj
@@ -1368,6 +1373,7 @@ export function adjustCmaCompAlongMarket(opts: {
     timeAdjustedPrice,
     ppsfTimeAdjusted: +ppsfTimeAdjusted.toFixed(2),
     sizeAdjustment,
+    sizeAdjustmentBasis: size.basis,
     storyAdjustment: storyAdj,
     adjustedPrice,
     weight,
