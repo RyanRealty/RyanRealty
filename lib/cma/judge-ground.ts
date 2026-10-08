@@ -22,13 +22,25 @@
  *     may not drop it either.
  *  4. A $/sqft floor, ceiling, or band is supported only when the comp's actual
  *     $/sqft is outside it. "Below $419" when the sale is at $430 is ignored.
- *  5. A price-tier cut that does clear the cited number is still ignored when
- *     the sale sits within PRICE_TIER_OUTLIER (20%) of the median $/sqft of the
- *     other candidates. That is a line drawn through the cluster, not a
- *     different tier. A sale 20% or more off that median is a real price tier.
- *  6. Lot: the cited acres must match, and the lots must actually differ
- *     (ratio at least 2, or at least 0.15 acres). A 0.34 acre lot against a
- *     0.14 acre lot is a real difference. A "1 acre floor" both lots miss is not.
+ *  5. ONE 20% LINE (Matt 2026-10-08, lib/pricing/price-tier.ts). When the
+ *     home has an independent price anchor (the selection's
+ *     diagnostics.price_anchor, the figure the comp search graded every sale
+ *     against), a price-tier cut is supported only when the sale's own closed
+ *     $/sqft (close price over living area, before date adjustment) is outside
+ *     that anchor plus or minus 20%. A cut of a sale inside the line is
+ *     overridden like any unsupported exclusion: kept at half weight. The
+ *     search admitted it on that same line, so the review cannot drop it for
+ *     price. With no anchor, the old rule holds: a cut that clears the cited
+ *     number is still ignored when the sale sits within PRICE_TIER_OUTLIER
+ *     (20%) of the median $/sqft of the other candidates.
+ *  6. Lot (Matt 2026-10-08, "review uses search's rule"). Under one acre on
+ *     both sides, a lot difference is disclosed (the Lot size row beside every
+ *     sale in the comp matrix) and is never grounds to drop a sale: the comp
+ *     search only separates lots at one acre (lotCompatible in
+ *     lib/pricing/classes.ts). The exclusion is overridden and the sale kept at
+ *     half weight with the difference stated. At one acre and above on either
+ *     side the old test holds: the cited acres must match, and the lots must
+ *     actually differ (ratio at least 2, or at least 0.15 acres).
  *  7. Vintage is not a second cut. The picker already applied year built, and
  *     it widens closed-sale age and date when the first location search is
  *     short of 3. A 15-year wall here dropped sales the picker kept, so a
@@ -48,7 +60,7 @@
  *     disprove is not thrown out. An exclusion we can disprove is.
  *
  * Legitimate exclusions stay: a real duplex in the remarks, a living area gap
- * past 25%, a $/sqft outlier of 20% or more, a doubled lot, a room gap
+ * past 25%, a $/sqft outside the 20% line, a doubled lot at an acre or more, a room gap
  * the one-room rule refuses, a fairway the remarks actually name. Year built
  * does not drop a sale the picker kept.
  */
@@ -62,6 +74,7 @@ import {
   type ExclusionBasis,
 } from '@/lib/cma/judge-consistency'
 import { PRICE_SET_SQFT_BAND } from '@/lib/pricing/price-set'
+import { describePriceTierLine, priceTierPosition, salePpsf, type PriceTierLine } from '@/lib/pricing/price-tier'
 import { carriedRoomDecision } from '@/lib/pricing/room-ground'
 import { roomDifferenceSentence } from '@/lib/pricing/room-counts'
 
@@ -71,10 +84,21 @@ import { roomDifferenceSentence } from '@/lib/pricing/room-counts'
  * gap on it does not, because that sale set the price.
  */
 export const SIZE_FLOOR_GAP = PRICE_SET_SQFT_BAND
-/** Share off the other candidates' median $/sqft before a price tier is real. */
+/**
+ * Share off the other candidates' median $/sqft before a price tier is real.
+ * Used ONLY when the home has no independent anchor; with one, the price tier
+ * is the one 20% line around it (lib/pricing/price-tier.ts).
+ */
 export const PRICE_TIER_OUTLIER = 0.2
+/** Lots at or above an acre: the old lot test (ratio at least 2, or 0.15 acres apart). */
 export const LOT_RATIO = 2
 export const LOT_ACRES = 0.15
+/**
+ * The comp search's lot wall (lotCompatible in lib/pricing/classes.ts splits
+ * acreage from in-town at one acre). Under it on BOTH sides, a lot difference
+ * is disclosed, never a reason to drop a sale.
+ */
+export const LOT_WALL_ACRES = 1
 
 export const UNGROUNDED_KEEP_REASON =
   'Kept at half weight. The exclusion cited a threshold or fact these fields do not support.'
@@ -86,8 +110,10 @@ export type GroundRule =
   | 'size-gap'
   | 'price-not-outside'
   | 'price-cluster'
+  | 'price-inside-line'
   | 'price-outlier'
   | 'lot'
+  | 'lot-under-acre'
   | 'vintage'
   | 'structure'
   | 'location'
@@ -287,9 +313,21 @@ function priceSupported(
   return 'price-outlier'
 }
 
+/** Both lots known and both under the search's one-acre lot wall. */
+export function bothUnderAnAcre(subject: CmaSubject, comp: CmaComp): boolean {
+  const a = subject.lotAcres
+  const b = comp.lotAcres
+  if (a == null || b == null || !Number.isFinite(a) || !Number.isFinite(b)) return false
+  if (a <= 0 || b <= 0) return false
+  return a < LOT_WALL_ACRES && b < LOT_WALL_ACRES
+}
+
 function lotSupported(reason: string, subject: CmaSubject, comp: CmaComp): boolean {
   if (subject.lotAcres == null || comp.lotAcres == null) return false
   if (subject.lotAcres <= 0 || comp.lotAcres <= 0) return false
+  // Under an acre on both sides the search does not separate lots, so the
+  // review may not either (Matt 2026-10-08).
+  if (bothUnderAnAcre(subject, comp)) return false
   const ratio = Math.max(subject.lotAcres, comp.lotAcres) / Math.min(subject.lotAcres, comp.lotAcres)
   const abs = Math.abs(subject.lotAcres - comp.lotAcres)
   if (ratio < LOT_RATIO && abs < LOT_ACRES) return false
@@ -382,12 +420,12 @@ function keepForAllowedRoomGap(verdict: CompVerdict, notes: Array<'beds' | 'bath
   }
 }
 
-function weakKeep(verdict: CompVerdict, rule: GroundRule): GroundResult {
+function weakKeep(verdict: CompVerdict, rule: GroundRule, reason: string = UNGROUNDED_KEEP_REASON): GroundResult {
   return {
     verdict: {
       listingKey: verdict.listingKey,
       tier: 'weak',
-      reason: UNGROUNDED_KEEP_REASON,
+      reason,
     },
     grounded: false,
     modelTier: verdict.tier,
@@ -395,10 +433,43 @@ function weakKeep(verdict: CompVerdict, rule: GroundRule): GroundResult {
   }
 }
 
+function acresText(acres: number): string {
+  return `${Number(acres.toFixed(2))} ${acres === 1 ? 'acre' : 'acres'}`
+}
+
+/**
+ * A price-tier cut of a sale inside the one 20% line: overridden like any
+ * unsupported exclusion, with the line it sits inside named.
+ */
+function keepInsidePriceLine(verdict: CompVerdict, comp: CmaComp, line: PriceTierLine): GroundResult {
+  const p = Math.round(salePpsf(comp.closePrice, comp.sqft) ?? 0)
+  return weakKeep(
+    verdict,
+    'price-inside-line',
+    `Kept at half weight. It sold at $${p} a square foot, inside ${describePriceTierLine(line)}, this home's price tier, so price alone does not drop it.`,
+  )
+}
+
+/**
+ * A lot-size cut where both lots are under an acre: overridden, the sale kept,
+ * the difference stated. The comp matrix prints every sale's lot beside the
+ * subject's on the Lot size row, which is how the reader sees it.
+ */
+function keepSubAcreLot(verdict: CompVerdict, subject: CmaSubject, comp: CmaComp): GroundResult {
+  return weakKeep(
+    verdict,
+    'lot-under-acre',
+    `Kept at half weight. Its lot is ${acresText(comp.lotAcres!)} against this home's ${acresText(subject.lotAcres!)}. Both are under an acre, where a lot difference is shown beside the sale and does not drop it.`,
+  )
+}
+
 /**
  * Accept the exclusion, or rewrite it to a weak keep.
  * `band` is the model's declared $/sqft floor and ceiling for this vote, used
- * when the reason names no number of its own.
+ * when the reason names no number of its own and the home has no anchor.
+ * `line` is the one 20% line around the home's independent price anchor
+ * (lib/pricing/price-tier.ts), the same line the comp search admitted on.
+ * When present it alone decides whether a price-tier cut stands.
  */
 export function groundVerdict(
   subject: CmaSubject,
@@ -406,6 +477,7 @@ export function groundVerdict(
   verdict: CompVerdict,
   peers: readonly CmaComp[],
   band: { floor: number; ceiling: number } | null = null,
+  line: PriceTierLine | null = null,
 ): GroundResult {
   if (verdict.tier !== 'exclude') {
     return { verdict: { ...verdict }, grounded: true, modelTier: verdict.tier, rule: 'kept' }
@@ -426,7 +498,19 @@ export function groundVerdict(
   if (priceCited || basis === 'price-tier') {
     const outside = priceCited ? priceOutside(ppsf(comp), priceRead) : null
     if (outside === false) return weakKeep(verdict, 'price-not-outside')
-    if (basis === 'price-tier' || priceCited) {
+    // A cut that rests on price: the price-tier basis, or no named basis with
+    // a price in the reason. A named basis (size, lot, condition) that also
+    // quotes a number keeps the old reading below and then its own check.
+    const restsOnPrice = basis === 'price-tier' || basis === 'other' || basis == null
+    if (line && restsOnPrice) {
+      // ONE 20% LINE: outside it the cut stands, inside it the cut is
+      // overridden, whatever band the model drew from the sales it kept.
+      const position = priceTierPosition(salePpsf(comp.closePrice, comp.sqft), line)
+      // No living area on record: nothing to grade, so nothing supports the cut.
+      if (position == null) return weakKeep(verdict, 'price-cluster')
+      if (position === 'inside') return keepInsidePriceLine(verdict, comp, line)
+      return { verdict: { ...verdict }, grounded: true, modelTier: 'exclude', rule: 'price-outlier' }
+    } else if (basis === 'price-tier' || priceCited) {
       const supported = priceSupported(reason, comp, peers, basis === 'price-tier' ? band : null)
       if (!supported) return weakKeep(verdict, 'price-cluster')
       if (basis === 'price-tier' || basis === 'other' || basis == null) {
@@ -445,6 +529,7 @@ export function groundVerdict(
   }
 
   if (basis === 'lot') {
+    if (bothUnderAnAcre(subject, comp)) return keepSubAcreLot(verdict, subject, comp)
     if (!lotSupported(reason, subject, comp)) return weakKeep(verdict, 'lot')
     return { verdict: { ...verdict }, grounded: true, modelTier: 'exclude', rule: 'lot' }
   }
@@ -481,8 +566,16 @@ export function groundVerdict(
   if (structureSupported(reason, subject, comp)) {
     return { verdict: { ...verdict }, grounded: true, modelTier: 'exclude', rule: 'structure' }
   }
-  if (lotSupported(reason, subject, comp) && /\b(lot|acre)/i.test(reason)) {
-    return { verdict: { ...verdict }, grounded: true, modelTier: 'exclude', rule: 'lot' }
+  if (/\b(lot|acre)/i.test(reason)) {
+    // A lot cut under another basis is still a lot cut. Under an acre on both
+    // sides it does not stand, unless the reason also names a condition the
+    // remarks bear out (then the reading below decides, as before).
+    if (bothUnderAnAcre(subject, comp) && !tokenSupported(reason, CONDITION_TOKENS, subject, comp)) {
+      return keepSubAcreLot(verdict, subject, comp)
+    }
+    if (lotSupported(reason, subject, comp)) {
+      return { verdict: { ...verdict }, grounded: true, modelTier: 'exclude', rule: 'lot' }
+    }
   }
   if (/\b(built|vintage|year built)\b/i.test(reason) && /\b(19|20)\d{2}\b/.test(reason)) {
     return weakKeep(verdict, 'vintage')
@@ -499,6 +592,7 @@ export function groundVote(
   comps: readonly CmaComp[],
   verdicts: readonly CompVerdict[],
   band: { floor: number; ceiling: number } | null,
+  line: PriceTierLine | null = null,
 ): GroundResult[] {
   const byKey = new Map(verdicts.map((v) => [v.listingKey, v]))
   return comps.map((comp) => {
@@ -515,6 +609,6 @@ export function groundVote(
         rule: 'kept' as const,
       }
     }
-    return groundVerdict(subject, comp, verdict, comps, band)
+    return groundVerdict(subject, comp, verdict, comps, band, line)
   })
 }

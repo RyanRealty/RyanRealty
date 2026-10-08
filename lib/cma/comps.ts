@@ -92,7 +92,8 @@ import {
 } from '@/lib/pricing/price-anchor'
 import { ageRestrictedMismatch, ownPlatAgeRestrictedShare } from '@/lib/pricing/age-restricted'
 import { roomCountsDecision } from '@/lib/pricing/room-ground'
-import { SAME_NEIGHBORHOOD_TIER_RATIO, STARVED_TIER_WIDEN, SUBDIVISION_TIER_RATIO, normSubdivision } from '@/lib/pricing/classes'
+import { normSubdivision } from '@/lib/pricing/classes'
+import { describePriceTierLine, insidePriceTier, priceTierLine, salePpsf, type PriceTierLine } from '@/lib/pricing/price-tier'
 import { inferSubdivisionPocket, POCKET_RADIUS_MILES } from '@/lib/pricing/infer-pocket'
 import { isClusterPocket, pocketStopsLaterRungs } from '@/lib/pricing/ladder'
 import { locationMatchFromFacts } from '@/lib/pricing/closed-comp-weight'
@@ -596,15 +597,15 @@ export async function selectComps(
   let anchorPpsf: number | null = null
   let anchorN = 0
   /**
-   * ONE SALE against a MEDIAN, so the wider ratio. The 1.15 neighborhood ratio
-   * grades a subdivision median against another median — stable figures. A
-   * single sale swings much further than that on condition alone: at 1.15 the
-   * cut threw out 31 Benaiah, the same 2,080 sqft plan on the subject's own
-   * street, which is the best evidence this document has.
+   * ONE 20% LINE (Matt 2026-10-08, lib/pricing/price-tier.ts). A sale's own
+   * closed $/sqft (closePrice / sqft, before date adjustment) must sit within
+   * 20% of the anchor, the same line the comparability review grounds a
+   * price-tier cut on, so the search never seats a sale the review would drop
+   * for price. It replaced a 30% gap (SUBDIVISION_TIER_RATIO), which seated
+   * sales the review then cut and split its vote on. The same-street twin is
+   * still exempt (31 Benaiah), and so is the subject's own plat rung.
    */
-  const anchorTierRatio = SUBDIVISION_TIER_RATIO
-  /** Sentences the starved widening added, folded into the disclosures below. */
-  const disclosedWidening: string[] = []
+  let priceLine: PriceTierLine | null = null
   // Sales set aside for sitting across a river from an unmapped subject.
   let crossedFeature = 0
   // The community whose boundary contains the address. The MLS name is only
@@ -700,8 +701,11 @@ export async function selectComps(
       if (ring.rates.length < ANCHOR_MIN_N) continue
       anchorPpsf = medianOf(ring.rates)
       anchorN = ring.rates.length
+      priceLine = priceTierLine(anchorPpsf)
       trace.push(
-        `Price tier: homes of this size sell for about $${Math.round(anchorPpsf)} a square foot ${ring.where} (median of ${anchorN} sales, last 12 months). Sales more than ${Math.round((anchorTierRatio - 1) * 100)}% either side of that are a different market and are not used.`,
+        priceLine
+          ? `Price tier: homes of this size sell for about $${priceLine.anchor} a square foot ${ring.where} (median of ${anchorN} sales, last 12 months). Sales outside ${describePriceTierLine(priceLine)} are a different market and are not used.`
+          : `Price tier: no usable median ${ring.where}, so no sale was graded on price.`,
       )
       break
     }
@@ -811,19 +815,13 @@ export async function selectComps(
       continue
     }
     if (heldWhenOlderOpened == null && tier.monthsBack > 6) heldWhenOlderOpened = byKey.size
-    // THE PRICE BAND WIDENS WITH THE REST, ON THE LAST RUNG ONLY (Matt
-    // 2026-09-09: widen with a disclosure instead of failing). The starved
-    // widening rung already trades away age, size band and geography to reach
-    // the minimum; holding the price band fixed while it does made 120 Sisemore
-    // fail to build at four comps. Read ONCE per rung, before any comp is
-    // added, so the band cannot change partway through a rung.
-    const starvedRung = Boolean(tier.whenStarved) && byKey.size < MIN_COMPS
-    const rungTierRatio = starvedRung ? anchorTierRatio * STARVED_TIER_WIDEN : anchorTierRatio
-    if (starvedRung && anchorPpsf != null) {
-      const d = `The bounded search came up short, so the last step also widened what counts as your home's price tier: from ${Math.round((anchorTierRatio - 1) * 100)}% either side of $${Math.round(anchorPpsf)} a square foot to ${Math.round((rungTierRatio - 1) * 100)}%. Sales outside even that are still not used.`
-      trace.push(d)
-      disclosedWidening.push(d)
-    }
+    // THE PRICE LINE DOES NOT WIDEN (Matt 2026-10-08, "one 20% line"). The
+    // starved rung trades away age, size band and geography to reach the
+    // minimum, and it used to open the price band from 30% to about 50% as well
+    // (Matt 2026-09-09, 120 Sisemore). A sale it let in that way was one the
+    // comparability review then dropped for price, so the widened band never
+    // priced a home: it split the review's vote instead. The line stays at 20%
+    // of the anchor on every rung, this one included.
     // Push the tier's geography INTO the query. The row limit is applied
     // before any in-memory filter, so without this a polygon or radius tier
     // only sees whichever recent citywide sales happen to fall inside it.
@@ -1026,22 +1024,15 @@ export async function selectComps(
         { streetAddress: subject.streetAddress, city: subject.city, sqft: subject.sqft ?? 0 },
         { address: comp.address, city: comp.city, sqft: comp.sqft },
       )
-      if (!land && !tightRung && !ownStreetPeer && anchorPpsf != null) {
-        const rate = unitRate(comp, false)
-        if (anchorPpsf > 0 && rate > 0) {
-          // THE WIDENING DOES NOT STACK WITH THE RESORT CROSSING. The starved
-          // rung relaxes the resort wall so a home near Sunriver can find
-          // PRODUCT peers; widening the price band on top of that let a
-          // $595/sqft Caldera Springs sale price a $427/sqft plat (55442
-          // Heierman). A sale in a resort community the subject is not in is
-          // held to the ordinary band, whatever else the last rung relaxes.
-          const crossesResort = !resortOk(comp.listingKey, comp.subdivision)
-          const ratio = crossesResort ? anchorTierRatio : rungTierRatio
-          const gap = rate / anchorPpsf
-          if (gap < 1 / ratio || gap > ratio) {
-            rung.excluded.price_tier++
-            continue
-          }
+      // The one 20% line (lib/pricing/price-tier.ts), on the sale's own closed
+      // $/sqft before any date adjustment. It does not widen on the starved
+      // rung or across a resort crossing (55442 Heierman: a $595/sqft Caldera
+      // Springs sale must never price a $427/sqft plat). No anchor, no line:
+      // nothing is graded on price, as before this ruling.
+      if (!land && !tightRung && !ownStreetPeer && priceLine) {
+        if (!insidePriceTier(salePpsf(comp.closePrice, comp.sqft), priceLine)) {
+          rung.excluded.price_tier++
+          continue
         }
       }
 
@@ -1312,10 +1303,9 @@ export async function selectComps(
   if (x.lot_character > 0) {
     trace.push(`Excluded ${x.lot_character} comp(s) on lot character (acreage vs in-town lot is not comparable at any distance).`)
   }
-  if (x.price_tier > 0) {
-    const at = anchorPpsf != null && anchorPpsf > 0 ? ` The neighborhood's own sales run about $${Math.round(anchorPpsf)} a square foot.` : ''
+  if (x.price_tier > 0 && priceLine) {
     trace.push(
-      `Excluded ${x.price_tier} sale(s) on price tier: more than ${Math.round((anchorTierRatio - 1) * 100)}% away from what your home's own area sells for per square foot.${at}`,
+      `Excluded ${x.price_tier} sale(s) on price tier: they sold outside ${describePriceTierLine(priceLine)}, what your home's own area sells for.`,
     )
   }
   if (x.market_area > 0) trace.push(`Excluded ${x.market_area} comp(s) outside the subject's market area.`)
@@ -1475,7 +1465,6 @@ export async function selectComps(
       disclosures.push(t.disclosure)
     }
   }
-  for (const d of disclosedWidening) if (!disclosures.includes(d)) disclosures.push(d)
   const roomNotedCount = comps.filter((c) => (c.roomDifference ?? []).length > 0).length
   if (roomNotedCount > 0) {
     const d = `${roomNotedCount} sale(s) are one bedroom or bathroom different from your home. They are used because they sit on your home's own ground — its plat, its neighborhood or its street — and each is marked on the report. No dollar value is applied to the room: paired sales in this market do not support one.`

@@ -490,7 +490,9 @@ export function matchToCompSelection(
         rows_returned: r.scanned,
         comps_added: r.added,
         running_total: r.runningTotal,
-        excluded: emptyExclusions(),
+        // The one 20% price line is the one reason this ladder now counts
+        // (lib/pricing/price-tier.ts): a sale skipped there is named, not lost.
+        excluded: { ...emptyExclusions(), price_tier: r.priceTier ?? 0 },
         not_setting: r.notSetting,
       })),
       price_anchor: match.priceAnchor
@@ -507,7 +509,12 @@ export function matchToCompSelection(
       // The facts ladder rejects inside passesTier without a reason, so the
       // totals stay at zero — except the acreage splits, which the walk counts
       // once over the rural pool for the reader's story (Delta 4).
-      excluded_totals: { ...emptyExclusions(), ...(match.ruralSplits ?? {}) },
+      excluded_totals: {
+        ...emptyExclusions(),
+        ...(match.ruralSplits ?? {}),
+        // Distinct sales, not a sum over rungs: one sale is re-read on every rung.
+        price_tier: match.priceTierSkipped ?? 0,
+      },
       not_price_setting: match.rungs.reduce((n, r) => n + (r.notSetting ?? 0), 0),
       outliers_excluded: 0,
       final_count: match.comps.length,

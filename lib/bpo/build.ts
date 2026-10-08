@@ -141,7 +141,8 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
       selection,
       minComps: MIN_COMPS,
       exclusivePocket: selectionIsExclusivePocket(selection.tiersUsed),
-      judge: (comps) => judgeComps(subject, comps, market),
+      // The same one 20% price line the comp search admitted on (Matt 2026-10-08).
+      judge: (comps) => judgeComps(subject, comps, market, { priceAnchor: selection.diagnostics?.price_anchor ?? null }),
     })
     selection.comps = review.candidates
     if (review.pricingSales) selection.pricingSales = review.pricingSales

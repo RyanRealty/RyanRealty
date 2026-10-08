@@ -88,6 +88,13 @@ type DryRun = {
    * would draw on, not a refill that happened.
    */
   refillBench: { rung: string | null; widening: boolean; held: number; keys: string[] } | null
+  /**
+   * The home's independent price anchor and the one 20% line around it (Matt
+   * 2026-10-08, lib/pricing/price-tier.ts): the line the search admitted on and
+   * the review grounds a price-tier cut on. `skipped` is the distinct sales the
+   * line kept out (excluded_totals.price_tier). Null when there is no anchor.
+   */
+  priceAnchor?: { ppsf: number; n: number; floor: number; ceiling: number; skipped: number } | null
   concessionSentence: string | null
   /** Same sentence over a MIN_COMPS-sized kept set (judge-trim simulation). */
   concessionSentenceTrimmed: string | null
@@ -298,6 +305,7 @@ async function dryRun(slug: string): Promise<DryRun> {
   const { getCmaAdminRowBySlug } = await import('@/lib/data')
   const { resolveCmaSubject } = await import('@/lib/cma/subject')
   const { selectCompsPreferringFacts } = await import('@/lib/pricing/select')
+  const { priceTierLine } = await import('@/lib/pricing/price-tier')
   const { isCustomOrNewSubject } = await import('@/lib/pricing/classes')
   const { adjustComps, computePricing } = await import('@/lib/cma/pricing')
   const { pricingFailureMessage } = await import('@/lib/pricing/price-set')
@@ -430,7 +438,22 @@ async function dryRun(slug: string): Promise<DryRun> {
     }
   }
 
-  const withSel = { ...head, pricingSource: selection.pricingSource, compCount: selection.comps.length }
+  const anchorLine = priceTierLine(selection.diagnostics?.price_anchor?.ppsf)
+  const withSel = {
+    ...head,
+    pricingSource: selection.pricingSource,
+    compCount: selection.comps.length,
+    priceAnchor:
+      anchorLine && selection.diagnostics?.price_anchor
+        ? {
+            ppsf: anchorLine.anchor,
+            n: selection.diagnostics.price_anchor.n,
+            floor: anchorLine.floor,
+            ceiling: anchorLine.ceiling,
+            skipped: selection.diagnostics.excluded_totals?.price_tier ?? 0,
+          }
+        : null,
+  }
   if (selection.comps.length < MIN_COMPS) {
     return { ...withSel, error: `Only ${selection.comps.length} qualifying closed comps found (minimum ${MIN_COMPS}). ${selection.diagnostics.starved_reason ?? ''}`.trim() }
   }
@@ -862,6 +885,11 @@ async function main() {
     if (r.hold) {
       console.log(
         `   hold = ${r.hold.kind} · ask $${r.hold.ask.toLocaleString('en-US')} inside $${r.hold.bandLow.toLocaleString('en-US')} to $${r.hold.bandHigh.toLocaleString('en-US')}`,
+      )
+    }
+    if (r.priceAnchor) {
+      console.log(
+        `   price anchor $${r.priceAnchor.ppsf}/sqft (n=${r.priceAnchor.n}) · line $${r.priceAnchor.floor} to $${r.priceAnchor.ceiling} · ${r.priceAnchor.skipped} sale(s) skipped on the line`,
       )
     }
     if (r.comps.length) {

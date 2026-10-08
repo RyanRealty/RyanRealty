@@ -510,11 +510,19 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     const priorCache = await getCmaBuildSummaryBySlug(slug)
       .then((summary) => readJudgeCache(summary))
       .catch(() => null)
+    // THE ONE 20% LINE (Matt 2026-10-08, lib/pricing/price-tier.ts). The
+    // review is handed the same independent anchor the comp search graded
+    // every sale against, so it grades price on the same line and never drops
+    // a sale the search admitted for price. No anchor: the review runs as
+    // before. A broker-picked set never went through the search's line, so its
+    // review keeps the band it always drew.
+    const judgePriceAnchor = isCurated ? null : (selection.diagnostics?.price_anchor ?? null)
     const judgeOptions = {
       priorCache,
       minComps: MIN_COMPS,
       // A broker-picked set is priced as chosen. The minimum is not in play.
       enforceKeepMinimum: !isCurated,
+      priceAnchor: judgePriceAnchor,
     }
     let judgment: Awaited<ReturnType<typeof judgeComps>> = null
     let compsForPricing = selection.comps
@@ -1072,6 +1080,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
           market,
           judgment,
           findings: proseFindings,
+          priceAnchor: judgePriceAnchor,
         })
         if (repair) {
           // The rewrite is held to the gate the narrative it would replace
