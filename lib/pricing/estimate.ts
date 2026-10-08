@@ -1232,6 +1232,7 @@ export function pricingSaleToCmaComp(sale: SelectedPricingComp): CmaComp {
     selectionTier: sale.selectionTier,
     proximity: sale.proximity,
     roomDifference: sale.roomDifference ?? null,
+    roomDecision: sale.roomDecision ?? null,
     ownPlat: sale.ownPlat ?? null,
     locationMatch: sale.locationMatch ?? null,
     setsPrice: sale.setsPrice ?? null,

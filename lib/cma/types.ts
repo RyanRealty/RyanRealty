@@ -9,6 +9,7 @@
 
 import type { CmaMartYearFigure } from '@/lib/cma/market-board-mart'
 import type { LocationMatch } from '@/lib/pricing/closed-comp-weight'
+import type { RoomDecision } from '@/lib/pricing/room-ground'
 
 export interface CmaSubject {
   listingKey: string | null
@@ -155,6 +156,14 @@ export interface CmaComp {
    * it does not re-apply the wall the selector deliberately opened.
    */
   roomDifference?: Array<'beds' | 'baths'> | null
+  /**
+   * The picker's one-room decision for this sale with the counts it compared
+   * (lib/pricing/room-ground.ts). Every check after the picker reads it
+   * through `carriedRoomDecision`, so the review and the contract call the
+   * decision the picker called (rule 4) whatever subset of the bath split
+   * reached them. Absent on a sale no picker admitted.
+   */
+  roomDecision?: RoomDecision | null
   /**
    * The selector's own-plat decision for this sale (lib/pricing/price-anchor.ts
    * samePlat, or the street-cluster pocket), stamped by whichever ladder found

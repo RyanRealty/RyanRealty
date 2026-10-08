@@ -62,7 +62,7 @@ import {
   type ExclusionBasis,
 } from '@/lib/cma/judge-consistency'
 import { PRICE_SET_SQFT_BAND } from '@/lib/pricing/price-set'
-import { roomCountsDecision } from '@/lib/pricing/room-ground'
+import { carriedRoomDecision } from '@/lib/pricing/room-ground'
 import { roomDifferenceSentence } from '@/lib/pricing/room-counts'
 
 /**
@@ -347,7 +347,7 @@ export function isRoomCountExclusion(v: CompVerdict): boolean {
 }
 
 function roomsSupported(reason: string, subject: CmaSubject, comp: CmaComp): boolean {
-  const rooms = roomCountsDecision(subject, comp)
+  const rooms = carriedRoomDecision(subject, comp)
   // The rule allows this sale. The review may not exclude it for the room gap.
   if (rooms.ok) return false
   const beds = nums(/(\d)\s*-?\s*(?:bed|bd|br)\b/gi, reason)
@@ -416,7 +416,7 @@ export function groundVerdict(
   const basis: ExclusionBasis | 'price-like' | undefined =
     verdict.basis === 'other' && isPriceTierExclusion(verdict) ? 'price-tier' : verdict.basis
 
-  const rooms = roomCountsDecision(subject, comp)
+  const rooms = carriedRoomDecision(subject, comp)
   if (rooms.ok && isRoomishReason(reason) && (basis == null || basis === 'other')) {
     return keepForAllowedRoomGap(verdict, rooms.notes)
   }

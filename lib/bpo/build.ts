@@ -339,6 +339,11 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
       history,
       site,
       subjectSubType: subject.propertySubType,
+      subjectBaths: subject.baths,
+      subjectBathsFull: subject.bathsFull ?? null,
+      subjectBathsHalf: subject.bathsHalf ?? null,
+      subjectBeds: subject.beds,
+      subjectSubdivisionSlug: subject.subdivisionSlug ?? null,
       minComps: MIN_COMPS,
       marketContextPresent: market != null,
     })

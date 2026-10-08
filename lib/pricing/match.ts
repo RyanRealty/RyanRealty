@@ -12,7 +12,7 @@ import { saleSetsThePrice } from '@/lib/pricing/price-set'
 import { locationMatchFromFacts, type LocationMatch } from '@/lib/pricing/closed-comp-weight'
 import { ageRestrictedMismatch, ownPlatAgeRestrictedShare } from '@/lib/pricing/age-restricted'
 import { distanceMiles, proximityLabel, resolveMarketArea } from '@/lib/cma/market-area'
-import { roomCountsDecision } from '@/lib/pricing/room-ground'
+import { roomCountsDecision, type RoomDecision } from '@/lib/pricing/room-ground'
 import { crossesMajorDivide, unmappedCrossesKnownBank } from '@/lib/pricing/divides'
 import { crossesUs97, differentUs97Bank } from '@/lib/pricing/highway-cross'
 import { crossesNamedRiver } from '@/lib/pricing/river-cross'
@@ -229,6 +229,8 @@ export type SelectedPricingComp = PricingSale & {
    * the wall the selector deliberately opened.
    */
   roomDifference?: Array<'beds' | 'baths'> | null
+  /** The picker's one-room decision for this sale, with the counts it compared. */
+  roomDecision?: RoomDecision | null
   /**
    * True when the sale sits in the subject's own plat by the same-subdivision
    * rung's own test (inSubjectPlat), whichever rung admitted it. The comparability
@@ -597,7 +599,13 @@ function passesTier(
    * $579/sqft downtown sale (Matt 2026-09-10).
    */
   anchor: PriceAnchor | null = null,
-): { ok: boolean; miles: number | null; roomDifference?: Array<'beds' | 'baths'> | null; sewerNote?: string | null } {
+): {
+  ok: boolean
+  miles: number | null
+  roomDifference?: Array<'beds' | 'baths'> | null
+  roomDecision?: RoomDecision | null
+  sewerNote?: string | null
+} {
   if (subject.listingKey && sale.listingKey === subject.listingKey) return { ok: false, miles: null }
   if (subject.streetAddress && sale.address.toLowerCase() === subject.streetAddress.toLowerCase()) {
     return { ok: false, miles: null }
@@ -771,6 +779,7 @@ function passesTier(
     ok: true,
     miles,
     roomDifference: rooms.notes.length > 0 ? rooms.notes : null,
+    roomDecision: rooms,
     sewerNote,
   }
 }
@@ -1734,7 +1743,7 @@ export function walkPricingLadder(
       // agrees with itself on price even when it disagrees on square footage.
       const saleKey = `${sale.address.trim().toLowerCase()}|${(sale.city ?? '').trim().toLowerCase()}|${Math.round(sale.closePrice)}`
       if (bySale.has(saleKey)) continue
-      const { ok, roomDifference, sewerNote } = passesTier(subject, sale, tier, asOf, cells, priceAnchor)
+      const { ok, roomDifference, roomDecision, sewerNote } = passesTier(subject, sale, tier, asOf, cells, priceAnchor)
       if (!ok) continue
       // The subdivision-median tier does not see this close. Once the plat has
       // a sale, a different plat has to land on that set's own prices.
@@ -1744,6 +1753,7 @@ export function walkPricingLadder(
       const selected: SelectedPricingComp = {
         ...toSelected(subject, sale, asOf, tier.name),
         roomDifference: roomDifference ?? null,
+        roomDecision: roomDecision ?? null,
         sewerNote: sewerNote ?? null,
         setsPrice: true,
       }

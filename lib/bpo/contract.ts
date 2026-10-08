@@ -32,6 +32,14 @@ export function evaluateBpoAccuracyContract(args: {
    *  check fails closed without it (Matt 2026-09-08: apples to apples only),
    *  so the BPO build forwards it exactly as the CMA build does. */
   subjectSubType?: string | null
+  /** The subject's room counts, MLS bath split and recorded plat, forwarded
+   *  as the CMA build forwards them, so the room gate reads the picker's own
+   *  inputs (rule 4) instead of skipping for want of them. */
+  subjectBaths?: number | null
+  subjectBathsFull?: number | null
+  subjectBathsHalf?: number | null
+  subjectBeds?: number | null
+  subjectSubdivisionSlug?: string | null
   minComps: number
   marketContextPresent: boolean
 }): AccuracyContract {
