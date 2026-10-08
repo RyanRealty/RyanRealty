@@ -1060,7 +1060,8 @@ export async function selectComps(
     // the one ground decision (platGroundReach, lib/pricing/plat-ground.ts)
     // keeps the rows the polygon puts on the ground, whatever the MLS calls
     // them. A row the name read returned from another subdivision's polygon
-    // is not the subject's plat, as on the facts walk (samePlat).
+    // is not the subject's plat, as on the facts walk, which asks the same
+    // decision (onOwnPlat, Matt 2026-10-08 "Yes, everywhere").
     let rows = namedRows
     if (isOwnPlatRung(tier.name) && ownGround.platSlugs.length > 0) {
       const box = await readOwnGroundBox()
@@ -1261,6 +1262,8 @@ export async function selectComps(
           subdivision: comp.subdivision,
           latitude: comp.latitude,
           longitude: comp.longitude,
+          // Off the mesh a family plat counts only in the subject's town, as on the facts walk.
+          city: comp.city ?? null,
         }) != null
       const ownStreetPeer = sameStreetPeer(
         { streetAddress: subject.streetAddress, city: subject.city, sqft: subject.sqft ?? 0 },

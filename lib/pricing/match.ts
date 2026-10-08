@@ -7,7 +7,8 @@ import { realSubdivision } from '@/lib/cma/comp-tiers'
 import { resortCommunityCompatible } from '@/lib/cma/resort-guard'
 import { saleInsideSubjectCommunity, saleSearchCommunitySlug, searchCommunitySlug } from '@/lib/cma/community-location'
 import { isResortCommunity } from '@/lib/cma/resort-guard'
-import { anchorPlacePhrase, resolvePriceAnchor, samePlat, sameStreetPeer, streetKey, type PriceAnchor } from '@/lib/pricing/price-anchor'
+import { anchorPlacePhrase, resolvePriceAnchor, sameStreetPeer, streetKey, type PriceAnchor } from '@/lib/pricing/price-anchor'
+import { onOwnPlat } from '@/lib/pricing/plat-ground'
 import { describePriceTierLine, insidePriceTier, priceTierLine } from '@/lib/pricing/price-tier'
 import { saleSetsThePrice } from '@/lib/pricing/price-set'
 import { locationMatchFromFacts, type LocationMatch } from '@/lib/pricing/closed-comp-weight'
@@ -963,12 +964,21 @@ const BRACKET_MAX_AGE_MONTHS = 24
  * THE SAME-SUBDIVISION RUNG'S MEMBERSHIP TEST, as one function. A street-cluster
  * subject's "same subdivision" is its exclusive pocket (Canter / Horse Back /
  * Ranch, not every Black Butte home under the catch-all MLS name); everyone
- * else's is its own plat (samePlat in lib/pricing/price-anchor.ts, the recorded
- * polygon first and the MLS name as the fallback). The rung, the age-restricted
- * wall, and the `ownPlat` stamp every selected sale carries all read this.
+ * else's is its own subdivision by the one ground decision both ladders ask
+ * (onOwnPlat in lib/pricing/plat-ground.ts, Matt 2026-10-08 "Yes,
+ * everywhere"): the recorded polygon first, the plat, a phase of it, an alias
+ * sibling, or a recorded addition or phase of its subdivision family inside
+ * the subject's own neighborhood or community polygon, and the MLS name only
+ * for a sale no polygon holds. The rung, the age-restricted wall, the
+ * price-line exemption, the room rule's own ground, the size bracket, the
+ * pocket rules, the location weight, and the `ownPlat` stamp every selected
+ * sale carries (which the review reads) all read this. Before the ruling it
+ * was samePlat, so a Kenwood First Addition sale for a Kenwood subject came
+ * in on the touching-plat rung at weight 2 here and on the own-plat rung at
+ * weight 3 on the listings ladder.
  */
 function inSubjectPlat(subject: PricingSubject, sale: PricingSale): boolean {
-  return isClusterPocket(subject) ? saleInExclusivePocket(subject, sale) : samePlat(subject, sale)
+  return isClusterPocket(subject) ? saleInExclusivePocket(subject, sale) : onOwnPlat(subject, sale)
 }
 
 /**
