@@ -5,7 +5,7 @@
 
 import { realSubdivision } from '@/lib/cma/comp-tiers'
 import { resortCommunityCompatible } from '@/lib/cma/resort-guard'
-import { communityForAddress, memberPlatMap, saleInsideSubjectCommunity, searchCommunitySlug } from '@/lib/cma/community-location'
+import { saleInsideSubjectCommunity, saleSearchCommunitySlug, searchCommunitySlug } from '@/lib/cma/community-location'
 import { isResortCommunity } from '@/lib/cma/resort-guard'
 import { resolvePriceAnchor, samePlat, sameStreetPeer, streetKey, type PriceAnchor } from '@/lib/pricing/price-anchor'
 import { describePriceTierLine, insidePriceTier, priceTierLine } from '@/lib/pricing/price-tier'
@@ -584,7 +584,7 @@ type ParentWallRung = Partial<
  */
 function parentWallAdmits(subject: PricingSubject, sale: PricingSale, rung: ParentWallRung, asOfYear: number): boolean {
   const subjectCommunity = searchCommunitySlug(subject)
-  const saleCommunity = searchCommunitySlug(sale, memberPlatMap(subjectCommunity, subject.communityMemberPlats))
+  const saleCommunity = saleSearchCommunitySlug(subject, sale)
   const confined = parentConfines(subject)
   const crossesCommunity = !confined && (Boolean(rung.crossBoundary) || Boolean(rung.whenStarved))
   if (rung.sameCommunity) {
@@ -873,7 +873,7 @@ const BRACKET_OFF_PLAT_MAX_MILES = 1
 export function saleLocationMatch(subject: PricingSubject, sale: PricingSale): LocationMatch {
   const plat = sale.subdivisionSlug?.trim() || null
   const subjectCommunity = searchCommunitySlug(subject)
-  const saleCommunity = searchCommunitySlug(sale, memberPlatMap(subjectCommunity, subject.communityMemberPlats))
+  const saleCommunity = saleSearchCommunitySlug(subject, sale)
   const subjectArea = areaOf(subject)
   const saleStreet = streetKey(sale.address)
   const recordedPlat = subjectHasRecordedSubdivision(subject) && subject.inferredPocket?.inferred !== true
@@ -1003,6 +1003,78 @@ function bracketWallRung(subject: PricingSubject, sale: PricingSale): ParentWall
   return {}
 }
 
+/**
+ * THE RUNGS A SIZE SWAP STANDS IN FOR, for their year band and story rule
+ * (2026-10-08). The bracket checked the walls, the price line, rule 4 and the
+ * ADU wall, but no year band and no story rule, so on 711 Georgia (built
+ * 2016) it seated 355 Delaware (built 1925) from a touching plat, a sale every
+ * touching-plat rung had refused on the year band, in place of the only
+ * own-street sale.
+ *
+ * Null for the subject's own ground (its plat, or its own street at its size):
+ * the own-plat and own-street rungs carry no year band or story rule there
+ * (passesTier's ownPlat), so neither does the swap. A touching plat stands in
+ * for the touching-plat rungs, the next row for the next-row rungs. Anything
+ * else stands in for every rung of the walk's ladder that could reach the
+ * sale where it sits (its distance, the pocket, the subject's community, a
+ * rural subject's rural rungs), never the boundary exit, the starved widening
+ * or a peer community, which a size swap never stands behind (bracketWallRung).
+ * The sale passes when one of those rungs' year band and story rule passes it.
+ */
+function bracketStandInRungs(
+  subject: PricingSubject,
+  sale: PricingSale,
+  tiers: readonly PricingTier[],
+): PricingTier[] | null {
+  if (inSubjectPlat(subject, sale)) return null
+  if (
+    sameStreetPeer(
+      { streetAddress: subject.streetAddress, city: subject.city, sqft: subject.sqft },
+      { address: sale.address, city: sale.city, sqft: sale.sqft },
+    )
+  ) {
+    return null
+  }
+  const plat = sale.subdivisionSlug?.trim()
+  if (plat && (subject.adjacentSubdivisionSlugs ?? []).includes(plat)) return tiers.filter((t) => t.adjacentSubdivision)
+  if (plat && (subject.closerSubdivisionSlugs ?? []).includes(plat)) return tiers.filter((t) => t.closerSubdivision)
+  const miles = distanceMiles(
+    { lat: subject.latitude, lng: subject.longitude },
+    { lat: sale.latitude, lng: sale.longitude },
+  )
+  const saleStreet = streetKey(sale.address)
+  const inPocket =
+    (Boolean(sale.subdivisionNorm) && (subject.pocketSubdivisionNorms ?? []).includes(sale.subdivisionNorm!)) ||
+    Boolean(saleStreet && (subject.pocketStreetKeys ?? []).includes(saleStreet))
+  const subjectCommunity = searchCommunitySlug(subject)
+  const inCommunity = subjectCommunity != null && saleSearchCommunitySlug(subject, sale) === subjectCommunity
+  return tiers.filter((t) => {
+    if (t.sameStreetOnly || t.sameSubdivision || t.adjacentSubdivision || t.closerSubdivision) return false
+    if (t.crossBoundary || t.whenStarved || t.likeCommunity) return false
+    if (t.sameCommunity && !inCommunity) return false
+    if (t.samePocket && !inPocket) return false
+    if (t.ruralOnly && !subject.ruralAcreage) return false
+    if (t.maxMiles != null && (miles == null || miles > t.maxMiles)) return false
+    return true
+  })
+}
+
+/** True when a rung the swap stands in for would pass the sale on its year band and story rule. */
+function bracketYearAndStoryOk(
+  subject: PricingSubject,
+  sale: PricingSale,
+  tiers: readonly PricingTier[],
+  asOfYear: number,
+): boolean {
+  const standIn = bracketStandInRungs(subject, sale, tiers)
+  if (standIn == null) return true
+  return standIn.some(
+    (t) =>
+      ageOk(subject.yearBuilt, sale.yearBuilt, asOfYear, t.ageYears) &&
+      storyOk(subject.storyClass, sale.storyClass, t.sameStory),
+  )
+}
+
 function bracketEligible(
   subject: PricingSubject,
   sale: PricingSale,
@@ -1012,6 +1084,8 @@ function bracketEligible(
    *  reach into the whole city pool on size alone. */
   anchor: PriceAnchor | null = null,
   cells: Map<string, SubdivisionCell> = new Map(),
+  /** The walk's own ladder, for the year band and story rule of the rung the swap stands in for. */
+  tiers: readonly PricingTier[] = pricingTierLadder(),
 ): boolean {
   if (subject.listingKey && sale.listingKey === subject.listingKey) return false
   if (subject.streetAddress && sale.address.toLowerCase() === subject.streetAddress.toLowerCase()) return false
@@ -1029,6 +1103,10 @@ function bracketEligible(
   // Without them a plat-less subject's swap reached the whole pool.
   if (!parentWallAdmits(subject, sale, bracketWallRung(subject, sale), asOfYear)) return false
   if (!applesOk(subject, sale, 'product_lot', asOfYear)) return false
+  // The year band and story rule of the rung this swap stands in for
+  // (bracketStandInRungs): a sale that rung would refuse on age or stories
+  // is not a size fix (711 Georgia, 2026-10-08).
+  if (!bracketYearAndStoryOk(subject, sale, tiers, asOfYear)) return false
   // Rule 4, the walk's own call. A swap never seats a sale the rule refuses,
   // and a one-room sale it keeps goes in carrying that decision (toSelected).
   if (!pickerRoomDecision(subject, sale).ok) return false
@@ -1126,6 +1204,8 @@ function bracketGla(
    * imports a sale that does not set the price.
    */
   setsPrice: (sale: SelectedPricingComp) => boolean = () => true,
+  /** The walk's ladder (bracketEligible reads the rung the swap stands in for). */
+  tiers: readonly PricingTier[] = pricingTierLadder({ customOrNew: customLadder }),
 ): { comps: SelectedPricingComp[]; note: string | null } {
   if (comps.length === 0) return { comps, note: null }
   const allLarger = comps.every((c) => c.sqft > subject.sqft)
@@ -1137,7 +1217,7 @@ function bracketGla(
   const candidates = pool.filter(
     (sale) =>
       !kept.has(sale.listingKey) &&
-      bracketEligible(subject, sale, asOf, wantLarger, anchor, cells) &&
+      bracketEligible(subject, sale, asOf, wantLarger, anchor, cells, tiers) &&
       setsPrice(toSelected(subject, sale, asOf, 'gla-bracket')),
   )
   if (candidates.length === 0) return { comps, note: null }
@@ -1519,9 +1599,13 @@ function capPricingSet(
   return { kept, bench, widening: !ownGround }
 }
 
-/** A neighborhood polygon or a community boundary confines the search. */
+/**
+ * A neighborhood polygon or a community that walls the search confines it.
+ * A community made up from a plat name, with no HOA, is an ordinary plat and
+ * confines nothing (searchCommunitySlug, Matt 2026-10-08).
+ */
 function parentConfines(subject: PricingSubject): boolean {
-  return Boolean(subject.marketArea) || Boolean(communityForAddress(subject))
+  return Boolean(subject.marketArea) || Boolean(searchCommunitySlug(subject))
 }
 
 /**
@@ -1705,9 +1789,8 @@ export function walkPricingLadder(
   // ownPlat; the selector stamps communityLocated and communitySlug on each
   // row; sqft and lotAcres are row fields).
   const subjectCommunity = searchCommunitySlug(subject)
-  const platMap = memberPlatMap(subjectCommunity, subject.communityMemberPlats)
   const setsPrice = (sale: SelectedPricingComp): boolean => {
-    const saleCommunity = searchCommunitySlug(sale, platMap)
+    const saleCommunity = saleSearchCommunitySlug(subject, sale)
     return saleSetsThePrice({
       ownPlat: sale.ownPlat,
       subjectSubdivision: subject.subdivision,
@@ -1786,9 +1869,9 @@ export function walkPricingLadder(
               clusterPocket: isClusterPocket(subject),
             })
           ? `the pocket already supplied a tight closed+pending set (${exclusiveCount} closed, ${exclusivePending} pending), so the search stayed exclusive`
-        : tier.sameCommunity && !communityForAddress(subject)
+        : tier.sameCommunity && !subjectCommunity
         ? 'the subject is not inside a planned or golf community'
-        : tier.likeCommunity && !isResortCommunity(communityForAddress(subject))
+        : tier.likeCommunity && !isResortCommunity(subjectCommunity)
         ? 'the subject is not inside a golf or resort community'
         : tier.likeCommunity && byKey.size >= PRICING_MIN_COMPS
         ? 'the community supplied the minimum, so no peer community was needed'
@@ -1985,7 +2068,7 @@ export function walkPricingLadder(
   const sitting = hadOwnPlat ? ranked : pocketSalesSitWithKept(ranked, customLadder)
   const seats = capPricingSet(subject, sitting, PRICING_WALK_CAP, reachedOnTier)
   const sliced = seats.kept
-  const bracketed = bracketGla(subject, sliced, pool, asOf, priceAnchor, cells, customLadder, setsPrice)
+  const bracketed = bracketGla(subject, sliced, pool, asOf, priceAnchor, cells, customLadder, setsPrice, tiers)
   if (bracketed.note) {
     if (!tiersUsed.includes('gla-bracket')) tiersUsed.push('gla-bracket')
     trace.push(bracketed.note)

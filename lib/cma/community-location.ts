@@ -33,6 +33,13 @@ export type CommunityAddress = {
   containingPlatSlugs?: readonly string[] | null
   subdivisionSlug?: string | null
   subdivision?: string | null
+  /**
+   * Whether the home's MLS row reports an HOA ('hoa' | 'no_hoa' | 'unknown',
+   * lib/pricing/classes.ts classifyHoa). Only 'hoa' counts. A community made
+   * up from a plat's own name walls the comp search only when the home
+   * carries one (searchCommunitySlug).
+   */
+  hoaClass?: string | null
 }
 
 function platOf(address: CommunityAddress): string | null {
@@ -181,10 +188,42 @@ export function sameOrdinaryPhaseFamily(
 }
 
 /**
- * The community the comp search may use as a wall.
- * A phase stem of an ordinary subdivision is that subdivision, not a parent.
- * A registry community and an addition community (Bend Golf Club, Cedar Ridge)
- * still wall the search.
+ * THE REAL DERIVED COMMUNITIES (Matt 2026-10-08, "Only real communities").
+ * recordedPlatCommunityKey makes a community out of a plat's own name: strip
+ * "Addition", "Second Addition" or "Phase 2" and the rest is the parent. Most
+ * of those names are not a community at all. Northwest Townsite Second
+ * Addition is a 1910s townsite plat in River West, and Bend Park First
+ * Addition is another; walling the search at "northwest-townsite" left 1355
+ * Jacksonville with one sale while 32 River West sales sat next door.
+ *
+ * These are the derived names the code has kept on purpose as communities
+ * (the Bend Golf Club and Cedar Ridge cases in
+ * lib/cma/community-outline-plats.test.ts and the searchCommunitySlug notes
+ * since 2026-10-04). Each walls the search with or without an HOA:
+ *   - bend-golf-club: Bend Golf Club Addition and Bend Golf Club 2nd Addition,
+ *     the homes around the Bend Golf and Country Club course (recorded plats
+ *     on Deschutes County GIS, public.boundaries).
+ *   - cedar-ridge: the Cedar Ridge additions. No Cedar Ridge plat is in
+ *     public.boundaries as of 2026-10-08, so today this entry walls nothing;
+ *     it is kept because the code named it on purpose.
+ * Any other derived name walls only when the home carries an HOA. Add a name
+ * here only when Matt calls it a real community.
+ */
+export const REAL_DERIVED_COMMUNITIES: ReadonlySet<string> = new Set(['bend-golf-club', 'cedar-ridge'])
+
+/**
+ * The community the comp search may use as a wall (Matt 2026-10-08, "Only
+ * real communities"). A community walls the search only when:
+ *   1. it is in the community registry (data/resort-communities.json), or
+ *   2. it is one of REAL_DERIVED_COMMUNITIES, or
+ *   3. the home carries an HOA (hoaClass 'hoa').
+ * A community made up from a plat name with no HOA is an ordinary plat: the
+ * search walks its touching plats inside the neighborhood. A phase stem of an
+ * ordinary subdivision is that subdivision, never a parent, HOA or not.
+ *
+ * Membership (communityForAddress) is unchanged: this decides only whether
+ * that membership is a wall. To read a sale against a subject, use
+ * saleSearchCommunitySlug, which gives one place one answer.
  */
 export function searchCommunitySlug(
   address: CommunityAddress,
@@ -199,6 +238,30 @@ export function searchCommunitySlug(
     ...(address.containingPlatSlugs ?? []),
   ]
   if (plats.some((plat) => ordinaryPhaseFamilyKey(plat) === slug)) return null
-  return slug
+  if (REAL_DERIVED_COMMUNITIES.has(slug)) return slug
+  if (address.hoaClass === 'hoa') return slug
+  return null
+}
+
+/**
+ * The wall community of a sale, read against the subject. One place, one
+ * answer: a sale inside the subject's own community (by its location, or a
+ * member plat of it) takes the subject's decision, so a sale whose MLS row
+ * reports no HOA is still inside a community the subject's HOA made real, and
+ * a sale reporting an HOA does not raise a wall inside a plat-name community
+ * the subject's own row says is ordinary. A sale anywhere else is decided on
+ * its own row by searchCommunitySlug.
+ */
+export function saleSearchCommunitySlug(
+  subject: CommunityAddress & { communityMemberPlats?: readonly string[] | null },
+  sale: CommunityAddress,
+): string | null {
+  const subjectWall = searchCommunitySlug(subject)
+  const map = memberPlatMap(subjectWall, subject.communityMemberPlats)
+  const saleCommunity = communityForAddress(sale, map)
+  if (!saleCommunity) return null
+  const subjectCommunity = communityForAddress(subject)
+  if (subjectCommunity && saleCommunity === subjectCommunity) return subjectWall
+  return searchCommunitySlug(sale, map)
 }
 

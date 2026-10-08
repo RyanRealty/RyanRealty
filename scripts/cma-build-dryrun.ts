@@ -316,7 +316,7 @@ async function dryRun(slug: string): Promise<DryRun> {
   const { citySlug } = await import('@/lib/pricing/classes')
   const { getCmaMarketContext } = await import('@/lib/cma/market')
   const { evaluateAccuracyContract } = await import('@/lib/cma/contract')
-  const { MIN_COMPS } = await import('@/lib/cma/comps')
+  const { MIN_COMPS, brokerCompRefusal } = await import('@/lib/cma/comps')
   const { getBpoListingCyclesByAddress } = await import('@/lib/data/bpo/reads')
   const { analyzeListingHistory } = await import('@/lib/bpo/history')
   const { buildFailureFindings, stampFinalCycleDom, resolveFinalCycle, buildAskExposure, applyFailedAskCap, FAILED_ASK_RECENCY_MONTHS } =
@@ -455,7 +455,18 @@ async function dryRun(slug: string): Promise<DryRun> {
         : null,
   }
   if (selection.comps.length < MIN_COMPS) {
-    return { ...withSel, error: `Only ${selection.comps.length} qualifying closed comps found (minimum ${MIN_COMPS}). ${selection.diagnostics.starved_reason ?? ''}`.trim() }
+    // EXACTLY the sentence lib/cma/build.ts stores on the row (it leads with
+    // the path that held the most price-setting sales, by address), then the
+    // engineering diagnosis, which leads the same way.
+    const refusal = brokerCompRefusal({
+      diagnostics: selection.diagnostics,
+      found: selection.comps.length,
+      minComps: MIN_COMPS,
+      subjectBaths: subject.baths,
+      subjectCity: subject.city,
+      sales: selection.comps.map((c) => c.address),
+    })
+    return { ...withSel, error: `${refusal} ${selection.diagnostics.starved_reason ?? ''}`.replace(/\s+/g, ' ').trim() }
   }
 
   // The index is a fact about the CITY, not about which ladder found the sales

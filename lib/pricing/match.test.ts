@@ -706,14 +706,17 @@ describe('walkPricingLadder', () => {
   it('walks the community after short plat rows, and never takes a remarks mention', () => {
     // A recorded plat's own rows come first. They hold nothing here, so the
     // community is the next step (rules 15 and 19), and membership is the
-    // boundary or a member plat, never a remark.
+    // boundary or a member plat, never a remark. The community is Bend Golf
+    // Club, a real derived community (REAL_DERIVED_COMMUNITIES): since
+    // 2026-10-08 only a real community walls the search, and a placeholder
+    // slug with no HOA is an ordinary plat ("Only real communities").
     const inside = (listingKey: string, subdivision: string, over: Partial<PricingSale> = {}) =>
       sale({
         listingKey,
         subdivision,
         subdivisionNorm: subdivision.toLowerCase(),
         address: `${listingKey} Fairway`,
-        communitySlug: 'sample-community',
+        communitySlug: 'bend-golf-club',
         communityLocated: true,
         marketArea: 'test-area',
         latitude: 44.06,
@@ -725,7 +728,7 @@ describe('walkPricingLadder', () => {
       subject({
         subdivision: 'Subject Plat',
         subdivisionNorm: 'subject plat',
-        communitySlug: 'sample-community',
+        communitySlug: 'bend-golf-club',
         communityLocated: true,
         communityMemberPlats: ['member-plat'],
         marketArea: 'test-area',
@@ -753,7 +756,7 @@ describe('walkPricingLadder', () => {
           latitude: 44.06,
           longitude: -121.29,
           closeDate: '2026-06-02',
-          publicRemarks: 'Charming home in the sample community, walk to the clubhouse.',
+          publicRemarks: 'Charming home near the Bend Golf Club course, walk to the clubhouse.',
         }),
       ],
       { asOf },

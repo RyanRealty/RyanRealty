@@ -26,6 +26,21 @@ vi.mock('@/lib/data/geo/subdivision-ring', () => ({
   assignCommunitySlugs: async () => null,
 }))
 
+// The touching plats' recorded outline (the plat-family footprint DAL). The
+// adjacent rung's read is bounded by its box (2026-10-08); unmocked it would
+// reach the live database from a unit test.
+const TOUCHING_OUTLINE = {
+  type: 'Polygon' as const,
+  coordinates: [[[-121.31, 44.04], [-121.29, 44.04], [-121.29, 44.06], [-121.31, 44.06], [-121.31, 44.04]]],
+}
+const TOUCHING_BOUNDS = { latMin: 44.04, latMax: 44.06, lngMin: -121.31, lngMax: -121.29 }
+const footprintMock = vi.hoisted(() => ({
+  getPlatFamilyFootprint: vi.fn(async (_input: { familySlug: string; memberSlugs: readonly string[] }): Promise<unknown> => null),
+}))
+vi.mock('@/lib/data/subdivisions/getPlatFamilyFootprint', () => ({
+  getPlatFamilyFootprint: footprintMock.getPlatFamilyFootprint,
+}))
+
 vi.mock('@/lib/cma/hydrate-closed-comp-dom', () => ({
   hydrateClosedCompDaysOnMarket: async <T,>(comps: T) => comps,
 }))
@@ -56,6 +71,7 @@ vi.mock('@/lib/pricing/ladder', async (importOriginal) => {
 })
 
 import { selectComps, selectCompsByKeys } from '@/lib/cma/comps'
+import { marketAreaBounds } from '@/lib/cma/market-area'
 
 const subject = (over: Partial<CmaSubject> = {}): CmaSubject =>
   ({
@@ -598,15 +614,18 @@ describe('selectComps — walk to 7, price on 5+ (Matt 2026-10-07)', () => {
   const PLAT_TIERS = ['subdivision-6mo', 'subdivision-12mo', 'subdivision-18mo', 'subdivision-24mo']
 
   /**
-   * The plat query answers with the plat's rows, the touching-plat query
-   * (no subdivision, no bounds: limit 100) with the touching plat's, each by
-   * its own close-date window. The anchor and pocket reads get nothing.
+   * The plat query answers with the plat's rows, the touching-plat query (no
+   * subdivision, bounded by the touching plats' outline since 2026-10-08)
+   * with the touching plat's, each by its own close-date window. The anchor
+   * and pocket reads get nothing.
    */
   function poolOf(platRows: CmaListingRow[], touchingRows: CmaListingRow[] = []) {
     selectCmaCompsPool.mockImplementation(async (opts: Record<string, unknown>) => {
       const since = String(opts.closeDateGte ?? '')
       if (opts.subdivisionIlike === 'Kenwood') return platRows.filter((r) => String(r.CloseDate) >= since)
-      if (opts.limit === 100) return touchingRows.filter((r) => String(r.CloseDate) >= since)
+      if (JSON.stringify(opts.bounds) === JSON.stringify(TOUCHING_BOUNDS)) {
+        return touchingRows.filter((r) => String(r.CloseDate) >= since)
+      }
       return []
     })
   }
@@ -624,10 +643,49 @@ describe('selectComps — walk to 7, price on 5+ (Matt 2026-10-07)', () => {
       ring: [{ slug: 'aubrey', label: 'Aubrey', pointM: 10, rank: 1 }],
     }))
     ringMocks.assignSubdivisionSlugs.mockImplementation(async (pts: ReadonlyArray<unknown>) => pts.map(() => 'aubrey'))
+    footprintMock.getPlatFamilyFootprint.mockImplementation(async () => ({ geometry: TOUCHING_OUTLINE }))
   })
   afterEach(() => {
     ringMocks.getSubdivisionRing.mockImplementation(async () => null)
     ringMocks.assignSubdivisionSlugs.mockImplementation(async (pts: ReadonlyArray<unknown>) => pts.map(() => null))
+    footprintMock.getPlatFamilyFootprint.mockImplementation(async () => null)
+  })
+
+  it('reads the touching-plat rung inside the touching plats\' outline, and counts a row from another plat as not touching, not as outside the neighborhood (2026-10-08)', async () => {
+    // Three plat sales, so the touching rung runs. Its read is bounded by the
+    // outline's box at the 500-row page, never the 100 newest closes city-wide.
+    // Two of its rows sit in a plat that does not touch Kenwood.
+    poolOf(
+      [0, 1, 2].map((i) => plat(`O${i}`, i, 500_000, SIX_MO)),
+      [0, 1, 2, 3].map((i) => touching(`E${i}`, i, 500_000 + i * 1_000, SIX_MO)),
+    )
+    ringMocks.assignSubdivisionSlugs.mockImplementation(async (pts: ReadonlyArray<unknown>) =>
+      pts.map((_p, i) => (i < 2 ? 'aubrey' : 'not-touching-plat')),
+    )
+    const sel = await selectComps(kenwood)
+    expect(footprintMock.getPlatFamilyFootprint).toHaveBeenCalledWith({ familySlug: 'touching-kenwood', memberSlugs: ['aubrey'] })
+    const touchingReads = selectCmaCompsPool.mock.calls
+      .map(([opts]) => opts)
+      .filter((opts) => JSON.stringify(opts.bounds) === JSON.stringify(TOUCHING_BOUNDS))
+    expect(touchingReads.length).toBeGreaterThan(0)
+    expect(touchingReads.every((opts) => opts.limit === 500 && opts.subdivisionIlike == null)).toBe(true)
+    const rung = sel.diagnostics.ladder.find((t) => t.tier === 'adjacent-subdivision-6mo')!
+    expect(rung.excluded.not_touching_plat).toBe(2)
+    expect(rung.excluded.market_area).toBe(0)
+    expect(keys(sel)).toEqual(['E0', 'E1', 'O0', 'O1', 'O2'])
+  })
+
+  it('falls back to the neighborhood box when the touching outline cannot be read', async () => {
+    footprintMock.getPlatFamilyFootprint.mockImplementation(async () => {
+      throw new Error('rpc down')
+    })
+    poolOf([0, 1, 2].map((i) => plat(`O${i}`, i, 500_000, SIX_MO)))
+    const riverWest = subject({ subdivision: 'Kenwood', latitude: 44.0645, longitude: -121.3237 })
+    await selectComps(riverWest)
+    const riverWestBox = JSON.stringify(marketAreaBounds('bend-river-west'))
+    const reads = selectCmaCompsPool.mock.calls.map(([opts]) => opts)
+    expect(reads.some((opts) => JSON.stringify(opts.bounds) === riverWestBox && opts.limit === 500)).toBe(true)
+    expect(reads.some((opts) => JSON.stringify(opts.bounds) === JSON.stringify(TOUCHING_BOUNDS))).toBe(false)
   })
 
   it('an over-full plat yields seven: newest first, then nearest, then the tightest price', async () => {

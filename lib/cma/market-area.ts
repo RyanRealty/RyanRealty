@@ -100,6 +100,21 @@ export function marketAreaBounds(areaId: string | null): LatLngBounds | null {
 }
 
 /**
+ * Bounding box of a recorded outline (a plat, or the union of several), the
+ * same superset trick as marketAreaBounds: the box never drops a row the
+ * outline holds, and the caller still makes the exact membership call.
+ */
+export function geometryBounds(
+  geometry: { type: 'Polygon'; coordinates: Ring[] } | { type: 'MultiPolygon'; coordinates: Ring[][] } | null | undefined,
+): LatLngBounds | null {
+  if (!geometry) return null
+  const b: LatLngBounds = { latMin: 90, latMax: -90, lngMin: 180, lngMax: -180 }
+  if (geometry.type === 'Polygon') for (const ring of geometry.coordinates) extendBounds(b, ring)
+  else for (const poly of geometry.coordinates) for (const ring of poly) extendBounds(b, ring)
+  return b.latMin > b.latMax ? null : b
+}
+
+/**
  * Bounding box covering a radius in miles around a point — the same
  * push-into-the-query trick for the distance-bounded fallback tiers, which
  * otherwise capped at 100 citywide rows before applying the mileage bound.

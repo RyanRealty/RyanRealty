@@ -475,12 +475,15 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       // build_summary.comp_selection (the ladder, the per-tier row counts, the
       // exclusion totals, starved_reason), so nothing is lost; the prose on the
       // row now says only what the reader can act on.
+      // It leads with the path that held the most price-setting sales, by
+      // address: the facts walk rides on a listings fallback as facts_path.
       const err = brokerCompRefusal({
         diagnostics: selection.diagnostics,
         found: selection.comps.length,
         minComps: MIN_COMPS,
         subjectBaths: subject.baths,
         subjectCity: subject.city,
+        sales: selection.comps.map((c) => c.address),
       })
         .replace(/\s+/g, ' ')
         .trim()
