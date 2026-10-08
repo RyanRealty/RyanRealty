@@ -189,6 +189,12 @@ type DryRun = {
   renderArgsPricingClamp: unknown
   /** render_args.pricing.setAside — the sales the range rule removed from the price. */
   renderArgsPricingSetAside: unknown
+  /**
+   * render_args.pricing.streetAnchor: the same-street sale and whether it
+   * capped the price, or was a trimmed end set aside like any other
+   * (Matt 2026-10-08, "Trim normally").
+   */
+  renderArgsPricingStreetAnchor?: unknown
   /** render_args.pricing.review — the flag a document must not be able to hide. */
   renderArgsPricingReview: unknown
   /**
@@ -903,6 +909,7 @@ async function dryRun(slug: string, opts: { pocketLegacy?: boolean } = {}): Prom
     marketTrendMeasure: market?.trendMeasure ?? null,
     renderArgsPricingClamp: pricing.clamp ?? null,
     renderArgsPricingSetAside: pricing.setAside ?? null,
+    renderArgsPricingStreetAnchor: pricing.streetAnchor ?? null,
     renderArgsPricingReview: review,
     hold: pricing.hold ?? null,
     renderArgsPricingSellerNet: pricing.sellerNet ?? null,

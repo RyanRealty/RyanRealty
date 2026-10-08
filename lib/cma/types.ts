@@ -361,10 +361,24 @@ export interface CmaPricingClampApplication {
  * it rather than set it.
  */
 export interface CmaPricingStreetAnchor {
-  /** The same-street sale or sales the number is held to. */
+  /** The same-street sale or sales the number is held to (or, when `setAside`, would have been). */
   addresses: string[]
-  /** Their listing keys, when the pricer wrote them. A sale the anchor holds is never set aside. */
+  /** Their listing keys, when the pricer wrote them. */
   listingKeys?: string[]
+  /**
+   * TRIM NORMALLY (Matt 2026-10-08, 915 Saginaw). True when every same-street
+   * sale was an end of the adjusted sales and the range rule set it aside
+   * like any end sale. It then does not cap the price and does not set the
+   * floor: `before` and `after` are the same number and `ceiling` is only
+   * what the cap would have been. Absent on rows built before this ruling.
+   */
+  setAside?: boolean
+  /**
+   * True when the anchor held the recommendation to `ceiling` when it was
+   * applied. False on a set-aside record. Absent on rows built before
+   * 2026-10-08, where every stored anchor was one that capped.
+   */
+  capped?: boolean
   /** Median adjusted price of those sales — the anchor itself. */
   anchor: number
   /** The most the recommendation may sit above the anchor. */
@@ -379,6 +393,11 @@ export interface CmaPricingStreetAnchor {
   floor: number
   /** What the three methods supported before the anchor bound them. */
   before: number
+  /**
+   * The recommendation after the anchor: `ceiling` when it capped, `before`
+   * when it was set aside. Read when the anchor was applied in the pricer; a
+   * later failed-ask pass in the build can still move the printed price.
+   */
   after: number
   /** One sentence, for the document and the review page. */
   sentence: string
