@@ -7,7 +7,8 @@ import { UNADDRESSED_DOC_LINKS, escapeHtml, int, sparkPhotoAt, usd } from '@/lib
 import { trackedDocLink, type TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import { formatDate } from '@/lib/format/date'
 import { priceHistoryLineCompactHtml, pricePathFromListing } from '@/lib/cma/price-path'
-import { listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
+import { listingHistoryLine as buildListingHistoryLine, liveListingDays } from '@/lib/cma/listing-history-line'
+import { offerRun } from '@/lib/cma/listing-status'
 import { compAreaContains, compAreaIn, compAreaPhrase, type CompArea } from '@/lib/pricing/comp-area'
 import { countWord } from '@/lib/pricing/estimate'
 import { publishStreetNumber, publishStreetPart } from '@/lib/listing/publish-street-line'
@@ -22,7 +23,17 @@ export type CmaBandRival = {
   address: string
   listPrice: number
   status: 'Active' | 'Pending'
+  /**
+   * Active: days on the market as of the build. Pending: days from the day it
+   * went Active to the day it went under contract (`pendingDate`), never the
+   * days since it listed.
+   */
   daysOnMarket: number | null
+  /**
+   * YYYY-MM-DD (Pacific) a Pending home went under contract. The date its
+   * status column prints. Absent on rows built before it was read.
+   */
+  pendingDate?: string | null
   photoUrl: string | null
   latitude: number | null
   longitude: number | null
@@ -207,6 +218,22 @@ export function rivalVsSubjectLine(r: CmaBandRival, subject: CmaBandSubject | nu
 }
 
 /** Photo, linked address, price, size, days on market, and the delta line. */
+/**
+ * The days a competitor's card and row print, and what they count. A home for
+ * sale counts its days on the market. A home under contract counts the days
+ * from Active to its contract and says so; a stored row without its contract
+ * day has only the days since it listed, which is not that count, so it prints
+ * none (reader review 2026-10-08, 2820 Aldrich: "44 days" for an 18-day offer).
+ */
+export function rivalDays(r: Pick<CmaBandRival, 'status' | 'daysOnMarket' | 'pendingDate'>): {
+  days: number | null
+  measure: 'offer' | 'on-market'
+} {
+  const n = r.daysOnMarket != null && Number.isFinite(r.daysOnMarket) && r.daysOnMarket >= 0 ? Math.round(r.daysOnMarket) : null
+  if (r.status !== 'Pending') return { days: n, measure: 'on-market' }
+  return { days: r.pendingDate ? n : null, measure: 'offer' }
+}
+
 function rivalCard(
   r: CmaBandRival,
   subject: CmaBandSubject | null | undefined,
@@ -227,12 +254,13 @@ function rivalCard(
     },
     ctx ?? UNADDRESSED_DOC_LINKS,
   )
+  const told = rivalDays(r)
   const facts = joinFacts([
     r.sqft != null && r.sqft > 0 ? `${int(r.sqft)} sqft` : null,
     r.beds != null ? `${int(r.beds)} bd` : null,
     r.baths != null ? `${r.baths % 1 === 0 ? int(r.baths) : r.baths.toFixed(1)} ba` : null,
-    r.daysOnMarket != null && r.daysOnMarket >= 0
-      ? `${int(r.daysOnMarket)} ${r.daysOnMarket === 1 ? 'day' : 'days'} on market`
+    told.days != null
+      ? `${int(told.days)} ${told.days === 1 ? 'day' : 'days'} ${told.measure === 'offer' ? 'to an offer' : 'on market'}`
       : null,
   ])
   const vs = rivalVsSubjectLine(r, subject)
@@ -246,8 +274,9 @@ function rivalCard(
       listPrice: r.listPrice,
       originalListPrice: r.originalListPrice ?? null,
       onMarketDate: r.onMarketDate ?? null,
-      daysOnMarket: r.daysOnMarket,
+      daysOnMarket: told.days,
       status: r.status,
+      daysMeasure: told.measure,
     }),
     `rival-${r.listingKey}`,
   )
@@ -876,6 +905,10 @@ export type BandInventoryRow = BandStreetRow & {
   SubdivisionName?: string | null
   City?: string | null
   public_remarks?: string | null
+  /** The day it went under contract, on a Pending row. */
+  pending_timestamp?: string | null
+  /** MLS days from its OnMarketDate to Pending, on a Pending row. */
+  days_to_pending?: number | null
 }
 
 function finiteOrNull(v: unknown): number | null {
@@ -884,17 +917,16 @@ function finiteOrNull(v: unknown): number | null {
 }
 
 /**
- * Whole days since a listing went on market. Null when the date is unusable.
- * Date arithmetic, not the "DaysOnMarket" column: docs/DATABASE_FOR_AI_AGENTS.md
- * warns that column is list-to-close. The competition assembly reads this
- * same helper so its day figures cannot drift from the cards.
+ * Whole days since a listing went on market: calendar days from its Pacific
+ * on-market day to today's (liveListingDays, the count the subject's own live
+ * listing prints). Null when the date is unusable. Date arithmetic, not the
+ * "DaysOnMarket" column: docs/DATABASE_FOR_AI_AGENTS.md warns that column is
+ * list-to-close. The competition assembly reads this same helper so its day
+ * figures cannot drift from the cards.
  */
 export function daysSinceOnMarket(onMarketDate: string | null | undefined): number | null {
   if (!onMarketDate) return null
-  const then = new Date(onMarketDate)
-  if (Number.isNaN(then.getTime())) return null
-  const days = Math.floor((Date.now() - then.getTime()) / 86_400_000)
-  return days >= 0 ? days : null
+  return liveListingDays(onMarketDate)
 }
 
 /** One MLS row as a named competitor. Null when it has no address or no ask. */
@@ -903,13 +935,31 @@ export function bandRowToRival(row: BandInventoryRow, status: 'Active' | 'Pendin
   const listPrice = Number(row.ListPrice)
   if (!address || !Number.isFinite(listPrice) || listPrice <= 0) return null
   const originalListPrice = finiteOrNull(row.OriginalListPrice)
-  const daysOnMarket = daysSinceOnMarket(row.OnMarketDate) ?? finiteOrNull(row.DaysOnMarket)
+  // A HOME UNDER CONTRACT COUNTS TO ITS CONTRACT (reader review 2026-10-08).
+  // 2820 Aldrich listed Aug 24 and went Pending Sep 11, 18 days; the letter
+  // printed 44, the days since it listed. Its days are Active to Pending, as
+  // calendar days between the Pacific days, and it is dated the day it went
+  // under contract.
+  const offer =
+    status === 'Pending'
+      ? offerRun({
+          onMarketDate: row.OnMarketDate,
+          pendingAt: row.pending_timestamp ?? null,
+          mlsDaysToPending: finiteOrNull(row.days_to_pending),
+        })
+      : null
+  const pendingDate = offer?.to ?? null
+  const daysOnMarket =
+    status === 'Pending'
+      ? (offer?.days ?? null)
+      : (daysSinceOnMarket(row.OnMarketDate) ?? finiteOrNull(row.DaysOnMarket))
   return {
     listingKey: row.ListingKey,
     address,
     listPrice,
     status,
     daysOnMarket,
+    ...(pendingDate ? { pendingDate } : {}),
     photoUrl: row.PhotoURL,
     latitude: row.Latitude,
     longitude: row.Longitude,

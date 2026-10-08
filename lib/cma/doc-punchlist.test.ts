@@ -1212,8 +1212,9 @@ describe('tasteReview 2 — the answer is drawn, and nothing floats over it', ()
     expect(html).toMatch(/<button type="button" class="pin-hit is-closed" data-comp="1" data-pin="1"/)
     // Delta 3: every pin tells the tale — days on market, price changes, and
     // the outcome — on tap and on hover.
-    // 730 Quince had its offer in 1 day: the pin's count is the row's count.
-    expect(html).toMatch(/aria-label="1\. 730 Quince[^"]*days? on market/)
+    // 730 Quince had its offer in 1 day: the pin's count is the row's count,
+    // named for what it counts (reader review 2026-10-08).
+    expect(html).toMatch(/aria-label="1\. 730 Quince[^"]*days? to an offer/)
     expect(html).toContain('class="pin-legend"')
     // A cropped tile and a percentage-positioned pin cannot both be right.
     for (const css of [cmaStylesheet('https://ryan-realty.com'), immersiveStylesheet()]) {

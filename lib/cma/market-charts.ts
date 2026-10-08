@@ -4,6 +4,7 @@
  */
 
 import { escapeHtml, int } from '@/lib/cma/render-blocks'
+import { pacificDay, type CameOffFacts } from '@/lib/cma/listing-status'
 
 const esc = escapeHtml
 
@@ -718,10 +719,22 @@ export type ListingTimelineInput = {
   rangeHigh: number
   /** What the shaded zone is, in the seller's words. */
   rangeLabel: string
-  /** "withdrawn" / "expired" / "canceled". Printed at the end of the line. */
+  /**
+   * "withdrawn" / "expired" / "canceled": how it came off, printed at the end
+   * of the line. "off market" when it left Active under one status and took
+   * another later (lib/cma/listing-status.ts cameOffStatus), printed "came off".
+   */
   status: string | null
   /** Days the period ran. Printed beside the end. */
   days: number | null
+  /**
+   * The day it came off, the status it left Active for, and its status of
+   * record with the day that took effect. The reading under the chart turns
+   * them into "It came off the market on Feb 10 after 71 days, and the listing
+   * expired on Sep 30." when the status of record came later
+   * (lib/cma/listing-status.ts cameOffThenSentence).
+   */
+  cameOff?: CameOffFacts | null
   caption: string
 }
 
@@ -735,11 +748,10 @@ type TimelineGeometry = {
   high: number
 }
 
+/** UTC midnight of the Pacific day a date or MLS timestamp falls on (never its UTC day). */
 function timelineDay(value: string | null | undefined): number | null {
-  const raw = String(value ?? '').trim()
-  if (!raw) return null
-  const day = raw.slice(0, 10)
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return null
+  const day = pacificDay(value ?? null)
+  if (!day) return null
   const t = Date.parse(`${day}T00:00:00.000Z`)
   return Number.isNaN(t) ? null : t
 }
@@ -787,8 +799,9 @@ function timelineStepPath(
 }
 
 function monthDay(iso: string): string {
-  const d = new Date(`${iso.slice(0, 10)}T12:00:00.000Z`)
-  return Number.isNaN(d.getTime())
+  const day = pacificDay(iso)
+  const d = new Date(`${day ?? ''}T12:00:00.000Z`)
+  return day == null || Number.isNaN(d.getTime())
     ? ''
     : d.toLocaleString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
 }

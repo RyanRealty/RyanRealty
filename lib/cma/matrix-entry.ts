@@ -39,10 +39,11 @@ import { keyFor, type CmaMapFamily } from '@/lib/cma/map-families'
 import type { CmaPinFact } from '@/lib/cma/comp-pin-map'
 import type { ExpiredFinalCycle } from '@/lib/cma/expired-audit'
 import { closedSaleDaysToOffer } from '@/lib/cma/listing-history-line'
+import { pacificDay } from '@/lib/cma/listing-status'
 import { sellerOffMarketDate } from '@/lib/cma/seller-letter-copy'
 import type { AskExposureLike } from '@/lib/cma/ask-position'
 import type { CmaExpiredPeer } from '@/lib/cma/market-status'
-import type { CmaBandRival } from '@/lib/cma/band-rivals'
+import { rivalDays, type CmaBandRival } from '@/lib/cma/band-rivals'
 import type { CmaAdjustedComp, CmaSubject } from '@/lib/cma/types'
 import { concessionOnSale, printedAdjustedPrice } from '@/lib/pricing/seller-net'
 
@@ -69,11 +70,12 @@ export type MatrixEntry = {
   baths: number | null
   domDays: number | null
   /**
-   * What `domDays` counts on a closed sale. `offer` is first list to an
-   * accepted offer, the days a home sat before it sold. `listed-to-closed` is
-   * first list to close, printed only when the offer day is unknown, and the
-   * cell says so beside the number. Absent on unsold and live rows, where the
-   * count is the days on market.
+   * What `domDays` counts. `offer` is Active to an accepted offer on the
+   * listing period that produced it: a closed sale's days before it sold, and
+   * a home under contract's days to its contract. `listed-to-closed` is first
+   * list to close, printed only when the offer day is unknown, and the cell
+   * says so beside the number. Absent on unsold and live rows, where the count
+   * is the days on market.
    */
   domMeasure?: 'offer' | 'listed-to-closed'
   /**
@@ -299,6 +301,7 @@ export function closedEntries(
     const ran = days(c.domTotal)
     const toOffer = closedSaleDaysToOffer({
       daysToOffer: c.daysToOffer,
+      measuredFrom: c.offerFrom ?? null,
       domTotal: ran,
       firstListDate: c.onMarketDate,
       closeDate: c.closeDate,
@@ -441,11 +444,16 @@ export function unsoldEntries(
       proximity: (p as { proximity?: string | null }).proximity?.trim() || entryProximity(subject, p),
       garageSpaces: null,
       cdomDays: dom,
-      statusDate: sellerOffMarketDate({
-        listDate: p.onMarketDate,
-        offMarketDate: null,
-        days: dom,
-      }),
+      // The date beside the status the column prints: the day the listing took
+      // its status of record (3204 Spring Creek, expired Jul 31), not the day
+      // its days on the market ended (withdrawn Jan 20) when those differ.
+      statusDate:
+        p.statusDate ??
+        sellerOffMarketDate({
+          listDate: p.onMarketDate,
+          offMarketDate: p.offMarketDate ?? null,
+          days: dom,
+        }),
       adjustedPrice: null,
       endLabel: 'came off',
       mlsStatus: p.status,
@@ -473,16 +481,24 @@ export function activeEntries(
   subject?: Pick<CmaSubject, 'latitude' | 'longitude'> | null,
 ): MatrixEntry[] {
   return rivals.map((r, i) => {
+    const pending = r.status === 'Pending'
+    // A HOME UNDER CONTRACT IS DATED THE DAY IT WENT UNDER CONTRACT, AND ITS
+    // DAYS ARE THE DAYS TO THAT OFFER (reader review 2026-10-08). 2820 Aldrich
+    // went Pending Sep 11 after 18 days and printed "Status date Aug 24, 2026"
+    // and "44 days", its list date and the days since. A stored row without
+    // the pending day has neither fact, so it prints neither (rivalDays).
+    const pendingDay = pending ? (r.pendingDate ?? null) : null
+    const told = rivalDays(r)
+    const dom = told.days
     const path = pricePathFromListing({
       address: r.address,
       listPrice: r.listPrice,
       originalListPrice: r.originalListPrice ?? null,
       onMarketDate: r.onMarketDate ?? null,
-      daysOnMarket: r.daysOnMarket,
+      daysOnMarket: dom,
       status: r.status,
+      daysMeasure: told.measure,
     })
-    const dom = days(r.daysOnMarket)
-    const pending = r.status === 'Pending'
     const remarks = remarksOf(r)
     return {
       key: keyFor('active', i),
@@ -501,7 +517,11 @@ export function activeEntries(
       photoUrl: r.photoUrl?.trim() || null,
       outcome: [
         pending ? `under contract at ${shortUsd(r.listPrice)}` : `asking ${shortUsd(r.listPrice)}`,
-        dom != null ? `${int(dom)} ${dom === 1 ? 'day' : 'days'}` : '',
+        dom != null
+          ? pending
+            ? `offer in ${int(dom)} ${dom === 1 ? 'day' : 'days'}`
+            : `${int(dom)} ${dom === 1 ? 'day' : 'days'}`
+          : '',
       ]
         .filter(Boolean)
         .join(' · '),
@@ -514,6 +534,7 @@ export function activeEntries(
       beds: r.beds ?? null,
       baths: printedBaths(r),
       domDays: dom,
+      ...(pending && dom != null ? { domMeasure: 'offer' as const } : {}),
       priceChanges: movedOrNull(num(r.originalListPrice), num(r.listPrice)),
       priceChangesExact: false,
       path,
@@ -525,9 +546,7 @@ export function activeEntries(
       proximity: (r as { proximity?: string | null }).proximity?.trim() || entryProximity(subject, r),
       garageSpaces: null,
       cdomDays: dom,
-      statusDate: /^\d{4}-\d{2}-\d{2}/.test((r.onMarketDate ?? '').slice(0, 10))
-        ? (r.onMarketDate ?? '').slice(0, 10)
-        : null,
+      statusDate: pending ? pendingDay : pacificDay(r.onMarketDate ?? null),
       adjustedPrice: null,
       endLabel: pending ? 'under contract' : 'still for sale',
       latitude: r.latitude ?? null,
@@ -612,15 +631,16 @@ export function subjectEntry(input: {
     proximity: null,
     garageSpaces: s.garageSpaces != null && Number.isFinite(s.garageSpaces) ? Number(s.garageSpaces) : null,
     cdomDays: input.domDays,
+    // The date beside the status the column prints: Coho's listing expired
+    // Sep 30, months after it came off on Feb 10, and its Status reads Expired.
     statusDate: cameOff
-      ? sellerOffMarketDate({
+      ? (input.finalCycle?.statusDate ??
+        sellerOffMarketDate({
           listDate: input.finalCycle?.listDate ?? s.lastListDate,
           offMarketDate: input.finalCycle?.offMarketDate,
           days: input.finalCycle?.days ?? null,
-        })
-      : s.lastListDate && /^\d{4}-\d{2}-\d{2}/.test(s.lastListDate.slice(0, 10))
-        ? s.lastListDate.slice(0, 10)
-        : null,
+        }))
+      : pacificDay(s.lastListDate ?? null),
     adjustedPrice: null,
     endLabel: cameOff ? 'came off' : input.printableAsk != null ? 'still asking' : '',
     mlsStatus: s.standardStatus ?? null,

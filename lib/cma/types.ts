@@ -51,6 +51,15 @@ export interface CmaSubject {
   lastListDate: string | null
   listingHistoryLine: string | null
   /**
+   * The status the last listing left Active for, from the MLS status log, when
+   * it is not the status of record: 3177 Coho was withdrawn Feb 10 and its
+   * listing expired Sep 30, so this is 'Withdrawn' beside a standardStatus of
+   * 'Expired'. Every sentence about the day it came off reads the two through
+   * lib/cma/listing-status.ts cameOffStatus. Absent on rows built before the
+   * status log was read.
+   */
+  cameOffAs?: string | null
+  /**
    * MLS association fields. Optional so existing fixtures keep compiling.
    * The MLS reports whether an association EXISTS and what it charges. It does
    * NOT report what the recorded CC&Rs say — see lib/cma/development.ts.
@@ -143,6 +152,13 @@ export interface CmaComp {
   listingHistoryLine?: string | null
   /** On-market date when known (comp list cycle). */
   onMarketDate?: string | null
+  /**
+   * The Pacific day the listing period that produced the sale went Active: the
+   * day `daysToOffer` counts from (lib/cma/listing-status.ts offerRun). Later
+   * than `onMarketDate` when the home was withdrawn or fell out of contract and
+   * came back. Absent on rows built before the status log was read.
+   */
+  offerFrom?: string | null
   selectionTier: string
   /** "1.75 miles NW" — Fannie Mae B4-1.3-08 requires distance + direction be reported. */
   proximity?: string | null

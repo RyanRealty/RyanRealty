@@ -179,7 +179,9 @@ function daysOnMarket(onMarketDate: string | null): number | null {
  */
 // public_remarks: the competition passes the same multi-unit and ADU walls as
 // the sales (rule 24, Matt 2026-10-08), and those walls read the remarks.
-const AREA_SELECT = `${BAND_SELECT}, City, SubdivisionName, public_remarks`
+// pending_timestamp + days_to_pending: a home under contract is dated the day
+// it went under contract and counts its days to that offer (band-rivals.ts).
+const AREA_SELECT = `${BAND_SELECT}, City, SubdivisionName, public_remarks, pending_timestamp, days_to_pending`
 
 export type CmaAreaBandInventory = {
   area: CompArea

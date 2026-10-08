@@ -38,6 +38,7 @@ import {
 } from '@/lib/cma/price-path'
 import type { TrackedDocLinkCtx } from '@/lib/cma/doc-links'
 import { daysOnMarketFrom, liveListingDays } from '@/lib/cma/listing-history-line'
+import { pacificDay } from '@/lib/cma/listing-status'
 import { COMPARABLE_DAYS_TO_OFFER_ROW_LABEL } from '@/lib/cma/comparable-dom-history'
 import { ON_MARKET_STATUS } from '@/lib/cma/subject-on-market'
 import { roomAdjustmentWords } from '@/lib/cma/seller-letter-copy'
@@ -533,9 +534,10 @@ function statusCell(entry: MatrixEntry): string {
 }
 
 function statusDateCell(entry: MatrixEntry): string {
-  const raw = entry.statusDate
-  if (!raw || !/^\d{4}-\d{2}-\d{2}/.test(raw)) return '-'
-  return formatDate(raw.slice(0, 10)) || raw.slice(0, 10)
+  // The Pacific day: a timestamp's UTC day can be the next day in Bend.
+  const day = pacificDay(entry.statusDate ?? null)
+  if (!day) return '-'
+  return formatDate(day) || day
 }
 
 /** A dollar figure, or the dash a blank cell prints. The Adjusted row's own cell. */
@@ -550,14 +552,22 @@ export function weightCell(weight: number | null | undefined): string {
 
 /**
  * The Days on market cell. A closed sale counts to its accepted offer, the
- * same number its outcome line prints. When only first list to close is
- * known, the cell says that is what it counts: that figure is not days on
- * market (CLAUDE.md §7), and a bare number under that label would claim it.
+ * same number its outcome line prints, in a row the sales table names for
+ * that. When only first list to close is known, the cell says that is what it
+ * counts: that figure is not days on market (CLAUDE.md §7), and a bare number
+ * under that label would claim it. A home under contract, in a table whose row
+ * is days on market, counts to its offer and says so (2820 Aldrich, "18 days
+ * to an offer", reader review 2026-10-08).
  */
-export function domCell(entry: Pick<MatrixEntry, 'domMeasure'>, n: number | null | undefined): string {
+export function domCell(
+  entry: Pick<MatrixEntry, 'domMeasure'> & Partial<Pick<MatrixEntry, 'family'>>,
+  n: number | null | undefined,
+): string {
   if (n == null || !Number.isFinite(n) || n < 0) return '-'
   const count = `${int(n)} ${n === 1 ? 'day' : 'days'}`
-  return entry.domMeasure === 'listed-to-closed' ? `${count}, listed to closed` : count
+  if (entry.domMeasure === 'listed-to-closed') return `${count}, listed to closed`
+  if (entry.domMeasure === 'offer' && entry.family === 'active') return `${count} to an offer`
+  return count
 }
 
 function sharedCells(entry: MatrixEntry, _range?: PricePathRange | null): string[] {

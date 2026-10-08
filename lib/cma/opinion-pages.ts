@@ -851,7 +851,10 @@ export function whatHappenedGraphicHtml(a: OpinionPageArgs): string {
     marketMedianDom: readOfferTiming(a.market)?.medianDays ?? a.market?.medianDom ?? null,
     neutral: storyClassFor(a) === 'neutral',
     exposureKnown: askExposureKnown(a),
-    status: a.subject.standardStatus,
+    // How it came off, the word the chart's end label prints, and the two
+    // dates when the listing came off before it took its status of record.
+    status: timeline.status ?? a.subject.standardStatus,
+    cameOff: timeline.cameOff ?? null,
     // Every ask and its days, so the inside story says how long the ask sat
     // above the range before it came inside (reader review 2026-10-08). With
     // no exposure on the row the split is unknown and no claim is made.

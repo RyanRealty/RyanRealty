@@ -1075,8 +1075,16 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
   })
 
   it('writes whyItSat from the data on the row and nothing else', () => {
+    // Mar 12 to Aug 9 is 150 calendar days: the days are the row's own dates.
     const set = buildExpiredPeerSet({
-      rows: [unsold('A', '10 Aspen', 1, { ListPrice: 500_000, OriginalListPrice: 525_000 })],
+      rows: [
+        unsold('A', '10 Aspen', 1, {
+          ListPrice: 500_000,
+          OriginalListPrice: 525_000,
+          OnMarketDate: '2026-03-12',
+          status_change_timestamp: '2026-08-09',
+        }),
+      ],
       subject: subj,
       area: AREA,
       asOf: ASOF,
@@ -1088,6 +1096,59 @@ describe('buildExpiredPeerSet — the window opens until three homes failed', ()
     // 500,000 / 1,450 sqft = $345/sqft, 15% above the $300 the sales closed at.
     expect(why).toContain('$345 a square foot')
     expect(why).toContain('15 percent above the $300')
+  })
+
+  it('ends a peer\'s days the day it left Active, not the day its listing expired (3204 Spring Creek)', () => {
+    // Reader review 2026-10-08: Active Oct 16, withdrawn Jan 20, expired Jul
+    // 31. Both letters said it "came off after 288 days". It was on the market
+    // 96 days; its status column still reads Expired, dated Jul 31.
+    const set = buildExpiredPeerSet({
+      rows: [
+        unsold('A', '3204 Spring Creek', 1, {
+          OnMarketDate: '2025-10-16T21:18:46+00:00',
+          ListDate: '2025-10-16T21:18:46+00:00',
+          status_change_timestamp: '2026-08-01T05:00:00+00:00',
+          off_market_date: '2026-07-31',
+          DaysOnMarket: 288,
+          CumulativeDaysOnMarket: null,
+          statusChanges: [
+            { at: '2026-01-20T18:37:48+00:00', from: 'Active', to: 'Withdrawn' },
+            { at: '2026-08-01T05:00:00+00:00', from: 'Withdrawn', to: 'Expired' },
+          ],
+        }),
+      ],
+      subject: subj,
+      area: AREA,
+      asOf: ASOF,
+      keptCompMedianPpsf: 300,
+    })
+    const peer = set.peers[0]!
+    expect(peer.daysOnMarket).toBe(96)
+    expect(peer.offMarketDate).toBe('2026-01-20')
+    expect(peer.cameOffAs).toBe('Withdrawn')
+    expect(peer.statusDate).toBe('2026-07-31')
+    expect(peer.whyItSat).toContain('96 days on the market')
+    expect(peer.whyItSat).not.toContain('288')
+    expect(peer.listingHistoryLine).toContain('came off the market · 96 days on market')
+  })
+
+  it('counts a peer with no status log on its own dates, in Pacific days', () => {
+    // Listed 7:13 PM Dec 1 Pacific (03:13 UTC Dec 2), off Aug 9: 251 days,
+    // whatever the row's DaysOnMarket says.
+    const set = buildExpiredPeerSet({
+      rows: [
+        unsold('A', '10 Aspen', 1, {
+          OnMarketDate: '2025-12-02T03:13:18+00:00',
+          status_change_timestamp: '2026-08-09',
+          off_market_date: '2026-08-09',
+          DaysOnMarket: 200,
+        }),
+      ],
+      subject: subj,
+      area: AREA,
+      asOf: ASOF,
+    })
+    expect(set.peers[0]!.daysOnMarket).toBe(251)
   })
 
   it('says a home never came down when the opening ask is on the record and equal', () => {

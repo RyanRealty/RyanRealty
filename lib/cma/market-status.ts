@@ -12,6 +12,7 @@ import { realSubdivision } from '@/lib/cma/comp-tiers'
 import { roomNotedSentence, sameAreaFit, sameAreaSubject, type SameAreaCandidate } from '@/lib/cma/same-area-fit'
 import type { CmaMarketAreaRow } from '@/lib/data/cma/marketAreaReads'
 import { daysOnMarketFrom, listingHistoryLine as buildListingHistoryLine } from '@/lib/cma/listing-history-line'
+import { cameOffStatus, lastActiveRun, pacificDay, sameStatus, type ActiveRun } from '@/lib/cma/listing-status'
 
 export type CmaStatusBucket = {
   key: 'selected' | 'active' | 'pending' | 'expired' | 'closed'
@@ -62,9 +63,19 @@ export type CmaExpiredPeer = {
   listPrice: number
   originalListPrice: number | null
   status: string
+  /** Days on the market: the day it went Active to the day it left Active. */
   daysOnMarket: number | null
   /** Cycle start — used to label or collapse multi-cycle peers. */
   onMarketDate: string | null
+  /**
+   * YYYY-MM-DD (Pacific) it left Active, from the MLS status log. Absent on rows
+   * built before the log was read.
+   */
+  offMarketDate?: string | null
+  /** The status it left Active for, when that differs from `status` (withdrawn, then expired). */
+  cameOffAs?: string | null
+  /** YYYY-MM-DD (Pacific) `status` took effect: the date the column prints beside it. */
+  statusDate?: string | null
   photoUrl: string | null
   listingHistoryLine: string | null
   /**
@@ -318,19 +329,33 @@ function peerDist2(row: CmaMarketAreaRow, lat: number, lng: number): number {
   return dLat * dLat + dLng * dLng
 }
 
-/** MLS DOM when present; else on-market → off-market (status change) sit-time. */
-function peerDom(row: CmaMarketAreaRow): number | null {
+/**
+ * The last stretch an unsold listing was on the market, from its status log
+ * when the read attached one, else its own on-market and off-market days.
+ */
+function peerRun(row: CmaMarketAreaRow): ActiveRun | null {
+  return lastActiveRun({
+    changes: row.statusChanges ?? [],
+    onMarketDate: row.OnMarketDate ?? row.ListDate,
+    offMarketDate: row.off_market_date ?? row.status_change_timestamp ?? row.CloseDate,
+    status: row.StandardStatus,
+  })
+}
+
+/**
+ * DAYS ON THE MARKET END THE DAY IT LEFT ACTIVE (reader review 2026-10-08).
+ *
+ * 3204 Spring Creek went Active Oct 16, was withdrawn Jan 20 and expired Jul
+ * 31. Its MLS DaysOnMarket ran to the expiry, and both letters said it "came
+ * off after 288 days". The status log gives 96. Without a log the count is its
+ * on-market day to its off-market day, as calendar days between Pacific days,
+ * and the MLS figure only when neither date is on the row.
+ */
+function peerDom(row: CmaMarketAreaRow, run: ActiveRun | null): number | null {
+  if (run?.days != null) return run.days
   const d = num(row.CumulativeDaysOnMarket) ?? num(row.DaysOnMarket)
   if (d != null && d > 0) return d
-  const on = row.OnMarketDate ?? row.ListDate
-  const offRaw = row.status_change_timestamp ?? row.CloseDate
-  if (on && offRaw) {
-    const off = new Date(offRaw.length <= 10 ? `${offRaw}T12:00:00.000Z` : offRaw)
-    if (!Number.isNaN(off.getTime())) {
-      return daysOnMarketFrom({ onMarketDate: on, asOf: off })
-    }
-  }
-  return daysOnMarketFrom({ onMarketDate: on })
+  return daysOnMarketFrom({ onMarketDate: row.OnMarketDate ?? row.ListDate })
 }
 
 function onMarketSortKey(iso: string | null | undefined): number {
@@ -410,9 +435,13 @@ export function pickExpiredPeers(
         row.OriginalListPrice != null && Number.isFinite(Number(row.OriginalListPrice))
           ? Number(row.OriginalListPrice)
           : null
-      const onMarketDate = row.OnMarketDate ?? row.ListDate ?? null
-      const daysOnMarket = peerDom(row)
+      const run = peerRun(row)
+      const onMarketDate = (run?.source === 'status-history' ? run.from : null) ?? row.OnMarketDate ?? row.ListDate ?? null
+      const daysOnMarket = peerDom(row, run)
       const status = row.StandardStatus
+      const leftAs = run?.source === 'status-history' ? run.leftAs : null
+      const cameOffAs = leftAs && !sameStatus(leftAs, status) ? leftAs : null
+      const statusDay = pacificDay(row.status_change_timestamp ?? row.off_market_date ?? null)
       const peer: CmaExpiredPeer = {
         listingKey: key,
         address,
@@ -421,11 +450,14 @@ export function pickExpiredPeers(
         status,
         daysOnMarket,
         onMarketDate,
+        ...(run?.to ? { offMarketDate: run.to } : {}),
+        ...(cameOffAs ? { cameOffAs } : {}),
+        ...(statusDay ? { statusDate: statusDay } : {}),
         photoUrl: row.PhotoURL ?? null,
         listingHistoryLine: buildListingHistoryLine({
           listPrice,
           originalListPrice,
-          status,
+          status: cameOffStatus(status, cameOffAs),
           onMarketDate,
           daysOnMarket,
         }),
@@ -750,9 +782,15 @@ export function whyItSat(
   return bits.length > 0 ? `${joinBits(bits)}.` : null
 }
 
-/** Months between an off-market day and as-of. Null when the row carries no date. */
+/**
+ * Months between the day it came off the market and as-of. Null when the row
+ * carries no date. The day it left Active when the status log says, so a home
+ * withdrawn 25 months ago whose listing expired 23 months ago did not come off
+ * "in the last 24 months".
+ */
 function offMarketMonths(row: CmaMarketAreaRow, asOf: Date): number | null {
-  const raw = row.status_change_timestamp?.trim()
+  const run = row.statusChanges?.length ? peerRun(row) : null
+  const raw = (run?.source === 'status-history' ? run.to : null) ?? row.status_change_timestamp?.trim()
   if (!raw) return null
   const t = new Date(raw.length <= 10 ? `${raw}T12:00:00.000Z` : raw)
   if (Number.isNaN(t.getTime())) return null

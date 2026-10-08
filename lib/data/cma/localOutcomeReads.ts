@@ -18,6 +18,11 @@
  *     ListingKey, from `price_history` (structured old → new) and
  *     `listing_history` (the MLS change log). This is what turns the subject's
  *     final cycle into a stepped line instead of two endpoints.
+ *  4. `getListingStatusChanges` — every MLS status change recorded against a
+ *     set of ListingKeys, from `listing_history` ('MlsStatus: A → B') and
+ *     `status_history` (the delta sync). This is what says when a listing left
+ *     Active, so a listing withdrawn in February and expired in September is
+ *     counted 71 days on the market, not 302 (lib/cma/listing-status.ts).
  *
  * WHY THE RAW TABLE AND NOT A CACHE. `market_stats_cache` and
  * `market_pulse_live` publish a single median-to-pending per geo over a
@@ -42,6 +47,12 @@ import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
 import { resolveCanonicalListingKey } from '@/lib/data/listings/resolveCanonicalListingKey'
 import { listStartDatesFromHistory } from '@/lib/cma/listing-history-line'
+import {
+  mergeStatusChanges,
+  pacificDay,
+  parseMlsStatusChange,
+  type ListingStatusChange,
+} from '@/lib/cma/listing-status'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
 
 function client() {
@@ -183,10 +194,13 @@ export const getCmaCityFailedOutcomes = makeResilientCached(
   [] as CmaCityFailedOutcomeRow[],
 )
 
-/** `2026-07-28T16:18:30.175+00:00` and `2026-07-28` both → `2026-07-28`. */
+/**
+ * The Pacific calendar day of a change. `2026-01-02T02:42:56+00:00` is Jan 1 in
+ * Bend, and 3177 Coho's chart printed "Cut to $569K on Jan 2" off the UTC day
+ * (reader review 2026-10-08). A bare `2026-07-28` stays as written.
+ */
 function dayOf(value: unknown): string | null {
-  const s = String(value ?? '').trim().slice(0, 10)
-  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : null
+  return typeof value === 'string' ? pacificDay(value) : null
 }
 
 function positive(value: unknown): number | null {
@@ -284,10 +298,96 @@ async function fetchCmaListingPriceEvents(listingKey: string): Promise<CmaListin
 
 export const getCmaListingPriceEvents = makeResilientCached(
   fetchCmaListingPriceEvents,
-  ['cma-listing-price-events-v1'],
+  // v2: event days are Pacific calendar days (were UTC).
+  ['cma-listing-price-events-v2'],
   { revalidate: CACHE_WINDOWS.marketStats, tags: [cacheTag.listings] },
   [] as CmaListingPriceEvent[],
 )
+
+type StatusChangeClient = NonNullable<ReturnType<typeof client>>
+
+/**
+ * The status changes for a set of keys, both writers merged, keyed by listing.
+ * The change-log read is filtered to status lines so a listing with hundreds
+ * of remark edits cannot push its Pending line past the page cap.
+ */
+async function fetchStatusChanges(
+  sb: StatusChangeClient,
+  keys: readonly string[],
+): Promise<Map<string, ListingStatusChange[]>> {
+  const out = new Map<string, ListingStatusChange[]>()
+  if (keys.length === 0) return out
+  const [loggedPage, syncedPage] = await Promise.all([
+    fetchPagedRows<Record<string, unknown>>(
+      (from, to) =>
+        sb
+          .from('listing_history')
+          .select('listing_key, event_date, description')
+          .in('listing_key', keys as string[])
+          .like('description', 'MlsStatus:%')
+          .order('event_date', { ascending: true })
+          .order('listing_key', { ascending: true })
+          .range(from, to),
+      5000,
+    ),
+    fetchPagedRows<Record<string, unknown>>(
+      (from, to) =>
+        sb
+          .from('status_history')
+          .select('listing_key, old_status, new_status, changed_at')
+          .in('listing_key', keys as string[])
+          .order('changed_at', { ascending: true })
+          .order('listing_key', { ascending: true })
+          .range(from, to),
+      5000,
+    ),
+  ])
+  if (loggedPage.error) throw new Error(`getListingStatusChanges(listing_history): ${loggedPage.error.message}`)
+  if (syncedPage.error) throw new Error(`getListingStatusChanges(status_history): ${syncedPage.error.message}`)
+  const logged = new Map<string, ListingStatusChange[]>()
+  const synced = new Map<string, ListingStatusChange[]>()
+  for (const row of loggedPage.rows) {
+    const key = typeof row.listing_key === 'string' ? row.listing_key : null
+    const at = typeof row.event_date === 'string' ? row.event_date : null
+    const change = parseMlsStatusChange(typeof row.description === 'string' ? row.description : null)
+    if (!key || !at || !change) continue
+    const list = logged.get(key) ?? []
+    list.push({ at, from: change.from, to: change.to })
+    logged.set(key, list)
+  }
+  for (const row of syncedPage.rows) {
+    const key = typeof row.listing_key === 'string' ? row.listing_key : null
+    const at = typeof row.changed_at === 'string' ? row.changed_at : null
+    const to = typeof row.new_status === 'string' ? row.new_status.trim() : ''
+    if (!key || !at || !to) continue
+    const list = synced.get(key) ?? []
+    list.push({ at, from: typeof row.old_status === 'string' ? row.old_status.trim() || null : null, to })
+    synced.set(key, list)
+  }
+  for (const key of keys) {
+    const merged = mergeStatusChanges(logged.get(key) ?? [], synced.get(key) ?? [])
+    if (merged.length > 0) out.set(key, merged)
+  }
+  return out
+}
+
+/**
+ * Every MLS status change recorded against these listings, oldest first, keyed
+ * by ListingKey. A key with no recorded change is absent from the map.
+ *
+ * THROWS on a database error: the caller decides what an unread log means. A
+ * build treats it as additive and keeps the listing row's own dates, which is
+ * the count every letter printed before this read existed.
+ */
+export async function getListingStatusChanges(
+  listingKeys: readonly string[],
+): Promise<Map<string, ListingStatusChange[]>> {
+  const keys = Array.from(new Set(listingKeys.map((k) => k.trim()).filter(Boolean)))
+  if (keys.length === 0) return new Map()
+  const sb = client()
+  if (!sb) return new Map()
+  return fetchStatusChanges(sb, keys)
+}
 
 export type ClosedCompListStartRow = {
   listingKey: string
@@ -296,6 +396,12 @@ export type ClosedCompListStartRow = {
   originalEntryTimestamp: string | null
   originalOnMarketTimestamp: string | null
   historyListDates: string[]
+  /** Every MLS status change on the listing, oldest first. */
+  statusChanges: ListingStatusChange[]
+  pendingTimestamp: string | null
+  daysToPending: number | null
+  /** CumulativeDaysOnMarket, else DaysOnMarket, as the row carries it. */
+  mlsDaysOnMarket: number | null
 }
 
 /**
@@ -330,10 +436,12 @@ export async function getClosedCompListStarts(
   // History/price batches can exceed PostgREST's 1,000-row response cap across
   // a closed-comp set — page with a stable order (G48). Cap stays 2,000 so a
   // huge set still finishes; earliest list dates live near the front of the order.
-  const [listingRes, historyPage, pricePage] = await Promise.all([
+  const [listingRes, historyPage, pricePage, statusChanges] = await Promise.all([
     sb
       .from('listings')
-      .select('ListingKey, OnMarketDate, ListDate, original_entry_timestamp, original_on_market_timestamp')
+      .select(
+        'ListingKey, OnMarketDate, ListDate, original_entry_timestamp, original_on_market_timestamp, pending_timestamp, days_to_pending, DaysOnMarket, CumulativeDaysOnMarket',
+      )
       .in('ListingKey', keys),
     fetchPagedRows<Record<string, unknown>>(
       (from, to) =>
@@ -357,6 +465,12 @@ export async function getClosedCompListStarts(
           .range(from, to),
       2000,
     ),
+    // Additive like the rest of this read: an unread status log leaves the
+    // offer clock on the row's own dates.
+    fetchStatusChanges(sb, keys).catch((err) => {
+      console.error('[getClosedCompListStarts] status changes', err instanceof Error ? err.message : String(err))
+      return new Map<string, ListingStatusChange[]>()
+    }),
   ])
   if (listingRes.error) {
     console.error('[getClosedCompListStarts] listings', listingRes.error.message)
@@ -370,27 +484,27 @@ export async function getClosedCompListStarts(
   const historyRes = { data: historyPage.rows }
   const priceRes = { data: pricePage.rows }
 
-  for (const key of keys) {
-    out.set(key, {
-      listingKey: key,
-      onMarketDate: null,
-      listDate: null,
-      originalEntryTimestamp: null,
-      originalOnMarketTimestamp: null,
-      historyListDates: [],
-    })
-  }
+  const blank = (key: string): ClosedCompListStartRow => ({
+    listingKey: key,
+    onMarketDate: null,
+    listDate: null,
+    originalEntryTimestamp: null,
+    originalOnMarketTimestamp: null,
+    historyListDates: [],
+    statusChanges: statusChanges.get(key) ?? [],
+    pendingTimestamp: null,
+    daysToPending: null,
+    mlsDaysOnMarket: null,
+  })
+  for (const key of keys) out.set(key, blank(key))
 
   for (const row of (listingRes.data ?? []) as Array<Record<string, unknown>>) {
     const key = typeof row.ListingKey === 'string' ? row.ListingKey : null
     if (!key) continue
-    const cur = out.get(key) ?? {
-      listingKey: key,
-      onMarketDate: null,
-      listDate: null,
-      originalEntryTimestamp: null,
-      originalOnMarketTimestamp: null,
-      historyListDates: [],
+    const cur = out.get(key) ?? blank(key)
+    const num = (v: unknown): number | null => {
+      const n = typeof v === 'number' ? v : v == null ? Number.NaN : Number(v)
+      return Number.isFinite(n) ? n : null
     }
     cur.onMarketDate = typeof row.OnMarketDate === 'string' ? row.OnMarketDate : null
     cur.listDate = typeof row.ListDate === 'string' ? row.ListDate : null
@@ -398,6 +512,9 @@ export async function getClosedCompListStarts(
       typeof row.original_entry_timestamp === 'string' ? row.original_entry_timestamp : null
     cur.originalOnMarketTimestamp =
       typeof row.original_on_market_timestamp === 'string' ? row.original_on_market_timestamp : null
+    cur.pendingTimestamp = typeof row.pending_timestamp === 'string' ? row.pending_timestamp : null
+    cur.daysToPending = num(row.days_to_pending)
+    cur.mlsDaysOnMarket = num(row.CumulativeDaysOnMarket) ?? num(row.DaysOnMarket)
     out.set(key, cur)
   }
 

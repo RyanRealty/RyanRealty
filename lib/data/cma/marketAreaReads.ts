@@ -5,6 +5,7 @@
  */
 
 import 'server-only'
+import type { ListingStatusChange } from '@/lib/cma/listing-status'
 import { createServiceClient } from '@/lib/supabase/service'
 
 function client() {
@@ -42,6 +43,14 @@ export type CmaMarketAreaRow = {
   lot_size_acres?: number | null
   /** Selected only by the area-scoped unsold read: the came-off fit reads it for the multi-unit and ADU walls (rule 24). */
   public_remarks?: string | null
+  /** Selected only by the area-scoped unsold read: the day the listing took its status of record. */
+  off_market_date?: string | null
+  /**
+   * Attached only by the area-scoped unsold read: the listing's MLS status
+   * changes, oldest first, so the days it was on the market end the day it
+   * left Active (lib/cma/listing-status.ts), not the day it expired.
+   */
+  statusChanges?: ListingStatusChange[]
 }
 
 const COLS =
