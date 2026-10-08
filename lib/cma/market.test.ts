@@ -420,7 +420,7 @@ describe('one population on the Bend right now page (2026-10-08)', () => {
   // (1224 / 6 = 204), and all residential held 896. The letter's stored month
   // line was market_stats_cache monthly, Bend clipped to its TIGER polygon
   // (Apr to Sep 2026: 140, 157, 198, 188, 147, 148 sold, 978 in all), and
-  // market_pulse_live (the same polygon, Active plus Coming Soon) held 472 at
+  // market_pulse_live (the same polygon, counting pre-market listings too) held 472 at
   // 2.95. Two reviewers divided 712 by the polygon's 163 a month and got 4.4,
   // a balanced verdict no single population supports. The fix keeps the
   // counts on Market Truth, puts the month line on the same membership, and

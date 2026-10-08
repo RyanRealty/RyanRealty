@@ -141,7 +141,7 @@ async function readCmaLeftover(
 export const CMA_MARKET_POPULATION =
   "Market Truth mt-v1 segment detached: PropertyType 'A' and property_sub_type 'Single Family Residence'. " +
   'A city is its MLS City text (D5), a resort community its primary place membership. ' +
-  "Active is StandardStatus 'Active' only (Coming Soon and pending are not inventory). " +
+  "Active is StandardStatus 'Active' only (pre-market and pending listings are not inventory). " +
   'Months of supply = active / (closed_180d / 6). The month line is one-month median_close and closed_count on the same membership.'
 
 /** The month line covers the last year: twelve complete months. */
